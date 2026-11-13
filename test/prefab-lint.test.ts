@@ -9,11 +9,20 @@ import { stripTypeScriptTypes } from 'node:module';
 import fixtures from './fixtures/prefab-lint.json' with { type: 'json' };
 import structural from './fixtures/prefab-structural.json' with { type: 'json' };
 import moduleFixtures from './fixtures/prefab-modules.json' with { type: 'json' };
+import legacyFixtures from './fixtures/prefab-legacy.json' with { type: 'json' };
 import { createModuleResolver } from '../dev/lint/prefab-boundaries.ts';
 import debt from '../dev/lint/prefab-debt.json' with { type: 'json' };
 import { lintSafety } from '../dev/lint/safety.ts';
 import type { PrefabDebt } from '../dev/lint/safety.ts';
 import { comparePrefabDebt, checkPrefabDebt, PREFAB_DEBT_FILE } from '../dev/registry/prefab-debt.ts';
+
+for (const fixture of legacyFixtures)
+  test(fixture.name, () =>
+    assert.ok(
+      lintSafety(fixture.code, 'src/entities/review/probe.ts').some((d) => d.rule === fixture.rule),
+      'Expected prefab boundary rejection; received none',
+    ),
+  );
 
 for (const fixture of structural)
   test(fixture.name, () =>
@@ -266,7 +275,8 @@ test('registry bootstraps only existing base calls, then rejects list growth and
     fs.writeFileSync(path.join(root, file), text);
   };
   const current = {
-    version: 2,
+    version: 3,
+    legacy: {},
     colliders: { 'src/old.ts': { count: 1, exports: [], reason: '2026-11-13: Approved existing call.' } },
     seats: {},
   };

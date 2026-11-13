@@ -13,6 +13,9 @@ import type { ImportBan, ImportOptions, Restriction, Rule } from './policy.ts';
 import { isCapability, createModuleResolver, moduleEdges, runtimeExports } from './prefab-boundaries.ts';
 import type { PrefabDebt, ModuleResolver } from './prefab-boundaries.ts';
 export type { PrefabBudget, PrefabDebt } from './prefab-boundaries.ts';
+import { acquiredConstruction, loadLegacyGraph, unanalysedProjectCode } from './prefab-edges.ts';
+import type { LegacyGraph } from './prefab-edges.ts';
+const legacyGraphs = new WeakMap<PrefabDebt, LegacyGraph>();
 
 export type Diagnostic = { file: string; line: number; rule: string; message: string };
 export const customRules = new Set([
@@ -100,6 +103,7 @@ export function lintSafety(
   file: string,
   debt: PrefabDebt = prefabDebt,
   resolve: ModuleResolver = defaultResolver,
+  legacyGraph?: LegacyGraph,
 ): Diagnostic[] {
   if (ignored(file)) return [];
   const rules = rulesFor(file);
@@ -233,6 +237,34 @@ export function lintSafety(
           rule,
           `Prefab debt has ${actual} violations, budget ${budget.count}: lower the count to ${actual} (remove a zero entry). ${prefabDoor}`,
         );
+    }
+  }
+  // Edge errors are never provider count waivers: even a debt file cannot acquire a new legacy API.
+  if (debt.legacy && edges.length) {
+    let graph = legacyGraph ?? legacyGraphs.get(debt);
+    if (!graph) {
+      graph = loadLegacyGraph(process.cwd(), debt);
+      legacyGraphs.set(debt, graph);
+    }
+    for (const edge of edges) {
+      const target = edge.source ? resolve(file, edge.source) : null;
+      if (!edge.erased && target && unanalysedProjectCode(graph, target))
+        for (const kind of ['colliders', 'seats'])
+          report(
+            edge.node,
+            `boogle/${kind}-from-records`,
+            `Unanalysed project module ${target} cannot forward construction capabilities. ${prefabDoor}`,
+          );
+      for (const key of acquiredConstruction(graph, file, edge, resolve)) {
+        const recorded = debt.legacy[key];
+        if (recorded?.importers.includes(file)) continue;
+        for (const kind of graph.constructors[key]!.kinds)
+          report(
+            edge.node,
+            `boogle/${kind}-from-records`,
+            `New legacy construction importer ${file} → ${key}; importer edges may only shrink. ${prefabDoor}`,
+          );
+      }
     }
   }
   // CommonJS was the legacy config's default latest/sloppy scope. The two non-native recommended rules still

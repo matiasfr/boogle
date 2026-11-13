@@ -32,9 +32,24 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   unbounded star exports are forbidden. Registry ratchets these public names as well as file identities/counts;
   removed names must be removed from the record. A new barrel cannot import a capability, and a trusted barrel
   cannot invent a new surface: this closes laundering without guessing alias/function-body provenance. The
-  declared instantiate API and existing debt APIs are intentional trusted surfaces. This is an architectural
-  boundary, not a security sandbox: edits to existing approved API bodies, global side effects or arbitrary
-  generated code still require review; recorded counts count module edges and legacy direct calls, not objects.
+  declared instantiate API stays open for record-authored content. Existing construction APIs are additionally
+  constrained by the importer ratchet below; public names alone are not permission for new consumers.
+- `dev/lint/prefab-edges.ts` computes construction-capable exports, never a hand list. Its conservative binding
+  graph follows local helper/alias/closure references, namespace/type dependency bags, assigned values and
+  statically bound calls across modules. Capability-module functions are roots; opaque callable/dependency
+  parameters may construct and therefore fail closed as both kinds. An export of a door/debt provider that may
+  reach those roots is a legacy construction export. The record-only `src/prefab/instantiate.ts` surface is the
+  explicit exception. This is a may-reach set (including exposed values), not a claim every member constructs.
+  Named, namespace, dynamic and require acquisitions follow renamed/star barrels and wrapper provenance to
+  real consumers. Every forwarding file is an importer too: a new barrel or a new consumer fails and names
+  `src/prefab/instantiate.ts`. The graph covers project code including tools/tests, so moving a barrel outside
+  `src` cannot launder it; source imports of ignored/unanalyzed project code fail closed.
+  `legacy["file#export"]` records kinds and importing files. Lint and registry require the computed set and
+  recorded set to match exactly; removed APIs/edges must be deleted. Registry forbids new APIs, kinds or importer
+  identities relative to main. A new constructor under an old public name cannot appear silently. The graph
+  cache fingerprints analyzed source bytes/file identities, analyzer/visitor code, providers, lockfile and
+  tsconfig; writes are atomic. It is derivative data, not a waiver. Existing approved edges can reuse an API;
+  globals/reflection/generated code remain outside a security-sandbox guarantee.
 - `boogle/records-are-data`: content imports/re-exports only prefab `types.ts`/`names.ts`, `src/constants.ts`,
   `src/math-pure.ts`, and explicitly listed pure layout helpers (`place/layout.ts`, `entities/railway/line2-path.ts`).
   No three.js (even inline `import('three').Mesh` types), browser/DOM globals or unknown/computed dynamic imports.
@@ -43,8 +58,8 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   ambient `declare`, type bindings and erased imports do not. Local `origin` and local `globalThis` objects are
   allowed. The compiler separately
   rejects non-JSON exported values; compiled JSON remains committed.
-- `dev/lint/prefab-debt.json` version 2 lists collider/seat files with `{ count, reason, exports }` and fixed door
-  public surfaces. Lint and registry
+- `dev/lint/prefab-debt.json` version 3 lists collider/seat files with `{ count, reason, exports }`, fixed door
+  public surfaces and computed construction/importer records. Dropping the schema or edge set fails. Lint and registry
   reject excess violations and require fewer violations to **lower the count** (remove a zero entry). Registry
   also rejects any new file identity or per-file count growth, even when another file/count shrinks. Against a
   base predating the structural schema, it derives counts and exported names from the branch/base common

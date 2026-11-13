@@ -1,0 +1,22 @@
+[
+  {
+    "name": "audit c: new collider consumer",
+    "code": "import { makeCar } from '../railway/car.ts'; export const make = (...args: Parameters<typeof makeCar>) => makeCar(...args);",
+    "rule": "boogle/colliders-from-records"
+  },
+  {
+    "name": "audit c: new seat consumer",
+    "code": "import { buildMachine } from '../railway/track-machine.ts'; export const make = (...args: Parameters<typeof buildMachine>) => buildMachine(...args);",
+    "rule": "boogle/seats-from-records"
+  },
+  {
+    "name": "audit c: new barrel",
+    "code": "export { makeCar as make } from '../railway/car.ts';",
+    "rule": "boogle/colliders-from-records"
+  },
+  {
+    "name": "audit c: existing barrel consumer",
+    "code": "import { makeCar } from '../railway/rail-kit.ts'; export const make = (...args: Parameters<typeof makeCar>) => makeCar(...args);",
+    "rule": "boogle/colliders-from-records"
+  }
+]

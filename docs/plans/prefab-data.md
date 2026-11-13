@@ -232,6 +232,30 @@ belong to `.look/prefab-step-5-review/`, superseding this task's earlier static 
 
 ## 6. What can start today, and what waits
 
+**Step 5c consumer-edge correction (supersedes the approved-API escape hatch below):** the audit's four typed
+`makeCar`/`buildMachine` and new/existing-barrel probes were ported first; all four failed before enforcement
+edits (`.look/prefab-step-5-edges/red.log`). `dev/lint/prefab-edges.ts` computes a conservative may-reach graph over
+lexical bindings, helper/alias/closure references, assigned values, namespace dependency bags and statically
+resolved calls. Capability-module functions seed construction reachability; opaque callback/dependency parameters
+fail closed. This includes exposed construction-capable values, not just functions which build immediately.
+Every construction-capable export of a door/debt provider is computed, not hand-listed. The record-only
+`instantiate.ts` public API is the explicit exception so new record-authored content remains possible.
+
+The version-3 `legacy` records freeze each computed API's kinds and real importing files, following renamed,
+namespace, dynamic and star/wrapper chains. Forwarding files count as importers too, including tools/tests and
+barrels outside `src`; source imports of ignored/unanalyzed project code fail closed. A new barrel or consumer
+fails with the prefab door; removed consumers must be deleted. Lint and registry compare the computed set with
+the recorded set, and registry rejects new APIs/kinds/edges relative to its base. A fixture changes an existing
+pure export into a constructor to prove that public-name freezing alone cannot bless it silently.
+
+The cache fingerprints project code, providers, lockfile, tsconfig and analyzer/visitor code, and writes atomically.
+Source-file additions/removals invalidate it. The graph deliberately over-approximates unknown callbacks and
+dependency values: its API/edge counts are architectural reachability, not actual body/seat/object counts. It
+covers all 50 audit paths and seven injected constructors; that audit list is validation evidence, not production
+configuration. Existing approved consumers can reuse an acquired API; arbitrary global/reflected/generated-code
+effects remain outside a sandbox guarantee. The requested rebase, regenerated per-entry debt differences and
+final checks are recorded in this follow-up's handoff under `.look/prefab-step-5-edges/`.
+
 **Step 5 structural re-review correction (supersedes its syntax-based boundary notes):** the four new findings
 were ported first as five failing fixtures (including both physics and seat laundering). All failed at
 `12c3db6fc` before production edits; `.look/prefab-step-5-structural/red.log` preserves the result. Runtime imports
