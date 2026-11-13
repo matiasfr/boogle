@@ -848,8 +848,16 @@ from Ring Island) so the Home island's stops stay apart; names and marks are the
 island is drawn 16% to 36% smaller on five of the six displays. Each head's platform and High Gorge's north platform
 has the same map on a grey stand between the rack and the frame, its own stop ringed, up while trains stop there.
 Home has no hall line map yet ([home-station](../plans/home-station.md), step 12): the Village halt's display is
-its map. Not built yet: kit cars carry no number, a joining train appears without its one-second scale-in, and the
-kit does not hop from the train to the rack. Not tested on a device.
+its map. **The kit's number** (step 4b, 12 November): line 2's kit car carries a small dark board on a post at its
+rear, over the load, with the number of the section its kit is for, or **S** for the steel works' kit; the rack's
+plate and the frame's sign carry the same number at the same size, so a train whose board does not match the rack
+runs past it. The board is there while the car carries logs or rails. At the rack the crates hop from the car in an
+arc (about a second) and the rack's logs and rails appear as each lands. On Ring Island the steel works' two stacks
+stand under a **STEEL KIT** plate with the S, from the rivet until the works lights. The two extra trains have no
+shed: each grows from the rails over one second where it joins at the Village, and its marker grows on every map
+in the same second. Ring Island's low map table carries the halt map from the rivet (north up, Ring Island ringed,
+no train markers); before the rivet it is the painted table it was. Placeholder marks and labels. Not tested on a
+device.
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
