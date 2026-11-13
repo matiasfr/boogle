@@ -68,7 +68,7 @@ import { railLegKitHolders, railLegKitRelease } from '../sim/railway-sys-route-k
 import { railBeamPutDown, railBeamRelease, railBeamStood } from '../sim/railway-sys-line1.ts';
 import { railLine2Active, ringHead } from '../sim/railway-queries.ts';
 import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
-import { railSession, railSettle } from '../sim/railway-sys-core.ts';
+import { railSession, railSettle, remember } from '../sim/railway-sys-core.ts';
 import { RAIL_ARRIVAL, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, railPos } from '../sim/railway-route.ts';
 import { haltHead, legOpen, legRow } from '../sim/railway-queries-route.ts';
 import type { World } from '../ecs/index.ts';
@@ -392,6 +392,16 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
       return result.status === 'accepted' && result.accepted > 0
         ? { ...result, effect: railEffect(world, pid, e, before) }
         : result;
+    },
+    /** A classic command shares the railway's persistent identity/history, with no material action or new shape.
+     * ok=1 means accepted; the command's actual result is host-local until its state gains a projection. */
+    record(pid: string, e: RailAction, accepted: boolean): RailResult {
+      const previous = railOutcome(world, pid, e.epoch, e.request);
+      if (previous) return previous;
+      const a = world.lookup(Account, pid)!; // coordinator checked the session and next request
+      const result = world.run(remember, { a, e, n: accepted ? 1 : 0, rejected: !accepted });
+      commit();
+      return result;
     },
     /** A new session epoch for pid (a page opened or took over). */
     session(pid: string, epoch: number) {
