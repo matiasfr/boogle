@@ -1,6 +1,6 @@
 # Leg 1: the lay ask can expire before boarding
 
-13 November 2026, `codex/leg1-lost-ask`. The original diagnosis below is the **v34 baseline**, committed at
+13 November 2026, `codex/leg1-lost-ask-2`, rebased onto fetched main `c3a816c72`. The original diagnosis below is the **v34 baseline**, committed at
 `7c28778a`. The [v35 bounded correction](#v35-bounded-correction) below supersedes the unrestricted-repeat
 candidate at `77bb44f3`. The owner ruled that the existing anti-spam assertions win unchanged.
 **The original failure was reproduced in the sim; the corrected rule is committed for independent review.**
@@ -126,7 +126,7 @@ was invoked before noticing that it can query GitHub; no further network command
 ## V35 bounded correction
 
 Policy retained on this branch: **at most one dwell extension per stand**, not unrestricted repeat refresh and not
-the drop-refresh fallback. Nothing has been pushed, shipped or rebased. The owner explicitly ruled on the conflict
+the drop-refresh fallback. Only this job was rebased; nothing has been pushed or shipped. The owner explicitly ruled on the conflict
 found at `77bb44f3`; the original two anti-spam assertions at `test/railway-r3b1-review.test.ts:38` and `:46` are
 unchanged and now pass. The earlier candidate's two failures remain in its archived logs, not the current results.
 
@@ -137,7 +137,7 @@ unchanged and now pass. The earlier candidate's two failures remain in its archi
 - `src/sim/railway-sys-route.ts:85`: the lay still gives a redirected train its full 50 ticks, retaining `arrived`.
   That departure clock already differs from arrival, so a later platform call cannot re-extend that same stand.
   The regression checks all 49 standing ticks, refuses a repeat on tick 49, and departs exactly on tick 50.
-- `railway-trains.ts:513`: the next real arrival resets `depart` and `arrived` together. Save/load preserves both,
+- `railway-trains.ts:516`: the next real arrival resets `depart` and `arrived` together. Save/load preserves both,
   so it does not replenish the allowance. Signal stands cannot match a platform call. Neither end headway timestamps
   nor the end/Ring hold caps are changed. The original late-call assertion still permits the existing one asker's
   dwell across an end hold deadline: 649 + 50 = 699; it does not permit a second extension. The cap is not restarted.
@@ -147,15 +147,17 @@ unchanged and now pass. The earlier candidate's two failures remain in its archi
 - `src/entities/railway/halts-view.ts:583`: the previous correction still offers an outward lever at every still-open
   old head after the next section opens, including heads 1 and 2. `dev/look/bots/railway-ride.ts:73` and
   `railway-legs.ts:158` use it when no outward train stands, and recover a consumed ask during the walk.
-- `test/railway-jump.test.ts:37`: pin all **24 menu rows** literally, in order, plus the 23 offered seed stages.
-  The expectation is not derived from the seed catalog. Adding a buildable seed cannot silently add a menu item;
-  `gorge-mid` remains unoffered. No menu source or wording changed.
+- `test/railway-jump.test.ts:38`: pin all **22 visible `MENU_JUMPS` rows** literally, in order. Keep main's
+  `MENU_JUMPS` mechanism and its existing menu/tooling test: `gorge-open` and `gorge-reached` remain in `JUMPS` for
+  tooling but are absent from the menu; `gorge-mid` remains a buildable test seed without a menu row. The expected
+  list is not derived from the seed catalog. `src/world/railway-jump.ts` is byte-identical to fetched main.
 - `src/world/namespace.ts:77`: retain the unshipped **v35** boundary, revising its dated history to describe the
-  bounded rule. No extra bump or migration. The v35 golden (only the two Gorge stages changed from v34) still passes;
-  **no pinned fixture moved or was regenerated in this follow-up**.
+  bounded rule immediately after main's v34 history. No extra bump or migration. Against main, only
+  `test/fixtures/railway-golden.json` differs: namespace and `gorge-mid` / `gorge-reached`. All nine shards pass;
+  the previously generated v35 fixture remains valid, so nothing was regenerated during this rebase.
 
 No new prompt literal was introduced. **Suspect placeholder lines for the owner:** the existing outward-lever
-wording now offered at heads 1 and 2, “Request stop: to Stack railhead” (`halts-view.ts:654`, `:808`). The homeward prompts are unchanged.
+wording now offered at heads 1 and 2, “Request stop: to Stack railhead” (`halts-view.ts:656`, `:834`). The homeward prompts are unchanged.
 
 ### Final 960-case table beside the baseline
 
@@ -177,8 +179,8 @@ was weakened. The original bot timing analysis above remains historical; there i
 
 ### Final route gates and checks
 
-The final audited run passes **77/77**, no TODOs, in 388.3 s. Its 960-case distribution is identical to the quick
-sweep above. Exact command (timeout bounds the entire process):
+The fresh post-rebase audited run passes **77/77**, no TODOs, in 380.9 s. Its 960-case distribution and route-gate
+table are identical to the accepted pre-rebase run at `2a2870f98`; both tables here are freshly verified. Exact command (timeout bounds the entire process):
 
 ```sh
 RAIL_AUDIT=1 FUZZ_STRIDE=1 ROUTE_GATES=1 LEG_ASK_FUZZ=1 UNIT_ONLY=test/railway-route-rules.test.ts timeout 1800 node dev/test-unit.ts --test-timeout=1200000
@@ -200,34 +202,75 @@ frame idle **1129/559/363/363**, below **1200/600/600/600**. Call 88 old-to-new-
 its four fuzz journeys peak at **1076**. Gate 15: steel kit **+651**; first steel home/install **+1823 idle / +2396 fed**,
 versus build-2 **+1824**, fed penalty **572 ≤1050**. The 48-seed light/heavy checkpoint sheet was not rerun.
 
-Final checks after the last runtime/test edit:
+Fresh checks after the rebase conflict resolution and the final `MENU_JUMPS` test edit:
 
-| Check                                                            | Result                                                                                                 |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `npm run check`, scoped `UNIT_ONLY`                              | exit 0: 160/160, no TODOs; lint, typecheck, registry, level, assets and build pass                     |
-| `timeout 600 node dev/ship-check.ts 7c28778a`                    | exit 0: 1065 pass, 0 fail, one unchanged all-longer-fleet TODO; 91 affected files                      |
-| Six-train fleet/join, train/hold units, original anti-spam tests | pass in route gates and scoped check; both original anti-spam test bodies byte-identical to `7c28778a` |
-| Real hold-host tests                                             | 4/4: late join, restart, bounded repeat, assigned-ask release                                          |
-| Pinned golden shard 8 and menu checks                            | pass; no golden regeneration or new fixture edits                                                      |
-| `npm run registry`                                               | pass; 22 presence keys, 16 message types, 16 ops, 9 states                                             |
-| `npm run loop -- run`                                            | pass; headless model, later areas still flagged stand-ins                                              |
+| Check                                                    | Result                                                                                                    |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `npm run check`, scoped `UNIT_ONLY`                      | exit 0: 68/68, no TODOs; lint, typecheck, registry, level, assets and build pass                          |
+| `timeout 600 node dev/ship-check.ts` (default main base) | exit 0: 1079 pass, 0 fail, one unchanged all-longer-fleet TODO; 92 affected test files                    |
+| All nine golden shards, menu, trains and r3b1-review     | 166/166, no TODOs; includes all eight main six-hold cases and the original unchanged anti-spam assertions |
+| Real hold-host tests                                     | 4/4: late join, restart, bounded repeat, assigned-ask release                                             |
+| Audited route gates and 960-case sweep                   | 77/77, no TODOs; tables identical to the accepted pre-rebase run                                          |
+| `npm run registry`                                       | pass; 22 presence keys, 16 message types, 16 ops, 9 states                                                |
 
-The scoped check used `UNIT_ONLY='test/railway-route-rules.test.ts test/railway-trains.test.ts
-test/railway-r3b1-review.test.ts test/railway-cart.test.ts test/railway-jump.test.ts test/railway-golden-8.test.ts'`
-and `timeout 600 npm run check`. Hold-host used
+The scoped check used `UNIT_ONLY='test/railway-jump.test.ts test/railway-route-rules.test.ts
+test/railway-r3b1-review.test.ts test/railway-cart.test.ts'` and `timeout 600 npm run check`. The separate 166-test run
+used `UNIT_ONLY` for all `test/railway-golden-0.test.ts` through `-8.test.ts`, `railway-jump`, `railway-trains` and
+`railway-r3b1-review`, via `timeout 360 node dev/test-unit.ts`. Hold-host used
 `timeout 240 node --import ./test/helpers/rail-no-audit.ts --test --test-timeout=120000 --test-name-pattern='hold host' server/test/railway-steel-host.test.ts`.
-The ship-check base scopes this job rather than inherited pre-rebase work; its output includes the unchanged
-`test/railway-install.test.ts:434` all-longer TODO, not a new skip or a passing assertion. Prettier ran on changed files.
-No whole-suite run. Logs, all 155 >1200 traces, distributions and source hashes are indexed in the
-[worker-authored headless manifest](../../.look/lost-ask-bounded/manifest.json), which is not a broker manifest.
+The default ship-check now sees only this job above main. Its unchanged `test/railway-install.test.ts:434`
+all-longer TODO is not a new skip or a passing assertion. Prettier ran on the resolved halt view, changed menu test
+and report. No whole-suite run.
 
-Implementation commit: `2e6e4a8189be3310fd34eabde64e548a6a0f58a2`; report committed separately.
+Relative to main, **one fixture file moves**, `test/fixtures/railway-golden.json`: `worldNs` v34 → v35 and only
+`gorge-mid` / `gorge-reached` stage/after hashes. Mid stays tick **13085**; reached moves **15269 →15313**. The v35 file
+from this job survived the rebase and passes all nine shards, so there was no new regeneration. The
+[keyed fixture delta](../../.look/lost-ask-rebased/fixture-delta.json) records every old/new value.
+Fresh logs, all 155 >1200 traces, distributions and source hashes are indexed in the
+[worker-authored headless manifest](../../.look/lost-ask-rebased/manifest.json), which is not a broker manifest.
 
-`review stamp f0ee8b15ec47 (41 files since origin/main).`
+### Rebase scope and independent review
+
+Fetch succeeded. Created **`codex/leg1-lost-ask-2`** in the same worktree, preserving the original branch at
+`2a2870f98`. Ran `git rebase --onto origin/main aa256023e`, where `aa256023e` is the last commit not authored by this
+job. Exactly the six original job commits replayed; the spacing and step-5 history beneath them is excluded.
+The only conflict was the two outward-lever conditions in `halts-view.ts`: main's view, including its closed-head
+“Track clear” request, remains intact, with this job's still-open-head outward conditions applied on top. The bot
+files are byte-identical to the accepted pre-rebase tip. Commit `e22eb30e` adapts the full-list pin to main's menu.
+
+**Requested core comparison: empty apart from what main brought.** The raw diff from `2a2870f98` is not empty:
+it contains main's changes to `railway-queries-trade.ts`, `railway-sys-trains.ts`, `railway-trains.ts`, `tune.ts` and
+`src/world/railway-jump.ts`; `server/src` has no delta. Main added the `holdOff` extraction, the corrected direction
+for an open-end ask in `controlFree`, hold wording and `MENU_JUMPS`. No extra sim rule change was introduced here.
+
+Two normalized zero-context patch comparisons verify this, including all of `src/sim`, `src/world`, `server/src`:
+
+- main's delta (`aa256023e` → `c3a816c72`) equals pre-tip → rebased tip:
+  `136f5f6ee500c4698dd4e70b638d3ce8291a5529`.
+- this job's own original delta (`aa256023e` → `2a2870f98`) equals main → rebased tip:
+  `6e2d0c7e10befb19d6f7dcac0b320e62802ad24b`.
+
+[Comparison evidence](../../.look/lost-ask-rebased/rebase-comparison.json) records the base, files and both comparisons.
+The latest menu adaptation is test-only, so neither comparison changes. Rebased code checkpoint: `e22eb30e`;
+the final report is committed separately.
+
+`review stamp c8571ddabd15 (10 files since origin/main).`
 
 Generated with `timeout 120 npm run review-stamp -- /Users/matiasfranco/Developer/boogle-codex/leg1-lost-ask --no-fetch`.
-This includes inherited pre-rebase work, as intended. It is a fingerprint for the independent review, not a claim
-that review has happened. No fetch, push, ship, rebase, stash, new op, saved field or ROM input.
+Every file below is marked **review**; none is merely **read**. The stamp is a fingerprint, not an independent review.
+
+1. `server/test/railway-steel-host.test.ts`
+2. `src/sim/railway-sys-route.ts`
+3. `src/sim/railway-sys-trains.ts`
+4. `src/world/namespace.ts`
+5. `test/fixtures/railway-golden.json`
+6. `test/helpers/rail-rows.ts`
+7. `test/railway-cart.test.ts`
+8. `test/railway-jump.test.ts`
+9. `test/railway-r3b1-review.test.ts`
+10. `test/railway-route-rules.test.ts`
+
+No push, ship, stash, new op, saved field or ROM input. This rebase and fetch were explicitly authorized.
 
 ### Browser work owed
 
