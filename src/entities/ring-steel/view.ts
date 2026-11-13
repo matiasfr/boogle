@@ -17,6 +17,7 @@ import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL, ringAt } from '../../sim/rail
 import { account, aperture, steel } from '../../sim/railway-rows.ts';
 import { free, heldBig } from '../../sim/railway-queries.ts';
 import { createBoxBatch, drawWorksBoxes } from '../railway/works-box-view.ts';
+import { STEEL_MARK, paintPlate } from '../railway/kit-board.ts';
 import type { WorksBox } from '../railway/works-shape.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 
@@ -29,7 +30,8 @@ const TAKE_LOGS = 'Take logs',
   BRING_BOTH = 'Bring logs or rails',
   BACK_FULL = 'Your back is full',
   HANDS_FULL = 'Hands full',
-  SIGN_TITLE = 'STEEL WORKS';
+  SIGN_TITLE = 'STEEL WORKS',
+  KIT_PLATE = 'STEEL KIT';
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 const GREY = '#9c9ea1',
   GREY_DARK = '#6f7275',
@@ -126,6 +128,18 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
   }
   sign.mesh.visible = false;
   let painted = '';
+  // The yard's plate (the greybox route's step 4 review, answers b and j): `STEEL KIT` with the mark a steel kit
+  // car's board carries, on a post between the two stacks, over them, facing the platform; it stands while the works
+  // still takes its kit (from the rivet until it lights). The stack line's rack across the tracks reads `KIT 1`.
+  const plate = signBoard(owner, { w: 2.3, h: 0.8, px: 512, foot: 2.1, posts: 'one', wood: '#5d6063' });
+  {
+    const p = at((LOGS_AT.u + 0.75 + RAILS_AT.u - 0.7) / 2, LOGS_AT.lat);
+    plate.mesh.position.set(p.x, Y, p.z);
+    plate.mesh.rotation.y = FACE_PLATFORM;
+    plate.mesh.name = 'ring-steel:kit-plate';
+    paintPlate(plate, [{ t: KIT_PLATE, size: 0.42 }], STEEL_MARK);
+  }
+  plate.mesh.visible = false;
 
   /** The works' rows once the first whole state is in (`read.whole()`, a latch), or null. */
   function rows() {
@@ -139,6 +153,7 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
     fixed.visible = on;
     batch.mesh.visible = on && !!r;
     sign.mesh.visible = on && !!r && r.joined;
+    plate.mesh.visible = on && !!r && r.joined && r.s.lit < 0;
     if (!r || !on) return;
     const { s } = r;
     if (sign.mesh.visible) {
@@ -189,8 +204,7 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
         mine = account(wd, adapter.read.pid),
         out: Interactable[] = [];
       if (within(p, YARD, RING_STEEL_YARD.reach)) {
-        const full =
-          mine && free(wd, mine) <= 0 ? { blocked: heldBig(wd, mine) ? HANDS_FULL : BACK_FULL } : {};
+        const full = mine && free(wd, mine) <= 0 ? { blocked: heldBig(wd, mine) ? HANDS_FULL : BACK_FULL } : {};
         if (s.yardLogs > 0)
           out.push({
             id: 'railway-steel-take-logs',
@@ -234,6 +248,7 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
         steelView: {
           shown: fixed.visible,
           sign: sign.mesh.visible ? painted : null,
+          kitPlate: plate.mesh.visible ? `${STEEL_MARK}|${KIT_PLATE}` : null,
           yard: r ? { logs: r.s.yardLogs, rails: r.s.yardRails } : null,
           bill: r ? { logs: r.s.logs, rails: r.s.rails, lit: r.s.lit >= 0 } : null,
           rack: r ? r.s.rack : 0,
