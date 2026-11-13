@@ -8,12 +8,12 @@ export type Pick = { who: string; model: string; effort: string };
 export type Route = { work: string; withCodex: Pick; normal: Pick };
 
 /**
- * Normal mode is Claude only. withCodex makes Codex the workhorse and saves Claude for Opus; it is on from `codexFrom`
- * (owner's local date) onward, and off when `codexFrom` is null.
+ * Normal mode is Claude only. withCodex gives Codex everything below Opus and saves Claude for Opus and Fable; it is
+ * on from `codexFrom` (owner's local date) onward, and off when `codexFrom` is null.
  */
-export const codexFrom: string | null = '2026-11-13';
+export const codexFrom: string | null = '2026-11-12';
 export const codexWhy =
-  'Codex usage is out (owner, 8 November): Claude only until Thursday 12 November or a new model drops, whichever is first';
+  'Codex allowance is back (owner, 12 November): Codex takes the work below Opus on Sol, and Astra the high-risk and review work';
 
 const codex = (model: string, effort: string): Pick => ({ who: 'Codex (dev/codex/run.ts)', model, effort });
 const claude = (who: string, model: string, effort: string): Pick => ({ who, model, effort });
@@ -51,20 +51,20 @@ export const routes: Route[] = [
   },
   {
     work: 'Fixes, tooling and captures-driven tasks with no plan to follow',
-    withCodex: codex('gpt-6.1-sol', 'medium'),
+    withCodex: codex('gpt-6.1-sol', 'high'),
     normal: claude('general-purpose subagent', 'opus', 'medium'),
   },
   {
     work: 'High-risk implementation (server, sync, src/world, src/net)',
-    withCodex: codex('gpt-6.1-sol', 'high'),
+    withCodex: codex('gpt-6-astra', 'high'),
     normal: claude('implementer agent, spawned with model opus', 'opus', 'medium'),
   },
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     withCodex: {
       who: "a fresh reviewer with none of the author's context: a Codex review job or a Claude general-purpose subagent",
-      model: 'gpt-6-astra, or fable or opus',
-      effort: 'xhigh for astra, medium for fable or opus',
+      model: 'gpt-6-astra first, or fable or opus',
+      effort: 'high for astra (xhigh for one unresolved question), medium for fable or opus',
     },
     normal: claude('a fresh general-purpose subagent that did not write the code', 'fable', 'medium'),
   },
@@ -75,7 +75,7 @@ export const routes: Route[] = [
   },
   {
     work: 'Runner: owed proofs on a built branch (rebase, bot runs, stills, tick marks); reports failures, changes no design or game code',
-    withCodex: codex('gpt-6-luna', 'low'),
+    withCodex: codex('gpt-6.1-sol', 'medium'),
     normal: claude('general-purpose subagent', 'sonnet', 'medium'),
   },
   {
@@ -90,7 +90,7 @@ export const routes: Route[] = [
   },
   {
     work: 'Quick, easy, mechanical jobs',
-    withCodex: codex('gpt-6-luna', 'low'),
+    withCodex: codex('gpt-6.1-sol', 'medium'),
     normal: claude('general-purpose subagent', 'sonnet', 'medium'),
   },
   {

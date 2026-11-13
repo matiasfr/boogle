@@ -31,7 +31,7 @@ contract is [dev/codex/README.md](../../dev/codex/README.md); visual framing and
 From the checkout containing the work, start a job with a unique topic:
 
 ```sh
-node dev/codex/run.ts task inspect-forge --base-ref HEAD --model gpt-6-luna --effort low "Run the place bot, inspect the forge reveal from its checkpoint, open the images, and report failures and visual findings. Do not change source."
+node dev/codex/run.ts task inspect-forge --base-ref HEAD --model gpt-6.1-sol --effort medium "Run the place bot, inspect the forge reveal from its checkpoint, open the images, and report failures and visual findings. Do not change source."
 ```
 
 Use `--snapshot` instead of `--base-ref HEAD` only when the job should include uncommitted work; it includes all
