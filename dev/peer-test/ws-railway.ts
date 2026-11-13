@@ -46,9 +46,9 @@ const ENVELOPE = `{"t":"m","from":${JSON.stringify(SERVER_ID)},"d":}`.length;
 /** Seat authority over real sockets and client mirrors, including a real first-page close. Presentation prediction
  * is covered by the seat host/adapter tests and the two-player bench look; this probe never moves an avatar. */
 export async function railwaySeats(c: Ctx) {
-  const check = (name: string, ok: boolean) => {
-    c.check(name, ok);
-    if (!ok) throw new Error(`Seat proof stopped: ${name}`);
+  const check = (name: string, ok: boolean, detail = '') => {
+    c.check(name, ok, detail);
+    if (!ok) throw new Error(`Seat proof stopped: ${name}${detail ? ` (${detail})` : ''}`);
   };
   const room = railwayRoomId(`${c.room}-seats`);
   const open = (name: string, pid: string) =>
@@ -65,8 +65,9 @@ export async function railwaySeats(c: Ctx) {
         return (await rail(p)).messages.some((m) => m.t === 'r:session');
       })) >= 0,
     );
-    epochs.set(p, Number((await rail(p)).messages.findLast((m) => m.t === 'r:session')!.epoch));
-    next.set(p, 1);
+    const reply = (await rail(p)).messages.findLast((m) => m.t === 'r:session')!;
+    epochs.set(p, Number(reply.epoch));
+    next.set(p, Number(reply.next));
   };
   const command = async (p: Page, op: 'seat.sit' | 'seat.stand', id?: string, alt?: string[]) => {
     const request = next.get(p)!;
@@ -78,12 +79,16 @@ export async function railwaySeats(c: Ctx) {
       `${p.name} ${op} gets a receipt`,
       (await waitFor(async () => {
         answer = (await rail(p)).messages.findLast(
-          (m) => m.epoch === e.epoch && m.request === request && (m.t === 'ack' || m.t === 'rej'),
+          (m) => m.epoch === e.epoch && m.request === request && (m.t === 'ok' || m.t === 'rej'),
         );
         return !!answer;
       })) >= 0,
     );
     return answer!;
+  };
+  const accept = async (name: string, p: Page, op: 'seat.sit' | 'seat.stand', id?: string, alt?: string[]) => {
+    const answer = await command(p, op, id, alt);
+    check(name, answer.t === 'ok' && answer.accepted === 1, JSON.stringify(answer));
   };
   const seats = async (p: Page) => Object.fromEntries((await rail(p)).seats.map((s) => [s.id, s.pid]));
   const agree = (peers: Page[], expected: Record<string, string>) =>
@@ -99,15 +104,25 @@ export async function railwaySeats(c: Ctx) {
   const B = await open('SeatB', 'seatb');
   await session(A);
   await session(B);
-  check('first seat request wins', (await command(A, 'seat.sit', 'machine-deck-0')).t === 'ack');
+  // The raw fixture starts without an actor pose. Like every command, seats require one; an ack watermark alone
+  // would also acknowledge this rejection. Prove that boundary before providing valid envelopes for contention.
+  const actorless = await command(A, 'seat.sit', 'machine-deck-0');
   check(
-    'the losing seat request takes the alternate',
-    (await command(B, 'seat.sit', 'machine-deck-0', ['machine-deck-1'])).t === 'ack',
+    'a seat command without its actor pose is refused',
+    actorless.t === 'rej' && actorless.reason === 'refused',
+    JSON.stringify(actorless),
   );
+  check('an actorless seat command leaves both mirrors empty', (await agree([A, B], {})) >= 0);
+  await Promise.all([A, B].map((p) => ev(p.page, () => window.T.railStand(0, 0, 0))));
+  // Wait for the first request's accepted receipt before sending the competitor. This orders arrival at the server
+  // without assuming cross-socket ordering or sleeping; mirror predicates below separately await replication.
+  await accept('first seat request wins', A, 'seat.sit', 'machine-deck-0');
+  await accept('the losing seat request takes the alternate', B, 'seat.sit', 'machine-deck-0', ['machine-deck-1']);
   const held = { 'machine-deck-0': 'seata', 'machine-deck-1': 'seatb' };
   check('both seat mirrors agree without displacement', (await agree([A, B], held)) >= 0);
   const C = await open('SeatC', 'seatc');
   await session(C);
+  await ev(C.page, () => window.T.railStand(0, 0, 0));
   check('a late join sees both occupied chairs', (await agree([A, B, C], held)) >= 0);
   const refused = await command(C, 'seat.sit', 'machine-deck-0', ['machine-deck-1']);
   check('a third player at two stools is refused taken', refused.t === 'rej' && refused.reason === 'taken');
@@ -135,22 +150,14 @@ export async function railwaySeats(c: Ctx) {
   check('server restart clears transient seat rows on both clients', (await agree([B, C], {})) >= 0);
   await session(B);
   await session(C);
-  check(
-    'a friend takes the old chair during the restart gap',
-    (await command(C, 'seat.sit', 'machine-deck-1')).t === 'ack',
-  );
-  check(
-    're-claim includes alternatives and is accepted',
-    (await command(B, 'seat.sit', 'machine-deck-1', ['machine-deck-0'])).t === 'ack',
-  );
+  await accept('a friend takes the old chair during the restart gap', C, 'seat.sit', 'machine-deck-1');
+  await accept('re-claim includes alternatives and is accepted', B, 'seat.sit', 'machine-deck-1', ['machine-deck-0']);
   check(
     're-claim slides to the alternate without displacing the friend',
     (await agree([B, C], { 'machine-deck-0': 'seatb', 'machine-deck-1': 'seatc' })) >= 0,
   );
-  check(
-    'standing releases only the caller',
-    (await command(B, 'seat.stand')).t === 'ack' && (await agree([B, C], { 'machine-deck-1': 'seatc' })) >= 0,
-  );
+  await accept('standing is accepted', B, 'seat.stand');
+  check('standing releases only the caller', (await agree([B, C], { 'machine-deck-1': 'seatc' })) >= 0);
   await Promise.all([B.page.close(), C.page.close()]);
 }
 
