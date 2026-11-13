@@ -33,7 +33,7 @@
     "rule": "boogle/colliders-from-records",
     "file": "src/physics/backend-probe.ts",
     "code": "createBody({});",
-    "fail": false
+    "fail": true
   },
   { "rule": "boogle/colliders-from-records", "file": "src/place/land.ts", "code": "slab();", "fail": false },
   {

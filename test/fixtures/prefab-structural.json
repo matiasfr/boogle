@@ -1,0 +1,37 @@
+[
+  {
+    "name": "review b: physics bridge renamed export",
+    "file": "src/physics/bridge.ts",
+    "code": "export { createBody as make } from './engine.ts';",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "review b: instantiate launders seat creation",
+    "file": "src/prefab/instantiate.ts",
+    "code": "export { registerSeat as make } from '../entities/railway/seat.ts';",
+    "rule": "boogle/prefab-public-surface",
+    "fail": true
+  },
+  {
+    "name": "review b: extensionless capability namespace",
+    "file": "src/probe.ts",
+    "code": "import * as api from './physics/engine'; const {createBody: make}=api; make(1);",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "review b: destructured globalThis",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "const {document}=globalThis; export const title=document?.title;",
+    "rule": "boogle/records-are-data",
+    "fail": true
+  },
+  {
+    "name": "review b: ambient document is not a runtime local",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "declare const document: {title:string}; export const title=document.title;",
+    "rule": "boogle/records-are-data",
+    "fail": true
+  }
+]

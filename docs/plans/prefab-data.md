@@ -232,6 +232,36 @@ belong to `.look/prefab-step-5-review/`, superseding this task's earlier static 
 
 ## 6. What can start today, and what waits
 
+**Step 5 structural re-review correction (supersedes its syntax-based boundary notes):** the four new findings
+were ported first as five failing fixtures (including both physics and seat laundering). All failed at
+`12c3db6fc` before production edits; `.look/prefab-step-5-structural/red.log` preserves the result. Runtime imports
+now refer to resolved capability modules, not selected symbol names. A shared native Oxc resolver covers actual
+files, extensionless/index paths, tsconfig aliases, query suffixes and symlinks; device/inode identity also closes
+case-insensitive and hard-link aliases (the Mac case regression failed before this fix). Native Rapier package
+modules are capabilities too. The previous general import rules
+had only textual matchers, so there was no real resolver to reuse; the already-locked resolver is promoted to a
+direct development dependency without downloading packages. Unknown runtime loaders fail closed, and only
+imports/exports that actually erase are exempt (verified against Node's type stripper).
+
+The chosen no-laundering contract freezes runtime export names on every named door and debt file, prohibits
+capability re-exports and unbounded star exports, and ratchets public names in registry as well as source lint.
+Thus a new physics/prefab wrapper or barrel fails at its first capability import; a trusted file cannot add a
+renamed binding or exported wrapper to its recorded public surface. Existing declared API bodies remain trusted
+code, not a sandbox against arbitrary global side effects, generated code or malicious edits to approved APIs.
+The version-2 debt baseline records **111 collider files / 302 violations** and **13 seat files / 16 violations**,
+plus fixed door public names; these counts include all module edges, even imports of non-factory names. The
+schema transition derives the new counts and public names from the branch/base common ancestor's existing
+source (main independently renamed an old export while this job ran). Opaque `import.meta` loaders, including
+Vite globs, also fail closed unless already counted; only `env`/`url` data access is exempt. Future file,
+count and export additions fail; fewer violations/exports must lower the record.
+
+Content checks use lexical scope references rather than access syntax: unresolved `globalThis`, `window` and
+`self` are rejected at their source, so destructuring and computed access cannot hide a DOM read. Ambient
+declarations, type-only bindings and erased imports are not runtime shadows; genuine local bindings still work.
+The fixture table covers both reviews, wrappers, barrels, namespace computation, symlinks, aliases, type erasure,
+and browser-global binding cases. Runtime source, Home station, artifacts, goldens and namespace are unchanged.
+Fresh checks, lint timing and the final stamp live in `.look/prefab-step-5-structural/`; prior evidence is stale.
+
 **Step 3 review-4 serialization correction:** the reviewer’s quarter-turn regression was ported first and failed (`.look/prefab-review-4/red.log`). Choice **(a)**: emit lossless JSON numbers for rotations and all other numeric record/transform fields. This removes serialization roundoff independently of the scale ratio and preserves fractional compensation too; increasing only angle precision would leave that second failure. The sorted-key and array-order rules remain. Both goldens and the committed chair artifacts are byte-identical; no golden or content regeneration was needed.
 
 The 11-row round-trip property table covers seven accepted sources (quarter, eighth and arbitrary yaws under suitable nonuniform parents, cancelling collider rotation, fractional scale compensation, the actual authored chair, and a large supported scale ratio) through compile → parse → validate → instantiate. Two genuinely sheared sources and two scale-ratio boundary cases reject at source, build and runtime load with the same message. A failing boundary probe also showed direct Euler math and runtime quaternion/TRS math differed by amplified ulps: the pure headless basis now follows three.js's exact YXZ quaternion/TRS operation order. No shear predicate or tolerance was relaxed. All 55 prefab tests pass. Instantiation code and the current chair JSON are unchanged, so no new browser run is represented by this correction; the final static checks and stamp are recorded in its handoff. Steps 4 and 5, forbidden source paths, push and ship remain untouched.

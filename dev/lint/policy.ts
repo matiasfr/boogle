@@ -260,7 +260,13 @@ const policyBlocks: PolicyBlock[] = [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/', '.look/'] },
   {
     files: ['src/**/*.{js,ts}'],
-    ignores: ['src/prefab/instantiate.ts', 'src/physics/**', 'src/place/land.ts'],
+    ignores: [
+      'src/prefab/instantiate.ts',
+      'src/physics/engine.ts',
+      'src/physics/backend-rapier.ts',
+      'src/physics/physics.ts',
+      'src/place/land.ts',
+    ],
     rules: { 'boogle/colliders-from-records': 'error' },
   },
   {
@@ -272,6 +278,7 @@ const policyBlocks: PolicyBlock[] = [
     files: ['src/content/**/*.{js,ts}'],
     rules: { 'boogle/records-are-data': 'error' },
   },
+  { files: ['src/**/*.{js,ts}'], rules: { 'boogle/prefab-public-surface': 'error' } },
   // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync, proto and debug bans.
   {
     files: ['src/**/*.{js,ts}'],

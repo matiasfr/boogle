@@ -1,0 +1,263 @@
+[
+  {
+    "name": "capability: renamed local alias",
+    "file": "src/probe.ts",
+    "code": "import {createBody} from './physics/engine'; const make=createBody; make({});",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: computed namespace access",
+    "file": "src/probe.ts",
+    "code": "import * as api from './physics/engine'; const make=api['create'+'Body']; make({});",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: destructured dynamic import",
+    "file": "src/probe.ts",
+    "code": "const {createBody: make}=await import('./physics/engine'); make({});",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: require destructuring",
+    "file": "src/probe.ts",
+    "code": "const {createBody: make}=require('./physics/engine'); make({});",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: aliased require loader",
+    "file": "src/probe.ts",
+    "code": "const load=require; const api=load('./physics/engine'); api.createBody({});",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: computed module loader",
+    "file": "src/probe.ts",
+    "code": "const load=module['require']; const api=load('./physics/engine'); api.createBody({});",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: unknown dynamic target fails closed",
+    "file": "src/probe.ts",
+    "code": "export const load=(path:string)=>import(path);",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: named nonfactory import is still a module capability",
+    "file": "src/probe.ts",
+    "code": "import {teleport} from './physics/engine'; teleport();",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: path alias",
+    "file": "src/probe.ts",
+    "code": "import * as api from '@body'; const {createBody: make}=api; make({});",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: star alias path",
+    "file": "src/probe.ts",
+    "code": "import * as api from '@physics/engine'; const make=api['createBody']; make({});",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: query suffix",
+    "file": "src/probe.ts",
+    "code": "import * as api from './physics/engine.ts?raw'; export const value=api;",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: export star",
+    "file": "src/probe.ts",
+    "code": "export * from './physics/engine';",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: namespace re-export",
+    "file": "src/probe.ts",
+    "code": "export * as api from './physics/engine';",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: renamed re-export",
+    "file": "src/probe.ts",
+    "code": "export {createBody as make} from './physics/engine';",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "barrel: consumer resolves directory index, barrel cannot import capability",
+    "file": "src/barrel/index.ts",
+    "code": "export {createBody as make} from '../physics/engine';",
+    "rule": "boogle/colliders-from-records",
+    "fail": true,
+    "files": { "src/consumer.ts": "import {make} from './barrel'; make({});" }
+  },
+  {
+    "name": "barrel: physics directory is not an exemption",
+    "file": "src/physics/bridge/index.ts",
+    "code": "export * from '../engine';",
+    "rule": "boogle/colliders-from-records",
+    "fail": true,
+    "files": { "src/consumer.ts": "import * as api from './physics/bridge'; api.createBody({});" }
+  },
+  {
+    "name": "capability: seat extensionless",
+    "file": "src/probe.ts",
+    "code": "import * as api from './entities/railway/seat'; const make=api['register'+'Seat']; make({});",
+    "rule": "boogle/seats-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: new prefab wrapper",
+    "file": "src/prefab/wrapper.ts",
+    "code": "import {createBody} from '../physics/engine'; export const make=createBody;",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "capability: solid helper",
+    "file": "src/probe.ts",
+    "code": "import {drawWorksBoxes} from './entities/railway/works-box-view'; drawWorksBoxes(owner,boxes);",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "surface: exported wrapper from debt",
+    "file": "src/legacy.ts",
+    "code": "import {createBody} from './physics/engine'; export const existing=1; export function make(){return createBody({});}",
+    "rule": "boogle/prefab-public-surface",
+    "fail": true
+  },
+  {
+    "name": "surface: local alias exported from debt",
+    "file": "src/legacy.ts",
+    "code": "import {createBody} from './physics/engine'; export const existing=1; const make=createBody; export {make};",
+    "rule": "boogle/prefab-public-surface",
+    "fail": true
+  },
+  {
+    "name": "surface: star from debt",
+    "file": "src/legacy.ts",
+    "code": "export const existing=1; export * from './physics/engine';",
+    "rule": "boogle/prefab-public-surface",
+    "fail": true
+  },
+  {
+    "name": "surface: named door cannot export seat alias",
+    "file": "src/prefab/instantiate.ts",
+    "code": "import {registerSeat} from '../entities/railway/seat'; export const instantiate=()=>({}); const make=registerSeat; export {make};",
+    "rule": "boogle/prefab-public-surface",
+    "fail": true
+  },
+  {
+    "name": "surface: declared instantiate API",
+    "file": "src/probe.ts",
+    "code": "import {instantiate} from './prefab/instantiate'; instantiate();",
+    "rule": "boogle/colliders-from-records",
+    "fail": false
+  },
+  {
+    "name": "type: import type truly erases",
+    "file": "src/probe.ts",
+    "code": "import type {Body} from './physics/engine'; export type T=Body;",
+    "rule": "boogle/colliders-from-records",
+    "fail": false
+  },
+  {
+    "name": "type: inline type specifier leaves a module load",
+    "file": "src/probe.ts",
+    "code": "import {type Body} from './physics/engine'; export type T=Body;",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "type: inline import type expression truly erases",
+    "file": "src/probe.ts",
+    "code": "export type T=import('./physics/engine').Body;",
+    "rule": "boogle/colliders-from-records",
+    "fail": false
+  },
+  {
+    "name": "type: export type truly erases",
+    "file": "src/probe.ts",
+    "code": "export type {Body} from './physics/engine';",
+    "rule": "boogle/colliders-from-records",
+    "fail": false
+  },
+  {
+    "name": "type: inline export type leaves a module load",
+    "file": "src/probe.ts",
+    "code": "export {type Body} from './physics/engine';",
+    "rule": "boogle/colliders-from-records",
+    "fail": true
+  },
+  {
+    "name": "content: destructured globalThis",
+    "file": "src/content/probe.ts",
+    "code": "const {document}=globalThis; export const title=document.title;",
+    "rule": "boogle/records-are-data",
+    "fail": true
+  },
+  {
+    "name": "content: nested destructured window",
+    "file": "src/content/probe.ts",
+    "code": "const {document:{title}}=window; export {title};",
+    "rule": "boogle/records-are-data",
+    "fail": true
+  },
+  {
+    "name": "content: computed self access",
+    "file": "src/content/probe.ts",
+    "code": "export const title=self['docu'+'ment'];",
+    "rule": "boogle/records-are-data",
+    "fail": true
+  },
+  {
+    "name": "content: ambient origin",
+    "file": "src/content/probe.ts",
+    "code": "declare const origin:string; export const x=origin;",
+    "rule": "boogle/records-are-data",
+    "fail": true
+  },
+  {
+    "name": "content: ambient function",
+    "file": "src/content/probe.ts",
+    "code": "declare function fetch(x:string):unknown; export const x=fetch('x');",
+    "rule": "boogle/records-are-data",
+    "fail": true
+  },
+  {
+    "name": "content: runtime local origin",
+    "file": "src/content/probe.ts",
+    "code": "const origin=[0,0,0]; export const pos=origin;",
+    "rule": "boogle/records-are-data",
+    "fail": false
+  },
+  {
+    "name": "content: runtime local globalThis",
+    "file": "src/content/probe.ts",
+    "code": "const globalThis={document:{title:'x'}}; const {document}=globalThis; export const title=document.title;",
+    "rule": "boogle/records-are-data",
+    "fail": false
+  },
+  {
+    "name": "content: type import three still forbidden",
+    "file": "src/content/probe.ts",
+    "code": "export type Visual=import('three').Mesh;",
+    "rule": "boogle/records-are-data",
+    "fail": true
+  }
+]

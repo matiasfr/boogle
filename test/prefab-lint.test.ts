@@ -5,16 +5,120 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { stripTypeScriptTypes } from 'node:module';
 import fixtures from './fixtures/prefab-lint.json' with { type: 'json' };
+import structural from './fixtures/prefab-structural.json' with { type: 'json' };
+import moduleFixtures from './fixtures/prefab-modules.json' with { type: 'json' };
+import { createModuleResolver } from '../dev/lint/prefab-boundaries.ts';
 import debt from '../dev/lint/prefab-debt.json' with { type: 'json' };
 import { lintSafety } from '../dev/lint/safety.ts';
 import type { PrefabDebt } from '../dev/lint/safety.ts';
 import { comparePrefabDebt, checkPrefabDebt, PREFAB_DEBT_FILE } from '../dev/registry/prefab-debt.ts';
 
+for (const fixture of structural)
+  test(fixture.name, () =>
+    assert.equal(
+      lintSafety(fixture.code, fixture.file).some((d) => d.rule === fixture.rule),
+      fixture.fail,
+    ),
+  );
+
+test('resolved capability identity survives case-insensitive filesystems', () => {
+  assert.ok(
+    lintSafety(
+      "import * as api from './physics/ENGINE'; const make=api['create'+'Body']; make({});",
+      'src/probe.ts',
+    ).some((d) => d.rule === 'boogle/colliders-from-records'),
+  );
+});
+
+test('opaque import.meta loaders cannot bypass the resolved import boundary', () => {
+  for (const code of [
+    "const modules=import.meta.glob('./physics/*.ts',{eager:true});",
+    'const meta=import.meta; const load=meta.glob; load(path);',
+    "const load=import.meta['g'+'lob']; load(path);",
+  ])
+    assert.ok(
+      lintSafety(code, 'src/probe.ts').some((d) => d.rule === 'boogle/colliders-from-records'),
+      code,
+    );
+});
+
+test('structural module and public-surface fixture table uses actual files and tsconfig resolution', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-module-fixtures-'));
+  const write = (file: string, code: string) => {
+    fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+    fs.writeFileSync(path.join(root, file), code);
+  };
+  try {
+    write(
+      'tsconfig.json',
+      JSON.stringify({
+        compilerOptions: {
+          baseUrl: '.',
+          paths: { '@body': ['src/physics/engine.ts'], '@physics/*': ['src/physics/*'] },
+        },
+      }),
+    );
+    write(
+      'src/physics/engine.ts',
+      'export type Body = object; export const createBody=(o:unknown)=>o; export const teleport=()=>{};',
+    );
+    write('src/entities/railway/seat.ts', 'export const registerSeat=(o:unknown)=>o;');
+    write('src/entities/railway/works-box-view.ts', 'export const drawWorksBoxes=()=>{};');
+    fs.symlinkSync('physics/engine.ts', path.join(root, 'src/body-link.ts'));
+    fs.linkSync(path.join(root, 'src/physics/engine.ts'), path.join(root, 'src/body-hard.ts'));
+    for (const fixture of moduleFixtures) {
+      write('src/prefab/instantiate.ts', 'export const instantiate=()=>({});');
+      for (const [file, code] of Object.entries(fixture.files ?? {})) if (code !== undefined) write(file, code);
+      write(fixture.file, fixture.code);
+      const budgets: PrefabDebt = {
+        colliders: { 'src/legacy.ts': { count: 2, exports: ['existing'], reason: '2026-11-13: Fixture baseline.' } },
+        seats: {},
+        doors: { 'src/prefab/instantiate.ts': ['instantiate'] },
+      };
+      const resolve = createModuleResolver(root);
+      if (fixture.files)
+        assert.ok(
+          resolve(
+            'src/consumer.ts',
+            fixture.name.includes('physics directory') ? './physics/bridge' : './barrel',
+          )?.endsWith('/index.ts'),
+        );
+      const found = lintSafety(fixture.code, fixture.file, budgets, resolve).filter((d) => d.rule === fixture.rule);
+      assert.equal(found.length > 0, fixture.fail, fixture.name + '\n' + JSON.stringify(found));
+      if (fixture.name.startsWith('type:'))
+        assert.equal(
+          stripTypeScriptTypes(fixture.code).includes('./physics/engine'),
+          fixture.fail,
+          fixture.name + ' must match Node type erasure',
+        );
+    }
+    assert.ok(
+      lintSafety(
+        "import * as api from './body-link'; const make=api['create'+'Body']; make({});",
+        'src/probe.ts',
+        { colliders: {}, seats: {} },
+        createModuleResolver(root),
+      ).some((d) => d.rule === 'boogle/colliders-from-records'),
+    );
+    assert.ok(
+      lintSafety(
+        "import * as api from './body-hard'; const make=api['create'+'Body']; make({});",
+        'src/probe.ts',
+        { colliders: {}, seats: {} },
+        createModuleResolver(root),
+      ).some((d) => d.rule === 'boogle/colliders-from-records'),
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('review P1: capability imports cannot be hidden behind aliases or re-exports', () => {
   for (const [rule, module, name] of [
-    ['boogle/colliders-from-records', '../physics/engine.ts', 'createBody'],
-    ['boogle/seats-from-records', '../entities/railway/seat.ts', 'registerSeat'],
+    ['boogle/colliders-from-records', './physics/engine.ts', 'createBody'],
+    ['boogle/seats-from-records', './entities/railway/seat.ts', 'registerSeat'],
   ])
     for (const code of [
       `import { ${name} } from '${module}'; const make = ${name}; make({});`,
@@ -162,7 +266,8 @@ test('registry bootstraps only existing base calls, then rejects list growth and
     fs.writeFileSync(path.join(root, file), text);
   };
   const current = {
-    colliders: { 'src/old.ts': { count: 1, reason: '2026-11-13: Approved existing call.' } },
+    version: 2,
+    colliders: { 'src/old.ts': { count: 1, exports: [], reason: '2026-11-13: Approved existing call.' } },
     seats: {},
   };
   const save = () => write(PREFAB_DEBT_FILE, JSON.stringify(current));
@@ -174,7 +279,7 @@ test('registry bootstraps only existing base calls, then rejects list growth and
     save();
     assert.deepEqual(checkPrefabDebt(root, 'HEAD'), []);
     write('src/new.ts', 'addStatic(shape, pos);');
-    const grown = { ...current.colliders, 'src/new.ts': { count: 1, reason: '2026-11-13: Added later.' } };
+    const grown = { ...current.colliders, 'src/new.ts': { count: 1, exports: [], reason: '2026-11-13: Added later.' } };
     write(PREFAB_DEBT_FILE, JSON.stringify({ ...current, colliders: grown }));
     assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /colliders grew: src\/new.ts/);
     save();
@@ -190,6 +295,17 @@ test('registry bootstraps only existing base calls, then rejects list growth and
       JSON.stringify({ colliders: { 'src/old.ts': { ...current.colliders['src/old.ts'], count: 3 } }, seats: {} }),
     );
     assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /count grew/);
+    save();
+    write('src/old.ts', 'addStatic(shape, pos); export const make=()=>1;');
+    assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /unapproved public export make/);
+    write(
+      PREFAB_DEBT_FILE,
+      JSON.stringify({
+        ...current,
+        colliders: { 'src/old.ts': { ...current.colliders['src/old.ts'], exports: ['make'] } },
+      }),
+    );
+    assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /public exports grew/);
     save();
     write('src/old.ts', 'instantiate(key, pose, options);');
     assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /stale colliders\/src\/old.ts/);

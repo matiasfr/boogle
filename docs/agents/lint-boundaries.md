@@ -12,28 +12,45 @@ Before changing module dependencies, services or lockstep boundaries, read this 
 - One door: `new WebSocket`, `AudioContext` and `requestAnimationFrame` only on `DOORS`' allow-lists; a second frame loop is an `onFrame`.
 - Input: outside `INPUT_LAYER` and `INPUT_ALLOW` (`policy.ts`, each entry with its reason) nothing names a key/mouse/wheel/touch/pointer/pad event, `getGamepads` or a `KeyboardEvent`-style type (`boogle/input-through-actions`, owner call in `owner-calls.md`). Use `registerAction` (`key`, `mouse`, `touch`), `onKey`, `onMenuKey` (menus) or `touchHold` in `src/player/controls.ts`. A text field's own key handler takes `boogle-disable-next-line boogle/input-through-actions -- reason`.
 - No WebGL-only three.js APIs in `src/` (list in `src/render/README.md`, "Materials").
-- Prefab doors (`policy.ts`, `safety.ts`): `boogle/colliders-from-records` allows `addStatic`, `addStatics`,
-  `staticBody`, `createBody`, `slab` only in `src/prefab/instantiate.ts`, `src/physics/`, `src/place/land.ts` and the explicit
-  collider debt files. `boogle/seats-from-records` allows `registerSeat` only in `src/prefab/instantiate.ts` and
-  seat debt files. Imports of these APIs are forbidden too: named/renamed, namespace, re-export, dynamic import
-  and require. This closes local aliasing at the import. The collider rule also covers `drawWorksBoxes`,
-  `drawGreyBoxes`, `plank`, `buildLand` and `staticSpheresBody`; namespace/dynamic/require access to their modules
-  is a capability import. Pure named helpers and type-only imports stay available. New prefab-folder wrappers
-  have no exemption. Both rules include prototypes/debug; raw calls also count against existing debt.
-  Use `npm run prefab:new -- <area>.<name>`, records/placements in `src/content/`, procedural visuals in
-  `src/prefab/builders/` and the owning view's `instantiate` call. This is not a blanket mesh-constructor ban.
+- Prefab capability modules (`dev/lint/prefab-boundaries.ts`, `CAPABILITIES`): the body engine/backend, physics
+  service, land, solid-box helpers, native Rapier package modules and seat service are whole-module capabilities. `boogle/colliders-from-records`
+  and `boogle/seats-from-records` reject **every runtime import** of their resolved file outside the explicit
+  `PREFAB_DOORS` and counted debt files, regardless of imported names or later calls. There are no directory
+  exemptions. The native Oxc resolver (already locked, now a direct dev dependency) resolves actual files,
+  extensionless paths, index files, tsconfig paths, query suffixes and symlinks; protected files are canonicalized
+  by device/inode too, so case-insensitive paths and hard links retain the same identity. The older general boundary
+  rules remain lexical matchers and had no filesystem resolver to reuse. Named, namespace, re-export, dynamic
+  and require edges use that same resolver in lint and registry. Unresolved runtime loaders fail closed;
+  aliasing require, CommonJS module globals and opaque `import.meta` loaders (including Vite globs and hot APIs)
+  also fail. Only `import.meta.env`/`url` data reads are exempt from the opaque-loader guard.
+  Only truly erased declarations/expressions are
+  exempt: `import type` and `export type` erase, but `import { type T }` and `export { type T } from` still load.
+  Start new content with `prefab:new`, records/placements and the owning view's `instantiate` call.
+- `boogle/prefab-public-surface` chooses the review's explicit-public-surface rule: every door and debt file's
+  current runtime export names are recorded, and **any new export name fails**, including defaults, renamed
+  locals and exported wrapper functions, even before a consumer exists. Runtime capability re-exports and
+  unbounded star exports are forbidden. Registry ratchets these public names as well as file identities/counts;
+  removed names must be removed from the record. A new barrel cannot import a capability, and a trusted barrel
+  cannot invent a new surface: this closes laundering without guessing alias/function-body provenance. The
+  declared instantiate API and existing debt APIs are intentional trusted surfaces. This is an architectural
+  boundary, not a security sandbox: edits to existing approved API bodies, global side effects or arbitrary
+  generated code still require review; recorded counts count module edges and legacy direct calls, not objects.
 - `boogle/records-are-data`: content imports/re-exports only prefab `types.ts`/`names.ts`, `src/constants.ts`,
   `src/math-pure.ts`, and explicitly listed pure layout helpers (`place/layout.ts`, `entities/railway/line2-path.ts`).
   No three.js (even inline `import('three').Mesh` types), browser/DOM globals or unknown/computed dynamic imports.
-  Browser globals are unresolved scope references: local names such as `origin`, function parameters and imports
-  do not count as browser access. The compiler separately
+  Scope analysis checks every reference to browser globals, including `globalThis` itself, so member access,
+  computed access and destructuring all fail at their source. Only runtime local definitions count as shadows:
+  ambient `declare`, type bindings and erased imports do not. Local `origin` and local `globalThis` objects are
+  allowed. The compiler separately
   rejects non-JSON exported values; compiled JSON remains committed.
-- `dev/lint/prefab-debt.json` lists existing collider/seat files with `{ count, reason }` budgets. Lint and registry
+- `dev/lint/prefab-debt.json` version 2 lists collider/seat files with `{ count, reason, exports }` and fixed door
+  public surfaces. Lint and registry
   reject excess violations and require fewer violations to **lower the count** (remove a zero entry). Registry
   also rejects any new file identity or per-file count growth, even when another file/count shrinks. Against a
-  base predating count budgets, it derives the baseline from matching imports/calls in that local base, including
-  the old reason-only list's transition. Thereafter the recorded counts bind. No fetch or namespace exemption.
-  Every entry needs `YYYY-MM-DD: reason`; reasons do not authorize growth. These three prefab rules cannot be
+  base predating the structural schema, it derives counts and exported names from the branch/base common
+  ancestor's source, so unrelated main changes cannot masquerade as new branch exports during bootstrap.
+  Thereafter the recorded counts and export names bind. No fetch or namespace exemption.
+  Every entry needs `YYYY-MM-DD: reason`; reasons do not authorize growth. All four prefab rules cannot be
   disabled by comments. Signs/interactions are deferred to prefab step 9; Godot proof to step 14.
 
 `npm run lint -- [files...]` runs native Oxlint, oxlint-tsgolint and the repo's oxc-parser safety checks together.

@@ -3,7 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { lintSafety } from '../lint/safety.ts';
-import type { PrefabDebt, PrefabBudget } from '../lint/safety.ts';
+import type { PrefabDebt } from '../lint/safety.ts';
+import { parseSync } from 'oxc-parser';
+import { createModuleResolver, runtimeExports, PREFAB_DOORS } from '../lint/prefab-boundaries.ts';
 
 export const PREFAB_DEBT_FILE = 'dev/lint/prefab-debt.json';
 const empty = (): PrefabDebt => ({ colliders: {}, seats: {} });
@@ -29,14 +31,21 @@ export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] 
         errors.push(
           `${PREFAB_DEBT_FILE}: ${kind}/${file} count grew: ${base[kind][file]!.count} → ${entry.count}; lower the count. Use src/prefab/instantiate.ts.`,
         );
+      for (const name of entry.exports ?? [])
+        if (!(base[kind][file]?.exports ?? []).includes(name))
+          errors.push(`${PREFAB_DEBT_FILE}: ${kind}/${file} public exports grew: ${name}`);
     }
+  for (const [file, names] of Object.entries(head.doors ?? {}))
+    for (const name of names)
+      if (!(base.doors?.[file] ?? []).includes(name))
+        errors.push(`${PREFAB_DEBT_FILE}: door ${file} public exports grew: ${name}`);
   return errors;
 }
 
 export function checkPrefabDebt(root: string, ref: string): string[] {
-  const gitFile = (file: string): string | null => {
+  const gitFile = (file: string, at = ref): string | null => {
     try {
-      return execFileSync('git', ['show', `${ref}:${file}`], {
+      return execFileSync('git', ['show', `${at}:${file}`], {
         cwd: root,
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
@@ -47,34 +56,48 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
   };
   const head = JSON.parse(fs.readFileSync(path.join(root, PREFAB_DEBT_FILE), 'utf8')) as PrefabDebt;
   const baseline = gitFile(PREFAB_DEBT_FILE);
-  const oldLists =
-    baseline === null
-      ? empty()
-      : (JSON.parse(baseline) as {
-          colliders: Record<string, PrefabBudget | string>;
-          seats: Record<string, PrefabBudget | string>;
-        });
+  const oldLists = baseline === null ? empty() : (JSON.parse(baseline) as PrefabDebt);
   const base = empty();
-  const legacy =
-    baseline === null || Object.values(oldLists).some((list) => Object.values(list).some((v) => typeof v === 'string'));
-  const countIn = (text: string, file: string, kind: keyof PrefabDebt) =>
-    lintSafety(text, file, empty()).filter((d) => d.rule === rules[kind]).length;
-  for (const kind of ['colliders', 'seats'] as const)
-    for (const [file, entry] of Object.entries(oldLists[kind]))
-      base[kind][file] =
-        typeof entry === 'string' ? { count: countIn(gitFile(file) ?? '', file, kind), reason: entry } : entry;
+  const legacy = oldLists.version !== 2;
+  // Bootstrap only from shared history: main may have independently renamed old exports since this branch cut.
+  // Once counted surfaces exist on main, compare those exact records instead of recomputing history.
+  const sourceRef = legacy
+    ? execFileSync('git', ['merge-base', 'HEAD', ref], { cwd: root, encoding: 'utf8' }).trim()
+    : ref;
+  const resolve = createModuleResolver(root);
+  const countIn = (text: string, file: string, kind: 'colliders' | 'seats') =>
+    lintSafety(text, file, empty(), resolve).filter((d) => d.rule === rules[kind]).length;
+  const exportsIn = (text: string, file: string) => runtimeExports(parseSync(file, text).program);
+  const surfaceErrors = (actual: string[], recorded: string[] | undefined, file: string) =>
+    recorded === undefined
+      ? [`${file}: record the public exports in ${PREFAB_DEBT_FILE}`]
+      : [
+          ...actual
+            .filter((name) => name === '*' || !recorded.includes(name))
+            .map((name) => `${file}: unapproved public export ${name}`),
+          ...recorded
+            .filter((name) => !actual.includes(name))
+            .map((name) => `${file}: remove stale public export ${name}`),
+        ];
+  if (!legacy) {
+    base.colliders = oldLists.colliders;
+    base.seats = oldLists.seats;
+    base.doors = oldLists.doors;
+  }
   const errors: string[] = [];
   // Bootstrap against real call sites in the local base, not this branch's additions. Once main has the list,
   // even an equal-size file substitution fails. No network and no WORLD_NS exemption.
   for (const kind of ['colliders', 'seats'] as const)
     for (const file of Object.keys(head[kind])) {
-      if (legacy && !Object.hasOwn(base[kind], file)) {
-        const old = gitFile(file);
+      if (legacy) {
+        const old = gitFile(file, sourceRef);
         const count = old === null ? 0 : countIn(old, file, kind);
-        if (count) base[kind][file] = { count, reason: head[kind][file]!.reason };
+        if (count) base[kind][file] = { count, exports: exportsIn(old!, file), reason: head[kind][file]!.reason };
       }
       const current = path.join(root, file);
-      const count = fs.existsSync(current) ? countIn(fs.readFileSync(current, 'utf8'), file, kind) : 0;
+      const text = fs.existsSync(current) ? fs.readFileSync(current, 'utf8') : '';
+      const count = countIn(text, file, kind);
+      errors.push(...surfaceErrors(exportsIn(text, file), head[kind][file]!.exports, file));
       if (count < head[kind][file]!.count)
         errors.push(`${PREFAB_DEBT_FILE}: stale ${kind}/${file}; lower the count to ${count} (remove a zero entry).`);
       if (count > head[kind][file]!.count)
@@ -82,5 +105,15 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
           `${PREFAB_DEBT_FILE}: ${kind}/${file} has ${count} violations, budget ${head[kind][file]!.count}; use src/prefab/instantiate.ts.`,
         );
     }
+  const doors = [...new Set(Object.values(PREFAB_DOORS).flat())];
+  base.doors ??= {};
+  for (const file of doors) {
+    const current = path.join(root, file);
+    if (!fs.existsSync(current)) continue;
+    if (legacy) base.doors[file] = exportsIn(gitFile(file, sourceRef) ?? '', file);
+    errors.push(...surfaceErrors(exportsIn(fs.readFileSync(current, 'utf8'), file), head.doors?.[file], file));
+  }
+  for (const file of Object.keys(head.doors ?? {}))
+    if (!doors.includes(file)) errors.push(`Unapproved prefab door ${file}`);
   return [...errors, ...comparePrefabDebt(base, head)];
 }
