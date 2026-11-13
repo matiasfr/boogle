@@ -258,6 +258,20 @@ export const INPUT_ALLOW = [
 
 const policyBlocks: PolicyBlock[] = [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/', '.look/'] },
+  {
+    files: ['src/**/*.{js,ts}'],
+    ignores: ['src/prefab/**', 'src/physics/**', 'src/place/land.ts'],
+    rules: { 'boogle/colliders-from-records': 'error' },
+  },
+  {
+    files: ['src/**/*.{js,ts}'],
+    ignores: ['src/prefab/instantiate.ts'],
+    rules: { 'boogle/seats-from-records': 'error' },
+  },
+  {
+    files: ['src/content/**/*.{js,ts}'],
+    rules: { 'boogle/records-are-data': 'error' },
+  },
   // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync, proto and debug bans.
   {
     files: ['src/**/*.{js,ts}'],

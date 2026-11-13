@@ -12,6 +12,21 @@ Before changing module dependencies, services or lockstep boundaries, read this 
 - One door: `new WebSocket`, `AudioContext` and `requestAnimationFrame` only on `DOORS`' allow-lists; a second frame loop is an `onFrame`.
 - Input: outside `INPUT_LAYER` and `INPUT_ALLOW` (`policy.ts`, each entry with its reason) nothing names a key/mouse/wheel/touch/pointer/pad event, `getGamepads` or a `KeyboardEvent`-style type (`boogle/input-through-actions`, owner call in `owner-calls.md`). Use `registerAction` (`key`, `mouse`, `touch`), `onKey`, `onMenuKey` (menus) or `touchHold` in `src/player/controls.ts`. A text field's own key handler takes `boogle-disable-next-line boogle/input-through-actions -- reason`.
 - No WebGL-only three.js APIs in `src/` (list in `src/render/README.md`, "Materials").
+- Prefab doors (`policy.ts`, `safety.ts`): `boogle/colliders-from-records` allows `addStatic`, `addStatics`,
+  `staticBody`, `createBody`, `slab` only in `src/prefab/`, `src/physics/`, `src/place/land.ts` and the explicit
+  collider debt files. `boogle/seats-from-records` allows `registerSeat` only in `src/prefab/instantiate.ts` and
+  seat debt files. Calls through imported aliases and member names are checked, including prototypes/debug.
+  Use `npm run prefab:new -- <area>.<name>`, records/placements in `src/content/`, procedural visuals in
+  `src/prefab/builders/` and the owning view's `instantiate` call. This is not a blanket mesh-constructor ban.
+- `boogle/records-are-data`: content imports/re-exports only prefab `types.ts`/`names.ts`, `src/constants.ts`,
+  `src/math-pure.ts`, and explicitly listed pure layout helpers (`place/layout.ts`, `entities/railway/line2-path.ts`).
+  No three.js (even types), browser/DOM globals or unknown/computed dynamic imports. The compiler separately
+  rejects non-JSON exported values; compiled JSON remains committed.
+- `dev/lint/prefab-debt.json` lists existing collider/seat files with dated reasons. Registry rejects any new file
+  identity, even when another is removed, and stale entries after migration. Against a base predating the list,
+  it bootstraps only files with matching calls already in that local base. No fetch or namespace exemption.
+  Every entry needs `YYYY-MM-DD: reason`; reasons do not authorize growth. These three prefab rules cannot be
+  disabled by comments. Signs/interactions are deferred to prefab step 9; Godot proof to step 14.
 
 `npm run lint -- [files...]` runs native Oxlint, oxlint-tsgolint and the repo's oxc-parser safety checks together.
 Use that command in hooks and CI: calling Oxlint alone omits custom protections. `.oxlintrc.json` holds the native

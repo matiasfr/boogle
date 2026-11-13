@@ -133,7 +133,7 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 - [x] **3. `instantiate` and the workshop chair.** First capture the golden from today's code: a test that builds `solidSpecs` and the seat from `makeWorkshop` and writes their world values. Then create `src/prefab/instantiate.ts`, `src/prefab/builders/seat-chair.ts` (wrapping `seatMesh()`), the record in `src/content/prefabs/town.ts`; replace `workshop.ts:65-76` with one `instantiate` call. Proof: the golden is byte-equal after; the orchestrator reports three chair before/after stills with zero differing pixels and identical sit/stand on main and this branch using the chair-focused eval committed as `865e03502`. Deletes the chair's two hand-typed boxes and its `registerSeat` call. Review corrections below supersede the initial visual hold.
 - [x] **4. One greybox platform.** Record `greybox.box` (`src/content/prefabs/greybox.ts`), builder `src/prefab/builders/greybox-box.ts` (the instanced mesh from `boxes.ts:64-75`), level `src/content/levels/gorge.ts` holding the north platform's five spans with ids; `drawGreyBoxes` takes placements for those and `GreyBox` for the rest. Proof: collider golden of all 53 solids equal before and after; `stack-at` still; `describe()` still reports 73 boxes and 53 solids. As built below corrects these pre-leg-2 counts.
 - [ ] **Checkpoint A** (the proving slice): `npm run check`, the two stills side by side, `npm run level-check` still 12 reports, `npm run perf` at the Gorge (draw calls and bodies unchanged). The designer and owner rule on the open questions here.
-- [ ] **5. Enforcement on.** The three lint rules with their seeded lists, the generated `test/prefab-records.test.ts`, the registry ratchet for the lists, `docs/agents/plugins.md` ("New things in the world are prefab records") and the new-feature skill. Proof: a fixture file with a stray `addStatic` fails lint; `npm run registry` fails when a list grows.
+- [x] **5. Enforcement on.** The three lint rules with their seeded lists, the generated `test/prefab-records.test.ts`, the registry ratchet for the lists, `docs/agents/plugins.md` ("New things in the world are prefab records") and the new-feature skill. Proof: a fixture file with a stray `addStatic` fails lint; `npm run registry` fails when a list grows. As built: generated record coverage already landed in step 3; this step adds passing/failing lint fixtures and the file-identity ratchet (below).
 - [ ] **6. High Gorge massing.** All 73 boxes become placements in `src/content/levels/gorge.ts` (the frame helpers move there from `massing.ts`); `massing.ts` keeps only exported constants others import. Proof: goldens equal, `stack-at` and `stack-draws` stills. Deletes `GreyBox`'s collider loop (`boxes.ts:76-82`) and `gorgeMassing()`; removes `route-greybox/boxes.ts` from the collider list.
 - [ ] **7. Leg 2 and later legs** (after `greybox/leg2-massing` merges): `Piece`, `Pad` and `Post` become placements of `greybox.box`, `greybox.pad`, `greybox.sign-post` (a `label` attachment; placeholder text stays where it is authored); `dev/level/route-leg2.ts` reads `content/built/levels/*.json`. Proof: goldens, that branch's level report unchanged, one still per area. Deletes the three record types and `leg2-draw.ts`'s collider code. New legs are authored as level files from here.
 - [ ] **Checkpoint B:** `npm run check`, perf at Bell Rock, a bot walk of leg 1.
@@ -176,6 +176,32 @@ The five curved north-platform spans are now `greybox.box` placements with stabl
 Baseline commit `df0fb9eb` captured all old Gorge collider recipes (including the two hidden stack colliders) and drawn instance matrices/colours before production edits. `test/fixtures/prefab-gorge-{colliders,placements}.json` remain byte-identical without regeneration after conversion; the workshop goldens also remain unchanged. The plan's counts were stale after leg 2 landed: the live description and baseline have **84 visible boxes, 55 solids** (86 boxes including two hidden), and level-check now has **13 reports**, all passing. `dev/level/route-leg2.ts` is unchanged; its artifact migration belongs to step 7. This is a Local scenery refactor: no design, copy, state, namespace or Home changes.
 
 The Gorge-reached broker look using `stack-at.ts` was opened: the light-grey deck is continuous over its posts and meets the concourse without a visible gap; WebGPU reported no graphics errors and `describe()` reported 84/55. The initial manifest is `.look/evidence/1794577000841-76108/evidence.json`; final-tree evidence is recorded in the task handoff. This single still is not a before/after pixel comparison, a movement playtest or performance evidence. No full playthrough, device test, push or ship. `npm run inflight` was omitted because it fetches and this task forbids external networking.
+
+### Step 5 as built: enforcement
+
+The three named rules are enabled in `dev/lint/policy.ts` and enforced by `safety.ts`: collider calls use prefab
+records, seat registration uses `instantiate.ts`, and content imports only explicitly listed data/pure helpers
+with no browser/DOM globals. Imported aliases and member calls are checked; comment suppressions cannot open
+another door. Procedural meshes remain code in prefab builders: the plan never specified a blanket `Mesh` ban.
+Signs and interactions still belong to step 9.
+
+`dev/lint/prefab-debt.json` records **54 collider files and 2 seat files**, each with the owner's dated step-5
+baseline reason. This includes prototypes and current dynamic-body callers because the specified constructor
+ban covers them too. The plan's 48/3 inventory was stale; the chair seat is already migrated. Registry checks
+file identities, so even an equal-size substitution fails, and rejects stale exemptions. For a local base that
+predates this list it verifies each bootstrap exemption against an actual matching call in that base; once the
+base has the list, additions fail outright. Dated reasons are mandatory but never authorize growth. The
+fixtures exercise both bootstrap and post-baseline growth, removal, substitution and missing reasons.
+
+`test/prefab-records.test.ts` was already generated coverage from step 3 and remains in place, alongside the
+unchanged chair/Gorge goldens and committed artifacts. Plug-in docs and the new-feature skill now route new
+placed content through `prefab:new`, data and the owning view's `instantiate`. This tooling-only step changes
+no runtime source, game design, Home station, sim/world/net/server, wire shape or `WORLD_NS`.
+
+Checkpoint A remains unticked: this task authorizes step 5, not a claim of its missing performance/owner verdict.
+The Godot portability proof remains step 14, after checkpoint B. `npm run inflight` is omitted because it fetches
+and this task permits network only to the local broker. No browser run or images are needed for lint enforcement.
+Final check results and the source fingerprint are recorded in this task's local handoff/evidence.
 
 ## 6. What can start today, and what waits
 

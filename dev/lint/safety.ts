@@ -5,6 +5,8 @@ import { parse } from 'acorn';
 import query from 'esquery';
 import type { Node } from 'esquery';
 import ignore from 'ignore';
+import globals from 'globals';
+import prefabDebt from './prefab-debt.json' with { type: 'json' };
 import { policy, ENTITY_MESSAGE, INPUT_MESSAGE, INPUT_SELECTORS, RETIRED_RAILWAY_NAMES } from './policy.ts';
 import type { ImportBan, ImportOptions, Restriction, Rule } from './policy.ts';
 
@@ -16,7 +18,22 @@ export const customRules = new Set([
   'boogle/use-an-entity',
   'boogle/input-through-actions',
   'boogle/retired-railway-names',
+  'boogle/colliders-from-records',
+  'boogle/seats-from-records',
+  'boogle/records-are-data',
 ]);
+export type PrefabDebt = { colliders: Record<string, string>; seats: Record<string, string> };
+const contentImports = new Set([
+  'src/prefab/types.ts',
+  'src/prefab/names.ts',
+  'src/constants.ts',
+  'src/math-pure.ts',
+  // Explicit pure layout helpers; a view beside one is never implicitly allowed.
+  'src/place/layout.ts',
+  'src/entities/railway/line2-path.ts',
+]);
+const browserGlobals = new Set(Object.keys(globals.browser).filter((name) => !(name in globals.es2022)));
+const prefabDoor = 'Declare src/content/prefabs/ and levels/ data; use src/prefab/instantiate.ts (npm run prefab:new).';
 export const matches = (file: string, patterns: string[]) => patterns.some((p) => path.matchesGlob(file, p));
 export const ignorePatterns = ['**/.git/**', '**/node_modules/**', ...policy[0]!.ignores!.map((p) => p + '**')];
 export const ignored = (file: string) => matches(file, ignorePatterns);
@@ -50,7 +67,7 @@ function importMatches(source: string, ban: ImportBan): boolean {
   return matcher.ignores(source);
 }
 
-export function lintSafety(code: string, file: string): Diagnostic[] {
+export function lintSafety(code: string, file: string, debt: PrefabDebt = prefabDebt): Diagnostic[] {
   if (ignored(file)) return [];
   const rules = rulesFor(file);
   if (file.endsWith('.ts') && !Object.keys(rules).some((r) => customRules.has(r)) && !code.includes('boogle-'))
@@ -80,6 +97,42 @@ export function lintSafety(code: string, file: string): Diagnostic[] {
   }
   const ast = parsed.program as unknown as Node;
   const select = (selector: string) => query.match(ast, selectorOf(selector), { fallback: 'iteration' });
+  for (const [kind, rule, names] of [
+    ['colliders', 'boogle/colliders-from-records', ['addStatic', 'addStatics', 'staticBody', 'createBody', 'slab']],
+    ['seats', 'boogle/seats-from-records', ['registerSeat']],
+  ] as const) {
+    if (!rules[rule] || Object.hasOwn(debt[kind], file)) continue;
+    const banned = new Set<string>(names);
+    // An import alias must not turn createBody into a second door.
+    for (const node of select('ImportSpecifier'))
+      if (banned.has(node.imported?.name ?? node.imported?.value ?? '')) banned.add(node.local!.name!);
+    for (const node of select('CallExpression')) {
+      const c = node.callee!;
+      const name = c.type === 'Identifier' ? c.name : (c.property?.name ?? c.property?.value);
+      if (name && banned.has(name)) report(node, rule, prefabDoor);
+    }
+  }
+  if (rules['boogle/records-are-data']) {
+    const rule = 'boogle/records-are-data';
+    const message = `Content is portable data: import only prefab types/names, constants, math-pure or listed pure layout helpers. ${prefabDoor}`;
+    for (const node of select(
+      'ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportEqualsDeclaration',
+    )) {
+      const source = node.source?.value ?? node.moduleReference?.expression?.value;
+      if (!source && node.type !== 'ImportExpression' && node.type !== 'TSImportEqualsDeclaration') continue;
+      const resolved = source?.startsWith('.')
+        ? path.posix.normalize(path.posix.join(path.posix.dirname(file), source))
+        : source;
+      if (!resolved || !contentImports.has(resolved)) report(node, rule, message);
+    }
+    for (const node of select(
+      'Identifier:not(MemberExpression[computed=false] > Identifier.property):not(Property[computed=false] > Identifier.key)',
+    ))
+      if (browserGlobals.has(node.name!)) report(node, rule, `Content cannot use browser/DOM globals. ${prefabDoor}`);
+    for (const node of select('MemberExpression[object.name="globalThis"]'))
+      if (browserGlobals.has(node.property?.name ?? node.property?.value ?? ''))
+        report(node, rule, `Content cannot use browser/DOM globals. ${prefabDoor}`);
+  }
   // CommonJS was the legacy config's default latest/sloppy scope. The two non-native recommended rules still
   // apply there even though the strict-module parser subsumes them for .js/.mjs.
   if (file.endsWith('.cjs')) {
@@ -165,6 +218,9 @@ export function lintSafety(code: string, file: string): Diagnostic[] {
     }));
   });
   const visible: Diagnostic[] = diagnostics.filter((d) => {
+    // These doors have an explicit file debt list; a comment is not another exemption mechanism.
+    if (['boogle/colliders-from-records', 'boogle/seats-from-records', 'boogle/records-are-data'].includes(d.rule))
+      return true;
     let active: (typeof directives)[number] | undefined;
     for (const directive of directives) {
       if (directive.rule !== d.rule) continue;

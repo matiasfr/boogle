@@ -16,6 +16,7 @@ import { PROTOS } from '../../protos/protos.ts';
 import { prototypeReport } from './prototypes.ts';
 import { checkAgentDocs } from './agent-docs.ts';
 import { checkDecisions } from '../decisions/check.ts';
+import { checkPrefabDebt } from './prefab-debt.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -161,6 +162,7 @@ function evalHeaderErrors(): string[] {
 
 const decisionLog = checkDecisions(ROOT);
 const errors = [
+  ...checkPrefabDebt(ROOT, baseRef),
   ...evalHeaderErrors(),
   ...agentDocs.errors,
   ...decisionLog.errors.map((e) => `decision log: ${e} (npm run decisions)`),
