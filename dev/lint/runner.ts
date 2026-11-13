@@ -5,7 +5,9 @@ import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { nativeConfig } from './config.ts';
 import { ignored, ignorePatterns, lintSafety } from './safety.ts';
-import type { Diagnostic } from './safety.ts';
+import type { Diagnostic, PrefabDebt } from './safety.ts';
+import { createModuleResolver } from './prefab-boundaries.ts';
+import { loadLegacyGraph, checkLegacyRecords, checkConstructionForwards } from './prefab-constructors.ts';
 
 export type Budgets = Record<string, Record<string, { count: number }>>;
 export type Options = { typeAware?: boolean; relaxed?: boolean; prune?: boolean; fix?: boolean };
@@ -42,6 +44,17 @@ function batches(files: string[]): string[][] {
 export function lintFiles(root: string, targets: string[], options: Options = {}): Diagnostic[] {
   // On macOS, /var and /private/var must not give Oxlint different bases for overrides and file paths.
   root = fs.realpathSync(root);
+  const resolveModule = createModuleResolver(root);
+  // Each lint root owns its budgets. Temporary fixtures must not inherit this checkout's file exemptions.
+  const prefabPath = path.join(root, 'dev/lint/prefab-debt.json');
+  const prefabDebt: PrefabDebt = fs.existsSync(prefabPath)
+    ? JSON.parse(fs.readFileSync(prefabPath, 'utf8'))
+    : { colliders: {}, seats: {} };
+  const legacyGraph = prefabDebt.legacy ? loadLegacyGraph(root, prefabDebt) : undefined;
+  if (legacyGraph?.conservative.length)
+    console.log(
+      `prefab conservative dynamic-import analysis (use simpler module bindings to remove): ${legacyGraph.conservative.join(', ')}`,
+    );
   const files = new Set<string>();
   for (const target of targets) {
     const absolute = path.resolve(root, target);
@@ -101,7 +114,9 @@ export function lintFiles(root: string, targets: string[], options: Options = {}
       }));
       // Re-read after --fix so the safety checks always see the code that is being kept.
       for (const file of selected)
-        diagnostics.push(...lintSafety(fs.readFileSync(path.join(root, file), 'utf8'), file));
+        diagnostics.push(
+          ...lintSafety(fs.readFileSync(path.join(root, file), 'utf8'), file, prefabDebt, resolveModule, legacyGraph),
+        );
     } finally {
       fs.rmSync(config, { force: true });
     }
@@ -133,5 +148,26 @@ export function lintFiles(root: string, targets: string[], options: Options = {}
     }
   }
   if (options.prune) fs.writeFileSync(budgetPath, JSON.stringify(budgets, null, 2) + '\n');
+  if (
+    fs.existsSync(prefabPath) &&
+    (prefabDebt.version !== 7 || !prefabDebt.legacy || !prefabDebt.forwards || !prefabDebt.doorCounts)
+  )
+    diagnostics.push({
+      file: 'dev/lint/prefab-debt.json',
+      line: 1,
+      rule: 'boogle/legacy-construction-counts',
+      message: 'Keep schema version 7 and its binding/construction counts. Use src/prefab/instantiate.ts.',
+    });
+  if (legacyGraph)
+    for (const message of [
+      ...checkLegacyRecords(legacyGraph.constructors, prefabDebt.legacy),
+      ...checkConstructionForwards(legacyGraph, prefabDebt.forwards),
+    ])
+      diagnostics.push({
+        file: 'dev/lint/prefab-debt.json',
+        line: 1,
+        rule: 'boogle/legacy-construction-counts',
+        message,
+      });
   return diagnostics;
 }

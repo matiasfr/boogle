@@ -1,0 +1,154 @@
+[
+  {
+    "rule": "boogle/colliders-from-records",
+    "file": "src/entities/probe/view.ts",
+    "code": "addStatic(shape, pos);",
+    "fail": true
+  },
+  {
+    "rule": "boogle/colliders-from-records",
+    "file": "src/entities/probe/view.ts",
+    "code": "instantiate('town.chair', pose, options);",
+    "fail": false
+  },
+  {
+    "rule": "boogle/colliders-from-records",
+    "file": "src/entities/probe/view.ts",
+    "code": "import { createBody as make } from '../../physics/engine.ts'; make({});",
+    "fail": true
+  },
+  {
+    "rule": "boogle/colliders-from-records",
+    "file": "src/proto/probe.ts",
+    "code": "land['addStatics']([], pos);",
+    "fail": true
+  },
+  {
+    "rule": "boogle/colliders-from-records",
+    "file": "src/prefab/builders/probe.ts",
+    "code": "staticBody(shape, pos);",
+    "fail": true
+  },
+  {
+    "rule": "boogle/colliders-from-records",
+    "file": "src/physics/backend-probe.ts",
+    "code": "createBody({});",
+    "fail": true
+  },
+  { "rule": "boogle/colliders-from-records", "file": "src/place/land.ts", "code": "slab();", "fail": true },
+  {
+    "rule": "boogle/colliders-from-records",
+    "file": "src/entities/probe/view.ts",
+    "code": "// boogle-disable-next-line boogle/colliders-from-records -- bypass\naddStatic(shape, pos);",
+    "fail": true
+  },
+  {
+    "rule": "boogle/seats-from-records",
+    "file": "src/entities/probe/view.ts",
+    "code": "registerSeat({});",
+    "fail": true
+  },
+  {
+    "rule": "boogle/seats-from-records",
+    "file": "src/prefab/builders/probe.ts",
+    "code": "registerSeat({});",
+    "fail": true
+  },
+  {
+    "rule": "boogle/seats-from-records",
+    "file": "src/prefab/instantiate.ts",
+    "code": "registerSeat({});",
+    "fail": true
+  },
+  {
+    "rule": "boogle/seats-from-records",
+    "file": "src/entities/probe/view.ts",
+    "code": "owner.own(instantiate(key, pose, options));",
+    "fail": false
+  },
+  {
+    "rule": "boogle/seats-from-records",
+    "file": "src/entities/probe/view.ts",
+    "code": "import { registerSeat as sit } from '../railway/seat.ts'; sit({});",
+    "fail": true
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "import { Mesh } from 'three';",
+    "fail": true
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "import type { Mesh } from 'three';",
+    "fail": true
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/levels/probe.ts",
+    "code": "import { defineLevel } from '../../prefab/types.ts'; import { line2World } from '../../entities/railway/line2-path.ts'; export const levels = [defineLevel({place:'probe', placements:[]})];",
+    "fail": false
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "import { definePrefab } from '../../prefab/types.ts'; import type { BuilderName } from '../../prefab/names.ts'; import { PLAYER_R } from '../../constants.ts'; import { clamp } from '../../math-pure.ts';",
+    "fail": false
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/levels/probe.ts",
+    "code": "const xs = []; const data = {length: xs.length, x: Math.sin(1)};",
+    "fail": false
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "export * from '../../render/materials.ts';",
+    "fail": true
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "import '../../render/materials.ts';",
+    "fail": true
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "import('../../render/materials.ts');",
+    "fail": true
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "import(`../../render/materials.ts`);",
+    "fail": true
+  },
+  { "rule": "boogle/records-are-data", "file": "src/content/prefabs/probe.ts", "code": "import(path);", "fail": true },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "import { x } from '../../entities/railway/other-view.ts';",
+    "fail": true
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "document.createElement('div');",
+    "fail": true
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "new HTMLElement();",
+    "fail": true
+  },
+  {
+    "rule": "boogle/records-are-data",
+    "file": "src/content/prefabs/probe.ts",
+    "code": "globalThis['document'];",
+    "fail": true
+  }
+]

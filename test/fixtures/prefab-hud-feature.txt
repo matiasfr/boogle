@@ -1,0 +1,25 @@
+import { onStart, type FrameCtx } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
+import { me, cam } from '../player/player.ts';
+import { onEntered } from '../entities/player/state.ts';
+import { interactTarget } from '../player/hands.ts';
+import type { Body } from '../physics/engine.ts';
+
+defineKind('prefab-fixture-hud', { update: 39 });
+onStart(() => {
+  const output = document.createElement('output');
+  document.body.append(output);
+  onEntered(() => {
+    output.dataset.entered = 'true';
+  });
+  spawn({
+    kind: 'prefab-fixture-hud',
+    update({ now }: FrameCtx) {
+      const body: Body | null = me.body;
+      output.textContent = `${me.name}: ${body?.position.y ?? 0}, ${cam.yaw}, ${now}, ${interactTarget()?.verb ?? ''}`;
+    },
+    dispose() {
+      output.remove();
+    },
+  });
+});

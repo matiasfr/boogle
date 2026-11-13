@@ -1,0 +1,10 @@
+[
+  {
+    "file": "src/review-lookout-hole.ts",
+    "code": "import {createLookoutView} from './entities/lookout/view.ts';\nexport async function reviewLookout() { return createLookoutView(); }\n"
+  },
+  {
+    "file": "src/review-finds-hole.ts",
+    "code": "import {createFindsView} from './entities/finds/view.ts';\nimport {createFinds} from './entities/finds/state.ts';\nexport async function reviewFinds() { return createFindsView(createFinds({read:()=>null,write:()=>{}})); }\n"
+  }
+]

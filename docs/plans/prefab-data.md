@@ -133,7 +133,7 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 - [x] **3. `instantiate` and the workshop chair.** First capture the golden from today's code: a test that builds `solidSpecs` and the seat from `makeWorkshop` and writes their world values. Then create `src/prefab/instantiate.ts`, `src/prefab/builders/seat-chair.ts` (wrapping `seatMesh()`), the record in `src/content/prefabs/town.ts`; replace `workshop.ts:65-76` with one `instantiate` call. Proof: the golden is byte-equal after; the orchestrator reports three chair before/after stills with zero differing pixels and identical sit/stand on main and this branch using the chair-focused eval committed as `865e03502`. Deletes the chair's two hand-typed boxes and its `registerSeat` call. Review corrections below supersede the initial visual hold.
 - [x] **4. One greybox platform.** Record `greybox.box` (`src/content/prefabs/greybox.ts`), builder `src/prefab/builders/greybox-box.ts` (the instanced mesh from `boxes.ts:64-75`), level `src/content/levels/gorge.ts` holding the north platform's five spans with ids; `drawGreyBoxes` takes placements for those and `GreyBox` for the rest. Proof: collider golden of all 53 solids equal before and after; `stack-at` still; `describe()` still reports 73 boxes and 53 solids. As built below corrects these pre-leg-2 counts.
 - [ ] **Checkpoint A** (the proving slice): `npm run check`, the two stills side by side, `npm run level-check` still 12 reports, `npm run perf` at the Gorge (draw calls and bodies unchanged). The designer and owner rule on the open questions here.
-- [ ] **5. Enforcement on.** The three lint rules with their seeded lists, the generated `test/prefab-records.test.ts`, the registry ratchet for the lists, `docs/agents/plugins.md` ("New things in the world are prefab records") and the new-feature skill. Proof: a fixture file with a stray `addStatic` fails lint; `npm run registry` fails when a list grows.
+- [x] **5. Enforcement on.** The three lint rules with their seeded lists, the generated `test/prefab-records.test.ts`, the registry ratchet for the lists, `docs/agents/plugins.md` ("New things in the world are prefab records") and the new-feature skill. Proof: a fixture file with a stray `addStatic` fails lint; `npm run registry` fails when a list grows. As built: generated record coverage already landed in step 3; this step adds passing/failing lint fixtures and the file-identity ratchet (below).
 - [ ] **6. High Gorge massing.** All 73 boxes become placements in `src/content/levels/gorge.ts` (the frame helpers move there from `massing.ts`); `massing.ts` keeps only exported constants others import. Proof: goldens equal, `stack-at` and `stack-draws` stills. Deletes `GreyBox`'s collider loop (`boxes.ts:76-82`) and `gorgeMassing()`; removes `route-greybox/boxes.ts` from the collider list.
 - [ ] **7. Leg 2 and later legs** (after `greybox/leg2-massing` merges): `Piece`, `Pad` and `Post` become placements of `greybox.box`, `greybox.pad`, `greybox.sign-post` (a `label` attachment; placeholder text stays where it is authored); `dev/level/route-leg2.ts` reads `content/built/levels/*.json`. Proof: goldens, that branch's level report unchanged, one still per area. Deletes the three record types and `leg2-draw.ts`'s collider code. New legs are authored as level files from here.
 - [ ] **Checkpoint B:** `npm run check`, perf at Bell Rock, a bot walk of leg 1.
@@ -177,7 +177,167 @@ Baseline commit `df0fb9eb` captured all old Gorge collider recipes (including th
 
 The Gorge-reached broker look using `stack-at.ts` was opened: the light-grey deck is continuous over its posts and meets the concourse without a visible gap; WebGPU reported no graphics errors and `describe()` reported 84/55. The initial manifest is `.look/evidence/1794577000841-76108/evidence.json`; final-tree evidence is recorded in the task handoff. This single still is not a before/after pixel comparison, a movement playtest or performance evidence. No full playthrough, device test, push or ship. `npm run inflight` was omitted because it fetches and this task forbids external networking.
 
+### Step 5 as built: enforcement
+
+The three named rules are enabled in `dev/lint/policy.ts` and enforced by `safety.ts`: collider calls use prefab
+records, seat registration uses `instantiate.ts`, and content imports only explicitly listed data/pure helpers
+with no browser/DOM globals. Imported aliases and member calls are checked; comment suppressions cannot open
+another door. Procedural meshes remain code in prefab builders: the plan never specified a blanket `Mesh` ban.
+Signs and interactions still belong to step 9.
+
+`dev/lint/prefab-debt.json` records **54 collider files and 2 seat files**, each with the owner's dated step-5
+baseline reason. This includes prototypes and current dynamic-body callers because the specified constructor
+ban covers them too. The plan's 48/3 inventory was stale; the chair seat is already migrated. Registry checks
+file identities, so even an equal-size substitution fails, and rejects stale exemptions. For a local base that
+predates this list it verifies each bootstrap exemption against an actual matching call in that base; once the
+base has the list, additions fail outright. Dated reasons are mandatory but never authorize growth. The
+fixtures exercise both bootstrap and post-baseline growth, removal, substitution and missing reasons.
+
+`test/prefab-records.test.ts` was already generated coverage from step 3 and remains in place, alongside the
+unchanged chair/Gorge goldens and committed artifacts. Plug-in docs and the new-feature skill now route new
+placed content through `prefab:new`, data and the owning view's `instantiate`. This tooling-only step changes
+no runtime source, game design, Home station, sim/world/net/server, wire shape or `WORLD_NS`.
+
+Checkpoint A remains unticked: this task authorizes step 5, not a claim of its missing performance/owner verdict.
+The Godot portability proof remains step 14, after checkpoint B. `npm run inflight` is omitted because it fetches
+and this task permits network only to the local broker. No browser run or images are needed for lint enforcement.
+Final check results and the source fingerprint are recorded in this task's local handoff/evidence.
+
+### Step 5 independent review corrections
+
+The five accepted findings from the independent review were reproduced first: all five named regression tests
+failed before production edits (`.look/prefab-step-5-review/red.log`). Creation API imports are now rejected
+outside the named runtime door and debt files, including renamed exports, namespace access, dynamic imports
+and require; local aliases cannot hide the original import. Legacy solid helper entry points (`drawWorksBoxes`,
+`drawGreyBoxes`, `plank`, `buildLand`, `staticSpheresBody`) follow the same rule. The prefab directory is no longer
+a blanket collider exemption: only `instantiate.ts` is. Pure named helpers and type-only imports remain usable.
+
+The debt schema is now `{ count, reason }` per file. Both lint and registry reject excess violations and demand
+that fewer violations lower the recorded count; registry additionally rejects per-file budget growth and file
+substitution. The expanded rules find **68 collider files / 209 violations** and **3 seat files / 4 violations**
+(imports and calls, not runtime object counts). Fourteen additional collider baseline files are existing imports
+or helper consumers newly covered by the corrected rule, plus one existing dynamic seat-module importer,
+verified against the local base; no runtime code was
+added. The baseline transition derives counts from that base's source for the old reason-only schema too; once
+the base contains counts, it never accepts file or count growth. Dates remain mandatory.
+
+Content browser-global checks now use lexical scope resolution, so a local `origin`, a shadowed `document` or
+a local `globalThis` is valid data code, while unresolved DOM access still fails. Inline `TSImportType` nodes
+are covered by the same content import whitelist. Scope analysis runs only on content files; the two creation
+rules share their import/call traversal to keep whole-repo lint near the review's four-second median.
+
+These corrections change no runtime source, Home station file, compiled artifact, golden, namespace or game
+behavior. No browser run, PNG or bot result is claimed; the fresh static checks, timing samples and final stamp
+belong to `.look/prefab-step-5-review/`, superseding this task's earlier static evidence.
+
 ## 6. What can start today, and what waits
+
+**Step 5h orchestrator reset:** [the precise-guard audit](prefab-data-step-5-precise-audit.md) supersedes the
+rejected `eea9e0a42` reference-taint design. Branch step-5-6 starts from `e09762b0` and rebases onto current main.
+Keep the 64-export construction model, private-helper proofs and async value flow; add only distinct capability
+import-specifier/namespace-member counts, including named-door budgets. Resolved dynamic reads acquire selected
+members, so the look eval reading me does not acquire enterIsland. All eight ordinary fixture groups pass with
+unchanged debt; the round-six import addition fails before storage/aliasing. The accepted residuals are listed
+once in lint-boundaries.md. Step 5 stays checked; compiled JSON stays committed; Godot remains step 14.
+
+**Step 5g main rebase and ordinary-feature audit:** [the complete audit](prefab-data-step-5-rebase-4.md)
+supersedes 5f's totals: rebased onto `721fcffca`, removed three deleted raw-debt files (eight violations),
+and corrected generic callback/query false positives. Raw debt is 110 files / 310 violations; construction
+exports 64, conservative files 31, formatted debt 954 lines. Actual `setShapes` and injected Shape → Body
+factories remain counted. Both the original record-door feature and new HUD-only feature pass without debt
+changes. `enterIsland` allocates the lobby player; named player state reads remain free. Step 5 remains checked;
+Godot stays in step 14. Depth-one missing-main-debt bootstrap and fresh checks are recorded with the audit.
+
+**Step 5f dynamic-value correction (supersedes the 5e negative ownership audit):** both reported new-consumer
+fixtures failed first. Promise.all import destructuring hid lookout's `land.addStatic` and finds' call to the
+collider-building secrets view. The general value model now binds await/aggregates, object/array patterns, then
+callbacks, local assignments and forwarded values. Private debt helper calls participate in the fixed point.
+Exemption candidates receive an unpruned allocation/unknown-use proof, and unsafe ones are automatically counted.
+OwnedView-producing factories are discovered even outside raw-capability debt files. Actual owner-only/record-door
+factories remain free. The [complete before/after and all-20/ownership audit](prefab-data-step-5-dynamic-audit.md)
+records 42 → 92 construction exports, 32 conservative files printed by lint/registry, and the stricter treatment
+of the allocating singleton enterIsland. Metadata remains compact (998 formatted lines); raw file/count budgets,
+capability import bans, public surfaces, shallow-clone behavior and committed prefab JSON are unchanged.
+
+**Step 5e fourth-review correction (supersedes the shallow-bootstrap and namespace gaps below):** five of six
+reproduction tests failed before production edits (the local namespace-import/export control already passed):
+namespace forwarding, new forwarding surface, the full OwnedView + instantiate feature, and a depth-one clone
+with no merge base. Namespace re-exports retain
+constructor identity; schema 5 records compact forwarding surfaces so new re-exports fail even if counts stay flat.
+OwnedView is an open lifecycle door. The [62-export audit](prefab-data-step-5-lifecycle-audit.md) removes 20
+ownership/query/movement false positives, leaving 42 counted exports and three forwarding bindings. Registry
+compares the base debt file directly; missing/older schemas run internal consistency only. A depth-one fixture
+checks all three base-schema states. Rebased onto `1af69645b` on `codex/prefab-data-step-5-3`; no runtime source edits.
+
+**Step 5d compact count correction (supersedes the 5c transitive edge ratchet):** the whole-program graph
+found 296 exports and 23,539 edges, including shared entity lifecycle, player/ball state and platform services.
+That reference/callback closure made routine imports unnecessarily expensive and produced 25,635 JSON lines.
+The owner chose a targeted debt-only direct-call fixed point with importer counts, not importer identities.
+The four audit probes still fail; ordinary feature registration plus the prefab door passes. The explicit non-constructor list stops at entity lifecycle, singleton player/ball state and platform carry
+services; the lint contract justifies each entry. Factory-result and callback-container references no longer
+forward callable provenance.
+The old edge analyzer/list is removed; schema 4 stores 62 constructor counts inside the existing debt JSON
+(961 formatted lines). Capability import bans, frozen surfaces, per-file budgets and content globals stay intact.
+Importer swaps and reflection intentionally pass. [Shape, central modules and measurements](prefab-data-step-5-shape.md).
+
+**Step 5c consumer-edge correction (supersedes the approved-API escape hatch below):** the audit's four typed
+`makeCar`/`buildMachine` and new/existing-barrel probes were ported first; all four failed before enforcement
+edits (`.look/prefab-step-5-edges/red.log`). `dev/lint/prefab-edges.ts` computes a conservative may-reach graph over
+lexical bindings, helper/alias/closure references, assigned values, namespace dependency bags and statically
+resolved calls. Capability-module functions seed construction reachability; opaque callback/dependency parameters
+fail closed. This includes exposed construction-capable values, not just functions which build immediately.
+Every construction-capable export of a door/debt provider is computed, not hand-listed. The record-only
+`instantiate.ts` public API is the explicit exception so new record-authored content remains possible.
+
+The version-3 `legacy` records freeze each computed API's kinds and real importing files, following renamed,
+namespace, dynamic and star/wrapper chains. Forwarding files count as importers too, including tools/tests and
+barrels outside `src`; source imports of ignored/unanalyzed project code fail closed. A new barrel or consumer
+fails with the prefab door; removed consumers must be deleted. Lint and registry compare the computed set with
+the recorded set, and registry rejects new APIs/kinds/edges relative to its base. A fixture changes an existing
+pure export into a constructor to prove that public-name freezing alone cannot bless it silently.
+
+The cache fingerprints project code, providers, lockfile, tsconfig and analyzer/visitor code, and writes atomically.
+Source-file additions/removals invalidate it. The graph deliberately over-approximates unknown callbacks and
+dependency values: its API/edge counts are architectural reachability, not actual body/seat/object counts. It
+covers all 50 audit paths and seven injected constructors; that audit list is validation evidence, not production
+configuration. Existing approved consumers can reuse an acquired API; arbitrary global/reflected/generated-code
+effects remain outside a sandbox guarantee. Rebased on local `origin/main` at `c279b824c` (including Home flip
+`9c9b4cd67`) on `codex/prefab-data-step-5-2`. The regenerated baseline has 111 collider files/302 violations,
+13 seat files/16 violations, 296 computed exports and 23,539 importer edges. The boiler install view drops its
+`POST` export; 107 computed export records change consumer sets (202 edges added, 161 removed) through inherited
+Home/railway/tree changes. Every changed entry is listed in [the rebase delta](prefab-data-step-5-rebase.md).
+The Home hall treads reuse an existing helper, so their added collider instances do not increase syntactic
+violation counts. Final checks are recorded in this follow-up's handoff under `.look/prefab-step-5-edges/`.
+
+**Step 5 structural re-review correction (supersedes its syntax-based boundary notes):** the four new findings
+were ported first as five failing fixtures (including both physics and seat laundering). All failed at
+`12c3db6fc` before production edits; `.look/prefab-step-5-structural/red.log` preserves the result. Runtime imports
+now refer to resolved capability modules, not selected symbol names. A shared native Oxc resolver covers actual
+files, extensionless/index paths, tsconfig aliases, query suffixes and symlinks; device/inode identity also closes
+case-insensitive and hard-link aliases (the Mac case regression failed before this fix). Native Rapier package
+modules are capabilities too. The previous general import rules
+had only textual matchers, so there was no real resolver to reuse; the already-locked resolver is promoted to a
+direct development dependency without downloading packages. Unknown runtime loaders fail closed, and only
+imports/exports that actually erase are exempt (verified against Node's type stripper).
+
+The chosen no-laundering contract freezes runtime export names on every named door and debt file, prohibits
+capability re-exports and unbounded star exports, and ratchets public names in registry as well as source lint.
+Thus a new physics/prefab wrapper or barrel fails at its first capability import; a trusted file cannot add a
+renamed binding or exported wrapper to its recorded public surface. Existing declared API bodies remain trusted
+code, not a sandbox against arbitrary global side effects, generated code or malicious edits to approved APIs.
+The version-2 debt baseline records **111 collider files / 302 violations** and **13 seat files / 16 violations**,
+plus fixed door public names; these counts include all module edges, even imports of non-factory names. The
+schema transition derives the new counts and public names from the branch/base common ancestor's existing
+source (main independently renamed an old export while this job ran). Opaque `import.meta` loaders, including
+Vite globs, also fail closed unless already counted; only `env`/`url` data access is exempt. Future file,
+count and export additions fail; fewer violations/exports must lower the record.
+
+Content checks use lexical scope references rather than access syntax: unresolved `globalThis`, `window` and
+`self` are rejected at their source, so destructuring and computed access cannot hide a DOM read. Ambient
+declarations, type-only bindings and erased imports are not runtime shadows; genuine local bindings still work.
+The fixture table covers both reviews, wrappers, barrels, namespace computation, symlinks, aliases, type erasure,
+and browser-global binding cases. Runtime source, Home station, artifacts, goldens and namespace are unchanged.
+Fresh checks, lint timing and the final stamp live in `.look/prefab-step-5-structural/`; prior evidence is stale.
 
 **Step 3 review-4 serialization correction:** the reviewer’s quarter-turn regression was ported first and failed (`.look/prefab-review-4/red.log`). Choice **(a)**: emit lossless JSON numbers for rotations and all other numeric record/transform fields. This removes serialization roundoff independently of the scale ratio and preserves fractional compensation too; increasing only angle precision would leave that second failure. The sorted-key and array-order rules remain. Both goldens and the committed chair artifacts are byte-identical; no golden or content regeneration was needed.
 
