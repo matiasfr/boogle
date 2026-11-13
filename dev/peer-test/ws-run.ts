@@ -58,6 +58,8 @@ async function serve(env: Record<string, string> = {}) {
     SERVER_ROOMS: '*',
     MAX_PLAYERS: '4',
     SERVER_SAVE_MS: '200',
+    // The suite restarts and reloads many independent players on one loopback IP (as WS_LOAD does below).
+    UPGRADES_PER_MIN: '1000',
     ADVANCE_KEY: 'peer-test-advance',
     REPORT_TOKEN: 'peer-test-report',
     ...env,
