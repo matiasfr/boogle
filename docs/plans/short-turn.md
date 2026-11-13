@@ -583,3 +583,140 @@ These replace the plan's three. Only question 1 holds anything, and only the bui
 **The plan's questions.** Its question 1 is the owner's (above). Its question 2 is not: the bar is a gate figure
 inside his 12 November words, ruled in F and logged. Its question 3 is not yet a question: the sixth train is
 measured in step 1 without asking, and holding leg 1 is his to raise ([call 109](../agent-calls.md)).
+
+## Design ruling on step 1's sheet (designer, 2026-11-12)
+
+Rules on the step 1 sheet (branch `scratch/spacing-leg1-step1` at e857fe21e; 48 seeds, 20,000 ticks, hold 75%, from
+E0's base worlds; six trains join at section 1, so their base worlds are their own). Figures are from the sheet's
+comparison table or the orchestrator's brief of it; I ran nothing and took no stills. Cells are mean / share over
+1,050 / worst.
+
+**Verdict.** **Cleared to build six trains with the Ring Island hold** (cap 200, on 15%), on the steps and gates
+below. **The short turn is parked, not built,** and its owner question is withdrawn. 4 Decided, 6 Default, 2 New.
+
+| Candidate | Heavy settled | Heavy whole | Light settled | Light whole | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| E0 | 601 / 7.24% / 1,553 | 560 / 3.38% / 1,484 | 439 / 2.99% / 1,535 | 429 / 3.06% / 1,548 | |
+| End hold at 100, 115, 130% | | | | | Killed: kit ticks move while kits are owed, gate 14 fails |
+| Six trains | 502 / 3.96% / 1,470 | 478 / 2.76% / 1,470 | 393 / 2.10% / 1,510 | 389 / 2.87% / 1,473 | Misses both bars |
+| The hold (B 200, 15, late) | 598 / 6.80% / 1,499 | 558 / 3.19% / 1,484 | 396 / 0.61% / 1,275 | 396 / 1.48% / 1,353 | Tier 1 met, keep rule missed |
+| **Six trains with the hold** | 493 / 3.54% / 1,470 | 473 / 2.47% / 1,470 | 343 / 0.22% / 1,275 | 349 / 1.02% / 1,473 | **Tier 1 and the keep rule, both rates** |
+
+### 1. The Railhead's outward worst on the growing leg: noise until shown otherwise
+
+Not a kill. I wrote that rule for a turn, which takes an outward train out of service; nothing here does. Both
+figures (1,338 heavy, 1,311 light) are under the growing cap of 1,600 and under 1,350, they are the largest of
+roughly 170 light waits at one platform, and on the settled line the same platform falls (1,499 to 1,324 heavy,
+1,535 to 1,164 light). A maximum at one platform is the measure the train-spacing review argued against.
+
+**The cheap test, run beside the build and not before it:** E0 and six-with-the-hold on a second seed block (1030 to
+105f), whole leg, both rates. Read the Railhead's outward **share over 1,050 and p95**, pooled over all 96 seeds, not
+the worst. It is a real cost if that share is higher than E0's at either rate, or any wait there passes 1,600. Then
+the sheet comes back here before the checkpoint; the hold is one tunable to turn off.
+
+### 2. Build it now: what the player meets, and the calls
+
+Yes, under call 24 of the review above ("a cheaper candidate that clears the bar is built instead"). It also
+shortens the ride: the Gorge-bound journey falls from 2,503 to 2,390 heavy and 1,986 to 1,925 light, the rider's
+light homeward trip rises 3.5% (under the 5% line), the quiet lap is 1.098, kits equal E0's.
+
+- **A sixth train.** It waits in the shed, where the view does not draw it, and joins at the Village when the first
+  section is laid, as the fourth and fifth do today (greybox calls 63 and 66: no running train is held for a join).
+  The player meets it as one more train on the halt maps and a shorter gap. Line 2 has no fare route, so fares do
+  not move; the stone gate passes. I found no count of trains in the garage's rows, so nothing there changes.
+  Reverses my own "more trains are not the lever" and "do not add trains" (greybox step 3 review): the quiet lap
+  that refused seven trains passes at six.
+- **A train sometimes stands at Ring Island,** 25 to 33 ticks a lap on average and never over 200 past its dwell.
+  What says why, all of it already ruled for B (train-spacing review, section B and call 15): doors open, the hold
+  lamp in the cab, the platform's signal arm at stop for that train, the hold badge on its marker on every halt
+  map, and the bell two seconds before it leaves. No text. Ring Island has both bills and the works in reach, so
+  stepping off is a real choice. No "go now".
+- **Against the owner's words.** "Up to about 2 minutes 15": with one to three playing, none over 2 minutes 08 on the
+  finished line in our test (1,275) and 0.22% over 105 s. Under the heaviest test load the worst is 2 minutes 27
+  (1,470), and while the line is growing 2 minutes 27 at either rate. He is told both.
+- **The late sheet is the floor.** It starts from worlds built without the hold. A shipped room has the hold from the
+  day its line passes Ring Island; B built that way measured 2.63% heavy against 6.80% late (train-spacing Results).
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Greybox waits "up to about 2 minutes 15", tightened when spacing lands | Decided | [12 November](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered) |
+| 2 | 20 s with a bell is the figure for a train waiting with players aboard | Decided | [10 November](../decisions-rail.md#d-2026-11-10-open-calls-answered-the-express-and). The hold's cap |
+| 3 | Anything a playtest could tune is tunable | Decided | Owner call, 5 November. The cap and the on share, 0 as off |
+| 4 | Nothing waits on a world bump; none ships mid-session | Decided | Owner calls, 10 November. Ruling 4 |
+| 5 | Line 2 runs six trains from the first section laid (`fleet.trains` 3, 6, 6, 6, 6); the sixth waits unseen in the shed and joins at the Village | Default | Amends greybox call 63. The sheet |
+| 6 | The hold is shown by open doors, the hold lamp, the signal arm, the map's hold badge and a bell two seconds before leaving | Default | Train-spacing review, call 15. Kept |
+| 7 | The hold is built as measured: cap 200, on 15%, off half of on, never on a train a lever ask is assigned to, off for errand trains as the sheet ran it and while a train is joining | Default | Relaxes the train-spacing review's call 16 only if kit ticks equal E0's, which they do |
+| 8 | The Railhead's outward worst on the growing leg is read as noise; a second seed block decides, on the share and p95 | Default | Ruling 1 |
+| 9 | The gates in "Gates" below; call 109 restated | Default | Ruling 6 |
+| 10 | Spacing lands after the fourth car, on its own bump, and is measured again on that base as its gate | Default | Ruling 4 |
+| 11 | A train may stand at Ring Island up to 20 s past its dwell with riders aboard, no "go now" | **New** | Train-spacing review, call 23, open with the owner. Now built on the recommendation |
+| 12 | The short turn is parked: not built for the greybox, its scratch rule not written; it returns only if a later leg's sheet misses with six trains and the hold | **New** | Ruling 5. Replaces calls 18 and 20 above |
+
+### 3. The platoon: one diagnostic, no new rule before building
+
+The finding moves the cause from the end holds to quiet time: 1,000 ticks with nothing asked put three trains one
+block signal apart with a 2 km hole, and a real room is quiet most of the time. The hold at Ring Island is already
+the rule aimed at it, because it acts on the gap with nothing asked; that is why B built from the start beat B
+turned on late. So no new rule first. **One scratch run beside the build, not before it:** six with the hold from
+base worlds built with both on, printing the trains' places after the 1,000 quiet ticks. If the platoon still forms
+and the heavy settled share stays over 2%, the next candidate is the end hold at 115% with errand trains exempt (the
+hp115 light rows were the best on the sheet and died only on kit ticks). Changing the block signals' spacing at the
+Gorge end is a layout change with its own gates and is not tried for this.
+
+### 4. The fourth car and the bump
+
+No separate measurement before building. The fourth car's plan already reruns the 48 seeds on its own extent and
+holds itself to main's figures within 10 ticks and 0.3 points. Spacing rebases onto it (both edit
+`railway-trains.ts` and `railway-lines.ts`) and its step 1 below reruns E0 and six-with-the-hold on that base; those
+are the figures the gates take. Separate bumps: the fourth car keeps v33 and ships when ready, spacing takes the
+next free one. They share a ship only if both are ready on the same day; neither waits for the other.
+
+### 5. The owner's question 1 is moot for the greybox
+
+Withdrawn, with question 2 (answered by call 24 and this sheet). The crossing walk in section D is no longer owed
+for a turn; its fourth measure (crossing Ring Island's tracks on foot to go home) is still unproved and goes to the
+greybox route's level findings. **What remains his:**
+
+1. **"A train may now stand at Ring Island for up to 20 s, doors open, with a bell before it leaves, so the trains
+   stay evenly spaced. Keep it?"**
+   - **Yes (recommended; built).**
+   - Yes, and anyone aboard can send it on.
+   - No: six trains only (one wait in fifty over 105 s instead of one in five hundred, with one to three playing).
+   Answer: ___
+2. **"With six trains and that stand, nobody waited over 2 minutes 08 on the finished long line with one to three
+   playing, and 2 minutes 27 under our heaviest test. Is that train spacing done for the greybox?"**
+   - **Yes (recommended):** the tighter target (at most one wait in a hundred over 105 s under the heaviest load) is
+     looked at again when the next leg sets its trains.
+   - No: keep working on it now.
+   Answer: ___
+
+### 6. Build steps and gates
+
+1. **Rebase and re-measure (S; nothing merges).** The harness onto the fourth car's branch or main once v33 is in. E0
+   and six-with-the-hold, settled and whole, both rates, late and from base worlds built with both on; the second
+   seed block of ruling 1; ruling 3's print. Stop and return here if tier 1 or the keep rule is lost.
+2. **The rule (M; one bump).** `fleet.trains` to six from section 1; the control halt at Ring Island as the scratch
+   branch has it; the cap and the on share as room tunables beside `railTrainHeadPct`, 0 as off and off equal to
+   five-train main's rule bit for bit apart from the fleet. Not mid-session.
+3. **The telling (S; no bump).** Call 6's five signs. One look at Ring Island with a train held; one at the Village
+   as the sixth train joins. Game-design's trains section.
+4. **Independent review, then a real server:** a train held at Ring Island through a join and a restore; all clients
+   agree on rows and hash.
+5. **Checkpoint.** `npm run check`, `npm run loop -- run`, `npm run test:net`, the gates below; call 109 restated;
+   train-spacing's status note.
+
+**Gates.**
+
+- **The committed route gates, four seeds, heavy (`ROUTE_GATES=1`):** unchanged and none loosened. Gate 8 at 1,350,
+  gate 9 at 1,400, gate 10 at 1.2, the whole leg at 1,600, gates 5 and 12 to 15 as they are. Gate 9's text says
+  "four seeds".
+- **The 48-seed sheet, at the checkpoint only** (measured beside each):
+  - Light settled: worst at most 1,350 (1,275); share over 1,050 at most 0.5% (0.22%); mean no higher than E0's.
+  - Heavy settled: share at most 3.62% (3.54%); mean at most 525 (493); worst at most 1,500 (1,470).
+  - The whole leg, both rates: worst at most 1,600 (1,470 and 1,473).
+  - The Gorge-bound journey's mean no higher than E0's; the rider's mean trip at most 5% over; no stand over 1,200
+    (838; the sheet says where); no stand at Ring Island over 200 past the dwell; kit ticks equal E0's.
+- **Honestly:** on 48 seeds the 1,350 line is met at a playtest's rate and not under heavy asks (1,470). Gate 9's
+  1,400 stays a four-seed figure. Call 109's "the 1,600 cap everywhere" becomes "1,350 settled at light asks, 1,500
+  settled at heavy asks, 1,600 growing". Table C's heavy tail (1.0%, none over 1,158) is still missed and stays the
+  recorded target.
