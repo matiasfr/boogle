@@ -59,8 +59,8 @@ const overalls = (body: string, strap: string, trim: string): Part[] => [
   ['strap', -0.14, 0, 0, 1, 1, 1, strap],
   ['strap', 0.14, 0, 0, 1, 1, 1, strap],
   ['b', 0, -0.055, 0.246, 0.15, 0.11, 0.012, trim],
-  ['s', -0.13, 0.065, 0.225, 0.022, 0.022, 0.012, '#d9a23a'],
-  ['s', 0.13, 0.065, 0.225, 0.022, 0.022, 0.012, '#d9a23a'],
+  ['s', -0.13, 0.065, 0.225, 0.022, 0.022, 0.012, BRASS],
+  ['s', 0.13, 0.065, 0.225, 0.022, 0.022, 0.012, BRASS],
 ];
 // New pieces carry no line yet: those wait for the owner's writing pass. Existing lines stay as they were.
 export const GIFTS: Gift[] = [
@@ -223,7 +223,7 @@ export const GIFTS: Gift[] = [
     line: '',
     parts: [
       ['t', 0, 0.3, 0, 0.26, 0.05, 0.26, '#3a302c'],
-      ['c', 0, 0.02, 0.26, 0.05, 0.16, 0.05, '#d9a23a', Math.PI / 2],
+      ['c', 0, 0.02, 0.26, 0.05, 0.16, 0.05, BRASS, Math.PI / 2],
     ],
   },
   {
@@ -234,8 +234,8 @@ export const GIFTS: Gift[] = [
     name: 'Cable goggles',
     line: '',
     parts: [
-      ['c', -0.13, 0.17, 0.26, 0.1, 0.06, 0.1, '#d9a23a', Math.PI / 2],
-      ['c', 0.13, 0.17, 0.26, 0.1, 0.06, 0.1, '#d9a23a', Math.PI / 2],
+      ['c', -0.13, 0.17, 0.26, 0.1, 0.06, 0.1, BRASS, Math.PI / 2],
+      ['c', 0.13, 0.17, 0.26, 0.1, 0.06, 0.1, BRASS, Math.PI / 2],
       ['c', -0.13, 0.17, 0.29, 0.07, 0.02, 0.07, '#7fe0d0', Math.PI / 2],
       ['c', 0.13, 0.17, 0.29, 0.07, 0.02, 0.07, '#7fe0d0', Math.PI / 2],
       ['b', 0, 0.17, 0, 0.62, 0.05, 0.56, '#3a302c'],
@@ -398,8 +398,8 @@ export const STOCK: Stock[] = [
     after: 'trains',
     parts: [
       ['t', 0, 0.3, 0, 0.26, 0.2, 0.26, '#3f6fb0'],
-      ['c', 0, 0.02, 0.28, 0.06, 0.2, 0.06, '#d9a23a', Math.PI / 2],
-      ['s', 0, 0.02, 0.2, 0.09, 0.09, 0.09, '#d9a23a'],
+      ['c', 0, 0.02, 0.28, 0.06, 0.2, 0.06, BRASS, Math.PI / 2],
+      ['s', 0, 0.02, 0.2, 0.09, 0.09, 0.09, BRASS],
     ],
   },
 ];

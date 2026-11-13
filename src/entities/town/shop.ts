@@ -5,7 +5,7 @@
 // with swapSlot. Walk out still trying something on and it's yours anyway: it was free. Local and personal: two people can shop at
 // once, and neither takes the other's stock, because there's no stock.
 // `createShop` mounts it in `rooms`' shop on an owner: the town entity's in the live game (src/entities/town/), with the
-// wardrobe (src/entities/wardrobe/state.ts); ?proto=place's in ./town-life.ts, with ./gifts.ts adapted to the same surface.
+// wardrobe (src/entities/wardrobe/state.ts).
 // Docs: docs/research/town-interiors.md, "A shop when money is a joke"; docs/research/cosmetic-rarity.md.
 import * as THREE from 'three/webgpu';
 import { dollars, paperMaterial } from '../../place/signs.ts';
@@ -31,14 +31,14 @@ import {
 } from './rooms.ts';
 import { BOARDS, SHOP, type Fact } from './town-lines.ts';
 
-/** What the shop needs of a wardrobe: the live game's, or Place's gifts.ts adapted to it. */
+/** What the shop needs of the wardrobe. */
 export type ShopWardrobe = Pick<
   WardrobeApi,
   'owned' | 'isOwned' | 'isWorn' | 'tried' | 'tryOn' | 'keepTried' | 'wearOwned' | 'takeOff' | 'swapLabel' | 'swapSlot'
 >;
 export type ShopEnv = {
   has(f: Fact): boolean;
-  /** The money on your counter: production's score, Place's `money()`. Only the tags read it. */
+  /** The money on your counter: production's score. Only the tags read it. */
   money(): number;
   /** The "You got" card, for what you take. */
   youGot(g: Got): boolean;
@@ -353,6 +353,6 @@ export function createShop(owner: OwnedView, rooms: Rooms, env: ShopEnv, wardrob
     tagMat.dispose();
     gotMat.dispose();
   });
-  return { targets, update, listPrice };
+  return { targets, update };
 }
 export type Shop = ReturnType<typeof createShop>;

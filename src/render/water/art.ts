@@ -1,6 +1,7 @@
 // The sea's own textures (docs/plans/water-sunshine.md, "Art it needs"), baked once on the CPU at load from
 // tiled Worley noise. Original procedural art; nothing sampled, traced or derived from any game.
 import * as THREE from 'three/webgpu';
+import { smoothstep } from '../../math-pure.ts';
 
 const fract = (x: number) => x - Math.floor(x);
 // David Hoskins, Hash without Sine.
@@ -36,10 +37,6 @@ function worley(px: number, py: number, period: number, seed: number) {
   return f2 - f1;
 }
 const sat = (x: number) => Math.max(0, Math.min(1, x));
-const sstep = (a: number, b: number, x: number) => {
-  const t = sat((x - a) / (b - a));
-  return t * t * (3 - 2 * t);
-};
 // Tiled value noise for the slow blotch.
 function vnoise(px: number, py: number, period: number) {
   const ix = Math.floor(px),
@@ -70,8 +67,9 @@ export function bakeWaveCell(art: WaveArt = WAVE_ART) {
       const u = (i + 0.5) / n,
         v = (j + 0.5) / n;
       // Border width in texels -> cell units at each octave.
-      const a = 1 - sstep(0, (art.line * art.cells) / n, worley(u * art.cells, v * art.cells, art.cells, 1));
-      const b = 1 - sstep(0, (art.line * 0.8 * art.detail) / n, worley(u * art.detail, v * art.detail, art.detail, 2));
+      const a = 1 - smoothstep(0, (art.line * art.cells) / n, worley(u * art.cells, v * art.cells, art.cells, 1));
+      const b =
+        1 - smoothstep(0, (art.line * 0.8 * art.detail) / n, worley(u * art.detail, v * art.detail, art.detail, 2));
       lines[j * n + i] = sat(Math.max(a, b * 0.6));
     }
   const blur = new Float32Array(n * n);
@@ -112,7 +110,7 @@ export function bakeCausticTile() {
   for (let j = 0; j < n; j++)
     for (let i = 0; i < n; i++) {
       const w = worley(((i + 0.5) / n) * cells, ((j + 0.5) / n) * cells, cells, 3);
-      sum += data[j * n + i] = Math.round(Math.pow(1 - sstep(0, 0.22, w), 1.6) * 255);
+      sum += data[j * n + i] = Math.round(Math.pow(1 - smoothstep(0, 0.22, w), 1.6) * 255);
     }
   const tex = new THREE.DataTexture(data, n, n, THREE.RedFormat);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;

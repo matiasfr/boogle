@@ -44,7 +44,7 @@ import {
   smoothstep as tslSmoothstep,
 } from 'three/tsl';
 import { CSMShadowNode } from 'three/addons/csm/CSMShadowNode.js';
-import { scene, camera, sun } from '../render/scene.ts';
+import { scene, camera, hemi, sun } from '../render/scene.ts';
 import { skyU } from '../render/sky.ts';
 import { patchNode } from '../render/material-patch.ts';
 import { GRID_RES, CELL, HALF, COURT } from '../constants.ts';
@@ -159,10 +159,8 @@ export function updateEra(dt: number) {
   skyU.uHorizon.value.lerp(STEAM.horizon, m * 0.7);
   sun.color.lerp(STEAM.sun, m * 0.6);
   sun.intensity *= 1 - 0.15 * m;
-  const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
-    THREE.HemisphereLight | undefined;
-  hemi?.color.lerp(STEAM.hemiSky, m * 0.6);
-  hemi?.groundColor.lerp(STEAM.hemiGround, m * 0.6);
+  hemi.color.lerp(STEAM.hemiSky, m * 0.6);
+  hemi.groundColor.lerp(STEAM.hemiGround, m * 0.6);
 }
 
 // ---------------------------------------------------------------- shadows

@@ -7,15 +7,14 @@
 // on the door of a room, or from a stroller in the street once the town's changed. At most one at a time. Local.
 //
 // `createResidents` mounts them on an owner: the town entity's in the live game (src/entities/town/), with its memory in
-// src/entities/town/memory.ts, and a never-disposed one in ?proto=place (./place-residents.ts), whose shore worker is
-// ./shore-worker.ts.
+// src/entities/town/memory.ts.
 import * as THREE from 'three/webgpu';
 import { conversation } from '../../player/conversation.ts';
 import { NO_TARGETS, interactTarget, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { camera } from '../../render/scene.ts';
-import type { VoiceSpec } from '../../render/npc-voice.ts';
+import { folkVoice as voice, type VoiceSpec } from '../../render/npc-voice.ts';
 import { TOWN_FACTS } from '../../sim/town-facts.ts';
 import { playMark } from '../../proto/mark.ts';
 import { babble } from '../../place/chatter.ts';
@@ -46,15 +45,6 @@ type Cast = {
   voice: VoiceSpec;
   up?: number; // stands on something, so you can see them over the furniture
 };
-const voice = (baseHz: number, cps: number, formantScale: number, brightnessHz: number): VoiceSpec => ({
-  baseHz,
-  rangeSemis: 3,
-  formantScale,
-  brightnessHz,
-  cps,
-  grainMs: [55, 85],
-  vowels: [0.3, 0.15, 0.2, 0.25, 0.1],
-});
 /** Room space; `yaw` 0 faces the door. Fixed spots, out of the way of the door: nobody has to walk round a shared little guy. */
 const CAST: Record<ResidentId, Cast> = {
   pip: {
@@ -164,7 +154,7 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
     }
   });
   const inRoom = (r: Room) => IDS.filter((id) => CAST[id].room === r.id);
-  let seen = seenFrom(memory.load());
+  const seen = seenFrom(memory.load());
   const remember = () => memory.save(seen);
 
   const turn = (list: string[], tally: Partial<Record<ResidentId, number>>, id: ResidentId) => {
@@ -316,12 +306,9 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
   });
   const VX = toWorld(VILLAGE.x);
   const screen = new THREE.Vector3();
-  function inView(x: number, y: number, z: number, margin: number, includeNear = false) {
+  function inView(x: number, y: number, z: number, margin: number) {
     screen.set(x, y, z).project(camera);
-    // The shore approach includes its clip edges; the existing bark tests use open screen/far edges.
-    return includeNear
-      ? !(screen.z < -1 || screen.z > 1 || Math.abs(screen.x) > margin || Math.abs(screen.y) > margin)
-      : screen.z < 1 && Math.abs(screen.x) < margin && Math.abs(screen.y) < margin;
+    return screen.z < 1 && Math.abs(screen.x) < margin && Math.abs(screen.y) < margin;
   }
   function street(dt: number) {
     const b = me.body;
@@ -354,13 +341,6 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
     const line = STREET_RUMOURS[seen.streetRumour++ % STREET_RUMOURS.length]!;
     remember();
     bark(best, line);
-  }
-  /** Start over: everyone's a stranger again. */
-  function reset() {
-    seen = seenFrom(null);
-    remember();
-    pending.length = 0;
-    stopBark();
   }
   function update(dt: number) {
     for (const id of IDS) {
@@ -405,19 +385,10 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
     guys,
     update,
     targets,
-    reset,
     /** Someone who lives here says this now. */
     say: (id: ResidentId, text: string) => bark(guys[id], text, true),
-    /** For ?proto=place's shore worker (./shore-worker.ts), which barks through the same bubble. */
-    bark,
-    stopBark,
-    barker: () => barker,
-    inView,
-    /** This player's memory, for ?proto=place's save. */
+    /** This player's memory, for the town inspection. */
     seen: () => seen,
-    restore(v: unknown) {
-      seen = seenFrom(v);
-    },
     /** For the evals: who's saying something, and what. */
     barking: () => (barker ? { k: barker.k, text: bubble.textContent ?? '' } : null),
   };

@@ -27,10 +27,10 @@ import {
   ROOM_PLOTS,
   FORGE_FRAME,
   AXE_STAND,
+  FAR,
 } from '../../src/place/layout.ts';
 import { layout, parseMapPage } from '../../src/sickle/map-data.ts';
 import { RING_CONES, ringHeight } from '../../src/proto/greybox/ground.ts';
-import { FAR } from '../../src/place/layout.ts';
 import { WORLD_LINES, FORMATION } from '../../src/sim/railway-world-lines.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import {
@@ -156,9 +156,9 @@ function trip(stops: number[]) {
   return { t20: r1(t20), t25: r1(t25), saved: r1(t20 - t25), direct: r1(direct), short: direct < SHORT_SAVED };
 }
 /** A per-line speed upgrade is felt when it saves at least this much end to end (s). */
-export const SHORT_SAVED = 10;
+const SHORT_SAVED = 10;
 /** One non-stop leg saves L/100 − 1.43 s from 20 to 25 m/s at 3.5 m/s²: 10 s from about 1.15 km. */
-export const MIN_UPGRADE_LINE_M = Math.ceil((SHORT_SAVED + 25 / 3.5 - 20 / 3.5) * 100);
+const MIN_UPGRADE_LINE_M = Math.ceil((SHORT_SAVED + 25 / 3.5 - 20 / 3.5) * 100);
 /** The service ladder (sickle-greybox): 20 m/s, 3.5 m/s², 5 s dwell. */
 const legSeconds = (m: number) => m / 20 + 20 / 3.5 + 5;
 /** Trains a line needs for generic-lines' wait bound (no wait for a train your way over about 60 s): its round trip
@@ -864,7 +864,7 @@ const LOADER_NOTE =
  * stalls for end-game engines), and only ever on layout B (the design review's finding 1): a sector south of B's table
  * on its spur, to `r`, plus the grown table. Nothing in town moves. What stands within `r` of the table is listed with
  * its bearing (degrees clockwise from north), and whether it is inside the sector. */
-export const GROWN = { table: 8, stalls: 16, wall: 2, from: 130, to: 250 } as const;
+const GROWN = { table: 8, stalls: 16, wall: 2, from: 130, to: 250 } as const;
 function keepClear() {
   const c = W(TABLE);
   const R = GROWN.table + GROWN.stalls + GROWN.wall;

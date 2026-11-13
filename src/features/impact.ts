@@ -122,13 +122,13 @@ function nearestPerson(p: THREE.Vector3) {
 }
 
 function detect(now: number) {
-  if (ball.mine && ball.held) lastHeldByMe = now;
   const held = ball.held;
+  if (ball.mine && held) lastHeldByMe = now;
   const p = ball.pose.p;
   if (held) {
     if (!wasHeld && prevSpeed > TUNE.catchMinSpeed) {
       freezeUntil = now + TUNE.hitStopMs;
-      freezeMine = ball.mine && ball.held;
+      freezeMine = ball.mine;
       freezeP.copy(ballMesh.position);
       freezeQ.copy(ballMesh.quaternion);
       kick(prevV.lengthSq() > 0.01 ? prevV : axis, clamp(prevSpeed / 40, 0.08, 0.3));

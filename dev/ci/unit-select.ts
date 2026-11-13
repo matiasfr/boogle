@@ -155,7 +155,7 @@ function filesUnder(dir: string, root: string): string[] {
 const ROOTED = /(['"`])(?:\.\/)?([A-Za-z][\w.-]*\/[^'"`$\s*?]*[^'"`$\s*?/])\1/g;
 // Files whose rooted strings name paths as data (lint scopes), never a load; the guard holds any load site in them to
 // the same rule, so a load added here still fails it.
-export const NAMES_ONLY: readonly string[] = ['dev/lint/policy.ts'];
+const NAMES_ONLY: readonly string[] = ['dev/lint/policy.ts'];
 // A folder URL (`new URL('../src/entities/railway/', import.meta.url)`), or a computed one with a literal folder
 // (`new URL(`../src/entities/railway/${f}.ts`, …)`): the code reads that folder, so every file in it. One that names
 // the root or above is a base for rooted paths (ROOTED follows those), not a folder anything reads whole.
@@ -236,7 +236,7 @@ export function unitTests(root = ROOT): string[] {
 
 /** What review-path code loads from outside REVIEW_PATHS (src/constants.ts, protos/review-types.ts): a change there is
  * a change to what lockstep and the server run, so the full suite. */
-export function reviewClosure(root = ROOT, walker = createWalker(root)): Set<string> {
+function reviewClosure(root = ROOT, walker = createWalker(root)): Set<string> {
   return walker.closure(REVIEW_PATHS.flatMap((p) => filesUnder(p, root)));
 }
 

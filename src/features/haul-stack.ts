@@ -8,8 +8,7 @@
 // host-confirmed count with a pop and a count sound per step (docs/research/ui-patterns.md, rec 3).
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import { backSeam, type CarryReadout } from '../player/haul-back.ts';
-export { backSeam, myBundleNext } from '../player/haul-back.ts';
-export { BUNDLE_SCALE } from '../render/haul-bundle.ts';
+export { backSeam } from '../player/haul-back.ts';
 import '../ui/ui-kit.css';
 import './haul-stack.css';
 import * as THREE from 'three/webgpu';
@@ -268,9 +267,11 @@ function tickCarry(load: CarryReadout, now: number) {
     pauseSections.push(pauseCarry);
   }
   const held = load.logs + load.rails + load.stone;
-  const pending = (load.incoming ?? 0) + (load.reserved ?? 0);
+  const incoming = load.incoming ?? 0;
+  const reserved = load.reserved ?? 0;
+  const pending = incoming + reserved;
   const full = !load.big && held + pending >= load.capacity;
-  const key = `${load.logs}/${load.rails}/${load.stone}/${load.big}/${load.capacity}/${load.incoming ?? 0}/${load.reserved ?? 0}`;
+  const key = `${load.logs}/${load.rails}/${load.stone}/${load.big}/${load.capacity}/${incoming}/${reserved}`;
   if (key !== carryKey) {
     if (carryKey || held || pending || load.big) carryUntil = now + 2000;
     carryKey = key;

@@ -18,12 +18,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import net from 'node:net';
 import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import type { Browser } from 'playwright';
-import { Game, launch, root as harnessRoot, sleep, type Stack } from './lib.ts';
+import { Game, freePort, launch, root as harnessRoot, sleep, type Stack } from './lib.ts';
 import { OPT_IN, POSES, type PoseName } from '../../src/debug/perf-poses.ts';
 
 const argv = process.argv.slice(2);
@@ -67,14 +66,6 @@ const SUBSYSTEMS: [string, RegExp][] = [
   ['room clock + replication', /railway|world\.ts|sync|replic|room|net\.ts|presence|lockstep|remote-player/],
 ];
 const subsystem = (name: string) => SUBSYSTEMS.find(([, re]) => re.test(name))?.[0] ?? 'view updates';
-
-const freePort = () =>
-  new Promise<number>((res) => {
-    const s = net.createServer().listen(0, '127.0.0.1', () => {
-      const p = (s.address() as net.AddressInfo).port;
-      s.close(() => res(p));
-    });
-  });
 
 async function waitUp(url: string, proc: ChildProcess, what: string) {
   for (let t = 0; t < 300; t++) {
@@ -369,10 +360,7 @@ async function measure(browser: Browser, stack: Stack, dataDir: string) {
         await sleep(5000);
         const f1 = (await g.eval('return window.boogle.prof.last.frames')) as number;
         const { profile } = await cdp.send('Profiler.stop');
-        fs.writeFileSync(
-          `${cpuProf}-${pose}.cpuprofile`,
-          JSON.stringify({ ...profile, frames: f1 - f0 }),
-        );
+        fs.writeFileSync(`${cpuProf}-${pose}.cpuprofile`, JSON.stringify({ ...profile, frames: f1 - f0 }));
         await cdp.detach();
       }
       const { sections, ...rest } = timing as { sections: Sections };

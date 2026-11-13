@@ -491,7 +491,6 @@ const CHUNK = 12; // objects a compileAsync: an object held in a frame waits for
 const drawable = (o: THREE.Object3D) =>
   (o as THREE.Mesh).isMesh || (o as THREE.Sprite).isSprite || (o as THREE.Line).isLine || (o as THREE.Points).isPoints;
 const sphere = new THREE.Sphere();
-/** m from p to the nearest point of the object's bounds (0 inside them). */
 /** The object's bounds in world space (into the shared `sphere`). */
 function bounds(o: THREE.Object3D) {
   const im = o as THREE.InstancedMesh;
@@ -505,6 +504,7 @@ function bounds(o: THREE.Object3D) {
   } else sphere.set(sphere.center.set(0, 0, 0), 0);
   return sphere.applyMatrix4(o.matrixWorld);
 }
+/** m from p to the nearest point of the object's bounds (0 inside them). */
 function reach(o: THREE.Object3D, p: THREE.Vector3) {
   const s = bounds(o);
   const d = Math.max(0, s.center.distanceTo(p) - s.radius);

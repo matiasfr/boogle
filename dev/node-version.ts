@@ -22,7 +22,7 @@ const NEED = Number(
 const major = (v: string) => Number(v.replace(/^v/, '').split('.')[0]);
 
 /** nvm's newest installed Node of the pinned major: its bin directory, or null. */
-export function pinnedNodeBin(): string | null {
+function pinnedNodeBin(): string | null {
   const root = path.join(process.env.NVM_DIR ?? path.join(os.homedir(), '.nvm'), 'versions', 'node');
   let names: string[];
   try {

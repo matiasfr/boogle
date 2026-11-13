@@ -46,8 +46,6 @@ const TABS: [GuideKind, string][] = [
   ['touch', 'Touch'],
 ];
 const LEAVE_MS = 3000;
-// Sections a prototype adds to the Room page, above You.
-const roomExtras: (() => HTMLElement)[] = [];
 
 // Built on first open (build) and at start (the menu button); used only after.
 let dlg!: HTMLDialogElement;
@@ -82,6 +80,16 @@ const button = (text: string, onClick: () => void | Promise<void>, cls = '') => 
     if (task) background(task, 'pause action');
   });
   return b;
+};
+const backButton = (to: () => Page) => {
+  const b = button('Back', () => show(to()), 'pause-back');
+  b.dataset.act = 'back';
+  return b;
+};
+const identityRow = () => {
+  const r = el('div', 'pause-identity');
+  r.append(dom.rosterEl, dom.netEl);
+  return r;
 };
 
 function inviteLink() {
@@ -265,17 +273,9 @@ function renderOptions() {
   const more = button('More', () => show('more'));
   more.dataset.act = 'more';
   const list = el('div', 'pause-list');
-  if (!startId) {
-    const identity = el('div', 'pause-identity');
-    identity.append(dom.rosterEl, dom.netEl);
-    list.append(identity);
-  }
+  if (!startId) list.append(identityRow());
   list.append(...pauseSections, resume);
-  if (startId) {
-    const back = button('Back', () => show(startId!), 'pause-back');
-    back.dataset.act = 'back';
-    list.append(back);
-  }
+  if (startId) list.append(backButton(() => startId!));
   list.append(
     controls,
     button('Graphics', () => show('graphics')),
@@ -309,8 +309,7 @@ function renderMore() {
   for (const extra of pausePages)
     if (extra.id !== 'graphics' && !extra.start)
       list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
-  const back = button('Back', () => show(OPTIONS), 'pause-back');
-  back.dataset.act = 'back';
+  const back = backButton(() => OPTIONS);
   list.append(back);
   return list;
 }
@@ -329,8 +328,7 @@ function renderControls() {
   const body = el('div', 'pause-guide');
   const diagram = tab === 'pad' && padView === 'diagram';
   body.append(diagram ? renderPadDiagram(padCtx) : renderGuide(tab));
-  const back = button('Back', () => show(OPTIONS), 'pause-back');
-  back.dataset.act = 'back';
+  const back = backButton(() => OPTIONS);
   const bar = el('div', 'pause-bar');
   bar.append(back, tabs);
   wrap.append(bar);
@@ -401,17 +399,9 @@ function renderRoom() {
     }
   });
   copy.dataset.act = 'copy';
-  const back = button('Back', () => show(OPTIONS), 'pause-back');
-  back.dataset.act = 'back';
+  const back = backButton(() => OPTIONS);
   link.append(copy);
-  wrap.append(
-    el('h2', 'pause-h', 'On the island'),
-    list,
-    link,
-    ...roomExtras.map((part) => part()),
-    youEditor({ colour: !startId }),
-    back,
-  );
+  wrap.append(el('h2', 'pause-h', 'On the island'), list, link, youEditor({ colour: !startId }), back);
   fillPeople(list);
   return wrap;
 }
@@ -440,9 +430,7 @@ function show(next: Page) {
   head.classList.toggle('has-actions', mute || fullscreen);
   if (onStart) {
     // The roster and the connection pill: Pause's first page keeps them (5 November), in a compact row.
-    const identity = el('div', 'pause-identity');
-    identity.append(dom.rosterEl, dom.netEl);
-    head.append(identity);
+    head.append(identityRow());
   }
   if (mute || fullscreen) {
     const actions = el('div', 'pause-actions');

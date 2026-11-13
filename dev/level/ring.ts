@@ -109,7 +109,7 @@ function apexes() {
 }
 /** The late double jump: the farthest a sprint double jump lands `drop` m down over every press time, plus the coyote
  * grace and the body's radius; and the press at the apex, as COURSE_DOUBLE presses it. */
-export function lateDouble(drop: number) {
+function lateDouble(drop: number) {
   const top = apexes()[0].t,
     land = jumpFlight(drop, null);
   let best = { t: 0, press: 0 };
@@ -185,7 +185,7 @@ function clip(poly: readonly P2[], l: P2, c: P2) {
  * kept carry (src/physics/platforms.ts: the deck's speed less CARRY.skid for CARRY.departureSkidS, kept to the
  * landing) from every standable top at every 10 cm before the stop, each landing on the brace platform by the least
  * own motion whose straight world path passes east of the raised leaf's toe. One row per top, worst first. */
-export function brakingCarry(brake: number, approach: number) {
+function brakingCarry(brake: number, approach: number) {
   const head = RING_HEAD[7]!,
     B = RING_BRACE_PLATFORM,
     lineSpeed = (RAIL_LINES[1]!.speed * 10) / 100;

@@ -450,7 +450,7 @@ export function timberDecks(): Deck[] {
 }
 
 /** The rail, sleeper and trestle-plank boxes of both lines as oriented boxes: base-standing unit boxes under `local`. */
-export function trackObbs() {
+function trackObbs() {
   const out: Deck[] = [];
   for (const { spec, mode, boxes, kinds } of trackBoxes()) {
     if (mode !== 'continuous') continue;

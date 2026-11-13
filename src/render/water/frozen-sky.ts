@@ -21,7 +21,7 @@ import {
 import { FOG_HEX, FOG_NEAR, FOG_FAR } from '../../constants.ts';
 import { skyState } from '../../sim/sky-clock.ts';
 import { clouds } from '../props.ts';
-import { renderer, rendererReady, scene, sky, sun } from '../scene.ts';
+import { hemi, renderer, rendererReady, scene, sky, sun } from '../scene.ts';
 import { atmosphere, skyNow } from '../sky.ts';
 import { SUN_DIR } from '../sun-dir.ts';
 import { seaU } from './state.ts';
@@ -47,7 +47,6 @@ export async function prepareFrozenLighting() {
 export function flushFrozenLighting() {
   if (!flushLighting) throw new Error('Frozen lighting is not ready');
   flushLighting();
-  const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as THREE.HemisphereLight;
   return {
     key: { intensity: sun.intensity, color: sun.color.toArray(), position: sun.position.toArray() },
     fill: { intensity: hemi.intensity, color: hemi.color.toArray(), ground: hemi.groundColor.toArray() },
@@ -88,8 +87,6 @@ export function createFrozenWaterSky() {
   environment.params.cloudBrightness = lightingDefault('sky.cloudBrightness');
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
-  const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
-    THREE.HemisphereLight | undefined;
   const prior = {
     background: scene.backgroundNode,
     environment: scene.environment,
@@ -104,7 +101,7 @@ export function createFrozenWaterSky() {
     shadowIntensity: sun.shadow.intensity,
     shadowUpdate: sun.shadow.autoUpdate,
     exposure: renderer.toneMappingExposure,
-    hemi: hemi && { color: hemi.color.clone(), ground: hemi.groundColor.clone(), intensity: hemi.intensity },
+    hemi: { color: hemi.color.clone(), ground: hemi.groundColor.clone(), intensity: hemi.intensity },
   };
   // Read at render time, so whatever range the frame ends with is the one drawn (it was copied in the sea's late
   // update, so a later write never reached the picture). Routes keep setting their own ranges on scene.fog.
@@ -202,17 +199,15 @@ export function createFrozenWaterSky() {
     sun.shadow.intensity = 1;
     sun.shadow.autoUpdate = true;
     const ug = atmosphere.underground;
-    if (hemi) {
-      hemi.color.copy(upper);
-      hemi.color.multiply(lighting.fillTint);
-      colourProfile(hemi.color);
-      hemi.color.lerp(CAVE.sky, ug);
-      hemi.groundColor.copy(lower);
-      colourProfile(hemi.groundColor);
-      hemi.groundColor.lerp(CAVE.ground, ug);
-      hemi.intensity = Math.PI * THREE.MathUtils.lerp(1, 0.8, ug);
-      hemi.intensity *= THREE.MathUtils.lerp(lighting.fillGain, 1, ug);
-    }
+    hemi.color.copy(upper);
+    hemi.color.multiply(lighting.fillTint);
+    colourProfile(hemi.color);
+    hemi.color.lerp(CAVE.sky, ug);
+    hemi.groundColor.copy(lower);
+    colourProfile(hemi.groundColor);
+    hemi.groundColor.lerp(CAVE.ground, ug);
+    hemi.intensity = Math.PI * THREE.MathUtils.lerp(1, 0.8, ug);
+    hemi.intensity *= THREE.MathUtils.lerp(lighting.fillGain, 1, ug);
     seaU.uSun.value.copy(direction);
     seaU.uSpecCol.value.setRGB(c.x, c.y, c.z);
 
@@ -488,11 +483,9 @@ export function createFrozenWaterSky() {
     sun.shadow.autoUpdate = prior.shadowUpdate;
     SUN_DIR.copy(prior.direction);
     renderer.toneMappingExposure = prior.exposure;
-    if (hemi && prior.hemi) {
-      hemi.color.copy(prior.hemi.color);
-      hemi.groundColor.copy(prior.hemi.ground);
-      hemi.intensity = prior.hemi.intensity;
-    }
+    hemi.color.copy(prior.hemi.color);
+    hemi.groundColor.copy(prior.hemi.ground);
+    hemi.intensity = prior.hemi.intensity;
   }
   /** No usable bake: never black. The sun and fill stay the frozen sky's (from constants), over a two-colour sky (FLAT)
    *  with no reflection cube; the haze is the flat horizon colour while skyReady is 0. Restoring the pre-bake look instead was

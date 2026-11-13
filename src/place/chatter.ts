@@ -4,7 +4,7 @@
 // (docs/research/little-guys.md, "a silence budget"). Silent until the player's first gesture, like all audio: getAudio
 // returns null till then. ./folk.ts decides who talks, how rarely and for how long. Local.
 import { dbToGain, getAudio } from '../render/audio.ts';
-import { buildPlan, createLane, type VoiceSpec } from '../render/npc-voice.ts';
+import { buildPlan, createLane, folkVoice, type VoiceSpec } from '../render/npc-voice.ts';
 import { camera } from '../render/scene.ts';
 
 /** The tunes to listen for. `levelDb` is against the voice bus, where The Boogler talks at 0. */
@@ -33,15 +33,7 @@ const LINES = [
 ];
 
 export function voiceOf(k: number): VoiceSpec {
-  return {
-    baseHz: CHATTER.baseHz + (k % CHATTER.steps) * CHATTER.stepHz,
-    rangeSemis: 3,
-    formantScale: 1.3 + (k % 3) * 0.06,
-    brightnessHz: 4200,
-    cps: 15,
-    grainMs: [55, 85],
-    vowels: [0.3, 0.15, 0.2, 0.25, 0.1],
-  };
+  return folkVoice(CHATTER.baseHz + (k % CHATTER.steps) * CHATTER.stepHz, 15, 1.3 + (k % 3) * 0.06, 4200);
 }
 
 /** Says one line at (x, z); returns how long it runs in ms, and a stop for when it's cut off. Silent is fine: the same length. */

@@ -1,4 +1,4 @@
-// Buildings you can walk into in ?proto=place: the house, the shop and the museum (docs/plans/round-4.md, step 6;
+// Buildings you can walk into in the town: the house, the shop and the museum (docs/plans/round-4.md, step 6;
 // docs/research/town-interiors.md). Each stands in the same world as everything else, with an open door and no loading: a site
 // like any other (./sites.ts, its pieces in the town's one instanced mesh), but hollow, with its walls and roof in `ROOM_GROUP`.
 //
@@ -11,8 +11,7 @@
 //
 // Interiors draw only with the camera near their building (`near`), so a village you're not in pays for its walls and
 // nothing behind them; what's outside and over the door, a little further out. Local; which rooms exist comes from
-// `env.up`, read from what's shared. `createRooms` mounts them on an owner: the town entity's in
-// the live game (src/entities/town/), and a never-disposed one in ?proto=place (./place-rooms.ts).
+// `env.up`, read from what's shared. `createRooms` mounts them on the town entity's owner (src/entities/town/).
 import * as THREE from 'three/webgpu';
 import { registerStepFloor } from '../../render/locomotion-surfaces.ts';
 import { vertexColor } from 'three/tsl';
@@ -586,6 +585,6 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
     const k = camConstraints.indexOf(indoorCamera);
     if (k >= 0) camConstraints.splice(k, 1);
   });
-  return { rooms, indoors, onRoom, indoorCamera, update, cull, warm, snap, stakeBoard };
+  return { rooms, indoors, onRoom, update, cull, warm, snap, stakeBoard };
 }
 export type Rooms = ReturnType<typeof createRooms>;

@@ -7,7 +7,6 @@ import * as THREE from 'three';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { material } from '../render/materials.ts';
 import { warmUp } from '../render/precompile.ts';
-
 import { boing, farGain } from '../render/boing.ts';
 import { PLAYER_R, HEAD_OFFSET } from '../constants.ts';
 import { lerp } from '../math.ts';
@@ -88,12 +87,17 @@ function flop(avatar: Avatar, down: boolean, left: number, dt: number, t: number
   e.stars.visible = down && left > 0;
   if (e.stars.visible) {
     // Head ends up behind the feet (+z in avatar space) when lying on the back.
-    const sp = e.stars.children.length;
-    e.stars.children.forEach((s, k) => {
+    const stars = e.stars.children;
+    const sp = stars.length;
+    const low = (u.flopY ?? PLAYER_R) - PLAYER_R; // a body lying lower has its stars lower
+    for (let k = 0; k < sp; k++) {
       const a = t * 5 + (k * Math.PI * 2) / sp;
-      const low = (u.flopY ?? PLAYER_R) - PLAYER_R; // a body lying lower has its stars lower
-      s.position.set(Math.cos(a) * 0.5, 1.0 + low + Math.sin(a * 2) * 0.05, HEAD_OFFSET + 0.2 + Math.sin(a) * 0.5);
-    });
+      stars[k]!.position.set(
+        Math.cos(a) * 0.5,
+        1.0 + low + Math.sin(a * 2) * 0.05,
+        HEAD_OFFSET + 0.2 + Math.sin(a) * 0.5,
+      );
+    }
   }
 }
 

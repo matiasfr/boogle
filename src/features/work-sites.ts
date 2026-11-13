@@ -70,38 +70,37 @@ function label(w: number, h: number, foot: number): Label {
 }
 // A plaque row turning over: what it said before, and when it starts (staggered down the plaque).
 type Flap = { old: string; at: number };
-export const flapFeel = { ms: 320 }; // one row's flip (dev/scenarios/ui-kit.ts slows it for a still)
+const FLAP_MS = 320; // one row's flip
 function paint(l: Label, lines: string[], bg = '#3a2816', flaps?: Map<number, Flap>, now = 0): void {
   const text = lines.join('\n');
   if (text === l.text && !flaps?.size) return;
   l.text = text;
   const { g, cw, ch } = l;
-  const c = { width: cw, height: ch };
   g.fillStyle = bg;
-  g.fillRect(0, 0, c.width, c.height);
+  g.fillRect(0, 0, cw, ch);
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  const lh = (c.height - 16) / lines.length;
+  const lh = (ch - 16) / lines.length;
   lines.forEach((t: string, k: number) => {
     const y = 8 + lh * (k + 0.5);
     const f = flaps?.get(k);
     // p: 0 → 1 over the flip; the old text folds away to the row's midline, the new one unfolds from it
-    const p = f ? Math.min(1, Math.max(0, (now - f.at) / flapFeel.ms)) : 1;
+    const p = f ? Math.min(1, Math.max(0, (now - f.at) / FLAP_MS)) : 1;
     if (f && p >= 1) flaps!.delete(k);
     if (f) {
       g.fillStyle = `rgba(255, 201, 61, ${0.4 * (1 - p * p)})`; // --sun, fading as it settles
       g.beginPath();
-      if (g.roundRect) g.roundRect(14, y - lh / 2 + 2, c.width - 28, lh - 4, 10);
-      else g.rect(14, y - lh / 2 + 2, c.width - 28, lh - 4);
+      if (g.roundRect) g.roundRect(14, y - lh / 2 + 2, cw - 28, lh - 4, 10);
+      else g.rect(14, y - lh / 2 + 2, cw - 28, lh - 4);
       g.fill();
     }
     g.fillStyle = '#fff7e8';
     g.font = `${k ? 600 : 800} ${Math.round(lh * 0.62)}px Figtree, system-ui, sans-serif`;
     const sy = Math.max(0.04, Math.abs(Math.cos(Math.PI * p)));
     g.save();
-    g.translate(c.width / 2, y);
+    g.translate(cw / 2, y);
     g.scale(1, sy);
-    g.fillText(f && p < 0.5 ? f.old : t, 0, 0, c.width - 24);
+    g.fillText(f && p < 0.5 ? f.old : t, 0, 0, cw - 24);
     g.restore();
   });
   l.painted();

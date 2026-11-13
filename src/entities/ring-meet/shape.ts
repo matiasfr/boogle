@@ -3,6 +3,7 @@
 // after the join (or reloads) is owed. No three.js, no DOM: ring-meet/view.ts plays what this decides.
 import { RING_END, RING_FORMATION, RING_RIVET, ringAt, ringDeckY } from '../../sim/railway-ring-layout.ts';
 import { ringUL } from '../ring-island/ground.ts';
+import { smoothstep } from '../../math-pure.ts';
 
 export type V3 = { x: number; y: number; z: number };
 
@@ -173,8 +174,7 @@ export const STUD = { rTop: 0.4, rFoot: 0.46, h: 0.3 } as const;
 export const GLINT_NEAR = 10;
 export const GLINT_FAR = 22;
 export function glintPlan(distance: number) {
-  const k = Math.min(1, Math.max(0, (distance - GLINT_NEAR) / (GLINT_FAR - GLINT_NEAR))),
-    e = k * k * (3 - 2 * k);
+  const e = smoothstep(GLINT_NEAR, GLINT_FAR, distance);
   return { size: 0.28 + 0.62 * e, interval: 0.3 - 0.2 * e, rise: 1.4 + 3.4 * e, life: 1.4 };
 }
 

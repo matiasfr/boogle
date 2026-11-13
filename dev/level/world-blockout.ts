@@ -20,13 +20,13 @@ import {
   FORGE,
   lineAt,
   railY,
+  FAR,
 } from '../../src/place/layout.ts';
 import { H } from '../../src/place/terrain.ts';
 import { GATES, GATE_SLAB, PILLARS } from '../../src/place/tech-layout.ts';
 import { FRAME_D, FRAME_W, frameBesideLine } from '../../src/place/spatial-station.ts';
 import { layout, parseMapPage, polyLen, smoothRing, type Line, type XZ } from '../../src/sickle/map-data.ts';
 import { RING_CONES } from '../../src/proto/greybox/ground.ts';
-import { FAR } from '../../src/place/layout.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const CATALOG = 'src/sim/railway-world-lines.ts';
@@ -41,7 +41,7 @@ type Turn = 'crossover' | 'loop' | null;
 /** Every corridor is double track (owner, 10 November): two tracks on 4 m centres. The gauge is the village's: rails 0.5 m
  * either side of the centre (src/entities/railway/track.ts), on a 3.6 m deck, so the formation is 7.6 m wide. Halts get a
  * platform outside each track. */
-export const FORMATION = { tracks: 2, centresCm: 400, gaugeCm: 100, deckCm: 760, platformCm: 580, loopCm: 4000 };
+const FORMATION = { tracks: 2, centresCm: 400, gaugeCm: 100, deckCm: 760, platformCm: 580, loopCm: 4000 };
 /** How each line's ends turn a train back without reversing it: a scissors crossover just short of the terminus
  * platform, or a single-track balloon loop past it where the island has room. Null: the line runs on (line 2's end). */
 const TURNBACKS: Record<string, [start: Turn, end: Turn]> = {
@@ -57,7 +57,7 @@ const TURNBACKS: Record<string, [start: Turn, end: Turn]> = {
  * High Port is a crane lift, not a rail leg, so the `lift` link is in no service. The White Wall grows from Port Quay on
  * the `cave` row (greybox-route design review, ruling 2): its `s` keeps growing to the Gorge, where it ends beside
  * line 2 as a second platform. `deck` is a halt's deck where no map place names it. */
-export const SERVICES: Service[] = [
+const SERVICES: Service[] = [
   {
     id: 'ring',
     name: 'Line 2 to High Gorge',
@@ -118,7 +118,7 @@ export const SERVICES: Service[] = [
 ];
 
 /** The greybox ride round the whole network: Home, Ring Island, the Gorge, the Wall, Port Quay and back through the cave. */
-export const FULL_LOOP: Leg[] = [
+const FULL_LOOP: Leg[] = [
   { id: 'l2a' },
   { id: 'l2b' },
   { id: 'ringx' },
@@ -511,7 +511,7 @@ function build(svc: Service): Built {
     note: svc.note,
   };
 }
-export const BUILT = SERVICES.map(build);
+const BUILT = SERVICES.map(build);
 
 // ---------------------------------------------------------------- the second track beside today's line 1 and line 2
 // The live lines stay put: for each, which side a second track 4 m off would go, and where it meets something. Sampled
@@ -588,7 +588,7 @@ function secondTrack(lineIndex: 0 | 1) {
   }));
   return { line: lineIndex, side: best.side, metres: Math.round(best.metres), clashes, other: other.clashes };
 }
-export const LIVE_SECOND = [secondTrack(0), secondTrack(1)];
+const LIVE_SECOND = [secondTrack(0), secondTrack(1)];
 
 // ---------------------------------------------------------------- the catalog file
 function catalog() {

@@ -9,6 +9,7 @@
 // things and the coast normal they drift along).
 import * as THREE from 'three/webgpu';
 import { SEA } from '../../constants.ts';
+import { smoothstep } from '../../math-pure.ts';
 import { shoreApronHeight, shoreProviders, shoreRevision, type ShoreProvider } from './shore-providers.ts';
 import { TSL, type N } from './tsl.ts';
 
@@ -28,15 +29,12 @@ type Rect = { minX: number; maxX: number; minZ: number; maxZ: number };
 type Region = {
   ids: string[];
   grid: Grid;
+  rect: Rect; // rectOf(grid), kept for the per-sample pick
   row: number;
   bed: Float32Array;
   shade: Float32Array;
   sdf: Float32Array;
   bakeMs: number;
-};
-const smooth = (a: number, b: number, x: number) => {
-  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
 };
 
 // Felzenszwalb & Huttenlocher's 1D squared distance transform, in place over a strided line.
@@ -150,7 +148,7 @@ function shelfBed(bed: Float32Array, covered: Uint8Array, toWater: Float32Array,
       continue;
     }
     const land = w[k]! > 1e-3 ? h[k]! / w[k]! : 0;
-    const slope = SHELF.beach + (SHELF.cliff - SHELF.beach) * smooth(SHELF.low, SHELF.high, land);
+    const slope = SHELF.beach + (SHELF.cliff - SHELF.beach) * smoothstep(SHELF.low, SHELF.high, land);
     const fall = SHELF.open * (1 - Math.exp((-shaped[k]! * cell * slope) / SHELF.open));
     const shelf = SEA - SHELF.shaped - fall;
     // Terrain genuinely deeper than the shelf (a channel, a deep grid) stays; a flat floor is replaced.
@@ -172,8 +170,7 @@ function bedAt(providers: ShoreProvider[], x: number, z: number) {
       covered = s.valid;
       if (s.valid) return s.height - p.seaLevel + SEA;
     }
-    const b = p.bounds;
-    const g = Math.hypot(Math.max(b.minX - x, 0, x - b.maxX), Math.max(b.minZ - z, 0, z - b.maxZ));
+    const g = rectGap(p.bounds, x, z);
     if (g < gap) {
       gap = g;
       nearest = p;
@@ -188,8 +185,9 @@ function bedAt(providers: ShoreProvider[], x: number, z: number) {
   return Math.min(SEA + shoreApronHeight(edge.height - nearest.seaLevel, gap, nearest.extent), SEA - 0.5);
 }
 
-const rectGap = (a: Rect, x: number, z: number) =>
-  Math.hypot(Math.max(a.minX - x, 0, x - a.maxX), Math.max(a.minZ - z, 0, z - a.maxZ));
+function rectGap(a: Rect, x: number, z: number) {
+  return Math.hypot(Math.max(a.minX - x, 0, x - a.maxX), Math.max(a.minZ - z, 0, z - a.maxZ));
+}
 const overlaps = (a: Rect, b: Rect) => a.minX <= b.maxX && b.minX <= a.maxX && a.minZ <= b.maxZ && b.minZ <= a.maxZ;
 const union = (a: Rect, b: Rect): Rect => ({
   minX: Math.min(a.minX, b.minX),
@@ -276,7 +274,7 @@ function pick(regions: Region[], x: number, z: number) {
   let best = regions[0]!,
     gap = Infinity;
   for (const r of regions) {
-    const g = rectGap(rectOf(r.grid), x, z);
+    const g = rectGap(r.rect, x, z);
     if (g < gap) {
       gap = g;
       best = r;
@@ -296,6 +294,7 @@ export function createCoast() {
     {
       ids: [],
       grid: { x0: 0, z0: 0, cell: 1, nx: 2, nz: 2 },
+      rect: rectOf({ x0: 0, z0: 0, cell: 1, nx: 2, nz: 2 }),
       row: 0,
       bed: new Float32Array(4),
       shade: new Float32Array(4),
@@ -371,6 +370,7 @@ export function createCoast() {
       const region = {
         ids: g.members.map((m) => providers[m]!.id),
         grid,
+        rect: rectOf(grid),
         row,
         ...baked,
         bakeMs: performance.now() - t,

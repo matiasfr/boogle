@@ -25,6 +25,18 @@ export type VoiceSpec = {
   vowels: readonly [number, number, number, number, number]; // a e i o u: the voice's mouth, weights adding to 1
 };
 
+/** The villagers' shared voice (the town's residents, the ring folk, the chatter): only pitch, size, brightness and
+ * typing speed tell them apart. */
+export const folkVoice = (baseHz: number, cps: number, formantScale: number, brightnessHz: number): VoiceSpec => ({
+  baseHz,
+  rangeSemis: 3,
+  formantScale,
+  brightnessHz,
+  cps,
+  grainMs: [55, 85],
+  vowels: [0.3, 0.15, 0.2, 0.25, 0.1],
+});
+
 type Kind = 'open' | 'stop' | 'hiss' | 'soft';
 export type Syllable = { at: number; ms: number; vowel: number; kind: Kind; semis: number; db: number };
 type Plan = { revealAt: Float32Array; syllables: Syllable[] };

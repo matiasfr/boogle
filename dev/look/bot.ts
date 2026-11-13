@@ -49,6 +49,12 @@ export type BotOptions = {
   avoid?: () => readonly { x: number; z: number; r: number }[];
 };
 
+/** Hides makeBot's on-screen notes panel so a still shows the game; the console keeps every note. */
+export function hideBotNotes() {
+  for (const panel of document.querySelectorAll<HTMLDivElement>('body > div'))
+    if (panel.style.zIndex === '9999' && panel.style.whiteSpace === 'pre') panel.style.display = 'none';
+}
+
 export function makeBot(opts: BotOptions = {}) {
   const water = opts.water ?? ((_x: number, y: number) => y < SEA + 1.2); // you swim before the ground's under the sea, and it has waves
   const body = () => me.body!;
