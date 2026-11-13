@@ -571,6 +571,66 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       (answer g); the kit cars' number boards (answer j); the joining train's one-second scale-in at the Village and
       its marker on the boards (answer f); the kit's hop from the train to the rack and the `STEEL KIT` plate (answer
       b). Verify: `test/island-map-labels.test.ts` at each stage of the leg; one look a piece.
+      *As built, the maps part (12 November; branch `greybox/leg1-step4b-maps`, committed, not shipped; views only:
+      nothing under `src/sim`, `src/net`, `src/world` or `server/`, no bump, no new test file):* **The map**
+      (`railway/halt-map.ts`, `render/island-map.ts`). From the rivet every display's map is fitted once to the
+      whole leg and never rescales at a lay. Line 2 runs solid to its last open stop and dashed on to a dim High
+      Gorge. The stop the frame stands at carries a square before its name: Ring Island with nothing laid, then the
+      head, a lit `Stack railhead`. A head still a stop behind the railhead is an unnamed dot (answer l names only
+      the head; the sim keeps it a stop one more section); a head closed behind is not drawn. With the Gorge open
+      its name lights, the square goes and the third head is `Stack halt`. Trains past the island are drawn on the
+      track (their metres along the same path). **The fit, a departure for the designer:** the leg is not drawn to
+      scale. At true scale the map's long side grows from 0.86 km to 2.0 km and Village and Quarry stand 16 px apart
+      on a face whose stops need 19, so every mark would shrink again. The leg is drawn at 30% of its run west and
+      22% of its run north about Ring Island's stop (`STACK_MAP`), which puts High Gorge 8 degrees west of its true
+      bearing. Marks and names keep the sea map's 0.7; the Home island is drawn smaller: metres to pixels on the
+      256 px face go 0.276 to 0.221 at Village, 0.233 to 0.179 at Camp, 0.236 to 0.179 at Quarry, 0.310 to 0.197 at
+      Far Head, 0.313 to 0.236 at the Pier, and Village line 2's stays 0.21. Uniform 0.3 failed the label test at
+      the Gorge's own board and shrank the island further. **At phone size:** names are the pixel size they were;
+      stops on the Home island stand 16% to 36% closer on five displays; the hold badge and the glider's mark are
+      the same size on a smaller island, so the state file's P3 (the badge reads as the Pier's, the glider crowds
+      "Quarry") is not better and is a little worse at Quarry; with five trains the markers bunch at the railhead
+      and cover the unnamed dot. **Departure boards** (answer g; `halt-map.ts` `stackDisplays`, `halts-view.ts`):
+      the same map on a grey stand at each head's platform (13 m short of the section's end, between the rack and
+      the frame, at the platform's back, facing the rails) and on High Gorge's north platform (10 m short of the
+      stop), its own stop ringed, standing while trains stop there; one draw for the four stands, ten atlas cells
+      where there were six. **The Home hall's line map** does not exist (home-station step 12 is open): Home's map
+      is the Village halt's display (the Home island's with `?home=b`), which carries the same marks. **The search**
+      (`mapLabels`) stops at 300,000 steps and keeps the best placement found: a face with no clean placement cost
+      8 to 40 s of the page's one thread; the label tests hold every standing face under the budget. **Label test
+      changes:** `test/helpers/island-labels.ts` gains the stages joined (8 names, was 7: the dim High Gorge) and
+      each section laid (9); skips a stack board at a stage it does not stand; counts named stops only and leaves
+      hidden stops out of the ring checks; asserts the search's budget. The display counts go 6 to 10 and 5 to 9
+      (`island-map-labels.test.ts`, `-b`). `test/island-map-path.test.ts`: joined is solid to Ring Island by name
+      and the last stop is High Gorge. **Stills read** (`.look/`, `dev/look/evals/halt-board.ts`):
+      `map-joined-quarry` (the old stops as they were, smaller; a square by Ring Island; four dashes to the dim
+      Gorge), `map-laid-2-head` (the second railhead's board: ringed, `Stack railhead` with its square, three
+      trains on the leg, a hold badge, one and a half dashes to the Gorge), `map-laid-2-stand` (the stand on the
+      platform between the frame and the rack), `map-gorge-open` (High Gorge lit and ringed, `Stack halt` 30 px
+      from it, two trains over the Gorge's dot), `map-gorge-home` (the Village's board, every name clear),
+      `map-laid-2-phone` (440 by 796: names read; the dim Gorge is faint; markers bunch at the head). **Left in
+      4b:** the Ring Island map table (answer l's "the Ring Island map table included": it is separate greybox in
+      `src/entities/ring-island/view.ts`, so a player at the first frame with nothing laid sees none of the new
+      marks there), kit cars' number boards (j), the joining train's scale-in and board marker (f), the kit's hop
+      to the rack and the `STEEL KIT` plate (b). Not tested on a device.
+      *After the independent review (same branch):* **Names and their stops.** A name placed a line out from its
+      stop, or as near another stop as its own, is tied to its own stop by a thin leader; that place costs more,
+      most of all for the stop you stand at and the frame's. Faces with a name as near another stop as its own:
+      36 of 97 standing faces (42 before; 18 of 66 on main), 46 names; the 18 faces before the rivet are main's,
+      untouched, and on the 37 faces from the rivet on it is 18 faces, 28 names, each with a leader (a higher cost
+      lowered it but set "Quarry" on the track on the `?home=b` board); two names one right under the other cost too
+      ("Railhead" under "Ring Island" read as one two-line name); some are the
+      `here` or frame name where no clean near placement exists (the Village board's "Village", 55 px from the
+      face's edge between Camp and Quarry; "Stack railhead" beside the ring's Railhead). The costs and
+      the leader apply only once the stack line is on the map (`MapLine.ties`): before the rivet every face places
+      its names exactly as main does (applied everywhere they moved 21 of 110 faces, and set "Quarry" on the track
+      on the `?home=b` board). The label helper asserts the `here` and
+      frame names are nearer their own stop than any other drawn stop or carry a leader. A board that is down is
+      not drawn (it is when it stands). Noted, not fixed: on Far Head's board at phone width "Village" still sits
+      beside Camp's dot when a train marker covers Village's own (the markers are quads over a canvas drawn once a
+      stage; a leader that follows them is not a small change). **Notes for the owner, left as they are:** train markers cover stops at
+      the leg's end (one clips the "y" of "Quarry"); the dim High Gorge is faint at phone width; the frame's
+      square reads as an unticked checkbox; the short-drawn leg makes the Gorge look nearer than it is.
 - [ ] **5. Seeds, jump rows, the loop and the bot (HOTBOX, M).** New `src/sim/railway-seed-legs.ts` from
       `ring-joined`, accepted ops only: `gorge-open` (the leg open, nothing fed), `gorge-mid` (two sections laid, kit
       aboard a train), `gorge-reached` (four laid, `pick` not taken). `SEED_STAGES`; two `JUMPS` rows ("Stack line

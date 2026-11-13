@@ -6,6 +6,6 @@ import assert from 'node:assert/strict';
 test('every Home island layout display places its names clear of each other, the edge and the stops', async () => {
   process.env.BOOGLE_HOME = 'b';
   const { checkHaltLabels } = await import('./helpers/island-labels.ts');
-  // The island's two edges share one display: five in all.
-  assert.equal(await checkHaltLabels(), 5);
+  // The island's two edges share one display: five, then the stack line's three heads and High Gorge.
+  assert.equal(await checkHaltLabels(), 9);
 });

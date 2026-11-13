@@ -39,7 +39,8 @@ import { me } from '../../player/player.ts';
 import { roadPlaque } from './home-pictogram.ts';
 import { createIslandBoards } from './island-boards.ts';
 import { createUpPlatforms } from './up-platforms.ts';
-import { displayYaw, haltDisplays, haltMap, haltRows } from './halt-map.ts';
+import { displayYaw, haltDisplays, haltMap, haltRows, stackDisplays } from './halt-map.ts';
+import { createBoxBatch } from './works-box-view.ts';
 
 /** How near a request lever's knob its prompt is offered (m, flat). */
 const LEVER_REACH = 1.8;
@@ -574,6 +575,35 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       spots.push(ringSpot(stop, true, 2.45, () => u - 4, () => stopsNow[LINE2]!.length > stop + 1));
   }
   const ringSpots = spots.filter((x) => x.ring);
+  // The stack line's departure boards (leg 1 step 4b; the design review's answer g): the halt map on a grey stand at
+  // each head's platform and High Gorge's, up while trains stop there. Greybox: two legs, a dark back, a cap; one draw
+  // for all four stands, rewritten when the line's stops change. No collider: it stops no one.
+  const stackStands = createBoxBatch(owner, 16, false);
+  stackStands.mesh.name = 'railway:stack-boards';
+  const stackBoards = stackDisplays().map((d) => {
+    const frame = new THREE.Matrix4().compose(
+      new THREE.Vector3(d.at.x, d.at.y, d.at.z),
+      new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, d.yaw),
+      new THREE.Vector3(1, 1, 1),
+    );
+    return { ...d, frame, board: boards.add(new THREE.Vector3(d.at.x, d.at.y + 1.35, d.at.z), d.yaw, 0.045, d.here) };
+  });
+  let stackOpen = -1;
+  /** Stands the stack line's boards for line 2's `open` stops (none while no train runs). */
+  function stackBoardsFor(open: number) {
+    if (open === stackOpen) return;
+    stackOpen = open;
+    stackStands.begin();
+    for (const d of stackBoards) {
+      const on = open > 0 && !d.shut(open);
+      boards.set(d.board, on);
+      if (!on) continue;
+      for (const side of [-0.42, 0.42]) stackStands.part(d.frame, side, 0.475, 0, 0.07, 0.95, 0.07, '#6f7275');
+      stackStands.part(d.frame, 0, 1.35, 0, 1.08, 0.88, 0.08, '#23262d');
+      stackStands.part(d.frame, 0, 1.825, 0, 1.2, 0.07, 0.22, '#9c9ea1');
+    }
+    stackStands.commit();
+  }
   let shown = false;
   /** Levers pulled on this tab and not yet answered: shown over at once (the press's own feedback), until then. */
   const pulled = new Map<Spot, number>();
@@ -694,6 +724,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       mapLines.splice(0, mapLines.length, ...next.lines);
       boards.redraw(next.scale);
     }
+    stackBoardsFor(shown ? open : 0);
     boards.trains(
       // A fleet row in the shed (the greybox route) is on no board until it joins.
       RAIL_TRAINS.map(({ line }, k) =>

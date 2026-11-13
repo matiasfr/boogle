@@ -244,12 +244,18 @@ export function createIslandBoards(
   });
 
   const cellOf = (b: number) => ({ x: (b % COLS) * CW, y: Math.floor(b / COLS) * CH });
+  /** Fits and draws display `b`'s cell. */
+  function drawCell(b: number) {
+    const bd = boards[b]!;
+    bd.face.view = fitMap(lines, bd.face.fwd, CW, CH, CH * MAP_CELL.pad);
+    drawMapBase(g, cellOf(b), CW, CH, lines, bd.face.view, bd.here, scale);
+    map.needsUpdate = true;
+  }
+  /** Every shown display's cell; one not shown is drawn when `set` shows it (nobody reads its face meanwhile). */
   function drawAll() {
     boards.forEach((bd, b) => {
-      bd.face.view = fitMap(lines, bd.face.fwd, CW, CH, CH * MAP_CELL.pad);
-      drawMapBase(g, cellOf(b), CW, CH, lines, bd.face.view, bd.here, scale);
+      if (bd.on) drawCell(b);
     });
-    map.needsUpdate = true;
   }
 
   let clock = 0,
@@ -312,6 +318,7 @@ export function createIslandBoards(
     /** Display `b` shown or not. */
     set(b: number, on: boolean) {
       const bd = boards[b]!;
+      if (on && !bd.on) drawCell(b);
       bd.on = on;
       bd.mesh.visible = on;
     },

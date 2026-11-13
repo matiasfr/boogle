@@ -831,9 +831,18 @@ flights with pale parapets up to the rim, 81 m above; on the rim a post, "POWERE
 section is laid, then **Take the powered pick**. Behind the south platform a red barrier, "BARRIER: THE INCLINE",
 which reads "Needs the powered pick" and then "No line beyond yet" (the incline is leg 2). West of the gangway a pad
 with two grey boxes, three staked plots and a board is the stand-in town. A slipway climbs from the split's water to
-the gangway. The stacks themselves are the horizon's shapes, made solid while you are within 400 m. Not built yet:
-the halt map and Home's line map do not show the line past Ring Island, kit cars carry no number, a joining train
-appears without its one-second scale-in, and the kit does not hop from the train to the rack. Not tested on a device.
+the gangway. The stacks themselves are the horizon's shapes, made solid while you are within 400 m. **The halt
+map** (step 4b, 12 November) shows the stack line from the rivet on, on every display: solid teal to the line's end,
+dashed on to a dim **High Gorge**, a small square (the building frame) before the name of the stop the frame stands
+at: Ring Island, then the head, a lit stop named **Stack railhead**. The head before it is a plain dot while trains
+still stop there. With High Gorge open its name lights and the third head reads **Stack halt** (placeholder names).
+Trains on the stack line are drawn on its track. The leg is drawn short (30% of its run west, 22% of its run north
+from Ring Island) so the Home island's stops stay apart; names and marks are the size they were, and the Home
+island is drawn 16% to 36% smaller on five of the six displays. Each head's platform and High Gorge's north platform
+has the same map on a grey stand between the rack and the frame, its own stop ringed, up while trains stop there.
+Home has no hall line map yet ([home-station](../plans/home-station.md), step 12): the Village halt's display is
+its map. Not built yet: kit cars carry no number, a joining train appears without its one-second scale-in, and the
+kit does not hop from the train to the rack. Not tested on a device.
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
