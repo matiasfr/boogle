@@ -50,6 +50,7 @@ export type RailwayProbe = {
   /** Line two's job completions (Q1 first), empty before line two. */
   line2: number[];
   people: { pid: string; name: string }[];
+  seats: { id: string; pid: string }[];
 };
 export type RailwayAdapterProbe = {
   /** `adapter.read`'s session values (ready, pending, status, stalled, tick) and its `debug()` (step, hash, epoch,
@@ -206,7 +207,12 @@ const T = (window.T = {
   railSnapshot: null as unknown as () => boolean,
   railOpen: () => railRoom!.send({ t: 'r:open' }),
   // A client action carries where its actor stands (cm, the last railPose) and its action clock (ms).
-  railEdit: (e: RailAction | { op: 'who.set'; n: string; c: number; epoch: number; request: number }) => {
+  railEdit: (
+    e:
+      | RailAction
+      | { op: 'who.set'; n: string; c: number; epoch: number; request: number }
+      | { op: 'seat.sit' | 'seat.stand'; id?: string; alt?: string[]; epoch: number; request: number },
+  ) => {
     T.railSent.push({ at: Date.now(), epoch: e.epoch, request: e.request, op: e.op });
     railRoom!.send({ t: 'r:edit', e: { ...(railAt ? { at: railAt } : {}), ms: Math.round(performance.now()), ...e } });
   },
@@ -548,6 +554,7 @@ function startWorld(room: Room) {
         sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: tree(mw, k).left })),
         line2: qjobs(mw).map((j) => j.completion),
         people: rail.roster.roster.pids.map((pid, k) => ({ pid, name: rail.roster.nameOf(k) })),
+        seats: rail.seats.rows().map((row) => ({ ...row })),
       };
     };
 }

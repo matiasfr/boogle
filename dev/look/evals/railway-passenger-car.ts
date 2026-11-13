@@ -95,6 +95,11 @@ await (async () => {
   await until(() => interactTarget()?.id === 'place-sit', 'Sit offered', 30000);
   bot.press();
   await until(() => seatState().sitting, 'seated', 10000);
+  await until(
+    () => seatState().occupants[seatState().sitting!] === railRead()?.pid,
+    'server confirms the chair',
+    10000,
+  );
   mark('seated');
   // A camera 4 m out in front of the rider, 35 degrees round from straight on, re-aimed each frame so it rides the deck:
   // the rider, their bench and the car's rail read together. The follow camera comes back when they stand up.

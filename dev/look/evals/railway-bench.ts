@@ -42,6 +42,11 @@ background(
     await wait(300);
     sitDown();
     while (!seatState().sitting) await wait(50);
+    const confirmBy = performance.now() + 10000;
+    while (seatState().occupants[seatState().sitting!] !== inspectRailway()?.pid) {
+      if (performance.now() > confirmBy) throw new Error('bench: server never confirmed the chair');
+      await wait(50);
+    }
     await wait(800);
     const p = me.body!.position;
     // Side on from behind the car, over its end rail: `&benchCam=<m back>,<m up>,<fov>`.
