@@ -13,7 +13,7 @@ const read = (p: string) =>
     .map((l) => JSON.parse(l) as Record<string, unknown>);
 const [pa, pb] = process.argv.slice(2) as [string, string];
 const key = (r: Record<string, unknown>) =>
-  r.kind === 'fuzz' ? `fuzz ${r.where} ${r.seed} ${r.headPct} ${r.light}` : `quiet ${r.where}`;
+  r.kind === 'fuzz' ? `fuzz ${r.where} ${r.seed} ${r.headPct} ${r.light}` : `quiet ${r.where} ${r.headPct ?? 75}`;
 const a = new Map(read(pa).map((r) => [key(r), r]));
 let n = 0,
   bad = 0;
