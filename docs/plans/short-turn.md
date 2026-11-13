@@ -705,6 +705,41 @@ greybox route's level findings. **What remains his:**
 5. **Checkpoint.** `npm run check`, `npm run loop -- run`, `npm run test:net`, the gates below; call 109 restated;
    train-spacing's status note.
 
+**Step 2 as built (2026-11-12, branch `spacing/six-hold` on `car4/rules`; v34; not shipped, not tested on a device).**
+
+- **Six trains.** Line 2's `fleet.trains` is 3, 6, 6, 6, 6: a third shed row (slot 6) joins at the Village after the
+  fourth and fifth (gate 12 now waits for all three, same 1,050 limit; the fuzz's join count is 3).
+- **The hold.** `RailHalt.control` marks Ring Island (a load check refuses a control halt at a line's first or last
+  halt). `railway-trains.ts`: `controlOf` (the room's `TrainHold`; `on` is `pct` of the whole circuit over the line's
+  most trains, `off` half of it, as the harness measured), `controlStop` ORed into `trainReasons`, `controlHold` beside
+  the end holds (the cap runs from `arrived` plus the dwell, no saved field; as at the end holds, a lever ask at the
+  train's own platform restarts the dwell, so a hold can run to dwell + cap + one asker's dwell), `controlFree`
+  refusing the headway-exempt train, an IO-off train (`TrainIO.controlOff`, the query `holdOff` in
+  `railway-queries-trade.ts`: footings owed, a kit aboard that can unload, a kit owed), any train a lever ask is
+  assigned to (bar the ask at the platform it stands at; an open end's ask, one digit for both ways, is asked the way
+  in only, as trainReasons serves it: the review's P2-1) and, new beside the sheet, every train while one waits in the
+  shed to join. The scratch `whole` and `asks` variants are not built.
+- **Tunables.** `railTrainHoldCap` (200, 0 to 1,800 ticks past arrival plus the dwell) and `railTrainHoldPct` (15, 0
+  to 100), appended after the trade keys, in the host's controller list; either at 0 is off. `railTick` takes them as
+  a fifth argument.
+- **Known, left:** the hysteresis reads only the row, so a train standing at Ring Island for a rider's or a lever ask
+  is held at `off` (7.5%), not `on` (15%). A fix that keeps the rows the only latch exists (judge the hold at `on` while
+  the row or the line still holds an ask for that platform its way, which leaving drops), but it changes the measured
+  rule and is not built.
+- **Proof.** Fleet 5 and both tunables at 0 equal `car4/rules` bit for bit: 35 harness runs (stages 0 to 4, settled and
+  the whole leg; heavy and light asks, seeds c0ffee and 777, 3,000 ticks; and a quiet run each, world hashes every
+  1,000 ticks) print identical lines. Route gates (`ROUTE_GATES=1`, four seeds, limits unchanged): gate 8 worst 992
+  (car4 1,166); gate 9 settled 1,184 / 1,186 / 1,166 / 1,089 (car4 1,261 / 1,340 / 1,397 / 1,367); the whole leg 1,417
+  (car4 1,417, before the first section: the hold is inert there); gate 14 3,574 (equal); gate 15 first steel home
+  +1,823 idle (equal) and +2,396 fed (car4 +2,160; the scratch sheet +2,393). Host tests in
+  `server/test/railway-steel-host.test.ts`: a held train in a late joiner's snapshot and through a restart leaves on
+  its cap; a lever ask assigned to it releases it. After the review's fixes (P2-1's narrow form; unit tests in
+  `test/railway-trains.test.ts` for each of controlFree's clauses, the cap and the errand list, each failing with its
+  clause removed) the off case is still bit for bit and the gate figures above are unchanged; one per-platform wait in
+  the whole-leg fuzz moved (seed 5eed, Ring Island up, 728 to 748), so the 48-seed sheet is rerun on this rule.
+- **What a player sees until step 3:** a train standing at Ring Island, as it stands at any stop, for up to 20 s past
+  its dwell, with no lamp, signal arm, badge or bell yet saying why; one more train on the halt maps once section 1 is laid.
+
 **Gates.**
 
 - **The committed route gates, four seeds, heavy (`ROUTE_GATES=1`):** unchanged and none loosened. Gate 8 at 1,350,

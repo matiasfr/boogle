@@ -203,10 +203,10 @@ test('the ring row counts 100 cm ahead of line 2: the shift is the catalog row a
   assert.deepEqual([RAIL_LINES[LINE2]!.path[2 * k], RAIL_LINES[LINE2]!.path[2 * k + 1]], [p0.x, p0.z]);
 });
 
-test('the fleet: 3, then 5 from the first section laid (ruling A.4); the fourth and fifth rows start in the shed', () => {
+test('the fleet: 3, then 6 from the first section laid (ruling A.4; six from short-turn call 5); the fourth to sixth rows start in the shed', () => {
   assert.deepEqual(
     Array.from({ length: N + 1 }, (_v, n) => fleetOf(LINE2, [n])),
-    [3, 5, 5, 5, 5],
+    [3, 6, 6, 6, 6],
   );
   assert.deepEqual(
     RAIL_TRAINS.map((t) => [t.line, !!t.shed]),
@@ -217,12 +217,13 @@ test('the fleet: 3, then 5 from the first section laid (ruling A.4); the fourth 
       [1, false],
       [1, true],
       [1, true],
+      [1, true],
     ],
   );
   const w = createRailwayWorld();
   assert.deepEqual(
     trains(w).map((r) => r.phase),
-    [0, 0, 0, 0, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED],
+    [0, 0, 0, 0, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED],
   );
   // Spawned last, in catalog order, nothing laid.
   assert.equal(w.count(Leg), RAIL_LEGS.length);
@@ -777,7 +778,7 @@ for (const [seed, headPct] of [
     );
     if (ROUTE_GATES) {
       assert.equal(legRow(s.w, STACK).laid, N, 'the leg was laid in the run');
-      assert.equal(joins.length, 2, 'the fourth and fifth trains joined');
+      assert.equal(joins.length, 3, 'the fourth to sixth trains joined');
       if (headPct === 75) assert.equal(toRailhead.length, N, 'a train reached the new railhead after every lay');
     }
     if (headPct === 75)
@@ -788,8 +789,9 @@ for (const [seed, headPct] of [
   });
 
 // The wake leaves the fleet rows in the shed (rail.boilerFit places the first stage's trains only), and the tick the
-// fourth train joins it stands at the Village on the up track with a fresh dwell. Gate 12: both extra trains run within
-// 1,050 ticks of the first section laying, and no running train is held for a join (the join writes no other row).
+// fourth train joins it stands at the Village on the up track with a fresh dwell. Gate 12: every extra train runs within
+// 1,050 ticks of the first section laying, and no running train is held for a join (the join writes no other row). Six
+// trains from short-turn's ruling (call 5): the sixth joins as the fourth and fifth do, within the same 1,050.
 test('a joining train stands at the Village going up, its dwell from the join, clear of the end block', () => {
   const s = copy(JOINED);
   feedSectionStart(s);
@@ -806,16 +808,17 @@ test('a joining train stands at the Village going up, its dwell from the join, c
   advance(s, TRAIN.dwellTicks + 2000);
   assert.equal(invariant(s.w), null);
 });
-test('gate 12: both extra trains join within 1,050 ticks of the first section laying, each into a gap', () => {
+test('gate 12: the three extra trains join within 1,050 ticks of the first section laying, each into a gap', () => {
   // fleetJoin writes only the joiner's row (./railway-trains.ts) and only when every running train is a block's gap from
   // the Village and none is in or bound for its end block: no running train is held for a join.
   const s = unaudited(copy(JOINED));
   feedSectionStart(s);
   while (legRow(s.w, STACK).laid === 0) advance(s, 1);
   const laidAt = s.t;
-  const [fourth, fifth] = [LINE_SLOTS[LINE2]![3]!, LINE_SLOTS[LINE2]![4]!];
-  while (train(s.w, fourth).phase === TRAIN_PHASE.SHED || train(s.w, fifth).phase === TRAIN_PHASE.SHED) {
-    assert.ok(s.t - laidAt <= 1050, 'both joined within 1,050 ticks of the first section laying');
+  const extra = LINE_SLOTS[LINE2]!.slice(3);
+  assert.equal(extra.length, 3, 'three rows wait in the shed');
+  while (extra.some((k) => train(s.w, k).phase === TRAIN_PHASE.SHED)) {
+    assert.ok(s.t - laidAt <= 1050, 'all joined within 1,050 ticks of the first section laying');
     advance(s, 1);
     assert.equal(
       trainSpacing(

@@ -210,6 +210,22 @@ const supply = {
     owner: 'src/sim/railway-trade-layout.ts',
     meaning: "Every plot's price, from the stand-ins; R4's buy reads it.",
   },
+  railTrainHoldCap: {
+    id: 'railway.trainHoldCap',
+    units: 'ticks past arrival plus the dwell',
+    at: 'next rule tick',
+    owner: 'src/sim/railway-trains.ts',
+    meaning:
+      "The Ring Island hold: the most a train stands at a control halt, counted from its arrival plus the dwell, while the gap ahead of it is much shorter than the gap behind; a lever ask at its own platform restarts the dwell, as at the line's ends; 0 turns the hold off.",
+  },
+  railTrainHoldPct: {
+    id: 'railway.trainHoldPct',
+    units: 'percent of an even split',
+    at: 'next rule tick',
+    owner: 'src/sim/railway-trains.ts',
+    meaning:
+      "How much shorter the gap ahead must be than the gap behind for a train to stop at a control halt, as a share of the line's circuit split between its most trains (it stands on while the difference is over half of it); 0 turns the hold off.",
+  },
 } as const;
 /** Commands the dev tool and `npm run tune` both accept. */
 export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;

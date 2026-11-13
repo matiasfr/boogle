@@ -683,4 +683,7 @@ const RAIL_TUNE_KEYS = new Set([
   'railFarePct',
   'railRiderPct',
   'railPricePct',
+  // The Ring Island hold (short-turn's ruling, step 2).
+  'railTrainHoldCap',
+  'railTrainHoldPct',
 ]);
