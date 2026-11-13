@@ -111,10 +111,10 @@ Nothing is placed in the world; no level check applies.
 
 ## Open questions
 
-**Owner (three, recommendation first):**
-1. **Retire the seven classic states the live game cannot change, instead of porting them?** Recommended: retire (step 5). They run only behind `?proto=net` and `?proto=wagon`; porting costs three or more high-risk sittings for state no live player can touch, and anything the designer wants back is then built once on the chosen library. It deletes the classic island's haul loop, gifts and helper bank as playable systems. The Boogler's gift copy is kept.
-2. **Authority now on today's storage (path a'), before the library decision?** Recommended: yes. Steps 1 to 4 and 9 are the same under E, Becsy or bitECS.
-3. **Move server-owned seats and The Boogler ahead of "the passenger and train work"?** Recommended: yes, right after checkpoint B, because the lead tab is the last thing a thin client cannot do; it reverses the 10 November answer, so it needs his word.
+**Owner (three, recommendation first). Answered 13 November UTC: "Yes, I agree on retiring the 7 classic states. 2, I agree on move authority. 3, I agree" ([decision](../decisions-process.md#d-2026-11-13-server-owned-state-answered)).**
+1. **Answered: retire.** **Retire the seven classic states the live game cannot change, instead of porting them?** Recommended: retire (step 5). They run only behind `?proto=net` and `?proto=wagon`; porting costs three or more high-risk sittings for state no live player can touch, and anything the designer wants back is then built once on the chosen library. It deletes the classic island's haul loop, gifts and helper bank as playable systems. The Boogler's gift copy is kept.
+2. **Answered: yes.** **Authority now on today's storage (path a'), before the library decision?** Recommended: yes. Steps 1 to 4 and 9 are the same under E, Becsy or bitECS.
+3. **Answered: yes ("I agree").** **Move server-owned seats and The Boogler ahead of "the passenger and train work"?** Recommended: yes, right after checkpoint B, because the lead tab is the last thing a thin client cannot do; it reverses the 10 November answer, so it needs his word.
 
 **Designer:**
 - D1. The predict-or-wait table in section 2, only if question 1 is "port": is waiting acceptable for `site.run`, `open.*` and the gift toss landing?
