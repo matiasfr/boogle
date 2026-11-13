@@ -32,8 +32,14 @@ export type GarageSnap = {
   ring: number;
   /** Ms since the commit (`moment`, `rest`) or since the part started coming off (`undo`). */
   ms: number;
-  /** A part is on the works copy for a Try it. */
+  /** A part is on the works copy for a Try it, or going on for real. */
   trying: boolean;
+  /** This moment is an install sent to the server (not a Try it). */
+  real: boolean;
+  /** The part hangs over its seat waiting for the server's answer. */
+  waiting: boolean;
+  /** The Longer boiler can be installed from here now (steel home, not fitted, the post inside the server's reach). */
+  canInstall: boolean;
   /** Interact now skips (from c+800 until rest). */
   canSkip: boolean;
   /** The last tap that was too short, for the button's pulse. */

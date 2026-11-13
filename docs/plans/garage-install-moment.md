@@ -231,6 +231,51 @@ plan's fields; `restYaw()` returns null while the deck is not at rest.
 **Not seen.** The copy's arrival on a live tick (the puff and whistle), a restore mid-shunt, a player on the deck as
 the boxes arrive, the show-off turn at today's table, a second player, a phone. Not tested on a device.
 
+<a id="g3-as-built-12-november-2026"></a>
+
+### G3 as built (12 November 2026)
+
+- **The intent path needed nothing outside views.** `adapter.installBoiler(revision)` was already there
+  (`railway-intents.ts`); the garage calls it through `deps.install`. No adapter, sim, net, world or server edit.
+- **The wait.** The completed hold sends `rail.install` on `Line.boiler` as this tab saw it; the moment's clock runs
+  to `MOMENT.quiet` (180 ms) and holds there until `accepted(true)`; the hanging part sways and the button's ring
+  breathes (`.garage-ui.waiting`). `MOMENT.answerBy` (2.5 s from the commit) with no answer, the adapter's
+  correction for the install, an unsent intent or `adapter.read.ready()` going false lowers the part down the lift's
+  own path (`uiSound('deny')`), and the hold can be made again at once: Back is free as soon as it starts down.
+- **A real moment ends fitted**: no rest, no undo; the copy wears the rows. The whistle and the full turn are the
+  real install's only (a Try it has neither).
+- **Press-to-drop, measured** (`dev/look/evals/railway-install-act.ts`, `--real`, a local server, the Mac at load 10
+  to 14, three captures): commit 1211 to 1219 ms after the press, the accept 14 to 15 ms later, the drop's start at
+  1375 to 1385 ms, the hit at 1526 to 1537 ms. The designed figure is 1380 (1200 hold, 180 quiet): the wait cost
+  nothing here. A real room's round trip is not measured; over about 180 ms it adds to the hang.
+- **The camera's side is fixed** (G2's pick of a side is gone): seen from the other side the engine stood under the
+  panel on the right, which the first capture showed. The engine shot now always has the engine on the left, three
+  quarters from the front, so at today's table the deck turns the copy 92° on opening (nose to 137°, toward the
+  stand), at a quarter turn a second. That replaces "the deck turns least".
+- **The banner stays** in `boiler-install-view.ts` for a page whose garage is shut (the plan moved it to G4): without
+  it a friend away would get nothing between G3 and G4.
+- **A tab's own accept that lands after its hang gave up**, and anyone else's accept, just show in the rows for now:
+  no moment. That is G4.
+- **Labels.** "Install" (idle, and through the moment until the whistle), "Keep holding", "Installed" from c+1800
+  with `uiSound('pop')`; the button's aria label "Hold to install". The "Trying it on" tag is not shown for a real
+  install.
+- **Looked at** (`g3-install-realtime.webm`, its 16-frame sheet and a 20-frame strip; `g3-cam-waiting-still`,
+  `g3-cam-empty-still`): the hold lifts the barrel from the lower left across to the engine; the drop lands with the
+  tile turning "Installed" and the knob green; the rows count (24 then 25 m/s, 14.4 then 15.3); "Installed" on the
+  button at about 3.2 s; the engine turns once round between about 3.6 and 5.2 s and comes back to the pose; then the
+  button is gone and the rows are ink. **Wrong in it:** the player and the post stand in front of the engine's front
+  wheels and buffer in the garage's frame; the waiting barrel's nose covers the lower left eighth and the corner of
+  the buffer; the pallet is a band in the lower right, more than a corner, partly under the parts strip; on the way
+  over, the barrel passes close to the camera and hides the engine for about a third of a second; the stall's roof
+  line sits behind the chimney's cap; the button reads "Install" for 1.8 s after the commit. Sound was not heard
+  (a capture has none). Not seen: a deny, the 2.5 s timeout, a lost connection, a second player, touch.
+- **The bot and the loop.** `railway-steel.ts` presses `railway-garage`, checks it opened on the Longer boiler ready,
+  holds Interact until `Line.boiler` is 1, waits the moment out and closes the garage; its playthrough was not run
+  (the checkpoint's). `railway-install.ts` (eval) does the same with a tap that must install nothing first: passed
+  on `steel-home`. It waits 14 s first, because a player seeded into a room is shown each ability's flourish in turn
+  (`ability-arrival.ts`), the last a small boiler over Buddy, which the first capture caught beside the engine.
+  `npm run loop -- node install`: the cue names the garage's post; no rule changed.
+
 ## 6. Steps
 
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and
@@ -260,7 +305,7 @@ the live install working. One proof look each; the full check, the bot and the t
       false for `b` against today's `SHED_TABLE`; every `a` point outside both lines' sleepers and off the landing;
       both train tails off the deck. Proof: the top-down still of section 5 with the garage drawn, and its numbers
       written back into section 5 as built. **Visual review** per `npm run models`.
-- [ ] **G3. The real Install (M).** Edit `garage-view.ts` (`deps.install`; with `canInstall` the completed hold calls
+- [x] **G3. The real Install (M).** As built: [below](#g3-as-built-12-november-2026). Edit `garage-view.ts` (`deps.install`; with `canInstall` the completed hold calls
       `install(facts.boilerRev)` and the moment's clock holds at `MOMENT.quiet` until `accepted(true)` arrives;
       2.5 s with none: the part lowers, `uiSound('deny')`; a real moment ends fitted, with no rest-and-undo; Try it
       skips the whistle and the turn), `src/features/garage.ts` (button "Install", "Keep holding", "Installed" with

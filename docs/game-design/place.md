@@ -796,11 +796,20 @@ once the longer boiler is on. A jib and a stand are south-east of the table, off
 from the table over the grass; when steel is home the arm swings round over the stand (a pull on its cord and a
 clank), the longer boiler lies there under its hook and two crew figures wait by the mast. The pallet is north-east
 of the post. Interact at the post opens
-the garage ("Look at the engine") on a camera from the east, and the deck turns the copy for it; it is not
-offered while steel waits, when the post carries the plain "Install the longer boiler" hold above (its bar is gone
-with the grey post). In the garage the Longer boiler tile reads "Needs steel", then "Ready", then "Installed", and
-the old Boiler "Replaced"; the button is still Try it. The garage's own Install, and the moment for everyone, are the
-plan's next steps. Not tested on a device.
+the garage ("Look at the engine") on a camera from the east, and the deck turns the copy a quarter turn for it, nose
+to the stand. In the garage the Longer boiler tile reads "Needs steel", then "Ready", then "Installed", and the old
+Boiler "Replaced". **The Install (G3, 12 November):** at today's table the garage is the one way to install; the
+plain post, its bar and its "Install the longer boiler" prompt are gone there (they remain only under `?home=b`). With
+steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
+for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go
+lowers it. The completed hold sends the install and the barrel hangs over its seat, swaying, the button's ring
+breathing, until the server answers; then it drops, clanks, the bolts go on as the rows count to their new numbers,
+steam, the wheels run up, the whistle blows as the button reads "Installed", and the table turns the engine once
+round. Skip is offered from 0.8 s after the commit. With no answer in 2.5 s, a refusal or a lost connection the barrel
+lowers with the deny sound and the hold can be made again at once. After it the copy wears the longer boiler, the knob
+is green, the stand is empty and the jib's arm swings back to its park. A Try it (before steel) has no whistle and no
+turn. A friend who is not in the garage still gets the banner above; their own view of the moment is the plan's next
+step. Not tested on a device.
 
 **The stack line to High Gorge, a greybox (12 November 2026; [greybox-route](../plans/greybox-route.md), leg 1 step
 4).** Every label below is a placeholder, grey and readable, with no sound or effect. **On Ring Island** the tracks

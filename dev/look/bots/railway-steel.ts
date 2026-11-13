@@ -1,8 +1,9 @@
 // Ring Island build 2's part of the route through ordinary inputs (docs/plans/ring-island-build2.md, R5), from the ring
 // joined to the longer boiler: ride out to the island (the kit train has put the logs and rails in the yard), take the
 // logs and feed the works, take the rails and feed them, ride home when steel is on the rack (or wait for it at the
-// Village), then hold the Install at the Roundhouse table's post until Line.boiler is 1. Prompts are pressed by their
-// ids (`railway-steel-take-logs`, `railway-steel-take-rails`, `railway-steel-feed`, `railway-install`). Each phase
+// Village), then open the garage at the Roundhouse table's lever post and hold its Install until Line.boiler is 1
+// (docs/plans/garage-install-moment.md, G3). Prompts are pressed by their
+// ids (`railway-steel-take-logs`, `railway-steel-take-rails`, `railway-steel-feed`, `railway-garage`). Each phase
 // reads the rows first, so the bot also resumes from `steel-kit`, `steel-lit` and `steel-home` seeds. Inspection
 // observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
@@ -14,6 +15,7 @@ import { triggerAction } from '../../../src/player/controls.ts';
 import { RING_HALT, STEEL, ringAt } from '../../../src/sim/railway-ring-layout.ts';
 import { LINE2 } from '../../../src/sim/railway-lines.ts';
 import { POST } from '../../../src/entities/railway/boiler-install-view.ts';
+import { garage } from '../../../src/entities/railway/garage-state.ts';
 import { HALT, line2Rides } from './railway-ride.ts';
 
 export type SteelRoute = { bot: Bot; checkpoint: (name: string) => Promise<void> };
@@ -126,20 +128,28 @@ export async function steelRoute({ bot, checkpoint }: SteelRoute) {
     await checkpoint('steel home');
   }
 
-  // 4. The Install: a hold at the table's post.
+  // 4. The Install: Interact at the garage's post opens it on the Longer boiler; the same button held is the install.
   if (boiler() < 1) {
-    check(await bot.walk(POST_STAND.x, POST_STAND.z, 0.8), 'walked to the install post');
+    check(await bot.walk(POST_STAND.x, POST_STAND.z, 0.8), 'walked to the garage post');
     face(POST.x, POST.z);
-    await until(() => interactTarget()?.id === 'railway-install', '"Install the longer boiler" offered', 20000);
+    await until(() => interactTarget()?.id === 'railway-garage', 'the garage is offered at the post', 20000);
     const t = interactTarget()!;
-    check(t.run && !t.blocked, `the install is ready, not blocked "${t.blocked ?? ''}"`);
-    // Held through the interact action itself (the garage's hold is the same press): down now, up once it is done.
+    check(t.run && !t.blocked, `the garage opens, not blocked "${t.blocked ?? ''}"`);
+    bot.press();
+    await until(() => garage.api?.snap().open, 'the garage opened', 8000);
+    const opened = garage.api!.snap();
+    check(opened.sel === 'long' && opened.canInstall, `it opened on the Longer boiler, ready (${opened.sel})`);
+    await bot.wait(700); // the camera's glide
+    // Held through the interact action itself: down now, up once the server has fitted it.
     triggerAction('interact', 'down');
     try {
       await untilTicks(() => boiler() >= 1, 'Line.boiler is 1 after the hold', 600);
     } finally {
       triggerAction('interact', 'up');
     }
+    // The moment is the installer's own: it runs to its end (about 4 s), then Back is theirs again.
+    await until(() => garage.api?.snap().phase === 'idle', 'the install moment ran to its end', 15000);
+    garage.api!.close();
     await checkpoint('boiler installed');
   }
 }

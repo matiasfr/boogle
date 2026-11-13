@@ -151,6 +151,9 @@ export async function createRailwayRoundhouse(
         (deckK === null || deckK <= 0) && !tableTurning && Math.abs(shunterA - (PARKED_A - PARK.gap)) < 0.05
           ? tableYaw
           : null,
+      install: (rev) => adapter.installBoiler(rev),
+      installHere: garageHere,
+      online: () => adapter.read.ready(),
     },
   );
   owner.cleanup(garageView.dispose);
@@ -747,11 +750,13 @@ export async function createRailwayRoundhouse(
         lowering.push({ site: e.site, slot, from, t: 0 });
       }
       if (e.op === 'rail.turn') clank(table.x, table.z);
+      if (e.op === 'rail.install') garageView.accepted(e.pid === adapter.read.pid);
     },
     corrected(c: RailwayCorrection) {
       const e = c.event;
       if (e.op === 'rail.footSet') lowering.length = 0;
       if (e.op === 'rail.turn') asked = null;
+      if (e.op === 'rail.install') garageView.denied();
     },
     targets(): Interactable[] {
       const pos = me.body?.position;
@@ -763,9 +768,9 @@ export async function createRailwayRoundhouse(
       const nearStall =
         Math.hypot(pos.x - stallAt.x, pos.z - stallAt.z) <= SHED_STALL.reach / 100 - 0.4 &&
         Math.abs(pos.y - SHED_STALL.y / 100) <= 2.6;
-      // The garage's post. At today's table it keeps build 2's reach test (2.6 m of the post, inside the server's
-      // 6 m of the table less 0.4 m), and it is not offered while steel waits uninstalled: the plain Install prompt
-      // owns the post in that state until the garage's own Install lands (G3).
+      // The garage's post, offered in every state. At today's table it keeps build 2's reach test (2.6 m of the post,
+      // inside the server's 6 m of the table less 0.4 m), and the player is held while the garage is open, so every
+      // Install hold is sent from inside the reach.
       if (
         !garageView.isOpen() &&
         Math.hypot(pos.x - garagePost.x, pos.z - garagePost.z) <= 2.6 &&
@@ -774,8 +779,7 @@ export async function createRailwayRoundhouse(
             Math.abs(pos.y - SHED_TABLE.y / 100) <= 2.6))
       ) {
         const facts = roomFacts(wd);
-        const waits = garageHere && facts.steelHome && !facts.longFitted;
-        if (facts.boilerFitted && !waits && (facts.tableBusy || garageView.standing()))
+        if (facts.boilerFitted && (facts.tableBusy || garageView.standing()))
           out.push({
             id: 'railway-garage',
             verb: facts.tableBusy ? 'The table’s busy' : 'Look at the engine',

@@ -307,6 +307,23 @@
 .g-label {
   position: relative;
 }
+/* A real install hangs for the server's answer: the full ring breathes, so the wait reads as held, not stalled. */
+.garage-ui.waiting .g-btn::before {
+  animation: g-wait 0.7s ease-in-out infinite alternate;
+}
+@keyframes g-wait {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .garage-ui.waiting .g-btn::before {
+    animation: none;
+  }
+}
 .g-btn.pulse {
   animation: ui-tick 0.5s;
 }

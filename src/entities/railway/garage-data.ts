@@ -313,6 +313,8 @@ export const MOMENT = {
   hang: 0.6,
   /** A skip is offered from here (the game's one skip chip) and the hit can never be skipped. */
   skipFrom: 800,
+  /** A real install hangs at `quiet` for the server's answer; this long after the commit with none, the part lowers. */
+  answerBy: 2500,
 } as const;
 
 /** The hold's place along the lift (0 stand, 1 hanging over the seat): the ring's value, pushed back a little in the

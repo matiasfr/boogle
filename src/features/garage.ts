@@ -245,7 +245,9 @@ function refresh() {
     els.desc.textContent = part.desc;
     els.note.textContent = part.price ?? (snap.cat === 'looks' ? 'A look never changes what the train does.' : '');
   }
-  const rows = rowsFor(snap.cat, snap.sel, snap.facts.longFitted);
+  // Through a real install the rows count from the old numbers to the new, though the room's rows already say fitted.
+  const landing = snap.real && snap.phase === 'moment';
+  const rows = rowsFor(snap.cat, snap.sel, snap.facts.longFitted && !landing);
   const html = rows.map((r, i) => rowHtml(r, i, snap)).join('');
   const key = html;
   if (key !== shownKey) {
@@ -254,17 +256,33 @@ function refresh() {
   }
   const busy = snap.phase === 'moment' || snap.phase === 'rest' || snap.phase === 'undo';
   const label = els.btn.querySelector('.g-label')!;
-  const act = snap.cat === 'whistle' ? 'hear' : part.tryable ? 'try' : 'none';
+  const act = snap.cat === 'whistle' ? 'hear' : part.tryable || landing ? 'try' : 'none';
   els.btn.dataset.act = act;
   els.btn.hidden = act === 'none';
+  // The Install's own words where this post can install; "Installed" lands with the whistle.
+  const install = landing || (snap.canInstall && snap.sel === 'long');
   const text =
-    act === 'hear' ? 'Hear it' : busy ? 'Trying it on' : snap.phase === 'holding' ? 'Keep holding' : 'Try it';
+    act === 'hear'
+      ? 'Hear it'
+      : landing
+        ? snap.ms >= MOMENT.whistle
+          ? 'Installed'
+          : 'Install'
+        : busy
+          ? 'Trying it on'
+          : snap.phase === 'holding'
+            ? 'Keep holding'
+            : install
+              ? 'Install'
+              : 'Try it';
+  if (text === 'Installed' && label.textContent === 'Install') uiSound('pop');
   if (label.textContent !== text) label.textContent = text;
   els.btn.disabled = busy && act === 'try';
   root.style.setProperty('--ring', String(snap.phase === 'moment' ? 1 : snap.ring));
   root.classList.toggle('holding', snap.phase === 'holding');
   root.classList.toggle('moment', snap.phase === 'moment');
-  els.tag.hidden = !snap.trying;
+  root.classList.toggle('waiting', snap.waiting);
+  els.tag.hidden = !snap.trying || snap.real;
   els.skip.hidden = !snap.canSkip;
   const skipHtml = `${glyph('interact')} Skip`.trim();
   if (els.skip.dataset.html !== skipHtml) {
@@ -273,8 +291,7 @@ function refresh() {
   }
   if (snap.tapped && performance.now() - snap.tapped < 700) els.btn.classList.add('pulse');
   else els.btn.classList.remove('pulse');
-  els.btn.setAttribute('aria-label', act === 'try' ? 'Hold to try it' : text);
-  void MOMENT;
+  els.btn.setAttribute('aria-label', act === 'try' ? (install ? 'Hold to install' : 'Hold to try it') : text);
 }
 
 defineKind('garage', { update: 40 });
