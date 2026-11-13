@@ -15,7 +15,13 @@ import type { Body, Shape } from '../src/physics/engine.ts';
 import type { Seat } from '../src/entities/railway/seat.ts';
 import type { Plan } from '../src/place/building-plans.ts';
 import { names } from '../src/prefab/names.ts';
-import { validateArtifact, validateLevel, validateLevelArtifact, validatePrefab } from '../src/prefab/validate.ts';
+import {
+  validateArtifact,
+  validateLevel,
+  validateLevelArtifact,
+  validatePrefab,
+  validateColliderScale,
+} from '../src/prefab/validate.ts';
 import type { Placement, PrefabArtifact } from '../src/prefab/types.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
@@ -60,6 +66,7 @@ export function captureWorkshop() {
     workshop,
     names,
     validateArtifact,
+    validateColliderScale,
     validatePrefab,
     validateLevel,
     validateLevelArtifact,
@@ -164,6 +171,7 @@ function runtimeHarness() {
       workshop,
       names,
       validateArtifact,
+      validateColliderScale,
       validateLevel,
       validateLevelArtifact,
       validatePrefab,
@@ -191,8 +199,11 @@ function runtimeHarness() {
     get allocations() {
       return allocations;
     },
-    spawn(placement: Placement = runtime.workshopChair) {
-      return runtime.instantiate(placement.prefab, placement, { owner, gates: { open: () => true } });
+    spawn(
+      placement: Placement = runtime.workshopChair,
+      gates: Readonly<Record<string, () => boolean>> = { open: () => true },
+    ) {
+      return runtime.instantiate(placement.prefab, placement, { owner, gates });
     },
   };
 }
@@ -250,6 +261,39 @@ test('review regression: rotated collider rejects every nonuniform axis pair', (
     assert.equal(h.active.size, 1);
     assert.equal(h.seats.length, 1);
     h.owner.dispose();
+    assert.equal(h.active.size, 0);
+    assert.equal(h.seats.length, 0);
+  } finally {
+    h.owner.dispose();
+  }
+});
+
+test('re-review: rotated unit-scale placement survives decomposition roundoff', () => {
+  const h = runtimeHarness();
+  h.data.prefabs['town.workshop-chair']!.colliders = [
+    { shape: 'box', at: [0, 0, 0], half: [1, 1, 1], rot: [0.3, 0, 0] },
+  ];
+  const placement: Placement = { ...h.placement, rot: [0, 0.7, 0], scale: [1, 1, 1] };
+  try {
+    validateLevel({ place: 'runtime', placements: [placement] }, h.data.prefabs);
+    const instance = h.spawn(placement);
+    instance.setEnabled(true);
+    assert.equal(h.active.size, 1);
+    assert.equal(h.seats.length, 1);
+  } finally {
+    h.owner.dispose();
+  }
+  assert.equal(h.active.size, 0);
+  assert.equal(h.seats.length, 0);
+});
+
+test('re-review: runtime refuses gates inherited through the prototype', () => {
+  const h = runtimeHarness();
+  const gates = Object.create({ open: () => true }) as Readonly<Record<string, () => boolean>>;
+  try {
+    assert.throws(() => h.spawn(h.placement, gates), /missing gate/);
+    assert.equal(h.allocations, 0);
+    assert.equal(h.owner.root.children.length, 0);
     assert.equal(h.active.size, 0);
     assert.equal(h.seats.length, 0);
   } finally {

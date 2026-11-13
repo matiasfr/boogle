@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateArtifact, validateJson, validateLevel, validatePrefab } from '../src/prefab/validate.ts';
-import { metadata, type PrefabDef } from '../src/prefab/types.ts';
+import { metadata, type PrefabDef, type Placement } from '../src/prefab/types.ts';
 import type { NameRegistry } from '../src/prefab/names.ts';
 import { compile } from '../dev/prefab/compiler.ts';
 
@@ -88,4 +88,38 @@ test('review regression: inherited names never satisfy registry membership', () 
     );
     assert.throws(() => validatePrefab({ ...prefab(), material: name }, registry), /unknown name/);
   }
+});
+
+test('re-review: unsupported collider scale fails validation and compilation', () => {
+  const record: PrefabDef = {
+    ...prefab(),
+    colliders: [{ shape: 'box', at: [0, 0, 0], half: [1, 1, 1], rot: [0.3, 0, 0] }],
+  };
+  const placement: Placement = { id: 'chair', prefab: record.key, pos: [0, 0, 0], rot: [0, 0.7, 0], scale: [2, 1, 1] };
+  const level = { place: 'town', placements: [placement] };
+  assert.throws(() => validateLevel(level, { [record.key]: record }), /nonuniform/);
+  assert.throws(() => compile([record], [level], registry), /nonuniform/);
+  assert.doesNotThrow(() =>
+    compile([record], [{ ...level, placements: [{ ...placement, scale: [1, 1, 1] }] }], registry),
+  );
+  const parent: Placement = { id: 'room', prefab: 'town.frame', pos: [0, 0, 0], scale: [2, 1, 1] };
+  const frame: PrefabDef = { ...prefab(), key: 'town.frame', colliders: [] };
+  assert.throws(
+    () =>
+      compile(
+        [record, frame],
+        [{ place: 'town', placements: [parent, { ...placement, parent: parent.id, scale: [1, 1, 1] }] }],
+        registry,
+      ),
+    /nonuniform/,
+  );
+});
+
+test('re-review: array subclasses cannot compile as JSON data', () => {
+  class AuthoredArray extends Array<number> {}
+  const values = new AuthoredArray(1, 2, 3);
+  assert.throws(() => validateJson(values), /non-JSON/);
+  const record = { ...prefab(), visual: { builder: 'chair', params: { values } } };
+  assert.throws(() => compile([record as PrefabDef], [], registry), /non-JSON/);
+  validateJson([1, 2, 3]);
 });

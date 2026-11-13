@@ -1,5 +1,14 @@
 import { names, type NameRegistry } from './names.ts';
-import { metadata, type LevelArtifact, type LevelDef, type PrefabArtifact, type PrefabDef } from './types.ts';
+import {
+  metadata,
+  type ColliderDef,
+  type LevelArtifact,
+  type LevelDef,
+  type Placement,
+  type PrefabArtifact,
+  type PrefabDef,
+  type Vec3,
+} from './types.ts';
 
 function fail(message: string): never {
   throw new Error(`prefabs: ${message}`);
@@ -29,6 +38,38 @@ function known(value: unknown, choices: readonly string[]) {
   const name = text(value);
   if (!choices.includes(name)) fail(`unknown name ${name}`);
 }
+// Local matrix decomposition introduces a few ulps even for authored unit scales. Reject real distortion,
+// not those representation errors; compiler and runtime use the same relative comparison.
+const SCALE_RELATIVE_TOLERANCE = 1e-9;
+export function validateColliderScale(colliders: readonly ColliderDef[], scale: Vec3): void {
+  vec(scale, true);
+  const equal = (a: number, b: number) =>
+    Math.abs(a - b) <= SCALE_RELATIVE_TOLERANCE * Math.max(Math.abs(a), Math.abs(b));
+  const uniform = equal(scale[0], scale[1]) && equal(scale[0], scale[2]) && equal(scale[1], scale[2]);
+  for (const c of colliders) {
+    if (c.rot && !uniform) fail('rotated collider under nonuniform scale');
+    if (c.shape === 'sphere' && !uniform) fail('sphere needs uniform scale');
+    if (c.shape === 'trunk' && !equal(scale[0], scale[2])) fail('trunk needs equal radial scale');
+  }
+}
+
+type Basis = readonly [Vec3, Vec3, Vec3];
+const applyBasis = (b: Basis, v: Vec3): Vec3 => [
+  b[0][0] * v[0] + b[1][0] * v[1] + b[2][0] * v[2],
+  b[0][1] * v[0] + b[1][1] * v[1] + b[2][1] * v[2],
+  b[0][2] * v[0] + b[1][2] * v[1] + b[2][2] * v[2],
+];
+/** YXZ columns, purely numeric: build validation composes the same parent transforms as the runtime. */
+function placementBasis(p: Placement): Basis {
+  const [yaw, pitch, roll] = p.rot ?? [0, 0, 0],
+    [sx, sy, sz] = p.scale ?? [1, 1, 1];
+  const rotate = ([x, y, z]: Vec3): Vec3 => {
+    [x, y] = [x * Math.cos(roll) - y * Math.sin(roll), x * Math.sin(roll) + y * Math.cos(roll)];
+    [y, z] = [y * Math.cos(pitch) - z * Math.sin(pitch), y * Math.sin(pitch) + z * Math.cos(pitch)];
+    return [x * Math.cos(yaw) + z * Math.sin(yaw), y, -x * Math.sin(yaw) + z * Math.cos(yaw)];
+  };
+  return [rotate([sx, 0, 0]), rotate([0, sy, 0]), rotate([0, 0, sz])];
+}
 /** Reject code, sparse arrays, cycles and non-plain values before serialization can hide them. */
 export function validateJson(value: unknown, ancestors = new Set<object>()): void {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
@@ -38,6 +79,7 @@ export function validateJson(value: unknown, ancestors = new Set<object>()): voi
   }
   if (typeof value !== 'object' || !value) fail('non-JSON value');
   if (ancestors.has(value)) fail('non-JSON cycle');
+  if (Array.isArray(value) && Object.getPrototypeOf(value) !== Array.prototype) fail('non-JSON array subclass');
   if (
     !Array.isArray(value) &&
     Object.getPrototypeOf(value) !== Object.prototype &&
@@ -174,6 +216,29 @@ export function validateLevel(value: unknown, prefabs: Readonly<Record<string, P
       seen.add(key);
       parent = parents.get(key);
     }
+  }
+  // Parent references are now known and acyclic. Include their authored scale and rotation in each check.
+  const byId = new Map((placements as Placement[]).map((p) => [p.id, p]));
+  const bases = new Map<string, Basis>();
+  const worldBasis = (id: string): Basis => {
+    const cached = bases.get(id);
+    if (cached) return cached;
+    const p = byId.get(id)!;
+    let basis = placementBasis(p);
+    if (p.parent) {
+      const parent = worldBasis(p.parent);
+      basis = [applyBasis(parent, basis[0]), applyBasis(parent, basis[1]), applyBasis(parent, basis[2])];
+    }
+    bases.set(id, basis);
+    return basis;
+  };
+  for (const p of byId.values()) {
+    const basis = worldBasis(p.id);
+    validateColliderScale(prefabs[p.prefab]!.colliders, [
+      Math.hypot(...basis[0]),
+      Math.hypot(...basis[1]),
+      Math.hypot(...basis[2]),
+    ]);
   }
 }
 function header(value: unknown, format: string) {

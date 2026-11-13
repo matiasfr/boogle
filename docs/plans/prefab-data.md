@@ -171,6 +171,8 @@ The normal chair's record, mesh builder, placement, seat id and poses are unchan
 
 ## 6. What can start today, and what waits
 
+**Step 3 re-review corrections:** exact decomposed-scale equality introduced a false rejection for a unit-scale placement rotated `[0, 0.7, 0]` with collider rotation `[0.3, 0, 0]`. The validator and runtime now share `validateColliderScale` with a named `1e-9` relative tolerance for matrix roundoff. Level/build validation composes authored parent rotations and scales with pure numeric YXZ bases and applies the same collider restrictions, so unsupported nonuniform scales fail compilation too; `[2,1,1]` still fails. Runtime gates must be own function properties, and JSON arrays must have the native array prototype (subclasses fail before serialization). Four new regression tests failed before these edits and passed afterward; the prior six regressions remain in place. No authored chair data, mesh, pose, seat id or browser-visible behavior changed; both goldens remain byte-identical. No new browser proof is required for this correction, and the earlier inspected chair evidence is not being represented as a fresh run. Steps 4 and 5 remain untouched.
+
 - **Today, whatever the ECS choice:** steps 1 to 7 and 9, 12, 13. They touch only views, tools and data.
 - **Better after the choice or after option 1:** step 8 (seat authority is option 1's); any use of `components`; turning `scope` into real mount and unload scopes (stage H's other half, which belongs with the scheduler); making a placement spawn a library entity. Steps 10 and 11 can run before the choice but are the ones to review hardest.
 

@@ -6,7 +6,13 @@ import workshop from '../../content/built/levels/workshop.json' with { type: 'js
 import { names } from './names.ts';
 import type { BuilderName } from './names.ts';
 import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
-import { validateArtifact, validateLevelArtifact, validateLevel, validatePrefab } from './validate.ts';
+import {
+  validateArtifact,
+  validateLevelArtifact,
+  validateLevel,
+  validatePrefab,
+  validateColliderScale,
+} from './validate.ts';
 import './builders/seat-chair.ts';
 import { builders } from './builders.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
@@ -51,8 +57,9 @@ export function instantiate(
     if (!interaction.at || def.attach?.[interaction.at]?.kind !== 'seat')
       throw new Error('prefabs: seat action needs seat attachment');
     if (interaction.gate) {
-      const gate = options.gates?.[interaction.gate];
-      if (!gate) throw new Error(`prefabs: missing gate ${interaction.gate}`);
+      const gate =
+        options.gates && Object.hasOwn(options.gates, interaction.gate) ? options.gates[interaction.gate] : undefined;
+      if (typeof gate !== 'function') throw new Error(`prefabs: missing gate ${interaction.gate}`);
       gates.set(interaction.at, gate);
     }
   }
@@ -67,6 +74,7 @@ export function instantiate(
   const scale = new THREE.Vector3(),
     rotation = new THREE.Quaternion();
   matrixWorld.decompose(new THREE.Vector3(), rotation, scale);
+  validateColliderScale(def.colliders, [scale.x, scale.y, scale.z]);
   // Combine record coordinates in the author's frame before adding the room's full-precision ground height.
   // That preserves today's literal addition order, including the chair's z=1.4 exit.
   const world = (at: Vec3) => {
@@ -83,8 +91,6 @@ export function instantiate(
   const recipes: { shape: Shape; at: THREE.Vector3; q?: THREE.Quaternion; group?: number }[] = [];
   for (const c of def.colliders) {
     const q = rotation.clone().multiply(new THREE.Quaternion().setFromEuler(euler(c.rot)));
-    if (c.rot && (scale.x !== scale.y || scale.y !== scale.z || scale.x !== scale.z))
-      throw new Error('prefabs: rotated collider under nonuniform scale');
     const add = (shape: Shape, at = c.at) =>
       recipes.push({
         shape,
@@ -97,11 +103,9 @@ export function instantiate(
         add({ kind: 'box', hx: c.half[0] * scale.x, hy: c.half[1] * scale.y, hz: c.half[2] * scale.z });
         break;
       case 'sphere':
-        if (scale.x !== scale.y || scale.x !== scale.z) throw new Error('prefabs: sphere needs uniform scale');
         add({ kind: 'sphere', r: c.r * scale.x });
         break;
       case 'trunk':
-        if (scale.x !== scale.z) throw new Error('prefabs: trunk needs equal radial scale');
         add({ kind: 'cylinder', rTop: c.r * scale.x, rBottom: c.r * scale.x, h: c.h * scale.y, segments: 12 });
         break;
       case 'capsule':
