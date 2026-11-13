@@ -60,6 +60,7 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     why: 'executes the seat construction blocks selected from these source-owned boundaries',
   },
   'test/prefab-seats.test.ts: readFileSync': {
+    count: 2,
     reaches: ['test/fixtures/prefab-seat-ids.json', 'test/fixtures/prefab-seat-poses.json'],
     why: 'the golden loop constructs these two fixture names; source block inputs are rooted literals already followed',
   },
