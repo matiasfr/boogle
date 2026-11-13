@@ -37,6 +37,8 @@ export const RAIL_STOPS = {
   'steel-lit': 'steel works lit',
   'steel-home': 'steel home',
   'boiler-long': 'boiler installed',
+  // The greybox route's leg 1 (dev/look/bots/railway-legs.ts), from `--from ring-joined`, `gorge-open` or `gorge-mid`.
+  gorge: 'gorge reached',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
 /** `--from <stage>`: an accepted `--rail-seed` server save that its `bot` eval resumes from (its `railFrom`).
@@ -54,6 +56,9 @@ export const RAIL_FROM = {
   'steel-kit': { railFrom: 'steel', after: 'ring-joined', bot: 'railway-steel-bot.ts' },
   'steel-lit': { railFrom: 'steel', after: 'steel-lit', bot: 'railway-steel-bot.ts' },
   'steel-home': { railFrom: 'steel', after: 'steel-home', bot: 'railway-steel-bot.ts' },
+  // Leg 1 (greybox route step 5): the stack line to High Gorge. `--from ring-joined --to gorge` runs it too.
+  'gorge-open': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
+  'gorge-mid': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
 export const RAIL_COOP_STOPS: readonly RailStop[] = [
@@ -85,7 +90,12 @@ export function railSegmentOptions(args: string[]) {
     to = value('--to');
   if (from !== undefined && !isSeed(from)) throw new Error(`--from: ${Object.keys(RAIL_FROM).join(', ')} (rail seeds)`);
   if (to !== undefined && !isStop(to)) throw new Error(`--to: ${names.join(', ')}`);
-  const seed = from ? RAIL_FROM[from] : undefined;
+  // `ring-joined` runs the steel bot, or the leg bot when the stop is the Gorge.
+  const seed = from
+    ? from === 'ring-joined' && to === 'gorge'
+      ? RAIL_FROM['gorge-open']
+      : RAIL_FROM[from]
+    : undefined;
   if (seed && to && names.indexOf(to) <= names.indexOf(seed.after))
     throw new Error(`--to must follow ${seed.after} when starting from ${from}`);
   return { from, to, seed };
