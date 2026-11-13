@@ -4,6 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { parseSync, type Node, type Program } from 'oxc-parser';
+import { moduleValues } from './prefab-values.ts';
 import { analyze } from '@typescript-eslint/scope-manager';
 import { walk, literal } from '../scan/parse.ts';
 import { createModuleResolver, moduleEdges, isCapability, PREFAB_DOORS } from './prefab-boundaries.ts';
@@ -16,17 +17,23 @@ export type LegacyGraph = {
   constructors: Record<string, ConstructionRecord>;
   surfaces: Record<string, string[]>;
   modules: Record<string, string[]>;
+  constructionProof: Record<string, { creates: boolean; kinds: string[]; allocation: boolean; uncertain: boolean }>;
+  conservative: string[];
+  conservativeSites: Record<string, number[]>;
+  exemptionAudit: Record<string, { creates: boolean; kinds: string[]; allocation: boolean; uncertain: boolean }>;
+  ownedFactories: Record<string, { creates: boolean; kinds: string[]; allocation: boolean; uncertain: boolean }>;
 };
 type Facts = {
   file: string;
   program: Program;
   edges: ModuleEdge[];
   refs: Map<number, string>;
+  defs: Map<number, string>;
   names: Map<string, string>;
   exports: Map<string, string>;
   stars: string[];
 };
-type Binding = { file: string; nodes: Node[]; fn?: Node };
+type Binding = { file: string; nodes: Node[]; fn?: Node; dataSafe?: boolean; aliasable?: boolean };
 const kinds = ['colliders', 'seats'] as const;
 const exportId = (file: string, name: string) => `E:${file}#${name}`;
 const namespaceId = (file: string) => `N:${file}`;
@@ -85,6 +92,7 @@ export function computeLegacyGraph(
       program,
       edges: moduleEdges(program),
       refs: new Map(),
+      defs: new Map(),
       names: new Map(),
       exports: new Map(),
       stars: [],
@@ -98,6 +106,7 @@ export function computeLegacyGraph(
         const first = defs[0]!.name as unknown as Node;
         const id = `B:${file}:${first.start}:${variable.name}`;
         ids.set(variable, id);
+        for (const def of defs) f.defs.set((def.name as unknown as Node).start, id);
         const nodes: Node[] = [];
         let fn: Node | undefined;
         for (const def of defs) {
@@ -116,7 +125,19 @@ export function computeLegacyGraph(
             if (functionNode(impl as Node)) fn = impl as Node;
           }
         }
-        bindings.set(id, { file, nodes, ...(fn ? { fn } : {}) });
+        bindings.set(id, {
+          file,
+          nodes,
+          ...(fn ? { fn } : {}),
+          aliasable: defs.every((def) => {
+            const n = def.node as unknown as Node;
+            return n.type === 'VariableDeclarator' && n.id.type === 'Identifier';
+          }),
+          dataSafe: defs.every((def) => {
+            const p = def.parent as unknown as Node;
+            return p?.type === 'VariableDeclaration' && p.kind === 'const';
+          }),
+        });
         if (s.type === 'module') f.names.set(variable.name, id);
       }
     for (const s of scope.scopes)
@@ -288,33 +309,105 @@ export function computeLegacyGraph(
     }
   };
   for (const [id, b] of bindings)
-    if (!b.fn && !(b.file in NOT_CONSTRUCTORS)) for (const node of b.nodes) identity(modules.get(b.file)!, id, node);
+    if (!b.fn && b.aliasable && !(b.file in NOT_CONSTRUCTORS))
+      for (const node of b.nodes) identity(modules.get(b.file)!, id, node);
   for (const [id, b] of bindings)
-    if (!b.fn && !(b.file in NOT_CONSTRUCTORS))
+    if (!b.fn && b.aliasable && !(b.file in NOT_CONSTRUCTORS))
       for (const node of b.nodes)
         if (node.type === 'MemberExpression')
           for (const target of targets(modules.get(b.file)!, node)) link(id, target, true);
-  const exportedBindings = new Set<string>();
-  const todo = [...modules.values()]
-    .filter((f) => eligible(f.file))
-    .flatMap((f) =>
-      [...f.exports].filter(([name]) => !(`${f.file}#${name}` in NOT_CONSTRUCTION_EXPORTS)).map(([, id]) => id),
-    );
-  for (let i = 0; i < todo.length; i++) {
-    const id = todo[i]!;
-    if (exportedBindings.has(id)) continue;
-    exportedBindings.add(id);
-    for (const alias of aliases.get(id) ?? []) todo.push(alias);
-  }
-  // One fixed point over debt implementations: own-body calls, including callbacks lexically inside that body.
-  // Never walk arguments, registries, non-debt wrapper bodies, or door implementations.
+  // Anonymous callbacks are callable bindings too, so named .then handlers and local helpers preserve identity.
+  const functions = new Map<string, { file: string; fn: Node }>();
+  for (const [id, b] of bindings) if (b.fn) functions.set(id, { file: b.file, fn: b.fn });
+  for (const f of modules.values())
+    walk(f.program, (n) => {
+      if (functionNode(n)) {
+        const id = `F:${f.file}:${n.start}`;
+        functions.set(id, { file: f.file, fn: n });
+        bindings.set(id, { file: f.file, nodes: [n], fn: n });
+      }
+    });
+  for (const f of modules.values())
+    walk(f.program, (n) => {
+      if (n.type !== 'AssignmentExpression' && n.type !== 'UpdateExpression') return;
+      let left: Node = n.type === 'AssignmentExpression' ? n.left : n.argument;
+      while (left.type === 'MemberExpression') left = left.object;
+      if (left.type === 'Identifier') {
+        const id = f.refs.get(left.start);
+        const b = id ? bindings.get(id) : undefined;
+        if (b) b.dataSafe = false;
+      }
+    });
+  const values = moduleValues(
+    [...modules.values()],
+    new Map([...aliases].map(([id, refs]) => [id, new Set(refs)])),
+    resolve,
+    functions,
+    new Map([...modules].map(([file, f]) => [file, new Set(f.exports.keys())])),
+    bindings,
+  );
+  // Re-exported dynamic locals/aggregates retain the same identities as static namespace barrels.
+  for (const [id, refs] of values.forwarded) for (const ref of refs) if (id !== ref) link(id, ref, true);
+  const callees = (f: Facts, n: Node) => new Set([...targets(f, n), ...values.targets(f.file, n)]);
+  const isOwnedCall = (refs: Set<string>) => {
+    const todo = [...refs],
+      seen = new Set<string>();
+    while (todo.length) {
+      const id = todo.pop()!;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      if (id === 'E:src/render/owned-view.ts#createOwnedView') return true;
+      for (const alias of aliases.get(id) ?? []) todo.push(alias);
+    }
+    return false;
+  };
+  const owned = new Set<string>();
+  for (const [id, b] of bindings)
+    if (b.fn) {
+      const f = modules.get(b.file)!;
+      walk(b.fn, (n) => {
+        if (n.type === 'CallExpression' && isOwnedCall(callees(f, n.callee))) owned.add(id);
+      });
+    }
+  for (const id of aliases.get('E:src/render/owned-view.ts#createOwnedView') ?? [])
+    if (bindings.get(id)?.fn) owned.add(id);
+  for (const [id, b] of bindings)
+    if (b.fn && 'returnType' in b.fn && b.fn.returnType)
+      walk(b.fn.returnType as Node, (n) => {
+        if (n.type === 'TSTypeReference' && n.typeName.type === 'Identifier' && n.typeName.name === 'OwnedView')
+          owned.add(id);
+      });
+  const ownedFiles = new Set([...owned].map((id) => bindings.get(id)!.file));
+  const analysisFile = (file: string) =>
+    providers.has(file) || ownedFiles.has(file) || kinds.some((kind) => isCapability(kind, file));
+  const conservative = new Set<string>();
+  const conservativeSeeds = new Map<string, Set<ConstructionKind>>();
+  // Do not prune exemptions before proving their debt-local callees safe. Never traverse the prefab door.
   for (const [id, b] of bindings) {
-    if (!b.fn || !eligible(b.file) || !exportedBindings.has(id)) continue;
+    if (
+      !b.fn ||
+      !analysisFile(b.file) ||
+      ['src/prefab/instantiate.ts', 'src/physics/engine.ts', 'src/physics/backend-rapier.ts'].includes(b.file)
+    )
+      continue;
     const f = modules.get(b.file)!;
     walk(b.fn, (n) => {
       if (n.type !== 'CallExpression' && n.type !== 'NewExpression') return;
-      for (const target of targets(f, n.callee)) link(id, target);
+      for (const target of callees(f, n.callee)) link(id, target);
+      for (const target of values.extraCalls.get(n) ?? []) link(id, target);
     });
+    const unknown = values.fallback.get(b.file) ?? new Set<number>();
+    let unresolved = [...unknown].some((start) => start >= b.fn!.start && start < b.fn!.end);
+    if (unknown.size)
+      walk(b.fn, (n) => {
+        if (n.type === 'Identifier' && [...values.origins(b.file, n)].some((origin) => unknown.has(origin)))
+          unresolved = true;
+      });
+    if (unresolved) {
+      conservative.add(b.file);
+      conservativeSeeds.set(id, new Set(kinds));
+      for (const kind of kinds) seed(id, kind);
+    }
   }
   for (const f of modules.values())
     for (const kind of kinds) if (isCapability(kind, f.file)) for (const id of f.exports.values()) seed(id, kind);
@@ -342,20 +435,80 @@ export function computeLegacyGraph(
     }
     return values;
   };
-  const reached = propagate(seeds);
+  // Creation proof uses actual allocation/seat-registration endpoints, rather than treating queries as creation.
+  // Physics/land helper implementations participate in this proof; the record-only prefab door does not.
+  const allocationSeeds = new Map<string, Set<ConstructionKind>>();
+  for (const f of modules.values())
+    for (const [name, id] of f.exports) {
+      if (kinds.some((kind) => isCapability(kind, f.file)) && name === 'createBody')
+        for (const implementation of deps.get(id) ?? []) allocationSeeds.set(implementation, new Set(['colliders']));
+      if (f.file === 'src/entities/railway/seat.ts' && name === 'registerSeat')
+        for (const implementation of deps.get(id) ?? []) allocationSeeds.set(implementation, new Set(['seats']));
+    }
+  const allocationReached = propagate(allocationSeeds);
+  const uncertainReached = propagate(conservativeSeeds);
+  const creationSeeds = new Map<string, Set<ConstructionKind>>(allocationSeeds);
+  for (const [id, found] of conservativeSeeds)
+    creationSeeds.set(id, new Set([...(creationSeeds.get(id) ?? []), ...found]));
+  const creationReached = propagate(creationSeeds);
+  const creationOf = (id: string) =>
+    new Set([
+      ...(creationReached.get(id) ?? []),
+      ...[...(deps.get(id) ?? [])].flatMap((dep) => [...(creationReached.get(dep) ?? [])]),
+    ]);
+  const proof = (id: string) => ({
+    creates: creationOf(id).size > 0,
+    kinds: [...creationOf(id)].sort(),
+    allocation: !!allocationReached.get(id)?.size,
+    uncertain: !!uncertainReached.get(id)?.size,
+  });
+  const safeStops = new Set<string>();
+  for (const f of modules.values())
+    for (const [name, id] of f.exports)
+      if ((f.file in NOT_CONSTRUCTORS || `${f.file}#${name}` in NOT_CONSTRUCTION_EXPORTS) && !creationOf(id).size) {
+        const todo = [id];
+        while (todo.length) {
+          const next = todo.pop()!;
+          if (safeStops.has(next)) continue;
+          safeStops.add(next);
+          for (const alias of aliases.get(next) ?? []) todo.push(alias);
+        }
+      }
+  const reached = propagate(seeds, safeStops);
+  const exemptionAudit: LegacyGraph['exemptionAudit'] = {};
+  for (const f of modules.values())
+    for (const [name, id] of f.exports)
+      if (f.file in NOT_CONSTRUCTORS || `${f.file}#${name}` in NOT_CONSTRUCTION_EXPORTS)
+        exemptionAudit[`${f.file}#${name}`] = proof(id);
+  const ownedFactories: LegacyGraph['ownedFactories'] = {};
+  for (const id of owned) {
+    const b = bindings.get(id)!;
+    const exports = [...modules.get(b.file)!.exports].filter(([, e]) => (aliases.get(e) ?? new Set()).has(id));
+    if (exports.length) for (const [name] of exports) ownedFactories[`${b.file}#${name}`] = proof(id);
+    else if (
+      id.startsWith('B:') ||
+      ![...owned].some((other) => other !== id && bindings.get(other)?.fn?.start === b.fn?.start)
+    )
+      ownedFactories[`${b.file}:${b.fn!.start}`] = proof(id);
+  }
   const constructors: LegacyGraph['constructors'] = {};
+  const constructionProof: LegacyGraph['constructionProof'] = {};
   const roots = new Map<string, Set<string>>();
-  for (const file of [...providers].sort())
+  for (const file of [...new Set([...providers, ...ownedFiles])].sort())
     for (const [name, id] of modules.get(file)?.exports ?? []) {
       // The record-only instantiate door is intentionally open to new authored content.
-      if (!eligible(file) || `${file}#${name}` in NOT_CONSTRUCTION_EXPORTS) continue;
+      if (doors.has(file)) continue;
+      const unsafe = creationOf(id).size > 0;
+      if ((!eligible(file) || `${file}#${name}` in NOT_CONSTRUCTION_EXPORTS) && !unsafe) continue;
+      if (!providers.has(file) && !unsafe) continue;
       // Capability exports are terminal APIs for callers, not automatically constructors themselves.
-      const found = new Set<ConstructionKind>();
+      const found = new Set<ConstructionKind>(creationOf(id));
       for (const implementation of deps.get(id) ?? [])
         for (const kind of reached.get(implementation) ?? []) found.add(kind);
       if (!found?.size) continue;
       const key = `${file}#${name}`;
       constructors[key] = { kinds: [...found].sort(), importers: [] };
+      constructionProof[key] = proof(id);
       roots.set(id, new Set([key]));
     }
   // Provenance for importer counting follows aliases and barrels only, never function-body calls.
@@ -373,7 +526,26 @@ export function computeLegacyGraph(
     }
     if (all.size) moduleOrigins[f.file] = [...all].sort();
   }
-  const result: LegacyGraph = { files: Object.keys(sources).sort(), constructors, surfaces, modules: moduleOrigins };
+  const result: LegacyGraph = {
+    files: Object.keys(sources).sort(),
+    constructors,
+    surfaces,
+    modules: moduleOrigins,
+    constructionProof,
+    conservative: [...conservative].sort(),
+    conservativeSites: Object.fromEntries(
+      [...conservative]
+        .sort()
+        .map((file) => [
+          file,
+          [...(values.fallback.get(file) ?? [])]
+            .filter((start) => modules.get(file)!.edges.some((edge) => !edge.erased && edge.node.start === start))
+            .sort((a, b) => a - b),
+        ]),
+    ),
+    exemptionAudit,
+    ownedFactories,
+  };
   for (const f of modules.values())
     for (const edge of f.edges)
       for (const key of acquiredConstruction(result, f.file, edge, resolve)) {
@@ -424,7 +596,7 @@ export function acquiredConstruction(
 export const constructionCounts = (graph: LegacyGraph): Record<string, number> =>
   Object.fromEntries(Object.entries(graph.constructors).map(([key, value]) => [key, value.importers.length]));
 
-// Shared lifecycle/state services are not placed-content factories. Each explicit stop has its own reason.
+// Exemption candidates: allocation/unknown-use reachability overrides every entry, including ownership factories.
 export const NOT_CONSTRUCTORS = {
   'src/entity/entity.ts': 'Lifecycle registration/attachment of finished entities; no body or seat creation.',
   'src/entities/player/state.ts': 'Singleton player movement, grounding and respawn; not placed-content factories.',
@@ -434,7 +606,7 @@ export const NOT_CONSTRUCTORS = {
   'src/physics/platforms.ts': 'Platform registration, coordinate conversion and carry state over existing bodies.',
 } as const;
 
-// Mixed modules retain their real construction factories; these exports only own, query or move existing data.
+// Export-level exemption candidates in mixed modules; each must retain a negative allocation/opaque-use proof.
 export const NOT_CONSTRUCTION_EXPORTS = {
   'src/player/camera-arm.ts#makeCameraArm': 'Camera obstruction query/solver lifecycle; sweepSphere only.',
   'src/place/pose.ts#createPosePolicy': 'Placement preview pose/query policy; sweepSphere only.',
@@ -490,6 +662,7 @@ export function checkConstructionForwards(graph: LegacyGraph, recorded: PrefabDe
 const TOOL_HASH = createHash('sha256')
   .update(fs.readFileSync(new URL('./prefab-constructors.ts', import.meta.url)))
   .update(fs.readFileSync(new URL('./prefab-boundaries.ts', import.meta.url)))
+  .update(fs.readFileSync(new URL('./prefab-values.ts', import.meta.url)))
   .update(fs.readFileSync(new URL('../scan/parse.ts', import.meta.url)))
   .digest('hex');
 export function loadLegacyGraph(

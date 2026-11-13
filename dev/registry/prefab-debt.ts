@@ -116,6 +116,8 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
     if (!doors.includes(file)) errors.push(`Unapproved prefab door ${file}`);
   if (head.legacy) {
     const graph = loadLegacyGraph(root, head);
+    if (graph.conservative.length)
+      console.log(`prefab conservative dynamic-import analysis: ${graph.conservative.join(', ')}`);
     errors.push(...checkLegacyRecords(graph.constructors, head.legacy));
     errors.push(...checkConstructionForwards(graph, head.forwards));
   } else if (head.version === 5)

@@ -48,7 +48,7 @@ test('direct debt calls form a fixed point; barrels count, registries and door w
     'src/prefab/instantiate.ts':
       "import {createBody}from '../physics/engine'; export const instantiate=()=>createBody();",
     'src/authored.ts': "import {instantiate}from './prefab/instantiate'; export const record=()=>instantiate();",
-    'src/entity/entity.ts': "import {makeCar}from '../car'; export function register(){makeCar();}",
+    'src/entity/entity.ts': 'export function register(fn){return fn;}',
     'src/finished.ts': "import {makeCar}from './car'; export const finished=makeCar();",
     'src/finished-consumer.ts': "import {finished}from './finished'; console.log(finished);",
     'src/new-feature.ts':

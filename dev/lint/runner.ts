@@ -51,6 +51,10 @@ export function lintFiles(root: string, targets: string[], options: Options = {}
     ? JSON.parse(fs.readFileSync(prefabPath, 'utf8'))
     : { colliders: {}, seats: {} };
   const legacyGraph = prefabDebt.legacy ? loadLegacyGraph(root, prefabDebt) : undefined;
+  if (legacyGraph?.conservative.length)
+    console.log(
+      `prefab conservative dynamic-import analysis (use simpler module bindings to remove): ${legacyGraph.conservative.join(', ')}`,
+    );
   const files = new Set<string>();
   for (const target of targets) {
     const absolute = path.resolve(root, target);
