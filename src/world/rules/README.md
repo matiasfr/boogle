@@ -7,8 +7,7 @@ edit generators and lockstep transport retired at v40; they are not recipes for 
 ## Contract
 
 `roster.ts` exports `installServer(sync, ops, replication, now)`; `tune.ts` exports
-`installRailTune(sync, ops, replication)`. Seats use `installSeats(ops, replication, now)` without checkpoint registration.
-The host calls them before the railway registration and projections.
+`installRailTune(sync, ops, replication)`. The host calls them before the railway registration and projections.
 `SyncView` in `types.ts` exposes the world clock, `registerState(..., { server: true })`, `onTick` and `onSnapshot`.
 Checkpoint order is deterministic; clients install none of these state owners.
 
@@ -49,7 +48,8 @@ the existing look/bot harness. Update the owning game-design chapter for player-
 The railway's rule ticks and action set live in `../railway-server.ts`; its state is also registered Server kind.
 `../README.md` owns the clock and checkpoint contract. The Boogler remains a lead-tab Host field.
 
-Seat commands bind the socket's pid, validate opaque ids, choose the first free requested chair, and rate-limit
+`installSeats(ops, replication, now)` has no checkpoint registration. Seat commands bind the socket's pid,
+validate opaque ids, choose the first free requested chair, and rate-limit
 accepted sits to one per 400 ms of host time. `taken` and `rate` are nonfatal receipt reasons; the command adapter
 preserves them without reopening its session. Clients predict sitting and standing immediately; only `taken` steps a
 predicted rider off, while `rate` holds the pose until the once-a-second reconcile retries, including alternates.

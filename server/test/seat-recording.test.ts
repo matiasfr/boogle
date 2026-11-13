@@ -11,8 +11,9 @@ type Record = { kind: string; pid?: string; id?: string | null; count?: number }
 let serial = 0;
 async function record(client: Client, cleanup: (fn: () => void) => void) {
   const suffix = `?seat-recording=${serial++}`;
-  const mark = new URL(`../../src/proto/mark.ts${suffix}`, import.meta.url);
-  const binder = new URL(`../../src/adapters/seat-recording.ts${suffix}`, import.meta.url);
+  const mark = new URL('../../src/proto/mark.ts', import.meta.url);
+  const binder = new URL('../../src/adapters/seat-recording.ts', import.meta.url);
+  mark.search = binder.search = suffix;
   const hooks = registerHooks({
     resolve(specifier, ctx, next) {
       if (ctx.parentURL === binder.href && specifier === '../proto/mark.ts')
