@@ -1,4 +1,4 @@
-// Conservative, binding-based may-reach graph. No hand-maintained list of construction export names.
+// Targeted debt-only call graph and compact importer-count ratchet.
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -21,14 +21,12 @@ type Facts = {
   file: string;
   program: Program;
   edges: ModuleEdge[];
-  scope: ReturnType<typeof analyze>;
-  parent: Map<Node, Node>;
   refs: Map<number, string>;
   names: Map<string, string>;
   exports: Map<string, string>;
   stars: string[];
 };
-type Binding = { file: string; nodes: Node[]; fn?: Node; params: string[][] };
+type Binding = { file: string; nodes: Node[]; fn?: Node };
 const kinds = ['colliders', 'seats'] as const;
 const exportId = (file: string, name: string) => `E:${file}#${name}`;
 const namespaceId = (file: string) => `N:${file}`;
@@ -58,7 +56,6 @@ export function computeLegacyGraph(
   const deps = new Map<string, Set<string>>();
   const aliases = new Map<string, Set<string>>();
   const bindings = new Map<string, Binding>();
-  const parameters = new Set<string>();
   const modules = new Map<string, Facts>();
   const seeds = new Map<string, Set<ConstructionKind>>();
   const add = (graph: Map<string, Set<string>>, from: string, to: string) => {
@@ -86,18 +83,13 @@ export function computeLegacyGraph(
     const f: Facts = {
       file,
       program,
-      scope,
       edges: moduleEdges(program),
-      parent: new Map(),
       refs: new Map(),
       names: new Map(),
       exports: new Map(),
       stars: [],
     };
     modules.set(file, f);
-    walk(program, (n, p) => {
-      if (p) f.parent.set(n, p);
-    });
     const ids = new Map<object, string>();
     for (const s of scope.scopes)
       for (const variable of s.variables) {
@@ -124,8 +116,7 @@ export function computeLegacyGraph(
             if (functionNode(impl as Node)) fn = impl as Node;
           }
         }
-        bindings.set(id, { file, nodes, ...(fn ? { fn } : {}), params: [] });
-        if (defs.some((d) => d.type === 'Parameter')) parameters.add(id);
+        bindings.set(id, { file, nodes, ...(fn ? { fn } : {}) });
         if (s.type === 'module') f.names.set(variable.name, id);
       }
     for (const s of scope.scopes)
@@ -183,7 +174,6 @@ export function computeLegacyGraph(
             file: f.file,
             nodes: [n.declaration as Node],
             ...(functionNode(n.declaration as Node) ? { fn: n.declaration as Node } : {}),
-            params: [],
           });
       }
       if (n.type !== 'ExportNamedDeclaration' || n.exportKind === 'type') continue;
@@ -239,209 +229,64 @@ export function computeLegacyGraph(
         }
   }
   for (const f of modules.values()) for (const id of f.exports.values()) link(namespaceId(f.file), id, true);
-  const owners = new Map<Node, string[]>();
+  const providers = new Set([...Object.keys(debt.colliders), ...Object.keys(debt.seats)]);
+  const doors = new Set(Object.values(PREFAB_DOORS).flat());
+  const eligible = (file: string) => providers.has(file) && !doors.has(file) && !(file in NOT_CONSTRUCTORS);
+  // Only aliases/re-exports carry values across modules. No arbitrary reference, argument or callback flow.
   for (const [id, b] of bindings)
-    for (const n of b.nodes) {
-      const list = owners.get(n) ?? [];
-      list.push(id);
-      owners.set(n, list);
-    }
-  // Dynamic module values and destructuring: conservatively retain all modules in an initializer.
-  for (const [id, b] of bindings) {
-    const f = modules.get(b.file)!;
-    for (const n of b.nodes)
-      if (!functionNode(n))
-        for (const edge of f.edges) {
-          if (edge.erased || !edge.source || edge.node.start < n.start || edge.node.end > n.end) continue;
-          const target = resolve(b.file, edge.source);
-          if (!target) continue;
-          link(id, namespaceId(target), true);
-          const set = namespace.get(id) ?? new Set<string>();
-          set.add(target);
-          namespace.set(id, set);
-        }
-  }
-  const refTargets = (f: Facts, node: Node): Set<string> => {
+    if (!b.fn && !(b.file in NOT_CONSTRUCTORS))
+      for (const node of b.nodes) {
+        const f = modules.get(b.file)!;
+        walk(node, (n) => {
+          if (n.type !== 'Identifier') return;
+          const target = f.refs.get(n.start);
+          if (target) link(id, target, true);
+        });
+      }
+  const targets = (f: Facts, node: Node): Set<string> => {
     const out = new Set<string>();
-    walk(node, (n, p) => {
-      if (n.type !== 'Identifier') return;
-      const id = f.refs.get(n.start);
-      if (!id) return;
-      const spaces = namespace.get(id);
-      if (spaces && p?.type === 'MemberExpression' && p.object === n && member(p) !== undefined)
-        for (const target of spaces) out.add(exportId(target, member(p)!));
-      else out.add(id);
-    });
+    if (node.type === 'Identifier') {
+      const id = f.refs.get(node.start);
+      if (id) out.add(id);
+    } else if (node.type === 'MemberExpression' && node.object.type === 'Identifier') {
+      const id = f.refs.get(node.object.start);
+      const spaces = new Set<string>();
+      const seen = new Set<string>();
+      const todo = id ? [id] : [];
+      while (todo.length) {
+        const alias = todo.pop()!;
+        if (seen.has(alias)) continue;
+        seen.add(alias);
+        for (const module of namespace.get(alias) ?? []) spaces.add(module);
+        for (const next of aliases.get(alias) ?? []) todo.push(next);
+      }
+      for (const module of spaces) {
+        const name = member(node);
+        if (name !== undefined) out.add(exportId(module, name));
+        else out.add(namespaceId(module));
+      }
+    } else if ('expression' in node && node.expression && typeof node.expression === 'object')
+      return targets(f, node.expression as Node);
     return out;
   };
-  for (const f of modules.values()) {
-    walk(f.program, (n) => {
-      if (n.type !== 'Identifier' || !f.refs.has(n.start)) return;
-      let current: Node | undefined = n;
-      const targets = refTargets(f, n);
-      // For member selection, refTargets needs the member parent as well.
-      const p = f.parent.get(n);
-      if (p?.type === 'MemberExpression' && p.object === n) {
-        targets.clear();
-        for (const t of refTargets(f, p)) targets.add(t);
-      }
-      while (current) {
-        for (const owner of owners.get(current) ?? []) for (const target of targets) link(owner, target);
-        current = f.parent.get(current);
-      }
-    });
+  const exportedBindings = new Set<string>();
+  const todo = [...modules.values()].filter((f) => eligible(f.file)).flatMap((f) => [...f.exports.values()]);
+  for (let i = 0; i < todo.length; i++) {
+    const id = todo[i]!;
+    if (exportedBindings.has(id)) continue;
+    exportedBindings.add(id);
+    for (const alias of aliases.get(id) ?? []) todo.push(alias);
   }
-  // Value aliases for call targets do not follow a function's body. This prevents argument flow through unrelated callees.
-  for (const [id, b] of bindings)
-    if (!b.fn)
-      for (const n of b.nodes) for (const target of refTargets(modules.get(b.file)!, n)) add(aliases, id, target);
-  // Calls through opaque callback/dependency parameters may reach construction. Fail closed rather than
-  // pretending an unresolvable callback is pure; aliases of those parameters retain the same provenance.
-  for (const f of modules.values())
-    walk(f.program, (n) => {
-      if (n.type === 'AssignmentExpression') {
-        let left: Node = n.left;
-        while (left.type === 'MemberExpression') left = left.object;
-        if (left.type === 'Identifier') {
-          const id = f.refs.get(left.start);
-          if (id) for (const target of refTargets(f, n.right)) link(id, target);
-        }
-      }
+  // One fixed point over debt implementations: own-body calls, including callbacks lexically inside that body.
+  // Never walk arguments, registries, non-debt wrapper bodies, or door implementations.
+  for (const [id, b] of bindings) {
+    if (!b.fn || !eligible(b.file) || !exportedBindings.has(id)) continue;
+    const f = modules.get(b.file)!;
+    walk(b.fn, (n) => {
       if (n.type !== 'CallExpression' && n.type !== 'NewExpression') return;
-      const todo = [...refTargets(f, n.callee)];
-      const seen = new Set<string>();
-      while (todo.length) {
-        const id = todo.pop()!;
-        if (seen.has(id)) continue;
-        seen.add(id);
-        if (parameters.has(id)) for (const kind of kinds) seed(id, kind);
-        if (bindings.get(id)?.fn) continue;
-        for (const dep of aliases.get(id) ?? []) todo.push(dep);
-      }
+      for (const target of targets(f, n.callee)) link(id, target);
     });
-  // Map actual arguments to lexical parameters (including destructured dependency bags).
-  for (const [id, b] of bindings)
-    if (b.fn && 'params' in b.fn) {
-      const f = modules.get(b.file)!;
-      b.params = b.fn.params.map(() => []);
-      // Parameters' definitions are the pattern itself; identify their exact scopes, not matching names globally.
-      for (const s of f.scope.scopes)
-        for (const variable of s.variables)
-          for (const def of variable.defs)
-            if (def.type === 'Parameter' && (def.node as unknown as Node) === b.fn) {
-              const v = `B:${f.file}:${(variable.defs[0]!.name as unknown as Node).start}:${variable.name}`;
-              const name = def.name as unknown as Node;
-              const index = b.fn.params.findIndex((p) => p.start <= name.start && p.end >= name.end);
-              if (index >= 0) b.params[index]!.push(v);
-            }
-      void id;
-    }
-  const calls: { targets: Set<string>; args: Set<string>[] }[] = [];
-  const invokedParameters = new Set<string>();
-  for (const f of modules.values())
-    walk(f.program, (n) => {
-      if (n.type === 'CallExpression' || n.type === 'NewExpression') {
-        calls.push({ targets: refTargets(f, n.callee), args: n.arguments.map((a) => refTargets(f, a as Node)) });
-        if (n.callee.type === 'Identifier') {
-          const id = f.refs.get(n.callee.start);
-          if (id) invokedParameters.add(id);
-        }
-      }
-    });
-  // Namespace dependency bags are capability values explicitly advertised by typeof-import types. Read their
-  // type aliases mechanically, rather than merging every arbitrary object passed to an unrelated parameter.
-  const typeModules = new Map<string, Set<string>>();
-  const typeDeps = new Map<string, Set<string>>();
-  for (const f of modules.values())
-    for (const n of f.program.body) {
-      const d = n.type === 'ExportNamedDeclaration' ? n.declaration : n;
-      if (d?.type !== 'TSTypeAliasDeclaration' && d?.type !== 'TSInterfaceDeclaration') continue;
-      const id = `${f.file}#${d.id.name}`;
-      const found = new Set<string>();
-      const refs = new Set<string>();
-      walk(d, (t) => {
-        if (t.type === 'TSTypeQuery' && t.exprName.type === 'TSImportType') {
-          const spec = literal(t.exprName.source);
-          const target = spec ? resolve(f.file, spec) : null;
-          if (target) found.add(target);
-        }
-        if (t.type === 'TSTypeReference' && t.typeName.type === 'Identifier') refs.add(`${f.file}#${t.typeName.name}`);
-      });
-      typeModules.set(id, found);
-      typeDeps.set(id, refs);
-    }
-  changed = true;
-  while (changed) {
-    changed = false;
-    for (const [id, refs] of typeDeps) {
-      const set = typeModules.get(id)!;
-      for (const ref of refs)
-        for (const module of typeModules.get(ref) ?? [])
-          if (!set.has(module)) {
-            set.add(module);
-            changed = true;
-          }
-    }
   }
-  for (const f of modules.values())
-    for (const s of f.scope.scopes)
-      for (const variable of s.variables)
-        for (const def of variable.defs)
-          if (def.type === 'Parameter') {
-            const name = def.name as unknown as Node;
-            const id = `B:${f.file}:${(variable.defs[0]!.name as unknown as Node).start}:${variable.name}`;
-            const fn = def.node as unknown as Node;
-            if (!('params' in fn)) continue;
-            const param = fn.params.find((p) => p.start <= name.start && p.end >= name.end);
-            if (!param) continue;
-            walk(param, (t) => {
-              if (t.type === 'TSTypeReference' && t.typeName.type === 'Identifier')
-                for (const target of typeModules.get(`${f.file}#${t.typeName.name}`) ?? [])
-                  link(id, namespaceId(target));
-              if (t.type === 'TSTypeQuery' && t.exprName.type === 'TSImportType') {
-                const spec = literal(t.exprName.source);
-                const target = spec ? resolve(f.file, spec) : null;
-                if (target) link(id, namespaceId(target));
-              }
-            });
-          }
-  {
-    const targetCache = new Map<string, Set<string>>();
-    const targetsOf = (starts: Set<string>) => {
-      const found = new Set<string>();
-      for (const start of starts) {
-        let cached = targetCache.get(start);
-        if (!cached) {
-          cached = new Set();
-          const seen = new Set<string>();
-          const todo = [start];
-          while (todo.length) {
-            const id = todo.pop()!;
-            if (seen.has(id)) continue;
-            seen.add(id);
-            if (bindings.get(id)?.fn) {
-              cached.add(id);
-              continue;
-            }
-            for (const d of aliases.get(id) ?? []) todo.push(d);
-          }
-          targetCache.set(start, cached);
-        }
-        for (const id of cached) found.add(id);
-      }
-      return found;
-    };
-    for (const call of calls) {
-      const targets = targetsOf(call.targets);
-      for (const target of targets) {
-        const b = bindings.get(target);
-        if (!b?.fn) continue;
-        for (const [i, args] of call.args.entries())
-          for (const p of b.params[i] ?? []) if (invokedParameters.has(p)) for (const actual of args) link(p, actual);
-      }
-    }
-  }
-  // Calls into a capability module are terminal roots. Function-valued aliases and closures inherit these roots.
   for (const [id, b] of bindings) if (b.fn) for (const kind of kinds) if (isCapability(kind, b.file)) seed(id, kind);
   const reverse = new Map<string, Set<string>>();
   for (const [from, to] of deps) for (const d of to) add(reverse, d, from);
@@ -468,27 +313,22 @@ export function computeLegacyGraph(
     return values;
   };
   const reached = propagate(seeds);
-  const providers = new Set([
-    ...Object.keys(debt.colliders),
-    ...Object.keys(debt.seats),
-    ...Object.values(PREFAB_DOORS).flat(),
-  ]);
   const constructors: LegacyGraph['constructors'] = {};
   const roots = new Map<string, Set<string>>();
   for (const file of [...providers].sort())
     for (const [name, id] of modules.get(file)?.exports ?? []) {
       // The record-only instantiate door is intentionally open to new authored content.
-      if (file === 'src/prefab/instantiate.ts') continue;
+      if (!eligible(file)) continue;
       const found = reached.get(id);
       if (!found?.size) continue;
       const key = `${file}#${name}`;
       constructors[key] = { kinds: [...found].sort(), importers: [] };
       roots.set(id, new Set([key]));
     }
-  const origins = propagate(
-    roots,
-    new Set([...roots.keys(), ...[...(modules.get('src/prefab/instantiate.ts')?.exports.values() ?? [])]]),
-  );
+  // Provenance for importer counting follows aliases and barrels only, never function-body calls.
+  reverse.clear();
+  for (const [from, to] of aliases) for (const d of to) add(reverse, d, from);
+  const origins = propagate(roots, new Set(roots.keys()));
   const surfaces: LegacyGraph['surfaces'] = {};
   const moduleOrigins: LegacyGraph['modules'] = {};
   for (const f of modules.values()) {
@@ -548,8 +388,17 @@ export function acquiredConstruction(
   return [...keys].sort();
 }
 
+export const constructionCounts = (graph: LegacyGraph): Record<string, number> =>
+  Object.fromEntries(Object.entries(graph.constructors).map(([key, value]) => [key, value.importers.length]));
+
+// This lifecycle service attaches already-built bodies and invokes registered entity callbacks; it is not
+// a content factory. Ordinary features must be able to register/spawn record-instantiated entities here.
+export const NOT_CONSTRUCTORS = {
+  'src/entity/entity.ts': 'Lifecycle registration/attachment of finished entities; no body or seat creation.',
+} as const;
+
 const TOOL_HASH = createHash('sha256')
-  .update(fs.readFileSync(new URL('./prefab-edges.ts', import.meta.url)))
+  .update(fs.readFileSync(new URL('./prefab-constructors.ts', import.meta.url)))
   .update(fs.readFileSync(new URL('./prefab-boundaries.ts', import.meta.url)))
   .update(fs.readFileSync(new URL('../scan/parse.ts', import.meta.url)))
   .digest('hex');
@@ -599,7 +448,7 @@ export function loadLegacyGraph(
     hash.update(file).update('\0').update(text);
   }
   const fingerprint = hash.digest('hex');
-  const file = path.join(root, `.look/cache/prefab-edges${options.ref ? '-base' : ''}.json`);
+  const file = path.join(root, `.look/cache/prefab-constructors${options.ref ? '-base' : ''}.json`);
   if (options.cache !== false && fs.existsSync(file)) {
     try {
       const old = JSON.parse(fs.readFileSync(file, 'utf8')) as { fingerprint: string; graph: LegacyGraph };
@@ -628,19 +477,13 @@ export function checkLegacyRecords(actual: LegacyGraph['constructors'], recorded
   const errors: string[] = [];
   const door = 'Use src/prefab/instantiate.ts and prefab records.';
   for (const [key, value] of Object.entries(actual)) {
-    const old = recorded?.[key];
-    if (!old) {
-      errors.push(`Unrecorded computed legacy construction export ${key}. ${door}`);
-      continue;
-    }
-    if (JSON.stringify(value.kinds) !== JSON.stringify(old.kinds))
-      errors.push(`Legacy capability kinds changed for ${key}; computed set must equal recorded set. ${door}`);
-    for (const file of value.importers)
-      if (!old.importers.includes(file)) errors.push(`New legacy importer ${file} → ${key}. ${door}`);
-    for (const file of old.importers)
-      if (!value.importers.includes(file)) errors.push(`Remove stale legacy importer ${file} → ${key}. ${door}`);
-    if (new Set(old.importers).size !== old.importers.length)
-      errors.push(`Duplicate legacy importer for ${key}. ${door}`);
+    const count = recorded?.[key];
+    if (count === undefined) errors.push(`Unrecorded computed legacy construction export ${key}. ${door}`);
+    else if (!Number.isSafeInteger(count) || count < 0) errors.push(`Invalid importer count ${key}. ${door}`);
+    else if (value.importers.length > count)
+      errors.push(`Legacy importer count grew for ${key}: ${value.importers.length} > ${count}. ${door}`);
+    else if (value.importers.length < count)
+      errors.push(`Legacy importer count for ${key}: lower the count to ${value.importers.length}. ${door}`);
   }
   for (const key of Object.keys(recorded ?? {}))
     if (!actual[key]) errors.push(`Remove stale computed legacy construction export ${key}. ${door}`);
@@ -649,17 +492,10 @@ export function checkLegacyRecords(actual: LegacyGraph['constructors'], recorded
 
 export function compareLegacyRecords(base: PrefabDebt['legacy'], head: PrefabDebt['legacy']): string[] {
   const errors: string[] = [];
-  const door = 'Use src/prefab/instantiate.ts and prefab records.';
-  for (const [key, value] of Object.entries(head ?? {})) {
+  for (const [key, count] of Object.entries(head ?? {})) {
     const old = base?.[key];
-    if (!old) {
-      errors.push(`New legacy construction export ${key}; the set may only shrink. ${door}`);
-      continue;
-    }
-    for (const kind of value.kinds)
-      if (!old.kinds.includes(kind)) errors.push(`Legacy construction kinds grew: ${key}/${kind}. ${door}`);
-    for (const file of value.importers)
-      if (!old.importers.includes(file)) errors.push(`Legacy importer edges grew: ${file} → ${key}. ${door}`);
+    if (old === undefined || count > old)
+      errors.push(`Legacy construction importer count grew: ${key}; use src/prefab/instantiate.ts.`);
   }
   return errors;
 }

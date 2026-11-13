@@ -34,22 +34,24 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   cannot invent a new surface: this closes laundering without guessing alias/function-body provenance. The
   declared instantiate API stays open for record-authored content. Existing construction APIs are additionally
   constrained by the importer ratchet below; public names alone are not permission for new consumers.
-- `dev/lint/prefab-edges.ts` computes construction-capable exports, never a hand list. Its conservative binding
-  graph follows local helper/alias/closure references, namespace/type dependency bags, assigned values and
-  statically bound calls across modules. Capability-module functions are roots; opaque callable/dependency
-  parameters may construct and therefore fail closed as both kinds. An export of a door/debt provider that may
-  reach those roots is a legacy construction export. The record-only `src/prefab/instantiate.ts` surface is the
-  explicit exception. This is a may-reach set (including exposed values), not a claim every member constructs.
-  Named, namespace, dynamic and require acquisitions follow renamed/star barrels and wrapper provenance to
-  real consumers. Every forwarding file is an importer too: a new barrel or a new consumer fails and names
-  `src/prefab/instantiate.ts`. The graph covers project code including tools/tests, so moving a barrel outside
-  `src` cannot launder it; source imports of ignored/unanalyzed project code fail closed.
-  `legacy["file#export"]` records kinds and importing files. Lint and registry require the computed set and
-  recorded set to match exactly; removed APIs/edges must be deleted. Registry forbids new APIs, kinds or importer
-  identities relative to main. A new constructor under an old public name cannot appear silently. The graph
-  cache fingerprints analyzed source bytes/file identities, analyzer/visitor code, providers, lockfile and
-  tsconfig; writes are atomic. It is derivative data, not a waiver. Existing approved edges can reuse an API;
-  globals/reflection/generated code remain outside a security-sandbox guarantee.
+- `dev/lint/prefab-constructors.ts` computes a targeted call graph, not the whole-program reference closure.
+  A construction export belongs to a debt file and its own body calls a capability-module API or another
+  construction export. The fixed point runs over debt implementations only; door implementations and non-debt
+  function bodies do not propagate construction. Call aliases and re-export/barrel identities resolve normally.
+  Nested callbacks lexically inside a constructor body count; arbitrary callback arguments, type dependency bags,
+  state references and loader/registry callbacks do not. The short `NOT_CONSTRUCTORS` list contains exactly
+  `src/entity/entity.ts`: it attaches already-built bodies and schedules entity callbacks, so registration and
+  spawning finished record-authored entities must remain available to ordinary features. No folder exemption.
+  `legacy["file#export"]` stores only the number of distinct importing files, including forwarding barrels.
+  Named, namespace, dynamic and require acquisitions resolve to constructor identities through aliases/barrels;
+  wrapper function bodies outside debt do not extend this closure. Higher counts fail naming
+  `src/prefab/instantiate.ts`; lower counts fail with **lower the count**. Computed export keys must match the
+  record; registry ratchets each count and forbids new keys. A new ordinary feature may import entity/loop
+  registration and use the prefab door. Counts deliberately permit swapping one importer for another;
+  reflection passes. Existing approved consumers can reuse APIs. Unexported-helper indirection, non-debt wrapper
+  bodies and generated/global effects are outside this narrow count rule and require review. The unchanged
+  capability-module import ban, provider public surfaces and per-file violation budgets still bind them.
+  A derivative cache fingerprints code, analyzer, lockfile, tsconfig and providers; no importer paths are committed.
 - `boogle/records-are-data`: content imports/re-exports only prefab `types.ts`/`names.ts`, `src/constants.ts`,
   `src/math-pure.ts`, and explicitly listed pure layout helpers (`place/layout.ts`, `entities/railway/line2-path.ts`).
   No three.js (even inline `import('three').Mesh` types), browser/DOM globals or unknown/computed dynamic imports.
@@ -58,8 +60,8 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   ambient `declare`, type bindings and erased imports do not. Local `origin` and local `globalThis` objects are
   allowed. The compiler separately
   rejects non-JSON exported values; compiled JSON remains committed.
-- `dev/lint/prefab-debt.json` version 3 lists collider/seat files with `{ count, reason, exports }`, fixed door
-  public surfaces and computed construction/importer records. Dropping the schema or edge set fails. Lint and registry
+- `dev/lint/prefab-debt.json` version 4 lists collider/seat files with `{ count, reason, exports }`, fixed door
+  public surfaces and compact computed construction/importer counts. Dropping the schema or counts fails. Lint and registry
   reject excess violations and require fewer violations to **lower the count** (remove a zero entry). Registry
   also rejects any new file identity or per-file count growth, even when another file/count shrinks. Against a
   base predating the structural schema, it derives counts and exported names from the branch/base common

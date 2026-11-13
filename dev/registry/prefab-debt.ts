@@ -6,7 +6,12 @@ import { lintSafety } from '../lint/safety.ts';
 import type { PrefabDebt } from '../lint/safety.ts';
 import { parseSync } from 'oxc-parser';
 import { createModuleResolver, runtimeExports, PREFAB_DOORS } from '../lint/prefab-boundaries.ts';
-import { loadLegacyGraph, checkLegacyRecords, compareLegacyRecords } from '../lint/prefab-edges.ts';
+import {
+  loadLegacyGraph,
+  constructionCounts,
+  checkLegacyRecords,
+  compareLegacyRecords,
+} from '../lint/prefab-constructors.ts';
 
 export const PREFAB_DEBT_FILE = 'dev/lint/prefab-debt.json';
 const empty = (): PrefabDebt => ({ colliders: {}, seats: {} });
@@ -14,8 +19,8 @@ const rules = { colliders: 'boogle/colliders-from-records', seats: 'boogle/seats
 
 export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] {
   const errors: string[] = [];
-  if (base.version === 3 && head.version !== 3)
-    errors.push('Cannot drop prefab debt schema version 3 or its construction-edge records.');
+  if (base.version === 4 && head.version !== 4)
+    errors.push('Cannot drop prefab debt schema version 4 or its construction-count records.');
   for (const kind of ['colliders', 'seats'] as const)
     for (const [file, entry] of Object.entries(head[kind])) {
       if (
@@ -61,7 +66,7 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
   const baseline = gitFile(PREFAB_DEBT_FILE);
   const oldLists = baseline === null ? empty() : (JSON.parse(baseline) as PrefabDebt);
   const base = empty();
-  const legacy = oldLists.version !== 3;
+  const legacy = oldLists.version !== 4;
   // Bootstrap only from shared history: main may have independently renamed old exports since this branch cut.
   // Once counted surfaces exist on main, compare those exact records instead of recomputing history.
   const sourceRef = legacy
@@ -89,9 +94,9 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
     base.legacy = oldLists.legacy;
   }
   const errors: string[] = [];
-  if (head.version !== 3 || !head.legacy)
+  if (head.version !== 4 || !head.legacy)
     errors.push(
-      'Prefab debt requires schema version 3 and its computed construction/importer set. Use src/prefab/instantiate.ts.',
+      'Prefab debt requires schema version 4 and its computed construction/importer set. Use src/prefab/instantiate.ts.',
     );
   // Bootstrap against real call sites in the local base, not this branch's additions. Once main has the list,
   // even an equal-size file substitution fails. No network and no WORLD_NS exemption.
@@ -126,8 +131,8 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
   if (head.legacy) {
     const graph = loadLegacyGraph(root, head);
     errors.push(...checkLegacyRecords(graph.constructors, head.legacy));
-    if (legacy) base.legacy = loadLegacyGraph(root, head, { ref: sourceRef }).constructors;
-  } else if (head.version === 3)
-    errors.push('Missing computed legacy construction set and importer edges; use src/prefab/instantiate.ts.');
+    if (legacy) base.legacy = constructionCounts(loadLegacyGraph(root, head, { ref: sourceRef }));
+  } else if (head.version === 4)
+    errors.push('Missing computed legacy construction set and importer counts; use src/prefab/instantiate.ts.');
   return [...errors, ...comparePrefabDebt(base, head)];
 }

@@ -11,7 +11,7 @@ export type PrefabDebt = {
   colliders: Record<string, PrefabBudget>;
   seats: Record<string, PrefabBudget>;
   doors?: Record<string, string[]>;
-  legacy?: Record<string, { kinds: string[]; importers: string[] }>;
+  legacy?: Record<string, number>;
 };
 export const CAPABILITIES = {
   colliders: [

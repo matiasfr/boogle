@@ -275,7 +275,7 @@ test('registry bootstraps only existing base calls, then rejects list growth and
     fs.writeFileSync(path.join(root, file), text);
   };
   const current = {
-    version: 3,
+    version: 4,
     legacy: {},
     colliders: { 'src/old.ts': { count: 1, exports: [], reason: '2026-11-13: Approved existing call.' } },
     seats: {},

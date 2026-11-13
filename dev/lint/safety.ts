@@ -13,8 +13,8 @@ import type { ImportBan, ImportOptions, Restriction, Rule } from './policy.ts';
 import { isCapability, createModuleResolver, moduleEdges, runtimeExports } from './prefab-boundaries.ts';
 import type { PrefabDebt, ModuleResolver } from './prefab-boundaries.ts';
 export type { PrefabBudget, PrefabDebt } from './prefab-boundaries.ts';
-import { acquiredConstruction, loadLegacyGraph, unanalysedProjectCode } from './prefab-edges.ts';
-import type { LegacyGraph } from './prefab-edges.ts';
+import { acquiredConstruction, loadLegacyGraph, unanalysedProjectCode } from './prefab-constructors.ts';
+import type { LegacyGraph } from './prefab-constructors.ts';
 const legacyGraphs = new WeakMap<PrefabDebt, LegacyGraph>();
 
 export type Diagnostic = { file: string; line: number; rule: string; message: string };
@@ -257,12 +257,17 @@ export function lintSafety(
           );
       for (const key of acquiredConstruction(graph, file, edge, resolve)) {
         const recorded = debt.legacy[key];
-        if (recorded?.importers.includes(file)) continue;
+        if (
+          recorded !== undefined &&
+          graph.constructors[key]!.importers.length + (graph.constructors[key]!.importers.includes(file) ? 0 : 1) <=
+            recorded
+        )
+          continue;
         for (const kind of graph.constructors[key]!.kinds)
           report(
             edge.node,
             `boogle/${kind}-from-records`,
-            `New legacy construction importer ${file} → ${key}; importer edges may only shrink. ${prefabDoor}`,
+            `New legacy construction importer ${file} → ${key}; importer counts may only shrink. ${prefabDoor}`,
           );
       }
     }
