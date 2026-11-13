@@ -143,6 +143,17 @@ for (const area of ['bell', 'west'] as const)
     owner.dispose();
     assert.equal(active.size, 0, 'all boxes and rim colliders leave with the owner');
     if (area === 'bell') {
+      assert.throws(() => draw.leg2Massing({ ...bellLevel, version: 99 }), /version/);
+      assert.throws(
+        () =>
+          draw.leg2Massing({
+            ...bellLevel,
+            placements: bellLevel.placements.map((p) =>
+              'labels' in p ? { ...p, labels: { label: 'missing.copy' } } : p,
+            ),
+          }),
+        /missing label text/,
+      );
       const nextOwner = createOwnedView();
       const pad = (massing.bellMassing!() as readonly Placement[]).find((p) => p.prefab === 'greybox.pad')!;
       const target = runtime.createPrefabBatch('greybox.box', 8, nextOwner);
