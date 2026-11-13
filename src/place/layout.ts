@@ -8,7 +8,7 @@ import { smoothstep } from '../math.ts';
 import { TURNOUT_CM } from '../sim/railway-lines.ts';
 import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/railway-line-layout.ts';
 import { LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
-import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
+import { SHORE_COAST, SHORE_LANDING, SHORE_WORKER } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
 import {
   ISLAND_HALTS,
@@ -541,6 +541,8 @@ export const YARD = HOME_B ? PROPS.yard : { x: -62, z: 20 }; // where the stone 
 export const SHELF: { x: number; z: number; yaw: number; y?: number } = HOME_B
   ? SHELF_B
   : { x: -91.6, z: 8.5, yaw: -Math.PI / 2 };
+/** Where Sleeves, the greeter, stands: beside the path from the shore; in `?home=b`, in front of the hall's north end. */
+export const GREETER = HOME_B ? PROPS.greeter : SHORE_WORKER;
 /** Spawn: at the village's edge, with the path, the shelf, the forge, the stub and the gorge ahead. */
 export const SPAWN = { x: -97, z: 14, yaw: -0.25 };
 export const LANDING = SHORE_COAST ? SHORE_LANDING : SPAWN;

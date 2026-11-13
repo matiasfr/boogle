@@ -138,7 +138,9 @@ export const HALL = (() => {
     d = 6,
     a = A0 - 1 - d / 2;
   const yaw = Math.atan2(AXIS.d.x, AXIS.d.z);
-  return { ...axisPoint(a, ISLAND_C), a, c: ISLAND_C, w, d, yaw, height: 4.6, endWall: 2.4, floor: 18.34 };
+  /** The goods door: a 1.5 m gap in the north end wall's back half, behind road 1's buffer, toward the forge. */
+  const goodsDoor = { a0: -8.9, a1: -7.4 };
+  return { ...axisPoint(a, ISLAND_C), a, c: ISLAND_C, w, d, yaw, height: 4.6, endWall: 2.4, floor: 18.34, goodsDoor };
 })();
 
 // ---------------------------------------------------------------- the engine spur, the table and the stalls
@@ -224,6 +226,22 @@ export function cartRoadAt(d: number, lines: { north: Sampled; east: Sampled }):
   if (d <= CART_FORGE) return sample(lines.east, CART_FORGE - d);
   return sample(lines.east, d - CART_FORGE);
 }
+/** The rules' cart distance `d` (m from the camp, on today's road, whose forge stop is `forge` m out) as a distance
+ * along layout B's road: scaled on the way in so the forge stop lands on `CART_FORGE`, metre for metre past it. Only
+ * until the flip gives the rules B's road. */
+export const cartRoadFrom = (d: number, forge: number) =>
+  d <= forge ? (d * CART_FORGE) / forge : CART_FORGE + (d - forge);
+/** The rail's height `d` metres along the cart's road, from each line's own height by its `s`; the leg runs evenly
+ * from line 1's height at its points to road 2's. */
+export function cartRoadY(d: number, y: { north: (s: number) => number; east: (s: number) => number }): number {
+  const legFrom = CAMP_S - LEG.from;
+  if (d <= legFrom) return y.north(CAMP_S - d);
+  if (d <= legFrom + LEG.len) {
+    const from = y.north(LEG.from);
+    return from + ((y.east(LEG.to) - from) * (d - legFrom)) / LEG.len;
+  }
+  return y.east(Math.abs(CART_FORGE - d));
+}
 /** Where the wagon's centre turns back on road 2's buffer stub: the shunter, leading, stops 0.3 m short of the buffer
  * and the wagon's rear is clear of the spur's points. */
 export const SHUNT_CUSP_S = 3;
@@ -247,11 +265,30 @@ export function shuntPath(wagonS: number): { pts: XZ[]; cusp: number } {
   return { pts, cusp };
 }
 
+// ---------------------------------------------------------------- the board crossing
+/** A board crossing over road 2, the short way from the island to the stall (design review of the Home flip, finding
+ * 2): `s` its middle by road 2's `s`, `len` along the road, from the island's edge (`c0`, across the axis) to past
+ * road 2's sleepers (`c1`). It lies on the buffer stub beside the foot of the head ramp: behind the tail of a train
+ * standing at line 2's stop (the steel car, s 5.55), short of the spur's points (s 5.5) and clear of the cart at its
+ * forge stop (s ±1.35). The island's far end, where home-station's review first put it, no longer has room: since
+ * v33 the engine's nose stands at s 24.45 to 24.95 and the leg's points are at s 26. From here the walk to the open
+ * stall passes west of the table and crosses no track a vehicle runs on (only the ruined 220° stall's dead road). Drawn only: boards on the ground, no collider. */
+export const CROSSING = {
+  road: 1 as const,
+  s: 2.8,
+  len: 1.6,
+  c0: ISLAND_C + ISLAND.width / 2,
+  c1: ROAD_GAP + 1.75,
+};
+
 // ---------------------------------------------------------------- what moves to make room
-/** Yard props drawn in B's places (Place-local): the forge rack on the apron, the pedestal on the forge side of road 1,
- * the crane and dock beside road 1, the stone yard off the table. Q1's frame flips to road 2's south side. */
+/** Yard props drawn in B's places (Place-local): the forge rack on the apron's road 2 side (a lane stays open along
+ * road 1's edge, from the hall's back bay to the head ramp), the pedestal on the forge side of road 1, the crane and
+ * dock beside road 1, the stone yard off the table, and the greeter in front of the hall's north end, beside the open
+ * bay and outside the shelf's reach. Q1's frame flips to road 2's south side. */
 export const PROPS = {
-  rack: { x: -84.9, z: 9.12 },
+  rack: { x: -84.53, z: 10.05 },
+  greeter: { x: -95.86, z: 9.65 },
   pedestal: { x: -78.0, z: -1.05 },
   crane: { x: -72.4, z: -3.1 },
   dock: { x: -76.15, z: -1.73 },
@@ -295,3 +332,16 @@ export const ISLAND_HALTS = [
   { s0: ISLAND_A.deck0, s1: ISLAND_A.deck1, lat: ISLAND_C },
   { s0: ISLAND_A.deck0 + ROAD2_S, s1: ISLAND_A.deck1 + ROAD2_S, lat: ISLAND_C - ROAD_GAP },
 ] as const;
+/** How near a request lever's knob its prompt is offered (m, flat). */
+export const LEVER_REACH = 1.8;
+/** The island's two request levers: each on its own edge under its own signal mast, `edge` in from the deck's side
+ * and `fromEnd` short of the deck's far end. They stand further apart than twice `LEVER_REACH`, so no spot on the
+ * island offers both (design review of the Home flip, call 13: a lever calls its own line's train). */
+export const ISLAND_LEVER = { edge: 0.3, fromEnd: 1.4 };
+/** Road `road`'s lever frame on the island, Place-local (halts-view.ts stands it there). */
+export function islandLever(road: 0 | 1): XZ {
+  const h = ISLAND_HALTS[road],
+    p = roadAt(road, h.s1 - ISLAND_LEVER.fromEnd),
+    lat = h.lat - Math.sign(h.lat) * (ISLAND.width / 2 - ISLAND_LEVER.edge);
+  return { x: p.x + Math.cos(rad(p.bearing)) * lat, z: p.z + Math.sin(rad(p.bearing)) * lat };
+}

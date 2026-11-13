@@ -39,6 +39,7 @@ import { forgePlan, openingBuildings } from '../../src/place/opening-plans.ts';
 import { frameBesideLine, stationColliders, stationStockCollider } from '../../src/place/spatial-station.ts';
 import type { Box } from '../../src/render/box-plan.ts';
 import { H } from '../../src/place/terrain.ts';
+import { ISLAND } from '../../src/place/home-station.ts';
 
 export type Deck = { id: string; owner: string; center: THREE.Vector3; axes: THREE.Vector3[]; half: number[] };
 
@@ -282,6 +283,12 @@ export function timberDecks(): Deck[] {
   // The up track's platforms too (src/entities/railway/up-platforms.ts), the Quarry's with no ramp off its far end.
   for (const { name, line: which, s0, s1, lat, ...rest } of [...HALTS, ...UP_HALTS]) {
     const endRamp = !('endRamp' in rest) || rest.endRamp;
+    // Layout B's two Village halts are one island (halts-view.ts): line 1's edge builds the one deck, 4.3 m wide,
+    // with a canopy for a roof, a head ramp and an end ramp; no shelter and no ramp off the back, which would cross
+    // a track.
+    const island = 'island' in rest && !!rest.island;
+    if (island && which === 1) continue;
+    const width = island ? ISLAND.width : 2.5;
     const line = LINKS[which]!.line;
     const low = Math.min(railY(line, s0), railY(line, s1)) + 0.72;
     const mid = (s0 + s1) / 2,
@@ -298,7 +305,7 @@ export function timberDecks(): Deck[] {
         c.x,
         Math.min(ground, low - 0.5),
         c.z,
-        2.5,
+        width,
         low - Math.min(ground, low - 0.5),
         half * 2,
         yaw,
@@ -311,12 +318,15 @@ export function timberDecks(): Deck[] {
       sn = Math.sin(yaw);
     const rx = c.x + -sign * 0.4 * cs + shelter * sn,
       rz = c.z - -sign * 0.4 * sn + shelter * cs;
-    decks.push(standing(`${name}/roof`, file, rx, low + 3.2, rz, 2.7, 0.3, 8.4, yaw));
+    if (island) decks.push(standing(`${name}/roof`, file, c.x, low + 4.6, c.z, width + 1.3, 0.3, half * 2 + 0.3, yaw));
+    else decks.push(standing(`${name}/roof`, file, rx, low + 3.2, rz, 2.7, 0.3, 8.4, yaw));
     const ramp = (id: string, from: { x: number; z: number }, to: { x: number; z: number }) =>
-      decks.push(between(`${name}/${id}`, file, from.x, from.z, to.x, to.z, H(from.x, from.z) + 0.05, low, 2.5, 0.4));
-    ramp('ramp-start', lateral(line, s0 - 6, lat), lateral(line, s0, lat));
-    if (endRamp) ramp('ramp-end', lateral(line, s1 + 6, lat), lateral(line, s1, lat));
-    ramp('ramp-back', lateral(line, mid, lat + sign * 7), lateral(line, mid, lat + sign * 1.25));
+      decks.push(between(`${name}/${id}`, file, from.x, from.z, to.x, to.z, H(from.x, from.z) + 0.05, low, width, 0.4));
+    const head = island ? ISLAND.headRamp : 6,
+      end = island ? ISLAND.endRamp : 6;
+    ramp('ramp-start', lateral(line, s0 - head, lat), lateral(line, s0, lat));
+    if (endRamp) ramp('ramp-end', lateral(line, s1 + end, lat), lateral(line, s1, lat));
+    if (!island) ramp('ramp-back', lateral(line, mid, lat + sign * 7), lateral(line, mid, lat + sign * 1.25));
   }
   // The forge, its scaffold and the opening's buildings (opening-plans.ts).
   for (const b of [...openingBuildings(), { id: 'forge', boxes: forgePlan().scaffold }])

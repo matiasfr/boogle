@@ -89,10 +89,28 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     const mid = at(a, c);
     add(box(mid.x, floor - 0.12, mid.z, w + 0.2, 0.24, d + 0.2, yaw), STONE, true);
     // The end walls stop at 2.4 m, with a stone coping; the roof stands on the posts, the corner ones included.
+    // The north wall (toward the forge) is in two lengths round the goods door, behind road 1's buffer.
+    const door = home.HALL.goodsDoor;
     for (const j of [-1, 1]) {
-      const wall = at(a, c + j * (w / 2 - 0.15));
-      add(box(wall.x, floor + endWall / 2, wall.z, 0.3, endWall, d - 0.4, yaw), BRICK, true);
-      add(box(wall.x, floor + endWall + 0.06, wall.z, 0.42, 0.12, d - 0.2, yaw), STONE);
+      const spans: [number, number][] =
+        j < 0
+          ? [
+              [a - d / 2, door.a0],
+              [door.a1, a + d / 2],
+            ]
+          : [[a - d / 2, a + d / 2]];
+      for (const [a0, a1] of spans) {
+        // A length that ends at a corner stops 0.2 m short of it (the wall) or 0.1 m (the coping), as the whole wall did.
+        const end = (v: number, inset: number) => (v === a - d / 2 ? v + inset : v === a + d / 2 ? v - inset : v);
+        const wall0 = end(a0, 0.2),
+          wall1 = end(a1, 0.2),
+          cope0 = end(a0, 0.1),
+          cope1 = end(a1, 0.1);
+        const wall = at((wall0 + wall1) / 2, c + j * (w / 2 - 0.15)),
+          cope = at((cope0 + cope1) / 2, c + j * (w / 2 - 0.15));
+        add(box(wall.x, floor + endWall / 2, wall.z, 0.3, endWall, wall1 - wall0, yaw), BRICK, true);
+        add(box(cope.x, floor + endWall + 0.06, cope.z, 0.42, 0.12, cope1 - cope0, yaw), STONE);
+      }
     }
     for (const i of [-1, 1])
       for (const x of [-(w / 2 - 0.15), -w / 4, 0, w / 4, w / 2 - 0.15]) {
