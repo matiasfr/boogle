@@ -22,7 +22,7 @@ export type NumberSpec = {
   owner: string;
   ruleOwner?: string;
   meaning?: string;
-} & ({ scope: 'lockstep'; sharedKey: TuneKey } | { scope: 'local' | 'owner'; sharedKey?: never });
+} & ({ scope: 'server'; sharedKey: TuneKey } | { scope: 'local' | 'owner'; sharedKey?: never });
 /** The glide numbers are read by the Owner glide step, not by a rule. */
 const GLIDE_OWNER = 'src/entities/railway/glide-step.ts';
 const supply = {
@@ -231,27 +231,26 @@ const supply = {
 export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;
 export const CATALOG: readonly NumberSpec[] = [
   ...TUNABLES.map((t) => {
-    const railway = Object.hasOwn(supply, t.key) ? supply[t.key as keyof typeof supply] : null;
+    const railway = supply[t.key];
     return {
-      id: railway?.id ?? `haul.${t.key}`,
+      id: railway.id,
       type: 'number' as const,
-      scope: 'lockstep' as const,
+      scope: 'server' as const,
       sharedKey: t.key,
       default: t.def,
       min: t.min,
       max: t.max,
       integer: true,
-      units: railway?.units ?? t.label,
-      at: railway ? railway.at : t.key === 'yield' ? 'next accepted take' : 'existing rule boundary',
-      owner: railway
-        ? 'owner' in railway
+      units: railway.units,
+      at: railway.at,
+      owner:
+        'owner' in railway
           ? railway.owner
           : railway.at === 'next accepted supply-maintenance pulse'
             ? 'src/sim/railway-supply.ts'
-            : 'src/sim/railway-line.ts'
-        : 'src/sim/tune.ts',
-      ...(railway ? { ruleOwner: 'src/world/railway-server.ts' } : {}),
-      meaning: railway?.meaning ?? t.label,
+            : 'src/sim/railway-line.ts',
+      ruleOwner: 'src/world/railway-server.ts',
+      meaning: railway.meaning,
     };
   }),
   EXPOSURE_SPEC,
@@ -268,5 +267,5 @@ export const CATALOG: readonly NumberSpec[] = [
 const byId = new Map(CATALOG.map((spec) => [spec.id, spec]));
 export const tunableSpec = (id: unknown) => (typeof id === 'string' ? byId.get(id) : undefined);
 export const sharedTunableSpec = (key: unknown) =>
-  CATALOG.find((spec) => spec.scope === 'lockstep' && spec.sharedKey === key);
+  CATALOG.find((spec) => spec.scope === 'server' && spec.sharedKey === key);
 export { validValue } from './spec.ts';

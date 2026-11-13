@@ -63,17 +63,8 @@ const web = await startWeb('ws-page.ts', root);
 const open = (name: string, pid = 'pl' + name.toLowerCase()): Promise<Page> =>
   web.open(name, `room=${room}&server=http://127.0.0.1:${port}&pid=${pid}`);
 const world = (p: Page) => ev(p.page, () => window.T.world());
-const hasName = async (p: Page, name: string): Promise<boolean> =>
-  (await world(p)).people.some((person: { name: string }) => person.name === name);
-// Recorded state hashes agree at every tick (after `from`) that all of `group` recorded; true if at least one is shared.
-async function hashesAgree(group: Page[], from = 0): Promise<boolean> {
-  const all = await Promise.all(group.map((p) => ev(p.page, () => window.T.hashes)));
-  const ticks = Object.keys(all[0])
-    .map(Number)
-    .filter((t) => t > from && all.every((h) => t in h));
-  return ticks.length > 0 && ticks.every((t) => all.every((h) => h[t] === all[0][t]));
-}
-const names = ['Before restart', 'After restart'];
+const clocksReady = async (group: Page[]) =>
+  (await Promise.all(group.map(world))).every((w) => w.status.ready && w.status.mode === 'client');
 
 let exitCode = 1;
 try {
@@ -144,19 +135,14 @@ try {
   const errs = (await Promise.all(all.map((p) => ev(p.page, () => window.T.errors)))).flat();
   check('from matches every sender', errs.length === 0, errs.join());
 
-  // 4. world: a rename reaches everyone through the server, and everyone hashes the same
-  await waitFor(async () => (await Promise.all(all.map(world))).every((w) => w.status.ready), 5000);
-  await ev(A.page, (name: string) => window.T.rename(name), names[0]);
-  const renameMs = await waitFor(
-    async () => (await Promise.all(all.map((p) => hasName(p, names[0]!)))).every(Boolean),
-    3000,
-  );
-  check('a rename reaches every page within 1 s', renameMs >= 0 && renameMs < 1000, renameMs + ' ms');
-  check('every page hashes the same at shared ticks', (await waitFor(() => hashesAgree(all), 4000)) >= 0);
+  // 4. Ordinary rooms retain the clock; shared state is exercised in railwayChecks below.
+  check('every page follows the server clock', (await waitFor(() => clocksReady(all), 5000)) >= 0);
+  const firstTick = (await world(A)).tick;
+  check('the server clock advances', (await waitFor(async () => (await world(A)).tick > firstTick, 2000)) >= 0);
 
-  // 5. a late joiner gets the name from a snapshot; past the cap a page is turned away
+  // 5. A late joiner receives the clock; past the cap a page is turned away.
   let D = await open('D');
-  check('late joiner D has the name', (await waitFor(() => hasName(D, names[0]!), 3000)) >= 0);
+  check('late joiner D follows the clock', (await waitFor(() => clocksReady([D]), 3000)) >= 0);
   const E = await open('E');
   const refusal = E.selfId as { error?: string; max?: number };
   check(
@@ -204,26 +190,25 @@ try {
     return true;
   }, 5000);
   check('pages reconnect within 5 s of a restart', backMs >= 0, backMs + ' ms');
-  check(
-    'the name survives the restart',
-    (await waitFor(async () => (await Promise.all(all.map((p) => hasName(p, names[0]!)))).every(Boolean), 3000)) >= 0,
-  );
+  check('all clocks reconnect after the restart', (await waitFor(() => clocksReady(all), 3000)) >= 0);
   await sleep(500);
   const after = (await world(B)).tick;
   check('the world went back at most 5 ticks', after >= before - 5, `before ${before}, after ${after}`);
-  await ev(B.page, (name: string) => window.T.rename(name), names[1]);
-  check(
-    'an edit after the restart reaches everyone',
-    (await waitFor(async () => (await Promise.all(all.map((p) => hasName(p, names[1]!)))).every(Boolean), 3000)) >= 0,
-  );
+  check('the restarted clock advances', (await waitFor(async () => (await world(B)).tick > after, 2000)) >= 0);
 
-  // 8. a crash (no final save): pages resync to the last periodic save and agree again
-  await sleep(400); // one periodic save holds the second name
+  // 8. A crash without final save reconnects to the periodic checkpoint clock.
+  await sleep(400);
+  const crashConns = await Promise.all(all.map((p) => ev(p.page, () => window.T.conn.length)));
   await svc.close({ save: false });
   svc = await serve();
-  await Promise.all(all.map((p) => ev(p.page, () => (window.T.hashes = {}))));
-  const syncMs = await waitFor(() => hashesAgree(all), 4000); // only hashes recorded after the crash
-  check('after a crash the pages resync and hash the same within 4 s', syncMs >= 0, syncMs + ' ms');
+  const syncMs = await waitFor(async () => {
+    for (const [k, p] of all.entries()) {
+      const conn = await ev(p.page, () => window.T.conn);
+      if (conn.length < crashConns[k] + 2 || !conn.at(-1).c) return false;
+    }
+    return clocksReady(all);
+  }, 5000);
+  check('after a crash every page reconnects to the clock within 5 s', syncMs >= 0, syncMs + ' ms');
 
   // 9. WS_LOAD=1: 8 pages at 20 Hz for 20 s
   if (process.env.WS_LOAD) {

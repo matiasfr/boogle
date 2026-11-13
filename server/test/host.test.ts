@@ -9,6 +9,7 @@ import { createService, loadConfig } from '../src/server.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { HALF } from '../../src/world/grid.ts';
+import type { RailwayWorldHost } from '../src/host/world-host.ts';
 
 type Msg = Record<string, any>;
 const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
@@ -58,10 +59,35 @@ const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-test('v38 clients receive a clean refusal after the v39 classic-state retirement', async () => {
+async function rename(client: ReturnType<typeof connect>, name: string) {
+  for (let k = 0; k < 100 && !client.msgs.some(isWorld('r:session')); k++) {
+    client.send({ t: 'm', d: { t: 'r:open' } });
+    await sleep(20);
+  }
+  const session = client.msgs.findLast(isWorld('r:session'))?.d;
+  assert.ok(session, 'the server session becomes ready');
+  client.send({
+    t: 'm',
+    d: {
+      t: 'r:edit',
+      e: {
+        op: 'who.set',
+        n: name,
+        c: 2,
+        epoch: session.epoch,
+        request: session.next,
+        at: [0, 0, 0],
+        ms: 0,
+      },
+    },
+  });
+  await client.next((m) => isWorld('s')(m) && m.d.ack?.[0] === session.epoch && m.d.ack?.[1] >= session.next);
+}
+
+test('v39 clients receive a clean refusal after the v40 classic-transport retirement', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
-    for (const room of ['v38-boogle', 'rail-v38-boogle']) {
+    for (const room of ['v39-boogle', 'rail-v39-boogle']) {
       const client = connect(base, room, 'oldtab');
       assert.deepEqual(await client.next(is('peer')), { t: 'peer' });
       assert.equal(await client.closed, 4000);
@@ -114,7 +140,7 @@ for (const disconnected of [false, true]) {
   }
 }
 
-test('classic rail-demo and production demo select distinct hosts and saves', async () => {
+test('ordinary rail-demo and production demo select distinct hosts and saves', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
     const productionRoom = railwayRoomId('demo');
@@ -125,10 +151,12 @@ test('classic rail-demo and production demo select distinct hosts and saves', as
     await Promise.all([production.next(is('welcome')), classic.next(is('welcome'))]);
     const productionHost = svc.roomHost()!.room(productionRoom)!.world;
     const classicHost = svc.roomHost()!.room(classicRoom)!.world;
+    assert.ok('whenReady' in productionHost && typeof productionHost.whenReady === 'function');
+    await productionHost.whenReady(); // Welcome precedes asynchronous railway checkpoint startup.
     assert.notEqual(productionHost, classicHost);
     assert.ok(((productionHost.sync.snapshot().data.railway as Msg).c as Msg).beam, 'the railway saves its world');
     assert.equal(classicHost.sync.snapshot().data.railway, undefined);
-    assert.ok(classicHost.sync.snapshot().data.roster);
+    assert.deepEqual(classicHost.sync.snapshot().data, {});
     assert.equal(svc.roomHost()!.rooms(), 2);
     production.ws.close();
     classic.ws.close();
@@ -257,12 +285,9 @@ test('relay: messages reach the others with from; oversize and host-only types d
     assert.ok(!b.msgs.some((m) => m.from === 'aaa' && m.d?.t === 'w:c'));
     assert.ok(!b.msgs.some((m) => m.d?.t === 'w:rejected'));
     a.send({ t: 'm', d: { t: 'w:edit', e: { op: 'tune.commit', i: 0, j: 0, requestId: 'refused' } } });
-    assert.deepEqual(await a.next(isWorld('w:rejected')), {
-      t: 'm',
-      from: 'server',
-      d: { t: 'w:rejected', to: 'aaa', op: 'tune.commit', requestId: 'refused' },
-    });
-    assert.ok(!b.msgs.some((m) => m.d?.t === 'w:rejected'), 'receipts are routed only to their requester');
+    a.send({ t: 'hb', at: 7 });
+    await a.next((m) => m.t === 'hb' && m.at === 7);
+    assert.ok(!a.msgs.some(isWorld('w:rejected')), 'retired classic commands emit no receipt');
     a.ws.close();
     b.ws.close();
   } finally {
@@ -426,34 +451,25 @@ test('voice signals go only to the tab they name, bounded, and never into the wo
   }
 });
 
-for (const room of [worldRoomId('resume'), 'ws-current-test', 'v01-configured']) {
-  test(`world: saved identity and tick survive cleanup-on restart: ${room}`, async () => {
+for (const room of [worldRoomId('resume'), 'ws-current-test', 'v01-configured', railwayRoomId('resume')]) {
+  test(`world: checkpoint and tick survive cleanup-on restart: ${room}`, async () => {
     const env = { SERVER_SAVE_MS: '300', SERVER_ROOMS: room === 'v01-configured' ? room : '*', REPORT_TOKEN: 't' };
     const { svc, base, dataDir } = await start(env);
     assert.equal(svc.config.saveCleanup, 'trash');
-    const rename = { op: 'who.set', i: 0, j: 0, n: 'Saved', c: 2 };
+    const railway = room.startsWith('rail-');
     let saved = 0;
     try {
       const a = connect(base, room, 'aaa');
-      await a.next(isWorld('w:snap'));
+      await a.next(is('welcome'));
       const b = connect(base, room, 'bbb');
-      const chunks: Msg[] = [];
-      const first = await b.next((m) => isWorld('w:snap')(m) && m.d.to === 'bbb');
-      for (let k = 0; k < first.d.n; k++)
-        chunks.push((await b.next((m) => isWorld('w:snap')(m) && m.d.to === 'bbb' && m.d.k === k)).d);
-      assert.ok('roster' in JSON.parse(chunks.map((c) => c.s).join('')).snap.data);
-      assert.equal(first.from, 'server');
-      assert.ok(!a.msgs.some((m) => m.d?.t === 'w:snap' && m.d.to === 'bbb'));
-
-      a.send({ t: 'm', d: { t: 'w:edit', e: rename } });
-      const stamped = (m: Msg) =>
-        isWorld('w:edits')(m) &&
-        m.d.list.some((x: Msg) => x.e.op === 'who.set' && x.e.p === 'aaa' && x.e.u === 'aaapid');
-      await Promise.all([a.next(stamped), b.next(stamped)]);
+      await b.next(is('welcome'));
+      if (railway) await rename(a, 'Saved');
+      await Promise.all([a.next(isWorld('w:c')), b.next(isWorld('w:c'))]);
       await sleep(700);
       const doc = JSON.parse(await fs.readFile(path.join(dataDir, `${room}.json`), 'utf8'));
       assert.equal(doc.writerId, 'server');
-      assert.ok('roster' in doc.data.data);
+      if (railway) assert.deepEqual(doc.data.checkpoint.data.roster, [['aaapid', 'Saved', 2]]);
+      else assert.deepEqual(doc.data.data, {});
 
       const closedA = a.closed;
       await svc.close({ save: true });
@@ -467,12 +483,14 @@ for (const room of [worldRoomId('resume'), 'ws-current-test', 'v01-configured'])
     const again = await start(env, dataDir);
     try {
       const back = connect(again.base, room, 'after');
-      await back.next(isWorld('w:snap'));
+      await back.next(isWorld('w:c'));
       const world = again.svc.roomHost()!.room(room)!.world;
       await sleep(20);
       assert.ok(world.sync.world.tick >= saved, `resumed at ${world.sync.world.tick}, saved ${saved}`);
-      assert.ok('roster' in world.rules, 'ordinary rooms retain the classic roster');
-      assert.equal(world.rules.roster.nameOf(world.rules.roster.indexOf('aaapid')), rename.n);
+      if (railway) {
+        const roster = (world as RailwayWorldHost).rules.roster;
+        assert.equal(roster.nameOf(roster.indexOf('aaapid')), 'Saved');
+      } else assert.deepEqual(world.sync.registry().states, []);
       const response = await fetch(`${again.base.replace('ws', 'http')}/admin/saves`, {
         headers: { authorization: 'Bearer t' },
       });
@@ -522,15 +540,16 @@ test('SERVER_ROOMS=*: a room loads on its first join, unloads with a save when i
 });
 
 test('admin: reset backs the save up and starts the room fresh; restore brings the backup back', async () => {
-  const room = worldRoomId('wipe');
+  const room = railwayRoomId('wipe');
   const { svc, base, dataDir } = await start({ SERVER_SAVE_MS: '100', SERVER_ROOMS: '*', REPORT_TOKEN: 't' });
   const http = base.replace('ws', 'http');
   const admin = (p: string, method = 'POST', token = 't') =>
     fetch(`${http}/admin/rooms${p}`, { method, headers: { authorization: `Bearer ${token}` } });
-  const rename = { op: 'who.set', i: 0, j: 0, n: 'Saved', c: 2 };
   const named = () => {
-    const roster = svc.roomHost()!.room(room)!.world.rules.roster;
-    return roster.nameOf(roster.indexOf('aaapid')) === rename.n;
+    const world = svc.roomHost()!.room(room)!.world;
+    assert.ok('rules' in world);
+    const rules = (world as RailwayWorldHost).rules;
+    return rules.roster.nameOf(rules.roster.indexOf('aaapid')) === 'Saved';
   };
   try {
     assert.equal((await admin(`/${room}/reset`, 'POST', 'wrong')).status, 401);
@@ -538,10 +557,7 @@ test('admin: reset backs the save up and starts the room fresh; restore brings t
     const a = connect(base, room, 'aaa');
     const born = (await a.next(is('welcome'))).born;
     assert.match(born, /^[a-z0-9]{1,16}$/);
-    await a.next(isWorld('w:snap'));
-    a.send({ t: 'm', d: { t: 'w:edit', e: rename } });
-    await a.next((m) => isWorld('w:edits')(m) && m.d.list.some((x: Msg) => x.e.op === 'who.set'));
-    // The edit applies on a later tick and the save follows it; under a loaded test run that takes a while.
+    await rename(a, 'Saved');
     const until = async (what: string, ok: () => unknown) => {
       for (let k = 0; k < 100 && !(await ok()); k++) await sleep(50);
       assert.ok(await ok(), what);
@@ -571,7 +587,7 @@ test('admin: reset backs the save up and starts the room fresh; restore brings t
     const b = connect(base, room, 'bbb');
     const reborn = (await b.next(is('welcome'))).born;
     assert.notEqual(reborn, born, 'a reset room is a new world to its players');
-    await b.next(isWorld('w:snap'));
+    await b.next(isWorld('w:c'));
     assert.ok(!named(), 'the reset room is a fresh world');
     b.ws.close();
     await b.closed;
@@ -581,7 +597,7 @@ test('admin: reset backs the save up and starts the room fresh; restore brings t
     assert.equal(restored.restored, reset.backup);
     const c = connect(base, room, 'ccc');
     assert.equal((await c.next(is('welcome'))).born, born, 'the restored world is the one that was backed up');
-    await c.next(isWorld('w:snap'));
+    await c.next(isWorld('w:c'));
     assert.ok(named(), 'the restored room has the saved name again');
     assert.equal((await (await admin('', 'GET')).json()).backups.length, 2);
     assert.equal((await admin(`/${room}/restore?backup=nope`)).status, 404);

@@ -1,4 +1,4 @@
-// Real accepted requests and maintenance stamps, with an injected host clock rather than a long wall wait.
+// Real accepted requests and server maintenance, with an injected host clock rather than a long wall wait.
 import assert from 'node:assert/strict';
 import { createStore } from '../../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../../src/host/world-host.ts';
@@ -19,7 +19,6 @@ export async function supplyFixture(
   let clock = 1793906400000;
   let position = { x: T1.x / 100, z: T1.z / 100, at: clock };
   let observers: (RailwayPosition | null)[] = [];
-  const published: Record<string, unknown>[] = [];
   const create = () => {
     const host = createRailwayWorldHost({
       roomId,
@@ -30,10 +29,6 @@ export async function supplyFixture(
       pidOf: (sid) => (sid === 'supplysession' ? 'supplier' : null),
       tuneController,
       positions: () => observers,
-    });
-    host.onSend((message) => {
-      if (message.t === 'w:edits' && Array.isArray(message.list))
-        for (const item of message.list as { e: Record<string, unknown> }[]) published.push(item.e);
     });
     host.replication.addClient('supplysession');
     return host;
@@ -99,7 +94,6 @@ export async function supplyFixture(
     advance,
     stage,
     toStage,
-    published,
     now: () => clock,
     observe(people: (RailwayPosition | null)[]) {
       observers = people;

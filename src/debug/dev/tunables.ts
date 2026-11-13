@@ -5,9 +5,9 @@ import { createTuneStartup } from '../../tunables/startup.ts';
 import { BUILD_ID } from '../../build-id.ts';
 import { WORLD_NS } from '../../world/namespace.ts';
 import { RAILWAY_PLAY_NS } from '../../world/railway-namespace.ts';
-import { rules, railTune } from '../../world/game-world.ts';
+import { railTune } from '../../world/game-world.ts';
 import { railwayCommands, onRailwayCommands } from '../../entities/railway/state.ts';
-import { world, worldStatus, submitEdit, onApplied, onSnapshot, onRejected } from '../../world/sync.ts';
+import { world, worldStatus, onSnapshot } from '../../world/sync.ts';
 import { getRoomId, onNetState } from '../../netplay/net.ts';
 import { me } from '../../player/state.ts';
 import { onEntered } from '../../entities/player/state.ts';
@@ -72,11 +72,9 @@ function read(id: string) {
   const spec = tunableSpec(id);
   if (!spec) return null;
   const feel = snapshotFeelSpring();
-  const shared = spec.scope === 'lockstep';
-  const rail = shared && spec.sharedKey.startsWith('rail');
-  const sharedTune = rail ? railTune : rules.tune;
+  const shared = spec.scope === 'server';
   const value = shared
-    ? (sharedTune?.tune.v[spec.sharedKey] ?? spec.default)
+    ? (railTune?.tune.v[spec.sharedKey] ?? spec.default)
     : spec.scope === 'owner'
       ? feel.value
       : ((localBinding(id)?.get() as number | undefined) ??
@@ -86,15 +84,11 @@ function read(id: string) {
     value,
     source: shared ? 'room' : spec.scope === 'owner' ? (feel.revision ? 'session' : 'default') : local.get(id)!.source,
     revision: shared
-      ? (sharedTune?.tune.revision ?? 0)
+      ? (railTune?.tune.revision ?? 0)
       : spec.scope === 'owner'
         ? feel.revision
         : local.get(id)!.revision,
-    available: shared
-      ? rail
-        ? !!railTune && !!railwayCommands()?.read.ready()
-        : worldStatus().ready
-      : spec.scope === 'owner' || !!localBinding(id),
+    available: shared ? !!railTune && !!railwayCommands()?.read.ready() : spec.scope === 'owner' || !!localBinding(id),
     ...(spec.scope === 'owner' ? { active: feel.active, chopLocked: feel.chopLocked } : {}),
   };
 }
@@ -103,7 +97,7 @@ export function tuneSnapshot() {
     schema: 1,
     build: BUILD_ID || 'dev',
     namespace: productionRailway ? RAILWAY_PLAY_NS : WORLD_NS,
-    revision: (productionRailway ? railTune : rules.tune)?.tune.revision ?? 0,
+    revision: railTune?.tune.revision ?? 0,
     tick: world.tick,
     setup: startingSetup ?? setup(),
     values: CATALOG.map((spec) => read(spec.id)!),
@@ -168,12 +162,7 @@ function validate(args: Args): Result {
     (!Number.isSafeInteger(args.expectedRevision) || args.expectedRevision !== read(spec.id)!.revision)
   )
     return rejected('stale-revision');
-  if (
-    spec.scope === 'lockstep' &&
-    spec.sharedKey !== 'yield' &&
-    spec.sharedKey !== 'railRegrowMinutes' &&
-    spec.sharedKey !== 'railRecoveryMinutes'
-  )
+  if (spec.scope === 'server' && spec.sharedKey !== 'railRegrowMinutes' && spec.sharedKey !== 'railRecoveryMinutes')
     return rejected('read-only-in-first-proof');
   if (spec.id.startsWith('railway.') && !productionRailway) return rejected('unsupported-route');
   if (!read(spec.id)!.available) return rejected(spec.scope === 'local' ? 'reload-required' : 'not-ready');
@@ -207,9 +196,7 @@ function set(args: Args, source = 'session'): Result {
     requestId,
   };
   const session = railwayCommands();
-  const queued = spec.sharedKey?.startsWith('rail')
-    ? !!session && session.act('tune.commit', fields) !== false
-    : submitEdit({ op: 'tune.commit', i: 0, j: 0, ...fields });
+  const queued = !!session && session.act('tune.commit', fields) !== false;
   if (!queued) requests.set(requestId, { status: 'rejected', at: performance.now() });
   return {
     ok: queued,
@@ -240,43 +227,9 @@ onFeelSpringChange((event, state) => {
     action: state.active.action,
   });
 });
-onApplied(
-  (
-    e: { op: string; requestId?: string; key?: string; v?: number },
-    tick,
-    result: { status?: string; revision?: number } | null,
-  ) => {
-    if (e.op !== 'tune.commit' && e.op !== 'tune.set') return;
-    if (e.requestId && requests.has(e.requestId))
-      requests.set(e.requestId, {
-        status: result?.status ?? 'rejected',
-        at: performance.now(),
-        revision: result?.revision,
-        appliedTick: tick,
-      });
-    if (result && result.status !== 'rejected') {
-      const spec = sharedTunableSpec(e.key);
-      if (!spec) return;
-      emitTuneRecord('tune.change', {
-        id: spec.id,
-        value: e.v ?? null,
-        revision: rules.tune.tune.revision,
-        tick,
-        source: 'room',
-      });
-      recordTuneSnapshot();
-    }
-  },
-);
 onSnapshot(() => {
   queryStartup.snapshot();
   recordTuneSnapshot();
-});
-onRejected((event) => {
-  if (event.op !== 'tune.commit') return;
-  const request = requests.get(event.requestId);
-  if (request?.status === 'pending')
-    requests.set(event.requestId, { ...request, status: 'rejected', ...(event.reason ? { code: event.reason } : {}) });
 });
 onEntered(() => recordTuneSnapshot());
 onNetState((state) => {
@@ -341,7 +294,7 @@ onRailwayCommands((session) => {
 /** Appearance and initial authoritative room state may arrive in either order. */
 export function applyTuneQuery() {
   const shared = [...pageQuery()].some(
-    ([key]) => key.startsWith('t.') && tunableSpec(key.slice(2))?.scope === 'lockstep',
+    ([key]) => key.startsWith('t.') && tunableSpec(key.slice(2))?.scope === 'server',
   );
   queryStartup.start(shared);
 }
@@ -379,7 +332,7 @@ function submitTuneQuery() {
 export const tool: Tool = {
   id: 'tunables',
   label: 'Tunables',
-  scope: 'Local, Owner and host-accepted Lockstep settings',
+  scope: 'Local, Owner and Server settings',
   commands: [...TUNE_COMMANDS],
   available: () => (tuningVisit ? null : 'Tuning is disabled.'),
   async run(command, args) {
@@ -411,7 +364,7 @@ export const tool: Tool = {
     }
     if (command === 'reset-local') {
       const spec = tunableSpec(args.id);
-      return spec && spec.scope !== 'lockstep' ? set({ ...args, value: spec.default }) : rejected('local-id-required');
+      return spec && spec.scope !== 'server' ? set({ ...args, value: spec.default }) : rejected('local-id-required');
     }
     return no('Unknown command.');
   },

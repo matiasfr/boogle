@@ -33,31 +33,39 @@ function sources(root: string): Source[] {
   return out;
 }
 
-// Installs current rules on a recording stand-in for sync: module order, ops, and state owners.
-type RulesModule = { name: string; install: (sync: unknown, land: unknown, installed: unknown) => unknown };
-
+// Execute server registrations on recording stand-ins, so the registry follows the owners' actual definitions.
 async function rulesOf(root: string) {
   const url = (p: string) => pathToFileURL(path.join(root, p)).href;
-  const { RULES } = (await import(url('src/world/rules/index.ts'))) as { RULES: RulesModule[] };
-  const { homeLand } = await import(url('test/helpers/land.ts'));
+  const { installServer } = (await import(
+    url('src/world/rules/roster.ts')
+  )) as typeof import('../../src/world/rules/roster.ts');
+  const { installRailTune } = (await import(
+    url('src/world/rules/tune.ts')
+  )) as typeof import('../../src/world/rules/tune.ts');
   const ops: Record<string, string> = {};
   const states: Record<string, StateInfo> = {};
-  let current = '?';
+  let current = 'roster';
   const sync = {
-    world: { tick: 0, seed: 1 },
-    registerOp: (op: string) => (ops[op] = current),
-    registerState: (key: string) => (states[key] = { module: current }),
+    world: { tick: 0, seed: 1, epochMs: 0 },
+    registerState(key: string, _handlers: unknown, options: { server: true }) {
+      if (options?.server !== true) throw new Error(`registry: ${key} must be Server kind`);
+      if (Object.hasOwn(states, key)) throw new Error(`registry: duplicate state ${key}`);
+      states[key] = { module: current };
+    },
     onTick() {},
-    onApplied() {},
     onSnapshot() {},
   };
-  // installRules' own loop, recording which module registers what.
-  const installed: Record<string, unknown> = {};
-  for (const m of RULES) {
-    current = m.name;
-    installed[m.name] = m.install(sync, homeLand(), installed);
-  }
-  return { rules: RULES.map((m) => m.name), ops, states };
+  const commands = {
+    define(op: string) {
+      if (Object.hasOwn(ops, op)) throw new Error(`registry: duplicate op ${op}`);
+      ops[op] = current;
+    },
+  } as unknown as Parameters<typeof installServer>[1];
+  const replication = { touchAll() {} } as unknown as Parameters<typeof installServer>[2];
+  installServer(sync, commands, replication, () => 0);
+  current = 'railTune';
+  installRailTune(sync, commands, replication);
+  return { rules: ['roster', 'railTune'], ops, states };
 }
 
 async function registryOf(root: string): Promise<Registry> {

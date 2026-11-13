@@ -64,7 +64,7 @@ test('a live railway apply failure preserves the checkpoint through periodic sav
   assert.deepEqual(await f.store.read(roomId), before);
 });
 
-test('a queued classic stamp cannot checkpoint a later failed live railway action', async (t) => {
+test('a queued server command cannot checkpoint a later failed live railway action', async (t) => {
   const roomId = railwayRoomId('fatal-tail');
   const f = await fixture(roomId);
   t.after(async () => {
@@ -80,13 +80,11 @@ test('a queued classic stamp cannot checkpoint a later failed live railway actio
     act(...args);
     throw new Error('railway failure after mutation');
   });
-  // Exercise sync's retained tail boundary directly: no client classic edit is admitted after step 4.
-  f.host.sync.registerOp('test.tail', { apply: () => null });
-  assert.equal(f.host.sync.receiveEdit({ op: 'test.tail', i: 0, j: 0 }, 'a'), true);
+  f.send('a', { op: 'who.set', n: 'Pending', c: 1 });
   f.pose('a', T1.wake.x, T1.wake.z);
   f.send('a', { op: 'rail.wake' });
   await f.host.sync.whenDurable().catch((error: Error) => assert.match(error.message, /storage/));
-  assert.deepEqual(await f.store.read(roomId), before, 'a queued stamp must not persist the failed railway mutation');
+  assert.deepEqual(await f.store.read(roomId), before, 'a queued command must not persist the failed railway mutation');
   await assert.rejects(f.host.close(), /storage/);
 });
 
@@ -226,19 +224,16 @@ async function fixture(roomId = railwayRoomId('host'), saveMs = 2000) {
   };
 }
 
-test('ordinary rooms keep the classic registry; a railway room holds railway as a server state', async () => {
+test('ordinary rooms keep only the clock; a railway room holds only server states', async () => {
   const f = await fixture();
   try {
     const ordinary = createWorldHost({ roomId: worldRoomId('boogle'), store: f.store, tick: false });
-    assert.equal(ordinary.sync.registry().states.includes('railway'), false);
+    assert.deepEqual(ordinary.sync.registry().states, []);
     assert.throws(() => createRailwayWorldHost({ roomId: worldRoomId('boogle'), store: f.store, tick: false }));
     await ordinary.close({ save: false });
     assert.ok(f.host.sync.registry().states.includes('railway'));
-    assert.ok(!('railway' in f.host.sync.stateHashes()), 'never hashed: clients mirror it');
-    assert.ok(
-      f.host.sync.registry().ops.every((op) => !op.startsWith('rail.')),
-      'no railway op is lockstep',
-    );
+    assert.ok('railway' in f.host.sync.snapshot().data, 'server state is checkpointed');
+    assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway']);
     await f.open('a');
     // Missing reach (no position) is a recorded rejection, refused to the actor, and survives a restart.
     const rejected = await f.edit('a', { op: 'rail.wake' });

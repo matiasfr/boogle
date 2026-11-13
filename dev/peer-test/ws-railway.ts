@@ -166,8 +166,8 @@ export async function railwayChecks(c: Ctx) {
   railCheck('a restart issues a new epoch', epochRestored === epochA2 + 1);
   const initial = await rail(RA2);
   railCheck(
-    'the room registers only retained haul tuning; railway and roster are mirrored',
-    JSON.stringify(initial.registry.states) === JSON.stringify(['tune']),
+    'the client registers no shared state; railway, tuning and roster are mirrored',
+    initial.registry.states.length === 0,
   );
   // Re-sent until it shows, as src/features/identity.ts does every 3 s: just after the restart the host can drop an
   // edit that arrives before its world runs again (CI run 42723426132), and the host refuses one that changes nothing.

@@ -1,6 +1,6 @@
 # Plan: every shared outcome decided on the server
 
-> **Status:** steps 1–5 built, 13 November 2026; rail tuning and the live roster are Server kind; the seven inactive classic gameplay states are retired at v39. Checkpoint A still has browser-harness limitations below. Original inventory read at `de19c85a3`. Owner calls behind it: [Engine foundations first](../agents/owner-calls.md) and [Save resets never block development or architecture](../agents/owner-calls.md#save-resets-never-block-development-or-architecture) (both 13 November). This is "option 1" (the server as the simulation, the client a thin view). Option 2 (prefab and content data) is another plan and is not covered. No ECS library is chosen; Becsy is a lean, not a decision.
+> **Status:** steps 1–5 and 9 built, 13 November 2026; steps 6–8 skipped by the owner's Retire choice. The classic transport and its final registrations are retired at v40; rail tuning and the live roster are Server kind. Checkpoints A and B remain incomplete, with browser-harness/device limitations below and in the [step 9 report](server-owned-state-step9-report.md). Original inventory read at `de19c85a3`. Owner calls behind it: [Engine foundations first](../agents/owner-calls.md) and [Save resets never block development or architecture](../agents/owner-calls.md#save-resets-never-block-development-or-architecture) (both 13 November). This is "option 1" (the server as the simulation, the client a thin view). Option 2 (prefab and content data) is another plan and is not covered. No ECS library is chosen; Becsy is a lean, not a decision.
 
 ## Goal
 
@@ -80,7 +80,7 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. "High-risk" means
 - [ ] **6. (Port) The haul cluster: stacks, piles, sites, sources and the 8 haul keys, in shadow** (high-risk; no bump). Server only: define the cluster's 9 ops (`src.take`, `pile.take`, `pile.drop`, `site.stock`, `site.run`, `tune.set`, `tune.commit`, `tune.fill`, `tune.reset` for haul keys) as server ops that call the same sim functions, and project `carried`, `pile`, `site`, `source`; lockstep stays authoritative and clients ignore the projections. Proof: for the step 1 trace, the projection after each command equals the lockstep state field for field, including `invariants` (conservation, unique pile ids).
 - [ ] **7. (Port) Flip the haul cluster** (high-risk; bump). Register the four states `{ server: true }`, clients read the mirror, predict take, drop and stock per D1 with a predictor like `railway-predict.ts` (`src/world/haul-predict.ts`), temporary pile ids remapped by `ids`. Proof: 2 to 6 simulated clients on a random stream, each predicted state equal to the server's after the last ack; two peers take the last log (one is corrected); late join; duplicate delivery. Deletes four lockstep registrations and their hashes; roster's ordinal is now only a server detail.
 - [ ] **8. (Port) Gifts, then bank and opening** (high-risk; bump). Same shadow-then-flip in one sitting each if needed: `gift.take` predicted, `gift.toss` lands on confirmation; `bank.wake` becomes a server call in `createWorldHost`, not an op; `open.*` wait. Proof: trace equality, gift ids and sweep order unchanged, late join mid-opening draws from the start tick.
-- [ ] **9. Delete the classic transport** (high-risk; bump). When no lockstep state is registered: remove from `src/world/sync.ts` `w:edit`, `w:edits`, `w:hash`, `w:need`, `w:snap`, `w:rejected`, `DELAY`, `LAG`, `LEAD`, `HOST_TYPES`, the held-edit queue, `onDesync`, `onSnapFail`, `stateHashes`, the recovery tail; keep the room clock, `registerState` for server states, the checkpoint and its verified-save guards. Remove `submitEdit`, `registerOp` and the lockstep recipe from `src/world/README.md`, `src/world/rules/README.md`, docs/agents/sync.md, lockstep.md and DESIGN.md's sync table (owner commits the DESIGN text drafted in replication, section 3). Rewrite `test/world-replay.test.ts` and `test/world-sync.test.ts` to state equality on server replay; delete `test/sync-recovery.test.ts` with the tail. Lint: the cross-browser trig ban shrinks to "no `Math.random` or `Date` in rules".
+- [x] **9. Delete the classic transport** (high-risk; bump). When no lockstep state is registered: remove from `src/world/sync.ts` `w:edit`, `w:edits`, `w:hash`, `w:need`, `w:snap`, `w:rejected`, `DELAY`, `LAG`, `LEAD`, `HOST_TYPES`, the held-edit queue, `onDesync`, `onSnapFail`, `stateHashes`, the recovery tail; keep the room clock, `registerState` for server states, the checkpoint and its verified-save guards. Remove `submitEdit`, `registerOp` and the lockstep recipe from `src/world/README.md`, `src/world/rules/README.md`, docs/agents/sync.md, lockstep.md and DESIGN.md's sync table (owner commits the DESIGN text drafted in replication, section 3). Rewrite `test/world-replay.test.ts` and `test/world-sync.test.ts` to state equality on server replay; delete `test/sync-recovery.test.ts` with the tail. Original lint proposal: shrink the cross-browser trig ban to "no `Math.random` or `Date` in rules"; the implementation brief makes this conditional on prediction dependencies, so the existing ban remains (see step 9 as built).
 - [ ] **Checkpoint B** (after 9): `npm run check:full`, `npm run test:net`, a two-device play of join, reconnect and a server restart.
 
 **Later, not in this plan's steps (player side).** (i) **Server-owned seats:** a transient Server component `seat { occupant }` with `seat.sit` and `seat.stand` ops replaces `placeSeatGrants`, `placeSeatRequest` and the lead's `assignSeats`; pose stays Owner. The 10 November answer placed this "with the passenger and train work"; it needs a new owner word to move earlier. (ii) **The Boogler** off the lead tab to a Server entity (net-roadmap phase 3), which removes `addHostField` and the lead. (iii) **Shared physical props:** the ball and the great beam on server Rapier per the 6 November physics call and [shared-physics](../research/shared-physics.md); a solo-held object stays Owner. (iv) **Movement validation** as in section 2. (v) **Per-account progress** (finds, wardrobe ownership, station claims) to server profile records keyed by pid.
@@ -166,6 +166,26 @@ The [retirement report](server-owned-state-step5-report.md) lists every state, r
 counts, preserved copy locations, trace projection proof, checks and browser limits. Full check, server tests,
 ship-check, registry and level checks pass; two peers complete T2. Net and world-inputs are unverified on the
 updated harness because the trusted broker still runs pre-retirement code. Checkpoint A remains incomplete.
+
+### Step 9 as built, 13 November
+
+The eight haul keys and final classic roster/tune registrations are removed first;
+the classic transport, recovery tail and trace oracle are then retired at v40. No
+lockstep state remains. The room clock, server registration/checkpoint and verified
+save/fatal-command guards remain. Seats and The Boogler still use the lead tab.
+The [step 9 report](server-owned-state-step9-report.md) records deleted files/lines,
+fixture changes, server replay/convergence proofs and proposed owner-only DESIGN
+text. DESIGN.md and prefab lint files are unchanged. The existing math ban stays:
+shared railway prediction and repeatable server replay still need consistent rules.
+
+Full check (1,716 pass, one existing TODO), server tests (224), ship-check (888),
+registry, level-check and loop pass; review stamp `5defc05d9ebc`, independent review
+without concrete findings. Two-player T2 bot and look pass; both pairs of stills were
+opened, showing completed rails/overlays and both peers. The old broker net harness
+imports a deleted module, and its world-inputs scenario fails initial gifts-layout
+readiness; updated harness execution remains unverified. No bot beat failure,
+real-time smoothness claim, push or ship. Not tested on a device. Checkpoints A/B
+remain open; this implementation does not claim their completion.
 
 ## Original questions (owner answers recorded above)
 

@@ -30,14 +30,12 @@ export function createHost(pids: readonly string[], from?: { snapshot: unknown; 
   const world = { tick: from?.tick ?? 0, seed: 1, epochMs: 0 };
   const sync = {
     world,
-    registerOp() {},
     registerState(_key: string, handlers: StateHandlers) {
       state = handlers;
     },
     onTick(fn: (tick: number) => void) {
       onTick = fn;
     },
-    onApplied() {},
     onSnapshot() {},
     roomStep: () => world.tick,
   };

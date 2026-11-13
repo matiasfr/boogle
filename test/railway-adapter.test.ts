@@ -79,7 +79,6 @@ function world({
   movement = () => MOVEMENT,
 }: { reach?: (pid: string) => boolean; movement?: () => typeof MOVEMENT } = {}) {
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const base = installRailRules(sync, homeLand(), replication);
   const api = installRailway(sync, base, replication);

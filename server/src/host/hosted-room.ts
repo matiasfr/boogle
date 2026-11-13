@@ -21,7 +21,6 @@ import { createStepMeter } from './step-meter.ts';
 import { createWorldHost, createRailwayWorldHost, type RailwayWorldHost } from './world-host.ts';
 import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
-import { HOST_TYPES } from '../../../src/world/sync.ts';
 import { validatePing, honkShape } from '../../../src/sim/social.ts';
 import { HALF } from '../../../src/world/grid.ts';
 import { RTC_TYPE, validateRtc } from '../../../src/net/rtc-wire.ts';
@@ -47,7 +46,6 @@ const MIN_GAP_MS = 20; // per-source spacing of presence packets to one client
 const MSG_RATE = 50; // messages/s per client (burst MSG_BURST)
 const MSG_BURST = 100;
 const PRESENCE_RATE = 40; // presence packets/s per client
-const CLIENT_ONLY = new Set(['w:edit', 'w:need']); // for the server's sync alone
 // Voice signals (src/net/rtc-wire.ts): their own bucket, so a burst of ICE candidates never eats game messages.
 const RTC_RATE = 20;
 const RTC_BURST = 60;
@@ -289,7 +287,8 @@ export function createHostedRoom({
     }
     if (!take(c.msgs, MSG_RATE, MSG_BURST, now)) return void c.dropped++;
     const t = (m.d as WireMsg | null)?.t;
-    if (HOST_TYPES.has(t as string)) return void c.dropped++;
+    // The world channel is server-clock only. Never relay any client w:* payload.
+    if (typeof t === 'string' && t.startsWith('w:')) return void c.dropped++;
     if (railway) {
       // Existing cosmetic one-offs remain peer messages. Strip unrelated fields; none enters the material host.
       if (t === 'ping' || t === 'honk' || t === 'mush') {
@@ -299,12 +298,11 @@ export function createHostedRoom({
         return;
       }
       // Railway actions and world requests go only to the host. Never relay a forged packet or old edit protocol.
-      if (typeof t !== 'string' || (t !== 'w:need' && t !== 'w:edit' && !RAILWAY_CLIENT_MESSAGES.has(t)))
-        return void c.dropped++;
+      if (typeof t !== 'string' || !RAILWAY_CLIENT_MESSAGES.has(t)) return void c.dropped++;
       world.deliver(m.d, c.id);
       return;
     }
-    if (!CLIENT_ONLY.has(t as string)) toAll(encode({ t: 'm', from: c.id, d: m.d }), c.id);
+    toAll(encode({ t: 'm', from: c.id, d: m.d }), c.id);
     world.deliver(m.d, c.id);
   }
 
@@ -437,7 +435,6 @@ export function createHostedRoom({
     sendList(true);
     if (lead !== id) checkLead();
     if (railway) (world as RailwayWorldHost).wake(); // a paused room applies its away credit before anyone sees it
-    world.deliver({ t: 'w:need' }, id); // a tab back after a server restart gets the world at once
   }
 
   const housekeep = setInterval(() => {

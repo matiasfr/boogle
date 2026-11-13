@@ -5,13 +5,11 @@ import type { Game } from '../../look/lib.ts';
 // ---- Window handles only (window.boogle, window.boogle.sync): safe for scenarios that also run on a built site
 // (`--url`: smoke, reconnect-edit). Never add a /src/ import to this section.
 
-// How long to wait for a tab to apply an edit, a toss or a pick-up. At about a frame a second (a CI runner's software
-// WebGPU) a tab's world clock gains 2.5 ticks a frame (src/world/sync.ts, MAX_STEPS on a 50 ms dt), so it applies one it
-// has already received 80 s or more late. On a real GPU it lands at once and the wait returns.
+// Receipt/view waits allow slow software-rendered test pages without changing simulation authority.
 const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 export const EDIT_WAIT_MS = 180000;
 export const MET = `window.boogle.net.room && window.boogle.remotes.size >= 1`;
-const ROLE = `(() => { const w = window.boogle.sync.worldStatus(); return w.ready && w.mode + (w.hostId === 'server' ? '@server' : ''); })()`;
+const ROLE = `(() => { const w = window.boogle.sync.worldStatus(); return w.ready && w.mode; })()`;
 const LEAD = `window.boogle.net.room.isLead()`;
 
 // Waits until both tabs hold the world; `ok` when both follow the server's world (src/net/ws-room.ts: the server hosts
@@ -20,28 +18,37 @@ const LEAD = `window.boogle.net.room.isLead()`;
 export async function roles(A: Game, B: Game) {
   for (const g of [A, B]) await g.waitFor(ROLE, { timeout: 60000 });
   const modes = [await A.eval(`return ${ROLE};`), await B.eval(`return ${ROLE};`)];
-  const ok = modes.every((m) => m === 'client@server');
+  const ok = modes.every((m) => m === 'client');
   const [host, client] = (await A.eval(`return ${LEAD};`)) ? [A, B] : [B, A];
   return { modes, ok, host, client };
 }
 
-// Record ticks while this check is active, then wait for an actual overlap. Installing a fixed future range after
-// separate tick reads races slow evaluations, and snapshots can skip it. A rolling history keeps recording across
-// those jumps and retains the faster tab's samples until the slower tab arrives. No extra hashing in normal play.
-export async function hashesAtOneTick(host: Game, client: Game) {
+// Compare published server replicas at a shared server step. Sampling exists only during this check,
+// with a bounded history and cleanup; it never hashes or simulates classic state.
+export async function replicasAtOneStep(host: Game, client: Game) {
   const deadline = Date.now() + EDIT_WAIT_MS;
   const supported = await Promise.all(
-    [host, client].map((g) => g.eval<boolean>(`return typeof window.boogle.sync.captureHashes === 'function';`)),
+    [host, client].map((g) => g.eval<boolean>(`return typeof window.boogle.sync.replica === 'function';`)),
   );
   if (!supported.every(Boolean))
-    return { same: false, status: 'unavailable', detail: 'build lacks bounded hash capture' };
+    return { same: false, status: 'unavailable', detail: 'build lacks replica observation' };
   let detail = 'no samples';
   try {
-    await Promise.all([host, client].map((g) => g.eval(`window.boogle.sync.captureHashes(true);`)));
-    // Each tab records its hashes on a shared tick grid (src/features/debug-handle.ts) and keeps a long history, so the
-    // faster tab's samples are still there when the slower one arrives at a tick. Compare the latest tick both hold; a
-    // slow client never has to land inside a short sliding window.
-    const ticks = (g: Game) => g.eval<number[]>(`return window.boogle.sync.hashTicks();`);
+    await Promise.all(
+      [host, client].map((g) =>
+        g.eval(`
+      const samples = new Map();
+      const timer = setInterval(() => {
+        const r = window.boogle.sync.replica();
+        if (!r?.ready) return;
+        samples.set(r.step, JSON.stringify({ hash: r.hash, roster: r.roster, tune: r.tune }));
+        if (samples.size > 4096) samples.delete(samples.keys().next().value);
+      }, 50);
+      window.__replicaCheck = { samples, timer };
+    `),
+      ),
+    );
+    const ticks = (g: Game) => g.eval<number[]>(`return [...window.__replicaCheck.samples.keys()];`);
     while (Date.now() < deadline) {
       const [h, c] = await Promise.all([ticks(host), ticks(client)]);
       const have = new Set(h);
@@ -49,14 +56,14 @@ export async function hashesAtOneTick(host: Game, client: Game) {
       detail = `host recorded ${h.length} ticks (${h[0]}..${h.at(-1)}), client ${c.length} (${c[0]}..${c.at(-1)}), none in common yet`;
       if (common.length) {
         const tick = Math.max(...common);
-        const at = (g: Game) => g.eval<Record<string, number> | null>(`return window.boogle.sync.hashesAt(${tick});`);
+        const at = (g: Game) => g.eval<string | null>(`return window.__replicaCheck.samples.get(${tick}) ?? null;`);
         const [a, b] = await Promise.all([at(host), at(client)]);
         if (a && b) {
-          const same = JSON.stringify(a) === JSON.stringify(b);
+          const same = a === b;
           return {
             same,
             status: same ? 'matched' : 'mismatch',
-            detail: `tick ${tick} host ${JSON.stringify(a)} client ${JSON.stringify(b)}`,
+            detail: `server step ${tick} host ${a} client ${b}`,
           };
         }
       }
@@ -64,7 +71,13 @@ export async function hashesAtOneTick(host: Game, client: Game) {
     }
     return { same: false, status: 'unavailable', detail: `no shared tick before deadline; ${detail}` };
   } finally {
-    await Promise.all([host, client].map((g) => g.eval(`window.boogle.sync.captureHashes(false);`)));
+    await Promise.all(
+      [host, client].map((g) =>
+        g.eval(`
+      clearInterval(window.__replicaCheck?.timer); delete window.__replicaCheck;
+    `),
+      ),
+    );
   }
 }
 

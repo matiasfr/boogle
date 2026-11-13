@@ -17,12 +17,9 @@ export async function roomSummary() {
     build: BUILD,
     remoteBuilds: [...remotes].map(([peer, p]) => ({ peer, build: p.build ?? 'unavailable' })),
     peers: net.room?.peers().map((p) => p.peer) ?? [],
-    queued: status.queued,
-    heldDropped: status.heldDropped,
-    rejected: 'unavailable: no per-command rejection stream exposed by the current room adapter',
-    hash: { ok: status.hashOk, bad: status.hashBad, lastBad: status.lastBad, subsystems: status.subsystems },
+    clockReady: status.ready,
     placeAuthority: productionRailway ? railwayDump() : 'not a place route',
-    note: productionRailway ? 'T1 material and completion use server Lockstep authority.' : 'Server Lockstep hashes.',
+    note: productionRailway ? 'Shared state is replicated from the server.' : 'Server room clock; local preview.',
   };
 }
 export const tool: Tool = {

@@ -235,7 +235,6 @@ type Page = {
 function room(stage: 'leaf-raised' | 'ring-joined' = 'leaf-raised') {
   const seed = railwayAtRing(stage);
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   while (sync.world.tick <= seed.t) sync.stepWorld(100);

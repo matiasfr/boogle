@@ -4,7 +4,6 @@
 // that much round trip to the railway's messages (half each way), &adapter=1 drives the real browser adapter.
 import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
-import { installRules } from '../../src/world/rules/index.ts';
 import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
@@ -29,7 +28,6 @@ import { trainAlong } from '../../src/sim/railway-train.ts';
 import { RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { cartAlong } from '../../src/sim/railway-cart.ts';
 import { railwaySession, type RailwaySession } from '../../src/entities/railway/state.ts';
-import home from '../../src/world/home-land.json';
 
 export type RailwayProbe = {
   pid: string;
@@ -47,7 +45,7 @@ export type RailwayProbe = {
   counts: ReturnType<typeof railCounts>;
   accounts: RailAccount[];
   messages: Record<string, unknown>[];
-  registry: { states: string[]; ops: string[] };
+  registry: { states: string[] };
   sources: { id: number; remaining: number }[];
   /** Line two's job completions (Q1 first), empty before line two. */
   line2: number[];
@@ -83,7 +81,6 @@ declare global {
 
 const q = new URLSearchParams(location.search);
 const roomId = q.get('room') ?? worldRoomId('test');
-const HASH_EVERY = 10; // ticks between recorded state hashes
 const LAT = Number(q.get('lat') || 0); // added railway round trip, ms (half each way)
 const PID = q.get('pid') ?? 'p' + Math.random().toString(36).slice(2, 10);
 
@@ -100,7 +97,6 @@ const T = (window.T = {
   leads: [] as { at: number; lead: boolean }[],
   errors: [] as string[],
   fatal: null as string | null, // a fatal room error's code (elsewhere, room_full)
-  hashes: {} as Record<number, string>,
   got: 0,
   railMessages: [] as Record<string, unknown>[],
   // Railway packets as they arrive (after the added delay): Date.now(), characters, and the events they carried.
@@ -191,7 +187,7 @@ const T = (window.T = {
       peers: r.peers().map((p) => ({ peer: p.peer, sameTab: p.sameTab, presence: p.presence })),
     };
   },
-  rename: null as unknown as (name: string) => boolean, // set by startWorld
+  rename: null as unknown as (name: string) => number | false | null, // server request number, set by startWorld
   world: (): unknown => null,
   rail: (): RailwayProbe | null => null,
   railAdapter: (): RailwayAdapterProbe | null => null,
@@ -236,19 +232,17 @@ const T = (window.T = {
   },
 });
 
-// The railway's own messages, with LAT/2 added each way (the lockstep world and presence are left undelayed).
+// The railway's messages, with LAT/2 added each way (room clock and presence are left undelayed).
 let railRoom: WorldRoom | null = null;
 
 function startWorld(room: Room) {
   const w = createSync();
-  T.railSnapshot = () => {
-    const before = w.worldStatus().resyncs;
-    w.requestResync();
-    return w.worldStatus().resyncs > before;
-  };
-  const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
   const rail = isRailwayRoom(roomId) ? createRailwayMirror() : null;
-  const rules = installRules(w, land, rail ? () => rail.roster : undefined);
+  T.railSnapshot = () => {
+    if (!railRoom || !rail) return false;
+    railRoom.send({ t: 'r:resync' });
+    return true;
+  };
   // What the probes read (ECS M11, M12): the mirror's confirmed world, published only once a whole state has fully
   // arrived (a late join's first chunk already carries Rail, its trees and jobs come later) and kept through a refill
   // and a reset; a fresh railway before that. Not `rail.synced()`: it goes false during a refill while the world is
@@ -509,10 +503,6 @@ function startWorld(room: Room) {
       }
     };
   }
-  w.onAfterTick((t) => {
-    if (t % HASH_EVERY === 0) T.hashes[t] = JSON.stringify(w.stateHashes());
-  });
-  w.setPid(PID);
   w.attachWorld(room, { roomId });
   if (adapter && railRoom) adapter.attach(railRoom);
   let last = performance.now();
@@ -522,10 +512,10 @@ function startWorld(room: Room) {
     adapter?.update(now);
     last = now;
   }, 50);
-  T.rename = (name: string) => w.submitEdit({ op: 'who.set', i: 0, j: 0, n: name, c: 2 });
+  T.rename = (name: string) => adapter?.act('who.set', { n: name, c: 2 }) ?? null;
   T.world = () => ({
     tick: w.world.tick,
-    people: rules.roster.roster.pids.map((pid, k) => ({ pid, name: rules.roster.nameOf(k) })),
+    people: rail?.roster.roster.pids.map((pid, k) => ({ pid, name: rail.roster.nameOf(k) })) ?? [],
     status: w.worldStatus(),
   });
   if (rail)
@@ -557,7 +547,7 @@ function startWorld(room: Room) {
         registry: w.registry(),
         sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: tree(mw, k).left })),
         line2: qjobs(mw).map((j) => j.completion),
-        people: rules.roster.roster.pids.map((pid, k) => ({ pid, name: rules.roster.nameOf(k) })),
+        people: rail.roster.roster.pids.map((pid, k) => ({ pid, name: rail.roster.nameOf(k) })),
       };
     };
 }

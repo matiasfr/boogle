@@ -1,5 +1,5 @@
-// Problem reports to our server (POST /report, see server/README.md): JS errors, desyncs (which states, which tick),
-// snapshots that would not load, and how joining a room went. Only when VITE_BOOGLE_SERVER is set; otherwise inert.
+// Problem reports to our server (POST /report, see server/README.md): JS errors and how joining a room went.
+// Only when VITE_BOOGLE_SERVER is set; otherwise inert. Server checkpoint failures stay in server diagnostics.
 // Nothing personal: room, kind, a short detail, tick, build and a coarse browser ("Chrome 130 Android"); no names,
 // no peer ids, no URLs beyond the script path. Deduped (the same report at most MAX_SAME times), at most MAX_REPORTS
 // per page load, batched into one POST every FLUSH_MS (and on pagehide) via navigator.sendBeacon.
@@ -7,12 +7,12 @@
 // Connection reports carry `role` (lead or client) and `transport` ('server'). A good join also says `rttMs`, the round
 // trip to the server; a non-owner sees the ball about rtt (owner -> server -> them) + INTERP_MS late. They also
 // say whether the room was running mixed builds (`mixedBuilds`, src/netplay/builds.ts; a yes or no, never the ids).
-// Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
+// Serves DESIGN.md "Understandable at a glance". Sync kind: Local
 // (nothing here is shared with other players).
 import { BUILD_ID } from '../build-id.ts';
 import { background } from '../async.ts';
 import { net, getRoomId, onNetState } from '../netplay/net.ts';
-import { world, onDesync, onSnapFail } from '../world/sync.ts';
+import { world } from '../world/sync.ts';
 import { mixedBuilds } from '../netplay/builds.ts';
 import { coarseUa, firstFrame, scrub } from '../netplay/report-format.ts';
 import { gfx } from '../render/scene.ts';
@@ -69,10 +69,6 @@ if (SERVER) {
     const r = e.reason;
     report('error', { msg: `unhandled: ${scrub(r?.message ?? r).slice(0, 190)}`, at: firstFrame(r?.stack) });
   });
-
-  // ---- shared world ----
-  onDesync(({ keys }) => report('desync', { keys: keys.join(',') || 'tick/order' }));
-  onSnapFail(({ from, reason }) => report('snapshot', { from, reason }));
 
   // ---- connection: net.ts reports every change of net.state ('connecting' | 'live' | 'solo') ----
   let since = performance.now(); // when the current attempt started connecting (page load for the first one)

@@ -1,6 +1,6 @@
 # 6.15 Telemetry and updates
 
-- **Telemetry.** Sends JS errors, desyncs (which states, which tick), snapshot load failures and connection outcomes
+- **Telemetry.** Sends JS errors and connection outcomes
   (with `role` (lead or client), `transport` (8.1), `mixedBuilds` and `gfx`; a good join also sends the round trip to
   the server as `rttMs`) to `POST /report`, only when `VITE_BOOGLE_SERVER` is set. Nothing personal.
   At most 20 reports per page load, each duplicate at most twice, batched every 10 s and on pagehide with
@@ -56,8 +56,9 @@
   uncached assets and during precache; only successful responses enter its cache. WASM retries belong to the page's
   loader so a controlling worker does not multiply the retry budget. Local.
   Files: [src/boot/sw-policy.ts](../../src/boot/sw-policy.ts), [src/boot/chunk-reload.ts](../../src/boot/chunk-reload.ts).
-- **Desync visibility (dev).** `?netdebug=1` shows an overlay of role, hash checks and per-state status, and on a
-  mismatch saves both sides' diverging state as JSON. The stub [src/features/syncsafety.ts](../../src/features/syncsafety.ts)
+- **Room visibility (dev).** `?netdebug=1` shows clock readiness, role, server tick, lead, round-trip time and build.
+  The classic hash comparisons and divergence dumps retired at v40; checkpoint failures remain in server diagnostics.
+  The stub [src/features/syncsafety.ts](../../src/features/syncsafety.ts)
   loads [src/debug/netdebug.ts](../../src/debug/netdebug.ts) only with the flag; `?debugcam=1` likewise loads
   [src/debug/debug-cam.ts](../../src/debug/debug-cam.ts).
 

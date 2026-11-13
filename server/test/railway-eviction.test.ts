@@ -93,9 +93,9 @@ async function manager(store: Store) {
 }
 const railwayHost = (room: HostedRoom) => room.world as RailwayWorldHost;
 function material(room: HostedRoom) {
-  return 'railway' in room.world.rules
+  return 'rules' in room.world
     ? (railwayHost(room).rules.railway.account('alice')?.carry ?? 0)
-    : room.world.rules.roster.size();
+    : room.world.sync.world.tick;
 }
 async function drain(room: HostedRoom, store: Store, id: string) {
   room.world.sync.saveNow(true);
@@ -173,14 +173,14 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
     await prepare(old, original, railway);
     await drain(old, store, id);
     const initial = material(old);
-    assert.equal(initial, 0);
+    if (railway) assert.equal(initial, 0);
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
     const blocked = store.withLock(id, () => gate);
     let published = false;
     old.world.onSend((m) => {
-      if (m.t === 'w:edits' && (m.list as { e: Obj }[]).some((q) => q.e.op === 'who.set')) published = true;
+      if (!railway && m.t === 'w:c' && (m.ht as number) > initial) published = true;
     });
     if (railway) {
       const source = RAILWAY_SOURCES[0]!;
@@ -205,11 +205,8 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
       await until(() => material(old) === 2, 'chop applied');
       published = true;
     } else {
-      original.send({
-        t: 'm',
-        d: { t: 'w:edit', e: { op: 'who.set', i: 0, j: 0, n: 'Saved', c: 2 } },
-      });
-      await until(() => material(old) === 1, 'classic accepted identity');
+      old.world.step(0.2);
+      assert.ok(material(old) > initial, 'ordinary room advances its clock');
       old.world.sync.saveNow(true);
     }
     let closing = false;
@@ -245,12 +242,12 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
     await drain(replacement, store, id);
     const result = {
       room: id,
-      kind: railway ? 'railway (Server kind)' : 'live server W state (not Place localStorage railway)',
+      kind: railway ? 'railway (Server kind)' : 'ordinary server clock',
       initial,
       published,
       overlapping,
       changedAuthority,
-      expected: railway ? 2 : 1,
+      expected: railway ? 2 : old.world.sync.world.tick,
       restored,
       receipt: railway ? railwayHost(replacement).rules.railway.outcome('alice', 1, 2) : null,
       saved: store.readSync(id),
@@ -259,8 +256,9 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
     console.log(
       `[manager-eviction] ${id}: overlapping=${overlapping} published=${published} restored=${restored} expected=${result.expected}`,
     );
-    assert.ok(published, 'accepted edit was published');
-    assert.equal(restored, result.expected, 'saved accepted material must survive eviction and rejoin');
+    assert.ok(published, 'accepted state or clock was published');
+    if (railway) assert.equal(restored, result.expected, 'saved accepted material must survive eviction and rejoin');
+    else assert.ok(restored >= result.expected, 'the restored clock cannot move backwards');
     assert.equal(overlapping, false, 'rejoin cannot create another writer while close drains');
     assert.equal(changedAuthority, false, 'the old authority retains its manager slot until durable close');
   });
@@ -317,13 +315,10 @@ for (const [id, failure] of [
           },
         },
       });
-    } else
-      client.send({
-        t: 'm',
-        d: { t: 'w:edit', e: { op: 'who.set', i: 0, j: 0, n: 'Saved', c: 2 } },
-      });
-    await until(() => material(room) === (railway ? 2 : 1), 'saved accepted material');
+    } else room.world.step(0.2);
+    await until(() => (railway ? material(room) === 2 : material(room) >= 2), 'saved accepted state or clock');
     await drain(room, store, id);
+    const expected = material(room);
     const file = path.join(dataDir, `${id}.json`);
     const before = await fs.readFile(file, 'utf8');
     fail = true;
@@ -340,12 +335,13 @@ for (const [id, failure] of [
     const next = app.rooms.room(id)!;
     assert.notEqual(next, room, 'from a new authority');
     if (railway) await railwayHost(next).whenReady();
-    assert.equal(material(next), railway ? 2 : 1, 'which loads the last good save');
+    if (railway) assert.equal(material(next), expected, 'which loads the last good save');
+    else assert.ok(material(next) >= expected, 'which resumes the last good clock');
     await evidence(`manager-close-${id}.json`, {
       room: id,
       failure,
       fenced: true,
-      expectedMaterial: railway ? 2 : 1,
+      expectedMaterial: expected,
       lastGoodUnchanged: true,
       rejoin: 'welcome',
     });

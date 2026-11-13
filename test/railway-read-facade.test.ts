@@ -28,7 +28,6 @@ import { cloneWorld } from '../src/sim/railway-queries.ts';
 
 function room() {
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   api.touchAll();

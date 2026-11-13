@@ -1,29 +1,9 @@
-// Playtest tuning (docs/playtest-kits/haul.md): the haul loop's lockstep numbers as a room-wide state, so a `proto-`
-// room can change a cap or a cost for everyone at the same tick. The complete effective configuration, including
-// defaults, is saved and hashed. Rail keys now run as Server kind over the same functions. Pure and deterministic.
-import { AGES, ROUTE, TRACK, costOf } from './route.ts';
-import { WAGON_CRUISE, WAGON_ACCEL, type WagonPace } from './wagon.ts';
+// Server-owned railway tuning. The complete effective configuration, including defaults and revision, is saved
+// and checksummed; clients receive its values through replication. Pure and deterministic.
 import { FNV_SEED, foldAll } from './hash.ts';
-type CostFn = (s: number, ring: number) => number;
-
-// Retained haul catalog values; their classic state owners retired at v39.
-const HARD_CAP = 60;
-const HARD_MAX = 200;
-const FULL = 2;
-const YIELD = 4;
-const TRICKLE_EVERY = 200;
-const FULL_MAX = 20;
 
 // Stable order: a key's index is folded into the hash.
 export const TUNABLES = [
-  { key: 'cost0', def: AGES[0]!.cost, min: 2, max: 600, label: 'Section cost (wood)' },
-  { key: 'helper0', def: AGES[0]!.helper, min: 1, max: 600, label: 'Helper hut cost (wood)' },
-  { key: 'hard', def: HARD_CAP, min: 1, max: HARD_MAX, label: 'Hard cap' },
-  { key: 'yield', def: YIELD, min: 1, max: 60, label: 'Logs per take' },
-  { key: 'full', def: FULL, min: 1, max: FULL_MAX, label: 'Takes per bundle' },
-  { key: 'trickle', def: TRICKLE_EVERY, min: 10, max: 6000, label: 'Bundle refill every (ticks)' },
-  { key: 'wagonCruise', def: WAGON_CRUISE, min: 10, max: 100, label: 'Wagon cruise (cm per tick)' },
-  { key: 'wagonAccel', def: WAGON_ACCEL, min: 5, max: 100, label: 'Wagon speed-up (ticks to cruise)' },
   { key: 'railRegrowMinutes', def: 31, min: 1, max: 1440, label: 'Railway regrowth wait (minutes)' },
   { key: 'railRecoveryMinutes', def: 21, min: 1, max: 1440, label: 'Railway drop recovery (minutes)' },
   { key: 'railFeedMs', def: 70, min: 10, max: 1000, label: 'Railway feed interval (milliseconds)' },
@@ -160,8 +140,7 @@ export type Tune = { v: Record<TuneKey, number>; revision: number; rev: number }
 export type TuneJson = { revision: number; values: Record<TuneKey, number> };
 
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
-export const RAIL_TUNABLES = TUNABLES.filter((t) => t.key.startsWith('rail'));
-export const HAUL_TUNABLES = TUNABLES.filter((t) => !t.key.startsWith('rail'));
+export const RAIL_TUNABLES = TUNABLES;
 const defaults = (specs: readonly TuneSpec[]): Record<TuneKey, number> =>
   Object.fromEntries(specs.map((t) => [t.key, t.def])) as Record<TuneKey, number>;
 
@@ -179,15 +158,6 @@ export function setTune(t: Tune, key: TuneKey, v: number): void {
   t.revision++;
   t.rev++;
 }
-// A ring's cost under this tuning: the wood age's from the tuning, every later age's default.
-export const costIn =
-  (t: Tune): CostFn =>
-  (s, ring) =>
-    ROUTE[s]?.age === 0 ? (ring === TRACK ? t.v.cost0 : t.v.helper0) : costOf(s, ring);
-
-// The wagon's speed profile under this tuning (../sim/wagon.ts).
-export const paceIn = (t: Tune): WagonPace => ({ cruise: t.v.wagonCruise, accel: t.v.wagonAccel });
-
 // Tuning is for playtest rooms only: the room id (after the world namespace, ../world/namespace.ts) starts `proto-`.
 export const isProtoRoom = (id: unknown): boolean => typeof id === 'string' && /^(v\d+-)?proto-/.test(id);
 

@@ -38,6 +38,35 @@ async function alive(s: ReturnType<typeof connect>, at: number) {
 }
 const threw = (logs: string[]) => logs.filter((l) => l.includes('dropped a message that threw'));
 
+test('legacy and malformed classic messages cannot change or crash a railway room', async () => {
+  const { svc, logs, base } = await start();
+  try {
+    const room = railwayRoomId('classic-retired');
+    const a = connect(base, room, 'aaa'),
+      b = connect(base, room, 'bbb');
+    await Promise.all([a.opened, b.opened]);
+    assert.equal(await alive(a, 50), true);
+    const world = svc.roomHost()!.room(room)!.world;
+    assert.ok('whenReady' in world && typeof world.whenReady === 'function');
+    await world.whenReady(); // A heartbeat proves socket liveness, not checkpoint startup completion.
+    const before = world.sync.snapshot().data;
+    for (const type of ['w:edit', 'w:edits', 'w:hash', 'w:need', 'w:snap', 'w:rejected'])
+      for (const e of [null, [], { op: { toString: 0 } }, { op: 'who.set', n: 'Forged', c: 1 }])
+        a.send(JSON.stringify({ t: 'm', d: { t: type, e, list: e, snap: e, ht: 999999, tick: 999999 } }));
+    assert.equal(await alive(a, 51), true);
+    assert.equal(await alive(b, 52), true);
+    assert.deepEqual(world.sync.snapshot().data, before);
+    assert.equal(world.status().ready, true);
+    assert.deepEqual(threw(logs), []);
+    assert.equal(
+      b.msgs.some((m) => m.from === 'aaa' && String(m.d?.t).startsWith('w:')),
+      false,
+    );
+  } finally {
+    await svc.close();
+  }
+});
+
 test('railway: a message type that throws when coerced is dropped before anything coerces it', async () => {
   const { svc, logs, base } = await start();
   try {
@@ -52,18 +81,17 @@ test('railway: a message type that throws when coerced is dropped before anythin
   }
 });
 
-test('a handler that throws does not escape the socket listener: the room and its neighbours keep running', async () => {
+test('a malformed retired command is ignored: the room and its neighbours keep running', async () => {
   const { svc, logs, base } = await start();
   try {
-    // A classic world room's edit path still coerces its op (src/world/sync.ts stamp); the listener holds it.
     const a = connect(base, worldRoomId('malformed'), 'aaa'),
       b = connect(base, worldRoomId('malformed-2'), 'bbb');
     await Promise.all([a.opened, b.opened]);
     a.send('{"t":"m","d":{"t":"w:edit","e":{"op":{"toString":0},"i":0,"j":0}}}');
     assert.equal(await alive(a, 2), true, 'the room answers its sender');
     assert.equal(await alive(b, 3), true, 'and another room');
-    assert.deepEqual(threw(logs), [`room ${worldRoomId('malformed')}: dropped a message that threw TypeError`]);
-    // An operator sees it in the room's status.
+    assert.deepEqual(threw(logs), [], 'retired commands never enter an op coercion path');
+    // An operator sees the refused legacy message in the drop counter, without an exception log.
     const status = await (await fetch(`${base.replace('ws:', 'http:')}/rooms/${worldRoomId('malformed')}/host`)).json();
     assert.equal(status.dropped, 1);
   } finally {

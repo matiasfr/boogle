@@ -1,6 +1,4 @@
-// Maximum capped checkpoint plus durable-tail width; conservation is covered by railway-line-authority. The railway is
-// Server kind (replication R1a): it rides in the checkpoint as its E world's snapshot, and its actions never enter the
-// tail; the tail holds only the lockstep edit a railway room admits (who.set).
+// Maximum capped Server-kind checkpoint width; conservation is covered by railway-line-authority.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync, MAX_RECOVERY_BYTES } from '../src/world/sync.ts';
@@ -12,7 +10,7 @@ import { ensure } from '../src/sim/roster.ts';
 import { TUNABLES } from '../src/sim/tune.ts';
 import { railSession } from '../src/sim/railway-sys-core.ts';
 import { Account, Outcome, Pile, RAIL_COMPONENTS } from '../src/sim/railway-components.ts';
-test('line recovery width bound retains sixty-four worst lockstep stamps and maximum roster', (t) => {
+test('line checkpoint width bound retains maximum railway state, tuning and roster', (t) => {
   // Deliberately combines mutually exclusive balances: a conservative byte bound, not a reachable state. The railway
   // saves its world's schema snapshot, so every row of every component is set to its widest value.
   const replication = createReplicator();
@@ -50,28 +48,20 @@ test('line recovery width bound retains sixty-four worst lockstep stamps and max
       const row = w.mut(c, id) as Record<string, unknown>;
       for (const f of c.names) if (f !== c.key) row[f] = widest(c.fields[f]!, f);
     }
-  for (const t of TUNABLES) (t.key.startsWith('rail') ? base.railTune : base.tune).tune.v[t.key] = t.max;
-  base.tune.tune.revision = M;
+  for (const t of TUNABLES) base.railTune.tune.v[t.key] = t.max;
   base.railTune.tune.revision = M;
   const snapshot = sync.snapshot();
   snapshot.tick = M;
   snapshot.epochMs = 1793850000000;
-  const common = { p: 's'.repeat(32), u: 's'.repeat(32) };
-  // Only bounded identity remains in the classic recovery tail.
-  for (const body of [{ op: 'who.set', i: 0, j: 0, n: '\ufffd'.repeat(16), c: 7 }]) {
-    const tail = Array.from({ length: 64 }, (_, i) => ({ tick: M, seq: M - 64 + i, e: { ...body, ...common } }));
-    const e = {
-      version: 1,
-      namespace: 'rail-v14-' + 'x'.repeat(22),
-      catalog: '2',
-      checkpoint: snapshot,
-      hash: 4294967295,
-      tail,
-      seq: M,
-      checksum: 4294967295,
-    };
-    const bytes = Buffer.byteLength(JSON.stringify(e));
-    t.diagnostic(`${body.op}: ${bytes}/${MAX_RECOVERY_BYTES} bytes`);
-    assert.ok(bytes < MAX_RECOVERY_BYTES);
-  }
+  const e = {
+    version: 1,
+    namespace: 'rail-v40-' + 'x'.repeat(22),
+    catalog: '2',
+    checkpoint: snapshot,
+    hash: 4294967295,
+    checksum: 4294967295,
+  };
+  const bytes = Buffer.byteLength(JSON.stringify(e));
+  t.diagnostic(`${bytes}/${MAX_RECOVERY_BYTES} bytes`);
+  assert.ok(bytes < MAX_RECOVERY_BYTES);
 });
