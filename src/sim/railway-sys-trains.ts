@@ -52,12 +52,12 @@ import {
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
-import { freightStop } from './railway-queries-trade.ts';
+import { freightStop, holdOff } from './railway-queries-trade.ts';
 import type { TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
 import { legKitArrive, legKitLoad, legKitService } from './railway-sys-route-kit.ts';
 import { fleetOf } from './railway-train.ts';
-import { legKitWaiting, legsLaid } from './railway-queries-route.ts';
+import { legsLaid } from './railway-queries-route.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
  * so a repeat (or a friend's same ask) moves nothing. From a halt's lever it is the line's (`Line.req`), served by the
@@ -246,14 +246,8 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold): Tra
     headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
     // The greybox route: the trains a line runs at its legs' stage (its fleet).
     fleet: (line) => fleetOf(line, legsLaid(w)),
-    // The Ring Island hold is off while the line owes footings (the wagon's errand) and for a train on a kit errand (a
-    // kit aboard that can unload now, a kit owed), as the train-spacing sheets ran it (candidate B's errand list,
-    // short-turn's ruling call 7). The wagon's train with no footings owed is on no errand.
-    controlOff(line, slot) {
-      if (footingsOwed(w, line)) return true;
-      const r = row(slot);
-      return (r.logs + r.rails > 0 && !legKitWaiting(w, line, r)) || kitOwed(w, r, line);
-    },
+    // The Ring Island hold is off for a train on an errand (./railway-queries-trade.ts, holdOff).
+    controlOff: (line, slot) => holdOff(w, line, row(slot)),
   };
 }
 function trainStep(w: World, tick: number, headPct: number, pct: TradePct, hold: TrainHold) {
