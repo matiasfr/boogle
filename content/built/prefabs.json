@@ -28,6 +28,40 @@
         }
       }
     },
+    "greybox.collider": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "half": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "greybox.collider",
+      "scope": "place",
+      "visual": {
+        "none": true
+      }
+    },
+    "greybox.decoration": {
+      "colliders": [],
+      "key": "greybox.decoration",
+      "scope": "place",
+      "visual": {
+        "batch": "route-greybox:massing",
+        "builder": "greybox.box",
+        "params": {
+          "colour": "#9c9ea1"
+        }
+      }
+    },
     "town.workshop-chair": {
       "attach": {
         "seat": {

@@ -134,7 +134,7 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 - [x] **4. One greybox platform.** Record `greybox.box` (`src/content/prefabs/greybox.ts`), builder `src/prefab/builders/greybox-box.ts` (the instanced mesh from `boxes.ts:64-75`), level `src/content/levels/gorge.ts` holding the north platform's five spans with ids; `drawGreyBoxes` takes placements for those and `GreyBox` for the rest. Proof: collider golden of all 53 solids equal before and after; `stack-at` still; `describe()` still reports 73 boxes and 53 solids. As built below corrects these pre-leg-2 counts.
 - [ ] **Checkpoint A** (the proving slice): `npm run check`, the two stills side by side, `npm run level-check` still 12 reports, `npm run perf` at the Gorge (draw calls and bodies unchanged). The designer and owner rule on the open questions here.
 - [x] **5. Enforcement on.** The three lint rules with their seeded lists, the generated `test/prefab-records.test.ts`, the registry ratchet for the lists, `docs/agents/plugins.md` ("New things in the world are prefab records") and the new-feature skill. Proof: a fixture file with a stray `addStatic` fails lint; `npm run registry` fails when a list grows. As built: generated record coverage already landed in step 3; this step adds passing/failing lint fixtures and the file-identity ratchet (below).
-- [ ] **6. High Gorge massing.** All 73 boxes become placements in `src/content/levels/gorge.ts` (the frame helpers move there from `massing.ts`); `massing.ts` keeps only exported constants others import. Proof: goldens equal, `stack-at` and `stack-draws` stills. Deletes `GreyBox`'s collider loop (`boxes.ts:76-82`) and `gorgeMassing()`; removes `route-greybox/boxes.ts` from the collider list.
+- [x] **6. High Gorge massing.** All 73 boxes become placements in `src/content/levels/gorge.ts` (the frame helpers move there from `massing.ts`); `massing.ts` keeps only exported constants others import. Proof: goldens equal, `stack-at` and `stack-draws` stills. Deletes `GreyBox`'s collider loop (`boxes.ts:76-82`) and `gorgeMassing()`; removes `route-greybox/boxes.ts` from the collider list. As built below corrects the count to 86.
 - [ ] **7. Leg 2 and later legs** (after `greybox/leg2-massing` merges): `Piece`, `Pad` and `Post` become placements of `greybox.box`, `greybox.pad`, `greybox.sign-post` (a `label` attachment; placeholder text stays where it is authored); `dev/level/route-leg2.ts` reads `content/built/levels/*.json`. Proof: goldens, that branch's level report unchanged, one still per area. Deletes the three record types and `leg2-draw.ts`'s collider code. New legs are authored as level files from here.
 - [ ] **Checkpoint B:** `npm run check`, perf at Bell Rock, a bot walk of leg 1.
 - [ ] **8. The other seats (medium risk).** `railway.machine-chair` (`track-machine.ts:119`) and `railway.car-bench` (`train-view.ts:184-201`, `car-kit.ts:19`) with `parent` set to the moving platform. Seat ids are on the wire through presence: a golden asserts every id string is byte-identical, so no bump. Coordinate with `plan/server-owned-state`, which moves seat authority: whichever lands second rebases. Deletes the last `registerSeat` outside the runtime.
@@ -146,6 +146,45 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 - [ ] **14. Portability proof (if open question 3 is yes):** `dev/prefab/bake.ts` and `dev/prefab/export-godot.ts` write the chair and the Gorge level as `.glb` and `.tscn`. Proof: Godot's headless import lists the nodes and collision shapes with matching counts.
 
 ## Level findings
+
+### Step 6 as built: all High Gorge massing
+
+Baseline commit `db0eb0b8` executed the old draw boundary and recaptured the existing collider and placement
+goldens with no byte changes; it added the old-code count golden: **86 authored boxes, 84 visible, 55 bodies,
+one massing batch**. Step 6 replaces all 86 entries with compiled placements, retaining the five north-platform
+ids and original insertion order. `massing.ts` retains only the shared exported coordinates/constants; its
+private box/frame authoring moved to the Gorge level. `gorgeMassing()` and the GreyBox collider/mesh construction
+loops are deleted. Bell/West descriptors adapt to records at the existing draw boundary until step 7, without
+changing their layout sources. No Home, seat, sim/world/net/server or namespace file changes.
+
+Visible solid and decorative records share the same builder/batch; two explicit collider-only placements use no
+draw slots. The runtime preserves explicitly authored identity rotations, keeping collider bytes exact.
+The pure Gorge coordinate module and leg-2 layout module join the explicit content-helper whitelist; no debt
+entry grows. Both converted collider-debt entries disappear (2 and 18 units), along with the `drawGreyBoxes`
+construction importer count. Combined collider/seat debt: **120 file entries / 542 units / 64 construction exports /
+83 importer counts → 118 / 522 / 63 / 82**; recorded public names drop 371 → 361. Collider debt alone is
+107 files / 522 units → 105 / 502; seat debt stays 13 / 20. Distinct files across both lists are 109 → 107.
+Door budgets are unchanged.
+
+The plan's 73 boxes/53 solids and 12 level reports were stale; current counts are 86/55 and 13 reports.
+Leg 2 has already landed, so its Gorge incline boxes are included while step 7's other areas/tools remain deferred.
+The pure authoring helper is named `levelBox`: lint reserves `slab` as a construction call even for a local data
+helper. No new suppression or constructor exemption was added. All old Gorge and workshop goldens remain
+byte-identical without regeneration after conversion. Final check and broker verdicts belong to this job's
+handoff/evidence; timing under shared load is not performance evidence. Not tested on a device.
+
+`npm run check` passed (1,797 tests passing, one existing TODO), all 133 prefab tests passed, and explicit
+ship-check against `origin/main HEAD` passed 329 assertions. Registry passed; level-check retained 13 reports.
+Review stamp `4e2d96ad98df` flags the count fixture and golden-test assertion changes for the caller's review;
+no independent review, push or ship is claimed.
+
+The Gorge-reached, real-time `stack-at` + `stack-draws` captures before (`db0eb0b8`) and after (`9866903d`)
+were both opened: stair silhouette, concourse/platform junctions and town pad appear unchanged. Both report
+84 visible boxes / 55 bodies, 12 named route meshes, **1,036 total draws / 1,028 without route meshes / 8 added**
+and 21,560 added triangles at the same camera. Massing alone remains one batch. Manifests:
+`.look/evidence/1794602977655-97763/evidence.json` and `.look/evidence/1794603979321-9671/evidence.json`.
+An earlier warped capture failed because the trusted launcher requires two players for `--clock-url`; it
+produced no visual proof. Successful captures used `--real`. No full playthrough, device test or motion verdict.
 
 ### Step 3 baseline (before conversion)
 

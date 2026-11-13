@@ -921,6 +921,12 @@ in the same second. Ring Island's low map table carries the halt map from the ri
 no train markers); before the rivet it is the painted table it was. Placeholder marks and labels. Not tested on a
 device.
 
+High Gorge's static massing is authored in `src/content/levels/gorge.ts` and loaded from compiled JSON through
+the prefab runtime (prefab-data step 6). Its 86 placements retain 84 visible boxes, two hidden stack colliders,
+55 bodies and one shared massing batch. Positions, colours, collider recipes and insertion order match the
+old massing goldens byte for byte. The incline platforms still derive from the existing leg-2 layout authority.
+This changes no route, interaction, sign copy or resident distance.
+
 **Greybox leg 2: Bell Rock, Home's West landing, the Gorge's incline platforms (13 November 2026;
 [greybox-leg2-massing](../plans/greybox-leg2-massing.md)).** Layout only, live for everyone: grey boxes, labelled
 pads and boards, no rails, no rules, nothing to press. Every label is a placeholder.
