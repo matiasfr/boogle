@@ -1,9 +1,15 @@
-> **Status: plan for the designer's and the owner's review (12 November 2026).** Nothing is built or measured by the
-> planner: figures are the orchestrator's brief of 12 November (main's method) unless marked *arithmetic*. Section 1's
-> limit is a proposal. **Owner, 12 November UTC: "A looser rate for the greybox"** ([decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered)): build 2 and
-> greybox leg 1 ship now on a worst wait of 1,350 settled and 1,600 growing (orchestrator's reading), and the gates
-> tighten to [section C](#c-the-limit-as-a-rate)'s table when this plan's spacing lands. Questions 2 and 3 are open.
-
+> **Status: measured, and neither candidate is built (12 November 2026).** Steps 1 and 2 ran on scratch branches;
+> [Results](#results-12-november-2026) holds the sheets' key rows. E0 reproduces the brief. Candidate A dies on main's
+> stages (every variant: a passed ask waits more than 250 ticks extra, and a lit lamp goes out). Candidate B (Ring
+> Island, cap 200, on 15%) survives at light asks only and misses [table C](#c-the-limit-as-a-rate) on leg 1 at both
+> rates, so by the review's rule it is not built. E1 (candidate C) and E4 (A with B) were not run: A died on main, so E4
+> has no A to combine. Next is the short turn: [short-turn](short-turn.md). Steps 0 and 3 to 6 have not run.
+> **Owner, 12 November UTC: "A looser rate for the greybox"** ([decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered)):
+> build 2 and greybox leg 1 ship on a worst wait of 1,350 settled and 1,600 growing (orchestrator's reading), and the
+> gates tighten to table C when spacing lands. Leg 1 then measured over 1,350 on 48 seeds and shipped under the 1,600
+> cap alone ([call 109](../agent-calls.md), his to keep or reverse). Questions 2 and 3 are open; question 2 is moot
+> unless A returns. Figures in sections 1 to 4 and the design review are the orchestrator's brief of 12 November unless
+> marked *arithmetic*; the Results section's are read from the sheets.
 # Train spacing: even gaps along a line, so waits stay short as lines grow
 
 ## Goal
@@ -525,3 +531,242 @@ These replace the plan's three. None holds steps 0 to 2 or the build.
    - Up to 30 or 60 s.
    - Never mid-line: the long line's waits stay as built.
    Answer: ___
+
+## Results (12 November 2026)
+
+Steps 1 and 2, run by two scratch agents on 12 November and recorded here on the same day by the planner, who ran
+nothing. Every figure below was read from a `sheet.txt`; the sheets are in gitignored `.look/spacing/` folders of two
+worktrees and are not in git, so this section is their durable record. Waits are ticks (10 a second). Unless said:
+48 seeds (hex 1000 to 102f), 20,000 ticks a run, hold 75%, waits pooled as the brief pooled them (served, plus asks
+still waiting at the end at their wait so far). "Heavy" is main's fuzz (about 8 lever asks a minute); "light" is one
+ask attempted every 200 to 299 ticks with no rider asks (1.2 to 1.6 accepted a minute on the sheets). All named sheets
+were present: `e0-20k`, `e0-3k`, `e2-v0` to `e2-v4`, `leg1-e0`, `e0-24`, `e3`, `e3b`, `e3c`; every one reads "errors 0".
+
+| Branch (pushed, never merged) | Tip | Base | Holds |
+| --- | --- | --- | --- |
+| `origin/scratch/spacing-e0` | 3cee21326 | main at eb2d30c0b | `test/spacing/run.ts`, `sweep.ts`: main's stages |
+| `origin/scratch/spacing-a` | 232c77843 | `spacing-e0` | candidate A in four `src/sim` train files; `SPACING_PASS` |
+| `origin/scratch/spacing-leg1-e0` | b04ef6333 | leg 1's step 3 branch (merge base with main 6b6f13f5f) | `test/spacing/leg1.ts`, `leg1-sweep.ts`, `catalog.ts` |
+| `origin/scratch/spacing-leg1-b` | 564152fea | `spacing-leg1-e0` | candidate B in three `src/sim` files; `compare.ts`; `SPACING_CONTROL`, `SPACING_CONTROL_LATE` |
+
+### E0 on main: the harness reproduces the brief
+
+Sheet `e0-20k`. The brief's figures in section 1 (means 234 to 439, at most 0.12% over 1,050, worst 1,120, none over
+1,158, 40 of 48 seeds under 1,050 at `gap-footed`) are the heavy rows to the digit.
+
+| Rate | Stage | Waits served (+ still waiting) | Mean | p95 | Over 1,050 | Over 1,158 | Worst (halt, way, seed) | Seeds over 1,050 | Lever asks a minute |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| heavy | `q6-stocked` | 9,067 (+102) | 233.9 | 457 | 0.000% | 0.000% | 706 (Quarry down, 1003) | 0 | 7.9 |
+| heavy | `crossing-done` | 9,247 (+106) | 242.5 | 460 | 0.000% | 0.000% | 717 (Quarry down, 1020) | 0 | 8.0 |
+| heavy | `deck-laid` | 9,645 (+146) | 310.2 | 681 | 0.000% | 0.000% | 1,011 (Railhead down, 100e, unserved) | 0 | 8.3 |
+| heavy | `gap-footed` | 9,206 (+150) | 343.9 | 675 | 0.118% | 0.000% | 1,087 (Railhead down, 1004) | 8 | 8.0 |
+| heavy | `ring-joined` | 10,350 (+238) | 439.5 | 707 | 0.009% | 0.000% | 1,120 (Railhead up, 102c, unserved) | 1 | 8.8 |
+| light | `q6-stocked` | 1,368 (+20) | 191.0 | 377 | 0.000% | 0.000% | 631 (Far Head down, 1028) | 0 | 1.2 |
+| light | `crossing-done` | 1,404 (+16) | 192.5 | 379 | 0.000% | 0.000% | 592 (Quarry up, 1005, unserved) | 0 | 1.2 |
+| light | `deck-laid` | 1,629 (+21) | 233.0 | 506 | 0.000% | 0.000% | 683 (Quarry down, 100b) | 0 | 1.3 |
+| light | `gap-footed` | 1,600 (+26) | 256.8 | 554 | 0.000% | 0.000% | 845 (Pier down, 1001) | 0 | 1.3 |
+| light | `ring-joined` | 2,011 (+34) | 300.4 | 631 | 0.000% | 0.000% | 914 (Pier down, 100f) | 0 | 1.6 |
+
+- **Hold 0% against 75%, heavy:** identical in every column at four stages; `deck-laid` differs in the fourth digit
+  (mean 309.8, p95 679, 9,650 served). At light asks the two differ slightly (the worst is 988 at `gap-footed` and
+  1,008 at `ring-joined` at 0%); none is over 1,050.
+- **At 3,000 ticks** (sheet `e0-3k`, heavy rows only): no seed over 1,050 at any stage; worst 763, 687, 728, 846 and
+  913 (`ring-joined`, Railhead up, seed 100b); means 204.7, 235.7, 278.9, 318.7, 398.6.
+- **Headway at `ring-joined`, heavy:** mean 720 to 727 at every platform, coefficient of variation 0.05 to 0.18.
+- **Nothing asked, 12,000 ticks:** lap over non-stop is 1.28 at worst (`q6-stocked`) and 1.0 to 1.198 elsewhere; 32
+  stone at `crossing-done` and `ring-joined`; wagon arrivals 36, 35, 24, 19, 17 from `wagon-on` to `ring-joined`.
+- **Light row of table C on main's stages** ("none over 1,050", "provisional until E0"): main meets it as written.
+
+### E2, candidate A: four variants, all killed on main's stages
+
+Sheets `e2-v0` to `e2-v4`, hold 75% only. The sheets do not record each variant's setting; these are from the scratch
+agent's report: v0 `pass` unset, v1 `pass.cm` 20,000 with band 17,260, v2 30,000 with 27,260, v3 40,000 with 37,260,
+v4 30,000 with the wider band 45,000. **v0 equals E0 in every wait column** (the off case). Its nothing-asked "footing
+changes" column reads 14 at `wagon-on` and 13 at `deck-laid` where `e0-20k` reads 0, on every `e2` sheet, v0 included:
+the harness's counter changed between the two sweeps (commit 3cee21326), not the sim. The nothing-asked table is
+otherwise identical on all five sheets.
+
+Stage order in each cell: `q6-stocked`, `crossing-done`, `deck-laid`, `gap-footed`, `ring-joined`.
+
+| Variant | Rate | Asks passed | Extra wait of a passed ask, mean / worst | Worst total wait of a passed ask | Two trains past one ask | Lamp lit 10 ticks, then out |
+| --- | --- | --- | --- | --- | --- | --- |
+| v1 | heavy | 2, 1, 3, 0, 0 | 342/344, 353/353, 407/474 | 742 | 0 | 24, 16, 251, 58, 1 |
+| v1 | light | 0, 0, 1, 0, 0 | 290/290 | 328 | 0 | 0, 1, 4, 5, 13 |
+| v2 | heavy | 23, 24, 69, 28, 0 | 352/392, 343/379, 373/521, 383/519 | 862, 964, 1,218, 1,231 | 0, 0, 5, 0, 0 | 265, 241, 297, 224, 3 |
+| v2 | light | 28, 38, 16, 14, 13 (2.1%, 2.8%, 1.0%, 0.9%, 0.7%) | 278/592, 264/311, 287/338, 327/336, 369/406 | 728, 778, 796, 1,102, 1,108 | 3, 1, 1, 0, 1 | 54, 63, 10, 26, 34 |
+| v3 | heavy | 12, 11, 88, 46, 3 | 359/375, 371/381, 385/505, 402/513, 642/723 | 880, 964, 1,236, 1,332, 1,162 | 0, 0, 3, 0, 0 | 327, 358, 556, 401, 34 |
+| v3 | light | 22, 31, 29, 29, 70 (1.7%, 2.3%, 1.8%, 1.9%, 3.5%) | 270/375, 266/368, 307/399, 327/407, 380/516 | 938, 865, 903, 1,142, 1,200 | 1, 2, 3, 1, 2 | 48, 58, 34, 56, 158 |
+| v4 | heavy | 2, 0, 63, 27, 0 | 347/354, none, 359/472, 378/468 | 742, none, 1,258, 1,231 | 0, 0, 5, 0, 0 | 42, 39, 310, 225, 3 |
+| v4 | light | 1, 0, 13, 14, 13 | 260/260, none, 282/292, 327/336, 369/406 | 459, none, 796, 1,102, 1,108 | 0, 0, 1, 0, 1 | 1, 1, 8, 26, 34 |
+
+What each did to the waits (E0 beside it):
+
+| Variant | Heavy: over 1,050 | Heavy: over 1,158 and worst | Light: over 1,050 (E0: none) | Light means that moved |
+| --- | --- | --- | --- | --- |
+| E0 | `gap-footed` 0.118%, `ring-joined` 0.009% | none; worst 1,120 | none | 191.0, 192.5, 233.0, 256.8, 300.4 |
+| v1 | unchanged | none; worst 1,120 | none | unchanged |
+| v2 | `deck-laid` 0.122%, `gap-footed` 0.085%, `ring-joined` 0.009% | `deck-laid` 0.020%, `gap-footed` 0.043%; worst 1,231 | `gap-footed` 0.061%, `ring-joined` 0.049% | `q6-stocked` 197.3, `crossing-done` 204.0 |
+| v3 | `deck-laid` 0.152%, `gap-footed` 0.149%, `ring-joined` 0.038% | 0.020%, 0.053%, 0.009%; worst 1,332 | `gap-footed` 0.061%, `ring-joined` 0.195% | `crossing-done` 202.3, `ring-joined` 309.9 |
+| v4 | `deck-laid` 0.122%, `gap-footed` 0.085%, `ring-joined` 0.009% | `deck-laid` 0.030%, `gap-footed` 0.043%; worst 1,258 | `gap-footed` 0.061%, `ring-joined` 0.049% | none over 1% |
+
+**Why each dies** (section 3's rules and the review's section E):
+
+| Kill rule | v1 | v2 | v3 | v4 |
+| --- | --- | --- | --- | --- |
+| A passed ask waits over 250 ticks more than the leader would have given it | worst 474, mean 290 to 407 | worst 592, mean 264 to 383 | worst 723, mean 266 to 642 | worst 472, mean 260 to 378 |
+| A lamp lit 10 ticks goes out while the train can brake | up to 251 a stage | up to 297 | up to 556 | up to 310 |
+| A light-row figure missed where main meets it | holds | over 1,050 at two stages | over 1,050 at two stages, 0.049% over 1,158 | over 1,050 at two stages |
+| A main stage's share over 1,050 rises | holds | `deck-laid` 0 to 0.122% | three stages | `deck-laid` 0 to 0.122% |
+| None over 1,158 on main's stages | holds | worst 1,231 | worst 1,332 | worst 1,258 |
+| A main stage's mean rises over 5% | holds | light `crossing-done` 192.5 to 204.0 (*arithmetic*: 6.0%) | light `crossing-done` to 202.3 (*arithmetic*: 5.1%) | holds |
+| An ask sees two trains run past | holds | up to 5 a stage | up to 3 | up to 5 |
+| A passed ask's total wait over 1,050 | holds (742) | 1,231 | 1,332 | 1,258 |
+| More than one ask in ten passed at light asks | holds | holds (2.8% at most) | holds (3.5%) | holds (0.9%) |
+
+- v1 is killed by the first two rules alone and changes nothing else: it passes at most three asks a stage.
+- The cause of the first rule, on the sheets: the follower is not "about 20 s behind" in wait terms. Its own gap, dwell
+  and stops put the passed asker 260 to 640 ticks behind the leader on average.
+- Not met by any variant: no train stood 1,200 ticks (longest stand 492, as on main).
+- A was not run on leg 1 or on build 2's mixed fleet: it was dead on main first.
+
+### E0 on leg 1: 48 seeds, both rates, by place
+
+Sheet `leg1-e0`. "Stage k" is k sections laid; "settled" is stage 4 plus 1,000 quiet ticks in the starting world;
+"whole" is the whole leg with the room stocking. Trips are a rider's end-to-end ride under asks, mean/worst.
+
+| Rate | Place | Waits | Mean | p95 | Over 1,050 | Over 1,158 | Worst (halt, way, tick asked, seed) | Seeds over 1,050 | Trip up | Trip down |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| heavy | stage 0 | 10,619 | 439.6 | 696 | 0.00% | 0.00% | none | 0 | 968/1,072 | 1,061/1,157 |
+| heavy | stage 1 | 14,186 | 330.7 | 637 | 0.03% | 0.00% | 1,088 (Ring Island up, 777, 1015) | 2 | 1,293/1,476 | 1,380/1,527 |
+| heavy | stage 2 | 14,075 | 434.0 | 823 | 0.39% | 0.06% | 1,291 (Quarry down, 124, 1013) | 28 | 1,652/1,796 | 1,749/1,863 |
+| heavy | stage 3 | 13,073 | 509.6 | 925 | 0.94% | 0.14% | 1,386 (Stack head 2 up, 14014, 1026) | 38 | 1,914/2,014 | 2,011/2,147 |
+| heavy | stage 4 | 12,048 | 587.0 | 1,007 | 2.92% | 0.44% | 1,379 (Stack head 3 up, 17722, 102d) | 46 | 2,182/2,294 | 2,281/2,400 |
+| heavy | settled | 11,898 | 601.4 | 1,100 | 7.24% | 2.91% | 1,553 (Ring Island up, 391, 1022) | 48 | 2,182/2,293 | 2,279/2,406 |
+| heavy | whole | 11,819 | 559.8 | 1,001 | 3.38% | 1.51% | 1,484 (Pier down, 8416, 101d) | 48 | 1,989/2,646 | 2,008/2,382 |
+| light | stage 0 | 2,022 | 302.2 | 611 | 0.00% | 0.00% | none | 0 | 689/989 | 710/968 |
+| light | stage 1 | 2,213 | 260.4 | 549 | 0.00% | 0.00% | none | 0 | 962/1,298 | 962/1,218 |
+| light | stage 2 | 2,316 | 335.2 | 768 | 0.52% | 0.13% | 1,213 (Stack head 1 up, 11356, 1001) | 9 | 1,215/1,494 | 1,237/1,581 |
+| light | stage 3 | 2,287 | 379.6 | 846 | 1.27% | 0.66% | 1,483 (Ring Island up, 10957, 1025) | 15 | 1,472/1,857 | 1,501/1,836 |
+| light | stage 4 | 2,269 | 444.7 | 987 | 3.04% | 1.54% | 1,422 (Railhead down, 8638, 1023) | 30 | 1,739/2,117 | 1,771/2,096 |
+| light | settled | 2,275 | 439.0 | 975 | 2.99% | 1.58% | 1,535 (Railhead up, 15251, 1019) | 31 | 1,740/2,096 | 1,772/2,203 |
+| light | whole | 2,220 | 429.4 | 965 | 3.06% | 1.22% | 1,548 (Ring Island up, 16344, 100c) | 31 | 1,589/2,211 | 1,579/2,203 |
+
+- **Hold 0%** (heavy only): the same to within a few waits (settled 602.1, 7.26%, 2.93%, worst 1,553).
+- **Headway, settled:** heavy mean 909 to 951 by platform, coefficient of variation 0.23 to 0.31; light 732 to 753,
+  0.31 to 0.42. At stage 0 heavy it is 725 to 732 and 0.04 to 0.14, as on main at `ring-joined`.
+- **Stand past the dwell a lap, settled:** heavy High Gorge 70, Village 32, Ring Island 0; light Village 72, High
+  Gorge 35. Longest stand at settled 594 (heavy) and 649 (light); 664 on the whole leg.
+- **Nothing asked:** laps over non-stop fall from 1.078 at stage 0 to 1.032 settled.
+- **Against the gates.** Light settled (2.99% over 1,050) misses table C's light row for the grown line (0.5%), so
+  the long line needs a mechanism at a playtest's rate, not only as margin. Both rates exceed the owner's looser
+  1,350 settled; every place is under 1,600 ([call 109](../agent-calls.md)).
+
+### The first 1,000 ticks against the rest
+
+Counts of waits by the tick the ask was made (sheet `leg1-e0`, hold 75%), first 1,000 ticks / the other 19,000:
+
+| Rate, place | Over 1,350 | Over 1,158 | Over 1,050 | Worst asked after tick 1,000 |
+| --- | --- | --- | --- | --- |
+| heavy, stage 4 | 0 / 1 | 10 / 43 | 30 / 322 | 1,379 |
+| heavy, settled | 23 / 16 | 110 / 236 | 165 / 696 | 1,514 |
+| heavy, whole | 0 / 30 | 0 / 179 | 0 / 399 | 1,484 |
+| light, stage 4 | 0 / 2 | 0 / 35 | 0 / 69 | 1,422 |
+| light, settled | 0 / 8 | 1 / 35 | 3 / 65 | 1,535 |
+| light, whole | 0 / 3 | 0 / 27 | 0 / 68 | 1,548 |
+
+At heavy settled the first 5% of the run holds 23 of the 39 waits over 1,350 (*arithmetic*: 59%), so the state the
+trains arrive in makes the worst waits early; but waits over 1,350 keep coming after it, up to 1,514, at both rates.
+Stage 4 and "settled" differ only by 1,000 quiet ticks in the starting world and pool at 2.92% and 7.24%: 20,000
+ticks do not forget the starting state. Any later candidate is judged from E0's starting state for this reason.
+
+### E3, candidate B: a hold at Ring Island
+
+`SPACING_CONTROL=<cap>,<on %>`: Ring Island the one control halt, `off` half of `on`. **"Early"** builds the base
+worlds with B on throughout (the default); **"late"** builds them as E0 did and turns B on for the run alone. Round 1
+(sheets `e3`) excluded the wagon's train for good, which made its `whole` variants equal E0 exactly; round 2 (`e3b`,
+`e3c`) uses the designer's errand list. Rows below are round 2 unless marked. Cells are mean / over 1,050 / worst.
+
+**48 seeds, cap 200, on 15%** (sheets `e3c`), against E0:
+
+| Rate, place | E0 | B early | B late (from E0's starting state) |
+| --- | --- | --- | --- |
+| heavy, stage 4 | 587.0 / 2.92% / 1,379 | 582.1 / 1.39% / 1,250 | 585.1 / 2.62% / 1,379 |
+| heavy, settled | 601.4 / 7.24% / 1,553 | 585.1 / 2.63% / 1,533 | 597.6 / 6.80% / 1,499 |
+| heavy, whole | 559.8 / 3.38% / 1,484 | 557.5 / 3.19% / 1,484 | 557.5 / 3.19% / 1,484 |
+| light, stage 4 | 444.7 / 3.04% / 1,422 | 390.5 / 0.39% / 1,238 | 389.2 / 0.61% / 1,181 |
+| light, settled | 439.0 / 2.99% / 1,535 | 398.2 / 0.39% / 1,160 | 395.7 / 0.61% / 1,275 |
+| light, whole | 429.4 / 3.06% / 1,548 | 395.7 / 1.48% / 1,353 | 395.7 / 1.48% / 1,353 |
+
+Over 1,158 at 48 seeds: heavy settled 0.55% early and 2.74% late (E0 2.91%); light settled 0.04% early and 0.13% late
+(E0 1.58%); light whole 0.31% (E0 1.22%). Early at stages 1 to 3: heavy 0.00%, 0.03%, 0.41% over 1,050 (E0 0.03%,
+0.39%, 0.94%); light 0.00%, 0.04%, 0.00% (E0 0.00%, 0.52%, 1.27%). Stage 0 equals E0 in every column: Ring Island is
+the end there and B does nothing.
+
+**24-seed screen** (seeds 1000 to 1017; sheets `e0-24`, `e3b`, and `e3` for the diagnostic). Cells are mean / over 1,050:
+
+| Run | Settled, heavy | Settled, light | Whole, heavy | Whole, light |
+| --- | --- | --- | --- | --- |
+| E0, these 24 seeds | 602.9 / 7.49% | 441.5 / 3.23% | 562.8 / 3.27% | 429.7 / 3.12% |
+| 150, 15, early | 587.4 / 2.61% | 400.5 / 0.69% | 560.1 / 3.01% | 395.2 / 1.78% |
+| 200, 15, early | 587.3 / 2.61% | 395.5 / 0.43% | 560.2 / 3.01% | 391.3 / 1.60% |
+| 300, 15, early | 587.3 / 2.61% | 396.9 / 0.43% | 560.0 / 3.01% | 389.3 / 1.60% |
+| 200, 25, early | 588.8 / 3.18% | 405.5 / 0.35% | 560.7 / 3.03% | 396.9 / 1.69% |
+| 200, 15, `whole` (off while any train is on an errand), early | 588.8 / 2.79% | 394.8 / 0.52% | 561.4 / 3.08% | 397.5 / 1.51% |
+| 150, 15, late | 599.1 / 7.20% | 395.5 / 0.52% | 560.1 / 3.01% | 395.2 / 1.78% |
+| 200, 15, late | 599.0 / 7.18% | 386.7 / 0.35% | 560.2 / 3.01% | 391.3 / 1.60% |
+| 300, 15, late | 598.7 / 7.20% | 387.7 / 0.35% | 560.0 / 3.01% | 389.3 / 1.60% |
+| 200, 25, late | 599.3 / 7.21% | 398.2 / 0.43% | 560.7 / 3.03% | 396.9 / 1.69% |
+| Diagnostic, round 1: 300, 15, also holding trains a lever ask is assigned to | 605.5 / 5.07% (worst 1,608) | 426.5 / 1.47% | 569.8 / 5.89% (worst 1,729) | 419.1 / 2.24% |
+
+- **The starting-state effect.** The heavy gain is the starting state, not the rule under asks: with B on while the
+  base world is built, heavy settled falls from 7.24% to 2.63%; from E0's starting state it falls to 6.80%. The
+  whole-leg rows start from the same world either way and are identical early and late. Light asks gain either way
+  (2.99% to 0.39% early, 0.61% late).
+- **Why heavy asks barely move.** B never holds a train a lever ask is assigned to. On the sheets Ring Island's stand
+  past the dwell is 5 ticks a lap early and 10 late at heavy settled, against 42 and 45 at light settled. (The scratch
+  agent's report puts a lever ask on about 69% of train-ticks at heavy asks; that figure is not on a sheet.) Lifting
+  the exclusion is the diagnostic row: worse at every place, and its whole-leg worst of 1,729 breaks the 1,600 cap.
+- **The cap hardly matters** (150, 200 and 300 agree to a few waits); on 15% beats on 25% at heavy asks.
+- **Nothing asked with B on** (sheet `e3c`, early): laps over non-stop 1.132 at worst (stage 1), 1.1 at stage 4 and
+  settled, against E0's 1.032 to 1.078; wagon arrivals in 12,000 ticks 17, 11, 12, 8, 9 at stages 1 to 4 and settled
+  against E0's 12, 10, 8, 7, 7, so the wagon's trips move on the grown line; kit changes equal E0's.
+- **The rider's trip, light settled, 48 seeds:** down 1,859 early and 1,863 late against E0's 1,772 (*arithmetic*:
+  +4.9% and +5.1%, at the review's 5% line); up 1,758 and 1,760 against 1,740.
+
+**Kills and survivors:**
+
+| Rule | Result on the sheets |
+| --- | --- |
+| Quiet lap at most 1.2 | Holds: 1.132 at worst |
+| No train stands 1,200 ticks | Holds: 560 at settled at 200, 15; 664 on the whole leg, as in E0 |
+| `lineSpacing` and the load check | Hold: errors 0 on every sheet |
+| The rider's mean trip up at most 5% | 200, 15 is at the line (+4.9% early, +5.1% late, down trip, light settled) |
+| The diagnostic (holding trains with an ask) | Killed: worse at every place; worst 1,729 on the whole leg and 1,714 at stage 4 at light asks, over the 1,600 cap |
+| Section 3's keep rule (share over 1,050 at least halves on leg 1, mean no higher) | Light: kept at every place. Heavy: kept early only (2.63%); from E0's starting state it fails (6.80%), and on the whole leg it fails (3.38% to 3.19%) |
+| The review's build rule (table C on leg 1 at both rates) | **Missed.** Heavy settled 2.63% early and 6.80% late against 1.0%, means 585 and 598 against 525, worst 1,533 against 1,158; light settled 0.39% meets 0.5% early and 0.61% late does not; light whole 1.48% |
+
+**Survivors, at light asks only:** on 15% at caps 150 and 200, per train or `whole`; 200, 15 is the best at the
+designer's cap. **B is not built** (the review: "built only if it meets table C on leg 1 at both rates"). B was not
+run on main with Far Head as the control halt (E3's other half); on main's stages as they are it is inert, since Ring
+Island is the end.
+
+### How to rerun
+
+`export PATH=$HOME/.nvm/versions/node/v26.13.0/bin:$PATH` first; each sweep runs at most 4 processes and writes
+`sheet.txt`, `sheet.json` and `runs.jsonl` under `SPACING_OUT`. Every setting is an environment variable, listed at the
+top of `sweep.ts` and `leg1-sweep.ts`; `SPACING_FROM=<runs.jsonl>` re-aggregates without running.
+
+| Sheet | Branch | Command |
+| --- | --- | --- |
+| `e0-20k` | `scratch/spacing-e0` | `SPACING_OUT=.look/spacing/e0-20k node test/spacing/sweep.ts` |
+| `e0-3k` | `scratch/spacing-e0` | the same with `SPACING_TICKS=3000` (the sheet holds heavy rows only) |
+| `e2-v1` to `e2-v4` | `scratch/spacing-a` | `SPACING_PASS=<cm>,<band> SPACING_HOLDS=75 SPACING_OUT=.look/spacing/e2-v2 node test/spacing/sweep.ts`; unset for v0 |
+| `leg1-e0` | `scratch/spacing-leg1-e0` | `SPACING_OUT=.look/spacing/leg1-e0 node test/spacing/leg1-sweep.ts` (about 45 minutes) |
+| `e3c`, early | `scratch/spacing-leg1-b` | `SPACING_CONTROL=200,15 SPACING_HOLDS=75 SPACING_OUT=.look/spacing/e3c/early-200-15 node test/spacing/leg1-sweep.ts` |
+| `e3c`, late | `scratch/spacing-leg1-b` | add `SPACING_CONTROL_LATE=1 SPACING_WHERE=stage4,settled,whole SPACING_QUIET=0` |
+| `e3`, `e3b` screens | `scratch/spacing-leg1-b` | add `SPACING_SEEDS=1000-1017 SPACING_WHERE=stage2,stage4,settled,whole`; append `,whole` or `,asks` to `SPACING_CONTROL` |
+| Off case, bit for bit | either leg 1 branch | `node test/spacing/compare.ts <a>/runs.jsonl <b>/runs.jsonl` |
+| One run | leg 1 branches | `node --import ./test/helpers/rail-no-audit.ts test/spacing/leg1.ts fuzz settled 75 20000 heavy c0ffee,777,5eed,badd` |
+
+The leg 1 harness sits on leg 1's step 3 branch, not on main; leg 1 has since shipped (v32), so a rerun on main first
+reproduces `leg1-e0` or says what moved.
