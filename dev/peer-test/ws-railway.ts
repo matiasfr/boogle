@@ -1220,6 +1220,27 @@ export async function railwayJumpIn(c: Ctx) {
   );
   // The replacement checkpoint uses the same two live browser mirrors, at a later played tick, then restores
   // the pinned old world. These are the real room hooks; a peer relay cannot invoke onReplacing.
+  await ev(J0.page, () => (window.T.railMessages.length = 0));
+  jumpCheck(
+    'replace: a fresh command session opens before occupying a seat',
+    (await waitFor(async () => {
+      await ev(J0.page, () => window.T.railOpen());
+      return (await rail(J0)).messages.some((m) => m.t === 'r:session');
+    })) >= 0,
+  );
+  const seatSession = (await rail(J0)).messages.findLast((m) => m.t === 'r:session')!;
+  await ev(J0.page, () => window.T.railStand(0, 0, 0));
+  const sit = {
+    op: 'seat.sit' as const,
+    id: 'machine-deck-0',
+    epoch: Number(seatSession.epoch),
+    request: Number(seatSession.next),
+  };
+  await ev(J0.page, (edit: typeof sit) => window.T.railEdit(edit), sit);
+  jumpCheck(
+    'replace: both peers mirror the occupied seat before replacement',
+    await both((s) => s.seats.length === 1 && s.seats[0]!.pid === 'jump0'),
+  );
   const beforeBorn = await ev(J0.page, () => window.T.room!.born());
   await Promise.all(
     [J0, J1].map((p) =>
@@ -1286,6 +1307,10 @@ export async function railwayJumpIn(c: Ctx) {
     await both((s) => s.line2[2] === 1 && left(s) === source.remaining, 15000),
   );
   jumpCheck('replace: both mirrors agree in the replaced world', await agreeOn([J0, J1]));
+  jumpCheck(
+    'replace: v41 host and both peers have no seat rows',
+    (await both((s) => s.seats.length === 0)) && (await hostedWorld(c, id)).status().seats.length === 0,
+  );
   const seedState = await rail(J0);
   jumpCheck(
     'replace: the played world returns to a lower seed tick',
@@ -1310,6 +1335,7 @@ export async function railwayJumpIn(c: Ctx) {
     await both((s) => lowered(s) && s.line2[2] === 1 && s.line2[3] !== 1, 15000),
   );
   jumpCheck('replace: restored mirrors agree', await agreeOn([J0, J1]));
+  jumpCheck('replace: restoring the save also leaves transient seats empty', await both((s) => s.seats.length === 0));
   const restoredState = await rail(J0);
   console.log(
     'Replacement checkpoint',

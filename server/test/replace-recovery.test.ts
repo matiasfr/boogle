@@ -112,6 +112,8 @@ test('a pinned replacement backup survives 31 ordinary backups', async (t) => {
       });
       assert.equal(result.status, 200);
       await result.arrayBuffer();
+      // Ordinary backup names have millisecond precision; exercise 31 distinct recovery points.
+      await new Promise((resolve) => setTimeout(resolve, 2));
     }
     assert.equal((await replacements.pins())[0]!.name, record.backup);
     assert.equal(

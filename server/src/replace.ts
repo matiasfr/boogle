@@ -1,7 +1,7 @@
 // Dev-key-only whole-room replacement. No client command or lead-tab identity grants this authority.
 import crypto from 'node:crypto';
 import express from 'express';
-import type { Express, RequestHandler } from 'express';
+import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import { isSeedStage, SEED_STAGES } from '../../src/sim/railway-seeds.ts';
 import { isRailwayRoom, RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { jumpOf } from '../../src/world/railway-jump.ts';
@@ -51,7 +51,7 @@ export function addReplace(
   app.post(
     '/admin/rooms/:id/replace',
     deps.limit,
-    (req, res, next) => {
+    (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
       if (!cfg.advanceKey) return res.status(404).json({ error: 'not found' });
       const given = Buffer.from(req.get('authorization') ?? '');
       const want = Buffer.from(`Bearer ${cfg.advanceKey}`);
@@ -60,7 +60,7 @@ export function addReplace(
       next();
     },
     express.json({ limit: '1kb', type: ['application/json', 'text/plain'] }),
-    (req, res, next) => {
+    (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
       const run = async () => {
         res.set('Cache-Control', 'no-store');
         const id = req.params.id;

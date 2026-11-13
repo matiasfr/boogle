@@ -201,7 +201,7 @@ Local invocation (the server must have the same key; choose a disposable room):
 export BOOGLE_SERVER=http://127.0.0.1:9000
 export ADVANCE_KEY=local-replace-key
 npm run server -- replace test-room awake --override
-curl -X POST "$BOOGLE_SERVER/admin/rooms/rail-v40-test-room/replace" \
+curl -X POST "$BOOGLE_SERVER/admin/rooms/rail-v41-test-room/replace" \
   -H "Authorization: Bearer $ADVANCE_KEY" -H 'Content-Type: application/json' \
   --data '{"stage":"awake","confirm":"test-room","override":true}'
 # Use the exact restore command printed in the response, with REPORT_TOKEN set.
