@@ -18,10 +18,12 @@ import {
   PIER_FRAME,
   CROSSING_BENTS,
 } from '../src/sim/railway-works-layout.ts';
+import { CART_FORGE, HEADS } from '../src/place/home-station.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { distToLine, layout, parseMapPage, polyLen, rideSeconds, type XZ } from '../src/proto/greybox/map-data.ts';
 import {
   CART_Q4_S,
+  APRON_CONNECTOR,
   rideLength,
   ridePoints,
   rideModelSeconds,
@@ -95,7 +97,8 @@ test('rides: legs match the rails (±2 m) and the plan sums', () => {
   const E = LINES.east.len;
   for (const r of rides) {
     for (const leg of r.legs) {
-      const len = LINES[leg.line].len;
+      const len =
+        leg.line === 'cart' ? CART_FORGE + CART_Q4_S : leg.line === 'apron' ? APRON_CONNECTOR : LINES[leg.line].len;
       assert.ok(leg.from >= 0 && leg.from <= len && leg.to >= 0 && leg.to <= len, `${r.id}/${leg.stop} is on its line`);
     }
     const pts = ridePoints(r, 2);
@@ -106,8 +109,8 @@ test('rides: legs match the rails (±2 m) and the plan sums', () => {
     );
   }
   const [cart, train, boiler] = rides;
-  // The cart: camp to the turntable down line 1, then out along line 2 to the Q4 rack (depot.ts L1_FROM, stopFor).
-  assert.deepEqual(cart!.legs.map(legLength), [STUB.camp + 5, EAST.quarry - 13]);
+  // The cart: from camp over the leg to the forge, reversing onto line 2 for the Q4 rack.
+  assert.deepEqual(cart!.legs.map(legLength), [CART_FORGE, EAST.quarry - 13]);
   assert.equal(CART_Q4_S, EAST.quarry - 13);
   // The train: the quarry's `stops` and the Far Head stop, then the pier at the line's end.
   const stops = LINKS.find((l) => l.id === 'quarry')!.stops;
@@ -117,6 +120,10 @@ test('rides: legs match the rails (±2 m) and the plan sums', () => {
   assert.ok(Math.abs(rideModelSeconds(train!) - rideSeconds(data.ride, train!.legs.map(legLength))) < 0.01);
   // The boiler: 546 m home in about 98 s, then on to the old train at the camp.
   assert.equal(legLength(boiler!.legs[0]!), EAST.head);
+  assert.equal(boiler!.legs[1]!.line, 'apron');
+  assert.equal(legLength(boiler!.legs[1]!), APRON_CONNECTOR);
+  assert.ok(Math.abs(APRON_CONNECTOR - 8.15) < 0.01);
+  assert.equal(rideLength(boiler!), EAST.head + APRON_CONNECTOR + STUB.camp + 5);
   assert.ok(Math.abs(legLength(boiler!.legs[0]!) / boiler!.mps - 98) < 0.01);
 });
 
@@ -141,5 +148,18 @@ test('works: Split-rock and Roundhouse marks agree with every pinned catalog pos
   for (const [id, p] of Object.entries(expected)) {
     const mark = marks.find((w) => w.id === id)!;
     assert.ok(Math.hypot(mark.at[0] - (p.x / 100 - ORIGIN.x), mark.at[1] - (p.z / 100 - ORIGIN.z)) <= 1, id);
+  }
+});
+
+test('Home map heads follow both buffer roads through their joins', () => {
+  for (const [road, id] of ['l1', 'l2a'].entries()) {
+    const pts = data.common.lines.find((l) => l.id === id)!.pts;
+    const rail = road === 0 ? LINES.north : LINES.east;
+    assert.ok(Math.hypot(pts[0]![0] - rail.xs[0]!, pts[0]![1] - rail.zs[0]!) < 0.01);
+    for (let s = 0; s <= HEADS[road as 0 | 1].join; s++) {
+      const p = { x: 0, z: 0, ux: 0, uz: 0 };
+      lineAt(rail, s, p);
+      assert.ok(distToLine([p.x, p.z], pts) < 0.2, `${id} at s ${s}`);
+    }
   }
 });

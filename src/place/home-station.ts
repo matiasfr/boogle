@@ -1,21 +1,11 @@
 // Home as one terminus station, layout B (docs/plans/home-station.md), as data: both lines' new first stretches, the
 // buffer stops, the island, the hall, the engine spur and its table, the three stall roads, the cart's leg and the
 // moved yard props. Place-local metres (world x = local x + 1000), north is -z, bearings in degrees clockwise from
-// north, `s` metres along a line from its start. Local, no three.js: until the flip (the plan's step 6) only `?home=b`
-// (or BOOGLE_HOME=b for Node tools) draws it, and the rules keep today's anchors.
+// north, `s` metres along a line from its start. Local, no three.js; the rules pin these anchors in centimetres.
 import type { Line } from './layout.ts';
 
 /** Both lines' first spline point. It was the turntable's centre; the table moves, the lines must not. */
 export const LINE_ORIGIN = { x: -82, z: 12 };
-
-let on: boolean | null = null;
-/** Whether this page (or Node tool) draws layout B. Read once. */
-export function homeLayout(): boolean {
-  if (on !== null) return on;
-  if (typeof location !== 'undefined') return (on = new URLSearchParams(location.search).get('home') === 'b');
-  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
-  return (on = env?.BOOGLE_HOME === 'b');
-}
 
 export type XZ = { x: number; z: number };
 export type Pose = XZ & { bearing: number };
@@ -226,11 +216,6 @@ export function cartRoadAt(d: number, lines: { north: Sampled; east: Sampled }):
   if (d <= CART_FORGE) return sample(lines.east, CART_FORGE - d);
   return sample(lines.east, d - CART_FORGE);
 }
-/** The rules' cart distance `d` (m from the camp, on today's road, whose forge stop is `forge` m out) as a distance
- * along layout B's road: scaled on the way in so the forge stop lands on `CART_FORGE`, metre for metre past it. Only
- * until the flip gives the rules B's road. */
-export const cartRoadFrom = (d: number, forge: number) =>
-  d <= forge ? (d * CART_FORGE) / forge : CART_FORGE + (d - forge);
 /** The rail's height `d` metres along the cart's road, from each line's own height by its `s`; the leg runs evenly
  * from line 1's height at its points to road 2's. */
 export function cartRoadY(d: number, y: { north: (s: number) => number; east: (s: number) => number }): number {
@@ -289,9 +274,9 @@ export const CROSSING = {
 export const PROPS = {
   rack: { x: -84.53, z: 10.05 },
   greeter: { x: -95.86, z: 9.65 },
-  pedestal: { x: -78.0, z: -1.05 },
+  pedestal: { x: -78.0, z: -1.17 }, // the existing 3.5 m rail clearance, including the pedestal's footprint
   crane: { x: -72.4, z: -3.1 },
-  dock: { x: -76.15, z: -1.73 },
+  dock: { x: -76.07, z: -1.73 }, // retain 2 m between the dock and the pedestal
   yard: { x: -46, z: 22 },
 };
 /** The curio shelf's footprint in its own frame (`curio-shelf.ts`): the crown's half-width, how far the crown reaches in

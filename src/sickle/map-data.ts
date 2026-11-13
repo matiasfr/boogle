@@ -3,6 +3,11 @@
 // Shared by the production horizon and dev greybox. Place-local metres: x east, z south; world = local + ORIGIN.
 // The geometry helpers copy the page's own (blobPts, mulberry), so outlines match the drawn map exactly.
 
+import { HALTS, LINES, ORIGIN, lineAt } from '../place/layout.ts';
+import { HEADS, headPoints } from '../place/home-station.ts';
+import { LINE2_BOILER, LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
+import { SHED_STALL, SHED_TABLE, WORKS_BREAKER, WORKS_SEAMS } from '../sim/railway-works-layout.ts';
+
 export type XZ = [x: number, z: number];
 /** A stage, or `{ c, s: [if side c is picked first, if second] }`; null means never. A is the first branch's side. */
 export type Staged = number | null | { c: 'A' | 'B'; s: [number | null, number | null] };
@@ -164,6 +169,54 @@ export function parseMapPage(html: string): MapData {
   const m = /<script type="application\/json" id="map-data">([\s\S]*?)<\/script>/.exec(html);
   if (!m) throw new Error('map-prototypes.html has no #map-data block');
   return JSON.parse(m[1]!) as MapData;
+}
+
+/** Refresh Home's built marks and heads before the world-blockout generator writes the page's shared JSON.
+ * Other options and the authored rail points beyond the station's joins keep their shapes. */
+export function syncHomeMap(data: MapData): MapData {
+  const local = (p: { x: number; z: number }): XZ => [p.x / 100 - ORIGIN.x, p.z / 100 - ORIGIN.z];
+  const anchors: Record<string, { x: number; z: number }> = {
+    Q1: LINE2_STATIONS[0]!,
+    Q2: LINE2_STATIONS[1]!,
+    boiler: LINE2_BOILER,
+    breaker: WORKS_BREAKER,
+    'stall-slab': WORKS_SEAMS[0],
+    stall: SHED_STALL,
+    turntable: SHED_TABLE,
+  };
+  for (const w of data.common.works ?? []) {
+    if (anchors[w.id]) w.at = local(anchors[w.id]!);
+    const halt = w.id === 'halt-village' ? HALTS[0] : w.id === 'halt-village-line-2' ? HALTS[2] : null;
+    if (halt) {
+      const p = { x: 0, z: 0, ux: 0, uz: 0 };
+      w.s = (halt.s0 + halt.s1) / 2;
+      w.off = Math.abs(halt.lat);
+      lineAt(halt.line === 0 ? LINES.north : LINES.east, w.s, p);
+      w.at = [p.x - p.uz * halt.lat, p.z + p.ux * halt.lat];
+    }
+  }
+  for (const road of [0, 1] as const) {
+    const line = data.common.lines.find((l) => l.id === (road === 0 ? 'l1' : 'l2a'));
+    if (!line) continue;
+    const rail = road === 0 ? LINES.north : LINES.east;
+    const join = HEADS[road].join;
+    // Keep the authored tail after the join; on reruns this also drops the previously generated head samples.
+    const tail = line.pts.filter(([x, z]) => {
+      let nearest = 0,
+        best = Infinity;
+      for (let s = 0; s < rail.xs.length; s++) {
+        const d = Math.hypot(x - rail.xs[s]!, z - rail.zs[s]!);
+        if (d < best) {
+          best = d;
+          nearest = s;
+        }
+      }
+      return nearest > join;
+    });
+    const points = headPoints(road);
+    line.pts = [...points.filter((_, i) => i % 4 === 0 || i === points.length - 1).map((p): XZ => [p.x, p.z]), ...tail];
+  }
+  return data;
 }
 
 // ---------------------------------------------------------------- geometry, as the page draws it

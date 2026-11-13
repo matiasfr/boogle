@@ -1,7 +1,7 @@
-// Home's layout B in greybox, look only (docs/plans/home-station.md, step 3; `?home=b`): the hall, the buffer stops, the
+// Home's terminus station in greybox (docs/plans/home-station.md): the hall, the buffer stops, the
 // apron, a kerb outline of the island (its deck drops in with the trains, as halts do: ./halts-view.ts), the stubs, the
 // spur, the stall roads and, once line 2 has its first stretch, the cart's leg, and the two ruined stalls beside the
-// open one (./roundhouse-view.ts). Local: the rules keep today's anchors, so prompts stay where they were.
+// open one (./roundhouse-view.ts). Local view over the station's data rows.
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { line2Completed } from '../../sim/railway-queries-line2.ts';
@@ -90,6 +90,23 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     const { a, c, w, d, height, endWall, floor } = home.HALL;
     const mid = at(a, c);
     add(box(mid.x, floor - 0.12, mid.z, w + 0.2, 0.24, d + 0.2, yaw), STONE, true);
+    // The way in from the square: the slab's top is 0.12 m over the highest ground under the hall, so over the sand
+    // at the open north bays its front stands a third of a metre up, more than a walking step. Stone treads across
+    // those bays, from the north wall to the shelf's end, each rise a walking step; the kerb stays everywhere else.
+    {
+      const STEP = 0.115,
+        TREAD = 0.4;
+      const c0 = c - w / 2 + 0.3,
+        c1 = home.toAxis(home.SHELF_B).c - home.SHELF_SIZE.crown,
+        edge = a - d / 2 - 0.1;
+      const low = Math.min(...[c0, (c0 + c1) / 2, c1].map((cc) => ground(at(edge - TREAD, cc))));
+      const n = Math.ceil((floor - low) / STEP);
+      for (let k = 1; k < n; k++) {
+        const top = floor - (k * (floor - low)) / n,
+          tread = at(edge - (k - 0.5) * TREAD, (c0 + c1) / 2);
+        add(box(tread.x, top - 0.3, tread.z, c1 - c0, 0.6, TREAD, yaw), STONE, true);
+      }
+    }
     // The end walls stop at 2.4 m, with a stone coping; the roof stands on the posts, the corner ones included.
     // The north wall (toward the forge) is in two lengths round the goods door, behind road 1's buffer.
     const door = home.HALL.goodsDoor;

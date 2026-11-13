@@ -31,7 +31,7 @@ export const CART_PHASES = 8;
 /** Pinned from Place: the camp stop is line one's s = STUB.camp + 5 (196 m), so the turntable is 196 m on; a rack
  * stop is 13 m short of its stretch's start along line two, behind the waiting machine (depot.ts stopFor). */
 export const CART_ROAD = {
-  forgeCm: 19600,
+  forgeCm: 20632,
   behindCm: 1300,
   rackCm: (k: number) => CART_ROAD.forgeCm + (LINE2_STATIONS[k]?.fromCm ?? 0) - CART_ROAD.behindCm,
 } as const;

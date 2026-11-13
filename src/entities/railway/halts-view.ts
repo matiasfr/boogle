@@ -105,7 +105,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     return out;
   };
   /** A platform along one side of `line`, `s0` to `s1` metres along, at `lat` from the rails, with a ramp off its side.
-   * An `island` halt (`?home=b`) is one edge of the island both village roads share: line 1's edge builds the deck, its
+   * An `island` halt is one edge of the island both village roads share: line 1's edge builds the deck, its
    * end ramps and a greybox canopy down the middle (no back ramp, no shelter), and each edge has its own signal, board
    * and destination plaque. Standing anywhere on the island is on both. */
   function makeHalt(

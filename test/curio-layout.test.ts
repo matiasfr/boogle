@@ -1,5 +1,4 @@
-// The curio shelf, the finders' bay, its trophy plinth and its missed boxes stay off every walk line, in layout A and in
-// `?home=b` (docs/plans/curio-shelves-placement.md, finding 4; owner, 10 November: "Ok let's commit to A for now").
+// The curio shelf, the finders' bay, its trophy plinth and its missed boxes stay off every walk line at Home.
 // Footprints are oriented boxes in each piece's own frame (+z its front, three.js yaw), measured against path
 // centrelines sampled every 10 cm.
 import test from 'node:test';
@@ -47,9 +46,8 @@ function boxDistance(p: XZ, at: XZ, yaw: number, size: { across: number; front: 
 const nearest = (at: XZ, yaw: number, size: { across: number; front: number; back: number }) =>
   Math.min(...lines.map((line) => Math.min(...line.map((p) => boxDistance(p, at, yaw, size)))));
 
-const LAYOUTS = { A: SHELF, B: SHELF_B };
-
 test('the bay is on the shelf_b centreline, 16.3 m out, facing the hall; boxes and plinth in its frame', () => {
+  assert.deepEqual(SHELF, SHELF_B);
   const s = toAxis(SHELF_B),
     b = toAxis(FINDERS_B);
   assert.ok(Math.abs(b.c - s.c) < 1e-9 && Math.abs(s.a - b.a - 16.3) < 1e-9);
@@ -68,24 +66,23 @@ test('the bay is on the shelf_b centreline, 16.3 m out, facing the hall; boxes a
   }
 });
 
-for (const [name, shelf] of Object.entries(LAYOUTS))
-  test(`layout ${name}: every curio footprint is 2.5 m off each path centreline, the box block 3 m`, () => {
-    const pieces: [string, XZ, number, { across: number; front: number; back: number }][] = [
-      ['shelf', shelf, shelf.yaw, CROWN],
-      ['bay', FINDERS_B, FINDERS_B.yaw, CROWN],
-      ['plinth', bayPoint(0, PLINTH_OUT), 0, { across: 0.75, front: 0.75, back: 0.75 }],
-    ];
-    for (const [label, at, yaw, size] of pieces) {
-      const d = nearest(at, yaw, size);
-      assert.ok(d >= 2.5, `${label}: ${d.toFixed(2)} m from a path centreline`);
-    }
-    const out = BAY_BOXES.out,
-      across = BAY_BOXES.across;
-    const block = {
-      across: Math.max(...across.map(Math.abs)) + BOX_HALF,
-      front: out[out.length - 1]! + BOX_HALF,
-      back: -(out[0]! - BOX_HALF),
-    };
-    const d = nearest(FINDERS_B, FINDERS_B.yaw, block);
-    assert.ok(d >= 3, `box block: ${d.toFixed(2)} m from a path centreline`);
-  });
+test('every curio footprint is 2.5 m off each path centreline, the box block 3 m', () => {
+  const pieces: [string, XZ, number, { across: number; front: number; back: number }][] = [
+    ['shelf', SHELF, SHELF.yaw, CROWN],
+    ['bay', FINDERS_B, FINDERS_B.yaw, CROWN],
+    ['plinth', bayPoint(0, PLINTH_OUT), 0, { across: 0.75, front: 0.75, back: 0.75 }],
+  ];
+  for (const [label, at, yaw, size] of pieces) {
+    const d = nearest(at, yaw, size);
+    assert.ok(d >= 2.5, `${label}: ${d.toFixed(2)} m from a path centreline`);
+  }
+  const out = BAY_BOXES.out,
+    across = BAY_BOXES.across;
+  const block = {
+    across: Math.max(...across.map(Math.abs)) + BOX_HALF,
+    front: out[out.length - 1]! + BOX_HALF,
+    back: -(out[0]! - BOX_HALF),
+  };
+  const d = nearest(FINDERS_B, FINDERS_B.yaw, block);
+  assert.ok(d >= 3, `box block: ${d.toFixed(2)} m from a path centreline`);
+});

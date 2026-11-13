@@ -31,5 +31,6 @@ export const TREE_SOURCES: readonly TreeSource[] = [
   ),
   source(OAK.x + ORIGIN.x, OAK.z + ORIGIN.z, 1.1),
   source(GREAT_TREE.x + ORIGIN.x, GREAT_TREE.z + ORIGIN.z, 2.1, true),
-  ...LAND_TREES.map((t) => source(t.x, t.z, t.size, false, t.hardwood)),
-].map((t, index) => ({ ...t, index }));
+]
+  .map((t, index) => ({ ...t, index }))
+  .concat(LAND_TREES.map((t) => ({ ...source(t.x, t.z, t.size, false, t.hardwood), index: t.id })));

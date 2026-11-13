@@ -47,9 +47,8 @@ const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
 /** Ring Island build 2 (R4, v31). The island halt's east (down) platform at u 444, lat +4, on its deck, facing the
  * works' doorway (u 452, lat +6.5), beside the loader's mast (V1). */
 const STEEL_LAND = near({ ...ringAt(44400, 400) }, 0, 0, RING_HALT.down.y / 100, RING_STEEL_WORKS);
-/** 5.5 m east of the Roundhouse table's centre (5.2 m east, 1.7 m south), on the open ground between line 2's two
- * roads (surface 18.1 m by `jump-land-probe`), facing the table's centre with the stall behind it. Inside the table's
- * 6 m reach. The spot before (4 m west, 2 m south) put the camera inside the stall's shell. */
+/** Beside Home's spur table, 5.2 m east and 1.7 m south, facing its centre. The garage's radial stand and the
+ * stall roads clear this landing, inside the table's 6 m reach (home-flip X1). */
 const TABLE_LAND = near(SHED_TABLE, 5.2, 1.7, 18.1, SHED_TABLE);
 /** Line 1's Village and Camp platforms (slice 5's freight-running lands on the first, facing the second). */
 const VILLAGE_LINE1 = RAIL_LINES[0]!.halts[0]!.platforms[0],
@@ -135,7 +134,7 @@ export const JUMPS: readonly Jump[] = [
     stage: 'fares-running',
     label: 'Fares paid',
     line: "Riders board at the Village's line 2 platform; the strongbox holds 100 Boogles",
-    land: near(VILLAGE_LINE2, 3.1, 3.56, VILLAGE_LINE2.y / 100, QUARRY_LINE2), // 5 m on along the platform (s 22), facing the Quarry
+    land: near(VILLAGE_LINE2, 4.7, -1.71, VILLAGE_LINE2.y / 100, QUARRY_LINE2), // 5 m on along Home's 70° island axis, facing the Quarry
   },
   {
     stage: 'q6-done',

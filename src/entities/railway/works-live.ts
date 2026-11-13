@@ -44,7 +44,7 @@ export async function createRailwayWorksLive(
   const leaf = createRailwayLeaf(adapter);
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
-  const install = createBoilerInstall(adapter, owner, { post: !roundhouse.garageHere });
+  const install = createBoilerInstall(adapter, owner);
   const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, steel, install, leg];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */

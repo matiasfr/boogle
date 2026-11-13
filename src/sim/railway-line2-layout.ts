@@ -12,8 +12,8 @@ export const LINE2_FORGE = {
   logs: 56,
   x: 91200,
   z: -1200,
-  rackX: 91450,
-  rackZ: 540,
+  rackX: 91547,
+  rackZ: 1005,
   rackMax: 24,
   pourTicks: 5,
   turnTicks: 26,
@@ -41,8 +41,8 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     beam: 0,
     fromCm: 700,
     toCm: 4200,
-    x: 92719,
-    z: 1059,
+    x: 92507,
+    z: 1751,
     panels: 6,
     crate: false,
     speed: 100,
@@ -55,8 +55,8 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     beam: 0,
     fromCm: 4200,
     toCm: 12200,
-    x: 94948,
-    z: 3056,
+    x: 95948,
+    z: -151,
     panels: 12,
     crate: true,
     speed: 120,
@@ -182,7 +182,7 @@ export function line2Panels(station: Line2Station) {
 }
 
 /** Boiler pickup and camp fit anchors, world cm, pinned from Place. */
-export const LINE2_BOILER = { x: 91900, z: 540, y: 1815, reach: 420 } as const;
+export const LINE2_BOILER = { x: 92200, z: -117, y: 1800, reach: 420 } as const;
 export const LINE2_OLD_TRAIN = { x: 100964, z: -14900, reach: 800 } as const;
 
 export const LINE2_BOILER_AREA = { x0: 88000, x1: 104000, z0: -17200, z1: 3500, y0: 1000, y1: 4500 } as const;

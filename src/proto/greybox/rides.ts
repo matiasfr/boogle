@@ -1,10 +1,17 @@
 // The panel's line-2 rides, with the timings the 2D economy model uses: the depot cart's trip, the line 2 train and the
-// boiler walk. Pure (no three.js): each leg is a run of metres along Place's real rails (`LINES.north` is line 1,
-// `LINES.east` line 2), so the greybox rides the actual track at its real rail height and a test checks the lengths.
+// boiler walk. Pure (no three.js): legs follow Place's real rails, cart road or the apron between buffer ends;
+// the greybox uses their real rail heights and a test checks the lengths.
 import { CART, EAST, LINES, STUB, lineAt, railY } from '../../place/layout.ts';
+import { CART_FORGE, cartRoadAt, cartRoadY } from '../../place/home-station.ts';
 import type { MapData } from './map-data.ts';
 
-export type RideLeg = { line: 'north' | 'east'; from: number; to: number; stop: string; dwellS: number };
+export type RideLeg = {
+  line: 'north' | 'east' | 'cart' | 'apron';
+  from: number;
+  to: number;
+  stop: string;
+  dwellS: number;
+};
 export type WorkRide = {
   id: string;
   name: string;
@@ -18,6 +25,10 @@ export type WorkRide = {
 /** Where the depot cart loads, on line 1 (Place's deleted depot.ts `L1_FROM`), and its Q4 stop on line 2 (`stopFor`). */
 export const CART_LOAD_S = STUB.camp + 5;
 export const CART_Q4_S = EAST.quarry - 13;
+const northHead = { x: LINES.north.xs[0]!, z: LINES.north.zs[0]! };
+const eastHead = { x: LINES.east.xs[0]!, z: LINES.east.zs[0]! };
+/** The walk across the apron between the two buffer ends. */
+export const APRON_CONNECTOR = Math.hypot(northHead.x - eastHead.x, northHead.z - eastHead.z);
 /** The boiler's carry: "546 m home, about 98 s" (docs/game-design/place.md, The run 7). */
 export const BOILER_MPS = EAST.head / 98;
 
@@ -33,12 +44,12 @@ export function workRides(ride: MapData['ride']): WorkRide[] {
   return [
     {
       id: 'cart',
-      name: 'Cart trip: camp, turntable and forge stop, Q4 rack (9 m/s)',
+      name: 'Cart trip: camp, leg and forge stop, Q4 rack (9 m/s)',
       mps: CART.speed,
       startS: CART.loadS,
       legs: [
-        { line: 'north', from: CART_LOAD_S, to: 0, stop: 'Turntable and forge stop', dwellS: CART.forgeS },
-        { line: 'east', from: 0, to: CART_Q4_S, stop: 'Q4 rack', dwellS: 0 },
+        { line: 'cart', from: 0, to: CART_FORGE, stop: 'Forge stop', dwellS: CART.forgeS },
+        { line: 'cart', from: CART_FORGE, to: CART_FORGE + CART_Q4_S, stop: 'Q4 rack', dwellS: 0 },
       ],
     },
     {
@@ -58,7 +69,8 @@ export function workRides(ride: MapData['ride']): WorkRide[] {
       mps: BOILER_MPS,
       startS: 0,
       legs: [
-        { line: 'east', from: EAST.head, to: 0, stop: 'Apron', dwellS: 0 },
+        { line: 'east', from: EAST.head, to: 0, stop: 'Apron, road 2', dwellS: 0 },
+        { line: 'apron', from: 0, to: APRON_CONNECTOR, stop: 'Apron, road 1', dwellS: 0 },
         { line: 'north', from: 0, to: CART_LOAD_S, stop: 'Old train at the camp', dwellS: 0 },
       ],
     },
@@ -76,12 +88,25 @@ export function ridePoints(r: WorkRide, step = 4): [x: number, y: number, z: num
   const out: [number, number, number][] = [];
   const p = { x: 0, z: 0, ux: 0, uz: 0 };
   for (const leg of r.legs) {
-    const line = LINES[leg.line];
     const n = Math.max(1, Math.ceil(legLength(leg) / step));
     for (let k = out.length ? 1 : 0; k <= n; k++) {
       const s = leg.from + ((leg.to - leg.from) * k) / n;
-      lineAt(line, s, p);
-      out.push([p.x, railY(line, s), p.z]);
+      if (leg.line === 'cart') {
+        const at = cartRoadAt(s, LINES);
+        const y = cartRoadY(s, { north: (d) => railY(LINES.north, d), east: (d) => railY(LINES.east, d) });
+        out.push([at.x, y, at.z]);
+      } else if (leg.line === 'apron') {
+        const u = s / APRON_CONNECTOR;
+        out.push([
+          eastHead.x + (northHead.x - eastHead.x) * u,
+          railY(LINES.east, 0) + (railY(LINES.north, 0) - railY(LINES.east, 0)) * u,
+          eastHead.z + (northHead.z - eastHead.z) * u,
+        ]);
+      } else {
+        const line = LINES[leg.line];
+        lineAt(line, s, p);
+        out.push([p.x, railY(line, s), p.z]);
+      }
     }
   }
   return out;

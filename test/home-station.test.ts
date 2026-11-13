@@ -26,7 +26,6 @@ import {
   TABLE,
   axisPoint,
   cartRoadAt,
-  cartRoadFrom,
   cartRoadY,
   headPoints,
   islandLever,
@@ -45,6 +44,7 @@ import { STEEL_CAR, TRAILER, TRAIN_OFFSETS, WAGON_CAR, steelCarOffset } from '..
 import { ENGINE, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
+import { CART_ROAD } from '../src/sim/railway-cart.ts';
 import { H } from '../src/place/terrain.ts';
 
 const bearingOf = (ux: number, uz: number) => ((((Math.atan2(ux, -uz) * 180) / Math.PI) % 360) + 360) % 360;
@@ -420,13 +420,12 @@ test('the goods door: 1.5 m in the north wall’s back half, behind road 1’s b
 });
 
 // docs/plans/home-flip.md, F2.
-test('the rules’ cart distance lands on layout B’s road: the forge stop on road 2’s s 0, the rail height unbroken', () => {
+test('the rules’ cart distance lands on Home’s road: the forge stop on road 2’s s 0, the rail height unbroken', () => {
   const lines = { north: spliceHead(LINES.north, headPoints(0)), east: spliceHead(LINES.east, headPoints(1)) };
-  const F = 196; // today's forge stop in the rules (CART_ROAD.forgeCm), until the flip
-  assert.equal(cartRoadFrom(0, F), 0);
-  assert.ok(Math.abs(cartRoadFrom(F, F) - CART_FORGE) < 1e-9);
-  assert.ok(Math.abs(cartRoadFrom(F + 30, F) - (CART_FORGE + 30)) < 1e-9, 'metre for metre past the stop');
-  assert.ok(dist(cartRoadAt(cartRoadFrom(F, F), lines), roadAt(1, 0)) < 0.01);
+  const forge = CART_ROAD.forgeCm / 100;
+  assert.equal(CART_ROAD.forgeCm, Math.round(CART_FORGE * 100));
+  assert.ok(dist(cartRoadAt(forge, lines), roadAt(1, 0)) < 0.01);
+  assert.ok(dist(cartRoadAt(forge + 30, lines), roadAt(1, 30)) < 0.01, 'metre for metre past the stop');
   // Heights from each line's own s: the leg joins line 1's at its points to road 2's with no step.
   const y = { north: (s: number) => 20 + s * 0.01, east: (s: number) => 19 + s * 0.02 };
   let prev = cartRoadY(0, y);

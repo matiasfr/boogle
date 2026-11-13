@@ -497,11 +497,15 @@ export const LIVE_SECOND_TRACK: readonly SecondTrack[] = [
     line: 0,
     side: -1,
     clashes: [
-      { fromCm: 0, toCm: 400, reason: 'the turntable', otherFree: false },
-      { fromCm: 600, toCm: 3200, reason: 'the Village platform', otherFree: false },
+      { fromCm: 0, toCm: 200, reason: 'the forge', otherFree: false },
+      { fromCm: 400, toCm: 800, reason: 'the Boiler', otherFree: false },
       { fromCm: 11200, toCm: 11200, reason: 'a drop over 6 m', otherFree: true },
       { fromCm: 11400, toCm: 11400, reason: 'a bank', otherFree: true },
     ],
   },
-  { line: 1, side: -1, clashes: [{ fromCm: 0, toCm: 400, reason: 'the turntable', otherFree: false }] },
+  {
+    line: 1,
+    side: -1,
+    clashes: [{ fromCm: 400, toCm: 2400, reason: 'the Village, line 2 platform', otherFree: true }],
+  },
 ];

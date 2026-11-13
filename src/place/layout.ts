@@ -8,22 +8,9 @@ import { smoothstep } from '../math.ts';
 import { TURNOUT_CM } from '../sim/railway-lines.ts';
 import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/railway-line-layout.ts';
 import { LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
-import { SHORE_COAST, SHORE_LANDING, SHORE_WORKER } from './shore-layout.ts';
+import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
-import {
-  ISLAND_HALTS,
-  LINE_ORIGIN,
-  PROPS,
-  SHELF_B,
-  TABLE,
-  headPoints,
-  homeLayout,
-  spliceHead,
-} from './home-station.ts';
-
-/** `?home=b` (docs/plans/home-station.md, step 3): draw Home as one terminus station. Look only; the rules keep today's
- * anchors, so prompts at Home stay in the old places. */
-const HOME_B = homeLayout();
+import { ISLAND_HALTS, LINE_ORIGIN, PROPS, SHELF_B, TABLE, headPoints, spliceHead } from './home-station.ts';
 
 /** Far from today's island, past its soft wall, as the crossing does. */
 // The bank cart has one level resting place on the shoulder, clear of the steep bank.
@@ -208,64 +195,66 @@ export function lineAt(l: Line, s: number, out: LinePoint) {
 export const railY = (l: Line, s: number) => l.y0 + (l.y1 - l.y0) * smoothstep(l.ramp[0], l.ramp[1], s);
 
 /** Line 1's village end, and the turntable there: line 2 leaves from the same spot. */
-export const TURNTABLE = HOME_B ? { x: TABLE.x, z: TABLE.z, r: TABLE.r } : { x: -82, z: 12, r: 4.8 };
+export const TURNTABLE = { x: TABLE.x, z: TABLE.z, r: TABLE.r };
 // Both lines start at LINE_ORIGIN, not TURNTABLE: moving the table (docs/plans/home-station.md) must not reshape them.
-const TODAY = {
-  north: makeLine(
-    [
-      [LINE_ORIGIN.x, LINE_ORIGIN.z], // straight for its first 36 m: the platform is one straight box
-      [-70, -2],
-      [-58, -16],
-      [-46, -36],
-      [-38, -60],
-      [-30, -90],
-      [-24, -110],
-      [-28, -128],
-      [-24, -143],
-      [-8, -149],
-      [8, -149],
-      [24, -149],
-    ],
-    18.3,
-    30.3,
-    [50, 118],
+export const LINES = {
+  north: spliceHead(
+    makeLine(
+      [
+        [LINE_ORIGIN.x, LINE_ORIGIN.z], // straight for its first 36 m: the platform is one straight box
+        [-70, -2],
+        [-58, -16],
+        [-46, -36],
+        [-38, -60],
+        [-30, -90],
+        [-24, -110],
+        [-28, -128],
+        [-24, -143],
+        [-8, -149],
+        [8, -149],
+        [24, -149],
+      ],
+      18.3,
+      30.3,
+      [50, 118],
+    ),
+    headPoints(0),
   ),
-  east: makeLine(
-    [
-      [LINE_ORIGIN.x, LINE_ORIGIN.z],
-      [-70, 24],
-      [-58, 36],
-      [-40, 38],
-      [-15, 30],
-      [8, 30],
-      [45, 38],
-      [75, 38],
-      [88, 36],
-      // On past the quarry: over the table, across the sea on a long trestle, up onto Far Head...
-      [118, 16],
-      [150, -8],
-      [182, -30],
-      [222, -62],
-      [262, -94],
-      [306, -128],
-      [346, -156],
-      [376, -176],
-      [392, -200],
-      // ...and the pier, north off the Head towards the shard across the sea.
-      [400, -232],
-      [404, -270],
-      [404, -320],
-      [402, -372],
-    ],
-    18.3,
-    24.3,
-    [72, 112],
+  east: spliceHead(
+    makeLine(
+      [
+        [LINE_ORIGIN.x, LINE_ORIGIN.z],
+        [-70, 24],
+        [-58, 36],
+        [-40, 38],
+        [-15, 30],
+        [8, 30],
+        [45, 38],
+        [75, 38],
+        [88, 36],
+        // On past the quarry: over the table, across the sea on a long trestle, up onto Far Head...
+        [118, 16],
+        [150, -8],
+        [182, -30],
+        [222, -62],
+        [262, -94],
+        [306, -128],
+        [346, -156],
+        [376, -176],
+        [392, -200],
+        // ...and the pier, north off the Head towards the shard across the sea.
+        [400, -232],
+        [404, -270],
+        [404, -320],
+        [402, -372],
+      ],
+      18.3,
+      24.3,
+      [72, 112],
+    ),
+    headPoints(1),
   ),
 };
-/** Layout B splices each line's new head over its first metres: every `s` past the join is where it was. */
-export const LINES = HOME_B
-  ? { north: spliceHead(TODAY.north, headPoints(0)), east: spliceHead(TODAY.east, headPoints(1)) }
-  : TODAY;
 
 // ---------------------------------------------------------------- the lines' stations
 export type Goods = 'logs' | 'rails' | 'stone' | 'beam';
@@ -312,7 +301,7 @@ const STATION_LAND: Record<LineStationId | Line2StationId, { side: number; label
   T2: { side: 1, label: 'Station 2' },
   T3: { side: 1, label: 'Station 3' },
   // In B the island is on road 2's north side, so Q1's frame stands south of it.
-  Q1: { side: HOME_B ? 1 : -1, label: 'Line 2, station 1' },
+  Q1: { side: 1, label: 'Line 2, station 1' },
   Q2: { side: -1, label: 'Line 2, station 2' },
   Q3: { side: -1, label: 'Line 2, station 3' },
   Q4: { side: -1, label: 'Line 2, station 4' },
@@ -388,9 +377,9 @@ export type Halt = { name: string; line: 0 | 1; s0: number; s1: number; lat: num
 /** Layout B's two village halts are the two edges of one island: halts-view.ts builds its deck once. */
 const island = (line: 0 | 1, name: string): Halt => ({ name, line, ...ISLAND_HALTS[line], stop: 0, island: true });
 export const HALTS: Halt[] = [
-  HOME_B ? island(0, 'Village') : { name: 'Village', line: 0, s0: 8, s1: 30, lat: -2.9, stop: 0 },
+  island(0, 'Village'),
   { name: 'Camp', line: 0, s0: N - 26, s1: N - 2, lat: 2.9, stop: 1 },
-  HOME_B ? island(1, 'Village, line 2') : { name: 'Village, line 2', line: 1, s0: 6, s1: 28, lat: 3.1, stop: 0 }, // 3.1: the line bends toward it
+  island(1, 'Village, line 2'),
   { name: 'Quarry', line: 1, s0: EAST.quarry - 12, s1: EAST.quarry + 8, lat: 2.9, stop: 1 }, // the straight before the quarry's bend
   { name: 'Far Head', line: 1, s0: EAST.headStop - 11, s1: EAST.headStop + 11, lat: 2.9, stop: 2 },
 ];
@@ -530,21 +519,19 @@ export const BUOYS = { n: 12, gap: 62 };
 // The platform is on the forge's side of the track, and the forge stands just past where the train stops, so what your
 // cargo builds fills the view as you pull in and from the platform (the owner "had to go and look for what cargo built").
 export const FORGE = { x: -87, z: -3, w: 10, d: 8 };
-export const CRANE = HOME_B ? PROPS.crane : { x: -80, z: 2.5 };
-export const DOCK = HOME_B ? PROPS.dock : { x: -78.6, z: -1.5 }; // where crates off the train land for the crane
+export const CRANE = PROPS.crane;
+export const DOCK = PROPS.dock; // where crates off the train land for the crane
 export const HEAP = { x: -78, z: -9.5 }; // the village's timber heap, once the forge has what it needs
-export const RACK = HOME_B ? PROPS.rack : { x: -85.5, z: 5.4 }; // where the forge's rails stack
-export const YARD = HOME_B ? PROPS.yard : { x: -62, z: 20 }; // where the stone lands
-/** The curio shelf at the station. In A (until v24), on the forge's west wall line, square to the street and facing
- * west across it (curio placement plan, 10 November). `y`, when set, is the floor it stands on (`?home=b`: the hall's);
- * otherwise the ground. */
-export const SHELF: { x: number; z: number; yaw: number; y?: number } = HOME_B
-  ? SHELF_B
-  : { x: -91.6, z: 8.5, yaw: -Math.PI / 2 };
-/** Where Sleeves, the greeter, stands: beside the path from the shore; in `?home=b`, in front of the hall's north end. */
-export const GREETER = HOME_B ? PROPS.greeter : SHORE_WORKER;
-/** Spawn: at the village's edge, with the path, the shelf, the forge, the stub and the gorge ahead. */
-export const SPAWN = { x: -97, z: 14, yaw: -0.25 };
+export const RACK = PROPS.rack; // where the forge's rails stack
+export const YARD = PROPS.yard; // where the stone lands
+/** The curio shelf stands on the hall's floor, facing the square. */
+export const SHELF: { x: number; z: number; yaw: number; y?: number } = SHELF_B;
+/** Sleeves stands in front of the hall's north end, beside its open bay. */
+export const GREETER = PROPS.greeter;
+/** Spawn: at the village's edge, with the path, the shelf, the forge, the stub and the gorge ahead. The yaw looks
+ * at the hall's open bay, about 21° right of Sleeves (-0.25 faced him, so Buddy stood between him and the camera):
+ * he is whole in frame beside Buddy, at phone width too. */
+export const SPAWN = { x: -97, z: 14, yaw: -0.62 };
 export const LANDING = SHORE_COAST ? SHORE_LANDING : SPAWN;
 
 // ---------------------------------------------------------------- the town's plots

@@ -152,14 +152,13 @@ test('catalog exactly pins current T1 recipe and every starter source to centime
       rng(); // tree size consumes the third value
     }
   rows.push([
-    id++,
+    id,
     Math.round((layout.OAK.x + layout.ORIGIN.x) * 100),
     Math.round((layout.OAK.z + layout.ORIGIN.z) * 100),
   ]);
-  id++; // great tree is a later beam, not T1 material
+  // The great tree is a later beam; scenery carries its original identity even after a clearance.
   for (const t of LAND_TREES) {
-    if (!t.hardwood) rows.push([id, Math.round(t.x * 100), Math.round(t.z * 100)]);
-    id++;
+    if (!t.hardwood) rows.push([t.id, Math.round(t.x * 100), Math.round(t.z * 100)]);
   }
   assert.deepEqual(RAILWAY_SOURCES, rows);
   const link = layout.LINKS[0]!,

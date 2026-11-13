@@ -1,10 +1,10 @@
-> **Status, 12 November (owner, late session): to be scheduled, not parked.** On opening the sealed buildings: "I think this stuff could be in conjunction with the first version of the updated town that we designed that we plan to implement. Make sure that we plan to implement that." The sealed buildings open together with the Round's first build ([owner calls](../agents/owner-calls.md)).
+> **Status, 13 November: the Home flip is implemented locally through X2, not shipped.** The Round's data is built; moving the buildings and opening the gate cottage remain R2 of [home-flip](home-flip.md). The ECS migration is complete. The owner said on 12 November: "I think this stuff could be in conjunction with the first version of the updated town that we designed that we plan to implement. Make sure that we plan to implement that." The sealed buildings open together with the Round's first build ([owner calls](../agents/owner-calls.md)).
 
 > **Status: layout chosen, reviewed (2026-11-10).** The owner picked **option 2, the Round**. The
 > [design review](#design-review-designer-2026-11-10) ruled every call and its rulings are applied to the body below.
 > **Note, 10 November (owner): the ring is built regular**; the review's designed irregularity (its call 2) is
-> overruled, and the ring table below is the regular one. Next: step 1 (data and its test) and step 0b (the roof probe) can start now; steps 2 to 5 and 7 wait for the Home
-> station flip and the ECS migration's M8; step 6 is the passenger trade's. The [2D page](../world/town-layout.html)
+> overruled, and the ring table below is the regular one. Step 1 (data and its test) is built; the Home flip is implemented and the ECS migration is done.
+> Steps 2 to 5 and 7 remain the Round build; step 6 is the passenger trade's. The [2D page](../world/town-layout.html)
 > still draws the three options as proposed; the Round's reviewed positions are in this plan.
 
 # Home's town layout: a proper town, with a radial part

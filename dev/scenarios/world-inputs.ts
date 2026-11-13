@@ -15,6 +15,10 @@ import { installRules } from '../../src/world/rules/index.ts';
 import type { Land } from '../../src/world/rules/types.ts';
 import * as line from '../../src/sim/railway-line-layout.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
+import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
+import { LINE2_FORGE, LINE2_BOILER, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
+import { SHED_TABLE, SHED_STALL, WORKS_BREAKER, WORKS_SEAMS, WORKS } from '../../src/sim/railway-works-layout.ts';
+import { CART_ROAD } from '../../src/sim/railway-cart.ts';
 
 const FIXTURE = fileURLToPath(new URL('../../test/fixtures/world-inputs.json', import.meta.url));
 const LAND = fileURLToPath(new URL('../../src/world/home-land.json', import.meta.url));
@@ -117,6 +121,10 @@ export default {
       const { railwayMirror } = await import('/src/world/game-world.ts');
       const line = await import('/src/sim/railway-line-layout.ts');
       const { RAILWAY_SOURCES } = await import('/src/sim/railway-layout.ts');
+      const { RAIL_LINES } = await import('/src/sim/railway-lines.ts');
+      const { LINE2_FORGE, LINE2_BOILER, LINE2_STATIONS } = await import('/src/sim/railway-line2-layout.ts');
+      const { SHED_TABLE, SHED_STALL, WORKS_BREAKER, WORKS_SEAMS, WORKS } = await import('/src/sim/railway-works-layout.ts');
+      const { CART_ROAD } = await import('/src/sim/railway-cart.ts');
       return {
         registry: sync.registry(),
         installed: !!railwayMirror?.confirmed(),
@@ -125,6 +133,12 @@ export default {
           greatTree: line.LINE1_GREAT_TREE, axe: line.LINE1_AXE_STAND, jump: line.LINE1_JUMP_DEVICE,
           hardwoods: line.LINE1_HARDWOODS, initial: line.LINE1_INITIAL, sources: RAILWAY_SOURCES,
           panels: line.linePanels(),
+          home: {
+            lines: RAIL_LINES.slice(0, 2).map(l => ({ path: l.path, halt: l.halts[0] })),
+            forge: LINE2_FORGE, boiler: LINE2_BOILER, q1: LINE2_STATIONS[0],
+            table: SHED_TABLE, stall: SHED_STALL, breaker: WORKS_BREAKER, seam: WORKS_SEAMS[0],
+            cartForgeCm: CART_ROAD.forgeCm, rollTicks: WORKS.rollTicks,
+          },
         },
       };`);
     const node = createSync();
@@ -143,6 +157,18 @@ export default {
       initial: line.LINE1_INITIAL,
       sources: RAILWAY_SOURCES,
       panels: line.linePanels(),
+      home: {
+        lines: RAIL_LINES.slice(0, 2).map((l) => ({ path: l.path, halt: l.halts[0] })),
+        forge: LINE2_FORGE,
+        boiler: LINE2_BOILER,
+        q1: LINE2_STATIONS[0],
+        table: SHED_TABLE,
+        stall: SHED_STALL,
+        breaker: WORKS_BREAKER,
+        seam: WORKS_SEAMS[0],
+        cartForgeCm: CART_ROAD.forgeCm,
+        rollTicks: WORKS.rollTicks,
+      },
     });
   },
 };

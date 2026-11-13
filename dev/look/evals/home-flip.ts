@@ -1,4 +1,4 @@
-// npm run look -- --question "..." --eval dev/look/evals/home-flip.ts --rail-seed q1-done --query 'home=b&homeat=platform'
+// npm run look -- --question "..." --eval dev/look/evals/home-flip.ts --rail-seed q1-done --query 'homeat=platform'
 // The Home flip's proof framings (docs/plans/home-flip.md, "What the stills must show"), each a fixed eye-height
 // camera in the station's axis frame (src/place/home-station.ts) with Buddy stood where the question is:
 //   homeat=platform   from the hall's back bay: the lane beside the rack with Buddy in it, the head ramp at its end and
@@ -6,7 +6,6 @@
 //   homeat=arrival    from spawn at eye height: Sleeves, the shelf and the open bay (use --rail-seed awake)
 //   homeat=crossing   from where line 2's train stops, on the deck's road 2 edge: the board crossing over road 2
 //                     (Buddy on its far side) and the stall's footing sockets
-// Without `home=b` the same cameras look at today's Home (the layout's numbers are read either way).
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -80,5 +79,5 @@ setCam();
 setTimeout(setCam, 100);
 const hold = setInterval(setCam, 200);
 setTimeout(() => clearInterval(hold), 120_000);
-console.log(`HOMEFLIP ${at} ${JSON.stringify({ stand, eye, look, homeB: home.homeLayout() })}`);
+console.log(`HOMEFLIP ${at} ${JSON.stringify({ stand, eye, look })}`);
 export {};

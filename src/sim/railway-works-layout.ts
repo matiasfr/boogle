@@ -20,15 +20,15 @@ export const WORKS = {
   counterweight: 4,
   total: 32,
   wagonCap: 6,
-  rollTicks: 60,
+  rollTicks: 110,
 } as const;
 export const WORKS_SEAMS = [
-  { id: 0, name: 'stall', x: 91240, z: 1760, y: 1830, reach: 400 },
+  { id: 0, name: 'stall', x: 94063, z: 2549, y: 1830, reach: 400 },
   { id: 1, name: 'throat', x: 111900, z: 8200, y: 2400, reach: 500 },
   // The gold rivet at the leaf's toe (rail.strike id 2, Ring Island's): struck once the leaf is down.
   { id: 2, name: 'rivet', ...RING_RIVET },
 ] as const;
-export const WORKS_BREAKER = { x: 91900, z: 540, y: 1815, reach: 420 } as const;
+export const WORKS_BREAKER = { x: 92200, z: -117, y: 1800, reach: 420 } as const;
 export const WORKS_CLEFT = { x: 116000, z: 12000, y: 2148 } as const;
 export const WORKS_KILN = { x: 112800, z: 8700, y: 2420, reach: 450 } as const;
 export const WORKS_RACK = { x: 108800, z: 5000, y: 2400, reach: 400 } as const;
@@ -36,8 +36,8 @@ export const WORKS_ROCKS = [
   { id: 3, x: 114500, z: 10500, y: 2462, initial: 8 },
   { id: 4, x: 115000, z: 9800, y: 2468, initial: 8 },
 ] as const;
-export const SHED_STALL = { x: 90950, z: 2050, y: 1800, reach: 500 } as const;
-export const SHED_TABLE = { x: 91800, z: 1200, y: 1830, reach: 600 } as const;
+export const SHED_STALL = { x: 94011, z: 2845, y: 1800, reach: 500 } as const;
+export const SHED_TABLE = { x: 94210, z: 1712, y: 1830, reach: 600 } as const;
 export const SHED_ROAD = { stall: 0, line2: 1 } as const;
 export const WAGON_S = 1085; // the Village stop less 7.4 m (v33: 1825 - 740)
 // Line 2 stands 3.5 m short of the Pier halt's middle (s 730), so its engine stops 2.7 m clear of the track layer

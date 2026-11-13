@@ -124,6 +124,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     body: null,
     stump: null,
   }));
+  const treesById = new Map(trees.map((tree) => [tree.index, tree]));
   // The trees a stroke can be asked of (the line's sources, its hardwoods and the great tree), in tree order.
   const choppable = trees.filter((tree) => sourceIndex.has(tree.index) || hardwoodIndex.has(tree.index) || tree.great);
   const models = createTreeView(
@@ -199,7 +200,11 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     partner.t = CHOP_CONTACT;
     const from = [...remotes.values()].find((remote) => remote.pid === pid)?.avatar?.position;
     const tree =
-      event.op === 'rail.chop' ? trees[event.id] : event.op === 'rail.beamChop' ? trees.find((t) => t.great) : null;
+      event.op === 'rail.chop'
+        ? treesById.get(event.id)
+        : event.op === 'rail.beamChop'
+          ? trees.find((t) => t.great)
+          : null;
     const rock = event.op === 'rail.mine' ? cargo.rocks.find((row) => row.id === event.id) : null;
     partner.aimed = !!from && !!(tree || rock);
     if (from && tree) barkContact(tree, from, partner.contact);
@@ -501,7 +506,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       return;
     }
     if (event.op !== 'rail.chop') return;
-    const tree = trees[event.id],
+    const tree = treesById.get(event.id),
       k = sourceIndex.get(event.id);
     const h = hardwoodIndex.get(event.id);
     if (!tree || (k === undefined && h === undefined)) return;
@@ -571,7 +576,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     const held = (kind === 'stone' ? mine?.stone : kind === 'rail' ? mine?.rails : mine?.carry) ?? 0;
     let home: THREE.Vector3 | null = null;
     if (e.op === 'rail.chop') {
-      const tree = trees[e.id];
+      const tree = treesById.get(e.id);
       if (!tree) return;
       fromState(tree);
       tree.shake = 1;
@@ -907,8 +912,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     targets,
     dispose,
     bundleOrigin,
-    // Read by the slot the tree was admitted with, as fromState and onReset do, not by its catalog `hardwood` flag:
-    // under `?home=b` the Place catalog plants on another grid, so the two disagree (the sim's ids are layout A's).
+    // Read by the stable ID the tree was admitted with, as fromState and onReset do.
     inspect: () =>
       choppable.map((tree) => {
         const h = hardwoodIndex.get(tree.index),

@@ -2,7 +2,7 @@
 // data: one row per table. Pure: no scene, DOM or clock. Local view data only: nothing here is sent, saved or read by
 // the simulation. Bearings are degrees clockwise from north (north is -z), distances metres from the table's centre.
 import { SHED_TABLE } from '../../sim/railway-works-layout.ts';
-import { TABLE, homeLayout } from '../../place/home-station.ts';
+import { TABLE } from '../../place/home-station.ts';
 import { ORIGIN } from '../../place/layout.ts';
 
 export type XZ = { x: number; z: number };
@@ -36,48 +36,25 @@ export const STAND_PART = { half: 1.575, r: 0.625 } as const;
  * G2, R2). */
 export const STAND_LEGS = { at: [6.1, 7.6], half: 0.5 } as const;
 
-export const GARAGE_GEO: { a: GarageGeo; b: GarageGeo } = {
-  /** Today's table (`SHED_TABLE`). Thrown away at the Home flip. Nothing fixed stands within the deck's 4.8 m
-   * (design review, call 24): the copy's corners sweep 4.4 m of it. The post is where build 2's plain post stood. */
-  a: {
-    post: { bearing: 92, r: 5.2 },
-    jib: { bearing: 118, r: 8.4 },
-    mast: 4.4,
-    arm: 10.6,
-    park: 100,
-    stand: { bearing: 118, r: 6.5 },
-    standAlong: 'radius',
-    crew: [
-      { bearing: 121, r: 9.4 },
-      { bearing: 114, r: 8.7 },
-    ],
-    camBearing: 85,
-  },
-  /** Layout B's table (`?home=b`): today's radial arrangement at bearing 85°, the stand's inner end 4.93 m out, the
-   * jib and the crew behind it, nothing within the deck's 4.8 m (docs/plans/home-flip.md, F1). Bearing 85° keeps the
-   * barrel off the jump-in landing (108°, 5.5 m), 60° from the nearest stall road and well inside line 2's curve. */
-  b: {
-    post: { bearing: 60, r: 5.6 },
-    jib: { bearing: 85, r: 8.4 },
-    mast: 4.4,
-    arm: 10.6,
-    park: 67,
-    stand: { bearing: 85, r: 6.5 },
-    standAlong: 'radius',
-    crew: [
-      { bearing: 88, r: 9.4 },
-      { bearing: 81, r: 8.7 },
-    ],
-    camBearing: 15,
-  },
+/** The garage's radial arrangement at bearing 85° keeps the stand outside the deck's sweep and clear of the
+ * jump-in landing, with the jib and crew behind it (docs/plans/home-flip.md, F1). */
+export const GARAGE_GEO: GarageGeo = {
+  post: { bearing: 60, r: 5.6 },
+  jib: { bearing: 85, r: 8.4 },
+  mast: 4.4,
+  arm: 10.6,
+  park: 67,
+  stand: { bearing: 85, r: 6.5 },
+  standAlong: 'radius',
+  crew: [
+    { bearing: 88, r: 9.4 },
+    { bearing: 81, r: 8.7 },
+  ],
+  camBearing: 15,
 };
-
-/** The garage this page draws: its row, its table's centre (world metres) and the ground beside the table. The one
- * place a view or a look reads which table the garage stands at (`?home=b`: layout B's). */
+/** The garage's row, table centre (world metres) and ground beside the table. */
 export function garageRow(): { geo: GarageGeo; table: XZ; y: number } {
-  return homeLayout()
-    ? { geo: GARAGE_GEO.b, table: { x: TABLE.x + ORIGIN.x, z: TABLE.z }, y: TABLE.y + 0.5 }
-    : { geo: GARAGE_GEO.a, table: { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 }, y: SHED_TABLE.y / 100 };
+  return { geo: GARAGE_GEO, table: { x: TABLE.x + ORIGIN.x, z: TABLE.z }, y: TABLE.y + 0.5 };
 }
 
 const rad = (d: number) => (d * Math.PI) / 180;
@@ -97,7 +74,6 @@ export function standEnds(centre: XZ, geo: GarageGeo): [XZ, XZ] {
   ];
 }
 /** A hold at this post reaches the server's install point (`rail.install` is judged within `SHED_TABLE.reach` of
- * `SHED_TABLE`; 0.4 m in hand, as build 2's prompt keeps). True at today's table; true at layout B's the day the flip
- * moves `SHED_TABLE`. */
+ * `SHED_TABLE`; 0.4 m in hand, as the garage's prompt keeps). */
 export const installHere = (post: XZ) =>
-  Math.hypot(post.x - SHED_TABLE.x / 100, post.z - SHED_TABLE.z / 100) <= SHED_TABLE.reach / 100 - 0.4;
+  Math.round(Math.hypot(post.x * 100 - SHED_TABLE.x, post.z * 100 - SHED_TABLE.z)) <= SHED_TABLE.reach - 40;
