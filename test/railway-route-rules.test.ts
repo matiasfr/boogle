@@ -48,14 +48,16 @@ import {
   trainDir,
   trainPassesBy,
   trainStopsOf,
+  reqHas,
+  reqIndex,
 } from '../src/sim/railway-train.ts';
-import { LINE_SLOTS, cycleTicks, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
+import { LINE_SLOTS, cycleTicks, servingSlots, trainServes, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
-import { rail, train, trains } from '../src/sim/railway-rows.ts';
+import { line, rail, train, trains } from '../src/sim/railway-rows.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
 import { legKitNeed, legKitWaiting, legRow, legsLaid, routeRow } from '../src/sim/railway-queries-route.ts';
 import { freightStop } from '../src/sim/railway-queries-trade.ts';
-import { kitOwed, steelNeed } from '../src/sim/railway-queries.ts';
+import { footingsOwed, kitOwed, steelNeed } from '../src/sim/railway-queries.ts';
 import { TRADE } from '../src/sim/railway-trade-layout.ts';
 import { RAIL_PREDICTED, railPredict } from '../src/world/railway-predict.ts';
 import { railCounts } from '../src/sim/railway-queries-line2.ts';
@@ -1271,6 +1273,185 @@ for (const seed of [0xc0ffee, 0x777, 0x5eed, 0xbadd])
     if (ROUTE_GATES) assert.equal(w.done().length, N, 'every lay ridden on');
     for (const v of w.done()) assert.ok(v <= SETTLED_CAP, `a ride on took ${v}`);
   });
+
+// ---------------------------------------------------------------- delayed arrival after a lay (docs/research/leg1-lost-ask.md)
+const ASK_WAIT = 3600;
+/** One second of continuous stand on the outward track is a sim boarding opportunity, not a physics boarding proof.
+ * No next section is fed during this observation: closure two lays later cannot explain a missing train. */
+function headWait(base: Seed, delays: readonly number[], renew = false, limit = ASK_WAIT) {
+  const s = unaudited(copy(base)),
+    laid = legRow(s.w, STACK).laid,
+    from = laid === 1 ? RING : HEAD + laid - 2,
+    stops = stopsOf(s.w, LINE2),
+    trace: unknown[] = [],
+    waits: (number | null)[] = delays.map(() => null),
+    last = Math.max(...delays) + limit;
+  let window = -1,
+    slot = -1,
+    previous = '';
+  const sample = (dt: number) => {
+    const req = line(s.w, LINE2).req,
+      active = reqHas(req, from, 1, stops.length),
+      assigned = active ? trainServes((k) => train(s.w, k), LINE2, stops, from, 1, s.t) : -1;
+    const fleet = LINE_SLOTS[LINE2]!.map((k) => {
+      const r = train(s.w, k);
+      return {
+        slot: k,
+        phase: r.phase,
+        at: r.at,
+        to: r.to,
+        track: r.track,
+        cm: Math.round(trainAlong(r, LINE2, s.t)),
+        req: r.req,
+        depart: r.depart,
+        turn: r.turn,
+        kit: r.legKit,
+        cargo: r.logs + r.rails,
+        owed: kitOwed(s.w, r, LINE2),
+        controlOff:
+          footingsOwed(s.w, LINE2) || (r.logs + r.rails > 0 && !legKitWaiting(s.w, LINE2, r)) || kitOwed(s.w, r, LINE2),
+      };
+    });
+    const key = JSON.stringify([active, assigned, fleet.map((r) => [r.phase, r.at, r.to, r.track, r.req])]);
+    if (key !== previous || delays.includes(dt) || dt === last) {
+      trace.push({ dt, active, assigned, fleet });
+      previous = key;
+    }
+  };
+  for (let dt = 0; dt <= last; dt++) {
+    if (renew && dt === delays[0])
+      assert.ok(
+        ask(s, { id: haltId(LINE2, from), dir: 1 }) || reqHas(line(s.w, LINE2).req, from, 1, stops.length),
+        'arrival ask accepted or already pending',
+      );
+    sample(dt);
+    const standing = LINE_SLOTS[LINE2]!.find((k) => {
+      const r = train(s.w, k);
+      return r.phase === TRAIN_PHASE.STAND && r.at === from && r.track === 0;
+    });
+    if (standing !== undefined) {
+      if (slot !== standing) {
+        slot = standing;
+        window = dt;
+      }
+      for (let j = 0; j < delays.length; j++) {
+        const start = Math.max(window, delays[j]!);
+        if (waits[j] === null && dt - start >= 9 && start - delays[j]! <= limit) waits[j] = start - delays[j]!;
+      }
+      if (waits.every((v) => v !== null)) break;
+    } else {
+      slot = -1;
+      window = -1;
+    }
+    if (dt < last) railTick(s.w, ++s.t, 75);
+  }
+  assert.equal(invariant(s.w), null);
+  return { waits, trace };
+}
+
+// Explicit opt-in: 16 random schedules, two real seeds, each remaining lay, five arrival delays, with/without a
+// fresh outward ask. Quiet/light background asks vary the approach to the lay; none rescue the waiting rider.
+if (process.env.LEG_ASK_FUZZ === '1') {
+  const totals: { stage: string; section: number; seed: number; delay: number; renew: boolean; wait: number | null }[] =
+    [];
+  for (const stage of ['gorge-open', 'gorge-mid'] as const)
+    for (let seed = 0; seed < 16; seed++)
+      test(`lost ask fuzz ${stage} seed ${seed}`, { timeout: 60000 }, (t) => {
+        const s = unaudited(buildSeedWorld(stage)),
+          rand = mulberry32(seed);
+        const step = () => {
+          if (seed % 2 && rand() < 0.05) {
+            const pool = askPool(s.w);
+            ask(s, { id: pool[Math.floor(rand() * pool.length)]!, dir: rand() < 0.5 ? -1 : 1 });
+          }
+          railTick(s.w, ++s.t, 75);
+        };
+        while (legRow(s.w, STACK).laid < N) {
+          const before = legRow(s.w, STACK).laid;
+          for (let k = Math.floor(rand() * 1200); k > 0; k--) step();
+          // Accepted rack take/feed ops, with a random 1..30 tick gap between carries; no direct state patch.
+          for (let guard = 0; legRow(s.w, STACK).laid === before; guard++) {
+            assert.ok(guard < 8000, 'section lays within the bounded feed loop');
+            if (guard % 30 === 0 || rand() < 0.1) stock(s);
+            step();
+          }
+          assert.equal(invariant(s.w), null);
+          const delays = [0, 10, 50, 150, 600],
+            automatic = headWait(s, delays);
+          for (const [j, delay] of delays.entries())
+            for (const renew of [false, true]) {
+              const result = renew ? headWait(s, [delay], true) : automatic,
+                wait = result.waits[renew ? 0 : j]!,
+                row = { stage, section: before + 1, seed, delay, renew, wait };
+              totals.push(row);
+              t.diagnostic(`CASE ${JSON.stringify(row)}`);
+              if (wait === null || wait > 1200)
+                t.diagnostic(`TRACE ${JSON.stringify({ ...row, layTick: s.t, trace: result.trace })}`);
+            }
+        }
+      });
+  test('lost ask fuzz distribution', () => {
+    for (const renew of [false, true])
+      for (let section = 1; section <= N; section++) {
+        const rows = totals.filter((r) => r.renew === renew && r.section === section),
+          served = rows.flatMap((r) => (r.wait === null ? [] : [r.wait])).sort((a, b) => a - b);
+        console.log(
+          'DISTRIBUTION',
+          JSON.stringify({
+            renew,
+            section,
+            n: rows.length,
+            censored: rows.length - served.length,
+            over1200: rows.filter((r) => r.wait === null || r.wait > 1200).length,
+            min: served[0],
+            median: served[Math.floor(served.length / 2)],
+            p95: served[Math.floor(served.length * 0.95)],
+            max: served.at(-1),
+          }),
+        );
+      }
+  });
+}
+
+// Shared replay fixture, outside the timeout as LEAF/JOINED above. Keep the desired-behaviour assertion visibly
+// failing as TODO until the separately reviewed rule fix; LEG_ASK_RED=1 makes this an ordinary red test.
+const HEAD2_LAY = unaudited(buildSeedWorld('gorge-mid'));
+feedSection(HEAD2_LAY);
+test(
+  'lost ask: a rider arriving one second after section 3 lays gets an outward train within 1,200 ticks',
+  { todo: process.env.LEG_ASK_RED !== '1' && 'Known defect; src/sim fix intentionally outside this diagnosis' },
+  (t) => {
+    const result = headWait(HEAD2_LAY, [10], false, 1201);
+    t.diagnostic(`lay=${HEAD2_LAY.t}; arrival=+10; waits=${JSON.stringify(result.waits)}`);
+    if (process.env.LEG_ASK_RED === '1') t.diagnostic(`TRACE ${JSON.stringify(result.trace)}`);
+    assert.ok(result.waits[0] !== null && result.waits[0]! <= 1200, 'no outward boarding window within 1,200 ticks');
+  },
+);
+
+test('lost ask mechanism: the redirected train consumes it after seven ticks; a fresh ask restores service', () => {
+  const s = unaudited(copy(HEAD2_LAY)),
+    from = HEAD + 1,
+    n = stopsOf(s.w, LINE2).length;
+  assert.equal(s.t, 13748);
+  assert.equal(
+    trainServes((k) => train(s.w, k), LINE2, stopsOf(s.w, LINE2), from, 1, s.t),
+    4,
+  );
+  assert.equal(train(s.w, 4).at, from);
+  assert.equal(train(s.w, 4).track, 0);
+  assert.equal(train(s.w, 4).depart + TRAIN.dwellTicks - s.t, 7, 'the lay did not restart its dwell');
+  assert.ok(reqHas(line(s.w, LINE2).req, from, 1, n));
+  for (let k = 0; k < 7; k++) railTick(s.w, ++s.t, 75);
+  assert.equal(train(s.w, 4).phase, TRAIN_PHASE.RUN);
+  assert.ok(!reqHas(line(s.w, LINE2).req, from, 1, n), 'leaving clears the lay ask');
+  const recovered = headWait(HEAD2_LAY, [10], true, 1200).waits[0];
+  assert.ok(recovered !== null && recovered! <= 1200, 'the same fleet serves a fresh ask');
+});
+
+test('an open end shares one request digit, but the old head has distinct ways after growth', () => {
+  assert.equal(reqIndex(HEAD + 1, 1, HEAD + 2), reqIndex(HEAD + 1, -1, HEAD + 2));
+  assert.notEqual(reqIndex(HEAD + 1, 1, HEAD + 3), reqIndex(HEAD + 1, -1, HEAD + 3));
+});
 
 // ---------------------------------------------------------------- the step 4 review's finding 2: a unit lost
 test('a unit lifted off the leg rack and lost is owed again; one carried to the frame is not loaded twice', () => {
