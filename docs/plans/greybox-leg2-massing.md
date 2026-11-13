@@ -85,7 +85,7 @@ at https://boogle.club/; Bell Rock and the Gorge by the DEV strip's Free cam (a 
       the generator. Verify: `git diff --exit-code src/sim`; `test/world-lines.test.ts`; the cut in one look.
 - [x] **3. Bell Rock, the lower level (M).** `massing-bell.ts`: the bed, platforms, lower deck, ramp, slipway, rock
       colliders, two pads. Stills: from the west platform's north (lever) end at eye height; up the ramp from its foot.
-- [ ] **4. Bell Rock, the upper level (M).** The bridge beds, platforms, end ramps, upper deck, step, the pinnacle's
+- [x] **4. Bell Rock, the upper level (M).** The bridge beds, platforms, end ramps, upper deck, step, the pinnacle's
       collider, three pads, the post. Stills: the in-half's landward platform (lever) end; **the profile** from 200 m north.
 - [ ] **5. The West landing (S).** `massing-west.ts`: the bed, platforms, end ramp, apron, posts, the board. Stills:
       from platform A's root (lever) end along the row; from the commons' edge looking down; the way down walked.

@@ -46,7 +46,17 @@ export type Reserve = { id: string; x: number; z: number; yaw: number; w: number
 /** A labelled pad (Ruling 2): a 6 by 4 m pale outline and one sign. */
 export type Pad = { id: string; x: number; z: number; y: number; yaw: number; lines: readonly [string, string] };
 /** A sign on its own post or posts, facing (nx, nz). */
-export type Post = { id: string; x: number; z: number; y: number; nx: number; nz: number; lines: readonly string[] };
+export type Post = {
+  id: string;
+  x: number;
+  z: number;
+  y: number;
+  nx: number;
+  nz: number;
+  lines: readonly string[];
+  /** On one tall post, the board overhead, where it stands in a walkway. */
+  high?: true;
+};
 
 const unit = (x: number, z: number): XZ => {
   const l = Math.hypot(x, z);
@@ -138,13 +148,13 @@ function bell() {
     { ...ne.box('ramp-landing', -30, -26, -24, -21, UPPER, 0.4, 'grey'), posts: true },
     // The upper level. PROVISIONAL (design review, change 5): the four upper platforms and the deck's south edge move
     // when the track plan eases the 52 degree kink (about 11 m south at a 100 m radius), so they get no polish.
-    { ...bayIn.box('bay-bed-in', -4, 70, -BED, BED, BAY_RAIL - 0.1, 0.6, 'dark'), over: true },
-    { ...bayOut.box('bay-bed-out', -4, 70, -BED, BED, BAY_RAIL - 0.1, 0.6, 'dark'), over: true },
+    { ...bayIn.box('bay-bed-in', -4, 70, -BED, BED, BAY_RAIL - 0.1, BAY_RAIL - 0.1 - ROCK, 'dark'), over: true },
+    { ...bayOut.box('bay-bed-out', -4, 70, -BED, BED, BAY_RAIL - 0.1, BAY_RAIL - 0.1 - ROCK, 'dark'), over: true },
     // The two on the inside of the kink start at t 2: from t -3 their corners stood in the other half's bed.
-    { ...bayIn.box('upper-in-n', -3, 20, BED, PLAT, UPPER, 0.5, 'light'), over: true, provisional: true },
-    { ...bayIn.box('upper-in-s', 2, 20, -PLAT, -BED, UPPER, 0.5, 'light'), over: true, provisional: true },
-    { ...bayOut.box('upper-out-n', -3, 30, BED, PLAT, UPPER, 0.5, 'light'), over: true, provisional: true },
-    { ...bayOut.box('upper-out-s', 2, 30, -PLAT, -BED, UPPER, 0.5, 'light'), over: true, provisional: true },
+    { ...bayIn.box('upper-in-n', -3, 20, BED, PLAT, UPPER, UPPER - ROCK, 'light'), over: true, provisional: true },
+    { ...bayIn.box('upper-in-s', 2, 20, -PLAT, -BED, UPPER, UPPER - ROCK, 'light'), over: true, provisional: true },
+    { ...bayOut.box('upper-out-n', -3, 30, BED, PLAT, UPPER, UPPER - ROCK, 'light'), over: true, provisional: true },
+    { ...bayOut.box('upper-out-s', 2, 30, -PLAT, -BED, UPPER, UPPER - ROCK, 'light'), over: true, provisional: true },
     { ...bayIn.ramp('upper-in-n-end', 20, UPPER, 24, ROCK, BED, PLAT, 'grey'), over: true, provisional: true },
     { ...bayIn.ramp('upper-in-s-end', 20, UPPER, 24, ROCK, -PLAT, -BED, 'grey'), over: true, provisional: true },
     { ...bayOut.ramp('upper-out-n-end', 30, UPPER, 34, ROCK, BED, PLAT, 'grey'), over: true, provisional: true },
@@ -188,9 +198,17 @@ function bell() {
       pad('pad-canopy', 'Canopy Town', -13, -34, UPPER),
       pad('pad-quay', 'Port Quay', -4, -34, UPPER),
     ],
-    // The inert board at the ramp's head.
+    // The inert board at the ramp's head, overhead on one post and turned to the walker coming up the ramp.
     posts: [
-      { id: 'market', ...ne.at(-28, -24), y: UPPER, nx: BELL_E.x, nz: BELL_E.z, lines: ['Market board (placeholder)'] },
+      {
+        id: 'market',
+        ...ne.at(-28, -24),
+        y: UPPER,
+        nx: (BELL_E.x + BELL_N.x) * Math.SQRT1_2,
+        nz: (BELL_E.z + BELL_N.z) * Math.SQRT1_2,
+        lines: ['Market board (placeholder)'],
+        high: true,
+      },
     ] as Post[],
     reserves: [
       ne.reserve('ns row', -60, 60, -BED, BED, NS_RAIL - 0.1, NS_RAIL + LOADING),

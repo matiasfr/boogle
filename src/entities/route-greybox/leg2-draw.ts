@@ -121,8 +121,16 @@ export function leg2Signs(
     nz: number,
     lines: readonly string[],
     w: number,
+    high = false,
   ) => {
-    const s = signBoard(owner, { w, h: w * 0.32, px: 1024, foot: 1.2, posts: 'two', wood: '#5d6063' });
+    const s = signBoard(owner, {
+      w,
+      h: w * 0.32,
+      px: 1024,
+      foot: high ? 2.4 : 1.2,
+      posts: high ? 'one' : 'two',
+      wood: '#5d6063',
+    });
     paint(s, lines);
     s.painted();
     s.mesh.name = 'route-greybox:sign';
@@ -138,5 +146,5 @@ export function leg2Signs(
       p.lines,
       4.6,
     );
-  for (const p of free) stand(p, p.nx, p.nz, p.lines, 4.6);
+  for (const p of free) stand(p, p.nx, p.nz, p.lines, p.high ? 3.4 : 4.6, p.high);
 }
