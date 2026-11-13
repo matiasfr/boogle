@@ -135,7 +135,7 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 - [ ] **Checkpoint A** (the proving slice): `npm run check`, the two stills side by side, `npm run level-check` still 12 reports, `npm run perf` at the Gorge (draw calls and bodies unchanged). The designer and owner rule on the open questions here.
 - [x] **5. Enforcement on.** The three lint rules with their seeded lists, the generated `test/prefab-records.test.ts`, the registry ratchet for the lists, `docs/agents/plugins.md` ("New things in the world are prefab records") and the new-feature skill. Proof: a fixture file with a stray `addStatic` fails lint; `npm run registry` fails when a list grows. As built: generated record coverage already landed in step 3; this step adds passing/failing lint fixtures and the file-identity ratchet (below).
 - [x] **6. High Gorge massing.** All 73 boxes become placements in `src/content/levels/gorge.ts` (the frame helpers move there from `massing.ts`); `massing.ts` keeps only exported constants others import. Proof: goldens equal, `stack-at` and `stack-draws` stills. Deletes `GreyBox`'s collider loop (`boxes.ts:76-82`) and `gorgeMassing()`; removes `route-greybox/boxes.ts` from the collider list. As built below corrects the count to 86.
-- [ ] **7. Leg 2 and later legs** (after `greybox/leg2-massing` merges): `Piece`, `Pad` and `Post` become placements of `greybox.box`, `greybox.pad`, `greybox.sign-post` (a `label` attachment; placeholder text stays where it is authored); `dev/level/route-leg2.ts` reads `content/built/levels/*.json`. Proof: goldens, that branch's level report unchanged, one still per area. Deletes the three record types and `leg2-draw.ts`'s collider code. New legs are authored as level files from here.
+- [x] **7. Leg 2 and later legs** (after `greybox/leg2-massing` merges): `Piece`, `Pad` and `Post` become placements of `greybox.box`, `greybox.pad`, `greybox.sign-post` (a `label` attachment; placeholder text stays where it is authored); `dev/level/route-leg2.ts` reads `content/built/levels/*.json`. Proof: goldens, that branch's level report unchanged, one still per area. Deletes the three record types and `leg2-draw.ts`'s collider code. New legs are authored as level files from here.
 - [ ] **Checkpoint B:** `npm run check`, perf at Bell Rock, a bot walk of leg 1.
 - [x] **8. The other seats (medium risk).** `railway.machine-chair` (`track-machine.ts:119`) and `railway.car-bench` (`train-view.ts:184-201`, `car-kit.ts:19`) with `parent` set to the moving platform. Seat ids are on the wire through presence: a golden asserts every id string is byte-identical, so no bump. Coordinate with `plan/server-owned-state`, which moves seat authority: whichever lands second rebases. Deletes the last `registerSeat` outside the runtime. As built: ids now key Server-kind rows at v41; all 31 ids and moving-seat pose goldens remain byte-identical. Seat debt shrank 13 files/20 units to 11/15. [Report, checks and inspected images](prefab-data-step-8-report.md); local main lacked step 7, and stale broker smoke required the current worktree npm scenario fallback. Not pushed or shipped; not tested on a device.
 - [ ] **9. Town rooms and furnishing.** `workshop-kit.ts` solids, `rooms.ts`, `curio-shelf.ts`, `shop.ts`, `museum.ts`: each furnishing piece a record whose builder returns its parts, so parts and solids stop being parallel lists. Signs and interactions join the lint rule. Proof: goldens, one still per room. Removes `workshop.ts` from `ENTITY_SERVICES` if nothing else holds it there.
@@ -146,6 +146,23 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 - [ ] **14. Portability proof (if open question 3 is yes):** `dev/prefab/bake.ts` and `dev/prefab/export-godot.ts` write the chair and the Gorge level as `.glb` and `.tscn`. Proof: Godot's headless import lists the nodes and collision shapes with matching counts.
 
 ## Level findings
+
+### Step 7 as built: leg 2 and later legs
+
+Bell Rock and the West landing load compiled placements; the Gorge retains all 86 placement values and ids while
+its incline authoring joins `src/content/levels/leg2.ts`. New static legs use level files. The runtime gains exact
+trimesh recipes (both Bell outline prisms retained), four-slot pad batches and label references to unchanged copy.
+The distinct overhead sign has its own prefab variant. The level checker reads compiled geometry, marks and
+placement references; the complete old report and all collider/placement/count goldens remain byte-identical.
+
+Old-code proof was committed first at `a935137ed`; final implementation is `30ccf502`. Bell/West retain 75/28
+visible boxes, 23/8 bodies, 6/1 signs and one massing batch each. Opened before/final stills show unchanged layouts;
+total draws stay 304/674, with 12/6 added by named route meshes. Collider debt shrinks 105 files/502 units to
+104/500; seat debt stays 13/20. All required static checks pass (137 prefab tests, 1,801 full-check passes and one
+existing TODO, 351 ship-check assertions, 13 level reports). Review stamp `3545df41e4f6` marks ten golden/test files;
+no independent review, push or ship is claimed. Not tested on a device.
+
+[Full proof, schema extensions, sign texts, manifests and limits](prefab-data-step-7.md). Checkpoint B remains separate.
 
 ### Step 6 as built: all High Gorge massing
 
