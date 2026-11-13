@@ -58,7 +58,7 @@ jobs:
           # Empty/unknown diffs and main (dispatch or push) run every gate: an empty list to --jobs means everything.
           # Otherwise server and net run when their import closure changed, the image build and boot when its paths
           # did (dev/ci/change-class.ts).
-          # The unit run: the full suite in four shards, or (dev/ci/unit-select.ts) the affected tests plus the core in
+          # The unit run: the full suite in eight balanced shards, or (dev/ci/unit-select.ts) the affected tests plus the core in
           # one job for a ship that touches neither lockstep nor a review path. Main and an empty diff are full.
           if [ "$REF" = main ] || [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
             jobs=$(node dev/ci/change-class.ts --jobs < /dev/null)
@@ -132,7 +132,8 @@ jobs:
       - run: npm run build
 
   # The unit tests. The full suite (main, and any ship that touches lockstep code, a review path or something every
-  # test shares: dev/ci/unit-select.ts) runs in four parallel shards (node --test-shard: every fourth file), with the rail
+  # test shares: dev/ci/unit-select.ts) runs in eight parallel shards, balanced by measured whole-file duration
+  # (dev/ci/unit-shards.ts; test-unit.ts consumes --test-shard before Node), with the rail
   # audit and every tick offset of the sweeps (`--ci`, dev/test-env.ts). Any other ship runs one job: the tests that
   # import a changed file plus the core, the audit on, every 16th offset and one fuzz seed (`--ship`); main proves the
   # rest minutes after the merge (docs/agents/ship-pipeline.md, "Unit test settings"; docs/plans/ci-diet.md, Batch 2).
@@ -144,8 +145,9 @@ jobs:
       fail-fast: false
       matrix:
         shard: ${{ fromJSON(needs.changes.outputs.unit_shards) }}
-    # The whole suite took 16 minutes in one job on 11 November (world v27's Ring Island fuzz tests took it past 10, so
-    # main's run was cancelled twice). Cut the suite or add a shard before raising this.
+    # On 13 November shard 1/4 passed its tests in 589s but hit this job limit. Eight duration-balanced shards target
+    # ~6 min including setup; the runner warns after 7 min. Re-measure/rebalance before raising this. See
+    # docs/research/ci-unit-shard-time.md. Coverage, audit and sweep settings stay full.
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -156,7 +158,7 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      - name: Unit tests (the full suite in four shards, or the ship's selection in one)
+      - name: Unit tests (the full suite in eight balanced shards, or the ship's selection in one)
         env:
           FULL: ${{ needs.changes.outputs.unit_full }}
           UNIT_ONLY: ${{ needs.changes.outputs.unit_only }}

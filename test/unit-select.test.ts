@@ -68,8 +68,8 @@ test('CLI prints the CI outputs; main and an empty diff are full', () => {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore'],
     });
-  assert.equal(run(''), 'unit_full=true\nunit_shards=[1,2,3,4]\nunit_only=\n');
-  assert.equal(run('src/sim/railway.ts\n'), 'unit_full=true\nunit_shards=[1,2,3,4]\nunit_only=\n');
+  assert.equal(run(''), 'unit_full=true\nunit_shards=[1,2,3,4,5,6,7,8]\nunit_only=\n');
+  assert.equal(run('src/sim/railway.ts\n'), 'unit_full=true\nunit_shards=[1,2,3,4,5,6,7,8]\nunit_only=\n');
   const lines = run('dev/heartbeat.sh\n').trimEnd().split('\n');
   assert.deepEqual(lines.slice(0, 2), ['unit_full=false', 'unit_shards=[1]']);
   assert.match(lines[2]!, /^unit_only=test\/\S+\.test\.ts( test\/\S+\.test\.ts)*$/);
