@@ -538,11 +538,12 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       second in a one-second sample at load 6 (vsync-bound: no evidence of headroom). **Stills read** (`.look/`,
       seeds `ring-joined` and the looks-only `--rail-seed stack-laid-<n>`, `dev/look/stack-seed.ts`, until step 5's
       stages): both bills either side of the tracks; the west bill across the tracks; the first railhead; the zigzag
-      and platforms from 100 m out; the barrier from the stair's top landing. **Departures, for the designer:**
+      and platforms from 200 m and 100 m out; the barrier from the stair's top landing. **Departures, for the designer:**
       (1) the stair is two strips side by side (c -45 to -42 and -42 to -39), not one: stacked on one strip a
       flight's last three metres ran under the next with a metre of headroom; it still draws the zigzag. (2) From a
-      train **200 m out the stair cannot be seen**: the row comes round the south stack's east end (17 m off the
-      split's axis at 98 m, 70 m at 238 m), so the zigzag first shows at about 120 m. (3) **The barrier is not in
+      train 200 m out the zigzag and the platforms are in view on the north wall, round the south stack's east end
+      (the first still that showed neither was taken with the massing not mounted: a free look camera does not mount
+      it, a body within 400 m does). (3) **The barrier is not in
       view from the rim's pad** (8 m back from the edge, eye 2 m up); it is from the stair's top landing, over the
       parapet. (4) **The row turns off the straight at s 1200, inside Ring Island's platforms**, and crosses the
       island's north-west hillside under up to 23 m of rock for 350 m: the views keep the platforms' track straight
