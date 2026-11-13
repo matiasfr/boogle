@@ -175,6 +175,7 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
     standSince = new Map<number, number>(),
     leftEnd = new Map<number, { t: number; end: number }>(),
     trips: { up: number[]; down: number[] } = { up: [], down: [] };
+  let midPast = { ticks: 0, at: '', tick: 0 };
   let longest = { ticks: 0, at: '', tick: 0 },
     nextAsk = s.t,
     gorgeAt = -1,
@@ -213,6 +214,9 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
       if (r.phase === TRAIN_PHASE.STAND && r.at >= 0 && s.t >= r.depart + TRAIN.dwellTicks) {
         const key = RAIL_HALTS[haltId(LINE2, r.at)]!.name;
         stand.set(key, (stand.get(key) ?? 0) + 1);
+        // The longest stand past the dwell at a middle halt (Ring Island's hold: its cap runs from `arrived`).
+        if (r.at > 0 && r.at < last && s.t - r.arrived - TRAIN.dwellTicks > midPast.ticks)
+          midPast = { ticks: s.t - r.arrived - TRAIN.dwellTicks, at: key, tick: s.t - t0 };
       }
       if (was.phase === TRAIN_PHASE.STAND && r.phase === TRAIN_PHASE.RUN && (was.at === 0 || was.at === last)) {
         if (was.at === 0) laps++;
@@ -325,6 +329,8 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
     longest,
     trips,
     plat,
+    midPast,
+    railheadUp: waits.filter((x) => x.at === 'Railhead up').map((x) => x.v),
     journeys: journeys.filter((j) => j.done >= 0).map((j) => j.done),
     journeysOpen: journeys.filter((j) => j.done < 0).length,
     startGaps: gapsOf(b),
