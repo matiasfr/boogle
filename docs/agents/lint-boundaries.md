@@ -34,32 +34,32 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   cannot invent a new surface: this closes laundering without guessing alias/function-body provenance. The
   declared instantiate API stays open for record-authored content. Existing construction APIs are additionally
   constrained by the importer ratchet below; public names alone are not permission for new consumers.
-- `dev/lint/prefab-constructors.ts` computes a targeted call graph, not the whole-program reference closure.
-  A construction export belongs to a debt file and its own body calls a capability-module API or another
-  construction export. The fixed point runs over debt implementations only; door implementations and non-debt
-  function bodies do not propagate construction. Call aliases and re-export/barrel identities resolve normally. Factory results and callback containers are not callable aliases.
-  Nested callbacks lexically inside a constructor body count; arbitrary callback arguments, type dependency bags,
-  state references and loader/registry callbacks do not. The short `NOT_CONSTRUCTORS` list is justified per file:
-  `src/entity/entity.ts` attaches finished bodies and schedules callbacks; `src/entities/player/state.ts` owns
-  singleton player movement/grounding/respawn; `src/entities/ball/state.ts` owns singleton ball state/ownership/play;
-  `src/physics/platforms.ts` registers existing platforms and converts/carries coordinates;
-  `src/render/owned-view.ts` owns/attaches already-built bodies and meshes, animation and disposal (the documented
-  prefab ownership door). Export-specific `NOT_CONSTRUCTION_EXPORTS` stops cover query/movement/lifecycle APIs
-  inside mixed modules without exempting their real factories; [every removed entry](../plans/prefab-data-step-5-lifecycle-audit.md) has a reason. These shared lifecycle
-  and state APIs remain available to ordinary features, not placed-content factories. No folder exemption.
+- `dev/lint/prefab-constructors.ts` computes construction capabilities in debt files and discovered
+  OwnedView-producing factories. The call fixed point includes their private helpers; ordinary service/loader
+  bodies elsewhere do not expand the closure. The record-only instantiate door remains open.
+  `prefab-values.ts` tracks resolved module/callable identities through await, Promise.all/allSettled, array/object
+  patterns (including aliases/rest), then callbacks, local assignments and aggregate fields. Function results
+  are not automatically aliases of their factories. Dynamic locals re-exported directly or in aggregates retain
+  the same provider identities as static namespace barrels. Proved constant data is distinguished from module APIs.
+  Unknown consumers, opaque arguments, unresolved imports and value-analysis bounds fail closed: importing or
+  module-carrying debt exports are counted as both capabilities. Lint/registry print the affected files;
+  [the complete current list and before/after audit](../plans/prefab-data-step-5-dynamic-audit.md) shows what to simplify.
+  The bounded value domain allows eight aggregate levels and 24 fixed-point passes; exceeding either is not a waiver.
+  `NOT_CONSTRUCTORS` and `NOT_CONSTRUCTION_EXPORTS` are exemption **candidates**, never unconditional stops.
+  Their unpruned debt-local closure must reach neither allocation/seat-registration endpoints nor unresolved
+  dynamic use. An unsafe candidate is counted automatically. This keeps OwnedView's ownership/attachment/disposal
+  factory free while restoring actual constructors that merely use an owner. Engine/backend createBody and
+  registerSeat are allocation terminals; their implementations and instantiate are closed doors, not ordinary
+  placed-content factories. Query/attachment APIs create no bodies by those contracts.
   `legacy["file#export"]` stores only the number of distinct importing files, including forwarding barrels.
-  Named, namespace, dynamic and require acquisitions resolve to constructor identities through aliases/barrels;
-  `export * as ns`, namespace imports exported locally, and nested namespaces preserve those provider identities.
-  `forwards["file#export"]` records only existing construction forwarding identities. Any new re-export binding
-  or forwarded provider fails as a surface change, including in a barrel already acquiring that provider;
-  removed bindings must be pruned. Wrapper function bodies outside debt do not extend this closure. Higher counts fail naming
+  Named, namespace, dynamic and require acquisitions resolve through aliases/barrels. Higher counts fail naming
   `src/prefab/instantiate.ts`; lower counts fail with **lower the count**. Computed export keys must match the
-  record; registry ratchets each count and forbids new keys. A new ordinary feature may import entity/loop
-  registration and use the prefab door. Counts deliberately permit swapping one importer for another;
-  reflection passes. Existing approved consumers can reuse APIs. Unexported-helper indirection, non-debt wrapper
-  bodies and generated/global effects are outside this narrow count rule and require review. The unchanged
-  capability-module import ban, provider public surfaces and per-file violation budgets still bind them.
-  A derivative cache fingerprints code, analyzer, lockfile, tsconfig and providers; no importer paths are committed.
+  record; registry ratchets each count and forbids new keys. The full OwnedView + instantiate + entity/onStart
+  feature fixture remains passing. `forwards["file#export"]` freezes construction re-export binding/provider
+  identities, including nested namespaces; added surfaces fail even in already-importing barrels, and removals
+  require pruning. No importer paths are committed. The derivative cache fingerprints source, analyzer/value
+  model/visitor code, providers, lockfile and tsconfig. Count-preserving importer swaps, reflection and arbitrary
+  non-debt/non-ownership wrapper bodies remain accepted residuals; this is an architectural rule, not a sandbox.
 - `boogle/records-are-data`: content imports/re-exports only prefab `types.ts`/`names.ts`, `src/constants.ts`,
   `src/math-pure.ts`, and explicitly listed pure layout helpers (`place/layout.ts`, `entities/railway/line2-path.ts`).
   No three.js (even inline `import('three').Mesh` types), browser/DOM globals or unknown/computed dynamic imports.

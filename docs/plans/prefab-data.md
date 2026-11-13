@@ -232,6 +232,17 @@ belong to `.look/prefab-step-5-review/`, superseding this task's earlier static 
 
 ## 6. What can start today, and what waits
 
+**Step 5f dynamic-value correction (supersedes the 5e negative ownership audit):** both reported new-consumer
+fixtures failed first. Promise.all import destructuring hid lookout's `land.addStatic` and finds' call to the
+collider-building secrets view. The general value model now binds await/aggregates, object/array patterns, then
+callbacks, local assignments and forwarded values. Private debt helper calls participate in the fixed point.
+Exemption candidates receive an unpruned allocation/unknown-use proof, and unsafe ones are automatically counted.
+OwnedView-producing factories are discovered even outside raw-capability debt files. Actual owner-only/record-door
+factories remain free. The [complete before/after and all-20/ownership audit](prefab-data-step-5-dynamic-audit.md)
+records 42 → 92 construction exports, 32 conservative files printed by lint/registry, and the stricter treatment
+of the allocating singleton enterIsland. Metadata remains compact (998 formatted lines); raw file/count budgets,
+capability import bans, public surfaces, shallow-clone behavior and committed prefab JSON are unchanged.
+
 **Step 5e fourth-review correction (supersedes the shallow-bootstrap and namespace gaps below):** five of six
 reproduction tests failed before production edits (the local namespace-import/export control already passed):
 namespace forwarding, new forwarding surface, the full OwnedView + instantiate feature, and a depth-one clone
