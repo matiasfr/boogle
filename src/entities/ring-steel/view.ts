@@ -83,6 +83,8 @@ const SHED = { u0: 448, u1: 455, l0: 6.5, l1: 14, roof: 6.9, wall: 3.6, door: [4
 const JIB = { u0: 436.9, u1: 444.3, lat: 6.6, y: 4.6 } as const;
 const RACK = { u0: 438.6, lat: 6.3, step: 0.64 } as const;
 // The kit's two stacks, either side of the yard point (u 445.5, lat 8), on the open deck past the tarp's end.
+/** The `STEEL KIT` plate's middle: 1.3 m north of the RINGWORKS board's south post, 0.17 m toward the tracks. */
+const KIT_PLATE_AT = { u: 447.0, lat: 4.83 };
 const LOGS_AT = { u: 444.75, lat: 8.3 },
   RAILS_AT = { u: 446.6, lat: 8.3 };
 
@@ -129,11 +131,14 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
   sign.mesh.visible = false;
   let painted = '';
   // The yard's plate (the greybox route's step 4 review, answers b and j): `STEEL KIT` with the mark a steel kit
-  // car's board carries, on a post between the two stacks, over them, facing the platform; it stands while the works
-  // still takes its kit (from the rivet until it lights). The stack line's rack across the tracks reads `KIT 1`.
-  const plate = signBoard(owner, { w: 2.3, h: 0.8, px: 512, foot: 2.1, posts: 'one', wood: '#5d6063' });
+  // car's board carries. It hangs under build 1's RINGWORKS board on the east platform's back edge (posts at u 445.7
+  // and 450.3, lat 5.0, the board's foot 3.3 m up), beside the south post and just clear of the posts on the
+  // platform's side, its face to the tracks: the yard's two stacks stand 3 m behind it. Between the stacks it was
+  // crossed by that board's post from straight opposite (the step 4b review). It hangs while the works still takes
+  // its kit (from the rivet until it lights). The stack line's rack across the tracks reads `KIT 1`.
+  const plate = signBoard(owner, { w: 2.3, h: 0.8, px: 512, foot: 2.3, posts: 'none', wood: '#5d6063' });
   {
-    const p = at((LOGS_AT.u + 0.75 + RAILS_AT.u - 0.7) / 2, LOGS_AT.lat);
+    const p = at(KIT_PLATE_AT.u, KIT_PLATE_AT.lat);
     plate.mesh.position.set(p.x, Y, p.z);
     plate.mesh.rotation.y = FACE_PLATFORM;
     plate.mesh.name = 'ring-steel:kit-plate';

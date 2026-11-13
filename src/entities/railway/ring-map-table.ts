@@ -10,7 +10,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { drawMapBase, fitMap, mapLabelSteps, MAP_CELL, type MapLine } from '../../render/island-map.ts';
-import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
+import { RING_TABLE_DISPLAY } from './halt-map.ts';
 import { RING_MAP_TABLE } from '../ring-island/state.ts';
 
 const CW = MAP_CELL.w,
@@ -21,9 +21,8 @@ const CW = MAP_CELL.w,
   PLATE = { y0: 0.08, y1: 0.135, w: RING_MAP_TABLE.w - 0.04, d: RING_MAP_TABLE.d - 0.04 },
   FACE_W = 2.3,
   FACE_D = (FACE_W * CH) / CW;
-/** A reader of the table faces north: what lies to the north is up the map. */
-const NORTH = { x: 0, z: -1 };
-const HERE = [{ line: LINE2, stop: RAIL_LINES[LINE2]!.halts.findIndex((h) => h.ring && !h.leg) }];
+/** A reader of the table faces north: what lies to the north is up the map (halt-map.ts, RING_TABLE_DISPLAY). */
+const NORTH = { x: -Math.sin(RING_TABLE_DISPLAY.yaw), z: -Math.cos(RING_TABLE_DISPLAY.yaw) };
 
 export function createRingMapTable(owner: OwnedView) {
   const canvas = document.createElement('canvas');
@@ -58,7 +57,17 @@ export function createRingMapTable(owner: OwnedView) {
     /** Draws the map for `lines` (halt-map.ts's, at a stage from the rivet on), its marks at `scale`. */
     draw(lines: readonly MapLine[], scale: number) {
       g.setTransform(DENSITY, 0, 0, DENSITY, 0, 0);
-      drawMapBase(g, { x: 0, y: 0 }, CW, CH, lines, fitMap(lines, NORTH, CW, CH, CH * MAP_CELL.pad), HERE, scale);
+      drawMapBase(
+        g,
+        { x: 0, y: 0 },
+        CW,
+        CH,
+        lines,
+        fitMap(lines, NORTH, CW, CH, CH * MAP_CELL.pad),
+        RING_TABLE_DISPLAY.here,
+        scale,
+        RING_TABLE_DISPLAY.stackGap,
+      );
       steps = mapLabelSteps;
       map.needsUpdate = true;
     },

@@ -162,6 +162,7 @@ type Hop = {
   to: THREE.Vector3;
   aim?: (to: THREE.Vector3) => void; // moves `to` each frame (a flatbed that may be moving)
   leave?: (from: THREE.Vector3) => void; // as it leaves: sets `from`, frees its slot on the load
+  over?: number; // the arc's top is at least this world height (a long hop over a track a train may stand on)
   spin: THREE.Vector3;
   land: () => void;
 };
@@ -173,7 +174,7 @@ function launch(
   delay: number,
   land: () => void,
   stage: THREE.Object3D,
-  extra?: Pick<Hop, 'aim' | 'leave'>,
+  extra?: Pick<Hop, 'aim' | 'leave' | 'over'>,
 ) {
   const mesh = take(kind);
   mesh.visible = false;
@@ -222,8 +223,9 @@ export function hopOn(d: Deck, kind: Kind, from: THREE.Vector3, delay: number, l
   return true;
 }
 
-/** The crate in slot `k` hops off the load to a world point; `landed` when it comes down. */
-export function hopOff(d: Deck, k: number, to: THREE.Vector3, delay: number, landed: () => void) {
+/** The crate in slot `k` hops off the load to a world point; `landed` when it comes down. `over`: the least world
+ * height of the arc's top (its centre), for a hop that crosses something tall. */
+export function hopOff(d: Deck, k: number, to: THREE.Vector3, delay: number, landed: () => void, over?: number) {
   const c = d.held[k];
   if (!c) return;
   const leave = (from: THREE.Vector3) => {
@@ -234,7 +236,7 @@ export function hopOff(d: Deck, k: number, to: THREE.Vector3, delay: number, lan
     give(c.kind, c.mesh);
     if (d.held[k] === c) d.held[k] = null;
   };
-  launch(c.kind, to, to, delay, landed, d.stage, { leave });
+  launch(c.kind, to, to, delay, landed, d.stage, over === undefined ? { leave } : { leave, over });
 }
 
 /** A crate hops between two world points. */
@@ -281,7 +283,7 @@ export function updateCrates(dt: number) {
     }
     h.aim?.(h.to);
     const u = Math.min(1, h.t / HOP.flight);
-    const top = Math.max(h.from.y, h.to.y) + HOP.apex;
+    const top = Math.max(Math.max(h.from.y, h.to.y) + HOP.apex, h.over ?? -Infinity);
     const y0 = h.from.y,
       y1 = h.to.y;
     const b = 2 * (top - y0) + 2 * Math.sqrt(Math.max(0, (top - y0) * (top - y1)));

@@ -297,6 +297,9 @@ export async function createRailwayTrains(
   /** A shed train's scale-in (the greybox route's step 4 review, answer f: "shed trains, no shed"): the second its
    * cars take to grow where it joins, standing at the Village, so no train blinks into being. */
   const JOIN_S = 1;
+  /** How high over the rails a kit crate's arc tops out when its rack is across a track (m, the crate's centre):
+   * 1.3 m over an engine's cab roof (ENGINE_CAB.roofTop, 3.3 m), 0.6 m for its far corner as it tumbles. */
+  const HOP_OVER = 4.6;
   const beatAt = new THREE.Vector3();
   const first = trains[0]!;
   /** Line 2's trains: the ones that carry the kit and the footing wagon. */
@@ -424,8 +427,10 @@ export async function createRailwayTrains(
       const hidden = !shown || (tr.line !== 0 && !secondVisible) || row.phase === TRAIN_PHASE.SHED;
       const pose = (c: Car, at: number) =>
         tr.line === LINE2 ? poseOnLine2(c, at, lat) : rail.poseCarOnLine(c, line, at, 1, lat);
+      // Joining, the cars grow from the train's middle (car 1's spot): each car's place along the track closes in
+      // by its scale, so the couplings stay shut.
       tr.cars.forEach((c, n) => {
-        pose(c, along + offsets[n]!);
+        pose(c, along + offsets[n]! * c.mesh.scale.x);
         if (hidden) c.y = -60;
       });
       if (tr === coupled) {
@@ -961,13 +966,25 @@ export async function createRailwayTrains(
             const rack = legRack(RAIL_LEGS[leg]!, legRow(w, leg).laid);
             legKitFlight.logs += logs;
             legKitFlight.rails += rails;
+            // A rack across a track (Ring Island's, 8.4 m over the up track): the arc tops out HOP_OVER above the
+            // rails, so a tumbling crate (0.71 m to its far corner) clears a cab roof (3.3 m) standing under it.
+            const kitCar = tr.cars[2]!,
+              far = Math.hypot(rack.x / 100 - kitCar.x, rack.z / 100 - kitCar.z) > 6,
+              over = far ? kitCar.y - (BOTTOM + kitCar.hy) + HOP_OVER : undefined;
             for (let i = 0; i < count; i++) {
               const to = new THREE.Vector3(rack.x / 100, rack.y / 100 + 0.5, rack.z / 100);
               const share = (n: number) => Math.floor((n * (i + 1)) / count) - Math.floor((n * i) / count);
-              crates.hopOff(tr.deck, keep + i, to, i * 0.09, () => {
-                legKitFlight.logs = Math.max(0, legKitFlight.logs - share(logs));
-                legKitFlight.rails = Math.max(0, legKitFlight.rails - share(rails));
-              });
+              crates.hopOff(
+                tr.deck,
+                keep + i,
+                to,
+                i * 0.09,
+                () => {
+                  legKitFlight.logs = Math.max(0, legKitFlight.logs - share(logs));
+                  legKitFlight.rails = Math.max(0, legKitFlight.rails - share(rails));
+                },
+                over,
+              );
             }
             tr.count = keep;
           }

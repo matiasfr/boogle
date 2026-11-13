@@ -225,6 +225,7 @@ export function mapLabels(
   h: number,
   here: readonly { line: number; stop: number }[],
   scale = 1,
+  stackGap = 0.5,
 ): MapLabel[] {
   const S = mapSizes(h, scale),
     clear = stopClear(h, scale),
@@ -342,9 +343,10 @@ export function mapLabels(
   const PAD = S.label * 0.1;
   const clash = (a: MapLabel, b: MapLabel) =>
     a.x < b.x + b.w + PAD && b.x < a.x + a.w + PAD && a.y < b.y + b.h + PAD && b.y < a.y + a.h + PAD;
-  // Two names one right under the other read as one two-line name.
+  // Two names one right under the other read as one two-line name: within `stackGap` of a name's height (half
+  // on the halts' upright faces; a whole one on Ring Island's table, read from above at a slant).
   const stacked = (a: MapLabel, b: MapLabel) =>
-    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h + S.label * 0.5 && b.y < a.y + a.h + S.label * 0.5;
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h + S.label * stackGap && b.y < a.y + a.h + S.label * stackGap;
   let best = Infinity,
     pick: MapLabel[] = [];
   const chosen: MapLabel[] = [];
@@ -387,6 +389,7 @@ export function drawMapBase(
   v: MapView,
   here: readonly { line: number; stop: number }[],
   scale = 1,
+  stackGap?: number,
 ) {
   const S = mapSizes(h, scale),
     x0 = 0,
@@ -445,7 +448,7 @@ export function drawMapBase(
   // Names, each in the box `mapLabels` gave it, set against the side nearer its stop.
   g.font = `700 ${S.label}px ${FONT}`;
   g.textBaseline = 'middle';
-  for (const b of mapLabels(lines, v, w, h, here, scale)) {
+  for (const b of mapLabels(lines, v, w, h, here, scale, stackGap)) {
     g.textAlign = b.align;
     g.fillStyle = g.strokeStyle = b.here ? MAP_INK : b.lit ? NAME_LIT : MAP_DIM;
     // A frame square leads the name, hard against the drawn text (which is narrower than its box).

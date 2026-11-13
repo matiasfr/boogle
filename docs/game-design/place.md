@@ -852,8 +852,9 @@ its map. **The kit's number** (step 4b, 12 November): line 2's kit car carries a
 rear, over the load, with the number of the section its kit is for, or **S** for the steel works' kit; the rack's
 plate and the frame's sign carry the same number at the same size, so a train whose board does not match the rack
 runs past it. The board is there while the car carries logs or rails. At the rack the crates hop from the car in an
-arc (about a second) and the rack's logs and rails appear as each lands. On Ring Island the steel works' two stacks
-stand under a **STEEL KIT** plate with the S, from the rivet until the works lights. The two extra trains have no
+arc (about a second) and the rack's logs and rails appear as each lands. On Ring Island a **STEEL KIT** plate with the S hangs under the
+RINGWORKS board in front of the steel works' two stacks, from the rivet until the works lights. A rack across a
+track gets a higher arc, 4.6 m over the rails, clear of an engine's cab. The two extra trains have no
 shed: each grows from the rails over one second where it joins at the Village, and its marker grows on every map
 in the same second. Ring Island's low map table carries the halt map from the rivet (north up, Ring Island ringed,
 no train markers); before the rivet it is the painted table it was. Placeholder marks and labels. Not tested on a
