@@ -1,4 +1,5 @@
-> **Status: plan for the designer's review (12 November 2026). Nothing here is built.**
+> **Status: cleared by the designer (12 November 2026); steps 2, 1 and 3 are built (13 November), 4 to 6 are not. See
+> "Build notes" at the end for where the build left the plan's numbers.**
 
 # Greybox leg 2, the massing: High Gorge's incline platforms, Bell Rock, Home's West landing
 
@@ -82,7 +83,7 @@ at https://boogle.club/; Bell Rock and the Gorge by the DEV strip's Free cam (a 
 - [x] **2. Bell Rock in the map data (S).** In `map-prototypes.html` replace `bell-land` with `bell-w` and `bell-e`
       (`poly` for `c`, `r`, `seed`, `rough`), point the shoal at `bell-w`, move the pinnacle to [-1024, -870]; run
       the generator. Verify: `git diff --exit-code src/sim`; `test/world-lines.test.ts`; the cut in one look.
-- [ ] **3. Bell Rock, the lower level (M).** `massing-bell.ts`: the bed, platforms, lower deck, ramp, slipway, rock
+- [x] **3. Bell Rock, the lower level (M).** `massing-bell.ts`: the bed, platforms, lower deck, ramp, slipway, rock
       colliders, two pads. Stills: from the west platform's north (lever) end at eye height; up the ramp from its foot.
 - [ ] **4. Bell Rock, the upper level (M).** The bridge beds, platforms, end ramps, upper deck, step, the pinnacle's
       collider, three pads, the post. Stills: the in-half's landward platform (lever) end; **the profile** from 200 m north.
@@ -269,3 +270,24 @@ Neither holds the build. Nothing here is direction, unapproved scope or irrevers
      Rock bursts out of the dark into the Gorge.
    - No: the line leaves by the split's open end and goes round the stack, longer and beside line 2.
    Answer: ___
+
+## Build notes (implementer, 13 November 2026)
+
+Steps 2, 1 and 3 are built. Where the build left the plan's numbers, for the designer:
+
+1. **The rim is far wider than the plan says.** The level report measures drawn rock with no collider under it up to
+   **68.5 m** from the nearest solid box (the east land's tip, world (83.5, -850.5)), about 11,800 m² in all, against
+   finding 6's "up to 25 m": the four boxes stop at e -85 and e 65 and the two lands run to e -132 and e 134. The
+   four boxes are built as planned; more boxes inside the outlines are a call for step 4.
+2. **Three trims for the plan's own reserves** (the report fails a box in a row's ±3.8 m). The two upper platforms on
+   the inside of the 52° kink start at t 2, not t -3 (their corners stood in the other half's bed). The West
+   landing's platform B starts at s 2, not s 0 (its root corner stood 1 m inside the `cave` row's corridor, which
+   leaves the same root). The Gorge's `ns` reserve ends at t 62, short of the mouth's mark.
+3. **The rock colliders' faces on the cut are flush with the decks** (e -24, n ±26, e 9, not e -25, n ±27, e 10): the
+   plan's left a 1 m slot behind the drawn wall along three sides of the lower deck.
+4. **Change 2's "6 m inside a collider"** is measured to the nearest rim over 2 m wide: slivers under 2 m between a
+   collider's edge and the outline at the cut's walls are not counted.
+5. **Step 2 regenerates four pages, not two:** `rail-map.html` and `economy-prototype.html` embed the land list too,
+   and their tests fail stale otherwise. `src/sim` and `src/world` are unchanged.
+6. **A shared file the plan did not list:** `leg2-draw.ts` (layout pieces to boxes, posts, pad outlines and signs),
+   for `massing-bell.ts` and step 5's `massing-west.ts`.
