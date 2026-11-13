@@ -381,3 +381,205 @@ For the owner; none holds steps 1 and 2. Planner's own: the three under "could n
    - Measure a sixth train.
    - Hold leg 1 until waits are fixed (reverses call 109).
    Answer: ___
+
+## Design review (designer, 2026-11-12)
+
+Reviews the plan above before anything is measured or built. Where this differs from sections 1, 2 and 6 or the Open
+questions, this is what the measurement and any build take; the plan's steps and code are not edited.
+
+**Read:** the plan; train-spacing's review and its Results; DESIGN.md 7, 8 and 11; the rail Current rules and the
+dated entries on request stops, the express and interchanges, double track, Ring Island's end and the 12 November
+greybox waits; owner-calls; [call 109](../agent-calls.md); `RING_HALT`, `RING_END` and `RING_FORMATION` in
+`src/sim/railway-ring-layout.ts`, the island halt in `src/entities/ring-island/view.ts`, `TRAIN` and `TRAIN_EXTENT`;
+[train-riding](../research/train-riding.md), [rail-network-depth](../research/rail-network-depth.md),
+[route-contract](../research/route-contract.md) and
+[progression-flow-layout](../research/progression-flow-layout.md) (top blocks). The research index has nothing on
+headway or short-turning; train-spacing's Reference is from memory and unverified, as the plan says. **Not run:** any
+fuzz, `npm run loop`, the playtest CLI (no session has a line long enough to bunch). `npm run level-check` does not
+cover Ring Island. **No stills:** `npm run look` refused to start (the main checkout's install is out of step with
+its lock file, and I did not reinstall the owner's checkout), so I have not seen the platforms, the bed between them
+or a train standing there. The level findings below are from the layout data alone.
+
+**Verdict.** **Cleared to measure** (steps 1 and 2, with the changes in E and F). **Not cleared to build:** call 12
+is direction and waits for the owner's answer to question 1; steps 3 to 7 start only after it, after the walk in D,
+and only if the sheet beats the cheaper candidates in F. 7 Decided, 10 Default, 7 New.
+
+### A. Being put off a train (call 12)
+
+**Acceptable only as a connection, never as a turn-out, and it is the owner's to say yes to.**
+
+- **For it.** The owner has already put changing trains in the game: "every open stop is reachable from the first
+  junction, by a connecting train held across the platform"
+  ([10 November](../decisions-rail.md#d-2026-11-10-open-calls-answered-the-express-and)). The crossover turn is a
+  sight every player has watched since Ring Island was the end. Co-op gains a meeting: a friend on each train of the
+  pair end up on one train.
+- **Against it.** Request stops were chosen so trains "go about their business" and to end "the train missed me"
+  ([10 November](../decisions-rail.md#d-2026-11-10-trains-stop-on-request-at-the)). This is a new form of it: the
+  train I boarded did not take me there. The sim cannot see the rider it does this to. Clause 5 protects only a cord
+  ask for Stack head 3; the commonest long ride (the Village to High Gorge) pulls no cord, so the rule's main victim
+  is invisible to it. With one to three players that rider is usually the only person on the line, so the whole
+  cost lands on the one player and the gain (a homeward gap filled) often on nobody.
+- **Solo.** Told aboard, you get off at the far platform, cross both tracks and board the follower 10 to 35 s later.
+  If you miss it you ride home: the turning train's own stand is the plain 5 s dwell, which the plan does not
+  mention. Recoverable (the cord stops it at the Railhead), never stranded, but it costs two legs and a wait.
+- **With a friend on the other train.** The friend's train stops and waits for you: good. A friend waiting at the
+  Gorge for you sees your marker turn back on the map; the badge must make that read as "changing", not "left".
+- **So, if built:** every turn has a follower standing (the plan has this); **the turning train stands, doors open,
+  for at least `meet` as well** (New, call 19); a rider can read the turn from a seat (C); and no more than one
+  outward train in ten turns at light asks (E).
+
+### B. Told aboard or before boarding (call 13)
+
+"Announce consequential changes before they happen, and choose the warning length for the event." The event for a
+rider is the change, and the last moment they can act differently is before boarding. **V is what the principle asks
+for; R meets it only as a fallback.** The plan's rule is reversed: **V is built if it clears the bar in F, even if R
+measures better. R is built only if V misses, R clears, and the owner has picked the first answer to question 1.**
+Under V a plated train is a kind of train, like the express with its headboard, and nobody is put off unknowingly.
+V keeps clause 3, the meet and call 19: a rider who boards a short train anyway still finds a train to step onto.
+The plan does not say so.
+
+### C. The telling (call 17, now a Default) and the cord (call 14)
+
+- **The plate cannot be read by the rider it is for.** It is on the engine and the car's outside; the row shows only
+  to someone at the cord. Add a telling visible from every seat (the same plate inside the car) in step 4.
+- **The bell "as a cord ask rings it" says "someone asked for a stop".** Ring it twice for a turn. No new recipe.
+- **The follower's meet is a hold:** doors open, the hold lamp (`railTrainHeld`), the bell two seconds before it
+  leaves, as ruled for B (train-spacing review, call 15). The plan's table leaves these out.
+- **The four strings** are acceptable placeholders. "Change here for High Gorge" is helper text (DESIGN.md 11) and
+  stays only because the follower's plate across the tracks says the same thing in the world.
+- **Call 14: yes.** A cord ask beyond Ring Island prevents the turn. It can only restore today's behaviour, it costs
+  the rider a stop they did not want, and gate 18 guards it. The sheet counts turns it prevents at heavy asks.
+- **Call 16: yes,** at `meet` no higher than 200 (the owner's 20 s, call 5) and no lower than D's figure.
+
+### D. Level: the crossing at Ring Island (the plan's flag)
+
+**From the data.** The homeward platform is east (lat +1.8 to +5.3), the outward one west (-9.3 to -5.8), both 0.9 m
+over a 7.6 m bed with the tracks at lat 0 and -4. I found no plank crossing, ramp or step between them in the
+island's view (the generic halts have plank crossings; a search of the file is not a look). A standing train is 17.2 m long and
+solid, with the passenger car at the platforms' middle, so both trains of the pair stand across the straight line.
+
+| Leg | Distance | Time |
+| --- | --- | --- |
+| Seat on L to L's end, along the east platform | about 9 m | 1.6 s, plus unseating |
+| Down 0.9 m, across the bed, up 0.9 m | 7.6 m | 1.4 s, plus the climb (unproved with the plain jump) |
+| Back along the west platform to F's car | about 9 m | 1.6 s |
+
+About 5 s of walking plus two kerbs and the unseat (*arithmetic*): at or over the plan's 10 s with no margin. The
+follower arrives on the track the rider is crossing.
+
+**What the walk must measure for the rule to stand** (step 2, on the built island, both trains standing, plain walk
+and the plain jump only, three tries, by a bot or a session; the worst is T):
+
+1. From seated in L's passenger car to standing in F's, in ticks.
+2. That the 0.9 m kerb is climbed by the plain jump every try, from the bed, with a train standing beside it.
+3. What a train arriving on the outward track does to a player in the bed (pushed clear, carried, or stuck).
+4. The same walk the other way (the outward platform to the homeward one), which leg 1 already asks of anyone going
+   home from the west platform: flow rule 3, nobody stranded, has no proof here today.
+
+`meet` is T plus 50 ticks to notice and stand up, and at most 200. **If T is over 150, or the kerb or the bed fails,
+neither R nor V stands as planned** (V's rider crosses too): a foot crossing at the platforms is planned and
+level-checked first, and no meet is stretched to cover the walk.
+
+### E. The kill and keep rules as the player's experience
+
+The plan's rules mostly measure platforms and trains. Changes (Default, call 21):
+
+- **Rule 5, "the through wait", is V's measure only.** Under R a player boards the first train that stands. Add,
+  for both variants, **the Gorge-bound journey:** from an outward lever pull at the Village, the Quarry, Far Head or
+  the Railhead to standing at High Gorge, taking the first train that stands and changing if it turns; mean, p95 and
+  worst against E0's same journey; the share of journeys with a change. Kill if the mean is higher than E0's at
+  either rate, or a journey with a change is over 250 ticks longer than that train would have taken running through.
+- **Rule 7** counts journeys, not trains: a turned train makes no through trip and would drop out of the mean.
+- **Rule 4.** "The connection" is from L standing to F **leaving**, at most 250 and never under `meet`. The homeward
+  stand for a landing is at most **200**, not 250: it is away from a platform with nothing to step onto
+  (train-riding, recommendation 6), and 20 s is the owner's one figure for a train standing with players aboard. Print
+  how many a lap.
+- **Rule 9:** one outward train in **ten** at light asks, the figure candidate A was held to.
+- **Add: the turning train leaves no earlier than `meet` after it stands** (call 19), and its cost to the gap it was
+  sent to fill is on the sheet.
+- **Add: waits by platform and way.** Of the eleven worst waits E0 names on leg 1, eight are outward asks (Ring
+  Island up four times, the Railhead up, each stack head up) and three homeward (the Quarry, the Pier, the Railhead).
+  A turned train serves an outward ask only after an inner lap, and section 2 argues from homeward gaps. Kill if
+  Ring Island's or the Railhead's outward worst rises.
+- **Add: no outer platform's worst rises** (rule 6 has the mean and the share). The player building the next leg
+  waits at the outer end.
+- **Strike nothing.** Rules 1 to 3, 8 and 10 stand.
+
+### F. The bar (call 15) and the cheaper experiments first
+
+- **Tier 1 alone is not a reason to build this.** "None over 1,350 settled" removes 8 of 2,275 light waits and 39 of
+  11,898 heavy (Results, *arithmetic*): one wait in three hundred, shortened by up to 20 s. The plan's keep rule (the
+  share over 1,050 at least halves at both rates, means no higher) is the part a player feels. The build bar is
+  both, as the plan has it, **and the short turn must beat the best cheaper candidate on the same sheet** (New, call
+  22).
+- **Candidate B's light survivor already meets tier 1 as this plan writes it,** from E0's starting state: light
+  settled 395.7 / 0.61% / 1,275, light whole 1,353, heavy no worse than E0 (Results, cap 200 on 15%, late). It fails
+  the heavy halving (6.80%) and sits on the 5% trip line (+5.1%). It was refused against table C, before the looser
+  rate. It puts nobody off a train. The plan's Alternatives do not list it; E9 only adds it to the turn.
+- **Candidate C was never run** (train-spacing's status: "E1 (candidate C) and E4 were not run"). Its stand-in is a
+  tunable, `railTrainHeadPct` at 100, 115 and 130, with no `src` change. The sheets also say stage 4 and "settled"
+  differ only by 1,000 quiet ticks and pool at 2.92% and 7.24%: something about how the trains sit when nothing is
+  asked makes the worst waits, and the end holds are where that is set.
+- **A sixth train is one catalog value** (`fleet.trains`), with the quiet lap printed against the 1.2 gate.
+- **So step 1 also runs, before the scratch rule is written:** E1 on leg 1; six trains on leg 1; B 200, 15 late
+  reprinted against tier 1 and the keep rule. All three need no new sim code. Step 2 may start beside them, but its
+  Results print them in the same table, and a cheaper candidate that clears the bar is built instead. None of this
+  waits for the owner; question 3's "measure a sixth train" is simply done.
+- A shorter dwell stays refused (the dwell is the asker's walk to the door). Accepting the cap stays the fallback.
+
+### Findings
+
+1. **Change before step 1:** add E1, the six-train sweep and B's reprint (F).
+2. **Change before step 2:** the journey column, the platform-and-way table, call 19's stand and E's amended rules;
+   V keeps the follower clause and the meet.
+3. **Change before the designer rules on the sheets:** the walk in D, all four measures. A reach claim with no proof.
+4. **Change before step 4:** the in-car telling, the double bell, the follower's hold lamp and bell (C).
+5. **Flow.** Rule 1 holds. Rule 3 (nobody stranded) holds only with the follower clause in both variants and a
+   proved crossing; a rider who stays aboard is carried home and can stop the train, so is not stranded. The lens "a
+   place to meet in co-op" is served. Route contract: nothing supplies a route or skips work.
+6. **Order (game-direction).** Nothing waits on this plan: leg 1 is live under call 109 and the owner called waits
+   of about 2 minutes 15 fine until spacing lands. That is also why question 1 can wait for him.
+7. **Port from Place:** nothing, agreed.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 to 6 | As the plan's table | Decided | Agreed |
+| 7 | Every open stop is reachable "by a connecting train held across the platform" | Decided | [10 November](../decisions-rail.md#d-2026-11-10-open-calls-answered-the-express-and). The precedent for changing trains; it does not cover an ordinary train ending early |
+| 8 to 12 | The plan's calls 7 to 11 | Default | Already logged; kept |
+| 13 | The plate, the turn-back badge and the four placeholder strings (the plan's call 17) | Default | View only. With C's additions |
+| 14 | A turn is told inside the car, by two bell strokes; the follower's meet shows doors open, the hold lamp and a bell before leaving | Default | Section C |
+| 15 | `meet` is the measured walk plus 50 ticks, at most 200; over 150 a foot crossing is planned first | Default | Section D |
+| 16 | The amended kill rules: the Gorge-bound journey, the connection to F leaving, a homeward stand of at most 200, one train in ten, waits by platform and way | Default | Section E |
+| 17 | E1, a six-train sweep and B's reprint run in step 1 | Default | Section F |
+| 18 | The leader of a close pair ends at Ring Island and a Gorge-bound rider changes (the plan's call 12) | **New** | Direction. **Waits for the owner** (question 1) before any build; measured meanwhile |
+| 19 | The turning train stands, doors open, at least `meet` | **New** | Section A. Or a rider has 5 s to leave it |
+| 20 | Shown before boarding (V) is built if it clears the bar; told aboard (R) only if V misses and the owner picks it (the plan's call 13, reversed) | **New** | Section B |
+| 21 | A cord ask beyond Ring Island prevents a turn (the plan's call 14) | **New** | Yes. Section C |
+| 22 | The build bar is tier 1 with the keep rule, and the short turn must beat the best of B, C and six trains on the same sheet (the plan's call 15, amended) | **New** | Section F. Table C stays tier 2 |
+| 23 | The follower waits `meet` with riders aboard, no "go now" (the plan's call 16) | **New** | Yes, shown as call 14 |
+| 24 | A cheaper candidate that clears the bar is built instead of the short turn | **New** | Section F. B's 20 s stand is the train-spacing review's call 23, still open with the owner |
+
+**Counts:** 7 Decided, 10 Default, 7 New. **Suspect lines of The Boogler's:** none written or changed.
+
+### Owner questions
+
+These replace the plan's three. Only question 1 holds anything, and only the build.
+
+1. **"May a train end its trip at Ring Island and turn back, when the train right behind it takes you on to the
+   Gorge?"** Direction: it changes what boarding a train means. Nothing is built until this is answered.
+   - **Only if the train says so before anyone boards it (recommended):** it wears "Ring Island only" from the
+     Village, so you choose it or the next one, and the next one waits for you at Ring Island either way.
+   - Yes, even when you learn aboard: a bell and a board about 16 s before, both trains wait, you cross the platform.
+   - Never: a train always runs to the end of the line, and trains are evened out some other way.
+   Answer: ___
+2. **"If the long line can be brought to 'about 2 minutes 15 at worst, usually under a minute' by a train standing
+   up to 20 s at Ring Island with its doors open, or by a sixth train, should that be built instead of the turn?"**
+   - **Yes (recommended; built on the sheet until he answers):** nobody is put off a train.
+   - No: build the turn if it measures best.
+   Answer: ___
+
+**The plan's questions.** Its question 1 is the owner's (above). Its question 2 is not: the bar is a gate figure
+inside his 12 November words, ruled in F and logged. Its question 3 is not yet a question: the sixth train is
+measured in step 1 without asking, and holding leg 1 is his to raise ([call 109](../agent-calls.md)).
