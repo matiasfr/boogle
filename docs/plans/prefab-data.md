@@ -236,10 +236,11 @@ belong to `.look/prefab-step-5-review/`, superseding this task's earlier static 
 found 296 exports and 23,539 edges, including shared entity lifecycle, player/ball state and platform services.
 That reference/callback closure made routine imports unnecessarily expensive and produced 25,635 JSON lines.
 The owner chose a targeted debt-only direct-call fixed point with importer counts, not importer identities.
-The four audit probes still fail; ordinary feature registration plus the prefab door passes. Entity lifecycle
-is the sole explicit non-constructor because it attaches already-built bodies and schedules callbacks.
-The old edge analyzer/list is removed; schema 4 stores 84 constructor counts inside the existing debt JSON
-(983 formatted lines). Capability import bans, frozen surfaces, per-file budgets and content globals stay intact.
+The four audit probes still fail; ordinary feature registration plus the prefab door passes. The explicit non-constructor list stops at entity lifecycle, singleton player/ball state and platform carry
+services; the lint contract justifies each entry. Factory-result and callback-container references no longer
+forward callable provenance.
+The old edge analyzer/list is removed; schema 4 stores 62 constructor counts inside the existing debt JSON
+(961 formatted lines). Capability import bans, frozen surfaces, per-file budgets and content globals stay intact.
 Importer swaps and reflection intentionally pass. [Shape, central modules and measurements](prefab-data-step-5-shape.md).
 
 **Step 5c consumer-edge correction (supersedes the approved-API escape hatch below):** the audit's four typed

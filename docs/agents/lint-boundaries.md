@@ -37,11 +37,13 @@ Before changing module dependencies, services or lockstep boundaries, read this 
 - `dev/lint/prefab-constructors.ts` computes a targeted call graph, not the whole-program reference closure.
   A construction export belongs to a debt file and its own body calls a capability-module API or another
   construction export. The fixed point runs over debt implementations only; door implementations and non-debt
-  function bodies do not propagate construction. Call aliases and re-export/barrel identities resolve normally.
+  function bodies do not propagate construction. Call aliases and re-export/barrel identities resolve normally. Factory results and callback containers are not callable aliases.
   Nested callbacks lexically inside a constructor body count; arbitrary callback arguments, type dependency bags,
-  state references and loader/registry callbacks do not. The short `NOT_CONSTRUCTORS` list contains exactly
-  `src/entity/entity.ts`: it attaches already-built bodies and schedules entity callbacks, so registration and
-  spawning finished record-authored entities must remain available to ordinary features. No folder exemption.
+  state references and loader/registry callbacks do not. The short `NOT_CONSTRUCTORS` list is justified per file:
+  `src/entity/entity.ts` attaches finished bodies and schedules callbacks; `src/entities/player/state.ts` owns
+  singleton player movement/grounding/respawn; `src/entities/ball/state.ts` owns singleton ball state/ownership/play;
+  `src/physics/platforms.ts` registers existing platforms and converts/carries coordinates. These shared lifecycle
+  and state APIs remain available to ordinary features, not placed-content factories. No folder exemption.
   `legacy["file#export"]` stores only the number of distinct importing files, including forwarding barrels.
   Named, namespace, dynamic and require acquisitions resolve to constructor identities through aliases/barrels;
   wrapper function bodies outside debt do not extend this closure. Higher counts fail naming

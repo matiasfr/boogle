@@ -23,7 +23,7 @@ test('computed targeted constructor counts equal the committed baseline', { time
 
 test('ordinary feature registration and the prefab door remain open', () => {
   const code =
-    "import {defineKind,spawn} from '../entity/entity.ts'; import {instantiate} from '../prefab/instantiate.ts'; export const init=()=>{defineKind('fixture',{}); const value=instantiate({}); return spawn(value);};";
+    "import {defineKind,spawn} from '../entity/entity.ts'; import {onEntered} from '../entities/player/state.ts'; import {ballInReach} from '../entities/ball/state.ts'; import {aboard} from '../physics/platforms.ts'; import {instantiate} from '../prefab/instantiate.ts'; export const init=()=>{defineKind('fixture',{}); onEntered(()=>ballInReach()); aboard(); const value=instantiate({}); return spawn(value);};";
   assert.deepEqual(lintSafety(code, 'src/features/review-fixture.ts'), []);
 });
 
@@ -45,6 +45,8 @@ test('direct debt calls form a fixed point; barrels count, registries and door w
       "import {createBody}from '../physics/engine'; export const instantiate=()=>createBody();",
     'src/authored.ts': "import {instantiate}from './prefab/instantiate'; export const record=()=>instantiate();",
     'src/entity/entity.ts': "import {makeCar}from '../car'; export function register(){makeCar();}",
+    'src/finished.ts': "import {makeCar}from './car'; export const finished=makeCar();",
+    'src/finished-consumer.ts': "import {finished}from './finished'; console.log(finished);",
     'src/new-feature.ts':
       "import {register}from './entity/entity'; import {record}from './authored'; register();record();",
   };
@@ -82,6 +84,7 @@ test('direct debt calls form a fixed point; barrels count, registries and door w
       assert.ok(base.constructors[car]!.importers.includes(file), file);
     assert.ok(!base.constructors[car]!.importers.includes('src/types.ts'));
     assert.ok(!base.constructors[car]!.importers.includes('src/new-feature.ts'));
+    assert.ok(!base.constructors[car]!.importers.includes('src/finished-consumer.ts'));
     sources['src/new.ts'] = "export {make as fresh}from '../dev/forward';";
     write('src/new.ts');
     const grown = graph();

@@ -232,17 +232,6 @@ export function computeLegacyGraph(
   const providers = new Set([...Object.keys(debt.colliders), ...Object.keys(debt.seats)]);
   const doors = new Set(Object.values(PREFAB_DOORS).flat());
   const eligible = (file: string) => providers.has(file) && !doors.has(file) && !(file in NOT_CONSTRUCTORS);
-  // Only aliases/re-exports carry values across modules. No arbitrary reference, argument or callback flow.
-  for (const [id, b] of bindings)
-    if (!b.fn && !(b.file in NOT_CONSTRUCTORS))
-      for (const node of b.nodes) {
-        const f = modules.get(b.file)!;
-        walk(node, (n) => {
-          if (n.type !== 'Identifier') return;
-          const target = f.refs.get(n.start);
-          if (target) link(id, target, true);
-        });
-      }
   const targets = (f: Facts, node: Node): Set<string> => {
     const out = new Set<string>();
     if (node.type === 'Identifier') {
@@ -269,6 +258,35 @@ export function computeLegacyGraph(
       return targets(f, node.expression as Node);
     return out;
   };
+  // Only identity expressions forward a callable. A factory call's result, an object containing callbacks,
+  // or an arbitrary initializer reference is not an alias of that factory.
+  const identity = (f: Facts, id: string, node: Node): void => {
+    if ('expression' in node && node.expression && typeof node.expression === 'object')
+      return identity(f, id, node.expression as Node);
+    if (node.type === 'AwaitExpression') return identity(f, id, node.argument);
+    if (node.type === 'Identifier') {
+      const target = f.refs.get(node.start);
+      if (target) link(id, target, true);
+    }
+    if (
+      node.type === 'ImportExpression' ||
+      (node.type === 'CallExpression' && node.callee.type === 'Identifier' && node.callee.name === 'require')
+    ) {
+      const source = node.type === 'ImportExpression' ? literal(node.source) : literal(node.arguments[0] as Node);
+      const target = source ? resolve(f.file, source) : null;
+      if (target) {
+        link(id, namespaceId(target), true);
+        namespace.set(id, new Set([target]));
+      }
+    }
+  };
+  for (const [id, b] of bindings)
+    if (!b.fn && !(b.file in NOT_CONSTRUCTORS)) for (const node of b.nodes) identity(modules.get(b.file)!, id, node);
+  for (const [id, b] of bindings)
+    if (!b.fn && !(b.file in NOT_CONSTRUCTORS))
+      for (const node of b.nodes)
+        if (node.type === 'MemberExpression')
+          for (const target of targets(modules.get(b.file)!, node)) link(id, target, true);
   const exportedBindings = new Set<string>();
   const todo = [...modules.values()].filter((f) => eligible(f.file)).flatMap((f) => [...f.exports.values()]);
   for (let i = 0; i < todo.length; i++) {
@@ -287,7 +305,8 @@ export function computeLegacyGraph(
       for (const target of targets(f, n.callee)) link(id, target);
     });
   }
-  for (const [id, b] of bindings) if (b.fn) for (const kind of kinds) if (isCapability(kind, b.file)) seed(id, kind);
+  for (const f of modules.values())
+    for (const kind of kinds) if (isCapability(kind, f.file)) for (const id of f.exports.values()) seed(id, kind);
   const reverse = new Map<string, Set<string>>();
   for (const [from, to] of deps) for (const d of to) add(reverse, d, from);
   const propagate = <T extends string>(initial: Map<string, Set<T>>, stop = new Set<string>()) => {
@@ -319,7 +338,10 @@ export function computeLegacyGraph(
     for (const [name, id] of modules.get(file)?.exports ?? []) {
       // The record-only instantiate door is intentionally open to new authored content.
       if (!eligible(file)) continue;
-      const found = reached.get(id);
+      // Capability exports are terminal APIs for callers, not automatically constructors themselves.
+      const found = new Set<ConstructionKind>();
+      for (const implementation of deps.get(id) ?? [])
+        for (const kind of reached.get(implementation) ?? []) found.add(kind);
       if (!found?.size) continue;
       const key = `${file}#${name}`;
       constructors[key] = { kinds: [...found].sort(), importers: [] };
@@ -391,10 +413,12 @@ export function acquiredConstruction(
 export const constructionCounts = (graph: LegacyGraph): Record<string, number> =>
   Object.fromEntries(Object.entries(graph.constructors).map(([key, value]) => [key, value.importers.length]));
 
-// This lifecycle service attaches already-built bodies and invokes registered entity callbacks; it is not
-// a content factory. Ordinary features must be able to register/spawn record-instantiated entities here.
+// Shared lifecycle/state services are not placed-content factories. Each explicit stop has its own reason.
 export const NOT_CONSTRUCTORS = {
   'src/entity/entity.ts': 'Lifecycle registration/attachment of finished entities; no body or seat creation.',
+  'src/entities/player/state.ts': 'Singleton player movement, grounding and respawn; not placed-content factories.',
+  'src/entities/ball/state.ts': 'Singleton ball state, ownership and play controls; not placed-content factories.',
+  'src/physics/platforms.ts': 'Platform registration, coordinate conversion and carry state over existing bodies.',
 } as const;
 
 const TOOL_HASH = createHash('sha256')
