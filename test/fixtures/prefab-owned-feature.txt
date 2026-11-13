@@ -1,0 +1,13 @@
+import { defineKind, spawn } from '../entity/entity.ts';
+import { onStart } from '../loop.ts';
+import { createOwnedView } from '../render/owned-view.ts';
+import { instantiate, workshopChair } from '../prefab/instantiate.ts';
+
+defineKind('review-legitimate-a', { update: 31 });
+onStart(() => {
+  const owner = createOwnedView();
+  const placement = { ...workshopChair, id: 'review-legitimate-a' };
+  const chair = instantiate(placement.prefab, placement, { owner });
+  chair.setEnabled(true);
+  spawn({ kind: 'review-legitimate-a', mesh: owner.root, update: owner.update, dispose: owner.dispose });
+});
