@@ -185,9 +185,11 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
     prevC = new Map<number, { c: number; len: number }>(),
     stand = new Map<string, number>(), // halt name -> ticks stood past the dwell (any halt)
     standSince = new Map<number, number>(),
-    standAt = new Map<number, string>(), // slot -> where its current stand is (halt name or 'signal')
+    standAt = new Map<number, string>(), // slot -> where its current stand is (halt name, or 'signal after <halt> <way>')
+    lastHalt = new Map<number, string>(), // slot -> the halt it last stood at
     longStands: { ticks: number; at: string }[] = [], // every stand (dwell included) over 600 ticks, by place
     pastBy = new Map<string, number>(), // halt name -> the longest stand past the dwell there, from `arrived`
+    pastMid = new Map<string, number>(), // the same while the halt is a middle halt
     leftEnd = new Map<number, { t: number; end: number }>(),
     trips: { up: number[]; down: number[] } = { up: [], down: [] };
   let midPast = { ticks: 0, at: '', tick: 0 };
@@ -232,6 +234,8 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
         // The longest stand past the dwell at a middle halt (Ring Island's hold: its cap runs from `arrived`).
         const past = s.t - r.arrived - TRAIN.dwellTicks;
         if (past > (pastBy.get(key) ?? 0)) pastBy.set(key, past);
+        // A middle halt only (Ring Island is the line's end until leg 1's first section opens: a turnaround, no hold).
+        if (r.at > 0 && r.at < last && past > (pastMid.get(key) ?? 0)) pastMid.set(key, past);
         if (r.at > 0 && r.at < last && s.t - r.arrived - TRAIN.dwellTicks > midPast.ticks)
           midPast = { ticks: s.t - r.arrived - TRAIN.dwellTicks, at: key, tick: s.t - t0 };
       }
@@ -252,8 +256,14 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
       } else {
         if (!standSince.has(slot)) {
           standSince.set(slot, s.t);
-          standAt.set(slot, r.at >= 0 ? RAIL_HALTS[haltId(LINE2, r.at)]!.name : 'signal');
+          standAt.set(
+            slot,
+            r.at >= 0
+              ? RAIL_HALTS[haltId(LINE2, r.at)]!.name
+              : `signal after ${lastHalt.get(slot) ?? '?'} ${trainDir(r) > 0 ? 'up' : 'down'} @${s.t - t0}`,
+          );
         }
+        if (r.at >= 0) lastHalt.set(slot, RAIL_HALTS[haltId(LINE2, r.at)]!.name);
         const d = s.t - standSince.get(slot)!;
         if (d > longest.ticks)
           longest = { ticks: d, at: r.at >= 0 ? RAIL_HALTS[haltId(LINE2, r.at)]!.name : 'signal', tick: s.t - t0 };
@@ -357,6 +367,7 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
     plat,
     midPast,
     pastBy: Object.fromEntries(pastBy),
+    pastMid: Object.fromEntries(pastMid),
     longStands,
     hold: { ...TRAIN_HOLD, late: LATE },
     railheadUp: waits.filter((x) => x.at === 'Railhead up').map((x) => x.v),

@@ -1,0 +1,18 @@
+Six-hold checkpoint (scratch measurement): the production rule at 884e185f6 (six trains, the Ring Island hold,
+railTrainHoldCap 200, railTrainHoldPct 15 as defaults), seeds 1000-102f, 20,000 ticks, settled and whole, heavy and light.
+
+  built/          hold on in the base worlds too (the gated sheet; quiet 12,000 ticks a place)
+  late/           base worlds built with the hold off (SPACING_HOLD_LATE=1), the hold on for the run; no quiet runs
+  signals-whole/  the whole leg again, with each long signal stand's place (identical waits to built/ run for run)
+  rimid-*.jsonl   whole heavy, the five seeds whose Ring Island stand past the dwell topped 200, with middle-halt stands
+  ref-car4-e0/    car4 E0 (the gates' reference), copied from .look/spacing/car4/leg1-e0
+  gates-built.txt, gates-late.txt   node test/spacing/gates.ts ref-car4-e0 <dir> [.look/spacing/stepC/sixh-built]
+
+Ring Island past the dwell: the 203 to 211 on the whole heavy leg are turnarounds while Ring Island is the line's end
+(before leg 1's first section opens); as a middle halt its longest is 199 at both rates, settled and whole.
+
+Against the env-switch sheet (.look/spacing/stepC/sixh-built): settled heavy and light and whole heavy identical run for
+run; whole light differs on 6 of 48 seeds (1002, 1005, 1006, 100a, 1013, 1016): the production hold is off while a
+train waits in the shed to join. Pooled whole light: worst 1353 -> 1454 (seed 1006, Stack head 3 down, asked 5961,
+around the Gorge opening at 6150), share over 1,050 0.98% -> 0.93%, mean 351.7 -> 351.8, journey 1961 -> 1967, trip down
+1665 -> 1664. Quiet hashes equal.
