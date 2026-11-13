@@ -31,7 +31,7 @@ You plan features for Boogle; you do not implement them. The only file you write
      the level check on the planned positions before the plan is reviewed (`npm run level-check`, docs/agents/test-details/level.md)
      and list what it finds, especially anything reachable before the ability that should gate it. The designer rules on
      these with the plan, not after the build (owner, 9 November).
-   - **Risks**: anything from "Don't" in docs/agents/room-safety.md that applies, hotspot files, mixed builds (wire changes additive),
+   - **Risks**: anything from "Don't" in docs/agents/room-safety.md that applies, hotspot files, mixed builds (dev phase: no compatibility code; a wire, state or catalog break bumps `WORLD_NS` with a dated history line),
      performance (`npm run perf` if it adds meshes, lights or tick work): report the cost; it is not a reason to cut or defer gameplay without the owner's word ([owner call](../../docs/agents/owner-calls.md#performance-guides-not-gates)).
    - **Open questions** for the user, if any.
 4. Be concrete enough that the implementer can follow the steps without redesigning anything: name functions,

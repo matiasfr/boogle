@@ -20,7 +20,7 @@ With an argument, run only that part. Without one, run all five in order, skippi
   `src/render`; `src/player` and features; `server`; `dev`) and run one pass per area, one area at a time.
 - First run `npm run inflight` and skip files an in-flight branch is editing; say which.
 - Keep lockstep behaviour identical, never touch The Boogler's copy, and prove with `npm run check` plus the checks
-  `npm run checks-for` picks. Ship each area with ship-q (or `npm run ship`). Record the end commit.
+  `npm run checks-for` picks. Ship each area with `npm run ship-queue` (or `npm run ship`). Record the end commit.
 
 ## 2. Architecture: drift and implicit state machines
 

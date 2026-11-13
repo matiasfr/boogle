@@ -17,7 +17,7 @@ The script picks the first one that is available. Force one with `--via api` or 
 
 1. **OpenAI Images API.** Needs `OPENAI_API_KEY` in the environment. It works in cloud sessions too, because `api.openai.com` is reachable from them. Add the key as an environment secret in the environment's settings (cloud), or export it in your shell (local). Never paste a key into chat or commit it.
    - The script calls `POST /v1/images/generations`, or `/v1/images/edits` when an item has reference images (multipart `image[]`; untested so far).
-   - Defaults: `gpt-image-2`, `medium` quality, size from the kind (below).
+   - Defaults: `gpt-image-2.6-sunburst`, `medium` quality, size from the kind (below).
    - GPT image models return base64 PNGs.
    - It bills at API rates. `--quality low` is cheap for drafts; use `high` for keepers.
 2. **Codex CLI.** For a machine with Codex installed and logged in with ChatGPT. The script runs `codex exec ... "$imagegen <prompt>"` in the output folder, which uses the subscription, not the API key. Tested with Codex CLI 0.166.0: imagegen saves to `~/.codex/generated_images/<session>/` and copies the PNG into the output folder. It picks its own size (about 1672x941 for 16:9, 1254x1254 for square) and ignores `--quality`; each image takes about a minute. Reference images are copied next to the output and Codex is asked to open them first (untested so far).

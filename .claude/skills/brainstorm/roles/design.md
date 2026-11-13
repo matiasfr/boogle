@@ -8,8 +8,8 @@ the Current rules of the topics this idea touches (docs/decisions.md routes them
 docs/game-design/ the idea touches, and the newest entry in docs/playtests.md. Look for what shipped games do with
 this kind of verb.
 
-Lens: the current principles in DESIGN.md and later owner decisions. Principles 1 and 4 were retired on 7 November;
-do not reject an idea for depending on goals, rewards or deliberate coordination. Drop-in onboarding is secondary.
+Lens: the current principles in DESIGN.md and later owner decisions. An idea may depend on goals, rewards or
+deliberate coordination; none of those is a reason to reject it. Drop-in onboarding is secondary.
 Evaluate solo and co-op quality alongside each other. Judge the project from wanting its outcome through the work,
 coordination and payoff to what players can do next; a solo toy test is not a prerequisite for that verdict.
 Push the idea further than the seed: the twist that makes it Boogle's, the interaction with

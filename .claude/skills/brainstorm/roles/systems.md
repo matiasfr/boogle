@@ -9,7 +9,7 @@ touches, and then the code it would touch (`npm run map` first; read one similar
 Compare to how Unity, Unreal and Godot handle it where that settles a choice.
 
 Lens: the sync kind and authority of each piece of state; existing systems, registries and helpers to reuse instead
-of adding; mixed builds (wire changes additive); performance on an M1 Mac and on mobile; the smallest build that
+of adding; mixed builds (dev phase: no compatibility code; a clean break bumps `WORLD_NS`); performance on an M1 Mac and on mobile; the smallest build that
 answers the playtest question (prototype rules: behind a `?proto=` flag, mechanics only). Suggest technical
 amplifications too: a cheap generalization that unlocks more play, or a system already built that the idea could
 ride on. Name files, functions and ops; don't write a step-by-step plan.
