@@ -35,6 +35,9 @@ import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
+import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
+import { RAIL_LEGS, legRack } from '../../sim/railway-route.ts';
+import { legKitStop, legRow, openLeg } from '../../sim/railway-queries-route.ts';
 
 const BRASS = '#c79a3e';
 /** Steel, the island's orange (ring-island/view.ts, ring-steel/view.ts). */
@@ -261,6 +264,11 @@ export async function createRailwayTrains(
       cars,
       deck: crateDeck,
       solid: solidLoad,
+      // Line 2's kit car says whose kit it carries (./kit-board.ts; the greybox route's step 4 review, answer j).
+      board:
+        line === LINE2
+          ? createKitBoard(owner, model.cars[2]!, wagon.TRAIN_CARS[2]!.top, wagon.TRAIN_CARS[2]!.hz)
+          : null,
       boiler,
       long,
       wears: 0,
@@ -268,6 +276,8 @@ export async function createRailwayTrains(
        * restore, and the seconds into its longer boiler going on, or -1. */
       seen: false,
       beat: -1,
+      /** Seconds into its scale-in after joining from the shed (JOIN_S), or -1. */
+      join: -1,
       lamp: { mesh: stopLamp, material: lampMaterial, on: false },
       hold: { mesh: holdLamp, material: holdMaterial, on: false },
       fit,
@@ -284,6 +294,12 @@ export async function createRailwayTrains(
   /** The platform beat's times, seconds from the row's change: the swap under the puff, the squash's length, the toot. */
   const BEAT = { swap: 0.4, squash: 0.18, toot: 1.2 } as const;
   const BEAT_STEAM = new THREE.Color('#e9eef2');
+  /** A shed train's scale-in (the greybox route's step 4 review, answer f: "shed trains, no shed"): the second its
+   * cars take to grow where it joins, standing at the Village, so no train blinks into being. */
+  const JOIN_S = 1;
+  /** How high over the rails a kit crate's arc tops out when its rack is across a track (m, the crate's centre):
+   * 1.3 m over an engine's cab roof (ENGINE_CAB.roofTop, 3.3 m), 0.6 m for its far corner as it tumbles. */
+  const HOP_OVER = 4.6;
   const beatAt = new THREE.Vector3();
   const first = trains[0]!;
   /** Line 2's trains: the ones that carry the kit and the footing wagon. */
@@ -411,8 +427,10 @@ export async function createRailwayTrains(
       const hidden = !shown || (tr.line !== 0 && !secondVisible) || row.phase === TRAIN_PHASE.SHED;
       const pose = (c: Car, at: number) =>
         tr.line === LINE2 ? poseOnLine2(c, at, lat) : rail.poseCarOnLine(c, line, at, 1, lat);
+      // Joining, the cars grow from the train's middle (car 1's spot): each car's place along the track closes in
+      // by its scale, so the couplings stay shut.
       tr.cars.forEach((c, n) => {
-        pose(c, along + offsets[n]!);
+        pose(c, along + offsets[n]! * c.mesh.scale.x);
         if (hidden) c.y = -60;
       });
       if (tr === coupled) {
@@ -580,6 +598,7 @@ export async function createRailwayTrains(
     merge2 = mergeShown = endMergeM(stops2);
     secondVisible = on;
     flyingLogs = flyingRails = 0;
+    legKitFlight.logs = legKitFlight.rails = 0;
     unloading = false;
     footFlights.length = 0;
     for (const tr of cargo) crates.clearCrates(tr.deck);
@@ -591,6 +610,11 @@ export async function createRailwayTrains(
       // A restore or a late join shows the rows only: no beat, and the next frame's fit is not an edge.
       tr.seen = false;
       tr.beat = -1;
+      tr.join = -1;
+      for (const c of tr.cars) {
+        c.mesh.scale.setScalar(1);
+        c.rock.position.y = -(BOTTOM + c.hy);
+      }
       tr.model.cars[0]!.scale.set(1, 1, 1);
       drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
     });
@@ -811,8 +835,23 @@ export async function createRailwayTrains(
         on = line2Trains(w);
       // Each line's open stops, worked out once for the frame and shared by the lamps.
       const stops = [trainStops(w, 0), trainStops(w, LINE2)];
+      const marks = kitMarks(w, tick);
       trains.forEach((tr) => {
         const row = trainRow(w, tr.slot);
+        tr.board?.set(marks.get(tr.slot) ?? '');
+        // Joined from the shed on a live tick: its cars grow in over JOIN_S (their bodies are whole at once).
+        if (tr.seen && tr.last?.phase === TRAIN_PHASE.SHED && row.phase !== TRAIN_PHASE.SHED) tr.join = 0;
+        if (tr.join >= 0) {
+          tr.join += dt;
+          const u = reducedMotion ? 1 : Math.min(1, tr.join / JOIN_S),
+            s = Math.max(0.02, u * u * (3 - 2 * u));
+          // Each car grows from the rails under it (its frame hangs BOTTOM + hy under the body's centre).
+          for (const c of tr.cars) {
+            c.mesh.scale.setScalar(s);
+            c.rock.position.y = -(BOTTOM + c.hy) / s;
+          }
+          if (u >= 1) tr.join = -1;
+        }
         // Amber: on its way to a request stop it will make, its riders' or a lever's it serves (so a train running
         // through a lit lever is dark, and the one behind it lit). Red: held, standing for the block or the headway.
         const lit = railTrainAsked(w, tr.slot, tick, stops[tr.line]);
@@ -914,6 +953,42 @@ export async function createRailwayTrains(
             });
           }
         }
+        // A leg's kit hops from the car to its rack (the greybox route's step 4 review, answer b: 8 m over the up
+        // track at Ring Island, then onto each railhead's), drawn as the Q kits' unload is. The rows moved the units
+        // on the tick the train stood; the rack's view draws each once its crate lands (legKitFlight).
+        const leg = tr.line === LINE2 && tr.last?.legKit ? openLeg(w, LINE2) : -1;
+        if (leg >= 0 && tr.last && row.phase === TRAIN_PHASE.STAND && row.at === legKitStop(w, leg) && tr.count > 0) {
+          const logs = tr.last.logs - row.logs,
+            rails = tr.last.rails - row.rails,
+            keep = Math.ceil((row.logs + row.rails) / 8),
+            count = tr.count - keep;
+          if (logs >= 0 && rails >= 0 && logs + rails > 0 && count > 0) {
+            const rack = legRack(RAIL_LEGS[leg]!, legRow(w, leg).laid);
+            legKitFlight.logs += logs;
+            legKitFlight.rails += rails;
+            // A rack across a track (Ring Island's, 8.4 m over the up track): the arc tops out HOP_OVER above the
+            // rails, so a tumbling crate (0.71 m to its far corner) clears a cab roof (3.3 m) standing under it.
+            const kitCar = tr.cars[2]!,
+              far = Math.hypot(rack.x / 100 - kitCar.x, rack.z / 100 - kitCar.z) > 6,
+              over = far ? kitCar.y - (BOTTOM + kitCar.hy) + HOP_OVER : undefined;
+            for (let i = 0; i < count; i++) {
+              const to = new THREE.Vector3(rack.x / 100, rack.y / 100 + 0.5, rack.z / 100);
+              const share = (n: number) => Math.floor((n * (i + 1)) / count) - Math.floor((n * i) / count);
+              crates.hopOff(
+                tr.deck,
+                keep + i,
+                to,
+                i * 0.09,
+                () => {
+                  legKitFlight.logs = Math.max(0, legKitFlight.logs - share(logs));
+                  legKitFlight.rails = Math.max(0, legKitFlight.rails - share(rails));
+                },
+                over,
+              );
+            }
+            tr.count = keep;
+          }
+        }
         if (!unloading || tr.line !== LINE2) drawLoad(tr, Math.ceil((row.logs + row.rails) / 8));
         if (tr.line === LINE2 && tr.last) footArrivals(row, tr.last);
         tr.last = { ...row };
@@ -955,6 +1030,8 @@ export async function createRailwayTrains(
         along: trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock),
         cars: carsOf(tr).map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
         crates: crates.deckCount(tr.deck),
+        kitBoard: tr.board?.mark() ?? '',
+        joinScale: +tr.cars[0]!.mesh.scale.x.toFixed(3),
         lashed: tr.boiler.visible || tr.long.boiler.visible,
         longBoiler: tr.long.body.visible,
         stopLamp: tr.lamp.on,
@@ -974,6 +1051,7 @@ export async function createRailwayTrains(
             }
           : {}),
       })),
+      legKitFlying: { ...legKitFlight },
       oldTrain: { shown: !line2Trains(adapter.read.world()), rust: look.rustTrainU.value, stop: TRAIN_HOME[0] },
       bolting: folk.bolting(),
     }),

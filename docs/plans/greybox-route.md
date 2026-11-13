@@ -565,7 +565,7 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       (the rack 20 and 20 to 4 and 4); "Take the powered pick" on the rim, after the stair walked bottom to top in
       40 s, set the pick and the objective moved on to the barrier; with the pick held the barrier offers "Open the
       barrier" blocked with "No line beyond yet".
-- [ ] **4b. What step 4 left (Mac, S to M).** The halt map and the Home hall's line map past Ring Island (answer l:
+- [x] **4b. What step 4 left (Mac, S to M).** The halt map and the Home hall's line map past Ring Island (answer l:
       solid to the head, dashed on to a dim High Gorge, the head a lit `Stack railhead` with a frame mark, one fit for
       the whole leg; `Stack halt` once the Gorge opens), with a departure board at each live head and at the Gorge
       (answer g); the kit cars' number boards (answer j); the joining train's one-second scale-in at the Village and
@@ -631,6 +631,59 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       stage; a leader that follows them is not a small change). **Notes for the owner, left as they are:** train markers cover stops at
       the leg's end (one clips the "y" of "Quarry"); the dim High Gorge is faint at phone width; the frame's
       square reads as an unticked checkbox; the short-drawn leg makes the Gorge look nearer than it is.
+      *As built, the rest (12 November; branch `greybox/leg1-step4b-rest`, committed, not shipped; views only:
+      nothing under `src/sim`, `src/net`, `src/world` or `server/`, no bump, no new test file):*
+      **Kit cars' number boards** (j; new `railway/kit-board.ts`, `train-view.ts`). Line 2's kit car carries a dark
+      board on a grey post at its rear end, over the load, two faces to the platforms: the number of the section its
+      kit is for, `S` for the steel works' kit (cargo that is not `Train.legKit`), at the size of the badge on the
+      rack's plate and the frame's sign (one painter, `paintPlate`, moved out of `leg-view.ts`). The number is worked
+      out from the rows each frame (`kitMarks`): the open leg's sections are filled in order by what is fed, racked and
+      on backs, then by each carrier in the order it reaches the rack (outbound before homeward); a carrier's number
+      is the first section its cargo still fills. Kit no section lacks carries no board. **The scale-in** (f): on the
+      live tick a row leaves the shed its three cars grow from the rails over one second (smoothstep; none with
+      reduced motion, none on a restore), bodies whole at once; its marker on every board grows over the same second
+      (`halts-view.ts`, `island-boards.ts` `trains(..., grow)`). The marker was already there on the join's tick.
+      **The hop** (b): when a leg kit train comes to a stand at the rack's halt and its row drops units, as many
+      crates as left the deck hop to the rack (`crates.hopOff`, as Q6's and Q7's kit), and `leg-view.ts` draws the
+      rack's accepted count less what is in the air (`legKitFlight`), so each unit shows as its crate lands; the take
+      prompts read the accepted count. **`STEEL KIT`** (b; `ring-steel/view.ts`): a plate with the `S` badge on a
+      post between the yard's two stacks, 2.1 m up so it clears a full stack, facing the platform, from the rivet
+      until the works lights. **Ring Island's map table** (l; new `railway/ring-map-table.ts`, mounted by
+      `halts-view.ts`; `RING_MAP_TABLE` in `ring-island/state.ts`): from the rivet a dark plate lies over the table's
+      paint with the halt map's own drawing for the stage (`haltMap`, `drawMapBase`), north up, Ring Island ringed,
+      redrawn when line 2's stage changes; before the rivet it is not drawn and the table is as it was. **Looks**
+      (`dev/look/evals/stack-kit.ts`; the looks seed `stack-fresh-<n>`: a section just laid, shed trains still to
+      join; `.look/`): `kit-car-still` (a `4` over five crates on a train passing home, `stack-laid-2`),
+      `kit-car-steel-still` (a `1` on a kit train loading at the Village; the same run's rows give the works' train
+      `S`), `kit-hop-motion` and `-realtime.webm` (`stack-fresh-1`: the train stands with a `2`, five crates arc to
+      the `KIT 2` rack over 0.9 s, the stacks appear as they land), `kit-join-motion` and `-realtime.webm` (slot 5
+      grows from nothing to whole in 1 s, inspect 0.55 at 0.5 s, the marker's size beside it), `steel-kit-plate-still`,
+      `ring-table-laid-2-still`, `ring-table-before-still` (the painted table, untouched), `ring-table-phone-still`
+      (440 by 796).
+      *After the independent review (same branch; 13 looks, its stills in `.look/review/`):* **The `STEEL KIT`
+      plate** hangs under build 1's RINGWORKS board, beside its south post (u 447.0, lat 4.83, foot 2.3 m), face to
+      the tracks, the yard's stacks 3 m behind it: between the stacks that board's post crossed it from straight
+      opposite and the board hid it from a play camera (`steel-kit-plate-still`, `-phone-still`: whole from 2.2 m
+      behind a body on the east platform, at 960 by 600 and 440 by 796). **The table's face is in the label tests**
+      (`RING_TABLE_DISPLAY` in `halt-map.ts`; `test/helpers/island-labels.ts` checks it beside the displays from the
+      rivet on, both layouts, not counted as a display; the reviewer's steps: 385, 6,529 (6,849 on layout b), 29,889,
+      449, 449 against 300,000). On that face two names one under the other are kept a whole name's height apart
+      (`mapLabels`' new `stackGap`, half a height on the upright faces as before): with the Gorge open "Stack halt"
+      sat 9 px over "Ring Island" and read as one name; it now stands left of its own stop
+      (`ring-table-phone-still`, retaken framed on the table with four laid). **The joining cars stay coupled:**
+      each car's place along the track closes toward the middle car by its scale (`kit-join-motion`). **The long
+      hop clears a cab:** a rack more than 6 m from the kit car (Ring Island's, 8.4 m over the up track) gets an arc
+      whose top is 4.6 m over the rails at the crate's centre (`crates.hopOff`'s new `over`); an engine's cab roof is
+      3.3 m (`ENGINE_CAB.roofTop`), so the centre clears it by 1.3 m and a tumbling crate's far corner by 0.6 m
+      (`kit-hop-ring-motion`, `ring-joined`: five crates over both tracks to the `KIT 1` rack). **Clean in the
+      review:** the board clears on the tick the first crate leaves; a reload mid-hop shows the accepted count; the
+      `S` board shows on the steel kit's car; the garage's boiler beat plays; the table before the rivet is as it
+      was. **Notes, left as they are:** a take that outruns the hop gives units not drawn yet (the rack never goes
+      negative; bill, back and server agree); the table reads only from its south edge and is too small from a play
+      camera 4 m back; the marker's growth is too small to see on a board at 11 m; a same-page reconnect mid-hop and
+      a train passing during the stage 0 hop were not staged; no dust or sound at a join; the table shows no train
+      markers; the steel kit's own unload to the yard still has no hop (build 2's greybox). None of the five has a
+      prompt. Not tested on a device.
 - [ ] **5. Seeds, jump rows, the loop and the bot (HOTBOX, M).** New `src/sim/railway-seed-legs.ts` from
       `ring-joined`, accepted ops only: `gorge-open` (the leg open, nothing fed), `gorge-mid` (two sections laid, kit
       aboard a train), `gorge-reached` (four laid, `pick` not taken). `SEED_STAGES`; two `JUMPS` rows ("Stack line

@@ -3,10 +3,10 @@
 // (src/entities/railway/halt-map.ts): the Pier unlaid (five names, today's sizes), the Pier laid (six, the sea line
 // and Ring Island dim), Q7 laid at each of the eight railheads (seven), joined (eight: the stack line dashed on to a dim
 // High Gorge) and each of the stack line's four sections laid (nine). Every display is checked at every stage, the
-// stack line's own (halt-map.ts stackDisplays) too. Pure numbers: the same boxes, sizes and fit the game draws.
+// stack line's own (halt-map.ts stackDisplays) too, and Ring Island's map table (RING_TABLE_DISPLAY) from the rivet. Pure numbers: the same boxes, sizes and fit the game draws.
 import assert from 'node:assert/strict';
 import { boxGap, fitMap, MAP_CELL, mapLabels, mapLabelSteps, mapPx, mapSizes, stopClear, type MapLabel } from '../../src/render/island-map.ts';
-import { haltDisplays, haltMap, type MapStage } from '../../src/entities/railway/halt-map.ts';
+import { haltDisplays, haltMap, RING_TABLE_DISPLAY, type MapStage } from '../../src/entities/railway/halt-map.ts';
 
 const CW = MAP_CELL.w,
   CH = MAP_CELL.h;
@@ -30,12 +30,13 @@ export async function checkHaltLabels() {
     const S = mapSizes(CH, scale),
       clear = stopClear(CH, scale);
     assert.equal(scale, stage.open >= 4 ? 0.7 : 1, `${stageAt}: marks at 0.7 once the sea line is on the map`);
-    for (const d of displays) {
+    // Ring Island's map table lies flat with the same map from the rivet on: checked as a display, not counted as one.
+    for (const d of [...displays, RING_TABLE_DISPLAY]) {
       // A stack line board not yet laid to, or closed behind, does not stand at this stage: nobody reads its face.
       if (d.shut(stage.open)) continue;
       const n = { x: Math.sin(d.yaw), z: Math.cos(d.yaw) };
       const v = fitMap(lines, { x: -n.x, z: -n.z }, CW, CH, CH * MAP_CELL.pad);
-      const labels = mapLabels(lines, v, CW, CH, d.here, scale);
+      const labels = mapLabels(lines, v, CW, CH, d.here, scale, 'stackGap' in d ? d.stackGap : undefined);
       const at = `${d.name} (${stageAt})`;
       assert.ok(mapLabelSteps < 300_000, `${at}: the names are placed inside the search's budget`);
       // A stop with no name (a stack head trains still stop at behind the railhead, or one closed and hidden) has no

@@ -155,6 +155,19 @@ export function stackDisplays() {
   });
 }
 
+/** Ring Island's map table (./ring-map-table.ts): the same map lying flat, north up (its reader faces world -z, so
+ * the face's normal as a display's yaw is 0), Ring Island ringed, from the rivet on. Names one under the other are
+ * kept a whole name's height apart there (`stackGap`): read from above at a slant, "Stack halt" 9 px over "Ring
+ * Island" was one two-line name. Not one of haltDisplays (it is no upright board), checked beside them by the label
+ * tests. */
+export const RING_TABLE_DISPLAY = {
+  name: 'Ring Island map table',
+  yaw: 0,
+  here: [{ line: LINE2, stop: RING_STOP }],
+  shut: (open: number) => open < JOINED,
+  stackGap: 1,
+} as const;
+
 /** Every display in the game: the halt it stands at, its face's yaw, and the stops it rings. The Home island's two
  * edges share one, built with line 1's edge; the stack line's (stackDisplays) follow Place's. */
 export function haltDisplays(layout: Layout) {

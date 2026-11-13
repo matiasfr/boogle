@@ -30,7 +30,14 @@ const CW = MAP_CELL.w,
   COLS = 4,
   BLINK_HZ = 2.5;
 
-type Face = { view: MapView; fwd: { x: number; z: number }; c: THREE.Vector3; right: THREE.Vector3; out: THREE.Vector3; yaw: number };
+type Face = {
+  view: MapView;
+  fwd: { x: number; z: number };
+  c: THREE.Vector3;
+  right: THREE.Vector3;
+  out: THREE.Vector3;
+  yaw: number;
+};
 type Here = { line: number; stop: number };
 type Board = { mesh: THREE.Mesh; face: Face; here: readonly Here[]; on: boolean };
 /** "You are here" stops one display can ring (the Home island's is on both lines). */
@@ -264,6 +271,7 @@ export function createIslandBoards(
   /** The stop each train is on its way to (null: standing, or none), and whether it is held. */
   const heading: (number | null)[] = trainLines.map(() => null);
   const held: boolean[] = trainLines.map(() => false);
+  const size: number[] = trainLines.map(() => 1);
   const m4 = new THREE.Matrix4(),
     q = new THREE.Quaternion(),
     p = new THREE.Vector3(),
@@ -324,9 +332,16 @@ export function createIslandBoards(
     },
     /** Each train, metres along its line's path (null: none), the stop it is on its way to (null: standing), whose
      * ring blinks on every display that stop is "here" on, and whether it is held (its badge). */
-    trains(at: readonly (number | null)[], to: readonly (number | null)[], hold: readonly boolean[]) {
+    trains(
+      at: readonly (number | null)[],
+      to: readonly (number | null)[],
+      hold: readonly boolean[],
+      grow?: readonly number[],
+    ) {
       to.forEach((s, k) => (heading[k] = s));
       hold.forEach((v, k) => (held[k] = v));
+      // A marker's size, 0 to 1 (a train joining from the shed grows in); whole when not given.
+      trainLines.forEach((_l, k) => (size[k] = grow?.[k] ?? 1));
       // Reduced motion: the markers step once a second instead of gliding.
       if (reducedMotion && clock - stepped < 1 && along.every((a) => a !== null)) return;
       stepped = clock;
@@ -370,7 +385,8 @@ export function createIslandBoards(
           const at = pathAt(lines[li]!, a);
           const [px, py] = mapPx(face.view, at.x, at.z);
           onFace(face, px, py, 0.012);
-          marks.setMatrixAt(k, m4.compose(p, q, sc.set(S.markW * toM, S.markH * toM, 1)));
+          const big = Math.max(0.02, size[t] ?? 1);
+          marks.setMatrixAt(k, m4.compose(p, q, sc.set(S.markW * toM * big, S.markH * toM * big, 1)));
           if (!held[t]) return holds.setMatrixAt(k, hide);
           onFace(face, px, py - S.markH * 1.05, 0.014);
           holds.setMatrixAt(k, m4.compose(p, q, sc.set(scale, scale, 1)));

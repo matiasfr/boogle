@@ -17,6 +17,7 @@ import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL, ringAt } from '../../sim/rail
 import { account, aperture, steel } from '../../sim/railway-rows.ts';
 import { free, heldBig } from '../../sim/railway-queries.ts';
 import { createBoxBatch, drawWorksBoxes } from '../railway/works-box-view.ts';
+import { STEEL_MARK, paintPlate } from '../railway/kit-board.ts';
 import type { WorksBox } from '../railway/works-shape.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 
@@ -29,7 +30,8 @@ const TAKE_LOGS = 'Take logs',
   BRING_BOTH = 'Bring logs or rails',
   BACK_FULL = 'Your back is full',
   HANDS_FULL = 'Hands full',
-  SIGN_TITLE = 'STEEL WORKS';
+  SIGN_TITLE = 'STEEL WORKS',
+  KIT_PLATE = 'STEEL KIT';
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 const GREY = '#9c9ea1',
   GREY_DARK = '#6f7275',
@@ -81,6 +83,8 @@ const SHED = { u0: 448, u1: 455, l0: 6.5, l1: 14, roof: 6.9, wall: 3.6, door: [4
 const JIB = { u0: 436.9, u1: 444.3, lat: 6.6, y: 4.6 } as const;
 const RACK = { u0: 438.6, lat: 6.3, step: 0.64 } as const;
 // The kit's two stacks, either side of the yard point (u 445.5, lat 8), on the open deck past the tarp's end.
+/** The `STEEL KIT` plate's middle: 1.3 m north of the RINGWORKS board's south post, 0.17 m toward the tracks. */
+const KIT_PLATE_AT = { u: 447.0, lat: 4.83 };
 const LOGS_AT = { u: 444.75, lat: 8.3 },
   RAILS_AT = { u: 446.6, lat: 8.3 };
 
@@ -126,6 +130,21 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
   }
   sign.mesh.visible = false;
   let painted = '';
+  // The yard's plate (the greybox route's step 4 review, answers b and j): `STEEL KIT` with the mark a steel kit
+  // car's board carries. It hangs under build 1's RINGWORKS board on the east platform's back edge (posts at u 445.7
+  // and 450.3, lat 5.0, the board's foot 3.3 m up), beside the south post and just clear of the posts on the
+  // platform's side, its face to the tracks: the yard's two stacks stand 3 m behind it. Between the stacks it was
+  // crossed by that board's post from straight opposite (the step 4b review). It hangs while the works still takes
+  // its kit (from the rivet until it lights). The stack line's rack across the tracks reads `KIT 1`.
+  const plate = signBoard(owner, { w: 2.3, h: 0.8, px: 512, foot: 2.3, posts: 'none', wood: '#5d6063' });
+  {
+    const p = at(KIT_PLATE_AT.u, KIT_PLATE_AT.lat);
+    plate.mesh.position.set(p.x, Y, p.z);
+    plate.mesh.rotation.y = FACE_PLATFORM;
+    plate.mesh.name = 'ring-steel:kit-plate';
+    paintPlate(plate, [{ t: KIT_PLATE, size: 0.42 }], STEEL_MARK);
+  }
+  plate.mesh.visible = false;
 
   /** The works' rows once the first whole state is in (`read.whole()`, a latch), or null. */
   function rows() {
@@ -139,6 +158,7 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
     fixed.visible = on;
     batch.mesh.visible = on && !!r;
     sign.mesh.visible = on && !!r && r.joined;
+    plate.mesh.visible = on && !!r && r.joined && r.s.lit < 0;
     if (!r || !on) return;
     const { s } = r;
     if (sign.mesh.visible) {
@@ -189,8 +209,7 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
         mine = account(wd, adapter.read.pid),
         out: Interactable[] = [];
       if (within(p, YARD, RING_STEEL_YARD.reach)) {
-        const full =
-          mine && free(wd, mine) <= 0 ? { blocked: heldBig(wd, mine) ? HANDS_FULL : BACK_FULL } : {};
+        const full = mine && free(wd, mine) <= 0 ? { blocked: heldBig(wd, mine) ? HANDS_FULL : BACK_FULL } : {};
         if (s.yardLogs > 0)
           out.push({
             id: 'railway-steel-take-logs',
@@ -234,6 +253,7 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
         steelView: {
           shown: fixed.visible,
           sign: sign.mesh.visible ? painted : null,
+          kitPlate: plate.mesh.visible ? `${STEEL_MARK}|${KIT_PLATE}` : null,
           yard: r ? { logs: r.s.yardLogs, rails: r.s.yardRails } : null,
           bill: r ? { logs: r.s.logs, rails: r.s.rails, lit: r.s.lit >= 0 } : null,
           rack: r ? r.s.rack : 0,
