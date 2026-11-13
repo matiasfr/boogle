@@ -1,0 +1,120 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "gorge",
+  "placements": [
+    {
+      "id": "gorge.platform-n.0",
+      "params": {
+        "colour": "#b4b6b8"
+      },
+      "pos": [
+        -71.30225757149515,
+        3.65,
+        -1970.0586358199753
+      ],
+      "prefab": "greybox.box",
+      "rot": [
+        -2.257883298046245,
+        0,
+        0
+      ],
+      "scale": [
+        4.5,
+        0.5,
+        8.10246331202135
+      ]
+    },
+    {
+      "id": "gorge.platform-n.1",
+      "params": {
+        "colour": "#b4b6b8"
+      },
+      "pos": [
+        -77.63241426435354,
+        3.65,
+        -1975.1172710862834
+      ],
+      "prefab": "greybox.box",
+      "rot": [
+        -2.232137363885892,
+        0,
+        0
+      ],
+      "scale": [
+        4.5,
+        0.5,
+        8.105134481778736
+      ]
+    },
+    {
+      "id": "gorge.platform-n.2",
+      "params": {
+        "colour": "#b4b6b8"
+      },
+      "pos": [
+        -84.1083523344513,
+        3.65,
+        -1980.0068954859257
+      ],
+      "prefab": "greybox.box",
+      "rot": [
+        -2.2029364894942765,
+        0,
+        0
+      ],
+      "scale": [
+        4.5,
+        0.5,
+        8.125729850906783
+      ]
+    },
+    {
+      "id": "gorge.platform-n.3",
+      "params": {
+        "colour": "#b4b6b8"
+      },
+      "pos": [
+        -90.73377323395664,
+        3.65,
+        -1984.7032865779934
+      ],
+      "prefab": "greybox.box",
+      "rot": [
+        -2.171916279538202,
+        0,
+        0
+      ],
+      "scale": [
+        4.5,
+        0.5,
+        8.118427207118238
+      ]
+    },
+    {
+      "id": "gorge.platform-n.4",
+      "params": {
+        "colour": "#b4b6b8"
+      },
+      "pos": [
+        -97.44878335213298,
+        3.65,
+        -1989.2048869349792
+      ],
+      "prefab": "greybox.box",
+      "rot": [
+        -2.1507243503764575,
+        0,
+        0
+      ],
+      "scale": [
+        4.5,
+        0.5,
+        8.05106318273265
+      ]
+    }
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

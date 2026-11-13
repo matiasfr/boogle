@@ -4,6 +4,8 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { material } from '../../render/materials.ts';
+import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
+import type { Placement } from '../../prefab/types.ts';
 
 export type GreyBox = {
   x: number;
@@ -61,20 +63,34 @@ function place(b: GreyBox) {
 }
 
 /** Draws `boxes` as one instanced mesh under `owner` and adds their colliders. Returns the mesh and the counts. */
-export async function drawGreyBoxes(owner: OwnedView, boxes: readonly GreyBox[]) {
+export async function drawGreyBoxes(owner: OwnedView, boxes: readonly (GreyBox | Placement)[]) {
   const { addStatic } = await import('../../place/land.ts');
-  const shown = boxes.filter((b) => !b.hidden);
-  const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const mesh = new THREE.InstancedMesh(geometry, material('stone', { colour: '#ffffff' }), Math.max(1, shown.length));
-  geometry.dispose();
+  const shown = boxes.filter((b) => 'prefab' in b || !b.hidden);
+  const hasPlacements = boxes.some((b) => 'prefab' in b);
+  const batch = hasPlacements ? createPrefabBatch('greybox.box', Math.max(1, shown.length), owner) : undefined;
+  const geometry = batch ? undefined : new THREE.BoxGeometry(1, 1, 1);
+  const mesh =
+    batch?.mesh ??
+    new THREE.InstancedMesh(geometry!, material('stone', { colour: '#ffffff' }), Math.max(1, shown.length));
+  geometry?.dispose();
   mesh.count = shown.length;
   const colour = new THREE.Color();
   shown.forEach((b, i) => {
+    if ('prefab' in b) return;
     mesh.setMatrixAt(i, place(b).matrix);
     mesh.setColorAt(i, colour.set(b.colour ?? '#9c9ea1'));
   });
   let solids = 0;
+  let index = 0;
   for (const b of boxes) {
+    if ('prefab' in b) {
+      const instance = instantiate(b.prefab, b, { owner, batch: { target: batch!, index } });
+      instance.setEnabled(true);
+      solids += instance.bodies.length;
+      index++;
+      continue;
+    }
+    if (!b.hidden) index++;
     if (b.solid === false) continue;
     const p = place(b);
     addStatic({ kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 }, p.position, p.quaternion, undefined, owner);
@@ -84,6 +100,6 @@ export async function drawGreyBoxes(owner: OwnedView, boxes: readonly GreyBox[])
   mesh.receiveShadow = true;
   mesh.computeBoundingBox();
   mesh.computeBoundingSphere();
-  owner.add(mesh);
+  if (!batch) owner.add(mesh);
   return { mesh, solids };
 }

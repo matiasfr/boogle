@@ -8,17 +8,41 @@ import * as line2 from '../src/entities/railway/line2-path.ts';
 import { RAIL_GATES, RAIL_GRANTS } from '../src/sim/railway-route.ts';
 import { LEG2, PAD_SIZE } from '../src/entities/route-greybox/leg2-layout.ts';
 import type { Shape } from '../src/physics/engine.ts';
+import * as validation from '../src/prefab/validate.ts';
+import { names } from '../src/prefab/names.ts';
+import artifact from '../content/built/prefabs.json' with { type: 'json' };
+import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
+import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
 
 test('Gorge colliders and drawn placements match the old hand-built platform', async () => {
   const colliders: unknown[] = [];
   const record = (shape: Shape, at: THREE.Vector3, q?: THREE.Quaternion) => {
     colliders.push({ shape, at: at.toArray(), rotation: q?.toArray() });
   };
+  const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.ts').createOwnedView>(
+    'src/render/owned-view.ts',
+    'createOwnedView',
+    { THREE, owners: new WeakMap(), addBody() {}, removeBody() {} },
+  );
+  const builders = new Map();
+  sourceModule(fs.readFileSync('src/prefab/builders/greybox-box.ts', 'utf8'), {
+    THREE,
+    material: () => new THREE.MeshStandardNodeMaterial(),
+    registerBuilder: (name: string, build: unknown) => {
+      builders.set(name, build);
+      return build;
+    },
+  });
+  builders.set('seat.chair', () => new THREE.Group());
+  const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
+    fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
+    { THREE, artifact, workshop, gorge, names, ...validation, builders, staticBody: record },
+  );
   const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
     fs
       .readFileSync('src/entities/route-greybox/boxes.ts', 'utf8')
       .replace("await import('../../place/land.ts')", '{ addStatic: record }'),
-    { THREE, material: () => new THREE.MeshStandardNodeMaterial(), record },
+    { THREE, material: () => new THREE.MeshStandardNodeMaterial(), record, ...runtime },
   );
   const leg2 = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
     fs.readFileSync('src/entities/route-greybox/leg2-draw.ts', 'utf8'),
@@ -26,12 +50,7 @@ test('Gorge colliders and drawn placements match the old hand-built platform', a
   );
   const massing = sourceModule<typeof import('../src/entities/route-greybox/massing.ts')>(
     fs.readFileSync('src/entities/route-greybox/massing.ts', 'utf8'),
-    { ...line2, RAIL_GATES, RAIL_GRANTS, span: boxes.span, leg2Boxes: leg2.leg2Boxes, LEG2 },
-  );
-  const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.ts').createOwnedView>(
-    'src/render/owned-view.ts',
-    'createOwnedView',
-    { THREE, owners: new WeakMap(), addBody() {}, removeBody() {} },
+    { ...line2, RAIL_GATES, RAIL_GRANTS, span: boxes.span, leg2Boxes: leg2.leg2Boxes, LEG2, ...runtime },
   );
   const owner = createOwnedView();
   const { mesh, solids } = await boxes.drawGreyBoxes(owner, massing.gorgeMassing());
