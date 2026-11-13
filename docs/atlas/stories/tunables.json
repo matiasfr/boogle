@@ -11,13 +11,18 @@
     },
     {
       "go": [["you.features", "you.world"]],
-      "text": "Haul yield submits a bounded request with catalog and expected revision. The server checks its explicitly assigned controller. Queued is not applied; refusals have correlated receipts.",
+      "text": "Haul yield submits a bounded lockstep request with its expected revision. The server checks its explicitly assigned controller. Queued is not applied; refusals have correlated receipts.",
       "cite": [{ "op": "tune.commit" }, { "file": "src/world/rules/tune.ts" }]
     },
     {
       "hl": ["you.world", "fr.world"],
-      "text": "Both peers apply the accepted profile at its tick. Complete values, defaults-inclusive catalog and revision are saved and hashed. Incompatible catalogs cannot join current rooms.",
-      "cite": [{ "state": "tune" }, { "file": "src/sim/tune.ts" }, { "file": "server/src/host/rooms.ts" }]
+      "text": "The eight haul keys apply at their stamped tick and remain hashed. Rail values instead go through the ordered server command boundary: the server applies on arrival, checkpoints a commit before acknowledging it, and both peers mirror its global tuneValue and tuneRev rows. Development shape changes reset the namespace.",
+      "cite": [
+        { "state": "tune" },
+        { "file": "src/sim/tune.ts" },
+        { "file": "src/world/classic-replicate.ts" },
+        { "file": "src/world/server-ops.ts" }
+      ]
     },
     {
       "hl": ["you.features"],

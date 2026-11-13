@@ -34,6 +34,8 @@ import { railCadence, RAIL_CADENCE_SLACK_MS } from '../../../src/world/railway-p
 import { createReplicator, type Replicator } from '../../../src/world/replicate-server.ts';
 import { createRailwayRequests, type ActorFacts } from './railway-requests.ts';
 import { canSet, cleanName } from '../../../src/sim/roster.ts';
+import { installRailTune } from '../../../src/world/rules/tune.ts';
+import { projectRailTune } from '../../../src/world/classic-replicate.ts';
 import { createServerOps } from '../../../src/world/server-ops.ts';
 
 // The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
@@ -203,13 +205,15 @@ export function createRailwayWorldHost({
 }: RailwayHostOptions) {
   if (!isRailwayRoom(roomId)) throw new Error('railway host requires a railway namespace');
   const namespace = RAILWAY_PLAY_NS;
-  const ops = createServerOps(); // Step 2 defines no production commands; tune and roster remain lockstep.
+  const ops = createServerOps();
   const env = { protoRoom: isProtoRoom(roomId.slice(namespace.length + 1)), tuneController };
   // Preserve the existing playtest-only tune policy; ordinary railway rooms cannot change shared rates.
-  const sync = createSync({ env });
+  const sync = createSync();
   const base = installRules(sync, home.land as Parameters<typeof installRules>[1]);
-  const api = installRailway(sync, base, replication);
-  const rules = { ...base, railway: api };
+  const railTune = installRailTune(sync, ops, replication);
+  projectRailTune(replication, railTune);
+  const api = installRailway(sync, { railTune }, replication);
+  const rules = { ...base, railTune, railway: api };
   const sent = new Set<(message: Msg) => void>();
   const incoming = new Set<(message: unknown, from: string) => void>();
   const send = (message: Msg) => {
@@ -371,7 +375,7 @@ export function createRailwayWorldHost({
     actor,
     commands: {
       ops,
-      context: (from, actor) => ({ from, tick: sync.world.tick, env, actor }),
+      context: (from, actor) => ({ from, tick: sync.world.tick, env: {}, actor, ...env }),
       async save() {
         // saveNow is a no-op while an older checkpoint is pending. Drain it first, then capture this command and
         // its receipt; waiting only for that older write would falsely acknowledge unsaved state.
@@ -406,7 +410,7 @@ export function createRailwayWorldHost({
       return;
     }
     beamAway ??= t;
-    if (t - beamAway >= rules.tune.get('railBeamGraceS') * 1000) {
+    if (t - beamAway >= rules.railTune.get('railBeamGraceS') * 1000) {
       api.beamPutDown(beam.holder);
       beamAway = null;
     }
@@ -428,7 +432,7 @@ export function createRailwayWorldHost({
       return;
     }
     boilerAway ??= t;
-    if (t - boilerAway >= rules.tune.get('railBeamGraceS') * 1000) {
+    if (t - boilerAway >= rules.railTune.get('railBeamGraceS') * 1000) {
       api.boilerPutDown(b.holder);
       boilerAway = null;
     }
@@ -446,7 +450,7 @@ export function createRailwayWorldHost({
       }
       const away = footAway.get(pid) ?? now();
       footAway.set(pid, away);
-      if (now() - away >= rules.tune.get('railBeamGraceS') * 1000) {
+      if (now() - away >= rules.railTune.get('railBeamGraceS') * 1000) {
         api.footRelease(pid, epoch);
         footAway.delete(pid);
       }
@@ -466,7 +470,7 @@ export function createRailwayWorldHost({
       }
       const away = legAway.get(pid) ?? now();
       legAway.set(pid, away);
-      if (now() - away >= rules.tune.get('railBeamGraceS') * 1000) {
+      if (now() - away >= rules.railTune.get('railBeamGraceS') * 1000) {
         api.legKitRelease(pid, epoch);
         legAway.delete(pid);
       }
@@ -560,39 +564,7 @@ export function createRailwayWorldHost({
         const edit = e as Msg;
         if (edit.op === 'who.set' && canSet(rules.roster.roster, pidOf(from), edit.n, edit.c))
           sync.receiveEdit({ op: 'who.set', i: 0, j: 0, n: recoveryName(edit.n), c: edit.c }, from);
-        else if (
-          (edit.op === 'tune.set' || edit.op === 'tune.commit') &&
-          typeof edit.key === 'string' &&
-          RAIL_TUNE_KEYS.has(edit.key)
-        ) {
-          // Preserve correlation exactly, but bound its escaped representation in the durable tail.
-          if (edit.op === 'tune.commit' && typeof edit.requestId === 'string' && edit.requestId.length > 64) {
-            if (edit.requestId.length <= 80)
-              send({
-                t: 'w:rejected',
-                to: from,
-                op: edit.op,
-                requestId: edit.requestId,
-                reason: 'request-id-too-long',
-              });
-            return;
-          }
-          // Only canonical fields reach sync. It still owns controller/catalog/revision validation,
-          // authenticated p/u, recovery admission and correlated refusal; queued is not applied.
-          const clean: Msg = { op: edit.op, i: edit.i, j: edit.j, key: edit.key, v: edit.v };
-          if (edit.op === 'tune.commit') {
-            clean.expectedRevision = edit.expectedRevision;
-            clean.requestId = edit.requestId;
-          }
-          for (const fn of incoming) fn({ t: 'w:edit', e: clean }, from);
-        } else if (
-          edit.op === 'tune.commit' &&
-          typeof edit.requestId === 'string' &&
-          edit.requestId.length > 0 &&
-          edit.requestId.length <= 80
-        ) {
-          send({ t: 'w:rejected', to: from, op: 'tune.commit', requestId: edit.requestId });
-        }
+
         return;
       }
       if (message && typeof message === 'object' && (message as Msg).t === 'w:need') {
@@ -675,38 +647,3 @@ export function createRailwayWorldHost({
   };
 }
 export type RailwayWorldHost = ReturnType<typeof createRailwayWorldHost>;
-// Railway tunables a room's controller may change; the rest stay classic-only.
-const RAIL_TUNE_KEYS = new Set([
-  'railRegrowMinutes',
-  'railRecoveryMinutes',
-  'railFeedMs',
-  'railLaySpeed',
-  'railDepartureTicks',
-  'railBeamSoloSpeed',
-  'railBeamHelpSpeed',
-  'railJumpImpulse',
-  'railJumpTurn',
-  'railJumpSteer',
-  'railJumpApexSpeed',
-  'railBeamGraceS',
-  'railGlideSpeed',
-  'railGlideSink',
-  'railGlideAccel',
-  'railGlideBrake',
-  'railGlideOver',
-  'railGlideTurnTau',
-  'railGlideTurnMax',
-  'railGlideDeploy',
-  'railBoilerSoloSpeed',
-  'railBoilerHelpSpeed',
-  'railFootSoloSpeed',
-  'railFootHelpSpeed',
-  'railTrainHeadPct',
-  // Slice 5 R3's trade tunables.
-  'railFarePct',
-  'railRiderPct',
-  'railPricePct',
-  // The Ring Island hold (short-turn's ruling, step 2).
-  'railTrainHoldCap',
-  'railTrainHoldPct',
-]);

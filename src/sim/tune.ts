@@ -1,6 +1,6 @@
 // Playtest tuning (docs/playtest-kits/haul.md): the haul loop's lockstep numbers as a room-wide state, so a `proto-`
 // room can change a cap or a cost for everyone at the same tick. The complete effective configuration, including
-// defaults, is saved and hashed. Pure and deterministic (lockstep).
+// defaults, is saved and hashed. Rail keys now run as Server kind over the same functions. Pure and deterministic.
 import { AGES, ROUTE, TRACK, costOf } from './route.ts';
 import { HARD_CAP, HARD_MAX } from './stacks.ts';
 import { FULL, YIELD, TRICKLE_EVERY, FULL_MAX } from './sources.ts';
@@ -154,11 +154,13 @@ export type Tune = { v: Record<TuneKey, number>; revision: number; rev: number }
 export type TuneJson = { revision: number; values: Record<TuneKey, number> };
 
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
-const defaults = (): Record<TuneKey, number> =>
-  Object.fromEntries(TUNABLES.map((t) => [t.key, t.def])) as Record<TuneKey, number>;
+export const RAIL_TUNABLES = TUNABLES.filter((t) => t.key.startsWith('rail'));
+export const HAUL_TUNABLES = TUNABLES.filter((t) => !t.key.startsWith('rail'));
+const defaults = (specs: readonly TuneSpec[]): Record<TuneKey, number> =>
+  Object.fromEntries(specs.map((t) => [t.key, t.def])) as Record<TuneKey, number>;
 
-export function createTune(): Tune {
-  return { v: defaults(), revision: 0, rev: 0 };
+export function createTune(specs: readonly TuneSpec[] = TUNABLES): Tune {
+  return { v: defaults(specs), revision: 0, rev: 0 };
 }
 export const specOf = (key: unknown): TuneSpec | null => TUNABLES.find((t) => t.key === key) ?? null;
 // A known key and an integer within its bounds (state-free; the rules add what depends on the world).
@@ -192,7 +194,10 @@ export function loadTune(t: Tune, json: unknown): void {
   if (!isInt(j.revision) || j.revision < 0) throw new Error('tune: bad revision');
   if (!j.values || typeof j.values !== 'object' || Array.isArray(j.values)) throw new Error('tune: missing values');
   const entries = Object.entries(j.values);
-  if (entries.length !== TUNABLES.length || entries.some(([key, n]) => !okTune(key, n)))
+  if (
+    entries.length !== Object.keys(t.v).length ||
+    entries.some(([key, n]) => !Object.hasOwn(t.v, key) || !okTune(key, n))
+  )
     throw new Error('tune: incomplete or invalid values');
   Object.assign(t, { v: { ...j.values }, revision: j.revision, rev: t.rev + 1 });
 }
@@ -200,7 +205,7 @@ export function loadTune(t: Tune, json: unknown): void {
 export function hashTune(t: Tune): number {
   let h = foldAll(FNV_SEED, [t.revision]);
   TUNABLES.forEach(({ key }, k) => {
-    h = foldAll(h, [k, t.v[key]]);
+    if (Object.hasOwn(t.v, key)) h = foldAll(h, [k, t.v[key]]);
   });
   return h;
 }

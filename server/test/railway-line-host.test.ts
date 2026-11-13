@@ -32,7 +32,8 @@ import {
   trees,
   type Seed,
 } from '../../test/helpers/rail.ts';
-import type { TuneApi } from '../../src/world/rules/tune.ts';
+import { setImmediate } from 'node:timers/promises';
+import type { ServerPacket } from '../../src/world/replicate.ts';
 
 type Obj = Record<string, unknown>;
 for (const early of [true, false]) {
@@ -468,7 +469,7 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     host.depart('a'); // The claim applied on arrival; the carrier is away, and keeps it through the grace.
     await ticks(9);
     assert.equal(beam().state, 'held', 'an absent carrier keeps the beam');
-    now += host.rules.tune.get('railBeamGraceS') * 1000;
+    now += host.rules.railTune.get('railBeamGraceS') * 1000;
     await ticks(3);
     assert.equal(beam().state, 'ground', 'past the grace it goes down where they stood, not back to the tree');
     assert.equal(beam().holder, '');
@@ -661,7 +662,7 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
     assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, camp)).status, 'rejected');
     // The server follows the hauled boiler from presence (body centre, metres) and a leaver past the grace has it put
     // down where they last stood (docs/plans/boiler-first-choice.md, step 5): on the apron, inside the haul area.
-    const grace = host.rules.tune.get('railBeamGraceS') * 1000;
+    const grace = host.rules.railTune.get('railBeamGraceS') * 1000;
     const stand = (x: number, z: number) =>
       (people = [{ pid: 'a', x: x / 100, y: (apron[1] + 45) / 100, z: z / 100, at: now }]);
     assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, apron)).status, 'accepted');
@@ -792,13 +793,12 @@ test("line host: a proto room's controller can tune all eight of the glider's nu
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-glide-tune-'));
   t.after(() => fs.rm(dir, { recursive: true, force: true }));
   const f = await supplyFixture(dir, railwayRoomId('proto-glide-tune'), false);
-  const tune = () => {
-    assert.ok('tune' in f.host.rules);
-    return f.host.rules.tune as TuneApi;
-  };
+  const tune = () => f.host.rules.railTune;
   const keys = CATALOG.filter((c) => c.owner === 'src/entities/railway/glide-step.ts');
   assert.equal(keys.length, 8, "the glider's eight tunables");
-  let request = 0;
+  const account = f.host.rules.railway.account('supplier')!;
+  const epoch = account.epoch;
+  let request = account.request;
   try {
     for (const spec of keys) {
       const key = spec.sharedKey!;
@@ -806,20 +806,32 @@ test("line host: a proto room's controller can tune all eight of the glider's nu
       const v = before + 1 <= spec.max ? before + 1 : before - 1;
       f.host.deliver(
         {
-          t: 'w:edit',
+          t: 'r:edit',
           e: {
             op: 'tune.commit',
-            i: 0,
-            j: 0,
+            epoch,
+            request: ++request,
+            at: [0, 0, 0],
+            ms: 0,
             key,
             v,
             expectedRevision: tune().tune.revision,
-            requestId: `glide-tune-${++request}`,
+            requestId: `glide-tune-${request}`,
           },
         },
         'supplysession',
       );
+      await setImmediate();
+      await f.host.sync.whenDurable();
+      await setImmediate();
       await f.ticks(4);
+      const packets: ServerPacket[] = [];
+      f.host.replication.commit(f.host.sync.roomStep());
+      f.host.replication.flush(f.host.sync.roomStep(), (_sid, packet) => packets.push(packet));
+      assert.ok(
+        packets.some((p) => p.ok?.some(([e, r, n]) => e === epoch && r === request && n === 1)),
+        'durable command receipt',
+      );
       assert.equal(tune().get(key), v, `${key} accepted from the controller`);
     }
   } finally {

@@ -4,11 +4,11 @@
 // nothing here writes the world, the predictor or the mirror.
 import type { World } from '../ecs/index.ts';
 import type { ReadWorld } from '../sim/railway-rows.ts';
-import type { TuneApi } from '../world/rules/tune.ts';
+import type { RailTuneApi } from '../world/rules/tune.ts';
 import type { RailwayIntent } from './railway-intents.ts';
 
-/** Movement tunables the views read; tune stays lockstep, so a tab reads its own copy. */
-export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
+/** Movement tunables the views read from the server mirror. */
+export const railMovement = (tune: Pick<RailTuneApi, 'get'>) => ({
   beamSoloSpeed: tune.get('railBeamSoloSpeed') / 100,
   beamHelpSpeed: tune.get('railBeamHelpSpeed') / 100,
   boilerSoloSpeed: tune.get('railBoilerSoloSpeed') / 100,

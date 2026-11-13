@@ -118,9 +118,9 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
     },
     /** A room tunable set as an applied tune.set lands (the room's controller's). */
     tune(key: TuneKey, v: number) {
-      setTune(h.rules.tune.tune, key, v);
+      setTune(h.rules.railTune.tune, key, v);
     },
-    tuned: (key: TuneKey) => h.rules.tune.get(key),
+    tuned: (key: TuneKey) => h.rules.railTune.get(key),
     /** An orderly restart (a deploy): the room saves on close and comes back from its save. */
     async restart() {
       await h.close({ save: true });
@@ -129,7 +129,7 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
       await h.whenReady();
     },
     depart: (sid: string) => h.depart(sid),
-    grace: () => h.rules.tune.get('railBeamGraceS') * 1000,
+    grace: () => h.rules.railTune.get('railBeamGraceS') * 1000,
     async action(e: Obj, at: At, sid = 's') {
       const x = sessions[sid]!;
       now += 1000;

@@ -1,5 +1,5 @@
 // Default T1 entry. Explicit Place keeps its isolated legacy regression entry until its last promotion slice.
-import { railwayMirror, rules } from '../../world/game-world.ts';
+import { railwayMirror } from '../../world/game-world.ts';
 import { productionRailway } from '../../proto/flags.ts';
 import { defineKind, despawn, spawn } from '../../entity/entity.ts';
 import { identity } from '../../player/identity.ts';
@@ -10,7 +10,7 @@ import { createRailwayAdapter } from '../../adapters/railway-session.ts';
 import { railMovement } from '../../adapters/railway-read.ts';
 import { delayedRoom } from '../../world/delayed-room.ts';
 import { createRailwayView, type RailwayView } from './view.ts';
-import { setRailwayView, setRailwayWorldRead } from './state.ts';
+import { setRailwayView, setRailwayWorldRead, setRailwayCommands } from './state.ts';
 
 defineKind('railway', { prePhysics: -59, fixedPre: 43, update: 10, lateUpdate: 0 });
 // The glide keeps the heading it had before the controller's air steering (Place's order-22 note, at 23 here): a second slot.
@@ -19,11 +19,12 @@ let active: RailwayView | null = null;
 registerInteractable(() => active?.targets() ?? NO_TARGETS);
 
 if (productionRailway && railwayMirror) {
+  const tune = railwayMirror.tune;
   const query = new URLSearchParams(location.search);
   const adapter = createRailwayAdapter({
     mirror: railwayMirror,
-    movement: () => railMovement(rules.tune),
-    movementRev: () => rules.tune.tune.rev,
+    movement: () => railMovement(tune),
+    movementRev: () => tune.tune.rev,
     pid: identity.pid,
     pose: () => {
       const local = localPresence();
@@ -31,6 +32,7 @@ if (productionRailway && railwayMirror) {
     },
   });
   setRailwayWorldRead(adapter.read);
+  setRailwayCommands(adapter);
   // Dev only: &railLag=<ms> adds that round trip to the railway's own messages (replication R1b captures).
   const lag = import.meta.env.DEV ? Math.min(1000, Math.max(0, Number(query.get('railLag')) || 0)) : 0;
   onRoomReady((room) => adapter.attach(delayedRoom(room, lag)));
@@ -68,6 +70,7 @@ if (productionRailway && railwayMirror) {
         active = null;
         setRailwayView(null);
         setRailwayWorldRead(null);
+        setRailwayCommands(null);
         view.dispose();
         adapter.dispose();
       },

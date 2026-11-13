@@ -69,6 +69,18 @@ const LOG_MAX = 256;
 
 type Act = { intent: RailwayIntent; tick: number; predict: boolean };
 type Shown = { event: RailwayAccepted; n: number };
+/** Non-predicted commands share the railway session, request sequence and bounded window. */
+export type CommandAccepted = {
+  op: string;
+  fields: Readonly<Record<string, unknown>>;
+  epoch: number;
+  request: number;
+  tick: number;
+};
+export type CommandRefusal = Omit<CommandAccepted, 'tick'> & {
+  reason: 'refused' | 'order' | 'session' | 'storage' | 'unknown';
+};
+type Command = Omit<CommandAccepted, 'tick'> & { wire: Record<string, unknown> };
 
 export type ActorPose = () => { x: number; y: number; z: number } | null;
 export function createRailwayAdapter({
@@ -95,7 +107,12 @@ export function createRailwayAdapter({
   const effects = new Set<(event: RailwayAccepted) => void>();
   const corrections = new Set<(c: RailwayCorrection) => void>();
   const refusals = new Set<(r: RailwayRefusal) => void>();
+  const commands = new Map<number, Command>();
+  const commandAccepted = new Set<(event: CommandAccepted) => void>();
+  const commandRefused = new Set<(event: CommandRefusal) => void>();
   const remaps = new Set<(request: number, id: number) => void>();
+  const readyListeners = new Set<() => void>();
+  let wasReady = false;
   const resets = new Set<(soft: boolean) => void>();
   let room: WorldRoom | null = null;
   let offRoom: (() => void)[] = [];
@@ -182,7 +199,15 @@ export function createRailwayAdapter({
     epoch > 0 &&
     accountRow(confirmed(), pid)?.epoch === epoch &&
     !stopped() &&
-    predictor.pending().length < RAILWAY_WINDOW;
+    predictor.pending().length + commands.size < RAILWAY_WINDOW;
+
+  function notifyReady() {
+    const ready = available();
+    if (ready) status = 'ready';
+    const changed = ready && !wasReady;
+    wasReady = ready;
+    if (changed) for (const fn of readyListeners) fn();
+  }
 
   function correct(list: RailwayCorrection[]) {
     for (const c of list) {
@@ -210,11 +235,35 @@ export function createRailwayAdapter({
       for (const [r, { event, n }] of shown)
         if (r >= from && n > 0) back.push({ event, kept: 0, lost: n, reason: 'session' });
     shown.clear();
+    wasReady = false;
     epoch = 0;
     predictor.session(0, 1);
     probeAt = -Infinity;
     if (!stopped()) status = connected ? 'starting' : 'connecting';
     correct(back);
+  }
+  function refuseCommand(command: Command, reason: CommandRefusal['reason']) {
+    commands.delete(command.request);
+    const { op, fields, epoch, request } = command;
+    for (const fn of commandRefused) fn({ op, fields, epoch, request, reason });
+  }
+  function settleCommands(p: ServerPacket) {
+    // A refill can carry the only durable receipt; unlike visual effects these notifications must survive it.
+    if (!rail.synced() || p.m) return;
+    for (const command of commands.values()) {
+      const { op, fields, epoch, request } = command;
+      const refusal = p.rej?.find(([e, r]) => e === epoch && r === request);
+      if (refusal) {
+        const reason = refusal[2];
+        refuseCommand(command, reason === 'order' || reason === 'session' ? reason : 'refused');
+      } else if (p.ok?.some(([e, r, n]) => e === epoch && r === request && n > 0)) {
+        commands.delete(request);
+        for (const fn of commandAccepted) fn({ op, fields, epoch, request, tick: Math.floor(p.tk / RULE_STEPS) });
+      } else if (p.ack?.[0] === epoch && p.ack[1] >= request) {
+        // An ack alone is not proof of success: an outcome can have aged out of the bounded server history.
+        refuseCommand(command, 'unknown');
+      }
+    }
   }
   function probe() {
     if (!connected || !room || epoch || stopped() || clock - probeAt < 500) return;
@@ -223,6 +272,7 @@ export function createRailwayAdapter({
   }
 
   function settle(p: ServerPacket) {
+    settleCommands(p);
     const rebuilt = !synced && rail.synced();
     if (rebuilt) synced = true;
     // This packet is read against the session it was sent for, even if a refusal below ends that session.
@@ -338,10 +388,10 @@ export function createRailwayAdapter({
       frozen = null;
       predictor.invalidate();
       for (const fn of resets) fn(soft);
-      if (available()) status = 'ready';
+      notifyReady();
       return;
     }
-    if (available()) status = 'ready';
+    notifyReady();
     // A piece you were shown but did not get flies to whoever did get it, when their action is in this packet.
     const returned = new Map<RailwayAccepted, number>();
     const matched = back.map((c) => {
@@ -389,7 +439,11 @@ export function createRailwayAdapter({
     // Room status, sent at once (the room clock is held while it starts or after its storage failed): the action it
     // names was not applied.
     if (message.t === 'r:state' && message.to === room?.selfId) {
-      if (message.state === 'storage' || message.state === 'full') status = message.state;
+      if (message.state === 'storage' || message.state === 'full') {
+        status = message.state;
+        for (const command of commands.values())
+          refuseCommand(command, message.state === 'storage' ? 'storage' : 'unknown');
+      }
       // The action it names and every later one were not applied; earlier ones are settled by the mirror.
       lose(railInt(message.request, RAILWAY_MAX_INT, 1) && message.epoch === epoch ? message.request : next);
       return;
@@ -407,9 +461,16 @@ export function createRailwayAdapter({
       next = message.epoch === epoch ? Math.max(next, message.next) : message.next;
       if (message.epoch !== epoch) shown.clear();
       epoch = message.epoch;
+      for (const command of commands.values()) {
+        if (command.epoch !== epoch) refuseCommand(command, 'unknown');
+        else {
+          next = Math.max(next, command.request + 1);
+          room?.send({ t: 'r:edit', e: command.wire });
+        }
+      }
       predictor.session(epoch, next);
       if (!stopped()) status = 'starting';
-      if (available()) status = 'ready';
+      notifyReady();
     }
   }
 
@@ -490,6 +551,50 @@ export function createRailwayAdapter({
     return true;
   }
 
+  /** Queue a server command without prediction. Retain the exact identity and payload across a reconnect. */
+  function act(op: string, fields: Record<string, unknown>): number | false {
+    if (!available() || !room || next >= RAILWAY_MAX_INT || !op || op.startsWith('rail.')) return false;
+    const body = pose();
+    if (!body || !Number.isFinite(body.x) || !Number.isFinite(body.y) || !Number.isFinite(body.z)) return false;
+    const request = next++;
+    predictor.session(epoch, next);
+    const wire = {
+      ...fields,
+      op,
+      epoch,
+      request,
+      ms: Math.max(0, Math.round(now())),
+      at: [cm(body.x), cm(body.y), cm(body.z)],
+    };
+    commands.set(request, { op, fields: { ...fields }, epoch, request, wire });
+    room.send({ t: 'r:edit', e: wire });
+    return request;
+  }
+  function onAccepted(fn: (event: RailwayAccepted) => void): () => boolean;
+  function onAccepted(fn: (event: CommandAccepted) => void, kind: 'command'): () => boolean;
+  function onAccepted(fn: ((event: RailwayAccepted) => void) | ((event: CommandAccepted) => void), kind?: 'command') {
+    if (kind === 'command') {
+      const listener = fn as (event: CommandAccepted) => void;
+      commandAccepted.add(listener);
+      return () => commandAccepted.delete(listener);
+    }
+    const listener = fn as (event: RailwayAccepted) => void;
+    effects.add(listener);
+    return () => effects.delete(listener);
+  }
+  function onRefused(fn: (event: RailwayRefusal) => void): () => boolean;
+  function onRefused(fn: (event: CommandRefusal) => void, kind: 'command'): () => boolean;
+  function onRefused(fn: ((event: RailwayRefusal) => void) | ((event: CommandRefusal) => void), kind?: 'command') {
+    if (kind === 'command') {
+      const listener = fn as (event: CommandRefusal) => void;
+      commandRefused.add(listener);
+      return () => commandRefused.delete(listener);
+    }
+    const listener = fn as (event: RailwayRefusal) => void;
+    refusals.add(listener);
+    return () => refusals.delete(listener);
+  }
+
   // ---------------------------------------------------------------- reads
   const { read, nextFrame, latch } = createRailwayRead({
     view,
@@ -555,18 +660,19 @@ export function createRailwayAdapter({
       latch();
     },
     ...railwayActs(submit, view),
-    onAccepted(fn: (event: RailwayAccepted) => void) {
-      effects.add(fn);
-      return () => effects.delete(fn);
+    act,
+    /** The whole mirror and session can arrive in either order. No per-frame polling is required. */
+    onReady(fn: () => void) {
+      readyListeners.add(fn);
+      if (available()) fn();
+      return () => readyListeners.delete(fn);
     },
+    onAccepted,
     onCorrected(fn: (c: RailwayCorrection) => void) {
       corrections.add(fn);
       return () => corrections.delete(fn);
     },
-    onRefused(fn: (r: RailwayRefusal) => void) {
-      refusals.add(fn);
-      return () => refusals.delete(fn);
-    },
+    onRefused,
     onRemap(fn: (request: number, id: number) => void) {
       remaps.add(fn);
       return () => remaps.delete(fn);
@@ -582,10 +688,14 @@ export function createRailwayAdapter({
       offRoom = [];
       shown.clear();
       predictor.session(0, 1);
+      for (const command of commands.values()) refuseCommand(command, 'unknown');
+      commandAccepted.clear();
+      commandRefused.clear();
       effects.clear();
       corrections.clear();
       remaps.clear();
       resets.clear();
+      readyListeners.clear();
       room = null;
     },
   };

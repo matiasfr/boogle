@@ -16,7 +16,7 @@ import { railMovement } from '../src/adapters/railway-read.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../src/world/sync.ts';
-import { installRules } from '../src/world/rules/index.ts';
+import { installRailRules } from './helpers/rail-rules.ts';
 import { install as installRailway } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
@@ -84,7 +84,7 @@ function room(seed?: Seed) {
   const sync = createSync();
   sync.setSelfId('server');
   const replication = createReplicator();
-  const api = installRailway(sync, installRules(sync, homeLand()), replication);
+  const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   if (seed) {
     while (sync.world.tick < seed.t) sync.stepWorld(100);
     api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
@@ -396,7 +396,7 @@ test("M12: a late join's chunks publish nothing until the whole state, then all 
   const sync = createSync();
   sync.setSelfId('server');
   const replication = createReplicator();
-  const api = installRailway(sync, installRules(sync, homeLand()), replication);
+  const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   const seed = buildSeedWorld('ring-joined');
   while (sync.world.tick < seed.t) sync.stepWorld(100);
   api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));

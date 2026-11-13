@@ -1,5 +1,6 @@
 // Exercise tuning admission through the real playable host and its durable recovery store.
 import test from 'node:test';
+import { setImmediate } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -10,7 +11,7 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { MAX_RECOVERY_BYTES, type RecoveryEnvelope } from '../../src/world/sync.ts';
 import { MAX_PLAYERS, NAME_MAX } from '../../src/sim/roster.ts';
 import { invariant } from '../../test/helpers/rail.ts';
-import type { TuneApi } from '../../src/world/rules/tune.ts';
+import type { RailTuneApi } from '../../src/world/rules/tune.ts';
 
 type Obj = Record<string, unknown>;
 async function fixture() {
@@ -43,8 +44,7 @@ async function fixture() {
     store,
     roomId,
     tune() {
-      assert.ok('tune' in host.rules);
-      return host.rules.tune as TuneApi;
+      return host.rules.railTune as RailTuneApi;
     },
     recovery() {
       const recovery = store.readSync(roomId)?.data as RecoveryEnvelope | undefined;
@@ -88,34 +88,43 @@ function commit(requestId: string, expectedRevision = 0): Obj {
   };
 }
 
-test('playable tuning strips padded burst fields before durable admission', async () => {
+test('rail tuning never enters the classic recovery tail or persists arbitrary padding', async () => {
   const f = await fixture();
   try {
-    for (let k = 0; k < 64; k++) {
-      const e = { ...commit(`burst-${k}`), pad: '' };
-      e.pad = 'x'.repeat(990 - JSON.stringify(e).length);
-      assert.ok(JSON.stringify(e).length < 1000);
-      f.host.deliver({ t: 'w:edit', e }, 'controller');
+    f.host.replication.addClient('controller');
+    f.host.deliver({ t: 'r:open' }, 'controller');
+    for (let request = 1; request <= 8; request++) {
+      f.host.deliver(
+        {
+          t: 'r:edit',
+          e: {
+            ...commit(`burst-${request}`, request - 1),
+            epoch: 1,
+            request,
+            at: [0, 0, 0],
+            ms: 0,
+            pad: 'x'.repeat(500),
+          },
+        },
+        'controller',
+      );
     }
-    await assert.doesNotReject(f.host.sync.whenDurable());
-    const recovery = f.recovery();
-    assert.ok(!JSON.stringify(recovery).includes('"pad"'));
-    assert.equal(recovery.tail.filter(({ e }) => e.op === 'tune.commit').length, 64);
-    assert.equal(f.host.status().ready, true);
-    // Restart with accepted work still pending: replay once, then persist the applied revision.
-    await f.restart();
+    await setImmediate();
     await f.ticks();
-    assert.equal(f.tune().get('railRegrowMinutes'), 2);
-    assert.equal(f.tune().tune.revision, 1);
+    await f.host.close(); // drains every accepted durable write
+    const recovery = f.recovery();
+    assert.equal(recovery.tail.length, 0);
+    assert.ok(!JSON.stringify(recovery).includes('"pad"'));
     await f.restart();
+    assert.equal(f.tune().get('railRegrowMinutes'), 2);
+    assert.equal(f.tune().tune.revision, 8);
     assert.equal(f.host.status().ready, true);
-    assert.equal(f.tune().tune.revision, 1);
   } finally {
     await f.close();
   }
 });
 
-test('full roster tuning refuses oversized ids and tail pressure before stamping, then recovers', async (t) => {
+test('full roster keeps bounded recovery; rail commit accepts 65–80 unit ids without the old tail limit', async (t) => {
   const f = await fixture();
   try {
     const sid = (k: number) => `p${k.toString(36).padStart(31, '0')}`;
@@ -124,55 +133,24 @@ test('full roster tuning refuses oversized ids and tail pressure before stamping
       if (k % 32 === 31) await f.ticks();
     }
     assert.equal(f.host.rules.roster.roster.pids.length, MAX_PLAYERS);
-    const initialSeq = f.recovery().seq;
-    const ids = new Set<string>();
-    for (let k = 0; k < 64; k++) {
-      const requestId = `${k.toString(36).padStart(2, '0')}${'\ud800'.repeat(62)}`;
-      ids.add(requestId);
-      const e = commit(requestId);
-      assert.equal(requestId.length, 64);
-      assert.ok(JSON.stringify(e).length < 1000);
-      f.host.deliver({ t: 'w:edit', e }, sid(0));
+    f.host.replication.addClient(sid(0));
+    f.host.deliver({ t: 'r:open' }, sid(0));
+    for (const [k, length] of [65, 80, 81].entries()) {
+      f.host.deliver(
+        { t: 'r:edit', e: { ...commit('x'.repeat(length), k), epoch: 1, request: k + 1, at: [0, 0, 0], ms: 0 } },
+        sid(0),
+      );
     }
-    await assert.doesNotReject(f.host.sync.whenDurable());
+    await setImmediate();
+    await f.ticks();
+    assert.equal(f.tune().tune.revision, 2);
+    await f.host.close();
     const recovery = f.recovery();
-    const accepted = recovery.tail.filter(({ e }) => e.op === 'tune.commit');
-    const refused = f.sent.filter((m) => m.t === 'w:rejected' && ids.has(m.requestId as string));
-    assert.ok(accepted.length > 0);
-    // Since the 128 KB budget (6 November) the 64-entry tail cap binds before bytes even at a full roster;
-    // the byte refusal itself is covered by sync-recovery's oversized-state test.
-    assert.ok(Buffer.byteLength(JSON.stringify(recovery)) <= MAX_RECOVERY_BYTES);
-    assert.equal(accepted.length + refused.length, 64);
-    assert.ok(refused.every((m) => m.reason === 'recovery-budget'));
-    assert.equal(recovery.seq, initialSeq + accepted.length);
-    assert.ok(accepted.every(({ e }) => !refused.some((m) => m.requestId === e.requestId)));
-    t.diagnostic(
-      `full roster: ${accepted.length} accepted, ${refused.length} refused, ${Buffer.byteLength(JSON.stringify(recovery))}/${MAX_RECOVERY_BYTES} bytes`,
-    );
-    assert.equal(f.host.status().ready, true);
-
+    assert.equal(recovery.tail.filter(({ e }) => typeof e.op === 'string' && e.op.startsWith('tune.')).length, 0);
+    t.diagnostic(`full roster: ${Buffer.byteLength(JSON.stringify(recovery))}/${MAX_RECOVERY_BYTES} bytes`);
     await f.restart();
-    await f.ticks();
-    assert.equal(f.tune().tune.revision, 1);
-    f.host.deliver({ t: 'w:edit', e: { ...commit('retry', 1), v: 3 } }, sid(0));
-    await f.host.sync.whenDurable();
-    await f.ticks();
     assert.equal(f.tune().tune.revision, 2);
-    assert.equal(f.tune().get('railRegrowMinutes'), 3);
-    await f.restart();
-    assert.equal(f.host.status().ready, true);
     assert.equal(f.host.rules.roster.roster.pids.length, MAX_PLAYERS);
-    assert.equal(f.tune().tune.revision, 2);
-    assert.equal(f.tune().get('railRegrowMinutes'), 3);
-    assert.equal(invariant(f.host.rules.railway.world()), null);
-    const beforeLongId = f.recovery().seq;
-    const tooLong = '\ud800'.repeat(65);
-    f.host.deliver({ t: 'w:edit', e: commit(tooLong, 2) }, sid(0));
-    await f.host.sync.whenDurable();
-    assert.equal(f.recovery().seq, beforeLongId);
-    assert.ok(
-      f.sent.some((m) => m.t === 'w:rejected' && m.requestId === tooLong && m.reason === 'request-id-too-long'),
-    );
   } finally {
     await f.close();
   }

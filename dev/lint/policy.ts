@@ -19,7 +19,7 @@ const rapierBans = ['@dimforge/rapier3d', '@dimforge/rapier3d-simd'].map((name) 
 }));
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
 const rulesMessage =
-  'src/world/rules/ is lockstep only: src/sim/, ../grid.ts and sibling rules (docs/agents/lockstep.md).';
+  'Rules use src/sim/, ../grid.ts and sibling rules; server registration may import boundary types (docs/agents/lockstep.md).';
 const netplayMessage = 'src/netplay/ is infrastructure: expose a hook and let the game side subscribe (see net.ts).';
 // Browser and timer globals a rules module must not read (src/world/rules/README.md).
 const RULES_GLOBALS = [
@@ -359,9 +359,12 @@ const policyBlocks: PolicyBlock[] = [
           patterns: [
             {
               // three/*, and any ../ path except ../grid and ../../sim/<file> (.js or .ts)
-              regex: '^(three/|\\.\\./(?!grid\\.[jt]s$|\\.\\./sim/[^/.]+\\.[jt]s$))',
+              regex:
+                '^(three/|\\.\\./(?!grid\\.[jt]s$|server-ops\\.ts$|replicate-server\\.ts$|\\.\\./sim/[^/.]+\\.[jt]s$))',
               message: rulesMessage,
             },
+            // Server-kind rules wire these headless boundaries through types; runtime imports remain forbidden.
+            { group: ['../server-ops.ts', '../replicate-server.ts'], message: rulesMessage, allowTypeImports: true },
             railCheckBan,
             railDriverBan,
           ],

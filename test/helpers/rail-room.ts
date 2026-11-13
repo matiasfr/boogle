@@ -10,7 +10,7 @@ import { railMovement } from '../../src/adapters/railway-read.ts';
 import { specOf, type TuneKey } from '../../src/sim/tune.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../../src/world/sync.ts';
-import { installRules } from '../../src/world/rules/index.ts';
+import { installRailRules } from './rail-rules.ts';
 import { install as installRailway } from '../../src/world/railway-server.ts';
 import { createReplicator } from '../../src/world/replicate-server.ts';
 import { RAIL_SCHEMAS, createRailwayMirror, type RailwayMirror } from '../../src/world/railway-replicate.ts';
@@ -56,7 +56,7 @@ export function railRoom(seed?: Seed, options: RailRoomOptions = {}) {
   const sync = createSync();
   sync.setSelfId('server');
   const replication = createReplicator();
-  const api = installRailway(sync, installRules(sync, homeLand()), replication);
+  const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   if (seed) {
     while (sync.world.tick < seed.t) sync.stepWorld(100);
     api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
@@ -144,9 +144,8 @@ export function railRoom(seed?: Seed, options: RailRoomOptions = {}) {
       if (options.served) history.set(sync.roomStep(), replicatedRows(api.world()));
       clock.now += 17;
       replication.commit(sync.roomStep());
-      replication.flush(
-        sync.roomStep(),
-        (cid, _p, json) => down.push({ at: step + (clients.get(cid)?.delay ?? 0), cid, m: JSON.parse(json) }),
+      replication.flush(sync.roomStep(), (cid, _p, json) =>
+        down.push({ at: step + (clients.get(cid)?.delay ?? 0), cid, m: JSON.parse(json) }),
       );
       for (const c of clients.values())
         down.push({ at: step + c.delay, cid: c.cid, m: { t: 'w:c', ht: sync.world.tick } });

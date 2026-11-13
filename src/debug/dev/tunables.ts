@@ -5,7 +5,8 @@ import { createTuneStartup } from '../../tunables/startup.ts';
 import { BUILD_ID } from '../../build-id.ts';
 import { WORLD_NS } from '../../world/namespace.ts';
 import { RAILWAY_PLAY_NS } from '../../world/railway-namespace.ts';
-import { rules } from '../../world/game-world.ts';
+import { rules, railTune } from '../../world/game-world.ts';
+import { railwayCommands, onRailwayCommands } from '../../entities/railway/state.ts';
 import { world, worldStatus, submitEdit, onApplied, onSnapshot, onRejected } from '../../world/sync.ts';
 import { getRoomId, onNetState } from '../../netplay/net.ts';
 import { me } from '../../player/state.ts';
@@ -72,8 +73,10 @@ function read(id: string) {
   if (!spec) return null;
   const feel = snapshotFeelSpring();
   const shared = spec.scope === 'lockstep';
+  const rail = shared && spec.sharedKey.startsWith('rail');
+  const sharedTune = rail ? railTune : rules.tune;
   const value = shared
-    ? rules.tune.tune.v[spec.sharedKey]
+    ? (sharedTune?.tune.v[spec.sharedKey] ?? spec.default)
     : spec.scope === 'owner'
       ? feel.value
       : ((localBinding(id)?.get() as number | undefined) ??
@@ -82,9 +85,15 @@ function read(id: string) {
     ...spec,
     value,
     source: shared ? 'room' : spec.scope === 'owner' ? (feel.revision ? 'session' : 'default') : local.get(id)!.source,
-    revision: shared ? rules.tune.tune.revision : spec.scope === 'owner' ? feel.revision : local.get(id)!.revision,
+    revision: shared
+      ? (sharedTune?.tune.revision ?? 0)
+      : spec.scope === 'owner'
+        ? feel.revision
+        : local.get(id)!.revision,
     available: shared
-      ? worldStatus().ready && (!id.startsWith('railway.') || productionRailway)
+      ? rail
+        ? !!railTune && !!railwayCommands()?.read.ready()
+        : worldStatus().ready
       : spec.scope === 'owner' || !!localBinding(id),
     ...(spec.scope === 'owner' ? { active: feel.active, chopLocked: feel.chopLocked } : {}),
   };
@@ -94,7 +103,7 @@ export function tuneSnapshot() {
     schema: 1,
     build: BUILD_ID || 'dev',
     namespace: productionRailway ? RAILWAY_PLAY_NS : WORLD_NS,
-    revision: rules.tune.tune.revision,
+    revision: (productionRailway ? railTune : rules.tune)?.tune.revision ?? 0,
     tick: world.tick,
     setup: startingSetup ?? setup(),
     values: CATALOG.map((spec) => read(spec.id)!),
@@ -191,15 +200,16 @@ function set(args: Args, source = 'session'): Result {
   if (requests.size >= 32) requests.delete(requests.keys().next().value!);
   const requestId = crypto.randomUUID();
   requests.set(requestId, { status: 'pending', at: performance.now() });
-  const queued = submitEdit({
-    op: 'tune.commit',
-    i: 0,
-    j: 0,
+  const fields = {
     key: spec.sharedKey,
     v: value,
-    expectedRevision: args.expectedRevision ?? rules.tune.tune.revision,
+    expectedRevision: args.expectedRevision ?? read(spec.id)!.revision,
     requestId,
-  });
+  };
+  const session = railwayCommands();
+  const queued = spec.sharedKey?.startsWith('rail')
+    ? !!session && session.act('tune.commit', fields) !== false
+    : submitEdit({ op: 'tune.commit', i: 0, j: 0, ...fields });
   if (!queued) requests.set(requestId, { status: 'rejected', at: performance.now() });
   return {
     ok: queued,
@@ -277,8 +287,51 @@ onNetState((state) => {
 
 const queryStartup = createTuneStartup(() => {
   const status = worldStatus();
-  return status.mode === 'client' && status.ready;
+  return status.mode === 'client' && status.ready && (!productionRailway || !!railwayCommands()?.read.ready());
 }, submitTuneQuery);
+
+let offCommands: (() => void)[] = [];
+onRailwayCommands((session) => {
+  for (const off of offCommands) off();
+  offCommands = [];
+  if (!session) return;
+  offCommands = [
+    session.onAccepted((event) => {
+      if (event.op !== 'tune.commit' && event.op !== 'tune.set') return;
+      const id = event.fields.requestId;
+      if (typeof id === 'string' && requests.has(id))
+        requests.set(id, {
+          status: 'applied',
+          at: performance.now(),
+          revision: railTune?.tune.revision,
+          appliedTick: event.tick,
+        });
+      const spec = sharedTunableSpec(event.fields.key);
+      if (spec)
+        emitTuneRecord('tune.change', {
+          id: spec.id,
+          value: event.fields.v as number,
+          revision: railTune?.tune.revision ?? 0,
+          tick: event.tick,
+          source: 'room',
+        });
+      recordTuneSnapshot();
+    }, 'command'),
+    session.onRefused((event) => {
+      const id = event.fields.requestId;
+      if (typeof id !== 'string') return;
+      const request = requests.get(id);
+      if (request)
+        requests.set(id, {
+          ...request,
+          status: event.reason === 'unknown' || event.reason === 'storage' ? 'unknown' : 'rejected',
+          code: event.reason,
+        });
+    }, 'command'),
+    session.onReady(() => queryStartup.snapshot()),
+    session.onReset(() => recordTuneSnapshot()),
+  ];
+});
 
 /** Appearance and initial authoritative room state may arrive in either order. */
 export function applyTuneQuery() {

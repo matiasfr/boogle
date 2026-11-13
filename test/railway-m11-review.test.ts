@@ -9,7 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
 import { createSync } from '../src/world/sync.ts';
-import { installRules } from '../src/world/rules/index.ts';
+import { installRailRules } from './helpers/rail-rules.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
@@ -41,7 +41,7 @@ function host(stage?: SeedStage) {
   const sync = createSync();
   sync.setSelfId('server');
   const replication = createReplicator();
-  const api = installRailway(sync, installRules(sync, homeLand()), replication);
+  const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   api.touchAll();
   if (stage) {
     const seed = seedOf(stage);

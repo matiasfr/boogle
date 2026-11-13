@@ -1,4 +1,5 @@
-// Playtest tuning rules: the `tune` state (../../sim/tune.ts), the tune.set op that changes one of the haul loop's
+// Playtest tuning: the eight haul keys stay in lockstep `tune`; rail keys use Server-kind `railTune`.
+// The haul state (../../sim/tune.ts), the tune.set op that changes one of the haul loop's
 // lockstep numbers for the whole room at once, tune.fill (fills the open Track
 // ring), and tune.reset, which puts the haul (stacks, piles, sites, bundles) back
 // to fresh. All only in `proto-` rooms: the host knows the room id (env.protoRoom), the rules don't. The earlier haul
@@ -13,7 +14,8 @@ import {
   loadTune,
   hashTune,
   specOf,
-  TUNABLES,
+  HAUL_TUNABLES,
+  RAIL_TUNABLES,
   type TuneKey,
 } from '../../sim/tune.ts';
 import { createStacks } from '../../sim/stacks.ts';
@@ -23,6 +25,8 @@ import { ROUTE, TRACK, HELPER } from '../../sim/route.ts';
 import { JUNK, bad } from './edit-gen.ts';
 
 import type { SyncView, Land, Stream, Ctx, Rules } from './types.ts';
+import type { ServerOps } from '../server-ops.ts';
+import type { Replicator } from '../replicate-server.ts';
 import type { StacksApi } from './stacks.ts';
 import type { PilesApi } from './piles.ts';
 import type { SitesApi } from './sites.ts';
@@ -40,7 +44,7 @@ export function install(
   land: Land,
   rules: { stacks: StacksApi; piles: PilesApi; sites: SitesApi; sources: SourcesApi },
 ) {
-  const tune = createTune();
+  const tune = createTune(HAUL_TUNABLES);
   const { sites } = rules.sites;
   // A cost change must leave every ring within its cost and nothing stuck: the open wood site's Track ring can't drop
   // below what it holds or change mid-run; a Helper ring still being filled must keep room for one more piece.
@@ -56,7 +60,8 @@ export function install(
       });
     return true;
   }
-  const ok = (key: unknown, v: unknown): key is TuneKey => okTune(key, v) && fits(key as TuneKey, v as number);
+  const ok = (key: unknown, v: unknown): key is TuneKey =>
+    typeof key === 'string' && Object.hasOwn(tune.v, key) && okTune(key, v) && fits(key as TuneKey, v as number);
   sync.registerOp<{ key: string; v: number }>('tune.set', {
     validate: (e, ctx) => controlled(ctx) && ok(e.key, e.v),
     apply: (e) => {
@@ -126,7 +131,7 @@ export const edits = {
   }),
   'tune.set': (r: Stream) => {
     if (r.chance(JUNK)) return bad(r, 'tune.set');
-    const t = r.pick(TUNABLES);
+    const t = r.pick(HAUL_TUNABLES);
     const v = r.chance(0.5) ? t.def + r.int(-t.def + t.min, t.def) : r.int(t.min, t.max);
     return { op: 'tune.set', i: 0, j: 0, key: t.key, v: Math.min(t.max, Math.max(t.min, v)) };
   },
@@ -141,3 +146,52 @@ export function invariants({ tune }: TuneApi): string | null {
   for (const [key, v] of Object.entries(tune.v)) if (!specOf(key) || !okTune(key, v)) return `tune ${key} = ${v}`;
   return null;
 }
+
+/** Rail keys are Server kind. The eight haul keys above keep their lockstep readers. */
+export function installRailTune(sync: SyncView, ops: ServerOps, replication: Replicator) {
+  const tune = createTune(RAIL_TUNABLES);
+  const changed = () => {
+    replication.touchAll('tuneValue');
+    replication.touchAll('tuneRev');
+  };
+  sync.registerState(
+    'railTune',
+    {
+      serialize: () => serializeTune(tune),
+      load: (json) => {
+        loadTune(tune, json);
+        changed();
+      },
+      hash: () => hashTune(tune),
+    },
+    { server: true },
+  );
+  const ok = (key: unknown, v: unknown): key is TuneKey =>
+    typeof key === 'string' && Object.hasOwn(tune.v, key) && okTune(key, v);
+  for (const op of ['tune.set', 'tune.commit']) {
+    const commit = op === 'tune.commit';
+    ops.define(op, {
+      durable: commit,
+      validate: (e, ctx) =>
+        ctx.protoRoom &&
+        ctx.tuneController(ctx.from) &&
+        ok(e.key, e.v) &&
+        (!commit ||
+          (typeof e.requestId === 'string' &&
+            e.requestId.length > 0 &&
+            e.requestId.length <= 80 &&
+            e.expectedRevision === tune.revision)),
+      apply: (e) => {
+        // JSON can carry -0; the replica integer codec requires canonical zero.
+        const v = (e.v as number) || 0;
+        setTune(tune, e.key as TuneKey, v);
+        changed();
+        return commit
+          ? { requestId: e.requestId, status: 'applied', key: e.key, v, revision: tune.revision }
+          : { key: e.key, v };
+      },
+    });
+  }
+  return { tune, get: (key: TuneKey) => tune.v[key] };
+}
+export type RailTuneApi = ReturnType<typeof installRailTune>;

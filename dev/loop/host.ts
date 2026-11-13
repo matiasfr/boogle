@@ -46,7 +46,7 @@ export function createHost(pids: readonly string[], from?: { snapshot: unknown; 
   const replication = { define() {}, touch() {}, touchAll() {} };
   const api = install(
     sync as unknown as Parameters<typeof install>[0],
-    { tune } as unknown as Parameters<typeof install>[1],
+    { railTune: tune } as unknown as Parameters<typeof install>[1],
     replication as unknown as Parameters<typeof install>[2],
   );
   if (!state || !onTick) throw new Error('loop host: the railway did not register its state and tick');
