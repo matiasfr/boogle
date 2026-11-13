@@ -1,0 +1,11 @@
+Ticks 20000; seeds 1000-102f; hold default (200,15) late; errors 0
+
+| rate | where | hold | seeds | waits | mean | p95 | >1,050 | >1,158 | worst (halt way, asked, seed) | seeds >1,050 | >1,350 first 1,000 / rest | >1,158 first/rest | >1,050 first/rest | worst after 1,000 | longest stand | trip up mean/worst | down |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| heavy | settled | 75 | 48 | 13218 | 493.1 | 1013 | 3.59% | 1.15% | 1470 (Quarry down, 581, 100b) | 48 | 7 / 3 | 57 / 95 | 108 / 367 | 1394 | 540 Village, line 2 | 2167/2309 | 2282/2544 |
+| light | settled | 75 | 48 | 2309 | 341.6 | 717 | 0.17% | 0.09% | 1275 (Far Head down, 277, 101f) | 3 | 0 / 0 | 1 / 1 | 2 / 2 | 1164 | 350 Village, line 2 | 1768/2096 | 1836/2241 |
+
+Headway mean (CV) by halt and way; stand past the dwell a lap by halt:
+
+- heavy settled 75%: Railhead up 776 (0.35); Stack head 3 up 754 (0.37); Quarry up 789 (0.31); Railhead down 782 (0.33); Ring Island up 779 (0.36); Pier down 783 (0.34); Far Head up 787 (0.33); Stack head 3 down 749 (0.33); High Gorge down 758 (0.38); Far Head down 782 (0.35); Quarry down 781 (0.36); Village, line 2 up 781 (0.37); Ring Island down 761 (0.33) || stand/lap: Ring Island 25, Village, line 2 40, High Gorge 58, Far Head 2, Railhead 0
+- light settled 75%: Railhead up 626 (0.29); Stack head 3 up 615 (0.25); Quarry up 632 (0.25); Railhead down 627 (0.25); Ring Island up 626 (0.29); Pier down 627 (0.25); Far Head up 632 (0.27); Stack head 3 down 610 (0.26); High Gorge down 615 (0.26); Far Head down 628 (0.26); Quarry down 627 (0.27); Village, line 2 up 625 (0.29); Ring Island down 611 (0.26) || stand/lap: Ring Island 34, Village, line 2 23, High Gorge 6

@@ -1,0 +1,1019 @@
+{
+ "ticks": 20000,
+ "seeds": "1000-102f",
+ "hold": "default",
+ "late": false,
+ "rows": [
+  {
+   "rate": "heavy",
+   "where": "settled",
+   "hold": 75,
+   "seeds": 48,
+   "n": 13432,
+   "mean": 480.1,
+   "p95": 931,
+   "over1050": 0.01317748659916617,
+   "over1158": 0.003052412150089339,
+   "worst": {
+    "v": 1437,
+    "at": "Railhead up",
+    "asked": 620,
+    "seed": "102d",
+    "open": false
+   },
+   "seedsOver": 43,
+   "split": {
+    "over1350": [
+     1,
+     1
+    ],
+    "over1158": [
+     11,
+     30
+    ],
+    "over1050": [
+     35,
+     142
+    ],
+    "worstLate": 1362
+   },
+   "headway": {
+    "Railhead up": {
+     "mean": 779,
+     "cv": 0.29
+    },
+    "Stack head 3 up": {
+     "mean": 756,
+     "cv": 0.31
+    },
+    "Village, line 2 up": {
+     "mean": 780,
+     "cv": 0.3
+    },
+    "Ring Island down": {
+     "mean": 767,
+     "cv": 0.28
+    },
+    "Ring Island up": {
+     "mean": 782,
+     "cv": 0.3
+    },
+    "Stack head 3 down": {
+     "mean": 750,
+     "cv": 0.27
+    },
+    "Quarry up": {
+     "mean": 781,
+     "cv": 0.26
+    },
+    "High Gorge down": {
+     "mean": 759,
+     "cv": 0.32
+    },
+    "Railhead down": {
+     "mean": 771,
+     "cv": 0.27
+    },
+    "Far Head up": {
+     "mean": 778,
+     "cv": 0.28
+    },
+    "Pier down": {
+     "mean": 772,
+     "cv": 0.28
+    },
+    "Far Head down": {
+     "mean": 770,
+     "cv": 0.29
+    },
+    "Quarry down": {
+     "mean": 771,
+     "cv": 0.3
+    }
+   },
+   "standLap": {
+    "Ring Island": 21,
+    "High Gorge": 47,
+    "Village, line 2": 28,
+    "Far Head": 1
+   },
+   "longest": {
+    "ticks": 531,
+    "at": "Village, line 2",
+    "tick": 17894
+   },
+   "tripUp": [
+    2161,
+    2309
+   ],
+   "tripDown": [
+    2280,
+    2530
+   ],
+   "journey": {
+    "n": 3599,
+    "mean": 2373,
+    "p95": 3028,
+    "worst": 3387,
+    "open": 376
+   },
+   "plat": {
+    "Ring Island down": {
+     "n": 1042,
+     "mean": 464,
+     "over1050": 0.005758157389635317,
+     "worst": 1153
+    },
+    "Ring Island up": {
+     "n": 1020,
+     "mean": 494,
+     "over1050": 0.021568627450980392,
+     "worst": 1309
+    },
+    "High Gorge down": {
+     "n": 1042,
+     "mean": 403,
+     "over1050": 0.0019193857965451055,
+     "worst": 1143
+    },
+    "Far Head up": {
+     "n": 1011,
+     "mean": 507,
+     "over1050": 0.011869436201780416,
+     "worst": 1282
+    },
+    "Stack head 3 up": {
+     "n": 1034,
+     "mean": 482,
+     "over1050": 0.02611218568665377,
+     "worst": 1362
+    },
+    "Pier down": {
+     "n": 1036,
+     "mean": 474,
+     "over1050": 0.015444015444015444,
+     "worst": 1280
+    },
+    "Stack head 3 down": {
+     "n": 1060,
+     "mean": 492,
+     "over1050": 0.006603773584905661,
+     "worst": 1183
+    },
+    "Far Head down": {
+     "n": 1024,
+     "mean": 476,
+     "over1050": 0.015625,
+     "worst": 1230
+    },
+    "Railhead up": {
+     "n": 1016,
+     "mean": 518,
+     "over1050": 0.02066929133858268,
+     "worst": 1437
+    },
+    "Quarry down": {
+     "n": 1025,
+     "mean": 490,
+     "over1050": 0.018536585365853658,
+     "worst": 1283
+    },
+    "Railhead down": {
+     "n": 1068,
+     "mean": 468,
+     "over1050": 0.00749063670411985,
+     "worst": 1179
+    },
+    "Village, line 2 up": {
+     "n": 1045,
+     "mean": 453,
+     "over1050": 0.0066985645933014355,
+     "worst": 1176
+    },
+    "Quarry up": {
+     "n": 1009,
+     "mean": 522,
+     "over1050": 0.013875123885034688,
+     "worst": 1143
+    }
+   },
+   "startGaps": {
+    "gaps": [
+     85600,
+     85600,
+     64015,
+     180227,
+     119413,
+     107575
+    ],
+    "cv": 0.347
+   }
+  },
+  {
+   "rate": "heavy",
+   "where": "whole",
+   "hold": 75,
+   "seeds": 48,
+   "n": 12887,
+   "mean": 473.9,
+   "p95": 953,
+   "over1050": 0.024908822844727244,
+   "over1158": 0.013812369054085512,
+   "worst": {
+    "v": 1470,
+    "at": "Pier down",
+    "asked": 8416,
+    "seed": "101d",
+    "open": false
+   },
+   "seedsOver": 48,
+   "split": {
+    "over1350": [
+     0,
+     28
+    ],
+    "over1158": [
+     0,
+     178
+    ],
+    "over1050": [
+     0,
+     321
+    ],
+    "worstLate": 1470
+   },
+   "headway": {
+    "Pier down": {
+     "mean": 811,
+     "cv": 0.32
+    },
+    "Railhead up": {
+     "mean": 710,
+     "cv": 0.31
+    },
+    "Quarry up": {
+     "mean": 718,
+     "cv": 0.3
+    },
+    "Far Head down": {
+     "mean": 814,
+     "cv": 0.32
+    },
+    "Ring Island down": {
+     "mean": 817,
+     "cv": 0.35
+    },
+    "Quarry down": {
+     "mean": 813,
+     "cv": 0.33
+    },
+    "Railhead down": {
+     "mean": 816,
+     "cv": 0.32
+    },
+    "Far Head up": {
+     "mean": 718,
+     "cv": 0.3
+    },
+    "Village, line 2 up": {
+     "mean": 813,
+     "cv": 0.33
+    },
+    "Ring Island up": {
+     "mean": 710,
+     "cv": 0.35
+    },
+    "Stack head 1 down": {
+     "mean": 644,
+     "cv": 0.76
+    },
+    "Stack head 1 up": {
+     "mean": 406,
+     "cv": 0.12
+    },
+    "Stack head 2 down": {
+     "mean": 716,
+     "cv": 0.53
+    },
+    "Stack head 3 down": {
+     "mean": 767,
+     "cv": 0.3
+    },
+    "Stack head 2 up": {
+     "mean": 507,
+     "cv": 0.44
+    },
+    "Stack head 3 up": {
+     "mean": 745,
+     "cv": 0.32
+    },
+    "High Gorge down": {
+     "mean": 748,
+     "cv": 0.33
+    }
+   },
+   "standLap": {
+    "Village, line 2": 72,
+    "Ring Island": 25,
+    "Quarry": 10,
+    "Far Head": 7,
+    "High Gorge": 34,
+    "Stack head 3": 2,
+    "Stack head 2": 0,
+    "Stack head 1": 0
+   },
+   "longest": {
+    "ticks": 649,
+    "at": "Village, line 2",
+    "tick": 3699
+   },
+   "tripUp": [
+    2018,
+    2688
+   ],
+   "tripDown": [
+    2061,
+    2532
+   ],
+   "journey": {
+    "n": 2509,
+    "mean": 2385,
+    "p95": 3017,
+    "worst": 3388,
+    "open": 365
+   },
+   "plat": {
+    "Quarry up": {
+     "n": 1087,
+     "mean": 459,
+     "over1050": 0.0018399264029438822,
+     "worst": 1071
+    },
+    "Quarry down": {
+     "n": 1011,
+     "mean": 521,
+     "over1050": 0.05539070227497527,
+     "worst": 1463
+    },
+    "Far Head up": {
+     "n": 1094,
+     "mean": 452,
+     "over1050": 0.008226691042047532,
+     "worst": 1187
+    },
+    "Village, line 2 up": {
+     "n": 1081,
+     "mean": 392,
+     "over1050": 0.0018501387604070306,
+     "worst": 1113
+    },
+    "Pier down": {
+     "n": 1006,
+     "mean": 517,
+     "over1050": 0.04970178926441352,
+     "worst": 1470
+    },
+    "Railhead up": {
+     "n": 1070,
+     "mean": 482,
+     "over1050": 0.012149532710280374,
+     "worst": 1338
+    },
+    "Far Head down": {
+     "n": 1013,
+     "mean": 527,
+     "over1050": 0.05133267522211254,
+     "worst": 1415
+    },
+    "Ring Island down": {
+     "n": 1008,
+     "mean": 508,
+     "over1050": 0.05357142857142857,
+     "worst": 1399
+    },
+    "Railhead down": {
+     "n": 1011,
+     "mean": 511,
+     "over1050": 0.04945598417408507,
+     "worst": 1387
+    },
+    "Stack head 1 down": {
+     "n": 50,
+     "mean": 479,
+     "over1050": 0,
+     "worst": 881
+    },
+    "Ring Island up": {
+     "n": 958,
+     "mean": 445,
+     "over1050": 0.009394572025052192,
+     "worst": 1170
+    },
+    "Stack head 2 down": {
+     "n": 81,
+     "mean": 426,
+     "over1050": 0,
+     "worst": 958
+    },
+    "Stack head 2 up": {
+     "n": 60,
+     "mean": 328,
+     "over1050": 0.016666666666666666,
+     "worst": 1114
+    },
+    "Stack head 3 down": {
+     "n": 832,
+     "mean": 485,
+     "over1050": 0.008413461538461538,
+     "worst": 1231
+    },
+    "High Gorge down": {
+     "n": 778,
+     "mean": 391,
+     "over1050": 0.002570694087403599,
+     "worst": 1129
+    },
+    "Stack head 3 up": {
+     "n": 723,
+     "mean": 480,
+     "over1050": 0.019363762102351315,
+     "worst": 1206
+    },
+    "Stack head 1 up": {
+     "n": 24,
+     "mean": 227,
+     "over1050": 0,
+     "worst": 361
+    }
+   },
+   "startGaps": {
+    "gaps": [
+     74095,
+     78984,
+     81271
+    ],
+    "cv": 0.038
+   },
+   "gorgeAt": [
+    4470,
+    8670
+   ]
+  },
+  {
+   "rate": "light",
+   "where": "settled",
+   "hold": 75,
+   "seeds": 48,
+   "n": 2320,
+   "mean": 340.9,
+   "p95": 712,
+   "over1050": 0.001293103448275862,
+   "over1158": 0,
+   "worst": {
+    "v": 1106,
+    "at": "Railhead up",
+    "asked": 12634,
+    "seed": "1017",
+    "open": false
+   },
+   "seedsOver": 3,
+   "split": {
+    "over1350": [
+     0,
+     0
+    ],
+    "over1158": [
+     0,
+     0
+    ],
+    "over1050": [
+     1,
+     2
+    ],
+    "worstLate": 1106
+   },
+   "headway": {
+    "Railhead up": {
+     "mean": 627,
+     "cv": 0.26
+    },
+    "Stack head 3 up": {
+     "mean": 617,
+     "cv": 0.23
+    },
+    "Village, line 2 up": {
+     "mean": 626,
+     "cv": 0.26
+    },
+    "Ring Island down": {
+     "mean": 620,
+     "cv": 0.25
+    },
+    "Ring Island up": {
+     "mean": 627,
+     "cv": 0.27
+    },
+    "Stack head 3 down": {
+     "mean": 611,
+     "cv": 0.24
+    },
+    "Quarry up": {
+     "mean": 625,
+     "cv": 0.23
+    },
+    "High Gorge down": {
+     "mean": 616,
+     "cv": 0.25
+    },
+    "Railhead down": {
+     "mean": 618,
+     "cv": 0.21
+    },
+    "Far Head up": {
+     "mean": 626,
+     "cv": 0.25
+    },
+    "Pier down": {
+     "mean": 618,
+     "cv": 0.21
+    },
+    "Far Head down": {
+     "mean": 618,
+     "cv": 0.21
+    },
+    "Quarry down": {
+     "mean": 618,
+     "cv": 0.23
+    }
+   },
+   "standLap": {
+    "Ring Island": 34,
+    "Village, line 2": 17,
+    "High Gorge": 5,
+    "Far Head": 0
+   },
+   "longest": {
+    "ticks": 321,
+    "at": "Village, line 2",
+    "tick": 3431
+   },
+   "tripUp": [
+    1765,
+    2117
+   ],
+   "tripDown": [
+    1833,
+    2251
+   ],
+   "journey": {
+    "n": 666,
+    "mean": 1934,
+    "p95": 2395,
+    "worst": 2704,
+    "open": 56
+   },
+   "plat": {
+    "Far Head down": {
+     "n": 180,
+     "mean": 332,
+     "over1050": 0,
+     "worst": 889
+    },
+    "Railhead up": {
+     "n": 179,
+     "mean": 436,
+     "over1050": 0.01675977653631285,
+     "worst": 1106
+    },
+    "High Gorge down": {
+     "n": 175,
+     "mean": 288,
+     "over1050": 0,
+     "worst": 957
+    },
+    "Stack head 3 down": {
+     "n": 167,
+     "mean": 404,
+     "over1050": 0,
+     "worst": 975
+    },
+    "Ring Island up": {
+     "n": 175,
+     "mean": 336,
+     "over1050": 0,
+     "worst": 951
+    },
+    "Pier down": {
+     "n": 186,
+     "mean": 319,
+     "over1050": 0,
+     "worst": 829
+    },
+    "Far Head up": {
+     "n": 194,
+     "mean": 379,
+     "over1050": 0,
+     "worst": 966
+    },
+    "Railhead down": {
+     "n": 179,
+     "mean": 307,
+     "over1050": 0,
+     "worst": 899
+    },
+    "Stack head 3 up": {
+     "n": 163,
+     "mean": 390,
+     "over1050": 0,
+     "worst": 803
+    },
+    "Village, line 2 up": {
+     "n": 186,
+     "mean": 247,
+     "over1050": 0,
+     "worst": 753
+    },
+    "Quarry up": {
+     "n": 179,
+     "mean": 391,
+     "over1050": 0,
+     "worst": 1046
+    },
+    "Quarry down": {
+     "n": 176,
+     "mean": 323,
+     "over1050": 0,
+     "worst": 868
+    },
+    "Ring Island down": {
+     "n": 181,
+     "mean": 288,
+     "over1050": 0,
+     "worst": 770
+    }
+   },
+   "startGaps": {
+    "gaps": [
+     85600,
+     85600,
+     64015,
+     180227,
+     119413,
+     107575
+    ],
+    "cv": 0.347
+   }
+  },
+  {
+   "rate": "light",
+   "where": "whole",
+   "hold": 75,
+   "seeds": 48,
+   "n": 2253,
+   "mean": 352.6,
+   "p95": 783,
+   "over1050": 0.009320905459387484,
+   "over1158": 0.0031069684864624943,
+   "worst": {
+    "v": 1454,
+    "at": "Stack head 3 down",
+    "asked": 5961,
+    "seed": "1006",
+    "open": false
+   },
+   "seedsOver": 14,
+   "split": {
+    "over1350": [
+     0,
+     1
+    ],
+    "over1158": [
+     0,
+     7
+    ],
+    "over1050": [
+     0,
+     21
+    ],
+    "worstLate": 1454
+   },
+   "headway": {
+    "Pier down": {
+     "mean": 646,
+     "cv": 0.35
+    },
+    "Quarry up": {
+     "mean": 585,
+     "cv": 0.34
+    },
+    "Railhead up": {
+     "mean": 580,
+     "cv": 0.36
+    },
+    "Far Head down": {
+     "mean": 647,
+     "cv": 0.35
+    },
+    "Ring Island down": {
+     "mean": 654,
+     "cv": 0.4
+    },
+    "Far Head up": {
+     "mean": 584,
+     "cv": 0.35
+    },
+    "Quarry down": {
+     "mean": 647,
+     "cv": 0.37
+    },
+    "Railhead down": {
+     "mean": 650,
+     "cv": 0.34
+    },
+    "Village, line 2 up": {
+     "mean": 647,
+     "cv": 0.38
+    },
+    "Ring Island up": {
+     "mean": 586,
+     "cv": 0.37
+    },
+    "Stack head 1 down": {
+     "mean": 746,
+     "cv": 0.6
+    },
+    "Stack head 1 up": {
+     "mean": 352,
+     "cv": 0.27
+    },
+    "Stack head 2 down": {
+     "mean": 495,
+     "cv": 0.56
+    },
+    "Stack head 2 up": {
+     "mean": 426,
+     "cv": 0.24
+    },
+    "Stack head 3 down": {
+     "mean": 612,
+     "cv": 0.36
+    },
+    "Stack head 3 up": {
+     "mean": 623,
+     "cv": 0.28
+    },
+    "High Gorge down": {
+     "mean": 614,
+     "cv": 0.31
+    }
+   },
+   "standLap": {
+    "Village, line 2": 55,
+    "Ring Island": 36,
+    "Stack head 2": 1,
+    "Stack head 3": 4,
+    "High Gorge": 14,
+    "Stack head 1": 0,
+    "Far Head": 0,
+    "Quarry": 0
+   },
+   "longest": {
+    "ticks": 801,
+    "at": "signal",
+    "tick": 2599
+   },
+   "tripUp": [
+    1639,
+    2265
+   ],
+   "tripDown": [
+    1666,
+    2203
+   ],
+   "journey": {
+    "n": 491,
+    "mean": 1966,
+    "p95": 2451,
+    "worst": 2963,
+    "open": 52
+   },
+   "plat": {
+    "Quarry down": {
+     "n": 175,
+     "mean": 382,
+     "over1050": 0.011428571428571429,
+     "worst": 1326
+    },
+    "Far Head up": {
+     "n": 187,
+     "mean": 387,
+     "over1050": 0.016042780748663103,
+     "worst": 1265
+    },
+    "Stack head 1 down": {
+     "n": 15,
+     "mean": 346,
+     "over1050": 0,
+     "worst": 959
+    },
+    "Ring Island down": {
+     "n": 183,
+     "mean": 342,
+     "over1050": 0.00546448087431694,
+     "worst": 1107
+    },
+    "Ring Island up": {
+     "n": 166,
+     "mean": 295,
+     "over1050": 0,
+     "worst": 882
+    },
+    "Stack head 2 down": {
+     "n": 8,
+     "mean": 393,
+     "over1050": 0,
+     "worst": 703
+    },
+    "Pier down": {
+     "n": 182,
+     "mean": 356,
+     "over1050": 0.01098901098901099,
+     "worst": 1293
+    },
+    "Railhead down": {
+     "n": 181,
+     "mean": 361,
+     "over1050": 0.0055248618784530384,
+     "worst": 1129
+    },
+    "High Gorge down": {
+     "n": 122,
+     "mean": 283,
+     "over1050": 0,
+     "worst": 846
+    },
+    "Village, line 2 up": {
+     "n": 193,
+     "mean": 231,
+     "over1050": 0,
+     "worst": 797
+    },
+    "Stack head 3 up": {
+     "n": 129,
+     "mean": 401,
+     "over1050": 0.007751937984496124,
+     "worst": 1073
+    },
+    "Far Head down": {
+     "n": 186,
+     "mean": 406,
+     "over1050": 0.016129032258064516,
+     "worst": 1150
+    },
+    "Quarry up": {
+     "n": 188,
+     "mean": 396,
+     "over1050": 0.015957446808510637,
+     "worst": 1065
+    },
+    "Stack head 3 down": {
+     "n": 150,
+     "mean": 341,
+     "over1050": 0.013333333333333334,
+     "worst": 1454
+    },
+    "Railhead up": {
+     "n": 180,
+     "mean": 395,
+     "over1050": 0.016666666666666666,
+     "worst": 1143
+    },
+    "Stack head 2 up": {
+     "n": 6,
+     "mean": 267,
+     "over1050": 0,
+     "worst": 469
+    },
+    "Stack head 1 up": {
+     "n": 2,
+     "mean": 199,
+     "over1050": 0,
+     "worst": 227
+    }
+   },
+   "startGaps": {
+    "gaps": [
+     74095,
+     78984,
+     81271
+    ],
+    "cv": 0.038
+   },
+   "gorgeAt": [
+    3750,
+    6660
+   ]
+  }
+ ],
+ "quiet": [
+  {
+   "kind": "quiet",
+   "where": "whole",
+   "headPct": 75,
+   "ticks": 12000,
+   "laps": [
+    1.081
+   ],
+   "wagon": [
+    "435@0",
+    "1129@5",
+    "1798@-1",
+    "2396@0",
+    "3259@5",
+    "4504@9",
+    "6484@0",
+    "8306@9",
+    "9434@5",
+    "10127@0",
+    "10821@5",
+    "11949@9"
+   ],
+   "footing": [],
+   "kits": [
+    "435:0/20/20/0/0/-1",
+    "937:0/40/40/0/0/-1",
+    "1130:0/40/40/20/12/-1",
+    "1131:0/40/40/20/20/11925",
+    "1345:0/60/60/20/20/11925",
+    "1430:1/60/60/0/0/-1",
+    "1448:1/80/80/0/0/-1",
+    "1990:1/80/80/20/12/-1",
+    "1991:1/80/80/20/20/12785",
+    "2290:2/80/80/0/0/-1",
+    "2653:2/80/80/20/12/-1",
+    "2654:2/80/80/20/20/13448",
+    "2953:3/80/80/0/0/-1",
+    "3274:3/80/80/20/12/-1",
+    "3275:3/80/80/20/20/14069",
+    "3574:4/80/80/0/0/-1"
+   ],
+   "hashes": [
+    "4265568943",
+    "2590007287",
+    "3687997868",
+    "582582473",
+    "1379138041",
+    "851313657",
+    "3568805945",
+    "4158017573",
+    "1147187457",
+    "153308089",
+    "3388163241",
+    "4020127681"
+   ],
+   "stone": 32,
+   "fares": 4058
+  },
+  {
+   "kind": "quiet",
+   "where": "settled",
+   "headPct": 75,
+   "ticks": 12000,
+   "laps": [
+    1.095,
+    1.032
+   ],
+   "wagon": [
+    "732@9",
+    "1860@5",
+    "2553@0",
+    "3247@5",
+    "4375@9",
+    "6114@0",
+    "7828@9",
+    "8956@5",
+    "9736@0",
+    "11450@9"
+   ],
+   "footing": [],
+   "kits": [],
+   "hashes": [
+    "1282032089",
+    "84604137",
+    "3496870649",
+    "2660738017",
+    "2761788641",
+    "2772134657",
+    "1145665969",
+    "631355761",
+    "2986631433",
+    "1950229513",
+    "650076177",
+    "41997457"
+   ],
+   "stone": 32,
+   "fares": 2525
+  }
+ ],
+ "errors": []
+}

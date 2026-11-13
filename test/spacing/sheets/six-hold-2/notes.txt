@@ -1,0 +1,12 @@
+Six-hold checkpoint 2 (scratch measurement): the production rule at 1bc5e2b24 (the six-hold review's controlFree fix:
+an open end's lever ask is asked the way in only), seeds 1000-102f, 20,000 ticks, defaults 200/15.
+
+  built/          hold on in the base worlds too (the gated sheet): settled and whole, heavy and light, quiet 12,000
+  late/           settled only, base worlds built with the hold off (SPACING_HOLD_LATE=1); no quiet runs
+  ref-car4-e0/    car4 E0 (the gates' reference)
+  gates-built.txt node test/spacing/gates.ts ref-car4-e0 built <the first sheet, scratch/spacing-six-hold c4f08abd1>
+
+Every gate passes. Against the first sheet (the unfixed rule): runs differing, of 48: settled heavy 9, settled light 18,
+whole heavy 1, whole light 8; quiet hashes equal. Ring Island as a middle halt: at most 199 in every row (the raw 211 on
+the whole heavy leg is a turnaround while it is the line's end). Late settled: heavy 493.1 / 3.59% / 1470, journey 2390,
+trip 2167/2282; light 341.6 / 0.17% / 1275, journey 1928, trip 1768/1836.

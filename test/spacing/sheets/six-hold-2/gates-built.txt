@@ -1,0 +1,67 @@
+Gates: test/spacing/sheets/six-hold-2/built against test/spacing/sheets/six-hold-2/ref-car4-e0
+
+| gate | value | limit | |
+| --- | --- | --- | --- |
+| light settled worst | 1106 | 1,350 | pass |
+| light settled share >1,050 | 0.13% | 0.5% | pass |
+| heavy settled share >1,050 | 1.32% | 3.62% | pass |
+| heavy settled mean | 480.1 | 525 | pass |
+| heavy settled worst | 1437 | 1,500 | pass |
+| heavy whole worst | 1470 | 1,600 | pass |
+| light whole worst | 1454 | 1,600 | pass |
+| heavy settled journey mean | 2373 | E0 2503 | pass |
+| heavy whole journey mean | 2385 | E0 2486 | pass |
+| light settled journey mean | 1934 | E0 1985 | pass |
+| light whole journey mean | 1966 | E0 2010 | pass |
+| longest stand (any row) | 801 | under 1,200 | pass |
+| kit ticks (quiet settled, whole) | equal | equal to E0 | pass |
+| quiet lap | 1.095 | 1.2 | pass |
+| heavy settled trip up | 2161 (-1.0%) | E0 2182 +5% | pass |
+| heavy settled trip down | 2280 (0.0%) | E0 2279 +5% | pass |
+| light settled trip up | 1765 (1.4%) | E0 1740 +5% | pass |
+| light settled trip down | 1833 (3.4%) | E0 1772 +5% | pass |
+| heavy whole door to door up | 448 + 2018 = 2466 | E0 530 + 1992 = 2522 | pass |
+| heavy whole trip up | 2018 (1.3%) | E0 1992 +6% | pass |
+| heavy whole door to door down | 497 + 2061 = 2558 | E0 588 + 2010 = 2598 | pass |
+| heavy whole trip down | 2061 (2.5%) | E0 2010 +6% | pass |
+| light whole door to door up | 348 + 1639 = 1987 | E0 411 + 1588 = 1999 | pass |
+| light whole trip up | 1639 (3.2%) | E0 1588 +6% | pass |
+| light whole door to door down | 357 + 1666 = 2023 | E0 447 + 1579 = 2026 | pass |
+| light whole trip down | 1666 (5.5%) | E0 1579 +6% | pass |
+
+Rows (mean / share >1,050 / worst; journey mean; longest stand; trip up/down):
+
+- test/spacing/sheets/six-hold-2/ref-car4-e0 heavy settled: 601.4 / 7.24% / 1553 (Ring Island up, seed 1022); journey 2503; longest 593 High Gorge; trip 2182/2279; wait up/down 612/593
+- test/spacing/sheets/six-hold-2/ref-car4-e0 heavy whole: 560.7 / 3.34% / 1484 (Pier down, seed 101d); journey 2486; longest 667 Village, line 2; trip 1992/2010; wait up/down 530/588
+- test/spacing/sheets/six-hold-2/ref-car4-e0 light settled: 439.1 / 3.03% / 1536 (Railhead up, seed 1019); journey 1985; longest 649 Village, line 2; trip 1740/1772; wait up/down 431/446
+- test/spacing/sheets/six-hold-2/ref-car4-e0 light whole: 429.9 / 3.01% / 1544 (Ring Island up, seed 100c); journey 2010; longest 649 Village, line 2; trip 1588/1579; wait up/down 411/447
+- test/spacing/sheets/six-hold-2/built heavy settled: 480.1 / 1.32% / 1437 (Railhead up, seed 102d); journey 2373; longest 531 Village, line 2; trip 2161/2280; wait up/down 496/467
+- test/spacing/sheets/six-hold-2/built heavy whole: 473.9 / 2.49% / 1470 (Pier down, seed 101d); journey 2385; longest 649 Village, line 2; trip 2018/2061; wait up/down 448/497
+- test/spacing/sheets/six-hold-2/built light settled: 340.9 / 0.13% / 1106 (Railhead up, seed 1017); journey 1934; longest 321 Village, line 2; trip 1765/1833; wait up/down 362/322
+- test/spacing/sheets/six-hold-2/built light whole: 352.6 / 0.93% / 1454 (Stack head 3 down, seed 1006); journey 1966; longest 801 signal; trip 1639/1666; wait up/down 348/357
+- .look/spacing/sixhold/built heavy settled: 481.0 / 1.38% / 1362 (Stack head 3 up, seed 1026); journey 2375; longest 531 Village, line 2; trip 2161/2281; wait up/down 496/468
+- .look/spacing/sixhold/built heavy whole: 473.8 / 2.49% / 1470 (Pier down, seed 101d); journey 2385; longest 649 Village, line 2; trip 2018/2061; wait up/down 448/497
+- .look/spacing/sixhold/built light settled: 342.9 / 0.13% / 1106 (Railhead up, seed 1017); journey 1934; longest 321 Village, line 2; trip 1766/1832; wait up/down 363/326
+- .look/spacing/sixhold/built light whole: 351.8 / 0.93% / 1454 (Stack head 3 down, seed 1006); journey 1967; longest 801 signal; trip 1640/1664; wait up/down 345/357
+
+Ring Island's longest stand past the dwell (from `arrived`), and every halt's, by row:
+
+- test/spacing/sheets/six-hold-2/built heavy settled: Ring Island 199 (seed 1002); all: Village, line 2 481, High Gorge 344, Ring Island 199, Far Head 82
+- test/spacing/sheets/six-hold-2/built heavy whole: Ring Island 211 (seed 100b); all: Village, line 2 599, High Gorge 353, Stack head 3 237, Quarry 216, Ring Island 211, Far Head 115, Stack head 1 24, Stack head 2 8
+- test/spacing/sheets/six-hold-2/built light settled: Ring Island 199 (seed 1000); all: Village, line 2 271, High Gorge 248, Ring Island 199, Far Head 21
+- test/spacing/sheets/six-hold-2/built light whole: Ring Island 199 (seed 1000); all: Village, line 2 524, Stack head 3 289, High Gorge 266, Quarry 210, Ring Island 199, Stack head 2 115, Far Head 79, Stack head 1 34
+- .look/spacing/sixhold/built heavy settled: Ring Island 199 (seed 1002); all: Village, line 2 481, High Gorge 344, Ring Island 199, Far Head 82
+- .look/spacing/sixhold/built heavy whole: Ring Island 211 (seed 100b); all: Village, line 2 599, High Gorge 353, Stack head 3 237, Quarry 216, Ring Island 211, Far Head 115, Stack head 1 24, Stack head 2 8
+- .look/spacing/sixhold/built light settled: Ring Island 199 (seed 1000); all: Village, line 2 271, High Gorge 248, Ring Island 199, Far Head 21
+- .look/spacing/sixhold/built light whole: Ring Island 199 (seed 1000); all: Village, line 2 524, Stack head 3 289, High Gorge 266, Quarry 210, Ring Island 199, Stack head 2 115, Far Head 79, Stack head 1 34
+
+Stands over 600 and over 800 ticks (dwell included) per 48 seeds, by place:
+
+- test/spacing/sheets/six-hold-2/built heavy settled (48 seeds): none; worst 0
+- test/spacing/sheets/six-hold-2/built heavy whole (48 seeds): Village, line 2 27 / 0; signal after Quarry down 1 / 0; worst 649
+- test/spacing/sheets/six-hold-2/built light settled (48 seeds): none; worst 0
+- test/spacing/sheets/six-hold-2/built light whole (48 seeds): signal after Ring Island down 13 / 1; signal after Railhead down 2 / 0; signal after Pier down 1 / 0; signal after Far Head down 1 / 0; worst 801
+- .look/spacing/sixhold/built heavy settled (48 seeds): none; worst 0
+- .look/spacing/sixhold/built heavy whole (48 seeds): Village, line 2 27 / 0; signal 1 / 0; worst 649
+- .look/spacing/sixhold/built light settled (48 seeds): none; worst 0
+- .look/spacing/sixhold/built light whole (48 seeds): signal 17 / 1; worst 801
