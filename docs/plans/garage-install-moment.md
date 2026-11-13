@@ -359,6 +359,16 @@ the boxes arrive, the show-off turn at today's table, a second player, a phone. 
   rather than behind it; the squash is too short to pick out at 6 frames a second; the whistle is the full 1.5 s
   one (no short recipe, call 15). Sound was not heard. Not seen: a second player, a restore during the beat.
 
+### The phone frame (12 November 2026)
+
+Held upright (taller than 1.15 times its width) the garage uses a portrait camera row: the engine shot stands further
+back (15 m, 4.2 m up) and aims at the engine itself, so it sits whole in the band between the panel and the rail; the
+other categories pull back 1.8 times along their own line. Looked at 440 by 796 with steel home (`g-phone-still.png`):
+the engine with its ghost boiler, the post, the player and the waiting barrel's nose in the band, "Install" above
+them. Wrong in it: the timber cart is under the camera and fills the frame's foot behind the rail and the parts
+strip; the engine's nose points at the barrel, which covers the lower left. A real touch hold, the other categories
+in portrait and the moment in portrait were not looked at. Not tested on a device.
+
 ## 6. Steps
 
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and

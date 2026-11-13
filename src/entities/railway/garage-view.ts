@@ -73,6 +73,24 @@ const CAMS: Record<CatId, { pos: [number, number, number]; at: [number, number, 
   whistle: { pos: [2.6, 2.8, 3.6], at: [0, 2.0, 1.4], turns: true },
 };
 
+/** A phone held upright: the panel takes the top of the screen and the rail and parts the bottom, leaving a band in
+ * the middle a third of the screen high, and the view is narrow. The engine shot stands further back and aims at the
+ * engine itself, so the whole of it sits in that band; the other shots pull back along their own line. */
+const PORTRAIT_ENGINE: (typeof CAMS)[CatId] = { pos: [13.2, 4.2, 11.2], at: [0, 2.0, 4.4], turns: true };
+const PORTRAIT_BACK = 1.8;
+const portrait = () => typeof innerHeight === 'number' && innerHeight > innerWidth * 1.15;
+function camOf(cat: CatId): (typeof CAMS)[CatId] {
+  const c = CAMS[cat];
+  if (!portrait()) return c;
+  if (cat === 'engine') return PORTRAIT_ENGINE;
+  const at: [number, number, number] = [c.at[0], c.at[1] + 0.6, c.at[2]];
+  return {
+    pos: [0, 1, 2].map((k) => at[k]! + (c.pos[k]! - c.at[k]!) * PORTRAIT_BACK) as [number, number, number],
+    at,
+    turns: c.turns,
+  };
+}
+
 export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGeo, deps: Deps) {
   const [kit, spec, cars, carKit, look, { addStatic }] = await Promise.all([
     import('./engine-kit.ts'),
@@ -523,7 +541,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   const camFrame = new THREE.Matrix4();
   const constraint: (typeof camConstraints)[number] = (look, pos) => {
     if (openT <= 0) return false;
-    const c = CAMS[cat];
+    const c = camOf(cat);
     camFrame.makeRotationY(baseYaw()).setPosition(centre.x, centre.y, centre.z);
     // The train frame of the camera: shifted so the 8.5 m train is centred as it is on the table, and mirrored to the
     // side the rest pose was picked for.
