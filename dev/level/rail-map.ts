@@ -69,6 +69,7 @@ import {
   type Status,
 } from './rail-network.ts';
 import { checkContinuity, type Finding } from './track-continuity.ts';
+import { pageJson, pageNumber } from './page-data.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const PAGE = 'docs/world/rail-map.html';
@@ -649,7 +650,9 @@ function liveHaltRows(): HaltRow[] {
       x: r1(p.x),
       z: r1(p.z),
       platforms: [h.up, h.down]
-        .map((q, k) => (q ? `${k ? 'down' : 'up'} ${r1(q.s1 - q.s0)} m at lat ${q.lat}` : `${k ? 'down' : 'up'}: none`))
+        .map((q, k) =>
+          q ? `${k ? 'down' : 'up'} ${r1(q.s1 - q.s0)} m at lat ${pageNumber(q.lat)}` : `${k ? 'down' : 'up'}: none`,
+        )
         .join('; '),
       stops: `one mark for both tracks: s ${h.stop}${stop !== h.stop ? ` → ${stop}` : ' (kept)'}; ${MARKS[h.name]?.why ?? ''}`,
       turns: TURNS[h.name] ?? '',
@@ -1460,7 +1463,7 @@ ${loaderList}
 </ul>
 </main>
 <script>
-const D = ${JSON.stringify(data)};
+const D = ${pageJson(data)};
 const COL = ${JSON.stringify(COLOURS)};
 ${CLIENT}
 </script>

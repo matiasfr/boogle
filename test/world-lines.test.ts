@@ -9,6 +9,44 @@ import { LINES, ORIGIN } from '../src/place/layout.ts';
 import { layout, parseMapPage } from '../src/sickle/map-data.ts';
 import { readFileSync } from 'node:fs';
 
+test('generated world pages emit numbers with at most three decimals', () => {
+  for (const name of [
+    'map-prototypes',
+    'world-blockout',
+    'home-layout',
+    'home-passenger-bay',
+    'rail-map',
+    'economy-prototype',
+  ]) {
+    const file = `docs/world/${name}.html`;
+    const html = readFileSync(file, 'utf8');
+    const data = [...html.matchAll(/<script[^>]*type="application\/json"[^>]*>([\s\S]*?)<\/script>/g)].map(
+      (m) => m[1]!,
+    );
+    if (name === 'rail-map') {
+      const map = /const D = (\{[^\n]*\});/.exec(html);
+      assert.ok(map, `${file}: generated map data exists`);
+      data.push(map[1]!);
+    }
+    if (['map-prototypes', 'home-layout', 'rail-map', 'economy-prototype'].includes(name))
+      assert.equal(data.length, 1, `${file}: generated data block exists`);
+    const numbers = (value: unknown, path: string): void => {
+      if (typeof value === 'number') assert.equal(value, Number(value.toFixed(3)), path);
+      else if (Array.isArray(value)) value.forEach((v: unknown, i) => numbers(v, `${path}[${i}]`));
+      else if (value && typeof value === 'object')
+        for (const [key, v] of Object.entries(value)) numbers(v, `${path}.${key}`);
+    };
+    for (const block of data) {
+      numbers(JSON.parse(block), file);
+      // Also cover numbers interpolated into labels before JSON serialization.
+      assert.doesNotMatch(block, /\d+\.\d{4,}/, `${file}: generated label precision`);
+    }
+    // Generated SVG attributes and prose; authored client code (e.g. a loop epsilon) is not emitted geometry.
+    const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
+    assert.doesNotMatch(markup, /\d+\.\d{4,}/, `${file}: generated markup precision`);
+  }
+});
+
 test('the catalog and the world-blockout page are current with the map JSON', () => {
   // The generator reads Place's terrain, which needs the dev hooks (import.meta.glob), so it runs in its own process.
   execFileSync(process.execPath, ['--import', './dev/sim/hooks.ts', 'dev/level/world-blockout.ts', '--check'], {

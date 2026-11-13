@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { pageJson } from './page-data.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const PAGE = 'docs/world/home-layout.html';
@@ -180,7 +181,7 @@ async function part() {
   const open = '<script type="application/json" id="home-data">';
   const [head, rest] = html.split(open);
   const tail = rest!.slice(rest!.indexOf('</script>'));
-  fs.writeFileSync(ROOT + PAGE, head + open + '\n' + JSON.stringify(data) + '\n' + tail);
+  fs.writeFileSync(ROOT + PAGE, head + open + '\n' + pageJson(data) + '\n' + tail);
   execFileSync(ROOT + 'node_modules/.bin/prettier', ['--write', PAGE], { cwd: ROOT, stdio: 'ignore' });
   console.log(`${PAGE}: data from ${data.sourceCommit.slice(0, 8)}; Home's drive round ${data.home.drive.length} m`);
 }

@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as prettier from 'prettier';
+import { pageJson } from './page-data.ts';
 import {
   HALTS,
   LINES,
@@ -1159,7 +1160,7 @@ function mapPage(): { page: string; authored: string } {
     page:
       html.slice(0, m.index + m[1]!.length) +
       '\n' +
-      JSON.stringify(data, null, 2) +
+      pageJson(data, 2) +
       '\n' +
       html.slice(m.index + m[0].length - m[3]!.length),
     authored: JSON.stringify(authored),

@@ -66,6 +66,28 @@ The exhaustive JSON comparison finds exactly 25 changed scalars, all equal to th
 
 Fresh proof is collected separately in `.look/evidence/home-prefab/`: `colliders.diff` and `placements.diff` print every changed value; `comparison.json` records exact equality and artifact hashes; `terrain-proof.ts` / `terrain-proof.json` record the controlled terrain evaluation. Its final manifest records this repair's checks and current review stamp. The older results and stamp below belong to the earlier pre-rebase tree and are historical, not current evidence.
 
+### Generated-page precision after the Linux CI failure
+
+The reported Linux x64 Node 26.13.1 failure was `world-blockout.ts --check` finding `map-prototypes.html` stale, while Mac arm64 Node 26.13.0 passed. The new Home samples reached `syncHomeMap()` unrounded, then `mapPage()` serialized every native-math bit. The CI report did not include a value-level Linux diff; the exact Mac values and every normalization are in `.look/evidence/home-page-precision/changed-values.json`, with the original page snapshots and occurrence audit alongside it. Native Linux re-execution remains unverified locally.
+
+| Output / source | Raw Mac value(s) → emitted value(s) |
+| --- | --- |
+| `map-data.common.lines` (`l1` and `l2a` heads): `headPoints()` / `roadAt()` in `src/place/home-station.ts`, using `sin`/`cos` for straight and curved pieces | 72 scalars, including `[-78.74722951685636, 2.8349194266973248]` → `[-78.747, 2.835]` |
+| Both island halts: rotated axis, `ROAD_GAP`/`ROAD2_S`, `lineAt()` | Positions `[-70.14612197257422, 3.7483001595777483]` and `[-70.14612934023046, 3.7483031527528383]` → `[-70.146, 3.748]`; both offsets `3.800049616899547` → `3.8`; line-2 midpoint `14.703285808850957` → `14.703` |
+| Sim centimetres converted to local metres by `syncHomeMap()` (ordinary binary arithmetic residue, not libm) | Q1 `-74.92999999999995` → `-74.93`; Q2 `-40.51999999999998` → `-40.52`; seam `-59.370000000000005` → `-59.37`; stall `-59.889999999999986` → `-59.89`; table `-57.89999999999998` → `-57.9` |
+| Existing map ride parameter (division, not libm) | `5.714285714285714` → `5.714` |
+| `rail-map.html` end/crossover directions: `dirAt()` and `atan2()` | 20 radians, including Home's `-1.221729333564752` and `-1.2217321670073782` → `-1.222` |
+| Rail-map table centre: Home's rotated station geometry | `[942.1035057011552, 17.121173817737976]` → `[942.104, 17.121]` |
+| Rail-map platform prose, both JSON labels and HTML table | `±3.800049616899547` → `±3.8` |
+
+The output boundary is `dev/level/page-data.ts:3–5`: `pageNumber()` caps display data at three decimals, and `pageJson()` applies it recursively only when serializing. `world-blockout.ts` uses it for map JSON; `rail-map.ts` uses it for map JSON and rounds the interpolated platform labels; `home-station-page.ts` uses the same boundary defensively. Calculations and `syncHomeMap()` remain full precision. Existing two-decimal coordinate rounding elsewhere remains; the cap preserves millimetres and milliradians. It never touches sim serialization.
+
+There are 85 changed map scalars (maximum change 0.00048344) and 22 rail-map numeric fields (maximum change 0.00049430), plus its two platform strings. Home's page changes provenance only; the economy page changes its source hash only. World-blockout and passenger-bay HTML regenerate byte-identically. All five page generators were run. Both native `--check` and diagnostic runs perturbing non-integer `sin`, `cos`, `atan2`, `hypot`, `pow` and `sqrt` results by ±2 relative machine epsilons pass for world-blockout and rail-map. This demonstrates resistance to low-bit noise, not a Linux CI verdict.
+
+The requested regression in `test/world-lines.test.ts` checks all six generated pages' JSON values, numeric labels and SVG/HTML markup against a three-decimal maximum. Authored client-code constants (such as Home's sampling-loop epsilon `1.0001`) are outside emitted geometry and left alone. The regression failed on the original data and passes after regeneration. The existing freshness test is unchanged; no platform skip or relaxed assertion was added.
+
+`src/sim/railway-world-lines.ts` is byte-identical to `6602d7326`, SHA-256 `a6c4cf94a701a83df78999b252635740684c6fe4f481a3df51e6e8583b09749d`; no file under `src/sim` changed. The existing integer-centimetre tests still pass. No namespace or gameplay edit is part of this repair. Current commands, status, tip and review stamp live in `.look/evidence/home-page-precision/manifest.json`; earlier reports above/below are historical.
+
 Regenerated pages through their generators:
 
 ```sh
