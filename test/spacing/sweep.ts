@@ -166,6 +166,23 @@ for (const rate of RATES)
         twoPast: R.reduce((a, r) => a + r.twoPast, 0),
         lampForward: R.reduce((a, r) => a + r.lampForward, 0),
         lampOut: R.reduce((a, r) => a + r.lampOut, 0),
+        // The other lines' waits (line 1 on these stages) by halt and way, and pooled: served plus still waiting.
+        others: (() => {
+          const P: Record<string, [number, number, number, number]> = {};
+          for (const r of R)
+            for (const [k, v] of Object.entries((r.others ?? {}) as Record<string, [number, number, number, number]>)) {
+              const p = (P[k] ??= [0, 0, 0, 0]);
+              p[0] += v[0];
+              p[1] += v[1];
+              p[2] += v[2];
+              p[3] = Math.max(p[3], v[3]);
+            }
+          const all = Object.values(P).reduce((a, p) => [a[0] + p[0], a[1] + p[1], a[2] + p[2], Math.max(a[3], p[3])], [0, 0, 0, 0]);
+          return {
+            pooled: { n: all[0], mean: Number((all[1] / Math.max(1, all[0])).toFixed(1)), over1050: all[2] / Math.max(1, all[0]), worst: all[3] },
+            by: Object.fromEntries(Object.entries(P).map(([k, p]) => [k, { n: p[0], mean: Number((p[1] / Math.max(1, p[0])).toFixed(1)), over1050: p[2] / Math.max(1, p[0]), worst: p[3] }])),
+          };
+        })(),
       });
     }
 const quiet = runs
@@ -216,5 +233,14 @@ if (quiet.length) {
       `| ${r.stage} | ${r.rideMean} | ${r.rideWorst} | ${r.lapMean} | ${r.lapWorst} | ${r.wagon.length} | ${r.footing.length} | ${r.stone} | ${r.fares} |`,
     );
 }
+md.push('', 'Other lines (line 1) by halt and way: mean, share over 1,050, worst (n):', '');
+for (const r of rows)
+  if (r.others?.pooled.n)
+    md.push(
+      `- ${r.rate} ${r.stage} ${r.hold}%: pooled ${r.others.pooled.mean}, ${pct(r.others.pooled.over1050)}, ${r.others.pooled.worst} (${r.others.pooled.n}) || ${Object.entries(r.others.by as Record<string, Any>)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k} ${v.mean}, ${pct(v.over1050)}, ${v.worst} (${v.n})`)
+        .join('; ')}`,
+    );
 fs.writeFileSync(path.join(OUT, 'sheet.txt'), md.join('\n') + '\n');
 console.log(md.join('\n'));

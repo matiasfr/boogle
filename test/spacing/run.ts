@@ -144,7 +144,16 @@ export function fuzz(stage: string, seed: number, headPct: number, ticks: number
     standSince = new Map<number, number>(),
     waits: { wait: number; key: string; tick: number; passed: number }[] = [],
     waitsAll: number[] = [], // every line's served lever waits
-    unserved: number[] = []; // line 2's asks still waiting at the end, how long so far
+    unserved: number[] = [], // line 2's asks still waiting at the end, how long so far
+    others: Record<string, [number, number, number, number]> = {}; // the other lines' waits by halt and way: n, sum, over 1,050, worst
+  const other = (id: number, dir: number, wt: number) => {
+    const h = RAIL_HALTS[id]!,
+      p = (others[`${RAIL_LINES[h.line]!.name}: ${h.name} ${dir > 0 ? 'up' : 'down'}`] ??= [0, 0, 0, 0]);
+    p[0]++;
+    p[1] += wt;
+    if (wt > 1050) p[2]++;
+    p[3] = Math.max(p[3], wt);
+  };
   let longest = { slot: -1, ticks: 0, at: -1, tick: 0 };
   // Per outstanding line-2 ask: the trains named under the nearest rule while it waited, the server under the line's
   // rule last tick (and how long), and the trains that ran through its platform its way.
@@ -252,6 +261,7 @@ export function fuzz(stage: string, seed: number, headPct: number, ticks: number
         const wt = w.t - since;
         if (wt > (worst.get(key)?.ticks ?? -1)) worst.set(key, { ticks: wt, tick: w.t });
         waitsAll.push(wt);
+        if (h.line !== LINE2) other(id, dir, wt);
         if (h.line === LINE2) {
           const t = track.get(key);
           let pass = 0;
@@ -334,6 +344,7 @@ export function fuzz(stage: string, seed: number, headPct: number, ticks: number
     const wt = w.t - since;
     if (wt > (worst.get(key)?.ticks ?? -1)) worst.set(key, { ticks: wt, tick: w.t });
     if (RAIL_HALTS[Number(key.split('/')[0])]!.line === LINE2) unserved.push(wt);
+    else other(Number(key.split('/')[0]), Number(key.split('/')[1]), wt);
   }
   let top = { key: '', ticks: -1, tick: 0, open: false };
   for (const [key, v] of worst)
@@ -357,6 +368,7 @@ export function fuzz(stage: string, seed: number, headPct: number, ticks: number
     waits: waits.map((x) => x.wait),
     waitsAll,
     unserved,
+    others,
     worst: { ticks: top.ticks, at: top.key ? name(top.key) : '', tick: top.tick, open: top.open },
     longest,
     headway: Object.fromEntries(
