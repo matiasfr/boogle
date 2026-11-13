@@ -92,7 +92,13 @@ export class FixtureLine {
     if (trainPassesBy(this.line, stop, dir, n)) return 0;
     const wait = (slot: number) => {
       const r = this.rows[slot]!;
-      if (r.phase === TRAIN_PHASE.STAND && r.at === stop && trainDir(r) === dir && tick > r.depart) {
+      if (
+        r.phase === TRAIN_PHASE.STAND &&
+        r.at === stop &&
+        trainDir(r) === dir &&
+        r.depart === r.arrived &&
+        tick > r.depart
+      ) {
         this.rows[slot] = { ...r, depart: tick };
         return true;
       }

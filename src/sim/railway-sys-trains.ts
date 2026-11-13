@@ -60,7 +60,8 @@ import { fleetOf } from './railway-train.ts';
 import { legsLaid } from './railway-queries-route.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
- * so a repeat adds no request. A platform repeat can refresh a standing train's dwell. From a halt's lever it is the line's (`Line.req`), served by the
+ * so a repeat adds no request. A platform call can extend an unextended stand once (depart still equals arrived).
+ * From a halt's lever it is the line's (`Line.req`), served by the
  * next train that way that can still brake for it (trainServes); aboard (`train`, the rider's slot) it is that train's
  * own, for a middle halt its way. Never an open end's way in: no train stands at that platform. A train standing at
  * that halt, leaving the way asked, waits a full dwell from now. Never a way the halt refuses (the homeward-only Pier's
@@ -79,8 +80,16 @@ export const call = defineSystem(
     if (trainPassesBy(halt.line, halt.stop, dir, n)) return 0;
     const wait = (slot: number) => {
       const r = w.get(Train, trainId(w, slot))!;
-      // A shed train (the greybox route's fleet) is not in service: never at a platform.
-      if (r.phase === TRAIN_PHASE.STAND && r.at === halt.stop && trainDir(r) === dir && tick > r.depart) {
+      // depart === arrived is the unextended stand, reset together only on arrival. A first call (or a lay's
+      // redirected dwell) consumes that allowance; repeats cannot prolong it, including after save/restore.
+      // A shed train is not in service: never at a platform. Arrival-based holds and headway remain unchanged.
+      if (
+        r.phase === TRAIN_PHASE.STAND &&
+        r.at === halt.stop &&
+        trainDir(r) === dir &&
+        r.depart === r.arrived &&
+        tick > r.depart
+      ) {
         w.mut(Train, trainId(w, slot))!.depart = tick;
         return true;
       }
@@ -96,8 +105,8 @@ export const call = defineSystem(
       return 1;
     }
     const l = w.get(Line, lineId(w, halt.line))!;
-    // Refresh every matching stand even if the request digit is already set. Report an accepted change only
-    // when a dwell moved; repeating in the same tick or while the train is away is still a no-op.
+    // A request can predate the stand. Its first eligible platform call gets one boarding dwell even with the
+    // digit pending. Further calls cannot move depart again; no per-request or per-player state is needed.
     let refreshed = false;
     for (const slot of LINE_SLOTS[halt.line]!) if (wait(slot)) refreshed = true;
     if (reqHas(l.req, halt.stop, dir, n)) return refreshed ? 1 : 0;

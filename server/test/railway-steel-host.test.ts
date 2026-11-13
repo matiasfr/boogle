@@ -633,7 +633,7 @@ test('hold host: a held train stands through a restart, then leaves on its cap f
   }
 });
 
-test('hold host: a repeated platform ask gets its dwell without restarting the Ring hold cap', async () => {
+test('hold host: only the first platform call extends dwell; a repeated ask cannot delay the Ring cap', async () => {
   const r = await host('hold-refresh', legLaid());
   try {
     r.tune('railTrainHoldCap', 100);
@@ -646,12 +646,11 @@ test('hold host: a repeated platform ask gets its dwell without restarting the R
     const cap = arrived + TRAIN.dwellTicks + 100;
     await r.ticks(cap - 10 - r.tick);
     assert.equal(train(r.w, k).phase, TRAIN_PHASE.STAND);
-    assert.equal(await r.action({ op: 'rail.call', id, dir }, at), 'accepted', 'pending ask refreshes');
-    const refreshed = r.tick;
+    const first = train(r.w, k).depart;
+    assert.equal(await r.action({ op: 'rail.call', id, dir }, at), 'noop', 'pending ask cannot re-extend');
+    assert.equal(train(r.w, k).depart, first);
     assert.equal(train(r.w, k).arrived, arrived, 'hold cap still anchored to original arrival');
-    await r.ticks(TRAIN.dwellTicks - 1);
-    assert.equal(train(r.w, k).phase, TRAIN_PHASE.STAND, 'full boarding dwell even across the hold cap');
-    assert.equal(await leaves(r, k), refreshed + TRAIN.dwellTicks, 'no extra hold after the refreshed dwell');
+    assert.equal(await leaves(r, k), cap, 'the later call cannot delay departure beyond the original cap');
   } finally {
     await r.done();
   }

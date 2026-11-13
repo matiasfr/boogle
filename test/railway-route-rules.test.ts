@@ -1425,7 +1425,7 @@ test('lost ask: a rider arriving one second after section 3 lays gets an outward
   assert.ok(result.waits[0] !== null && result.waits[0]! <= 1200, 'no outward boarding window within 1,200 ticks');
 });
 
-test('a redirected train gets 50 dwell ticks; a pending platform ask refreshes dwell without moving arrival', () => {
+test('a redirected train gets 50 dwell ticks; pending platform repeats cannot prolong that stand', () => {
   const s = unaudited(copy(HEAD2_LAY)),
     from = HEAD + 1,
     n = stopsOf(s.w, LINE2).length;
@@ -1443,14 +1443,9 @@ test('a redirected train gets 50 dwell ticks; a pending platform ask refreshes d
     railTick(s.w, ++s.t, 75);
     assert.equal(train(s.w, 4).phase, TRAIN_PHASE.STAND, 'full lay dwell');
   }
-  assert.ok(ask(s, { id: haltId(LINE2, from), dir: 1 }), 'pending ask refresh accepted');
-  assert.equal(train(s.w, 4).depart, s.t);
+  assert.ok(!ask(s, { id: haltId(LINE2, from), dir: 1 }), 'the lay already extended this stand');
+  assert.equal(train(s.w, 4).depart, HEAD2_LAY.t, 'the repeat does not move departure');
   assert.equal(train(s.w, 4).arrived, arrived, 'no hold-cap reset');
-  assert.ok(!ask(s, { id: haltId(LINE2, from), dir: 1 }), 'same-tick repeat changes nothing');
-  for (let k = 0; k < 49; k++) {
-    railTick(s.w, ++s.t, 75);
-    assert.equal(train(s.w, 4).phase, TRAIN_PHASE.STAND, 'full refreshed dwell');
-  }
   railTick(s.w, ++s.t, 75);
   assert.equal(train(s.w, 4).phase, TRAIN_PHASE.RUN);
   assert.ok(!reqHas(line(s.w, LINE2).req, from, 1, n), 'leaving clears the lay ask');
