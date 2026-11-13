@@ -1,0 +1,346 @@
+{
+  "seed": 61585,
+  "inputs": [
+    {
+      "tick": 0,
+      "from": "alice",
+      "edit": {
+        "op": "who.set",
+        "i": 0,
+        "j": 0,
+        "n": "  A\u0000na  Smith  ",
+        "c": 2,
+        "u": "forged",
+        "p": "forged"
+      },
+      "wait": 3
+    },
+    {
+      "tick": 3,
+      "from": "alice",
+      "edit": {
+        "op": "who.set",
+        "i": 0,
+        "j": 0,
+        "n": "Ana Smith",
+        "c": 2
+      },
+      "wait": 3
+    },
+    {
+      "tick": 6,
+      "from": "alice",
+      "edit": {
+        "op": "who.set",
+        "i": 0,
+        "j": 0,
+        "n": "",
+        "c": 2
+      },
+      "wait": 3
+    },
+    {
+      "tick": 9,
+      "from": "alice",
+      "edit": {
+        "op": "who.set",
+        "i": 0,
+        "j": 0,
+        "n": "Ana Smith",
+        "c": 8
+      },
+      "wait": 3
+    },
+    {
+      "tick": 12,
+      "from": "alice",
+      "edit": {
+        "op": "who.set",
+        "i": 0,
+        "j": 0,
+        "n": "Ana Smith",
+        "c": 3
+      },
+      "wait": 3
+    },
+    {
+      "tick": 15,
+      "from": "bob",
+      "edit": {
+        "op": "who.set",
+        "i": 0,
+        "j": 0,
+        "n": "Bob",
+        "c": 1
+      },
+      "wait": 3
+    },
+    {
+      "tick": 18,
+      "from": "alice",
+      "edit": {
+        "op": "who.set",
+        "i": 0,
+        "j": 0,
+        "n": "abcdefghijklmnopqrst",
+        "c": 3
+      },
+      "wait": 3
+    },
+    {
+      "tick": 21,
+      "from": "alice",
+      "edit": {
+        "op": "tune.set",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 10
+      },
+      "wait": 3
+    },
+    {
+      "tick": 24,
+      "from": "alice",
+      "edit": {
+        "op": "tune.set",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 10
+      },
+      "wait": 3
+    },
+    {
+      "tick": 27,
+      "from": "alice",
+      "edit": {
+        "op": "tune.set",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 9
+      },
+      "wait": 3
+    },
+    {
+      "tick": 30,
+      "from": "alice",
+      "edit": {
+        "op": "tune.set",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 1001
+      },
+      "wait": 3
+    },
+    {
+      "tick": 33,
+      "from": "alice",
+      "edit": {
+        "op": "tune.set",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 20
+      },
+      "controlled": false,
+      "wait": 3
+    },
+    {
+      "tick": 36,
+      "from": "alice",
+      "edit": {
+        "op": "tune.commit",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 1000,
+        "expectedRevision": 2,
+        "requestId": "max"
+      },
+      "wait": 3
+    },
+    {
+      "tick": 39,
+      "from": "alice",
+      "edit": {
+        "op": "tune.commit",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 10,
+        "expectedRevision": 2,
+        "requestId": "stale"
+      },
+      "wait": 3
+    },
+    {
+      "tick": 42,
+      "from": "alice",
+      "edit": {
+        "op": "tune.commit",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 1000,
+        "expectedRevision": 3,
+        "requestId": "equal"
+      },
+      "wait": 3
+    },
+    {
+      "tick": 45,
+      "from": "alice",
+      "edit": {
+        "op": "tune.commit",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 20,
+        "expectedRevision": 4,
+        "requestId": "first"
+      },
+      "wait": 0
+    },
+    {
+      "tick": 45,
+      "from": "alice",
+      "edit": {
+        "op": "tune.commit",
+        "i": 0,
+        "j": 0,
+        "key": "railFeedMs",
+        "v": 30,
+        "expectedRevision": 4,
+        "requestId": "race"
+      },
+      "wait": 3
+    }
+  ],
+  "expected": {
+    "tune": {
+      "cost0": [[0, 60]],
+      "helper0": [[0, 36]],
+      "hard": [[0, 60]],
+      "yield": [[0, 4]],
+      "full": [[0, 2]],
+      "trickle": [[0, 200]],
+      "wagonCruise": [[0, 30]],
+      "wagonAccel": [[0, 30]],
+      "railRegrowMinutes": [[0, 31]],
+      "railRecoveryMinutes": [[0, 21]],
+      "railFeedMs": [
+        [0, 70],
+        [35, 10],
+        [57, 1000],
+        [72, 20]
+      ],
+      "railLaySpeed": [[0, 50]],
+      "railDepartureTicks": [[0, 20]],
+      "railBeamSoloSpeed": [[0, 220]],
+      "railBeamHelpSpeed": [[0, 500]],
+      "railJumpImpulse": [[0, 680]],
+      "railJumpTurn": [[0, 70]],
+      "railJumpSteer": [[0, 2500]],
+      "railJumpApexSpeed": [[0, 160]],
+      "railBeamGraceS": [[0, 180]],
+      "railGlideSpeed": [[0, 1000]],
+      "railGlideSink": [[0, 320]],
+      "railGlideAccel": [[0, 1800]],
+      "railGlideBrake": [[0, 1200]],
+      "railGlideOver": [[0, 800]],
+      "railGlideTurnTau": [[0, 120]],
+      "railGlideTurnMax": [[0, 360]],
+      "railGlideDeploy": [[0, 100]],
+      "railBoilerSoloSpeed": [[0, 300]],
+      "railBoilerHelpSpeed": [[0, 540]],
+      "railFootSoloSpeed": [[0, 300]],
+      "railFootHelpSpeed": [[0, 540]],
+      "railTrainHeadPct": [[0, 75]],
+      "railFarePct": [[0, 100]],
+      "railRiderPct": [[0, 100]],
+      "railPricePct": [[0, 100]],
+      "railTrainHoldCap": [[0, 200]],
+      "railTrainHoldPct": [[0, 15]]
+    },
+    "steps": [
+      "be2cb9cfec5f5a7079648cafa76696b2fb483afaf1ccf91dcfe2a2bcedcaf74e",
+      "731e7c76168b4ddf73d1d1e5e52eb1e115cb8a24644a10b65151e9632223e470",
+      "d5e55184e078e6426d6c6785f9550bbbd47052f49e47ce75310aa56fda4d33ec",
+      "1fdfe60d56e2849fcc96ee1b17156020825efb702142cd49119f75fa2890bdb2",
+      "19518426c94aac3b0ba4ac1eb8cf0cc65dabacb14f7bb1a1ea3f2efe42aea7b0",
+      "fc9c9d949ca5f98cabb2250db2c0e1c169fb35bd3ab0f9a54b42636e65e8a622",
+      "d769fcd1204e6f68d4889bd7a35c5b9e90f7873e638a064253f70d0083ea6b0d",
+      "08c03e7996bc6a00107fb56a8a6cfaddbf1ed98a1b4fc1ec50d29c0397675ad0",
+      "72378af4564bcbd7e8090752c23c8b5be277ca30bb3ad4dee6c7d55f82c6756b",
+      "f009cb9712452d649f3fdec8e70631ba77d9456ddc1f8dbb9507a83cfff7aa76",
+      "8894e55f9619dbee3bd8550daddab006c67afd78ad26f75e2c9b6383c44ed95e",
+      "8ba6f5dc7a59e43afc35a447fc9f034d1f52e97365150f64e55bfe5771647dc9",
+      "73bc1ce9764954b351b6e093698126c0c0418c9416507efc46cfa7d86b9a42a4",
+      "9e75d29f05f5c06644da19040a3dea25beaab0ffddd31d21fa62ea31d30ca06a",
+      "348a0e56972a9ed4f35af646d4f8383d2280f4b1bc2953a5e9fc878589e25ba0",
+      "fee9aa1eb16d039584b13963fa4047ebdd637cba8a6982a63f3af1603d87c221",
+      "5860a65591596d65bbf1504c1d6d7e57053e796bd90f966a691b0c18d0333830",
+      "df77d2d46df291ad46b198952680c0d7591ce0f735a9736b75b53934c50e6769",
+      "70c0336b122a6876213a69c13fdb4da5fd70f157038f680565f513f96b69506b",
+      "913e0d220ca35eaacd010e2b8275eb70a19e0ba92c7ba43517d1e7bf887a516b",
+      "5284111492d91f2769ea61a8bcfaeebad977e9f9412d4b9201a5b616e7143e69",
+      "c4fcfa7de6d8a6400a7007022291b383eba3532e4db0825f322772beef0744fb",
+      "e80e9d53ce0385a30c3fe84924c4e111307ca358053cf70759fd4410358bebce",
+      "8cee6e728f33778590e20268f0a5f11ec524eba57894e3d8705d23aec29b0e2a",
+      "5d0300a457f36efe7a4ef7b8cac416cdec853994d81fb0e9a7046d6320413ae5",
+      "84ee9d4d725310dbc61789e8a88e81272fc13cc4e614faecd2f5b1de26c0a692",
+      "43ab748e38b1b42ba822aa8f9e3a6df021e40498b2aefb8c8c4c540637db6241",
+      "d0552be93a6f685ed57340d79cb48cef3daef5e8a14c280eeffc8efdf758dad9",
+      "b1a27443a327b92966c64d5661c13bc539e97085fa177adceac9c7edcee92047",
+      "4eaf31b13c870014fcfd17de8faf14be46e3bbd783faf2349049b497e256882b",
+      "df90f8c513cc184b49ce50832b9c17959890796deac24551bccdbeacd0fc82bd",
+      "783134423d9ec13a075bf23239b34efe6065a6338e06460860fe8d0c2b1ba6a8",
+      "bacd3a51b718f7813fc65445c8c9f188f3acd1c4001e03f82fb3ac47da05b9ad",
+      "36eca449abeabc13c89eba8016479577df8e52aed012ec130ba151e8fbfc078e",
+      "5064cb80e78d04ad261ee6d975b7403696511868fae955a6fdc4d38d9f25c14c",
+      "79be557dd4bec0039d49a8de8d6b75186a93f692fcde31180b7a5d092872d885",
+      "a96f8daa637aadab4beb19a4b857a1d8d057ee33f73cb6af5e6b379eb7265243",
+      "94089581bcf030872a6453b52258edfa488c63b941a53fc966eff743745f0ac5",
+      "542394c46d1f25792148be363339008616109d7b155c02263d20d03c0f5d045d",
+      "9a1e482513d690d01e91eb748988ee7efc4a617c42317ad25bcf700a28aacb88",
+      "c89b3cf93123dc0f843a68a3a4cfb5c6a78ab3c6bb3c67e2e6ca5166d88eca22",
+      "eb0644966de51e421d178117c617c5a9fd0e2a57503148555b8ca442bfa80066",
+      "142b5cb8262d9538dce8a002358f96417a409af7a54d8029c711677f16082809",
+      "5360ebb4f7b11782cbacd91ceb28976617e75a1d49f755e813111d84d653358e",
+      "b262b29d153fc1a181acedb28508c4e5d0dc752e16f588191f60c5eec2b5d157",
+      "11dd790dac8f20617ff741c33353167b5ce2bba92a8043c9e9fdfe3e1c6606b6",
+      "295281da64be05f51e3ebad6c3b6af4cb5c455de6e1580c261434295c65582e1",
+      "1b43591023b486ea13da821ff728dd3c12f0665e9932fd64bb2f993bbef94b2b",
+      "04ffc1fcf01fcc9b687615d8d7def3e0494146d44ee3f13aedb0dc1cdb2366c5",
+      "a34dd008d8d650e219b1013f9cd7e279cb8151bfae26248e84af9ed690252d5d",
+      "b670027f6cd5ab827c49b08743dc78f269dc69e69b45d29ed33743045a35e2ea",
+      "e47c44a040213269823aefd1ecb484b32d734069ebbb8f4dd789db5a83bed8ec",
+      "7c6a6c621e6e051f4fe4ece184bc824f364c0e54d781d868d4ba458fbb32a09c",
+      "d0b5356a76145427eb890bccc98bda656b7f74863f5072f0db3432322b708836",
+      "09bef92bbc2ac775d3995547529fe3501fc51810e244ca163a6635b07a159c28",
+      "1d53bd52ea07def002e557f11c19fb89dff0e829ab9ab1fc398ff8b94fcb36c6",
+      "3c2ad8d041d435e43b010c86f6b52d66f6174d078757883c659a10e13618859d",
+      "939fbfc833768b951ed4a466b41782fd226e3cfedfa725c7a2ea47b42eeeb58a",
+      "a7c9f02a48d68742b18ef02b54881429f1c79072b9524849cf3a4124da95c80b",
+      "fe63a864acca8f7fcd2173662622fc81b20af23f3348a9dab0bf4291dc92e5c6",
+      "3683ae34be541ebbad848cd59e1a233e3877e317dc363ddb6733013ff292993b",
+      "2c8cfc537e6c50368d0ecd2fcd2aa8b290569cbc54509148a23807195aa9c9c0",
+      "4f4af48a756a29b57577cb91eb2d26c68d05afb44937425a1fb7fbde05fac190",
+      "bd07a734c283302c0cb5a4c4c50f219deaa2d295db074c91f8badc656e53891e",
+      "273c90d40fce9210c1de7dad55c0a3700aa239d63f1103399cb96f97936b5d31",
+      "b477c2b4843936abce50e623a1a1ab72e6db597755236c43357173f55f35b6da",
+      "bdce6a03decbe06c01399eb687811a8769ec0363e24e7f851c89738188df8c19",
+      "d16b97c2bc631636a6e3d9f8892982afb00c6504efd038f1c62dab1f5cc72e94",
+      "488275d56c37491d4bfe43e591ee381f4cce3ef0f318e9ab46c83aee1dec6de4",
+      "72a1cac0075f80669931a3c5e277603f10f495b2eaa3868d4eaf4bff678a5e3f",
+      "d9c2f122fa1cdc884f31449d28dca8bbaabd05379fe8a2ed3579fb31d3e3eba4",
+      "3049d917783c5388874f17800b5578b451b643fd71a849f59e64021076b8b1f9",
+      "95c3c195c9c0ba4fcbbd0f1da6fddf8901c6bd634e1b44d80fb9e1aff30afd56",
+      "bb1a3ed39b08e217110b8a1e3bb1d356acf10f03ace8c2f42348c4473c58a6b3",
+      "8f7b648113ec6c5ccb029cb945afa3177713f979068dcb4d521ff01ab1d4f387"
+    ]
+  }
+}
