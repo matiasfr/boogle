@@ -16,7 +16,10 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   service, land, solid-box helpers, native Rapier package modules and seat service are whole-module capabilities. `boogle/colliders-from-records`
   and `boogle/seats-from-records` reject **every runtime import** of their resolved file outside the explicit
   `PREFAB_DOORS` and counted debt files, regardless of imported names or later calls. There are no directory
-  exemptions. The native Oxc resolver (already locked, now a direct dev dependency) resolves actual files,
+  exemptions. One explicit mixed-helper data API is allowed: static named `span` from route-greybox/boxes.ts
+  (with erased type companions). Its descriptor math creates no bodies. Namespace/default imports and the
+  collider-building helper exports remain restricted; this does not free a physics/seat module.
+  The native Oxc resolver (already locked, now a direct dev dependency) resolves actual files,
   extensionless paths, index files, tsconfig paths, query suffixes and symlinks; protected files are canonicalized
   by device/inode too, so case-insensitive paths and hard links retain the same identity. The older general boundary
   rules remain lexical matchers and had no filesystem resolver to reuse. Named, namespace, re-export, dynamic
@@ -30,7 +33,7 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   current runtime export names are recorded, and **any new export name fails**, including defaults, renamed
   locals and exported wrapper functions, even before a consumer exists. Runtime capability re-exports and
   unbounded star exports are forbidden. Registry ratchets these public names as well as file identities/counts;
-  removed names must be removed from the record. A new barrel cannot import a capability, and a trusted barrel
+  removed names must be removed from the record. A new barrel cannot import a construction capability, and a trusted barrel
   cannot invent a new surface: this closes laundering without guessing alias/function-body provenance. The
   declared instantiate API stays open for record-authored content. Existing construction APIs are additionally
   constrained by the importer ratchet below; public names alone are not permission for new consumers.
@@ -41,6 +44,10 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   patterns (including aliases/rest), then callbacks, local assignments and aggregate fields. Function results
   are not automatically aliases of their factories. Dynamic locals re-exported directly or in aggregates retain
   the same provider identities as static namespace barrels. Proved constant data is distinguished from module APIs.
+  Resolved dynamic acquisitions record the members actually selected, including destructuring, casts, await,
+  Promise.all and then callbacks. Reading `me` does not acquire unused `enterIsland`. Nested namespace reads
+  retain leaf selection. Only an opaque/escaped namespace falls back to its whole construction surface;
+  passing an already selected value to another API does not acquire its module's other members.
   Unknown consumers, opaque arguments, unresolved imports and value-analysis bounds fail closed: importing or
   module-carrying debt exports are counted as both capabilities. Lint/registry print the affected files;
   [the complete current list and before/after audit](../plans/prefab-data-step-5-dynamic-audit.md) shows what to simplify.
@@ -61,12 +68,20 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   feature fixture remains passing, as does a DOM-only HUD fixture importing lifecycle, entity and named player
   state APIs plus a truly erased physics type. Runtime raw physics/seat module imports remain forbidden;
   HUD state reads use named player exports or `src/player/state.ts`, not whole construction namespaces.
-  The [rebased importer audit](../plans/prefab-data-step-5-rebase-4.md) lists the ten largest exports and pure-helper corrections.
+  The [precise-guard audit](../plans/prefab-data-step-5-precise-audit.md) records current counts and the eight
+  ordinary fixture groups; earlier importer totals are historical.
   `forwards["file#export"]` freezes construction re-export binding/provider
   identities, including nested namespaces; added surfaces fail even in already-importing barrels, and removals
   require pruning. No importer paths are committed. The derivative cache fingerprints source, analyzer/value
-  model/visitor code, providers, lockfile and tsconfig. Count-preserving importer swaps, reflection and arbitrary
-  non-debt/non-ownership wrapper bodies remain accepted residuals; this is an architectural rule, not a sandbox.
+  model/visitor code, providers, lockfile and tsconfig. The reference-taint/storage-edge design was rejected:
+  immutable data, query functions and mesh-only helpers do not inherit capabilities from neighbouring arguments.
+- `dev/lint/prefab-specifiers.ts` adds only a binding-set guard to the restored construction model. A capability
+  import specifier (including an additional import alias) counts once, and each literal member name selected
+  directly on a namespace/default import counts once per binding. Scope identity excludes shadowing locals.
+  Repeated reads or another call to an already imported query do not grow this set; no objects, constants,
+  parameters, private helper results or stored references are tainted. Normal debt counts combine these units
+  with existing module-edge/direct-call checks. Named doors have separate `doorCounts` for this binding set.
+  The round-six `createBody as allocate` addition fails at the import-only step, before hiddenMaker exists.
 - `boogle/records-are-data`: content imports/re-exports only prefab `types.ts`/`names.ts`, `src/constants.ts`,
   `src/math-pure.ts`, and explicitly listed pure layout helpers (`place/layout.ts`, `entities/railway/line2-path.ts`).
   No three.js (even inline `import('three').Mesh` types), browser/DOM globals or unknown/computed dynamic imports.
@@ -75,7 +90,7 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   ambient `declare`, type bindings and erased imports do not. Local `origin` and local `globalThis` objects are
   allowed. The compiler separately
   rejects non-JSON exported values; compiled JSON remains committed.
-- `dev/lint/prefab-debt.json` version 5 lists collider/seat files with `{ count, reason, exports }`, fixed door
+- `dev/lint/prefab-debt.json` version 7 lists collider/seat files with `{ count, reason, exports }`, fixed door
   public surfaces and compact computed construction/importer counts. Dropping the schema or counts fails. Lint and registry
   reject excess violations and require fewer violations to **lower the count** (remove a zero entry). Registry
   also rejects any new file identity or per-file count growth, even when another file/count shrinks. Against a
@@ -84,6 +99,15 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   fetch or namespace exemption is needed; this supports CI's depth-one trees.
   Every entry needs `YYYY-MM-DD: reason`; reasons do not authorize growth. All four prefab rules cannot be
   disabled by comments. Signs/interactions are deferred to prefab step 9; Godot proof to step 14.
+  Zero binding counts are valid for named doors; all counts and public names still only shrink against a
+  current-schema base. Versions 5/6 used different counting contracts and bootstrap as older schemas.
+
+The owner accepts these prefab-enforcement residuals:
+
+- Importer swaps that preserve the importing-file count.
+- Reflection.
+- Deliberate indirection inside an already-exempt file without a new capability specifier.
+- Count-preserving rewrites, including additional calls from an already-counted legacy importer.
 
 `npm run lint -- [files...]` runs native Oxlint, oxlint-tsgolint and the repo's oxc-parser safety checks together.
 Use that command in hooks and CI: calling Oxlint alone omits custom protections. `.oxlintrc.json` holds the native

@@ -232,6 +232,14 @@ belong to `.look/prefab-step-5-review/`, superseding this task's earlier static 
 
 ## 6. What can start today, and what waits
 
+**Step 5h orchestrator reset:** [the precise-guard audit](prefab-data-step-5-precise-audit.md) supersedes the
+rejected `eea9e0a42` reference-taint design. Branch step-5-6 starts from `e09762b0` and rebases onto current main.
+Keep the 64-export construction model, private-helper proofs and async value flow; add only distinct capability
+import-specifier/namespace-member counts, including named-door budgets. Resolved dynamic reads acquire selected
+members, so the look eval reading me does not acquire enterIsland. All eight ordinary fixture groups pass with
+unchanged debt; the round-six import addition fails before storage/aliasing. The accepted residuals are listed
+once in lint-boundaries.md. Step 5 stays checked; compiled JSON stays committed; Godot remains step 14.
+
 **Step 5g main rebase and ordinary-feature audit:** [the complete audit](prefab-data-step-5-rebase-4.md)
 supersedes 5f's totals: rebased onto `721fcffca`, removed three deleted raw-debt files (eight violations),
 and corrected generic callback/query false positives. Raw debt is 110 files / 310 violations; construction
