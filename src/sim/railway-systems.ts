@@ -9,7 +9,7 @@
 //
 //   railApply(w, pid, e, tick, timing)   one action: receipt, the op, remember (the request history)
 //   railOutcome(w, pid, epoch, request)  the receipt: a request's recorded result, snapshot-required, or null
-//   railTick(w, tick, headPct)           the rule tick, a schedule: line one's job, line two's forge and job, the depot
+//   railTick(w, tick, headPct, ...)      the rule tick, a schedule: line one's job, line two's forge and job, the depot
 //                                        cart's trip (./railway-cart.ts), the yards' crates (./railway-sys-trade.ts),
 //                                        every line's trains (./railway-trains.ts) with their yard freight and
 //                                        line 2's kit and footing wagon, the Works kiln's casts
@@ -18,7 +18,7 @@
 import { createSchedule, type System, type World } from '../ecs/index.ts';
 import { LINE_TIMING } from './railway-line.ts';
 import type { LineTiming } from './railway-line-schedule.ts';
-import { TRAIN_HEAD_PCT } from './railway-trains.ts';
+import { TRAIN_HEAD_PCT, TRAIN_HOLD, type TrainHold } from './railway-trains.ts';
 import type { RailAction } from './railway.ts';
 import type { RailResult } from './railway.ts';
 import { Account } from './railway-components.ts';
@@ -152,9 +152,22 @@ export const RAIL_TICK: readonly System<never, unknown>[] = [
 ];
 const TICK = createSchedule(RAIL_TICK);
 /** The rule tick; `headPct` is the room's railTrainHeadPct (the trains' headway hold), `trade` its railFarePct and
- * railRiderPct (slice 5 R3). */
-export function railTick(w: World, tick: number, headPct = TRAIN_HEAD_PCT, trade: TradePct = TRADE_PCT) {
-  TICK.run(w, 'tick', { tick, headPct, farePct: trade.farePct, riderPct: trade.riderPct });
+ * railRiderPct (slice 5 R3), `hold` its railTrainHoldCap and railTrainHoldPct (the Ring Island hold). */
+export function railTick(
+  w: World,
+  tick: number,
+  headPct = TRAIN_HEAD_PCT,
+  trade: TradePct = TRADE_PCT,
+  hold: TrainHold = TRAIN_HOLD,
+) {
+  TICK.run(w, 'tick', {
+    tick,
+    headPct,
+    farePct: trade.farePct,
+    riderPct: trade.riderPct,
+    holdCap: hold.cap,
+    holdPct: hold.pct,
+  });
 }
 /** The systems the server and the host call by name (lifecycle, the request history and absent carriers). The job
  * clock is the tick's, and also runs after an applied action (railSettle) and a resume. */

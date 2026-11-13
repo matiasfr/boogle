@@ -70,7 +70,11 @@
 // v33 (2026-11-12): the fourth car (docs/plans/fourth-car.md, R1 and R2): steel's car behind a train on the longer
 // boiler, derived from `train.boiler` (no field, no op); `TRAIN_EXTENT.behindCm` 1270 and `RIDER_SPAN` 1110; line 2's
 // Village stop 17.0 to 18.25 m (a v32 save's train standing there no longer loads); no shape change, no migration.
-export const WORLD_NS = 'v33';
+// v34 (2026-11-12): train spacing (docs/plans/short-turn.md, the ruling on step 1's sheet, step 2): line 2 runs six
+// trains from the first section of leg 1 laid (`fleet.trains` 3, 6, 6, 6, 6: a third shed row), and the Ring Island
+// hold (`RailHalt.control`; the railTrainHoldCap and railTrainHoldPct tunables, 200 and 15); the hold's cap runs from
+// `train.arrived`, so no shape change beyond the row and the two tunables; no migration.
+export const WORLD_NS = 'v34';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

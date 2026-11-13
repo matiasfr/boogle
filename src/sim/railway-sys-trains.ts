@@ -7,7 +7,7 @@ import { LINE2_KIT } from './railway-line2-layout.ts';
 import { CART_PHASE } from './railway-cart.ts';
 import { TRAIN, TRAIN_PHASE, reqAdd, reqHas, trainDir, trainPassesBy, type ServiceStop } from './railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
-import { LINE_SLOTS, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
+import { LINE_SLOTS, atEnd, trainStepLine, type TrainHold, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { railInt } from './railway.ts';
 import {
@@ -57,7 +57,7 @@ import type { TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
 import { legKitArrive, legKitLoad, legKitService } from './railway-sys-route-kit.ts';
 import { fleetOf } from './railway-train.ts';
-import { legsLaid } from './railway-queries-route.ts';
+import { legKitWaiting, legsLaid } from './railway-queries-route.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
  * so a repeat (or a friend's same ask) moves nothing. From a halt's lever it is the line's (`Line.req`), served by the
@@ -158,7 +158,7 @@ export function trainMoveIO(w: World): TrainMoveIO {
 /** The world's side of the trains' step (./railway-trains.ts): rows, stops, every line's yard freight (slice 5,
  * ./railway-sys-trade.ts), and line 2's cargo, wagon and the cart's hold on line 1. Transfers and phase changes are
  * atomic inside this tick apply. */
-function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
+function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold): TrainIO {
   const row = (slot: number) => w.get(Train, trainId(w, slot))!;
   const line2 = (slot: number) => RAIL_TRAINS[slot]!.line === LINE2;
   return {
@@ -169,6 +169,7 @@ function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
     stops: (line) => stopsOf(w, line),
     awake: w.get(Rail, railId(w))!.trains,
     headPct,
+    hold,
     service: (slot) => serviceOf(w, slot, row(slot)),
     arrive(slot) {
       freightArrives(w, slot);
@@ -245,11 +246,19 @@ function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
     headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
     // The greybox route: the trains a line runs at its legs' stage (its fleet).
     fleet: (line) => fleetOf(line, legsLaid(w)),
+    // The Ring Island hold is off while the line owes footings (the wagon's errand) and for a train on a kit errand (a
+    // kit aboard that can unload now, a kit owed), as the train-spacing sheets ran it (candidate B's errand list,
+    // short-turn's ruling call 7). The wagon's train with no footings owed is on no errand.
+    controlOff(line, slot) {
+      if (footingsOwed(w, line)) return true;
+      const r = row(slot);
+      return (r.logs + r.rails > 0 && !legKitWaiting(w, line, r)) || kitOwed(w, r, line);
+    },
   };
 }
-function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {
+function trainStep(w: World, tick: number, headPct: number, pct: TradePct, hold: TrainHold) {
   if (w.get(Rail, railId(w))!.trains < 0) return;
-  const io = trainIO(w, headPct, pct);
+  const io = trainIO(w, headPct, pct, hold);
   for (let line = 0; line < RAIL_LINES.length; line++) trainStepLine(io, line, tick);
 }
 export const trainTick = defineSystem(
@@ -260,5 +269,6 @@ export const trainTick = defineSystem(
     phase: 'tick',
     order: 3,
   },
-  (w, { tick, headPct, farePct, riderPct }: Tick) => trainStep(w, tick, headPct, { farePct, riderPct }),
+  (w, { tick, headPct, farePct, riderPct, holdCap, holdPct }: Tick) =>
+    trainStep(w, tick, headPct, { farePct, riderPct }, { cap: holdCap, pct: holdPct }),
 );

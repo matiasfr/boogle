@@ -93,7 +93,11 @@ test("a footing's own pace, then the trains' headway hold: appended last (works-
   // Appended in order; only later appended keys follow them (slice 5's trade tunables, in their own test).
   const at = keys.indexOf('railFootSoloSpeed');
   assert.deepEqual(keys.slice(at, at + 3), Object.keys(foot), 'appended in order');
-  assert.deepEqual(keys.slice(at + 3), ['railFarePct', 'railRiderPct', 'railPricePct'], 'then only the trade keys');
+  assert.deepEqual(
+    keys.slice(at + 3),
+    ['railFarePct', 'railRiderPct', 'railPricePct', 'railTrainHoldCap', 'railTrainHoldPct'],
+    "then only the trade keys and the Ring Island hold's",
+  );
   for (const [key, def] of Object.entries(foot)) {
     const t = TUNABLES.find((s) => s.key === key)!;
     assert.equal(t.def, def, key);
