@@ -25,9 +25,7 @@ const files = argv.filter((a) => !a.startsWith('--'));
 const showAll = argv.includes('--all');
 const json = argv.includes('--json');
 const bad = argv.filter(
-  (a) =>
-    a.startsWith('--') &&
-    !['--all', '--json', '--place=classic', '--place=place', '--cove'].includes(a),
+  (a) => a.startsWith('--') && !['--all', '--json', '--place=classic', '--place=place', '--cove'].includes(a),
 );
 if (
   bad.length ||
@@ -229,6 +227,12 @@ async function runChecks() {
     failed += ring.failures;
     report.push(ring);
     if (!json) printRing(ring);
+    // Greybox leg 2 (planned boxes): Bell Rock's two levels and Home's West landing (docs/plans/greybox-leg2-massing.md).
+    const { checkLeg2, printLeg2 } = await import('./route-leg2.ts');
+    const leg2 = checkLeg2();
+    failed += leg2.failures;
+    report.push(leg2);
+    if (!json) printLeg2(leg2);
     // Track continuity: kinks, curves, grades and joins over every line as the game draws it (docs/plans/rail-map.md).
     const { checkContinuity, printContinuity } = await import('./track-continuity.ts');
     const continuity = checkContinuity();

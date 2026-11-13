@@ -1,4 +1,5 @@
-> **Status: plan for the designer's review (12 November 2026). Nothing here is built.**
+> **Status: built, all six steps (13 November 2026), on the designer's clearance of 12 November. See "Build notes" at
+> the end for where the build left the plan's numbers.**
 
 # Greybox leg 2, the massing: High Gorge's incline platforms, Bell Rock, Home's West landing
 
@@ -74,21 +75,21 @@ at https://boogle.club/; Bell Rock and the Gorge by the DEV strip's Free cam (a 
 
 ## Steps
 
-- [ ] **1. The data, the list and the level report (S).** `leg2-layout.ts`: the frames, every box above as named
+- [x] **1. The data, the list and the level report (S).** `leg2-layout.ts`: the frames, every box above as named
       data (`LEG2.bell`, `.west`, `.gorge`), the reserves, pads and posts. `index.ts`: an `AREAS` list of `{ id,
       centre, build, signs }`, the Gorge first; signs by `signBoard`; `describe()` gains `bell`, `west`. `stack-at.ts`
       waits for the area within 380 m. `dev/level/route-leg2.ts` (`checkLeg2`, `printLeg2`, from `check.ts`): `flood`
       with `MOVER` over the boxes; asserts finding 2 and the reserves. Verify: `npm run level-check`; one Gorge look.
-- [ ] **2. Bell Rock in the map data (S).** In `map-prototypes.html` replace `bell-land` with `bell-w` and `bell-e`
+- [x] **2. Bell Rock in the map data (S).** In `map-prototypes.html` replace `bell-land` with `bell-w` and `bell-e`
       (`poly` for `c`, `r`, `seed`, `rough`), point the shoal at `bell-w`, move the pinnacle to [-1024, -870]; run
       the generator. Verify: `git diff --exit-code src/sim`; `test/world-lines.test.ts`; the cut in one look.
-- [ ] **3. Bell Rock, the lower level (M).** `massing-bell.ts`: the bed, platforms, lower deck, ramp, slipway, rock
+- [x] **3. Bell Rock, the lower level (M).** `massing-bell.ts`: the bed, platforms, lower deck, ramp, slipway, rock
       colliders, two pads. Stills: from the west platform's north (lever) end at eye height; up the ramp from its foot.
-- [ ] **4. Bell Rock, the upper level (M).** The bridge beds, platforms, end ramps, upper deck, step, the pinnacle's
+- [x] **4. Bell Rock, the upper level (M).** The bridge beds, platforms, end ramps, upper deck, step, the pinnacle's
       collider, three pads, the post. Stills: the in-half's landward platform (lever) end; **the profile** from 200 m north.
-- [ ] **5. The West landing (S).** `massing-west.ts`: the bed, platforms, end ramp, apron, posts, the board. Stills:
+- [x] **5. The West landing (S).** `massing-west.ts`: the bed, platforms, end ramp, apron, posts, the board. Stills:
       from platform A's root (lever) end along the row; from the commons' edge looking down; the way down walked.
-- [ ] **6. The Gorge's incline platforms (S).** `massing.ts`: the two platforms and the portal box. Stills: from the
+- [x] **6. The Gorge's incline platforms (S).** `massing.ts`: the two platforms and the portal box. Stills: from the
       lat −5.8 platform's root end (the portal, the barrier, the stair behind); step 4's "200 m out" again.
 
 One sitting a step; each leaves `node dev/ship-check.ts` green and ends on its stills. **Checkpoint, once:** `npm run
@@ -269,3 +270,33 @@ Neither holds the build. Nothing here is direction, unapproved scope or irrevers
      Rock bursts out of the dark into the Gorge.
    - No: the line leaves by the split's open end and goes round the stack, longer and beside line 2.
    Answer: ___
+
+## Build notes (implementer, 13 November 2026)
+
+All six steps are built. Where the build left the plan's numbers, for the designer:
+
+1. **All of Bell Rock's drawn rock is solid (orchestrator, 13 November: fix the rim, do not re-rule it).** The plan's
+   four hidden boxes left drawn rock with no collider up to **68.5 m** wide (finding 6 said "up to 25 m"; call 121
+   accepted that figure). They are gone: each of the map's two Bell Rock lands is one collider on its own outline,
+   read from the same map page the backdrop draws. The level report asserts the widest unsolid rim under 3 m (it
+   reads 0.0 m) and checks the reserves against the rock too. Change 2's feet are asserted on solid rock.
+2. **Three trims for the plan's own reserves** (the report fails a box in a row's ±3.8 m). The two upper platforms on
+   the inside of the 52° kink start at t 2, not t -3 (their corners stood in the other half's bed). The West
+   landing's platform B starts at s 2, not s 0 (its root corner stood 1 m inside the `cave` row's corridor, which
+   leaves the same root). The Gorge's `ns` reserve ends at t 62, short of the mouth's mark.
+3. **The pinnacle's collider is square to the map** (22 m east to west, 18 m north to south), as the backdrop draws
+   it, not yawed 0.4. Moved 6 m east it clears the lower east platform (seen from above and from 200 m north).
+4. **The West landing has a grey stair (call 120, change 1).** A body walking one straight line at the bare cliff
+   stops at its foot, so the stair ships with step 5: 26 m at 5.4 in 10, due east from the shelf beside the end
+   ramp (x 805 to 831, z 13.5 to 16.5) to the commons' edge, a parapet each side. Walked down and up by the body
+   with forward held and no jump. Home's own dirt path also comes down to the shelf just south of it.
+5. **The boards.** The West landing's stands beside the stair's foot at (805, 20.5), facing east (change 4). Bell
+   Rock's market board is overhead on one post and turned south-east to the walker coming up the ramp: at the
+   plan's spot a board on the ground stood across the ramp's head. Pad boards size their type to the board.
+6. **Thicker slabs than "0.9 m over the rail":** the upper platforms, the bay beds and the West landing's platforms
+   reach down to the rock or the shelf, so nothing floats over ground.
+7. **Step 2 regenerates four pages, not two:** `rail-map.html` and `economy-prototype.html` embed the land list too,
+   and their tests fail stale otherwise. `src/sim` and `src/world` are unchanged.
+8. **A shared file the plan did not list:** `leg2-draw.ts` (layout pieces to boxes, posts, pad outlines and signs),
+   for `massing-bell.ts`, `massing-west.ts` and the Gorge's two platforms.
+9. **Seen at the West landing, not changed:** the platforms stand over Home's existing timber jetty on that shore.

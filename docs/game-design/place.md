@@ -894,6 +894,31 @@ in the same second. Ring Island's low map table carries the halt map from the ri
 no train markers); before the rivet it is the painted table it was. Placeholder marks and labels. Not tested on a
 device.
 
+**Greybox leg 2: Bell Rock, Home's West landing, the Gorge's incline platforms (13 November 2026;
+[greybox-leg2-massing](../plans/greybox-leg2-massing.md)).** Layout only, live for everyone: grey boxes, labelled
+pads and boards, no rails, no rules, nothing to press. Every label is a placeholder.
+
+**Bell Rock** is two lands on every map, cut through north to south, and the cut is sea. All the rock that is drawn
+is solid. **The lower level** stands in the cut on posts: the north-south line's unlaid bed (a dark slab, no rails),
+a 40 m platform each side of it, and west of them an open deck 52 m by 16 m with two outlined stall pads, each with
+a board: "Stall: High Gorge (placeholder)" and "Stall: Ring Island (placeholder)" over "Not connected yet". A slipway
+climbs out of the water to the west platform's north end, the one way up from the sea. A ramp with a pale parapet
+runs up the cut's west wall to **the upper level**: a deck 1.9 m over the west rock with three more pads (Home,
+Canopy Town, Port Quay), a "Market board (placeholder)" overhead at the ramp's head, a short ramp down to the rock,
+and the bay line's two unlaid bed halves bridging the cut, a platform each side of each half, with end ramps down
+to the rock. The east rock and the pinnacle's foot are reached by the bridge only. You get there by the DEV strip's
+Free cam, or by swimming: no line runs there yet.
+
+**Home's West landing** stands on the shelf under the commons' west cliff: the bay line's unlaid bed pointing out
+to sea at Bell Rock (its pinnacle shows on the horizon from the platform), a 40 m platform each side on posts past
+the shore, a ramp from the landward platform down to the shelf, an apron behind it, and a board beside the way
+down, facing the walker: "LINE TO BELL ROCK / UNDER CONSTRUCTION". A plain grey stair with parapets climbs the
+cliff from the shelf to the commons' edge; the bare cliff cannot be walked up.
+
+**High Gorge** gains the incline's two 40 m platforms beside the north-south row, level with the stack line's
+south platform, and a dark mark on the south wall where the row will enter the rock (nothing is bored).
+Not tested on a device.
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's
