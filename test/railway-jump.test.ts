@@ -34,6 +34,38 @@ test('jump-in rows are unique, buildable and in route order', () => {
   );
 });
 
+// Deliberate menu admission, independent of SEED_STAGES: a new buildable stage is not an automatic jump-in.
+test('the complete Jump in menu is pinned stage by stage', () => {
+  const menu = [
+    'start',
+    'awake',
+    'q1-done',
+    'hook-taken',
+    'hook-earned',
+    'q4-done',
+    'q5-done',
+    'glide-earned',
+    'trains-on',
+    'freight-running',
+    'fares-running',
+    'q6-done',
+    'works-open',
+    'crossing-finishing',
+    'crossing-done',
+    'deck-laid',
+    'gap-footed',
+    'ring-joined',
+    'steel-kit',
+    'steel-lit',
+    'steel-home',
+    'boiler-long',
+  ];
+  assert.deepEqual(
+    MENU_JUMPS.map((j) => j.stage),
+    menu,
+  );
+});
+
 test('the seed catalog holds every train, works, ring, steel and leg stage', () => {
   assert.equal(new Set(seeds).size, seeds.length);
   for (const s of [...TRAIN_STAGES, ...WORKS_STAGES, ...RING_STAGES, ...STEEL_STAGES, ...LEG_STAGES])

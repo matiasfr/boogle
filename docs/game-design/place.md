@@ -640,8 +640,13 @@ Not tested on a device.
 train stops at a halt only when that halt has a request in the train's direction, at an end of its line, or at a
 service stop the sim decides; otherwise it runs straight through at cruise. A request is one digit per halt per
 direction on the train's row (`req`, a safe integer with room for 26 stops); an end halt has one, its way out. The
-lever's handle and a passenger's press set the same digit, so a repeat or a friend's same ask moves nothing, and a
-later request never replaces an earlier one (until 10 November each line held one call and a later call replaced it).
+lever's handle and a passenger's press set the same digit, and a later request never replaces an earlier one
+(until 10 November each line held one call and a later call replaced it). With v35, a platform call may extend an
+unextended stand once, even with the request digit already set. Once the departure clock differs from the arrival
+clock, later calls cannot extend that stand again; a lay's redirected dwell also uses that allowance. A fresh arrival
+resets it. Holding or spamming the lever cannot keep the train indefinitely. Arrival-based hold caps and headway
+rules stay unchanged, including the existing allowance for one late asker's dwell. No new op or saved request field
+(see [leg 1 findings](../research/leg1-lost-ask.md#v35-bounded-correction)).
 The server takes `rail.call {id, dir}` from the halt's platform or aboard: within 10 m of the train's pose now, plus
 its length (7.4 m) and what it travels in a 10-tick lag window (a coarse line path in `src/sim/railway-line-path.ts`),
 and the train's own tick clears the digit as it leaves the halt that way.
@@ -656,9 +661,16 @@ while the wagon carries footings; the wagon's roll-out counts as a request at li
 asked, a service stop ahead that wants the other way is where the train turns, so an ask never turns it back short of
 an errand it still owes (the independent review found a Far Head lever pressed again and again starving the kit, and
 the wagon the same way). Dwell is 5 s at every stop (the 1.5 s call dwell is gone), and a
-request at the halt a train stands at, leaving that way, restarts its dwell. Owner calls behind it: "Stop on request"
+request at the halt a train stands at, leaving that way, may restart its unextended dwell once. Owner calls behind it: "Stop on request"
 and the passenger request (decisions, 10 November); the two handles, LOOK turn-backs and replanning are recommended
 details logged in the plan. Not tested on a device.
+
+**Leg 1 boarding correction candidate (13 November 2026, v35).** Laying a section restarts the full 50-tick dwell
+of a train standing at the previous stub end when it is redirected outward. Its original arrival tick still anchors
+the end and Ring Island hold caps. Each still-open old Stack head now offers the existing outward request lever once
+the line extends beyond it, including heads 1 and 2. A late player can request another outbound stop. The bot uses
+that lever when no train stands there and repeats if the request is consumed during its walk. No new op or saved
+request field. Physical boarding, lever placement and the updated bot await browser verification.
 
 The two Server-owned lines run at
 20 m/s: camp–village, and village–quarry–Far Head. Owner platform carry keeps a rider

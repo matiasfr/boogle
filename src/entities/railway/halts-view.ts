@@ -574,7 +574,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   // The stack line's halts (docs/plans/greybox-route.md, leg 1 step 4; the design review's answer g): one homeward lever
   // on each head's one platform (route-greybox/leg-view.ts draws it: lat +1.8 to +6.3, the 25 m before the section's
   // end), 6 m short of its end, while the head is a stop (a head closed behind passes both ways and loses its lever);
-  // the third head, kept as a request stop once High Gorge opens, gains a lever for the way on; High Gorge's stands on
+  // each old head gains a lever for the way on until it closes behind; High Gorge's stands on
   // its north platform. No chained up lever at a line's end.
   const stackStops = RAIL_LINES[LINE2]!.halts.map((h, stop) => ({ h, stop })).filter((x) => x.h.leg);
   for (const { h, stop } of stackStops) {
@@ -590,14 +590,14 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         () => !shut(),
       ),
     );
-    if (stub && h.closesAt === undefined)
+    if (stub)
       spots.push(
         ringSpot(
           stop,
           true,
           2.45,
           () => u - 4,
-          () => stopsNow[LINE2]!.length > stop + 1,
+          () => !shut() && stopsNow[LINE2]!.length > stop + 1,
         ),
       );
   }

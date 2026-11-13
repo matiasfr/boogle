@@ -92,8 +92,17 @@ export class FixtureLine {
     if (trainPassesBy(this.line, stop, dir, n)) return 0;
     const wait = (slot: number) => {
       const r = this.rows[slot]!;
-      if (r.phase === TRAIN_PHASE.STAND && r.at === stop && trainDir(r) === dir && tick > r.depart)
+      if (
+        r.phase === TRAIN_PHASE.STAND &&
+        r.at === stop &&
+        trainDir(r) === dir &&
+        r.depart === r.arrived &&
+        tick > r.depart
+      ) {
         this.rows[slot] = { ...r, depart: tick };
+        return true;
+      }
+      return false;
     };
     if (train !== undefined) {
       const r = this.rows[train]!;
@@ -102,9 +111,10 @@ export class FixtureLine {
       wait(train);
       return 1;
     }
-    if (reqHas(this.lineRow.req, stop, dir, n)) return 0;
+    let refreshed = false;
+    for (let slot = 0; slot < this.rows.length; slot++) if (wait(slot)) refreshed = true;
+    if (reqHas(this.lineRow.req, stop, dir, n)) return refreshed ? 1 : 0;
     this.lineRow = { ...this.lineRow, req: reqAdd(this.lineRow.req, stop, dir, n) };
-    this.rows.forEach((_r, slot) => wait(slot));
     return 1;
   }
   /** What the load check would refuse (rows and the line's row on these stops), or null. */

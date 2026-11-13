@@ -633,6 +633,29 @@ test('hold host: a held train stands through a restart, then leaves on its cap f
   }
 });
 
+test('hold host: only the first platform call extends dwell; a repeated ask cannot delay the Ring cap', async () => {
+  const r = await host('hold-refresh', legLaid());
+  try {
+    r.tune('railTrainHoldCap', 100);
+    const k = await heldAtRing(r),
+      arrived = train(r.w, k).arrived,
+      id = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === RING),
+      dir = train(r.w, k).track ? -1 : 1,
+      at = spot(haltPlatform(RAIL_HALTS[id]!, dir, 0));
+    assert.equal(await r.action({ op: 'rail.call', id, dir }, at), 'accepted');
+    const cap = arrived + TRAIN.dwellTicks + 100;
+    await r.ticks(cap - 10 - r.tick);
+    assert.equal(train(r.w, k).phase, TRAIN_PHASE.STAND);
+    const first = train(r.w, k).depart;
+    assert.equal(await r.action({ op: 'rail.call', id, dir }, at), 'noop', 'pending ask cannot re-extend');
+    assert.equal(train(r.w, k).depart, first);
+    assert.equal(train(r.w, k).arrived, arrived, 'hold cap still anchored to original arrival');
+    assert.equal(await leaves(r, k), cap, 'the later call cannot delay departure beyond the original cap');
+  } finally {
+    await r.done();
+  }
+});
+
 test('hold host: a lever ask assigned to a held train releases it', async () => {
   const r = await host('hold-ask', legLaid());
   try {

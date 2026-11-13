@@ -134,8 +134,7 @@ export async function legRoute({ bot, checkpoint, leg = 0 }: LegRoute) {
     const here = k === 0 ? ISLAND : L.railheadHalt + k - 1;
     const lever = () => ringLevers().find((l) => l.halt === here && l.dir === 1 && l.on);
     const stands = () => ringLevers().some((l) => l.halt === here && l.stands) || here !== ISLAND;
-    // The island has an outward lever on its west platform; a stack head has none (the lay asks for the train).
-    const ready = k === 0 ? lever() : undefined;
+    // Every still-open old head now has an outward lever; recover if the lay's train has already left.
     const dest = last ? cm(rowHalt('ring', L.destRowHalt)) : cm(legFrame(L, laid()));
     // While waiting for the train, say where line 2's trains are every 20 s of page time (a stall's evidence).
     const watch = setInterval(
@@ -156,12 +155,12 @@ export async function legRoute({ bot, checkpoint, leg = 0 }: LegRoute) {
         name: k === 0 ? 'Ring Island' : `Stack head ${k}`,
         stop: here,
         stands,
-        handle: () => (k === 0 ? lever() : undefined),
+        handle: () => lever(),
         calling: () => !!lever()?.over,
         wait: cm(legFrame(L, k)),
       },
       stop,
-      { asked: k > 0 && !ready, askEach: true },
+      { askEach: true },
     );
     clearInterval(watch);
     await hopTo(

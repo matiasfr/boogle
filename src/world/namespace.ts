@@ -74,7 +74,10 @@
 // trains from the first section of leg 1 laid (`fleet.trains` 3, 6, 6, 6, 6: a third shed row), and the Ring Island
 // hold (`RailHalt.control`; the railTrainHoldCap and railTrainHoldPct tunables, 200 and 15); the hold's cap runs from
 // `train.arrived`, so no shape change beyond the row and the two tunables; no migration.
-export const WORLD_NS = 'v34';
+// v35 (2026-11-13): a lay redirects a standing stack train with a full boarding dwell; repeat platform requests
+// may extend an unextended stand once, even with an ask pending; later calls cannot re-extend it.
+// Arrival-based hold caps and headway stay fixed; no shape change or migration.
+export const WORLD_NS = 'v35';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

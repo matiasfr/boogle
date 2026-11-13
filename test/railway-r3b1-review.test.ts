@@ -54,6 +54,34 @@ test('griefing, worst case: one ask on the last held tick adds its dwell, and no
   assert.equal(t, last + TRAIN.dwellTicks, `held ${t} ticks: dwell + cap + one asker's dwell`);
 });
 
+test('a second end-platform call cannot extend the stand again near the original hold cap', () => {
+  const f = bunched();
+  const last = TRAIN.dwellTicks + V.balance! - 1;
+  let accepted = 0;
+  const t = leaves(f, 1, 5000, (tick) => {
+    if (tick === 1 || tick === last) accepted += f.call(0, 1, tick);
+  });
+  assert.equal(accepted, 1, 'only the first platform call extends the stand');
+  assert.equal(f.rows[0]!.arrived, 0, 'the hold remains anchored to arrival');
+  assert.equal(t, TRAIN.dwellTicks + V.balance!, 'the repeat cannot delay departure past the original hold cap');
+});
+
+test('a request pending before arrival allows one extension, survives a save, and resets only on a new stand', () => {
+  const f = bunched();
+  // The line ask was already pending before this stand. Reaching the platform is the first dwell extension.
+  assert.equal(f.call(0, 1, 0), 1);
+  f.rows[0] = standingAt(f.stops, 0, 0, 1);
+  assert.equal(f.call(0, 1, 49), 1);
+  assert.equal(f.rows[0]!.depart, 49);
+  f.restore();
+  const t = leaves(f, 50, 5000, (tick) => assert.equal(f.call(0, 1, tick), 0));
+  assert.equal(t, 1 + TRAIN.dwellTicks + V.balance!, 'neither restore nor continuous calls reset the allowance');
+  f.rows[0] = standingAt(f.stops, 0, 0, 1000);
+  assert.equal(f.call(0, 1, 1049), 1, 'a new stand gets its own allowance');
+  assert.equal(f.call(0, 1, 1050), 0);
+  assert.equal(f.rows[0]!.depart, 1049);
+});
+
 test('the waiter exception misses a train held at the old far signal after the railhead moves on; the cap still ends it', () => {
   // Q7 laid, the railhead at bent 1: train 0 stands at the Railhead end (stop 4) going down. A second train stands at
   // bent 0's signal on the up track (the signal the bent moved on from), a third running down just ahead of train 0.
