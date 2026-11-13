@@ -48,14 +48,21 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   `NOT_CONSTRUCTORS` and `NOT_CONSTRUCTION_EXPORTS` are exemption **candidates**, never unconditional stops.
   Their unpruned debt-local closure must reach neither allocation/seat-registration endpoints nor unresolved
   dynamic use. An unsafe candidate is counted automatically. This keeps OwnedView's ownership/attachment/disposal
-  factory free while restoring actual constructors that merely use an owner. Engine/backend createBody and
-  registerSeat are allocation terminals; their implementations and instantiate are closed doors, not ordinary
+  factory free while restoring actual constructors that merely use an owner. Engine/backend createBody,
+  setShapes (collision-shape replacement) and registerSeat are construction terminals. Typed Shape → Body
+  callback parameters also represent injected body factories. Callable/module arguments taint their supplying
+  caller, never every invocation of the generic receiving helper. Query-only physics/terrain calls and pure
+  geometry/positioning helpers do not consume construction budgets. The terminal implementations and instantiate are closed doors, not ordinary
   placed-content factories. Query/attachment APIs create no bodies by those contracts.
   `legacy["file#export"]` stores only the number of distinct importing files, including forwarding barrels.
   Named, namespace, dynamic and require acquisitions resolve through aliases/barrels. Higher counts fail naming
   `src/prefab/instantiate.ts`; lower counts fail with **lower the count**. Computed export keys must match the
   record; registry ratchets each count and forbids new keys. The full OwnedView + instantiate + entity/onStart
-  feature fixture remains passing. `forwards["file#export"]` freezes construction re-export binding/provider
+  feature fixture remains passing, as does a DOM-only HUD fixture importing lifecycle, entity and named player
+  state APIs plus a truly erased physics type. Runtime raw physics/seat module imports remain forbidden;
+  HUD state reads use named player exports or `src/player/state.ts`, not whole construction namespaces.
+  The [rebased importer audit](../plans/prefab-data-step-5-rebase-4.md) lists the ten largest exports and pure-helper corrections.
+  `forwards["file#export"]` freezes construction re-export binding/provider
   identities, including nested namespaces; added surfaces fail even in already-importing barrels, and removals
   require pruning. No importer paths are committed. The derivative cache fingerprints source, analyzer/value
   model/visitor code, providers, lockfile and tsconfig. Count-preserving importer swaps, reflection and arbitrary

@@ -232,6 +232,14 @@ belong to `.look/prefab-step-5-review/`, superseding this task's earlier static 
 
 ## 6. What can start today, and what waits
 
+**Step 5g main rebase and ordinary-feature audit:** [the complete audit](prefab-data-step-5-rebase-4.md)
+supersedes 5f's totals: rebased onto `721fcffca`, removed three deleted raw-debt files (eight violations),
+and corrected generic callback/query false positives. Raw debt is 110 files / 310 violations; construction
+exports 64, conservative files 31, formatted debt 954 lines. Actual `setShapes` and injected Shape → Body
+factories remain counted. Both the original record-door feature and new HUD-only feature pass without debt
+changes. `enterIsland` allocates the lobby player; named player state reads remain free. Step 5 remains checked;
+Godot stays in step 14. Depth-one missing-main-debt bootstrap and fresh checks are recorded with the audit.
+
 **Step 5f dynamic-value correction (supersedes the 5e negative ownership audit):** both reported new-consumer
 fixtures failed first. Promise.all import destructuring hid lookout's `land.addStatic` and finds' call to the
 collider-building secrets view. The general value model now binds await/aggregates, object/array patterns, then
