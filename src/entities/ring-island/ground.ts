@@ -36,7 +36,6 @@ const STACK_CUT = (() => {
 // 4.6 m of formation and a 2 m grid cell, so the triangles between nodes stay under the deck's edge.
 const STACK_CUT_HALF = 6.6,
   STACK_CUT_WALL = 3;
-/** The station house terrace grown by a metre (src/proto/greybox/ring-house.ts CONCOURSE.terrace; u and lat, m). */
 /** The cutting's samples' box, grown by the reach of its walls: outside it no node is tested against them. */
 const STACK_BOX = {
   x0: Math.min(...STACK_CUT.map((p) => p.x)) - 16,
@@ -44,6 +43,7 @@ const STACK_BOX = {
   z0: Math.min(...STACK_CUT.map((p) => p.z)) - 16,
   z1: Math.max(...STACK_CUT.map((p) => p.z)) + 16,
 };
+/** The station house terrace grown by a metre (src/proto/greybox/ring-house.ts CONCOURSE.terrace; u and lat, m). */
 const STACK_KEEP = { u0: 467, u1: 478.5, lat0: -21, lat1: -8.3 };
 const UNIT = Math.sqrt(1 + 0.0272 * 0.0272);
 /** u and lat (m) of a world point: the inverse of ringAt (its orthogonal unit axes, unrounded). */

@@ -504,7 +504,7 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       the fourth sheet's run: 8 fixed stages worst 1,166; 9 settled 1,261, 1,340, 1,397, 1,367 and stage 0 766 to 820;
       11 whole-leg 1,210 to 1,421; 5 the opening load at +2,252; 14 rivet to Gorge 3,575; 15 +651 and +1,824 / +2,157.
       Fixtures regenerated for the two Leg fields.
-- [x] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
+- [ ] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
       lifecycle), `massing.ts` (the Gorge's stacks and split from `src/proto/greybox/blockout.ts`, one merged mesh per
       material, resident by P1's rule), `leg-view.ts` (deck and trestle bents from `laid`, the frame, rack, bill sign
       reading "0 of 20", the barrier, the pickup post). `src/adapters/railway-read.ts` and `railway-intents.ts`: the
@@ -553,6 +553,21 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       (g: the boards are the halt map's displays), the `STEEL KIT` plate on the east rack (b), and the predicted
       "press shows nothing" for `rail.grant` and `rail.gate` (they wait for the server, once a leg). Not tested on a
       device.
+      *After the independent review (same branch):* with nothing laid the run-off's deck, its slabs and the buffers
+      (drawn and solid) stand only while Ring Island's near view is mounted (a default room showed a solid grey slab
+      floating over the far island's hillside); the bill's foot is 0.6 m higher, clear of the frame's top rail; a
+      blocked "Take logs" or "Take rails" carries no `run`; the cutting's test sweeps the views' own track from the
+      platforms' end (s 1210), beside the kept terrace. **Notes left as they are:** from the stair's top landing the
+      barrier is a small red mark 100 m below (in view, not readable); the west bill is edge-on from the east
+      platform's south end and reads from the door straight across. **Held open:** the three presses that carry an id
+      (`rail.legStock`'s `leg`, `rail.grant`'s and `rail.gate`'s `id`) are refused by a real server until its request
+      shapes pass those fields (the server's fix, on its own branch); this step's proof of the presses waits on it.
+- [ ] **4b. What step 4 left (Mac, S to M).** The halt map and the Home hall's line map past Ring Island (answer l:
+      solid to the head, dashed on to a dim High Gorge, the head a lit `Stack railhead` with a frame mark, one fit for
+      the whole leg; `Stack halt` once the Gorge opens), with a departure board at each live head and at the Gorge
+      (answer g); the kit cars' number boards (answer j); the joining train's one-second scale-in at the Village and
+      its marker on the boards (answer f); the kit's hop from the train to the rack and the `STEEL KIT` plate (answer
+      b). Verify: `test/island-map-labels.test.ts` at each stage of the leg; one look a piece.
 - [ ] **5. Seeds, jump rows, the loop and the bot (HOTBOX, M).** New `src/sim/railway-seed-legs.ts` from
       `ring-joined`, accepted ops only: `gorge-open` (the leg open, nothing fed), `gorge-mid` (two sections laid, kit
       aboard a train), `gorge-reached` (four laid, `pick` not taken). `SEED_STAGES`; two `JUMPS` rows ("Stack line

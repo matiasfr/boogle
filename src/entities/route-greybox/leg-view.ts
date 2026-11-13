@@ -193,7 +193,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     s.mesh.rotation.y = Math.atan2(nx, nz);
     s.mesh.visible = true;
   }
-  const bill = sign(4.2, 1.8, 1.2, 'one', 768),
+  // The bill's foot clears the frame's top rail (1.7 m), which covered its last line from across the tracks.
+  const bill = sign(4.2, 1.8, 1.8, 'one', 768),
     plate = sign(1.9, 0.8, 1.3, 'one', 384),
     endBoard = sign(5.2, 1.4, 0.9, 'two', 768),
     signalPlates = R.slice(0, -1).map(() => sign(1.5, 0.8, 2.6, 'one', 256)),
@@ -328,6 +329,16 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     return out;
   }
   let stood = -1;
+  /** Takes the deck's slabs and the standing pieces' colliders away (and forgets what was drawn), until next shown. */
+  function clear() {
+    if (deckLaid < 0 && stood < 0 && deckEnd < 0) return;
+    for (const b of deckBodies.splice(0)) owner.removeBody(b);
+    for (const b of standing.bodies.splice(0)) owner.removeBody(b);
+    standing.boxes = [];
+    deckLaid = stood = deckEnd = -1;
+    deck.begin();
+    deck.commit();
+  }
   const standing: { boxes: GreyBox[]; bodies: Body[] } = { boxes: [], bodies: [] };
   const euler = new THREE.Euler(0, 0, 0, 'YXZ'),
     quat = new THREE.Quaternion();
@@ -389,9 +400,23 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   let objective = '';
   function draw() {
     const r = rows();
-    deck.mesh.visible = things.mesh.visible = !!r;
     for (const s of [bill, plate, endBoard, pickPlate, gatePlate, townBoard, ...signalPlates]) s.mesh.visible = false;
-    if (!r) return;
+    // With nothing laid the line's end is Ring Island's run-off, which belongs to the island's near view: its deck,
+    // its slabs and the buffers (drawn and solid) stand only while that view is mounted. Across the sea the island
+    // is its far cones, and a slab there would float over the bare hillside.
+    const here = !!r && (r.laid > 0 || ringIslandNear.mounted);
+    deck.mesh.visible = here;
+    things.mesh.visible = !!r;
+    if (!r || !here) {
+      clear();
+      things.begin();
+      things.commit();
+      if (!r) return;
+      gorge(r);
+      things.commit();
+      note(r);
+      return;
+    }
     const { leg, laid } = r;
     // The deck: to the laid end, and on over a laying section's lay clock (2 m steps).
     const laying = r.open && leg.start >= 0 && laid < SECTIONS;
@@ -404,14 +429,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     stand(laid);
 
     things.begin();
-    // The run-off's buffers keep Ring Island's near view company: they are not drawn from across the sea.
-    if (laid > 0 || ringIslandNear.mounted)
-      for (const b of standing.boxes)
-        things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
+    for (const b of standing.boxes) things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
     // The end board, 1.5 m behind the buffers' faces, facing back down the line: blank until the rivet, then the
     // line's name; it travels with the head and is gone at High Gorge (answer i).
     const ringEnd = laid === 0;
-    if (laid < SECTIONS && (!ringEnd || ringIslandNear.mounted)) {
+    if (laid < SECTIONS) {
       const s = ringEnd ? END[0]! + 0.6 : END[laid]! - 0.3;
       line2At(s, P);
       line2World(s, FORM_MID, q);
@@ -446,7 +468,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     });
 
     // The current section's frame, bill, rack and plate.
-    if (r.open && (laid > 0 || ringIslandNear.mounted)) {
+    if (r.open) {
       const f = FRAMES[laid]!,
         k = RACKS[laid]!,
         sec = STACK.sections[laid]!,
@@ -491,7 +513,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       show(plate, local(k, -1.6, 0), k.y, k.tx, k.tz, [{ t: `KIT ${n}`, size: 0.5 }], n);
     }
 
-    // High Gorge: the pickup post, the barrier and the stand-in town's board, while you are near it.
+    gorge(r);
+    things.commit();
+    note(r);
+  }
+  /** High Gorge: the pickup post, the barrier and the stand-in town's board, while you are near it (into `things`). */
+  function gorge(r: NonNullable<ReturnType<typeof rows>>) {
     if (nearGorge()) {
       const north = gorgeAt(0, -1),
         o = gorgeAt(0, 0),
@@ -543,9 +570,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         { t: 'STAND-IN: 3 PLOTS STAKED', size: 0.2 },
       ]);
     }
-    things.commit();
-
-    // The objective line's text, to the play record (no on-screen line on the route).
+  }
+  /** The objective line's text, to the play record (no on-screen line on the route). */
+  function note(r: NonNullable<ReturnType<typeof rows>>) {
+    const laid = r.laid;
     const text = !r.reached
       ? ''
       : !r.done
@@ -596,23 +624,16 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           }
         }
         if (within(p, k, legRack(STACK, laid).reach)) {
-          const full = mine && free(wd, mine) <= 0 ? { blocked: heldBig(wd, mine) ? HANDS_FULL : BACK_FULL } : {};
+          // A blocked prompt carries its reason and no `run`.
+          const full = mine && free(wd, mine) <= 0 ? (heldBig(wd, mine) ? HANDS_FULL : BACK_FULL) : null;
+          const take = (id: string, verb: string, along: number, run: () => void): Interactable => {
+            const target = { id, verb, at: v3(local(k, along, 0), k.y + 1.3) };
+            return full ? { ...target, blocked: full } : { ...target, run };
+          };
           if (r.rack.logs > 0)
-            out.push({
-              id: 'railway-leg-take-logs',
-              verb: TAKE_LOGS,
-              at: v3(local(k, -0.6, 0), k.y + 1.3),
-              run: () => void adapter.depotTake(),
-              ...full,
-            });
+            out.push(take('railway-leg-take-logs', TAKE_LOGS, -0.6, () => void adapter.depotTake()));
           if (r.rack.rails > 0)
-            out.push({
-              id: 'railway-leg-take-rails',
-              verb: TAKE_RAILS,
-              at: v3(local(k, 0.6, 0), k.y + 1.3),
-              run: () => void adapter.depotRailTake(),
-              ...full,
-            });
+            out.push(take('railway-leg-take-rails', TAKE_RAILS, 0.6, () => void adapter.depotRailTake()));
         }
       }
       // The pickup refuses until the fourth section is laid ("Not yet": call 28); the barrier until the room holds
