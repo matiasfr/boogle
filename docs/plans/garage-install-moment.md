@@ -341,6 +341,24 @@ the boxes arrive, the show-off turn at today's table, a second player, a phone. 
   catch-up lift itself (it falls between two frames of the sheet), a watcher inside the garage, a friend on the deck
   through the turn, sound.
 
+<a id="g5-as-built-12-november-2026"></a>
+
+### G5 as built (12 November 2026)
+
+- `train-view.ts`, per train: when its own row's `boiler` goes 0 to 1 on a frame after the view has drawn it since the
+  last restore, 18 bright steam particles at the chimney, the swap to the long body and barrel 0.4 s later with
+  `clank`, a 0.18 s squash of the engine's group, `whistle` at 1.2 s. A restore or a late join clears the memory and
+  shows the rows. No collider, seat, crew or departure-board change. Reduced motion: the swap only.
+- The puff is drawn brighter than the train's own smoke (`readableIntensity`): at plain intensity a steam-coloured
+  particle draws dark grey against the sky, which the first capture showed. The garage's own steam puffs
+  (`steamPuff`, the copy's arrival) still draw that way; left for the detail pass.
+- **Looked at** (`dev/look/evals/garage-platform.ts`; `g5-platform-realtime.webm`, `g5-platform-strip.png`, real
+  time, the Mac at load 8 to 10): the first standard-boiler train ran in 48 s after the install; standing at the
+  Village it wore the short barrel, a white puff rose at the chimney, and under it the engine was the longer one with
+  the taller chimney. **Wrong in it:** the puff sits at and above the chimney, so the barrel's swap shows beneath it
+  rather than behind it; the squash is too short to pick out at 6 frames a second; the whistle is the full 1.5 s
+  one (no short recipe, call 15). Sound was not heard. Not seen: a second player, a restore during the beat.
+
 ## 6. Steps
 
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and
@@ -391,7 +409,7 @@ the live install working. One proof look each; the full check, the bot and the t
       a tab neither in the garage nor within 30 m of the table). Proof: one two-player look from `steel-home`
       (the look skill's comparison-multiplayer reference): one installs, the
       second stands 8 m off; the second page's video shows the drop and the turn with its own camera unmoved.
-- [ ] **G5. The platform beat (S).** Edit `train-view.ts`: per train, remember the last drawn `boiler`; on 0 to 1 while
+- [x] **G5. The platform beat (S).** As built: [below](#g5-as-built-12-november-2026). Edit `train-view.ts`: per train, remember the last drawn `boiler`; on 0 to 1 while
       the view has drawn that train before, emit the steam puff at the chimney, swap under it at 400 ms, `clank`, a
       180 ms squash of the engine group, `whistle` short at 1200 ms; reset the memory in `restore()`. No collider or
       seat change. Proof: `--rail-seed steel-home --video`, install by the eval, camera on the Village's line 2

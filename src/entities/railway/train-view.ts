@@ -13,8 +13,9 @@ import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
 import { createWakePresentation } from '../../render/wake-presentation.ts';
 import { emit } from '../../render/particles.ts';
-import { whistle, thump, bell, cordPull } from '../../render/machine-sfx.ts';
+import { whistle, thump, bell, cordPull, clank } from '../../render/machine-sfx.ts';
 import { dustRing } from '../../render/particle-effects.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import {
   LINE_HALTS,
@@ -263,6 +264,10 @@ export async function createRailwayTrains(
       boiler,
       long,
       wears: 0,
+      /** The platform beat (docs/plans/garage-install-moment.md, G5): this view has drawn the train since the last
+       * restore, and the seconds into its longer boiler going on, or -1. */
+      seen: false,
+      beat: -1,
       lamp: { mesh: stopLamp, material: lampMaterial, on: false },
       hold: { mesh: holdLamp, material: holdMaterial, on: false },
       fit,
@@ -276,6 +281,10 @@ export async function createRailwayTrains(
       speed: 0,
     };
   });
+  /** The platform beat's times, seconds from the row's change: the swap under the puff, the squash's length, the toot. */
+  const BEAT = { swap: 0.4, squash: 0.18, toot: 1.2 } as const;
+  const BEAT_STEAM = new THREE.Color('#e9eef2');
+  const beatAt = new THREE.Vector3();
   const first = trains[0]!;
   /** Line 2's trains: the ones that carry the kit and the footing wagon. */
   const cargo = trains.filter((tr) => tr.line === LINE2);
@@ -579,6 +588,10 @@ export async function createRailwayTrains(
       const last = { ...trainRow(w, tr.slot) };
       tr.last = last;
       tr.count = -1;
+      // A restore or a late join shows the rows only: no beat, and the next frame's fit is not an edge.
+      tr.seen = false;
+      tr.beat = -1;
+      tr.model.cars[0]!.scale.set(1, 1, 1);
       drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
     });
     step();
@@ -813,7 +826,50 @@ export async function createRailwayTrains(
           tr.hold.material.color.set(held ? HOLD.on : HOLD.off);
         }
         const worn = on && !(tr.slot === 0 && boilerFlying()),
-          wears = on ? (row.boiler ?? 0) : 0;
+          fit = on ? (row.boiler ?? 0) : 0;
+        // The platform beat: the train's own row took the longer boiler on a live tick (it stands at the Village). A
+        // puff of steam covers the swap, then a clank and a short squash, then a toot. Riders keep their seats: no
+        // collider or seat changes.
+        const loco = tr.model.cars[0]!;
+        if (tr.seen && fit === 1 && tr.wears === 0 && tr.beat < 0 && !reducedMotion) {
+          tr.beat = 0;
+          tr.model.chimneyTop.getWorldPosition(beatAt);
+          for (let i = 0; i < 18; i++)
+            emit({
+              x: beatAt.x + (Math.random() - 0.5) * 1.6,
+              y: beatAt.y - 0.9 + Math.random() * 1.2,
+              z: beatAt.z + (Math.random() - 0.5) * 1.6,
+              vx: (Math.random() - 0.5) * 0.7,
+              vy: 0.5 + Math.random() * 0.9,
+              vz: (Math.random() - 0.5) * 0.7,
+              life: 1.4,
+              size: 0.7,
+              color: BEAT_STEAM,
+              // Bright enough to read as white steam over the red barrel (plain particles draw dim in daylight).
+              intensity: readableIntensity() * 1.3,
+              alpha: 0.9,
+              grow: [1, 2.6],
+              fade: 0.6,
+              shape: 'dust',
+            });
+        }
+        let wears = fit;
+        if (tr.beat >= 0) {
+          const before = tr.beat;
+          tr.beat += dt;
+          const at = (t: number) => before < t && tr.beat >= t;
+          if (tr.beat < BEAT.swap) wears = 0;
+          if (at(BEAT.swap)) clank(tr.cars[0]!.x, tr.cars[0]!.z);
+          const u = (tr.beat - BEAT.swap) / BEAT.squash;
+          const k = u > 0 && u < 1 ? Math.sin(u * Math.PI) : 0;
+          loco.scale.set(1 + 0.04 * k, 1 - 0.07 * k, 1 + 0.04 * k);
+          if (at(BEAT.toot)) whistle(tr.cars[0]!.x, tr.cars[0]!.z);
+          if (tr.beat >= BEAT.toot || fit !== 1) {
+            tr.beat = -1;
+            loco.scale.set(1, 1, 1);
+          }
+        }
+        tr.seen = true;
         if (wears !== tr.wears) {
           tr.wears = wears;
           if (tr.cab) tr.cab.body.visible = !wears;

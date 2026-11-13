@@ -814,7 +814,10 @@ the server's accept: the barrel lifts off its stand in 0.4 s, drops, the bolts g
 across the island, quiet at distance) and the table turns the engine once round. Nothing is taken from them: their
 camera and input are theirs and Back still leaves the garage. A friend more than 30 m from the table with the garage
 shut gets the banner above instead. A refused install lowers the barrel at once; one the server accepts after the
-barrel has already lowered plays a short version (lift, drop, bolts, steam). Not tested on a device.
+barrel has already lowered plays a short version (lift, drop, bolts, steam). **At the platform (G5):** each line 2
+train takes the boiler the next time it stands at the Village, and whoever is there sees it: a puff of white steam at
+the chimney, the longer barrel and taller chimney on it 0.4 s later with a clank and a small squash, then a whistle.
+Riders keep their seats. Not tested on a device.
 
 **The stack line to High Gorge, a greybox (12 November 2026; [greybox-route](../plans/greybox-route.md), leg 1 step
 4).** Every label below is a placeholder, grey and readable, with no sound or effect. **On Ring Island** the tracks
