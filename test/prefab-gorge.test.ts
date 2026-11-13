@@ -53,7 +53,8 @@ test('Gorge colliders and drawn placements match the old hand-built platform', a
     { ...line2, RAIL_GATES, RAIL_GRANTS, span: boxes.span, leg2Boxes: leg2.leg2Boxes, LEG2, ...runtime },
   );
   const owner = createOwnedView();
-  const { mesh, solids } = await boxes.drawGreyBoxes(owner, massing.gorgeMassing());
+  const authored = massing.gorgeMassing();
+  const { mesh, solids } = await boxes.drawGreyBoxes(owner, authored);
   const placements = Array.from({ length: mesh.count }, (_, i) => {
     const matrix = new THREE.Matrix4();
     const colour = new THREE.Color();
@@ -62,6 +63,15 @@ test('Gorge colliders and drawn placements match the old hand-built platform', a
     return { matrix: matrix.toArray(), colour: colour.toArray() };
   });
   for (const [file, value] of [
+    [
+      'test/fixtures/prefab-gorge-counts.json',
+      {
+        authored: authored.length,
+        visible: mesh.count,
+        bodies: solids,
+        batches: owner.root.children.filter((child) => child instanceof THREE.InstancedMesh).length,
+      },
+    ],
     ['test/fixtures/prefab-gorge-colliders.json', colliders],
     ['test/fixtures/prefab-gorge-placements.json', { boxes: mesh.count, solids, placements }],
   ] as const) {
