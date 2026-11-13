@@ -1,8 +1,9 @@
 # Leg 1: the lay ask can expire before boarding
 
 13 November 2026, `codex/leg1-lost-ask`. The original diagnosis below is the **v34 baseline**, committed at
-`7c28778a`. The [v35 correction candidate](#v35-correction-candidate) follows it; its unresolved anti-spam conflict
-prevents a clean check. **The original failure was reproduced in the sim.**
+`7c28778a`. The [v35 bounded correction](#v35-bounded-correction) below supersedes the unrestricted-repeat
+candidate at `77bb44f3`. The owner ruled that the existing anti-spam assertions win unchanged.
+**The original failure was reproduced in the sim; the corrected rule is committed for independent review.**
 The failure is a consumed one-shot request, not an ask left permanently assigned to a held train.
 
 ## Deterministic failure
@@ -122,125 +123,117 @@ evidence manifest; there is no broker/browser manifest for these Node runs.
 No new browser/broker run, push, ship, stash, WORLD_NS change or ROM input. The initial required `npm run inflight`
 was invoked before noticing that it can query GitHub; no further network command was used.
 
-## V35 correction candidate
+## V35 bounded correction
 
-The orchestrator accepted the correction on 13 November. This branch implements it for independent review;
-**not pushed, shipped or rebased**. The original diagnosis above is retained as historical evidence, not a claim
-that the current tree still has a TODO or lacks an outward lever.
+Policy retained on this branch: **at most one dwell extension per stand**, not unrestricted repeat refresh and not
+the drop-refresh fallback. Nothing has been pushed, shipped or rebased. The owner explicitly ruled on the conflict
+found at `77bb44f3`; the original two anti-spam assertions at `test/railway-r3b1-review.test.ts:38` and `:46` are
+unchanged and now pass. The earlier candidate's two failures remain in its archived logs, not the current results.
 
-- `src/sim/railway-sys-route.ts:85`: redirecting a standing stub train sets `depart` to the lay tick, retaining
-  `arrived`. The reduced head-2 case now has an immediate boarding window at arrival +10; the TODO is removed.
-- `src/sim/railway-sys-trains.ts:99`: the platform branch refreshes matching standing trains before testing the
-  pending request digit, and returns accepted when the dwell actually changes. No new request digit, op or saved
-  field. Aboard duplicates, same-tick duplicates and duplicates while no matching train stands remain no-ops.
-- `src/entities/railway/halts-view.ts:583`: each still-open stub head gets the existing outward lever after the
-  next section opens. Heads 1 and 2 now match head 3. No new literal copy; **suspect placeholder for the owner:**
-  the newly offered use of “Request stop: to Stack railhead” at heads 1 and 2.
-- `dev/look/bots/railway-legs.ts:158`, `dev/look/bots/railway-ride.ts:73`: use the real lever if no outward train
-  stands, and re-request if the signal is consumed during the walk to the platform edge. The bot no longer assumes
-  that the lay's ask is still pending. This is implemented, not yet proven by a browser playthrough.
-- `src/world/namespace.ts:77`: v35, dated history, no shape change or migration. The cart-save namespace test
-  now expects v35. `test/helpers/rail-rows.ts:95` mirrors the production repeat-call rule, exposing its conflict below.
+- `src/sim/railway-sys-trains.ts:90`: `depart === arrived` admits only an unextended stand. The first eligible call
+  writes `depart=tick`; later calls cannot move it again. A request may predate arrival, so a pending digit does not
+  itself prove that the standing train already received its boarding extension. The guard is on the shared wait
+  helper, before either platform or aboard calls can change dwell. It uses no new saved field, op or per-player state.
+- `src/sim/railway-sys-route.ts:85`: the lay still gives a redirected train its full 50 ticks, retaining `arrived`.
+  That departure clock already differs from arrival, so a later platform call cannot re-extend that same stand.
+  The regression checks all 49 standing ticks, refuses a repeat on tick 49, and departs exactly on tick 50.
+- `railway-trains.ts:513`: the next real arrival resets `depart` and `arrived` together. Save/load preserves both,
+  so it does not replenish the allowance. Signal stands cannot match a platform call. Neither end headway timestamps
+  nor the end/Ring hold caps are changed. The original late-call assertion still permits the existing one asker's
+  dwell across an end hold deadline: 649 + 50 = 699; it does not permit a second extension. The cap is not restarted.
+- The added save/stand test starts with a request pending before arrival, permits one extension, restores the world,
+  then spams until departure without prolonging the original hold. A second real stand gets its own allowance.
+  The real Ring host test permits the first call, refuses a second near the cap, and leaves on the original cap.
+- `src/entities/railway/halts-view.ts:583`: the previous correction still offers an outward lever at every still-open
+  old head after the next section opens, including heads 1 and 2. `dev/look/bots/railway-ride.ts:73` and
+  `railway-legs.ts:158` use it when no outward train stands, and recover a consumed ask during the walk.
+- `test/railway-jump.test.ts:37`: pin all **24 menu rows** literally, in order, plus the 23 offered seed stages.
+  The expectation is not derived from the seed catalog. Adding a buildable seed cannot silently add a menu item;
+  `gorge-mid` remains unoffered. No menu source or wording changed.
+- `src/world/namespace.ts:77`: retain the unshipped **v35** boundary, revising its dated history to describe the
+  bounded rule. No extra bump or migration. The v35 golden (only the two Gorge stages changed from v34) still passes;
+  **no pinned fixture moved or was regenerated in this follow-up**.
 
-The lay regression verifies a full 49 standing ticks, a pending-call refresh, another 49 standing ticks and departure
-on tick 50, while `arrived` never changes. The former stub is now a middle halt, with no Ring control flag, so neither
-end hold nor Ring control hold applies to the redirected train. Separate finite-call end and real-host Ring tests
-verify that a late repeated ask receives its full dwell across the original hold deadline and then leaves with no
-additional hold. The existing rule gives dwell priority over the hold deadline; keeping `arrived` does not truncate
-an asker's 50 ticks.
+No new prompt literal was introduced. **Suspect placeholder lines for the owner:** the existing outward-lever
+wording now offered at heads 1 and 2, “Request stop: to Stack railhead” (`halts-view.ts:654`, `:808`). The homeward prompts are unchanged.
 
-### Repeat-call conflict still open
+### Final 960-case table beside the baseline
 
-**Two existing anti-spam tests fail, without weakened assertions or new skips.** In
-`test/railway-r3b1-review.test.ts:38` and `:46`, repeated platform calls were formerly accepted only once while the
-request digit remained set. Moving refresh ahead of the duplicate check means an ask every tick continuously moves
-`depart`; both probes remain standing for 50,000 ticks. `arrived` and the hold cap stay fixed, but the dwell check
-runs before the hold and is never satisfied. A finite repeated call works; continuous repeats can stall the fleet.
+Same stages (`gorge-open`, `gorge-mid`), 16 schedules, every remaining lay, delays 0/10/50/150/600, two policies,
+3,600-tick observation limit and ten-tick boarding window. Quantiles include served cases only; minima are zero.
+Waits are ticks from rider arrival, not warped browser seconds. `miss` means no window by 3,600; `>1200` includes misses.
 
-A clarification is pending: preserve the bounded anti-spam rule with a limit on repeated refreshes, or explicitly
-allow every repeat a fresh 50 ticks. The former needs a concrete acceptance/window rule; an unlimited full dwell
-for every repeat and a finite departure bound cannot both hold. No extra request state, tunable or exception was
-invented to conceal this conflict. The literal repeat-refresh candidate is committed for review, **not ready to ship**.
+| Lay / n per policy | v34 auto median / p95 / max; miss; >1200 | Bounded v35 auto median / p95 / max; miss; >1200 | v34 one-call median / p95 / max; miss | Bounded v35 one-call median / p95 / max; miss |
+| ------------------ | ---------------------------------------- | ------------------------------------------------ | ------------------------------------- | --------------------------------------------- |
+| 1 / 80             | 364 / 1730 / 1961; 0; 14                 | 364 / 1575 / 2007; 0; 14                         | 290 / 945 / 1961; 0                   | 280 / 845 / 995; 0                            |
+| 2 / 80             | 236 / 484 / 534; 23; 23                  | 264 / 484 / 534; 20; 20                          | 225 / 407 / 534; 1                    | 232 / 414 / 534; 0                            |
+| 3 / 160            | 45 / 342 / 436; 95; 95                   | 22 / 326 / 436; 76; 76                           | 182 / 476 / 980; 7                    | 118 / 426 / 619; 0                            |
+| 4 / 160            | 301 / 471 / 488; 58; 58                  | 294 / 660 / 1001; 45; 45                         | 311 / 638 / 997; 2                    | 334 / 851 / 1024; 0                           |
 
-### The same 960 cases, before and after
+The arrival-call assertion is retained: **480/480 boardable; zero misses; worst 1024 <1600** (102.4 nominal seconds).
+Automatic-only misses are **141/480**: the lever is still needed for late arrivals. All **155** cases over 1,200 are
+in the automatic-only policy and retain full transition traces. No assertion, observation window or spacing limit
+was weakened. The original bot timing analysis above remains historical; there is no new browser pacing measurement.
 
-Same stages, 16 seeds, lay schedule, five arrival delays, two policies and 3,600-tick observation limit as the baseline.
-The opt-in assertion now requires all 480 arrival-call cases to have a ten-tick boarding window and wait **<1,600**.
-Both the audited and faster sweep produce this identical table. Times are ticks from rider arrival; quantiles exclude
-censored cases. Every minimum is zero. `miss` means no window by 3,600; `>1200` includes misses.
+### Final route gates and checks
 
-| Lay / n per policy | v34 auto median / p95 / max; miss; >1200 | v35 auto median / p95 / max; miss; >1200 | v34 one-call median / p95 / max; miss | v35 one-call median / p95 / max; miss |
-| ------------------ | ---------------------------------------- | ---------------------------------------- | ------------------------------------- | ------------------------------------- |
-| 1 / 80             | 364 / 1730 / 1961; 0; 14                 | 365 / 1678 / 2007; 0; 14                 | 290 / 945 / 1961; 0                   | 280 / 845 / 995; 0                    |
-| 2 / 80             | 236 / 484 / 534; 23; 23                  | 271 / 493 / 543; 20; 20                  | 225 / 407 / 534; 1                    | 232 / 414 / 543; 0                    |
-| 3 / 160            | 45 / 342 / 436; 95; 95                   | 29 / 326 / 436; 76; 76                   | 182 / 476 / 980; 7                    | 118 / 426 / 619; 0                    |
-| 4 / 160            | 301 / 471 / 488; 58; 58                  | 315 / 679 / 1001; 43; 43                 | 311 / 638 / 997; 2                    | 346 / 851 / 1001; 0                   |
+The final audited run passes **77/77**, no TODOs, in 388.3 s. Its 960-case distribution is identical to the quick
+sweep above. Exact command (timeout bounds the entire process):
 
-One-call misses fall **10 → 0**, maximum served wait **1961 → 1001** (100.1 nominal seconds). Automatic misses fall
-**176 → 139**; one-shot asks still do not cover arbitrarily late arrival. This is why the repeatable outward lever
-matters. All **153** v35 cases over 1,200 are automatic-only and have transition traces in
-`.look/lost-ask-v35/over-1200.jsonl`; all 960 cases and distributions are beside it. The baseline's historical bot
-seconds above are unchanged; no new browser pacing claim is inferred from these headless results.
+```sh
+RAIL_AUDIT=1 FUZZ_STRIDE=1 ROUTE_GATES=1 LEG_ASK_FUZZ=1 UNIT_ONLY=test/railway-route-rules.test.ts timeout 1800 node dev/test-unit.ts --test-timeout=1200000
+```
 
-### Route gates, unchanged limits
-
-`RAIL_AUDIT=1 FUZZ_STRIDE=1 ROUTE_GATES=1 LEG_ASK_FUZZ=1 UNIT_ONLY=test/railway-route-rules.test.ts timeout 1200 node dev/test-unit.ts --test-timeout=600000`
-passed **77/77**, no TODOs, in 452.5 seconds. Gate 8 fixed stages / gate 9 settled worst waits are below;
-parentheses give mean, and the last column is settled waits over 1,050. The gate limits remain 1,350 fixed,
-1,400 four-seed settled, 1,600 growing. The 48-seed light/heavy checkpoint sheet was not rerun.
+Gate 8 fixed-stage / gate 9 settled worst waits, with means in parentheses. Limits remain **1350 fixed / 1400
+four-seed settled / 1600 growing**; the final column is settled waits over 1050. No gate was loosened.
 
 | Seed   | 0 laid    | 1         | 2         | 3          | 4          | Settled    | Settled >1050 |
 | ------ | --------- | --------- | --------- | ---------- | ---------- | ---------- | ------------- |
-| c0ffee | 796 (248) | 607 (234) | 982 (343) | 887 (320)  | 1062 (405) | 1160 (435) | 6/307         |
-| 777    | 735 (335) | 596 (218) | 868 (271) | 839 (322)  | 914 (384)  | 1319 (455) | 19/302        |
-| 5eed   | 725 (329) | 544 (198) | 875 (263) | 1034 (352) | 974 (392)  | 1157 (418) | 5/322         |
-| badd   | 741 (355) | 623 (225) | 812 (304) | 766 (360)  | 982 (399)  | 1247 (432) | 6/325         |
+| c0ffee | 734 (329) | 607 (234) | 982 (343) | 887 (320)  | 1062 (405) | 1160 (443) | 6/303         |
+| 777    | 749 (320) | 596 (227) | 868 (282) | 839 (321)  | 877 (390)  | 1319 (459) | 18/298        |
+| 5eed   | 697 (351) | 662 (198) | 875 (263) | 1034 (373) | 974 (392)  | 1157 (426) | 5/312         |
+| badd   | 726 (352) | 623 (225) | 812 (306) | 766 (360)  | 982 (406)  | 1138 (419) | 4/324         |
 
-- Growing fuzz worst **1379**, longest stand **628**, six 20,000-tick schedules, all within unchanged limits.
-- Gate 10: each quiet stage's lap ≤1.2× non-stop, pass. Gates 5 (stone) and 12 (fleet joins ≤1050), pass.
-- Gate 14: rivet to Gorge **3618 ≤3700**; frame idle **1129/559/363/363**, below **1200/600/600/600**.
-- Call 88: old-head to new-head journey **559/363/363/368 ≤1158**.
-- Gate 15: steel kit in yard **+651**; first steel home/install **+1823 idle / +2396 fed** versus **+1824** build-2
-  baseline, fed penalty 572 ≤1050. These are sim ticks, not warped browser seconds.
+Growing fuzz: six 20,000-tick schedules; worst **1431**, longest stand **590**. Gate 10's ≤1.2× non-stop lap, gate 5's
+stone delivery, and gate 12's three joining trains within 1050 all pass. Gate 14: rivet to Gorge **3618 ≤3700**;
+frame idle **1129/559/363/363**, below **1200/600/600/600**. Call 88 old-to-new-head journey **559/363/363/368 ≤1158**;
+its four fuzz journeys peak at **1076**. Gate 15: steel kit **+651**; first steel home/install **+1823 idle / +2396 fed**,
+versus build-2 **+1824**, fed penalty **572 ≤1050**. The 48-seed light/heavy checkpoint sheet was not rerun.
 
-### Fixtures, final checks and browser evidence
+Final checks after the last runtime/test edit:
 
-Only `test/fixtures/railway-golden.json` moved: namespace v35 plus `gorge-mid` and `gorge-reached` stage/after hashes.
-`gorge-mid` stays at tick 13085; `gorge-reached` moves **15269 →15313**. Regenerated with that fixture helper's
-`GOLDEN=1` command scoped to shard 8:
-`GOLDEN=1 UNIT_ONLY=test/railway-golden-8.test.ts timeout 180 node dev/test-unit.ts --test-concurrency=1`.
-The prior pinned-fixture check found only those two changed stages; schema, M12, ops and tick-order pins did not move.
-Formatting then normalized the JSON; regeneration was not used to hide any rule failure.
+| Check                                                            | Result                                                                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `npm run check`, scoped `UNIT_ONLY`                              | exit 0: 160/160, no TODOs; lint, typecheck, registry, level, assets and build pass                     |
+| `timeout 600 node dev/ship-check.ts 7c28778a`                    | exit 0: 1065 pass, 0 fail, one unchanged all-longer-fleet TODO; 91 affected files                      |
+| Six-train fleet/join, train/hold units, original anti-spam tests | pass in route gates and scoped check; both original anti-spam test bodies byte-identical to `7c28778a` |
+| Real hold-host tests                                             | 4/4: late join, restart, bounded repeat, assigned-ask release                                          |
+| Pinned golden shard 8 and menu checks                            | pass; no golden regeneration or new fixture edits                                                      |
+| `npm run registry`                                               | pass; 22 presence keys, 16 message types, 16 ops, 9 states                                             |
+| `npm run loop -- run`                                            | pass; headless model, later areas still flagged stand-ins                                              |
 
-The requested visual question was whether still-open head 1 shows separate homeward/outward levers after section 2.
-The client timed out in the shared queue; the broker later completed with status 1 before rendering:
-`--clock-url requires two-player warp`. The [broker manifest](../../.look/evidence/1794562452463-67714/evidence.json)
-and output record this failure. **No new PNG was produced or opened.** The original legs2 still is historical v34
-only. No updated bot playthrough, physical boarding, prompt reach/placement, live repeat-call delivery or visual
-quality is claimed. No direct Chromium or broker bypass was used.
+The scoped check used `UNIT_ONLY='test/railway-route-rules.test.ts test/railway-trains.test.ts
+test/railway-r3b1-review.test.ts test/railway-cart.test.ts test/railway-jump.test.ts test/railway-golden-8.test.ts'`
+and `timeout 600 npm run check`. Hold-host used
+`timeout 240 node --import ./test/helpers/rail-no-audit.ts --test --test-timeout=120000 --test-name-pattern='hold host' server/test/railway-steel-host.test.ts`.
+The ship-check base scopes this job rather than inherited pre-rebase work; its output includes the unchanged
+`test/railway-install.test.ts:434` all-longer TODO, not a new skip or a passing assertion. Prettier ran on changed files.
+No whole-suite run. Logs, all 155 >1200 traces, distributions and source hashes are indexed in the
+[worker-authored headless manifest](../../.look/lost-ask-bounded/manifest.json), which is not a broker manifest.
 
-Final verification after the last code/test edit (all runs bounded by `timeout`):
+Implementation commit: `2e6e4a8189be3310fd34eabde64e548a6a0f58a2`; report committed separately.
 
-- `npm run check` with `UNIT_ONLY` naming route-rules, trains, r3b1-review, cart and golden shard 8: lint and
-  typecheck pass; the scoped unit run has **149 passes / 2 anti-spam failures / 0 TODOs** (151 tests). It stops there, so this final check
-  does **not** establish a fresh level/assets/build pass.
-- `timeout 600 node dev/ship-check.ts 7c28778a`: registry, changed-file lint and typecheck pass; affected-test closure
-  has **1061 passes / 2 failures / 1 pre-existing TODO** (1064 tests), with the same two anti-spam failures.
-  The unrelated all-longer installation TODO in `test/railway-install.test.ts:434` remains unchanged. The explicit base scopes the accepted follow-up, not inherited pre-rebase work.
-- Four real-host hold tests pass: late join, save/restart, finite repeated-call dwell and assigned-ask release.
-  The finite end-platform repeat test also passes. The six-train fleet/join gates and all route-rules tests pass.
-- `npm run registry` passes; `npm run loop -- run` passes the headless route model (future route areas remain
-  explicitly modeled stand-ins; not browser traversal). The audited 960-case gates above match the final runtime
-  sources; subsequent edits changed only documentation and test expectations/coverage.
-- Prettier ran on every changed file, including the Markdown files with the repository's Markdown ignore overridden.
-  No full suite, checkpoint 48-seed sheet, direct browser, push, ship, rebase, stash or ROM input.
+`review stamp f0ee8b15ec47 (41 files since origin/main).`
 
-Headless logs, distributions, every >1200 trace, source hashes and final check counts are indexed in the
-[worker-authored manifest](../../.look/lost-ask-v35/manifest.json). It is explicitly not a broker manifest.
-Implementation commit: `84414729e6a367976a339e3624c4bacbab8e6d1b`. The report is committed separately.
+Generated with `timeout 120 npm run review-stamp -- /Users/matiasfranco/Developer/boogle-codex/leg1-lost-ask --no-fetch`.
+This includes inherited pre-rebase work, as intended. It is a fingerprint for the independent review, not a claim
+that review has happened. No fetch, push, ship, rebase, stash, new op, saved field or ROM input.
 
-`review stamp be3cdffd536a (41 files since origin/main).`
+### Browser work owed
 
-Generated by `npm run review-stamp -- /Users/matiasfranco/Developer/boogle-codex/leg1-lost-ask --no-fetch` after the
-implementation commit. It includes inherited pre-rebase work as intended; no rebase or network fetch was performed.
-This is the fingerprint for an independent review, not a claim that one has occurred. Recompute after later edits.
+Per the owner's latest instruction, **no browser retry or new PNG**. The lever-placement look at still-open head 1
+and the `ring-joined` → `gorge` bot playthrough are owed, including real boarding and prompt/server delivery. The
+[previous broker capture](../../.look/evidence/1794562452463-67714/evidence.json) failed before rendering with
+`--clock-url requires two-player warp`; it provides no visual verdict. Only the historical v34 `legs2/end-still.png`
+was inspected earlier (rider at a platform, no adjacent train). No current lever placement, visual quality, bot
+success, live repeat-call delivery or real-time feel is claimed. Independent review remains required before shipping.
