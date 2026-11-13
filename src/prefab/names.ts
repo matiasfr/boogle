@@ -1,8 +1,12 @@
 // Names are portable data; implementations live behind the runtime door.
 /* oxlint-disable typescript/no-empty-object-type -- declaration-merging registries intentionally start empty */
 export interface BuilderNames {}
-export interface InteractionNames {}
-export interface GateNames {}
+export interface InteractionNames {
+  'seat.sit': true;
+}
+export interface GateNames {
+  open: true;
+}
 export interface MaterialNames {}
 export interface AssetNames {}
 export interface ComponentInits {}
@@ -21,9 +25,9 @@ export type NameRegistry = {
   retired: readonly string[];
 };
 export const names: NameRegistry = {
-  builders: [],
-  interactions: [],
-  gates: [],
+  builders: ['seat.chair'],
+  interactions: ['seat.sit'],
+  gates: ['open'],
   materials: [],
   assets: {},
   retired: [],

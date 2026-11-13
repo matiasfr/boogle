@@ -151,6 +151,16 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 
 `test/prefab-workshop.test.ts` executes today's `makeWorkshop` and furnishing with recording service dependencies and the actual forge plan. Committed collider and placement bytes include the wire-visible `forge-workshop` seat id, the world sit/exit poses and the chair's local/world placement. Only `GOLDEN=1` regenerates them. The original chair code is still intact in this baseline commit.
 
+### Step 3 as built; visual proof held
+
+Implemented `instantiate`, the registered `seat.chair` builder, `town.workshop-chair` and the compiled `workshop` level in the room owner's floor frame. The workshop owns the instance with `OwnedView`, toggles its two bodies with readiness, and keeps the original body insertion order and seat registration lifetime. Both baseline goldens remain byte-identical without regeneration. `test/prefab-records.test.ts` validates every compiled record and level, geometry, seat clearance and the current room floor authority. Runtime implementations for assets, batches, named materials and capsule bodies deliberately fail closed until their authored conversion steps; component initializers remain empty.
+
+`npm run check` passed (1,681 passing tests, one existing fleet-wait TODO, no failures; 12 unchanged level reports), as did `node dev/ship-check.ts`, prefab freshness and registry. No source under sim/world/net/server or railway/ring-island/route-greybox changed relative to this job's starting commit `60be20237`. No namespace bump, push, ship, copy edit or device test.
+
+The broker's single-player clock option was incompatible with the trusted launcher; `--real` returned healthy WebGPU captures within ten minutes each. Opened `.look/evidence/1794562229858-61733/prefab-chair-before-real-still.png` and `.look/evidence/1794562620463-72059/prefab-chair-after-real-still.png`: doorway, floor, chimney and furnace guard look unchanged, but the yellow player's pose and red NPC's position differ. The guard obscures the chair's corner. This is not a demonstrated static-geometry regression, but the owner's literal **stop if a still differs** condition fired: no further implementation or visual acceptance. Step 3 stays unticked pending that proof.
+
+The already-running `railway-seats` evaluation was stopped under that condition, within its ten-minute limit. Its verdict is **killed**, not passed; sit/stand proof is owed. Broker manifests: `.look/evidence/1794562229858-61733/evidence.json` (before), `.look/evidence/1794562620463-72059/evidence.json` (after), `.look/evidence/1794562781062-79085/evidence.json` (seat run). They fingerprint the tested source before these as-built prose notes. Not tested on a device; real-time feel remains unverified. Steps 4 and 5 were not started.
+
 Nothing new is placed and nothing moves. `npm run level-check` at `f464b11d2`: 12 reports, all planned or never-drawn track continuity, none on reachability. Each conversion step must leave that list unchanged; the collider goldens are the stricter proof.
 
 ## 6. What can start today, and what waits

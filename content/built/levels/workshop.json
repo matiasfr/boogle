@@ -1,0 +1,19 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "workshop",
+  "placements": [
+    {
+      "id": "forge-workshop",
+      "pos": [
+        2.7,
+        0,
+        0.3
+      ],
+      "prefab": "town.workshop-chair"
+    }
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

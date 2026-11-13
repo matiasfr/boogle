@@ -14,6 +14,11 @@ import { PLAYER_R } from '../src/constants.ts';
 import type { Body, Shape } from '../src/physics/engine.ts';
 import type { Seat } from '../src/entities/railway/seat.ts';
 import type { Plan } from '../src/place/building-plans.ts';
+import { names } from '../src/prefab/names.ts';
+import { validateArtifact, validateLevel, validateLevelArtifact } from '../src/prefab/validate.ts';
+import type { Placement } from '../src/prefab/types.ts';
+import artifact from '../content/built/prefabs.json' with { type: 'json' };
+import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 
 const opening = sourceModule<{ forgePlan(): Plan }>(fs.readFileSync('src/place/opening-plans.ts', 'utf8'), {
   FORGE: layout.FORGE,
@@ -41,11 +46,41 @@ export function captureWorkshop() {
   };
   const chair = new THREE.Group();
   chair.name = 'captured-chair';
+  const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.ts').createOwnedView>(
+    'src/render/owned-view.ts',
+    'createOwnedView',
+    { THREE, owners: new WeakMap(), addBody: () => {}, removeBody: () => {} },
+  );
+  const runtime = sourceModule<{
+    instantiate: typeof import('../src/prefab/instantiate.ts').instantiate;
+    workshopChair: Placement;
+  }>(fs.readFileSync('src/prefab/instantiate.ts', 'utf8'), {
+    THREE,
+    artifact,
+    workshop,
+    names,
+    validateArtifact,
+    validateLevel,
+    validateLevelArtifact,
+    builders: new Map([['seat.chair', () => chair]]),
+    registerSeat,
+    ROOM_GROUP: 8,
+    staticBody,
+  });
+  let chairRoot = chair;
+  const instantiate: typeof runtime.instantiate = (...args) => {
+    const instance = runtime.instantiate(...args);
+    chairRoot = instance.root;
+    return instance;
+  };
   const makeWorkshop = sourceFunction<typeof import('../src/entities/town/workshop.ts').makeWorkshop>(
     'src/entities/town/workshop.ts',
     'makeWorkshop',
     {
       THREE,
+      instantiate,
+      workshopChair: runtime.workshopChair,
+      createOwnedView,
       reducedMotion: true,
       addBody: () => {},
       getMask: () => 0,
@@ -80,8 +115,8 @@ export function captureWorkshop() {
   scene.updateMatrixWorld(true);
   const placement = {
     id: 'forge-workshop',
-    local: chair.position.toArray(),
-    world: chair.getWorldPosition(new THREE.Vector3()).toArray(),
+    local: chairRoot.position.toArray(),
+    world: chairRoot.getWorldPosition(new THREE.Vector3()).toArray(),
     seats,
   };
   view.dispose();
