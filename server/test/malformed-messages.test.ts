@@ -47,6 +47,8 @@ test('legacy and malformed classic messages cannot change or crash a railway roo
     await Promise.all([a.opened, b.opened]);
     assert.equal(await alive(a, 50), true);
     const world = svc.roomHost()!.room(room)!.world;
+    assert.ok('whenReady' in world && typeof world.whenReady === 'function');
+    await world.whenReady(); // A heartbeat proves socket liveness, not checkpoint startup completion.
     const before = world.sync.snapshot().data;
     for (const type of ['w:edit', 'w:edits', 'w:hash', 'w:need', 'w:snap', 'w:rejected'])
       for (const e of [null, [], { op: { toString: 0 } }, { op: 'who.set', n: 'Forged', c: 1 }])

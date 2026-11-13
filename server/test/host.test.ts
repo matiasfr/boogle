@@ -151,6 +151,8 @@ test('ordinary rail-demo and production demo select distinct hosts and saves', a
     await Promise.all([production.next(is('welcome')), classic.next(is('welcome'))]);
     const productionHost = svc.roomHost()!.room(productionRoom)!.world;
     const classicHost = svc.roomHost()!.room(classicRoom)!.world;
+    assert.ok('whenReady' in productionHost && typeof productionHost.whenReady === 'function');
+    await productionHost.whenReady(); // Welcome precedes asynchronous railway checkpoint startup.
     assert.notEqual(productionHost, classicHost);
     assert.ok(((productionHost.sync.snapshot().data.railway as Msg).c as Msg).beam, 'the railway saves its world');
     assert.equal(classicHost.sync.snapshot().data.railway, undefined);
