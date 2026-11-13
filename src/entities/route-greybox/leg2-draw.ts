@@ -35,11 +35,12 @@ function posts(p: Piece): GreyBox[] {
   const out: GreyBox[] = [];
   const s = Math.sin(p.yaw),
     c = Math.cos(p.yaw),
-    under = p.top - p.h,
     count = Math.max(2, Math.ceil(p.d / 12) + 1);
   for (const across of p.w > 8 ? [-p.w / 2 + 0.6, p.w / 2 - 0.6] : [0])
     for (let k = 0; k < count; k++) {
-      const along = -p.d / 2 + 0.6 + ((p.d - 1.2) * k) / (count - 1);
+      const along = -p.d / 2 + 0.6 + ((p.d - 1.2) * k) / (count - 1),
+        // Up to the slab's underside there (a ramp's rises along it).
+        under = p.top + (p.rise ?? 0) * (along / p.d + 0.5) - p.h;
       out.push({
         x: p.x + s * along + c * across,
         y: (under + SEABED) / 2,

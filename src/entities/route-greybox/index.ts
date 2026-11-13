@@ -13,6 +13,7 @@ import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
 import { precompile } from '../../render/precompile.ts';
 import { gorgeMassing } from './massing.ts';
 import { bellExtras, bellMassing } from './massing-bell.ts';
+import { westExtras, westMassing } from './massing-west.ts';
 import { AREA_CENTRES } from './leg2-layout.ts';
 import { drawGreyBoxes, type GreyBox } from './boxes.ts';
 
@@ -30,6 +31,7 @@ type Area = {
 const AREAS: readonly Area[] = [
   { id: 'gorge', centre: AREA_CENTRES.gorge, build: gorgeMassing },
   { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, extras: bellExtras },
+  { id: 'west', centre: AREA_CENTRES.west, build: westMassing, extras: westExtras },
 ];
 
 if (productionRailway && new URLSearchParams(location.search).get('blockout') !== 'world') {
