@@ -63,17 +63,17 @@ The measurer's u 430..436 is moved 2 to 5 m south: from v33 a standing train's t
 
 ## Steps
 
-- [ ] **0. Land the eval.** Cherry-pick c974c605a (`dev/look/evals/ring-crossing-walk.ts`, modes
+- [x] **0. Land the eval.** Cherry-pick c974c605a (`dev/look/evals/ring-crossing-walk.ts`, modes
   `cross=walk|kerb|bed|round|above|platform`) onto the build branch. Verify: `cross=above` reproduces
   `.look/cross-above-still.png` (no crossing yet).
-- [ ] **1. Constants and level check.** `src/entities/ring-island/state.ts`: `RING_CROSSING`, `ringCrossingPlanks()`.
+- [x] **1. Constants and level check.** `src/entities/ring-island/state.ts`: `RING_CROSSING`, `ringCrossingPlanks()`.
   `dev/level/ring.ts`: a section "The island halt's foot crossing" after the terminus, failing on any of: ramp steeper
   than 15 degrees or past `WALKABLE_NY`; planks' north edge less than 3 m short of the standing tail
   (`RING_END.u - TRAIN_EXTENT.behindCm`); ramp top north of that tail; crossover end (`RING_END.cross.u1`) less than
   5 m south of the planks; a plank span over a rail; landing top not equal to the rail top; fingerpost
   (`RING_HALT.u0 + 800`) less than 1 m past the ramp top. `test/ring-crossing.test.ts`: the five spans cover
   -5.8..1.8 less four flangeways, none within 0.08 m of a rail. Verify: the test, `npm run level-check`.
-- [ ] **2. Build it.** `src/entities/ring-island/view.ts`, the island halt block (line 402): the two platform `block`
+- [x] **2. Build it.** `src/entities/ring-island/view.ts`, the island halt block (line 402): the two platform `block`
   calls start at `RING_CROSSING.rampTop`; per side a `block(CONCRETE, 428, 430.6, l0, l1, HALT_Y - 0.8, top)` landing
   and a `beam(CONCRETE, p3(430.6, mid, top), p3(434.6, mid, PLATFORM_Y), 3.5, 0.4)` ramp with a
   `block(..., HALT_Y - 0.8, top)` fill under it (no gap shows); the five plank `block`s with `isSolid` false; one

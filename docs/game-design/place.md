@@ -769,6 +769,16 @@ readable from Home is not on the leaf: it flies from its own fixed pole on a foo
 **Not built yet:** the splash, the creak on the pawl, the lit bracket, the rivet's glint, and a tumble for the one walked
 clear. Not tested on a device.
 
+**The island halt's foot crossing (12 November 2026; [ring-island-crossing](../plans/ring-island-crossing.md), steps 1
+and 2).** The two platforms at Ring Island are joined by a walked way over both tracks at their south end (the Way's
+end, the fingerpost's end): each platform slopes down its full width, 0.68 m over 4 m, to a landing level with the
+rail tops, and a band of timber planks 2.4 m wide runs between the landings across both beds, with a slot by each rail
+for the wheels. The platforms proper now start 6.6 m further north; a standing train's tail stops short of the ramps,
+also with the fourth car. Nothing marks it but the timber (no sign, prompt or control), as at the Quarry's and Far
+Head's crossings. The kerb jump out of the bed still works and stays the short way; trains run over the planks at line
+speed and still shove whoever is on them (the fender is the next step, not built). Local scenery and static colliders:
+no state, no sync. Serves DESIGN.md 7 and 11. Not tested on a device.
+
 **The steel works, a greybox (12 November 2026; [ring-island-build2](../plans/ring-island-build2.md), V1).** On the
 island halt's works yard, east of the east platform, from v31: a grey open shed stands over the drop hammer with a
 doorway facing the platform, a box loader and a rack stand beside the platform's south half, and two pallets lie on

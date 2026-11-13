@@ -2,10 +2,10 @@
 // (src/sim/railway-ring-layout.ts). Their half-crossing (the Pilgrims' Way, u 277-470) with laid double track and truss
 // posts, the hinge pier, the brace platform with its gold strut and a waving folk, the steps up to their deck, the
 // hinge pier's sea ramp, the raised leaf (a pivot group R4c turns through ringIslandPose, its bracket empty and its
-// outline painted), the island halt's two platforms with the RINGWORKS board, the fingerpost (emblems only), the low map
-// table, the crossover, the works yard (steel under a tarp, the drop hammer, the prophecy mural), the path
-// to the summit lookout, and the ground with its sand band. Nothing here does anything yet and nothing prompts (call
-// 22). Static geometry merged into one vertex-coloured mesh; the leaf, its bracket, the hammer's head and the board's
+// outline painted), the island halt's two platforms (and the foot crossing at their south end) with the RINGWORKS
+// board, the fingerpost (emblems only), the low map table, the crossover, the works yard (steel under a tarp, the drop
+// hammer, the prophecy mural), the path to the summit lookout, and the ground with its sand band. Nothing here does
+// anything yet and nothing prompts (call 22). Static geometry merged into one vertex-coloured mesh; the leaf, its bracket, the hammer's head and the board's
 // face are their own. Colliders: the ground's heightfield, the decks, ramps, platforms and yard, the leaf (kinematic).
 // Local: no state, no sync. Positions in world metres from (u, lat) metres via ringAt.
 import * as THREE from 'three/webgpu';
@@ -31,7 +31,7 @@ import {
   type RingLanding,
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
-import { RING_MAP_TABLE, ringIslandPose } from './state.ts';
+import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks, ringIslandPose } from './state.ts';
 import { addFarGround } from '../../place/far-ground.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
 import {
@@ -401,9 +401,37 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   // ---------------------------------------------------------------- the island halt
   const [upL0, upL1] = RING_HALT.upLat.map((l) => l / 100) as [number, number];
   const [dnL0, dnL1] = RING_HALT.downLat.map((l) => l / 100) as [number, number];
-  // The platforms, solid down to the fill (ground.ts), so no gap shows under them.
-  block(CONCRETE, HALT[0], HALT[1], upL0, upL1, HALT_Y - 0.8, PLATFORM_Y);
-  block(CONCRETE, HALT[0], HALT[1], dnL0, dnL1, HALT_Y - 0.8, PLATFORM_Y);
+  // The platforms, solid down to the fill (ground.ts), so no gap shows under them. They start at the foot crossing's
+  // ramp tops (docs/plans/ring-island-crossing.md): their first 6.6 m are its landings and ramps.
+  const X = RING_CROSSING;
+  for (const [l0, l1] of [
+    [upL0, upL1],
+    [dnL0, dnL1],
+  ] as const) {
+    block(CONCRETE, X.rampTop, HALT[1], l0, l1, HALT_Y - 0.8, PLATFORM_Y);
+    // A landing at the rail tops, carried on under the ramp as its fill, and the ramp the platform's full width,
+    // deep enough that its underside stays inside the fill.
+    block(CONCRETE, X.landing[0], X.rampTop, l0, l1, HALT_Y - 0.8, X.top);
+    const mid = (l0 + l1) / 2;
+    beam(CONCRETE, p3(X.landing[1], mid, X.top), p3(X.rampTop, mid, PLATFORM_Y), l1 - l0, 0.75);
+  }
+  // The planks between the landings: five timber spans with a flangeway by each rail, drawn only, over one solid slab
+  // whose top is the rail tops (drawn a plank's depth lower, as the bed in the flangeways, so the rails show).
+  for (const [l0, l1] of ringCrossingPlanks()) block(TIMBER, X.u0, X.u1, l0, l1, X.top - 0.12, X.top, false);
+  block(BED, X.u0, X.u1, FORM.left, FORM.right, HALT_Y, X.top - 0.12, false);
+  {
+    const c = at((X.u0 + X.u1) / 2, (FORM.left + FORM.right) / 2);
+    parts.solid(
+      FORM.right - FORM.left,
+      X.top - HALT_Y,
+      X.u1 - X.u0,
+      new THREE.Matrix4().compose(
+        new THREE.Vector3(c.x, (HALT_Y + X.top) / 2, c.z),
+        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, YAW),
+        new THREE.Vector3(1, 1, 1),
+      ),
+    );
+  }
   // The west platform's ramp off its north end, down onto the slope where the path starts.
   const pathFoot = at(HALT[1] - 4, upL0 - 9.5);
   beam(

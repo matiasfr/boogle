@@ -43,6 +43,7 @@ import {
   ringDeckY,
   type RingFlight,
 } from '../../src/sim/railway-ring-layout.ts';
+import { RING_CROSSING, ringCrossingPlanks } from '../../src/entities/ring-island/state.ts';
 
 /** Literals inside src/entities/player/state.ts, not exported there: sprint speed, the coyote grace, the fall-speed
  * cap. And the eye height the hook aims from. */
@@ -436,6 +437,53 @@ function terminus(
     `  from the platforms' north end a late double jump on the level reaches ${f1(level)} m, to u ${f1(m(H.u1) + level)}: over the buffers onto the open ground behind them (nothing there is gated)`,
   );
 }
+/** "The island halt's foot crossing" (docs/plans/ring-island-crossing.md, step 1): RING_CROSSING's planks, landings
+ * and ramps against the rails, the standing trains' tails (today's and the fourth car's), the crossover and the
+ * fingerpost. */
+function footCrossing(section: (message: string) => void, assertion: (passed: boolean, message: string) => void) {
+  const C = RING_CROSSING,
+    H = RING_HALT,
+    E = RING_END;
+  section("The island halt's foot crossing");
+  const rise = m(H.y + 90) - C.top,
+    run = C.rampTop - C.landing[1],
+    deg = (Math.atan2(rise, run) * 180) / Math.PI;
+  assertion(
+    deg <= 15 && Math.cos((deg * Math.PI) / 180) > WALKABLE_NY,
+    `ramps u ${f1(C.landing[1])}-${f1(C.rampTop)}: ${rise.toFixed(2)} m over ${f1(run)} m, ${f1(deg)} degrees (at most 15; walkable at WALKABLE_NY ${WALKABLE_NY})`,
+  );
+  assertion(
+    Math.abs(C.top - (m(H.y) + RAIL_TOP)) < 1e-9,
+    `landings and planks at ${C.top.toFixed(2)} m, the rail tops (deck ${f1(m(H.y))} + ${RAIL_TOP})`,
+  );
+  const rails = RING_FORMATION.tracks.flatMap((t) => [m(t) - 0.5, m(t) + 0.5]),
+    spans = ringCrossingPlanks();
+  assertion(
+    spans.length === 5 && rails.every((r) => spans.every(([lo, hi]) => r <= lo - 0.079 || r >= hi + 0.079)),
+    `planks u ${f1(C.u0)}-${f1(C.u1)}, lat ${spans.map(([lo, hi]) => `${lo.toFixed(2)}..${hi.toFixed(2)}`).join(', ')}: none over a rail (lat ${rails.join(', ')}; 0.08 m clear each side)`,
+  );
+  for (const [name, t] of [
+    ["today's train", TRAIN_EXTENT],
+    ['the long train', LONG],
+  ] as const) {
+    const tail = m(E.u - t.behindCm);
+    assertion(
+      tail - C.u1 >= 3 && C.rampTop <= tail,
+      `${name} standing at u ${m(E.u)}: tail at u ${f1(tail)}, ${f1(tail - C.u1)} m north of the planks (at least 3), ${f1(tail - C.rampTop)} m north of the ramp top (u ${f1(C.rampTop)})`,
+    );
+  }
+  assertion(
+    C.u0 - m(E.cross.u1) >= 5,
+    `the crossover ends at u ${m(E.cross.u1)}, ${f1(C.u0 - m(E.cross.u1))} m south of the planks (at least 5): both tracks straight under them`,
+  );
+  const post = m(H.u0 + 800);
+  assertion(
+    post - C.rampTop >= 1,
+    `the fingerpost (u ${f1(post)}) is ${f1(post - C.rampTop)} m past the west ramp's top (at least 1)`,
+  );
+}
+/** The fourth car's train (world v33, car4/rules): the tail grows to 12.7 m. */
+const LONG = { aheadCm: 820, behindCm: 1270 };
 const m = (cm: number) => cm / 100;
 const f1 = (x: number) => x.toFixed(1);
 /** Gap between two intervals, 0 if they overlap. */
@@ -651,6 +699,7 @@ export function checkRing() {
     );
   }
   terminus(fact, section, assertion);
+  footCrossing(section, assertion);
   fact(`  (stepped at 1/${Math.round(1 / DT)} s; the controller steps at 1/${Math.round(1 / FIXED)} s)`);
   const failures = entries.filter((e) => e.kind === 'assertion' && !e.passed).length;
   return { level: 'ring (planned)', entries, failures };
