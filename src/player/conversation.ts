@@ -31,7 +31,7 @@
 import './conversation.css';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { angleLerp } from '../math.ts';
-import { setPadGrab, menuSlot, describeControl, onMenuKey } from './controls.ts';
+import { setPadGrab, menuSlot, describeControl, onMenuKey, type MenuKey } from './controls.ts';
 import { devInputBlocked } from './dev-input.ts';
 import { modalOpen } from './modal.ts';
 import { inputState } from './input.ts';
@@ -193,27 +193,18 @@ function talkHints() {
   return hint(glyph('confirm'), n >= 2 ? 'Answer' : 'Next') + pick + hint(glyph('close'), 'Leave');
 }
 
+const NAV_KEYS: ReadonlySet<MenuKey> = new Set<MenuKey>(['up', 'down', 'left', 'right']);
+const TALK_KEYS: ReadonlySet<MenuKey> = new Set<MenuKey>([...NAV_KEYS, 'back', 'interact', 'confirm']);
+
 // Capture phase on window, before the game's own key handlers: it stops only the keys it answers with (Space would
 // jump) and lets the rest through (H still opens the pause view).
 onMenuKey((e) => {
   if (!cur || devInputBlocked() || e.modified || e.typing) return;
   const { key, digit } = e;
-  if (
-    !digit &&
-    !(
-      key === 'back' ||
-      key === 'interact' ||
-      key === 'confirm' ||
-      key === 'up' ||
-      key === 'down' ||
-      key === 'left' ||
-      key === 'right'
-    )
-  )
-    return;
+  if (!digit && !(key && TALK_KEYS.has(key))) return;
   e.preventDefault();
   e.stop();
-  const nav = key === 'up' || key === 'down' || key === 'left' || key === 'right';
+  const nav = !!key && NAV_KEYS.has(key);
   if (e.repeat && !nav) return;
   if (key === 'back') cur.close();
   else if (digit) say(digit - 1);

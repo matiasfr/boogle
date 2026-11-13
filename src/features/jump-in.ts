@@ -29,7 +29,6 @@ function mount(parent: HTMLElement) {
   head.textContent = 'Jump in opens a new private room. This world stays as it is.';
   const list = document.createElement('div');
   list.className = 'pause-list';
-  let seeded = false;
   const go = (text: string, line: string, href: string) => {
     const b = document.createElement('button');
     b.className = 'pause-btn';
@@ -50,8 +49,7 @@ function mount(parent: HTMLElement) {
   let disposed = false;
   background(
     roomSeed().then((seed) => {
-      if (disposed || !seed || seeded) return;
-      seeded = true;
+      if (disposed || !seed) return;
       head.replaceChildren(
         'This room started at ',
         Object.assign(document.createElement('strong'), { textContent: labelOf(seed) }),

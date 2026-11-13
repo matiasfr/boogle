@@ -136,16 +136,17 @@ const move = (step: number, across: 'part' | 'cat') => {
 };
 
 // Registered when this file loads (before Pause's own Esc handler), so Back leaves the garage and goes no further.
+// Left/right step the parts, up/down the categories; the menu keys and the pad's grabbed slots share it.
+const NAV: Record<string, () => void> = {
+  left: () => move(-1, 'part'),
+  right: () => move(1, 'part'),
+  up: () => move(-1, 'cat'),
+  down: () => move(1, 'cat'),
+};
+
 onMenuKey((e) => {
   if (!garage.api?.isOpen() || e.modified || e.typing) return;
-  const act =
-    e.key === 'back'
-      ? () => leave()
-      : e.key === 'left' || e.key === 'up'
-        ? () => (e.key === 'left' ? move(-1, 'part') : move(-1, 'cat'))
-        : e.key === 'right' || e.key === 'down'
-          ? () => (e.key === 'right' ? move(1, 'part') : move(1, 'cat'))
-          : null;
+  const act = e.key === 'back' ? () => leave() : (e.key && NAV[e.key]) || null;
   if (!act) return;
   e.preventDefault();
   e.stop();
@@ -200,17 +201,9 @@ function refresh() {
     root.hidden = !snap.open;
     document.body.classList.toggle('garage-open', snap.open);
     if (snap.open) {
-      setPadGrab(
-        (slot) => {
-          if (slot === 'b') leave();
-          else if (slot === 'left') move(-1, 'part');
-          else if (slot === 'right') move(1, 'part');
-          else if (slot === 'up') move(-1, 'cat');
-          else if (slot === 'down') move(1, 'cat');
-        },
-        ['b', 'up', 'down', 'left', 'right'],
-        { stick: true },
-      );
+      setPadGrab((slot) => (slot === 'b' ? leave() : NAV[slot]?.()), ['b', 'up', 'down', 'left', 'right'], {
+        stick: true,
+      });
       shownKey = railKey = '';
     } else setPadGrab(null);
   }
@@ -251,9 +244,8 @@ function refresh() {
   const landing = snap.real && snap.phase === 'moment';
   const rows = rowsFor(snap.cat, snap.sel, snap.facts.longFitted && !landing);
   const html = rows.map((r, i) => rowHtml(r, i, snap)).join('');
-  const key = html;
-  if (key !== shownKey) {
-    shownKey = key;
+  if (html !== shownKey) {
+    shownKey = html;
     els.rows.innerHTML = html;
   }
   const busy = snap.phase === 'moment' || snap.phase === 'rest' || snap.phase === 'undo';

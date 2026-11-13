@@ -402,5 +402,4 @@ export async function voiceProbe() {
   const vc = Object.fromEntries(inVoice); // peer -> their presence vc (1 in voice, 2 muted)
   return { joined, muted, problem, self: net.room?.selfId ?? null, members: members(), vc, peers };
 }
-export const voiceJoin = join;
 export const voiceLeave = leave;
