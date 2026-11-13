@@ -12,6 +12,11 @@ import type { Seat } from '../src/entities/railway/seat.ts';
 import type { Platform } from '../src/physics/platforms.ts';
 import type { Body } from '../src/physics/engine.ts';
 import { captureWorkshop } from './prefab-workshop.test.ts';
+import artifact from '../content/built/prefabs.json' with { type: 'json' };
+import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
+import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
+import { names } from '../src/prefab/names.ts';
+import * as validation from '../src/prefab/validate.ts';
 
 function block(file: string, start: string, end: string, bindings: Record<string, unknown>) {
   const source = fs.readFileSync(file, 'utf8');
@@ -23,10 +28,11 @@ function block(file: string, start: string, end: string, bindings: Record<string
 
 function captureSeats() {
   const registered: Seat[] = [];
+  const bodies = new Set<Body>();
   const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.ts').createOwnedView>(
     'src/render/owned-view.ts',
     'createOwnedView',
-    { THREE, owners: new WeakMap(), addBody() {}, removeBody() {} },
+    { THREE, owners: new WeakMap(), addBody: (b: Body) => bodies.add(b), removeBody: (b: Body) => bodies.delete(b) },
   );
   const owner = createOwnedView();
   const registerSeat = sourceFunction<typeof import('../src/entities/railway/seat.ts').registerSeat>(
@@ -34,14 +40,24 @@ function captureSeats() {
     'registerSeat',
     { seats: registered, sitting: null, standUp() {} },
   );
-  const machine = sourceFunction<readonly number[]>('src/entities/railway/machine-model.ts', 'MACHINE_CHAIRS', {});
-  const chairTop = sourceFunction<number>('src/entities/railway/machine-model.ts', 'MACHINE_CHAIR_SEAT', {});
-  const hips = sourceFunction<number>('src/entities/railway/seat.ts', 'SEATED_HIPS', {});
-  const bench = sourceFunction<typeof import('../src/entities/railway/car-kit.ts').BENCH>(
-    'src/entities/railway/car-kit.ts',
-    'BENCH',
-    {},
+  const { instantiate } = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
+    fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
+    {
+      THREE,
+      artifact,
+      workshop,
+      gorge,
+      names,
+      ...validation,
+      registerSeat,
+      builders: new Map(names.builders.map((name) => [name, () => new THREE.Group()])),
+      ROOM_GROUP: 8,
+      staticBody: () => {
+        throw new Error('vehicle seats must not allocate static bodies');
+      },
+    },
   );
+  const machine = sourceFunction<readonly number[]>('src/entities/railway/machine-model.ts', 'MACHINE_CHAIRS', {});
   const car = (id: string) => {
     const mesh = new THREE.Group(),
       rock = new THREE.Group();
@@ -55,6 +71,7 @@ function captureSeats() {
       top: 0.29,
       move() {},
     };
+    owner.addBody(platform.body);
     return { mesh, rock, platform, hy: 0.29, y: 0 };
   };
   const flatbed = car('railway:T1:flatbed');
@@ -69,10 +86,9 @@ function captureSeats() {
       model: { chairs: new THREE.Group() },
       MACHINE_DECK: 0.7,
       MACHINE_CHAIRS: machine,
-      MACHINE_CHAIR_SEAT: chairTop,
-      SEATED_HIPS: hips,
       PLAYER_R,
       registerSeat,
+      instantiate,
     },
   );
   const cars = RAIL_TRAINS.map((_, slot) => {
@@ -83,12 +99,12 @@ function captureSeats() {
       cars: [null, passenger],
       PLAYER_R,
       PASSENGER_CAR_UPGRADED: false,
-      carKit: { CAR_DECK: 0.7, BENCH: bench, passengerCar: () => new THREE.Group() },
-      seats: { registerSeat, lowStoolAnchor: chairTop + hips },
+      carKit: { CAR_DECK: 0.7, passengerCar: () => new THREE.Group() },
+      instantiate,
     });
     return passenger;
   });
-  return { owner, registered, flatbed, cars };
+  return { owner, registered, flatbed, cars, bodies };
 }
 
 test('all 31 seat ids and poses match the pre-prefab construction bytes', () => {
@@ -121,4 +137,69 @@ test('all 31 seat ids and poses match the pre-prefab construction bytes', () => 
   }
   h.owner.dispose();
   assert.equal(h.registered.length, 0);
+  assert.equal(h.bodies.size, 0);
+});
+
+test('bench and stools follow their moving parent; contention retains the other stool', () => {
+  const h = captureSeats();
+  const yawOf = sourceFunction<typeof import('../src/physics/platforms.ts').yawOf>(
+    'src/physics/platforms.ts',
+    'yawOf',
+    {},
+  );
+  const fromPlatform = sourceFunction<typeof import('../src/physics/platforms.ts').fromPlatform>(
+    'src/physics/platforms.ts',
+    'fromPlatform',
+    { yawOf },
+  );
+  const world = sourceFunction<(s: Seat, exit?: boolean) => Seat['at']>('src/entities/railway/seat.ts', 'world', {
+    pose: {},
+    surfacePose: {},
+    PLAYER_R,
+    fromPlatform,
+  });
+  for (const parent of [h.flatbed, h.cars[0]!]) {
+    const seat = h.registered.find((s) => s.platform === parent.platform)!;
+    const before = { ...world(seat) };
+    parent.platform.body.position.set(10, 3, -7);
+    parent.platform.body.quaternion.set(0, Math.sin(Math.PI / 4), 0, Math.cos(Math.PI / 4));
+    parent.mesh.position.copy(parent.platform.body.position);
+    parent.mesh.quaternion.copy(parent.platform.body.quaternion);
+    parent.rock.rotation.x = 0.2;
+    const after = { ...world(seat) };
+    assert.notDeepEqual(after, before);
+    assert.ok(Math.abs(after.x - (10 + seat.at.z)) < 1e-12);
+    assert.ok(Math.abs(after.z - (-7 - seat.at.x)) < 1e-12);
+    assert.equal(after.y, 3 + seat.at.y);
+    assert.ok(Math.abs(world(seat, true).y - (3 + seat.exit.y)) < 1e-12);
+    assert.equal(seat.frame, parent === h.flatbed ? undefined : parent.rock);
+    assert.ok(parent.mesh.children.length > 1, 'record root attached to moving mesh');
+    parent.y = -31;
+    assert.equal(seat.available(), false);
+  }
+  h.flatbed.y = 0;
+  const me = { body: { position: { ...world(h.registered[0]!) } } };
+  const reachable = sourceFunction<(s: Seat) => boolean>('src/entities/railway/seat.ts', 'reachable', {
+    me,
+    world,
+    carry: { on: h.flatbed.platform },
+  });
+  const choices = sourceFunction<(s: Seat) => { id: string; alt: string[] }>(
+    'src/entities/railway/seat.ts',
+    'seatChoices',
+    { seats: h.registered, me, world, reachable },
+  );
+  for (const [index, alternate] of [
+    [0, 1],
+    [1, 0],
+  ] as const)
+    assert.deepEqual(choices(h.registered[index]!), {
+      id: `machine-deck-${index}`,
+      alt: [`machine-deck-${alternate}`],
+    });
+  assert.equal(h.bodies.size, 8);
+  h.owner.dispose();
+  h.owner.dispose();
+  assert.equal(h.registered.length, 0);
+  assert.equal(h.bodies.size, 0);
 });

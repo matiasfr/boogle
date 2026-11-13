@@ -1,7 +1,7 @@
 // The railway's passenger car fittings, from assets/src/passenger-car.py (docs/plans/passenger-car-previz.md, candidate
 // Four, the knifeboard): each GLB node baked once to plain float geometry in the flatbed's frame (origin on the rail
 // line, deck middle), with its vertex colours, drawn in the kit's own paint (./look.ts). Load before use; no scene,
-// loop, world or physics dependency. The seats are registered by ../../entities/railway/train-view.ts.
+// loop, world or physics dependency. Prefab railway.car-bench owns the rider anchors and registration.
 import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
@@ -13,11 +13,6 @@ kit.scene.updateMatrixWorld(true);
 
 /** The flatbed's deck top over the rail line (src/entities/railway/cars.ts TRAILER.top): the recipe's origin is the rail line. */
 export const CAR_DECK = 0.7;
-/** The bench's seat top over the deck (the track layer's low stool's, seat.ts) and the bench's rider anchors: a rider's
- * capsule centre sits `SEAT_X` from the middle, facing out, at these z along the car. `forward`: the drawn rider sits
- * this much further out, so the head clears the backrest (owner, 10 November: "slightly forward on them"). */
-export const BENCH = { seatTop: 0.32, seatX: 0.45, forward: 0.16, z: [-0.85, 0.45] as const };
-
 type CarPart = 'car_fit' | 'car_upgrade';
 const baked = new Map<CarPart, THREE.BufferGeometry>();
 /** A node's geometry in the car's frame, in metres (meshopt's quantization lives on the node: baked in here). */

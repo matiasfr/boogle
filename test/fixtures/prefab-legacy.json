@@ -6,7 +6,7 @@
   },
   {
     "name": "audit c: new seat consumer",
-    "code": "import { buildMachine } from '../railway/track-machine.ts'; export const make = (...args: Parameters<typeof buildMachine>) => buildMachine(...args);",
+    "code": "import { registerSeat } from '../railway/seat.ts'; export const make = (...args: Parameters<typeof registerSeat>) => registerSeat(...args);",
     "rule": "boogle/seats-from-records"
   },
   {

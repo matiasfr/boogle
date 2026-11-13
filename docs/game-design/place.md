@@ -309,6 +309,11 @@ The machine's 2.2 by 3.2 m flatbed retains its forward cradle. The 5 November br
 
 **The finished forge is a workshop.** Once its eighth freight crate finishes building the roof, the sealed construction collider gives way to hollow walls, with one 2.8 m doorway left of the furnace output. Two shallow steps reach the existing foundation floor. A guarded furnace faces the visitor and a chair faces the outside rail rack. Entry has no new payment. The roof and camera-side upper walls cut away locally using the town room reveal timing and camera collision group, with a shadow-only shell; physics walls remain. The original mouth/output opening, rail flight, external pickup, production intervals, rack capacity and freight route are unchanged. Construction completion still comes from the existing shared forge slice, and furnishings/occlusion are Local.
 
+**Seat records (13 November).** The machine stools and passenger bench now instantiate from `railway.machine-chair`
+and `railway.car-bench`, parented to their moving platform. Their 30 ids plus the workshop id, contention groups,
+sit/exit poses, prompts and cosmetic rider frames are unchanged. The vehicle GLBs still supply their nonblocking
+seat meshes; the car's pitched visual frame remains separate from its level capsule/exit frame.
+
 **The decks hold you.** Stop at the edge of a train's or the machine's deck and you're eased a few centimetres back inside, so standing never takes you off, moving or not. Push the stick off the side or jump and you leave as ever; there are no railings.
 
 Settled train crates use the same idle edge hold on their own top footprint. A standing rider at a crate's edge is eased inward before the sphere-shaped player can slide off its rounded contact, even while still inside the wider flatbed. Walking and jumping still release that hold. This remains Owner player physics derived from the existing cargo, with no new presence, save or train-speed state. [Standing co-op verification](../plans/coop-route-verification.md) records the reproduced loss and the distinction between uncommanded knock-offs and missed jump landings.

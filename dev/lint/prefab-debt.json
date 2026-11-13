@@ -686,16 +686,6 @@
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/entities/railway/track-machine.ts": {
-      "count": 4,
-      "exports": ["buildMachine", "thud"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
-    "src/entities/railway/train-view.ts": {
-      "count": 1,
-      "exports": ["createRailwayTrains"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/entities/railway/view.ts": {
       "count": 1,
       "exports": ["createRailwayView"],
@@ -897,7 +887,7 @@
     "src/entities/railway/reward.ts#createRailwayReward": 1,
     "src/entities/railway/ring-deck.ts#createRingDeck": 1,
     "src/entities/railway/roundhouse-view.ts#createRailwayRoundhouse": 1,
-    "src/entities/railway/seat.ts#registerSeat": 3,
+    "src/entities/railway/seat.ts#registerSeat": 1,
     "src/entities/railway/shelf-view.ts#createRailwayShelf": 1,
     "src/entities/railway/sources.ts#createRailwaySources": 1,
     "src/entities/railway/stations.ts#buildStation": 2,

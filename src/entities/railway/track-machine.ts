@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
-import { FIXED, PLAYER_R } from '../../constants.ts';
+import { FIXED } from '../../constants.ts';
 import { background } from '../../async.ts';
 import machineUrl from '../../../assets/built/track-layer.glb?url';
 import wingUrl from '../../../assets/built/track-wing.glb?url';
@@ -19,8 +19,8 @@ import { LOOK, STEEL, paint, rustU, softGlow } from '../../place/look.ts';
 import { merged } from '../../render/part-geometry.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { kitBatch, machineLook } from '../../place/look-kit.ts';
-import { machineModel, MACHINE_CHAIR_SEAT, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';
-import { registerSeat, SEATED_HIPS } from './seat.ts';
+import { machineModel, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
 import { MAX_PANEL_LENGTH } from './track-panels.ts';
 import { FIRST_SEATED, WING, WING_BEAM_LENGTH, wingSide, type UpSeat } from './machine-panels.ts';
 import { buildWing } from './machine-wing.ts';
@@ -115,20 +115,20 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
     model.chairs.position.y = flatbed.hy - MACHINE_DECK;
     flatbed.mesh.add(model.chairs);
     MACHINE_CHAIRS.forEach((x, i) => {
-      // The built machine batches its bevelled chair shells; these gameplay anchors stay unchanged.
-      const unregister = registerSeat({
-        id: `machine-deck-${i}`,
-        group: 'machine-deck',
-        platform: flatbed.platform,
-        anchorView: true,
-        // Avatars face -Z at zero yaw; the gantry and travel direction are local +Z.
-        // Driving_Loop puts his hips 0.63 m under the capsule centre (measured on the bones), his feet 0.92 m: the seat top
-        // sits under his hips and his feet reach the deck. Hips over the seat centre.
-        at: { x, y: flatbed.hy + MACHINE_CHAIR_SEAT + SEATED_HIPS, z: -1.15, yaw: Math.PI },
-        exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },
-        available: () => flatbed.y > -30,
-      });
-      owner.cleanup(unregister);
+      instantiate(
+        'railway.machine-chair',
+        {
+          id: `machine-deck-${i}`,
+          prefab: 'railway.machine-chair',
+          pos: [x, flatbed.hy, 0],
+          parent: flatbed.platform.id,
+        },
+        {
+          owner,
+          parent: { platform: flatbed.platform, root: flatbed.mesh },
+          gates: { open: () => flatbed.y > -30 },
+        },
+      ).setEnabled(true);
     });
     heldRail = model.heldRail;
     heldRail.visible = false;
