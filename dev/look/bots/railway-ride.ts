@@ -64,22 +64,11 @@ export function line2Rides(bot: Bot) {
     calling: () => boolean;
     wait: { x: number; z: number };
   };
-  /** `asked`: the way was asked for already by the rules (a lay leaves an up-way ask at the old stack head), so there
-   * is no handle to pull; wait on the platform. `askEach`: the destination is not a Place halt (the stack line's), so
+  /** `askEach`: the destination is not a Place halt (the stack line's), so
    * ask for each next stop the train offers aboard ("Request stop: ...") until it stands at the destination. */
-  const rideFrom = async (halt: Departure, destination: number, opts: { asked?: boolean; askEach?: boolean } = {}) => {
+  const rideFrom = async (halt: Departure, destination: number, opts: { askEach?: boolean } = {}) => {
     await until(halt.stands, `${halt.name} halt stands`);
     const dir: 1 | -1 = destination > halt.stop ? 1 : -1;
-    if (!opts.asked) {
-      const handle = halt.handle(dir);
-      check(handle, `${halt.name} has a handle toward stop ${destination}`);
-      if (!handle!.over) await halt.before?.(handle!);
-      if (!handle!.over && !(await bot.use(handle!.x, handle!.z, `request a train at ${halt.name}`, /^Request stop/)))
-        check(false, `request a train at ${halt.name} offered`);
-      await until(halt.calling, `${halt.name} signal drops for the request`);
-    }
-    check(await bot.walk(halt.wait.x, halt.wait.z, 0.5), `walked to ${halt.name}'s platform edge`);
-    // Whichever of line 2's trains stops for the lever is the ride (v26).
     const standing = () =>
       view()
         .trains.filter((t) => t.line === 1)
@@ -87,7 +76,27 @@ export function line2Rides(bot: Bot) {
           const r = trains()[t.slot]!;
           return r.phase === 0 && r.at === halt.stop && (r.track ? -1 : 1) === dir;
         })?.slot;
-    await until(() => standing() !== undefined, `a train toward stop ${destination} stands at ${halt.name}`);
+    const request = async () => {
+      const handle = halt.handle(dir);
+      check(handle, `${halt.name} has a handle toward stop ${destination}`);
+      if (!handle!.over) await halt.before?.(handle!);
+      if (!handle!.over && !(await bot.use(handle!.x, handle!.z, `request a train at ${halt.name}`, /^Request stop/)))
+        check(false, `request a train at ${halt.name} offered`);
+      await until(() => halt.calling() || standing() !== undefined, `${halt.name} signal drops or train stands`);
+    };
+    if (standing() === undefined) await request();
+    check(await bot.walk(halt.wait.x, halt.wait.z, 0.5), `walked to ${halt.name}'s platform edge`);
+    // Whichever of line 2's trains stops for the lever is the ride (v26).
+    // The first train can leave during the walk to the edge. Re-read the signal and use the real lever again.
+    const waitEnd = performance.now() + 2400000;
+    while (standing() === undefined && performance.now() < waitEnd) {
+      if (!halt.calling()) {
+        await request();
+        check(await bot.walk(halt.wait.x, halt.wait.z, 0.5), `returned to ${halt.name}'s platform edge`);
+      }
+      await bot.wait(100);
+    }
+    check(standing() !== undefined, `a train toward stop ${destination} stands at ${halt.name}`);
     const slot = standing()!;
     const row = () => trains()[slot]!;
     const train = () => view().trains.find((t) => t.slot === slot)!;

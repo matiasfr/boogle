@@ -633,6 +633,30 @@ test('hold host: a held train stands through a restart, then leaves on its cap f
   }
 });
 
+test('hold host: a repeated platform ask gets its dwell without restarting the Ring hold cap', async () => {
+  const r = await host('hold-refresh', legLaid());
+  try {
+    r.tune('railTrainHoldCap', 100);
+    const k = await heldAtRing(r),
+      arrived = train(r.w, k).arrived,
+      id = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === RING),
+      dir = train(r.w, k).track ? -1 : 1,
+      at = spot(haltPlatform(RAIL_HALTS[id]!, dir, 0));
+    assert.equal(await r.action({ op: 'rail.call', id, dir }, at), 'accepted');
+    const cap = arrived + TRAIN.dwellTicks + 100;
+    await r.ticks(cap - 10 - r.tick);
+    assert.equal(train(r.w, k).phase, TRAIN_PHASE.STAND);
+    assert.equal(await r.action({ op: 'rail.call', id, dir }, at), 'accepted', 'pending ask refreshes');
+    const refreshed = r.tick;
+    assert.equal(train(r.w, k).arrived, arrived, 'hold cap still anchored to original arrival');
+    await r.ticks(TRAIN.dwellTicks - 1);
+    assert.equal(train(r.w, k).phase, TRAIN_PHASE.STAND, 'full boarding dwell even across the hold cap');
+    assert.equal(await leaves(r, k), refreshed + TRAIN.dwellTicks, 'no extra hold after the refreshed dwell');
+  } finally {
+    await r.done();
+  }
+});
+
 test('hold host: a lever ask assigned to a held train releases it', async () => {
   const r = await host('hold-ask', legLaid());
   try {

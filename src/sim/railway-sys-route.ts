@@ -82,7 +82,8 @@ function lay(w: World, k: number, tick: number) {
     for (const slot of LINE_SLOTS[leg.line]!) {
       const r = io.row(slot);
       if (r.phase === TRAIN_PHASE.STAND && r.at === from && r.track === 1)
-        io.set(slot, { track: 0, req: reqOnly(r.req, stopsOf(w, leg.line).length, 1) });
+        // Give the builder a full boarding dwell; arrived still anchors the holds' caps.
+        io.set(slot, { track: 0, depart: tick, req: reqOnly(r.req, stopsOf(w, leg.line).length, 1) });
     }
   const lid = w.lookup(Line, leg.line)!,
     stops = stopsOf(w, leg.line).length;

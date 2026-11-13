@@ -60,7 +60,7 @@ import { fleetOf } from './railway-train.ts';
 import { legsLaid } from './railway-queries-route.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
- * so a repeat (or a friend's same ask) moves nothing. From a halt's lever it is the line's (`Line.req`), served by the
+ * so a repeat adds no request. A platform repeat can refresh a standing train's dwell. From a halt's lever it is the line's (`Line.req`), served by the
  * next train that way that can still brake for it (trainServes); aboard (`train`, the rider's slot) it is that train's
  * own, for a middle halt its way. Never an open end's way in: no train stands at that platform. A train standing at
  * that halt, leaving the way asked, waits a full dwell from now. Never a way the halt refuses (the homeward-only Pier's
@@ -80,8 +80,11 @@ export const call = defineSystem(
     const wait = (slot: number) => {
       const r = w.get(Train, trainId(w, slot))!;
       // A shed train (the greybox route's fleet) is not in service: never at a platform.
-      if (r.phase === TRAIN_PHASE.STAND && r.at === halt.stop && trainDir(r) === dir && tick > r.depart)
+      if (r.phase === TRAIN_PHASE.STAND && r.at === halt.stop && trainDir(r) === dir && tick > r.depart) {
         w.mut(Train, trainId(w, slot))!.depart = tick;
+        return true;
+      }
+      return false;
     };
     if (e.train !== undefined) {
       if (!railInt(e.train, RAIL_TRAINS.length - 1) || RAIL_TRAINS[e.train]!.line !== halt.line) return 0;
@@ -93,9 +96,12 @@ export const call = defineSystem(
       return 1;
     }
     const l = w.get(Line, lineId(w, halt.line))!;
-    if (reqHas(l.req, halt.stop, dir, n)) return 0;
+    // Refresh every matching stand even if the request digit is already set. Report an accepted change only
+    // when a dwell moved; repeating in the same tick or while the train is away is still a no-op.
+    let refreshed = false;
+    for (const slot of LINE_SLOTS[halt.line]!) if (wait(slot)) refreshed = true;
+    if (reqHas(l.req, halt.stop, dir, n)) return refreshed ? 1 : 0;
     w.mut(Line, lineId(w, halt.line))!.req = reqAdd(l.req, halt.stop, dir, n);
-    LINE_SLOTS[halt.line]!.forEach(wait);
     return 1;
   },
 );

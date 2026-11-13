@@ -54,6 +54,18 @@ test('griefing, worst case: one ask on the last held tick adds its dwell, and no
   assert.equal(t, last + TRAIN.dwellTicks, `held ${t} ticks: dwell + cap + one asker's dwell`);
 });
 
+test('a repeated end-platform call gets its dwell across the original hold cap without restarting that cap', () => {
+  const f = bunched();
+  const last = TRAIN.dwellTicks + V.balance! - 1;
+  let accepted = 0;
+  const t = leaves(f, 1, 5000, (tick) => {
+    if (tick === 1 || tick === last) accepted += f.call(0, 1, tick);
+  });
+  assert.equal(accepted, 2, 'the pending platform ask refreshes the boarding dwell');
+  assert.equal(f.rows[0]!.arrived, 0, 'the hold remains anchored to arrival');
+  assert.equal(t, last + TRAIN.dwellTicks, 'departure at the full dwell, with no added hold');
+});
+
 test('the waiter exception misses a train held at the old far signal after the railhead moves on; the cap still ends it', () => {
   // Q7 laid, the railhead at bent 1: train 0 stands at the Railhead end (stop 4) going down. A second train stands at
   // bent 0's signal on the up track (the signal the bent moved on from), a third running down just ahead of train 0.

@@ -1410,38 +1410,48 @@ if (process.env.LEG_ASK_FUZZ === '1') {
           }),
         );
       }
+    assert.equal(totals.length, 960, 'every schedule, lay, delay and call policy observed');
+    for (const r of totals.filter((r) => r.renew))
+      assert.ok(r.wait !== null && r.wait < GROWTH_CAP, `arrival-time call: ${JSON.stringify(r)}`);
   });
 }
 
-// Shared replay fixture, outside the timeout as LEAF/JOINED above. Keep the desired-behaviour assertion visibly
-// failing as TODO until the separately reviewed rule fix; LEG_ASK_RED=1 makes this an ordinary red test.
+// Shared replay fixture, outside the timeout as LEAF/JOINED above.
 const HEAD2_LAY = unaudited(buildSeedWorld('gorge-mid'));
 feedSection(HEAD2_LAY);
-test(
-  'lost ask: a rider arriving one second after section 3 lays gets an outward train within 1,200 ticks',
-  { todo: process.env.LEG_ASK_RED !== '1' && 'Known defect; src/sim fix intentionally outside this diagnosis' },
-  (t) => {
-    const result = headWait(HEAD2_LAY, [10], false, 1201);
-    t.diagnostic(`lay=${HEAD2_LAY.t}; arrival=+10; waits=${JSON.stringify(result.waits)}`);
-    if (process.env.LEG_ASK_RED === '1') t.diagnostic(`TRACE ${JSON.stringify(result.trace)}`);
-    assert.ok(result.waits[0] !== null && result.waits[0]! <= 1200, 'no outward boarding window within 1,200 ticks');
-  },
-);
+test('lost ask: a rider arriving one second after section 3 lays gets an outward train within 1,200 ticks', (t) => {
+  const result = headWait(HEAD2_LAY, [10], false, 1201);
+  t.diagnostic(`lay=${HEAD2_LAY.t}; arrival=+10; waits=${JSON.stringify(result.waits)}`);
+  assert.ok(result.waits[0] !== null && result.waits[0]! <= 1200, 'no outward boarding window within 1,200 ticks');
+});
 
-test('lost ask mechanism: the redirected train consumes it after seven ticks; a fresh ask restores service', () => {
+test('a redirected train gets 50 dwell ticks; a pending platform ask refreshes dwell without moving arrival', () => {
   const s = unaudited(copy(HEAD2_LAY)),
     from = HEAD + 1,
     n = stopsOf(s.w, LINE2).length;
-  assert.equal(s.t, 13748);
   assert.equal(
     trainServes((k) => train(s.w, k), LINE2, stopsOf(s.w, LINE2), from, 1, s.t),
     4,
   );
   assert.equal(train(s.w, 4).at, from);
   assert.equal(train(s.w, 4).track, 0);
-  assert.equal(train(s.w, 4).depart + TRAIN.dwellTicks - s.t, 7, 'the lay did not restart its dwell');
+  assert.equal(train(s.w, 4).depart, s.t, 'the lay restarts its dwell');
+  const arrived = train(s.w, 4).arrived;
+  assert.ok(arrived < s.t, 'arrival still anchors hold caps');
   assert.ok(reqHas(line(s.w, LINE2).req, from, 1, n));
-  for (let k = 0; k < 7; k++) railTick(s.w, ++s.t, 75);
+  for (let k = 0; k < 49; k++) {
+    railTick(s.w, ++s.t, 75);
+    assert.equal(train(s.w, 4).phase, TRAIN_PHASE.STAND, 'full lay dwell');
+  }
+  assert.ok(ask(s, { id: haltId(LINE2, from), dir: 1 }), 'pending ask refresh accepted');
+  assert.equal(train(s.w, 4).depart, s.t);
+  assert.equal(train(s.w, 4).arrived, arrived, 'no hold-cap reset');
+  assert.ok(!ask(s, { id: haltId(LINE2, from), dir: 1 }), 'same-tick repeat changes nothing');
+  for (let k = 0; k < 49; k++) {
+    railTick(s.w, ++s.t, 75);
+    assert.equal(train(s.w, 4).phase, TRAIN_PHASE.STAND, 'full refreshed dwell');
+  }
+  railTick(s.w, ++s.t, 75);
   assert.equal(train(s.w, 4).phase, TRAIN_PHASE.RUN);
   assert.ok(!reqHas(line(s.w, LINE2).req, from, 1, n), 'leaving clears the lay ask');
   const recovered = headWait(HEAD2_LAY, [10], true, 1200).waits[0];
