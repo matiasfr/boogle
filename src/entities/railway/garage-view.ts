@@ -57,6 +57,8 @@ const ARM_RATE = { swing: 1.5, follow: 9 } as const;
 const CLEAR = 0.55;
 /** A part hanging for the server's answer rises this far over the designed hang, clear of the boiler that is on. */
 const HANG_CLEAR = 0.9;
+/** The install's whistle carries across the room, quiet at distance (metres; machine sounds reach 45). */
+const WHISTLE_HEAR = 400;
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 const backOut = (t: number) => 1 + 2.7 * (t - 1) ** 3 + 1.7 * (t - 1) ** 2;
@@ -303,7 +305,12 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     real = false,
     waiting = false,
     sinceCommit = 0,
-    hangUp = 0; // m the waiting part has risen over the designed hang
+    hangUp = 0, // m the waiting part has risen over the designed hang
+    // Whose moment (G4): `mine` is this tab's own hold; a moment that is not is someone's accepted install, watched in
+    // the garage or in the world, with no camera or input taken. `brief` ends it after the steam.
+    mine = false,
+    brief = false,
+    restored = false;
   /** The Longer boiler can go on for real from this post now. */
   const canInstall = () =>
     deps.installHere && facts.steelHome && !facts.longFitted && !facts.tableBusy && facts.boilerFitted;
@@ -549,6 +556,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     hit = answered = false;
     skipped = false;
     trying = true;
+    mine = true;
+    brief = false;
     uiSound('pop');
     thump(stand.x, stand.z);
     // Where the server can judge it the hold is the install: sent now, and the part hangs until the answer.
@@ -567,9 +576,40 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     ring = 1;
     uiSound('deny');
   }
+  /** Someone's install was accepted and it is not this tab's running hold (G4): whatever this tab was trying is
+   * dropped, the part lifts off its stand in `MOMENT.catchUp` and the same moment plays, in the garage or out in the
+   * world, with nothing taken. A tab whose own install lost the race already has the part over the seat: it drops
+   * from there. Only ever called from an accepted event. */
+  function watch(short: boolean) {
+    if (!shown) return;
+    const hanging = phase === 'moment' && real && waiting;
+    holding = false;
+    trying = true;
+    real = true;
+    waiting = false;
+    mine = false;
+    brief = short;
+    hit = answered = skipped = false;
+    stopLeft = 0;
+    sinceCommit = 0;
+    showTurn = -1;
+    ring = 0;
+    setLong(false);
+    for (const b of bolts) b.visible = false;
+    spinRate = speedMs(BOILERS.boiler.speed);
+    phase = 'moment';
+    partGroup.visible = true;
+    if (hanging) ms = Math.min(ms, MOMENT.quiet - 0.001);
+    else {
+      ms = -MOMENT.catchUp;
+      hangUp = 0;
+      placePart(0);
+      thump(stand.x, stand.z);
+    }
+  }
   /** A real install's end: the rows already say fitted, so the copy just wears them. No rest, no undo. */
   function finish() {
-    real = waiting = trying = false;
+    real = waiting = trying = mine = brief = false;
     phase = 'idle';
     ms = 0;
     ring = 0;
@@ -605,6 +645,12 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   function stepMoment(dt: number) {
     if (stopLeft > 0) {
       stopLeft = Math.max(0, stopLeft - dt);
+      return;
+    }
+    if (ms < 0) {
+      // Someone else's install: the catch-up lift, stand to seat.
+      ms = Math.min(0, ms + dt * 1000);
+      placePart(1 + ms / MOMENT.catchUp);
       return;
     }
     const before = ms;
@@ -656,7 +702,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       const t = MOMENT.bolts + i * MOMENT.boltEvery;
       if (at(t)) {
         bolts[i]!.visible = true;
-        uiSound('count', 1);
+        if (open) uiSound('count', 1);
         sparks(engine.localToWorld(bolts[i]!.position.clone()), 3);
       }
     }
@@ -667,12 +713,13 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       soundAt(p, (x, z) => chuff(x, z, 1));
       spinRate = speedMs(BOILERS.long.speed);
     }
+    if (brief && c >= MOMENT.briefEnd) return finish();
     if (at(MOMENT.whistle)) {
       steamPuff(14, 2.6);
       // The whistle and the table's full turn are the real install's; a Try it has neither (decided, 10 November).
       if (real) {
         const p = seatPos();
-        soundAt(p, (x, z) => whistle(x, z));
+        soundAt(p, (x, z) => whistle(x, z, WHISTLE_HEAR));
         showTurn = reducedMotion ? -1 : 0;
       }
     }
@@ -699,6 +746,15 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       if (snapNext || reducedMotion) yaw = restPose;
     }
     snapNext = false;
+    if (restored) {
+      // A restore, a rejoin or a refill in the middle of an install: the rows decide. Fitted, the copy wears it and
+      // the garage stays open; not fitted, the part is back on its stand and the hold can be made again.
+      restored = false;
+      if (real) {
+        showTurn = -1;
+        finish();
+      }
+    }
     solid();
     if (open && (!room.boilerFitted || room.tableBusy || !shown)) close();
     openT = clamp01(openT + ((open ? 1 : -1) * dt) / (open ? 0.6 : 0.4));
@@ -740,7 +796,9 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
         ring = Math.max(0, ring - dt / (MOMENT.drain / 1000));
         if (ring <= 0) {
           phase = 'idle';
-          partGroup.visible = false;
+          // Back on its stand if it waits there (no frame without it), else gone.
+          partGroup.visible = shown && room.steelHome && !room.longFitted;
+          if (partGroup.visible) placePart(0);
           thump(stand.x, stand.z);
         }
       }
@@ -766,7 +824,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     // The table: it turns slowly; stops with a hold; a full show-off turn after the whistle.
     // With the Longer boiler chosen and ready to install the engine stays at the opening pose, where the install is
     // in clear view left of the panel: no idle turn, and a table already turned comes home (through the hold too).
-    const poised = sel === 'long' && (real || canInstall());
+    const poised = real || (sel === 'long' && canInstall());
     const turns = open && CAMS[cat].turns && phase !== 'holding' && phase !== 'moment' && !reducedMotion && !poised;
     if (showTurn >= 0) {
       showTurn += dt / 2.2;
@@ -780,12 +838,13 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       const home = wrap(turnYaw);
       turnYaw = Math.abs(home) <= DECK_RATE * dt || reducedMotion ? 0 : home - Math.sign(home) * DECK_RATE * dt;
     } else if (!CAMS[cat].turns && phase === 'idle') turnYaw -= turnYaw * Math.min(1, dt * 3);
-    if (!open) turnYaw = 0;
+    if (!open && showTurn < 0) turnYaw = 0;
     // The deck carries the copy to the garage's pose and back at the table's own rate; once there it follows exactly.
-    const target = open ? baseYaw() + turnYaw : restPose;
+    // With the garage shut the show-off turn of someone's install still turns it, about its rest.
+    const target = (open ? baseYaw() : restPose) + turnYaw;
     const d = wrap(target - yaw),
       step = DECK_RATE * dt;
-    if ((open && settled) || reducedMotion || Math.abs(d) <= step) {
+    if ((open && settled) || (!open && showTurn >= 0) || reducedMotion || Math.abs(d) <= step) {
       yaw = target;
       settled = open;
     } else yaw += Math.sign(d) * step;
@@ -816,7 +875,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
         ? THREE.MathUtils.lerp(speedMs(BOILERS.boiler.speed), rate, answered ? k : 0)
         : THREE.MathUtils.lerp(today(), rate, 1);
     // The wheels run only in the garage: closed, the copy stands still on the bridge rails.
-    wheelAngle += dt * spin * 0.12 * (openT > 0 ? 1 : 0);
+    wheelAngle += dt * spin * 0.12 * (openT > 0 || phase === 'moment' ? 1 : 0);
     for (const w of wheels) w.rotation.x = wheelAngle;
     rods.position.y = ENGINE_WHEELS.throw * Math.cos(wheelAngle);
     rods.position.z = ENGINE_WHEELS.throw * Math.sin(wheelAngle);
@@ -879,11 +938,13 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     open = false;
     holding = false;
     inputState.held = false;
+    // Someone else's install plays on in the world when this tab leaves the garage.
+    if (phase === 'moment' && real && !mine) return;
     if (phase !== 'idle') {
       phase = 'idle';
       partGroup.visible = false;
     }
-    trying = real = waiting = false;
+    trying = real = waiting = mine = brief = false;
     wearRows();
     spinRate = today();
     ring = 0;
@@ -914,10 +975,11 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
         ms,
         trying,
         held: holding,
+        mine,
         real,
         waiting,
         canInstall: canInstall(),
-        canSkip: phase === 'moment' && ms >= MOMENT.skipFrom,
+        canSkip: phase === 'moment' && mine && ms >= MOMENT.skipFrom,
         tapped,
         facts,
       };
@@ -969,17 +1031,18 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     /** The server accepted `rail.install`. `mine`: this tab's own hold, so the hanging part drops and the moment
      * runs on. Anyone else's (and this tab's own, should it land after its hang gave up) just shows in the rows for
      * now: everyone else's moment is the plan's G4. Never called from a restore, a rejoin or a late join. */
-    accepted(mine: boolean) {
-      if (mine && real && waiting) waiting = false;
+    accepted(own: boolean) {
+      // This tab's hold, still hanging: it drops. Anyone else's install, or this tab's own landing after its hang
+      // gave up (the brief version): watched.
+      if (own && mine && real && waiting) waiting = false;
+      else watch(own);
     },
-    /** The server refused this tab's install, or the adapter took it back. */
+    /** The server refused this tab's install. */
     denied: deny,
-    /** A restore, a rejoin or a refill: rows only. The garage shuts and the copy, stand, bolts and knob snap. */
+    /** A restore, a rejoin or a refill: rows only, no effect. The copy, stand, bolts and knob snap; an install in
+     * the air is settled by the rows on the next frame. The garage stays open. */
     restore() {
-      close();
-      openT = 0;
-      turnYaw = 0;
-      showTurn = -1;
+      restored = true;
       snapNext = true;
     },
     inspect: () => ({

@@ -809,8 +809,12 @@ steam, the wheels run up, the whistle blows, and the table turns the engine once
 round. Skip is offered from 0.8 s after the commit. With no answer in 2.5 s, a refusal or a lost connection the barrel
 lowers with the deny sound and the hold can be made again at once. After it the copy wears the longer boiler, the knob
 is green, the stand is empty and the jib's arm swings back to its park. A Try it (before steel) has no whistle and no
-turn. A friend who is not in the garage still gets the banner above; their own view of the moment is the plan's next
-step. Not tested on a device.
+turn. **Everyone else (G4, 12 November):** a friend at the table, or with the garage open, sees the same moment from
+the server's accept: the barrel lifts off its stand in 0.4 s, drops, the bolts go on, the whistle blows (it carries
+across the island, quiet at distance) and the table turns the engine once round. Nothing is taken from them: their
+camera and input are theirs and Back still leaves the garage. A friend more than 30 m from the table with the garage
+shut gets the banner above instead. A refused install lowers the barrel at once; one the server accepts after the
+barrel has already lowered plays a short version (lift, drop, bolts, steam). Not tested on a device.
 
 **The stack line to High Gorge, a greybox (12 November 2026; [greybox-route](../plans/greybox-route.md), leg 1 step
 4).** Every label below is a placeholder, grey and readable, with no sound or effect. **On Ring Island** the tracks

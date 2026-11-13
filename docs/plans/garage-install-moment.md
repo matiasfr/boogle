@@ -305,6 +305,42 @@ the boxes arrive, the show-off turn at today's table, a second player, a phone. 
 - The framing ruled as built: the barrel's nose in the lower left, the player and post before the front wheels, the
   pallet's band, the barrel passing the camera in the lift. For G4 or the flip.
 
+<a id="g4-as-built-12-november-2026"></a>
+
+### G4 as built (12 November 2026)
+
+- **Everyone else's moment.** `garage-view.ts` `accepted(own)`: this tab's hold, still hanging, drops as before;
+  anything else is watched (`watch`). Whatever this tab was trying is dropped, the part lifts off its stand in
+  `MOMENT.catchUp` (0.4 s) and the same moment plays: in the garage on the garage's camera with Back live, or with the
+  garage shut out in the world, the copy turning about its rest for the show-off. A watched moment is never `mine`:
+  no skip chip, no lock, and leaving the garage lets it play on in the world. The whistle's hearing range is 400 m.
+- **The banner moved** to `roundhouse-view.ts` with the shared-moment mark: a page gets it only when its garage is
+  shut and its player is more than 30 m from the table.
+- **A refusal comes back at once.** Why it did not: the adapter's corrections are made only for predicted actions
+  (something shown to give back), and `rail.install` is not predicted, so a refusal settled in silence and the view
+  waited out its 2.5 s. `railway-session.ts` now has `onRefused`: an action that is not predicted and was refused, or
+  acknowledged with no accepted event of yours in the packet. Local delivery only, in `src/adapters`; no wire, sim or
+  server change. Staged out of reach: the part lowered 32 ms after the commit, and the retry installed.
+- **A late accept** (after the hang gave up) plays the brief version: the catch-up lift, the drop, the bolts and the
+  steam, ending at c+1950 with no whistle and no turn. Staged with the wire held back 3.5 s: seen in the rows of the
+  run's log and its sheet.
+- **A restore no longer shuts the garage.** An install in the air is settled by the rows on the next frame (fitted:
+  the copy wears it; not: the part is back on its stand). Staged: a socket dropped during the hang, the garage still
+  open 5.5 s later and the retry installing. A drop after the accept, mid-moment, was not staged.
+- **The barrel's blink after a deny** was real: the lowering ended a frame before the idle rule put the part back on
+  its stand. It is placed there in the same frame now.
+- **The race.** Two tabs holding from the same server tick: the winner's moment is `mine`; the loser's hang is refused
+  (the deny sound plays), then the winner's accept arrives and the loser watches it, not `mine`, and Back left the
+  garage during it. The deny sound before the winner's moment is the one thing that does not read as "theirs".
+- **Looked at** (`dev/look/evals/garage-two.ts`, two players, real time): `g4-two-motion.png` and
+  `g4-two-realtime.webm`, the bystander's own camera 12 m east of the table: the barrel on its stand until the
+  installer's commit, then gone from the stand, the engine wearing the long boiler, turning once round between about
+  8.3 and 9.9 s, and the jib's arm swinging back to its park; the bystander's camera, position and input hold read
+  the same before and after. It is small in that frame: the table is 17 m from the camera and the timber cart stands
+  in front of the player. `p2-g4-two-still.png`, the installer's garage after: fitted, the rows in ink. Not seen: the
+  catch-up lift itself (it falls between two frames of the sheet), a watcher inside the garage, a friend on the deck
+  through the turn, sound.
+
 ## 6. Steps
 
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and
@@ -347,7 +383,7 @@ the live install working. One proof look each; the full check, the bot and the t
       `docs/game-design/place.md` (the V3 paragraph). Proof: `npm run look -- --rail-seed steel-home --video --eval
       dev/look/evals/railway-install.ts`, read in real time: press frame, first movement, the hit against the clank,
       and the rows `Line.boiler` 1 after. **Visual review.**
-- [ ] **G4. Everyone else's moment (M).** Edit `garage-view.ts` (`accepted(false)`: any Try it or hold of this tab's
+- [x] **G4. Everyone else's moment (M).** As built: [below](#g4-as-built-12-november-2026). Edit `garage-view.ts` (`accepted(false)`: any Try it or hold of this tab's
       is dropped, the part shows at the stand, lifts in 0.4 s and the same moment plays; in the garage view on the
       garage camera with input free and Back live; out of it, in the world, with no camera constraint and sounds
       placed at the table; the whistle with the widened `hear`), `src/features/garage.ts` (`leave()` allowed when the

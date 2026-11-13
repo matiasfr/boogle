@@ -14,6 +14,8 @@
 //   onAccepted(fn)       effects: your predicted actions at once (predicted: true), everyone else's as the server
 //                        confirms them (returned: how many of their pieces a correction already flies to them)
 //   onCorrected(fn)      a predicted action gave back `lost` pieces (reason: refused, noop, contested, session)
+//   onRefused(fn)        an action that is not predicted (nothing was shown for it, so there is nothing to correct) was
+//                        refused by the server, or acknowledged without being accepted: its view stops waiting
 //   onRemap(fn)          fn(request, id): your drop of that request landed in pile `id`, not the pile it was shown
 //                        landing in (a temporary id, or a merge the server made a new pile)
 import { SERVER_ID } from '../net/ids.ts';
@@ -35,6 +37,7 @@ import {
   sameTarget,
   type RailwayAccepted,
   type RailwayCorrection,
+  type RailwayRefusal,
 } from './railway-effects.ts';
 import { railInt, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailAction } from '../sim/railway.ts';
 import { account as accountRow, beam as beamRow, boiler as boilerRow } from '../sim/railway-rows.ts';
@@ -91,6 +94,7 @@ export function createRailwayAdapter({
   const progressMarks = createRailwayProgressMarks();
   const effects = new Set<(event: RailwayAccepted) => void>();
   const corrections = new Set<(c: RailwayCorrection) => void>();
+  const refusals = new Set<(r: RailwayRefusal) => void>();
   const remaps = new Set<(request: number, id: number) => void>();
   const resets = new Set<(soft: boolean) => void>();
   let room: WorldRoom | null = null;
@@ -297,7 +301,14 @@ export function createRailwayAdapter({
     };
     for (const [r, reason] of settled) {
       const was = shown.get(r);
-      if (!was) continue;
+      if (!was) {
+        // Not predicted, so never shown: the server's accept arrives as an event of yours in this packet. Without
+        // one, the request is settled and nothing came of it.
+        const intent = pending.get(r);
+        if (intent && !RAIL_PREDICTED.has(intent.op) && !events.some((e) => e.pid === pid && e.request === r))
+          for (const fn of refusals) fn({ intent, request: r, reason: reason === 'refused' ? 'refused' : 'noop' });
+        continue;
+      }
       shown.delete(r);
       const kept = reason === 'refused' ? 0 : (moved.get(r) ?? 0);
       if (kept === was.n) stats.confirmed++;
@@ -546,6 +557,10 @@ export function createRailwayAdapter({
     onCorrected(fn: (c: RailwayCorrection) => void) {
       corrections.add(fn);
       return () => corrections.delete(fn);
+    },
+    onRefused(fn: (r: RailwayRefusal) => void) {
+      refusals.add(fn);
+      return () => refusals.delete(fn);
     },
     onRemap(fn: (request: number, id: number) => void) {
       remaps.add(fn);

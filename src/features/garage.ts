@@ -115,7 +115,9 @@ function pickCat(cat: CatId) {
 }
 function leave() {
   const snap = garage.api?.snap();
-  if (!snap || snap.phase === 'moment' || snap.phase === 'rest' || snap.phase === 'undo') return;
+  // Your own moment holds you to its end; someone else's install, watched from here, never does.
+  const watched = snap?.phase === 'moment' && !snap.mine;
+  if (!snap || (!watched && (snap.phase === 'moment' || snap.phase === 'rest' || snap.phase === 'undo'))) return;
   garage.api?.close();
   uiSound('pop');
 }

@@ -24,6 +24,8 @@ import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGarageView } from './garage-view.ts';
 import { roomFacts } from './garage-state.ts';
+import { playSharedMoment } from './shared-moment.ts';
+import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { GARAGE_GEO, installHere, polarAt } from './garage-geo.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 
@@ -42,6 +44,10 @@ const BACK_TICKS = 100;
 const BACK = { turn: [0.3, 0.5] } as const;
 /** Along the stall's length (local z): the wagon parks at the door end, the shunter behind it, ready to push. */
 const PARK = { wagon: -0.9, gap: 3.6 } as const;
+/** The longer boiler's banner for a player away from the table (placeholder lines, on main since build 2; none is The
+ * Boogler's), and how far "away" is, in metres from the table's centre. */
+const BANNER = ['Longer boiler installed', 'Line 2’s trains take it at the Village'] as const,
+  BANNER_BEYOND = 30;
 const BRASS = '#c79a3e',
   STEEL = '#7c7c74';
 
@@ -157,6 +163,12 @@ export async function createRailwayRoundhouse(
     },
   );
   owner.cleanup(garageView.dispose);
+  // The install is not predicted, so a refusal is no correction: the adapter says so directly and the part lowers.
+  owner.cleanup(
+    adapter.onRefused((r) => {
+      if (r.intent.op === 'rail.install') garageView.denied();
+    }),
+  );
 
   // ---------------------------------------------------------------- the shunt path: stall, door, table, line 2
   const pathPts: THREE.Vector3[] = [];
@@ -750,7 +762,16 @@ export async function createRailwayRoundhouse(
         lowering.push({ site: e.site, slot, from, t: 0 });
       }
       if (e.op === 'rail.turn') clank(table.x, table.z);
-      if (e.op === 'rail.install') garageView.accepted(e.pid === adapter.read.pid);
+      if (e.op === 'rail.install')
+        // The room's moment, on every page from the accepted install (never a restore or a late join): at the table
+        // or in the garage it is the part going on; a page away from both gets the banner as its note.
+        playSharedMoment('longer boiler', e, adapter.read.pid, (mine) => {
+          const pos = me.body?.position;
+          const away = !pos || Math.hypot(pos.x - table.x, pos.z - table.z) > BANNER_BEYOND;
+          if (away && !garageView.isOpen()) showMomentBanner(BANNER[0], BANNER[1], 4.5);
+          garageView.accepted(mine);
+          return false;
+        });
     },
     corrected(c: RailwayCorrection) {
       const e = c.event;
