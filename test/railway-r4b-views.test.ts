@@ -24,7 +24,7 @@ import {
   ringDeckY,
 } from '../src/sim/railway-ring-layout.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
-import { TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
+import { TRAIN_TAIL_M } from '../src/entities/railway/cars.ts';
 import {
   BENTS,
   BUFFER_BACK,
@@ -133,7 +133,7 @@ test('at every footing count the drawn deck reaches the nose of every train the 
     assert.ok(noseU(head) - noseU(Math.max(0, head - 1)) <= 20);
   }
   // Whatever length the consist is, its rear is on deck too: Q7's deck begins at the pier head (u 0) and the pier before.
-  const rear = Math.min(...TRAIN_OFFSETS);
+  const rear = -TRAIN_TAIL_M; // the steel car's tail on the wagon's train (v33)
   assert.ok(noseU(0) + rear > 0, 'a train at the first railhead has its whole length on Q7 or the pier');
   // Once the line is a through one: Q7's deck, bents 7-13, the leaf (the island's near view, at its true angle on the
   // rivet) and the Way from the hinge.
