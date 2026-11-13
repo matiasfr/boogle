@@ -1,6 +1,8 @@
 // Ring Island's steel works and the install on the real host (docs/plans/ring-island-build2.md, R4, v31): the yard
 // take judged at the yard, the feed at the works' doorway, the install at the Roundhouse table; malformed kinds, lines,
-// parts and revisions refused without a throw, and a stale install a noop.
+// parts and revisions refused without a throw, and a stale install a noop. The greybox route's leg 1 ops (v32) as real
+// r:edit messages: the frame feed, the pickups and the barriers keep their `leg`/`id` through railwayRequestEdit;
+// and a guard that every op's fields the rules read survive it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -16,7 +18,14 @@ import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-stee
 import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
 import { rail } from '../../src/sim/railway-rows.ts';
 import { RAIL_LEGS, legRack } from '../../src/sim/railway-route.ts';
-import { legKitNeed, legRow } from '../../src/sim/railway-queries-route.ts';
+import { legKitNeed, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
+import { RAIL_GATES, RAIL_GRANTS, legFrame } from '../../src/sim/railway-route.ts';
+import { restore } from '../../test/helpers/rail.ts';
+import { railApply } from '../../src/sim/railway-systems.ts';
+import { Account } from '../../src/sim/railway-components.ts';
+import type { RailAction } from '../../src/sim/railway.ts';
+import { RAIL_ACTIONS, railValid, type Actor } from '../../src/world/railway-server.ts';
+import { railwayRequestEdit } from '../src/host/railway-requests.ts';
 
 type Obj = Record<string, unknown>;
 type At = [number, number, number];
@@ -202,4 +211,130 @@ test('steel host: the install at the table, once, two players pressing on the sa
   } finally {
     await r.done();
   }
+});
+
+// ---------------------------------------------------------------- the greybox route's leg 1 ops (v32)
+const STACK = 0;
+const incline = RAIL_GATES.findIndex((g) => g.id === 'incline');
+/** Ring Island joined, its first kit racked: the leg's rack and frame are live. */
+async function racked(r: Awaited<ReturnType<typeof host>>) {
+  for (let k = 0; rail(r.w).depotRails === 0; k++) {
+    assert.ok(k < 4000, 'the first kit racked');
+    await r.ticks(1);
+  }
+}
+
+test('route host: the frame feed keeps its leg; fed at the frame, refused away and for a malformed leg', async () => {
+  const r = await host('leg-stock', buildSeedWorld('ring-joined'));
+  try {
+    await racked(r);
+    const laid = legRow(r.w, STACK).laid;
+    const p = legFrame(RAIL_LEGS[STACK]!, laid),
+      frame = spot(p);
+    assert.equal(await r.action({ op: 'rail.depotRailTake' }, spot(legRack(RAIL_LEGS[STACK]!, laid))), 'accepted');
+    const before = legRow(r.w, STACK).rails;
+    for (const leg of ['0', 0.5, -1, RAIL_LEGS.length, null, undefined])
+      assert.equal(await r.action({ op: 'rail.legStock', leg }, frame), 'rejected', `leg ${String(leg)}`);
+    assert.equal(await r.action({ op: 'rail.legStock', leg: STACK }, away(p)), 'rejected', 'not at the frame');
+    assert.equal(legRow(r.w, STACK).rails, before, 'nothing fed yet');
+    // Fields the op does not take are dropped, not judged: the feed goes in as `{ leg }` alone.
+    assert.equal(await r.action({ op: 'rail.legStock', leg: STACK, id: 3, kind: 2, junk: 'x' }, frame), 'accepted');
+    assert.ok(legRow(r.w, STACK).rails > before, 'fed into the frame');
+  } finally {
+    await r.done();
+  }
+});
+
+// A grant and a gate the rules cannot give yet (seeds' leg is not laid, the incline wants the pick): at their spot each
+// reaches the rule, a noop; refused away and malformed. Before the request kept `id`, every one was refused. (The pick
+// itself is not taken here: its rim lies 2032 m out, past the 2000 m `at` bound in railway-requests.ts.)
+test('route host: a grant and a gate keep their id; judged at their spot, refused away and for a malformed id', async () => {
+  const r = await host('leg-grant', buildSeedWorld('ring-joined'));
+  try {
+    const seeds = RAIL_GRANTS.findIndex((g) => g.id === 'seeds');
+    const g = RAIL_GRANTS[seeds]!.at,
+      b = RAIL_GATES[incline]!.at,
+      field = spot(g),
+      pad = spot(b);
+    for (const id of ['0', 0.5, -1, RAIL_GRANTS.length, null, undefined])
+      assert.equal(await r.action({ op: 'rail.grant', id }, field), 'rejected', `grant ${String(id)}`);
+    assert.equal(await r.action({ op: 'rail.grant', id: seeds }, away(g)), 'rejected', 'not at its spot');
+    assert.equal(await r.action({ op: 'rail.grant', id: seeds, leg: 3, junk: 'x' }, field), 'noop', 'leg 2 not laid');
+    for (const id of ['0', 0.5, -1, RAIL_GATES.length, null, undefined])
+      assert.equal(await r.action({ op: 'rail.gate', id }, pad), 'rejected', `gate ${String(id)}`);
+    assert.equal(await r.action({ op: 'rail.gate', id: incline }, away(b)), 'rejected', 'not at the pad');
+    assert.equal(await r.action({ op: 'rail.gate', id: incline, leg: 1 }, pad), 'noop', 'the pick not held');
+    assert.deepEqual([routeRow(r.w).grants, routeRow(r.w).gates], [0, 0]);
+  } finally {
+    await r.done();
+  }
+});
+
+test('railwayRequestEdit: the route ops come out in their exact wire shape', () => {
+  const extra = { epoch: 9, request: 9, at: [0, 0, 0], ms: 1, junk: 'x', kind: 2, revision: 0 };
+  assert.deepEqual(railwayRequestEdit({ op: 'rail.legStock', leg: 0, id: 1, ...extra }, 1, 2), {
+    op: 'rail.legStock',
+    epoch: 1,
+    request: 2,
+    leg: 0,
+  });
+  for (const op of ['rail.grant', 'rail.gate'])
+    assert.deepEqual(railwayRequestEdit({ op, id: 0, leg: 1, ...extra }, 1, 2), { op, epoch: 1, request: 2, id: 0 });
+});
+
+// The guard: every field of RailAction (the type check below fails when one is added and not listed here) is sent on
+// every client op; whatever the op's validation (railValid) or its rule (railApply) then reads that
+// railwayRequestEdit dropped is a field the live server would lose. Reads made for every op (railValid's `kind`) are
+// subtracted by an unknown op's baseline. Two passes (0 and 1 in each number) reach reads behind a first check.
+const FIELDS = [
+  'id',
+  'n',
+  'x',
+  'z',
+  'y',
+  'yaw',
+  'collapsed',
+  'kind',
+  'station',
+  'revision',
+  'rack',
+  'site',
+  'to',
+  'dir',
+  'train',
+  'line',
+  'part',
+  'tk',
+  'leg',
+] as const satisfies readonly (keyof RailAction)[];
+type Unlisted = Exclude<keyof RailAction, (typeof FIELDS)[number] | 'op' | 'epoch' | 'request'>;
+const everyField: [Unlisted] extends [never] ? true : Unlisted = true;
+const anywhere: Actor = { reach: () => true, height: () => true, cadence: () => true };
+
+test('railwayRequestEdit: every field an op validates or applies survives the request', () => {
+  assert.ok(everyField);
+  const joined = buildSeedWorld('ring-joined');
+  const lost = (op: string, v: number) => {
+    const w = restore(joined.w);
+    const a = w.get(Account, w.lookup(Account, 'a')!)!;
+    const all: Obj = { op, station: 'T3', collapsed: false };
+    for (const k of FIELDS) all[k] ??= v;
+    const clean = railwayRequestEdit(all, a.epoch, a.request + 1);
+    const read = new Set<string>();
+    const watched = new Proxy(clean, {
+      get(t, k, recv) {
+        if (typeof k === 'string' && !Object.hasOwn(t, k)) read.add(k);
+        return Reflect.get(t, k, recv) as unknown;
+      },
+    });
+    railValid(w, watched, anywhere, joined.t);
+    railApply(w, 'a', watched, joined.t);
+    return read;
+  };
+  const missing: string[] = [];
+  for (const v of [0, 1]) {
+    const baseline = lost('rail.none', v);
+    for (const op of RAIL_ACTIONS) for (const k of lost(op, v)) if (!baseline.has(k)) missing.push(`${op} reads ${k}`);
+  }
+  assert.deepEqual([...new Set(missing)], [], 'fields the request drops');
 });

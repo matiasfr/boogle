@@ -44,9 +44,13 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
     e.op === 'rail.take' ||
     e.op === 'rail.mine' ||
     e.op === 'rail.call' ||
-    e.op === 'rail.strike'
+    e.op === 'rail.strike' ||
+    e.op === 'rail.grant' ||
+    e.op === 'rail.gate'
   )
     clean.id = e.id;
+  // The greybox route's frame feed names its leg (a RAIL_LEGS index); the rules validate it.
+  if (e.op === 'rail.legStock') clean.leg = e.leg;
   if (e.op === 'rail.footTake') clean.rack = e.rack;
   if (e.op === 'rail.footSet') clean.site = e.site;
   if (e.op === 'rail.turn') clean.to = e.to;
