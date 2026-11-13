@@ -79,7 +79,7 @@ at https://boogle.club/; Bell Rock and the Gorge by the DEV strip's Free cam (a 
       centre, build, signs }`, the Gorge first; signs by `signBoard`; `describe()` gains `bell`, `west`. `stack-at.ts`
       waits for the area within 380 m. `dev/level/route-leg2.ts` (`checkLeg2`, `printLeg2`, from `check.ts`): `flood`
       with `MOVER` over the boxes; asserts finding 2 and the reserves. Verify: `npm run level-check`; one Gorge look.
-- [ ] **2. Bell Rock in the map data (S).** In `map-prototypes.html` replace `bell-land` with `bell-w` and `bell-e`
+- [x] **2. Bell Rock in the map data (S).** In `map-prototypes.html` replace `bell-land` with `bell-w` and `bell-e`
       (`poly` for `c`, `r`, `seed`, `rough`), point the shoal at `bell-w`, move the pinnacle to [-1024, -870]; run
       the generator. Verify: `git diff --exit-code src/sim`; `test/world-lines.test.ts`; the cut in one look.
 - [ ] **3. Bell Rock, the lower level (M).** `massing-bell.ts`: the bed, platforms, lower deck, ramp, slipway, rock
