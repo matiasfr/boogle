@@ -1,8 +1,8 @@
 # World: server state and client mirrors
 
-Railway state, rail tuning and roster are Server kind. Since v40, no lockstep state or classic edit transport
+Railway state, rail tuning, roster and seats are Server kind. Since v40, no lockstep state or classic edit transport
 remains. Clients mirror the server and may predict declared railway actions; a client predicting nothing is correct.
-Seats and The Boogler still use the lead tab's Host fields. Player movement remains Owner kind.
+The Boogler still uses the lead tab's Host field. Player movement and seat pose remain Owner kind.
 
 ## Pieces
 
@@ -15,6 +15,7 @@ Seats and The Boogler still use the lead tab's Host fields. Player movement rema
 | `replicate*.ts`, `room-clock.ts` | Component schemas, changed-row replication, complete client mirrors, prediction hooks and the 60 Hz room clock. |
 | `railway-server.ts`, `railway-replicate.ts`, `railway-predict.ts` | Server railway rules and projections, published client state and bounded local action prediction. |
 | `classic-replicate.ts` | Server roster and rail-tune projections/mirrors; the filename is historical, not a classic transport. |
+| `seat-replicate.ts` | Transient global seat occupancy rows keyed by seat id; complete client mirrors keyed by pid and seat. |
 | `grid.ts` | Pure grid constants. |
 | `background.ts`, `clock-worker.ts` | Bounded elapsed time shared by visible frames and hidden-tab heartbeats. |
 

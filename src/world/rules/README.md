@@ -1,13 +1,14 @@
 # World rules: server registrations
 
-Roster and railway tuning are Server kind. The server validates and applies commands, checkpoints state and
+Roster, railway tuning and seats are Server kind. The server validates and applies commands, checkpoints durable state and
 projects values onto the railway replication stream. Clients read mirrors. The classic registrations, haul keys,
 edit generators and lockstep transport retired at v40; they are not recipes for new shared state.
 
 ## Contract
 
 `roster.ts` exports `installServer(sync, ops, replication, now)`; `tune.ts` exports
-`installRailTune(sync, ops, replication)`. The host calls them before the railway registration and projections.
+`installRailTune(sync, ops, replication)`. Seats use `installSeats(ops, replication, now)` without checkpoint registration.
+The host calls them before the railway registration and projections.
 `SyncView` in `types.ts` exposes the world clock, `registerState(..., { server: true })`, `onTick` and `onSnapshot`.
 Checkpoint order is deterministic; clients install none of these state owners.
 
@@ -43,14 +44,15 @@ the existing look/bot harness. Update the owning game-design chapter for player-
 | --- | --- | --- | --- |
 | `roster.ts` | Durable `who.set` | `roster`: stable ordinals, names and colours, cap 256 | Global `player` rows |
 | `tune.ts` | `tune.set`, durable `tune.commit` | `railTune`: 30 rail keys and revision | Global `tuneValue`, `tuneRev` rows |
-| `seats.ts` | Transient shadow `seat.sit`, `seat.stand` | None | None; diagnostic `status().seats` only |
+| `seats.ts` | Transient `seat.sit`, `seat.stand` | None | Global `seat` rows keyed by seat id, with occupant pid |
 
 The railway's rule ticks and action set live in `../railway-server.ts`; its state is also registered Server kind.
-`../README.md` owns the clock and checkpoint contract. Seats and The Boogler remain lead-tab Host fields in this step.
+`../README.md` owns the clock and checkpoint contract. The Boogler remains a lead-tab Host field.
 
-Seat shadow commands bind the socket's pid, validate opaque ids, choose the first free requested chair, and rate-limit
+Seat commands bind the socket's pid, validate opaque ids, choose the first free requested chair, and rate-limit
 accepted sits to one per 400 ms of host time. `taken` and `rate` are nonfatal receipt reasons; the command adapter
-preserves them without reopening its session. Shadow receipts never change seating on the client. Actual departure
-releases the pid, and pause clears every chair. No component, saved shape or namespace changes in this step.
-The host compares the shadow table with the lead's grants after a changed pair stays stable for 400 ms; status exposes
-`seatShadow` checks/agreements/mismatches, logging each stable mismatch once. This is diagnostic, never arbitration.
+preserves them without reopening its session. Clients predict sitting and standing immediately; only `taken` steps a
+predicted rider off, while `rate` holds the pose until the once-a-second reconcile retries, including alternates.
+Actual departure after the reconnect grace releases the pid, and pause clears every chair. Occupancy is transient:
+a restart starts empty, and seated clients reclaim. Remote riders require both the Server row and Owner
+`placeSeatPose` to name the chair. v41 removed the lead's seat grants and seat-request presence; no seat is saved.

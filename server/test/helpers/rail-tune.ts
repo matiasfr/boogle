@@ -37,36 +37,40 @@ export async function fixture(t: TestContext) {
   let held: { gate: ReturnType<typeof deferred<void>>; entered: ReturnType<typeof deferred<void>> } | null = null;
   const writes: RecoveryEnvelope[] = [];
   let serverNow = 1800000000000;
-  const host = createRailwayWorldHost({
-    roomId,
-    tick: false,
-    now: () => serverNow,
-    pidOf: (sid) => sid,
-    tuneController: (sid) => sid === 'alice',
-    store: {
-      ...store,
-      async write(id, doc, options) {
-        writes.push(doc.data as RecoveryEnvelope);
-        const hold = held;
-        held = null;
-        if (hold) {
-          hold.entered.resolve();
-          await hold.gate.promise;
-        }
-        return store.write(id, doc, options);
+  const makeHost = () =>
+    createRailwayWorldHost({
+      roomId,
+      tick: false,
+      now: () => serverNow,
+      pidOf: (sid) => sid,
+      tuneController: (sid) => sid === 'alice',
+      store: {
+        ...store,
+        async write(id, doc, options) {
+          writes.push(doc.data as RecoveryEnvelope);
+          const hold = held;
+          held = null;
+          if (hold) {
+            hold.entered.resolve();
+            await hold.gate.promise;
+          }
+          return store.write(id, doc, options);
+        },
       },
-    },
-  });
+    });
+  let host = makeHost();
   await host.whenReady();
   let now = 1000;
   const up: { sid: string; message: unknown }[] = [];
   const clients = new Map<string, ReturnType<typeof join>>();
   const messages: Record<string, unknown>[] = [];
-  host.onSend((m) => {
-    messages.push(m);
-    if (typeof m.to === 'string') clients.get(m.to)?.hear(m);
-    else for (const c of clients.values()) c.hear(m);
-  });
+  const bindHost = () =>
+    host.onSend((m) => {
+      messages.push(m);
+      if (typeof m.to === 'string') clients.get(m.to)?.hear(m);
+      else for (const c of clients.values()) c.hear(m);
+    });
+  bindHost();
   function join(sid: string, holdSession = false) {
     const sessionReplies: unknown[] = [];
     const mirror = createRailwayMirror();
@@ -160,7 +164,9 @@ export async function fixture(t: TestContext) {
     await fs.rm(dir, { recursive: true, force: true });
   });
   return {
-    host,
+    get host() {
+      return host;
+    },
     store,
     roomId,
     writes,
@@ -168,6 +174,14 @@ export async function fixture(t: TestContext) {
     join,
     run,
     settled,
+    /** A new host reads the same verified store; clients retain their adapters and predicted presentation. */
+    async restart() {
+      for (const c of clients.values()) c.disconnect();
+      await host.close();
+      host = makeHost();
+      await host.whenReady();
+      bindHost();
+    },
     now: () => serverNow,
     advanceTime: (ms: number) => {
       serverNow += ms;

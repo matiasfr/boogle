@@ -10,7 +10,7 @@ import { worldRoomId } from '../../src/world/namespace.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { HALF } from '../../src/world/grid.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
-import { assignSeats, type Grants, type SeatRequest } from '../../src/entities/railway/seat-claims.ts';
+import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 
 type Msg = Record<string, any>;
 const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
@@ -62,7 +62,7 @@ const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-test('review: an unchanged lead grant agrees during follower reconnect grace', async () => {
+test('a server seat stays occupied throughout the 1.5 second reconnect grace', async () => {
   const room = railwayRoomId('review-grace');
   const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*' }, undefined, 1500);
   const a = connect(base, room, 'seata');
@@ -79,14 +79,12 @@ test('review: an unchanged lead grant agrees during follower reconnect grace', a
       d: { t: 'r:edit', e: { op: 'seat.sit', id: 'chair', epoch: session.epoch, request: 1, at: [0, 0, 0], ms: 0 } },
     });
     await b.next((m) => isWorld('s')(m) && m.d.ack?.[1] === 1);
-    a.send({ t: 'p', s: 1, d: { v: 1, placeSeatGrants: { chair: { peer: 'seatb', ticket: 1 } } } });
-    for (let i = 0; i < 100 && world.status().seatShadow.agreements < 1; i++) await sleep(20);
-    assert.equal(world.status().seatShadow.mismatches, 0);
     b.ws.close();
     await b.closed;
     await sleep(800);
     assert.deepEqual(world.status().seats, [{ id: 'chair', pid: 'seatbpid' }]);
-    assert.equal(world.status().seatShadow.mismatches, 0, 'unchanged grants and held row must still agree');
+    await a.next((m) => m.t === 'left' && m.id === 'seatb');
+    assert.deepEqual(world.status().seats, [], 'actual departure frees the chair after grace');
   } finally {
     a.ws.close();
     b.ws.close();
@@ -95,8 +93,8 @@ test('review: an unchanged lead grant agrees during follower reconnect grace', a
   }
 });
 
-test('seat shadow over two sockets agrees after every sit/stand and retains a chair through reconnect grace', async () => {
-  const room = railwayRoomId('seat-shadow');
+test('server seats over two sockets agree after every sit/stand and retain a chair through reconnect grace', async () => {
+  const room = railwayRoomId('server-seats');
   const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*' });
   const a = connect(base, room, 'seata'),
     b = connect(base, room, 'seatb');
@@ -110,18 +108,14 @@ test('seat shadow over two sockets agrees after every sit/stand and retains a ch
       client.send({ t: 'm', d: { t: 'r:open' } });
       await client.next(isWorld('r:session'));
     }
-    const reqs = new Map<string, SeatRequest>();
-    const chairs = ['bench-0', 'bench-1'].map((id) => ({ id, group: 'bench', available: () => true }));
-    let grants: Grants = {},
-      presence = 0,
-      checks = 0;
+    const mirrors = [createRailwayMirror(), createRailwayMirror()];
+    const cursors = [0, 0];
+    const expected = new Map<string, string>();
     const requests = new Map<string, number>();
     async function action(client: ReturnType<typeof connect>, peer: string, sitting: boolean) {
       const session = client.msgs.findLast(isWorld('r:session'))!.d;
       const request = (requests.get(peer) ?? 0) + 1;
       requests.set(peer, request);
-      if (sitting) reqs.set(peer, { id: 'bench-0', ticket: request });
-      else reqs.delete(peer);
       client.send({
         t: 'm',
         d: {
@@ -137,23 +131,30 @@ test('seat shadow over two sockets agrees after every sit/stand and retains a ch
         },
       });
       await client.next((m) => isWorld('s')(m) && m.d.ack?.[1] === request);
-      grants = assignSeats(grants, reqs, chairs);
-      a.send({ t: 'p', s: ++presence, d: { v: 1, placeSeatGrants: grants } });
-      checks++;
-      for (let i = 0; i < 150 && world.status().seatShadow.checks < checks; i++) await sleep(20);
-      assert.deepEqual(world.status().seatShadow, { checks, agreements: checks, mismatches: 0 });
+      if (sitting) expected.set(peer, expected.size ? 'bench-1' : 'bench-0');
+      else expected.delete(peer);
+      const rows = [...expected]
+        .map(([pid, id]) => ({ id, pid: pid + 'pid' }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      for (let attempt = 0; attempt < 100; attempt++) {
+        for (const [i, c] of [a, b].entries()) {
+          for (const m of c.msgs.slice(cursors[i])) if (isWorld('s')(m)) mirrors[i]!.mirror.apply(m.d);
+          cursors[i] = c.msgs.length;
+        }
+        if (mirrors.every((m) => JSON.stringify(m.seats.rows()) === JSON.stringify(rows))) break;
+        await sleep(20);
+      }
+      for (const mirror of mirrors) assert.deepEqual(mirror.seats.rows(), rows);
       assert.deepEqual(
         world.status().seats.sort((a, b) => a.id.localeCompare(b.id)),
-        Object.entries(grants)
-          .map(([id, g]) => ({ id, pid: g.peer + 'pid' }))
-          .sort((a, b) => a.id.localeCompare(b.id)),
+        rows,
       );
     }
     await action(a, 'seata', true);
     await action(b, 'seatb', true);
     await action(a, 'seata', false);
     await action(b, 'seatb', false);
-    console.log('Socket seat shadow: 4/4 agreements, 0 mismatches after each sit and stand');
+    await sleep(400); // accepted sits use host cadence even after standing
     await action(b, 'seatb', true);
     b.ws.close();
     await b.closed;
@@ -200,10 +201,10 @@ async function rename(client: ReturnType<typeof connect>, name: string) {
   await client.next((m) => isWorld('s')(m) && m.d.ack?.[0] === session.epoch && m.d.ack?.[1] >= session.next);
 }
 
-test('v39 clients receive a clean refusal after the v40 classic-transport retirement', async () => {
+test('v40 clients receive a clean refusal after the v41 seat authority flip', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
-    for (const room of ['v39-boogle', 'rail-v39-boogle']) {
+    for (const room of ['v40-boogle', 'rail-v40-boogle']) {
       const client = connect(base, room, 'oldtab');
       assert.deepEqual(await client.next(is('peer')), { t: 'peer' });
       assert.equal(await client.closed, 4000);

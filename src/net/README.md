@@ -38,6 +38,6 @@ wire/save reshapes use the dated `WORLD_NS` reset described in [mixed builds](..
 The server validates all messages and bounds input. Railway commands use ordered `r:*` requests and `s` packets;
 the only remaining `w:*` message is the server-origin `w:c` clock. Client-origin legacy or malformed `w:*` data
 is ignored or refused without entering simulation. Clients mirror state and never persist server checkpoints.
-The existing room namespace admission refuses a v39 client at v40; no migration or alternate transport is retained.
+The existing room namespace admission refuses a v40 client at v41; no migration or alternate transport is retained.
 Shared tuning writes require an explicit server `TUNE_CONTROLLER_KEY` matching the sender's bound socket key,
 a current revision and valid values; being the room lead grants nothing.
