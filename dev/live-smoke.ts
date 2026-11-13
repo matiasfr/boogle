@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { WS_PROTOCOL, roomUrl, decode, encode, type WireMsg } from '../src/net/ws-wire.ts';
+import { waitForServerBuild } from './deploy-wait.ts';
 
 const args = process.argv.slice(2);
 // Reuse the server's pinned ws dependency; its Origin option matches a real site's upgrade.
@@ -17,14 +18,16 @@ const site = new URL(option('--url') || 'https://boogle.club/');
 const expected = option('--build');
 const start = performance.now();
 const sockets: import('ws').WebSocket[] = [];
-// The server deploy (tests, image build, Fly) can finish minutes after Pages, so the identity wait gets five minutes.
-const SERVER_WAIT_MS = 300000;
-const deadline = setTimeout(() => {
-  console.error('FAIL live smoke exceeded 7 minutes');
-  process.exit(1);
-}, 420000);
-async function get(url: URL, contentType: RegExp) {
-  const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+// Leave two minutes beyond the twelve-minute identity wait for assets and the room round-trip.
+const deadline = setTimeout(
+  () => {
+    console.error('FAIL live smoke exceeded 14 minutes');
+    process.exit(1);
+  },
+  14 * 60 * 1000,
+);
+async function get(url: URL, contentType: RegExp, timeoutMs = 5000) {
+  const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(Math.ceil(timeoutMs)) });
   assert.equal(res.status, 200, `${url}: HTTP ${res.status}`);
   assert.match(res.headers.get('content-type') || '', contentType, `${url}: content type`);
   return res;
@@ -92,20 +95,15 @@ try {
   // Server and Pages deploy independently, and the server usually lands last. serverBuild is the last commit that
   // touched the server, so a Pages-only push expects the build already live and passes on the first poll; a server
   // push waits here for deploy-server. A server that never reaches serverBuild still fails below.
-  let actual = '';
-  let versionError = '';
-  const waitUntil = performance.now() + SERVER_WAIT_MS;
-  while (performance.now() < waitUntil) {
-    try {
-      const data = (await (await get(new URL('/version', server), /application\/json/)).json()) as { build?: string };
-      actual = data.build || '';
-      if (actual === version.serverBuild) break;
-    } catch (error) {
-      versionError = String(error);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-  assert.equal(actual, version.serverBuild, `server deployed source commit (${versionError})`);
+  console.log(`Waiting up to 12 minutes for ${server}/version: expected server source commit ${version.serverBuild}`);
+  const actual = await waitForServerBuild(version.serverBuild, {
+    readBuild: async (timeoutMs) => {
+      const data = (await (await get(new URL('/version', server), /application\/json/, timeoutMs)).json()) as {
+        build?: string;
+      };
+      return data.build || '';
+    },
+  });
   // Seven isolated rooms bound stored-room growth and never touch boogle or a friend's room.
   const room = `smoke-node-${new Date().getUTCDay()}`;
   // A server restart (a deploy landing just after the identity check) drops sockets or stalls the relay. One retry on
