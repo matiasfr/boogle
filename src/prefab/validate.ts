@@ -86,16 +86,40 @@ const applyBasis = (b: Basis, v: Vec3): Vec3 => [
   b[0][1] * v[0] + b[1][1] * v[1] + b[2][1] * v[2],
   b[0][2] * v[0] + b[1][2] * v[1] + b[2][2] * v[2],
 ];
-/** YXZ columns, purely numeric: build validation composes the same parent transforms as the runtime. */
+/** Match three's YXZ Euler -> quaternion -> Matrix4.compose operation order, without importing the renderer.
+ * Algebraically equivalent direct Euler matrices differ by ulps, amplified by extreme scale ratios.
+ * References: three/src/math/Quaternion.js setFromEuler, Matrix4.js compose; round-trip tests guard parity.
+ */
 function placementBasis(p: Pick<Placement, 'rot' | 'scale'>): Basis {
   const [yaw, pitch, roll] = p.rot ?? [0, 0, 0],
     [sx, sy, sz] = p.scale ?? [1, 1, 1];
-  const rotate = ([x, y, z]: Vec3): Vec3 => {
-    [x, y] = [x * Math.cos(roll) - y * Math.sin(roll), x * Math.sin(roll) + y * Math.cos(roll)];
-    [y, z] = [y * Math.cos(pitch) - z * Math.sin(pitch), y * Math.sin(pitch) + z * Math.cos(pitch)];
-    return [x * Math.cos(yaw) + z * Math.sin(yaw), y, -x * Math.sin(yaw) + z * Math.cos(yaw)];
-  };
-  return [rotate([sx, 0, 0]), rotate([0, sy, 0]), rotate([0, 0, sz])];
+  const c1 = Math.cos(pitch / 2),
+    c2 = Math.cos(yaw / 2),
+    c3 = Math.cos(roll / 2);
+  const s1 = Math.sin(pitch / 2),
+    s2 = Math.sin(yaw / 2),
+    s3 = Math.sin(roll / 2);
+  const x = s1 * c2 * c3 + c1 * s2 * s3,
+    y = c1 * s2 * c3 - s1 * c2 * s3;
+  const z = c1 * c2 * s3 - s1 * s2 * c3,
+    w = c1 * c2 * c3 + s1 * s2 * s3;
+  const x2 = x + x,
+    y2 = y + y,
+    z2 = z + z;
+  const xx = x * x2,
+    xy = x * y2,
+    xz = x * z2,
+    yy = y * y2,
+    yz = y * z2,
+    zz = z * z2;
+  const wx = w * x2,
+    wy = w * y2,
+    wz = w * z2;
+  return [
+    [(1 - (yy + zz)) * sx, (xy + wz) * sx, (xz - wy) * sx],
+    [(xy - wz) * sy, (1 - (xx + zz)) * sy, (yz + wx) * sy],
+    [(xz + wy) * sz, (yz - wx) * sz, (1 - (xx + yy)) * sz],
+  ];
 }
 /** Reject code, sparse arrays, cycles and non-plain values before serialization can hide them. */
 export function validateJson(value: unknown, ancestors = new Set<object>()): void {

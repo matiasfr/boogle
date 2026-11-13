@@ -4,10 +4,12 @@ import { metadata, type LevelDef, type PrefabDef } from '../../src/prefab/types.
 import { names, type NameRegistry } from '../../src/prefab/names.ts';
 import { validateArtifact, validateLevelArtifact } from '../../src/prefab/validate.ts';
 
-/** Canonical portable bytes: sort object keys, preserve authored array order, round metres/radians to 1e-4. */
+/** Canonical portable bytes: sorted keys, authored array order, lossless JSON number representations.
+ * Decimal quantization can turn accepted rotations or compensating scales into shear. Retaining the full
+ * finite JS number makes serialization error zero for every scale ratio the validator supports.
+ */
 export function canonical(value: unknown): string {
   const sorted = (v: unknown): unknown => {
-    if (typeof v === 'number') return Math.round(v * 1e4) / 1e4;
     if (Array.isArray(v)) return v.map(sorted);
     if (v && typeof v === 'object')
       return Object.fromEntries(
@@ -28,9 +30,9 @@ export function compile(prefabs: readonly PrefabDef[], levels: readonly LevelDef
   const artifact = { ...metadata, format: 'boogle-prefabs', prefabs: records };
   validateArtifact(artifact, registry);
   const outputs = new Map<string, string>([['prefabs.json', canonical(artifact)]]);
-  // Rounding must not turn a valid tiny shape into a degenerate collider.
-  const rounded: unknown = JSON.parse(outputs.get('prefabs.json')!);
-  validateArtifact(rounded, registry);
+  // Verify the actual bytes the runtime will load, including all record and level references.
+  const serialized: unknown = JSON.parse(outputs.get('prefabs.json')!);
+  validateArtifact(serialized, registry);
   for (const level of levels) {
     if (!/^[a-z0-9][a-z0-9-]*$/.test(level.place)) throw new Error('unsafe level name');
     const file = `levels/${level.place}.json`;
@@ -38,7 +40,7 @@ export function compile(prefabs: readonly PrefabDef[], levels: readonly LevelDef
     const artifact = { ...metadata, format: 'boogle-level', ...level };
     validateLevelArtifact(artifact, records);
     const bytes = canonical(artifact);
-    validateLevelArtifact(JSON.parse(bytes), rounded.prefabs);
+    validateLevelArtifact(JSON.parse(bytes), serialized.prefabs);
     outputs.set(file, bytes);
   }
   return outputs;

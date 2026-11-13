@@ -23,8 +23,18 @@ import {
   validateColliderWorldTransforms,
   validatePlacement,
 } from '../src/prefab/validate.ts';
-import type { Placement, PrefabArtifact, PrefabDef, Vec3 } from '../src/prefab/types.ts';
+import {
+  metadata,
+  type Placement,
+  type PrefabArtifact,
+  type PrefabDef,
+  type Vec3,
+  type LevelArtifact,
+  type LevelDef,
+} from '../src/prefab/types.ts';
 import { compile } from '../dev/prefab/compiler.ts';
+import { prefabs as authoredPrefabs } from '../src/content/prefabs/town.ts';
+import { levels as authoredLevels } from '../src/content/levels/workshop.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 
@@ -146,7 +156,7 @@ test('workshop collider and placement bytes match the pre-conversion code', () =
 });
 
 // The same source-owned boundary as the golden, with real ownership and recording allocation services.
-function runtimeHarness() {
+function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact }) {
   const active = new Set<Body>(),
     seats: Seat[] = [];
   const physicsSpecs: { shape: Shape; position: { x: number; y: number; z: number }; rotation?: THREE.Quaternion }[] =
@@ -167,13 +177,13 @@ function runtimeHarness() {
     'registerSeat',
     { seats, sitting: null, standUp: () => {} },
   );
-  const data = structuredClone(artifact) as unknown as PrefabArtifact;
+  const data = input ? structuredClone(input.prefabs) : (structuredClone(artifact) as unknown as PrefabArtifact);
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
     fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
     {
       THREE,
       artifact: data,
-      workshop,
+      workshop: input?.level ?? workshop,
       names,
       validateArtifact,
       validateColliderWorldTransforms,
@@ -510,6 +520,141 @@ for (const row of worldTransformCases)
         assert.equal(h.active.size, 0);
         assert.equal(h.seats.length, 0);
       }
+    } finally {
+      h.owner.dispose();
+    }
+    assert.equal(h.active.size, 0);
+    assert.equal(h.seats.length, 0);
+  });
+
+type RoundTripCase = {
+  name: string;
+  parentScale?: Vec3;
+  scale?: Vec3;
+  yaw?: number;
+  colliderYaw?: number;
+  expected: 'accept' | 'shear' | 'agree';
+  chair?: true;
+};
+const roundTripCases: RoundTripCase[] = [
+  { name: 'quarter-turn under stretched parent', expected: 'accept', parentScale: [2, 1, 1], yaw: Math.PI / 2 },
+  { name: 'eighth-turn in equal radial axes', expected: 'accept', parentScale: [2, 1, 2], yaw: Math.PI / 4 },
+  { name: 'arbitrary yaw in equal radial axes', expected: 'accept', parentScale: [2, 1, 2], yaw: 0.731234567890123 },
+  {
+    name: 'arbitrary cancelling collider yaw',
+    expected: 'accept',
+    parentScale: [2, 1, 1],
+    yaw: 0.731234567890123,
+    colliderYaw: -0.731234567890123,
+  },
+  {
+    name: 'fractional compensating scales',
+    expected: 'accept',
+    parentScale: [0.123456789, 1, 1],
+    scale: [1 / 0.123456789, 1, 1],
+    colliderYaw: 0.3,
+  },
+  { name: 'authored workshop chair', expected: 'accept', chair: true },
+  { name: 'quarter-turn at a large supported ratio', expected: 'accept', parentScale: [1e6, 1, 1], yaw: Math.PI / 2 },
+  { name: 'genuine arbitrary-yaw shear', expected: 'shear', parentScale: [2, 1, 1], yaw: 0.7 },
+  { name: 'genuine eighth-turn shear', expected: 'shear', parentScale: [2, 1, 1], yaw: Math.PI / 4 },
+  {
+    name: 'quarter-turn at the numerical tolerance boundary',
+    expected: 'agree',
+    parentScale: [1e7, 1, 1],
+    yaw: Math.PI / 2,
+  },
+  {
+    name: 'quarter-turn beyond the numerical tolerance boundary',
+    expected: 'agree',
+    parentScale: [1e9, 1, 1],
+    yaw: Math.PI / 2,
+  },
+];
+for (const row of roundTripCases)
+  test(`round-trip property: ${row.name}`, () => {
+    const frame: PrefabDef = { key: 'roundtrip.frame', visual: { none: true }, colliders: [], scope: 'owner' };
+    const box: PrefabDef = {
+      key: 'roundtrip.box',
+      visual: { none: true },
+      colliders: [
+        {
+          shape: 'box',
+          at: [0, 0, 0],
+          half: [1, 1, 1],
+          ...(row.colliderYaw === undefined ? {} : { rot: [row.colliderYaw, 0, 0] as Vec3 }),
+        },
+      ],
+      scope: 'owner',
+    };
+    const records: PrefabDef[] = row.chair ? authoredPrefabs : [frame, box];
+    const level: LevelDef = row.chair
+      ? authoredLevels[0]!
+      : {
+          place: 'roundtrip',
+          placements: [
+            { id: 'parent', prefab: frame.key, pos: [0, 0, 0], scale: row.parentScale ?? [1, 1, 1] },
+            {
+              id: 'child',
+              prefab: box.key,
+              parent: 'parent',
+              pos: [0, 0, 0],
+              rot: [row.yaw ?? 0, 0, 0],
+              scale: row.scale ?? [1, 1, 1],
+            },
+          ],
+        };
+    const defs = Object.fromEntries(records.map((p) => [p.key, p]));
+    let sourceError: string | null = null;
+    try {
+      validateLevel(level, defs);
+    } catch (error) {
+      assert.ok(error instanceof Error);
+      sourceError = error.message;
+    }
+    if (row.expected === 'shear' || sourceError !== null) {
+      assert.notEqual(row.expected, 'accept', sourceError ?? 'source unexpectedly accepted');
+      assert.match(sourceError ?? '', /shear/);
+      assert.throws(
+        () => compile(records, [level]),
+        (error: unknown) => error instanceof Error && error.message === sourceError,
+      );
+      const rawPrefabs: PrefabArtifact = { ...metadata, format: 'boogle-prefabs', prefabs: defs };
+      const rawLevel: LevelArtifact = { ...metadata, format: 'boogle-level', ...level };
+      assert.throws(
+        () => runtimeHarness({ prefabs: rawPrefabs, level: rawLevel }),
+        (error: unknown) => error instanceof Error && error.message === sourceError,
+      );
+      return;
+    }
+    const outputs = compile(records, [level]);
+    const parsedPrefabs: unknown = JSON.parse(outputs.get('prefabs.json')!);
+    validateArtifact(parsedPrefabs);
+    const parsedLevel: unknown = JSON.parse(outputs.get(`levels/${level.place}.json`)!);
+    validateLevelArtifact(parsedLevel, parsedPrefabs.prefabs);
+    assert.deepEqual(parsedPrefabs.prefabs, defs, 'serialization must preserve accepted record numbers');
+    assert.deepEqual(parsedLevel.placements, level.placements, 'serialization must preserve accepted transforms');
+    const child = parsedLevel.placements.at(-1)!;
+    const byId = new Map(parsedLevel.placements.map((p) => [p.id, p]));
+    const parents: Placement[] = [];
+    for (let p = child.parent; p; p = byId.get(p)!.parent) parents.unshift(byId.get(p)!);
+    const h = runtimeHarness({ prefabs: parsedPrefabs, level: parsedLevel });
+    let parent = new THREE.Group();
+    for (const p of parents) {
+      const next = new THREE.Group();
+      next.position.fromArray(p.pos);
+      next.scale.fromArray(p.scale ?? [1, 1, 1]);
+      const r = p.rot ?? [0, 0, 0];
+      next.rotation.set(r[1], r[0], r[2], 'YXZ');
+      parent.add(next);
+      parent = next;
+    }
+    parent.add(h.owner.root);
+    try {
+      const instance = h.spawn(child);
+      instance.setEnabled(true);
+      assert.equal(h.active.size, parsedPrefabs.prefabs[child.prefab]!.colliders.length);
+      if (row.chair) assert.equal(instance.seats[0]!.id, 'forge-workshop');
     } finally {
       h.owner.dispose();
     }
