@@ -7,10 +7,10 @@ const { identity } = (await import(
 const { net, connectRoom } = (await import(
   '/src/netplay/net.ts' as string
 )) as typeof import('../../../src/netplay/net.ts');
-const { rules } = (await import(
+const { railTune } = (await import(
   '/src/world/game-world.ts' as string
 )) as typeof import('../../../src/world/game-world.ts');
-const { snapshot, detachWorld, worldStatus } = (await import(
+const { detachWorld, worldStatus } = (await import(
   '/src/world/sync.ts' as string
 )) as typeof import('../../../src/world/sync.ts');
 const { onTuneRecord } = (await import(
@@ -19,6 +19,9 @@ const { onTuneRecord } = (await import(
 const { recordTuneSnapshot } = (await import(
   '/src/debug/dev/tunables.ts' as string
 )) as typeof import('../../../src/debug/dev/tunables.ts');
+const { railwayCommands } = (await import(
+  '/src/entities/railway/state.ts' as string
+)) as typeof import('../../../src/entities/railway/state.ts');
 const { renderer } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
 const { exposureSettings } = (await import(
   '/src/render/exposure.ts' as string
@@ -28,7 +31,10 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function until(check: () => boolean, label: string) {
   const deadline = performance.now() + 60_000;
   while (!check()) {
-    if (performance.now() > deadline) throw new Error(`Tunables: ${label}`);
+    if (performance.now() > deadline)
+      throw new Error(
+        `Tunables: ${label}; ${JSON.stringify({ net: net.state, rail: railwayCommands()?.read.debug() })}`,
+      );
     await wait(50);
   }
 }
@@ -40,6 +46,8 @@ async function run() {
   const api = window.boogle.dev!;
   await until(() => exposureSettings.centre === 0.24, 'URL exposure after Look restoration');
   const player = new URLSearchParams(location.search).get('player') ?? '1';
+  const records: { kind: string; [key: string]: unknown }[] = [];
+  const off = onTuneRecord((kind, fields) => records.push({ kind, ...fields }));
   const initial = await api.run('tunables', 'snapshot');
   const invalid = await api.run('tunables', 'set', { id: 'post.centre', value: -1 });
   assert(!invalid.ok, 'invalid value refused');
@@ -48,18 +56,25 @@ async function run() {
     net.room?.close();
     detachWorld();
     net.room = null;
-    identity.pid = 'tunectl001';
+    // Keep the adapter's player id; let the old socket's 1.5 s identity reservation expire before changing its key.
+    await wait(2000);
     identity.key = 'tunablesproofcontroller01';
     await connectRoom();
-    await until(() => worldStatus().ready && net.state === 'live', 'controller reconnect');
+    // This eval replaces a live room object; request a full state after its listeners have attached.
+    net.room!.send({ t: 'r:resync' });
+    await until(() => !!railwayCommands()?.read.ready() && net.state === 'live', 'controller reconnect');
+    await until(
+      () => net.room!.peers().some((peer) => !peer.sameTab && peer.presence.tuneProofReady === true),
+      'peer recording subscribed',
+    );
     const result = await api.run('tunables', 'set', {
       id: 'railway.regrowMinutes',
       value: 60,
-      expectedRevision: rules.tune.tune.revision,
+      expectedRevision: railTune!.tune.revision,
     });
     const data = result.data as { requestId: string; status: string };
     assert(data.status === 'pending', 'shared write queued');
-    await until(() => rules.tune.get('railRegrowMinutes') === 60, 'shared write applied');
+    await until(() => railTune!.get('railRegrowMinutes') === 60, 'shared write applied');
     const applied = await api.run('tunables', 'status', { requestId: data.requestId });
     assert((applied.data as { status: string }).status === 'applied', 'correlated apply');
     const stale = await api.run('tunables', 'set', { id: 'railway.regrowMinutes', value: 70, expectedRevision: 0 });
@@ -68,7 +83,10 @@ async function run() {
     assert(local.ok, 'local exposure applied');
     console.log('TUNABLES ' + JSON.stringify({ player, initial, applied, stale }));
   } else {
-    await until(() => rules.tune.get('railRegrowMinutes') === 60, 'peer receives shared value');
+    // Harness readiness is transient presence; railway rooms deliberately refuse unknown peer messages.
+    await net.room!.presence({ tuneProofReady: true });
+    await until(() => railTune!.get('railRegrowMinutes') === 60, 'peer receives shared value');
+    await net.room!.presence({ tuneProofReady: null });
     const denied = await api.run('tunables', 'set', { id: 'railway.regrowMinutes', value: 90 });
     const requestId = (denied.data as { requestId: string }).requestId;
     let status = 'pending';
@@ -83,17 +101,22 @@ async function run() {
     assert((local.data as { value: number }).value === 0.24, 'exposure stays local');
     console.log('TUNABLES ' + JSON.stringify({ player, initial, unauthorized: status, local }));
   }
-  const records: unknown[] = [];
-  const off = onTuneRecord((kind, fields) => records.push({ kind, ...fields }));
+  const changes = records.filter((r) => r.kind === 'tune.change' && r.id === 'railway.regrowMinutes');
+  assert(changes.length === 1 && changes[0]!.value === 60, 'each peer records the change exactly once');
+  assert(
+    records.some((r) => r.kind === 'tune.value' && r.id === 'railway.regrowMinutes' && r.value === 60),
+    'replication records the updated snapshot without a manual export',
+  );
   recordTuneSnapshot();
   off();
+  await api.open('tunables');
   console.log(
     'TUNABLES EXPORT ' +
       JSON.stringify({
         player,
         snapshot: (await api.run('tunables', 'snapshot')).data,
         diff: (await api.run('tunables', 'diff')).data,
-        saved: snapshot().data.tune,
+        mirrored: { values: railTune!.tune.v, revision: railTune!.tune.revision },
         records,
         render: renderer.info.render,
       }),
