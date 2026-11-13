@@ -222,10 +222,23 @@ test("line 2's trains bring the kit, bring a lost load again, and carry every st
   t.diagnostic(`kit in the yard ${kitSeconds} s after the rivet; first steel home ${firstHome} s after lit`);
 });
 
-/** The bill can still be completed from here (finding 2): the players feed their backs, the train brings what is owed,
- * and every load is fed, with time between loads for the forge to pour. */
+/** The bill can still be completed from here (finding 2): the players feed their backs and put down surplus cargo,
+ * the train brings what is owed, and every load is fed, with time between loads for the forge to pour. */
 function completes(from: Seed) {
   const s = seed(from);
+  for (const pid of ['a', 'b']) {
+    act(s, pid, 'rail.steel');
+    // The fuzz can fill a back with cargo the bill no longer needs. Waiting for kit cannot make room for it:
+    // seed 777 ends with a carrying 16 spare logs while the yard holds the five rails still needed.
+    for (const kind of [0, 2]) {
+      let left = kind ? account(s.w, pid)!.rails : account(s.w, pid)!.carry;
+      while (left > 0) {
+        const n = act(s, pid, 'rail.drop', { kind, n: left, x: 141000, y: 890, z: -81500 });
+        assert.ok(n > 0, 'surplus cargo can be put down');
+        left -= n;
+      }
+    }
+  }
   for (let round = 0; round < 12 && steel(s.w).lit < 0; round++) {
     for (const pid of ['a', 'b']) act(s, pid, 'rail.steel');
     landKit(s);
