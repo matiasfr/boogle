@@ -5,7 +5,7 @@ description: Record clips and GIFs of the running game and cut them into trailer
 
 # Clips and videos
 
-Commands built on the look harness (`dev/look/lib.ts`: Vite, local signaling, headless Chromium). Output
+Commands built on the look harness (`dev/look/lib.ts`: Vite, a local game server, headless Chromium). Output
 goes to `.look/` (gitignored).
 
 | What | Command | Source | Output |
@@ -118,14 +118,14 @@ old `video-*` releases. To preview pages locally: copy `.look/publish/<tag>` int
 
 ## 5. Patch video loop
 
-`npm run daily -- patch-video` runs this on the owner's Mac with Codex on the owner's subscription. The director
+`npm run daily -- patch-video` runs this on command on the owner's Mac with Codex on the owner's subscription; it is not on the launchd schedule (`dev/daily/jobs.ts`, `scheduled`). The director
 installs the launchd calendar with `npm run daily:install`; [setup, schedule and recovery](../../../dev/daily/README.md).
 `--dry-run` previews without side effects; `--force` bypasses the three-game-commit gate and `--notes "..."` adds
 editorial instructions. The daily loop covers main only, never prototypes. It always uses a fresh worktree and skips
 overlapping runs. Codex records and cuts the video; a separate Codex session checks and fixes the cut. It writes
 `.look/publish.json` rather than publishing itself. The runner checks and ships changed shots with `npm run ship`,
-publishes the approved video, then posts to the "Patch videos" issue mentioning the owner. CI still deploys Pages;
-the old Claude patch-video workflow is removed. For the daily agent, the runner owns steps 5-7 below and the separate
+publishes the approved video, then posts to the "Patch videos" issue mentioning the owner. CI still deploys Pages.
+For the daily agent, the runner owns steps 5-7 below and the separate
 review session. New edit lists use `.look/reels/<name>.ts` and `npm run reel -- .look/reels/<name>.ts`.
 The following describes the editorial sequence; the daily agent must not pull or switch the caller's checkout.
 

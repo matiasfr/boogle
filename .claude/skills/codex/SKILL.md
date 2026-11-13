@@ -33,11 +33,11 @@ Codex reads AGENTS.md and the docs its table triggers like you do, and can't pus
 |---|---|---|---|
 | `previz` | medium (`high` for a hard art-direction call) | `.look/previz/<topic>/` (gitignored) | `shot-<n>.png` (`--shots`, default 4) and `board.md`: pitch, per-shot camera, light, palette, the prompt, and how we'd build it in TSL, particles and post |
 | `brainstorm` | high, live web search, read-only | this checkout, in place; `--role design\|systems\|creative` | one panelist's contribution as `.look/codex/<topic>/report.md`; resume for round 2 (the brainstorm skill drives it) |
-| `research` | xhigh, live web search | worktree `../boogle-codex/<topic>`, branch `codex/<topic>` | `docs/research/<topic>.md` committed, not pushed |
+| `research` | high, live web search | worktree `../boogle-codex/<topic>`, branch `codex/<topic>` | `docs/research/<topic>.md` committed, not pushed |
 | `task` | medium (high for server or sync work) | same worktree setup | commits on `codex/<topic>`, `npm run check` run, not pushed |
-| `review` | xhigh | detached worktree at `--ref-branch` (default HEAD) | `codex exec review` against `origin/main`; an optional brief focuses it |
+| `review` | high | detached worktree at `--ref-branch` (default HEAD) | `codex exec review` against `origin/main`; an optional brief focuses it |
 
-Check `npm run models` first: it names the model and effort per kind of work, and in normal (Claude-only) mode the runner refuses everything but previz. Effort: previz is mostly image prompts, so `medium` (or `high`) is enough; `xhigh` for research and review; `high` for implementation; `max` only for one hard question. For straightforward implementation with a clear shape, use `--model gpt-6.1-terra --effort low` first (see `npm run models`).
+Check `npm run models` first: it names the model and effort per kind of work, and in normal (Claude-only) mode the runner refuses everything but previz. Pass that row's `--model` and `--effort`; the table's defaults are only what `run.ts` uses when a flag is omitted.
 
 ## Previz
 
