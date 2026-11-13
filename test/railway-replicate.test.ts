@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.ts';
-import { installRules } from '../src/world/rules/index.ts';
+import { installRailRules } from './helpers/rail-rules.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror, RAIL_SCHEMAS } from '../src/world/railway-replicate.ts';
@@ -106,8 +106,8 @@ for (const k of [3, 4]) {
 function room() {
   const sync = createSync();
   sync.setSelfId('server');
-  const base = installRules(sync, homeLand());
   const replication = createReplicator();
+  const base = installRailRules(sync, homeLand(), replication);
   const api = installRailway(sync, base, replication);
   api.touchAll();
   const mirrors = new Map<string, ReturnType<typeof createRailwayMirror>>();

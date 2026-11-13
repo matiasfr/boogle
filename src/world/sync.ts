@@ -116,7 +116,7 @@ const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
 export const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap', 'w:rejected']); // what a client accepts, only from the host
-export type EditRejection = { op: string; requestId: string; reason?: 'recovery-budget' | 'request-id-too-long' };
+export type EditRejection = { op: string; requestId: string; reason?: 'recovery-budget' };
 const correlation = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length <= 80;
 const isObj = (v: unknown): v is Obj => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
@@ -655,7 +655,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
           fn({
             op: msg.op,
             requestId: msg.requestId,
-            ...(msg.reason === 'recovery-budget' || msg.reason === 'request-id-too-long' ? { reason: msg.reason } : {}),
+            ...(msg.reason === 'recovery-budget' ? { reason: msg.reason } : {}),
           });
         } catch (err) {
           console.warn('[world] onRejected failed', err);

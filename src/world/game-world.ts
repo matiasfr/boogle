@@ -13,3 +13,5 @@ export const land: Land = { n: GRID_RES, layout: { trees: [], perches: [] } };
 export const rules = installRules({ world, registerOp, registerState, onTick, onApplied, onSnapshot }, land);
 // The railway is Server-kind state (docs/plans/replication.md, R1a): no rules here, only the mirror the server fills.
 export const railwayMirror = productionRailway ? createRailwayMirror() : null;
+
+export const railTune = railwayMirror?.tune ?? null;

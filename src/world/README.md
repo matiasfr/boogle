@@ -73,8 +73,7 @@ only from an already-pinned host and only for their own session; it cannot elect
 The server blocks client-origin receipts. Accepted edits still resolve through `onApplied`; a disconnect or lost
 receipt may leave a caller's outcome unknown, so a timeout is never a success or a proved refusal.
 The receipt may carry a bounded `reason`: `recovery-budget` means no stamp was issued because the durable tail
-is full; `request-id-too-long` means the T1 tuning correlation exceeds 64 UTF-16 code units. Unknown reasons
-are ignored. After budget pressure clears, callers may submit a new request using the current revision.
+is full. Unknown reasons are ignored. After budget pressure clears, callers may submit a new request using the current revision.
 
 Grid cells use the heightfield indexing from `src/island/terrain.ts`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
 
@@ -120,6 +119,9 @@ and Node tests read it (`test/helpers/land.ts`); `dev/scenarios/world-inputs.ts`
 and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` when a tree, rock or POI
 moves on purpose.
 
-Playable railway uses the same complete tuning state, controller authorization and correlated receipts as classic. Its transport permits only the two supply timers in prototype rooms. Current recovery verifies the registered state, checksum, checkpoint hash and accepted tail before atomic replacement. Frozen historical verifiers and old tuning migrations were removed under the owner's 5 November no-old-builds call; the old integration record in [production-core](../../docs/plans/production-core.md#supply-branch-integration-5-november) is historical.
-
-T1 forwards only known tuning fields, never arbitrary client padding. Its commit request IDs are preserved exactly and capped at 64 UTF-16 code units; the usual UUID fits. IDs of 65–80 units receive `request-id-too-long`; larger IDs are outside the existing receipt correlation limit and are discarded. This adds no authority and changes no accepted edit, recovery version, namespace or catalog.
+Railway tuning is Server kind: `railTune` is checkpointed, projected as global `tuneValue`/`tuneRev` rows and mirrored
+on clients. `tune.set` and durable `tune.commit` go through `server-ops.ts` on the railway session's request sequence.
+The eight haul tune keys stay lockstep with their readers; their revision and hash exclude every rail key. The only
+classic edit admitted by a railway room is now `who.set`. Current recovery verifies the registered state, checksum,
+checkpoint hash and accepted tail before atomic replacement. The seven inactive classic states are retained until
+server-owned-state step 5.

@@ -110,12 +110,12 @@ test('admission refusals are bounded, correlated and accepted only from the pinn
   await run(net, all, 5);
   assert.equal(received.length, 1, 'oversized requests get no reflected correlation');
   host.p.room.send({ ...forged, requestId: 'budget', reason: 'recovery-budget' });
-  host.p.room.send({ ...forged, requestId: 'length', reason: 'request-id-too-long' });
+  host.p.room.send({ ...forged, requestId: 'length', reason: 'unknown-reason' });
   host.p.room.send({ ...forged, requestId: 'unknown', reason: 'x'.repeat(1000) });
   await run(net, all, 5);
   assert.deepEqual(received.slice(1), [
     { op: 'add', requestId: 'budget', reason: 'recovery-budget' },
-    { op: 'add', requestId: 'length', reason: 'request-id-too-long' },
+    { op: 'add', requestId: 'length' },
     { op: 'add', requestId: 'unknown' },
   ]);
   unsubscribe();

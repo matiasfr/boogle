@@ -1,11 +1,11 @@
-// Classic commands' Server-kind boundary (server-owned-state, step 2). No production op is defined yet.
+// Classic commands' Server-kind boundary (server-owned-state, step 2). Rail tune commands use this boundary.
 // Validation sees authenticated identity and host facts; apply only receives the edit and rule tick. Results stay
 // local to the host; the existing railway receipt carries acceptance (ok=1), never an arbitrary result on the wire.
 import type { Actor } from './railway-server.ts';
 import type { Ctx } from './rules/types.ts';
 
 export type ServerEdit = Record<string, unknown> & { op: string; p: string; u: string };
-export type ServerOpContext = Ctx & { actor: Actor };
+export type ServerOpContext = Ctx & { actor: Actor; protoRoom: boolean; tuneController: (from: string) => boolean };
 export type ServerOpHandlers = {
   validate: (e: ServerEdit, ctx: ServerOpContext) => boolean;
   apply: (e: ServerEdit, tick: number) => unknown;

@@ -78,7 +78,7 @@ import { railEffect, railWakeTick, piles as pilesOf, type RailEffect } from './r
 export type { RailEffect } from './railway-predict.ts';
 import type { Replicator } from './replicate-server.ts';
 import type { SyncView } from './rules/types.ts';
-import type { TuneApi } from './rules/tune.ts';
+import type { RailTuneApi } from './rules/tune.ts';
 
 export const name = 'railway';
 export type RailwayApi = ReturnType<typeof install>;
@@ -320,7 +320,11 @@ function legRackNear(w: World, at: (p: { x: number; z: number; y: number; reach:
   return k >= 0 && at(legRack(RAIL_LEGS[k]!, legRow(w, k).laid));
 }
 
-export function install(sync: SyncView & { roomStep(): number }, rules: { tune: TuneApi }, replication: Replicator) {
+export function install(
+  sync: SyncView & { roomStep(): number },
+  rules: { railTune: Pick<RailTuneApi, 'get'> },
+  replication: Replicator,
+) {
   // The railway's state is an E world (src/sim/railway-components.ts); its rules are systems
   // (src/sim/railway-systems.ts).
   let world = createRailwayWorld();
@@ -338,9 +342,9 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
   const commit = () => touchChanges(world, touch);
   const timing = () => ({
     ...LINE_TIMING,
-    feedIntervalMs: rules.tune.get('railFeedMs'),
-    cruiseCmPerTick: rules.tune.get('railLaySpeed'),
-    departureTicks: rules.tune.get('railDepartureTicks'),
+    feedIntervalMs: rules.railTune.get('railFeedMs'),
+    cruiseCmPerTick: rules.railTune.get('railLaySpeed'),
+    departureTicks: rules.railTune.get('railDepartureTicks'),
   });
   // Saved as the world's schema snapshot (accounts and the beam holder by pid); loaded all or nothing through the
   // railway's own check.
@@ -361,9 +365,9 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     railTick(
       world,
       tick,
-      rules.tune.get('railTrainHeadPct'),
-      { farePct: rules.tune.get('railFarePct'), riderPct: rules.tune.get('railRiderPct') },
-      { cap: rules.tune.get('railTrainHoldCap'), pct: rules.tune.get('railTrainHoldPct') },
+      rules.railTune.get('railTrainHeadPct'),
+      { farePct: rules.railTune.get('railFarePct'), riderPct: rules.railTune.get('railRiderPct') },
+      { cap: rules.railTune.get('railTrainHoldCap'), pct: rules.railTune.get('railTrainHoldPct') },
     );
     commit();
   }, 'railway');
@@ -428,8 +432,8 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     },
     supply(pulse: SupplyPulse) {
       const moved = railSupplyPulse(world, pulse, {
-        regrow: rules.tune.get('railRegrowMinutes'),
-        recover: rules.tune.get('railRecoveryMinutes'),
+        regrow: rules.railTune.get('railRegrowMinutes'),
+        recover: rules.railTune.get('railRecoveryMinutes'),
       });
       commit();
       return moved;

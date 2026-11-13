@@ -7,7 +7,12 @@ import { railCounts } from '../../../src/sim/railway-queries-line2.ts';
 import { invariant, trees } from '../../../test/helpers/rail.ts';
 
 export const SUPPLY_SOURCE = 5;
-export async function supplyFixture(dataDir: string, roomId: string, recover = true) {
+export async function supplyFixture(
+  dataDir: string,
+  roomId: string,
+  recover = true,
+  tuneController: (sid: string) => boolean = (sid) => sid === 'supplysession',
+) {
   const store = createStore({ dataDir, maxRooms: 4 });
   await store.init();
   // Minute-aligned and fixed: a wall-clock remainder near a minute boundary can advance a stage on restart.
@@ -23,7 +28,7 @@ export async function supplyFixture(dataDir: string, roomId: string, recover = t
       saveMs: 1000000000,
       now: () => clock,
       pidOf: (sid) => (sid === 'supplysession' ? 'supplier' : null),
-      tuneController: (sid) => sid === 'supplysession',
+      tuneController,
       positions: () => observers,
     });
     host.onSend((message) => {

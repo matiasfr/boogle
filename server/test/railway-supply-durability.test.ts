@@ -12,7 +12,8 @@ import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { railCounts } from '../../src/sim/railway-queries-line2.ts';
 import { invariant, trees } from '../../test/helpers/rail.ts';
-import type { TuneApi } from '../../src/world/rules/tune.ts';
+import { setImmediate } from 'node:timers/promises';
+import type { ServerPacket } from '../../src/world/replicate.ts';
 import { SUPPLY_SOURCE, supplyFixture } from './fixtures/railway-supply-fixture.ts';
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -40,25 +41,29 @@ function assertSupply(host: RailwayWorldHost, stage: number) {
 test('only controlled T1 proto commits accept the two supply tunes, which survive restart and govern conserved progress', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-supply-tune-'));
   t.after(() => fs.rm(dir, { recursive: true, force: true }));
-  const f = await supplyFixture(dir, railwayRoomId('proto-supply-tune'), false);
-  const tune = () => {
-    assert.ok('tune' in f.host.rules);
-    return f.host.rules.tune as TuneApi;
-  };
-  const refusals: Record<string, unknown>[] = [];
-  f.host.onSend((message) => {
-    if (message.t === 'w:rejected') refusals.push(message);
-  });
-  let request = 0;
+  let controlled = false;
+  const f = await supplyFixture(
+    dir,
+    railwayRoomId('proto-supply-tune'),
+    false,
+    (sid) => controlled && sid === 'supplysession',
+  );
+  const tune = () => f.host.rules.railTune;
+  const receipts: ServerPacket[] = [];
+  const account = f.host.rules.railway.account('supplier')!;
+  const epoch = account.epoch;
+  let request = account.request;
   const set = async (key: string, v: number, patch: Record<string, unknown> = {}) => {
     const requestId = `supply-tune-${++request}`;
     f.host.deliver(
       {
-        t: 'w:edit',
+        t: 'r:edit',
         e: {
           op: 'tune.commit',
-          i: 0,
-          j: 0,
+          epoch,
+          request,
+          at: [0, 0, 0],
+          ms: 0,
           key,
           v,
           expectedRevision: tune().tune.revision,
@@ -68,29 +73,42 @@ test('only controlled T1 proto commits accept the two supply tunes, which surviv
       },
       'supplysession',
     );
+    await setImmediate();
+    await f.host.sync.whenDurable();
+    await setImmediate();
     await f.ticks(4);
-    return requestId;
+    f.host.replication.commit(f.host.sync.roomStep());
+    f.host.replication.flush(f.host.sync.roomStep(), (sid, packet) => {
+      assert.equal(sid, 'supplysession');
+      receipts.push(packet);
+    });
+    return request;
   };
   try {
-    f.host.sync.setEnv({ tuneController: () => false });
+    controlled = false;
     const denied = await set('railRegrowMinutes', 1);
     assert.equal(tune().get('railRegrowMinutes'), 31);
-    assert.ok(refusals.some((r) => r.requestId === denied && r.to === 'supplysession'));
-    f.host.sync.setEnv({ tuneController: (sid: string) => sid === 'supplysession' });
+    assert.ok(receipts.some((p) => p.rej?.some(([e, r, why]) => e === epoch && r === denied && why === 'refused')));
+    controlled = true;
     const stale = await set('railRegrowMinutes', 1, { expectedRevision: 42 });
     assert.equal(tune().get('railRegrowMinutes'), 31);
-    assert.ok(refusals.some((r) => r.requestId === stale));
-    await set('railRegrowMinutes', 1);
-    await set('railRecoveryMinutes', 2);
+    assert.ok(receipts.some((p) => p.rej?.some(([e, r, why]) => e === epoch && r === stale && why === 'refused')));
+    const regrow = await set('railRegrowMinutes', 1);
+    const recovery = await set('railRecoveryMinutes', 2);
+    for (const request of [regrow, recovery])
+      assert.ok(
+        receipts.some((p) => p.ok?.some(([e, r, n]) => e === epoch && r === request && n === 1)),
+        'durable acceptance',
+      );
     assert.equal(tune().get('railRegrowMinutes'), 1);
     assert.equal(tune().get('railRecoveryMinutes'), 2);
     await set('railRegrowMinutes', 0);
     await set('railRecoveryMinutes', 1441);
     assert.equal(tune().get('railRegrowMinutes'), 1, 'bounds remain enforced');
     assert.equal(tune().get('railRecoveryMinutes'), 2);
-    const oldCost = tune().get('cost0');
+    const oldCost = f.host.rules.tune.get('cost0');
     await set('cost0', oldCost + 1);
-    assert.equal(tune().get('cost0'), oldCost, 'the T1 allow-list does not open unrelated tuning');
+    assert.equal(f.host.rules.tune.get('cost0'), oldCost, 'rail commands do not open haul tuning');
     assert.equal(tune().tune.revision, 2, 'only the two accepted commits increment revision');
     f.advance(1);
     await f.ticks(4);
@@ -110,14 +128,26 @@ test('only controlled T1 proto commits accept the two supply tunes, which surviv
   }
   const ordinary = await supplyFixture(dir, railwayRoomId('supply-no-tune'), false);
   try {
+    const account = ordinary.host.rules.railway.account('supplier')!;
     ordinary.host.deliver(
-      { t: 'w:edit', e: { op: 'tune.set', i: 0, j: 0, key: 'railRegrowMinutes', v: 1 } },
+      {
+        t: 'r:edit',
+        e: {
+          op: 'tune.set',
+          epoch: account.epoch,
+          request: account.request + 1,
+          at: [0, 0, 0],
+          ms: 0,
+          key: 'railRegrowMinutes',
+          v: 1,
+        },
+      },
       'supplysession',
     );
     await ordinary.ticks(4);
-    assert.ok('tune' in ordinary.host.rules);
+    assert.ok('railTune' in ordinary.host.rules);
     assert.equal(
-      (ordinary.host.rules.tune as TuneApi).get('railRegrowMinutes'),
+      ordinary.host.rules.railTune.get('railRegrowMinutes'),
       31,
       'normal rooms retain the existing tuning policy',
     );

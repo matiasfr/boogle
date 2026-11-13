@@ -267,7 +267,7 @@ test("works host: a leaver's footing waits out the grace, then goes back to the 
   try {
     const now = () => works(r.w);
     const foot = () => account(r.w, 'a')!.foot;
-    const grace = () => r.h.rules.tune.get('railBeamGraceS') * 1000;
+    const grace = () => r.h.rules.railTune.get('railBeamGraceS') * 1000;
     assert.equal(await r.action({ op: 'rail.footTake', rack: 0 }, spot(WORKS_RACK)), 'accepted');
     // A restart ends every session; whoever comes back within the grace still carries it.
     await r.restart();
@@ -297,7 +297,7 @@ test('works host: a carrier back for less than a rule tick still gets a fresh gr
   try {
     const now = () => works(r.w);
     const foot = () => account(r.w, 'a')!.foot;
-    const grace = () => r.h.rules.tune.get('railBeamGraceS') * 1000;
+    const grace = () => r.h.rules.railTune.get('railBeamGraceS') * 1000;
     assert.equal(await r.action({ op: 'rail.footTake', rack: 0 }, spot(WORKS_RACK)), 'accepted');
     r.h.depart('s');
     await r.ticks(1);
@@ -323,7 +323,7 @@ type Host = Awaited<ReturnType<typeof host>>;
 async function briefReturn(r: Host) {
   r.h.depart('s');
   await r.ticks(1);
-  r.later(r.h.rules.tune.get('railBeamGraceS') * 1000 - 1000);
+  r.later(r.h.rules.railTune.get('railBeamGraceS') * 1000 - 1000);
   r.h.deliver({ t: 'r:open' }, 's');
   r.h.depart('s');
   r.later(1500);
@@ -351,7 +351,7 @@ test('works host: a boiler carrier back for less than a rule tick gets a fresh g
   const r = await host('brief-boiler', railwayAtTrains('boiler'));
   try {
     const boilerNow = () => boiler(r.w);
-    const grace = r.h.rules.tune.get('railBeamGraceS') * 1000;
+    const grace = r.h.rules.railTune.get('railBeamGraceS') * 1000;
     assert.equal(
       await r.action({ op: 'rail.boilerTake', revision: boilerNow().revision }, spot(LINE2_BOILER)),
       'accepted',
@@ -372,7 +372,7 @@ test('works host: a beam carrier back for less than a rule tick gets a fresh gra
   const r = await host('brief-beam', atBeam());
   try {
     const beamNow = () => beam(r.w);
-    const grace = r.h.rules.tune.get('railBeamGraceS') * 1000;
+    const grace = r.h.rules.railTune.get('railBeamGraceS') * 1000;
     assert.equal(
       await r.action({ op: 'rail.beamTake', revision: beamNow().revision }, [beamNow().x, 0, beamNow().z]),
       'accepted',

@@ -3,6 +3,21 @@ import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 
 type RailwayRead = RailwayAdapter['read'];
 
+let commandSession: RailwayAdapter | null = null;
+const commandListeners = new Set<(session: RailwayAdapter | null) => void>();
+/** The mounted command boundary, shared with the dev tuning panel. */
+export const railwayCommands = () => commandSession;
+export function onRailwayCommands(fn: (session: RailwayAdapter | null) => void) {
+  commandListeners.add(fn);
+  fn(commandSession);
+  return () => commandListeners.delete(fn);
+}
+/** Lifecycle owner only. */
+export function setRailwayCommands(session: RailwayAdapter | null) {
+  commandSession = session;
+  for (const fn of commandListeners) fn(session);
+}
+
 let worldRead: RailwayRead | null = null;
 /** The adapter's read facade (docs/plans/ecs-migration-railway.md, M8): the world the views see now, its tick, the
  * local pid and the session status, for rows and queries. Null until the railway is mounted. */

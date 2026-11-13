@@ -143,12 +143,24 @@ test('each job closure holds every parsed relative load of every file in it', ()
   }
 });
 
+test('server jobs follow the real tuning panel and recorder behind per-tab import isolation', () => {
+  const closure = jobClosure('server');
+  for (const file of ['src/debug/dev/tunables.ts', 'src/tunables/events.ts', 'src/tunables/catalog.ts']) {
+    assert.ok(closure.has(file), file);
+    assert.equal(codeJobs([file]).server, true, `${file} must run the actual-panel recording regression`);
+  }
+});
+
 // Loads no walk can follow: a computed import or URL, a worker or child process started from a path that is not a
 // literal URL, a bundle built by entry name. Each one known is listed with what covers it; a new one fails here.
 const UNFOLLOWED: Record<string, string> = {
   'dev/peer-test/harness.ts: esbuild.build': "bundles dev/peer-test/<entry>: every file there is one of net's roots",
   'dev/peer-test/worker-source.ts: registerHooks': 'redirects src/ to a worker tree; the same src files',
   'dev/peer-test/node-player.ts: import': 'imports the bundle node-player itself builds from dev/peer-test',
+  'server/test/helpers/tune-panel.ts: registerHooks':
+    'isolates the two literal panel/event URLs and stubs browser entry points; their complete source imports remain in the server closure',
+  'server/test/helpers/tune-panel.ts: import':
+    'imports the two literal new URL targets above with per-tab query parameters; both targets and their imports are walked',
 };
 test('every load the walk cannot follow is known', () => {
   const found = new Set<string>();

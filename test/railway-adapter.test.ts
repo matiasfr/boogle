@@ -11,7 +11,7 @@ import type { RailwayAccepted, RailwayCorrection, RailwayRefusal } from '../src/
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../src/world/sync.ts';
-import { installRules } from '../src/world/rules/index.ts';
+import { installRailRules } from './helpers/rail-rules.ts';
 import { install as installRailway } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
@@ -80,8 +80,8 @@ function world({
 }: { reach?: (pid: string) => boolean; movement?: () => typeof MOVEMENT } = {}) {
   const sync = createSync();
   sync.setSelfId('server');
-  const base = installRules(sync, homeLand());
   const replication = createReplicator();
+  const base = installRailRules(sync, homeLand(), replication);
   const api = installRailway(sync, base, replication);
   api.touchAll();
   const clients = new Map<string, Client>();

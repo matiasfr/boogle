@@ -123,8 +123,8 @@ async function fixture(t: TestContext) {
     host.ops.define(op, {
       durable,
       validate: (e, ctx) =>
-        ctx.env.protoRoom === true &&
-        (ctx.env.tuneController as (sid: string) => boolean)(ctx.from) &&
+        ctx.protoRoom === true &&
+        ctx.tuneController(ctx.from) &&
         ctx.actor.reach(0, 0, 10) &&
         canSet(host.rules.roster.roster, e.u, e.n, e.c),
       apply: (e) => {
@@ -181,6 +181,8 @@ test('server ops validate authenticated identity, return results, and reject unk
     from: 'socket',
     tick: 12,
     env: {},
+    protoRoom: true,
+    tuneController: () => true,
     actor: { reach: () => true, height: () => true, cadence: () => true },
   };
   ops.define('probe', {
@@ -342,10 +344,10 @@ test('a departed session cannot publish a held receipt into its replacement', as
   assert.deepEqual(f.flush().rej, [[1, 1, 'session']]);
 });
 
-test('production registers no classic server commands and keeps the classic registry', async (t) => {
+test('production admits rail tune commands while roster and haul retain the classic registry', async (t) => {
   const f = await fixture(t);
   for (const op of ['tune.set', 'tune.commit', 'who.set']) {
-    assert.equal(f.host.ops.has(op), false);
+    assert.equal(f.host.ops.has(op), op !== 'who.set');
     assert.ok(f.host.sync.registry().ops.includes(op));
   }
   f.edit(1, { op: 'who.set' });

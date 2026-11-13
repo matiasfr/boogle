@@ -1,10 +1,10 @@
 // Maximum capped checkpoint plus durable-tail width; conservation is covered by railway-line-authority. The railway is
 // Server kind (replication R1a): it rides in the checkpoint as its E world's snapshot, and its actions never enter the
-// tail; the tail holds only the lockstep edits a railway room admits (who.set, tune).
+// tail; the tail holds only the lockstep edit a railway room admits (who.set).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync, MAX_RECOVERY_BYTES } from '../src/world/sync.ts';
-import { installRules } from '../src/world/rules/index.ts';
+import { installRailRules } from './helpers/rail-rules.ts';
 import { install as installRailway } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { homeLand } from './helpers/land.ts';
@@ -15,9 +15,10 @@ import { Account, Outcome, Pile, RAIL_COMPONENTS } from '../src/sim/railway-comp
 test('line recovery width bound retains sixty-four worst lockstep stamps and maximum roster', (t) => {
   // Deliberately combines mutually exclusive balances: a conservative byte bound, not a reachable state. The railway
   // saves its world's schema snapshot, so every row of every component is set to its widest value.
+  const replication = createReplicator();
   const sync = createSync(),
-    base = installRules(sync, homeLand()),
-    api = installRailway(sync, base, createReplicator()),
+    base = installRailRules(sync, homeLand(), replication),
+    api = installRailway(sync, base, replication),
     w = api.world(),
     M = 2147483647;
   for (let k = 0; k < 256; k++) {
@@ -49,25 +50,15 @@ test('line recovery width bound retains sixty-four worst lockstep stamps and max
       const row = w.mut(c, id) as Record<string, unknown>;
       for (const f of c.names) if (f !== c.key) row[f] = widest(c.fields[f]!, f);
     }
-  for (const t of TUNABLES) base.tune.tune.v[t.key] = t.max;
+  for (const t of TUNABLES) (t.key.startsWith('rail') ? base.railTune : base.tune).tune.v[t.key] = t.max;
   base.tune.tune.revision = M;
+  base.railTune.tune.revision = M;
   const snapshot = sync.snapshot();
   snapshot.tick = M;
   snapshot.epochMs = 1793850000000;
   const common = { p: 's'.repeat(32), u: 's'.repeat(32) };
-  // The widest lockstep edits a railway room admits (world-host.ts deliver): a long-name who.set and a tune commit.
-  for (const body of [
-    { op: 'who.set', i: 0, j: 0, n: '\ufffd'.repeat(16), c: 7 },
-    {
-      op: 'tune.commit',
-      i: 0,
-      j: 0,
-      key: 'railRecoveryMinutes',
-      v: M,
-      expectedRevision: M,
-      requestId: '\\'.repeat(64),
-    },
-  ]) {
+  // Only bounded identity remains in the classic recovery tail.
+  for (const body of [{ op: 'who.set', i: 0, j: 0, n: '\ufffd'.repeat(16), c: 7 }]) {
     const tail = Array.from({ length: 64 }, (_, i) => ({ tick: M, seq: M - 64 + i, e: { ...body, ...common } }));
     const e = {
       version: 1,

@@ -38,7 +38,8 @@ Update the system's `docs/game-design/` chapter (new system: add a chapter and i
 
 ```ts
 // src/world/rules/<name>.ts
-// Imports allowed: ../grid.ts, ../../sim/*, sibling rules (including types.ts).
+// Runtime imports: ../grid.ts, ../../sim/*, sibling rules (including types.ts).
+// Server-kind registration may also import command/replicator types (docs/agents/lint-boundaries.md).
 export const name = 'thing'; // key in the rules handle; equals its state key when it has one
 export function install(sync, land, rules) {
   // register ops, state, ticks and sim listeners on `sync`; return the API adapters and later rules use
@@ -129,6 +130,8 @@ export const edits = {
 This sketch shows the wiring; copy `piles.ts` for typed `SyncView`, `Land`, edit fields, generators and API. Then append `thing` to `RULES` in `index.ts`, add its API to `Rules` in `types.ts`, and read `rules.thing` from `../game-world.ts` in the adapter.
 
 ## Modules
+
+Rail tuning is installed separately by `tune.ts`'s `installRailTune`: it registers `railTune` as Server kind and defines `tune.set`/durable `tune.commit` on `server-ops.ts`. Its 30 rail keys are projected globally by `../classic-replicate.ts`; clients mirror them and never hash or simulate them. The `tune` row below contains only the eight haul keys. Server rail validation receives `protoRoom` and `tuneController` directly in the command context; the env table above describes the retained haul path.
 
 The railway is not a rules module: it is Server kind (`../railway-server.ts`, replicated by `../railway-replicate.ts`; docs/plans/replication.md), saved with the host's checkpoint and never registered as a lockstep op or hashed state.
 

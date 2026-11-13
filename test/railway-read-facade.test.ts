@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.ts';
-import { installRules } from '../src/world/rules/index.ts';
+import { installRailRules } from './helpers/rail-rules.ts';
 import type { World } from '../src/ecs/index.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
@@ -30,7 +30,7 @@ function room() {
   const sync = createSync();
   sync.setSelfId('server');
   const replication = createReplicator();
-  const api = installRailway(sync, installRules(sync, homeLand()), replication);
+  const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   api.touchAll();
   const mirror = createRailwayMirror();
   replication.addClient('a');

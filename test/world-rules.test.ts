@@ -174,7 +174,7 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
   assert.equal(b.s.worldHash(), a.s.worldHash());
 });
 
-test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
+test('rules runtime imports reach only pure modules (type-only boundaries are erased)', () => {
   const allowed = /\/src\/(world\/rules\/[^/]+|world\/grid|sim\/[^/]+)\.(js|ts)$/;
   const seen = new Set<string>();
   const visit = (url: URL) => {
@@ -183,7 +183,7 @@ test('rules import only pure modules (no three.js, DOM or constants.js)', () => 
     assert.match(url.pathname, allowed, `rules reach ${url.pathname}`);
     const src = fs.readFileSync(url, 'utf8');
     for (const [, a, b] of src.matchAll(
-      /^\s*(?:import|export)\b[^'";]*?\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm,
+      /^\s*(?:import|export)\b(?!\s+type\b)[^'";]*?\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm,
     )) {
       const spec = a ?? b!;
       assert.ok(spec.startsWith('.'), `${url.pathname} imports the package ${spec}`);
