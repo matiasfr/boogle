@@ -11,13 +11,19 @@ import { sanitizeName } from '../math.ts';
 import { addPresenceField, net, onNetState } from '../netplay/net.ts';
 import { submitEdit, worldStatus } from '../world/sync.ts';
 import { railwayCommands } from '../entities/railway/state.ts';
-import { playMark } from '../proto/mark.ts';
+import { playMark, recordRosterSnapshot, type RosterSnapshot } from '../proto/mark.ts';
 
-// Every peer records the roster it actually received, including snapshots and reconnect changes.
+// Every peer records one complete snapshot outside the mark budget; subsequent changes also get timeline marks.
+let recordedRoster: RosterSnapshot['rows'] | undefined;
 railwayMirror?.roster.onChange(({ rows, tick }) => {
-  playMark('roster.begin', { tick, count: rows.length });
-  rows.forEach(([pid, name, color], ordinal) => playMark('roster.player', { pid, name, color, ordinal, tick }));
-  playMark('roster.end', { tick, count: rows.length });
+  recordRosterSnapshot({ rows, tick });
+  if (recordedRoster)
+    rows.forEach(([pid, name, color], ordinal) => {
+      const before = recordedRoster![ordinal];
+      if (!before || before[0] !== pid || before[1] !== name || before[2] !== color)
+        playMark('roster.player', { pid, name, color, ordinal, tick });
+    });
+  recordedRoster = rows;
 });
 
 const WHO_EVERY_MS = 3000; // at most one who.set this often (the host also refuses one that changes nothing)

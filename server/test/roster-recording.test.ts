@@ -25,7 +25,13 @@ async function record(client: Client) {
     '../world/sync.ts':
       'export const submitEdit=()=>{throw Error("classic identity")}; export const worldStatus=()=>({ready:true});',
     '../entities/railway/state.ts': `${access} export const railwayCommands=()=>c.client.adapter;`,
-    '../proto/mark.ts': `${access} export const playMark=(kind,fields)=>c.records.push({kind,fields});`,
+    '../proto/mark.ts': `${access}
+      export const playMark=(kind,fields)=>c.records.push({kind,fields});
+      export const recordRosterSnapshot=({rows,tick})=>{
+        c.records.push({kind:'roster.begin',fields:{tick,count:rows.length}});
+        rows.forEach(([pid,name,color],ordinal)=>c.records.push({kind:'roster.player',fields:{pid,name,color,ordinal,tick}}));
+        c.records.push({kind:'roster.end',fields:{tick,count:rows.length}});
+      };`,
   };
   const hooks = registerHooks({
     resolve(specifier, ctx, next) {
@@ -78,8 +84,8 @@ test('every peer records replicated roster snapshots, including remote edits and
   const lateRecords = await record(late);
   f.run(3);
   for (const entries of [...records, lateRecords]) {
-    assert.equal(entries.filter((r) => r.kind === 'roster.player').length, 1);
+    assert.equal(entries.filter((r) => r.kind === 'roster.player').length, entries === lateRecords ? 1 : 2);
     assert.equal(entries.find((r) => r.kind === 'roster.player')?.fields.name, 'Annie');
-    assert.equal(entries.at(-1)?.fields.count, 1);
+    assert.equal(entries.find((r) => r.kind === 'roster.end')?.fields.count, 1);
   }
 });

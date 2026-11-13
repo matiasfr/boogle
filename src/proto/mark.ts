@@ -58,3 +58,18 @@ export function onPlayMark(fn: PlayFn) {
   playFn = fn;
   for (const [name, data, ms] of early.splice(0)) fn(name, data, ms);
 }
+
+/** One complete replicated roster, separate from the lossy per-mark budget. Names are the consented exception. */
+export type RosterSnapshot = { rows: readonly (readonly [string, string, number])[]; tick: number };
+let rosterSnapshot: RosterSnapshot | undefined;
+const rosterListeners = new Set<(snapshot: RosterSnapshot) => void>();
+export function recordRosterSnapshot(snapshot: RosterSnapshot) {
+  rosterSnapshot = snapshot;
+  for (const listener of rosterListeners) listener(snapshot);
+}
+/** A recorder loaded after replication still starts with the complete current roster. */
+export function onRosterSnapshot(listener: (snapshot: RosterSnapshot) => void) {
+  rosterListeners.add(listener);
+  if (rosterSnapshot) listener(rosterSnapshot);
+  return () => rosterListeners.delete(listener);
+}
