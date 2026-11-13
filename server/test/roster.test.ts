@@ -82,3 +82,25 @@ test('roster keeps ordinals across pending reconnect, departure, late join and s
   assert.deepEqual(serializeRoster(restarted.rules.roster.roster), expected);
   assert.equal(restarted.rules.roster.indexOf('alice'), 0);
 });
+
+test('accepted durable roster name stays identical across restart', async (t) => {
+  const f = await fixture(t),
+    a = f.join('alice');
+  f.run(3);
+  a.adapter.act('who.set', { n: 'abcdefghijklmno p', c: 2 });
+  f.run();
+  await f.settled();
+  assert.equal(a.accepted.length, 1);
+  const expected = f.host.rules.roster.nameOf(0);
+  await f.host.close({ save: false });
+  const restarted = createRailwayWorldHost({
+    roomId: f.roomId,
+    store: f.store,
+    tick: false,
+    now: () => 1800000000000,
+    pidOf: (s) => s,
+  });
+  t.after(() => restarted.close({ save: false }).catch(() => {}));
+  await restarted.whenReady();
+  assert.equal(restarted.rules.roster.nameOf(0), expected);
+});
