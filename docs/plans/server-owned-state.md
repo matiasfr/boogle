@@ -144,6 +144,10 @@ Four loader-only mutations, without editing production files, proved the boundar
 - **Final local gates:** `npm run check` exits 0 (1,734 passing unit tests and one existing train-wait TODO), `node dev/ship-check.ts` exits 0 (893 assertions across 81 affected files), and `npm run registry` passes with unchanged debt. Changed files were formatted with Prettier.
 - Evidence: `.look/evidence/step3-checks/` (local gates), `.look/evidence/1794572077785-23440/evidence.json` (net limitation), `.look/evidence/1794572212462-25405/evidence.json` (world-inputs), `.look/evidence/1794572237743-25727/evidence.json` (two-player T2, both inspected stills).
 
+### Rebase after Home, 13 November
+
+Rebased on `9c9b4cd67` as `codex/server-state-step-3-2`, preserving Home's single layout and its v36 history entry. Rail tuning's state-shape break now takes **v37**. The only textual conflict was `src/world/namespace.ts`; Home's cart distances merged intact, and the cart room assertion advances to v37. Frozen classic trace inputs and their expected behavior remain unchanged. Generated fixtures and pages are refreshed through their owning record switches/generators; their keyed differences and current verification are recorded in `.look/evidence/rebase-v37/`.
+
 ## Original questions (owner answers recorded above)
 
 **Owner (three, recommendation first). Answered 13 November UTC: "Yes, I agree on retiring the 7 classic states. 2, I agree on move authority. 3, I agree" ([decision](../decisions-process.md#d-2026-11-13-server-owned-state-answered)).**
