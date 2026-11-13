@@ -395,7 +395,8 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     halts: [
       {
         name: 'Village, line 2',
-        s: 1700,
+        // 18.25 m from v33 (docs/plans/fourth-car.md, R2): the wagon train's steel car stands off the table's deck.
+        s: 1825,
         opens: -1,
         platforms: both({ x: 92779, z: 2617, y: 1902, reach: 1260 }),
         end: railEnd('stub', 3400, -1),

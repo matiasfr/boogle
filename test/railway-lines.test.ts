@@ -34,7 +34,7 @@ import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 
 const V25_STOPS = [
   [1400, 20700],
-  [1700, 17400, 52400, PIER_STOP_CM],
+  [1825, 17400, 52400, PIER_STOP_CM], // line 2's Village stop: v25's 1700, 1825 from v33 (fourth-car R2)
 ];
 const V25_HOME = [1, 0];
 /** v27 (ring-island-build1, R3b): line 2 runs three trains, at the Village (up), Far Head (down) and Quarry (down). */
@@ -282,18 +282,18 @@ test("the catalog: every fixed halt's platform by way is its own; v27's fields o
 
 test('v27 stops: Q6 opens the Pier, Q7 the Railhead at its bent, the rivet the island', () => {
   assert.deepEqual(trainStopsOf(1, true), V25_STOPS[1], "v26's shim: true is Q6 laid");
-  assert.deepEqual(line2Stops(0), [1700, 17400, 52400]);
-  assert.deepEqual(line2Stops(6), [1700, 17400, 52400, 72650]);
+  assert.deepEqual(line2Stops(0), [1825, 17400, 52400]);
+  assert.deepEqual(line2Stops(6), [1825, 17400, 52400, 72650]);
   assert.deepEqual(trainStopsOf(LINE2_ROWS, true), line2Stops(6), 'the shim means Q6, not every slot');
   for (let k = 0; k < RING_HEAD.length; k++) {
-    assert.deepEqual(line2Stops(7, k), [1700, 17400, 52400, 72650, RING_HEAD[k]!.s]);
-    assert.deepEqual(line2Stops(7, k, true), [1700, 17400, 52400, 72650, RING_HEAD[k]!.s, 119000]);
+    assert.deepEqual(line2Stops(7, k), [1825, 17400, 52400, 72650, RING_HEAD[k]!.s]);
+    assert.deepEqual(line2Stops(7, k, true), [1825, 17400, 52400, 72650, RING_HEAD[k]!.s, 119000]);
     assert.deepEqual(line2Stops(6, k, true), line2Stops(6), 'nothing past the pier before Q7');
   }
-  // 1173 m end to end once joined (the plan's v27 numbers).
+  // 1173 m end to end once joined (the plan's v27 numbers), 1171.75 m from v33's Village stop.
   const joined = line2Stops(7, 7, true);
-  assert.deepEqual(joined, [1700, 17400, 52400, 72650, 99200, 119000]);
-  assert.equal(joined[joined.length - 1]! - joined[0]!, 117300);
+  assert.deepEqual(joined, [1825, 17400, 52400, 72650, 99200, 119000]);
+  assert.equal(joined[joined.length - 1]! - joined[0]!, 117175);
 });
 
 test('three trains stand on three places: the Village (up), Far Head (down) and Quarry (down)', () => {
