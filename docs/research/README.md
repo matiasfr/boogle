@@ -225,6 +225,7 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [dev-compat-reports.md](dev-compat-reports.md) (2026-11-05): report-endpoint compatibility inventory, nothing deleted. **Status:** adopted.
 - [dev-compat-state.md](dev-compat-state.md) (2026-11-05): state and recovery cleanup; load current state only. **Status:** adopted.
 - [dev-menu-plan.md](dev-menu-plan.md) (2026-11-03): one opt-in Dev page in the pause menu, water tuning first. **Status:** adopted. See [plan dev-menu](../plans/dev-menu.md).
+- [dev-saves-and-stage-jumps.md](dev-saves-and-stage-jumps.md) (2026-11-12): guarded live-room stage replacement, isolated agent seeds, verified recovery and explicit personal-state semantics. **Status:** open. See [plan room-fast-forward](../plans/room-fast-forward.md).
 - [dev-tools-agentic.md](dev-tools-agentic.md) (2026-11-03): review loop first: one link, before and after, a pinned note, the right agent. **Status:** partly adopted. See [plan review-inbox](../plans/review-inbox.md), [plan asset-stage](../plans/asset-stage.md), [plan look-compare](../plans/look-compare.md).
 - [direction-skill-test.md](direction-skill-test.md) (2026-11-03): game-direction skill passed four prompt tests. **Status:** reference. See [game-direction](game-direction.md).
 - [features-audit.md](features-audit.md) (2026-11-03): feature organization and performance audit; keep flat composition entries. **Status:** reference.
