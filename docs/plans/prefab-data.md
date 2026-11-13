@@ -147,6 +147,10 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 
 ## Level findings
 
+### Step 3 baseline (before conversion)
+
+`test/prefab-workshop.test.ts` executes today's `makeWorkshop` and furnishing with recording service dependencies and the actual forge plan. Committed collider and placement bytes include the wire-visible `forge-workshop` seat id, the world sit/exit poses and the chair's local/world placement. Only `GOLDEN=1` regenerates them. The original chair code is still intact in this baseline commit.
+
 Nothing new is placed and nothing moves. `npm run level-check` at `f464b11d2`: 12 reports, all planned or never-drawn track continuity, none on reachability. Each conversion step must leave that list unchanged; the collider goldens are the stricter proof.
 
 ## 6. What can start today, and what waits
