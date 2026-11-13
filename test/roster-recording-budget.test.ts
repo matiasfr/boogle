@@ -6,9 +6,10 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { runInNewContext } from 'node:vm';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
-import { onPlayMark, playMark, onRosterSnapshot, recordRosterSnapshot } from '../src/proto/mark.ts';
+import { onPlayMark, playMark, onRosterSnapshot, recordRosterSnapshot, ROSTER_SNAPSHOT_MS } from '../src/proto/mark.ts';
 
-test('a full roster and late recorder retain every row even after the real mark budget is exhausted', () => {
+test('a full roster and late recorder retain every row even after the real mark budget is exhausted', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const source = readFileSync(new URL('../src/proto/playdata/record.ts', import.meta.url), 'utf8');
   const marks = source.slice(source.indexOf('const here ='), source.indexOf("push('step',"));
   const snapshots = source.slice(source.indexOf('onRosterSnapshot('), source.indexOf('function recordTuning'));
@@ -19,7 +20,7 @@ test('a full roster and late recorder retain every row even after the real mark 
     round: Math.round,
     MARKS_PER_WINDOW: budget,
     onPlayMark,
-    onRosterSnapshot,
+    onRosterSnapshot: (fn: Parameters<typeof onRosterSnapshot>[0]) => t.after(onRosterSnapshot(fn)),
     push: (kind: string, fields: object) => events.push({ kind, ...fields }),
     dropped: 0,
   };
@@ -52,6 +53,8 @@ test('a full roster and late recorder retain every row even after the real mark 
   };
   complete();
   assert.equal(railwayMirror.mirror.apply({ t: 's', tk: 2, c: [['player', 0, { name: 'Changed' }]] }), true);
+  assert.equal(events.length, 0, 'rename only attempts one budgeted mark until the trailing snapshot');
+  t.mock.timers.tick(ROSTER_SNAPSHOT_MS);
   complete(true);
   assert.equal(ctx.dropped, 2, 'incremental marks still respect the budget; the snapshot does not');
 });

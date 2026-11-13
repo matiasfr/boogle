@@ -36,10 +36,11 @@ export async function fixture(t: TestContext) {
   const roomId = railwayRoomId('proto-rail-tune');
   let held: { gate: ReturnType<typeof deferred<void>>; entered: ReturnType<typeof deferred<void>> } | null = null;
   const writes: RecoveryEnvelope[] = [];
+  let serverNow = 1800000000000;
   const host = createRailwayWorldHost({
     roomId,
     tick: false,
-    now: () => 1800000000000,
+    now: () => serverNow,
     pidOf: (sid) => sid,
     tuneController: (sid) => sid === 'alice',
     store: {
@@ -143,6 +144,7 @@ export async function fixture(t: TestContext) {
         c?.hear(packet);
       });
       now += 17;
+      serverNow += 17;
       for (const c of clients.values()) c.adapter.update(now);
     }
   }
@@ -166,6 +168,10 @@ export async function fixture(t: TestContext) {
     join,
     run,
     settled,
+    now: () => serverNow,
+    advanceTime: (ms: number) => {
+      serverNow += ms;
+    },
     holdNextWrite() {
       const h = { gate: deferred<void>(), entered: deferred<void>() };
       held = h;

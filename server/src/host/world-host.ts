@@ -201,7 +201,7 @@ export function createRailwayWorldHost({
   // Preserve the existing playtest-only tune policy; ordinary railway rooms cannot change shared rates.
   const sync = createSync();
   const base = installRules(sync, home.land as Parameters<typeof installRules>[1], () =>
-    installRoster(sync, ops, replication),
+    installRoster(sync, ops, replication, now),
   );
   projectRoster(replication, base.roster);
   const railTune = installRailTune(sync, ops, replication);

@@ -1,4 +1,4 @@
-// Step 4 keeps every sequential roster rule/result; only command delivery and ownership move.
+// Sequential roster rules/results stay classic-compatible outside the new server-only rate bound.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.ts';
@@ -36,12 +36,14 @@ test('roster server commands match frozen classic admission, results, normalizat
   const sync = createSync();
   const ops = createServerOps();
   const replication = createReplicator();
-  const api = installServer(sync, ops, replication);
+  let now = 0;
+  const api = installServer(sync, ops, replication, () => now);
   projectRoster(replication, api);
   const mirror = createMirror(CLASSIC_SCHEMAS);
   const read = createRosterMirror(mirror);
   replication.addClient('peer');
   inputs.forEach((input, i) => {
+    now += 3000; // Compare sequential rule semantics outside the new server-only cadence bound.
     const span = trace.steps.slice(boundaries[i]!, boundaries[i + 1] ?? trace.steps.length);
     const actual = ops.run(input.from, input.edit, {
       from: input.from,
@@ -65,7 +67,7 @@ test('accepted roster names mirror exactly without repeated change records', () 
   const sync = createSync(),
     ops = createServerOps(),
     replication = createReplicator();
-  const api = installServer(sync, ops, replication);
+  const api = installServer(sync, ops, replication, () => 0);
   projectRoster(replication, api);
   const mirror = createMirror(CLASSIC_SCHEMAS),
     read = createRosterMirror(mirror);

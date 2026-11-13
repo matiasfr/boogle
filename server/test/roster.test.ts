@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fixture } from './helpers/rail-tune.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
+import { ROSTER_CHANGE_MS } from '../../src/world/rules/roster.ts';
 import { serializeRoster } from '../../src/sim/roster.ts';
 
 test('roster authenticates identity, rejects classic forgery and ignores replay', async (t) => {
@@ -60,6 +61,7 @@ test('roster keeps ordinals across pending reconnect, departure, late join and s
   assert.equal(changes[0]!.length, 2);
   assert.equal(changes[1]!.length, 2, 'every peer observes replicated changes, not submitter receipts');
   a.disconnect();
+  f.advanceTime(ROSTER_CHANGE_MS);
   b.adapter.act('who.set', { n: 'Bob', c: 4 });
   f.run();
   await f.settled();
@@ -74,7 +76,7 @@ test('roster keeps ordinals across pending reconnect, departure, late join and s
     roomId: f.roomId,
     store: f.store,
     tick: false,
-    now: () => 1800000000000,
+    now: f.now,
     pidOf: (sid) => sid,
   });
   t.after(() => restarted.close({ save: false }));
@@ -97,10 +99,50 @@ test('accepted durable roster name stays identical across restart', async (t) =>
     roomId: f.roomId,
     store: f.store,
     tick: false,
-    now: () => 1800000000000,
+    now: f.now,
     pidOf: (s) => s,
   });
   t.after(() => restarted.close({ save: false }).catch(() => {}));
   await restarted.whenReady();
   assert.equal(restarted.rules.roster.nameOf(0), expected);
+});
+
+test('roster cadence uses host time, rejects without a save, and survives a replacement session', async (t) => {
+  const f = await fixture(t);
+  const a = f.join('alice'),
+    b = f.join('bob');
+  f.run(3);
+  a.adapter.act('who.set', { n: 'Ana', c: 2 });
+  f.run();
+  await f.settled();
+  const writes = f.writes.length;
+  f.host.deliver({ t: 'r:edit', e: { ...a.edits[0], request: 2, ms: 1_000_000_000, n: 'Forged clock' } }, 'alice');
+  f.run(3);
+  assert.ok(a.packets.some((p) => p.rej?.some(([, request, reason]) => request === 2 && reason === 'refused')));
+  assert.equal(f.host.rules.roster.nameOf(0), 'Ana');
+  // A fresh session for the same authenticated player cannot reset their rate limit.
+  a.disconnect();
+  const replacement = f.join('alice');
+  f.run(3);
+  replacement.adapter.act('who.set', { n: 'Too soon', c: 3 });
+  f.run();
+  await f.settled();
+  assert.equal(replacement.accepted.length, 0);
+  assert.equal(replacement.refused.at(-1)?.reason, 'refused');
+  assert.equal(f.writes.length, writes, 'rate refusals are non-durable');
+  assert.equal(f.host.status().ready, true);
+  // Other players have their own slot, and an unchanged value never spends it.
+  b.adapter.act('who.set', { n: 'Bo', c: 1 });
+  f.run();
+  await f.settled();
+  assert.equal(b.accepted.length, 1);
+  f.advanceTime(ROSTER_CHANGE_MS);
+  replacement.adapter.act('who.set', { n: 'Ana', c: 2 });
+  f.run();
+  await f.settled();
+  replacement.adapter.act('who.set', { n: 'Annie', c: 3 });
+  f.run();
+  await f.settled();
+  assert.equal(replacement.accepted.length, 1);
+  assert.equal(f.host.rules.roster.nameOf(0), 'Annie');
 });

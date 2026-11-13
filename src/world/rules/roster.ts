@@ -19,6 +19,8 @@ import type { ServerOps } from '../server-ops.ts';
 import type { Replicator } from '../replicate-server.ts';
 
 export const name = 'roster';
+// Host wall time, never the action's client-supplied clock. No persisted/wire state.
+export const ROSTER_CHANGE_MS = 3000;
 
 export type RosterApi = ReturnType<typeof install>;
 
@@ -26,16 +28,25 @@ export type RosterApi = ReturnType<typeof install>;
 export function install(sync: SyncView) {
   return create(sync);
 }
-export function installServer(sync: SyncView, ops: ServerOps, replication: Replicator) {
-  return create(sync, { ops, replication });
+export function installServer(sync: SyncView, ops: ServerOps, replication: Replicator, now: () => number) {
+  return create(sync, { ops, replication, now });
 }
-function create(sync: SyncView, server?: { ops: ServerOps; replication: Replicator }) {
+function create(sync: SyncView, server?: { ops: ServerOps; replication: Replicator; now: () => number }) {
   const roster = createRoster();
+  // At most MAX_PLAYERS entries: only a valid, changing roster command spends a slot.
+  // Key by authenticated pid so reconnects and replacement sockets cannot reset the bound.
+  const lastChange = new Map<string, number>();
   const changed = () => server?.replication.touchAll('player');
   if (server)
     server.ops.define('who.set', {
       durable: true,
-      validate: (e) => canSet(roster, e.u, e.n, e.c),
+      validate: (e) => {
+        if (!canSet(roster, e.u, e.n, e.c)) return false;
+        const at = server.now();
+        if (at - (lastChange.get(e.u) ?? -Infinity) < ROSTER_CHANGE_MS) return false;
+        lastChange.set(e.u, at);
+        return true;
+      },
       apply: (e) => {
         const result = setWho(roster, e.u, e.n as string, (e.c as number) || 0);
         changed();

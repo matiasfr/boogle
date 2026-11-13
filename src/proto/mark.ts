@@ -59,17 +59,36 @@ export function onPlayMark(fn: PlayFn) {
   for (const [name, data, ms] of early.splice(0)) fn(name, data, ms);
 }
 
-/** One complete replicated roster, separate from the lossy per-mark budget. Names are the consented exception. */
+/** Latest replicated roster. Names are the consented exception. Sync kind: Local diagnostics only. */
 export type RosterSnapshot = { rows: readonly (readonly [string, string, number])[]; tick: number };
+export const ROSTER_SNAPSHOT_MS = 30_000;
 let rosterSnapshot: RosterSnapshot | undefined;
-const rosterListeners = new Set<(snapshot: RosterSnapshot) => void>();
+const rosterListeners = new Set<() => void>();
+/** Renames remain budgeted marks. Request a coalesced recovery snapshot so dropped marks never lose final state. */
 export function recordRosterSnapshot(snapshot: RosterSnapshot) {
   rosterSnapshot = snapshot;
-  for (const listener of rosterListeners) listener(snapshot);
+  for (const listener of rosterListeners) listener();
 }
-/** A recorder loaded after replication still starts with the complete current roster. */
+/** Each recorder starts complete, even when loaded late. Subsequent dirty/refill snapshots have a fixed trailing
+ * window: more updates replace the pending state without postponing the flush. No idle timer or unbounded queue. */
 export function onRosterSnapshot(listener: (snapshot: RosterSnapshot) => void) {
-  rosterListeners.add(listener);
-  if (rosterSnapshot) listener(rosterSnapshot);
-  return () => rosterListeners.delete(listener);
+  let started = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const receive = () => {
+    if (!started) {
+      started = true;
+      listener(rosterSnapshot!);
+    } else if (timer === undefined) {
+      timer = setTimeout(() => {
+        timer = undefined;
+        listener(rosterSnapshot!);
+      }, ROSTER_SNAPSHOT_MS);
+    }
+  };
+  rosterListeners.add(receive);
+  if (rosterSnapshot) receive();
+  return () => {
+    rosterListeners.delete(receive);
+    if (timer !== undefined) clearTimeout(timer);
+  };
 }

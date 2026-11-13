@@ -13,7 +13,8 @@ import { submitEdit, worldStatus } from '../world/sync.ts';
 import { railwayCommands } from '../entities/railway/state.ts';
 import { playMark, recordRosterSnapshot, type RosterSnapshot } from '../proto/mark.ts';
 
-// Every peer records one complete snapshot outside the mark budget; subsequent changes also get timeline marks.
+// Every peer requests a bounded trailing snapshot; each changed row gets one budgeted timeline mark.
+// Complete initial/refill packets also notify when rows are unchanged, so reconnect recordings can recover.
 let recordedRoster: RosterSnapshot['rows'] | undefined;
 railwayMirror?.roster.onChange(({ rows, tick }) => {
   recordRosterSnapshot({ rows, tick });

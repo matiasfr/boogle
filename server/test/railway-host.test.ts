@@ -15,6 +15,7 @@ import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { railMaxDuration } from '../../src/sim/railway-queries-line1.ts';
 import { accounts, invariant, job, jobRun, rail, railClock, trees } from '../../test/helpers/rail.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
+import { ROSTER_CHANGE_MS } from '../../src/world/rules/roster.ts';
 import { MAX_PLAYERS } from '../../src/sim/roster.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 
@@ -302,6 +303,7 @@ test('the railway registry accepts bounded identity but rejects every legacy mat
     f.send('a', { op: 'who.set', n: 'Alice', c: 2, ignored: 'x'.repeat(10000) });
     await f.step(4);
     assert.equal(f.host.rules.roster.nameOf(0), 'Alice');
+    f.advance(ROSTER_CHANGE_MS); // The next valid rename is outside the server-only cadence bound.
     f.send('a', { op: 'who.set', n: '\ud800'.repeat(16), c: 2 });
     await f.step(4);
     assert.equal(f.host.rules.roster.nameOf(0), '\ud800'.repeat(16), 'same cleanName result as the classic oracle');
@@ -310,6 +312,7 @@ test('the railway registry accepts bounded identity but rejects every legacy mat
       false,
       'roster never enters the classic tail',
     );
+    f.advance(ROSTER_CHANGE_MS);
     f.send('a', { op: 'who.set', n: 'Alice', c: 2 });
     await f.step(4);
     const before = JSON.stringify(f.host.sync.snapshot().data);

@@ -48,7 +48,7 @@ export function projectRoster(replication: Replicator, api: RosterApi) {
   replication.touchAll(PLAYER.kind);
 }
 
-/** Read-only roster published at complete packet boundaries, including late joins and changed refills. */
+/** Read-only roster published at complete packet boundaries, including late joins and unchanged refills. */
 export function createRosterMirror(mirror: Mirror) {
   const roster = createRoster();
   const listeners = new Set<(event: { rows: RosterJson; tick: number }) => void>();
@@ -66,7 +66,7 @@ export function createRosterMirror(mirror: Mirror) {
         return;
       rows.push([row.pid, row.name, row.color]);
     }
-    if (JSON.stringify(rows) === JSON.stringify(serializeRoster(roster))) return;
+    if (!packet.w && JSON.stringify(rows) === JSON.stringify(serializeRoster(roster))) return;
     loadRoster(roster, rows);
     for (const fn of listeners) fn({ rows, tick: Math.floor(packet.tk / RULE_STEPS) });
   });
