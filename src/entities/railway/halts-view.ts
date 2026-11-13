@@ -41,6 +41,8 @@ import { createIslandBoards } from './island-boards.ts';
 import { createUpPlatforms } from './up-platforms.ts';
 import { displayYaw, haltDisplays, haltMap, haltRows, stackDisplays } from './halt-map.ts';
 import { createBoxBatch } from './works-box-view.ts';
+import { createRingMapTable } from './ring-map-table.ts';
+import { ringIslandNear } from '../ring-island/state.ts';
 
 /** How near a request lever's knob its prompt is offered (m, flat). */
 const LEVER_REACH = 1.8;
@@ -707,6 +709,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   boards.redraw();
   // The boards' own smooth clock in ticks, pulled gently onto shared time (as train-view's), so markers glide.
   let clock = -1;
+  const table = createRingMapTable(owner);
+  let tableDrawn = false;
   /** Each train: whether its row was in the shed last frame (null: not yet seen since a restore), the seconds into
    * its marker's scale-in (-1: none) and the marker's size now (1 whole). */
   const inShed: (boolean | null)[] = RAIL_TRAINS.map(() => null),
@@ -744,7 +748,11 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       const next = haltMap(layout, { open, head });
       mapLines.splice(0, mapLines.length, ...next.lines);
       boards.redraw(next.scale);
+      // Ring Island's map table carries the same map from the rivet on (the stack line is on it: `ties`).
+      tableDrawn = !!next.lines[LINE2]?.ties;
+      if (tableDrawn) table.draw(next.lines, next.scale);
     }
+    table.set(shown && tableDrawn && ringIslandNear.mounted);
     stackBoardsFor(shown ? open : 0);
     // A shed train that joins gains its marker on that tick, growing over the second its cars do (train-view.ts's
     // JOIN_S; the step 4 review's answer f). A live edge only: `inShed` is null after a restore.
@@ -915,6 +923,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       /** Whether every shown display marks the waiting glider on Needle Bell's summit. */
       boardGlider: boards.gliderMark(),
       boardFaces: boards.faces(),
+      ringMapTable: table.inspect(),
       /** The up track's platforms (generic-lines step 2): each one's halt row, whether it stands, its deck's centre
        * and the walk from it to today's side over the plank crossing (UP_HALTS order, as upLevers). */
       upPlatforms: ups.inspect().map((g, i) => ({ ...g, ...upLevers[i]!.centre, path: upLevers[i]!.path })),

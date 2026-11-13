@@ -31,7 +31,7 @@ import {
   type RingLanding,
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
-import { ringIslandPose } from './state.ts';
+import { RING_MAP_TABLE, ringIslandPose } from './state.ts';
 import { addFarGround } from '../../place/far-ground.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
 import {
@@ -507,9 +507,14 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
         }
       }
     }
-    const mc = at(HALT[0] + 14, FORM.left - 1.75),
-      top = PLATFORM_Y + 0.95;
-    parts.add(TARP, new THREE.BoxGeometry(2.4, 0.08, 2.0), new THREE.Matrix4().makeTranslation(mc.x, top + 0.04, mc.z));
+    // Where it stands is state.ts's (the halt map lies over this paint from the rivet: railway/ring-map-table.ts).
+    const mc = RING_MAP_TABLE,
+      top = RING_MAP_TABLE.top;
+    parts.add(
+      TARP,
+      new THREE.BoxGeometry(mc.w, 0.08, mc.d),
+      new THREE.Matrix4().makeTranslation(mc.x, top + 0.04, mc.z),
+    );
     for (const [x, z] of [
       [-1.0, -0.8],
       [1.0, -0.8],
