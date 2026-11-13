@@ -37,7 +37,7 @@ export function line2Rides(bot: Bot) {
    * ask for a middle `destination` aboard ("Request stop: <halt>"), ride there. The Pier and the Works' halts are in
    * `view().halts`: step off onto them. The Railhead and Ring Island are not (their platforms are the ring's own): the
    * ride ends with the train standing there and the rider aboard, and the caller steps off. */
-  const ride = (haltId: number, destination: number) => {
+  const ride = (haltId: number, destination: number, opts?: { askEach?: boolean }) => {
     const halt = () => view().halts[haltId]!;
     return rideFrom(
       {
@@ -49,6 +49,7 @@ export function line2Rides(bot: Bot) {
         wait: halt(),
       },
       destination,
+      opts,
     );
   };
   /** A departure: a halt's name and stop, when it stands, the lever handle for a way, whether its signal is down for a
@@ -63,15 +64,20 @@ export function line2Rides(bot: Bot) {
     calling: () => boolean;
     wait: { x: number; z: number };
   };
-  const rideFrom = async (halt: Departure, destination: number) => {
+  /** `asked`: the way was asked for already by the rules (a lay leaves an up-way ask at the old stack head), so there
+   * is no handle to pull; wait on the platform. `askEach`: the destination is not a Place halt (the stack line's), so
+   * ask for each next stop the train offers aboard ("Request stop: ...") until it stands at the destination. */
+  const rideFrom = async (halt: Departure, destination: number, opts: { asked?: boolean; askEach?: boolean } = {}) => {
     await until(halt.stands, `${halt.name} halt stands`);
     const dir: 1 | -1 = destination > halt.stop ? 1 : -1;
-    const handle = halt.handle(dir);
-    check(handle, `${halt.name} has a handle toward stop ${destination}`);
-    if (!handle!.over) await halt.before?.(handle!);
-    if (!handle!.over && !(await bot.use(handle!.x, handle!.z, `request a train at ${halt.name}`, /^Request stop/)))
-      check(false, `request a train at ${halt.name} offered`);
-    await until(halt.calling, `${halt.name} signal drops for the request`);
+    if (!opts.asked) {
+      const handle = halt.handle(dir);
+      check(handle, `${halt.name} has a handle toward stop ${destination}`);
+      if (!handle!.over) await halt.before?.(handle!);
+      if (!handle!.over && !(await bot.use(handle!.x, handle!.z, `request a train at ${halt.name}`, /^Request stop/)))
+        check(false, `request a train at ${halt.name} offered`);
+      await until(halt.calling, `${halt.name} signal drops for the request`);
+    }
     check(await bot.walk(halt.wait.x, halt.wait.z, 0.5), `walked to ${halt.name}'s platform edge`);
     // Whichever of line 2's trains stops for the lever is the ride (v26).
     const standing = () =>
@@ -117,8 +123,14 @@ export function line2Rides(bot: Bot) {
     }
     let ran = false;
     let sample: Promise<void> | undefined;
+    const asked = new Set<string>();
     await until(() => {
       check(aboard() && !me.swimming, 'rider stays aboard the line-2 train');
+      const ask = interactTarget();
+      if (opts.askEach && ask?.id === 'railway-request-aboard' && ask.run && !ask.blocked && !asked.has(ask.verb)) {
+        asked.add(ask.verb);
+        bot.press();
+      }
       const r = row();
       ran ||= r.phase === 1;
       // `railPerf`: one real-frame sample aboard a moving train (with the wagon once it is coupled).
@@ -156,7 +168,8 @@ export function line2Rides(bot: Bot) {
   };
   /** Off a car over its side rail onto a platform at (x, z): W at it with a jump on each landing, as boarding does. */
   const hopTo = async (x: number, z: number, beat: string, ms = 15000, r = 1.5, minY = -Infinity) => {
-    const there = () => Math.hypot(me.body!.position.x - x, me.body!.position.z - z) <= r && me.body!.position.y >= minY;
+    const there = () =>
+      Math.hypot(me.body!.position.x - x, me.body!.position.z - z) <= r && me.body!.position.y >= minY;
     const end = performance.now() + ms;
     try {
       while (!there() && performance.now() < end) {

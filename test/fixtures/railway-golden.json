@@ -221,6 +221,21 @@
       "tick": 13528,
       "stage": 899180903,
       "after": 2273181367
+    },
+    "gorge-open": {
+      "tick": 11924,
+      "stage": 3971050861,
+      "after": 2252935328
+    },
+    "gorge-mid": {
+      "tick": 13085,
+      "stage": 1789982695,
+      "after": 683252102
+    },
+    "gorge-reached": {
+      "tick": 15269,
+      "stage": 91824045,
+      "after": 216100353
     }
   }
 }

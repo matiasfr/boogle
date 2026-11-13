@@ -693,6 +693,25 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       driven by `RAIL_LEGS` for every leg; `dev/look/segments.ts` gains `gorge`. Verify: `npm run loop -- node
       stack-1` and `-- node gorge` print the bill, the train supply and the cue; `npm run loop -- run` plays area 4
       through the rules and models 5 to 9.
+      *As built so far (13 November; branch `greybox/leg1-step5`, committed, not shipped; dev data and tooling only, no
+      bump; parts 1 to 3 of the step, the loop graph left):* **Seeds** (`src/sim/railway-seed-legs.ts`, on
+      `ring-joined`, accepted ops and ticks only; players `a` and `b` feed the frame off the rack as the rules test
+      does): `gorge-open` (the first kit on Ring Island's rack, nothing fed; +1,500 or so), `gorge-mid` (two laid, a leg
+      kit aboard a train), `gorge-reached` (four laid, 900 ticks run on, the pick not taken). In `SEED_STAGES`, the
+      golden's last shard (three rows added, no other row moved, prettier-formatted) and `test/railway-jump.test.ts`;
+      `dev/look/stack-seed.ts` keeps only the looks' `stack-laid-<n>`, `stack-pick` and the feeding is the catalog's
+      (`laySection`). **Jump rows** ("Stack line open", `gorge-open`, landing between Ring Island's first rack and frame;
+      "High Gorge reached", `gorge-reached`, landing on the Gorge's north platform facing the pick post): built, but under
+      the owner's late call against separate jump rooms they are not to be advertised as the way in; the stages are what
+      a fast-forward in the live room would apply. A stage is a world built from `ring-joined` by a history of ops and
+      ticks, so applying one to an existing room means replaying those ops on its rows, which a live room's state (trains
+      mid-run, kit already on backs) does not allow without a pure "stage to rows" description; not built.
+      **The bot** (`dev/look/bots/railway-legs.ts`, one bot driven by `RAIL_LEGS`, run by `dev/look/evals/railway-legs-bot.ts`;
+      `npm run playthrough -- --from ring-joined --to gorge`, also `--from gorge-open|gorge-mid`; `RAIL_STOPS.gorge`):
+      rides to Ring Island, presses `railway-leg-take-logs`, `-take-rails` and `-feed` for each section, rides the lay's
+      asked train on to each head and steps off, to High Gorge's platform. Verdict **pass, not under load (13 to 11),
+      rivet to Gorge 3,415 s of game (57 min) with the bot's walks and waits; waits for a train after a lay 157 to 554 s**
+      (`.look/playthrough/legs4/`). `rideFrom` gained an asked way and asking each next stop aboard.
 
 **Checkpoint A (leg 1 playable).** Named proofs, run once: `npm run loop -- run` for one to four players, with idle
 seconds per wait beside minutes per section; the bot segment `--from ring-joined --to gorge`; `npm run test:net`;
