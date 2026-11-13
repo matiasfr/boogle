@@ -29,6 +29,7 @@ test('namespace names count once; repeated queries and shadowing locals do not g
   const prefix = "import*as physics from '../physics/engine.ts';";
   assert.equal(count(prefix + 'physics.sweepSphere();physics.sweepSphere();'), 2);
   assert.equal(count(prefix + "physics.sweepSphere();physics['createBody']();"), 3);
+  assert.equal(count(prefix + 'physics.sweepSphere();(physics as typeof physics)[`createBody`];'), 3);
   assert.equal(count(prefix + 'function read(physics){return physics.createBody;}'), 1);
 });
 test('using an existing query again is ordinary work', () => {

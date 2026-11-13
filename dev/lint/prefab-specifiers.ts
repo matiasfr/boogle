@@ -1,7 +1,7 @@
 // A set of imported capabilities and directly selected namespace members, never a reference/taint graph.
 import { analyze } from '@typescript-eslint/scope-manager';
 import type { Node, Program } from 'oxc-parser';
-import { walk } from '../scan/parse.ts';
+import { walk, literal } from '../scan/parse.ts';
 import { isCapability, moduleEdges, pureHelperEdge, type ModuleResolver } from './prefab-boundaries.ts';
 
 export function capabilitySpecifiers(
@@ -48,13 +48,15 @@ export function capabilitySpecifiers(
           if (name) uses.set((ref.identifier as unknown as Node).start, name);
         }
   walk(program, (n) => {
-    if (n.type !== 'MemberExpression' || n.object.type !== 'Identifier') return;
-    const name = uses.get(n.object.start);
+    if (n.type !== 'MemberExpression') return;
+    let object: Node = n.object;
+    while ('expression' in object && object.expression && typeof object.expression === 'object')
+      object = object.expression as Node;
+    if (object.type !== 'Identifier') return;
+    const name = uses.get(object.start);
     if (!name) return;
     const key = n.computed
-      ? n.property.type === 'Literal'
-        ? String(n.property.value)
-        : undefined
+      ? (literal(n.property) ?? (n.property.type === 'Literal' ? String(n.property.value) : undefined))
       : n.property.type === 'Identifier'
         ? n.property.name
         : undefined;

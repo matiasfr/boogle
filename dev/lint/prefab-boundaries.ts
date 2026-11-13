@@ -51,6 +51,14 @@ export function pureHelperEdge(edge: ModuleEdge, target: string): boolean {
     !!names &&
     (n.type === 'ImportDeclaration' || n.type === 'ExportNamedDeclaration') &&
     n.specifiers.length > 0 &&
+    n.specifiers.some((s) =>
+      s.type === 'ImportSpecifier'
+        ? s.importKind !== 'type' &&
+          names.includes(s.imported.type === 'Identifier' ? s.imported.name : s.imported.value)
+        : s.type === 'ExportSpecifier' &&
+          s.exportKind !== 'type' &&
+          names.includes(s.local.type === 'Identifier' ? s.local.name : s.local.value),
+    ) &&
     n.specifiers.every((s) => {
       if (s.type === 'ImportSpecifier')
         return (
