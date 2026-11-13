@@ -147,3 +147,125 @@ with a step down; or the west rock is filled to deck height.
 
 **Open questions.** None for the owner. N2 and N5 change the catalog: the designer rules them before the rules plan.
 Is Bell Rock seen from the West landing at 995 m, or lost in fog: step 5's still. **Suspect lines:** none.
+
+## Design review (designer, 2026-11-12)
+
+**Verdict: cleared to build, all six steps, with the six changes under "Changes the build takes".** Layout only, as
+the owner asked on 12 November ("I think we should continue with the gray boxing work"; owner-calls on main,
+"Playtest before bespoke functionality"). **Nothing in this plan edits `src/sim`, `src/world`, `src/net` or `server/`,**
+and none of the rulings below adds such an edit: N2 and N5 are ruled here for the later rules plan, which carries the
+catalog change and its bump. Step 2's `git diff --exit-code src/sim` is a gate, widened to `src/world`.
+**Read:** [level-design](../research/level-design.md) (recs 3, 5, 6, 9), [route-contract](../research/route-contract.md),
+[progression-flow-layout](../research/progression-flow-layout.md); the plan uses the first two and contradicts neither.
+**Port from Place:** nothing. **Seen:** the plan's numbers, the catalog rows (`ns`: stops 20 m, 1156 m; a crossover at
+s 55), `massing.ts`. **Not seen:** any still. Nothing is built, and one look at Home's west shore from the commons did
+not return in this sitting; the West landing is judged from the map numbers only, so step 5's stills carry that.
+
+**The owner's words that settle calls here** (relayed by the orchestrator, 13 November UTC; it records them in the
+decision log):
+
+- On N4: "So, I should think the gray under construction platform can appear on the live game".
+- On greybox places in the shared room: "Yes, I think it should. In general, we should consider this like a live
+  service game where we have a working game and then we're working on something in the background. We're fully in the
+  midst of development and so we should make any changes on the live game so that when we playtest we're seeing
+  everything live and everything that we've progressed on", corrected by him to "we shouldn't consider this like a
+  liver service game*". Development is in the open: changes go on the live game.
+- On jump rooms: "In general, I'm not a fan of the jump-in rooms as separate rooms. We should just have a live game and
+  then we should maybe have a mechanism to fast-forward progress for testing in the game to move the server in the
+  same room".
+
+So no ruling here puts a greybox place behind a flag or in a test room, and N4's "jump rooms only" option is dropped.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 105 | Grey, labelled, no character detail; live for everyone with an "under construction" board | Decided | Calls 82 and 84; the owner's words above |
+| 106 | Bell Rock on two levels, the bay line on top; stalls are views, by a fixed table, on the level of their line | Decided | Calls 43, 47, 48 ([12 November](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered)) |
+| 107 | Layout only; new bespoke mechanics wait until he has played leg 1 | Decided | Owner, 12 November |
+| 108 | **N4** The grey "under construction" platform stands on Home's west shore in the live game | Decided | Owner, 13 November UTC, quoted above. No agent-calls row |
+| 109 | Five labelled pads, two lower and three upper, within 30 m of the ramp; an inert board post; 40 m platforms both sides; a slipway | Default, as ruled | Calls 52, 27; route finding 3 |
+| 110 | (a) The cut widens west into a 52 × 16 m lower deck | Default | Ship. Ruling 2's test ("if the lower level has no ground the level rule is dropped") is met: the stall level rule stands |
+| 111 | (b) The ramp up the cut's west wall, 20 m, 3 m wide, its head at the upper pads | Default | Ship. Platform to platform is about 65 m, 12 s on foot; change 3 |
+| 112 | (c) Unlaid beds only; no rails or sea spans | Default | Ship. Shows the before (level-design rec 9) |
+| 113 | (d) Every pad reads "Not connected yet"; the pad boxes from `Leg.laid` wait for the rules plan | Default | Ship. Amends call 52's timing only: no leg row exists to read |
+| 114 | The West landing's board, `LINE TO BELL ROCK` / `UNDER CONSTRUCTION`; all pad and post labels | Default | Placeholder text, none The Boogler's. Change 4 |
+| 115 | **N1** Bell Rock is cut through for the lower line, two lands in the map data, sea in the cut | **New** | Yes, sea. Question 1 |
+| 116 | **N2** The incline's first 165 m is a tunnel: keep the row and bore it | **New**, for the rules plan | Bore. Built here: the dark mouth only. Question 2 |
+| 117 | **N3** The pinnacle moves 6 m east; the lower east platform keeps its 40 m | Default | Move it. Six metres does not show at 200 m; call 27 holds |
+| 118 | **N5** The Gorge's `ns` stop moves to about t 36, its crossover with it | **New**, for the rules plan | Move it. Built here: the platforms at t 16..56. Change 6 |
+| 119 | **N6** The upper deck stays 1.9 m over the rock, with a short ramp down | Default | Step, not fill: the fill is a second map edit to hide 1.9 m |
+| 120 | The West landing's way down: walked both ways, and a plain grey stair if the way up fails | Default | Change 1 |
+| 121 | The rock's rim past the colliders is drawn and not solid | Default | Accepted off the route only. Change 2 |
+| 122 | The `bay` row's 52° kink at Bell Rock's halt: four straight platform halves for now | Default | The track plan clears it (route finding 1). Change 5 |
+
+**Counts:** 4 Decided, 11 Default (1 as ruled before), 3 New. **Suspect lines of The Boogler's:** none.
+
+### Findings
+
+1. **N4, against what a leg 1 playtester sees at Home.** Decided, so this is what to watch. He sees a grey platform
+   and a bed stub 60 m west of the commons pointing at open sea, for a line whose turn comes after High Gorge (call
+   44). It serves DESIGN 7. The risk is one misreading: "this is the next thing to build", then a look for a rack that
+   is not there. The board answers it if it is read on the way in, so it faces the commons (change 4).
+2. **The West landing's cliff is 56° (14.6 m in 10 m).** The flood calls it walkable by 0.06. Going down is a slide;
+   coming back up is the question, and this is finished Home where anyone can wander. Near-universal rule 3 (nobody
+   stranded) is not left to a margin that thin.
+3. **Reach is proven by the flood, not by a body, and not from the sea.** Finding 2 covers the platforms. It does not
+   say a swimmer who falls into the cut on its east side gets out, or that every ramp foot lands on solid rock.
+4. **The rim.** Up to 25 m of drawn rock that drops a walker into the sea reads as a bug to an owner walking it in
+   grey. It is harmless where nobody is led and wrong at the feet of the end ramps, the step and the path to the
+   pinnacle.
+5. **The 52° kink binds leg 3, not leg 2.** Leg 2's `bay` train ends on the in half. Easing the bend later moves the
+   bed south, away from the upper deck: about 11 m at a 100 m radius (arithmetic). The upper level round the origin
+   is provisional and gets no polish.
+6. **N2 and N5 meet at the Gorge.** Platforms to t 56, the tunnel mouth at s 67: 11 m. The row's crossover (s 55 today)
+   has no open track to stand on once the stop moves. The rules plan decides: a crossover inside the bore, or a plain
+   terminal. The first frame stays outside (the first railhead is at s 568; Ruling 1 keeps frames out of tunnels).
+7. **The bore as a reveal.** A train from Bell Rock comes out of 8 s of dark into the 90 m split under 85 m walls:
+   the strongest arrival on the route so far (level-design rec 3, shapes that block the view). Moving the row means
+   leaving by the split's east mouth beside line 2 and curving round the stack. The cave line needs a covered stretch
+   anyway (leg 4). The bore gates nothing: the `pick` barrier is at the frame, and a walker finds bed and then sea.
+8. **Is Bell Rock seen from the West landing?** 995 m against fog opaque at 520 m. The pinnacle is the area's one
+   tall landmark (rec 5) and the lure across the sea (rec 6). Step 5 reports it; this plan fixes nothing.
+
+### Changes the build takes
+
+1. **Step 5:** the way between the commons and the platform is walked **up and down** by a body at walk speed with no
+   jump. If up fails, or takes more than one line, the plain grey stair ships in the same step.
+2. **Steps 3 and 4:** every ramp foot, the step's foot and the walk to the pinnacle's foot land at least 6 m inside a
+   collider. The level report prints the widest unsolid rim.
+3. **Step 1's report** also asserts: from the sea on each side of the cut, the slipway is reached and the lower deck
+   from it; from the West landing's platforms, the commons (once change 1 has its answer).
+4. **Step 5:** the board stands where the walk in from the commons reads it before the platform is reached, facing
+   east. No prompt, no rack, nothing to press.
+5. **Step 4:** the upper platforms and the deck's south edge are marked provisional in `leg2-layout.ts` (one comment).
+6. **Step 6:** the platforms at t 16..56 are built on call 118. If the owner reverses it, two boxes move.
+
+### Cleared steps, in order, and what each still must show
+
+**2, then 1, 3, 4, 5, 6.** Step 2 goes first and alone (the plan's own risk: the rules lane regenerates that file).
+
+| Step | Its stills must show |
+| --- | --- |
+| 2 Map data | The cut from above or from 200 m north: two lands, sea between; `src/sim` and `src/world` unchanged |
+| 1 Data and report | The level report's lines for leg 2 (reach, reserves, change 3); one Gorge look unchanged |
+| 3 Lower level | From the west platform's lever end at eye height: the deck, both pads' labels readable, the ramp's foot in frame. Up the ramp from its foot: the parapet, the head. From the water at the slipway's foot |
+| 4 Upper level | From the in half's lever end: the three pads, the board post, the ramp's head. The profile from 200 m north: two levels read as two, the bridge over the cut, the pinnacle clear of the platform. Looking down from the ramp's head to the lower pads |
+| 5 West landing | From the commons' edge, eye height: the platform, the board readable, the way down. From platform A's lever end along the row: whether Bell Rock or its pinnacle is there. The walk, both ways, as frames |
+| 6 Gorge | From the lat −5.8 platform's root end: the mouth, the barrier's pad, the stair behind, the join to leg 1's south platform with no step. Step 4's 200 m view again |
+
+### Owner questions
+
+Neither holds the build. Nothing here is direction, unapproved scope or irreversible: map data is two polygons.
+
+1. **"Bell Rock is a solid 14 m rock and the lower line runs through its middle at 4 m. Cut the rock in two, with sea
+   in the cut?"**
+   - **Yes (recommended; built until he answers).** The junction's two levels are seen from the sea, the lower deck
+     is a harbour in a cleft, and a swimmer has a way up.
+   - No: the lower platform moves outside to the rock's foot, as rail-map first said; that is a catalog change.
+   Answer: ___
+2. **"The line from High Gorge to Bell Rock leaves through 165 m of the south stack. Tunnel through it?"**
+   - **Yes (recommended; only the mouth is marked now, the bore comes with the line's rules).** A train from Bell
+     Rock bursts out of the dark into the Gorge.
+   - No: the line leaves by the split's open end and goes round the stack, longer and beside line 2.
+   Answer: ___
