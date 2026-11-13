@@ -2,21 +2,12 @@
 // it. This catches what's broken; what a good level aims for is docs/research/level-design.md.
 import { collidersOf, footprintOf } from '../../src/blueprints/blueprint.ts';
 import { isHomePalm, PROP_BLUEPRINTS, tileKey } from '../../src/blueprints/props.ts';
-import {
-  CELL,
-  GRAVITY,
-  GRID_RES,
-  JUMP_SPEED,
-  PLAYER_R,
-  SEA,
-  SOFT_WALL,
-  SWIM_DEPTH,
-  SWIM_JUMP_SPEED,
-  WALKABLE_NY,
-} from '../../src/constants.ts';
+import { CELL, GRID_RES, PLAYER_R, SEA, SOFT_WALL } from '../../src/constants.ts';
 import { segDist, siteFrame } from '../../src/island/stamps.ts';
 import { WAGON_MAX_GRADE } from '../../src/sim/wagon.ts';
-import { flood, standable, type Grid, type Mover } from './flood.ts';
+import { flood, standable, type Grid } from './flood.ts';
+import { MOVER } from './mover.ts';
+export { MOVER } from './mover.ts';
 import { nodeOf, nodeX, nodeZ, siteFile, type Level } from './level.ts';
 
 export type Issue = {
@@ -29,12 +20,6 @@ export type Issue = {
   fix: string; // what to do
 };
 
-export const MOVER: Mover = {
-  walkSlope: Math.sqrt(1 - WALKABLE_NY * WALKABLE_NY) / WALKABLE_NY, // 1.52: rise over run at the normal the player counts as ground
-  jumpHeight: (JUMP_SPEED * JUMP_SPEED) / (2 * GRAVITY), // 1.6 m
-  wade: SWIM_DEPTH + PLAYER_R, // you swim once the sea is this far over the ground
-  swimHop: (SWIM_JUMP_SPEED * SWIM_JUMP_SPEED) / (2 * GRAVITY),
-};
 const TRACK_HALF = 1; // m each side the wagon needs: its deck is 0.8 (src/features/track-machine.ts)
 const GRADE_RUN = 2.5; // m: grades are measured over about the wagon's length, so one bump in the ground doesn't count
 const PLAYER_HEIGHT = 1.7; // m: what's higher up than this over the ground, you walk under
