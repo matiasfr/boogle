@@ -136,13 +136,13 @@ export const RAIL_ACTIONS = new Set([
   'rail.arrive',
 ]);
 
-/** A passenger's reach of its train: 10 m of the train's pose (its cars run 7.4 m behind it), at the tick or in the
+/** A passenger's reach of its train: 10 m of the train's pose (its cars run up to 11.1 m behind it, RIDER_SPAN), at the tick or in the
  * second before it (the rider's own view of the train lags the room clock). */
 export const RIDER_REACH = 1000;
 const RIDER_LAG_TICKS = 10;
-/** The farthest car from the train's pose: the rear car (line 2's footing wagon) sits 7.4 m behind it
- * (TRAIN_OFFSETS in src/entities/railway/cars.ts). */
-export const RIDER_SPAN = 740;
+/** The farthest car from the train's pose: from v33 the steel car on the wagon's train sits 11.1 m behind it
+ * (steelCarOffset(true) in src/entities/railway/cars.ts; docs/plans/fourth-car.md, R1). */
+export const RIDER_SPAN = 1110;
 /** A passenger's ask is judged against the train's pose now, widened by what it can travel in the lag window (its
  * speed now × RIDER_LAG_TICKS) and by the train's length, all in integer cm. Not replayed from the row's past poses:
  * a replan rewrites the row, which would collapse those to the replan point and refuse a lagging rider. */

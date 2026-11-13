@@ -101,12 +101,14 @@ export const balanceOk = (b: number | undefined) =>
 const both = (p: RailPlatform) => [p, p] as const;
 /** A stub's turnout: past its merge the two tracks part over this length (src/place/layout.ts draws it). */
 export const TURNOUT_CM = 2000;
-/** How far a train reaches from its along (cm), with the footing wagon: the engine's nose ahead (+s), the wagon's tail
- * behind. The cars are src/entities/railway/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
+/** How far a train reaches from its along (cm): the engine's nose ahead (+s), from v33 the steel car's tail behind on
+ * the wagon's train (below). The cars are src/entities/railway/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
  * in step), so a longer train moves every signal with it. From v28 (ring-island-build2, R3, call 15) the reach ahead
  * is the longer boiler's, rail-map's long train (8.2 m), whichever boiler a train wears: one extent, one block rule.
- * The drawn longer engine reaches less (test/railway-lines.test.ts holds this at least the drawn one). */
-export const TRAIN_EXTENT = { aheadCm: 820, behindCm: 900 } as const;
+ * The drawn longer engine reaches less (test/railway-lines.test.ts holds this at least the drawn one). From v33
+ * (docs/plans/fourth-car.md, R1) the reach behind is the steel car's tail on the wagon's train (12.7 m, cars.ts's
+ * TRAIN_TAIL_M), whichever cars a train pulls: one extent for every train, as ahead. */
+export const TRAIN_EXTENT = { aheadCm: 820, behindCm: 1270 } as const;
 /** A line end at `mergeCm`, at its line's low end (`side` -1, the first halt) or high end (+1). Its block reaches the
  * merge plus a stub's turnout (`edgeCm`: past it the tracks are apart; a crossover's block starts at the crossover);
  * its signal stands outside that by the reach of an inbound train's leading end, so a train held there is clear of the
@@ -393,7 +395,8 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     halts: [
       {
         name: 'Village, line 2',
-        s: 1700,
+        // 18.25 m from v33 (docs/plans/fourth-car.md, R2): the wagon train's steel car stands off the table's deck.
+        s: 1825,
         opens: -1,
         platforms: both({ x: 92779, z: 2617, y: 1902, reach: 1260 }),
         end: railEnd('stub', 3400, -1),

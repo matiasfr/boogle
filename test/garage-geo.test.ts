@@ -13,6 +13,8 @@ import {
   type XZ,
 } from '../src/entities/railway/garage-geo.ts';
 import { SHED_TABLE } from '../src/sim/railway-works-layout.ts';
+import { STEEL_CAR, steelCarOffset } from '../src/entities/railway/cars.ts';
+import { TRAIN_STOPS } from '../src/sim/railway-train.ts';
 
 import { LINES, ORIGIN, lineAt } from '../src/place/layout.ts';
 import { TABLE } from '../src/place/home-station.ts';
@@ -74,12 +76,63 @@ test('every piece is off both lines’ sleepers and off the jump-in landing, whi
   }
   // The stand's middle is off the sleepers. The 3.15 m barrel lying on it does not fit the wedge between line 2 and
   // the landing with its inner end off the deck: as built its side overhangs line 2's sleeper ends by 0.34 m (clear of
-  // the rail, on track no train stands on: the tails stop at s 8.0) and passes 0.316 m from the landing point. Both are
-  // pinned here so a move re-measures them; the plan's section 5 carries the finding for the designer.
+  // the rail; from v33 a standing wagon train's steel car covers that track, s 5.55 to 8.75: the next test) and passes
+  // 0.316 m from the landing point. Both are pinned here so a move re-measures them; the plan's section 5 carries the
+  // finding for the designer.
   assert.ok(offLines(polarAt(centre, a.stand)) > SLEEPER + 0.2);
   const barrel = standAxis();
   const toLine = Math.min(...barrel.map((p) => offLines(p) - STAND_PART.r)),
     toLand = Math.min(...barrel.map((p) => dist(p, land) - STAND_PART.r));
   assert.ok(toLine >= 0.8, `the barrel's side ${toLine.toFixed(2)} m from line 2's centre (the rail is at 0.68 m)`);
   assert.ok(toLand >= 0.3, `the barrel's side ${toLand.toFixed(2)} m from the landing`);
+});
+
+/** Where a point stands against line 2's first 16 m: its nearest s and its distance from the line's centre. */
+function onLine2(p: XZ) {
+  const lp = { x: 0, z: 0, ux: 0, uz: 0 };
+  let best = { s: 0, d: Infinity };
+  for (let s = 0; s <= 16; s += 0.01) {
+    lineAt(LINES.east, s, lp);
+    const d = dist(p, { x: lp.x + ORIGIN.x, z: lp.z });
+    if (d < best.d) best = { s, d };
+  }
+  return best;
+}
+// The fourth car (docs/plans/fourth-car.md, R2 and the design review's findings 1 and 2): line 2's Village stop at
+// 18.25 m puts the wagon train's steel car at s 5.55 to 8.75, beside the stand. Its side is a flatbed's half width
+// out from line 2's centre.
+test('the steel car clears the empty stand’s legs; a part waiting on the stand would graze it (call 26)', () => {
+  const stop = TRAIN_STOPS[1]![0]! / 100,
+    car = [stop + steelCarOffset(true) - STEEL_CAR.hz, stop + steelCarOffset(true) + STEEL_CAR.hz] as const;
+  assert.deepEqual(
+    car.map((v) => Math.round(v * 100)),
+    [555, 875],
+  );
+  const beside = (p: XZ) => {
+    const at = onLine2(p);
+    return at.s >= car[0] && at.s <= car[1] ? at.d - STEEL_CAR.hx : Infinity;
+  };
+  // Each leg a box across the barrel: STAND_LEGS.half each side, 0.15 m deep along the radius (garage-view.ts).
+  const bearing = (a.stand.bearing * Math.PI) / 180,
+    across = { x: Math.cos(bearing), z: Math.sin(bearing) },
+    radial = { x: Math.sin(bearing), z: -Math.cos(bearing) };
+  let legs = Infinity;
+  for (const r of STAND_LEGS.at) {
+    const mid = polarAt(centre, { bearing: a.stand.bearing, r });
+    for (let i = -10; i <= 10; i++)
+      for (const j of [-1, 0, 1]) {
+        const u = (STAND_LEGS.half * i) / 10,
+          v = 0.075 * j;
+        legs = Math.min(
+          legs,
+          beside({ x: mid.x + across.x * u + radial.x * v, z: mid.z + across.z * u + radial.z * v }),
+        );
+      }
+  }
+  assert.ok(legs >= 0.15, `the nearer leg ${legs.toFixed(2)} m from the steel car's side (the review measured 0.18)`);
+  // The barrel's side against the car: 0.03 m inside it at the car's rear corner. No part waits on the stand when the
+  // car exists today (the install that creates the car takes the one part); a second part would graze it. Pinned as
+  // the known figure: whoever places a second part, or the Home flip, re-places the stand (design review, call 26).
+  const barrel = Math.min(...standAxis().map((p) => beside(p) - STAND_PART.r));
+  assert.ok(Math.abs(barrel - -0.03) <= 0.01, `the barrel's side ${barrel.toFixed(3)} m from the steel car's side`);
 });

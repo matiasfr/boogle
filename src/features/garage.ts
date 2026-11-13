@@ -233,6 +233,8 @@ function refresh() {
           `<button class="g-part" role="option" type="button" data-part="${p.id}" aria-selected="${p.id === snap.sel}"><span class="nm">${h(p.name)}</span><span class="pill ${p.standing}">${h(p.pill)}</span></button>`,
       )
       .join('');
+    // A category with more parts than the strip holds (Cargo's four): the chosen tile is brought into view.
+    els.parts.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     els.where.textContent = CATS.find((c) => c.id === snap.cat)!.name;
     els.name.textContent = part.name;
     els.pill.textContent = part.pill;

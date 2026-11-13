@@ -204,12 +204,13 @@ const NAMED_ROUTES: { id: string; name: string; legs: string[] }[] = [
 const WORK_RIDES = workRides(map.ride);
 const legId = (leg: string) => leg.replace(/^[~=]/, '');
 /** Line 2 from the Village halt to the rails' end, on Place's real track (the pier's end is where `ringx` starts). */
+const L2_VILLAGE = 18.25; // line 2's Village stop from v33 (docs/plans/fourth-car.md, R2), as ./rides.ts
 const LINE2_RIDE: WorkRide = {
   id: 'l2',
   name: 'Line 2',
   mps: RIDE_SPEED,
   startS: 0,
-  legs: [{ line: 'east', from: 17, to: LINES.east.len, stop: 'Rails end', dwellS: 0 }],
+  legs: [{ line: 'east', from: L2_VILLAGE, to: LINES.east.len, stop: 'Rails end', dwellS: 0 }],
 };
 const ROUTES = [
   ...NAMED_ROUTES.filter((r) => r.legs.every((id) => id === '=l2' || box.lines.some((l) => l.id === legId(id)))),
@@ -234,7 +235,7 @@ function startRide(id: string, speed = 1) {
   const along = [0];
   for (let i = 1; i < path.length; i++) along.push(along[i - 1]! + path[i]!.distanceTo(path[i - 1]!));
   const lens = route.legs.map((leg) =>
-    leg === '=l2' ? LINES.east.len - 17 : polyLen(map.lines.find((l) => l.id === legId(leg))!.pts),
+    leg === '=l2' ? LINES.east.len - L2_VILLAGE : polyLen(map.lines.find((l) => l.id === legId(leg))!.pts),
   );
   const mps = work?.mps ?? RIDE_SPEED;
   const model = work ? rideModelSeconds(work) : rideSeconds(map.ride, lens);

@@ -154,7 +154,7 @@ function awake(stage: 'trains-on' | 'q6-done' = 'trains-on', audit = true) {
 }
 
 // ---------------------------------------------------------------- the catalog's numbers
-test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to the Railhead; three trains (v27)", () => {
+test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to the Railhead; three trains (v27; the same ticks from v33's 18.25 m stop)", () => {
   const pier = TRAIN_STOPS[LINE2]!.slice(0, 4),
     before = pier.slice(0, 3),
     railhead = line2Stops(7, 0);
@@ -175,16 +175,16 @@ test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to t
   // Every block reaches past its stub's turnout (a crossover's starts at it), and every signal stands on the inbound
   // track outside it by a train's lead, at least a train's gap from the end stop (review of v26, P2-1).
   const [village, farHead] = endBlocks(LINE2, before);
-  assert.deepEqual([village.from, village.to, village.signal], [1700, 5400, 6300]);
+  assert.deepEqual([village.from, village.to, village.signal], [1825, 5400, 6670]);
   assert.deepEqual([farHead.from, farHead.to, farHead.signal], [49000, 52400, 48180]);
   assert.deepEqual(
     endBlocks(LINE2, pier).map((b) => b.signal),
-    [6300, 52780],
+    [6670, 52780],
     "the far end's block moves to the pier's stub",
   );
   assert.deepEqual(
     endBlocks(LINE2, railhead).map((b) => b.signal),
-    [6300, 80380],
+    [6670, 80380],
     "and on to the Railhead's at Q7",
   );
 });
@@ -366,6 +366,22 @@ test('a train held at the old Far Head signal when the pier opens runs signal to
   assert.match(check(refused) ?? '', /^railway:/, 'the load check refuses it');
 });
 
+// Review of car4/rules: the reason v33 is a bump. A v32 save's line 2 train standing at the Village holds the old stop
+// (17.0 m); under v33's catalog (18.25 m) the load check refuses the whole world, standing or idle, rather than
+// loading a train 1.25 m off its mark.
+test('review (car4): a v32 stand at the old Village stop (17.0 m) is refused by the load check, whole', () => {
+  const w = awake('trains-on', false);
+  assert.equal(TRAIN_STOPS[LINE2]![0], 1825);
+  // A train standing at the Village as the rules left it; only its stop is v32's.
+  until(w, () => LINE_SLOTS[LINE2]!.some((k) => standing(w, k, 0)()));
+  const k = LINE_SLOTS[LINE2]!.find((s) => standing(w, s, 0)())!;
+  assert.equal(row(w, k).from, 1825);
+  assert.equal(check(restore(w.w)), null, 'the v33 world loads');
+  const old = restore(w.w);
+  Object.assign(old.mut(Train, trainId(old, k))!, { from: 1700, dest: 1700 });
+  assert.equal(check(old), 'railway: train', `slot ${k} standing at 1700`);
+});
+
 test("the wagon's twelve footings reach the pier under random asks and restores", (t) => {
   let w = unaudited(railwayAtWorks('cradle-fitted'));
   const rand = mulberry32(0xfee7);
@@ -466,7 +482,7 @@ function blocked(delay: number) {
   ]);
   step(w);
   assert.equal(row(w, B).phase, TRAIN_PHASE.RUN);
-  assert.deepEqual([row(w, B).to, row(w, B).dest], [-1, 6300], "B's leg ends at the village block's signal");
+  assert.deepEqual([row(w, B).to, row(w, B).dest], [-1, 6670], "B's leg ends at the village block's signal");
   return w;
 }
 test('a train held at a signal leaves the tick the block clears; the end block holds one train', () => {
@@ -505,7 +521,7 @@ for (const pct of [100, TRAIN_HEAD_PCT])
     const w = awake('q6-done', false);
     place(w, [
       { k: A, stop: 0, track: 0, depart: w.t - TRAIN.dwellTicks },
-      { k: B, stop: -1, track: 1, depart: w.t, s: 6300 },
+      { k: B, stop: -1, track: 1, depart: w.t, s: 6670 },
     ]);
     // v27: three trains, so an even spacing is a third of the cycle; the balanced hold at the ends evens them too.
     const st = trainStops(w.w, LINE2),

@@ -1206,9 +1206,11 @@ test('R3: played through pier, ring, counterweight and rivet, riders aboard when
       assert.equal(tw.boarded - tw.alighted, now, `tick ${tk}: riders aboard`);
       // Each rider stepping off pays one fare (the route's fare that tick), no more and no less.
       assert.equal(earned(w) - paid, stepped * fare, `tick ${tk}: ${stepped} stepped off at ${fare}`);
-      // Who stepped off where: the riders stepping off this tick left the line 2 train that arrived this tick.
+      // Who stepped off where: the riders stepping off this tick left the line 2 train that arrived at a halt this
+      // tick. A train held at a signal (`at` -1) has arrived nowhere: from v33 one is held at the far end's signal (s
+      // 527.8 m, on the up track) at tick 6512 as another reaches the Village (fourth-car R2).
       const came = LINE2_SLOTS.filter(
-        (k, i) => phase[i] === TRAIN_PHASE.RUN && train(w, k).phase === TRAIN_PHASE.STAND,
+        (k, i) => phase[i] === TRAIN_PHASE.RUN && train(w, k).phase === TRAIN_PHASE.STAND && train(w, k).at >= 0,
       );
       if (stepped) {
         assert.equal(came.length, 1, `tick ${tk}: one train arrived as riders stepped off`);

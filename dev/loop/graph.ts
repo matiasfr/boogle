@@ -932,7 +932,7 @@ export const NODES: readonly LoopNode[] = [
     cue: [
       onMain(
         'world',
-        "steel on the kit car's deck and the pallet by the Roundhouse table",
+        "steel on the kit car's deck (on the train's steel car once it wears the longer boiler) and the pallet by the Roundhouse table",
         'src/entities/railway/boiler-install-view.ts',
       ),
     ],

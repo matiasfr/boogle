@@ -23,7 +23,7 @@ import {
   createRailwayWorld,
 } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, legBuilt } from '../src/sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, TRAIN_EXTENT, legBuilt } from '../src/sim/railway-lines.ts';
 import {
   LEG_TUNE,
   RAIL_ARRIVAL,
@@ -160,6 +160,13 @@ test('line 2 grows on past Ring Island to the stack railhead and High Gorge; ns,
     LEG.sections.slice(0, -1).map((sec, k) => [legS(LEG, sec.toCm) - 1000, 'stub', k]),
   );
   assert.equal(line2.halts[GORGE]!.s, legS(LEG, LEG.sections.at(-1)!.toCm));
+  // Fourth car, design review finding 5 (call 25): a train standing at the Gorge has its tail (the steel car's, on the
+  // wagon's train, TRAIN_EXTENT.behindCm) 0.3 m clear of the crossover before the platforms, which is as long as the
+  // island's (22 m). The tightest figure of v33: a later stop or extent change re-measures it here.
+  const gorge = line2.halts[GORGE]!,
+    crossEnd = gorge.end!.mergeCm + (RING_END.cross.u1 - RING_END.cross.u0);
+  assert.equal(gorge.end!.kind, 'crossover');
+  assert.equal(gorge.s - TRAIN_EXTENT.behindCm - crossEnd, 30, 'the tail 0.3 m clear of the crossover');
   assert.equal(line2.halts[RING]!.s, legS(LEG, LEG.fromCm), 'the leg starts at Ring Island (row cm less 100)');
   for (let k = 1; k < line2.halts.length; k++) assert.ok(line2.halts[k]!.s > line2.halts[k - 1]!.s);
   assert.equal(line2.path.length / 2 - 1, Math.floor(legS(LEG, 325140) / 1000), 'the path runs past the buffers');

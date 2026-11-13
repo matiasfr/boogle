@@ -10,7 +10,7 @@ import { JUMP } from '../../src/entities/player/state.ts';
 import { APEX_GRAVITY } from '../../src/entities/player/apex-float.ts';
 import { MOVE } from '../../src/place/tech-layout.ts';
 import { ENGINE, ENGINE_BOILER, ENGINE_CAB } from '../../src/entities/railway/engine.ts';
-import { TRAIN_CARS, TRAIN_OFFSETS } from '../../src/entities/railway/cars.ts';
+import { STEEL_CAR, TRAIN_CARS, TRAIN_OFFSETS, steelCarOffset } from '../../src/entities/railway/cars.ts';
 import { CARRY } from '../../src/physics/platforms.ts';
 import { TUNABLES } from '../../src/sim/tune.ts';
 import { RAIL_LINES, TRAIN_EXTENT, TURNOUT_CM } from '../../src/sim/railway-lines.ts';
@@ -149,6 +149,14 @@ const STANDABLE = [
     y: c.top,
     hx: c.hx,
   })),
+  // Steel's car (docs/plans/fourth-car.md, V2): the last deck of a fitted train, behind the wagon or the kit car.
+  ...[true, false].map((wagon) => ({
+    name: wagon ? "steel car's deck (the wagon's train)" : "steel car's deck (a plain train)",
+    off: steelCarOffset(wagon),
+    z: STEEL_CAR.hz,
+    y: STEEL_CAR.top,
+    hx: STEEL_CAR.hx,
+  })),
 ];
 type P2 = { u: number; lat: number };
 /** Distance from q to the convex polygon `poly` (counter-clockwise in (u, lat)), 0 inside. */
@@ -273,8 +281,7 @@ function terminus(
   assertion: (passed: boolean, message: string) => void,
 ) {
   const E = RING_END,
-    H = RING_HALT,
-    LONG = { aheadCm: 820, behindCm: 1270 };
+    H = RING_HALT;
   section('The island terminus (buffers and a crossover)');
   for (const [k, b] of E.buffers.entries())
     assertion(
@@ -323,10 +330,8 @@ function terminus(
     `  the crossover is tighter than the continuity report's ${LIMITS.radius} m, as every turnout on lines 1 and 2 is (reported there, not failed); it is Far Head's shape on a straight`,
   );
 
-  for (const [name, t] of [
-    ["today's train", TRAIN_EXTENT],
-    ['the long train', LONG],
-  ] as const) {
+  // One train row from v33 (fourth-car, R1): the extent is the wagon's train with its steel car, the longest there is.
+  for (const [name, t] of [['the longest train', TRAIN_EXTENT]] as const) {
     const tail = E.u - t.behindCm,
       nose = E.u + t.aheadCm;
     assertion(
@@ -334,10 +339,8 @@ function terminus(
       `${name} (${m(t.aheadCm)} m ahead, ${m(t.behindCm)} m behind) standing at u ${m(E.u)}: u ${f1(m(tail))}-${f1(m(nose))}, ${f1(m(tail - E.cross.u1))} m clear of the crossover, ${f1(m(E.bufferU - nose))} m short of the buffers, beside the platforms (u ${m(H.u0)}-${m(H.u1)})`,
     );
   }
-  for (const [name, t] of [
-    ["today's train", TRAIN_EXTENT],
-    ['the long train', LONG],
-  ] as const) {
+  // One train row from v33 (fourth-car, R1): the extent is the wagon's train with its steel car, the longest there is.
+  for (const [name, t] of [['the longest train', TRAIN_EXTENT]] as const) {
     const signal = E.mergeCm - t.aheadCm,
       tail = signal - t.behindCm;
     const pastHinge = tail - (RING_S_HEAD + RING_GAP.hinge),
