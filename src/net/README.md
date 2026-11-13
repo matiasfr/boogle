@@ -19,6 +19,7 @@ room.onPeers(handler, onError) // handler({ peers, joined, left, updated }); cal
 room.onConnection(handler, onError) // handler(connected: boolean). returns unsubscribe
 room.send(msg)         // reliable, ordered JSON message to every OTHER tab (relayed by the server; held while reconnecting)
 room.onMessage(handler) // handler(msg, fromId). returns unsubscribe
+room.onReplacing(h)    // server-only {label, seconds}; late joins get remainder; returns unsubscribe
 room.transport         // 'server'
 room.isLead()          // true when this tab publishes Host-kind fields (addHostField)
 room.onLeadChange(h)   // h(isLead); returns unsubscribe

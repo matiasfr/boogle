@@ -13,6 +13,8 @@ import { addPlaydata } from './playdata.ts';
 import { addReviews } from './reviews.ts';
 import { addAdmin } from './admin.ts';
 import { addJump, type JumpConfig } from './jump.ts';
+import { addReplace, type ReplaceConfig } from './replace.ts';
+import { createReplacements } from './replacements.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
 import type { RoomHost } from './host/rooms.ts';
@@ -67,6 +69,9 @@ export function loadConfig(
     reportRatePerMin: Number(env.REPORT_RATE_PER_MIN ?? 12),
     reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
     reportToken: env.REPORT_TOKEN || '',
+    advanceKey: env.ADVANCE_KEY || '',
+    advanceShared: env.ADVANCE_SHARED === '1',
+    replaceRatePerMin: Number(env.REPLACE_RATE_PER_MIN) || 6,
     saveCleanup: env.SAVE_CLEANUP === 'off' ? 'off' : 'trash',
     serverRooms: env.SERVER_ROOMS ? list(env.SERVER_ROOMS) : ['*'], // rooms it hosts (docs/plans/server-host.md); default all
     tuneControllerKey: env.TUNE_CONTROLLER_KEY || '',
@@ -95,7 +100,7 @@ export function loadConfig(
   };
 }
 
-export type ServerConfig = {
+export type ServerConfig = ReplaceConfig & {
   build: string;
   port: number;
   dataDir: string;
@@ -123,6 +128,7 @@ export type ServerConfig = {
   jumpMaxRooms: number;
   jumpSeedsDir?: string; // test override: where prebuilt seeds live (default server/seeds)
   jumpBuildDoc?: JumpConfig['jumpBuildDoc']; // test seam: builds a seed in place of the worker
+  replaceFailAt?: 'backup' | 'save' | 'record'; // test-only crash seam
   serverSaveMs: number;
   roomIdleMs: number;
   roomPauseMs?: number;
@@ -223,6 +229,7 @@ export function createService(cfg: ServerConfig) {
 
   // ---- snapshot storage (./store.ts) ----
   const store = createStore(cfg);
+  const replacements = createReplacements(cfg, store);
   const { readIfExists, withLock } = store;
   let roomHost: RoomHost | null = null; // the server-hosted rooms (./host/rooms.ts), made in listen() once the store is ready
   let lastCleanup: Cleanup | null = null;
@@ -248,7 +255,9 @@ export function createService(cfg: ServerConfig) {
     res.set('Cache-Control', 'no-store');
     if (!roomHost?.hosts(req.params.roomId)) return res.status(404).json({ error: 'not hosted' });
     const seed = jumps.seedOf(req.params.roomId); // a jump room's stage (./jump.ts)
-    res.json({ ...roomHost.status(req.params.roomId), ...(seed && { seed }) });
+    const record = replacements.read(req.params.roomId);
+    const replaced = record ? { stage: record.stage, at: record.at, born: record.born } : null;
+    res.json({ ...roomHost.status(req.params.roomId), ...(seed && { seed }), ...(replaced && { replaced }) });
   });
 
   // ---- reports (errors, desyncs, snapshot and connection failures from players' browsers) ----
@@ -341,7 +350,7 @@ export function createService(cfg: ServerConfig) {
     }
   });
 
-  addAdmin(app, cfg, { authed, store, roomHost: () => roomHost });
+  addAdmin(app, cfg, { authed, store, roomHost: () => roomHost, replacements });
 
   const reviewReport = addReviews(app, cfg, {
     authed,
@@ -370,7 +379,16 @@ export function createService(cfg: ServerConfig) {
   const jumps = addJump(app, cfg, {
     store,
     roomHost: () => roomHost,
+    replaced: (id) => !!replacements.read(id),
+    reserved: (id) => replacements.busy(id),
     limit: createRateLimiter({ perMinute: cfg.jumpRatePerMin }),
+  });
+  const replace = addReplace(app, cfg, {
+    store,
+    roomHost: () => roomHost,
+    jumps,
+    replacements,
+    limit: createRateLimiter({ perMinute: cfg.replaceRatePerMin }),
   });
 
   // ---- room sockets (./host/upgrade.ts) ----
@@ -398,6 +416,7 @@ export function createService(cfg: ServerConfig) {
     async listen(port = cfg.port) {
       if (server.listening) throw new Error('Service is already listening');
       await store.init();
+      await replacements.init();
       lastCleanup = null;
       try {
         const inventory = await saveInventory();
@@ -423,7 +442,8 @@ export function createService(cfg: ServerConfig) {
     // logged the moment it arrives (by 7.5 s, rooms.ts close), then rethrown after the HTTP close (at most 1 s more).
     async close({ save = true } = {}) {
       try {
-        await roomHost?.close({ save });
+        // Seed preparation may still be finishing. Checkpoint live rooms immediately, before the process deadline.
+        await Promise.all([replace.close(), roomHost?.close({ save })]);
       } catch (error) {
         const inner = error instanceof AggregateError ? error.errors.map(String) : [];
         cfg.log('rooms failed to close:', String(error), ...inner);

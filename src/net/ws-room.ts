@@ -9,7 +9,7 @@
 // meanwhile, and drops the peers the server has not listed again within GRACE_MS. A reconnect turned away as full or
 // bad stops and reports a fatal error, and so does `elsewhere`: a newer tab of the same player (pid) joined.
 import { SELF_ID, SERVER_ID } from './ids.ts';
-import { WS_PROTOCOL, CLOSE, MAX_MSG, encode, decode, roomUrl, type WireMsg } from './ws-wire.ts';
+import { WS_PROTOCOL, CLOSE, MAX_MSG, encode, decode, roomUrl, type WireMsg, type ReplacingNotice } from './ws-wire.ts';
 import { createPeerTable } from './peer-table.ts';
 import { worldRoomId } from '../world/namespace.ts';
 import type { PeersChange } from './peer-table.ts';
@@ -55,7 +55,13 @@ export async function createWsRoom(opts: WsRoomOptions) {
   const connHandlers = new Set<(c: boolean) => void>(),
     msgHandlers = new Set<(m: unknown, from: string) => void>(),
     leadHandlers = new Set<(lead: boolean) => void>(),
+    replacingHandlers = new Set<(notice: ReplacingNotice) => void>(),
     errHandlers = new Set<(e: RoomError) => void>();
+  let replacement: { label: string; until: number } | null = null;
+  const replacingNow = (): ReplacingNotice | null =>
+    replacement && replacement.until > performance.now()
+      ? { label: replacement.label, seconds: Math.ceil((replacement.until - performance.now()) / 1000) }
+      : null;
   let ws: WebSocket | null = null;
   let connected = false,
     closed = false,
@@ -153,7 +159,20 @@ export async function createWsRoom(opts: WsRoomOptions) {
         case 'lead':
           setLead(typeof m.id === 'string' ? m.id : null);
           return;
+        case 'replacing':
+          if (
+            typeof m.label !== 'string' ||
+            m.label.length > 160 ||
+            !Number.isSafeInteger(m.seconds) ||
+            Number(m.seconds) < 0 ||
+            Number(m.seconds) > 10
+          )
+            return;
+          replacement = { label: m.label, until: performance.now() + Number(m.seconds) * 1000 };
+          call(replacingHandlers, { label: m.label, seconds: Number(m.seconds) });
+          return;
         case 'bye':
+          replacement = null;
           graceful = true;
           return;
         case 'full':
@@ -306,6 +325,13 @@ export async function createWsRoom(opts: WsRoomOptions) {
     onMessage(h: (msg: unknown, from: string) => void) {
       msgHandlers.add(h);
       return () => msgHandlers.delete(h);
+    },
+    /** Only the server's top-level notice reaches this hook, never a relayed peer message. */
+    onReplacing(h: (notice: ReplacingNotice) => void) {
+      replacingHandlers.add(h);
+      const notice = replacingNow();
+      if (notice) h(notice); // the joining socket can receive its notice before createWsRoom resolves
+      return () => replacingHandlers.delete(h);
     },
     isLead: () => lead === SELF_ID,
     /** The room's world as of the last welcome (before onConnection(true)); null from a server that sends none. */

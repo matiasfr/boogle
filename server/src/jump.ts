@@ -110,7 +110,19 @@ export function addressKey(ip: string | undefined): string {
 export function addJump(
   app: Express,
   cfg: JumpConfig,
-  { store, roomHost, limit }: { store: Store; roomHost: () => RoomHost | null; limit: RequestHandler },
+  {
+    store,
+    roomHost,
+    limit,
+    replaced = () => false,
+    reserved = () => false,
+  }: {
+    store: Store;
+    roomHost: () => RoomHost | null;
+    limit: RequestHandler;
+    replaced?: (id: string) => boolean;
+    reserved?: (id: string) => boolean;
+  },
 ) {
   const ns = roomNamespaces(cfg.serverRooms);
   const dir = path.join(cfg.dataDir, 'jumps');
@@ -131,7 +143,7 @@ export function addJump(
   let reserving = 0, // reservations in flight
     reservedRooms = 0; // of those, the ones not yet in `seeds`
 
-  const loaded = (id: string) => !!roomHost()?.room(id);
+  const loaded = (id: string) => !!roomHost()?.room(id) || reserved(id);
   async function prebuilt(): Promise<SeedManifest | null> {
     if (manifest !== undefined) return manifest;
     try {
@@ -211,6 +223,10 @@ export function addJump(
   async function sweep(now = Date.now()) {
     const cutoff = now - cfg.jumpIdleDays * 86_400_000;
     for (const [id, seed] of [...seeds]) {
+      if (replaced(id)) {
+        await forget(id);
+        continue;
+      }
       const file = path.join(cfg.dataDir, `${id}.json`);
       const touched = Math.max(
         Date.parse(seed.at) || 0,
@@ -315,8 +331,10 @@ export function addJump(
   );
 
   return {
+    docFor,
     seedRoom,
     seedOf(id: string): RoomSeed | null {
+      if (replaced(id)) return null;
       const s = seeds.get(id);
       return s ? { stage: s.stage, at: s.at } : null;
     },
@@ -325,6 +343,10 @@ export function addJump(
       for (const file of await fs.readdir(dir).catch((): string[] => [])) {
         const id = /^([a-z0-9-]{1,32})\.json$/.exec(file)?.[1];
         if (!id) continue;
+        if (replaced(id)) {
+          await forget(id);
+          continue;
+        }
         // A sidecar for an old namespace goes with that world (boot cleanup trashes its room file).
         if (!currentRoomId(id, ns) || !id.startsWith(`${RAILWAY_PLAY_NS}-`)) {
           await fs.rm(path.join(dir, file), { force: true });
