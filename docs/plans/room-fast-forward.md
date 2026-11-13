@@ -294,3 +294,35 @@ request invalidated by the doc correction). The later playthrough manifest confi
 [Follow-up check logs and provenance](../../.look/evidence/room-fast-forward-server/followup-evidence.json)
 supersede the earlier v40 evidence for this fix. The client controls/countdown rendering remain outside this job.
 No push or ship was run.
+
+### Authentication-budget follow-up, 13 November
+
+Re-review found the shared global admission bucket let unauthenticated traffic consume every operator token.
+The review's simulated-clock regression was ported first and failed (the last operator attempt got 429).
+Implementation `5f0db9c4` on `codex/room-fast-forward-server-2` replaces that earlier shared budget:
+
+1. Per-IP admission runs first; refusal spends no other budget. Its default is now 30/minute so an operator
+   sending 24/minute does not hit the old 6/minute IP ceiling in the review's original five-minute test.
+2. The credential check compares fixed-size SHA-256 digests with `timingSafeEqual`; no secret-length or prefix
+   early return, credential logging, or credential echo. Body parsing and expensive work remain later.
+3. Failed credentials draw only from a 24/minute global failed-authentication bucket, returning generic 401/429.
+4. Correct credentials draw only from a separate 24/minute operator bucket. The existing two replacement-job
+   and two validation-worker caps remain. Every IP limiter tracks at most 1,024 addresses, evicting the least
+   recently seen first.
+
+The requested IP-first order necessarily still throttles callers sharing an exhausted IP. Isolation is across
+addresses: both the original single-IP flood and 3,840 distinct-IP failed guesses preserved all 120/120 operator
+attempts over five simulated minutes. The five new tests also verify budget independence, refusal accounting,
+operator refill, LRU eviction, generic responses and no key logs or seed work from guesses.
+
+Fresh verification: check passes (1,794 tests plus one existing TODO); server tests 276/276; direct test:net
+191/191, including replacement/restore and empty v41 seats; `node dev/ship-check.ts origin/main HEAD` passes
+438 assertions in 43 affected test files; registry passes. Independent review found no actionable issues in
+this delta; stamp **c7b4f9149668**. No namespace, seat, backup, or client-control change was needed.
+
+[New T2 manifest](../../.look/evidence/1794610273487-65077/evidence.json): clean, unchanged `5f0db9c4` throughout;
+both players finish, 178 sampled steps agree, no missed beats or graphics errors. Opened `run/end-still.png`
+and `run/p2-end-still.png`: both players and completed rails are visible, with T2-complete overlays. The 3x warped
+run reports drift and load, so timing/feel and device behavior remain unverified. Client controls remain deferred.
+[Current logs and provenance](../../.look/evidence/room-fast-forward-server/auth-evidence.json) supersede earlier
+admission evidence. No push or ship was run.
