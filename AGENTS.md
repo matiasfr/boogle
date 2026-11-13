@@ -5,7 +5,7 @@ Goofy co-op browser game: three.js WebGPU + TSL, Rapier and Vite; a WebSocket se
 - Keep The Boogler's copy; list suspect lines for the owner.
 - No ROM data or anything cut from it, on any branch or in builds.
 - Models and effort come from `npm run models` (dev/models.ts; normal is Claude only, withCodex adds Codex). Pause and tell the owner at a usage limit.
-- Nothing waits for a playtest; don't ship a WORLD_NS bump mid-session (owner-calls).
+- Nothing waits for a playtest or session; ships hold on the owner's word only (owner-calls).
 - Decisions live in the repo and bind every agent.
 - Never force-push, skip hooks or push main unless a human asks.
 - Ship with npm run ship; report only verified states.

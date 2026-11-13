@@ -29,7 +29,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-08 · the summit switch opens early; switch cinematics; try a springy beam ([entry](#d-2026-11-08-the-summit-switch-opens-early-switch))
 - 2026-11-08 · the next playtest: today's fixes plus B5–B8 ([entry](#d-2026-11-08-the-next-playtest-today-s-fixes))
 - 2026-11-08 · fill a gated stretch before its switch ([entry](#d-2026-11-08-fill-a-gated-stretch-before-its))
-- 2026-11-08 · a world wipe is a new save; old saves go ([entry](#d-2026-11-08-a-world-wipe-is-a-new)) _13 November: see [Save resets never block development or architecture](agents/owner-calls.md)._
+- 2026-11-08 · a world wipe is a new save; old saves go ([entry](#d-2026-11-08-a-world-wipe-is-a-new)) _13 November: see [Save resets never block development or architecture](agents/owner-calls.md#save-resets-never-block-development-or-architecture)._
 - 2026-11-08 · the cart may shove you; the train lines run low and bend ([entry](#d-2026-11-08-the-cart-may-shove-you-the))
 - 2026-11-08 · the hook shot comes into the game ([entry](#d-2026-11-08-the-hook-shot-comes-into-the))
 - 2026-11-07 · world scale settled: Keep the current scale: Buddy (1.59 m), the little guys (0.96 m), buildings and the Sickle Isles terrain stay as they are; the little guys needn't match their houses' proportions ("the shop that you… ([entry](#d-2026-11-07-world-scale-settled))
