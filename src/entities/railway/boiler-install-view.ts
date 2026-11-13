@@ -1,7 +1,8 @@
 // Line 2's longer boiler, installed by a plain hold at the Roundhouse table (docs/plans/ring-island-build2.md, V3, on
 // the coordinator's ruling of 12 November): the steel that came home on a pallet east of the table, a post beside it,
-// and the one prompt. Greybox: boxes, placeholder labels, no sound, no camera. The garage's own install moment
-// (garage-view.ts, `?home=b`) waits for the Home flip, when the table and the server's install point are one place.
+// and the one prompt. Greybox: boxes, placeholder labels, no sound, no camera. Where the garage stands at this table
+// (garage-view.ts; docs/plans/garage-install-moment.md, G2) its lever post is the post: this view's grey post, lamp
+// and bar are not drawn (`opts.post` false) and the prompt hangs on the garage's, until the garage's own Install (G3).
 // A Local view of accepted state, mounted by works-live.ts. It reads the Shed, Line, Aperture and Train rows through
 // `adapter.read.world()` at the head of every entry point and keeps nothing from a world. The install is not predicted
 // (railway-predict.ts), so the banner and the post's lamp follow the accepted event and the rows, on every page.
@@ -56,7 +57,7 @@ onStart(() => {
   touchHold(dom.grabBtn, { down: () => {}, up: () => release?.(), cancel: () => release?.() });
 });
 
-export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
+export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView, opts: { post: boolean }) {
   const batch = createBoxBatch(owner, STEEL.total + 6, false);
   /** Seconds held so far, or -1; the tick of a tap that was too short; the wait for the server's answer (ms). */
   let held = -1,
@@ -115,14 +116,16 @@ export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
       );
     }
     // The post: a lamp that is grey until steel is home, orange while the install waits, green once fitted, and the
-    // hold's bar filling under it.
-    batch.box(POST.x, y + 0.06, POST.z, 0.5, 0.12, 0.5, GREY_DARK);
-    batch.box(POST.x, y + 0.65, POST.z, 0.2, 1.3, 0.2, GREY);
-    batch.box(POST.x, y + 1.42, POST.z, 0.36, 0.24, 0.36, r.fitted ? FITTED : r.steel > 0 ? READY : GREY_DARK);
-    const fill = r.fitted ? 1 : held >= 0 ? Math.min(1, held / HOLD_S) : 0;
-    batch.box(POST.x, y + 1.02, POST.z, 0.9, 0.12, 0.24, GREY_DARK);
-    if (fill > 0)
-      batch.box(POST.x - 0.45 + 0.45 * fill, y + 1.02, POST.z, 0.9 * fill, 0.16, 0.28, r.fitted ? FITTED : READY);
+    // hold's bar filling under it. Not where the garage's post stands (its knob carries the colours).
+    if (opts.post) {
+      batch.box(POST.x, y + 0.06, POST.z, 0.5, 0.12, 0.5, GREY_DARK);
+      batch.box(POST.x, y + 0.65, POST.z, 0.2, 1.3, 0.2, GREY);
+      batch.box(POST.x, y + 1.42, POST.z, 0.36, 0.24, 0.36, r.fitted ? FITTED : r.steel > 0 ? READY : GREY_DARK);
+      const fill = r.fitted ? 1 : held >= 0 ? Math.min(1, held / HOLD_S) : 0;
+      batch.box(POST.x, y + 1.02, POST.z, 0.9, 0.12, 0.24, GREY_DARK);
+      if (fill > 0)
+        batch.box(POST.x - 0.45 + 0.45 * fill, y + 1.02, POST.z, 0.9 * fill, 0.16, 0.28, r.fitted ? FITTED : READY);
+    }
     batch.commit();
   }
   function letGo() {

@@ -1,4 +1,5 @@
-> **Status: plan for the owner's and the designer's review (12 November 2026).** Nothing here is built. The next Ring
+> **Status: cleared to build by the design review below (12 November 2026); G1 and G2 are built, G3 to G5 and the
+> checkpoint are not.** G2's stand does not fit as the review placed it: [G2 as built](#g2-as-built-12-november-2026). The next Ring
 > Island item after greybox leg 1 step 3 (owner, 12 November: "yes, plain for now", "but prioritize the garage
 > moment"). View only: no sim, wire or save change, no `WORLD_NS` bump.
 
@@ -151,6 +152,71 @@ steel pallet (72°, 6.0 m), the plain post (92°, 5.2 m) and a timber frame at 9
 | 7 | The copy is solid: one static box per vehicle | A player standing on the deck when the wagon couples would be pushed out; after that the copy is always there. Nothing a player must reach lies across the table | Accept |
 | 8 | **Reached before the ability that should gate it** | None. The garage opens once the boiler is fitted and the wagon has coupled; Install needs `Shed.steel >= 1`, judged by the server. No route, reach or ability is added | None |
 
+<a id="g2-as-built-12-november-2026"></a>
+
+### G2 as built (12 November 2026)
+
+Measured on the build (`test/garage-geo.test.ts` pins them; stills in `.look/`, named in the hand-over). Bearings
+clockwise from north, metres from the table's centre (918, 12).
+
+| Piece | As built | Clearances |
+| --- | --- | --- |
+| The works copy | At rest along the bridge on the stall road's axis, nose at 45° (toward line 1). Two static boxes at that pose, which never turn: the engine 2.0 by 4.0 by 2.5 m (4.5 m long once the longer boiler is on), the car 2.2 by 3.2 by 0.8 m | Corners 4.4 m, inside the 4.8 m deck. Each box is added only once this tab's player is clear of it by 0.55 m |
+| The post | 92°, 5.2 m (where build 2's plain post stood) | 0.4 m inside the reach the prompt keeps (5.6 m); 1.5 m from the landing |
+| The stand | 118°, middle 6.5 m, along the radius, the barrel nose to the table: it spans 4.93 m to 8.08 m | **Does not fit as ruled** (below). Its side overhangs line 2's sleeper ends by 0.34 m and passes 0.33 m from the landing point |
+| The jib | 118°, 8.4 m; mast 4.4 m, arm 10.6 m | 2.5 m from line 2's centre. The arm reaches the engine's seat at any turn of the table (8.4 + 1.9 m) and clears the tall chimney (3.5 m over the grass) |
+| The crew | 121°, 9.4 m and 114°, 8.7 m, by the mast | 2.3 m and 3.1 m from line 2's centre; 3.2 m or more from the landing |
+| The camera | From 100° (east-south-east), 9.2 m out, 2.7 m up | Below |
+| `TABLE_LAND` | Untouched: (923.2, 18.1, 13.7), asserted | |
+| Train tails | Line 2 at s 8.0. Line 1 at s 5.0 by the catalogue (`halts[0].s` 14.0 m less `TRAIN_EXTENT.behindCm`), not the 8.7 of row 1: 0.2 m off the rim, 0.6 m from a longer boiler's nose at rest | Both asserted off the deck |
+
+**The stand: finding 3's numbers do not fit, for the designer.** The review placed the stand radially at 5.6 m with
+legs 0.9 m either side. The part that lies on it is the longer barrel, 3.15 m long and 1.25 m across (`engine.ts`), so
+at 5.6 m its inner end is at 4.0 m, inside the copy's 4.4 m sweep, which is what call 24 forbids. With the inner end
+off the deck (4.93 m) the barrel needs 1.78 m from line 2's centre at that end to clear the sleepers (bearing 113.8° or
+less) and 0.98 m from the landing to clear a landing player (118.2° or more): no bearing does both, and anything
+further out on the landing's own bearing stands in the jump-in camera. Built: the test-asserted rules first (4.8 m,
+the landing untouched, every point off the sleepers), 118° as the even split of what is left. The overhang is over
+track no train stands on (the tails stop at s 8.0) and 0.13 m clear of the rail. Choices for the ruling: accept; move
+the view-only pallet and stand the part where it is (62° to 81° is free of both lines once the pallet goes, but that is
+in front of the east camera); or stand it on line 2's far side, by the platform end.
+
+**The reach proof (finding 2).** `dev/look/evals/garage-walk.ts`, forge door to the post, real time, the Mac at load
+6.5 to 10 (the seconds are not evidence; the metres are). Today's straight walk over the empty deck (`stall-done`):
+14.8 m, 2.7 s. With the copy solid (`steel-home`): the bot's own planner hops onto the flat car and over it, 15.9 m,
+3.1 s, rising 0.91 m; sent round the engine's nose on line 1's track bed instead it walks 17.0 m in 3.3 s and rises
+0.33 m, the same rise as that route with no copy (17.0 m, 3.1 s). So the copy adds about 2 m and well under a second
+and needs no jump: the first car's box stays. The flat car can be stood on, like the wagon.
+
+**The camera (finding 7).** East at 85°: the engine is clear from the wheels up and nothing meets the chimney, but the
+stand and jib are out of frame (only the arm crosses the top) and the pallet fills the lower right. **100° is built:**
+the waiting barrel on its stand is the left foreground under the arm, trolley and chain, the engine stands clear
+right of centre, the post and its knob fall right of centre, nothing meets the chimney. What is wrong in it: the
+barrel covers about a quarter of the frame and hides the car's wheels; the mast is out of frame; the pallet still
+shows in the lower right corner; the engine is seen side on (the deck turns it only 3° from rest); no line 2 train
+is in frame from any east camera at this distance (it stands behind the camera's left shoulder). South (180°),
+taken for comparison: the engine three-quarter front and the stand in frame on the right, but the forge crane's mast
+rises behind the cab and line 2's platform slab is the foreground. The camera row is one number
+(`GARAGE_GEO.a.camBearing`).
+
+**What `wagonCoupled` means, and when the copy shows.** `wagonCoupled` is "some line 2 train row carries `wagon`"
+(`garage-state.ts`). `deckK === null` is not the rest test: once the wagon has coupled `deckK` is never null again (it
+is 0 at rest), and the coupling can land while the shunter is still backing over the deck. The copy shows when
+`wagonCoupled` and the deck is at rest: no choreography turn (`deckK` null or 0), the table not turning, the shunter
+home in its stall (`roundhouse-view.ts`, `restYaw`). First shown on a live tick: 26 steam particles along the train
+and `whistle`; after a restore: no effect.
+
+**Calls made building it (defaults, for the log).** The garage opens only once the copy stands (it used to open from
+the boiler's fit, on an empty table). The jib and empty stand are there whenever the copy is; the crew from steel
+home, and while the garage is open. The copy's wheels and chuff run only in the garage. The camera's side and the
+copy's nose are picked from the bridge's rest so the deck turns least on opening; the engine shot's camera now lands
+exactly on the row's bearing, which moves layout B's by about 10°. The hook takes the barrel on top at its middle,
+and with no part in sight the arm rests over the stand. `GarageGeo` gained `mast`, `arm` and `standAlong` beside the
+plan's fields; `restYaw()` returns null while the deck is not at rest.
+
+**Not seen.** The copy's arrival on a live tick (the puff and whistle), a restore mid-shunt, a player on the deck as
+the boxes arrive, the show-off turn at today's table, a second player, a phone. Not tested on a device.
+
 ## 6. Steps
 
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and
@@ -168,7 +234,7 @@ the live install working. One proof look each; the full check, the bot and the t
       sent on). The Longer boiler is not tryable once fitted (no button). Looked at: `boiler-long` under `?home=b`,
       Longer boiler "Installed", Boiler "Replaced" struck through, rows 25 m/s, 4 cars, 2.9, 15.3 in ink with no
       arrow. Still wrong there until G2: the copy wore the short boiler with the yellow ghost over it.
-- [ ] **G2. The garage and the works copy at today's table (M).** Create `src/entities/railway/garage-geo.ts`
+- [x] **G2. The garage and the works copy at today's table (M).** As built: [below](#g2-as-built-12-november-2026). Create `src/entities/railway/garage-geo.ts`
       (section 4; `a` from section 5). Edit `garage-view.ts` (take the geo row; `restYaw`; the copy shown from
       `wagonCoupled`, wearing `longFitted`, bolts on when fitted; two static boxes through `addStatic(..., owner)`;
       the long boiler on the stand and the knob orange when `steelHome && !longFitted`, green when fitted;

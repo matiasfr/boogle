@@ -24,6 +24,7 @@ import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGarageView } from './garage-view.ts';
 import { roomFacts } from './garage-state.ts';
+import { GARAGE_GEO, installHere, polarAt } from './garage-geo.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 
 /** Seconds: the stall frame's build, the tarp's slide, the table's quarter turn. */
@@ -131,16 +132,28 @@ export async function createRailwayRoundhouse(
     owner,
   );
 
-  // The train garage (docs/brainstorms/engine-garage.md, first build): a lever post at the table's rim opens a framed
-  // view of the works copy of the engine. Behind `?home=b` with the table; Local, nothing sent or saved.
-  const garagePost = {
-    x: table.x + Math.sin((60 * Math.PI) / 180) * 5.6,
-    z: table.z - Math.cos((60 * Math.PI) / 180) * 5.6,
-  };
-  const garageView = homeB
-    ? await createGarageView(owner, { table, y: tableY, post: garagePost, ground: tableY })
-    : null;
-  if (garageView) owner.cleanup(garageView.dispose);
+  // The train garage (docs/brainstorms/engine-garage.md, first build; docs/plans/garage-install-moment.md, G2): the
+  // works copy of the engine stands on the table once the wagon has coupled, and a lever post at the rim opens a
+  // framed view of it. Mounted at today's table and at layout B's, each with its own placement row. Local: nothing is
+  // sent or saved. `garageHere`: a hold at this post is inside the server's reach for the install (today's table only,
+  // until the flip moves `SHED_TABLE`).
+  const garageRow = homeB ? GARAGE_GEO.b : GARAGE_GEO.a;
+  const garagePost = polarAt(table, garageRow.post);
+  const garageHere = installHere(garagePost);
+  const garageView = await createGarageView(
+    owner,
+    // Today's table stands 0.2 m over the grass east of it (surface 18.1 m, railway-jump.ts's TABLE_LAND).
+    { table, y: tableY, post: garagePost, ground: homeB ? tableY : SHED_TABLE.y / 100 - 0.2 },
+    garageRow,
+    {
+      // The deck is at rest when no choreography turns it, it is not catching up, and the shunter is home in the stall.
+      restYaw: () =>
+        (deckK === null || deckK <= 0) && !tableTurning && Math.abs(shunterA - (PARKED_A - PARK.gap)) < 0.05
+          ? tableYaw
+          : null,
+    },
+  );
+  owner.cleanup(garageView.dispose);
 
   // ---------------------------------------------------------------- the shunt path: stall, door, table, line 2
   const pathPts: THREE.Vector3[] = [];
@@ -427,15 +440,18 @@ export async function createRailwayRoundhouse(
       thump(table.x, table.z);
       clank(table.x, table.z);
     }
+    // The garage turns the bridge with its works copy (the garage's camera pose, the show-off turn); the accepted
+    // table and the prompts keep `tableYaw`.
+    const drawn = garageView.deckYaw() ?? tableYaw;
     for (const side of [-1, 1]) {
-      const ox = Math.cos(tableYaw) * side * 0.63,
-        oz = -Math.sin(tableYaw) * side * 0.63;
-      batch.box(table.x + ox, tableY + 0.1, table.z + oz, 0.1, 0.1, R * 2 - 0.6, '#3f4145', tableYaw);
+      const ox = Math.cos(drawn) * side * 0.63,
+        oz = -Math.sin(drawn) * side * 0.63;
+      batch.box(table.x + ox, tableY + 0.1, table.z + oz, 0.1, 0.1, R * 2 - 0.6, '#3f4145', drawn);
     }
-    batch.box(table.x, tableY + 0.04, table.z, 1.5, 0.08, R * 2 - 0.3, '#5c5046', tableYaw);
+    batch.box(table.x, tableY + 0.04, table.z, 1.5, 0.08, R * 2 - 0.3, '#5c5046', drawn);
     // A handle on the rim that travels with the disc: what you turn.
-    const hx = table.x + Math.sin(tableYaw + Math.PI / 2) * (R - 0.4),
-      hz = table.z + Math.cos(tableYaw + Math.PI / 2) * (R - 0.4);
+    const hx = table.x + Math.sin(drawn + Math.PI / 2) * (R - 0.4),
+      hz = table.z + Math.cos(drawn + Math.PI / 2) * (R - 0.4);
     batch.box(hx, tableY + 0.55, hz, 0.16, 1, 0.16, BRASS);
   }
   /**
@@ -613,6 +629,7 @@ export async function createRailwayRoundhouse(
     shunterA = t.shunter;
     deckK = t.k;
     tableYaw = deckK === null ? yaws[shed(wd).table]! : yaws[0]! + turnBy * deckK;
+    garageView.restore();
   }
   snap();
   const avatarBack = (pid: string, out: THREE.Vector3) => {
@@ -626,10 +643,12 @@ export async function createRailwayRoundhouse(
   const stallAt = { x: SHED_STALL.x / 100, z: SHED_STALL.z / 100 };
   return {
     restore: snap,
+    /** The garage's post is where the install is judged from: the plain post (boiler-install-view.ts) is not drawn. */
+    garageHere,
     update(dt: number) {
       later.update(dt);
       wd = adapter.read.world();
-      garageView?.update(dt, roomFacts(wd));
+      garageView.update(dt, roomFacts(wd));
       const sh = shed(wd);
       const open = !!(worksRow(wd).seams & SEAM_STALL);
       if (open && !slabOpen && pop < 0) solidSlab(false);
@@ -744,9 +763,19 @@ export async function createRailwayRoundhouse(
       const nearStall =
         Math.hypot(pos.x - stallAt.x, pos.z - stallAt.z) <= SHED_STALL.reach / 100 - 0.4 &&
         Math.abs(pos.y - SHED_STALL.y / 100) <= 2.6;
-      if (garageView && !garageView.isOpen() && Math.hypot(pos.x - garagePost.x, pos.z - garagePost.z) <= 2.6) {
+      // The garage's post. At today's table it keeps build 2's reach test (2.6 m of the post, inside the server's
+      // 6 m of the table less 0.4 m), and it is not offered while steel waits uninstalled: the plain Install prompt
+      // owns the post in that state until the garage's own Install lands (G3).
+      if (
+        !garageView.isOpen() &&
+        Math.hypot(pos.x - garagePost.x, pos.z - garagePost.z) <= 2.6 &&
+        (!garageHere ||
+          (Math.hypot(pos.x - anchor.x, pos.z - anchor.z) <= SHED_TABLE.reach / 100 - 0.4 &&
+            Math.abs(pos.y - SHED_TABLE.y / 100) <= 2.6))
+      ) {
         const facts = roomFacts(wd);
-        if (facts.boilerFitted)
+        const waits = garageHere && facts.steelHome && !facts.longFitted;
+        if (facts.boilerFitted && !waits && (facts.tableBusy || garageView.standing()))
           out.push({
             id: 'railway-garage',
             verb: facts.tableBusy ? 'The table’s busy' : 'Look at the engine',
@@ -817,6 +846,7 @@ export async function createRailwayRoundhouse(
       const w = new THREE.Vector3();
       pathAt(wagonA, w);
       return {
+        garageView: { ...garageView.inspect(), here: garageHere, post: garagePost, deckYaw: garageView.deckYaw() },
         slab: !slabOpen,
         slabSolid: !!slabBody,
         socketGhosts: socketGhosts.count,
