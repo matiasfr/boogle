@@ -326,3 +326,52 @@ and `run/p2-end-still.png`: both players and completed rails are visible, with T
 run reports drift and load, so timing/feel and device behavior remain unverified. Client controls remain deferred.
 [Current logs and provenance](../../.look/evidence/room-fast-forward-server/auth-evidence.json) supersede earlier
 admission evidence. No push or ship was run.
+
+### Fly-address and key-strength follow-up, 13 November
+
+The third review's two P2s were reproduced before the fix: the shared app-side forwarding hop exhausted a
+fresh operator's admission bucket, and `ADVANCE_KEY=x` left replacement enabled. Implementation `3f91ab99`
+on `codex/room-fast-forward-server-2` fixes both:
+
+- `server/src/replace.ts:27` resolves a valid `Fly-Client-IP` only with explicit `REPLACE_FLY_PROXY=1`.
+  `server/fly.toml:18` enables that trust for Fly's edge; local/dev defaults off. Missing/invalid headers use
+  the socket address. No `X-Forwarded-For` entry participates. This explicit deployment flag prevents a direct
+  local caller forging the Fly header; it must never be enabled on a directly exposed public listener.
+- `server/src/server.ts:211` disables replacement for a nonempty key shorter than 32 characters, with a warning
+  that contains no credential. Health and the game server stay available. The review's original startup-throw
+  expectation was adapted to the owner's explicit endpoint-off/server-healthy requirement.
+  `server/README.md:196` requires random generation (`openssl rand -base64 32`); length does not prove randomness.
+
+The remaining `req.ip` consumers below retain their existing behavior and can group unrelated clients with the
+same reproduced Fly chain and `trust proxy: 1`. They need a separate review; this branch changes only replacement
+address selection. The generic fallback is `server/src/server.ts:164`.
+
+| Location | Unchanged limiter or quota |
+| --- | --- |
+| `server/src/server.ts:310` | `POST /report` |
+| `server/src/server.ts:373` | Shared reads: `GET /reviews`, `/reviews/:id`, `/reviews/:id/:side` |
+| `server/src/server.ts:374` | `POST /reviews` upload; authentication precedes this limiter |
+| `server/src/server.ts:392` | `/playdata` submissions |
+| `server/src/server.ts:399` | `/jump` requests |
+| `server/src/playdata.ts:209` | New playdata sessions |
+| `server/src/jump.ts:272` | Per-address daily jump quota |
+
+WebSocket upgrade admission already uses the Fly header/socket rather than `req.ip`; it is unchanged.
+The prior 30/minute IP, separate 24/minute failed-auth and operator budgets, 1,024-address LRU and two-job/two-worker
+caps remain. No persisted shape, namespace, seat implementation or client control changed.
+
+Seven new regressions cover the Fly chain, spoofed forwarded headers, local forged Fly headers, missing/invalid
+headers, IPv6, short-key disable/health/warning and the 31/32-character boundary. Focused tests pass 22/22.
+Fresh full verification: check passes (1,794 tests and one existing train-wait TODO), server tests 283/283,
+direct test:net 191/191 (including replacement/restore and empty v41 seats), ship-check against `origin/main HEAD`
+438 assertions/43 affected test files, and registry pass. Independent review of this delta found no actionable
+issues; stamp **96ed47b183b4**.
+
+[Fresh T2 manifest](../../.look/evidence/1794611395530-97295/evidence.json) records unchanged, clean `3f91ab99`:
+both players finish, 192 common sampled hashes agree, no missed beats or graphics errors. Opened
+`run/end-still.png` and `run/p2-end-still.png`: both players, completed rails and T2-complete overlays are visible.
+This answers the rendering regression question, not the deferred replacement UI. The 3x run reports clock drift;
+real-time smoothness and device behavior remain unverified. Fly edge behavior is locally reproduced from the
+reviewer's chain and repo deployment configuration, not verified against a live deployment.
+[Current evidence and limiter inventory](../../.look/evidence/room-fast-forward-server/proxy-evidence.json)
+supersede earlier evidence for this delta. No push or ship was run.
