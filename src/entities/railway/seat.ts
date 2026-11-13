@@ -1,31 +1,23 @@
-// Authored resting places. Movement stays Owner; the lead assigns transient seats before anyone snaps in.
+// Authored resting places. Movement and pose stay Owner; the server owns transient seats, predicted on the press.
 // DESIGN: Cooperation is automatic, not negotiated; Start animation simple (owner, 5 November).
 import * as THREE from 'three/webgpu';
 import { PLAYER_R } from '../../constants.ts';
 import { onFrame } from '../../loop.ts';
 import { onPreStep, teleport } from '../../physics/engine.ts';
 import { carry, carryVerticalSpeed, fromPlatform, type Local, type Platform } from '../../physics/platforms.ts';
-import {
-  addHostField,
-  addPresenceField,
-  isLead,
-  net,
-  onNetState,
-  onPeerRemoved,
-  onRemotePresence,
-  onRoomReady,
-  remotes,
-} from '../../netplay/net.ts';
+import { addPresenceField, onPeerRemoved, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { me } from '../../player/player.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { pop } from '../../render/fanfare.ts';
-import { assignSeats, readGrants, seatVerdict, type Grants, type SeatRequest } from './seat-claims.ts';
 import { flat } from '../../render/flat.ts';
 import { merged } from '../../render/part-geometry.ts';
 import { MACHINE_CHAIR_SEAT } from './machine-model.ts';
 import type { Part } from '../../render/cosmetic-parts.ts';
 import { onRailwayCommands } from './state.ts';
-import { createSeatShadow } from './seat-shadow.ts';
+import { createSeatSession } from './seat-session.ts';
+import { seatViews, type SeatPose } from './seat-view.ts';
+import { railwayMirror } from '../../world/game-world.ts';
+import { recordSeats } from '../../adapters/seat-recording.ts';
 
 export type Seat = {
   id: string;
@@ -47,33 +39,29 @@ export type Seat = {
   available: () => boolean;
 };
 const seats: Seat[] = [];
-export type { SeatRequest } from './seat-claims.ts';
-let serial = 0;
-let request: SeatRequest | null = null;
 let sitting: Seat | null = null;
-let shadow: ReturnType<typeof createSeatShadow> | null = null;
-const requests = new Map<string, SeatRequest>();
+let claims: ReturnType<typeof createSeatSession> | null = null;
 const remoteSeats = new Map<string, Seat>();
-let grants: Grants = {};
-// Since the press, or since the lead last showed this sitter's grant: an unanswered sit steps off after a grace.
-let heardAt = 0;
+const remotePoses = new Map<string, SeatPose>();
+const occupants = railwayMirror?.seats;
+if (occupants) recordSeats(occupants);
 const pose: Local = { x: 0, y: 0, z: 0, yaw: 0 };
 const surfacePose: Local = { x: 0, y: 0, z: 0, yaw: 0 };
 // Local diagnostics only: retain the cause before a transient release destroys its evidence.
 let lastRelease: {
   reason: string;
   seat: string | null;
-  request: SeatRequest | null;
+  pending: ReturnType<ReturnType<typeof createSeatSession>['pending']>;
   platform: string | null;
   distance: number | null;
   at: number;
 } | null = null;
 function recordRelease(reason: string, distance: number | null = null) {
-  if (!sitting && !request) return;
+  if (!sitting) return;
   lastRelease = {
     reason,
     seat: sitting?.id ?? null,
-    request,
+    pending: claims?.pending() ?? null,
     platform: carry.on?.id ?? null,
     distance,
     at: performance.now(),
@@ -90,11 +78,16 @@ export function registerSeat(seat: Seat) {
   };
 }
 const find = (id: unknown) => (typeof id === 'string' ? seats.find((s) => s.id === id) : undefined);
-export const seated = () => sitting !== null || request !== null;
-/** Someone sits in this chair: this tab, or a rider the lead has granted it to. */
-export const seatHeld = (id: string) => sitting?.id === id || !!grants[id];
+export const seated = () => sitting !== null;
+/** Someone sits in this chair: this tab's prediction, or the authoritative server row. */
+export const seatHeld = (id: string) => sitting?.id === id || !!occupants?.occupant(id);
 /** Read-only capture diagnostics for pending claims versus actual sitting. */
-export const seatState = () => ({ request, sitting: sitting?.id ?? null, grants: { ...grants }, lastRelease });
+export const seatState = () => ({
+  pending: claims?.pending() ?? null,
+  sitting: sitting?.id ?? null,
+  occupants: Object.fromEntries(occupants?.rows().map(({ id, pid }) => [id, pid]) ?? []),
+  lastRelease,
+});
 const world = (s: Seat, exit = false, interpolated = false) => {
   const local = exit ? s.exit : s.at;
   if (!s.platform) return Object.assign(pose, local);
@@ -127,7 +120,7 @@ const reachable = (s: Seat) => {
 };
 function freeSeat() {
   return seats
-    .filter((s) => reachable(s) && !grants[s.id])
+    .filter((s) => reachable(s) && !seatHeld(s.id))
     .sort((a, b) => {
       const p = me.body!.position;
       const wa = { ...world(a) },
@@ -149,20 +142,29 @@ function seatChoices(s: Seat) {
   return { id: s.id, alt };
 }
 onRailwayCommands((session) => {
-  shadow?.dispose();
-  shadow = session ? createSeatShadow(session, performance.now.bind(performance)) : null;
-  if (sitting && me.body) shadow?.sit(seatChoices(sitting));
+  claims?.dispose();
+  claims =
+    session && occupants
+      ? createSeatSession(session, occupants, performance.now.bind(performance), {
+          move(id) {
+            const next = find(id);
+            if (next) occupy(next);
+            else standUp('seat missing');
+          },
+          taken: () => standUp('taken'),
+        })
+      : null;
+  if (sitting && me.body) claims?.sit(seatChoices(sitting));
 });
 export function sitDown(s = freeSeat()) {
   if (!s || !reachable(s) || seated()) return;
-  // Shadow only: ordered reachable alternatives. Receipts never change the lead's visible verdict.
-  shadow?.sit(seatChoices(s));
-  request = { id: s.id, ticket: ++serial };
-  heardAt = performance.now();
-  // Sit on the press, everywhere (instant feedback). In a live room the lead's grants then confirm the chair, move the
-  // sitter to the free neighbour of a chair someone else won, or step them off onto its exit (seatVerdict).
+  const choices = seatChoices(s);
+  // Sit on the press; the receipt only corrects a contested chair, never repeats the predicted effect.
   occupy(s);
-  if (sitting) pop(2, 0.35);
+  if (sitting) {
+    pop(2, 0.35);
+    claims?.sit(choices);
+  }
 }
 function occupy(s: Seat) {
   // Sliding over to a neighbour on the same deck is always allowed: a seated capsule rides above the deck support.
@@ -176,12 +178,12 @@ function occupy(s: Seat) {
   me.body.velocity.set(carry.x, carry.y, carry.z);
 }
 function standUp(reason = 'stand input') {
-  if (sitting || request) shadow?.stand();
   recordRelease(reason);
   const s = sitting;
   sitting = null;
   carry.seat = null;
-  request = null;
+  // A taken sit owns no chair. All other exits free our server row, including a correction we cannot display.
+  if (s && reason !== 'taken') claims?.stand();
   if (!s || !me.body) return;
   if (reason === 'stand input' || reason === 'jump input') pop(1, 0.3);
   const p = world(s, true);
@@ -202,83 +204,23 @@ export function withSeatTargets(others: Interactable[]): Interactable[] {
   if (!seat) return others;
   return [...others, { id: 'place-sit', verb: 'Sit', at: promptAt, r: -100, run: () => sitDown(seat) }];
 }
-function assign() {
-  if (net.myPeer) {
-    if (request) requests.set(net.myPeer, request);
-    else requests.delete(net.myPeer);
-  }
-  grants = assignSeats(grants, requests, seats);
-  return grants;
-}
-addPresenceField('placeSeatRequest', () => request);
 addPresenceField('placeSeatPose', () => sitting?.id ?? null);
-addHostField('placeSeatGrants', assign, (value) => {
-  if (isLead()) return;
-  grants = readGrants(value, (id) => !!find(id));
-});
 onRemotePresence((r, pr) => {
-  const raw = pr.placeSeatRequest;
-  const req = raw && typeof raw === 'object' ? (raw as Partial<SeatRequest>) : null;
-  const s = find(req?.id);
-  if (s && r.entered && Number.isSafeInteger(req?.ticket) && req!.ticket! > 0)
-    requests.set(r.peer, { id: s.id, ticket: req!.ticket! });
-  else requests.delete(r.peer);
   const seated = find(pr.placeSeatPose);
-  if (seated && grants[seated.id]?.peer === r.peer && r.avatar) {
-    r.avatar.userData.seatedAt = performance.now();
-    r.avatar.userData.seatRise = seatRise(seated);
-    r.avatar.userData.seatAhead = seatAhead(seated);
-    remoteSeats.set(r.peer, seated);
-  } else remoteSeats.delete(r.peer);
+  if (seated && r.pid) remotePoses.set(r.peer, { id: seated.id, pid: r.pid, at: performance.now() });
+  else remotePoses.delete(r.peer);
 });
 onPeerRemoved((r) => {
-  requests.delete(r.peer);
   remoteSeats.delete(r.peer);
-  for (const id of Object.keys(grants)) if (grants[id]?.peer === r.peer) delete grants[id];
+  remotePoses.delete(r.peer);
 });
-const reset = () => {
-  standUp('network state');
-  requests.clear();
-  remoteSeats.clear();
-  grants = {};
-};
-onNetState((state, prev) => {
-  if (state !== 'live' || prev !== 'live') reset();
-});
-onRoomReady((room) =>
-  room.onLeadChange(() => {
-    standUp('lead change');
-  }),
-);
 onPreStep(
   () => {
-    shadow?.update();
-    if (request && me.jumpQueued > 0) {
+    claims?.update();
+    if (sitting && me.jumpQueued > 0) {
       me.jumpQueued = 0;
       standUp('jump input');
       return;
-    }
-    if (request && net.myPeer && net.state === 'live') {
-      const now = performance.now();
-      if (Object.values(grants).some((g) => g.peer === net.myPeer && g.ticket === request!.ticket)) heardAt = now;
-      if (!sitting) {
-        // A sitter whose chair was released underneath them (seat unavailable) waits for nothing: drop the claim.
-        recordRelease('no chair');
-        shadow?.stand();
-        request = null;
-      } else {
-        const verdict = seatVerdict({
-          grants,
-          peer: net.myPeer,
-          ticket: request.ticket,
-          sitting: sitting.id,
-          seats,
-          waitedMs: now - heardAt,
-        });
-        if (verdict.kind === 'release') return standUp('claim lost');
-        const next = verdict.kind === 'move' ? find(verdict.id) : undefined;
-        if (next) occupy(next);
-      }
     }
     const s = sitting,
       b = me.body;
@@ -286,10 +228,9 @@ onPreStep(
     const p = world(s);
     if (!s.available()) {
       recordRelease('seat unavailable', Math.hypot(p.x - b.position.x, p.y - b.position.y, p.z - b.position.z));
-      shadow?.stand();
+      claims?.stand();
       sitting = null;
       carry.seat = null;
-      request = null;
       return;
     }
     // A deck that jumps (a restored or caught-up machine snaps to its accepted place) carries its sitter along:
@@ -308,8 +249,20 @@ onPreStep(
   { order: 21 },
 );
 onFrame(
-  () => {
+  ({ now }) => {
     if (sitting) me.yaw = world(sitting, false, true).yaw;
+    // Set the animation input before remote-player poses its rig in the update phase. A quiet Owner stream
+    // must not expire a confirmed seated animation while the server keeps the chair through reconnect grace.
+    const drawn = seatViews(occupants?.rows() ?? [], [...remotePoses.values()], now, sitting?.id ?? null);
+    remoteSeats.clear();
+    for (const r of remotes.values()) {
+      const seat = find(r.pid ? drawn.get(r.pid) : undefined);
+      if (seat) remoteSeats.set(r.peer, seat);
+      if (!r.avatar) continue;
+      r.avatar.userData.seatedAt = seat ? now : -Infinity;
+      r.avatar.userData.seatRise = seat ? seatRise(seat) : 0;
+      r.avatar.userData.seatAhead = seat ? seatAhead(seat) : 0;
+    }
   },
   { phase: 'world', order: 100 },
 );
@@ -325,8 +278,8 @@ onFrame(
     for (const r of remotes.values()) {
       if (!r.avatar) continue;
       const seat = remoteSeats.get(r.peer);
-      if (seat?.anchorView && grants[seat.id]?.peer === r.peer) drawAtSeat(r.avatar, seat);
-      if (performance.now() - (r.avatar.userData.seatedAt ?? -1e9) < 200) {
+      if (seat) {
+        drawAtSeat(r.avatar, seat);
         const inner = r.avatar.userData.inner as THREE.Object3D | undefined;
         if (inner) inner.position.y -= SEATED_DROP;
       }

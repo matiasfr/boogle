@@ -1,22 +1,22 @@
 {
   "id": "seats",
   "title": "Two friends find a seat",
-  "kind": "host",
+  "kind": "lock",
   "order": 81,
   "steps": [
     {
-      "go": [["you.input", "you.features", "lane:owner", "fr.netplay"]],
-      "text": "Interact requests an authored chair with a fresh ticket. The avatar waits for a grant instead of snapping into a contested seat.",
-      "cite": [{ "presence": "placeSeatRequest" }, { "file": "src/entities/railway/seat.ts" }]
+      "go": [["you.input", "you.features", "you.world"]],
+      "text": "Interact sits immediately and sends seat.sit with the nearest reachable alternatives. A queued request is prediction, not confirmation.",
+      "cite": [{ "file": "src/entities/railway/seat.ts" }]
     },
     {
-      "go": [["fr.netplay", "lane:host", "you.features"]],
-      "text": "The lead keeps existing occupants and assigns each remaining chair once. Two requests for the same chair may receive different chairs in that group.",
-      "cite": [{ "hostField": "placeSeatGrants" }]
+      "hl": ["you.world", "fr.world"],
+      "text": "The server keeps one chair per player, never displaces a sitter, and grants the first free chair in request order. Every tab mirrors the same transient seat rows; a loser slides to a free neighbour or steps off if all are taken. A rate refusal holds the prediction and retries.",
+      "cite": [{ "file": "src/world/rules/seats.ts" }, { "file": "src/world/seat-replicate.ts" }]
     },
     {
       "go": [["you.features", "lane:owner", "fr.screen"]],
-      "text": "Movement remains Owner-driven in the platform frame. Presence supplies the seated pose; Jump or Interact moves the rider to the authored exit and releases the claim. Seats are never saved.",
+      "text": "Movement remains Owner-driven in the platform frame. The server row and Owner presence must both name a friend's chair before it draws their seated pose. Jump or Interact stands immediately; reconnects re-claim with alternatives once a second. Seats are never saved.",
       "cite": [{ "presence": "placeSeatPose" }, { "file": "src/entities/railway/seat.ts" }]
     }
   ]

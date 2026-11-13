@@ -3,6 +3,7 @@
 // pair on the bench. Short: a hang is not retried.
 // npm run look -- --players 2 --rail-seed trains-on --query shot=play --eval dev/look/evals/railway-passenger-car-two.ts \
 //   --until window.__placeDone --wall 240 --name passenger-car-two
+// Add &seatQuiet=1 with --real: player 1 pauses presence through capture; player 2 proves 3 s of silence while seated.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { inspectRailway, railRead, rw, trains } = (await import(
   '/dev/look/rail-read.ts' as string
@@ -19,6 +20,9 @@ const { seatState, withSeatTargets } = (await import(
   '/src/entities/railway/seat.ts' as string
 )) as typeof import('../../../src/entities/railway/seat.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
+const { railwayCommands } = (await import(
+  '/src/entities/railway/state.ts' as string
+)) as typeof import('../../../src/entities/railway/state.ts');
 
 type Halt = { x: number; z: number; up: boolean; lever: { dir: number; on: boolean; x: number; z: number }[] };
 type View = { halts: Halt[]; trains: { cars: { x: number; z: number; riding: boolean }[] }[] };
@@ -33,7 +37,12 @@ const standsUp = () => {
   if (k !== undefined) slot = k;
   return k !== undefined;
 };
-const player = new URLSearchParams(location.search).get('player');
+const query = new URLSearchParams(location.search);
+const player = query.get('player');
+const confirmed = () => {
+  const s = seatState();
+  return !!s.sitting && s.occupants[s.sitting] === railRead()?.pid;
+};
 const shot = window as Window & { __placeDone?: boolean };
 const bot = makeBot({
   recover: () => {
@@ -78,13 +87,48 @@ background(
     await until(() => interactTarget()?.id === 'place-sit', 'Sit offered', 30000);
     bot.press();
     await until(() => seatState().sitting, 'seated', 10000);
+    await until(confirmed, 'server confirms the chair', 10000);
     console.log(`SEATED ${player} ${seatState().sitting}`);
     await until(() => me.avatar && window.boogle.remotes.size > 0, 'sees the partner', 30000);
     await bot.wait(4000);
-    if (player === '1' && new URLSearchParams(location.search).has('seatShadowReview')) {
-      const { railwayCommands } = (await import(
-        '/src/entities/railway/state.ts' as string
-      )) as typeof import('../../../src/entities/railway/state.ts');
+    await until(
+      () =>
+        Object.keys(seatState().occupants).filter((id) => id.startsWith(`railway:train${slot}-1-seat`)).length === 2,
+      'both server rows name this bench',
+      30000,
+    );
+    await until(
+      () =>
+        [...window.boogle.remotes.values()].some(
+          (r) => r.avatar && performance.now() - (r.avatar.userData.seatedAt ?? -1e9) < 300,
+        ),
+      'the partner is drawn seated',
+      30000,
+    );
+    if (player === '2' && query.has('seatContest')) {
+      const session = railwayCommands()!;
+      const own = seatState().sitting!;
+      const other = Object.entries(seatState().occupants).find(([, pid]) => pid !== session.read.pid)!;
+      let accepted = false;
+      const off = session.onAccepted((e) => {
+        if (e.op === 'seat.sit' && e.request === request) accepted = true;
+      }, 'command');
+      // Deliberately ask for the already held chair through the real command boundary. Its current sitter wins;
+      // the requesting rider's existing reachable neighbour is the fallback. Host tests cover simultaneous presses.
+      const request = session.act('seat.sit', { id: other[0], alt: [own] });
+      try {
+        check(request, 'contested seat command queued');
+        await until(() => accepted, 'contested seat returns the free alternate', 10000);
+        check(confirmed() && seatState().sitting === own, 'loser remains in the alternate chair');
+        check(seatState().occupants[other[0]] === other[1], 'the first sitter is never displaced');
+        console.log(
+          `SEAT CONTEST wanted=${other[0]} alternate=${own} occupants=${JSON.stringify(seatState().occupants)}`,
+        );
+      } finally {
+        off();
+      }
+    }
+    if (player === '1' && query.has('seatRateReview')) {
       const session = railwayCommands()!;
       let rates = 0,
         accepted = 0;
@@ -107,9 +151,9 @@ background(
         check(seatState().sitting, 'rapid re-sit stays visibly seated on the press');
         await until(() => rates === 1, 'rate refusal heard', 10000);
         check(seatState().sitting, 'rate refusal never stands the player up');
-        await until(() => accepted === 2, 'shadow re-sit accepted after retry', 10000);
+        await until(() => accepted === 2 && confirmed(), 're-sit accepted in the server row after retry', 10000);
         check(seatState().sitting, 'retry preserves the seated pose');
-        console.log(`SEAT SHADOW REVIEW rates=${rates} accepted=${accepted} sitting=${seatState().sitting}`);
+        console.log(`SEAT RATE REVIEW rates=${rates} accepted=${accepted} sitting=${seatState().sitting}`);
       } finally {
         for (const stop of off) stop();
       }
@@ -122,6 +166,36 @@ background(
     aim();
     setInterval(aim, 16);
     await bot.wait(1500);
+    if (query.has('seatQuiet')) {
+      if (player === '1') {
+        const { net } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
+        net.lastSend = Infinity; // Only this test page's periodic presence; the socket and server row stay live.
+        await bot.wait(3500);
+        console.log('SEAT QUIET sender presence paused through capture');
+      } else {
+        const friend = [...window.boogle.remotes.values()][0]!;
+        let last = friend.lastT;
+        let quietSince = performance.now();
+        await until(
+          () => {
+            if (friend.lastT !== last) {
+              last = friend.lastT;
+              quietSince = performance.now();
+            }
+            return performance.now() - quietSince >= 3100;
+          },
+          'partner presence is quiet for at least 3 s',
+          15000,
+        );
+        const row = Object.entries(seatState().occupants).find(([, pid]) => pid === friend.pid);
+        check(row && friend.avatar, 'quiet partner retains its server chair and avatar');
+        const poseAge = performance.now() - friend.avatar!.userData.seatedAt!;
+        check(poseAge < 200, 'quiet partner is still drawn seated');
+        console.log(
+          `SEAT QUIET watcher silence=${performance.now() - quietSince}ms poseAge=${poseAge}ms seat=${row![0]}`,
+        );
+      }
+    }
     shot.__placeDone = true;
   })(),
   'passenger-car-two look',

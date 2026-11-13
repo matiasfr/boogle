@@ -6,101 +6,290 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { assignSeats, type Grants, type SeatRequest } from '../../src/entities/railway/seat-claims.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 import { fixture as adapterFixture } from './helpers/rail-tune.ts';
-import { createSeatShadow } from '../../src/entities/railway/seat-shadow.ts';
+import { createSeatSession } from '../../src/entities/railway/seat-session.ts';
+import type { SeatSit } from '../../src/sim/seats.ts';
 
-test('review: sit-stand-sit 100 ms apart recovers the shadow row within 1 second', async (t) => {
+type AdapterFixture = Awaited<ReturnType<typeof adapterFixture>>;
+function rider(t: TestContext, f: AdapterFixture, client: ReturnType<AdapterFixture['join']>) {
+  let sitting: string | null = null;
+  let taken = 0;
+  const moves: string[] = [];
+  const session = createSeatSession(client.adapter, client.mirror.seats, f.now, {
+    move(id) {
+      moves.push(id);
+      sitting = id;
+    },
+    taken() {
+      taken++;
+      sitting = null;
+    },
+  });
+  t.after(() => session.dispose());
+  return {
+    session,
+    moves,
+    sitting: () => sitting,
+    taken: () => taken,
+    sit(fields: SeatSit) {
+      sitting = fields.id; // presentation is predicted on the press, before any server reply
+      session.sit(fields);
+    },
+    stand() {
+      sitting = null;
+      session.stand();
+    },
+    run(n: number) {
+      for (let i = 0; i < n; i++) {
+        f.run();
+        session.update();
+      }
+    },
+  };
+}
+
+test('sit-stand-sit 100 ms apart holds the predicted seat on rate and reclaims within one reconcile', async (t) => {
   const f = await adapterFixture(t);
   const a = f.join('alice');
-  const shadow = createSeatShadow(a.adapter, f.now);
-  t.after(() => shadow.dispose());
-  const run = (n: number) => {
-    for (let k = 0; k < n; k++) {
-      f.run();
-      shadow.update();
-    }
-  };
+  const r = rider(t, f, a);
   f.run(3);
-  shadow.sit({ id: 'chair' });
+  r.sit({ id: 'chair' });
+  assert.equal(r.sitting(), 'chair');
+  assert.equal(a.mirror.seats.seatOf('alice'), null, 'press does not wait for a receipt');
   f.run(1);
-  shadow.stand();
+  r.stand();
+  assert.equal(r.sitting(), null, 'stand does not wait for a receipt');
   f.run(1);
   f.advanceTime(66);
-  shadow.sit({ id: 'chair' });
+  r.sit({ id: 'chair' });
   f.run(1);
   assert.equal(a.refused.at(-1)?.reason, 'rate');
-  run(70);
+  assert.equal(r.sitting(), 'chair', 'rate never steps the predicted rider off');
+  assert.equal(r.taken(), 0);
+  assert.equal(r.session.pending(), null);
+  r.run(60);
+  assert.equal(a.mirror.seats.seatOf('alice'), 'chair');
   assert.deepEqual(f.host.status().seats, [{ id: 'chair', pid: 'alice' }]);
   const sent = a.edits.length;
-  run(180);
-  assert.equal(a.edits.length, sent, 'accepted receipt stops shadow retries');
-  console.log('Rapid re-sit: rate refused at 100 ms; reclaimed after one 1000 ms retry; retries stop on acceptance');
+  r.run(180);
+  assert.equal(a.edits.length, sent, 'matching accepted row stops retries');
 });
 
-test('shadow retries a full request window with its alternates; taken stops without sending a stand', async (t) => {
+test('full-window retry retains ordered alternates; only taken steps the loser off', async (t) => {
   const f = await adapterFixture(t);
   const a = f.join('alice'),
     b = f.join('bob');
-  const shadow = createSeatShadow(a.adapter, f.now);
-  t.after(() => shadow.dispose());
-  const run = (n: number) => {
-    for (let i = 0; i < n; i++) {
-      f.run();
-      shadow.update();
-    }
-  };
-  run(70);
+  const r = rider(t, f, a);
+  r.run(70);
   assert.equal(a.edits.length, 0, 'startup does not send an unsolicited stand');
   b.adapter.act('seat.sit', { id: 'chair' });
   f.run(2);
   for (let i = 0; i < 8; i++) a.adapter.act('tune.set', { key: 'railRegrowMinutes', v: 30 + i });
-  shadow.sit({ id: 'chair', alt: ['next'] });
+  r.sit({ id: 'chair', alt: ['nearest', 'farther'] });
   assert.equal(
     a.edits.some((e) => e.op === 'seat.sit'),
     false,
     'the full window refused queuing',
   );
-  run(70);
-  assert.ok(f.host.status().seats.some((r) => r.pid === 'alice' && r.id === 'next'));
-  assert.deepEqual(a.edits.find((e) => e.op === 'seat.sit')?.alt, ['next']);
-  shadow.stand();
-  run(2);
-  shadow.sit({ id: 'chair' });
-  run(70);
+  r.run(70);
+  assert.equal(r.sitting(), 'nearest');
+  assert.ok(f.host.status().seats.some((row) => row.pid === 'alice' && row.id === 'nearest'));
+  assert.deepEqual(a.edits.find((e) => e.op === 'seat.sit')?.alt, ['nearest', 'farther']);
+  r.stand();
+  r.run(30);
+  r.sit({ id: 'chair' });
+  r.run(70);
   assert.equal(a.refused.at(-1)?.reason, 'taken');
+  assert.equal(r.sitting(), null);
+  assert.equal(r.taken(), 1);
   const sent = a.edits.length;
-  run(180);
-  assert.equal(a.edits.length, sent, 'taken ends this claim without standing the visible sitter');
+  r.run(180);
+  assert.equal(a.edits.length, sent, 'taken ends the claim, without a redundant stand');
   assert.deepEqual(f.host.status().seats, [{ id: 'chair', pid: 'bob' }]);
 });
 
-test('shadow reclaims after a whole reconnect mirror and disposes its receipt listeners', async (t) => {
+test('ordinary refused validation holds prediction rather than treating it as taken', async (t) => {
   const f = await adapterFixture(t);
   const a = f.join('alice');
-  const shadow = createSeatShadow(a.adapter, f.now);
-  const run = (n: number) => {
-    for (let i = 0; i < n; i++) {
-      f.run();
-      shadow.update();
+  const r = rider(t, f, a);
+  r.run(3);
+  r.sit({ id: 'invalid chair' });
+  r.run(2);
+  assert.equal(a.refused.at(-1)?.reason, 'refused');
+  assert.equal(r.sitting(), 'invalid chair');
+  assert.equal(r.taken(), 0);
+});
+
+for (const state of ['storage', 'full'])
+  test(`${state} refusal never converts an unknown outcome into a taken seat`, async (t) => {
+    const f = await adapterFixture(t);
+    const a = f.join('alice');
+    const r = rider(t, f, a);
+    r.run(3);
+    r.sit({ id: 'chair' });
+    const pending = r.session.pending()!;
+    a.hear({ t: 'r:state', to: 'alice', state, ...pending });
+    assert.equal(a.refused.at(-1)?.reason, state === 'storage' ? 'storage' : 'unknown');
+    assert.equal(r.sitting(), 'chair');
+    assert.equal(r.taken(), 0);
+  });
+
+test('a late taken receipt for an earlier sit cannot unseat a newer prediction', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice'),
+    b = f.join('bob');
+  const r = rider(t, f, a);
+  r.run(3);
+  b.adapter.act('seat.sit', { id: 'chair' });
+  f.run(3);
+  r.sit({ id: 'chair' });
+  r.stand();
+  r.sit({ id: 'other' });
+  r.run(3);
+  assert.equal(a.refused.find((e) => e.op === 'seat.sit')?.reason, 'taken');
+  assert.equal(r.sitting(), 'other');
+  assert.equal(r.taken(), 0);
+  assert.equal(a.mirror.seats.seatOf('alice'), 'other');
+});
+
+test('the third player at a two-stool machine steps off without displacing either sitter', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice'),
+    b = f.join('bob'),
+    c = f.join('charlie');
+  const r = rider(t, f, c);
+  r.run(3);
+  const choices = { id: 'machine-deck-0', alt: ['machine-deck-1'] };
+  a.adapter.act('seat.sit', choices);
+  b.adapter.act('seat.sit', choices);
+  r.sit(choices);
+  r.run(3);
+  assert.equal(r.sitting(), null);
+  assert.equal(r.taken(), 1);
+  assert.equal(c.mirror.seats.seatOf('alice'), 'machine-deck-0');
+  assert.equal(c.mirror.seats.seatOf('bob'), 'machine-deck-1');
+  assert.equal(c.mirror.seats.seatOf('charlie'), null);
+});
+
+test('a confirmed or unanswered seat stays predicted through its own reconnect', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice');
+  const r = rider(t, f, a);
+  r.run(3);
+  r.sit({ id: 'chair', alt: ['next'] });
+  a.disconnect(); // queued request never reached the server
+  r.run(20);
+  assert.equal(r.sitting(), 'chair');
+  a.reconnect();
+  r.run(90);
+  assert.equal(r.sitting(), 'chair');
+  assert.equal(a.mirror.seats.seatOf('alice'), 'chair');
+  assert.equal(r.session.pending(), null, 'old epoch request cannot block reconciliation');
+  const sent = a.edits.length;
+  a.disconnect();
+  r.run(60); // one second, inside the real hosted-room's 1.5 s grace
+  assert.equal(r.sitting(), 'chair');
+  a.reconnect();
+  r.run(90);
+  assert.equal(r.sitting(), 'chair');
+  assert.equal(a.mirror.seats.seatOf('alice'), 'chair');
+  assert.equal(a.edits.length, sent, 'a retained row needs no second claim');
+  assert.equal(r.taken(), 0);
+});
+
+test('reclaim after departure sends alternatives when a friend took the chair in the gap', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice'),
+    b = f.join('bob');
+  const r = rider(t, f, a);
+  r.run(3);
+  r.sit({ id: 'chair', alt: ['nearest', 'farther'] });
+  r.run(3);
+  a.disconnect();
+  f.host.depart('alice'); // the host calls this only after its socket grace
+  f.advanceTime(1600);
+  b.adapter.act('seat.sit', { id: 'chair' });
+  f.run(3);
+  a.reconnect();
+  r.run(90);
+  assert.equal(r.sitting(), 'nearest');
+  assert.equal(r.taken(), 0);
+  assert.equal(a.mirror.seats.seatOf('bob'), 'chair', 'the friend is never displaced');
+  assert.deepEqual(a.edits.filter((e) => e.op === 'seat.sit').at(-1)?.alt, ['nearest', 'farther']);
+});
+
+for (const occupied of [false, true])
+  test(`actual restart keeps prediction and ${occupied ? 'slides around a friend' : 'reclaims the same seat'}`, async (t) => {
+    const f = await adapterFixture(t);
+    const a = f.join('alice'),
+      b = f.join('bob');
+    const r = rider(t, f, a);
+    r.run(3);
+    r.sit({ id: 'chair', alt: ['nearest', 'farther'] });
+    r.run(3);
+    const oldHost = f.host;
+    await f.restart();
+    assert.notEqual(f.host, oldHost);
+    assert.deepEqual(f.host.status().seats, [], 'no transient seat survives a real host restart');
+    assert.equal(r.sitting(), 'chair', 'restart does not undo the local sitting pose');
+    if (occupied) {
+      b.reconnect();
+      f.run(3);
+      b.adapter.act('seat.sit', { id: 'chair' });
+      f.run(3);
     }
-  };
-  run(3);
-  shadow.sit({ id: 'chair', alt: ['next'] });
-  run(3);
+    a.reconnect();
+    r.run(100);
+    assert.equal(r.sitting(), occupied ? 'nearest' : 'chair');
+    assert.equal(a.mirror.seats.seatOf('alice'), r.sitting());
+    assert.equal(r.taken(), 0);
+    assert.deepEqual(a.edits.filter((e) => e.op === 'seat.sit').at(-1)?.alt, ['nearest', 'farther']);
+    assert.equal(a.edits.filter((e) => e.op === 'seat.sit').length, 2);
+  });
+
+test('a taken reclaim steps off; a disposed controller never reclaims', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice'),
+    b = f.join('bob');
+  const r = rider(t, f, a);
+  r.run(3);
+  r.sit({ id: 'chair' });
+  r.run(3);
+  await f.restart();
+  b.reconnect();
+  f.run(3);
+  b.adapter.act('seat.sit', { id: 'chair' });
+  f.run(3);
+  a.reconnect();
+  r.run(100);
+  assert.equal(r.sitting(), null);
+  assert.equal(r.taken(), 1);
+  r.sit({ id: 'other' });
+  r.run(3);
+  r.session.dispose();
   a.disconnect();
   f.host.rules.seats.clear();
   a.reconnect();
-  run(100);
-  assert.deepEqual(f.host.status().seats, [{ id: 'chair', pid: 'alice' }]);
-  assert.equal(a.edits.filter((e) => e.op === 'seat.sit').length, 2);
-  shadow.dispose();
-  a.disconnect();
-  f.host.rules.seats.clear();
-  a.reconnect();
-  run(100);
+  f.run(100);
   assert.deepEqual(f.host.status().seats, [], 'disposed helper does not react to later resets');
+});
+
+test('a stand lost during reconnect is immediate locally and reconciles the retained row away', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice');
+  const r = rider(t, f, a);
+  r.run(3);
+  r.sit({ id: 'chair' });
+  r.run(3);
+  a.disconnect();
+  r.stand();
+  assert.equal(r.sitting(), null);
+  a.reconnect();
+  r.run(90);
+  assert.equal(a.mirror.seats.seatOf('alice'), null);
+  assert.equal(r.sitting(), null);
+  assert.equal(r.taken(), 0);
 });
 
 test('existing roster, rail tuning and railway refusals retain their reasons and session behavior', async (t) => {
@@ -147,8 +336,6 @@ async function fixture(t: TestContext) {
   const store = createStore({ dataDir: dir, maxRooms: 1 });
   await store.init();
   let now = 1800000000000;
-  let lead: { id: string; pid: string }[] | null = null;
-  const logs: unknown[][] = [];
   const pids = new Map([
     ['a', 'alice'],
     ['b', 'bob'],
@@ -161,8 +348,6 @@ async function fixture(t: TestContext) {
     tick: false,
     now: () => now,
     pidOf: (sid) => pids.get(sid) ?? null,
-    shadowSeats: () => lead,
-    log: (...args) => logs.push(args),
   });
   t.after(async () => {
     await host.close();
@@ -198,10 +383,6 @@ async function fixture(t: TestContext) {
     send,
     step,
     open,
-    logs,
-    lead: (rows: typeof lead) => {
-      lead = rows;
-    },
   };
 }
 
@@ -284,38 +465,4 @@ test('a replacement session keeps its seat; departure and pause release transien
   f.send('b', { op: 'seat.sit', id: 'chair' });
   f.host.pause();
   assert.deepEqual(f.host.status().seats, []);
-});
-
-test('two-player shadow agrees after each lead sit/stand, and logs/counts a stable mismatch', async (t) => {
-  const f = await fixture(t);
-  const requests = new Map<string, SeatRequest>();
-  const chairs = ['chair', 'next'].map((id) => ({ id, group: 'bench', available: () => true }));
-  let grants: Grants = {};
-  const compare = () => {
-    grants = assignSeats(grants, requests, chairs);
-    f.lead(Object.entries(grants).map(([id, g]) => ({ id, pid: g.peer === 'a' ? 'alice' : 'bob' })));
-    f.step(100);
-    f.step(500);
-  };
-  requests.set('a', { id: 'chair', ticket: 1 });
-  f.send('a', { op: 'seat.sit', id: 'chair', alt: ['next'] });
-  compare();
-  requests.set('b', { id: 'chair', ticket: 1 });
-  f.send('b', { op: 'seat.sit', id: 'chair', alt: ['next'] });
-  compare();
-  requests.delete('a');
-  f.send('a', { op: 'seat.stand' });
-  compare();
-  requests.delete('b');
-  f.send('b', { op: 'seat.stand' });
-  compare();
-  assert.deepEqual(f.host.status().seatShadow, { checks: 4, agreements: 4, mismatches: 0 });
-  f.lead([{ id: 'chair', pid: 'alice' }]);
-  f.step(100);
-  f.step(500);
-  assert.deepEqual(f.host.status().seatShadow, { checks: 5, agreements: 4, mismatches: 1 });
-  assert.equal(f.logs.filter((args) => String(args[0]).includes('seat shadow mismatch')).length, 1);
-  f.step(1000);
-  assert.equal(f.host.status().seatShadow.mismatches, 1, 'unchanged mismatch is not logged every tick');
-  console.log('Seat shadow: 4/4 agreement checkpoints; 1 injected mismatch logged/counted');
 });

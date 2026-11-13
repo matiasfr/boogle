@@ -22,6 +22,7 @@ import { createRailwayWorld, Rail, RAIL_COMPONENTS, RAIL_REPLICATED } from '../s
 import { clockWorld, cloneWorld } from '../sim/railway-queries.ts';
 
 import { CLASSIC_SCHEMAS, createClassicMirror, createRosterMirror } from './classic-replicate.ts';
+import { SEAT, createSeatMirror } from './seat-replicate.ts';
 
 export const RAIL_SCHEMAS = RAIL_REPLICATED;
 /** The components whose writes are marked (the replicated ones, and any other tracked one a spawn fills). */
@@ -30,9 +31,10 @@ const TRACKED = RAIL_COMPONENTS.filter((c) => c.track);
 /** Client: the mirror, the ingest world its packets write, and the confirmed world it publishes. Until a whole state
  * has arrived the confirmed world is a fresh railway (actions wait for it anyway). */
 export function createRailwayMirror() {
-  const mirror = createMirror([...RAIL_SCHEMAS, ...CLASSIC_SCHEMAS]);
+  const mirror = createMirror([...RAIL_SCHEMAS, ...CLASSIC_SCHEMAS, SEAT]);
   const tune = createClassicMirror(mirror);
   const roster = createRosterMirror(mirror);
+  const seats = createSeatMirror(mirror);
   let world = clockWorld(createWorld(RAIL_COMPONENTS));
   let published: World = clockWorld(createRailwayWorld());
   let synced = false;
@@ -66,6 +68,7 @@ export function createRailwayMirror() {
     mirror,
     tune,
     roster,
+    seats,
     /** The confirmed world: the last published clone (a fresh railway before the first whole state). Never written:
      * the predictor clones it, views read it. It stays through a refill and a reset until the next whole state. */
     confirmed: () => published,
@@ -77,7 +80,7 @@ export function createRailwayMirror() {
     hash() {
       if (hashAt === mirror.stats.applied) return hashed;
       let h = 2166136261;
-      for (const schema of [...RAIL_SCHEMAS, ...CLASSIC_SCHEMAS]) {
+      for (const schema of [...RAIL_SCHEMAS, ...CLASSIC_SCHEMAS, SEAT]) {
         const rows = [...mirror.entries(schema.kind)].sort(([a], [b]) => (String(a) < String(b) ? -1 : 1));
         const text = JSON.stringify(rows.map(([id, f]) => [id, schema.names.map((n) => f[n])]));
         for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);

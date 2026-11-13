@@ -18,6 +18,9 @@ const { interactTarget } = (await import(
 const { seatState } = (await import(
   '/src/entities/railway/seat.ts' as string
 )) as typeof import('../../../src/entities/railway/seat.ts');
+const { railwayWorldRead } = (await import(
+  '/src/entities/railway/state.ts' as string
+)) as typeof import('../../../src/entities/railway/state.ts');
 const query = new URLSearchParams(location.search);
 const view = query.get('chair') ?? 'front';
 const sit = Number(query.get('sit') ?? 0);
@@ -76,12 +79,20 @@ background(
       await until(() => interactTarget()?.verb === 'Sit', 'Sit offered at the chair');
       interact();
       await until(() => seatState().sitting, 'seated on the press');
+      await until(
+        () => seatState().occupants[seatState().sitting!] === railwayWorldRead()?.pid,
+        'server confirms the chair',
+      );
       await wait(1500);
       say('seated');
       if (sit === 2) {
         await until(() => interactTarget()?.verb === 'Stand up', 'Stand up offered');
         interact();
-        await until(() => !seatState().sitting && !seatState().request, 'stood up on the press');
+        await until(() => !seatState().sitting, 'stood up on the press');
+        await until(
+          () => !Object.values(seatState().occupants).includes(railwayWorldRead()!.pid),
+          'server releases the chair',
+        );
         await wait(1500);
         say('stood');
       }

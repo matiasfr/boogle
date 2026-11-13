@@ -384,6 +384,71 @@ test('the prediction window caps unconfirmed actions; a new session retires the 
   assert.deepEqual(p.act(1), [4, 1]);
 });
 
+test('idle hash samples share the server step after staggered joins, backpressure and resync', () => {
+  const w = toyWorld(3);
+  w.rep.touchAll('tree');
+  w.rep.touchAll('room');
+  w.rep.commit(17);
+  const mirrors = new Map(['a', 'b'].map((cid) => [cid, createMirror([treeSchema, roomSchema])]));
+  const hashes = new Map(['a', 'b'].map((cid) => [cid, [] as number[]]));
+  const pump = (step: number, blocked = '') =>
+    w.rep.flush(
+      step,
+      (cid, p) => {
+        assert.ok(mirrors.get(cid)!.apply(p));
+        if (p.h !== undefined) hashes.get(cid)!.push(p.tk);
+      },
+      (cid) => cid !== blocked,
+    );
+  w.rep.addClient('a');
+  pump(17);
+  w.rep.addClient('b');
+  pump(18);
+  assert.deepEqual(
+    [...mirrors.values()].map((m) => m.lastStep()),
+    [17, 18],
+    'whole sends happen on different steps',
+  );
+  // A private receipt also advances only its recipient; neither it nor the join time sets the periodic phase.
+  w.rep.ack('a', 1, 1);
+  pump(19);
+  for (let step = 20; step <= HASH_STEPS; step++) pump(step);
+  assert.deepEqual([...hashes.values()], [[HASH_STEPS], [HASH_STEPS]], 'idle clients share a periodic sample');
+  assert.deepEqual(
+    [...mirrors.values()].map((m) => m.lastStep()),
+    [HASH_STEPS, HASH_STEPS],
+  );
+  for (const m of mirrors.values()) assert.deepEqual(seen(m), expected(w, 'all'));
+
+  // A backed-up client gets its overdue hash when writable, then returns to the common phase.
+  for (let step = HASH_STEPS + 1; step <= 2 * HASH_STEPS + 3; step++) pump(step, step < 2 * HASH_STEPS + 3 ? 'b' : '');
+  assert.deepEqual(
+    [...hashes.values()],
+    [
+      [HASH_STEPS, 2 * HASH_STEPS],
+      [HASH_STEPS, 2 * HASH_STEPS + 3],
+    ],
+  );
+  // A whole refill also keeps the common phase instead of starting another client-specific timer.
+  mirrors.get('a')!.refill();
+  w.rep.resync('a');
+  pump(2 * HASH_STEPS + 7);
+  for (let step = 2 * HASH_STEPS + 8; step <= 4 * HASH_STEPS; step++) pump(step);
+  assert.deepEqual(
+    [...hashes.values()],
+    [
+      [HASH_STEPS, 2 * HASH_STEPS, 3 * HASH_STEPS, 4 * HASH_STEPS],
+      [HASH_STEPS, 2 * HASH_STEPS + 3, 3 * HASH_STEPS, 4 * HASH_STEPS],
+    ],
+    'no extra hash-only packets between boundaries after recovery or refill',
+  );
+  for (const m of mirrors.values()) {
+    assert.equal(m.lastStep(), 4 * HASH_STEPS);
+    assert.deepEqual(seen(m), expected(w, 'all'));
+    assert.equal(m.stats.diverged, 0);
+  }
+});
+
 test('a hash every HASH_STEPS catches a diverged mirror; a resync refills it whole, keeping the ack', () => {
   const w = toyWorld(40);
   w.rep.touchAll('tree');

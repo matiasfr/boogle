@@ -1145,8 +1145,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     interact();
     require(!!seatState().sitting, `${name} seated on the press`);
     await until(
-      () => Object.values(seatState().grants).some((g) => g.peer === net.myPeer) || !net.room,
-      `${name} chair granted`,
+      () => Object.values(seatState().occupants).includes(read().pid) || !net.room,
+      `${name} server confirms the chair`,
       10000,
     );
     if (coop) await until(remoteSeated, `${name} friend seen seated`, 60000);
@@ -1169,7 +1169,12 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await checkpoint(`${name} seated ride completed`);
     await until(() => interactTarget()?.verb === 'Stand up', `${name} Stand up offered`, 5000);
     interact();
-    require(!seatState().sitting && !seatState().request, `${name} stood up on the press`);
+    require(!seatState().sitting, `${name} stood up on the press`);
+    await until(
+      () => !Object.values(seatState().occupants).includes(read().pid) || !net.room,
+      `${name} server releases the chair`,
+      10000,
+    );
     await bot.wait(600);
     const aboard = carry.on?.id === 'railway:T1:flatbed' || carry.on?.id === 'railway:T1:loco';
     require(aboard && !me.swimming, `${name} stood up onto the deck`);

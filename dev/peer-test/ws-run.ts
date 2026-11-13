@@ -24,6 +24,7 @@ const { freePort } = await import('../look/lib.ts');
 const { createService, loadConfig } = await import('../../server/src/server.ts');
 const {
   railwayChecks,
+  railwaySeats,
   railwayJumpIn,
   railwayRequestStop,
   railwayLeaf,
@@ -242,6 +243,7 @@ try {
     dataDir,
   };
   await railwayChecks(ctx);
+  await railwaySeats(ctx); // Server-kind chairs survive a hidden/closed lead and a sitter's reconnect.
   await railwayJumpIn(ctx); // a seeded playtest room, two players, through a restart
   await railwayRequestStop(ctx); // a lever request, mirrored on three tabs, and the train stopping for it
   await railwayLeaf(ctx); // Ring Island's leaf: two players bring it down, a late joiner, a reload and a restart

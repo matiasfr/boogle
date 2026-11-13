@@ -50,6 +50,7 @@ export type RailwayProbe = {
   /** Line two's job completions (Q1 first), empty before line two. */
   line2: number[];
   people: { pid: string; name: string }[];
+  seats: { id: string; pid: string }[];
 };
 export type RailwayAdapterProbe = {
   /** `adapter.read`'s session values (ready, pending, status, stalled, tick) and its `debug()` (step, hash, epoch,
@@ -206,7 +207,12 @@ const T = (window.T = {
   railSnapshot: null as unknown as () => boolean,
   railOpen: () => railRoom!.send({ t: 'r:open' }),
   // A client action carries where its actor stands (cm, the last railPose) and its action clock (ms).
-  railEdit: (e: RailAction | { op: 'who.set'; n: string; c: number; epoch: number; request: number }) => {
+  railEdit: (
+    e:
+      | RailAction
+      | { op: 'who.set'; n: string; c: number; epoch: number; request: number }
+      | { op: 'seat.sit' | 'seat.stand'; id?: string; alt?: string[]; epoch: number; request: number },
+  ) => {
     T.railSent.push({ at: Date.now(), epoch: e.epoch, request: e.request, op: e.op });
     railRoom!.send({ t: 'r:edit', e: { ...(railAt ? { at: railAt } : {}), ms: Math.round(performance.now()), ...e } });
   },
@@ -290,8 +296,12 @@ function startWorld(room: Room) {
           op: String(e.op),
         });
     });
-    // Without the adapter the page applies the packets itself.
-    if (!adapter)
+    // Without the adapter the page owns both packet delivery and its reconnect lifecycle. Preserve the visible
+    // rows while a fresh whole snapshot is assembled, including a restart with empty transient kinds.
+    if (!adapter) {
+      railRoom!.onConnection((live) => {
+        if (!live) rail.refill();
+      });
       railRoom!.onMessage((m, from) => {
         if (from !== SERVER_ID) return;
         const msg = m as { t?: string; ht?: number };
@@ -299,6 +309,7 @@ function startWorld(room: Room) {
         else if (msg.t?.startsWith('w:') && Number.isSafeInteger(msg.ht))
           rail.mirror.stamp(msg.ht! * RULE_STEPS, performance.now());
       });
+    }
     // The load run (ws-run WS_LOAD): chop, drop and take in a cycle every `every` ms, near trees from `first` on.
     T.railLoad = ({ ms, every, first, epoch, next }) =>
       new Promise((resolve) => {
@@ -523,6 +534,9 @@ function startWorld(room: Room) {
       const tick = Math.max(0, Math.floor(rail.mirror.step(performance.now()) / RULE_STEPS));
       const mw = mirrored();
       const acks = T.railPackets.filter((p) => p.ack).map((p) => ({ t: 'ack', epoch: p.ack![0], request: p.ack![1] }));
+      const ok = T.railPackets.flatMap((p) =>
+        (p.ok ?? []).map(([epoch, request, accepted]) => ({ t: 'ok', epoch, request, accepted })),
+      );
       const rej = T.railPackets.flatMap((p) =>
         ((p.rej ?? []) as [number, number, string][]).map(([epoch, request, reason]) => ({
           t: 'rej',
@@ -543,11 +557,12 @@ function startWorld(room: Room) {
         activeStation: railActiveStation(mw),
         counts: railCounts(mw, tick),
         accounts: accounts(mw).map((a) => ({ ...a })),
-        messages: [...T.railMessages.map((m) => ({ ...m })), ...acks, ...rej],
+        messages: [...T.railMessages.map((m) => ({ ...m })), ...acks, ...ok, ...rej],
         registry: w.registry(),
         sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: tree(mw, k).left })),
         line2: qjobs(mw).map((j) => j.completion),
         people: rail.roster.roster.pids.map((pid, k) => ({ pid, name: rail.roster.nameOf(k) })),
+        seats: rail.seats.rows().map((row) => ({ ...row })),
       };
     };
 }

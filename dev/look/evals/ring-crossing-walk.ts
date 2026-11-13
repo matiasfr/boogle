@@ -241,6 +241,8 @@ background(
         // Interact can keep offering the aboard request (one stop ahead after another): then ride in standing.
         if (!seatState().sitting)
           log.couldNotSit = { target: interactTarget()?.id ?? null, verb: interactTarget()?.verb };
+        else if (!(await bot.until(() => seatState().occupants[seatState().sitting!] === inspectRailway()?.pid, 10000)))
+          throw new Error('crossing: server never confirmed the chair');
       }
       const sat = !!seatState().sitting;
       log.seatedAt = railAt();

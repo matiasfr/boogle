@@ -29,6 +29,13 @@ is in the room. A restarting server says goodbye, saves and closes every socket;
 where it stopped), and after a crash they roll back to its last save (at most 2 s old). Edits made while reconnecting
 are held (up to 64, 5 s) and released one per 210 ms.
 
+Seats are Server kind, independent of that lead. Sit and stand predict locally on the press; the replicated seat row
+corrects a contested sit to the nearest free alternate, or steps the loser off when every offered chair is taken.
+A rate refusal holds the prediction and retries once a second. Riders keep their seat through their own reconnect,
+a server restart, and another player's tab hiding, leaving or becoming lead. Rows are transient, freed after the
+departing player's 1.5 s grace and cleared on room pause; reconnect/restart reclaims include alternate chairs.
+The body and `placeSeatPose` stay Owner: friends draw a seated rider only when both the row and pose agree.
+
 ## 8.3 Sync kind per feature
 
 | Feature                                                           | Kind                                                  | Channel / API                                                                                    |
