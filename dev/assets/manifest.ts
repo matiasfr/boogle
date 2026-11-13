@@ -68,7 +68,7 @@ export function sourceHash(file: string, name: string, dir = SRC) {
 }
 /** Load priority of each built asset, read from the registrations (`registerAsset` in src/), which are its only owner. */
 export type AssetStage = { priority: 'first' | 'soon' | 'later'; conditional: boolean };
-export function assetStages(srcDir = path.join(ROOT, 'src')): Record<string, AssetStage> {
+function assetStages(srcDir = path.join(ROOT, 'src')): Record<string, AssetStage> {
   const stages: Record<string, AssetStage> = {};
   const walk = (dir: string) => {
     for (const f of fs.readdirSync(dir, { withFileTypes: true })) {

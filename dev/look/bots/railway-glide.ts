@@ -5,7 +5,7 @@
 // - `--rail-seed q5-done --query glideTake=1` (piece B's grant): the setup stands you 2.5 m east of the woken device,
 //   facing it (staging only); the flight presses Interact to take it, dismisses the card, steps off west and flies to
 //   the boiler's apron by the forge as the bot's glide home does, writing `__glideResult`.
-import { makeBot } from '../bot.ts';
+import { hideBotNotes as hideNotes, makeBot } from '../bot.ts';
 import { glideToBoiler, takeGlider } from './railway.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { me, cam } from '../../../src/player/player.ts';
@@ -34,10 +34,6 @@ const face = (pitch = -0.12) => {
   cam.yaw = me.yaw = Math.PI / 2;
   cam.pitch = pitch;
 };
-function hideNotes() {
-  for (const panel of document.querySelectorAll<HTMLDivElement>('body > div'))
-    if (panel.style.zIndex === '9999' && panel.style.whiteSpace === 'pre') panel.style.display = 'none';
-}
 
 export async function stage() {
   await until(() => !!railRead()?.ready() && !!me.body, 'railway ready', 60000);

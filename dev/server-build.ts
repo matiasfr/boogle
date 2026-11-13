@@ -22,8 +22,7 @@ export function serverBuild() {
 }
 
 /** True when a path is one of the image's sources or under one (what decides a server deploy after a merge). */
-export const touchesServerImage = (file: string) =>
-  SERVER_IMAGE_PATHS.some((p) => file === p || file.startsWith(`${p}/`));
+const touchesServerImage = (file: string) => SERVER_IMAGE_PATHS.some((p) => file === p || file.startsWith(`${p}/`));
 
 // CLI, for automerge.yml: `node dev/server-build.ts --touches` reads paths on stdin (one per line) and exits 0 when any
 // is an image source, 1 when none is. Imports nothing outside node:, so it runs before `npm ci`.

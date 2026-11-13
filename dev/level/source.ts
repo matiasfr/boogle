@@ -49,7 +49,7 @@ export function sourceModule<T>(source: string, bindings: Record<string, unknown
   return new Function(...Object.keys(bindings), `${js}\nreturn {${names.join(',')}};`)(...Object.values(bindings)) as T;
 }
 
-export function sourceTextFunction<T>(source: string, symbol: string, bindings: Record<string, unknown>): T {
+function sourceTextFunction<T>(source: string, symbol: string, bindings: Record<string, unknown>): T {
   const node = statements(source).find((n) => namesOf(declaration(n), source).includes(symbol));
   if (!node) throw new Error(`No top-level source symbol: ${symbol}`);
   return sourceModule<Record<string, T>>(source.slice(node.start, node.end), bindings, [symbol])[symbol]!;

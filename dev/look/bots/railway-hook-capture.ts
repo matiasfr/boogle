@@ -1,6 +1,6 @@
 // Reuse the production route and its ordinary input helpers; no restored progress or body relocation.
 import { play, aimHook, hookTo, returnFromTower } from './railway.ts';
-import { makeBot } from '../bot.ts';
+import { hideBotNotes as hideNotes, makeBot } from '../bot.ts';
 import { background } from '../../../src/async.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
@@ -8,10 +8,6 @@ import { inspectRailway } from '../../../src/entities/railway/state.ts';
 
 const shot = window as Window & { __railStop?: string; __placeDone?: boolean };
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-function hideNotes() {
-  for (const panel of document.querySelectorAll<HTMLDivElement>('body > div'))
-    if (panel.style.zIndex === '9999' && panel.style.whiteSpace === 'pre') panel.style.display = 'none';
-}
 let started = false;
 export function start() {
   if (started) return;

@@ -139,13 +139,19 @@ async function waitForQuiet() {
   }
 }
 
+/** The number of the one open issue labelled `label`, if there is one; more than one is an error. */
+function openIssue(label: string) {
+  const issues = JSON.parse(
+    gh(['issue', 'list', '--label', label, '--state', 'open', '--limit', '100', '--json', 'number']),
+  ) as { number: number }[];
+  if (issues.length > 1) throw new Error(`Multiple open ${label} issues; resolve duplicates before reporting`);
+  return issues[0]?.number;
+}
+
 /** The one open issue labelled `performance`, created on the first run. */
 function performanceIssue(dir: string) {
-  const issues = JSON.parse(
-    gh(['issue', 'list', '--label', 'performance', '--state', 'open', '--limit', '100', '--json', 'number']),
-  ) as { number: number }[];
-  if (issues.length > 1) throw new Error('Multiple open performance issues; resolve duplicates before reporting');
-  if (issues[0]) return String(issues[0].number);
+  const open = openIssue('performance');
+  if (open !== undefined) return String(open);
   gh(['label', 'create', 'performance', '--color', '1d76db', '--description', 'Daily benchmark', '--force']);
   const intro = path.join(dir, 'issue.md');
   fs.writeFileSync(
@@ -159,16 +165,13 @@ function performanceIssue(dir: string) {
 
 /** One issue per check (scenarios, long-run): created or commented on a failure, commented and closed on a pass. */
 function reportIssue(label: string, title: string, description: string, file: string, failed: boolean) {
-  const issues = JSON.parse(
-    gh(['issue', 'list', '--label', label, '--state', 'open', '--limit', '100', '--json', 'number']),
-  ) as { number: number }[];
-  if (issues.length > 1) throw new Error(`Multiple open ${label} issues; resolve duplicates before reporting`);
-  if (failed && !issues.length) {
+  const open = openIssue(label);
+  if (failed && open === undefined) {
     gh(['label', 'create', label, '--color', 'd93f0b', '--description', description, '--force']);
     gh(['issue', 'create', '--title', title, '--label', label, '--body-file', file]);
-  } else if (issues.length) {
-    gh(['issue', 'comment', String(issues[0]!.number), '--body-file', file]);
-    if (!failed) gh(['issue', 'close', String(issues[0]!.number)]);
+  } else if (open !== undefined) {
+    gh(['issue', 'comment', String(open), '--body-file', file]);
+    if (!failed) gh(['issue', 'close', String(open)]);
   }
 }
 

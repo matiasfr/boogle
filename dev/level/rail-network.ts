@@ -94,7 +94,7 @@ export const LIVE = [
 /** Ring Island's lat (cm east of track 1) for a track. */
 const RING_TRACK_LAT = { down: RING_FORMATION.tracks[1], up: RING_FORMATION.tracks[0] } as const;
 /** u (cm) along the crossing of a world point: the pier head's datum, line 2's heading (inverse of ringAt). */
-export function ringU(x: number, z: number) {
+function ringU(x: number, z: number) {
   const ux = 0.0272,
     n = Math.sqrt(1 + ux * ux);
   const dx = x * 100 - 140200,
