@@ -7,6 +7,7 @@ import { RAILS } from './railway-line2-layout.ts';
 import { layProgress, type LineTiming } from './railway-line-schedule.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { railInt, RAILWAY_MAX_INT, RAILWAY_PILES } from './railway.ts';
+import { railPos } from './railway-route.ts';
 import {
   Account,
   Aperture,
@@ -297,12 +298,7 @@ export const beamDrop = defineSystem(
     if (!held(w, a.pid) || e.revision !== w.get(Beam, beamId(w))!.revision) return 0;
     if (!releasable(w, a.pid, a.epoch, e.revision!)) return 0;
     release(w);
-    if (
-      railInt(e.x, 200000, -200000) &&
-      railInt(e.y, 200000, -200000) &&
-      railInt(e.z, 200000, -200000) &&
-      lineBeamGround(e.x, e.y, e.z)
-    )
+    if (railPos(e.x) && railPos(e.y) && railPos(e.z) && lineBeamGround(e.x, e.y, e.z))
       Object.assign(w.mut(Beam, beamId(w))!, { state: 'ground', x: e.x, y: e.y, z: e.z });
     return 1;
   },
@@ -375,8 +371,7 @@ export const beamStood = defineSystem(
   (w, q: { pid: string; x: number; y: number; z: number }) => {
     const b = w.get(Beam, beamId(w))!;
     // The point comes from presence: the same bounds as rail.beamDrop and rail.boilerStood, and never -0.
-    if (!railInt(q.x, 200000, -200000) || !railInt(q.y, 200000, -200000) || !railInt(q.z, 200000, -200000))
-      return false;
+    if (!railPos(q.x) || !railPos(q.y) || !railPos(q.z)) return false;
     if (b.state !== 'held' || b.holder !== q.pid || (b.x === q.x && b.y === q.y && b.z === q.z)) return false;
     Object.assign(w.mut(Beam, beamId(w))!, { x: q.x, y: q.y, z: q.z });
     return true;

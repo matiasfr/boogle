@@ -15,6 +15,7 @@ import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { railGrowthMask, railGrowthAllowed } from '../src/sim/railway-supply.ts';
 import { Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
+import { RAIL_POSITION_MAX } from '../src/sim/railway-route.ts';
 import {
   account,
   apply,
@@ -383,7 +384,7 @@ test("a beam drop's point is checked: never -0, never out of range, and the room
     [99650, 3000, -0],
     [-0, 3000, -13800],
     [99650, 1e300, -13800],
-    [200001, 3000, -13800],
+    [RAIL_POSITION_MAX + 1, 3000, -13800],
     [99650, 3000, 0.5],
     [NaN, 3000, -13800],
   ]) {

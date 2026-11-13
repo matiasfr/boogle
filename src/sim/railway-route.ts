@@ -5,6 +5,7 @@
 //
 // Lockstep math: integers and `+ - * /`, `Math.floor`, `Math.round` and `Math.sqrt` only (docs/agents/lockstep.md).
 import type { RailPlatform } from './railway-lines.ts';
+import { railInt } from './railway.ts';
 import { RING_S_HEAD, ringAt } from './railway-ring-layout.ts';
 import { WORLD_LINES, type WorldLine } from './railway-world-lines.ts';
 
@@ -420,3 +421,24 @@ export const LEG_TUNE = {
   kitLead: Math.max(...RAIL_LEGS.map((l) => l.sections.length)),
 } as const;
 if (LEG_TUNE.kitLead < 2) throw new Error('railway-route: kitLead under 2');
+
+/** Every place the route names (its pickups, barriers, the meeting, each leg's frames and racks), as platforms. */
+export const RAIL_ROUTE_POINTS: readonly RailPlatform[] = [
+  ...RAIL_GRANTS.map((g) => g.at),
+  ...RAIL_GATES.map((g) => g.at),
+  RAIL_ARRIVAL,
+  ...RAIL_LEGS.flatMap((l) => l.sections.flatMap((_s, k) => [legFrame(l, k), legRack(l, k)])),
+];
+/** What an actor or a dropped thing may stand beyond the farthest catalog point, cm (a walk off the edge of a pad). */
+export const RAIL_POSITION_MARGIN = 20000;
+/** The bound on each axis of a railway position, cm: an action's `at`, a drop's or a beam's x/y/z, a pile's, an effect's.
+ * The farthest of the route's points and the catalog rows' vertices, plus the margin, so a new leg or pickup cannot
+ * fall outside it (the pick's rim is 2032 m out). Validation only: positions travel and save as JSON integers and the
+ * components' x/y/z are 'int', so no field is narrower. */
+export const RAIL_POSITION_MAX =
+  Math.max(
+    ...RAIL_ROUTE_POINTS.flatMap((p) => [Math.abs(p.x), Math.abs(p.y), Math.abs(p.z)]),
+    ...WORLD_LINES.flatMap((l) => l.pts.flatMap((p) => [Math.abs(p[0]), Math.abs(p[1]), Math.abs(p[2])])),
+  ) + RAIL_POSITION_MARGIN;
+/** A whole-centimetre railway coordinate inside RAIL_POSITION_MAX. */
+export const railPos = (v: unknown): v is number => railInt(v, RAIL_POSITION_MAX, -RAIL_POSITION_MAX);

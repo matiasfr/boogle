@@ -15,7 +15,7 @@ import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
-import { RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
+import { RAIL_LEGS, RAIL_YARDS, railPos } from './railway-route.ts';
 import { RECOVERY_MINUTES } from './railway-supply.ts';
 import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES, RAILWAY_PILES } from './railway.ts';
 import {
@@ -188,9 +188,9 @@ function checkRailway(w: World) {
         !railInt(id, lastPile, 1) ||
         !railInt(p.n, T1.carry, 1) ||
         !railInt(p.kind, 3) ||
-        !railInt(p.x, 200000, -200000) ||
-        !railInt(p.z, 200000, -200000) ||
-        !railInt(p.y, 200000, -200000) ||
+        !railPos(p.x) ||
+        !railPos(p.z) ||
+        !railPos(p.y) ||
         !railInt(p.age, RECOVERY_MINUTES)
       );
     })
@@ -240,9 +240,9 @@ function checkRailway(w: World) {
     !railInt(b.work, 12) ||
     !railInt(b.epoch) ||
     !railInt(b.revision) ||
-    !railInt(b.x, 200000, -200000) ||
-    !railInt(b.y, 200000, -200000) ||
-    !railInt(b.z, 200000, -200000) ||
+    !railPos(b.x) ||
+    !railPos(b.y) ||
+    !railPos(b.z) ||
     !railInt(b.age, 21)
   )
     bad('beam encoding');
