@@ -9,6 +9,8 @@ WORKDIR /app
 COPY package.json ./
 COPY server/package.json server/package-lock.json ./server/
 RUN cd server && npm ci --omit=dev && npm cache clean --force
+# Shared src/ecs modules resolve runtime packages from /app, not /app/server.
+RUN ln -s server/node_modules node_modules
 COPY server/src ./server/src
 COPY src/world ./src/world
 COPY src/sim ./src/sim

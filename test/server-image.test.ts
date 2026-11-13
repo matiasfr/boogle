@@ -136,10 +136,12 @@ test('automerge decides a server deploy from SERVER_IMAGE_PATHS, not a copy', ()
 
 test('the server image resolves every package the server imports', () => {
   const deps = Object.keys((JSON.parse(read('server/package.json')) as { dependencies?: object }).dependencies ?? {});
+  const sharedPackages = /^RUN ln -s server\/node_modules node_modules$/m.test(read('server/Dockerfile'));
   const problems: string[] = [];
   for (const [file, spec] of walk().bare) {
-    // Node resolves a bare import from the importing file's folder up; only server/node_modules is in the image.
-    if (!file.startsWith('server/')) problems.push(`${file} imports ${spec}: only server/ files can use packages`);
+    // Shared src/ imports need the image's root link as well as a declared server dependency.
+    if (!file.startsWith('server/') && !sharedPackages)
+      problems.push(`${file} imports ${spec}: no root node_modules link in the image`);
     else if (!deps.includes(packageName(spec))) problems.push(`${file} imports ${spec}: not a server dependency`);
   }
   assert.deepEqual(problems, []);

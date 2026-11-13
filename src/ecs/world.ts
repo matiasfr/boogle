@@ -19,12 +19,14 @@ import {
   type Spec,
 } from './schema.ts';
 
+import { createBitStore, type BitStore, type Rows as StoreRows } from './bitecs.ts';
+
 type AnyRow = Record<string, FieldValue>;
 type Table = {
   c: AnyComponent;
   ids: number[];
   list: AnyRow[];
-  rows: Map<number, AnyRow>;
+  rows: StoreRows;
   byKey: Map<FieldValue, number> | null;
   /** Ids marked since the last drain (may repeat), and the drain epoch a row's MARK compares with. */
   marked: number[];
@@ -46,7 +48,7 @@ function stamp(r: object, epoch: number) {
   if (Object.hasOwn(r, MARK)) (r as { [MARK]: number })[MARK] = epoch;
   else Object.defineProperty(r, MARK, { value: epoch, writable: true });
 }
-type State = { tables: Table[]; next: number };
+type State = { tables: Table[]; next: number; store?: BitStore };
 type Op =
   | { t: 'spawn'; id: number; pairs: readonly (readonly [AnyComponent, object])[] }
   | { t: 'despawn'; id: number }
@@ -149,11 +151,11 @@ export function createSchedule(systems: readonly AnySystem[]) {
   };
 }
 
-const empty = (c: AnyComponent): Table => ({
+const empty = (c: AnyComponent, store?: BitStore): Table => ({
   c,
   ids: [],
   list: [],
-  rows: new Map(),
+  rows: store ? store.table(c) : new Map(),
   byKey: c.key ? new Map() : null,
   marked: [],
   epoch: 0,
@@ -186,14 +188,15 @@ function at(ids: number[], id: number) {
   }
   return lo;
 }
-function fresh(components: readonly AnyComponent[]): State {
+function fresh(components: readonly AnyComponent[], bitecs = false): State {
+  const store = bitecs ? createBitStore(components) : undefined;
   const tables: Table[] = [];
-  for (const c of components) tables[c.cid] = empty(c);
-  return { tables, next: 1 };
+  for (const c of components) tables[c.cid] = empty(c, store);
+  return { tables, next: 1, store };
 }
-function copyTable(t: Table): Table {
+function copyTable(t: Table, store?: BitStore): Table {
   pack(t);
-  const n = empty(t.c);
+  const n = empty(t.c, store);
   n.ids = [...t.ids];
   for (let i = 0; i < t.ids.length; i++) {
     const r = { ...t.list[i]! };
@@ -219,10 +222,10 @@ function split(t: Table): Table {
 }
 // A clone shares each table that has nothing marked (its marks would belong to both) and copies the rest.
 function copy(st: State, components: readonly AnyComponent[]): State {
-  const out: State = { tables: [], next: st.next };
+  const out: State = { tables: [], next: st.next, store: st.store ? createBitStore(components) : undefined };
   for (const c of components) {
     const t = st.tables[c.cid]!;
-    if (t.marked.length || t.dead) out.tables[c.cid] = copyTable(t);
+    if (st.store || t.marked.length || t.dead) out.tables[c.cid] = copyTable(t, out.store);
     else {
       t.refs++;
       out.tables[c.cid] = t;
@@ -231,7 +234,15 @@ function copy(st: State, components: readonly AnyComponent[]): State {
   return out;
 }
 
-export function createWorld(components: readonly AnyComponent[], opts: { audit?: boolean } = {}): World {
+export function createWorld(
+  components: readonly AnyComponent[],
+  opts: { audit?: boolean; store?: 'inhouse' | 'bitecs'; queryOrder?: 'canonical' | 'native' } = {},
+): World {
+  // Explicit options win over the Node or Vite experiment switch. Unset builds keep the old store.
+  const env = typeof process === 'undefined' ? undefined : process.env;
+  const bitecs = (opts.store ?? env?.BOOGLE_ECS_STORE ?? import.meta.env?.VITE_ECS_STORE) === 'bitecs';
+  const native = bitecs && (opts.queryOrder ?? env?.BOOGLE_ECS_ORDER ?? import.meta.env?.VITE_ECS_ORDER) === 'native';
+  opts = { ...opts, store: bitecs ? 'bitecs' : 'inhouse', queryOrder: native ? 'native' : 'canonical' };
   const kinds = new Set<string>();
   for (const c of components) {
     if (kinds.has(c.kind)) throw new Error(`world: two components named ${c.kind}`);
@@ -239,7 +250,7 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
     for (const r of c.requires) if (!components.includes(r)) throw new Error(`world: ${c.kind} requires ${r.kind}`);
   }
   const byKind = [...components].sort((a, b) => (a.kind < b.kind ? -1 : 1));
-  let st = fresh(components);
+  let st = fresh(components, bitecs);
   let sys: AnySystem | null = null;
   const ops: Op[] = [];
   let marked: Set<string> | null = null; // the audit: what this system run marked
@@ -377,6 +388,21 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
     each(cs, fn, writes) {
       if (cs.length > 4) throw new Error('world: each takes up to four components');
       const ts = cs.map((c) => pack(table(c, writes?.includes(c) ? 2 : 1)));
+      if (native) {
+        iterating++;
+        try {
+          for (const id of st.store!.query(cs)) {
+            const rows = ts.map((t) => {
+              const row = t.rows.get(id)!;
+              return writes?.includes(t.c) ? write(t, id, row) : row;
+            });
+            (fn as (id: number, ...rows: AnyRow[]) => void)(id, ...rows);
+          }
+        } finally {
+          iterating--;
+        }
+        return;
+      }
       let small = ts[0]!;
       for (const t of ts) if (t.ids.length < small.ids.length) small = t;
       const call = fn as (id: number, ...rows: AnyRow[]) => void;
@@ -419,7 +445,10 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
         iterating--;
       }
     },
-    ids: (c) => pack(table(c, 1)).ids,
+    ids(c) {
+      const t = table(c, 1);
+      return native ? st.store!.query([c]) : pack(t).ids;
+    },
     count: (c) => table(c, 1).rows.size,
     single(c) {
       const t = pack(table(c, 1));
@@ -519,7 +548,7 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
     load(json, check) {
       const next = parse(json);
       if (check) {
-        const temp = createWorld(components) as World & { adopt(s: State): void };
+        const temp = createWorld(components, opts) as World & { adopt(s: State): void };
         temp.adopt(next);
         check(temp);
       }
@@ -544,7 +573,7 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
       throw new Error('load: header');
     if (!j.c || typeof j.c !== 'object' || Object.keys(j.c).sort().join() !== [...kinds].sort().join())
       throw new Error('load: components');
-    const next = fresh(components);
+    const next = fresh(components, bitecs);
     next.next = j.next;
     for (const c of components) {
       const cols = j.c[c.kind];
