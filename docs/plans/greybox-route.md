@@ -560,9 +560,11 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       blocked "Take logs" or "Take rails" carries no `run`; the cutting's test sweeps the views' own track from the
       platforms' end (s 1210), beside the kept terrace. **Notes left as they are:** from the stair's top landing the
       barrier is a small red mark 100 m below (in view, not readable); the west bill is edge-on from the east
-      platform's south end and reads from the door straight across. **Held open:** the three presses that carry an id
-      (`rail.legStock`'s `leg`, `rail.grant`'s and `rail.gate`'s `id`) are refused by a real server until its request
-      shapes pass those fields (the server's fix, on its own branch); this step's proof of the presses waits on it.
+      platform's south end and reads from the door straight across. **The three presses that carry an id, proved** on main's request shapes (#1677), a real local server, the
+      reviewer's evals: "Feed the frame" at Ring Island took the bill from 0/20 to 16/20 logs and then 16/20 rails
+      (the rack 20 and 20 to 4 and 4); "Take the powered pick" on the rim, after the stair walked bottom to top in
+      40 s, set the pick and the objective moved on to the barrier; with the pick held the barrier offers "Open the
+      barrier" blocked with "No line beyond yet".
 - [ ] **4b. What step 4 left (Mac, S to M).** The halt map and the Home hall's line map past Ring Island (answer l:
       solid to the head, dashed on to a dim High Gorge, the head a lit `Stack railhead` with a frame mark, one fit for
       the whole leg; `Stack halt` once the Gorge opens), with a departure board at each live head and at the Gorge
