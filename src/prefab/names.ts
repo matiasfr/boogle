@@ -25,7 +25,7 @@ export type NameRegistry = {
   retired: readonly string[];
 };
 export const names: NameRegistry = {
-  builders: ['seat.chair'],
+  builders: ['seat.chair', 'greybox.box'],
   interactions: ['seat.sit'],
   gates: ['open'],
   materials: [],

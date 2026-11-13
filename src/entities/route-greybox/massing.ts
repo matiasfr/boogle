@@ -14,6 +14,8 @@ import { RAIL_GATES, RAIL_GRANTS } from '../../sim/railway-route.ts';
 import { span, type GreyBox } from './boxes.ts';
 import { leg2Boxes } from './leg2-draw.ts';
 import { LEG2 } from './leg2-layout.ts';
+import { gorgePlacements } from '../../prefab/instantiate.ts';
+import type { Placement } from '../../prefab/types.ts';
 
 const GREY = '#9c9ea1',
   GREY_DARK = '#6f7275',
@@ -65,8 +67,8 @@ const metres = (p: { x: number; y: number; z: number }) => ({ x: p.x / 100, y: p
 export const PICK_AT = metres(RAIL_GRANTS[0]!.at),
   GATE_AT = metres(RAIL_GATES[0]!.at);
 
-export function gorgeMassing(): GreyBox[] {
-  const out: GreyBox[] = [];
+export function gorgeMassing(): (GreyBox | Placement)[] {
+  const out: (GreyBox | Placement)[] = [];
   const E = LINE2_END_S;
   // The platforms: 40 m both sides (call 27), each 4.5 m deep, the north one the down track's (lat +1.8 to +6.3), the
   // south one the up track's (lat -10.3 to -5.8), in 8 m lengths along the row's curve, on posts in the water.
@@ -77,7 +79,11 @@ export function gorgeMassing(): GreyBox[] {
       line2World(s, lat, q0);
       line2World(s + 8, lat, q1);
       const top = line2Y(E) + 0.9;
-      out.push(span({ ...q0, y: top }, { ...q1, y: top }, 4.5, 0.5, GREY_LIGHT));
+      out.push(
+        lat === 4.05
+          ? gorgePlacements[Math.round((s - (E - 40)) / 8)]!
+          : span({ ...q0, y: top }, { ...q1, y: top }, 4.5, 0.5, GREY_LIGHT),
+      );
       out.push({
         x: q0.x,
         y: (top - 0.5 - 8) / 2,
@@ -118,15 +124,7 @@ export function gorgeMassing(): GreyBox[] {
     if (k < STAIR.flights - 1) {
       out.push(slab(l0, l1, STAIR.inner, STAIR.inner + 2 * STAIR.w, y1 - 0.4, y1, GREY));
       out.push(
-        slab(
-          up ? l1 - 0.2 : l0,
-          up ? l1 : l0 + 0.2,
-          STAIR.inner,
-          STAIR.inner + 2 * STAIR.w,
-          y1,
-          y1 + 1,
-          GREY_DARK,
-        ),
+        slab(up ? l1 - 0.2 : l0, up ? l1 : l0 + 0.2, STAIR.inner, STAIR.inner + 2 * STAIR.w, y1, y1 + 1, GREY_DARK),
       );
       out.push(slab(l0, l1, STAIR.inner + 2 * STAIR.w - 0.2, STAIR.inner + 2 * STAIR.w, y1, y1 + 1, GREY_DARK));
     }

@@ -3,6 +3,7 @@
 import * as THREE from 'three/webgpu';
 import artifact from '../../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../../content/built/levels/workshop.json' with { type: 'json' };
+import gorge from '../../content/built/levels/gorge.json' with { type: 'json' };
 import { names } from './names.ts';
 import type { BuilderName } from './names.ts';
 import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
@@ -14,6 +15,7 @@ import {
   validateColliderWorldTransforms,
 } from './validate.ts';
 import './builders/seat-chair.ts';
+import './builders/greybox-box.ts';
 import { builders } from './builders.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
 import { ROOM_GROUP, staticBody } from '../place/land.ts';
@@ -28,9 +30,29 @@ const compiled = (() => {
 const room: unknown = workshop;
 validateLevelArtifact(room, compiled.prefabs);
 export const workshopChair = room.placements[0]!;
+const gorgeLevel: unknown = gorge;
+validateLevelArtifact(gorgeLevel, compiled.prefabs);
+export const gorgePlacements = gorgeLevel.placements;
 for (const name of names.builders)
   if (!builders.has(name as BuilderName)) throw new Error(`prefabs: missing builder ${name}`);
 const euler = (v: Vec3 = [0, 0, 0]) => new THREE.Euler(v[1], v[0], v[2], 'YXZ');
+
+type PrefabBatch = { key: PrefabKey; owner: OwnedView; mesh: THREE.InstancedMesh; slots: Set<number> };
+/** One owner-local shared draw, including legacy boxes until their conversion. Instances keep their own lifetime. */
+export function createPrefabBatch(key: PrefabKey, count: number, owner: OwnedView): PrefabBatch {
+  if (!owner.alive) throw new Error('prefabs: cannot batch for a disposed owner');
+  const def = compiled.prefabs[key];
+  if (!def || !('builder' in def.visual) || !def.visual.batch) throw new Error('prefabs: expected batched builder');
+  const mesh = builders.get(def.visual.builder)!({ ...def.visual.params, count });
+  if (!(mesh instanceof THREE.InstancedMesh)) throw new Error('prefabs: batch builder must return InstancedMesh');
+  // A fresh instance is disabled until setEnabled(true), including slots not instantiated yet.
+  const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+  for (let i = 0; i < mesh.count; i++) mesh.setMatrixAt(i, hidden);
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.name = def.visual.batch;
+  owner.add(mesh);
+  return { key, owner, mesh, slots: new Set() };
+}
 
 export function instantiate(
   key: PrefabKey,
@@ -38,6 +60,7 @@ export function instantiate(
   options: {
     owner: OwnedView;
     gates?: Readonly<Record<string, () => boolean>>;
+    batch?: { target: PrefabBatch; index: number };
   },
 ) {
   const owner = options.owner;
@@ -47,8 +70,21 @@ export function instantiate(
   validatePrefab(def);
   validatePlacement(placement, compiled.prefabs);
   // These fields have no authored users yet. Fail closed until their conversion step provides the implementation.
-  if ('asset' in def.visual || ('batch' in def.visual && def.visual.batch) || def.material)
-    throw new Error('prefabs: asset, batch and material implementations await their conversion steps');
+  if ('asset' in def.visual || def.material)
+    throw new Error('prefabs: asset and material implementations await their conversion steps');
+  const batch = options.batch;
+  if ('builder' in def.visual && def.visual.batch) {
+    if (
+      !batch ||
+      batch.target.owner !== owner ||
+      batch.target.key !== key ||
+      !Number.isInteger(batch.index) ||
+      batch.index < 0 ||
+      batch.index >= batch.target.mesh.count ||
+      batch.target.slots.has(batch.index)
+    )
+      throw new Error('prefabs: missing, mismatched or occupied batch slot');
+  } else if (batch) throw new Error('prefabs: unexpected batch');
   const gates = new Map<string, () => boolean>();
   for (const interaction of def.interactions ?? []) {
     if (interaction.action !== 'seat.sit') throw new Error('prefabs: missing interaction implementation');
@@ -95,6 +131,12 @@ export function instantiate(
     new THREE.Matrix4()
       .set(x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, 0, 0, 0, 1)
       .decompose(new THREE.Vector3(), q, scale);
+    // With an identity owner and no collider rotation, retain the authored TRS exactly rather than
+    // introducing decomposition ulps. The full world basis above still validates every collider first.
+    if (!c.rot && owner.root.matrixWorld.equals(new THREE.Matrix4())) {
+      q.setFromEuler(euler(placement.rot));
+      scale.fromArray(placement.scale ?? [1, 1, 1]);
+    }
     const add = (shape: Shape, at = c.at) =>
       recipes.push({
         shape,
@@ -124,8 +166,14 @@ export function instantiate(
   root.position.fromArray(placement.pos);
   root.rotation.copy(euler(placement.rot));
   root.scale.fromArray(placement.scale ?? [1, 1, 1]);
-  if ('builder' in def.visual)
-    root.add(builders.get(def.visual.builder)!({ ...def.visual.params, ...placement.params }));
+  if ('builder' in def.visual) {
+    const visual = builders.get(def.visual.builder)!(
+      { ...def.visual.params, ...placement.params },
+      batch ? { mesh: batch.target.mesh, index: batch.index } : undefined,
+    );
+    if (!batch) root.add(visual);
+    else batch.target.slots.add(batch.index);
+  }
   owner.add(root);
   root.updateWorldMatrix(true, true);
   const bodies: Body[] = [],
@@ -152,6 +200,12 @@ export function instantiate(
     if (disposed || on === enabled) return;
     enabled = on;
     root.visible = on;
+    if (batch) {
+      batch.target.mesh.setMatrixAt(batch.index, on ? localMatrix : new THREE.Matrix4().makeScale(0, 0, 0));
+      batch.target.mesh.instanceMatrix.needsUpdate = true;
+      batch.target.mesh.computeBoundingBox();
+      batch.target.mesh.computeBoundingSphere();
+    }
     if (on) for (const r of recipes) bodies.push(owner.addBody(staticBody(r.shape, r.at, r.q, r.group)));
     else {
       for (const body of bodies) owner.removeBody(body);
@@ -163,6 +217,7 @@ export function instantiate(
     setEnabled(false);
     disposed = true;
     for (const unseat of unseats) unseat();
+    if (batch) batch.target.slots.delete(batch.index);
     root.removeFromParent();
   }
   owner.cleanup(dispose);

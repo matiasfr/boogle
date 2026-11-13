@@ -37,6 +37,7 @@ import { prefabs as authoredPrefabs } from '../src/content/prefabs/town.ts';
 import { levels as authoredLevels } from '../src/content/levels/workshop.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
+import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
 
 const opening = sourceModule<{ forgePlan(): Plan }>(fs.readFileSync('src/place/opening-plans.ts', 'utf8'), {
   FORGE: layout.FORGE,
@@ -76,6 +77,7 @@ export function captureWorkshop() {
     THREE,
     artifact,
     workshop,
+    gorge,
     names,
     validateArtifact,
     validateColliderWorldTransforms,
@@ -83,7 +85,10 @@ export function captureWorkshop() {
     validatePrefab,
     validateLevel,
     validateLevelArtifact,
-    builders: new Map([['seat.chair', () => chair]]),
+    builders: new Map([
+      ['seat.chair', () => chair],
+      ['greybox.box', () => chair],
+    ]),
     registerSeat,
     ROOM_GROUP: 8,
     staticBody,
@@ -184,6 +189,7 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
       THREE,
       artifact: data,
       workshop: input?.level ?? workshop,
+      gorge: input ? { ...gorge, placements: [] } : gorge,
       names,
       validateArtifact,
       validateColliderWorldTransforms,
@@ -191,7 +197,8 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
       validateLevel,
       validateLevelArtifact,
       validatePrefab,
-      builders: new Map([
+      builders: new Map<string, () => THREE.Object3D>([
+        ['greybox.box', () => new THREE.Group()],
         [
           'seat.chair',
           () => {
