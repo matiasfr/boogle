@@ -105,3 +105,64 @@ Run today on `de19c85a3`, `npm run level-check -- --place=place`:
 1. **Does the flip go ahead under "Engine foundations first"?** Recommended: **yes.** It changes rule constants and one data table, adds no component, op or system, and so leaves nothing to migrate; you agreed to the flip today.
 2. **Is one bump at X1, and possibly a second at R2 if the town's paths move trees, fine?** Recommended: **yes**, each ships when ready.
 3. **The first sealed building opens empty (greybox walls, a door, nothing inside yet)?** Recommended: **yes**; residents and dressing wait for the details phase.
+
+## Design review (designer, 2026-11-13)
+
+**Read and run:** owner calls on origin/main (Development is live, Playtest before bespoke functionality, Engine foundations first, Save resets never block), "Home gets one coherent station" (rail, 9 November), home-station's review (its answers 4 and 5), town-layout's review of 10 November, the top blocks of home-station-layout, level-design and progression-flow-layout, `halts-view.ts`, `railway-server.ts` (`rail.call`), `tree-catalog.ts`, `npm run loop`, and `BOOGLE_HOME=b npm run level-check -- --place=place`. Five stills of layout B as built (`?home=b`, before F1): from the commons at G, from spawn, from the hall's back down the apron, from the island's end toward line 1's turnout, and from the island back to the hall.
+
+**Seen:** the rack's posts stand in the middle of the apron between the two buffers (problem 5 is real). From spawn the shelf fills the hall and the way through is the open bay to its left. From G the finders' bay, on its "for now" spot, hides the hall (R2 moves it). Each island edge has its own lever under its own signal and plaque. Through the hall from the island the town reads well.
+
+**Not judged:** no train was seen moving through the 9.5 m turnout; the garage's new stand, the goods door, Sleeves and the rack at their new places (none is built); the footing walk with a footing in hand; the Round; phone size. The playtest sessions (all on Place, 12 November) hold no Home-station moment, so the flow findings rest on the loop graph and arithmetic.
+
+### Calls
+
+| # | Call | Kind | Ruling |
+| --- | --- | --- | --- |
+| 1 | Layout B's shape, the table, one stall, low end walls, the shelf's place | Decided | Owner, 9 November (rail, "Home gets one coherent station") |
+| 2 | The Round; the gate cottage is the first sealed building to open | Decided | Owner, 10 and 12 November; town-layout review call 17 |
+| 3 | The greybox station is Home for everyone | Decided | Owner, 13 November ("Development is live") |
+| 4 | A bump at X1, and a second at R2 if needed | Decided | "Save resets never block development or architecture" and "Nothing waits on a world bump". Question 2 need not be asked |
+| 5 | The rack at (−84.53, 10.05) | Default | Accept. The 2.2 m lane is under the town's 2.4 m alley figure; if F1's still shows two players squeezing, move it a further 0.2 m |
+| 6 | Sleeves at (−95.86, 9.65) | Default | Accept, with one condition: he stands beside the open north bay, not in it (finding 3) |
+| 7 | A 1.5 m goods door in the north wall's back half | Default | Accept. A travel edge between two open grounds; it reaches nothing early |
+| 8 | The garage stand radial at 85°, r 6.5 | Default | Accept. Proved by the sweep test on row `b`; seen at X1 |
+| 9 | No `?home=` value; the old Home tagged | Default | Accept. It is what "Development is live" asks for |
+| 10 | Stable tree planting, the table regenerated | Default | Accept the goal, **not the method as written** (finding 1) |
+| 11 | The step from the deck to a car (the tool reports the edge 1.45 m from the rail, 0.55 and 0.75 m today) | Default | Accept on the numbers (edge to track centre is 1.65 m in both layouts). The figure is unexplained; X1's platform still must show the gap |
+| 12 | The gate cottage opens as an empty greybox room | New | Yes: a door that opens, bare walls, no resident and no copy. An empty room is honest greybox and fits "Playtest before bespoke functionality". The owner's question 3 |
+| 13 | Which train a lever ask calls on the island | New | **The lever's own line.** A player at a lever expects the train on the rail beside it, going where the plaque above it says. That is what is built: the knobs stand about 3.7 m apart and a prompt reaches 1.8 m, so no spot offers both. Never pick by the nearest platform centre. The server's shared reach is fine. Two additions (finding 4) |
+| 14 | Line 1's turnout at 9.5 m | New | **Accept.** Line 1 already runs an 11.1 m turnout at s 182 and line 2 leaves Home on 10.7 m today; trains pass it within 20 m of a stand, so slowly. Ease only if X1's video fails the test in "What the stills must show" |
+| 15 | The footing walk (19 to 36 m against 11 m) and the pedestal-to-seam walk (32 m against 14 m) | New | **Accept both**, as home-station's review did. About 13 s a footing at carry pace and 6 s to the seam, once a world, inside level-design's "something to do every 10 to 20 s". One condition (finding 2) |
+
+Decided 4, Default 7, New 4.
+
+### Findings
+
+1. **Trees: the fix as written replants the whole island, not "a few trees near Home". Change this before X1.** Today a skipped candidate draws no further numbers (`tree-catalog.ts:42-55`), and one stream gives every candidate its place. Making every candidate draw all its numbers shifts the stream from the first skipped candidate on, so all 362 trees move once. That moves the wood beside Q1 and Q2, the two hardwoods north of the forge (picked by place) and anything a tree hides. Recommended: plant with today's draws and today's order against a frozen mask, then drop only the trees the station's ground covers. If the planner keeps the full replant, the plan must say so, and X1 adds a check of the wood within 60 m of Q1 and Q2 and a still of the hardwoods. This is read from the planting code; the new table was not generated.
+2. **The stall's footings have no cue, and the flip puts a track between the train and the sockets** (flow rule 1, the next goal can be found). `npm run loop` lists the stall as "NO CUE (prompt-only)". Home-station's review accepted the walk with a boarded crossing over road 2 at the island's end; that crossing is in its step 11, which the flip does not build. Recommended: a greybox board crossing rides F2 (view only), sited off the points, so the short way is drawn on the ground.
+3. **F1 moves the first character a player meets and takes no still of him.** Add an arrival still to F1 (below). Cheap, and it is the first sight of the game.
+4. **The island's two levers read the same.** Both prompts say "Request stop", 3.7 m apart, and only the plaque tells them apart. Recommended (Default): on the island the prompt names its end, in the form middle halts already use ("Request stop: to …"); and a test holds the two knobs more than twice the prompt reach apart (the margin today is about 0.1 m). Not The Boogler's copy.
+5. **Between F1 and X1 the flag's view and the rules disagree.** Accepted as today's state, but no still taken under the flag in that window proves a prompt's place.
+
+No route-contract finding: the level check's progression lines match in both layouts and nothing is reached before its ability. Co-op: spawn stays in front of the hall as the meeting place (town-layout call 19).
+
+### What the stills must show
+
+- **F1** (`?home=b`, `q1-done`). The platform, from the hall's back bay: the lane beside the rack with a player in it, the head ramp at its end, the goods door with the forge through it. Arrival, from spawn at `awake` at eye height: Sleeves, the shelf and the open bay all readable, Sleeves clear of the bay.
+- **F2.** None of its own; if the crossing rides it, one still from where line 2's train stops, showing the boards and the stall's sockets in one frame.
+- **X1** (no flag). Arrival as above. The platform at `trains-on`: a train at each edge, the gap from deck to car floor, both levers and plaques. The turnout, in real time from the island's end ramp as a line 1 train leaves: no car corner over the next rail or the ramp's foot, and no snap between cars worse than at s 182. The Roundhouse from bearing 15° with the table turned: stand, jib and crew outside the deck's sweep, the jump-in landing free. From the commons at G toward the hall. The two videos as planned.
+- **R2.** From the commons and from the top of the dock street, also at phone size: the gate cottage's open door reads as a way in; the finders' bay no longer hides the hall.
+
+### Cleared to build
+
+- **F1: now.** View only, behind the flag. Add the arrival still.
+- **F2: now.** The fourth car landed on main (f464b11d2); merge main first. Add the crossing.
+- **R1: now.** View only and independent of the flip.
+- **X1: waits** for the owner's answer to question 1 and for finding 1's change to the plan. X2 rides it.
+- **R2, R3: after X1.** R2's empty room proceeds on call 12 unless the owner answers question 3 otherwise.
+
+### Owner questions (his to answer)
+
+1. **The flip under "Engine foundations first".** Recommended: **yes.** It moves constants and one table, adds no component, op or system, so there is nothing to migrate; he agreed to the flip on 13 November. The one cost is a collision if the engine work is open on `src/sim/railway-lines.ts` at the same time.
+2. **One bump at X1, perhaps a second at R2.** Recommended: **yes**; his standing calls already cover it.
+3. **The first sealed building opens empty.** Recommended: **yes.**
