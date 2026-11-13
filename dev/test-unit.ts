@@ -17,7 +17,8 @@ if (ship && !only.length) {
   console.error('test:unit --ship: UNIT_ONLY lists no test files (dev/ci/unit-select.ts prints them)');
   process.exit(1);
 }
-const files = ship ? only.sort() : fs.globSync('test/**/*.test.ts').sort();
+// An explicit selection also scopes local checkpoints (npm run check); absent it, defaults are unchanged.
+const files = only.length ? only.sort() : fs.globSync('test/**/*.test.ts').sort();
 if (!files.length) {
   console.error('test:unit: no files match test/**/*.test.ts (run it from the repository root)');
   process.exit(1);
