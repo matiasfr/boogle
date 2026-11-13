@@ -6,7 +6,7 @@ import workshop from '../../content/built/levels/workshop.json' with { type: 'js
 import { names } from './names.ts';
 import type { BuilderName } from './names.ts';
 import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
-import { validateArtifact, validateLevelArtifact, validateLevel } from './validate.ts';
+import { validateArtifact, validateLevelArtifact, validateLevel, validatePrefab } from './validate.ts';
 import './builders/seat-chair.ts';
 import { builders } from './builders.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
@@ -36,8 +36,11 @@ export function instantiate(
     gates?: Readonly<Record<string, () => boolean>>;
   },
 ) {
+  const owner = options.owner;
+  if (!owner.alive) throw new Error('prefabs: cannot instantiate for a disposed owner');
   const def = compiled.prefabs[key];
   if (!def || placement.prefab !== key) throw new Error(`prefabs: unknown or mismatched prefab ${key}`);
+  validatePrefab(def);
   validateLevel({ place: 'runtime', placements: [placement] }, compiled.prefabs);
   // These fields have no authored users yet. Fail closed until their conversion step provides the implementation.
   if ('asset' in def.visual || ('batch' in def.visual && def.visual.batch) || def.material)
@@ -53,17 +56,17 @@ export function instantiate(
       gates.set(interaction.at, gate);
     }
   }
-  const owner = options.owner;
   const root = new THREE.Group();
   root.position.fromArray(placement.pos);
   root.rotation.copy(euler(placement.rot));
   root.scale.fromArray(placement.scale ?? [1, 1, 1]);
-  if ('builder' in def.visual)
-    root.add(builders.get(def.visual.builder)!({ ...def.visual.params, ...placement.params }));
-  owner.add(root);
-  root.updateWorldMatrix(true, true);
-  const scale = root.getWorldScale(new THREE.Vector3());
-  const rotation = root.getWorldQuaternion(new THREE.Quaternion());
+  // Preflight world transforms and all collider recipes while detached, before allocating a visual or owning it.
+  root.updateMatrix();
+  owner.root.updateWorldMatrix(true, false);
+  const matrixWorld = new THREE.Matrix4().multiplyMatrices(owner.root.matrixWorld, root.matrix);
+  const scale = new THREE.Vector3(),
+    rotation = new THREE.Quaternion();
+  matrixWorld.decompose(new THREE.Vector3(), rotation, scale);
   // Combine record coordinates in the author's frame before adding the room's full-precision ground height.
   // That preserves today's literal addition order, including the chair's z=1.4 exit.
   const world = (at: Vec3) => {
@@ -80,7 +83,7 @@ export function instantiate(
   const recipes: { shape: Shape; at: THREE.Vector3; q?: THREE.Quaternion; group?: number }[] = [];
   for (const c of def.colliders) {
     const q = rotation.clone().multiply(new THREE.Quaternion().setFromEuler(euler(c.rot)));
-    if (c.rot && scale.x !== scale.y && scale.y !== scale.z)
+    if (c.rot && (scale.x !== scale.y || scale.y !== scale.z || scale.x !== scale.z))
       throw new Error('prefabs: rotated collider under nonuniform scale');
     const add = (shape: Shape, at = c.at) =>
       recipes.push({
@@ -106,6 +109,10 @@ export function instantiate(
         throw new Error('prefabs: capsule implementation awaits an authored user');
     }
   }
+  if ('builder' in def.visual)
+    root.add(builders.get(def.visual.builder)!({ ...def.visual.params, ...placement.params }));
+  owner.add(root);
+  root.updateWorldMatrix(true, true);
   const bodies: Body[] = [],
     seats: Seat[] = [],
     unseats: (() => void)[] = [];

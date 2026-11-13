@@ -46,10 +46,21 @@ export function validateJson(value: unknown, ancestors = new Set<object>()): voi
     fail('non-JSON class');
   if (Object.getOwnPropertySymbols(value).length) fail('non-JSON symbol');
   ancestors.add(value);
+  const descriptors = Object.getOwnPropertyDescriptors(value);
   if (Array.isArray(value)) {
-    for (let i = 0; i < value.length; i++) validateJson(value[i], ancestors);
+    // Read descriptors, never indexed values: validation must not run authoring getters.
+    const length = descriptors.length!.value as number;
+    if (Object.keys(descriptors).length !== length + 1) fail('non-JSON array property or hole');
+    for (const [key, descriptor] of Object.entries(descriptors)) {
+      if (key === 'length') continue;
+      const index = Number(key);
+      if (!Number.isInteger(index) || index < 0 || index >= length || String(index) !== key)
+        fail('non-JSON array property');
+      if (descriptor.get || descriptor.set || !descriptor.enumerable) fail('non-JSON array accessor or property');
+      validateJson(descriptor.value, ancestors);
+    }
   } else {
-    for (const descriptor of Object.values(Object.getOwnPropertyDescriptors(value))) {
+    for (const descriptor of Object.values(descriptors)) {
       if (descriptor.get || descriptor.set || !descriptor.enumerable) fail('non-JSON property');
       validateJson(descriptor.value, ancestors);
     }
@@ -70,6 +81,7 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
     if (v.batch !== undefined) text(v.batch);
     if ('asset' in v || 'none' in v) fail('ambiguous visual');
   } else if (Object.hasOwn(v, 'asset')) {
+    if (!Object.hasOwn(registry.assets, text(v.asset))) fail(`unknown asset ${String(v.asset)}`);
     const asset = registry.assets[text(v.asset)];
     if (!asset) fail(`unknown asset ${String(v.asset)}`);
     if (v.node !== undefined) known(v.node, asset.nodes);
@@ -88,9 +100,7 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
         number(c.r, true);
         break;
       case 'capsule':
-        number(c.r, true);
-        number(c.halfHeight, true);
-        break;
+        return fail('capsule implementation awaits an authored user');
       case 'trunk':
         number(c.r, true);
         number(c.h, true);

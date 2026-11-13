@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { validateArtifact, validateJson, validateLevel, validatePrefab } from '../src/prefab/validate.ts';
 import { metadata, type PrefabDef } from '../src/prefab/types.ts';
 import type { NameRegistry } from '../src/prefab/names.ts';
+import { compile } from '../dev/prefab/compiler.ts';
 
 const registry: NameRegistry = {
   builders: ['chair'],
@@ -47,4 +48,44 @@ test('JSON rejects values serialization would erase', () => {
   const cycle: unknown[] = [];
   cycle.push(cycle);
   assert.throws(() => validateJson(cycle));
+});
+
+test('review regression: compiler rejects callback properties on arrays', () => {
+  const values = Object.assign([], { callback: () => 0 });
+  const record = { ...prefab(), visual: { builder: 'chair', params: { values } } };
+  assert.throws(() => compile([record as unknown as PrefabDef], [], registry), /non-JSON/);
+});
+
+test('review regression: array accessors are rejected without executing them', () => {
+  let calls = 0;
+  const values = [0];
+  Object.defineProperty(values, '0', {
+    enumerable: true,
+    get() {
+      calls++;
+      return 0;
+    },
+  });
+  assert.throws(() => validateJson(values), /non-JSON/);
+  assert.equal(calls, 0);
+});
+
+test('review regression: inherited names never satisfy registry membership', () => {
+  for (const name of ['toString', 'constructor', '__proto__']) {
+    assert.throws(() => validatePrefab({ ...prefab(), visual: { asset: name } }, registry), /unknown asset/);
+    assert.throws(
+      () => validatePrefab({ ...prefab(), visual: { builder: name, params: {} } }, registry),
+      /unknown name/,
+    );
+    assert.throws(() => validatePrefab({ ...prefab(), interactions: [{ action: name }] }, registry), /unknown name/);
+    assert.throws(
+      () =>
+        validatePrefab(
+          { ...prefab(), interactions: [{ action: 'sit', gate: name }] },
+          { ...registry, interactions: ['sit'] },
+        ),
+      /unknown name/,
+    );
+    assert.throws(() => validatePrefab({ ...prefab(), material: name }, registry), /unknown name/);
+  }
 });
