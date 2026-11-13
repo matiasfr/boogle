@@ -1,4 +1,5 @@
-> **Status: plan for the owner's and the designer's review (12 November 2026).** Nothing here is built. The next Ring
+> **Status: cleared to build by the design review below (12 November 2026); G1 and G2 are built, G3 to G5 and the
+> checkpoint are not.** G2's stand does not fit as the review placed it: [G2 as built](#g2-as-built-12-november-2026). The next Ring
 > Island item after greybox leg 1 step 3 (owner, 12 November: "yes, plain for now", "but prioritize the garage
 > moment"). View only: no sim, wire or save change, no `WORLD_NS` bump.
 
@@ -151,12 +152,165 @@ steel pallet (72°, 6.0 m), the plain post (92°, 5.2 m) and a timber frame at 9
 | 7 | The copy is solid: one static box per vehicle | A player standing on the deck when the wagon couples would be pushed out; after that the copy is always there. Nothing a player must reach lies across the table | Accept |
 | 8 | **Reached before the ability that should gate it** | None. The garage opens once the boiler is fitted and the wagon has coupled; Install needs `Shed.steel >= 1`, judged by the server. No route, reach or ability is added | None |
 
+<a id="g2-as-built-12-november-2026"></a>
+
+### G2 as built (12 November 2026)
+
+Measured on the build (`test/garage-geo.test.ts` pins them; stills in `.look/`, named in the hand-over). Bearings
+clockwise from north, metres from the table's centre (918, 12).
+
+| Piece | As built | Clearances |
+| --- | --- | --- |
+| The works copy | At rest along the bridge on the stall road's axis, nose at 45° (toward line 1). Two static boxes at that pose, which never turn: the engine 2.0 by 4.0 by 2.5 m (4.5 m long once the longer boiler is on), the car 2.2 by 3.2 by 0.8 m | Corners 4.4 m, inside the 4.8 m deck. Each box is added only once this tab's player is clear of it by 0.55 m |
+| The post | 92°, 5.2 m (where build 2's plain post stood) | 0.4 m inside the reach the prompt keeps (5.6 m); 1.5 m from the landing |
+| The stand | 118°, middle 6.5 m, along the radius, the barrel nose to the table: it spans 4.93 m to 8.08 m. Legs at 6.1 m and 7.6 m, 0.5 m either side of the axis (G2b, ruling R2) | Did not fit as first ruled (below); accepted as built by the [ruling](#design-ruling-on-g2-as-built-designer-2026-11-12). Its side overhangs line 2's sleeper ends by 0.34 m and passes 0.316 m from the landing point (the test's measure; first written as 0.33) |
+| The jib | 118°, 8.4 m; mast 4.4 m, arm 10.6 m. Parked, the arm points along 100° from its mast, over the grass east-south-east; it points at the hook only while a part is in sight and through a moment (G2b, R3) | 2.5 m from line 2's centre. The arm reaches the engine's seat at any turn of the table (8.4 + 1.9 m) and clears the tall chimney (3.5 m over the grass) |
+| The pallet | 64°, 7.0 m (G2b, R6; it was 72°, 6.0 m) | 2.8 m from line 1's centre |
+| The crew | 121°, 9.4 m and 114°, 8.7 m, by the mast | 2.3 m and 3.1 m from line 2's centre; 3.2 m or more from the landing |
+| The camera | From 85° (east), 9.2 m out, 2.7 m up (G2b, R4; first built at 100°) | Below |
+| `TABLE_LAND` | Untouched: (923.2, 18.1, 13.7), asserted | |
+| Train tails | Line 2 at s 8.0. Line 1 at s 5.0 by the catalogue (`halts[0].s` 14.0 m less `TRAIN_EXTENT.behindCm`), not the 8.7 of row 1: 0.2 m off the rim, 0.6 m from a longer boiler's nose at rest | Arithmetic on the catalogue; the tails assertion was dropped at the test review |
+
+**The stand: finding 3's numbers do not fit, for the designer.** The review placed the stand radially at 5.6 m with
+legs 0.9 m either side. The part that lies on it is the longer barrel, 3.15 m long and 1.25 m across (`engine.ts`), so
+at 5.6 m its inner end is at 4.0 m, inside the copy's 4.4 m sweep, which is what call 24 forbids. With the inner end
+off the deck (4.93 m) the barrel needs 1.78 m from line 2's centre at that end to clear the sleepers (bearing 113.8° or
+less) and 0.98 m from the landing to clear a landing player (118.2° or more): no bearing does both, and anything
+further out on the landing's own bearing stands in the jump-in camera. Built: the test-asserted rules first (4.8 m,
+the landing untouched, every point off the sleepers), 118° as the even split of what is left. The overhang is over
+track no train stands on (the tails stop at s 8.0) and 0.13 m clear of the rail. Choices for the ruling: accept; move
+the view-only pallet and stand the part where it is (62° to 81° is free of both lines once the pallet goes, but that is
+in front of the east camera); or stand it on line 2's far side, by the platform end.
+
+**The reach proof (finding 2).** `dev/look/evals/garage-walk.ts`, forge door to the post, real time, the Mac at load
+6.5 to 10 (the seconds are not evidence; the metres are). Today's straight walk over the empty deck (`stall-done`):
+14.8 m, 2.7 s. With the copy solid (`steel-home`): the bot's own planner hops onto the flat car and over it, 15.9 m,
+3.1 s, rising 0.91 m; sent round the engine's nose on line 1's track bed instead it walks 17.0 m in 3.3 s and rises
+0.33 m, the same rise as that route with no copy (17.0 m, 3.1 s). So the copy adds about 2 m and well under a second
+and needs no jump: the first car's box stays. The flat car can be stood on, like the wagon.
+
+**The camera (finding 7).** East at 85°: the engine is clear from the wheels up and nothing meets the chimney, but the
+stand and jib are out of frame (only the arm crosses the top) and the pallet fills the lower right. **100° is built:**
+the waiting barrel on its stand is the left foreground under the arm, trolley and chain, the engine stands clear
+right of centre, the post and its knob fall right of centre, nothing meets the chimney. What is wrong in it: the
+barrel covers about a quarter of the frame and hides the car's wheels; the mast is out of frame; the pallet still
+shows in the lower right corner; the engine is seen side on (the deck turns it only 3° from rest); no line 2 train
+is in frame from any east camera at this distance (it stands behind the camera's left shoulder). South (180°),
+taken for comparison: the engine three-quarter front and the stand in frame on the right, but the forge crane's mast
+rises behind the cab and line 2's platform slab is the foreground. The camera row is one number
+(`GARAGE_GEO.a.camBearing`).
+
+**G2b, after the ruling (12 November).** One yaw by state on `armPivot`, as the ruling expected: it eases at 1.5 rad
+a second (about 2 s for the swing), follows a part on the hook at 9, snaps on a restore, and a swing in on a live tick
+plays one `cordPull` and one `clank` at the mast. The trolley and chain show once the arm is over the hook. The camera
+stays at 85°: the nudge to 92° was not tried, since at 85° the frame already meets R5. Looked at:
+`g2b-cam-waiting-still` (steel home: the engine clear from the wheels up, nothing at the chimney, the post and orange
+knob low centre, the arm, trolley and chain in from the top left; the barrel's nose takes about a seventh of the
+frame at the lower left and ends just short of the car; the pallet is a sliver in the lower right corner),
+`g2b-cam-empty-still` (fitted: the arm out of frame, one stand leg and line 2's platform end at the left, the pallet
+a corner), `g2b-top-parked-still` (the arm off the table over open grass, running out of frame to the east-south-east;
+both legs outside 6 m) and `g2b-jump-still` (the jump-in's own camera: the player whole and in the clear with the
+barrel alongside on the left, its near end large in the lower left; the mast and a crew figure's head are at the
+frame's left edge and the timber cart at the lower right). Not seen: the swing itself in motion.
+
+**What `wagonCoupled` means, and when the copy shows.** `wagonCoupled` is "some line 2 train row carries `wagon`"
+(`garage-state.ts`). `deckK === null` is not the rest test: once the wagon has coupled `deckK` is never null again (it
+is 0 at rest), and the coupling can land while the shunter is still backing over the deck. The copy shows when
+`wagonCoupled` and the deck is at rest: no choreography turn (`deckK` null or 0), the table not turning, the shunter
+home in its stall (`roundhouse-view.ts`, `restYaw`). First shown on a live tick: 26 steam particles along the train
+and `whistle`; after a restore: no effect.
+
+**Calls made building it (defaults, for the log).** The garage opens only once the copy stands (it used to open from
+the boiler's fit, on an empty table). The jib and empty stand are there whenever the copy is; the crew from steel
+home, and while the garage is open. The copy's wheels and chuff run only in the garage. The camera's side and the
+copy's nose are picked from the bridge's rest so the deck turns least on opening; the engine shot's camera now lands
+exactly on the row's bearing, which moves layout B's by about 10°. The hook takes the barrel on top at its middle,
+and with no part in sight the arm rests over the stand. `GarageGeo` gained `mast`, `arm` and `standAlong` beside the
+plan's fields; `restYaw()` returns null while the deck is not at rest.
+
+**Not seen.** The copy's arrival on a live tick (the puff and whistle), a restore mid-shunt, a player on the deck as
+the boxes arrive, the show-off turn at today's table, a second player, a phone. Not tested on a device.
+
+<a id="g3-as-built-12-november-2026"></a>
+
+### G3 as built (12 November 2026)
+
+- **The intent path needed nothing outside views.** `adapter.installBoiler(revision)` was already there
+  (`railway-intents.ts`); the garage calls it through `deps.install`. No adapter, sim, net, world or server edit.
+- **The wait.** The completed hold sends `rail.install` on `Line.boiler` as this tab saw it; the moment's clock runs
+  to `MOMENT.quiet` (180 ms) and holds there until `accepted(true)`; the hanging part sways and the button's ring
+  breathes (`.garage-ui.waiting`). `MOMENT.answerBy` (2.5 s from the commit) with no answer, the adapter's
+  correction for the install, an unsent intent or `adapter.read.ready()` going false lowers the part down the lift's
+  own path (`uiSound('deny')`), and the hold can be made again at once: Back is free as soon as it starts down.
+- **A real moment ends fitted**: no rest, no undo; the copy wears the rows. The whistle and the full turn are the
+  real install's only (a Try it has neither).
+- **Press-to-drop, measured** (`dev/look/evals/railway-install-act.ts`, `--real`, a local server, the Mac at load 10
+  to 14, three captures): commit 1211 to 1219 ms after the press, the accept 14 to 15 ms later, the drop's start at
+  1375 to 1385 ms, the hit at 1526 to 1537 ms. The designed figure is 1380 (1200 hold, 180 quiet): the wait cost
+  nothing here. A real room's round trip is not measured; over about 180 ms it adds to the hang.
+- **The camera's side is fixed** (G2's pick of a side is gone): seen from the other side the engine stood under the
+  panel on the right, which the first capture showed. The engine shot now always has the engine on the left, three
+  quarters from the front, so at today's table the deck turns the copy 92° on opening (nose to 137°, toward the
+  stand), at a quarter turn a second. That replaces "the deck turns least".
+- **The banner stays** in `boiler-install-view.ts` for a page whose garage is shut (the plan moved it to G4): without
+  it a friend away would get nothing between G3 and G4.
+- **A tab's own accept that lands after its hang gave up**, and anyone else's accept, just show in the rows for now:
+  no moment. That is G4.
+- **Labels.** "Install" (idle, and through the moment until the whistle), "Keep holding", "Installed" from c+1800
+  with `uiSound('pop')`; the button's aria label "Hold to install". The "Trying it on" tag is not shown for a real
+  install.
+- **Looked at** (`g3-install-realtime.webm`, its 16-frame sheet and a 20-frame strip; `g3-cam-waiting-still`,
+  `g3-cam-empty-still`): the hold lifts the barrel from the lower left across to the engine; the drop lands with the
+  tile turning "Installed" and the knob green; the rows count (24 then 25 m/s, 14.4 then 15.3); "Installed" on the
+  button at about 3.2 s; the engine turns once round between about 3.6 and 5.2 s and comes back to the pose; then the
+  button is gone and the rows are ink. **Wrong in it:** the player and the post stand in front of the engine's front
+  wheels and buffer in the garage's frame; the waiting barrel's nose covers the lower left eighth and the corner of
+  the buffer; the pallet is a band in the lower right, more than a corner, partly under the parts strip; on the way
+  over, the barrel passes close to the camera and hides the engine for about a third of a second; the stall's roof
+  line sits behind the chimney's cap; the button reads "Install" for 1.8 s after the commit. Sound was not heard
+  (a capture has none). Not seen: a deny, the 2.5 s timeout, a lost connection, a second player, touch.
+- **The bot and the loop.** `railway-steel.ts` presses `railway-garage`, checks it opened on the Longer boiler ready,
+  holds Interact until `Line.boiler` is 1, waits the moment out and closes the garage; its playthrough was not run
+  (the checkpoint's). `railway-install.ts` (eval) does the same with a tap that must install nothing first: passed
+  on `steel-home`. It waits 14 s first, because a player seeded into a room is shown each ability's flourish in turn
+  (`ability-arrival.ts`), the last a small boiler over Buddy, which the first capture caught beside the engine.
+  `npm run loop -- node install`: the cue names the garage's post; no rule changed.
+
+**After the review of G1 to G3 (12 November; no P1, one fix before shipping).**
+
+- **The engine stays at the opening pose while the Longer boiler is chosen and can be installed** (the reviewer's
+  P2-1: after 17 s in the garage the Engine category's idle turn had carried the boiler, drop and bolts under the
+  right-hand panel). No idle turn in that state; a table already turned (the player came from another tile) comes
+  home at a quarter turn a second, through the hold too, and a real install's drop waits at the quiet until it is
+  home. Looked at: `g3-dwell-install-realtime.webm` and its sheet, a 17 s wait and then the hold: the lift, drop,
+  bolts, whistle and turn all left of the panel. The come-home from a turned table was not staged.
+- **The button reads "Installed" from the hit** (it read "Install" beside an "Installed" pill until the whistle); the
+  `pop` moved with it.
+- **A part hanging for the answer rises 0.9 m over the designed hang**, clear of the boiler that is on, with the
+  seat's ghost left showing under it; at 0.6 m it sat inside the old barrel and read as fitted. **"Keep holding" is
+  shown only while the press is down**, not while the part lowers after a refusal or the timeout. Looked at
+  (`g3-timeout-realtime.webm`, the reviewer's held-back wire): the part 0.96 m higher through the wait, lowered 2.5 s
+  after the commit, the button reading "Install" on the way down.
+
+**Left for G4 or a follow-up (from the review; not built).**
+
+- A refusal runs the full 2.5 s: the adapter's correction for an unpredicted `rail.install` does not reach the view in
+  time to end the hang early.
+- A late accept, after the hang gave up, turns the tile to "Installed" with no moment.
+- A socket drop in the middle of a moment shuts the garage on the reconnect (the restore).
+- The barrel may blink off its stand for a frame after a deny.
+- The phone frame (440 by 796): Install can be reached, but only the ghost boiler and the buffer show; it wants a
+  portrait camera row. A real touch hold is untested.
+- "Look at the engine" is the post's prompt even with the boiler ready to install: suspect copy for the owner.
+- The framing ruled as built: the barrel's nose in the lower left, the player and post before the front wheels, the
+  pallet's band, the barrel passing the camera in the lift. For G4 or the flip.
+
 ## 6. Steps
 
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and
 the live install working. One proof look each; the full check, the bot and the two-player look are the checkpoint's.
 
-- [ ] **G1. The room's facts and a true tile (S).** Edit `garage-data.ts` (`RoomFacts`, `Standing`, `partsOf`,
+- [x] **G1. The room's facts and a true tile (S).** Edit `garage-data.ts` (`RoomFacts`, `Standing`, `partsOf`,
       `BOILERS` from `BOILER_SPEED`, `rowsFor`'s `fitted`), `garage-state.ts` (`roomFacts` reads `shed(w).steel`,
       `line(w, LINE2).boiler`; the header's "nothing is read" line corrected), `src/features/garage.ts` (pass the fact;
       pill classes), `garage.css` (two pill colours), `test/garage-data.test.ts`. Longer boiler: "Needs steel", then
@@ -164,7 +318,11 @@ the live install working. One proof look each; the full check, the bot and the t
       the leftover "the tile in `?home=b` still reads Needs steel". Tests: the three standings from three fact sets;
       a fitted room's rows carry no arrow. Proof: `npm run look -- --rail-seed boiler-long --query home=b --eval
       dev/look/evals/garage-open.ts`, the tile reading "Installed".
-- [ ] **G2. The garage and the works copy at today's table (M).** Create `src/entities/railway/garage-geo.ts`
+      **As built (12 November):** as planned. `boilerRev` is `Line.boiler` itself (what `adapter.installBoiler` is
+      sent on). The Longer boiler is not tryable once fitted (no button). Looked at: `boiler-long` under `?home=b`,
+      Longer boiler "Installed", Boiler "Replaced" struck through, rows 25 m/s, 4 cars, 2.9, 15.3 in ink with no
+      arrow. Still wrong there until G2: the copy wore the short boiler with the yellow ghost over it.
+- [x] **G2. The garage and the works copy at today's table (M).** As built: [below](#g2-as-built-12-november-2026). Create `src/entities/railway/garage-geo.ts`
       (section 4; `a` from section 5). Edit `garage-view.ts` (take the geo row; `restYaw`; the copy shown from
       `wagonCoupled`, wearing `longFitted`, bolts on when fitted; two static boxes through `addStatic(..., owner)`;
       the long boiler on the stand and the knob orange when `steelHome && !longFitted`, green when fitted;
@@ -176,7 +334,7 @@ the live install working. One proof look each; the full check, the bot and the t
       false for `b` against today's `SHED_TABLE`; every `a` point outside both lines' sleepers and off the landing;
       both train tails off the deck. Proof: the top-down still of section 5 with the garage drawn, and its numbers
       written back into section 5 as built. **Visual review** per `npm run models`.
-- [ ] **G3. The real Install (M).** Edit `garage-view.ts` (`deps.install`; with `canInstall` the completed hold calls
+- [x] **G3. The real Install (M).** As built: [below](#g3-as-built-12-november-2026). Edit `garage-view.ts` (`deps.install`; with `canInstall` the completed hold calls
       `install(facts.boilerRev)` and the moment's clock holds at `MOMENT.quiet` until `accepted(true)` arrives;
       2.5 s with none: the part lowers, `uiSound('deny')`; a real moment ends fitted, with no rest-and-undo; Try it
       skips the whistle and the turn), `src/features/garage.ts` (button "Install", "Keep holding", "Installed" with
@@ -389,3 +547,66 @@ None blocks the build; each proceeds on its recommendation and is logged in [age
   race where the second holder keeps camera and input.
 - **G5.** As planned.
 - **Checkpoint.** Report press-to-drop from the real-time capture. The fourth car is the next Ring Island step.
+
+## Design ruling on G2 as built (designer, 2026-11-12)
+
+**My finding 3 was wrong in its numbers.** I sized the stand by its legs (0.9 m either side), not by the 3.15 m by
+1.25 m barrel that lies on it, so "radial at 5.6 m" put the barrel's inner end inside the sweep it was meant to
+clear. The rule (call 24, nothing fixed within 4.8 m) stands; the placement is replaced by this ruling.
+
+**Looked at** (the builder's stills on a46c987cf): `g2-top-still`, `g2-cam-still` (100°), `g2-cam-east85-still`,
+`g2-cam-180-still`. **Not seen:** the arm parked, the barrel from 86° to 92°, the jump-in's first frame, anything
+moving, the empty stand beside a car. Those are G3's stills, named below.
+
+| # | Ruling | Kind |
+| --- | --- | --- |
+| R1 | **The stand stays as built:** 118°, middle 6.5 m, along the radius, the barrel nose to the table (4.93 to 8.08 m). The 0.34 m over line 2's sleeper ends and the 0.33 m from the landing point are accepted | Default |
+| R2 | **The stand's legs must clear a car on line 2:** legs at 6.0 m or further out, no wider than 0.5 m either side of the barrel's axis, asserted in `test/garage-geo.test.ts` | Default |
+| R3 | **The jib keeps its size** (mast 4.4 m at 8.4 m, arm 10.6 m) **but the arm parks off the table.** It points at the table only while a part waits (steel home, not yet fitted) and through the install; otherwise it is swung away from the table over the open grass east-south-east. It swings in over about 2 s when steel comes home on a live tick, with one `cordPull` and a `clank`; swings back after the show-off; snaps on a restore | Default |
+| R4 | **The camera is 85°, not 100°.** The builder may nudge it to at most 92° if the barrel's nose then enters the left edge, takes a tenth of the frame or less and stays off the car's wheels; otherwise 85° | Default |
+| R5 | **What the camera still must show:** the engine clear from the wheels up; nothing meeting the chimney; the post and its knob; with a part waiting, the arm in frame leading to the engine. Dropped: the mast in frame, the whole stand in frame, a line 2 train in frame | Default |
+| R6 | **The pallet may move** (it is view only) within 60° to 75°, 6 to 7 m, so it is no more than a corner of the 85° frame | Default |
+| R7 | The builder's own calls stand: the garage opens only once the copy stands; the jib and empty stand are there whenever the copy is; the crew from steel home; wheels and chuff only in the garage; the flat car can be stood on; the first car's box stays (the walk is 2 m longer, no jump); the copy shows on "coupled and the deck at rest" (the builder's test, not my `deckK === null`) | Default |
+
+**Why, option by option.**
+
+- **Accept the stand (the builder's option 1): yes.** Line 2 inside s 8.0 is track no train stands on, the barrel has
+  no collider, and the landing is the owner's jump-in, not a place a player arrives at in play. The barrel and the
+  fourth car never meet: the car arrives with the install, which takes the barrel off the stand. What is left is the
+  empty stand, hence R2. At its inner end the barrel's axis is 1.39 m from line 2's centre, which a car's side (about
+  1.25 m) all but touches; at 6.0 m it is 1.75 m, room for legs 0.5 m wide.
+- **Option 2 (62° to 81°, the pallet moved): no.** A barrel whose top is about 2.1 m up, 3.6 m in front of a camera
+  2.7 m up, hides the engine below about 1.2 m: the wheels that run up in the moment. It would force the south
+  camera, which has the forge crane's mast behind the cab (seen in `g2-cam-180-still`).
+- **Option 3 (line 2's far side, by the platform end): no.** That slab end is the walk from a line 2 train to the
+  table; a barrel there is walked through or blocks it.
+- **Along the rim or on end: no.** Along the rim needs 3.15 m of arc that the wedge only has where option 2 puts it.
+  On end it fits (118°, 6.2 m) but stands 3 m tall half a metre off the jump-in's camera line and stops reading as a
+  boiler waiting to go on.
+- **The arm.** A mast behind a radial stand is 8.4 m from the centre and must reach a seat 1.9 m past it; no smaller
+  jib does that, and there is no room for a mast at the rim beside the stand (the landing one side, the sleepers the
+  other). So the size is kept and the fault is fixed in time, not space: the arm crosses the copy only while there is
+  something to install. That also turns the crane swinging round into the telegraph that steel is home, seen from
+  line 2's platform. `armPivot` already exists, so this is one yaw by state.
+- **The camera.** `g2-cam-east85-still` is the best frame taken: the engine large and clear with the open stall
+  behind it, the post and knob low centre, off the wheels. At 100° the barrel is a quarter of the frame and hides the
+  car's wheels. The part is not lost at 85°: it comes in from the left along the arm that is already in frame.
+- **The line 2 train condition** was there to catch a standing train blocking the frame. None is in frame from the
+  east, so it is dropped.
+
+**Fallback.** If parking the arm is more than a small edit, the arm stays fixed over the stand for this build and
+that is logged as built; nothing else here depends on it.
+
+**For the Home flip, not this plan.** Layout B's row has the stand at 3.9 m, inside the 4.8 m rule; the flip re-places
+it. Line 1's tail stands 0.2 m off the rim (s 5.0, not the 8.7 of section 5's row 1): clear of the 4.4 m sweep by
+0.6 m, accepted.
+
+**What the builder changes (G3 carries it, or a small G2b first).**
+
+1. `GARAGE_GEO.a.camBearing`: 100 to 85 (up to 92 under R4's test).
+2. The stand's legs per R2, with the test.
+3. The arm's park and swing per R3; the parked arm out of the garage frame or only at its top edge.
+4. The pallet per R6 if it is more than a corner of the frame.
+5. Stills: the garage camera with a part waiting and with the stand empty and the arm parked; the top-down with the
+   arm parked; the `steel-home` jump-in's first frame (the barrel must not stand between the camera and the player).
+6. Section 5 and "G2 as built" updated with the numbers as built.

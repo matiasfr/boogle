@@ -1,7 +1,7 @@
 // The train garage's catalogue and readout maths (docs/brainstorms/engine-garage.md), pure: no scene, DOM or clock.
 // Local view data only: nothing here is sent, saved or read by the simulation. Speeds and times come from the
 // railway's own leg maths (src/sim/railway-train.ts) so a number on the screen is the number the timetable gives.
-import { trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
+import { BOILER_SPEED, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
 import { WORKS } from '../../sim/railway-works-layout.ts';
 import { LINE2_KIT } from '../../sim/railway-line2-layout.ts';
@@ -29,6 +29,12 @@ export type RoomFacts = {
   wagonCoupled: boolean;
   /** The shunter or the footing wagon is using the table (the roll-out): the garage waits ("The table's busy"). */
   tableBusy: boolean;
+  /** Steel has come home (`Shed.steel` of 1 or more): the longer boiler can be installed. */
+  steelHome: boolean;
+  /** The room's line 2 wears the longer boiler (`Line.boiler` of 1 or more). */
+  longFitted: boolean;
+  /** The boiler fit this tab last saw (`Line.boiler`): the revision an install is sent on. */
+  boilerRev: number;
 };
 
 export type PartId = 'boiler' | 'long' | 'plough' | 'four' | 'kitcar' | 'wagon' | 'cradle' | 'roof' | 'toot' | 'two';
@@ -41,6 +47,10 @@ export type Standing =
   | 'free'
   /** Cannot be installed yet because the material is missing (the part still shows as a ghost to try on). */
   | 'steel'
+  /** The material is home: it can be installed now. */
+  | 'ready'
+  /** A later part took its place; it cannot be put back. */
+  | 'replaced'
   /** Not built yet: shown so the category reads true, with no picture of its own. */
   | 'later';
 export type Part = {
@@ -65,8 +75,8 @@ export function partsOf(room: RoomFacts): Part[] {
       cat: 'engine',
       name: 'Boiler',
       desc: 'The first install. It woke the trains.',
-      standing: 'installed',
-      pill: 'Installed',
+      standing: room.longFitted ? 'replaced' : 'installed',
+      pill: room.longFitted ? 'Replaced' : 'Installed',
       size: 'large',
       tryable: false,
     },
@@ -75,10 +85,10 @@ export function partsOf(room: RoomFacts): Part[] {
       cat: 'engine',
       name: 'Longer boiler',
       desc: 'A steel boiler, half a metre longer, with a taller chimney and a sand dome. It runs faster and pulls one more car.',
-      standing: 'steel',
-      pill: 'Needs steel',
+      standing: room.longFitted ? 'installed' : room.steelHome ? 'ready' : 'steel',
+      pill: room.longFitted ? 'Installed' : room.steelHome ? 'Ready' : 'Needs steel',
       size: 'large',
-      tryable: true,
+      tryable: !room.longFitted,
       price: 'Free: the reward for reaching steel',
     },
     {
@@ -183,8 +193,8 @@ export const speedMs = (cmPerTick: number) => cmPerTick / 10;
 /** What each boiler sets (owner, 10 November: "certain boilers are faster but also raise the cap of the amount of
  * cars"): its top speed and how many cars the engine pulls. */
 export const BOILERS = {
-  boiler: { speed: 200, pulls: 3 },
-  long: { speed: 250, pulls: 4 },
+  boiler: { speed: BOILER_SPEED[0], pulls: 3 },
+  long: { speed: BOILER_SPEED[1], pulls: 4 },
 } as const;
 export type BoilerId = keyof typeof BOILERS;
 /** The line's run for the readouts: the Village stop to the line's last stop, in centimetres, or, until the island
@@ -228,12 +238,13 @@ export type Row = {
 export const rowChanged = (r: Row) => r.kind !== 'text' && r.now !== r.then;
 
 /** The rows a part shows, for the part chosen against what the category has now. Only rows the part changes carry a
- * preview (brief, call 37); a part that changes nothing shows what the category is today. */
-export function rowsFor(cat: CatId, chosen: PartId): Row[] {
+ * preview (brief, call 37); a part that changes nothing shows what the category is today. `fitted`: the room wears
+ * the longer boiler, so today's numbers are its and no row carries a preview. */
+export function rowsFor(cat: CatId, chosen: PartId, fitted = false): Row[] {
   const { cm } = lineRunCm();
   const end = lineRunCm().end;
   if (cat === 'engine') {
-    const a = BOILERS.boiler,
+    const a = fitted ? BOILERS.long : BOILERS.boiler,
       b = chosen === 'long' ? BOILERS.long : a;
     const runA = runSeconds(cm, a.speed),
       runB = runSeconds(cm, b.speed);
@@ -302,6 +313,8 @@ export const MOMENT = {
   hang: 0.6,
   /** A skip is offered from here (the game's one skip chip) and the hit can never be skipped. */
   skipFrom: 800,
+  /** A real install hangs at `quiet` for the server's answer; this long after the commit with none, the part lowers. */
+  answerBy: 2500,
 } as const;
 
 /** The hold's place along the lift (0 stand, 1 hanging over the seat): the ring's value, pushed back a little in the

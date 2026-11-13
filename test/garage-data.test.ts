@@ -9,9 +9,11 @@ import {
   partsOf,
   perMinute,
   roundTripSeconds,
+  rowChanged,
   rowProgress,
   rowsFor,
   runSeconds,
+  shownRow,
   speedOffered,
   speedSaved,
 } from '../src/entities/railway/garage-data.ts';
@@ -64,8 +66,37 @@ test('the lift follows the ring and pushes back in the last third', () => {
 });
 
 test('the wagon is free only once it has coupled; the longer boiler waits on steel', () => {
-  const find = (c: boolean) => partsOf({ boilerFitted: true, wagonCoupled: c, tableBusy: false });
+  const room = { boilerFitted: true, wagonCoupled: true, tableBusy: false, steelHome: false, longFitted: false };
+  const find = (c: boolean) => partsOf({ ...room, wagonCoupled: c, boilerRev: 0 });
   assert.equal(find(true).find((p) => p.id === 'wagon')!.standing, 'free');
   assert.equal(find(false).find((p) => p.id === 'wagon')!.standing, 'later');
   assert.equal(find(true).find((p) => p.id === 'long')!.pill, 'Needs steel');
+});
+
+test('the longer boiler reads Needs steel, then Ready, then Installed, and the old boiler Replaced', () => {
+  const base = { boilerFitted: true, wagonCoupled: true, tableBusy: false };
+  const of = (steelHome: boolean, longFitted: boolean) => {
+    const parts = partsOf({ ...base, steelHome, longFitted, boilerRev: longFitted ? 1 : 0 });
+    const pick = (id: string) => parts.find((p) => p.id === id)!;
+    return { long: pick('long'), boiler: pick('boiler') };
+  };
+  const none = of(false, false),
+    home = of(true, false),
+    fitted = of(true, true);
+  assert.deepEqual([none.long.standing, none.long.pill, none.long.tryable], ['steel', 'Needs steel', true]);
+  assert.deepEqual([home.long.standing, home.long.pill, home.long.tryable], ['ready', 'Ready', true]);
+  assert.deepEqual([fitted.long.standing, fitted.long.pill, fitted.long.tryable], ['installed', 'Installed', false]);
+  assert.deepEqual([none.boiler.standing, home.boiler.standing], ['installed', 'installed']);
+  assert.deepEqual([fitted.boiler.standing, fitted.boiler.pill], ['replaced', 'Replaced']);
+});
+
+test('a fitted room’s rows are the longer boiler’s, with no arrow', () => {
+  for (const chosen of ['boiler', 'long'] as const) {
+    const rows = rowsFor('engine', chosen, true);
+    assert.ok(rows.every((r) => !rowChanged(r) && !shownRow(r, 0, 'idle', 0).arrow));
+    assert.deepEqual(
+      rows.map((r) => r.then),
+      [25, 4, 2.9, 15.3],
+    );
+  }
 });

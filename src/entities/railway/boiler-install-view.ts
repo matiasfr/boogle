@@ -1,7 +1,10 @@
 // Line 2's longer boiler, installed by a plain hold at the Roundhouse table (docs/plans/ring-island-build2.md, V3, on
 // the coordinator's ruling of 12 November): the steel that came home on a pallet east of the table, a post beside it,
-// and the one prompt. Greybox: boxes, placeholder labels, no sound, no camera. The garage's own install moment
-// (garage-view.ts, `?home=b`) waits for the Home flip, when the table and the server's install point are one place.
+// and the one prompt. Greybox: boxes, placeholder labels, no sound, no camera. Where the garage stands at this table
+// (garage-view.ts; docs/plans/garage-install-moment.md, G2 and G3) the garage's lever post and its own Install are the
+// one way to install: this view's grey post, lamp, bar and prompt are gone (`opts.post` false) and it keeps the
+// pallet, and the banner for a page that is not in the garage (everyone else's moment is the plan's G4). The post
+// and prompt remain only under `?home=b`, whose garage stands outside the server's reach until the Home flip.
 // A Local view of accepted state, mounted by works-live.ts. It reads the Shed, Line, Aperture and Train rows through
 // `adapter.read.world()` at the head of every entry point and keeps nothing from a world. The install is not predicted
 // (railway-predict.ts), so the banner and the post's lamp follow the accepted event and the rows, on every page.
@@ -21,6 +24,7 @@ import { LINE2 } from '../../sim/railway-lines.ts';
 import { aperture, line, shed, trains } from '../../sim/railway-rows.ts';
 import { createBoxBatch } from './works-box-view.ts';
 import { playSharedMoment } from './shared-moment.ts';
+import { garage } from './garage-state.ts';
 
 // Placeholder labels (docs/agent-calls.md; none is The Boogler's).
 const INSTALL = 'Hold: install the longer boiler',
@@ -37,11 +41,11 @@ const GREY = '#9c9ea1',
   READY = '#e8742c',
   FITTED = '#58b368';
 /** Metres from the table's centre, on the open ground between line 2's two roads east of the deck: the post 5.2 m out
- * (inside the 6 m the server judges the install from) and the pallet north of it, 3 m clear of the road to the
- * Village platform and of line 2's frame. */
+ * (inside the 6 m the server judges the install from) and the pallet north-east of it, 64 degrees round from north
+ * and 7 m out (design ruling on G2, R6: a corner of the garage's camera frame at most), 2.8 m off line 1's centre. */
 const TABLE = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100, y: SHED_TABLE.y / 100 - 0.2 };
 export const POST = { x: TABLE.x + 5.2, z: TABLE.z + 0.2 },
-  PALLET = { x: TABLE.x + 5.7, z: TABLE.z - 1.8, w: 1.5, d: 2.1 };
+  PALLET = { x: TABLE.x + 6.3, z: TABLE.z - 3.05, w: 1.5, d: 2.1 };
 
 let release: (() => void) | null = null;
 onStart(() => {
@@ -56,7 +60,7 @@ onStart(() => {
   touchHold(dom.grabBtn, { down: () => {}, up: () => release?.(), cancel: () => release?.() });
 });
 
-export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
+export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView, opts: { post: boolean }) {
   const batch = createBoxBatch(owner, STEEL.total + 6, false);
   /** Seconds held so far, or -1; the tick of a tap that was too short; the wait for the server's answer (ms). */
   let held = -1,
@@ -115,14 +119,16 @@ export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
       );
     }
     // The post: a lamp that is grey until steel is home, orange while the install waits, green once fitted, and the
-    // hold's bar filling under it.
-    batch.box(POST.x, y + 0.06, POST.z, 0.5, 0.12, 0.5, GREY_DARK);
-    batch.box(POST.x, y + 0.65, POST.z, 0.2, 1.3, 0.2, GREY);
-    batch.box(POST.x, y + 1.42, POST.z, 0.36, 0.24, 0.36, r.fitted ? FITTED : r.steel > 0 ? READY : GREY_DARK);
-    const fill = r.fitted ? 1 : held >= 0 ? Math.min(1, held / HOLD_S) : 0;
-    batch.box(POST.x, y + 1.02, POST.z, 0.9, 0.12, 0.24, GREY_DARK);
-    if (fill > 0)
-      batch.box(POST.x - 0.45 + 0.45 * fill, y + 1.02, POST.z, 0.9 * fill, 0.16, 0.28, r.fitted ? FITTED : READY);
+    // hold's bar filling under it. Not where the garage's post stands (its knob carries the colours).
+    if (opts.post) {
+      batch.box(POST.x, y + 0.06, POST.z, 0.5, 0.12, 0.5, GREY_DARK);
+      batch.box(POST.x, y + 0.65, POST.z, 0.2, 1.3, 0.2, GREY);
+      batch.box(POST.x, y + 1.42, POST.z, 0.36, 0.24, 0.36, r.fitted ? FITTED : r.steel > 0 ? READY : GREY_DARK);
+      const fill = r.fitted ? 1 : held >= 0 ? Math.min(1, held / HOLD_S) : 0;
+      batch.box(POST.x, y + 1.02, POST.z, 0.9, 0.12, 0.24, GREY_DARK);
+      if (fill > 0)
+        batch.box(POST.x - 0.45 + 0.45 * fill, y + 1.02, POST.z, 0.9 * fill, 0.16, 0.28, r.fitted ? FITTED : READY);
+    }
     batch.commit();
   }
   function letGo() {
@@ -159,13 +165,14 @@ export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
       if (e.op !== 'rail.install') return;
       askedUntil = 0;
       playSharedMoment('longer boiler', e, adapter.read.pid, () => {
-        showMomentBanner(BANNER[0], BANNER[1], 4.5);
+        // In the garage the install is on screen; the banner is for a page that is not looking at it.
+        if (!garage.api?.isOpen()) showMomentBanner(BANNER[0], BANNER[1], 4.5);
         return false;
       });
     },
     targets(): Interactable[] {
       const r = rows();
-      if (!r || !adapter.read.ready() || !inReach()) return [];
+      if (!opts.post || !r || !adapter.read.ready() || !inReach()) return [];
       const s = standing(r);
       if (s === 'hidden') return [];
       const at = new THREE.Vector3(POST.x, TABLE.y + 1.8, POST.z);

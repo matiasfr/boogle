@@ -910,11 +910,13 @@ export const NODES: readonly LoopNode[] = [
       // Any logs and rails count, not only the yard's, but nobody carries a bill's worth 1.2 km to the island.
       dec('steelkit', 'world', `${RULES_STEEL} steelTake: the yard holds the kit; steelFeed takes any logs and rails`),
     ],
-    cue: [onMain(
+    cue: [
+      onMain(
         'world',
         '"Feed the works", shown blocked with its reason to an empty back (ruling E)',
         'src/entities/ring-steel/view.ts targets',
-      ),],
+      ),
+    ],
   },
   {
     id: 'steelhome',
@@ -927,11 +929,13 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'steel home' },
     stops: ['steel-home'],
     requires: [dec('steelworks', 'rules', `${RULES_STEEL} steelTick: lit; steelArrives: the kit car takes the rack`)],
-    cue: [onMain(
+    cue: [
+      onMain(
         'world',
         "steel on the kit car's deck and the pallet by the Roundhouse table",
         'src/entities/railway/boiler-install-view.ts',
-      )],
+      ),
+    ],
   },
   {
     id: 'install',
@@ -944,11 +948,13 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'boiler installed' },
     stops: ['boiler-long'],
     requires: [dec('steelhome', 'rules', `${RULES_STEEL} install: Shed.steel >= 1; railway-server.ts railValid`)],
-    cue: [onMain(
+    cue: [
+      onMain(
         'world',
-        'the install post by the table: a hold, sending rail.install',
-        'src/entities/railway/boiler-install-view.ts',
-      )],
+        "the garage's lever post by the table (its knob orange, the longer boiler on its stand): Interact opens the garage on the Longer boiler, and holding Install sends rail.install",
+        'src/entities/railway/garage-view.ts',
+      ),
+    ],
   },
 ];
 
