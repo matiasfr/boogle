@@ -147,3 +147,64 @@ and its copy; dev-menu.md's "Jump in" becomes "Fast-forward" plus a "Test rooms"
    line. Or: refused while anyone else is in the room.
 3. **Is going back allowed?** Recommended: not in the game, only by restoring the backup from the command line. Or:
    any stage may be picked, earlier ones included.
+
+## Design review (designer, 2026-11-12)
+
+**Verdict: cleared to build in the order below, with three changes.** Nothing is placed or gated, so the level review
+is short: landings are `JUMPS`' probed `land`s, and no stills were taken (there is no new place to look at). Research:
+[dev-menu-plan](../research/dev-menu-plan.md) is followed (the authority enforces the gate, exact ids, a typed confirm);
+its "Keep cheats in disposable tests" is departed from on the owner's 13 November word, which is his to give.
+
+**Is it in scope under "Playtest before bespoke functionality"?** Step 0: yes, now; it is the build the 13 November
+route decision is waiting for. Steps 1 to 4: in scope because the owner asked for the mechanism by name on 13 November
+(after that call), and it is tooling, not a mechanic. But it does **not** get him to the playtest sooner: Pause → More →
+Jump in → "Ring joined" already puts him at the rivet in one tap, and with no closed bit that room builds leg 1 today
+(playdata, 12 November: `ring-joined-*` rooms were opened). What it changes is which room he tests in. So it must not
+run ahead of the pre-playtest list, and the old way in is not deleted before the new one works for him (change 3).
+
+| # | Call | Kind | Source or ruling |
+| --- | --- | --- | --- |
+| 1 | The greybox route is open in the shared room; a room at the rivet sees leg 0's frame and rack at once | Decided | [13 November](../decisions-rail.md#d-2026-11-13-greybox-route-open-in-the-shared-room) |
+| 2 | The owner's way to a later stage is a fast-forward of the room he is in; the Jump in list goes | Decided | owner-calls, "One live game" (13 November) |
+| 3 | A fast-forward replaces the whole world: progress past the stage, everything carried and the account rows are lost; wardrobe finds stay | New | Accepted as what "replace" means; the cost on the shared island is owner question 1 |
+| 4 | The line | Default | Ruled: "The shared island was moved forward to <label> for testing. The world changed for everyone, and what you carried is gone." (a private room: "This room was moved…"). The plan's "Everything here changed for everyone" does not say what the reader lost. Plain UI text, in the words of today's "A test room, started at <label>. The shared island is unchanged." |
+| 5 | The control's labels and warning | Default | Group "Fast-forward this room"; button "Replace this room with <label>". On `boogle`: "This is the shared island. Everyone who plays here gets this world, and N others are here now. Anything built past <label> and everything carried is lost. A backup is kept." Never "forward" alone: a played room with no record can go back in effect |
+| 6 | Who lands at the stage's spot | New | Everyone who was in the room before the advance, once, present or away. A row with no `land` uses the usual spawn, not the saved pose (change 2) |
+| 7 | Who is told and landed | New | Only a device that has been in this room before the advance. A first-time visitor gets the normal arrival and no line (change 1) |
+| 8 | `?from=` for people | Default | The URL keeps working, with no gate, and is in no menu or player-facing doc; no new rows are made for people. A gate would be bespoke work for nothing, and the three-day sweep already clears the rooms. The 9 November goal is met by fast-forwarding a room; friends join it by its normal invite |
+| 9 | What the list offers | Default | `JUMPS` rows only: they have labels and probed landings and are the ones production prebuilds. `ring-joined` is a row; the `gorge-*` stages join as rows when they ship |
+| 10 | A fresh start stays one tap away | Default | 9 November: "starting from the beginning stays one tap away". Deleting the list deletes "From the beginning" (`start` is not a seed stage). Dev → Room keeps one "New empty room" row that opens a fresh private room and replaces nothing |
+| 11 | Typed room name, the count of others shown, the key kept in `sessionStorage`, no URL flag | Default | As planned (dev-menu-plan: confirm a destructive command) |
+| 12 | Forward-only against the record; back is the operator's restore | Default until answered | Owner question 3; the conservative option, so it builds |
+| 13 | A tab on an older build plays on with no line; the away credit starts from the advance | Default | As planned |
+
+**Changes before building**
+
+1. **A first-time visitor must not get the line or the landing** (step 3). As written, any device with no
+   `advance.seen` entry is told "This room was moved forward" and dropped at a mid-game platform, for ever after one
+   advance of the shared island: a new player's first sight would be a testing notice in place of the arrival. Show and
+   land only when this device has a saved pose or visit in the room older than `advanced.at`. Playdata has first-time
+   phones on `boogle` on 12 and 13 November.
+2. **No `land` means the usual spawn** (step 3). "Just woke" and "Trains running" have no `land`; a saved pose in a
+   replaced world can be on a deck that is no longer there. Flow rule 3 (nobody is stranded).
+3. **Split step 4.** The Dev → Room control builds now. Deleting the Jump in list waits until he has fast-forwarded a
+   room himself with the key in his hands, and it keeps call 10's fresh-start row.
+
+**Cleared before the owner answers:** step 0 (both tests and the record); step 1 with the shared island refused (400
+for `railwayRoomId('boogle')` unless a server setting `ADVANCE_SHARED` is on, off by default, with a test); steps 2
+and 3; step 4's control. **Waits:** turning `ADVANCE_SHARED` on (question 1), setting `ADVANCE_KEY` on production (his
+or the operator's act), and deleting the Jump in list (change 3). Question 2's recommended behaviour builds, since
+until question 1 is answered the others in a room are friends he invited.
+
+**Owner questions (his to answer; recommendations only)**
+
+1. **Who, and which rooms?** Recommended: the key holder only, any room including the shared island, behind the typed
+   name and the backup. His words are "move the server in the same room" and "changes go on the live game"; the shared
+   island's progress is already reset by each `WORLD_NS` bump (v33 and v34 are coming); visitors there so far stay
+   under four minutes. Cost to weigh: principle 9, and 9 November's "never touched", which this ends.
+2. **Move everyone without asking?** Recommended: yes, with the count shown to him first and the line for them.
+   Refusing while anyone is present would let one idle tab block his playtest.
+3. **Going back?** Recommended: not in the game; the operator restores the backup. Only the newest 30 backups are
+   kept across all rooms, so "back" is not guaranteed for long, and the control should say so.
+
+**Suspect copy:** none of The Boogler's is touched.
