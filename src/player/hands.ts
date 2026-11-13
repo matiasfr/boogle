@@ -40,21 +40,16 @@
 // The pick is src/sim/interact-pick.ts: something that would act beats something blocked, then nearest wins, with a
 // nudge toward where you look. Ties go to the provider registered first.
 //
-// Thrown things other than the beach ball fly and land through src/adapters/gifts.ts; the ball keeps its own physics.
-//
-// The live game (the production railway room) offers no throw until replication R3 makes island throwing work: its
-// server refuses gift.toss, so nothing would leave the hand (owner, 9 November, docs/decisions.md "Four more answers"
-// (3)). There nothing winds up, and neither the name tag, the touch main button nor the Toss button says Throw; the
-// ball goes the same way. Holding, seeds, gifts to The Boogler and a swap's drop are unchanged. ?proto=place throws.
+// Classic gift flights and landings were retired on 13 November. The ball keeps its own physics and can still be
+// thrown on nonproduction entries; the production railway continues to offer no throw. Holding seeds and giving
+// gifts to The Boogler remain local inventory interactions.
 import * as THREE from 'three';
 import { me, cam } from './state.ts';
 import { startCharge, cancelCharge, chargeAmount, launch, releasePoint } from './throw.ts';
 import { ball, ballInReach, grabBall, throwBall } from '../entities/ball/state.ts';
 import { remoteHoldsBall } from '../entities/ball/state.ts';
 import { heldId, take, emptyHand, drop, onHandChange, onLetGo } from './inventory.ts';
-import { throwItem } from '../adapters/gifts.ts';
 import { sprout } from '../adapters/mushrooms.ts';
-import { giftIndex } from '../sim/gift-catalog.ts';
 import { pickInteract, NO_TARGETS, type InteractTarget } from '../sim/interact-pick.ts';
 import { currentFrame } from '../loop.ts';
 import { productionRailway } from '../proto/flags.ts';
@@ -73,7 +68,7 @@ export type Interactable = InteractTarget & {
 
 const USE_VERB: Record<string, string> = { seeds: 'Sprout' };
 const THROWS = !productionRailway;
-export const canThrow = () => THROWS && !!heldId();
+export const canThrow = () => THROWS && heldId() === 'ball';
 const ballAt = new THREE.Vector3();
 
 // The ball is in your hand while ball ownership says so: thrown, stolen, respawned or dropped on a hidden tab, it leaves
@@ -86,14 +81,12 @@ onHandChange(() => {
   syncBall();
 });
 
-// What a new thing pushes out of your hand lands a step or two ahead, in reach to swap back, through the same toss
-// everything else uses (the ball through its own throw).
+// A ball pushed out of your hand drops ahead through its own physics owner.
 const DROP = { forward: 2.2, up: 3.2 }; // m/s
 onLetGo((id) => {
   const p = releasePoint(id);
   const v = new THREE.Vector3(-Math.sin(cam.yaw) * DROP.forward, DROP.up, -Math.cos(cam.yaw) * DROP.forward);
   if (id === 'ball') throwBall(p, v);
-  else throwItem(giftIndex(id), p, v);
 });
 
 // Grab first: every change of hand syncs the ball to ownership.
@@ -172,11 +165,9 @@ function windUp() {
 
 function throwHeld(c: number) {
   const id = heldId();
-  if (!id || !me.body) return;
+  if (id !== 'ball' || !me.body) return;
   const { p, v } = launch(id, c);
-  if (id === 'ball') return throwBall(p, v);
-  emptyHand();
-  if (!throwItem(giftIndex(id), p, v)) take(id);
+  throwBall(p, v);
 }
 
 export const emptyHands: { down: () => boolean; up: () => void } = { down: () => false, up: () => {} };
@@ -222,7 +213,7 @@ export const throwDown = windUp;
 
 export function useVerb() {
   const id = heldId();
-  return id ? (USE_VERB[id] ?? (THROWS ? 'Throw' : null)) : null;
+  return id ? (USE_VERB[id] ?? (canThrow() ? 'Throw' : null)) : null;
 }
 
 export const mainVerb = () => (me.charging ? null : interactTarget())?.verb ?? useVerb() ?? 'Grab';

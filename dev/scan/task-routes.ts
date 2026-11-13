@@ -227,28 +227,27 @@ export const TASK_ROUTES: Record<string, Route[]> = {
     {
       scope: 'Op in an existing system',
       owners: ['src/world/rules', 'src/sim', 'src/adapters'],
-      example: 'src/world/rules/piles.ts',
-      copy: 'pile.drop validation/apply, edits generator and typed fields',
+      example: 'src/world/rules/tune.ts',
+      copy: 'tune.commit validation/apply, edits generator and typed fields',
       mustRead: [...core, ...rulesDocs],
       readIf: [
         rail,
-        { when: 'Changing the piles system described here', refs: ['docs/game-design/haul.md#ground-piles'] },
         { when: 'Changing tick/acceptance semantics', refs: ['src/world/README.md#contract-syncts'] },
         { when: 'Changing replay generators', refs: ['src/world/rules/README.md#edit-generators-and-invariants'] },
       ],
       sync: 'Lockstep; adapter effects in onApplied after acceptance',
       checks: 'npm run check; lockstep determinism/conservation/validation tests; look for visible adapter changes',
-      lookalikes: ['src/features/piles.ts', 'src/world/sync.ts'],
+      lookalikes: ['src/world/rules/roster.ts', 'src/world/sync.ts'],
       warning:
-        'Register with the owning rules module, not the feature or sync service. Update the actual system chapter; haul is the example.',
+        'Register with the owning rules module. New shared state follows Server kind; this route covers retained classic transport.',
     },
   ],
   'lockstep-system': [
     {
       scope: 'New shared persistent system',
       owners: ['src/sim', 'src/world/rules', 'src/world/rules/index.ts', 'src/world/rules/types.ts', 'src/features'],
-      example: 'src/world/rules/piles.ts',
-      copy: 'PilesApi, state, edits and invariants; sim and adapter are separate owners',
+      example: 'src/world/rules/tune.ts',
+      copy: 'TuneApi, state, edits and invariants; sim and adapter are separate owners',
       mustRead: [
         ...core,
         ...rulesDocs,
@@ -257,14 +256,10 @@ export const TASK_ROUTES: Record<string, Route[]> = {
         'src/world/rules/README.md#edit-generators-and-invariants',
         'docs/agents/test-details/atlas.md',
       ],
-      readIf: [
-        rail,
-        { when: 'Implementing the example piles system', refs: ['docs/game-design/haul.md#ground-piles'] },
-        { when: 'Adding a game-design chapter', refs: ['docs/game-design.md'] },
-      ],
+      readIf: [rail, { when: 'Adding a game-design chapter', refs: ['docs/game-design.md'] }],
       sync: 'Lockstep; append RULES and typed Rules API; WORLD_NS break for development shape changes',
       checks: 'npm run check; lockstep tests; new sync contract scenario when needed; look; atlas story/check',
-      lookalikes: ['src/adapters/piles.ts'],
+      lookalikes: ['src/world/rules/roster.ts'],
       warning:
         'Use a feature adapter unless other modules import it. Add a game-design chapter and index line, not just the example haul chapter.',
     },
@@ -334,8 +329,8 @@ export const TASK_ROUTES: Record<string, Route[]> = {
     {
       scope: 'Target for the existing interact button',
       owners: ['src/player/hands.ts', 'src/features'],
-      example: 'src/features/log-sources.ts',
-      copy: 'registerInteractable returns targets in reach; run queues an edit',
+      example: 'src/entities/railway/sources.ts',
+      copy: 'registerInteractable returns targets in reach; run sends a railway action',
       mustRead: [...core, registers, '.claude/rules/state-consumers.md', safety],
       readIf: [
         rail,
@@ -412,7 +407,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
     {
       scope: 'Flagged experiment',
       owners: ['src/proto', 'src/features', 'protos/protos.ts'],
-      example: 'src/features/proto-net.ts',
+      example: 'src/features/proto-greybox.ts',
       copy: 'Small flag-gated dynamic loader; keep implementation under proto',
       mustRead: [
         ...core,

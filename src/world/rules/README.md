@@ -1,5 +1,10 @@
 # World rules: the lockstep half of each system
 
+As of v39 (13 November 2026), only the classic roster and eight haul tune keys remain here.
+The live roster and rail tuning are Server kind. Gifts, stacks, piles, sites, sources, bank and opening
+are retired, including their ops, ticks and saved shapes; their old playable prototypes are removed.
+The classic transport and its recipe below remain until server-owned-state step 9.
+
 A **rules module** holds everything about one system that every peer must compute bit for bit: its ops (validate and
 apply), its state (serialize, load, hash), its sim ticks, and sim-side listeners. Its **adapter** keeps everything
 else (meshes, sounds, input, inventory), reading the rules' API and reacting through `onApplied`, `onAfterTick` and
@@ -15,12 +20,12 @@ The sim, rules and adapter have distinct owners; registration also updates the t
    and returns an API. It exports `edits` (a generator per op) and optionally `invariants`, for the replay test.
 3. One line appended to `RULES` in `index.ts`. States snapshot, load and hash in its order; a reordered registry
    needs a dated `WORLD_NS` break during development.
-   Add its API to `Rules` in `src/world/rules/types.ts` too (see `PilesApi`).
+   Add its API to `Rules` in `src/world/rules/types.ts` too (see `TuneApi`).
 4. `src/features/<x>.ts`, the adapter. It imports `rules` from `../world/game-world.ts` **first** (so the rules are
    registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
    `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv` (below, "env keys").
    If other modules (hands) must import the adapter, put it in `src/adapters/<x>.ts` instead, with a thin
-   feature file, since features cannot import each other. Example: `src/adapters/gifts.ts`.
+   feature file, since features cannot import each other.
 
 Update the system's `docs/game-design/` chapter (new system: add a chapter and index line), and its atlas story for a new sync system or big feature. Run `npm run check`. Run `check:full` locally only when touching `src/net*`, `src/world/sync.ts`, `src/world/game-world.ts` or `server/`. New tests are for lockstep determinism, conservation and validation; UI, features, tuning and feel use `look`, with a new scenario only for a sync contract (see AGENTS.md's entity-core exception). Notes:
 
@@ -32,7 +37,8 @@ Update the system's `docs/game-design/` chapter (new system: add a chapter and i
 - Ids come from a counter in the state, never a per-peer one.
 - Players start an action through the registries (docs/agents/registries.md, "Shared registries"); a new carried item is appended to
   `GIFTS` in `src/sim/gift-catalog.ts` (ground items store its index: reorder only with a `WORLD_NS` bump; it also needs The Boogler's `taste` and `line`), and what using it does is a case
-  in `useDown` in `src/player/hands.ts`.
+  in `useDown` in `src/player/hands.ts`. The v39 retirement preserves this catalog as character copy;
+  it no longer registers ground gifts or throwing ops.
 
 ## Contract
 
@@ -66,7 +72,7 @@ Rules:
 ## Edit generators and invariants
 
 `test/world-replay.test.ts` runs a host and two clients on the real rules and the home land, feeds them a seeded
-stream of every registered op, kills the host midway, adds a late joiner after a toss, reloads a JSON snapshot in a
+stream of every registered op, kills the host midway, adds a late joiner after an edit, reloads a JSON snapshot in a
 fresh tab, and requires every peer to hash every state the same at every shared tick, every invariant to hold, and a
 second run with the same seed to give the same result. It fails when a registered op has no generator, or when no
 edit of that op was ever accepted. So a module with ops exports:
@@ -89,16 +95,14 @@ export function invariants(api, rules) {
 - Edits are JSON-safe, with integer `i`/`j` and no `p` (sync adds it).
 - Invariants check what would silently break: conserved quantities, unique ids, caps, spacing.
 
-**Redrawing views.** A sim state that views draw can keep a `rev` counter, bumped on every change (in its own
-functions and on load) and never saved or hashed (`piles`, `sites`, `sources`). A view redraws when `rev` differs
-from the one it last drew: that covers edits, ticks (freight, trickles, runs ending) and snapshots, without matching
-op names.
+**Redrawing views.** A sim state that views draw can keep a `rev` counter, bumped on changes and loads,
+never saved or hashed. A view redraws when `rev` differs from the one it last drew.
 
 ## env keys
 
 | Key | Set by | Server | Used by |
 |---|---|---|---|
-| `protoRoom` | `src/features/proto-haul.ts` (`isProtoRoom(getRoomId())`) | `isProtoRoom(roomId)` in `server/src/host/world-host.ts` | `tune.set`, `tune.commit`, `tune.fill`, `tune.reset`, `open.lay` validate |
+| `protoRoom` | No browser assignment needed for admission | `isProtoRoom(roomId)` in `server/src/host/world-host.ts` | `tune.set`, `tune.commit` validate |
 | `tuneController` | No browser assignment; absent means writes are refused | Explicit `TUNE_CONTROLLER_KEY` compared with the sender's bound socket key in `server/src/host/hosted-room.ts` | `tune.set`, `tune.commit` validate; a room lead has no tuning authority by election |
 
 The server hosts rooms with no renderer (docs/plans/server-host.md), so a new key needs a "Server" source too:
@@ -127,7 +131,8 @@ export const edits = {
 };
 ```
 
-This sketch shows the wiring; copy `piles.ts` for typed `SyncView`, `Land`, edit fields, generators and API. Then append `thing` to `RULES` in `index.ts`, add its API to `Rules` in `types.ts`, and read `rules.thing` from `../game-world.ts` in the adapter.
+This sketch shows the retained transport wiring; `tune.ts` has typed `SyncView`, edit fields, generators and API.
+New shared state follows the Server-kind direction; step 9 removes this classic recipe.
 
 ## Modules
 
@@ -137,15 +142,8 @@ The railway is not a rules module: it is Server kind (`../railway-server.ts`, re
 
 | Module | Ops | State | API |
 |---|---|---|---|
-| `gifts.ts` | `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
-| `roster.ts` | `who.set` | `roster` | `{ roster, indexOf(pid), ensure(pid), nameOf(k), colorOf(k), size() }`: every pid seen, with name and colour, by index of first sight (cap 256). Tables store players as this index; `ensure` adds one (apply only). |
-| `piles.ts` | `pile.drop`, `pile.take` | `piles` | `{ piles, drop(i, j, k, n), room(k, n) }`: loose material on the ground (`../../sim/piles.ts`); `drop` returns `{ placed, ids }` |
-| `stacks.ts` | none | `stacks` | `{ stacks, count(pid), kind(pid), countAt(k), kindAt(k), room(pid, k), add(pid, k, n), take(pid, n) }`: what each player carries (`../../sim/stacks.ts`), by roster index; later rules call `add`/`take` in their apply |
-| `sites.ts` | `site.stock`, `site.run` | `sites` | `{ sites, onSectionDone(fn), age(), isDone(s), points(pid), room(s, ring), canRun(s), run(s, tick), helpers(), addFreight(n) }`: work sites on the preset route (`../../sim/sites.ts`, `../../sim/route.ts`), plaques, machine runs (`../../sim/scripted-run.ts`), helper freight and the age change (derived from `open`); later rules subscribe to `onSectionDone` at install |
-| `sources.ts` | `src.take` | `sources` | `{ sources, charges(id), list() }`: the current age's material sources (`../../sim/sources.ts`; wood: the log bundles at the palm cells in `land.layout.trees`), stored as charges spent; refills on `sites.onSectionDone` and a seeded trickle tick |
-| `bank.ts` | `bank.wake` (`hostOnly`) | `bank` | `{ bank, ms() }`: offline time already turned into helper freight (`../../sim/bank.ts`); only the host's own wake is stamped |
-| `tune.ts` | `tune.set`, `tune.commit`, `tune.fill`, `tune.reset` (`proto-` rooms only, env `protoRoom`) | `tune` | `{ tune, cost(s, ring), get(key) }`: haul lockstep values (`../../sim/tune.ts`), with all resolved defaults, catalog and revision saved and hashed. `tune.commit` compares the expected revision and catalog, and returns a correlated applied/rejected result after application; admission refusal returns `w:rejected` through `onRejected`. Both value-write ops require `tuneController`. `tune.fill` fills the open Track ring (as freight); `tune.reset` empties stacks, piles, sites and bundles without undoing tuning. `stacks`, `sites` and `sources` read `rules.tune` at run time (it installs after them) |
-| `opening.ts` | `open.start`, `open.here`, `open.lay` (`proto-` rooms only, env `protoRoom`) | `opening` | `{ opening, ready(), bell(tick), era(tick) }`: opening day (`../../sim/era.ts`): the tick it started, once the age's last section is laid (first start wins), and the tick everyone was at the platform (`open.here`, which ends the gathering call early, once); `bell` is its run (phase `call`, then `bell`), `era` the derived era (2 once the bell has run out). `open.lay` is the playtest shortcut that lays the rest of the route; `tune.reset` also undoes opening day |
+| `roster.ts` | `who.set` | `roster` | Stable ordinals, names and colours (cap 256). Server-kind in railway rooms; classic registration retained for transport fixtures through step 9. |
+| `tune.ts` | `tune.set`, `tune.commit` | `tune` | Eight haul keys, with unchanged defaults, catalog order and revision. Both writes require a proto room and explicit tuning controller. `tune.commit` compares the revision and returns a correlated result. |
 | `edit-gen.ts` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |
 
 The land (`{ n, layout }`) comes from `../home-land.json` outside the game (server, tests); see `../README.md`.

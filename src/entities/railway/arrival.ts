@@ -3,7 +3,6 @@ import type * as THREE from 'three/webgpu';
 import { PLAYER_R } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
 import { hideControls } from '../../player/controls.ts';
-import { haulHooks } from '../../player/haul-hooks.ts';
 import { softWall } from '../player/state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { physicsTime, raycastClosest, rayHit, setCcd, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
@@ -47,11 +46,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   const insidePlace = (x: number, z: number) => inPlace(x, z) || island.onIsland(x, z);
   const H = (x: number, z: number) => (inPlace(x, z) ? placeH(x, z) : island.islandH(x, z));
   owner.cleanup(registerPlaceShore());
-  const old = { wall: softWall.at, near: camera.near, moved: haulHooks.moved };
+  const old = { wall: softWall.at, near: camera.near };
   const wasFresh = document.body.classList.contains('place-fresh');
   document.body.classList.add('place-fresh');
   hideControls(['respawn', 'use', 'toss', 'guest-crouch', 'guest-punch']);
-  haulHooks.moved = () => true;
   softWall.at = Infinity;
   camera.near = 0.25;
   camera.updateProjectionMatrix();
@@ -225,7 +223,6 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     const k = camConstraints.indexOf(constraint);
     if (k >= 0) camConstraints.splice(k, 1);
     softWall.at = old.wall;
-    haulHooks.moved = old.moved;
     camera.near = old.near;
     camera.updateProjectionMatrix();
     if (!wasFresh) document.body.classList.remove('place-fresh');

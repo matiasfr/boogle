@@ -1,6 +1,6 @@
 // Types for rules modules (./README.md, "Contract"): the view of sync a module installs on, the land, the edits it
 // handles and the replay test's generator stream. Types only, so it costs nothing at runtime.
-import type { Cell } from '../../sim/sources.ts';
+type Cell = { i: number; j: number };
 
 /** An edit as apply sees it: the op's own fields, plus the session (p) and player id (u) the host stamped. */
 export type Edit<F = object> = { op: string; i: number; j: number; p: string; u: string } & F;
@@ -29,15 +29,8 @@ export type SyncView = {
 export type Land = { n: number; layout: { trees: Cell[]; perches: (Cell & { kind: number })[] } };
 /** Every module's API, keyed by its name: what installRules returns (./index.ts). */
 export type Rules = {
-  gifts: ReturnType<typeof import('./gifts.ts').install>;
   roster: import('./roster.ts').RosterApi;
-  stacks: import('./stacks.ts').StacksApi;
-  piles: import('./piles.ts').PilesApi;
-  sites: import('./sites.ts').SitesApi;
-  sources: import('./sources.ts').SourcesApi;
-  bank: import('./bank.ts').BankApi;
   tune: import('./tune.ts').TuneApi;
-  opening: import('./opening.ts').OpeningApi;
 };
 /** The replay test's seeded stream (./edit-gen.ts). */
 export type Stream = {

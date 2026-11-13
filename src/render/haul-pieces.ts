@@ -29,36 +29,5 @@ export function commitPieces(mesh: THREE.InstancedMesh, n: number): void {
   if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
 }
 
-// Pieces flying to your stack (a pickup, a shake): anyone can ask, the haul stack (src/features/haul-stack.ts) draws
-// them. fly(from: Vector3, n, spill): `spill` when they come out of a bundle (Take logs) rather than off a ground pile,
-// for a look that tells the two apart (the haul magnet variant spills them out first).
-type FlyFn = (from: THREE.Vector3, n: number, spill?: boolean) => void;
-const flyFns: FlyFn[] = [];
-export const onFly = (fn: FlyFn): void => void flyFns.push(fn);
-export const fly: FlyFn = (from, n, spill = false) => flyFns.forEach((fn) => fn(from, n, spill));
-
 const colors = TINT.map((h) => new THREE.Color(h));
 export const pieceColor = (k: number): THREE.Color => colors[k] ?? colors[0]!;
-
-// A deterministic heap: piece m of a pile sits in a loose cross-hatched stack (4 per layer, alternating direction).
-const q = new THREE.Quaternion(),
-  e = new THREE.Euler(),
-  v = new THREE.Vector3(),
-  one = new THREE.Vector3(1, 1, 1);
-export function heapMatrix(
-  m: number,
-  seed: number,
-  x: number,
-  y: number,
-  z: number,
-  out: THREE.Matrix4,
-): THREE.Matrix4 {
-  const layer = Math.floor(m / 4),
-    slot = m % 4;
-  const turn = (layer % 2) * (Math.PI / 2) + seed * 0.7;
-  const off = (slot - 1.5) * PIECE.r * 2.1;
-  e.set(0, turn, ((seed * 13 + m * 7) % 5) * 0.03);
-  q.setFromEuler(e);
-  v.set(Math.sin(turn) * off, PIECE.r + layer * PIECE.r * 1.8, Math.cos(turn) * off);
-  return out.compose(v.set(x + v.x, y + v.y, z + v.z), q, one);
-}

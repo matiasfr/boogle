@@ -1,6 +1,6 @@
 // Roster authority: durable server who.set and the roster state (../../sim/roster.ts), in first-sight ordinal order.
-// The command boundary supplies authenticated e.u; client mirrors never allocate ordinals. Server stacks still
-// read this API directly. Classic prototype installation remains until step 5 retires its dependent tables.
+// The command boundary supplies authenticated e.u; client mirrors never allocate ordinals.
+// The classic registration remains for transport fixtures until step 9 deletes that transport.
 import {
   createRoster,
   canSet,
@@ -24,7 +24,7 @@ export const ROSTER_CHANGE_MS = 3000;
 
 export type RosterApi = ReturnType<typeof install>;
 
-// Classic prototypes retain their old registration until their retirement in step 5.
+// Retained classic transport registration; the net/wagon gameplay prototypes retired at v39.
 export function install(sync: SyncView) {
   return create(sync);
 }

@@ -1,6 +1,7 @@
 # World: shared, deterministic island state
 
-Everything players can change and everyone must agree on (items, piles) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
+Shared game state lives behind this module. Railway state, rail tuning and the live roster are Server kind.
+The classic transport retains only haul tuning and its prototype roster until server-owned-state step 9.
 
 ## Pieces
 
@@ -9,13 +10,13 @@ Everything players can change and everyone must agree on (items, piles) lives be
 | `sync.ts` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
 | `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break; a bump also resets players' local progress: `src/player/world-reset.ts`. |
-| `game-world.ts` | The island's `land` and the rules installed on the real sync (`rules.gifts`, ...), and the railway mirror. Adapters import it first. |
+| `game-world.ts` | The island's `land`, retained haul tuning and roster API, and the railway mirror. Adapters import it first. |
 | `replicate*.ts`, `room-clock.ts` | Replication (docs/plans/replication.md): component schemas, the server's touched-entity diff and per-client send, the client mirror and prediction hooks; the one 60 Hz room clock. |
 | `railway-server.ts`, `railway-replicate.ts` | The railway as Server kind: the host's rules (actions applied on arrival, a server state saved with the checkpoint) and its projections; the client mirror, a world published whole (`confirmed()`) that views and the predictor read. |
 | `grid.ts` | Pure, lockstep: grid constants. |
 | `background.ts`, `clock-worker.ts` | One bounded elapsed-time clock shared by visible frames and hidden-tab heartbeats; independent of the physics frame clamp. |
 
-Pure sim logic lives in `../sim/` (gifts, piles, ...); the game side of lockstep state in `../adapters/`
+Pure sim logic lives in `../sim/`; the game side of shared state in `../adapters/`
 and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.ts`;
 tests install the rules on their own sync instances (`test/helpers/net.ts`).
 
@@ -46,7 +47,7 @@ onTick(fn, label?)           // fn(tick) every sim tick, in registration order, 
 onAfterTick(fn, label?)      // fn(tick) after every onTick handler, before the host hashes (render work)
 onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied (render hooks: rebuild mesh, splash, sounds);
                              // result is what apply returned. Runs on every peer: effects for the submitter only check
-                             // edit.p === room.selfId ('local' with no room; src/adapters/gifts.ts). Not replayed after
+                             // edit.p === room.selfId ('local' with no room). Not replayed after
                              // a snapshot load, so onSnapshot rebuilds the view. A throwing listener is logged.
                              // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
@@ -84,7 +85,7 @@ Integer units: base heights are stored in **centimetres** (`Int16`). Base terrai
 2. Run `onTick` handlers in registration order (a system that reads another's state registers after it).
 3. Run `onAfterTick` handlers in registration order.
 
-Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-clock time enters only through the tick number (and `world.epochMs`, the wall time of tick 0, which a host that loaded a save compares with its clock to submit `bank.wake` for the time nobody hosted).
+Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-clock time enters only through the tick number and `world.epochMs`, the wall time of tick 0. The classic helper bank retired at v39.
 
 ## Other exports
 
@@ -123,7 +124,7 @@ Railway tuning is Server kind: `railTune` is checkpointed, projected as global `
 on clients. `tune.set` and durable `tune.commit` go through `server-ops.ts` on the railway session's request sequence.
 The eight haul tune keys stay lockstep with their readers; their revision and hash exclude every rail key. All
 classic edits are no longer admitted by railway rooms. Roster is Server kind, with durable `who.set` commands and
-global `player` rows keyed by stable roster ordinal. Clients read a mirror; server stacks retain direct ordinal access.
+global `player` rows keyed by stable roster ordinal. Clients read a mirror; the classic prototype roster registration remains for transport fixtures through step 9.
 Current recovery verifies the registered state, checksum,
 checkpoint hash and accepted tail before atomic replacement. The seven inactive classic states are retained until
 server-owned-state step 5.

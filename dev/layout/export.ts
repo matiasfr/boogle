@@ -23,7 +23,7 @@ const { lerp, smoothstep } = await import('../../src/math-pure.ts');
 const { HALF, CELL, COURT, SEA, SEABED } = await import('../../src/world/grid.ts');
 const { ROUTE, RING_R } = await import('../../src/sim/route.ts');
 const { WAGON_CRUISE, WAGON_ACCEL, WAGON_DWELL } = await import('../../src/sim/wagon.ts');
-const { MS_PER_TICK } = await import('../../src/sim/bank.ts');
+const { RULE_MS: MS_PER_TICK } = await import('../../src/world/room-clock.ts');
 const { SPAWN, BALL_SPAWN, FOG_NEAR, FOG_FAR } = await import('../../src/constants.ts');
 
 const { baseSites: sites } = await import('../level/sites.ts');

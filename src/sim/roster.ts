@@ -1,5 +1,5 @@
 // The roster: every player (pid) a room has seen, with the name and colour they last used, in order of first sight.
-// A player's index here is how every other lockstep table stores them (stacks, plaques), so hashes stay integer folds
+// A player's index is the stable replicated player id; the retained classic transport hashes integer folds
 // and a plaque can still print "Ana" after Ana has gone home. Pure and deterministic (lockstep).
 
 import { FNV_SEED, fold, foldStr } from './hash.ts';

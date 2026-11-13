@@ -1,5 +1,11 @@
 # 6.27 Prototype: the line feeds the town (`?proto=net`)
 
+> **Retired, 13 November 2026:** server-owned-state step 5 removed the classic haul, gifts, bank and opening
+> systems and the net/wagon prototypes. The account-based railway is the live game. The text below is a dated
+> design record, not current runtime behavior; paths to retired implementations name their historical owners.
+> The eight haul tuning keys remain until the classic transport is retired. The Boogler's copy is preserved in
+> [gift-catalog.ts](../../src/sim/gift-catalog.ts); see [retired copy](retired-classic-copy.md).
+
 *A greybox prototype for [find-the-fun](../plans/find-the-fun.md), step 6, from the owner's rail-loop direction in
 [decisions.md](../decisions.md) ("Trains and the world", 2026-11-02), after Death Stranding's auto-pavers and
 monorails: building infrastructure makes it easier to build more. Gut question: "When the village steps up, do you want

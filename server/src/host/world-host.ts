@@ -10,14 +10,10 @@
 //   wh.status()                   worldStatus() plus the tick
 //   await wh.close({ save })      stop ticking; with save, write the last tick and wait for the file
 //
-// Classic only: the host-side work a browser host does outside the rules is done here too, src/features/helper-bank.ts's
-// bank.wake for the time nobody hosted (a server restart). The helper bank goes with classic; railway rooms never wake it
-// and use the away credit instead (createRailwayWorldHost below).
 import { createSync } from '../../../src/world/sync.ts';
 import { STEP_MS } from '../../../src/world/room-clock.ts';
 import { installRules } from '../../../src/world/rules/index.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
-import { offlineGap, MIN_GAP_MS } from '../../../src/sim/bank.ts';
 import { isProtoRoom } from '../../../src/sim/tune.ts';
 import type { StepMeter } from './step-meter.ts';
 import { loadHomeLand, type HomeLand } from './land.ts';
@@ -39,8 +35,7 @@ import { projectRailTune, projectRoster } from '../../../src/world/classic-repli
 import { createServerOps } from '../../../src/world/server-ops.ts';
 
 // The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
-// Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
-// hosted from the saved tick: so the tick is saved at least this often, and always on close.
+// Saves skip unchanged state, but persist the advancing room clock at least this often, and always on close.
 const TICK_SAVE_MS = 30000;
 
 type Msg = Record<string, unknown>;
@@ -67,7 +62,7 @@ export function createWorldHost({
   meter,
   log = () => {},
 }: WorldHostOptions) {
-  // protoRoom: playtest tuning (tune.set, tune.reset) is allowed in `proto-` rooms only (src/world/rules/tune.ts).
+  // protoRoom: retained haul tuning is allowed in `proto-` rooms only (src/world/rules/tune.ts).
   const sync = createSync({ env: { protoRoom: isProtoRoom(roomId), tuneController } });
   const rules = installRules(sync, home.land as Parameters<typeof installRules>[1]);
   const sendFns = new Set<(msg: Msg) => void>();
@@ -99,12 +94,6 @@ export function createWorldHost({
         });
     },
   };
-  sync.onSnapshot(() => {
-    const st = sync.worldStatus();
-    if (st.mode !== 'host' || st.loadErrors) return;
-    const ms = offlineGap(Date.now(), sync.world.epochMs, sync.world.tick, rules.bank.ms());
-    if (ms >= MIN_GAP_MS) sync.submitEdit({ op: 'bank.wake', i: 0, j: 0, ms });
-  });
   sync.attachWorld(
     {
       selfId: SERVER_ID,

@@ -20,23 +20,17 @@ answers"); the owner kept it (2026-11-01). Local and cosmetic: nothing here is s
   shakes its head on a refusal; the name tag bounces when something new lands in your hand. Reduced motion turns the squash and shake off.
 - **Legibility**: text read during play is 18 px (the held thing's name, the haul chip, notices), the prompt's verb 20 px,
   and every glass panel is 0.72 opaque so white text holds over clouds and foam.
-- **Haul chip** ([src/features/haul-stack.ts](../../src/features/haul-stack.ts)): a wood pill above the name tag (above the action rows on narrow portrait touch screens) with a log
-  icon, a big tabular count and the material, only while you carry something. The count ticks one by one toward the
-  host-confirmed one (about 300 ms per change, a clink and a pop per step); at the hard cap it turns sun-yellow and says
-  "full". Place replaces this chip with its [temporary carried-resource tag](place.md#carried-resource-display): four columns of material-coloured slots on no background, two rows without the frame and four with it. Empty cells remain visible; landed pickups pop for 200 ms with a 35 ms minimum stagger, disabled under reduced motion. "Full" and big cargo names use outlined display type. Exact contents remain in Pause; the existing 2-second hold and 200 ms fade stay. Classic Haul and its variants retain this chip unchanged.
+- **Carried-resource tag** ([src/features/haul-stack.ts](../../src/features/haul-stack.ts)): the railway's [temporary carried-resource tag](place.md#carried-resource-display) has four columns of material-coloured slots on no background, two rows without the frame and four with it. Empty cells remain visible; landed pickups pop for 200 ms with a 35 ms minimum stagger, disabled under reduced motion. "Full" and big cargo names use outlined display type. Exact contents remain in Pause; the existing 2-second hold and 200 ms fade stay. The classic Haul chip and its ticking counter were retired on 13 November 2026.
 - **One notification lane** ([src/ui/notify.ts](../../src/ui/notify.ts)): a single pill where the held thing's name tag is
   (under it on touch), for things only you need to know. One notice at a time, at most three waiting,
   the same text refreshing instead of stacking, 2.5 s by default. A hands note ("Can't grow here", "Nothing to plant
   here") is a coral _deny_ that goes first; "Boogle was updated" is a sticky _news_ notice with a Reload sticker
   ([telemetry-and-updates.md](telemetry-and-updates.md)) that waits under anything newer. The name tag gives way while
   a notice shows.
-- **World first**: shared news stays in the world, never in the lane. When a pour earns points the site's plaque turns
-  the changed rows over like a departures board (staggered, a sun glow fading as each settles), with a puff of motes
-  over the board, and plays the flap. While you keep pouring (one pour every 300 ms) it flips at most once every 1.2 s;
-  the pours in between just change the numbers ([haul.md](haul.md)).
+- **World first**: shared news stays in the world, never in the lane. Classic work-site plaques and their per-player contribution rows were retired on 13 November 2026.
 - **Files.** [src/ui/](../../src/ui/), [src/features/held.ts](../../src/features/held.ts),
   [src/features/prompt.ts](../../src/features/prompt.ts), [src/features/haul-stack.ts](../../src/features/haul-stack.ts),
-  [src/features/work-sites.ts](../../src/features/work-sites.ts), [src/features/updates.ts](../../src/features/updates.ts).
+  [src/features/updates.ts](../../src/features/updates.ts).
   Stills at desktop and iPad size: `npm run scenario -- hud-glance` (on the railway, in a room jumped in at `awake`: Chop and Pick up prompts, the press squash, the name tag, the carry tag, the lane; the plaque has no railway surface, so no plaque stills). Listening pack: `node dev/audio/render.ts --only ui`.
 
 ---

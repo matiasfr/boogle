@@ -1,5 +1,9 @@
 # 6.7 Throwing and flight
 
+> **13 November 2026:** classic item flight/landing and shared pickup were retired with gifts. The production
+> railway still offers no throw. Only the ball can throw on nonproduction entries, through its independent physics
+> owner. The profiles and preview helpers remain; the item behavior described below is historical.
+
 - **What and how it plays.** Hold to charge (a meter and a dotted aim preview show), release to throw. One module
   (`throw.ts`) aims, charges, previews and launches everything you hold, the ball included; each kind has a profile of
   numbers (`throw-curve.ts`). The preview follows each thing's own flight, so the ball's dots follow the ball's linear
@@ -15,7 +19,7 @@
   Power 8 + 20 × charge (frisbee 9 + 15 × charge) m/s. Drag 0.002/m; frisbee lift 0.05 per (m/s)², max 0.85 g, drag
   0.009, fade 1.6 m/s² below 18 m/s. Bounce keeps 30 % into the surface and 55 % along it (frisbee 12 % and 80 %);
   rests under 2 m/s on a surface flatter than about 53°. Max 8 s of flight.
-- **Files.** [src/player/throw.ts](../../src/player/throw.ts), [src/player/throw-curve.ts](../../src/player/throw-curve.ts), [src/physics/flight.ts](../../src/physics/flight.ts), [src/adapters/gifts.ts](../../src/adapters/gifts.ts), [src/player/hands.ts](../../src/player/hands.ts).
+- **Files.** [src/player/throw.ts](../../src/player/throw.ts), [src/player/throw-curve.ts](../../src/player/throw-curve.ts), [src/physics/flight.ts](../../src/physics/flight.ts), [src/player/hands.ts](../../src/player/hands.ts).
 - **Known issues and limits.** Paths on different machines only need to look alike (raycasts use the physics engine).
 
 ---

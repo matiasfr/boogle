@@ -1,5 +1,11 @@
 # 6.19 Haul: piles, the stack, sources and work sites
 
+> **Retired, 13 November 2026:** server-owned-state step 5 removed the classic haul, gifts, bank and opening
+> systems and the net/wagon prototypes. The account-based railway is the live game. The text below is a dated
+> design record, not current runtime behavior; paths to retired implementations name their historical owners.
+> The eight haul tuning keys remain until the classic transport is retired. The Boogler's copy is preserved in
+> [gift-catalog.ts](../../src/sim/gift-catalog.ts); see [retired copy](retired-classic-copy.md).
+
 The 0.1 groundwork ([docs/plans/0.1-groundwork.md](../plans/0.1-groundwork.md), research in
 [docs/research/0.1/](../research/0.1/10-groundwork.md)): one material per age (wood first: logs), carried on your back,
 poured into work sites that lay the railway. Placeholder visuals throughout. Every part is optional: nothing blocks a

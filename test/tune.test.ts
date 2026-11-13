@@ -13,18 +13,17 @@ import {
   TUNABLES,
 } from '../src/sim/tune.ts';
 import { FNV_SEED } from '../src/sim/hash.ts';
-import { HARD_CAP } from '../src/sim/stacks.ts';
 import { TRACK, HELPER, AGES } from '../src/sim/route.ts';
 
 test('defaults are saved and hashed with revision', () => {
   const t = createTune();
-  assert.equal(t.v.hard, HARD_CAP);
+  assert.equal(t.v.hard, 60);
   assert.equal(t.v.cost0, AGES[0]!.cost);
   assert.deepEqual(serializeTune(t), { revision: 0, values: t.v });
   assert.notEqual(hashTune(t), FNV_SEED);
   const initial = hashTune(t);
   setTune(t, 'hard', 30);
-  setTune(t, 'hard', HARD_CAP);
+  setTune(t, 'hard', 60);
   assert.notEqual(hashTune(t), initial, 'returning to defaults preserves the accepted revision');
 });
 
