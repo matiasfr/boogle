@@ -17,6 +17,41 @@ import path from 'node:path';
 import { computeLegacyGraph } from '../dev/lint/prefab-constructors.ts';
 import { createModuleResolver } from '../dev/lint/prefab-boundaries.ts';
 
+for (const [name, body] of Object.entries({
+  destructured: "const{label}=await import('/src/car.ts' as string);console.log(label);",
+  accessed: "const api=await import('/src/car.ts');console.log(api.label);",
+  all: "const[{label}]=await Promise.all([import('/src/car.ts')]);console.log(label);",
+  then: "const label=await import('/src/car.ts').then(api=>api.label);console.log(label);",
+  nestedNamespace: "const api=await import('/src/barrel.ts');console.log(api.cars.label);",
+}))
+  test(`selected dynamic ${name} does not acquire an unused constructor`, () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-prefab-selected-'));
+    const sources = {
+      'src/physics/engine.ts': 'export function createBody(){}',
+      'src/car.ts':
+        "import{createBody}from './physics/engine.ts';export const makeCar=()=>createBody();export const label='safe';",
+      'src/barrel.ts': "export * as cars from './car.ts';",
+      'dev/look/evals/read.ts': `export async function read(){${body}}`,
+    };
+    try {
+      for (const [f, code] of Object.entries(sources)) {
+        fs.mkdirSync(path.dirname(path.join(root, f)), { recursive: true });
+        fs.writeFileSync(path.join(root, f), code);
+      }
+      const graph = computeLegacyGraph(
+        sources,
+        {
+          colliders: { 'src/car.ts': { count: 1, exports: ['makeCar', 'label'], reason: '2026-11-13: Fixture.' } },
+          seats: {},
+        },
+        createModuleResolver(root),
+      );
+      assert.ok(!graph.constructors['src/car.ts#makeCar']!.importers.includes('dev/look/evals/read.ts'));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
 const cases: Record<string, string> = {
   requireObject: "const {createBody:make}=require('./physics/engine');make();",
   await: "const api=await import('./physics/engine');api.createBody();",

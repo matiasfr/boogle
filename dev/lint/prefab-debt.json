@@ -1,13 +1,13 @@
 {
-  "version": 5,
+  "version": 7,
   "colliders": {
     "src/adapters/mushrooms.ts": {
-      "count": 4,
+      "count": 9,
       "exports": ["STALL", "bounceOffCaps", "createStall", "listenForSprouts", "spotsAhead", "sprout", "stallTargets"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/boogler/boogler.ts": {
-      "count": 3,
+      "count": 9,
       "exports": [
         "ACT",
         "MODE",
@@ -24,7 +24,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/boogler/play.ts": {
-      "count": 1,
+      "count": 3,
       "exports": [
         "booglerTalk",
         "carryBooglerRider",
@@ -36,7 +36,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/debug/dev/inspect.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["inspectSummary", "railwayDump", "tool"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -51,12 +51,12 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/debug/record.ts": {
-      "count": 1,
+      "count": 2,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/ball/state.ts": {
-      "count": 3,
+      "count": 10,
       "exports": [
         "ball",
         "ballInReach",
@@ -77,7 +77,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/camera/index.ts": {
-      "count": 2,
+      "count": 4,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -97,7 +97,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/player/state.ts": {
-      "count": 2,
+      "count": 10,
       "exports": [
         "JUMP",
         "MOVE",
@@ -121,17 +121,17 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/props/state.ts": {
-      "count": 3,
+      "count": 4,
       "exports": ["blockedAt", "obstacles", "placements", "propBodies", "trees"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/arrival.ts": {
-      "count": 3,
+      "count": 10,
       "exports": ["createRailwayArrival"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/boiler-install-view.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["PALLET", "createBoilerInstall"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -141,12 +141,12 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/car.ts": {
-      "count": 3,
+      "count": 9,
       "exports": ["BOTTOM", "drawCar", "makeCar", "poseCarOnLine", "snapCar"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/cart-view.ts": {
-      "count": 1,
+      "count": 4,
       "exports": ["createRailwayCart"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -156,7 +156,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/crossing-view.ts": {
-      "count": 3,
+      "count": 7,
       "exports": ["createRailwayCrossing"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -166,7 +166,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/footing-view.ts": {
-      "count": 1,
+      "count": 5,
       "exports": ["createRailwayFootings"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -191,7 +191,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/glide.ts": {
-      "count": 2,
+      "count": 6,
       "exports": ["createRailwayGlide", "railwayGlideOpen"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -201,17 +201,17 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/halts-view.ts": {
-      "count": 12,
+      "count": 16,
       "exports": ["createRailwayHalts"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/home-station-view.ts": {
-      "count": 4,
+      "count": 5,
       "exports": ["createHomeStation"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/hook-shot.ts": {
-      "count": 2,
+      "count": 7,
       "exports": ["createRailwayHook"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -241,7 +241,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/railhead-view.ts": {
-      "count": 4,
+      "count": 10,
       "exports": ["createRailwayRailhead"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -251,12 +251,12 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/ring-deck.ts": {
-      "count": 5,
+      "count": 8,
       "exports": ["createRingDeck"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/roundhouse-view.ts": {
-      "count": 6,
+      "count": 12,
       "exports": ["createRailwayRoundhouse"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -266,7 +266,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/seat.ts": {
-      "count": 1,
+      "count": 3,
       "exports": [
         "SEATED_HIPS",
         "kitMaterial",
@@ -294,7 +294,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/stations.ts": {
-      "count": 7,
+      "count": 10,
       "exports": ["buildStation", "frameBesideLine"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -304,22 +304,22 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/track-machine.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["buildMachine", "thud"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/track.ts": {
-      "count": 4,
+      "count": 8,
       "exports": ["buildTrack"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/train-load.ts": {
-      "count": 1,
+      "count": 3,
       "exports": ["solidTrainLoad"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/train-view.ts": {
-      "count": 3,
+      "count": 9,
       "exports": ["createRailwayTrains"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -329,7 +329,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/up-platforms.ts": {
-      "count": 7,
+      "count": 8,
       "exports": ["createUpPlatforms"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -344,22 +344,22 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/works-view.ts": {
-      "count": 4,
+      "count": 9,
       "exports": ["createRailwayWorks"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/remote-player/index.ts": {
-      "count": 2,
+      "count": 7,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/ring-island/view.ts": {
-      "count": 5,
+      "count": 9,
       "exports": ["createRingIslandView"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/ring-steel/view.ts": {
-      "count": 2,
+      "count": 4,
       "exports": ["createRingSteel"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -369,18 +369,13 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/route-greybox/index.ts": {
-      "count": 2,
+      "count": 3,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/route-greybox/leg-view.ts": {
-      "count": 4,
+      "count": 5,
       "exports": ["LEG_OBJECTIVES", "createLegView"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
-    "src/entities/route-greybox/leg2-draw.ts": {
-      "count": 1,
-      "exports": ["leg2Boxes", "leg2Signs"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/route-greybox/massing-bell.ts": {
@@ -389,7 +384,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/route-greybox/massing.ts": {
-      "count": 19,
+      "count": 18,
       "exports": ["GATE_AT", "GORGE_DECK", "GORGE_RIM", "PICK_AT", "STAIR", "TOWN_PAD", "gorgeAt", "gorgeMassing"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -399,12 +394,12 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/museum.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["createMuseum"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/rooms.ts": {
-      "count": 4,
+      "count": 8,
       "exports": [
         "DOOR",
         "ROOM_CAM",
@@ -420,22 +415,22 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/workshop.ts": {
-      "count": 3,
+      "count": 8,
       "exports": ["WORKSHOP_DOOR", "makeWorkshop"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entity/entity.ts": {
-      "count": 1,
+      "count": 5,
       "exports": ["defineKind", "despawn", "entityKinds", "entityMethods", "spawn"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/fall/index.ts": {
-      "count": 2,
+      "count": 6,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/fall/letters.ts": {
-      "count": 3,
+      "count": 6,
       "exports": ["TITLE_Y", "blastLetters", "burst", "fallWithYou", "hitTitle"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -445,7 +440,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/features/ping.ts": {
-      "count": 2,
+      "count": 5,
       "exports": ["chime"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -455,17 +450,17 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/features/return-spot.ts": {
-      "count": 1,
+      "count": 2,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/guest/collision.ts": {
-      "count": 2,
+      "count": 4,
       "exports": ["UNITS", "gatherSurfaces"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/guest/play.ts": {
-      "count": 1,
+      "count": 3,
       "exports": ["loadSim", "startGuest", "stopGuest", "updateRemoteGuests"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -496,17 +491,17 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/main.ts": {
-      "count": 3,
+      "count": 5,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/physics/flight.ts": {
-      "count": 2,
+      "count": 5,
       "exports": ["STEP", "dropPoint", "flyPath", "stepBall", "stepFlight"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/physics/platforms.ts": {
-      "count": 1,
+      "count": 3,
       "exports": [
         "CARRY",
         "aboard",
@@ -522,17 +517,17 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/place/cove-stop.ts": {
-      "count": 2,
+      "count": 5,
       "exports": ["holdCoveStop"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/place/cove-view.ts": {
-      "count": 3,
+      "count": 6,
       "exports": ["buildCove"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/place/folk.ts": {
-      "count": 1,
+      "count": 2,
       "exports": [
         "TALK",
         "addGreeter",
@@ -555,22 +550,22 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/place/look-kit.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["installContact", "kitBatch", "kitLogs", "lookTrack", "machineLook", "stationKit", "trainLook"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/place/opening-models.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["craneModel", "rackModel"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/place/pose.ts": {
-      "count": 2,
+      "count": 4,
       "exports": ["createPosePolicy"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/place/sites.ts": {
-      "count": 3,
+      "count": 8,
       "exports": [
         "addFoot",
         "addSite",
@@ -592,52 +587,52 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/player/camera-arm.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["makeCameraArm"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/pois/caves/decor.ts": {
-      "count": 3,
+      "count": 7,
       "exports": ["buildDecor", "mouthFrame"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/pois/caves/index.ts": {
-      "count": 4,
+      "count": 13,
       "exports": ["cavesReady", "inCave"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/pois/lighthouse/index.ts": {
-      "count": 4,
+      "count": 8,
       "exports": ["DECK_Y", "FRISBEE_SPOT"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/pois/windmills/index.ts": {
-      "count": 5,
+      "count": 12,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/proto/crossing/index.ts": {
-      "count": 1,
+      "count": 3,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/proto/crossing/train.ts": {
-      "count": 3,
+      "count": 9,
       "exports": ["cars", "clock", "onTrain", "seekS", "start", "train"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/proto/crossing/world.ts": {
-      "count": 6,
+      "count": 10,
       "exports": ["PADS", "buildWorld"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/proto/greybox/build.ts": {
-      "count": 3,
+      "count": 7,
       "exports": ["STAGE_COLOURS", "TINT", "buildGreybox", "refreshMaterials"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/proto/greybox/index.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["VIEWS"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -665,32 +660,32 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/proto/greybox/ring.ts": {
-      "count": 4,
+      "count": 8,
       "exports": ["RING_LAYOUT"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/proto/session.ts": {
-      "count": 1,
+      "count": 2,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/render/locomotion-surfaces.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["registerStepFloor", "segmentStepSupport", "stepSurfaceAt", "tagStepSupport"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/render/owned-view.ts": {
-      "count": 1,
+      "count": 3,
       "exports": ["createOwnedView", "setViewGeometry"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/render/place-tree-view.ts": {
-      "count": 5,
+      "count": 8,
       "exports": ["createAxes", "createTreeSolids", "createTreeView", "shedTreeCrown"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/render/splash.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["splash", "updateSplash"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     }
@@ -702,7 +697,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/track-machine.ts": {
-      "count": 2,
+      "count": 4,
       "exports": ["buildMachine", "thud"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -717,7 +712,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/workshop.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["WORKSHOP_DOOR", "makeWorkshop"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -793,7 +788,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/prefab/builders/seat-chair.ts": {
-      "count": 1,
+      "count": 2,
       "exports": ["seatChair"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     }
@@ -891,9 +886,9 @@
     "src/entities/finds/secrets-view.ts#createSecretsView": 1,
     "src/entities/finds/view.ts#createFindsView": 1,
     "src/entities/lookout/view.ts#createLookoutView": 1,
-    "src/entities/player/state.ts#enterIsland": 83,
+    "src/entities/player/state.ts#enterIsland": 3,
     "src/entities/railway/arrival.ts#createRailwayArrival": 1,
-    "src/entities/railway/car.ts#makeCar": 13,
+    "src/entities/railway/car.ts#makeCar": 5,
     "src/entities/railway/cart-view.ts#createRailwayCart": 1,
     "src/entities/railway/crates-view.ts#createStationBoxes": 1,
     "src/entities/railway/crossing-view.ts#createRailwayCrossing": 1,
@@ -912,13 +907,13 @@
     "src/entities/railway/reward.ts#createRailwayReward": 1,
     "src/entities/railway/ring-deck.ts#createRingDeck": 1,
     "src/entities/railway/roundhouse-view.ts#createRailwayRoundhouse": 1,
-    "src/entities/railway/seat.ts#registerSeat": 9,
+    "src/entities/railway/seat.ts#registerSeat": 3,
     "src/entities/railway/shelf-view.ts#createRailwayShelf": 1,
     "src/entities/railway/sources.ts#createRailwaySources": 1,
     "src/entities/railway/stations.ts#buildStation": 2,
     "src/entities/railway/tools.ts#createRailwayTools": 1,
-    "src/entities/railway/track-machine.ts#buildMachine": 12,
-    "src/entities/railway/track.ts#buildTrack": 12,
+    "src/entities/railway/track-machine.ts#buildMachine": 3,
+    "src/entities/railway/track.ts#buildTrack": 3,
     "src/entities/railway/train-load.ts#solidTrainLoad": 1,
     "src/entities/railway/train-view.ts#createRailwayTrains": 1,
     "src/entities/railway/trophy-plinth.ts#createTrophyPlinth": 1,
@@ -936,10 +931,10 @@
     "src/entities/town/workshop.ts#makeWorkshop": 1,
     "src/fall/letters.ts#blastLetters": 1,
     "src/place/cove-view.ts#buildCove": 1,
-    "src/place/sites.ts#hullBodies": 6,
-    "src/place/sites.ts#buildSites": 6,
-    "src/place/sites.ts#snapSite": 7,
-    "src/place/sites.ts#updateSites": 6,
+    "src/place/sites.ts#hullBodies": 1,
+    "src/place/sites.ts#buildSites": 2,
+    "src/place/sites.ts#snapSite": 2,
+    "src/place/sites.ts#updateSites": 2,
     "src/pois/caves/decor.ts#buildDecor": 1,
     "src/proto/crossing/world.ts#buildWorld": 1,
     "src/proto/greybox/build.ts#buildGreybox": 2,
@@ -950,5 +945,23 @@
     "src/entities/railway/rail-kit.ts#makeCar": ["src/entities/railway/car.ts#makeCar"],
     "src/entities/railway/rail-kit.ts#buildMachine": ["src/entities/railway/track-machine.ts#buildMachine"],
     "src/player/player.ts#enterIsland": ["src/entities/player/state.ts#enterIsland"]
+  },
+  "doorCounts": {
+    "src/physics/backend-rapier.ts": {
+      "colliders": 0
+    },
+    "src/physics/engine.ts": {
+      "colliders": 1
+    },
+    "src/physics/physics.ts": {
+      "colliders": 5
+    },
+    "src/place/land.ts": {
+      "colliders": 3
+    },
+    "src/prefab/instantiate.ts": {
+      "colliders": 2,
+      "seats": 1
+    }
   }
 }

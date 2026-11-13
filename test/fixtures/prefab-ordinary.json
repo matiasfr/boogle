@@ -1,0 +1,53 @@
+[
+  {
+    "kind": "HUD",
+    "files": {
+      "src/features/review-hud.ts": "import { onStart } from '../loop.ts';\nimport { defineKind, spawn } from '../entity/entity.ts';\nimport { me } from '../entities/player/state.ts';\nimport { railwayWorldRead } from '../entities/railway/state.ts';\ndefineKind('review-hud', { update: 39 });\nonStart(() => {\n const output = document.createElement('output'); document.body.append(output);\n spawn({kind:'review-hud', update(){ const read=railwayWorldRead(); output.textContent=`${me.name}: ${read?.tick() ?? 0}`; }, dispose(){output.remove();}});\n});\n"
+    }
+  },
+  {
+    "kind": "feel",
+    "files": {
+      "src/features/review-footfeel.ts": "import { Color } from 'three/webgpu';\nimport { onStart } from '../loop.ts';\nimport { defineKind, spawn } from '../entity/entity.ts';\nimport { me } from '../player/state.ts';\nimport { stepSurfaceAt } from '../render/locomotion-surfaces.ts';\nimport { emit } from '../render/particles.ts';\ndefineKind('review-footfeel', { update: 39 });\nonStart(() => {let wasGrounded=false; spawn({kind:'review-footfeel', update(){const p=me.body?.position; if(!p)return; const grounded=me.coyote>0; if(grounded&&!wasGrounded&&stepSurfaceAt(p.x,p.y,p.z)==='sand') emit({x:p.x,y:p.y,z:p.z,vx:0,vy:1,vz:0,life:0.3,size:0.08,color:new Color(0xddccaa)}); wasGrounded=grounded;}});});\n"
+    }
+  },
+  {
+    "kind": "look",
+    "files": {
+      "dev/look/evals/review-player.ts": "const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');\nconst { inspectRailway } = (await import('/src/entities/railway/state.ts' as string)) as typeof import('../../../src/entities/railway/state.ts');\nconsole.log(JSON.stringify({ player:me.name, rail:inspectRailway()?.head }));\nexport {};\n"
+    }
+  },
+  {
+    "kind": "test",
+    "files": {
+      "test/review-tune.test.ts": "import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { createTune, serializeTune, loadTune, hashTune } from '../src/sim/tune.ts';\nimport { CELL } from '../src/world/grid.ts';\ntest('review tune round trip',()=>{ const a=createTune(), b=createTune(); loadTune(b,serializeTune(a)); assert.equal(hashTune(a),hashTune(b)); assert.ok(CELL>0); });\n"
+    }
+  },
+  {
+    "kind": "mesh view",
+    "files": {
+      "src/entities/railway/review-rail-view.ts": "import { createOwnedView } from '../../render/owned-view.ts';\nimport { kitBatch } from '../../place/look-kit.ts';\nimport { STEEL } from '../../place/look.ts';\nexport function createRailMarker(){const owner=createOwnedView(); owner.add(kitBatch('rail',STEEL,1,owner)); return owner;}\n\nimport {span} from '../route-greybox/boxes.ts';\nimport {stepSurfaceAt} from '../../render/locomotion-surfaces.ts';\nimport {W_R} from '../../boogler/boogler.ts';\nexport const surface=()=>stepSurfaceAt(0,0,0);\nexport const dimensions=span({x:0,y:0,z:0},{x:0,y:0,z:10},W_R,0.2,'#dddddd',false);\n"
+    }
+  },
+  {
+    "kind": "record entity",
+    "files": {
+      "src/content/prefabs/review-marker.ts": "import { definePrefab } from '../../prefab/types.ts';\nexport const prefabs=[definePrefab({key:'review.marker',visual:{none:true},colliders:[{shape:'box',half:[0.5,0.5,0.5],at:[0,0.5,0]}],scope:'owner'})];\n",
+      "src/content/levels/review-marker.ts": "import { defineLevel } from '../../prefab/types.ts';\nexport const levels=[defineLevel({place:'review-marker',placements:[{id:'review-marker',prefab:'review.marker',pos:[0,0,0]}]})];\n",
+      "src/features/review-prefab.ts": "import { defineKind, spawn } from '../entity/entity.ts';\nimport { onStart } from '../loop.ts';\nimport { createOwnedView } from '../render/owned-view.ts';\nimport { instantiate } from '../prefab/instantiate.ts';\nimport { levels } from '../content/levels/review-marker.ts';\ndefineKind('review-prefab',{update:39});\nonStart(()=>{const owner=createOwnedView(); const placement=levels[0]!.placements[0]!; instantiate(placement.prefab,placement,{owner}); spawn({kind:'review-prefab',mesh:owner.root,update:owner.update,dispose:owner.dispose});});\n"
+    }
+  },
+  {
+    "kind": "dev tool",
+    "files": {
+      "dev/review-tune.ts": "import { createTune, serializeTune } from '../src/sim/tune.ts';\nconst tune = createTune();\nconsole.log(JSON.stringify(serializeTune(tune), null, 2));\n",
+      "dev/review-span.ts": "import { span } from '../src/entities/route-greybox/boxes.ts';\nconst box=span({x:0,y:0,z:0},{x:0,y:0,z:10},2,0.2,'#dddddd',false);\nconsole.log(JSON.stringify({length:box.d,width:box.w}));\n"
+    }
+  },
+  {
+    "kind": "server rule",
+    "files": {
+      "src/world/rules/review-tune-rule.ts": "import { okTune } from '../../sim/tune.ts';\nimport { SEA } from '../grid.ts';\nexport function validateTuningRequest(key:unknown,value:unknown){return okTune(key,value)&&SEA===0;}\n"
+    }
+  }
+]

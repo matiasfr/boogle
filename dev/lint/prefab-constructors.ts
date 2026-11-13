@@ -17,6 +17,7 @@ export type LegacyGraph = {
   constructors: Record<string, ConstructionRecord>;
   surfaces: Record<string, string[]>;
   modules: Record<string, string[]>;
+  selections: Record<string, Record<number, string[] | null>>;
   constructionProof: Record<string, { creates: boolean; kinds: string[]; allocation: boolean; uncertain: boolean }>;
   conservative: string[];
   conservativeSites: Record<string, number[]>;
@@ -558,6 +559,7 @@ export function computeLegacyGraph(
     constructors,
     surfaces,
     modules: moduleOrigins,
+    selections: values.selections(),
     constructionProof,
     conservative: [...conservative].sort(),
     conservativeSites: Object.fromEntries(
@@ -594,6 +596,13 @@ export function acquiredConstruction(
   if (!target) return [];
   const n = edge.node;
   const keys = new Set<string>();
+  if (n.type === 'ImportExpression' || n.type === 'CallExpression') {
+    const selected = graph.selections[file]?.[n.start];
+    if (selected !== undefined && selected !== null) {
+      for (const ref of selected) for (const key of graph.surfaces[ref.slice(2)] ?? []) keys.add(key);
+      return [...keys].sort();
+    }
+  }
   if (
     (n.type === 'ImportDeclaration' && n.specifiers.length) ||
     (n.type === 'ExportNamedDeclaration' && n.specifiers.length)

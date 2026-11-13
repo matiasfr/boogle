@@ -148,12 +148,15 @@ export function lintFiles(root: string, targets: string[], options: Options = {}
     }
   }
   if (options.prune) fs.writeFileSync(budgetPath, JSON.stringify(budgets, null, 2) + '\n');
-  if (fs.existsSync(prefabPath) && (prefabDebt.version !== 5 || !prefabDebt.legacy || !prefabDebt.forwards))
+  if (
+    fs.existsSync(prefabPath) &&
+    (prefabDebt.version !== 7 || !prefabDebt.legacy || !prefabDebt.forwards || !prefabDebt.doorCounts)
+  )
     diagnostics.push({
       file: 'dev/lint/prefab-debt.json',
       line: 1,
       rule: 'boogle/legacy-construction-counts',
-      message: 'Keep schema version 5 and its computed construction/importer set. Use src/prefab/instantiate.ts.',
+      message: 'Keep schema version 7 and its binding/construction counts. Use src/prefab/instantiate.ts.',
     });
   if (legacyGraph)
     for (const message of [

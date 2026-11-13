@@ -35,7 +35,7 @@
     "code": "createBody({});",
     "fail": true
   },
-  { "rule": "boogle/colliders-from-records", "file": "src/place/land.ts", "code": "slab();", "fail": false },
+  { "rule": "boogle/colliders-from-records", "file": "src/place/land.ts", "code": "slab();", "fail": true },
   {
     "rule": "boogle/colliders-from-records",
     "file": "src/entities/probe/view.ts",
@@ -58,7 +58,7 @@
     "rule": "boogle/seats-from-records",
     "file": "src/prefab/instantiate.ts",
     "code": "registerSeat({});",
-    "fail": false
+    "fail": true
   },
   {
     "rule": "boogle/seats-from-records",

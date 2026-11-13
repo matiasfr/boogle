@@ -20,8 +20,8 @@ const rules = { colliders: 'boogle/colliders-from-records', seats: 'boogle/seats
 
 export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] {
   const errors: string[] = [];
-  if (base.version === 5 && head.version !== 5)
-    errors.push('Cannot drop prefab debt schema version 5 or its construction-count records.');
+  if ((base.version ?? 0) >= 5 && (head.version ?? 0) < base.version!)
+    errors.push('Cannot drop prefab debt schema version or its construction-count records.');
   for (const kind of ['colliders', 'seats'] as const)
     for (const [file, entry] of Object.entries(head[kind])) {
       if (
@@ -48,6 +48,16 @@ export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] 
     for (const name of names)
       if (!(base.doors?.[file] ?? []).includes(name))
         errors.push(`${PREFAB_DEBT_FILE}: door ${file} public exports grew: ${name}`);
+  for (const [file, counts] of Object.entries(head.doorCounts ?? {}))
+    for (const kind of ['colliders', 'seats'] as const) {
+      const count = counts[kind];
+      if (count === undefined) continue;
+      const old = base.doorCounts?.[file]?.[kind];
+      if (old === undefined || count > old)
+        errors.push(
+          `${PREFAB_DEBT_FILE}: door ${file}/${kind} capability bindings grew. Use src/prefab/instantiate.ts.`,
+        );
+    }
   return [
     ...errors,
     ...compareLegacyRecords(base.legacy, head.legacy),
@@ -72,7 +82,7 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
   const oldLists = baseline === null ? empty() : (JSON.parse(baseline) as PrefabDebt);
   // CI has only two shallow trees: read the base file directly, never require shared ancestry.
   // Missing/older schemas bootstrap with internal consistency only; current schemas enforce shrink-only data.
-  const comparable = oldLists.version === 5;
+  const comparable = oldLists.version === 7;
   const resolve = createModuleResolver(root);
   const countIn = (text: string, file: string, kind: 'colliders' | 'seats') =>
     lintSafety(text, file, empty(), resolve).filter((d) => d.rule === rules[kind]).length;
@@ -89,9 +99,9 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
             .map((name) => `${file}: remove stale public export ${name}`),
         ];
   const errors: string[] = [];
-  if (head.version !== 5 || !head.legacy || !head.forwards)
+  if (head.version !== 7 || !head.legacy || !head.forwards || !head.doorCounts)
     errors.push(
-      'Prefab debt requires schema version 5 and its computed construction/importer set. Use src/prefab/instantiate.ts.',
+      'Prefab debt requires schema version 7 and its binding/construction counts. Use src/prefab/instantiate.ts.',
     );
   for (const kind of ['colliders', 'seats'] as const)
     for (const file of Object.keys(head[kind])) {
@@ -114,13 +124,29 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
   }
   for (const file of Object.keys(head.doors ?? {}))
     if (!doors.includes(file)) errors.push(`Unapproved prefab door ${file}`);
+  for (const kind of ['colliders', 'seats'] as const)
+    for (const file of PREFAB_DOORS[kind]) {
+      if (!fs.existsSync(path.join(root, file))) continue;
+      const actual = countIn(fs.readFileSync(path.join(root, file), 'utf8'), file, kind),
+        recorded = head.doorCounts?.[file]?.[kind];
+      if (recorded === undefined || !Number.isSafeInteger(recorded) || recorded < 0)
+        errors.push(`${file}: record the ${kind} door binding count.`);
+      else if (actual !== recorded)
+        errors.push(
+          `${file}: ${kind} door has ${actual} bindings, budget ${recorded}; ${actual < recorded ? 'lower the count' : 'use src/prefab/instantiate.ts'}.`,
+        );
+    }
+  for (const [file, counts] of Object.entries(head.doorCounts ?? {}))
+    for (const kind of Object.keys(counts))
+      if (!(kind === 'colliders' || kind === 'seats') || !PREFAB_DOORS[kind].includes(file))
+        errors.push(`Unapproved prefab door binding budget ${file}/${kind}`);
   if (head.legacy) {
     const graph = loadLegacyGraph(root, head);
     if (graph.conservative.length)
       console.log(`prefab conservative dynamic-import analysis: ${graph.conservative.join(', ')}`);
     errors.push(...checkLegacyRecords(graph.constructors, head.legacy));
     errors.push(...checkConstructionForwards(graph, head.forwards));
-  } else if (head.version === 5)
+  } else if (head.version === 7)
     errors.push('Missing computed legacy construction set and importer counts; use src/prefab/instantiate.ts.');
   return [...errors, ...comparePrefabDebt(comparable ? oldLists : head, head)];
 }

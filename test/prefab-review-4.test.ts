@@ -104,6 +104,7 @@ test('review 4: registry works in a depth-1 clone with no merge base', () => {
   };
   const head = {
     version: debt.version,
+    doorCounts: {},
     colliders: { 'src/old.ts': { count: 1, exports: [], reason: '2026-11-13: Fixture.' } },
     seats: {},
     legacy: {},
@@ -128,7 +129,7 @@ test('review 4: registry works in a depth-1 clone with no merge base', () => {
     assert.match(checkPrefabDebt(clone, 'origin/main').join('\n'), /has 2 violations/);
     write(clone, 'src/old.ts', 'addStatic(shape,pos);');
     git(source, 'switch', '-q', 'main');
-    for (const version of [4, debt.version]) {
+    for (const version of [4, 5, 6, debt.version]) {
       write(source, PREFAB_DEBT_FILE, JSON.stringify({ ...head, version }));
       commit(source);
       git(clone, 'fetch', '-q', '--depth', '1', 'origin', 'main');

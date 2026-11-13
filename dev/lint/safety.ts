@@ -10,7 +10,15 @@ import { analyze } from '@typescript-eslint/scope-manager';
 import prefabDebt from './prefab-debt.json' with { type: 'json' };
 import { policy, ENTITY_MESSAGE, INPUT_MESSAGE, INPUT_SELECTORS, RETIRED_RAILWAY_NAMES } from './policy.ts';
 import type { ImportBan, ImportOptions, Restriction, Rule } from './policy.ts';
-import { isCapability, createModuleResolver, moduleEdges, runtimeExports } from './prefab-boundaries.ts';
+import {
+  isCapability,
+  createModuleResolver,
+  moduleEdges,
+  runtimeExports,
+  PREFAB_DOORS,
+  pureHelperEdge,
+} from './prefab-boundaries.ts';
+import { capabilitySpecifiers } from './prefab-specifiers.ts';
 import type { PrefabDebt, ModuleResolver } from './prefab-boundaries.ts';
 export type { PrefabBudget, PrefabDebt } from './prefab-boundaries.ts';
 import { acquiredConstruction, loadLegacyGraph, unanalysedProjectCode } from './prefab-constructors.ts';
@@ -128,7 +136,7 @@ export function lintSafety(
     }
   }
   const parsed = parseSync(file, code, {
-    range: !!rules['boogle/records-are-data'] || /\b(require|module)\b/.test(code),
+    range: file.startsWith('src/') || !!rules['boogle/records-are-data'] || /\b(require|module)\b/.test(code),
     preserveParens: false,
   });
   if (parsed.errors.length) {
@@ -141,12 +149,21 @@ export function lintSafety(
   const targets = edges.map((edge) => (edge.source === undefined ? null : resolve(file, edge.source)));
   const calls = file.startsWith('src/') ? select('CallExpression') : [];
   for (const { kind, rule, names } of prefabRules) {
-    if (!rules[rule]) continue;
+    const door = PREFAB_DOORS[kind].includes(file);
+    if (!rules[rule] && !door) continue;
     const banned = new Set<string>(names);
     for (const [i, edge] of edges.entries())
-      if (!edge.erased && (targets[i] === null || isCapability(kind, targets[i]!))) report(edge.node, rule, prefabDoor);
+      if (
+        rules[rule] &&
+        !edge.erased &&
+        (targets[i] === null || (isCapability(kind, targets[i]!) && !pureHelperEdge(edge, targets[i]!)))
+      )
+        report(edge.node, rule, prefabDoor);
+    if (file.startsWith('src/'))
+      for (const node of capabilitySpecifiers(parsed.program, file, resolve, kind))
+        report(node, rule, `New capability import bindings must use the prefab door. ${prefabDoor}`);
     // Retain the legacy call-count ratchet as a supplement. Module access is the structural boundary.
-    for (const node of calls) {
+    for (const node of rules[rule] ? calls : []) {
       const c = node.callee!;
       const name = c.type === 'Identifier' ? c.name : (c.property?.name ?? c.property?.value);
       if (name && banned.has(name)) report(node, rule, prefabDoor);
@@ -174,7 +191,8 @@ export function lintSafety(
         !edge.erased &&
         edge.reexport &&
         targets[i] &&
-        (isCapability('colliders', targets[i]!) || isCapability('seats', targets[i]!))
+        (isCapability('colliders', targets[i]!) || isCapability('seats', targets[i]!)) &&
+        !pureHelperEdge(edge, targets[i]!)
       )
         report(
           edge.node,
@@ -227,15 +245,16 @@ export function lintSafety(
   }
   for (const { kind, rule } of prefabRules) {
     const budget = debt[kind][file];
-    if (!budget) continue;
+    const count = debt.doorCounts?.[file]?.[kind] ?? budget?.count;
+    if (count === undefined) continue;
     const actual = diagnostics.filter((d) => d.rule === rule).length;
-    if (actual <= budget.count) {
+    if (actual <= count) {
       for (let i = diagnostics.length - 1; i >= 0; i--) if (diagnostics[i]!.rule === rule) diagnostics.splice(i, 1);
-      if (actual < budget.count)
+      if (actual < count)
         report(
           { start: 0 },
           rule,
-          `Prefab debt has ${actual} violations, budget ${budget.count}: lower the count to ${actual} (remove a zero entry). ${prefabDoor}`,
+          `Prefab debt has ${actual} violations, budget ${count}: lower the count to ${actual} (remove a zero entry outside named doors). ${prefabDoor}`,
         );
     }
   }

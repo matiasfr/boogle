@@ -19,6 +19,8 @@ export function moduleValues(
   const fallback = new Map<string, Set<number>>();
   const consumed = new Map<string, Set<number>>();
   const imports = new Map<string, Set<number>>();
+  const selected = new Map<string, Map<number, Set<string>>>();
+  const escapedNamespaces = new Map<string, Set<number>>();
   const extraCalls = new Map<Node, Set<string>>();
   let previous = '';
   let converged = false;
@@ -64,6 +66,20 @@ export function moduleValues(
     const set = map.get(f.file) ?? new Set();
     for (const o of originSet(v)) set.add(o);
     map.set(f.file, set);
+    if (map === fallback && [...refsOf(v)].some((r) => r.startsWith('N:'))) {
+      const escaped = escapedNamespaces.get(f.file) ?? new Set<number>();
+      for (const origin of originSet(v)) escaped.add(origin);
+      escapedNamespaces.set(f.file, escaped);
+    }
+  };
+  const selectMember = (f: ValueModule, v: Value, refs: Iterable<string>) => {
+    const sites = selected.get(f.file) ?? new Map<number, Set<string>>();
+    for (const origin of originSet(v)) {
+      const names = sites.get(origin) ?? new Set<string>();
+      for (const ref of refs) if (ref.startsWith('E:')) names.add(ref);
+      sites.set(origin, names);
+    }
+    selected.set(f.file, sites);
   };
   const expand = (ref: string, seen = new Set<string>()): Value => {
     const v = empty();
@@ -117,7 +133,10 @@ export function moduleValues(
     if (key === undefined) {
       note(fallback, f, v);
       for (const x of v.fields.values()) merge(out, x);
-    } else if (v.fields.has(key)) merge(out, v.fields.get(key)!);
+    } else if (v.fields.has(key)) {
+      merge(out, v.fields.get(key)!);
+      if (!out.fields.size && ![...out.refs].some((r) => r.startsWith('N:'))) selectMember(f, v, out.refs);
+    }
     for (const r of v.refs) {
       const resolved = expand(r);
       if (key !== undefined && resolved.fields.has(key)) merge(out, resolved.fields.get(key)!);
@@ -126,17 +145,29 @@ export function moduleValues(
           const file = ref.slice(2);
           if (key !== undefined && exportedNames.get(file)?.has(key)) {
             namespaceFields++;
+            const ref = `E:${file}#${key}`,
+              value = expand(ref);
+            if (!value.fields.size && ![...value.refs].some((r) => r.startsWith('N:'))) selectMember(f, v, [ref]);
             if (!pureRef(`E:${file}#${key}`)) {
               onlyData = false;
               merge(out, expand(`E:${file}#${key}`));
             }
             note(consumed, f, v);
-          } else {
+          } else if (key === undefined) {
             onlyData = false;
             for (const name of exportedNames.get(file) ?? []) merge(out, expand(`E:${file}#${name}`));
             note(fallback, f, v);
           }
         }
+    }
+    // Expanding a barrel includes nested namespaces too. A known member on the actual namespace must
+    // not become opaque merely because that member is absent on one of its nested namespace exports.
+    if (key !== undefined && !namespaceFields && !v.fields.has(key) && [...v.refs].some((r) => r.startsWith('N:'))) {
+      onlyData = false;
+      note(fallback, f, v);
+      for (const ref of v.refs)
+        if (ref.startsWith('N:'))
+          for (const name of exportedNames.get(ref.slice(2)) ?? []) merge(out, expand(`E:${ref.slice(2)}#${name}`));
     }
     if (namespaceFields && onlyData && !out.refs.size && !out.fields.size) out.origins.clear();
     if (
@@ -247,6 +278,10 @@ export function moduleValues(
     if (staticData.size === old) break;
   }
   const active = new Set<Node>();
+  const moduleLiteral = (node: Node): string | undefined =>
+    'expression' in node && node.expression && typeof node.expression === 'object'
+      ? moduleLiteral(node.expression as Node)
+      : literal(node);
   function evaluate(f: ValueModule, n: Node | undefined): Value {
     if (!n || active.has(n)) return empty();
     active.add(n);
@@ -257,7 +292,7 @@ export function moduleValues(
         if (id) v = expand(id);
       } else if (n.type === 'ImportExpression') {
         v.origins.add(n.start);
-        const spec = literal(n.source),
+        const spec = moduleLiteral(n.source),
           file = spec ? resolve(f.file, spec) : null;
         if (file) v.refs.add(`N:${file}`);
         else note(fallback, f, v);
@@ -268,7 +303,7 @@ export function moduleValues(
         !f.refs.has(n.callee.start)
       ) {
         v.origins.add(n.start);
-        const spec = literal(n.arguments[0] as Node),
+        const spec = moduleLiteral(n.arguments[0] as Node),
           file = spec ? resolve(f.file, spec) : null;
         if (file) v.refs.add(`N:${file}`);
         else note(fallback, f, v);
@@ -398,6 +433,8 @@ export function moduleValues(
     fallback.clear();
     consumed.clear();
     extraCalls.clear();
+    selected.clear();
+    escapedNamespaces.clear();
     for (const { f, n } of operations) {
       if (n.type === 'VariableDeclarator' && n.init) bind(f, n.id, evaluate(f, n.init));
       else if (n.type === 'ReturnStatement' && n.argument) {
@@ -466,9 +503,22 @@ export function moduleValues(
         set.add(site);
         fallback.set(f, set);
       }
-  const refsOf = (v: Value): Set<string> =>
-    new Set([...v.refs, ...[...v.fields.values()].flatMap((field) => [...refsOf(field)])]);
+  function refsOf(v: Value): Set<string> {
+    return new Set([...v.refs, ...[...v.fields.values()].flatMap((field) => [...refsOf(field)])]);
+  }
   return {
+    selections: () =>
+      Object.fromEntries(
+        [...selected].map(([file, sites]) => [
+          file,
+          Object.fromEntries(
+            [...sites].map(([site, refs]) => [
+              site,
+              !converged || clipped.has(site) || escapedNamespaces.get(file)?.has(site) ? null : [...refs].sort(),
+            ]),
+          ),
+        ]),
+      ),
     forwarded: new Map([...locals].map(([id, v]) => [id, refsOf(v)])),
     targets: (file: string, node: Node) => {
       const f = byFile.get(file);

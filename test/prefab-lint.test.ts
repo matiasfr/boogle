@@ -275,7 +275,8 @@ test('registry bootstraps internal consistency, then rejects growth against a cu
     fs.writeFileSync(path.join(root, file), text);
   };
   const current = {
-    version: 5,
+    version: 7,
+    doorCounts: {},
     forwards: {},
     legacy: {},
     colliders: { 'src/old.ts': { count: 1, exports: [], reason: '2026-11-13: Approved existing call.' } },

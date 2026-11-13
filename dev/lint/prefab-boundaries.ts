@@ -13,6 +13,7 @@ export type PrefabDebt = {
   doors?: Record<string, string[]>;
   legacy?: Record<string, number>;
   forwards?: Record<string, string[]>;
+  doorCounts?: Record<string, Partial<Record<'colliders' | 'seats', number>>>;
 };
 export const CAPABILITIES = {
   colliders: [
@@ -38,6 +39,30 @@ export const PREFAB_DOORS = {
 export const isCapability = (kind: keyof typeof CAPABILITIES, target: string) =>
   CAPABILITIES[kind].includes(target) ||
   (kind === 'colliders' && /^node_modules\/@dimforge\/rapier3d(?:-simd)?\//.test(target));
+
+// This mixed helper module also exports a pure descriptor function. Never grant its namespace/constructors.
+export const SAFE_HELPER_EXPORTS: Record<string, readonly string[]> = {
+  'src/entities/route-greybox/boxes.ts': ['span'],
+};
+export function pureHelperEdge(edge: ModuleEdge, target: string): boolean {
+  const names = SAFE_HELPER_EXPORTS[target];
+  const n = edge.node;
+  return (
+    !!names &&
+    (n.type === 'ImportDeclaration' || n.type === 'ExportNamedDeclaration') &&
+    n.specifiers.length > 0 &&
+    n.specifiers.every((s) => {
+      if (s.type === 'ImportSpecifier')
+        return (
+          s.importKind === 'type' ||
+          names.includes(s.imported.type === 'Identifier' ? s.imported.name : s.imported.value)
+        );
+      if (s.type === 'ExportSpecifier')
+        return s.exportKind === 'type' || names.includes(s.local.type === 'Identifier' ? s.local.name : s.local.value);
+      return false;
+    })
+  );
+}
 
 export function createModuleResolver(root: string) {
   root = fs.realpathSync(root);
