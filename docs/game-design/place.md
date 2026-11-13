@@ -894,6 +894,17 @@ in the same second. Ring Island's low map table carries the halt map from the ri
 no train markers); before the rivet it is the painted table it was. Placeholder marks and labels. Not tested on a
 device.
 
+**Bell Rock, a greybox (13 November 2026; [greybox-leg2-massing](../plans/greybox-leg2-massing.md), steps 2 and 3).**
+Layout only, live for everyone: grey boxes, no rails, no rules, nothing to press. Bell Rock is two lands on every map,
+cut through north to south, and the cut is sea. **The lower level** stands in the cut on posts: the north-south
+line's unlaid bed (a dark slab, no rails), a 40 m platform each side of it, and west of them an open deck 52 m by
+16 m with two outlined stall pads, each with a board: "Stall: High Gorge (placeholder)" and "Stall: Ring Island
+(placeholder)" over "Not connected yet". A slipway climbs out of the water to the west platform's north end, the
+one way up from the sea. A ramp with a pale parapet runs up the cut's west wall from the deck to a landing at the
+upper level's height; the upper level itself (the bay line's bridge, its platforms, three more pads) is not built
+yet. The rock is solid under four hidden boxes; its outer rim past them is drawn and not solid. You get there by
+the DEV strip's Free cam, or by swimming: no line runs there yet. Not tested on a device.
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's
