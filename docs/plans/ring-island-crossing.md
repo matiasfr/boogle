@@ -63,10 +63,10 @@ The measurer's u 430..436 is moved 2 to 5 m south: from v33 a standing train's t
 
 ## Steps
 
-- [ ] **0. Land the eval.** Cherry-pick c974c605a (`dev/look/evals/ring-crossing-walk.ts`, modes
+- [x] **0. Land the eval.** Cherry-pick c974c605a (`dev/look/evals/ring-crossing-walk.ts`, modes
   `cross=walk|kerb|bed|round|above|platform`) onto the build branch. Verify: `cross=above` reproduces
   `.look/cross-above-still.png` (no crossing yet).
-- [ ] **1. Constants and level check.** `src/entities/ring-island/state.ts`: `RING_CROSSING`, `ringCrossingPlanks()`.
+- [x] **1. Constants and level check.** `src/entities/ring-island/state.ts`: `RING_CROSSING`, `ringCrossingPlanks()`.
   `dev/level/ring.ts`: a section "The island halt's foot crossing" after the terminus, failing on any of: ramp steeper
   than 15 degrees or past `WALKABLE_NY`; planks' north edge less than 3 m short of the standing tail
   (`RING_END.u - TRAIN_EXTENT.behindCm`); ramp top north of that tail; crossover end (`RING_END.cross.u1`) less than

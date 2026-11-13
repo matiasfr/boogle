@@ -3,17 +3,21 @@
 // with the stack line open past the island. Run with --real: warped, the page outruns the server's ticks. Staging
 // teleports only; every measured move is the controller's. Prints `CROSS ...` lines, sets `window.__crossDone`.
 // `cross=` picks the part:
-//   walk      three tries each way (`crossfrom=east|west` for one): aboard a train braking into one platform (seated on
+//   walk      three tries each way (`crossfrom=east|west` for one, `crosstries=<n>`): aboard a train braking into one platform (seated on
 //             the east, homeward one; standing on the west one, where Interact keeps offering the next request stop),
-//             from its stand to standing on the far platform beside where a car stops, round the trains' ends, then
-//             aboard the far train if it still stands, else the next one's boarding alone (its lever pulled). Live
-//             trains seldom stand here together (dwell 50 ticks), so the route goes round both trains' outline anyway.
+//             from its stand to standing on the far platform by the foot crossing at the platforms' south end
+//             (docs/plans/ring-island-crossing.md: down the ramp, over the planks, up the far ramp; no jump), then
+//             beside where a car stops and aboard the far train if it still stands, else the next one's boarding
+//             alone (its lever pulled).
 //   kerb      ten plain jumps from the bed up to each platform, from three spots
 //   bed       standing between the rails as a train comes: a stopping up train, a passing up and a passing down one
 //   round     ground heights round the halt, a drop off the yard's back edge, and the planner between the platforms
 //             with the formation (u 395..492) avoided: any other way round
-//   above | platform   a still from above or from the west platform's south end, once both tracks' trains are in the
-//             halt (one standing); up to 9000 ticks of waiting
+//   above | platform   a still from above the crossing or from the west platform beside where a car stops, looking
+//             south at it, once both tracks' trains are in the halt (one standing); up to 9000 ticks of waiting
+//             (`crosswait=<ticks>` for less), then whichever train stands next
+//   door      a still at eye height from the east platform beside the standing down train's passenger car, looking
+//             south along the train at the crossing (the first sight on stepping off)
 //   npm run look -- --rail-seed stack-laid-4 --real --query cross=walk --eval dev/look/evals/ring-crossing-walk.ts \
 //     --until window.__crossDone --wall 3500 --name cross-walk
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -47,6 +51,9 @@ const { trainAlong } = (await import(
 )) as typeof import('../../../src/sim/railway-train.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
+const { RING_CROSSING } = (await import(
+  '/src/entities/ring-island/state.ts' as string
+)) as typeof import('../../../src/entities/ring-island/state.ts');
 const { PLAYER_R } = (await import('/src/constants.ts' as string)) as typeof import('../../../src/constants.ts');
 
 const page = window as unknown as { __crossDone?: boolean; __crossResult?: unknown };
@@ -256,24 +263,18 @@ background(
       let ok = await go(st.carU, offLat, 0.5, 200, (p) => p.y < PLAT_Y - 0.2 && Math.abs(p.lat - offLat) < 1.6);
       log.off = { ticks: railAt() - t0, ok, ...trainState(), at: where() };
       if (!ok) return { ok, why: 'never got off the car', log, ticks: railAt() - t0 };
-      // Round the nearer end of both trains (as they stand now or stood at the start).
-      const other = standing(toTrack);
-      const u0 = Math.min(st.u0, other?.u0 ?? st.u0),
-        u1 = Math.max(st.u1, other?.u1 ?? st.u1);
-      const here = where().u;
-      const north = Math.abs(u1 + 1.2 - here) <= Math.abs(here - (u0 - 1.2));
-      const uEnd = north ? Math.min(u1 + 1.2, H.u1 / 100 - 0.6) : Math.max(u0 - 1.2, H.u0 / 100 + 0.6);
-      log.route = { trains: [f2(u0), f2(u1)], end: north ? 'north' : 'south', u: f2(uEnd) };
-      ok = await go(uEnd, offLat, 0.5, 300);
-      log.end = { ticks: railAt() - t0, ok, at: where() };
-      // Down into the bed, across both tracks, and up the far kerb with the plain jump.
-      const kerb = fromTrack === 1 ? to.lat1 : to.lat0,
-        onLat = fromTrack === 1 ? to.lat1 - 1.0 : to.lat0 + 1.0;
+      // South along our platform, down its ramp to the landing, over the planks, up the far ramp: no jump asked.
+      const X = RING_CROSSING,
+        planksU = (X.u0 + X.u1) / 2,
+        onLat = to.mid;
       const jumpsBefore = jumps;
-      ok = ok && (await go(uEnd, onLat, 0.5, 400, (p) => p.y < PLAT_Y - 0.3 && Math.abs(p.lat - kerb) < 0.95));
-      // The goal can be reached mid-jump: count the landing, still holding toward the platform's middle.
-      const landBy = railAt() + 20;
-      while (ok && !onPlatform(to) && railAt() < landBy) await frame();
+      ok = await go(X.rampTop + 0.5, from.mid, 0.5, 300);
+      log.rampTop = { ticks: railAt() - t0, ok, at: where() };
+      ok = ok && (await go(planksU, from.mid, 0.4, 200));
+      log.landing = { ticks: railAt() - t0, ok, at: where() };
+      ok = ok && (await go(planksU, to.mid, 0.4, 300));
+      log.across = { ticks: railAt() - t0, ok, at: where() };
+      ok = ok && (await go(X.rampTop + 0.6, to.mid, 0.4, 200));
       log.up = { ticks: railAt() - t0, ok, jumps: jumps - jumpsBefore, onPlatform: onPlatform(to), at: where() };
       if (!ok || !onPlatform(to)) return { ok: false, why: 'never up on the far platform', log, ticks: railAt() - t0 };
       const tPlatform = railAt() - t0;
@@ -322,6 +323,7 @@ background(
       }
       return {
         ok: true,
+        crossingJumps: (log.up as { jumps: number }).jumps,
         platformTicks: tPlatform,
         aboardTicks: tAboard,
         boardTicks,
@@ -337,7 +339,8 @@ background(
       ] as const) {
         const only = new URLSearchParams(location.search).get('crossfrom');
         if (only && only !== (fromTrack === 1 ? 'east' : 'west')) continue;
-        for (let k = 0; k < 3; k++) {
+        const tries = Number(new URLSearchParams(location.search).get('crosstries') ?? 3);
+        for (let k = 0; k < tries; k++) {
           if (!(await startStands(fromTrack))) {
             say(`walk ${fromTrack} try ${k}: no train stood`);
             continue;
@@ -563,10 +566,10 @@ background(
     }
 
     // ------------------------------------------------------------ stills
-    async function still(view: 'above' | 'platform') {
+    async function still(view: 'above' | 'platform' | 'door') {
       // Stand out of the frame, on the works yard behind the east platform, then wait for both tracks' trains in the
       // halt at once (both standing, or one standing and the other running through), pulling both levers as trains
-      // come; at most 9000 ticks, then whatever stands.
+      // come; at most 9000 ticks, then whatever stands. `door` waits for the down train alone.
       const inHalt = (track: number) =>
         viewTrains().find(
           (t) =>
@@ -577,12 +580,14 @@ background(
             }),
         );
       let got = false;
-      const giveUp = railAt() + 9000;
-      while (railAt() < giveUp) {
-        if ((standing(0) && inHalt(1)) || (standing(1) && inHalt(0))) {
+      const giveUp = railAt() + Number(new URLSearchParams(location.search).get('crosswait') ?? 9000);
+      for (;;) {
+        if (view === 'door' ? standing(1) : (standing(0) && inHalt(1)) || (standing(1) && inHalt(0))) {
           got = true;
           break;
         }
+        // Past the wait: whichever train stands next (the levers still pulled as trains come).
+        if (view !== 'door' && railAt() > giveUp && (standing(0) || standing(1))) break;
         if (etas(0).some((e) => e > 40 && e < 60) || etas(1).some((e) => e > 40 && e < 60)) {
           await pull(1);
           await pull(-1);
@@ -598,16 +603,18 @@ background(
           await stage(452, 12, PLAT_Y);
         await ticks(1);
       }
-      if (!got) await bot.until(() => standing(0) || standing(1), 600000);
       const a = standing(0),
         d = standing(1);
       const cars = viewTrains()
         .filter((t) => inHalt(t.track))
         .map((t) => ({ track: t.track, phase: t.phase, cars: t.cars.map((c) => f2(ul(c.x, c.z).u)) }));
+      const planks = { ...at((RING_CROSSING.u0 + RING_CROSSING.u1) / 2, -2), y: RING_CROSSING.top };
       const c =
         view === 'above'
-          ? { cam: { ...at(436, -2), y: 30 }, look: { ...at(450, -2), y: BED_Y } }
-          : { cam: { ...at(431, -8.2), y: PLAT_Y + 1.6 }, look: { ...at(452, -1), y: BED_Y + 1 } };
+          ? { cam: { ...at(422, -2), y: 30 }, look: { ...at(438, -2), y: BED_Y } }
+          : view === 'platform'
+            ? { cam: { ...at(446, WEST.lat1 - 1), y: PLAT_Y + 1.6 }, look: planks }
+            : { cam: { ...at(d?.carU ?? 448, EAST.mid), y: PLAT_Y + 1.6 }, look: planks };
       window.__debugCam!.set([c.cam.x, c.cam.y, c.cam.z], [c.look.x, c.look.y, c.look.z]);
       window.__debugCam!.set = () => {};
       // The bots' notes panel (dev/look/bot.ts) out of the still.
@@ -638,7 +645,7 @@ background(
             ? await bedPart()
             : mode === 'round'
               ? await roundPart()
-              : await still(mode === 'above' ? 'above' : 'platform');
+              : await still(mode === 'above' || mode === 'door' ? mode : 'platform');
     page.__crossResult = result;
     say(`result ${JSON.stringify(result)}`);
     say(`end tick ${railAt()}`);
