@@ -21,7 +21,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-09 · a daily tidy pass ([entry](#d-2026-11-09-a-daily-tidy-pass))
 - 2026-11-09 · pick and log; a designer review; a lighter brainstorm; research by topic ([entry](#d-2026-11-09-pick-and-log-a-designer-review))
 - 2026-11-09 · nothing waits for a playtest ([entry](#d-2026-11-09-nothing-waits-for-a-playtest))
-- 2026-11-09 · playtest jump-ins (a requirement) ([entry](#d-2026-11-09-playtest-jump-ins-a-requirement))
+- 2026-11-09 · playtest jump-ins (a requirement) ([entry](#d-2026-11-09-playtest-jump-ins-a-requirement)) _13 November: the owner is "not a fan of the jump-in rooms as separate rooms"; see [One live game](agents/owner-calls.md)._
 - 2026-11-08 · split the design record: decisions, roadmap and owner calls ([entry](#d-2026-11-08-split-the-design-record-decisions-roadmap))
 - 2026-11-08 · the Sickle Isles map as a backdrop, built for phones ([entry](#d-2026-11-08-the-sickle-isles-map-as-a))
 - 2026-11-08 · Split-rock answers: The forge casts the breaker after Q6; the Roundhouse is a yard shunter at Home's junction turntable whose wagon joins line 2's train; one footing fills your back, and a friend can Help carry a… ([entry](#d-2026-11-08-split-rock-answers))
