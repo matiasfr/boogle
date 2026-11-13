@@ -102,7 +102,9 @@ export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }):
     }
     const end = stops[stops.length - 1]!.s;
     const laid = k === 0 ? end : stops[leg ? stage.open - 1 : stage.open >= 5 ? 4 : sea ? 3 : 2]!.s;
-    return { color: LINE_MARK[k]!, path, laid, stops: stops.map((x) => ({ ...x, ...at(x.s) })) };
+    // Names are tied to their stops only once the stack line is drawn: before the rivet every face places as it did.
+    const ties = leg && k === 1 ? { ties: true as const } : {};
+    return { color: LINE_MARK[k]!, path, laid, stops: stops.map((x) => ({ ...x, ...at(x.s) })), ...ties };
   });
   return { lines, scale: sea ? MAP_SEA_SCALE : 1 };
 }

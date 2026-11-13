@@ -24,6 +24,10 @@ export type MapLine = {
   /** Track is laid from the start up to `laid` metres along; beyond it is dashed and its stations dim. */
   laid: number;
   stops: readonly MapStop[];
+  /** Names on this map are tied to their stops: a name set off from its stop, or as near another's, costs more and
+   * carries a leader, and two names one under the other cost (`mapLabels`). Set once the stack line is on the map;
+   * a map with no such line places its names as it always has. */
+  ties?: true;
 };
 /** How the map sits on a face: world point (x, z) to pixels. */
 export type MapView = {
@@ -227,6 +231,7 @@ export function mapLabels(
     gap = S.label * 0.15,
     lh = S.label * 1.05,
     edge = h * 0.04;
+  const ties = lines.some((l) => l.ties);
   const stops: [number, number, string][] = [];
   const names = new Map<string, { x: number; y: number; n: number; lit: boolean; here: boolean; frame: boolean }>();
   lines.forEach((l, li) =>
@@ -302,7 +307,7 @@ export function mapLabels(
         // wherever a clean placement has them there.
         let cost =
           bias +
-          far * (n.here || n.frame ? FAR_KEY : 2.5) +
+          far * (ties && (n.here || n.frame) ? FAR_KEY : 2.5) +
           Math.abs(slide) +
           3 * (1 - (cx * ox + cy * oy) / od) +
           (out > 0 ? 1e5 + out * 100 : 0);
@@ -320,8 +325,8 @@ export function mapLabels(
             ownAt = [x, y];
           }
         }
-        if (other <= own) cost += n.here || n.frame ? FAR_KEY : STRAY;
-        if (far || other <= own) box.lead = ownAt;
+        if (ties && other <= own) cost += n.here || n.frame ? FAR_KEY : STRAY;
+        if (ties && (far || other <= own)) box.lead = ownAt;
         for (const [x, y] of track)
           if (
             x > box.x - S.track / 2 &&
@@ -359,7 +364,7 @@ export function mapLabels(
     }
     for (const o of options[i]!) {
       let extra = o.cost;
-      for (const c of chosen) extra += clash(o.box, c) ? 1e6 : stacked(o.box, c) ? STACKED : 0;
+      for (const c of chosen) extra += clash(o.box, c) ? 1e6 : ties && stacked(o.box, c) ? STACKED : 0;
       chosen.push(o.box);
       search(i + 1, sum + extra);
       chosen.pop();

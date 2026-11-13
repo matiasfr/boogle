@@ -62,9 +62,10 @@ export async function checkHaltLabels() {
           assert.ok(Math.hypot(dx, dy) >= clear - 1e-6, `${at}: "${b.name}" covers ${s.name}'s ring or train`);
         }
       }
-      // The name of the stop you stand at, and the frame's, read as their own stop's: nearer it than any other drawn
-      // stop, or tied to it by a leader.
-      for (const b of labels.filter((l) => l.here || l.frame)) {
+      // Once the stack line is on the map (joined: six stops open), the name of the stop you stand at, and the
+      // frame's, read as their own stop's: nearer it than any other drawn stop, or tied to it by a leader. Before
+      // that every face places its names as it always has.
+      for (const b of stage.open >= 6 ? labels.filter((l) => l.here || l.frame) : []) {
         const gap = (own: boolean) =>
           Math.min(...stops.filter(({ s }) => (s.name === b.name) === own).map(({ p }) => boxGap(b, p[0], p[1])));
         assert.ok(gap(true) < gap(false) || b.lead, `${at}: "${b.name}" sits nearer another stop, with no leader`);

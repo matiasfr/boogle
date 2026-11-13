@@ -616,14 +616,19 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       *After the independent review (same branch):* **Names and their stops.** A name placed a line out from its
       stop, or as near another stop as its own, is tied to its own stop by a thin leader; that place costs more,
       most of all for the stop you stand at and the frame's. Faces with a name as near another stop as its own:
-      34 of 97 standing faces (42 before; 18 of 66 on main), 40 names, each with a leader (a higher cost took it
-      to 28 but set "Quarry" on the track on the `?home=b` board); two names one right under the other cost too
-      ("Railhead" under "Ring Island" read as one two-line name); 17 of the 40 are the
+      36 of 97 standing faces (42 before; 18 of 66 on main), 46 names; the 18 faces before the rivet are main's,
+      untouched, and on the 37 faces from the rivet on it is 18 faces, 28 names, each with a leader (a higher cost
+      lowered it but set "Quarry" on the track on the `?home=b` board); two names one right under the other cost too
+      ("Railhead" under "Ring Island" read as one two-line name); some are the
       `here` or frame name where no clean near placement exists (the Village board's "Village", 55 px from the
-      face's edge between Camp and Quarry; "Stack railhead" beside the ring's Railhead). The costs apply before
-      the rivet too, so those faces are no longer pixel-identical to main. The label helper asserts the `here` and
+      face's edge between Camp and Quarry; "Stack railhead" beside the ring's Railhead). The costs and
+      the leader apply only once the stack line is on the map (`MapLine.ties`): before the rivet every face places
+      its names exactly as main does (applied everywhere they moved 21 of 110 faces, and set "Quarry" on the track
+      on the `?home=b` board). The label helper asserts the `here` and
       frame names are nearer their own stop than any other drawn stop or carry a leader. A board that is down is
-      not drawn (it is when it stands). **Notes for the owner, left as they are:** train markers cover stops at
+      not drawn (it is when it stands). Noted, not fixed: on Far Head's board at phone width "Village" still sits
+      beside Camp's dot when a train marker covers Village's own (the markers are quads over a canvas drawn once a
+      stage; a leader that follows them is not a small change). **Notes for the owner, left as they are:** train markers cover stops at
       the leg's end (one clips the "y" of "Quarry"); the dim High Gorge is faint at phone width; the frame's
       square reads as an unticked checkbox; the short-drawn leg makes the Gorge look nearer than it is.
 - [ ] **5. Seeds, jump rows, the loop and the bot (HOTBOX, M).** New `src/sim/railway-seed-legs.ts` from
