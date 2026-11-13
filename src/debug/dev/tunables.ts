@@ -291,6 +291,22 @@ const queryStartup = createTuneStartup(() => {
 }, submitTuneQuery);
 
 let offCommands: (() => void)[] = [];
+// A receipt belongs to its sender. Recording follows the authoritative mirror on every peer instead.
+railTune?.onChange(({ changes, revision, tick }) => {
+  for (const change of changes) {
+    const spec = sharedTunableSpec(change.key);
+    if (spec)
+      emitTuneRecord('tune.change', {
+        id: spec.id,
+        old: change.old,
+        value: change.value,
+        revision,
+        tick,
+        source: 'room',
+      });
+  }
+  recordTuneSnapshot();
+});
 onRailwayCommands((session) => {
   for (const off of offCommands) off();
   offCommands = [];
@@ -306,16 +322,6 @@ onRailwayCommands((session) => {
           revision: railTune?.tune.revision,
           appliedTick: event.tick,
         });
-      const spec = sharedTunableSpec(event.fields.key);
-      if (spec)
-        emitTuneRecord('tune.change', {
-          id: spec.id,
-          value: event.fields.v as number,
-          revision: railTune?.tune.revision ?? 0,
-          tick: event.tick,
-          source: 'room',
-        });
-      recordTuneSnapshot();
     }, 'command'),
     session.onRefused((event) => {
       const id = event.fields.requestId;
@@ -329,7 +335,6 @@ onRailwayCommands((session) => {
         });
     }, 'command'),
     session.onReady(() => queryStartup.snapshot()),
-    session.onReset(() => recordTuneSnapshot()),
   ];
 });
 

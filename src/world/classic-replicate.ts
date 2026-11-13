@@ -2,6 +2,7 @@
 // join or reconnect never exposes part of a tune revision. Catalog indices remain the wire ids.
 import { createTune, RAIL_TUNABLES, TUNABLES, type TuneKey } from '../sim/tune.ts';
 import { defineReplicated, GLOBAL_CELL } from './replicate.ts';
+import { RULE_STEPS } from './room-clock.ts';
 import type { Mirror } from './replicate-client.ts';
 import type { Replicator } from './replicate-server.ts';
 import type { RailTuneApi } from './rules/tune.ts';
@@ -30,8 +31,15 @@ export function projectRailTune(replication: Replicator, api: RailTuneApi) {
   for (const schema of CLASSIC_SCHEMAS) replication.touchAll(schema.kind);
 }
 
-export function createClassicMirror(mirror: Mirror): RailTuneApi {
+type TuneChange = {
+  changes: { key: TuneKey; old: number; value: number }[];
+  revision: number;
+  tick: number;
+};
+
+export function createClassicMirror(mirror: Mirror) {
   const tune = createTune(RAIL_TUNABLES);
+  const listeners = new Set<(event: TuneChange) => void>();
   mirror.onPacket((packet) => {
     if (!mirror.whole() || packet.m) return;
     const revision = mirror.get(TUNE_REV.kind, 0)?.revision;
@@ -43,9 +51,21 @@ export function createClassicMirror(mirror: Mirror): RailTuneApi {
       values[row.key] = value.v;
     }
     if (tune.revision === revision && rows.every(({ key }) => tune.v[key] === values[key])) return;
+    const changes = rows.flatMap(({ key }) =>
+      tune.v[key] === values[key] ? [] : [{ key, old: tune.v[key], value: values[key] }],
+    );
     tune.v = values;
     tune.revision = revision;
     tune.rev++;
+    for (const fn of listeners) fn({ changes, revision, tick: Math.floor(packet.tk / RULE_STEPS) });
   });
-  return { tune, get: (key: TuneKey) => tune.v[key] };
+  return {
+    tune,
+    get: (key: TuneKey) => tune.v[key],
+    /** Complete replicated configurations, on every peer; unchanged receipts/refills do not notify. */
+    onChange(fn: (event: TuneChange) => void) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+  };
 }

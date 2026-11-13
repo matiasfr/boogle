@@ -52,6 +52,8 @@ For an existing T1 tuning session, `boogle.dev.run('tunables', 'set', {id: 'rail
 
 Rail tuning uses the railway session's ordered request sequence, with no client simulation. `tune.commit` checks the controller and rail revision, applies on arrival, and reports acceptance only after its checkpoint write succeeds. A reconnect resends the same pending identity; a duplicate applies once. Request IDs keep the existing 1–80 character validation and no longer occupy the classic recovery tail. The eight haul keys retain their separate lockstep revision and readers. The panel's appearance and permitted settings are unchanged.
 
+Every tuning peer records changes and a complete resolved snapshot from the replicated rail configuration. The sender's receipt only settles its request; it does not record the change again. Repeated packets and unchanged reconnect snapshots add no change event.
+
 ## Looks
 
 **Looks** registers a ninth dock tool on Dev/tuning visits. On Place and crossing it compares five one-click presets on the procedural frozen sky: **Current** (production fixed-gain Neutral, owner call 5 November), **Clean toys** (Neutral with a brighter trim), **Sunny toys** (AgX with an 8% highlight-protected display-linear midtone chroma lift), **AgX Punchy** (the Post panel's 1.35 power / 1.4 saturation), and **Sunshine water** (Clean toys plus the water retune). Toy sky is unsupported here. Current always uses trim 1; candidate exposure trims are recorded in EV and can be adjusted. The initial Clean/Sunshine trim is `1 / 0.771116` (about +0.375 EV); Sunny/Punchy start at 0 EV.
