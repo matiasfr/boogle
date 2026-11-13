@@ -34,11 +34,12 @@ import { chopTo, railwayAtWorks, WORKS_STAGES, type WorksStage } from './railway
 import { railwayAtRing, RING_STAGES, type RingStage } from './railway-seed-ring.ts';
 import { railwayAtTrade, TRADE_STAGES, type TradeStage } from './railway-seed-trade.ts';
 import { railwayAtSteel, STEEL_STAGES, type SteelStage } from './railway-seed-steel.ts';
+import { LEG_STAGES, railwayAtLegs, type LegStage } from './railway-seed-legs.ts';
 
 export * from './railway-seed-route.ts';
 
 /** Every stage a seed can be built at, in route order (test/railway-jump.test.ts checks it holds TRAIN_STAGES,
- * WORKS_STAGES, RING_STAGES and STEEL_STAGES; test/railway-trade.test.ts that it holds TRADE_STAGES). */
+ * WORKS_STAGES, RING_STAGES, STEEL_STAGES and LEG_STAGES; test/railway-trade.test.ts that it holds TRADE_STAGES). */
 export const SEED_STAGES = [
   'awake',
   'q1-done',
@@ -86,6 +87,10 @@ export const SEED_STAGES = [
   'steel-lit',
   'steel-home',
   'boiler-long',
+  // The greybox route's leg 1 (./railway-seed-legs.ts): the stack line to High Gorge.
+  'gorge-open',
+  'gorge-mid',
+  'gorge-reached',
 ] as const;
 export type SeedStage = (typeof SEED_STAGES)[number];
 const Q5_STAGES: readonly string[] = ['q4-done', 'sea-open', 'q5-stocked', 'q5-finishing', 'q5-done'];
@@ -121,6 +126,7 @@ export function buildSeedWorld(stage: SeedStage): Seed {
   if ((RING_STAGES as readonly string[]).includes(stage)) return railwayAtRing(stage as RingStage);
   if ((TRADE_STAGES as readonly string[]).includes(stage)) return railwayAtTrade(stage as TradeStage);
   if ((STEEL_STAGES as readonly string[]).includes(stage)) return railwayAtSteel(stage as SteelStage);
+  if ((LEG_STAGES as readonly string[]).includes(stage)) return railwayAtLegs(stage as LegStage);
   if (stage === 'q1-done' || stage === 'q2-stocked' || stage === 'q2-arriving' || stage === 'q3-stocked') {
     const s = railwayAtQ2();
     if (stage === 'q3-stocked') {

@@ -55,6 +55,9 @@ export const SHARDS: readonly (readonly SeedStage[])[] = [
     'steel-lit',
     'steel-home',
     'boiler-long',
+    'gorge-open',
+    'gorge-mid',
+    'gorge-reached',
   ],
 ];
 type Row = { tick: number; stage: number; after: number };

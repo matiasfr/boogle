@@ -7,6 +7,7 @@ import { LINE2_BOILER, LINE2_HOOK, LINE2_LEVER, LINE2_SEA, LINE2_STATIONS } from
 import { RING_HALT, RING_HEAD, RING_JOINT_UP, RING_STEEL_WORKS, ringAt } from '../sim/railway-ring-layout.ts';
 import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN } from '../sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../sim/railway-lines.ts';
+import { RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
 
 /** Where a jump-in lands, in metres on world axes; y is the surface stood on (terrain, pad or deck). */
 export type JumpLand = { x: number; y: number; z: number; yaw?: number };
@@ -54,6 +55,22 @@ const VILLAGE_LINE1 = RAIL_LINES[0]!.halts[0]!.platforms[0],
  * second: along the line; boiler-long lands there too, to ride out at 25 m/s). */
 const VILLAGE_LINE2 = RAIL_LINES[1]!.halts[0]!.platforms[0],
   QUARRY_LINE2 = RAIL_LINES[1]!.halts[1]!.platforms[1];
+
+/** The greybox route's leg 1 (step 5). Ring Island's first frame and rack stand on the island's west platform, 7 m
+ * apart (deck 8.9 m): land between them, in the 4 m reach of both, facing the frame. The Gorge: the north platform at
+ * the halt's stop, on its deck (the halt's catalog point is the rail, 3.0 m, and the deck stands 0.9 m over it),
+ * facing the pickup post on the north rim, where the objective points. */
+const STACK_FRAME_1 = legFrame(RAIL_LEGS[0]!, 0),
+  STACK_RACK_1 = legRack(RAIL_LEGS[0]!, 0);
+const STACK_LAND = near(
+  { x: (STACK_FRAME_1.x + STACK_RACK_1.x) / 2, z: (STACK_FRAME_1.z + STACK_RACK_1.z) / 2 },
+  0,
+  0,
+  STACK_FRAME_1.y / 100,
+  STACK_FRAME_1,
+);
+const GORGE_HALT = RAIL_LINES[1]!.halts.find((h) => h.name === 'High Gorge')!.platforms[0],
+  GORGE_LAND = near(GORGE_HALT, 0, 0, GORGE_HALT.y / 100 + 0.9, RAIL_GRANTS[0]!.at);
 
 /** In route order. Labels and lines are UI text (not The Boogler's), logged in docs/agent-calls.md. Each `land` was
  * checked with a still (docs/plans/playtest-jump-in.md, step 7); `y` is the surface measured there. */
@@ -182,6 +199,19 @@ export const JUMPS: readonly Jump[] = [
     label: 'Longer boiler',
     line: "Line 2's trains wear the longer boiler",
     land: near(VILLAGE_LINE2, 0, 0, VILLAGE_LINE2.y / 100, QUARRY_LINE2), // the Village's line 2 platform
+  },
+  // The greybox route's leg 1 (step 5). Labels and lines are placeholders, logged in docs/agent-calls.md.
+  {
+    stage: 'gorge-open',
+    label: 'Stack line open',
+    line: 'The ring is joined; the first kit is on Ring Island\'s rack and the frame is bare',
+    land: STACK_LAND, // Ring Island's west platform between the first rack and frame, facing the frame
+  },
+  {
+    stage: 'gorge-reached',
+    label: 'High Gorge reached',
+    line: 'The stack line is laid to High Gorge; the powered pick waits on the rim',
+    land: GORGE_LAND, // the Gorge halt's north platform, facing the pickup on the rim
   },
 ];
 export const jumpOf = (stage: string): Jump | undefined => JUMPS.find((j) => j.stage === stage);
