@@ -16,7 +16,9 @@ import { span, type GreyBox } from './boxes.ts';
 const GREY = '#9c9ea1',
   GREY_DARK = '#6f7275',
   GREY_LIGHT = '#b4b6b8',
-  STAKE = '#d8c9a0';
+  STAKE = '#d8c9a0',
+  // The parapets: the palest grey, so the zigzag reads against the wall's shade from an arriving train.
+  PALE = '#e4e5e6';
 
 /** The split's frame (docs/world/map-prototypes.html, the `gorge` terrain line; world metres). */
 const G0 = { x: -103, z: -1988 },
@@ -107,7 +109,7 @@ export function gorgeMassing(): GreyBox[] {
     out.push(span(gorgeAt(from, mid, y0), gorgeAt(to, mid, y1), STAIR.w, 0.4, k % 2 ? GREY : GREY_LIGHT));
     // A solid 1 m parapet on each open side (the wall closes the inner strip's other side).
     for (const edge of up ? [c0 + STAIR.w] : [c0, c0 + STAIR.w])
-      out.push(span(gorgeAt(from, edge, y0 + 1), gorgeAt(to, edge, y1 + 1), 0.2, 1, GREY_DARK));
+      out.push(span(gorgeAt(from, edge, y0 + 1), gorgeAt(to, edge, y1 + 1), 0.2, 1, PALE));
     // The landing this flight ends on: 3 m long, across both strips, with a parapet on its outer edges.
     const l0 = up ? STAIR.a1 : STAIR.a0 - 3,
       l1 = l0 + 3;

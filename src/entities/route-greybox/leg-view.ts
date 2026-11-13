@@ -139,12 +139,12 @@ function paint(sign: SignBoard, lines: readonly { t: string; size: number }[], b
   g.textBaseline = 'middle';
   g.textAlign = 'center';
   // The section's number in a square at the left, the same on the frame's sign and the rack's plate (answer j).
-  const left = badge ? ch * 0.8 : 0;
+  const left = badge ? ch * 0.62 : 0;
   if (badge) {
-    g.fillRect(ch * 0.1, ch * 0.1, ch * 0.7, ch * 0.8);
+    g.fillRect(ch * 0.1, ch * 0.14, ch * 0.5, ch * 0.72);
     g.fillStyle = SIGN_LOOK.ground;
-    g.font = `900 ${ch * 0.62}px Figtree, system-ui, sans-serif`;
-    g.fillText(badge, ch * 0.45, ch * 0.53);
+    g.font = `900 ${ch * 0.56}px Figtree, system-ui, sans-serif`;
+    g.fillText(badge, ch * 0.35, ch * 0.53);
     g.fillStyle = SIGN_LOOK.ink;
   }
   const total = lines.reduce((n, l) => n + l.size * 1.25, 0);
@@ -152,7 +152,7 @@ function paint(sign: SignBoard, lines: readonly { t: string; size: number }[], b
   for (const l of lines) {
     g.font = `900 ${ch * l.size}px Figtree, system-ui, sans-serif`;
     y += ch * l.size * 0.625;
-    g.fillText(l.t, left + (cw - left) / 2, y, (cw - left) * 0.92);
+    g.fillText(l.t, left + (cw - left) / 2, y, (cw - left) * 0.88);
     y += ch * l.size * 0.625;
   }
   sign.painted();
@@ -162,11 +162,15 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   const [{ addStatic, slab }, ground] = await Promise.all([import('../../place/land.ts'), islandGround()]);
   const deck = createBoxBatch(owner, 2400, false),
     things = createBoxBatch(owner, 420, false);
+  // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
+  deck.mesh.name = 'route-greybox:deck';
+  things.mesh.name = 'route-greybox:things';
 
   // ---------------------------------------------------------------- signs
   const sign = (w: number, h: number, foot: number, posts: 'one' | 'two' | 'none', px = 512) => {
     const s = signBoard(owner, { w, h, px, foot, posts, wood: '#5d6063' });
     s.mesh.visible = false;
+    s.mesh.name = 'route-greybox:sign';
     return { ...s, text: '' };
   };
   type Sign = ReturnType<typeof sign>;
@@ -189,7 +193,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     s.mesh.rotation.y = Math.atan2(nx, nz);
     s.mesh.visible = true;
   }
-  const bill = sign(3.6, 1.8, 1.2, 'one', 768),
+  const bill = sign(4.2, 1.8, 1.2, 'one', 768),
     plate = sign(1.9, 0.8, 1.3, 'one', 384),
     endBoard = sign(5.2, 1.4, 0.9, 'two', 768),
     signalPlates = R.slice(0, -1).map(() => sign(1.5, 0.8, 2.6, 'one', 256)),

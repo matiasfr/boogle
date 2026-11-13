@@ -504,7 +504,7 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       the fourth sheet's run: 8 fixed stages worst 1,166; 9 settled 1,261, 1,340, 1,397, 1,367 and stage 0 766 to 820;
       11 whole-leg 1,210 to 1,421; 5 the opening load at +2,252; 14 rivet to Gorge 3,575; 15 +651 and +1,824 / +2,157.
       Fixtures regenerated for the two Leg fields.
-- [ ] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
+- [x] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
       lifecycle), `massing.ts` (the Gorge's stacks and split from `src/proto/greybox/blockout.ts`, one merged mesh per
       material, resident by P1's rule), `leg-view.ts` (deck and trestle bents from `laid`, the frame, rack, bill sign
       reading "0 of 20", the barrier, the pickup post). `src/adapters/railway-read.ts` and `railway-intents.ts`: the
@@ -512,6 +512,47 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       not yet built. Verify: `/look` at `--rail-seed gorge-open` (the first frame and rack on the island's west shore)
       and `gorge-reached` (the platform in the split); the look harness's mesh and collider counts with the Gorge
       resident and not.
+      *As built (12 November; branch `greybox/leg1-step4`, committed, not shipped; views only: nothing under
+      `src/sim`, `src/net`, `src/world` or `server/`, no bump, no new test file), as the step 4 design review rules
+      it:* **The path.** The views' line 2 (`railway/line2-path.ts`) follows the `ring` row past the island halt,
+      smoothed (three row points 7.5 m apart) and eased onto it over the 30 m after s 1210, as the sim's own path does:
+      trains draw on the leg, levers and sites stand on it. **`route-greybox/leg-view.ts`** (mounted by the works
+      seam, as the steel works is): the deck from `laid` (slab, two tracks, sea bents; a laying section grows over
+      its lay clock and is solid once laid), the buffers and the end board at the line's end ("LINE TO HIGH GORGE /
+      UNDER CONSTRUCTION" from the rivet; gone at the Gorge), the current section's frame, bill, rack and plate with
+      its number (b, j), a 25 m platform with a sea ramp at each head that is a stop (g; heads 1 and 2 keep theirs
+      until they close behind, the third stays), a signal post with a plate and an arm at each passed section end
+      (e), the pickup post, the barrier and the town's board at the Gorge, and five prompts (Feed the frame, Take
+      logs, Take rails, Take the powered pick, Open the barrier) through `railway-intents.ts`'s three new acts. The
+      objective's four texts (l) go to the play record; no HUD element, no pause map. **`massing.ts` and `index.ts`**
+      (P1, P3): High Gorge's platforms, concourse, gangway, stair, rim pad, slipway, barrier pad and the stand-in
+      town (a pad, two boxes, three staked plots) as one instanced mesh with real bounds and 53 static colliders,
+      mounted within 400 m of the split and freed past 550 m (resident: 71 boxes, 53 solids; not: none). The stacks
+      are the horizon silhouette's mesh; two hidden boxes make the walls and the 85 m top solid. **Levers**
+      (`halts-view.ts`): a homeward lever on each head's platform and on the Gorge's north platform; the third head
+      gains the way on once the Gorge opens; a lever to the moving end reads "Stack railhead". **Ring Island:** the
+      run-off's straight bed, rails, buffers and blank board left `ring-island/view.ts` (the row curves west through
+      them) and are the leg view's; `ground.ts` cuts the row's formation into the hillside with 3-in-1 rock walls and
+      keeps the station house terrace; the steel works' sign is headed `STEEL WORKS`. **Measured at the Gorge halt:**
+      7 draws added (12 meshes of the route's, 21,364 triangles) against the blockout's 58; 59.3 completed frames a
+      second in a one-second sample at load 6 (vsync-bound: no evidence of headroom). **Stills read** (`.look/`,
+      seeds `ring-joined` and the looks-only `--rail-seed stack-laid-<n>`, `dev/look/stack-seed.ts`, until step 5's
+      stages): both bills either side of the tracks; the west bill across the tracks; the first railhead; the zigzag
+      and platforms from 100 m out; the barrier from the stair's top landing. **Departures, for the designer:**
+      (1) the stair is two strips side by side (c -45 to -42 and -42 to -39), not one: stacked on one strip a
+      flight's last three metres ran under the next with a metre of headroom; it still draws the zigzag. (2) From a
+      train **200 m out the stair cannot be seen**: the row comes round the south stack's east end (17 m off the
+      split's axis at 98 m, 70 m at 238 m), so the zigzag first shows at about 120 m. (3) **The barrier is not in
+      view from the rim's pad** (8 m back from the edge, eye 2 m up); it is from the stair's top landing, over the
+      parapet. (4) **The row turns off the straight at s 1200, inside Ring Island's platforms**, and crosses the
+      island's north-west hillside under up to 23 m of rock for 350 m: the views keep the platforms' track straight
+      and draw the cutting; the catalog row there is leg 1's level check to redo. **Not built, and why:** the halt
+      map and the Home hall's line map past Ring Island (l: a refit of every display's scale and its label test;
+      trains past the island are off the map's track meanwhile), kit cars' number boards (j), the joining train's
+      one-second scale-in and its board marker (f), the kit's hop to the rack (b), a departure board at each head
+      (g: the boards are the halt map's displays), the `STEEL KIT` plate on the east rack (b), and the predicted
+      "press shows nothing" for `rail.grant` and `rail.gate` (they wait for the server, once a leg). Not tested on a
+      device.
 - [ ] **5. Seeds, jump rows, the loop and the bot (HOTBOX, M).** New `src/sim/railway-seed-legs.ts` from
       `ring-joined`, accepted ops only: `gorge-open` (the leg open, nothing fed), `gorge-mid` (two sections laid, kit
       aboard a train), `gorge-reached` (four laid, `pick` not taken). `SEED_STAGES`; two `JUMPS` rows ("Stack line

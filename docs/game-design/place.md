@@ -790,6 +790,29 @@ line 2 train takes the boiler the next time it stands at the Village. The steel 
 it yet). No sound, no camera move. The garage's own install moment (`?home=b`) is not wired and waits for the Home
 flip. Not tested on a device.
 
+**The stack line to High Gorge, a greybox (12 November 2026; [greybox-route](../plans/greybox-route.md), leg 1 step
+4).** Every label below is a placeholder, grey and readable, with no sound or effect. **On Ring Island** the tracks
+divide two bills: the steel works east (its sign now headed "STEEL WORKS", the counts under it) and the line on west.
+On the west platform stand a rack with a "KIT 1" plate, an empty frame 7 m north of it and a bill sign: "LINE TO HIGH
+GORGE / SECTION 1 OF 4 / LOGS 0/20  RAILS 0/20 / KIT: ON A TRAIN" (then "ON THE RACK", then "LAYING THE SECTION"),
+with the section's number in a black square on the sign and the plate. A train sets the kit on the rack; **Take logs**
+and **Take rails** at the rack, **Feed the frame** at the frame (blocked with "Bring logs or rails" on an empty back).
+The island's run-off now curves west onto the stack line through a rock cutting in the hillside; its buffers stand at
+the line's end with a board, "LINE TO HIGH GORGE / UNDER CONSTRUCTION" once the rivet is struck. **A section laid**
+grows the deck out over its 30 s lay clock: a grey slab with two tracks on bents over the sea, 510 m a section. At
+each railhead stand a 25 m platform on the right going out with a lever home, a ramp down into the sea, the rack and
+plate, the frame and its bill (now "SECTION 2 OF 4" and "KIT 2"), and the buffers and board at the deck's end. A
+railhead passed keeps its platform for one more section, then only a signal post between the tracks ("SIGNAL / TRAIN
+AHEAD", its arm red while a train is held there); the third stays as a request stop both ways. **High Gorge:** two
+40 m platforms in the split, buffers, a concourse behind them, a gangway to the north wall and a stair of four long
+flights with pale parapets up to the rim, 81 m above; on the rim a post, "POWERED PICK / NOT YET" until the fourth
+section is laid, then **Take the powered pick**. Behind the south platform a red barrier, "BARRIER: THE INCLINE",
+which reads "Needs the powered pick" and then "No line beyond yet" (the incline is leg 2). West of the gangway a pad
+with two grey boxes, three staked plots and a board is the stand-in town. A slipway climbs from the split's water to
+the gangway. The stacks themselves are the horizon's shapes, made solid while you are within 400 m. Not built yet:
+the halt map and Home's line map do not show the line past Ring Island, kit cars carry no number, a joining train
+appears without its one-second scale-in, and the kit does not hop from the train to the rack. Not tested on a device.
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's

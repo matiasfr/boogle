@@ -80,6 +80,7 @@ export async function drawGreyBoxes(owner: OwnedView, boxes: readonly GreyBox[])
     addStatic({ kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 }, p.position, p.quaternion, undefined, owner);
     solids++;
   }
+  mesh.name = 'route-greybox:massing';
   mesh.receiveShadow = true;
   mesh.computeBoundingBox();
   mesh.computeBoundingSphere();
