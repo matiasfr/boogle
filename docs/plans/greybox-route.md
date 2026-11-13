@@ -961,6 +961,7 @@ room holds `cloth` from leg 3 and is still refused. The lay speed of a section i
    areas". Recommendation: yes, live for everyone ([owner question 1](#owner-questions)). Until he answers, G1 ships
    with the route **closed in the shared room and open in jump-in rooms**: one saved bit on `Route` that the seeds
    set. He rides it by link the day it ships, friends see no change, and opening it later is one line and a bump.
+   _13 November: superseded; open in the shared live room for everyone ([decision](../decisions-rail.md#d-2026-11-13-greybox-route-open-in-the-shared-room))._
    Either way a leg reaches main whole, so the live end of the route is a shut barrier at a halt, never a half-fed
    frame without its next leg's rules.
 
@@ -1130,6 +1131,7 @@ Neither holds the build.
      co-op reading for free, and nothing waits for a playtest.
    - Jump-in rooms only until he has ridden wake to the card, then live. Friends see nothing half-made; he still
      rides each leg by link. This is what ships until he answers.
+     _13 November: not taken; the route is open in the shared live room ([decision](../decisions-rail.md#d-2026-11-13-greybox-route-open-in-the-shared-room))._
    - Never in the shared room as greybox; an area goes live when it is built to depth. Keeps the live game finished,
      and the whole shape is never played together until Alpha.
    - **Answered (owner, 12 November UTC): live for everyone, grey and labelled, each leg shipped whole (recommended).**
