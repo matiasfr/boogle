@@ -297,3 +297,99 @@ points on the same 48 seeds").
 3. **Bump to v33 now?** A third wipe in two days; the change is small but cannot ship without it.
    - **Yes, at the next session boundary, batched with whatever else needs a bump (recommended).**
    - Hold the branch until leg 1 step 5 or the short turn bumps.
+
+## Design review (designer, 2026-11-12)
+
+**Cleared to build**, with the step changes at the end. Nothing waits for the owner.
+
+**Read.** DESIGN.md; owner-calls; rail and core-loop Current rules and the entries cited below; the garage ruling
+(R1, R2); engine-garage finding 3; orchestrator-state (call 109, rules 19 and 25);
+[progression-flow-layout](../research/progression-flow-layout.md) (the three firm rules),
+[route-contract](../research/route-contract.md), [upgrade-economy](../research/upgrade-economy.md) (an upgrade names
+its site and effect). `npm run loop -- node steelhome` and `node install`; `rail.install`
+(`src/sim/railway-sys-steel.ts:193`). **Measured** (a throwaway test on this branch, removed): the stand, barrel and
+legs against line 2. **Looked at:** `--rail-seed steel-home` from line 2's platform end towards the stand, and
+`--rail-seed boiler-long` at the Pier's landward end. **Not seen:** the car itself (not built), the 18.25 mark, a
+train standing at either place, anything moving, the Gorge. **Playtest data:** `node dev/playtest/cli.ts` has no
+session that reached steel; nothing to weigh.
+
+### Calls
+
+| # | Call | Kind | Source or ruling |
+| --- | --- | --- | --- |
+| 1 to 8 | As the plan's table | Decided | As cited there; all hold |
+| 22 | Every train of a line runs the same cars, bought once | Decided | [the train garage](../decisions-core-loop.md#d-2026-11-10-the-train-garage-a-works-copy), answer 5. The steel car on every line 2 train obeys it; the wagon is the standing exception |
+| 23 | The bump ships when the branch is ready, after a `npm run heartbeat` check for a live session. Not batched, not held | Decided | owner-calls, "Nothing waits on a world bump" (10 November: "ships when it is ready, not batched for a later bump"). The plan's question 3 and its "batched" answer are withdrawn |
+| 9 to 12, 14 | Derived from `boiler >= 1`; last car; one extent 8.2 and 12.7 m; `sepCm` kept | Default | Ship |
+| 13 | Line 2's Village stop at 18.25 m | Default | **18.25, confirmed.** Finding 1 |
+| 15 | Steel on the steel car when fitted, the kit car otherwise, 6 a trip | Default | Ship. See call 20: in play this is one trip at most |
+| 16 | A standable deck, no seats, everywhere, the Pier included | Default | Ship. Finding 3 |
+| 17 | The coupling is a second clank under the platform beat's puff; no shunt | Default | Ship. Finding 4 adds one case |
+| 18 | The "Steel car" tile, free once fitted | Default | Ship; its pill reads "Owned" (decided call 2: "the screen shows it owned"). "Free with steel" reads as a price |
+| 24 | The checkpoint bar: no 48-seed figure worse than the 12 November sheet by more than 10 ticks or 0.3 points, **and** every worst under 1,600 | Default | Finding 6 |
+| 25 | High Gorge: the tail 0.3 m clear of the crossover is accepted and pinned by a test | Default | Finding 5 |
+| 26 | A second part waiting on today's stand would graze the wagon train's steel car; whoever comes first, the Home flip or the next steel part's plan, re-places the stand | Default | Finding 2 |
+| 19 | The wagon's train is one car longer than the others | **New** | **Ship it.** Every train visibly gains one car, so "pulls one more car" is true on each. "Cars it pulls 3 to 4" counts cars behind the engine: exact on the wagon's train, 2 to 3 on the others. The mixed look exists today (one train has the wagon) and ends with the consist build under call 22. A wagon for every train now is unapproved scope and re-opens gates 5 and 14 |
+| 20 | The steel car runs empty once steel is home | **New** | **Ship it; a visible job is not this plan's.** Finding 7 |
+| 21 | `kitTrains` stays "running trains less one" | **New** | **Keep.** It re-opens gates 13 and 14 while waits are over the owner's limit; the short turn's plan takes it |
+
+Ten decided, fourteen default, three new.
+
+### Findings
+
+1. **The stop mark: 18.25.** Measured as built: the stand's legs stand at s 5.84 and 7.26 along line 2, inner faces
+   1.28 and 1.72 m from its centre; a car's side is at 1.10 m. So the nearer leg is 0.18 m from the steel car (the
+   plan's "about 0.2" is right), the mast about 1.1 m, the crew 1.2 and 2.0 m. 20.7 m breaks layout B's road 2 and
+   buys nothing but that 0.18 m. One thing changes for a player: the track inside s 8.0 was the open way from line
+   2's platform end to the table, and a standing wagon train now covers s 5.55 to 8.75. The way across is a hop over
+   a 0.7 m deck or the 0.75 m behind the tail. Accepted: the car is a deck, and only one train in five does it.
+   `test/garage-geo.test.ts`'s note "the tails stop at s 8.0" becomes false and R2 rewrites it.
+2. **Ruling R1's "the barrel and the fourth car never meet" holds for this build only.** Today the one part leaves
+   the stand at the install that creates the car. With a part waiting for a second install, the barrel's side would
+   be 1.07 m from line 2's centre at s 5.55: 0.03 m inside the wagon train's steel car at its rear corner, widening
+   to 0.64 m clear at the car's front. No collider, so a visual graze on one train. Call 26; R2 pins the number.
+3. **The Pier is decked, not open.** The still shows the trestle planked across both tracks at s 713 to 719, Q7's
+   piled deck beside it and the halt's ramp coming down onto the planks. A player stepping off the steel car should
+   land on planks, 2 m from the ramp. Not proven: that the planks carry a collider there. V1 proves it with one
+   walk-off each side. The car stays standable everywhere (every car is a deck; rule 3, nobody stranded, is met by
+   the planks or, failing that, the swim). Unstandable is the fallback only if a player ends up stuck.
+4. **Missed: a player standing where the car appears.** After an install the room is at the table, beside s 5 to 12
+   of line 2, and the car's collider arrives from y −60 under a puff. V1 shows one case: a player standing on the
+   track at the tail when a fit lands ends on the deck or beside it, never inside and never launched.
+5. **High Gorge, 0.3 m.** Accepted (one train holds the end block). It is the tightest figure in the plan and
+   nothing asserts it: R1 adds the assert so a later stop or extent change re-measures it.
+6. **The checkpoint bar is right, with two conditions.** This step is not a spacing fix and must not be asked to
+   repair leg 1; it must not spend what is left under the cap either. So: compared against the fixed 12 November
+   sheet (1,553, 1,535, 1,548; 7.2% and 3.0%), never a later main, so steps cannot each take ten ticks; and every
+   worst under 1,600 (call 109, the owner's to keep or reverse). The footing delivery ticks are printed (rule 13).
+7. **The steel car carries steel for one trip at most.** `rail.install` needs one steel in the bay, the works casts
+   twelve in all at six a trip, so after the first trip home a room can install and at most the second trip rides
+   the new car; a room that installs late sees it carry none. Its job in this build is to be the car the boiler
+   pulls, which is what engine-garage finding 3 asked for ("a number is not a payoff"). Casting on with no sink is a
+   pacing change and not this plan's. The next steel pick (the bigger cradle) must give the car its load; logged so
+   that plan starts from it. Section 3's row and the game-design entry should say "one trip at most", not imply a
+   standing job.
+8. **Reach.** Finding 9's "none expected" is unproven until V2's row in `dev/level/ring.ts` runs: V2 reports it (no
+   new ledge or secret from the tail deck) before C1. `npm run loop -- run` in R2 covers order and softlocks.
+
+**Copy.** "It runs faster and pulls one more car." is kept and comes off the suspect list. Placeholders for the
+owner's list: "Steel car", "Came with the longer boiler. 6 steel a trip.", the pill (call 18).
+
+### What the build takes
+
+- **R1.** As planned, plus the High Gorge assert (finding 5).
+- **R2.** 18.25 as planned, plus `test/garage-geo.test.ts`: the legs clear the steel car's side by 0.15 m or more
+  over s 5.55 to 8.75, the barrel's −0.03 m pinned as the known figure for a second part, the stale note rewritten.
+- **R3.** As planned.
+- **V1.** As planned, plus: the Pier walk-off, both sides (finding 3); the player at the tail when a fit lands
+  (finding 4); the top-down still that shows the 0.18 m at the leg.
+- **V2.** As planned, plus: the pill "Owned"; the ring row's result reported; "one trip at most" in the game-design
+  entry.
+- **C1.** The bar of call 24. The bump ships when ready after the heartbeat check (call 23).
+
+### Owner questions
+
+None blocks. The plan's three are answered: 1 and 2 are logged calls (19, 20), 3 is his standing call (23).
+
+1. **The steel car is empty for the rest of today's game after one trip. Fine until the next steel pick?**
+   Recommended: yes; the bigger cradle's plan gives it its load.
