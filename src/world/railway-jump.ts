@@ -70,7 +70,9 @@ const STACK_LAND = near(
   STACK_FRAME_1,
 );
 const GORGE_HALT = RAIL_LINES[1]!.halts.find((h) => h.name === 'High Gorge')!.platforms[0],
-  GORGE_LAND = near(GORGE_HALT, 0, 0, GORGE_HALT.y / 100 + 0.9, RAIL_GRANTS[0]!.at);
+  // The halt's point is on the rails; the north platform (the down track's, lat +1.8 to +6.3: route-greybox/massing.ts)
+  // lies 4 m to the north, along -C of the split's frame (-0.5162, 0.8565), and a train stands on the rails.
+  GORGE_LAND = near(GORGE_HALT, 0.5162 * 4.05, -0.8565 * 4.05, GORGE_HALT.y / 100 + 0.9, RAIL_GRANTS[0]!.at);
 
 /** In route order. Labels and lines are UI text (not The Boogler's), logged in docs/agent-calls.md. Each `land` was
  * checked with a still (docs/plans/playtest-jump-in.md, step 7); `y` is the surface measured there. */
