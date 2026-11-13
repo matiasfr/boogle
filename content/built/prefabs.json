@@ -1,0 +1,8 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-prefabs",
+  "prefabs": {},
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

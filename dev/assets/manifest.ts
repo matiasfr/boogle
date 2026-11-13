@@ -39,9 +39,19 @@ export type Entry = {
   bytes: number;
   triangles: number;
   animations: string[];
+  nodes: string[];
   textures: { name: string; size: [number, number]; mime: string }[];
 };
 export type Manifest = Record<string, Entry>;
+/** Names from the committed GLB JSON chunk, without decoding or rebuilding any geometry. */
+export function glbNodes(bytes: Buffer): string[] {
+  if (bytes.readUInt32LE(0) !== 0x46546c67 || bytes.readUInt32LE(4) !== 2 || bytes.readUInt32LE(16) !== 0x4e4f534a)
+    throw new Error('assets: expected glTF 2 JSON chunk');
+  const json = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString('utf8')) as {
+    nodes?: { name?: string }[];
+  };
+  return [...new Set((json.nodes ?? []).flatMap((node) => (node.name ? [node.name] : [])))].sort();
+}
 const SOURCE_EXT = ['.py', '.blend', '.glb', '.gltf'];
 export const sha = (buf: Buffer | string) => crypto.createHash('sha256').update(buf).digest('hex').slice(0, 16);
 export const kb = (n: number) => (n / 1024).toFixed(1) + ' KB';

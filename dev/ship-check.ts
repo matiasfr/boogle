@@ -42,6 +42,14 @@ const lint = [...files].filter((f) => /\.(?:ts|mts|cts|js|mjs|cjs)$/.test(f) && 
 const policy = [...files].some((f) => /^(dev\/lint\/|\.oxlint|lint-suppressions|package(?:-lock)?\.json)/.test(f));
 if (policy || lint.length) run(['dev/lint/run.ts', ...(policy ? [] : lint)]);
 run(['node_modules/typescript/bin/tsc', '-p', '.']);
+if (
+  [...files].some((f) =>
+    /^(src\/(content|prefab)\/|content\/built\/|dev\/(prefab|assets)\/|assets\/built\/manifest\.json|package\.json)/.test(
+      f,
+    ),
+  )
+)
+  run(['dev/prefab/build.ts', '--check']);
 
 // The tests whose closure holds a changed file, plus the core: the same walk and core as CI's selection
 // (dev/ci/unit-select.ts), in the local unit run's settings below. A lockstep diff still runs only these here; CI runs

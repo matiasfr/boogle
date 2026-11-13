@@ -34,6 +34,7 @@ import {
   sidecar,
   sourceHash,
   readManifest,
+  glbNodes,
   budgetReport,
   assetSizeWarning,
   textureSizeWarning,
@@ -59,6 +60,7 @@ function check() {
       errors.push(`${name}: ${file} changed since its output was built; run \`npm run assets -- ${name}\``);
     const buf = fs.readFileSync(out);
     if (e.outHash !== sha(buf)) errors.push(`${name}: ${name}.glb doesn't match the manifest; rebuild it`);
+    if (JSON.stringify(e.nodes) !== JSON.stringify(glbNodes(buf))) errors.push(`${name}: node list does not match GLB`);
     const over = assetSizeWarning(name, buf.length, sidecar(name).budgetKB ?? BUDGET.assetKB);
     if (over) sizeWarnings.push(over);
     for (const t of e.textures) {
@@ -209,6 +211,7 @@ async function build(names: string[], force: boolean, scratch?: string) {
         rawBytes: raw.length,
         bytes: bytes.length,
         triangles,
+        nodes: glbNodes(bytes),
         animations: doc
           .getRoot()
           .listAnimations()

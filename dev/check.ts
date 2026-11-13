@@ -12,6 +12,7 @@ const steps = [
   ['run', 'registry'],
   ['run', 'level-check'],
   ['run', 'assets', '--', '--check'],
+  ['run', 'prefabs', '--', '--check'],
   ['run', 'build'],
   ...(process.argv.includes('--full')
     ? [
