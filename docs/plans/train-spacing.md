@@ -534,6 +534,11 @@ These replace the plan's three. None holds steps 0 to 2 or the build.
 
 ## Results (12 November 2026)
 
+> **Step 1 of the short turn's plan, and the ruling on it (12 November):** the end hold, six trains, and six trains
+> with the Ring Island hold were measured next. Six trains with the hold (cap 200, on 15%) clears the looser rate and
+> the keep rule at both ask rates and is cleared to build; the short turn is parked. See
+> [short-turn](short-turn.md#design-ruling-on-step-1s-sheet-designer-2026-11-12).
+
 Steps 1 and 2, run by two scratch agents on 12 November and recorded here on the same day by the planner, who ran
 nothing. Every figure below was read from a `sheet.txt`; the sheets are in gitignored `.look/spacing/` folders of two
 worktrees and are not in git, so this section is their durable record. Waits are ticks (10 a second). Unless said:
