@@ -32,7 +32,15 @@ import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts'
 import { createRailwayJourneyMarks } from '../../adapters/railway-marks.ts';
 import { HEAD, ORIGIN } from '../../place/layout.ts';
 import { currentCard } from '../card.ts';
-import { hookActivity, onPlayMark, onRosterSnapshot, playMark, playWhereNow, type PlayData } from '../mark.ts';
+import {
+  hookActivity,
+  onPlayMark,
+  onRosterSnapshot,
+  onSeatSnapshot,
+  playMark,
+  playWhereNow,
+  type PlayData,
+} from '../mark.ts';
 import type { PlayEvent } from '../../../server/src/playdata.ts';
 import { onTuneRecord } from '../../tunables/events.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
@@ -100,6 +108,13 @@ function recordTuning() {
     );
 }
 onStart(recordTuning);
+
+// Seat changes share the mark allowance; bounded snapshots recover any changes it drops, including stands.
+onSeatSnapshot(({ rows, tick }) => {
+  push('seat.begin', { tick, count: rows.length });
+  rows.forEach(({ id, pid }, ordinal) => push('seat.player', { id, pid, ordinal, tick }));
+  push('seat.end', { tick, count: rows.length });
+});
 
 function makeBatch(): string | null {
   if (dropped) {

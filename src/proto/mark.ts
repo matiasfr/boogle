@@ -62,33 +62,45 @@ export function onPlayMark(fn: PlayFn) {
 /** Latest replicated roster. Names are the consented exception. Sync kind: Local diagnostics only. */
 export type RosterSnapshot = { rows: readonly (readonly [string, string, number])[]; tick: number };
 export const ROSTER_SNAPSHOT_MS = 30_000;
-let rosterSnapshot: RosterSnapshot | undefined;
-const rosterListeners = new Set<() => void>();
-/** Renames remain budgeted marks. Request a coalesced recovery snapshot so dropped marks never lose final state. */
-export function recordRosterSnapshot(snapshot: RosterSnapshot) {
-  rosterSnapshot = snapshot;
-  for (const listener of rosterListeners) listener();
-}
+export const { record: recordRosterSnapshot, subscribe: onRosterSnapshot } =
+  snapshotChannel<RosterSnapshot>(ROSTER_SNAPSHOT_MS);
+
+/** Authoritative occupancy only; predicted sits are separate local marks. Sync kind: Local diagnostics. */
+export type SeatSnapshot = { rows: readonly { readonly id: string; readonly pid: string }[]; tick: number };
+export const SEAT_SNAPSHOT_MS = 30_000;
+export const { record: recordSeatSnapshot, subscribe: onSeatSnapshot } =
+  snapshotChannel<SeatSnapshot>(SEAT_SNAPSHOT_MS);
+
 /** Each recorder starts complete, even when loaded late. Subsequent dirty/refill snapshots have a fixed trailing
  * window: more updates replace the pending state without postponing the flush. No idle timer or unbounded queue. */
-export function onRosterSnapshot(listener: (snapshot: RosterSnapshot) => void) {
-  let started = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const receive = () => {
-    if (!started) {
-      started = true;
-      listener(rosterSnapshot!);
-    } else if (timer === undefined) {
-      timer = setTimeout(() => {
-        timer = undefined;
-        listener(rosterSnapshot!);
-      }, ROSTER_SNAPSHOT_MS);
-    }
-  };
-  rosterListeners.add(receive);
-  if (rosterSnapshot) receive();
-  return () => {
-    rosterListeners.delete(receive);
-    if (timer !== undefined) clearTimeout(timer);
+function snapshotChannel<T>(windowMs: number) {
+  let latest: T | undefined;
+  const listeners = new Set<() => void>();
+  return {
+    record(snapshot: T) {
+      latest = snapshot;
+      for (const listener of listeners) listener();
+    },
+    subscribe(listener: (snapshot: T) => void) {
+      let started = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const receive = () => {
+        if (!started) {
+          started = true;
+          listener(latest!);
+        } else if (timer === undefined) {
+          timer = setTimeout(() => {
+            timer = undefined;
+            listener(latest!);
+          }, windowMs);
+        }
+      };
+      listeners.add(receive);
+      if (latest) receive();
+      return () => {
+        listeners.delete(receive);
+        if (timer !== undefined) clearTimeout(timer);
+      };
+    },
   };
 }
