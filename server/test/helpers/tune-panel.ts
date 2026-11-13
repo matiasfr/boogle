@@ -27,9 +27,9 @@ export async function loadTunePanel(t: TestContext, client: Client) {
   const context = `import { panelContext } from ${JSON.stringify(import.meta.url)}; const c = panelContext(${JSON.stringify(id)});`;
   const stubs: Record<string, string> = {
     '../../build-id.ts': `export const BUILD_ID='test';`,
-    '../../world/game-world.ts': `${context} export const railwayMirror=c.client.mirror; export const railTune=railwayMirror.tune; export const rules={tune:{tune:{v:{},revision:0}}};`,
+    '../../world/game-world.ts': `${context} export const railwayMirror=c.client.mirror; export const railTune=railwayMirror.tune;`,
     '../../entities/railway/state.ts': `${context} export const railwayCommands=()=>c.client.adapter; export const onRailwayCommands=fn=>{fn(railwayCommands());return ()=>{}};`,
-    '../../world/sync.ts': `export const world={tick:0}; export const worldStatus=()=>({mode:'client',ready:true}); export const submitEdit=()=>{throw new Error('rail tuning entered lockstep')}; export const onApplied=()=>{}; export const onSnapshot=()=>{}; export const onRejected=()=>{};`,
+    '../../world/sync.ts': `export const world={tick:0}; export const worldStatus=()=>({mode:'client',ready:true}); export const onSnapshot=()=>{};`,
     '../../netplay/net.ts': `export const getRoomId=()=> 'proto-rail-tune'; export const onNetState=()=>{};`,
     '../../player/state.ts': `export const me={entered:true,body:{position:{x:0,y:0,z:0}}};`,
     '../../entities/player/state.ts': `export const onEntered=()=>{};`,

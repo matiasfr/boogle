@@ -5,12 +5,51 @@ import { setImmediate } from 'node:timers/promises';
 import { RAILWAY_WINDOW } from '../../src/sim/railway.ts';
 import type { RecoveryEnvelope } from '../../src/world/sync.ts';
 import { fixture } from './helpers/rail-tune.ts';
+import { createRailwayWorldHost } from '../src/host/world-host.ts';
+import { serializeRoster } from '../../src/sim/roster.ts';
+import { RAIL_SCHEMAS } from '../../src/world/railway-replicate.ts';
 
 const commit = (revision: number, value = 44) => ({
   key: 'railRegrowMinutes',
   v: value,
   expectedRevision: revision,
   requestId: `commit-${revision}-${value}`,
+});
+
+test('roster, rail tuning and railway converge together and restore from one checkpoint', async (t) => {
+  const f = await fixture(t);
+  const a = f.join('alice'),
+    b = f.join('bob');
+  f.run(3);
+  a.adapter.act('who.set', { n: 'Alice', c: 2 });
+  b.adapter.act('who.set', { n: 'Bob', c: 3 });
+  a.adapter.act('tune.commit', commit(0));
+  assert.equal(a.adapter.wake(), true);
+  f.run();
+  await f.settled();
+  f.run(12);
+  a.disconnect();
+  a.reconnect();
+  const late = f.join('late');
+  f.run(6);
+  const expected = f.host.sync.snapshot().data;
+  for (const c of [a, b, late]) {
+    assert.deepEqual(serializeRoster(c.mirror.roster.roster), expected.roster);
+    assert.deepEqual(c.mirror.tune.tune.v, f.host.rules.railTune.tune.v);
+    for (const schema of RAIL_SCHEMAS) {
+      const ids = f.host.rules.railway.world().ids(schema);
+      assert.equal([...c.mirror.mirror.entries(schema.kind)].length, ids.length, `${schema.kind} row count`);
+      for (const id of ids)
+        assert.deepEqual(c.mirror.confirmed().get(schema, id), f.host.rules.railway.world().get(schema, id));
+    }
+  }
+  assert.equal(f.host.sync.saveNow(true), true);
+  await f.host.sync.whenDurable();
+  await f.host.close({ save: false });
+  const restored = createRailwayWorldHost({ roomId: f.roomId, store: f.store, tick: false, now: f.now });
+  t.after(() => restored.close({ save: false }));
+  await restored.whenReady();
+  assert.deepEqual(restored.sync.snapshot().data, expected);
 });
 
 test('rail tune: two mirrors, late join, stale revision and wrong controller', async (t) => {
@@ -36,9 +75,8 @@ test('rail tune: two mirrors, late join, stale revision and wrong controller', a
   assert.equal(a.refused.at(-1)?.reason, 'refused');
   assert.equal(b.refused.at(-1)?.reason, 'refused');
   assert.equal(f.host.rules.railTune.get('railRegrowMinutes'), 44);
-  const hashes = f.host.sync.stateHashes();
-  assert.equal(Object.hasOwn(hashes, 'railTune'), false);
-  assert.equal(Object.keys(f.host.rules.tune.tune.v).length, 8);
+  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway']);
+  assert.equal(Object.hasOwn(f.host.sync.snapshot().data, 'tune'), false, 'haul state is retired');
 });
 
 test('rail tune: reconnect retains a pending commit and waits for its durable receipt', async (t) => {

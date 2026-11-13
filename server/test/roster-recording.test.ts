@@ -25,8 +25,7 @@ async function record(client: Client) {
     '../player/player.ts': 'export const me={};',
     '../math.ts': 'export const sanitizeName=String;',
     '../netplay/net.ts': 'export const addPresenceField=()=>{}; export const onNetState=()=>{}; export const net={};',
-    '../world/sync.ts':
-      'export const submitEdit=()=>{throw Error("classic identity")}; export const worldStatus=()=>({ready:true});',
+    '../world/sync.ts': 'export const worldStatus=()=>({ready:true});',
     '../entities/railway/state.ts': `${access} export const railwayCommands=()=>c.client.adapter;`,
     '../proto/mark.ts': `${stripTypeScriptTypes(readFileSync(new URL('../../src/proto/mark.ts', import.meta.url), 'utf8'))}
       ${access}

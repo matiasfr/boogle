@@ -5,7 +5,6 @@ import {
   createTune,
   okTune,
   setTune,
-  costIn,
   serializeTune,
   loadTune,
   hashTune,
@@ -13,17 +12,16 @@ import {
   TUNABLES,
 } from '../src/sim/tune.ts';
 import { FNV_SEED } from '../src/sim/hash.ts';
-import { TRACK, HELPER, AGES } from '../src/sim/route.ts';
 
 test('defaults are saved and hashed with revision', () => {
   const t = createTune();
-  assert.equal(t.v.hard, 60);
-  assert.equal(t.v.cost0, AGES[0]!.cost);
+  assert.equal(t.v.railFeedMs, 70);
+  assert.equal(t.v.railLaySpeed, 50);
   assert.deepEqual(serializeTune(t), { revision: 0, values: t.v });
   assert.notEqual(hashTune(t), FNV_SEED);
   const initial = hashTune(t);
-  setTune(t, 'hard', 30);
-  setTune(t, 'hard', 60);
+  setTune(t, 'railFeedMs', 80);
+  setTune(t, 'railFeedMs', 70);
   assert.notEqual(hashTune(t), initial, 'returning to defaults preserves the accepted revision');
 });
 
@@ -38,8 +36,8 @@ test('keys and bounds', () => {
 
 test('round-trip keeps the hash; bad saves throw', () => {
   const t = createTune();
-  setTune(t, 'cost0', 30);
-  setTune(t, 'trickle', 50);
+  setTune(t, 'railFeedMs', 80);
+  setTune(t, 'railLaySpeed', 60);
   const u = createTune();
   loadTune(u, JSON.parse(JSON.stringify(serializeTune(t))));
   assert.deepEqual(u.v, t.v);
@@ -52,12 +50,9 @@ test('round-trip keeps the hash; bad saves throw', () => {
   assert.throws(() => loadTune(u, { ...serializeTune(t), revision: -1 }));
 });
 
-test('wood costs follow the tuning', () => {
-  const t = createTune();
-  setTune(t, 'cost0', 24);
-  setTune(t, 'helper0', 10);
-  assert.equal(costIn(t)(0, TRACK), 24);
-  assert.equal(costIn(t)(2, HELPER), 10);
+test('retired haul tuning cannot be admitted', () => {
+  for (const key of ['cost0', 'helper0', 'hard', 'yield', 'full', 'trickle', 'wagonCruise', 'wagonAccel'])
+    assert.equal(okTune(key, 10), false, key);
 });
 
 test("the boiler's haul pace: appended after the glider's keys, 300 cm/s solo and 540 helped", () => {

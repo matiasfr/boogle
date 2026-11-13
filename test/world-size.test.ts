@@ -2,19 +2,17 @@
 // MAX_RECOVERY_BYTES (128 KB since 6 November), so snapshots stay quick to serve.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSync, MAX_RECOVERY_BYTES } from '../src/world/sync.ts';
-import { installRules } from '../src/world/rules/index.ts';
-import { homeLand } from './helpers/land.ts';
+import { MAX_RECOVERY_BYTES } from '../src/world/sync.ts';
+import { serverWorld } from './helpers/server-world.ts';
 import { setWho, MAX_PLAYERS } from '../src/sim/roster.ts';
 
 const BUDGET = MAX_RECOVERY_BYTES;
 
 test('a world filled to every cap serializes within the recovery budget', () => {
-  const s = createSync();
-  s.setSelfId('a');
-  const rules = installRules(s, homeLand());
+  const host = serverWorld();
+  const s = host.sync;
   s.updateWorld(0.1);
-  const r = rules.roster.roster;
+  const r = host.roster.roster;
   for (let k = 0; k < MAX_PLAYERS; k++)
     setWho(r, `p${String(k).padStart(9, '0')}`, `Player name ${k}`.padEnd(16, 'x'), k % 8);
   s.world.tick = 99_999_999;

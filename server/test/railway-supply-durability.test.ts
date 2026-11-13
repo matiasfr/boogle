@@ -106,9 +106,9 @@ test('only controlled T1 proto commits accept the two supply tunes, which surviv
     await set('railRecoveryMinutes', 1441);
     assert.equal(tune().get('railRegrowMinutes'), 1, 'bounds remain enforced');
     assert.equal(tune().get('railRecoveryMinutes'), 2);
-    const oldCost = f.host.rules.tune.get('cost0');
-    await set('cost0', oldCost + 1);
-    assert.equal(f.host.rules.tune.get('cost0'), oldCost, 'rail commands do not open haul tuning');
+    const retired = await set('cost0', 2);
+    assert.ok(receipts.some((p) => p.rej?.some(([e, r, why]) => e === epoch && r === retired && why === 'refused')));
+    assert.equal(Object.hasOwn(f.host.sync.snapshot().data, 'tune'), false, 'haul tuning is retired');
     assert.equal(tune().tune.revision, 2, 'only the two accepted commits increment revision');
     f.advance(1);
     await f.ticks(4);

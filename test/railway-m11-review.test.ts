@@ -39,7 +39,6 @@ function open(r: ReturnType<typeof host>, pid: string) {
 }
 function host(stage?: SeedStage) {
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   api.touchAll();

@@ -32,7 +32,6 @@ type Delivered = { p: ServerPacket; whole: boolean };
 function room(stage: SeedStage) {
   const seed = buildSeedWorld(stage);
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   while (sync.world.tick < seed.t) sync.stepWorld(100);
@@ -267,7 +266,6 @@ test('review M12: across a disconnect, a split whole send on reconnect and play 
 function room2(stage: SeedStage) {
   const seed = buildSeedWorld(stage);
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   while (sync.world.tick < seed.t) sync.stepWorld(100);

@@ -1,41 +1,31 @@
-// Debug handle for scripts that drive the built game (the nightly smoke test, dev/scenarios/smoke.ts). The deployed
-// site has no /src/ modules to import, so the shared world is reached through `window.boogle.sync`:
-//   world, worldStatus(), stateHashes(), submitEdit(e)   straight from src/world/sync.ts
-//   markHashes(tick), hashesAt(tick)   per-state hashes at `tick` (current tick captured immediately; past misses stay null)
-//   captureHashes(on), hashTicks()   bounded, temporary history for slow two-tab checks; off during normal play
-//   gfx                                'webgpu' once the renderer is up (null while starting)
-//   tossBall(charge)                   grab the ball wherever it is and throw it (the real grab and throw, no walk)
-// Read-only for the sim: the tick hook only hashes. Serves "Determinism from day one" (a live desync gets caught).
+// Clock, replica observation and existing command/ball probes for built-game scripts.
 import { onStart } from '../loop.ts';
-import { world, worldStatus, stateHashes, submitEdit, onAfterTick } from '../world/sync.ts';
+import { world, worldStatus } from '../world/sync.ts';
 import { gfx } from '../render/scene.ts';
 import { grabBall, throwBall } from '../entities/ball/state.ts';
 import { launch } from '../player/throw.ts';
+import { railwayMirror } from '../world/game-world.ts';
+import { railwayCommands } from '../entities/railway/state.ts';
 
-const marks = new Map<number, ReturnType<typeof stateHashes> | null>();
-let capturing = false;
-function record(tick: number) {
-  marks.set(tick, stateHashes());
-  if (marks.size > 4096) marks.delete(marks.keys().next().value!);
-}
+// Never sample the ingest mirror between chunks of a split send; the published views still hold the prior state.
+let replicaComplete = false;
+railwayMirror?.mirror.onPacket((packet) => (replicaComplete = !packet.m));
 
 const sync = {
   world,
   worldStatus,
-  stateHashes,
-  submitEdit,
-  markHashes(tick: number) {
-    // A page evaluation runs between complete ticks. Never relabel today's state as a missed earlier tick.
-    if (tick === world.tick) record(tick);
-    else if (!marks.has(tick)) marks.set(tick, null);
+  replica() {
+    const r = railwayMirror;
+    if (!r) return null;
+    return {
+      ready: r.synced() && replicaComplete,
+      step: r.step(),
+      hash: r.hash(),
+      roster: r.roster.roster.pids.map((pid, k) => [pid, r.roster.nameOf(k), r.roster.colorOf(k)]),
+      tune: { values: { ...r.tune.tune.v }, revision: r.tune.tune.revision },
+    };
   },
-  hashesAt: (tick: number) => marks.get(tick) ?? null,
-  captureHashes(on: boolean) {
-    marks.clear();
-    capturing = on;
-    if (on) record(world.tick);
-  },
-  hashTicks: () => [...marks].filter(([, hashes]) => hashes !== null).map(([tick]) => tick),
+  act: (op: string, fields: Record<string, unknown>) => railwayCommands()?.act(op, fields) ?? null,
   tossBall(charge = 0.5) {
     grabBall();
     const { p, v } = launch('ball', charge);
@@ -43,16 +33,8 @@ const sync = {
   },
 };
 export type SyncHandle = typeof sync;
-
 onStart(() => {
-  // After every onTick handler and before the host hashes, so a mark sees the tick's final state (what sync hashes).
-  onAfterTick((t) => {
-    // One sample per simulation second, on the SAME tick grid in both tabs. The history survives slow browser
-    // evaluations and snapshot jumps; 4096 samples (about 40 minutes of ticks) let a slow tab reach a tick the faster one passed long before.
-    if (marks.has(t) || (capturing && t % 10 === 0)) record(t);
-  });
   if (!window.boogle) return;
-  // A getter: onStart can run before the renderer's init() resolves.
   Object.defineProperty(window.boogle, 'gfx', { get: gfx, enumerable: true });
   window.boogle.sync = sync;
 });

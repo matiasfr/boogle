@@ -88,7 +88,7 @@ function commit(requestId: string, expectedRevision = 0): Obj {
   };
 }
 
-test('rail tuning never enters the classic recovery tail or persists arbitrary padding', async () => {
+test('rail tuning persists only the checkpoint, never arbitrary command padding', async () => {
   const f = await fixture();
   try {
     f.host.replication.addClient('controller');
@@ -113,7 +113,7 @@ test('rail tuning never enters the classic recovery tail or persists arbitrary p
     await f.ticks();
     await f.host.close(); // drains every accepted durable write
     const recovery = f.recovery();
-    assert.equal(recovery.tail.length, 0);
+    assert.equal(Object.hasOwn(recovery, 'tail'), false);
     assert.ok(!JSON.stringify(recovery).includes('"pad"'));
     await f.restart();
     assert.equal(f.tune().get('railRegrowMinutes'), 2);
@@ -153,7 +153,7 @@ test('full roster keeps bounded recovery; rail commit accepts 65–80 unit ids w
     assert.equal(f.tune().tune.revision, 2);
     await f.host.close();
     const recovery = f.recovery();
-    assert.equal(recovery.tail.filter(({ e }) => typeof e.op === 'string' && e.op.startsWith('tune.')).length, 0);
+    assert.equal(Object.hasOwn(recovery, 'tail'), false);
     t.diagnostic(`full roster: ${Buffer.byteLength(JSON.stringify(recovery))}/${MAX_RECOVERY_BYTES} bytes`);
     await f.restart();
     assert.equal(f.tune().tune.revision, 2);

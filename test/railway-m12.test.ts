@@ -82,7 +82,6 @@ type Client = { cid: string; pid: string; adapter: Adapter; name: string } & {
 };
 function room(seed?: Seed) {
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   if (seed) {
@@ -394,7 +393,6 @@ test('M12: views read a published world, never the ingest world, and a published
 
 test("M12: a late join's chunks publish nothing until the whole state, then all of it at once", () => {
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   const seed = buildSeedWorld('ring-joined');

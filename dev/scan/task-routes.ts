@@ -225,43 +225,44 @@ export const TASK_ROUTES: Record<string, Route[]> = {
   ],
   'lockstep-op': [
     {
-      scope: 'Op in an existing system',
+      scope: 'Server command in an existing system (historical route key)',
       owners: ['src/world/rules', 'src/sim', 'src/adapters'],
       example: 'src/world/rules/tune.ts',
-      copy: 'tune.commit validation/apply, edits generator and typed fields',
+      copy: 'installRailTune command validation, durable apply and checkpoint registration',
       mustRead: [...core, ...rulesDocs],
       readIf: [
         rail,
         { when: 'Changing tick/acceptance semantics', refs: ['src/world/README.md#contract-syncts'] },
-        { when: 'Changing replay generators', refs: ['src/world/rules/README.md#edit-generators-and-invariants'] },
+        { when: 'Changing server replay or prediction', refs: ['src/world/README.md#server-replay-and-prediction'] },
       ],
-      sync: 'Lockstep; adapter effects in onApplied after acceptance',
-      checks: 'npm run check; lockstep determinism/conservation/validation tests; look for visible adapter changes',
+      sync: 'Server command and receipt; reversible prediction only for declared railway actions',
+      checks: 'npm run check; server replay/conservation/validation tests; look for visible adapter changes',
       lookalikes: ['src/world/rules/roster.ts', 'src/world/sync.ts'],
       warning:
-        'Register with the owning rules module. New shared state follows Server kind; this route covers retained classic transport.',
+        'Register through the existing server command boundary; the classic transport is retired. Queued is not accepted.',
     },
   ],
   'lockstep-system': [
     {
-      scope: 'New shared persistent system',
-      owners: ['src/sim', 'src/world/rules', 'src/world/rules/index.ts', 'src/world/rules/types.ts', 'src/features'],
+      scope: 'New server-owned persistent system (historical route key)',
+      owners: ['src/sim', 'src/world/rules', 'src/world/server-ops.ts', 'src/world/rules/types.ts', 'src/features'],
       example: 'src/world/rules/tune.ts',
-      copy: 'TuneApi, state, edits and invariants; sim and adapter are separate owners',
+      copy: 'RailTuneApi, server commands, checkpoint state and projections; pure rules and view adapters are separate',
       mustRead: [
         ...core,
         ...rulesDocs,
         sync,
-        'src/world/rules/README.md#adding-a-lockstep-system',
-        'src/world/rules/README.md#edit-generators-and-invariants',
+        'src/world/rules/README.md#adding-server-state',
+        'src/world/README.md#server-replay-and-prediction',
         'docs/agents/test-details/atlas.md',
       ],
       readIf: [rail, { when: 'Adding a game-design chapter', refs: ['docs/game-design.md'] }],
-      sync: 'Lockstep; append RULES and typed Rules API; WORLD_NS break for development shape changes',
-      checks: 'npm run check; lockstep tests; new sync contract scenario when needed; look; atlas story/check',
+      sync: 'Server commands, checkpoint registration and projections; WORLD_NS break for development shape changes',
+      checks:
+        'npm run check; server replay and mirror tests; new sync contract scenario when needed; look; atlas story/check',
       lookalikes: ['src/world/rules/roster.ts'],
       warning:
-        'Use a feature adapter unless other modules import it. Add a game-design chapter and index line, not just the example haul chapter.',
+        'Use the existing server boundary, not another transport. Add the owning game-design chapter for a player-visible system.',
     },
   ],
   hud: [
@@ -341,7 +342,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       checks: look,
       lookalikes: ['src/player/controls.ts'],
       warning:
-        'Use the existing interact action, not a new key. Queued submitEdit is not acceptance; update the target system chapter.',
+        'Use the existing interact action, not a new key. Queued commands are not acceptance; update the target system chapter.',
     },
   ],
   entity: [

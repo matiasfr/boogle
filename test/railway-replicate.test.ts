@@ -105,7 +105,6 @@ for (const k of [3, 4]) {
 
 function room() {
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const base = installRailRules(sync, homeLand(), replication);
   const api = installRailway(sync, base, replication);
@@ -281,12 +280,10 @@ test('a running job sends nothing per rule tick: its timed fields are derived', 
   assert.equal(RULE_STEPS, 6);
 });
 
-test('the railway state is a server state: saved by the host, never hashed or served to clients', () => {
+test('the railway state is checkpointed by the host and restores its session account', () => {
   const r = room();
   r.api.session('alice', 1);
-  assert.ok('railway' in r.sync.snapshot().data);
-  assert.ok(!('railway' in r.sync.snapshot(false).data));
-  assert.ok(!('railway' in r.sync.stateHashes()));
+  assert.ok('railway' in r.sync.snapshot().data, 'the server checkpoint contains railway state');
   const saved = JSON.parse(JSON.stringify(r.sync.snapshot()));
   const again = room();
   again.sync.loadSnapshot(saved);

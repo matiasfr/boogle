@@ -71,16 +71,14 @@ const STATS = `
     observer.stop();
   }`;
 
-// Run `n` ticks under profileTicks, yielding to the page every few so frames and timers still run. A host hashes every state every 20 ticks; a solo page is not a host, so
-// this does it in its place.
+// Observe `n` clock updates under profileTicks, yielding so frames and timers still run. Shared rules run on the server.
 const PROFILE = (n: number) => `
-  const { profileTicks, updateWorld, stateHashes, worldStatus, TICK_MS } = await import('/src/world/sync.ts');
+  const { profileTicks, updateWorld, worldStatus, TICK_MS } = await import('/src/world/sync.ts');
   const prof = profileTicks();
   let res;
   try {
     for (let k = 0; k < ${n}; k++) {
       updateWorld(TICK_MS / 1000);
-      if (k % 20 === 19 && worldStatus().mode !== 'host') stateHashes();
       if (k % 5 === 4) await new Promise((r) => setTimeout(r, 0));
     }
   } finally {

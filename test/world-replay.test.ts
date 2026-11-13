@@ -1,144 +1,80 @@
-// Replay: a host (the server's role) and two clients on the real rules and the home land play a seeded stream of every
-// registered op (each rules module's `edits` generators, about a fifth of it junk). Midway a late joiner loads a
-// snapshot over the wire, and at the end a fresh tab reloads a JSON snapshot. Every live peer must hash every state the same at every tick they share, every module's invariants must
-// hold, and a second run with the same seed must give the same results. See src/world/rules/README.md.
+// Server commands replay to identical state. Clients only consume the resulting replicas.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSync } from '../src/world/sync.ts';
-import { RULES, installRules } from '../src/world/rules/index.ts';
+import { serverWorld } from './helpers/server-world.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
-import { homeLand } from './helpers/land.ts';
-import { makeNet, run, live } from './helpers/net.ts';
-import type { FakeNet } from './helpers/net.ts';
-import type { Edit, Land, Rules, Stream } from '../src/world/rules/types.ts';
+import { RAIL_TUNABLES, serializeTune } from '../src/sim/tune.ts';
+import { serializeRoster } from '../src/sim/roster.ts';
+import { RAIL_SCHEMAS } from '../src/world/railway-replicate.ts';
+import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 
-/** What a rules module offers this test: edit generators by op, and invariants over its API. */
-type Gen = (r: Stream, view: { rules: Rules; land: Land; tick: number }) => Record<string, unknown> | null | undefined;
-type RuleModule = {
-  name: keyof Rules;
-  edits?: Record<string, Gen>;
-  invariants?: (api: unknown, rules: Rules) => string | null;
-};
-const MODULES = RULES as unknown as readonly RuleModule[];
-
-const SEED = 0xf091;
-const RECORD_EVERY = 10; // ticks between recorded state hashes
-
-function strHash(s: string) {
-  let h = 2166136261;
-  for (let k = 0; k < s.length; k++) h = Math.imul(h ^ s.charCodeAt(k), 16777619);
-  return h >>> 0;
-}
-function stream(seed: number): Stream {
-  const next = mulberry32(seed | 0);
-  const int = (lo: number, hi: number) => lo + Math.floor(next() * (hi - lo + 1));
-  return { next, int, pick: (a) => a[int(0, a.length - 1)]!, chance: (p: number) => next() < p };
-}
-const generators: Record<string, Gen> = Object.assign({}, ...MODULES.map((m) => m.edits ?? {}));
-
-// One tab. protoRoom keeps the retained haul tune ops enabled.
-function makePeer(seed: number, net: FakeNet | null, id: string, host?: boolean) {
-  const s = createSync({ env: { protoRoom: true, tuneController: () => true } });
-  const rules = installRules(s, homeLand());
-  const x = {
-    id,
-    s,
-    rules,
-    r: stream(seed ^ strHash(id)),
-    applied: new Map<string, number>(),
-    hashes: new Map<number, string>(),
-    p: { alive: true } as { alive: boolean; host?: boolean },
-  };
-  s.onApplied((e: Edit) => x.applied.set(e.op, (x.applied.get(e.op) ?? 0) + 1));
-  s.onAfterTick((t) => {
-    if (t % RECORD_EVERY === 0 && !x.hashes.has(t)) x.hashes.set(t, JSON.stringify(s.stateHashes()));
-  });
-  if (net) {
-    const p = net.add(id, host);
-    x.p = p;
-    s.attachWorld(p.room, { roomId: 'replay', host, storage: null, now: () => 1000 });
-  } else {
-    s.setSelfId(id);
-  }
-  return x;
-}
-
-type Peer = ReturnType<typeof makePeer>;
-
-function checkInvariants(x: Peer) {
-  for (const m of MODULES) {
-    const why = m.invariants?.(x.rules[m.name], x.rules);
-    assert.equal(why ?? null, null, `${x.id}: ${m.name} invariant broken at tick ${x.s.world.tick}: ${why}`);
-  }
-}
-
-async function replay(seed: number) {
-  const net = makeNet();
-  const peers = [makePeer(seed, net, 'h', true), makePeer(seed, net, 'c1', false), makePeer(seed, net, 'c2', false)];
-  const master = stream(seed);
-  const ops = peers[0]!.s.registry().ops;
-  const mixed = ops;
-  for (const op of ops)
-    assert.ok(generators[op], `op ${op} has no edit generator (export const edits in its rules module)`);
-  for (const op of Object.keys(generators)) assert.ok(ops.includes(op), `generator for unregistered op ${op}`);
-
-  let submitted = 0;
-  // `frames` frames of 50 ms; on each, a random live peer submits one generated edit of a random op (or `only`).
-  async function play(frames: number, only?: string) {
-    for (let f = 0; f < frames; f++) {
-      const x = master.pick(live(peers));
-      const op = only ?? master.pick(mixed);
-      const e = generators[op]!(x.r, { rules: x.rules, land: homeLand(), tick: x.s.world.tick });
-      if (e) {
-        x.s.submitEdit(e);
-        submitted++;
-      }
-      await run(net, peers, 1);
+function replay(seed: number) {
+  const host = serverWorld();
+  host.join('a');
+  host.join('b');
+  host.railway.session('alice', 1);
+  host.railway.session('bob', 1);
+  const requests = { alice: 0, bob: 0 };
+  const random = mulberry32(seed);
+  const history: unknown[] = [];
+  const accepted = new Set<string>();
+  const before = structuredClone(host.sync.snapshot().data.railway);
+  for (let i = 0; i < 60; i++) {
+    const pid = i % 2 ? 'alice' : 'bob';
+    const action = i < 2 ? 'rail.wake' : 'rail.chop';
+    const railResult = host.railway.act(
+      pid,
+      {
+        op: action,
+        epoch: 1,
+        request: ++requests[pid],
+        id: RAILWAY_SOURCES[i % RAILWAY_SOURCES.length]![0],
+        yaw: 0,
+        collapsed: false,
+      },
+      { reach: () => true, height: () => true, cadence: () => true },
+    );
+    if (railResult.status === 'accepted' && railResult.accepted > 0) accepted.add(action);
+    const spec = RAIL_TUNABLES[Math.floor(random() * RAIL_TUNABLES.length)]!;
+    const v = spec.min + Math.floor(random() * (spec.max - spec.min + 1));
+    const result = host.run(
+      i % 2 ? 'alice' : 'bob',
+      i % 3 === 0
+        ? { op: 'who.set', n: `Player ${i}`, c: i % 8 }
+        : { op: 'tune.commit', key: spec.key, v, expectedRevision: host.railTune.tune.revision, requestId: `${i}` },
+    );
+    assert.equal(result.status, 'accepted');
+    if (i === 20) host.join('late');
+    if (i === 40) {
+      host.replication.removeClient('b');
+      host.join('b');
     }
-  }
-
-  await run(net, peers, 6); // the host is up and both clients hold its snapshot
-  await play(40);
-  await play(30);
-  peers.push(makePeer(seed, net, 'late', false));
-  await play(30);
-  await run(net, peers, 10); // settle: every stamped edit applied everywhere
-
-  // A fresh tab reloads the new host's snapshot through JSON and ticks alone, in step with the room.
-  const host = live(peers).find((x) => x.p.host)!;
-  const tab = makePeer(seed, null, 'tab');
-  assert.equal(tab.s.loadSnapshot(JSON.parse(JSON.stringify(host.s.snapshot()))), true);
-  await run(net, peers, 2 * 2 * RECORD_EVERY); // 20 ticks: two recorded ones
-  while (tab.s.world.tick < host.s.world.tick) tab.s.updateWorld(0.1);
-
-  const alive = [...live(peers), tab];
-  for (const x of alive) checkInvariants(x);
-  for (const x of live(peers)) {
-    const st = x.s.worldStatus();
-    assert.equal(st.hashBad, 0, `${x.id} saw a hash mismatch: ${JSON.stringify(st.lastBad)}`);
-  }
-  // Every peer (the dead host too, until it died) recorded the same state hashes at every tick it shares with the host.
-  for (const x of [...peers, tab]) {
-    let shared = 0;
-    for (const [t, h] of x.hashes)
-      if (host.hashes.has(t)) {
-        shared++;
-        assert.equal(h, host.hashes.get(t), `${x.id} and ${host.id} differ at tick ${t}`);
+    host.flush();
+    for (const client of host.clients.values()) {
+      assert.deepEqual(serializeRoster(client.roster.roster), serializeRoster(host.roster.roster));
+      assert.deepEqual(serializeTune(client.tune.tune), serializeTune(host.railTune.tune));
+      for (const schema of RAIL_SCHEMAS) {
+        const world = host.railway.world();
+        assert.deepEqual([...client.confirmed().ids(schema)], [...world.ids(schema)]);
+        for (const id of world.ids(schema))
+          assert.deepEqual(client.confirmed().get(schema, id), world.get(schema, id), `${i}: ${schema.kind} ${id}`);
       }
-    assert.ok(shared >= 2, `${x.id} shares only ${shared} recorded ticks with the host`);
+    }
+    history.push(structuredClone({ result, railResult, state: host.sync.snapshot() }));
   }
-  const applied = new Set(peers.flatMap((x) => [...x.applied.keys()]));
-  for (const op of ops) assert.ok(applied.has(op), `the host never accepted a ${op}`);
-  return {
-    submitted,
-    applied: Object.fromEntries([...host.applied].sort()),
-    hashes: [...host.hashes],
-    final: host.s.stateHashes(),
-  };
+  assert.deepEqual([...accepted].sort(), ['rail.chop', 'rail.wake'], 'the replay changes live railway gameplay state');
+  assert.notDeepEqual(host.sync.snapshot().data.railway, before);
+  const restored = serverWorld();
+  assert.equal(restored.sync.loadSnapshot(structuredClone(host.sync.snapshot())), true);
+  assert.deepEqual(restored.sync.snapshot(), host.sync.snapshot());
+  for (let i = 0; i < 10; i++) {
+    host.flush();
+    restored.flush();
+    assert.deepEqual(restored.sync.snapshot(), host.sync.snapshot(), 'restart continues the same server state');
+  }
+  return history;
 }
 
-test('a seeded stream of every op stays in step across a late joiner and a snapshot reload', async () => {
-  const a = await replay(SEED);
-  const b = await replay(SEED);
-  assert.deepEqual(b, a, 'the same seed gave different results');
+test('server replay preserves state across two mirrors, late join, reconnect and checkpoint reload', () => {
+  assert.deepEqual(replay(0xf091), replay(0xf091), 'the same commands and ticks produce the same state');
 });

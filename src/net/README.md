@@ -2,7 +2,7 @@
 
 `ws-room.ts` is the one module the game talks to for multiplayer: `src/netplay/net.ts` calls `createWsRoom({ roomId,
 server, build, debug })`. Our server hosts every room (docs/plans/server-host.md): one WebSocket per tab (wire:
-`ws-wire.ts`), the server's sync is the lockstep host (its messages come `from` `SERVER_ID`), and the server picks a
+`ws-wire.ts`), the server owns shared state and sends its clock/replication `from` `SERVER_ID`, and the server picks a
 lead, the oldest visible tab, which publishes Host-kind fields. The room reconnects by itself (header of `ws-room.ts`);
 its peer table is `peer-table.ts`. Changes must keep this interface; run `npm run test:net` after touching it
 (`dev/peer-test/ws-run.ts` runs the real server in-process).
@@ -35,6 +35,9 @@ The room id comes from the effective page flags (`src/proto/flags.ts`): the bare
 
 During development every client is assumed current. There is no catalog fingerprint or old-build admission fence;
 wire/save reshapes use the dated `WORLD_NS` reset described in [mixed builds](../../docs/agents/mixed-builds.md).
-The server still validates all messages, bounds input and isolates classic-registry (prototype) and railway room identities.
+The server validates all messages and bounds input. Railway commands use ordered `r:*` requests and `s` packets;
+the only remaining `w:*` message is the server-origin `w:c` clock. Client-origin legacy or malformed `w:*` data
+is ignored or refused without entering simulation. Clients mirror state and never persist server checkpoints.
+The existing room namespace admission refuses a v39 client at v40; no migration or alternate transport is retained.
 Shared tuning writes require an explicit server `TUNE_CONTROLLER_KEY` matching the sender's bound socket key,
 a current revision and valid values; being the room lead grants nothing.

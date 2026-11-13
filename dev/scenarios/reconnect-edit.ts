@@ -2,16 +2,16 @@
 // the production entry. One tab's socket drops (room.pause: closed as a network loss would, reconnects held for
 // PAUSE_MS), so it goes to 'connecting'; it changes its local colour, then identity.ts sends durable who.set when
 // its session is ready again. (Chromium's offline mode spares localhost.)
-// Once it is live again the other tab's roster has changed, the tab dropped no held edit, and both tabs hash every
-// state the same at one tick. The tab's own colour is set too, so identity.ts does not send it back.
-// Run it after changing held edits in src/world/sync.ts, reconnects in src/net/ws-room.ts, or src/netplay/net.ts
+// Once it is live again the other tab's roster has changed and both tabs observe the same published replica.
+// The tab's own colour is set too, so identity.ts does not send it back.
+// Run it after changing command reconnects, src/net/ws-room.ts, or src/netplay/net.ts
 // attach/fail. Window handles only (window.boogle.sync, window.boogle.me), so `--url` works too. Not in the
 // nightly smoke: a forced drop adds timing flakiness to a job that files issues.
-import { EDIT_WAIT_MS, MET, roles, hashesAtOneTick } from './lib/world.ts';
+import { EDIT_WAIT_MS, MET, roles, replicasAtOneStep } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
-const PAUSE_MS = 2000; // well under sync's 5 s held-edit age
+const PAUSE_MS = 2000;
 const ROSTER = `JSON.stringify((await import('/src/world/game-world.ts')).rules.roster.roster.colors)`;
 // The tab's colour, changed, as a held who.set; the tab's own state follows so identity.ts agrees with it.
 const RECOLOUR = `const me = window.boogle.me, c = me.colorIdx === 0 ? 1 : 0;
@@ -64,7 +64,6 @@ export default {
     t.check('the tab is live again on the server', up >= 0 && after.ok, `${up} ms; ${after.modes.join(',')}`);
 
     const landed = await other.waitFor(`${ROSTER} !== ${JSON.stringify(before)}`, { timeout: EDIT_WAIT_MS });
-    const st = await client.eval(`return window.boogle.sync.worldStatus();`);
     t.check(
       'the identity command reaches the other tab after reconnect',
       landed >= 0,
@@ -82,14 +81,8 @@ export default {
       roster === want,
       `${String(pid)}: roster ${String(roster)}, wanted ${String(want)}`,
     );
-    t.check(
-      'the tab dropped no held edit',
-      st.heldDropped === 0,
-      `heldDropped ${st.heldDropped}, resyncs ${st.resyncs}`,
-    );
-
-    const hashes = await hashesAtOneTick(other, client);
-    t.check('both tabs hash every state the same at one tick', hashes.same, hashes.detail);
+    const replicas = await replicasAtOneStep(other, client);
+    t.check('both tabs agree on railway, roster and tuning at one server step', replicas.same, replicas.detail);
     // Stills are for a human reading a failure; on a starved machine a screenshot can time out, which is not one.
     for (const g of [A, B])
       console.log('  still', await g.still(g === client ? 'dropped' : 'other').catch((e) => e.message.split('\n')[0]));

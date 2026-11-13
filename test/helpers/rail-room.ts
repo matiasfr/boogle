@@ -54,7 +54,6 @@ export type RailRoomOptions = {
 
 export function railRoom(seed?: Seed, options: RailRoomOptions = {}) {
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   if (seed) {

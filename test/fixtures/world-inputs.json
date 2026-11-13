@@ -1,5 +1,0 @@
-{
-  "about": "Pinned by dev/scenarios/world-inputs.ts (UPDATE_FIXTURE=1). Step 5 removes the seven retired states and their ops; roster and haul tuning remain until classic transport retirement.",
-  "states": ["roster", "tune"],
-  "ops": ["who.set", "tune.set", "tune.commit"]
-}

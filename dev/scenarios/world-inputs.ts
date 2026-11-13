@@ -1,16 +1,10 @@
-// World inputs: retained classic registry fixture, production browser/Node registry, grid and railway catalog parity.
+// World inputs: no client-owned shared state, and browser/Node grid and railway catalog parity.
 // The gifts layout was only read by the retired classic states and no longer feeds a production rule.
-// Update the registry fixture only on purpose:
-// `UPDATE_FIXTURE=1 npm run scenario -- world-inputs`, and say why in the commit. Serves "Determinism from day one".
 import fs from 'node:fs';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { T } from './run.ts';
 import { enterGame } from '../look/lib.ts';
 import { createSync } from '../../src/world/sync.ts';
-import { installRules } from '../../src/world/rules/index.ts';
-import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
-import type { Land } from '../../src/world/rules/types.ts';
 import * as line from '../../src/sim/railway-line-layout.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
@@ -18,7 +12,6 @@ import { LINE2_FORGE, LINE2_BOILER, LINE2_STATIONS } from '../../src/sim/railway
 import { SHED_TABLE, SHED_STALL, WORKS_BREAKER, WORKS_SEAMS, WORKS } from '../../src/sim/railway-works-layout.ts';
 import { CART_ROAD } from '../../src/sim/railway-cart.ts';
 
-const FIXTURE = fileURLToPath(new URL('../../test/fixtures/world-inputs.json', import.meta.url));
 const LAND = fileURLToPath(new URL('../../src/world/home-land.json', import.meta.url));
 // Runs in the page.
 const READ = `
@@ -27,61 +20,24 @@ const READ = `
   return {
     n: land.n,
     states: Object.keys(sync.snapshot().data),
-    ops: sync.registry().ops,
   };`;
 
 export default {
-  about: 'classic registry fixture and production line-one browser/Node registry and numeric catalog parity',
+  about: 'empty client shared-state registry and production browser/Node numeric catalog parity',
   timeout: 300000,
   async run(t: T) {
-    // The classic transport retains roster/tune in Node; the production browser mirrors its server roster.
+    // All shared state arrives through the server replica; the browser registers none.
     const g = await t.open({ name: 'inputs', size: [192, 120] });
     const ready = await g.waitFor(`!!window.boogle?.sync`, { timeout: 90000 });
     if (!t.check('the game is up', ready >= 0, ready + ' ms')) return;
     const page = await g.eval(READ);
-    const classic = createSync();
-    installRules(classic, { n: page.n, layout: { trees: [], perches: [] } });
-    const prefix = classic.registry();
-    const got = {
-      ...page,
-      states: prefix.states,
-      ops: prefix.ops,
-    };
-    const productionRegistry = createSync();
-    installRules(
-      productionRegistry,
-      { n: page.n, layout: { trees: [], perches: [] } },
-      () => createRailwayMirror().roster,
-    );
-    t.check(
-      'the browser and Node register the retained production state and ops identically',
-      JSON.stringify([page.states, page.ops]) ===
-        JSON.stringify([productionRegistry.registry().states, productionRegistry.registry().ops]),
-      `got ${JSON.stringify(page.states)}, Node ${JSON.stringify(productionRegistry.registry().states)}`,
-    );
-    const old = fs.existsSync(FIXTURE) ? JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) : null;
-
-    if (process.env.UPDATE_FIXTURE === '1') {
-      const prettier = await import('prettier');
-      const write = async (file: string, data: unknown) => {
-        const opts = (await prettier.resolveConfig(file)) ?? {};
-        fs.mkdirSync(path.dirname(file), { recursive: true });
-        fs.writeFileSync(file, await prettier.format(JSON.stringify(data), { ...opts, filepath: file }));
-      };
-      const about = 'Pinned by dev/scenarios/world-inputs.ts (UPDATE_FIXTURE=1).';
-      await write(FIXTURE, { about, states: got.states, ops: got.ops ?? old?.ops ?? null });
-      t.check('wrote the registry fixture', true, `${FIXTURE}; ${got.states.join(',')}`);
-      return;
-    }
+    t.check('the browser registers no shared state', page.states.length === 0, JSON.stringify(page.states));
     const land = fs.existsSync(LAND) ? JSON.parse(fs.readFileSync(LAND, 'utf8')) : null;
     if (!t.check('the land file exists', !!land, LAND)) return;
-    if (!t.check('the fixture exists', !!old, FIXTURE)) return;
 
     const same = <V>(label: string, a: V, b: V, show: (v: V) => string = (v) => JSON.stringify(v)) =>
       t.check(label, JSON.stringify(a) === JSON.stringify(b), `got ${show(a)}, fixture ${show(b)}`);
-    same('grid size', got.n, land.n);
-    same('state key order', got.states, old.states);
-    same('op order', got.ops, old.ops);
+    same('grid size', page.n, land.n);
 
     // Reuse the one rendering page in a fresh room: PR scenarios deliberately prohibit a second GPU player.
     const production = new URL(g.page.url());
@@ -139,11 +95,9 @@ export default {
         },
       };`);
     const node = createSync();
-    const mirrored = createRailwayMirror();
-    installRules(node, land as Land, () => mirrored.roster);
     // The railway is Server kind (replication R1a): a tab mirrors it and registers no railway op or state.
     t.check('production mirrors line one in the browser', actual.installed);
-    same('production state and op registration order (classic only)', actual.registry, node.registry());
+    same('production has an empty client shared-state registry', actual.registry, node.registry());
     same('production numeric source and line catalog', actual.catalog, {
       version: line.LINE1_CATALOG,
       stations: line.LINE1_STATIONS,

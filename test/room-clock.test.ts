@@ -13,7 +13,7 @@ import {
 import { createSync, TICK_MS } from '../src/world/sync.ts';
 import { createRailwayClock } from '../src/world/railway-clock.ts';
 
-test('a rule tick is exactly six 60 Hz steps, and lockstep keeps its 100 ms tick', () => {
+test('a server rule tick is exactly six 60 Hz steps and keeps its 100 ms duration', () => {
   assert.equal(STEP_HZ, 60);
   assert.equal(RULE_STEPS, 6);
   assert.equal(RULE_MS, 100);

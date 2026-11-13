@@ -1,4 +1,4 @@
-// Real host, request history, replicator and atomic store. Only this fixture defines classic server commands.
+// Real host, request history, replicator and atomic store, with fixture-only server commands.
 import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -28,7 +28,7 @@ function deferred<T>() {
 // Astra's two durability races, also exercised with a live railway action failing after mutation.
 for (const waiting of [false, true])
   for (const railway of [false, true])
-    test(`${waiting ? 'waiting' : 'queued'} durability preserves the good save after a fatal ${railway ? 'railway' : 'classic'} apply`, async (t) => {
+    test(`${waiting ? 'waiting' : 'queued'} durability preserves the good save after a fatal ${railway ? 'railway' : 'server command'} apply`, async (t) => {
       const f = await fixture(t);
       const before = await f.store.read(f.roomId);
       const writes = f.writes.length;
@@ -344,18 +344,18 @@ test('a departed session cannot publish a held receipt into its replacement', as
   assert.deepEqual(f.flush().rej, [[1, 1, 'session']]);
 });
 
-test('production admits rail tune and roster commands; only haul retains classic ops', async (t) => {
+test('production admits rail tune and roster commands with only server states registered', async (t) => {
   const f = await fixture(t);
   for (const op of ['tune.set', 'tune.commit', 'who.set']) {
     assert.equal(f.host.ops.has(op), true);
-    assert.equal(f.host.sync.registry().ops.includes(op), op !== 'who.set');
   }
+  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway']);
   f.edit(1, { op: 'who.set', n: '' });
   assert.deepEqual(f.flush().rej, [[1, 1, 'refused']]);
   assert.equal(f.applies(), 0);
 });
 
-test('an account epoch replaced under a live session is refused before classic apply', async (t) => {
+test('an account epoch replaced under a live session is refused before server command apply', async (t) => {
   const f = await fixture(t);
   // The same replacement a loaded account can cause, without changing the coordinator's live session.
   assert.equal(f.host.rules.railway.session('alice', 2), true);

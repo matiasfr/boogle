@@ -12,7 +12,6 @@ import { storyAct } from '../src/sim/railway-queries-story.ts';
 
 test('the act turns over when Q5 is laid, not before', () => {
   const sync = createSync();
-  sync.setSelfId('server');
   const replication = createReplicator();
   const api = installRailway(sync, installRailRules(sync, homeLand(), replication), replication);
   api.touchAll();

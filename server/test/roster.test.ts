@@ -26,7 +26,7 @@ test('roster authenticates identity, rejects classic forgery and ignores replay'
   f.run(3);
   assert.equal(f.host.rules.roster.nameOf(0), 'Ana');
   assert.ok(a.packets.some((p) => p.rej?.some(([, request, why]) => request === 3 && why === 'order')));
-  assert.equal(Object.hasOwn(f.host.sync.stateHashes(), 'roster'), false);
+  assert.deepEqual(f.host.sync.snapshot().data.roster, [['alice', 'Ana', 2]]);
   assert.deepEqual(a.mirror.roster.roster, b.mirror.roster.roster);
 });
 
