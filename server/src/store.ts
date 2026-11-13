@@ -103,6 +103,21 @@ export function createStore(cfg: { dataDir: string; maxRooms: number; serverRoom
         return { status: 200, body: { ok: true, tick: doc.tick } };
       });
     },
+    /** Caller holds withLock(id) and has taken the host offline. Whole-save replacement, including its birth. */
+    async replace(id: string, doc: RoomDoc, { restoreBorn = false } = {}): Promise<void> {
+      if (!currentRoomId(id, ns)) throw new Error(`Cannot replace obsolete or invalid room: ${id}`);
+      if (!knownRooms.has(id) && knownRooms.size >= cfg.maxRooms) throw new Error('room limit reached');
+      const born = restoreBorn ? (okBorn(doc.born) ? doc.born : BORN_LEGACY) : crypto.randomBytes(6).toString('hex');
+      const tmp = `${fileFor(id)}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+      try {
+        await fs.writeFile(tmp, JSON.stringify({ ...doc, born }));
+        await fs.rename(tmp, fileFor(id));
+      } finally {
+        await fs.rm(tmp, { force: true });
+      }
+      knownRooms.add(id);
+      unborn.delete(id);
+    },
     /** A new room's first save, never over one: the temp file is hard-linked into place, so an existing file (or a
      * write racing this one) refuses rather than replaces. Jump-in seeds only (./jump.ts). */
     create(id: string, doc: RoomDoc): Promise<WriteResult> {
