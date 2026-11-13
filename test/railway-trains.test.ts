@@ -366,6 +366,22 @@ test('a train held at the old Far Head signal when the pier opens runs signal to
   assert.match(check(refused) ?? '', /^railway:/, 'the load check refuses it');
 });
 
+// Review of car4/rules: the reason v33 is a bump. A v32 save's line 2 train standing at the Village holds the old stop
+// (17.0 m); under v33's catalog (18.25 m) the load check refuses the whole world, standing or idle, rather than
+// loading a train 1.25 m off its mark.
+test('review (car4): a v32 stand at the old Village stop (17.0 m) is refused by the load check, whole', () => {
+  const w = awake('trains-on', false);
+  assert.equal(TRAIN_STOPS[LINE2]![0], 1825);
+  // A train standing at the Village as the rules left it; only its stop is v32's.
+  until(w, () => LINE_SLOTS[LINE2]!.some((k) => standing(w, k, 0)()));
+  const k = LINE_SLOTS[LINE2]!.find((s) => standing(w, s, 0)())!;
+  assert.equal(row(w, k).from, 1825);
+  assert.equal(check(restore(w.w)), null, 'the v33 world loads');
+  const old = restore(w.w);
+  Object.assign(old.mut(Train, trainId(old, k))!, { from: 1700, dest: 1700 });
+  assert.equal(check(old), 'railway: train', `slot ${k} standing at 1700`);
+});
+
 test("the wagon's twelve footings reach the pier under random asks and restores", (t) => {
   let w = unaudited(railwayAtWorks('cradle-fitted'));
   const rand = mulberry32(0xfee7);

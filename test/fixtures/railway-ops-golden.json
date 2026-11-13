@@ -1,1297 +1,269 @@
 {
- "opening": [
-  [
-   "jump",
-   1,
-   1795429915
+  "opening": [
+    ["jump", 1, 1795429915],
+    ["jump again", 0, 254478686],
+    ["axe before the forge", 0, 4177116057],
+    ["reject", 0, 4211988108],
+    ["unknown op", 0, 1097688911],
+    ["chop", 2, 4220706162],
+    ["drop", 2, 2739246941],
+    ["take part", 2, 2115250675],
+    ["take wrong kind", 0, 239309526],
+    ["drop for recovery", 1, 4139945697],
+    ["supply pulse 1", 0, 2985791201],
+    ["supply pulse 2 recovers the pile", 1, 4097386052],
+    ["rackTake stone", 0, 267809895],
+    ["rackTake rails", 0, 238670221],
+    ["rackTake logs", 1, 2802044397],
+    ["drop the rest", 2, 3704146753],
+    ["beamChop 0", 1, 2812485747],
+    ["beamChop 1", 1, 2130569195],
+    ["beamChop 2", 1, 3308859401],
+    ["beamChop 3", 1, 681596085],
+    ["beamChop 4", 1, 292696487],
+    ["beamChop 5", 1, 1808068152],
+    ["beamChop 6", 1, 107263373],
+    ["beamChop 7", 1, 3428186086],
+    ["beamChop 8", 1, 2752808539],
+    ["beamChop 9", 1, 3437286524],
+    ["beamChop 10", 1, 2699324145],
+    ["beamChop 11", 1, 2565342302],
+    ["beamTake", 1, 3159001734],
+    ["beamStood", 1, 4112858822],
+    ["beamStood same spot", 0, 4112858822],
+    ["beamRelease stale revision", 0, 4112858822],
+    ["beamRelease", 1, 3850296517],
+    ["beamTake again", 1, 816471659],
+    ["beamDrop", 1, 1408128398],
+    ["supply pulse beam age", 0, 1637029262],
+    ["supply pulse beam recovers", 1, 1035076831],
+    ["beamTake from the tree", 1, 176698909],
+    ["beamPutDown", 1, 2087603129],
+    ["beamPutDown not held", 0, 2087603129],
+    ["beamTake from the ground", 1, 4063535754],
+    ["beamDeposit", 1, 2896316530],
+    ["resume", 200, 3267905650],
+    ["resume same marker", 0, 3267905650],
+    ["session epoch 2", 1, 503154802],
+    ["session epoch skipped", 0, 503154802]
   ],
-  [
-   "jump again",
-   0,
-   254478686
+  "axe": [
+    ["axe", 1, 2399226866],
+    ["axe again", 0, 3122041483],
+    ["chop 0", 1, 1797095707],
+    ["drop 0", 1, 616799496],
+    ["chop 1", 1, 402609453],
+    ["drop 1", 1, 251550714],
+    ["chop 2", 1, 36527551],
+    ["drop 2", 1, 747129332],
+    ["chop 3", 1, 3699615033],
+    ["drop 3", 1, 186665510],
+    ["chop 4", 1, 440550203],
+    ["drop 4", 1, 1282253216],
+    ["chop 5", 1, 2157662181],
+    ["drop 5", 1, 3068969362],
+    ["chop a hardwood", 1, 2246728983],
+    ["chop the other hardwood", 0, 1025425996],
+    ["supply pulse 1", 0, 1823720012],
+    ["supply pulse 2 regrows", 0, 3142521420],
+    ["supply pulse 3 regrows", 0, 1966594636]
   ],
-  [
-   "axe before the forge",
-   0,
-   4177116057
+  "boiler": [
+    ["boilerTake", 1, 1428936572],
+    ["boilerStood", 1, 4225980],
+    ["boilerStood same spot", 0, 4225980],
+    ["boilerPutDown", 1, 287064768],
+    ["boilerPutDown not held", 0, 287064768],
+    ["boilerTake from the ground", 1, 1365379397],
+    ["boilerDrop", 1, 2643997390],
+    ["supply pulse 1", 0, 1684746958],
+    ["supply pulse 2 recovers", 1, 610141199]
   ],
-  [
-   "reject",
-   0,
-   4211988108
+  "call": [
+    ["call 0 (line 0 stop 0) dir -1", 0, 860858851],
+    ["call 0 (line 0 stop 0) dir 1", 1, 2623381740],
+    ["call 1 (line 0 stop 1) dir -1", 1, 2972007005],
+    ["call 1 (line 0 stop 1) dir 1", 0, 3618252358],
+    ["call 2 (line 1 stop 0) dir -1", 0, 3286119215],
+    ["call 2 (line 1 stop 0) dir 1", 1, 3926505448],
+    ["call 3 (line 1 stop 1) dir -1", 1, 3517550585],
+    ["call 3 (line 1 stop 1) dir 1", 1, 3235764850],
+    ["call 4 (line 1 stop 2) dir -1", 1, 3168222171],
+    ["call 4 (line 1 stop 2) dir 1", 0, 553787460],
+    ["call 5 (line 1 stop 3) dir -1", 0, 2285477621],
+    ["call 5 (line 1 stop 3) dir 1", 0, 495656542],
+    ["call 6 (line 1 stop 4) dir -1", 0, 3673764807],
+    ["call 6 (line 1 stop 4) dir 1", 0, 1149373623],
+    ["call 7 (line 1 stop 5) dir -1", 0, 1943506313],
+    ["call 7 (line 1 stop 5) dir 1", 0, 2994727885],
+    ["call 8 (line 1 stop 6) dir -1", 0, 3727065804],
+    ["call 8 (line 1 stop 6) dir 1", 0, 3076739123],
+    ["call 9 (line 1 stop 7) dir -1", 0, 3168479522],
+    ["call 9 (line 1 stop 7) dir 1", 0, 3696514105],
+    ["call 10 (line 1 stop 8) dir -1", 0, 2831439720],
+    ["call 10 (line 1 stop 8) dir 1", 0, 3210939295],
+    ["call 11 (line 1 stop 9) dir -1", 0, 1942624222],
+    ["call 11 (line 1 stop 9) dir 1", 0, 3078247973],
+    ["call 12 (line 2 stop 0) dir -1", 0, 1051714852],
+    ["call 12 (line 2 stop 0) dir 1", 0, 1149389995],
+    ["call 13 (line 2 stop 1) dir -1", 0, 3661144954],
+    ["call 13 (line 2 stop 1) dir 1", 0, 4124168177],
+    ["call 14 (line 2 stop 2) dir -1", 0, 2703315680],
+    ["call 14 (line 2 stop 2) dir 1", 0, 1897652352],
+    ["call 15 (line 3 stop 0) dir -1", 0, 2791452878],
+    ["call 15 (line 3 stop 0) dir 1", 0, 2262706842],
+    ["call 16 (line 3 stop 1) dir -1", 0, 2953678492],
+    ["call 16 (line 3 stop 1) dir 1", 0, 3554732819],
+    ["call 17 (line 3 stop 2) dir -1", 0, 3721251298],
+    ["call 17 (line 3 stop 2) dir 1", 0, 3831475785],
+    ["call 18 (line 3 stop 3) dir -1", 0, 3519368248],
+    ["call 18 (line 3 stop 3) dir 1", 0, 656447871],
+    ["call 19 (line 4 stop 0) dir -1", 0, 3633232670],
+    ["call 19 (line 4 stop 0) dir 1", 0, 3501087861],
+    ["call 20 (line 4 stop 1) dir -1", 0, 3970066676],
+    ["call 20 (line 4 stop 1) dir 1", 0, 1838831563],
+    ["call 21 (line 4 stop 2) dir -1", 0, 280765626],
+    ["call 21 (line 4 stop 2) dir 1", 0, 2584302145],
+    ["call 22 (line 4 stop 3) dir -1", 0, 1442416880],
+    ["call 22 (line 4 stop 3) dir 1", 0, 2409862359],
+    ["call 23 (line 4 stop 4) dir -1", 0, 2044942006],
+    ["call 23 (line 4 stop 4) dir 1", 0, 4101679757],
+    ["call bad id", 0, 2510962124],
+    ["call bad dir", 0, 3995134796],
+    ["aboard train 0 calls 0 dir -1", 0, 2160602186],
+    ["aboard train 0 calls 0 dir 1", 0, 2002604870],
+    ["aboard train 0 calls 1 dir -1", 0, 3336363336],
+    ["aboard train 0 calls 1 dir 1", 0, 1786208168],
+    ["aboard train 1 calls 2 dir -1", 0, 2678286998],
+    ["aboard train 1 calls 2 dir 1", 0, 4028959061],
+    ["aboard train 1 calls 3 dir -1", 0, 1448017460],
+    ["aboard train 1 calls 3 dir 1", 1, 2614322419],
+    ["aboard train 1 calls 4 dir -1", 0, 2659837394],
+    ["aboard train 1 calls 4 dir 1", 0, 4084859937],
+    ["aboard train 1 calls 5 dir -1", 0, 641425008],
+    ["aboard train 1 calls 5 dir 1", 0, 2567726751],
+    ["aboard train 1 calls 6 dir -1", 0, 366772110],
+    ["aboard train 1 calls 6 dir 1", 0, 4145315629],
+    ["aboard train 1 calls 7 dir -1", 0, 2832457292],
+    ["aboard train 1 calls 7 dir 1", 0, 2733982155],
+    ["aboard train 1 calls 8 dir -1", 0, 2856347722],
+    ["aboard train 1 calls 8 dir 1", 0, 1338209753],
+    ["aboard train 1 calls 9 dir -1", 0, 1955882024],
+    ["aboard train 1 calls 9 dir 1", 0, 464146903],
+    ["aboard train 1 calls 10 dir -1", 0, 2708362118],
+    ["aboard train 1 calls 10 dir 1", 0, 357997125],
+    ["aboard train 1 calls 11 dir -1", 0, 3263739748],
+    ["aboard train 1 calls 11 dir 1", 0, 1816120291],
+    ["aboard train 2 calls 2 dir -1", 0, 880890370],
+    ["aboard train 2 calls 2 dir 1", 0, 1998824401],
+    ["aboard train 2 calls 3 dir -1", 1, 540099616],
+    ["aboard train 2 calls 3 dir 1", 0, 1498588303],
+    ["aboard train 2 calls 4 dir -1", 0, 1125830846],
+    ["aboard train 2 calls 4 dir 1", 0, 1269745117],
+    ["aboard train 2 calls 5 dir -1", 0, 1115780092],
+    ["aboard train 2 calls 5 dir 1", 0, 3171599419],
+    ["aboard train 2 calls 6 dir -1", 0, 76654074],
+    ["aboard train 2 calls 6 dir 1", 0, 852671689],
+    ["aboard train 2 calls 7 dir -1", 0, 3415505240],
+    ["aboard train 2 calls 7 dir 1", 0, 1089437383],
+    ["aboard train 2 calls 8 dir -1", 0, 4248632310],
+    ["aboard train 2 calls 8 dir 1", 0, 3749204917],
+    ["aboard train 2 calls 9 dir -1", 0, 3672842772],
+    ["aboard train 2 calls 9 dir 1", 0, 3792996435],
+    ["aboard train 2 calls 10 dir -1", 0, 2670305842],
+    ["aboard train 2 calls 10 dir 1", 0, 1497883393],
+    ["aboard train 2 calls 11 dir -1", 0, 532598608],
+    ["aboard train 2 calls 11 dir 1", 0, 4011776895],
+    ["aboard train 3 calls 2 dir -1", 0, 90768494],
+    ["aboard train 3 calls 2 dir 1", 0, 4129851661],
+    ["aboard train 3 calls 3 dir -1", 1, 1940031276],
+    ["aboard train 3 calls 3 dir 1", 0, 866550187],
+    ["aboard train 3 calls 4 dir -1", 0, 502675498],
+    ["aboard train 3 calls 4 dir 1", 0, 3771244217],
+    ["aboard train 3 calls 5 dir -1", 0, 1603792648],
+    ["aboard train 3 calls 5 dir 1", 0, 4091118775],
+    ["aboard train 3 calls 6 dir -1", 0, 1915870438],
+    ["aboard train 3 calls 6 dir 1", 0, 850101925],
+    ["aboard train 3 calls 7 dir -1", 0, 3874739652],
+    ["aboard train 3 calls 7 dir 1", 0, 2366188611],
+    ["aboard train 3 calls 8 dir -1", 0, 2491737698],
+    ["aboard train 3 calls 8 dir 1", 0, 350116401],
+    ["aboard train 3 calls 9 dir -1", 0, 2538186880],
+    ["aboard train 3 calls 9 dir 1", 0, 273087855],
+    ["aboard train 3 calls 10 dir -1", 0, 1347141534],
+    ["aboard train 3 calls 10 dir 1", 0, 1479369021],
+    ["aboard train 3 calls 11 dir -1", 0, 3634075228],
+    ["aboard train 3 calls 11 dir 1", 0, 2240158747],
+    ["aboard train 4 calls 2 dir -1", 0, 739848922],
+    ["aboard train 4 calls 2 dir 1", 0, 3482567465],
+    ["aboard train 4 calls 3 dir -1", 0, 343973944],
+    ["aboard train 4 calls 3 dir 1", 0, 2559176103],
+    ["aboard train 4 calls 4 dir -1", 0, 2727946966],
+    ["aboard train 4 calls 4 dir 1", 0, 1870915221],
+    ["aboard train 4 calls 5 dir -1", 0, 1556027764],
+    ["aboard train 4 calls 5 dir 1", 0, 795223091],
+    ["aboard train 4 calls 6 dir -1", 0, 4132870162],
+    ["aboard train 4 calls 6 dir 1", 0, 1477282913],
+    ["aboard train 4 calls 7 dir -1", 0, 2309102000],
+    ["aboard train 4 calls 7 dir 1", 0, 267803871],
+    ["aboard train 4 calls 8 dir -1", 0, 2783236302],
+    ["aboard train 4 calls 8 dir 1", 0, 3634947181],
+    ["aboard train 4 calls 9 dir -1", 0, 79473036],
+    ["aboard train 4 calls 9 dir 1", 0, 1222723339],
+    ["aboard train 4 calls 10 dir -1", 0, 2347135370],
+    ["aboard train 4 calls 10 dir 1", 0, 2710857497],
+    ["aboard train 4 calls 11 dir -1", 0, 1619997288],
+    ["aboard train 4 calls 11 dir 1", 0, 1630728471],
+    ["aboard train 5 calls 2 dir -1", 0, 4217498054],
+    ["aboard train 5 calls 2 dir 1", 0, 1725257349],
+    ["aboard train 5 calls 3 dir -1", 0, 3426987940],
+    ["aboard train 5 calls 3 dir 1", 0, 2918223139],
+    ["aboard train 5 calls 4 dir -1", 0, 3374651714],
+    ["aboard train 5 calls 4 dir 1", 0, 652150033],
+    ["aboard train 5 calls 5 dir -1", 0, 1795867232],
+    ["aboard train 5 calls 5 dir 1", 0, 3091503567],
+    ["aboard train 5 calls 6 dir -1", 0, 281429246],
+    ["aboard train 5 calls 6 dir 1", 0, 3184553757],
+    ["aboard train 5 calls 7 dir -1", 0, 1483473724],
+    ["aboard train 5 calls 7 dir 1", 0, 2873826427],
+    ["aboard train 5 calls 8 dir -1", 0, 3689875258],
+    ["aboard train 5 calls 8 dir 1", 0, 1370115849],
+    ["aboard train 5 calls 9 dir -1", 0, 3962426520],
+    ["aboard train 5 calls 9 dir 1", 0, 235850503],
+    ["aboard train 5 calls 10 dir -1", 0, 1619990582],
+    ["aboard train 5 calls 10 dir 1", 0, 46564597],
+    ["aboard train 5 calls 11 dir -1", 0, 2931449428],
+    ["aboard train 5 calls 11 dir 1", 0, 3752124819],
+    ["advance 300", 300, 304432787],
+    ["call 0 dir 1 after", 0, 698043749],
+    ["call 1 dir 1 after", 0, 2812664313],
+    ["call 2 dir 1 after", 1, 275693343],
+    ["call 3 dir 1 after", 1, 3658281759],
+    ["call 4 dir 1 after", 0, 470034641],
+    ["call 5 dir 1 after", 0, 1531412405],
+    ["call 6 dir 1 after", 0, 713515787],
+    ["call 7 dir 1 after", 0, 1898827115],
+    ["call 8 dir 1 after", 0, 3397737757],
+    ["call 9 dir 1 after", 0, 3144171377],
+    ["call 10 dir 1 after", 0, 142746263],
+    ["call 11 dir 1 after", 0, 426624919],
+    ["call 12 dir 1 after", 0, 3644649033],
+    ["call 13 dir 1 after", 0, 2176720269],
+    ["call 14 dir 1 after", 0, 1329236579],
+    ["call 15 dir 1 after", 0, 3023724035],
+    ["call 16 dir 1 after", 0, 31580437],
+    ["call 17 dir 1 after", 0, 3046717673],
+    ["call 18 dir 1 after", 0, 316346255],
+    ["call 19 dir 1 after", 0, 2229614863],
+    ["call 20 dir 1 after", 0, 4155458113],
+    ["call 21 dir 1 after", 0, 1801865317],
+    ["call 22 dir 1 after", 0, 3687219707],
+    ["call 23 dir 1 after", 0, 2457017563]
   ],
-  [
-   "unknown op",
-   0,
-   1097688911
-  ],
-  [
-   "chop",
-   2,
-   4220706162
-  ],
-  [
-   "drop",
-   2,
-   2739246941
-  ],
-  [
-   "take part",
-   2,
-   2115250675
-  ],
-  [
-   "take wrong kind",
-   0,
-   239309526
-  ],
-  [
-   "drop for recovery",
-   1,
-   4139945697
-  ],
-  [
-   "supply pulse 1",
-   0,
-   2985791201
-  ],
-  [
-   "supply pulse 2 recovers the pile",
-   1,
-   4097386052
-  ],
-  [
-   "rackTake stone",
-   0,
-   267809895
-  ],
-  [
-   "rackTake rails",
-   0,
-   238670221
-  ],
-  [
-   "rackTake logs",
-   1,
-   2802044397
-  ],
-  [
-   "drop the rest",
-   2,
-   3704146753
-  ],
-  [
-   "beamChop 0",
-   1,
-   2812485747
-  ],
-  [
-   "beamChop 1",
-   1,
-   2130569195
-  ],
-  [
-   "beamChop 2",
-   1,
-   3308859401
-  ],
-  [
-   "beamChop 3",
-   1,
-   681596085
-  ],
-  [
-   "beamChop 4",
-   1,
-   292696487
-  ],
-  [
-   "beamChop 5",
-   1,
-   1808068152
-  ],
-  [
-   "beamChop 6",
-   1,
-   107263373
-  ],
-  [
-   "beamChop 7",
-   1,
-   3428186086
-  ],
-  [
-   "beamChop 8",
-   1,
-   2752808539
-  ],
-  [
-   "beamChop 9",
-   1,
-   3437286524
-  ],
-  [
-   "beamChop 10",
-   1,
-   2699324145
-  ],
-  [
-   "beamChop 11",
-   1,
-   2565342302
-  ],
-  [
-   "beamTake",
-   1,
-   3159001734
-  ],
-  [
-   "beamStood",
-   1,
-   4112858822
-  ],
-  [
-   "beamStood same spot",
-   0,
-   4112858822
-  ],
-  [
-   "beamRelease stale revision",
-   0,
-   4112858822
-  ],
-  [
-   "beamRelease",
-   1,
-   3850296517
-  ],
-  [
-   "beamTake again",
-   1,
-   816471659
-  ],
-  [
-   "beamDrop",
-   1,
-   1408128398
-  ],
-  [
-   "supply pulse beam age",
-   0,
-   1637029262
-  ],
-  [
-   "supply pulse beam recovers",
-   1,
-   1035076831
-  ],
-  [
-   "beamTake from the tree",
-   1,
-   176698909
-  ],
-  [
-   "beamPutDown",
-   1,
-   2087603129
-  ],
-  [
-   "beamPutDown not held",
-   0,
-   2087603129
-  ],
-  [
-   "beamTake from the ground",
-   1,
-   4063535754
-  ],
-  [
-   "beamDeposit",
-   1,
-   2896316530
-  ],
-  [
-   "resume",
-   200,
-   3267905650
-  ],
-  [
-   "resume same marker",
-   0,
-   3267905650
-  ],
-  [
-   "session epoch 2",
-   1,
-   503154802
-  ],
-  [
-   "session epoch skipped",
-   0,
-   503154802
+  "foot": [
+    ["footTake works rack", 1, 1549778976],
+    ["footRelease", 1, 1822670880],
+    ["footRelease nothing held", 0, 1822670880],
+    ["footTake pier rack", 0, 441766844]
   ]
- ],
- "axe": [
-  [
-   "axe",
-   1,
-   2399226866
-  ],
-  [
-   "axe again",
-   0,
-   3122041483
-  ],
-  [
-   "chop 0",
-   1,
-   1797095707
-  ],
-  [
-   "drop 0",
-   1,
-   616799496
-  ],
-  [
-   "chop 1",
-   1,
-   402609453
-  ],
-  [
-   "drop 1",
-   1,
-   251550714
-  ],
-  [
-   "chop 2",
-   1,
-   36527551
-  ],
-  [
-   "drop 2",
-   1,
-   747129332
-  ],
-  [
-   "chop 3",
-   1,
-   3699615033
-  ],
-  [
-   "drop 3",
-   1,
-   186665510
-  ],
-  [
-   "chop 4",
-   1,
-   440550203
-  ],
-  [
-   "drop 4",
-   1,
-   1282253216
-  ],
-  [
-   "chop 5",
-   1,
-   2157662181
-  ],
-  [
-   "drop 5",
-   1,
-   3068969362
-  ],
-  [
-   "chop a hardwood",
-   1,
-   2246728983
-  ],
-  [
-   "chop the other hardwood",
-   0,
-   1025425996
-  ],
-  [
-   "supply pulse 1",
-   0,
-   1823720012
-  ],
-  [
-   "supply pulse 2 regrows",
-   0,
-   3142521420
-  ],
-  [
-   "supply pulse 3 regrows",
-   0,
-   1966594636
-  ]
- ],
- "boiler": [
-  [
-   "boilerTake",
-   1,
-   1428936572
-  ],
-  [
-   "boilerStood",
-   1,
-   4225980
-  ],
-  [
-   "boilerStood same spot",
-   0,
-   4225980
-  ],
-  [
-   "boilerPutDown",
-   1,
-   287064768
-  ],
-  [
-   "boilerPutDown not held",
-   0,
-   287064768
-  ],
-  [
-   "boilerTake from the ground",
-   1,
-   1365379397
-  ],
-  [
-   "boilerDrop",
-   1,
-   2643997390
-  ],
-  [
-   "supply pulse 1",
-   0,
-   1684746958
-  ],
-  [
-   "supply pulse 2 recovers",
-   1,
-   610141199
-  ]
- ],
- "call": [
-  [
-   "call 0 (line 0 stop 0) dir -1",
-   0,
-   860858851
-  ],
-  [
-   "call 0 (line 0 stop 0) dir 1",
-   1,
-   2623381740
-  ],
-  [
-   "call 1 (line 0 stop 1) dir -1",
-   1,
-   2972007005
-  ],
-  [
-   "call 1 (line 0 stop 1) dir 1",
-   0,
-   3618252358
-  ],
-  [
-   "call 2 (line 1 stop 0) dir -1",
-   0,
-   3286119215
-  ],
-  [
-   "call 2 (line 1 stop 0) dir 1",
-   1,
-   3926505448
-  ],
-  [
-   "call 3 (line 1 stop 1) dir -1",
-   1,
-   3517550585
-  ],
-  [
-   "call 3 (line 1 stop 1) dir 1",
-   1,
-   3235764850
-  ],
-  [
-   "call 4 (line 1 stop 2) dir -1",
-   1,
-   3168222171
-  ],
-  [
-   "call 4 (line 1 stop 2) dir 1",
-   0,
-   553787460
-  ],
-  [
-   "call 5 (line 1 stop 3) dir -1",
-   0,
-   2285477621
-  ],
-  [
-   "call 5 (line 1 stop 3) dir 1",
-   0,
-   495656542
-  ],
-  [
-   "call 6 (line 1 stop 4) dir -1",
-   0,
-   3673764807
-  ],
-  [
-   "call 6 (line 1 stop 4) dir 1",
-   0,
-   1149373623
-  ],
-  [
-   "call 7 (line 1 stop 5) dir -1",
-   0,
-   1943506313
-  ],
-  [
-   "call 7 (line 1 stop 5) dir 1",
-   0,
-   2994727885
-  ],
-  [
-   "call 8 (line 1 stop 6) dir -1",
-   0,
-   3727065804
-  ],
-  [
-   "call 8 (line 1 stop 6) dir 1",
-   0,
-   3076739123
-  ],
-  [
-   "call 9 (line 1 stop 7) dir -1",
-   0,
-   3168479522
-  ],
-  [
-   "call 9 (line 1 stop 7) dir 1",
-   0,
-   3696514105
-  ],
-  [
-   "call 10 (line 1 stop 8) dir -1",
-   0,
-   2831439720
-  ],
-  [
-   "call 10 (line 1 stop 8) dir 1",
-   0,
-   3210939295
-  ],
-  [
-   "call 11 (line 1 stop 9) dir -1",
-   0,
-   1942624222
-  ],
-  [
-   "call 11 (line 1 stop 9) dir 1",
-   0,
-   3078247973
-  ],
-  [
-   "call 12 (line 2 stop 0) dir -1",
-   0,
-   1051714852
-  ],
-  [
-   "call 12 (line 2 stop 0) dir 1",
-   0,
-   1149389995
-  ],
-  [
-   "call 13 (line 2 stop 1) dir -1",
-   0,
-   3661144954
-  ],
-  [
-   "call 13 (line 2 stop 1) dir 1",
-   0,
-   4124168177
-  ],
-  [
-   "call 14 (line 2 stop 2) dir -1",
-   0,
-   2703315680
-  ],
-  [
-   "call 14 (line 2 stop 2) dir 1",
-   0,
-   1897652352
-  ],
-  [
-   "call 15 (line 3 stop 0) dir -1",
-   0,
-   2791452878
-  ],
-  [
-   "call 15 (line 3 stop 0) dir 1",
-   0,
-   2262706842
-  ],
-  [
-   "call 16 (line 3 stop 1) dir -1",
-   0,
-   2953678492
-  ],
-  [
-   "call 16 (line 3 stop 1) dir 1",
-   0,
-   3554732819
-  ],
-  [
-   "call 17 (line 3 stop 2) dir -1",
-   0,
-   3721251298
-  ],
-  [
-   "call 17 (line 3 stop 2) dir 1",
-   0,
-   3831475785
-  ],
-  [
-   "call 18 (line 3 stop 3) dir -1",
-   0,
-   3519368248
-  ],
-  [
-   "call 18 (line 3 stop 3) dir 1",
-   0,
-   656447871
-  ],
-  [
-   "call 19 (line 4 stop 0) dir -1",
-   0,
-   3633232670
-  ],
-  [
-   "call 19 (line 4 stop 0) dir 1",
-   0,
-   3501087861
-  ],
-  [
-   "call 20 (line 4 stop 1) dir -1",
-   0,
-   3970066676
-  ],
-  [
-   "call 20 (line 4 stop 1) dir 1",
-   0,
-   1838831563
-  ],
-  [
-   "call 21 (line 4 stop 2) dir -1",
-   0,
-   280765626
-  ],
-  [
-   "call 21 (line 4 stop 2) dir 1",
-   0,
-   2584302145
-  ],
-  [
-   "call 22 (line 4 stop 3) dir -1",
-   0,
-   1442416880
-  ],
-  [
-   "call 22 (line 4 stop 3) dir 1",
-   0,
-   2409862359
-  ],
-  [
-   "call 23 (line 4 stop 4) dir -1",
-   0,
-   2044942006
-  ],
-  [
-   "call 23 (line 4 stop 4) dir 1",
-   0,
-   4101679757
-  ],
-  [
-   "call bad id",
-   0,
-   2510962124
-  ],
-  [
-   "call bad dir",
-   0,
-   3995134796
-  ],
-  [
-   "aboard train 0 calls 0 dir -1",
-   0,
-   2160602186
-  ],
-  [
-   "aboard train 0 calls 0 dir 1",
-   0,
-   2002604870
-  ],
-  [
-   "aboard train 0 calls 1 dir -1",
-   0,
-   3336363336
-  ],
-  [
-   "aboard train 0 calls 1 dir 1",
-   0,
-   1786208168
-  ],
-  [
-   "aboard train 1 calls 2 dir -1",
-   0,
-   2678286998
-  ],
-  [
-   "aboard train 1 calls 2 dir 1",
-   0,
-   4028959061
-  ],
-  [
-   "aboard train 1 calls 3 dir -1",
-   0,
-   1448017460
-  ],
-  [
-   "aboard train 1 calls 3 dir 1",
-   1,
-   2614322419
-  ],
-  [
-   "aboard train 1 calls 4 dir -1",
-   0,
-   2659837394
-  ],
-  [
-   "aboard train 1 calls 4 dir 1",
-   0,
-   4084859937
-  ],
-  [
-   "aboard train 1 calls 5 dir -1",
-   0,
-   641425008
-  ],
-  [
-   "aboard train 1 calls 5 dir 1",
-   0,
-   2567726751
-  ],
-  [
-   "aboard train 1 calls 6 dir -1",
-   0,
-   366772110
-  ],
-  [
-   "aboard train 1 calls 6 dir 1",
-   0,
-   4145315629
-  ],
-  [
-   "aboard train 1 calls 7 dir -1",
-   0,
-   2832457292
-  ],
-  [
-   "aboard train 1 calls 7 dir 1",
-   0,
-   2733982155
-  ],
-  [
-   "aboard train 1 calls 8 dir -1",
-   0,
-   2856347722
-  ],
-  [
-   "aboard train 1 calls 8 dir 1",
-   0,
-   1338209753
-  ],
-  [
-   "aboard train 1 calls 9 dir -1",
-   0,
-   1955882024
-  ],
-  [
-   "aboard train 1 calls 9 dir 1",
-   0,
-   464146903
-  ],
-  [
-   "aboard train 1 calls 10 dir -1",
-   0,
-   2708362118
-  ],
-  [
-   "aboard train 1 calls 10 dir 1",
-   0,
-   357997125
-  ],
-  [
-   "aboard train 1 calls 11 dir -1",
-   0,
-   3263739748
-  ],
-  [
-   "aboard train 1 calls 11 dir 1",
-   0,
-   1816120291
-  ],
-  [
-   "aboard train 2 calls 2 dir -1",
-   0,
-   880890370
-  ],
-  [
-   "aboard train 2 calls 2 dir 1",
-   0,
-   1998824401
-  ],
-  [
-   "aboard train 2 calls 3 dir -1",
-   1,
-   540099616
-  ],
-  [
-   "aboard train 2 calls 3 dir 1",
-   0,
-   1498588303
-  ],
-  [
-   "aboard train 2 calls 4 dir -1",
-   0,
-   1125830846
-  ],
-  [
-   "aboard train 2 calls 4 dir 1",
-   0,
-   1269745117
-  ],
-  [
-   "aboard train 2 calls 5 dir -1",
-   0,
-   1115780092
-  ],
-  [
-   "aboard train 2 calls 5 dir 1",
-   0,
-   3171599419
-  ],
-  [
-   "aboard train 2 calls 6 dir -1",
-   0,
-   76654074
-  ],
-  [
-   "aboard train 2 calls 6 dir 1",
-   0,
-   852671689
-  ],
-  [
-   "aboard train 2 calls 7 dir -1",
-   0,
-   3415505240
-  ],
-  [
-   "aboard train 2 calls 7 dir 1",
-   0,
-   1089437383
-  ],
-  [
-   "aboard train 2 calls 8 dir -1",
-   0,
-   4248632310
-  ],
-  [
-   "aboard train 2 calls 8 dir 1",
-   0,
-   3749204917
-  ],
-  [
-   "aboard train 2 calls 9 dir -1",
-   0,
-   3672842772
-  ],
-  [
-   "aboard train 2 calls 9 dir 1",
-   0,
-   3792996435
-  ],
-  [
-   "aboard train 2 calls 10 dir -1",
-   0,
-   2670305842
-  ],
-  [
-   "aboard train 2 calls 10 dir 1",
-   0,
-   1497883393
-  ],
-  [
-   "aboard train 2 calls 11 dir -1",
-   0,
-   532598608
-  ],
-  [
-   "aboard train 2 calls 11 dir 1",
-   0,
-   4011776895
-  ],
-  [
-   "aboard train 3 calls 2 dir -1",
-   0,
-   90768494
-  ],
-  [
-   "aboard train 3 calls 2 dir 1",
-   0,
-   4129851661
-  ],
-  [
-   "aboard train 3 calls 3 dir -1",
-   1,
-   1940031276
-  ],
-  [
-   "aboard train 3 calls 3 dir 1",
-   0,
-   866550187
-  ],
-  [
-   "aboard train 3 calls 4 dir -1",
-   0,
-   502675498
-  ],
-  [
-   "aboard train 3 calls 4 dir 1",
-   0,
-   3771244217
-  ],
-  [
-   "aboard train 3 calls 5 dir -1",
-   0,
-   1603792648
-  ],
-  [
-   "aboard train 3 calls 5 dir 1",
-   0,
-   4091118775
-  ],
-  [
-   "aboard train 3 calls 6 dir -1",
-   0,
-   1915870438
-  ],
-  [
-   "aboard train 3 calls 6 dir 1",
-   0,
-   850101925
-  ],
-  [
-   "aboard train 3 calls 7 dir -1",
-   0,
-   3874739652
-  ],
-  [
-   "aboard train 3 calls 7 dir 1",
-   0,
-   2366188611
-  ],
-  [
-   "aboard train 3 calls 8 dir -1",
-   0,
-   2491737698
-  ],
-  [
-   "aboard train 3 calls 8 dir 1",
-   0,
-   350116401
-  ],
-  [
-   "aboard train 3 calls 9 dir -1",
-   0,
-   2538186880
-  ],
-  [
-   "aboard train 3 calls 9 dir 1",
-   0,
-   273087855
-  ],
-  [
-   "aboard train 3 calls 10 dir -1",
-   0,
-   1347141534
-  ],
-  [
-   "aboard train 3 calls 10 dir 1",
-   0,
-   1479369021
-  ],
-  [
-   "aboard train 3 calls 11 dir -1",
-   0,
-   3634075228
-  ],
-  [
-   "aboard train 3 calls 11 dir 1",
-   0,
-   2240158747
-  ],
-  [
-   "aboard train 4 calls 2 dir -1",
-   0,
-   739848922
-  ],
-  [
-   "aboard train 4 calls 2 dir 1",
-   0,
-   3482567465
-  ],
-  [
-   "aboard train 4 calls 3 dir -1",
-   0,
-   343973944
-  ],
-  [
-   "aboard train 4 calls 3 dir 1",
-   0,
-   2559176103
-  ],
-  [
-   "aboard train 4 calls 4 dir -1",
-   0,
-   2727946966
-  ],
-  [
-   "aboard train 4 calls 4 dir 1",
-   0,
-   1870915221
-  ],
-  [
-   "aboard train 4 calls 5 dir -1",
-   0,
-   1556027764
-  ],
-  [
-   "aboard train 4 calls 5 dir 1",
-   0,
-   795223091
-  ],
-  [
-   "aboard train 4 calls 6 dir -1",
-   0,
-   4132870162
-  ],
-  [
-   "aboard train 4 calls 6 dir 1",
-   0,
-   1477282913
-  ],
-  [
-   "aboard train 4 calls 7 dir -1",
-   0,
-   2309102000
-  ],
-  [
-   "aboard train 4 calls 7 dir 1",
-   0,
-   267803871
-  ],
-  [
-   "aboard train 4 calls 8 dir -1",
-   0,
-   2783236302
-  ],
-  [
-   "aboard train 4 calls 8 dir 1",
-   0,
-   3634947181
-  ],
-  [
-   "aboard train 4 calls 9 dir -1",
-   0,
-   79473036
-  ],
-  [
-   "aboard train 4 calls 9 dir 1",
-   0,
-   1222723339
-  ],
-  [
-   "aboard train 4 calls 10 dir -1",
-   0,
-   2347135370
-  ],
-  [
-   "aboard train 4 calls 10 dir 1",
-   0,
-   2710857497
-  ],
-  [
-   "aboard train 4 calls 11 dir -1",
-   0,
-   1619997288
-  ],
-  [
-   "aboard train 4 calls 11 dir 1",
-   0,
-   1630728471
-  ],
-  [
-   "aboard train 5 calls 2 dir -1",
-   0,
-   4217498054
-  ],
-  [
-   "aboard train 5 calls 2 dir 1",
-   0,
-   1725257349
-  ],
-  [
-   "aboard train 5 calls 3 dir -1",
-   0,
-   3426987940
-  ],
-  [
-   "aboard train 5 calls 3 dir 1",
-   0,
-   2918223139
-  ],
-  [
-   "aboard train 5 calls 4 dir -1",
-   0,
-   3374651714
-  ],
-  [
-   "aboard train 5 calls 4 dir 1",
-   0,
-   652150033
-  ],
-  [
-   "aboard train 5 calls 5 dir -1",
-   0,
-   1795867232
-  ],
-  [
-   "aboard train 5 calls 5 dir 1",
-   0,
-   3091503567
-  ],
-  [
-   "aboard train 5 calls 6 dir -1",
-   0,
-   281429246
-  ],
-  [
-   "aboard train 5 calls 6 dir 1",
-   0,
-   3184553757
-  ],
-  [
-   "aboard train 5 calls 7 dir -1",
-   0,
-   1483473724
-  ],
-  [
-   "aboard train 5 calls 7 dir 1",
-   0,
-   2873826427
-  ],
-  [
-   "aboard train 5 calls 8 dir -1",
-   0,
-   3689875258
-  ],
-  [
-   "aboard train 5 calls 8 dir 1",
-   0,
-   1370115849
-  ],
-  [
-   "aboard train 5 calls 9 dir -1",
-   0,
-   3962426520
-  ],
-  [
-   "aboard train 5 calls 9 dir 1",
-   0,
-   235850503
-  ],
-  [
-   "aboard train 5 calls 10 dir -1",
-   0,
-   1619990582
-  ],
-  [
-   "aboard train 5 calls 10 dir 1",
-   0,
-   46564597
-  ],
-  [
-   "aboard train 5 calls 11 dir -1",
-   0,
-   2931449428
-  ],
-  [
-   "aboard train 5 calls 11 dir 1",
-   0,
-   3752124819
-  ],
-  [
-   "advance 300",
-   300,
-   304432787
-  ],
-  [
-   "call 0 dir 1 after",
-   0,
-   698043749
-  ],
-  [
-   "call 1 dir 1 after",
-   0,
-   2812664313
-  ],
-  [
-   "call 2 dir 1 after",
-   1,
-   275693343
-  ],
-  [
-   "call 3 dir 1 after",
-   1,
-   3658281759
-  ],
-  [
-   "call 4 dir 1 after",
-   0,
-   470034641
-  ],
-  [
-   "call 5 dir 1 after",
-   0,
-   1531412405
-  ],
-  [
-   "call 6 dir 1 after",
-   0,
-   713515787
-  ],
-  [
-   "call 7 dir 1 after",
-   0,
-   1898827115
-  ],
-  [
-   "call 8 dir 1 after",
-   0,
-   3397737757
-  ],
-  [
-   "call 9 dir 1 after",
-   0,
-   3144171377
-  ],
-  [
-   "call 10 dir 1 after",
-   0,
-   142746263
-  ],
-  [
-   "call 11 dir 1 after",
-   0,
-   426624919
-  ],
-  [
-   "call 12 dir 1 after",
-   0,
-   3644649033
-  ],
-  [
-   "call 13 dir 1 after",
-   0,
-   2176720269
-  ],
-  [
-   "call 14 dir 1 after",
-   0,
-   1329236579
-  ],
-  [
-   "call 15 dir 1 after",
-   0,
-   3023724035
-  ],
-  [
-   "call 16 dir 1 after",
-   0,
-   31580437
-  ],
-  [
-   "call 17 dir 1 after",
-   0,
-   3046717673
-  ],
-  [
-   "call 18 dir 1 after",
-   0,
-   316346255
-  ],
-  [
-   "call 19 dir 1 after",
-   0,
-   2229614863
-  ],
-  [
-   "call 20 dir 1 after",
-   0,
-   4155458113
-  ],
-  [
-   "call 21 dir 1 after",
-   0,
-   1801865317
-  ],
-  [
-   "call 22 dir 1 after",
-   0,
-   3687219707
-  ],
-  [
-   "call 23 dir 1 after",
-   0,
-   2457017563
-  ]
- ],
- "foot": [
-  [
-   "footTake works rack",
-   1,
-   1549778976
-  ],
-  [
-   "footRelease",
-   1,
-   1822670880
-  ],
-  [
-   "footRelease nothing held",
-   0,
-   1822670880
-  ],
-  [
-   "footTake pier rack",
-   0,
-   441766844
-  ]
- ]
 }

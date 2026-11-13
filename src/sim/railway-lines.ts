@@ -101,8 +101,8 @@ export const balanceOk = (b: number | undefined) =>
 const both = (p: RailPlatform) => [p, p] as const;
 /** A stub's turnout: past its merge the two tracks part over this length (src/place/layout.ts draws it). */
 export const TURNOUT_CM = 2000;
-/** How far a train reaches from its along (cm), with the footing wagon: the engine's nose ahead (+s), the wagon's tail
- * behind. The cars are src/entities/railway/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
+/** How far a train reaches from its along (cm): the engine's nose ahead (+s), from v33 the steel car's tail behind on
+ * the wagon's train (below). The cars are src/entities/railway/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
  * in step), so a longer train moves every signal with it. From v28 (ring-island-build2, R3, call 15) the reach ahead
  * is the longer boiler's, rail-map's long train (8.2 m), whichever boiler a train wears: one extent, one block rule.
  * The drawn longer engine reaches less (test/railway-lines.test.ts holds this at least the drawn one). From v33

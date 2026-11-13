@@ -1,1309 +1,605 @@
 {
- "worldNs": "v33",
- "components": [
-  {
-   "kind": "rail",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [
-    "railClock"
-   ],
-   "defaults": {
-    "awake": -1,
-    "trains": -1
-   },
-   "fields": [
-    [
-     "awake",
-     "int"
-    ],
-    [
-     "axe",
-     "bool"
-    ],
-    [
-     "jump",
-     "bool"
-    ],
-    [
-     "stoneRack",
-     "int"
-    ],
-    [
-     "stoneProduced",
-     "int"
-    ],
-    [
-     "rack",
-     "int"
-    ],
-    [
-     "produced",
-     "int"
-    ],
-    [
-     "depot",
-     "int"
-    ],
-    [
-     "depotProduced",
-     "int"
-    ],
-    [
-     "lever",
-     "bool"
-    ],
-    [
-     "sea",
-     "bool"
-    ],
-    [
-     "hook",
-     "bool"
-    ],
-    [
-     "glide",
-     "bool"
-    ],
-    [
-     "out0",
-     "int"
-    ],
-    [
-     "out1",
-     "int"
-    ],
-    [
-     "out2",
-     "int"
-    ],
-    [
-     "out3",
-     "int"
-    ],
-    [
-     "out4",
-     "int"
-    ],
-    [
-     "out5",
-     "int"
-    ],
-    [
-     "trains",
-     "int"
-    ],
-    [
-     "out6",
-     "int"
-    ],
-    [
-     "pack",
-     "bool"
-    ],
-    [
-     "depotRails",
-     "int"
-    ],
-    [
-     "shelfOut",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "railClock",
-   "key": null,
-   "replicate": false,
-   "track": false,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "resumeMarker",
-     "int"
-    ],
-    [
-     "supplyMarker",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "beam",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {
-    "state": "standing",
-    "x": 99600,
-    "y": 3000,
-    "z": -13800
-   },
-   "fields": [
-    [
-     "state",
-     "str"
-    ],
-    [
-     "work",
-     "int"
-    ],
-    [
-     "holder",
-     "str"
-    ],
-    [
-     "epoch",
-     "int"
-    ],
-    [
-     "revision",
-     "int"
-    ],
-    [
-     "x",
-     "int"
-    ],
-    [
-     "y",
-     "int"
-    ],
-    [
-     "z",
-     "int"
-    ],
-    [
-     "age",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "forge",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [
-    "forgeClock"
-   ],
-   "defaults": {
-    "lit": -1
-   },
-   "fields": [
-    [
-     "used",
-     "int"
-    ],
-    [
-     "lit",
-     "int"
-    ],
-    [
-     "rack",
-     "int"
-    ],
-    [
-     "poured",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "forgeClock",
-   "key": null,
-   "replicate": false,
-   "track": false,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "lastPour",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "job",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [
-    "jobRun"
-   ],
-   "defaults": {
-    "start": -1,
-    "end": -1,
-    "depositMs": 320,
-    "feedIntervalMs": 70,
-    "logFlightMs": 550,
-    "stoneFlightMs": 450,
-    "beamFlightMs": 900,
-    "cruiseCmPerTick": 50,
-    "departureTicks": 20
-   },
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "stock",
-     "int"
-    ],
-    [
-     "delivered",
-     "int"
-    ],
-    [
-     "stoneStock",
-     "int"
-    ],
-    [
-     "stoneDelivered",
-     "int"
-    ],
-    [
-     "start",
-     "int"
-    ],
-    [
-     "ahead",
-     "int"
-    ],
-    [
-     "end",
-     "int"
-    ],
-    [
-     "completion",
-     "int"
-    ],
-    [
-     "depositMs",
-     "int"
-    ],
-    [
-     "feedIntervalMs",
-     "int"
-    ],
-    [
-     "logFlightMs",
-     "int"
-    ],
-    [
-     "stoneFlightMs",
-     "int"
-    ],
-    [
-     "beamFlightMs",
-     "int"
-    ],
-    [
-     "cruiseCmPerTick",
-     "int"
-    ],
-    [
-     "departureTicks",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "jobRun",
-   "key": null,
-   "replicate": false,
-   "track": false,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "allocation",
-     "int"
-    ],
-    [
-     "used",
-     "int"
-    ],
-    [
-     "stoneAllocation",
-     "int"
-    ],
-    [
-     "stoneUsed",
-     "int"
-    ],
-    [
-     "elapsed",
-     "int"
-    ],
-    [
-     "lastTick",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "qjob",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [
-    "qjobRun"
-   ],
-   "defaults": {
-    "start": -1,
-    "end": -1,
-    "depositMs": 320,
-    "feedIntervalMs": 70,
-    "logFlightMs": 550,
-    "stoneFlightMs": 450,
-    "beamFlightMs": 900,
-    "cruiseCmPerTick": 50,
-    "departureTicks": 20
-   },
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "stock",
-     "int"
-    ],
-    [
-     "railStock",
-     "int"
-    ],
-    [
-     "delivered",
-     "int"
-    ],
-    [
-     "railDelivered",
-     "int"
-    ],
-    [
-     "start",
-     "int"
-    ],
-    [
-     "ahead",
-     "int"
-    ],
-    [
-     "end",
-     "int"
-    ],
-    [
-     "completion",
-     "int"
-    ],
-    [
-     "depositMs",
-     "int"
-    ],
-    [
-     "feedIntervalMs",
-     "int"
-    ],
-    [
-     "logFlightMs",
-     "int"
-    ],
-    [
-     "stoneFlightMs",
-     "int"
-    ],
-    [
-     "beamFlightMs",
-     "int"
-    ],
-    [
-     "cruiseCmPerTick",
-     "int"
-    ],
-    [
-     "departureTicks",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "qjobRun",
-   "key": null,
-   "replicate": false,
-   "track": false,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "allocation",
-     "int"
-    ],
-    [
-     "railAllocation",
-     "int"
-    ],
-    [
-     "used",
-     "int"
-    ],
-    [
-     "railUsed",
-     "int"
-    ],
-    [
-     "elapsed",
-     "int"
-    ],
-    [
-     "lastTick",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "tree",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "left",
-     "int"
-    ],
-    [
-     "work",
-     "int"
-    ],
-    [
-     "yaw",
-     "f64"
-    ],
-    [
-     "fell",
-     "bool"
-    ],
-    [
-     "age",
-     "int"
-    ],
-    [
-     "big",
-     "bool"
-    ]
-   ]
-  },
-  {
-   "kind": "hardwood",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "left",
-     "int"
-    ],
-    [
-     "work",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "rock",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "left",
-     "int"
-    ],
-    [
-     "work",
-     "int"
-    ],
-    [
-     "age",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "pile",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "x",
-     "int"
-    ],
-    [
-     "y",
-     "int"
-    ],
-    [
-     "z",
-     "int"
-    ],
-    [
-     "n",
-     "int"
-    ],
-    [
-     "kind",
-     "int"
-    ],
-    [
-     "age",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "account",
-   "key": "pid",
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "pid",
-     "str"
-    ],
-    [
-     "carry",
-     "int"
-    ],
-    [
-     "stone",
-     "int"
-    ],
-    [
-     "rails",
-     "int"
-    ],
-    [
-     "foot",
-     "int"
-    ],
-    [
-     "epoch",
-     "int"
-    ],
-    [
-     "request",
-     "int"
-    ],
-    [
-     "legLogs",
-     "u8"
-    ],
-    [
-     "legRails",
-     "u8"
-    ]
-   ]
-  },
-  {
-   "kind": "outcome",
-   "key": null,
-   "replicate": false,
-   "track": false,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "pid",
-     "str"
-    ],
-    [
-     "epoch",
-     "int"
-    ],
-    [
-     "request",
-     "int"
-    ],
-    [
-     "status",
-     "u8"
-    ],
-    [
-     "accepted",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "cart",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "phase",
-     "u8"
-    ],
-    [
-     "depart",
-     "int"
-    ],
-    [
-     "from",
-     "int"
-    ],
-    [
-     "to",
-     "int"
-    ],
-    [
-     "logs",
-     "int"
-    ],
-    [
-     "rails",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "boiler",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {
-    "state": "none",
-    "x": 91900,
-    "y": 1815,
-    "z": 540
-   },
-   "fields": [
-    [
-     "state",
-     "str"
-    ],
-    [
-     "holder",
-     "str"
-    ],
-    [
-     "epoch",
-     "int"
-    ],
-    [
-     "revision",
-     "int"
-    ],
-    [
-     "x",
-     "int"
-    ],
-    [
-     "y",
-     "int"
-    ],
-    [
-     "z",
-     "int"
-    ],
-    [
-     "age",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "train",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "phase",
-     "u8"
-    ],
-    [
-     "at",
-     "int"
-    ],
-    [
-     "to",
-     "int"
-    ],
-    [
-     "track",
-     "u8"
-    ],
-    [
-     "depart",
-     "int"
-    ],
-    [
-     "req",
-     "int"
-    ],
-    [
-     "from",
-     "int"
-    ],
-    [
-     "v0",
-     "int"
-    ],
-    [
-     "dest",
-     "int"
-    ],
-    [
-     "turn",
-     "bool"
-    ],
-    [
-     "logs",
-     "int"
-    ],
-    [
-     "rails",
-     "int"
-    ],
-    [
-     "wagon",
-     "bool"
-    ],
-    [
-     "foot",
-     "int"
-    ],
-    [
-     "arrived",
-     "int"
-    ],
-    [
-     "freight",
-     "int"
-    ],
-    [
-     "riders",
-     "int"
-    ],
-    [
-     "steel",
-     "int"
-    ],
-    [
-     "boiler",
-     "u8"
-    ],
-    [
-     "legKit",
-     "bool"
-    ]
-   ]
-  },
-  {
-   "kind": "works",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [
-    "worksClock"
-   ],
-   "defaults": {
-    "lit": -1,
-    "crossing": -1
-   },
-   "fields": [
-    [
-     "breaker",
-     "u8"
-    ],
-    [
-     "seams",
-     "u8"
-    ],
-    [
-     "logs",
-     "int"
-    ],
-    [
-     "stone",
-     "int"
-    ],
-    [
-     "lit",
-     "int"
-    ],
-    [
-     "rack",
-     "int"
-    ],
-    [
-     "poured",
-     "int"
-    ],
-    [
-     "pierRack",
-     "int"
-    ],
-    [
-     "pierSet",
-     "int"
-    ],
-    [
-     "crossing",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "worksClock",
-   "key": null,
-   "replicate": false,
-   "track": false,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "lastCast",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "shed",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {
-    "fitted": -1,
-    "ready": -1
-   },
-   "fields": [
-    [
-     "stall",
-     "int"
-    ],
-    [
-     "cradle",
-     "int"
-    ],
-    [
-     "cradleRails",
-     "int"
-    ],
-    [
-     "fitted",
-     "int"
-    ],
-    [
-     "table",
-     "u8"
-    ],
-    [
-     "tableRev",
-     "int"
-    ],
-    [
-     "ready",
-     "int"
-    ],
-    [
-     "steel",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "line",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {
-    "left0": -1,
-    "left1": -1,
-    "fitted": -1
-   },
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "req",
-     "int"
-    ],
-    [
-     "left0",
-     "int"
-    ],
-    [
-     "left1",
-     "int"
-    ],
-    [
-     "boiler",
-     "u8"
-    ],
-    [
-     "fitted",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "aperture",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {
-    "brace": 1,
-    "joined": -1
-   },
-   "fields": [
-    [
-     "set",
-     "int"
-    ],
-    [
-     "rack",
-     "int"
-    ],
-    [
-     "cw",
-     "u8"
-    ],
-    [
-     "brace",
-     "u8"
-    ],
-    [
-     "joined",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "yard",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [
-    "yardClock"
-   ],
-   "defaults": {},
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "stock",
-     "int"
-    ],
-    [
-     "made",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "yardClock",
-   "key": null,
-   "replicate": false,
-   "track": false,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "last",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "town",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [
-    "townClock"
-   ],
-   "defaults": {},
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "wood",
-     "int"
-    ],
-    [
-     "stone",
-     "int"
-    ],
-    [
-     "wait0",
-     "int"
-    ],
-    [
-     "wait1",
-     "int"
-    ],
-    [
-     "boarded",
-     "int"
-    ],
-    [
-     "alighted",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "townClock",
-   "key": null,
-   "replicate": false,
-   "track": false,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "acc",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "till",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "boogles",
-     "int"
-    ],
-    [
-     "landed",
-     "int"
-    ],
-    [
-     "lost",
-     "int"
-    ],
-    [
-     "spent",
-     "int"
-    ],
-    [
-     "sack",
-     "int"
-    ],
-    [
-     "poured",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "steel",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [
-    "steelClock"
-   ],
-   "defaults": {
-    "lit": -1
-   },
-   "fields": [
-    [
-     "yardLogs",
-     "int"
-    ],
-    [
-     "yardRails",
-     "int"
-    ],
-    [
-     "logs",
-     "int"
-    ],
-    [
-     "rails",
-     "int"
-    ],
-    [
-     "lit",
-     "int"
-    ],
-    [
-     "rack",
-     "int"
-    ],
-    [
-     "poured",
-     "int"
-    ],
-    [
-     "outLogs",
-     "int"
-    ],
-    [
-     "outRails",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "steelClock",
-   "key": null,
-   "replicate": false,
-   "track": false,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "lastCast",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "leg",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {
-    "start": -1
-   },
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "laid",
-     "int"
-    ],
-    [
-     "logs",
-     "int"
-    ],
-    [
-     "rails",
-     "int"
-    ],
-    [
-     "start",
-     "int"
-    ],
-    [
-     "loadedLogs",
-     "int"
-    ],
-    [
-     "loadedRails",
-     "int"
-    ],
-    [
-     "heldLogs",
-     "int"
-    ],
-    [
-     "heldRails",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "legYard",
-   "key": "slot",
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {},
-   "fields": [
-    [
-     "slot",
-     "int"
-    ],
-    [
-     "logs",
-     "int"
-    ],
-    [
-     "rails",
-     "int"
-    ]
-   ]
-  },
-  {
-   "kind": "route",
-   "key": null,
-   "replicate": true,
-   "track": true,
-   "requires": [],
-   "defaults": {
-    "arrived": -1
-   },
-   "fields": [
-    [
-     "grants",
-     "int"
-    ],
-    [
-     "gates",
-     "int"
-    ],
-    [
-     "arrived",
-     "int"
-    ]
-   ]
-  }
- ]
+  "worldNs": "v33",
+  "components": [
+    {
+      "kind": "rail",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": ["railClock"],
+      "defaults": {
+        "awake": -1,
+        "trains": -1
+      },
+      "fields": [
+        ["awake", "int"],
+        ["axe", "bool"],
+        ["jump", "bool"],
+        ["stoneRack", "int"],
+        ["stoneProduced", "int"],
+        ["rack", "int"],
+        ["produced", "int"],
+        ["depot", "int"],
+        ["depotProduced", "int"],
+        ["lever", "bool"],
+        ["sea", "bool"],
+        ["hook", "bool"],
+        ["glide", "bool"],
+        ["out0", "int"],
+        ["out1", "int"],
+        ["out2", "int"],
+        ["out3", "int"],
+        ["out4", "int"],
+        ["out5", "int"],
+        ["trains", "int"],
+        ["out6", "int"],
+        ["pack", "bool"],
+        ["depotRails", "int"],
+        ["shelfOut", "int"]
+      ]
+    },
+    {
+      "kind": "railClock",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["resumeMarker", "int"],
+        ["supplyMarker", "int"]
+      ]
+    },
+    {
+      "kind": "beam",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "state": "standing",
+        "x": 99600,
+        "y": 3000,
+        "z": -13800
+      },
+      "fields": [
+        ["state", "str"],
+        ["work", "int"],
+        ["holder", "str"],
+        ["epoch", "int"],
+        ["revision", "int"],
+        ["x", "int"],
+        ["y", "int"],
+        ["z", "int"],
+        ["age", "int"]
+      ]
+    },
+    {
+      "kind": "forge",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": ["forgeClock"],
+      "defaults": {
+        "lit": -1
+      },
+      "fields": [
+        ["used", "int"],
+        ["lit", "int"],
+        ["rack", "int"],
+        ["poured", "int"]
+      ]
+    },
+    {
+      "kind": "forgeClock",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [["lastPour", "int"]]
+    },
+    {
+      "kind": "job",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": ["jobRun"],
+      "defaults": {
+        "start": -1,
+        "end": -1,
+        "depositMs": 320,
+        "feedIntervalMs": 70,
+        "logFlightMs": 550,
+        "stoneFlightMs": 450,
+        "beamFlightMs": 900,
+        "cruiseCmPerTick": 50,
+        "departureTicks": 20
+      },
+      "fields": [
+        ["slot", "int"],
+        ["stock", "int"],
+        ["delivered", "int"],
+        ["stoneStock", "int"],
+        ["stoneDelivered", "int"],
+        ["start", "int"],
+        ["ahead", "int"],
+        ["end", "int"],
+        ["completion", "int"],
+        ["depositMs", "int"],
+        ["feedIntervalMs", "int"],
+        ["logFlightMs", "int"],
+        ["stoneFlightMs", "int"],
+        ["beamFlightMs", "int"],
+        ["cruiseCmPerTick", "int"],
+        ["departureTicks", "int"]
+      ]
+    },
+    {
+      "kind": "jobRun",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["allocation", "int"],
+        ["used", "int"],
+        ["stoneAllocation", "int"],
+        ["stoneUsed", "int"],
+        ["elapsed", "int"],
+        ["lastTick", "int"]
+      ]
+    },
+    {
+      "kind": "qjob",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": ["qjobRun"],
+      "defaults": {
+        "start": -1,
+        "end": -1,
+        "depositMs": 320,
+        "feedIntervalMs": 70,
+        "logFlightMs": 550,
+        "stoneFlightMs": 450,
+        "beamFlightMs": 900,
+        "cruiseCmPerTick": 50,
+        "departureTicks": 20
+      },
+      "fields": [
+        ["slot", "int"],
+        ["stock", "int"],
+        ["railStock", "int"],
+        ["delivered", "int"],
+        ["railDelivered", "int"],
+        ["start", "int"],
+        ["ahead", "int"],
+        ["end", "int"],
+        ["completion", "int"],
+        ["depositMs", "int"],
+        ["feedIntervalMs", "int"],
+        ["logFlightMs", "int"],
+        ["stoneFlightMs", "int"],
+        ["beamFlightMs", "int"],
+        ["cruiseCmPerTick", "int"],
+        ["departureTicks", "int"]
+      ]
+    },
+    {
+      "kind": "qjobRun",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["allocation", "int"],
+        ["railAllocation", "int"],
+        ["used", "int"],
+        ["railUsed", "int"],
+        ["elapsed", "int"],
+        ["lastTick", "int"]
+      ]
+    },
+    {
+      "kind": "tree",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["left", "int"],
+        ["work", "int"],
+        ["yaw", "f64"],
+        ["fell", "bool"],
+        ["age", "int"],
+        ["big", "bool"]
+      ]
+    },
+    {
+      "kind": "hardwood",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["left", "int"],
+        ["work", "int"]
+      ]
+    },
+    {
+      "kind": "rock",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["left", "int"],
+        ["work", "int"],
+        ["age", "int"]
+      ]
+    },
+    {
+      "kind": "pile",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["x", "int"],
+        ["y", "int"],
+        ["z", "int"],
+        ["n", "int"],
+        ["kind", "int"],
+        ["age", "int"]
+      ]
+    },
+    {
+      "kind": "account",
+      "key": "pid",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["pid", "str"],
+        ["carry", "int"],
+        ["stone", "int"],
+        ["rails", "int"],
+        ["foot", "int"],
+        ["epoch", "int"],
+        ["request", "int"],
+        ["legLogs", "u8"],
+        ["legRails", "u8"]
+      ]
+    },
+    {
+      "kind": "outcome",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["pid", "str"],
+        ["epoch", "int"],
+        ["request", "int"],
+        ["status", "u8"],
+        ["accepted", "int"]
+      ]
+    },
+    {
+      "kind": "cart",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["phase", "u8"],
+        ["depart", "int"],
+        ["from", "int"],
+        ["to", "int"],
+        ["logs", "int"],
+        ["rails", "int"]
+      ]
+    },
+    {
+      "kind": "boiler",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "state": "none",
+        "x": 91900,
+        "y": 1815,
+        "z": 540
+      },
+      "fields": [
+        ["state", "str"],
+        ["holder", "str"],
+        ["epoch", "int"],
+        ["revision", "int"],
+        ["x", "int"],
+        ["y", "int"],
+        ["z", "int"],
+        ["age", "int"]
+      ]
+    },
+    {
+      "kind": "train",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["phase", "u8"],
+        ["at", "int"],
+        ["to", "int"],
+        ["track", "u8"],
+        ["depart", "int"],
+        ["req", "int"],
+        ["from", "int"],
+        ["v0", "int"],
+        ["dest", "int"],
+        ["turn", "bool"],
+        ["logs", "int"],
+        ["rails", "int"],
+        ["wagon", "bool"],
+        ["foot", "int"],
+        ["arrived", "int"],
+        ["freight", "int"],
+        ["riders", "int"],
+        ["steel", "int"],
+        ["boiler", "u8"],
+        ["legKit", "bool"]
+      ]
+    },
+    {
+      "kind": "works",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": ["worksClock"],
+      "defaults": {
+        "lit": -1,
+        "crossing": -1
+      },
+      "fields": [
+        ["breaker", "u8"],
+        ["seams", "u8"],
+        ["logs", "int"],
+        ["stone", "int"],
+        ["lit", "int"],
+        ["rack", "int"],
+        ["poured", "int"],
+        ["pierRack", "int"],
+        ["pierSet", "int"],
+        ["crossing", "int"]
+      ]
+    },
+    {
+      "kind": "worksClock",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [["lastCast", "int"]]
+    },
+    {
+      "kind": "shed",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "fitted": -1,
+        "ready": -1
+      },
+      "fields": [
+        ["stall", "int"],
+        ["cradle", "int"],
+        ["cradleRails", "int"],
+        ["fitted", "int"],
+        ["table", "u8"],
+        ["tableRev", "int"],
+        ["ready", "int"],
+        ["steel", "int"]
+      ]
+    },
+    {
+      "kind": "line",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "left0": -1,
+        "left1": -1,
+        "fitted": -1
+      },
+      "fields": [
+        ["slot", "int"],
+        ["req", "int"],
+        ["left0", "int"],
+        ["left1", "int"],
+        ["boiler", "u8"],
+        ["fitted", "int"]
+      ]
+    },
+    {
+      "kind": "aperture",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "brace": 1,
+        "joined": -1
+      },
+      "fields": [
+        ["set", "int"],
+        ["rack", "int"],
+        ["cw", "u8"],
+        ["brace", "u8"],
+        ["joined", "int"]
+      ]
+    },
+    {
+      "kind": "yard",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": ["yardClock"],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["stock", "int"],
+        ["made", "int"]
+      ]
+    },
+    {
+      "kind": "yardClock",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [["last", "int"]]
+    },
+    {
+      "kind": "town",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": ["townClock"],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["wood", "int"],
+        ["stone", "int"],
+        ["wait0", "int"],
+        ["wait1", "int"],
+        ["boarded", "int"],
+        ["alighted", "int"]
+      ]
+    },
+    {
+      "kind": "townClock",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [["acc", "int"]]
+    },
+    {
+      "kind": "till",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["boogles", "int"],
+        ["landed", "int"],
+        ["lost", "int"],
+        ["spent", "int"],
+        ["sack", "int"],
+        ["poured", "int"]
+      ]
+    },
+    {
+      "kind": "steel",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": ["steelClock"],
+      "defaults": {
+        "lit": -1
+      },
+      "fields": [
+        ["yardLogs", "int"],
+        ["yardRails", "int"],
+        ["logs", "int"],
+        ["rails", "int"],
+        ["lit", "int"],
+        ["rack", "int"],
+        ["poured", "int"],
+        ["outLogs", "int"],
+        ["outRails", "int"]
+      ]
+    },
+    {
+      "kind": "steelClock",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [["lastCast", "int"]]
+    },
+    {
+      "kind": "leg",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "start": -1
+      },
+      "fields": [
+        ["slot", "int"],
+        ["laid", "int"],
+        ["logs", "int"],
+        ["rails", "int"],
+        ["start", "int"],
+        ["loadedLogs", "int"],
+        ["loadedRails", "int"],
+        ["heldLogs", "int"],
+        ["heldRails", "int"]
+      ]
+    },
+    {
+      "kind": "legYard",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["logs", "int"],
+        ["rails", "int"]
+      ]
+    },
+    {
+      "kind": "route",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "arrived": -1
+      },
+      "fields": [
+        ["grants", "int"],
+        ["gates", "int"],
+        ["arrived", "int"]
+      ]
+    }
+  ]
 }

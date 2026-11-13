@@ -172,6 +172,14 @@ test('every stop stands beside the island, 1.65 m in from its edge and within it
           rear - shift >= ISLAND_A.deck0 && front - shift <= ISLAND_A.deck1,
           `road ${road} at ${engine}x on the deck`,
         );
+      else {
+        // The overhang as measured (0.15 m behind; 0.75 m ahead on the standard engine, 1.25 m on the longer), each
+        // bounded with 5 cm in hand, so a later stop or car change re-measures it.
+        const behind = ISLAND_A.deck0 - (rear - shift),
+          ahead = front - shift - ISLAND_A.deck1;
+        assert.ok(behind <= 0.2, `road 2 at ${engine}x overhangs the deck ${behind.toFixed(2)} m behind`);
+        assert.ok(ahead <= (engine === 1 ? 0.8 : 1.3), `road 2 at ${engine}x overhangs it ${ahead.toFixed(2)} m ahead`);
+      }
       for (let s = rear; s <= front; s += 0.5) {
         const at = toAxis(roadAt(road, s));
         assert.ok(Math.abs(Math.abs(at.c - ISLAND_C) - (ISLAND.width / 2 + ISLAND.edge)) < 0.01, `road ${road} s ${s}`);
