@@ -74,10 +74,12 @@ export function createBooglerBrain({
   land,
   rng,
   start,
+  walk = stepBooglerWalk,
 }: {
   land: BooglerLand;
   rng: () => number;
   start: { x: number; z: number };
+  walk?: typeof stepBooglerWalk;
 }) {
   const range = (a: number, b: number) => a + rng() * (b - a);
   const sim: BooglerState = {
@@ -203,7 +205,7 @@ export function createBooglerBrain({
       return;
     }
     const speed = sim.mode === MODE.FLEE ? FLEE_SPEED : sim.mode === MODE.RIDDEN ? RIDDEN_SPEED : SPEED;
-    const result = stepBooglerWalk(sim, dt, speed, canBlock);
+    const result = walk(sim, dt, speed, canBlock);
     if (result === 'arrived') {
       sim.walking = false;
       sim.wait = range(1.5, 5);

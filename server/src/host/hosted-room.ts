@@ -26,6 +26,7 @@ import { HALF } from '../../../src/world/grid.ts';
 import { RTC_TYPE, validateRtc } from '../../../src/net/rtc-wire.ts';
 import { createReplicator } from '../../../src/world/replicate-server.ts';
 import { RAIL_AWAY } from '../../../src/sim/railway-away.ts';
+import { booglerActivity } from './boogler-presence.ts';
 import type { Store } from '../store.ts';
 
 export type HostCfg = {
@@ -138,6 +139,12 @@ export function createHostedRoom({
         ...hostOptions,
         replication,
         awake: false, // the first join wakes it, with the away credit since its last save
+        hasPlayers: () => clients.size > 0,
+        leadBoogler() {
+          const client = lead ? clients.get(lead) : null;
+          const at = lead ? poseAt.get(lead) : undefined;
+          return client && at !== undefined ? { value: (client.d as { g?: unknown } | null)?.g, at } : null;
+        },
         positions() {
           return [...clients].map(([sid, client]) => {
             const p = client.d && typeof client.d === 'object' ? (client.d as { p?: unknown }).p : null;
@@ -149,6 +156,7 @@ export function createHostedRoom({
                   z: p[2],
                   at,
                   pid: client.pid,
+                  ...booglerActivity((client.d as { bg?: unknown }).bg),
                 }
               : null;
           });
@@ -486,6 +494,8 @@ export function createHostedRoom({
         ? {
             railway: (world as RailwayWorldHost).stats,
             seats: (world as RailwayWorldHost).status().seats,
+            boogler: (world as RailwayWorldHost).status().boogler,
+            booglerMeter: (world as RailwayWorldHost).status().booglerMeter,
           }
         : {}),
     }),

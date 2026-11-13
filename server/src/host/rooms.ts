@@ -148,7 +148,19 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
     status(id: string) {
       const room = rooms.get(id);
       if (!room) return { mode: 'server', tick: store.readSync(id)?.tick ?? 0, players: 0, max: cfg.maxPlayers };
-      const { boot: b, tick, players, max, dropped, noSave, replication, railway, steps } = room.status();
+      const {
+        boot: b,
+        tick,
+        players,
+        max,
+        dropped,
+        noSave,
+        replication,
+        railway,
+        steps,
+        boogler,
+        booglerMeter,
+      } = room.status();
       return {
         mode: 'server',
         boot: b,
@@ -160,6 +172,8 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         replication,
         railway,
         steps,
+        boogler,
+        booglerMeter,
       };
     },
     upgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {

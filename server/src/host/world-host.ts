@@ -34,6 +34,14 @@ import { projectRailTune, projectRoster } from '../../../src/world/classic-repli
 import { createServerOps } from '../../../src/world/server-ops.ts';
 import { installSeats } from '../../../src/world/rules/seats.ts';
 import { projectSeats } from '../../../src/world/seat-replicate.ts';
+import { installBoogler } from '../../../src/world/rules/boogler.ts';
+import { createBooglerShadow } from '../../../src/world/boogler-shadow.ts';
+import { loadBooglerLand } from './land.ts';
+import { booglerVisitors } from './boogler-presence.ts';
+import { createBooglerMeter, type LeadBoogler } from './boogler-meter.ts';
+
+// One immutable baked land per process, shared by awake rooms.
+let booglerLand: ReturnType<typeof loadBooglerLand> | undefined;
 
 // The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
 // Saves skip unchanged state, but persist the advancing room clock at least this often, and always on close.
@@ -146,6 +154,8 @@ export type WorldHost = ReturnType<typeof createWorldHost>;
 export type RailwayHostOptions = WorldHostOptions & {
   /** Every connected session, including unknown poses. Unknown blocks maintenance. */
   positions?: () => (RailwayPosition | null)[];
+  hasPlayers?: () => boolean;
+  leadBoogler?: () => LeadBoogler | null;
   now?: () => number;
   /** The room's replicator (hosted-room.ts flushes it each step); a host of its own makes one. */
   replication?: Replicator;
@@ -171,6 +181,8 @@ export function createRailwayWorldHost({
   pidOf = () => null,
   tuneController = () => false,
   positions = () => [null],
+  hasPlayers = () => true,
+  leadBoogler = () => null,
   now = Date.now,
   meter,
   log = () => {},
@@ -200,6 +212,24 @@ export function createRailwayWorldHost({
   let startup = true;
   let loaded = false; // startup finished without error
   let present = awake; // someone is here (or the caller simulates without a room): wake once loaded
+  const booglerMeter = createBooglerMeter();
+  const boogler = installBoogler(
+    sync,
+    (rng, tick) => {
+      const brain = createBooglerShadow((booglerLand ??= loadBooglerLand()), rng, tick);
+      return {
+        snapshot: brain.snapshot,
+        step(t: number) {
+          const started = performance.now();
+          const time = now();
+          brain.step(t, booglerVisitors(positions(), time));
+          const cost = performance.now() - started;
+          booglerMeter.measure(cost, brain.snapshot(), leadBoogler(), time);
+        },
+      };
+    },
+    () => running && hasPlayers(),
+  );
   // The 100 ms marker at which the room stopped simulating, or null while it runs. A save while paused is stamped
   // with it, so neither a reload nor a crash counts the paused time as hosted.
   let awayMarker: number | null = null;
@@ -553,6 +583,8 @@ export function createRailwayWorldHost({
     status: () => ({
       tick: sync.world.tick,
       seats: seats.rows(),
+      boogler: boogler.leg(),
+      booglerMeter: booglerMeter.report(),
       ...sync.worldStatus(),
       recoveryError:
         startupError ??
