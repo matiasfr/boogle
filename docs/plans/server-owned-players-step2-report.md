@@ -1,8 +1,10 @@
 # Server-owned players, step 2: flip seats
 
 Implemented 13 November 2026 in `codex/server-players-step-2`, based on local `origin/main` at `d50f514c5`.
-Implementation and check-fix tip: **ba29e0b2**. Review stamp: **6c2eb947767b** (`--no-fetch`).
-No push or ship. Step 2 is built; **Checkpoint S is incomplete** because the trusted browser broker predates v40.
+Initial implementation and check-fix tip: **ba29e0b2**. Initial review stamp: **6c2eb947767b** (`--no-fetch`).
+The network-harness follow-up is **a2ed92de**, with review stamp **d5acdddd1cd3**.
+No push or ship. Step 2 is built; **Checkpoint S is incomplete**. The initial browser broker predated v40;
+the direct network-harness follow-up below supersedes the original network verification limit.
 DESIGN.md: **Clear authority**, **Server hosts every room**, **Enjoyable alone and together**, **Small and readable**.
 
 ## Change and deletions
@@ -49,8 +51,8 @@ reclaim. A timeout or ack without an outcome is not acceptance.
 - The railway bot, workshop chair, bench, passenger-car, two-player passenger-car and ring-crossing evals now assert
   authoritative occupants by pid. No existing scenario asserted the deleted grants. The seat atlas story is updated.
 - The existing network harness adds late join, contention, third-player refusal, hiding/lead transfer, grace reconnect,
-  actual first-page closure, restart/friend reclaim and stand cases. **Those added harness cases are not executed by
-  the old trusted broker**; they require a launcher refresh. No new browser harness was added.
+  actual first-page closure, restart/friend reclaim and stand cases. The old trusted broker did not execute these
+  added cases. The follow-up uses the worktree's direct `npm run test:net`, as CI does. No new browser harness was added.
 - No replay/schema golden or land fixture was regenerated. Contract prose was shortened/repositioned to keep the
   existing required-reading budgets; no safety contract or lint budget was relaxed.
 
@@ -107,12 +109,58 @@ The manifests distinguish the worker build from trusted harness **d87c05719**. E
 6. [Network launcher failure](../../.look/evidence/1794600439240-52458/evidence.json): module load error before
    network assertions, no image. This does not test the current worktree network harness.
 
+## Direct network follow-up (13 November 2026)
+
+Harness fix: **a2ed92de**. This is a **proof/fixture defect**, not a server seat-authority defect. Direct
+`npm run test:net` reproduced the owner's exact failure: **116 passes**, then `first seat request wins`.
+The test page had never set its actor pose, so `railEdit` omitted `at`; the host correctly returned `rej: refused`
+before invoking the seat rule. The corrected proof first asserts that refusal and unchanged empty mirrors, then
+supplies valid actor facts. `ws-page.ts` exposes explicit `ok` receipts, and `ws-railway.ts` requires `accepted: 1`
+before sending the competitor. An ack watermark is not acceptance. Mirror assertions poll replicated rows; no
+sleep was added to order requests. Sessions also use the server's returned next request number.
+
+The first fixture correction got through contention, alternatives, third-player refusal, hiding, reconnect and
+departure (**133 passes**), then exposed another raw-page fixture omission at restart: without the production
+adapter, the page never called `rail.refill()` on disconnect. A fresh snapshot omitting transient seats therefore
+left its old seat row behind. The raw page now follows the production adapter's refill lifecycle, retaining the
+visible rows until the complete replacement arrives. All existing assertions remain; four checks were added.
+Only the two network-harness files have source changes. Production code and **v41 are unchanged**.
+
+The final five-run series passed consecutively on the unchanged harness now committed as **a2ed92de**:
+**175/175, 175/175, 175/175, 175/175, 175/175**. The pre-branch total was **140**; this branch adds 35 checks.
+The shared browser queue serialized these runs with other agents' debug, scenario and net jobs. No bypass was used.
+There are no remaining failures in this final series. Logs:
+[original reproduction](../../.look/step2-net-reproduce.log),
+[intermediate fixture failure](../../.look/step2-net-fixture-attempt.log),
+[run 1](../../.look/step2-net-fixed-1.log), [run 2](../../.look/step2-net-fixed-2.log),
+[run 3](../../.look/step2-net-fixed-3.log), [run 4](../../.look/step2-net-fixed-4.log),
+[run 5](../../.look/step2-net-fixed-5.log).
+
+After the final harness edit: `npm run check` passed (1,712 passed, one existing TODO), server tests passed 250/250.
+`node dev/ship-check.ts` passed 668 assertions across 70 affected test files, with lint and typecheck; registry passed
+with unchanged debt (20 suppressions, zero knots, 15 allowances / 24 maximum). The final review stamp is
+**d5acdddd1cd3**, using `--no-fetch`. These checks were rerun after the five network passes.
+The follow-up logs are `.look/step2-followup-{check,server,ship-check,registry,review-stamp}.log`.
+The [follow-up evidence index](../../.look/evidence/step2-net-followup/evidence.json) collects copied logs and the three
+opened stills. It is a manual index of direct command results, not a broker-generated execution manifest.
+
+No captures, looks or bots were launched in this follow-up. Opened three existing PNGs produced by the separate
+Claude runner: [A mid-ride](../../.look/runner/seats-explore/c1-A-mid-ride-still.png),
+[B mid-ride](../../.look/runner/seats-explore/c1-B-mid-ride-still.png), and
+[B after the lead closed](../../.look/runner/seats-explore/c2-B-after-lead-closed-still.png).
+Both mid-ride views show two Buddies seated side by side on the bench; the post-close frame shows one Buddy seated
+on the bench with the other chair empty. These are visual observations of saved frames, not an independent verdict
+on the runner's execution, continuous motion or device performance. The runner's untracked debug harness is not
+part of this fix and was left untouched.
+
 ## Remaining verification and departures
 
-- Worktree `npm run test:net`, current `world-inputs` and the literal first-tab-close mid-ride look remain unverified.
-  The required broker is stale; direct Chromium was prohibited. Its two-player look also requires both pages open
-  for final screenshots/health and remote counts, and exposes no close-first-page operation. No bypass or compatibility
-  shim was added. Checkpoint S stays open for these proofs after a trusted launcher refresh.
+- Current `world-inputs` and continuous first-tab-close mid-ride behavior remain unverified by this agent. The initial
+  report incorrectly treated the broker restriction as preventing the direct worktree network test; the owner
+  explicitly authorized it for the follow-up. The earlier broker required both pages open for final health checks
+  and exposed no close-first-page operation. A separate Claude runner owns the new browser looks; this follow-up
+  launches no captures or bots. The saved-frame observations above do not replace its execution report.
+  Checkpoint S stays open pending that evidence.
 - Own reconnect and actual server restart are proven with real host/client adapters, and grace with real sockets;
   the corresponding seated avatar transitions have not been captured in a browser.
 - Immediate input is implemented in the press path and the rate look asserts its pose; sub-100 ms end-to-end reaction
