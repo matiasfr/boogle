@@ -1,11 +1,10 @@
 # Networking
 
-`ws-room.ts` is the one module the game talks to for multiplayer: `src/netplay/net.ts` calls `createWsRoom({ roomId,
-server, build, debug })`. Our server hosts every room (docs/plans/server-host.md): one WebSocket per tab (wire:
-`ws-wire.ts`), the server owns shared state and sends its clock/replication `from` `SERVER_ID`, and the server picks a
-lead, the oldest visible tab, which publishes Host-kind fields. The room reconnects by itself (header of `ws-room.ts`);
-its peer table is `peer-table.ts`. Changes must keep this interface; run `npm run test:net` after touching it
-(`dev/peer-test/ws-run.ts` runs the real server in-process).
+`src/netplay/net.ts` uses only `ws-room.ts` for multiplayer: `createWsRoom({ roomId, server, build, debug })`.
+The server hosts every room (docs/plans/server-host.md), owns shared state and sends clock/replication `from`
+`SERVER_ID` over one WebSocket per tab (`ws-wire.ts`). The oldest visible tab leads Host-kind fields.
+Rooms reconnect automatically (`ws-room.ts` header); `peer-table.ts` tracks peers. Keep this interface;
+run `npm run test:net` after edits (`dev/peer-test/ws-run.ts` uses the real server).
 
 ```js
 const room = await createWsRoom({ roomId, server /* our server's http(s) base */, pid /* this player */, build /* optional */, debug /* optional */ });

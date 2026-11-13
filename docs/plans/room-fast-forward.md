@@ -260,3 +260,37 @@ on the old `d87c0571` broker harness. Opened `world-inputs/inputs-final-still.pn
 the log reports no graphics errors. The stale scenario's contract remains unverified. Visible countdown/line,
 stage landing, returning absent-player personal-state behavior, playdata and Dev dock controls remain for the client
 job. No push or ship was run.
+
+### Security follow-up, 13 November
+
+On `codex/room-fast-forward-server-2`, rebased onto `origin/main` `f00736aec` (v41 seats), both P2 findings
+from the security/data-safety review are fixed. The original distinct-IP regression failed before the fix;
+the release regression left 31 ordinary files, and a concurrent cross-room fixture left 40. All now pass.
+
+- Replacement admission has a fixed server-wide 24/minute token bucket alongside the existing per-IP 6/minute
+  default. Both run before key comparison/body parsing. At most two replacement jobs prepare/count down at once;
+  excess requests get 429. A separate process-wide cap permits two validation workers across replacement and
+  restore, with no queue; capacity returns only after worker termination, including error/timeout paths.
+- Pin release and every ordinary-backup creation path use the same newest-30 retention, ordered by timestamp
+  across rooms. Remaining pins are excluded. Concurrent releases retain the newest files deterministically.
+- The v41 net checkpoint occupies a seat before replacement, then verifies empty seat rows on the new host and
+  both clients; restoring the pinned save also leaves transient seats empty. No seat implementation changed and
+  no additional namespace bump was needed. The curl example now names `rail-v41`.
+
+Verification on implementation `40986242` plus the networking-doc budget correction: `npm run check` passes
+(1,794 passing tests, one existing train-wait TODO), server tests 271/271, direct `npm run test:net` 191/191,
+25 checkpoint seeds, ship-check 438 assertions/43 affected test files, and registry pass. Independent follow-up
+review found no actionable issues; stamp **cd860a391bef**. The pre-rebase server run was interrupted; the first
+v41 full check exceeded the networking-doc reading budget by 100 characters. Both are superseded by the final runs.
+The release fixture now spaces ordinary backup requests by 2 ms so it creates distinct millisecond filenames.
+
+[Fresh two-player T2 evidence](../../.look/evidence/1794608894318-27733/evidence.json) passes: both finish,
+195 common server-step hashes agree, no missed beat or graphics error. Opened `run/end-still.png` and
+`run/p2-end-still.png`: both players, completed rails and both T2-complete overlays are visible. The 3x warped
+capture reports drift and under-load execution; timing, smoothness and device behavior remain unverified.
+Two checkpoint-list attempts did not establish a visual result (broker clock-option refusal, then a queued
+request invalidated by the doc correction). The later playthrough manifest confirms unchanged before/after trees.
+
+[Follow-up check logs and provenance](../../.look/evidence/room-fast-forward-server/followup-evidence.json)
+supersede the earlier v40 evidence for this fix. The client controls/countdown rendering remain outside this job.
+No push or ship was run.
