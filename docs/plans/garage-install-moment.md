@@ -163,13 +163,13 @@ clockwise from north, metres from the table's centre (918, 12).
 | --- | --- | --- |
 | The works copy | At rest along the bridge on the stall road's axis, nose at 45° (toward line 1). Two static boxes at that pose, which never turn: the engine 2.0 by 4.0 by 2.5 m (4.5 m long once the longer boiler is on), the car 2.2 by 3.2 by 0.8 m | Corners 4.4 m, inside the 4.8 m deck. Each box is added only once this tab's player is clear of it by 0.55 m |
 | The post | 92°, 5.2 m (where build 2's plain post stood) | 0.4 m inside the reach the prompt keeps (5.6 m); 1.5 m from the landing |
-| The stand | 118°, middle 6.5 m, along the radius, the barrel nose to the table: it spans 4.93 m to 8.08 m. Legs at 6.1 m and 7.6 m, 0.5 m either side of the axis (G2b, ruling R2) | Did not fit as first ruled (below); accepted as built by the [ruling](#design-ruling-on-g2-as-built-designer-2026-11-12). Its side overhangs line 2's sleeper ends by 0.34 m and passes 0.33 m from the landing point |
+| The stand | 118°, middle 6.5 m, along the radius, the barrel nose to the table: it spans 4.93 m to 8.08 m. Legs at 6.1 m and 7.6 m, 0.5 m either side of the axis (G2b, ruling R2) | Did not fit as first ruled (below); accepted as built by the [ruling](#design-ruling-on-g2-as-built-designer-2026-11-12). Its side overhangs line 2's sleeper ends by 0.34 m and passes 0.316 m from the landing point (the test's measure; first written as 0.33) |
 | The jib | 118°, 8.4 m; mast 4.4 m, arm 10.6 m. Parked, the arm points along 100° from its mast, over the grass east-south-east; it points at the hook only while a part is in sight and through a moment (G2b, R3) | 2.5 m from line 2's centre. The arm reaches the engine's seat at any turn of the table (8.4 + 1.9 m) and clears the tall chimney (3.5 m over the grass) |
 | The pallet | 64°, 7.0 m (G2b, R6; it was 72°, 6.0 m) | 2.8 m from line 1's centre |
 | The crew | 121°, 9.4 m and 114°, 8.7 m, by the mast | 2.3 m and 3.1 m from line 2's centre; 3.2 m or more from the landing |
 | The camera | From 85° (east), 9.2 m out, 2.7 m up (G2b, R4; first built at 100°) | Below |
 | `TABLE_LAND` | Untouched: (923.2, 18.1, 13.7), asserted | |
-| Train tails | Line 2 at s 8.0. Line 1 at s 5.0 by the catalogue (`halts[0].s` 14.0 m less `TRAIN_EXTENT.behindCm`), not the 8.7 of row 1: 0.2 m off the rim, 0.6 m from a longer boiler's nose at rest | Both asserted off the deck |
+| Train tails | Line 2 at s 8.0. Line 1 at s 5.0 by the catalogue (`halts[0].s` 14.0 m less `TRAIN_EXTENT.behindCm`), not the 8.7 of row 1: 0.2 m off the rim, 0.6 m from a longer boiler's nose at rest | Arithmetic on the catalogue; the tails assertion was dropped at the test review |
 
 **The stand: finding 3's numbers do not fit, for the designer.** The review placed the stand radially at 5.6 m with
 legs 0.9 m either side. The part that lies on it is the longer barrel, 3.15 m long and 1.25 m across (`engine.ts`), so

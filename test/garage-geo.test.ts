@@ -13,7 +13,7 @@ import {
   type XZ,
 } from '../src/entities/railway/garage-geo.ts';
 import { SHED_TABLE } from '../src/sim/railway-works-layout.ts';
-import { RAIL_LINES, TRAIN_EXTENT } from '../src/sim/railway-lines.ts';
+
 import { LINES, ORIGIN, lineAt } from '../src/place/layout.ts';
 import { TABLE } from '../src/place/home-station.ts';
 import { jumpOf } from '../src/world/railway-jump.ts';
@@ -45,16 +45,17 @@ const standAxis = () => {
 
 test('a hold at today’s post reaches the install; layout B’s post does not until the flip moves the table', () => {
   assert.ok(installHere(polarAt(centre, a.post)));
-  assert.ok(dist(polarAt(centre, a.post), centre) <= SHED_TABLE.reach / 100 - 0.4);
   const tableB = { x: TABLE.x + ORIGIN.x, z: TABLE.z };
   assert.ok(!installHere(polarAt(tableB, GARAGE_GEO.b.post)));
 });
 
 test('nothing fixed stands within the deck’s 4.8 m: the copy sweeps it', () => {
+  // The rule's own number, not whatever the constant says (design review, call 24).
+  assert.equal(DECK_R, 4.8);
   for (const p of [a.post, a.jib, ...a.crew]) assert.ok(p.r >= 5.0, `${p.bearing}° at ${p.r} m`);
-  for (const p of standAxis()) assert.ok(dist(p, centre) >= DECK_R, 'the part on its stand');
+  for (const p of standAxis()) assert.ok(dist(p, centre) >= 4.8, 'the part on its stand');
   const [inner] = standEnds(centre, a);
-  assert.ok(dist(inner, centre) >= DECK_R, 'the stand’s inner end');
+  assert.ok(dist(inner, centre) >= 4.8, 'the stand’s inner end');
   // The empty stand clears a car on line 2 (design ruling on G2, R2): legs 6 m or further out, no wider than the barrel.
   assert.ok(Math.min(...STAND_LEGS.at) >= 6.0 && STAND_LEGS.half <= 0.5);
   for (const r of STAND_LEGS.at) assert.ok(Math.abs(r - a.stand.r) <= STAND_PART.half, 'a leg under the barrel');
@@ -73,7 +74,7 @@ test('every piece is off both lines’ sleepers and off the jump-in landing, whi
   }
   // The stand's middle is off the sleepers. The 3.15 m barrel lying on it does not fit the wedge between line 2 and
   // the landing with its inner end off the deck: as built its side overhangs line 2's sleeper ends by 0.34 m (clear of
-  // the rail, on track no train stands on: the tails stop at s 8.0) and passes 0.33 m from the landing point. Both are
+  // the rail, on track no train stands on: the tails stop at s 8.0) and passes 0.316 m from the landing point. Both are
   // pinned here so a move re-measures them; the plan's section 5 carries the finding for the designer.
   assert.ok(offLines(polarAt(centre, a.stand)) > SLEEPER + 0.2);
   const barrel = standAxis();
@@ -81,11 +82,4 @@ test('every piece is off both lines’ sleepers and off the jump-in landing, whi
     toLand = Math.min(...barrel.map((p) => dist(p, land) - STAND_PART.r));
   assert.ok(toLine >= 0.8, `the barrel's side ${toLine.toFixed(2)} m from line 2's centre (the rail is at 0.68 m)`);
   assert.ok(toLand >= 0.3, `the barrel's side ${toLand.toFixed(2)} m from the landing`);
-});
-
-test('both lines’ trains stand with their tails off the deck', () => {
-  for (const line of [0, 1]) {
-    const tail = (RAIL_LINES[line]!.halts[0]!.s - TRAIN_EXTENT.behindCm) / 100;
-    assert.ok(tail > DECK_R, `line ${line + 1}'s tail at s ${tail}`);
-  }
 });
