@@ -3,6 +3,7 @@
 Implemented 13 November 2026 in `codex/server-players-step-2`, based on local `origin/main` at `d50f514c5`.
 Initial implementation and check-fix tip: **ba29e0b2**. Initial review stamp: **6c2eb947767b** (`--no-fetch`).
 The network-harness follow-up is **a2ed92de**, with review stamp **d5acdddd1cd3**.
+The replica-phase and quiet-seat follow-up is **de7d63e4**, **fa733c8d**, with review stamp **71275b90226c**.
 No push or ship. Step 2 is built; **Checkpoint S is incomplete**. The initial browser broker predated v40;
 the direct network-harness follow-up below supersedes the original network verification limit.
 DESIGN.md: **Clear authority**, **Server hosts every room**, **Enjoyable alone and together**, **Small and readable**.
@@ -16,8 +17,9 @@ a dated history entry. A real-socket host test proves a v40 room request is refu
 Sit and stand still show on the press. The local seat session tracks the command's epoch/request and reconciles once
 a second while the adapter is ready. Only a matching `taken` refusal steps the rider off; rate, unknown and storage
 outcomes retain the prediction. Reclaims keep the ordered reachable alternatives, including after reconnect/restart.
-The existing platform-carry order 21 is unchanged. Remote seating requires both the row's pid and Owner
-`placeSeatPose`; standing clears the pose immediately. Offline/prototype seats remain local.
+The existing platform-carry order 21 is unchanged. Remote seating follows the server row even with stale or missing
+Owner `placeSeatPose`; a fresh uncontested Owner pose can bridge a rowless prediction. Standing clears the Owner
+pose immediately, and friends stop the confirmed pose when its row clears. Offline/prototype seats remain local.
 
 Deleted `placeSeatGrants`, `placeSeatRequest`, lead `assignSeats`/`assign`, request tickets and grant bookkeeping,
 the lead/connection-change stand-ups, the host shadow comparison/status, `src/entities/railway/seat-claims.ts`,
@@ -153,14 +155,70 @@ on the bench with the other chair empty. These are visual observations of saved 
 on the runner's execution, continuous motion or device performance. The runner's untracked debug harness is not
 part of this fix and was left untouched.
 
+## Replica phase and quiet-seat follow-up (13 November 2026)
+
+**Cause and fixes.** The idle sample mismatch was a pre-existing server scheduling defect: a client's first whole
+snapshot scheduled its hash at that send step plus 120. Staggered joins, resync or a deferred hash established
+independent phases indefinitely. Ordinary deltas and private receipts did not reset that timer. Step 1 already had
+this scheduler; empty seat registration adds no packet, and the seated reconcile sends nothing when desired and
+held rows agree. Seat changes can add shared deltas, but no change in failure probability was measured.
+
+`src/world/replicate-server.ts:267` now schedules the next global multiple of 120. A backpressured client receives
+its overdue hash when writable, then returns to the common phase. The regression in `test/replicate.test.ts:387`
+failed first, and covers staggered joins, a private receipt, backpressure and resync. The strict scenario helper is
+unchanged: railway, roster, tuning and seats are compared at one server step (the composite hash includes seats).
+
+`src/entities/railway/seat-view.ts:12` selects authoritative rows independently of presence age.
+`src/entities/railway/seat.ts:256` applies that selection before remote animation, then anchors the avatar at its
+chair at line 282. This removes the 200 ms expiry that made a retained chair look like a stand-up. Fresh Owner
+prediction also bridges a rate-refused re-sit while the row is absent, excluding server occupants, competing fresh
+poses and the local predicted sitter. All three view-model tests failed against the former rule before the fix.
+The known opaque-id tradeoff is updated: a hostile claimant of a known chair can now be drawn there.
+
+**Current-tree checks.** All five direct `npm run test:net` runs passed **175/175** each (35 more than the pre-branch
+140). Five direct `npm run scenario -- smoke reconnect-edit` runs each passed all **15 assertions**: smoke **5/5**,
+reconnect-edit **5/5**. Their matched server steps, respectively: **840/840, 840/840, 840/865, 842/889, 858/841**.
+The helper may catch a shared delta before the periodic boundary; equality is still exact at the same step.
+`npm run check` passed **1,716 tests**, with one existing TODO; server tests **250/250**; focused tests **17/17**;
+ship-check **758 assertions**, 81 affected test files and 33 lint files; registry passed with unchanged debt.
+Independent Astra code review found no actionable defects. Review stamp: **71275b90226c**, with `--no-fetch`.
+
+The [evidence index](../../.look/evidence/step2-seat-followup2/evidence.json) preserves the five net logs, five
+scenario logs, final scenario verdict/stills and check logs. It is a manual index of direct command results, not a
+broker-generated manifest. All ten scenarios and the looks tested clean **fa733c8d**, tree
+**dd2e5136d5c3393d233a8894c55a81a992a7ba25**. The following changes only correct this report and the plan's risk prose.
+
+**Browser execution versus visual result.** The [broker scenario attempt](../../.look/evidence/1794605785900-47185/evidence.json)
+failed both scenarios before replica comparison: trusted harness **d87c05719** expected the retired host-role model
+and rejected `client,client`. The worktree's existing npm scenario runner was used as a fallback, under the shared
+queue; no new scenario or browser harness was written. The first look invocation also rejected unsupported `--wall`
+before launch; it was retried without that flag.
+
+The [first quiet-seat look](../../.look/evidence/1794605697083-44214/evidence.json) and
+[second camera attempt](../../.look/evidence/1794605896712-50918/evidence.json) passed state/capture checks, but their
+opened watcher stills hid the remote sitter behind the local player and bench. The second attempt's action only
+ran on the first page in the old harness. Neither supplied an adequate remote visual verdict.
+
+The [third, final look](../../.look/evidence/1794606731552-62639/evidence.json) used the existing bench eval with a
+camera-only wrapper on the watcher. Both players boarded and sat; sender presence stayed paused through capture.
+At 1x, the watcher measured **3,133.1 ms** without a presence update while its seated animation input stayed current
+(**8.5 ms**). Opened both `seat-quiet-watcher-still.png` and `p2-seat-quiet-watcher-still.png`: the exposed yellow friend
+has hips at bench height, bent knees and feet forward, visibly seated rather than standing. Independent visual
+review agreed. Capture health passed, with no page, console or graphics errors. The wrapper is saved beside the
+manifest. No additional capture round was needed.
+
+Also opened the final smoke `Alice-still.png` and reconnect-edit `other-still.png`: both show the players outside
+the shop, without a loading or error overlay. These saved frames do not establish motion quality. No bot playthrough
+was run in this follow-up. Current direct checks have no remaining failures; stale broker failures remain recorded.
+
 ## Remaining verification and departures
 
 - Current `world-inputs` and continuous first-tab-close mid-ride behavior remain unverified by this agent. The initial
   report incorrectly treated the broker restriction as preventing the direct worktree network test; the owner
   explicitly authorized it for the follow-up. The earlier broker required both pages open for final health checks
-  and exposed no close-first-page operation. A separate Claude runner owns the new browser looks; this follow-up
-  launches no captures or bots. The saved-frame observations above do not replace its execution report.
-  Checkpoint S stays open pending that evidence.
+  and exposed no close-first-page operation. The separate Claude runner supplied the earlier close-tab evidence;
+  the latest follow-up adds the quiet-presence look described above. Checkpoint S stays open pending the remaining
+  world-input and continuous close-tab evidence.
 - Own reconnect and actual server restart are proven with real host/client adapters, and grace with real sockets;
   the corresponding seated avatar transitions have not been captured in a browser.
 - Immediate input is implemented in the press path and the rate look asserts its pose; sub-100 ms end-to-end reaction

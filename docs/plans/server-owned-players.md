@@ -61,7 +61,7 @@ Server: `lead`, `pickLead`, `checkLead`, `leadHiddenMs`, the `lead` in `welcome`
 
 | Option | Cost | Risk | A player notices |
 | --- | --- | --- | --- |
-| **S1 (recommended): opaque seat ids.** The server checks the id's shape, that it is free, one seat per pid and a rate limit; it cannot check reach | About 60 lines of rule, one op pair | A hostile client can hold one chair it is not standing at (others cannot sit there; no avatar appears in it). One chair per hostile player, freed when they leave | Nothing |
+| **S1 (recommended): opaque seat ids.** The server checks the id's shape, that it is free, one seat per pid and a rate limit; it cannot check reach | About 60 lines of rule, one op pair | A hostile client can hold one chair it is not standing at (others cannot sit there; its avatar is drawn there if the client knows that chair). One chair per hostile player, freed when they leave | Nothing |
 | S2: a server seat catalogue (ids, groups and positions derived from train rows, the machine and prefab placements) so reach is checked | A pure catalogue the server and views share, train positions evaluated on the server, prefab placements made server-readable; several sittings | Duplicates what the prefab and content-data plan (option 2) will own; must match the views or honest sits are refused | Nothing, unless it disagrees with a view |
 
 S2 belongs with prefab data. Exploits do not matter (owner, 6 November), and S1's harm is bounded.
