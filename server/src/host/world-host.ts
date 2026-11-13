@@ -34,6 +34,7 @@ import { railCadence, RAIL_CADENCE_SLACK_MS } from '../../../src/world/railway-p
 import { createReplicator, type Replicator } from '../../../src/world/replicate-server.ts';
 import { createRailwayRequests, type ActorFacts } from './railway-requests.ts';
 import { canSet, cleanName } from '../../../src/sim/roster.ts';
+import { createServerOps } from '../../../src/world/server-ops.ts';
 
 // The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
 // Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
@@ -202,10 +203,10 @@ export function createRailwayWorldHost({
 }: RailwayHostOptions) {
   if (!isRailwayRoom(roomId)) throw new Error('railway host requires a railway namespace');
   const namespace = RAILWAY_PLAY_NS;
+  const ops = createServerOps(); // Step 2 defines no production commands; tune and roster remain lockstep.
+  const env = { protoRoom: isProtoRoom(roomId.slice(namespace.length + 1)), tuneController };
   // Preserve the existing playtest-only tune policy; ordinary railway rooms cannot change shared rates.
-  const sync = createSync({
-    env: { protoRoom: isProtoRoom(roomId.slice(namespace.length + 1)), tuneController },
-  });
+  const sync = createSync({ env });
   const base = installRules(sync, home.land as Parameters<typeof installRules>[1]);
   const api = installRailway(sync, base, replication);
   const rules = { ...base, railway: api };
@@ -365,6 +366,17 @@ export function createRailwayWorldHost({
     available: () => running && !closed && !sync.worldStatus().recoveryError && supplyCurrent(),
     unavailable: () => (startupError || sync.worldStatus().recoveryError ? 'storage' : 'starting'),
     actor,
+    commands: {
+      ops,
+      context: (from, actor) => ({ from, tick: sync.world.tick, env, actor }),
+      async save() {
+        // saveNow is a no-op while an older checkpoint is pending. Drain it first, then capture this command and
+        // its receipt; waiting only for that older write would falsely acknowledge unsaved state.
+        await sync.whenDurable();
+        sync.saveNow(true);
+        await sync.whenDurable();
+      },
+    },
   });
   // The unique beam stays with its carrier through an absence (a hidden tab, a reload, a lost link, a restart): while
   // they are here it follows where they stand (once a second, from presence); a carrier who comes back within
@@ -484,7 +496,7 @@ export function createRailwayWorldHost({
     return true;
   }
   function wakeNow() {
-    if (!loaded || closed || running || sync.worldStatus().recoveryError) return;
+    if (!loaded || closed || running || requests.failed() || sync.worldStatus().recoveryError) return;
     const credited = credit();
     running = true;
     maintainSupply(); // regrowth and drop recovery catch up on the join, not a rule tick later
@@ -502,7 +514,7 @@ export function createRailwayWorldHost({
     ? setInterval(() => {
         const time = performance.now();
         meter?.timer(time);
-        if (running && !closed) {
+        if (running && !closed && !requests.failed()) {
           const before = sync.world.tick;
           const step0 = sync.roomStep();
           sync.stepWorld(Math.min(time - last, 1000));
@@ -527,6 +539,7 @@ export function createRailwayWorldHost({
     sync,
     rules,
     replication,
+    ops,
     stats,
     onSend(fn: (message: Msg) => void) {
       sent.add(fn);
@@ -537,7 +550,7 @@ export function createRailwayWorldHost({
       // Keep this allow-list bounded: admitting another state also needs a maximum-envelope proof.
       if (message && typeof message === 'object' && (message as Msg).t === 'w:edit') {
         const e = (message as Msg).e;
-        if (!running || closed || !e || typeof e !== 'object') return;
+        if (!running || closed || requests.failed() || !e || typeof e !== 'object') return;
         const edit = e as Msg;
         if (edit.op === 'who.set' && canSet(rules.roster.roster, pidOf(from), edit.n, edit.c))
           sync.receiveEdit({ op: 'who.set', i: 0, j: 0, n: recoveryName(edit.n), c: edit.c }, from);
@@ -577,9 +590,9 @@ export function createRailwayWorldHost({
         return;
       }
       if (message && typeof message === 'object' && (message as Msg).t === 'w:need') {
-        if (running && !closed) for (const fn of incoming) fn(message, from);
+        if (running && !closed && !requests.failed()) for (const fn of incoming) fn(message, from);
       } else {
-        if (!supplyCurrent()) maintainSupply();
+        if (!requests.failed() && !supplyCurrent()) maintainSupply();
         const t0 = performance.now();
         requests.receive(message, from);
         const ms = performance.now() - t0;
@@ -589,7 +602,7 @@ export function createRailwayWorldHost({
       }
     },
     step(dt: number) {
-      if (running && !closed) {
+      if (running && !closed && !requests.failed()) {
         sync.stepWorld(dt * 1000);
         maintainSupply();
         maintainBeam();
@@ -601,8 +614,11 @@ export function createRailwayWorldHost({
     status: () => ({
       tick: sync.world.tick,
       ...sync.worldStatus(),
-      recoveryError: startupError ?? sync.worldStatus().recoveryError,
-      ready: loaded && !startupError && !sync.worldStatus().recoveryError,
+      recoveryError:
+        startupError ??
+        sync.worldStatus().recoveryError ??
+        (requests.failed() ? 'server command storage failed' : null),
+      ready: loaded && !startupError && !sync.worldStatus().recoveryError && !requests.failed(),
       paused: !running,
     }),
     whenReady: () => ready,
@@ -614,7 +630,7 @@ export function createRailwayWorldHost({
     /** Nobody is here (after the hosted room's grace): stop simulating and save the stamp the away credit counts from. */
     pause() {
       present = false;
-      if (!running || closed) return;
+      if (!running || closed || requests.failed()) return;
       running = false;
       awayMarker = Math.floor(now() / 100);
       sync.saveNow(true);
@@ -640,6 +656,7 @@ export function createRailwayWorldHost({
       if (timer) clearInterval(timer);
       try {
         await ready;
+        await requests.whenDurable();
         await sync.whenDurable();
         if (save) {
           sync.saveNow(true);

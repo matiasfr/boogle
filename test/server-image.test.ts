@@ -79,6 +79,7 @@ function deployPaths(): string[] {
 
 test('every file the server image runs is copied, in the build identity and in the deploy filter', () => {
   const { files } = walk();
+  assert.ok(files.has('src/world/server-ops.ts'), 'the command boundary must be in the image import closure');
   const lists = {
     'server/Dockerfile COPY': dockerCopies(),
     'dev/server-build.ts': [...SERVER_IMAGE_PATHS],
@@ -130,6 +131,7 @@ test('automerge decides a server deploy from SERVER_IMAGE_PATHS, not a copy', ()
     }
   };
   assert.equal(touches('src/net/rtc-wire.ts\n'), true);
+  assert.equal(touches('src/world/server-ops.ts\n'), true);
   assert.equal(touches('server/src/server.ts\n'), true);
   assert.equal(touches('src/features/x.ts\nsrc/network.ts\n'), false);
 });

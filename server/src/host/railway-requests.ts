@@ -20,15 +20,17 @@
 //                     replication `ids` [['p:<epoch>:<request>', pileId]]: the pile an accepted drop landed in, for
 //                       the actor's predicted pile
 //                     a wake's `tk` (the tick its actor pressed at) sets its start, bounded by railWakeTick
-import { railInt, RAILWAY_MAX_INT, type RailAction } from '../../../src/sim/railway.ts';
+import { railInt, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailAction } from '../../../src/sim/railway.ts';
 import { railPos } from '../../../src/sim/railway-route.ts';
 import { RAIL_ACTIONS, type Actor, type RailwayApi } from '../../../src/world/railway-server.ts';
 import { railTempPile, RAIL_PREDICTED } from '../../../src/world/railway-predict.ts';
 import type { Replicator } from '../../../src/world/replicate-server.ts';
 import type { RailwayResponse } from '../../../src/world/railway-wire.ts';
+import type { ServerOps, ServerOpContext } from '../../../src/world/server-ops.ts';
 
 type Obj = Record<string, unknown>;
-type Session = { sid: string; epoch: number; clockStep: number };
+type PendingReceipt = { request: number; refused: boolean; moved: number; ready: boolean };
+type Session = { sid: string; epoch: number; clockStep: number; pending: PendingReceipt[] };
 const object = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 const token = (v: Obj) => railInt(v.epoch, RAILWAY_MAX_INT, 1) && railInt(v.request, RAILWAY_MAX_INT, 1);
 /** Validation facts a client action carries (docs/plans/replication.md, revision 1): where the actor stood
@@ -129,6 +131,7 @@ export function createRailwayRequests({
   available,
   unavailable,
   actor,
+  commands,
 }: {
   api: RailwayApi;
   pidOf: (sid: string) => string | null;
@@ -139,8 +142,17 @@ export function createRailwayRequests({
   unavailable: () => 'starting' | 'storage';
   /** The checks an action's facts allow, or null when they are malformed. */
   actor: (facts: ActorFacts) => Actor;
+  /** Classic commands are optional for railway-only callers; the production host always supplies this boundary. */
+  commands?: {
+    ops: ServerOps;
+    context: (from: string, actor: Actor) => ServerOpContext;
+    /** Captures the applied command AND its receipt, even if an older checkpoint is already being written. */
+    save: () => Promise<void>;
+  };
 }) {
   const sessions = new Map<string, Session>();
+  const writes = new Set<Promise<void>>();
+  let failed = false;
   const rej = (sid: string, epoch: number, request: number, reason: string) => {
     if (replication.has(sid)) replication.reject(sid, epoch, request, reason);
   };
@@ -158,7 +170,42 @@ export function createRailwayRequests({
     if (refused) rej(sid, epoch, request, 'refused');
     else if (moved > 0 && replication.has(sid)) replication.accepted(sid, epoch, request, moved);
   };
+  function drain(pid: string, session: Session) {
+    if (failed || sessions.get(pid) !== session) return;
+    while (session.pending[0]?.ready) {
+      const r = session.pending.shift()!;
+      settle(session.sid, session.epoch, r.request, r.refused, r.moved);
+    }
+  }
+  function storageFailure(sid: string, epoch: number, request: number) {
+    failed = true;
+    state(sid, 'storage', { epoch, request });
+  }
+  function complete(pid: string, session: Session, request: number, refused: boolean, moved: number, durable = false) {
+    const receipt = { request, refused, moved, ready: !durable };
+    session.pending.push(receipt);
+    if (durable) {
+      const work = Promise.resolve()
+        .then(() => commands!.save())
+        .then(
+          () => {
+            receipt.ready = true;
+            drain(pid, session);
+          },
+          () => storageFailure(session.sid, session.epoch, request),
+        );
+      writes.add(work);
+      void work.finally(() => writes.delete(work));
+    }
+    drain(pid, session);
+  }
   return {
+    /** Close drains outstanding receipt writes before detaching the sync. */
+    async whenDurable() {
+      while (writes.size) await Promise.all(writes);
+      if (failed) throw new Error('server command storage failed');
+    },
+    failed: () => failed,
     /** Whether pid has a live session (its socket is here and has opened one). */
     active: (pid: string) => sessions.has(pid),
     /** Only the room's actual departure/takeover calls this, never stale presence or a missed packet. */
@@ -177,18 +224,21 @@ export function createRailwayRequests({
       const current = sessions.get(pid);
       if (message.t === 'r:clock') {
         const step = api.step();
-        if (!available() || current?.sid !== from || !railInt(message.at) || step < current.clockStep) return;
+        if (failed || !available() || current?.sid !== from || !railInt(message.at) || step < current.clockStep) return;
         current.clockStep = step + 6; // at most ten replies/second/session, independent of the echoed client clock
         send({ t: 'r:clock', to: from, at: message.at, step });
         return;
       }
       if (message.t === 'r:resync') {
+        if (failed) return state(from, 'storage');
         // Whole state again, from change tick -1; the mirror reset itself before asking.
         if (replication.has(from)) replication.resync(from);
         return;
       }
       if (message.t === 'r:open') {
-        if (!available()) return state(from, unavailable());
+        if (failed || !available()) return state(from, failed ? 'storage' : unavailable());
+        // Reopening cannot turn an applied-but-unwritten request into a settled `next` watermark.
+        if (current?.pending.length) return state(from, 'starting');
         const account = api.account(pid);
         if (current?.sid === from && account)
           return send({ t: 'r:session', to: from, epoch: current.epoch, next: 1 + account.request });
@@ -196,7 +246,7 @@ export function createRailwayRequests({
         // one had in flight.
         const epoch = (account?.epoch ?? 0) + 1;
         if (epoch > RAILWAY_MAX_INT || !api.session(pid, epoch)) return state(from, 'full');
-        sessions.set(pid, { sid: from, epoch, clockStep: 0 });
+        sessions.set(pid, { sid: from, epoch, clockStep: 0, pending: [] });
         send({ t: 'r:session', to: from, epoch, next: 1 });
         return;
       }
@@ -205,29 +255,43 @@ export function createRailwayRequests({
       const e = message.e;
       const epoch = e.epoch as number,
         request = e.request as number;
-      if (!available()) return state(from, unavailable(), { epoch, request });
+      if (failed || !available()) return state(from, failed ? 'storage' : unavailable(), { epoch, request });
       if (!current || current.sid !== from || current.epoch !== epoch) return rej(from, epoch, request, 'session');
       const account = api.account(pid);
-      // A session whose account is gone (a load replaced the accounts): refused with no change, and dropped so the
-      // client's reopen makes a fresh one.
-      if (!account) {
+      // A load may remove the account or replace its epoch. Refuse before any classic apply, then drop the live
+      // session so reopening gets a fresh identity from the loaded account.
+      if (!account || account.epoch !== epoch) {
         sessions.delete(pid);
         return rej(from, epoch, request, 'session');
       }
       if (request <= account.request) {
+        if (current.pending.some((r) => r.request === request)) return; // no early ack on a resend
         // Already settled (a resend): answer again from its recorded outcome.
         const old = api.outcome(pid, epoch, request);
         return settle(from, epoch, request, old?.status === 'rejected', old?.status === 'accepted' ? old.accepted : 0);
       }
-      if (request !== account.request + 1) return rej(from, epoch, request, 'order');
+      // A held durable receipt cannot grow an unbounded queue; clients already use this action window.
+      if (request !== account.request + 1 || current.pending.length >= RAILWAY_WINDOW)
+        return rej(from, epoch, request, 'order');
       const clean = railwayRequestEdit(e, epoch, request);
       // Every action carries its actor's position and action time; one without them is a recorded rejection.
       const facts: ActorFacts | null =
         position(e.at) && railInt(e.ms, RAILWAY_MAX_INT)
           ? { pid, epoch, request, at: [e.at[0], e.at[1], e.at[2]], ms: e.ms }
           : null;
+      if (commands && !RAIL_ACTIONS.has(e.op as string)) {
+        try {
+          const result = facts ? commands.ops.run(pid, e, commands.context(from, actor(facts))) : null;
+          const accepted = result?.status === 'accepted';
+          api.record(pid, clean, accepted);
+          complete(pid, current, request, !accepted, accepted ? 1 : 0, result?.durable);
+        } catch {
+          storageFailure(from, epoch, request); // apply may have mutated state; never acknowledge it
+        }
+        return;
+      }
       const result = api.act(pid, clean, RAIL_ACTIONS.has(String(e.op)) && facts ? actor(facts) : null);
-      settle(from, epoch, request, result.status === 'rejected', result.accepted);
+      complete(pid, current, request, result.status === 'rejected', result.accepted);
       if (result.effect) {
         const event: Record<string, string | number | boolean> = {
           op: clean.op,
