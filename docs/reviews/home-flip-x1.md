@@ -52,6 +52,19 @@ Each fixture was regenerated through its owning file's record switch, after the 
 | `railway-m12-trace.json` | `M12_RECORD=1 node --import ./test/helpers/rail-no-audit.ts --test test/railway-m12.test.ts` | 76/82 client traces change with the new state/timing; fresh and awake for all three clients stay identical. 32 tests pass. |
 | `coast-regions.test.ts`'s two digests | `PRINT_COAST_BASELINE=1 node --test --test-name-pattern='two shores' test/coast-regions.test.ts` | The terrain inputs change the texture/sample bytes. Dimensions, transforms, lattice bounds, separate-region and water-margin assertions remain; no coast/shader code changes. |
 | `RAILWAY_SOURCES` | Existing `railway.test.ts` regeneration recipe, also recorded by `tree-proof.ts` | No row changes: the frozen planting preserves all 388 sources. |
+| `prefab-colliders.json`, `prefab-placements.json` (post-rebase repair) | `node dev/prefab/build.ts`, then `GOLDEN=1 node --test test/prefab-workshop.test.ts` | Exactly 25 world Y values move by −0.03354454040527344 m: all 22 workshop colliders, chair origin, seat and exit. Home's new rail heads remove the old rail-bed blend under the unchanged forge footprint. Local placement, counts, dimensions, rotations and collision groups are identical. Compiled artifacts and both High Gorge goldens remain byte-identical. See the follow-up below. |
+
+### Prefab follow-up after rebase onto af5f8d536
+
+Starting tip `881bc30c0` includes the Claude runner's hall treads and spawn yaw; this repair preserves both and keeps `WORLD_NS` v36. Main's newly merged prefab conversion pinned the old Home's workshop elevation. The failing byte comparison is an expected terrain-seat change, not a chair-placement or compiler bug. No assertion or runtime source was changed.
+
+`forgePlan()` still samples `H(913, -3)` for the unchanged forge at local `(-87, -3)`, 10 × 8 m. `makeWorkshop()` places the owner at ground + 0.5 m, and the compiled chair remains owner-local `[2.7, 0, 0.3]`. Ground changes from `18.033544540405273` to `18`; the finished floor and chair origin change from `18.533544540405273` to `18.5`. The seat changes from `19.533544540405273` to `19.5`; exit from `18.993544540405274` to `18.96`. The chair retains its floor-relative height, including its collider bottom at local zero. No old world coordinate is baked into `src/content/levels/workshop.ts`.
+
+A controlled evaluation of the unchanged terrain recipe with the old layout reproduces the old height. Replacing only its `LINES`/`LINKS` with the new heads produces exactly 18 m; replacing only `YARD` retains the old height. The four terrain-grid samples around the forge change from `[18.000293731689453, 18, 18.105968475341797, 18.027915954589844]` to `[18, 18, 18, 18]`. Thus the head move removes the former rail-bed blend at this point; the yard and spawn yaw do not cause this difference.
+
+The exhaustive JSON comparison finds exactly 25 changed scalars, all equal to the translation `(0, −0.03354454040527344, 0)`, with **zero floating residual**. All other fields compare exactly, including array order, 22 solid colliders, one chair, one seat, X/Z, dimensions, rotation fields, collision groups and seat availability. The source's solid flags are untouched. The whole prefab build still emits 2 records, 2 levels and 4,149 bytes; running its generator changes no artifact. Both High Gorge golden files are byte-identical to `af5f8d536`.
+
+Fresh proof is collected separately in `.look/evidence/home-prefab/`: `colliders.diff` and `placements.diff` print every changed value; `comparison.json` records exact equality and artifact hashes; `terrain-proof.ts` / `terrain-proof.json` record the controlled terrain evaluation. Its final manifest records this repair's checks and current review stamp. The older results and stamp below belong to the earlier pre-rebase tree and are historical, not current evidence.
 
 Regenerated pages through their generators:
 
