@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createBackgroundAdvance } from '../src/world/background.ts';
 import { createSync } from '../src/world/sync.ts';
+import { SERVER_ID } from '../src/net/ids.ts';
 import { makeNet } from './helpers/net.ts';
 
 test('world clock slices elapsed time and caps catch-up across visible/hidden handoffs', () => {
@@ -25,18 +26,21 @@ test('world clock slices elapsed time and caps catch-up across visible/hidden ha
   assert.ok(Math.abs(calls.reduce((a, b) => a + b, 0) - 5) < 1e-9);
 });
 
-test('a sparse visible frame retries a missing snapshot using elapsed time', () => {
+test('a sparse visible frame follows the server clock without requesting a classic snapshot', () => {
   const net = makeNet();
+  const server = net.add(SERVER_ID, true);
   const sync = createSync();
   sync.attachWorld(net.add('slow-client').room);
-  assert.equal(net.queue.length, 1, 'initial snapshot request');
-  net.queue.length = 0; // host startup/durability can defer this request
+  assert.equal(net.queue.length, 0, 'joining sends no classic snapshot request');
   const advance = createBackgroundAdvance(sync.updateWorld, 0);
   for (const now of [500, 1000, 1500, 2000]) advance(now, false);
   advance(2500, true);
-  assert.deepEqual(
-    net.queue.map(({ m }) => m),
-    [{ t: 'w:need' }],
-  );
-  assert.equal(sync.worldStatus().ready, false, 'retrying alone does not verify a snapshot');
+  assert.equal(sync.worldStatus().ready, false, 'elapsed time alone cannot establish the server clock');
+  assert.equal(net.queue.length, 0);
+  server.room.send({ t: 'w:c', ht: 40 });
+  net.flush();
+  assert.equal(sync.worldStatus().ready, true);
+  advance(3000, true);
+  assert.equal(sync.world.tick, 45, 'the visible frame includes elapsed time after the clock stamp');
+  assert.equal(net.queue.length, 0, 'clock following never emits a retired request');
 });
