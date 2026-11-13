@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRailwayAdapter } from '../src/adapters/railway-session.ts';
 import { railMovement } from '../src/adapters/railway-read.ts';
-import type { RailwayAccepted, RailwayCorrection } from '../src/adapters/railway-effects.ts';
+import type { RailwayAccepted, RailwayCorrection, RailwayRefusal } from '../src/adapters/railway-effects.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../src/world/sync.ts';
@@ -26,6 +26,7 @@ import { homeLand } from './helpers/land.ts';
 import {
   account,
   accounts,
+  boiler,
   buildSeedWorld,
   pilesWithIds,
   rail,
@@ -53,6 +54,7 @@ type Client = {
   edits: Record<string, unknown>[];
   effects: RailwayAccepted[];
   corrections: RailwayCorrection[];
+  refusals: RailwayRefusal[];
   remaps: [number, number][];
   resets: number;
   live: boolean;
@@ -120,6 +122,7 @@ function world({
       edits: [],
       effects: [],
       corrections: [],
+      refusals: [],
       remaps: [],
       resets: 0,
       live: true,
@@ -149,6 +152,7 @@ function world({
     };
     adapter.onAccepted((e) => c.effects.push(e));
     adapter.onCorrected((x) => c.corrections.push(x));
+    adapter.onRefused((x) => c.refusals.push(x));
     adapter.onRemap((temp, id) => c.remaps.push([temp, id]));
     adapter.onReset(() => c.resets++);
     clients.set(cid, c);
@@ -820,9 +824,9 @@ for (const how of ['a lost connection', 'a resync'] as const)
   });
 
 /** A server room started from the boiler seed, as a joined room would be. */
-function boilerRoom() {
+function boilerRoom(opts: Parameters<typeof world>[0] = {}) {
   const seed = buildSeedWorld('boiler'),
-    w = world();
+    w = world(opts);
   return {
     seed,
     w,
@@ -833,6 +837,86 @@ function boilerRoom() {
     },
   };
 }
+// onRefused: an action that is not predicted shows nothing, so the adapter has no correction for it. Taking the
+// boiler (`rail.boilerTake`) is one.
+test('an unpredicted action the server accepts never reads as refused', () => {
+  const { w, load } = boilerRoom();
+  load();
+  const a = w.join('a', 'a', 6);
+  w.ready();
+  assert.equal(a.adapter.takeBoiler(w.api.boiler().revision), true);
+  w.quiet();
+  assert.equal(w.api.boiler().state, 'held');
+  assert.equal(a.effects.filter((e) => e.op === 'rail.boilerTake').length, 1, 'its accept arrived as an event');
+  assert.deepEqual(a.refusals, []);
+});
+
+test('an unpredicted action the server refuses is told once, as refused', () => {
+  let near = true;
+  const { w, load } = boilerRoom({ reach: () => near });
+  load();
+  const a = w.join('a', 'a', 6);
+  w.ready();
+  near = false;
+  assert.equal(a.adapter.takeBoiler(w.api.boiler().revision), true, 'sent: the server is the judge of reach');
+  w.quiet();
+  assert.equal(w.api.boiler().state, 'pedestal');
+  assert.deepEqual(
+    a.refusals.map((r) => [r.intent.op, r.reason]),
+    [['rail.boilerTake', 'refused']],
+  );
+  assert.equal(a.corrections.length, 0, 'nothing was shown, so nothing is corrected');
+});
+
+test('an unpredicted action acknowledged with nothing done is told once, as a no-op', () => {
+  const { w, load } = boilerRoom();
+  load();
+  const a = w.join('a', 'a', 6),
+    b = w.join('b', 'b', 0);
+  w.ready();
+  // Both take the boiler they see on the pedestal; b's reaches the server first, so a's is on a stale revision.
+  const revision = w.api.boiler().revision;
+  assert.equal(a.adapter.takeBoiler(revision), true);
+  assert.equal(b.adapter.takeBoiler(revision), true);
+  w.quiet();
+  assert.equal(w.api.boiler().holder, 'b');
+  assert.deepEqual(
+    a.refusals.map((r) => [r.intent.op, r.reason]),
+    [['rail.boilerTake', 'noop']],
+  );
+  assert.deepEqual(b.refusals, []);
+});
+
+test('a predicted action is never told as refused: its correction says so', () => {
+  let near = true;
+  const w = world({ reach: () => near });
+  const a = w.join('a', 'alice', 6);
+  w.ready();
+  w.awake(a);
+  near = false;
+  assert.equal(a.adapter.chop(TREE, 0, false), true);
+  w.quiet(40);
+  assert.equal(a.corrections.length, 1);
+  assert.deepEqual(a.refusals, []);
+});
+
+test('a resync that drops the accept of an unpredicted action reads as no refusal: the whole state shows it', () => {
+  const { w, load } = boilerRoom();
+  load();
+  const a = w.join('a', 'a', 6);
+  w.ready();
+  assert.equal(a.adapter.takeBoiler(w.api.boiler().revision), true);
+  // A packet the mirror must refuse, before the accept arrives: it resets and asks for the whole state. The refill
+  // keeps this client's ack and drops its queued events, so the ack comes with no event of its own.
+  w.deliver('a', { t: 's', tk: w.sync.roomStep(), c: [['nope', 1, {}]] });
+  assert.equal(a.mirror.synced(), false, 'the mirror asked for the whole state');
+  w.quiet(40);
+  assert.equal(a.adapter.read.ready(), true);
+  assert.deepEqual(a.refusals, [], 'the accepted take is not told as a no-op');
+  assert.equal(w.api.boiler().state, 'held');
+  assert.equal(boiler(a.adapter.read.world()).state, 'held', 'the refilled world shows it applied');
+});
+
 test('no breaker and no strike sent while you haul the boiler', () => {
   const { w, load } = boilerRoom();
   load();

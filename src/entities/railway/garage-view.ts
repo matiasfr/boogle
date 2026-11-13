@@ -74,15 +74,23 @@ const CAMS: Record<CatId, { pos: [number, number, number]; at: [number, number, 
 };
 
 /** A phone held upright: the panel takes the top of the screen and the rail and parts the bottom, leaving a band in
- * the middle a third of the screen high, and the view is narrow. The engine shot stands further back and aims at the
- * engine itself, so the whole of it sits in that band; the other shots pull back along their own line. */
-const PORTRAIT_ENGINE: (typeof CAMS)[CatId] = { pos: [13.2, 4.2, 11.2], at: [0, 2.0, 4.4], turns: true };
+ * the middle a third of the screen high, and the view is narrow. Each shot has its own portrait row: further back,
+ * aimed at its subject so it sits in that band, and standing on the train's open side (the engine shot's), since a
+ * landscape row pulled straight back lands in whatever stands behind the table. The whistle's is its landscape row
+ * pulled back along its own line. */
+const PORTRAIT: Partial<Record<CatId, (typeof CAMS)[CatId]>> = {
+  engine: { pos: [13.2, 4.2, 11.2], at: [0, 2.0, 4.4], turns: true },
+  cars: { pos: [11.3, 3.8, 6.4], at: [0, 1.5, -0.2], turns: false },
+  cargo: { pos: [11.3, 3.8, 5.0], at: [0, 1.3, -1.6], turns: false },
+  looks: { pos: [16, 5, 8.1], at: [0, 1.9, 2.3], turns: true },
+};
 const PORTRAIT_BACK = 1.8;
 const portrait = () => typeof innerHeight === 'number' && innerHeight > innerWidth * 1.15;
 function camOf(cat: CatId): (typeof CAMS)[CatId] {
   const c = CAMS[cat];
   if (!portrait()) return c;
-  if (cat === 'engine') return PORTRAIT_ENGINE;
+  const own = PORTRAIT[cat];
+  if (own) return own;
   const at: [number, number, number] = [c.at[0], c.at[1] + 0.6, c.at[2]];
   return {
     pos: [0, 1, 2].map((k) => at[k]! + (c.pos[k]! - c.at[k]!) * PORTRAIT_BACK) as [number, number, number],
@@ -769,7 +777,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       // the garage stays open; not fitted, the part is back on its stand and the hold can be made again.
       restored = false;
       if (real) {
-        showTurn = -1;
+        // Fitted, a show-off turn already running finishes rather than snapping home.
+        if (!room.longFitted) showTurn = -1;
         finish();
       }
     }
@@ -1003,7 +1012,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       };
     },
     choose(c: CatId, p?: PartId) {
-      if (phase !== 'idle' && phase !== 'holding') return;
+      // Your own moment holds the rail; someone else's install, watched from here, does not.
+      if (phase !== 'idle' && phase !== 'holding' && !(phase === 'moment' && !mine)) return;
       if (c !== cat) uiSound('tick');
       else if (p !== sel) uiSound('tick');
       cat = c;

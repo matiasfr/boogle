@@ -299,6 +299,10 @@ export function createRailwayAdapter({
       else if (kept < was.n && holds(confirmed(), was.event.op, was.event)) standing.add(was.event.op);
       else if (kept < was.n) back.push({ event: was.event, kept, lost: was.n - kept, reason });
     };
+    // Unpredicted actions this packet settled with nothing to show for them. Delivered after the `rebuilt` return
+    // below, as corrections are: a refill keeps the ack but drops the queued events, so an accepted action would
+    // read here as a no-op, and the views settle from the whole state instead.
+    const refused: RailwayRefusal[] = [];
     for (const [r, reason] of settled) {
       const was = shown.get(r);
       if (!was) {
@@ -306,7 +310,7 @@ export function createRailwayAdapter({
         // one, the request is settled and nothing came of it.
         const intent = pending.get(r);
         if (intent && !RAIL_PREDICTED.has(intent.op) && !events.some((e) => e.pid === pid && e.request === r))
-          for (const fn of refusals) fn({ intent, request: r, reason: reason === 'refused' ? 'refused' : 'noop' });
+          refused.push({ intent, request: r, reason: reason === 'refused' ? 'refused' : 'noop' });
         continue;
       }
       shown.delete(r);
@@ -348,6 +352,7 @@ export function createRailwayAdapter({
       return { ...c, winner: winner.pid };
     });
     correct(matched);
+    for (const r of refused) for (const fn of refusals) fn(r);
     for (const e of more) for (const fn of effects) fn(e);
     for (const e of events) {
       if (!mine(e) && standing.has(e.op)) continue;

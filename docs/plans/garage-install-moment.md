@@ -369,6 +369,28 @@ them. Wrong in it: the timber cart is under the camera and fills the frame's foo
 strip; the engine's nose points at the barrel, which covers the lower left. A real touch hold, the other categories
 in portrait and the moment in portrait were not looked at. Not tested on a device.
 
+### After the review of G4, G5 and the phone frame (12 November 2026)
+
+- **Portrait rows per category** (the reviewer's P1: Cars and Cargo showed only the wooden rail rack, since a
+  landscape row pulled straight back lands behind the table). Cars, Cargo and Looks have their own rows on the
+  train's open side, as the engine shot has; the Whistle keeps its landscape row pulled back. Looked at 440 by 796:
+  `g-phone-cars-still.png` (the flat car and its bench in the band, the cab at the left, the pallet at the foot),
+  `g-phone-cargo-still.png` (the car from its tail, the rail rack beyond, not in front), `g-phone-looks-still.png`
+  (the whole train in the band, the waiting barrel at the left edge, the timber cart at the foot).
+- **`onRefused` after a resync.** A refill keeps the client's ack and drops its queued events, so an accepted
+  unpredicted action read as a no-op. Refusals are now collected and delivered after the whole-state return, as
+  corrections are. `test/railway-adapter.test.ts` has the five cases (accepted never, refused once, an acknowledged
+  no-op, a predicted action never, the resync).
+- **Small ones.** In portrait the Skip chip sits above the rail. A watcher's garage takes the rail and the parts strip
+  through someone else's moment. A restore that finds the boiler fitted lets a running show-off turn finish.
+- **Left for the owner or a later pass.**
+  - The race's loser hears the deny sound and sees a second lift before the winner's moment.
+  - The platform beat's puff sits above the chimney, so the swap shows beneath it; the squash cannot be seen.
+  - The readouts pass through in-between values for a frame or two after the drop.
+  - The other player's name tag sits over the engine through a watcher's moment.
+  - One frame with the camera inside the smokebox on leaving the garage. The leave blend is the one G2 and G3
+    shipped (this branch does not touch it), so main has it by the code; it was not captured on main.
+
 ## 6. Steps
 
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and
