@@ -2,7 +2,7 @@
 // for dev/ci/change-class.ts:
 //   node dev/ci/unit-select.ts   prints CI's outputs: unit_full=, unit_shards=, unit_only= (space-separated test files)
 //
-// Either the FULL suite (all four shards, the audit on, every offset and seed: `test:unit -- --ci`) or the SELECTION
+// Either the FULL suite (eight balanced shards, the audit on, every offset and seed: `test:unit -- --ci`) or the SELECTION
 // (one job, `test:unit -- --ship`): the tests whose closure holds a changed file, plus the always-on core.
 // A ship takes the full suite when the owner's call says so (lockstep and review-path ships "keep the unit suite for
 // now", 11 November), when the change is something review-path code loads, or when it can reach any test without a
@@ -18,6 +18,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { importClosure, relativeLoads } from './change-class.ts';
 import { REVIEW_PATHS } from '../review-stamp.ts';
+import { CI_UNIT_SHARDS } from './unit-shards.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const posix = (f: string) => f.split(path.sep).join('/');
@@ -276,6 +277,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const plan = unitPlan(files);
   if (plan.full) console.error(`unit-select: full suite (${plan.why})`);
   console.log(`unit_full=${plan.full}`);
-  console.log(`unit_shards=${plan.full ? '[1,2,3,4]' : '[1]'}`);
+  console.log(
+    `unit_shards=${JSON.stringify(plan.full ? Array.from({ length: CI_UNIT_SHARDS }, (_, i) => i + 1) : [1])}`,
+  );
   console.log(`unit_only=${plan.full ? '' : plan.tests.join(' ')}`);
 }

@@ -9,6 +9,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { parseSync, type Node } from 'oxc-parser';
 import { CORE_TESTS, FULL_ON, UNFOLLOWED, createWalker, unitPlan, unitTests } from '../dev/ci/unit-select.ts';
+import { CI_UNIT_SHARDS, unitShards } from '../dev/ci/unit-shards.ts';
 import { isMetaUrl, literal, walk } from '../dev/scan/parse.ts';
 import { REVIEW_PATHS } from '../dev/review-stamp.ts';
 
@@ -60,6 +61,19 @@ test('the core is real, unique and always selected, even for a tool nothing impo
   assert.deepEqual(p.full ? [] : p.tests, [...CORE_TESTS].sort());
 });
 
+test('the eight CI shards contain every discovered test file exactly once', () => {
+  const discovered = fs
+    .globSync('test/**/*.test.ts', { cwd: ROOT })
+    .map((f) => f.split(path.sep).join('/'))
+    .sort();
+  const shards = unitShards(discovered, CI_UNIT_SHARDS);
+  assert.equal(shards.length, 8);
+  assert.ok(shards.every((shard) => shard.length > 0));
+  const assigned = shards.flat();
+  assert.equal(new Set(assigned).size, assigned.length, 'no duplicate files across shards');
+  assert.deepEqual(assigned.sort(), discovered, 'no discovered file omitted or invented');
+});
+
 test('CLI prints the CI outputs; main and an empty diff are full', () => {
   const run = (input: string) =>
     execFileSync(process.execPath, ['dev/ci/unit-select.ts'], {
@@ -68,8 +82,8 @@ test('CLI prints the CI outputs; main and an empty diff are full', () => {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore'],
     });
-  assert.equal(run(''), 'unit_full=true\nunit_shards=[1,2,3,4]\nunit_only=\n');
-  assert.equal(run('src/sim/railway.ts\n'), 'unit_full=true\nunit_shards=[1,2,3,4]\nunit_only=\n');
+  assert.equal(run(''), 'unit_full=true\nunit_shards=[1,2,3,4,5,6,7,8]\nunit_only=\n');
+  assert.equal(run('src/sim/railway.ts\n'), 'unit_full=true\nunit_shards=[1,2,3,4,5,6,7,8]\nunit_only=\n');
   const lines = run('dev/heartbeat.sh\n').trimEnd().split('\n');
   assert.deepEqual(lines.slice(0, 2), ['unit_full=false', 'unit_shards=[1]']);
   assert.match(lines[2]!, /^unit_only=test\/\S+\.test\.ts( test\/\S+\.test\.ts)*$/);
