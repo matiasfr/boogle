@@ -20,7 +20,13 @@
 //                     replication `ids` [['p:<epoch>:<request>', pileId]]: the pile an accepted drop landed in, for
 //                       the actor's predicted pile
 //                     a wake's `tk` (the tick its actor pressed at) sets its start, bounded by railWakeTick
-import { railInt, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailAction } from '../../../src/sim/railway.ts';
+import {
+  railInt,
+  RAILWAY_MAX_INT,
+  RAILWAY_WINDOW,
+  RAILWAY_OUTCOMES,
+  type RailAction,
+} from '../../../src/sim/railway.ts';
 import { railPos } from '../../../src/sim/railway-route.ts';
 import { RAIL_ACTIONS, type Actor, type RailwayApi } from '../../../src/world/railway-server.ts';
 import { railTempPile, RAIL_PREDICTED } from '../../../src/world/railway-predict.ts';
@@ -29,8 +35,14 @@ import type { RailwayResponse } from '../../../src/world/railway-wire.ts';
 import type { ServerOps, ServerOpContext } from '../../../src/world/server-ops.ts';
 
 type Obj = Record<string, unknown>;
-type PendingReceipt = { request: number; refused: boolean; moved: number; ready: boolean };
-type Session = { sid: string; epoch: number; clockStep: number; pending: PendingReceipt[] };
+type PendingReceipt = { request: number; refused: boolean; moved: number; ready: boolean; reason: string };
+type Session = {
+  sid: string;
+  epoch: number;
+  clockStep: number;
+  pending: PendingReceipt[];
+  reasons: Map<number, string>;
+};
 const object = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 const token = (v: Obj) => railInt(v.epoch, RAILWAY_MAX_INT, 1) && railInt(v.request, RAILWAY_MAX_INT, 1);
 /** Validation facts a client action carries (docs/plans/replication.md, revision 1): where the actor stood
@@ -165,24 +177,35 @@ export function createRailwayRequests({
     send({ t: 'r:state', to, state: s, ...(id ?? {}) });
   // Every settled request is acknowledged; a refused one is also named, with its reason, and an accepted one with what
   // it moved (the actor's prediction is answered by this, not by its event).
-  const settle = (sid: string, epoch: number, request: number, refused: boolean, moved: number) => {
+  const settle = (sid: string, epoch: number, request: number, refused: boolean, moved: number, reason = 'refused') => {
     ack(sid, epoch, request);
-    if (refused) rej(sid, epoch, request, 'refused');
+    if (refused) rej(sid, epoch, request, reason);
     else if (moved > 0 && replication.has(sid)) replication.accepted(sid, epoch, request, moved);
   };
   function drain(pid: string, session: Session) {
     if (failed || sessions.get(pid) !== session) return;
     while (session.pending[0]?.ready) {
       const r = session.pending.shift()!;
-      settle(session.sid, session.epoch, r.request, r.refused, r.moved);
+      settle(session.sid, session.epoch, r.request, r.refused, r.moved, r.reason);
     }
   }
   function storageFailure(sid: string, epoch: number, request: number) {
     failed = true;
     state(sid, 'storage', { epoch, request });
   }
-  function complete(pid: string, session: Session, request: number, refused: boolean, moved: number, durable = false) {
-    const receipt = { request, refused, moved, ready: !durable };
+  function complete(
+    pid: string,
+    session: Session,
+    request: number,
+    refused: boolean,
+    moved: number,
+    durable = false,
+    reason = 'refused',
+  ) {
+    const receipt = { request, refused, moved, ready: !durable, reason };
+    // Seat refusal detail is transient like seats, bounded to the existing retry horizon. No saved shape changes.
+    if (refused && reason !== 'refused') session.reasons.set(request, reason);
+    for (const r of session.reasons.keys()) if (r <= request - RAILWAY_OUTCOMES) session.reasons.delete(r);
     session.pending.push(receipt);
     if (durable) {
       const work = Promise.resolve()
@@ -246,7 +269,7 @@ export function createRailwayRequests({
         // one had in flight.
         const epoch = (account?.epoch ?? 0) + 1;
         if (epoch > RAILWAY_MAX_INT || !api.session(pid, epoch)) return state(from, 'full');
-        sessions.set(pid, { sid: from, epoch, clockStep: 0, pending: [] });
+        sessions.set(pid, { sid: from, epoch, clockStep: 0, pending: [], reasons: new Map() });
         send({ t: 'r:session', to: from, epoch, next: 1 });
         return;
       }
@@ -268,7 +291,14 @@ export function createRailwayRequests({
         if (current.pending.some((r) => r.request === request)) return; // no early ack on a resend
         // Already settled (a resend): answer again from its recorded outcome.
         const old = api.outcome(pid, epoch, request);
-        return settle(from, epoch, request, old?.status === 'rejected', old?.status === 'accepted' ? old.accepted : 0);
+        return settle(
+          from,
+          epoch,
+          request,
+          old?.status === 'rejected',
+          old?.status === 'accepted' ? old.accepted : 0,
+          current.reasons.get(request),
+        );
       }
       // A held durable receipt cannot grow an unbounded queue; clients already use this action window.
       if (request !== account.request + 1 || current.pending.length >= RAILWAY_WINDOW)
@@ -284,7 +314,7 @@ export function createRailwayRequests({
           const result = facts ? commands.ops.run(pid, e, commands.context(from, actor(facts))) : null;
           const accepted = result?.status === 'accepted';
           api.record(pid, clean, accepted);
-          complete(pid, current, request, !accepted, accepted ? 1 : 0, result?.durable);
+          complete(pid, current, request, !accepted, accepted ? 1 : 0, result?.durable, result?.reason);
         } catch {
           storageFailure(from, epoch, request); // apply may have mutated state; never acknowledge it
         }

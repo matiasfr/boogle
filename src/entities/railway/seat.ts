@@ -24,6 +24,8 @@ import { flat } from '../../render/flat.ts';
 import { merged } from '../../render/part-geometry.ts';
 import { MACHINE_CHAIR_SEAT } from './machine-model.ts';
 import type { Part } from '../../render/cosmetic-parts.ts';
+import { onRailwayCommands } from './state.ts';
+import { createSeatShadow } from './seat-shadow.ts';
 
 export type Seat = {
   id: string;
@@ -49,6 +51,7 @@ export type { SeatRequest } from './seat-claims.ts';
 let serial = 0;
 let request: SeatRequest | null = null;
 let sitting: Seat | null = null;
+let shadow: ReturnType<typeof createSeatShadow> | null = null;
 const requests = new Map<string, SeatRequest>();
 const remoteSeats = new Map<string, Seat>();
 let grants: Grants = {};
@@ -132,8 +135,28 @@ function freeSeat() {
       return Math.hypot(p.x - wa.x, p.z - wa.z) - Math.hypot(p.x - wb.x, p.z - wb.z);
     })[0];
 }
+function seatChoices(s: Seat) {
+  const p = me.body!.position;
+  const alt = seats
+    .filter((other) => other !== s && other.group === s.group && reachable(other))
+    .map((other) => {
+      const w = world(other);
+      return { id: other.id, d: (p.x - w.x) ** 2 + (p.z - w.z) ** 2 };
+    })
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 7)
+    .map((other) => other.id);
+  return { id: s.id, alt };
+}
+onRailwayCommands((session) => {
+  shadow?.dispose();
+  shadow = session ? createSeatShadow(session, performance.now.bind(performance)) : null;
+  if (sitting && me.body) shadow?.sit(seatChoices(sitting));
+});
 export function sitDown(s = freeSeat()) {
   if (!s || !reachable(s) || seated()) return;
+  // Shadow only: ordered reachable alternatives. Receipts never change the lead's visible verdict.
+  shadow?.sit(seatChoices(s));
   request = { id: s.id, ticket: ++serial };
   heardAt = performance.now();
   // Sit on the press, everywhere (instant feedback). In a live room the lead's grants then confirm the chair, move the
@@ -153,6 +176,7 @@ function occupy(s: Seat) {
   me.body.velocity.set(carry.x, carry.y, carry.z);
 }
 function standUp(reason = 'stand input') {
+  if (sitting || request) shadow?.stand();
   recordRelease(reason);
   const s = sitting;
   sitting = null;
@@ -228,6 +252,7 @@ onRoomReady((room) =>
 );
 onPreStep(
   () => {
+    shadow?.update();
     if (request && me.jumpQueued > 0) {
       me.jumpQueued = 0;
       standUp('jump input');
@@ -239,6 +264,7 @@ onPreStep(
       if (!sitting) {
         // A sitter whose chair was released underneath them (seat unavailable) waits for nothing: drop the claim.
         recordRelease('no chair');
+        shadow?.stand();
         request = null;
       } else {
         const verdict = seatVerdict({
@@ -260,6 +286,7 @@ onPreStep(
     const p = world(s);
     if (!s.available()) {
       recordRelease('seat unavailable', Math.hypot(p.x - b.position.x, p.y - b.position.y, p.z - b.position.z));
+      shadow?.stand();
       sitting = null;
       carry.seat = null;
       request = null;

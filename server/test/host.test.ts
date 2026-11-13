@@ -10,13 +10,16 @@ import { worldRoomId } from '../../src/world/namespace.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { HALF } from '../../src/world/grid.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
+import { assignSeats, type Grants, type SeatRequest } from '../../src/entities/railway/seat-claims.ts';
 
 type Msg = Record<string, any>;
 const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
 
-async function start(env: Record<string, string> = {}, dataDir?: string) {
+async function start(env: Record<string, string> = {}, dataDir?: string, reconnectGraceMs = FAST.reconnectGraceMs) {
   dataDir ??= await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-host-'));
-  const svc = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: 'beach', ...env }, FAST));
+  const svc = createService(
+    loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: 'beach', ...env }, { ...FAST, reconnectGraceMs }),
+  );
   const port = await svc.listen(0);
   return { svc, dataDir, base: `ws://127.0.0.1:${port}` };
 }
@@ -58,6 +61,119 @@ function connect(base: string, room: string, self: string, pid = self + 'pid', k
 const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+test('review: an unchanged lead grant agrees during follower reconnect grace', async () => {
+  const room = railwayRoomId('review-grace');
+  const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*' }, undefined, 1500);
+  const a = connect(base, room, 'seata');
+  await a.next(is('welcome'));
+  const b = connect(base, room, 'seatb');
+  try {
+    await b.next(is('welcome'));
+    const world = svc.roomHost()!.room(room)!.world as RailwayWorldHost;
+    await world.whenReady();
+    b.send({ t: 'm', d: { t: 'r:open' } });
+    const session = (await b.next(isWorld('r:session'))).d;
+    b.send({
+      t: 'm',
+      d: { t: 'r:edit', e: { op: 'seat.sit', id: 'chair', epoch: session.epoch, request: 1, at: [0, 0, 0], ms: 0 } },
+    });
+    await b.next((m) => isWorld('s')(m) && m.d.ack?.[1] === 1);
+    a.send({ t: 'p', s: 1, d: { v: 1, placeSeatGrants: { chair: { peer: 'seatb', ticket: 1 } } } });
+    for (let i = 0; i < 100 && world.status().seatShadow.agreements < 1; i++) await sleep(20);
+    assert.equal(world.status().seatShadow.mismatches, 0);
+    b.ws.close();
+    await b.closed;
+    await sleep(800);
+    assert.deepEqual(world.status().seats, [{ id: 'chair', pid: 'seatbpid' }]);
+    assert.equal(world.status().seatShadow.mismatches, 0, 'unchanged grants and held row must still agree');
+  } finally {
+    a.ws.close();
+    b.ws.close();
+    await svc.close({ save: false });
+    await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});
+
+test('seat shadow over two sockets agrees after every sit/stand and retains a chair through reconnect grace', async () => {
+  const room = railwayRoomId('seat-shadow');
+  const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*' });
+  const a = connect(base, room, 'seata'),
+    b = connect(base, room, 'seatb');
+  let back: ReturnType<typeof connect> | null = null;
+  try {
+    await a.next(is('welcome'));
+    await b.next(is('welcome'));
+    const world = svc.roomHost()!.room(room)!.world as RailwayWorldHost;
+    await world.whenReady();
+    for (const client of [a, b]) {
+      client.send({ t: 'm', d: { t: 'r:open' } });
+      await client.next(isWorld('r:session'));
+    }
+    const reqs = new Map<string, SeatRequest>();
+    const chairs = ['bench-0', 'bench-1'].map((id) => ({ id, group: 'bench', available: () => true }));
+    let grants: Grants = {},
+      presence = 0,
+      checks = 0;
+    const requests = new Map<string, number>();
+    async function action(client: ReturnType<typeof connect>, peer: string, sitting: boolean) {
+      const session = client.msgs.findLast(isWorld('r:session'))!.d;
+      const request = (requests.get(peer) ?? 0) + 1;
+      requests.set(peer, request);
+      if (sitting) reqs.set(peer, { id: 'bench-0', ticket: request });
+      else reqs.delete(peer);
+      client.send({
+        t: 'm',
+        d: {
+          t: 'r:edit',
+          e: {
+            op: sitting ? 'seat.sit' : 'seat.stand',
+            ...(sitting ? { id: 'bench-0', alt: ['bench-1'] } : {}),
+            epoch: session.epoch,
+            request,
+            at: [0, 0, 0],
+            ms: 0,
+          },
+        },
+      });
+      await client.next((m) => isWorld('s')(m) && m.d.ack?.[1] === request);
+      grants = assignSeats(grants, reqs, chairs);
+      a.send({ t: 'p', s: ++presence, d: { v: 1, placeSeatGrants: grants } });
+      checks++;
+      for (let i = 0; i < 150 && world.status().seatShadow.checks < checks; i++) await sleep(20);
+      assert.deepEqual(world.status().seatShadow, { checks, agreements: checks, mismatches: 0 });
+      assert.deepEqual(
+        world.status().seats.sort((a, b) => a.id.localeCompare(b.id)),
+        Object.entries(grants)
+          .map(([id, g]) => ({ id, pid: g.peer + 'pid' }))
+          .sort((a, b) => a.id.localeCompare(b.id)),
+      );
+    }
+    await action(a, 'seata', true);
+    await action(b, 'seatb', true);
+    await action(a, 'seata', false);
+    await action(b, 'seatb', false);
+    console.log('Socket seat shadow: 4/4 agreements, 0 mismatches after each sit and stand');
+    await action(b, 'seatb', true);
+    b.ws.close();
+    await b.closed;
+    assert.equal(world.status().seats[0]?.pid, 'seatbpid');
+    back = connect(base, room, 'seatb');
+    await back.next(is('welcome'));
+    await sleep(250); // past the old disconnect's grace: its cancelled departure must not release the chair
+    assert.equal(world.status().seats[0]?.pid, 'seatbpid');
+    back.ws.close();
+    await back.closed;
+    await a.next((m) => m.t === 'left' && m.id === 'seatb');
+    assert.deepEqual(world.status().seats, []);
+  } finally {
+    a.ws.close();
+    b.ws.close();
+    back?.ws.close();
+    await svc.close({ save: false });
+    await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});
 
 async function rename(client: ReturnType<typeof connect>, name: string) {
   for (let k = 0; k < 100 && !client.msgs.some(isWorld('r:session')); k++) {

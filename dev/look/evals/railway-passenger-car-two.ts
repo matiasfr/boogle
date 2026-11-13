@@ -15,7 +15,7 @@ const { interactTarget } = (await import(
 const { pressJump, releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
-const { seatState } = (await import(
+const { seatState, withSeatTargets } = (await import(
   '/src/entities/railway/seat.ts' as string
 )) as typeof import('../../../src/entities/railway/seat.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
@@ -81,6 +81,39 @@ background(
     console.log(`SEATED ${player} ${seatState().sitting}`);
     await until(() => me.avatar && window.boogle.remotes.size > 0, 'sees the partner', 30000);
     await bot.wait(4000);
+    if (player === '1' && new URLSearchParams(location.search).has('seatShadowReview')) {
+      const { railwayCommands } = (await import(
+        '/src/entities/railway/state.ts' as string
+      )) as typeof import('../../../src/entities/railway/state.ts');
+      const session = railwayCommands()!;
+      let rates = 0,
+        accepted = 0;
+      const off = [
+        session.onRefused((e) => {
+          if (e.op === 'seat.sit' && e.reason === 'rate') rates++;
+        }, 'command'),
+        session.onAccepted((e) => {
+          if (e.op === 'seat.sit') accepted++;
+        }, 'command'),
+      ];
+      try {
+        withSeatTargets([]).find((t) => t.id === 'place-stand')!.run!();
+        await until(() => withSeatTargets([]).some((t) => t.id === 'place-sit'), 'chair free for rapid re-sit', 10000);
+        const sit = withSeatTargets([]).find((t) => t.id === 'place-sit')!.run!;
+        // The same real chair target, in one frame: server sees sit/stand/sit inside its 400 ms bound.
+        sit();
+        withSeatTargets([]).find((t) => t.id === 'place-stand')!.run!();
+        sit();
+        check(seatState().sitting, 'rapid re-sit stays visibly seated on the press');
+        await until(() => rates === 1, 'rate refusal heard', 10000);
+        check(seatState().sitting, 'rate refusal never stands the player up');
+        await until(() => accepted === 2, 'shadow re-sit accepted after retry', 10000);
+        check(seatState().sitting, 'retry preserves the seated pose');
+        console.log(`SEAT SHADOW REVIEW rates=${rates} accepted=${accepted} sitting=${seatState().sitting}`);
+      } finally {
+        for (const stop of off) stop();
+      }
+    }
     const aim = () => {
       const a = me.avatar!.rotation.y + 0.9;
       const p = me.body!.position;
