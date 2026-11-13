@@ -9,6 +9,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { parseSync, type Node } from 'oxc-parser';
 import { CORE_TESTS, FULL_ON, UNFOLLOWED, createWalker, unitPlan, unitTests } from '../dev/ci/unit-select.ts';
+import { CI_UNIT_SHARDS, unitShards } from '../dev/ci/unit-shards.ts';
 import { isMetaUrl, literal, walk } from '../dev/scan/parse.ts';
 import { REVIEW_PATHS } from '../dev/review-stamp.ts';
 
@@ -58,6 +59,19 @@ test('the core is real, unique and always selected, even for a tool nothing impo
   for (const t of CORE_TESTS) assert.ok(fs.existsSync(`${ROOT}/${t}`), t);
   const p = plan('dev/heartbeat.sh');
   assert.deepEqual(p.full ? [] : p.tests, [...CORE_TESTS].sort());
+});
+
+test('the eight CI shards contain every discovered test file exactly once', () => {
+  const discovered = fs
+    .globSync('test/**/*.test.ts', { cwd: ROOT })
+    .map((f) => f.split(path.sep).join('/'))
+    .sort();
+  const shards = unitShards(discovered, CI_UNIT_SHARDS);
+  assert.equal(shards.length, 8);
+  assert.ok(shards.every((shard) => shard.length > 0));
+  const assigned = shards.flat();
+  assert.equal(new Set(assigned).size, assigned.length, 'no duplicate files across shards');
+  assert.deepEqual(assigned.sort(), discovered, 'no discovered file omitted or invented');
 });
 
 test('CLI prints the CI outputs; main and an empty diff are full', () => {

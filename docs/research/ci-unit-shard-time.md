@@ -1,5 +1,13 @@
 # Unit shard time, 13 November 2026
 
+**Rebase follow-up:** `codex/ci-unit-shard-time-2` rebases the two original commits onto `origin/main` at
+`505f62f40` (world v35). The runner first honors explicit `UNIT_ONLY` in every mode, then consumes CI's shard flag
+and balances that selected set. Main's opt-in scoped flags in `dev/check.ts` and `dev/ship-check.ts` are preserved.
+The unit discovery now finds 200 files, including `classic-trace`; a committed test asserts the eight shards'
+union equals that discovered set with no duplicates. The [fresh local manifest](../../.look/evidence/ci-unit-shard-time-2/manifest.json)
+records the assignment, regression smoke checks and requested validation on this base. Measurements and CI
+projections below are historical evidence from the original base; v35 and its expanded route tests were not reprofiled.
+
 The reported incident passed 434 tests in 589s, then hit the **job's** ten-minute ceiling including setup.
 This worktree starts at `66d902242` (199 files, 1,693 tests), so it is not the incident's exact build. No network
 was used. No `src/` files, game assertions, audit settings, fuzz lengths, offsets or seeds change.
