@@ -4,9 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { sourceFunction, sourceModule } from '../dev/level/source.ts';
-import * as line2 from '../src/entities/railway/line2-path.ts';
-import { RAIL_GATES, RAIL_GRANTS } from '../src/sim/railway-route.ts';
-import { LEG2, PAD_SIZE } from '../src/entities/route-greybox/leg2-layout.ts';
+
 import type { Shape } from '../src/physics/engine.ts';
 import * as validation from '../src/prefab/validate.ts';
 import { names } from '../src/prefab/names.ts';
@@ -14,7 +12,7 @@ import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
 
-test('Gorge colliders and drawn placements match the old hand-built platform', async () => {
+test('Gorge collider, placement and count bytes match the old massing', async () => {
   const colliders: unknown[] = [];
   const record = (shape: Shape, at: THREE.Vector3, q?: THREE.Quaternion) => {
     colliders.push({ shape, at: at.toArray(), rotation: q?.toArray() });
@@ -39,21 +37,11 @@ test('Gorge colliders and drawn placements match the old hand-built platform', a
     { THREE, artifact, workshop, gorge, names, ...validation, builders, staticBody: record },
   );
   const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
-    fs
-      .readFileSync('src/entities/route-greybox/boxes.ts', 'utf8')
-      .replace("await import('../../place/land.ts')", '{ addStatic: record }'),
-    { THREE, material: () => new THREE.MeshStandardNodeMaterial(), record, ...runtime },
-  );
-  const leg2 = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
-    fs.readFileSync('src/entities/route-greybox/leg2-draw.ts', 'utf8'),
-    { span: boxes.span, PAD_SIZE },
-  );
-  const massing = sourceModule<typeof import('../src/entities/route-greybox/massing.ts')>(
-    fs.readFileSync('src/entities/route-greybox/massing.ts', 'utf8'),
-    { ...line2, RAIL_GATES, RAIL_GRANTS, span: boxes.span, leg2Boxes: leg2.leg2Boxes, LEG2, ...runtime },
+    fs.readFileSync('src/entities/route-greybox/boxes.ts', 'utf8'),
+    runtime,
   );
   const owner = createOwnedView();
-  const authored = massing.gorgeMassing();
+  const authored = runtime.gorgePlacements;
   const { mesh, solids } = await boxes.drawGreyBoxes(owner, authored);
   const placements = Array.from({ length: mesh.count }, (_, i) => {
     const matrix = new THREE.Matrix4();

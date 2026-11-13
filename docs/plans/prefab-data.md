@@ -147,6 +147,32 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 
 ## Level findings
 
+### Step 6 as built: all High Gorge massing
+
+Baseline commit `db0eb0b8` executed the old draw boundary and recaptured the existing collider and placement
+goldens with no byte changes; it added the old-code count golden: **86 authored boxes, 84 visible, 55 bodies,
+one massing batch**. Step 6 replaces all 86 entries with compiled placements, retaining the five north-platform
+ids and original insertion order. `massing.ts` retains only the shared exported coordinates/constants; its
+private box/frame authoring moved to the Gorge level. `gorgeMassing()` and the GreyBox collider/mesh construction
+loops are deleted. Bell/West descriptors adapt to records at the existing draw boundary until step 7, without
+changing their layout sources. No Home, seat, sim/world/net/server or namespace file changes.
+
+Visible solid and decorative records share the same builder/batch; two explicit collider-only placements use no
+draw slots. The runtime preserves explicitly authored identity rotations, keeping collider bytes exact.
+The pure Gorge coordinate module and leg-2 layout module join the explicit content-helper whitelist; no debt
+entry grows. Both converted collider-debt entries disappear (2 and 18 units), along with the `drawGreyBoxes`
+construction importer count. Combined collider/seat debt: **120 file entries / 542 units / 64 construction exports /
+83 importer counts → 118 / 522 / 63 / 82**; recorded public names drop 371 → 361. Collider debt alone is
+107 files / 522 units → 105 / 502; seat debt stays 13 / 20. Distinct files across both lists are 109 → 107.
+Door budgets are unchanged.
+
+The plan's 73 boxes/53 solids and 12 level reports were stale; current counts are 86/55 and 13 reports.
+Leg 2 has already landed, so its Gorge incline boxes are included while step 7's other areas/tools remain deferred.
+The pure authoring helper is named `levelBox`: lint reserves `slab` as a construction call even for a local data
+helper. No new suppression or constructor exemption was added. All old Gorge and workshop goldens remain
+byte-identical without regeneration after conversion. Final check and broker verdicts belong to this job's
+handoff/evidence; timing under shared load is not performance evidence. Not tested on a device.
+
 ### Step 3 baseline (before conversion)
 
 `test/prefab-workshop.test.ts` executes today's `makeWorkshop` and furnishing with recording service dependencies and the actual forge plan. Committed collider and placement bytes include the wire-visible `forge-workshop` seat id, the world sit/exit poses and the chair's local/world placement. Only `GOLDEN=1` regenerates them. The original chair code is still intact in this baseline commit.

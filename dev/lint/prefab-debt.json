@@ -363,11 +363,6 @@
       "exports": ["createRingSteel"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/entities/route-greybox/boxes.ts": {
-      "count": 2,
-      "exports": ["drawGreyBoxes", "span"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/entities/route-greybox/index.ts": {
       "count": 3,
       "exports": [],
@@ -381,11 +376,6 @@
     "src/entities/route-greybox/massing-bell.ts": {
       "count": 2,
       "exports": ["bellExtras", "bellMassing"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
-    "src/entities/route-greybox/massing.ts": {
-      "count": 18,
-      "exports": ["GATE_AT", "GORGE_DECK", "GORGE_RIM", "PICK_AT", "STAIR", "TOWN_PAD", "gorgeAt", "gorgeMassing"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/curio-shelf.ts": {
@@ -922,7 +912,6 @@
     "src/entities/railway/works-view.ts#createRailwayWorks": 1,
     "src/entities/ring-island/view.ts#createRingIslandView": 1,
     "src/entities/ring-steel/view.ts#createRingSteel": 1,
-    "src/entities/route-greybox/boxes.ts#drawGreyBoxes": 1,
     "src/entities/route-greybox/leg-view.ts#createLegView": 1,
     "src/entities/route-greybox/massing-bell.ts#bellExtras": 1,
     "src/entities/town/curio-shelf.ts#createCurioShelf": 1,

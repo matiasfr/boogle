@@ -11,7 +11,7 @@ import { camera } from '../../render/scene.ts';
 import { me } from '../../player/player.ts';
 import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
 import { precompile } from '../../render/precompile.ts';
-import { gorgeMassing } from './massing.ts';
+import { gorgePlacements } from '../../prefab/instantiate.ts';
 import { bellExtras, bellMassing } from './massing-bell.ts';
 import { westExtras, westMassing } from './massing-west.ts';
 import { AREA_CENTRES } from './leg2-layout.ts';
@@ -26,11 +26,11 @@ defineKind('route-greybox-area', {});
 type Area = {
   id: string;
   centre: { x: number; z: number };
-  build: () => (GreyBox | Placement)[];
+  build: () => readonly (GreyBox | Placement)[];
   extras?: (owner: OwnedView) => void | Promise<void>;
 };
 const AREAS: readonly Area[] = [
-  { id: 'gorge', centre: AREA_CENTRES.gorge, build: gorgeMassing },
+  { id: 'gorge', centre: AREA_CENTRES.gorge, build: () => gorgePlacements },
   { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, extras: bellExtras },
   { id: 'west', centre: AREA_CENTRES.west, build: westMassing, extras: westExtras },
 ];

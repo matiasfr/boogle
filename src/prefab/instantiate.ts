@@ -73,11 +73,15 @@ export function instantiate(
   if ('asset' in def.visual || def.material)
     throw new Error('prefabs: asset and material implementations await their conversion steps');
   const batch = options.batch;
+  const batchVisual = batch && compiled.prefabs[batch.target.key]?.visual;
   if ('builder' in def.visual && def.visual.batch) {
     if (
       !batch ||
       batch.target.owner !== owner ||
-      batch.target.key !== key ||
+      !batchVisual ||
+      !('builder' in batchVisual) ||
+      batchVisual.builder !== def.visual.builder ||
+      batchVisual.batch !== def.visual.batch ||
       !Number.isInteger(batch.index) ||
       batch.index < 0 ||
       batch.index >= batch.target.mesh.count ||
@@ -141,7 +145,7 @@ export function instantiate(
       recipes.push({
         shape,
         at: world(at),
-        ...(q.x || q.y || q.z ? { q } : {}),
+        ...(placement.rot || q.x || q.y || q.z ? { q } : {}),
         ...(c.group === 'room' ? { group: ROOM_GROUP } : {}),
       });
     switch (c.shape) {

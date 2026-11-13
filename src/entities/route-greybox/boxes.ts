@@ -1,9 +1,5 @@
-// The greybox route's static boxes (docs/plans/greybox-route.md, leg 1 step 4; prerequisite P3): one instanced mesh
-// with real bounds, each box yawed and optionally pitched (a ramp or a stair flight), with a static collider unless
-// `solid` is false. `hidden` boxes are colliders only (a stack's wall and top under the horizon silhouette's mesh).
-import * as THREE from 'three/webgpu';
+// Legacy Bell/West descriptors adapt to records until step 7. No collider construction lives here.
 import type { OwnedView } from '../../render/owned-view.ts';
-import { material } from '../../render/materials.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
 import type { Placement } from '../../prefab/types.ts';
 
@@ -52,54 +48,34 @@ export function span(
   };
 }
 
-const pose = new THREE.Object3D();
-pose.rotation.order = 'YXZ';
-function place(b: GreyBox) {
-  pose.position.set(b.x, b.y, b.z);
-  pose.rotation.set(-(b.pitch ?? 0), b.yaw, 0);
-  pose.scale.set(b.w, b.h, b.d);
-  pose.updateMatrix();
-  return pose;
-}
-
-/** Draws `boxes` as one instanced mesh under `owner` and adds their colliders. Returns the mesh and the counts. */
+/** Draw all visible records in one shared batch, preserving body and instance insertion order. */
 export async function drawGreyBoxes(owner: OwnedView, boxes: readonly (GreyBox | Placement)[]) {
-  const { addStatic } = await import('../../place/land.ts');
-  const shown = boxes.filter((b) => 'prefab' in b || !b.hidden);
-  const hasPlacements = boxes.some((b) => 'prefab' in b);
-  const batch = hasPlacements ? createPrefabBatch('greybox.box', Math.max(1, shown.length), owner) : undefined;
-  const geometry = batch ? undefined : new THREE.BoxGeometry(1, 1, 1);
-  const mesh =
-    batch?.mesh ??
-    new THREE.InstancedMesh(geometry!, material('stone', { colour: '#ffffff' }), Math.max(1, shown.length));
-  geometry?.dispose();
-  mesh.count = shown.length;
-  const colour = new THREE.Color();
-  shown.forEach((b, i) => {
-    if ('prefab' in b) return;
-    mesh.setMatrixAt(i, place(b).matrix);
-    mesh.setColorAt(i, colour.set(b.colour ?? '#9c9ea1'));
-  });
-  let solids = 0;
-  let index = 0;
-  for (const b of boxes) {
-    if ('prefab' in b) {
-      const instance = instantiate(b.prefab, b, { owner, batch: { target: batch!, index } });
-      instance.setEnabled(true);
-      solids += instance.bodies.length;
-      index++;
-      continue;
-    }
-    if (!b.hidden) index++;
-    if (b.solid === false) continue;
-    const p = place(b);
-    addStatic({ kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 }, p.position, p.quaternion, undefined, owner);
-    solids++;
+  const placements = boxes.map((b, i): Placement =>
+    'prefab' in b
+      ? b
+      : {
+          id: `legacy.massing.${i}`,
+          prefab: b.hidden ? 'greybox.collider' : b.solid === false ? 'greybox.decoration' : 'greybox.box',
+          pos: [b.x, b.y, b.z],
+          rot: [b.yaw, -(b.pitch ?? 0), 0],
+          scale: [b.w, b.h, b.d],
+          params: { colour: b.colour ?? '#9c9ea1' },
+        },
+  );
+  const shown = placements.filter((p) => p.prefab !== 'greybox.collider');
+  const batch = createPrefabBatch('greybox.box', Math.max(1, shown.length), owner);
+  batch.mesh.count = shown.length;
+  let solids = 0,
+    index = 0;
+  for (const p of placements) {
+    const instance = instantiate(p.prefab, p, {
+      owner,
+      ...(p.prefab === 'greybox.collider' ? {} : { batch: { target: batch, index: index++ } }),
+    });
+    instance.setEnabled(true);
+    solids += instance.bodies.length;
   }
-  mesh.name = 'route-greybox:massing';
-  mesh.receiveShadow = true;
-  mesh.computeBoundingBox();
-  mesh.computeBoundingSphere();
-  if (!batch) owner.add(mesh);
-  return { mesh, solids };
+  batch.mesh.computeBoundingBox();
+  batch.mesh.computeBoundingSphere();
+  return { mesh: batch.mesh, solids };
 }
