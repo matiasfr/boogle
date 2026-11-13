@@ -210,7 +210,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
     },
     // The operator replacing a room's save (../admin.ts). The room's state is being discarded; the slot stays
     // `closing` until fn has settled, so no join loads the old file.
-    async offline<T>(id: string, fn: () => Promise<T>): Promise<T | 'busy'> {
+    async offline<T>(id: string, fn: () => Promise<T>, { save = false } = {}): Promise<T | 'busy'> {
       if (stopping || closing.has(id)) return 'busy';
       closing.add(id);
       // Shutdown waits for this run (fn may queue its write only after other work, after shutdown's drain).
@@ -219,9 +219,15 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       try {
         const room = rooms.get(id);
         if (room) {
-          if (!(await closeBounded(id, room, false))) await drain(id);
-          failed.delete(id); // its state is being replaced: nothing is lost
+          const status = room.world.status();
+          const invalid = save && (status.badSave || status.recoveryError || ('ready' in status && !status.ready));
+          const closed = await closeBounded(id, room, save);
+          if (!closed) await drain(id);
           rooms.delete(id);
+          const after = room.world.status();
+          if (save && (!closed || invalid || after.badSave || after.recoveryError))
+            throw new Error(`room ${id}: verified close failed; nothing replaced`);
+          failed.delete(id); // its state is being replaced: nothing is lost
         }
         return await fn();
       } finally {

@@ -7,21 +7,26 @@
 //   POST /admin/rooms/:id/restore?backup=  back the save up, then put a backup (default: that room's newest) in its place
 //
 // Reset and restore take the room offline first (everyone gets `bye` and reconnects into the new world) and answer 409
-// while players are in it unless `?force=1`. Backups are `.backups/<room>@<UTC stamp>.json`; the newest KEEP stay.
+// while players are in it unless `?force=1`. Backups are `.backups/<room>@<UTC stamp>.json`; the newest 30 stay.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Express, Request, Response, NextFunction } from 'express';
 import type { RoomHost } from './host/rooms.ts';
 import type { RoomDoc, Store } from './store.ts';
 import { currentRoomId, roomNamespaces } from './room-ids.ts';
-
-const KEEP = 30;
-const BACKUP_RE = /^([a-z0-9-]{1,32})@(\d{8}T\d{9}Z)\.json$/;
+import { BACKUP_RE, pruneBackups, type Replacements } from './replacements.ts';
+import { SeedValidationBusyError, validateSeedDoc } from './seeds/validate.ts';
+import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
 
 export function addAdmin(
   app: Express,
   cfg: { dataDir: string; serverRooms: string[]; log: (...a: unknown[]) => void },
-  deps: { authed: (req: Request, res: Response) => boolean; store: Store; roomHost: () => RoomHost | null },
+  deps: {
+    authed: (req: Request, res: Response) => boolean;
+    store: Store;
+    roomHost: () => RoomHost | null;
+    replacements?: Replacements;
+  },
 ) {
   const { store } = deps;
   const ns = roomNamespaces(cfg.serverRooms);
@@ -55,7 +60,7 @@ export function addAdmin(
       if (move) store.forget(id);
       return name;
     });
-    for (const old of (await backups()).slice(KEEP)) await fs.rm(path.join(dir, old.name), { force: true });
+    await pruneBackups(cfg.dataDir);
     return made;
   }
 
@@ -65,20 +70,30 @@ export function addAdmin(
       if (!deps.authed(req, res)) return;
       const host = deps.roomHost();
       if (!host || !currentRoomId(req.params.id, ns)) return res.status(400).json({ error: 'not a current room id' });
+      if (deps.replacements && !deps.replacements.begin(req.params.id)) return res.status(409).json({ error: 'busy' });
       try {
         res.set('Cache-Control', 'no-store');
+        await deps.replacements?.recover(req.params.id);
         await fn(req, res, host);
       } catch (error) {
         next(error);
+      } finally {
+        deps.replacements?.end(req.params.id);
       }
     };
   };
   // Runs fn with the room offline, unless players are in it (without ?force=1) or it is already closing.
-  async function offline(req: RoomReq, res: Response, host: RoomHost, fn: () => Promise<Record<string, unknown>>) {
+  async function offline(
+    req: RoomReq,
+    res: Response,
+    host: RoomHost,
+    fn: () => Promise<Record<string, unknown>>,
+    save = false,
+  ) {
     const id = req.params.id;
     const players = host.room(id)?.status().players ?? 0;
     if (players && req.query.force !== '1') return res.status(409).json({ error: 'players in the room', players });
-    const done = await host.offline(id, fn);
+    const done = await host.offline(id, fn, { save });
     if (done === 'busy') return res.status(409).json({ error: 'the room is closing; try again' });
     cfg.log(`admin: ${req.path} ${JSON.stringify(done)}`);
     res.json({ ok: true, room: id, kicked: players, ...done });
@@ -105,9 +120,34 @@ export function addAdmin(
         });
       }
       res.set('Cache-Control', 'no-store');
-      res.json({ ns: ns.world, rail: ns.rail, rooms, backups: await backups() });
+      res.json({
+        ns: ns.world,
+        rail: ns.rail,
+        rooms,
+        backups: [...(await backups()), ...(await (deps.replacements?.pins() ?? []))].sort((a, b) =>
+          stampOf(b.name).localeCompare(stampOf(a.name)),
+        ),
+      });
     } catch (error) {
       next(error);
+    }
+  });
+
+  app.post('/admin/backups/:name/release', async (req: Request, res: Response, next: NextFunction) => {
+    if (!deps.authed(req, res)) return;
+    const name = String(req.params.name);
+    if (!deps.replacements || !BACKUP_RE.test(name)) return res.status(400).json({ error: 'invalid backup name' });
+    const id = BACKUP_RE.exec(name)![1]!;
+    if (!deps.replacements.begin(id)) return res.status(409).json({ error: 'busy' });
+    try {
+      await deps.replacements.recover(id);
+      await deps.replacements.release(name);
+      res.json({ ok: true, released: name });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return res.status(404).json({ error: 'no such pin' });
+      next(error);
+    } finally {
+      deps.replacements.end(id);
     }
   });
 
@@ -129,18 +169,34 @@ export function addAdmin(
     '/admin/rooms/:id/restore',
     route(async (req, res, host) => {
       const id = req.params.id;
-      const mine = (await backups()).filter((b) => b.room === id);
+      const mine = [...(await backups()), ...(await (deps.replacements?.pins() ?? []))]
+        .filter((b) => b.room === id)
+        .sort((a, b) => stampOf(b.name).localeCompare(stampOf(a.name)));
       const from = typeof req.query.backup === 'string' ? mine.find((b) => b.name === req.query.backup) : mine[0];
       if (!from) return res.status(404).json({ error: 'no such backup for this room' });
-      const doc = JSON.parse(await fs.readFile(path.join(dir, from.name), 'utf8')) as RoomDoc;
+      const doc = JSON.parse(
+        await fs.readFile(path.join(dir, 'pinned' in from ? 'pinned' : '', from.name), 'utf8'),
+      ) as RoomDoc;
       if (!doc || !Number.isSafeInteger(doc.tick) || typeof doc.data !== 'object' || !doc.data)
         return res.status(422).json({ error: 'the backup is not a room save' });
-      await offline(req, res, host, async () => {
-        const backup = await keep(id, true);
-        const wrote = await store.write(id, doc);
-        if (wrote.status !== 200) throw new Error(`restore ${id}: ${JSON.stringify(wrote.body)}`);
-        return { restored: from.name, backup };
-      });
+      try {
+        if (isRailwayRoom(id)) await validateSeedDoc(doc);
+      } catch (error) {
+        if (error instanceof SeedValidationBusyError) throw error;
+        return res.status(422).json({ error: 'the backup is not a verified room save' });
+      }
+      await offline(
+        req,
+        res,
+        host,
+        async () => {
+          const backup = await keep(id, false);
+          await store.withLock(id, () => store.replace(id, doc, { restoreBorn: true }));
+          await deps.replacements?.logRestore(id, from.name);
+          return { restored: from.name, backup };
+        },
+        true,
+      );
     }),
   );
 }

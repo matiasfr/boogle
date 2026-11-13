@@ -55,7 +55,7 @@ import { LINE_SLOTS, cycleTicks, servingSlots, trainServes, trainSpacing } from 
 import { railTick } from '../src/sim/railway-systems.ts';
 import { line, rail, train, trains } from '../src/sim/railway-rows.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
-import { legKitNeed, legKitWaiting, legRow, legsLaid, routeRow } from '../src/sim/railway-queries-route.ts';
+import { legKitNeed, legKitWaiting, legOpen, legRow, legsLaid, routeRow } from '../src/sim/railway-queries-route.ts';
 import { freightStop } from '../src/sim/railway-queries-trade.ts';
 import { footingsOwed, kitOwed, steelNeed } from '../src/sim/railway-queries.ts';
 import { TRADE } from '../src/sim/railway-trade-layout.ts';
@@ -253,6 +253,15 @@ test('the stops: the railhead opens with the first section and moves on; the Gor
 });
 
 // ---------------------------------------------------------------- the rules' refusals
+test('no closed bit: any room at the rivet has leg 0 open and accepts stock', () => {
+  const s = copy(JOINED);
+  assert.deepEqual(Object.keys(s.w.get(Route, s.w.single(Route))!).sort(), ['arrived', 'gates', 'grants']);
+  assert.ok(legOpen(s.w, 0));
+  chopTo(s, 'a', 1);
+  assert.ok(act(s, 'a', 'rail.legStock', { leg: 0 }) > 0, 'accepted stock moves carried material into the frame');
+  assert.equal(invariant(s.w), null);
+});
+
 test('rail.legStock is refused before the rivet, for a malformed or unbuilt leg, an empty back and while laying', () => {
   const s = copy(LEAF);
   assert.equal(act(s, 'a', 'rail.legStock', { leg: STACK }), 0, 'before the rivet: the leg is not open');

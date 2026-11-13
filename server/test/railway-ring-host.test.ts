@@ -13,27 +13,36 @@ import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
 import { RING_BRACE, RING_HEAD, RING_RIVET } from '../../src/sim/railway-ring-layout.ts';
 import { railwayAtRing, type RingStage } from '../../src/sim/railway-seed-ring.ts';
-import { aperture, invariant, type Seed } from '../../test/helpers/rail.ts';
+import { aperture, buildSeedWorld, chopTo, invariant, type Seed } from '../../test/helpers/rail.ts';
+import { legOpen } from '../../src/sim/railway-queries-route.ts';
+import { RAIL_LEGS, legFrame } from '../../src/sim/railway-route.ts';
 
 type Obj = Record<string, unknown>;
 type At = [number, number, number];
 
 /** A real host on a temp store, loaded with an accepted fixture; actions go through r:edit with their actor's spot. */
-async function host(name: string, fixture: Seed, players: Record<string, string> = { s: 'a' }) {
+async function host(
+  name: string,
+  fixture: Seed,
+  players: Record<string, string> = { s: 'a' },
+  roomName = `ring-${name}`,
+  reload = false,
+) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), `boogle-ring-${name}-`));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
   await store.init();
   let now = 1800000000000;
   const sent: Obj[] = [];
-  const h = createRailwayWorldHost({
-    roomId: railwayRoomId(`ring-${name}`),
-    store,
-    tick: false,
-    now: () => now,
-    pidOf: (sid) => players[sid] ?? null,
-    positions: () => [],
-  });
-  h.onSend((m) => sent.push(m));
+  const create = () =>
+    createRailwayWorldHost({
+      roomId: railwayRoomId(roomName),
+      store,
+      tick: false,
+      now: () => now,
+      pidOf: (sid) => players[sid] ?? null,
+      positions: () => [],
+    });
+  let h = create();
   const ticks = async (n: number) => {
     for (let i = 0; i < n; i++) {
       now += 100;
@@ -45,6 +54,13 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
   while (h.sync.world.tick <= fixture.t) await ticks(1);
   h.rules.railway.world().load(JSON.parse(JSON.stringify(fixture.w.snapshot())), railwayCheck);
   h.rules.railway.touchAll();
+  if (reload) {
+    await h.close({ save: true });
+    assert.ok(await store.read(railwayRoomId(roomName)), 'the seed saved through the real host');
+    h = create();
+    await h.whenReady();
+  }
+  h.onSend((m) => sent.push(m));
   const sessions: Record<string, { epoch: number; request: number }> = {};
   for (const sid of Object.keys(players)) {
     h.deliver({ t: 'r:open' }, sid);
@@ -73,6 +89,18 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
 const spot = (p: { x: number; y: number; z: number }): At => [p.x, p.y, p.z];
 const fixture = (stage: RingStage) => railwayAtRing(stage);
 const RAILHEAD = RAIL_HALTS.findIndex((h) => h.name === 'Railhead');
+
+test('shared boogle host loaded from a ring-joined save accepts rail.legStock', async () => {
+  const seed = buildSeedWorld('ring-joined');
+  chopTo(seed, 'a', 1);
+  const r = await host('shared', seed, { s: 'a' }, 'boogle', true);
+  try {
+    assert.ok(legOpen(r.w, 0));
+    assert.equal(await r.action({ op: 'rail.legStock', leg: 0 }, spot(legFrame(RAIL_LEGS[0]!, 0))), 'accepted');
+  } finally {
+    await r.done();
+  }
+});
 
 test('ring host: the rack, the jib and the lever judged where the railhead stands now', async () => {
   const r = await host('reach', fixture('gap-footed'));
@@ -140,7 +168,11 @@ for (const braceFirst of [true, false])
         assert.equal(await r.action({ op: 'rail.footSet', site: 3 }, spot(head.jib), 't'), 'accepted', `hang ${k}`);
       };
       // Each judged at its own actor's spot: bob's press at the strut from the jib is out of reach.
-      assert.equal(await r.action({ op: 'rail.brace', revision: 1 }, spot(head.jib), 't'), 'rejected', 'not at the strut');
+      assert.equal(
+        await r.action({ op: 'rail.brace', revision: 1 }, spot(head.jib), 't'),
+        'rejected',
+        'not at the strut',
+      );
       if (braceFirst) assert.equal(await brace(), 'accepted');
       for (let k = 1; k <= 4; k++) await hang(k);
       if (!braceFirst) {

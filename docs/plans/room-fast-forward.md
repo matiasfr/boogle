@@ -1,5 +1,7 @@
-> **Status: planned, amended 2026-11-13.** Base `origin/main` at `5b42057ad` (`WORLD_NS` v32). No `WORLD_NS` bump. One
-> new server-to-client wire message (`replacing`). Nothing here was built or run: every claim is from reading main.
+> **Status: server implementation, 2026-11-13; client work pending.** The original plan below was based on
+> `origin/main` at `5b42057ad` (`WORLD_NS` v32). The [server implementation](#server-implementation-13-november)
+> adapts it to v40. No `WORLD_NS` bump; one server-to-client wire message (`replacing`). Original design claims
+> below are historical; the implementation section distinguishes the current scope and outstanding client work.
 >
 > **Amendments (13 November)**, from [dev-saves-and-stage-jumps](../research/dev-saves-and-stage-jumps.md)
 > (recommendations 1 to 6), the designer's three changes and three owner calls:
@@ -130,27 +132,27 @@ for people), `--rail-seed`, `--from/--to`, `npm run checkpoints`. The Jump in li
 Order: 0 at any time; server 1, 2, 3, 4; client 5 after 3, 6 after 2 and 5; the checkpoint; 7 last. Each is one
 sitting and leaves `node dev/ship-check.ts` green. 1 to 3 are high-risk server work (`server/AGENTS.md`).
 
-- [ ] **0. Pin that the route is open in the shared room** (tests; the decision is
+- [x] **0. Pin that the route is open in the shared room** (tests; the decision is
   [recorded](../decisions-rail.md#d-2026-11-13-greybox-route-open-in-the-shared-room)). `test/railway-route-rules.test.ts`:
   "no closed bit: any room at the rivet has leg 0 open" (`buildSeedWorld('ring-joined')`: `legOpen(w, 0)`, `rail.legStock`
   accepted, `Route`'s fields exactly those three); `server/test/railway-ring-host.test.ts`: a `boogle` host loaded
   from that doc accepts `rail.legStock`. No bump.
-- [ ] **1. Recovery primitives** (server, high-risk). `store.replace`; `offline`'s `{ save: true }`; pinned backups,
+- [x] **1. Recovery primitives** (server, high-risk). `store.replace`; `offline`'s `{ save: true }`; pinned backups,
   `release`, restore from a pin; the journal and its recovery; a seam `replaceFailAt: 'backup' | 'save' | 'record'`.
   `server/test/replace-recovery.test.ts`: each failure point leaves a whole, loadable save and the stated files; a pin
   survives 31 later backups; a failed close replaces nothing; `born` changes on replace and returns on restore.
-- [ ] **2. The endpoint** (server, high-risk). `server/src/replace.ts`, `server/src/seeds/validate.ts`,
+- [x] **2. The endpoint** (server, high-risk). `server/src/replace.ts`, `server/src/seeds/validate.ts`,
   `server/src/server.ts` (`ADVANCE_KEY`, `ADVANCE_SHARED`, `replaceRatePerMin` 6), `replaced` on the host status.
   `server/test/replace.test.ts`: key unset 404; no bearer, a wrong one and `REPORT_TOKEN` 401 with the save's bytes
   unchanged; shared island 403, and 200 with `ADVANCE_SHARED`; unknown stage 400; wrong `confirm` 409; earlier stage
   409; occupied 409 with the count, 200 with `override`; an invalid target 422, room untouched; over the rate 429;
   success: the save equals the seed and the record names its restore command. `malformed-messages.test.ts`:
   `{ op: 'rail.replace' }`, `{ t: 'replace' }` and a client-sent `{ t: 'replacing' }` change nothing.
-- [ ] **3. Countdown and the wire message** (server and net, high-risk). `hosted-room.ts`, `ws-wire.ts`, `ws-room.ts`,
+- [x] **3. Countdown and the wire message** (server and net, high-risk). `hosted-room.ts`, `ws-wire.ts`, `ws-room.ts`,
   `src/net/README.md`. Tests: every peer gets `replacing` before `bye`; a second request during the countdown is 409;
   a peer joining mid-countdown is told. `dev/peer-test/ws-railway.ts`: "replace: both peers are told, rejoin, and
   their mirrored hashes equal the seed's".
-- [ ] **4. CLI** (tooling). `dev/server-admin.ts`: `replace` (prints the four categories and the count, asks for the
+- [x] **4. CLI** (tooling). `dev/server-admin.ts`: `replace` (prints the four categories and the count, asks for the
   room name, prints the pin and the restore command), `release`, pins in `rooms`; `server/README.md`.
 - [ ] **5. Notice, line, landing, playdata** (client view). The Client paragraph's files and `dev/playtest/summary.ts`.
   Proof: `/look` stills of the countdown and of the line after a local replacement; a no-`land` row at the spawn.
@@ -192,7 +194,184 @@ three texts; whether the welcome card shows on the reset load (default: no); the
 
 ## Owner questions
 
-1. **Who may replace a room, and may the shared island be replaced?** Recommended: the key holder only, any room
-   including the shared island, behind the typed name, the countdown and the pinned backup. Until he answers,
-   `ADVANCE_SHARED` stays off, and `ADVANCE_KEY` is his or the operator's to set on production.
+1. **Who may replace a room, and may the shared island be replaced?** Answered by the owner, 13 November: the dev
+   key holder only, any room including the shared island, behind the typed name, countdown and pinned backup.
+   `ADVANCE_SHARED` may be enabled in production behind `ADVANCE_KEY`; its default stays off.
 2. **Going back?** Recommended: not in the game; the operator restores the pinned backup. Or: any stage may be picked.
+
+## Server implementation, 13 November
+
+The server implementation targets the current v40 server-owned host. The classic lockstep transport described
+in older sections is deleted; replacement uses the current checkpoint/load/hash and fatal-status guards, and
+clients reconnect onto complete server-owned mirrors. It introduces no gameplay op, client authority or seat
+change. No `WORLD_NS` bump is required: the persisted game/checkpoint shape and seed recipes are unchanged;
+replacement records and pending journals are operator metadata outside the world document.
+
+The existing `SEED_STAGES` builders, including `railway-seed-legs.ts`, supply the targets. The endpoint and CLI
+use only `ADVANCE_KEY`; `REPORT_TOKEN` remains the separate operator restore/release credential. Any occupied
+room requires explicit override because an HTTP key holder cannot authenticate a matching in-room identity.
+The ordering rule compares the last replacement record, not natural progression. Interrupted countdowns are
+cancelled rather than resumed after restart; only a save-write journal needs recovery.
+
+The server exposes `replaced` status and the room countdown/text hook. Client notification rendering, reset
+landing, line display, playdata and the Dev dock control remain for the client job. The full visual checkpoint
+and removal of Jump in rows remain open; no server test establishes those client outcomes.
+
+**Suspect placeholder copy for the owner**, preserved exactly from this plan:
+"This room will be replaced with <label> in 10 seconds. What you carry and your finds here will be lost."
+The later line is also pending client review: "The shared island was replaced with <label> for testing. The world
+changed for everyone, and what you carried and found here is gone." (Private room: "This room was replaced…".)
+The Boogler's copy is unchanged.
+
+### Verification and handoff, 13 November
+
+Server steps 0–4 and the notice text hooks are built. The full client checkpoint above remains open.
+The endpoint contract, exact recovery command and local curl invocation are in
+[server/README.md](../../server/README.md#operator-tools). Replaced jump rooms are removed from jump expiry,
+including after journal recovery. Fresh rooms get an initial verified checkpoint to pin. Fatal/failed closes
+refuse replacement and restore; shutdown checkpoints other rooms without waiting for seed preparation.
+Hostile-message coverage lives in `server/test/replace-wire.test.ts` rather than `malformed-messages.test.ts`.
+
+Checks on implementation tip `d89b4107` (rebased on already-fetched `859abbe7`, no authored prefab changes):
+
+- `npm run check`: pass, 1,798 unit tests and one existing train-wait TODO; lint, typecheck, registry, level/assets and build pass.
+- `npm --prefix server test`: 253 pass. The rebase changed no server, sim, world or net runtime files.
+- `npm run test:net` directly: 152/152 pass. Both peers receive notices before replacement disconnects, observe
+  the same new birth, reload to a lower seed tick, agree, then restore the pin and original birth/world hash.
+  Final trace: before tick 2322/hash 2093773740, seed tick 1715/hash 4123723040, restored tick 2369/hash 2093773740.
+  The bare net page reproduces production's birth-triggered reload explicitly; it installs no game features.
+  Its loopback upgrade budget matches its existing load fixture so repeated reloads do not consume production's
+  per-IP admission budget. Production limits are unchanged.
+- `npm run checkpoints`: all 25 routed/offered seeds build through the host save path.
+- `node dev/ship-check.ts`: pass, 437 assertions across 42 affected test files; 19 lint files, typecheck and registry pass.
+- `npm run registry`: pass. `npm run review-stamp -- . --no-fetch`: **5d6cba7be4d4**, independently reviewed with
+  no remaining actionable findings. The review's shutdown finding has a red-first, then passing regression.
+- Local CLI exercised end to end: typed confirmation, replacement, pinned listing, restore to original birth, release.
+
+[Local check evidence](../../.look/evidence/room-fast-forward-server/evidence.json) contains the logs and identities.
+[Two-player T2 bot](../../.look/evidence/1794605819661-47456/evidence.json): both finish, mirrors agree at 93 sampled
+server steps, no missed beats or graphics errors. Opened `run/end-still.png` and `run/p2-end-still.png`: both players
+and completed rails are visible; both overlays finish at T2. This capture predates the upstream High Gorge rebase
+and final test-harness corrections; it is a regression observation, not a visual proof of the replacement UI.
+Warped clock drift leaves real-time smoothness unverified; no device test.
+
+[World inputs](../../.look/evidence/1794605720611-44768/evidence.json) fails its initial gifts-layout readiness check
+on the old `d87c0571` broker harness. Opened `world-inputs/inputs-final-still.png`: Home and the player render;
+the log reports no graphics errors. The stale scenario's contract remains unverified. Visible countdown/line,
+stage landing, returning absent-player personal-state behavior, playdata and Dev dock controls remain for the client
+job. No push or ship was run.
+
+### Security follow-up, 13 November
+
+On `codex/room-fast-forward-server-2`, rebased onto `origin/main` `f00736aec` (v41 seats), both P2 findings
+from the security/data-safety review are fixed. The original distinct-IP regression failed before the fix;
+the release regression left 31 ordinary files, and a concurrent cross-room fixture left 40. All now pass.
+
+- Replacement admission has a fixed server-wide 24/minute token bucket alongside the existing per-IP 6/minute
+  default. Both run before key comparison/body parsing. At most two replacement jobs prepare/count down at once;
+  excess requests get 429. A separate process-wide cap permits two validation workers across replacement and
+  restore, with no queue; capacity returns only after worker termination, including error/timeout paths.
+- Pin release and every ordinary-backup creation path use the same newest-30 retention, ordered by timestamp
+  across rooms. Remaining pins are excluded. Concurrent releases retain the newest files deterministically.
+- The v41 net checkpoint occupies a seat before replacement, then verifies empty seat rows on the new host and
+  both clients; restoring the pinned save also leaves transient seats empty. No seat implementation changed and
+  no additional namespace bump was needed. The curl example now names `rail-v41`.
+
+Verification on implementation `40986242` plus the networking-doc budget correction: `npm run check` passes
+(1,794 passing tests, one existing train-wait TODO), server tests 271/271, direct `npm run test:net` 191/191,
+25 checkpoint seeds, ship-check 438 assertions/43 affected test files, and registry pass. Independent follow-up
+review found no actionable issues; stamp **cd860a391bef**. The pre-rebase server run was interrupted; the first
+v41 full check exceeded the networking-doc reading budget by 100 characters. Both are superseded by the final runs.
+The release fixture now spaces ordinary backup requests by 2 ms so it creates distinct millisecond filenames.
+
+[Fresh two-player T2 evidence](../../.look/evidence/1794608894318-27733/evidence.json) passes: both finish,
+195 common server-step hashes agree, no missed beat or graphics error. Opened `run/end-still.png` and
+`run/p2-end-still.png`: both players, completed rails and both T2-complete overlays are visible. The 3x warped
+capture reports drift and under-load execution; timing, smoothness and device behavior remain unverified.
+Two checkpoint-list attempts did not establish a visual result (broker clock-option refusal, then a queued
+request invalidated by the doc correction). The later playthrough manifest confirms unchanged before/after trees.
+
+[Follow-up check logs and provenance](../../.look/evidence/room-fast-forward-server/followup-evidence.json)
+supersede the earlier v40 evidence for this fix. The client controls/countdown rendering remain outside this job.
+No push or ship was run.
+
+### Authentication-budget follow-up, 13 November
+
+Re-review found the shared global admission bucket let unauthenticated traffic consume every operator token.
+The review's simulated-clock regression was ported first and failed (the last operator attempt got 429).
+Implementation `5f0db9c4` on `codex/room-fast-forward-server-2` replaces that earlier shared budget:
+
+1. Per-IP admission runs first; refusal spends no other budget. Its default is now 30/minute so an operator
+   sending 24/minute does not hit the old 6/minute IP ceiling in the review's original five-minute test.
+2. The credential check compares fixed-size SHA-256 digests with `timingSafeEqual`; no secret-length or prefix
+   early return, credential logging, or credential echo. Body parsing and expensive work remain later.
+3. Failed credentials draw only from a 24/minute global failed-authentication bucket, returning generic 401/429.
+4. Correct credentials draw only from a separate 24/minute operator bucket. The existing two replacement-job
+   and two validation-worker caps remain. Every IP limiter tracks at most 1,024 addresses, evicting the least
+   recently seen first.
+
+The requested IP-first order necessarily still throttles callers sharing an exhausted IP. Isolation is across
+addresses: both the original single-IP flood and 3,840 distinct-IP failed guesses preserved all 120/120 operator
+attempts over five simulated minutes. The five new tests also verify budget independence, refusal accounting,
+operator refill, LRU eviction, generic responses and no key logs or seed work from guesses.
+
+Fresh verification: check passes (1,794 tests plus one existing TODO); server tests 276/276; direct test:net
+191/191, including replacement/restore and empty v41 seats; `node dev/ship-check.ts origin/main HEAD` passes
+438 assertions in 43 affected test files; registry passes. Independent review found no actionable issues in
+this delta; stamp **c7b4f9149668**. No namespace, seat, backup, or client-control change was needed.
+
+[New T2 manifest](../../.look/evidence/1794610273487-65077/evidence.json): clean, unchanged `5f0db9c4` throughout;
+both players finish, 178 sampled steps agree, no missed beats or graphics errors. Opened `run/end-still.png`
+and `run/p2-end-still.png`: both players and completed rails are visible, with T2-complete overlays. The 3x warped
+run reports drift and load, so timing/feel and device behavior remain unverified. Client controls remain deferred.
+[Current logs and provenance](../../.look/evidence/room-fast-forward-server/auth-evidence.json) supersede earlier
+admission evidence. No push or ship was run.
+
+### Fly-address and key-strength follow-up, 13 November
+
+The third review's two P2s were reproduced before the fix: the shared app-side forwarding hop exhausted a
+fresh operator's admission bucket, and `ADVANCE_KEY=x` left replacement enabled. Implementation `3f91ab99`
+on `codex/room-fast-forward-server-2` fixes both:
+
+- `server/src/replace.ts:27` resolves a valid `Fly-Client-IP` only with explicit `REPLACE_FLY_PROXY=1`.
+  `server/fly.toml:18` enables that trust for Fly's edge; local/dev defaults off. Missing/invalid headers use
+  the socket address. No `X-Forwarded-For` entry participates. This explicit deployment flag prevents a direct
+  local caller forging the Fly header; it must never be enabled on a directly exposed public listener.
+- `server/src/server.ts:211` disables replacement for a nonempty key shorter than 32 characters, with a warning
+  that contains no credential. Health and the game server stay available. The review's original startup-throw
+  expectation was adapted to the owner's explicit endpoint-off/server-healthy requirement.
+  `server/README.md:196` requires random generation (`openssl rand -base64 32`); length does not prove randomness.
+
+The remaining `req.ip` consumers below retain their existing behavior and can group unrelated clients with the
+same reproduced Fly chain and `trust proxy: 1`. They need a separate review; this branch changes only replacement
+address selection. The generic fallback is `server/src/server.ts:164`.
+
+| Location | Unchanged limiter or quota |
+| --- | --- |
+| `server/src/server.ts:310` | `POST /report` |
+| `server/src/server.ts:373` | Shared reads: `GET /reviews`, `/reviews/:id`, `/reviews/:id/:side` |
+| `server/src/server.ts:374` | `POST /reviews` upload; authentication precedes this limiter |
+| `server/src/server.ts:392` | `/playdata` submissions |
+| `server/src/server.ts:399` | `/jump` requests |
+| `server/src/playdata.ts:209` | New playdata sessions |
+| `server/src/jump.ts:272` | Per-address daily jump quota |
+
+WebSocket upgrade admission already uses the Fly header/socket rather than `req.ip`; it is unchanged.
+The prior 30/minute IP, separate 24/minute failed-auth and operator budgets, 1,024-address LRU and two-job/two-worker
+caps remain. No persisted shape, namespace, seat implementation or client control changed.
+
+Seven new regressions cover the Fly chain, spoofed forwarded headers, local forged Fly headers, missing/invalid
+headers, IPv6, short-key disable/health/warning and the 31/32-character boundary. Focused tests pass 22/22.
+Fresh full verification: check passes (1,794 tests and one existing train-wait TODO), server tests 283/283,
+direct test:net 191/191 (including replacement/restore and empty v41 seats), ship-check against `origin/main HEAD`
+438 assertions/43 affected test files, and registry pass. Independent review of this delta found no actionable
+issues; stamp **96ed47b183b4**.
+
+[Fresh T2 manifest](../../.look/evidence/1794611395530-97295/evidence.json) records unchanged, clean `3f91ab99`:
+both players finish, 192 common sampled hashes agree, no missed beats or graphics errors. Opened
+`run/end-still.png` and `run/p2-end-still.png`: both players, completed rails and T2-complete overlays are visible.
+This answers the rendering regression question, not the deferred replacement UI. The 3x run reports clock drift;
+real-time smoothness and device behavior remain unverified. Fly edge behavior is locally reproduced from the
+reviewer's chain and repo deployment configuration, not verified against a live deployment.
+[Current evidence and limiter inventory](../../.look/evidence/room-fast-forward-server/proxy-evidence.json)
+supersede earlier evidence for this delta. No push or ship was run.

@@ -16,6 +16,14 @@ export const CLOSE = {
 export const MAX_MSG = 16000;
 
 export type WireMsg = { t: string; [k: string]: unknown };
+/** Server-origin only; clients have no room replacement command on the socket. */
+export type ReplacingNotice = { label: string; seconds: number };
+/** Placeholder UI copy from room-fast-forward.md, pending owner review. */
+export const replacingText = ({ label, seconds }: ReplacingNotice) =>
+  `This room will be replaced with ${label} in ${seconds} seconds. What you carry and your finds here will be lost.`;
+/** Placeholder post-reset line from the plan; the client decides whether this browser actually rebirthed. */
+export const replacedText = (label: string, shared: boolean) =>
+  `${shared ? 'The shared island' : 'This room'} was replaced with ${label} for testing. The world changed for everyone, and what you carried and found here is gone.`;
 export const encode = (msg: WireMsg) => JSON.stringify(msg);
 /** The message, or null for anything that is not a JSON object with a string `t`. */
 export function decode(data: unknown): WireMsg | null {

@@ -24,6 +24,13 @@ Place's Go to, Test scenarios, disposable TEST runs and setup links were deleted
 
 ## Jump in
 
+**Server replacement is available to operators** through `npm run server -- replace` or the authenticated endpoint
+in [server/README.md](../../server/README.md#replace-room-with-stage). It replaces the same room for everyone,
+including the shared island when enabled, after typed-name confirmation and an occupied-room override/countdown.
+A pinned backup restores the previous world; room birth changes reset personal state under the existing reset rules.
+The countdown event and exact notice-text hooks are built; visible notifications, stage landing and the Dev dock
+control remain client work. Jump in rows stay for now. Replaced jump rooms leave the automatic expiry pool.
+
 A playtest jump-in opens a fresh private room on the real server, seeded at a stage of the route, so a beat can be played without replaying everything before it ([plan](../plans/playtest-jump-in.md)). The shared `boogle` world is never touched: the server refuses any room that isn't a new jump room, has a save or is loaded. Links work for anyone and land in a new room each time, for example https://boogle.club/?from=hook-taken (right after the hook, before Q3), https://boogle.club/?from=hook-earned (the quarry gate) and https://boogle.club/?from=start (from the beginning, a fresh private room with no fall). Pause → More → **Jump in** lists the same rows; it shows with Dev on, and inside any jump room, where its header reads "This room started at …" with a way back to the shared island.
 
 - **Rows** (`src/world/railway-jump.ts`, in route order): From the beginning, Just woke, Cart starts, Hook earned, Quarry gate, Sea switch, Boiler waiting, Glide earned, Trains running, Pier reached, Works open, Crossing built, Deck laid, Gap footed, Ring joined. Each names its stage, a one-line description and where you land.

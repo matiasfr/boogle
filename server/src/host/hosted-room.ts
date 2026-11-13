@@ -162,6 +162,15 @@ export function createHostedRoom({
   let lead: string | null = null;
   const retired = new Set<string>(); // sessions a newer tab of their player replaced: turned away if they come back
   let closing = false;
+  let replacement: { label: string; until: number } | null = null;
+  const replacingNotice = () =>
+    replacement
+      ? {
+          t: 'replacing',
+          label: replacement.label,
+          seconds: Math.max(0, Math.ceil((replacement.until - performance.now()) / 1000)),
+        }
+      : null;
   let emptySince = performance.now(); // when the last client was gone for good (rooms.ts unloads idle rooms)
 
   const write = (c: Client, text: string) => {
@@ -433,6 +442,8 @@ export function createHostedRoom({
       chars += size;
     }
     sendList(true);
+    const notice = replacingNotice();
+    if (notice) ws.send(encode(notice));
     if (lead !== id) checkLead();
     if (railway) (world as RailwayWorldHost).wake(); // a paused room applies its away credit before anyone sees it
   }
@@ -453,6 +464,13 @@ export function createHostedRoom({
     world,
     replication,
     join,
+    replacing(label: string, seconds: number) {
+      replacement = { label, until: performance.now() + seconds * 1000 };
+      toAll(encode({ t: 'replacing', label, seconds }));
+    },
+    clearReplacing() {
+      replacement = null;
+    },
     status: () => ({
       boot,
       tick: world.sync.world.tick,
@@ -471,7 +489,7 @@ export function createHostedRoom({
           }
         : {}),
     }),
-    idleMs: () => (clients.size || gone.size ? 0 : performance.now() - emptySince),
+    idleMs: () => (replacement || clients.size || gone.size ? 0 : performance.now() - emptySince),
     async close({ save = true } = {}) {
       closing = true;
       clearInterval(housekeep);

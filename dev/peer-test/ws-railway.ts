@@ -1218,6 +1218,134 @@ export async function railwayJumpIn(c: Ctx) {
     'the shared room was not created or changed',
     sharedBefore === null ? sharedAfter === null : !!sharedAfter && sharedAfter.equals(sharedBefore),
   );
+  // The replacement checkpoint uses the same two live browser mirrors, at a later played tick, then restores
+  // the pinned old world. These are the real room hooks; a peer relay cannot invoke onReplacing.
+  await ev(J0.page, () => (window.T.railMessages.length = 0));
+  jumpCheck(
+    'replace: a fresh command session opens before occupying a seat',
+    (await waitFor(async () => {
+      await ev(J0.page, () => window.T.railOpen());
+      return (await rail(J0)).messages.some((m) => m.t === 'r:session');
+    })) >= 0,
+  );
+  const seatSession = (await rail(J0)).messages.findLast((m) => m.t === 'r:session')!;
+  await ev(J0.page, () => window.T.railStand(0, 0, 0));
+  const sit = {
+    op: 'seat.sit' as const,
+    id: 'machine-deck-0',
+    epoch: Number(seatSession.epoch),
+    request: Number(seatSession.next),
+  };
+  await ev(J0.page, (edit: typeof sit) => window.T.railEdit(edit), sit);
+  jumpCheck(
+    'replace: both peers mirror the occupied seat before replacement',
+    await both((s) => s.seats.length === 1 && s.seats[0]!.pid === 'jump0'),
+  );
+  const beforeBorn = await ev(J0.page, () => window.T.room!.born());
+  await Promise.all(
+    [J0, J1].map((p) =>
+      ev(p.page, () => {
+        const events: string[] = [];
+        document.documentElement.dataset.replaceEvents = '[]';
+        window.T.room!.onReplacing(({ label, seconds }: { label: string; seconds: number }) => {
+          events.push(`notice:${label}:${seconds}`);
+          document.documentElement.dataset.replaceEvents = JSON.stringify(events);
+        });
+        window.T.room!.onConnection((connected: boolean) => {
+          if (!connected) events.push('disconnected');
+          document.documentElement.dataset.replaceEvents = JSON.stringify(events);
+        });
+      }),
+    ),
+  );
+  // Keep enough played clock beyond the seed for reconnect latency not to mask the lower-tick replacement.
+  await advancePast(await hostedWorld(c, id), (await rail(J0)).tick + 600);
+  jumpCheck(
+    'replace: both peers observe the played clock before replacement',
+    await both((s) => s.tick >= (c.hosted(id)?.world.sync.world.tick ?? 0) - 60),
+  );
+  const preChange = await rail(J0);
+  const replaced = await fetch(`http://127.0.0.1:${c.port()}/admin/rooms/${id}/replace`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer peer-test-advance-32-char-key-000000', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stage: 'q3-done', confirm: room, override: true }),
+  });
+  jumpCheck('replace: authenticated request succeeds', replaced.status === 200, await replaced.clone().text());
+  const record = (await replaced.json()) as { backup: string };
+  const births = () => Promise.all([J0, J1].map((p) => ev(p.page, () => window.T.room!.born())));
+  // The production room-reset feature reloads on changed born. This bare transport page does not install features:
+  // observe that trigger first, retain notice evidence, then reproduce its reload before reading a fresh mirror.
+  const reloadPeers = () =>
+    Promise.all(
+      [J0, J1].map(async (p) => {
+        await p.page.reload();
+        p.selfId = await ev(p.page, () => window.T.start());
+      }),
+    );
+  jumpCheck(
+    'replace: both peers reconnect with a new birth',
+    (await waitFor(async () => (await births()).every((born) => born && born !== beforeBorn), 15000)) >= 0,
+  );
+  const events = await Promise.all(
+    [J0, J1].map((p) =>
+      ev(p.page, () => JSON.parse(document.documentElement.dataset.replaceEvents ?? '[]') as string[]),
+    ),
+  );
+  jumpCheck(
+    'replace: both peers receive countdown before disconnect',
+    events.every((rows) => {
+      const notice = rows.findIndex((row) => row.startsWith('notice:'));
+      return notice >= 0 && rows.indexOf('disconnected', notice + 1) > notice;
+    }),
+    JSON.stringify(events),
+  );
+  const newBorn = await births();
+  jumpCheck('replace: both peers receive the same new birth', newBorn[0] !== beforeBorn && newBorn[0] === newBorn[1]);
+  await reloadPeers();
+  jumpCheck(
+    'replace: both peers reload into the unplayed Q3 seed',
+    await both((s) => s.line2[2] === 1 && left(s) === source.remaining, 15000),
+  );
+  jumpCheck('replace: both mirrors agree in the replaced world', await agreeOn([J0, J1]));
+  jumpCheck(
+    'replace: v41 host and both peers have no seat rows',
+    (await both((s) => s.seats.length === 0)) && (await hostedWorld(c, id)).status().seats.length === 0,
+  );
+  const seedState = await rail(J0);
+  jumpCheck(
+    'replace: the played world returns to a lower seed tick',
+    seedState.tick < preChange.tick,
+    `${preChange.tick} -> ${seedState.tick}`,
+  );
+  const restored = await fetch(
+    `http://127.0.0.1:${c.port()}/admin/rooms/${id}/restore?force=1&backup=${encodeURIComponent(record.backup)}`,
+    {
+      method: 'POST',
+      headers: { Authorization: 'Bearer peer-test-report' },
+    },
+  );
+  jumpCheck('replace: pinned backup restores successfully', restored.status === 200, await restored.clone().text());
+  jumpCheck(
+    'replace: original birth returns on both peers',
+    (await waitFor(async () => (await births()).every((born) => born === beforeBorn), 15000)) >= 0,
+  );
+  await reloadPeers();
+  jumpCheck(
+    'replace: both peers recover the old Q3 world and chop',
+    await both((s) => lowered(s) && s.line2[2] === 1 && s.line2[3] !== 1, 15000),
+  );
+  jumpCheck('replace: restored mirrors agree', await agreeOn([J0, J1]));
+  jumpCheck('replace: restoring the save also leaves transient seats empty', await both((s) => s.seats.length === 0));
+  const restoredState = await rail(J0);
+  console.log(
+    'Replacement checkpoint',
+    JSON.stringify({
+      before: { tick: preChange.tick, hash: preChange.hash },
+      seed: { tick: seedState.tick, hash: seedState.hash },
+      restored: { tick: restoredState.tick, hash: restoredState.hash },
+      backup: record.backup,
+    }),
+  );
   await Promise.all([J0, J1].map((p) => p.page.close()));
 }
 // Step a fresh railway room's clock past `tick`. A step does nothing until the room's startup checkpoint (and any stamp
