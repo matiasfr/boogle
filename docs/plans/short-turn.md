@@ -720,3 +720,40 @@ greybox route's level findings. **What remains his:**
   1,400 stays a four-seed figure. Call 109's "the 1,600 cap everywhere" becomes "1,350 settled at light asks, 1,500
   settled at heavy asks, 1,600 growing". Table C's heavy tail (1.0%, none over 1,158) is still missed and stays the
   recorded target.
+
+### 7. Ruling on build step 1's sheet (designer, 2026-11-12)
+
+The re-measure on the fourth car's extent (`car4/rules` at 5b5ce4a0f; 48 seeds, hold 75%; "late" is base worlds built
+with the hold off, "built-with" is built with six trains and the hold on, as a shipped room). Figures are the
+orchestrator's brief of the sheet; I ran nothing. **Cleared to build the rule** (fleet six, the control halt, the
+tunables, the telling) on top of the fourth car.
+
+| Gate | Limit | E0 | Late | Built-with |
+| --- | --- | --- | --- | --- |
+| Light settled worst | 1,350 | 1,536 | 1,275 | 1,106 |
+| Light settled share over 1,050 | 0.5% | 3.03% | 0.17% | 0.13% |
+| Heavy settled share over 1,050 | 3.62% | 7.24% | 3.59% | 1.38% |
+| Heavy settled mean | 525 | 601 | 493 | 481 |
+| Heavy settled worst | 1,500 | 1,553 | 1,470 | 1,362 |
+| Whole leg worst, heavy / light | 1,600 | 1,484 / 1,544 | 1,470 / 1,353 | 1,470 / 1,353 |
+| Gorge-bound journey mean, heavy / light | E0's | 2,503 / 1,985 | 2,390 / 1,926 | 2,375 / 1,934 |
+
+1. **The light homeward trip on the growing leg, +5.4% (1,665 against 1,579): not a kill, and it is a miss of the
+   rule as I wrote it.** Gate 6 above gave "the rider's mean trip at most 5% over" no scope. The rule is restated
+   (Default): **5% on the settled line** (met: +3.4% to +3.6% at most); **on the growing leg the gate is door to door,
+   the mean wait plus the mean trip no higher than E0's for each way and rate, with the trip alone at most 6% over.**
+   Why: 86 ticks is under 9 s on a 2 minute 38 ride, and the same change took about 80 ticks off the mean light wait
+   on the whole leg (429 to 349 on the first sheet), so the homeward rider is about level and everyone else is ahead.
+   The 5% line was drawn to stop a hold slowing rides for no gain, which is not what this is. The checkpoint prints
+   the homeward door-to-door figure at light asks on this base; if it is higher than E0's, it comes back here.
+2. **The Railhead's outward waits are not a real cost,** by the test set in ruling 1: over 96 seeds the share over
+   1,050 and the p95 both fall (heavy 1.81% and 979 to 1.12% and 916; light 2.49% and 963 to 1.93% and 809), none over
+   1,600. Closed.
+3. **The platoon is left for the next leg.** It still forms at the signal spacing, and every gate is met with it
+   there; built-with has the smallest hole. Nothing is tried now. It is the first thing measured when the next leg
+   sets its trains and signals, with the errand-exempt end hold of ruling 3 as the candidate.
+4. **The checkpoint gates on built-with,** against the limits above unchanged (they are not tightened to what was
+   measured). A bump wipes every room, so built-with is the only state a room can be in; late is printed beside it and
+   not gated. Two things the sheet has not yet shown are owed at the checkpoint: Ring Island's stand past the dwell on
+   the whole leg (at most 200; 199 on settled), and where the 801-tick stand is, with its count. It is at a block
+   signal, away from a platform; over 1,200 anywhere is still a kill.
