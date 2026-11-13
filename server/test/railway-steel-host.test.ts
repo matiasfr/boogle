@@ -2,7 +2,8 @@
 // take judged at the yard, the feed at the works' doorway, the install at the Roundhouse table; malformed kinds, lines,
 // parts and revisions refused without a throw, and a stale install a noop. The greybox route's leg 1 ops (v32) as real
 // r:edit messages: the frame feed, the pickups and the barriers keep their `leg`/`id` through railwayRequestEdit;
-// and a guard that every op's fields the rules read survive it.
+// and a guard that every op's fields the rules read survive it. The fourth car (docs/plans/fourth-car.md, R3, v33):
+// the install replicated to a fitted train and a joiner's snapshot, and a rider's ask from the steel car's deck.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -35,6 +36,13 @@ import { Account, Pile } from '../../src/sim/railway-components.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
 import { RAIL_ACTIONS, railValid, type Actor } from '../../src/world/railway-server.ts';
 import { railwayRequestEdit } from '../src/host/railway-requests.ts';
+import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
+import { train } from '../../src/sim/railway-rows.ts';
+import { LINE_SLOTS } from '../../src/sim/railway-trains.ts';
+import { TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
+import { railLinePoint } from '../../src/sim/railway-line-path.ts';
+import { RAIL_HALTS, trainPassesBy } from '../../src/sim/railway-lines.ts';
+import { stopsOf } from '../../src/sim/railway-queries.ts';
 
 type Obj = Record<string, unknown>;
 type At = [number, number, number];
@@ -55,10 +63,17 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
     positions: () => [],
   });
   h.onSend((m) => sent.push(m));
+  // Clients that read the replication (`connect`): each a mirror filled from the packets the host sends it.
+  const mirrors = new Map<string, ReturnType<typeof createRailwayMirror>>();
   const ticks = async (n: number) => {
     for (let i = 0; i < n; i++) {
       now += 100;
       h.step(0.1);
+      if (!mirrors.size) continue;
+      h.replication.commit(h.sync.roomStep());
+      h.replication.flush(h.sync.roomStep(), (cid, _p, json) => {
+        assert.ok(mirrors.get(cid)?.mirror.apply(JSON.parse(json), 0), 'a well-formed packet');
+      });
     }
     await h.sync.whenDurable();
   };
@@ -78,6 +93,17 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
       return h.rules.railway.world();
     },
     ticks,
+    /** The room's rule tick now. */
+    get tick() {
+      return h.sync.world.tick;
+    },
+    /** A client joins the replication now; its mirror's world once the whole state has reached it. */
+    connect(cid: string) {
+      const m = createRailwayMirror();
+      mirrors.set(cid, m);
+      h.replication.addClient(cid);
+      return () => (m.synced() ? m.world() : undefined);
+    },
     later(ms: number) {
       now += ms;
     },
@@ -217,6 +243,65 @@ test('steel host: the install at the table, once, two players pressing on the sa
     assert.deepEqual([line(r.w, 1).boiler, line(r.w, 1).fitted >= 0], [1, true], 'line 2 fitted');
     assert.equal(await r.action(install(), spot(SHED_TABLE), 't'), 'noop', 'the second press saw a stale fit');
     assert.equal(await r.action(install(1), spot(SHED_TABLE), 't'), 'noop', 'already the longer boiler');
+    // The fourth car (R3a): the car is drawn from the replicated row's `boiler`, so the one fact to prove is that a
+    // line 2 train takes the fit standing at the Village and that row reaches a client and a late joiner.
+    const seen = r.connect('c');
+    const village = (w: typeof r.w, k: number) =>
+      train(w, k).phase === TRAIN_PHASE.STAND && train(w, k).at === 0 && train(w, k).boiler === 1;
+    let fitted = -1;
+    for (let t = 0; fitted < 0; t++) {
+      assert.ok(t < 3000, 'a line 2 train stands fitted at the Village');
+      await r.ticks(1);
+      fitted = LINE_SLOTS[1]!.find((k) => village(r.w, k)) ?? -1;
+    }
+    await r.ticks(2);
+    assert.equal(train(seen()!, fitted).boiler, 1, 'the replicated row wears the longer boiler');
+    const joiner = r.connect('late');
+    await r.ticks(3);
+    assert.ok(joiner(), "the joiner's snapshot is whole");
+    assert.equal(train(joiner()!, fitted).boiler, 1, "and its row wears it: the joiner's train has the steel car");
+    for (const k of LINE_SLOTS[1]!)
+      assert.equal(train(joiner()!, k).boiler, train(r.w, k).boiler, `train ${k}: the joiner's row is the host's`);
+  } finally {
+    await r.done();
+  }
+});
+
+// The fourth car (R3b): a rider on the steel car of the wagon's train (11.1 m behind the pose, RIDER_SPAN) asks for
+// the quarry as a real r:edit, standing at the Village: accepted. From 22 m behind (past the rider's 10 m of reach
+// and the train's 11.1 m): refused. No new op; this is the reach the steel car's deck leans on.
+test('steel host: a rider asks from the steel car of the wagon train, 11.1 m behind its pose; 22 m is out of reach', async () => {
+  const r = await host('steel-car-call', fixture('steel-home'));
+  try {
+    assert.equal(await r.action(install(), spot(SHED_TABLE)), 'accepted');
+    const k = LINE_SLOTS[1]!.find((s) => train(r.w, s).wagon);
+    assert.ok(k !== undefined, 'the wagon is on a line 2 train');
+    // It takes the fit at its next Village stand: fitted, it has the steel car.
+    const fitted = () => train(r.w, k).phase === TRAIN_PHASE.STAND && train(r.w, k).at === 0 && train(r.w, k).boiler;
+    for (let t = 0; !fitted(); t++) {
+      assert.ok(t < 3000, 'the wagon train stands fitted at the Village');
+      await r.ticks(1);
+    }
+    const along = trainAlong(train(r.w, k), 1, r.tick),
+      y = RAIL_HALTS[2]!.platforms[0].y;
+    // Straight back from the pose along the steel car's line (line 2 itself ends 18.25 m behind, at the table), in
+    // whole centimetres as a client sends its position.
+    const pose = railLinePoint(1, along),
+      deck = railLinePoint(1, along - 1110);
+    const behind = (cm: number): At => [
+      Math.round(pose.x + ((deck.x - pose.x) * cm) / 1110),
+      y,
+      Math.round(pose.z + ((deck.z - pose.z) * cm) / 1110),
+    ];
+    // A halt up the line this train stops at on request (not an end, not one it passes by now the Pier is open).
+    const stops = stopsOf(r.w, 1),
+      id = RAIL_HALTS.findIndex(
+        (h) => h.line === 1 && h.stop > 0 && h.stop < stops.length - 1 && !trainPassesBy(1, h.stop, 1, stops.length),
+      );
+    assert.ok(id >= 0, 'a request halt up line 2');
+    const ask = { op: 'rail.call', id, dir: 1, train: k };
+    assert.equal(await r.action(ask, behind(2200)), 'rejected', '22 m behind the pose: beside no car');
+    assert.equal(await r.action(ask, behind(1110)), 'accepted', "on the steel car's deck");
   } finally {
     await r.done();
   }
