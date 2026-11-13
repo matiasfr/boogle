@@ -34,7 +34,10 @@ import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { railApply } from '../../src/sim/railway-systems.ts';
 import { Account, Pile } from '../../src/sim/railway-components.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
-import { RAIL_ACTIONS, railValid, type Actor } from '../../src/world/railway-server.ts';
+import { RAIL_ACTIONS, RIDER_REACH, RIDER_SPAN, railValid, type Actor } from '../../src/world/railway-server.ts';
+import { steelCarOffset } from '../../src/entities/railway/cars.ts';
+import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
+import { currentRoomId, roomNamespaces } from '../src/room-ids.ts';
 import { railwayRequestEdit } from '../src/host/railway-requests.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import { train } from '../../src/sim/railway-rows.ts';
@@ -302,6 +305,47 @@ test('steel host: a rider asks from the steel car of the wagon train, 11.1 m beh
     const ask = { op: 'rail.call', id, dir: 1, train: k };
     assert.equal(await r.action(ask, behind(2200)), 'rejected', '22 m behind the pose: beside no car');
     assert.equal(await r.action(ask, behind(1110)), 'accepted', "on the steel car's deck");
+  } finally {
+    await r.done();
+  }
+});
+
+// Review of car4/rules (R3b's gap): 11.1 m and 22 m read the same on v32's span (17.4 m of reach), so the case above
+// passes with RIDER_SPAN left at 740. This one pins v33's own edge on a standing train, as real r:edit: 21.0 m behind
+// the pose is in reach (refused on v32), 21.25 m is not, and the span is the steel car's place on the wagon's train.
+// It also shows what the reach is not: 21.0 m straight back is 8.3 m past the train's tail (12.7 m), on no car.
+test('review (car4): the reach edge of a standing fitted train is 21.1 m, the steel car plus the rider 10 m', async () => {
+  assert.equal(RIDER_SPAN, Math.round(-steelCarOffset(true) * 100), "the span is the steel car's centre");
+  assert.equal(RIDER_REACH + RIDER_SPAN, 2110);
+  // A v32 room id is not this server's railway: no host is made for it (the deploy gap).
+  assert.equal(isRailwayRoom('rail-v32-somewhere'), false);
+  assert.equal(currentRoomId('rail-v32-somewhere', roomNamespaces(['*'])), false);
+  const r = await host('steel-car-edge', fixture('steel-home'));
+  try {
+    assert.equal(await r.action(install(), spot(SHED_TABLE)), 'accepted');
+    const k = LINE_SLOTS[1]!.find((s) => train(r.w, s).wagon)!;
+    const fitted = () => train(r.w, k).phase === TRAIN_PHASE.STAND && train(r.w, k).at === 0 && train(r.w, k).boiler;
+    for (let t = 0; !fitted(); t++) {
+      assert.ok(t < 3000, 'the wagon train stands fitted at the Village');
+      await r.ticks(1);
+    }
+    const along = trainAlong(train(r.w, k), 1, r.tick),
+      y = RAIL_HALTS[2]!.platforms[0].y;
+    const pose = railLinePoint(1, along),
+      deck = railLinePoint(1, along - 1110);
+    const behind = (cm: number): At => [
+      Math.round(pose.x + ((deck.x - pose.x) * cm) / 1110),
+      y,
+      Math.round(pose.z + ((deck.z - pose.z) * cm) / 1110),
+    ];
+    const stops = stopsOf(r.w, 1),
+      id = RAIL_HALTS.findIndex(
+        (h) => h.line === 1 && h.stop > 0 && h.stop < stops.length - 1 && !trainPassesBy(1, h.stop, 1, stops.length),
+      );
+    const ask = { op: 'rail.call', id, dir: 1, train: k };
+    assert.equal(train(r.w, k).phase, TRAIN_PHASE.STAND, 'still standing: no travel in the lag window');
+    assert.equal(await r.action(ask, behind(2125)), 'rejected', '21.25 m: past the reach');
+    assert.equal(await r.action(ask, behind(2100)), 'accepted', '21.0 m: inside it (17.4 m on v32)');
   } finally {
     await r.done();
   }

@@ -1,4 +1,5 @@
-> **Status: plan for the designer's and the owner's review (12 November 2026).** Nothing is built. The planner ran one
+> **Status (12 November 2026): R1 to R3 built on `car4/rules` (the rules, the Village stop mark, the host tests;
+> reviewed, ship); V1, V2 and C1 to come.** The plan as written for review follows. The planner ran one
 > trial in this worktree (the planned extent and stop mark applied, uncommitted, then reverted): its figures are marked
 > *trial*; everything else is read from main at `e9a7e752` or is *arithmetic*. The next Ring Island step after the
 > garage's install moment. One rules change with its own bump (v33); no new op, no new field.
