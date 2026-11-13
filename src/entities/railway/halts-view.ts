@@ -761,7 +761,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       if (inShed[k] === true && !shed && shown) joining[k] = 0;
       inShed[k] = shed;
       const t = joining[k]!;
-      grow[k] = t < 0 ? 1 : 1 - (1 - t) ** 3;
+      grow[k] = t < 0 ? 1 : t * t * (3 - 2 * t);
       if (t >= 0) joining[k] = t + dt >= 1 ? -1 : t + dt;
     });
     boards.trains(
@@ -924,6 +924,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       boardGlider: boards.gliderMark(),
       boardFaces: boards.faces(),
       ringMapTable: table.inspect(),
+      markerGrow: grow.map((n) => +n.toFixed(3)),
       /** The up track's platforms (generic-lines step 2): each one's halt row, whether it stands, its deck's centre
        * and the walk from it to today's side over the plank crossing (UP_HALTS order, as upLevers). */
       upPlatforms: ups.inspect().map((g, i) => ({ ...g, ...upLevers[i]!.centre, path: upLevers[i]!.path })),

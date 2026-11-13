@@ -606,7 +606,10 @@ export async function createRailwayTrains(
       tr.seen = false;
       tr.beat = -1;
       tr.join = -1;
-      for (const c of tr.cars) c.mesh.scale.setScalar(1);
+      for (const c of tr.cars) {
+        c.mesh.scale.setScalar(1);
+        c.rock.position.y = -(BOTTOM + c.hy);
+      }
       tr.model.cars[0]!.scale.set(1, 1, 1);
       drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
     });
@@ -836,8 +839,12 @@ export async function createRailwayTrains(
         if (tr.join >= 0) {
           tr.join += dt;
           const u = reducedMotion ? 1 : Math.min(1, tr.join / JOIN_S),
-            s = Math.max(0.02, 1 - (1 - u) ** 3);
-          for (const c of tr.cars) c.mesh.scale.setScalar(s);
+            s = Math.max(0.02, u * u * (3 - 2 * u));
+          // Each car grows from the rails under it (its frame hangs BOTTOM + hy under the body's centre).
+          for (const c of tr.cars) {
+            c.mesh.scale.setScalar(s);
+            c.rock.position.y = -(BOTTOM + c.hy) / s;
+          }
           if (u >= 1) tr.join = -1;
         }
         // Amber: on its way to a request stop it will make, its riders' or a lever's it serves (so a train running
@@ -1007,6 +1014,7 @@ export async function createRailwayTrains(
         cars: carsOf(tr).map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
         crates: crates.deckCount(tr.deck),
         kitBoard: tr.board?.mark() ?? '',
+        joinScale: +tr.cars[0]!.mesh.scale.x.toFixed(3),
         lashed: tr.boiler.visible || tr.long.boiler.visible,
         longBoiler: tr.long.body.visible,
         stopLamp: tr.lamp.on,
@@ -1026,6 +1034,7 @@ export async function createRailwayTrains(
             }
           : {}),
       })),
+      legKitFlying: { ...legKitFlight },
       oldTrain: { shown: !line2Trains(adapter.read.world()), rust: look.rustTrainU.value, stop: TRAIN_HOME[0] },
       bolting: folk.bolting(),
     }),
