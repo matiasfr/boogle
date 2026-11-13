@@ -3,7 +3,8 @@
 // reached Node literally on Windows, matched nothing and passed with 0 tests. An empty match now fails.
 // Extra arguments (npm run test:unit -- --test-name-pattern=x) go to node --test ahead of the files. `--ci` (CI's unit
 // job), `--ship` (a non-review ship's CI) and `--long` (npm run test:long, nightly) pick the run's settings
-// (./test-env.ts). `--ship` runs only the files in UNIT_ONLY (space-separated; dev/ci/unit-select.ts picks them) and
+// (./test-env.ts). UNIT_ONLY selects files in every mode (space-separated; dev/ci/unit-select.ts picks them).
+// `--ship` requires UNIT_ONLY and
 // refuses to run with none, so a missing selection cannot pass having tested nothing.
 import './node-version.ts'; // first: re-runs under the pinned Node
 import fs from 'node:fs';
@@ -17,7 +18,7 @@ if (ship && !only.length) {
   console.error('test:unit --ship: UNIT_ONLY lists no test files (dev/ci/unit-select.ts prints them)');
   process.exit(1);
 }
-const files = ship ? only.sort() : fs.globSync('test/**/*.test.ts').sort();
+const files = only.length ? only.sort() : fs.globSync('test/**/*.test.ts').sort();
 if (!files.length) {
   console.error('test:unit: no files match test/**/*.test.ts (run it from the repository root)');
   process.exit(1);
