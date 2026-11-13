@@ -14,10 +14,10 @@ function peer() {
 }
 const copy = (v: unknown) => JSON.parse(JSON.stringify(v));
 
-// A world with something in it: a frisbee on the ground.
+// A world with a changed retained state: the classic transport's roster.
 function played() {
   const s = peer();
-  s.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
+  s.submitEdit({ op: 'who.set', i: 0, j: 0, n: 'Ana', c: 3 });
   for (let k = 0; k < 5; k++) s.updateWorld(0.1);
   return { snap: copy(s.snapshot()), hashes: s.stateHashes() };
 }

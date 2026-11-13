@@ -1,9 +1,6 @@
-// World inputs: the static facts every peer builds the shared world from. The land (grid size and gifts layout) is
-// pinned in src/world/home-land.json, which the server and Node tests run the rules on; the state and op order in test/fixtures/world-inputs.json.
-// It checks, in the running game: the grid size, the state key order (snapshot, load and hash order), the op order
-// (once sync has registry()) and the gifts layout (trees, perches), which Node tests run the rules on
-// (test/helpers/land.ts). The ground's heights are not an input: no rule reads them.
-// A change in any of them means peers on different builds disagree, so update the fixture only on purpose:
+// World inputs: retained classic registry fixture, production browser/Node registry, grid and railway catalog parity.
+// The gifts layout was only read by the retired classic states and no longer feeds a production rule.
+// Update the registry fixture only on purpose:
 // `UPDATE_FIXTURE=1 npm run scenario -- world-inputs`, and say why in the commit. Serves "Determinism from day one".
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,39 +24,40 @@ const LAND = fileURLToPath(new URL('../../src/world/home-land.json', import.meta
 const READ = `
   const sync = await import('/src/world/sync.ts');
   const { land } = await import('/src/world/game-world.ts');
-  const pick = (o) => JSON.parse(JSON.stringify(o));
   return {
     n: land.n,
     states: Object.keys(sync.snapshot().data),
     ops: sync.registry().ops,
-    layout: { trees: pick(land.layout.trees), perches: pick(land.layout.perches) },
   };`;
-
-const counts = (l: { trees?: unknown[]; perches?: unknown[] } | null) =>
-  l ? `${l.trees?.length} trees / ${l.perches?.length} perches` : '-';
 
 export default {
   about: 'classic registry fixture and production line-one browser/Node registry and numeric catalog parity',
   timeout: 300000,
   async run(t: T) {
-    // The current game installs the classic registry (src/world/game-world.ts); the railway is mirrored, not
-    // registered. The fixture pins the classic registry, which Node tests run the rules on.
-    const g = await t.open({ name: 'inputs', size: [192, 120], query: 'proto=net' });
-    const ready = await g.waitFor(`window.boogle?.land?.layout?.trees?.length > 0`, { timeout: 90000 });
-    if (!t.check('the game is up with the gifts layout', ready >= 0, ready + ' ms')) return;
+    // The classic transport retains roster/tune in Node; the production browser mirrors its server roster.
+    const g = await t.open({ name: 'inputs', size: [192, 120] });
+    const ready = await g.waitFor(`!!window.boogle?.sync`, { timeout: 90000 });
+    if (!t.check('the game is up', ready >= 0, ready + ' ms')) return;
     const page = await g.eval(READ);
     const classic = createSync();
     installRules(classic, { n: page.n, layout: { trees: [], perches: [] } });
     const prefix = classic.registry();
     const got = {
       ...page,
-      states: page.states.slice(0, prefix.states.length),
-      ops: page.ops?.slice(0, prefix.ops.length),
+      states: prefix.states,
+      ops: prefix.ops,
     };
+    const productionRegistry = createSync();
+    installRules(
+      productionRegistry,
+      { n: page.n, layout: { trees: [], perches: [] } },
+      () => createRailwayMirror().roster,
+    );
     t.check(
-      'the browser registers the classic registry first, as Node does',
-      JSON.stringify([got.states, got.ops]) === JSON.stringify([prefix.states, prefix.ops]),
-      `got ${JSON.stringify(got.states)}, Node ${JSON.stringify(prefix.states)}`,
+      'the browser and Node register the retained production state and ops identically',
+      JSON.stringify([page.states, page.ops]) ===
+        JSON.stringify([productionRegistry.registry().states, productionRegistry.registry().ops]),
+      `got ${JSON.stringify(page.states)}, Node ${JSON.stringify(productionRegistry.registry().states)}`,
     );
     const old = fs.existsSync(FIXTURE) ? JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) : null;
 
@@ -71,9 +69,8 @@ export default {
         fs.writeFileSync(file, await prettier.format(JSON.stringify(data), { ...opts, filepath: file }));
       };
       const about = 'Pinned by dev/scenarios/world-inputs.ts (UPDATE_FIXTURE=1).';
-      await write(LAND, { about, n: got.n, layout: got.layout });
       await write(FIXTURE, { about, states: got.states, ops: got.ops ?? old?.ops ?? null });
-      t.check('wrote the land and the fixture', true, `${LAND}; ${got.states.join(',')}; ${counts(got.layout)}`);
+      t.check('wrote the registry fixture', true, `${FIXTURE}; ${got.states.join(',')}`);
       return;
     }
     const land = fs.existsSync(LAND) ? JSON.parse(fs.readFileSync(LAND, 'utf8')) : null;
@@ -85,7 +82,6 @@ export default {
     same('grid size', got.n, land.n);
     same('state key order', got.states, old.states);
     same('op order', got.ops, old.ops);
-    same('gifts layout', got.layout, land.layout, counts);
 
     // Reuse the one rendering page in a fresh room: PR scenarios deliberately prohibit a second GPU player.
     const production = new URL(g.page.url());

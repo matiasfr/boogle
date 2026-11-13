@@ -1,17 +1,13 @@
-// The rules contract (src/world/rules/README.md), checked over every module in RULES on the home land: the order pin,
-// identical edits giving identical hashes on two peers, snapshot round-trips, old saves, and rules purity.
+// The surviving classic transport contract: roster and haul tuning retain deterministic ordering and round-trips.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createSync } from '../src/world/sync.ts';
 import { RULES, installRules } from '../src/world/rules/index.ts';
 import { homeLand, fixture } from './helpers/land.ts';
-import { giftIndex } from '../src/sim/gift-catalog.ts';
-import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
-import { MAX_PILES, MAX_N } from '../src/sim/piles.ts';
 import type { Rules } from '../src/world/rules/types.ts';
 
-const CANONICAL = ['gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'tune', 'opening']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['roster', 'tune'];
 
 function peer() {
   const s = createSync({ env: { protoRoom: true, tuneController: () => true } });
@@ -20,80 +16,11 @@ function peer() {
   return { s, rules, after: {} as Record<string, number> };
 }
 type Peer = ReturnType<typeof peer>;
-const tick = (x: Peer, n = 1) => x.s.updateWorld(n * 0.1); // local mode: whole 100 ms ticks, edits apply next tick
-
-test('concurrent source takes preserve charges when destination capacity disappears before apply', () => {
-  const x = peer();
-  const { sources, stacks, piles } = x.rules;
-  const yieldN = x.rules.tune.get('yield');
-  stacks.add('a', 0, stacks.hard() - yieldN);
-  // A valid saturated save: all ground slots are full; only one handful fits on the player.
-  const snap = x.s.snapshot();
-  snap.data.piles = {
-    id: MAX_PILES + 1,
-    p: Array.from({ length: MAX_PILES }, (_, i) => [i + 1, i + 1, 10, 0, MAX_N]).flat(),
-  };
-  assert.equal(x.s.loadSnapshot(snap), true);
-  const source = sources.list()[0]!;
-  const edit = { op: 'src.take', ...source, id: 0 };
-  const charges = sources.charges(0);
-  const pileTotal = () => piles.piles.list.reduce((sum, p) => sum + p.n, 0);
-  const before = stacks.count('a') + pileTotal();
-  assert.equal(x.s.submitEdit(edit), true);
-  assert.equal(x.s.submitEdit(edit), true, 'both requests pass admission before the first applies');
-  tick(x);
-  assert.equal(stacks.count('a') + pileTotal() - before, yieldN);
-  assert.equal(sources.charges(0), charges - 1, 'the unplaceable second handful keeps its source charge');
-
-  stacks.take('a', yieldN);
-  assert.equal(x.s.submitEdit(edit), true, 'the preserved charge can be collected after making room');
-  tick(x);
-  assert.equal(sources.charges(0), charges - 2);
-  assert.equal(stacks.count('a'), stacks.hard());
-});
-
-test('concurrent source takes still spill the second handful when ground capacity remains', () => {
-  const x = peer();
-  const { sources, stacks, piles } = x.rules;
-  const yieldN = x.rules.tune.get('yield');
-  stacks.add('a', 0, stacks.hard() - yieldN);
-  const edit = { op: 'src.take', ...sources.list()[0]!, id: 0 };
-  const charges = sources.charges(0);
-  assert.equal(x.s.submitEdit(edit), true);
-  assert.equal(x.s.submitEdit(edit), true);
-  tick(x);
-  assert.equal(sources.charges(0), charges - 2);
-  assert.equal(stacks.count('a'), stacks.hard());
-  assert.equal(
-    piles.piles.list.reduce((sum, p) => sum + p.n, 0),
-    yieldN,
-  );
-});
-
-// One accepted edit per op, per system, built from that peer's state (a function builds its edit when its turn comes).
-// A new rules module with ops adds its script here.
+const tick = (x: Peer, n = 1) => x.s.updateWorld(n * 0.1);
 type Step = Record<string, unknown> | ((x: Peer) => Record<string, unknown>);
 const SCRIPTS: Partial<Record<keyof Rules, (x: Peer) => Step[]>> = {
-  gifts: () => [
-    { op: 'gift.toss', i: 230, j: 205, k: giftIndex('frisbee'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
-    ({ rules }) => {
-      const it = rules.gifts.gifts.items.find((x) => x.src === SRC.TOSS)!;
-      return { op: 'gift.take', i: it.i, j: it.j, id: it.id };
-    },
-  ],
   roster: () => [{ op: 'who.set', i: 0, j: 0, n: 'Ana', c: 3 }],
-  piles: () => [
-    ({ rules }) => {
-      rules.piles.drop(212, 188, 0, 9); // a pile to start from, the same on both peers (nothing else makes one yet)
-      return { op: 'pile.take', i: 212, j: 188, id: rules.piles.piles.list[0]!.id, n: 6 };
-    },
-    { op: 'pile.drop', i: 214, j: 188, n: 2 },
-  ],
-  sources: () => [{ op: 'src.take', i: 175, j: 200, id: 0 }],
-  bank: () => [{ op: 'bank.wake', i: 0, j: 0, ms: 3600000 }], // what a host that loaded an hour-old save measures
-  // the reset empties the haul states again; each module's change is checked right after its own script (play)
   tune: () => [
-    { op: 'tune.reset', i: 0, j: 0 },
     { op: 'tune.set', i: 0, j: 0, key: 'hard', v: 30 },
     ({ rules }) => ({
       op: 'tune.commit',
@@ -104,25 +31,9 @@ const SCRIPTS: Partial<Record<keyof Rules, (x: Peer) => Step[]>> = {
       expectedRevision: rules.tune.tune.revision,
       requestId: 'script',
     }),
-    { op: 'tune.fill', i: 0, j: 0 },
-  ],
-  sites: () => [
-    { op: 'site.stock', i: 0, j: 0, s: 0, ring: 0, n: 2 },
-    { op: 'site.stock', i: 0, j: 0, s: 0, ring: 1, n: 1 },
-    ({ rules }) => {
-      rules.sites.addFreight(60); // fill the Track ring the same way on both peers, so the machine can start
-      return { op: 'site.run', i: 0, j: 0, s: 0 };
-    },
-  ],
-  opening: () => [
-    { op: 'open.lay', i: 0, j: 0 }, // the proto shortcut lays the rest of the route (env protoRoom)
-    { op: 'open.start', i: 0, j: 0 },
-    { op: 'open.here', i: 0, j: 0 }, // everyone at the platform: the call ends early
   ],
 };
 
-// Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits;
-// x.after holds each module's state hash right after its own script.
 function play(x: Peer) {
   const edits: Record<string, unknown>[] = [];
   for (const m of RULES) {

@@ -1,6 +1,6 @@
 // Replay: a host (the server's role) and two clients on the real rules and the home land play a seeded stream of every
 // registered op (each rules module's `edits` generators, about a fifth of it junk). Midway a late joiner loads a
-// snapshot over the wire (after a toss), and at the end a fresh tab reloads a JSON snapshot. Every live peer must hash every state the same at every tick they share, every module's invariants must
+// snapshot over the wire, and at the end a fresh tab reloads a JSON snapshot. Every live peer must hash every state the same at every tick they share, every module's invariants must
 // hold, and a second run with the same seed must give the same results. See src/world/rules/README.md.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -36,7 +36,7 @@ function stream(seed: number): Stream {
 }
 const generators: Record<string, Gen> = Object.assign({}, ...MODULES.map((m) => m.edits ?? {}));
 
-// One tab. protoRoom: a playtest room, so the tune ops and the open.lay shortcut run too.
+// One tab. protoRoom keeps the retained haul tune ops enabled.
 function makePeer(seed: number, net: FakeNet | null, id: string, host?: boolean) {
   const s = createSync({ env: { protoRoom: true, tuneController: () => true } });
   const rules = installRules(s, homeLand());
@@ -75,21 +75,9 @@ function checkInvariants(x: Peer) {
 async function replay(seed: number) {
   const net = makeNet();
   const peers = [makePeer(seed, net, 'h', true), makePeer(seed, net, 'c1', false), makePeer(seed, net, 'c2', false)];
-  // A head start, the same on every peer before tick 1 (clients replace it with the host's snapshot anyway): piles of
-  // logs and ore to take, and the first site's Track ring full so a run can start (pours go to the Helper ring).
-  for (const x of peers) {
-    for (const [i, k] of [
-      [212, 0],
-      [230, 0],
-      [250, 1],
-    ])
-      x.rules.piles.drop(i!, 188, k!, 64);
-    x.rules.sites.addFreight(60);
-  }
   const master = stream(seed);
   const ops = peers[0]!.s.registry().ops;
-  // Opening day closes the route for good, so its ops play on their own near the end rather than in the random mix.
-  const mixed = ops.filter((op) => !op.startsWith('open.') && op !== 'tune.fill');
+  const mixed = ops;
   for (const op of ops)
     assert.ok(generators[op], `op ${op} has no edit generator (export const edits in its rules module)`);
   for (const op of Object.keys(generators)) assert.ok(ops.includes(op), `generator for unregistered op ${op}`);
@@ -112,24 +100,8 @@ async function replay(seed: number) {
   await run(net, peers, 6); // the host is up and both clients hold its snapshot
   await play(40);
   await play(30);
-  await play(8, 'gift.toss'); // a toss lands before the joiner copies the state fresh
-  assert.ok(
-    peers.some((x) => x.p.alive && x.applied.get('gift.toss')),
-    'no toss applied before the joiner',
-  );
   peers.push(makePeer(seed, net, 'late', false));
   await play(30);
-  // The ?proto=lay shortcuts, scripted by the host so the seeded stream stays as it was: reset the haul, fill the ring
-  // and start the machine.
-  const h0 = live(peers).find((x) => x.p.host)!;
-  for (const e of [{ op: 'tune.reset' }, { op: 'tune.fill' }, { op: 'site.run', s: 0 }]) {
-    assert.ok(h0.s.submitEdit({ i: 0, j: 0, ...e }), `lay leg: ${e.op} refused`);
-    await run(net, peers, 10);
-  }
-  // Opening day needs the whole route laid: the playtest shortcut, then a start (later ones are rejected).
-  await play(4, 'open.lay');
-  await play(4, 'open.start');
-  await play(4, 'open.here'); // everyone at the platform: the call ends early (later ones are rejected)
   await run(net, peers, 10); // settle: every stamped edit applied everywhere
 
   // A fresh tab reloads the new host's snapshot through JSON and ticks alone, in step with the room.

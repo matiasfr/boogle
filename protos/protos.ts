@@ -66,54 +66,34 @@ export const PROTOS: Proto[] = [
     id: 'net',
     title: 'The line feeds the town',
     step: 6,
-    status: 'live',
+    status: 'retired',
+    retired: { why: 'superseded', note: 'Classic state retired on 13 November 2026; the live railway owns the route.' },
+    merged: { label: 'Play Boogle', url: '/' },
     url: '/?room=proto-net&proto=net&layout=net-line',
     question: 'When the village steps up, do you want to go connect the next camp?',
     what: 'Connect a camp by rail: its crates ride to the village by themselves, the village steps up, the train speeds up and the rail fills the next work site.',
     since: '2026-11-02',
     spawn: { x: -24.5, z: 31, yaw: 0.02 }, // in the village, looking up the line at Camp 1's smoke
     verb: 'links',
-    variants: [
-      {
-        name: 'haul',
-        url: '/?room=proto-net&proto=net&layout=net-line&v=haul',
-        what: 'The town still grows and the train still speeds up, but you haul every section by hand.',
-      },
-      {
-        name: 'depot',
-        url: '/?room=proto-net&proto=net&layout=net-line&v=depot',
-        what: 'Each camp connected puts up a depot the wagon keeps stocked: one press takes a load, and the next trip is shorter.',
-      },
-    ],
   },
   {
     id: 'wagon',
     title: 'Ride: the wagon',
     step: 3,
-    status: 'answered',
+    status: 'retired',
     answer: {
       on: '2026-11-02',
       verdict: 'I think it’s fine just as a transportation.',
       next: 'The trackside show and the seat are cut; the wagon stays a ride you stand on. Choosing a single pace comes later.',
     },
+    retired: { why: 'superseded', note: 'Classic state retired on 13 November 2026; the live railway owns the route.' },
+    merged: { label: 'Play Boogle', url: '/' },
     url: '/?room=proto-wagon&proto=wagon',
     question: 'Would you ride it twice for no reason, and does each laid section make the ride feel like yours?',
     what: 'A greybox steam wagon on the laid rails: lay the route (panel, or −/+ for one section at a time), hop on a flatbed. On the island the step puts you on its deck.',
     since: '2026-11-01',
     spawn: { x: 13, z: -9, yaw: 3.0 }, // at the second station (Palm Walk), the wagon coming up the line towards you
     verb: 'riding',
-    variants: [
-      {
-        name: 'lively',
-        url: '/?room=proto-wagon&proto=wagon&v=lively',
-        what: 'Same 3 m/s, but the deck rocks and dips at every rail joint, your view jolts, more smoke.',
-      },
-      {
-        name: 'fast',
-        url: '/?room=proto-wagon&proto=wagon&v=fast',
-        what: 'Lively at double the speed (6.5 m/s): the island rushes past; jump off and you skid in a dust trail.',
-      },
-    ],
   },
   {
     id: 'look',

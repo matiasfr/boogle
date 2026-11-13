@@ -2,11 +2,17 @@
 // room can change a cap or a cost for everyone at the same tick. The complete effective configuration, including
 // defaults, is saved and hashed. Rail keys now run as Server kind over the same functions. Pure and deterministic.
 import { AGES, ROUTE, TRACK, costOf } from './route.ts';
-import { HARD_CAP, HARD_MAX } from './stacks.ts';
-import { FULL, YIELD, TRICKLE_EVERY, FULL_MAX } from './sources.ts';
 import { WAGON_CRUISE, WAGON_ACCEL, type WagonPace } from './wagon.ts';
 import { FNV_SEED, foldAll } from './hash.ts';
-import type { CostFn } from './sites.ts';
+type CostFn = (s: number, ring: number) => number;
+
+// Retained haul catalog values; their classic state owners retired at v39.
+const HARD_CAP = 60;
+const HARD_MAX = 200;
+const FULL = 2;
+const YIELD = 4;
+const TRICKLE_EVERY = 200;
+const FULL_MAX = 20;
 
 // Stable order: a key's index is folded into the hash.
 export const TUNABLES = [

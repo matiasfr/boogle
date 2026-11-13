@@ -1,7 +1,6 @@
 // Local bundle geometry and seating, shared by the game haul view and the isolated asset stage.
 import * as THREE from 'three/webgpu';
 import { abs, float, mix, normalGeometry, positionGeometry, sin, smoothstep as ss, vec3 } from 'three/tsl';
-import { HARD_CAP } from '../sim/stacks.ts';
 import { PIECE, pieceMesh, pieceColor, commitPieces } from './haul-pieces.ts';
 
 export const SHOWN = 22;
@@ -30,7 +29,8 @@ const TALL = slotsFor(1.4);
 const ROUND = slotsFor(0.9);
 const EXTENTS = new Map([TALL, ROUND].map((s) => [s, extentsOf(s)]));
 export const shownOf = (n: number): number => (n <= 12 ? n : Math.min(SHOWN, Math.round(12 + (n - 12) * 0.21)));
-export const lenOf = (n: number): number => 1 + 0.55 * Math.min(1, n / HARD_CAP);
+// Keep the established visual growth scale independently of the retired classic stack cap.
+export const lenOf = (n: number): number => 1 + 0.55 * Math.min(1, n / 60);
 const q = new THREE.Quaternion(),
   e = new THREE.Euler(),
   v = new THREE.Vector3(),

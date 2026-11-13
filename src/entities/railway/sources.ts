@@ -625,7 +625,6 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
 
   const previous = { ...backSeam };
   const count = () => carriedOf(adapter.read.pid)?.carry ?? 0;
-  backSeam.flyIns = false;
   backSeam.count = count;
   backSeam.remote = (peer) => {
     const pid = remotes.get(peer)?.pid;

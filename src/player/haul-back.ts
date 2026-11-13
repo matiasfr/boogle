@@ -18,11 +18,8 @@ export type CarryReadout = {
   attention: boolean;
 };
 
-// Seams for an owner that draws the carry its own way (Place, the railway): with
-// `flyIns` false this module draws no fly-ins; `count(n)` is what your chip and your own bundle show while the host's
-// count is n (the magnet moves it one arrival at a time). Local.
+// The railway supplies accepted counts for the Local bundle and carry HUD.
 export const backSeam = {
-  flyIns: true,
   count: (n: number) => n,
   remote: null as ((peer: string) => number) | null, // ?proto=place&coop=1: a partner's logs, from their presence
   carry: null as (() => CarryReadout) | null,

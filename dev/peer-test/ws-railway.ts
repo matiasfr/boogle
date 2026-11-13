@@ -166,9 +166,8 @@ export async function railwayChecks(c: Ctx) {
   railCheck('a restart issues a new epoch', epochRestored === epochA2 + 1);
   const initial = await rail(RA2);
   railCheck(
-    'the room registers only the classic lockstep states; the railway is mirrored',
-    JSON.stringify(initial.registry.states) ===
-      JSON.stringify(['gifts', 'stacks', 'piles', 'sites', 'sources', 'bank', 'tune', 'opening']),
+    'the room registers only retained haul tuning; railway and roster are mirrored',
+    JSON.stringify(initial.registry.states) === JSON.stringify(['tune']),
   );
   // Re-sent until it shows, as src/features/identity.ts does every 3 s: just after the restart the host can drop an
   // edit that arrives before its world runs again (CI run 42723426132), and the host refuses one that changes nothing.
@@ -191,11 +190,9 @@ export async function railwayChecks(c: Ctx) {
       return false;
     })) >= 0,
   );
-  await ev(RA2.page, () =>
-    window.T.railBaseEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] }),
-  );
+  await ev(RA2.page, () => window.T.railBaseEdit({ op: 'who.set', i: 0, j: 0, n: 'Forged', c: 2 }));
   await sleep(500);
-  railCheck('the legacy material channel is refused', (await rail(RA2)).classicItems === initial.classicItems);
+  railCheck('the legacy edit channel is refused', !(await rail(RA2)).people.some((person) => person.name === 'Forged'));
 
   const epochB2 = await session(RB);
   const next = new Map<Page, number>([

@@ -295,7 +295,7 @@ test('the last-piece race between two players in one step transfers one log; it 
   }
 });
 
-test('the railway registry accepts bounded identity but rejects every legacy material op and snapshot import', async () => {
+test('the railway registry accepts bounded identity but rejects classic-channel edits and snapshot import', async () => {
   const f = await fixture(railwayRoomId('boogle'));
   try {
     await f.open('a');
@@ -316,17 +316,7 @@ test('the railway registry accepts bounded identity but rejects every legacy mat
     f.send('a', { op: 'who.set', n: 'Alice', c: 2 });
     await f.step(4);
     const before = JSON.stringify(f.host.sync.snapshot().data);
-    for (const op of [
-      'who.set',
-      'src.take',
-      'pile.take',
-      'pile.drop',
-      'site.stock',
-      'site.run',
-      'gift.toss',
-      'tune.fill',
-      'rail.chop',
-    ])
+    for (const op of ['who.set', 'tune.set', 'tune.commit', 'rail.chop'])
       f.host.deliver({ t: 'w:edit', e: { op, i: 0, j: 0, id: 0, n: 8, k: 0, epoch: 1, request: 1 } }, 'a');
     f.host.deliver({ t: 'placeCoop', shared: { back: { logs: 24 } } }, 'a');
     await f.step(4);

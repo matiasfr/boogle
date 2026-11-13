@@ -1,8 +1,7 @@
 // Welcome back: a returning player (src/player/arrival.ts) lands straight in the world and gets a small card at the top
 // for a few seconds, "Welcome back, <name>", plus what changed in this room since their last visit when that is known:
-// friends who were here, sections laid, opening day. It reads existing state only (the roster; in the railway room, the
-// game, the railway's rows through its read facade; on a classic `?proto=` entry the sites' plaques and the opening
-// flag) against what this browser remembered about the room last time. Never blocks: no clicks, no input.
+// friends who were here and railway sections laid. It reads the roster and railway rows through their read facades
+// against what this browser remembered about the room last time. Never blocks: no clicks, no input.
 // More welcome-back lines (persistent progress, a mailbox) are `addWelcomeItem` calls. Local. Serves DESIGN.md 8
 // (Designed for drop-in) and 9 (Leave something for the next visitor: you hear what the others did).
 import { rules, railwayMirror } from '../world/game-world.ts';
@@ -23,15 +22,14 @@ const LINE_MS = 800;
 const SAVE_MS = 5000; // how often this visit is remembered while you play
 
 // ---------------------------------------------------------------- what a returning player hears about
-// Friends who poured since (their plaque points rose) or who are new to the room's roster. In the railway room (the
-// game) only "new to the roster" can happen: nothing pours into the classic sites there, so the points never rise.
+// Friends new to the room's roster. Zero values retain the local record's existing shape.
 addWelcomeItem({
   key: 'friends',
   save: () => {
     if (railwayMirror && !railwayMirror.synced()) return undefined;
     const { roster } = rules.roster;
     const pts: Record<string, number> = {};
-    for (const pid of roster.pids) pts[pid] = rules.sites.points(pid);
+    for (const pid of roster.pids) pts[pid] = 0;
     return pts;
   },
   since: (then) => {
@@ -40,39 +38,26 @@ addWelcomeItem({
     const names: string[] = [];
     roster.pids.forEach((pid, k) => {
       if (pid === identity.pid) return;
-      if (!(pid in was) || rules.sites.points(pid) > was[pid]!) names.push(rules.roster.nameOf(k) || 'Someone');
+      if (!(pid in was)) names.push(rules.roster.nameOf(k) || 'Someone');
     });
     if (!names.length) return null;
     return `${nameList(names)} ${names.length === 1 ? 'was' : 'were'} here`;
   },
 });
-// Stretches of track laid: in the railway room the stations laid on both lines (undefined until its state is in, which
-// keeps the last count); on a classic entry the sites opened.
+// Stretches of track laid on both railway lines (undefined until its state is in, which keeps the last count).
 const railway = () => railwayKnown(railwayWorldRead());
 addWelcomeItem({
   key: 'laid',
   save: () => {
-    if (!productionRailway) return rules.sites.sites.open;
     const w = railway();
     return w ? stretchesLaid(w) : undefined;
   },
   since: (then) => {
-    const w = productionRailway ? railway() : null;
-    const n = productionRailway
-      ? w
-        ? stretchesSince(then, stretchesLaid(w))
-        : 0
-      : rules.sites.sites.open - (then as number);
+    const w = railway();
+    const n = w ? stretchesSince(then, stretchesLaid(w)) : 0;
     if (n <= 0) return null;
     return n === 1 ? 'A new stretch of track was laid' : `${n} new stretches of track were laid`;
   },
-});
-// Unreachable in the railway room (the game): it has no opening day, and the classic opening flag never changes there.
-// Live only on a classic `?proto=` entry.
-addWelcomeItem({
-  key: 'opened',
-  save: () => rules.opening.opening.t0 >= 0,
-  since: (then) => (!then && rules.opening.opening.t0 >= 0 ? 'Opening day happened while you were away' : null),
 });
 
 // ---------------------------------------------------------------- the card

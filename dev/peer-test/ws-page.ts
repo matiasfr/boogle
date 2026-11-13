@@ -52,7 +52,6 @@ export type RailwayProbe = {
   /** Line two's job completions (Q1 first), empty before line two. */
   line2: number[];
   people: { pid: string; name: string }[];
-  classicItems: number;
 };
 export type RailwayAdapterProbe = {
   /** `adapter.read`'s session values (ready, pending, status, stalled, tick) and its `debug()` (step, hash, epoch,
@@ -192,7 +191,7 @@ const T = (window.T = {
       peers: r.peers().map((p) => ({ peer: p.peer, sameTab: p.sameTab, presence: p.presence })),
     };
   },
-  toss: null as unknown as (i: number, j: number) => boolean, // set by startWorld
+  rename: null as unknown as (name: string) => boolean, // set by startWorld
   world: (): unknown => null,
   rail: (): RailwayProbe | null => null,
   railAdapter: (): RailwayAdapterProbe | null => null,
@@ -523,10 +522,10 @@ function startWorld(room: Room) {
     adapter?.update(now);
     last = now;
   }, 50);
-  T.toss = (i, j) => w.submitEdit({ op: 'gift.toss', i, j, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
+  T.rename = (name: string) => w.submitEdit({ op: 'who.set', i: 0, j: 0, n: name, c: 2 });
   T.world = () => ({
     tick: w.world.tick,
-    items: rules.gifts.gifts.items.map((p) => [p.i, p.j]),
+    people: rules.roster.roster.pids.map((pid, k) => ({ pid, name: rules.roster.nameOf(k) })),
     status: w.worldStatus(),
   });
   if (rail)
@@ -559,7 +558,6 @@ function startWorld(room: Room) {
         sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: tree(mw, k).left })),
         line2: qjobs(mw).map((j) => j.completion),
         people: rules.roster.roster.pids.map((pid, k) => ({ pid, name: rules.roster.nameOf(k) })),
-        classicItems: rules.gifts.gifts.items.length,
       };
     };
 }

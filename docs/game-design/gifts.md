@@ -1,19 +1,11 @@
 # 6.5 Gifts
 
-- **What and how it plays.** Things you throw land on the island and lie there for anyone to pick up until they rot
-  (what they held lands by them). The frisbee waits on a perch on the lighthouse deck and twinkles so you can spot it; a
-  perch refills a minute after its item is taken. Throwing is 6.7, what you carry is 6.6.
-- **Controls.** E / pad X: Pick up (the interact button, nothing new). Logs are taken from their bundle: 6.19,
-  [haul.md](haul.md).
-- **Sync kind.** Lockstep. Ops `gift.take` (`id`) and `gift.toss` (`k` kind, `i, j`, `y` resting height or -1 ground /
-  -3 lost, `l` launch, `n` nonce); state `gifts`. The frisbee perch is a static layout filled before tick 1.
-- **Tuning** ([src/sim/gifts.ts](../../src/sim/gifts.ts)). Thrown things last 6,000 ticks (10 min); perched items never
-  expire; a perch refills 600 ticks (60 s) after its item is taken; at most 48 items. When full, a new throw sweeps
-  away the oldest thrown item.
-- **Files.** [src/sim/gifts.ts](../../src/sim/gifts.ts), [src/sim/gift-catalog.ts](../../src/sim/gift-catalog.ts),
-  [src/world/rules/gifts.ts](../../src/world/rules/gifts.ts), [src/adapters/gifts.ts](../../src/adapters/gifts.ts), [src/features/gifts.ts](../../src/features/gifts.ts).
-- **Known issues and limits.** None known.
+**Retired, 13 November 2026:** the classic shared gift state, pickup/toss operations, perch refill, expiry and flight
+views were removed in server-owned-state step 5. Railway rooms already refused these operations. There is no
+replacement shared gift mechanic in this step.
 
----
+[The Boogler's gift catalog](../../src/sim/gift-catalog.ts) stays byte-for-byte unchanged, including every taste and
+spoken line. Local inventory, the seed stand and The Boogler's gift dialogue still use it; the beach ball keeps its
+independent Owner physics. [Preserved copy and suspect notice](retired-classic-copy.md).
 
-Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.
+Part of the [game design document](../game-design.md) (as built).

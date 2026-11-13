@@ -95,7 +95,7 @@ const railwayHost = (room: HostedRoom) => room.world as RailwayWorldHost;
 function material(room: HostedRoom) {
   return 'railway' in room.world.rules
     ? (railwayHost(room).rules.railway.account('alice')?.carry ?? 0)
-    : room.world.rules.gifts.gifts.items.filter((it) => it.i === 230 && it.j === 205).length;
+    : room.world.rules.roster.size();
 }
 async function drain(room: HostedRoom, store: Store, id: string) {
   room.world.sync.saveNow(true);
@@ -180,7 +180,7 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
     const blocked = store.withLock(id, () => gate);
     let published = false;
     old.world.onSend((m) => {
-      if (m.t === 'w:edits' && (m.list as { e: Obj }[]).some((q) => q.e.op === 'gift.toss')) published = true;
+      if (m.t === 'w:edits' && (m.list as { e: Obj }[]).some((q) => q.e.op === 'who.set')) published = true;
     });
     if (railway) {
       const source = RAILWAY_SOURCES[0]!;
@@ -207,9 +207,9 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
     } else {
       original.send({
         t: 'm',
-        d: { t: 'w:edit', e: { op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] } },
+        d: { t: 'w:edit', e: { op: 'who.set', i: 0, j: 0, n: 'Saved', c: 2 } },
       });
-      await until(() => material(old) === 1, 'classic accepted toss');
+      await until(() => material(old) === 1, 'classic accepted identity');
       old.world.sync.saveNow(true);
     }
     let closing = false;
@@ -320,7 +320,7 @@ for (const [id, failure] of [
     } else
       client.send({
         t: 'm',
-        d: { t: 'w:edit', e: { op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] } },
+        d: { t: 'w:edit', e: { op: 'who.set', i: 0, j: 0, n: 'Saved', c: 2 } },
       });
     await until(() => material(room) === (railway ? 2 : 1), 'saved accepted material');
     await drain(room, store, id);

@@ -112,37 +112,20 @@ test('tuning commits require the assigned controller and current revision, and p
   await loaded.wh.close({ save: false });
 });
 
-test('every op of every rules module is accepted from a client or, host-only, from the server', async () => {
+test('every retained classic op is accepted from a client', async () => {
   const { wh, sent } = await makeHost(tmp(), 2000, worldRoomId('proto-beach')); // the tune ops run too
   assert.equal(wh.status().mode, 'host');
   assert.equal(wh.status().ready, true);
-  // The replay test's head start: piles to take and a full Track ring so a run can start.
-  for (const [i, k] of [
-    [212, 0],
-    [230, 0],
-    [250, 1],
-  ])
-    wh.rules.piles.drop(i!, 188, k!, 64);
-  wh.rules.sites.addFreight(60);
-
   const accepted = new Set<string>();
   wh.sync.onApplied((e: Msg) => void accepted.add(e.op));
   const ops = wh.sync.registry().ops as string[];
   for (const op of ops) assert.ok(generators[op], `op ${op} has no edit generator`);
-  const hostOnly = new Set(['bank.wake']);
   const r = stream(0x5e7);
   for (let f = 0; f < 600 && accepted.size < ops.length; f++) {
-    // The haul reset empties the head start and opening day's shortcut closes the route, so they go last: the
-    // shortcut, then opening day and its early end, then the reset.
     const left = ops.filter((o) => !accepted.has(o));
-    const late = ['open.lay', 'open.start', 'open.here', 'tune.reset', 'tune.fill']; // a fill needs an empty ring: after the reset
-    const early = left.filter((o) => !late.includes(o));
-    const op = early.length ? r.pick(early)! : late.find((o) => left.includes(o))!;
+    const op = r.pick(left)!;
     const e = generators[op]!(r, { rules: wh.rules, land: home.land, tick: wh.sync.world.tick });
-    if (e) {
-      if (hostOnly.has(op)) wh.sync.submitEdit(e);
-      else wh.deliver({ t: 'w:edit', e }, 'c1');
-    }
+    if (e) wh.deliver({ t: 'w:edit', e }, 'c1');
     wh.step(0.05);
     await settle();
   }
@@ -160,12 +143,11 @@ test('every op of every rules module is accepted from a client or, host-only, fr
   await wh.close({ save: false });
 });
 
-test('tuning and the haul reset are refused outside a proto- room', async () => {
+test('tuning is refused outside a proto- room', async () => {
   const { wh } = await makeHost(tmp());
   const applied: string[] = [];
   wh.sync.onApplied((e: Msg) => void applied.push(e.op));
   wh.deliver({ t: 'w:edit', e: { op: 'tune.set', i: 0, j: 0, key: 'hard', v: 30 } }, 'c1');
-  wh.deliver({ t: 'w:edit', e: { op: 'tune.reset', i: 0, j: 0 } }, 'c1');
   for (let f = 0; f < 6; f++) (wh.step(0.05), await settle());
   assert.deepEqual(applied, []);
   assert.equal(wh.rules.tune.get('hard'), 60);
@@ -183,25 +165,24 @@ test('a w:need gets snapshot chunks addressed to that client only', async () => 
       .map((m) => m.s)
       .join(''),
   );
-  assert.ok('gifts' in payload.snap.data);
+  assert.ok('roster' in payload.snap.data);
   await wh.close({ save: false });
 });
 
 test('the world saves as the server and a restart resumes from it', async () => {
   const dir = tmp();
   let { store, wh } = await makeHost(dir, 500);
-  const tossed = (w: { rules: Msg }) =>
-    w.rules.gifts.gifts.items.filter((it: Msg) => it.i === 230 && it.j === 205).length;
-  wh.deliver({ t: 'w:edit', e: { op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] } }, 'c1');
+  const named = (w: { rules: Msg }) => w.rules.roster.nameOf(w.rules.roster.indexOf('c1pid')) === 'Saved';
+  wh.deliver({ t: 'w:edit', e: { op: 'who.set', i: 0, j: 0, n: 'Saved', c: 2 } }, 'c1');
   for (let f = 0; f < 12; f++) (wh.step(0.05), await settle());
   await wh.close({ save: true });
   const doc = store.readSync(worldRoomId('beach'))!;
   assert.equal(doc.writerId, 'server');
   const tick = doc.tick;
   assert.ok(tick > 0 && (doc.data as Msg).tick === tick);
-  assert.equal(tossed(wh), 1);
+  assert.equal(named(wh), true);
 
-  // Nothing changes from here, but the tick moves on: a close still saves it (the helper bank reads it).
+  // Nothing changes from here, but the tick moves on: a close still saves it.
   ({ store, wh } = await makeHost(dir));
   for (let f = 0; f < 30; f++) (wh.step(0.1), await settle());
   const later = wh.sync.world.tick;
@@ -210,6 +191,6 @@ test('the world saves as the server and a restart resumes from it', async () => 
 
   ({ wh } = await makeHost(dir));
   assert.ok(wh.sync.world.tick >= later && later > tick, `resumed at ${wh.sync.world.tick}, saved ${later}`);
-  assert.equal(tossed(wh), 1);
+  assert.equal(named(wh), true);
   await wh.close({ save: false });
 });

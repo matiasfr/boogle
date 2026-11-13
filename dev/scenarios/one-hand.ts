@@ -1,8 +1,6 @@
 // One thing in your hands: a new player starts empty-handed; something new knocks the beach ball out of your hand; The
-// Boogler takes what you hold; a bag of seeds sprouts mushrooms; the frisbee waits on the lighthouse deck. On a phone the
-// live game offers no throw, and the name tag clears the HUD. The toss checks (a tossed item picked up, a throw landing, a
-// swap's drop, the deck frisbee taken and gliding) wait for replication R3 (owner, 9 November): the live game's server
-// refuses gift.toss and gift.take until then.
+// Boogler takes what you hold; a bag of seeds sprouts mushrooms. On a phone the live game offers no throw,
+// and the name tag clears the HUD. Classic shared gifts were retired in server-owned-state step 5.
 import { TP, INV, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
 
@@ -27,7 +25,7 @@ const LAYOUT = `${DOM}
 
 export default {
   island: true, // the classic island by the court (run.ts)
-  about: 'hold and give what you pick up; plant anywhere; the frisbee on the lighthouse; the phone HUD offers no throw',
+  about: 'hold and give what you pick up; plant anywhere; the phone HUD offers no throw',
   timeout: 800000, // two software-rendered players in a row; the nightly runner took over 450 s, with checks timing out
   async run(t: T) {
     const g = await t.open({ name: 'holder', hud: 'play' });
@@ -46,10 +44,6 @@ export default {
         I.emptyHand();
         return kept;`),
     );
-
-    // No toss checks until replication R3 (owner, 9 November, docs/decisions.md "Four more answers" (3)): the live
-    // game's server refuses gift.toss, so a tossed item, a thrown one landing and a swap's dropped bag never appear.
-    // They come back with R3.
 
     // The ball: grab it, it is in your hand; pick up something else and it flies off, out of your hands and your claim.
     const ball = await g.eval(`${INV}
@@ -121,23 +115,6 @@ export default {
       return { spots: spots.length / 2, kept: I.heldId() === 'seeds' };`);
     t.check('a bag sprouts mushrooms and is spent', sprouted.spots > 0 && !sprouted.kept, JSON.stringify(sprouted));
 
-    // The frisbee waits on the lighthouse deck; throw it off and it glides far.
-    const { FRISBEE } = await g.eval(
-      `const L = await import('/src/pois/lighthouse/index.ts'); return { FRISBEE: L.FRISBEE_SPOT };`,
-    );
-    await g.eval(`window.__debugCam.clear();`);
-    await g.eval(TP(FRISBEE.x, FRISBEE.z, FRISBEE.y + 0.8));
-    await g.wait(0.6);
-    const perched = await g.eval(`return window.boogle.gifts.items.some((it) => it.src === 1);`);
-    await g.view({
-      cam: [FRISBEE.x + 4, FRISBEE.y + 2.5, FRISBEE.z + 4],
-      look: [FRISBEE.x, FRISBEE.y + 0.5, FRISBEE.z],
-    });
-    const deck = await g.still('deck');
-    t.check('the frisbee waits on the lighthouse deck', perched, deck);
-    // Picking it up and its glide off the deck wait for replication R3 too: the live game's server accepts no gift op
-    // (gift.take as well as gift.toss; server/src/host/world-host.ts, deliver), so the take never comes.
-    await g.eval(`window.__debugCam.clear();`);
     t.check('no failed edits ([world] console errors)', !consoleErrors.length, consoleErrors.join(' | '));
 
     // ------------------------------------------------------------ on a phone, portrait

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { CLASSIC_OPS, recordTrace, pinTrace, type TraceFixture, type TraceStep } from './helpers/classic-trace.ts';
+import { recordTrace, pinTrace, type TraceFixture, type TraceStep } from './helpers/classic-trace.ts';
 
 const fixture = (name: string): TraceFixture =>
   JSON.parse(readFileSync(new URL(`./fixtures/classic-trace-${name}.json`, import.meta.url), 'utf8')) as TraceFixture;
@@ -46,18 +46,6 @@ test('pin tune and roster admission, results and every intermediate state/hash',
     ['alice', 'abcdefghijklmnop', 3],
     ['bob', 'Bob', 1],
   ]);
-  assertPinned(trace.steps, recorded.expected);
-  assert.deepEqual(recordTrace(recorded.seed, trace.inputs), trace);
-});
-
-test('the original recorded inputs cover all 16 classic ops and replay exactly', () => {
-  const recorded = fixture('all-ops');
-  const trace = recordTrace(recorded.seed, recorded.inputs);
-  assert.equal(CLASSIC_OPS.length, 16);
-  assert.deepEqual(
-    [...new Set(trace.steps.filter((s) => s.phase === 'apply').map((s) => s.op))].sort(),
-    [...CLASSIC_OPS].sort(),
-  );
   assertPinned(trace.steps, recorded.expected);
   assert.deepEqual(recordTrace(recorded.seed, trace.inputs), trace);
 });

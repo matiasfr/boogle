@@ -6,7 +6,7 @@
 //   railAwayCredit(awayTicks)        production ticks to credit (≤ awayTicks, < H)
 //   RAIL_AWAY.finishTicks            an absence at least this long finishes the funded job
 
-/** Rule ticks are 100 ms (src/sim/bank.ts MS_PER_TICK); the railway's markers use the same unit. */
+/** Rule ticks are 100 ms; the railway's markers use the same unit. */
 const TICKS_PER_HOUR = 36000;
 export const RAIL_AWAY = {
   /** H, the credit's soft limit: an absence of H credits ~63% of H, a long one approaches H. Tunable. */
