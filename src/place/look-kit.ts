@@ -310,11 +310,10 @@ export function lookTrack(set: DropSet, kinds: string[], owner: OwnedView, chunk
       q.mesh.setMatrixAt(r.at, tm.copy(m).scale(q.inv));
       q.mesh.instanceMatrix.needsUpdate = true;
     }
-    if (r.chunk.at.length) {
-      const hidden = isHidden(m);
+    const hidden = isHidden(m);
+    if (r.chunk.at.length)
       r.chunk.at.set(hidden ? [NaN, NaN, NaN] : [m.elements[12]!, m.elements[13]!, m.elements[14]!], r.at * 3);
-    }
-    if (!isHidden(m)) {
+    if (!hidden) {
       growBounds(r.chunk.box, m).getBoundingSphere(r.chunk.sphere);
       if (!r.chunk.placed) {
         r.chunk.placed = true;
@@ -330,9 +329,8 @@ export function lookTrack(set: DropSet, kinds: string[], owner: OwnedView, chunk
     update(dt);
     for (const c of state) {
       if (!c.placed) continue;
-      const distance = c.box.distanceToPoint(camera.position);
       if (c.gated) {
-        const casts = castsShadow(distance, c.shadow);
+        const casts = castsShadow(c.box.distanceToPoint(camera.position), c.shadow);
         if (casts !== c.shadow) {
           c.shadow = casts;
           setChunk(c);

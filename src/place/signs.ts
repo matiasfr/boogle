@@ -100,7 +100,7 @@ export function setNumbers(score: { money: number; logs: number; metres: number 
   const whole = Math.round(shownNum.money);
   if (whole === lastShown) return;
   lastShown = whole;
-  const money = `$${whole.toLocaleString('en-US')}`;
+  const money = dollars(whole);
   moneyPill.textContent = money;
   const s = `<span class="place-money"><b>${money}</b></span>`;
   if (s === lastNums) return;
