@@ -25,6 +25,59 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+// Astra's two durability races, also exercised with a live railway action failing after mutation.
+for (const waiting of [false, true])
+  for (const railway of [false, true])
+    test(`${waiting ? 'waiting' : 'queued'} durability preserves the good save after a fatal ${railway ? 'railway' : 'classic'} apply`, async (t) => {
+      const f = await fixture(t);
+      const before = await f.store.read(f.roomId);
+      const writes = f.writes.length;
+      const old = waiting ? f.holdNextWrite() : null;
+      if (old) {
+        f.host.sync.saveNow(true);
+        await old.entered.promise;
+      }
+      f.host.ops.define('test.crash.pending', {
+        validate: () => true,
+        apply: () => {
+          setWho(f.host.rules.roster.roster, 'alice', 'Partial', 2);
+          throw new Error('partial apply');
+        },
+      });
+      if (railway) {
+        const act = f.host.rules.railway.act;
+        t.mock.method(f.host.rules.railway, 'act', (...args: Parameters<typeof act>) => {
+          act(...args); // real rail.wake mutates before this injected failure
+          throw new Error('partial railway apply');
+        });
+      }
+      f.edit(1, { op: 'test.rename' });
+      if (waiting) await setImmediate(); // the durability callback is suspended on the older write
+      // Observe persistence even if the old live path leaks the exception to its caller.
+      let escaped: unknown;
+      try {
+        f.edit(
+          2,
+          railway ? { op: 'rail.wake', at: [RAILWAY_T1.wake.x, 0, RAILWAY_T1.wake.z] } : { op: 'test.crash.pending' },
+        );
+      } catch (error) {
+        escaped = error;
+      }
+      old?.gate.resolve();
+      await f.settled();
+      const saved = (await f.store.read(f.roomId))!.data as RecoveryEnvelope;
+      assert.deepEqual(
+        saved.checkpoint.data.roster,
+        (before!.data as RecoveryEnvelope).checkpoint.data.roster,
+        'fatal apply must not be captured by the pending durable callback',
+      );
+      assert.equal(f.writes.length, writes + (waiting ? 1 : 0), 'only the already-captured safe write may finish');
+      assert.equal(escaped, undefined);
+      assert.equal(f.host.status().ready, false);
+      assert.deepEqual(f.flush(), { ack: [], rej: [], ok: [] });
+      await assert.rejects(f.host.close(), /storage/);
+    });
+
 async function fixture(t: TestContext) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-server-ops-'));
   const store = createStore({ dataDir: dir, maxRooms: 1 });

@@ -338,6 +338,9 @@ export function createRailwayWorldHost({
             return doc.data;
           },
           async write(data) {
+            // A queued classic-stamp flush also reaches here, outside the command save callback. Once an apply
+            // fails, no newly started write may persist its partial mutation; an already-started safe write can finish.
+            if (requests.failed()) throw new Error('server command storage failed');
             // Until startup has applied the offline catch-up, a save must not claim the absent time as passed.
             const updatedAt = startup
               ? Math.max(savedAt, api.resumeMarker() * 100)
@@ -372,7 +375,10 @@ export function createRailwayWorldHost({
       async save() {
         // saveNow is a no-op while an older checkpoint is pending. Drain it first, then capture this command and
         // its receipt; waiting only for that older write would falsely acknowledge unsaved state.
+        // A later apply may have failed before this callback starts OR while it awaits that older write.
+        if (requests.failed()) throw new Error('server command storage failed');
         await sync.whenDurable();
+        if (requests.failed()) throw new Error('server command storage failed');
         sync.saveNow(true);
         await sync.whenDurable();
       },

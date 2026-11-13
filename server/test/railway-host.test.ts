@@ -20,6 +20,74 @@ import type { ServerPacket } from '../../src/world/replicate.ts';
 
 type Obj = Record<string, unknown>;
 const START = 1800000000000;
+
+test('a live railway apply failure preserves the checkpoint through periodic save, pause and close', async (t) => {
+  const roomId = railwayRoomId('fatal-apply');
+  const f = await fixture(roomId, 1);
+  t.after(async () => {
+    await f.host.close({ save: false }).catch(() => {});
+    await fs.rm(f.dir, { recursive: true, force: true });
+  });
+  await f.open('a');
+  f.host.sync.saveNow(true);
+  await f.host.sync.whenDurable();
+  const before = await f.store.read(roomId);
+  const tick = f.host.status().tick;
+  const act = f.host.rules.railway.act;
+  t.mock.method(f.host.rules.railway, 'act', (...args: Parameters<typeof act>) => {
+    const result = act(...args);
+    assert.equal(result.status, 'accepted');
+    throw new Error('railway failure after mutation');
+  });
+  f.pose('a', T1.wake.x, T1.wake.z);
+  let escaped: unknown;
+  try {
+    f.send('a', { op: 'rail.wake' });
+  } catch (error) {
+    escaped = error;
+  }
+  f.host.step(0.1); // would checkpoint immediately with saveMs=1
+  await f.host.sync.whenDurable();
+  f.host.pause();
+  await f.host.sync.whenDurable();
+  assert.deepEqual(await f.store.read(roomId), before, 'a partial railway action must never replace the good save');
+  assert.equal(escaped, undefined);
+  assert.equal(f.host.status().ready, false);
+  assert.equal(f.host.status().tick, tick);
+  assert.deepEqual(f.sent.at(-1), { t: 'r:state', to: 'a', state: 'storage', epoch: 1, request: 1 });
+  f.host.replication.flush(f.host.sync.roomStep(), (_sid, packet) => {
+    assert.equal(packet.ack, undefined);
+    assert.equal(packet.ok, undefined);
+  });
+  await assert.rejects(f.host.close(), /storage/);
+  assert.deepEqual(await f.store.read(roomId), before);
+});
+
+test('a queued classic stamp cannot checkpoint a later failed live railway action', async (t) => {
+  const roomId = railwayRoomId('fatal-tail');
+  const f = await fixture(roomId);
+  t.after(async () => {
+    await f.host.close({ save: false }).catch(() => {});
+    await fs.rm(f.dir, { recursive: true, force: true });
+  });
+  await f.open('a');
+  f.host.sync.saveNow(true);
+  await f.host.sync.whenDurable();
+  const before = await f.store.read(roomId);
+  const act = f.host.rules.railway.act;
+  t.mock.method(f.host.rules.railway, 'act', (...args: Parameters<typeof act>) => {
+    act(...args);
+    throw new Error('railway failure after mutation');
+  });
+  // The classic stamp owns a queued sync.flush, independently of the durable server-command callback.
+  f.host.deliver({ t: 'w:edit', e: { op: 'who.set', n: 'Ana', c: 2 } }, 'a');
+  f.pose('a', T1.wake.x, T1.wake.z);
+  f.send('a', { op: 'rail.wake' });
+  await f.host.sync.whenDurable().catch((error: Error) => assert.match(error.message, /storage/));
+  assert.deepEqual(await f.store.read(roomId), before, 'a queued stamp must not persist the failed railway mutation');
+  await assert.rejects(f.host.close(), /storage/);
+});
+
 async function fixture(roomId = railwayRoomId('host'), saveMs = 2000) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-railway-host-'));
   const store = createStore({ dataDir: dir, maxRooms: 10 });

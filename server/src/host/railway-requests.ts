@@ -290,7 +290,14 @@ export function createRailwayRequests({
         }
         return;
       }
-      const result = api.act(pid, clean, RAIL_ACTIONS.has(String(e.op)) && facts ? actor(facts) : null);
+      let result: ReturnType<RailwayApi['act']>;
+      try {
+        result = api.act(pid, clean, RAIL_ACTIONS.has(String(e.op)) && facts ? actor(facts) : null);
+      } catch {
+        // Railway rules may also have mutated before throwing. Stop checkpoints and receipt publication just
+        // like a failed classic apply; neither the next timer tick nor a pending durable command may save it.
+        return storageFailure(from, epoch, request);
+      }
       complete(pid, current, request, result.status === 'rejected', result.accepted);
       if (result.effect) {
         const event: Record<string, string | number | boolean> = {

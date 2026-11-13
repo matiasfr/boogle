@@ -119,6 +119,12 @@ Nothing is placed in the world; no level check applies.
 - **Owner answers (13 November):** retire the seven inactive classic states in step 5, keeping The Boogler's copy; move authority now on today's storage, independently of the ECS decision; seats and The Boogler move off the lead immediately after checkpoint B. Steps 3–4 remain separate work after independent review; no reset or authority cutover in steps 1–2.
 - **Validation:** scoped `npm run check` and `node dev/ship-check.ts` passed with `UNIT_ONLY='test/classic-trace.test.ts test/server-image.test.ts'` (8 assertions), and the bounded `server/test/server-ops.test.ts` run passed (13 assertions). Registry remains 16 classic ops / 9 states; all sim files, `gift-catalog.ts`, namespace and wire shapes are unchanged. No push or ship; independent review and checkpoint browser/network proofs remain for the caller.
 
+### Independent-review follow-up
+
+Astra reviewed stamp `bc21e977d32b` and found P2: a queued durable save, or one awaiting an older write, could checkpoint a subsequent apply's partial mutation. Both reproductions were ported from the reviewer's scratch tests and failed before the fix. The live railway action path also lacked the fatal-apply catch; its queued/waiting variants and its periodic-save/pause/close proof failed too. A sixth regression caught a queued classic-stamp flush persisting a failed railway action independently of the durable callback.
+
+The command save now checks fatal status before and after draining older writes. The recovery write boundary also refuses newly started writes after fatal apply, covering queued stamp flushes; an already-started write holds its immutable earlier checkpoint and may finish. Railway apply exceptions now enter the same fatal state as classic exceptions, before acknowledgements or effects. All six regressions pass, as do all 31 tests in the two touched server test files. No state, wire, sim or namespace change. Earlier evidence is superseded by `.look/evidence/server-state-review-fix/` for this fix; no browser or visual claim.
+
 ## Original questions (owner answers recorded above)
 
 **Owner (three, recommendation first). Answered 13 November UTC: "Yes, I agree on retiring the 7 classic states. 2, I agree on move authority. 3, I agree" ([decision](../decisions-process.md#d-2026-11-13-server-owned-state-answered)).**
