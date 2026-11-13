@@ -9,6 +9,8 @@ export const SERVER_IMAGE_PATHS = [
   'src/world',
   'src/sim',
   'src/ecs',
+  'src/math-pure.ts',
+  'src/math.ts',
   'src/net/ids.ts',
   'src/net/ws-wire.ts',
   'src/net/rtc-wire.ts',

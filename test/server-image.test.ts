@@ -14,7 +14,13 @@ import { runtimeSpecifiers as specifiers } from '../dev/scan/parse.ts';
 import { SERVER_IMAGE_PATHS } from '../dev/server-build.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const ENTRIES = ['server/src/index.ts', 'server/src/seeds/prebuild.ts'];
+// The prepared Boogler land loader ships before the server starts calling it (players plan, step 3).
+const ENTRIES = [
+  'server/src/index.ts',
+  'server/src/seeds/prebuild.ts',
+  'server/src/host/land.ts',
+  'src/world/boogler-brain.ts',
+];
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 const builtin = (spec: string) => spec.startsWith('node:') || builtinModules.includes(spec.split('/')[0]!);
@@ -80,6 +86,9 @@ function deployPaths(): string[] {
 test('every file the server image runs is copied, in the build identity and in the deploy filter', () => {
   const { files } = walk();
   assert.ok(files.has('src/world/server-ops.ts'), 'the command boundary must be in the image import closure');
+  assert.ok(files.has('src/world/boogler-land.json'), 'the Boogler bake must be in the server image import closure');
+  assert.ok(files.has('src/world/heights.ts'), 'the shared height sampler must be in the server image import closure');
+  assert.ok(files.has('src/math-pure.ts'), 'the height sampler math must be in the server image import closure');
   const lists = {
     'server/Dockerfile COPY': dockerCopies(),
     'dev/server-build.ts': [...SERVER_IMAGE_PATHS],

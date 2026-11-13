@@ -11,8 +11,16 @@ import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import { LINE2_FORGE, LINE2_BOILER, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import { SHED_TABLE, SHED_STALL, WORKS_BREAKER, WORKS_SEAMS, WORKS } from '../../src/sim/railway-works-layout.ts';
 import { CART_ROAD } from '../../src/sim/railway-cart.ts';
+import type { BooglerLandBake } from '../../src/world/boogler-land.ts';
 
 const LAND = fileURLToPath(new URL('../../src/world/home-land.json', import.meta.url));
+const BOOGLER_LAND = fileURLToPath(new URL('../../src/world/boogler-land.json', import.meta.url));
+let pendingBake: BooglerLandBake | undefined;
+// The runner closes its pages and finalizes health before exiting. Never replace a source fixture during a run
+// or after a failed check. The broker-safe command is node dev/bake-boogler-land.ts.
+process.once('exit', (code) => {
+  if (code === 0 && pendingBake) fs.writeFileSync(BOOGLER_LAND, JSON.stringify(pendingBake, null, 2) + '\n');
+});
 // Runs in the page.
 const READ = `
   const sync = await import('/src/world/sync.ts');
@@ -38,6 +46,19 @@ export default {
     const same = <V>(label: string, a: V, b: V, show: (v: V) => string = (v) => JSON.stringify(v)) =>
       t.check(label, JSON.stringify(a) === JSON.stringify(b), `got ${show(a)}, fixture ${show(b)}`);
     same('grid size', page.n, land.n);
+
+    const boogler: BooglerLandBake = await g.eval(`
+      const { readBooglerLand } = await import('/dev/boogler-land-input.ts');
+      return readBooglerLand();
+    `);
+    if (process.env.UPDATE_FIXTURE === '1') pendingBake = boogler;
+    const pinned =
+      pendingBake ?? (fs.existsSync(BOOGLER_LAND) ? JSON.parse(fs.readFileSync(BOOGLER_LAND, 'utf8')) : null);
+    t.check(
+      'Boogler land matches the initialized island',
+      JSON.stringify(boogler) === JSON.stringify(pinned),
+      'height grid, prop and stall discs, keep-outs, mainland; re-bake: node dev/bake-boogler-land.ts',
+    );
 
     // Reuse the one rendering page in a fresh room: PR scenarios deliberately prohibit a second GPU player.
     const production = new URL(g.page.url());

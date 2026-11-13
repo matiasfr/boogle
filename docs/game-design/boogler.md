@@ -21,6 +21,8 @@ show only while you are on his island (dry land of its grid; Local presentation)
   hurries at 2.3 m/s while ridden; flees at 3.4 m/s from wary players within 9 m.
 - **Files.** [src/boogler/boogler.ts](../../src/boogler/boogler.ts), [src/boogler/hud.ts](../../src/boogler/hud.ts),
   [src/boogler/fx.ts](../../src/boogler/fx.ts), [src/features/boogler.ts](../../src/features/boogler.ts).
+  The lead's pure brain and frame-sized walk live in `src/world/boogler-brain.ts` and `boogler-walk.ts`;
+  its frame cadence, live terrain, shared animation RNG and `g` payload are unchanged. The server does not run it yet.
 
 ## What he remembers
 
