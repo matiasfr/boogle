@@ -1,7 +1,7 @@
 // Remote device tests (docs/plans/remote-device-tests.md), the Mac's side: it makes a link, lists the runs a device
 // uploaded and turns one into a report. The device does the measuring; this reads a few kilobytes of JSON.
 //
-//   npm run device -- new [--suite quick] [--label "iphone 15"] [--query 'terrain=1&home=b'] [--site <origin>]
+//   npm run device -- new [--suite quick] [--label "iphone 15"] [--query 'terrain=1'] [--site <origin>]
 //       prints the link to open on the device; writes .look/device/<id>/run.json (the id is the upload token)
 //   npm run device -- list
 //       the device runs on the server, newest first: code, label, device, build, state, pulled or not

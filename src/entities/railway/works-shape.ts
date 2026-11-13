@@ -1,13 +1,7 @@
 // Local greybox geometry, world metres. J1's centimetre catalog remains the authority for interaction anchors.
-import {
-  WORKS_SEAMS,
-  WORKS_CLEFT,
-  WORKS_RACK,
-  WORKS_ROCKS,
-  SHED_TABLE,
-  SHED_STALL,
-  PIER_FRAME,
-} from '../../sim/railway-works-layout.ts';
+import { WORKS_SEAMS, WORKS_CLEFT, WORKS_RACK, WORKS_ROCKS, PIER_FRAME } from '../../sim/railway-works-layout.ts';
+import { stallFrame, STALLS } from '../../place/home-station.ts';
+import { ORIGIN } from '../../place/layout.ts';
 export type WorksPoint = { x: number; z: number };
 export type WorksBox = WorksPoint & {
   y: number;
@@ -144,17 +138,14 @@ export function stallShape({ centre, yaw, slabZ, rim }: StallFrame) {
   const STALL_SOCKETS = [-1.5, 1.5].map((x) => stallPoint(x, -3.7));
   return { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL_SOCKETS };
 }
-const table = metres(SHED_TABLE),
-  stall = metres(SHED_STALL);
-// J1 checked anchors. Its 7 x 14 m shell overlaps the rotated hall and path: fit a 4 x 9 m ruin
-// two metres north of the anchor, with a bent approach from the table. The seam stays within its slab.
-export const STALL_TODAY = stallShape({
-  centre: { x: stall.x, z: stall.z - 2 },
-  yaw: -Math.PI / 2,
-  slabZ: stall.x - metres(WORKS_SEAMS[0]).x,
-  rim: { x: table.x - 4.8 / Math.SQRT2, z: table.z + 4.8 / Math.SQRT2 },
+const openStall = stallFrame(STALLS.open);
+const toWorld = (p: WorksPoint): WorksPoint => ({ x: p.x + ORIGIN.x, z: p.z });
+export const { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL_SOCKETS } = stallShape({
+  centre: toWorld(openStall.centre),
+  yaw: openStall.yaw,
+  slabZ: -2.9,
+  rim: toWorld(openStall.rim),
 });
-export const { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL_SOCKETS } = STALL_TODAY;
 const pier = metres(PIER_FRAME);
 export const PIER_SOCKETS = Array.from({ length: 12 }, (_, i) => ({
   x: pier.x + (i % 2 ? 2.5 : -2.5),

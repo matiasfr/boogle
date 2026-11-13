@@ -14,7 +14,7 @@ import { me } from '../../player/player.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
-import { CART, CART_PHASE, CART_ROAD, cartAlong } from '../../sim/railway-cart.ts';
+import { CART, CART_PHASE, cartAlong } from '../../sim/railway-cart.ts';
 import type { Car } from './car.ts';
 import { playMark } from '../../proto/mark.ts';
 import {
@@ -63,16 +63,12 @@ export async function createRailwayCart(
   const { flat } = flatMod;
   const [north, east] = [layout.LINKS[0]!.line, layout.LINKS[1]!.line];
   const SIZE = layout.CART; // hx, hz, top: Place's cart
-  const F = CART_ROAD.forgeCm / 100;
-  // `?home=b` (docs/plans/home-flip.md, F2): the cart runs layout B's road (line 1, the leg, road 2 to the buffers and
-  // back out along it). The rules still count today's 196 m to the forge, so the way in is scaled until the flip.
-  const homeB = home.homeLayout();
   const roads = { north, east };
   const roadY = { north: (s: number) => layout.railY(north, s), east: (s: number) => layout.railY(east, s) };
-  /** The car on layout B's road at the rules' distance `d`. It reverses at the forge stop without turning: its nose
+  /** The car on its road at the rules' distance `d`. It reverses at the forge stop without turning: its nose
    * points the way in on both sides of the stop. */
-  function poseOnRoadB(c: Car, d: number) {
-    const at = home.cartRoadFrom(d, F),
+  function poseOnRoad(c: Car, d: number) {
+    const at = d,
       stop = home.CART_FORGE,
       inward = at <= stop,
       sign = inward ? 1 : -1;
@@ -179,9 +175,7 @@ export async function createRailwayCart(
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * TICKS_PER_S + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
     const d = cartAlong(cartRow(w), clock) / 100;
-    if (homeB) poseOnRoadB(car, d);
-    else if (d <= F) rail.poseCarOnLine(car, north, F - d, -1);
-    else rail.poseCarOnLine(car, east, d - F, 1);
+    poseOnRoad(car, d);
     if (!shown) {
       shown = true;
       rail.snapCar(car);

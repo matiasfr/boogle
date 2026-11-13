@@ -37,7 +37,7 @@ if (!(await railReady(30_000))) throw new Error('garage-platform: the railway ne
 while (!me.body || !me.entered) await wait(100);
 const { geo, table: centre, y: groundY } = garageRow();
 const post = geo.post;
-const stood = polarAt(centre, { bearing: post.bearing + 6, r: post.r + 0.2 });
+const stood = polarAt(centre, { bearing: post.bearing + 6, r: post.r - 0.2 });
 teleport(me.body, stood.x, groundY + 0.7, stood.z);
 me.body.velocity.set(0, 0, 0);
 cam.yaw = me.yaw = Math.atan2(stood.x - centre.x, stood.z - centre.z);

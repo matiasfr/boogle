@@ -1,5 +1,5 @@
 // The train garage (docs/brainstorms/engine-garage.md, first build; docs/plans/garage-install-moment.md, G2): stand at
-// the Roundhouse table's lever post (today's table, or layout B's under `?home=b`) and press Interact through the real
+// the Roundhouse table's lever post and press Interact through the real
 // action, so the garage opens as a player opens it.
 //   npm run look -- --rail-seed wagon-on --hud --eval dev/look/evals/garage-open.ts \
 //     --action dev/look/evals/garage-act.ts --question "..."
@@ -40,8 +40,8 @@ const { geo: row, table: centre } = garageRow();
 const tryCam = Number(new URLSearchParams(location.search).get('cam'));
 if (tryCam) (row as { camBearing: number }).camBearing = tryCam;
 const post = polarAt(centre, row.post);
-// Beside the post, a little further round the rim: inside both layouts' prompt reach.
-const stood = polarAt(centre, { bearing: row.post.bearing + 6, r: row.post.r + 0.2 });
+// Beside the post, a little further round the rim: inside the server's install reach.
+const stood = polarAt(centre, { bearing: row.post.bearing + 6, r: row.post.r - 0.2 });
 teleport(me.body!, stood.x, 19.2, stood.z);
 await wait(1500);
 if (new URLSearchParams(location.search).get('train')) {
@@ -59,8 +59,7 @@ if (new URLSearchParams(location.search).get('train')) {
   console.log('GARAGE a line 2 train stands at the Village');
 }
 void post;
-// `&open=api` opens it without the prompt, for a camera still in a state where the post offers something else (steel
-// waiting at today's table, where the plain Install prompt owns the post until the garage's own Install).
+// `&open=api` opens it without the prompt for a camera-only still.
 if (new URLSearchParams(location.search).get('open') === 'api') garage.api?.open();
 else {
   triggerAction('interact', 'down');

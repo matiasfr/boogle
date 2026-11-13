@@ -1,7 +1,7 @@
-// Home's layout B in greybox, look only (docs/plans/home-station.md, step 3; `?home=b`): the hall, the buffer stops, the
+// Home's terminus station in greybox (docs/plans/home-station.md): the hall, the buffer stops, the
 // apron, a kerb outline of the island (its deck drops in with the trains, as halts do: ./halts-view.ts), the stubs, the
 // spur, the stall roads and, once line 2 has its first stretch, the cart's leg, and the two ruined stalls beside the
-// open one (./roundhouse-view.ts). Local: the rules keep today's anchors, so prompts stay where they were.
+// open one (./roundhouse-view.ts). Local view over the station's data rows.
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { line2Completed } from '../../sim/railway-queries-line2.ts';

@@ -85,7 +85,7 @@ if (!(await railReady(30_000))) throw new Error('garage-two: the railway never b
 while (!me.body || !me.entered) await wait(100);
 const post = geo.post;
 if (race) {
-  stand(post.bearing + (second ? -7 : 7), post.r + 0.25);
+  stand(post.bearing + (second ? -7 : 7), post.r - 0.25);
   // A player seeded into a room is shown each ability's flourish first (ability-arrival.ts); let them play out.
   await wait(14000);
   window.__debugCam?.clear();
@@ -114,7 +114,7 @@ if (race) {
     'garage race',
   );
 } else if (second) {
-  stand(post.bearing + 6, post.r + 0.2);
+  stand(post.bearing + 6, post.r - 0.2);
   await wait(14000);
   window.__debugCam?.clear();
   await openGarage();

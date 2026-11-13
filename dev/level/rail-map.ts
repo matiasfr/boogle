@@ -9,9 +9,7 @@
 // The page follows the artifact contract: body content only, a <title> first, inline CSS and JS, colours as custom
 // properties with dark values, an explicit body background. The SVG is drawn by the page's script from the JSON
 // embedded below, so the two tracks can be spread to stay visible at any zoom (true 4 m centres when zoomed in).
-// Home is drawn as layout B (the owner's pick, 9 November; docs/plans/home-station.md): this must evaluate before
-// Place's layout reads BOOGLE_HOME. The live game draws the turntable terminus until home-station's flip (step 6).
-import './home-b.ts';
+// Home is drawn from the same station layout as the live game.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
@@ -81,10 +79,10 @@ const W = (p: { x: number; z: number }) => ({ x: r1(p.x + ORIGIN.x), z: r1(p.z +
 /** The passenger car's distance from buffers at a terminal, either way round (the design review's call 12): the long
  * train's tail behind it plus 2 m. */
 const TERMINAL_GAP = r1(-CONSIST.tail + 2);
-/** Layout B's buffer stops, by each Village road's s. */
+/** Home's buffer stops, by each Village road's s. */
 const [BUF1, BUF2] = BUFFERS;
 /** One shared stop mark per halt (the design review's call 11): today's TRAIN_STOPS unless a reason moves it. Village:
- * layout B kept s 14 and 17 abeam (home-station call 10); from v33 line 2's is 18.25 for its four-car train
+ * Home kept s 14 and 17 abeam (home-station call 10); from v33 line 2's is 18.25 for its four-car train
  * (docs/plans/fourth-car.md, R2), 1.25 m ahead of abeam. Both are more than TERMINAL_GAP from their buffers. */
 const MARKS: Record<string, { s: number; why: string }> = {
   Village: {
@@ -189,7 +187,7 @@ function lineRows(): LineRow[] {
       halts: ['Village', 'Camp'],
       trains: '1 (v26 keeps 1)',
       trip: trip(TRAIN_STOPS_M[0]!),
-      ends: [`Village (layout B): buffer stops at s ${BUF1}, the forge's goods dock`, 'Camp: stub, bare rail end'],
+      ends: [`Village (Home): buffer stops at s ${BUF1}, the forge's goods dock`, 'Camp: stub, bare rail end'],
       after: ['Village: terminal, buffers and an end board (home-station step 9)', 'Camp: terminal, buffers at s 220'],
     },
     {
@@ -203,7 +201,7 @@ function lineRows(): LineRow[] {
       trains: `1 today, 2 in v26, ${trainsFor(170)} for the v27 wait bound (plan: 3)`,
       trip: trip(TRAIN_STOPS_M[1]!),
       ends: [
-        `Village (layout B): buffer stops at s ${BUF2}; the engine spur to the table leaves at s ${SPUR.s}`,
+        `Village (Home): buffer stops at s ${BUF2}; the engine spur to the table leaves at s ${SPUR.s}`,
         'Far end: Far Head crossover (before Q6), pier head stub (bare), v27 moving railhead (buffers), Ring Island loop (R1)',
       ],
       after: [
@@ -293,28 +291,28 @@ function ends(): End[] {
   const out: End[] = [
     {
       id: 'l1-village',
-      where: `Line 1, Village (layout B: road 1's buffers, s ${BUF1})`,
+      where: `Line 1, Village (Home: road 1's buffers, s ${BUF1})`,
       line: 'line1',
       status: 'live',
       ...at(beside(N, BUF1, 0)),
       dir: dirAt(N, BUF1, -2),
       before: 'buffers',
-      beforeText: `Layout B (the owner's pick, 9 November): road 1 runs straight at bearing 70° along the island (deck s 2.8-20.8) to buffer stops at s ${BUF1}, abeam of road 2's; its last 2.9 m beside the forge's south wall is the forge's goods dock. Today's live game still ends line 1 in the turntable well (no buffers) until home-station's flip.`,
+      beforeText: `Home (the owner's pick, 9 November): road 1 runs straight at bearing 70° along the island (deck s 2.8-20.8) to buffer stops at s ${BUF1}, abeam of road 2's; its last 2.9 m beside the forge's south wall is the forge's goods dock.`,
       complies: 'yes',
       after: 'terminal',
       afterText:
         "Buffers, the Village end board and the concourse 1 m behind them: Home is both lines' terminus. Line trains never reach the table (it is on the engine spur).",
-      cost: "Home-station step 9 (buffer stops and dressing, look only), after the flip (step 6). Nothing on today's table rim is worth building.",
+      cost: 'Home-station step 9 (buffer stops and dressing, look only).',
     },
     {
       id: 'l2-village',
-      where: `Line 2, Village (layout B: road 2's buffers, s ${BUF2})`,
+      where: `Line 2, Village (Home: road 2's buffers, s ${BUF2})`,
       line: 'line2',
       status: 'live',
       ...at(beside(E, BUF2, 0)),
       dir: dirAt(E, BUF2, -2),
       before: 'buffers',
-      beforeText: `Layout B: road 2 runs along the island's other edge (deck s 5.7-23.7) to buffer stops at s ${BUF2}. The engine spur leaves it at s ${SPUR.s} to the right for the 9.6 m table; the cart's leg joins it at s ${LEG.to}. Today's live game still ends line 2 on the table's line-2 road.`,
+      beforeText: `Home: road 2 runs along the island's other edge (deck s 5.7-23.7) to buffer stops at s ${BUF2}. The engine spur leaves it at s ${SPUR.s} to the right for the 9.6 m table; the cart's leg joins it at s ${LEG.to}.`,
       complies: 'yes',
       after: 'terminal',
       afterText:
@@ -323,13 +321,13 @@ function ends(): End[] {
     },
     {
       id: 'stall',
-      where: `The Roundhouse's open stall (layout B: the table's ${STALLS.open}° road)`,
+      where: `The Roundhouse's open stall (Home: the table's ${STALLS.open}° road)`,
       line: 'line2',
       status: 'live',
       ...W(stallFrame(STALLS.open).back),
       dir: Math.atan2(stallFrame(STALLS.open).u.x, stallFrame(STALLS.open).u.z),
       before: 'stub',
-      beforeText: `Layout B: the engine spur (R 15, 60°) to the table, and three radial stall roads at ${STALLS.bearings.join('°, ')}° (the ${STALLS.open}° one open, the others ruin outlines), each ${STALLS.depth} m deep. No buffer stop at the stall's back.`,
+      beforeText: `Home: the engine spur (R 15, 60°) to the table, and three radial stall roads at ${STALLS.bearings.join('°, ')}° (the ${STALLS.open}° one open, the others ruin outlines), each ${STALLS.depth} m deep. No buffer stop at the stall's back.`,
       complies: 'no',
       after: 'buffers',
       afterText:
@@ -530,7 +528,7 @@ type HaltRow = {
 };
 const FOR: Record<string, string> = {
   Village:
-    "Home: one terminus (layout B), the concourse, the forge's goods dock, the turntable and Roundhouse on the engine spur; deliveries arrive here. Spawn's shore is 100-130 m west.",
+    "Home: one terminus, the concourse, the forge's goods dock, the turntable and Roundhouse on the engine spur; deliveries arrive here. Spawn's shore is 100-130 m west.",
   Camp: "Line 1's timber camp: logs.",
   'Village, line 2':
     "Home, line 2: the island's other edge; the wagon comes from the stall over the table and up the spur.",
@@ -660,7 +658,7 @@ function liveHaltRows(): HaltRow[] {
       role: ROLE[h.name] ?? '',
       overhang,
       flags,
-      // Layout B's Village halts are one island, drawn with the station (homeB).
+      // Home's Village halts are one island, drawn with the station (homeStation).
       plats: h.name.startsWith('Village')
         ? []
         : [
@@ -719,9 +717,9 @@ function liveHaltRows(): HaltRow[] {
   return rows;
 }
 const TURNS: Record<string, string> = {
-  Village: `layout B: buffers at s ${BUF1} (today's game: a stub into the table well)`,
+  Village: `Home: buffers at s ${BUF1}`,
   Camp: 'stub (bare rail end)',
-  'Village, line 2': `layout B: buffers at s ${BUF2} (today's game: onto the table road)`,
+  'Village, line 2': `Home: buffers at s ${BUF2}`,
   Quarry: 'nothing',
   'Far Head': 'crossover s 490-512 (before Q6)',
   Pier: 'stub (bare end, Q6 to v27)',
@@ -799,12 +797,12 @@ function loaders() {
     ...SOURCES.filter((s) => s.id !== 'stall').map((s) => ({ ...s, ln: E })),
     {
       id: 'forge',
-      name: "The forge rack (rails; layout B, on the island's apron by the buffers)",
+      name: "The forge rack (rails; Home, on the island's apron by the buffers)",
       ...rack,
       line: 'line2',
       ln: E,
     },
-    { id: 'stall', name: "The Roundhouse's open stall (layout B)", ...stall, line: 'line2', ln: E },
+    { id: 'stall', name: "The Roundhouse's open stall (Home)", ...stall, line: 'line2', ln: E },
     {
       id: 'depot',
       name: "The depot (line 2's camp, the cart)",
@@ -835,7 +833,7 @@ function loaders() {
       s.id === 'stall'
         ? `${where} Not a loader: the shunter brings stock from the stall over the table and up the spur, which leaves road 2 at s ${SPUR.s}.`
         : s.id === 'forge'
-          ? `${where}${loader} The rack stands on the island's apron between the buffers and the deck's head ramp, ${r1(near.stop + CONSIST.tail - a.s)} m behind the last cargo car: the cargo end, on the island, so rails go from rack to car without crossing a track. The recovery rack (the Village yard, today at ${RECOVERY_RACK.x / 100}, ${RECOVERY_RACK.z / 100}) moves beside it in layout B.`
+          ? `${where}${loader} The rack stands on the island's apron between the buffers and the deck's head ramp, ${r1(near.stop + CONSIST.tail - a.s)} m behind the last cargo car: the cargo end, on the island, so rails go from rack to car without crossing a track. The recovery rack (the Village yard) stands at ${RECOVERY_RACK.x / 100}, ${RECOVERY_RACK.z / 100}.`
           : where + loader;
     rows.push({ name: s.name, x: r1(s.x), z: r1(s.z), text });
   }
@@ -862,7 +860,7 @@ const LOADER_NOTE =
 
 // ---------------------------------------------------------------- keep-clear for the grown Roundhouse
 /** The Roundhouse grows as an upgrade (the engine-garage brief: today's 9.6 m table to about a 16 m table and 16 m
- * stalls for end-game engines), and only ever on layout B (the design review's finding 1): a sector south of B's table
+ * stalls for end-game engines), and only ever at Home (the design review's finding 1): a sector south of Home's table
  * on its spur, to `r`, plus the grown table. Nothing in town moves. What stands within `r` of the table is listed with
  * its bearing (degrees clockwise from north), and whether it is inside the sector. */
 const GROWN = { table: 8, stalls: 16, wall: 2, from: 130, to: 250 } as const;
@@ -887,10 +885,10 @@ function keepClear() {
   near('the forge', FORGE.x + ORIGIN.x, FORGE.z + ORIGIN.z, Math.max(FORGE.w, FORGE.d) / 2);
   near("the forge's frame", FORGE_FRAME.x + ORIGIN.x, FORGE_FRAME.z + ORIGIN.z);
   near('the axe stand', AXE_STAND.x + ORIGIN.x, AXE_STAND.z + ORIGIN.z);
-  near('the forge crane (layout B)', W(PROPS.crane).x, W(PROPS.crane).z);
-  near('the forge rack (layout B)', W(PROPS.rack).x, W(PROPS.rack).z);
+  near('the forge crane (Home)', W(PROPS.crane).x, W(PROPS.crane).z);
+  near('the forge rack (Home)', W(PROPS.rack).x, W(PROPS.rack).z);
   near(
-    `the recovery rack, the Village yard (today ${RECOVERY_RACK.x / 100}, ${RECOVERY_RACK.z / 100}; layout B by the buffers)`,
+    `the recovery rack, the Village yard (${RECOVERY_RACK.x / 100}, ${RECOVERY_RACK.z / 100})`,
     W(PROPS.rack).x,
     W(PROPS.rack).z,
   );
@@ -898,7 +896,7 @@ function keepClear() {
   const q1 = LINKS[1]!.stations.find((t) => t.id === 'Q1');
   if (q1) {
     const f = frameBesideLine(q1, LINKS[1]!.line, LINKS[1]!.dir);
-    near("Q1's frame (layout B: road 2's south side)", f.x, f.z);
+    near("Q1's frame (Home: road 2's south side)", f.x, f.z);
   }
   for (const b of STALLS.bearings) {
     const f = stallFrame(b);
@@ -1052,7 +1050,7 @@ function corridors(): Corridor[] {
     const pts: [number, number][] = [],
       a: (number | null)[] = [],
       b: (number | null)[] = [];
-    // From layout B's buffers (behind s 0), then every 2 m.
+    // From Home's buffers (behind s 0), then every 2 m.
     const ss = [BUFFERS[L.index]!, ...Array.from({ length: Math.floor(L.line.len / 2) + 1 }, (_, k) => 2 * k)];
     for (const s of ss) {
       const p = beside(L.line, s, 0);
@@ -1193,9 +1191,9 @@ function loopsAndCrossings() {
   return { loops, cross, stubs, planks, crossoverZone: PLACE_FORMATION.quarry.crossover };
 }
 
-/** Layout B's station furniture, drawn at Home: the engine spur, the stall roads, the cart's leg, the concourse and
+/** Home's station furniture, drawn at Home: the engine spur, the stall roads, the cart's leg, the concourse and
  * the island. World metres. */
-function homeB() {
+function homeStation() {
   const pl = (ps: { x: number; z: number }[]) => ps.map((p) => [W(p).x, W(p).z] as [number, number]);
   const stalls = STALLS.bearings.map((b) => {
     const f = stallFrame(b);
@@ -1215,7 +1213,7 @@ function homeB() {
     stalls,
     hall,
     island,
-    label: `Layout B (the owner's pick, 9 November; home-station.md): one terminus, both lines at buffer stops beside one island (deck line 1 s 2.8-20.8, line 2 s 5.7-23.7) and one concourse; the 9.6 m table on its own engine spur off road 2 at s ${SPUR.s}; line trains never turn on the table. The live game draws today's turntable terminus until the flip (step 6); ?home=b previews B.`,
+    label: `Home (the owner's pick, 9 November; home-station.md): one terminus, both lines at buffer stops beside one island (deck line 1 s 2.8-20.8, line 2 s 5.7-23.7) and one concourse; the 9.6 m table on its own engine spur off road 2 at s ${SPUR.s}; line trains never turn on the table.`,
   };
 }
 
@@ -1272,7 +1270,7 @@ function page() {
     marks: marks(c),
     table: { x: TURNTABLE.x + ORIGIN.x, z: TURNTABLE.z + ORIGIN.z, r: TURNTABLE.r },
     keep: keepClear(),
-    home: homeB(),
+    home: homeStation(),
     services: SERVICES,
     removed: REMOVED,
   };
@@ -1358,7 +1356,7 @@ svg text { font-family: system-ui, sans-serif; paint-order: stroke; stroke: var(
 <code>dev/level/rail-map.ts</code>). World metres, north up. Every corridor is double track on 4 m centres, left-hand
 running (the up track, away from Home, on the left); at this scale the two tracks are spread apart so both stay
 visible, and come back to their true 4 m when you zoom in. Plan: <code>docs/plans/rail-map.md</code>.</p>
-<p class="muted"><b>Home is drawn as layout B</b>, the owner's pick (9 November): one terminus, both lines at buffer stops beside one island, the table on its own engine spur. The live game still draws today's turntable terminus until home-station's flip; <code>?home=b</code> previews B.</p>
+<p class="muted"><b>Home has one terminus</b>, the owner's pick (9 November): both lines at buffer stops beside one island, the table on its own engine spur.</p>
 <div class="stats">
   <div class="stat"><b>${lines.length}</b>services (2 live, 1 v27, ${lines.length - 3} tentative)</div>
   <div class="stat"><b>${E.length}</b>track ends, today and planned</div>
@@ -1403,8 +1401,8 @@ visible, and come back to their true 4 m when you zoom in. Plan: <code>docs/plan
   <span><svg width="20" height="14"><rect x="2" y="3" width="16" height="8" fill="var(--halt)" stroke="var(--ink)"/></svg>Platform, one per track (tap a halt)</span>
   <span><svg width="20" height="14"><circle cx="10" cy="7" r="6" fill="var(--mark)"/></svg>Continuity mark (numbered below)</span>
   <span><svg width="20" height="14"><rect x="4" y="2" width="10" height="10" fill="none" stroke="var(--good)" stroke-width="2"/></svg>Cargo loader (where it would stand)</span>
-  <span><svg width="20" height="14"><path d="M10 2v6l5 4z" fill="var(--mark)" fill-opacity="0.15" stroke="var(--mark)" stroke-dasharray="3 2"/></svg>Keep clear: the grown Roundhouse, a sector south of layout B's table (tap it)</span>
-  <span><svg width="20" height="14"><rect x="2" y="4" width="16" height="6" fill="var(--chalk)" stroke="var(--ink)"/></svg>Home, layout B: the island, the concourse, the spur and stall roads (tap)</span>
+  <span><svg width="20" height="14"><path d="M10 2v6l5 4z" fill="var(--mark)" fill-opacity="0.15" stroke="var(--mark)" stroke-dasharray="3 2"/></svg>Keep clear: the grown Roundhouse, a sector south of Home's table (tap it)</span>
+  <span><svg width="20" height="14"><rect x="2" y="4" width="16" height="6" fill="var(--chalk)" stroke="var(--ink)"/></svg>Home: the island, the concourse, the spur and stall roads (tap)</span>
   <span><svg width="20" height="14"><circle cx="10" cy="7" r="6" fill="none" stroke="var(--muted)" stroke-dasharray="1.5 3"/></svg>Undrawn alternative (Ring Island's loop, as proposed only)</span>
 </div>
 
@@ -1450,7 +1448,7 @@ ${serviceList('canopy')}
 </ul>
 
 <h2>Keep clear at Home: the grown Roundhouse</h2>
-<p class="muted">The table grows from 9.6 m to about 16 m, with 16 m stalls, as an upgrade (the engine-garage brief), and only ever on layout B. Kept clear: a sector from ${data.keep.from}° to ${data.keep.to}° (clockwise from north), r ${data.keep.r} m, south of B's table on its spur, plus the grown table (r ${data.keep.table} m); nothing in town moves. The engine-garage brief's "30 m on the stall side" and this become one footprint. Within ${data.keep.r} m of the table:</p>
+<p class="muted">The table grows from 9.6 m to about 16 m, with 16 m stalls, as an upgrade (the engine-garage brief), and only ever at Home. Kept clear: a sector from ${data.keep.from}° to ${data.keep.to}° (clockwise from north), r ${data.keep.r} m, south of Home's table on its spur, plus the grown table (r ${data.keep.table} m); nothing in town moves. The engine-garage brief's "30 m on the stall side" and this become one footprint. Within ${data.keep.r} m of the table:</p>
 <ul>
 ${data.keep.items.map((i) => `<li>${esc(i).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</li>`).join('\n')}
 </ul>
@@ -1517,8 +1515,8 @@ function draw() {
   el('circle', { cx: D.table.x, cy: D.table.z, r: Math.max(D.table.r, 3 * px), fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1.5 * px });
   const K = D.keep, bp = (b, r) => [K.x + r * Math.sin(b * Math.PI / 180), K.z - r * Math.cos(b * Math.PI / 180)];
   const k0 = bp(K.from, K.r), k1 = bp(K.to, K.r);
-  el('path', { d: 'M' + K.x + ',' + K.z + 'L' + k0.join(',') + 'A' + K.r + ',' + K.r + ' 0 0 1 ' + k1.join(',') + 'Z', fill: 'var(--mark)', 'fill-opacity': 0.1, stroke: 'var(--mark)', 'stroke-width': 1.4 * px, 'stroke-dasharray': 5 * px + ' ' + 3 * px }).addEventListener('click', () => show('<b>Keep clear: the grown Roundhouse</b> (layout B: a sector ' + K.from + '°-' + K.to + '° to r ' + K.r + ' m south of the spur table, and the grown 16 m table)<br>' + K.items.map((i) => i.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')).join('<br>')));
-  // Layout B's station: the island, the concourse, the engine spur, the stall roads and the cart's leg
+  el('path', { d: 'M' + K.x + ',' + K.z + 'L' + k0.join(',') + 'A' + K.r + ',' + K.r + ' 0 0 1 ' + k1.join(',') + 'Z', fill: 'var(--mark)', 'fill-opacity': 0.1, stroke: 'var(--mark)', 'stroke-width': 1.4 * px, 'stroke-dasharray': 5 * px + ' ' + 3 * px }).addEventListener('click', () => show('<b>Keep clear: the grown Roundhouse</b> (Home: a sector ' + K.from + '°-' + K.to + '° to r ' + K.r + ' m south of the spur table, and the grown 16 m table)<br>' + K.items.map((i) => i.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')).join('<br>')));
+  // Home's station: the island, the concourse, the engine spur, the stall roads and the cart's leg
   const H = D.home, poly = (pts) => pts.map((p) => p.join(',')).join(' ');
   const hb = el('g', {});
   el('polygon', { points: poly(H.island), fill: 'var(--halt)', stroke: 'var(--ink)', 'stroke-width': px }, hb);
@@ -1526,7 +1524,7 @@ function draw() {
   el('polyline', { points: poly(H.spur), fill: 'none', stroke: COL.line2, 'stroke-width': 2 * px }, hb);
   el('polyline', { points: poly(H.leg), fill: 'none', stroke: 'var(--muted)', 'stroke-width': 1.4 * px, 'stroke-dasharray': 3 * px + ' ' + 2 * px }, hb);
   for (const t of H.stalls) el('polyline', { points: poly(t.pts), fill: 'none', stroke: t.open ? COL.line2 : 'var(--muted)', 'stroke-width': (t.open ? 2 : 1.2) * px, 'stroke-dasharray': t.open ? '' : 2 * px + ' ' + 2 * px }, hb);
-  hb.addEventListener('click', () => show('<b>Home, layout B</b><br>' + H.label));
+  hb.addEventListener('click', () => show('<b>Home</b><br>' + H.label));
   el('circle', { cx: D.keep.x, cy: D.keep.z, r: D.keep.table, fill: 'none', stroke: 'var(--mark)', 'stroke-width': px, 'stroke-dasharray': 2 * px + ' ' + 2 * px });
   const W = 2.2 * px;
   for (const c of D.corridors) {

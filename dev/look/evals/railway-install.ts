@@ -65,7 +65,7 @@ if (!(await railReady(30_000))) throw new Error('install: the railway never beca
 void (async () => {
   // Beside the post, a little further round the rim (clear of the barrel on its stand), facing the table.
   const { geo, table: centre, y: groundY } = garageRow();
-  const stood = polarAt(centre, { bearing: geo.post.bearing + 6, r: geo.post.r + 0.2 });
+  const stood = polarAt(centre, { bearing: geo.post.bearing + 6, r: geo.post.r - 0.2 });
   teleport(me.body!, stood.x, groundY + 0.7, stood.z);
   me.body!.velocity.set(0, 0, 0);
   cam.yaw = me.yaw = Math.atan2(centre.x - stood.x, centre.z - stood.z);

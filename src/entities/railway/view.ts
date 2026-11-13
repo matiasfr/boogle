@@ -102,10 +102,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   line2.boilerSeat(trains.boilerSeat);
   trains.holdBoiler(line2.boilerFlying);
   const halts = await createRailwayHalts(adapter, owner);
-  // `?home=b`: Home drawn as one terminus station (docs/plans/home-station.md, step 3). Look only.
-  const homeStation = (await import('../../place/home-station.ts')).homeLayout()
-    ? await import('./home-station-view.ts').then((m) => m.createHomeStation(adapter, owner))
-    : null;
+  const homeStation = await import('./home-station-view.ts').then((m) => m.createHomeStation(adapter, owner));
   const flying = () => ({
     logs: cart.flying().logs + trains.trainFlying().logs,
     rails: cart.flying().rails + trains.trainFlying().rails,
@@ -521,7 +518,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       cart.update(dt);
       trains.update(dt);
       halts.update(dt);
-      homeStation?.update();
+      homeStation.update();
       works?.update(dt);
       line2.update(dt);
       hook.update(dt, now);

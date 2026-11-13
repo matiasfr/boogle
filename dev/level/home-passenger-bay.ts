@@ -1,11 +1,9 @@
 // node --import ./dev/sim/hooks.ts dev/level/home-passenger-bay.ts [--check]: the options page for where the bought
 // passenger set stands at Home, docs/world/home-passenger-bay.html (docs/brainstorms/express-train.md, "Home's bay for
 // the passenger set"; the owner picked A, the east bay, on 10 November). Every length on it is measured here from
-// layout B's own data: the lines' heads, the spur, the table and the cart's leg (src/place/home-station.ts), the double
+// Home's own data: the lines' heads, the spur, the table and the cart's leg (src/place/home-station.ts), the double
 // formation and the town (src/place/layout.ts), the Q frames and the terrain. `--check` writes nothing and exits 1 when
 // the page is stale. The page follows the artifact contract: body content only, a <title> first, inline CSS and JS.
-// Home is drawn as layout B: home-b.ts must evaluate before Place's layout reads BOOGLE_HOME.
-import './home-b.ts';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import prettier from 'prettier';
@@ -15,7 +13,6 @@ import * as terrain from '../../src/place/terrain.ts';
 import * as spatial from '../../src/place/spatial-station.ts';
 
 const OUT = fileURLToPath(new URL('../../docs/world/home-passenger-bay.html', import.meta.url));
-if (!home.homeLayout()) throw new Error('home-b.ts did not set layout B');
 
 type P = { x: number; z: number };
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -244,7 +241,7 @@ const tableRow = (rows: [string, string][]) =>
 
 const svg = `
 <svg viewBox="${VB.x0} ${VB.z0} ${VB.x1 - VB.x0} ${VB.z1 - VB.z0}" role="img" aria-labelledby="map-title">
-<title id="map-title">Home under layout B, to scale, north up, with the chosen bay option drawn over it</title>
+<title id="map-title">Home, to scale, north up, with the chosen bay option drawn over it</title>
 <rect x="${VB.x0}" y="${VB.z0}" width="${VB.x1 - VB.x0}" height="${VB.z1 - VB.z0}" fill="var(--land)"/>
 <polygon points="${poly(gorge)}" fill="var(--sea)"/>
 ${town.map((t: P[]) => `<polygon points="${poly(t)}" class="town"/>`).join('\n')}
@@ -523,11 +520,11 @@ const factsC: [string, string][] = [
 const html = `<title>Home's bay for the passenger train</title>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="Three measured options for where the bought passenger train stands at Home, drawn to scale on layout B." />
+<meta name="description" content="Three measured options for where the bought passenger train stands at Home, drawn to scale." />
 <style>${css}</style>
 <main id="page" data-opt="a">
 <h1>Where does the bought passenger train stand at Home?</h1>
-<p>The express comes in two stages: first the ordinary train with a headboard, later a passenger train the room buys, "kept ready at each big station". On 10 November you ruled that at Home it does not stand in the Roundhouse: "the Roundhouse stays the upgrade screen only; find it a bay elsewhere". This page draws Home as layout B (the one-station Home you picked on 9 November, not yet live) to scale from the layout code, with three answers. Pick a tab.</p>
+<p>The express comes in two stages: first the ordinary train with a headboard, later a passenger train the room buys, "kept ready at each big station". On 10 November you ruled that at Home it does not stand in the Roundhouse: "the Roundhouse stays the upgrade screen only; find it a bay elsewhere". This page draws Home to scale from the layout code, with three answers. Pick a tab.</p>
 <div class="bar" role="group" aria-label="Option">
 <button type="button" data-pick="a" aria-pressed="true">A · East bay</button>
 <button type="button" data-pick="b" aria-pressed="false">B · The cart's track</button>
@@ -599,7 +596,7 @@ const html = `<title>Home's bay for the passenger train</title>
 <li>That outbound trains really run on the left-hand track from 54 m out. The layout draws it there (the double-track work); I read the drawing, not how trains are posed on it. A depends on it.</li>
 <li>Every time above that is marked as an estimate. They come from distances; no simulation runs a train that belongs to no line yet.</li>
 <li>West landing's layout. It is not drawn; its distances are straight lines to the blockout's two halts.</li>
-<li>The ground under the bay is from the terrain data (level within about 0.9 m of the rails), not from a look in the game. Layout B is not live, and the level check does not know the spur, the cart's track or a bay.</li>
+<li>The ground under the bay is from the terrain data (level within about 0.9 m of the rails), not from a look in the game. The level check does not know the spur, the cart's track or a bay.</li>
 <li>If the joining curve on line 2 is later eased over 30 m instead of 20 (the rail map's proposal), A's join moves from 54 m to 64 m out. The bay still works, but where a standing train clears the next track should be measured again.</li>
 </ul>
 <p class="muted">Drawn from <code>src/place/home-station.ts</code>, <code>src/place/layout.ts</code> and the terrain by <code>dev/level/home-passenger-bay.ts</code>. Design only: nothing here is built. Brief: <code>docs/brainstorms/express-train.md</code>.</p>

@@ -19,14 +19,24 @@ import { material } from '../../render/materials.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import { WORKS, SHED_STALL, SHED_TABLE, WAGON_S } from '../../sim/railway-works-layout.ts';
 import { SEAM_STALL } from '../../sim/railway-works.ts';
-import { STALL_TODAY, stallShape, beam, box, type WorksBox } from './works-shape.ts';
+import {
+  STALL_BOXES,
+  STALL_SLAB,
+  STALL_ROAD,
+  STALL_SOCKETS,
+  STALL_YAW,
+  stallPoint,
+  beam,
+  box,
+  type WorksBox,
+} from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGarageView } from './garage-view.ts';
 import { roomFacts } from './garage-state.ts';
 import { playSharedMoment } from './shared-moment.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
-import { garageRow, installHere, polarAt } from './garage-geo.ts';
+import { garageRow, polarAt } from './garage-geo.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 
 /** Seconds: the stall frame's build, the tarp's slide, the table's quarter turn. */
@@ -37,7 +47,7 @@ const FLOOR = 18.05,
   RAIL = 18.35;
 /** Rule ticks per second (the railway sim runs at 10 Hz, as cart-view.ts says). */
 const TICKS_PER_S = 10;
-/** The roll-out's turn, as fractions of its `rollTicks` (6 s): push on, the 2 s turn, push off. */
+/** The roll-out's turn, as fractions of its `rollTicks` (11 s): push on, turn, back down the spur and push off. */
 const ROLL = { turn: [0.36, 0.69] } as const;
 /** The shunter's way home after the wagon waits on line 2 (ticks), and its turn back as fractions of it. */
 const BACK_TICKS = 100;
@@ -61,15 +71,7 @@ export async function createRailwayRoundhouse(
     import('../../place/layout.ts'),
     import('../../place/home-station.ts'),
   ]);
-  // `?home=b` (docs/plans/home-station.md, step 3) draws the open stall on the table's 190 degree road and the table at
-  // its spur's end, and runs the shunt on layout B's track (`shuntPath()`, below). Look only: the prompts' reach keeps
-  // today's anchors.
-  const homeB = home.homeLayout();
-  const open = home.stallFrame(home.STALLS.open);
   const toWorld = (p: { x: number; z: number }) => ({ x: p.x + layout.ORIGIN.x, z: p.z });
-  const { STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL_SOCKETS, STALL_YAW, stallPoint } = homeB
-    ? stallShape({ centre: toWorld(open.centre), yaw: open.yaw, slabZ: -2.9, rim: toWorld(open.rim) })
-    : STALL_TODAY;
   const boxes: WorksBox[] = [...STALL_BOXES];
   const part = (x: number, y: number, z: number, w: number, h: number, d: number, colour: `#${string}`) => {
     const p = stallPoint(x, z);
@@ -111,20 +113,14 @@ export async function createRailwayRoundhouse(
   // ---------------------------------------------------------------- the turntable (Place's junction disc is not
   // loaded in production: the Roundhouse draws its own at the same place and size)
   const anchor = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
-  const table = homeB ? toWorld(home.TABLE) : anchor;
+  const table = toWorld(home.TABLE);
   const line2 = layout.LINKS[1]!.line;
-  const lp = { x: 0, z: 0, ux: 0, uz: 0 };
-  const lineAt = (s: number, out: THREE.Vector3) => {
-    layout.lineAt(line2, s, lp);
-    return out.set(lp.x + layout.ORIGIN.x, layout.railY(line2, s), lp.z);
-  };
   const tableY = layout.railY(line2, 0);
   const R = 4.8;
   const rim = STALL_ROAD[0]!;
   const yaws = [Math.atan2(rim.x - table.x, rim.z - table.z), 0];
-  layout.lineAt(line2, 0.5, lp);
   const spur = (home.TABLE.spur * Math.PI) / 180;
-  yaws[1] = homeB ? Math.atan2(Math.sin(spur), -Math.cos(spur)) : Math.atan2(lp.ux, lp.uz);
+  yaws[1] = Math.atan2(Math.sin(spur), -Math.cos(spur));
   const discGeo = new THREE.CylinderGeometry(R, R, 0.24, 24);
   const disc = new THREE.Mesh(discGeo, material('stone', { colour: '#7f7a70' }));
   discGeo.dispose();
@@ -139,30 +135,20 @@ export async function createRailwayRoundhouse(
     owner,
   );
 
-  // The train garage (docs/brainstorms/engine-garage.md, first build; docs/plans/garage-install-moment.md, G2): the
-  // works copy of the engine stands on the table once the wagon has coupled, and a lever post at the rim opens a
-  // framed view of it. Mounted at today's table and at layout B's, each with its own placement row. Local: nothing is
-  // sent or saved. `garageHere`: a hold at this post is inside the server's reach for the install (today's table only,
-  // until the flip moves `SHED_TABLE`).
+  // The train garage: the works copy stands on the table after coupling; the lever post opens its framed view.
+  // Local: nothing is sent or saved. Every Install hold starts inside the server's reach.
   const garageGeo = garageRow().geo;
   const garagePost = polarAt(table, garageGeo.post);
-  const garageHere = installHere(garagePost);
-  const garageView = await createGarageView(
-    owner,
-    // Today's table stands 0.2 m over the grass east of it (surface 18.1 m, railway-jump.ts's TABLE_LAND).
-    { table, y: tableY, post: garagePost, ground: homeB ? tableY : SHED_TABLE.y / 100 - 0.2 },
-    garageGeo,
-    {
-      // The deck is at rest when no choreography turns it, it is not catching up, and the shunter is home in the stall.
-      restYaw: () =>
-        (deckK === null || deckK <= 0) && !tableTurning && Math.abs(shunterA - (PARKED_A - PARK.gap)) < 0.05
-          ? tableYaw
-          : null,
-      install: (rev) => adapter.installBoiler(rev),
-      installHere: garageHere,
-      online: () => adapter.read.ready(),
-    },
-  );
+  const garageView = await createGarageView(owner, { table, y: tableY, post: garagePost, ground: tableY }, garageGeo, {
+    // The deck is at rest when no choreography turns it, it is not catching up, and the shunter is home in the stall.
+    restYaw: () =>
+      (deckK === null || deckK <= 0) && !tableTurning && Math.abs(shunterA - (PARKED_A - PARK.gap)) < 0.05
+        ? tableYaw
+        : null,
+    install: (rev) => adapter.installBoiler(rev),
+    installHere: true,
+    online: () => adapter.read.ready(),
+  });
   owner.cleanup(garageView.dispose);
   // The install is not predicted, so a refusal is no correction: the adapter says so directly and the part lowers.
   owner.cleanup(
@@ -181,13 +167,6 @@ export async function createRailwayRoundhouse(
   pathPts.push(new THREE.Vector3(door.x, RAIL, door.z));
   pathPts.push(new THREE.Vector3(rim.x, (RAIL + tableY) / 2, rim.z));
   pathPts.push(new THREE.Vector3(table.x, tableY, table.z));
-  // Today's path runs straight on from the table along line 2. Layout B's ends at the table: what follows is `shuntB`.
-  if (!homeB) {
-    for (let s = 1; s <= WAGON_S / 100 + 0.01; s += 1)
-      pathPts.push(lineAt(Math.min(s, WAGON_S / 100), new THREE.Vector3()));
-    if (pathPts.at(-1)!.distanceTo(lineAt(WAGON_S / 100, new THREE.Vector3())) > 0.01)
-      pathPts.push(lineAt(WAGON_S / 100, new THREE.Vector3()));
-  }
   const lengths = (pts: THREE.Vector3[]) => {
     const out: number[] = [0];
     for (let i = 1; i < pts.length; i++) out.push(out[i - 1]! + pts[i]!.distanceTo(pts[i - 1]!));
@@ -207,13 +186,12 @@ export async function createRailwayRoundhouse(
   const PARKED_A = cum[1]!; // the wagon's parked place along the path
   const TABLE_A = cum[4]!;
   const pathAt = (a: number, out: THREE.Vector3) => polyAt(pathPts, cum, a, out);
-  /** Layout B's shunt past the table (home-station.ts `shuntPath()`; docs/plans/home-flip.md, F2), in two tracks. The
+  /** The shunt past the table (home-station.ts `shuntPath()`; docs/plans/home-flip.md, F2), in two tracks. The
    * deck turns the pair so the shunter leaves first: `inPts` runs from the table's centre down the spur onto road 2
    * and on to the buffer, and the pair backs down it, the shunter leading, until the wagon's centre is at the cusp;
    * `outPts` is road 2 from the buffer outward, along which the shunter pushes the wagon to its wait. One distance
    * still places each vehicle: `cuspA` is the wagon's at the cusp, `outA` at its wait. */
-  const shuntB = (() => {
-    if (!homeB) return null;
+  const shunt = (() => {
     const wagonS = WAGON_S / 100,
       buffer = home.BUFFERS[1];
     const { pts, cusp } = home.shuntPath(wagonS);
@@ -243,35 +221,26 @@ export async function createRailwayRoundhouse(
       outA: cuspA + (wagonS - home.SHUNT_CUSP_S),
     };
   })();
-  const OUT_A = shuntB ? shuntB.outA : cum.at(-1)!; // its wait on line 2
+  const OUT_A = shunt.outA; // its wait on line 2
   // The deck carries what stands on it (works-late-game step 5): drive on heading `hIn`, turn `turnBy` with the deck,
   // drive off heading `hOut`. `deckK` is the turn done (0..1) while the choreography runs, null while the deck simply
   // follows the accepted table.
   const tableAt = new THREE.Vector3(table.x, tableY, table.z);
   const headingOf = (from: THREE.Vector3, to: THREE.Vector3) => Math.atan2(to.x - from.x, to.z - from.z);
   const hIn = headingOf(pathAt(TABLE_A - 2, new THREE.Vector3()), tableAt);
-  // Layout B's deck turns its stall end to the spur, so the pair leaves it backwards, the shunter first.
-  const hOut = shuntB
-    ? headingOf(tableAt, shuntB.inPts[1]!) + Math.PI
-    : headingOf(tableAt, pathAt(TABLE_A + 2.8, new THREE.Vector3()));
+  // The deck turns its stall end to the spur, so the pair leaves backwards, the shunter first.
+  const hOut = headingOf(tableAt, shunt.inPts[1]!) + Math.PI;
   const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
   const turnBy = wrap(hOut - hIn);
   /** Half the bogie spacing of the wagon and the shunter (their wheels sit at z ±1). */
   const BOGIE = 1;
   let deckK: number | null = null;
-  /** A bogie at path distance `a`: on the deck while it turns it rides the deck round its centre, else the path. */
-  function bogieAt(a: number, out: THREE.Vector3) {
-    const d = a - TABLE_A;
-    if (deckK === null || Math.abs(d) >= R || (deckK <= 0 && d <= 0) || (deckK >= 1 && d >= 0)) return pathAt(a, out);
-    const h = hIn + turnBy * deckK;
-    return out.set(table.x + Math.sin(h) * d, tableY, table.z + Math.cos(h) * d);
-  }
-  /** Layout B: the point `c` metres ahead of the wagon's centre along the pair (its bogies ±1; the shunter's centre
+  /** The point `c` metres ahead of the wagon's centre along the pair (its bogies ±1; the shunter's centre
    * `PARK.gap` behind) when the wagon's distance is `a`. Up to its seat on the deck the pair is on the stall road or
    * turning with the deck; then it backs down `inPts` (the point ahead of the centre trails, nearer the table); past
    * the cusp it runs out along `outPts`. */
   function pairAt(a: number, c: number, out: THREE.Vector3) {
-    const b = shuntB!,
+    const b = shunt,
       seated = TABLE_A + PARK.gap / 2;
     if (a <= seated) {
       const d = a + c - TABLE_A;
@@ -284,7 +253,7 @@ export async function createRailwayRoundhouse(
   }
   /** A vehicle's centre at its own distance: the wagon's, or the shunter's (`PARK.gap` behind the wagon's). */
   const centreAt = (a: number, shunter: boolean, out: THREE.Vector3) =>
-    !shuntB ? pathAt(a, out) : shunter ? pairAt(a + PARK.gap, -PARK.gap, out) : pairAt(a, 0, out);
+    shunter ? pairAt(a + PARK.gap, -PARK.gap, out) : pairAt(a, 0, out);
 
   // ---------------------------------------------------------------- moving parts
   const batch = createBoxBatch(owner, 320);
@@ -428,7 +397,7 @@ export async function createRailwayRoundhouse(
   let socketKey = '';
   function drawSocketGhosts() {
     const from = slabOpen ? Math.min(WORKS.stall, shed(wd).stall) : WORKS.stall;
-    const key = `${from} ${homeB}`;
+    const key = String(from);
     if (key === socketKey) return;
     socketKey = key;
     socketGhosts.begin();
@@ -445,15 +414,10 @@ export async function createRailwayRoundhouse(
   function vehicleFrame(a: number, out: THREE.Matrix4, shunter = false) {
     // Local +z points the way out: the shunter, behind, pushes the wagon ahead of it. The body sits between its two
     // bogies and faces along them, so its heading eases through every corner of the path and turns with the deck.
-    if (shuntB) {
-      const wagon = shunter ? a + PARK.gap : a,
-        c = shunter ? -PARK.gap : 0;
-      pairAt(wagon, c + BOGIE, front);
-      pairAt(wagon, c - BOGIE, rear);
-    } else {
-      bogieAt(a + BOGIE, front);
-      bogieAt(a - BOGIE, rear);
-    }
+    const wagon = shunter ? a + PARK.gap : a,
+      c = shunter ? -PARK.gap : 0;
+    pairAt(wagon, c + BOGIE, front);
+    pairAt(wagon, c - BOGIE, rear);
     p.addVectors(front, rear).multiplyScalar(0.5);
     return out.compose(p, q.setFromEuler(e.set(0, headingOf(rear, front), 0)), s.set(1, 1, 1));
   }
@@ -558,15 +522,14 @@ export async function createRailwayRoundhouse(
       seated = TABLE_A + PARK.gap / 2; // the wagon's centre on the deck, the shunter's as far behind the middle
     if (sh.ready < 0) return { wagon: PARKED_A, shunter: home, k: hidden ? 0 : null, hidden };
     const phase = (u: number, from: number, to: number) => smooth(Math.min(1, Math.max(0, (u - from) / (to - from))));
-    /** From `a0` to `a1` over `from`..`to`; in layout B by way of `cusp`, coming to rest there before it reverses. */
+    /** From `a0` to `a1` over `from`..`to`; by way of `cusp`, coming to rest there before it reverses. */
     const run = (u: number, from: number, to: number, a0: number, a1: number, cusp: number) => {
-      if (!shuntB) return a0 + (a1 - a0) * phase(u, from, to);
       const split = from + ((to - from) * Math.abs(cusp - a0)) / (Math.abs(cusp - a0) + Math.abs(a1 - cusp));
       return u < split ? a0 + (cusp - a0) * phase(u, from, split) : cusp + (a1 - cusp) * phase(u, split, to);
     };
-    const cuspA = shuntB?.cuspA ?? 0;
-    // Where the shunter stands on the deck for the turn back: its middle today; in layout B, where it sat on the way out.
-    const deckStop = shuntB ? TABLE_A - PARK.gap / 2 : TABLE_A;
+    const cuspA = shunt.cuspA;
+    // The shunter turns back where it sat on the deck on the way out.
+    const deckStop = TABLE_A - PARK.gap / 2;
     const u = (tick - (sh.ready - WORKS.rollTicks)) / WORKS.rollTicks;
     if (u < 1) {
       const a =
@@ -742,8 +705,6 @@ export async function createRailwayRoundhouse(
   const stallAt = { x: SHED_STALL.x / 100, z: SHED_STALL.z / 100 };
   return {
     restore: snap,
-    /** The garage's post is where the install is judged from: the plain post (boiler-install-view.ts) is not drawn. */
-    garageHere,
     update(dt: number) {
       later.update(dt);
       wd = adapter.read.world();
@@ -873,15 +834,14 @@ export async function createRailwayRoundhouse(
       const nearStall =
         Math.hypot(pos.x - stallAt.x, pos.z - stallAt.z) <= SHED_STALL.reach / 100 - 0.4 &&
         Math.abs(pos.y - SHED_STALL.y / 100) <= 2.6;
-      // The garage's post, offered in every state. At today's table it keeps build 2's reach test (2.6 m of the post,
+      // The garage's post, offered in every state. It keeps the reach test (2.6 m of the post,
       // inside the server's 6 m of the table less 0.4 m), and the player is held while the garage is open, so every
       // Install hold is sent from inside the reach.
       if (
         !garageView.isOpen() &&
         Math.hypot(pos.x - garagePost.x, pos.z - garagePost.z) <= 2.6 &&
-        (!garageHere ||
-          (Math.hypot(pos.x - anchor.x, pos.z - anchor.z) <= SHED_TABLE.reach / 100 - 0.4 &&
-            Math.abs(pos.y - SHED_TABLE.y / 100) <= 2.6))
+        Math.hypot(pos.x - anchor.x, pos.z - anchor.z) <= SHED_TABLE.reach / 100 - 0.4 &&
+        Math.abs(pos.y - SHED_TABLE.y / 100) <= 2.6
       ) {
         const facts = roomFacts(wd);
         if (facts.boilerFitted && (facts.tableBusy || garageView.standing()))
@@ -955,7 +915,7 @@ export async function createRailwayRoundhouse(
       const w = new THREE.Vector3();
       centreAt(wagonA, false, w);
       return {
-        garageView: { ...garageView.inspect(), here: garageHere, post: garagePost, deckYaw: garageView.deckYaw() },
+        garageView: { ...garageView.inspect(), here: true, post: garagePost, deckYaw: garageView.deckYaw() },
         slab: !slabOpen,
         slabSolid: !!slabBody,
         socketGhosts: socketGhosts.count,

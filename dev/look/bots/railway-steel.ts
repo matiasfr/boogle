@@ -14,7 +14,7 @@ import { interactTarget } from '../../../src/player/hands.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { RING_HALT, STEEL, ringAt } from '../../../src/sim/railway-ring-layout.ts';
 import { LINE2 } from '../../../src/sim/railway-lines.ts';
-import { POST } from '../../../src/entities/railway/boiler-install-view.ts';
+import { garageRow, polarAt } from '../../../src/entities/railway/garage-geo.ts';
 import { garage } from '../../../src/entities/railway/garage-state.ts';
 import { HALT, line2Rides } from './railway-ride.ts';
 
@@ -22,8 +22,6 @@ export type SteelRoute = { bot: Bot; checkpoint: (name: string) => Promise<void>
 const cm = (p: { x: number; z: number }) => ({ x: p.x / 100, z: p.z / 100 });
 /** Ring Island is line 2's stop 5, the Village its stop 0. */
 const STOP = { village: 0, island: 5 } as const;
-/** Where the hold is made from: 1.3 m west of the post, inside its 2.6 m and the table's reach. */
-const POST_STAND = { x: POST.x - 1.3, z: POST.z - 0.1 };
 const TICKS = 1500; // bounds below are in server ticks, never page time
 
 export async function steelRoute({ bot, checkpoint }: SteelRoute) {
@@ -129,9 +127,13 @@ export async function steelRoute({ bot, checkpoint }: SteelRoute) {
   }
 
   // 4. The Install: Interact at the garage's post opens it on the Longer boiler; the same button held is the install.
+  const { geo, table } = garageRow();
+  const post = polarAt(table, geo.post);
+  // Beside the lever and inside the server's reach, with room for the walk's stopping tolerance.
+  const stood = polarAt(table, { bearing: geo.post.bearing + 6, r: geo.post.r - 0.6 });
   if (boiler() < 1) {
-    check(await bot.walk(POST_STAND.x, POST_STAND.z, 0.8), 'walked to the garage post');
-    face(POST.x, POST.z);
+    check(await bot.walk(stood.x, stood.z, 0.3), 'walked to the garage post');
+    face(post.x, post.z);
     await until(() => interactTarget()?.id === 'railway-garage', 'the garage is offered at the post', 20000);
     const t = interactTarget()!;
     check(t.run && !t.blocked, `the garage opens, not blocked "${t.blocked ?? ''}"`);
