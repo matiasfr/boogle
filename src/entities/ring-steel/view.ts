@@ -130,6 +130,8 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
   }
   sign.mesh.visible = false;
   let painted = '';
+  // The stacks and rack depend only on these counts, so the batch is rewritten only when they change.
+  let stacked = '';
   // The yard's plate (the greybox route's step 4 review, answers b and j): `STEEL KIT` with the mark a steel kit
   // car's board carries. It hangs under build 1's RINGWORKS board on the east platform's back edge (posts at u 445.7
   // and 450.3, lat 5.0, the board's foot 3.3 m up), beside the south post and just clear of the posts on the
@@ -175,20 +177,24 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
         sign.painted();
       }
     }
-    batch.begin();
-    for (let i = 0; i < Math.min(s.yardLogs, STEEL.logs); i++) {
-      const p = at(LOGS_AT.u - 0.54 + (i % 4) * 0.36, LOGS_AT.lat);
-      batch.box(p.x, Y + 0.28 + Math.floor(i / 4) * 0.34, p.z, 1.6, 0.32, 0.32, LOG, YAW);
+    const key = `${s.yardLogs}|${s.yardRails}|${s.rack}`;
+    if (key !== stacked) {
+      stacked = key;
+      batch.begin();
+      for (let i = 0; i < Math.min(s.yardLogs, STEEL.logs); i++) {
+        const p = at(LOGS_AT.u - 0.54 + (i % 4) * 0.36, LOGS_AT.lat);
+        batch.box(p.x, Y + 0.28 + Math.floor(i / 4) * 0.34, p.z, 1.6, 0.32, 0.32, LOG, YAW);
+      }
+      for (let i = 0; i < Math.min(s.yardRails, STEEL.rails); i++) {
+        const p = at(RAILS_AT.u - 0.55 + (i % 6) * 0.22, RAILS_AT.lat);
+        batch.box(p.x, Y + 0.19 + Math.floor(i / 6) * 0.16, p.z, 1.7, 0.12, 0.12, RAIL, YAW);
+      }
+      for (let i = 0; i < Math.min(s.rack, STEEL.rackCap); i++) {
+        const p = at(RACK.u0 + 0.4 + i * RACK.step, RACK.lat);
+        batch.box(p.x, Y + 0.45, p.z, 0.8, 0.4, 0.5, STEEL_BLOCK, YAW);
+      }
+      batch.commit();
     }
-    for (let i = 0; i < Math.min(s.yardRails, STEEL.rails); i++) {
-      const p = at(RAILS_AT.u - 0.55 + (i % 6) * 0.22, RAILS_AT.lat);
-      batch.box(p.x, Y + 0.19 + Math.floor(i / 6) * 0.16, p.z, 1.7, 0.12, 0.12, RAIL, YAW);
-    }
-    for (let i = 0; i < Math.min(s.rack, STEEL.rackCap); i++) {
-      const p = at(RACK.u0 + 0.4 + i * RACK.step, RACK.lat);
-      batch.box(p.x, Y + 0.45, p.z, 0.8, 0.4, 0.5, STEEL_BLOCK, YAW);
-    }
-    batch.commit();
   }
   const v = (u: number, lat: number, up: number) => {
     const p = at(u, lat);

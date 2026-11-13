@@ -13,6 +13,7 @@ import type { Interactable } from '../../player/hands.ts';
 import { conversation } from '../../player/conversation.ts';
 import { me } from '../../player/player.ts';
 import { whistle } from '../../render/machine-sfx.ts';
+import { folkVoice, type VoiceSpec } from '../../render/npc-voice.ts';
 import { accounts, aperture } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createSeen } from '../railway/ability-arrival.ts';
@@ -54,17 +55,9 @@ const LOOK_COLOR = { rivet: '#f0c030', squint: '#e8742c', hooter: '#3f8ee0' } as
 const TALK_REACH = 3.3;
 const MEM_GLIDED = 'glided',
   MEM_SWAM = 'swam';
-const voice = (baseHz: number, formantScale: number) => ({
-  baseHz,
-  rangeSemis: 3,
-  formantScale,
-  brightnessHz: 4200,
-  cps: 34,
-  grainMs: [55, 85] as [number, number],
-  vowels: [0.3, 0.15, 0.2, 0.25, 0.1] as const,
-});
+const voice = (baseHz: number, formantScale: number) => folkVoice(baseHz, 34, formantScale, 4200);
 const NAMES: Record<Who, string> = { rivet: 'Rivet', squint: 'Squint', hooter: 'Hooter' };
-const VOICES: Record<Who, ReturnType<typeof voice>> = {
+const VOICES: Record<Who, VoiceSpec> = {
   rivet: voice(210, 1.05),
   squint: voice(300, 1.2),
   hooter: voice(170, 0.95),

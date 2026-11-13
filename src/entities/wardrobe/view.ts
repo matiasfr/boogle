@@ -52,17 +52,14 @@ const follow = (p: { x: number; y: number; z: number }): Follow => ({
 });
 // src/entities/railway/seat.ts stamps `seatedAt` and `seatRise` on a seated avatar each frame: its body is held seatRise m
 // above where it would stand on that deck, so the deck under a sitter is that much further down.
+const seatedNow = (avatar: THREE.Object3D | null | undefined) =>
+  !!avatar && performance.now() - ((avatar.userData.seatedAt as number | undefined) ?? -1e9) < 200;
 const seatRise = (avatar: THREE.Object3D | null | undefined) =>
-  performance.now() - ((avatar?.userData.seatedAt as number | undefined) ?? -1e9) < 200
-    ? ((avatar?.userData.seatRise as number | undefined) ?? 0)
-    : 0;
+  seatedNow(avatar) ? ((avatar!.userData.seatRise as number | undefined) ?? 0) : 0;
 /** A seated avatar's seat: seat.ts draws a bench's rider `seatAhead` m forward of it, the way they face (yaw 0 faces
  * -z), and the stowaway stays on the bench beside the seat. Anyone else: their position. */
 const bySeat = (avatar: THREE.Object3D, out: THREE.Vector3) => {
-  const ahead =
-    performance.now() - ((avatar.userData.seatedAt as number | undefined) ?? -1e9) < 200
-      ? ((avatar.userData.seatAhead as number | undefined) ?? 0)
-      : 0;
+  const ahead = seatedNow(avatar) ? ((avatar.userData.seatAhead as number | undefined) ?? 0) : 0;
   return out.set(
     avatar.position.x + Math.sin(avatar.rotation.y) * ahead,
     avatar.position.y,
@@ -112,10 +109,7 @@ function stepPet(
     c.z = p.z + c.rz;
     c.y = p.y - 0.5 - rise; // the deck: where your feet would be standing
     c.yaw = yaw + Math.PI;
-    mesh.position.set(c.x, c.y + c.hop, c.z);
-    mesh.rotation.y = c.yaw;
-    const sq = 1 + (moving ? 0.1 * Math.cos(c.t * 2) : 0.03 * Math.sin(c.t));
-    mesh.scale.set(CRIT.scale / sq, CRIT.scale * sq, CRIT.scale / sq);
+    poseCritter(mesh, c, moving);
     return;
   }
   c.riding = false;
@@ -139,6 +133,10 @@ function stepPet(
   c.t += dt * (moving ? 11 : 2.4);
   c.hop = moving ? Math.abs(Math.sin(c.t)) * 0.36 : Math.max(0, Math.sin(c.t) * 0.02);
   c.y += (p.y - 0.5 - c.y) * Math.min(1, dt * 10);
+  poseCritter(mesh, c, moving);
+}
+/** Draws the follower where `c` says, squashing as it hops. */
+function poseCritter(mesh: THREE.Mesh, c: Follow, moving: boolean) {
   mesh.position.set(c.x, c.y + c.hop, c.z);
   mesh.rotation.y = c.yaw;
   const sq = 1 + (moving ? 0.1 * Math.cos(c.t * 2) : 0.03 * Math.sin(c.t));
@@ -253,10 +251,10 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
   function walkPets(dt: number, riding: boolean) {
     const body = me.body;
     if (wardrobe.pet() === PET && body) {
-      const seated = me.avatar && performance.now() - (me.avatar.userData.seatedAt ?? -1e9) < 200;
       // Seated, the chair draws you on the moving deck's frame (seat.ts drawAtSeat): sit by that, not the body.
-      const p = seated ? bySeat(me.avatar!, seatAt) : body.interpolatedPosition;
-      stepPet(dt, petOf('self', p).at, pets.get('self')!.mesh, p, me.yaw, riding, seatRise(me.avatar));
+      const p = seatedNow(me.avatar) ? bySeat(me.avatar!, seatAt) : body.interpolatedPosition;
+      const pet = petOf('self', p);
+      stepPet(dt, pet.at, pet.mesh, p, me.yaw, riding, seatRise(me.avatar));
     } else dropPet('self');
     for (const remote of remotes.values()) {
       const pet = partnerStowaway(remote.peer);

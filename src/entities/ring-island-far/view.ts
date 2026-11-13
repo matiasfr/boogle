@@ -5,6 +5,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { camera } from '../../render/scene.ts';
+import { smoothstep } from '../../math.ts';
 import { RING_GAP, RING_FORMATION, ringAt, ringDeckY } from '../../sim/railway-ring-layout.ts';
 
 /** Call 20: a cream pennant so the raised leaf reads from Home (the step 0 measure: the leaf alone is 8 px from Home's
@@ -96,11 +97,6 @@ export function setNearViewMounted(isMounted: (() => boolean) | null) {
   nearViewMounted = isMounted ?? (() => false);
 }
 
-const smooth = (a: number, b: number, v: number) => {
-  const t = Math.min(1, Math.max(0, (v - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
-
 export function createRingIslandFarView() {
   const owner = createOwnedView();
   // The line's frame: X across it (lat), Y up, Z back toward home (falling u), so the lowered leaf lies along +Z.
@@ -183,7 +179,7 @@ export function createRingIslandFarView() {
       mounted = nearViewMounted();
       root.visible = !mounted;
       if (mounted) return;
-      const g = smooth(FADE.from, FADE.to, Math.hypot(x - m(hinge.x), z - m(hinge.z)));
+      const g = smoothstep(FADE.from, FADE.to, Math.hypot(x - m(hinge.x), z - m(hinge.z)));
       leafMaterial.color.copy(near).lerp(glow, g);
       leafMaterial.emissiveIntensity = g * FADE.glow;
     },
