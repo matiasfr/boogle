@@ -672,6 +672,14 @@ the line extends beyond it, including heads 1 and 2. A late player can request a
 that lever when no train stands there and repeats if the request is consumed during its walk. No new op or saved
 request field. Physical boarding, lever placement and the updated bot await browser verification.
 
+**Stack head levers, order and plaques (13 November 2026, view only).** A head's two levers stand in the order of
+their ways: the homeward one at the stop (10 m short of the platform's end), the outward one 4 m further out, toward
+the railhead. Both plaques face the platform (the outward one faced the track) and are twice the usual size, 48 by
+18 cm, so the pair reads from across the platform: "Village" and "Stack railhead" (existing placeholder names).
+Heads 1, 2 and 3 share the rule; High Gorge's single lever, the Railhead's and Ring Island's are unchanged. Local
+view; no op, state or reach change (both knobs are within 4.7 m of the point the server judges `rail.call` from,
+reach 12.6 m). Not tested on a device.
+
 The two Server-owned lines run at
 20 m/s: camp–village, and village–quarry–Far Head. Owner platform carry keeps a rider
 aboard; train schedules receive no away credit. The first line-2 service moves Q6's kit from the forge: 32 minted

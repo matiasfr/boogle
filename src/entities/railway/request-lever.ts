@@ -38,8 +38,10 @@ function plaqueTexture(text: string) {
   return map;
 }
 
-/** `side` is +1 when the frame's local +x points at the rails; the plaques face the other way, onto the platform. */
-export function createRequestLever(owner: OwnedView, handles: number, side: number) {
+/** `side` is +1 when the frame's local +x points at the rails; the plaques face the other way, onto the platform.
+ * `plaque` scales the plaque (24 by 9 cm at 1): a stack head's two levers stand side by side on one platform and are
+ * told apart by their plaques from across it, so theirs are twice the size. */
+export function createRequestLever(owner: OwnedView, handles: number, side: number, plaque = 1) {
   const group = new THREE.Group();
   const iron = new THREE.MeshStandardNodeMaterial({ color: IRON, roughness: 0.6, metalness: 0.4 });
   const red = new THREE.MeshStandardNodeMaterial({ color: RED, roughness: 0.5 });
@@ -73,11 +75,11 @@ export function createRequestLever(owner: OwnedView, handles: number, side: numb
     pivot.rotation.x = REST;
     group.add(pivot);
     const plaqueMat = new THREE.MeshBasicNodeMaterial({ color: '#ffffff' });
-    const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.09), plaqueMat);
-    plaque.position.set(-side * 0.115, 0.5, z);
-    plaque.rotation.y = -side * (Math.PI / 2);
-    group.add(plaque);
-    plaques.push({ mesh: plaque, map: null, text: '' });
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.24 * plaque, 0.09 * plaque), plaqueMat);
+    face.position.set(-side * 0.115, 0.5, z);
+    face.rotation.y = -side * (Math.PI / 2);
+    group.add(face);
+    plaques.push({ mesh: face, map: null, text: '' });
     return { pivot, angle: REST };
   });
   // The chain: links from the first handle's rod down to the plinth, and a padlock on it. Hidden unless chained.

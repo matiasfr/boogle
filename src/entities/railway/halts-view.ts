@@ -521,8 +521,17 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const RAILHEAD = 4,
     RING_ISLAND = 5;
   const ringHaltId = (stop: number) => LINE_HALTS.findIndex((h) => h.line === LINE2 && h.stop === stop);
-  const ringSpot = (stop: number, up: boolean, lat: number, u: () => number, need: () => boolean): Spot => {
-    const lever = createRequestLever(owner, 1, up ? -1 : 1);
+  const ringSpot = (
+    stop: number,
+    up: boolean,
+    lat: number,
+    u: () => number,
+    need: () => boolean,
+    plaque = 1,
+  ): Spot => {
+    // The plaque faces away from the rails, onto the platform: the rails lie toward the centre line from `lat` (a stack
+    // head's outward lever stands on the east platform too, so the side is the platform's, not the way's).
+    const lever = createRequestLever(owner, 1, lat < 0 ? -1 : 1, plaque);
     lever.group.visible = false;
     return {
       id: ringHaltId(stop),
@@ -573,13 +582,17 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   );
   // The stack line's halts (docs/plans/greybox-route.md, leg 1 step 4; the design review's answer g): one homeward lever
   // on each head's one platform (route-greybox/leg-view.ts draws it: lat +1.8 to +6.3, the 25 m before the section's
-  // end), 6 m short of its end, while the head is a stop (a head closed behind passes both ways and loses its lever);
-  // each old head gains a lever for the way on until it closes behind; High Gorge's stands on
-  // its north platform. No chained up lever at a line's end.
+  // end), at the stop (10 m short of its end), while the head is a stop (a head closed behind passes both ways and
+  // loses its lever); each old head gains a lever for the way on until it closes behind, 4 m further out (6 m short of
+  // the end), so the two stand in the order of their ways: the homeward one nearer home, the outward one nearer the
+  // railhead, more than twice the prompt's reach apart, both plaques facing the platform and twice the usual size (48
+  // by 18 cm: the pair is told apart by them from across the platform). High Gorge's one lever
+  // stands 4 m past its stop on its north platform. Both are inside the server's reach for rail.call (12.6 m from the
+  // stop on the track's centre line: the outward one's knob is 4.7 m from it). No chained up lever at a line's end.
   const stackStops = RAIL_LINES[LINE2]!.halts.map((h, stop) => ({ h, stop })).filter((x) => x.h.leg);
   for (const { h, stop } of stackStops) {
     const stub = h.end?.kind === 'stub',
-      u = (h.s - RING_S_HEAD) / 100 + 4,
+      u = (h.s - RING_S_HEAD) / 100 + (stub ? 0 : 4),
       shut = () => h.closesAt !== undefined && stopsNow[LINE2]!.length >= h.closesAt;
     spots.push(
       ringSpot(
@@ -588,6 +601,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         2.45,
         () => u,
         () => !shut(),
+        stub ? 2 : 1,
       ),
     );
     if (stub)
@@ -596,8 +610,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
           stop,
           true,
           2.45,
-          () => u - 4,
+          () => u + 4,
           () => !shut() && stopsNow[LINE2]!.length > stop + 1,
+          2,
         ),
       );
   }
