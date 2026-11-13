@@ -110,4 +110,17 @@ without changing or weakening the test. The first review-stamp invocation with a
 fetch path and was blocked opening `FETCH_HEAD` before network contact; the final invocation uses `--no-fetch`.
 `inflight` was not run because it fetches; local refs/worktrees supplied the ownership check.
 
-Final commit tip, stamp and aggregate diff accounting are added in the verification commit.
+Implementation commit: **`32bd6a38a`** on `codex/server-state-step-5`; the follow-up commit records verification
+only. Review stamp: **`6c4876599227`**, covering 53 files (`npm run review-stamp -- . --no-fetch`). The independent
+reviewer verified that committed stamp and the corrected sync-handle readiness wait; its no-additional-findings
+assessment applies. Nothing was pushed or shipped.
+
+Aggregate diff from `1af69645b`: **12,455 removed lines** across 111 changed files. The implementation commit
+adds 477 lines (net 11,978 removed); the verification follow-up adds only this accounting. The seven directly
+owned file groups above account for 4,056 deleted lines; the ledgers include all shared code, fixture and doc
+changes as well. The gift catalog, Boogler directory and prohibited prefab/lint paths have no diff.
+
+The browser captures precede the implementation commit and their manifests correctly say dirty. Game/server
+source did not change after the successful two-player run; the later correction affects only the scenario's
+readiness wait, followed by lint/typecheck and the recorded stale-broker scenario attempt. Real device and
+updated trusted-harness execution remain unverified.
