@@ -98,7 +98,11 @@ test('replace: aggregate authentication budget rejects a distributed burst befor
     }
     assert.ok(statuses.includes(429), 'aggregate budget rejects requests from distinct IPs');
     assert.equal(builds, 0);
-    assert.equal((await s.post(body)).status, 429, 'valid keys consume the same pre-authentication budget');
+    assert.equal(
+      (await s.post({ ...body, stage: 'unknown' })).status,
+      400,
+      'failed guesses cannot spend the operator budget',
+    );
   } finally {
     await s.svc.close();
   }

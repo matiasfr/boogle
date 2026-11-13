@@ -71,7 +71,7 @@ export function loadConfig(
     reportToken: env.REPORT_TOKEN || '',
     advanceKey: env.ADVANCE_KEY || '',
     advanceShared: env.ADVANCE_SHARED === '1',
-    replaceRatePerMin: Number(env.REPLACE_RATE_PER_MIN) || 6,
+    replaceRatePerMin: Number(env.REPLACE_RATE_PER_MIN) || 30,
     saveCleanup: env.SAVE_CLEANUP === 'off' ? 'off' : 'trash',
     serverRooms: env.SERVER_ROOMS ? list(env.SERVER_ROOMS) : ['*'], // rooms it hosts (docs/plans/server-host.md); default all
     tuneControllerKey: env.TUNE_CONTROLLER_KEY || '',
@@ -141,7 +141,7 @@ export type ServerConfig = ReplaceConfig & {
   housekeepMs?: number;
 };
 
-/** Simple in-memory token bucket keyed by string. */
+/** Token buckets with at most 1,024 addresses, evicting the least recently seen first. */
 function createRateLimiter({ perMinute, global = false }: { perMinute: number; global?: boolean }) {
   const buckets = new Map<string, { tokens: number; t: number }>();
   const refillPerMs = perMinute / 60000;
@@ -154,6 +154,8 @@ function createRateLimiter({ perMinute, global = false }: { perMinute: number; g
     const now = Date.now();
     const key = global ? 'server' : req.ip || 'unknown';
     let b = buckets.get(key);
+    buckets.delete(key); // Refresh insertion order for the bounded LRU, even on refusal.
+    if (buckets.size >= 1024) buckets.delete(buckets.keys().next().value!);
     if (!b) b = { tokens: perMinute, t: now };
     b.tokens = Math.min(perMinute, b.tokens + (now - b.t) * refillPerMs);
     b.t = now;
@@ -388,10 +390,9 @@ export function createService(cfg: ServerConfig) {
     roomHost: () => roomHost,
     jumps,
     replacements,
-    limit: [
-      createRateLimiter({ perMinute: 24, global: true }),
-      createRateLimiter({ perMinute: cfg.replaceRatePerMin }),
-    ],
+    ipLimit: createRateLimiter({ perMinute: cfg.replaceRatePerMin }),
+    failedAuthLimit: createRateLimiter({ perMinute: 24, global: true }),
+    operatorLimit: createRateLimiter({ perMinute: 24, global: true }),
   });
 
   // ---- room sockets (./host/upgrade.ts) ----

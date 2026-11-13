@@ -29,10 +29,15 @@ export function addReplace(
     roomHost: () => RoomHost | null;
     jumps: Jumps;
     replacements: Replacements;
-    limit: RequestHandler[];
+    ipLimit: RequestHandler;
+    failedAuthLimit: RequestHandler;
+    operatorLimit: RequestHandler;
   },
 ) {
   const { store, replacements } = deps;
+  // Fixed-size digests keep the comparison independent of the secret's length or a matching prefix.
+  const credentialHash = (value: string) => crypto.createHash('sha256').update(value).digest();
+  const want = credentialHash(`Bearer ${cfg.advanceKey}`);
   let stopping = false;
   const waits = new Set<() => void>();
   const jobs = new Set<Promise<unknown>>();
@@ -50,15 +55,17 @@ export function addReplace(
   }
   app.post(
     '/admin/rooms/:id/replace',
-    deps.limit,
+    deps.ipLimit,
     (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
       if (!cfg.advanceKey) return res.status(404).json({ error: 'not found' });
-      const given = Buffer.from(req.get('authorization') ?? '');
-      const want = Buffer.from(`Bearer ${cfg.advanceKey}`);
-      if (given.length !== want.length || !crypto.timingSafeEqual(given, want))
-        return res.status(401).json({ error: 'unauthorized' });
+      const given = credentialHash(req.get('authorization') ?? '');
+      if (!crypto.timingSafeEqual(given, want))
+        return deps.failedAuthLimit(req, res, () => {
+          res.status(401).json({ error: 'unauthorized' });
+        });
       next();
     },
+    deps.operatorLimit,
     express.json({ limit: '1kb', type: ['application/json', 'text/plain'] }),
     (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
       const run = async () => {

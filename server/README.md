@@ -60,7 +60,7 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 | `REPORT_TOKEN`               | unset       | Enables `GET /reports` for whoever sends this bearer token. Unset: reports are write-only (read them on the volume).                                                   |
 | `ADVANCE_KEY` | unset | Enables room replacement for this bearer only; `REPORT_TOKEN` cannot authorize it. |
 | `ADVANCE_SHARED` | off | `1` permits replacing the shared `boogle` island behind `ADVANCE_KEY`. |
-| `REPLACE_RATE_PER_MIN` | `6` | Per-IP replacement requests; a fixed server-wide 24/minute token bucket also applies. Both run before authentication. |
+| `REPLACE_RATE_PER_MIN` | `30` | Per-IP replacement requests, before authentication. Failed authentication and authenticated operators have separate fixed server-wide 24/minute token buckets. |
 | `PLAY_RATE_PER_MIN`          | `240`       | Per-IP token bucket for `POST /playdata` (a tab sends a batch every 5 s; friends may share an IP).                                                                     |
 | `PLAY_NEW_SESSIONS_PER_HOUR` | `40`        | New sessions per IP per hour on `POST /playdata`; each page load is one.                                                                                               |
 | `PLAY_MAX_SESSION_BYTES`     | `4194304`   | Cap on one session's file (4 MB); further batches get 507.                                                                                                             |
@@ -182,6 +182,12 @@ client work; the room interface supplies the event and exact plan text hook.
 The server admits at most two replacement jobs at once, including preparation and countdown. Checkpoint
 validation also has a process-wide two-worker cap shared with restore; excess work gets 429 without a queue.
 Worker capacity is released only after the worker terminates, including failures and timeouts.
+Admission order is per-IP bucket, fixed-size constant-time credential comparison, then either the failed-auth
+bucket (401/429) or the operator bucket (429 when exhausted), before body parsing or checkpoint work. An IP
+refusal spends neither global budget. Failed guesses cannot drain operator capacity. The IP default is 30/minute
+so one operator can use the full 24/minute operator budget; an exhausted shared IP still throttles all its callers.
+Each IP limiter tracks at most 1,024 addresses, evicting the least recently seen. Credentials are never logged or
+echoed; wrong credentials share generic responses without length/prefix hints.
 
 On success the response identifies the pinned backup and restore command. Pins live under
 `DATA_DIR/.backups/pinned/` and survive normal pruning until released. The `replacements/` journal is reconciled
