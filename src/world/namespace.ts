@@ -67,7 +67,10 @@
 // `leg.heldLogs`, `leg.heldRails`, `account.legLogs` and `account.legRails` (2026-11-12, the step 3 review's P2-2
 // and its re-review, in the same bump: v32 has not shipped);
 // no migration.
-export const WORLD_NS = 'v32';
+// v33 (2026-11-12): the fourth car (docs/plans/fourth-car.md, R1 and R2): steel's car behind a train on the longer
+// boiler, derived from `train.boiler` (no field, no op); `TRAIN_EXTENT.behindCm` 1270 and `RIDER_SPAN` 1110; line 2's
+// Village stop 17.0 to 18.25 m (a v32 save's train standing there no longer loads); no shape change, no migration.
+export const WORLD_NS = 'v33';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

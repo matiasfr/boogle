@@ -180,7 +180,7 @@ Rules steps: an opus implementer each, then one independent reviewer for R1 and 
 (a review that drives a real server once: rule 23). Views: a fable implementer each. Every step leaves
 `node dev/ship-check.ts` green; nothing else is run in a step.
 
-- [ ] **R1. The extent and the reach (rules).** Edit `src/entities/railway/cars.ts` (add `STEEL_CAR`,
+- [x] **R1. The extent and the reach (rules).** Edit `src/entities/railway/cars.ts` (add `STEEL_CAR`,
       `steelCarOffset(wagon)`, `TRAIN_TAIL_M`; leave the two tables), `src/sim/railway-lines.ts:109` (`behindCm` 1270;
       the comment names the steel car), `src/sim/railway-train.ts:25-27` (the comment: 6.5 m),
       `src/world/railway-server.ts:140-145` (`RIDER_SPAN` 1110), `src/world/namespace.ts` (**v33**, one line for the
@@ -194,6 +194,13 @@ Rules steps: an opus implementer each, then one independent reviewer for R1 and 
       trace and the tick-order files by their own headers). Verify: `test/railway-install.test.ts` "every middle halt
       stands clear of both end blocks, and every signal of its own" passes unedited (line 2's Village signal less the
       tail is exactly the turnout's edge, 5400).
+      *As built (12 November):* `TRAIN_TAIL_M` is derived (`STEEL_CAR.hz - steelCarOffset(true)`), the lines test pins
+      `behindCm` to it and to 1270; line 2's Village signal 6670 (line 1's 6870, unpinned). Plus the review's High
+      Gorge assert (`test/railway-route-rules.test.ts`, the first catalog case: the tail less the crossover's far end is
+      exactly 30 cm) and `test/railway-cart.test.ts`'s room id (`rail-v33-`). `dev/level/ring.ts`'s `LONG` is
+      `TRAIN_EXTENT` (V2 merges the two rows). Every pinned fixture moved (golden, ops golden, rail schema, M12 trace,
+      tick order and its heads); the rail map did not (`--check` clean). Build 2's all-longer todo reads 1,152 after R1
+      alone, as on v32.
 - [ ] **R2. Line 2's Village stop mark (rules).** Edit `src/sim/railway-lines.ts:396` (1825),
       `src/place/layout.ts:379` (18.25), `src/sim/railway-works-layout.ts:42` (`WAGON_S` 1085). Tests edited:
       `test/railway-lines.test.ts` (the three "v25/v27 stops" cases and "the pier opens with Q6"),

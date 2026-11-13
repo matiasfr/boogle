@@ -105,8 +105,10 @@ export const TURNOUT_CM = 2000;
  * behind. The cars are src/entities/railway/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
  * in step), so a longer train moves every signal with it. From v28 (ring-island-build2, R3, call 15) the reach ahead
  * is the longer boiler's, rail-map's long train (8.2 m), whichever boiler a train wears: one extent, one block rule.
- * The drawn longer engine reaches less (test/railway-lines.test.ts holds this at least the drawn one). */
-export const TRAIN_EXTENT = { aheadCm: 820, behindCm: 900 } as const;
+ * The drawn longer engine reaches less (test/railway-lines.test.ts holds this at least the drawn one). From v33
+ * (docs/plans/fourth-car.md, R1) the reach behind is the steel car's tail on the wagon's train (12.7 m, cars.ts's
+ * TRAIN_TAIL_M), whichever cars a train pulls: one extent for every train, as ahead. */
+export const TRAIN_EXTENT = { aheadCm: 820, behindCm: 1270 } as const;
 /** A line end at `mergeCm`, at its line's low end (`side` -1, the first halt) or high end (+1). Its block reaches the
  * merge plus a stub's turnout (`edgeCm`: past it the tracks are apart; a crossover's block starts at the crossover);
  * its signal stands outside that by the reach of an inbound train's leading end, so a train held there is clear of the

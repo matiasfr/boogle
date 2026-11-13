@@ -175,16 +175,16 @@ test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to t
   // Every block reaches past its stub's turnout (a crossover's starts at it), and every signal stands on the inbound
   // track outside it by a train's lead, at least a train's gap from the end stop (review of v26, P2-1).
   const [village, farHead] = endBlocks(LINE2, before);
-  assert.deepEqual([village.from, village.to, village.signal], [1700, 5400, 6300]);
+  assert.deepEqual([village.from, village.to, village.signal], [1700, 5400, 6670]);
   assert.deepEqual([farHead.from, farHead.to, farHead.signal], [49000, 52400, 48180]);
   assert.deepEqual(
     endBlocks(LINE2, pier).map((b) => b.signal),
-    [6300, 52780],
+    [6670, 52780],
     "the far end's block moves to the pier's stub",
   );
   assert.deepEqual(
     endBlocks(LINE2, railhead).map((b) => b.signal),
-    [6300, 80380],
+    [6670, 80380],
     "and on to the Railhead's at Q7",
   );
 });
@@ -466,7 +466,7 @@ function blocked(delay: number) {
   ]);
   step(w);
   assert.equal(row(w, B).phase, TRAIN_PHASE.RUN);
-  assert.deepEqual([row(w, B).to, row(w, B).dest], [-1, 6300], "B's leg ends at the village block's signal");
+  assert.deepEqual([row(w, B).to, row(w, B).dest], [-1, 6670], "B's leg ends at the village block's signal");
   return w;
 }
 test('a train held at a signal leaves the tick the block clears; the end block holds one train', () => {
@@ -505,7 +505,7 @@ for (const pct of [100, TRAIN_HEAD_PCT])
     const w = awake('q6-done', false);
     place(w, [
       { k: A, stop: 0, track: 0, depart: w.t - TRAIN.dwellTicks },
-      { k: B, stop: -1, track: 1, depart: w.t, s: 6300 },
+      { k: B, stop: -1, track: 1, depart: w.t, s: 6670 },
     ]);
     // v27: three trains, so an even spacing is a third of the cycle; the balanced hold at the ends evens them too.
     const st = trainStops(w.w, LINE2),

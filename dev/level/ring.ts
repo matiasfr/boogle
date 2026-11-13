@@ -274,7 +274,7 @@ function terminus(
 ) {
   const E = RING_END,
     H = RING_HALT,
-    LONG = { aheadCm: 820, behindCm: 1270 };
+    LONG = TRAIN_EXTENT; // rail-map's long train is the extent from v33 (fourth-car, R1); V2 makes the rows one
   section('The island terminus (buffers and a crossover)');
   for (const [k, b] of E.buffers.entries())
     assertion(

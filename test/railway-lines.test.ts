@@ -24,7 +24,7 @@ import {
   RING_PATH,
 } from '../src/sim/railway-ring-layout.ts';
 import { LINE2_ROWS, line2Stops } from './helpers/rail-rows.ts';
-import { TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
+import { TRAIN_CARS, TRAIN_OFFSETS, TRAIN_TAIL_M } from '../src/entities/railway/cars.ts';
 import { ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { FORMATION, TURNOUT } from '../src/place/layout.ts';
 import { LINE_HALTS, TRAIN, TRAIN_HOME, TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
@@ -169,8 +169,11 @@ test("the sim's train reach and turnout are the drawn ones, and every signal sta
   const ahead = Math.max(...TRAIN_CARS.map((c, n) => TRAIN_OFFSETS[n]! + c.hz)),
     behind = Math.max(...TRAIN_CARS.map((c, n) => c.hz - TRAIN_OFFSETS[n]!));
   // From v28 (ring-island-build2, R3, call 15) the reach ahead is rail-map's long train (8.2 m) on either boiler: at
-  // least the drawn engine's with the longer boiler's frame (6.7 m), the wagon's tail behind as drawn.
-  assert.equal(TRAIN_EXTENT.behindCm, Math.round(behind * 100));
+  // least the drawn engine's with the longer boiler's frame (6.7 m). From v33 (fourth-car, R1) the reach behind is the
+  // steel car's tail on the wagon's train (12.7 m), past the three cars and the wagon of the table.
+  assert.equal(TRAIN_EXTENT.behindCm, Math.round(TRAIN_TAIL_M * 100));
+  assert.equal(TRAIN_EXTENT.behindCm, 1270);
+  assert.ok(TRAIN_EXTENT.behindCm > Math.round(behind * 100), "past the table's last car");
   assert.equal(TRAIN_EXTENT.aheadCm, 820);
   assert.ok(TRAIN_EXTENT.aheadCm >= Math.round((ahead + ENGINE_LONG_AHEAD) * 100), 'covers the longer engine as drawn');
   assert.equal(TURNOUT * 100, TURNOUT_CM);
@@ -193,8 +196,8 @@ test("the sim's train reach and turnout are the drawn ones, and every signal sta
       assert.equal(h.end.signalCm, h.end.edgeCm - side * lead, `${h.name}: a held train's lead stops at the block`);
     }),
   );
-  // The reviewer's numbers: the village's signal about 63 m, the pier's about 530 m.
-  assert.equal(RAIL_LINES[1]!.halts[0]!.end!.signalCm, 6300);
+  // The reviewer's numbers: the village's signal about 66.7 m (63 m before v33's steel car), the pier's about 530 m.
+  assert.equal(RAIL_LINES[1]!.halts[0]!.end!.signalCm, 6670);
   assert.equal(RAIL_LINES[1]!.halts[3]!.end!.signalCm, 52780);
 });
 

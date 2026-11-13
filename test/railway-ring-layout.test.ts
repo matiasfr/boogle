@@ -149,9 +149,9 @@ test('the walkway the railhead leaves behind only grows', () => {
 
 test('the island ends in buffers 15 m past the platforms, a crossover before them', () => {
   const E = RING_END;
-  // Rail-map's long train: the longer boiler ahead, three cargo cars behind (docs/plans/rail-map.md, the station plan).
-  const LONG = { aheadCm: 820, behindCm: 1270 };
-  assert.ok(LONG.aheadCm >= TRAIN_EXTENT.aheadCm && LONG.behindCm >= TRAIN_EXTENT.behindCm);
+  // Rail-map's long train (the longer boiler ahead, three cargo cars behind; docs/plans/rail-map.md, the station plan)
+  // is the extent from v33 (fourth-car, R1: the steel car behind the wagon).
+  assert.deepEqual(TRAIN_EXTENT, { aheadCm: 820, behindCm: 1270 });
   assert.equal(E.bufferU, RING_HALT.u1 + 1500);
   assert.deepEqual(E.buffers[0], { ...ringAt(E.bufferU, -400), y: 940 });
   assert.deepEqual(E.buffers[1], { ...ringAt(E.bufferU, 0), y: 940 });
@@ -163,7 +163,7 @@ test('the island ends in buffers 15 m past the platforms, a crossover before the
   assert.equal(E.cross.u1 - E.cross.u0, (q[1] - q[0]) * 100);
   assert.ok(E.cross.u1 - E.cross.u0 >= TURNOUT_CM);
   assert.ok(E.cross.u1 <= RING_HALT.u0);
-  for (const t of [TRAIN_EXTENT, LONG]) {
+  for (const t of [TRAIN_EXTENT]) {
     const nose = E.u + t.aheadCm,
       tail = E.u - t.behindCm;
     assert.ok(tail - E.cross.u1 >= 500, `tail ${tail} clear of the crossover`);
