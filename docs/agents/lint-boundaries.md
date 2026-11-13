@@ -42,11 +42,17 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   state references and loader/registry callbacks do not. The short `NOT_CONSTRUCTORS` list is justified per file:
   `src/entity/entity.ts` attaches finished bodies and schedules callbacks; `src/entities/player/state.ts` owns
   singleton player movement/grounding/respawn; `src/entities/ball/state.ts` owns singleton ball state/ownership/play;
-  `src/physics/platforms.ts` registers existing platforms and converts/carries coordinates. These shared lifecycle
+  `src/physics/platforms.ts` registers existing platforms and converts/carries coordinates;
+  `src/render/owned-view.ts` owns/attaches already-built bodies and meshes, animation and disposal (the documented
+  prefab ownership door). Export-specific `NOT_CONSTRUCTION_EXPORTS` stops cover query/movement/lifecycle APIs
+  inside mixed modules without exempting their real factories; [every removed entry](../plans/prefab-data-step-5-lifecycle-audit.md) has a reason. These shared lifecycle
   and state APIs remain available to ordinary features, not placed-content factories. No folder exemption.
   `legacy["file#export"]` stores only the number of distinct importing files, including forwarding barrels.
   Named, namespace, dynamic and require acquisitions resolve to constructor identities through aliases/barrels;
-  wrapper function bodies outside debt do not extend this closure. Higher counts fail naming
+  `export * as ns`, namespace imports exported locally, and nested namespaces preserve those provider identities.
+  `forwards["file#export"]` records only existing construction forwarding identities. Any new re-export binding
+  or forwarded provider fails as a surface change, including in a barrel already acquiring that provider;
+  removed bindings must be pruned. Wrapper function bodies outside debt do not extend this closure. Higher counts fail naming
   `src/prefab/instantiate.ts`; lower counts fail with **lower the count**. Computed export keys must match the
   record; registry ratchets each count and forbids new keys. A new ordinary feature may import entity/loop
   registration and use the prefab door. Counts deliberately permit swapping one importer for another;
@@ -62,13 +68,13 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   ambient `declare`, type bindings and erased imports do not. Local `origin` and local `globalThis` objects are
   allowed. The compiler separately
   rejects non-JSON exported values; compiled JSON remains committed.
-- `dev/lint/prefab-debt.json` version 4 lists collider/seat files with `{ count, reason, exports }`, fixed door
+- `dev/lint/prefab-debt.json` version 5 lists collider/seat files with `{ count, reason, exports }`, fixed door
   public surfaces and compact computed construction/importer counts. Dropping the schema or counts fails. Lint and registry
   reject excess violations and require fewer violations to **lower the count** (remove a zero entry). Registry
   also rejects any new file identity or per-file count growth, even when another file/count shrinks. Against a
-  base predating the structural schema, it derives counts and exported names from the branch/base common
-  ancestor's source, so unrelated main changes cannot masquerade as new branch exports during bootstrap.
-  Thereafter the recorded counts and export names bind. No fetch or namespace exemption.
+  base read directly with `git show origin/main:dev/lint/prefab-debt.json`, a matching schema ratchets those
+  exact records. A missing/older schema bootstraps with internal consistency only. No merge base, deep history,
+  fetch or namespace exemption is needed; this supports CI's depth-one trees.
   Every entry needs `YYYY-MM-DD: reason`; reasons do not authorize growth. All four prefab rules cannot be
   disabled by comments. Signs/interactions are deferred to prefab step 9; Godot proof to step 14.
 

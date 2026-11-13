@@ -8,7 +8,8 @@ import { parseSync } from 'oxc-parser';
 import { createModuleResolver, runtimeExports, PREFAB_DOORS } from '../lint/prefab-boundaries.ts';
 import {
   loadLegacyGraph,
-  constructionCounts,
+  compareConstructionForwards,
+  checkConstructionForwards,
   checkLegacyRecords,
   compareLegacyRecords,
 } from '../lint/prefab-constructors.ts';
@@ -19,8 +20,8 @@ const rules = { colliders: 'boogle/colliders-from-records', seats: 'boogle/seats
 
 export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] {
   const errors: string[] = [];
-  if (base.version === 4 && head.version !== 4)
-    errors.push('Cannot drop prefab debt schema version 4 or its construction-count records.');
+  if (base.version === 5 && head.version !== 5)
+    errors.push('Cannot drop prefab debt schema version 5 or its construction-count records.');
   for (const kind of ['colliders', 'seats'] as const)
     for (const [file, entry] of Object.entries(head[kind])) {
       if (
@@ -47,7 +48,11 @@ export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] 
     for (const name of names)
       if (!(base.doors?.[file] ?? []).includes(name))
         errors.push(`${PREFAB_DEBT_FILE}: door ${file} public exports grew: ${name}`);
-  return [...errors, ...compareLegacyRecords(base.legacy, head.legacy)];
+  return [
+    ...errors,
+    ...compareLegacyRecords(base.legacy, head.legacy),
+    ...compareConstructionForwards(base.forwards, head.forwards),
+  ];
 }
 
 export function checkPrefabDebt(root: string, ref: string): string[] {
@@ -65,13 +70,9 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
   const head = JSON.parse(fs.readFileSync(path.join(root, PREFAB_DEBT_FILE), 'utf8')) as PrefabDebt;
   const baseline = gitFile(PREFAB_DEBT_FILE);
   const oldLists = baseline === null ? empty() : (JSON.parse(baseline) as PrefabDebt);
-  const base = empty();
-  const legacy = oldLists.version !== 4;
-  // Bootstrap only from shared history: main may have independently renamed old exports since this branch cut.
-  // Once counted surfaces exist on main, compare those exact records instead of recomputing history.
-  const sourceRef = legacy
-    ? execFileSync('git', ['merge-base', 'HEAD', ref], { cwd: root, encoding: 'utf8' }).trim()
-    : ref;
+  // CI has only two shallow trees: read the base file directly, never require shared ancestry.
+  // Missing/older schemas bootstrap with internal consistency only; current schemas enforce shrink-only data.
+  const comparable = oldLists.version === 5;
   const resolve = createModuleResolver(root);
   const countIn = (text: string, file: string, kind: 'colliders' | 'seats') =>
     lintSafety(text, file, empty(), resolve).filter((d) => d.rule === rules[kind]).length;
@@ -87,26 +88,13 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
             .filter((name) => !actual.includes(name))
             .map((name) => `${file}: remove stale public export ${name}`),
         ];
-  if (!legacy) {
-    base.colliders = oldLists.colliders;
-    base.seats = oldLists.seats;
-    base.doors = oldLists.doors;
-    base.legacy = oldLists.legacy;
-  }
   const errors: string[] = [];
-  if (head.version !== 4 || !head.legacy)
+  if (head.version !== 5 || !head.legacy || !head.forwards)
     errors.push(
-      'Prefab debt requires schema version 4 and its computed construction/importer set. Use src/prefab/instantiate.ts.',
+      'Prefab debt requires schema version 5 and its computed construction/importer set. Use src/prefab/instantiate.ts.',
     );
-  // Bootstrap against real call sites in the local base, not this branch's additions. Once main has the list,
-  // even an equal-size file substitution fails. No network and no WORLD_NS exemption.
   for (const kind of ['colliders', 'seats'] as const)
     for (const file of Object.keys(head[kind])) {
-      if (legacy) {
-        const old = gitFile(file, sourceRef);
-        const count = old === null ? 0 : countIn(old, file, kind);
-        if (count) base[kind][file] = { count, exports: exportsIn(old!, file), reason: head[kind][file]!.reason };
-      }
       const current = path.join(root, file);
       const text = fs.existsSync(current) ? fs.readFileSync(current, 'utf8') : '';
       const count = countIn(text, file, kind);
@@ -119,11 +107,9 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
         );
     }
   const doors = [...new Set(Object.values(PREFAB_DOORS).flat())];
-  base.doors ??= {};
   for (const file of doors) {
     const current = path.join(root, file);
     if (!fs.existsSync(current)) continue;
-    if (legacy) base.doors[file] = exportsIn(gitFile(file, sourceRef) ?? '', file);
     errors.push(...surfaceErrors(exportsIn(fs.readFileSync(current, 'utf8'), file), head.doors?.[file], file));
   }
   for (const file of Object.keys(head.doors ?? {}))
@@ -131,8 +117,8 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
   if (head.legacy) {
     const graph = loadLegacyGraph(root, head);
     errors.push(...checkLegacyRecords(graph.constructors, head.legacy));
-    if (legacy) base.legacy = constructionCounts(loadLegacyGraph(root, head, { ref: sourceRef }));
-  } else if (head.version === 4)
+    errors.push(...checkConstructionForwards(graph, head.forwards));
+  } else if (head.version === 5)
     errors.push('Missing computed legacy construction set and importer counts; use src/prefab/instantiate.ts.');
-  return [...errors, ...comparePrefabDebt(base, head)];
+  return [...errors, ...comparePrefabDebt(comparable ? oldLists : head, head)];
 }

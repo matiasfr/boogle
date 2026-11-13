@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "colliders": {
     "src/adapters/mushrooms.ts": {
       "count": 4,
@@ -898,16 +898,9 @@
     "src/adapters/mushrooms.ts#bounceOffCaps": 1,
     "src/adapters/mushrooms.ts#createStall": 1,
     "src/boogler/boogler.ts#createBoogler": 1,
-    "src/boogler/boogler.ts#booglerBodyStep": 1,
-    "src/boogler/play.ts#checkStandingOnBoogler": 1,
-    "src/boogler/play.ts#carryBooglerRider": 1,
-    "src/debug/perf-poses.ts#putPlayer": 1,
-    "src/entities/finds/view.ts#createFindsView": 1,
-    "src/entities/lookout/view.ts#createLookoutView": 1,
     "src/entities/railway/arrival.ts#createRailwayArrival": 1,
     "src/entities/railway/boiler-install-view.ts#createBoilerInstall": 1,
     "src/entities/railway/car.ts#makeCar": 13,
-    "src/entities/railway/car.ts#snapCar": 13,
     "src/entities/railway/cart-view.ts#createRailwayCart": 1,
     "src/entities/railway/crossing-view.ts#createRailwayCrossing": 1,
     "src/entities/railway/footing-view.ts#createRailwayFootings": 1,
@@ -937,25 +930,17 @@
     "src/entities/town/rooms.ts#createRooms": 1,
     "src/entities/town/workshop.ts#makeWorkshop": 1,
     "src/fall/letters.ts#blastLetters": 1,
-    "src/guest/collision.ts#gatherSurfaces": 1,
-    "src/guest/play.ts#startGuest": 1,
-    "src/guest/play.ts#stopGuest": 1,
     "src/place/cove-stop.ts#holdCoveStop": 1,
     "src/place/cove-view.ts#buildCove": 1,
-    "src/place/folk.ts#crewStart": 6,
-    "src/place/folk.ts#updateFolk": 6,
-    "src/place/look-kit.ts#installContact": 5,
     "src/place/opening-models.ts#craneModel": 1,
     "src/place/opening-models.ts#rackModel": 1,
-    "src/place/pose.ts#createPosePolicy": 2,
-    "src/place/sites.ts#housePlan": 7,
-    "src/place/sites.ts#towerPlan": 6,
-    "src/place/sites.ts#blockPlan": 6,
     "src/place/sites.ts#hullBodies": 6,
-    "src/player/camera-arm.ts#makeCameraArm": 3,
     "src/pois/caves/decor.ts#buildDecor": 1,
-    "src/render/locomotion-surfaces.ts#stepSurfaceAt": 1,
-    "src/render/owned-view.ts#createOwnedView": 7,
     "src/render/place-tree-view.ts#createTreeSolids": 1
+  },
+  "forwards": {
+    "src/entities/railway/rail-kit.ts#buildTrack": ["src/entities/railway/track.ts#buildTrack"],
+    "src/entities/railway/rail-kit.ts#makeCar": ["src/entities/railway/car.ts#makeCar"],
+    "src/entities/railway/rail-kit.ts#buildMachine": ["src/entities/railway/track-machine.ts#buildMachine"]
   }
 }

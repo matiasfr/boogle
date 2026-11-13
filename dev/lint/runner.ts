@@ -7,7 +7,7 @@ import { nativeConfig } from './config.ts';
 import { ignored, ignorePatterns, lintSafety } from './safety.ts';
 import type { Diagnostic, PrefabDebt } from './safety.ts';
 import { createModuleResolver } from './prefab-boundaries.ts';
-import { loadLegacyGraph, checkLegacyRecords } from './prefab-constructors.ts';
+import { loadLegacyGraph, checkLegacyRecords, checkConstructionForwards } from './prefab-constructors.ts';
 
 export type Budgets = Record<string, Record<string, { count: number }>>;
 export type Options = { typeAware?: boolean; relaxed?: boolean; prune?: boolean; fix?: boolean };
@@ -144,15 +144,18 @@ export function lintFiles(root: string, targets: string[], options: Options = {}
     }
   }
   if (options.prune) fs.writeFileSync(budgetPath, JSON.stringify(budgets, null, 2) + '\n');
-  if (fs.existsSync(prefabPath) && (prefabDebt.version !== 4 || !prefabDebt.legacy))
+  if (fs.existsSync(prefabPath) && (prefabDebt.version !== 5 || !prefabDebt.legacy || !prefabDebt.forwards))
     diagnostics.push({
       file: 'dev/lint/prefab-debt.json',
       line: 1,
       rule: 'boogle/legacy-construction-counts',
-      message: 'Keep schema version 4 and its computed construction/importer set. Use src/prefab/instantiate.ts.',
+      message: 'Keep schema version 5 and its computed construction/importer set. Use src/prefab/instantiate.ts.',
     });
   if (legacyGraph)
-    for (const message of checkLegacyRecords(legacyGraph.constructors, prefabDebt.legacy))
+    for (const message of [
+      ...checkLegacyRecords(legacyGraph.constructors, prefabDebt.legacy),
+      ...checkConstructionForwards(legacyGraph, prefabDebt.forwards),
+    ])
       diagnostics.push({
         file: 'dev/lint/prefab-debt.json',
         line: 1,

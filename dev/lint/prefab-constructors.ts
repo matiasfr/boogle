@@ -160,7 +160,14 @@ export function computeLegacyGraph(
     for (const n of f.program.body) {
       if (n.type === 'ExportAllDeclaration' && n.exportKind !== 'type' && n.source) {
         const target = resolve(f.file, n.source.value);
-        if (target) f.stars.push(target);
+        if (target) {
+          if (n.exported) {
+            const name = n.exported.type === 'Identifier' ? n.exported.name : n.exported.value;
+            const id = exportId(f.file, name);
+            f.exports.set(name, id);
+            link(id, namespaceId(target), true);
+          } else f.stars.push(target);
+        }
         continue;
       }
       if (n.type === 'ExportDefaultDeclaration') {
@@ -288,7 +295,11 @@ export function computeLegacyGraph(
         if (node.type === 'MemberExpression')
           for (const target of targets(modules.get(b.file)!, node)) link(id, target, true);
   const exportedBindings = new Set<string>();
-  const todo = [...modules.values()].filter((f) => eligible(f.file)).flatMap((f) => [...f.exports.values()]);
+  const todo = [...modules.values()]
+    .filter((f) => eligible(f.file))
+    .flatMap((f) =>
+      [...f.exports].filter(([name]) => !(`${f.file}#${name}` in NOT_CONSTRUCTION_EXPORTS)).map(([, id]) => id),
+    );
   for (let i = 0; i < todo.length; i++) {
     const id = todo[i]!;
     if (exportedBindings.has(id)) continue;
@@ -337,7 +348,7 @@ export function computeLegacyGraph(
   for (const file of [...providers].sort())
     for (const [name, id] of modules.get(file)?.exports ?? []) {
       // The record-only instantiate door is intentionally open to new authored content.
-      if (!eligible(file)) continue;
+      if (!eligible(file) || `${file}#${name}` in NOT_CONSTRUCTION_EXPORTS) continue;
       // Capability exports are terminal APIs for callers, not automatically constructors themselves.
       const found = new Set<ConstructionKind>();
       for (const implementation of deps.get(id) ?? [])
@@ -350,7 +361,7 @@ export function computeLegacyGraph(
   // Provenance for importer counting follows aliases and barrels only, never function-body calls.
   reverse.clear();
   for (const [from, to] of aliases) for (const d of to) add(reverse, d, from);
-  const origins = propagate(roots, new Set(roots.keys()));
+  const origins = propagate(roots);
   const surfaces: LegacyGraph['surfaces'] = {};
   const moduleOrigins: LegacyGraph['modules'] = {};
   for (const f of modules.values()) {
@@ -418,8 +429,63 @@ export const NOT_CONSTRUCTORS = {
   'src/entity/entity.ts': 'Lifecycle registration/attachment of finished entities; no body or seat creation.',
   'src/entities/player/state.ts': 'Singleton player movement, grounding and respawn; not placed-content factories.',
   'src/entities/ball/state.ts': 'Singleton ball state, ownership and play controls; not placed-content factories.',
+  'src/render/owned-view.ts':
+    'Ownership/disposal factory for finished meshes and bodies; required prefab lifecycle door.',
   'src/physics/platforms.ts': 'Platform registration, coordinate conversion and carry state over existing bodies.',
 } as const;
+
+// Mixed modules retain their real construction factories; these exports only own, query or move existing data.
+export const NOT_CONSTRUCTION_EXPORTS = {
+  'src/player/camera-arm.ts#makeCameraArm': 'Camera obstruction query/solver lifecycle; sweepSphere only.',
+  'src/place/pose.ts#createPosePolicy': 'Placement preview pose/query policy; sweepSphere only.',
+  'src/render/locomotion-surfaces.ts#stepSurfaceAt': 'Reads existing static surfaces; creates no bodies.',
+  'src/guest/collision.ts#gatherSurfaces': 'Copies existing static surfaces into guest collision data.',
+  'src/guest/play.ts#startGuest': 'Guest mode lifecycle over the existing singleton player body.',
+  'src/guest/play.ts#stopGuest': 'Restores the existing singleton player body motion and disposes its view.',
+  'src/boogler/boogler.ts#booglerBodyStep': 'Moves the existing Boogler body; createBoogler remains counted.',
+  'src/boogler/play.ts#checkStandingOnBoogler': 'Reads contacts/time for the existing singleton rider.',
+  'src/boogler/play.ts#carryBooglerRider': 'Moves an existing rider; no creation.',
+  'src/entities/railway/car.ts#snapCar': 'Teleports an existing car; makeCar remains counted.',
+  'src/debug/perf-poses.ts#putPlayer': 'Debug positioning of the existing player body.',
+  'src/place/sites.ts#housePlan': 'Returns building plan data at a queried terrain height; hullBodies remains counted.',
+  'src/place/sites.ts#towerPlan': 'Returns building plan data at a queried terrain height.',
+  'src/place/sites.ts#blockPlan': 'Returns building plan data at a queried terrain height.',
+  'src/place/folk.ts#crewStart': 'Selects existing villagers and queries terrain height; creates no bodies.',
+  'src/place/folk.ts#updateFolk': 'Updates existing villagers over queried terrain height.',
+  'src/place/look-kit.ts#installContact': 'Owned visual contact-shadow animation over terrain queries; no collider.',
+} as const;
+
+/** Only forwarded construction identities, not every ordinary module export or importer path. */
+export const constructionForwards = (graph: LegacyGraph): Record<string, string[]> =>
+  Object.fromEntries(
+    Object.entries(graph.surfaces)
+      .map(([key, values]) => [key, values.filter((value) => value !== key)] as const)
+      .filter(([, values]) => values.length),
+  );
+
+export function compareConstructionForwards(base: PrefabDebt['forwards'], head: PrefabDebt['forwards']): string[] {
+  const errors: string[] = [];
+  for (const [key, values] of Object.entries(head ?? {}))
+    for (const value of values)
+      if (!base?.[key]?.includes(value))
+        errors.push(`Construction forwarding surface grew: ${key} → ${value}; use src/prefab/instantiate.ts.`);
+  return errors;
+}
+
+export function checkConstructionForwards(graph: LegacyGraph, recorded: PrefabDebt['forwards']): string[] {
+  const actual = constructionForwards(graph);
+  const errors = compareConstructionForwards(recorded, actual);
+  for (const [key, values] of Object.entries(recorded ?? {})) {
+    if (!actual[key] || !values.length)
+      errors.push(`Remove stale construction forwarding surface ${key}; use src/prefab/instantiate.ts.`);
+    if (new Set(values).size !== values.length)
+      errors.push(`Duplicate construction forwarding surface ${key}; use src/prefab/instantiate.ts.`);
+    for (const value of values)
+      if (!actual[key]?.includes(value))
+        errors.push(`Remove stale construction forwarding surface ${key} → ${value}; use src/prefab/instantiate.ts.`);
+  }
+  return errors;
+}
 
 const TOOL_HASH = createHash('sha256')
   .update(fs.readFileSync(new URL('./prefab-constructors.ts', import.meta.url)))

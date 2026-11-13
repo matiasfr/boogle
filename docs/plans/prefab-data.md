@@ -232,6 +232,16 @@ belong to `.look/prefab-step-5-review/`, superseding this task's earlier static 
 
 ## 6. What can start today, and what waits
 
+**Step 5e fourth-review correction (supersedes the shallow-bootstrap and namespace gaps below):** five of six
+reproduction tests failed before production edits (the local namespace-import/export control already passed):
+namespace forwarding, new forwarding surface, the full OwnedView + instantiate feature, and a depth-one clone
+with no merge base. Namespace re-exports retain
+constructor identity; schema 5 records compact forwarding surfaces so new re-exports fail even if counts stay flat.
+OwnedView is an open lifecycle door. The [62-export audit](prefab-data-step-5-lifecycle-audit.md) removes 20
+ownership/query/movement false positives, leaving 42 counted exports and three forwarding bindings. Registry
+compares the base debt file directly; missing/older schemas run internal consistency only. A depth-one fixture
+checks all three base-schema states. Rebased onto `1af69645b` on `codex/prefab-data-step-5-3`; no runtime source edits.
+
 **Step 5d compact count correction (supersedes the 5c transitive edge ratchet):** the whole-program graph
 found 296 exports and 23,539 edges, including shared entity lifecycle, player/ball state and platform services.
 That reference/callback closure made routine imports unnecessarily expensive and produced 25,635 JSON lines.

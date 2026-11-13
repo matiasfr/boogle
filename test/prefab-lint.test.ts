@@ -267,7 +267,7 @@ test('every initial file exemption has a dated reason; no list growth or equal-s
   );
 });
 
-test('registry bootstraps only existing base calls, then rejects list growth and stale entries', () => {
+test('registry bootstraps internal consistency, then rejects growth against a current-schema base', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-prefab-debt-'));
   const git = (...args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe' });
   const write = (file: string, text: string) => {
@@ -275,7 +275,8 @@ test('registry bootstraps only existing base calls, then rejects list growth and
     fs.writeFileSync(path.join(root, file), text);
   };
   const current = {
-    version: 4,
+    version: 5,
+    forwards: {},
     legacy: {},
     colliders: { 'src/old.ts': { count: 1, exports: [], reason: '2026-11-13: Approved existing call.' } },
     seats: {},
@@ -291,7 +292,7 @@ test('registry bootstraps only existing base calls, then rejects list growth and
     write('src/new.ts', 'addStatic(shape, pos);');
     const grown = { ...current.colliders, 'src/new.ts': { count: 1, exports: [], reason: '2026-11-13: Added later.' } };
     write(PREFAB_DEBT_FILE, JSON.stringify({ ...current, colliders: grown }));
-    assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /colliders grew: src\/new.ts/);
+    assert.deepEqual(checkPrefabDebt(root, 'HEAD'), []);
     save();
     git('add', '.');
     git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'Seed list');

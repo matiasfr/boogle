@@ -9,6 +9,8 @@ import {
   computeLegacyGraph,
   loadLegacyGraph,
   constructionCounts,
+  constructionForwards,
+  checkConstructionForwards,
   checkLegacyRecords,
   compareLegacyRecords,
 } from '../dev/lint/prefab-constructors.ts';
@@ -19,6 +21,8 @@ test('computed targeted constructor counts equal the committed baseline', { time
   const graph = loadLegacyGraph(process.cwd(), debt);
   assert.deepEqual(checkLegacyRecords(graph.constructors, debt.legacy), []);
   assert.deepEqual(constructionCounts(graph), debt.legacy);
+  assert.deepEqual(checkConstructionForwards(graph, debt.forwards), []);
+  assert.deepEqual(constructionForwards(graph), debt.forwards);
 });
 
 test('ordinary feature registration and the prefab door remain open', () => {
