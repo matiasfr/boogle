@@ -27,7 +27,7 @@ import {
   type RoomFacts,
 } from './garage-data.ts';
 import { garage, type GarageSnap } from './garage-state.ts';
-import { polarAt, type GarageGeo } from './garage-geo.ts';
+import { polarAt, STAND_LEGS, type GarageGeo } from './garage-geo.ts';
 
 /** The table's centre and rail height, the post (the row's, placed by the caller), and the ground the post, jib, stand
  * and crew stand on. */
@@ -42,7 +42,10 @@ const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 /** The deck turns the copy to and from the garage's pose at this rate (a quarter turn in 2 s, the table's own). */
 const DECK_RATE = Math.PI / 4;
 /** The stand's legs: their height, and half their spacing along the part. */
-const LEG = { h: 0.5, half: 1.0 } as const;
+const LEG = { h: 0.5 } as const;
+/** The jib's arm swings between its park and the part at this rate (about 2 s for the swing), and keeps up with a
+ * part on the hook at the faster one. */
+const ARM_RATE = { swing: 1.5, follow: 9 } as const;
 /** Around the copy's boxes a player counts as in the way (their body's radius and a little). */
 const CLEAR = 0.55;
 const smooth = (t: number) => t * t * (3 - 2 * t);
@@ -197,8 +200,9 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     stand.z - Math.cos(standYaw) * partMid,
   );
   const trestle = new THREE.Group();
-  for (const dz of radial ? [-LEG.half, LEG.half] : [-0.9, 0.9]) {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(radial ? 1.0 : 0.4, LEG.h, 0.15), iron);
+  // The trestle's own +z points at the table for a radial stand: a leg at `r` from the centre is `stand.r - r` along it.
+  for (const dz of radial ? STAND_LEGS.at.map((r) => row.stand.r - r) : [-0.9, 0.9]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(radial ? STAND_LEGS.half * 2 : 0.4, LEG.h, 0.15), iron);
     leg.position.set(0, LEG.h / 2, dz);
     leg.castShadow = true;
     trestle.add(leg);
@@ -451,21 +455,37 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     partGroup.rotation.y = standYaw + wrap(yaw - standYaw) * u;
     partGroup.rotation.z = u < 1 ? Math.sin(u * 9) * 0.015 * (holding ? clamp01((lift - 0.66) * 3) : 0) : 0;
   }
-  function placeJib() {
-    // The hook takes the barrel at its middle, on top. With no part in sight the arm rests over the stand.
+  /** The arm's yaw when parked (design ruling on G2, R3): swung off the table along the row's bearing. */
+  const parkYaw = Math.PI - rad(row.park);
+  let armYaw = parkYaw,
+    armIn = false;
+  function placeJib(dt: number, snap: boolean) {
+    // The hook takes the barrel at its middle, on top. The arm points at it only while a part is in sight (waiting on
+    // the stand, or on the hook through an install) and for the moment's show-off; otherwise it is parked.
     const held = partGroup.visible;
     const p = held ? partGroup.position : standRest,
       at = held ? partGroup.rotation.y : standYaw;
     const hx = p.x + Math.sin(at) * hookMid,
       hz = p.z + Math.cos(at) * hookMid;
-    armPivot.rotation.y = Math.atan2(hx - jibAt.x, hz - jibAt.z);
+    const pointing = held || phase === 'moment' || phase === 'rest' || phase === 'undo';
+    // Swinging in on a live tick is the telegraph that there is something to install: a pull on the cord and a clank.
+    if (pointing && !armIn && !snap && shown && phase === 'idle') {
+      cordPull(jibAt.x, jibAt.z);
+      clank(jibAt.x, jibAt.z);
+    }
+    armIn = pointing;
+    const aim = pointing ? Math.atan2(hx - jibAt.x, hz - jibAt.z) : parkYaw;
+    const d = wrap(aim - armYaw),
+      step = (phase === 'idle' ? ARM_RATE.swing : ARM_RATE.follow) * dt;
+    armYaw = snap || reducedMotion || Math.abs(d) <= step ? aim : armYaw + Math.sign(d) * step;
+    armPivot.rotation.y = armYaw;
     trolley.position.set(hx, geo.ground + row.mast - 0.3, hz);
     const top = trolley.position.y - 0.08,
       bottom = p.y + ENGINE_BOILER.top;
     chain.scale.y = Math.max(0.1, top - bottom);
     chain.position.set(hx, bottom + chain.scale.y / 2, hz);
-    trolley.visible = held || open;
-    chain.visible = held;
+    // The trolley and chain show once the arm is over the hook.
+    trolley.visible = chain.visible = held && Math.abs(wrap(aim - armYaw)) < 0.05;
     crank.rotation.x = ring * 18;
   }
 
@@ -597,6 +617,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     // The copy stands from the wagon's coupling (a line-2 train row carries `wagon`), and only once the deck is at
     // rest: the coupling can land while the shunter is still backing over the table.
     const rest = deps.restYaw();
+    const snapped = snapNext;
     if (!room.wagonCoupled) shown = false;
     else if (!shown && rest !== null) {
       shown = true;
@@ -771,7 +792,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       });
     // The white flash is the join: 60 ms on the part only.
     flash.visible = phase === 'moment' && ms < MOMENT.hit && ms > MOMENT.hit - 40;
-    placeJib();
+    placeJib(dt, snapped);
   }
 
   function close() {

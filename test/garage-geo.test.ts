@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {
   DECK_R,
   GARAGE_GEO,
+  STAND_LEGS,
   STAND_PART,
   installHere,
   polarAt,
@@ -54,6 +55,9 @@ test('nothing fixed stands within the deck’s 4.8 m: the copy sweeps it', () =>
   for (const p of standAxis()) assert.ok(dist(p, centre) >= DECK_R, 'the part on its stand');
   const [inner] = standEnds(centre, a);
   assert.ok(dist(inner, centre) >= DECK_R, 'the stand’s inner end');
+  // The empty stand clears a car on line 2 (design ruling on G2, R2): legs 6 m or further out, no wider than the barrel.
+  assert.ok(Math.min(...STAND_LEGS.at) >= 6.0 && STAND_LEGS.half <= 0.5);
+  for (const r of STAND_LEGS.at) assert.ok(Math.abs(r - a.stand.r) <= STAND_PART.half, 'a leg under the barrel');
   // The jib's arm reaches the engine's seat wherever the table has turned it (1.9 m past the centre).
   assert.ok(a.arm >= a.jib.r + 1.9);
 });

@@ -163,10 +163,11 @@ clockwise from north, metres from the table's centre (918, 12).
 | --- | --- | --- |
 | The works copy | At rest along the bridge on the stall road's axis, nose at 45° (toward line 1). Two static boxes at that pose, which never turn: the engine 2.0 by 4.0 by 2.5 m (4.5 m long once the longer boiler is on), the car 2.2 by 3.2 by 0.8 m | Corners 4.4 m, inside the 4.8 m deck. Each box is added only once this tab's player is clear of it by 0.55 m |
 | The post | 92°, 5.2 m (where build 2's plain post stood) | 0.4 m inside the reach the prompt keeps (5.6 m); 1.5 m from the landing |
-| The stand | 118°, middle 6.5 m, along the radius, the barrel nose to the table: it spans 4.93 m to 8.08 m | **Does not fit as ruled** (below). Its side overhangs line 2's sleeper ends by 0.34 m and passes 0.33 m from the landing point |
-| The jib | 118°, 8.4 m; mast 4.4 m, arm 10.6 m | 2.5 m from line 2's centre. The arm reaches the engine's seat at any turn of the table (8.4 + 1.9 m) and clears the tall chimney (3.5 m over the grass) |
+| The stand | 118°, middle 6.5 m, along the radius, the barrel nose to the table: it spans 4.93 m to 8.08 m. Legs at 6.1 m and 7.6 m, 0.5 m either side of the axis (G2b, ruling R2) | Did not fit as first ruled (below); accepted as built by the [ruling](#design-ruling-on-g2-as-built-designer-2026-11-12). Its side overhangs line 2's sleeper ends by 0.34 m and passes 0.33 m from the landing point |
+| The jib | 118°, 8.4 m; mast 4.4 m, arm 10.6 m. Parked, the arm points along 100° from its mast, over the grass east-south-east; it points at the hook only while a part is in sight and through a moment (G2b, R3) | 2.5 m from line 2's centre. The arm reaches the engine's seat at any turn of the table (8.4 + 1.9 m) and clears the tall chimney (3.5 m over the grass) |
+| The pallet | 64°, 7.0 m (G2b, R6; it was 72°, 6.0 m) | 2.8 m from line 1's centre |
 | The crew | 121°, 9.4 m and 114°, 8.7 m, by the mast | 2.3 m and 3.1 m from line 2's centre; 3.2 m or more from the landing |
-| The camera | From 100° (east-south-east), 9.2 m out, 2.7 m up | Below |
+| The camera | From 85° (east), 9.2 m out, 2.7 m up (G2b, R4; first built at 100°) | Below |
 | `TABLE_LAND` | Untouched: (923.2, 18.1, 13.7), asserted | |
 | Train tails | Line 2 at s 8.0. Line 1 at s 5.0 by the catalogue (`halts[0].s` 14.0 m less `TRAIN_EXTENT.behindCm`), not the 8.7 of row 1: 0.2 m off the rim, 0.6 m from a longer boiler's nose at rest | Both asserted off the deck |
 
@@ -198,6 +199,19 @@ is in frame from any east camera at this distance (it stands behind the camera's
 taken for comparison: the engine three-quarter front and the stand in frame on the right, but the forge crane's mast
 rises behind the cab and line 2's platform slab is the foreground. The camera row is one number
 (`GARAGE_GEO.a.camBearing`).
+
+**G2b, after the ruling (12 November).** One yaw by state on `armPivot`, as the ruling expected: it eases at 1.5 rad
+a second (about 2 s for the swing), follows a part on the hook at 9, snaps on a restore, and a swing in on a live tick
+plays one `cordPull` and one `clank` at the mast. The trolley and chain show once the arm is over the hook. The camera
+stays at 85°: the nudge to 92° was not tried, since at 85° the frame already meets R5. Looked at:
+`g2b-cam-waiting-still` (steel home: the engine clear from the wheels up, nothing at the chimney, the post and orange
+knob low centre, the arm, trolley and chain in from the top left; the barrel's nose takes about a seventh of the
+frame at the lower left and ends just short of the car; the pallet is a sliver in the lower right corner),
+`g2b-cam-empty-still` (fitted: the arm out of frame, one stand leg and line 2's platform end at the left, the pallet
+a corner), `g2b-top-parked-still` (the arm off the table over open grass, running out of frame to the east-south-east;
+both legs outside 6 m) and `g2b-jump-still` (the jump-in's own camera: the player whole and in the clear with the
+barrel alongside on the left, its near end large in the lower left; the mast and a crew figure's head are at the
+frame's left edge and the timber cart at the lower right). Not seen: the swing itself in motion.
 
 **What `wagonCoupled` means, and when the copy shows.** `wagonCoupled` is "some line 2 train row carries `wagon`"
 (`garage-state.ts`). `deckK === null` is not the rest test: once the wagon has coupled `deckK` is never null again (it

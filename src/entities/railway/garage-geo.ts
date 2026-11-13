@@ -13,6 +13,8 @@ export type GarageGeo = {
   jib: Polar;
   mast: number;
   arm: number;
+  /** The bearing the arm points along from its mast when parked: off the table, with nothing to install. */
+  park: number;
   /** The middle of the stand the waiting part lies on, and how the part lies: along the radius with its nose at the
    * table, or along the rim. */
   stand: Polar;
@@ -27,6 +29,10 @@ export type GarageGeo = {
 export const DECK_R = 4.8;
 /** The longer boiler lying on its stand: half its length and its radius (engine.ts: 3.15 m by 1.25 m). */
 export const STAND_PART = { half: 1.575, r: 0.625 } as const;
+/** A radial stand's two legs: their distances from the table's centre and their half width across the barrel. They
+ * stand 6 m or further out and no wider than the barrel, so a car on line 2 clears the empty stand (design ruling on
+ * G2, R2). */
+export const STAND_LEGS = { at: [6.1, 7.6], half: 0.5 } as const;
 
 export const GARAGE_GEO: { a: GarageGeo; b: GarageGeo } = {
   /** Today's table (`SHED_TABLE`). Thrown away at the Home flip. Nothing fixed stands within the deck's 4.8 m
@@ -36,13 +42,14 @@ export const GARAGE_GEO: { a: GarageGeo; b: GarageGeo } = {
     jib: { bearing: 118, r: 8.4 },
     mast: 4.4,
     arm: 10.6,
+    park: 100,
     stand: { bearing: 118, r: 6.5 },
     standAlong: 'radius',
     crew: [
       { bearing: 121, r: 9.4 },
       { bearing: 114, r: 8.7 },
     ],
-    camBearing: 100,
+    camBearing: 85,
   },
   /** Layout B's table (`?home=b`), as the first build placed it. */
   b: {
@@ -50,6 +57,7 @@ export const GARAGE_GEO: { a: GarageGeo; b: GarageGeo } = {
     jib: { bearing: 105, r: 5.6 },
     mast: 3.4,
     arm: 5.8,
+    park: 105,
     stand: { bearing: 105, r: 3.9 },
     standAlong: 'rim',
     crew: [

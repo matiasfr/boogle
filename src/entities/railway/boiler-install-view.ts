@@ -38,11 +38,11 @@ const GREY = '#9c9ea1',
   READY = '#e8742c',
   FITTED = '#58b368';
 /** Metres from the table's centre, on the open ground between line 2's two roads east of the deck: the post 5.2 m out
- * (inside the 6 m the server judges the install from) and the pallet north of it, 3 m clear of the road to the
- * Village platform and of line 2's frame. */
+ * (inside the 6 m the server judges the install from) and the pallet north-east of it, 64 degrees round from north
+ * and 7 m out (design ruling on G2, R6: a corner of the garage's camera frame at most), 2.8 m off line 1's centre. */
 const TABLE = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100, y: SHED_TABLE.y / 100 - 0.2 };
 export const POST = { x: TABLE.x + 5.2, z: TABLE.z + 0.2 },
-  PALLET = { x: TABLE.x + 5.7, z: TABLE.z - 1.8, w: 1.5, d: 2.1 };
+  PALLET = { x: TABLE.x + 6.3, z: TABLE.z - 3.05, w: 1.5, d: 2.1 };
 
 let release: (() => void) | null = null;
 onStart(() => {

@@ -792,9 +792,11 @@ once the footing wagon has coupled and the shunter is back in its stall, a works
 stands on the table along the bridge, solid, wearing the room's boiler (the longer one with its four bolts once it is
 installed). On a live tick it arrives behind a puff of steam with a whistle; a reload or a late join just finds it
 there. The grey post is now the garage's lever post, with a knob that is brass, orange while steel waits and green
-once the longer boiler is on. A jib and a stand are south-east of the table, off the deck; when steel is home the
-longer boiler lies on the stand under the jib's hook and two crew figures wait by the mast. Interact at the post opens
-the garage ("Look at the engine") on a camera from the east-south-east, and the deck turns the copy for it; it is not
+once the longer boiler is on. A jib and a stand are south-east of the table, off the deck, the jib's arm parked away
+from the table over the grass; when steel is home the arm swings round over the stand (a pull on its cord and a
+clank), the longer boiler lies there under its hook and two crew figures wait by the mast. The pallet is north-east
+of the post. Interact at the post opens
+the garage ("Look at the engine") on a camera from the east, and the deck turns the copy for it; it is not
 offered while steel waits, when the post carries the plain "Install the longer boiler" hold above (its bar is gone
 with the grey post). In the garage the Longer boiler tile reads "Needs steel", then "Ready", then "Installed", and
 the old Boiler "Replaced"; the button is still Try it. The garage's own Install, and the moment for everyone, are the
