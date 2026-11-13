@@ -1,4 +1,5 @@
-> **Status: plan for the designer's and the owner's review (12 November 2026).** Nothing is built. The planner ran one
+> **Status (12 November 2026): R1 to R3 built on `car4/rules` (the rules, the Village stop mark, the host tests;
+> reviewed, ship); V1 and V2 built on `car4/ship` (rules and views rebased onto main, 13 November); C1 to come.** The plan as written for review follows. The planner ran one
 > trial in this worktree (the planned extent and stop mark applied, uncommitted, then reverted): its figures are marked
 > *trial*; everything else is read from main at `e9a7e752` or is *arithmetic*. The next Ring Island step after the
 > garage's install moment. One rules change with its own bump (v33); no new op, no new field.
@@ -180,7 +181,7 @@ Rules steps: an opus implementer each, then one independent reviewer for R1 and 
 (a review that drives a real server once: rule 23). Views: a fable implementer each. Every step leaves
 `node dev/ship-check.ts` green; nothing else is run in a step.
 
-- [ ] **R1. The extent and the reach (rules).** Edit `src/entities/railway/cars.ts` (add `STEEL_CAR`,
+- [x] **R1. The extent and the reach (rules).** Edit `src/entities/railway/cars.ts` (add `STEEL_CAR`,
       `steelCarOffset(wagon)`, `TRAIN_TAIL_M`; leave the two tables), `src/sim/railway-lines.ts:109` (`behindCm` 1270;
       the comment names the steel car), `src/sim/railway-train.ts:25-27` (the comment: 6.5 m),
       `src/world/railway-server.ts:140-145` (`RIDER_SPAN` 1110), `src/world/namespace.ts` (**v33**, one line for the
@@ -194,7 +195,14 @@ Rules steps: an opus implementer each, then one independent reviewer for R1 and 
       trace and the tick-order files by their own headers). Verify: `test/railway-install.test.ts` "every middle halt
       stands clear of both end blocks, and every signal of its own" passes unedited (line 2's Village signal less the
       tail is exactly the turnout's edge, 5400).
-- [ ] **R2. Line 2's Village stop mark (rules).** Edit `src/sim/railway-lines.ts:396` (1825),
+      *As built (12 November):* `TRAIN_TAIL_M` is derived (`STEEL_CAR.hz - steelCarOffset(true)`), the lines test pins
+      `behindCm` to it and to 1270; line 2's Village signal 6670 (line 1's 6870, unpinned). Plus the review's High
+      Gorge assert (`test/railway-route-rules.test.ts`, the first catalog case: the tail less the crossover's far end is
+      exactly 30 cm) and `test/railway-cart.test.ts`'s room id (`rail-v33-`). `dev/level/ring.ts`'s `LONG` is
+      `TRAIN_EXTENT` (V2 merges the two rows). Every pinned fixture moved (golden, ops golden, rail schema, M12 trace,
+      tick order and its heads); the rail map did not (`--check` clean). Build 2's all-longer todo reads 1,152 after R1
+      alone, as on v32.
+- [x] **R2. Line 2's Village stop mark (rules).** Edit `src/sim/railway-lines.ts:396` (1825),
       `src/place/layout.ts:379` (18.25), `src/sim/railway-works-layout.ts:42` (`WAGON_S` 1085). Tests edited:
       `test/railway-lines.test.ts` (the three "v25/v27 stops" cases and "the pier opens with Q6"),
       `test/railway-trains.test.ts:157-187` (the cycle and headway literals, re-derived and stated in the title; the
@@ -207,14 +215,30 @@ Rules steps: an opus implementer each, then one independent reviewer for R1 and 
       again and the rail map (`node --import ./dev/sim/hooks.ts dev/level/rail-map.ts`). Verify: `npm run level-check`
       (the trial: 0 new problems, "stop at 18.25" reachable); `npm run loop -- run` (1 to 4 players finish); the
       section 5 gates in short mode; the reviewer runs them with `ROUTE_GATES=1` and reports the table.
-- [ ] **R3. The server path (rules, tests only).** Edit `server/test/railway-steel-host.test.ts`, no new file. (a) Its
+      *As built (12 November):* as planned, plus the review's `test/garage-geo.test.ts` case (the nearer leg 0.18 m
+      from the steel car's side, asserted at 0.15 or more over s 5.55 to 8.75; the barrel −0.03 m pinned within
+      0.01) and its stale note rewritten. Three things the plan did not list: `src/proto/greybox/rides.ts` (the greybox
+      ride's own copy of the 17, which "rides" pins); `test/home-station.test.ts`'s "abeam" now reads "1.25 m ahead of
+      abeam", and the 1.25x engine-pass case keeps the wagon consist (four cars at 1.25x do not fit road 2; the Home
+      flip's); `test/railway-trade.test.ts`'s tick 6512 was a train held at the Village's signal (`at` −1) arriving
+      the same tick as one at a halt, so the test counts arrivals at halts only (no tick moved, the assert unchanged).
+      The cycle and headway ticks did not move. `npm run level-check`: 0 problems, "stop at 18.25" ok; `npm run loop
+      -- run`: 1 to 4 players finish. Rail map regenerated (two figures).
+- [x] **R3. The server path (rules, tests only).** Edit `server/test/railway-steel-host.test.ts`, no new file. (a) Its
       install case (`:212`, a real `r:edit`) runs the host on until a line 2 train stands at the Village and asserts
       the replicated row wears boiler 1 and that a joiner's snapshot has it: the one fact the car is drawn from. (b) A
       rider's `rail.call` with `train` set, sent as a real `r:edit` from the steel car's deck on the wagon's train
       (11.1 m behind the pose, standing): accepted; from 22 m behind: refused. **No new op exists in this plan;** these
       are the two server paths it leans on. Also the P2 leftover in the same file only if it is one line (the guard
       test's baseline); otherwise leave it.
-- [ ] **V1. The car on the train (view; fable).** Edit `src/entities/railway/train-view.ts`, `car-kit.ts` or
+      *As built (12 November):* (a) the host helper gained `connect` (a client's mirror fed from the host's packets);
+      the install case runs on to a line 2 train standing fitted at the Village, its replicated row and a late
+      joiner's whole snapshot wear boiler 1, every line 2 row the host's. (b) a new case in the same file: the wagon's
+      train stands fitted at the Village, a request halt picked from the catalog (the Quarry, up), a rider 22 m
+      straight back from the pose refused, at 11.1 m accepted (positions in whole cm, as a client sends them: a float
+      `at` is refused before the reach). 11.1 m alone would pass on v32's span too; the span's edge is
+      `test/railway-placement.test.ts`'s. The P2 leftover was not one line: left.
+- [x] **V1. The car on the train (view; fable).** Edit `src/entities/railway/train-view.ts`, `car-kit.ts` or
       `src/render/wagon-look.ts` for the look. One steel car a line 2 slot (five), built as the wagon's car is
       (`rail.makeCar(STEEL_CAR, ...)`, `platform.id = railway:train${slot}-steel`, `shared`, `speedLimit` 30), a
       flatbed with low stakes and an orange stripe (greybox). Shown when the row's `boiler >= 1`, posed at
@@ -225,13 +249,42 @@ Rules steps: an opus implementer each, then one independent reviewer for R1 and 
       registry row. **Proof look:** `--rail-seed boiler-long`, the game's camera at the Village platform, a fitted
       wagon train standing (tail off the table's deck, the car clear of the stand's legs) and a plain fitted train
       leaving; one still each, and one of steel riding the steel car from `steel-lit` after an install.
-- [ ] **V2. The garage, the graph and the level sheet (view; fable).** Edit `src/entities/railway/garage-data.ts` (a
+      *As built (13 November):* in `train-view.ts` alone: one `rail.makeCar(STEEL_CAR, ...)` a line 2 slot, drawn as
+      boxes in the steel batch (deck, four wheels, a stripe and two stakes a side), `carOn` from the row and the
+      beat, in `carsOf`, `isTrain` and the request prompt. Three things the plan did not list. (1) **A second puff
+      at the tail** (the same emit, 14 more particles): the plan's "under the same puff" cannot hide a car 7 to 11 m
+      from the chimney. (2) **`standClear`:** the first look showed a player standing where the car arrives ending
+      inside its box (a kinematic body pushes nobody out); now this tab's player is set on the deck when a car
+      arrives round them. Looked at after: feet on the deck top, highest 0.01 m above rest, 0.9 m/s at most, carried
+      by the car as it leaves. (3) **Main's scale-in:** the steel car grows with a joining train's cars and closes
+      toward the middle car by the same scale. Looks (evals in `dev/look/evals/steel-car.ts`, one case each): the
+      wagon's train four long at the Village, the top-down at the stand's leg, a plain fitted train standing, the
+      coupling beat and the player at the tail in real time, the Pier from a plain train both sides (a ride from the
+      stack head on the deck and "Request stop: Pier" pressed from it). **Not shown:** steel riding the steel car
+      (a real-time wait for the second trip, not reached in a bounded run); a fitted train joining (no seed has a
+      shed train on a fitted line: the stack seeds have not installed); the wagon train's Pier step-off to the left
+      (the look was stopped in the bot queue). Its step-off to the right, from the car that stands wholly off the
+      deck (s 713.8 to 717.0), lands on the planks at rail height, standing. Level finding 4 as found: no fall through and nobody stuck; a step off lands
+      on the halt deck or the planks; walking on 7 m goes off the trestle's edge into the sea and you swim. The car
+      stays standable at every halt.
+- [x] **V2. The garage, the graph and the level sheet (view; fable).** Edit `src/entities/railway/garage-data.ts` (a
       `steelcar` tile in `cargo`: `later` until `Line.boiler >= 1`, then `free`; placeholder name "Steel car",
       description "Came with the longer boiler. 6 steel a trip.", pill "Free with steel": **not The Boogler's, listed
       for the owner**), `dev/loop/graph.ts:922-940` (`steelhome`'s cue: the steel car once fitted),
       `dev/level/ring.ts:141-148` (the steel car's deck among the standable tops), `docs/game-design/` (the owning
       railway section: train length, the car, the moved mark). The tile on the old Boiler path is untouched. **Proof
       look:** the garage on Cargo before and after an install (two stills).
+      *As built (13 November):* the tile reads "Later" with "Comes with the longer boiler. 6 steel a trip." before
+      the install and "Owned" with "Came with the longer boiler. 6 steel a trip." after (the review's pill; three
+      placeholder strings and the name, for the owner's list). Cargo's four tiles overflow the parts strip, so
+      `src/features/garage.ts` scrolls the chosen one into view (one line). `steelhome`'s cue names the steel car.
+      `dev/level/ring.ts`: two steel car decks among the standable tops (the wagon's train and a plain one) and the
+      two train rows made one. **Review finding 8, the late jump:** at the island's end stop the steel car's deck
+      lands 14.3 m (plain train) and 17.9 m (the wagon's) short of the brace platform, against the wagon deck's
+      14.5 m; at the terminus it lands at most at u 462.4 and 458.7, short of flatbed 2's 466.1. No new ledge from
+      the tail deck; `npm run level-check` 0 problems. The game-design entry is place.md's "The steel car". Looked
+      at: Cargo before, after and at 440x796 (where the garage hides every part's description, so the line does not
+      show at that width).
 - [ ] **Checkpoint C1 (the bump).** Once, for the branch: the full unit suite and `ROUTE_GATES=1`; section 5's 48-seed
       sheet with the footing delivery ticks; `test:net`; the steel bot (`dev/look/bots/railway-steel.ts`) through the
       install to a fitted train leaving; one two-player look of the coupling from the platform and from a rider's

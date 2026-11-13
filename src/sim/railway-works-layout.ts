@@ -39,7 +39,7 @@ export const WORKS_ROCKS = [
 export const SHED_STALL = { x: 90950, z: 2050, y: 1800, reach: 500 } as const;
 export const SHED_TABLE = { x: 91800, z: 1200, y: 1830, reach: 600 } as const;
 export const SHED_ROAD = { stall: 0, line2: 1 } as const;
-export const WAGON_S = 960;
+export const WAGON_S = 1085; // the Village stop less 7.4 m (v33: 1825 - 740)
 // Line 2 stands 3.5 m short of the Pier halt's middle (s 730), so its engine stops 2.7 m clear of the track layer
 // parked at the rails' end (742 m, its loco's back at 734.4 m), still 1.2 m with an engine half as long again, and the
 // wagon still stands at the halt's landward end (s 719-741).

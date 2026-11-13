@@ -84,15 +84,16 @@ const TERMINAL_GAP = r1(-CONSIST.tail + 2);
 /** Layout B's buffer stops, by each Village road's s. */
 const [BUF1, BUF2] = BUFFERS;
 /** One shared stop mark per halt (the design review's call 11): today's TRAIN_STOPS unless a reason moves it. Village:
- * layout B keeps s 14 and 17 abeam (home-station call 10), already more than TERMINAL_GAP from its buffers. */
+ * layout B kept s 14 and 17 abeam (home-station call 10); from v33 line 2's is 18.25 for its four-car train
+ * (docs/plans/fourth-car.md, R2), 1.25 m ahead of abeam. Both are more than TERMINAL_GAP from their buffers. */
 const MARKS: Record<string, { s: number; why: string }> = {
   Village: {
     s: 14,
-    why: `kept (layout B's stops stand abeam, home-station call 10): ${r1(14 - BUF1)} m from the buffers at s ${BUF1}; the ${TERMINAL_GAP} m rule allows down to s ${r1(BUF1 + TERMINAL_GAP)}`,
+    why: `kept (home-station call 10): ${r1(14 - BUF1)} m from the buffers at s ${BUF1}; the ${TERMINAL_GAP} m rule allows down to s ${r1(BUF1 + TERMINAL_GAP)}`,
   },
   'Village, line 2': {
-    s: 17,
-    why: `kept (abeam with line 1's): ${r1(17 - BUF2)} m from the buffers at s ${BUF2}; the rule allows down to s ${r1(BUF2 + TERMINAL_GAP)}`,
+    s: 18.25,
+    why: `kept (v33, fourth-car R2: the wagon train's steel car off the table's deck, 1.25 m ahead of abeam): ${r1(18.25 - BUF2)} m from the buffers at s ${BUF2}; the rule allows down to s ${r1(BUF2 + TERMINAL_GAP)}`,
   },
   Camp: { s: r1(220 - TERMINAL_GAP), why: `${TERMINAL_GAP} m from the proposed buffers at s 220 (call 12)` },
   Quarry: {

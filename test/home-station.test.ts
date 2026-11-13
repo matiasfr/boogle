@@ -36,7 +36,7 @@ import {
   type XZ,
 } from '../src/place/home-station.ts';
 import { CART, FORGE, LINES, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/place/layout.ts';
-import { TRAILER, TRAIN_OFFSETS, WAGON_CAR } from '../src/entities/railway/cars.ts';
+import { STEEL_CAR, TRAILER, TRAIN_OFFSETS, WAGON_CAR, steelCarOffset } from '../src/entities/railway/cars.ts';
 import { ENGINE, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
@@ -66,27 +66,34 @@ test('each head is 1 m samples from s 0 to its join, meeting today line at the j
  * ahead (docs/plans/engine-previz.md: 4.5 m, 1.5× the old LOCO, the longest these halts allow). */
 const ENGINES = [1, 1 + ENGINE_LONG_AHEAD / (2 * ENGINE.hz)];
 /** A train's extent along its road at stop `s`: cars from TRAIN_OFFSETS, the engine scaled by `engine` and moved out
- * so the gap behind its cab stays, every car scaled by `cars`. */
-function trainSpan(s: number, cars: number, withWagon: boolean, engine = cars) {
+ * so the gap behind its cab stays, every car scaled by `cars`. `consist`: three cars, three and the footing wagon, or
+ * (v33, docs/plans/fourth-car.md) the wagon's train on the longer boiler, the steel car last (steelCarOffset(true)). */
+function trainSpan(s: number, cars: number, consist: 'three' | 'wagon' | 'steel', engine = cars) {
   const [first, , third, fourth] = TRAIN_OFFSETS as [number, number, number, number];
   const gap = first - ENGINE.hz - TRAILER.hz;
   const lead = TRAILER.hz * cars + gap + ENGINE.hz * engine;
-  const tail = withWagon ? fourth * cars - WAGON_CAR.hz * cars : third * cars - TRAILER.hz * cars;
+  const tail =
+    consist === 'steel'
+      ? (steelCarOffset(true) - STEEL_CAR.hz) * cars
+      : consist === 'wagon'
+        ? (fourth - WAGON_CAR.hz) * cars
+        : (third - TRAILER.hz) * cars;
   return [s + tail, s + lead + ENGINE.hz * engine] as const;
 }
 
-test('both stops are on the straight and abeam, with room for the longer boiler past them', () => {
+test("both stops are on the straight, line 2's 1.25 m ahead of abeam (v33), with room for the longer boiler past them", () => {
   const [l1, l2] = STOP as [number, number];
   assert.equal(l1, 14);
-  assert.equal(l2, 17);
-  assert.ok(Math.abs(toAxis(roadAt(0, l1)).a - toAxis(roadAt(1, l2)).a) < 0.2, 'abeam');
+  assert.equal(l2, 18.25); // v33 (fourth-car R2, level finding 1): the only mark that fits four cars on road 2
+  // Abeam until v33: line 2's mark moved 1.25 m on (fourth-car R2) for its four-car train, so it stands that far ahead.
+  assert.ok(Math.abs(toAxis(roadAt(1, l2)).a - toAxis(roadAt(0, l1)).a - 1.25) < 0.2, '1.25 m ahead of abeam');
   for (const engine of ENGINES) {
     assert.ok(
-      trainSpan(l1, 1, false, engine)[1] <= HEADS[0].segs[0].len,
+      trainSpan(l1, 1, 'three', engine)[1] <= HEADS[0].segs[0].len,
       `line 1's front on the straight at ${engine}x`,
     );
     assert.ok(
-      trainSpan(l2, 1, true, engine)[1] <= HEADS[1].segs[0].len,
+      trainSpan(l2, 1, 'steel', engine)[1] <= HEADS[1].segs[0].len,
       `line 2's front on the straight at ${engine}x`,
     );
   }
@@ -103,8 +110,9 @@ function inOrder(spans: [string, number, number][]) {
 
 test('road 2: buffer, cart, points, waiting wagon, train and leg in order and apart; no stop overlaps a buffer', () => {
   const wagon = WAGON_S / 100;
+  // The wagon waits only until it first couples, long before the install: a waiting wagon meets a three-car train.
   for (const engine of ENGINES) {
-    const train = trainSpan(STOP[1]!, 1, false, engine);
+    const train = trainSpan(STOP[1]!, 1, 'three', engine);
     inOrder([
       ['buffer', BUFFERS[1], BUFFERS[1]],
       ['the cart at its forge stop', -CART.hz, CART.hz],
@@ -116,7 +124,7 @@ test('road 2: buffer, cart, points, waiting wagon, train and leg in order and ap
   }
   // The whole train at 1.25x stands with its wagon coupled: the scaled cars reach back past the waiting wagon's place
   // (the engine pass must move WAGON_S, or the stop, before it scales the cars).
-  const whole = trainSpan(STOP[1]!, 1.25, true);
+  const whole = trainSpan(STOP[1]!, 1.25, 'wagon');
   inOrder([
     ['buffer', BUFFERS[1], BUFFERS[1]],
     ['the cart', -CART.hz, CART.hz],
@@ -124,7 +132,20 @@ test('road 2: buffer, cart, points, waiting wagon, train and leg in order and ap
     ['the whole train at 1.25x, wagon coupled', whole[0], whole[1]],
     ["the leg's points", LEG.to, LEG.to],
   ]);
-  const one = trainSpan(STOP[0]!, 1.25, false);
+  // v33 (docs/plans/fourth-car.md, level finding 1): the wagon's train on the longer boiler, four cars and the steel
+  // car last, at 1x: its rear just past the spur's points (5.55 against 5.5), its nose short of the leg's points.
+  // Not layout B finished for four cars: the Home flip owns road 2's deck and the car's road.
+  for (const engine of ENGINES) {
+    const four = trainSpan(STOP[1]!, 1, 'steel', engine);
+    inOrder([
+      ['buffer', BUFFERS[1], BUFFERS[1]],
+      ['the cart', -CART.hz, CART.hz],
+      ["the spur's points", SPUR.s, SPUR.s],
+      [`the wagon's fitted train, engine ${engine}x`, four[0], four[1]],
+      ["the leg's points", LEG.to, LEG.to],
+    ]);
+  }
+  const one = trainSpan(STOP[0]!, 1.25, 'three');
   assert.ok(BUFFERS[0] < one[0], "line 1's whole train at 1.25x clears road 1's buffer");
   assert.ok(one[1] <= HEADS[0].segs[0].len, "and stays on road 1's straight");
 });
@@ -133,16 +154,32 @@ test('every stop stands beside the island, 1.65 m in from its edge and within it
   assert.ok(Math.abs(ROAD_GAP - (ISLAND.width + 2 * ISLAND.edge)) < 0.01, 'the roads are 7.6 m apart');
   const centre = axisPoint((ISLAND_A.deck0 + ISLAND_A.deck1) / 2, ISLAND_C);
   const cases = [
-    { road: 0 as const, halt: LINE_HALTS[0], shift: 0, wagon: false },
-    { road: 1 as const, halt: LINE_HALTS[2], shift: ROAD2_S, wagon: true },
+    { road: 0 as const, halt: LINE_HALTS[0], shift: 0, consist: 'three' as const },
+    { road: 1 as const, halt: LINE_HALTS[2], shift: ROAD2_S, consist: 'steel' as const },
   ];
-  for (const { road, halt, shift, wagon } of cases)
+  for (const { road, halt, shift, consist } of cases)
     for (const engine of ENGINES) {
-      const [rear, front] = trainSpan(STOP[road]!, 1, wagon, engine);
+      const [rear, front] = trainSpan(STOP[road]!, 1, consist, engine);
+      // From v33 (fourth-car, level finding 1) road 2's longest train overhangs the island's deck at both ends (by
+      // 0.15 m behind and about 1.25 m ahead); its passenger car, where the seats are, stands on it.
+      const passenger = [STOP[road]! + TRAIN_OFFSETS[1]! - TRAILER.hz, STOP[road]! + TRAIN_OFFSETS[1]! + TRAILER.hz];
       assert.ok(
-        rear - shift >= ISLAND_A.deck0 && front - shift <= ISLAND_A.deck1,
-        `road ${road} at ${engine}x on the deck`,
+        passenger[0]! - shift >= ISLAND_A.deck0 && passenger[1]! - shift <= ISLAND_A.deck1,
+        `road ${road}'s passenger car on the deck`,
       );
+      if (road === 0)
+        assert.ok(
+          rear - shift >= ISLAND_A.deck0 && front - shift <= ISLAND_A.deck1,
+          `road ${road} at ${engine}x on the deck`,
+        );
+      else {
+        // The overhang as measured (0.15 m behind; 0.75 m ahead on the standard engine, 1.25 m on the longer), each
+        // bounded with 5 cm in hand, so a later stop or car change re-measures it.
+        const behind = ISLAND_A.deck0 - (rear - shift),
+          ahead = front - shift - ISLAND_A.deck1;
+        assert.ok(behind <= 0.2, `road 2 at ${engine}x overhangs the deck ${behind.toFixed(2)} m behind`);
+        assert.ok(ahead <= (engine === 1 ? 0.8 : 1.3), `road 2 at ${engine}x overhangs it ${ahead.toFixed(2)} m ahead`);
+      }
       for (let s = rear; s <= front; s += 0.5) {
         const at = toAxis(roadAt(road, s));
         assert.ok(Math.abs(Math.abs(at.c - ISLAND_C) - (ISLAND.width / 2 + ISLAND.edge)) < 0.01, `road ${road} s ${s}`);

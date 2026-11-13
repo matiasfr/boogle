@@ -37,7 +37,8 @@ export type RoomFacts = {
   boilerRev: number;
 };
 
-export type PartId = 'boiler' | 'long' | 'plough' | 'four' | 'kitcar' | 'wagon' | 'cradle' | 'roof' | 'toot' | 'two';
+export type PartId =
+  'boiler' | 'long' | 'plough' | 'four' | 'kitcar' | 'wagon' | 'steelcar' | 'cradle' | 'roof' | 'toot' | 'two';
 /** How big an install of this part is (brief, "Three sizes of install"): a tunable table, not three code paths. */
 export type Size = 'small' | 'medium' | 'large';
 export type Standing =
@@ -139,6 +140,29 @@ export function partsOf(room: RoomFacts): Part[] {
           desc: 'It waits in the stall until the cradle is fitted and the table turns.',
           standing: 'later',
           pill: 'Waits in the stall',
+          size: 'medium',
+          tryable: false,
+        },
+    // Steel's own car (docs/plans/fourth-car.md, V2): free with the longer boiler, so the screen shows it owned once
+    // the line is fitted and as a later part until then. Placeholder strings, for the owner's list.
+    room.longFitted
+      ? {
+          id: 'steelcar',
+          cat: 'cargo',
+          name: 'Steel car',
+          desc: 'Came with the longer boiler. 6 steel a trip.',
+          standing: 'free',
+          pill: 'Owned',
+          size: 'medium',
+          tryable: false,
+        }
+      : {
+          id: 'steelcar',
+          cat: 'cargo',
+          name: 'Steel car',
+          desc: 'Comes with the longer boiler. 6 steel a trip.',
+          standing: 'later',
+          pill: 'Later',
           size: 'medium',
           tryable: false,
         },
