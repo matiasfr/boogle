@@ -149,6 +149,8 @@ test('workshop collider and placement bytes match the pre-conversion code', () =
 function runtimeHarness() {
   const active = new Set<Body>(),
     seats: Seat[] = [];
+  const physicsSpecs: { shape: Shape; position: { x: number; y: number; z: number }; rotation?: THREE.Quaternion }[] =
+    [];
   let allocations = 0;
   const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.ts').createOwnedView>(
     'src/render/owned-view.ts',
@@ -190,7 +192,10 @@ function runtimeHarness() {
       ]),
       registerSeat,
       ROOM_GROUP: 8,
-      staticBody: () => ({}) as Body,
+      staticBody: (shape: Shape, position: { x: number; y: number; z: number }, rotation?: THREE.Quaternion) => {
+        physicsSpecs.push({ shape, position: { ...position }, rotation: rotation?.clone() });
+        return {} as Body;
+      },
     },
   );
   const owner = createOwnedView();
@@ -200,6 +205,7 @@ function runtimeHarness() {
     placement: runtime.workshopChair,
     active,
     seats,
+    physicsSpecs,
     get allocations() {
       return allocations;
     },
@@ -243,10 +249,10 @@ test('review regression: unsupported capsule is rejected without orphaning a mes
   }
 });
 
-test('review regression: rotated collider rejects every nonuniform axis pair', () => {
+test('review regression: rotated collider rejects sheared unequal axes', () => {
   const h = runtimeHarness();
   h.data.prefabs['town.workshop-chair']!.colliders = [
-    { shape: 'box', at: [0, 0, 0], half: [1, 1, 1], rot: [Math.PI / 4, 0, 0] },
+    { shape: 'box', at: [0, 0, 0], half: [1, 1, 1], rot: [Math.PI / 4, Math.PI / 6, Math.PI / 7] },
   ];
   try {
     for (const scale of [
@@ -254,7 +260,7 @@ test('review regression: rotated collider rejects every nonuniform axis pair', (
       [1, 2, 1],
       [1, 1, 2],
     ] as const) {
-      assert.throws(() => h.spawn({ ...h.placement, scale }), /nonuniform/);
+      assert.throws(() => h.spawn({ ...h.placement, scale }), /shear/);
       assert.equal(h.owner.root.children.length, 0);
     }
     assert.equal(h.allocations, 0);
@@ -313,9 +319,43 @@ type WorldTransformCase = {
   placementScale?: Vec3;
   placementRot?: Vec3;
   colliderRot?: Vec3;
-  nonuniform?: true;
+  sheared?: true;
+  placementPos?: Vec3;
+  check?: 'build-shear' | 'runtime-shear' | 'precision' | 'disabled' | 'collider-frame';
 };
 const worldTransformCases: WorldTransformCase[] = [
+  {
+    name: 'collider rotation cancels frame shear and uses its world axes',
+    allowed: true,
+    parentScale: [2, 1, 1],
+    parentRot: [-0.3, 0, 0],
+    placementRot: [0.3, 0, 0],
+    colliderRot: [-0.3, 0, 0],
+    check: 'collider-frame',
+  },
+  {
+    name: 'review-3 build rejects unrotated shear',
+    allowed: false,
+    parentScale: [2, 1, 1],
+    placementRot: [0.7, 0, 0],
+    check: 'build-shear',
+  },
+  {
+    name: 'review-3 runtime rejects shear before allocation',
+    allowed: false,
+    parentScale: [2, 1, 1],
+    placementRot: [0.7, 0, 0],
+    check: 'runtime-shear',
+  },
+  {
+    name: 'review-3 full precision through compensating scales',
+    allowed: true,
+    parentScale: [10000, 10000, 10000],
+    placementScale: [0.0001, 0.0001, 0.0001],
+    placementPos: [0, 0, 0],
+    check: 'precision',
+  },
+  { name: 'review-3 initially disabled root is hidden', allowed: true, check: 'disabled' },
   { name: 'unrotated collider with nonuniform scale', allowed: true, placementScale: [2, 1, 1] },
   {
     name: 'rotated collider with uniform scales at every level',
@@ -338,7 +378,7 @@ const worldTransformCases: WorldTransformCase[] = [
     allowed: false,
     placementScale: [2, 1, 1],
     colliderRot: [0.3, 0, 0],
-    nonuniform: true,
+    sheared: true,
   },
   { name: 'rotation only on placement', allowed: true, placementRot: [0, 0.7, 0] },
   { name: 'rotation only on parent', allowed: true, parentRot: [0.2, 0.4, 0.1] },
@@ -359,16 +399,17 @@ const worldTransformCases: WorldTransformCase[] = [
     allowed: false,
     parentScale: [2, 1, 1],
     colliderRot: [0.3, 0, 0],
-    nonuniform: true,
+    sheared: true,
   },
 ];
 for (const row of worldTransformCases)
   test(`world-transform table: ${row.name}`, () => {
     const h = runtimeHarness();
     const record = h.data.prefabs['town.workshop-chair']!;
-    record.colliders = [
-      { shape: 'box', at: [0, 0, 0], half: [1, 1, 1], ...(row.colliderRot ? { rot: row.colliderRot } : {}) },
-    ];
+    if (row.check !== 'precision')
+      record.colliders = [
+        { shape: 'box', at: [0, 0, 0], half: [1, 1, 1], ...(row.colliderRot ? { rot: row.colliderRot } : {}) },
+      ];
     const frame: PrefabDef = { key: 'town.frame', visual: { none: true }, colliders: [], scope: 'owner' };
     const parent: Placement = {
       id: 'frame',
@@ -379,6 +420,7 @@ for (const row of worldTransformCases)
     };
     const placement: Placement = {
       ...h.placement,
+      ...(row.placementPos ? { pos: row.placementPos } : {}),
       ...(row.placementScale ? { scale: row.placementScale } : {}),
       ...(row.placementRot ? { rot: row.placementRot } : {}),
     };
@@ -400,16 +442,67 @@ for (const row of worldTransformCases)
       );
       const runtimeError = errorOf(() => {
         const instance = h.spawn(placement);
+        if (row.check === 'disabled') {
+          instance.setEnabled(false);
+          assert.equal(instance.root.visible, false, 'a fresh disabled root must be hidden');
+        }
         instance.setEnabled(true);
+        assert.equal(instance.root.visible, true);
+        if (row.check === 'precision') {
+          assert.ok(
+            Math.abs(instance.seats[0]!.exit.y - 0.46) < 1e-9,
+            `expected exit y=0.46; got ${instance.seats[0]!.exit.y}`,
+          );
+          for (const [i, collider] of record.colliders.entries()) {
+            const visual = new THREE.Vector3().fromArray(collider.at).applyMatrix4(instance.root.matrixWorld);
+            const actual = h.physicsSpecs[i]!.position;
+            assert.ok(
+              visual.distanceTo(new THREE.Vector3(actual.x, actual.y, actual.z)) < 1e-9,
+              'collider centre must match the drawn frame',
+            );
+          }
+        }
+        if (row.check === 'collider-frame') {
+          const c = record.colliders[0]!;
+          assert.equal(c.shape, 'box');
+          const r = c.rot ?? [0, 0, 0];
+          const visual = instance.root.matrixWorld
+            .clone()
+            .multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(r[1], r[0], r[2], 'YXZ')));
+          const actual = h.physicsSpecs[0]!;
+          assert.ok(actual.shape.kind === 'box');
+          const half = [actual.shape.hx, actual.shape.hy, actual.shape.hz];
+          for (let axis = 0; axis < 3; axis++) {
+            const expected = new THREE.Vector3().setFromMatrixColumn(visual, axis);
+            assert.ok(
+              Math.abs(half[axis]! - expected.length()) < 1e-9,
+              'body dimensions must follow the collider world basis',
+            );
+            const direction = new THREE.Vector3()
+              .setComponent(axis, 1)
+              .applyQuaternion(actual.rotation ?? new THREE.Quaternion());
+            assert.ok(
+              direction.distanceTo(expected.normalize()) < 1e-9,
+              'body orientation must follow the collider world basis',
+            );
+          }
+          const forward = new THREE.Vector3(0, 0, 1).transformDirection(instance.root.matrixWorld);
+          assert.ok(
+            Math.abs(instance.seats[0]!.at.yaw - Math.atan2(forward.x, forward.z)) < 1e-9,
+            'seat facing must use the full world frame',
+          );
+        }
       });
+      if (row.check === 'runtime-shear') assert.match(runtimeError ?? '', /shear/);
+      if (row.check === 'build-shear') assert.match(buildError ?? '', /shear/);
       assert.equal(buildError === null, row.allowed, `build: ${buildError}`);
       assert.equal(runtimeError === null, row.allowed, `runtime: ${runtimeError}`);
-      if (row.nonuniform) {
-        assert.match(buildError!, /nonuniform world scale/);
+      if (row.sheared) {
+        assert.match(buildError!, /shear/);
         assert.equal(runtimeError, buildError, 'build and runtime must reject with the same physical rule');
       }
       if (row.allowed) {
-        assert.equal(h.active.size, 1);
+        assert.equal(h.active.size, record.colliders.length);
         assert.equal(h.seats.length, 1);
       } else {
         assert.equal(h.allocations, 0);

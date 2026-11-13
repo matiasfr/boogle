@@ -97,8 +97,8 @@ test('re-review: unsupported collider scale fails validation and compilation', (
   };
   const placement: Placement = { id: 'chair', prefab: record.key, pos: [0, 0, 0], rot: [0, 0.7, 0], scale: [2, 1, 1] };
   const level = { place: 'town', placements: [placement] };
-  assert.throws(() => validateLevel(level, { [record.key]: record }), /nonuniform/);
-  assert.throws(() => compile([record], [level], registry), /nonuniform/);
+  assert.throws(() => validateLevel(level, { [record.key]: record }), /shear/);
+  assert.throws(() => compile([record], [level], registry), /shear/);
   assert.doesNotThrow(() =>
     compile([record], [{ ...level, placements: [{ ...placement, scale: [1, 1, 1] }] }], registry),
   );
@@ -111,7 +111,7 @@ test('re-review: unsupported collider scale fails validation and compilation', (
         [{ place: 'town', placements: [parent, { ...placement, parent: parent.id, scale: [1, 1, 1] }] }],
         registry,
       ),
-    /nonuniform/,
+    /shear/,
   );
 });
 

@@ -41,7 +41,10 @@ function known(value: unknown, choices: readonly string[]) {
 // Local matrix decomposition introduces a few ulps even for authored unit scales. Reject real distortion,
 // not those representation errors; compiler and runtime use the same relative comparison.
 const SCALE_RELATIVE_TOLERANCE = 1e-9;
-export function validateColliderWorldTransforms(colliders: readonly ColliderDef[], chain: readonly Basis[]): void {
+export function validateColliderWorldTransforms(
+  colliders: readonly ColliderDef[],
+  chain: readonly Basis[],
+): readonly Basis[] {
   const equal = (a: number, b: number) =>
     Math.abs(a - b) <= SCALE_RELATIVE_TOLERANCE * Math.max(Math.abs(a), Math.abs(b));
   let world: Basis = [
@@ -50,6 +53,7 @@ export function validateColliderWorldTransforms(colliders: readonly ColliderDef[
     [0, 0, 1],
   ];
   for (const basis of chain) world = composeBasis(world, basis);
+  const checked: Basis[] = [];
   for (const c of colliders) {
     // The sole physical rule: owner/parents, placement and collider are composed BEFORE testing support.
     const basis = composeBasis(world, placementBasis({ rot: c.rot }));
@@ -66,11 +70,13 @@ export function validateColliderWorldTransforms(colliders: readonly ColliderDef[
       Math.abs(dot(unit[0], unit[1])) <= SCALE_RELATIVE_TOLERANCE &&
       Math.abs(dot(unit[0], unit[2])) <= SCALE_RELATIVE_TOLERANCE &&
       Math.abs(dot(unit[1], unit[2])) <= SCALE_RELATIVE_TOLERANCE;
-    const uniform = orthogonal && equal(scale[0], scale[1]) && equal(scale[0], scale[2]) && equal(scale[1], scale[2]);
-    if (c.rot?.some((n) => n !== 0) && !uniform) fail('rotated collider under nonuniform world scale');
+    if (!orthogonal) fail('sheared collider world basis');
+    const uniform = equal(scale[0], scale[1]) && equal(scale[0], scale[2]) && equal(scale[1], scale[2]);
     if (c.shape === 'sphere' && !uniform) fail('sphere needs uniform scale');
-    if (c.shape === 'trunk' && (!orthogonal || !equal(scale[0], scale[2]))) fail('trunk needs equal radial scale');
+    if (c.shape === 'trunk' && !equal(scale[0], scale[2])) fail('trunk needs equal radial scale');
+    checked.push(basis);
   }
+  return checked;
 }
 
 type Basis = readonly [Vec3, Vec3, Vec3];

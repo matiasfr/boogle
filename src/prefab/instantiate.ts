@@ -31,8 +31,6 @@ export const workshopChair = room.placements[0]!;
 for (const name of names.builders)
   if (!builders.has(name as BuilderName)) throw new Error(`prefabs: missing builder ${name}`);
 const euler = (v: Vec3 = [0, 0, 0]) => new THREE.Euler(v[1], v[0], v[2], 'YXZ');
-const rounded = (v: THREE.Vector3) =>
-  v.set(...(v.toArray().map((n) => Math.round(n * 1e4) / 1e4) as [number, number, number]));
 
 export function instantiate(
   key: PrefabKey,
@@ -72,32 +70,31 @@ export function instantiate(
   owner.root.updateWorldMatrix(true, false);
   const matrixWorld = new THREE.Matrix4().multiplyMatrices(owner.root.matrixWorld, localMatrix);
   const e = matrixWorld.elements;
-  validateColliderWorldTransforms(def.colliders, [
+  const colliderBases = validateColliderWorldTransforms(def.colliders, [
     [
       [e[0]!, e[1]!, e[2]!],
       [e[4]!, e[5]!, e[6]!],
       [e[8]!, e[9]!, e[10]!],
     ],
   ]);
-  const scale = new THREE.Vector3(),
-    rotation = new THREE.Quaternion();
-  matrixWorld.decompose(new THREE.Vector3(), rotation, scale);
-  // Combine record coordinates in the author's frame before adding the room's full-precision ground height.
-  // That preserves today's literal addition order, including the chair's z=1.4 exit.
-  const world = (at: Vec3) => {
-    const local = rounded(new THREE.Vector3().fromArray(at).applyMatrix4(localMatrix));
-    return owner.root.localToWorld(local);
-  };
+  // Compose in full precision. The final world frame already preserves the chair golden's literal values.
+  const world = (at: Vec3) => new THREE.Vector3().fromArray(at).applyMatrix4(matrixWorld);
   const pose = (at: Vec3, yaw: number) => {
     const p = world(at);
     const facing = new THREE.Vector3(0, 0, 1)
       .applyQuaternion(new THREE.Quaternion().setFromEuler(euler([yaw, 0, 0])))
-      .applyQuaternion(rotation);
+      .transformDirection(matrixWorld);
     return { x: p.x, y: p.y, z: p.z, yaw: Math.atan2(facing.x, facing.z) };
   };
   const recipes: { shape: Shape; at: THREE.Vector3; q?: THREE.Quaternion; group?: number }[] = [];
-  for (const c of def.colliders) {
-    const q = rotation.clone().multiply(new THREE.Quaternion().setFromEuler(euler(c.rot)));
+  for (const [i, c] of def.colliders.entries()) {
+    // Use the checked collider basis itself: rotations can permute unequal world-axis lengths.
+    const [x, y, z] = colliderBases[i]!;
+    const q = new THREE.Quaternion(),
+      scale = new THREE.Vector3();
+    new THREE.Matrix4()
+      .set(x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, 0, 0, 0, 1)
+      .decompose(new THREE.Vector3(), q, scale);
     const add = (shape: Shape, at = c.at) =>
       recipes.push({
         shape,
@@ -120,7 +117,10 @@ export function instantiate(
         throw new Error('prefabs: capsule implementation awaits an authored user');
     }
   }
+  let enabled = false,
+    disposed = false;
   const root = new THREE.Group();
+  root.visible = enabled;
   root.position.fromArray(placement.pos);
   root.rotation.copy(euler(placement.rot));
   root.scale.fromArray(placement.scale ?? [1, 1, 1]);
@@ -148,8 +148,6 @@ export function instantiate(
     seats.push(seat);
     unseats.push(registerSeat(seat));
   }
-  let enabled = false,
-    disposed = false;
   function setEnabled(on: boolean) {
     if (disposed || on === enabled) return;
     enabled = on;
