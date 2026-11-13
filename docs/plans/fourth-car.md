@@ -223,13 +223,20 @@ Rules steps: an opus implementer each, then one independent reviewer for R1 and 
       the same tick as one at a halt, so the test counts arrivals at halts only (no tick moved, the assert unchanged).
       The cycle and headway ticks did not move. `npm run level-check`: 0 problems, "stop at 18.25" ok; `npm run loop
       -- run`: 1 to 4 players finish. Rail map regenerated (two figures).
-- [ ] **R3. The server path (rules, tests only).** Edit `server/test/railway-steel-host.test.ts`, no new file. (a) Its
+- [x] **R3. The server path (rules, tests only).** Edit `server/test/railway-steel-host.test.ts`, no new file. (a) Its
       install case (`:212`, a real `r:edit`) runs the host on until a line 2 train stands at the Village and asserts
       the replicated row wears boiler 1 and that a joiner's snapshot has it: the one fact the car is drawn from. (b) A
       rider's `rail.call` with `train` set, sent as a real `r:edit` from the steel car's deck on the wagon's train
       (11.1 m behind the pose, standing): accepted; from 22 m behind: refused. **No new op exists in this plan;** these
       are the two server paths it leans on. Also the P2 leftover in the same file only if it is one line (the guard
       test's baseline); otherwise leave it.
+      *As built (12 November):* (a) the host helper gained `connect` (a client's mirror fed from the host's packets);
+      the install case runs on to a line 2 train standing fitted at the Village, its replicated row and a late
+      joiner's whole snapshot wear boiler 1, every line 2 row the host's. (b) a new case in the same file: the wagon's
+      train stands fitted at the Village, a request halt picked from the catalog (the Quarry, up), a rider 22 m
+      straight back from the pose refused, at 11.1 m accepted (positions in whole cm, as a client sends them: a float
+      `at` is refused before the reach). 11.1 m alone would pass on v32's span too; the span's edge is
+      `test/railway-placement.test.ts`'s. The P2 leftover was not one line: left.
 - [ ] **V1. The car on the train (view; fable).** Edit `src/entities/railway/train-view.ts`, `car-kit.ts` or
       `src/render/wagon-look.ts` for the look. One steel car a line 2 slot (five), built as the wagon's car is
       (`rail.makeCar(STEEL_CAR, ...)`, `platform.id = railway:train${slot}-steel`, `shared`, `speedLimit` 30), a
