@@ -259,18 +259,18 @@ function refresh() {
   const act = snap.cat === 'whistle' ? 'hear' : part.tryable || landing ? 'try' : 'none';
   els.btn.dataset.act = act;
   els.btn.hidden = act === 'none';
-  // The Install's own words where this post can install; "Installed" lands with the whistle.
+  // The Install's own words where this post can install; "Installed" lands with the hit, as the tile's pill turns.
   const install = landing || (snap.canInstall && snap.sel === 'long');
   const text =
     act === 'hear'
       ? 'Hear it'
       : landing
-        ? snap.ms >= MOMENT.whistle
+        ? snap.ms >= MOMENT.hit
           ? 'Installed'
           : 'Install'
         : busy
           ? 'Trying it on'
-          : snap.phase === 'holding'
+          : snap.phase === 'holding' && snap.held
             ? 'Keep holding'
             : install
               ? 'Install'

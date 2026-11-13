@@ -92,6 +92,12 @@ void (async () => {
   if (opened.sel !== 'long' || !opened.canInstall)
     throw new Error('install: it did not open on the Longer boiler, ready');
   await wait(900); // the camera's glide
+  // `&dwell=<ms>` waits in the open garage first: a player reading the panel before they hold.
+  const dwell = Number(new URLSearchParams(location.search).get('dwell'));
+  if (dwell) {
+    await wait(dwell);
+    say(`dwelt ${dwell} ms in the garage`);
+  }
   if (step !== 'prompt') {
     // A tap installs nothing.
     triggerAction('interact', 'down');

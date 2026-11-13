@@ -55,6 +55,8 @@ const LEG = { h: 0.5 } as const;
 const ARM_RATE = { swing: 1.5, follow: 9 } as const;
 /** Around the copy's boxes a player counts as in the way (their body's radius and a little). */
 const CLEAR = 0.55;
+/** A part hanging for the server's answer rises this far over the designed hang, clear of the boiler that is on. */
+const HANG_CLEAR = 0.9;
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 const backOut = (t: number) => 1 + 2.7 * (t - 1) ** 3 + 1.7 * (t - 1) ** 2;
@@ -300,7 +302,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     // part hangs for the server's answer, `sinceCommit` the wall time the answer has taken (ms).
     real = false,
     waiting = false,
-    sinceCommit = 0;
+    sinceCommit = 0,
+    hangUp = 0; // m the waiting part has risen over the designed hang
   /** The Longer boiler can go on for real from this post now. */
   const canInstall = () =>
     deps.installHere && facts.steelHome && !facts.longFitted && !facts.tableBusy && facts.boilerFitted;
@@ -552,6 +555,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     real = canInstall();
     waiting = real;
     sinceCommit = 0;
+    hangUp = 0;
     if (real && !deps.install(facts.boilerRev)) deny();
   }
   /** No answer, a refusal or a lost connection: the part lowers to its stand and the hold can be made again at once. */
@@ -605,26 +609,32 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     }
     const before = ms;
     ms += dt * 1000;
-    if (waiting) {
+    // A real install drops only with the server's answer and with the engine back at the opening pose (a hold that
+    // began with the table turned: the deck is bringing it home).
+    const offPose = real && !hit && Math.abs(wrap(turnYaw)) > 0.02;
+    if (waiting || offPose) {
       // The clock runs through the designed quiet and holds at its end: an answer inside 180 ms costs nothing.
-      sinceCommit += dt * 1000;
-      if (sinceCommit >= MOMENT.answerBy || !deps.online()) return deny();
+      if (waiting) sinceCommit += dt * 1000;
+      if (waiting && (sinceCommit >= MOMENT.answerBy || !deps.online())) return deny();
       if (ms >= MOMENT.quiet) {
         ms = MOMENT.quiet - 0.001;
-        // Held, not frozen: a slow sway on the hook.
+        // Held, not frozen: it rises clear of the boiler that is on (hanging at the designed 0.6 m it sits in the
+        // old barrel and reads as fitted) and sways slowly on the hook.
+        hangUp = Math.min(HANG_CLEAR, hangUp + dt * 3);
         placePart(1, 0);
-        partGroup.position.y += 0.06;
+        partGroup.position.y += 0.06 + hangUp;
         if (!reducedMotion) partGroup.rotation.z = Math.sin(sinceCommit / 260) * 0.035;
         return;
       }
     }
+    hangUp = Math.max(0, hangUp - dt * 9);
     const at = (t: number) => before < t && ms >= t;
     const c = ms;
     // c+0..180 hangs 6 cm up; 180..320 the drop.
     if (c < MOMENT.hit) {
       const drop = clamp01((c - MOMENT.quiet) / MOMENT.drop);
       placePart(1, drop * drop);
-      partGroup.position.y += c < MOMENT.quiet ? 0.06 * smooth(c / 120) : 0;
+      partGroup.position.y += (c < MOMENT.quiet ? 0.06 * smooth(c / 120) : 0) + hangUp;
       if (at(MOMENT.quiet)) cordPull(stand.x, stand.z);
     }
     if (at(MOMENT.hit)) {
@@ -754,7 +764,10 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     }
 
     // The table: it turns slowly; stops with a hold; a full show-off turn after the whistle.
-    const turns = open && CAMS[cat].turns && phase !== 'holding' && phase !== 'moment' && !reducedMotion;
+    // With the Longer boiler chosen and ready to install the engine stays at the opening pose, where the install is
+    // in clear view left of the panel: no idle turn, and a table already turned comes home (through the hold too).
+    const poised = sel === 'long' && (real || canInstall());
+    const turns = open && CAMS[cat].turns && phase !== 'holding' && phase !== 'moment' && !reducedMotion && !poised;
     if (showTurn >= 0) {
       showTurn += dt / 2.2;
       turnYaw = smooth(clamp01(showTurn)) * TAU;
@@ -763,7 +776,10 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
         turnYaw = 0;
       }
     } else if (turns) turnYaw = (turnYaw + dt * rad(6)) % TAU;
-    else if (!CAMS[cat].turns && phase === 'idle') turnYaw -= turnYaw * Math.min(1, dt * 3);
+    else if (poised && open) {
+      const home = wrap(turnYaw);
+      turnYaw = Math.abs(home) <= DECK_RATE * dt || reducedMotion ? 0 : home - Math.sign(home) * DECK_RATE * dt;
+    } else if (!CAMS[cat].turns && phase === 'idle') turnYaw -= turnYaw * Math.min(1, dt * 3);
     if (!open) turnYaw = 0;
     // The deck carries the copy to the garage's pose and back at the table's own rate; once there it follows exactly.
     const target = open ? baseYaw() + turnYaw : restPose;
@@ -818,8 +834,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       openT > 0 &&
       sel === 'long' &&
       (!facts.longFitted || (real && !hit)) &&
-      !trying &&
-      (phase === 'idle' || phase === 'holding' || phase === 'undo');
+      // The seat's ghost stays under a part that hangs for the server's answer: it is not on yet.
+      ((!trying && (phase === 'idle' || phase === 'holding' || phase === 'undo')) || (real && !hit));
     ghost.visible = want;
     if (want) {
       ghostT = Math.min(1, ghostT + dt / 0.22);
@@ -897,6 +913,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
         ring,
         ms,
         trying,
+        held: holding,
         real,
         waiting,
         canInstall: canInstall(),

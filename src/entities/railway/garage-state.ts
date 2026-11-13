@@ -34,6 +34,8 @@ export type GarageSnap = {
   ms: number;
   /** A part is on the works copy for a Try it, or going on for real. */
   trying: boolean;
+  /** The hold's press is down (false while the ring drains: let go, or the part lowering after a refusal). */
+  held: boolean;
   /** This moment is an install sent to the server (not a Try it). */
   real: boolean;
   /** The part hangs over its seat waiting for the server's answer. */

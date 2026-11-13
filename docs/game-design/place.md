@@ -802,9 +802,10 @@ Boiler "Replaced". **The Install (G3, 12 November):** at today's table the garag
 plain post, its bar and its "Install the longer boiler" prompt are gone there (they remain only under `?home=b`). With
 steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
 for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go
-lowers it. The completed hold sends the install and the barrel hangs over its seat, swaying, the button's ring
-breathing, until the server answers; then it drops, clanks, the bolts go on as the rows count to their new numbers,
-steam, the wheels run up, the whistle blows as the button reads "Installed", and the table turns the engine once
+lowers it. While the Longer boiler is chosen and ready the table does not turn idly: the engine stays at the opening
+pose. The completed hold sends the install and the barrel hangs high over its seat and the ghost, swaying, the button's ring
+breathing, until the server answers; then it drops, clanks, the button reads "Installed", the bolts go on as the rows count to their new numbers,
+steam, the wheels run up, the whistle blows, and the table turns the engine once
 round. Skip is offered from 0.8 s after the commit. With no answer in 2.5 s, a refusal or a lost connection the barrel
 lowers with the deny sound and the hold can be made again at once. After it the copy wears the longer boiler, the knob
 is green, the stand is empty and the jib's arm swings back to its park. A Try it (before steel) has no whistle and no

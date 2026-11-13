@@ -276,6 +276,35 @@ the boxes arrive, the show-off turn at today's table, a second player, a phone. 
   (`ability-arrival.ts`), the last a small boiler over Buddy, which the first capture caught beside the engine.
   `npm run loop -- node install`: the cue names the garage's post; no rule changed.
 
+**After the review of G1 to G3 (12 November; no P1, one fix before shipping).**
+
+- **The engine stays at the opening pose while the Longer boiler is chosen and can be installed** (the reviewer's
+  P2-1: after 17 s in the garage the Engine category's idle turn had carried the boiler, drop and bolts under the
+  right-hand panel). No idle turn in that state; a table already turned (the player came from another tile) comes
+  home at a quarter turn a second, through the hold too, and a real install's drop waits at the quiet until it is
+  home. Looked at: `g3-dwell-install-realtime.webm` and its sheet, a 17 s wait and then the hold: the lift, drop,
+  bolts, whistle and turn all left of the panel. The come-home from a turned table was not staged.
+- **The button reads "Installed" from the hit** (it read "Install" beside an "Installed" pill until the whistle); the
+  `pop` moved with it.
+- **A part hanging for the answer rises 0.9 m over the designed hang**, clear of the boiler that is on, with the
+  seat's ghost left showing under it; at 0.6 m it sat inside the old barrel and read as fitted. **"Keep holding" is
+  shown only while the press is down**, not while the part lowers after a refusal or the timeout. Looked at
+  (`g3-timeout-realtime.webm`, the reviewer's held-back wire): the part 0.96 m higher through the wait, lowered 2.5 s
+  after the commit, the button reading "Install" on the way down.
+
+**Left for G4 or a follow-up (from the review; not built).**
+
+- A refusal runs the full 2.5 s: the adapter's correction for an unpredicted `rail.install` does not reach the view in
+  time to end the hang early.
+- A late accept, after the hang gave up, turns the tile to "Installed" with no moment.
+- A socket drop in the middle of a moment shuts the garage on the reconnect (the restore).
+- The barrel may blink off its stand for a frame after a deny.
+- The phone frame (440 by 796): Install can be reached, but only the ghost boiler and the buffer show; it wants a
+  portrait camera row. A real touch hold is untested.
+- "Look at the engine" is the post's prompt even with the boiler ready to install: suspect copy for the owner.
+- The framing ruled as built: the barrel's nose in the lower left, the player and post before the front wheels, the
+  pallet's band, the barrel passing the camera in the lift. For G4 or the flip.
+
 ## 6. Steps
 
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and
