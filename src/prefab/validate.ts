@@ -41,26 +41,47 @@ function known(value: unknown, choices: readonly string[]) {
 // Local matrix decomposition introduces a few ulps even for authored unit scales. Reject real distortion,
 // not those representation errors; compiler and runtime use the same relative comparison.
 const SCALE_RELATIVE_TOLERANCE = 1e-9;
-export function validateColliderScale(colliders: readonly ColliderDef[], scale: Vec3): void {
-  vec(scale, true);
+export function validateColliderWorldTransforms(colliders: readonly ColliderDef[], chain: readonly Basis[]): void {
   const equal = (a: number, b: number) =>
     Math.abs(a - b) <= SCALE_RELATIVE_TOLERANCE * Math.max(Math.abs(a), Math.abs(b));
-  const uniform = equal(scale[0], scale[1]) && equal(scale[0], scale[2]) && equal(scale[1], scale[2]);
+  let world: Basis = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+  ];
+  for (const basis of chain) world = composeBasis(world, basis);
   for (const c of colliders) {
-    if (c.rot && !uniform) fail('rotated collider under nonuniform scale');
+    // The sole physical rule: owner/parents, placement and collider are composed BEFORE testing support.
+    const basis = composeBasis(world, placementBasis({ rot: c.rot }));
+    const scale: Vec3 = [Math.hypot(...basis[0]), Math.hypot(...basis[1]), Math.hypot(...basis[2])];
+    vec(scale, true);
+    const unit = basis.map((axis, i) => axis.map((n) => n / scale[i]!)) as unknown as Basis;
+    const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    const determinant =
+      unit[0][0] * (unit[1][1] * unit[2][2] - unit[1][2] * unit[2][1]) -
+      unit[1][0] * (unit[0][1] * unit[2][2] - unit[0][2] * unit[2][1]) +
+      unit[2][0] * (unit[0][1] * unit[1][2] - unit[0][2] * unit[1][1]);
+    if (determinant <= 0) fail('non-positive collider world scale');
+    const orthogonal =
+      Math.abs(dot(unit[0], unit[1])) <= SCALE_RELATIVE_TOLERANCE &&
+      Math.abs(dot(unit[0], unit[2])) <= SCALE_RELATIVE_TOLERANCE &&
+      Math.abs(dot(unit[1], unit[2])) <= SCALE_RELATIVE_TOLERANCE;
+    const uniform = orthogonal && equal(scale[0], scale[1]) && equal(scale[0], scale[2]) && equal(scale[1], scale[2]);
+    if (c.rot?.some((n) => n !== 0) && !uniform) fail('rotated collider under nonuniform world scale');
     if (c.shape === 'sphere' && !uniform) fail('sphere needs uniform scale');
-    if (c.shape === 'trunk' && !equal(scale[0], scale[2])) fail('trunk needs equal radial scale');
+    if (c.shape === 'trunk' && (!orthogonal || !equal(scale[0], scale[2]))) fail('trunk needs equal radial scale');
   }
 }
 
 type Basis = readonly [Vec3, Vec3, Vec3];
+const composeBasis = (a: Basis, b: Basis): Basis => [applyBasis(a, b[0]), applyBasis(a, b[1]), applyBasis(a, b[2])];
 const applyBasis = (b: Basis, v: Vec3): Vec3 => [
   b[0][0] * v[0] + b[1][0] * v[1] + b[2][0] * v[2],
   b[0][1] * v[0] + b[1][1] * v[1] + b[2][1] * v[2],
   b[0][2] * v[0] + b[1][2] * v[1] + b[2][2] * v[2],
 ];
 /** YXZ columns, purely numeric: build validation composes the same parent transforms as the runtime. */
-function placementBasis(p: Placement): Basis {
+function placementBasis(p: Pick<Placement, 'rot' | 'scale'>): Basis {
   const [yaw, pitch, roll] = p.rot ?? [0, 0, 0],
     [sx, sy, sz] = p.scale ?? [1, 1, 1];
   const rotate = ([x, y, z]: Vec3): Vec3 => {
@@ -183,6 +204,21 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
   if (p.material !== undefined) known(p.material, registry.materials);
   if (p.components !== undefined && Object.keys(object(p.components)).length) fail('v1 has no component initializers');
 }
+/** Structure only: a placement's physical scale cannot be judged without its actual parent/owner frame. */
+export function validatePlacement(
+  value: unknown,
+  prefabs: Readonly<Record<string, PrefabDef>>,
+): asserts value is Placement {
+  validateJson(value);
+  const p = object(value);
+  text(p.id);
+  if (!Object.hasOwn(prefabs, text(p.prefab))) fail(`unknown prefab ${String(p.prefab)}`);
+  vec(p.pos);
+  if (p.rot !== undefined) vec(p.rot);
+  if (p.scale !== undefined) vec(p.scale, true);
+  if (p.params !== undefined) object(p.params);
+  if (p.parent !== undefined) text(p.parent);
+}
 export function validateLevel(value: unknown, prefabs: Readonly<Record<string, PrefabDef>>): asserts value is LevelDef {
   validateJson(value);
   const level = object(value);
@@ -190,16 +226,10 @@ export function validateLevel(value: unknown, prefabs: Readonly<Record<string, P
   const placements = list(level.placements),
     ids = new Set<string>();
   for (const value of placements) {
-    const p = object(value),
-      id = text(p.id);
+    validatePlacement(value, prefabs);
+    const id = value.id;
     if (ids.has(id)) fail(`duplicate id ${id}`);
     ids.add(id);
-    if (!Object.hasOwn(prefabs, text(p.prefab))) fail(`unknown prefab ${String(p.prefab)}`);
-    vec(p.pos);
-    if (p.rot !== undefined) vec(p.rot);
-    if (p.scale !== undefined) vec(p.scale, true);
-    if (p.params !== undefined) object(p.params);
-    if (p.parent !== undefined) text(p.parent);
   }
   const parents = new Map(
     placements.map((p) => {
@@ -219,26 +249,17 @@ export function validateLevel(value: unknown, prefabs: Readonly<Record<string, P
   }
   // Parent references are now known and acyclic. Include their authored scale and rotation in each check.
   const byId = new Map((placements as Placement[]).map((p) => [p.id, p]));
-  const bases = new Map<string, Basis>();
-  const worldBasis = (id: string): Basis => {
-    const cached = bases.get(id);
+  const chains = new Map<string, readonly Basis[]>();
+  const worldChain = (id: string): readonly Basis[] => {
+    const cached = chains.get(id);
     if (cached) return cached;
     const p = byId.get(id)!;
-    let basis = placementBasis(p);
-    if (p.parent) {
-      const parent = worldBasis(p.parent);
-      basis = [applyBasis(parent, basis[0]), applyBasis(parent, basis[1]), applyBasis(parent, basis[2])];
-    }
-    bases.set(id, basis);
-    return basis;
+    const chain = [...(p.parent ? worldChain(p.parent) : []), placementBasis(p)];
+    chains.set(id, chain);
+    return chain;
   };
   for (const p of byId.values()) {
-    const basis = worldBasis(p.id);
-    validateColliderScale(prefabs[p.prefab]!.colliders, [
-      Math.hypot(...basis[0]),
-      Math.hypot(...basis[1]),
-      Math.hypot(...basis[2]),
-    ]);
+    validateColliderWorldTransforms(prefabs[p.prefab]!.colliders, worldChain(p.id));
   }
 }
 function header(value: unknown, format: string) {

@@ -20,9 +20,11 @@ import {
   validateLevel,
   validateLevelArtifact,
   validatePrefab,
-  validateColliderScale,
+  validateColliderWorldTransforms,
+  validatePlacement,
 } from '../src/prefab/validate.ts';
-import type { Placement, PrefabArtifact } from '../src/prefab/types.ts';
+import type { Placement, PrefabArtifact, PrefabDef, Vec3 } from '../src/prefab/types.ts';
+import { compile } from '../dev/prefab/compiler.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 
@@ -66,7 +68,8 @@ export function captureWorkshop() {
     workshop,
     names,
     validateArtifact,
-    validateColliderScale,
+    validateColliderWorldTransforms,
+    validatePlacement,
     validatePrefab,
     validateLevel,
     validateLevelArtifact,
@@ -171,7 +174,8 @@ function runtimeHarness() {
       workshop,
       names,
       validateArtifact,
-      validateColliderScale,
+      validateColliderWorldTransforms,
+      validatePlacement,
       validateLevel,
       validateLevelArtifact,
       validatePrefab,
@@ -300,3 +304,122 @@ test('re-review: runtime refuses gates inherited through the prototype', () => {
     h.owner.dispose();
   }
 });
+
+type WorldTransformCase = {
+  name: string;
+  allowed: boolean;
+  parentScale?: Vec3;
+  parentRot?: Vec3;
+  placementScale?: Vec3;
+  placementRot?: Vec3;
+  colliderRot?: Vec3;
+  nonuniform?: true;
+};
+const worldTransformCases: WorldTransformCase[] = [
+  { name: 'unrotated collider with nonuniform scale', allowed: true, placementScale: [2, 1, 1] },
+  {
+    name: 'rotated collider with uniform scales at every level',
+    allowed: true,
+    parentScale: [2, 2, 2],
+    placementScale: [3, 3, 3],
+    parentRot: [0.2, 0.4, 0.1],
+    placementRot: [0.1, 0.3, 0.2],
+    colliderRot: [0.3, 0.2, 0.1],
+  },
+  {
+    name: 'compensating owner and placement scales',
+    allowed: true,
+    parentScale: [0.5, 1, 1],
+    placementScale: [2, 1, 1],
+    colliderRot: [0.3, 0, 0],
+  },
+  {
+    name: 'rotated collider with nonuniform world scale',
+    allowed: false,
+    placementScale: [2, 1, 1],
+    colliderRot: [0.3, 0, 0],
+    nonuniform: true,
+  },
+  { name: 'rotation only on placement', allowed: true, placementRot: [0, 0.7, 0] },
+  { name: 'rotation only on parent', allowed: true, parentRot: [0.2, 0.4, 0.1] },
+  { name: 'rotation only on collider', allowed: true, colliderRot: [0.3, 0, 0] },
+  { name: 'negative placement scale', allowed: false, placementScale: [-1, 1, 1] },
+  { name: 'zero placement scale', allowed: false, placementScale: [0, 1, 1] },
+  { name: 'previous decomposition roundoff', allowed: true, placementRot: [0, 0.7, 0], colliderRot: [0.3, 0, 0] },
+  { name: 'negative owner scale', allowed: false, parentScale: [-1, 1, 1] },
+  { name: 'zero owner scale', allowed: false, parentScale: [0, 1, 1] },
+  {
+    name: 'explicitly unrotated collider with nonuniform scale',
+    allowed: true,
+    placementScale: [2, 1, 1],
+    colliderRot: [0, 0, 0],
+  },
+  {
+    name: 'nonuniform scale inherited from owner',
+    allowed: false,
+    parentScale: [2, 1, 1],
+    colliderRot: [0.3, 0, 0],
+    nonuniform: true,
+  },
+];
+for (const row of worldTransformCases)
+  test(`world-transform table: ${row.name}`, () => {
+    const h = runtimeHarness();
+    const record = h.data.prefabs['town.workshop-chair']!;
+    record.colliders = [
+      { shape: 'box', at: [0, 0, 0], half: [1, 1, 1], ...(row.colliderRot ? { rot: row.colliderRot } : {}) },
+    ];
+    const frame: PrefabDef = { key: 'town.frame', visual: { none: true }, colliders: [], scope: 'owner' };
+    const parent: Placement = {
+      id: 'frame',
+      prefab: frame.key,
+      pos: [0, 0, 0],
+      ...(row.parentScale ? { scale: row.parentScale } : {}),
+      ...(row.parentRot ? { rot: row.parentRot } : {}),
+    };
+    const placement: Placement = {
+      ...h.placement,
+      ...(row.placementScale ? { scale: row.placementScale } : {}),
+      ...(row.placementRot ? { rot: row.placementRot } : {}),
+    };
+    h.owner.root.scale.fromArray(row.parentScale ?? [1, 1, 1]);
+    const rot = row.parentRot ?? [0, 0, 0];
+    h.owner.root.rotation.set(rot[1], rot[0], rot[2], 'YXZ');
+    const errorOf = (run: () => unknown): string | null => {
+      try {
+        run();
+        return null;
+      } catch (error) {
+        assert.ok(error instanceof Error);
+        return error.message;
+      }
+    };
+    try {
+      const buildError = errorOf(() =>
+        compile([record, frame], [{ place: 'scale-table', placements: [parent, { ...placement, parent: parent.id }] }]),
+      );
+      const runtimeError = errorOf(() => {
+        const instance = h.spawn(placement);
+        instance.setEnabled(true);
+      });
+      assert.equal(buildError === null, row.allowed, `build: ${buildError}`);
+      assert.equal(runtimeError === null, row.allowed, `runtime: ${runtimeError}`);
+      if (row.nonuniform) {
+        assert.match(buildError!, /nonuniform world scale/);
+        assert.equal(runtimeError, buildError, 'build and runtime must reject with the same physical rule');
+      }
+      if (row.allowed) {
+        assert.equal(h.active.size, 1);
+        assert.equal(h.seats.length, 1);
+      } else {
+        assert.equal(h.allocations, 0);
+        assert.equal(h.owner.root.children.length, 0);
+        assert.equal(h.active.size, 0);
+        assert.equal(h.seats.length, 0);
+      }
+    } finally {
+      h.owner.dispose();
+    }
+    assert.equal(h.active.size, 0);
+    assert.equal(h.seats.length, 0);
+  });

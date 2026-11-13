@@ -9,9 +9,9 @@ import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
 import {
   validateArtifact,
   validateLevelArtifact,
-  validateLevel,
+  validatePlacement,
   validatePrefab,
-  validateColliderScale,
+  validateColliderWorldTransforms,
 } from './validate.ts';
 import './builders/seat-chair.ts';
 import { builders } from './builders.ts';
@@ -47,7 +47,7 @@ export function instantiate(
   const def = compiled.prefabs[key];
   if (!def || placement.prefab !== key) throw new Error(`prefabs: unknown or mismatched prefab ${key}`);
   validatePrefab(def);
-  validateLevel({ place: 'runtime', placements: [placement] }, compiled.prefabs);
+  validatePlacement(placement, compiled.prefabs);
   // These fields have no authored users yet. Fail closed until their conversion step provides the implementation.
   if ('asset' in def.visual || ('batch' in def.visual && def.visual.batch) || def.material)
     throw new Error('prefabs: asset, batch and material implementations await their conversion steps');
@@ -63,22 +63,29 @@ export function instantiate(
       gates.set(interaction.at, gate);
     }
   }
-  const root = new THREE.Group();
-  root.position.fromArray(placement.pos);
-  root.rotation.copy(euler(placement.rot));
-  root.scale.fromArray(placement.scale ?? [1, 1, 1]);
-  // Preflight world transforms and all collider recipes while detached, before allocating a visual or owning it.
-  root.updateMatrix();
+  // Preflight the ACTUAL owner + placement world frame, before allocating a root, visual, seat or body.
+  const localMatrix = new THREE.Matrix4().compose(
+    new THREE.Vector3().fromArray(placement.pos),
+    new THREE.Quaternion().setFromEuler(euler(placement.rot)),
+    new THREE.Vector3().fromArray(placement.scale ?? [1, 1, 1]),
+  );
   owner.root.updateWorldMatrix(true, false);
-  const matrixWorld = new THREE.Matrix4().multiplyMatrices(owner.root.matrixWorld, root.matrix);
+  const matrixWorld = new THREE.Matrix4().multiplyMatrices(owner.root.matrixWorld, localMatrix);
+  const e = matrixWorld.elements;
+  validateColliderWorldTransforms(def.colliders, [
+    [
+      [e[0]!, e[1]!, e[2]!],
+      [e[4]!, e[5]!, e[6]!],
+      [e[8]!, e[9]!, e[10]!],
+    ],
+  ]);
   const scale = new THREE.Vector3(),
     rotation = new THREE.Quaternion();
   matrixWorld.decompose(new THREE.Vector3(), rotation, scale);
-  validateColliderScale(def.colliders, [scale.x, scale.y, scale.z]);
   // Combine record coordinates in the author's frame before adding the room's full-precision ground height.
   // That preserves today's literal addition order, including the chair's z=1.4 exit.
   const world = (at: Vec3) => {
-    const local = rounded(new THREE.Vector3().fromArray(at).applyMatrix4(root.matrix));
+    const local = rounded(new THREE.Vector3().fromArray(at).applyMatrix4(localMatrix));
     return owner.root.localToWorld(local);
   };
   const pose = (at: Vec3, yaw: number) => {
@@ -113,6 +120,10 @@ export function instantiate(
         throw new Error('prefabs: capsule implementation awaits an authored user');
     }
   }
+  const root = new THREE.Group();
+  root.position.fromArray(placement.pos);
+  root.rotation.copy(euler(placement.rot));
+  root.scale.fromArray(placement.scale ?? [1, 1, 1]);
   if ('builder' in def.visual)
     root.add(builders.get(def.visual.builder)!({ ...def.visual.params, ...placement.params }));
   owner.add(root);
