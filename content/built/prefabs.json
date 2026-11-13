@@ -1,0 +1,68 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-prefabs",
+  "prefabs": {
+    "town.workshop-chair": {
+      "attach": {
+        "seat": {
+          "at": [
+            0,
+            1,
+            0.25
+          ],
+          "exit": [
+            0,
+            0.46,
+            1.1
+          ],
+          "kind": "seat",
+          "yaw": 0
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.275,
+            0
+          ],
+          "half": [
+            0.4,
+            0.275,
+            0.325
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            0.95,
+            -0.3
+          ],
+          "half": [
+            0.4,
+            0.4,
+            0.06
+          ],
+          "shape": "box"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "seat.sit",
+          "at": "seat",
+          "gate": "open"
+        }
+      ],
+      "key": "town.workshop-chair",
+      "scope": "owner",
+      "visual": {
+        "builder": "seat.chair",
+        "params": {}
+      }
+    }
+  },
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

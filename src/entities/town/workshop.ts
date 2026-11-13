@@ -10,7 +10,9 @@ import { flat } from '../../render/flat.ts';
 import { draw, makeSet } from '../../render/boxes.ts';
 import { ROOM_GROUP, staticBody } from '../../place/land.ts';
 import { ROOM_CAM } from './rooms.ts';
-import { kitMaterial, registerSeat, seatHeight, seatMesh } from '../railway/seat.ts';
+import { kitMaterial } from '../railway/seat.ts';
+import { createOwnedView } from '../../render/owned-view.ts';
+import { instantiate, workshopChair } from '../../prefab/instantiate.ts';
 import { workshopKit } from './workshop-kit.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Plan } from '../../place/building-plans.ts';
@@ -62,18 +64,10 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   );
   g.add(panes);
   for (const k of kit.solids) solidSpecs.push({ ...k, room: false });
-  const chair = seatMesh();
-  chair.position.set(2.7, 0, 0.3);
-  g.add(chair);
-  solidSpecs.push({ x: 2.7, y: 0.275, z: 0.3, w: 0.8, h: 0.55, d: 0.65, room: false });
-  solidSpecs.push({ x: 2.7, y: 0.95, z: 0, w: 0.8, h: 0.8, d: 0.12, room: false });
-  const unseat = registerSeat({
-    id: 'forge-workshop',
-    group: 'forge-workshop',
-    at: { x: x + 2.7, y: floor + seatHeight, z: z + 0.55, yaw: 0 },
-    exit: { x: x + 2.7, y: floor + 0.46, z: z + 1.4, yaw: 0 },
-    available: ready,
-  });
+  const chairIndex = solidSpecs.length;
+  const chairOwner = createOwnedView();
+  g.add(chairOwner.root);
+  const chair = instantiate(workshopChair.prefab, workshopChair, { owner: chairOwner, gates: { open: ready } });
   const wall = (xx: number, yy: number, zz: number, w: number, h: number, d: number) =>
     solidSpecs.push({ x: xx, y: yy, z: zz, w, h, d, room: true });
   wall(0, high / 2 - 0.5, -hd, hw * 2 + 0.4, high, 0.4);
@@ -109,7 +103,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   return {
     /** Undo everything it added (the production forge's view ends; Place's forge lives for the page). */
     dispose() {
-      unseat();
+      chairOwner.dispose();
       const i = camConstraints.indexOf(constraint);
       if (i >= 0) camConstraints.splice(i, 1);
       for (const b of bodies) removeBody(b);
@@ -131,7 +125,9 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
         wasReady = open;
         g.visible = open;
         if (open)
-          for (const s of solidSpecs) {
+          for (const [index, s] of solidSpecs.entries()) {
+            // Keep today's body insertion order: furnishing, chair, then room walls.
+            if (index === chairIndex) chair.setEnabled(true);
             const body = staticBody(
               { kind: 'box', hx: s.w / 2, hy: s.h / 2, hz: s.d / 2 },
               { x: x + s.x, y: floor + s.y, z: z + s.z },
@@ -142,6 +138,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
             bodies.push(body);
           }
         else {
+          chair.setEnabled(false);
           for (const b of bodies) removeBody(b);
           bodies.length = 0;
         }

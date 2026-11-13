@@ -70,6 +70,8 @@
     "video:changes": "node dev/video/changes.ts",
     "video:publish": "node dev/video/publish.ts",
     "assets": "node dev/assets/build.ts",
+    "prefabs": "node dev/prefab/build.ts",
+    "prefab:new": "node dev/prefab/new.ts",
     "review-card": "node scripts/review-card.ts",
     "playtest": "node dev/playtest/cli.ts",
     "device": "node dev/device/cli.ts",
