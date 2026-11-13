@@ -172,6 +172,15 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
     known(v.builder, registry.builders);
     object(v.params);
     if (v.batch !== undefined) text(v.batch);
+    if (v.instances !== undefined) {
+      if (!v.batch || !list(v.instances).length) fail('instances need a batch and at least one transform');
+      for (const value of list(v.instances)) {
+        const instance = object(value);
+        vec(instance.pos);
+        if (instance.rot !== undefined) vec(instance.rot);
+        if (instance.scale !== undefined) vec(instance.scale, true);
+      }
+    }
     if ('asset' in v || 'none' in v) fail('ambiguous visual');
   } else if (Object.hasOwn(v, 'asset')) {
     if (!Object.hasOwn(registry.assets, text(v.asset))) fail(`unknown asset ${String(v.asset)}`);
@@ -198,6 +207,26 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
         number(c.r, true);
         number(c.h, true);
         break;
+      case 'trimesh': {
+        const vertices = list(c.vertices),
+          indices = list(c.indices);
+        if (vertices.length < 9 || vertices.length % 3 || !indices.length || indices.length % 3)
+          fail('malformed trimesh arrays');
+        vertices.forEach((n) => number(n));
+        for (const i of indices)
+          if (!Number.isInteger(i) || (i as number) < 0 || (i as number) >= vertices.length / 3)
+            fail('trimesh index out of range');
+        for (let k = 0; k < indices.length; k += 3) {
+          const a = (indices[k] as number) * 3,
+            b = (indices[k + 1] as number) * 3,
+            d = (indices[k + 2] as number) * 3;
+          const u = [0, 1, 2].map((j) => (vertices[b + j] as number) - (vertices[a + j] as number));
+          const v = [0, 1, 2].map((j) => (vertices[d + j] as number) - (vertices[a + j] as number));
+          if (!Math.hypot(u[1]! * v[2]! - u[2]! * v[1]!, u[2]! * v[0]! - u[0]! * v[2]!, u[0]! * v[1]! - u[1]! * v[0]!))
+            fail('degenerate trimesh triangle');
+        }
+        break;
+      }
       default:
         fail('unknown collider');
     }
@@ -218,6 +247,8 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
         if ((a.facing as number[]).every((n) => n === 0)) fail('zero label facing');
         number(a.w, true);
         number(a.h, true);
+        if (a.posts !== undefined) known(a.posts, ['one', 'two', 'none']);
+        if ((a.facing as number[])[1] !== 0) fail('standing label needs horizontal facing');
         break;
       case 'point':
         break;
@@ -248,6 +279,14 @@ export function validatePlacement(
   if (p.scale !== undefined) vec(p.scale, true);
   if (p.params !== undefined) object(p.params);
   if (p.parent !== undefined) text(p.parent);
+  const labels = p.labels === undefined ? {} : object(p.labels);
+  const attachments = prefabs[text(p.prefab)]!.attach ?? {};
+  for (const [name, key] of Object.entries(labels)) {
+    if (attachments[name]?.kind !== 'label') fail('unknown label attachment');
+    text(key);
+  }
+  for (const [name, a] of Object.entries(attachments))
+    if (a.kind === 'label' && !Object.hasOwn(labels, name)) fail('missing label text reference');
 }
 export function validateLevel(value: unknown, prefabs: Readonly<Record<string, PrefabDef>>): asserts value is LevelDef {
   validateJson(value);
