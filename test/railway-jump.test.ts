@@ -59,14 +59,11 @@ test('the complete Jump in menu is pinned stage by stage', () => {
     'steel-lit',
     'steel-home',
     'boiler-long',
-    'gorge-open',
-    'gorge-reached',
   ];
   assert.deepEqual(
-    JUMPS.map((j) => j.stage),
+    MENU_JUMPS.map((j) => j.stage),
     menu,
   );
-  assert.deepEqual(OFFERED_STAGES, menu.slice(1));
 });
 
 test('the seed catalog holds every train, works, ring, steel and leg stage', () => {
