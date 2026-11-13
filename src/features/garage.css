@@ -381,6 +381,10 @@ body.garage-open .hud > :not(.garage-ui):not(.shot-skip-chip):not(.notify) {
   .g-where {
     display: none;
   }
+  /* Above the rail's two rows, not on its chips. */
+  .g-skip {
+    bottom: 264px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .g-row b {

@@ -17,22 +17,19 @@ import { onStart } from '../../loop.ts';
 import { me } from '../../player/player.ts';
 import { touchHold, wrapAction } from '../../player/controls.ts';
 import { dom } from '../../player/dom.ts';
-import { showMomentBanner } from '../../ui/moment-banner.ts';
+
 import { SHED_TABLE } from '../../sim/railway-works-layout.ts';
 import { STEEL } from '../../sim/railway-ring-layout.ts';
 import { LINE2 } from '../../sim/railway-lines.ts';
 import { aperture, line, shed, trains } from '../../sim/railway-rows.ts';
 import { createBoxBatch } from './works-box-view.ts';
-import { playSharedMoment } from './shared-moment.ts';
-import { garage } from './garage-state.ts';
 
 // Placeholder labels (docs/agent-calls.md; none is The Boogler's).
 const INSTALL = 'Hold: install the longer boiler',
   HOLDING = 'Keep holding',
   TAPPED = 'Hold to install',
   BUSY = 'The table’s busy',
-  NOT_NOW = 'Not now',
-  BANNER = ['Longer boiler installed', 'Line 2’s trains take it at the Village'] as const;
+  NOT_NOW = 'Not now';
 /** Seconds of hold (the garage's Large install, garage-data.ts SIZES.large.hold). */
 const HOLD_S = 1.2;
 const GREY = '#9c9ea1',
@@ -159,16 +156,10 @@ export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView, o
       }
       draw();
     },
-    /** The room's moment, from the server's accepted install on every page: a banner, and the lamp goes green with
-     * the rows. A restore or a late join gets the green lamp only. */
+    /** The server accepted the install: the prompt stops waiting; the lamp goes green with the rows. The room's
+     * moment and the banner for players away are roundhouse-view.ts's (docs/plans/garage-install-moment.md, G4). */
     accepted(e: RailwayAccepted) {
-      if (e.op !== 'rail.install') return;
-      askedUntil = 0;
-      playSharedMoment('longer boiler', e, adapter.read.pid, () => {
-        // In the garage the install is on screen; the banner is for a page that is not looking at it.
-        if (!garage.api?.isOpen()) showMomentBanner(BANNER[0], BANNER[1], 4.5);
-        return false;
-      });
+      if (e.op === 'rail.install') askedUntil = 0;
     },
     targets(): Interactable[] {
       const r = rows();

@@ -315,6 +315,11 @@ export const MOMENT = {
   skipFrom: 800,
   /** A real install hangs at `quiet` for the server's answer; this long after the commit with none, the part lowers. */
   answerBy: 2500,
+  /** Someone else's install (G4): the part lifts off its stand over this long before the same moment plays. */
+  catchUp: 400,
+  /** A tab's own install that the server accepted after its hang gave up plays the moment this far and ends: the drop,
+   * the bolts and the steam, with no whistle and no turn. */
+  briefEnd: 1950,
 } as const;
 
 /** The hold's place along the lift (0 stand, 1 hanging over the seat): the ring's value, pushed back a little in the

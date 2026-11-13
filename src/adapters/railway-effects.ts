@@ -54,6 +54,10 @@ export type RailwayCorrection = Readonly<{
   winner?: string;
 }>;
 
+/** An action that is not predicted came to nothing: the server refused it, or acknowledged it without accepting it.
+ * Local delivery only (railway-session.ts `onRefused`); nothing was shown for it, so nothing is given back. */
+export type RailwayRefusal = Readonly<{ intent: RailwayIntent; request: number; reason: 'refused' | 'noop' }>;
+
 /** What an event's own action left behind (src/world/railway-predict.ts RailEffect): several events can share one
  * packet, so effects read these rather than the packet's final state. */
 export const effectOf = (v: Record<string, unknown>) => {

@@ -305,6 +305,92 @@ the boxes arrive, the show-off turn at today's table, a second player, a phone. 
 - The framing ruled as built: the barrel's nose in the lower left, the player and post before the front wheels, the
   pallet's band, the barrel passing the camera in the lift. For G4 or the flip.
 
+<a id="g4-as-built-12-november-2026"></a>
+
+### G4 as built (12 November 2026)
+
+- **Everyone else's moment.** `garage-view.ts` `accepted(own)`: this tab's hold, still hanging, drops as before;
+  anything else is watched (`watch`). Whatever this tab was trying is dropped, the part lifts off its stand in
+  `MOMENT.catchUp` (0.4 s) and the same moment plays: in the garage on the garage's camera with Back live, or with the
+  garage shut out in the world, the copy turning about its rest for the show-off. A watched moment is never `mine`:
+  no skip chip, no lock, and leaving the garage lets it play on in the world. The whistle's hearing range is 400 m.
+- **The banner moved** to `roundhouse-view.ts` with the shared-moment mark: a page gets it only when its garage is
+  shut and its player is more than 30 m from the table.
+- **A refusal comes back at once.** Why it did not: the adapter's corrections are made only for predicted actions
+  (something shown to give back), and `rail.install` is not predicted, so a refusal settled in silence and the view
+  waited out its 2.5 s. `railway-session.ts` now has `onRefused`: an action that is not predicted and was refused, or
+  acknowledged with no accepted event of yours in the packet. Local delivery only, in `src/adapters`; no wire, sim or
+  server change. Staged out of reach: the part lowered 32 ms after the commit, and the retry installed.
+- **A late accept** (after the hang gave up) plays the brief version: the catch-up lift, the drop, the bolts and the
+  steam, ending at c+1950 with no whistle and no turn. Staged with the wire held back 3.5 s: seen in the rows of the
+  run's log and its sheet.
+- **A restore no longer shuts the garage.** An install in the air is settled by the rows on the next frame (fitted:
+  the copy wears it; not: the part is back on its stand). Staged: a socket dropped during the hang, the garage still
+  open 5.5 s later and the retry installing. A drop after the accept, mid-moment, was not staged.
+- **The barrel's blink after a deny** was real: the lowering ended a frame before the idle rule put the part back on
+  its stand. It is placed there in the same frame now.
+- **The race.** Two tabs holding from the same server tick: the winner's moment is `mine`; the loser's hang is refused
+  (the deny sound plays), then the winner's accept arrives and the loser watches it, not `mine`, and Back left the
+  garage during it. The deny sound before the winner's moment is the one thing that does not read as "theirs".
+- **Looked at** (`dev/look/evals/garage-two.ts`, two players, real time): `g4-two-motion.png` and
+  `g4-two-realtime.webm`, the bystander's own camera 12 m east of the table: the barrel on its stand until the
+  installer's commit, then gone from the stand, the engine wearing the long boiler, turning once round between about
+  8.3 and 9.9 s, and the jib's arm swinging back to its park; the bystander's camera, position and input hold read
+  the same before and after. It is small in that frame: the table is 17 m from the camera and the timber cart stands
+  in front of the player. `p2-g4-two-still.png`, the installer's garage after: fitted, the rows in ink. Not seen: the
+  catch-up lift itself (it falls between two frames of the sheet), a watcher inside the garage, a friend on the deck
+  through the turn, sound.
+
+<a id="g5-as-built-12-november-2026"></a>
+
+### G5 as built (12 November 2026)
+
+- `train-view.ts`, per train: when its own row's `boiler` goes 0 to 1 on a frame after the view has drawn it since the
+  last restore, 18 bright steam particles at the chimney, the swap to the long body and barrel 0.4 s later with
+  `clank`, a 0.18 s squash of the engine's group, `whistle` at 1.2 s. A restore or a late join clears the memory and
+  shows the rows. No collider, seat, crew or departure-board change. Reduced motion: the swap only.
+- The puff is drawn brighter than the train's own smoke (`readableIntensity`): at plain intensity a steam-coloured
+  particle draws dark grey against the sky, which the first capture showed. The garage's own steam puffs
+  (`steamPuff`, the copy's arrival) still draw that way; left for the detail pass.
+- **Looked at** (`dev/look/evals/garage-platform.ts`; `g5-platform-realtime.webm`, `g5-platform-strip.png`, real
+  time, the Mac at load 8 to 10): the first standard-boiler train ran in 48 s after the install; standing at the
+  Village it wore the short barrel, a white puff rose at the chimney, and under it the engine was the longer one with
+  the taller chimney. **Wrong in it:** the puff sits at and above the chimney, so the barrel's swap shows beneath it
+  rather than behind it; the squash is too short to pick out at 6 frames a second; the whistle is the full 1.5 s
+  one (no short recipe, call 15). Sound was not heard. Not seen: a second player, a restore during the beat.
+
+### The phone frame (12 November 2026)
+
+Held upright (taller than 1.15 times its width) the garage uses a portrait camera row: the engine shot stands further
+back (15 m, 4.2 m up) and aims at the engine itself, so it sits whole in the band between the panel and the rail; the
+other categories pull back 1.8 times along their own line. Looked at 440 by 796 with steel home (`g-phone-still.png`):
+the engine with its ghost boiler, the post, the player and the waiting barrel's nose in the band, "Install" above
+them. Wrong in it: the timber cart is under the camera and fills the frame's foot behind the rail and the parts
+strip; the engine's nose points at the barrel, which covers the lower left. A real touch hold, the other categories
+in portrait and the moment in portrait were not looked at. Not tested on a device.
+
+### After the review of G4, G5 and the phone frame (12 November 2026)
+
+- **Portrait rows per category** (the reviewer's P1: Cars and Cargo showed only the wooden rail rack, since a
+  landscape row pulled straight back lands behind the table). Cars, Cargo and Looks have their own rows on the
+  train's open side, as the engine shot has; the Whistle keeps its landscape row pulled back. Looked at 440 by 796:
+  `g-phone-cars-still.png` (the flat car and its bench in the band, the cab at the left, the pallet at the foot),
+  `g-phone-cargo-still.png` (the car from its tail, the rail rack beyond, not in front), `g-phone-looks-still.png`
+  (the whole train in the band, the waiting barrel at the left edge, the timber cart at the foot).
+- **`onRefused` after a resync.** A refill keeps the client's ack and drops its queued events, so an accepted
+  unpredicted action read as a no-op. Refusals are now collected and delivered after the whole-state return, as
+  corrections are. `test/railway-adapter.test.ts` has the five cases (accepted never, refused once, an acknowledged
+  no-op, a predicted action never, the resync).
+- **Small ones.** In portrait the Skip chip sits above the rail. A watcher's garage takes the rail and the parts strip
+  through someone else's moment. A restore that finds the boiler fitted lets a running show-off turn finish.
+- **Left for the owner or a later pass.**
+  - The race's loser hears the deny sound and sees a second lift before the winner's moment.
+  - The platform beat's puff sits above the chimney, so the swap shows beneath it; the squash cannot be seen.
+  - The readouts pass through in-between values for a frame or two after the drop.
+  - The other player's name tag sits over the engine through a watcher's moment.
+  - One frame with the camera inside the smokebox on leaving the garage. The leave blend is the one G2 and G3
+    shipped (this branch does not touch it), so main has it by the code; it was not captured on main.
+
 ## 6. Steps
 
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and
@@ -347,7 +433,7 @@ the live install working. One proof look each; the full check, the bot and the t
       `docs/game-design/place.md` (the V3 paragraph). Proof: `npm run look -- --rail-seed steel-home --video --eval
       dev/look/evals/railway-install.ts`, read in real time: press frame, first movement, the hit against the clank,
       and the rows `Line.boiler` 1 after. **Visual review.**
-- [ ] **G4. Everyone else's moment (M).** Edit `garage-view.ts` (`accepted(false)`: any Try it or hold of this tab's
+- [x] **G4. Everyone else's moment (M).** As built: [below](#g4-as-built-12-november-2026). Edit `garage-view.ts` (`accepted(false)`: any Try it or hold of this tab's
       is dropped, the part shows at the stand, lifts in 0.4 s and the same moment plays; in the garage view on the
       garage camera with input free and Back live; out of it, in the world, with no camera constraint and sounds
       placed at the table; the whistle with the widened `hear`), `src/features/garage.ts` (`leave()` allowed when the
@@ -355,7 +441,7 @@ the live install working. One proof look each; the full check, the bot and the t
       a tab neither in the garage nor within 30 m of the table). Proof: one two-player look from `steel-home`
       (the look skill's comparison-multiplayer reference): one installs, the
       second stands 8 m off; the second page's video shows the drop and the turn with its own camera unmoved.
-- [ ] **G5. The platform beat (S).** Edit `train-view.ts`: per train, remember the last drawn `boiler`; on 0 to 1 while
+- [x] **G5. The platform beat (S).** As built: [below](#g5-as-built-12-november-2026). Edit `train-view.ts`: per train, remember the last drawn `boiler`; on 0 to 1 while
       the view has drawn that train before, emit the steam puff at the chimney, swap under it at 400 ms, `clank`, a
       180 ms squash of the engine group, `whistle` short at 1200 ms; reset the memory in `restore()`. No collider or
       seat change. Proof: `--rail-seed steel-home --video`, install by the eval, camera on the Village's line 2

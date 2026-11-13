@@ -36,6 +36,9 @@ export type GarageSnap = {
   trying: boolean;
   /** The hold's press is down (false while the ring drains: let go, or the part lowering after a refusal). */
   held: boolean;
+  /** This moment is this tab's own hold (a Try it, or its install): its camera and Back are held until it ends. A
+   * moment that is not `mine` is someone else's install, watched: nothing is taken. */
+  mine: boolean;
   /** This moment is an install sent to the server (not a Try it). */
   real: boolean;
   /** The part hangs over its seat waiting for the server's answer. */
