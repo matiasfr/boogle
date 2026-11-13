@@ -8,6 +8,7 @@ import { createService, loadConfig, type ServerConfig } from '../src/server.ts';
 import { buildSeedDoc } from '../src/seeds/build.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
+import { SeedValidationBusyError, validateSeedDoc } from '../src/seeds/validate.ts';
 
 async function start(overrides: Partial<ServerConfig> = {}, existing?: string) {
   const dataDir = existing ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-replace-')));
@@ -76,6 +77,73 @@ test('replace: rate limit runs before authentication', async () => {
   }
 });
 
+test('replace: aggregate authentication budget rejects a distributed burst before building seeds', async () => {
+  let builds = 0;
+  const s = await start({
+    replaceRatePerMin: 1,
+    jumpBuildDoc: async () => {
+      builds++;
+      throw new Error('unexpected build');
+    },
+  });
+  try {
+    const statuses: number[] = [];
+    for (let n = 1; n <= 32; n++) {
+      const response = await fetch(`${s.base}/admin/rooms/${railwayRoomId('testing')}/replace`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer wrong', 'x-forwarded-for': `192.0.2.${n}` },
+      });
+      statuses.push(response.status);
+      await response.text();
+    }
+    assert.ok(statuses.includes(429), 'aggregate budget rejects requests from distinct IPs');
+    assert.equal(builds, 0);
+    assert.equal((await s.post(body)).status, 429, 'valid keys consume the same pre-authentication budget');
+  } finally {
+    await s.svc.close();
+  }
+});
+
+test('replace: at most two authenticated rooms prepare concurrently and capacity is released on failure', async () => {
+  let builds = 0;
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const s = await start();
+  s.svc.jumps.docFor = async () => {
+    builds++;
+    await gate;
+    return { status: 500, error: 'fixture failed' };
+  };
+  const first = s.post({ stage: 'awake', confirm: 'one' }, 'advance', 'one');
+  const second = s.post({ stage: 'q1-done', confirm: 'two' }, 'advance', 'two');
+  try {
+    await until(() => builds === 2);
+    const third = s.post({ stage: 'q3-done', confirm: 'three' }, 'advance', 'three');
+    const response = await Promise.race([third, new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000))]);
+    assert.equal(response?.status, 429, 'excess work is refused without waiting for a build');
+    assert.equal(builds, 2);
+    release();
+    await Promise.all([first, second]);
+    assert.notEqual((await s.post({ stage: 'q3-done', confirm: 'three' }, 'advance', 'three')).status, 429);
+    assert.equal(builds, 3);
+  } finally {
+    release();
+    await Promise.all([first, second]);
+    await s.svc.close();
+  }
+});
+
+test('validation workers share a two-worker cap and release capacity after failure', async () => {
+  const bad = { tick: -1, data: {} };
+  const workers = [validateSeedDoc(bad), validateSeedDoc(bad)];
+  const settled = Promise.allSettled(workers);
+  await assert.rejects(validateSeedDoc(bad), SeedValidationBusyError);
+  assert.ok((await settled).every((result) => result.status === 'rejected'));
+  await assert.rejects(validateSeedDoc(bad), /invalid seed document/);
+});
+
 test('replace: seed, new birth, host record, pinned backup, restore, and earlier-stage rule', async () => {
   const seed = await buildSeedDoc('q1-done');
   const s = await start({ advanceShared: true, jumpBuildDoc: async () => seed });
@@ -93,6 +161,16 @@ test('replace: seed, new birth, host record, pinned backup, restore, and earlier
     };
     assert.equal(status.replaced.born, result.born);
     assert.equal(status.replaced.stage, 'q1-done');
+    const observer = connect(s.base, 'boogle', 'observer');
+    try {
+      await until(() => observer.messages.some((m) => m.t === 'welcome'));
+      const host = s.svc.roomHost()!.room(id)!.world as RailwayWorldHost;
+      await host.whenReady();
+      assert.deepEqual(host.status().seats, [], 'a replaced host starts with no seat occupants');
+    } finally {
+      observer.ws.close();
+    }
+    await until(() => s.svc.roomHost()!.room(id)!.status().players === 0);
     assert.equal((await s.post({ stage: 'awake', confirm: 'boogle' }, 'advance', 'boogle')).status, 409);
     const restore = await fetch(`${s.base}/admin/rooms/${id}/restore?backup=${encodeURIComponent(result.backup)}`, {
       method: 'POST',

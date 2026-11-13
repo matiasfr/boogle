@@ -142,7 +142,7 @@ export type ServerConfig = ReplaceConfig & {
 };
 
 /** Simple in-memory token bucket keyed by string. */
-function createRateLimiter({ perMinute }: { perMinute: number }) {
+function createRateLimiter({ perMinute, global = false }: { perMinute: number; global?: boolean }) {
   const buckets = new Map<string, { tokens: number; t: number }>();
   const refillPerMs = perMinute / 60000;
   const sweep = setInterval(() => {
@@ -152,7 +152,7 @@ function createRateLimiter({ perMinute }: { perMinute: number }) {
   sweep.unref();
   const middleware = (req: Request, res: Response, next: NextFunction) => {
     const now = Date.now();
-    const key = req.ip || 'unknown';
+    const key = global ? 'server' : req.ip || 'unknown';
     let b = buckets.get(key);
     if (!b) b = { tokens: perMinute, t: now };
     b.tokens = Math.min(perMinute, b.tokens + (now - b.t) * refillPerMs);
@@ -388,7 +388,10 @@ export function createService(cfg: ServerConfig) {
     roomHost: () => roomHost,
     jumps,
     replacements,
-    limit: createRateLimiter({ perMinute: cfg.replaceRatePerMin }),
+    limit: [
+      createRateLimiter({ perMinute: 24, global: true }),
+      createRateLimiter({ perMinute: cfg.replaceRatePerMin }),
+    ],
   });
 
   // ---- room sockets (./host/upgrade.ts) ----

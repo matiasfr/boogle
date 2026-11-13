@@ -9,7 +9,23 @@ import { railwayRoomId } from '../../../src/world/railway-namespace.ts';
 import type { SeedDoc } from './build.ts';
 
 export type ValidatedSeed = { tick: number; hash: number };
-export function validateSeedDoc(doc: SeedDoc): Promise<ValidatedSeed> {
+export class SeedValidationBusyError extends Error {
+  status = 429;
+  constructor() {
+    super('seed validation capacity reached');
+  }
+}
+let active = 0;
+export async function validateSeedDoc(doc: SeedDoc): Promise<ValidatedSeed> {
+  if (active >= 2) throw new SeedValidationBusyError();
+  active++;
+  try {
+    return await runWorker(doc);
+  } finally {
+    active--;
+  }
+}
+function runWorker(doc: SeedDoc): Promise<ValidatedSeed> {
   const worker = new Worker(new URL('./validate.ts', import.meta.url), {
     workerData: doc,
     resourceLimits: { maxOldGenerationSizeMb: 192 },
@@ -30,7 +46,9 @@ export function validateSeedDoc(doc: SeedDoc): Promise<ValidatedSeed> {
       finish();
       reject(new Error(`seed validator exited (${code})`));
     });
-  }).finally(() => void worker.terminate());
+  }).finally(async () => {
+    await worker.terminate();
+  });
 }
 
 async function validate(doc: SeedDoc): Promise<ValidatedSeed> {

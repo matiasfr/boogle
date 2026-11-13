@@ -7,6 +7,22 @@ import { RAILWAY_PLAY_NS } from '../../src/world/railway-namespace.ts';
 import type { RoomDoc, Store } from './store.ts';
 
 export const BACKUP_RE = /^([a-z0-9-]{1,32})@(\d{8}T\d{9}Z)\.json$/;
+
+// Every ordinary-backup creation path shares this budget. Never descend into the pinned directory.
+export async function pruneBackups(dataDir: string) {
+  const dir = path.join(dataDir, '.backups');
+  const entries = await fs.readdir(dir, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  });
+  const names = entries
+    .filter((entry) => entry.isFile() && BACKUP_RE.test(entry.name))
+    .map((entry) => entry.name)
+    .sort((a, b) => BACKUP_RE.exec(b)![2]!.localeCompare(BACKUP_RE.exec(a)![2]!) || b.localeCompare(a));
+  // Concurrent creators/pruners may already have removed an old file; each snapshot deletes only its oldest.
+  for (const name of names.slice(30)) await fs.rm(path.join(dir, name), { force: true });
+}
+
 export type ReplacementRecord = {
   stage: string;
   at: string;
@@ -105,8 +121,9 @@ export function createReplacements(
     pins,
     async release(name: string) {
       if (!BACKUP_RE.test(name)) throw new Error('invalid backup name');
-      // Releasing the pin returns it to the ordinary retention pool; it does not delete the recovery point.
+      // Releasing the pin makes it subject to the ordinary newest-30 retention pool immediately.
       await fs.rename(path.join(pinDir, name), path.join(cfg.dataDir, '.backups', name));
+      await pruneBackups(cfg.dataDir);
       cfg.log(`release: ${name}`);
     },
     async replace(id: string, doc: RoomDoc, meta: { stage: string; players: number; docHash: string }) {

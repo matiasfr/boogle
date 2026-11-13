@@ -60,7 +60,7 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 | `REPORT_TOKEN`               | unset       | Enables `GET /reports` for whoever sends this bearer token. Unset: reports are write-only (read them on the volume).                                                   |
 | `ADVANCE_KEY` | unset | Enables room replacement for this bearer only; `REPORT_TOKEN` cannot authorize it. |
 | `ADVANCE_SHARED` | off | `1` permits replacing the shared `boogle` island behind `ADVANCE_KEY`. |
-| `REPLACE_RATE_PER_MIN` | `6` | Per-IP replacement requests, checked before authentication. |
+| `REPLACE_RATE_PER_MIN` | `6` | Per-IP replacement requests; a fixed server-wide 24/minute token bucket also applies. Both run before authentication. |
 | `PLAY_RATE_PER_MIN`          | `240`       | Per-IP token bucket for `POST /playdata` (a tab sends a batch every 5 s; friends may share an IP).                                                                     |
 | `PLAY_NEW_SESSIONS_PER_HOUR` | `40`        | New sessions per IP per hour on `POST /playdata`; each page load is one.                                                                                               |
 | `PLAY_MAX_SESSION_BYTES`     | `4194304`   | Cap on one session's file (4 MB); further batches get 507.                                                                                                             |
@@ -174,17 +174,22 @@ world has a pinned recovery point too. Shutdown aborts a pending countdown befor
 
 The replacement endpoint returns 404 with no configured key; 401 for missing/wrong bearer; 400 for invalid room,
 stage or body; 403 for the shared island unless `ADVANCE_SHARED=1`; 409 for missing/wrong typed confirmation,
-an earlier recorded stage, a busy room or players present without `override: true`; 429 for the rate limit;
+an earlier recorded stage, a busy room or players present without `override: true`; 429 for the rate or capacity limits;
 503 for an unavailable seed; 422 if the target fails validation; and 500 for a failed close or write.
 Connected clients receive `{ t: 'replacing', label, seconds }` before a 10-second countdown, including clients
 joining during it. Empty rooms skip the countdown. The notification renderer and Dev dock control are separate
 client work; the room interface supplies the event and exact plan text hook.
+The server admits at most two replacement jobs at once, including preparation and countdown. Checkpoint
+validation also has a process-wide two-worker cap shared with restore; excess work gets 429 without a queue.
+Worker capacity is released only after the worker terminates, including failures and timeouts.
 
 On success the response identifies the pinned backup and restore command. Pins live under
 `DATA_DIR/.backups/pinned/` and survive normal pruning until released. The `replacements/` journal is reconciled
 at boot and before replacement: an unchanged birth means the save rename did not land; a changed birth completes
 the record. An interrupted countdown is cancelled on shutdown/restart; it never resumes a delayed replacement.
 `GET /rooms/:id/host` reports `replaced: { stage, at, born }` for the recorded replacement.
+Releasing a pin immediately applies the newest-30 ordinary-backup retention, ordered by timestamp across rooms.
+Ordinary backup creation uses the same pruning rule; other pins are never candidates for deletion.
 
 Replacement and restore abort when the current loaded host cannot produce a verified checkpoint (including fatal
 command status). An operator repairing such a room must first take it through the existing reset workflow, then

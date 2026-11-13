@@ -11,7 +11,7 @@ import type { RoomHost } from './host/rooms.ts';
 import type { Store } from './store.ts';
 import type { Jumps } from './jump.ts';
 import type { Replacements } from './replacements.ts';
-import { validateSeedDoc } from './seeds/validate.ts';
+import { SeedValidationBusyError, validateSeedDoc } from './seeds/validate.ts';
 
 export type ReplaceConfig = {
   advanceKey: string;
@@ -29,13 +29,14 @@ export function addReplace(
     roomHost: () => RoomHost | null;
     jumps: Jumps;
     replacements: Replacements;
-    limit: RequestHandler;
+    limit: RequestHandler[];
   },
 ) {
   const { store, replacements } = deps;
   let stopping = false;
   const waits = new Set<() => void>();
   const jobs = new Set<Promise<unknown>>();
+  let active = 0;
   async function wait(ms: number) {
     await new Promise<void>((resolve) => {
       const cancel = () => {
@@ -80,7 +81,9 @@ export function addReplace(
         )
           return res.status(400).json({ error: 'invalid body' });
         if (stopping) return res.status(503).json({ error: 'server stopping' });
+        if (active >= 2) return res.status(429).json({ error: 'replacement capacity reached' });
         if (!replacements.begin(id)) return res.status(409).json({ error: 'busy' });
+        active++;
         try {
           await replacements.recover(id);
           const previous = replacements.read(id);
@@ -98,7 +101,8 @@ export function addReplace(
           let validated;
           try {
             validated = await validateSeedDoc(seed);
-          } catch {
+          } catch (error) {
+            if (error instanceof SeedValidationBusyError) throw error;
             return res.status(422).json({ error: 'invalid stage checkpoint' });
           }
           if (stopping) return res.status(503).json({ error: 'server stopping' });
@@ -145,6 +149,7 @@ export function addReplace(
         } finally {
           host.room(id)?.clearReplacing();
           replacements.end(id);
+          active--;
         }
       };
       const job = run();

@@ -7,18 +7,16 @@
 //   POST /admin/rooms/:id/restore?backup=  back the save up, then put a backup (default: that room's newest) in its place
 //
 // Reset and restore take the room offline first (everyone gets `bye` and reconnects into the new world) and answer 409
-// while players are in it unless `?force=1`. Backups are `.backups/<room>@<UTC stamp>.json`; the newest KEEP stay.
+// while players are in it unless `?force=1`. Backups are `.backups/<room>@<UTC stamp>.json`; the newest 30 stay.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Express, Request, Response, NextFunction } from 'express';
 import type { RoomHost } from './host/rooms.ts';
 import type { RoomDoc, Store } from './store.ts';
 import { currentRoomId, roomNamespaces } from './room-ids.ts';
-import { BACKUP_RE, type Replacements } from './replacements.ts';
-import { validateSeedDoc } from './seeds/validate.ts';
+import { BACKUP_RE, pruneBackups, type Replacements } from './replacements.ts';
+import { SeedValidationBusyError, validateSeedDoc } from './seeds/validate.ts';
 import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
-
-const KEEP = 30;
 
 export function addAdmin(
   app: Express,
@@ -62,7 +60,7 @@ export function addAdmin(
       if (move) store.forget(id);
       return name;
     });
-    for (const old of (await backups()).slice(KEEP)) await fs.rm(path.join(dir, old.name), { force: true });
+    await pruneBackups(cfg.dataDir);
     return made;
   }
 
@@ -183,7 +181,8 @@ export function addAdmin(
         return res.status(422).json({ error: 'the backup is not a room save' });
       try {
         if (isRailwayRoom(id)) await validateSeedDoc(doc);
-      } catch {
+      } catch (error) {
+        if (error instanceof SeedValidationBusyError) throw error;
         return res.status(422).json({ error: 'the backup is not a verified room save' });
       }
       await offline(

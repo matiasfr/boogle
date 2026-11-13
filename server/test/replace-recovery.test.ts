@@ -67,6 +67,38 @@ test('reservation is process-local, pins persist until explicit release', async 
   assert.equal((await restarted.pins()).length, 0);
 });
 
+test('releasing pins enforces the ordinary newest-30 backup retention', async (t) => {
+  const { dataDir, replacements } = await fixture(t);
+  for (let n = 0; n < 31; n++) {
+    const record = await replacements.replace(id, doc(n), { stage: 'awake', players: 0, docHash: 'fixture' });
+    await replacements.release(record.backup);
+    await new Promise((resolve) => setTimeout(resolve, 2));
+  }
+  const ordinary = (await fs.readdir(path.join(dataDir, '.backups'))).filter((name) => name.endsWith('.json'));
+  assert.equal(ordinary.length, 30, 'released pins must enter the bounded retention pool immediately');
+});
+
+test('concurrent releases retain the newest timestamps across rooms and leave other pins alone', async (t) => {
+  const { dataDir, replacements } = await fixture(t);
+  const dir = path.join(dataDir, '.backups');
+  const pinDir = path.join(dir, 'pinned');
+  await fs.mkdir(pinDir, { recursive: true });
+  const names = Array.from({ length: 40 }, (_, n) => {
+    // Room sort order deliberately opposes the backup's timestamp order.
+    const room = railwayRoomId(n < 20 ? 'z-old' : 'a-new');
+    return `${room}@20261113T000000${String(n).padStart(3, '0')}Z.json`;
+  });
+  await Promise.all(names.map((name) => fs.writeFile(path.join(pinDir, name), JSON.stringify(doc(0)))));
+  const retainedPin = `${id}@20261112T000000000Z.json`;
+  await fs.writeFile(path.join(pinDir, retainedPin), JSON.stringify(doc(0)));
+  await Promise.all(names.map((name) => replacements.release(name)));
+  assert.deepEqual((await fs.readdir(dir)).filter((name) => name.endsWith('.json')).sort(), names.slice(10).sort());
+  assert.deepEqual(
+    (await replacements.pins()).map((pin) => pin.name),
+    [retainedPin],
+  );
+});
+
 test('a pinned replacement backup survives 31 ordinary backups', async (t) => {
   const { dataDir, replacements } = await fixture(t);
   const record = await replacements.replace(id, doc(3), { stage: 'ring-joined', players: 0, docHash: 'seed' });
