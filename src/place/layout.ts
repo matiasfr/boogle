@@ -528,8 +528,10 @@ export const YARD = PROPS.yard; // where the stone lands
 export const SHELF: { x: number; z: number; yaw: number; y?: number } = SHELF_B;
 /** Sleeves stands in front of the hall's north end, beside its open bay. */
 export const GREETER = PROPS.greeter;
-/** Spawn: at the village's edge, with the path, the shelf, the forge, the stub and the gorge ahead. */
-export const SPAWN = { x: -97, z: 14, yaw: -0.25 };
+/** Spawn: at the village's edge, with the path, the shelf, the forge, the stub and the gorge ahead. The yaw looks
+ * at the hall's open bay, about 21° right of Sleeves (-0.25 faced him, so Buddy stood between him and the camera):
+ * he is whole in frame beside Buddy, at phone width too. */
+export const SPAWN = { x: -97, z: 14, yaw: -0.62 };
 export const LANDING = SHORE_COAST ? SHORE_LANDING : SPAWN;
 
 // ---------------------------------------------------------------- the town's plots
