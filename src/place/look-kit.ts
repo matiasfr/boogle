@@ -243,8 +243,7 @@ export function lookTrack(set: DropSet, kinds: string[], owner: OwnedView, chunk
     if (LOOK.kit) {
       names.push(KIT_NAME[run.kind] ?? run.kind);
       list.push({ mesh: kitBatch(names[0]!, p, n, owner), inv });
-    }
-    else {
+    } else {
       const mesh = new THREE.InstancedMesh(unitBox, paint(p), n);
       mesh.castShadow = mesh.receiveShadow = true;
       list.push({ mesh, inv });
@@ -361,7 +360,8 @@ function keepParts(source: THREE.BufferGeometry, keep: (box: THREE.Box3) => bool
     root.set(k, r);
     return r;
   };
-  const key = (i: number) => `${position.getX(i).toFixed(4)},${position.getY(i).toFixed(4)},${position.getZ(i).toFixed(4)}`;
+  const key = (i: number) =>
+    `${position.getX(i).toFixed(4)},${position.getY(i).toFixed(4)},${position.getZ(i).toFixed(4)}`;
   for (let t = 0; t < index.length; t += 3) {
     const a = find(key(index[t]!));
     for (const o of [1, 2]) root.set(find(key(index[t + o]!)), a);
@@ -598,6 +598,7 @@ const wheelSet = (p: Paint, n: number, owner: OwnedView) => {
   let b: THREE.InstancedMesh | null = null;
   return () => {
     if (b) return b;
+    // boogle-disable-next-line boogle/input-through-actions -- the wheel batch's name, not the wheel event
     b = kitBatch('wheel', p, n, owner);
     b.castShadow = false;
     b.count = 0;

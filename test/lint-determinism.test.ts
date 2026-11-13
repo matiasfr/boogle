@@ -157,6 +157,45 @@ test('import restrictions include re-exports, namespace imports and mixed physic
   );
 });
 
+test('only src/sim and src/world import the E facade; src/adapters names its types (AR-6)', () => {
+  const value = "import { createWorld } from '../ecs/index.ts';";
+  const type = "import type { World } from '../ecs/index.ts';";
+  const dynamic = "export const e = () => import('../ecs/index.ts');";
+  const banned = (code: string, file: string) =>
+    lintSafety(code, file).some((d) => /no-restricted-(imports|syntax)/.test(d.rule) && /AR-6/.test(d.message));
+  for (const file of [
+    'src/sim/probe.ts',
+    'src/world/probe.ts',
+    'src/world/game-world.ts',
+    'src/world/railway-server.ts',
+  ])
+    for (const code of [value, type]) assert.ok(!banned(code, file), `${file}: ${code}`);
+  assert.ok(!banned(type, 'src/adapters/probe.ts'));
+  assert.ok(!banned("import { type World } from '../ecs/index.ts';", 'src/adapters/probe.ts'));
+  for (const code of [value, "export * from '../ecs/index.ts';", "import '../ecs';", dynamic])
+    assert.ok(banned(code, 'src/adapters/probe.ts'), `src/adapters: ${code}`);
+  for (const file of [
+    'src/probe.ts',
+    'src/entities/probe/view.ts',
+    'src/entities/probe/state.ts',
+    'src/features/probe.ts',
+    'src/net/probe.ts',
+    'src/netplay/probe.ts',
+    'src/place/probe.ts',
+    'src/debug/probe.ts',
+    'src/physics/backend-probe.ts',
+    'src/main.ts',
+  ])
+    for (const code of [value, type, dynamic]) assert.ok(banned(code, file), `${file}: ${code}`);
+});
+
+test('src/place and the railway machine model read input through actions (AR-4)', () => {
+  const raw = "addEventListener('keydown', () => {});";
+  for (const file of ['src/place/probe.ts', 'src/place/look-kit.ts', 'src/entities/railway/machine-model.ts'])
+    assert.ok(has(lintSafety(raw, file), 'boogle/input-through-actions'), file);
+  assert.ok(!has(lintSafety(raw, 'src/place/talk.ts'), 'boogle/input-through-actions'));
+});
+
 test('the JS language guard replaces duplicate-parameter and legacy-octal parser protections', () => {
   for (const code of ['export function f(a, a) {}', 'export const n = 010;', 'export const s = "\\1";'])
     assert.ok(has(lintSafety(code, 'dev/probe.js'), 'boogle/js-language'), code);

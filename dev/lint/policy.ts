@@ -132,6 +132,20 @@ const ecsBan = {
   regex: '(^|/)ecs/(?!index\\.ts$)',
   message: 'Reach E through src/ecs/index.ts only: its tables are not an API (docs/plans/ecs-e.md, section 7).',
 };
+// Who may import the facade at all (architecture review AR-6, docs/research/engine-portability.md, item 1): src/sim/
+// and src/world/ (values), src/adapters/ (types only). A view reads rows through ReadWorld (src/sim/railway-rows.ts).
+const ECS_FACADE = '(^|/)ecs(/index(\\.[jt]s)?)?$';
+const ecsFacadeMessage =
+  'Only src/sim/ and src/world/ import src/ecs/index.ts, and src/adapters/ only its types: a view reads rows through ReadWorld (src/sim/railway-rows.ts; architecture review AR-6).';
+const ecsFacadeBan = { regex: ECS_FACADE, message: ecsFacadeMessage };
+const ecsFacadeTypesBan = { ...ecsFacadeBan, allowTypeImports: true };
+// The same for an `import()`, which no-restricted-imports does not see.
+const ecsDynamicBan = {
+  selector: RAIL_DYNAMIC_AT.flatMap((at) => [`${at}.value`, `${at}.quasis.0.value.raw`])
+    .map((at) => `ImportExpression[${at}=/${ECS_FACADE.replaceAll('/', '\\/')}/]`)
+    .join(', '),
+  message: ecsFacadeMessage,
+};
 const ecsDeclare = {
   selector: 'CallExpression[callee.name=/^define(Component|System)$/]',
   message: 'E components and systems are declared in headless code only: src/sim/ or src/world/ (docs/plans/ecs-e.md).',
@@ -232,10 +246,9 @@ export const INPUT_LAYER = [
 ];
 // Not gameplay input, or not ours to change yet. Each entry says why.
 export const INPUT_ALLOW = [
-  'src/entities/railway/machine-model.ts', // moved from src/proto/place with its key read unchanged (ecs-migration-railway M6); goes through actions with the owner conversion
   'src/debug/**', // dev and debug tools: free camera, record, dev menu, panels
   'src/proto/**', // prototypes load by import() and carry their own bindings
-  'src/place/**', // the village kit moved out of src/proto with its key reads (talk, look-kit); it goes through actions with the owner conversion (ecs-migration-railway M5)
+  'src/place/talk.ts', // keeps taps on the talk panel from reaching the canvas; reads no control
   'src/render/audio.ts', // any gesture unlocks the audio context; reads no control
   'src/features/wake-lock.ts', // any input takes the screen wake lock; reads no control
   'src/boogler/dialogue.ts', // keeps clicks inside the DOM dialogue from reaching the canvas; reads no control
@@ -248,6 +261,16 @@ const policyBlocks: PolicyBlock[] = [
   // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync, proto and debug bans.
   {
     files: ['src/**/*.{js,ts}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: rapierBans, patterns: [syncBan, protoBan, debugBan, ...railViewBans] },
+      ],
+    },
+  },
+  // The same bans for src/adapters/, which may also name E's types (the facade ban is added below).
+  {
+    files: ['src/adapters/**/*.{js,ts}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -539,7 +562,7 @@ const policyBlocks: PolicyBlock[] = [
     files: ['src/**/*.{js,ts}'],
     ignores: [...LOCKSTEP_FILES, 'src/world/**'],
     rules: {
-      'no-restricted-syntax': ['error', glOnly, ...DOORS.map(doorRule), ecsDeclare, railDynamicBan],
+      'no-restricted-syntax': ['error', glOnly, ...DOORS.map(doorRule), ecsDeclare, railDynamicBan, ecsDynamicBan],
     },
   },
   {
@@ -558,7 +581,13 @@ const policyBlocks: PolicyBlock[] = [
   ...DOORS.map((door): PolicyBlock => ({
     files: door.allow,
     rules: {
-      'no-restricted-syntax': ['error', glOnly, ...DOORS.filter((d) => d !== door).map(doorRule), railDynamicBan],
+      'no-restricted-syntax': [
+        'error',
+        glOnly,
+        ...DOORS.filter((d) => d !== door).map(doorRule),
+        railDynamicBan,
+        ecsDynamicBan,
+      ],
     },
   })),
   {
@@ -613,7 +642,9 @@ const policyBlocks: PolicyBlock[] = [
     },
   },
 ];
-// Every import block but E's own carries the facade ban (a later block replaces the rule for its files).
+// Every import block but E's own carries the tables ban, and every one outside src/sim/ and src/world/ the facade ban
+// (types allowed in src/adapters/). A later block replaces the rule for its files.
+const within = (block: PolicyBlock, dirs: string[]) => block.files!.every((f) => dirs.some((dir) => f.startsWith(dir)));
 export const policy: PolicyBlock[] = policyBlocks.map((block) => {
   const rule = block.rules?.['no-restricted-imports'];
   if (
@@ -623,11 +654,16 @@ export const policy: PolicyBlock[] = policyBlocks.map((block) => {
   )
     return block;
   const [level, options] = rule as [string, ImportOptions];
+  const facade = within(block, ['src/sim/', 'src/world/'])
+    ? []
+    : within(block, ['src/adapters/'])
+      ? [ecsFacadeTypesBan]
+      : [ecsFacadeBan];
   return {
     ...block,
     rules: {
       ...block.rules,
-      'no-restricted-imports': [level, { ...options, patterns: [...(options.patterns ?? []), ecsBan] }],
+      'no-restricted-imports': [level, { ...options, patterns: [...(options.patterns ?? []), ecsBan, ...facade] }],
     },
   };
 });

@@ -5,6 +5,7 @@ Before changing module dependencies, services or lockstep boundaries, read this 
 - Determinism rules on `LOCKSTEP_FILES`: a new lockstep module outside `src/sim/` and `src/world/rules/` joins that list.
 - `registerOp`/`registerState`/`onTick` only in `src/world/rules/` (and `game-world.ts`, which installs them): one place owns wire order and hashing.
 - Rules import only `src/sim/`, `../grid.ts` and sibling rules; `src/sim/` imports nothing from `src/`.
+- E (`src/ecs/`) is reached only through `src/ecs/index.ts`, which only `src/sim/` and `src/world/` import (`src/adapters/` its types, `import()` too): a view reads rows through `ReadWorld` (AR-6).
 - Features don't import other features: shared code moves to `src/` (an adapter, `src/player/`, ...).
 - `src/world/*.ts` and `src/net/` stay headless: no `three`, `src/render/`, `src/player/` or `src/features/`.
 - Outside `src/proto/` and `src/debug/`, reach them with `import()`; the only static ways in are `proto/flags.ts` and `proto/mark.ts`.
