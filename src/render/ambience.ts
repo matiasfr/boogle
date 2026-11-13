@@ -7,7 +7,7 @@
 // Turn it off with &ambience=off; shift the whole bed with &ambience=-6 (dB). Everything else is in LEVELS and FEEL.
 import { dbToGain, getAudio } from './audio.ts';
 import { brownNoiseBuffer, darkReverbBuffer } from './noise.ts';
-import { smoothstep } from '../math.ts';
+import { lerp, smoothstep } from '../math.ts';
 import { cam, me } from '../player/player.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 
@@ -42,7 +42,6 @@ const FEEL = {
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const between = ([a, b]: number[]) => rand(a!, b!);
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // ---------------------------------------------------------------- how far the water is
 // Two distance fields on a 4 m grid, baked once when the sound starts (a chamfer transform).
@@ -341,10 +340,7 @@ let started = false;
 export async function startAmbience(): Promise<void> {
   if (OFF || started) return;
   started = true;
-  const [{ H }, { ORIGIN, SPIRE }] = await Promise.all([
-    import('../place/terrain.ts'),
-    import('../place/layout.ts'),
-  ]);
+  const [{ H }, { ORIGIN, SPIRE }] = await Promise.all([import('../place/terrain.ts'), import('../place/layout.ts')]);
   land = { H, ORIGIN, SPIRE };
   // Baked now, while the page loads, not in the first frame after Jump in: the arrival's roll began with it (10 November).
   bakeFields(land);

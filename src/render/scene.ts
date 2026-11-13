@@ -338,7 +338,9 @@ export function toScreen<T extends { x: number; y: number; behind?: boolean }>(
   return out as T & { behind: boolean };
 }
 
-scene.add(new THREE.HemisphereLight('#d4f0ff', '#e6d3a0', 1.2));
+/** The scene's one sky/ground fill light. */
+export const hemi = new THREE.HemisphereLight('#d4f0ff', '#e6d3a0', 1.2);
+scene.add(hemi);
 export const sun = new THREE.DirectionalLight('#fff0d0', 2.5);
 sun.castShadow = true;
 sun.shadow.mapSize.setScalar(isTouch ? 1024 : 2048); // phones: a quarter of the shadow fill cost

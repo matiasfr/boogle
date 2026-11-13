@@ -4,7 +4,7 @@
 // the water ceiling, the telescope and height). One opaque depth copy gives intersection foam and a soft waterline.
 import * as THREE from 'three/webgpu';
 import { SEA } from '../../constants.ts';
-import { scene, sun } from '../scene.ts';
+import { hemi, sun } from '../scene.ts';
 import { seaRipples, seaU } from './state.ts';
 import { TSL, type N } from './tsl.ts';
 import { derived, scalar, vector } from './live.ts';
@@ -342,8 +342,6 @@ export function createOcean(options: OceanOptions): Ocean {
   const mesh = new THREE.Mesh(geo, material);
   mesh.frustumCulled = false;
   mesh.renderOrder = -1; // drawn before other see-through things, writing depth
-  const hemi = () =>
-    scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as THREE.HemisphereLight;
   const rebuild = () => {
     geo.dispose();
     mesh.geometry = geo = buildGrid(angular, far);
@@ -367,8 +365,7 @@ export function createOcean(options: OceanOptions): Ocean {
       uPhases.value.set(phases[0]!, phases[1]!, phases[2]!, phases[3]!);
       uGridScale.value = Math.min(Math.max(1, Math.abs(camera.position.y) / 6), (far * 0.9) / OUTER);
       uSunE.value.copy(sun.color).multiplyScalar(sun.intensity / Math.PI);
-      const h = hemi();
-      if (h) uFill.value.copy(h.color).multiplyScalar(h.intensity / Math.PI);
+      uFill.value.copy(hemi.color).multiplyScalar(hemi.intensity / Math.PI);
     },
     vertices: () => geo.getAttribute('position').count,
     dispose() {
