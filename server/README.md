@@ -58,6 +58,9 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 | `REPORT_RATE_PER_MIN`        | `12`        | Per-IP token bucket for `POST /report` (the client batches, so one POST carries several reports).                                                                      |
 | `REPORT_MAX_BYTES_PER_DAY`   | `5242880`   | Cap on each day's report file (5 MB); further reports that day get 507.                                                                                                |
 | `REPORT_TOKEN`               | unset       | Enables `GET /reports` for whoever sends this bearer token. Unset: reports are write-only (read them on the volume).                                                   |
+| `ADVANCE_KEY` | unset | Enables room replacement for this bearer only; `REPORT_TOKEN` cannot authorize it. |
+| `ADVANCE_SHARED` | off | `1` permits replacing the shared `boogle` island behind `ADVANCE_KEY`. |
+| `REPLACE_RATE_PER_MIN` | `6` | Per-IP replacement requests, checked before authentication. |
 | `PLAY_RATE_PER_MIN`          | `240`       | Per-IP token bucket for `POST /playdata` (a tab sends a batch every 5 s; friends may share an IP).                                                                     |
 | `PLAY_NEW_SESSIONS_PER_HOUR` | `40`        | New sessions per IP per hour on `POST /playdata`; each page load is one.                                                                                               |
 | `PLAY_MAX_SESSION_BYTES`     | `4194304`   | Cap on one session's file (4 MB); further batches get 507.                                                                                                             |
@@ -122,18 +125,24 @@ and creates no new trash folder. See [the plan](../docs/plans/world-version-and-
 
 ## Operator tools
 
-Room saves are managed on the running server, with no deploy (`server/src/admin.ts`). Same guard as `/admin/saves`:
-`Authorization: Bearer <REPORT_TOKEN>`, 404 while the token is unset.
+Room saves are managed on the running server, with no deploy (`server/src/admin.ts`). Listing, backups, resets,
+restores and pin releases use `Authorization: Bearer <REPORT_TOKEN>`, 404 while the token is unset. Replacement
+uses its own `ADVANCE_KEY` and never accepts `REPORT_TOKEN` in its place.
 
 ```sh
 npm run server -- rooms                    # saved rooms, who is in them, and the backups kept
 npm run server -- reset <room> | --all     # back the save up, then start the room fresh
 npm run server -- backup <room> | --all    # keep a copy of the save as it is now
 npm run server -- restore <room> [backup]  # put a backup back (default: that room's newest)
+npm run server -- replace <room> <stage> [--override] # print losses/count, then type the room name
+npm run server -- release <backup>        # release a pin into ordinary backup retention
 ```
 
 `<room>` is the name in the URL (`?room=`), matching its classic and its railway room, or a full id from `rooms`.
 `BOOGLE_SERVER` picks the server (default production); the token comes from `REPORT_TOKEN` or `.env.local`.
+`replace` reads `ADVANCE_KEY` from the environment and needs no report token. It uses the current railway
+namespace, reads the public host status for the player count, and requires the exact plain room name at its
+prompt. `--override` explicitly permits replacing an occupied room; `--force` belongs to reset/restore only.
 
 Each room's save carries `born`, the id of its world, sent to every joiner in `welcome`. A reset gives the room a new
 one and a restore brings the backup's back; a client that last joined a different world there starts the player over
@@ -142,16 +151,58 @@ read as `0`.
 
 | Endpoint | Does |
 | --- | --- |
-| `GET /admin/rooms` | `{ ns, rail, rooms: [{ id, bytes, savedAt, loaded, players, tick? }], backups: [{ name, room, bytes }] }`: current-namespace saves and the backups, newest first. |
+| `GET /admin/rooms` | `{ ns, rail, rooms: [{ id, bytes, savedAt, loaded, players, tick? }], backups: [{ name, room, bytes, pinned? }] }`: current-namespace saves and the backups, newest first. |
 | `POST /admin/rooms/:id/backup` | Copies the room's last checkpoint (up to `SERVER_SAVE_MS` old) to `DATA_DIR/.backups/<id>@<UTC stamp>.json`. 404 without a save. |
 | `POST /admin/rooms/:id/reset` | Closes the room without saving, moves its save into `.backups/`, and lets the next join start a fresh world. |
-| `POST /admin/rooms/:id/restore?backup=<name>` | Closes the room without saving, backs its save up, then writes the backup (default: that room's newest) as its save. 404 no such backup, 422 not a room save. |
+| `POST /admin/rooms/:id/restore?backup=<name>` | Saves the room's last verified checkpoint before closing, backs it up, then restores the chosen backup, including a pin, with its original birth id. 404 no such backup, 422 not a room save; a failed/fatal close aborts. |
+| `POST /admin/backups/:name/release` | Releases a pinned backup into the ordinary newest-30 retention pool. |
+| `POST /admin/rooms/:id/replace` | Bearer `ADVANCE_KEY`; JSON `{ stage, confirm, override? }`. Replaces a current railway room with an existing `SEED_STAGES` recipe after validation, countdown, verified close and pinned backup. |
 
 Reset and restore answer 409 while players are in the room unless `?force=1`; with it everyone gets `bye`, the socket
 closes with 1012 and their tab reconnects into the new world. Joins are refused until the files have changed, so a
 reconnect never loads the old save. Only current room ids are accepted (400 otherwise). The newest 30 backups are
 kept, across all rooms; boot cleanup measures `.backups/` and never moves it. A backup restores only into its own room
 id, so a `WORLD_NS` bump leaves older backups unusable.
+
+Replacement is a whole new world birth. It resets carried/account state and everything personal to that room,
+including wardrobe finds; a server backup restores the old world, not browser state already cleared. The CLI
+prints all four loss categories from [the plan](../docs/plans/room-fast-forward.md#what-a-replacement-loses-shown-in-the-control-and-printed-by-the-cli-before-it-runs).
+The last recorded stage sets the forward-only check; it does not measure played progress.
+Every occupied room requires `override: true`: the authenticated HTTP key does not prove which socket, if any,
+belongs to the caller. A never-visited empty room is initialized and checkpointed before replacement so its first
+world has a pinned recovery point too. Shutdown aborts a pending countdown before any replacement begins.
+
+The replacement endpoint returns 404 with no configured key; 401 for missing/wrong bearer; 400 for invalid room,
+stage or body; 403 for the shared island unless `ADVANCE_SHARED=1`; 409 for missing/wrong typed confirmation,
+an earlier recorded stage, a busy room or players present without `override: true`; 429 for the rate limit;
+503 for an unavailable seed; 422 if the target fails validation; and 500 for a failed close or write.
+Connected clients receive `{ t: 'replacing', label, seconds }` before a 10-second countdown, including clients
+joining during it. Empty rooms skip the countdown. The notification renderer and Dev dock control are separate
+client work; the room interface supplies the event and exact plan text hook.
+
+On success the response identifies the pinned backup and restore command. Pins live under
+`DATA_DIR/.backups/pinned/` and survive normal pruning until released. The `replacements/` journal is reconciled
+at boot and before replacement: an unchanged birth means the save rename did not land; a changed birth completes
+the record. An interrupted countdown is cancelled on shutdown/restart; it never resumes a delayed replacement.
+`GET /rooms/:id/host` reports `replaced: { stage, at, born }` for the recorded replacement.
+
+Replacement and restore abort when the current loaded host cannot produce a verified checkpoint (including fatal
+command status). An operator repairing such a room must first take it through the existing reset workflow, then
+restore the selected valid pin; the failed world's fallback is never saved as its recovery point.
+
+Local invocation (the server must have the same key; choose a disposable room):
+
+```sh
+export BOOGLE_SERVER=http://127.0.0.1:9000
+export ADVANCE_KEY=local-replace-key
+npm run server -- replace test-room awake --override
+curl -X POST "$BOOGLE_SERVER/admin/rooms/rail-v40-test-room/replace" \
+  -H "Authorization: Bearer $ADVANCE_KEY" -H 'Content-Type: application/json' \
+  --data '{"stage":"awake","confirm":"test-room","override":true}'
+# Use the exact restore command printed in the response, with REPORT_TOKEN set.
+```
+
+The sample room id uses v40; use the running build's current railway namespace if it changes.
 
 ## Run locally
 

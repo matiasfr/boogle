@@ -1,5 +1,7 @@
-> **Status: planned, amended 2026-11-13.** Base `origin/main` at `5b42057ad` (`WORLD_NS` v32). No `WORLD_NS` bump. One
-> new server-to-client wire message (`replacing`). Nothing here was built or run: every claim is from reading main.
+> **Status: server implementation, 2026-11-13; client work pending.** The original plan below was based on
+> `origin/main` at `5b42057ad` (`WORLD_NS` v32). The [server implementation](#server-implementation-13-november)
+> adapts it to v40. No `WORLD_NS` bump; one server-to-client wire message (`replacing`). Original design claims
+> below are historical; the implementation section distinguishes the current scope and outstanding client work.
 >
 > **Amendments (13 November)**, from [dev-saves-and-stage-jumps](../research/dev-saves-and-stage-jumps.md)
 > (recommendations 1 to 6), the designer's three changes and three owner calls:
@@ -130,7 +132,7 @@ for people), `--rail-seed`, `--from/--to`, `npm run checkpoints`. The Jump in li
 Order: 0 at any time; server 1, 2, 3, 4; client 5 after 3, 6 after 2 and 5; the checkpoint; 7 last. Each is one
 sitting and leaves `node dev/ship-check.ts` green. 1 to 3 are high-risk server work (`server/AGENTS.md`).
 
-- [ ] **0. Pin that the route is open in the shared room** (tests; the decision is
+- [x] **0. Pin that the route is open in the shared room** (tests; the decision is
   [recorded](../decisions-rail.md#d-2026-11-13-greybox-route-open-in-the-shared-room)). `test/railway-route-rules.test.ts`:
   "no closed bit: any room at the rivet has leg 0 open" (`buildSeedWorld('ring-joined')`: `legOpen(w, 0)`, `rail.legStock`
   accepted, `Route`'s fields exactly those three); `server/test/railway-ring-host.test.ts`: a `boogle` host loaded
@@ -192,7 +194,31 @@ three texts; whether the welcome card shows on the reset load (default: no); the
 
 ## Owner questions
 
-1. **Who may replace a room, and may the shared island be replaced?** Recommended: the key holder only, any room
-   including the shared island, behind the typed name, the countdown and the pinned backup. Until he answers,
-   `ADVANCE_SHARED` stays off, and `ADVANCE_KEY` is his or the operator's to set on production.
+1. **Who may replace a room, and may the shared island be replaced?** Answered by the owner, 13 November: the dev
+   key holder only, any room including the shared island, behind the typed name, countdown and pinned backup.
+   `ADVANCE_SHARED` may be enabled in production behind `ADVANCE_KEY`; its default stays off.
 2. **Going back?** Recommended: not in the game; the operator restores the pinned backup. Or: any stage may be picked.
+
+## Server implementation, 13 November
+
+The server implementation targets the current v40 server-owned host. The classic lockstep transport described
+in older sections is deleted; replacement uses the current checkpoint/load/hash and fatal-status guards, and
+clients reconnect onto complete server-owned mirrors. It introduces no gameplay op, client authority or seat
+change. No `WORLD_NS` bump is required: the persisted game/checkpoint shape and seed recipes are unchanged;
+replacement records and pending journals are operator metadata outside the world document.
+
+The existing `SEED_STAGES` builders, including `railway-seed-legs.ts`, supply the targets. The endpoint and CLI
+use only `ADVANCE_KEY`; `REPORT_TOKEN` remains the separate operator restore/release credential. Any occupied
+room requires explicit override because an HTTP key holder cannot authenticate a matching in-room identity.
+The ordering rule compares the last replacement record, not natural progression. Interrupted countdowns are
+cancelled rather than resumed after restart; only a save-write journal needs recovery.
+
+The server exposes `replaced` status and the room countdown/text hook. Client notification rendering, reset
+landing, line display, playdata and the Dev dock control remain for the client job. The full visual checkpoint
+and removal of Jump in rows remain open; no server test establishes those client outcomes.
+
+**Suspect placeholder copy for the owner**, preserved exactly from this plan:
+"This room will be replaced with <label> in 10 seconds. What you carry and your finds here will be lost."
+The later line is also pending client review: "The shared island was replaced with <label> for testing. The world
+changed for everyone, and what you carried and found here is gone." (Private room: "This room was replaced…".)
+The Boogler's copy is unchanged.

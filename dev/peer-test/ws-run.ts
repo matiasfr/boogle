@@ -53,8 +53,16 @@ async function serve(env: Record<string, string> = {}) {
       roomHost: () => undefined,
     };
   }
-  const env0 = { DATA_DIR: dataDir, SERVER_ROOMS: '*', MAX_PLAYERS: '4', SERVER_SAVE_MS: '200', ...env };
-  const svc = createService(loadConfig(env0, { log: () => {} }));
+  const env0 = {
+    DATA_DIR: dataDir,
+    SERVER_ROOMS: '*',
+    MAX_PLAYERS: '4',
+    SERVER_SAVE_MS: '200',
+    ADVANCE_KEY: 'peer-test-advance',
+    REPORT_TOKEN: 'peer-test-report',
+    ...env,
+  };
+  const svc = createService(loadConfig(env0, { log: () => {}, replaceCountdownMs: 100 }));
   await svc.listen(port);
   return svc;
 }
