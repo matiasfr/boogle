@@ -6,7 +6,8 @@ import { changeClass } from './ci/change-class.ts';
 import { affectedTests } from './ci/unit-select.ts';
 import { testEnv } from './test-env.ts';
 
-const [base = 'origin/main', head = 'HEAD'] = process.argv.slice(2);
+const scoped = process.argv.includes('--unit-only');
+const [base = 'origin/main', head = 'HEAD'] = process.argv.slice(2).filter((a) => a !== '--unit-only');
 const start = performance.now();
 const elapsed = () => `${((performance.now() - start) / 1000).toFixed(2)}s`;
 const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' }).trim();
@@ -45,10 +46,15 @@ run(['node_modules/typescript/bin/tsc', '-p', '.']);
 // The tests whose closure holds a changed file, plus the core: the same walk and core as CI's selection
 // (dev/ci/unit-select.ts), in the local unit run's settings below. A lockstep diff still runs only these here; CI runs
 // the full suite for it.
-const tests = affectedTests([...files]);
-if (tests.length) {
+const tests = scoped ? (process.env.UNIT_ONLY ?? '').split(/\s+/).filter(Boolean) : affectedTests([...files]);
+if (scoped) {
+  // The opt-in never changes the hook's default affected selection. test-unit rejects an empty UNIT_ONLY.
+  run(['dev/test-unit.ts', '--ship']);
+} else if (tests.length) {
   // The unit run's settings (./test-env.ts): the rail audit off unless RAIL_AUDIT=1, as `npm run test:unit` runs.
   const { env, flags } = testEnv();
   runTests([...flags, ...tests], env);
 }
-console.log(`ship-check: registry, ${lint.length} lint files, typecheck, ${tests.length} affected tests; ${elapsed()}`);
+console.log(
+  `ship-check: registry, ${lint.length} lint files, typecheck, ${tests.length} ${scoped ? 'selected' : 'affected'} tests; ${elapsed()}`,
+);

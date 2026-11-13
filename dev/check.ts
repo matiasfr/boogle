@@ -7,7 +7,8 @@ import { spawnSync } from 'node:child_process';
 const steps = [
   ['run', 'lint'],
   ['run', 'typecheck'],
-  ['run', 'test:unit'],
+  // Explicit task-scoped check; --ship requires a nonempty UNIT_ONLY and keeps per-test timeouts.
+  ['run', 'test:unit', ...(process.argv.includes('--unit-only') ? ['--', '--ship'] : [])],
   ['run', 'registry'],
   ['run', 'level-check'],
   ['run', 'assets', '--', '--check'],
