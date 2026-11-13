@@ -15,7 +15,12 @@ import { SERVER_IMAGE_PATHS } from '../dev/server-build.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 // The prepared Boogler land loader ships before the server starts calling it (players plan, step 3).
-const ENTRIES = ['server/src/index.ts', 'server/src/seeds/prebuild.ts', 'server/src/host/land.ts'];
+const ENTRIES = [
+  'server/src/index.ts',
+  'server/src/seeds/prebuild.ts',
+  'server/src/host/land.ts',
+  'src/world/boogler-brain.ts',
+];
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 const builtin = (spec: string) => spec.startsWith('node:') || builtinModules.includes(spec.split('/')[0]!);

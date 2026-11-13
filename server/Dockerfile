@@ -13,7 +13,7 @@ COPY server/src ./server/src
 COPY src/world ./src/world
 COPY src/sim ./src/sim
 COPY src/ecs ./src/ecs
-COPY src/math-pure.ts ./src/
+COPY src/math-pure.ts src/math.ts ./src/
 COPY src/net/ids.ts src/net/ws-wire.ts src/net/rtc-wire.ts ./src/net/
 # The playtest jump-in seeds (docs/plans/playtest-jump-in.md), built here from this commit's sim so the VM never builds
 # one at runtime. About 30 s; each stage's time is in the build log. Set here, not only in fly.toml, since a missing

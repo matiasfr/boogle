@@ -3,6 +3,7 @@
 Implemented on `codex/server-players-step-3`, from `origin/main` at `f00736aec` (v41).
 DESIGN.md: **Clear authority**, **Server hosts every room**, **Small and readable**.
 The two-commit series is local only. No push or ship.
+Step 3 commit: **7ab7a713**; review stamp **2c0267e0cb3c** (`--no-fetch`).
 
 ## Change
 
@@ -65,7 +66,8 @@ No new suspect copy was found in the edited files. No ROM data, prefab lint or r
 
 ## Limits
 
-`npm run check` passed (lint, types, unit tests, registry, level/assets and build); server tests **254/254**.
+`npm run check` passed (lint, types, **1,793 unit passes / one existing TODO**, registry, level/assets and build);
+server tests **254/254**. `npm run registry` passes with unchanged debt.
 `node dev/ship-check.ts origin/main HEAD` passed **388 assertions / 43 affected files**, with 11 lint files,
 typecheck and registry. Logs: `.look/step3-check.log`, `step3-server.log`, `step3-ship-check.log`.
 The initial ship-check found a missing eval command header; the corrected run above is green.

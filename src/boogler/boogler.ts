@@ -12,7 +12,7 @@
 // players who talk to him, hurries while someone rides him, and runs from players he's wary of.
 import * as THREE from 'three';
 import { INTERP_MS, HALF, reducedMotion } from '../constants.ts';
-import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
+import { lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { camera, toScreen } from '../render/scene.ts';
 import { chaseKinematic, playerMat, NOT_SCENERY } from '../physics/physics.ts';
@@ -25,39 +25,27 @@ import { net, remotes, addHostField, isLead } from '../netplay/net.ts';
 import { createSnaps } from '../netplay/snaps.ts';
 import type { Remote } from '../netplay/net.ts';
 import type { Body } from '../physics/engine.ts';
+import { ACT, MODE, W_R, MIN_H, createBooglerBrain, findStart } from '../world/boogler-brain.ts';
+import type { BooglerVisitor } from '../world/boogler-brain.ts';
+import type { BooglerLand } from '../world/boogler-land.ts';
+export { ACT, MODE, W_R } from '../world/boogler-brain.ts';
 
 /** A remote player as he sees them: their bg presence (src/boogler/play.ts: act, wary, ev, evN). */
 export type BgRemote = Remote & { bg?: number[] | null };
 /** His pose as the lead publishes it (presence g). */
 type Wire = { p: number[]; r: number; w: number; m: number };
 type Pose = { x: number; z: number; r: number; w: boolean; m: number };
-type Visitor = { x: number; z: number; act: number; wary: boolean };
 export type Mood = 'smile' | 'joy' | 'grump' | 'worry' | 'puff' | 'talk';
 
 // Shape: about three times as wide as he is tall.
-export const W_R = 0.8; // half width
 const H_R = 0.27; // half height
 const BODY_Y = 0.32; // body center above the ground
 const BODY_HEX = '#b99cff';
 const FOOT_HEX = '#6c4fd1';
 const FACE_HEX = '#1d1640';
 
-// Wandering.
-const SPEED = 1.5; // m/s
-const TURN = 3.2; // rad/s
-const MIN_H = 0.45; // stays on dry land
 /** Dry land of his island under x, z: the ground he walks on. Off its grid (the railway world, the sea) is the seabed. */
 export const onBooglerIsland = (x: number, z: number) => groundHeight(x, z) >= MIN_H;
-const MAX_H = 30; // the whole island, massif included
-const MAX_STEP = 0.55; // max height change per metre of path
-const MAP_LIMIT = HALF - 25;
-// Home is the meadow east of the court: he drifts back towards it, and only now and then sets off to see the rest of the
-// island.
-const HOME_X = 30,
-  HOME_Z = 2.5;
-const HOME_RANGE = 22; // metres around home where he just potters about
-const TRIP_CHANCE = 0.08; // per stop near home: chance to head off somewhere far
-const FACE_RANGE = 7; // turns to look at players this close while idle
 const STALE_MS = 3000; // no host snapshot for this long: walk him locally
 // His top hat, comically tall: the brim is a third of his radius (it sits on top of his head, covering none of it), the
 // crown half the brim's radius, and the whole hat about one and a half times his height.
@@ -67,20 +55,22 @@ const BRIM_H = 0.03;
 const HAT_H = 1.5 * (BODY_Y + H_R); // brim included
 const HAT_SINK = 0.015; // into the curve of his head, so no gap shows under the brim
 const LABEL_GAP = 0.45; // name tag anchor above the top of the hat (a crushed hat too, so it clears a rider)
-const FLEE_SPEED = 3.4;
-const RIDDEN_SPEED = 2.3;
-const FLEE_RANGE = 9;
-const ATTEND_RANGE = 5;
 export const PUFF_MS = 750;
-
-// What a player is doing with him (published by each player) and what he is doing (published by the host).
-export const ACT = { NONE: 0, TALK: 1, RIDE: 2 };
-export const MODE = { CALM: 0, FLEE: 1, RIDDEN: 2 };
 
 const rng = mulberry32((Date.now() ^ 0x5eed) | 0);
 const range = (a: number, b: number) => a + rng() * (b - a);
 
-const sim = { x: 0, z: 0, yaw: 0, walking: false, tx: 0, tz: 0, wait: 1, mode: MODE.CALM, fleeCheck: 0 };
+// Keep the same RNG shared with the cosmetic hop below: its draws are part of today's wander sequence.
+const land: BooglerLand = {
+  height: groundHeight,
+  blocked: blockedAt,
+  get keepOut() {
+    return island.keepOut;
+  },
+  mainland: MAINLAND,
+};
+const brain = createBooglerBrain({ land, rng, start: { x: 0, z: 0 } });
+const sim = brain.state;
 const disp = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
 const target = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
 const snaps = createSnaps<Pose>();
@@ -102,94 +92,9 @@ export const boogler = {
   me: { act: ACT.NONE, wary: false, mood: null as Mood | null, speaking: false },
 };
 
-// ---------------------------------------------------------------- terrain checks
-// Already inside a footprint (a new lead takes over wherever he's drawn, and an older build may have let him in), he may
-// walk through it, or he could never leave.
-function blocked(x: number, z: number, pad = 0, fromX = NaN, fromZ = NaN) {
-  if (Math.abs(x) > MAP_LIMIT || Math.abs(z) > MAP_LIMIT) return true;
-  const h = groundHeight(x, z);
-  if (h < MIN_H || h > MAX_H) return true;
-  return blockedAt(x, z, W_R + pad) && !blockedAt(fromX, fromZ, W_R + pad);
-}
-
-function pathClear(x0: number, z0: number, x1: number, z1: number) {
-  const len = Math.hypot(x1 - x0, z1 - z0);
-  const n = Math.max(1, Math.ceil(len));
-  let prev = groundHeight(x0, z0);
-  for (let k = 1; k <= n; k++) {
-    const x = lerp(x0, x1, k / n),
-      z = lerp(z0, z1, k / n);
-    if (blocked(x, z, 0.2, x0, z0)) return false;
-    const h = groundHeight(x, z);
-    if (Math.abs(h - prev) > (MAX_STEP * len) / n) return false;
-    prev = h;
-  }
-  return true;
-}
-
-// Where he's heading on a trip away from home (a POI or a random far spot), or null while pottering about.
-let trip: { x: number; z: number } | null = null;
-
-// Sets his next walk target if the way there is clear.
-function headFor(x: number, z: number) {
-  if (!pathClear(sim.x, sim.z, x, z)) return false;
-  sim.tx = x;
-  sim.tz = z;
-  return true;
-}
-
-function tryStep(a: number, dmin: number, dmax: number) {
-  for (let tries = 0; tries < 12; tries++) {
-    const aa = a + (rng() - 0.5) * (tries < 6 ? 0.9 : 2.6),
-      d = range(dmin, dmax);
-    if (headFor(sim.x + Math.cos(aa) * d, sim.z + Math.sin(aa) * d)) return true;
-  }
-  return false;
-}
-
-function pickTarget() {
-  const homeD = Math.hypot(HOME_X - sim.x, HOME_Z - sim.z);
-  if (!trip && homeD < HOME_RANGE * 1.5 && rng() < TRIP_CHANCE) {
-    // Off to see a POI (or somewhere random), standing a little way from it.
-    const spots = island.keepOut;
-    if (spots.length && rng() < 0.7) {
-      const k = spots[Math.floor(rng() * spots.length)]!;
-      const a = rng() * Math.PI * 2;
-      trip = { x: k.x + Math.cos(a) * (k.r + 6), z: k.z + Math.sin(a) * (k.r + 6) };
-    } else
-      trip = {
-        x: range(MAINLAND.x - MAINLAND.rx, MAINLAND.x + MAINLAND.rx),
-        z: range(MAINLAND.z - MAINLAND.rz, 0),
-      };
-  }
-  if (trip) {
-    const d = Math.hypot(trip.x - sim.x, trip.z - sim.z);
-    if (d < 8 || rng() < 0.03)
-      trip = null; // arrived (or got bored on the way)
-    else if (tryStep(Math.atan2(trip.z - sim.z, trip.x - sim.x), 8, Math.min(22, d))) return true;
-    else trip = null;
-  }
-  // Pottering: random little walks, pulled back towards home the further he strays.
-  const pull = clamp((homeD - HOME_RANGE) / 40, 0, 0.85);
-  if (rng() < pull && tryStep(Math.atan2(HOME_Z - sim.z, HOME_X - sim.x), 6, 18)) return true;
-  return tryStep(rng() * Math.PI * 2, 5, 20);
-}
-
-function findStart() {
-  // A spot on dry land near the spawn, so new players meet him early.
-  for (let ring = 4; ring < 40; ring += 2)
-    for (let k = 0; k < 16; k++) {
-      const a = (k / 16) * Math.PI * 2;
-      const x = 6 + Math.cos(a) * ring,
-        z = 22 + Math.sin(a) * ring;
-      if (!blocked(x, z, 0.5)) return { x, z };
-    }
-  return { x: 0, z: 0 };
-}
-
 // ---------------------------------------------------------------- brain (authority only)
-// The players near him this frame, refilled into reused entries (think() runs every frame and allocates nothing).
-const seen: Visitor[] = [];
+// The players near him this frame, refilled into reused entries for the headless brain.
+const seen: BooglerVisitor[] = [];
 let seenCount = 0;
 function visitor(x: number, z: number, act: number, wary: boolean) {
   const v = seen[seenCount] ?? (seen[seenCount] = { x, z, act, wary });
@@ -204,97 +109,6 @@ function visitors() {
   if (me.entered && me.body) visitor(me.body.position.x, me.body.position.z, boogler.me.act, boogler.me.wary);
   for (const r of remotes.values() as Iterable<BgRemote>)
     if (r.entered && r.avatar) visitor(r.target.x, r.target.z, r.bg?.[0] ?? 0, r.bg?.[1] === 1);
-}
-
-function fleeFrom(t: Visitor) {
-  const away = Math.atan2(sim.z - t.z, sim.x - t.x);
-  for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8]) {
-    const d = range(7, 12);
-    if (headFor(sim.x + Math.cos(away + off) * d, sim.z + Math.sin(away + off) * d)) return true;
-  }
-  return false;
-}
-
-function turnToward(yaw: number, dt: number) {
-  const d = angleLerp(sim.yaw, yaw, 1) - sim.yaw;
-  sim.yaw += clamp(d, -TURN * dt, TURN * dt);
-  return Math.abs(d);
-}
-
-const facing = (p: Visitor) => Math.atan2(-(p.x - sim.x), -(p.z - sim.z));
-
-function think(dt: number) {
-  let focus: Visitor | null = null,
-    focusD = ATTEND_RANGE,
-    threat: Visitor | null = null,
-    threatD = FLEE_RANGE,
-    nearest: Visitor | null = null, // whoever he turns to look at while idle
-    nearestD = FACE_RANGE,
-    ridden = false;
-  visitors();
-  for (let k = 0; k < seenCount; k++) {
-    const v = seen[k]!;
-    const d = Math.sqrt((v.x - sim.x) * (v.x - sim.x) + (v.z - sim.z) * (v.z - sim.z));
-    if (d < nearestD && d > 0.5) {
-      nearest = v;
-      nearestD = d;
-    }
-    if (v.act === ACT.RIDE && d < W_R + 0.8) ridden = true;
-    else if (v.act === ACT.TALK) {
-      if (d < focusD) {
-        focus = v;
-        focusD = d;
-      }
-    } else if (v.wary && d < threatD) {
-      threat = v;
-      threatD = d;
-    }
-  }
-  sim.mode = threat ? MODE.FLEE : ridden ? MODE.RIDDEN : MODE.CALM;
-
-  if (focus && !ridden) {
-    sim.walking = false;
-    sim.wait = Math.max(sim.wait, 1);
-    turnToward(facing(focus), dt);
-    return;
-  }
-  if (threat) {
-    sim.fleeCheck -= dt;
-    if (!sim.walking || sim.fleeCheck <= 0) {
-      sim.fleeCheck = 0.8;
-      sim.walking = fleeFrom(threat) || sim.walking;
-    }
-  } else if (ridden) sim.wait = Math.min(sim.wait, 0.3);
-
-  if (!sim.walking) {
-    if (nearest) turnToward(facing(nearest), dt);
-    sim.wait -= dt;
-    if (sim.wait <= 0) {
-      if (pickTarget()) sim.walking = true;
-      else sim.wait = 1;
-    }
-    return;
-  }
-  const dx = sim.tx - sim.x,
-    dz = sim.tz - sim.z;
-  const dist = Math.hypot(dx, dz);
-  if (dist < 0.3) {
-    sim.walking = false;
-    sim.wait = range(1.5, 5);
-    return;
-  }
-  const off = turnToward(Math.atan2(-dx, -dz), dt);
-  const speed = sim.mode === MODE.FLEE ? FLEE_SPEED : sim.mode === MODE.RIDDEN ? RIDDEN_SPEED : SPEED;
-  const step = Math.min(dist, speed * dt * Math.max(0, Math.cos(off)));
-  const nx = sim.x + (dx / dist) * step,
-    nz = sim.z + (dz / dist) * step;
-  if (blocked(nx, nz, 0, sim.x, sim.z)) {
-    sim.walking = false;
-    sim.wait = range(0.5, 1.5);
-    return;
-  }
-  sim.x = nx;
-  sim.z = nz;
 }
 
 // ---------------------------------------------------------------- network
@@ -489,7 +303,7 @@ type Parts = ReturnType<typeof buildModel>;
 // src/features/boogler.ts spawns what this returns, at start: he needs the props to exist, to know where the trees and
 // rocks are.
 export function createBoogler() {
-  const s = findStart();
+  const s = findStart(land);
   sim.x = disp.x = target.x = s.x;
   sim.z = disp.z = target.z = s.z;
   modelParts = buildModel();
@@ -660,16 +474,13 @@ export function updateBoogler(dt: number, now: number) {
 
   if (shouldSim && !simulating) {
     // Taking over (became host, went solo, or the host went quiet): continue from where he is on screen.
-    sim.x = disp.x;
-    sim.z = disp.z;
-    sim.yaw = disp.yaw;
-    sim.walking = false;
-    sim.wait = 0.6;
+    brain.takeover(disp);
   }
   simulating = shouldSim;
 
   if (simulating) {
-    think(dt);
+    visitors();
+    brain.step(dt, seen, seenCount);
     disp.x = sim.x;
     disp.z = sim.z;
     disp.yaw = sim.yaw;
