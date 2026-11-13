@@ -4,10 +4,12 @@
 import './node-version.ts'; // first: re-runs under the pinned Node
 import { spawnSync } from 'node:child_process';
 
+// An explicit scoped checkpoint still runs every non-unit gate. The unit runner refuses an empty UNIT_ONLY.
+const unitOnly = process.argv.includes('--unit-only');
 const steps = [
   ['run', 'lint'],
   ['run', 'typecheck'],
-  ['run', 'test:unit'],
+  ['run', 'test:unit', ...(unitOnly ? ['--', '--ship'] : [])],
   ['run', 'registry'],
   ['run', 'level-check'],
   ['run', 'assets', '--', '--check'],
