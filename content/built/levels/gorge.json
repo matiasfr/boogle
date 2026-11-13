@@ -1,4 +1,62 @@
 {
+  "analysis": {
+    "marks": {},
+    "origin": {
+      "x": -103,
+      "z": -1988
+    },
+    "pads": [],
+    "posts": [],
+    "reserves": [
+      {
+        "d": 46,
+        "id": "ns row",
+        "w": 7.6,
+        "x": -91.78061281819605,
+        "y0": 2.9,
+        "y1": 8,
+        "yaw": 0.2917999942555311,
+        "z": -1950.6486231677495
+      },
+      {
+        "d": 3,
+        "id": "incline-n lever end",
+        "w": 4,
+        "x": -103.52047974219188,
+        "y0": 3.9,
+        "y1": 6.9,
+        "yaw": 0.2917999942555311,
+        "z": -1969.5712425584911
+      },
+      {
+        "d": 3,
+        "id": "incline-s lever end",
+        "w": 4,
+        "x": -92.41083945362509,
+        "y0": 3.9,
+        "y1": 6.9,
+        "yaw": 0.2917999942555311,
+        "z": -1972.9082910535917
+      }
+    ],
+    "surfaces": [
+      {
+        "id": "gorge.massing.73",
+        "name": "incline-n",
+        "over": false
+      },
+      {
+        "id": "gorge.massing.74",
+        "name": "incline-s",
+        "over": false
+      },
+      {
+        "id": "gorge.massing.75",
+        "name": "portal",
+        "over": false
+      }
+    ]
+  },
   "axes": "x east, y up, z south, right-handed",
   "format": "boogle-level",
   "place": "gorge",

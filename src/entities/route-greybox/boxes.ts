@@ -1,7 +1,15 @@
-// Legacy Bell/West descriptors adapt to records until step 7. No collider construction lives here.
+// Static massing uses compiled placements. GreyBox/span remain only for the dynamic leg's descriptor API.
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
 import type { Placement } from '../../prefab/types.ts';
+import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import { validateArtifact } from '../../prefab/validate.ts';
+
+const compiled = (() => {
+  const value: unknown = artifact;
+  validateArtifact(value);
+  return value;
+})();
 
 export type GreyBox = {
   x: number;
@@ -49,29 +57,22 @@ export function span(
 }
 
 /** Draw all visible records in one shared batch, preserving body and instance insertion order. */
-export async function drawGreyBoxes(owner: OwnedView, boxes: readonly (GreyBox | Placement)[]) {
-  const placements = boxes.map((b, i): Placement =>
-    'prefab' in b
-      ? b
-      : {
-          id: `legacy.massing.${i}`,
-          prefab: b.hidden ? 'greybox.collider' : b.solid === false ? 'greybox.decoration' : 'greybox.box',
-          pos: [b.x, b.y, b.z],
-          rot: [b.yaw, -(b.pitch ?? 0), 0],
-          scale: [b.w, b.h, b.d],
-          params: { colour: b.colour ?? '#9c9ea1' },
-        },
-  );
-  const shown = placements.filter((p) => p.prefab !== 'greybox.collider');
-  const batch = createPrefabBatch('greybox.box', Math.max(1, shown.length), owner);
-  batch.mesh.count = shown.length;
+export async function drawGreyBoxes(owner: OwnedView, placements: readonly Placement[]) {
+  const slots = (p: Placement) => {
+    const visual = compiled.prefabs[p.prefab]!.visual;
+    return 'builder' in visual ? (visual.instances?.length ?? 1) : 0;
+  };
+  const count = placements.reduce((n, p) => n + slots(p), 0);
+  const batch = createPrefabBatch('greybox.box', Math.max(1, count), owner);
+  batch.mesh.count = count;
   let solids = 0,
     index = 0;
   for (const p of placements) {
     const instance = instantiate(p.prefab, p, {
       owner,
-      ...(p.prefab === 'greybox.collider' ? {} : { batch: { target: batch, index: index++ } }),
+      ...(slots(p) ? { batch: { target: batch, index } } : {}),
     });
+    index += slots(p);
     instance.setEnabled(true);
     solids += instance.bodies.length;
   }

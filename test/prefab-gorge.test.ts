@@ -38,7 +38,7 @@ test('Gorge collider, placement and count bytes match the old massing', async ()
   );
   const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
     fs.readFileSync('src/entities/route-greybox/boxes.ts', 'utf8'),
-    runtime,
+    { ...runtime, artifact, ...validation },
   );
   const owner = createOwnedView();
   const authored = runtime.gorgePlacements;

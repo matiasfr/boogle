@@ -84,7 +84,8 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   The round-six `createBody as allocate` addition fails at the import-only step, before hiddenMaker exists.
 - `boogle/records-are-data`: content imports/re-exports only prefab `types.ts`/`names.ts`, `src/constants.ts`,
   `src/math-pure.ts`, and explicitly listed pure layout helpers (`place/layout.ts`, `entities/railway/line2-path.ts`,
-  `entities/route-greybox/massing.ts`'s shared coordinates and `entities/route-greybox/leg2-layout.ts`'s layout).
+  `entities/route-greybox/massing.ts`'s shared coordinates, `entities/route-greybox/leg2-layout.ts`'s coordinates/copy,
+  and `content/levels/leg2.ts`'s pure authoring shared with the Gorge level).
   No three.js (even inline `import('three').Mesh` types), browser/DOM globals or unknown/computed dynamic imports.
   Scope analysis checks every reference to browser globals, including `globalThis` itself, so member access,
   computed access and destructuring all fail at their source. Only runtime local definitions count as shadows:

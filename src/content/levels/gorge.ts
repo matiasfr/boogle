@@ -2,7 +2,7 @@
 import { defineLevel, type Placement } from '../../prefab/types.ts';
 import { LINE2_END_S, line2World, line2Y } from '../../entities/railway/line2-path.ts';
 import { gorgeAt, GORGE_DECK, GORGE_RIM, STAIR, TOWN_PAD } from '../../entities/route-greybox/massing.ts';
-import { LEG2 } from '../../entities/route-greybox/leg2-layout.ts';
+import { inclinePlacements, inclineAnalysis } from './leg2.ts';
 
 type Box = {
   x: number;
@@ -75,7 +75,7 @@ function levelBox(a0: number, a1: number, c0: number, c1: number, y0: number, y1
   } satisfies Box;
 }
 
-function placements(): Placement[] {
+function placements() {
   const out: Box[] = [];
   const E = LINE2_END_S;
   // The platforms: 40 m both sides (call 27), each 4.5 m deep, the north one the down track's (lat +1.8 to +6.3), the
@@ -189,46 +189,7 @@ function placements(): Placement[] {
         ),
       );
   }
-  // Leg 2 (docs/plans/greybox-leg2-massing.md, step 6): the incline's two platforms beside the `ns` row, t 16 to 56
-  // (call 118), and the dark mark on the south wall where the row enters the rock (call 116; nothing is bored).
-  // Keep leg 2's pure layout authority until its own placement conversion (step 7).
-  const pieces = LEG2.gorge.pieces;
-  for (const p of pieces) {
-    if (p.rise) throw new Error('gorge: incline massing now needs a ramp recipe');
-    out.push({
-      x: p.x,
-      y: p.top - p.h / 2,
-      z: p.z,
-      w: p.w,
-      h: p.h,
-      d: p.d,
-      yaw: p.yaw,
-      colour: p.tone === 'black' ? '#101113' : GREY_LIGHT,
-      solid: p.solid !== false,
-    });
-  }
-  for (const p of pieces.filter((p) => p.posts)) {
-    const s = Math.sin(p.yaw),
-      c = Math.cos(p.yaw),
-      count = Math.max(2, Math.ceil(p.d / 12) + 1);
-    for (const across of p.w > 8 ? [-p.w / 2 + 0.6, p.w / 2 - 0.6] : [0])
-      for (let k = 0; k < count; k++) {
-        const along = -p.d / 2 + 0.6 + ((p.d - 1.2) * k) / (count - 1),
-          under = p.top + (p.rise ?? 0) * (along / p.d + 0.5) - p.h;
-        out.push({
-          x: p.x + s * along + c * across,
-          y: (under - 8) / 2,
-          z: p.z + c * along - s * across,
-          w: 0.5,
-          h: under + 8,
-          d: 0.5,
-          yaw: p.yaw,
-          colour: GREY_DARK,
-          solid: false,
-        });
-      }
-  }
-  return out.map((b, i) => ({
+  const base: Placement[] = out.map((b, i) => ({
     id: i < 10 && i % 2 === 0 ? `gorge.platform-n.${i / 2}` : `gorge.massing.${i}`,
     prefab: b.hidden ? 'greybox.collider' : b.solid === false ? 'greybox.decoration' : 'greybox.box',
     pos: [b.x, b.y, b.z],
@@ -236,6 +197,11 @@ function placements(): Placement[] {
     scale: [b.w, b.h, b.d],
     params: { colour: b.colour ?? GREY },
   }));
+  const ids = new Map(inclinePlacements.map((p, i) => [p.id, `gorge.massing.${base.length + i}`]));
+  return {
+    placements: [...base, ...inclinePlacements.map((p) => ({ ...p, id: ids.get(p.id)! }))],
+    analysis: { ...inclineAnalysis, surfaces: inclineAnalysis.surfaces.map((s) => ({ ...s, id: ids.get(s.id)! })) },
+  };
 }
 
-export const levels = [defineLevel({ place: 'gorge', placements: placements() })];
+export const levels = [defineLevel({ place: 'gorge', ...placements() })];
