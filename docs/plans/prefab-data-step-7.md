@@ -1,5 +1,8 @@
 # Prefab data step 7: leg 2 proof
 
+Current v41 verification and the independent review's placed-collider correction are recorded in
+[the follow-up proof](prefab-data-step-7-review.md). The initial evidence below is retained as history.
+
 Implemented on `codex/prefab-data-step-7`, from `origin/main` at `859abbe7c` (step 6 landed).
 Implementation tip: `30ccf5025192fefeba235e4aabae4942d958014d`. This report follows in a documentation-only commit.
 No push or ship. Not tested on a device.
