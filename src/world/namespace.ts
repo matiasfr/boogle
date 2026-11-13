@@ -77,7 +77,10 @@
 // v35 (2026-11-13): a lay redirects a standing stack train with a full boarding dwell; repeat platform requests
 // may extend an unextended stand once, even with an ask pending; later calls cannot re-extend it.
 // Arrival-based hold caps and headway stay fixed; no shape change or migration.
-export const WORLD_NS = 'v35';
+// v36 (2026-11-13): Home's terminus station is the only layout: both path heads, yard and platform anchors,
+// the cart's longer road and the 110-tick shunt; tree planting frozen before station clearance, with stable IDs.
+// A clean reset for the moved station and tree table; no shape change or migration.
+export const WORLD_NS = 'v36';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

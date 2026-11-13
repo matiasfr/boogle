@@ -14,41 +14,36 @@ import {
   TOWN,
   lineAt,
 } from './layout.ts';
-import {
-  CELL,
-  H,
-  PATH_SAMPLES,
-  SHORE_SAMPLES,
-  at,
-  catalogClearMask,
-  catalogHeights,
-  clearMask,
-  gorgeD,
-  heights,
-} from './terrain.ts';
+import { CELL, H, PATH_SAMPLES, SHORE_SAMPLES, at, catalogClearMask, clearMask, gorgeD, NX, NZ } from './terrain.ts';
+import { PLANTING_CLEAR, PLANTING_LOW, PLANTING_HEIGHTS } from './tree-planting-mask.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { JUMP_COURSE, JUMP_RECOVERY } from './tech-layout.ts';
 
-export type LandTree = { x: number; y: number; z: number; size: number; hardwood: boolean };
-export const LAND_TREES: LandTree[] = [];
+export type LandTree = { id: number; x: number; y: number; z: number; size: number; hardwood: boolean };
+// The planting mask is frozen, not re-baked from today's roads. Changing an exclusion before the later draws
+// would replant the island. Assign identities before removing trees covered by the station's new ground.
+const plantingMask = new Uint8Array(NX * NZ);
+for (const [start, end] of [...PLANTING_CLEAR, ...PLANTING_LOW]) plantingMask.fill(1, start, end);
+const planted: LandTree[] = [];
+const firstId = GROVES.reduce((n, g) => n + g.n, 0) + 2; // the oak and great tree follow the groves
 const rng = mulberry32(31);
-for (let n = 0; n < 2600 && LAND_TREES.length < 400; n++) {
+for (let n = 0; n < 2600 && planted.length < 400; n++) {
   // Keep every RNG call and exclusion in the original order: append IDs must survive reloads.
-  const old = LAND_TREES.length < 340,
+  const old = planted.length < 340,
     x = old ? (rng() * 2 - 1) * 248 : HEAD.x + (rng() * 2 - 1) * HEAD.r,
     z = old ? (rng() * 2 - 1) * 248 : HEAD.z + (rng() * 2 - 1) * HEAD.r;
   const i = Math.round((x - GRID.x0) / CELL),
-    j = Math.round((z - GRID.z0) / CELL),
-    h = catalogHeights[at(i, j)]!;
-  if (h < 4 || catalogClearMask[at(i, j)]! > 0.05 || gorgeD(x, z) < 21) continue;
+    j = Math.round((z - GRID.z0) / CELL);
+  if (plantingMask[at(i, j)] || gorgeD(x, z) < 21) continue;
   if (Math.hypot(x - SPIRE.x, z - SPIRE.z) < 30) continue;
   if (GROVES.some((g) => Math.hypot(x - g.x, z - g.z) < g.r + 6)) continue;
   const grove = Math.sin(x * 0.036 + 1.2) * Math.cos(z * 0.041 - 0.4) + (z < -100 ? 0.8 : 0);
   if (old && grove < 0.15 + rng() * 0.25) continue;
   if (!old && rng() < 0.4) continue;
-  LAND_TREES.push({
+  planted.push({
+    id: firstId + planted.length,
     x: x + ORIGIN.x,
-    y: heights[at(i, j)]!,
+    y: PLANTING_HEIGHTS[planted.length]!,
     z: z + ORIGIN.z,
     size: 0.8 + rng() * 0.7,
     hardwood: false,
@@ -57,7 +52,8 @@ for (let n = 0; n < 2600 && LAND_TREES.length < 400; n++) {
 
 // The two nearest existing trees north of the forge: visible on the later walk back along the village ridge.
 // Selection does not move a tree or consume RNG; IDs still follow the original scenery planting order.
-const hardwoods = LAND_TREES.map((t, i) => ({ t, i }))
+const hardwoods = planted
+  .map((t, i) => ({ t, i }))
   .filter(({ t }) => t.x < ORIGIN.x - 55 && t.z < 0 && t.z > -80)
   .sort(
     (a, b) =>
@@ -66,6 +62,14 @@ const hardwoods = LAND_TREES.map((t, i) => ({ t, i }))
   )
   .slice(0, 2);
 for (const { t } of hardwoods) t.hardwood = true;
+
+// Only the new station ground may remove an already planted tree. Keep every survivor's id and ordering.
+// X1 covers no existing trunks: all 362 survive (the v35 comparison is in home-flip's proof report).
+export const LAND_TREES = planted.filter((t) => {
+  const i = Math.round((t.x - ORIGIN.x - GRID.x0) / CELL),
+    j = Math.round((t.z - ORIGIN.z - GRID.z0) / CELL);
+  return catalogClearMask[at(i, j)]! <= 0.05;
+});
 
 const puzzleDecks = [...JUMP_COURSE, ...JUMP_RECOVERY.slabs.map((p) => ({ ...p, top: JUMP_RECOVERY.top }))];
 /** Local scenery clearance only: retain every harvest ID and its accepted state across old/new tabs. */
