@@ -149,7 +149,7 @@ test('the rack serves the halt', () => {
 });
 test('the wagon waits between the table and the train', () => {
   assert.ok(WAGON_S / 100 - 1.6 > TURNTABLE.r);
-  assert.ok(WAGON_S / 100 + 1.6 < 11.7);
+  assert.ok(WAGON_S / 100 + 1.6 < 12.95, 'short of the plain train at the stop (v33: 18.25 less 3.7 and 1.6)');
   assert.deepEqual(local(SHED_TABLE), [TURNTABLE.x, TURNTABLE.z]);
   assert.deepEqual(SHED_ROAD, { stall: 0, line2: 1 });
 });

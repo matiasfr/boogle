@@ -201,7 +201,7 @@ Rules steps: an opus implementer each, then one independent reviewer for R1 and 
       `TRAIN_EXTENT` (V2 merges the two rows). Every pinned fixture moved (golden, ops golden, rail schema, M12 trace,
       tick order and its heads); the rail map did not (`--check` clean). Build 2's all-longer todo reads 1,152 after R1
       alone, as on v32.
-- [ ] **R2. Line 2's Village stop mark (rules).** Edit `src/sim/railway-lines.ts:396` (1825),
+- [x] **R2. Line 2's Village stop mark (rules).** Edit `src/sim/railway-lines.ts:396` (1825),
       `src/place/layout.ts:379` (18.25), `src/sim/railway-works-layout.ts:42` (`WAGON_S` 1085). Tests edited:
       `test/railway-lines.test.ts` (the three "v25/v27 stops" cases and "the pier opens with Q6"),
       `test/railway-trains.test.ts:157-187` (the cycle and headway literals, re-derived and stated in the title; the
@@ -214,6 +214,15 @@ Rules steps: an opus implementer each, then one independent reviewer for R1 and 
       again and the rail map (`node --import ./dev/sim/hooks.ts dev/level/rail-map.ts`). Verify: `npm run level-check`
       (the trial: 0 new problems, "stop at 18.25" reachable); `npm run loop -- run` (1 to 4 players finish); the
       section 5 gates in short mode; the reviewer runs them with `ROUTE_GATES=1` and reports the table.
+      *As built (12 November):* as planned, plus the review's `test/garage-geo.test.ts` case (the nearer leg 0.18 m
+      from the steel car's side, asserted at 0.15 or more over s 5.55 to 8.75; the barrel −0.03 m pinned within
+      0.01) and its stale note rewritten. Three things the plan did not list: `src/proto/greybox/rides.ts` (the greybox
+      ride's own copy of the 17, which "rides" pins); `test/home-station.test.ts`'s "abeam" now reads "1.25 m ahead of
+      abeam", and the 1.25x engine-pass case keeps the wagon consist (four cars at 1.25x do not fit road 2; the Home
+      flip's); `test/railway-trade.test.ts`'s tick 6512 was a train held at the Village's signal (`at` −1) arriving
+      the same tick as one at a halt, so the test counts arrivals at halts only (no tick moved, the assert unchanged).
+      The cycle and headway ticks did not move. `npm run level-check`: 0 problems, "stop at 18.25" ok; `npm run loop
+      -- run`: 1 to 4 players finish. Rail map regenerated (two figures).
 - [ ] **R3. The server path (rules, tests only).** Edit `server/test/railway-steel-host.test.ts`, no new file. (a) Its
       install case (`:212`, a real `r:edit`) runs the host on until a line 2 train stands at the Village and asserts
       the replicated row wears boiler 1 and that a joiner's snapshot has it: the one fact the car is drawn from. (b) A

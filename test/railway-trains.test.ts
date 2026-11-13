@@ -154,7 +154,7 @@ function awake(stage: 'trains-on' | 'q6-done' = 'trains-on', audit = true) {
 }
 
 // ---------------------------------------------------------------- the catalog's numbers
-test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to the Railhead; three trains (v27)", () => {
+test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to the Railhead; three trains (v27; the same ticks from v33's 18.25 m stop)", () => {
   const pier = TRAIN_STOPS[LINE2]!.slice(0, 4),
     before = pier.slice(0, 3),
     railhead = line2Stops(7, 0);
@@ -175,7 +175,7 @@ test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to t
   // Every block reaches past its stub's turnout (a crossover's starts at it), and every signal stands on the inbound
   // track outside it by a train's lead, at least a train's gap from the end stop (review of v26, P2-1).
   const [village, farHead] = endBlocks(LINE2, before);
-  assert.deepEqual([village.from, village.to, village.signal], [1700, 5400, 6670]);
+  assert.deepEqual([village.from, village.to, village.signal], [1825, 5400, 6670]);
   assert.deepEqual([farHead.from, farHead.to, farHead.signal], [49000, 52400, 48180]);
   assert.deepEqual(
     endBlocks(LINE2, pier).map((b) => b.signal),

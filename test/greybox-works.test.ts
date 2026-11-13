@@ -111,9 +111,9 @@ test('rides: legs match the rails (±2 m) and the plan sums', () => {
   assert.equal(CART_Q4_S, EAST.quarry - 13);
   // The train: the quarry's `stops` and the Far Head stop, then the pier at the line's end.
   const stops = LINKS.find((l) => l.id === 'quarry')!.stops;
-  assert.deepEqual(stops, [17, EAST.quarry - 4, EAST.headStop]);
+  assert.deepEqual(stops, [18.25, EAST.quarry - 4, EAST.headStop]);
   assert.deepEqual(train!.legs.map(legLength), [stops[1]! - stops[0]!, stops[2]! - stops[1]!, E - stops[2]!]);
-  assert.ok(Math.abs(rideLength(train!) - (E - 17)) <= 2);
+  assert.ok(Math.abs(rideLength(train!) - (E - 18.25)) <= 2);
   assert.ok(Math.abs(rideModelSeconds(train!) - rideSeconds(data.ride, train!.legs.map(legLength))) < 0.01);
   // The boiler: 546 m home in about 98 s, then on to the old train at the camp.
   assert.equal(legLength(boiler!.legs[0]!), EAST.head);

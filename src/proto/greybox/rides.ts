@@ -47,7 +47,7 @@ export function workRides(ride: MapData['ride']): WorkRide[] {
       mps: ride.speed,
       startS: ride.boardS,
       legs: [
-        train(17, EAST.quarry - 4, 'Quarry stop'),
+        train(18.25, EAST.quarry - 4, 'Quarry stop'), // line 2's Village stop (v33, fourth-car R2)
         train(EAST.quarry - 4, EAST.headStop, 'Far Head stop'),
         train(EAST.headStop, E, 'Pier'),
       ],
