@@ -17,13 +17,15 @@ const STONE = '#c8c0b0',
   SLEEPER = '#8a6236',
   RAIL = '#4c5058',
   BUFFER = '#a33a2c',
-  BRASS = '#e6a33e';
+  BRASS = '#e6a33e',
+  PLANK = '#b98a52';
 
 export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedView) {
-  const [{ H }, layout, home] = await Promise.all([
+  const [{ H }, layout, home, { addFoot }] = await Promise.all([
     import('../../place/land.ts'),
     import('../../place/layout.ts'),
     import('../../place/home-station.ts'),
+    import('../../place/sites.ts'),
   ]);
   const world = (p: { x: number; z: number }): WorksPoint => ({ x: p.x + layout.ORIGIN.x, z: p.z });
   const ground = (p: WorksPoint) => H(p.x, p.z);
@@ -89,10 +91,28 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     const mid = at(a, c);
     add(box(mid.x, floor - 0.12, mid.z, w + 0.2, 0.24, d + 0.2, yaw), STONE, true);
     // The end walls stop at 2.4 m, with a stone coping; the roof stands on the posts, the corner ones included.
+    // The north wall (toward the forge) is in two lengths round the goods door, behind road 1's buffer.
+    const door = home.HALL.goodsDoor;
     for (const j of [-1, 1]) {
-      const wall = at(a, c + j * (w / 2 - 0.15));
-      add(box(wall.x, floor + endWall / 2, wall.z, 0.3, endWall, d - 0.4, yaw), BRICK, true);
-      add(box(wall.x, floor + endWall + 0.06, wall.z, 0.42, 0.12, d - 0.2, yaw), STONE);
+      const spans: [number, number][] =
+        j < 0
+          ? [
+              [a - d / 2, door.a0],
+              [door.a1, a + d / 2],
+            ]
+          : [[a - d / 2, a + d / 2]];
+      for (const [a0, a1] of spans) {
+        // A length that ends at a corner stops 0.2 m short of it (the wall) or 0.1 m (the coping), as the whole wall did.
+        const end = (v: number, inset: number) => (v === a - d / 2 ? v + inset : v === a + d / 2 ? v - inset : v);
+        const wall0 = end(a0, 0.2),
+          wall1 = end(a1, 0.2),
+          cope0 = end(a0, 0.1),
+          cope1 = end(a1, 0.1);
+        const wall = at((wall0 + wall1) / 2, c + j * (w / 2 - 0.15)),
+          cope = at((cope0 + cope1) / 2, c + j * (w / 2 - 0.15));
+        add(box(wall.x, floor + endWall / 2, wall.z, 0.3, endWall, wall1 - wall0, yaw), BRICK, true);
+        add(box(cope.x, floor + endWall + 0.06, cope.z, 0.42, 0.12, cope1 - cope0, yaw), STONE);
+      }
     }
     for (const i of [-1, 1])
       for (const x of [-(w / 2 - 0.15), -w / 4, 0, w / 4, w / 2 - 0.15]) {
@@ -104,6 +124,8 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
       add(box(fascia.x, floor + height - 0.25, fascia.z, w, 0.5, 0.2, yaw), POST);
     }
     add(box(mid.x, floor + height + 0.15, mid.z, w + 0.8, 0.3, d + 0.8, yaw), ROOF, true);
+    // The little guys walk round the hall (src/place/sites.ts).
+    addFoot(mid.x, mid.z, yaw, w / 2, d / 2, owner);
   }
 
   // ---------------------------------------------------------------- the island: the apron and the kerb outline
@@ -128,6 +150,32 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     add(box(end.x, ground(end) + 0.1, end.z, home.ISLAND.width, 0.24, 0.3, yaw), KERB);
   }
 
+  // ---------------------------------------------------------------- the board crossing over road 2
+  // Planks along the road, level with the rail heads, with a gap at each rail for the wheels: the short way from the
+  // island to the stall, drawn on the ground. No collider: a train runs through it and a player walks the rails anyway.
+  {
+    const { s, len, c0, c1 } = home.CROSSING;
+    const a = s - home.ROAD2_S,
+      top = railAt(1, s) + 0.22,
+      rails = [home.ROAD_GAP - 0.5, home.ROAD_GAP + 0.5];
+    const edges = [c0 + 0.05, rails[0]! - 0.09, rails[0]! + 0.09, rails[1]! - 0.09, rails[1]! + 0.09, c1];
+    for (let k = 0; k < edges.length; k += 2) {
+      // Each run of the crossing is planks about 0.3 m wide, a finger apart.
+      const from = edges[k]!,
+        to = edges[k + 1]!,
+        n = Math.max(1, Math.round((to - from) / 0.3));
+      for (let i = 0; i < n; i++) {
+        const mid = at(a, from + ((to - from) * (i + 0.5)) / n);
+        add(box(mid.x, top - 0.04, mid.z, (to - from) / n - 0.03, 0.08, len, yaw), PLANK);
+      }
+    }
+    // A bright post at each far corner, so the crossing reads from the deck and from the stall.
+    for (const da of [-len / 2, len / 2]) {
+      const post = at(a + da, c1 + 0.12);
+      add(box(post.x, ground(post) + 0.45, post.z, 0.14, 0.9, 0.14, yaw), BRASS);
+    }
+  }
+
   // ---------------------------------------------------------------- the spur, the stall roads and the ruined stalls
   track(home.spurPoints().map(world), () => TABLE_RAIL, boxes);
   const lever = (p: WorksPoint, heading: number) => {
@@ -145,7 +193,11 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     const f = home.stallFrame(bearing);
     const rim = world(f.rim),
       door = world(f.door);
-    if (bearing !== home.STALLS.open) {
+    if (bearing === home.STALLS.open) {
+      // The open stall is the Roundhouse's to draw (./roundhouse-view.ts); the little guys walk round it too.
+      const mid = world(f.centre);
+      addFoot(mid.x, mid.z, f.yaw, home.STALLS.width / 2, home.STALLS.depth / 2, owner);
+    } else {
       const n = Math.ceil(home.STALLS.door - home.TABLE.r);
       track(
         Array.from({ length: n + 1 }, (_, k) => ({
@@ -162,6 +214,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
       const { door: d0, depth, width } = home.STALLS;
       const centre = p(d0 + depth / 2, 0);
       add(box(centre.x, FLOOR, centre.z, width, 0.12, depth, f.yaw), '#8f8a80');
+      addFoot(centre.x, centre.z, f.yaw, width / 2, depth / 2, owner);
       for (const x of [-1, 1]) {
         const heights = x < 0 ? [0.9, 0.35, 0.6] : [0.5, 0.8, 0.3];
         heights.forEach((h, k) => {

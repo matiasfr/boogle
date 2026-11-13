@@ -16,15 +16,9 @@ const { triggerAction } = (await import(
 const { garage } = (await import(
   '/src/entities/railway/garage-state.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-state.ts');
-const home = (await import(
-  '/src/place/home-station.ts' as string
-)) as typeof import('../../../src/place/home-station.ts');
-const { GARAGE_GEO, polarAt } = (await import(
+const { garageRow, polarAt } = (await import(
   '/src/entities/railway/garage-geo.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-geo.ts');
-const { SHED_TABLE } = (await import(
-  '/src/sim/railway-works-layout.ts' as string
-)) as typeof import('../../../src/sim/railway-works-layout.ts');
 const { railReady, rw, train } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { LINE2 } = (await import(
   '/src/sim/railway-lines.ts' as string
@@ -41,9 +35,7 @@ while (!me.body || !me.entered) {
   if (performance.now() > deadline) throw new Error('garage look: the player did not become ready');
   await wait(100);
 }
-const homeB = home.homeLayout();
-const centre = homeB ? { x: home.TABLE.x + 1000, z: home.TABLE.z } : { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
-const row = homeB ? GARAGE_GEO.b : GARAGE_GEO.a;
+const { geo: row, table: centre } = garageRow();
 // `&cam=<bearing>` tries another camera bearing for this look only (the row is read live while the garage is shut).
 const tryCam = Number(new URLSearchParams(location.search).get('cam'));
 if (tryCam) (row as { camBearing: number }).camBearing = tryCam;

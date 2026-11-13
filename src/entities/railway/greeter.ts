@@ -46,15 +46,14 @@ export type GreeterRead = {
   ready: () => boolean;
 };
 export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
-  const [folk, talk, layout, shore, land] = await Promise.all([
+  const [folk, talk, layout, land] = await Promise.all([
     import('../../place/folk.ts'),
     import('../../place/talk.ts'),
     import('../../place/layout.ts'),
-    import('../../place/shore-layout.ts'),
     import('../../place/land.ts'),
   ]);
   if (!owner.alive) return { update: () => {}, targets: (): Interactable[] => [] };
-  const g = folk.addGreeter(layout.toWorld(shore.SHORE_WORKER.x), layout.VILLAGE.y, shore.SHORE_WORKER.z);
+  const g = folk.addGreeter(layout.toWorld(layout.GREETER.x), layout.VILLAGE.y, layout.GREETER.z);
   // Ground the original shore worker beside the path, without adding a blocking body.
   g.fy = land.H(g.x, g.z);
   const at = new THREE.Vector3(g.x, g.fy + 1.5, g.z);

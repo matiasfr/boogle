@@ -15,6 +15,7 @@ import { clank, thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { CART, CART_PHASE, CART_ROAD, cartAlong } from '../../sim/railway-cart.ts';
+import type { Car } from './car.ts';
 import { playMark } from '../../proto/mark.ts';
 import {
   line2Active,
@@ -48,8 +49,9 @@ export async function createRailwayCart(
   depotSlot: (k: number, n: number, out: THREE.Vector3) => THREE.Vector3,
   shelfSlot: (k: number, n: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
-  const [layout, rail, pieces, flatMod, look, kit, props, common] = await Promise.all([
+  const [layout, home, rail, pieces, flatMod, look, kit, props, common] = await Promise.all([
     import('../../place/layout.ts'),
+    import('../../place/home-station.ts'),
     import('./rail-kit.ts'),
     import('../../place/pieces.ts'),
     import('../../render/flat.ts'),
@@ -62,6 +64,31 @@ export async function createRailwayCart(
   const [north, east] = [layout.LINKS[0]!.line, layout.LINKS[1]!.line];
   const SIZE = layout.CART; // hx, hz, top: Place's cart
   const F = CART_ROAD.forgeCm / 100;
+  // `?home=b` (docs/plans/home-flip.md, F2): the cart runs layout B's road (line 1, the leg, road 2 to the buffers and
+  // back out along it). The rules still count today's 196 m to the forge, so the way in is scaled until the flip.
+  const homeB = home.homeLayout();
+  const roads = { north, east };
+  const roadY = { north: (s: number) => layout.railY(north, s), east: (s: number) => layout.railY(east, s) };
+  /** The car on layout B's road at the rules' distance `d`. It reverses at the forge stop without turning: its nose
+   * points the way in on both sides of the stop. */
+  function poseOnRoadB(c: Car, d: number) {
+    const at = home.cartRoadFrom(d, F),
+      stop = home.CART_FORGE,
+      inward = at <= stop,
+      sign = inward ? 1 : -1;
+    const lo = inward ? Math.max(0, at - 1.1) : Math.max(stop, at - 1.1),
+      hi = inward ? Math.min(stop, at + 1.1) : at + 1.1;
+    const p = home.cartRoadAt(lo, roads),
+      q = home.cartRoadAt(hi, roads),
+      mid = home.cartRoadAt(at, roads);
+    c.x = mid.x + layout.ORIGIN.x;
+    c.z = mid.z + layout.ORIGIN.z;
+    c.yaw = Math.atan2((q.x - p.x) * sign, (q.z - p.z) * sign);
+    const yp = home.cartRoadY(lo, roadY),
+      yq = home.cartRoadY(hi, roadY);
+    c.y = (yp + yq) / 2 + rail.BOTTOM + c.hy;
+    c.pitch = Math.atan2((yq - yp) * sign, hi - lo || 1);
+  }
   const geometries: THREE.BufferGeometry[] = [];
   const materials: THREE.Material[] = [];
 
@@ -152,7 +179,8 @@ export async function createRailwayCart(
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * TICKS_PER_S + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
     const d = cartAlong(cartRow(w), clock) / 100;
-    if (d <= F) rail.poseCarOnLine(car, north, F - d, -1);
+    if (homeB) poseOnRoadB(car, d);
+    else if (d <= F) rail.poseCarOnLine(car, north, F - d, -1);
     else rail.poseCarOnLine(car, east, d - F, 1);
     if (!shown) {
       shown = true;

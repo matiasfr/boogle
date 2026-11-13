@@ -17,7 +17,7 @@ import { STEEL_CAR, steelCarOffset } from '../src/entities/railway/cars.ts';
 import { TRAIN_STOPS } from '../src/sim/railway-train.ts';
 
 import { LINES, ORIGIN, lineAt } from '../src/place/layout.ts';
-import { TABLE } from '../src/place/home-station.ts';
+import { HEADS, STALLS, TABLE, roadAt, spurPoints, stallFrame } from '../src/place/home-station.ts';
 import { jumpOf } from '../src/world/railway-jump.ts';
 
 const centre = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
@@ -85,6 +85,47 @@ test('every piece is off both lines’ sleepers and off the jump-in landing, whi
     toLand = Math.min(...barrel.map((p) => dist(p, land) - STAND_PART.r));
   assert.ok(toLine >= 0.8, `the barrel's side ${toLine.toFixed(2)} m from line 2's centre (the rail is at 0.68 m)`);
   assert.ok(toLand >= 0.3, `the barrel's side ${toLand.toFixed(2)} m from the landing`);
+});
+
+// Layout B's row (docs/plans/home-flip.md, F1, problem 2): the same sweep, legs and landing rules, measured from
+// layout B's table and against layout B's track (both heads, the spur and the three stall roads).
+test('layout B’s row: nothing within the deck’s sweep, legs under the barrel, off every track and the landing', () => {
+  const b = GARAGE_GEO.b,
+    tableB = { x: TABLE.x, z: TABLE.z };
+  const track: XZ[] = [];
+  for (const road of [0, 1] as const) for (let s = -6; s <= HEADS[road].join; s += 0.1) track.push(roadAt(road, s));
+  track.push(...spurPoints());
+  for (const bearing of STALLS.bearings) {
+    const f = stallFrame(bearing);
+    for (let k = 0; k <= 40; k++)
+      track.push({ x: f.rim.x + ((f.back.x - f.rim.x) * k) / 40, z: f.rim.z + ((f.back.z - f.rim.z) * k) / 40 });
+  }
+  const offTrack = (p: XZ) => Math.min(...track.map((t) => dist(t, p)));
+  // The sweep: the post, jib and crew 5 m or further out; the part on its radial stand wholly outside 4.8 m.
+  assert.equal(b.standAlong, 'radius');
+  for (const p of [b.post, b.jib, ...b.crew]) assert.ok(p.r >= 5.0, `${p.bearing}° at ${p.r} m`);
+  const [inner, outer] = standEnds(tableB, b);
+  const barrel = Array.from({ length: 33 }, (_, k) => ({
+    x: inner.x + ((outer.x - inner.x) * k) / 32,
+    z: inner.z + ((outer.z - inner.z) * k) / 32,
+  }));
+  for (const p of barrel) assert.ok(dist(p, tableB) >= DECK_R, 'the part on its stand');
+  assert.ok(Math.abs(dist(inner, tableB) - 4.925) < 0.01, 'the stand’s inner end, 4.93 m out');
+  for (const r of STAND_LEGS.at) assert.ok(Math.abs(r - b.stand.r) <= STAND_PART.half, 'a leg under the barrel');
+  assert.ok(b.arm >= b.jib.r + 1.9, 'the arm reaches the engine’s seat past the centre');
+  // The jib and the crew stand behind the stand, on its bearing or within 4° of it.
+  assert.ok(b.jib.r > b.stand.r + STAND_PART.half && b.jib.bearing === b.stand.bearing);
+  for (const p of b.crew) assert.ok(p.r > b.stand.r + STAND_PART.half && Math.abs(p.bearing - b.stand.bearing) <= 4);
+  // The landing follows the table at the flip (TABLE_LAND: 5.2 m east, 1.7 m south of the centre).
+  const land = { x: tableB.x + 5.2, z: tableB.z + 1.7 };
+  for (const p of [b.post, b.jib, ...b.crew].map((q) => polarAt(tableB, q))) {
+    assert.ok(offTrack(p) > SLEEPER + 0.2, `a piece ${offTrack(p).toFixed(2)} m from a track`);
+    assert.ok(dist(p, land) >= 0.9, `a piece ${dist(p, land).toFixed(2)} m from the landing`);
+  }
+  const toTrack = Math.min(...barrel.map((p) => offTrack(p) - STAND_PART.r)),
+    toLand = Math.min(...barrel.map((p) => dist(p, land) - STAND_PART.r));
+  assert.ok(toTrack >= 5, `the barrel's side ${toTrack.toFixed(2)} m from the nearest track`);
+  assert.ok(toLand >= 1.5, `the barrel's side ${toLand.toFixed(2)} m from the landing`);
 });
 
 /** Where a point stands against line 2's first 16 m: its nearest s and its distance from the line's centre. */

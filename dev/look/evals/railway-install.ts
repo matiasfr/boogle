@@ -34,12 +34,9 @@ const { TRAIN_PHASE } = (await import(
 const { garage } = (await import(
   '/src/entities/railway/garage-state.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-state.ts');
-const { GARAGE_GEO, polarAt } = (await import(
+const { garageRow, polarAt } = (await import(
   '/src/entities/railway/garage-geo.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-geo.ts');
-const { SHED_TABLE } = (await import(
-  '/src/sim/railway-works-layout.ts' as string
-)) as typeof import('../../../src/sim/railway-works-layout.ts');
 
 const step = new URLSearchParams(location.search).get('installstep') ?? 'prompt';
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -67,9 +64,9 @@ async function offered() {
 if (!(await railReady(30_000))) throw new Error('install: the railway never became ready');
 void (async () => {
   // Beside the post, a little further round the rim (clear of the barrel on its stand), facing the table.
-  const centre = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
-  const stood = polarAt(centre, { bearing: GARAGE_GEO.a.post.bearing + 6, r: GARAGE_GEO.a.post.r + 0.2 });
-  teleport(me.body!, stood.x, SHED_TABLE.y / 100 + 0.7, stood.z);
+  const { geo, table: centre, y: groundY } = garageRow();
+  const stood = polarAt(centre, { bearing: geo.post.bearing + 6, r: geo.post.r + 0.2 });
+  teleport(me.body!, stood.x, groundY + 0.7, stood.z);
   me.body!.velocity.set(0, 0, 0);
   cam.yaw = me.yaw = Math.atan2(centre.x - stood.x, centre.z - stood.z);
   await wait(1500);

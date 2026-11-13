@@ -42,9 +42,6 @@ const { input } = (await import('/src/player/input.ts' as string)) as typeof imp
 const talk = (await import('/src/place/talk.ts' as string)) as typeof import('../../../src/place/talk.ts');
 const layout = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
 const land = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
-const shore = (await import(
-  '/src/place/shore-layout.ts' as string
-)) as typeof import('../../../src/place/shore-layout.ts');
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const deadline = performance.now() + 20000;
@@ -94,7 +91,7 @@ if (at === 'house' || at === 'shop' || at === 'museum') {
   look = { x: (h.cx + s.cx + m.cx) / 3, y: stand.y + 1.5, z: (h.cz + s.cz + m.cz) / 3 };
   eye = { x: stand.x + 9, y: stand.y + 7, z: stand.z + 2 };
 } else if (at === 'sleeves') {
-  const g = ground(layout.toWorld(shore.SHORE_WORKER.x), shore.SHORE_WORKER.z);
+  const g = ground(layout.toWorld(layout.GREETER.x), layout.GREETER.z);
   const h = door('house');
   // On the path a step from Sleeves, toward the village: what a newcomer sees of the house from there.
   const toX = h.x - g.x,

@@ -2,6 +2,8 @@
 // data: one row per table. Pure: no scene, DOM or clock. Local view data only: nothing here is sent, saved or read by
 // the simulation. Bearings are degrees clockwise from north (north is -z), distances metres from the table's centre.
 import { SHED_TABLE } from '../../sim/railway-works-layout.ts';
+import { TABLE, homeLayout } from '../../place/home-station.ts';
+import { ORIGIN } from '../../place/layout.ts';
 
 export type XZ = { x: number; z: number };
 export type Polar = { bearing: number; r: number };
@@ -51,22 +53,32 @@ export const GARAGE_GEO: { a: GarageGeo; b: GarageGeo } = {
     ],
     camBearing: 85,
   },
-  /** Layout B's table (`?home=b`), as the first build placed it. */
+  /** Layout B's table (`?home=b`): today's radial arrangement at bearing 85°, the stand's inner end 4.93 m out, the
+   * jib and the crew behind it, nothing within the deck's 4.8 m (docs/plans/home-flip.md, F1). Bearing 85° keeps the
+   * barrel off the jump-in landing (108°, 5.5 m), 60° from the nearest stall road and well inside line 2's curve. */
   b: {
     post: { bearing: 60, r: 5.6 },
-    jib: { bearing: 105, r: 5.6 },
-    mast: 3.4,
-    arm: 5.8,
-    park: 105,
-    stand: { bearing: 105, r: 3.9 },
-    standAlong: 'rim',
+    jib: { bearing: 85, r: 8.4 },
+    mast: 4.4,
+    arm: 10.6,
+    park: 67,
+    stand: { bearing: 85, r: 6.5 },
+    standAlong: 'radius',
     crew: [
-      { bearing: 123, r: 5.2 },
-      { bearing: 91, r: 4.4 },
+      { bearing: 88, r: 9.4 },
+      { bearing: 81, r: 8.7 },
     ],
     camBearing: 15,
   },
 };
+
+/** The garage this page draws: its row, its table's centre (world metres) and the ground beside the table. The one
+ * place a view or a look reads which table the garage stands at (`?home=b`: layout B's). */
+export function garageRow(): { geo: GarageGeo; table: XZ; y: number } {
+  return homeLayout()
+    ? { geo: GARAGE_GEO.b, table: { x: TABLE.x + ORIGIN.x, z: TABLE.z }, y: TABLE.y + 0.5 }
+    : { geo: GARAGE_GEO.a, table: { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 }, y: SHED_TABLE.y / 100 };
+}
 
 const rad = (d: number) => (d * Math.PI) / 180;
 export const polarAt = (centre: XZ, p: Polar): XZ => ({

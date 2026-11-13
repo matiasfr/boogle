@@ -44,14 +44,20 @@ import { createBoxBatch } from './works-box-view.ts';
 import { createRingMapTable } from './ring-map-table.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 
-/** How near a request lever's knob its prompt is offered (m, flat). */
-const LEVER_REACH = 1.8;
 type Box = import('../../render/boxes.ts').Box;
 type Line = import('../../place/layout.ts').Line;
 type LinePoint = import('../../place/layout.ts').LinePoint;
 
 export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedView) {
-  const [{ flat }, boxModule, landModule, layout, { boardMaterial }, piecesModule, { ISLAND }] = await Promise.all([
+  const [
+    { flat },
+    boxModule,
+    landModule,
+    layout,
+    { boardMaterial },
+    piecesModule,
+    { ISLAND, ISLAND_LEVER, LEVER_REACH },
+  ] = await Promise.all([
     import('../../render/flat.ts'),
     import('../../render/boxes.ts'),
     import('../../place/land.ts'),
@@ -266,8 +272,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const dir: -1 | 1 = stop === 0 ? 1 : -1;
     const lever: RequestLever = createRequestLever(owner, 1, sign);
     {
-      const dl = mast - sign * 0.5,
-        ds = half - 0.8 - 0.6;
+      // On the island each lever stands out on its own edge, under its mast (home-station.ts, ISLAND_LEVER): the two
+      // are then more than twice the prompt's reach apart.
+      const dl = island ? sign * (hw - ISLAND_LEVER.edge) : mast - sign * 0.5,
+        ds = island ? half - ISLAND_LEVER.fromEnd : half - 0.8 - 0.6;
       lever.group.position.set(c.x + dl * cosY + ds * sinY, low, c.z - dl * sinY + ds * cosY);
       lever.group.rotation.y = yaw;
       lever.group.visible = false;
@@ -389,6 +397,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       stop,
       lever,
       middle,
+      island,
       dir,
       x: c.x,
       y: low,
@@ -816,8 +825,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       signals(true);
       levers(0, true);
     },
-    /** The levers in reach: "Request stop" at an end halt, "Request stop: to <end>" at a middle one (the end on the
-     * lever's plaque); greyed while that request stands. A chained lever offers nothing. */
+    /** The levers in reach: "Request stop" at an end halt, "Request stop: to <end>" at a middle one and on the Home
+     * island, where two lines' levers stand on one deck (the end on the lever's plaque; the island's wording is a
+     * placeholder, not The Boogler's); greyed while that request stands. A chained lever offers nothing. */
     targets(): Interactable[] {
       const p = me.body?.position;
       if (!shown || !p) return [];
@@ -830,8 +840,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         const at = x.lever.knob(0, new THREE.Vector3());
         if (Math.hypot(p.x - at.x, p.z - at.z) > LEVER_REACH || Math.abs(p.y - at.y) > 1.6) continue;
         const id = `railway-request-${x.id}-${x.up ? 'up' : 'down'}`;
-        const middle = x.ring ? x.stop > 0 && x.stop < stopsNow[x.line]!.length - 1 : halts[x.id]!.middle;
-        const verb = middle ? `Request stop: to ${label(x)}` : 'Request stop';
+        const named = x.ring
+          ? x.stop > 0 && x.stop < stopsNow[x.line]!.length - 1
+          : halts[x.id]!.middle || halts[x.id]!.island;
+        const verb = named ? `Request stop: to ${label(x)}` : 'Request stop';
         if (over(x) || pulled.has(x)) out.push({ id, verb, at, blocked: 'Stop requested' });
         else
           out.push({
