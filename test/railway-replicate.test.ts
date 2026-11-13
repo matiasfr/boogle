@@ -607,8 +607,8 @@ test("every train and line row reaches the mirror through the replicated compone
     agree(r, 'a');
     const server = r.api.world(),
       mirror = r.mirrors.get('a')!.confirmed();
-    // v27's four, and the greybox route's two fleet rows (in the shed until the stack line is laid).
-    assert.equal(trains(mirror).length, 6);
+    // v27's four, and the greybox route's three fleet rows (in the shed until the stack line is laid; three from v34).
+    assert.equal(trains(mirror).length, 7);
     assert.deepEqual(trains(mirror), trains(server));
     assert.deepEqual(lines(mirror), lines(server));
   }
