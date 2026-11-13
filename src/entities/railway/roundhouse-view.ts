@@ -26,7 +26,7 @@ import { createGarageView } from './garage-view.ts';
 import { roomFacts } from './garage-state.ts';
 import { playSharedMoment } from './shared-moment.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
-import { GARAGE_GEO, installHere, polarAt } from './garage-geo.ts';
+import { garageRow, installHere, polarAt } from './garage-geo.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 
 /** Seconds: the stall frame's build, the tarp's slide, the table's quarter turn. */
@@ -62,7 +62,8 @@ export async function createRailwayRoundhouse(
     import('../../place/home-station.ts'),
   ]);
   // `?home=b` (docs/plans/home-station.md, step 3) draws the open stall on the table's 190 degree road and the table at
-  // its spur's end. Look only: the prompts' reach keeps today's anchors, and the shunt still runs today's path.
+  // its spur's end, and runs the shunt on layout B's track (`shuntPath()`, below). Look only: the prompts' reach keeps
+  // today's anchors.
   const homeB = home.homeLayout();
   const open = home.stallFrame(home.STALLS.open);
   const toWorld = (p: { x: number; z: number }) => ({ x: p.x + layout.ORIGIN.x, z: p.z });
@@ -143,14 +144,14 @@ export async function createRailwayRoundhouse(
   // framed view of it. Mounted at today's table and at layout B's, each with its own placement row. Local: nothing is
   // sent or saved. `garageHere`: a hold at this post is inside the server's reach for the install (today's table only,
   // until the flip moves `SHED_TABLE`).
-  const garageRow = homeB ? GARAGE_GEO.b : GARAGE_GEO.a;
-  const garagePost = polarAt(table, garageRow.post);
+  const garageGeo = garageRow().geo;
+  const garagePost = polarAt(table, garageGeo.post);
   const garageHere = installHere(garagePost);
   const garageView = await createGarageView(
     owner,
     // Today's table stands 0.2 m over the grass east of it (surface 18.1 m, railway-jump.ts's TABLE_LAND).
     { table, y: tableY, post: garagePost, ground: homeB ? tableY : SHED_TABLE.y / 100 - 0.2 },
-    garageRow,
+    garageGeo,
     {
       // The deck is at rest when no choreography turns it, it is not catching up, and the shunter is home in the stall.
       restYaw: () =>
@@ -180,31 +181,79 @@ export async function createRailwayRoundhouse(
   pathPts.push(new THREE.Vector3(door.x, RAIL, door.z));
   pathPts.push(new THREE.Vector3(rim.x, (RAIL + tableY) / 2, rim.z));
   pathPts.push(new THREE.Vector3(table.x, tableY, table.z));
-  for (let s = 1; s <= WAGON_S / 100 + 0.01; s += 1)
-    pathPts.push(lineAt(Math.min(s, WAGON_S / 100), new THREE.Vector3()));
-  if (pathPts.at(-1)!.distanceTo(lineAt(WAGON_S / 100, new THREE.Vector3())) > 0.01)
-    pathPts.push(lineAt(WAGON_S / 100, new THREE.Vector3()));
-  const cum: number[] = [0];
-  for (let i = 1; i < pathPts.length; i++) cum.push(cum[i - 1]! + pathPts[i]!.distanceTo(pathPts[i - 1]!));
-  const PARKED_A = cum[1]!; // the wagon's parked place along the path
-  const OUT_A = cum.at(-1)!; // its wait on line 2
-  const TABLE_A = cum[4]!;
-  /** The point at path distance `a`, carried straight on past either end (a bogie can stand beyond the last point). */
-  function pathAt(a: number, out: THREE.Vector3) {
-    let i = 1;
-    while (i < pathPts.length - 1 && cum[i]! < a) i++;
-    let u = (a - cum[i - 1]!) / (cum[i]! - cum[i - 1]! || 1);
-    if (i > 1) u = Math.max(0, u);
-    if (i < pathPts.length - 1) u = Math.min(1, u);
-    return out.lerpVectors(pathPts[i - 1]!, pathPts[i]!, u);
+  // Today's path runs straight on from the table along line 2. Layout B's ends at the table: what follows is `shuntB`.
+  if (!homeB) {
+    for (let s = 1; s <= WAGON_S / 100 + 0.01; s += 1)
+      pathPts.push(lineAt(Math.min(s, WAGON_S / 100), new THREE.Vector3()));
+    if (pathPts.at(-1)!.distanceTo(lineAt(WAGON_S / 100, new THREE.Vector3())) > 0.01)
+      pathPts.push(lineAt(WAGON_S / 100, new THREE.Vector3()));
   }
+  const lengths = (pts: THREE.Vector3[]) => {
+    const out: number[] = [0];
+    for (let i = 1; i < pts.length; i++) out.push(out[i - 1]! + pts[i]!.distanceTo(pts[i - 1]!));
+    return out;
+  };
+  /** The point at distance `a` along a polyline, carried straight on past either end (a bogie can stand beyond the
+   * last point). */
+  function polyAt(pts: THREE.Vector3[], along: number[], a: number, out: THREE.Vector3) {
+    let i = 1;
+    while (i < pts.length - 1 && along[i]! < a) i++;
+    let u = (a - along[i - 1]!) / (along[i]! - along[i - 1]! || 1);
+    if (i > 1) u = Math.max(0, u);
+    if (i < pts.length - 1) u = Math.min(1, u);
+    return out.lerpVectors(pts[i - 1]!, pts[i]!, u);
+  }
+  const cum = lengths(pathPts);
+  const PARKED_A = cum[1]!; // the wagon's parked place along the path
+  const TABLE_A = cum[4]!;
+  const pathAt = (a: number, out: THREE.Vector3) => polyAt(pathPts, cum, a, out);
+  /** Layout B's shunt past the table (home-station.ts `shuntPath()`; docs/plans/home-flip.md, F2), in two tracks. The
+   * deck turns the pair so the shunter leaves first: `inPts` runs from the table's centre down the spur onto road 2
+   * and on to the buffer, and the pair backs down it, the shunter leading, until the wagon's centre is at the cusp;
+   * `outPts` is road 2 from the buffer outward, along which the shunter pushes the wagon to its wait. One distance
+   * still places each vehicle: `cuspA` is the wagon's at the cusp, `outA` at its wait. */
+  const shuntB = (() => {
+    if (!homeB) return null;
+    const wagonS = WAGON_S / 100,
+      buffer = home.BUFFERS[1];
+    const { pts, cusp } = home.shuntPath(wagonS);
+    const roadPoint = (s: number) => {
+      const p = toWorld(home.roadAt(1, s));
+      return new THREE.Vector3(p.x, layout.railY(line2, Math.max(0, s)), p.z);
+    };
+    // pts[3] is the table's centre and pts[cusp - 1] road 2 one metre short of the cusp: the spur at the table's height.
+    const inPts = pts.slice(3, cusp).map((p) => {
+      const w = toWorld(p);
+      return new THREE.Vector3(w.x, tableY, w.z);
+    });
+    for (let s = home.SHUNT_CUSP_S; s > buffer; s--) inPts.push(roadPoint(s));
+    inPts.push(roadPoint(buffer));
+    const inCum = lengths(inPts);
+    const outPts: THREE.Vector3[] = [];
+    for (let s = buffer; s <= wagonS + 3; s++) outPts.push(roadPoint(s));
+    const cuspW = inCum[cusp - 3]!; // the cusp's distance from the table's centre
+    const cuspA = TABLE_A + PARK.gap + cuspW;
+    return {
+      inPts,
+      inCum,
+      outPts,
+      outCum: lengths(outPts),
+      buffer,
+      cuspA,
+      outA: cuspA + (wagonS - home.SHUNT_CUSP_S),
+    };
+  })();
+  const OUT_A = shuntB ? shuntB.outA : cum.at(-1)!; // its wait on line 2
   // The deck carries what stands on it (works-late-game step 5): drive on heading `hIn`, turn `turnBy` with the deck,
   // drive off heading `hOut`. `deckK` is the turn done (0..1) while the choreography runs, null while the deck simply
   // follows the accepted table.
   const tableAt = new THREE.Vector3(table.x, tableY, table.z);
   const headingOf = (from: THREE.Vector3, to: THREE.Vector3) => Math.atan2(to.x - from.x, to.z - from.z);
   const hIn = headingOf(pathAt(TABLE_A - 2, new THREE.Vector3()), tableAt);
-  const hOut = headingOf(tableAt, pathAt(TABLE_A + 2.8, new THREE.Vector3()));
+  // Layout B's deck turns its stall end to the spur, so the pair leaves it backwards, the shunter first.
+  const hOut = shuntB
+    ? headingOf(tableAt, shuntB.inPts[1]!) + Math.PI
+    : headingOf(tableAt, pathAt(TABLE_A + 2.8, new THREE.Vector3()));
   const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
   const turnBy = wrap(hOut - hIn);
   /** Half the bogie spacing of the wagon and the shunter (their wheels sit at z ±1). */
@@ -217,6 +266,25 @@ export async function createRailwayRoundhouse(
     const h = hIn + turnBy * deckK;
     return out.set(table.x + Math.sin(h) * d, tableY, table.z + Math.cos(h) * d);
   }
+  /** Layout B: the point `c` metres ahead of the wagon's centre along the pair (its bogies ±1; the shunter's centre
+   * `PARK.gap` behind) when the wagon's distance is `a`. Up to its seat on the deck the pair is on the stall road or
+   * turning with the deck; then it backs down `inPts` (the point ahead of the centre trails, nearer the table); past
+   * the cusp it runs out along `outPts`. */
+  function pairAt(a: number, c: number, out: THREE.Vector3) {
+    const b = shuntB!,
+      seated = TABLE_A + PARK.gap / 2;
+    if (a <= seated) {
+      const d = a + c - TABLE_A;
+      if (deckK === null || Math.abs(d) >= R) return pathAt(a + c, out);
+      const h = hIn + turnBy * Math.min(1, Math.max(0, deckK));
+      return out.set(table.x + Math.sin(h) * d, tableY, table.z + Math.cos(h) * d);
+    }
+    if (a <= b.cuspA) return polyAt(b.inPts, b.inCum, a - seated - PARK.gap / 2 - c, out);
+    return polyAt(b.outPts, b.outCum, home.SHUNT_CUSP_S + (a - b.cuspA) + c - b.buffer, out);
+  }
+  /** A vehicle's centre at its own distance: the wagon's, or the shunter's (`PARK.gap` behind the wagon's). */
+  const centreAt = (a: number, shunter: boolean, out: THREE.Vector3) =>
+    !shuntB ? pathAt(a, out) : shunter ? pairAt(a + PARK.gap, -PARK.gap, out) : pairAt(a, 0, out);
 
   // ---------------------------------------------------------------- moving parts
   const batch = createBoxBatch(owner, 320);
@@ -374,11 +442,18 @@ export async function createRailwayRoundhouse(
   /** The vehicles' local frame at path distance `a` (origin on the rail, +z the way out). */
   const front = new THREE.Vector3(),
     rear = new THREE.Vector3();
-  function vehicleFrame(a: number, out: THREE.Matrix4) {
+  function vehicleFrame(a: number, out: THREE.Matrix4, shunter = false) {
     // Local +z points the way out: the shunter, behind, pushes the wagon ahead of it. The body sits between its two
     // bogies and faces along them, so its heading eases through every corner of the path and turns with the deck.
-    bogieAt(a + BOGIE, front);
-    bogieAt(a - BOGIE, rear);
+    if (shuntB) {
+      const wagon = shunter ? a + PARK.gap : a,
+        c = shunter ? -PARK.gap : 0;
+      pairAt(wagon, c + BOGIE, front);
+      pairAt(wagon, c - BOGIE, rear);
+    } else {
+      bogieAt(a + BOGIE, front);
+      bogieAt(a - BOGIE, rear);
+    }
     p.addVectors(front, rear).multiplyScalar(0.5);
     return out.compose(p, q.setFromEuler(e.set(0, headingOf(rear, front), 0)), s.set(1, 1, 1));
   }
@@ -483,20 +558,29 @@ export async function createRailwayRoundhouse(
       seated = TABLE_A + PARK.gap / 2; // the wagon's centre on the deck, the shunter's as far behind the middle
     if (sh.ready < 0) return { wagon: PARKED_A, shunter: home, k: hidden ? 0 : null, hidden };
     const phase = (u: number, from: number, to: number) => smooth(Math.min(1, Math.max(0, (u - from) / (to - from))));
+    /** From `a0` to `a1` over `from`..`to`; in layout B by way of `cusp`, coming to rest there before it reverses. */
+    const run = (u: number, from: number, to: number, a0: number, a1: number, cusp: number) => {
+      if (!shuntB) return a0 + (a1 - a0) * phase(u, from, to);
+      const split = from + ((to - from) * Math.abs(cusp - a0)) / (Math.abs(cusp - a0) + Math.abs(a1 - cusp));
+      return u < split ? a0 + (cusp - a0) * phase(u, from, split) : cusp + (a1 - cusp) * phase(u, split, to);
+    };
+    const cuspA = shuntB?.cuspA ?? 0;
+    // Where the shunter stands on the deck for the turn back: its middle today; in layout B, where it sat on the way out.
+    const deckStop = shuntB ? TABLE_A - PARK.gap / 2 : TABLE_A;
     const u = (tick - (sh.ready - WORKS.rollTicks)) / WORKS.rollTicks;
     if (u < 1) {
       const a =
         u < ROLL.turn[0]
           ? PARKED_A + (seated - PARKED_A) * phase(u, 0, ROLL.turn[0])
-          : seated + (OUT_A - seated) * phase(u, ROLL.turn[1], 1);
+          : run(u, ROLL.turn[1], 1, seated, OUT_A, cuspA);
       return { wagon: a, shunter: a - PARK.gap, k: phase(u, ROLL.turn[0], ROLL.turn[1]), hidden };
     }
     const v = (tick - sh.ready) / BACK_TICKS,
       out = OUT_A - PARK.gap;
     const shunter =
       v < BACK.turn[0]
-        ? out + (TABLE_A - out) * phase(v, 0, BACK.turn[0])
-        : TABLE_A + (home - TABLE_A) * phase(v, BACK.turn[1], 1);
+        ? run(v, 0, BACK.turn[0], out, deckStop, cuspA - PARK.gap)
+        : deckStop + (home - deckStop) * phase(v, BACK.turn[1], 1);
     return { wagon: OUT_A, shunter, k: 1 - phase(v, BACK.turn[0], BACK.turn[1]), hidden };
   }
   const smooth = (u: number) => u * u * (3 - 2 * u);
@@ -541,7 +625,7 @@ export async function createRailwayRoundhouse(
         puffs += dt * 3;
         while (puffs >= 1) {
           puffs--;
-          pathAt(shunterA, p);
+          centreAt(shunterA, true, p);
           chuff(p.x, p.z, 0.3);
           emit({
             x: p.x,
@@ -564,7 +648,7 @@ export async function createRailwayRoundhouse(
     hidden = t.hidden;
     const wagonFrame = vehicleFrame(wagonA, new THREE.Matrix4());
     if (!hidden) drawWagon(wagonFrame);
-    const shunterFrame = vehicleFrame(shunterA, new THREE.Matrix4());
+    const shunterFrame = vehicleFrame(shunterA, new THREE.Matrix4(), true);
     drawShunter(shunterFrame);
 
     // The parked wagon is something to stand on, in the stall or waiting on line 2.
@@ -869,7 +953,7 @@ export async function createRailwayRoundhouse(
     },
     inspect: () => {
       const w = new THREE.Vector3();
-      pathAt(wagonA, w);
+      centreAt(wagonA, false, w);
       return {
         garageView: { ...garageView.inspect(), here: garageHere, post: garagePost, deckYaw: garageView.deckYaw() },
         slab: !slabOpen,

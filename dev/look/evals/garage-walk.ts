@@ -16,20 +16,17 @@ const { inspectRailway, railReady } = (await import(
 const { X, Z } = (await import(
   '/src/place/opening-plans.ts' as string
 )) as typeof import('../../../src/place/opening-plans.ts');
-const { GARAGE_GEO, polarAt } = (await import(
+const { garageRow, polarAt } = (await import(
   '/src/entities/railway/garage-geo.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-geo.ts');
-const { SHED_TABLE } = (await import(
-  '/src/sim/railway-works-layout.ts' as string
-)) as typeof import('../../../src/sim/railway-works-layout.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 background(
   (async () => {
     if (!(await railReady())) throw new Error('garage-walk: the railway never became ready');
     while (!me.body || !me.entered) await wait(100);
-    const centre = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
-    const post = polarAt(centre, GARAGE_GEO.a.post);
+    const { geo, table: centre } = garageRow();
+    const post = polarAt(centre, geo.post);
     // Where a player stands to use the post: 0.6 m south of it, inside the prompt's reach.
     const goal = polarAt(centre, { bearing: 98, r: 5.4 });
     // Outside the forge's door (railway-forge-walk.ts's "out the door").

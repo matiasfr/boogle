@@ -28,12 +28,9 @@ const { background } = (await import('/src/async.ts' as string)) as typeof impor
 const { garage } = (await import(
   '/src/entities/railway/garage-state.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-state.ts');
-const { GARAGE_GEO, polarAt } = (await import(
+const { garageRow, polarAt } = (await import(
   '/src/entities/railway/garage-geo.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-geo.ts');
-const { SHED_TABLE } = (await import(
-  '/src/sim/railway-works-layout.ts' as string
-)) as typeof import('../../../src/sim/railway-works-layout.ts');
 const { LINE2, RAIL_LINES } = (await import(
   '/src/sim/railway-lines.ts' as string
 )) as typeof import('../../../src/sim/railway-lines.ts');
@@ -114,10 +111,10 @@ async function waitFor(what: string, test: () => number | undefined, forTicks = 
 }
 /** Opens the garage at its post and holds the install, as a player does (dev/look/evals/garage-platform.ts). */
 async function install() {
-  const centre = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
-  const post = GARAGE_GEO.a.post;
+  const { geo, table: centre, y: groundY } = garageRow();
+  const post = geo.post;
   const stood = polarAt(centre, { bearing: post.bearing + 6, r: post.r + 0.2 });
-  teleport(body, stood.x, SHED_TABLE.y / 100 + 0.7, stood.z);
+  teleport(body, stood.x, groundY + 0.7, stood.z);
   body.velocity.set(0, 0, 0);
   cam.yaw = me.yaw = Math.atan2(stood.x - centre.x, stood.z - centre.z);
   await wait(1500);

@@ -21,12 +21,9 @@ const { background } = (await import('/src/async.ts' as string)) as typeof impor
 const { garage } = (await import(
   '/src/entities/railway/garage-state.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-state.ts');
-const { GARAGE_GEO, polarAt } = (await import(
+const { garageRow, polarAt } = (await import(
   '/src/entities/railway/garage-geo.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-geo.ts');
-const { SHED_TABLE } = (await import(
-  '/src/sim/railway-works-layout.ts' as string
-)) as typeof import('../../../src/sim/railway-works-layout.ts');
 const { LINE2 } = (await import(
   '/src/sim/railway-lines.ts' as string
 )) as typeof import('../../../src/sim/railway-lines.ts');
@@ -41,7 +38,7 @@ const who = second ? 'two' : 'one';
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const say = (text: string) => console.log(`TWO ${who}: ${text}`);
 const done = window as Window & { __twoDone?: boolean };
-const centre = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
+const { geo, table: centre, y: groundY } = garageRow();
 const boiler = () => line(rw(), LINE2).boiler;
 const snapOf = () => {
   const s = garage.api!.snap();
@@ -55,7 +52,7 @@ const mineNow = () => ({
 });
 function stand(bearing: number, r: number) {
   const p = polarAt(centre, { bearing, r });
-  teleport(me.body!, p.x, SHED_TABLE.y / 100 + 0.7, p.z);
+  teleport(me.body!, p.x, groundY + 0.7, p.z);
   me.body!.velocity.set(0, 0, 0);
   // The game's camera stands on the side `cam.yaw` points to, looking back over the player: away from the table.
   cam.yaw = me.yaw = Math.atan2(p.x - centre.x, p.z - centre.z);
@@ -86,7 +83,7 @@ async function watchMoment() {
 
 if (!(await railReady(30_000))) throw new Error('garage-two: the railway never became ready');
 while (!me.body || !me.entered) await wait(100);
-const post = GARAGE_GEO.a.post;
+const post = geo.post;
 if (race) {
   stand(post.bearing + (second ? -7 : 7), post.r + 0.25);
   // A player seeded into a room is shown each ability's flourish first (ability-arrival.ts); let them play out.
