@@ -5,7 +5,7 @@
 // flag) against what this browser remembered about the room last time. Never blocks: no clicks, no input.
 // More welcome-back lines (persistent progress, a mailbox) are `addWelcomeItem` calls. Local. Serves DESIGN.md 8
 // (Designed for drop-in) and 9 (Leave something for the next visitor: you hear what the others did).
-import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
+import { rules, railwayMirror } from '../world/game-world.ts';
 import './welcome-back.css';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { me } from '../player/player.ts';
@@ -28,6 +28,7 @@ const SAVE_MS = 5000; // how often this visit is remembered while you play
 addWelcomeItem({
   key: 'friends',
   save: () => {
+    if (railwayMirror && !railwayMirror.synced()) return undefined;
     const { roster } = rules.roster;
     const pts: Record<string, number> = {};
     for (const pid of roster.pids) pts[pid] = rules.sites.points(pid);

@@ -154,6 +154,10 @@ test('server jobs follow the real tuning panel and recorder behind per-tab impor
 // Loads no walk can follow: a computed import or URL, a worker or child process started from a path that is not a
 // literal URL, a bundle built by entry name. Each one known is listed with what covers it; a new one fails here.
 const UNFOLLOWED: Record<string, string> = {
+  'server/test/roster-recording.test.ts: registerHooks':
+    'isolates identity per tab and stubs renderer entry points; its literal source URL and imports remain in the server closure',
+  'server/test/roster-recording.test.ts: import':
+    'loads the literal identity URL with per-tab query parameters; that target and its imports are walked',
   'dev/peer-test/harness.ts: esbuild.build': "bundles dev/peer-test/<entry>: every file there is one of net's roots",
   'dev/peer-test/worker-source.ts: registerHooks': 'redirects src/ to a worker tree; the same src files',
   'dev/peer-test/node-player.ts: import': 'imports the bundle node-player itself builds from dev/peer-test',

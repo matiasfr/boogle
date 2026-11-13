@@ -2,7 +2,7 @@
 // avatar to your stack and plaque lines; the roster (src/world/rules/roster.ts) learns your name and colour from Jump
 // in and any rename after; and when a newer tab of this browser takes over, this one says so and offers to play here. Serves DESIGN.md 8 (drop-in, drop-out: you are the same player after a
 // reload) and 6 (personal rewards need a person to belong to).
-import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
+import { rules, railwayMirror } from '../world/game-world.ts';
 import './identity.css';
 import { onFrame } from '../loop.ts';
 import { identity } from '../player/identity.ts';
@@ -10,6 +10,15 @@ import { me } from '../player/player.ts';
 import { sanitizeName } from '../math.ts';
 import { addPresenceField, net, onNetState } from '../netplay/net.ts';
 import { submitEdit, worldStatus } from '../world/sync.ts';
+import { railwayCommands } from '../entities/railway/state.ts';
+import { playMark } from '../proto/mark.ts';
+
+// Every peer records the roster it actually received, including snapshots and reconnect changes.
+railwayMirror?.roster.onChange(({ rows, tick }) => {
+  playMark('roster.begin', { tick, count: rows.length });
+  rows.forEach(([pid, name, color], ordinal) => playMark('roster.player', { pid, name, color, ordinal, tick }));
+  playMark('roster.end', { tick, count: rows.length });
+});
 
 const WHO_EVERY_MS = 3000; // at most one who.set this often (the host also refuses one that changes nothing)
 
@@ -25,7 +34,8 @@ onFrame(
     const k = rules.roster.indexOf(identity.pid);
     if (!name || (k >= 0 && rules.roster.nameOf(k) === name && rules.roster.colorOf(k) === me.colorIdx)) return;
     lastWho = now;
-    submitEdit({ op: 'who.set', i: 0, j: 0, n: me.name, c: me.colorIdx });
+    if (railwayMirror) railwayCommands()?.act('who.set', { n: me.name, c: me.colorIdx });
+    else submitEdit({ op: 'who.set', i: 0, j: 0, n: me.name, c: me.colorIdx });
   },
   { phase: 'late', order: 40 },
 );

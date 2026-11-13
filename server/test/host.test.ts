@@ -58,6 +58,21 @@ const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+test('v37 clients receive a clean refusal after the v38 roster wire reset', async () => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  try {
+    for (const room of ['v37-boogle', 'rail-v37-boogle']) {
+      const client = connect(base, room, 'oldtab');
+      assert.deepEqual(await client.next(is('peer')), { t: 'peer' });
+      assert.equal(await client.closed, 4000);
+      assert.equal(client.msgs.some(is('welcome')), false);
+    }
+    assert.equal(svc.roomHost()!.rooms(), 0);
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
 for (const disconnected of [false, true]) {
   for (const changed of ['pid', 'key'] as const) {
     test(`a ${disconnected ? 'grace' : 'live'} session id cannot replace its bound ${changed}`, async () => {

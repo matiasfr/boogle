@@ -17,7 +17,7 @@ export const RULES = [gifts, roster, stacks, piles, sites, sources, bank, tune, 
 
 // Installs every rules module on a sync (the real one in game-world.ts, fresh ones in tests). Each gets a view of the
 // sync without submitEdit (rules react to edits, they never make them), the land, and the APIs of the modules before it.
-export function installRules(sync: SyncView, land: Land): Rules {
+export function installRules(sync: SyncView, land: Land, rosterOwner?: () => roster.RosterApi): Rules {
   const view = {
     world: sync.world,
     registerOp: sync.registerOp,
@@ -29,6 +29,9 @@ export function installRules(sync: SyncView, land: Land): Rules {
   const rules: Record<string, unknown> = {};
   // Each module's install takes the APIs of the modules before it; RULES' order guarantees they exist.
   for (const m of RULES)
-    rules[m.name] = (m.install as (s: SyncView, l: Land, r: unknown) => unknown)(view, land, rules);
+    rules[m.name] =
+      m.name === 'roster' && rosterOwner
+        ? rosterOwner()
+        : (m.install as (s: SyncView, l: Land, r: unknown) => unknown)(view, land, rules);
   return rules as Rules;
 }

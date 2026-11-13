@@ -129,7 +129,14 @@ test('full roster keeps bounded recovery; rail commit accepts 65–80 unit ids w
   try {
     const sid = (k: number) => `p${k.toString(36).padStart(31, '0')}`;
     for (let k = 0; k < MAX_PLAYERS; k++) {
-      f.host.deliver({ t: 'w:edit', e: { op: 'who.set', i: 0, j: 0, n: '\uffff'.repeat(NAME_MAX), c: 0 } }, sid(k));
+      f.host.deliver({ t: 'r:open' }, sid(k));
+      f.host.deliver(
+        {
+          t: 'r:edit',
+          e: { op: 'who.set', n: '\ud800'.repeat(NAME_MAX), c: 0, epoch: 1, request: 1, at: [0, 0, 0], ms: 0 },
+        },
+        sid(k),
+      );
       if (k % 32 === 31) await f.ticks();
     }
     assert.equal(f.host.rules.roster.roster.pids.length, MAX_PLAYERS);
@@ -137,7 +144,7 @@ test('full roster keeps bounded recovery; rail commit accepts 65–80 unit ids w
     f.host.deliver({ t: 'r:open' }, sid(0));
     for (const [k, length] of [65, 80, 81].entries()) {
       f.host.deliver(
-        { t: 'r:edit', e: { ...commit('x'.repeat(length), k), epoch: 1, request: k + 1, at: [0, 0, 0], ms: 0 } },
+        { t: 'r:edit', e: { ...commit('x'.repeat(length), k), epoch: 1, request: k + 2, at: [0, 0, 0], ms: 0 } },
         sid(0),
       );
     }

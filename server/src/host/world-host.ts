@@ -33,24 +33,15 @@ import { install as installRailway, type Actor } from '../../../src/world/railwa
 import { railCadence, RAIL_CADENCE_SLACK_MS } from '../../../src/world/railway-predict.ts';
 import { createReplicator, type Replicator } from '../../../src/world/replicate-server.ts';
 import { createRailwayRequests, type ActorFacts } from './railway-requests.ts';
-import { canSet, cleanName } from '../../../src/sim/roster.ts';
+import { installServer as installRoster } from '../../../src/world/rules/roster.ts';
 import { installRailTune } from '../../../src/world/rules/tune.ts';
-import { projectRailTune } from '../../../src/world/classic-replicate.ts';
+import { projectRailTune, projectRoster } from '../../../src/world/classic-replicate.ts';
 import { createServerOps } from '../../../src/world/server-ops.ts';
 
 // The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
 // Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
 // hosted from the saved tick: so the tick is saved at least this often, and always on close.
 const TICK_SAVE_MS = 30000;
-
-// JSON escapes lone UTF-16 surrogates to six bytes each. Preserve their displayed replacement character while
-// keeping the existing sixteen-character name and three-byte-per-code-unit recovery bound (ES2022 browsers).
-function recoveryName(value: unknown) {
-  return Array.from(cleanName(value), (c) => {
-    const unit = c.charCodeAt(0);
-    return c.length === 1 && unit >= 0xd800 && unit <= 0xdfff ? '\ufffd' : c;
-  }).join('');
-}
 
 type Msg = Record<string, unknown>;
 export type WorldHostOptions = {
@@ -177,8 +168,8 @@ export type RailwayHostOptions = WorldHostOptions & {
   awake?: boolean;
 };
 
-// The railway room (docs/plans/replication.md, R1a): the classic lockstep states (roster, tune, ...) on the sync as
-// before, and the `railway` as Server-kind state on the same sync, applied the moment an action arrives and replicated
+// The railway room (docs/plans/replication.md, R1a): inactive classic states and haul tune remain on the sync;
+// roster, rail tuning and railway are Server kind, applied the moment an action arrives and replicated
 // to clients by the room's replicator. Persistence is the sync's 2 s checkpoint plus the save on close: a crash may
 // roll the room back up to 2 s (owner, 6 November). Actions are not journalled before they apply.
 //
@@ -209,7 +200,10 @@ export function createRailwayWorldHost({
   const env = { protoRoom: isProtoRoom(roomId.slice(namespace.length + 1)), tuneController };
   // Preserve the existing playtest-only tune policy; ordinary railway rooms cannot change shared rates.
   const sync = createSync();
-  const base = installRules(sync, home.land as Parameters<typeof installRules>[1]);
+  const base = installRules(sync, home.land as Parameters<typeof installRules>[1], () =>
+    installRoster(sync, ops, replication),
+  );
+  projectRoster(replication, base.roster);
   const railTune = installRailTune(sync, ops, replication);
   projectRailTune(replication, railTune);
   const api = installRailway(sync, { railTune }, replication);
@@ -556,17 +550,6 @@ export function createRailwayWorldHost({
       return () => sent.delete(fn);
     },
     deliver(message: unknown, from: string) {
-      // The retained base APIs support eager consumers, but no classic material owner may accept edits here.
-      // Keep this allow-list bounded: admitting another state also needs a maximum-envelope proof.
-      if (message && typeof message === 'object' && (message as Msg).t === 'w:edit') {
-        const e = (message as Msg).e;
-        if (!running || closed || requests.failed() || !e || typeof e !== 'object') return;
-        const edit = e as Msg;
-        if (edit.op === 'who.set' && canSet(rules.roster.roster, pidOf(from), edit.n, edit.c))
-          sync.receiveEdit({ op: 'who.set', i: 0, j: 0, n: recoveryName(edit.n), c: edit.c }, from);
-
-        return;
-      }
       if (message && typeof message === 'object' && (message as Msg).t === 'w:need') {
         if (running && !closed && !requests.failed()) for (const fn of incoming) fn(message, from);
       } else {

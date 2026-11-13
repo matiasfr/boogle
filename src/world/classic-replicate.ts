@@ -6,10 +6,13 @@ import { RULE_STEPS } from './room-clock.ts';
 import type { Mirror } from './replicate-client.ts';
 import type { Replicator } from './replicate-server.ts';
 import type { RailTuneApi } from './rules/tune.ts';
+import { createRoster, loadRoster, serializeRoster, indexOf, type RosterJson } from '../sim/roster.ts';
+import type { RosterApi } from './rules/roster.ts';
 
 export const TUNE_VALUE = defineReplicated('tuneValue', { key: 'str', v: 'int' });
 export const TUNE_REV = defineReplicated('tuneRev', { revision: 'int' });
-export const CLASSIC_SCHEMAS = [TUNE_VALUE, TUNE_REV];
+export const PLAYER = defineReplicated('player', { pid: 'str', name: 'str', color: 'u8' });
+export const CLASSIC_SCHEMAS = [TUNE_VALUE, TUNE_REV, PLAYER];
 const rows = TUNABLES.flatMap((spec, id) => (spec.key.startsWith('rail') ? [{ ...spec, id }] : []));
 
 export function projectRailTune(replication: Replicator, api: RailTuneApi) {
@@ -28,7 +31,58 @@ export function projectRailTune(replication: Replicator, api: RailTuneApi) {
     project: (id) => (id === 0 ? { revision: api.tune.revision } : null),
     cell: () => GLOBAL_CELL,
   });
-  for (const schema of CLASSIC_SCHEMAS) replication.touchAll(schema.kind);
+  for (const schema of [TUNE_VALUE, TUNE_REV]) replication.touchAll(schema.kind);
+}
+
+export function projectRoster(replication: Replicator, api: RosterApi) {
+  replication.define({
+    schema: PLAYER,
+    ids: () => api.roster.pids.map((_, id) => id),
+    project: (id) => {
+      if (typeof id !== 'number') return null;
+      const pid = api.roster.pids[id];
+      return pid === undefined ? null : { pid, name: api.nameOf(id), color: api.colorOf(id) };
+    },
+    cell: () => GLOBAL_CELL,
+  });
+  replication.touchAll(PLAYER.kind);
+}
+
+/** Read-only roster published at complete packet boundaries, including late joins and changed refills. */
+export function createRosterMirror(mirror: Mirror) {
+  const roster = createRoster();
+  const listeners = new Set<(event: { rows: RosterJson; tick: number }) => void>();
+  mirror.onPacket((packet) => {
+    if (!mirror.whole() || packet.m) return;
+    const entries = [...mirror.entries(PLAYER.kind)].sort(([a], [b]) => Number(a) - Number(b));
+    const rows: RosterJson = [];
+    for (const [id, row] of entries) {
+      if (
+        id !== rows.length ||
+        typeof row.pid !== 'string' ||
+        typeof row.name !== 'string' ||
+        typeof row.color !== 'number'
+      )
+        return;
+      rows.push([row.pid, row.name, row.color]);
+    }
+    if (JSON.stringify(rows) === JSON.stringify(serializeRoster(roster))) return;
+    loadRoster(roster, rows);
+    for (const fn of listeners) fn({ rows, tick: Math.floor(packet.tk / RULE_STEPS) });
+  });
+  return {
+    roster,
+    indexOf: (pid: unknown) => indexOf(roster, pid),
+    // Inactive classic readers may look up ordinals, but a client never allocates one.
+    ensure: (pid: string) => indexOf(roster, pid),
+    nameOf: (k: number) => roster.names[k] ?? '',
+    colorOf: (k: number) => roster.colors[k] ?? 0,
+    size: () => roster.pids.length,
+    onChange(fn: (event: { rows: RosterJson; tick: number }) => void) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+  };
 }
 
 type TuneChange = {

@@ -79,8 +79,9 @@ test('a queued classic stamp cannot checkpoint a later failed live railway actio
     act(...args);
     throw new Error('railway failure after mutation');
   });
-  // The classic stamp owns a queued sync.flush, independently of the durable server-command callback.
-  f.host.deliver({ t: 'w:edit', e: { op: 'who.set', n: 'Ana', c: 2 } }, 'a');
+  // Exercise sync's retained tail boundary directly: no client classic edit is admitted after step 4.
+  f.host.sync.registerOp('test.tail', { apply: () => null });
+  assert.equal(f.host.sync.receiveEdit({ op: 'test.tail', i: 0, j: 0 }, 'a'), true);
   f.pose('a', T1.wake.x, T1.wake.z);
   f.send('a', { op: 'rail.wake' });
   await f.host.sync.whenDurable().catch((error: Error) => assert.match(error.message, /storage/));
@@ -297,18 +298,23 @@ test('the railway registry accepts bounded identity but rejects every legacy mat
   const f = await fixture(railwayRoomId('boogle'));
   try {
     await f.open('a');
-    f.host.deliver({ t: 'w:edit', e: { op: 'who.set', n: 'Alice', c: 2, ignored: 'x'.repeat(10000) } }, 'a');
+    f.pose('a', 0, 0);
+    f.send('a', { op: 'who.set', n: 'Alice', c: 2, ignored: 'x'.repeat(10000) });
     await f.step(4);
     assert.equal(f.host.rules.roster.nameOf(0), 'Alice');
-    f.host.deliver({ t: 'w:edit', e: { op: 'who.set', n: '\ud800'.repeat(16), c: 2 } }, 'a');
+    f.send('a', { op: 'who.set', n: '\ud800'.repeat(16), c: 2 });
     await f.step(4);
-    assert.equal(f.host.rules.roster.nameOf(0), '�'.repeat(16));
-    const nameStamp = f.sent.filter((m) => m.t === 'w:edits').at(-1)!;
-    assert.ok(Buffer.byteLength(JSON.stringify(nameStamp)) < 500, 'name is normalized before entering the tail');
-    f.host.deliver({ t: 'w:edit', e: { op: 'who.set', n: 'Alice', c: 2 } }, 'a');
+    assert.equal(f.host.rules.roster.nameOf(0), '\ud800'.repeat(16), 'same cleanName result as the classic oracle');
+    assert.equal(
+      f.sent.some((m) => m.t === 'w:edits'),
+      false,
+      'roster never enters the classic tail',
+    );
+    f.send('a', { op: 'who.set', n: 'Alice', c: 2 });
     await f.step(4);
     const before = JSON.stringify(f.host.sync.snapshot().data);
     for (const op of [
+      'who.set',
       'src.take',
       'pile.take',
       'pile.drop',

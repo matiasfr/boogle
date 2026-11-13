@@ -21,7 +21,7 @@ import { createMirror } from './replicate-client.ts';
 import { createRailwayWorld, Rail, RAIL_COMPONENTS, RAIL_REPLICATED } from '../sim/railway-components.ts';
 import { clockWorld, cloneWorld } from '../sim/railway-queries.ts';
 
-import { CLASSIC_SCHEMAS, createClassicMirror } from './classic-replicate.ts';
+import { CLASSIC_SCHEMAS, createClassicMirror, createRosterMirror } from './classic-replicate.ts';
 
 export const RAIL_SCHEMAS = RAIL_REPLICATED;
 /** The components whose writes are marked (the replicated ones, and any other tracked one a spawn fills). */
@@ -32,6 +32,7 @@ const TRACKED = RAIL_COMPONENTS.filter((c) => c.track);
 export function createRailwayMirror() {
   const mirror = createMirror([...RAIL_SCHEMAS, ...CLASSIC_SCHEMAS]);
   const tune = createClassicMirror(mirror);
+  const roster = createRosterMirror(mirror);
   let world = clockWorld(createWorld(RAIL_COMPONENTS));
   let published: World = clockWorld(createRailwayWorld());
   let synced = false;
@@ -64,6 +65,7 @@ export function createRailwayMirror() {
   return {
     mirror,
     tune,
+    roster,
     /** The confirmed world: the last published clone (a fresh railway before the first whole state). Never written:
      * the predictor clones it, views read it. It stays through a refill and a reset until the next whole state. */
     confirmed: () => published,

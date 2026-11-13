@@ -10,8 +10,12 @@ import { createRailwayMirror } from './railway-replicate.ts';
 // Static and the same on every peer. layout is filled by reference before tick 1 (rules must not read it at install).
 /** @type {import('./rules/types.ts').Land} */
 export const land: Land = { n: GRID_RES, layout: { trees: [], perches: [] } };
-export const rules = installRules({ world, registerOp, registerState, onTick, onApplied, onSnapshot }, land);
 // The railway is Server-kind state (docs/plans/replication.md, R1a): no rules here, only the mirror the server fills.
 export const railwayMirror = productionRailway ? createRailwayMirror() : null;
+export const rules = installRules(
+  { world, registerOp, registerState, onTick, onApplied, onSnapshot },
+  land,
+  railwayMirror ? () => railwayMirror.roster : undefined,
+);
 
 export const railTune = railwayMirror?.tune ?? null;
