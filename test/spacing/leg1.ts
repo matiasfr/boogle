@@ -20,7 +20,7 @@
 import './catalog.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
 import type { World } from '../../src/ecs/index.ts';
-import { Account, Aperture, Works } from '../../src/sim/railway-components.ts';
+import { Account, Aperture, Till, Town, Works } from '../../src/sim/railway-components.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, circuitAhead, circuitCm, circuitLen } from '../../src/sim/railway-lines.ts';
 import { RAIL_LEGS } from '../../src/sim/railway-route.ts';
 import { TRAIN, TRAIN_PHASE, trainDir, trainPassesBy } from '../../src/sim/railway-train.ts';
@@ -139,11 +139,26 @@ function passages(w: World, t: number, prev: Map<number, { c: number; len: numbe
   return out;
 }
 
+const OUTWARD = new Set(['Village, line 2', 'Quarry', 'Far Head', 'Railhead']);
+const GORGE = RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'High Gorge');
+/** The serving trains' circuit gaps (each to the train ahead), in circuit order from the Village, and their CV. */
+export function gapsOf(s: Seed) {
+  const stops = stopsOf(s.w, LINE2),
+    len = circuitLen(stops);
+  const cs = servingSlots((j) => train(s.w, j), LINE2)
+    .map((j) => trainPose(train(s.w, j), LINE2, stops, s.t).c)
+    .sort((x, y) => x - y);
+  const gaps = cs.map((c, j) => circuitAhead(c, cs[(j + 1) % cs.length]!, len) || (cs.length === 1 ? len : 0));
+  const m = len / Math.max(1, cs.length),
+    sd = Math.sqrt(gaps.reduce((a, g) => a + (g - m) ** 2, 0) / Math.max(1, gaps.length));
+  return { gaps, cv: Number((sd / m).toFixed(3)) };
+}
 export function fuzz(where: string, seed: number, headPct: number, ticks: number, light: boolean) {
   const b = base(where),
     whole = where === 'whole';
   let s = unaudited({ w: restore(b.w), t: b.t });
   const t0 = b.t;
+  const journeys: { asked: number; slot: number; from: string; done: number }[] = [];
   const rand = mulberry32(seed),
     asked = new Map<string, number>(),
     waits: { v: number; at: string; asked: number; served: number }[] = [];
@@ -240,9 +255,24 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
       });
       if (there) {
         if (h.line === LINE2) note(id, dir, since, s.t);
+        // The Gorge-bound journey (short-turn review, E): an outward lever pull at the Village, the Quarry, Far Head or
+        // the Railhead with High Gorge open, on the first train that stands there that way, to it standing at the Gorge.
+        const n = stopsOf(s.w, LINE2).length;
+        if (h.line === LINE2 && dir > 0 && OUTWARD.has(h.name) && n === GORGE + 1) {
+          const j = LINE_SLOTS[LINE2]!.find((q) => {
+            const r = train(s.w, q);
+            return r.phase === TRAIN_PHASE.STAND && r.at === h.stop && trainDir(r) === dir;
+          })!;
+          journeys.push({ asked: since, slot: j, from: h.name, done: -1 });
+        }
         asked.delete(key);
       }
     }
+    for (const jr of journeys)
+      if (jr.done < 0) {
+        const r = train(s.w, jr.slot);
+        if (r.phase === TRAIN_PHASE.STAND && r.at === GORGE) jr.done = s.t - jr.asked;
+      }
     if (k % 10 === 0) {
       const broken = trainSpacing(
         (j) => train(s.w, j),
@@ -267,6 +297,14 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
   const broken = invariant(s.w);
   if (broken) throw new Error(`invariant at the end: ${broken}`);
   const v = waits.map((x) => x.v);
+  const plat: Record<string, [number, number, number, number]> = {}; // n, sum, over 1,050, worst
+  for (const x of waits) {
+    const p = (plat[x.at] ??= [0, 0, 0, 0]);
+    p[0]++;
+    p[1] += x.v;
+    if (x.v > 1050) p[2]++;
+    p[3] = Math.max(p[3], x.v);
+  }
   return {
     kind: 'fuzz',
     where,
@@ -286,6 +324,10 @@ export function fuzz(where: string, seed: number, headPct: number, ticks: number
     laps,
     longest,
     trips,
+    plat,
+    journeys: journeys.filter((j) => j.done >= 0).map((j) => j.done),
+    journeysOpen: journeys.filter((j) => j.done < 0).length,
+    startGaps: gapsOf(b),
   };
 }
 
@@ -311,6 +353,8 @@ export function quiet(where: string, ticks: number, headPct = 75) {
   };
   let foot = footNow(),
     kit = kitNow();
+  const stone0 = sum(Town, (r: { stone: number }) => r.stone),
+    fares0 = sum(Till, (r: { landed: number }) => r.landed);
   const wagon: string[] = [],
     footing: string[] = [],
     kits: string[] = [],
@@ -343,9 +387,50 @@ export function quiet(where: string, ticks: number, headPct = 75) {
     if ((k + 1) % 1000 === 0) hashes.push(String(s.w.hash()));
   }
   laps = laps.map((x) => Number(x.toFixed(3)));
-  return { kind: 'quiet', where, ticks, laps, wagon, footing, kits, hashes };
+  return {
+    kind: 'quiet',
+    where,
+    headPct,
+    ticks,
+    laps,
+    wagon,
+    footing,
+    kits,
+    hashes,
+    stone: sum(Town, (r: { stone: number }) => r.stone) - stone0,
+    fares: sum(Till, (r: { landed: number }) => r.landed) - fares0,
+  };
 }
 
+/** Nothing asked from a place: the gaps' CV every `every` ticks and the ticks each end held a train past its dwell
+ * (the headway hold and the balanced hold), with the trains' halts, so stage 4 can be traced into settled. */
+export function gapsTrace(where: string, ticks: number, every: number) {
+  const s = unaudited({ w: restore(base(where).w), t: base(where).t });
+  const out: { t: number; cv: number; gaps: number[]; hold: Record<string, number>; at: string[] }[] = [];
+  let hold: Record<string, number> = {};
+  for (let k = 0; k <= ticks; k++) {
+    if (k % every === 0) {
+      const g = gapsOf(s);
+      const at = servingSlots((j) => train(s.w, j), LINE2).map((j) => {
+        const r = train(s.w, j);
+        return r.phase === TRAIN_PHASE.STAND && r.at >= 0 ? `${RAIL_HALTS[haltId(LINE2, r.at)]!.name}` : `run>${r.to}`;
+      });
+      out.push({ t: k, cv: g.cv, gaps: g.gaps, hold, at });
+      hold = {};
+    }
+    if (k === ticks) break;
+    railTick(s.w, ++s.t);
+    const last = stopsOf(s.w, LINE2).length - 1;
+    for (const j of servingSlots((q) => train(s.w, q), LINE2)) {
+      const r = train(s.w, j);
+      if (r.phase === TRAIN_PHASE.STAND && (r.at === 0 || r.at === last) && s.t >= r.depart + TRAIN.dwellTicks) {
+        const key = r.at === 0 ? 'Village' : 'far end';
+        hold[key] = (hold[key] ?? 0) + 1;
+      }
+    }
+  }
+  return { kind: 'gaps', where, out };
+}
 const seedsOf = (spec: string) =>
   spec.includes('-')
     ? (() => {
@@ -363,7 +448,10 @@ if (cmd === 'fuzz') {
       console.log(JSON.stringify({ kind: 'error', where, seed, hold: Number(hold), rate, error: String(e) }));
     }
   }
+} else if (cmd === 'gaps') {
+  const [where, ticks, every] = a as [string, string, string];
+  console.log(JSON.stringify(gapsTrace(where, Number(ticks), Number(every))));
 } else if (cmd === 'quiet') {
-  const [where, ticks] = a as [string, string];
-  console.log(JSON.stringify(quiet(where, Number(ticks))));
+  const [where, ticks, hold] = a as [string, string, string | undefined];
+  console.log(JSON.stringify(quiet(where, Number(ticks), hold === undefined ? 75 : Number(hold))));
 }
