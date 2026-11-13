@@ -1,9 +1,9 @@
-// One room's world, run by the server (docs/plans/server-host.md, "The sync on the server"): a headless sync with every
-// rules module, attached as host to an in-process room adapter, ticking with or without clients and saving through the
+// One room's world, run by the server: a headless clock/checkpoint attached to an in-process room adapter,
+// ticking with or without clients and saving through the
 // store (the same file and shape GET /rooms/:id/snapshot serves).
 //
 //   const wh = createWorldHost({ roomId, store, saveMs, pidOf })   pidOf(selfId): that session's player id, or null
-//   wh.onSend((msg) => ...)       the sync's outgoing messages, for the hosted room to fan out (a w:snap only to msg.to)
+//   wh.onSend((msg) => ...)       the sync's outgoing clock messages, for the hosted room to fan out
 //   wh.deliver(msg, from)         a client's message into the sync (from = its selfId)
 //   wh.step(dt)                   advance dt seconds of the 60 Hz room clock by hand (tests pass tick: false; otherwise a
 //                                 step timer does it)
@@ -12,11 +12,10 @@
 //
 import { createSync } from '../../../src/world/sync.ts';
 import { STEP_MS } from '../../../src/world/room-clock.ts';
-import { installRules } from '../../../src/world/rules/index.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { isProtoRoom } from '../../../src/sim/tune.ts';
 import type { StepMeter } from './step-meter.ts';
-import { loadHomeLand, type HomeLand } from './land.ts';
+import type { HomeLand } from './land.ts';
 import type { Store } from '../store.ts';
 import { isRailwayRoom, RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
@@ -55,16 +54,12 @@ export function createWorldHost({
   roomId,
   store,
   saveMs = 2000,
-  home = loadHomeLand(),
   tick = true,
   pidOf = () => null,
-  tuneController = () => false,
   meter,
   log = () => {},
 }: WorldHostOptions) {
-  // protoRoom: retained haul tuning is allowed in `proto-` rooms only (src/world/rules/tune.ts).
-  const sync = createSync({ env: { protoRoom: isProtoRoom(roomId), tuneController } });
-  const rules = installRules(sync, home.land as Parameters<typeof installRules>[1]);
+  const sync = createSync();
   const sendFns = new Set<(msg: Msg) => void>();
   const msgFns = new Set<(msg: unknown, from: string) => void>();
   let writing: Promise<unknown> = Promise.resolve();
@@ -125,7 +120,6 @@ export function createWorldHost({
 
   return {
     sync,
-    rules,
     onSend(fn: (msg: Msg) => void) {
       sendFns.add(fn);
       return () => sendFns.delete(fn);
@@ -157,8 +151,7 @@ export type RailwayHostOptions = WorldHostOptions & {
   awake?: boolean;
 };
 
-// The railway room (docs/plans/replication.md, R1a): inactive classic states and haul tune remain on the sync;
-// roster, rail tuning and railway are Server kind, applied the moment an action arrives and replicated
+// The railway room: roster, rail tuning and railway are Server kind, applied when an action arrives and replicated
 // to clients by the room's replicator. Persistence is the sync's 2 s checkpoint plus the save on close: a crash may
 // roll the room back up to 2 s (owner, 6 November). Actions are not journalled before they apply.
 //
@@ -172,7 +165,6 @@ export function createRailwayWorldHost({
   roomId,
   store,
   saveMs = 2000,
-  home = loadHomeLand(),
   tick = true,
   pidOf = () => null,
   tuneController = () => false,
@@ -189,16 +181,13 @@ export function createRailwayWorldHost({
   const env = { protoRoom: isProtoRoom(roomId.slice(namespace.length + 1)), tuneController };
   // Preserve the existing playtest-only tune policy; ordinary railway rooms cannot change shared rates.
   const sync = createSync();
-  const base = installRules(sync, home.land as Parameters<typeof installRules>[1], () =>
-    installRoster(sync, ops, replication, now),
-  );
-  projectRoster(replication, base.roster);
+  const roster = installRoster(sync, ops, replication, now);
+  projectRoster(replication, roster);
   const railTune = installRailTune(sync, ops, replication);
   projectRailTune(replication, railTune);
   const api = installRailway(sync, { railTune }, replication);
-  const rules = { ...base, railTune, railway: api };
+  const rules = { roster, railTune, railway: api };
   const sent = new Set<(message: Msg) => void>();
-  const incoming = new Set<(message: unknown, from: string) => void>();
   const send = (message: Msg) => {
     for (const fn of sent) fn(message);
   };
@@ -303,7 +292,7 @@ export function createRailwayWorldHost({
         send: (message) => {
           if (running) send(message as Msg);
         },
-        onMessage: (fn) => (incoming.add(fn), () => incoming.delete(fn)),
+        onMessage: () => () => {},
         onConnection: (fn) => (fn(true), () => {}),
         pidOf,
       },
@@ -325,8 +314,8 @@ export function createRailwayWorldHost({
             return doc.data;
           },
           async write(data) {
-            // A queued classic-stamp flush also reaches here, outside the command save callback. Once an apply
-            // fails, no newly started write may persist its partial mutation; an already-started safe write can finish.
+            // Once an apply fails, no newly started write may persist its partial mutation;
+            // an already-started safe write can finish.
             if (requests.failed()) throw new Error('server command storage failed');
             // Until startup has applied the offline catch-up, a save must not claim the absent time as passed.
             const updatedAt = startup
@@ -464,7 +453,7 @@ export function createRailwayWorldHost({
     await sync.whenDurable();
     // No session survives a server restart: a held beam's carrier is away from now (maintainBeam), and keeps it if they
     // come back within the grace.
-    // The room stood still from its last save (less any tail the recovery replayed): the away credit waits for a join.
+    // The room stood still from its last checkpoint: the away credit waits for a join.
     awayMarker = Math.min(
       Math.floor(now() / 100),
       Math.max(Math.floor(savedAt / 100), api.resumeMarker()) + (sync.world.tick - savedTick),
@@ -539,17 +528,13 @@ export function createRailwayWorldHost({
       return () => sent.delete(fn);
     },
     deliver(message: unknown, from: string) {
-      if (message && typeof message === 'object' && (message as Msg).t === 'w:need') {
-        if (running && !closed && !requests.failed()) for (const fn of incoming) fn(message, from);
-      } else {
-        if (!requests.failed() && !supplyCurrent()) maintainSupply();
-        const t0 = performance.now();
-        requests.receive(message, from);
-        const ms = performance.now() - t0;
-        stats.actions++;
-        stats.actionMs += ms;
-        stats.maxActionMs = Math.max(stats.maxActionMs, ms);
-      }
+      if (!requests.failed() && !supplyCurrent()) maintainSupply();
+      const t0 = performance.now();
+      requests.receive(message, from);
+      const ms = performance.now() - t0;
+      stats.actions++;
+      stats.actionMs += ms;
+      stats.maxActionMs = Math.max(stats.maxActionMs, ms);
     },
     step(dt: number) {
       if (running && !closed && !requests.failed()) {

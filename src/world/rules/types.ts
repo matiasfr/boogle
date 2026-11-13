@@ -1,16 +1,7 @@
-// Types for rules modules (./README.md, "Contract"): the view of sync a module installs on, the land, the edits it
-// handles and the replay test's generator stream. Types only, so it costs nothing at runtime.
+// Headless server registration and command context. State hashes verify checkpoints, never client lockstep.
 type Cell = { i: number; j: number };
 
-/** An edit as apply sees it: the op's own fields, plus the session (p) and player id (u) the host stamped. */
-export type Edit<F = object> = { op: string; i: number; j: number; p: string; u: string } & F;
-/** validate's context: who sent it, the host tick, and host-only facts (../README.md, setEnv). */
 export type Ctx = { from: string; tick: number; env: Record<string, unknown> };
-export type OpHandlers<F> = {
-  hostOnly?: boolean; // only the host's own submit is stamped
-  validate?: (e: Edit<F>, ctx: Ctx) => boolean; // e's fields are unchecked here: validate checks them
-  apply: (e: Edit<F>, tick: number) => unknown; // returns the result onApplied listeners get
-};
 export type StateHandlers = {
   serialize: () => unknown;
   load: (json: unknown) => void;
@@ -18,24 +9,9 @@ export type StateHandlers = {
 };
 export type SyncView = {
   world: { tick: number; seed: number; epochMs: number };
-  registerOp: <F>(op: string, handlers: OpHandlers<F>) => void;
-  /** server: a Server-kind state, registered on the host only (persisted, never hashed or served). */
-  registerState: (key: string, handlers: StateHandlers, opts?: { server?: boolean }) => void;
+  registerState: (key: string, handlers: StateHandlers, opts: { server: true }) => void;
   onTick: (fn: (tick: number) => void, label?: string) => void;
-  onApplied: (fn: (e: Edit, tick: number, result: unknown) => void, label?: string) => void;
   onSnapshot: (fn: (tick: number) => void) => void;
 };
-/** The static land every peer builds the same: grid size and the gifts layout (filled before tick 1). */
+/** The static land: grid size and legacy scenery layout, filled before the first tick. */
 export type Land = { n: number; layout: { trees: Cell[]; perches: (Cell & { kind: number })[] } };
-/** Every module's API, keyed by its name: what installRules returns (./index.ts). */
-export type Rules = {
-  roster: import('./roster.ts').RosterApi;
-  tune: import('./tune.ts').TuneApi;
-};
-/** The replay test's seeded stream (./edit-gen.ts). */
-export type Stream = {
-  int: (lo: number, hi: number) => number;
-  pick: <T>(a: readonly T[]) => T;
-  chance: (p: number) => boolean;
-  next: () => number;
-};

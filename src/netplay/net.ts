@@ -4,7 +4,7 @@ import { pageQuery, productionRailway } from '../proto/flags.ts';
 import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, SEND_MS } from '../constants.ts';
 import { finiteArr, r2, sanitizeName } from '../math.ts';
 import { createWsRoom, type Room } from '../net/ws-room.ts';
-import { attachWorld, detachWorld, setPid, setSelfId } from '../world/sync.ts';
+import { attachWorld, detachWorld } from '../world/sync.ts';
 import { worldRoomId } from '../world/namespace.ts';
 import { railwayRoomId } from '../world/railway-namespace.ts';
 import { identity } from '../player/identity.ts';
@@ -357,7 +357,6 @@ export async function connectRoom() {
   // The room and its world live under the namespaced id; the plain name stays for the URL, titles and telemetry.
   dropOldSaves();
   const roomId = productionRailway ? railwayRoomId(getRoomId()) : worldRoomId(getRoomId());
-  setPid(identity.pid); // for anything this tab stamps itself while solo
   let room: Room;
   try {
     const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (2: every reconnect)
@@ -386,7 +385,6 @@ export async function connectRoom() {
   net.full = 0;
   net.room = room;
   setNet('connecting');
-  setSelfId(room.selfId);
   for (const fn of roomHooks.splice(0)) fn(room);
   attachWorld(room, { roomId });
   const fail = (e: NetError) => {
