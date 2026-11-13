@@ -70,7 +70,11 @@ export const routes: Route[] = [
   },
   {
     work: 'Code review before shipping (/code-review, e.g. on src/net*, src/world/ or server/)',
-    withCodex: claude('general-purpose subagent running /code-review medium, not the main session', 'opus', 'medium'),
+    withCodex: {
+      who: 'a Codex review job on the committed branch (node dev/codex/run.ts review), not the main session',
+      model: 'gpt-6-astra',
+      effort: 'high',
+    },
     normal: claude('general-purpose subagent running /code-review medium, not the main session', 'opus', 'medium'),
   },
   {
