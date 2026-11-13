@@ -7,11 +7,16 @@ import type { Ctx } from './rules/types.ts';
 export type ServerEdit = Record<string, unknown> & { op: string; p: string; u: string };
 export type ServerOpContext = Ctx & { actor: Actor; protoRoom: boolean; tuneController: (from: string) => boolean };
 export type ServerOpHandlers = {
-  validate: (e: ServerEdit, ctx: ServerOpContext) => boolean;
+  validate: (e: ServerEdit, ctx: ServerOpContext) => boolean | 'taken' | 'rate';
   apply: (e: ServerEdit, tick: number) => unknown;
   durable?: boolean;
 };
-export type ServerOpResult = { status: 'accepted' | 'rejected'; result: unknown; durable: boolean };
+export type ServerOpResult = {
+  status: 'accepted' | 'rejected';
+  result: unknown;
+  durable: boolean;
+  reason?: 'taken' | 'rate';
+};
 
 export function createServerOps() {
   const ops = new Map<string, ServerOpHandlers>();
@@ -28,7 +33,8 @@ export function createServerOps() {
       if (!handlers) return refused;
       const e: ServerEdit = { ...input, op: input.op, p: ctx.from, u: pid };
       try {
-        if (!handlers.validate(e, ctx)) return refused;
+        const valid = handlers.validate(e, ctx);
+        if (valid !== true) return { ...refused, ...(valid === false ? {} : { reason: valid }) };
       } catch {
         return refused; // malformed input must not crash the room
       }

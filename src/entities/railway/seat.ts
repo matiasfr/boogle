@@ -24,6 +24,7 @@ import { flat } from '../../render/flat.ts';
 import { merged } from '../../render/part-geometry.ts';
 import { MACHINE_CHAIR_SEAT } from './machine-model.ts';
 import type { Part } from '../../render/cosmetic-parts.ts';
+import { railwayCommands } from './state.ts';
 
 export type Seat = {
   id: string;
@@ -134,6 +135,18 @@ function freeSeat() {
 }
 export function sitDown(s = freeSeat()) {
   if (!s || !reachable(s) || seated()) return;
+  // Shadow only: ordered reachable alternatives, receipts ignored. The lead still owns every visible verdict.
+  const p = me.body!.position;
+  const alt = seats
+    .filter((other) => other !== s && other.group === s.group && reachable(other))
+    .map((other) => {
+      const w = world(other);
+      return { id: other.id, d: (p.x - w.x) ** 2 + (p.z - w.z) ** 2 };
+    })
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 7)
+    .map((other) => other.id);
+  railwayCommands()?.act('seat.sit', { id: s.id, alt });
   request = { id: s.id, ticket: ++serial };
   heardAt = performance.now();
   // Sit on the press, everywhere (instant feedback). In a live room the lead's grants then confirm the chair, move the
@@ -153,6 +166,7 @@ function occupy(s: Seat) {
   me.body.velocity.set(carry.x, carry.y, carry.z);
 }
 function standUp(reason = 'stand input') {
+  if (sitting || request) railwayCommands()?.act('seat.stand', {});
   recordRelease(reason);
   const s = sitting;
   sitting = null;

@@ -138,6 +138,19 @@ export function createHostedRoom({
         ...hostOptions,
         replication,
         awake: false, // the first join wakes it, with the away credit since its last save
+        shadowSeats() {
+          const d = lead ? clients.get(lead)?.d : null;
+          const raw = d && typeof d === 'object' ? (d as Record<string, unknown>).placeSeatGrants : null;
+          if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+          const rows: { id: string; pid: string }[] = [];
+          for (const [id, value] of Object.entries(raw)) {
+            if (!value || typeof value !== 'object') continue;
+            const peer = (value as Record<string, unknown>).peer;
+            const pid = typeof peer === 'string' ? clients.get(peer)?.pid : null;
+            if (pid) rows.push({ id, pid });
+          }
+          return rows;
+        },
         positions() {
           return [...clients].map(([sid, client]) => {
             const p = client.d && typeof client.d === 'object' ? (client.d as { p?: unknown }).p : null;
@@ -464,7 +477,13 @@ export function createHostedRoom({
       noSave: world.status().badSave, // a failed-load fallback must not replace the durable save
       steps: meter.report(world.sync.stepsDropped()),
       replication: { ...repStats, entities: replication.size() },
-      ...(railway ? { railway: (world as RailwayWorldHost).stats } : {}),
+      ...(railway
+        ? {
+            railway: (world as RailwayWorldHost).stats,
+            seats: (world as RailwayWorldHost).status().seats,
+            seatShadow: (world as RailwayWorldHost).status().seatShadow,
+          }
+        : {}),
     }),
     idleMs: () => (clients.size || gone.size ? 0 : performance.now() - emptySince),
     async close({ save = true } = {}) {

@@ -78,7 +78,7 @@ export type CommandAccepted = {
   tick: number;
 };
 export type CommandRefusal = Omit<CommandAccepted, 'tick'> & {
-  reason: 'refused' | 'order' | 'session' | 'storage' | 'unknown';
+  reason: 'refused' | 'taken' | 'rate' | 'order' | 'session' | 'storage' | 'unknown';
 };
 type Command = Omit<CommandAccepted, 'tick'> & { wire: Record<string, unknown> };
 
@@ -255,7 +255,10 @@ export function createRailwayAdapter({
       const refusal = p.rej?.find(([e, r]) => e === epoch && r === request);
       if (refusal) {
         const reason = refusal[2];
-        refuseCommand(command, reason === 'order' || reason === 'session' ? reason : 'refused');
+        refuseCommand(
+          command,
+          reason === 'order' || reason === 'session' || reason === 'taken' || reason === 'rate' ? reason : 'refused',
+        );
       } else if (p.ok?.some(([e, r, n]) => e === epoch && r === request && n > 0)) {
         commands.delete(request);
         for (const fn of commandAccepted) fn({ op, fields, epoch, request, tick: Math.floor(p.tk / RULE_STEPS) });
@@ -332,7 +335,7 @@ export function createRailwayAdapter({
       if (e !== ep) continue;
       settled.set(r, 'refused');
       predictor.reject([e, r]);
-      if (reason !== 'refused') sessionLost = Math.min(sessionLost ?? r, r);
+      if (reason === 'order' || reason === 'session') sessionLost = Math.min(sessionLost ?? r, r);
     }
     if (p.ack && p.ack[0] === ep)
       for (const q of predictor.pending())

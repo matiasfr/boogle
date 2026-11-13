@@ -32,6 +32,8 @@ import { installServer as installRoster } from '../../../src/world/rules/roster.
 import { installRailTune } from '../../../src/world/rules/tune.ts';
 import { projectRailTune, projectRoster } from '../../../src/world/classic-replicate.ts';
 import { createServerOps } from '../../../src/world/server-ops.ts';
+import { installSeats } from '../../../src/world/rules/seats.ts';
+import type { SeatRow } from '../../../src/sim/seats.ts';
 
 // The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
 // Saves skip unchanged state, but persist the advancing room clock at least this often, and always on close.
@@ -142,6 +144,8 @@ export function createWorldHost({
 export type WorldHost = ReturnType<typeof createWorldHost>;
 
 export type RailwayHostOptions = WorldHostOptions & {
+  /** Read-only lead presence for shadow diagnostics. Null when no lead has published grants. */
+  shadowSeats?: () => SeatRow[] | null;
   /** Every connected session, including unknown poses. Unknown blocks maintenance. */
   positions?: () => (RailwayPosition | null)[];
   now?: () => number;
@@ -174,6 +178,7 @@ export function createRailwayWorldHost({
   log = () => {},
   replication = createReplicator(),
   awake = true,
+  shadowSeats = () => null,
 }: RailwayHostOptions) {
   if (!isRailwayRoom(roomId)) throw new Error('railway host requires a railway namespace');
   const namespace = RAILWAY_PLAY_NS;
@@ -182,11 +187,43 @@ export function createRailwayWorldHost({
   // Preserve the existing playtest-only tune policy; ordinary railway rooms cannot change shared rates.
   const sync = createSync();
   const roster = installRoster(sync, ops, replication, now);
+  const seats = installSeats(ops, now);
   projectRoster(replication, roster);
   const railTune = installRailTune(sync, ops, replication);
   projectRailTune(replication, railTune);
   const api = installRailway(sync, { railTune }, replication);
-  const rules = { roster, railTune, railway: api };
+  const rules = { roster, railTune, railway: api, seats };
+  const seatShadow = { checks: 0, agreements: 0, mismatches: 0 };
+  let shadowKey = '',
+    shadowSince = 0,
+    shadowChecked = false;
+  // Presence and commands arrive separately. Compare a changed pair once it has stayed stable for 400 ms;
+  // do not count every tick or mistake an ordinary in-flight lead grant for a disagreement.
+  const compareSeats = () => {
+    const lead = shadowSeats();
+    if (lead === null) {
+      shadowKey = '';
+      shadowChecked = false;
+      return;
+    }
+    const canonical = (rows: SeatRow[]) => JSON.stringify(rows.map(({ id, pid }) => [id, pid]).sort());
+    const actual = canonical(seats.rows()),
+      expected = canonical(lead);
+    const key = JSON.stringify([actual, expected]);
+    if (key !== shadowKey) {
+      shadowKey = key;
+      shadowSince = now();
+      shadowChecked = false;
+    }
+    if (shadowChecked || now() - shadowSince < 400) return;
+    shadowChecked = true;
+    seatShadow.checks++;
+    if (actual === expected) seatShadow.agreements++;
+    else {
+      seatShadow.mismatches++;
+      log(`world ${roomId}: seat shadow mismatch`, { server: actual, lead: expected });
+    }
+  };
   const sent = new Set<(message: Msg) => void>();
   const send = (message: Msg) => {
     for (const fn of sent) fn(message);
@@ -501,6 +538,7 @@ export function createRailwayWorldHost({
           const step0 = sync.roomStep();
           sync.stepWorld(Math.min(time - last, 1000));
           if (sync.world.tick !== before) {
+            compareSeats();
             maintainSupply(); // on rule ticks only, not 60 times a second
             maintainBeam();
             maintainBoiler();
@@ -539,6 +577,7 @@ export function createRailwayWorldHost({
     step(dt: number) {
       if (running && !closed && !requests.failed()) {
         sync.stepWorld(dt * 1000);
+        compareSeats();
         maintainSupply();
         maintainBeam();
         maintainBoiler();
@@ -548,6 +587,8 @@ export function createRailwayWorldHost({
     },
     status: () => ({
       tick: sync.world.tick,
+      seats: seats.rows(),
+      seatShadow: { ...seatShadow },
       ...sync.worldStatus(),
       recoveryError:
         startupError ??
@@ -565,6 +606,7 @@ export function createRailwayWorldHost({
     /** Nobody is here (after the hosted room's grace): stop simulating and save the stamp the away credit counts from. */
     pause() {
       present = false;
+      seats.clear();
       if (!running || closed || requests.failed()) return;
       running = false;
       awayMarker = Math.floor(now() / 100);
@@ -574,6 +616,7 @@ export function createRailwayWorldHost({
     /** The room's actual departure of a session (after its reconnect grace). A carried beam waits for its carrier. */
     depart(sid: string) {
       const session = requests.depart(sid);
+      if (session && !requests.active(session.pid)) seats.release(session.pid);
       const beam = api.beam();
       // The grace runs from the carrier's departure, not from when maintenance next notices it.
       if (session && beam.state === 'held' && beam.holder === session.pid && !requests.active(session.pid))

@@ -43,6 +43,14 @@ the existing look/bot harness. Update the owning game-design chapter for player-
 | --- | --- | --- | --- |
 | `roster.ts` | Durable `who.set` | `roster`: stable ordinals, names and colours, cap 256 | Global `player` rows |
 | `tune.ts` | `tune.set`, durable `tune.commit` | `railTune`: 30 rail keys and revision | Global `tuneValue`, `tuneRev` rows |
+| `seats.ts` | Transient shadow `seat.sit`, `seat.stand` | None | None; diagnostic `status().seats` only |
 
 The railway's rule ticks and action set live in `../railway-server.ts`; its state is also registered Server kind.
 `../README.md` owns the clock and checkpoint contract. Seats and The Boogler remain lead-tab Host fields in this step.
+
+Seat shadow commands bind the socket's pid, validate opaque ids, choose the first free requested chair, and rate-limit
+accepted sits to one per 400 ms of host time. `taken` and `rate` are nonfatal receipt reasons; the command adapter
+preserves them without reopening its session. Shadow receipts never change seating on the client. Actual departure
+releases the pid, and pause clears every chair. No component, saved shape or namespace changes in this step.
+The host compares the shadow table with the lead's grants after a changed pair stays stable for 400 ms; status exposes
+`seatShadow` checks/agreements/mismatches, logging each stable mismatch once. This is diagnostic, never arbitration.
