@@ -1,6 +1,5 @@
 // Roster authority: durable server who.set and the roster state (../../sim/roster.ts), in first-sight ordinal order.
 // The command boundary supplies authenticated e.u; client mirrors never allocate ordinals.
-// The classic registration remains for transport fixtures until step 9 deletes that transport.
 import {
   createRoster,
   canSet,
@@ -11,53 +10,37 @@ import {
   loadRoster,
   hashRoster,
   MAX_PLAYERS,
-  N_COLORS,
 } from '../../sim/roster.ts';
-import { JUNK, bad } from './edit-gen.ts';
-import type { SyncView, Stream } from './types.ts';
+import type { SyncView } from './types.ts';
 import type { ServerOps } from '../server-ops.ts';
 import type { Replicator } from '../replicate-server.ts';
 
-export const name = 'roster';
 // Host wall time, never the action's client-supplied clock. No persisted/wire state.
 export const ROSTER_CHANGE_MS = 3000;
 
-export type RosterApi = ReturnType<typeof install>;
+export type RosterApi = ReturnType<typeof installServer>;
 
-// Retained classic transport registration; the net/wagon gameplay prototypes retired at v39.
-export function install(sync: SyncView) {
-  return create(sync);
-}
 export function installServer(sync: SyncView, ops: ServerOps, replication: Replicator, now: () => number) {
-  return create(sync, { ops, replication, now });
-}
-function create(sync: SyncView, server?: { ops: ServerOps; replication: Replicator; now: () => number }) {
   const roster = createRoster();
   // At most MAX_PLAYERS entries: only a valid, changing roster command spends a slot.
   // Key by authenticated pid so reconnects and replacement sockets cannot reset the bound.
   const lastChange = new Map<string, number>();
-  const changed = () => server?.replication.touchAll('player');
-  if (server)
-    server.ops.define('who.set', {
-      durable: true,
-      validate: (e) => {
-        if (!canSet(roster, e.u, e.n, e.c)) return false;
-        const at = server.now();
-        if (at - (lastChange.get(e.u) ?? -Infinity) < ROSTER_CHANGE_MS) return false;
-        lastChange.set(e.u, at);
-        return true;
-      },
-      apply: (e) => {
-        const result = setWho(roster, e.u, e.n as string, (e.c as number) || 0);
-        changed();
-        return result;
-      },
-    });
-  else
-    sync.registerOp<{ n: string; c: number }>('who.set', {
-      validate: (e) => canSet(roster, e.u, e.n, e.c),
-      apply: (e) => setWho(roster, e.u, e.n, e.c),
-    });
+  const changed = () => replication.touchAll('player');
+  ops.define('who.set', {
+    durable: true,
+    validate: (e) => {
+      if (!canSet(roster, e.u, e.n, e.c)) return false;
+      const at = now();
+      if (at - (lastChange.get(e.u) ?? -Infinity) < ROSTER_CHANGE_MS) return false;
+      lastChange.set(e.u, at);
+      return true;
+    },
+    apply: (e) => {
+      const result = setWho(roster, e.u, e.n as string, (e.c as number) || 0);
+      changed();
+      return result;
+    },
+  });
   sync.registerState(
     'roster',
     {
@@ -68,7 +51,7 @@ function create(sync: SyncView, server?: { ops: ServerOps; replication: Replicat
       },
       hash: () => hashRoster(roster),
     },
-    server ? { server: true } : undefined,
+    { server: true },
   );
   return {
     roster,
@@ -83,13 +66,6 @@ function create(sync: SyncView, server?: { ops: ServerOps; replication: Replicat
     size: () => roster.pids.length,
   };
 }
-
-// Replay-test generators (./README.md): a name and colour, sometimes the same as before (refused), or junk.
-const NAMES = ['Ana', 'Bo', '  Sam  ', 'Dat Frinco', 'x'.repeat(30), 'Zoë', ''];
-export const edits = {
-  'who.set': (r: Stream) =>
-    r.chance(JUNK) ? bad(r, 'who.set') : { op: 'who.set', i: 0, j: 0, n: r.pick(NAMES), c: r.int(-1, N_COLORS) },
-};
 
 // Indexes are dense and unique, and names are clean.
 export function invariants({ roster }: RosterApi): string | null {

@@ -9,7 +9,7 @@ import { identity } from '../player/identity.ts';
 import { me } from '../player/player.ts';
 import { sanitizeName } from '../math.ts';
 import { addPresenceField, net, onNetState } from '../netplay/net.ts';
-import { submitEdit, worldStatus } from '../world/sync.ts';
+import { worldStatus } from '../world/sync.ts';
 import { railwayCommands } from '../entities/railway/state.ts';
 import { playMark, recordRosterSnapshot, type RosterSnapshot } from '../proto/mark.ts';
 
@@ -42,7 +42,6 @@ onFrame(
     if (!name || (k >= 0 && rules.roster.nameOf(k) === name && rules.roster.colorOf(k) === me.colorIdx)) return;
     lastWho = now;
     if (railwayMirror) railwayCommands()?.act('who.set', { n: me.name, c: me.colorIdx });
-    else submitEdit({ op: 'who.set', i: 0, j: 0, n: me.name, c: me.colorIdx });
   },
   { phase: 'late', order: 40 },
 );

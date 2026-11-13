@@ -1,8 +1,5 @@
-// The game's world: the island's land and the lockstep rules installed on the real sync, and the railway's mirror. The only non-test caller of
-// installRules. Every adapter that reads rules state imports this first, so the rules register before anything else.
+// The game's static land and read-only server mirrors. Clients register no simulated or persisted world state.
 import { GRID_RES } from './grid.ts';
-import { world, registerOp, registerState, onTick, onApplied, onSnapshot } from './sync.ts';
-import { installRules } from './rules/index.ts';
 import type { Land } from './rules/types.ts';
 import { productionRailway } from '../proto/flags.ts';
 import { createRailwayMirror } from './railway-replicate.ts';
@@ -11,11 +8,9 @@ import { createRailwayMirror } from './railway-replicate.ts';
 /** @type {import('./rules/types.ts').Land} */
 export const land: Land = { n: GRID_RES, layout: { trees: [], perches: [] } };
 // The railway is Server-kind state (docs/plans/replication.md, R1a): no rules here, only the mirror the server fills.
-export const railwayMirror = productionRailway ? createRailwayMirror() : null;
-export const rules = installRules(
-  { world, registerOp, registerState, onTick, onApplied, onSnapshot },
-  land,
-  railwayMirror ? () => railwayMirror.roster : undefined,
-);
+const mirror = createRailwayMirror();
+export const railwayMirror = productionRailway ? mirror : null;
+// Non-production previews have an empty read-only roster; they never allocate classic ordinals.
+export const rules = { roster: mirror.roster };
 
 export const railTune = railwayMirror?.tune ?? null;
