@@ -9,6 +9,7 @@ import { LINE2_PACK, type Line2StationId } from '../sim/railway-line2-layout.ts'
 import { BOILER_MAX, LINE_HALTS } from '../sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { RAIL_ROCKS } from '../sim/railway-works-layout.ts';
+import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from '../sim/railway-route.ts';
 import { Pile } from '../sim/railway-components.ts';
 import { activeStation } from '../sim/railway-queries.ts';
 import { railBeamChoppable } from '../sim/railway-queries-line1.ts';
@@ -41,6 +42,8 @@ export type RailwayIntent =
   | { op: 'rail.brace'; revision: 1 }
   | { op: 'rail.turn'; to: 0 | 1; revision: number }
   | { op: 'rail.steelTake'; kind: 0 | 1 }
+  | { op: 'rail.legStock'; leg: number }
+  | { op: 'rail.grant' | 'rail.gate'; id: number }
   | { op: 'rail.install'; line: number; part: 1; revision: number }
   | { op: 'rail.boilerTake' | 'rail.boilerFit'; revision: number }
   | { op: 'rail.boilerDrop'; revision: number; x: number; y: number; z: number }
@@ -64,6 +67,10 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     return { op: e.op, kind: e.kind === 1 ? 1 : 0 };
   if (e.op === 'rail.install' && e.line === LINE2 && e.part === 1 && railInt(e.revision, BOILER_MAX))
     return { op: e.op, line: LINE2, part: 1, revision: e.revision };
+  // The greybox route (docs/plans/greybox-route.md, leg 1 step 4): catalog indexes.
+  if (e.op === 'rail.legStock' && railInt(e.leg, RAIL_LEGS.length - 1)) return { op: e.op, leg: e.leg };
+  if (e.op === 'rail.grant' && railInt(e.id, RAIL_GRANTS.length - 1)) return { op: e.op, id: e.id };
+  if (e.op === 'rail.gate' && railInt(e.id, RAIL_GATES.length - 1)) return { op: e.op, id: e.id };
   if (e.op === 'rail.strike' && railInt(e.id, 2)) return { op: e.op, id: e.id };
   if (e.op === 'rail.footTake' && railInt(e.rack, 2)) return { op: e.op, rack: e.rack as 0 | 1 | 2 };
   if (e.op === 'rail.footSet' && railInt(e.site, 3)) return { op: e.op, site: e.site as 0 | 1 | 2 | 3 };
@@ -180,6 +187,8 @@ export const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.brace',
   'rail.turn',
   'rail.install',
+  'rail.grant',
+  'rail.gate',
 ]);
 /** Refused only while you haul the boiler, as the sim refuses them (one thing on your back at a time). */
 export const NOT_WHILE_HAULING: ReadonlySet<string> = new Set(['rail.breaker', 'rail.strike']);
@@ -267,6 +276,11 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     /** Install line 2's longer boiler at the table, on the line's fit you saw (`Line.boiler`). */
     installBoiler: (revision: number) =>
       railInt(revision, BOILER_MAX) && submit({ op: 'rail.install', line: LINE2, part: 1, revision }),
+    /** The greybox route: feed your back's logs and rails into leg `leg`'s current frame (a RAIL_LEGS index); take a
+     * pickup for the room (a RAIL_GRANTS index); open a barrier (a RAIL_GATES index). */
+    feedLeg: (leg: number) => railInt(leg, RAIL_LEGS.length - 1) && submit({ op: 'rail.legStock', leg }),
+    takeGrant: (id: number) => railInt(id, RAIL_GRANTS.length - 1) && submit({ op: 'rail.grant', id }),
+    openGate: (id: number) => railInt(id, RAIL_GATES.length - 1) && submit({ op: 'rail.gate', id }),
     pullLever: () => submit({ op: 'rail.lever' }),
     pullSeaSwitch: () => submit({ op: 'rail.seaSwitch' }),
     claimHook: () => submit({ op: 'rail.hook' }),

@@ -16,6 +16,7 @@ import { createBoilerInstall } from './boiler-install-view.ts';
 import { createRingMeet } from '../ring-meet/view.ts';
 import { createRingFolk } from '../ring-folk/view.ts';
 import { createRingSteel } from '../ring-steel/view.ts';
+import { createLegView } from '../route-greybox/leg-view.ts';
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
@@ -31,11 +32,12 @@ export async function createRailwayWorksLive(
 ) {
   const shapes = await import('../../render/part-geometry.ts');
   const breaker = createRailwayBreaker(adapter, owner, shapes);
-  const [works, roundhouse, crossing, steel] = await Promise.all([
+  const [works, roundhouse, crossing, steel, leg] = await Promise.all([
     createRailwayWorks(adapter, owner, { contactIn: breaker.contactIn, seated: deps.seated, busy: deps.busy }),
     createRailwayRoundhouse(adapter, owner, { contactIn: breaker.contactIn }),
     createRailwayCrossing(adapter, owner, deps),
     createRingSteel(adapter, owner),
+    createLegView(adapter, owner),
   ]);
   const footings = createRailwayFootings(adapter, owner);
   const railhead = createRailwayRailhead(adapter, owner, deps);
@@ -43,7 +45,7 @@ export async function createRailwayWorksLive(
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
   const install = createBoilerInstall(adapter, owner);
-  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, steel, install];
+  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, steel, install, leg];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
     footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
@@ -79,6 +81,7 @@ export async function createRailwayWorksLive(
       ...folk.targets(),
       ...steel.targets(),
       ...install.targets(),
+      ...leg.targets(),
     ],
     inspect: () => ({
       ...works.inspect(),
@@ -88,6 +91,7 @@ export async function createRailwayWorksLive(
       ...folk.inspect(),
       ...steel.inspect(),
       ...install.inspect(),
+      ...leg.inspect(),
       ...roundhouse.inspect(),
       ...breaker.inspect(),
       footings: footings.inspect(),

@@ -10,7 +10,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { trainAlong, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
-import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../../sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
@@ -23,7 +23,7 @@ import {
   works as worksRow,
   type ReadWorld,
 } from '../../sim/railway-rows.ts';
-import { RING_HEAD } from '../../sim/railway-ring-layout.ts';
+import { RING_HEAD, RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
 import { line2World, line2Y, RING_S } from './line2-path.ts';
 import { createRequestLever, type RequestLever } from './request-lever.ts';
 import { LINE2_GLIDE, pierLaid } from '../../sim/railway-line2-layout.ts';
@@ -559,6 +559,20 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       () => true,
     ),
   );
+  // The stack line's halts (docs/plans/greybox-route.md, leg 1 step 4; the design review's answer g): one homeward lever
+  // on each head's one platform (route-greybox/leg-view.ts draws it: lat +1.8 to +6.3, the 25 m before the section's
+  // end), 6 m short of its end, while the head is a stop (a head closed behind passes both ways and loses its lever);
+  // the third head, kept as a request stop once High Gorge opens, gains a lever for the way on; High Gorge's stands on
+  // its north platform. No chained up lever at a line's end.
+  const stackStops = RAIL_LINES[LINE2]!.halts.map((h, stop) => ({ h, stop })).filter((x) => x.h.leg);
+  for (const { h, stop } of stackStops) {
+    const stub = h.end?.kind === 'stub',
+      u = (h.s - RING_S_HEAD) / 100 + 4,
+      shut = () => h.closesAt !== undefined && stopsNow[LINE2]!.length >= h.closesAt;
+    spots.push(ringSpot(stop, false, 2.45, () => u, () => !shut()));
+    if (stub && h.closesAt === undefined)
+      spots.push(ringSpot(stop, true, 2.45, () => u - 4, () => stopsNow[LINE2]!.length > stop + 1));
+  }
   const ringSpots = spots.filter((x) => x.ring);
   let shown = false;
   /** Levers pulled on this tab and not yet answered: shown over at once (the press's own feedback), until then. */
@@ -585,10 +599,13 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
    * Pier at Far Head's, Ring Island at the joint's), or the line's last halt where none does. */
   function label(x: Spot) {
     if (x.dir < 0) return haltName(x.line, 0);
-    // The greybox route's halts (a leg's, or a shut row's) have no lever here yet (its views are step 4's).
+    // A chained lever never names a greybox route halt (a leg's, or a shut row's): Ring Island's reads Ring Island.
     const n = stopsNow[x.line]!.length,
       count = LINE_HALTS.filter((r, id) => r.line === x.line && !RAIL_HALTS[id]!.leg && !RAIL_HALTS[id]!.shut).length;
-    return haltName(x.line, chained(x) ? Math.min(n, count - 1) : n - 1);
+    const to = chained(x) ? Math.min(n, count - 1) : n - 1,
+      h = RAIL_LINES[x.line]!.halts[to]!;
+    // The stack line's moving end (placeholder name, the step 4 review's answer l; not The Boogler's).
+    return h.leg && h.end?.kind === 'stub' ? 'Stack railhead' : haltName(x.line, to);
   }
   /** Whether a lever stands: its halt is up and its frame shown (an up lever with today's halt's). */
   const standing = (x: Spot) =>

@@ -3,7 +3,7 @@
 // posts, the hinge pier, the brace platform with its gold strut and a waving folk, the steps up to their deck, the
 // hinge pier's sea ramp, the raised leaf (a pivot group R4c turns through ringIslandPose, its bracket empty and its
 // outline painted), the island halt's two platforms with the RINGWORKS board, the fingerpost (emblems only), the low map
-// table, the run-off, buffers and end board, the crossover, the works yard (steel under a tarp, the drop hammer, the prophecy mural), the path
+// table, the crossover, the works yard (steel under a tarp, the drop hammer, the prophecy mural), the path
 // to the summit lookout, and the ground with its sand band. Nothing here does anything yet and nothing prompts (call
 // 22). Static geometry merged into one vertex-coloured mesh; the leaf, its bracket, the hammer's head and the board's
 // face are their own. Colliders: the ground's heightfield, the decks, ramps, platforms and yard, the leaf (kinematic).
@@ -552,30 +552,11 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     station(GOLD, 0, 0, 0);
   }
 
-  // ---------------------------------------------------------------- the run-off, the buffers and the end board (R2d)
-  {
-    // The formation carried on level from the Way's end to the buffer faces: a deck over the cutting (ground.ts), rails
-    // under both lanes to the faces, a timber buffer stop behind each face (the railhead's shape) and the blank board.
-    const B = RING_END.bed,
-      face = RING_END.bufferU / 100,
-      y = B.y / 100;
-    deck(STEEL, WAY_END, B.u1 / 100, B.lat0 / 100, B.lat1 / 100, () => y, 3);
-    track(WAY_END, face, () => y, 3);
-    // Each stop stands 30 cm behind its face, its top at the buffer's y (RING_END.buffers).
-    TRACKS.forEach((t, i) => {
-      const k = at(face + 0.3, t);
-      post(TIMBER_DARK, k.x, k.z, y + 0.2, RING_END.buffers[i]!.y / 100, 2.6, 0.6);
-    });
-    // The board, 1.5 m behind the faces: two posts and a blank face (its words are the owner's), its foot at board.y.
-    const u = face + 1.5,
-      by = RING_END.board.y / 100;
-    for (const s of [-2.3, 2.3]) {
-      const q = at(u, FORM.mid + s);
-      post(RAIL, q.x, q.z, y, by + 1.4, 0.2, 0.2, false);
-    }
-    const f = at(u, FORM.mid);
-    post(CONCRETE, f.x, f.z, by, by + 1.4, 5.2, 0.12, false);
-  }
+  // ---------------------------------------------------------------- the run-off, the buffers and the end board
+  // Not here since the greybox route (docs/plans/greybox-route.md, leg 1 step 4): line 2 runs on from WAY_END along
+  // the stack line's row, which curves west through where R2d's straight bed and buffers stood, so the run-off's deck
+  // and rails, the buffers and the end board are route-greybox/leg-view.ts's, drawn at the line's end as it is laid
+  // (here until the first section, then at each railhead). The cutting is ground.ts's.
 
   // ---------------------------------------------------------------- the crossover's rails on the Way (R2d)
   {

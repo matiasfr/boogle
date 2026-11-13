@@ -10,7 +10,7 @@ import { createRailwayWorldHost } from '../../server/src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { railwayAtRing } from '../../src/sim/railway-seed-ring.ts';
-import { act } from '../../src/sim/railway-seed-route.ts';
+import { act, type Seed } from '../../src/sim/railway-seed-route.ts';
 import { advanceWorks } from '../../src/sim/railway-seed-works.ts';
 import { aperture } from '../../src/sim/railway-rows.ts';
 import { need } from '../../src/sim/railway-drive.ts';
@@ -26,6 +26,11 @@ export async function buildRingMidDoc(set: number) {
       need(act(seed, 'a', 'rail.footSet', { site: 3 }) === 1, 'a footing set at the jib');
     } else advanceWorks(seed, 1);
   }
+  return seedDoc(seed);
+}
+
+/** A seed's world as the save the real host writes (as server/src/seeds/build.ts does for the catalog's stages). */
+export async function seedDoc(seed: Seed) {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-seed-'));
   try {
     const roomId = railwayRoomId('seed');

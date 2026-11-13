@@ -29,7 +29,7 @@ const TAKE_LOGS = 'Take logs',
   BRING_BOTH = 'Bring logs or rails',
   BACK_FULL = 'Your back is full',
   HANDS_FULL = 'Hands full',
-  SIGN_TITLE = 'Steel works';
+  SIGN_TITLE = 'STEEL WORKS';
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 const GREY = '#9c9ea1',
   GREY_DARK = '#6f7275',
@@ -148,8 +148,10 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
           : `logs ${Math.min(s.logs, STEEL.logs)}/${STEEL.logs}  rails ${Math.min(s.rails, STEEL.rails)}/${STEEL.rails}`;
       if (counts !== painted) {
         painted = counts;
-        // The counts are the big line (they are what is read from the platform), the works' name under them.
-        paintTwoLines(sign, counts, SIGN_TITLE, BILL_LOOK);
+        // The heading is the largest line (the greybox route's step 4 review, b: two bills stand either side of the
+        // tracks, `STEEL WORKS` east and `LINE TO HIGH GORGE` west, and the headings tell them apart); the counts
+        // under it.
+        paintTwoLines(sign, SIGN_TITLE, counts, BILL_LOOK);
         sign.painted();
       }
     }
