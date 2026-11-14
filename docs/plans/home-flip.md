@@ -221,6 +221,76 @@ After B4 and the owner's walk, each construction is its own commit: its row leav
 2. **Is a level town enough for the blockout, or do you want a bolder ground move now?** The Round already sits on flat ground; B1 only fills dips of up to 0.5 m and widens the top of the dock street. Recommended: **level for now**; walk it, then say where the ground should rise or step (the west rim, where it falls to the cove, is the natural place).
 3. **Can the gate cottage wait one step to open?** On 12 November the sealed buildings were to open with the Round's first build. Recommended: **yes**: its place should be signed off first, and D1 is the first detail step.
 
+### Design review (designer, 2026-11-14)
+
+**Read and run:** this section and steps B1 to B4 and D1 to D5; the owner's three sentences; owner calls "Block out spacing first, details later", "Place for the look, not the cost; terrain may change", "Small rulings are the orchestrator's" and "Playtest before bespoke functionality"; [town-layout](town-layout.md)'s Round and its 10 November review; the rail and rewards Current rules for the town (the Round, built regular; unbought plots stay empty ground; the gate cottage opens empty); the top-down sheet (`.look/owner/town-plan-sheet.png`, source e08abacf7); the top blocks of growing-towns and level-design. One measurement of my own: the ground's height on this branch (main's ground) sampled from G every 20° out to 70 m.
+
+**Not seen:** nothing of the Round stands in the game, so no still from the player's eye could be taken; everything below is read from the sheet, the plan's numbers and the height samples. The playtest CLI was not run: the 10 and 13 November reviews found no town-centre moment in its sessions. No Place port is involved, so no fit check is owed. No line of The Boogler's copy is touched.
+
+#### Calls
+
+| # | Call | Kind | Ruling |
+| --- | --- | --- | --- |
+| 1 | Block out spacing first; the blockout ships live | Decided | Owner, 14 November |
+| 2 | Terrain may be reshaped for the layout | Decided | Owner, 14 November |
+| 3 | Blocks stand on the eight unbought plots until the spacing is signed off | New | **Yes.** The owner's call asks for the layout "as plain blocks at true size and position"; spacing cannot be walked on empty ground. It bends "unbought plots stay empty ground" (rewards, 10 November) for a stated time only: the rows leave `TOWN_BLOCKS` at D4. The blocks must keep reading as stand-ins (one flat grey, no roof), which the plan does. His to overrule (question 1) |
+| 4 | Block height is the kit's eave; a pale door panel and a ground mat on the door side | Default | Accept. True heights are what make the climbing findings honest |
+| 5 | The pad at G is r 38 with an 8 m edge | Default | Accept. It is the largest that keeps the tree pin, so no bump |
+| 6 | The dock street is 8 m wide to r 38 | Default | Accept (10 November review, call 21) |
+| 7 | The hall's apron keeps its 0.1 to 0.2 m rise | Default | Accept. The hall standing a little above the green is right (finding 4) |
+| 8 | The quarry road runs at x −97.85, 3.65 m clear of plot 2's corner and of the fronts of plots 3 and 6 | New | **Accept.** A 4.8 m road in a 7.3 m gap between 3.84 m walls is the town's one two-sided street, which the 10 November diagnosis asked for. The verge at the pinch is 1.25 m a side; if two players and riders squeeze there on the walk, move plots 3, 5 and 6 east by a metre, not the road |
+| 9 | The bold camp path starts at the 40° mouth, 9.9 m from spawn (5 m today), joined by the ring road's paint | New | **Accept.** The first goal does not depend on it: the forge's frame is 20 m from spawn in plain sight and Sleeves stands beside it. One condition, in B4 (finding 2) |
+| 10 | The plinth's rule becomes "beside the ring road" | Default | Accept |
+| 11 | House blocks on plots 1 and 2 stand 3.0 m from Fine Prices from arrival; a second jump from the shop's site walkway may reach the balcony | New | **Leave them.** Do not raise them (a false height defeats call 4) and do not hold them as stakes (they frame the dock street and the shop, the first spacing a player meets). The window is about 7 s once a world, the balcony is a cosmetic find and not a gate (10 November, call 12), and the blocks go at D4; a bought house there always comes after the glider. B4 probes it; if the hop lands it is logged and stays until D4 |
+| 12 | Fine Prices and the museum stay stake boards before T3 | Default | Accept. In a fresh room the ring has two holes at 190° and 340° while later plots are blocks; the shared room and the `q6-done` looks are past T3, so the walk is not affected |
+| 13 | The gate cottage stays sealed until D1 | New | **Yes, with one change of order: D1 follows B3 and runs beside B4; it does not wait for the owner's walk.** The room is drawn in the cottage's own frame from `townBuilding('gate')`, so a later spacing edit moves it with its row. That keeps "sealed buildings open with the first version of the updated town" (owner, 12 November). A small ruling, not a question |
+| 14 | The `yard` find behind the gate cottage at (−145.44, 14.71) | Default | Accept (10 November, call 14). Ground there is 18.0 to 18.1 and the fall starts past r 38. From the top of the dock street it lies 19 m to the left in the open, since the cottage's back faces the walk in: a find for looking left, as intended |
+| 15 | The hall's roof is a perch from the moved bay | Default | Leave it, as ruled on 10 November. It is also the best place in the game to judge the Round from. B4's probe must show a way down on each side |
+| 16 | The green is a shallow bowl, 0.8 m down at the middle, the ring road and every footprint staying at 18 m | New | **My recommendation, added to B1 as one tunable** (finding 4, question 2) |
+
+Decided 2, Default 7, New 6.
+
+#### The spacing, as a player would feel it
+
+At 5.6 m/s walking and 9.5 m/s sprinting:
+
+| Leg | Metres | Walk | Sprint |
+| --- | --- | --- | --- |
+| Across the green, edge to edge | 28 | 5 s | 3 s |
+| Door to door across the Round (Pip's house to Fine Prices) | 44 | 8 s | 5 s |
+| Spawn to the gate cottage's door | 40 | 7 s | 4 s |
+| Hall front to the footing at G | 23 | 4 s | 2.5 s |
+| Once round the ring road | 107 | 19 s | 11 s |
+| Shore landing to the gate cottage's door (straight) | 63 | 11 s | 7 s |
+
+- **44 m is right, and it is also the floor.** Eight seconds door to door sits inside level-design's "something to do every 10 to 20 s", and three players, a crowd of riders and a 26 m clock need the room. It is not a free number: on the decided 30° grid a 7.4 m house beside the 10 m shop needs fronts at about 21 m or more to keep the 2.4 m alley, so a smaller Round means fewer buildings on the ring. Do not tune the radius in the blockout.
+- **It will feel open, not enclosed.** Walls of 3 to 3.84 m across 44 m are about 1 to 11; a square usually stops feeling like a room past 1 to 6 (a common town-planning rule of thumb, not from `docs/research`). The clock carries the middle later; until then the footing is 0.3 m high. This is the main reason for finding 4.
+- **Arrival from the hall reads as a town with the blocks on, and that is not the arrival the game will have.** From the hall's front the whole ring shows: seven fronts and the footing within 45 m. The decided arrival is Pip's house, one cottage, two boards and two staked plots. The blockout answers "is the full town well spaced"; it cannot answer "does an almost empty Round read as the start of a town" unless B4 also looks at it empty (finding 1).
+- **Crowded: the south-east quarter, a little.** Fine Prices, plots 2, 8, 3, 5 and 6 stand in about 35 by 30 m with five gaps of 2.8 to 3.3 m. It passes the 2.4 m alley rule and it is where the street is, so it stays; walk the alleys between plots 3, 5 and 6 with the camera before anything is detailed. If they pinch, close 3, 5 and 6 into one terrace or open them to 4 m: either is a row edit.
+- **Stranded: plot 7.** One cottage 46 m from G, 13 m past the forge's north wall, with nothing opposite. Plots 5, 6 and 8 are not stranded: they are the street. Leave plot 7 where it is for the walk (the forge's rack, chest and oak hold the ground between); if it reads as an outlier, my lean is the west side of the camp road north of Pip's house, so it backs the ring instead of trailing off. Not changed now.
+
+#### Findings
+
+1. **B4 must look at the Round both ways.** Add two stills with the eight blocks hidden by the look's own eval (no player-facing flag): from spawn's camera and from the top of the dock street, at phone size too. They show the arrival state the decided rules describe. Without them the owner signs off spacing on a picture no new player will see.
+2. **The bold path now starts off to the side of spawn (flow rule 1, the next goal can be found).** B4's arrival still from spawn's own camera must have the forge's frame or the 40° mouth in frame, and the bot's `forge-lit` segment must show no new idle at Home. If either fails, the fix is a short tangent of path paint from spawn to (−98, −6), today's line, not moving the mouth.
+3. **Reach claims still without proof, all B4's:** the second jump onto plot 1's block from the walkway; plot 4's block to the museum's roof (no reward there, accept if it lands); a way down from the hall's roof; a saved pose inside a block returning at spawn. None blocks B1.
+4. **Level wastes the permission; block out one move now: the green as a shallow bowl.** Sampled today, the town's ground is 18.0 m flat to within 0.2 m for 50 m in every direction except the west (15.8 m at 260°, r 44, then 7.7 m at r 70 down to the cove). A ring painted on a table reads as a ring only from above, which is the sheet's view and not the player's. Dropping the green to 17.2 m at the middle (level inside about r 10, a bank of about 1 in 4 out to r 14) makes the Round a shape in the ground: every door stands on a rim looking in, the hall at 18.34 m stands highest, riders crossing are seen from every side, and the walk up from the cove crests and looks down across it. It costs one more `pad` call inside r 14, moves no tree, footprint, road or spawn, and B1's level test already leaves the green out. Recommended as `TOWN_GROUND.green = { drop: 0.8, flat: 10 }` with `drop: 0` as level, so the owner walks both. Two things follow in B3: the footing's block sits on the ground at G, not at a fixed 18 m, and `WANDER`'s points on the green take the ground's height. This rests on height numbers and the sheet, not on a still. The west rim (steps or a terrace where the dock street meets the fall) is the second candidate and can wait for the walk.
+5. **No route-contract finding.** No bill, gate or ability moves; the level check's progression lines are main's. Co-op: spawn on the ring's east side stays the meeting place.
+
+#### Changes to make before building
+
+- **B1:** add the green's dip as a tunable (finding 4). Not blocking if the planner or owner declines: `drop: 0` is the plan as written.
+- **B3:** the footing reads the ground's height.
+- **B4:** the two stills with blocks hidden (finding 1); the arrival still and the bot's idle (finding 2).
+- **Order:** D1 follows B3 (call 13).
+
+#### Owner questions
+
+1. **Blocks on the eight unbought plots, live, until you sign off the spacing?** Recommended: **yes**; they become stakes and empty ground again at D4. The build proceeds on yes.
+2. **A level town, or the green as a shallow bowl in the blockout?** Recommended: **the bowl, 0.8 m, built as a tunable** so you can walk it and set it to zero. It is the one ground move that makes the Round readable from the ground, and it undoes in one number.
+
+The plan's question 3 (the gate cottage) is ruled above and need not be asked.
+
 ## Level findings
 
 Run today on `de19c85a3`, `npm run level-check -- --place=place`:
