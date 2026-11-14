@@ -350,7 +350,7 @@ The slab is 0.44 m wide to clear the hanging hands and 0.46 m deep, centred 0.13
 its front edge is 0.10 m ahead of that anchor. The 8 cm square legs sit at X ±0.15 m and Z −0.26/+0.02 m relative to it.
 The backrests are removed entirely, leaving plain stools (owner playtest, 8 November). Seat tops remain 0.32 m above the deck. Buddy's capsule anchor remains at seat top
 plus 0.63 m, X ±0.55 m and Z −1.15 m; the station hands retain their seat-height offset. This is Local mesh geometry.
-The shared workshop seat builder also has no back. Each production train has one passenger car and one cargo car
+The shared workshop seat builder also has no back. Its solid has none either since 14 November: an unseen 0.8 m backrest box stood behind the forge's stool and stopped you walking round it. Each production train has one passenger car and one cargo car
 behind it (owner, 10 November: "if there's cargo then it shouldnt have seats I think"). The cargo car, the one whose
 deck takes the crates, has no stools and never offers Sit, loaded or empty. It carries dark stakes up both long sides
 with low boards between them (`cargoFittings`, src/render/wagon-look.ts; cosmetic, no solid, outside the crate slots),
