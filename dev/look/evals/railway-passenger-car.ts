@@ -16,6 +16,7 @@ const { interactTarget } = (await import(
 const { pressJump, releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
+const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { seatState } = (await import(
   '/src/entities/railway/seat.ts' as string
 )) as typeof import('../../../src/entities/railway/seat.ts');
@@ -56,7 +57,7 @@ const mark = (beat: string) => {
   console.log(`CAR ${beat} ${JSON.stringify({ seat: seatState().sitting, row: row() })}`);
 };
 setTimeout(() => window.__debugCam?.clear(), 100);
-await (async () => {
+const ride = async () => {
   await until(() => railRead()?.ready() && me.body && me.coyote > 0, 'seed arrived', 300000);
   await until(() => view().halts[3]?.up && view().halts[2]?.up, 'line 2 halts stand', 60000);
   // Ask at the village for a train toward Far Head, as the request-stop look does.
@@ -87,6 +88,7 @@ await (async () => {
   }
   check(aboard(), 'boarded line 2 by a real jump');
   mark('boarded');
+  window.__debugCam?.clear();
   // Standing aboard, Sit and Request stop share the Interact button (seat.ts, withSeatTargets): facing a chair close
   // by it is Sit, turned away it is Request stop. Turn on the spot until each has shown.
   await until(() => interactTarget(), 'something offered aboard', 60000);
@@ -115,6 +117,15 @@ await (async () => {
     10000,
   );
   mark('seated');
+  // A camera 4 m out in front of the rider, 35 degrees round from straight on, re-aimed each frame so it rides the deck:
+  // the rider, their bench and the car's rail read together. The follow camera comes back when they stand up.
+  let top = false;
+  const aim = setInterval(() => {
+    if (top) return;
+    const a = me.avatar!.rotation.y + 0.6;
+    const p = me.body!.position;
+    window.__debugCam!.set([p.x - Math.sin(a) * 4, p.y + 0.9, p.z - Math.cos(a) * 4], [p.x, p.y - 0.3, p.z]);
+  }, 16);
   await until(() => row().phase === 1, 'the train is under way', 120000);
   await bot.wait(1000);
   mark('under-way');
@@ -124,7 +135,7 @@ await (async () => {
     'Request stop offered seated',
     60000,
   );
-  await bot.wait(700);
+  await bot.wait(1800);
   bot.press();
   await until(() => view().trains[slot]!.stopLamp, 'the engine lamp lights', 30000);
   await until(() => interactTarget()?.blocked === 'Stop requested', 'the prompt greys once requested', 10000);
@@ -132,19 +143,23 @@ await (async () => {
   await bot.wait(300);
   check(seatState().sitting, 'a second press neither asks again nor stands you up');
   mark('requested');
-  // A camera 4 m out in front of the rider, 35 degrees round from straight on, re-aimed each frame so it rides the deck:
-  // the rider, their bench and the car's rail read together. The follow camera comes back when they stand up.
-  const aim = setInterval(() => {
-    const a = me.avatar!.rotation.y + 0.6;
-    const p = me.body!.position;
-    window.__debugCam!.set([p.x - Math.sin(a) * 4, p.y + 0.9, p.z - Math.cos(a) * 4], [p.x, p.y - 0.3, p.z]);
-  }, 16);
-  await until(() => row().phase === 1, 'the train is under way', 120000);
-  await bot.wait(6000);
   mark('riding');
   await until(() => row().phase === 0 && row().at === 1, 'the train halts at the quarry', 300000);
   await bot.wait(1500);
   mark('halted');
+  // From overhead for a moment: the engine and the first car where the train stands (the Quarry's up track is the
+  // tightest bend a train stops on; car-spacing.ts).
+  {
+    const [e, c1] = view().trains[slot]!.cars as [Car, Car];
+    const y = me.body!.position.y;
+    top = true;
+    window.__debugCam!.set(
+      [(e.x + c1.x) / 2, y + 13, (e.z + c1.z) / 2 + 0.01],
+      [(e.x + c1.x) / 2, y, (e.z + c1.z) / 2],
+    );
+    await bot.wait(2600);
+    top = false;
+  }
   // Jump stands you up (the prompt's second chip, the touch Jump button's word).
   pressJump();
   await bot.wait(100);
@@ -157,5 +172,8 @@ await (async () => {
   await bot.walk(quarry.x, quarry.z, 0.8);
   mark('off');
   await bot.wait(1500);
-})();
+};
+// `&carBg=1`: as an --eval the ride runs on while the look captures (--until "window.__car==='under-way'").
+if (new URLSearchParams(location.search).has('carBg')) background(ride(), 'passenger car ride');
+else await ride();
 export {};
