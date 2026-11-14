@@ -725,7 +725,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
   assert.equal(rejectedOwner.root.children.length, 0, 'unsupported placement allocates no attached construction root');
   rejectedOwner.dispose();
   const instances: ReturnType<typeof runtime.instantiate>[] = [];
-  const { createRooms } = sourceModule<typeof import('../src/entities/town/rooms.ts')>(
+  const { createRooms, ROOM_CAM } = sourceModule<typeof import('../src/entities/town/rooms.ts')>(
     fs.readFileSync('src/entities/town/rooms.ts', 'utf8'),
     {
       THREE,
@@ -850,6 +850,19 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     r.site.state = 'done';
     rooms.update(0.1);
     capture(`${r.id}-ready`);
+    // The interior draws by distance to the door (room +z), not to the building: town-layout step 7.
+    const camAt = (z: number) => {
+      const v = new THREE.Vector3(0, 0, z).applyAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
+      camera.position.set(r.x + v.x, r.y + 8, r.z + v.z);
+      rooms.cull();
+      return r.near.visible;
+    };
+    const within = ROOM_CAM.drawWithin;
+    assert.equal(camAt(r.d / 2 + within - 1), true, `${r.id}: drawn approaching the door`);
+    assert.equal(camAt(r.d / 2 + within + 0.5), true, `${r.id}: still drawn inside the slack past the line`);
+    assert.equal(camAt(r.d / 2 + within + 2), false, `${r.id}: not drawn from beyond the door's radius`);
+    assert.equal(camAt(r.d / 2 + within + 0.5), false, `${r.id}: not drawn again until inside the line`);
+    assert.equal(camAt(-r.d / 2 - within + 2), false, `${r.id}: not drawn from as near behind`);
     const at = (z: number) => {
       const v = new THREE.Vector3(0, 0, z).applyAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
       player.body = { interpolatedPosition: { x: r.x + v.x, y: r.y + 0.5, z: r.z + v.z } };
