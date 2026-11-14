@@ -6,10 +6,12 @@ The default URL opens round 4 in the shared `boogle` room, with co-op enabled, a
 
 Our server hosts every room ([src/net/ws-room.ts](../../src/net/ws-room.ts), [src/net/README.md](../../src/net/README.md),
 [server/README.md](../../server/README.md)). Each tab opens one WebSocket to it at `/room/<world room>`, where the
-world room is `v02-<room>` (the world namespace, [src/world/namespace.ts](../../src/world/namespace.ts); the `?room=`
-URL and the pause title show the plain name). The server runs the room's lockstep world itself, relays presence (latest
+world room is `rail-v44-<room>` for the production railway or `v44-<room>` for ordinary rooms (the world namespace,
+[src/world/namespace.ts](../../src/world/namespace.ts); the `?room=` URL and the pause title show the plain name).
+The server owns the shared rules and clock, relays presence (latest
 wins per player, 20 ms apart) and messages, and saves the world to its own disk. Ids in messages are each tab's stable
-`selfId`. Heartbeats every second; a tab silent for 5 s is closed, and announced as left 1.5 s later unless it is back.
+`selfId`. Heartbeats every second; a tab silent for 20 s (120 s when hidden) is closed, and announced as left
+1.5 s later unless it is back.
 Messages are capped at 16,000 characters. The game reads the server from `VITE_BOOGLE_SERVER` (set by the Pages
 deploy); `npm run dev` runs its own in-process server. When the server can't be reached the tab says "connecting",
 plays alone, and keeps reconnecting (250 ms to 3 s apart); there is no peer-to-peer fallback.
@@ -20,45 +22,46 @@ within the 1.5 s grace always gets in. A room loads (from its save) on its first
 empty; 10 minutes after the last player left it is saved and unloaded. Measured with 8 pages at 20 Hz presence: the
 server uses about 8% of one core and delivers every update.
 
-## 8.2 The lead
+## 8.2 No special tab
 
-The server is the lockstep host, so there is no host migration: a tab that leaves takes nothing with it. One tab, the
-**lead**, publishes Host-kind fields (the Boogler, `addHostField`): the oldest visible tab, picked by the server and
-announced to everyone (`lead`). It changes when the lead leaves, or when it has been hidden for 5 s while a visible tab
-is in the room. A restarting server says goodbye, saves and closes every socket; tabs reconnect (the world resumes
-where it stopped), and after a crash they roll back to its last save (at most 2 s old). Edits made while reconnecting
-are held (up to 64, 5 s) and released one per 210 ms.
+Every tab is a client. The server owns seats, The Boogler's decisions and reactions, the roster, rail tuning and
+the railway. No tab is elected; hiding or closing the first tab transfers no shared authority. A restarting server
+says goodbye, saves and closes every socket; tabs reconnect and follow its restored state. Non-durable actions
+can roll back to the latest safe checkpoint (normally up to 2 s old). A queued command is never acceptance.
 
-Seats are Server kind, independent of that lead. Sit and stand predict locally on the press; the replicated seat row
+Seats are transient Server rows. Sit and stand predict locally on the press; the replicated seat row
 corrects a contested sit to the nearest free alternate, or steps the loser off when every offered chair is taken.
 A rate refusal holds the prediction and retries once a second. Riders keep their seat through their own reconnect,
-a server restart, and another player's tab hiding, leaving or becoming lead. Rows are transient, freed after the
+a server restart, and another player's tab hiding or leaving. Rows are freed after the
 departing player's 1.5 s grace and cleared on room pause; reconnect/restart reclaims include alternate chairs.
-The body and `placeSeatPose` stay Owner: friends draw a seated rider only when both the row and pose agree.
+The body and `placeSeatPose` stay Owner. A server row keeps a friend drawn seated when presence goes quiet; a fresh
+Owner seated pose can bridge a predicted re-sit only while no competing claim holds the chair. Standing clears the
+Owner pose at once, and clearing the row ends the confirmed seated pose.
+
+Effective prototype pages keep Local unarbitrated seats and a Boogler per tab. The retired `?proto=place` alias
+still opens the production game with Server authority. Prototypes do not gain a production command session
+for those features. An offline tab without a session also uses Local behavior; an established production session
+retains its reconnect and seat-reclaim behavior.
 
 ## 8.3 Sync kind per feature
 
 | Feature                                                           | Kind                                                  | Channel / API                                                                                    |
 | ----------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Your avatar (name, colour, position, yaw, state)                  | Owner                                                 | presence `n`, `c`, `p`, `r`, `s`                                                                 |
-| Your player id (pid)                                              | Owner + bound by the server                           | presence `pid`; `pid` in the `/room` URL; stamped on every edit as `e.u`                         |
-| Who each pid is (name, colour)                                    | Lockstep                                              | op `who.set`; state `roster`                                                                     |
+| Your avatar's position, yaw and pose                              | Owner                                                 | presence `p`, `r`, `s`                                                                           |
+| Your player id (pid)                                              | Local identity, bound by the server                    | `pid` in the `/room` URL and presence; commands use the socket's authenticated identity           |
+| Who each pid is (name, colour)                                    | Server                                                | durable `who.set`; replicated `player` rows and checkpoint state `roster`                         |
 | Beach ball                                                        | Owner (epoch rule)                                    | presence `b`                                                                                     |
-| What you hold                                                     | Owner                                                 | presence `hd`                                                                                    |
+| Your held-item pose                                                | Owner                                                 | presence `hd`                                                                                    |
 | Flops, knockdowns                                                 | Owner                                                 | presence `fl`, `kd`                                                                              |
 | Your build id                                                     | Owner                                                 | presence `bv`                                                                                    |
 | How you treat the Boogler                                         | Owner                                                 | presence `bg`                                                                                    |
-| The Boogler's position and mode                                   | Host                                                  | `addHostField('g')`                                                                              |
+| The Boogler's movement and mode                                   | Server                                                | replicated `booglerLeg`; continuous pose from the leg and room clock; saved position/facing        |
+| The Boogler's present and puff reactions                          | Server with immediate Local prediction                | `boogler.gift`, `boogler.puff`; accepted `boogler.react` events excluding the actor                  |
+| Seat occupancy                                                   | Server with immediate Local prediction                | transient `seat` rows; `seat.sit`, `seat.stand`; Owner `placeSeatPose` draws the rider               |
+| Rail tuning                                                      | Server                                                | `tune.set`, durable `tune.commit`; replicated `tuneValue` and `tuneRev` rows                         |
 | The railway (trees, rocks, log piles, carries, stations, line two) | Server, your own actions predicted                   | replication packets; `r:edit` actions (docs/plans/replication.md, R1a/R1b)                        |
-| Ground piles                                                      | Lockstep                                              | ops `pile.drop`, `pile.take`; state `piles`                                                      |
-| Haul stacks (what each player carries)                            | Lockstep, by roster index                             | state `stacks`; the spill is your call (Owner), applied as `pile.drop`                           |
-| Work sites, plaques (tier derived), machine runs                  | Lockstep (a run is a pure function of its start tick) | ops `site.stock`, `site.run`; state `sites`                                                      |
-| Log sources (the bundles at the home palms)                       | Lockstep                                              | op `src.take`; state `sources`; refills on a section laid and a seeded tick                      |
-| Offline helper bank                                               | Lockstep, from a host-only measurement                | op `bank.wake` (`hostOnly`: only the host's own submit is stamped); state `bank`                 |
 | Mushrooms                                                         | Local, from a one-off message                         | message `mush` (6.4)                                                                             |
-| Thrown things, frisbee                                            | Lockstep                                              | ops `gift.take`, `gift.toss`; state `gifts`                                                      |
-| Sky, sails, lighthouse beam                                       | Lockstep without state                                | function of `world.tick`                                                                         |
-| Flights of thrown things                                          | Local replay, Lockstep landing                        | `gift.toss`                                                                                      |
+| Sky, sails, lighthouse beam                                       | Local presentation using the shared clock             | function of `world.tick`                                                                         |
 | Honk, ping                                                        | Messages (not state)                                  | `room.send` `{ t: 'honk' }`, `{ t: 'ping' }`                                                     |
 | The guest's pose                                                  | Owner                                                 | presence `mr`                                                                                    |
 | What you hold                                                     | Local                                                 | none                                                                                             |
@@ -74,7 +77,7 @@ copies. Leaving, an unknown platform, or a riding sample older than 1 second ble
 New boarding blends current world presence onto the deck over 0.2 seconds, so a completed approach does not
 replay an obsolete avatar offset. Later attachment changes ease from the last displayed pose, including switching platforms. This is
 Local presentation only: collision proxies retain their prior distance guard, and wire fields, authority,
-lockstep and Place train reconciliation are unchanged. Serves DESIGN.md 4, Cooperation is automatic, not negotiated.
+server authority and Place train reconciliation are unchanged. Serves DESIGN.md 4, Cooperation is automatic, not negotiated.
 
 ## 8.4 Lockstep world, snapshots and saves
 
