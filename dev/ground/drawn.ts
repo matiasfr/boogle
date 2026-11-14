@@ -4,9 +4,9 @@
 import * as THREE from 'three/webgpu';
 import { scene } from '../../src/render/scene.ts';
 import { GRID, ORIGIN } from '../../src/place/layout.ts';
-import { NX, NZ, terrainCollisionTiles } from '../../src/place/terrain.ts';
-import { coveSurface } from '../../src/place/cove.ts';
-import { WALKABLE_NY } from '../../src/constants.ts';
+import { NX, NZ } from '../../src/place/terrain.ts';
+import { colliderHeight, colliderWalkable } from './collider.ts';
+export { colliderHeight, onHome } from './collider.ts';
 
 type Face = {
   x: number;
@@ -21,34 +21,6 @@ type Face = {
   det: number;
 };
 const BIN = 4;
-const collision = terrainCollisionTiles();
-
-export function onHome(x: number, z: number) {
-  return x >= GRID.x0 + ORIGIN.x && x <= GRID.x1 + ORIGIN.x && z >= GRID.z0 + ORIGIN.z && z <= GRID.z1 + ORIGIN.z;
-}
-
-/** Physics heightfield triangles, including the closed outer edge (surfaceHeight uses an outside fallback there).
- * The cove kit's exact shared triangle query composes its solid tops over the heightfield. */
-export function colliderHeight(x: number, z: number) {
-  for (const tile of collision) {
-    const nx = tile.heights.length,
-      nz = tile.heights[0]!.length;
-    const fx = (x - tile.position.x) / tile.cell;
-    const fz = (z - (tile.position.z - (nz - 1) * tile.cell)) / tile.cell;
-    if (fx < 0 || fz < 0 || fx > nx - 1 || fz > nz - 1) continue;
-    const i = Math.min(Math.floor(fx), nx - 2),
-      j = Math.min(Math.floor(fz), nz - 2);
-    const u = fx - i,
-      v = fz - j;
-    const a = tile.heights[i]![nz - 1 - j]!,
-      b = tile.heights[i + 1]![nz - 1 - j]!;
-    const c = tile.heights[i]![nz - 2 - j]!,
-      d = tile.heights[i + 1]![nz - 2 - j]!;
-    const h = u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
-    return coveSurface(x - ORIGIN.x, z - ORIGIN.z, h);
-  }
-  throw new Error(`No Home collider at ${x},${z}`);
-}
 
 export function drawnGround() {
   const full: THREE.Mesh[] = [];
@@ -132,20 +104,13 @@ export function recordGap(report: ReturnType<typeof gapReport>, x: number, z: nu
 }
 
 /** A regular 0.5 m lattice over every walkable Home cell, including cell edges.
- * Walkability uses the collider surface's local normal, not the drawn surface's slope. */
+ * Walkability uses actual incident collider-face normals, including cove faces and shared boundaries. */
 export function walkableGrid(home: ReturnType<typeof drawnGround>) {
   const report = gapReport();
   for (let z = GRID.z0 + ORIGIN.z; z <= GRID.z1 + ORIGIN.z; z += 0.5)
     for (let x = GRID.x0 + ORIGIN.x; x <= GRID.x1 + ORIGIN.x; x += 0.5) {
       const y = colliderHeight(x, z);
-      const e = 0.001;
-      const x0 = Math.max(x - e, GRID.x0 + ORIGIN.x),
-        x1 = Math.min(x + e, GRID.x1 + ORIGIN.x);
-      const z0 = Math.max(z - e, GRID.z0 + ORIGIN.z),
-        z1 = Math.min(z + e, GRID.z1 + ORIGIN.z);
-      const gx = (colliderHeight(x1, z) - colliderHeight(x0, z)) / (x1 - x0);
-      const gz = (colliderHeight(x, z1) - colliderHeight(x, z0)) / (z1 - z0);
-      if (1 / Math.hypot(1, gx, gz) < WALKABLE_NY) continue;
+      if (!colliderWalkable(x, z, y)) continue;
       recordGap(report, x, z, home.heightAt(x, z), y);
     }
   return report;

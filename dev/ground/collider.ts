@@ -1,0 +1,111 @@
+// Pure collider queries for the independent ground verifier. No render or ledge imports.
+import { GRID, ORIGIN } from '../../src/place/layout.ts';
+import { terrainCollisionTiles, type TerrainCollisionTile } from '../../src/place/terrain.ts';
+import { coveMeshes, coveSurface, type CoveMesh } from '../../src/place/cove.ts';
+import { WALKABLE_NY } from '../../src/constants.ts';
+
+const collision = terrainCollisionTiles();
+
+export function onHome(x: number, z: number) {
+  return x >= GRID.x0 + ORIGIN.x && x <= GRID.x1 + ORIGIN.x && z >= GRID.z0 + ORIGIN.z && z <= GRID.z1 + ORIGIN.z;
+}
+
+/** Physics heightfield triangles, including the closed outer edge (surfaceHeight uses an outside fallback there).
+ * The cove kit's exact shared triangle query composes its solid tops over the heightfield. */
+export function colliderHeight(x: number, z: number) {
+  for (const tile of collision) {
+    const nx = tile.heights.length,
+      nz = tile.heights[0]!.length;
+    const fx = (x - tile.position.x) / tile.cell;
+    const fz = (z - (tile.position.z - (nz - 1) * tile.cell)) / tile.cell;
+    if (fx < 0 || fz < 0 || fx > nx - 1 || fz > nz - 1) continue;
+    const i = Math.min(Math.floor(fx), nx - 2),
+      j = Math.min(Math.floor(fz), nz - 2);
+    const u = fx - i,
+      v = fz - j;
+    const a = tile.heights[i]![nz - 1 - j]!,
+      b = tile.heights[i + 1]![nz - 1 - j]!;
+    const c = tile.heights[i]![nz - 2 - j]!,
+      d = tile.heights[i + 1]![nz - 2 - j]!;
+    const h = u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+    return coveSurface(x - ORIGIN.x, z - ORIGIN.z, h);
+  }
+  throw new Error(`No Home collider at ${x},${z}`);
+}
+
+export type ColliderFace = { height: number; ny: number };
+const EDGE_EPS = 1e-6; // same barycentric inclusion tolerance as the cove collider's top query
+const HEIGHT_EPS = 1e-8; // numerical equality of incident physical faces, not a drawn-gap tolerance
+
+/** Every actual face incident at the point: both sides of diagonals, grid edges, vertices and tile joins.
+ * Source arguments keep the geometry queries testable with small, analytical heightfield and cove fixtures. */
+export function incidentColliderFaces(
+  x: number,
+  z: number,
+  tiles: readonly TerrainCollisionTile[] = collision,
+  meshes: readonly Pick<CoveMesh, 'vertices' | 'indices' | 'bounds'>[] = coveMeshes,
+): ColliderFace[] {
+  const faces: ColliderFace[] = [];
+  for (const tile of tiles) {
+    const nx = tile.heights.length,
+      nz = tile.heights[0]!.length;
+    const fx = (x - tile.position.x) / tile.cell;
+    const fz = (z - (tile.position.z - (nz - 1) * tile.cell)) / tile.cell;
+    if (fx < -EDGE_EPS || fz < -EDGE_EPS || fx > nx - 1 + EDGE_EPS || fz > nz - 1 + EDGE_EPS) continue;
+    for (let j = Math.max(0, Math.ceil(fz - EDGE_EPS) - 1); j <= Math.min(nz - 2, Math.floor(fz + EDGE_EPS)); j++)
+      for (let i = Math.max(0, Math.ceil(fx - EDGE_EPS) - 1); i <= Math.min(nx - 2, Math.floor(fx + EDGE_EPS)); i++) {
+        const u = fx - i,
+          v = fz - j;
+        const a = tile.heights[i]![nz - 1 - j]!,
+          b = tile.heights[i + 1]![nz - 1 - j]!;
+        const c = tile.heights[i]![nz - 2 - j]!,
+          d = tile.heights[i + 1]![nz - 2 - j]!;
+        if (u + v <= 1 + EDGE_EPS)
+          faces.push({
+            height: a + (b - a) * u + (c - a) * v,
+            ny: 1 / Math.hypot(1, (b - a) / tile.cell, (c - a) / tile.cell),
+          });
+        if (u + v >= 1 - EDGE_EPS)
+          faces.push({
+            height: d + (c - d) * (1 - u) + (b - d) * (1 - v),
+            ny: 1 / Math.hypot(1, (d - c) / tile.cell, (d - b) / tile.cell),
+          });
+      }
+  }
+  const lx = x - ORIGIN.x,
+    lz = z - ORIGIN.z;
+  for (const mesh of meshes) {
+    if (lx < mesh.bounds.minX || lx > mesh.bounds.maxX || lz < mesh.bounds.minZ || lz > mesh.bounds.maxZ) continue;
+    for (let k = 0; k < mesh.indices.length; k += 3) {
+      const a = mesh.indices[k]! * 3,
+        b = mesh.indices[k + 1]! * 3,
+        c = mesh.indices[k + 2]! * 3;
+      const ax = mesh.vertices[a]!,
+        ay = mesh.vertices[a + 1]!,
+        az = mesh.vertices[a + 2]!;
+      const bx = mesh.vertices[b]! - ax,
+        by = mesh.vertices[b + 1]! - ay,
+        bz = mesh.vertices[b + 2]! - az;
+      const cx = mesh.vertices[c]! - ax,
+        cy = mesh.vertices[c + 1]! - ay,
+        cz = mesh.vertices[c + 2]! - az;
+      const det = bx * cz - bz * cx;
+      if (Math.abs(det) < 1e-8) continue;
+      const u = ((lx - ax) * cz - (lz - az) * cx) / det;
+      const v = (bx * (lz - az) - bz * (lx - ax)) / det;
+      if (u < -EDGE_EPS || v < -EDGE_EPS || u + v > 1 + EDGE_EPS) continue;
+      faces.push({ height: ay + u * by + v * cy, ny: -det / Math.hypot(by * cz - bz * cy, det, bx * cy - by * cx) });
+    }
+  }
+  return faces;
+}
+
+/** A shared boundary belongs to each face; a walkable face at the top surface must not be excluded.
+ * Conversely, a buried walkable heightfield under a steep cove face cannot make that face walkable. */
+export function walkableFaces(faces: readonly ColliderFace[], height: number) {
+  return faces.some((face) => Math.abs(face.height - height) <= HEIGHT_EPS && face.ny >= WALKABLE_NY);
+}
+
+export function colliderWalkable(x: number, z: number, height = colliderHeight(x, z)) {
+  return walkableFaces(incidentColliderFaces(x, z), height);
+}

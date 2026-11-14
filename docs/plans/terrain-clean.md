@@ -46,7 +46,8 @@ faces and broken silhouettes). Departs from none.
 
 **Models:** steps 1 to 4, implementation of an approved plan: Codex `gpt-6.1-sol` medium. Proofs at the checkpoint,
 runner: Codex `gpt-6.1-sol` medium. Visual review of the checkpoint stills: a fresh general-purpose subagent, fable
-medium. No source under `src/sim`, `src/net`, `src/world` or `server/` changes. The final review-stamp tool nevertheless
+medium. No source under `src/sim`, `src/net`, `src/world` or `server/` changes. At the original Part 1 tip `75049e8be`,
+the review-stamp tool nevertheless
 classifies deletion of `test/terrain-pass-island.test.ts` as assertions removed: **`fb731dd370a5`**, one review file.
 This corrects the original prediction that no review would trigger. The review gate remains for a future merge;
 this job performs only the requested local commits and does not push, ship or bypass it.
@@ -112,14 +113,17 @@ by construction, so the proof is that heights did not change and that the drawn 
   `bodies`, `shapes`, `grounded`, `misses` and `worst`, with `footing`, `grid`, triangle and vertex counts added.
   Baseline game source is exactly local `origin/main` `22b331dba` (`git diff origin/main -- src` empty): 805 bodies,
   2,018 shapes, 612 terrain-grounded; 97,399 footing samples, worst **0.000001787839970290861 m** at world
-  (961.0125037718327, -219.1128101434796), none over 1 cm. Grid: 1,633,313 samples, worst
-  **0.25000011920928955 m** at (899, -177), 41 over 1 cm. Ground: 263,550 triangles, 134,980 vertices.
+  (961.0125037718327, -219.1128101434796), none over 1 cm. Corrected grid proof: 1,639,930 samples, worst
+  **8.597842645619025e-06 m** at (802.5, 49.5), none over 1 cm. Ground: 263,550 triangles, 134,980 vertices.
   The grounded count differs from the old 607 because this reference includes the physical cove kit.
-  Baseline census evidence: `.look/evidence/1794681188591-58295/evidence.json`; load 20.57 to 17.69.
+  Original baseline footing/count evidence: `.look/evidence/1794681188591-58295/evidence.json`; load 20.57 to 17.69.
+  Its grid classification is superseded; corrected grid evidence is listed in the P2 correction below.
   Four before stills (cameras 0, 2, 9, 5) opened; loads 14.28 to 27.81. Baseline cove render: 266 calls,
   178 shadow calls, 652,455 frame triangles (`.look/evidence/1794681305151-60481/evidence.json`).
   `node dev/ship-check.ts`: pass. Heights and five collision-tile hashes saved before any ground changes;
-  baseline level-check passes with 5,266 placements, zero problems and 13 reports.
+  baseline level-check passes with 5,266 placements, zero problems and 13 reports. The original grid classification
+  used central differences and was invalid; its grid figures are withdrawn and replaced by the face-normal rerun
+  recorded below. The original height, placement, footing and triangle-count proofs are unaffected.
 - [x] **1. Move what stays to `src/place/`, no behaviour change.**
   - Create `src/place/ground-layers.ts` (pure, no three.js) with `colliderHeight`, `colliderNy`, `vertexNy`,
     `steepness`, `describeGround` and `STRATA`, moved verbatim from `src/proto/terrain-pass/surface.ts`.
@@ -183,12 +187,13 @@ No push or ship in this job; the owner requested local commits only.
   tiles. The normalized level-check diff is empty: 5,266 placements, zero grounding problems, 13 reports. No height,
   collider or placed object moved. Exact terrain.ts deletions are listed under step 3 for sibling branches.
 - [x] Independent actual-render-buffer census repeated after steps 3 and 4: 805 static bodies, 612 terrain-grounded,
-  97,399 footing samples and 1,633,313 walkable-grid samples. Footing worst gap before/after:
+  97,399 footing samples and 1,639,930 correctly classified walkable-grid samples. Footing worst gap before/after:
   **0.000001787839970290861 / 7.860379014346108e-14 m**; grid worst:
-  **0.25000011920928955 / 8.597842645619025e-06 m**. Counts over 1 cm: footings **0 / 0**, grid **41 / 0**.
+  **8.597842645619025e-06 / 8.597842645619025e-06 m**. Counts over 1 cm: footings **0 / 0**, grid **0 / 0**.
   The after grid maximum is on the cove kit at world (802.5, 49.5), where Float32 rendered coordinates meet the
-  original collider recipe. The footing maximum is numerical zero to float precision. Fresh census manifest:
-  `.look/evidence/1794682704266-91488/evidence.json`, load 20.35 to 20.96; its wall PNG was opened.
+  original collider recipe. The footing maximum is numerical zero to float precision. Original footing/count manifest:
+  `.look/evidence/1794682704266-91488/evidence.json`, load 20.35 to 20.96; its wall PNG was opened. Its grid
+  classification is superseded by the corrected P2 rerun below.
 - [x] Full ground: **263,550 to 241,836 triangles**, **134,980 to 122,500 vertices**: exactly **21,714 fewer
   triangles and 12,480 fewer vertices**. Matched cove render counts: **266 to 266 draws**, **178 to 178 shadow
   draws**, **652,455 to 649,905 frame triangles**. Camera pose, FOV, dimensions, DPR and MSAA match the baseline
@@ -204,13 +209,42 @@ Final-tip revalidation (four fresh stills, census, matched count run, production
 static checks with a 600-second timeout) is recorded with exact manifests, logs and any failures in
 `.look/terrain-clean/report.md`. No ROM data added. Not tested on a device. No push or ship.
 
-Final game-code verification at `baeaa4897`: ship-check (63 affected test files), registry, level-check and full
+Original game-code verification at `baeaa4897` (before the P2 tool correction): ship-check (63 affected test files), registry, level-check and full
 `npm run check` all passed; 2,047 unit cases, 2,046 passes, zero failures and one existing todo. All six hashes match,
 and the normalized level diff is empty. Four fresh checkpoint stills (cameras 0, 2, 9, 5) were opened, with capture
 loads 6.08 to 8.75. The production T1 segment passed with every expected beat, no missed beat or timeout; its end
-still was opened. This was an accelerated bot run, not real-time feel evidence. This final note changes only plan
-text; renderer, physics, placements and tools are identical to that tested commit. Review stamp `fb731dd370a5` is
+still was opened. This was an accelerated bot run, not real-time feel evidence. That final note changed only plan
+text; renderer, physics and placements remain identical to that tested commit. The diagnostic tool is corrected
+separately below. Original review stamp `fb731dd370a5` is
 reported for the retired test deletion, not represented as an independent review having been completed.
+
+### Verification-tool P2 correction, 14 November
+
+Independent review found that central differences averaged different collider faces into a fictitious normal at
+triangle boundaries, admitting unwalkable points and excluding genuinely walkable boundary samples. The prior
+claim of a large gap on walkable ground is withdrawn: at world (899, -177), the actual incident normal Y values
+are **0.4237982267933741** and **0.43468170591155497**, both unwalkable. The game change itself checked out.
+
+The owner-requested regression first failed with the old classifier (`true` instead of `false`). The corrected
+tool enumerates actual incident heightfield and cove triangles, including both sides of diagonals, edges, vertices
+and tile joins. A point is walkable if any incident face at the physical top surface is walkable; a buried face
+cannot qualify it. Five pure tool tests cover the reported point, preserved walkable boundaries, tile edges and
+cove faces. No game source, height, collider, catalogue or placement changed for this fix.
+
+Corrected reruns on `origin/main` **`fceb07f6115d`** and this branch both sample **1,639,930** walkable-grid points:
+worst absolute gap **8.597842645619025e-06 m (0.008597842645619025 mm)** at world (802.5, 49.5), **zero** over
+1 cm, before **and** after ledge removal. This is float-coordinate noise at the cove, not a walkable-ground defect.
+The before ground source is unchanged from the original `22b331dba` baseline. The archive was served locally through
+the existing broker with only the corrected diagnostics overlaid; in-browser SHA256 checks verified the served
+terrain and land source. Archive-only Vite file access was set for the existing read-only package assets after an
+initial resource-403 health failure; the successful rerun had no page or graphics errors.
+
+Corrected before/after manifests: `.look/evidence/1794685011817-36305/evidence.json` and
+`.look/evidence/1794685037164-37521/evidence.json`; loads **19.34 to 16.18** and **15.92 to 15.62**. Both new wall
+PNGs were opened: warm banded rock remains, with the previously accepted broader green patches after removal.
+Execution health and this visual observation are separate from the numerical proof. Superseded central-difference
+grid outputs are invalidated in the local report; they must not be used as walkable-ground measurements.
+The added regression test can change the branch's review stamp; the current output belongs in the final report.
 
 ## Part 2: geometry clean-up, walkable ground first
 
