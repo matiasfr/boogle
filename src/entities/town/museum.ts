@@ -18,10 +18,9 @@ import type { Plan } from '../../place/sites.ts';
 import { mulberry32 } from '../../sim/rng.ts';
 import { BOARDS } from './town-lines.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
-import { loadLevelArtifact, loadPrefabArtifact } from '../../prefab/validate.ts';
-import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import { loadLevelArtifact } from '../../prefab/validate.ts';
+import { definitions } from '../../prefab/catalogue.ts';
 import level from '../../../content/built/levels/museum.json' with { type: 'json' };
-const definitions = loadPrefabArtifact(artifact).prefabs;
 const placements = loadLevelArtifact(level, definitions).placements;
 /** What the miniature shows, in world metres. The live game reads the shared railway; Place reads its own modules. */
 export type MuseumEnv = {

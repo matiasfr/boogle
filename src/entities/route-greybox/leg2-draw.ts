@@ -1,14 +1,9 @@
 // Compiled leg-2 placements share the massing batch; labels and rock are instantiated under the same owner.
-import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import { compiled as records } from '../../prefab/catalogue.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
-import { validateArtifact, loadLevelArtifact } from '../../prefab/validate.ts';
+import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { LEG2_TEXT } from './leg2-layout.ts';
-const records = (() => {
-  const value: unknown = artifact;
-  validateArtifact(value);
-  return value;
-})();
 function compiled(input: unknown) {
   const value = loadLevelArtifact(input, records.prefabs);
   for (const p of value.placements)

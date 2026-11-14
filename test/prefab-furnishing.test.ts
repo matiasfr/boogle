@@ -1,3 +1,4 @@
+import { compiled, definitions } from '../src/prefab/catalogue.ts';
 import assert from 'node:assert/strict';
 import { merged } from '../src/render/part-geometry.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -38,6 +39,8 @@ test('workshop furnishing matches the old authored parts, solids and glass', () 
     {
       merged: (parts: Part[]) => parts,
       artifact,
+      compiled,
+      definitions,
       level,
       loadLevelArtifact,
       loadPrefabArtifact,
@@ -80,6 +83,8 @@ test('shop furnishing matches the old parts, solids and sign references in order
     {
       THREE,
       artifact,
+      compiled,
+      definitions,
       level: shopLevel,
       loadLevelArtifact,
       loadPrefabArtifact,
@@ -142,6 +147,8 @@ test('shop world bodies retain the old solid order, dimensions and room transfor
     {
       THREE,
       artifact,
+      compiled,
+      definitions,
       workshop,
       gorge,
       names,
@@ -241,6 +248,8 @@ test('curio frames, every covered/uncovered gift, pegs, footprints and bodies ma
     {
       THREE,
       artifact,
+      compiled,
+      definitions,
       workshop,
       gorge,
       names,
@@ -260,6 +269,8 @@ test('curio frames, every covered/uncovered gift, pegs, footprints and bodies ma
     THREE,
     createOwnedView,
     artifact,
+    compiled,
+    definitions,
     loadPrefabArtifact: validation.loadPrefabArtifact,
     mergeGeometries,
     GIFTS,
@@ -464,6 +475,8 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
     {
       THREE,
       artifact,
+      compiled,
+      definitions,
       workshop,
       gorge,
       names,
@@ -484,6 +497,8 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
     ...bindings,
     ...museumTsl,
     artifact,
+    compiled,
+    definitions,
     level: museumLevel,
     loadPrefabArtifact,
     loadLevelArtifact,
@@ -675,6 +690,8 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     {
       THREE,
       artifact,
+      compiled,
+      definitions,
       workshop,
       gorge,
       names,
@@ -695,9 +712,9 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
   // Construction boxes carry the shared site's world matrices; a second placement transform must fail.
   const shellPlacement = {
     id: 'room-house-pieces-0',
-    prefab: 'town.room-house-pieces-0' as const,
+    prefab: 'town.room-house-shell' as const,
     pos: [0, 0, 0] as const,
-    params: { x: 686, y: ground(686, 11), z: 11, yaw: 1.42 },
+    params: { phase: 'pieces', index: 0, x: 686, y: ground(686, 11), z: 11, yaw: 1.42 },
   };
   const rejectedOwner = createOwnedView();
   for (const change of [{ pos: [1, 0, 0] as const }, { rot: [0.5, 0, 0] as const }, { scale: [2, 2, 2] as const }])
@@ -721,6 +738,8 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       ROOM_PLOTS: plots,
       toWorld: (x: number) => x + 800,
       artifact,
+      compiled,
+      definitions,
       loadLevelArtifact,
       loadPrefabArtifact,
       createOwnedView,
@@ -877,6 +896,31 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     plan: import('../src/place/building-plans.ts').Plan;
   }[];
   for (const { id, plan } of oldPlans) {
+    const roomLevel = loadLevelArtifact(
+      JSON.parse(fs.readFileSync(`content/built/levels/${id}.json`, 'utf8')),
+      definitions,
+    );
+    const expectedIds = (
+      [
+        ['scaffold', plan.scaffold.length],
+        ['pieces', plan.pieces.length],
+        ['hulls', plan.hulls.length],
+        ['poles', plan.poles.length],
+        ['proxy', 7],
+      ] as const
+    ).flatMap(([phase, count]) => Array.from({ length: count }, (_, index) => `${id}-${phase}-${index}`));
+    assert.deepEqual(
+      roomLevel.placements.map((p) => p.id),
+      expectedIds,
+      `${id} retains every placement id in old order`,
+    );
+    for (const placement of roomLevel.placements.filter(
+      (p) => p.id.includes('-scaffold-') || p.id.includes('-pieces-'),
+    )) {
+      const phase = placement.id.includes('-scaffold-') ? 'scaffold' : 'pieces';
+      assert.equal(placement.prefab, `town.${id}-shell`);
+      assert.deepEqual(placement.params, { phase, index: Number(placement.id.split('-').at(-1)) });
+    }
     const frameOwner = createOwnedView();
     frameOwner.root.position.set(plan.x, plan.y, plan.z);
     frameOwner.root.rotation.y = plan.yaw;
@@ -937,6 +981,8 @@ test('house furnishing retains old parts, solids, copy and every fact stage', ()
     {
       BOARDS,
       artifact,
+      compiled,
+      definitions,
       level: JSON.parse(fs.readFileSync('content/built/levels/house.json', 'utf8')),
       loadLevelArtifact,
       loadPrefabArtifact,

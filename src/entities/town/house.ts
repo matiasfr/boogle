@@ -5,10 +5,9 @@ import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
 import { plate, roomMesh, type Room } from './rooms.ts';
 import { BOARDS, type Fact } from './town-lines.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
-import { loadLevelArtifact, loadPrefabArtifact } from '../../prefab/validate.ts';
-import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import { loadLevelArtifact } from '../../prefab/validate.ts';
+import { definitions } from '../../prefab/catalogue.ts';
 import level from '../../../content/built/levels/house.json' with { type: 'json' };
-const definitions = loadPrefabArtifact(artifact).prefabs;
 const placements = loadLevelArtifact(level, definitions).placements;
 const FACTS: Fact[] = ['path', 'forge', 'trains', 'town'];
 

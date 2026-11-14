@@ -23,8 +23,8 @@ import { precompile } from '../../render/precompile.ts';
 import { camera } from '../../render/scene.ts';
 import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
-import { loadLevelArtifact, loadPrefabArtifact } from '../../prefab/validate.ts';
-import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import { loadLevelArtifact } from '../../prefab/validate.ts';
+import { definitions } from '../../prefab/catalogue.ts';
 import houseShell from '../../../content/built/levels/room-house.json' with { type: 'json' };
 import shopShell from '../../../content/built/levels/room-shop.json' with { type: 'json' };
 import museumShell from '../../../content/built/levels/room-museum.json' with { type: 'json' };
@@ -45,7 +45,6 @@ import {
   type Site,
 } from '../../place/sites.ts';
 
-const definitions = loadPrefabArtifact(artifact).prefabs;
 const shellLevels = { house: houseShell, shop: shopShell, museum: museumShell };
 
 export const ROOM_CAM = {
@@ -190,7 +189,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       placement,
       instance: instantiate(
         placement.prefab,
-        { ...placement, params: { x, y: y0, z: p.z, yaw: p.yaw } },
+        { ...placement, params: { ...placement.params, x, y: y0, z: p.z, yaw: p.yaw } },
         { owner: shellOwner },
       ),
     }));
