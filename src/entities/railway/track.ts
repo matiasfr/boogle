@@ -59,6 +59,9 @@ export type Track = {
    * for good, or puts it back: Q7 relays the pier as plain double track (ring-island-build1, call 61). Returns the
    * metres along the line where the first retired rail piece starts (the relay's own rails begin there). */
   retire: (on: boolean) => number;
+  /** The deck's plank pieces as drawn (boxes.ts: a place and a local matrix over the unit box), for what stands on
+   * them (path-refuge.ts plankTops). */
+  planks: () => { x: number; y: number; z: number; local: THREE.Matrix4 }[];
 };
 type PieceKind = 'sleeper' | 'plank' | 'rail' | 'cap' | 'stringer' | 'leg' | 'brace';
 export function buildTrack(
@@ -730,6 +733,7 @@ export function buildTrack(
       growSolids(t, to);
     },
     update: (dt) => set.update(dt),
+    planks: () => boxes.filter((_, k) => kinds[k] === 'plank'),
     retire(on) {
       for (const { k } of merge) {
         if (on) {

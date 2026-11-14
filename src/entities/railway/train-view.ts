@@ -37,6 +37,7 @@ import { BOTTOM, type Car } from './car.ts';
 import { STEEL_CAR, ridesOn, steelCarOffset } from './cars.ts';
 import { CAR_BUFFERS, ENGINE_BUFFERS, couplingCapacity, trainPlaces, type Vehicle } from './car-spacing.ts';
 import { createCouplings } from './couplings.ts';
+import type { TrainAhead } from './path-refuge.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
@@ -299,9 +300,7 @@ export async function createRailwayTrains(
       count: -1,
       puffs: 0,
       speed: 0,
-      /** Where the view has it along its line (m), its signed speed along it (m/s), and whether it is drawn there. */
-      along: 0,
-      vel: 0,
+      /** Whether it is drawn on its line (not hidden, joining from the shed or waiting under the land). */
       out: false,
     };
   });
@@ -449,9 +448,7 @@ export async function createRailwayTrains(
         line = layout.LINKS[tr.line]!.line;
       // Asleep, a row stands at its home; awake, wherever the room's clock puts it.
       const along = trainAlong(row, tr.line, clock) / 100;
-      tr.vel = on ? trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock) : 0;
-      tr.speed = Math.abs(tr.vel);
-      tr.along = along;
+      tr.speed = on ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
       const lat = (x: number) => latOf(tr, row, x);
       // A fleet row in the shed (the greybox route) is not on the line until it joins.
       const hidden = !shown || (tr.line !== 0 && !secondVisible) || row.phase === TRAIN_PHASE.SHED;
@@ -896,15 +893,15 @@ export async function createRailwayTrains(
     /** Every car a train can have, for the little guys' give-way (folk.ts `traffic`): one out of use waits under the
      * land. */
     cars: () => [...trains.flatMap((tr) => [...tr.cars, ...(tr.steel ? [tr.steel] : [])]), wagonCar],
-    /** The trains drawn on line `k` now: each one's ends along the line (m) and signed speed along it (m/s). */
-    onLine: (k: number) =>
+    /** The trains drawn on line `k` now, each as its ends along the line (m) some seconds from now by its accepted
+     * row: the leg it is on, or where it stands (path-refuge.ts TrainAhead). */
+    onLine: (k: number): TrainAhead[] =>
       trains
         .filter((tr) => tr.line === k && tr.out)
-        .map((tr) => ({
-          lo: tr.along + offsets[2]! - tr.cars[2]!.spec.hz,
-          hi: tr.along + offsets[0]! + tr.cars[0]!.spec.hz,
-          vel: tr.vel,
-        })),
+        .map((tr) => (sec: number) => {
+          const along = trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock + sec * 10) / 100;
+          return { lo: along + offsets[2]! - tr.cars[2]!.spec.hz, hi: along + offsets[0]! + tr.cars[0]!.spec.hz };
+        }),
     isTrain: (platform: Platform | null) =>
       platform === wagonCar.platform ||
       trains.some((tr) => tr.steel?.platform === platform || tr.cars.some((c) => c.platform === platform)),

@@ -167,6 +167,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     machine: () => ({ mesh: machine.flatbed.mesh, top: machine.flatbed.hy }),
     traffic: [machine.loco, machine.flatbed, ...trains.cars()],
     pathTrains: () => trains.onLine(0),
+    pathPlanks: () => track.planks(),
     station: () => frames[activeNow()]!,
     busy: () => phaseNow() === 'feeding' || phaseNow() === 'laying',
     // The station hands ride the chairs while it lays: one gives way to a player in their chair (folk seat k = chair k).

@@ -4,8 +4,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { townPopulation, townRead } from '../../sim/town-facts.ts';
 import { createTownGreeter, type GreeterRead } from './greeter.ts';
 import { forgePoles } from './forge-finish.ts';
-import { pathRefuges } from './path-refuge.ts';
-import type { FolkEnv } from '../../place/folk.ts';
+import { pathRefuges, plankTops, trainDue, type TrainAhead } from './path-refuge.ts';
 
 type OpeningEnv = {
   machine: () => { mesh: THREE.Object3D; top: number };
@@ -16,8 +15,10 @@ type OpeningEnv = {
   awake: () => boolean;
   hush: () => boolean;
   pathOpen: () => boolean;
-  /** The trains on line 1 now (train-view.ts `onLine`): the commuters on its track bed step off for them. */
-  pathTrains: () => readonly { lo: number; hi: number; vel: number }[];
+  /** The trains on line 1 now by their own plans (train-view.ts `onLine`), and the plank pieces of its track
+   * (track.ts `planks`): the commuters on its track bed step off for the one onto the other or the ground. */
+  pathTrains: () => readonly TrainAhead[];
+  pathPlanks: () => Parameters<typeof plankTops>[0];
   /** The railway as the views see it (the read facade's world and ready, view.ts's phase this frame). */
   progress: GreeterRead;
   /** The engines' driving stools (train-view.ts), for the little guy at the controls. */
@@ -28,7 +29,7 @@ type OpeningEnv = {
 };
 
 export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
-  const [plans, models, layout, land, sites, pieces, boxes, look, signs, folk, rail] = await Promise.all([
+  const [plans, models, layout, land, sites, pieces, boxes, look, signs, folk, rail, terrain] = await Promise.all([
     import('../../place/opening-plans.ts'),
     import('../../place/opening-models.ts'),
     import('../../place/layout.ts'),
@@ -40,6 +41,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     import('../../place/signs.ts'),
     import('../../place/folk.ts'),
     import('./rail-kit.ts'),
+    import('../../place/terrain.ts'),
   ]);
   if (!owner.alive) return { update: () => {}, numbers: () => {}, targets: () => [] };
   const footprints = new Set<(typeof sites.feet)[number]>();
@@ -136,13 +138,16 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   layout.lineAt(line, 19, p);
   const platform = rail.besideLine(line, 19, -2.9),
     gather = rail.besideLine(line, 6, -4.6);
-  const pathS = (u: number) => 30 + u * (layout.STUB.camp - 30);
-  // Where a commuter stands while a train passes, sampled once along the whole path (path-refuge.ts).
-  const refuges = pathRefuges(line, pathS(0), pathS(1), {
-    H: land.H,
+  // Where a commuter stands while a train passes (path-refuge.ts): on the drawn ground or the drawn deck. The path
+  // starts at the first place past the Village's platform that has a refuge (s 37; nothing holds a little guy clear
+  // of the tracks beside the platform's end) and runs to the Camp's stub.
+  const refuges = pathRefuges(line, 30, layout.STUB.camp, {
+    ground: terrain.surfaceHeight,
+    deckTop: plankTops(env.pathPlanks()),
     up: (s) => layout.upLat(layout.FORMATION[layout.LINKS[0]!.id], s) ?? 0,
     beside: rail.besideLine,
   });
+  const pathS = (u: number) => refuges.first + u * (layout.STUB.camp - refuges.first);
   folk.mountFolk(owner, {
     station: () => (env.awake() ? env.station() : null),
     machineBusy: env.busy,
@@ -164,25 +169,9 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
       // backwards; owner playtest).
       return { x: at.x, y: layout.railY(line, s) + 0.2, z: at.z, yaw: Math.atan2(tangent.ux, tangent.uz) };
     },
-    pathTrain: (u) => {
-      const s = pathS(u);
-      let best: ReturnType<NonNullable<FolkEnv['pathTrain']>> = null;
-      for (const t of env.pathTrains()) {
-        // A train's ends plus 3 m; inside that it is alongside.
-        const gap = Math.max(0, s - t.hi - 3, t.lo - 3 - s);
-        const closing = s > t.hi ? t.vel : -t.vel;
-        const eta = gap === 0 ? 0 : closing > 0.5 ? gap / closing : Infinity;
-        if (!best || eta < best.eta || (eta === best.eta && gap < best.gap))
-          best = { eta, gap, toward: (t.lo + t.hi) / 2 > s ? 1 : -1, clear: null, y: 0, go: 0 };
-      }
-      if (best) {
-        const refuge = refuges.at(s);
-        best.clear = refuge?.lat ?? null;
-        best.y = refuge?.y ?? 0;
-        best.go = refuges.go(s);
-      }
-      return best;
-    },
+    pathTrain: (u) => trainDue(pathS(u), env.pathTrains()),
+    pathRefuge: (u) => refuges.at(pathS(u)),
+    pathGo: (u) => refuges.go(pathS(u)),
     cart: () => null,
     hush: env.hush,
   });
