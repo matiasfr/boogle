@@ -5,6 +5,7 @@
 // docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim; it
 // reads the sim's station rows (LINE1_STATIONS, LINE2_STATIONS) and turnout length, never the other way round.
 import { smoothstep } from '../math.ts';
+import { easeBend, easedAt, type Eased } from './track-ease.ts';
 import { TURNOUT_CM } from '../sim/railway-lines.ts';
 import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/railway-line-layout.ts';
 import { LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
@@ -390,11 +391,33 @@ export const HALTS: Halt[] = [
  * while Far Head is its end. Metres along each line. Step 4a moves the merges into the sim catalog's `RailHalt.end`. */
 export const UP_LAT = -4;
 export const TURNOUT = TURNOUT_CM / 100; // the sim's: its end blocks and signals reach past it
-export type Formation = { from: number; to: number; crossover?: readonly [number, number] };
+/** `bend`: a stretch where the up track, 4 m inside the line's bend, would turn too tightly and is eased (below). */
+export type Formation = {
+  from: number;
+  to: number;
+  crossover?: readonly [number, number];
+  bend?: readonly [number, number];
+};
 export const FORMATION: Record<LineSpec['id'], Formation> = {
   timber: { from: 36, to: 182 },
-  quarry: { from: 34, to: 556, crossover: [490, 512] },
+  quarry: { from: 34, to: 556, crossover: [490, 512], bend: [156, 200] },
 };
+/** The tightest the up track turns where it is eased, m (the Quarry's bend: the line's own is 6.5 m there, and the
+ * up track 4 m inside it was 2.8 m, which stood a train's engine in its first car; ./track-ease.ts). */
+export const UP_BEND_MIN = 10;
+const bends = new Map<Formation, Eased | null>();
+/** The up track's full offset at `s`: UP_LAT, but through a formation's `bend` the eased offset (4.35 m at most,
+ * 3.91 m at least at the Quarry), so the track starts its turn earlier and ends it later. */
+export function upFull(f: Formation, s: number) {
+  if (!f.bend || s <= f.bend[0] || s >= f.bend[1]) return UP_LAT;
+  let e = bends.get(f);
+  if (e === undefined) {
+    const line = LINKS.find((l) => FORMATION[l.id] === f)!.line;
+    e = easeBend((at, out) => lineAt(line, at, out), f.bend[0], f.bend[1], UP_LAT, UP_BEND_MIN);
+    bends.set(f, e);
+  }
+  return e ? easedAt(e, s, UP_LAT) : UP_LAT;
+}
 const ease = (t: number) => {
   const x = Math.max(0, Math.min(1, t));
   return x * x * (3 - 2 * x);
@@ -402,7 +425,7 @@ const ease = (t: number) => {
 /** The up track's lateral offset at `s` (UP_LAT between the turnouts), or null where the line is single. */
 export function upLat(f: Formation, s: number): number | null {
   if (s < f.from || s > f.to) return null;
-  return UP_LAT * Math.min(ease((s - f.from) / TURNOUT), ease((f.to - s) / TURNOUT));
+  return upFull(f, s) * Math.min(ease((s - f.from) / TURNOUT), ease((f.to - s) / TURNOUT));
 }
 /** The crossover's lateral offset at `s`: from the up track at its start to today's track at its end; null off it. */
 export function crossLat(f: Formation, s: number): number | null {

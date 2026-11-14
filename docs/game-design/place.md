@@ -737,9 +737,12 @@ line; the up track, 4 m inside a bend, is shorter than the line there, so an up 
 engine's deck stood 0.68 m into the first car on line 1's bend and 0.98 m into it at the Quarry's stop. Each vehicle
 now stands its offset along its own track from the first car, and where a bend is still too tight for two decks'
 inside corners the coupling stretches until they clear by 0.1 m (the engine's buffers counted): at most 0.24 m on
-today's track and 0.42 m on line 1's up track, and 2.2 m at the Quarry's up-track stop, where the up track is drawn
-round a 2.8 m bend (the line's own is 6.8 m). That gap is open air with no drawbar yet, and the bend wants easing in
-the layout. On straight track nothing moves. Local view; bodies, seats and the cab's cutaway follow the same poses;
+today's track and 0.40 m on an up track, under way, and nothing at any up-track stop. **The Quarry's bend is eased on
+the up track** (`layout.ts` `upFull`, `track-ease.ts`): 4 m inside the line's 6.5 m bend it was a bend of under 3 m;
+now it starts its turn earlier and ends it later (s 156 to 200), running between 3.91 and 4.35 m from the line, and
+turns no tighter than 10 m. Rails, bed and trains follow it; the up platform (the track within 0.1 m of where it was
+beside it), the plank crossing, the levers and the stopping marks are where they were. On straight track nothing
+moves. Local view and Place data; bodies, seats and the cab's cutaway follow the same poses;
 the sim's train, its stops and its extent are unchanged. Not tested on a device.
 
 Both lines are drawn double track ([generic-lines](../plans/generic-lines.md), step 2): the up track runs 4 m left of

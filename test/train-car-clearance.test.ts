@@ -5,7 +5,8 @@
 // deck 0.68 m into the first car on line 1's bend and 0.98 m into it at the Quarry's stop.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FORMATION, LINKS, lineAt, upLat, type LinePoint } from '../src/place/layout.ts';
+import { FORMATION, LINKS, UP_BEND_MIN, UP_LAT, lineAt, upFull, upLat, type LinePoint } from '../src/place/layout.ts';
+import { tightest } from '../src/place/track-ease.ts';
 import {
   COUPLING_MIN,
   ENGINE_BUFFERS,
@@ -21,14 +22,15 @@ import { STEEL_CAR, TRAIN_CARS, TRAIN_OFFSETS, steelCarOffset } from '../src/ent
 import { ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { line2At } from '../src/entities/railway/line2-path.ts';
 
-/** Line `k`'s drawn track: today's (lat 0) or the up track, as train-view.ts's `trackAt`. */
-function trackOf(k: number, up: boolean) {
+/** Line `k`'s drawn track: today's (lat 0) or the up track, as train-view.ts's `trackAt`; `plain` is the up track
+ * as it was drawn, a flat 4 m beside the line through the Quarry's bend too. */
+function trackOf(k: number, up: boolean, plain = false) {
   const f = FORMATION[LINKS[k]!.id];
   const p: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   return (s: number, out: TrackPoint) => {
     if (k === 1) line2At(s, p);
     else lineAt(LINKS[k]!.line, s, p);
-    const l = up ? (upLat(f, s) ?? 0) : 0;
+    const l = up ? (upLat(f, s) ?? 0) / (plain ? upFull(f, s) / UP_LAT : 1) : 0;
     out.x = p.x - p.uz * l;
     out.z = p.z + p.ux * l;
   };
@@ -44,9 +46,10 @@ function vehiclesOf(steel: boolean, buffers = true): Vehicle[] {
   if (steel) list.push({ d: steelCarOffset(false), hx: STEEL_CAR.hx, back: STEEL_CAR.hz, front: STEEL_CAR.hz });
   return list;
 }
-/** The least gap between neighbours of the train at `along`; `old` is the line's metres and bare decks, as it was. */
+/** The least gap between neighbours of the train at `along`; `old` is as it was: the line's metres, bare decks and
+ * the plain up track. */
 function standing(k: number, up: boolean, along: number, steel: boolean, old = false) {
-  const at = trackOf(k, up),
+  const at = trackOf(k, up, old),
     vehicles = vehiclesOf(steel, !old);
   const places = old ? vehicles.map((v) => along + v.d) : trainPlaces(at, along, vehicles, [], up);
   const decks = vehicles.map((v, n): Deck =>
@@ -108,4 +111,38 @@ test('under way: decks stay clear round every bend of both lines, on both tracks
       assert.ok(worst > COUPLING_MIN - 0.01, `line ${k + 1} ${up ? 'up' : 'down'}: ${worst.toFixed(3)}`);
       if (up) assert.ok(was < -0.6, `line ${k + 1} up, as it was: ${was.toFixed(3)}`);
     }
+});
+
+test("the Quarry's bend: the up track is eased to 10 m and the up train stands there unstretched", () => {
+  // As drawn before: 4 m inside the line's 6.5 m bend, a bend under 4 m (2.8 m at its tightest metre). Eased
+  // (layout.ts upFull, track-ease.ts) it starts its turn earlier and ends it later, between 3.91 and 4.35 m from the
+  // line, and is the plain 4 m outside s 156-200.
+  const f = FORMATION.quarry;
+  const p: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
+  const path = (lat: (s: number) => number) => {
+    const out: TrackPoint[] = [];
+    for (let s = 60; s <= 480; s += 0.25) {
+      lineAt(LINKS[1]!.line, s, p);
+      const l = lat(s);
+      out.push({ x: p.x - p.uz * l, z: p.z + p.ux * l });
+    }
+    return out;
+  };
+  assert.ok(tightest(path(() => UP_LAT)) < 4, 'the plain offset was a bend under 4 m');
+  const eased = tightest(path((s) => upLat(f, s)!));
+  assert.ok(eased >= UP_BEND_MIN, `eased: ${eased.toFixed(2)}`);
+  for (let s = 60; s <= 480; s += 0.25) {
+    const l = upLat(f, s)!;
+    if (s <= 156 || s >= 200) assert.equal(l, UP_LAT, `plain at ${s}`);
+    else assert.ok(l > -4.4 && l < -3.9, `at ${s}: ${l}`);
+  }
+  // The up platform (s 154-174.5, outside the up track): the track stays within 0.1 m of where it was.
+  for (let s = 154; s <= 174.5; s += 0.25) assert.ok(Math.abs(upLat(f, s)! - UP_LAT) < 0.1, `platform at ${s}`);
+  const at = trackOf(1, true);
+  for (const steel of [false, true]) {
+    const vehicles = vehiclesOf(steel);
+    trainPlaces(at, 174, vehicles, []).forEach((s, n) =>
+      assert.ok(Math.abs(s - spacedAlong(at, 174, vehicles[n]!.d)) < 1e-9, `vehicle ${n} stretched`),
+    );
+  }
 });

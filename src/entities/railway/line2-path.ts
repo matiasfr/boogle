@@ -9,6 +9,7 @@ import {
   TURNOUT,
   UP_LAT,
   crossLat,
+  upFull,
   lineAt,
   railY,
   type LinePoint,
@@ -74,8 +75,7 @@ function rowAt(cm: number) {
   };
 }
 const STACK_TABLE = (() => {
-  const
-    n = Math.ceil((LINE2_END_S - TABLE_S) / STACK_STEP) + 2,
+  const n = Math.ceil((LINE2_END_S - TABLE_S) / STACK_STEP) + 2,
     out = new Float64Array(n * 3);
   for (let i = 0; i < n; i++) {
     const cm = (TABLE_S + i * STACK_STEP) * 100 + ROW_SHIFT.ring;
@@ -218,5 +218,6 @@ export function line2Lat(row: LatRow, s: number, stops: readonly number[], merge
     lat = UP_LAT * Math.min(ease((s - QUARRY.from) / TURNOUT), ease((merge - s) / TURNOUT));
   else if (s >= merge) lat = UP_LAT * (1 - ease((s - merge) / CROSS_LEN));
   if (row.turn && row.to !== last) lat *= 1 - ease((s - (row.dest / 100 - TURNOUT)) / TURNOUT);
-  return lat + 0; // never -0
+  // Through the Quarry's bend the up track's full offset is the eased one (layout.ts upFull).
+  return (lat / UP_LAT) * upFull(QUARRY, s) + 0; // never -0
 }

@@ -1,7 +1,7 @@
 // How far apart a train's vehicles stand on the track they are drawn on. No three.js: the layout test reads it.
 // A train's place is metres along its line (today's track); the up track is drawn up to 4 m beside it (layout.ts
 // `upLat`). On the inside of a bend that track is shorter than the line (line 1's 14.7 m bend is 10.7 m on the up
-// track; the Quarry's 6.8 m bend is 2.8 m), so cars spaced by the line's metres stood closer than their lengths and
+// track; the Quarry's was 2.8 m until layout.ts eased it), so cars spaced by the line's metres stood closer than their lengths and
 // the engine was drawn into the first car, 0.68 m on line 1 and 0.98 m at the Quarry's stop (owner, 14 November: "on
 // certain stops, especially with curves, the train car clips the train engine"). Two rules, view only (the sim's
 // train is a point and its extent is unchanged at rest on straight track):
@@ -12,8 +12,11 @@ export type TrackPoint = { x: number; z: number };
 export type TrackAt = (s: number, out: TrackPoint) => void;
 
 /** Where along the line a vehicle `d` metres (signed) along the drawn track from `s0` stands. `at(s, out)` is the
- * drawn track's point at `s` metres along the line (its lateral offset applied); walked in `step` m of the line. */
-export function spacedAlong(at: TrackAt, s0: number, d: number, step = 0.25) {
+ * drawn track's point at `s` metres along the line (its lateral offset applied); walked in `step` m of the line: the
+ * line's own metre, so each leg is a whole step of its polyline. A line's heading turns at its metre points, and a
+ * track drawn beside it steps back there on the inside of a bend; shorter legs would count that step back as way made
+ * (measured so, a 2.8 m bend read 1.6 m of track a metre of the line where 0.42 m is made). */
+export function spacedAlong(at: TrackAt, s0: number, d: number, step = 1) {
   if (d === 0) return s0;
   const dir = Math.sign(d),
     want = Math.abs(d);
@@ -46,7 +49,7 @@ export const AXLE = 1.1;
 export const COUPLING_MIN = 0.1;
 /** How far the engine's buffers reach behind its deck (assets/src/engine.py `buffers`: 0.27 at 1.25×). */
 export const ENGINE_BUFFERS = 0.34;
-/** The most a coupling stretches, m (the Quarry's up-track bend asks 1.5 m of the engine's). */
+/** The most a coupling stretches, m (0.4 m is the most any bend asks, now the Quarry's up track is eased). */
 const STRETCH_MAX = 2.5;
 
 function corners(r: Deck, out: number[]) {
