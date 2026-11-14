@@ -6,6 +6,9 @@ import {
   returnCandidates,
   haltLandings,
   createReturnSearch,
+  yawToward,
+  RETURN_BUDGET_S,
+  type ReturnCandidate,
   type ReturnPosition,
 } from '../src/place/return-spot.ts';
 import { RAIL_LINES } from '../src/sim/railway-lines.ts';
@@ -67,7 +70,8 @@ const probes = {
 test('return search holds before querying, then places the valid spot', () => {
   const search = createReturnSearch(spot, halts);
   assert.deepEqual(search.step(0, probes), { kind: 'hold' });
-  assert.deepEqual(search.step(0.02, probes), { kind: 'land', at: { x: spot.x, y: spot.y, z: spot.z } });
+  const at = { x: spot.x, y: spot.y, z: spot.z };
+  assert.deepEqual(search.step(0.02, probes), { kind: 'land', at, from: at });
   assert.equal(search.current(), null);
 });
 test('a gone or occupied exact spot uses a ring before considering halts', () => {
@@ -82,7 +86,7 @@ test('a gone or occupied exact spot uses a ring before considering halts', () =>
     },
   };
   search.step(0, p);
-  assert.deepEqual(search.step(0.02, p), { kind: 'land', at: beside });
+  assert.deepEqual(search.step(0.02, p), { kind: 'land', at: beside, from: { x: spot.x, y: spot.y, z: spot.z } });
 });
 test('a removed deck and missing ring fall back to the nearest standing halt, then the second', () => {
   const search = createReturnSearch(spot, halts);
@@ -92,14 +96,14 @@ test('a removed deck and missing ring fall back to the nearest standing halt, th
   assert.equal(search.current()!.x, 100);
   assert.deepEqual(search.step(0.04, p), { kind: 'hold' });
   assert.equal(search.current()!.x, 200);
-  assert.deepEqual(search.step(0.06, p), { kind: 'land', at: halts[1] });
+  assert.deepEqual(search.step(0.06, p), { kind: 'land', at: halts[1], from: halts[1] });
 });
 test('a distant train or water observation skips the old spot for its nearest halt', () => {
   for (const y of [22, 0]) {
     const search = createReturnSearch({ ...spot, ride: { x: 180, y, z: 20 } }, halts);
     assert.equal(search.current()!.x, 200);
     search.step(0, probes);
-    assert.deepEqual(search.step(0.02, probes), { kind: 'land', at: halts[1] });
+    assert.deepEqual(search.step(0.02, probes), { kind: 'land', at: halts[1], from: halts[1] });
   }
 });
 test('an unchecked halt probes platform rings, and same-halt platforms do not consume both choices', () => {
@@ -117,7 +121,7 @@ test('an unchecked halt probes platform rings, and same-halt platforms do not co
     },
   };
   search.step(0, p);
-  assert.deepEqual(search.step(0.02, p), { kind: 'land', at: halts[0] });
+  assert.deepEqual(search.step(0.02, p), { kind: 'land', at: halts[0], from: candidates[1] });
   assert.equal(returnCandidates({ ...spot, ride: { x: 110, y: 10, z: 20 } }, candidates).length, 2);
 });
 test('every unsettled candidate times out after 2.5 seconds, ending at Home', () => {
@@ -171,15 +175,116 @@ test('aboard, swimming, airborne and unsafe captures retain the last standing sp
     at: 3000,
   });
 });
-test('candidate order uses the spot within 25m, otherwise only the two nearest halts to the ride', () => {
+const built = (h: ReturnCandidate) => !!h.halt && (h.halt.startsWith('line1:') || h.halt.startsWith('line2:'));
+const run = (search: ReturnType<typeof createReturnSearch>, p: Parameters<typeof search.step>[1]) => {
+  for (let t = 0; t < 20; t += 0.1) {
+    const result = search.step(t, p);
+    if (result.kind !== 'hold') return result;
+  }
+  throw new Error('the search never ended');
+};
+test('halts not standing in this room are never candidates, however near', () => {
+  const all = haltLandings();
+  // By the stack line, where the catalogue's future lines have halts nearer than any built one.
+  const riding = { x: -84.3, y: 3.9, z: -1980.3, yaw: 0, at: 1000, ride: { x: -50, y: 1, z: -849.79 } };
+  const unfiltered = returnCandidates(riding, all),
+    standing = returnCandidates(riding, all, built);
+  assert.ok(!built(unfiltered[0]!), 'the fixture needs an unbuilt halt nearest');
+  assert.ok(standing.every(built));
+  const expected = standing[0]!;
+  const result = run(createReturnSearch(riding, all, built), {
+    settled: () => true,
+    standable: (p) => p === expected,
+    near: (p) => (p === expected ? expected : null),
+  });
+  assert.equal(result.kind, 'land');
+  assert.equal(result.kind === 'land' && result.from.halt, expected.halt);
+});
+test('two catalogue halts with one physical landing are one candidate', () => {
+  const all = haltLandings();
+  const gorge = all.find((p) => p.halt === 'line2:9')!;
+  const twins = all.filter((p) => p.x === gorge.x && p.y === gorge.y && p.z === gorge.z);
+  assert.ok(twins.length > 1, 'the fixture needs a shared landing (line2:9 and a future line at Gorge)');
+  const list = returnCandidates({ ...gorge, yaw: 0, at: 1000, ride: { x: gorge.x + 40, y: 1, z: gorge.z } }, all);
+  assert.equal(list.filter((p) => p.x === gorge.x && p.y === gorge.y && p.z === gorge.z).length, 1);
+  assert.equal(new Set(list.map((p) => `${p.x}:${p.y}:${p.z}`)).size, list.length);
+});
+test('a failed Gorge landing goes on to the next standing halt, and the third nearest when two fail', () => {
+  const all = haltLandings();
+  const gorge = all.find((p) => p.halt === 'line2:9')!;
+  const spot = { x: gorge.x, y: gorge.y, z: gorge.z, yaw: 0, at: 1000 };
+  const halts = returnCandidates(spot, all, built).filter((p) => p.halt);
+  assert.ok(halts.length >= 3);
+  for (const k of [1, 2]) {
+    const result = run(createReturnSearch(spot, all, built), {
+      settled: () => true,
+      standable: (p) => p === halts[k],
+      near: (p) => (p === halts[k] ? halts[k]! : null),
+    });
+    assert.equal(result.kind === 'land' && result.from.halt, halts[k]!.halt, `halt ${k + 1} nearest`);
+  }
+});
+test('the search gives up for Home once its time budget is spent, however many halts remain', () => {
+  const all = haltLandings();
+  const search = createReturnSearch({ x: 0, y: 5, z: 0, yaw: 0, at: 1000 }, all, built);
+  const p = { settled: () => false, standable: () => false, near: () => null };
+  let tried = 0;
+  for (let t = 0; t <= RETURN_BUDGET_S; t += 0.5) {
+    assert.deepEqual(search.step(t, p), { kind: 'hold' });
+    tried = Math.max(tried, 1);
+  }
+  assert.deepEqual(search.step(RETURN_BUDGET_S + 0.01, p), { kind: 'home' });
+  assert.ok(returnCandidates({ x: 0, y: 5, z: 0, yaw: 0, at: 1000 }, all, built).length > 4);
+});
+test('a train reload goes to the halt it was running to, falling back to the nearest', () => {
+  const halts = [
+    { x: 0, y: 1, z: 20, halt: 'line1:0' },
+    { x: 170, y: 1, z: 20, halt: 'line1:1' },
+    { x: 400, y: 1, z: 20, halt: 'line1:2' },
+  ];
+  const ride = { x: 12, y: 2, z: 20 }; // just out of the first halt, bound for the second
+  const order = (halt?: string, stands?: (h: ReturnCandidate) => boolean) =>
+    returnCandidates({ ...spot, x: 900, ride: { ...ride, ...(halt ? { halt } : {}) } }, halts, stands).map(
+      (p) => p.halt,
+    );
+  assert.deepEqual(order(), ['line1:0', 'line1:1', 'line1:2'], 'no train known: nearest first');
+  assert.deepEqual(order('line1:1'), ['line1:1', 'line1:0', 'line1:2'], 'the next halt first, then nearest');
+  assert.deepEqual(order('line9:4'), ['line1:0', 'line1:1', 'line1:2'], 'an unknown halt: nearest');
+  assert.deepEqual(
+    order('line1:1', (h) => h.halt !== 'line1:1'),
+    ['line1:0', 'line1:2'],
+    'a next halt that does not stand: nearest',
+  );
+  const riding = captureReturnSpot(spot, { standing: false, standable: false, pos: ride, yaw: 0, halt: 'line1:1' }, 5);
+  assert.deepEqual(riding!.ride, { ...ride, halt: 'line1:1' });
+  assert.deepEqual(readReturnSpot(JSON.parse(JSON.stringify(riding)), 6, 1000), riding);
+  for (const halt of [7, '', 'x'.repeat(40), 'line1:', '<script>:1'])
+    assert.equal(readReturnSpot({ ...spot, ride: { ...ride, halt } }, 1001, 1000), null, `halt ${String(halt)}`);
+  assert.equal(
+    captureReturnSpot(spot, { standing: false, standable: false, pos: ride, yaw: 0, halt: 'bad id' }, 5)!.ride!.halt,
+    undefined,
+  );
+});
+test('a fallback halt faces its track, which lies beside its platform', () => {
+  // Forward is (-sin yaw, -cos yaw): facing +x from the origin is yaw -pi/2.
+  assert.ok(Math.abs(yawToward({ x: 0, z: 0 }, { x: 5, z: 0 }) + Math.PI / 2) < 1e-9);
+  assert.ok(Math.abs(yawToward({ x: 0, z: 0 }, { x: 0, z: -5 })) < 1e-9);
+  for (const p of haltLandings().filter(built)) {
+    assert.ok(p.track && p.line !== undefined && p.stop !== undefined, `${p.halt}`);
+    const d = Math.hypot(p.x - p.track.x, p.z - p.track.z);
+    // A checked landing can stand up to 30 m from its platform; the track runs beside the platform.
+    assert.ok(d < 35, `${p.halt}: the track is ${d.toFixed(1)} m from the landing`);
+  }
+});
+test('candidate order uses the spot within 25m, then every halt nearest the last sighting first', () => {
   const halts = [
     { x: 0, y: 1, z: 20 },
     { x: 35, y: 1, z: 20 },
     { x: 60, y: 1, z: 20 },
   ];
-  assert.deepEqual(returnCandidates(spot, halts), [{ x: 10, y: 12, z: 20 }, halts[0], halts[1]]);
-  assert.deepEqual(returnCandidates({ ...spot, ride: { x: 36, y: 20, z: 20 } }, halts), [halts[1], halts[2]]);
-  assert.equal(returnCandidates({ ...spot, ride: { x: 35, y: 20, z: 20 } }, halts).length, 3);
+  assert.deepEqual(returnCandidates(spot, halts), [{ x: 10, y: 12, z: 20 }, halts[0], halts[1], halts[2]]);
+  assert.deepEqual(returnCandidates({ ...spot, ride: { x: 36, y: 20, z: 20 } }, halts), [halts[1], halts[2], halts[0]]);
+  assert.equal(returnCandidates({ ...spot, ride: { x: 35, y: 20, z: 20 } }, halts).length, 4);
 });
 test('every halt platform has its own or a checked nearby catalogue landing', () => {
   const landings = haltLandings();

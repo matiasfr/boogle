@@ -371,7 +371,12 @@ try {
     const t0 = Date.now();
     while (Date.now() - t0 < limit * 1000 && !g.errors.length) {
       await new Promise((r) => setTimeout(r, 200));
-      if (opt.until && (await g.page.evaluate(`!!(${opt.until})`))) break;
+      // A page that reloads itself (dev/look/evals/railway-return.ts) can be mid-navigation at a poll: ask again.
+      const reached = await g.page.evaluate(`!!(${opt.until ?? 'false'})`).catch((e: Error) => {
+        if (/Execution context was destroyed|navigation/i.test(e.message)) return false;
+        throw e;
+      });
+      if (opt.until && reached) break;
     }
   }
   if (g.errors.length) throw new Error(`Stopped during warm-up:\n${g.healthErrors().join('\n')}`);

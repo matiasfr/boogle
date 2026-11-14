@@ -13,11 +13,14 @@ import {
   captureReturnSpot,
   createReturnSearch,
   haltLandings,
+  yawToward,
   type ReturnSpot,
   type ReturnPosition,
 } from '../../place/return-spot.ts';
 import { routeAreasPending } from '../route-greybox/state.ts';
-import { returnKey, returnSettle, storedReturn } from '../../place/return-settle.ts';
+import type { ReturnHalts } from './return-halts.ts';
+import { returnKey, returnSettle, storedReturn, writeReturn } from '../../place/return-settle.ts';
+import { localStore } from '../../place/return-tuning.ts';
 import { coverLifted } from '../../boot/cover-hold.ts';
 import { bootMark } from '../../boot/timeline.ts';
 import { camera } from '../../render/scene.ts';
@@ -32,7 +35,11 @@ import { replacedStage } from '../../boot/world-reset.ts';
 import { jumpOf, type JumpLand } from '../../world/railway-jump.ts';
 
 type RecoveryPoint = { x: number; y: number; z: number };
-export async function createRailwayArrival(owner: OwnedView, laidPath: () => readonly RecoveryPoint[]) {
+export async function createRailwayArrival(
+  owner: OwnedView,
+  laidPath: () => readonly RecoveryPoint[],
+  halts: ReturnHalts,
+) {
   const [
     { H: placeH, insidePlace: inPlace, PATH_SAMPLES },
     { SPAWN, toWorld, ORIGIN, VILLAGE },
@@ -82,7 +89,7 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   // Read before first placement, so a pending return is not discarded by the Home-only spawn guard.
   let hadRecord = false;
   const readSavedPose = (): ReturnSpot | null => {
-    const stored = storedReturn(localStorage, poseKey, Date.now());
+    const stored = storedReturn(localStore(), poseKey, Date.now());
     hadRecord = stored.had;
     return stored.spot;
   };
@@ -146,7 +153,13 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     const standing = me.coyote > 0 && !me.swimming && !me.down && !aboard() && !inputState.seated;
     savedPose = captureReturnSpot(
       savedPose,
-      { standing, pos, yaw: me.yaw, standable: standing && posePolicy.standableAt(pos.x, pos.y, pos.z) },
+      {
+        standing,
+        pos,
+        yaw: me.yaw,
+        standable: standing && posePolicy.standableAt(pos.x, pos.y, pos.z),
+        halt: halts.next(aboard()?.id), // riding a train: a reload gets off where it was going
+      },
       Date.now(),
     );
     return true;
@@ -155,13 +168,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     if (!savedPose || fallArrival.active || !scenery.ready()) return;
     const fingerprint = JSON.stringify({ ...savedPose, at: 0 });
     if (!force && fingerprint === lastWritten && savedPose.at - lastWriteAt < 60000) return;
-    try {
-      localStorage.setItem(poseKey, JSON.stringify(savedPose));
-      lastWritten = fingerprint;
-      lastWriteAt = savedPose.at;
-    } catch {
-      // Unavailable local storage leaves the next visit at the ordinary spawn.
-    }
+    // Unavailable local storage leaves the next visit at the ordinary spawn.
+    if (!writeReturn(poseKey, savedPose)) return;
+    lastWritten = fingerprint;
+    lastWriteAt = savedPose.at;
   };
   // A jump room's landing (docs/plans/playtest-jump-in.md): with no saved pose here, everyone starts at the segment the
   // room was seeded for, standing on its terrain, pad or deck. undefined until the room's seed is known. A jump room
@@ -331,7 +341,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
       if (!loaded && ready && tick > 0 && body) {
         loaded = true;
         savedPose = readSavedPose();
-        if (savedPose && !fell) returning = createReturnSearch(savedPose, haltLandings());
+        if (savedPose && !fell)
+          returning = createReturnSearch(savedPose, haltLandings(), (halt) =>
+            halts.stands(halt.line ?? -1, halt.stop ?? -1),
+          );
         else returnSettle.done();
         restorePending = true;
       }
@@ -353,7 +366,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         if (result.kind !== 'hold') {
           if (result.kind === 'land') {
             placeReturn(result.at);
-            cam.yaw = me.yaw = savedPose!.yaw;
+            // Your own spot keeps the way you faced; a fallback halt faces its track, the boarding edge.
+            const track = result.from.track;
+            const beside = track && Math.hypot(result.at.x - track.x, result.at.z - track.z) > 0.5;
+            cam.yaw = me.yaw = beside ? yawToward(result.at, track) : savedPose!.yaw;
             cam.pitch = -0.14;
           } else atSpawn();
           touchdown = { kind: result.kind, at: performance.now() };

@@ -256,6 +256,10 @@ first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: st
   spawn; a candidate that never settles times out at 2.5 s; an expired record goes straight to spawn. One more eval
   mode (`?mode=train`): reload while seated on a moving train between two halts and land on a platform of the nearer
   one.
+- **After the independent review (14 November), as built:** the halt fallback lists only halts standing in the
+  room's accepted state, one a physical landing, and keeps trying the next nearest inside an 8 s budget (not "the two
+  nearest"); a train reload goes to the halt the train was running to and a fallback halt faces its track; every
+  read and write of the record goes through a guard that treats blocked storage as no record.
 - [x] **5. Nobody sees the move** (implementer, fable medium; visual review, fable medium). As built: the hold is
   asked for at boot, before the railway view exists (`src/features/return-cover.ts` reads the record;
   `src/boot/cover-hold.ts`, awaited in `src/main.ts` for at most 10 s; `src/place/return-settle.ts` is ended by the

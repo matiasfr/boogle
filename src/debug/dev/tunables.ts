@@ -15,7 +15,7 @@ import { snapshotFeelSpring, setFeelSpring, onFeelSpringChange } from '../../pla
 import { bindings, onChange } from '../../render/water/live.ts';
 import { exposureSettings } from '../../render/exposure.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
-import { readReturnMinutes, railReturnMinutes, RETURN_MINUTES_KEY } from '../../place/return-tuning.ts';
+import { localStore, readReturnMinutes, railReturnMinutes, RETURN_MINUTES_KEY } from '../../place/return-tuning.ts';
 import {
   AUDIO_SPECS,
   audioSettingKey,
@@ -33,12 +33,15 @@ import { ok, no, type Tool, type Args, type Result } from './types.ts';
 function localBinding(id: string) {
   if (id === railReturnMinutes.id)
     return {
-      get: () => readReturnMinutes(localStorage),
+      get: () => readReturnMinutes(localStore()),
       set: (value: unknown) => {
-        if (validValue(railReturnMinutes, value)) {
-          localStorage.setItem(RETURN_MINUTES_KEY, JSON.stringify(value));
-          localChanged();
+        if (!validValue(railReturnMinutes, value)) return;
+        try {
+          localStore()?.setItem(RETURN_MINUTES_KEY, JSON.stringify(value));
+        } catch {
+          // blocked or full storage: the default window stays
         }
+        localChanged();
       },
     };
   const key = audioSettingKey(id);

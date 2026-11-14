@@ -56,11 +56,17 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   it retains the last standing spot and refreshes the time and current `ride` position; it never writes null. The
   first-visit fall and unready scenery do not save. A record is read only within `railway.returnMinutes` (Local,
   default 30; 0 disables returns), with no migration from v0. Get unstuck records its checked surface. A recent
-  return tries the remembered spot, then free rings 1.4, 3 and 6 m beside it, then the two nearest distinct halts,
-  then Home. A `ride` over 25 m from the standing spot skips it and uses the nearest halts to that observation, so
-  leaving on a train, cart or in the sea returns beside the route. Each candidate is held in place while nearby
+  return tries the remembered spot, then free rings 1.4, 3 and 6 m beside it, then halts, then Home. Only halts that
+  stand in this room now are tried (open stops of their line, from the accepted state), one landing a halt and one
+  halt a physical landing, nearest first, for as long as the search's 8 s budget lasts: a failed landing goes on to
+  the next standing halt, never straight Home. A `ride` over 25 m from the standing spot skips it and uses the halts
+  nearest that observation, so leaving on a cart or in the sea returns beside the route. Aboard a train the record
+  also keeps the halt the train was running to, and a reload gets off there (the next halt in its direction of
+  travel; where it stands if it is standing), falling back to the nearest. At your own spot you face the way you
+  did; at a fallback halt you face its track, the boarding edge. Each candidate is held in place while nearby
   scenery mounts and one physics step completes; it must pass the live standable-surface test, with a 2.5 s limit
-  per candidate. Checked catalogue halt landings are reused; other halts probe 3, 4.5, 6 and 8 m rings for the highest
+  per candidate. Where the browser blocks storage nothing is read or saved and you arrive at Home. Checked catalogue
+  halt landings are reused; other halts probe 3, 4.5, 6 and 8 m rings for the highest
   surface between 0.5 m below and 1.5 m above the platform datum. Occupied points are skipped. Expired, disabled or
   malformed records go Home; a room with no record uses its jump-in landing, else Home. Room replacement, Start fresh
   and world-version changes clear the room memory. Nobody sees the placement: with a recent record the loading screen

@@ -15,7 +15,7 @@ import { getRoomId, remotes } from '../../../src/netplay/net.ts';
 import { railwayRoomId } from '../../../src/world/railway-namespace.ts';
 import { PLAYER_R } from '../../../src/constants.ts';
 import type { ReturnSpot } from '../../../src/place/return-spot.ts';
-import { haltLandings, returnCandidates } from '../../../src/place/return-spot.ts';
+import { haltLandings, returnCandidates, yawToward } from '../../../src/place/return-spot.ts';
 import { returnKey } from '../../../src/place/return-settle.ts';
 import { RETURN_MINUTES_KEY } from '../../../src/place/return-tuning.ts';
 import { sitDown, seated } from '../../../src/entities/railway/seat.ts';
@@ -171,10 +171,21 @@ async function run() {
   const previous = sessionStorage.getItem(KEY);
   if (previous) {
     await wait(6000);
-    const before = JSON.parse(previous) as P & { yaw: number; expected?: P[]; left?: P };
+    const before = JSON.parse(previous) as P & {
+      yaw: number;
+      expected?: (P & { halt?: string; track?: { x: number; z: number } })[];
+      left?: P;
+      next?: string;
+      nearest?: string;
+    };
     const after = { x: body.position.x, y: body.position.y, z: body.position.z };
     const home = { x: toWorld(SPAWN.x), z: SPAWN.z };
     const nearest = (before.expected ?? []).map((p) => round(flat(after, p)));
+    // A fallback halt faces its track: how far the facing is from that, in radians (0 to pi).
+    const track = before.expected?.[nearest.indexOf(Math.min(...nearest))]?.track;
+    const turn = track
+      ? Math.abs(Math.atan2(Math.sin(me.yaw - yawToward(after, track)), Math.cos(me.yaw - yawToward(after, track))))
+      : null;
     const result = {
       mode,
       before: point(before),
@@ -184,14 +195,20 @@ async function run() {
       yaw: { before: round(before.yaw), after: round(me.yaw) },
       fromHome: round(flat(after, home)),
       fromHalts: nearest,
+      halts: before.expected?.slice(0, 3).map((p) => p.halt),
+      trainWasRunningTo: before.next,
+      nearestHaltWhenLeft: before.nearest,
+      facingOffTrack: turn === null ? null : round(turn),
       standing: me.coyote > 0 && !me.swimming,
       cover: shown(after),
       ok:
         mode === 'zero'
           ? flat(after, home) < 15
-          : mode === 'train' || mode === 'swim'
-            ? nearest.some((d) => d < 10) && flat(after, home) > 30
-            : flat(after, before) < 2,
+          : mode === 'train'
+            ? nearest[0]! < 10 && turn !== null && turn < 0.2 // the halt the train was running to, facing its track
+            : mode === 'swim'
+              ? nearest.some((d) => d < 10) && flat(after, home) > 30
+              : flat(after, before) < 2,
     };
     sessionStorage.removeItem(KEY);
     localStorage.removeItem(RETURN_MINUTES_KEY);
@@ -199,7 +216,7 @@ async function run() {
     done(result.ok ? 'PASS' : 'FAIL', result);
     return;
   }
-  const leave = (extra: { expected?: P[]; left?: P } = {}) => {
+  const leave = (extra: { expected?: P[]; left?: P; next?: string; nearest?: string } = {}) => {
     window.dispatchEvent(new PageTransitionEvent('pagehide'));
     const saved = record();
     if (!saved) throw new Error('railway-return: nothing was saved before the reload');
@@ -208,7 +225,10 @@ async function run() {
     sessionStorage.setItem(KEY, JSON.stringify(before));
     location.reload();
   };
-  const halts = () => returnCandidates(record()!, haltLandings()).filter((p) => p.halt);
+  const halts = () =>
+    returnCandidates(record()!, haltLandings())
+      .filter((p) => p.halt)
+      .slice(0, 3);
   if (mode === 'duo') {
     const until = performance.now() + 240000;
     while (![...remotes.values()].some((r) => r.entered)) {
@@ -234,11 +254,19 @@ async function run() {
       if (performance.now() > until || !seated()) throw new Error('railway-return: seated train never departed');
       await wait(100);
     }
-    await wait(6000);
+    // Just out of the halt: the nearest halt is the one behind, the next is the one the train is running to.
+    await wait(1000);
     if (!aboard() && !seated()) throw new Error('railway-return: left the train before the reload');
     window.dispatchEvent(new PageTransitionEvent('pagehide'));
-    if (!record()?.ride) throw new Error('railway-return: no saved train observation');
-    return leave({ expected: halts(), left: point(body.position) });
+    const riding = record();
+    if (!riding?.ride) throw new Error('railway-return: no saved train observation');
+    const { halt: next, ...sighting } = riding.ride;
+    return leave({
+      expected: halts(),
+      left: point(body.position),
+      next,
+      nearest: returnCandidates({ ...riding, ride: sighting }, haltLandings())[0]?.halt,
+    });
   }
   if (mode === 'swim') {
     // The sea beside the Railhead's deck, far from the saved Gorge spot: the nearest halt is the Railhead.
