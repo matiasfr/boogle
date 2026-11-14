@@ -82,6 +82,7 @@ export const yawToward = (from: { x: number; z: number }, toward: { x: number; z
   Math.atan2(from.x - toward.x, from.z - toward.z);
 /** One candidate per catalogue platform; coincident up/down platforms share a candidate. */
 export function haltLandings(): ReturnCandidate[] {
+  const jumps = JUMPS.flatMap((j) => (j.land ? [j.land] : []));
   const points = RAIL_LINES.flatMap((line, index) =>
     line.halts.flatMap((halt, k) =>
       halt.platforms.map((point) => ({
@@ -96,7 +97,7 @@ export function haltLandings(): ReturnCandidate[] {
   const unique = new Map<string, ReturnCandidate>();
   for (const { point, halt, line, stop, path } of points) {
     const platform = { x: point.x / 100, y: point.y / 100, z: point.z / 100 };
-    const jump = JUMPS.flatMap((j) => (j.land ? [j.land] : []))
+    const jump = jumps
       .filter((p) => Math.hypot(p.x - platform.x, p.z - platform.z) <= 30)
       .sort(
         (a, b) => Math.hypot(a.x - platform.x, a.z - platform.z) - Math.hypot(b.x - platform.x, b.z - platform.z),
