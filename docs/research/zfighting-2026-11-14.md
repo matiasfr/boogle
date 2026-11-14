@@ -1,5 +1,7 @@
 # Classified z-fighting census, 14 November 2026
 
+> Latest: the independent-review follow-up below verifies proxy exclusion and emissive/normal metadata on `19d1093f4`. Counts and baseline are unchanged. The original top-twenty table and ten-site images retain their separately documented earlier provenance.
+
 Geometry remains the launch origin/main snapshot `fceb07f6115d854628bd14e3bb677b46866075b4`; no geometry fixes are made here. Run commit `7ac7996515f5fc884346d7d63c84d17cda2d1838`, source hash `337d6af47d881708d08dedba69f07435d1ea55701e52b08cf4d53105f54f2add`.
 
 Grouped findings: **a likely visible 205; b same-appearance joints 61; c proved hidden 545**. Raw oriented rows: a 2974, b 172, c 2422. New since baseline: **0**. 6049 pieces, 520394 triangles, 8061 ms (not a performance benchmark).
@@ -88,7 +90,7 @@ Earlier Home attempts were retained honestly: `1794690850021-81615` had a wagon 
 
 ### Executed validation and evidence provenance
 
-The final tested code is `7ac7996515f5fc884346d7d63c84d17cda2d1838` (source hash in the header). All ten final site manifests and the final T1 manifest have this clean before/after commit and `changedDuringRun: false`; the final commit after them records evidence/docs only. The [visual index](zfighting-2026-11-14-visual.json) records every manifest, still, comparison sheet and inspected observation. Every final top-ten still and comparison sheet, both supplied PNGs, and T1's end still were opened. Earlier passes were also inspected; the table uses the final nearest-member build. Rank 3 passed under load; no capture is treated as a timing, performance or feel benchmark.
+The pre-review top-ten tested code is `7ac7996515f5fc884346d7d63c84d17cda2d1838` (source hash in the header). All ten final site manifests and the final T1 manifest have this clean before/after commit and `changedDuringRun: false`; the final commit after them records evidence/docs only. The [visual index](zfighting-2026-11-14-visual.json) records every manifest, still, comparison sheet and inspected observation. Every final top-ten still and comparison sheet, both supplied PNGs, and T1's end still were opened. Earlier passes were also inspected; the table uses the final nearest-member build. Rank 3 passed under load; no capture is treated as a timing, performance or feel benchmark.
 
 - `timeout 300 node dev/ship-check.ts`: pass (registry, 14 lint files, typecheck, 25 affected test files).
 - `timeout 120 npm run registry`: pass.
@@ -100,3 +102,21 @@ The final tested code is `7ac7996515f5fc884346d7d63c84d17cda2d1838` (source hash
 - Ten final ranked looks: execution/health pass, no page/console/GPU errors. Visual limitations are recorded above; a passing capture does not confirm visual quality.
 
 Two tooling attempts failed before useful proof: `1794690013846-62593` rejected an inline eval export (fixed by separate-line exports); `1794690919751-82228` (`look --at list`) was rejected by the launcher's single-player clock-url constraint. Final looks use `--real`. There were no final bot failures. Full-route play, temporal flicker, real-time feel and device behaviour remain unverified. **Not tested on a device.** No ROM data added. Nothing pushed or shipped.
+
+## Independent-review P2 follow-up, 14 November 2026
+
+Both reproductions were fixed in `19d1093f47849af0892bb57b8ea700b0bfcda1c3`, tooling only:
+
+- The live collector, offline built-object collector and crosshair picker share `isOpaqueMaterial`: visible, non-transparent, opacity 1, colour and depth writes enabled. Shadow-only proxies cannot enter the candidate face list or closed-solid occlusion proof, and cannot intercept the crosshair.
+- `materialSurface` now lives beside the pure face-appearance comparison, with a structural material input. It captures `emissiveIntensity` and marks `emissiveNode`/`normalNode` graphs unresolved. Red emission at intensity 0 versus 2 and unresolved normal/emission graphs therefore remain class a. These shading slots do not change the existing geometry/opacity uncertainty rule for occluders.
+
+Five new pure regressions were run against the extracted **old behavior before fixing it**: all five failed (`.look/zfight-review-red.log`). The invisible enclosing box changed a to c; the shared hit predicate selected the proxy; emission intensity and each shader slot produced b. After the fixes, all five pass and the complete focused detector suite is **17/17 passing** (`.look/zfight-review-green.log`). Tests import no three.js or DOM. A visible opaque enclosing-box control still correctly produces c.
+
+`npm run zfight` was rerun: **a 205, b 61, c 545; raw a 2,974/b 172/c 2,422; new since baseline 0**, still 6,049 pieces and 520,394 triangles. Home/Forge remain a at ranks 4/28. Counts and ranked contacts did not move, so the baseline was not rewritten: SHA256 `c70d2abc4366b9a1f896acb6d003e92ed0b8137063b05c40ecae31b1e09e9fbe` is unchanged. No geometry/material tuning or ROM data was added.
+
+Fresh broker proof uses the committed fix with clean matching before/after identities and `changedDuringRun: false`:
+
+- Look manifest **`1794694651694-81887`** (`.look/evidence/.../evidence.json`): native three.js material checks passed, and a temporary invisible 4 m enclosure around Home left the actual crosshair, 9,856 collected faces and complete classification snapshot identical. The test enclosure was removed/disposed after the probe. The Home banner still identifies instance 43 against platform instance 5 at `(930.12, 18.33, 5.94)`. Both the new `zfight-p2-review-still.png` and `zfight-p2-review-motion.png` were opened: IDs/tints are readable and no enclosure appears. Capture health passed with WebGPU and no page/console/GPU errors. This verifies collection/selection and metadata, not temporal flicker or a rendered emissive/normal look.
+- T1 manifest **`1794694652748-81895`**: `playthrough --to t1-done` passed, all expected beats and no errors. The report and new end still were opened. The end still shows the completed T1 state without a diagnosis overlay; no bot failures. Two stationary build/wake waits were reported, with no walking-into-object or water failures.
+
+The changed-code ship-check passed (registry, 15 lint files, typecheck, 26 affected test files, 253 tests). Requested ship-check/registry and routed static validation are rerun after the documentation edits, with current logs under `.look/zfight-review-*.log`; the final handoff reports those outcomes. Earlier ten-site evidence remains historical; it is not claimed as a rerun of these proxy/material fixes. Not tested on a device; full-route play and temporal flicker remain unverified. Nothing pushed or shipped.
