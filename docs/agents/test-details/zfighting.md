@@ -63,9 +63,10 @@ absent from production builds. Unnamed pieces retain exact scene/instance/compon
 with three.js `getObjectById`; match their coordinates to the offline report for source placement ids.
 
 Limitations: local exterior exposure does not establish a playable camera viewpoint, flicker or visual severity.
-In the dated Home review the live nearest-three selection showed neighbouring top/track contacts rather than
-isolating the static base pair. Do not interpret that absence as a clean bill of health: use the all-classes button
-and compare the source census and coordinates. Its live isolation remains unverified.
+The banner names each group's nearest actionable member, rather than the largest member used for offline ranking.
+Its labelled group area still sums the group. This distinction matters at Home: the final reviewed scan identifies
+the kerb/platform instance pair at `(930.12, 18.33, 5.94)`; the earlier largest-member selection showed neighbours instead.
+An absent pair is not a clean bill of health: use the all-classes button and compare the source census and coordinates.
 Identical material/UV joins can be harmless. Open/non-convex meshes do not act
 as solid occluders, so hidden contacts can remain. The live component splitter can join two authored pieces that
 share a whole edge and miss their conflict; clipped neighbourhoods can also open an occluder. Skins, transparent

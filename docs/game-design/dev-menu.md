@@ -31,6 +31,7 @@ This is Local, off by default, has no continuous sampler and does not change sou
 The same snapshot is `boogle.dev.run('zfight', 'scan')`. See [diagnosis and limits](../agents/test-details/zfighting.md).
 The scan now shows appearance/visibility classes and grouped counts: likely-visible contacts by default, with an
 explicit second scan button for same-appearance joints and proved-hidden overlaps. Unknown appearance stays actionable.
+Within each group the banner names the member nearest the crosshair; the labelled area remains the group's total.
 
 ## Replace room with stage
 
