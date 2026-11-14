@@ -2,14 +2,7 @@
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
 import type { Placement } from '../../prefab/types.ts';
-import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
-import { validateArtifact } from '../../prefab/validate.ts';
-
-const compiled = (() => {
-  const value: unknown = artifact;
-  validateArtifact(value);
-  return value;
-})();
+import { compiled } from '../../prefab/catalogue.ts';
 
 export type GreyBox = {
   x: number;

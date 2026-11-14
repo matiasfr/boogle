@@ -15,13 +15,11 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { me } from '../../player/player.ts';
 import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
-import { loadPrefabArtifact } from '../../prefab/validate.ts';
-import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import { definitions } from '../../prefab/catalogue.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { GIFTS, type Gift, type GiftId, type Part } from '../../render/cosmetic-parts.ts';
 import type { WardrobeApi } from '../wardrobe/state.ts';
-const definitions = loadPrefabArtifact(artifact).prefabs;
 
 const WIDE = 5.4,
   CRYSTAL_Y = 0.82;

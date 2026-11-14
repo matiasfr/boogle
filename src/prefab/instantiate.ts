@@ -1,19 +1,13 @@
 // The only runtime door: compiled data becomes owned meshes, bodies and seat registrations.
 // Local only. Seat authority, ids and registration lifetime retain the existing seat service's contract.
 import * as THREE from 'three/webgpu';
-import artifact from '../../content/built/prefabs.json' with { type: 'json' };
+import { compiled } from './catalogue.ts';
 import workshop from '../../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../../content/built/levels/gorge.json' with { type: 'json' };
 import { names } from './names.ts';
 import type { BuilderName } from './names.ts';
 import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
-import {
-  loadPrefabArtifact,
-  loadLevelArtifact,
-  validatePlacement,
-  validatePrefab,
-  validateColliderWorldTransforms,
-} from './validate.ts';
+import { loadLevelArtifact, validatePlacement, validatePrefab, validateColliderWorldTransforms } from './validate.ts';
 import './builders/seat-chair.ts';
 import './builders/greybox-box.ts';
 import './builders/workshop-parts.ts';
@@ -34,7 +28,6 @@ import type { Body, Shape } from '../physics/engine.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import type { Platform } from '../physics/platforms.ts';
 
-const compiled = loadPrefabArtifact(artifact);
 const room = loadLevelArtifact(workshop, compiled.prefabs);
 export const workshopChair = room.placements[0]!;
 const gorgeLevel = loadLevelArtifact(gorge, compiled.prefabs);

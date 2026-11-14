@@ -1,3 +1,4 @@
+import { compiled, definitions } from '../src/prefab/catalogue.ts';
 import { prefabGolden, recordMatrices } from './helpers/prefab-golden.ts';
 // Owner-requested migration proof: execute the real draw boundary with recording physics, without a renderer.
 import test from 'node:test';
@@ -43,11 +44,11 @@ test('Gorge collider, placement and count values match the old massing', async (
   builders.set('town.room-proxy', () => new THREE.Group());
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
     fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
-    { THREE, artifact, workshop, gorge, names, ...validation, builders, staticBody: record },
+    { THREE, artifact, compiled, definitions, workshop, gorge, names, ...validation, builders, staticBody: record },
   );
   const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
     fs.readFileSync('src/entities/route-greybox/boxes.ts', 'utf8'),
-    { ...runtime, artifact, ...validation },
+    { ...runtime, artifact, compiled, definitions, ...validation },
   );
   const owner = createOwnedView();
   const authored = runtime.gorgePlacements;

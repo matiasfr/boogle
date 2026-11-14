@@ -1,3 +1,4 @@
+import { compiled, definitions } from '../src/prefab/catalogue.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 // Owner-requested step-8 goldens: execute the old seat construction blocks with recording services.
 // The blocks stay source-owned across conversion; no renderer, network or physics engine runs here.
@@ -46,6 +47,8 @@ function captureSeats() {
     {
       THREE,
       artifact,
+      compiled,
+      definitions,
       workshop,
       gorge,
       names,

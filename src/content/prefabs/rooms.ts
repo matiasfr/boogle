@@ -2,9 +2,9 @@
 import { definePrefab, type PrefabDef } from '../../prefab/types.ts';
 import { ROOM_PLOTS } from '../../place/layout.ts';
 const looks = {
-  house: { wall: '#e8dcc0', post: '#7f5630', roof: '#c9a86a', rise: 2.5, smoke: true, pieces: 79, scaffold: 18 },
-  shop: { wall: '#f0c98a', post: '#8a4a2c', roof: '#c4453a', rise: 2.6, smoke: false, pieces: 94, scaffold: 18 },
-  museum: { wall: '#c8c3b4', post: '#b2ad9f', roof: '#4d5560', rise: 2.8, smoke: false, pieces: 136, scaffold: 22 },
+  house: { wall: '#e8dcc0', post: '#7f5630', roof: '#c9a86a', rise: 2.5, smoke: true },
+  shop: { wall: '#f0c98a', post: '#8a4a2c', roof: '#c4453a', rise: 2.6, smoke: false },
+  museum: { wall: '#c8c3b4', post: '#b2ad9f', roof: '#4d5560', rise: 2.8, smoke: false },
 };
 export const prefabs: PrefabDef[] = Object.entries(looks).flatMap(([id, look]) => {
   const p = ROOM_PLOTS[id as keyof typeof ROOM_PLOTS];
@@ -21,16 +21,14 @@ export const prefabs: PrefabDef[] = Object.entries(looks).flatMap(([id, look]) =
     postPalette: id === 'museum' ? 'stone' : 'timber',
   };
   const records: PrefabDef[] = [];
-  for (const phase of ['scaffold', 'pieces'] as const)
-    for (let index = 0; index < look[phase]; index++)
-      records.push(
-        definePrefab({
-          key: `town.room-${id}-${phase}-${index}`,
-          visual: { builder: 'town.room-shell', params: { spec, phase, index } },
-          colliders: [],
-          scope: 'owner',
-        }),
-      );
+  records.push(
+    definePrefab({
+      key: `town.room-${id}-shell`,
+      visual: { builder: 'town.room-shell', params: { spec } },
+      colliders: [],
+      scope: 'owner',
+    }),
+  );
   for (const phase of ['hulls', 'poles'] as const)
     for (let index = 0; index < (phase === 'hulls' ? 8 : 5); index++)
       records.push(

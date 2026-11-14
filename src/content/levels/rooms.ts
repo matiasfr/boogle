@@ -12,7 +12,13 @@ export const levels = Object.entries(counts).map(([id, [pieces, scaffold]]) => {
   ] as const)
     for (let index = 0; index < count; index++) {
       const name = `${id}-${phase}-${index}`;
-      placements.push({ id: `room-${name}`, prefab: `town.room-${name}` as PrefabKey, pos: [0, 0, 0] });
+      const shell = phase === 'scaffold' || phase === 'pieces';
+      placements.push({
+        id: `room-${name}`,
+        prefab: `town.room-${shell ? `${id}-shell` : name}` as PrefabKey,
+        pos: [0, 0, 0],
+        ...(shell ? { params: { phase, index } } : {}),
+      });
     }
   return defineLevel({ place: `room-${id}`, placements });
 });
