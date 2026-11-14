@@ -3,6 +3,7 @@
 // seeds a world or moves a player.
 import type { Bot } from '../bot.ts';
 import { inspectRailway, rw, trainStops, trains as trainRows } from '../rail-read.ts';
+import { trainPassesBy } from '../../../src/sim/railway-lines.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
@@ -148,11 +149,33 @@ export function line2Rides(bot: Bot) {
     }
     check(aboard(), `boarded line 2 at ${halt.name} by a real jump`);
     const to = view().halts.find((h) => h.line === 1 && h.stop === destination);
-    const middle = destination > 0 && destination < trainStops(rw(), 1).length - 1;
+    const stops = trainStops(rw(), 1);
+    const middle = destination > 0 && destination < stops.length - 1;
     let destinationPrompt = false;
     let ran = false;
-    let sample: Promise<void> | undefined;
     const asked = new Set<string>();
+    if (to && middle && destination === halt.stop + dir && !trainPassesBy(1, destination, dir, stops.length)) {
+      // Adjacent requestable stops must offer the cord promptly, even when the train's arrival takes much longer.
+      // Keep PR 1816's Sit-aware selection and the original 20-second assertion separate from the arrival budget.
+      await until(
+        () => {
+          check(aboard() && !me.swimming, 'rider stays aboard the line-2 train');
+          ran ||= row().phase === 1;
+          return requestPrompt();
+        },
+        `"Request stop: ${to.name}" offered aboard`,
+        20000,
+      );
+      check(interactTarget()?.verb === `Request stop: ${to.name}`, `the prompt names ${to.name}`);
+      destinationPrompt = true;
+      if (interactTarget()?.run) bot.press();
+      asked.add(`Request stop: ${to.name}`);
+      await until(() => {
+        ran ||= row().phase === 1;
+        return row().to === destination || row().at === destination;
+      }, `the train will stop at ${to.name}`);
+    }
+    let sample: Promise<void> | undefined;
     await until(() => {
       check(aboard() && !me.swimming, 'rider stays aboard the line-2 train');
       // The cord names the next requestable halt, which may precede our destination. Wait until it names ours;
