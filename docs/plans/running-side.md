@@ -218,11 +218,16 @@ Models are `npm run models` rows (withCodex).
       -6.95, on piles, a lever and a plank crossing), its `RailPlatform` in the catalog, `only: -1` kept. Run
       `npm run level-check` on it before review. Tier: sim catalog plus view; same bump. Row: gpt-6-astra high for the
       catalog, fable for the view.
-- [ ] **6. Bots, tools and words.** `dev/look/bots/railway.ts`, `railway-legs.ts`, `railway-ride.ts` (where they pick
+- [x] **6. Bots, tools and words.** Built locally 14 November; not shipped. [Step 6 report](running-side-step6-report.md)
+      records checks, browser evidence, remaining limits and departures: production-path sampling replaces the obsolete
+      ring splice; the seeded Works eval dismisses station-box cards by normal E; a new ride eval proves the Q7 Pier
+      return; the Home bay's future routing remains unresolved. The mechanical `offsetLat` / `OFFSET_LAT` /
+      `OFFSET_HALTS` rename is its own commit, `d7d9d4e77`. No game behaviour or player copy changed.
+      `dev/look/bots/railway.ts`, `railway-legs.ts`, `railway-ride.ts` (where they pick
       a platform or lever by way), `dev/level/check.ts`, `rail-map.ts`, `track-continuity.ts`,
       `home-passenger-bay.ts`; place.md's "The second track, drawn" and the halts' paragraphs, the comments in
-      `layout.ts` ("left-hand running"), `generic-lines.md` and `turnouts.md`. A mechanical rename of `upLat`,
-      `UP_LAT` and `UP_HALTS` (the offset track is no longer the up track) is its own later commit.
+      `layout.ts` ("left-hand running"), `generic-lines.md` and `turnouts.md`. The mechanical rename of `upLat`,
+      `UP_LAT` and `UP_HALTS` (the offset track is no longer the up track) is recorded in its own commit above.
       Row: quick mechanical jobs (gpt-6.1-sol medium).
 - [ ] **Checkpoint (steps 3 to 6, one ship with the v45 bump).** Proofs, once: `npm run loop -- run`; the railway ride
       bot from Village to the Pier and back; the three proof looks of step 4; `test:net`; `npm run level-check`.
