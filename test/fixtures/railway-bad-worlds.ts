@@ -315,7 +315,12 @@ export const BAD_WORLDS: readonly BadWorld[] = [
       // Both of line two's trains standing at its start end (those in service: its fleet rows stay in the shed).
       const s0 = stopsOf(w, LINE2)[0]!;
       for (const slot of LINE_SLOTS[LINE2]!.filter((k) => w.get(Train, w.lookup(Train, k)!)!.phase !== 2))
-        set(w, Train, { phase: 0, at: 0, to: 0, from: s0, dest: s0, track: 0, v0: 0, req: 0, turn: false }, slot);
+        set(
+          w,
+          Train,
+          { phase: 0, at: 0, to: 0, from: s0, dest: s0, track: 0, origin: 0, v0: 0, req: 0, turn: false },
+          slot,
+        );
     },
   },
   // ------------------------------------------------ the Works (src/sim/railway-check-works.ts)

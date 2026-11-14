@@ -823,11 +823,10 @@ Camp's, the Pier's and the Home island's levers are where they were, and the sta
 lever each way. The signal on a first platform drops for its lever's way. The plaque's arrow and the prompt follow
 the way the lever calls now. **Known, for step 5:** once Q7 is laid the Pier is a middle halt with one platform on the
 east side, and its homeward train stands on the far track, 4 m beyond the near one; its lever still calls it and the
-server still takes the ask, but you cross a track to board. **Known, not row-pure:** a train standing at an end (or
-turning back there) at the moment the line grows past it leaves from the east platform and eases out to the homeward
-track (over Far Head's or Ring Island's crossover, or over the 20 m after its stop elsewhere); the saved rows do not
-say this once it stands, so a tab that joins or reloads in those seconds draws that one train on the homeward track
-until it has left the halt. Tests: `test/railway-r4a-views.test.ts` (every stage's lateral, no sideways jump),
+server still takes the ask, but you cross a track to board. **Departure origin (14 November, review fix):** the Server train row now keeps the far-end departure
+coordinate in `origin`, replicated and saved. It survives a growing line, a moving stop and replans until the next
+halt. Train decks and shared rideable bodies read it directly; no tab remembers a different departure side, and
+the Railhead merge used by those bodies no longer slides on a tab-local clock. Tests: `test/railway-r4a-views.test.ts` (every stage's lateral, no sideways jump),
 `test/halt-lever-place.test.ts` (ends, the server's reach, 3 m from every worked site),
 `test/prefab-halts.test.ts` (every lever's ask is taken at eight stages); look:
 `dev/look/evals/running-side.ts`. Local view over step 3's catalog; no op, state or server change in this step. Not

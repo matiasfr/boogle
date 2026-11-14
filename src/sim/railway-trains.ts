@@ -486,6 +486,7 @@ export function fleetJoin<L extends LineRef>(io: TrainIO<L>, line: L, tick: numb
     v0: 0,
     dest: s0,
     turn: false,
+    origin: 0,
   });
 }
 export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
@@ -516,6 +517,7 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
           depart: arrival,
           arrived: arrival,
           turn: false,
+          origin: r.track === 0 && (r.to === n - 1 || turn) ? r.dest : at < 0 ? r.origin : 0,
         });
         if (at >= 0) io.arrive(slot);
         // At an end (or the one it had crossed over at: `turn`) it turns back onto the other track; its riders' asks
@@ -640,6 +642,12 @@ export function trainRowBroken(
     !int(r.at, last, -1) ||
     !int(r.to, last, -1) ||
     !int(r.track, 1) ||
+    !int(r.origin, st[last]!) ||
+    (r.origin !== 0 &&
+      (r.track !== 1 ||
+        !lineDef(line).halts.some(
+          (h, k) => k > 0 && k <= last && h.end && (h.s === r.origin || h.heads?.includes(r.origin)),
+        ))) ||
     !int(r.depart) ||
     !int(r.arrived, r.depart) ||
     !reqValid(r.req, st.length) ||

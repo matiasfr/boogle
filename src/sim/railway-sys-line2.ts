@@ -147,6 +147,7 @@ export const boilerFit = defineSystem(
           at: stop,
           to: stop,
           track,
+          origin: track === 1 && stop === stopsOf(w, line).length - 1 ? s : 0,
           depart: tick + TRAIN.wakeTicks,
           req: 0,
           from: s,

@@ -168,6 +168,9 @@ export type RailTrain = {
   /** Running on track 0 to `to`, it turns back there though that halt is no longer an open end: it was on the end's
    * crossover when the line was extended past it (Far Head's, as Q6 opens the pier), so it has already crossed. */
   turn: boolean;
+  /** Far-end departure stop in cm, or 0: retained through replans and signal holds until the next halt.
+   * Server-owned so a late join/save draws the same departure track, including a moving railhead. */
+  origin: number;
   logs: number;
   rails: number;
   /** Line 2 only, one train at most: the footing wagon is coupled, and the footings aboard it. */
@@ -196,6 +199,7 @@ export function trainIdle(slot: number): RailTrain {
     v0: 0,
     dest: here,
     turn: false,
+    origin: TRAIN_HOME_TRACK[slot] === 1 && at === trainStopsOf(RAIL_TRAINS[slot]!.line, 0).length - 1 ? here : 0,
     logs: 0,
     rails: 0,
     wagon: false,

@@ -47,6 +47,7 @@ export function standingAt(stops: readonly number[], k: number, track: number, d
     v0: 0,
     dest: s,
     turn: false,
+    origin: track === 1 && k > 0 && k === stops.length - 1 ? s : 0,
     logs: 0,
     rails: 0,
     wagon: false,

@@ -85,16 +85,16 @@ test("line2At is the layout's to the pier and the ring's from the pier head on; 
 // ---------------------------------------------------------------- a train's lateral: right-hand running (v45)
 const OPEN = (laid: number, head = 0, joined = false) => trainStopsOf(LINE2, laid, { head, joined });
 /** A train going out (track 0, the original track) and one going home (track 1, the offset track). */
-const OUT = { track: 0 },
-  HOME = { track: 1 };
-type Left = Parameters<typeof line2Lat>[5];
+const OUT = { track: 0, origin: 0 },
+  HOME = { track: 1, origin: 0 };
+type Left = { halt: number; s: number } | null;
 /** The most the lateral moves over 0.05 m of the line along a run of metres, a train's lateral being the width of a
  * car's axle: a sideways jump is the whole 4 m in one step. */
 function worstStep(stops: readonly number[], from: number, to: number, left: Left = null) {
   let worst = 0,
-    prev = line2Lat(HOME, from, stops, undefined, false, left);
+    prev = line2Lat({ ...HOME, origin: left ? left.s * 100 : 0 }, from, stops);
   for (let s = from + 0.05; s <= to; s += 0.05) {
-    const cur = line2Lat(HOME, s, stops, undefined, false, left);
+    const cur = line2Lat({ ...HOME, origin: left ? left.s * 100 : 0 }, s, stops);
     worst = Math.max(worst, Math.abs(cur - prev));
     prev = cur;
   }
@@ -126,23 +126,30 @@ test('line 2 lateral: out on the original track, home on the offset one, and eac
   assert.equal(line2Lat(HOME, 520, pier), -4, 'past Far Head on the offset track: its west platform');
   assert.ok(worstStep(pier, 30, 740) < 0.3, 'no jump over the Pier stub');
   // A train that stood at Far Head (or was turning back there) as the pier opened leaves from the original track and
-  // still takes the crossover: train-view.ts remembers it (`left`), the rows do not say.
+  // still takes the crossover: the accepted row retains its departure coordinate.
   const farLeft = { halt: 2, s: 524 };
-  assert.equal(line2Lat(HOME, 524, pier, undefined, false, farLeft), 0);
-  assert.equal(line2Lat(HOME, 500, pier, undefined, false, farLeft), crossLat(FORMATION.quarry, 500));
-  assert.equal(line2Lat(HOME, 480, pier, undefined, false, farLeft), -4);
-  assert.ok(worstStep(pier, 30, 524, farLeft) < 0.3, 'no jump for the train the pier\'s opening caught at Far Head');
+  assert.equal(line2Lat({ ...HOME, origin: farLeft ? farLeft.s * 100 : 0 }, 524, pier), 0);
+  assert.equal(
+    line2Lat({ ...HOME, origin: farLeft ? farLeft.s * 100 : 0 }, 500, pier),
+    crossLat(FORMATION.quarry, 500),
+  );
+  assert.equal(line2Lat({ ...HOME, origin: farLeft ? farLeft.s * 100 : 0 }, 480, pier), -4);
+  assert.ok(worstStep(pier, 30, 524, farLeft) < 0.3, "no jump for the train the pier's opening caught at Far Head");
   // Q7 laid: the Pier is a middle halt on straight double track. A homeward train from beyond is on the offset track
   // there; one that stood at the Pier as the end eases out over the 20 m after its stop.
   const pierLeft = { halt: 3, s: PIER_STOP_CM / 100 };
-  assert.equal(line2Lat(HOME, PIER_STOP_CM / 100, head), -4, 'the far track from the Pier\'s one platform (step 5)');
-  assert.equal(line2Lat(HOME, PIER_STOP_CM / 100, head, undefined, false, pierLeft), 0);
-  assert.equal(line2Lat(HOME, PIER_STOP_CM / 100 - 20, head, undefined, false, pierLeft), -4);
-  assert.equal(line2Lat(HOME, 600, head, undefined, false, pierLeft), -4);
+  assert.equal(line2Lat(HOME, PIER_STOP_CM / 100, head), -4, "the far track from the Pier's one platform (step 5)");
+  assert.equal(line2Lat({ ...HOME, origin: pierLeft ? pierLeft.s * 100 : 0 }, PIER_STOP_CM / 100, head), 0);
+  assert.equal(line2Lat({ ...HOME, origin: pierLeft ? pierLeft.s * 100 : 0 }, PIER_STOP_CM / 100 - 20, head), -4);
+  assert.equal(line2Lat({ ...HOME, origin: pierLeft ? pierLeft.s * 100 : 0 }, 600, head), -4);
   assert.ok(worstStep(head, 30, PIER_STOP_CM / 100, pierLeft) < 0.3, 'no jump for the train turned at the Pier');
-  // The memory changes nothing while its halt is still the end and its stop has not moved.
+  // The accepted origin changes nothing while its halt is still the end and its stop has not moved.
   for (let s = 500; s <= 740; s += 3)
-    assert.equal(line2Lat(HOME, s, pier, undefined, false, pierLeft), line2Lat(HOME, s, pier), `s ${s}`);
+    assert.equal(
+      line2Lat({ ...HOME, origin: pierLeft ? pierLeft.s * 100 : 0 }, s, pier),
+      line2Lat(HOME, s, pier),
+      `s ${s}`,
+    );
   // The railhead's stub: the merge is 20 m short of the stop and moves with `head`.
   assert.equal(endMergeM(head), RING_HEAD[0]!.mergeCm / 100);
   assert.equal(line2Lat(HOME, 800, head), -4);
@@ -157,8 +164,8 @@ test('line 2 lateral: out on the original track, home on the offset one, and eac
   // out over the 20 m after.
   const stood = { halt: 4, s: head[4]! / 100 },
     moved = OPEN(7, 1);
-  assert.equal(line2Lat(HOME, stood.s, moved, undefined, false, stood), 0);
-  assert.equal(line2Lat(HOME, stood.s - 20, moved, undefined, false, stood), -4);
+  assert.equal(line2Lat({ ...HOME, origin: stood ? stood.s * 100 : 0 }, stood.s, moved), 0);
+  assert.equal(line2Lat({ ...HOME, origin: stood ? stood.s * 100 : 0 }, stood.s - 20, moved), -4);
   assert.ok(worstStep(moved, 700, stood.s, stood) < 0.3, 'no jump for the train the railhead moved on from');
   // Ring Island the end (the rivet struck): the homeward train crosses out at RING_END.cross.
   assert.equal(endMergeM(island), RING_END.mergeCm / 100);

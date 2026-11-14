@@ -189,12 +189,12 @@ const FAR_HEAD = 2;
 /** A crossover end's length along the line (metres): Far Head's 22 m, the island's 22 m. */
 const CROSS_LEN = QUARRY.crossover![1] - QUARRY.crossover![0];
 /** The part of a train row the lateral reads. */
-export type LatRow = { readonly track: number };
-/** A homeward train that still leaves a halt from the original track though the line has since grown past its stop
- * (it stood there as the end, or was turning back there, when the end moved on): the halt, and where it stood, metres.
- * The rows do not say this (`turn` is cleared when the train comes to a stand, and a train standing at the end as the
- * line grows is the same row as one that stopped at the west platform), so train-view.ts remembers it per train. */
-export type LeftFrom = { readonly halt: number; readonly s: number };
+export type LatRow = { readonly track: number; readonly origin: number };
+/** The accepted departure coordinate identifies its catalog end, even after that end moves or extends. */
+export const departureHalt = (row: LatRow) =>
+  row.origin === 0
+    ? -1
+    : HALTS.findIndex((h, k) => k > 0 && h.end && (h.s === row.origin || h.heads?.includes(row.origin)));
 /** Where the open end's merge (a stub) or crossover (a crossover) starts, metres: the catalog's, moved with a moving
  * stop (the Railhead's by its head). */
 export const endMergeM = (stops: readonly number[]) => {
@@ -204,26 +204,21 @@ export const endMergeM = (stops: readonly number[]) => {
 };
 /**
  * The lateral of line 2's train on `row`'s track at `s` metres (0 is the original track, UP_LAT the offset one;
- * Local, from rows alone but for `left`).
+ * Local, from accepted rows alone).
  *  - Going out (track 0): 0, everywhere. It runs straight in to an end's east platform.
  *  - Going home (track 1): UP_LAT between the ends (eased in over the 20 m after the layout's merge at s 34).
  *  - While the open end is Far Head, a train leaving it takes its crossover out (s 512 back to 490).
  *  - While it is a stub (the Pier, the Railhead), the leaving train is on the one terminal track to `merge` and eases
  *    out over the 20 m before it; at a crossover (Ring Island) it crosses out over the 22 m after `merge`.
- *  - `left`: a train leaving a halt the line has grown past (or whose stop has moved on) from the original track. At
+ *  - `origin`: a train leaving a halt the line has grown past (or whose stop has moved on) from the original track. At
  *    a crossover halt (Far Head, Ring Island) it takes that crossover; anywhere else it eases out over the 20 m after
  *    where it stood.
- * `merge` is endMergeM(stops), or a smoothed value for a moving railhead.
+ * `merge` is endMergeM(stops); rideable bodies use accepted rows, never a tab-local slide.
  */
-export function line2Lat(
-  row: LatRow,
-  s: number,
-  stops: readonly number[],
-  merge = endMergeM(stops),
-  smooth = false,
-  left: LeftFrom | null = null,
-) {
+export function line2Lat(row: LatRow, s: number, stops: readonly number[], merge = endMergeM(stops), smooth = false) {
   if (!row.track) return 0;
+  const halt = departureHalt(row);
+  const left = halt < 0 ? null : { halt, s: row.origin / 100 };
   const last = stops.length - 1;
   const start = s <= QUARRY.from ? 0 : UP_LAT * ease((s - QUARRY.from) / TURNOUT);
   const c = QUARRY.crossover!;

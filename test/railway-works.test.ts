@@ -180,6 +180,7 @@ test('no breaker and no strike while hauling the boiler', () => {
     const here = TRAIN_STOPS[line]![at]!;
     Object.assign(w.mut(Train, w.lookup(Train, slot)!)!, {
       ...{ phase: shed ? 2 : 0, at, to: at, track, depart: 0, arrived: 0, req: 0, from: here, v0: 0, dest: here },
+      origin: track === 1 && at === 2 ? here : 0,
     });
   });
   for (const id of w.ids(Line)) Object.assign(w.mut(Line, id)!, { req: 0, left0: -1, left1: -1 });

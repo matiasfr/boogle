@@ -69,6 +69,7 @@ const running = (from: number, to: number, dest: number, tick: number): Partial<
   v0: 0,
   dest,
   turn: false,
+  origin: 0,
 });
 
 test('each ring op is refused before its gate and accepted after', () => {
