@@ -144,7 +144,9 @@ of sleepers: the spur off road 2, the leg off line 1 and onto road 2, and each l
 the through track's sleepers, carried on as long timbers until the tracks are clear of each other; the branch's rails
 start beside the through track's. There are still no blades, frogs or working levers, and the table has no pit: that is
 the station's art pass (home-station steps 9 and 10). Each ruin's floor and near wall stop 0.3 m short of the built
-stall's eave. Drawn only: no rule, collider or save changes, except that the parked wagon's stand-on box sits 0.29 m
+stall's eave. The garage's stand, jib, lever post and crew stand on the yard's ground beside the table (they hung
+0.3 m over it, at the deck's height), and a rail along each side joins the stand's two legs so it reads as a trestle
+when its part has gone. Drawn only: no rule, collider or save changes, except that the parked wagon's stand-on box sits 0.29 m
 lower with it. Not tested on a device.
 
 **Track-layer clearance (5 November iPhone follow-up).** With no first panel target, the empty boom now parks
