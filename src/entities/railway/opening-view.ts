@@ -4,6 +4,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { townPopulation, townRead } from '../../sim/town-facts.ts';
 import { createTownGreeter, type GreeterRead } from './greeter.ts';
 import { forgePoles } from './forge-finish.ts';
+import { pathRefuges, plankTops, trainDue, type TrainAhead } from './path-refuge.ts';
 
 type OpeningEnv = {
   machine: () => { mesh: THREE.Object3D; top: number };
@@ -14,6 +15,10 @@ type OpeningEnv = {
   awake: () => boolean;
   hush: () => boolean;
   pathOpen: () => boolean;
+  /** The trains on line 1 now by their own plans (train-view.ts `onLine`), and the plank pieces of its track
+   * (track.ts `planks`): the commuters on its track bed step off for the one onto the other or the ground. */
+  pathTrains: () => readonly TrainAhead[];
+  pathPlanks: () => Parameters<typeof plankTops>[0];
   /** The railway as the views see it (the read facade's world and ready, view.ts's phase this frame). */
   progress: GreeterRead;
   /** The engines' driving stools (train-view.ts), for the little guy at the controls. */
@@ -24,7 +29,7 @@ type OpeningEnv = {
 };
 
 export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
-  const [plans, models, layout, land, sites, pieces, boxes, look, signs, folk, rail] = await Promise.all([
+  const [plans, models, layout, land, sites, pieces, boxes, look, signs, folk, rail, terrain] = await Promise.all([
     import('../../place/opening-plans.ts'),
     import('../../place/opening-models.ts'),
     import('../../place/layout.ts'),
@@ -36,6 +41,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     import('../../place/signs.ts'),
     import('../../place/folk.ts'),
     import('./rail-kit.ts'),
+    import('../../place/terrain.ts'),
   ]);
   if (!owner.alive) return { update: () => {}, numbers: () => {}, targets: () => [] };
   const footprints = new Set<(typeof sites.feet)[number]>();
@@ -132,6 +138,16 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   layout.lineAt(line, 19, p);
   const platform = rail.besideLine(line, 19, -2.9),
     gather = rail.besideLine(line, 6, -4.6);
+  // Where a commuter stands while a train passes (path-refuge.ts): on the drawn ground or the drawn deck. The path
+  // starts at the first place past the Village's platform that has a refuge (s 37; nothing holds a little guy clear
+  // of the tracks beside the platform's end) and runs to the Camp's stub.
+  const refuges = pathRefuges(line, 30, layout.STUB.camp, {
+    ground: terrain.surfaceHeight,
+    deckTop: plankTops(env.pathPlanks()),
+    up: (s) => layout.upLat(layout.FORMATION[layout.LINKS[0]!.id], s) ?? 0,
+    beside: rail.besideLine,
+  });
+  const pathS = (u: number) => refuges.first + u * (layout.STUB.camp - refuges.first);
   folk.mountFolk(owner, {
     station: () => (env.awake() ? env.station() : null),
     machineBusy: env.busy,
@@ -146,11 +162,16 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     forgeLit: () => forgePoles.down >= 1,
     path: (u, lat) => {
       if (!env.pathOpen()) return null;
-      const s = 30 + u * (layout.STUB.camp - 30);
+      const s = pathS(u);
       const at = rail.besideLine(line, s, lat);
       const tangent = layout.lineAt(line, s, { x: 0, z: 0, ux: 0, uz: 1 });
-      return { x: at.x, y: layout.railY(line, s) + 0.2, z: at.z, yaw: Math.atan2(-tangent.ux, -tangent.uz) };
+      // Facing the far end, the way `u` grows (until 14 November this faced the village, so every commuter walked
+      // backwards; owner playtest).
+      return { x: at.x, y: layout.railY(line, s) + 0.2, z: at.z, yaw: Math.atan2(tangent.ux, tangent.uz) };
     },
+    pathTrain: (u) => trainDue(pathS(u), env.pathTrains()),
+    pathRefuge: (u) => refuges.at(pathS(u)),
+    pathGo: (u) => refuges.go(pathS(u)),
     cart: () => null,
     hush: env.hush,
   });

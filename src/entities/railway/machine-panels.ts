@@ -1,7 +1,7 @@
 // Local rigid transforms only. Both the live machine and asset stage use this choreography.
 // Storyboard beats: return, lower, pick, lift to gauge, travel, sweep (pieces fall as it passes), seat, contact.
 import * as THREE from 'three/webgpu';
-import { carriedPiece, panelEase, panelPose } from './track-panels.ts';
+import { carriedPiece, panelEase, panelGlide, panelPose, type PanelBeats } from './track-panels.ts';
 
 export const PANEL_BEAM_Y = 4;
 /** The slewing beam's reach from its pivot over the deck, as built (assets/src/track-layer.py BEAM; 5.8 m before the
@@ -32,12 +32,17 @@ const GRIP_Y = 0.23,
   RAIL_KIT_LENGTH = 3.05;
 /** Instances ahead of the stack in the rail batch: the carried pair and the up track's pair. */
 const CARRIED = 4;
-/** A double-track panel's timeline: its first pair's whole cycle is squeezed into [0, UP_SPLIT] of the phase, so it is
- * seated at FIRST_SEATED; the second pair rides UP_LIFT m over the first and the crossing hops UP_HOP m. */
-const UP_SPLIT = 0.825,
-  UP_LIFT = 0.14,
-  UP_HOP = 0.35;
-export const FIRST_SEATED = 0.97 * UP_SPLIT;
+/** A double-track panel's timeline. The hand's loop is stack, down seat, up seat, stack, about 14 m in one panel's time
+ * (0.33 s on line 2's fast stretches, 0.6 s on line 1), and the 4 m crossing gets its share of that distance: the first
+ * pair is seated by FIRST_SEATED, then the jaws cross over UP_CROSS of the panel on a trapezoid (panelGlide) and are
+ * back over the stack by DOUBLE_BEATS[0] of the next. Until 14 November the first pair's cycle took 0.80 of the panel
+ * and the crossing 0.09 (two or three drawn frames, read as a teleport; owner playtest). The second pair rides UP_LIFT m
+ * over the first and the crossing hops UP_HOP m. */
+const DOUBLE_BEATS: PanelBeats = [0.27, 0.32, 0.35, 0.38, 0.54, 0.6, 0.64];
+export const FIRST_SEATED = DOUBLE_BEATS[6];
+export const UP_CROSS = 0.32;
+const UP_LIFT = 0.14,
+  UP_HOP = 0.6;
 /** The up track's carried pair: its seat (rail bases' midpoint) and heading in the rig frame. */
 export type UpSeat = { seat: THREE.Vector3; yaw: number; pitch: number };
 /** Kit rail batch: native 0.1 x 0.12 x 3.05 m, base origin. */
@@ -255,7 +260,7 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch, sta
       // A double-track panel carries both pairs in one trip: the first cycle runs to its seat by FIRST_SEATED, then the
       // jaws let go, cross to the up track and set the second pair down.
       const two = !!second && n > 1;
-      const p = panelPose(two ? phase / UP_SPLIT : phase);
+      const p = panelPose(phase, two ? DOUBLE_BEATS : undefined);
       carriedLength = length;
       carryingUp = two;
       upLift = UP_LIFT;
@@ -320,7 +325,7 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch, sta
       if (two && second && phase >= FIRST_SEATED) {
         // Let go of the first pair (the track shows it seated), lift a little, cross to the up seat and lower.
         carrying = false;
-        const k = panelEase((phase - FIRST_SEATED) / 0.09),
+        const k = panelGlide((phase - FIRST_SEATED) / UP_CROSS),
           lower = panelEase((phase - FIRST_SEATED) / (0.97 - FIRST_SEATED));
         upAxis.set(0, 1, 0).applyQuaternion(q.setFromEuler(e.set(-second.pitch, second.yaw, 0, 'YXZ')));
         seatUpJaw.copy(second.seat).addScaledVector(upAxis, GRIP_Y);
