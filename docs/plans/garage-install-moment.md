@@ -476,14 +476,12 @@ changing part within a tab changed nothing in the world except the Longer boiler
 | Cars | The camera eases to the first car; a whole frame round the bench |
 | Cargo | The camera eases to the tail and slides to each car: Rail and kit car and (once coupled) Footing wagon as ghost flatbeds in whole frames; Steel car dashed until the longer boiler is on, then a ghost; Bigger cradle a dashed box over the wagon's place |
 | Looks | The camera eases to the whole train; a dashed frame where the roof and lamps go over the first car |
-| Whistle | The camera eases to the Whistle shot; the frame is round the chimney's cap (whole for Toot, dashed for Two-tone), which that shot does not show: it is close on the cab, as before |
+| Whistle | The camera eases to the chimney (its own row since the review; the table holds still); the frame is round the cap, whole for Toot, dashed for Two-tone |
 
 **Wrong in it, for a later pass.** The cars behind the first run off the table toward the stall at the garage's
 pose: the steel car's frame stands in the stall's stone apron and the Cargo camera has the stall's wall filling its
-right side. The Bigger cradle's box floats with no wagon drawn under it. On the Engine tab the dashed frame and the
-seat ghost are two marks on one part. On Looks and Whistle the table's idle turn carries the frame behind the engine
-for part of each turn, and the Whistle shot (unchanged) never shows the chimney: sliding it forward to the cap was
-tried and looked at (`sel-whistle-three.png`: still the cab and the car) and taken out again; it wants its own row.
+right side. On the Engine tab the dashed frame and the seat ghost are two marks on one part. (The floating cradle
+box and the hidden Looks and Whistle frames are fixed below.)
 
 **Looked at (14 November, real time, `wagon-on`):** `sel-cargo-realtime.webm`, `sel-cargo-strip.png` and
 `sel-cargo-four.png` (the camera eases from the engine to the tail in about half a second; the kit car and the
@@ -492,6 +490,30 @@ boxes; Cars frames the bench); `sel-tabs-realtime.webm` and `sel-tabs-four.png` 
 barrel, a dashed box at the nose; Looks: the engine's front fills the shot and the roof's frame is behind it; Whistle:
 the cab fills the shot). After an install (`noTry-install-strip.png`) the fitted barrel wears the whole frame.
 Not seen: a phone-width frame, reduced motion, a second player, the steel car owned (its ghost).
+
+**After the review (14 November; one P2, no P1).**
+
+- **Teardown (the P2).** The ghost car hung under the train's group, which the owner never traversed (`owner.add(root)`
+  runs while the root is empty), so its geometry and its private material outlived the view. The frames and the ghost
+  car are now `garage-selection.ts`, which shares one deck and one wheel geometry and disposes both and the material
+  in the owner's cleanup; the two gold frames were already the owner's (`createGhostOutlines` adds them through it).
+  `test/garage-selection.test.ts` steps the selection through the tabs against the real `owned-view.ts`, disposes,
+  and finds every geometry, the material and both instanced frames disposed and the ghost off the train.
+- **The same fault, older and not fixed here:** everything else the garage hangs under that root after it was added
+  (the copy's wheels, deck, ghost boiler, jib, stand, crew, bolts, and the private materials `iron`, `brass`,
+  `ghostMat`, `flashMat`, the wheel and crew paints) is unregistered in the same way. One `owner.add(root)` at the
+  end of `createGarageView` would register the geometry; it changes which geometry the copy draws (the owner's
+  clones), so it wants its own look and is left for a follow-up.
+- **Heights.** The frames, the ghost car and the camera rows are all in the train's own frame, which stands at the
+  deck's rail height (`geo.y`); none reads `geo.ground`, which the post, stand, jib and crew use. When the yard tidy
+  passes the terrain's height as the ground, they stay on the rails with the copy. A ghost car beyond the deck's rim
+  rides at rail height, so it will stand 0.3 m higher over the lowered grass than it does today.
+- **The Bigger cradle** stands over a ghost of the footing wagon once the wagon has coupled.
+- **Looks and Whistle hold the table still** (`turns: false`), and the Whistle shot is a new row on the chimney's cap.
+  Looked at (`sel-fix-four.png`, real time): the cradle's dashed box on the pale wagon; Looks side on, the dashed roof
+  frame over the first car, clear of the engine; Whistle on the chimney from the front quarter, the frame round its
+  cap, whole for Toot and dashed for Two-tone. Wrong in it: the Whistle frame's box is larger than the cap and reads
+  as a cage round the chimney's top; in Looks the stall's doorway stands behind the roof's frame.
 
 ## 6. Steps
 

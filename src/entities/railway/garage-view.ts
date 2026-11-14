@@ -16,7 +16,7 @@ import { clank, thump, chuff, whistle, cordPull } from '../../render/machine-sfx
 import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
-import { createGhostOutlines } from '../../render/ghost-outline.ts';
+import { createGarageSelection, type Focus } from './garage-selection.ts';
 import {
   BOILERS,
   MOMENT,
@@ -72,14 +72,14 @@ const CAMS: Record<CatId, { pos: [number, number, number]; at: [number, number, 
   engine: { pos: [7.2, 2.7, 8.0], at: [-0.4, 1.1, 0.4], turns: true },
   cars: { pos: [3.6, 2.3, -5.6], at: [0, 1.0, -1.4], turns: false },
   cargo: { pos: [4.2, 2.8, -7.0], at: [0, 0.9, -2.4], turns: false },
-  looks: { pos: [8.4, 2.2, 1.0], at: [0, 1.2, 0.2], turns: true },
-  whistle: { pos: [2.6, 2.8, 3.6], at: [0, 2.0, 1.4], turns: true },
+  // Looks and Whistle hold the table still: turning, it carried the chosen part's frame behind the engine. The
+  // Whistle shot looks at the chimney's cap, where the whistle's steam leaves (it was close on the cab).
+  looks: { pos: [8.4, 2.2, 1.0], at: [0, 1.2, 0.2], turns: false },
+  whistle: { pos: [3.6, 3.9, 9.4], at: [0, 2.9, 5.6], turns: false },
 };
 
 /** The camera eases to a newly chosen category or part at this rate (1/s: most of the way in a third of a second). */
 const CAM_EASE = 7;
-/** A newly chosen part's frame settles onto it over this long (s), from this much oversize. */
-const SETTLE = { s: 0.28, over: 0.14, drop: 0.35 } as const;
 
 /** A phone held upright: the panel takes the top of the screen and the rail and parts the bottom, leaving a band in
  * the middle a third of the screen high, and the view is narrow. Each shot has its own portrait row: further back,
@@ -90,7 +90,7 @@ const PORTRAIT: Partial<Record<CatId, (typeof CAMS)[CatId]>> = {
   engine: { pos: [13.2, 4.2, 11.2], at: [0, 2.0, 4.4], turns: true },
   cars: { pos: [11.3, 3.8, 6.4], at: [0, 1.5, -0.2], turns: false },
   cargo: { pos: [11.3, 3.8, 5.0], at: [0, 1.3, -1.6], turns: false },
-  looks: { pos: [16, 5, 8.1], at: [0, 1.9, 2.3], turns: true },
+  looks: { pos: [16, 5, 8.1], at: [0, 1.9, 2.3], turns: false },
 };
 const PORTRAIT_BACK = 1.8;
 const portrait = () => typeof innerHeight === 'number' && innerHeight > innerWidth * 1.15;
@@ -219,31 +219,11 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   // when the room has it; the game's dashed "a part goes here" when it does not), the camera easing to it, and a car
   // the room owns that the copy does not carry drawn as a ghost where it rides in the train. No button and no rule:
   // nothing is tried on, and nothing on a real train changes until an install. Local: nobody else sees a selection.
-  const frameHave = createGhostOutlines(owner, 12, 40, 0, 0.045);
-  const frameGoes = createGhostOutlines(owner, 320);
-  const carGhostMat = new THREE.MeshStandardNodeMaterial({
-    color: '#e6dcc0',
-    emissive: '#b9a878',
-    emissiveIntensity: 0.5,
-    roughness: 0.6,
-    transparent: true,
-    opacity: 0.45,
-    depthWrite: false,
-  });
-  const carGhost = new THREE.Group();
-  const carGhostDeck = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.2, 3.2), carGhostMat);
-  carGhost.add(carGhostDeck);
-  for (const sx of [-0.8, 0.8])
-    for (const sz of [-1.1, 1.1]) {
-      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.12, 16).rotateZ(Math.PI / 2), carGhostMat);
-      w.position.set(sx, 0.37, sz);
-      carGhost.add(w);
-    }
-  carGhost.visible = false;
-  train.add(carGhost);
-  /** Where a part is, or goes, in the train's frame (the first car's centre at z 0, y from the rail): the box its
-   * frame is drawn round. `car`: it is a whole car, with its deck this high. */
-  type Focus = { c: [number, number, number]; s: [number, number, number]; car?: number };
+  // The frames and the ghost car are ./garage-selection.ts's, which owns their teardown. Every place below is in the
+  // train's own frame, so it stands on the deck's rails (`geo.y`) wherever the ground around the table is.
+  const selection = createGarageSelection(owner, train);
+  /** Where a part is, or goes, in the train's frame, with the ghost car to draw for it: a car the room owns that the
+   * copy does not carry, and the wagon under the cradle's place once the wagon has coupled. */
   function focusOf(p: PartId): Focus {
     const b = ENGINE_BOILER,
       at = TRAIN_OFFSETS[0]!,
@@ -252,7 +232,11 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       c: [0, b.y, at + (b.zBack + b.zFront + ahead) / 2],
       s: [b.r * 2 + 0.25, b.r * 2 + 0.25, b.zFront + ahead - b.zBack + 0.2],
     });
-    const car = (z: number, top: number): Focus => ({ c: [0, (top + 0.5) / 2, z], s: [2.3, top + 0.5, 3.3], car: top });
+    const car = (z: number, top: number, owned: boolean): Focus => ({
+      c: [0, (top + 0.5) / 2, z],
+      s: [2.3, top + 0.5, 3.3],
+      ...(owned ? { ghost: { z, top } } : {}),
+    });
     switch (p) {
       case 'boiler':
         return barrel(long);
@@ -265,13 +249,17 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       case 'roof':
         return { c: [0, (TRAILER.top + 2.8) / 2, 0], s: [2.6, 2.8 - TRAILER.top, 3.4] };
       case 'kitcar':
-        return car(TRAIN_OFFSETS[2]!, TRAILER.top);
+        return car(TRAIN_OFFSETS[2]!, TRAILER.top, true);
       case 'wagon':
-        return car(TRAIN_OFFSETS[3]!, WAGON_CAR.top);
+        return car(TRAIN_OFFSETS[3]!, WAGON_CAR.top, facts.wagonCoupled);
       case 'steelcar':
-        return car(steelCarOffset(facts.wagonCoupled), STEEL_CAR.top);
+        return car(steelCarOffset(facts.wagonCoupled), STEEL_CAR.top, facts.longFitted);
       case 'cradle':
-        return { c: [0, WAGON_CAR.top + 0.55, TRAIN_OFFSETS[3]!], s: [2.0, 1.1, 2.9] };
+        return {
+          c: [0, WAGON_CAR.top + 0.55, TRAIN_OFFSETS[3]!],
+          s: [2.0, 1.1, 2.9],
+          ...(facts.wagonCoupled ? { ghost: { z: TRAIN_OFFSETS[3]!, top: WAGON_CAR.top } } : {}),
+        };
       case 'toot':
       case 'two':
         return { c: [0, b.chimney.y + (facts.longFitted ? 0.17 : 0), at + b.chimney.z + long], s: [0.7, 0.7, 0.7] };
@@ -420,9 +408,6 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     mine = false,
     brief = false,
     restored = false,
-    // The chosen part's frame: what it was last drawn for, and 0..1 of its settle.
-    selKey = '',
-    selT = 1,
     // The camera's ease: the next frame snaps (the garage just opened), and when it last ran.
     camSnap = true,
     camClock = 0;
@@ -1022,39 +1007,20 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     showSelection(dt);
   }
 
-  const selAt = new THREE.Matrix4();
   /** The chosen part's frame and, for a car the copy does not carry, its ghost. Only while the garage is open and
    * nothing is going on: a hold or a moment has the picture to itself. */
   function showSelection(dt: number) {
-    frameHave.begin();
-    frameGoes.begin();
-    carGhost.visible = false;
     const standing =
       open && phase === 'idle' ? partsOf(facts).find((p) => p.id === sel && p.cat === cat)?.standing : null;
     // A replaced part is not on the train and has no place to go.
-    if (!standing || standing === 'replaced') selKey = '';
-    else {
-      const key = `${cat}/${sel}`;
-      if (key !== selKey) {
-        selKey = key;
-        selT = reducedMotion ? 1 : 0;
-      }
-      selT = Math.min(1, selT + dt / SETTLE.s);
-      const f = focusOf(sel),
-        owned = standing === 'installed' || standing === 'free',
-        settle = 1 - backOut(selT),
-        over = 1 + SETTLE.over * settle;
-      train.updateWorldMatrix(true, false);
-      selAt.makeTranslation(f.c[0], f.c[1], f.c[2]).premultiply(train.matrixWorld);
-      (owned ? frameHave : frameGoes).outline(selAt, f.s[0] * over, f.s[1] * over, f.s[2] * over);
-      if (owned && f.car !== undefined) {
-        carGhost.visible = true;
-        carGhost.position.set(0, settle * SETTLE.drop, f.c[2]);
-        carGhostDeck.position.y = f.car - 0.1;
-      }
-    }
-    frameHave.commit();
-    frameGoes.commit();
+    const shown = standing && standing !== 'replaced';
+    selection.show(
+      dt,
+      shown ? `${cat}/${sel}` : null,
+      shown ? focusOf(sel) : null,
+      standing === 'installed' || standing === 'free',
+      reducedMotion,
+    );
   }
 
   function close() {
@@ -1177,7 +1143,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       copy: { shown, yaw, restPose, side, solid: solids.filter((s) => s.body).length, long: longOn() },
       partOnStand: partGroup.visible && phase === 'idle',
       /** What the chosen part shows: its frame (whole: the room has it; dashed: it goes here) and a ghost car. */
-      selection: { key: selKey, whole: frameHave.count, dashed: frameGoes.count, ghostCar: carGhost.visible },
+      selection: selection.inspect(),
       /** Which boilers are drawn: the lifted part (and where), the copy's short set, its long set, the ghost. */
       drawn: {
         part: partGroup.visible ? partGroup.position.toArray().map((v) => Math.round(v * 100) / 100) : null,

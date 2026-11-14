@@ -941,8 +941,10 @@ through a hold and a moment. There is no button and nothing is tried on: no real
 Local: nobody else sees a selection. Per tab: Engine frames the barrel (Boiler, Longer boiler, with its seat ghost)
 or the nose (Plough and headlamp, dashed); Cars frames the bench on the first car; Cargo frames each car's place in
 the train, with the ghost for an owned one, and the Bigger cradle's place over the wagon's; Looks frames the roof's
-place over the first car (dashed); Whistle frames the chimney's cap, where the whistle's steam leaves, but the Whistle
-shot is close on the cab and does not show it (the shot needs its own camera row).
+place over the first car (dashed); Whistle frames the chimney's cap, where the whistle's steam leaves. The Bigger
+cradle's dashed box stands over a ghost of the footing wagon once the wagon has coupled. On Looks and Whistle the
+table holds still (it used to turn idly there, carrying the frame behind the engine), and the Whistle shot is its own
+camera row on the chimney (it was close on the cab).
 **The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
 steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
 for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go
