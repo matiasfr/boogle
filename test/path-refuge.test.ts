@@ -11,7 +11,14 @@ import { FORMATION, LINKS, STUB, lineAt, railY, upLat } from '../src/place/layou
 import { surfaceHeight } from '../src/place/terrain.ts';
 import { besideLine } from '../src/entities/railway/line-geometry.ts';
 import { STEEL_CAR, TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
-import { ENGINE_BUFFERS, deckAt, trainPlaces, type Deck, type Vehicle } from '../src/entities/railway/car-spacing.ts';
+import {
+  CAR_BUFFERS,
+  ENGINE_BUFFERS,
+  deckAt,
+  trainPlaces,
+  type Deck,
+  type Vehicle,
+} from '../src/entities/railway/car-spacing.ts';
 import { TRAIN_PHASE, trainAlong, trainArrives, type RailTrain } from '../src/sim/railway-train.ts';
 import {
   REFUGE_CLEAR,
@@ -149,8 +156,9 @@ const train = (dir: 1 | -1, depart: number) => {
 const made: Vehicle[] = TRAIN_CARS.slice(0, 3).map((spec, n) => ({
   d: TRAIN_OFFSETS[n]!,
   hx: spec.hx,
-  back: spec.hz + (n === 0 ? ENGINE_BUFFERS : 0),
+  back: spec.hz,
   front: spec.hz,
+  buffers: n === 0 ? ENGINE_BUFFERS : CAR_BUFFERS,
 }));
 const LO = TRAIN_OFFSETS[2]! - TRAIN_CARS[2]!.hz,
   HI = TRAIN_OFFSETS[0]! + TRAIN_CARS[0]!.hz;
