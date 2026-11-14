@@ -1315,6 +1315,7 @@ ids only, null when nothing is on). It replaced `railwayCosmetic` and `railwaySc
   it, the rest under dust sheets (and the two shapes that never come out of this run's boxes). A sheet comes off with a
   puff of cloth when a box's card is put away within 40 m. It is the display only: it has no prompts. You dress from Pause's
   You page (owner, 10 November; its four "Swap" prompts went). The stowaway's slot came with C2 (below); the finders' bay comes with F2.
+  The shelf and bay furnishing now load prefab records; ownership, reveal effects, gift order, and crystal/find pegs stay the same (prefab step 9 follow-up).
 
 Sync: Personal Local in the wardrobe store (`opened`, `dry`, `got`); eligibility is the server's accepted completion.
 No new presence key, op or `WORLD_NS` change. Measured at the bench's town pose: 233 draw calls against 231 before.

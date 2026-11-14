@@ -1,10 +1,13 @@
+import assert from 'node:assert/strict';
+import { merged } from '../src/render/part-geometry.ts';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 // Owner-requested old-code conversion goldens: no renderer, physics engine or network.
 import test from 'node:test';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { sourceModule, sourceFunction } from '../dev/level/source.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
-import { STOCK } from '../src/render/cosmetic-parts.ts';
+import { GIFTS, STOCK } from '../src/render/cosmetic-parts.ts';
 import { BOARDS, SHOP } from '../src/entities/town/town-lines.ts';
 import type { Part } from '../src/render/part-geometry.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
@@ -183,4 +186,146 @@ test('shop world bodies retain the old solid order, dimensions and room transfor
   }));
   prefabGolden(bodies, expected, 'shop-world');
   owner.dispose();
+});
+
+const fixture = 'test/fixtures/prefab-curio.json';
+test('curio frames, every covered/uncovered gift, pegs, footprints and bodies match old code', async () => {
+  const calls: unknown[] = [],
+    bodies: unknown[] = [],
+    feet: unknown[] = [],
+    effects: unknown[] = [];
+  const recordMerged = (parts: Part[], grow = 1) => {
+    calls.push(JSON.parse(JSON.stringify({ parts, grow })));
+    return merged(parts, grow);
+  };
+  const root = new THREE.Group();
+  const cleanups: (() => void)[] = [];
+  const owner = { add: (g: THREE.Object3D) => root.add(g), cleanup: (f: () => void) => cleanups.push(f) };
+  const owned = new Set<string>();
+  let changed: (e: { kind: string; id?: string }) => void = () => {};
+  const wardrobe = {
+    isOwned: (id: string) => owned.has(id),
+    onWardrobe: (fn: typeof changed) => {
+      changed = fn;
+      return () => {};
+    },
+  };
+  const H = (x: number, z: number) => 10 + x / 100 + z / 1000;
+  const SHELF = { x: 12, z: 3, y: 14, yaw: 0.7 };
+  const FINDERS_B = { x: -4, z: 9, yaw: -2.1 };
+  const toWorld = (x: number) => x + 800;
+  const bayBoxPoint = (k: number) => ({ x: k * 0.7 - 4, z: k * 0.3 + 9 });
+  const dependencies = [
+    { merged: recordMerged },
+    {
+      H,
+      addStatic: (shape: unknown, p: unknown, q: THREE.Quaternion) => {
+        bodies.push({ shape, position: p, rotation: q.toArray() });
+      },
+    },
+    { SHELF, toWorld },
+    { addFoot: (...args: unknown[]) => feet.push(args.slice(0, 5)) },
+    { FINDERS_B, bayBoxPoint },
+  ];
+  const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.ts').createOwnedView>(
+    'src/render/owned-view.ts',
+    'createOwnedView',
+    { THREE, owners: new WeakMap(), addBody() {}, removeBody() {} },
+  );
+  const { curioParts } = sourceModule<typeof import('../src/prefab/builders/curio-parts.ts')>(
+    fs.readFileSync('src/prefab/builders/curio-parts.ts', 'utf8'),
+    { GIFTS, registerBuilder() {} },
+  );
+  const builders = new Map<string, import('../src/prefab/builders.ts').Builder>(
+    names.builders.map((name) => [name, () => new THREE.Group()]),
+  );
+  builders.set('town.curio-parts', curioParts);
+  const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
+    fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
+    {
+      THREE,
+      artifact,
+      workshop,
+      gorge,
+      names,
+      builders,
+      ...validation,
+      ROOM_GROUP: 8,
+      staticBody(shape: unknown, p: THREE.Vector3, q: THREE.Quaternion) {
+        // q and -q encode the same physical orientation. Old yaw quaternions use positive w.
+        const rotation = q.toArray().map((v) => (q.w < 0 ? -v : v));
+        bodies.push({ shape, position: { x: p.x, y: p.y, z: p.z }, rotation });
+        return {};
+      },
+    },
+  );
+  const currentDependencies = [...dependencies, runtime];
+  const bindings: Record<string, unknown> = {
+    THREE,
+    createOwnedView,
+    artifact,
+    loadPrefabArtifact: validation.loadPrefabArtifact,
+    mergeGeometries,
+    GIFTS,
+    dependencies: currentDependencies,
+    me: { body: null },
+    emit: (e: unknown) => effects.push(e),
+    readableIntensity: () => 1,
+  };
+  // The adapter supplies old dynamic dependencies without loading the browser's terrain/physics setup.
+  const { createCurioShelf } = sourceModule<{
+    createCurioShelf: (...args: unknown[]) => Promise<{
+      inspect(): unknown;
+      shelfGroup: THREE.Group;
+      crystalPeg(k: number, n: number, out: THREE.Vector3): THREE.Vector3;
+      bayPeg(k: number, out: THREE.Vector3): THREE.Vector3;
+    }>;
+  }>(
+    fs
+      .readFileSync('src/entities/town/curio-shelf.ts', 'utf8')
+      .replace(/await Promise\.all\(\[[\s\S]*?\]\)/, 'dependencies'),
+    bindings,
+  );
+  const shelf = await createCurioShelf(owner, wardrobe);
+  const state = () => ({
+    inspect: shelf.inspect(),
+    meshes: shelf.shelfGroup.children
+      .filter((g): g is THREE.Mesh => g instanceof THREE.Mesh)
+      .map((g) => {
+        g.geometry.computeBoundingBox();
+        return {
+          visible: g.visible,
+          castShadow: g.castShadow,
+          receiveShadow: g.receiveShadow,
+          bounds: g.geometry.boundingBox?.isEmpty()
+            ? null
+            : { min: g.geometry.boundingBox?.min.toArray(), max: g.geometry.boundingBox?.max.toArray() },
+        };
+      }),
+  });
+  const states = [state()];
+  for (const g of GIFTS) {
+    owned.add(g.id);
+    changed({ kind: 'grant', id: g.id });
+    states.push(state());
+  }
+  const callCount = calls.length;
+  changed({ kind: 'wear' });
+  assert.equal(calls.length, callCount, 'wearing does not rebuild display geometry');
+  assert.equal(effects.length, 0, 'no player nearby: no reveal particles');
+  const value = JSON.parse(
+    JSON.stringify({
+      calls,
+      bodies,
+      feet,
+      states,
+      crystalPegs: [1, 3, 9].map((n) =>
+        Array.from({ length: n }, (_, k) => shelf.crystalPeg(k, n, new THREE.Vector3()).toArray()),
+      ),
+      bayPegs: Array.from({ length: 9 }, (_, k) => shelf.bayPeg(k, new THREE.Vector3()).toArray()),
+    }),
+  );
+  if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(value, null, 2) + '\n');
+  prefabGolden(value, JSON.parse(fs.readFileSync(fixture, 'utf8')), 'curio');
+  for (const cleanup of cleanups.reverse()) cleanup();
 });
