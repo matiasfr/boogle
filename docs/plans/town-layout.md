@@ -390,7 +390,7 @@ also split step 4 and ordered step 7; its build-order ruling is in
   build is the existing site animation (`place/sites.ts`) with a little-guy gang; a built plot is a room
   (`createRooms`) with a plain interior. Verify with that plan's checks, plus `npm run scenario` for two players
   seeing one plot built.
-- [ ] **7. Interiors draw by the door. After M8; before or with step 2** (the Round puts the museum's, the shop's and
+- [x] **7. Interiors draw by the door. After M8; before or with step 2** (the Round puts the museum's, the shop's and
   Pip's interiors inside the present 34 m of where everyone stands). Normal review. `rooms.ts`: `ROOM_CAM.drawWithin` measured from the door, with
   a smaller radius (about 18 m) unless you are inside. Verify: `npm run bench` at the `town` pose and at the clock,
   before and after; a look walking into Pip's house.
