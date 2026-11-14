@@ -64,6 +64,37 @@ All on one lawn wedge: the village's south slope down to the gorge path (the old
 
 Next if these land: crown tone (ramp by outward direction as vertex colour on the canopy meshes). Trees belong to the chop feature, so it is its own step.
 
+## What was built (14 November)
+
+Experiments 1 and 2, on the wedge, each off by default (owner call "Try things early"). Nothing was copied from the reference: the code is Boogle's own TSL, on the ground material now in `src/place/ground-material.ts`. Experiment 3 (air) was not built.
+
+**Flags.** `?meadow=tint`, `?meadow=flowers`, or both as a comma list: `?meadow=tint,flowers` (`?meadow=all` is the same). With no flag the ground's node graph is today's and nothing is added to the scene. Local view only: no sim, world, net or server change, nothing saved, no colliders, nothing to interact with.
+
+**One field under both** (`src/place/meadow-field.ts`, pure; `src/place/meadow.ts`). A 56 × 75 RGBA16F texture on the land's own 2 m grid over the wedge: the collider's height, "may something grow here", and two slow integer-hashed noises, `sun` (patches of 20 to 60 m) and `zone` (10 to 30 m). The tint and the planting both read it, so the ground's colour and what grows on it agree, which is the reference's main trick. "May grow" is 0 on rock (steep facets and the broad slope the material calls rock), below 3.4 m (the beach line), within 14 m of any levelled footing (pads, the Round, rail beds: `clearMask`, as for the trees, less the paths' own strips), inside the Round's ground, and within 6 m of every pad, device, secret and the lever (terrain-clean's design review; none stands on this wedge today). Paths are left to the path field, which is finer.
+
+**Tint** (`meadowLawn`). Inside the wedge, soft over its outer 14 m, the lawn's colour becomes a blend of four greens the game already has: the land's two grass vertex colours (`#568740`, `#6c9a42`) and the lawn's own warm and dry tints of the lighter one. Lush to fresh to sunny along `sun`, pale where `zone` peaks, the existing close-up mottle kept. One texture tap a pixel; no geometry, no draw. Rock, sand and the path layer are mixed over the lawn afterwards, as before.
+
+**Flowers and tufts** (`src/place/meadow-flowers.ts`, loaded only with the flag). Two instanced draws, flat shaded, no alpha, no shadow casting (they receive shadow), culled by the wedge's real bounds. Nothing is planted on the CPU: each instance has a seed in a 72 m tile that wraps round a point 14 m ahead of the camera, and the vertex stage reads the field and the path field to place it on the collider's own triangles, size it, pick its kind and decide whether it exists. A seed's world position is the seed plus whole tiles, so two players see the same meadow; a touch device draws the first half of the same shuffled list. Each instance shrinks to nothing at its own distance (over its last 7 m; flowers are gone between 18 and 36 m from that point, tufts between 14 and 36 m), so the meadow thins out instead of ending on a line, and nothing pops when the tile wraps. A flower is 12 triangles (three-sided stem, six-sided head with a rising and falling rim, three-sided heart), four kinds (white, yellow, pink, blue) each keeping to a band of `zone`, in drifts where `sun` is high. A tuft is 10 triangles (five chunky folded blades) in the ground's own green, thicker where the ground is lush. Both start 0.45 m off a tread's edge and are full size by 1.3 m, and lean a little on a slow gust. No per-frame CPU work.
+
+**Numbers.** `npm run perf -- --render --view wedge` (camera 6 m up beside the wedge's path, world (921, 24, 90) looking at (927, 16, 118)), renderer counters for one frame, shadow pass included, on an Apple M1 Max with load averages of 17 to 26 from other agents' runs. Counts are exact; no timing was taken, and timing under that load would not be evidence.
+
+| | Draw calls | Triangles | Shader stages |
+| --- | --- | --- | --- |
+| Off | 153 | 338,261 | 202 |
+| `?meadow=tint` | 153 | 338,261 | 202 |
+| `?meadow=flowers` | 155 | 566,261 | 210 |
+
+The flowers add two draws and 228,000 submitted triangles (9,000 seeds of 12 and 12,000 of 10), more than twice the note's estimate; most are collapsed to a point by the vertex stage and cover no pixels. Neither draw is in the shadow pass. With no flag, lawn-only crops of four frozen stills match the build before the change pixel for pixel but one pixel in 740,400 (whole frames differ between any two loads: the sea, the clouds and Buddy's colour).
+
+**What it looks like** (stills `.look/shots/meadow-t1/`, `c<camera>-v<variant>.png`; walk `.look/meadow-walk-realtime.webm`). From a player's eye and from play distance the flowers read as a meadow in Boogle's own style: white, yellow and pink drifts beside the path, chunky heads about as wide as Buddy's head, tufts that sit in the lawn's green. None stands on the tread. From above the tint gives soft lighter and darker patches and the lawn stops being one green; up close it is subtle. Weak points: from the village edge the planting is a thin band 30 m out, because nothing grows on the village's levelled ground and each instance is gone by 36 m; from above and from the wide village view the flowers are specks or absent and only the tint shows; the tint's patch borders are slightly angular (a 2 m field, blended linearly). On the walk, sampled at 10 frames a second, drifts come toward the camera steadily and nothing appears or vanishes at full size. Not judged: the sway at full frame rate, and any phone.
+
+**What I would change.**
+
+- Tint: decide whether it should cover all of Home's lawn (the field would become the land's whole grid, about 0.8 MB), and darken the lawn within a metre of tree feet, which was not done.
+- Flowers: fewer triangles for the same picture. Most seeds collapse to nothing (outside a drift, past their fade, off the wedge) but are still submitted; a tighter tile or two rings of density would cut that. On a phone the count is halved, not measured.
+- Tufts carry the eye-level view but vanish by 30 m, as the reference's blades do; from the village and from above the tint does the work alone. That matches the note's verdict and argues for shipping the tint first.
+- One colour function already feeds ground and tufts; trees and bushes could take the same `sun` noise for the crown-tone step.
+
 ## Licence and credits
 
 - **Code: MIT**, "Copyright (c) 2026 Patch" (`LICENSE`). Copying, changing and shipping it, commercially too, is allowed provided the copyright and permission notice travel with any copy or substantial portion. If Boogle ever ported a piece, that notice would go in Boogle's third-party notices. This note copies nothing.

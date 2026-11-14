@@ -56,6 +56,8 @@ export const VIEWS: Record<string, Pose> = {
   'far-head': { cam: [1452, 14, -170], look: [1650, 0, -190] },
   summit: { cam: [1015, 110, -6], look: [850, 0, 60] },
   telescope: { cam: [870, 72, 65], look: [1080, 0, -500], fov: 24 },
+  // Home's lawn wedge south of the village from play distance (dev/ground/meadow-shots.ts).
+  wedge: { cam: [921, 24, 90], look: [927, 16, 118], fov: 55 },
 };
 
 export const freePort = () =>
