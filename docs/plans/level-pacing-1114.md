@@ -1,9 +1,9 @@
-> **Status: proposed (2026-11-14). Design only; nothing built.** Three notes from the owner's 14 November play session,
+> **Status: proposed (2026-11-14). Design only; nothing built.** Four notes from the owner's 14 November play session,
 > each with a diagnosis from the code and his session data, three options and one recommendation. Base: `origin/main`
-> at `643548676`. Steps A1, B1, C1 and C2 are view-only and need no bump; step A2 moves a sim constant and takes the
+> at `643548676`. Steps A1, B1, C1, C2 and D1 are view-only and need no bump; step A2 moves a sim constant and takes the
 > next free `WORLD_NS` (v45).
 
-# Level pacing, 14 November: the great tree, the pinnacle and Q5's rails
+# Level pacing, 14 November: the great tree, the pinnacle, Q5's rails and the station boxes
 
 ## Goal
 
@@ -31,6 +31,8 @@ glider are already in the live game.
    brings 16. So they're expecting I have to go back and get them, or not. Why not? I think we also should think about
    what the wagon is like. Is that supposed to be like a preview of what the train can offer, as far as the design
    goes?" ("Far Ahead" is Far Head; the station is line 2's Q5; "the wagon" is the depot cart.)
+4. "I wonder if the station at deposit boxes should either go away once that area is built, or they should act as
+   shared resource drop boxes for when I have extra resources I want to put back into the system."
 
 ## Evidence
 
@@ -202,6 +204,47 @@ with the bills (16 rails at Q4, 24 at Q5, now readable on the tag), and riding s
 added to the cart and no schedule. The hand-over is already in the rules: once trains run the cart stops serving and
 Q6's kit arrives by train. Whether the cart can be stood on today was not checked.
 
+## Problem 4: the station boxes once their build is done
+
+### What he means, and what each does today
+
+| Deposit point | While its bill is open | Once its stretch is funded and laid |
+| --- | --- | --- |
+| The **frame** beside the track, one per station (T1 to T3, Q1 to Q7; `src/entities/railway/stations.ts`): four amber posts, a board, a roller feeder | Takes logs, stone, rails or the beam; a sign with have/need | **Stays standing as an empty prop.** Its sign goes off "when it's not its turn or it's done" (`stations.ts:344`); it has no prompt and takes nothing. I found no code that removes or changes a finished frame. This is the box he is looking at |
+| The **depot rack** and the **rail shelf** by the frame (Q2 on; `line2-view.ts:298`, `shelf-view.ts:116`) | The cart fills them; Pick up | There is one of each and it moves on to the next station, so none is left behind. Rails left on the shelf or the cart go back to the forge rack when the stretch funds (`src/sim/railway-sys-line2.ts:173-180`) |
+| The **forge's frame** | 24, then 32 logs | The forge stands in its place |
+
+**Extra logs or rails on your back today.** They go into the next open bill, which is where most surplus ends up. With
+no open bill for them: tap Drop for one piece, hold Drop 0.4 s for the whole back; piles of up to eight lie where you
+stood, persist, and anyone can pick them up; a pile left 21 minutes with nobody within 12 m is recovered (rails to the
+forge rack). So nothing is ever stuck on a back. What does not exist: a place that takes spares as stock. No op puts
+rails back on the forge rack or logs on a rack by hand.
+
+**Is surplus real?** Yes, but it is small and it comes from one cause. The depot's Pick up is capped by the bill (today:
+16 + 7 + 1 logs for Q2's 24, 12 + 4 for Q3's 16), so the cart never makes spares. Spares come from trees and from the
+forge rack, which fill a back of 16 whatever the bill wants, and one back holds every material: left-over logs block
+the rails you need next, so you drop them. He pressed Drop 7 times in today's 7 min 39 s session and none in the camp
+session (a back of 8 against bills of 24, 32 and 40). He raised the same thing on 10 November ("I was carrying extra
+resources and had to drop them in place").
+
+### Options
+
+| | What | Kind | Cost |
+| --- | --- | --- | --- |
+| **(a) A finished frame packs up** | When its stretch is laid the frame folds away in about a second (posts down, board off, a puff) and leaves a small tidy stack of spare sleepers beside the track as dressing; at a halt site the halt's own build replaces it. A reload shows it already gone | Default | View tier, Local, from accepted completions; the frame's colliders go with it. No bump |
+| (b) Shared drop boxes where the stations are | **Already decided, not built:** the owner's 10 November answers put a **yard at each halt**: "take it where it lies; trains later carry it to where their line needs it", never full, appearing "when the track reaches the halt site" ([rail](../decisions-rail.md#d-2026-11-10-open-calls-answered-yards-at-halts); [station-deposit](../brainstorms/station-deposit.md) build 1). "The system" there is the yard's own visible stock: anyone adds or takes, and build 2 lets trains draw from it. No wallet payout, so until build 2 a give-back is tidying that a friend can use | Decided | Sim state, server-owned like the racks; one `WORLD_NS` bump (station-deposit build 1) |
+| (c) One drop-off, station boxes gone | The Village yard only (station-deposit turns the recovery rack at world (905, 1) into it), with (a) for every frame | New (narrows a decided answer) | The same sim state for one yard; a bump. Spares made at Far Head are 546 m from it |
+
+### Recommendation: (a) now; (b) is the owner's own answer and should be built as decided, not parked
+
+The orchestrator's lean was (a) now and (b)/(c) parked unless surplus is common. Tested: (a) holds, and "never stuck"
+already holds through Drop. But (b) is not a new idea to park: the owner decided it four days ago and has now asked for
+it a second time in different words. It is still bespoke shared storage, so it keeps its place in the queue as
+station-deposit build 1 with its own bump; this plan adds nothing to it except the reading that a finished frame is not
+the yard (yards stand at halt sites, of which there are fewer than frames). (c) saves little and puts the box far from
+where spares are made. Co-op: with (a) alone, handing a friend spare rails stays a pile on the ground, which works
+today; the yard is what makes it read.
+
 ## Steps
 
 Each is one sitting and leaves `node dev/ship-check.ts` green. Run `npm run inflight` first: the Round's blockout
@@ -231,6 +274,12 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. Run `npm run infl
 - [ ] **C1. The cart tag's numbers. View tier, no bump.** `src/entities/railway/cart-view.ts:335`: the second line
   shows the load aboard or owed for the served stretch instead of `More coming`. Proof look: `--rail-seed q5-arriving`
   at Q5's rack.
+- [ ] **D1. Finished frames pack up. View tier, no bump.** `src/entities/railway/stations.ts` and its callers
+  (`line2-view.ts`, line 1's view): on the laid edge of a stretch its frame plays a one-second fold and is removed
+  with its colliders (`stationColliders`), leaving a three-sleeper stack as dressing; a snapshot with the stretch
+  already laid builds no frame. The forge's frame and Q7's own frame on the pier are left alone. Test: no frame
+  collider remains for a laid stretch. Proof look: `--rail-seed q3-done` along line 2 from Q1 to Q3, and a short
+  video of the edge on `q3-stocked`. Check the bot's route does not path through a removed collider's old position.
 - [ ] **C2. Docs only.** Correct `docs/game-design/place.md:47`; note at `src/place/layout.ts:61` is a code comment and
   is left for whoever next touches Place's constants.
 
@@ -249,6 +298,8 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. Run `npm run infl
 | 9 | Q5's rails come in one shipment of 24 | Decided in practice | Open 9 November call, built; unchanged here |
 | 10 | The rack tag's second line shows the load, not "More coming" | Default | Draft UI copy |
 | 11 | The cart previews freight only: no ride, no schedule | Default | 2 November "show and bench are cut" in spirit; riding is the train's reveal |
+| 12 | A finished frame packs up in about a second and leaves a small sleeper stack | Default | Recommended; view-only |
+| 13 | Spares go to a yard at each halt, taken where they lie | Decided, not built | [rail, 10 November](../decisions-rail.md#d-2026-11-10-open-calls-answered-yards-at-halts); station-deposit build 1 |
 
 **Findings.**
 
@@ -261,9 +312,11 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. Run `npm run infl
 4. Co-op: A1, B1 and C1 are Local views over accepted state, so each player sees the same blocked prompt, band count
    and tag from their own snapshot; a late joiner gets the current band count with no flare. A2 changes nothing about
    Help carry except a shorter haul. Solo is unchanged in every step.
-5. Reach is proved only for today's layout. A2's reach (the prow is walkable from Station 3, the beam's ground covers
+5. Problem 4: finished frames are dead props on the main line (nine by the time the pier is laid). Removing them is not a new
+   mechanic; the shared drop box is one, and it is already decided.
+6. Reach is proved only for today's layout. A2's reach (the prow is walkable from Station 3, the beam's ground covers
    it) is a claim until its step's level-check and bot leg run.
-6. Suspect copy: none of these lines is The Boogler's. Four draft UI strings are listed in calls 4, 7 and 10.
+7. Suspect copy: none of these lines is The Boogler's. Four draft UI strings are listed in calls 4, 7 and 10.
 
 **Owner questions.**
 
@@ -275,3 +328,6 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. Run `npm run infl
    feels flat at the top; moving it undoes your 3 and 8 November calls.
 3. Should the cart ever be ridden, as a taste of trains? **Recommended: no**; it previews freight, and the first ride
    stays the train's.
+4. Your 10 November answer already gives spares a home: a yard at each halt, shared, taken where it lies. Is that
+   still the drop box you mean, with finished frames simply packing away? **Recommended: yes**, and build the yards as
+   decided (one bump) rather than turning every frame into a box.
