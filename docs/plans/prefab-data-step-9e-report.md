@@ -7,6 +7,10 @@ Rebased cleanly onto local `origin/main` `20004bc6eaabf9ab45bce19d782d343ed0c7c0
 main's lead-tab deletion and v44 are inherited, with no edits to those systems. The earlier 9d branch is preserved.
 No fetch, push or ship; `inflight` was omitted because it fetches.
 
+**CI correction:** the timing test described below passed locally but failed in shallow CI without origin/main.
+[Step 9f](prefab-data-step-9f-report.md) replaces it with deterministic import-count and content-budget checks.
+The measurements below remain historical observations only.
+
 This completes both accepted findings from the independent review. The old-code golden proof, house scope,
 copy inventory and debt reduction in [9d](prefab-data-step-9d-report.md) remain valid. This report supersedes
 its catalogue counts, startup cost and final-check/visual evidence for the revised build.

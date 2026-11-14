@@ -525,9 +525,22 @@ deletion/v44. One runtime module now loads and validates the compiled catalogue 
 per-placement validation remains unchanged, including rejection of a record mutated after load. Three shared
 shell prefabs replace 367 repeated definitions, with phase/index in placements. Placement IDs/order and all
 old runtime goldens remain exact within the existing numeric tolerance; no fixture regeneration or debt growth.
-The catalogue drops 545 to 181 records, and total canonical artifacts 499,127 to 312,535 bytes. Final headless
-validation is 2.408 ms once, against 46.857 ms for the prior seven-loader startup path. The timings exclude
-parsing/construction/rendering. Prefab tests pass 220/220 normal and perturbed; full check has 1,915 passes and
+The catalogue drops 545 to 181 records, and total canonical artifacts 499,127 to 312,535 bytes. Historical headless
+measurements remain in the 9e report; they are not CI timing assertions. Prefab tests pass 220/220 normal and perturbed; full check has 1,915 passes and
 one existing TODO; ship-check has 454 passing assertions. Fresh opened house/museum stills align; museum Talk/
 doorway actions and the T1 bot pass. [Proof, timing samples, limits, checks and fresh manifests](prefab-data-step-9e-report.md).
 No push or ship; not tested on a device.
+
+
+### Step 9 CI correction: deterministic startup coverage
+
+The shallow-CI failure of the 9e startup timing test is corrected on codex/prefab-data-step-9f. It no longer
+uses Git refs or a clock. A fresh isolated ESM import spy evaluates all nine real consumer modules and asserts
+one catalogue validation, with zero direct revalidations. Deterministic ceilings of 200 records and 350,000
+compiled bytes allow modest room above the current 181 / 312,535 and reject the former duplication pattern.
+The existing owner import chain avoids adding constructor consumers; no scanner/debt allowance grows.
+Runtime code, authored artifacts, copy, old-code goldens and per-placement validation remain unchanged.
+Prefab tests pass 221/221 normally and perturbed; full check has 1,916 passes and one existing TODO; ship-check
+has 455 passing assertions. Fresh opened house/museum stills align, museum actions pass, and the T1 bot passes.
+[Deterministic test design, audit scope, checks, stamp, no-Git proof and fresh manifests](prefab-data-step-9f-report.md).
+No push or ship; remote CI not rerun; not tested on a device.
