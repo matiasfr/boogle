@@ -311,10 +311,13 @@ export function createRailwayRequests({
           : null;
       if (commands && !RAIL_ACTIONS.has(e.op as string)) {
         try {
-          const result = facts ? commands.ops.run(pid, e, commands.context(from, actor(facts))) : null;
+          const result = facts
+            ? commands.ops.run(pid, e, commands.context(from, actor(facts)))
+            : commands.ops.refuse(String(e.op));
           const accepted = result?.status === 'accepted';
           api.record(pid, clean, accepted);
           complete(pid, current, request, !accepted, accepted ? 1 : 0, result?.durable, result?.reason);
+          if (accepted && result.event) replication.emit(result.event, from);
         } catch {
           storageFailure(from, epoch, request); // apply may have mutated state; never acknowledge it
         }
