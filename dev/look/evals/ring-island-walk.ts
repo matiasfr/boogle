@@ -8,6 +8,8 @@
 //     --until "window.__ringIslandDone ?? (import('/dev/look/evals/ring-island-walk.ts'), false)"
 // The reload half runs only through --until (look re-imports this file in the reloaded page). Stills alone:
 //   ringview=halt   the island halt's west platform toward the shard and the ring
+//   ringview=step   an eye stepping off a standing train's tail door onto the west platform, toward the footbridge
+//   ringview=ramp   an eye at the top of the west platform's ramp, where the summit path starts, toward the footbridge
 //   ringview=bridge the summit path's footbridge from the halt-side rim, along the deck
 //   ringview=deck   standing on the deck 5 m from the halt-side end, looking along it
 //   ringview=cut    the bridge from track level in the cutting (use --rail-seed stack-laid-1 for the laid line)
@@ -63,6 +65,9 @@ const at = (u: number, lat: number) => {
 const CENTRE = { x: 1330, z: -1120 };
 const VIEWS = {
   halt: { cam: { ...at(432, -8.6), y: 8.9 + 2.2 }, look: { x: 1338, y: 70, z: -1120 } },
+  // Arrival eyes 1.7 m over the west platform (8.9 m), looking at the footbridge's middle.
+  step: { cam: { ...at(438, -6.6), y: 10.6 }, look: { x: 1392.9, y: 15.8, z: -884.3 } },
+  ramp: { cam: { ...at(464, -9.1), y: 10.6 }, look: { x: 1392.9, y: 15.8, z: -884.3 } },
   pier: { cam: { ...at(-2, 6), y: 30 }, look: { ...at(440, -20), y: 3 } },
   bridge: { cam: { x: 1374, y: 17.5, z: -872 }, look: { x: 1404.7, y: 17, z: -892 } },
   cut: { cam: { x: 1411, y: 10.6, z: -852 }, look: { x: 1392.9, y: 14, z: -884.3 } },
@@ -183,7 +188,7 @@ if (view || reloaded || first) {
     say(
       `${view} ${JSON.stringify({ toHinge: f2(toHinge()), at: where(), nearMounted: ring.ringIslandNear.mounted, far })}`,
     );
-  } else if (view === 'halt' || view === 'pier') {
+  } else if (view === 'halt' || view === 'step' || view === 'ramp' || view === 'pier') {
     const v = VIEWS[view];
     // At the pier you stand on the halt's deck behind the camera (crossing-done's landing), out of the frame.
     const h = ring.ringUnstuckHome;

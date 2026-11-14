@@ -4,7 +4,15 @@ import assert from 'node:assert/strict';
 import { FAR, ORIGIN } from '../src/place/layout.ts';
 import { RING_CONES } from '../src/proto/greybox/ring-cones.ts';
 import { createIslandGround } from '../src/entities/ring-island/ground.ts';
-import { summitBridge, summitPath, summitPathFacts, summitPathFoot } from '../src/entities/ring-island/path.ts';
+import {
+  summitBridge,
+  summitPath,
+  summitPathFacts,
+  summitPathFoot,
+  summitRimRockShape,
+  summitRimRocks,
+} from '../src/entities/ring-island/path.ts';
+import { DodecahedronGeometry } from 'three';
 import { MOVER } from '../dev/level/mover.ts';
 
 const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
@@ -60,4 +68,72 @@ test('the path crosses the cutting on the bridge leg and is about 330 m', () => 
   assert.deepEqual(way[bridgeLeg], [a.x, a.z]);
   assert.deepEqual(way[bridgeLeg + 1], [b.x, b.z]);
   assert.ok(Math.abs(facts.length - 330) < 2, `${facts.length} m`);
+});
+
+test('the rim rocks stand on uncut ground behind the summit-side rim, off the path and the bridge', () => {
+  const rocks = summitRimRocks(g, centre),
+    { a, b } = summitBridge(g),
+    { way, bridgeLeg } = summitPath(g, centre);
+  assert.ok(rocks.length >= 12 && rocks.length <= 24, `${rocks.length} rocks`);
+  for (const r of rocks) {
+    // Nothing cut within a metre of a rock's centre (the largest is 0.75 m from centre to corner): none overhangs.
+    for (let k = 0; k < 16; k++) {
+      const x = r.x + Math.cos((k * Math.PI) / 8),
+        z = r.z + Math.sin((k * Math.PI) / 8);
+      assert.ok(g.cone(x, z) - g.islandH(x, z) < 0.05, `cut ground by the rock at ${r.x}, ${r.z}`);
+    }
+    assert.ok(r.h <= 0.85 && r.w <= 1.2, 'low enough to hop (the jump is 1.6 m)');
+    // Clear of the deck's line by 4 m, so the bridge's approach stays open.
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      off = Math.abs((r.x - a.x) * dz - (r.z - a.z) * dx) / Math.hypot(dx, dz);
+    assert.ok(off > 4, `${off} m from the deck's axis`);
+    for (let i = 0; i < way.length - 1; i++) {
+      if (i === bridgeLeg) continue;
+      const [ax, az] = way[i]!,
+        [bx, bz] = way[i + 1]!,
+        ex = bx - ax,
+        ez = bz - az,
+        t = Math.max(0, Math.min(1, ((r.x - ax) * ex + (r.z - az) * ez) / (ex * ex + ez * ez)));
+      assert.ok(Math.hypot(r.x - ax - ex * t, r.z - az - ez * t) >= 3, 'three metres off the path');
+    }
+  }
+});
+
+test("every corner of a rim rock's collider is inside the drawn stone", () => {
+  for (const r of summitRimRocks(g, centre)) {
+    const { radius, drawn, box } = summitRimRockShape(r);
+    // The drawn stone's faces, scaled as the view scales them; both shapes share a centre and a yaw.
+    const p = new DodecahedronGeometry(radius).toNonIndexed().getAttribute('position');
+    const v = (i: number) => [p.getX(i) * drawn.x, p.getY(i) * drawn.y, p.getZ(i) * drawn.z] as const;
+    for (let i = 0; i < p.count; i += 3) {
+      const [a, b, c] = [v(i), v(i + 1), v(i + 2)],
+        e = [b[0] - a[0], b[1] - a[1], b[2] - a[2]],
+        f = [c[0] - a[0], c[1] - a[1], c[2] - a[2]],
+        n = [e[1]! * f[2]! - e[2]! * f[1]!, e[2]! * f[0]! - e[0]! * f[2]!, e[0]! * f[1]! - e[1]! * f[0]!],
+        len = Math.hypot(n[0]!, n[1]!, n[2]!),
+        d = (n[0]! * a[0] + n[1]! * a[1] + n[2]! * a[2]) / len;
+      assert.ok(d > 0, 'faces wind outward');
+      for (const sx of [-1, 1])
+        for (const sy of [-1, 1])
+          for (const sz of [-1, 1]) {
+            const out = (n[0]! * sx * box.x + n[1]! * sy * box.y + n[2]! * sz * box.z) / (2 * len) - d;
+            assert.ok(
+              out <= 1e-6,
+              `a collider corner stands ${out.toFixed(3)} m outside the stone (w ${r.w}, h ${r.h})`,
+            );
+          }
+    }
+  }
+});
+
+test("every rim rock's collider top stands at least 0.45 m over its ground", () => {
+  // src/place/pose.ts's safe() sweeps down to 0.4 m over the ground: a lower box would let a saved pose return
+  // inside a rock (test/ring-island-rim-pose.test.ts runs that policy on the real colliders).
+  for (const r of summitRimRocks(g, centre)) {
+    const { lift, box } = summitRimRockShape(r),
+      top = lift + box.y / 2;
+    assert.equal(r.y, g.islandH(r.x, r.z));
+    assert.ok(top >= 0.45, `collider top ${top.toFixed(3)} m over the ground at ${r.x}, ${r.z}`);
+  }
 });

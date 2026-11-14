@@ -5,7 +5,8 @@
 // outline painted), the island halt's two platforms (and the foot crossing at their south end) with the RINGWORKS
 // board, the fingerpost (emblems only), the low map table, the crossover, the works yard (steel under a tarp, the drop
 // hammer, the prophecy mural), the path to the summit lookout with its footbridge over the stack line's cutting (plain
-// solid blocks: docs/plans/ring-summit-path.md), and the ground with its sand band. Nothing here does
+// solid blocks: docs/plans/ring-summit-path.md) and a line of marker rocks on the cutting's summit-side rim, and the
+// ground with its sand band. Nothing here does
 // anything yet and nothing prompts (call 22). Static geometry merged into one vertex-coloured mesh; the leaf, its bracket, the hammer's head and the board's
 // face are their own. Colliders: the ground's heightfield, the decks, ramps, platforms and yard, the leaf (kinematic).
 // Local: no state, no sync. Positions in world metres from (u, lat) metres via ringAt.
@@ -32,7 +33,7 @@ import {
   type RingLanding,
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
-import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot } from './path.ts';
+import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot, summitRimRockShape, summitRimRocks } from './path.ts';
 import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks, ringIslandPose } from './state.ts';
 import { addFarGround } from '../../place/far-ground.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
@@ -96,6 +97,7 @@ const TIMBER = '#8a6a48',
   LAND = '#4a4d5c', // buildFar's cones
   LAND2 = '#3b3e4c',
   ROCK = '#7d7a78', // the cuttings' faces
+  STONE = '#c4beb0', // the rim's marker rocks, paler than the cut rock behind them
   SKY = '#8fc4e0',
   NIGHT = '#2c2e3a';
 
@@ -500,8 +502,10 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     };
     const GORGE = toward(-103, -1988),
       CANOPY = toward(-1085, -313);
-    const fp = at(HALT[0] + 8, FORM.left - 1.7);
-    post(TIMBER_DARK, fp.x, fp.z, PLATFORM_Y, PLATFORM_Y + 3.7, 0.28, 0.28, false);
+    // It stands on the fill 1.3 m off the platform's west edge, not on the platform: its arms point west, away from
+    // the deck, so from the crossing ramp and the platform it stands left of the footbridge and no longer over it.
+    const fp = at(HALT[0] + 8, upL0 - 1.3);
+    post(TIMBER_DARK, fp.x, fp.z, g.islandH(fp.x, fp.z) - 0.3, PLATFORM_Y + 3.7, 0.28, 0.28, false);
     for (const [dir, y, emblem] of [
       [GORGE, 3.2, 'gorge'],
       [CANOPY, 2.45, 'canopy'],
@@ -677,6 +681,20 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
         parts.solid(0.5, top - bottom, 0.5, m);
       }
     }
+  }
+  // The cutting's summit-side rim, marked: a sparse line of pale rocks 1.5 m behind the edge where the path runs near
+  // it, because from uphill the rim is a convex edge that hides the drop. Low enough to step round or hop, and solid.
+  for (const r of summitRimRocks(g, centre)) {
+    const { radius, lift, drawn, box } = summitRimRockShape(r),
+      q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw),
+      c = new THREE.Vector3(r.x, r.y + lift, r.z);
+    parts.add(
+      STONE,
+      new THREE.DodecahedronGeometry(radius),
+      new THREE.Matrix4().compose(c, q, new THREE.Vector3(drawn.x, drawn.y, drawn.z)),
+    );
+    // The box is inscribed in the drawn stone (test/ring-island-path.test.ts): nothing solid stands outside it.
+    parts.solid(box.x, box.y, box.z, new THREE.Matrix4().compose(c, q, new THREE.Vector3(1, 1, 1)));
   }
   const summit = g.islandH(CX, CZ) + 0.3;
   {

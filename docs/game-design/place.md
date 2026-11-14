@@ -1072,7 +1072,11 @@ timber deck 28 m long and 3 m wide between the rims, rising 1.8 m toward the sum
 orange steel parapets 1.05 m high (low enough to hop), a concrete abutment under each end and two dark steel bents
 standing just outside the track bed. It is plain blocks for now, all of it solid, with no sign or prompt; the path
 turns onto the deck's line 8 m before it, and the whole walk is 330 m. The rims are unfenced: a fall lands on the
-track bed, which walks out at both ends. Its buffers stand at
+track bed, which walks out at both ends. The summit-side rim, which hides its drop from uphill, is marked by a sparse
+line of 19 pale rocks 1.5 m behind the edge, about one every 3.5 m for the 78 m where the path runs near it, with a
+gap 12 m wide at the bridge; they are under 0.85 m high, solid, and easy to step round or hop. The halt's fingerpost
+stands on the fill 1.3 m off the west platform's edge (it stood on the platform), so from the foot crossing and the
+platform the footbridge shows clear to its right, under the ring and the shard. Its buffers stand at
 the line's end with a board, "LINE TO HIGH GORGE / UNDER CONSTRUCTION" once the rivet is struck. **A section laid**
 grows the deck out over its 30 s lay clock: a grey slab with two tracks on bents over the sea, 510 m a section. At
 each railhead stand a 25 m platform on the right going out with a lever home, a ramp down into the sea, the rack and
