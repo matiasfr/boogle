@@ -798,6 +798,41 @@ at hand wins. Local view; no op, state, catalog or server change. Not tested on 
 _Known, not fixed here:_ a loose pile's pickup is offered as runnable while a footing fills your back, though the
 server refuses it (`sources.ts`); it should be greyed.
 
+**Trains keep to the right, and the lever you pull is on your train's platform (14 November 2026, view; [running-side](../plans/running-side.md), step 4, with step 3's catalog; local branch, ships with the v45 reset).**
+_Why (owner, 14 November: "the train then goes left-hand side instead of right-hand side towards the pier... the
+station directions should be swapped at the quarry")._ No rail, platform or deck moved; which way runs on which track
+swapped. A train going out (away from the Village) runs on the original track, the one the first platforms stand
+beside (the Quarry's south platform, Far Head's east, the Railhead's and Ring Island's east); a train going home runs
+on the second track, 4 m to the west, beside the second platforms. Line 1 does the same between its turnouts. At an
+end the arriving train runs straight in to the east platform and the leaving one takes the end's crossover (Far Head
+before the pier, Ring Island) or turnout (the Pier, the Railhead, a stack head) out to the homeward track; the engine
+still faces out, so it propels its cars home as before. **Levers:** a first platform's lever calls the train going
+on and stands at the platform's far end (the Quarry's south lever: **Request stop: to Pier**, or to Far Head before
+the pier is laid); a second platform's lever calls the train home and stands at its Village end (the Quarry's north
+lever was already there; Far Head's west lever moved 19.2 m from the crossing end). **While a halt is the line's open
+end** both ways stand at its first platform, so that platform's lever calls the train home from the Village end, and
+the second platform's lever hangs chained, plaqued Village; when the line grows past it the first platform's lever
+slides to the far end (7 m/s, no prompt while it moves) with the next end's name on it and the second one unchains.
+That is Far Head before and after the pier, the Railhead before and after the rivet (its east lever goes from 0.6 m
+off the home end to 6 m short of the far end, where it stood before 14 November: nothing is set at the jib by then)
+and Ring Island before and after the stack line opens. The joint's and Ring Island's levers stand 9.5 m from their
+platform's middle toward the end their train leaves by, not at the very end: the server takes an ask within 12.6 m
+of the middle, and those platforms are 25 and 40 m long (Ring Island's home levers moved from u 457 to u 438.5,
+3.1 m clear of the steel yard's reach; the joint's west lever from u 253.5 to u 238, beside its plank crossing).
+Camp's, the Pier's and the Home island's levers are where they were, and the stack heads keep one platform with a
+lever each way. The signal on a first platform drops for its lever's way. The plaque's arrow and the prompt follow
+the way the lever calls now. **Known, for step 5:** once Q7 is laid the Pier is a middle halt with one platform on the
+east side, and its homeward train stands on the far track, 4 m beyond the near one; its lever still calls it and the
+server still takes the ask, but you cross a track to board. **Known, not row-pure:** a train standing at an end (or
+turning back there) at the moment the line grows past it leaves from the east platform and eases out to the homeward
+track (over Far Head's or Ring Island's crossover, or over the 20 m after its stop elsewhere); the saved rows do not
+say this once it stands, so a tab that joins or reloads in those seconds draws that one train on the homeward track
+until it has left the halt. Tests: `test/railway-r4a-views.test.ts` (every stage's lateral, no sideways jump),
+`test/halt-lever-place.test.ts` (ends, the server's reach, 3 m from every worked site),
+`test/prefab-halts.test.ts` (every lever's ask is taken at eight stages); look:
+`dev/look/evals/running-side.ts`. Local view over step 3's catalog; no op, state or server change in this step. Not
+tested on a device.
+
 The two Server-owned lines run at
 20 m/s: camp–village, and village–quarry–Far Head. Owner platform carry keeps a rider
 aboard; train schedules receive no away credit. The first line-2 service moves Q6's kit from the forge: 32 minted
@@ -826,7 +861,9 @@ Island use original-side/outbound and offset-side/homeward platforms; at the ope
 side, moving with the Railhead. Track geometry and train rules are unchanged. This is the catalog half of the
 right-hand swap, sharing the rotunda's v45 reset: the existing train and lever views still use the old ways and must
 ship with step 4, not alone. The Pier remains homeward-only; its west platform after Q7 is step 5. See the
-[step 3 report](../plans/running-side-step3-report.md) for the contract and remaining work.
+[step 3 report](../plans/running-side-step3-report.md) for the contract and remaining work. Step 4 (the views) is
+built on the same branch: "Trains keep to the right, and the lever you pull is on your train's platform" above. The
+paragraphs below still say "up track" and "left-hand running" for the second track; their rewording is step 6.
 
 **A train's vehicles stand apart along the track they are drawn on** (owner, 14 November: "on certain stops,
 especially with curves, the train car clips the train engine"; `car-spacing.ts`). A train's place is metres along its

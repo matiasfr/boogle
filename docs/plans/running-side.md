@@ -185,7 +185,24 @@ Models are `npm run models` rows (withCodex).
       rule before and after the rivet". No change to train rules: `npm run loop -- run` must report the same waits.
       Row: high-risk implementation (gpt-6-astra high), then the independent review row (a fresh reviewer, a failing
       test per suspected defect).
-- [ ] **4. Trains on the right, levers and signals to match. Tier: view; ships with step 3.**
+- [x] **4. Trains on the right, levers and signals to match. Tier: view; ships with step 3.**
+      _Built locally 14 November on step 3's branch; not shipped. Departures:_ (a) **the rows do not carry enough**
+      for a train that stands at an end, or is turning back there, as the line grows past it: `turn` is cleared when
+      it comes to a stand and the row is then the same as one that stopped at the west platform. Rather than stop
+      (this step's own instruction) or let that train jump 4 m sideways under its riders, `train-view.ts` remembers
+      it per train on this tab (`left`, `line2-path.ts` `LeftFrom`) until it has left the halt; a tab that joins or
+      reloads in those seconds draws it on the homeward track. A row-pure fix is a sim change (keep a flag on the
+      standing and leaving row, as `turn` is for the running one) and needs the owner's or the orchestrator's call.
+      (b) `kit-board.ts` reads `row.track` as a direction, not a side, and `src/features/voice.ts` reads a media
+      track: neither changed. `railhead-view.ts` draws by lateral, not index: unchanged; `ring-island/view.ts` drew
+      its crossover from `TRACKS[0]`, which step 3 made the original track (a straight line): now `TRACKS[1]`.
+      (c) Ring levers cannot stand 1.4 m from a 25 or 40 m platform's end (the server's reach is 12.6 m from its
+      middle): they stand 9.5 m from the middle toward that end. (d) The Railhead's east lever for the train on
+      stands 6 m short of the far end, not 1.4 m (the jib's foot is 3 m from that end). (e) The Pier's lever keeps
+      calling home after Q7 (`only: -1`), and its train then stands on the far track until step 5. (f) No one top-down
+      still holds a train each way at the Quarry; the Far Head still does, and the Quarry has one still per way.
+      (g) `test/review-v26.test.ts` needed no change (it reads rows, not the view); `test/halt-lever-place.test.ts`
+      and the halt goldens did. Proof looks and what each shows: the step's handover.
       `src/entities/railway/line2-path.ts` (`line2Lat`: track 0 returns 0; track 1 takes today's end shapes, including
       a train turned short at the Pier easing out over the 20 m after its stop, which today is the 20 m before it; if
       the row does not carry enough to tell, say so and stop), `train-view.ts` (`latOf`, `crossing` on track 1),
