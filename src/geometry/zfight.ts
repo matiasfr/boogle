@@ -1,6 +1,15 @@
 // Local/offline geometry diagnostics. No renderer, game state or numerical lockstep contract.
+import { surfaceDifferences, type Surface } from './zfight-surface.ts';
 export type Point = readonly [number, number, number];
-export type Face = { piece: string; points: readonly Point[]; ground?: boolean };
+export type Face = {
+  piece: string;
+  points: readonly Point[];
+  ground?: boolean;
+  surface?: Surface;
+  family?: string;
+  solid?: string;
+  assembly?: string;
+};
 export type Contact = {
   a: string;
   b: string;
@@ -8,6 +17,11 @@ export type Contact = {
   normal: Point;
   area: number;
   separation: number;
+  differences?: string[];
+  familyA?: string;
+  familyB?: string;
+  hidden?: boolean;
+  assembly?: string;
 };
 export const ZFIGHT = { separation: 0.002, normalDot: 0.999999, minArea: 0.005 };
 const EPS = 1e-8;
@@ -76,12 +90,14 @@ type Solid = { piece: string; planes: Plane[]; lo: Point; hi: Point };
 function solids(faces: Prepared[]): Solid[] {
   const grouped = new Map<string, Prepared[]>();
   for (const f of faces) {
-    const group = grouped.get(f.piece) ?? [];
+    const key = f.solid ?? f.piece;
+    const group = grouped.get(key) ?? [];
     group.push(f);
-    grouped.set(f.piece, group);
+    grouped.set(key, group);
   }
   const out: Solid[] = [];
   for (const [piece, group] of grouped) {
+    if (group.some((f) => f.surface?.occlusionUncertain)) continue;
     if (group[0]!.ground) {
       for (const f of group)
         if (f.n[1] > EPS)
@@ -95,6 +111,16 @@ function solids(faces: Prepared[]): Solid[] {
     }
     // Only closed convex pieces may hide another face. Open/non-convex meshes remain candidates.
     if (group.length < 4) continue;
+    const edgeCounts = new Map<string, number>();
+    for (const f of group)
+      for (let i = 0; i < f.points.length; i++) {
+        const key = [f.points[i]!, f.points[(i + 1) % f.points.length]!]
+          .map((p) => p.map((v) => Math.round(v * 100000)).join(','))
+          .sort()
+          .join('|');
+        edgeCounts.set(key, (edgeCounts.get(key) ?? 0) + 1);
+      }
+    if ([...edgeCounts.values()].some((count) => count !== 2)) continue;
     const vertices = group.flatMap((f) => f.points);
     const planes = group.filter(
       (f, i) => !group.slice(0, i).some((g) => dot(f.n, g.n) > 1 - EPS && Math.abs(f.d - g.d) < EPS),
@@ -126,8 +152,12 @@ function cells(lo: Point, hi: Point, visit: (key: string) => void) {
  * Subtract nearby opaque convex solids (and terrain prisms) at a point just outside BOTH faces.
  * This establishes local exterior exposure, not line-of-sight from every possible camera.
  */
-export function findZfights(input: readonly Face[], options: Partial<typeof ZFIGHT> = {}): Contact[] {
-  const settings = { ...ZFIGHT, ...options };
+export function findZfights(
+  input: readonly Face[],
+  options: Partial<typeof ZFIGHT> & { includeHidden?: boolean } = {},
+): Contact[] {
+  const { includeHidden, ...tolerance } = options;
+  const settings = { ...ZFIGHT, ...tolerance };
   if (
     !Object.values(settings).every(Number.isFinite) ||
     settings.separation < 0 ||
@@ -193,7 +223,8 @@ export function findZfights(input: readonly Face[], options: Partial<typeof ZFIG
       if (separation > settings.separation + EPS) continue;
       let overlap: Point[] = [...a.points];
       for (const plane of edges(b)) overlap = clip(overlap, plane);
-      if (measure(overlap, a.n).area < EPS) continue;
+      const whole = measure(overlap, a.n);
+      if (whole.area < EPS) continue;
       let exposed = [overlap];
       const near = new Set<Solid>();
       cells(a.lo, a.hi, (key) => {
@@ -201,12 +232,7 @@ export function findZfights(input: readonly Face[], options: Partial<typeof ZFIG
       });
       const offset = settings.separation + 0.0001;
       for (const solid of near) {
-        if (
-          solid.piece === a.piece ||
-          solid.piece === b.piece ||
-          [0, 1, 2].some((k) => a.lo[k]! > solid.hi[k]! + offset || a.hi[k]! < solid.lo[k]! - offset)
-        )
-          continue;
+        if ([0, 1, 2].some((k) => a.lo[k]! > solid.hi[k]! + offset || a.hi[k]! < solid.lo[k]! - offset)) continue;
         const next: Point[][] = [];
         for (const polygon of exposed) {
           let inside = polygon;
@@ -221,8 +247,11 @@ export function findZfights(input: readonly Face[], options: Partial<typeof ZFIG
         exposed = next;
         if (!exposed.length) break;
       }
-      for (const polygon of exposed) {
-        const { area, position } = measure(polygon, a.n);
+      const visibleArea = exposed.reduce((sum, polygon) => sum + measure(polygon, a.n).area, 0);
+      const portions = exposed.map((polygon) => ({ ...measure(polygon, a.n), hidden: false }));
+      if (includeHidden && whole.area - visibleArea > EPS)
+        portions.push({ area: whole.area - visibleArea, position: whole.position, hidden: true });
+      for (const { area, position, hidden } of portions) {
         if (area < EPS) continue;
         const names = [a.piece, b.piece].sort();
         // Aggregate triangles on the same oriented plane of a pair; opposite faces stay separate.
@@ -230,6 +259,7 @@ export function findZfights(input: readonly Face[], options: Partial<typeof ZFIG
           ...names,
           ...a.n.map((v) => Math.round(v * 10000)),
           Math.round(a.d / Math.max(settings.separation, 1e-5)),
+          hidden,
         ]);
         const old = contacts.get(key);
         contacts.set(key, {
@@ -239,6 +269,11 @@ export function findZfights(input: readonly Face[], options: Partial<typeof ZFIG
           position: old ? mix(old.position, position, area / (old.area + area)) : position,
           normal: a.n,
           separation: Math.max(old?.separation ?? 0, separation),
+          differences: [...new Set([...(old?.differences ?? []), ...surfaceDifferences(a, b, position)])],
+          familyA: a.piece === names[0] ? a.family : b.family,
+          familyB: b.piece === names[1] ? b.family : a.family,
+          hidden,
+          assembly: a.assembly && a.assembly === b.assembly ? a.assembly : undefined,
         });
       }
     }
