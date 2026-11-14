@@ -203,10 +203,10 @@ async function rename(client: ReturnType<typeof connect>, name: string) {
   await client.next((m) => isWorld('s')(m) && m.d.ack?.[0] === session.epoch && m.d.ack?.[1] >= session.next);
 }
 
-test('v41 clients receive a clean refusal after the v42 Boogler authority flip', async () => {
+test('v42 clients receive a clean refusal after the v43 Boogler reaction commands', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
-    for (const room of ['v41-boogle', 'rail-v41-boogle']) {
+    for (const room of ['v42-boogle', 'rail-v42-boogle']) {
       const client = connect(base, room, 'oldtab');
       assert.deepEqual(await client.next(is('peer')), { t: 'peer' });
       assert.equal(await client.closed, 4000);

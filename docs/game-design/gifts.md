@@ -6,6 +6,8 @@ replacement shared gift mechanic in this step.
 
 [The Boogler's gift catalog](../../src/sim/gift-catalog.ts) stays byte-for-byte unchanged, including every taste and
 spoken line. Local inventory, the seed stand and The Boogler's gift dialogue still use it; the beach ball keeps its
-independent Owner physics. [Preserved copy and suspect notice](retired-classic-copy.md).
+independent Owner physics. The seed bag is the only obtainable giftable kind today. The frisbee has no source;
+its catalogue entry and present reaction remain valid for a future source. The beach ball is refused locally.
+[Preserved copy and suspect notice](retired-classic-copy.md).
 
 Part of the [game design document](../game-design.md) (as built).

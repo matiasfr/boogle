@@ -2,14 +2,16 @@
 // Get launched too often and he runs when you come near.
 //
 // His memories are personal (src/boogler/memory.ts), saved in localStorage once per browser, shared by every room. Each player publishes
-// bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler/boogler.ts) reads act and wary, and every client plays
-// ev on his model whenever that player's evN changes, so friends see the hearts and launches too.
+// bg = [act, wary] in presence for the server's brain. Reactions play locally on the press and are shared by
+// validated server commands; friends receive a replicated event, never dialogue text.
 import { FIXED, PLAYER_R } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { background } from '../async.ts';
 import { forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.ts';
-import { remotes, addPresenceField, onRemotePresence, sendPresence } from '../netplay/net.ts';
+import { addPresenceField, onRemotePresence, sendPresence } from '../netplay/net.ts';
+import { railwayCommands, onRailwayCommands } from '../entities/railway/state.ts';
+import { railwayMirror } from '../world/game-world.ts';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.ts';
 import { booglerHearts, booglerPuff } from './fx.ts';
 import { booglerSay, setTagWary, setTagPrompt } from './hud.ts';
@@ -30,8 +32,8 @@ const LEAVE_RANGE = TALK_RANGE + 1;
 const LAUNCH_UP = 10.5;
 const LAUNCH_OUT = 5.5;
 const RIDE_WARN = [0.35, 0.6, 0.82]; // fractions of his patience at which he complains (RIDE lines)
-// Retired events still render when older tabs send them; never reuse their wire numbers.
-const EV = { NONE: 0, RETIRED_PET: 1, PAT: 2, RETIRED_CELEBRATION: 3, PUFF: 4, LOVE: 5, YUCK: 6 };
+// Reserved: 0 NONE, 1 retired PET, 3 retired CELEBRATION. Never reuse these wire numbers.
+const EV = { PAT: 2, PUFF: 4, LOVE: 5, YUCK: 6 };
 
 let memory: BooglerMemory | null = null;
 const storeKey = 'boogle.boogler'; // global: you are yours in every room (the old per-room keys are ignored)
@@ -56,39 +58,34 @@ function save() {
 const pick = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)]!;
 
 // ---------------------------------------------------------------- presence and shared reactions
-let ev = EV.NONE,
-  evN = 0;
-
-function play(kind: number) {
-  if (kind === EV.RETIRED_PET) {
-    booglerReact('pet');
-    booglerHearts('pet');
-  } else if (kind === EV.PAT) booglerReact('pet');
-  else if (kind === EV.RETIRED_CELEBRATION) {
-    booglerReact('joy');
-    booglerHearts('legacyCelebration');
-  } else if (kind === EV.PUFF) booglerPuff();
+function play(kind: number, start = performance.now()) {
+  if (kind === EV.PAT) booglerReact('pet');
+  else if (kind === EV.PUFF) booglerPuff(start);
   else if (kind === EV.LOVE) {
     booglerReact('joy');
-    booglerHearts('pet');
+    booglerHearts();
   } else if (kind === EV.YUCK) booglerReact('grump');
 }
 
-function emit(kind: number) {
-  ev = kind;
-  evN = (evN + 1) % 1000000;
-  play(kind);
+function emit(kind: number, gift?: number, now = performance.now()) {
+  play(kind, now);
+  const session = railwayCommands();
+  if (kind === EV.PUFF)
+    session?.act('boogler.puff', { end: session.read.tickNow() + (PUFF_MS - (performance.now() - now)) / 100 });
+  else session?.act('boogler.gift', { kind: gift });
 }
 
-const seen = new Map<string, number>(); // peer -> last evN played
-function playRemoteEvents() {
-  for (const r of remotes.values() as Iterable<BgRemote>) {
-    if (!r.bg) continue;
-    const prev = seen.get(r.peer);
-    seen.set(r.peer, r.bg[3]!);
-    if (prev !== undefined && prev !== r.bg[3]) play(r.bg[2]!);
-  }
-}
+let stopReactions: (() => void) | undefined;
+onRailwayCommands((session) => {
+  stopReactions?.();
+  stopReactions = session
+    ? railwayMirror?.boogler.onReact((e) => {
+        if (e.kind !== EV.PUFF) return play(e.kind);
+        const remaining = Math.min(PUFF_MS, (e.end! - session.read.tickNow()) * 100);
+        if (remaining > 0) play(e.kind, performance.now() - (PUFF_MS - remaining));
+      })
+    : undefined;
+});
 
 // ---------------------------------------------------------------- distance
 function dist() {
@@ -173,7 +170,7 @@ function updateRide(dt: number, now: number) {
     if (frac >= 1) {
       ride.puffAt = now;
       booglerSay(RIDE[RIDE.length - 1]!, PUFF_MS + 200);
-      emit(EV.PUFF);
+      emit(EV.PUFF, undefined, now);
     }
   } else if (!on && !ride.puffAt) {
     ride.t = Math.max(0, ride.t - dt * 0.5);
@@ -258,7 +255,7 @@ function answer(i: number) {
   save();
   if (out.gave) {
     const t = out.gave.taste;
-    emit(t === 'love' || t === 'like' ? EV.LOVE : t === 'dislike' ? EV.YUCK : EV.PAT);
+    emit(t === 'love' || t === 'like' ? EV.LOVE : t === 'dislike' ? EV.YUCK : EV.PAT, out.gave.kind);
   }
   render();
   if (out.bubble) sayFor(out.bubble);
@@ -306,10 +303,10 @@ export function talkTargets() {
 let waryCheckAt = 0;
 let fleeSayAt = 0;
 
-addPresenceField('bg', () => (me.entered && me.body ? [boogler.me.act, boogler.me.wary ? 1 : 0, ev, evN] : null));
+addPresenceField('bg', () => (me.entered && me.body ? [boogler.me.act, boogler.me.wary ? 1 : 0] : null));
 onRemotePresence((rr, pr) => {
   const r = rr as BgRemote;
-  r.bg = Array.isArray(pr.bg) && pr.bg.length === 4 && pr.bg.every(Number.isInteger) ? (pr.bg as number[]) : null;
+  r.bg = Array.isArray(pr.bg) && pr.bg.length === 2 && pr.bg.every(Number.isInteger) ? (pr.bg as number[]) : null;
 });
 
 export function updateBooglerPlay(dt: number, now: number) {
@@ -322,7 +319,6 @@ export function updateBooglerPlay(dt: number, now: number) {
   if (me.entered && me.body) updateRide(dt, now);
   boogler.me.act = dialogue.open ? ACT.TALK : riding() ? ACT.RIDE : ACT.NONE;
   if (previousAct !== boogler.me.act || previousWary !== boogler.me.wary) sendPresence();
-  playRemoteEvents();
 
   const d = dist();
   if (dialogue.open && (modalOpen() || riding() || (d > LEAVE_RANGE && talk?.ctx.start !== 'kick'))) leave();

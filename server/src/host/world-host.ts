@@ -33,8 +33,8 @@ import { projectRailTune, projectRoster } from '../../../src/world/classic-repli
 import { createServerOps } from '../../../src/world/server-ops.ts';
 import { installSeats } from '../../../src/world/rules/seats.ts';
 import { projectSeats } from '../../../src/world/seat-replicate.ts';
-import { installBoogler } from '../../../src/world/rules/boogler.ts';
-import { createBooglerShadow } from '../../../src/world/boogler-shadow.ts';
+import { installBoogler, installBooglerReactions } from '../../../src/world/rules/boogler.ts';
+import { createBooglerShadow, booglerPose } from '../../../src/world/boogler-shadow.ts';
 import { projectBoogler } from '../../../src/world/boogler-replicate.ts';
 import { loadBooglerLand } from './land.ts';
 import { booglerVisitors } from './boogler-presence.ts';
@@ -228,6 +228,15 @@ export function createRailwayWorldHost({
     },
     () => running && hasPlayers(),
     () => publishBoogler(),
+  );
+  const booglerReactions = installBooglerReactions(
+    ops,
+    now,
+    () => {
+      const state = boogler.leg();
+      return state.leg ? booglerPose(state.leg, sync.roomStep() / 6) : state;
+    },
+    () => sync.roomStep() / 6,
   );
   // The 100 ms marker at which the room stopped simulating, or null while it runs. A save while paused is stamped
   // with it, so neither a reload nor a crash counts the paused time as hosted.
@@ -592,6 +601,7 @@ export function createRailwayWorldHost({
         seats: seats.rows(),
         boogler: boogler.leg(),
         booglerMeter: booglerMeter.report(),
+        booglerRefused: { gift: ops.refusals('boogler.gift'), puff: ops.refusals('boogler.puff') },
         ...status,
         recoveryError: startupError ?? status.recoveryError ?? (failed ? 'server command storage failed' : null),
         ready: loaded && !startupError && !status.recoveryError && !failed,
@@ -620,6 +630,7 @@ export function createRailwayWorldHost({
       // requests.depart removed the pid's one session, so the pid is no longer active.
       const session = requests.depart(sid);
       if (!session) return;
+      booglerReactions.release(session.pid);
       seats.release(session.pid);
       for (const carry of [beamCarry, boilerCarry, footCarry, legCarry]) carry.departed(session.pid);
     },

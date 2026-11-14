@@ -51,8 +51,11 @@ The railway's rule ticks and action set live in `../railway-server.ts`; its stat
 `boogler.ts` installs the 10 Hz authority tick and the `boogler` pose checkpoint. Its injected native-trig brain lives in `../boogler-shadow.ts`,
 outside the guarded math paths; its private decision RNG uses the recovered world seed and first awake tick.
 The host projects a global leg only on changes and gates decisions on connected players, even during the empty-room
-grace. It supplies validated fresh Owner facts. Pose loads verify integrity before revalidating terrain. No commands
-or text are sent; present/puff events still use the unchanged Owner presence until step 7.
+grace. It supplies validated fresh Owner facts. Pose loads verify integrity before revalidating terrain.
+`installBooglerReactions` registers `boogler.gift { kind }` and `boogler.puff { end }` (launch deadline in room ticks).
+Simple reach and per-player cadence checks accept cosmetic reactions; taste is derived from the unchanged catalogue.
+The optional command `event` output is built after apply and emitted by the request coordinator, excluding the actor.
+No text is sent or reaction saved. Room status counts refused gifts and puffs, including malformed action facts.
 
 `installSeats(ops, replication, now)` has no checkpoint registration. Seat commands bind the socket's pid,
 validate opaque ids, choose the first free requested chair, and rate-limit

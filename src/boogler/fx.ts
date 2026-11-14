@@ -77,15 +77,14 @@ function spawnHeart(size: number, spread: number, speed: number, delay: number) 
   h.size = size * (0.7 + Math.random() * 0.6);
   h.sway = Math.random() * Math.PI * 2;
   h.delay = delay;
-  h.s.visible = false;
+  h.s.scale.setScalar(h.size * 0.4 * 1.45); // the age-zero size, also on the frame a delayed heart becomes visible
+  h.s.material.opacity = 1;
+  h.s.visible = delay <= 0;
 }
 
-// Gifts use a couple of small hearts. Older tabs can still send the retired celebration fountain.
-export function booglerHearts(kind: 'pet' | 'legacyCelebration') {
-  if (kind === 'legacyCelebration') {
-    const n = reducedMotion ? 8 : 30;
-    for (let k = 0; k < n; k++) spawnHeart(0.42, 0.9, 2.4, (k / n) * 1.1);
-  } else for (let k = 0; k < 3; k++) spawnHeart(0.24, 0.4, 1.4, k * 0.12);
+// Gifts use a couple of small hearts.
+export function booglerHearts() {
+  for (let k = 0; k < 3; k++) spawnHeart(0.24, 0.4, 1.4, k * 0.12);
 }
 
 // ---------------------------------------------------------------- the launch orb
