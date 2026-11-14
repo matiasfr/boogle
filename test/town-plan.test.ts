@@ -301,11 +301,11 @@ test('the ground under the Round footprints and their 3 m aprons is level', () =
       const dx = cellX(i) - TOWN_CENTRE.x,
         dz = cellZ(j) - TOWN_CENTRE.z;
       const r = Math.hypot(dx, dz);
-      if (r < TOWN_RING.inner || r > TOWN_RING.outer) continue;
+      if (r < TOWN_RING.inner || r > TOWN_GROUND.r) continue;
       const bearing = ((Math.atan2(dx, -dz) * 180) / Math.PI + 360) % 360;
       const hall = bearing >= 60 && bearing <= 100;
-      near(heights[at(i, j)]!, 18, hall ? 0.25 : 0.05, `ring ${cellX(i)},${cellZ(j)}`);
-      assert.ok(pathMask[at(i, j)]! >= 0.99, 'the ring is painted');
+      near(heights[at(i, j)]!, 18, hall ? 0.25 : 0.05, `Round ${cellX(i)},${cellZ(j)}`);
+      if (r <= TOWN_RING.outer) assert.ok(pathMask[at(i, j)]! >= 0.99, 'the ring is painted');
     }
   for (let r = 20; r <= 36; r += CELL) level(slotPoint(250, r), `dock r${r}`);
 });

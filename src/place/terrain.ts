@@ -343,14 +343,17 @@ if (SHORE_COAST) {
       heights[k] = heights[k]! + (Math.min(heights[k]!, target) - heights[k]!) * around;
       clearMask[k] = Math.max(clearMask[k]!, around);
     }
+  // The climb must not cut back into the Round's level pad at its west edge.
+  const inTown = (x: number, z: number) => Math.hypot(x - TOWN_CENTRE.x, z - TOWN_CENTRE.z) <= TOWN_GROUND.r;
   // Grade a broad grass shoulder first; paint with the ordinary bold-path widths on top.
   strip(
     SHORE_SAMPLES.filter(([x]) => x < -150),
     6,
     14,
     false,
+    inTown,
   );
-  strip(SHORE_SAMPLES, 3.6, 6.5, true);
+  strip(SHORE_SAMPLES, 3.6, 6.5, true, inTown);
   pad(SHORE_HOP.x, SHORE_HOP.z, SHORE_HOP.y, 2.5, 3);
   // Last: an 18 m disc (16 m clear after grid interpolation), including the steering funnel.
   pad(SHORE_LANDING.x, SHORE_LANDING.z, 3, 9, 5);
