@@ -1,5 +1,7 @@
 # Prefab construction graph shape
 
+> **History (kept as evidence).** Superseded by the [dynamic audit](prefab-data-step-5-dynamic-audit.md) (5f), [rebase 4](prefab-data-step-5-rebase-4.md) (5g) and the [precise audit](prefab-data-step-5-precise-audit.md) (5h). The 296-export whole-program graph was already abandoned here; the four-entry stop list and 62-export baseline were later replaced by allocation-endpoint proofs with exemption candidates. The identity rules in the third paragraph still hold. Current contract: [lint-boundaries](../agents/lint-boundaries.md); current counts: `dev/lint/prefab-debt.json`.
+
 The superseded 1db1a0b78 whole-program computation found **296 distinct construction exports**, 23,539 recorded importer edges and 25,635 formatted debt JSON lines. Provider counts below are the union of distinct importing files over that provider’s exports (not the sum per export).
 
 | Provider | Distinct importers | Export count | Central/shared API? |

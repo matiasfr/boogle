@@ -1,5 +1,7 @@
 # Prefab step 5: rebase debt delta
 
+> **History (kept as evidence).** Superseded by steps 5d to 5h. This records the 5c edge-list ratchet (importer paths per export, a whole-program closure), which 5d removed. Still true: counts are lint violations, not runtime collider instances. Current contract: [lint-boundaries](../agents/lint-boundaries.md); current counts: `dev/lint/prefab-debt.json`.
+
 Rebased onto local `origin/main` at `c279b824cf80fa26b21312fe5fa023d1a31824d8` (includes Home flip `9c9b4cd67`). No fetch. Comparison is the pre-rebase edge baseline against the regenerated rebased source. No runtime source was edited by this follow-up.
 
 Counts are lint violations (module acquisitions and legacy direct calls), not runtime collider instances. The new Home hall treads reuse the existing local helper and therefore do not increase this count. Removed Home files were consumers, not direct capability debt providers.

@@ -2,7 +2,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 import { parseSync, type Node, type Program } from 'oxc-parser';
 import { moduleValues } from './prefab-values.ts';
 import { analyze } from '@typescript-eslint/scope-manager';
@@ -10,17 +9,15 @@ import { walk, literal } from '../scan/parse.ts';
 import { createModuleResolver, moduleEdges, isCapability, PREFAB_DOORS } from './prefab-boundaries.ts';
 import type { ModuleEdge, ModuleResolver, PrefabDebt } from './prefab-boundaries.ts';
 
-export type ConstructionKind = 'colliders' | 'seats';
-export type ConstructionRecord = { kinds: ConstructionKind[]; importers: string[] };
+type ConstructionKind = 'colliders' | 'seats';
+type ConstructionRecord = { kinds: ConstructionKind[]; importers: string[] };
 export type LegacyGraph = {
   files: string[];
   constructors: Record<string, ConstructionRecord>;
   surfaces: Record<string, string[]>;
   modules: Record<string, string[]>;
   selections: Record<string, Record<number, string[] | null>>;
-  constructionProof: Record<string, { creates: boolean; kinds: string[]; allocation: boolean; uncertain: boolean }>;
   conservative: string[];
-  conservativeSites: Record<string, number[]>;
   exemptionAudit: Record<string, { creates: boolean; kinds: string[]; allocation: boolean; uncertain: boolean }>;
   ownedFactories: Record<string, { creates: boolean; kinds: string[]; allocation: boolean; uncertain: boolean }>;
 };
@@ -79,7 +76,7 @@ export function computeLegacyGraph(
   const namespace = new Map<string, Set<string>>();
   for (const [file, text] of Object.entries(sources)) {
     const parsed = parseSync(file, text, { astType: 'ts', range: true, preserveParens: false });
-    if (parsed.errors.length) throw new Error(`prefab edges cannot parse ${file}: ${parsed.errors[0]!.message}`);
+    if (parsed.errors.length) throw new Error(`prefab lint cannot parse ${file}: ${parsed.errors[0]!.message}`);
     const program = parsed.program;
     const scope = analyze(program as unknown as Parameters<typeof analyze>[0], { sourceType: 'module', lib: [] });
     const f: Facts = {
@@ -407,13 +404,12 @@ export function computeLegacyGraph(
   }
   const reverse = new Map<string, Set<string>>();
   for (const [from, to] of deps) for (const d of to) add(reverse, d, from);
-  const propagate = <T extends string>(initial: Map<string, Set<T>>, stop = new Set<string>()) => {
+  const propagate = <T extends string>(initial: Map<string, Set<T>>) => {
     const values = new Map<string, Set<T>>([...initial].map(([k, v]) => [k, new Set(v)]));
     const queue = [...values.keys()];
     for (let i = 0; i < queue.length; i++) {
       const id = queue[i]!;
       for (const user of reverse.get(id) ?? []) {
-        if (stop.has(user)) continue;
         const set = values.get(user) ?? new Set<T>();
         let grow = false;
         for (const v of values.get(id)!)
@@ -524,7 +520,6 @@ export function computeLegacyGraph(
       ownedFactories[`${b.file}:${b.fn!.start}`] = proof(id);
   }
   const constructors: LegacyGraph['constructors'] = {};
-  const constructionProof: LegacyGraph['constructionProof'] = {};
   const roots = new Map<string, Set<string>>();
   for (const file of [...new Set([...providers, ...ownedFiles])].sort())
     for (const [name, id] of modules.get(file)?.exports ?? []) {
@@ -536,7 +531,6 @@ export function computeLegacyGraph(
       if (!found?.size) continue;
       const key = `${file}#${name}`;
       constructors[key] = { kinds: [...found].sort(), importers: [] };
-      constructionProof[key] = proof(id);
       roots.set(id, new Set([key]));
     }
   // Provenance for importer counting follows aliases and barrels only, never function-body calls.
@@ -560,18 +554,7 @@ export function computeLegacyGraph(
     surfaces,
     modules: moduleOrigins,
     selections: values.selections(),
-    constructionProof,
     conservative: [...conservative].sort(),
-    conservativeSites: Object.fromEntries(
-      [...conservative]
-        .sort()
-        .map((file) => [
-          file,
-          [...(values.fallback.get(file) ?? [])]
-            .filter((start) => modules.get(file)!.edges.some((edge) => !edge.erased && edge.node.start === start))
-            .sort((a, b) => a - b),
-        ]),
-    ),
     exemptionAudit,
     ownedFactories,
   };
@@ -701,11 +684,7 @@ const TOOL_HASH = createHash('sha256')
   .update(fs.readFileSync(new URL('./prefab-values.ts', import.meta.url)))
   .update(fs.readFileSync(new URL('../scan/parse.ts', import.meta.url)))
   .digest('hex');
-export function loadLegacyGraph(
-  root: string,
-  debt: PrefabDebt,
-  options: { cache?: boolean; ref?: string } = {},
-): LegacyGraph {
+export function loadLegacyGraph(root: string, debt: PrefabDebt): LegacyGraph {
   const sources: Record<string, string> = {};
   const hash = createHash('sha256').update(TOOL_HASH);
   hash.update(fs.realpathSync(root));
@@ -715,40 +694,20 @@ export function loadLegacyGraph(
   hash.update(JSON.stringify(providers));
   const config = path.join(root, 'tsconfig.json');
   if (fs.existsSync(config)) hash.update(fs.readFileSync(config));
-  if (options.ref) {
-    const rows = execFileSync('git', ['ls-tree', '-r', '-z', options.ref], { cwd: root, encoding: 'utf8' })
-      .split('\0')
-      .filter(Boolean)
-      .map((line) => line.split('\t'))
-      .filter((row) => isAnalysedCode(row[1]!));
-    const objects = execFileSync('git', ['cat-file', '--batch'], {
+  for (const file of fs
+    .globSync('**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}', {
       cwd: root,
-      input: rows.map((row) => row[0]!.split(' ')[2]).join('\n') + '\n',
-      maxBuffer: 40_000_000,
-    });
-    let offset = 0;
-    for (const row of rows) {
-      const end = objects.indexOf(10, offset);
-      const size = Number(objects.subarray(offset, end).toString().split(' ')[2]);
-      offset = end + 1;
-      sources[row[1]!] = objects.subarray(offset, offset + size).toString('utf8');
-      offset += size + 1;
-    }
-  } else
-    for (const file of fs
-      .globSync('**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}', {
-        cwd: root,
-        exclude: ['**/node_modules/**', '.git/**', '.look/**', 'dist/**', '.claude/**', '.codex/**', '.agents/**'],
-      })
-      .filter(isAnalysedCode)
-      .sort())
-      sources[file] = fs.readFileSync(path.join(root, file), 'utf8');
+      exclude: ['**/node_modules/**', '.git/**', '.look/**', 'dist/**', '.claude/**', '.codex/**', '.agents/**'],
+    })
+    .filter(isAnalysedCode)
+    .sort())
+    sources[file] = fs.readFileSync(path.join(root, file), 'utf8');
   for (const [file, text] of Object.entries(sources).sort(([a], [b]) => a.localeCompare(b))) {
     hash.update(file).update('\0').update(text);
   }
   const fingerprint = hash.digest('hex');
-  const file = path.join(root, `.look/cache/prefab-constructors${options.ref ? '-base' : ''}.json`);
-  if (options.cache !== false && fs.existsSync(file)) {
+  const file = path.join(root, '.look/cache/prefab-constructors.json');
+  if (fs.existsSync(file)) {
     try {
       const old = JSON.parse(fs.readFileSync(file, 'utf8')) as { fingerprint: string; graph: LegacyGraph };
       if (old.fingerprint === fingerprint) return old.graph;
@@ -757,12 +716,10 @@ export function loadLegacyGraph(
     }
   }
   const graph = computeLegacyGraph(sources, debt, createModuleResolver(root));
-  if (options.cache !== false) {
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    const temporary = `${file}.${process.pid}.tmp`;
-    fs.writeFileSync(temporary, JSON.stringify({ fingerprint, graph }));
-    fs.renameSync(temporary, file);
-  }
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const temporary = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, JSON.stringify({ fingerprint, graph }));
+  fs.renameSync(temporary, file);
   return graph;
 }
 

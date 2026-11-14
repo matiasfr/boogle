@@ -1,5 +1,7 @@
 # Dynamic-import and ownership re-audit
 
+> **History for the counts; the model is current.** The 92-export table is superseded by [rebase 4](prefab-data-step-5-rebase-4.md) (query-only calls no longer count) and the [precise audit](prefab-data-step-5-precise-audit.md) (selected members: `enterIsland` 84 to 3). The value model, exemption proof, OwnedView discovery and Limits sections remain current. Current contract: [lint-boundaries](../agents/lint-boundaries.md); current counts: `dev/lint/prefab-debt.json`.
+
 This supersedes the fourth review’s negative proof. That analysis dropped real constructors after failing to bind Promise.all results. No runtime source or collider/seat recipe was changed. The two reported consumer fixtures failed first in `.look/prefab-dynamic/red.log`.
 
 ## Before and after: complete construction list

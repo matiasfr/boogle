@@ -22,7 +22,7 @@ import {
 } from './prefab-boundaries.ts';
 import { capabilitySpecifiers } from './prefab-specifiers.ts';
 import type { PrefabDebt, ModuleResolver } from './prefab-boundaries.ts';
-export type { PrefabBudget, PrefabDebt } from './prefab-boundaries.ts';
+export type { PrefabDebt } from './prefab-boundaries.ts';
 import { acquiredConstruction, loadLegacyGraph, unanalysedProjectCode } from './prefab-constructors.ts';
 import type { LegacyGraph } from './prefab-constructors.ts';
 const legacyGraphs = new WeakMap<PrefabDebt, LegacyGraph>();
@@ -304,7 +304,7 @@ export function lintSafety(
         );
     }
   }
-  // Edge errors are never provider count waivers: even a debt file cannot acquire a new legacy API.
+  // Importer-count growth is never covered by a file's raw budget: even a debt file cannot acquire a new legacy API.
   if (debt.legacy && edges.length) {
     let graph = legacyGraph ?? legacyGraphs.get(debt);
     if (!graph) {

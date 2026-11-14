@@ -1,5 +1,7 @@
 # Precise prefab enforcement after the orchestrator reset
 
+> **Current as of schema 7.** Contract: [lint-boundaries](../agents/lint-boundaries.md). The earlier step-5 documents are history.
+
 Branch `codex/prefab-data-step-5-6` starts from `e09762b0` (not the rejected reference-taint tree), rebased onto `d50f514c5`. No game/server/Home source changes; no push, ship or network fetch. The rejected prefab-references.ts and storage-edge design are absent.
 
 | Metric | Restored e09762b0 | Final precise guard |

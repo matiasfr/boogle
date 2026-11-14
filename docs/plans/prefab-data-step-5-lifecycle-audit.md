@@ -1,5 +1,7 @@
 # Fourth-review construction audit
 
+> **History (kept as evidence).** Superseded by the [dynamic audit](prefab-data-step-5-dynamic-audit.md) (5f) and later steps. The module and export stop list is now a candidate list with a computed proof. The paragraphs on `forwards` and on the registry reading the base debt file remain current. Current contract: [lint-boundaries](../agents/lint-boundaries.md); current counts: `dev/lint/prefab-debt.json`.
+
 **Superseded negative proof:** see [the fifth-review re-audit](prefab-data-step-5-dynamic-audit.md). Promise.all bindings hid real constructors; the two view removals below were incorrect and are restored.
 
 All 62 recorded construction exports at `d9b8d8573` were checked against their capability calls. The required OwnedView factory owns/attaches already-created bodies and schedules disposal; it must be freely importable with instantiate. The explicit module stop list now includes `src/render/owned-view.ts`, in addition to the four previously justified shared services. The prefab runtime remains an explicit open door. No raw capability import exemption or file budget was added.
