@@ -747,7 +747,7 @@ anywhere under way, 0.20 m at the Quarry's stop on today's track and 0.06 m on i
 stops. Buffers count: none stands in a deck or in another buffer (0.02 m at least between them). **A train on an up
 track is set across along the line's smooth heading** (`lineSmoothAt`): the line's own heading steps at each metre
 point, and along it a car 4 m beside the line stood back at every metre of a bend (0.58 m at the Quarry), a judder;
-rails and other fixed things keep the stepped heading the sim's platforms are pinned to, and both lie on one curve. **The Quarry's bend is eased on
+rails and other fixed things keep the stepped heading the sim's platforms are pinned to, and both lie on one curve. The two readings agree to 3 cm along both up tracks and to 1 cm at every platform and crossing. **Wheels are not on the drawn rails round a bend**, on either track: each rail is a straight box 2 to 4 m long (today's track sets it at its middle's heading), so a wheel stands up to 12 cm off one on line 1's own track, 15 cm on line 2's, 16 cm and 12 cm on their up tracks (`test/train-wheel-rail.test.ts` pins these so they get no worse). Rails that bend, or shorter ones on bends, are the track view's piece model (the gantry carries one rail pair a panel) and are not done. **The Quarry's bend is eased on
 the up track** (`layout.ts` `upFull`, `track-ease.ts`): 4 m inside the line's 6.5 m bend it was a bend of under 3 m;
 now it starts its turn earlier and ends it later (s 156 to 200), running between 3.91 and 4.35 m from the line, and
 turns no tighter than 10 m (10.4 m measured every 0.01 m, as the rails read it and as a train does). Rails, bed and trains follow it; the up platform (the track within 0.1 m of where it was
