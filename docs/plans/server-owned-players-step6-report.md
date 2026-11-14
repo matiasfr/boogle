@@ -1,5 +1,81 @@
 # Server-owned players, step 6
 
+## Follow-up: place unseen returns and finish watched corrections
+
+2026-11-13, runtime **a14c64e04**, branch **codex/server-players-step-6**. Local `origin/main` is still
+**86a2945d8**, already an ancestor, so no rebase or new branch was needed. No push, ship, fetch or reinstall.
+This client-only follow-up supersedes the hidden-return and fixed-cap policy in the older reports below.
+The orchestrator's 1x review of 00a3e89d1 found all three previous cuts gone, no step above 5.04 cm, and no walk,
+talk or ride regression; that is supplied review evidence, not a fresh observation of this tip.
+
+`src/boogler/boogler.ts:72` feeds actual `visibilitychange` events to the page-lifetime presenter. In
+`src/boogler/presentation.ts:18`, a hidden interval of at least **500 ms** grants placement on the first visible
+live frame. It copies the authoritative leg pose, clears the obsolete talk prediction and leaves no catch-up
+tail. A long frame while visible never grants placement. A return while offline consumes this permission and
+holds still; the later watched reconnect still eases. The existing initial-join placement is unchanged.
+
+`src/boogler/presentation.ts:88` retains a relative closing rate for long visible corrections until authority
+is reached. When the ordinary cap would take over three seconds to close the gap, the raised cap is target
+speed plus **gap / 2.5 seconds**. It survives new legs, including flee's repeated replans. Ordinary acceleration
+stays **12 m/s²**; extreme raised caps also raise acceleration to reach that cap within **0.5 seconds**. This
+preserves an eased first frame while avoiding an acceleration-limited long chase. Small corrections and talk
+release retain the previous bounds. No change to server brain, wire, WORLD_NS **v42**, lead consumers, dialogue,
+seats, prefabs or room replacement. No copy moved (old/new file:line: none). The talk box remains usable while
+he moves, with its existing leave-distance behavior.
+
+Tests first: the hidden-placement cases failed for the missing visibility transition, and the six-metre visible
+reconnect failed to converge within three seconds. Independent review found that resetting the raised cap for
+each leg caused a six-metre fleeing correction to take 5.67 seconds. Added that red regression and retained the
+closing rate across leg changes. A sixty-metre regression then failed under fixed acceleration; scaling only
+the extreme catch-up acceleration fixed it. **18 presentation tests pass**, and the reviewer found no remaining
+actionable issue. Old hidden-gap assertions now explicitly cover a **visible stall**, since a timestamp gap
+alone must not count as a hidden page. The distant-restart/re-anchor bounds were updated to permit the requested
+raised rates; no baked data or golden fixture changed.
+
+| Controlled 60 Hz case | Before (00a3e89d1) | After |
+| --- | ---: | ---: |
+| Pose error on first return after seven seconds hidden | 10.4717 m | 0 |
+| Six-metre gap behind a 1.5 m/s walking target: convergence | 4.233 s | 2.767 s |
+| Same visible catch-up: maximum speed | 3 m/s | **3.9 m/s** |
+| Same visible catch-up: maximum frame displacement | 5 cm | **6.5 cm** |
+
+Independent review measured repeated flee replans converging in **3.07 s at 6 m**, **2.78 s at 60 m** after the
+fix. This is an approximately three-second correction, not a hard three-second deadline when the target changes
+motion. The six-metre calm bound is `3.9 × dt` (19.5 cm at the production 50 ms frame cap); ordinary walk motion
+still follows its 1.5 m/s target. [Measurements](../../.look/step6-return-metrics.json),
+[initial red tests](../../.look/step6-return-red.log), [replan red test](../../.look/step6-return-replan-red.log),
+[extreme-gap red test](../../.look/step6-return-large-gap-red.log), [final tests](../../.look/step6-return-unit.log).
+
+Checks after the last source/test edit: `npm run check` **1,879 passing / one existing TODO**; server tests
+**355/355**; direct worktree `npm run test:net` **191/191**; direct `npm run scenario -- boogler-tag boogler-talk-pad
+interact` **all three pass**; ship-check **791/791**, 27 lint files and 80 affected test files; registry passes.
+Prettier ran on changed files. Review stamp **65e394b88717**, 22 classified files, `--no-fetch`.
+[Check](../../.look/step6-return-check.log), [server](../../.look/step6-return-server.log),
+[network](../../.look/step6-return-net.log), [scenarios](../../.look/step6-return-scenarios.log),
+[ship-check](../../.look/step6-return-ship-check.log), [registry](../../.look/step6-return-registry.log),
+[stamp](../../.look/step6-return-stamp.txt).
+
+[Fresh broker manifest](../../.look/evidence/1794622584495-82465/evidence.json): **pass**, runtime a14c64e04,
+unchanged tree throughout (only this report was uncommitted). The diagnostic sends a **synthetic visibility
+event**, waits seven real seconds behind an explicitly labelled cover, restores the last unseen pose, then sends
+the visible event through the production listener. It does not exercise native OS tab hiding. The first visible
+sample was **0.21 cm** from authority read slightly later that frame, after **7.48 m** of authoritative travel.
+The exact-clock presenter test is zero-error. The capture passed WebGPU/frame/console checks; that is execution
+health, not a verdict on feel.
+
+Opened its [still](../../.look/evidence/1794622584495-82465/boogler-visible-return-final-still.png),
+[motion sheet](../../.look/evidence/1794622584495-82465/boogler-visible-return-final-motion.png), and
+[12-frame return strip](../../.look/evidence/1794622584495-82465/return-frames.png): after the cover disappears he
+is at the current spot with no drawn chase in the inspected frames. Also opened fresh scenario
+[Talk](../../.look/scenarios/interact/talk-still.png) and [riding](../../.look/scenarios/interact/riding-still.png)
+stills: readable talk choices; rider over the compressed hat with the ball's Grab prompt. No scenario failures.
+The [first capture](../../.look/evidence/1794622256889-69648/evidence.json) passed its assertions/health checks but
+was invalidated by editing this report while queued; the repeat above held all tracked files fixed and passed.
+Its preliminary still and sheet were also opened, but are superseded.
+
+Native alt-tab behavior, subjective real-time smoothness and device behavior remain unverified. Not tested on a
+device. Earlier stamps and images below are historical. No push or ship.
+
 ## Follow-up: continuous presentation through outages and corrections
 
 2026-11-13. Runtime **ff7dfa43f**, following **386d928da**. These client-only fixes supersede the presentation
