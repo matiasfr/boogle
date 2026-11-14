@@ -241,7 +241,7 @@ first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: st
   `createPosePolicy.read` and the `ground` sample go; `posePolicy.safe` stays for Get unstuck's ground search.
   Verify: the step 1 eval now shows a `v1` record with High Gorge's coordinates after 6 s on the platform, unchanged
   after stepping onto a train (with `ride` set), and unchanged after 5 s in the sea.
-- [ ] **4. Return in place, with the fallback chain** (sol medium). Edit `src/entities/railway/arrival.ts`: replace
+- [x] **4. Return in place, with the fallback chain** (sol medium). Implemented; browser proofs recorded in the follow-up report. Edit `src/entities/railway/arrival.ts`: replace
   `restorePose` with a small state machine `returning: { list, k, since } | null`: on `loaded`, read the record with
   `readReturnSpot(..., Date.now(), tune.railReturnMinutes * 60000)`; if `null`, today's path (jump landing, else
   spawn). Else for candidate `k`: hold the body at it each update; when `areasSettled(x, z)` and `scenery.ready()`,

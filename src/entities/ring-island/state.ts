@@ -12,6 +12,24 @@ import { createIslandGround, ringUL, type IslandGround } from './ground.ts';
 /** The leaf: degrees up from the deck (78 raised, 0 down), counterweight footings in its bracket (0..4), braced. */
 export const ringIslandPose = { leaf: 78, bracket: 0, braced: false };
 export const ringIslandNear = { mounted: false, keep: false };
+const mountListeners = new Set<() => void>();
+export function onRingSceneryMounted(fn: () => void) {
+  mountListeners.add(fn);
+  return () => {
+    mountListeners.delete(fn);
+  };
+}
+export function ringSceneryMounted() {
+  for (const fn of mountListeners) fn();
+}
+/** The same two anchors and near radius used by index.ts's body-driven residency. */
+export function ringAreaPending(x: number, z: number) {
+  const anchors = [
+    ringAt(RING_GAP.hinge, RING_FORMATION.mid),
+    ringAt((RING_HALT.u0 + RING_HALT.u1) / 2, RING_FORMATION.mid),
+  ];
+  return !ringIslandNear.mounted && anchors.some((p) => Math.hypot(x - p.x / 100, z - p.z / 100) < 500);
+}
 /** The low map table on the west platform (view.ts builds it; railway/ring-map-table.ts lays the halt map over its
  * paint from the rivet): the middle of its top in world metres, `top` the height its top's box starts at, the top
  * `w` m along world x by `d` m along z. */

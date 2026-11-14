@@ -12,7 +12,7 @@ import { me } from '../../player/player.ts';
 import { precompile, warmUp } from '../../render/precompile.ts';
 import { RING_FORMATION, RING_GAP, RING_HALT, ringAt } from '../../sim/railway-ring-layout.ts';
 import { registerRingShore } from './shore.ts';
-import { islandGround, ringIslandNear } from './state.ts';
+import { islandGround, ringIslandNear, ringSceneryMounted } from './state.ts';
 import type { RingIslandView } from './view.ts';
 import { setNearViewMounted } from '../ring-island-far/view.ts';
 import { showFarHills } from '../../place/far-hills.ts';
@@ -77,6 +77,7 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
     ringIslandNear.mounted = true;
     // The near ground is the hills now, cuttings and all: Place's cones (no cuttings, nothing solid) stand down.
     showFarHills(false);
+    ringSceneryMounted();
   };
   const unmount = () => {
     if (near) despawn(near);

@@ -17,6 +17,7 @@ import { westExtras, westMassing } from './massing-west.ts';
 import { AREA_CENTRES } from './leg2-layout.ts';
 import { drawGreyBoxes } from './boxes.ts';
 import type { Placement } from '../../prefab/types.ts';
+import { routeAreas, routeSceneryMounted } from './state.ts';
 
 const MOUNT = { near: 400, far: 550 };
 defineKind('route-greybox', { update: 13 });
@@ -38,6 +39,8 @@ const AREAS: readonly Area[] = [
 if (productionRailway && new URLSearchParams(location.search).get('blockout') !== 'world') {
   let gone = false;
   const residents = AREAS.map((area) => {
+    const residency = { ...area.centre, mounted: false };
+    routeAreas.set(area.id, residency);
     let mounted: { owner: OwnedView; entity: GameEntity; boxes: number; solids: number } | null = null,
       building = false;
     const wanted = () => {
@@ -66,12 +69,15 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
         boxes: mesh.count,
         solids,
       };
+      residency.mounted = true;
+      routeSceneryMounted();
     }
     function unmount() {
       if (!mounted) return;
       despawn(mounted.entity);
       mounted.owner.dispose();
       mounted = null;
+      residency.mounted = false;
     }
     return {
       id: area.id,
@@ -94,6 +100,7 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
     dispose() {
       gone = true;
       for (const r of residents) r.unmount();
+      routeAreas.clear();
     },
   });
 }

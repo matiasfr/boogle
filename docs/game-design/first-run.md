@@ -56,8 +56,9 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   it retains the last standing spot and refreshes the time and current `ride` position; it never writes null. The
   first-visit fall and unready scenery do not save. A record is read only within `railway.returnMinutes` (Local,
   default 30; 0 disables returns), with no migration from v0. Get unstuck records its checked surface. Steps 1–3 of
-  [the return plan](../plans/resume-where-you-were.md) build saving; restoration still uses the old open-ground policy
-  until step 4 adds residency and fallbacks. In classic mode, only standing terrain counts, excluding a deck, seat
+  [the return plan](../plans/resume-where-you-were.md) now build saving and return placement: the spot, nearby rings,
+  the two nearest halts, then Home, with live mounted-scenery validation and a 2.5 s timeout per candidate. Step 5's
+  loading-cover hold and fade remain pending. In classic mode, only standing terrain counts, excluding a deck, seat
   or water. With no record, a different world namespace, or ground that has moved or gone under the sea, you get
   the usual spawn (or the room or prototype's own, from the URL). A bare launch of the Home Screen app goes straight back to
   the room or prototype it was last in.

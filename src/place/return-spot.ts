@@ -2,7 +2,9 @@
 import { RAIL_LINES } from '../sim/railway-lines.ts';
 import { JUMPS } from '../world/railway-jump.ts';
 
-type Position = { x: number; y: number; z: number };
+export type ReturnPosition = { x: number; y: number; z: number };
+type Position = ReturnPosition;
+export type ReturnCandidate = Position & { halt?: string; checked?: boolean };
 export type ReturnSpot = Position & { yaw: number; at: number; ride?: Position };
 const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 function position(value: unknown): value is Position {
@@ -39,10 +41,12 @@ export function captureReturnSpot(
   return prev ? { ...prev, at: now, ride: { ...state.pos } } : null;
 }
 /** One candidate per catalogue platform; coincident up/down platforms share a candidate. */
-export function haltLandings(): Position[] {
-  const points = RAIL_LINES.flatMap((line) => line.halts.flatMap((halt) => halt.platforms));
-  const unique = new Map<string, Position>();
-  for (const point of points) {
+export function haltLandings(): ReturnCandidate[] {
+  const points = RAIL_LINES.flatMap((line) =>
+    line.halts.flatMap((halt, k) => halt.platforms.map((point) => ({ point, halt: `${line.id}:${k}` }))),
+  );
+  const unique = new Map<string, ReturnCandidate>();
+  for (const { point, halt } of points) {
     const platform = { x: point.x / 100, y: point.y / 100, z: point.z / 100 };
     const jump = JUMPS.flatMap((j) => (j.land ? [j.land] : []))
       .filter((p) => Math.hypot(p.x - platform.x, p.z - platform.z) <= 30)
@@ -50,13 +54,73 @@ export function haltLandings(): Position[] {
         (a, b) => Math.hypot(a.x - platform.x, a.z - platform.z) - Math.hypot(b.x - platform.x, b.z - platform.z),
       )[0];
     const landing = jump ?? platform;
-    unique.set(`${landing.x}:${landing.y}:${landing.z}`, { x: landing.x, y: landing.y, z: landing.z });
+    unique.set(`${halt}:${landing.x}:${landing.y}:${landing.z}`, {
+      x: landing.x,
+      y: landing.y,
+      z: landing.z,
+      halt,
+      checked: !!jump,
+    });
   }
   return [...unique.values()];
 }
-export function returnCandidates(spot: ReturnSpot, halts: readonly Position[]): Position[] {
+export function returnCandidates(spot: ReturnSpot, halts: readonly ReturnCandidate[]): ReturnCandidate[] {
   const near = spot.ride ?? spot;
   const distance = (p: Position) => Math.hypot(p.x - near.x, p.z - near.z);
-  const closest = [...halts].sort((a, b) => distance(a) - distance(b)).slice(0, 2);
+  const seen = new Set<string>();
+  const closest = [...halts]
+    .sort((a, b) => distance(a) - distance(b))
+    .filter((p) => {
+      if (!p.halt) return true;
+      if (seen.has(p.halt)) return false;
+      seen.add(p.halt);
+      return true;
+    })
+    .slice(0, 2);
   return !spot.ride || distance(spot) <= 25 ? [{ x: spot.x, y: spot.y, z: spot.z }, ...closest] : closest;
+}
+
+/** Local placement search; seconds and surface queries are supplied by the arrival owner. */
+export function createReturnSearch(spot: ReturnSpot | null, halts: readonly ReturnCandidate[]) {
+  const list = spot ? returnCandidates(spot, halts) : [];
+  let k = 0,
+    since: number | null = null,
+    done = false;
+  return {
+    current: () => (done ? null : (list[k] ?? null)),
+    step(
+      now: number,
+      probes: {
+        settled: (p: Position) => boolean;
+        standable: (p: Position) => boolean;
+        near: (p: Position, radii: readonly number[]) => Position | null;
+      },
+    ): { kind: 'hold' } | { kind: 'home' } | { kind: 'land'; at: Position } {
+      const p = list[k];
+      if (done || !p) {
+        done = true;
+        return { kind: 'home' };
+      }
+      if (since === null) {
+        since = now;
+        return { kind: 'hold' };
+      }
+      if (now - since < 2.5 && !probes.settled(p)) return { kind: 'hold' };
+      if (now - since < 2.5) {
+        const exact = (!p.halt || p.checked) && probes.standable(p);
+        const at = exact ? p : probes.near(p, p.halt && !p.checked ? [3, 4.5, 6, 8] : [1.4, 3, 6]);
+        if (at) {
+          done = true;
+          return { kind: 'land', at };
+        }
+      }
+      k++;
+      since = now;
+      if (k >= list.length) {
+        done = true;
+        return { kind: 'home' };
+      }
+      return { kind: 'hold' };
+    },
+  };
 }

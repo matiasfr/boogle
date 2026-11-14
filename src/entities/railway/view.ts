@@ -31,6 +31,8 @@ import { createRailwayHook } from './hook-shot.ts';
 import { createRailwayGlide } from './glide.ts';
 import { stepMoves } from './move-order.ts';
 import { worksPreview } from './works-flag.ts';
+import { onRouteSceneryMounted } from '../route-greybox/state.ts';
+import { onRingSceneryMounted } from '../ring-island/state.ts';
 
 export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
@@ -69,6 +71,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       return [{ x: at.x + layout.ORIGIN.x, y: layout.railY(line.line, solid.s) + 0.2, z: at.z }];
     }),
   );
+  owner.cleanup(onRouteSceneryMounted(arrival.sceneryRebuilt));
+  owner.cleanup(onRingSceneryMounted(arrival.sceneryRebuilt));
   const sources = await createRailwaySources(adapter, owner);
   // The reward owns the one reveal queue; line two's devices show through it too.
   const reward = await createRailwayReward(adapter, owner, (out) =>

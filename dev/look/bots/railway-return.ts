@@ -10,6 +10,8 @@ import { getRoomId } from '../../../src/netplay/net.ts';
 import { railwayRoomId } from '../../../src/world/railway-namespace.ts';
 import { PLAYER_R } from '../../../src/constants.ts';
 import type { ReturnSpot } from '../../../src/place/return-spot.ts';
+import { haltLandings, returnCandidates } from '../../../src/place/return-spot.ts';
+import { sitDown, seated } from '../../../src/entities/railway/seat.ts';
 
 const KEY = 'look.railway-return';
 let started = false;
@@ -24,12 +26,23 @@ async function run() {
   const previous = sessionStorage.getItem(KEY);
   if (previous) {
     await wait(6000);
-    const before = JSON.parse(previous) as { x: number; y: number; z: number };
+    const before = JSON.parse(previous) as {
+      x: number;
+      y: number;
+      z: number;
+      mode?: string;
+      expected?: { x: number; z: number };
+    };
     const after = { x: body.position.x, y: body.position.y, z: body.position.z };
     const result = { before, after, distance: Math.hypot(after.x - before.x, after.z - before.z) };
     document.documentElement.dataset.railwayReturn = JSON.stringify(result);
     console.log(`RAILWAY RETURN ${JSON.stringify(result)}`);
     sessionStorage.removeItem(KEY);
+    window.__debugCam?.set([after.x + 8, after.y + 6, after.z + 10], [after.x, after.y, after.z]);
+    if (before.mode === 'train') {
+      if (!before.expected || Math.hypot(after.x - before.expected.x, after.z - before.expected.z) > 10)
+        throw new Error(`railway-return: missed nearest train halt: ${JSON.stringify(result)}`);
+    } else if (result.distance >= 2) throw new Error(`railway-return: missed Gorge spot: ${JSON.stringify(result)}`);
     return;
   }
   const land = jumpOf('gorge-reached')!.land!;
@@ -40,6 +53,37 @@ async function run() {
     await wait(100);
   }
   await wait(6000);
+  if (new URLSearchParams(location.search).get('mode') === 'train') {
+    const train = platformById('railway:train0-1');
+    if (!train) throw new Error('railway-return: passenger deck unavailable');
+    const local = { x: 0.7, y: train.top + PLAYER_R + 0.1, z: 0, yaw: 0 };
+    const at = fromPlatform(train, local, false, { ...local });
+    teleport(body, at.x, at.y, at.z);
+    body.velocity.set(0, 0, 0);
+    await wait(200);
+    sitDown();
+    if (!seated()) throw new Error('railway-return: no reachable train chair');
+    const departure = { x: body.position.x, z: body.position.z };
+    const until = performance.now() + 120000;
+    while (Math.hypot(body.position.x - departure.x, body.position.z - departure.z) < 10) {
+      if (performance.now() > until || !seated()) throw new Error('railway-return: seated train never departed');
+      await wait(100);
+    }
+    await wait(6000);
+    // pagehide captures the freshest ride point; force the same lifecycle event before measuring its candidate.
+    window.dispatchEvent(new PageTransitionEvent('pagehide'));
+    const record = JSON.parse(
+      localStorage.getItem(`boogle.railway-pose.v1:${railwayRoomId(getRoomId())}:${identity.pid}`) ?? 'null',
+    ) as ReturnSpot | null;
+    if (!record?.ride) throw new Error('railway-return: no saved train observation');
+    const expected = returnCandidates(record, haltLandings())[0];
+    sessionStorage.setItem(
+      KEY,
+      JSON.stringify({ x: body.position.x, y: body.position.y, z: body.position.z, mode: 'train', expected }),
+    );
+    location.reload();
+    return;
+  }
   if (new URLSearchParams(location.search).get('returnSave') === '1') {
     const key = `boogle.railway-pose.v1:${railwayRoomId(getRoomId())}:${identity.pid}`;
     const record = () => JSON.parse(localStorage.getItem(key) ?? 'null') as ReturnSpot | null;

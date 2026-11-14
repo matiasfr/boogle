@@ -56,7 +56,13 @@ export function createPosePolicy(
       surface !== null && Math.abs(surface - y) <= 0.5 && (surface > 1.6 || Math.abs(surface - ground(x, z)) > 0.5)
     );
   }
-  function standableNear(x: number, y: number, z: number, radii: readonly number[]) {
+  function standableNear(
+    x: number,
+    y: number,
+    z: number,
+    radii: readonly number[],
+    available: (x: number, y: number, z: number) => boolean = () => true,
+  ) {
     for (const radius of radii) {
       let best: { x: number; y: number; z: number } | null = null;
       const count = Math.max(6, Math.ceil((2 * Math.PI * radius) / 1.4));
@@ -71,7 +77,8 @@ export function createPosePolicy(
             surface >= y - 0.5 &&
             surface <= y + 1.5 &&
             (!best || surface > best.y) &&
-            standableAt(px, surface, pz)
+            standableAt(px, surface, pz) &&
+            available(px, surface, pz)
           )
             best = { x: px, y: surface, z: pz };
         }

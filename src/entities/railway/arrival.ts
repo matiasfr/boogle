@@ -9,7 +9,15 @@ import { physicsTime, raycastClosest, rayHit, setCcd, teleport, sweepSphere, typ
 import { GROUP } from '../../physics/physics.ts';
 import { aboard, carry } from '../../physics/platforms.ts';
 import { inputState } from '../../player/input-state.ts';
-import { captureReturnSpot, readReturnSpot, type ReturnSpot } from '../../place/return-spot.ts';
+import {
+  captureReturnSpot,
+  readReturnSpot,
+  createReturnSearch,
+  haltLandings,
+  type ReturnSpot,
+  type ReturnPosition,
+} from '../../place/return-spot.ts';
+import { routeAreasPending } from '../route-greybox/state.ts';
 import { readReturnMinutes } from '../../place/return-tuning.ts';
 import { camera } from '../../render/scene.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -71,16 +79,26 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   );
   const poseKey = `boogle.railway-pose.v1:${railwayRoomId(getRoomId())}:${identity.pid}`;
   // Read before first placement, so a pending return is not discarded by the Home-only spawn guard.
-  let savedPose: ReturnSpot | null = null;
-  try {
-    savedPose = readReturnSpot(
-      JSON.parse(localStorage.getItem(poseKey) ?? 'null'),
-      Date.now(),
-      readReturnMinutes(localStorage) * 60000,
-    );
-  } catch {
-    // Malformed or unavailable browser memory is the ordinary no-record arrival.
-  }
+  let hadRecord = false;
+  const readSavedPose = (): ReturnSpot | null => {
+    try {
+      const text = localStorage.getItem(poseKey);
+      hadRecord = text !== null;
+      return readReturnSpot(JSON.parse(text ?? 'null'), Date.now(), readReturnMinutes(localStorage) * 60000);
+    } catch {
+      return null;
+    }
+  };
+  let savedPose = readSavedPose();
+  let returning: ReturnType<typeof createReturnSearch> | null = null;
+  let heldCandidate: ReturnPosition | null = null;
+  const areasSettled = (x: number, z: number) => !routeAreasPending(x, z) && !ring.ringAreaPending(x, z);
+  const placeReturn = (p: ReturnPosition) => {
+    const body = me.body;
+    if (!body) return;
+    teleport(body, p.x, p.y + PLAYER_R + 0.4, p.z);
+    body.velocity.set(0, 0, 0);
+  };
   const scenery = createPoseReadiness(physicsTime);
   let lastWritten = '',
     lastWriteAt = 0;
@@ -151,13 +169,6 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     body.velocity.set(0, 0, 0);
     if (to.yaw !== undefined) cam.yaw = me.yaw = to.yaw;
     cam.pitch = -0.14;
-  };
-  const restorePose = () => {
-    const body = me.body;
-    if (!body || fallArrival.active || !scenery.ready() || !savedPose || !posePolicy.safe(savedPose)) return;
-    teleport(body, savedPose.x, H(savedPose.x, savedPose.z) + PLAYER_R + 0.4, savedPose.z);
-    body.velocity.set(0, 0, 0);
-    cam.yaw = me.yaw = savedPose.yaw;
   };
   const pagehide = () => {
     if (!loaded || !placed || restorePending) return;
@@ -264,6 +275,8 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   });
   return {
     sceneryRebuilt: scenery.rebuilt,
+    // Step 5 will connect this to the loading cover and the late-placement fade.
+    settling: () => restorePending || returning !== null,
     update(dt: number, ready: boolean, tick: number) {
       const body = me.body;
       if (body && body !== placed) {
@@ -272,7 +285,7 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         if (!fallArrival.active && !savedPose && !insidePlace(body.position.x, body.position.z)) atSpawn();
         restorePending = true;
       }
-      if (body && insidePlace(body.position.x, body.position.z)) {
+      if (body && !restorePending && insidePlace(body.position.x, body.position.z)) {
         const h = H(body.position.x, body.position.z);
         if (body.position.y < h - 0.8) {
           teleport(body, body.position.x, h + PLAYER_R + 0.3, body.position.z);
@@ -283,9 +296,37 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
       // colliders in this same update, before the broad phase knows a partner's new track exists.
       const poseReady = ready && tick > 0 && scenery.ready();
       fell ||= fallArrival.active;
-      if (!loaded && poseReady) {
+      if (!loaded && ready && tick > 0 && body) {
         loaded = true;
+        savedPose = readSavedPose();
+        if (savedPose && !fell) returning = createReturnSearch(savedPose, haltLandings());
         restorePending = true;
+      }
+      if (returning && body && !fallArrival.active) {
+        const candidate = returning.current();
+        if (candidate) {
+          if (heldCandidate !== candidate) {
+            heldCandidate = candidate;
+            scenery.rebuilt();
+          }
+          placeReturn(candidate);
+        }
+        const result = returning.step(performance.now() / 1000, {
+          settled: (p) => ready && tick > 0 && scenery.ready() && areasSettled(p.x, p.z),
+          standable: (p) => !taken(p.x, p.y, p.z) && posePolicy.standableAt(p.x, p.y, p.z),
+          near: (p, radii) => posePolicy.standableNear(p.x, p.y, p.z, radii, (x, y, z) => !taken(x, y, z)),
+        });
+        if (result.kind !== 'hold') {
+          if (result.kind === 'land') {
+            placeReturn(result.at);
+            cam.yaw = me.yaw = savedPose!.yaw;
+            cam.pitch = -0.14;
+          } else atSpawn();
+          returning = null;
+          restorePending = false;
+          landing = null;
+        }
+        return; // Never capture the held body, or query a second candidate in the same frame.
       }
       // An empty pose waits for the room's seed (one fetch, at most ten seconds) before it settles for the spawn.
       if (
@@ -296,8 +337,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         !fallArrival.active &&
         (savedPose || landing !== undefined)
       ) {
-        if (savedPose) restorePose();
-        else if (landing && !fell) land(landing);
+        if (!fell) {
+          atSpawn();
+          if (!hadRecord && landing) land(landing);
+        }
         landing = null; // once
         restorePending = false;
       }
