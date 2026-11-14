@@ -63,8 +63,11 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   per candidate. Checked catalogue halt landings are reused; other halts probe 3, 4.5, 6 and 8 m rings for the highest
   surface between 0.5 m below and 1.5 m above the platform datum. Occupied points are skipped. Expired, disabled or
   malformed records go Home; a room with no record uses its jump-in landing, else Home. Room replacement, Start fresh
-  and world-version changes clear the room memory. The [return plan](../plans/resume-where-you-were.md)'s step 5
-  loading-cover hold and fade remain pending: these moves are not yet guaranteed hidden. In classic mode, only
+  and world-version changes clear the room memory. Nobody sees the placement: with a recent record the loading screen
+  stays up until the body stands where it will stay (at most 10 s more, `src/boot/cover-hold.ts`), and the tab
+  publishes no pose until then, so a friend sees you appear in place, never at Home first. If the room answers later
+  than that, the screen fades to black for 250 ms before the body moves and back once it has settled. No fall, crane
+  or Act card plays on a return ([return plan](../plans/resume-where-you-were.md), step 5). In classic mode, only
   standing terrain counts, excluding a deck, seat or water; Get unstuck forgets its spot. With no record, a different
   world namespace, or ground that has moved or gone under the sea, you get
   the usual spawn (or the room or prototype's own, from the URL). A bare launch of the Home Screen app goes straight back to

@@ -11,14 +11,15 @@ import { aboard, carry } from '../../physics/platforms.ts';
 import { inputState } from '../../player/input-state.ts';
 import {
   captureReturnSpot,
-  readReturnSpot,
   createReturnSearch,
   haltLandings,
   type ReturnSpot,
   type ReturnPosition,
 } from '../../place/return-spot.ts';
 import { routeAreasPending } from '../route-greybox/state.ts';
-import { readReturnMinutes } from '../../place/return-tuning.ts';
+import { returnKey, returnSettle, storedReturn } from '../../place/return-settle.ts';
+import { coverLifted } from '../../boot/cover-hold.ts';
+import { bootMark } from '../../boot/timeline.ts';
 import { camera } from '../../render/scene.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { registerRailwayRecovery } from './state.ts';
@@ -77,21 +78,50 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     (p) => feet.some((foot) => outOf(foot, { x: p.x, z: p.z }, PLAYER_R + 0.2)),
     { raycastClosest, rayHit },
   );
-  const poseKey = `boogle.railway-pose.v1:${railwayRoomId(getRoomId())}:${identity.pid}`;
+  const poseKey = returnKey(railwayRoomId(getRoomId()), identity.pid);
   // Read before first placement, so a pending return is not discarded by the Home-only spawn guard.
   let hadRecord = false;
   const readSavedPose = (): ReturnSpot | null => {
-    try {
-      const text = localStorage.getItem(poseKey);
-      hadRecord = text !== null;
-      return readReturnSpot(JSON.parse(text ?? 'null'), Date.now(), readReturnMinutes(localStorage) * 60000);
-    } catch {
-      return null;
-    }
+    const stored = storedReturn(localStorage, poseKey, Date.now());
+    hadRecord = stored.had;
+    return stored.spot;
   };
   let savedPose = readSavedPose();
   let returning: ReturnType<typeof createReturnSearch> | null = null;
   let heldCandidate: ReturnPosition | null = null;
+  if (!savedPose) returnSettle.done();
+  owner.cleanup(returnSettle.done);
+  // Nobody sees the move (docs/plans/resume-where-you-were.md, step 5). The loading cover waits for the search
+  // (src/features/return-cover.ts). If the world is already on screen when a candidate is tried (a slow room: the
+  // cover gave up waiting), the screen goes black first: a 250 ms fade when the body has not moved yet, a cut when it
+  // is already being held somewhere, and a 250 ms fade back once it stands where it will stay.
+  const VEIL_MS = 250;
+  const veil = document.createElement('div');
+  veil.className = 'railway-return-veil';
+  veil.setAttribute('aria-hidden', 'true');
+  owner.cleanup(() => veil.remove());
+  let veilAt = -1;
+  const veiled = (cut: boolean) => {
+    if (veilAt < 0) {
+      veilAt = performance.now() - (cut ? VEIL_MS : 0);
+      veil.classList.toggle('cut', cut);
+      document.body.append(veil);
+      void veil.offsetWidth; // the style is computed at 0 before the class turns it on, so the fade plays
+      veil.classList.add('on');
+    }
+    return performance.now() - veilAt >= VEIL_MS;
+  };
+  const unveil = () => {
+    if (veilAt < 0) return;
+    veilAt = -1;
+    veil.classList.remove('on', 'cut');
+    setTimeout(() => veil.remove(), VEIL_MS + 50);
+  };
+  const settled = (kind: string) => {
+    returnSettle.done();
+    unveil();
+    bootMark('return-settled', { kind });
+  };
   const areasSettled = (x: number, z: number) => !routeAreasPending(x, z) && !ring.ringAreaPending(x, z);
   const placeReturn = (p: ReturnPosition) => {
     const body = me.body;
@@ -275,8 +305,6 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   });
   return {
     sceneryRebuilt: scenery.rebuilt,
-    // Step 5 will connect this to the loading cover and the late-placement fade.
-    settling: () => restorePending || returning !== null,
     update(dt: number, ready: boolean, tick: number) {
       const body = me.body;
       if (body && body !== placed) {
@@ -300,9 +328,11 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         loaded = true;
         savedPose = readSavedPose();
         if (savedPose && !fell) returning = createReturnSearch(savedPose, haltLandings());
+        else returnSettle.done();
         restorePending = true;
       }
       if (returning && body && !fallArrival.active) {
+        if (coverLifted() && !veiled(heldCandidate !== null)) return; // on screen: black before the body moves
         const candidate = returning.current();
         if (candidate) {
           if (heldCandidate !== candidate) {
@@ -322,6 +352,7 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
             cam.yaw = me.yaw = savedPose!.yaw;
             cam.pitch = -0.14;
           } else atSpawn();
+          settled(result.kind);
           returning = null;
           restorePending = false;
           landing = null;
