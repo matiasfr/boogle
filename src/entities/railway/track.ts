@@ -470,29 +470,20 @@ export function buildTrack(
       wide = ul < -0.5;
     lateral(ul / 2, q);
     add(s, 'cap', q.x, q.z, y - 0.97, place(0, 0, 0, 5 - ul, 0.55, 1, yaw), '#7f5630', 3, 2.2);
-    for (const t of wide ? [-1, 1, ul / 1.2 - 1, ul / 1.2 + 1] : [-1, 1]) {
-      lateral(t * 1.2, q);
-      add(
-        s,
-        'stringer',
-        q.x,
-        q.z,
-        y - 0.42,
-        place(
-          0,
-          0,
-          0,
-          0.8,
-          0.4,
-          6.3, // 20 cm end gap at the 6.5 m bent spacing, including the curve's inner edge
-          yaw,
-          new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0),
-        ),
-        '#6e4c2a',
-        2,
-        1.6,
-      );
+    // Span bent to bent. Trim 6 cm at each end: the joint's 12 cm gap is
+    // over the metre-wide cap, never halfway across an unsupported span.
+    const nextS = Math.min(s + 6.5, line.len);
+    const nextUl = ulOf(nextS);
+    for (const side of wide ? [-1, 1, -2, -3] : [-1, 1]) {
+      const l0 = side === -2 ? ul - 1.2 : side === -3 ? ul + 1.2 : side * 1.2;
+      const l1 = side === -2 ? nextUl - 1.2 : side === -3 ? nextUl + 1.2 : side * 1.2;
+      offsetAt(s, l0, wa);
+      offsetAt(nextS, l1, wb);
+      const length = Math.hypot(wb.x - wa.x, wb.z - wa.z, railY(line, nextS) - y);
+      offsetBox('stringer', s, l0, nextS, l1, 0.8, 0.4, -0.42, '#6e4c2a', 2, 1.6, length - 0.12);
     }
+    // Endpoint sampling above uses the shared line pose; restore it for this bent's legs.
+    bed(s);
     for (const l of wide ? [-2.1, -0.7, 0.7, 2.1, ul + 0.7, ul - 0.7, ul - 2.1] : [-2.1, -0.7, 0.7, 2.1]) {
       lateral(l, q);
       const g = H(q.x, q.z) - 0.4;
