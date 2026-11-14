@@ -287,7 +287,9 @@ function buildMesh(owner: OwnedView) {
   // The meadow's flowers and tufts (meadow-flowers.ts): loaded and baked after the land is up, so no frame waits.
   if (MEADOW.flowers && layered)
     background(
-      import('./meadow-flowers.ts').then((m) => (owner.alive ? m.addMeadowFlowers(owner) : undefined)),
+      import('./meadow-flowers.ts').then((m) => {
+        if (owner.alive) m.addMeadowFlowers(owner);
+      }),
       'meadow flowers',
     );
 

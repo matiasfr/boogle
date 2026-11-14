@@ -38,7 +38,8 @@ import { mulberry32 } from '../math.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import { GRID, ORIGIN } from './layout.ts';
 import { selectiveColour } from './look.ts';
-import { bakeMeadowKeep } from './meadow-field.ts';
+import { prof } from '../loop.ts';
+import { keepBakeByFrame } from './meadow-field.ts';
 import { MEADOW } from './meadow-flags.ts';
 import {
   byKind,
@@ -385,20 +386,7 @@ function tuftMesh(r: Ring, tris: Tri[], share: number, salt: number) {
   return mesh;
 }
 
-/** Bake the keep map a few milliseconds at a time, so no frame waits on it, then hand it to the texture. */
-async function bakeKeep(owner: OwnedView) {
-  const baking = bakeMeadowKeep();
-  for (;;) {
-    const started = performance.now();
-    let step = baking.next();
-    while (!step.done && performance.now() - started < 5) step = baking.next();
-    if (!owner.alive) return;
-    if (step.done) return setMeadowKeep(step.value);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-}
-
-/** Plant Home's lawn: up to four draws that leave with `owner`, and the keep map's bake. */
+/** Plant Home's lawn: up to four draws that leave with `owner`, and the keep map's bake, a slice a frame. */
 export function addMeadowFlowers(owner: OwnedView) {
   const share = tier();
   const meshes = [
@@ -413,5 +401,11 @@ export function addMeadowFlowers(owner: OwnedView) {
     owner.cleanup(() => (mesh.material as THREE.Material).dispose());
     owner.add(mesh);
   }
-  return bakeKeep(owner);
+  // The keep map bakes once a frame has been drawn, about 3 ms a frame, in the view's own frame step: it starts
+  // after the game's start and gives way to every frame. Until it is in, nothing grows.
+  const bake = keepBakeByFrame(() => prof.last.frames);
+  owner.animate(() => {
+    const map = bake();
+    if (map) setMeadowKeep(map);
+  }, 20);
 }

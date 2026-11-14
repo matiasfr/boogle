@@ -46,9 +46,11 @@ import {
   FORGE_FRAME,
   GREAT_TREE,
   GRID,
+  FORMATION,
   HALTS,
   HEAP,
   LINES,
+  LINKS,
   OAK,
   ORIGIN,
   ROCKS,
@@ -57,6 +59,7 @@ import {
   SPIRE,
   TOWN,
   lineAt,
+  upLat,
   type LinePoint,
 } from './layout.ts';
 import { FIELD_H, FIELD_W, pathAt } from './path-field.ts';
@@ -198,6 +201,21 @@ export function* bakeMeadowKeep(): Generator<void, Uint8Array> {
       Array.from(line.xs, (x, k) => ({ x, z: line.zs[k]! })),
       RAIL_HALF,
     );
+  // The second track of each double formation runs up to 4.35 m aside (layout.ts upLat, as terrain.ts beds it), and
+  // the crossover lies between the two: the same width about its own centre line, turnouts included.
+  const rail: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
+  for (const link of LINKS) {
+    const formation = FORMATION[link.id];
+    const up: { x: number; z: number }[] = [];
+    for (let s = formation.from; s <= formation.to; s += 0.5) {
+      const lat = upLat(formation, s);
+      if (lat === null) continue;
+      lineAt(link.line, s, rail);
+      up.push({ x: rail.x - rail.uz * lat, z: rail.z + rail.ux * lat });
+    }
+    along(up, RAIL_HALF);
+  }
+  yield;
   along(spurPoints(), RAIL_HALF - 1.4);
   along(legPoints(), RAIL_HALF - 1.4);
   along(
@@ -303,7 +321,7 @@ export function* bakeMeadowKeep(): Generator<void, Uint8Array> {
   };
   const step = CELL / 2,
     diagonal = step * Math.SQRT2;
-  for (let j = 0; j < H; j++)
+  for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {
       const k = i + j * W;
       relax(k, i, j, -1, 0, step);
@@ -311,8 +329,9 @@ export function* bakeMeadowKeep(): Generator<void, Uint8Array> {
       relax(k, i, j, -1, -1, diagonal);
       relax(k, i, j, 1, -1, diagonal);
     }
-  yield;
-  for (let j = H - 1; j >= 0; j--)
+    if (j % 90 === 89) yield;
+  }
+  for (let j = H - 1; j >= 0; j--) {
     for (let i = W - 1; i >= 0; i--) {
       const k = i + j * W;
       relax(k, i, j, 1, 0, step);
@@ -320,9 +339,10 @@ export function* bakeMeadowKeep(): Generator<void, Uint8Array> {
       relax(k, i, j, 1, 1, diagonal);
       relax(k, i, j, -1, 1, diagonal);
     }
-  yield;
+    if (j % 90 === 0) yield;
+  }
   const out = new Uint8Array(W * H * 4);
-  for (let j = 0; j < H; j++)
+  for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {
       const k = i + j * W;
       const density = inRound(GRID.x0 + i * step, GRID.z0 + j * step) ? DENSITY.town : DENSITY.open;
@@ -331,7 +351,31 @@ export function* bakeMeadowKeep(): Generator<void, Uint8Array> {
       out[k * 4 + 2] = Math.round(255 * density.lift);
       out[k * 4 + 3] = 255;
     }
+    if (j % 90 === 89) yield;
+  }
   return out;
+}
+
+/** The keep map's bake as a step to call once a frame: it does nothing until a frame has been drawn after it was
+ * made (`framesDrawn` is the loop's count of completed renders), so it never competes with the game's start, then
+ * bakes for about `budgetMs` a call and returns the map on the call that finishes it (null before, and after). */
+export function keepBakeByFrame(framesDrawn: () => number, budgetMs = 3, now: () => number = () => performance.now()) {
+  const madeAt = framesDrawn();
+  let baking: Generator<void, Uint8Array> | null = null,
+    finished = false;
+  return (): Uint8Array | null => {
+    if (finished || framesDrawn() <= madeAt) return null;
+    baking ??= bakeMeadowKeep();
+    const started = now();
+    for (;;) {
+      const step = baking.next();
+      if (step.done) {
+        finished = true;
+        return step.value;
+      }
+      if (now() - started >= budgetMs) return null;
+    }
+  };
 }
 
 /** The whole keep map at once, for Node. */

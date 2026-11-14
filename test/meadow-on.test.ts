@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 (globalThis as { location?: unknown }).location = { search: '' };
 const flags = await import('../src/place/meadow-flags.ts');
 const { homeGroundMaterial } = await import('../src/place/ground-material.ts');
-const { KEEP_REACH, KEEP_W, meadowKeep } = await import('../src/place/meadow-field.ts');
-const { GRID, LINES } = await import('../src/place/layout.ts');
+const { KEEP_REACH, KEEP_W, keepBakeByFrame, meadowKeep } = await import('../src/place/meadow-field.ts');
+const { FORMATION, GRID, LINES, LINKS, lineAt, upLat } = await import('../src/place/layout.ts');
 const { TOWN_CENTRE, TOWN_RING, TOWN_SLOTS, slotPoint, townBuilding } = await import('../src/place/town-plan.ts');
 const { DEVICES, LEVER, SECRETS } = await import('../src/place/tech-layout.ts');
 const { pathAt } = await import('../src/place/path-field.ts');
@@ -68,6 +68,57 @@ test('nothing grows in a building or plot, on a railway, or within 6 m of a secr
       [-3.5, 3.5],
     ] as const)
       assert.equal(at({ x: p.x + dx, z: p.z + dz }).clear, 0);
+});
+
+test('both tracks of a double formation are clear, sleeper ends and turnouts included', () => {
+  const on = { x: 0, z: 0, ux: 0, uz: 1 };
+  /** A point `across` metres off the up track's centre at `s` along a line. */
+  const upTrack = (link: (typeof LINKS)[number], s: number, across: number) => {
+    const lat = upLat(FORMATION[link.id], s);
+    if (lat === null) return null;
+    lineAt(link.line, s, on);
+    return { x: on.x - on.uz * (lat + across), z: on.z + on.ux * (lat + across) };
+  };
+  // The review's case: the timber line at s 70.5, inside the up track's sleepers on its far side.
+  for (const across of [-1.3, 0, 1.3]) assert.equal(at(upTrack(LINKS[0]!, 70.5, across)!).clear, 0, `timber ${across}`);
+  let checked = 0;
+  for (const link of LINKS)
+    for (let s = FORMATION[link.id].from; s <= FORMATION[link.id].to; s += 2.5)
+      for (const across of [-1.3, 0, 1.3]) {
+        const p = upTrack(link, s, across);
+        if (!p || p.x < GRID.x0 + 6 || p.x > GRID.x1 - 6 || p.z < GRID.z0 + 6 || p.z > GRID.z1 - 6) continue;
+        assert.equal(at(p).clear, 0, `${link.id} s ${s} across ${across}`);
+        checked++;
+      }
+  assert.ok(checked > 300);
+});
+
+test('the keep map does not start baking before a frame has been drawn, then bakes a slice a call', () => {
+  let frames = 0,
+    clock = 0,
+    asked = 0;
+  const step = keepBakeByFrame(
+    () => frames,
+    3,
+    () => {
+      asked++;
+      return (clock += 2);
+    },
+  );
+  for (let k = 0; k < 5; k++) assert.equal(step(), null);
+  assert.equal(asked, 0, 'no work before the first frame');
+  frames = 1;
+  assert.equal(step(), null, 'one slice is not the whole bake');
+  assert.ok(asked > 0);
+  let map: Uint8Array | null = null,
+    calls = 1;
+  while (!map && calls < 10000) {
+    map = step();
+    calls++;
+  }
+  assert.ok(map && calls > 3, `baked over ${calls} calls`);
+  assert.deepEqual(map, keep);
+  assert.equal(step(), null);
 });
 
 test('the ring road is left to the path field: the keep map does not need to know it', () => {
