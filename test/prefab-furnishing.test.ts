@@ -75,11 +75,6 @@ test('shop furnishing matches the old parts, solids and sign references in order
     outside: new THREE.Group(),
     furnishings: [],
   };
-  const plankFloor = sourceFunction<typeof import('../src/entities/town/rooms.ts').plankFloor>(
-    'src/entities/town/rooms.ts',
-    'plankFloor',
-    {},
-  );
   const { createShop } = sourceModule<{ createShop: (...args: unknown[]) => unknown }>(
     fs.readFileSync('src/entities/town/shop.ts', 'utf8'),
     {
@@ -107,7 +102,6 @@ test('shop furnishing matches the old parts, solids and sign references in order
       BOARDS,
       DOOR: { w: 2.6 },
       CLOTHES_SLOTS: ['hat', 'accessory', 'outfit'],
-      plankFloor,
       roomMesh: mesh,
       paperMaterial: () => new THREE.MeshBasicNodeMaterial(),
       mergeGeometries: () => new THREE.BufferGeometry(),
@@ -656,6 +650,64 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
   const constraints: unknown[] = [];
   let nextPole = 0;
   const ground = (x: number, z: number) => 18 + (x - 800) * 0.001 + z * 0.002;
+  const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.ts').createOwnedView>(
+    'src/render/owned-view.ts',
+    'createOwnedView',
+    {
+      THREE,
+      owners: new WeakMap(),
+      addBody: (b: unknown) => activeBodies.add(b),
+      removeBody: (b: unknown) => assert.ok(activeBodies.delete(b)),
+    },
+  );
+  const builders = new Map<string, import('../src/prefab/builders.ts').Builder>(
+    names.builders.map((name) => [name, () => new THREE.Group()]),
+  );
+  const registerBuilder = (name: string, build: import('../src/prefab/builders.ts').Builder) =>
+    builders.set(name, build);
+  sourceModule(fs.readFileSync('src/prefab/builders/room-shell.ts', 'utf8'), {
+    housePlan: plans.housePlan,
+    registerBuilder,
+  });
+  sourceModule(fs.readFileSync('src/prefab/builders/room-proxy.ts', 'utf8'), { registerBuilder });
+  const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
+    fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
+    {
+      THREE,
+      artifact,
+      workshop,
+      gorge,
+      names,
+      builders,
+      ...validation,
+      ROOM_GROUP: 8,
+      staticBody: (shape: unknown, at: THREE.Vector3, q?: THREE.Quaternion, group?: number) => {
+        bodyCalls.push({
+          shape,
+          at: { x: at.x, y: at.y, z: at.z },
+          rotation: q?.toArray(),
+          ...(group ? { group } : {}),
+        });
+        return {};
+      },
+    },
+  );
+  // Construction boxes carry the shared site's world matrices; a second placement transform must fail.
+  const shellPlacement = {
+    id: 'room-house-pieces-0',
+    prefab: 'town.room-house-pieces-0' as const,
+    pos: [0, 0, 0] as const,
+    params: { x: 686, y: ground(686, 11), z: 11, yaw: 1.42 },
+  };
+  const rejectedOwner = createOwnedView();
+  for (const change of [{ pos: [1, 0, 0] as const }, { rot: [0.5, 0, 0] as const }, { scale: [2, 2, 2] as const }])
+    assert.throws(
+      () => runtime.instantiate(shellPlacement.prefab, { ...shellPlacement, ...change }, { owner: rejectedOwner }),
+      /identity local placement/,
+    );
+  assert.equal(rejectedOwner.root.children.length, 0, 'unsupported placement allocates no attached construction root');
+  rejectedOwner.dispose();
+  const instances: ReturnType<typeof runtime.instantiate>[] = [];
   const { createRooms } = sourceModule<typeof import('../src/entities/town/rooms.ts')>(
     fs.readFileSync('src/entities/town/rooms.ts', 'utf8'),
     {
@@ -668,8 +720,18 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       ROOM_GROUP: 8,
       ROOM_PLOTS: plots,
       toWorld: (x: number) => x + 800,
-      housePlan: (spec: import('../src/place/building-plans.ts').HouseSpec) =>
-        plans.housePlan(spec, ground(spec.x, spec.z)),
+      artifact,
+      loadLevelArtifact,
+      loadPrefabArtifact,
+      createOwnedView,
+      houseShell: JSON.parse(fs.readFileSync('content/built/levels/room-house.json', 'utf8')),
+      shopShell: JSON.parse(fs.readFileSync('content/built/levels/room-shop.json', 'utf8')),
+      museumShell: JSON.parse(fs.readFileSync('content/built/levels/room-museum.json', 'utf8')),
+      instantiate: (...args: Parameters<typeof runtime.instantiate>) => {
+        const instance = runtime.instantiate(...args);
+        instances.push(instance);
+        return instance;
+      },
       addSite: (id: string, plan: import('../src/place/building-plans.ts').Plan, speed: number) => {
         sitePlans.push({ id, plan, speed });
         const site = { pole1: nextPole, state: 'none' };
@@ -685,12 +747,6 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
         return new THREE.MeshBasicNodeMaterial();
       },
       woodV: sourceFunction('src/place/signs.ts', 'woodV', { WOOD_ROWS: 64 }),
-      addStatic: (shape: unknown, at: unknown, q: THREE.Quaternion) => {
-        const b = {};
-        activeBodies.add(b);
-        bodyCalls.push({ shape, at, rotation: q.toArray() });
-        return b;
-      },
       snapSite: (site: { state: string }, on: boolean) => {
         site.state = on ? 'done' : 'none';
       },
@@ -729,6 +785,8 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     return out;
   });
   const roomList = Object.values(rooms.rooms);
+  const furnishingOn = new Map<string, boolean>();
+  for (const r of roomList) r.furnishings.push({ setEnabled: (on: boolean) => furnishingOn.set(r.id, on) });
   const callbacks: unknown[] = [];
   rooms.onRoom((r, inside) => callbacks.push([r.id, inside]));
   const states: unknown[] = [];
@@ -757,6 +815,8 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     });
   // Freeze each snapshot before the next transition changes the view's objects.
   const capture = (name: string) => {
+    for (const r of roomList)
+      assert.equal(furnishingOn.get(r.id) ?? false, r.ready, `${name}: furnishing follows readiness`);
     snap(name);
     states[states.length - 1] = JSON.parse(JSON.stringify(states.at(-1)));
   };
@@ -812,8 +872,46 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
   const roomFixture = 'test/fixtures/prefab-rooms.json';
   if (process.env.GOLDEN === '1') fs.writeFileSync(roomFixture, JSON.stringify(value) + '\n');
   prefabGolden(value, JSON.parse(fs.readFileSync(roomFixture, 'utf8')), 'rooms');
+  const oldPlans = JSON.parse(fs.readFileSync(roomFixture, 'utf8')).plans as {
+    id: string;
+    plan: import('../src/place/building-plans.ts').Plan;
+  }[];
+  for (const { id, plan } of oldPlans) {
+    const frameOwner = createOwnedView();
+    frameOwner.root.position.set(plan.x, plan.y, plan.z);
+    frameOwner.root.rotation.y = plan.yaw;
+    const at = bodyCalls.length;
+    const mounted = (['hulls', 'poles'] as const).flatMap((phase) =>
+      plan[phase].map((_h, index) => {
+        const key = `town.${id}-${phase}-${index}` as const;
+        const piece = runtime.instantiate(key, { id: key, prefab: key, pos: [0, 0, 0] }, { owner: frameOwner });
+        piece.setEnabled(true);
+        piece.setEnabled(true);
+        return piece;
+      }),
+    );
+    const c = Math.cos(plan.yaw),
+      s = Math.sin(plan.yaw);
+    prefabGolden(
+      bodyCalls.slice(at),
+      [...plan.hulls, ...plan.poles].map((h) => ({
+        shape: { kind: 'box', hx: h.hx, hy: h.hy, hz: h.hz },
+        at: { x: plan.x + h.dx * c + h.dz * s, y: plan.y + h.dy, z: plan.z - h.dx * s + h.dz * c },
+        rotation: new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, plan.yaw).toArray(),
+        ...(h.room ? { group: 8 } : {}),
+      })),
+      `${id} world hulls and scaffolding`,
+    );
+    for (const piece of mounted) {
+      piece.setEnabled(false);
+      piece.setEnabled(false);
+    }
+    frameOwner.dispose();
+  }
+  for (const instance of instances) assert.deepEqual(instance.targets(), [], 'room records add no E target');
   for (const fn of cleanups.reverse()) fn();
   assert.equal(constraints.length, 0, 'room disposal unregisters the indoor camera');
+  assert.equal(activeBodies.size, 0, 'plot-board bodies leave with their record owners');
 });
 
 test('house furnishing retains old parts, solids, copy and every fact stage', () => {
@@ -830,12 +928,40 @@ test('house furnishing retains old parts, solids, copy and every fact stage', ()
   };
   const cleanups: (() => void)[] = [];
   let facts = 0;
+  const { houseParts } = sourceModule<typeof import('../src/prefab/builders/house-parts.ts')>(
+    fs.readFileSync('src/prefab/builders/house-parts.ts', 'utf8'),
+    { registerBuilder() {} },
+  );
   const { createHouse } = sourceModule<{ createHouse: (...args: unknown[]) => { update(): void; stage(): number } }>(
     fs.readFileSync('src/entities/town/house.ts', 'utf8'),
     {
       BOARDS,
+      artifact,
+      level: JSON.parse(fs.readFileSync('content/built/levels/house.json', 'utf8')),
+      loadLevelArtifact,
+      loadPrefabArtifact,
+      createOwnedView: () => ({ root: new THREE.Group(), dispose() {} }),
+      instantiate: (
+        key: string,
+        placement: { labels?: Record<string, string> },
+        options: {
+          makeLabel: (a: unknown, key: string) => unknown;
+        },
+      ) => {
+        const def = loadPrefabArtifact(artifact).prefabs[key]!;
+        for (const c of def.colliders) {
+          if (c.shape !== 'box') throw new Error('expected box');
+          solids.push([c.at[0], c.at[2], c.half[0], c.half[2], c.half[1] * 2]);
+        }
+        if (def.attach?.sign) options.makeLabel(def.attach.sign, placement.labels!.sign!);
+        return {
+          root: new THREE.Group(),
+          ...('builder' in def.visual ? houseParts(def.visual.params) : { parts: [] }),
+          setEnabled() {},
+          targets: () => [],
+        };
+      },
       DOOR: { w: 2.6, rows: 3 },
-      plankFloor: sourceFunction('src/entities/town/rooms.ts', 'plankFloor', {}),
       addSolid: (_r: unknown, ...args: unknown[]) => solids.push(args),
       roomMesh: (p: Part[]) => {
         parts.push(p);
