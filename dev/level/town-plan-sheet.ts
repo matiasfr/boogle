@@ -5,7 +5,17 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { sourceFunction } from './source.ts';
-import { FORGE, LANDING, ORIGIN, PATHS, ROOM_PLOTS, SPAWN, TOWN } from '../../src/place/layout.ts';
+import {
+  FORGE,
+  LANDING,
+  ORIGIN,
+  PATHS,
+  ROOM_PLOTS,
+  SPAWN,
+  TOWN,
+  TOWN_BLOCKS,
+  TOWN_FOOTING,
+} from '../../src/place/layout.ts';
 import { CELL, H as groundHeight, NX, NZ, at, cellX, cellZ, heights, pathMask } from '../../src/place/terrain.ts';
 import { SECRETS, YARD_DRESSING, padById } from '../../src/place/tech-layout.ts';
 import { LAND_TREES } from '../../src/place/tree-catalog.ts';
@@ -61,6 +71,8 @@ const SOURCES = [
   'src/place/tech-layout.ts',
   'src/place/tree-catalog.ts',
   'src/place/opening-plans.ts',
+  'src/place/town-blockout.ts',
+  'src/content/levels/town-blockout.ts',
   'src/entities/town/workshop.ts',
   'docs/plans/town-layout.md',
   'docs/plans/home-flip.md',
@@ -130,6 +142,12 @@ const today: Building[] = [
     name: names[id as TownId],
     when: id === 'house' ? ('arrival' as const) : ('free' as const),
   })),
+  // B3: the bought plots stand as plain blocks until each is detailed.
+  ...TOWN_BLOCKS.map((b) => ({
+    ...b,
+    name: `${names[b.id]} · block`,
+    when: 'bought' as const,
+  })),
   hall,
   forge,
   ...stalls,
@@ -179,7 +197,7 @@ const notes = [
   'Unused TOWN.wood/stone growth rows and distant camps are excluded.',
   'Paint and height cells are baked data; dashed paths are authored centrelines.',
   'B1 streets/cottage/yard built; bay and shelf already moved on main (#1778).',
-  'B2 rooms and balcony built; bought-plot blocks and clock footing await B3.',
+  'B2 rooms and balcony built. B3: plots 1–8 and the clock footing stand as blocks.',
   'Doors have slab-matching thresholds; yard dressing follows the gift anchor.',
   'Distances are straight, horizontal metres, not walked routes or terrain slopes.',
   'Forge frame stands on arrival; free finish at F2. Shop/museum boards: arrival.',
@@ -377,6 +395,7 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
       ),
     );
   }
+  if (mode === 'today') out.push(shape(TOWN_FOOTING, '#e0e3e0', color.today));
   if (mode !== 'today') {
     out.push(
       circle(
@@ -465,6 +484,7 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
     { p: island, name: 'Station island', c: '#58615d' },
     { p: TABLE, name: 'Turntable', c: '#58615d' },
   );
+  if (mode === 'today') labels.push({ p: TOWN_CENTRE, name: 'Footing', c: '#58615d' });
   if (mode !== 'today')
     labels.push(
       { p: TOWN_CENTRE, name: 'G · green / clock footing', c: color.arrival },
