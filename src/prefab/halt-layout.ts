@@ -1,6 +1,8 @@
 // Expand authored halt placements into shared visual specifications and unit-box collider placements.
 import type { Json, JsonObject, LevelDef, Placement, Vec3 } from './types.ts';
 import { haltDeck } from './halt-deck.ts';
+import { haltAttachmentPose } from './halt-attachments.ts';
+import { haltCrossing } from './halt-crossing.ts';
 import { haltRamps } from './halt-ramps.ts';
 function object(v: unknown): JsonObject {
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error('prefabs: invalid halt placement');
@@ -19,6 +21,10 @@ export function expandHaltKit(level: LevelDef, entries: Json, fingerprint: Json 
       typeof params.up !== 'boolean'
     )
       throw new Error('prefabs: invalid halt placement selector');
+    if (params.piece === 'crossing') {
+      placements.push(...haltCrossing(entry.id, params));
+      continue;
+    }
     if (params.piece === 'ramps') {
       placements.push(...haltRamps(entry.id, params));
       continue;
@@ -26,10 +32,15 @@ export function expandHaltKit(level: LevelDef, entries: Json, fingerprint: Json 
     const deck = params.piece === 'deck' ? haltDeck(params.row, params.up) : null;
     const colliders = deck?.colliders ?? entry.colliders;
     if (!Array.isArray(colliders)) throw new Error('prefabs: invalid halt colliders');
+    const pose =
+      !params.ring && ['lever', 'signal', 'road-plaque'].includes(params.piece as string)
+        ? haltAttachmentPose(params)
+        : null;
     placements.push({
       id: entry.id,
       prefab: entry.prefab as Placement['prefab'],
-      pos: [0, 0, 0],
+      pos: pose?.pos ?? [0, 0, 0],
+      ...(pose ? { rot: pose.rot } : {}),
       params: { ...params, ...deck?.params },
     });
     for (const [i, raw] of colliders.entries()) {

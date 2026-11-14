@@ -10,6 +10,7 @@
           "half": 9,
           "halt": 0,
           "hw": 2.15,
+          "island": true,
           "piece": "deck",
           "row": 0,
           "sign": 1,
@@ -121,6 +122,7 @@
           "half": 9,
           "halt": 0,
           "hw": 2.15,
+          "island": true,
           "piece": "canopy",
           "row": 0,
           "sign": 1,
@@ -160,12 +162,28 @@
           "half": 9,
           "halt": 0,
           "hw": 2.15,
+          "island": true,
           "piece": "mast",
           "row": 0,
           "sign": 1,
           "up": false
         },
         "prefab": "railway.halt-mast"
+      },
+      {
+        "colliders": [],
+        "id": "railway.halt-0-down-display",
+        "params": {
+          "half": 9,
+          "halt": 0,
+          "hw": 2.15,
+          "island": true,
+          "piece": "display",
+          "row": 0,
+          "sign": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-display"
       },
       {
         "id": "railway.halt-0-down-ramps",
@@ -184,6 +202,7 @@
           "half": 12,
           "halt": 1,
           "hw": 1.25,
+          "island": false,
           "piece": "deck",
           "row": 1,
           "sign": 1,
@@ -231,6 +250,7 @@
           "half": 12,
           "halt": 1,
           "hw": 1.25,
+          "island": false,
           "piece": "shelter",
           "row": 1,
           "sign": 1,
@@ -258,6 +278,7 @@
           "half": 12,
           "halt": 1,
           "hw": 1.25,
+          "island": false,
           "piece": "bench",
           "row": 1,
           "sign": 1,
@@ -297,12 +318,28 @@
           "half": 12,
           "halt": 1,
           "hw": 1.25,
+          "island": false,
           "piece": "mast",
           "row": 1,
           "sign": 1,
           "up": false
         },
         "prefab": "railway.halt-mast"
+      },
+      {
+        "colliders": [],
+        "id": "railway.halt-1-down-display",
+        "params": {
+          "half": 12,
+          "halt": 1,
+          "hw": 1.25,
+          "island": false,
+          "piece": "display",
+          "row": 1,
+          "sign": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-display"
       },
       {
         "id": "railway.halt-1-down-ramps",
@@ -346,6 +383,7 @@
           "half": 9,
           "halt": 2,
           "hw": 2.15,
+          "island": true,
           "piece": "mast",
           "row": 2,
           "sign": -1,
@@ -360,6 +398,7 @@
           "half": 10,
           "halt": 3,
           "hw": 1.25,
+          "island": false,
           "piece": "deck",
           "row": 3,
           "sign": 1,
@@ -407,6 +446,7 @@
           "half": 10,
           "halt": 3,
           "hw": 1.25,
+          "island": false,
           "piece": "shelter",
           "row": 3,
           "sign": 1,
@@ -434,6 +474,7 @@
           "half": 10,
           "halt": 3,
           "hw": 1.25,
+          "island": false,
           "piece": "bench",
           "row": 3,
           "sign": 1,
@@ -473,12 +514,28 @@
           "half": 10,
           "halt": 3,
           "hw": 1.25,
+          "island": false,
           "piece": "mast",
           "row": 3,
           "sign": 1,
           "up": false
         },
         "prefab": "railway.halt-mast"
+      },
+      {
+        "colliders": [],
+        "id": "railway.halt-3-down-display",
+        "params": {
+          "half": 10,
+          "halt": 3,
+          "hw": 1.25,
+          "island": false,
+          "piece": "display",
+          "row": 3,
+          "sign": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-display"
       },
       {
         "id": "railway.halt-3-down-ramps",
@@ -497,6 +554,7 @@
           "half": 11,
           "halt": 4,
           "hw": 1.25,
+          "island": false,
           "piece": "deck",
           "row": 4,
           "sign": 1,
@@ -544,6 +602,7 @@
           "half": 11,
           "halt": 4,
           "hw": 1.25,
+          "island": false,
           "piece": "shelter",
           "row": 4,
           "sign": 1,
@@ -571,6 +630,7 @@
           "half": 11,
           "halt": 4,
           "hw": 1.25,
+          "island": false,
           "piece": "bench",
           "row": 4,
           "sign": 1,
@@ -610,12 +670,28 @@
           "half": 11,
           "halt": 4,
           "hw": 1.25,
+          "island": false,
           "piece": "mast",
           "row": 4,
           "sign": 1,
           "up": false
         },
         "prefab": "railway.halt-mast"
+      },
+      {
+        "colliders": [],
+        "id": "railway.halt-4-down-display",
+        "params": {
+          "half": 11,
+          "halt": 4,
+          "hw": 1.25,
+          "island": false,
+          "piece": "display",
+          "row": 4,
+          "sign": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-display"
       },
       {
         "id": "railway.halt-4-down-ramps",
@@ -634,6 +710,7 @@
           "half": 11,
           "halt": 5,
           "hw": 1.25,
+          "island": false,
           "piece": "deck",
           "row": 5,
           "sign": 1,
@@ -681,6 +758,7 @@
           "half": 11,
           "halt": 5,
           "hw": 1.25,
+          "island": false,
           "piece": "shelter",
           "row": 5,
           "sign": 1,
@@ -708,6 +786,7 @@
           "half": 11,
           "halt": 5,
           "hw": 1.25,
+          "island": false,
           "piece": "bench",
           "row": 5,
           "sign": 1,
@@ -747,12 +826,28 @@
           "half": 11,
           "halt": 5,
           "hw": 1.25,
+          "island": false,
           "piece": "mast",
           "row": 5,
           "sign": 1,
           "up": false
         },
         "prefab": "railway.halt-mast"
+      },
+      {
+        "colliders": [],
+        "id": "railway.halt-5-down-display",
+        "params": {
+          "half": 11,
+          "halt": 5,
+          "hw": 1.25,
+          "island": false,
+          "piece": "display",
+          "row": 5,
+          "sign": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-display"
       },
       {
         "id": "railway.halt-5-down-ramps",
@@ -771,6 +866,7 @@
           "half": 10.25,
           "halt": 3,
           "hw": 1.25,
+          "island": false,
           "piece": "deck",
           "row": 0,
           "sign": -1,
@@ -818,6 +914,7 @@
           "half": 10.25,
           "halt": 3,
           "hw": 1.25,
+          "island": false,
           "piece": "shelter",
           "row": 0,
           "sign": -1,
@@ -845,6 +942,7 @@
           "half": 10.25,
           "halt": 3,
           "hw": 1.25,
+          "island": false,
           "piece": "bench",
           "row": 0,
           "sign": -1,
@@ -869,6 +967,7 @@
           "half": 11,
           "halt": 4,
           "hw": 1.25,
+          "island": false,
           "piece": "deck",
           "row": 1,
           "sign": -1,
@@ -916,6 +1015,7 @@
           "half": 11,
           "halt": 4,
           "hw": 1.25,
+          "island": false,
           "piece": "shelter",
           "row": 1,
           "sign": -1,
@@ -943,6 +1043,7 @@
           "half": 11,
           "halt": 4,
           "hw": 1.25,
+          "island": false,
           "piece": "bench",
           "row": 1,
           "sign": -1,
@@ -959,10 +1060,395 @@
           "up": true
         },
         "prefab": "railway.halt-ramp"
+      },
+      {
+        "colliders": [],
+        "id": "halt-signal-0",
+        "params": {
+          "piece": "signal",
+          "road": 0,
+          "row": 0,
+          "up": false
+        },
+        "prefab": "railway.halt-signal"
+      },
+      {
+        "colliders": [],
+        "id": "halt-road-plaque-0",
+        "params": {
+          "piece": "road-plaque",
+          "road": 0,
+          "row": 0,
+          "up": false
+        },
+        "prefab": "railway.halt-road-plaque"
+      },
+      {
+        "colliders": [],
+        "id": "halt-signal-1",
+        "params": {
+          "piece": "signal",
+          "road": 0,
+          "row": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-signal"
+      },
+      {
+        "colliders": [],
+        "id": "halt-signal-2",
+        "params": {
+          "piece": "signal",
+          "road": 1,
+          "row": 2,
+          "up": false
+        },
+        "prefab": "railway.halt-signal"
+      },
+      {
+        "colliders": [],
+        "id": "halt-road-plaque-2",
+        "params": {
+          "piece": "road-plaque",
+          "road": 1,
+          "row": 2,
+          "up": false
+        },
+        "prefab": "railway.halt-road-plaque"
+      },
+      {
+        "colliders": [],
+        "id": "halt-signal-3",
+        "params": {
+          "piece": "signal",
+          "road": 1,
+          "row": 3,
+          "up": false
+        },
+        "prefab": "railway.halt-signal"
+      },
+      {
+        "colliders": [],
+        "id": "halt-signal-4",
+        "params": {
+          "piece": "signal",
+          "road": 1,
+          "row": 4,
+          "up": false
+        },
+        "prefab": "railway.halt-signal"
+      },
+      {
+        "colliders": [],
+        "id": "halt-signal-5",
+        "params": {
+          "piece": "signal",
+          "road": 1,
+          "row": 5,
+          "up": false
+        },
+        "prefab": "railway.halt-signal"
+      },
+      {
+        "id": "halt-crossing-0",
+        "params": {
+          "piece": "crossing",
+          "row": 0,
+          "up": true
+        },
+        "prefab": "railway.halt-parts"
+      },
+      {
+        "id": "halt-crossing-1",
+        "params": {
+          "piece": "crossing",
+          "row": 1,
+          "up": true
+        },
+        "prefab": "railway.halt-parts"
+      },
+      {
+        "colliders": [],
+        "id": "halt-stack-map-6",
+        "params": {
+          "piece": "stack-display",
+          "row": 8,
+          "up": false
+        },
+        "prefab": "railway.halt-parts"
+      },
+      {
+        "colliders": [],
+        "id": "halt-stack-map-7",
+        "params": {
+          "piece": "stack-display",
+          "row": 9,
+          "up": false
+        },
+        "prefab": "railway.halt-parts"
+      },
+      {
+        "colliders": [],
+        "id": "halt-stack-map-8",
+        "params": {
+          "piece": "stack-display",
+          "row": 10,
+          "up": false
+        },
+        "prefab": "railway.halt-parts"
+      },
+      {
+        "colliders": [],
+        "id": "halt-stack-map-9",
+        "params": {
+          "piece": "stack-display",
+          "row": 11,
+          "up": false
+        },
+        "prefab": "railway.halt-parts"
+      },
+      {
+        "colliders": [],
+        "id": "halt-lever-0-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "row": 0,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-lever-1-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "row": 1,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-lever-2-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "row": 2,
+          "side": -1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-lever-3-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "row": 3,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-lever-4-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "row": 4,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-lever-5-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "row": 5,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-lever-0-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "row": 0,
+          "side": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-lever-1-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "row": 1,
+          "side": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-4-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 6,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-4-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 6,
+          "side": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-5-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 7,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-5-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 7,
+          "side": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-6-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 2,
+          "ring": true,
+          "row": 8,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-6-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 2,
+          "ring": true,
+          "row": 8,
+          "side": 1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-7-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 2,
+          "ring": true,
+          "row": 9,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-7-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 2,
+          "ring": true,
+          "row": 9,
+          "side": 1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-8-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 2,
+          "ring": true,
+          "row": 10,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-8-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 2,
+          "ring": true,
+          "row": 10,
+          "side": 1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-ring-lever-9-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 11,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
       }
     ],
     "kind": "halt-kit",
-    "sourceFingerprint": "b90f7b8ed9e2067d386ea32672efa04c4b2be42801955d8e8515d151057a0505"
+    "sourceFingerprint": "a8fb965fe630a5cfec5c1749b9c3c8d2f64f707cde39f25cbe8ce29dd0e46336"
   },
   "place": "halt-kit",
   "placements": [],

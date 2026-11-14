@@ -12,16 +12,13 @@ type Box = import('../../render/boxes.ts').Box;
 type Deps = {
   layout: typeof import('../../place/layout.ts');
   boxes: typeof import('../../render/boxes.ts');
-  land: typeof import('../../place/land.ts');
   pieces: typeof import('../../place/pieces.ts');
 };
 
-const PLANK = '#a97a45';
-
 export function createUpPlatforms(owner: OwnedView, deps: Deps) {
-  const { layout, land } = deps;
+  const { layout } = deps;
   const { box, place } = deps.boxes;
-  const { ORIGIN, lineAt, railY, upLat, crossingPlanks, CROSSING_SPAN, CROSSING_WIDTH, FORMATION } = layout;
+  const { ORIGIN, lineAt, railY } = layout;
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
   const at = (line: import('../../place/layout.ts').Line, s: number, l: number) => {
     lineAt(line, s, P);
@@ -68,20 +65,8 @@ export function createUpPlatforms(owner: OwnedView, deps: Deps) {
     kit.rampBoxes.forEach(piece);
     g.solids.push(() => kit.enable('ramp'));
 
-    // The plank crossing over both tracks, flush with the rail tops, a flangeway beside each rail.
-    const s = h.crossS;
-    const edge = (d: number) => upLat(FORMATION.quarry, s + d) ?? 0;
-    const top = railY(line, s) + 0.22;
-    const to = h.crossTo ?? CROSSING_SPAN[1];
-    for (const [l0, l1] of crossingPlanks(edge(-CROSSING_WIDTH / 2), edge(CROSSING_WIDTH / 2), to)) {
-      const a = at(line, s, (l0 + l1) / 2);
-      const b = box(a.x, a.z, place(0, 0, 0, l0 - l1, 0.12, CROSSING_WIDTH, yaw), PLANK);
-      b.y = top - 0.12;
-      piece(b);
-    }
-    const a0 = at(line, s, CROSSING_SPAN[0]),
-      a1 = at(line, s, to);
-    g.solids.push(() => [land.slab(a0.x, a0.z, a1.x, a1.z, top, top, CROSSING_WIDTH, owner, 0, 'grass')]);
+    kit.crossingBoxes.forEach(piece);
+    g.solids.push(() => kit.enable('crossing'));
   }
   const set = deps.pieces.dropSet(
     all,

@@ -697,7 +697,12 @@
       "visual": {
         "builder": "railway.halt-parts",
         "params": {
-          "piece": "canopy"
+          "piece": "canopy",
+          "post": [
+            0.24,
+            4.6,
+            0.24
+          ]
         }
       }
     },
@@ -712,6 +717,33 @@
         }
       }
     },
+    "railway.halt-display": {
+      "colliders": [],
+      "key": "railway.halt-display",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "display"
+        }
+      }
+    },
+    "railway.halt-lever": {
+      "colliders": [],
+      "interactions": [
+        {
+          "action": "railway.request-stop"
+        }
+      ],
+      "key": "railway.halt-lever",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-lever",
+        "params": {
+          "handles": 1
+        }
+      }
+    },
     "railway.halt-mast": {
       "colliders": [],
       "key": "railway.halt-mast",
@@ -719,8 +751,22 @@
       "visual": {
         "builder": "railway.halt-parts",
         "params": {
-          "piece": "mast"
+          "piece": "mast",
+          "post": [
+            0.14,
+            4.4,
+            0.14
+          ]
         }
+      }
+    },
+    "railway.halt-parts": {
+      "colliders": [],
+      "key": "railway.halt-parts",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {}
       }
     },
     "railway.halt-ramp": {
@@ -732,6 +778,17 @@
         "params": {}
       }
     },
+    "railway.halt-road-plaque": {
+      "colliders": [],
+      "key": "railway.halt-road-plaque",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-attachment",
+        "params": {
+          "kind": "road-plaque"
+        }
+      }
+    },
     "railway.halt-shelter": {
       "colliders": [],
       "key": "railway.halt-shelter",
@@ -739,7 +796,23 @@
       "visual": {
         "builder": "railway.halt-parts",
         "params": {
-          "piece": "shelter"
+          "piece": "shelter",
+          "post": [
+            0.22,
+            3.2,
+            0.22
+          ]
+        }
+      }
+    },
+    "railway.halt-signal": {
+      "colliders": [],
+      "key": "railway.halt-signal",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-attachment",
+        "params": {
+          "kind": "signal"
         }
       }
     },

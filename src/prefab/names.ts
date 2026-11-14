@@ -3,6 +3,7 @@
 export interface BuilderNames {}
 export interface InteractionNames {
   'seat.sit': true;
+  'railway.request-stop': true;
   'town.shop-stock': true;
   'town.shop-rail': true;
 }
@@ -40,8 +41,10 @@ export const names: NameRegistry = {
     'town.room-proxy',
     'railway.halt-parts',
     'railway.halt-ramp',
+    'railway.halt-lever',
+    'railway.halt-attachment',
   ],
-  interactions: ['seat.sit', 'town.shop-stock', 'town.shop-rail'],
+  interactions: ['railway.request-stop', 'seat.sit', 'town.shop-stock', 'town.shop-rail'],
   gates: ['open'],
   materials: [],
   assets: {},
