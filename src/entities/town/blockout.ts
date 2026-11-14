@@ -7,9 +7,10 @@ import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { definitions } from '../../prefab/catalogue.ts';
 import level from '../../../content/built/levels/town-blockout.json' with { type: 'json' };
 import { H } from '../../place/terrain.ts';
-import { standBlockout } from '../../place/town-blockout.ts';
+import { addFoot } from '../../place/sites.ts';
+import { blockoutFeet, standBlockout } from '../../place/town-blockout.ts';
 
-/** Draw every block and mark in one batch; the blocks and the footing are solid, the marks are not. */
+/** Draw every block and mark in one batch; the blocks and the footing are solid and walked round, the marks are not. */
 export function createTownBlockout(owner: OwnedView) {
   const placements = standBlockout(loadLevelArtifact(level, definitions).placements, H);
   const batch = createPrefabBatch('greybox.box', placements.length, owner);
@@ -19,6 +20,8 @@ export function createTownBlockout(owner: OwnedView) {
     instance.setEnabled(true);
     solids += instance.bodies.length;
   });
+  // The little guys steer round footprints, not colliders: one for each block and the footing, gone with the owner.
+  for (const f of blockoutFeet(placements)) addFoot(f.x, f.z, f.yaw, f.hw, f.hd, owner);
   batch.mesh.computeBoundingBox();
   batch.mesh.computeBoundingSphere();
   return { boxes: placements.length, solids };

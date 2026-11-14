@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import blockoutLevel from '../content/built/levels/town-blockout.json' with { type: 'json' };
-import { standBlockout } from '../src/place/town-blockout.ts';
+import { blockoutFeet, standBlockout } from '../src/place/town-blockout.ts';
 import { AXIS, HALL, SHELF_SIZE, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
 import { prefabs as curioRecords } from '../src/content/prefabs/curio.ts';
 import { curioParts } from '../src/prefab/builders/curio-parts.ts';
@@ -504,4 +504,27 @@ test("no block's mat lies on a road: each is off the ring and outside the quarry
         assert.ok(toSegment(c, quarry[i]!, quarry[i + 1]!) >= 2.4, `${b.id} mat is off the quarry road`);
     }
   }
+});
+
+test('the little guys walk round the footing and the blocks: every solid has an avoidance footprint', () => {
+  // folk.ts steers round `feet` (src/place/sites.ts), not colliders: each solid piece registers its footprint.
+  const feet = blockoutFeet(stood);
+  assert.equal(feet.length, 9);
+  for (const b of [...TOWN_BLOCKS, TOWN_FOOTING]) {
+    const foot = feet.find((f) => Math.hypot(f.x - b.x - ORIGIN.x, f.z - b.z) < 0.001);
+    assert.ok(foot, 'a footprint at each solid');
+    assert.deepEqual([foot.yaw, foot.hw, foot.hd], [b.yaw, b.w / 2, b.d / 2]);
+  }
+  // The walk the review found: the green's wander points (-6, -6) and (6, 6) from G cross the footing.
+  const foot = feet.find((f) => Math.hypot(f.x - TOWN_CENTRE.x - ORIGIN.x, f.z - TOWN_CENTRE.z) < 0.001)!;
+  let crossed = false;
+  for (let t = 0; t <= 1; t += 0.01) {
+    const x = TOWN_CENTRE.x + ORIGIN.x - 6 + 12 * t - foot.x,
+      z = TOWN_CENTRE.z - 6 + 12 * t - foot.z;
+    crossed ||= Math.abs(x) <= foot.hw && Math.abs(z) <= foot.hd;
+  }
+  assert.ok(crossed, 'the diagonal across the green meets the footing footprint');
+  // The view registers every one of them with its owner, so they leave with the blocks.
+  const view = fs.readFileSync('src/entities/town/blockout.ts', 'utf8');
+  assert.match(view, /for \(const f of blockoutFeet\(placements\)\) addFoot\(f\.x, f\.z, f\.yaw, f\.hw, f\.hd, owner\);/);
 });
