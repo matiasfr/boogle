@@ -379,19 +379,8 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/rooms.ts": {
-      "count": 8,
-      "exports": [
-        "DOOR",
-        "ROOM_CAM",
-        "addSolid",
-        "createRooms",
-        "plankFloor",
-        "plate",
-        "roomMat",
-        "roomMesh",
-        "roomToWorld",
-        "worldToRoom"
-      ],
+      "count": 4,
+      "exports": ["DOOR", "ROOM_CAM", "createRooms", "plate", "roomMat", "roomMesh", "roomToWorld", "worldToRoom"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/workshop.ts": {

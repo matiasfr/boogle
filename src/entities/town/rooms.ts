@@ -16,20 +16,26 @@ import * as THREE from 'three/webgpu';
 import { registerStepFloor } from '../../render/locomotion-surfaces.ts';
 import { vertexColor } from 'three/tsl';
 import { reducedMotion } from '../../constants.ts';
-import { getMask, type Body } from '../../physics/engine.ts';
+import { getMask } from '../../physics/engine.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
 import { cam, camConstraints, me } from '../../player/player.ts';
 import { precompile } from '../../render/precompile.ts';
 import { camera } from '../../render/scene.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
+import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
+import { loadLevelArtifact, loadPrefabArtifact } from '../../prefab/validate.ts';
+import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import houseShell from '../../../content/built/levels/room-house.json' with { type: 'json' };
+import shopShell from '../../../content/built/levels/room-shop.json' with { type: 'json' };
+import museumShell from '../../../content/built/levels/room-museum.json' with { type: 'json' };
 import { merged } from '../../render/part-geometry.ts';
-import { H, ROOM_GROUP, addStatic } from '../../place/land.ts';
+import { ROOM_GROUP } from '../../place/land.ts';
+import { H } from '../../place/terrain.ts';
 import { ROOM_PLOTS, toWorld, type RoomId } from '../../place/layout.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { paintBoard, woodV } from '../../place/signs.ts';
 import {
   addSite,
-  housePlan,
   liftPiece,
   showPiece,
   snapSite,
@@ -38,6 +44,9 @@ import {
   type Plan,
   type Site,
 } from '../../place/sites.ts';
+
+const definitions = loadPrefabArtifact(artifact).prefabs;
+const shellLevels = { house: houseShell, shop: shopShell, museum: museumShell };
 
 export const ROOM_CAM = {
   enter: 0.75, // m outside the door where the show starts, and past which it can end
@@ -64,7 +73,6 @@ export type Part = Parameters<typeof merged>[0][number];
 type Face = 'roof' | 'front' | 'back' | 'left' | 'right';
 const WALLS = ['front', 'back', 'left', 'right'] as const;
 const FACES = ['roof', ...WALLS] as const;
-type Solid = { x: number; y: number; z: number; hx: number; hy: number; hz: number };
 export type Room = {
   id: RoomId;
   x: number;
@@ -86,89 +94,14 @@ export type Room = {
   t: Record<Face, number>; // 0 there, 1 out of the way
   shown: Record<Face, number>; // what's been written
   proxy: THREE.Mesh;
-  solids: Solid[];
-  bodies: Body[];
-  /** Record-owned furnishings follow the same standing/teardown transition as legacy solids. */
+  /** Record-owned furnishings follow the standing/teardown transition. */
   furnishings: { setEnabled(on: boolean): void }[];
   up: boolean;
   ready: boolean;
 };
 
 const rowsOf = (high: number) => Math.round((high - FLOOR) / 0.82);
-const doorTop = (high: number) => FLOOR + (DOOR.rows * (high - FLOOR)) / rowsOf(high);
-function hollow(w: number, d: number, high: number, rise: number): Hull[] {
-  const side = (w - DOOR.w) / 2,
-    t = 0.14,
-    top = doorTop(high);
-  const h = (dx: number, dy: number, dz: number, hx: number, hy: number, hz: number): Hull => ({
-    dx,
-    dy,
-    dz,
-    hx,
-    hy,
-    hz,
-    room: true,
-  });
-  return [
-    h(0, high / 2, -d / 2, w / 2 + t, high / 2, t),
-    h(-w / 2, high / 2, 0, t, high / 2, d / 2 + t),
-    h(w / 2, high / 2, 0, t, high / 2, d / 2 + t),
-    h(-(DOOR.w + side) / 2, high / 2, d / 2, side / 2, high / 2, t),
-    h((DOOR.w + side) / 2, high / 2, d / 2, side / 2, high / 2, t),
-    h(0, (top + high) / 2, d / 2, DOOR.w / 2, (high - top) / 2, t),
-    h(0, high + 0.2 + rise * 0.3, 0, w / 2 + 0.2, 0.2 + rise * 0.3, d / 2 + 0.2),
-    // The slab, plain scenery: it's what you stand on.
-    { dx: 0, dy: FLOOR / 2, dz: 0, hx: w / 2 + 0.8, hy: FLOOR / 2, hz: d / 2 + 0.8 },
-  ];
-}
-
-const LOOKS: Record<RoomId, { wall: string; post: string; roof: string; rise: number; smoke: boolean }> = {
-  house: { wall: '#e8dcc0', post: '#7f5630', roof: '#c9a86a', rise: 2.5, smoke: true },
-  shop: { wall: '#f0c98a', post: '#8a4a2c', roof: '#c4453a', rise: 2.6, smoke: false },
-  museum: { wall: '#c8c3b4', post: '#b2ad9f', roof: '#4d5560', rise: 2.8, smoke: false },
-};
-function planOf(id: RoomId): Plan {
-  const p = ROOM_PLOTS[id],
-    look = LOOKS[id];
-  const plan = housePlan({
-    x: toWorld(p.x),
-    z: p.z,
-    yaw: p.yaw,
-    w: p.w,
-    d: p.d,
-    high: p.high,
-    rise: look.rise,
-    wall: look.wall,
-    // The shop keeps its authored coloured plaster; the study's wall family is cream plaster.
-    wallPalette: id === 'house' ? 'walls' : id === 'museum' ? 'stone' : undefined,
-    post: look.post,
-    postPalette: id === 'museum' ? 'stone' : 'timber',
-    roof: look.roof,
-    door: DOOR,
-    closed: false,
-    windows: '#3f4a57',
-    floor: FLOOR,
-    chimney: look.smoke ? { dx: p.w * 0.38, dz: p.d * 0.2, n: 5, a: '#9a4a3a', b: '#8a4032' } : undefined,
-  });
-  plan.hulls = hollow(p.w, p.d, p.high, look.rise);
-  plan.keepOut = { dx: 0, dy: p.high / 2, dz: 0, hx: p.w / 2 + 0.1, hy: p.high / 2, hz: p.d / 2 + 0.1 };
-  return plan;
-}
-
 // ---------------------------------------------------------------- helpers for what goes in them
-/** Eight alternating planks, shared by the house and shop; sizes stay in room space. */
-export function plankFloor({ w, d }: Room, even: string, odd: string): Part[] {
-  return Array.from({ length: 8 }, (_, k) => [
-    'b',
-    0,
-    0.015,
-    -d / 2 + (k + 0.5) * (d / 8),
-    w - 0.3,
-    0.03,
-    d / 8 - 0.03,
-    k % 2 ? odd : even,
-  ]);
-}
 /** Room space to world. */
 export function roomToWorld(r: Room, lx: number, ly: number, lz: number, out: THREE.Vector3) {
   const c = Math.cos(r.yaw),
@@ -182,12 +115,6 @@ export function worldToRoom(r: Room, x: number, z: number) {
     az = z - r.z;
   return { x: ax * c - az * s, z: ax * s + az * c };
 }
-/** A piece of furniture is solid while its building stands: a box in room space, on the floor unless `y` says. */
-export function addSolid(r: Room, lx: number, lz: number, hx: number, hz: number, height: number, y = 0) {
-  r.solids.push({ x: lx, y: y + height / 2, z: lz, hx, hy: height / 2, hz });
-}
-const q_ = new THREE.Quaternion(),
-  v_ = new THREE.Vector3();
 /** One merged mesh of parts in room space, in the rooms' material. */
 export function roomMesh(parts: Part[], shadow = true) {
   const m = new THREE.Mesh(parts.length ? merged(parts) : new THREE.BufferGeometry(), roomMat);
@@ -252,8 +179,50 @@ function write(r: Room, g: Face) {
 export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) {
   function makeRoom(id: RoomId): Room {
     const p = ROOM_PLOTS[id],
-      plan = planOf(id);
-    const site = addSite(`room-${id}`, plan, id === 'museum' ? 1.6 : 1);
+      x = toWorld(p.x),
+      y0 = H(x, p.z);
+    const shellOwner = createOwnedView();
+    shellOwner.root.position.set(x, y0, p.z);
+    shellOwner.root.rotation.y = p.yaw;
+    owner.add(shellOwner.root);
+    owner.cleanup(shellOwner.dispose);
+    const records = loadLevelArtifact(shellLevels[id], definitions).placements.map((placement) => ({
+      placement,
+      instance: instantiate(
+        placement.prefab,
+        { ...placement, params: { x, y: y0, z: p.z, yaw: p.yaw } },
+        { owner: shellOwner },
+      ),
+    }));
+    const phase = (name: string) => records.filter(({ placement }) => placement.id.startsWith(`room-${id}-${name}-`));
+    const construction = records.flatMap(({ instance }) => instance.construction);
+    if (!construction.length) throw new Error('rooms: missing shell construction');
+    const hulls = (name: string): Hull[] =>
+      phase(name).flatMap(({ placement }) =>
+        definitions[placement.prefab]!.colliders.map((c) => {
+          if (c.shape !== 'box') throw new Error('rooms: expected shell box');
+          return {
+            dx: c.at[0],
+            dy: c.at[1],
+            dz: c.at[2],
+            hx: c.half[0],
+            hy: c.half[1],
+            hz: c.half[2],
+            ...(c.group === 'room' ? { room: true } : {}),
+          };
+        }),
+      );
+    const plan: Plan = {
+      ...construction[0]!.plan,
+      pieces: construction.filter((c) => c.phase === 'pieces').flatMap((c) => c.parts),
+      scaffold: construction.filter((c) => c.phase === 'scaffold').flatMap((c) => c.parts),
+      hulls: hulls('hulls'),
+      poles: hulls('poles'),
+    };
+    const site = addSite(`room-${id}`, plan, id === 'museum' ? 1.6 : 1, {
+      hulls: phase('hulls').map((r) => r.instance),
+      poles: phase('poles').map((r) => r.instance),
+    });
     const cos = Math.cos(p.yaw),
       sin = Math.sin(p.yaw);
     const pieces: Record<Face, number[]> = { roof: [], front: [], back: [], left: [], right: [] };
@@ -291,32 +260,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       owner.add(g);
       return g;
     };
-    const top = doorTop(p.high) - FLOOR;
-    const side = (p.w - DOOR.w) / 2,
-      hh = p.high - FLOOR,
-      t = 0.2;
-    const B = (x: number, yy: number, z: number, sx: number, sy: number, sz: number): Part => [
-      'b',
-      x,
-      yy,
-      z,
-      sx,
-      sy,
-      sz,
-      '#000000',
-    ];
-    const proxy = new THREE.Mesh(
-      merged([
-        B(0, hh + 0.2, 0, p.w + 1, 0.4, p.d + 1),
-        B(0, hh / 2, -p.d / 2, p.w, hh, t),
-        B(-p.w / 2, hh / 2, 0, t, hh, p.d),
-        B(p.w / 2, hh / 2, 0, t, hh, p.d),
-        B(-(DOOR.w + side) / 2, hh / 2, p.d / 2, side, hh, t),
-        B((DOOR.w + side) / 2, hh / 2, p.d / 2, side, hh, t),
-        B(0, (top + hh) / 2, p.d / 2, DOOR.w, hh - top, t),
-      ]),
-      shadowOnly,
-    );
+    const proxy = new THREE.Mesh(merged(phase('proxy').flatMap(({ instance }) => instance.parts)), shadowOnly);
     proxy.castShadow = true;
     proxy.position.set(plan.x, y, plan.z);
     proxy.rotation.y = p.yaw;
@@ -341,8 +285,6 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       t: { roof: 0, front: 0, back: 0, left: 0, right: 0 },
       shown: { roof: 0, front: 0, back: 0, left: 0, right: 0 },
       proxy,
-      solids: [],
-      bodies: [],
       furnishings: [],
       up: false,
       ready: false,
@@ -370,52 +312,32 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
   const onRoom = (fn: (r: Room, inside: boolean) => void) => void enterFns.push(fn);
 
   function setSolid(r: Room, on: boolean) {
-    for (const b of r.bodies) owner.removeBody(b);
-    r.bodies.length = 0;
     for (const piece of r.furnishings) piece.setEnabled(on);
-    if (!on) return;
-    q_.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
-    for (const s of r.solids) {
-      roomToWorld(r, s.x, s.y, s.z, v_);
-      r.bodies.push(
-        addStatic({ kind: 'box', hx: s.hx, hy: s.hy, hz: s.hz }, { x: v_.x, y: v_.y, z: v_.z }, q_, undefined, owner),
-      );
-    }
   }
   // ---------------------------------------------------------------- the plots before they're built
-  const stakes = new Map<Room, { g: THREE.Group; body: Body | null; lines: Parameters<typeof paintBoard>[0] }>();
-  function stakeSolid(r: Room, st: { g: THREE.Group; body: Body | null }) {
-    q_.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
-    st.body = addStatic(
-      { kind: 'box', hx: 1.2, hy: 1.1, hz: 0.1 },
-      { x: st.g.position.x, y: st.g.position.y + 1.1, z: st.g.position.z },
-      q_,
-      undefined,
-      owner,
-    );
-  }
+  const stakes = new Map<Room, ReturnType<typeof instantiate>>();
   /** A board on the empty plot, saying something's coming. It goes when the building starts. */
   function stakeBoard(r: Room, lines: Parameters<typeof paintBoard>[0]) {
-    const g = new THREE.Group();
     const out = r.d / 2 + 2;
     const wx = r.x + out * Math.sin(r.yaw),
       wz = r.z + out * Math.cos(r.yaw);
-    g.position.set(wx, H(wx, wz), wz);
-    g.rotation.y = r.yaw;
-    g.add(stakeMesh(lines));
-    g.visible = false;
-    owner.add(g);
-    stakes.set(r, { g, body: null, lines });
+    const stakeOwner = createOwnedView();
+    stakeOwner.root.position.set(wx, H(wx, wz), wz);
+    stakeOwner.root.rotation.y = r.yaw;
+    owner.add(stakeOwner.root);
+    owner.cleanup(stakeOwner.dispose);
+    const board = instantiate(
+      'town.room-plot-board',
+      { id: `room-${r.id}-plot`, prefab: 'town.room-plot-board', pos: [0, 0, 0], labels: { sign: r.id } },
+      {
+        owner: stakeOwner,
+        makeLabel: () => stakeMesh(lines),
+      },
+    );
+    stakes.set(r, board);
   }
   function setStake(r: Room, on: boolean) {
-    const st = stakes.get(r);
-    if (!st || st.g.visible === on) return;
-    st.g.visible = on;
-    if (on) stakeSolid(r, st);
-    else if (st.body) {
-      owner.removeBody(st.body);
-      st.body = null;
-    }
+    stakes.get(r)?.setEnabled(on);
   }
 
   // ---------------------------------------------------------------- standing, or not

@@ -8,6 +8,68 @@ function object(value: unknown): JsonObject {
 export function resolvePrefab(record: PrefabDef): PrefabDef {
   if (record.layout === undefined) return record;
   const layout = record.layout;
+  if (layout?.kind === 'room-hull') {
+    if (record.colliders.length || record.attach !== undefined)
+      throw new Error('prefabs: room hull must be recipe-only');
+    const number = (key: string) => {
+      const value = layout[key];
+      if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0)
+        throw new Error('prefabs: invalid room hull operand');
+      return value;
+    };
+    const w = number('w'),
+      d = number('d'),
+      high = number('high'),
+      rise = number('rise');
+    const index = layout.index,
+      phase = layout.phase;
+    if (
+      typeof index !== 'number' ||
+      !Number.isInteger(index) ||
+      index < 0 ||
+      (phase !== 'hulls' && phase !== 'poles') ||
+      index >= (phase === 'hulls' ? 8 : 5)
+    )
+      throw new Error('prefabs: invalid room hull recipe');
+    const floor = 0.14,
+      door = 2.6,
+      side = (w - door) / 2,
+      t = 0.14;
+    const rows = Math.round((high - floor) / 0.82);
+    if (rows < 3 || side <= 0) throw new Error('prefabs: invalid room doorway');
+    const top = floor + (3 * (high - floor)) / rows;
+    const hulls = [
+      [0, high / 2, -d / 2, w / 2 + t, high / 2, t],
+      [-w / 2, high / 2, 0, t, high / 2, d / 2 + t],
+      [w / 2, high / 2, 0, t, high / 2, d / 2 + t],
+      [-(door + side) / 2, high / 2, d / 2, side / 2, high / 2, t],
+      [(door + side) / 2, high / 2, d / 2, side / 2, high / 2, t],
+      [0, (top + high) / 2, d / 2, door / 2, (high - top) / 2, t],
+      [0, high + 0.2 + rise * 0.3, 0, w / 2 + 0.2, 0.2 + rise * 0.3, d / 2 + 0.2],
+      [0, floor / 2, 0, w / 2 + 0.8, floor / 2, d / 2 + 0.8],
+    ];
+    const poleTop = high + rise + 0.8;
+    const poles = [];
+    for (const sx of [-1, 1])
+      for (const sz of [-1, 1])
+        poles.push([(sx * (w + 1.4)) / 2, poleTop / 2, (sz * (d + 1.4)) / 2, 0.13, poleTop / 2, 0.13]);
+    poles.push([0, 1.8 + 0.18, (d + 1.4) / 2, (w + 1.4) / 2, 0.06, 0.35]);
+    const h = (phase === 'hulls' ? hulls : poles)[index]!;
+    const resolved: PrefabDef = {
+      ...record,
+      colliders: [
+        {
+          shape: 'box',
+          at: [h[0]!, h[1]!, h[2]!],
+          half: [h[3]!, h[4]!, h[5]!],
+          ...(phase === 'hulls' && index < 7 ? { group: 'room' as const } : {}),
+        },
+      ],
+    };
+    delete resolved.layout;
+    return resolved;
+  }
+
   if (
     !layout ||
     typeof layout !== 'object' ||
