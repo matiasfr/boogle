@@ -5,14 +5,15 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { sourceFunction } from './source.ts';
-import { FORGE, LANDING, PATHS, ROOM_PLOTS, SPAWN, TOWN } from '../../src/place/layout.ts';
+import { FORGE, LANDING, ORIGIN, PATHS, ROOM_PLOTS, SPAWN, TOWN } from '../../src/place/layout.ts';
+import { CELL, H as groundHeight, NX, NZ, at, cellX, cellZ, heights, pathMask } from '../../src/place/terrain.ts';
+import { SECRETS, YARD_DRESSING, padById } from '../../src/place/tech-layout.ts';
+import { LAND_TREES } from '../../src/place/tree-catalog.ts';
 import {
-  FINDERS_B,
   HALL,
   ISLAND,
   ISLAND_A,
   ISLAND_C,
-  SHELF_SIZE,
   STALLS,
   TABLE,
   axisPoint,
@@ -24,6 +25,7 @@ import { SHORE_PATH } from '../../src/place/shore-layout.ts';
 import {
   TOWN_CENTRE,
   TOWN_GREEN,
+  TOWN_GROUND,
   TOWN_PLOTS,
   TOWN_PROPS,
   TOWN_RING,
@@ -55,6 +57,9 @@ const SOURCES = [
   'src/place/town-plan.ts',
   'src/place/home-station.ts',
   'src/place/shore-layout.ts',
+  'src/place/terrain.ts',
+  'src/place/tech-layout.ts',
+  'src/place/tree-catalog.ts',
   'src/place/opening-plans.ts',
   'src/entities/town/workshop.ts',
   'docs/plans/town-layout.md',
@@ -64,7 +69,12 @@ const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' 
 const sourceHashes = Object.fromEntries(
   SOURCES.map((f) => [f, createHash('sha256').update(fs.readFileSync(f)).digest('hex')]),
 );
-const stamp = createHash('sha256').update(JSON.stringify(sourceHashes)).digest('hex').slice(0, 12);
+const groundHash = createHash('sha256')
+  .update(new Uint8Array(heights.buffer))
+  .update(new Uint8Array(pathMask.buffer))
+  .update(JSON.stringify(LAND_TREES))
+  .digest('hex');
+const stamp = createHash('sha256').update(JSON.stringify({ sourceHashes, groundHash })).digest('hex').slice(0, 12);
 const names: Record<TownId, string> = {
   house: "Pip's house",
   gate: 'Gate cottage',
@@ -80,7 +90,6 @@ const names: Record<TownId, string> = {
   plot8: 'Plot 8',
 };
 const color = { arrival: '#39705a', free: '#386da0', bought: '#a46b20', today: '#81878b' };
-const baySize = { w: SHELF_SIZE.crown * 2, d: SHELF_SIZE.front + SHELF_SIZE.back };
 const workshopDoor = sourceFunction<{ x: number; w: number }>('src/entities/town/workshop.ts', 'WORKSHOP_DOOR', {});
 const hall: Building = { ...HALL, id: 'hall', name: 'Hall', when: 'arrival', face: HALL.yaw + Math.PI };
 const forge: Building = {
@@ -111,8 +120,8 @@ const today: Building[] = [
     w: b.w ?? 6,
     d: b.d ?? 5,
     yaw: b.yaw ?? 0,
-    id: `cottage${i + 1}`,
-    name: `cottage ${i + 1}`,
+    id: i === 0 ? 'gate' : `cottage${i + 1}`,
+    name: i === 0 ? names.gate : `cottage ${i + 1}`,
     when: 'arrival' as const,
   })),
   ...Object.entries(ROOM_PLOTS).map(([id, b]) => ({
@@ -136,8 +145,11 @@ const round: Building[] = [
   { ...forge, name: 'Forge · west door', door: TOWN_PROPS.forgeDoor, face: -Math.PI / 2 },
   ...stalls,
 ];
-const bayToday: Building = { ...FINDERS_B, ...baySize, id: 'bay', name: "Finders' bay", when: 'arrival' };
-const bayRound: Building = { ...TOWN_PROPS.bay, ...baySize, id: 'bay', name: "Finders' bay", when: 'arrival' };
+// Already built on main (#1778); both layers use the actual drawn crowns, including their forward offset.
+const curioFrames: Building[] = [
+  { ...TOWN_PROPS.bay.foot, id: 'bay', name: "Finders' bay", when: 'arrival' },
+  { ...TOWN_PROPS.shelf.foot, id: 'shelf', name: 'Curio shelf', when: 'arrival' },
+];
 const door = (b: Building): Point => b.door ?? townLocal(b, 0, ((b.face === undefined ? 1 : -1) * b.d) / 2);
 const moves = [
   ...(['house', 'museum', 'shop'] as const).map((id) => ({
@@ -145,9 +157,8 @@ const moves = [
     from: today.find((b) => b.id === id)!,
     to: round.find((b) => b.id === id)!,
   })),
-  { name: names.gate, from: today[2]!, to: round.find((b) => b.id === 'gate')! },
-  { name: bayRound.name, from: bayToday, to: bayRound },
-];
+  { name: names.gate, from: today.find((b) => b.id === 'gate')!, to: round.find((b) => b.id === 'gate')! },
+].filter((m) => Math.hypot(m.from.x - m.to.x, m.from.z - m.to.z) > 0.05);
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.z - b.z);
 const opposite = [door(round.find((b) => b.id === 'house')!), door(round.find((b) => b.id === 'shop')!)] as const;
 const hallFront = door(hall),
@@ -159,8 +170,6 @@ const measures = [
   { name: 'Village fallback (SPAWN) ↔ gate door', a: SPAWN, b: gateDoor },
 ];
 const missing = [
-  'Camp/quarry streets: only mouth bearing and radius exist; no new route or width.',
-  'Revised SHORE_PATH: no replacement points; TODAY shows the current centreline.',
   'Plot prices, stake/board sites and clock build trigger are not in town-plan.ts.',
   'Forge west steps have no geometry in town-plan.ts; only its door is specified.',
 ];
@@ -168,8 +177,10 @@ const notes = [
   'All panels use the same scale; north = −z. Footprints are outside walls, not roofs.',
   'TODAY = opening cottages + rooms + forge + layout B station; all build stages.',
   'Unused TOWN.wood/stone growth rows and distant camps are excluded.',
-  'Current paths are control-point centrelines; the terrain smooths and feathers them.',
-  'The Round is the full plan, including later stages; R2/R3 are not applied.',
+  'Paint and height cells are baked data; dashed paths are authored centrelines.',
+  'B1 streets/cottage/yard built; bay and shelf already moved on main (#1778).',
+  'B2 rooms and balcony built; bought-plot blocks and clock footing await B3.',
+  'Doors have slab-matching thresholds; yard dressing follows the gift anchor.',
   'Distances are straight, horizontal metres, not walked routes or terrain slopes.',
   'Forge frame stands on arrival; free finish at F2. Shop/museum boards: arrival.',
   'Clock footing 5 × 5 m: arrival; clock: free with trains. Hall tick: town front.',
@@ -200,10 +211,71 @@ const bounds = {
 };
 const SCALE = Math.min(710 / (bounds.x1 - bounds.x0), 510 / (bounds.z1 - bounds.z0));
 const W = 1600,
-  H = 1540;
+  H = 1740;
 const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.w + 3 && a.x + a.w + 3 > b.x && a.y < b.y + b.h + 3 && a.y + a.h + 3 > b.y;
 const labelWarnings: string[] = [];
+
+function pointToSegment(p: Point, a: Point, b: Point) {
+  const dx = b.x - a.x,
+    dz = b.z - a.z;
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz)));
+  return Math.hypot(p.x - a.x - t * dx, p.z - a.z - t * dz);
+}
+function pointToFoot(p: Point, b: TownBuilding) {
+  const dx = p.x - b.x,
+    dz = p.z - b.z,
+    c = Math.cos(b.yaw),
+    s = Math.sin(b.yaw);
+  return Math.hypot(Math.max(0, Math.abs(dx * c - dz * s) - b.w / 2), Math.max(0, Math.abs(dx * s + dz * c) - b.d / 2));
+}
+function segmentGap(a: Point, b: Point, c: Point, d: Point) {
+  const cross = (p: Point, q: Point, r: Point) => (q.x - p.x) * (r.z - p.z) - (q.z - p.z) * (r.x - p.x);
+  const overlaps =
+    Math.max(a.x, b.x) >= Math.min(c.x, d.x) &&
+    Math.max(c.x, d.x) >= Math.min(a.x, b.x) &&
+    Math.max(a.z, b.z) >= Math.min(c.z, d.z) &&
+    Math.max(c.z, d.z) >= Math.min(a.z, b.z);
+  if (overlaps && cross(a, b, c) * cross(a, b, d) <= 0 && cross(c, d, a) * cross(c, d, b) <= 0) return 0;
+  return Math.min(pointToSegment(a, c, d), pointToSegment(b, c, d), pointToSegment(c, a, b), pointToSegment(d, a, b));
+}
+function streetGap(b: TownBuilding, line: readonly Point[]) {
+  const q = corners(b);
+  return Math.min(
+    ...line.map((p) => pointToFoot(p, b)),
+    ...line.slice(1).flatMap((p, i) => q.map((c, k) => segmentGap(c, q[(k + 1) % 4]!, line[i]!, p))),
+  );
+}
+function footprintGap(a: TownBuilding, b: TownBuilding) {
+  return Math.min(
+    ...corners(a).map((p) => pointToFoot(p, b)),
+    ...corners(b).map((p) => pointToFoot(p, a)),
+    streetGap(a, [...corners(b), corners(b)[0]!]),
+  );
+}
+const narrowGaps = TOWN_SLOTS.flatMap((a, i) =>
+  TOWN_SLOTS.slice(i + 1).flatMap((b) => {
+    const metres = footprintGap(townBuilding(a.id), townBuilding(b.id));
+    return metres < 4 ? [{ a: a.id, b: b.id, metres }] : [];
+  }),
+);
+const curioClearances = curioFrames.map((b) => {
+  const near = pointToFoot(TOWN_CENTRE, b),
+    far = Math.max(...corners(b).map((p) => distance(p, TOWN_CENTRE)));
+  const ground = [b, ...corners(b)].map((p) => groundHeight(p.x + ORIGIN.x, p.z));
+  return {
+    id: b.id,
+    ring: Math.max(0, near - TOWN_RING.outer, TOWN_RING.inner - far),
+    dock: Math.max(0, streetGap(b, TOWN_STREETS.dock.line) - TOWN_STREETS.dock.width / 2),
+    plot3: footprintGap(b, townBuilding('plot3')),
+    bowl: near - TOWN_RING.inner,
+    ground: [Math.min(...ground), Math.max(...ground)],
+  };
+});
+const yardSecret = SECRETS.find((s) => s.id === 'yard');
+if (!yardSecret) throw new Error('missing yard find');
+const yard: Point = { x: yardSecret.x, z: yardSecret.z };
+const balcony = padById('balcony');
 
 function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
   const out: string[] = [];
@@ -243,6 +315,28 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
     `<defs><clipPath id="clip-${mode}"><rect x="${px}" y="${py}" width="${mw}" height="${mh}"/></clipPath></defs>`,
   );
   out.push(`<g clip-path="url(#clip-${mode})">`);
+  // Exact baked samples at 2 m spacing: terrain and path paint, rather than a second ground model.
+  for (let j = 0; j < NZ; j++)
+    for (let i = 0; i < NX; i++) {
+      const x = cellX(i),
+        z = cellZ(j);
+      if (Math.hypot(x - TOWN_CENTRE.x, z - TOWN_CENTRE.z) > TOWN_GROUND.r + TOWN_GROUND.soft) continue;
+      const k = at(i, j),
+        h = heights[k]!,
+        paint = pathMask[k]!,
+        q = project({ x: x - CELL / 2, z: z - CELL / 2 });
+      if (Math.abs(h - 18) > 0.05)
+        out.push(
+          `<rect x="${n(q.x)}" y="${n(q.y)}" width="${n(CELL * SCALE)}" height="${n(CELL * SCALE)}" fill="${h < 18 ? '#9fcad6' : '#e6b88c'}" opacity="0.6"><title>${x}, ${z}: ${h.toFixed(3)} m</title></rect>`,
+        );
+      if (paint > 0.05)
+        out.push(
+          `<rect x="${n(q.x)}" y="${n(q.y)}" width="${n(CELL * SCALE)}" height="${n(CELL * SCALE)}" fill="#e4dcc8" opacity="${n(paint * 0.85)}"/>`,
+        );
+    }
+  out.push(circle(TOWN_CENTRE, TOWN_GROUND.r, 'none', '#849b8b', 'stroke-dasharray="5 3"'));
+  out.push(circle(TOWN_CENTRE, TOWN_GROUND.green.flat, 'none', '#6596ad', 'stroke-dasharray="3 3"'));
+  for (const t of LAND_TREES) out.push(circle({ x: t.x - ORIGIN.x, z: t.z }, 0.35, '#43785b', 'none'));
   for (let x = bounds.x0; x <= bounds.x1; x += 10)
     out.push(
       path(
@@ -290,15 +384,15 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
         (TOWN_RING.inner + TOWN_RING.outer) / 2,
         'none',
         '#e4dcc8',
-        `stroke-width="${(TOWN_RING.outer - TOWN_RING.inner) * SCALE}"`,
+        `stroke-width="${(TOWN_RING.outer - TOWN_RING.inner) * SCALE}" opacity="0.4"`,
       ),
     );
-    out.push(circle(TOWN_CENTRE, TOWN_GREEN.radius, '#d9e7cc', '#9bac91'));
+    out.push(circle(TOWN_CENTRE, TOWN_GREEN.radius, 'none', '#9bac91'));
     const d = TOWN_STREETS.dock;
     out.push(path([slotPoint(d.bearing, d.from), slotPoint(d.bearing, d.to)], '#e4dcc8', d.width * SCALE));
     for (const key of ['camp', 'quarry'] as const) {
       const s = TOWN_STREETS[key];
-      // Only the mouth is authored. A marker is honest; extending it would invent a street.
+      // The complete built paths are shown on TODAY and OVERLAY; the plan marks each mouth.
       out.push(circle(slotPoint(s.bearing, s.radius), 0.7, '#fffef9', '#9f9580'));
     }
     out.push(
@@ -319,7 +413,7 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
   out.push(circle(TABLE, TABLE.r, '#eceeeb', '#969c98'));
   for (const road of [0, 1] as const) out.push(path(headPoints(road), '#929996', 1.8));
   out.push(path(spurPoints(), '#929996'));
-  const active = mode === 'today' ? [...today, bayToday] : [...round, bayRound];
+  const active = [...(mode === 'today' ? today : round), ...curioFrames];
   const draw = (b: Building, ghost = false) => {
     const c = mode === 'today' || ghost ? color.today : color[b.when];
     const dash = ghost || b.when === 'bought' ? 'stroke-dasharray="4 3"' : '';
@@ -328,12 +422,23 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
       yaw = b.face ?? b.yaw;
     out.push(path([a, { x: a.x + Math.sin(yaw) * 2, z: a.z + Math.cos(yaw) * 2 }], c, 2));
   };
-  if (mode === 'overlay') [...today, bayToday].forEach((b) => draw(b, true));
+  if (mode === 'overlay') today.forEach((b) => draw(b, true));
   active.forEach((b) => draw(b));
+  for (const fence of YARD_DRESSING.fences) out.push(shape({ ...fence, yaw: 0 }, '#8a6238', '#8a6238'));
+  out.push(circle(YARD_DRESSING.laundry, 0.3, '#8a6238', '#8a6238'));
+  out.push(
+    shape(
+      { x: balcony.x, z: balcony.z, yaw: 0, w: balcony.hx * 2, d: balcony.hz * 2 },
+      'none',
+      '#8b7049',
+      'stroke-dasharray="2 2"',
+    ),
+  );
   if (mode === 'overlay')
     for (const m of moves) out.push(path([m.from, m.to], '#a34c67', 2, 'marker-end="url(#arrow)"'));
   if (mode === 'round') for (const m of measures) out.push(path([m.a, m.b], '#718677', 1, 'stroke-dasharray="2 3"'));
   for (const p of [LANDING, SPAWN]) out.push(circle(p, 0.65, '#37473f', '#fff'));
+  out.push(circle(yard, 0.7, '#9b527b', '#fff'));
   if (mode !== 'today') {
     const q = project(TOWN_CENTRE);
     out.push(line(q.x - 5, q.y, q.x + 5, q.y, '#243e2c'), line(q.x, q.y - 5, q.x, q.y + 5, '#243e2c'));
@@ -346,8 +451,15 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
       y = Math.min(...q.map((p) => p.y));
     return { x, y, w: Math.max(...q.map((p) => p.x)) - x, h: Math.max(...q.map((p) => p.y)) - y };
   });
-  const labels = active.map((b) => ({ p: b as Point, name: b.name, c: mode === 'today' ? '#58615d' : color[b.when] }));
+  // Label the narrow curio crowns first, before larger future plots use their nearby free space.
+  const labels = [...curioFrames, ...active.filter((b) => b.id !== 'bay' && b.id !== 'shelf')].map((b) => ({
+    p: b as Point,
+    name: b.name,
+    c: mode === 'today' ? '#58615d' : color[b.when],
+  }));
   labels.push(
+    { p: yard, name: 'yard find', c: '#9b527b' },
+    { p: balcony, name: 'balcony / aviator', c: '#8b7049' },
     { p: LANDING, name: 'LANDING · shore spawn', c: '#354b3c' },
     { p: SPAWN, name: 'SPAWN', c: '#354b3c' },
     { p: island, name: 'Station island', c: '#58615d' },
@@ -420,7 +532,12 @@ const parts = [
   '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10" fill="#a34c67"/></marker><marker id="north" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10" fill="#26332f"/></marker></defs>',
   `<rect width="${W}" height="${H}" fill="#f3f5ef"/>`,
   text(30, 38, 'Home · town plan sheet', 26),
-  text(30, 64, `Before home-flip R2/R3 · source ${git('rev-parse', '--short', 'HEAD')} · stamp ${stamp}`, 14),
+  text(
+    30,
+    64,
+    `B1+B2 as built / later Round plan · source ${git('rev-parse', '--short', 'HEAD')} · stamp ${stamp}`,
+    14,
+  ),
   panel('today', 20, 86),
   panel('round', 810, 86),
   panel('overlay', 20, 754),
@@ -450,6 +567,41 @@ for (const m of moves) {
 }
 parts.push(text(840, y + 4, 'Other three opening cottages are removed, not assigned to bought plots.', 13));
 y += 38;
+parts.push(text(840, y, 'WALL GAPS < 4 m · including future plots', 15));
+y += 26;
+for (const g of narrowGaps) {
+  parts.push(text(840, y, `${g.a} / ${g.b}: ${g.metres.toFixed(3)} m`, 13));
+  y += 23;
+}
+if (!narrowGaps.length) {
+  parts.push(text(840, y, 'None; every planned wall gap is at least 4 m.', 13));
+  y += 23;
+}
+y += 10;
+parts.push(text(840, y, 'CURIO CROWNS · metres clear, as built = plan', 15));
+y += 26;
+for (const c of curioClearances) {
+  parts.push(
+    text(
+      840,
+      y,
+      `${c.id}: ring ${c.ring.toFixed(3)} · dock ${c.dock.toFixed(3)} · plot 3 ${c.plot3.toFixed(3)} · bowl ${c.bowl.toFixed(3)}`,
+      13,
+    ),
+  );
+  y += 23;
+}
+parts.push(
+  text(
+    840,
+    y,
+    `Bowl centre ${(18 - TOWN_GROUND.green.drop).toFixed(2)} m · flat r${TOWN_GROUND.green.flat} · bank to r${TOWN_RING.inner}`,
+    13,
+  ),
+);
+y += 23;
+parts.push(text(840, y, 'Ring/dock: road edges; bowl: r14 bank edge. Blue/tan: below/above 18 m.', 13));
+y += 32;
 parts.push(text(840, y, 'DATA LIMITS · no guessed geometry', 15));
 y += 26;
 for (const s of missing) {
@@ -464,7 +616,7 @@ for (const s of notes) {
 parts.push(
   text(
     30,
-    1445,
+    1645,
     'Regenerate: npm run town-plan-sheet · geometry: src/place/{layout,home-station,town-plan,shore-layout}.ts',
     14,
   ),
@@ -472,7 +624,7 @@ parts.push(
 parts.push(
   text(
     30,
-    1470,
+    1670,
     'Green r14 m · ring r14–20 m · dock street 8 m wide · ticks show door direction · distances shown dotted in THE ROUND.',
     14,
   ),
@@ -503,6 +655,9 @@ const manifest = {
   tree: git('rev-parse', 'HEAD^{tree}'),
   stamp,
   sourceHashes,
+  groundHash,
+  curioClearances,
+  narrowGaps,
   command: 'npm run town-plan-sheet',
   artifacts: { svg: ROOT + svg, png: renderer ? ROOT + png : null },
   counts: { today: today.length, round: round.length, plots: TOWN_PLOTS.order.length },

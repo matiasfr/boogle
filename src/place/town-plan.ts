@@ -1,6 +1,6 @@
 // Home's town as data, the Round (docs/plans/town-layout.md, step 1): a green on the hall's centreline, a ring road
 // round it, twelve buildings on the ring or on the roads that leave it, the streets and the props that belong to the
-// layout. Local, no three.js, and nothing imports it yet: the plan's steps 2 to 5 read it. Place-local metres, north is
+// layout. Local, no three.js; the blockout's ground and streets read these rows. Place-local metres, north is
 // -z, bearings in degrees clockwise from north (a bearing from the centre), `yaw` as three.js turns a building's door
 // (local +z). The ring is regular on purpose (owner, 10 November: "I don't need the houses to be clumsily laid"): one
 // setback, 30 degrees apart on the station's own 30 degree grid (the Roundhouse's stalls use it too), every door
@@ -16,6 +16,8 @@ export const TOWN_CENTRE: XZ = axisPoint(HALL.a - 26.44, HALL.c);
 export const TOWN_RING = { inner: 14, outer: 20 } as const;
 /** The green, a clean round. */
 export const TOWN_GREEN = { radius: TOWN_RING.inner } as const;
+/** One ground move to walk: set drop to 0 for a level green. */
+export const TOWN_GROUND = { r: 38, soft: 8, green: { drop: 0.8, flat: 10 } } as const;
 /** The radius of every ring building's front wall: its door is 2 m from the ring road's outer edge. */
 export const TOWN_FRONT = 22;
 
@@ -86,10 +88,10 @@ export const TOWN_PLOTS = {
 /** The streets. The ring is `TOWN_RING`; each way out is a bearing from G, the radii it covers and its width. */
 export const TOWN_STREETS = {
   ring: TOWN_RING,
-  dock: { bearing: 250, from: 20, to: 38, width: 8 },
+  dock: { bearing: 250, from: 20, to: 38, width: 8, line: [slotPoint(250, 38), slotPoint(250, 20)] },
   /** The camp and quarry roads leave the ring road's centre line at these bearings. */
-  camp: { bearing: 40, radius: 17 },
-  quarry: { bearing: 130, radius: 17 },
+  camp: { bearing: 40, radius: 17, head: slotPoint(40, 17) },
+  quarry: { bearing: 130, radius: 17, head: [slotPoint(130, 17), { x: -97.85, z: 38 }, { x: -97.85, z: 58 }] },
 } as const;
 
 const SHOP = townBuilding('shop');

@@ -11,6 +11,7 @@ import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/rai
 import { LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
+import { TOWN_STREETS, townBuilding } from './town-plan.ts';
 import { ISLAND_HALTS, LINE_ORIGIN, PROPS, SHELF_B, TABLE, headPoints, spliceHead } from './home-station.ts';
 
 /** Far from today's island, past its soft wall, as the crossing does. */
@@ -88,7 +89,7 @@ export const PATHS: Foot[] = [
     // on the rim, down the wall to the river under where the trestle will go, over the bridge, then up the far wall and
     // round the shoulder of the ridge to the machine.
     pts: [
-      [-98, 9, 18],
+      [TOWN_STREETS.camp.head.x, TOWN_STREETS.camp.head.z, 18],
       [-98, -6, 18],
       [-102, -14, 18],
       [-122, -30, 18],
@@ -112,7 +113,7 @@ export const PATHS: Foot[] = [
     // To the quarry: south along the commons, down to the bank behind a shoulder, over the bridge with the spire up the
     // gorge, then up the far wall and along the table's edge.
     pts: [
-      [-98, 9, 18],
+      ...TOWN_STREETS.quarry.head.map((p): Pt => [p.x, p.z, 18]),
       [-100, 62, 18],
       [-78, 108, 17.5],
       [-70, 146, 12],
@@ -127,7 +128,7 @@ export const PATHS: Foot[] = [
       [92, 70, 24],
       [92, 45, 24],
     ],
-    bridgeAt: 6,
+    bridgeAt: 8,
     bold: false,
   },
 ];
@@ -627,6 +628,7 @@ const cottage = (x: number, z: number, yaw: number, smoke = false): Plot => ({
   d: 4.4,
   smoke,
 });
+const g = townBuilding('gate');
 /** Fewer buildings than the last round, placed for the views: the arriving train looks down the line at the great hall and
  * the clock behind it; the stone street lines the way in from the quarry. */
 export const TOWN: {
@@ -635,7 +637,7 @@ export const TOWN: {
   stone: Plot[][];
   camps: { asleep: Plot[]; awake: Plot[] }[];
 } = {
-  start: [cottage(-108, -4, 0.5, true), cottage(-123, 19, 1.6), cottage(-135, 24, 1.1, true), cottage(-139, 5, 1.5)],
+  start: [cottage(g.x, g.z, g.yaw, true)],
   wood: [
     [
       { type: 'hall', x: -88, z: 31, w: 11, d: 8, yaw: 2.73, smoke: true },
@@ -691,10 +693,12 @@ export const TOWN: {
 /** The buildings you can walk into (./rooms.ts). Their doors are local +z, so `yaw` turns each door to face the street. Sizes
  * are the outside; docs/research/town-interiors.md, "How little room is enough?". */
 export type RoomId = 'house' | 'shop' | 'museum';
+/** The shells' slab top above their ground datum; door grading and the room view share it. */
+export const ROOM_FLOOR = 0.14;
 export const ROOM_PLOTS: Record<RoomId, { x: number; z: number; yaw: number; w: number; d: number; high: number }> = {
-  house: { x: -114, z: 11, yaw: 1.42, w: 7.4, d: 7.4, high: 3.7 },
-  shop: { x: -116, z: 31, yaw: 2.05, w: 10, d: 8, high: 3.9 },
-  museum: { x: -125, z: -8, yaw: 0.97, w: 13, d: 12, high: 5 },
+  house: { ...townBuilding('house'), high: 3.7 },
+  shop: { ...townBuilding('shop'), high: 3.9 },
+  museum: { ...townBuilding('museum'), high: 5 },
 };
 /** What stands across the sea: too far to reach, north-east of the ridge. */
 export const FAR = { x: 330, z: -1120 };

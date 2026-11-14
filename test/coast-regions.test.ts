@@ -85,15 +85,15 @@ function digest(coast: Coast) {
   return { width: tex.image.width, height: tex.image.height, texture, sampled, n };
 }
 
-// v36 Home flip: terrain inputs changed through layout.ts; coast/shader code is unchanged.
+// Round B1: the pad, bowl and dock street change terrain inputs; coast/shader code is unchanged.
 // Print replacement texture/sample digests after an intentional terrain change (then review and update only those pins):
 // PRINT_COAST_BASELINE=1 node --test --test-name-pattern='two shores' test/coast-regions.test.ts
 // Size, transform, lattice bounds and region assertions remain independent of regeneration.
 const COAST_BASELINE = {
   width: 2015,
   height: 780,
-  texture: '3664f87252e673d66d37df00e5efe0284444a930861668de1ad19a0d5d4c9d3b',
-  sampled: '382e0aaa72325bfbd08bd48651e17eddb8c9aed9b1c8db395468061cb7d31176',
+  texture: '327e46c71c9247bb3b57c9757ead81b307be5073de15acf8c1e685da933f5a3d',
+  sampled: '2b3c292e11f5bbda3deca4c8e38b318bea96c947f19e81f80a1f96909e372364',
   transform: [-375, -400, 0.0004962779156327543, 0.001282051282051282],
 };
 
