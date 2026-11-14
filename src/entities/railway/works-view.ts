@@ -20,7 +20,15 @@ import { playSharedMoment } from './shared-moment.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { reducedMotion } from '../../constants.ts';
 import { goldMote } from './breaker-view.ts';
-import { SHED_STALL, WORKS, WORKS_KILN, WORKS_RACK, WORKS_ROCKS, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
+import {
+  SHED_STALL,
+  WAGON_S,
+  WORKS,
+  WORKS_KILN,
+  WORKS_RACK,
+  WORKS_ROCKS,
+  WORKS_SEAMS,
+} from '../../sim/railway-works-layout.ts';
 import {
   account,
   beam as beamRow,
@@ -42,6 +50,7 @@ import {
   cradleBillLine,
   cradleRailGhosts,
   cradleStage,
+  wagonGhost,
 } from './cradle-cues.ts';
 import { LINE2_FORGE } from '../../sim/railway-line2-layout.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -292,6 +301,29 @@ export async function createRailwayWorks(
       (a, b) =>
         Math.hypot(a.at.x - forgeRack.x, a.at.z - forgeRack.z) - Math.hypot(b.at.x - forgeRack.x, b.at.z - forgeRack.z),
     )[0]!;
+  // The table's handle as roundhouse-view.ts draws it on a still deck (its yaw by `shed.table`: toward the stall's rim,
+  // or down the spur), and the wagon's wait on road 2 (WAGON_S), for the gold ghosts.
+  const line2 = layout.LINKS[1]!.line;
+  const tableYaws = (() => {
+    const rim = home.stallFrame(home.STALLS.open).rim,
+      spur = (home.TABLE.spur * Math.PI) / 180;
+    return [Math.atan2(rim.x - home.TABLE.x, rim.z - home.TABLE.z), Math.atan2(Math.sin(spur), -Math.cos(spur))];
+  })();
+  const tableHandle = () => {
+    const yaw = tableYaws[shed(wd).table] ?? tableYaws[0]!;
+    return {
+      x: tableAt.x + Math.sin(yaw + Math.PI / 2) * (home.TABLE.r - 0.4),
+      y: layout.railY(line2, 0) + 0.55,
+      z: tableAt.z + Math.cos(yaw + Math.PI / 2) * (home.TABLE.r - 0.4),
+      yaw,
+    };
+  };
+  const wagonWait = (() => {
+    const s = WAGON_S / 100,
+      at = home.roadAt(1, s),
+      ahead = home.roadAt(1, s + 1);
+    return wagonGhost(at.x + layout.ORIGIN.x, layout.railY(line2, s), at.z, Math.atan2(ahead.x - at.x, ahead.z - at.z));
+  })();
   /** The cradle's ask, shown only once a stall seen being raised has stood and shed its tarp (`cueFrom`). */
   let stallUnbuilt = false,
     cueFrom = 0;
@@ -502,11 +534,18 @@ export async function createRailwayWorks(
   /** The forge's rail rack gives off the same gold motes while the cradle wants rails: the source wears the ask's
    * colour, as the limestone rocks do for the hopper. Off under reduced motion; the bill and ghosts stay. */
   function cradleMotes(dt: number) {
-    if (reducedMotion || cueStage() !== 'rails') return;
+    const stage = cueStage();
+    if (reducedMotion || stage === 'none') return;
     cueMote -= dt;
     if (cueMote > 0) return;
     cueMote = 0.2;
     rockSide *= -1;
+    if (stage === 'turn') {
+      // The handle glints while the turn is offered.
+      const h = tableHandle();
+      goldMote(h.x, h.y + 0.5, h.z, rockSide, 0.14);
+      return;
+    }
     goldMote(forgeRack.x + (Math.random() - 0.5) * 2.2, forgeRackY + 1.2, forgeRack.z, rockSide, 0.3);
   }
   function drawGhosts() {
@@ -529,6 +568,13 @@ export async function createRailwayWorks(
         ghosts.box(g.x, g.y, g.z, g.w, g.h, g.d, g.yaw);
         cueGhosts++;
       }
+    // A2: fitted, the table's handle wears the gold; and from the stall standing until the wagon rolls out, a ghost
+    // wagon stands on line 2 where it will wait to couple: what the rails and the turn are for.
+    if (stage === 'turn') {
+      const h = tableHandle();
+      ghosts.box(h.x, h.y, h.z, 0.34, 1.14, 0.34, h.yaw);
+    }
+    if (stage !== 'none') for (const g of wagonWait) ghosts.box(g.x, g.y, g.z, g.w, g.h, g.d, g.yaw);
     for (let i = WORKS.kilnLogs - logs; i < WORKS.kilnLogs; i++) {
       const yaw = logAt(i);
       ghosts.box(p.x, p.y, p.z, LOG[0] - 0.1, LOG[1] - 0.08, LOG[2] - 0.08, yaw);
@@ -901,12 +947,19 @@ export async function createRailwayWorks(
       }
       // The cradle asks in the open (footings-signalling A1): roundhouse-view.ts offers "Fit the cradle" only to a
       // back with rails; any other back in the same reach meets it greyed with where rails come from, never silence.
-      if (
-        cueStage() === 'rails' &&
-        !mine?.rails &&
+      const nearStall =
         Math.hypot(p.x - SHED_STALL.x / 100, p.z - SHED_STALL.z / 100) <= SHED_STALL.reach / 100 - 0.4 &&
-        Math.abs(p.y - SHED_STALL.y / 100) <= 2.6
-      ) {
+        Math.abs(p.y - SHED_STALL.y / 100) <= 2.6;
+      if (nearStall && shed(rows).stall >= WORKS.stall && mine?.foot) {
+        // A third footing carried home (A1): the stall takes two; the rest ride the wagon. Nothing sets here.
+        const c = cradleAt();
+        out.push({
+          id: 'railway-foot-set-1',
+          verb: CRADLE_COPY.setFooting,
+          at: new THREE.Vector3(c.x, 20.6, c.z),
+          blocked: CRADLE_COPY.wagonCarries,
+        });
+      } else if (nearStall && cueStage() === 'rails' && !mine?.rails) {
         const c = cradleAt();
         out.push({
           id: 'railway-cradle',
@@ -946,7 +999,13 @@ export async function createRailwayWorks(
       ghosts: { logs: ghostLogs, stone: ghostStone, dashes: ghosts.count },
       path: sign.visible,
       bill: bill.mesh.visible ? billPainted : null,
-      cradleCues: { stage: cueStage(), ghosts: cueGhosts, billAt: bill.mesh.position.toArray() },
+      cradleCues: {
+        stage: cueStage(),
+        ghosts: cueGhosts,
+        billAt: bill.mesh.position.toArray(),
+        handle: tableHandle(),
+        wagonWait: wagonWait[0],
+      },
       rack: Math.max(0, worksRow(wd).rack - flights.length),
       rollers: flights.length,
     }),
