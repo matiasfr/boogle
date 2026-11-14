@@ -16,6 +16,7 @@ import { SERVER_ID } from '../../../src/net/ids.ts';
 import type { StepMeter } from './step-meter.ts';
 import type { Store } from '../store.ts';
 import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
+import { createHostStatus } from './host-status.ts';
 import { createHostCheckpoint } from './host-checkpoint.ts';
 import type { RailwayPosition } from './railway-supply.ts';
 import { createHostAway } from './host-away.ts';
@@ -249,71 +250,35 @@ export function createRailwayWorldHost({
     maintainSupply: supply.maintain,
   });
   const ready = checkpoint.start();
-  // Server cost (npm run load, /rooms/:id/status): ms per timer wake (steps, rules, commit, flush) and per action.
-  const stats = { wakes: 0, steps: 0, stepMs: 0, maxStepMs: 0, actions: 0, actionMs: 0, maxActionMs: 0 };
-  let last = performance.now();
-  const timer = tick
-    ? setInterval(() => {
-        const time = performance.now();
-        meter?.timer(time);
-        if (checkpoint.canStep()) {
-          const before = sync.world.tick;
-          const step0 = sync.roomStep();
-          sync.stepWorld(Math.min(time - last, 1000));
-          if (sync.world.tick !== before) {
-            maintenance.maintain();
-          }
-          const ms = performance.now() - time;
-          stats.wakes++;
-          stats.steps += sync.roomStep() - step0;
-          stats.stepMs += ms;
-          stats.maxStepMs = Math.max(stats.maxStepMs, ms);
-        }
-        last = time;
-      }, STEP_MS)
-    : null;
-  timer?.unref();
+  const status = createHostStatus({
+    sync,
+    tick,
+    meter,
+    checkpoint,
+    maintain: maintenance.maintain,
+    receive: requests.receive,
+    failed: requests.failed,
+    seats,
+    boogler,
+    booglerMeter,
+    ops,
+  });
   return {
     sync,
     rules,
     replication,
     ops,
-    stats,
+    stats: status.stats,
     onSend(fn: (message: Msg) => void) {
       sent.add(fn);
       return () => sent.delete(fn);
     },
     deliver(message: unknown, from: string) {
       if (!requests.failed() && !supply.current()) supply.maintain();
-      const t0 = performance.now();
-      requests.receive(message, from);
-      const ms = performance.now() - t0;
-      stats.actions++;
-      stats.actionMs += ms;
-      stats.maxActionMs = Math.max(stats.maxActionMs, ms);
+      status.deliver(message, from);
     },
-    step(dt: number) {
-      if (checkpoint.canStep()) {
-        sync.stepWorld(dt * 1000);
-        maintenance.maintain();
-      }
-    },
-    status: () => {
-      const status = sync.worldStatus();
-      const failed = requests.failed();
-      const { loaded, startupError, running } = checkpoint.state();
-      return {
-        tick: sync.world.tick,
-        seats: seats.rows(),
-        boogler: boogler.leg(),
-        booglerMeter: booglerMeter.report(),
-        booglerRefused: { gift: ops.refusals('boogler.gift'), puff: ops.refusals('boogler.puff') },
-        ...status,
-        recoveryError: startupError ?? status.recoveryError ?? (failed ? 'server command storage failed' : null),
-        ready: loaded && !startupError && !status.recoveryError && !failed,
-        paused: !running,
-      };
-    },
+    step: status.step,
+    status: status.status,
     whenReady: () => ready,
     wake: checkpoint.wake,
     pause: checkpoint.pause,
@@ -327,10 +292,7 @@ export function createRailwayWorldHost({
       seats.release(session.pid);
       maintenance.departed(session.pid);
     },
-    close: (options?: { save?: boolean }) =>
-      checkpoint.close(() => {
-        if (timer) clearInterval(timer);
-      }, options),
+    close: (options?: { save?: boolean }) => checkpoint.close(status.stop, options),
   };
 }
 export type RailwayWorldHost = ReturnType<typeof createRailwayWorldHost>;
