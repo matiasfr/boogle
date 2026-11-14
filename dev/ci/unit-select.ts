@@ -55,6 +55,10 @@ export const CORE_TESTS = [
  * The guard also counts an fs read whose path is built into src/, dev/, server/, protos/ or test/fixtures and that the
  * walk does not follow, in a file a non-core test reaches (its call name: `readFileSync`, `readdir`, ...). */
 export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: string; count?: number }> = {
+  'test/round-grounding.test.ts: sourceModule': {
+    reaches: ['src/entities/finds/secrets-view.ts'],
+    why: 'executes the actual yard dressing block selected from this source-owned boundary',
+  },
   'test/prefab-seats.test.ts: sourceModule': {
     reaches: ['src/entities/railway/track-machine.ts', 'src/entities/railway/train-view.ts'],
     why: 'executes the seat construction blocks selected from these source-owned boundaries',
