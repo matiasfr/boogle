@@ -4,7 +4,8 @@
 // hinge pier's sea ramp, the raised leaf (a pivot group R4c turns through ringIslandPose, its bracket empty and its
 // outline painted), the island halt's two platforms (and the foot crossing at their south end) with the RINGWORKS
 // board, the fingerpost (emblems only), the low map table, the crossover, the works yard (steel under a tarp, the drop
-// hammer, the prophecy mural), the path to the summit lookout, and the ground with its sand band. Nothing here does
+// hammer, the prophecy mural), the path to the summit lookout with its footbridge over the stack line's cutting (plain
+// solid blocks: docs/plans/ring-summit-path.md), and the ground with its sand band. Nothing here does
 // anything yet and nothing prompts (call 22). Static geometry merged into one vertex-coloured mesh; the leaf, its bracket, the hammer's head and the board's
 // face are their own. Colliders: the ground's heightfield, the decks, ramps, platforms and yard, the leaf (kinematic).
 // Local: no state, no sync. Positions in world metres from (u, lat) metres via ringAt.
@@ -31,7 +32,7 @@ import {
   type RingLanding,
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
-import { summitPath, summitPathFoot } from './path.ts';
+import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot } from './path.ts';
 import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks, ringIslandPose } from './state.ts';
 import { addFarGround } from '../../place/far-ground.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
@@ -612,8 +613,9 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   const CX = centre.x,
     CZ = centre.z;
   {
-    const { way } = summitPath(g, centre);
+    const { way, bridgeLeg } = summitPath(g, centre);
     for (let i = 0; i < way.length - 1; i++) {
+      if (i === bridgeLeg) continue; // the deck, below: no ground path draped into the cutting
       const [ax, az] = way[i]!,
         [bx, bz] = way[i + 1]!;
       const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 6));
@@ -630,6 +632,49 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
           0.3,
           false,
         );
+      }
+    }
+  }
+  // The footbridge over the stack line's cutting, blocked out at true size (docs/plans/ring-summit-path.md): a timber
+  // deck flush with the path at both rims, two orange parapets low enough to hop, a concrete abutment under each end
+  // and two dark steel bents standing just outside the cutting's flat floor. Everything here is solid.
+  {
+    const { a, b } = summitBridge(g),
+      B = SUMMIT_BRIDGE;
+    const span = Math.hypot(b.x - a.x, b.z - a.z),
+      ax = (b.x - a.x) / span,
+      az = (b.z - a.z) / span;
+    /** A point `d` metres along the deck from a and `side` metres to its right, `dy` over the deck's top. */
+    const on = (d: number, side = 0, dy = 0) => ({
+      x: a.x + ax * d - az * side,
+      y: a.y + ((b.y - a.y) * d) / span + dy,
+      z: a.z + az * d + ax * side,
+    });
+    beam(TIMBER, a, b, B.width, B.thick);
+    for (const s of [-1, 1]) {
+      const side = s * (B.width / 2 - 0.06);
+      beam(STEEL, on(0, side, B.parapet), on(span, side, B.parapet), 0.12, B.parapet);
+    }
+    for (const [d0, d1] of [
+      [-1.5, 0.5],
+      [span - 0.5, span + 1.5],
+    ] as const)
+      beam(CONCRETE, on(d0, 0, -B.thick), on(d1, 0, -B.thick), 3.4, 1.2);
+    const yaw = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, Math.atan2(ax, az));
+    for (const d of B.bents) {
+      const under = on(d, 0, -B.thick).y;
+      beam(STEEL_DARK, on(d, -1.7, -B.thick), on(d, 1.7, -B.thick), 0.5, 0.4);
+      for (const side of [-1.2, 1.2]) {
+        const c = on(d, side),
+          bottom = g.islandH(c.x, c.z) - 0.5,
+          top = under - 0.4;
+        const m = new THREE.Matrix4().compose(
+          new THREE.Vector3(c.x, (bottom + top) / 2, c.z),
+          yaw,
+          new THREE.Vector3(1, 1, 1),
+        );
+        parts.add(STEEL_DARK, new THREE.BoxGeometry(0.5, top - bottom, 0.5), m);
+        parts.solid(0.5, top - bottom, 0.5, m);
       }
     }
   }
