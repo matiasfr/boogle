@@ -5,7 +5,7 @@
 // (local +z). The ring is regular on purpose (owner, 10 November: "I don't need the houses to be clumsily laid"): one
 // setback, 30 degrees apart on the station's own 30 degree grid (the Roundhouse's stalls use it too), every door
 // facing the green squarely.
-import { HALL, SHELF_B, axisPoint, type XZ } from './home-station.ts';
+import { FINDERS_B, HALL, SHELF_B, axisPoint, type XZ } from './home-station.ts';
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -96,11 +96,13 @@ const SHOP = townBuilding('shop');
 const GATE = townBuilding('gate');
 const GATE_BACK = slotPoint(280, TOWN_FRONT + GATE.d + 4.5);
 /** What stands in the town that is not a building: the clock on its 5 by 5 m footing at G; the finders' bay beside
- * the hall's south end; the balcony pad in the shop's frame; the `yard` find behind the gate cottage; the forge's west
+ * the hall's south end and the curio shelf beside the bay; the balcony pad in the shop's frame; the `yard` find behind the gate cottage; the forge's west
  * door. */
 export const TOWN_PROPS = {
   clock: { ...TOWN_CENTRE, footing: 5 },
-  bay: { ...axisPoint(HALL.a - 2.77, HALL.c + 10.45), yaw: SHELF_B.yaw },
+  bay: { x: FINDERS_B.x, z: FINDERS_B.z, yaw: FINDERS_B.yaw },
+  /** The curio shelf, beside the bay on its far side from the hall (owner, 14 November). */
+  shelf: { x: SHELF_B.x, z: SHELF_B.z, yaw: SHELF_B.yaw },
   balcony: townLocal(SHOP, -1.67, -7.63),
   yard: GATE_BACK,
   forgeDoor: { x: -92, z: -3, w: 2.8 },

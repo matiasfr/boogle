@@ -156,6 +156,7 @@ test('every building is 2.4 m or more from every other, and 1 m or more from the
     ['the hall', hall],
     ['the forge', FORGE],
     ['the bay', { ...TOWN_PROPS.bay, w: 5.9, d: 1 }],
+    ['the shelf', { ...TOWN_PROPS.shelf, w: 5.9, d: 1 }],
     ...STALLS.bearings.map((b): [string, TownBuilding] => {
       const f = stallFrame(b);
       return [`the ${b} stall`, { ...f.centre, yaw: f.yaw, w: STALLS.width, d: STALLS.depth }];
@@ -242,8 +243,8 @@ test('the yard find is 4.5 m behind the gate cottage, and the forge door and the
   near(pointGap(TOWN_PROPS.yard, gate), 4.5, 0.05, 'the yard find behind the back wall');
   assert.deepEqual(TOWN_PROPS.forgeDoor, { x: -92, z: -3, w: 2.8 });
   assert.deepEqual({ x: TOWN_PROPS.clock.x, z: TOWN_PROPS.clock.z }, TOWN_CENTRE);
-  near(TOWN_PROPS.bay.x, -89.19, 0.01, 'bay.x');
-  near(TOWN_PROPS.bay.z, 21.8, 0.01, 'bay.z');
+  near(TOWN_PROPS.bay.x, -88.0, 0.01, 'bay.x');
+  near(TOWN_PROPS.bay.z, 21.37, 0.01, 'bay.z');
 });
 
 test('the tree catalog retains its stable planting order (length, first and last rows)', () => {

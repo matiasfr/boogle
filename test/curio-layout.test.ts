@@ -46,19 +46,20 @@ function boxDistance(p: XZ, at: XZ, yaw: number, size: { across: number; front: 
 const nearest = (at: XZ, yaw: number, size: { across: number; front: number; back: number }) =>
   Math.min(...lines.map((line) => Math.min(...line.map((p) => boxDistance(p, at, yaw, size)))));
 
-test('the bay is on the shelf_b centreline, 16.3 m out, facing the hall; boxes and plinth in its frame', () => {
+test('the bay is at the Round’s spot beside the hall, the shelf beside it in its frame; boxes and plinth in its frame', () => {
   assert.deepEqual(SHELF, SHELF_B);
   const s = toAxis(SHELF_B),
     b = toAxis(FINDERS_B);
-  assert.ok(Math.abs(b.c - s.c) < 1e-9 && Math.abs(s.a - b.a - 16.3) < 1e-9);
-  assert.equal(FINDERS_B.yaw, HALL.yaw);
-  assert.ok(Math.hypot(FINDERS_B.x + 106.76, FINDERS_B.z - 18.88) < 0.01, 'the plan put the bay at (-106.76, 18.88)');
+  // Side by side (owner, 14 November): one line across the axis, the shelf on the bay's far side from the hall.
+  assert.ok(Math.abs(b.a - s.a) < 1e-9 && s.c > b.c && b.c > HALL.c + HALL.w / 2);
+  assert.equal(FINDERS_B.yaw, SHELF_B.yaw);
+  assert.ok(Math.hypot(FINDERS_B.x + 88.0, FINDERS_B.z - 21.37) < 0.01, 'the bay is at (-88.00, 21.37)');
   const plinth = bayPoint(0, PLINTH_OUT);
-  assert.ok(Math.hypot(plinth.x + 101.78, plinth.z - 17.07) < 0.01, 'the plan put the plinth at (-101.78, 17.07)');
-  // The bay's front points at the shelf, and the boxes stand between the bay and the plinth.
-  const face = { x: Math.sin(FINDERS_B.yaw), z: Math.cos(FINDERS_B.yaw) },
+  assert.ok(Math.hypot(plinth.x + 94.17, plinth.z - 23.61) < 0.01, 'the plan put the plinth at (-94.17, 23.61)');
+  // The shelf is on the bay's own front line, to its side, and the boxes stand between the bay and the plinth.
+  const side = { x: Math.cos(FINDERS_B.yaw), z: -Math.sin(FINDERS_B.yaw) },
     toShelf = { x: SHELF_B.x - FINDERS_B.x, z: SHELF_B.z - FINDERS_B.z };
-  assert.ok((face.x * toShelf.x + face.z * toShelf.z) / Math.hypot(toShelf.x, toShelf.z) > 0.999);
+  assert.ok((side.x * toShelf.x + side.z * toShelf.z) / Math.hypot(toShelf.x, toShelf.z) > 0.999);
   for (let k = 0; k < 9; k++) {
     const p = bayBoxPoint(k),
       d = Math.hypot(p.x - FINDERS_B.x, p.z - FINDERS_B.z);

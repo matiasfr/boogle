@@ -123,10 +123,9 @@ export const ISLAND_C = ROAD_GAP / 2;
 /** The concourse: an open hall on posts with end walls, its long side across the axis, 1 m behind the buffers. Its
  * roof stands `height` up on posts; the end walls stop at `endWall`, so the hall stays open to the forge yard beside it
  * (owner, 9 November: "Lower end walls"). `floor` is its slab's top: 0.12 m over the highest ground under it.
- * `posts` are the post lines across, from the hall's centreline: five along the back; the front keeps its corners and
- * the one between the way in's two bays (Sleeves stands before it). No front post stands before the curio shelf
- * (owner playtest, 14 November: the shelf "seemed to be intersecting with the station"; two posts stood 5 cm off its
- * crown, across its second and fifth columns), so the shelf and its side way share one open bay. */
+ * `posts` are the post lines across, from the hall's centreline, the same five front and back: four even bays. Nothing
+ * stands in the hall's front (owner, 14 November: the curio shelf "seemed to be intersecting with the station", then
+ * "the shelf could be somewhere else... That way the station feels more inviting and open"): see `SHELF_B`. */
 export const HALL = (() => {
   const w = 13,
     d = 6,
@@ -135,7 +134,7 @@ export const HALL = (() => {
   /** The goods door: a 1.5 m gap in the north end wall's back half, behind road 1's buffer, toward the forge. */
   const goodsDoor = { a0: -8.9, a1: -7.4 };
   const corner = w / 2 - 0.15,
-    posts = { front: [-corner, -w / 4, corner], back: [-corner, -w / 4, 0, w / 4, corner] };
+    posts = [-corner, -w / 4, 0, w / 4, corner];
   return {
     ...axisPoint(a, ISLAND_C),
     a,
@@ -298,26 +297,26 @@ export const PROPS = {
   yard: { x: -46, z: 22 },
 };
 /** The curio shelf's footprint in its own frame (`curio-shelf.ts`): the crown's half-width, how far the crown reaches in
- * front and the back panel behind, and the crown's top over its floor. `sideWay` is the gap kept on its +x side, toward
- * the south wall: the side way into the works board's bay (it was the finds board's room until that was cut, 9
- * November; curio placement plan, 10 November). */
-export const SHELF_SIZE = { crown: 2.95, sideWay: 1.4, front: 0.59, back: 0.35, top: 3.47 };
-/** The curio shelf (owner, 9 November: "move shelf off north wall"): in the hall's front, south of the way in, just
- * behind the front posts' line (none stands before it: `HALL.posts`) and facing the square, its side way toward the south wall. North of it the way in from the
- * square to the trains stays open, nearly 5 m wide; it keeps off the back span (the line map, step 12) and leaves the
- * south wall 0.15 m clear for the works board (call 29). */
-export const SHELF_B = (() => {
-  const a = HALL.a - HALL.d / 2 + 0.2 + 0.175 + 0.05 + SHELF_SIZE.front,
-    c = HALL.c + HALL.w / 2 - 0.3 - 0.15 - SHELF_SIZE.sideWay - SHELF_SIZE.crown;
-  return { ...axisPoint(a, c), yaw: Math.atan2(-AXIS.d.x, -AXIS.d.z), y: HALL.floor };
-})();
-/** The finders' bay, in both layouts (owner, 10 November: layout A of docs/plans/curio-shelves-placement.md, "for
- * now"): on the shelf's centreline 16.3 m out across the square, facing back up the station's axis at the hall, so
- * the south street passes between them. On the ground. */
-export const FINDERS_B = (() => {
-  const s = toAxis(SHELF_B);
-  return { ...axisPoint(s.a - 16.3, s.c), yaw: HALL.yaw };
-})();
+ * front and the back panel behind, and the crown's top over its foot. The finders' bay's frame is the same but lower. */
+export const SHELF_SIZE = { crown: 2.95, front: 0.59, back: 0.35, top: 3.47 };
+/** The level both curio frames stand on: the flat ground south of the hall. The bay's hall end is set up to 0.2 m into
+ * the rise toward the hall's slab, so the two fronts and feet line up. */
+export const CURIO_Y = 18;
+/** The finders' bay, at the Round's spot for it (docs/plans/town-layout.md, call 9), taken early so the pair below
+ * stands together (owner, 14 November): beside the hall's south end, 1 m from its wall, facing the square. It is
+ * 1.27 m further back than the Round first put it (its face 0.9 m behind the hall's front edge), so the shelf beside
+ * it stays over a metre off the Round's plot 3. Its boxes and the trophy plinth are in its frame and came with it. */
+export const FINDERS_B = {
+  ...axisPoint(HALL.a - 1.5, HALL.c + 10.45),
+  yaw: Math.atan2(-AXIS.d.x, -AXIS.d.z),
+  y: CURIO_Y,
+};
+/** The gap between the bay's crown and the shelf's: two pieces, too narrow to walk into. */
+export const CURIO_GAP = 0.3;
+/** The curio shelf (owner, 14 November: "It's the other blue rack. Maybe they should be next to each other"): out of
+ * the hall, beside the finders' bay on its far side from the hall, in the bay's own frame: the same facing, fronts in
+ * line, `CURIO_GAP` between the crowns, open ground in front of both. What you have beside what you missed. */
+export const SHELF_B = { ...bayPoint(2 * SHELF_SIZE.crown + CURIO_GAP, 0), yaw: FINDERS_B.yaw, y: CURIO_Y };
 /** A Place-local point in the bay's own frame: `across` metres along its front (its +x), `out` metres in front of it. */
 export function bayPoint(across: number, out: number): XZ {
   const c = Math.cos(FINDERS_B.yaw),
@@ -328,8 +327,9 @@ export function bayPoint(across: number, out: number): XZ {
 export const BAY_BOXES = { across: [0, -1.1, 1.1], out: [1.5, 2.6, 3.7] } as const;
 /** The bay box for missed secret k (0–8), Place-local. */
 export const bayBoxPoint = (k: number) => bayPoint(BAY_BOXES.across[k % 3]!, BAY_BOXES.out[Math.floor(k / 3)]!);
-/** The jump trophy's plinth: outermost on the bay's centreline, on the street's edge where people pass. */
-export const PLINTH_OUT = 5.3;
+/** The jump trophy's plinth: outermost on the bay's centreline, on the street's edge where people pass. 1.27 m further
+ * out than its old 5.3 m, as far as the bay stands back, so it keeps the Round's spot for it (−94.17, 23.61). */
+export const PLINTH_OUT = 6.57;
 /** The two village halts become one island: each line's platform edge, by its own `s`. */
 export const ISLAND_HALTS = [
   { s0: ISLAND_A.deck0, s1: ISLAND_A.deck1, lat: ISLAND_C },

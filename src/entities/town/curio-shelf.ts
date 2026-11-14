@@ -7,7 +7,7 @@
 // gold finds (9 November).
 // Each gift stands on its board (its lowest point on the board's top), and the top board sits higher than Place's so the
 // tall sheeted outfits fit under it: in Place they hung below the middle board, over the crystals' row.
-// The finders' bay (F2), across the square on the shelf's centreline (FINDERS_B): the secrets' gifts, under sheets until they're yours (Place's gifts.ts). It
+// The finders' bay (F2), beside the shelf at the hall's south end (FINDERS_B): the secrets' gifts, under sheets until they're yours (Place's gifts.ts). It
 // stands on its own but is drawn with the shelf: its frame is part of the shelf's frame, and what's on it is part of the
 // shelf's two meshes, so it costs no draws. Where `bayPeg` says, missed secrets' boxes wait in front of it
 // (../finds/view.ts).
@@ -46,10 +46,10 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi) 
   shelf.rotation.y = SHELF.yaw;
   owner.add(shelf); // empty now: what's added to it below is disposed here, not by the owner
   shelf.updateMatrixWorld(true);
-  // The finders' bay faces the shelf across the path. Bay space to shelf space: what's on the bay is drawn there.
+  // The finders' bay stands beside the shelf. Bay space to shelf space: what's on the bay is drawn there.
   const FX = toWorld(FINDERS.x),
     FZ = FINDERS.z,
-    FY = H(FX, FZ);
+    FY = FINDERS.y ?? H(FX, FZ);
   const bayToShelf = shelf.matrix
     .clone()
     .invert()

@@ -112,12 +112,18 @@ All motion and sparkle are Local; accepted contacts still own harvest sounds, ch
 ## The place
 
 **Home's one station (13 November, home-flip X1/X2).** The terminus is the only Home. Two buffer roads share a
-4.3 m island, an apron and an open hall; the shelf faces the square from the hall, and Sleeves stands beside its
-north bay. The shelf stands whole in one open bay of the hall's front (owner playtest, 14 November: it "seemed to be
-intersecting with the station"): two front posts stood 5 cm off its crown, across its second and fifth columns, and
-are gone. The front keeps its corner posts and the one between the way in's two bays, where Sleeves stands (1.83 m
-north of the crown and 1.53 m south of it are clear); the back keeps five. The shelf did not move. Stone treads across the open north bays walk up the slab's front from the square (it stands 0.34 m over
-the sand there); spawn faces the bay, so Sleeves is whole in frame beside Buddy, at phone width too. The rack leaves the accepted 1.97 m lane; the goods door reaches the forge. The table is on its own spur,
+4.3 m island, an apron and an open hall, and Sleeves stands before its second post. **The hall is empty and open
+(owner, 14 November):** five posts front and back in four even bays, nothing in its front, the buffers and trains seen
+through every bay from the square. The curio shelf left it (in the hall's front two posts stood 5 cm off its crown and
+it "seemed to be intersecting with the station"; then "the shelf could be somewhere else... That way the station feels
+more inviting and open", and "It's the other blue rack. Maybe they should be next to each other"). **The curio pair**
+stands beside the hall's south end, facing the square: the finders' bay (the teal-banded rack) 1 m off the south wall
+at (−88.00, 21.37), and the curio shelf beside it at (−85.88, 27.19), 0.3 m between their crowns, fronts in line and
+both on one level (y 18), their faces 0.9 m behind the hall's front edge, with open ground in front. The bay took the
+Round's spot for it early, 1.27 m further back so the shelf stays 1.09 m off the Round's plot 3; its boxes and the
+trophy plinth came with it in its frame, the plinth 6.57 m out so it keeps the Round's spot (−94.17, 23.61). Neither has a prompt; both are looked at. Stone treads across
+the whole open front walk up the slab from the square (it stands 0.34 m over the sand at the north end and meets
+the ground at the south); spawn faces the bay, so Sleeves is whole in frame beside Buddy, at phone width too. The rack leaves the accepted 1.97 m lane; the goods door reaches the forge. The table is on its own spur,
 with one open radial stall and two ruin outlines. Board crossing s 2.0–3.6 on road 2 marks the ramp way to the stall;
 it and the shunt have no collider. Each island lever calls its own line and the knobs stay 3.70 m apart.
 The rules use the new path heads, island centres and tool anchors, with stop marks unchanged. Line 1's Home turnout
@@ -1395,9 +1401,10 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
   the room has it (glider B, Needle Bell's summit). Two early ways in are accepted sequence breaks (designer,
   9 November): a drop from the plateau east of the alcove, and a double jump down from the stack-return slab onto the
   sea stack, whose crate therefore stands without the glider.
-- **The finders' bay** stands across the square from the curio shelf, drawn with it (no draws of its own): on the
-  shelf's centreline 16.3 m out at (−106.76, 18.88), facing 70° back at the hall, off the shore arrival and the street
-  (owner, 10 November, "for now"; [curio placement](../plans/curio-shelves-placement.md)), in both layouts. The secrets'
+- **The finders' bay** stands beside the curio shelf, drawn with it (no draws of its own): beside the hall's south end
+  at (−88.00, 21.37), facing the square, the shelf on its far side from the hall (owner, 14 November: "next to each
+  other"; "The place", Home's one station). Its 10 November "for now" spot across the square at (−106.76, 18.88) is
+  superseded ([curio placement](../plans/curio-shelves-placement.md)). The secrets'
   gifts under sheets until they're yours. A secret you went on past without turns up there as a second crate, in the
   order the abilities come: yard and bell with the hook; alcove and firstpull with the glider; nook and loft with the
   trains; the lookout once the double jump is yours and line 2 is complete; the balcony and the stack at the end of

@@ -134,6 +134,11 @@ Written for all three options; it holds for the Round, with the design review's 
   Roof, chimney cap and the walk-in workshop come when F2 completes, not at the crossing.
 - **The ticket window** is inside the hall's north end, at about (−92.1, 5.6). Every rider's walk ends there, then
   goes through the hall to the island (29 m to the middle of the platform).
+- _Done early and amended, 14 November (owner: the curio shelf leaves the hall and stands "next to" the bay): the bay
+  is at (−88.00, 21.37), 1.27 m further back along the station's axis than below, with the curio shelf beside it on
+  its far side from the hall at (−85.88, 27.19), 1.09 m off plot 3; the plinth is 6.57 m out, so it stays at
+  (−94.17, 23.61). `TOWN_PROPS.bay` and `.shelf` read `home-station.ts`. The roof-perch probe (R2) should be re-run
+  with both frames there._
 - **The finders' bay** moves beside the hall's south end on the hall's front line, facing the square as the shelf does:
   bay (−89.19, 21.80), yaw −1.2217 (faces 250°), 1 m from the hall's south wall; boxes in its own frame; the plinth
   5.3 m out at (−94.17, 23.61), 4.4 m from the quarry road's centre (inside its 4.5 m `NEAR`). Where it stands now
