@@ -7,25 +7,33 @@ import { WALKABLE_NY } from '../../constants.ts';
 import { GRID, ORIGIN, ROCKS } from '../../place/layout.ts';
 import { CELL, GRADED, NX, NZ, at, cellX, cellZ, clearMask, pathMask } from '../../place/terrain.ts';
 import { LAND_TREES } from '../../place/tree-catalog.ts';
+import { placements } from './placements.ts';
 import { colliderHeight, colliderNy, describeGround, ledgeOffset } from './surface.ts';
 
 /** One thing standing on Home's ground: the drawn ground is the collider's everywhere within `r` of it (Place-local
- * metres; `r` already includes KEEP_MARGIN around the footprint). */
-export type GroundKeep = { kind: 'pad' | 'strip' | 'support' | 'tree' | 'rock'; x: number; z: number; r: number };
+ * metres; `r` already includes KEEP_MARGIN around the footprint). `id` names a catalogued placement. */
+export type GroundKeep = {
+  kind: 'pad' | 'strip' | 'support' | 'tree' | 'rock' | 'placed';
+  id?: string;
+  x: number;
+  z: number;
+  r: number;
+};
 /** How far past a footprint the drawn ground stays exact, metres. */
 export const KEEP_MARGIN = 1;
 /** A 1 m drawn triangle that reaches into a keep has its far corner at most this much further out, so vertices are held
  * this far beyond `r`: then every point within `r` lies on triangles whose corners are all exact. */
 const KEEP_REACH = 1.5;
 /**
- * Everything standing on Home's ground, the one list the pass protects and test/terrain-pass-island.test.ts iterates:
- * every footprint the terrain grades for (terrain.ts GRADED: the village, camps, yard and head pads, every town, room
- * and camp plot, the shore landing, each metre of rail bed and path, station frames, bridge abutments, the bank cart),
- * every tree and every rock, each with a metre around it. A building reaches this list by getting its level ground from
- * terrain.ts, which every plot does; nothing here names buildings one by one. Read from the live layout at load.
+ * Everything standing on Home's ground, the one list the pass protects and test/terrain-pass-island.test.ts iterates,
+ * each with a metre around it: every footprint the terrain grades for (terrain.ts GRADED: pads, each metre of rail bed
+ * and path, support boxes), every catalogued placement whether or not the terrain graded for it (placements.ts: the
+ * ancient technology's platforms, pillars, devices and walks, halts, station frames and props, every plot by name),
+ * every tree and every rock. Read from the live layout at load.
  */
 export const GROUND_KEEPS: GroundKeep[] = [
   ...GRADED.map((g) => ({ ...g, r: g.r + KEEP_MARGIN })),
+  ...placements().map((p) => ({ kind: 'placed' as const, ...p, r: p.r + KEEP_MARGIN })),
   ...LAND_TREES.map((t) => ({ kind: 'tree' as const, x: t.x - ORIGIN.x, z: t.z - ORIGIN.z, r: t.size + KEEP_MARGIN })),
   ...ROCKS.map((r) => ({ kind: 'rock' as const, x: r.x, z: r.z, r: r.r + KEEP_MARGIN })),
 ];
@@ -68,6 +76,33 @@ export function protectionAt(x: number, z: number) {
   return keep;
 }
 
+/** Where a body can touch rock: within this of ground a player can stand on (a rim above it, a foot below), metres. */
+export const CONTACT = { reach: 1.5, fade: 1, vertical: 0.25 };
+/**
+ * A ledge's vertical offset, held to CONTACT.vertical within CONTACT.reach of any walkable collider face and freed over
+ * the next metre. Rock is drawn up to 0.25 m off its collider along its normal, which on the steepest faces is 0.83 m of
+ * height; where a player stands at the foot of a face or on its rim their body would show that gap, so there the drawn
+ * rock stays within a quarter metre of height (under 0.14 m along the normal of any unwalkable face).
+ */
+function capNearWalkable(x: number, z: number, offset: number) {
+  const size = Math.abs(offset);
+  if (size <= CONTACT.vertical) return offset;
+  // A drawn triangle that comes within reach of walkable ground has its far corner up to KEEP_REACH further out, so
+  // vertices are held that much beyond the reach: then every drawn point within reach is on capped corners only.
+  const held = CONTACT.reach + KEEP_REACH;
+  let nearest = Infinity;
+  for (let d = 0.5; d <= held + CONTACT.fade && nearest === Infinity; d += 0.5)
+    for (let n = 0; n < 24; n++) {
+      const angle = (n / 24) * 2 * Math.PI;
+      if (colliderNy(x + Math.cos(angle) * d, z + Math.sin(angle) * d) >= WALKABLE_NY) {
+        nearest = d;
+        break;
+      }
+    }
+  const free = smoothstep(held, held + CONTACT.fade, nearest);
+  return Math.sign(offset) * (CONTACT.vertical + free * (size - CONTACT.vertical));
+}
+
 /** Whether coarse cell (i, j) has a collider triangle you can't stand on. */
 export function steepCell(i: number, j: number) {
   const x = cellX(i),
@@ -95,9 +130,15 @@ export type IslandSurface = {
  * Home's unwalkable cells at 1 m. `base` is the id of the first new vertex; `skip` names cells the land leaves out (the
  * cove's patch); `tile` is the far ground's tile size in cells. Crack-free: a vertex moves only when every cell it
  * touches is a 1 m cell and it is not on a tile's border, so an edge shared with a 2 m cell, or with a far tile drawn
- * coarser, stays that cell's straight edge.
+ * coarser, stays that cell's straight edge. `contactCap` (on; `?terrainCap=0` turns it off to compare) holds the rock
+ * a body can touch close to its collider: see capNearWalkable.
  */
-export function buildIslandSurface(base: number, skip: (i: number, j: number) => boolean, tile: number): IslandSurface {
+export function buildIslandSurface(
+  base: number,
+  skip: (i: number, j: number) => boolean,
+  tile: number,
+  contactCap = true,
+): IslandSurface {
   const cw = NX - 1,
     cd = NZ - 1;
   const mark = new Uint8Array(cw * cd);
@@ -123,7 +164,9 @@ export function buildIslandSurface(base: number, skip: (i: number, j: number) =>
   const height = (a: number, b: number) => {
     const x = GRID.x0 + a * (CELL / 2),
       z = GRID.z0 + b * (CELL / 2);
-    return colliderHeight(x, z) + (free(a, b) ? ledgeOffset(x, z, protectionAt(x, z)) : 0);
+    if (!free(a, b)) return colliderHeight(x, z);
+    const offset = ledgeOffset(x, z, protectionAt(x, z));
+    return colliderHeight(x, z) + (contactCap ? capNearWalkable(x, z, offset) : offset);
   };
   const vertex = (a: number, b: number) => {
     if (a % 2 === 0 && b % 2 === 0) {

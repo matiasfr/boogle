@@ -40,8 +40,11 @@ function home() {
       walkableMaxVertical: round(faces.walkable.gap),
       walkableWorstAt: faces.walkable.at.map(round),
       steepTriangles: faces.steep.triangles,
-      steepMaxAlongNormal: round(faces.steep.gap),
-      steepMaxVertical: round(faces.steep.vertical),
+      steepMaxAlongNormal: round(faces.steep.alongNormal.alongNormal),
+      steepMaxAlongNormalAt: faces.steep.alongNormal.at.map(round),
+      steepMaxVertical: round(faces.steep.vertical.vertical),
+      steepMaxVerticalAt: faces.steep.vertical.at.map(round),
+      steepMaxVerticalNy: round(faces.steep.vertical.ny),
       keeps: kept.keeps,
       keepSamples: kept.samples,
       keepMax: round(kept.gap),
@@ -49,7 +52,8 @@ function home() {
       tolerance: TOLERANCE,
     }),
   );
-  if (faces.walkable.gap > 0.05 || kept.gap > 0.05 || faces.steep.gap > TOLERANCE.steep + 1e-5) process.exitCode = 1;
+  if (faces.walkable.gap > 0.05 || kept.gap > 0.05 || faces.steep.alongNormal.alongNormal > TOLERANCE.steep + 1e-5)
+    process.exitCode = 1;
 }
 for (const name of asked.length ? asked : ['home', '1', 'a2', 'a4']) {
   if (name === 'home') {

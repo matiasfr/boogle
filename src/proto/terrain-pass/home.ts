@@ -24,7 +24,9 @@ export function applyHomePass(
 ): HomePass {
   const count = geo.getAttribute('position').count,
     grid = NX * NZ;
-  const s = buildIslandSurface(count, skip, GROUND_TILE);
+  // `?terrainCap=0` draws the ledges without the contact cap, to compare (island.ts capNearWalkable).
+  const cap = new URLSearchParams(location.search).get('terrainCap') !== '0';
+  const s = buildIslandSurface(count, skip, GROUND_TILE, cap);
   const extra = s.position.length / 3,
     total = count + extra;
   // Every attribute grows by the new vertices, which take the land's own values at their place on the grid.

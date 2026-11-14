@@ -39,9 +39,9 @@ export type DrawnHome = {
   triangles: () => Generator<[number, number, number][]>;
 };
 
-export function drawnHome(): DrawnHome {
+export function drawnHome(contactCap = true): DrawnHome {
   const base = NX * NZ;
-  const surface = buildIslandSurface(base, inCove, TILE);
+  const surface = buildIslandSurface(base, inCove, TILE, contactCap);
   const movedY = new Map(surface.moved);
   const vertex = (id: number): [number, number, number] =>
     id < base
@@ -106,12 +106,18 @@ export function drawnHome(): DrawnHome {
   return { surface, heightAt, triangles };
 }
 
+/** One unwalkable collider face and how far its drawn triangle is from it. */
+export type SteepGap = { vertical: number; alongNormal: number; at: [number, number]; y: number; ny: number };
+
 /** Measure every changed triangle against the one collider triangle it lies in: the worst vertical gap on faces a
- * player can stand on, and the worst gap along the face's normal on faces they can't. */
-export function measureHome(home: DrawnHome = drawnHome()) {
+ * player can stand on; on faces they can't, the worst gap along the face's normal and, tracked on its own, the worst
+ * vertical gap (they are not the same triangle: the steeper the face, the more height a given normal offset is).
+ * `each` is called with every unwalkable triangle's gap. */
+export function measureHome(home: DrawnHome = drawnHome(), each?: (gap: SteepGap) => void) {
+  const none = { vertical: 0, alongNormal: 0, at: [0, 0] as [number, number], y: 0, ny: 1 };
   const worst = {
     walkable: { gap: 0, at: [0, 0] as [number, number], ny: 1, triangles: 0 },
-    steep: { gap: 0, vertical: 0, at: [0, 0] as [number, number], ny: 1, triangles: 0 },
+    steep: { triangles: 0, alongNormal: none as SteepGap, vertical: none as SteepGap },
   };
   for (const t of home.triangles()) {
     const [a, b, c] = t as [[number, number, number], [number, number, number], [number, number, number]];
@@ -127,8 +133,10 @@ export function measureHome(home: DrawnHome = drawnHome()) {
       if (gap > worst.walkable.gap) worst.walkable = { ...worst.walkable, gap, at: [cx, cz], ny: face.ny };
     } else {
       worst.steep.triangles++;
-      if (gap * face.ny > worst.steep.gap)
-        worst.steep = { ...worst.steep, gap: gap * face.ny, vertical: gap, at: [cx, cz], ny: face.ny };
+      const found: SteepGap = { vertical: gap, alongNormal: gap * face.ny, at: [cx, cz], y: face.height, ny: face.ny };
+      if (found.alongNormal > worst.steep.alongNormal.alongNormal) worst.steep.alongNormal = found;
+      if (found.vertical > worst.steep.vertical.vertical) worst.steep.vertical = found;
+      each?.(found);
     }
   }
   return worst;

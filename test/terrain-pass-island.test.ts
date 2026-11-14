@@ -19,7 +19,8 @@ import {
 import { PROPS, SHELF_B, TABLE } from '../src/place/home-station.ts';
 import { frameBesideLine, FRAME_D, FRAME_W } from '../src/place/spatial-station.ts';
 import { CELL, GRADED, NX, NZ, cellX, cellZ } from '../src/place/terrain.ts';
-import { GROUND_KEEPS, KEEP_MARGIN } from '../src/proto/terrain-pass/island.ts';
+import { WALKABLE_NY } from '../src/constants.ts';
+import { CONTACT, GROUND_KEEPS, KEEP_MARGIN } from '../src/proto/terrain-pass/island.ts';
 import { TOLERANCE, vertexNy } from '../src/proto/terrain-pass/surface.ts';
 import { TILE, collider, drawnHome, measureHome, measureKeeps } from '../dev/terrain-pass/drawn.ts';
 
@@ -46,8 +47,11 @@ test('every walkable collider face is drawn within 5 cm, island-wide', () => {
   ] as const)
     assert.ok(Math.abs(home.heightAt(x, z) - collider(x, z).height) <= FEET, `the reviewed face moved at ${x}, ${z}`);
   // Rock nobody can stand on keeps its ledges, bounded along each face's own normal.
-  assert.ok(worst.steep.gap <= TOLERANCE.steep + 1e-5, `rock strays ${worst.steep.gap} m along its normal`);
-  assert.ok(worst.steep.gap > 0.1, 'the ledges are there');
+  assert.ok(
+    worst.steep.alongNormal.alongNormal <= TOLERANCE.steep + 1e-5,
+    `rock strays ${worst.steep.alongNormal.alongNormal} m along its normal`,
+  );
+  assert.ok(worst.steep.alongNormal.alongNormal > 0.1, 'the ledges are there');
 });
 
 test('a vertex counts every collider face that touches it', () => {
@@ -91,6 +95,61 @@ test('the drawn ground is the collider under and 1 m around everything in the ke
   );
   // The spot the review found, under the awakened timber camp's block at (32, -144): it sank 0.8063 m.
   assert.ok(Math.abs(home.heightAt(33.0417, -143) - collider(33.0417, -143).height) <= FEET);
+});
+
+test('catalogued placements the terrain never graded for are kept too', () => {
+  // The jump course's platform p1 stands on ungraded rock beside the gorge: the drawn ground a metre outside it sank
+  // 0.116 m (second review, 14 November). placements.ts names it; this is that point.
+  const placed = GROUND_KEEPS.filter((k) => k.kind === 'placed');
+  for (const id of ['pad p1', 'pillar p1', 'pillar p2', 'device jump', 'glide ramp', 'gate sea', 'halt Camp'])
+    assert.ok(
+      placed.some((k) => k.id === id),
+      `${id} is in the keep list`,
+    );
+  assert.ok(placed.length > 200);
+  const x = -50.504226668478005,
+    z = -65.44495535881705;
+  const gap = Math.abs(home.heightAt(x, z) - collider(x, z).height);
+  assert.ok(gap <= FEET, `1 m outside p1 at (${x}, ${z}) the drawn ground is ${gap} m off the collider`);
+});
+
+test('the reported maxima bound every triangle, each on its own', () => {
+  // The vertical maximum is not the triangle with the largest normal offset: on a near-vertical face a few
+  // centimetres along the normal is most of a metre of height. Both are tracked and neither may understate a triangle.
+  let vertical = 0,
+    alongNormal = 0;
+  const worst = measureHome(home, (gap) => {
+    vertical = Math.max(vertical, gap.vertical);
+    alongNormal = Math.max(alongNormal, gap.alongNormal);
+  });
+  assert.equal(worst.steep.vertical.vertical, vertical);
+  assert.equal(worst.steep.alongNormal.alongNormal, alongNormal);
+  assert.ok(vertical > alongNormal, 'they differ');
+  assert.ok(vertical <= 0.9, `rock is drawn ${vertical} m of height from its collider`);
+});
+
+test('rock a body can touch stays within a quarter metre of height of its collider', () => {
+  // Within CONTACT.reach of ground a player can stand on (the foot of a face, its rim), every unwalkable drawn triangle.
+  let worst = { vertical: 0, alongNormal: 0, at: [0, 0] };
+  let near = 0;
+  measureHome(home, (gap) => {
+    let touches = false;
+    for (let n = 0; n < 16 && !touches; n++) {
+      const angle = (n / 16) * 2 * Math.PI;
+      for (const d of [0.5, 1, CONTACT.reach])
+        if (collider(gap.at[0] + Math.cos(angle) * d, gap.at[1] + Math.sin(angle) * d).ny >= WALKABLE_NY)
+          touches = true;
+    }
+    if (!touches) return;
+    near++;
+    if (gap.vertical > worst.vertical) worst = gap;
+  });
+  assert.ok(near > 10000, 'most of the island’s rock is within reach of somewhere to stand');
+  assert.ok(
+    worst.vertical <= CONTACT.vertical + 1e-4,
+    `rock within reach of walkable ground at ${worst.at} is drawn ${worst.vertical} m of height from its collider`,
+  );
+  assert.ok(worst.alongNormal <= 0.14);
 });
 
 test('buildings and stations named by the layout stand on drawn ground that is the collider', () => {
