@@ -25,13 +25,13 @@ import {
   ISLAND,
   ISLAND_A,
   ISLAND_C,
-  STALLS,
+  ROTUNDA_HOME,
   TABLE,
   axisPoint,
   headPoints,
   spurPoints,
-  stallFrame,
 } from '../../src/place/home-station.ts';
+import { ROTUNDA_KIT, ROTUNDA_PREVIEW, bayFrame, rotundaBays, rotundaFootprint } from '../../src/place/rotunda.ts';
 import { SHORE_PATH } from '../../src/place/shore-layout.ts';
 import {
   TOWN_CENTRE,
@@ -114,18 +114,19 @@ const forge: Building = {
   // forgePlan's existing south opening, not the centre of the south wall.
   door: { x: FORGE.x + workshopDoor.x, z: FORGE.z + FORGE.d / 2 },
 };
-const stalls: Building[] = STALLS.bearings.map((bearing) => {
-  const f = stallFrame(bearing);
-  return {
-    ...f.centre,
-    yaw: f.yaw + Math.PI,
-    w: STALLS.width,
-    d: STALLS.depth,
-    id: `stall${bearing}`,
-    name: `Stall ${bearing}°`,
-    when: 'free',
-  };
-});
+/** The Roundhouse's rotunda (src/place/rotunda.ts): every bay of Home's row as its wedge, with the stage it stands
+ * from (1: the stall's footings; 2: steel home; 3: held), and the painted bays past each end. */
+const rotunda = (() => {
+  const site = ROTUNDA_HOME;
+  const stageOf = (bay: number) => [1, 2, 3].find((stage) => rotundaBays(site, stage).includes(bay)) ?? 3;
+  const bays = site.order.map((bay) => ({ ...bayFrame(site, bay), stage: stageOf(bay) }));
+  const lo = Math.min(...site.order),
+    hi = Math.max(...site.order);
+  const painted = Array.from({ length: ROTUNDA_PREVIEW }, (_, k) => [lo - k - 1, hi + k + 1])
+    .flat()
+    .map((bay) => bayFrame(site, bay));
+  return { site, bays, painted, keepClear: rotundaFootprint(site, site.order.length) };
+})();
 // openingBuildings() draws TOWN.start and the distant camps. wood/stone are unused legacy growth rows.
 const today: Building[] = [
   ...TOWN.start.map((b, i) => ({
@@ -151,7 +152,6 @@ const today: Building[] = [
   })),
   hall,
   forge,
-  ...stalls,
 ];
 const round: Building[] = [
   ...TOWN_SLOTS.map((s) => ({
@@ -162,7 +162,6 @@ const round: Building[] = [
   })),
   hall,
   { ...forge, name: 'Forge · west door', door: TOWN_PROPS.forgeDoor, face: -Math.PI / 2 },
-  ...stalls,
 ];
 // Already built on main (#1778); both layers use the actual drawn crowns, including their forward offset.
 const curioFrames: Building[] = [
@@ -221,6 +220,8 @@ const corners = (b: TownBuilding) =>
 const allPoints = [...today, ...round].flatMap(corners).concat(
   SHORE_PATH.map(([x, z]) => ({ x, z })),
   LANDING,
+  rotunda.keepClear,
+  rotunda.painted.flatMap((b) => b.corners),
 );
 const bounds = {
   x0: Math.floor((Math.min(...allPoints.map((p) => p.x)) - 6) / 10) * 10,
@@ -432,7 +433,23 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
     yaw: HALL.yaw,
   };
   out.push(shape(island, '#eceeeb', '#969c98'));
-  out.push(circle(TABLE, TABLE.r, '#eceeeb', '#969c98'));
+  // The rotunda: its keep-clear outline (dotted), the kerb, the table, a road and a wedge for each bay (solid from the
+  // stall's footings, lighter from steel, dashed while held) and the bays painted on the ground past each end.
+  out.push(path(rotunda.keepClear, '#b9beba', 1, 'stroke-dasharray="1 3"'));
+  out.push(circle(TABLE, TABLE.r + ROTUNDA_KIT.rim, '#dfe2de', '#969c98'));
+  out.push(circle(TABLE, TABLE.r, '#4a4f52', '#969c98'));
+  for (const b of rotunda.painted)
+    out.push(
+      `<polygon points="${points(b.corners)}" fill="none" stroke="#e6a33e" stroke-width="1.2" stroke-dasharray="2 3"/>`,
+    );
+  for (const b of rotunda.bays) {
+    out.push(path([b.rim, b.back], '#929996'));
+    const extra = b.stage === 3 ? 'stroke-dasharray="4 3"' : '';
+    const fill = b.stage === 1 ? '#fffef8' : b.stage === 2 ? '#f1efe6' : 'none';
+    out.push(
+      `<polygon points="${points(b.corners)}" fill="${fill}" fill-opacity="0.8" stroke="${mode === 'today' ? color.today : color.free}" stroke-width="1.4" ${extra}/>`,
+    );
+  }
   for (const road of [0, 1] as const) out.push(path(headPoints(road), '#929996', 1.8));
   out.push(path(spurPoints(), '#929996'));
   const active = [...(mode === 'today' ? today : round), ...curioFrames];
@@ -485,7 +502,8 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
     { p: LANDING, name: 'LANDING · shore spawn', c: '#354b3c' },
     { p: SPAWN, name: 'SPAWN', c: '#354b3c' },
     { p: island, name: 'Station island', c: '#58615d' },
-    { p: TABLE, name: 'Turntable', c: '#58615d' },
+    { p: TABLE, name: 'Turntable 16 m', c: '#58615d' },
+    { p: rotunda.bays[0]!.centre, name: 'Rotunda · 3, 5, then 7 bays', c: '#58615d' },
   );
   if (mode === 'today') labels.push({ p: TOWN_CENTRE, name: 'Statue', c: '#58615d' });
   if (mode !== 'today')
