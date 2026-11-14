@@ -28,7 +28,7 @@ import { HALTS, OFFSET_HALTS, crossLat, offsetLat } from '../../src/place/layout
 /** A car's half width and a platform's (src/entities/railway/halts-view.ts: 2.5 m decks). */
 const CAR_HX = 1.1,
   PLATFORM_HX = 1.25;
-/** The up track's turnouts and Far Head's crossover: how steeply each leaves today's track and its tightest radius
+/** The offset track's turnouts and Far Head's crossover: how steeply each leaves today's track and its tightest radius
  * (3-point, 2 m arms, 0.5 m steps), so the eased lateral shift's ends are measured, not assumed. */
 function turnouts() {
   const out: { line: string; what: string; s0: number; s1: number; diverge: number; minRadius: number; at: number }[] =
@@ -353,7 +353,7 @@ export function measure(t: Track): { row: TrackRow; findings: Finding[] } {
   return { row, findings: f };
 }
 
-/** Where the up track's centre comes within FOUL of today's (or crosses it): its fouling points. */
+/** Where the offset track's centre comes within FOUL of today's (or crosses it): its fouling points. */
 function fouling(all: Track[]): Finding[] {
   const out: Finding[] = [];
   for (const up of all.filter((t) => t.kind === 'up' && t.status === 'v26')) {
@@ -493,7 +493,7 @@ export function printContinuity(r: ContinuityReport) {
   console.log('  joins:');
   for (const j of r.joins)
     console.log(`    [${j.status}] ${j.name}: gap ${j.gap.toFixed(2)} m, heading ${j.heading.toFixed(1)}° (${j.note})`);
-  console.log("  fouling zones (up track within 2.3 m of today's):");
+  console.log("  fouling zones (offset track within 2.3 m of today's):");
   for (const x of r.foul) console.log(`    ${x.track}: ${x.text}`);
   const line = (x: Finding) =>
     `    ${x.gross ? 'FAIL ' : ''}${x.track} [${x.status}] s ${x.s.toFixed(0)} (${x.x.toFixed(1)}, ${x.z.toFixed(1)}): ${x.text}`;

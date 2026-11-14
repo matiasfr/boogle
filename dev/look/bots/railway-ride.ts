@@ -2,7 +2,7 @@
 // Ring Island bot (railway-ring.ts: Village to the Railhead, the Railhead to the island). Inspection observes; it never
 // seeds a world or moves a player.
 import type { Bot } from '../bot.ts';
-import { inspectRailway, rw, trains as trainRows } from '../rail-read.ts';
+import { inspectRailway, rw, trainStops, trains as trainRows } from '../rail-read.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
@@ -147,6 +147,8 @@ export function line2Rides(bot: Bot) {
     }
     check(aboard(), `boarded line 2 at ${halt.name} by a real jump`);
     const to = view().halts.find((h) => h.line === 1 && h.stop === destination);
+    const middle = destination > 0 && destination < trainStops(rw(), 1).length - 1;
+    let destinationPrompt = false;
     let ran = false;
     let sample: Promise<void> | undefined;
     const asked = new Set<string>();
@@ -155,6 +157,7 @@ export function line2Rides(bot: Bot) {
       // The cord names the next requestable halt, which may precede our destination. Wait until it names ours;
       // askEach deliberately serves every intermediate halt too (including the stack heads).
       const ask = requestPrompt();
+      destinationPrompt ||= ask?.verb === `Request stop: ${to?.name}`;
       if (
         ask?.run &&
         !ask.blocked &&
@@ -182,6 +185,7 @@ export function line2Rides(bot: Bot) {
         })();
       return ran && r.phase === 0 && r.at === destination;
     }, `line 2 arrives at stop ${destination} with its rider`);
+    if (to && middle) check(destinationPrompt, `the aboard prompt names ${to.name}`);
     await sample;
     if (!to) return { slot, row, train, aboard };
     // Homeward at a middle halt: leave onto the offset platform and use its plank crossing. A retained old-end

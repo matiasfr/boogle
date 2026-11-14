@@ -2,7 +2,7 @@
 // (./track-continuity.ts) and the rail map (./rail-map.ts, docs/world/rail-map.html). Read-only: every point comes from
 // the owning data, nothing here is a second copy of a layout.
 //   live lines   Place's rail splines (src/place/layout.ts LINES, 1 m samples): what the view draws and poses cars
-//                on (rail.ts poseCarOnLine), today's track (down) and the up track's lateral offset (FORMATION, offsetLat,
+//                on (rail.ts poseCarOnLine), today's track (down) and the offset track's lateral offset (FORMATION, offsetLat,
 //                crossLat: the stub turnouts, Far Head's crossover)
 //   sim paths    RAIL_LINES[...].path (src/sim/railway-lines.ts, 10 m samples): what railLinePoint reads (the server's
 //                near-train check only)
@@ -181,7 +181,7 @@ export function tracks(): Track[] {
       out.push({
         id: `${L.id}-crossover`,
         line: L.id,
-        label: `${L.name}, Far Head crossover (s ${c[0]}-${c[1]}, up to down)`,
+        label: `${L.name}, Far Head crossover (s ${c[0]}-${c[1]}, original to offset on departure)`,
         status: 'v26',
         kind: 'crossover',
         nominal: 0.5,
@@ -205,7 +205,7 @@ export function tracks(): Track[] {
       enforce: false,
     });
   }
-  // v27: line 2 on from the pier head. The view: Place's spline to its end, then ringAt's straight line; the up track
+  // v27: line 2 on from the pier head. The view: Place's spline to its end, then ringAt's straight line; the offset track
   // on the widened pier (no merge at s 556 once Q7 is laid) and on over the bents.
   const E = LINES.east;
   for (const k of ['down', 'up'] as const) {
