@@ -1,8 +1,8 @@
 # Classified z-fighting census, 14 November 2026
 
-Geometry remains the launch origin/main snapshot `fceb07f6115d854628bd14e3bb677b46866075b4`; no geometry fixes are made here. Run commit `e4e497f870bae59c774ca4d61a5ba749ad0ed366`, source hash `c8a5f060ef58946dd01f2bf0c3d6b70c6b6ec35233e4b71b8f65bc3c3e227b75`.
+Geometry remains the launch origin/main snapshot `fceb07f6115d854628bd14e3bb677b46866075b4`; no geometry fixes are made here. Run commit `04445cbcfd7fdb549bdb6a7cec335314514c1523`, source hash `cffdace219465a99b657d4fe037ebb6371a585def9a380715938fa3425647165`.
 
-Grouped findings: **a likely visible 205; b same-appearance joints 61; c proved hidden 545**. Raw oriented rows: a 2974, b 172, c 2422. New since baseline: **0**. 6049 pieces, 520394 triangles, 23786 ms (not a performance benchmark).
+Grouped findings: **a likely visible 205; b same-appearance joints 61; c proved hidden 545**. Raw oriented rows: a 2974, b 172, c 2422. New since baseline: **0**. 6049 pieces, 520394 triangles, 13917 ms (not a performance benchmark).
 
 The old 3,151-row list lacked appearance and omitted buried portions. This pass preserves authored/instance colours, vertex colours, texture/UV evidence and shadow flags. Hidden counts now include clipped buried portions, so raw totals are not the old count partitioned. Any exposed portion with differing or unresolved appearance keeps the whole grouped contact in a. Downward normals alone never imply hidden.
 
@@ -46,7 +46,7 @@ Both remain **class a**. Home is the kerb against the platform foundation beside
 
 ## New visual review of the top ten
 
-All captures use the existing broker and in-game scan tint. Each also clears the tint after 1.2 seconds, allowing late motion-sheet frames to show the underlying seam/colours. These are still-image observations: none proves temporal flicker. Free-camera underside views do not establish that the normal player camera can reach that view. Missing or ambiguous evidence remains in a.
+All captures use the existing broker and in-game scan tint. Each clears the tint after 1.2 seconds for middle motion-sheet comparison frames, then rescans at 1.8 seconds so the final full-size still has tints. These are still-image observations: none proves temporal flicker. Free-camera underside views do not establish that the normal player camera can reach that view. Missing or ambiguous evidence remains in a.
 
 | Rank | Manifest under .look/evidence | Inspected observation |
 | ---- | ----------------------------- | --------------------- |

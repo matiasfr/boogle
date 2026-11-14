@@ -93,5 +93,5 @@ No ordinary scan writes it. `--strict` already fails on new class-a member pairs
 that same predicate as a failing assertion after the owner enables it. It presently reports, and fixes do not fail.
 
 `node dev/level/zfight-captures.ts <classified-report.json>` runs the existing broker at each top-ten coordinate,
-using the normal in-game scan. Stills contain tints; late motion-sheet frames clear them. Inspect every PNG and
+using the normal in-game scan. Stills contain tints; middle motion-sheet frames clear them, then rescan at 1.8 seconds. Inspect every PNG and
 write observations in the census. A successful capture is not a visual verdict, and a still cannot show flicker.

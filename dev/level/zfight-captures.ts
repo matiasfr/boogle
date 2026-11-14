@@ -16,11 +16,11 @@ for (const [index, finding] of report.findings.slice(0, 10).entries()) {
     action = `.look/zfight-top-ten/${tag}-action.ts`;
   fs.writeFileSync(
     setup,
-    `const {putPlayer}=await import('/src/debug/perf-poses.ts'); await putPlayer(${x},${y + 3},${z}); await window.boogle.dev.open('zfight'); window.boogle.dev.close(); export {};\n`,
+    `const {putPlayer}=await import('/src/debug/perf-poses.ts'); await putPlayer(${x},${y + 3},${z}); await window.boogle.dev.open('zfight'); window.boogle.dev.close();\nexport {};\n`,
   );
   fs.writeFileSync(
     action,
-    `const result=await window.boogle.dev.run('zfight','scan',{at:${JSON.stringify(finding.position)}}); console.log('ZFIGHT_RANK ${rank} '+JSON.stringify(result)); setTimeout(()=>{void window.boogle.dev.run('zfight','clear').catch(console.error)},1200); export {};\n`,
+    `const at=${JSON.stringify(finding.position)}; const result=await window.boogle.dev.run('zfight','scan',{at}); console.log('ZFIGHT_RANK ${rank} '+JSON.stringify(result)); setTimeout(()=>{void window.boogle.dev.run('zfight','clear').catch(console.error)},1200); setTimeout(()=>{void window.boogle.dev.run('zfight','scan',{at}).catch(console.error)},1800);\nexport {};\n`,
   );
   console.log(`Capturing rank ${rank}: ${finding.a} <> ${finding.b}`);
   const result = spawnSync(

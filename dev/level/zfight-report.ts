@@ -46,7 +46,7 @@ console.log(
     '',
     '## New visual review of the top ten',
     '',
-    'All captures use the existing broker and in-game scan tint. Each also clears the tint after 1.2 seconds, allowing late motion-sheet frames to show the underlying seam/colours. These are still-image observations: none proves temporal flicker. Free-camera underside views do not establish that the normal player camera can reach that view. Missing or ambiguous evidence remains in a.',
+    'All captures use the existing broker and in-game scan tint. Each clears the tint after 1.2 seconds for middle motion-sheet comparison frames, then rescans at 1.8 seconds so the final full-size still has tints. These are still-image observations: none proves temporal flicker. Free-camera underside views do not establish that the normal player camera can reach that view. Missing or ambiguous evidence remains in a.',
     '',
     '| Rank | Manifest under .look/evidence | Inspected observation |',
     '| --- | --- | --- |',

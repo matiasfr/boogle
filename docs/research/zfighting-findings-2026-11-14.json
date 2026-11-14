@@ -1,8 +1,8 @@
 {
   "level": "drawn-z-fighting",
   "build": {
-    "commit": "e4e497f870bae59c774ca4d61a5ba749ad0ed366",
-    "sourceHash": "c8a5f060ef58946dd01f2bf0c3d6b70c6b6ec35233e4b71b8f65bc3c3e227b75"
+    "commit": "04445cbcfd7fdb549bdb6a7cec335314514c1523",
+    "sourceHash": "cffdace219465a99b657d4fe037ebb6371a585def9a380715938fa3425647165"
   },
   "tolerances": {
     "separation": 0.002,
@@ -120201,6 +120201,6 @@
     "entries": 205
   },
   "count": 205,
-  "timingMs": 23786,
+  "timingMs": 13917,
   "failures": 0
 }
