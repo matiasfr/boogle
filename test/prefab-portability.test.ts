@@ -2,6 +2,7 @@ import { prefabs as rooms } from '../src/content/prefabs/rooms.ts';
 import { levels as roomLevels } from '../src/content/levels/rooms.ts';
 import { prefabs as house } from '../src/content/prefabs/house.ts';
 import { levels as houseLevels } from '../src/content/levels/house.ts';
+import { HALTS } from '../src/place/layout.ts';
 import { prefabs as museum } from '../src/content/prefabs/museum.ts';
 import { haltKitContent } from '../dev/prefab/halts.ts';
 import { levels as museumLevels } from '../src/content/levels/museum.ts';
@@ -126,6 +127,33 @@ test('artifact serialization is independent of runtime native transcendental res
   } finally {
     Object.assign(Math, original);
   }
+});
+test('moving a catalog platform makes the committed halt artifact stale', () => {
+  const outputs = () => {
+    const halts = haltKitContent();
+    // Use the same compiled level bytes and freshness comparison as build --check.
+    return compile(halts.prefabs, halts.levels).get('levels/halt-kit.json')!;
+  };
+  const committed = new Map(
+    [...fs.globSync('**/*.json', { cwd: 'content/built' })].map((file) => [
+      file,
+      fs.readFileSync(`content/built/${file}`, 'utf8'),
+    ]),
+  );
+  const check = () => {
+    committed.set('levels/halt-kit.json', outputs());
+    writeArtifacts(committed, 'content/built', true);
+  };
+  check();
+  const row = HALTS[1]!,
+    old = row.lat;
+  try {
+    row.lat += 1;
+    assert.throws(check, /prefab artifact differs: levels\/halt-kit.json/);
+  } finally {
+    row.lat = old;
+  }
+  check();
 });
 test('authored full-precision values round-trip losslessly; no decimal quantization', () => {
   const n = 0.7312345678901234;

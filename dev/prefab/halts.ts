@@ -1,7 +1,9 @@
+import { createHash } from 'node:crypto';
+import { canonical } from './compiler.ts';
 // Placement authority: join, never rewrite, the sim catalog and the existing view-only platform layout.
 import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
 import { HALTS, UP_HALTS } from '../../src/place/layout.ts';
-import { ISLAND } from '../../src/place/home-station.ts';
+import { ISLAND, HEADS, BUFFERS, LINE_ORIGIN, AXIS } from '../../src/place/home-station.ts';
 import { haltPiece, type HaltPiece } from '../../src/content/prefabs/halts.ts';
 import type { LevelDef, Placement, PrefabDef } from '../../src/prefab/types.ts';
 
@@ -36,6 +38,15 @@ export function haltKitContent() {
       placements.push({ id: key, prefab: key, pos: [0, 0, 0], params: { row: h.row, up: h.up, halt: id, piece } });
     }
   }
-  const levels: LevelDef[] = [{ place: 'halt-kit', placements }];
+  // Frame construction still lives in the views. Keep its authored inputs in the freshness contract too.
+  // Home s/lat are native-derived: fingerprint their authored operands, never those derived results.
+  const dependencies = {
+    catalog: RAIL_HALTS,
+    platforms: HALTS.filter((h) => !h.island),
+    upPlatforms: UP_HALTS,
+    home: { heads: HEADS, buffers: BUFFERS, island: ISLAND, origin: LINE_ORIGIN, bearing: AXIS.bearing },
+  };
+  const sourceFingerprint = createHash('sha256').update(canonical(dependencies)).digest('hex');
+  const levels: LevelDef[] = [{ place: 'halt-kit', placements, analysis: { sourceFingerprint } }];
   return { prefabs, levels };
 }

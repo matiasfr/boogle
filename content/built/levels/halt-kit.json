@@ -1,4 +1,7 @@
 {
+  "analysis": {
+    "sourceFingerprint": "b90f7b8ed9e2067d386ea32672efa04c4b2be42801955d8e8515d151057a0505"
+  },
   "axes": "x east, y up, z south, right-handed",
   "format": "boogle-level",
   "place": "halt-kit",
