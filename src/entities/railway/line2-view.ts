@@ -10,6 +10,8 @@ import type { Body } from '../../physics/engine.ts';
 import type { Got } from '../../render/reward-reveal.ts';
 import { me } from '../../player/player.ts';
 import { frameOccupied } from './frame-occupied.ts';
+import { goldMote } from './breaker-view.ts';
+import { reducedMotion } from '../../constants.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
@@ -59,6 +61,10 @@ type Rail = typeof import('./rail-kit.ts');
 type Machine = ReturnType<Rail['buildMachine']>;
 /** The rack's sign keeps the train until the first kit is off it: so the flip back to the count lands as the train
  * unloads at Far Head, not at the fit 500 m away. Trains run, and the kit is still to load or still aboard. */
+/** A train-fed frame's bill while it is short: its kit lies beside it, or a train still brings it (the cart tag's own
+ * words for stock in transit). Draft UI copy. */
+const KIT_ON_RACK = 'On the rack',
+  KIT_ON_WAY = 'On the way';
 const kitComing = (w: ReadWorld, active: number) => {
   if (!line2Trains(w) || active < 0 || LINE2_STATIONS[active]!.feed !== 'train' || qjob(w, active).start >= 0)
     return false;
@@ -296,6 +302,7 @@ export async function createRailwayLine2(
   const depotSlot = (k: number, n: number, out: THREE.Vector3) =>
     pieces.stackSlot(n, 4, depotPlace(k, depotAt), depotYaw(k), out);
   let drawnDepot = '';
+  let kitMote = 0;
   let cartFlying = () => ({ logs: 0 });
   function drawDepot(k: number, n: number, train: boolean) {
     const key = `${k}:${n}:${train}`;
@@ -1079,10 +1086,37 @@ export async function createRailwayLine2(
         });
         const gated = spec.gate === 'quarry' ? !gateOpen : spec.gate === 'sea' ? !stock.sea : false;
         const waiting = gated && job.stock === spec.bill[0] && job.railStock === spec.bill[1];
+        // A train-fed frame's bill says where its kit is while it is short (owner, 14 November, lost after the
+        // crossing's finale: "I missed those resources"): on the rack and shelf beside it, or still on the way.
+        const kit =
+          spec.feed !== 'train' || k !== active || job.start >= 0 || owed
+            ? undefined
+            : stock.depot + stock.depotRails > 0
+              ? KIT_ON_RACK
+              : kitComing(w, k)
+                ? KIT_ON_WAY
+                : undefined;
         frame.setTag(
           now && k === active && job.start < 0 && !owed,
-          waiting ? `Pull the ${spec.gate === 'quarry' ? 'lever' : 'switch'} to start` : undefined,
+          waiting ? `Pull the ${spec.gate === 'quarry' ? 'lever' : 'switch'} to start` : kit,
         );
+        // Station 7's rack gives off the works' gold motes while the frame still wants the logs lying on it (the
+        // shelf does the same for rails, shelf-view.ts). Off under reduced motion.
+        if (
+          k === Q7 &&
+          k === active &&
+          job.start < 0 &&
+          !reducedMotion &&
+          stock.depot > 0 &&
+          job.stock < spec.bill[0]
+        ) {
+          kitMote -= dt;
+          if (kitMote <= 0) {
+            kitMote = 0.2;
+            depotPlace(k, depotAt);
+            goldMote(depotAt.x + (Math.random() - 0.5) * 2, depotAt.y + 1.4, depotAt.z + (Math.random() - 0.5), 1, 0.3);
+          }
+        }
         // A laid stretch's frame packs up; Q7's own frame on the pier deck stays (level-pacing-1114, D1).
         if (machined(k))
           frame.settle(job.completion ? 'laid' : job.start >= 0 ? 'working' : 'open', () => frameOccupied(frame));

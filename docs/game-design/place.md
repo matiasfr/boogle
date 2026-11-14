@@ -859,7 +859,13 @@ side. Past the platform's north end the pier head's side deck shrinks to a **pad
 under the platform's north end (a drop going out, a plain jump coming back); the jump-ins land on the platform's
 south end. South of the ramp a **piled deck** (s 703-713, lat +1.8 to +6.0) carries **Station 7**'s frame (the
 sim's, s 710), its log rack, the rails' shelf and its box; Q7's kit unloads there from the train that stands at the
-Pier, and the frame, rack and shelf stand once the pier is laid. **Q7's double deck** is laid over bents 1-6 a panel at
+Pier, and the frame, rack and shelf stand once the pier is laid. **After the crossing's finale (14 November; owner: "the
+supports are there, but I don't know what to do next ... I missed those resources").** While Station 7 is the open
+stretch and short, its bill's big line says where the kit is, **On the rack** (logs or rails lie on the rack or
+shelf beside it) or **On the way** (a train still brings it; the cart tag's words), over the usual have/need line, and
+the rack and the shelf give off the works' gold motes while the frame still wants what lies on them (off under
+reduced motion). Station 6's bill takes the same two lines once trains run. The finale's shot is unchanged: its
+hand-back still faces the sea, with the frame about 19 m behind you. Draft UI copy; Local view. **Q7's double deck** is laid over bents 1-6 a panel at
 a time (planks across both tracks, both tracks' rails, stringers, a 1.5 m plank footway along its east edge from the
 pad to where the railhead's walkway begins; solid as it is laid), with a finger board "Railhead" at the pad's corner.
 When Q7 is done the pier's **up track** drops in from the old merge out to the pier head as plain double track (the

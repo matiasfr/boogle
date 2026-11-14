@@ -64,5 +64,9 @@ if (mode === 'cart') {
   else if (mode === 'rack') pose([913.6, 8.2], [909.5, 21.6, 5.2], [924, 19.6, 14.5]);
   else pose([945.6, 21.6], [949.5, 24, 12], [939.5, 18.6, 22.5]);
   console.log(`HF cradle ${JSON.stringify((view().worksView as { cradleCues?: unknown }).cradleCues)}`);
+} else if (mode === 'q7') {
+  // --rail-seed crossing-done: where the finale leaves you, at the pier head (1399.7, -356) on the 26 m deck, looking
+  // back landward at Station 7's frame (1407.9, -338.7), its rack and shelf.
+  pose([1399.7, -356], [1396.6, 29.2, -362.5], [1407.9, 27.4, -338.7], 26);
 } else throw new Error('Choose hf=cart|tree|frames|seal');
 export {};
