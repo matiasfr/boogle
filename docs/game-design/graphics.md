@@ -150,6 +150,9 @@
   from the warm sandstone; a dark cut edge with a painted bank, a darker verge, small
   stones, and timber risers square across the tread on climbs steeper than 1 in 8. Bold paths are 6 m wide, the others
   3.8 m. No vertex moves; where a tread needs real reshaping the plan lists it for a ground step.
+  The path field's own height bounds the painted bench instead of rejecting steep mesh facets. Cut earth beside
+  its uphill edge is confined to the wall's foot and blended at half strength; downhill banks keep their material.
+  Existing folded treads and a dark dotted crease remain height-work findings in Part 2b.
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon
   style B live as the default). No stepped light, cool shade side or rim on characters or the world. The comparison
   is kept as research: [toon-shading](../research/toon-shading.md).

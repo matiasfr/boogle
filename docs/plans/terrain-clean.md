@@ -317,6 +317,16 @@ Town paths on level ground (`H/c3-v0.png`, `H/c4-v0.png`) read clean: no finding
   - Stones, verge and painted bank keep their rules, with `ground` replaced by `bench`.
   - Verify: `H/c1`'s camera from above shows one line on the wall side, no green between tread and rock; the dotted
     line at (951, -103) is gone at `c2`'s crop; `test/path-field.test.ts` green (the field is unchanged).
+  - [x] Implementation complete; visual acceptance is **partial**. The own-height bench removes the small green
+    tread holes, but a dark dotted crease remains in the walking-up view. Do not claim finding 5 closed: Part 2b
+    still owns the folded geometry. Final opened c0, c1 and c2: `.look/evidence/1794699138778-29298/evidence.json`,
+    against packed-earth c0–c2 from step 1. The cliff stays tan above a restrained cut-earth foot; isolated cut
+    pockets remain at mesh folds. No source height moved; six hashes match. Path-field tests and ship-check pass.
+  - Visual repair departure: the literal exterior band painted whole dark cliff strips (opened c0/c1 from
+    `.look/evidence/1794698304300-8309/evidence.json`; that run also failed an exact one-pixel/channel repeat).
+    An unchanged retry passed health (`1794698886579-22035`). A height cap alone still drew black stripes and
+    downhill patches (opened c0–c2 from `1794698933745-23570`); the third source iteration restricts paint to the
+    uphill 0.6–1.2 m foot at half strength. No further autonomous tuning; residual dots are recorded, not hidden.
 - [ ] **3. Shore and rock borders (findings 6 and 8).** `src/place/ground-material.ts`: (a) the gorge-floor mask
   takes a per-pixel wander and a wider blend so sand meets bank over 6 to 8 m, not on a 2 m vertex line; (b) the
   broad-slope rock rule (`broad`) applies only where the interpolated vertex `steep` input is above 0.05, that is on triangles that
