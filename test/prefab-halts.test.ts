@@ -18,6 +18,7 @@ import * as ring from '../src/sim/railway-ring-layout.ts';
 import * as line2Layout from '../src/sim/railway-line2-layout.ts';
 import * as path from '../src/entities/railway/line2-path.ts';
 import * as haltMap from '../src/entities/railway/halt-map.ts';
+import * as leverPlace from '../src/entities/railway/lever-place.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
@@ -91,7 +92,17 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
       THREE,
       document: {
         createElement: () => ({
-          getContext: () => ({ fillRect() {}, strokeRect() {}, fillText: (s: string) => plaqueText.push(s) }),
+          getContext: () => ({
+            fillRect() {},
+            strokeRect() {},
+            beginPath() {},
+            // The plaque's arrow: its tip's x says which end it points to (16 left, 240 right).
+            moveTo: (x: number) => plaqueText.push(x < 128 ? '<' : '>'),
+            lineTo() {},
+            closePath() {},
+            fill() {},
+            fillText: (s: string) => plaqueText.push(s),
+          }),
         }),
       },
     },
@@ -182,6 +193,8 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
       ...line2Layout,
       ...path,
       ...haltMap,
+      ...leverPlace,
+      account: rows.account,
       aperture: rows.aperture,
       lineRow: rows.line,
       railRow: rows.rail,
@@ -218,7 +231,7 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
   );
   const halt = await createRailwayHalts(
     {
-      read: { world: () => seed.w, tickNow: () => seed.t },
+      read: { world: () => seed.w, tickNow: () => seed.t, pid: 'golden' },
       callTrain: (id: number, dir: number) => {
         calls.push([id, dir]);
         return true;

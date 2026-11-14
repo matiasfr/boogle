@@ -16,6 +16,7 @@ import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts'
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { ringHead } from '../../sim/railway-queries.ts';
 import {
+  account,
   aperture,
   line as lineRow,
   rail as railRow,
@@ -23,7 +24,8 @@ import {
   works as worksRow,
   type ReadWorld,
 } from '../../sim/railway-rows.ts';
-import { RING_HEAD, RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
+import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
+import { leverAskTaken, leverPlatform, leverYield, railheadLever } from './lever-place.ts';
 import { line2World, line2Y, RING_S } from './line2-path.ts';
 import { createRequestLever, type RequestLever } from './request-lever.ts';
 import { LINE2_GLIDE, pierLaid } from '../../sim/railway-line2-layout.ts';
@@ -155,10 +157,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const cosY = Math.cos(yaw),
       sinY = Math.sin(yaw);
     arm.visible = false;
-    // The request lever, at the mast's foot on the platform side (no collider: it stops no one): one handle, this
+    // The request lever, by the boarding edge (halt-attachments.ts; no collider: it stops no one): one handle, this
     // platform's way, the end halt's way out and the down track's at a middle one (its up platform has its own lever).
-    // Line 2's quarry and Far Head are middle halts once their line runs past them.
-    const middle = k === 1 && (stop === 1 || stop === 2);
     const dir: -1 | 1 = stop === 0 ? 1 : -1;
     const lever = createRequestLever(owner, `halt-lever-${row}-down`, () => targetsFor(lever));
     lever.group.visible = false;
@@ -229,7 +229,6 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       k,
       stop,
       lever,
-      middle,
       island,
       dir,
       x: c.x,
@@ -362,12 +361,13 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   };
   const wd0 = () => adapter.read.world();
   spots.push(
-    // The railhead's east platform moves with `head`: its lever rides 6 m short of the platform's end (u in metres).
+    // The railhead's east platform moves with `head` and its lever rides with it, at the platform's home end, clear of
+    // the jib and the rack (lever-place.ts).
     ringSpot(
       RAILHEAD,
       false,
-      2.45,
-      () => RING_HEAD[ringHead(wd0())]!.u / 100 - 6,
+      railheadLever(0).lat,
+      () => railheadLever(ringHead(wd0())).u,
       () => true,
     ),
     // The joint's west platform stands at bent 13 (footing 14); its lever is chained until the rivet.
@@ -476,17 +476,20 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     if (x.ring && Math.abs(x.ring.u() - x.ring.shown) > 0.05) return [];
     const at = x.lever.knob(0, new THREE.Vector3());
     if (Math.hypot(p.x - at.x, p.z - at.z) > LEVER_REACH || Math.abs(p.y - at.y) > 1.6) return [];
+    // No prompt from where the server would refuse the ask: it judges from the platform's middle, by reach and height.
+    if (!leverAskTaken(leverPlatform(wd0(), x.id, x.dir), p.x, p.y, p.z)) return [];
     const id = `railway-request-${x.id}-${x.up ? 'up' : 'down'}`;
-    const named = x.ring
-      ? x.stop > 0 && x.stop < stopsNow[x.line]!.length - 1
-      : halts[x.id]!.middle || halts[x.id]!.island;
-    const verb = named ? `Request stop: to ${label(x)}` : 'Request stop';
-    if (over(x) || pulled.has(x)) out.push({ id, verb, at, blocked: 'Stop requested' });
+    // Every lever's prompt names where its train goes (running-side.md, step 2; draft wording, not The Boogler's).
+    const verb = `Request stop: to ${label(x)}`;
+    // With a footing on your back, where a footing is worked, the lever yields the pick (lever-place.ts).
+    const r = leverYield(!!account(wd0(), adapter.read.pid)?.foot, p.x, p.z, ringHead(wd0()));
+    if (over(x) || pulled.has(x)) out.push({ id, verb, at, r, blocked: 'Stop requested' });
     else
       out.push({
         id,
         verb,
         at,
+        r,
         run: () => {
           if (!adapter.callTrain(x.id, x.dir)) return void uiSound('deny');
           pulled.set(x, performance.now() + PULL_HOLD_MS);
@@ -567,7 +570,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         placeRing(x, dt, snap);
         x.lever.group.visible = standing(x);
       } else if (x.up) x.lever.group.visible = standing(x);
-      x.lever.label(0, label(x));
+      x.lever.label(0, label(x), x.dir);
       x.lever.chained(lock);
       const until = pulled.get(x);
       if (until !== undefined && (now > until || over(x))) pulled.delete(x);
@@ -689,9 +692,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       signals(true);
       levers(0, true);
     },
-    /** The levers in reach: "Request stop" at an end halt, "Request stop: to <end>" at a middle one and on the Home
-     * island, where two lines' levers stand on one deck (the end on the lever's plaque; the island's wording is a
-     * placeholder, not The Boogler's); greyed while that request stands. A chained lever offers nothing. */
+    /** The levers in reach: "Request stop: to <end>" at every halt (the end on the lever's plaque; draft wording, not
+     * The Boogler's); greyed while that request stands. A chained lever offers nothing. */
     targets(): Interactable[] {
       if (!shown || !me.body) return [];
       refreshStops();
