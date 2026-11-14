@@ -20,13 +20,30 @@ import { playSharedMoment } from './shared-moment.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { reducedMotion } from '../../constants.ts';
 import { goldMote } from './breaker-view.ts';
-import { WORKS, WORKS_KILN, WORKS_RACK, WORKS_ROCKS, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
-import { account, beam as beamRow, boiler, rock, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
+import { SHED_STALL, WORKS, WORKS_KILN, WORKS_RACK, WORKS_ROCKS, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
+import {
+  account,
+  beam as beamRow,
+  boiler,
+  rock,
+  shed,
+  works as worksRow,
+  type ReadWorld,
+} from '../../sim/railway-rows.ts';
 import { SEAM_THROAT } from '../../sim/railway-works.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { LINE_HALTS } from '../../sim/railway-train.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
 import { kilnBill, kilnPrompt } from './kiln-prompt.ts';
+import {
+  CRADLE_COPY,
+  CRADLE_CUE_DELAY_S,
+  cradleAt,
+  cradleBillLine,
+  cradleRailGhosts,
+  cradleStage,
+} from './cradle-cues.ts';
+import { LINE2_FORGE } from '../../sim/railway-line2-layout.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
@@ -48,6 +65,8 @@ export async function createRailwayWorks(
   },
 ) {
   const { H, addStatic } = await import('../../place/land.ts');
+  const home = await import('../../place/home-station.ts');
+  const layout = await import('../../place/layout.ts');
   const kiln = { x: WORKS_KILN.x / 100, z: WORKS_KILN.z / 100 },
     rack = { x: WORKS_RACK.x / 100, z: WORKS_RACK.z / 100 };
   const throat = { x: WORKS_SEAMS[1].x / 100, z: WORKS_SEAMS[1].z / 100 };
@@ -257,15 +276,43 @@ export async function createRailwayWorks(
     bill.mesh.rotation.y = Math.atan2(-dir.x, -dir.z);
   }
   bill.mesh.visible = false;
+  const kilnBillAt = { at: bill.mesh.position.clone(), yaw: bill.mesh.rotation.y };
+  // The same board asks for the footing wagon's rails once the kiln is lit and the stall stands (cradle-cues.ts): it
+  // moves to the Roundhouse apron, on the bisector between the open stall's road and its forge-side neighbour, 7.5 m
+  // from the table's centre and edge-on to both roads, so it faces the walk round the table from the forge rack.
+  const tableAt = { x: home.TABLE.x + layout.ORIGIN.x, z: home.TABLE.z };
+  const forgeRack = { x: LINE2_FORGE.rackX / 100, z: LINE2_FORGE.rackZ / 100 };
+  const forgeRackY = H(forgeRack.x, forgeRack.z);
+  const stallBillAt = [-15, 15]
+    .map((turn) => {
+      const u = home.stallFrame(home.STALLS.open + turn).u;
+      return { at: new THREE.Vector3(tableAt.x + u.x * 7.5, 18.0, tableAt.z + u.z * 7.5), yaw: Math.atan2(u.z, -u.x) };
+    })
+    .sort(
+      (a, b) =>
+        Math.hypot(a.at.x - forgeRack.x, a.at.z - forgeRack.z) - Math.hypot(b.at.x - forgeRack.x, b.at.z - forgeRack.z),
+    )[0]!;
+  /** The cradle's ask, shown only once a stall seen being raised has stood and shed its tarp (`cueFrom`). */
+  let stallUnbuilt = false,
+    cueFrom = 0;
+  const cueStage = () => (performance.now() >= cueFrom ? cradleStage(shed(wd)) : 'none');
   let billPainted = '';
-  function drawBill(on: boolean) {
-    bill.mesh.visible = on;
-    if (!on) return;
-    const k = worksRow(wd);
-    const small = kilnBill(k.logs, k.stone, WORKS.kilnLogs, WORKS.kilnStone);
-    if (small === billPainted) return;
-    billPainted = small;
-    paintTwoLines(bill, 'Kiln', small, BILL_LOOK);
+  function drawBill() {
+    const k = worksRow(wd),
+      stage = cueStage();
+    const forKiln = open && k.lit < 0;
+    bill.mesh.visible = forKiln || stage !== 'none';
+    if (!bill.mesh.visible) return;
+    const big = forKiln ? 'Kiln' : CRADLE_COPY.bill,
+      small = forKiln
+        ? kilnBill(k.logs, k.stone, WORKS.kilnLogs, WORKS.kilnStone)
+        : cradleBillLine(stage, shed(wd).cradleRails);
+    if (big + '|' + small === billPainted) return;
+    billPainted = big + '|' + small;
+    const place = forKiln ? kilnBillAt : stallBillAt;
+    bill.mesh.position.copy(place.at);
+    bill.mesh.rotation.y = place.yaw;
+    paintTwoLines(bill, big, small, BILL_LOOK);
     bill.painted();
   }
   function drawPath() {
@@ -449,18 +496,39 @@ export async function createRailwayWorks(
     ghostLogs = 0,
     ghostStone = 0,
     rockMote = 0,
-    rockSide = 1;
+    rockSide = 1,
+    cueGhosts = 0,
+    cueMote = 0;
+  /** The forge's rail rack gives off the same gold motes while the cradle wants rails: the source wears the ask's
+   * colour, as the limestone rocks do for the hopper. Off under reduced motion; the bill and ghosts stay. */
+  function cradleMotes(dt: number) {
+    if (reducedMotion || cueStage() !== 'rails') return;
+    cueMote -= dt;
+    if (cueMote > 0) return;
+    cueMote = 0.2;
+    rockSide *= -1;
+    goldMote(forgeRack.x + (Math.random() - 0.5) * 2.2, forgeRackY + 1.2, forgeRack.z, rockSide, 0.3);
+  }
   function drawGhosts() {
     const k = worksRow(wd),
       wants = open && k.lit < 0;
     const logs = wants ? Math.max(0, WORKS.kilnLogs - k.logs) : 0,
       stone = wants ? Math.max(0, WORKS.kilnStone - k.stone) : 0;
-    const key = `${logs} ${stone}`;
+    // Lit, the same batch draws the cradle's missing rails (cradle-cues.ts): the kiln's ghosts are long gone.
+    const stage = cueStage(),
+      rails = shed(wd).cradleRails;
+    const key = `${logs} ${stone} ${stage} ${rails}`;
     if (key === ghostKey) return;
     ghostKey = key;
     ghostLogs = logs;
     ghostStone = stone;
     ghosts.begin();
+    cueGhosts = 0;
+    if (stage === 'rails')
+      for (const g of cradleRailGhosts(rails)) {
+        ghosts.box(g.x, g.y, g.z, g.w, g.h, g.d, g.yaw);
+        cueGhosts++;
+      }
     for (let i = WORKS.kilnLogs - logs; i < WORKS.kilnLogs; i++) {
       const yaw = logAt(i);
       ghosts.box(p.x, p.y, p.z, LOG[0] - 0.1, LOG[1] - 0.08, LOG[2] - 0.08, yaw);
@@ -687,6 +755,8 @@ export async function createRailwayWorks(
     solid(!open);
     ghostKey = '';
     billPainted = '';
+    stallUnbuilt = false;
+    cueFrom = 0;
   }
   snap();
   return {
@@ -725,7 +795,14 @@ export async function createRailwayWorks(
       const marked = w.breaker === 2;
       if (marked) drawPath();
       sign.visible = marked;
-      drawBill(open && w.lit < 0);
+      // A stall seen unbuilt and then raised waits out its build and tarp before the cradle's cues show.
+      if (shed(wd).stall < WORKS.stall) stallUnbuilt = true;
+      else if (stallUnbuilt) {
+        stallUnbuilt = false;
+        cueFrom = performance.now() + CRADLE_CUE_DELAY_S * 1000;
+      }
+      drawBill();
+      cradleMotes(dt);
       drawKiln();
       drawKilnFlights(dt);
       drawRack(dt);
@@ -822,6 +899,22 @@ export async function createRailwayWorks(
         };
         out.push(say.blocked ? { ...target, blocked: say.blocked } : { ...target, run: () => void adapter.fillKiln() });
       }
+      // The cradle asks in the open (footings-signalling A1): roundhouse-view.ts offers "Fit the cradle" only to a
+      // back with rails; any other back in the same reach meets it greyed with where rails come from, never silence.
+      if (
+        cueStage() === 'rails' &&
+        !mine?.rails &&
+        Math.hypot(p.x - SHED_STALL.x / 100, p.z - SHED_STALL.z / 100) <= SHED_STALL.reach / 100 - 0.4 &&
+        Math.abs(p.y - SHED_STALL.y / 100) <= 2.6
+      ) {
+        const c = cradleAt();
+        out.push({
+          id: 'railway-cradle',
+          verb: CRADLE_COPY.fit,
+          at: new THREE.Vector3(c.x, 20.4, c.z),
+          blocked: CRADLE_COPY.bringRails,
+        });
+      }
       if (w.rack > 0 && Math.hypot(p.x - rack.x, p.z - rack.z) <= WORKS_RACK.reach / 100 - 0.4) {
         const top = slotAt(Math.max(0, w.rack - 1), new THREE.Vector3()).add(new THREE.Vector3(0, 1.6, 0));
         out.push(
@@ -853,6 +946,7 @@ export async function createRailwayWorks(
       ghosts: { logs: ghostLogs, stone: ghostStone, dashes: ghosts.count },
       path: sign.visible,
       bill: bill.mesh.visible ? billPainted : null,
+      cradleCues: { stage: cueStage(), ghosts: cueGhosts, billAt: bill.mesh.position.toArray() },
       rack: Math.max(0, worksRow(wd).rack - flights.length),
       rollers: flights.length,
     }),
