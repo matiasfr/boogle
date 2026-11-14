@@ -1,5 +1,84 @@
 # Step 8: delete the lead tab
 
+## Rebased verification — 2026-11-13 follow-up
+
+This section supersedes the old-base verification below. Branch: `codex/server-players-step-8-2`.
+Rebased implementation/report tip: `aaa38c94d`; this follow-up is a separate report-only commit.
+Base: local `origin/main` at `3dcf42653685b02fe644cb09e8817404cc8df822` (v43). Runtime stays **v44**.
+The original branch `codex/server-players-step-8` and tip `bc86b179b` are preserved. No push or ship.
+
+The orchestrator reported an independent review of `bc86b179b` with no defects. Rebase completed with
+**zero conflicts**. `git range-diff 40de3b82..bc86b179b 3dcf42653..aaa38c94d` marks all four patches `=`:
+`96cddfa32` (runtime), `f2ef50856` (tooling), `c3d1a1d09` (docs), `aaa38c94d` (original report).
+No runtime fix or conflict resolution was needed. Main's workshop/shop/curio/museum conversions are
+preserved. No town room files, prefab files or `dev/lint/prefab-debt.json` differ from the rebase base.
+No debt regeneration was needed; the baseline failure is resolved by integrating main's content.
+The reviewed implementation still changes 52 files, +288/-337 lines, with zero whole-file deletions;
+including the original report, the rebased four commits change 53 files, +585/-337 lines.
+
+### Fresh checks on the rebased tree
+
+- `npm run check`: **pass in full**, including build; 1,909 unit passes, 0 failures, 1 existing TODO (1,910 total).
+- `npm --prefix server test`: **370/370 pass**.
+- Direct worktree `npm run test:net`: **190/190 pass**.
+- `npm run registry`: **pass against origin/main**, without alternate base or allowance changes.
+- `node dev/ship-check.ts origin/main HEAD`: **pass against origin/main**: registry, 37 lint files, typecheck, 607 assertions in 61 affected test files.
+- Requested scenarios, each through `npm run scenario -- <name>` on fresh local stacks: **10/10 pass** — smoke, second-tab, reconnect-edit, roster, shared-kinds, world-inputs, boogler-tag, boogler-talk-pad, interact, one-hand. Some ran under shared-machine load; their timings are not performance/feel evidence.
+- `npm run review-stamp -- . --no-fetch`: **`bde8e0c97749`**, unchanged by the rebase (15 classified files).
+- `git range-diff`: identical reviewed patches; no source changes after checks began. Ran `npx prettier --write` on the follow-up report before commit; repository `.prettierignore` excludes
+  Markdown, so its established prose layout is retained. Its affected registry/document check was rerun.
+
+New logs: `.look/step8-2-check.log`, `step8-2-server.log`, `step8-2-net.log`, `step8-2-registry.log`,
+`step8-2-ship-check.log`, `step8-2-stamp.log`, and `step8-2-scenario-results.txt` under `.look/`.
+Each fresh scenario's `verdict.json` and screenshots are in `.look/step8-2-scenarios/<name>/`.
+The old source/build captures below are historical, not evidence for this rebased tree.
+
+### Exactly why the network suite changed from 191 to 190
+
+At join, `dev/peer-test/ws-run.ts` used to have two checks:
+`no page is the lockstep host` (`snaps.every(s => !s.host)`) and
+`only the first page is the lead` (`snaps.map(s => s.lead).join() === 'true,false,false'`).
+The snapshot returned no `host` property, so the first assertion was vacuously true; it is removed.
+The obsolete lead election check is replaced by **`every page follows the server`**, awaiting every
+page's server clock. Thus those two join checks become one meaningful check: net **-1**.
+
+The other replacements do not change the count: `B becomes the lead within 2 s` becomes
+`the remaining tabs still follow the server`; `hiding the first tab moves the lead` becomes
+`the other tabs receive the first tab hiding`. The seat invariant is retained with its label changed
+from `a hidden tab and a new lead do not free seats` to `a hidden tab does not free seats`.
+Departure visibility, surviving seats, reconnect, restart and shared-state checks remain exercised.
+
+### Fresh prototype look
+
+Using the look skill and restarted broker, the visual question is: does `?proto=net` boot with its
+per-tab Boogler and allow both connected tabs to sit in the same locally named diagnostic seat without
+Server arbitration? The disposable `.look/step8-2-prototype.ts` eval uses the production `registerSeat`,
+`seatMesh` and `sitDown` APIs to stage a stool near each tab's Boogler. It is a capture fixture, not a new
+level or authored prop. Both tabs intentionally use the same seat id; each stool is positioned locally.
+The eval requires `productionRailway === false`, no railway mirror or command session, a moving Boogler
+in each tab, a successful sit, no pending claim and an empty Server occupancy map.
+
+[Fresh broker manifest](../../.look/evidence/1794631511766-14780/evidence.json): pass, clean worker
+commit `aaa38c94dc56bf86a886843c45d2492871aee3d6`, tree `9d6c0d5b46e45e8efd80c266608e453164488501`,
+unchanged before/after. The harness identity is recorded separately in the manifest.
+Opened both [first-tab still](../../.look/evidence/1794631511766-14780/step8-2-prototype-still.png) and
+[second-tab still](../../.look/evidence/1794631511766-14780/p2-step8-2-prototype-still.png).
+Each shows its local Buddy seated on its diagnostic stool and The Boogler nearby. The stool and seated
+pose read clearly in each local view; the other tab's diagnostic stool is deliberately not shared.
+Logs show one connected peer per tab, `serverMirror:false`, `commandSession:false`, the same
+`prototype-local-proof` seat id in both tabs, `pending:null`, `occupants:{}`, and independent sampled
+Boogler positions/movement. Capture health passed WebGPU, advancing frames and zero page/console/graphics
+errors. These stills establish startup and visible local seating, not smoothness or a final chair layout.
+
+No new gameplay defect was found. Remaining limits: the prototype fixture demonstrates the Local code
+path, not an authored prototype chair layout or subjective feel. No new three-player first-tab-close
+mid-ride or device session was requested/run in this follow-up; **not tested on a device**. Checkpoint C's
+device proof remains open. Earlier look-lab and guest limitations are historical and were not rerun;
+only the ten scenarios requested here are claimed freshly verified. No external fetch was needed;
+local `origin/main` was used, and review-stamp used `--no-fetch`.
+
+## Original implementation and pre-rebase evidence (historical)
+
 2026-11-13. Local review work on `codex/server-players-step-8`. No push or ship.
 Implementation tip: `f0f1b09ebe7bc6176fd31e3559b2313d8eb7a847`; the report follows in a docs-only commit.
 Starting local `origin/main`: `40de3b82cea04e05a298b85f3d665096d1d44957`, verified WORLD_NS v43.
