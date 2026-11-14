@@ -271,6 +271,8 @@ From 5–7 November and not on the roadmap anywhere else, so kept here; check ea
 
 ## Open owner questions
 
+- **Answered, 14 November, question 4 (Sit beside Request stop):** Sit wins near a chair; seated, Interact requests an offered stop and Jump stands you up. Confirms #1783 as a try; revisit after he plays ([decision](../decisions-controls.md#d-2026-11-14-sit-first-stop-when-seated)).
+
 Answered questions are in the decision log, not here.
 From 5–6 November; drop each when answered.
 
