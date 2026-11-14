@@ -62,6 +62,11 @@ export const polarAt = (centre: XZ, p: Polar): XZ => ({
   x: centre.x + Math.sin(rad(p.bearing)) * p.r,
   z: centre.z - Math.cos(rad(p.bearing)) * p.r,
 });
+/** The jib's mast as it stands on `ground` beside a table whose rail height is `deck`: a geometry's `mast` is the
+ * arm's height over the deck (it clears the part held up over the engine's seat), so the post is longer by however
+ * far the yard lies under the deck. */
+export const mastFrom = (geo: GarageGeo, deck: number, ground: number) => geo.mast + Math.max(0, deck - ground);
+
 /** The stand's two ends along the part (inner first for a radial stand), from the table's centre. */
 export function standEnds(centre: XZ, geo: GarageGeo): [XZ, XZ] {
   const mid = polarAt(centre, geo.stand);

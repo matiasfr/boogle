@@ -244,6 +244,16 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     leg.castShadow = true;
     trestle.add(leg);
   }
+  if (radial) {
+    // A rail along each side joins the two legs, so the stand reads as a trestle when the part has left it.
+    const [inner, outer] = STAND_LEGS.at.map((r) => row.stand.r - r) as [number, number];
+    for (const x of [-1, 1]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, inner - outer + 0.5), iron);
+      rail.position.set(x * (STAND_LEGS.half - 0.05), LEG.h - 0.05, (inner + outer) / 2);
+      rail.castShadow = true;
+      trestle.add(rail);
+    }
+  }
   trestle.position.set(stand.x, geo.ground, stand.z);
   trestle.rotation.y = radial ? standYaw : rad(row.stand.bearing);
   furniture.add(trestle);

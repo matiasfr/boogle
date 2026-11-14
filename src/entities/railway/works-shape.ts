@@ -1,6 +1,6 @@
 // Local greybox geometry, world metres. J1's centimetre catalog remains the authority for interaction anchors.
 import { WORKS_SEAMS, WORKS_CLEFT, WORKS_RACK, WORKS_ROCKS, PIER_FRAME } from '../../sim/railway-works-layout.ts';
-import { stallFrame, STALLS } from '../../place/home-station.ts';
+import { stallFrame, STALLS, TABLE } from '../../place/home-station.ts';
 import { ORIGIN } from '../../place/layout.ts';
 export type WorksPoint = { x: number; z: number };
 export type WorksBox = WorksPoint & {
@@ -146,6 +146,45 @@ export const { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL
   slabZ: -2.9,
   rim: toWorld(openStall.rim),
 });
+/** The stall roads' rail height (as layout.railY) from each stall's door to its back: sleepers on the yard's ground
+ * (18 m). From the table's rim (the lines' 18.3) each road ramps down to it at the door. The station draws the roads
+ * (./home-station-view.ts); the shunt rides them (./roundhouse-view.ts). */
+export const STALL_RAIL = 18.06;
+/** A rail's head over its track's rail height (./yard-track.ts and the lines: the foot 0.1 over it, the rail 0.135). */
+export const RAIL_HEAD = 0.235;
+/** The stall shunter and its wagon, in each one's own frame (origin on the track's centreline, y up): the wheels'
+ * centres across the track (on the rails, a metre apart), each one's wheel blocks and frame slab (centre and height),
+ * and how far the frame rides over the rail height so the wheels stand on the rail heads. The slabs' tops are where
+ * they were in the frame (the wagon's 0.475, what stands on it unchanged), so the wagon's deck stays level with the
+ * train's (railY + 0.5, ./cars.ts) that it couples to; the wheels and slabs are shallower, to clear the rails. */
+export const SHUNT = (() => {
+  // `z` is each wheel's place along the frame (and its mirror), `d` a block's or slab's length along it.
+  const wagon = { wheel: { y: 0.3425, h: 0.265, z: 1, d: 0.5 }, body: { y: 0.3975, h: 0.155, d: 3.2 } },
+    shunter = { wheel: { y: 0.36, h: 0.3, z: 1, d: 0.55 }, body: { y: 0.46, h: 0.28, d: 3.4 } };
+  return { gauge: 0.5, bogie: 1, wagon, shunter, ride: RAIL_HEAD - (wagon.wheel.y - wagon.wheel.h / 2) };
+})();
+type RailPoint = { x: number; y: number; z: number };
+/** A shunt vehicle's frame from its two bogie points on the track (`SHUNT.bogie` either side of its middle, each at
+ * the track's rail height there), as the trains are posed on a chord: midway between them, heading and pitched along
+ * them, riding `SHUNT.ride` over, so every wheel stands on its rail head on a ramp as on the level. `pitch` lifts the
+ * front. */
+export function shuntPose(front: RailPoint, rear: RailPoint) {
+  const dx = front.x - rear.x,
+    dz = front.z - rear.z;
+  return {
+    x: (front.x + rear.x) / 2,
+    y: (front.y + rear.y) / 2 + SHUNT.ride,
+    z: (front.z + rear.z) / 2,
+    yaw: Math.atan2(dx, dz),
+    pitch: Math.atan2(front.y - rear.y, Math.hypot(dx, dz) || 1),
+  };
+}
+/** A stall road's rail height `l` metres out from the table's rim, whose rail height is `deck`: the ramp down to the
+ * door, then level. */
+export function stallRoadY(l: number, deck: number) {
+  const ramp = STALLS.door - TABLE.r;
+  return l < ramp ? deck + ((STALL_RAIL - deck) * Math.max(0, l)) / ramp : STALL_RAIL;
+}
 const pier = metres(PIER_FRAME);
 export const PIER_SOCKETS = Array.from({ length: 12 }, (_, i) => ({
   x: pier.x + (i % 2 ? 2.5 : -2.5),

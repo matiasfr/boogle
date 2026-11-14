@@ -33,6 +33,23 @@ export function trackPanels(spec: LineSpec): TrackPanel[] {
   return out;
 }
 
+/** Where a panelled line's sleepers lie on the land between `from` and `to` (metres along the line), each with its
+ * depth along the track: the walk buildTrack makes (./track.ts: 1.2 m apart from each panel cut, the last of a cut
+ * shorter), for yard track that shares those sleepers (./yard-track.ts). Not for a decked stretch (planks, 1 m apart). */
+export function sleeperStations(spec: LineSpec, from: number, to: number): { s: number; depth: number }[] {
+  const panels = trackPanels(spec);
+  const cuts = [0, ...panels.map((p) => p.from), panels.at(-1)!.to, spec.line.len].sort((a, b) => a - b);
+  const out: { s: number; depth: number }[] = [];
+  for (let cut = 1; cut < cuts.length; cut++)
+    for (let at = cuts[cut - 1]!; at < cuts[cut]! - 1e-7;) {
+      const length = Math.min(1.2, cuts[cut]! - at);
+      const s = spec.dir > 0 ? at + length / 2 : spec.line.len - at - length / 2;
+      if (s >= from && s <= to) out.push({ s, depth: Math.min(0.42, length) });
+      at += length;
+    }
+  return out.sort((a, b) => a.s - b.s);
+}
+
 /** The longest rail pair any line lays (Place's Q4 rail, 6.75 m in two 3.375 m pairs; production's longest is Q2's
  * 3.33 m). The machine's deck setback, and so its gantry beam, follow from it. */
 export const MAX_PANEL_LENGTH = Math.max(...LINKS.flatMap((spec) => trackPanels(spec).map((p) => p.to - p.from)));
