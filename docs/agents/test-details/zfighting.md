@@ -1,5 +1,7 @@
 # Diagnose coplanar drawn surfaces
 
+> Current-main rebase: **a 176 / b 61 / c 541; 20 new findings, 162 stale baseline pair keys**. The 205/61/545 snapshot and baseline below are historical. Existing main-side seam/forge/rotunda changes explain the delta; see the [rebase note](../../research/zfighting-2026-11-14.md#current-main-rebase-port-14-november-2026). The baseline was not reset.
+
 `npm run zfight` prints counts for three classes and the twenty largest **class a** findings.
 `npm run zfight -- --all` also lists b/c; `--json` gives a ranked machine-readable report (add `--all` for other classes).
 `--strict` exits 1 only for class-a findings with **new member pairs since the committed baseline**. Without it,

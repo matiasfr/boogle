@@ -1,8 +1,8 @@
 # Classified z-fighting census, 14 November 2026
 
-> Latest: the independent-review follow-up below verifies proxy exclusion and emissive/normal metadata on `19d1093f4`. Counts and baseline are unchanged. The original top-twenty table and ten-site images retain their separately documented earlier provenance.
+> Latest: after the current-main rebase port, the census is **a 176 / b 61 / c 541**, with 20 new findings and 162 stale baseline pair keys. See the rebase follow-up below for the main-side geometry changes and fresh evidence. The original tables/images below retain their historical provenance.
 
-Geometry remains the launch origin/main snapshot `fceb07f6115d854628bd14e3bb677b46866075b4`; no geometry fixes are made here. Run commit `7ac7996515f5fc884346d7d63c84d17cda2d1838`, source hash `337d6af47d881708d08dedba69f07435d1ea55701e52b08cf4d53105f54f2add`.
+The original census below used the launch origin/main snapshot `fceb07f6115d854628bd14e3bb677b46866075b4`; no geometry fixes are made here. Run commit `7ac7996515f5fc884346d7d63c84d17cda2d1838`, source hash `337d6af47d881708d08dedba69f07435d1ea55701e52b08cf4d53105f54f2add`.
 
 Grouped findings: **a likely visible 205; b same-appearance joints 61; c proved hidden 545**. Raw oriented rows: a 2974, b 172, c 2422. New since baseline: **0**. 6049 pieces, 520394 triangles, 8061 ms (not a performance benchmark).
 
@@ -120,3 +120,34 @@ Fresh broker proof uses the committed fix with clean matching before/after ident
 - T1 manifest **`1794694652748-81895`**: `playthrough --to t1-done` passed, all expected beats and no errors. The report and new end still were opened. The end still shows the completed T1 state without a diagnosis overlay; no bot failures. Two stationary build/wake waits were reported, with no walking-into-object or water failures.
 
 The changed-code ship-check passed (registry, 15 lint files, typecheck, 26 affected test files, 253 tests). Requested ship-check/registry and routed static validation are rerun after the documentation edits, with current logs under `.look/zfight-review-*.log`; the final handoff reports those outcomes. Earlier ten-site evidence remains historical; it is not claimed as a rerun of these proxy/material fixes. Not tested on a device; full-route play and temporal flicker remain unverified. Nothing pushed or shipped.
+
+## Current-main rebase port, 14 November 2026
+
+Collector compatibility is restored in `a629414e7`, on `codex/zfight-detector-2`. No game source, geometry, detector core, tolerance, classification or baseline policy changed:
+
+- `drawn-geometry.ts` imports `describeGround` from `src/place/ground-layers.ts` and executes the current `land.buildMesh`/`addGroundLayers` functions to capture their real buffers. The removed terrain-pass modules are no longer imported. Ground layer packing does not rewrite positions. The `ground-material.ts` shader door remains stubbed at the existing headless capture boundary; `dev/ground/drawn.ts` likewise samples actual mesh buffers in-game rather than deriving shapes.
+- The current catalogue also requires its existing `town.boogler-statue` builder registration. The Home adapters require the current rotunda `bayFrame`/`ROTUNDA_KIT` bindings and train-visibility query. These missing capture dependencies were repaired rather than skipping their geometry. The existing policy of collecting all built static pieces before progression visibility is retained.
+
+### Why the census moved
+
+The executable scan now reports **a 176, b 61, c 541** (previous snapshot 205/61/545), raw **a 3,071 / b 172 / c 2,576**, with **6,298 pieces / 545,229 faces** (previously 6,049/520,394). `new since baseline` is **20 findings** and there are **162 stale member-pair keys**. The baseline remains byte-for-byte unchanged (`c70d2abc4366b9a1f896acb6d003e92ed0b8137063b05c40ecae31b1e09e9fbe`): an import compatibility fix is not permission to accept the rebased contact changes.
+
+Comparing the 205 committed historical class-a group ids with the current report gives **44 removed ids and 15 added ids**: `205 - 44 + 15 = 176`. Removed ids break down as 15 halt, 1 forge, 11 Home-yard and 17 Home-station groups. Of the 15 added ids, **13 have a historical centroid within 2 mm**: eleven yard sleepers were reindexed by the extra stall roads, one Home-station box was reindexed, and one halt group changed its grouping key. This matches unchanged locations; it does not prove every member of those groups is unchanged. Two added groups have new centroids:
+
+| Current pair                           | World x, y, z           |
+| -------------------------------------- | ----------------------- |
+| railway.halt-5-up-deck/part-0 ↔ part-1 | 1395.89, 24.52, -352.66 |
+| railway.halt-5-up-deck/part-2 ↔ part-3 | 1395.40, 24.52, -363.64 |
+
+The remaining removed groups correspond to main-side changes: 14 halt seam groups, the forge upper-step contact, and 16 old Home-outline groups. In particular, `f66b5b50e` insets halt stripes; `275cba0a4` removes the forge step's overlapping top; `75ceb460e` replaces the three old stall outlines with the rotunda and a road per bay. Those are existing game changes on the rebased base, not changes made by this port. More yard members and changed current layouts also explain why raw face/contact totals can rise while grouped findings fall. The 20 new flags include changed members in existing patterns as well as newly keyed groups; they are retained for owner review, not silently baselined. The original top-twenty list is historical, not the current ranking; use `npm run zfight` for the current list.
+
+### Fresh evidence and checks
+
+The code's missing-module errors are gone. The requested `node dev/ship-check.ts origin/main HEAD` reaches typecheck and reports only the explicitly allowed unrelated errors: `src/place/meadow-field.ts` imports removed `upLat`, and `test/meadow-on.test.ts` reads that removed export. Neither file was edited or suppressed. Registry passes. The 17 focused detector regressions pass. Final census, requested gates and routed `npm run check` are rerun after this note; final results are in the handoff and `.look/zfight-port-*.log`.
+
+Fresh browser runs use `meadow=0` solely to avoid loading that unrelated broken module. Their before/after code is the clean port commit, with no edits during the runs:
+
+- Home look manifest `1794696035783-21372`: WebGPU/health pass, no page/console/GPU errors. Opened `zfight-rebase-port-still.png` and `zfight-rebase-port-motion.png`. The platform/ground is visible and nearby track-pair tints and ids are readable; the old kerb/base pair is not the displayed pair in this completed-stage view, consistent with main taking the kerb away when trains arrive. This is a diagnostic sanity view, not a new verdict on all 176 findings or temporal flicker.
+- T1 manifest `1794696036906-21434`: all expected beats, no bot errors, no walking-into-object or water failures. Report and `run/end-still.png` opened; the end still shows the completed T1 state. Two stationary build/wake waits are reported. This passed with `meadow=0`, not the default meadow.
+
+The default meadow, full route, real-time feel and temporal flicker are unverified. Not tested on a device. No ROM data added. Nothing pushed or shipped.
