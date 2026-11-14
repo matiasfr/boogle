@@ -85,6 +85,12 @@ overlapping.
 
 ### Do today's centrelines make valid turnouts? Yes
 
+- **Correction, 14 November (the Quarry's bend, not a junction):** the table's 9.5 m was not the tightest drawn
+  track. Between its turnouts the up track ran a flat 4 m inside line 2's bend at the Quarry (the line's own radius
+  6.5 m there, s 175 to 181), which made it a bend of under 3 m; an up train's engine stood in its first car at that
+  stop. It is eased in Place data (`upFull` in `src/place/layout.ts`, `src/place/track-ease.ts`): through s 156 to
+  200 the up track's offset runs 3.91 to 4.35 m, so it turns no tighter than 10 m. `upLat` carries it, so anything
+  generated from the two centrelines there follows; the line's own 6.5 m bend is the sim's data and is unchanged.
 - **Tangent at the toe:** every junction leaves at 0.8° to 2.1° measured 0.3 m in (zero in the data: the smoothstep
   has zero slope at its start, the spur and leg are arcs tangent to their roads).
 - **Proportions:** a real lead (toe to frog) is about 2 × gauge × frog number. For a 1.0 m gauge and 1:3.8 that is

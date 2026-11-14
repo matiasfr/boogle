@@ -12,6 +12,7 @@
 //   beside  Buddy on the halt against the cab by the near door, on the follow camera; the --action jumps him once
 //           where he stands (the cab must stay whole: owner, 14 November), then walks him in (the roof lifts)
 //           (--video --seconds 4; ENGINE CUT lines give his place in the car's frame and the cutaway's faces)
+//   car     the passenger car and its coupling to the engine, from the platform (Buddy stands back by its tail)
 //   watch   --players 2: the first in the cab, the second on the halt, whose view keeps the cab whole
 // npm run look -- --rail-seed trains-on --query 'engineShot=halt&engineLine=0&engineStop=0' \
 //   --eval dev/look/evals/railway-engine.ts --until window.__placeDone --question "..."
@@ -164,7 +165,12 @@ if (w.__engineFrame) {
         const [bx, by, bz] =
           shot === 'cab'
             ? at(f, f.side * 1.9, deck + 1.0, ENGINE_CAB.door.z[0] - 0.6)
-            : at(f, f.side * 2.6, deck + 1.0, doorZ + (shot === 'halt' ? 0.4 : shot === 'door' ? -2.5 : 0));
+            : at(
+                f,
+                f.side * 2.6,
+                deck + 1.0,
+                doorZ + (shot === 'halt' ? 0.4 : shot === 'door' ? -2.5 : shot === 'car' ? -6.4 : 0),
+              );
         teleport(me.body!, bx, by, bz);
         const driver = at(f, ENGINE_STOOL.x, ENGINE_STOOL.seat + 0.55, ENGINE_STOOL.z);
         if (shot === 'arrive') cam(at(f, f.side * 7, 13, 3), at(f, f.side * 0.6, 1, 2.4), 60);
@@ -173,6 +179,8 @@ if (w.__engineFrame) {
         else if (shot === 'glass') cam(at(f, f.side * 3.4, 2.7, ENGINE_CAB.zFront + 5.5), driver, 40);
         else if (shot === 'ahead') cam(at(f, -0.4, 2.6, ENGINE_CAB.zFront + 9), driver, 30);
         else if (shot === 'door') cam(at(f, f.side * 3.2, 2.75, doorZ - 0.3), driver, 45);
+        // The passenger car (the first car, 4.2 m behind the engine's middle) from the platform, its coupling in view.
+        else if (shot === 'car') cam(at(f, f.side * 5.4, 2.7, -2.2), at(f, 0, 0.9, -4.0), 50);
         else if (shot === 'cab') cam(at(f, f.side * 2.7, 3.0, doorZ + 0.9), at(f, -0.4, 2.0, -1.0), 55);
         else cam(at(f, f.side * 6.5, 2.3, 3.6), at(f, 0, 1.9, -1.1), 50);
         await wait(400);

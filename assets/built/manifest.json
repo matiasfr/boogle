@@ -115,7 +115,9 @@
     "triangles": 76,
     "animations": [],
     "textures": [],
-    "nodes": ["roller_drum"]
+    "nodes": [
+      "roller_drum"
+    ]
   },
   "hero-clips": {
     "source": "hero-clips.glb",
@@ -208,14 +210,17 @@
   },
   "passenger-car": {
     "source": "passenger-car.py",
-    "sourceHash": "a622da07697d4fd1",
-    "outHash": "04733fad941025f0",
-    "rawBytes": 69664,
-    "bytes": 16852,
-    "triangles": 2132,
+    "sourceHash": "36281cdfcaf2bab3",
+    "outHash": "bca4dd1923153e11",
+    "rawBytes": 116240,
+    "bytes": 25832,
+    "triangles": 3728,
+    "nodes": [
+      "car_fit",
+      "car_upgrade"
+    ],
     "animations": [],
-    "textures": [],
-    "nodes": ["car_fit", "car_upgrade"]
+    "textures": []
   },
   "place-kit": {
     "source": "place-kit.py",
@@ -306,9 +311,15 @@
     "rawBytes": 12320,
     "bytes": 8828,
     "triangles": 152,
-    "animations": ["drop"],
+    "animations": [
+      "drop"
+    ],
     "textures": [],
-    "nodes": ["clamp", "plank", "pole"]
+    "nodes": [
+      "clamp",
+      "plank",
+      "pole"
+    ]
   },
   "track-layer": {
     "source": "track-layer.py",

@@ -9,7 +9,9 @@ Two nodes, each one mesh with its colours as vertex colours (colour attribute `C
 (src/proto/place/car-kit.ts):
 
   car_fit       the first car, always drawn: natural-wood seats and a back-to-back bench down the middle, dark iron
-                legs, boarded end panels with iron rails and posts, a board under each side of the deck
+                legs, boarded end panels with iron rails and posts, a board under each side of the deck, and the
+                car's own body: an underframe and headstocks, low panelled sides with a waist rail either side of an
+                open boarding gap, and a step under each gap (the game hides the flatbed's rail rack on this car)
   car_upgrade   the upgrade, built but switched off (the game has no upgrade rule yet; car-kit.ts `passengerCar`'s
                 `upgraded` argument is the hook): the roof on four posts with a cream fringe, two lamps, a brass line
 
@@ -72,6 +74,27 @@ def build_parts():
         box(p, 'fit', BACK, [-0.56, 0.56], [S - 0.1, S + 0.22], [1.375, 1.43] if s > 0 else [-1.43, -1.375])
     # A board under each side of the deck, so the flatbed reads as a coach (painted red with a brass line later).
     pair(p, 'fit', BACK, [1.105, 1.14], [0.42, 0.665], [-1.56, 1.56])
+    # The car's own body (owner, 14 November: "it's clearly just overlaid on a cargo car ... it should look more
+    # properly like a little passenger car"): the game draws this car without the flatbed's rail rack (its arms were
+    # the "spokes"), so the underframe is here, with a headstock at each end.
+    box(p, 'fit', IRON, [-0.88, 0.88], [0.16, 0.46], [-1.52, 1.52])
+    for s in (-1, 1):
+        box(p, 'fit', IRON, [-1.0, 1.0], [0.3, 0.5], [1.525, 1.6] if s > 0 else [-1.6, -1.525])
+    # Each side: a low panelled side fore and aft of an open boarding gap (1.2 m, at the middle, where you step on),
+    # a waist rail on it, a post with a knob at each edge of the gap, and a step under the gap on two hangers.
+    for z in ([0.6, 1.49], [-1.49, -0.6]):
+        pair(p, 'fit', BACK, [1.03, 1.085], [D + 0.06, D + 0.46], z)
+        pair(p, 'fit', TRIM, [1.02, 1.095], [D + 0.5, D + 0.57], [z[0] - 0.01, z[1] + 0.005])
+        for k in range(1, 3):  # panel battens
+            zz = z[0] + (z[1] - z[0]) * k / 3
+            pair(p, 'fit', TRIM, [1.086, 1.098], [D + 0.08, D + 0.44], [zz - 0.025, zz + 0.025])
+    for z in (-0.6, 0.6):
+        pair(p, 'fit', IRON, [1.015, 1.1], [D, D + 0.66], [z - 0.045, z + 0.045])
+        for x in (-1.0575, 1.0575):
+            sphere(p, 'fit', TRIM, [x, D + 0.7, z], 0.065)
+    pair(p, 'fit', BACK, [1.145, 1.38], [0.33, 0.39], [-0.5, 0.5])
+    for z in (-0.42, 0.42):
+        pair(p, 'fit', IRON, [1.15, 1.19], [0.39, 0.6], [z - 0.025, z + 0.025])
     # Each end: a boarded panel to the knees and a rail at the hands, between corner posts.
     for s in (-1, 1):
         z = [1.5, 1.555] if s > 0 else [-1.555, -1.5]

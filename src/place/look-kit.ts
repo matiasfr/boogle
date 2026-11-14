@@ -27,6 +27,7 @@ import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
 import { makeBoiler } from '../render/carry-models.ts';
 import { makeProp } from '../render/prop-kit.ts';
 import { ENGINE_BOILER, ENGINE_WHEELS } from '../entities/railway/engine.ts';
+import { FLAT_RACK } from '../entities/railway/cars.ts';
 
 // ---------------------------------------------------------------- the file
 const SPECK = new THREE.BufferGeometry();
@@ -681,7 +682,8 @@ function kitCars(
   const beds = Array.from({ length: trailers }, () => {
     const flatbed = new THREE.Group();
     add(flatbed, 'flat_deck', DECK);
-    add(flatbed, 'flat_black', BLACK);
+    // Named, so the passenger car's body can leave it undrawn (train-view.ts; cars.ts FLAT_RACK).
+    add(flatbed, 'flat_black', BLACK).name = FLAT_RACK;
     return { flatbed, wheels: wheels(TRAILER.hz, 0.22) };
   });
   // The machine's flatbed works for a living.

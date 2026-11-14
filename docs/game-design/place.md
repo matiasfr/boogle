@@ -364,7 +364,13 @@ the deck, two seats a side, riders facing out over the halt decks, at Z -0.85 an
 low stool's numbers (seat top 0.32 m over the deck, rider anchor `lowStoolAnchor`, 0.45 m from the middle, hips on the seat,
 feet on the deck), so Buddy sits as at the track layer. The car is still the flatbed's 3.2 m by 2.2 m: the first car is
 natural wood and dark iron with boarded end panels, rails at hand height and a board under each side of the deck (the
-`passenger-car` kit asset, `car_fit`, src/entities/railway/car-kit.ts). The upgrade (red and brass, a canopy roof with a
+`passenger-car` kit asset, `car_fit`, src/entities/railway/car-kit.ts). **It has its own body** (owner, 14 November:
+"it's clearly just overlaid on a cargo car, and it's weird that it has those spokes that stick out. It should look
+more properly like a little passenger car"): the flatbed's rail rack (the arms down each side) is not drawn on this
+car, and the fit brings an underframe with a headstock at each end, a low panelled side with a waist rail fore and aft
+of a 1.2 m open boarding gap at the middle of each side, a knobbed post at each edge of the gap and a step under it.
+Same footprint, seats, deck collider and camera; the sides, like the end panels and the bench, have no solid, so you
+still walk and jump on anywhere along the deck. Not tested on a device. The upgrade (red and brass, a canopy roof with a
 cream fringe, two lamps: `car_upgrade`) is built and switched off, as no upgrade rule exists yet; `PASSENGER_CAR_UPGRADED`
 in train-view.ts is its hook. Like the track layer's, the bench has no solid: walking and the bots' boarding pass through
 it. Stand up puts you 0.4 m out in front of your seat, on the deck by its edge. A seated rider is drawn 0.16 m
@@ -736,10 +742,17 @@ especially with curves, the train car clips the train engine"; `car-spacing.ts`)
 line; the up track, 4 m inside a bend, is shorter than the line there, so an up train's cars used to close up: the
 engine's deck stood 0.68 m into the first car on line 1's bend and 0.98 m into it at the Quarry's stop. Each vehicle
 now stands its offset along its own track from the first car, and where a bend is still too tight for two decks'
-inside corners the coupling stretches until they clear by 0.1 m (the engine's buffers counted): at most 0.24 m on
-today's track and 0.42 m on line 1's up track, and 2.2 m at the Quarry's up-track stop, where the up track is drawn
-round a 2.8 m bend (the line's own is 6.8 m). That gap is open air with no drawbar yet, and the bend wants easing in
-the layout. On straight track nothing moves. Local view; bodies, seats and the cab's cutaway follow the same poses;
+inside corners the coupling stretches until they clear by 0.1 m (the engine's buffers counted): at most 0.27 m
+anywhere under way, 0.20 m at the Quarry's stop on today's track and 0.06 m on its up track, nothing at the other
+stops. Buffers count: none stands in a deck or in another buffer (0.02 m at least between them). **A train on an up
+track is set across along the line's smooth heading** (`lineSmoothAt`): the line's own heading steps at each metre
+point, and along it a car 4 m beside the line stood back at every metre of a bend (0.58 m at the Quarry), a judder;
+rails and other fixed things keep the stepped heading the sim's platforms are pinned to, and both lie on one curve. The two readings agree to 3 cm along both up tracks and to 1 cm at every platform and crossing. **Wheels are not on the drawn rails round a bend**, on either track: each rail is a straight box 2 to 4 m long (today's track sets it at its middle's heading), so a wheel stands up to 12 cm off one on line 1's own track, 15 cm on line 2's, 16 cm and 12 cm on their up tracks (`test/train-wheel-rail.test.ts` pins these so they get no worse). Rails that bend, or shorter ones on bends, are the track view's piece model (the gantry carries one rail pair a panel) and are not done. **The Quarry's bend is eased on
+the up track** (`layout.ts` `upFull`, `track-ease.ts`): 4 m inside the line's 6.5 m bend it was a bend of under 3 m;
+now it starts its turn earlier and ends it later (s 156 to 200), running between 3.91 and 4.35 m from the line, and
+turns no tighter than 10 m (10.4 m measured every 0.01 m, as the rails read it and as a train does). Rails, bed and trains follow it; the up platform (the track within 0.1 m of where it was
+beside it), the plank crossing, the levers and the stopping marks are where they were. **A drawbar and buffers are drawn at each coupling** (`couplings.ts`): a dark iron bar from one headstock to the next and a pair of buffers on each car's end facing it (the engine's own are on its model), following the cars as drawn and stretching with the gap; no solid, no state, two instanced draws for every train. On straight track nothing
+moves. Local view and Place data; bodies, seats and the cab's cutaway follow the same poses;
 the sim's train, its stops and its extent are unchanged. Not tested on a device.
 
 Both lines are drawn double track ([generic-lines](../plans/generic-lines.md), step 2): the up track runs 4 m left of

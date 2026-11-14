@@ -25,3 +25,11 @@ export const steelCarOffset = (wagon: boolean) => (wagon ? TRAIN_OFFSETS[3]! : T
 /** The farthest tail of any train, the steel car's on the wagon's train (12.7 m behind the pose): the rules' extent
  * behind (TRAIN_EXTENT.behindCm in src/sim/railway-lines.ts; test/railway-lines.test.ts keeps them in step). */
 export const TRAIN_TAIL_M = STEEL_CAR.hz - steelCarOffset(true);
+
+/** The name the place kit gives a flatbed's underframe and rail rack (src/place/look-kit.ts kitCars), so the passenger
+ * car can leave it undrawn (train-view.ts) whatever order the flatbed's pieces are added in. */
+export const FLAT_RACK = 'flat_rack';
+/** Whether the platform a player is aboard (src/physics/platforms.ts `aboard()`: the deck under their feet, or the
+ * one whose chair they sit in) is one of these cars'. */
+export const ridesOn = (platform: unknown, cars: readonly { platform: unknown }[]) =>
+  platform != null && cars.some((c) => c.platform === platform);
