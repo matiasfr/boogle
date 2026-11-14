@@ -1,7 +1,8 @@
 // Request levers by the lever rule, and a footing's prompt where a lever used to compete (docs/plans/running-side.md,
 // steps 1 and 2; owner, 14 November). One spot a run, `--query spot=<spot>`, with `--hud` for the prompt:
 //   npm run look -- --hud --rail-seed trains-on --query 'debugcam=1&spot=camp' --eval dev/look/evals/lever-places.ts --until window.__leverPlace
-//   spot=pier (--rail-seed q6-done), spot=pier-jib (--rail-seed wagon-on), spot=railhead and spot=railhead-jib (--rail-seed deck-laid)
+//   spot=pier (--rail-seed q6-done), spot=pier-jib (--rail-seed crossing-finishing), spot=railhead and
+//   spot=railhead-jib (--rail-seed deck-laid)
 // The lever spots stand you behind the lever, facing the rails, and wait for "Request stop: to <end>". The jib spots
 // shoulder a footing at the rack, stand you where the lever stood before it moved, and wait for the jib's prompt; they
 // print how far the nearest lever's knob is. Staging teleports only. Prints `LEVERPLACE ...`.
@@ -131,6 +132,11 @@ if (spot === 'camp' || spot === 'pier') {
       back = { x: e.x - w.x, z: e.z - w.z };
     await atLever(lever()!, head.platform.y / 100, back, along);
     say({ head: k });
-  } else await atJib(head.rack, at(-1800, 300), at(-600, 245), head.jib, /^(Set the footing|Hang the weight)$/);
+  } else {
+    // The railhead's rack is empty until a wagon comes: the footing is shouldered at the Works rack.
+    const r = works.WORKS_RACK,
+      from = { x: r.x / 100 - 2.5, z: r.z / 100 };
+    await atJib(r, from, at(-600, 245), head.jib, /^(Set the footing|Hang the weight)$/);
+  }
 }
 (window as unknown as { __leverPlace: boolean }).__leverPlace = true;
