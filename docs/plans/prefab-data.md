@@ -516,3 +516,18 @@ TODO, and ship-check passes 452 assertions. Opened house/museum before/after sti
 matches; all three doorways and four resident E actions pass. T1 bot passes with zero errors and 20 saves.
 [Copy inventory, golden proof, debt, checks, stamp, exact opened images and broker manifests](prefab-data-step-9d-report.md).
 No push or ship; not tested on a device.
+
+
+### Step 9 independent review follow-up: shared catalogue and shell definitions
+
+The accepted startup findings are fixed on codex/prefab-data-step-9e, rebased onto current main's lead-tab
+deletion/v44. One runtime module now loads and validates the compiled catalogue once per page for every consumer;
+per-placement validation remains unchanged, including rejection of a record mutated after load. Three shared
+shell prefabs replace 367 repeated definitions, with phase/index in placements. Placement IDs/order and all
+old runtime goldens remain exact within the existing numeric tolerance; no fixture regeneration or debt growth.
+The catalogue drops 545 to 181 records, and total canonical artifacts 499,127 to 312,535 bytes. Final headless
+validation is 2.408 ms once, against 46.857 ms for the prior seven-loader startup path. The timings exclude
+parsing/construction/rendering. Prefab tests pass 220/220 normal and perturbed; full check has 1,915 passes and
+one existing TODO; ship-check has 454 passing assertions. Fresh opened house/museum stills align; museum Talk/
+doorway actions and the T1 bot pass. [Proof, timing samples, limits, checks and fresh manifests](prefab-data-step-9e-report.md).
+No push or ship; not tested on a device.
