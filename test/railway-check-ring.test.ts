@@ -10,9 +10,11 @@ import type { World } from '../src/ecs/index.ts';
 import { Aperture } from '../src/sim/railway-components.ts';
 import { stageWorld, worldVerdict } from './helpers/railway-check.ts';
 import type { SeedStage } from '../src/sim/railway-seeds.ts';
+import { RAILWAY_MAX_INT } from '../src/sim/railway.ts';
+import { RING_HEAD } from '../src/sim/railway-ring-layout.ts';
 
 const STAGES = ['deck-laid', 'gap-footed', 'ring-joined'] as const;
-type Fields = Partial<Record<'set' | 'rack' | 'cw' | 'brace' | 'joined', number>>;
+type Fields = Partial<Record<'set' | 'rack' | 'cw' | 'brace' | 'joined' | 'moved' | 'from', number>>;
 // Built at module scope, outside the 5 s test timeout (as the golden shards do).
 const bases = new Map<SeedStage, World>(STAGES.map((s) => [s, stageWorld(s)]));
 const verdict = (stage: SeedStage, fields: Fields) => {
@@ -42,4 +44,25 @@ test('the leaf is down only with all four weights hung, and a braced leaf with t
 
 test('the rivet comes only with the leaf down', () => {
   assert.equal(verdict('gap-footed', { joined: 3 }), 'railway: rivet before the leaf');
+});
+
+test('haul ticks and origins outside integer bounds are refused', () => {
+  for (const moved of [-2, RAILWAY_MAX_INT + 1, 1.5, NaN, Infinity])
+    assert.equal(verdict('gap-footed', { moved }), 'railway: ring bounds', `moved ${moved}`);
+  for (const from of [-1, RAILWAY_MAX_INT + 1, 1.5, NaN, Infinity])
+    assert.equal(verdict('gap-footed', { from }), 'railway: ring bounds', `from ${from}`);
+});
+
+test('a haul is stamped if and only if a pair is set', () => {
+  assert.equal(verdict('gap-footed', { moved: -1 }), 'railway: ring haul stamp');
+  assert.equal(verdict('deck-laid', { moved: 0 }), 'railway: ring haul stamp');
+  assert.equal(verdict('gap-footed', { moved: 0 }), null, 'tick zero is valid');
+  assert.equal(verdict('gap-footed', { moved: RAILWAY_MAX_INT }), null, 'maximum tick is valid');
+});
+
+test('haul origin is zero before any pair, otherwise between the first head and the target', () => {
+  assert.equal(verdict('deck-laid', { from: 1 }), 'railway: ring haul origin');
+  assert.equal(verdict('gap-footed', { from: RING_HEAD[0]!.u - 1 }), 'railway: ring haul origin');
+  assert.equal(verdict('gap-footed', { from: RING_HEAD[7]!.u + 1 }), 'railway: ring haul origin');
+  for (const from of [RING_HEAD[0]!.u, RING_HEAD[7]!.u]) assert.equal(verdict('gap-footed', { from }), null);
 });

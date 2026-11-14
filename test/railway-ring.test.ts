@@ -12,6 +12,7 @@ import { Aperture, Line, Train } from '../src/sim/railway-components.ts';
 import { LINE2_STATIONS, Q7 } from '../src/sim/railway-line2-layout.ts';
 import { RAIL_HALTS } from '../src/sim/railway-lines.ts';
 import { RING_HEAD, RING_END } from '../src/sim/railway-ring-layout.ts';
+import { HAUL, haulSettled, haulTarget, haulU } from '../src/sim/railway-ring-haul.ts';
 import { TRAIN_PHASE, trainAlong, type RailTrain } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
@@ -250,7 +251,7 @@ test('the wagon carries no ring footing before Q7 (call 65); after, the first re
   t.diagnostic(`first ring footings on the railhead rack ${((deck.t - from) / 10).toFixed(1)} s after deck-laid`);
 });
 
-test('footings are conserved and the pier rack stays empty under 5,000 random ring ops by two accounts', () => {
+test('5,000 random ring ops keep the haul invariants, conserve footings and leave the pier rack empty', () => {
   const rand = mulberry32(0x5eed);
   let s = seed(railwayAtRing('deck-laid'));
   const pids = ['a', 'b'];
@@ -268,6 +269,11 @@ test('footings are conserved and the pier rack stays empty under 5,000 random ri
     advanceWorks(s, Math.floor(rand() * 5));
     assert.equal(footingTotal(s.w), works(s.w).poured, `footings at op ${k}`);
     assert.equal(works(s.w).pierRack, 0, `the pier rack at op ${k}`);
+    const a = aperture(s.w);
+    assert.equal(a.moved >= 0, a.set >= 2, `haul stamp at op ${k}`);
+    assert.ok(Number.isInteger(a.moved) && Number.isInteger(a.from));
+    if (a.moved < 0) assert.equal(a.from, 0);
+    else assert.ok(a.from >= RING_HEAD[0]!.u && a.from <= haulTarget(a));
     if (rand() < 0.002) s = seed(s);
   }
   assert.ok(accepted > 20, `${accepted} accepted`);
@@ -285,10 +291,46 @@ test('a leaver keeps the gap as it stands: their footing goes back to the Works 
   assert.equal(invariant(s.w), null);
 });
 
-test('each ring seed stage passes the world check', () => {
+test('each ring seed stage is settled and passes the world check', () => {
   for (const stage of RING_STAGES) {
+    const s = railwayAtRing(stage);
+    assert.ok(haulSettled(aperture(s.w), s.t), `${stage}: settled`);
+    assert.equal(haulU(aperture(s.w), s.t), haulTarget(aperture(s.w)), `${stage}: at target`);
     const w = stageWorld(stage);
     assert.ok(w.single(Aperture) >= 0, stage);
     assert.equal(worldVerdict(w), null, `${stage}: the world check`);
   }
+});
+
+test("a bent's second footing stamps moved and from; its first does not", () => {
+  const s = railwayAtRing('deck-laid');
+  until(s, () => aperture(s.w).rack >= 4);
+  assert.deepEqual([aperture(s.w).moved, aperture(s.w).from], [-1, 0]);
+  assert.equal(carry(s), 1);
+  assert.deepEqual([aperture(s.w).moved, aperture(s.w).from], [-1, 0]);
+  assert.equal(carry(s, 'b'), 1);
+  assert.deepEqual([aperture(s.w).moved, aperture(s.w).from], [s.t, RING_HEAD[0]!.u]);
+  const stamp = { ...aperture(s.w) };
+  advanceWorks(s, 1);
+  assert.equal(carry(s), 1);
+  assert.deepEqual([aperture(s.w).moved, aperture(s.w).from], [stamp.moved, stamp.from]);
+});
+
+test('a pair completed mid-haul replans from where the traveller is', () => {
+  const s = railwayAtRing('deck-laid');
+  until(s, () => aperture(s.w).rack >= 4);
+  assert.equal(carry(s), 1);
+  assert.equal(carry(s, 'b'), 1);
+  // Three travel ticks give a fractional curve value: the stamp must use the canonical integer pose.
+  advanceWorks(s, HAUL.after + HAUL.ready + 3);
+  assert.equal(carry(s), 1);
+  const before = { ...aperture(s.w) };
+  const u = haulU(before, s.t);
+  assert.ok(u > RING_HEAD[0]!.u && u < haulTarget(before));
+  assert.equal(Number.isInteger(u), true);
+  assert.equal(carry(s, 'b'), 1, 'no new refusal while hauling');
+  const after = aperture(s.w);
+  assert.equal(after.moved, s.t);
+  assert.equal(after.from, u);
+  assert.equal(haulU(after, s.t), haulU(before, s.t), 'no jump at the accepted rule tick');
 });

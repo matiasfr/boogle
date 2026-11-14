@@ -14,6 +14,7 @@ import { WORKS } from './railway-works-layout.ts';
 import { LINE2 } from './railway-lines.ts';
 import { endMoved, stopMoved } from './railway-trains.ts';
 import { railInt } from './railway.ts';
+import { haulU } from './railway-ring-haul.ts';
 import { Account, Aperture, Beam, Boiler, Leg, QJob, Train, Works } from './railway-components.ts';
 import { apertureId, boilerHeld, FOOT, q7Laid, roomFor, worksId } from './railway-queries.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
@@ -49,10 +50,16 @@ export const ringFootSet = defineSystem(
     const id = apertureId(w),
       a = w.get(Aperture, id)!;
     if (a.set < FOOTED) {
+      // Read before mutating set: get/mut can share the row, and the old target defines the pose now.
+      const from = haulU(a, tick);
       const m = w.mut(Aperture, id)!;
       m.set++;
       // Each bent's second footing: the railhead (and its stop and end block) is a bent further on.
-      if (m.set % 2 === 0) stopMoved(trainMoveIO(w), LINE2, RAILHEAD, tick);
+      if (m.set % 2 === 0) {
+        m.from = from;
+        m.moved = tick;
+        stopMoved(trainMoveIO(w), LINE2, RAILHEAD, tick);
+      }
     } else if (a.cw < WORKS.counterweight) {
       const m = w.mut(Aperture, id)!;
       m.cw++;

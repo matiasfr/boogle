@@ -16,6 +16,7 @@ import { account, aperture, qjob, rail, trains, works } from './railway-rows.ts'
 import { LINE2_STATIONS, Q7 } from './railway-line2-layout.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { TRAIN_PHASE } from './railway-train.ts';
+import { haulSettled } from './railway-ring-haul.ts';
 
 export type RingStage = 'deck-laid' | 'gap-footed' | 'leaf-raised' | 'ring-joined';
 export const RING_STAGES: readonly RingStage[] = ['deck-laid', 'gap-footed', 'leaf-raised', 'ring-joined'];
@@ -52,6 +53,11 @@ function setFootings(s: Seed, more: () => boolean, what: string) {
       need(act(s, 'a', 'rail.footSet', { site: 3 }) === 1, 'a footing set at the jib');
     } else advanceWorks(s, 1);
   }
+  settleHaul(s);
+}
+/** Every seed opens at rest; stamps still come solely from accepted footing ops. */
+function settleHaul(s: Seed) {
+  until(s, () => haulSettled(aperture(s.w), s.t), 1000, 'the railhead haul settled');
 }
 
 function build(s: Seed, stage: RingStage): Seed {

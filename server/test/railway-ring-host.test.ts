@@ -16,6 +16,15 @@ import { railwayAtRing, type RingStage } from '../../src/sim/railway-seed-ring.t
 import { aperture, buildSeedWorld, chopTo, invariant, type Seed } from '../../test/helpers/rail.ts';
 import { legOpen } from '../../src/sim/railway-queries-route.ts';
 import { RAIL_LEGS, legFrame } from '../../src/sim/railway-route.ts';
+import { HAUL, haulEnd, haulSettled, haulTarget, haulU } from '../../src/sim/railway-ring-haul.ts';
+import { act } from '../../src/sim/railway-seed-route.ts';
+import { advanceWorks } from '../../src/sim/railway-seed-works.ts';
+import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
+import { createPredictor } from '../../src/world/replicate-client.ts';
+import { railPredict } from '../../src/world/railway-predict.ts';
+import { cloneWorld } from '../../src/sim/railway-queries.ts';
+import type { RailAction } from '../../src/sim/railway.ts';
+import type { World } from '../../src/ecs/index.ts';
 
 type Obj = Record<string, unknown>;
 type At = [number, number, number];
@@ -43,10 +52,29 @@ async function host(
       positions: () => [],
     });
   let h = create();
-  const ticks = async (n: number) => {
+  const mirrors = new Map<string, ReturnType<typeof createRailwayMirror>>();
+  const delays = new Map<string, number>();
+  const pending: { cid: string; due: number; json: string }[] = [];
+  const flush = () => {
+    h.replication.commit(h.sync.roomStep());
+    h.replication.flush(h.sync.roomStep(), (cid, _p, json) => {
+      pending.push({ cid, due: h.sync.world.tick + (delays.get(cid) ?? 0), json });
+    });
+    for (let i = 0; i < pending.length;) {
+      const p = pending[i]!;
+      if (p.due > h.sync.world.tick) {
+        i++;
+        continue;
+      }
+      assert.ok(mirrors.get(p.cid)!.mirror.apply(JSON.parse(p.json), now), 'a well-formed host packet');
+      pending.splice(i, 1);
+    }
+  };
+  const ticks = async (n: number, publish = true) => {
     for (let i = 0; i < n; i++) {
       now += 100;
       h.step(0.1);
+      if (publish && mirrors.size) flush();
     }
     await h.sync.whenDurable();
   };
@@ -72,6 +100,42 @@ async function host(
     get w() {
       return h.rules.railway.world();
     },
+    get tick() {
+      return h.sync.world.tick;
+    },
+    ticks,
+    flush,
+    delay(cid: string, ticks: number) {
+      delays.set(cid, ticks);
+    },
+    connect(cid: string) {
+      const m = createRailwayMirror();
+      mirrors.set(cid, m);
+      h.replication.addClient(cid);
+      const predictor = createPredictor<World, { intent: Pick<RailAction, 'op' | 'site'>; tick: number }>({
+        confirmed: m.confirmed,
+        clone: cloneWorld,
+        apply: (w, a, [epoch, request]) => {
+          railPredict(w, players[cid]!, { ...a.intent, epoch, request }, a.tick);
+        },
+      });
+      const session = sessions[cid];
+      if (session) predictor.session(session.epoch, session.request + 1);
+      m.mirror.onPacket((p) => {
+        if (p.ack) predictor.confirm(p.ack);
+        predictor.invalidate();
+      });
+      return { ...m, predictor };
+    },
+    async restart() {
+      await h.close({ save: true });
+      assert.ok(await store.read(railwayRoomId(roomName)), 'checkpoint written');
+      mirrors.clear();
+      pending.length = 0;
+      h = create();
+      await h.whenReady();
+      assert.equal(h.status().ready, true, 'verified checkpoint loaded');
+    },
     async action(e: Obj, at: At, sid = 's') {
       const x = sessions[sid]!;
       now += 1000;
@@ -89,6 +153,159 @@ async function host(
 const spot = (p: { x: number; y: number; z: number }): At => [p.x, p.y, p.z];
 const fixture = (stage: RingStage) => railwayAtRing(stage);
 const RAILHEAD = RAIL_HALTS.findIndex((h) => h.name === 'Railhead');
+
+/** Accepted fixture: two setters hold a footing each, and the next pair's supply is on the rack. */
+function pairFixture() {
+  const s = fixture('deck-laid');
+  for (let guard = 0; aperture(s.w).rack < 4; guard++) {
+    assert.ok(guard < 6000, 'wagon supplies the pair');
+    advanceWorks(s, 1);
+  }
+  assert.equal(act(s, 'a', 'rail.footTake', { rack: 2 }), 1);
+  assert.equal(act(s, 'b', 'rail.footTake', { rack: 2 }), 1);
+  return s;
+}
+const setters = { s: 'a', t: 'b' };
+type RingHost = Awaited<ReturnType<typeof host>>;
+async function setPair(r: RingHost) {
+  for (const sid of ['s', 't']) {
+    const head = RING_HEAD[Math.floor(aperture(r.w).set / 2)]!;
+    assert.equal(await r.action({ op: 'rail.footSet', site: 3 }, spot(head.jib), sid), 'accepted');
+  }
+}
+
+test('concurrent: two sessions set a pair in one tick; both mirrors hold the server stamp', async () => {
+  const r = await host('concurrent-haul', pairFixture(), setters);
+  try {
+    const a = r.connect('s'),
+      b = r.connect('t');
+    r.flush();
+    const tick = r.tick;
+    await setPair(r);
+    assert.equal(r.tick, tick, 'both accepted in one rule tick');
+    assert.deepEqual([aperture(r.w).set, aperture(r.w).moved, aperture(r.w).from], [2, tick, RING_HEAD[0]!.u]);
+    await r.ticks(1);
+    for (const m of [a, b]) assert.deepEqual(aperture(m.confirmed()), aperture(r.w));
+  } finally {
+    await r.done();
+  }
+});
+
+test('predicted: the server packet replaces moved, and both mirrors agree at every later haul tick', async () => {
+  const s = pairFixture();
+  assert.equal(act(s, 'a', 'rail.footSet', { site: 3 }), 1);
+  const r = await host('predicted-haul', s, setters);
+  try {
+    const a = r.connect('s'),
+      b = r.connect('t');
+    r.flush();
+    const predictedTick = r.tick - 2;
+    assert.ok(b.predictor.act({ intent: { op: 'rail.footSet', site: 3 }, tick: predictedTick }));
+    assert.equal(aperture(b.predictor.state()).moved, predictedTick);
+    assert.equal(aperture(b.confirmed()).moved, -1, 'prediction leaves the confirmed row alone');
+    assert.equal(await r.action({ op: 'rail.footSet', site: 3 }, spot(RING_HEAD[0]!.jib), 't'), 'accepted');
+    const acceptedTick = r.tick;
+    assert.notEqual(acceptedTick, predictedTick);
+    await r.ticks(1);
+    assert.equal(b.predictor.pending().length, 0, 'the host packet acknowledged the predicted request');
+    assert.equal(aperture(b.predictor.state()).moved, acceptedTick);
+    const end = haulEnd(aperture(r.w)) + 2;
+    for (; r.tick <= end; await r.ticks(1)) {
+      const expected = haulU(aperture(r.w), r.tick);
+      assert.equal(haulU(aperture(a.confirmed()), r.tick), expected);
+      assert.equal(haulU(aperture(b.predictor.state()), r.tick), expected);
+    }
+  } finally {
+    await r.done();
+  }
+});
+
+for (const delay of [15, 150])
+  test(`${delay === 15 ? 'backed up' : 'late'}: a mirror hears ${delay / 10} s late and keeps the accepted moved`, async () => {
+    const r = await host(`delayed-haul-${delay}`, pairFixture(), setters);
+    try {
+      const a = r.connect('s'),
+        b = r.connect('t');
+      r.flush();
+      r.delay('t', delay);
+      await setPair(r);
+      const stamp = { ...aperture(r.w) };
+      await r.ticks(delay);
+      assert.equal(aperture(b.confirmed()).moved, -1, 'the stamp packet is still in transit');
+      await r.ticks(1);
+      for (const m of [a, b]) {
+        const seen = aperture(m.confirmed());
+        assert.deepEqual([seen.set, seen.moved, seen.from], [stamp.set, stamp.moved, stamp.from]);
+        assert.equal(haulU(seen, r.tick), haulU(stamp, r.tick));
+        if (delay === 150) {
+          assert.ok(haulSettled(seen, r.tick), 'hearing late starts nothing');
+          assert.equal(haulU(seen, r.tick), haulTarget(seen), 'already at the new head');
+        }
+      }
+    } finally {
+      await r.done();
+    }
+  });
+
+test('batched: both footings in one packet give the same row as two packets', async () => {
+  const rows = [];
+  for (const batched of [false, true]) {
+    const r = await host(`batched-haul-${batched}`, pairFixture(), setters);
+    try {
+      const a = r.connect('s'),
+        b = r.connect('t');
+      r.flush();
+      assert.equal(await r.action({ op: 'rail.footSet', site: 3 }, spot(RING_HEAD[0]!.jib)), 'accepted');
+      // Identical accepted ticks in both runs; only the packet flush between the footings differs.
+      await r.ticks(1, !batched);
+      if (!batched) {
+        for (const m of [a, b]) assert.equal(aperture(m.confirmed()).set, 1, 'first footing has its own packet');
+      } else for (const m of [a, b]) assert.equal(aperture(m.confirmed()).set, 0, 'both footings await one flush');
+      assert.equal(await r.action({ op: 'rail.footSet', site: 3 }, spot(RING_HEAD[0]!.jib), 't'), 'accepted');
+      await r.ticks(1);
+      for (const m of [a, b]) assert.deepEqual(aperture(m.confirmed()), aperture(r.w));
+      rows.push({ ...aperture(a.confirmed()) });
+    } finally {
+      await r.done();
+    }
+  }
+  assert.deepEqual(rows[0], rows[1]);
+});
+
+test('reload and late join mid-haul: the checkpoint round-trips moved and from', async () => {
+  const r = await host('reload-haul', pairFixture(), setters);
+  try {
+    await setPair(r);
+    await r.ticks(HAUL.after + HAUL.ready + 3);
+    const before = { ...aperture(r.w) };
+    for (const sid of ['s', 't'])
+      assert.equal(await r.action({ op: 'rail.footTake', rack: 2 }, spot(RING_HEAD[1]!.rack), sid), 'accepted');
+    await setPair(r);
+    const stamp = { ...aperture(r.w) };
+    assert.equal(stamp.from, haulU(before, r.tick), 'checkpoint includes a replanned, noninitial origin');
+    assert.ok(stamp.from > RING_HEAD[0]!.u);
+    await r.ticks(HAUL.after + HAUL.ready + 5);
+    assert.equal(haulSettled(stamp, r.tick), false);
+    const tick = r.tick,
+      u = haulU(stamp, tick);
+    const late = r.connect('late');
+    r.flush();
+    assert.deepEqual(aperture(late.confirmed()), stamp, 'late join gets the live haul');
+    assert.equal(haulU(aperture(late.confirmed()), tick), u);
+    await r.restart();
+    assert.deepEqual(aperture(r.w), stamp, 'verified checkpoint preserves both stamp fields');
+    assert.equal(r.tick, tick);
+    const a = r.connect('s'),
+      b = r.connect('t');
+    r.flush();
+    for (const m of [a, b]) {
+      assert.deepEqual(aperture(m.confirmed()), stamp);
+      assert.equal(haulU(aperture(m.confirmed()), tick), u, 'resume does not restart the haul');
+    }
+  } finally {
+    await r.done();
+  }
+});
 
 test('shared boogle host loaded from a ring-joined save accepts rail.legStock', async () => {
   const seed = buildSeedWorld('ring-joined');
