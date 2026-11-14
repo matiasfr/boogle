@@ -48,5 +48,7 @@ const placements: Placement[] = PLOTS.flatMap(([plot, kit, short]): Placement[] 
   ];
 });
 placements.push({ id: 'town.footing', prefab: 'greybox.box', pos: [0, 0.15, 0], scale: [5, 0.3, 5] });
+// The Boogler's statue stands on the footing (owner, 14 November); its plinth's foot is the footing's top.
+placements.push({ id: 'town.statue', prefab: 'town.statue', pos: [0, 0.3, 0] });
 
 export const levels = [defineLevel({ place: 'town-blockout', placements })];

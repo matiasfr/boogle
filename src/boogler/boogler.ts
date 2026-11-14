@@ -23,6 +23,7 @@ import type { Body } from '../physics/engine.ts';
 import { ACT, MODE, W_R, MIN_H, findStart } from '../world/boogler-brain.ts';
 import { createBooglerShadow } from '../world/boogler-shadow.ts';
 import { createBooglerPresentation } from './presentation.ts';
+import { BOOGLER_SHAPE } from './shape.ts';
 import { railwayMirror } from '../world/game-world.ts';
 import { railwayWorldRead } from '../entities/railway/state.ts';
 import type { BooglerVisitor } from '../world/boogler-brain.ts';
@@ -33,22 +34,25 @@ export { ACT, MODE, W_R } from '../world/boogler-brain.ts';
 export type BgRemote = Remote & { bg?: number[] | null };
 export type Mood = 'smile' | 'joy' | 'grump' | 'worry' | 'puff' | 'talk';
 
-// Shape: about three times as wide as he is tall.
-const H_R = 0.27; // half height
-const BODY_Y = 0.32; // body center above the ground
+// Shape (src/boogler/shape.ts, shared with his statue): about three times as wide as he is tall.
+const H_R = BOOGLER_SHAPE.body.halfHeight;
+const BODY_Y = BOOGLER_SHAPE.body.y; // body center above the ground
 const BODY_HEX = '#b99cff';
 const FOOT_HEX = '#6c4fd1';
 const FACE_HEX = '#1d1640';
 
 /** Dry land of his island under x, z: the ground he walks on. Off its grid (the railway world, the sea) is the seabed. */
 export const onBooglerIsland = (x: number, z: number) => groundHeight(x, z) >= MIN_H;
-// His top hat, comically tall: the brim is a third of his radius (it sits on top of his head, covering none of it), the
-// crown half the brim's radius, and the whole hat about one and a half times his height.
-const BRIM_R = W_R / 3;
-const CROWN_R = BRIM_R / 2;
-const BRIM_H = 0.03;
-const HAT_H = 1.5 * (BODY_Y + H_R); // brim included
-const HAT_SINK = 0.015; // into the curve of his head, so no gap shows under the brim
+// His top hat, comically tall (proportions in shape.ts).
+const {
+  brimR: BRIM_R,
+  crownR: CROWN_R,
+  brimH: BRIM_H,
+  high: HAT_H,
+  sink: HAT_SINK,
+  flare: HAT_FLARE,
+} = BOOGLER_SHAPE.hat;
+const { hand: HAND, foot: FOOT, face: FACE } = BOOGLER_SHAPE;
 const LABEL_GAP = 0.45; // name tag anchor above the top of the hat (a crushed hat too, so it clears a rider)
 export const PUFF_MS = 750;
 
@@ -133,14 +137,14 @@ function drawFace(g: CanvasRenderingContext2D, m: (v: number) => number, expr: s
   };
   const line = (pts: [number, number][], w?: number) =>
     stroke(() => pts.forEach(([x, y], k) => (k ? g.lineTo(m(x), m(y)) : g.moveTo(m(x), m(y)))), w);
-  const eyes = (ry = 0.064, y = -0.075) => {
-    for (const sx of [-1, 1]) blob(0.145 * sx, y, 0.046, ry);
-    for (const sx of [-1, 1]) blob(0.145 * sx + 0.014, y - 0.025 * (ry / 0.064), 0.015, 0.015, '#ffffff');
+  const eyes = (ry: number = FACE.eye.ry, y: number = FACE.eye.y) => {
+    for (const sx of [-1, 1]) blob(FACE.eye.x * sx, y, FACE.eye.rx, ry);
+    for (const sx of [-1, 1]) blob(FACE.eye.x * sx + 0.014, y - 0.025 * (ry / 0.064), 0.015, 0.015, '#ffffff');
   };
   const cheeks = (a = 0.5, r = 1) => {
     for (const sx of [-1, 1]) blob(0.25 * sx, -0.005, 0.055 * r, 0.032 * r, `rgba(255, 110, 150, ${a})`);
   };
-  const smile = () => stroke(() => g.arc(0, m(-0.03), m(0.095), Math.PI * 0.18, Math.PI * 0.82));
+  const smile = () => stroke(() => g.arc(0, m(FACE.smile.y), m(FACE.smile.r), FACE.smile.from, FACE.smile.to));
   const openMouth = (rx: number, ry: number) => {
     blob(0, 0.02, rx, ry);
     blob(0, 0.02 + ry * 0.45, rx * 0.6, ry * 0.45, '#ff7a9a');
@@ -233,19 +237,19 @@ function buildModel() {
 
   const limbMat = new THREE.MeshStandardMaterial({ color: BODY_HEX, roughness: 0.5 });
   const footMat = new THREE.MeshStandardMaterial({ color: FOOT_HEX, roughness: 0.55 });
-  const handGeo = new THREE.SphereGeometry(0.15, 20, 12);
-  const footGeo = new THREE.SphereGeometry(0.19, 20, 12);
+  const handGeo = new THREE.SphereGeometry(HAND.r, 20, 12);
+  const footGeo = new THREE.SphereGeometry(FOOT.r, 20, 12);
   const hands = [-1, 1].map((sx) => {
     const h = new THREE.Mesh(handGeo, limbMat);
-    h.userData.base = new THREE.Vector3(sx * (W_R + 0.05), BODY_Y - 0.03, -0.05);
+    h.userData.base = new THREE.Vector3(sx * HAND.x, HAND.y, HAND.z);
     h.position.copy(h.userData.base);
     inner.add(h);
     return h;
   });
   const feet = [-1, 1].map((sx) => {
     const f = new THREE.Mesh(footGeo, footMat);
-    f.scale.set(1, 0.62, 1.25);
-    f.userData.base = new THREE.Vector3(sx * 0.38, 0.1, -0.42);
+    f.scale.fromArray(FOOT.scale);
+    f.userData.base = new THREE.Vector3(sx * FOOT.x, FOOT.y, FOOT.z);
     f.position.copy(f.userData.base);
     root.add(f);
     return f;
@@ -256,7 +260,7 @@ function buildModel() {
   const brim = new THREE.Mesh(new THREE.CylinderGeometry(BRIM_R, BRIM_R, BRIM_H, 28), hatMat);
   brim.position.y = BRIM_H / 2;
   const crownH = HAT_H - BRIM_H;
-  const crown = new THREE.Mesh(new THREE.CylinderGeometry(CROWN_R * 1.06, CROWN_R, crownH, 20), hatMat);
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(CROWN_R * HAT_FLARE, CROWN_R, crownH, 20), hatMat);
   crown.position.y = BRIM_H + crownH / 2;
   hat.add(brim, crown);
   root.add(hat);

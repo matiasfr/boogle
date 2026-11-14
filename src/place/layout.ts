@@ -711,14 +711,24 @@ export const TOWN_BLOCKS = TOWN_PLOTS.order.map((id) => {
   if (kit !== 'house' && kit !== 'cottage') throw new Error(`no blockout eave for ${kit}`);
   return { id, ...townBuilding(id), kit, high: TOWN_EAVE[kit] };
 });
-/** The clock's footing at G: a slab on the green's floor, no clock yet. */
+/** The footing at G: a slab on the green's floor. It carries The Boogler's statue (owner, 14 November). */
 export const TOWN_FOOTING = {
-  x: TOWN_PROPS.clock.x,
-  z: TOWN_PROPS.clock.z,
+  x: TOWN_PROPS.statue.x,
+  z: TOWN_PROPS.statue.z,
   yaw: 0,
-  w: TOWN_PROPS.clock.footing,
-  d: TOWN_PROPS.clock.footing,
+  w: TOWN_PROPS.statue.footing,
+  d: TOWN_PROPS.statue.footing,
   high: 0.3,
+} as const;
+/** The Boogler's statue on the footing: he faces the hall and spawn, bearing 70 from G (a yaw is 180 degrees less the
+ * bearing faced); `w` and `d` are its plinth's foot, inside the footing, whose footprint is the one the little
+ * guys walk round. */
+export const TOWN_STATUE = {
+  x: TOWN_PROPS.statue.x,
+  z: TOWN_PROPS.statue.z,
+  yaw: (110 * Math.PI) / 180,
+  w: 4.9,
+  d: 4.9,
 } as const;
 /** What stands across the sea: too far to reach, north-east of the ridge. */
 export const FAR = { x: 330, z: -1120 };

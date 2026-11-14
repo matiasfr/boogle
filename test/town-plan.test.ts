@@ -9,6 +9,9 @@ import { blockoutFeet, standBlockout } from '../src/place/town-blockout.ts';
 import { AXIS, HALL, SHELF_SIZE, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
 import { prefabs as curioRecords } from '../src/content/prefabs/curio.ts';
 import { curioParts } from '../src/prefab/builders/curio-parts.ts';
+import { prefabs as townRecords } from '../src/content/prefabs/town.ts';
+import { BOOGLER_SHAPE } from '../src/boogler/shape.ts';
+import { GRAVITY, JUMP_SPEED } from '../src/constants.ts';
 import {
   LINES,
   ORIGIN,
@@ -19,6 +22,7 @@ import {
   TOWN_BLOCKS,
   TOWN_EAVE,
   TOWN_FOOTING,
+  TOWN_STATUE,
   VILLAGE,
   lineAt,
 } from '../src/place/layout.ts';
@@ -280,7 +284,7 @@ test('the yard find is 4.5 m behind the gate cottage, and the forge door and the
   const gate = B('gate');
   near(pointGap(TOWN_PROPS.yard, gate), 4.5, 0.05, 'the yard find behind the back wall');
   assert.deepEqual(TOWN_PROPS.forgeDoor, { x: -92, z: -3, w: 2.8 });
-  assert.deepEqual({ x: TOWN_PROPS.clock.x, z: TOWN_PROPS.clock.z }, TOWN_CENTRE);
+  assert.deepEqual({ x: TOWN_PROPS.statue.x, z: TOWN_PROPS.statue.z }, TOWN_CENTRE);
   near(TOWN_PROPS.bay.x, -87.86, 0.01, 'bay.x');
   near(TOWN_PROPS.bay.z, 21.31, 0.01, 'bay.z');
 });
@@ -413,7 +417,7 @@ test('the gate is the one cottage, the yard is behind it and the shore ends at t
   );
 });
 
-// B3, the blockout: the eight bought plots as plain blocks and the clock's footing (docs/plans/home-flip.md).
+// B3, the blockout: the eight bought plots as plain blocks and the footing at G (docs/plans/home-flip.md).
 type Stood = {
   id: string;
   prefab: string;
@@ -452,8 +456,9 @@ test("a block's height is its kit's eave: a house's slab and wall, a cottage's w
 });
 
 test('the built level is the plan: eight solid blocks at their rows, a door panel and a mat on each door side', () => {
-  assert.equal(blockoutLevel.placements.length, 25);
+  assert.equal(blockoutLevel.placements.length, 26);
   assert.equal(stood.filter((p) => p.prefab === 'greybox.box').length, 9, 'eight blocks and the footing are solid');
+  assert.equal(stood.filter((p) => p.prefab === 'town.statue').length, 1, 'and the statue on the footing');
   for (const b of TOWN_BLOCKS) {
     const plan = townBuilding(b.id),
       block = piece(`town.block.${b.id}`),
@@ -521,14 +526,17 @@ test("no block's mat lies on a road: each is off the ring and outside the quarry
 test('the little guys walk round the footing and the blocks: every solid has an avoidance footprint', () => {
   // folk.ts steers round `feet` (src/place/sites.ts), not colliders: each solid piece registers its footprint.
   const feet = blockoutFeet(stood);
+  // The monument has one footprint, the footing's: it encloses the statue's plinth (town-statue-folk.test.ts).
   assert.equal(feet.length, 9);
   for (const b of [...TOWN_BLOCKS, TOWN_FOOTING]) {
-    const foot = feet.find((f) => Math.hypot(f.x - b.x - ORIGIN.x, f.z - b.z) < 0.001);
+    const foot = feet.find(
+      (f) => Math.hypot(f.x - b.x - ORIGIN.x, f.z - b.z) < 0.001 && f.hw === b.w / 2 && f.yaw === b.yaw,
+    );
     assert.ok(foot, 'a footprint at each solid');
-    assert.deepEqual([foot.yaw, foot.hw, foot.hd], [b.yaw, b.w / 2, b.d / 2]);
+    assert.equal(foot.hd, b.d / 2);
   }
   // The walk the review found: the green's wander points (-6, -6) and (6, 6) from G cross the footing.
-  const foot = feet.find((f) => Math.hypot(f.x - TOWN_CENTRE.x - ORIGIN.x, f.z - TOWN_CENTRE.z) < 0.001)!;
+  const foot = feet.find((f) => f.hw === TOWN_FOOTING.w / 2 && f.yaw === 0)!;
   let crossed = false;
   for (let t = 0; t <= 1; t += 0.01) {
     const x = TOWN_CENTRE.x + ORIGIN.x - 6 + 12 * t - foot.x,
@@ -542,4 +550,80 @@ test('the little guys walk round the footing and the blocks: every solid has an 
     view,
     /for \(const f of blockoutFeet\(placements\)\) addFoot\(f\.x, f\.z, f\.yaw, f\.hw, f\.hd, owner\);/,
   );
+});
+
+// The Boogler's statue on the footing (owner, 14 November: "the statue should replace the clock").
+const statueRecord = townRecords.find((r) => r.key === 'town.statue')!;
+const statueParams = statueRecord.visual as unknown as { params: { scale: number; plinth: [number, number][] } };
+const { scale: STATUE_SCALE, plinth: STATUE_PLINTH } = statueParams.params;
+const plinthHigh = STATUE_PLINTH.reduce((sum, step) => sum + step[1], 0);
+const headHigh = STATUE_SCALE * (BOOGLER_SHAPE.body.y + BOOGLER_SHAPE.body.halfHeight);
+const statueHigh = headHigh + STATUE_SCALE * (BOOGLER_SHAPE.hat.high - BOOGLER_SHAPE.hat.sink);
+
+test("The Boogler's statue stands on the footing at G, facing the hall", () => {
+  const statue = piece('town.statue');
+  assert.equal(statue.prefab, 'town.statue');
+  assert.equal(statue.scale, undefined, 'the record holds its size');
+  near(statue.pos[0]!, TOWN_CENTRE.x + ORIGIN.x, 0.001, 'statue x');
+  near(statue.pos[2]!, TOWN_CENTRE.z, 0.001, 'statue z');
+  near(statue.pos[1]!, VILLAGE.y - TOWN_GROUND.green.drop + TOWN_FOOTING.high, 0.001, "on the footing's top");
+  near(statue.rot[0]!, TOWN_STATUE.yaw, 1e-9, 'statue yaw');
+  // Its front (local +z) points along the hall's centreline, bearing 70 from G, toward where a player spawns.
+  const front = townLocal({ ...TOWN_STATUE }, 0, 1);
+  const bearing = (Math.atan2(front.x - TOWN_CENTRE.x, -(front.z - TOWN_CENTRE.z)) * 180) / Math.PI;
+  near(bearing, 70, 0.001, 'the bearing he faces');
+  // The plinth's foot is inside the footing, whose footprint is the one the little guys walk round.
+  for (const [r] of STATUE_PLINTH) assert.ok(r <= TOWN_FOOTING.w / 2, 'the plinth stands on the footing');
+  assert.equal(TOWN_STATUE.w, 2 * STATUE_PLINTH[0]![0]);
+  assert.equal(TOWN_STATUE.d, TOWN_STATUE.w);
+});
+
+test("the statue's solids are its plinth, his body and his hat, at his own proportions", () => {
+  const [low, high, figure, hat] = statueRecord.colliders as unknown as {
+    at: number[];
+    r: number;
+    h: number;
+    rot?: number[];
+  }[];
+  for (const c of statueRecord.colliders) assert.equal(c.shape, 'trunk');
+  assert.deepEqual([low!.r, low!.h, high!.r, high!.h], STATUE_PLINTH.flat());
+  near(low!.at[1]! + low!.h / 2, STATUE_PLINTH[0]![1], 1e-9, 'the lower step');
+  near(high!.at[1]! + high!.h / 2, plinthHigh, 1e-9, 'the upper step');
+  const { body, hat: brim } = BOOGLER_SHAPE;
+  near(figure!.r, STATUE_SCALE * body.r, 1e-9, "his body's radius");
+  near(figure!.at[1]! - figure!.h / 2, plinthHigh, 1e-9, 'his body stands on the plinth');
+  near(figure!.at[1]! + figure!.h / 2, plinthHigh + headHigh, 1e-9, 'to the top of his head');
+  near(hat!.h, STATUE_SCALE * brim.high, 1e-9, "the hat's height");
+  near(hat!.r, STATUE_SCALE * brim.crownR * brim.flare, 0.01, "the crown's radius");
+  // The hat leans about the middle of its brim; the post leans with it.
+  const lean = hat!.rot![2]!,
+    pivot = plinthHigh + STATUE_SCALE * (body.y + body.halfHeight - brim.sink);
+  near(hat!.at[0]!, (-Math.sin(lean) * hat!.h) / 2, 0.001, "the hat post's lean");
+  near(hat!.at[1]!, pivot + (Math.cos(lean) * hat!.h) / 2, 0.001, "the hat post's height");
+  // A monument to look up at: two to three times his height, on a plinth about a metre tall.
+  assert.ok(STATUE_SCALE >= 2 && STATUE_SCALE <= 3);
+  assert.ok(plinthHigh >= 0.9 && plinthHigh <= 1.3);
+});
+
+test('the statue is a perch and not a step: a second jump from its top lands on the green or the ring road', () => {
+  // One jump rises JUMP_SPEED^2 / 2g (1.60 m): the plinth is climbed with one jump from the footing; his head and the
+  // hat need the second jump.
+  const rise = JUMP_SPEED ** 2 / (2 * GRAVITY);
+  assert.ok(plinthHigh < rise, 'the plinth is one jump');
+  // The top of the hat above the town's ground (the green's floor is lower by its drop).
+  const top = TOWN_FOOTING.high + plinthHigh + statueHigh - TOWN_GROUND.green.drop;
+  assert.ok(top < 5.5, `the hat's top is ${top.toFixed(2)} m above the road`);
+  // Two jumps up from the hat, then the fall to the lowest eave (a cottage's): the longest flight that could land
+  // on a roof. At 10 m/s (faster than a sprint: B4 took 12.6 m in 1.35 s), with no run-up to be had on a 0.4 m hat,
+  // it stops short of the nearest thing that stands.
+  const up = 2 * (JUMP_SPEED / GRAVITY),
+    down = Math.sqrt((2 * (top + 2 * rise - TOWN_EAVE.cottage)) / GRAVITY),
+    reach = 10 * (up + down);
+  const walls = [...TOWN_SLOTS.map((s) => townBuilding(s.id)), FORGE, TOWN_PROPS.bay.foot, TOWN_PROPS.shelf.foot];
+  let nearest = Infinity;
+  for (const b of walls) {
+    const q = corners(b);
+    for (let i = 0; i < 4; i++) nearest = Math.min(nearest, toSegment(TOWN_CENTRE, q[i]!, q[(i + 1) % 4]!));
+  }
+  assert.ok(nearest - reach > 2, `nearest wall ${nearest.toFixed(2)} m from G, longest flight ${reach.toFixed(2)} m`);
 });
