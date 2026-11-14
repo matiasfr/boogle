@@ -58,6 +58,16 @@ test('same-world boots keep progress', () => {
   );
 });
 
+test('v0 and v1 return spots obey room and world reset boundaries', () => {
+  const mine = ['boogle.railway-pose.v0:rail-v19-a:p', 'boogle.railway-pose.v1:rail-v19-a:p'];
+  const other = 'boogle.railway-pose.v1:rail-v19-ab:p';
+  const s = storage(Object.fromEntries([...mine, other].map((key) => [key, 'value'])));
+  assert.deepEqual(staleKeys([...mine, other], 'v19', ns), []);
+  assert.deepEqual(resetForRoom(s, 'rail-v19-a', 'a').sort(), mine);
+  assert.equal(s.getItem(other), 'value');
+  assert.deepEqual(staleKeys([...mine, other], 'v19', { world: 'v20', rail: 'rail-v20' }), [...mine, other]);
+});
+
 test('a world bump clears the old world wardrobe and keeps this one', () => {
   const s = storage({
     'boogle.railway-wardrobe.v0:rail-v18-a:p': 'old',

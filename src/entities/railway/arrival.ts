@@ -60,8 +60,11 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   };
   camConstraints.push(constraint);
   let placed: Body | null = null;
-  const posePolicy = createPosePolicy(H, insidePlace, (p) =>
-    feet.some((foot) => outOf(foot, { x: p.x, z: p.z }, PLAYER_R + 0.2)),
+  const posePolicy = createPosePolicy(
+    H,
+    insidePlace,
+    (p) => feet.some((foot) => outOf(foot, { x: p.x, z: p.z }, PLAYER_R + 0.2)),
+    { raycastClosest, rayHit },
   );
   const poseKey = `boogle.railway-pose.v0:${railwayRoomId(getRoomId())}:${identity.pid}`;
   let savedPose: ReturnType<typeof posePolicy.read> = null;
@@ -102,21 +105,7 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   // spot's centre must meet the surface as well, so a ring spot past a deck's edge (where the sphere's side still
   // touches it) is refused; a ray that starts inside a shape (an overhang over the spot) meets it at once and fails.
   // The ray runs a centimetre off the spot: one straight down a terrain cell's edge can miss the heightfield.
-  const hit = rayHit();
-  const surfaceAt = (x: number, y: number, z: number) => {
-    const from = { x, y: y + 3, z };
-    const hits = (['skip', 'only'] as const)
-      .map((thin) => sweepSphere(from, { x, y: y - 1, z }, PLAYER_R, { mask: GROUP.SCENERY, thin }))
-      .filter((h) => h >= 0);
-    if (!hits.length || Math.abs(from.y - Math.min(...hits) - PLAYER_R - y) > 0.5) return false;
-    const ray = raycastClosest(
-      { x: x + 0.01, y: y + 3, z: z + 0.01 },
-      { x: x + 0.01, y: y - 1, z: z + 0.01 },
-      { mask: GROUP.SCENERY },
-      hit,
-    );
-    return ray && hit.distance > 0 && Math.abs(hit.hitPointWorld.y - y) <= 0.5;
-  };
+  const surfaceAt = posePolicy.surfaceAt;
   const taken = (x: number, y: number, z: number) =>
     [...remotes.values()].some((r) => {
       const p = r.entered ? r.avatar?.position : undefined;

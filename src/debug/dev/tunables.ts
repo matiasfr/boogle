@@ -15,6 +15,7 @@ import { snapshotFeelSpring, setFeelSpring, onFeelSpringChange } from '../../pla
 import { bindings, onChange } from '../../render/water/live.ts';
 import { exposureSettings } from '../../render/exposure.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
+import { readReturnMinutes, railReturnMinutes, RETURN_MINUTES_KEY } from '../../place/return-tuning.ts';
 import {
   AUDIO_SPECS,
   audioSettingKey,
@@ -30,6 +31,13 @@ import { ok, no, type Tool, type Args, type Result } from './types.ts';
 
 // Audio is available on every route, including before gesture unlock. It must not inherit the water binding gate.
 function localBinding(id: string) {
+  if (id === railReturnMinutes.id)
+    return {
+      get: () => readReturnMinutes(localStorage),
+      set: (value: unknown) => {
+        if (validValue(railReturnMinutes, value)) localStorage.setItem(RETURN_MINUTES_KEY, JSON.stringify(value));
+      },
+    };
   const key = audioSettingKey(id);
   return key
     ? {

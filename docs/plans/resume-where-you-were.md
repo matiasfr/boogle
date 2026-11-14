@@ -212,7 +212,7 @@ first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: st
   on High Gorge's north platform for 6 s, reload, and report `{ before, after, distance }` on
   `document.documentElement.dataset.railwayReturn`. Expected today: after is the village. No game code changes.
   Verify: the eval's output shows the failure this plan fixes; paste it in the report.
-- [ ] **2. The surface test and the record, pure** (sol medium). Create `src/place/return-spot.ts`:
+- [x] **2. The surface test and the record, pure** (sol medium). Create `src/place/return-spot.ts`:
   `type ReturnSpot`; `readReturnSpot(value: unknown, now: number, windowMs: number): ReturnSpot | null` (finite
   numbers, `|x|, |z| <= 5000`, `-50 <= y <= 500`, `0 <= now - at <= windowMs`, `ride` validated the same way, else
   `null`; never throws); `captureReturnSpot(prev, state, now)` implementing the saving table from

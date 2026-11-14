@@ -9,6 +9,7 @@ import { AUDIO_SPECS } from '../render/audio-tuning.ts';
 import { COVE_SPECS } from './terrain.ts';
 import { WOOD_SPECS } from './surfaces.ts';
 import { BEAM_CARRY_SPECS } from '../player/beam-carry-tuning.ts';
+import { railReturnMinutes } from '../place/return-tuning.ts';
 
 export type NumberSpec = {
   id: string;
@@ -230,6 +231,7 @@ const supply = {
 /** Commands the dev tool and `npm run tune` both accept. */
 export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;
 export const CATALOG: readonly NumberSpec[] = [
+  railReturnMinutes,
   ...TUNABLES.map((t) => {
     const railway = supply[t.key];
     return {
