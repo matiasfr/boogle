@@ -11,6 +11,7 @@ import {
   loadPrefabArtifact,
   loadLevelArtifact,
   validatePlacement,
+  validatePrefab,
   validateColliderWorldTransforms,
 } from './validate.ts';
 import './builders/seat-chair.ts';
@@ -71,6 +72,7 @@ export function instantiate(
   if (!owner.alive) throw new Error('prefabs: cannot instantiate for a disposed owner');
   const def = compiled.prefabs[key];
   if (!def || placement.prefab !== key) throw new Error(`prefabs: unknown or mismatched prefab ${key}`);
+  validatePrefab(def);
   validatePlacement(placement, compiled.prefabs);
   const parent = options.parent;
   if (parent && (!placement.parent || placement.parent !== parent.platform.id))
