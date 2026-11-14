@@ -57,10 +57,13 @@ test('the shunter and the wagon stand on the rail heads, clear of the ground and
     ['shunter', SHUNT.shunter],
   ] as const) {
     const wheel = SHUNT.ride + v.wheel.y - v.wheel.h / 2,
-      body = SHUNT.ride + v.body;
+      body = SHUNT.ride + v.body.y - v.body.h / 2;
     // Wheels on the heads (the lower of the two vehicles' wheels exactly; neither sinks into a rail).
     assert.ok(wheel >= RAIL_HEAD - 1e-9 && wheel < RAIL_HEAD + 0.05, `${name} wheel ${wheel} over the rail height`);
     assert.ok(body > RAIL_HEAD + 0.1, `${name} body ${body} clears the rail heads`);
+    // The slabs' tops are the frames' (what rides on them is placed in the frame): the wagon's deck is level with the
+    // deck of the train it couples to (railY + 0.5), within a step.
+    if (name === 'wagon') assert.ok(Math.abs(SHUNT.ride + v.body.y + v.body.h / 2 - 0.5) < 0.05);
     for (const p of poses) {
       const g = ground(p);
       assert.ok(

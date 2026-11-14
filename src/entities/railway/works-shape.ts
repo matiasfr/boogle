@@ -153,11 +153,13 @@ export const STALL_RAIL = 18.06;
 /** A rail's head over its track's rail height (./yard-track.ts and the lines: the foot 0.1 over it, the rail 0.135). */
 export const RAIL_HEAD = 0.235;
 /** The stall shunter and its wagon, in each one's own frame (origin on the track's centreline, y up): the wheels'
- * centres across the track (on the rails, a metre apart), each vehicle's lowest wheel and lowest body face, and how
- * far the frame rides over the rail height so the lowest wheel stands on the rail heads. */
+ * centres across the track (on the rails, a metre apart), each one's wheel blocks and frame slab (centre and height),
+ * and how far the frame rides over the rail height so the wheels stand on the rail heads. The slabs' tops are where
+ * they were in the frame (the wagon's 0.475, what stands on it unchanged), so the wagon's deck stays level with the
+ * train's (railY + 0.5, ./cars.ts) that it couples to; the wheels and slabs are shallower, to clear the rails. */
 export const SHUNT = (() => {
-  const wagon = { wheel: { y: 0.05, h: 0.5 }, body: 0.3 - 0.35 / 2 },
-    shunter = { wheel: { y: 0.075, h: 0.55 }, body: 0.35 - 0.5 / 2 };
+  const wagon = { wheel: { y: 0.3425, h: 0.265 }, body: { y: 0.3975, h: 0.155 } },
+    shunter = { wheel: { y: 0.36, h: 0.3 }, body: { y: 0.46, h: 0.28 } };
   return { gauge: 0.5, wagon, shunter, ride: RAIL_HEAD - (wagon.wheel.y - wagon.wheel.h / 2) };
 })();
 /** A stall road's rail height `l` metres out from the table's rim, whose rail height is `deck`: the ramp down to the

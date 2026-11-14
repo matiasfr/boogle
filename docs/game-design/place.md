@@ -147,8 +147,8 @@ the station's art pass (home-station steps 9 and 10). Each ruin's floor and near
 stall's eave. The garage's stand, jib, lever post and crew stand on the yard's ground beside the table (they hung
 0.3 m over it, at the deck's height), and a rail along each side joins the stand's two legs so it reads as a trestle
 when its part has gone; the jib's mast is 0.3 m longer, so its arm is where it was over the deck. Drawn only: no rule,
-collider or save changes, except that the parked wagon's stand-on box rides with it (0.15 m higher in the stall,
-0.44 m higher at its wait on line 2). Not tested on a device.
+collider or save changes, except that the parked wagon's stand-on box rides with it (0.27 m lower in the stall,
+0.03 m higher at its wait on line 2, its deck level with the train's it couples to). Not tested on a device.
 
 **Track-layer clearance (5 November iPhone follow-up).** With no first panel target, the empty boom now parks
 along the track instead of pointing through its own origin and cutting sideways into the camp chimney. The

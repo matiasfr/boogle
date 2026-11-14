@@ -421,7 +421,7 @@ export async function createRailwayRoundhouse(
     return out.compose(p, q.setFromEuler(e.set(0, headingOf(rear, front), 0)), s.set(1, 1, 1));
   }
   function drawWagon(frame: THREE.Matrix4) {
-    batch.part(frame, 0, 0.3, 0, 2.2, 0.35, 3.2, '#77766b');
+    batch.part(frame, 0, SHUNT.wagon.body.y, 0, 2.2, SHUNT.wagon.body.h, 3.2, '#77766b');
     for (const x of [-SHUNT.gauge, SHUNT.gauge])
       for (const z of [-1, 1]) batch.part(frame, x, SHUNT.wagon.wheel.y, z, 0.25, SHUNT.wagon.wheel.h, 0.5, '#3a3c3c');
     const fitted = shed(wd).fitted >= 0;
@@ -449,7 +449,7 @@ export async function createRailwayRoundhouse(
     if (fitted) for (const x of [-0.95, 0.95]) batch.part(frame, x, 1.62, 0, 0.12, 0.12, 2.9, BRASS);
   }
   function drawShunter(frame: THREE.Matrix4) {
-    batch.part(frame, 0, 0.35, 0, 2.2, 0.5, 3.4, '#4e5352');
+    batch.part(frame, 0, SHUNT.shunter.body.y, 0, 2.2, SHUNT.shunter.body.h, 3.4, '#4e5352');
     // The cab at the back; boiler, chimney and buffer beam forward, toward the wagon it pushes.
     batch.part(frame, 0, 1.75, -1.0, 2, 2.3, 1.4, '#87968b');
     batch.part(frame, 0, 3.0, -1.0, 2.2, 0.16, 1.7, '#4e5352');
