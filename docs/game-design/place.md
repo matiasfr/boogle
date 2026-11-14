@@ -554,7 +554,9 @@ in (you, or a friend's avatar, within about 3.5 m of its middle) keeps its colli
 clear, stands back up if someone steps on mid-fold, and gives up its colliders and its footprint together once gone
 (`frame-pack.ts`, tested), so nobody is dropped and the cleared ground is a valid place to be saved and to return to. That holds on every tab whatever it watched: a tab that was in the background while the stretch was laid, or a
 friend who joins while you stand on the frame, keeps it solid and drawn under you. A load that finds the frame clear
-never draws it: it stays solid but unseen for 3 s while the room's avatars arrive, then goes without the fold. The forge's frame and Q7's frame
+never draws it and opens the ground at once (colliders and footprint retire on the first laid frame, so a saved
+return pose on that ground is accepted); for 3 s a friend's avatar arriving on it still stands it back up, and your
+own restored body never does. The forge's frame and Q7's frame
 on the pier deck stay. Local view; the shared drop box he also asked for is the decided yard at each halt
 (station-deposit build 1), not this.
 

@@ -4,9 +4,11 @@ import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
 
 type Holds = { holds(p: { x: number; y: number; z: number }): boolean };
-export function frameOccupied(frame: Holds) {
-  if (me.body && frame.holds(me.body.position)) return true;
+/** A friend's avatar is on or in it. */
+export function frameHasRemote(frame: Holds) {
   for (const peer of remotes.values())
     if (peer.entered && peer.avatar && frame.holds(peer.avatar.position)) return true;
   return false;
 }
+/** You or a friend's avatar is on or in it. */
+export const frameOccupied = (frame: Holds) => (!!me.body && frame.holds(me.body.position)) || frameHasRemote(frame);

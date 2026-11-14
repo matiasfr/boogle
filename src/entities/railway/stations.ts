@@ -36,7 +36,7 @@ export { frameBesideLine, type FrameAt } from '../../place/spatial-station.ts';
 export type StationRun = ReturnType<typeof buildStation>;
 /** Seconds a finished frame takes to fold away, and how far from its middle counts as on it (frame, feeder, bearers). */
 const PACK_S = 1,
-  /** After a load finds a stretch laid: seconds the unseen frame stays solid while friends' avatars arrive. */
+  /** After a load finds a stretch laid and clear: seconds a friend's avatar arriving on it still stands it up. */
   PACK_SETTLE_S = 3,
   PACK_CLEAR = Math.hypot(FRAME_D / 2 + SPAN + 0.6, FRAME_W / 2 + 0.6);
 /** The bill's paint: ink on paper, like the village's boards (src/place/signs.ts). */
@@ -389,8 +389,9 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
      * November: the boxes "should either go away once that area is built"; level-pacing-1114, D1): it folds flat in
      * about a second with a puff, then draws nothing and is no longer solid. It never goes from under anyone: while
      * `occupied` it stays solid and drawn on every tab, whatever that tab watched. A join or a reload that finds it
-     * clear skips the fold. Local, from accepted completions. */
-    settle(state: 'open' | 'working' | 'laid', occupied: () => boolean) {
+     * clear skips the fold and opens the ground (colliders, footprint) at once; `remote` alone can stand it back up
+     * for a few seconds. Local, from accepted completions. */
+    settle(state: 'open' | 'working' | 'laid', occupied: () => boolean, remote: () => boolean) {
       if (state === 'working') sawWork = true;
       const now = performance.now();
       if (state !== 'laid') laidAt = 0;
@@ -401,6 +402,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
         laid: state === 'laid',
         sawWork,
         occupied,
+        remote,
         fold,
         settled: now - laidAt >= PACK_SETTLE_S * 1000,
         reducedMotion,

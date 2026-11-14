@@ -9,7 +9,7 @@ import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';
 import type { Got } from '../../render/reward-reveal.ts';
 import { me } from '../../player/player.ts';
-import { frameOccupied } from './frame-occupied.ts';
+import { frameHasRemote, frameOccupied } from './frame-occupied.ts';
 import { goldMote } from './breaker-view.ts';
 import { reducedMotion } from '../../constants.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
@@ -1119,7 +1119,11 @@ export async function createRailwayLine2(
         }
         // A laid stretch's frame packs up; Q7's own frame on the pier deck stays (level-pacing-1114, D1).
         if (machined(k))
-          frame.settle(job.completion ? 'laid' : job.start >= 0 ? 'working' : 'open', () => frameOccupied(frame));
+          frame.settle(
+            job.completion ? 'laid' : job.start >= 0 ? 'working' : 'open',
+            () => frameOccupied(frame),
+            () => frameHasRemote(frame),
+          );
         if (now && k === activeIndex(active)) {
           const entered = feed.filter((f) => f.kind === 'log' && f.landMs <= feedMs).length;
           const fraction = Math.min(

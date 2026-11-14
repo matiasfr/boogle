@@ -12,7 +12,7 @@ import { lineFeed, lineSchedule, lineLayDistance, type LineTiming } from '../../
 import { createOwnedView } from '../../render/owned-view.ts';
 import { createWakePresentation } from '../../render/wake-presentation.ts';
 import { me } from '../../player/player.ts';
-import { frameOccupied } from './frame-occupied.ts';
+import { frameHasRemote, frameOccupied } from './frame-occupied.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { FrameCtx } from '../../loop.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
@@ -508,7 +508,11 @@ export async function createRailwayView(adapter: RailwayAdapter) {
           beam: Math.max(0, station.have.beam - launched.filter((f) => f.kind === 'beam').length - stockOf(2)),
         });
         station.setTag(index === active && !job.completion && phase !== 'asleep' && phase !== 'waking');
-        station.settle(job.completion ? 'laid' : job.start >= 0 ? 'working' : 'open', () => frameOccupied(station));
+        station.settle(
+          job.completion ? 'laid' : job.start >= 0 ? 'working' : 'open',
+          () => frameOccupied(station),
+          () => frameHasRemote(station),
+        );
         if (index === active) {
           const entered = feed.filter((f) => f.kind === 'log' && f.landMs <= feedMs).length;
           const fraction = Math.min(

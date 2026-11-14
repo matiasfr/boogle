@@ -10,6 +10,7 @@ const step = (
     laid: boolean;
     sawWork: boolean;
     occupied: boolean;
+    remote: boolean;
     fold: number;
     settled: boolean;
     reducedMotion: boolean;
@@ -19,6 +20,7 @@ const step = (
     laid: o.laid ?? true,
     sawWork: o.sawWork ?? true,
     occupied: () => o.occupied ?? false,
+    remote: () => o.remote ?? o.occupied ?? false,
     fold: o.fold ?? 0,
     settled: o.settled ?? false,
     reducedMotion: o.reducedMotion ?? false,
@@ -65,7 +67,7 @@ test('a joining observer keeps a frame a friend stands on, even when the friend 
   // The load: laid, nobody drawn yet. Solid but not shown while the room's avatars arrive.
   let s = step('up', { sawWork: false });
   assert.equal(s, 'checking');
-  assert.equal(packSolid(s), true);
+  assert.equal(packSolid(s), false, 'open ground at once');
   assert.equal(packDrawn(s), false, 'no frame flashes up on a plain load');
   // The friend's avatar arrives standing on it, before the wait is over: the frame is drawn and solid under them.
   s = step(s, { sawWork: false, occupied: true });
@@ -92,4 +94,19 @@ test('reduced motion skips the fold but still waits for a clear frame; an un-lai
   assert.equal(step('held', { reducedMotion: true, occupied: true }), 'held');
   assert.equal(step('held', { reducedMotion: true }), 'gone');
   assert.equal(step('gone', { laid: false }), 'up');
+});
+
+test("a reload onto a retired frame's ground: the footprint is gone before the saved pose is tried", () => {
+  // arrival.ts tries the saved return pose in the same frames the room first reads as laid, and does not retry. The
+  // footprint (its pose exclusion) and the colliders must be retired on the first laid step, not after the wait for
+  // friends' avatars: you are restored onto open ground, and standing there must not bring the frame back.
+  let s = step('up', { sawWork: false });
+  assert.equal(packSolid(s), false, 'footprint and colliders retire at once on a load that finds the frame clear');
+  for (let frame = 0; frame < 10; frame++) {
+    s = step(s, { sawWork: false, occupied: true, remote: false });
+    assert.equal(packSolid(s) || packDrawn(s), false, 'your own restored body does not resurrect it');
+  }
+  // Only a friend's avatar, drawn where the frame stands, brings it back during the wait.
+  assert.equal(step(s, { sawWork: false, occupied: true, remote: true }), 'held');
+  assert.equal(step(s, { sawWork: false, occupied: true, remote: false, settled: true }), 'gone');
 });
