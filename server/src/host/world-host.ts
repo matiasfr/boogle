@@ -15,8 +15,8 @@ import { STEP_MS } from '../../../src/world/room-clock.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import type { StepMeter } from './step-meter.ts';
 import type { Store } from '../store.ts';
-import { isRailwayRoom, RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
-import { LINE1_CATALOG } from '../../../src/sim/railway-line-layout.ts';
+import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
+import { createHostCheckpoint } from './host-checkpoint.ts';
 import type { RailwayPosition } from './railway-supply.ts';
 import { createHostAway } from './host-away.ts';
 export type { RailwayPosition } from './railway-supply.ts';
@@ -175,7 +175,6 @@ export function createRailwayWorldHost({
   awake = true,
 }: RailwayHostOptions) {
   if (!isRailwayRoom(roomId)) throw new Error('railway host requires a railway namespace');
-  const namespace = RAILWAY_PLAY_NS;
   const ops = createServerOps();
   const sync = createSync();
   const roster = installRoster(sync, ops, replication, now);
@@ -190,11 +189,6 @@ export function createRailwayWorldHost({
   const send = (message: Msg) => {
     for (const fn of sent) fn(message);
   };
-  let running = false;
-  let closed = false;
-  let startup = true;
-  let loaded = false; // startup finished without error
-  let present = awake; // someone is here (or the caller simulates without a room): wake once loaded
   const {
     boogler,
     reactions: booglerReactions,
@@ -205,56 +199,34 @@ export function createRailwayWorldHost({
     replication,
     now,
     positions,
-    active: () => running && hasPlayers(),
+    active: () => checkpoint.running() && hasPlayers(),
   });
   const away = createHostAway(api, now);
+  const checkpoint = createHostCheckpoint({
+    sync,
+    api,
+    away,
+    roomId,
+    store,
+    now,
+    saveMs,
+    awake,
+    send,
+    log,
+    failed: () => requests.failed(),
+    whenCommandsDurable: () => requests.whenDurable(),
+    maintainSupply: () => supply.maintain(),
+    pauseActors: () => {
+      boogler.pause();
+      seats.clear();
+    },
+  });
   const supply = createHostSupply({
     api,
     now,
     positions,
-    available: () => running && !closed && !sync.worldStatus().recoveryError,
+    available: checkpoint.available,
   });
-  let startupError: string | null = null;
-  const attach = () =>
-    sync.attachWorld(
-      {
-        selfId: SERVER_ID,
-        send: (message) => {
-          if (running) send(message as Msg);
-        },
-        onMessage: () => () => {},
-        onConnection: (fn) => (fn(true), () => {}),
-      },
-      {
-        roomId,
-        host: true,
-        now,
-        saveMs,
-        recovery: {
-          namespace,
-          catalog: String(LINE1_CATALOG),
-          read() {
-            const doc = store.readSync(roomId);
-            if (!doc) return null;
-            away.read(doc);
-            return doc.data;
-          },
-          async write(data) {
-            // Once an apply fails, no newly started write may persist its partial mutation;
-            // an already-started safe write can finish.
-            if (requests.failed()) throw new Error('server command storage failed');
-            const updatedAt = away.updatedAt(startup);
-            const result = await store.write(roomId, {
-              tick: data.checkpoint.tick,
-              writerId: SERVER_ID,
-              data,
-              updatedAt: new Date(updatedAt).toISOString(),
-            });
-            if (result.status !== 200) throw new Error(`railway recovery write refused (${result.status})`);
-          },
-        },
-      },
-    );
   const requests = createHostCommands({
     api,
     sync,
@@ -264,18 +236,9 @@ export function createRailwayWorldHost({
     tuneController,
     send,
     replication,
-    available: () => running && !closed && !sync.worldStatus().recoveryError && supply.current(),
-    unavailable: () => (startupError || sync.worldStatus().recoveryError ? 'storage' : 'starting'),
-    async save() {
-      // saveNow is a no-op while an older checkpoint is pending. Drain it first, then capture this command and
-      // its receipt; waiting only for that older write would falsely acknowledge unsaved state.
-      // A later apply may have failed before this callback starts OR while it awaits that older write.
-      if (requests.failed()) throw new Error('server command storage failed');
-      await sync.whenDurable();
-      if (requests.failed()) throw new Error('server command storage failed');
-      sync.saveNow(true);
-      await sync.whenDurable();
-    },
+    available: () => checkpoint.available() && supply.current(),
+    unavailable: checkpoint.unavailable,
+    save: checkpoint.saveCommand,
   });
   const maintenance = createHostMaintenance({
     api,
@@ -285,33 +248,7 @@ export function createRailwayWorldHost({
     active: requests.active,
     maintainSupply: supply.maintain,
   });
-  const ready = (async () => {
-    attach();
-    await sync.whenDurable();
-    // No session survives a server restart: a held beam's carrier is away from now (maintainBeam), and keeps it if they
-    // come back within the grace.
-    // The room stood still from its last checkpoint: the away credit waits for a join.
-    away.restore(sync.world.tick);
-    startup = false;
-    if (present) away.credit(); // whoever's joining sees the credited world in the startup checkpoint
-    api.touchAll(); // every component, from change tick 0, for whoever joins
-    sync.saveNow(true);
-    await sync.whenDurable();
-    loaded = !closed;
-    if (present) wakeNow();
-  })();
-  function wakeNow() {
-    if (!loaded || closed || running || requests.failed() || sync.worldStatus().recoveryError) return;
-    const credited = away.credit();
-    running = true;
-    supply.maintain(); // regrowth and drop recovery catch up on the join, not a rule tick later
-    if (credited) sync.saveNow(true);
-  }
-  // The caller can await readiness; the timer path also owns and reports startup failure.
-  void ready.catch((e: unknown) => {
-    startupError = e instanceof Error ? e.message : String(e);
-    log(`world ${roomId}: recovery blocked`, startupError);
-  });
+  const ready = checkpoint.start();
   // Server cost (npm run load, /rooms/:id/status): ms per timer wake (steps, rules, commit, flush) and per action.
   const stats = { wakes: 0, steps: 0, stepMs: 0, maxStepMs: 0, actions: 0, actionMs: 0, maxActionMs: 0 };
   let last = performance.now();
@@ -319,7 +256,7 @@ export function createRailwayWorldHost({
     ? setInterval(() => {
         const time = performance.now();
         meter?.timer(time);
-        if (running && !closed && !requests.failed()) {
+        if (checkpoint.canStep()) {
           const before = sync.world.tick;
           const step0 = sync.roomStep();
           sync.stepWorld(Math.min(time - last, 1000));
@@ -356,7 +293,7 @@ export function createRailwayWorldHost({
       stats.maxActionMs = Math.max(stats.maxActionMs, ms);
     },
     step(dt: number) {
-      if (running && !closed && !requests.failed()) {
+      if (checkpoint.canStep()) {
         sync.stepWorld(dt * 1000);
         maintenance.maintain();
       }
@@ -364,6 +301,7 @@ export function createRailwayWorldHost({
     status: () => {
       const status = sync.worldStatus();
       const failed = requests.failed();
+      const { loaded, startupError, running } = checkpoint.state();
       return {
         tick: sync.world.tick,
         seats: seats.rows(),
@@ -377,22 +315,9 @@ export function createRailwayWorldHost({
       };
     },
     whenReady: () => ready,
-    /** Someone joined: a paused room applies its one away credit and simulates again. */
-    wake() {
-      present = true;
-      wakeNow();
-    },
-    /** Nobody is here (after the hosted room's grace): stop simulating and save the stamp the away credit counts from. */
-    pause() {
-      present = false;
-      boogler.pause();
-      seats.clear();
-      if (!running || closed || requests.failed()) return;
-      running = false;
-      away.pause();
-      sync.saveNow(true);
-    },
-    paused: () => !running,
+    wake: checkpoint.wake,
+    pause: checkpoint.pause,
+    paused: checkpoint.paused,
     /** The room's actual departure of a session (after its reconnect grace). A carried beam waits for its carrier. */
     depart(sid: string) {
       // requests.depart removed the pid's one session, so the pid is no longer active.
@@ -402,21 +327,10 @@ export function createRailwayWorldHost({
       seats.release(session.pid);
       maintenance.departed(session.pid);
     },
-    async close({ save = true } = {}) {
-      closed = true;
-      if (timer) clearInterval(timer);
-      try {
-        await ready;
-        await requests.whenDurable();
-        await sync.whenDurable();
-        if (save) {
-          sync.saveNow(true);
-          await sync.whenDurable();
-        }
-      } finally {
-        sync.detachWorld();
-      }
-    },
+    close: (options?: { save?: boolean }) =>
+      checkpoint.close(() => {
+        if (timer) clearInterval(timer);
+      }, options),
   };
 }
 export type RailwayWorldHost = ReturnType<typeof createRailwayWorldHost>;
