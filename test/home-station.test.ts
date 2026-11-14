@@ -393,20 +393,30 @@ test('the rack stands on the apron and leaves a lane along road 1; its posts cle
   const half = ISLAND.width / 2;
   assert.ok(at.a > ISLAND_A.buffers && at.a < ISLAND_A.apron, `on the apron along the axis: a ${at.a.toFixed(2)}`);
   assert.ok(Math.abs(at.c - ISLAND_C) < half, `on the apron across: c ${at.c.toFixed(2)}`);
-  // Its four 0.2 m posts (opening-models.ts rackModel: ±1.25 east, ±1.2 south; it is not turned to the axis).
+  // Its four 0.2 m posts (opening-models.ts rackModel: ±1.25 along, ±1.2 across, turned by `yaw` square to the axis:
+  // owner playtest, 14 November, the unturned rack's south posts stood on road 2's sleeper ends).
+  const cos = Math.cos(PROPS.rack.yaw),
+    sin = Math.sin(PROPS.rack.yaw);
   const posts = [-1.25, 1.25].flatMap((dx) =>
     [-1.2, 1.2].flatMap((dz) =>
       [-0.1, 0.1].flatMap((ex) =>
-        [-0.1, 0.1].map((ez) => toAxis({ x: PROPS.rack.x + dx + ex, z: PROPS.rack.z + dz + ez })),
+        [-0.1, 0.1].map((ez) => {
+          const x = dx + ex,
+            z = dz + ez;
+          return toAxis({ x: PROPS.rack.x + x * cos + z * sin, z: PROPS.rack.z - x * sin + z * cos });
+        }),
       ),
     ),
   );
+  assert.ok(Math.max(...posts.map((p) => p.a)) - Math.min(...posts.map((p) => p.a)) < 2.71, 'square to the axis');
   const near = Math.min(...posts.map((p) => p.c)),
     far = Math.max(...posts.map((p) => p.c));
   // The lane from the hall's back bay to the head ramp: between road 1's sleeper ends (2.3 m sleepers) and the posts.
   const lane = near - 1.15;
   assert.ok(lane >= 1.9, `the lane beside road 1 is ${lane.toFixed(2)} m`);
   assert.ok(near - (ISLAND_C - half) >= 1.4, 'and 1.4 m of it is on the apron itself');
+  assert.ok(far <= ISLAND_C + half, 'inside the apron\'s road 2 edge');
+  assert.ok(ROAD_GAP - 1.15 - far >= 0.5, `the far posts are ${(ROAD_GAP - 1.15 - far).toFixed(2)} m off road 2's sleeper ends`);
   assert.ok(
     far <= ROAD_GAP - CART.hx - 0.2,
     `the far posts are ${(ROAD_GAP - CART.hx - far).toFixed(2)} m off the cart`,

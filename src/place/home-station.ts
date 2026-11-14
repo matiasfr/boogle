@@ -289,7 +289,9 @@ export const CROSSING = {
  * dock beside road 1, the stone yard off the table, and the greeter in front of the hall's north end, beside the open
  * bay and outside the shelf's reach. Q1's frame flips to road 2's south side. */
 export const PROPS = {
-  rack: { x: -84.53, z: 10.05 },
+  // Square to the axis, centred along the apron: 1.97 m off road 1's sleeper ends, inside the apron's road 2 edge
+  // and 0.53 m off road 2's sleeper ends (unturned, its south posts stood 4 cm into them).
+  rack: { ...axisPoint(-3.88, 4.52), yaw: rad(90 - AXIS.bearing) },
   greeter: { x: -95.86, z: 9.65 },
   pedestal: { x: -78.0, z: -1.17 }, // the existing 3.5 m rail clearance, including the pedestal's footprint
   crane: { x: -72.4, z: -3.1 },
