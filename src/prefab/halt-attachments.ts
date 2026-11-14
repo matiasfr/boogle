@@ -4,7 +4,7 @@ import { UP_HALTS } from '../place/layout.ts';
 import { haltFrame } from './halt-deck.ts';
 import type { JsonObject, Vec3 } from './types.ts';
 export function haltAttachmentPose(p: JsonObject): { pos: Vec3; rot: Vec3 } {
-  const { h, island, hw, half, low, mid, yaw, c } = haltFrame(p.row as number, p.up as boolean);
+  const { h, island, hw, half, low, yaw, c } = haltFrame(p.row as number, p.up as boolean);
   const sign = Math.sign(h.lat),
     mast = sign * (hw - 0.3);
   let dl = mast,
@@ -13,13 +13,15 @@ export function haltAttachmentPose(p: JsonObject): { pos: Vec3; rot: Vec3 } {
   if (p.piece === 'signal') y += 4.2;
   else if (p.piece === 'road-plaque') y += 2.9;
   else if (p.up) {
-    if (!('crossS' in h)) throw new Error('halt lever: missing crossing');
+    // A second platform is the homeward train's (right-hand running, running-side.md step 4): its lever stands at the
+    // -s end, the way that train leaves, whichever end the plank crossing is at.
     dl = sign * (1.25 - 0.8);
-    ds = Math.sign(h.crossS - mid) * (half - 1.4);
+    ds = -(half - 1.4);
   } else {
-    // The lever rule (docs/plans/running-side.md, step 1): 0.8 m in from the boarding edge, 1.4 m from the end its
-    // train leaves toward. A halt with one platform (Camp, the Pier) calls the train home, so its lever stands at the
-    // -s end, clear of whatever is worked at the line's far end; a halt with a second platform waits for step 4.
+    // The lever rule (docs/plans/running-side.md): 0.8 m in from the boarding edge, 1.4 m from the end its train
+    // leaves toward. A halt with one platform (Camp, the Pier) calls the train home, so its lever stands at the -s
+    // end, clear of whatever is worked at the line's far end. A halt with a second platform calls the train on, at
+    // the +s end; while it is the line's open end it calls the train home and halts-view.ts stands it at the -s end.
     const home = !island && !UP_HALTS.some((u) => u.pair === p.row);
     dl = island ? sign * (hw - ISLAND_LEVER.edge) : mast - sign * 0.5;
     ds = island ? half - ISLAND_LEVER.fromEnd : (home ? -1 : 1) * (half - 0.8 - 0.6);

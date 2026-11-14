@@ -9,6 +9,7 @@ import { haltFrame } from '../src/prefab/halt-deck.ts';
 import { loadLevelArtifact, loadPrefabArtifact } from '../src/prefab/validate.ts';
 import { KNOB_TRAVEL } from '../src/prefab/builders/halt-lever.ts';
 import { LEVER_REACH } from '../src/place/home-station.ts';
+import { HALTS, UP_HALTS } from '../src/place/layout.ts';
 import { LINE_HALTS } from '../src/sim/railway-train.ts';
 import { LINE2, RAIL_HALTS, haltPlatform } from '../src/sim/railway-lines.ts';
 import * as works from '../src/sim/railway-works-layout.ts';
@@ -16,7 +17,9 @@ import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { RAILWAY_T1 } from '../src/sim/railway-layout.ts';
 import {
   RING_BRACE,
+  RING_HALT,
   RING_HEAD,
+  RING_JOINT_UP,
   RING_RIVET,
   RING_STEEL_WORKS,
   RING_STEEL_YARD,
@@ -27,6 +30,7 @@ import { ringHead } from '../src/sim/railway-queries.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
 import {
   LEVER_YIELD,
+  RING_LEVER_OFF,
   footingSites,
   leverAskTaken,
   leverPlatform,
@@ -110,18 +114,85 @@ test("Camp's and the Pier's levers stand within 1.5 m of the platform's -s end a
 test("every halt's generated lever keeps 3 m between its knob's reach and every footing, rack and frame's reach", () => {
   assert.equal(levers.length, 8);
   assert.ok(sites.some((s) => s.name === 'PIER_FRAME') && sites.some((s) => s.name === 'PIER_RACK'));
-  let least = Infinity;
+  let least = Infinity,
+    tight = '';
   for (const lever of levers) {
     const yaw = lever.rot![0];
     const ks = knobs(lever.pos[0], lever.pos[2], Math.sin(yaw), Math.cos(yaw));
     for (const s of sites) {
       const gap = clearance(ks, s);
-      least = Math.min(least, gap);
+      if (gap < least) [least, tight] = [gap, `${lever.id} against ${s.name}`];
       assert.ok(gap >= CLEAR, `${lever.id} is ${gap.toFixed(2)} m clear of ${s.name}`);
     }
   }
-  // The tightest today: Far Head's up lever against Q6's frame, at the server's reach.
-  assert.ok(least > 3.3 && least < 3.9, `the least clearance is ${least.toFixed(3)} m`);
+  // The tightest today (Far Head's second lever stood by Q6's frame at 3.3 to 3.9 m until it moved to its -s end).
+  assert.ok(least > 3.9 && least < 4, `the least clearance is ${least.toFixed(3)} m (${tight})`);
+});
+
+// Right-hand running (docs/plans/running-side.md, step 4): a second platform is the homeward train's, and its lever
+// stands at the -s end, the way that train leaves.
+test("the second platforms' levers stand within 1.5 m of the -s end, inside the server's reach of the homeward platform", () => {
+  UP_HALTS.forEach((u, row) => {
+    const lever = levers.find((p) => p.id === `halt-lever-${row}-up`)!;
+    const { c, yaw, half } = haltFrame(row, true);
+    const along = (lever.pos[0] - c.x) * Math.sin(yaw) + (lever.pos[2] - c.z) * Math.cos(yaw);
+    assert.ok(along < 0 && along + half <= 1.5 && along + half >= 1, `row ${row}: ${along + half} m from its -s end`);
+    const name = HALTS[u.pair]!.name,
+      plat = haltPlatform(
+        RAIL_HALTS.findIndex((r) => r.name === name),
+        -1,
+      );
+    for (const k of knobs(lever.pos[0], lever.pos[2], Math.sin(yaw), Math.cos(yaw))) {
+      const d = Math.hypot(k.x - plat.x / 100, k.z - plat.z / 100);
+      assert.ok(d + LEVER_REACH <= plat.reach / 100, `${name}: an ask ${d} m out is inside the server's reach`);
+    }
+  });
+});
+
+// A first platform's lever is generated at the +s end, for the train going on; while its halt is the line's open end
+// it calls the train home and halts-view.ts stands it 2 (half - 1.4) m back, at the -s end (Far Head before the pier).
+test("Far Head's first lever restood for the train home is at the -s end, in the end's reach and 3 m clear of every site", () => {
+  const row = HALTS.findIndex((h) => h.name === 'Far Head'),
+    lever = levers.find((p) => p.id === `halt-lever-${row}-down`)!;
+  const { c, yaw, half } = haltFrame(row, false);
+  const [ux, uz] = [Math.sin(yaw), Math.cos(yaw)];
+  const on = (lever.pos[0] - c.x) * ux + (lever.pos[2] - c.z) * uz;
+  assert.ok(Math.abs(half - on - 1.4) < 1e-9, `generated ${half - on} m from the +s end`);
+  const shift = -2 * (half - 1.4),
+    ks = knobs(lever.pos[0] + ux * shift, lever.pos[2] + uz * shift, ux, uz);
+  // As the end, both ways are judged from the first platform.
+  const plat = haltPlatform(
+    RAIL_HALTS.findIndex((r) => r.name === 'Far Head'),
+    -1,
+    0,
+    true,
+  );
+  for (const k of ks) {
+    const d = Math.hypot(k.x - plat.x / 100, k.z - plat.z / 100);
+    assert.ok(d + LEVER_REACH <= plat.reach / 100, `an ask ${d} m out is inside the server's reach`);
+  }
+  for (const s of sites) assert.ok(clearance(ks, s) >= CLEAR, `${clearance(ks, s).toFixed(2)} m clear of ${s.name}`);
+});
+
+// The joint's and Ring Island's levers stand RING_LEVER_OFF from their platform's middle, and the railhead's east one
+// for the train on stands 6 m short of its far end: all inside the server's reach, prompt and all.
+test("the ring's restood levers are inside the server's reach of their platforms", () => {
+  const last = RING_HEAD.length - 1;
+  for (const [name, u, lat, plat] of [
+    ['joint west', 247.5 - RING_LEVER_OFF, -6.3, RING_JOINT_UP],
+    ['island east, home', 448 - RING_LEVER_OFF, 2.45, RING_HALT.down],
+    ['island east, on', 448 + RING_LEVER_OFF, 2.45, RING_HALT.down],
+    ['island west', 448 - RING_LEVER_OFF, -6.3, RING_HALT.up],
+    ['railhead east, on', railheadLever(last, 1).u, railheadLever(last, 1).lat, RING_HEAD[last]!.platform],
+  ] as const) {
+    const p = ringAt(u * 100, lat * 100),
+      d = Math.hypot(p.x - plat.x, p.z - plat.z) / 100;
+    assert.ok(d + KNOB_TRAVEL[1] + LEVER_REACH <= plat.reach / 100, `${name}: ${d.toFixed(2)} m from the middle`);
+  }
+  // The island's home levers keep the steel works' yard's reach 3 m off (u 457 stood 0.5 m from the works').
+  const home = ringAt((448 - RING_LEVER_OFF) * 100, 245);
+  for (const s of [RING_STEEL_WORKS, RING_STEEL_YARD])
+    assert.ok(Math.hypot(home.x - s.x, home.z - s.z) / 100 - LEVER_REACH - s.reach / 100 >= CLEAR);
 });
 
 test("the railhead's knob stays clear of its jib and rack over the handle's travel at every bent", () => {

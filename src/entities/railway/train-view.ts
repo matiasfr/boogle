@@ -32,7 +32,7 @@ import { STEEL } from '../../sim/railway-ring-layout.ts';
 import { line2Active, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { aperture, rail as railRow, train as trainRow, works as worksRow } from '../../sim/railway-rows.ts';
 import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
-import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
+import { line2At, line2Lat, line2Y, endMergeM, type LeftFrom } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import { STEEL_CAR, ridesOn, steelCarOffset } from './cars.ts';
 import { CAR_BUFFERS, ENGINE_BUFFERS, couplingCapacity, trainPlaces, type Vehicle } from './car-spacing.ts';
@@ -54,8 +54,7 @@ const RAILHEAD = 4;
 /** How fast the drawn merge follows the railhead (m/s): a bent in about 3 s, as the lever's slide. */
 const MERGE_SLIDE = 7;
 /** Whether line 2's open end (its last open stop) turns trains on a crossover (Ring Island's; the greybox route's High
- * Gorge): its up trains cross onto the down track there. Far Head's is read on its own (FAR_HEAD, and a train its
- * opening caught there). */
+ * Gorge): a train leaving it crosses out to the offset track there. Far Head's is read on its own (FAR_HEAD). */
 const crossoverEnd = (stops: readonly number[]) =>
   RAIL_LINES[LINE2]!.halts[stops.length - 1]?.end?.kind === 'crossover';
 /** The passenger car's upgrade (roof, lamps; assets/src/passenger-car.py `car_upgrade`) is built and switched off: no
@@ -267,6 +266,8 @@ export async function createRailwayTrains(
     }
     return {
       slot,
+      /** The halt it still leaves from the original track (leaving(), below), this tab's memory. */
+      left: null as LeftFrom | null,
       line,
       model,
       cars,
@@ -336,32 +337,46 @@ export async function createRailwayTrains(
     ...(wagonTrain() === tr ? [wagonCar] : []),
     ...(tr.steel && tr.carOn ? [tr.steel] : []),
   ];
-  /** The up track's offset at s (m) for train `tr` on `row`'s track. Line 1 and line 2 before the pier: 4 m left
-   * between the turnouts, easing over each 20 m turnout, and over Far Head's crossover onto today's track while the
-   * train is crossing. Line 2 once the pier is laid reads the open end from the room's rows (./line2-path.ts: the
-   * Pier's stub, the Railhead's stub that moves with `head`, Ring Island's crossover). Local. */
+  /** The lateral at s (m) of train `tr` on `row`'s track: right-hand running (docs/plans/running-side.md, v45). Going
+   * out (track 0) it is on the original track, 0; going home (track 1) on the offset one, 4 m to the west between the
+   * turnouts, easing over each 20 m turnout. Line 2 reads its open end from the room's rows (./line2-path.ts: Far
+   * Head's crossover, the Pier's stub, the Railhead's stub that moves with `head`, Ring Island's crossover). Local. */
   const formations = layout.LINKS.map((l) => layout.FORMATION[l.id]);
   /** The open stops of line 2 and where its end merges, read once a frame through the read facade (step). */
   let stops2: readonly number[] = trainStops(adapter.read.world(), LINE2),
     merge2 = endMergeM(stops2),
     mergeShown = merge2;
   function latOf(tr: (typeof trains)[number], row: Readonly<RailTrain>, s: number) {
-    if (tr.line === LINE2) return line2Lat(row, s, stops2, mergeShown, true);
-    if (row.track) return 0;
-    const f = formations[tr.line]!,
-      c = f.crossover;
-    if (crossing(tr, row) && c && s >= c[0]) return layout.crossLat(f, s) ?? 0;
-    return layout.upLat(f, s, true) ?? 0;
+    if (tr.line === LINE2) return line2Lat(row, s, stops2, mergeShown, true, tr.left);
+    if (!row.track) return 0;
+    return layout.upLat(formations[tr.line]!, s, true) ?? 0;
   }
-  /** Whether a train on the up track takes a crossover, from the room's rows alone (a restore or a joining tab draws
-   * it the same): Far Head's while it is line 2's end, or for a train the pier's opening caught on it (`turn` and
-   * bound for Far Head: a train Q7 turns at the Pier is not on it), and Ring Island's once it is the end. */
+  /** Whether a homeward train takes a crossover out: Far Head's while it is line 2's end, Ring Island's once it is,
+   * and either for a train that stood there (or was turning back there) as the line grew past it (`left`). */
   const crossing = (tr: (typeof trains)[number], row: Readonly<RailTrain>) =>
-    row.track === 0 &&
-    formations[tr.line]!.crossover !== undefined &&
-    (tr.line === LINE2
-      ? stops2.length - 1 === FAR_HEAD || (row.turn && row.to === FAR_HEAD) || crossoverEnd(stops2)
-      : row.turn);
+    row.track === 1 &&
+    tr.line === LINE2 &&
+    (stops2.length - 1 === FAR_HEAD ||
+      crossoverEnd(stops2) ||
+      (tr.left !== null && RAIL_LINES[LINE2]!.halts[tr.left.halt]?.end?.kind === 'crossover'));
+  /** Keeps `tr.left` (line2-path.ts LeftFrom): a line 2 train standing at the open end, or turning back at a halt
+   * that was the end as it ran in (`turn`), leaves from the original track even if the line grows past that halt, or
+   * its stop moves on (the railhead's), before it has gone. The rows do not hold this once the train stands (`turn`
+   * is cleared, and the train is then the same row as one that stopped at the west platform), so it is this tab's
+   * memory: a tab that joins or reloads in those seconds draws that one train on the offset track until it has left
+   * the halt. Dropped when the train stands at another halt or runs out again. */
+  function leaving(tr: (typeof trains)[number], row: Readonly<RailTrain>) {
+    if (tr.line !== LINE2) return;
+    const last = stops2.length - 1;
+    const keep = (halt: number, s: number) => {
+      if (tr.left?.halt !== halt || tr.left.s !== s) tr.left = { halt, s };
+    };
+    if (row.phase === TRAIN_PHASE.STAND && row.at === last) keep(last, row.from / 100);
+    else if (row.phase === TRAIN_PHASE.RUN && row.turn) keep(row.to, row.dest / 100);
+    else if (!tr.left) return;
+    else if (row.phase === TRAIN_PHASE.SHED || (row.phase === TRAIN_PHASE.RUN && row.track === 0)) tr.left = null;
+    else if (row.phase === TRAIN_PHASE.STAND && row.at >= 0 && row.at !== tr.left.halt) tr.left = null;
+  }
   /** Poses a car of line 2 on the path that goes on past the layout's pier head (./line2-path.ts). */
   const a2 = { x: 0, z: 0, ux: 0, uz: 1 },
     b2 = { x: 0, z: 0, ux: 0, uz: 1 };
@@ -449,6 +464,7 @@ export async function createRailwayTrains(
       // Asleep, a row stands at its home; awake, wherever the room's clock puts it.
       const along = trainAlong(row, tr.line, clock) / 100;
       tr.speed = on ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
+      leaving(tr, row);
       const lat = (x: number) => latOf(tr, row, x);
       // A fleet row in the shed (the greybox route) is not on the line until it joins.
       const hidden = !shown || (tr.line !== 0 && !secondVisible) || row.phase === TRAIN_PHASE.SHED;
@@ -696,6 +712,7 @@ export async function createRailwayTrains(
     clock = adapter.read.tickNow();
     stops2 = trainStops(w, LINE2);
     merge2 = mergeShown = endMergeM(stops2);
+    for (const tr of trains) tr.left = null;
     secondVisible = on;
     flyingLogs = flyingRails = 0;
     legKitFlight.logs = legKitFlight.rails = 0;
