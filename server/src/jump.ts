@@ -278,7 +278,7 @@ export function addJump(
         // Never evict a live reservation: its completion must still release exactly its own count.
         if (!pending.has(who) && pending.size >= MAX_CLIENT_ADDRESSES)
           return res.status(429).json({ error: JUMP_DAY_ERROR });
-        if ((byAddress.get(who) ?? 0) + (pending.get(who) ?? 0) >= cfg.jumpMaxPerAddressDay)
+        if (used + (pending.get(who) ?? 0) >= cfg.jumpMaxPerAddressDay)
           return res.status(429).json({ error: JUMP_ADDRESS_ERROR });
         if (seeds.size + reservedRooms >= cfg.jumpMaxRooms)
           return res.status(507).json({ error: 'too many test rooms' });

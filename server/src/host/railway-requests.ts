@@ -152,9 +152,9 @@ export function createRailwayRequests({
   available: () => boolean;
   /** Why actions are not taken now: 'starting' or 'storage'. */
   unavailable: () => 'starting' | 'storage';
-  /** The checks an action's facts allow, or null when they are malformed. */
+  /** The checks an action's facts allow. */
   actor: (facts: ActorFacts) => Actor;
-  /** Classic commands are optional for railway-only callers; the production host always supplies this boundary. */
+  /** Server commands (ServerOps): optional for railway-only tests; the production host always supplies them. */
   commands?: {
     ops: ServerOps;
     context: (from: string, actor: Actor) => ServerOpContext;
@@ -281,7 +281,7 @@ export function createRailwayRequests({
       if (failed || !available()) return state(from, failed ? 'storage' : unavailable(), { epoch, request });
       if (!current || current.sid !== from || current.epoch !== epoch) return rej(from, epoch, request, 'session');
       const account = api.account(pid);
-      // A load may remove the account or replace its epoch. Refuse before any classic apply, then drop the live
+      // A load may remove the account or replace its epoch. Refuse before any command apply, then drop the live
       // session so reopening gets a fresh identity from the loaded account.
       if (!account || account.epoch !== epoch) {
         sessions.delete(pid);
@@ -325,7 +325,7 @@ export function createRailwayRequests({
         result = api.act(pid, clean, RAIL_ACTIONS.has(String(e.op)) && facts ? actor(facts) : null);
       } catch {
         // Railway rules may also have mutated before throwing. Stop checkpoints and receipt publication just
-        // like a failed classic apply; neither the next timer tick nor a pending durable command may save it.
+        // like a failed command apply; neither the next timer tick nor a pending durable command may save it.
         return storageFailure(from, epoch, request);
       }
       complete(pid, current, request, result.status === 'rejected', result.accepted);

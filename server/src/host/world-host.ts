@@ -15,7 +15,6 @@ import { STEP_MS } from '../../../src/world/room-clock.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { isProtoRoom } from '../../../src/sim/tune.ts';
 import type { StepMeter } from './step-meter.ts';
-import type { HomeLand } from './land.ts';
 import type { Store } from '../store.ts';
 import { isRailwayRoom, RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
@@ -53,8 +52,7 @@ export type WorldHostOptions = {
   roomId: string;
   store: Store;
   saveMs?: number;
-  home?: HomeLand;
-  tick?: boolean; // run the 50 ms timer (default true)
+  tick?: boolean; // run the step timer (default true)
   meter?: StepMeter; // the step timer's lateness, for the status route (step-meter.ts)
   pidOf?: (sid: string) => string | null; // the hosted room's binding of each session to its player
   tuneController?: (sid: string) => boolean; // explicit operator assignment, never elected from room leadership
@@ -189,8 +187,8 @@ export function createRailwayWorldHost({
   if (!isRailwayRoom(roomId)) throw new Error('railway host requires a railway namespace');
   const namespace = RAILWAY_PLAY_NS;
   const ops = createServerOps();
-  const env = { protoRoom: isProtoRoom(roomId.slice(namespace.length + 1)), tuneController };
   // Preserve the existing playtest-only tune policy; ordinary railway rooms cannot change shared rates.
+  const env = { protoRoom: isProtoRoom(roomId.slice(namespace.length + 1)), tuneController };
   const sync = createSync();
   const roster = installRoster(sync, ops, replication, now);
   const seats = installSeats(ops, replication, now);
@@ -398,89 +396,103 @@ export function createRailwayWorldHost({
   // they are here it follows where they stand (once a second, from presence); a carrier who comes back within
   // `railBeamGraceS` still carries it (railSession moves it to their new session); one who stays away longer has it
   // put down where they last stood (owner, 6 November: you keep your load, or it goes down where you stood).
-  let beamAway: number | null = null;
-  let stoodAt = -Infinity;
   /** Metres to whole centimetres, never -0 (Math.round gives -0 just south of zero, and the ECS int schema refuses it). */
   const cm = (m: number) => Math.round(m * 100) || 0;
-  const maintainBeam = () => {
-    const beam = api.beam();
-    if (beam.state !== 'held') return void (beamAway = null);
-    const t = now();
-    if (requests.active(beam.holder)) {
-      beamAway = null;
-      if (t - stoodAt < 1000) return;
-      stoodAt = t;
-      const p = positions().find((row) => row?.pid === beam.holder && row.y !== undefined && t - row.at <= 2000);
-      // Presence is the body's centre in metres; the beam lies at the feet.
-      if (p) api.beamStood(beam.holder, cm(p.x), cm(p.y!) - 45, cm(p.z));
-      return;
-    }
-    beamAway ??= t;
-    if (t - beamAway >= rules.railTune.get('railBeamGraceS') * 1000) {
-      api.beamPutDown(beam.holder);
-      beamAway = null;
-    }
+  const graceMs = () => railTune.get('railBeamGraceS') * 1000;
+  /** One carried load: remember where its present carrier stands; put it down once they have been away the grace. */
+  const carried = (
+    load: () => { state: string; holder?: string },
+    stood: (pid: string, x: number, y: number, z: number) => void,
+    putDown: (pid: string) => void,
+  ) => {
+    let away: number | null = null;
+    let stoodAt = -Infinity;
+    return {
+      maintain() {
+        const { state, holder } = load();
+        if (state !== 'held' || holder === undefined) return void (away = null);
+        const t = now();
+        if (requests.active(holder)) {
+          away = null;
+          if (t - stoodAt < 1000) return;
+          stoodAt = t;
+          const p = positions().find((row) => row?.pid === holder && row.y !== undefined && t - row.at <= 2000);
+          // Presence is the body's centre in metres; the load lies at the feet.
+          if (p) stood(holder, cm(p.x), cm(p.y!) - 45, cm(p.z));
+          return;
+        }
+        away ??= t;
+        if (t - away >= graceMs()) {
+          putDown(holder);
+          away = null;
+        }
+      },
+      /** The grace runs from the carrier's departure, not from when maintenance next notices it. */
+      departed(pid: string) {
+        const { state, holder } = load();
+        if (state === 'held' && holder === pid) away = now();
+      },
+    };
   };
+  const beamCarry = carried(
+    () => api.beam(),
+    (pid, x, y, z) => void api.beamStood(pid, x, y, z),
+    (pid) => void api.beamPutDown(pid),
+  );
   // The hauled boiler follows the same rule on its own clock (docs/plans/boiler-first-choice.md, Part 3).
-  let boilerAway: number | null = null;
-  let boilerStoodAt = -Infinity;
-  const maintainBoiler = () => {
-    const b = api.boiler();
-    if (b.state !== 'held') return void (boilerAway = null);
-    const t = now();
-    if (requests.active(b.holder)) {
-      boilerAway = null;
-      if (t - boilerStoodAt < 1000) return;
-      boilerStoodAt = t;
-      const p = positions().find((row) => row?.pid === b.holder && row.y !== undefined && t - row.at <= 2000);
-      // Presence is the body's centre in metres; the boiler is put down at the feet.
-      if (p) api.boilerStood(b.holder, cm(p.x), cm(p.y!) - 45, cm(p.z));
-      return;
-    }
-    boilerAway ??= t;
-    if (t - boilerAway >= rules.railTune.get('railBeamGraceS') * 1000) {
-      api.boilerPutDown(b.holder);
-      boilerAway = null;
-    }
+  const boilerCarry = carried(
+    () => api.boiler(),
+    (pid, x, y, z) => void api.boilerStood(pid, x, y, z),
+    (pid) => void api.boilerPutDown(pid),
+  );
+  /** Loads held per account: a holder keeps theirs through the grace, then it is released. */
+  const held = (
+    holders: () => readonly { pid: string; epoch: number }[],
+    release: (pid: string, epoch: number) => void,
+  ) => {
+    const away = new Map<string, number>();
+    return {
+      maintain() {
+        const list = holders();
+        for (const pid of away.keys()) if (!list.some((h) => h.pid === pid)) away.delete(pid);
+        for (const { pid, epoch } of list) {
+          if (requests.active(pid)) {
+            away.delete(pid);
+            continue;
+          }
+          const since = away.get(pid) ?? now();
+          away.set(pid, since);
+          if (now() - since >= graceMs()) {
+            release(pid, epoch);
+            away.delete(pid);
+          }
+        }
+      },
+      departed(pid: string) {
+        if (holders().some((h) => h.pid === pid)) away.set(pid, now());
+      },
+    };
   };
   // A footing works the same way: its carrier keeps it through the grace, then it goes back to the Works rack (the
   // kiln casts exactly the sixteen the sites need, so one held by a leaver would stall the crossing for good).
-  const footAway = new Map<string, number>();
-  const maintainFeet = () => {
-    const holders = api.footHolders();
-    for (const pid of footAway.keys()) if (!holders.some((h) => h.pid === pid)) footAway.delete(pid);
-    for (const { pid, epoch } of holders) {
-      if (requests.active(pid)) {
-        footAway.delete(pid);
-        continue;
-      }
-      const away = footAway.get(pid) ?? now();
-      footAway.set(pid, away);
-      if (now() - away >= rules.railTune.get('railBeamGraceS') * 1000) {
-        api.footRelease(pid, epoch);
-        footAway.delete(pid);
-      }
-    }
-  };
+  const footCarry = held(
+    () => api.footHolders(),
+    (pid, epoch) => void api.footRelease(pid, epoch),
+  );
   // A greybox leg's rack units on a leaver's back (the step 3 review's P2-2): each account's lifted count is state, so
   // through the grace its units stay counted held for the leg's frame; past it the release takes off that account's
   // own units only (the leg loads them again), and a released account is no holder, so a leaver never stalls the leg.
-  const legAway = new Map<string, number>();
-  const maintainLegKit = () => {
-    const holders = api.legKitHolders();
-    for (const pid of legAway.keys()) if (!holders.some((h) => h.pid === pid)) legAway.delete(pid);
-    for (const { pid, epoch } of holders) {
-      if (requests.active(pid)) {
-        legAway.delete(pid);
-        continue;
-      }
-      const away = legAway.get(pid) ?? now();
-      legAway.set(pid, away);
-      if (now() - away >= rules.railTune.get('railBeamGraceS') * 1000) {
-        api.legKitRelease(pid, epoch);
-        legAway.delete(pid);
-      }
-    }
+  const legCarry = held(
+    () => api.legKitHolders(),
+    (pid, epoch) => void api.legKitRelease(pid, epoch),
+  );
+  /** On rule ticks only, not 60 times a second; the order is part of the rules. */
+  const maintain = () => {
+    maintainSupply();
+    beamCarry.maintain();
+    boilerCarry.maintain();
+    footCarry.maintain();
+    legCarry.maintain();
   };
   const ready = (async () => {
     attach();
@@ -535,11 +547,7 @@ export function createRailwayWorldHost({
           const step0 = sync.roomStep();
           sync.stepWorld(Math.min(time - last, 1000));
           if (sync.world.tick !== before) {
-            maintainSupply(); // on rule ticks only, not 60 times a second
-            maintainBeam();
-            maintainBoiler();
-            maintainFeet();
-            maintainLegKit();
+            maintain();
           }
           const ms = performance.now() - time;
           stats.wakes++;
@@ -573,26 +581,23 @@ export function createRailwayWorldHost({
     step(dt: number) {
       if (running && !closed && !requests.failed()) {
         sync.stepWorld(dt * 1000);
-        maintainSupply();
-        maintainBeam();
-        maintainBoiler();
-        maintainFeet();
-        maintainLegKit();
+        maintain();
       }
     },
-    status: () => ({
-      tick: sync.world.tick,
-      seats: seats.rows(),
-      boogler: boogler.leg(),
-      booglerMeter: booglerMeter.report(),
-      ...sync.worldStatus(),
-      recoveryError:
-        startupError ??
-        sync.worldStatus().recoveryError ??
-        (requests.failed() ? 'server command storage failed' : null),
-      ready: loaded && !startupError && !sync.worldStatus().recoveryError && !requests.failed(),
-      paused: !running,
-    }),
+    status: () => {
+      const status = sync.worldStatus();
+      const failed = requests.failed();
+      return {
+        tick: sync.world.tick,
+        seats: seats.rows(),
+        boogler: boogler.leg(),
+        booglerMeter: booglerMeter.report(),
+        ...status,
+        recoveryError: startupError ?? status.recoveryError ?? (failed ? 'server command storage failed' : null),
+        ready: loaded && !startupError && !status.recoveryError && !failed,
+        paused: !running,
+      };
+    },
     whenReady: () => ready,
     /** Someone joined: a paused room applies its one away credit and simulates again. */
     wake() {
@@ -612,19 +617,11 @@ export function createRailwayWorldHost({
     paused: () => !running,
     /** The room's actual departure of a session (after its reconnect grace). A carried beam waits for its carrier. */
     depart(sid: string) {
+      // requests.depart removed the pid's one session, so the pid is no longer active.
       const session = requests.depart(sid);
-      if (session && !requests.active(session.pid)) seats.release(session.pid);
-      const beam = api.beam();
-      // The grace runs from the carrier's departure, not from when maintenance next notices it.
-      if (session && beam.state === 'held' && beam.holder === session.pid && !requests.active(session.pid))
-        beamAway = now();
-      const boiler = api.boiler();
-      if (session && boiler.state === 'held' && boiler.holder === session.pid && !requests.active(session.pid))
-        boilerAway = now();
-      if (session && !requests.active(session.pid) && api.footHolders().some((h) => h.pid === session.pid))
-        footAway.set(session.pid, now());
-      if (session && !requests.active(session.pid) && api.legKitHolders().some((h) => h.pid === session.pid))
-        legAway.set(session.pid, now());
+      if (!session) return;
+      seats.release(session.pid);
+      for (const carry of [beamCarry, boilerCarry, footCarry, legCarry]) carry.departed(session.pid);
     },
     async close({ save = true } = {}) {
       closed = true;

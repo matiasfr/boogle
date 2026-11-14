@@ -2,7 +2,7 @@
 // the cap, presence and message relay, heartbeats, the lead, and the room adapter the world host's sync talks through.
 // Wire shapes: src/net/ws-wire.ts.
 //
-//   const room = createHostedRoom({ roomId, store, cfg, log })
+//   const room = createHostedRoom({ roomId, store, cfg, boot, log })
 //   room.join(ws, selfId, pid, key)   an upgraded socket (rooms.ts has checked the room, ids, origin and rate). An
 //                                older session of the same player (same pid and key) is closed with ELSEWHERE and
 //                                leaves at once; a pid in the room under another key is refused with TAKEN
@@ -474,26 +474,30 @@ export function createHostedRoom({
     clearReplacing() {
       replacement = null;
     },
-    status: () => ({
-      boot,
-      tick: world.sync.world.tick,
-      players: clients.size,
-      max: cfg.maxPlayers,
-      // Malformed, over-rate or throwing messages dropped from the sockets connected now.
-      dropped: [...clients.values()].reduce((n, c) => n + c.dropped, 0),
-      lead,
-      noSave: world.status().badSave, // a failed-load fallback must not replace the durable save
-      steps: meter.report(world.sync.stepsDropped()),
-      replication: { ...repStats, entities: replication.size() },
-      ...(railway
-        ? {
-            railway: (world as RailwayWorldHost).stats,
-            seats: (world as RailwayWorldHost).status().seats,
-            boogler: (world as RailwayWorldHost).status().boogler,
-            booglerMeter: (world as RailwayWorldHost).status().booglerMeter,
-          }
-        : {}),
-    }),
+    status: () => {
+      // One world status per request: a railway status walks seats, The Boogler and the meter.
+      const ws = world.status();
+      return {
+        boot,
+        tick: world.sync.world.tick,
+        players: clients.size,
+        max: cfg.maxPlayers,
+        // Malformed, over-rate or throwing messages dropped from the sockets connected now.
+        dropped: [...clients.values()].reduce((n, c) => n + c.dropped, 0),
+        lead,
+        noSave: ws.badSave, // a failed-load fallback must not replace the durable save
+        steps: meter.report(world.sync.stepsDropped()),
+        replication: { ...repStats, entities: replication.size() },
+        ...(railway
+          ? {
+              railway: (world as RailwayWorldHost).stats,
+              seats: (ws as ReturnType<RailwayWorldHost['status']>).seats,
+              boogler: (ws as ReturnType<RailwayWorldHost['status']>).boogler,
+              booglerMeter: (ws as ReturnType<RailwayWorldHost['status']>).booglerMeter,
+            }
+          : {}),
+      };
+    },
     idleMs: () => (replacement || clients.size || gone.size ? 0 : performance.now() - emptySince),
     async close({ save = true } = {}) {
       closing = true;
