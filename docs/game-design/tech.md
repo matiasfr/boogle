@@ -64,6 +64,11 @@ folder map in [src/README.md](../../src/README.md).
   chunks; d3 never reaches the game bundle). Facts are read from `src/` with the TypeScript compiler API on every build
   (`npm run atlas` prints them, [dev/atlas/](../../dev/atlas/)); the explanations live in
   [docs/atlas/](../atlas/) and `atlas.yml` keeps them current daily. Not part of the game.
+- **Development dashboard.** `/development/` leads with `docs/backlog.md`'s Committed work table: P1, P2 and P3
+  in file order, effort, status, next step and plan/source links. Owner words are omitted; Dropped shows only a
+  count and repo link. Orchestrator notes follow under Running now. Vite renders escaped HTML on every build,
+  with no runtime API or agent update; the updated line uses the backlog's Git commit date. Cards become a single
+  column with 16 px outer gutters at phone width. Missing tables and wrong column counts fail with source lines.
 - **Video.** `npm run clip`, `reel`, `video:changes`, `video:publish` ([dev/video/](../../dev/video/)).
 - **Prototype inventory.** `npm run registry -- --json` lists each card's selector, loaders, core seams and incoming
   dependencies (including types). Answered cards with no other experiment importing them are owner-review notes only;
