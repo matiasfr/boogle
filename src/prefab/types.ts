@@ -4,11 +4,13 @@ export type Vec3 = readonly [number, number, number];
 export type Json = null | boolean | number | string | readonly Json[] | JsonObject;
 export type JsonObject = { readonly [key: string]: Json };
 export type PrefabKey = `${string}.${string}`;
+export type Transform = { pos: Vec3; rot?: Vec3; scale?: Vec3 };
 export type ColliderDef = { at: Vec3; rot?: Vec3; group?: 'scenery' | 'room' } & (
   | { shape: 'box'; half: Vec3 }
   | { shape: 'sphere'; r: number }
   | { shape: 'capsule'; r: number; halfHeight: number }
   | { shape: 'trunk'; r: number; h: number }
+  | { shape: 'trimesh'; vertices: readonly number[]; indices: readonly number[] }
 );
 export type Attach =
   | {
@@ -23,14 +25,18 @@ export type Attach =
       group?: string;
       anchorView?: true;
     }
-  | { kind: 'label'; at: Vec3; facing: Vec3; w: number; h: number }
+  | { kind: 'label'; at: Vec3; facing: Vec3; w: number; h: number; posts?: 'one' | 'two' | 'none' }
   | { kind: 'point'; at: Vec3 };
 export type PrefabDef = {
   key: PrefabKey;
   visual:
-    { asset: AssetId; node?: string } | { builder: BuilderName; params: JsonObject; batch?: string } | { none: true };
+    | { asset: AssetId; node?: string }
+    | { builder: BuilderName; params: JsonObject; batch?: string; instances?: readonly Transform[] }
+    | { none: true };
   colliders: readonly ColliderDef[];
   attach?: Readonly<Record<string, Attach>>;
+  /** Authored-only recipe; the loader derives runtime attachments before validation/allocation. */
+  layout?: JsonObject;
   interactions?: readonly { action: InteractionName; at?: string; gate?: GateName }[];
   components?: Partial<ComponentInits>;
   scope: 'owner' | 'place' | 'room';
@@ -44,8 +50,10 @@ export type Placement = {
   scale?: Vec3;
   params?: JsonObject;
   parent?: string;
+  /** Attachment name -> authored text key. Text stays with its copy author, outside the prefab. */
+  labels?: Readonly<Record<string, string>>;
 };
-export type LevelDef = { place: string; placements: readonly Placement[] };
+export type LevelDef = { place: string; placements: readonly Placement[]; layout?: JsonObject; analysis?: JsonObject };
 export const definePrefab = <T extends PrefabDef>(record: T): T => record;
 export const defineLevel = <T extends LevelDef>(record: T): T => record;
 export const metadata = {
@@ -59,4 +67,6 @@ export type LevelArtifact = typeof metadata & {
   format: 'boogle-level';
   place: string;
   placements: readonly Placement[];
+  layout?: JsonObject;
+  analysis?: JsonObject;
 };

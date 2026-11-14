@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateArtifact, validateLevelArtifact } from '../src/prefab/validate.ts';
+import { loadPrefabArtifact, loadLevelArtifact } from '../src/prefab/validate.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import type { ColliderDef, Vec3, PrefabDef } from '../src/prefab/types.ts';
 import { FORGE } from '../src/place/layout.ts';
@@ -23,11 +23,12 @@ function inside(point: Vec3, c: ColliderDef) {
       return x * x + z * z <= c.r * c.r && Math.abs(y) <= c.h / 2;
     case 'capsule':
       return x * x + z * z + Math.max(0, Math.abs(y) - c.halfHeight) ** 2 <= c.r * c.r;
+    case 'trimesh':
+      throw new Error('Seat clearance on trimeshes needs an authored floor authority');
   }
 }
 test('every compiled record has valid geometry, names and clear seat exits', () => {
-  const value: unknown = artifact;
-  validateArtifact(value);
+  const value = loadPrefabArtifact(artifact);
   for (const prefab of Object.values(value.prefabs)) {
     for (const attachment of Object.values(prefab.attach ?? {})) {
       if (attachment.kind !== 'seat') continue;
@@ -37,8 +38,7 @@ test('every compiled record has valid geometry, names and clear seat exits', () 
     assert.ok('none' in prefab.visual || 'builder' in prefab.visual || 'asset' in prefab.visual);
   }
   for (const file of fs.globSync('content/built/levels/*.json')) {
-    const level: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
-    validateLevelArtifact(level, value.prefabs);
+    const level = loadLevelArtifact(JSON.parse(fs.readFileSync(file, 'utf8')), value.prefabs);
     for (const placement of level.placements) {
       const prefab: PrefabDef = value.prefabs[placement.prefab]!;
       for (const attachment of Object.values(prefab.attach ?? {})) {

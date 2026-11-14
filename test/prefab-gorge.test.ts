@@ -1,6 +1,6 @@
+import { prefabGolden, recordMatrices } from './helpers/prefab-golden.ts';
 // Owner-requested migration proof: execute the real draw boundary with recording physics, without a renderer.
 import test from 'node:test';
-import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { sourceFunction, sourceModule } from '../dev/level/source.ts';
@@ -12,7 +12,8 @@ import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
 
-test('Gorge collider, placement and count bytes match the old massing', async () => {
+test('Gorge collider, placement and count values match the old massing', async () => {
+  const matrices = recordMatrices();
   const colliders: unknown[] = [];
   const record = (shape: Shape, at: THREE.Vector3, q?: THREE.Quaternion) => {
     colliders.push({ shape, at: at.toArray(), rotation: q?.toArray() });
@@ -38,16 +39,14 @@ test('Gorge collider, placement and count bytes match the old massing', async ()
   );
   const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
     fs.readFileSync('src/entities/route-greybox/boxes.ts', 'utf8'),
-    runtime,
+    { ...runtime, artifact, ...validation },
   );
   const owner = createOwnedView();
   const authored = runtime.gorgePlacements;
   const { mesh, solids } = await boxes.drawGreyBoxes(owner, authored);
   const placements = Array.from({ length: mesh.count }, (_, i) => {
-    const matrix = new THREE.Matrix4();
-    const colour = new THREE.Color();
-    mesh.getMatrixAt(i, matrix);
-    mesh.getColorAt(i, colour);
+    const matrix = matrices.get(mesh, i);
+    const colour = matrices.colour(mesh, i);
     return { matrix: matrix.toArray(), colour: colour.toArray() };
   });
   for (const [file, value] of [
@@ -65,7 +64,8 @@ test('Gorge collider, placement and count bytes match the old massing', async ()
   ] as const) {
     const bytes = JSON.stringify(value, null, 2) + '\n';
     if (process.env.GOLDEN === '1') fs.writeFileSync(file, bytes);
-    assert.equal(bytes, fs.readFileSync(file, 'utf8'), file);
+    prefabGolden(JSON.parse(bytes), JSON.parse(fs.readFileSync(file, 'utf8')), file);
   }
+  matrices.restore();
   owner.dispose();
 });

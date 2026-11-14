@@ -1,0 +1,795 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "layout": {
+    "area": "west",
+    "data": {
+      "basis": {
+        "o": {
+          "x": 801,
+          "z": 10
+        },
+        "u": {
+          "axis": {
+            "x": -0.6155,
+            "z": -0.7881
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -0.6155,
+              "z": -0.7881
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": -1
+        }
+      },
+      "marks": {
+        "cliffFoot": {
+          "x": 808,
+          "z": -3
+        },
+        "cliffTop": {
+          "x": 830,
+          "z": -3
+        },
+        "commons": {
+          "compute": "offsetPoint",
+          "dx": 60,
+          "dz": 0,
+          "point": {
+            "at": [
+              20,
+              0
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": 801,
+                "z": 10
+              },
+              "u": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": -0.6155,
+                    "z": -0.7881
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": -1
+              }
+            }
+          }
+        },
+        "platformA": {
+          "at": [
+            20,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "platformB": {
+          "at": [
+            20,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "rampFoot": {
+          "at": [
+            -5,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "rampHead": {
+          "at": [
+            1,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "root": {
+          "at": [
+            0,
+            0
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "seaEnd": {
+          "at": [
+            40,
+            0
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "stairFoot": {
+          "x": 803.8,
+          "z": 15
+        },
+        "stairTop": {
+          "x": 833.5,
+          "z": 15
+        },
+        "stairTurn": {
+          "x": 803.8,
+          "z": 11
+        },
+        "stop": {
+          "at": [
+            20,
+            0
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        }
+      },
+      "origin": {
+        "at": [
+          20,
+          0
+        ],
+        "compute": "point",
+        "frame": {
+          "o": {
+            "x": 801,
+            "z": 10
+          },
+          "u": {
+            "axis": {
+              "x": -0.6155,
+              "z": -0.7881
+            },
+            "compute": "unit"
+          },
+          "v": {
+            "axis": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "compute": "perp",
+            "sign": -1
+          }
+        }
+      },
+      "pads": [],
+      "pieces": [
+        {
+          "bounds": [
+            0,
+            60,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": 1,
+          "id": "bed",
+          "posts": true,
+          "tone": "dark",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            0,
+            40,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": 2,
+          "id": "platform-a",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            2,
+            40,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": 2,
+          "id": "platform-b",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            0,
+            -4,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": 0.3,
+          "id": "end-ramp",
+          "rise": {
+            "a": 4.9,
+            "b": 3,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 3
+        },
+        {
+          "bounds": [
+            4,
+            16,
+            7.8,
+            11.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": 2,
+          "id": "apron",
+          "tone": "grey",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            805,
+            831,
+            13.5,
+            16.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 0,
+              "z": 0
+            },
+            "u": {
+              "x": 1,
+              "z": 0
+            },
+            "v": {
+              "x": 0,
+              "z": 1
+            }
+          },
+          "h": 0.4,
+          "id": "stair",
+          "posts": true,
+          "rise": {
+            "a": 17.2,
+            "b": 3,
+            "compute": "sub"
+          },
+          "tone": "light",
+          "top": 3
+        },
+        {
+          "bounds": [
+            805,
+            831,
+            13.3,
+            13.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 0,
+              "z": 0
+            },
+            "u": {
+              "x": 1,
+              "z": 0
+            },
+            "v": {
+              "x": 0,
+              "z": 1
+            }
+          },
+          "h": 1,
+          "id": "stair-parapet-n",
+          "rise": {
+            "a": 18.2,
+            "b": 4,
+            "compute": "sub"
+          },
+          "tone": "pale",
+          "top": 4
+        },
+        {
+          "bounds": [
+            805,
+            831,
+            16.5,
+            16.7
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 0,
+              "z": 0
+            },
+            "u": {
+              "x": 1,
+              "z": 0
+            },
+            "v": {
+              "x": 0,
+              "z": 1
+            }
+          },
+          "h": 1,
+          "id": "stair-parapet-s",
+          "rise": {
+            "a": 18.2,
+            "b": 4,
+            "compute": "sub"
+          },
+          "tone": "pale",
+          "top": 4
+        }
+      ],
+      "posts": [
+        {
+          "id": "board",
+          "label": "west.board",
+          "nx": 1,
+          "nz": 0,
+          "x": 805,
+          "y": 3,
+          "z": 20.5
+        }
+      ],
+      "reserves": [
+        {
+          "bounds": [
+            0,
+            60,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "bay row",
+          "y0": 3.9,
+          "y1": 9
+        },
+        {
+          "bounds": [
+            4,
+            16,
+            7.8,
+            11.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "apron",
+          "y0": 4.9,
+          "y1": 7.9
+        },
+        {
+          "bounds": [
+            0,
+            3,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "platform-a lever end",
+          "y0": 4.9,
+          "y1": 7.9
+        },
+        {
+          "bounds": [
+            2,
+            5,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 801,
+              "z": 10
+            },
+            "u": {
+              "axis": {
+                "x": -0.6155,
+                "z": -0.7881
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.6155,
+                  "z": -0.7881
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "platform-b lever end",
+          "y0": 4.9,
+          "y1": 7.9
+        }
+      ]
+    },
+    "kind": "leg2"
+  },
+  "place": "west",
+  "placements": [],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

@@ -1,0 +1,2279 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "layout": {
+    "area": "bell",
+    "data": {
+      "basis": {
+        "o": {
+          "x": -50,
+          "z": -850
+        },
+        "u": {
+          "axis": {
+            "x": -0.0612,
+            "z": 0.9981
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -0.0612,
+              "z": 0.9981
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": 1
+        }
+      },
+      "extras": [
+        {
+          "id": "rock",
+          "pos": [
+            0,
+            0,
+            0
+          ],
+          "prefab": "greybox.bell-rock"
+        }
+      ],
+      "footOrder": [
+        "upper-in-n-end",
+        "upper-in-s-end",
+        "upper-out-n-end",
+        "upper-out-s-end",
+        "upper-step",
+        "the pinnacle's foot"
+      ],
+      "marks": {
+        "eastRock": {
+          "at": [
+            20,
+            40
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "feet": {
+          "the pinnacle's foot": {
+            "at": [
+              -5,
+              25
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": -0.0612,
+                    "z": 0.9981
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              }
+            }
+          },
+          "upper-in-n-end": {
+            "at": [
+              24.5,
+              5.8
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": 0.855,
+                    "z": 0.519
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              }
+            }
+          },
+          "upper-in-s-end": {
+            "at": [
+              24.5,
+              -5.8
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": 0.855,
+                    "z": 0.519
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              }
+            }
+          },
+          "upper-out-n-end": {
+            "at": [
+              34.5,
+              5.8
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": -0.934,
+                    "z": 0.357
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": -1
+              }
+            }
+          },
+          "upper-out-s-end": {
+            "at": [
+              34.5,
+              -5.8
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": -0.934,
+                    "z": 0.357
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": -1
+              }
+            }
+          },
+          "upper-step": {
+            "at": [
+              -13,
+              -50.5
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": -0.0612,
+                    "z": 0.9981
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              }
+            }
+          }
+        },
+        "lowerEast": {
+          "at": [
+            0,
+            6.4
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "lowerWest": {
+          "at": [
+            -10,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "rampFoot": {
+          "at": [
+            -5,
+            -22.5
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "rampHead": {
+          "at": [
+            -28,
+            -22.5
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "seaEast": {
+          "at": [
+            -40,
+            6
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "seaOutside": {
+          "at": [
+            -130,
+            0
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "seaWest": {
+          "at": [
+            40,
+            -16
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "seeds": {
+          "at": [
+            -4,
+            -15
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "slipwayFoot": {
+          "at": [
+            -47,
+            -6.5
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "upperDeck": {
+          "at": [
+            -13,
+            -40
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "upperInN": {
+          "at": [
+            10,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "upperInS": {
+          "at": [
+            10,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "upperOutN": {
+          "at": [
+            15,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "upperOutS": {
+          "at": [
+            15,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "westRock": {
+          "at": [
+            -13,
+            -58
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        }
+      },
+      "origin": {
+        "x": -50,
+        "z": -850
+      },
+      "pads": [
+        {
+          "at": [
+            -20,
+            -14
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-gorge",
+          "label": "bell.pad-gorge",
+          "y": 4.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        },
+        {
+          "at": [
+            -12,
+            -14
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-ring",
+          "label": "bell.pad-ring",
+          "y": 4.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        },
+        {
+          "at": [
+            -22,
+            -34
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-home",
+          "label": "bell.pad-home",
+          "y": 15.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        },
+        {
+          "at": [
+            -13,
+            -34
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-canopy",
+          "label": "bell.pad-canopy",
+          "y": 15.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        },
+        {
+          "at": [
+            -4,
+            -34
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-quay",
+          "label": "bell.pad-quay",
+          "y": 15.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        }
+      ],
+      "pieces": [
+        {
+          "bounds": [
+            -60,
+            60,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.4,
+          "id": "ns-bed",
+          "posts": true,
+          "tone": "dark",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            -20,
+            20,
+            3.8,
+            9
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.5,
+          "id": "lower-east",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            -28,
+            20,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.5,
+          "id": "lower-west",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            -26,
+            26,
+            -24,
+            -7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.5,
+          "id": "lower-deck",
+          "posts": true,
+          "tone": "grey",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            -48,
+            -28,
+            -7.7,
+            -5.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "slipway",
+          "rise": {
+            "a": 4.9,
+            "b": -1.4,
+            "compute": "sub"
+          },
+          "tone": "light",
+          "top": -1.4
+        },
+        {
+          "bounds": [
+            -5.6,
+            -26,
+            -24,
+            -21
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "ramp",
+          "rise": {
+            "a": 4.9,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -5.6,
+            -26,
+            -21.2,
+            -21
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 1,
+          "id": "ramp-parapet",
+          "rise": {
+            "a": 5.9,
+            "b": 16.9,
+            "compute": "sub"
+          },
+          "tone": "pale",
+          "top": 16.9
+        },
+        {
+          "bounds": [
+            -30,
+            -26,
+            -24,
+            -21
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.4,
+          "id": "ramp-landing",
+          "posts": true,
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -4,
+            70,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-in",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -4,
+            70,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-out",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -3,
+            20,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-in-n",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            2,
+            20,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-in-s",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -3,
+            30,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-out-n",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            2,
+            30,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-out-s",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            20,
+            24,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "upper-in-n-end",
+          "over": true,
+          "provisional": true,
+          "rise": {
+            "a": 14,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            20,
+            24,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "upper-in-s-end",
+          "over": true,
+          "provisional": true,
+          "rise": {
+            "a": 14,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            30,
+            34,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": 0.3,
+          "id": "upper-out-n-end",
+          "over": true,
+          "provisional": true,
+          "rise": {
+            "a": 14,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            30,
+            34,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": 0.3,
+          "id": "upper-out-s-end",
+          "over": true,
+          "provisional": true,
+          "rise": {
+            "a": 14,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -30,
+            3,
+            -46,
+            -24
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-deck",
+          "provisional": true,
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -46,
+            -50,
+            -15,
+            -11
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            },
+            "v": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            }
+          },
+          "h": 0.3,
+          "id": "upper-step",
+          "rise": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 14
+        },
+        {
+          "d": 18,
+          "h": 40,
+          "hidden": true,
+          "id": "pinnacle",
+          "tone": "grey",
+          "top": 54,
+          "w": 22,
+          "x": -24,
+          "yaw": 0,
+          "z": -870
+        }
+      ],
+      "posts": [
+        {
+          "at": [
+            -28,
+            -24
+          ],
+          "compute": "point",
+          "facing": {
+            "axis": {
+              "a": {
+                "axis": {
+                  "axis": {
+                    "x": -0.0612,
+                    "z": 0.9981
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              },
+              "b": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "mix",
+              "wa": 1,
+              "wb": 1
+            },
+            "compute": "unit"
+          },
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "high": true,
+          "id": "market",
+          "label": "bell.market",
+          "y": 15.9
+        }
+      ],
+      "reserves": [
+        {
+          "bounds": [
+            -60,
+            60,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "ns row",
+          "y0": 3.9,
+          "y1": 9
+        },
+        {
+          "bounds": [
+            0,
+            70,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "bay row, in",
+          "y0": 14.9,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            0,
+            70,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "bay row, out",
+          "y0": 14.9,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            -5.5,
+            -2.5,
+            -16.5,
+            -13.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "seeds spot",
+          "y0": 4.9,
+          "y1": 7.9
+        },
+        {
+          "bounds": [
+            -2,
+            3,
+            -30,
+            -24
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "Canopy frame and barrier",
+          "y0": 15.9,
+          "y1": 18.9
+        },
+        {
+          "bounds": [
+            -20,
+            -17,
+            3.8,
+            9
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "lower-east lever end",
+          "y0": 4.9,
+          "y1": 7.9
+        },
+        {
+          "bounds": [
+            -28,
+            -25,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "lower-west lever end",
+          "y0": 4.9,
+          "y1": 7.9
+        },
+        {
+          "bounds": [
+            17,
+            20,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "upper-in-n lever end",
+          "y0": 15.9,
+          "y1": 18.9
+        },
+        {
+          "bounds": [
+            17,
+            20,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "upper-in-s lever end",
+          "y0": 15.9,
+          "y1": 18.9
+        },
+        {
+          "bounds": [
+            -3,
+            0,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "upper-out-n lever end",
+          "y0": 15.9,
+          "y1": 18.9
+        },
+        {
+          "bounds": [
+            2,
+            5,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "upper-out-s lever end",
+          "y0": 15.9,
+          "y1": 18.9
+        }
+      ],
+      "rockBase": -10,
+      "rockTop": 14
+    },
+    "kind": "leg2"
+  },
+  "place": "bell",
+  "placements": [],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

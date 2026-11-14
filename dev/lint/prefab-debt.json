@@ -373,11 +373,6 @@
       "exports": ["LEG_OBJECTIVES", "createLegView"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/entities/route-greybox/massing-bell.ts": {
-      "count": 2,
-      "exports": ["bellExtras", "bellMassing"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/entities/town/curio-shelf.ts": {
       "count": 3,
       "exports": ["createCurioShelf"],
@@ -903,7 +898,6 @@
     "src/entities/ring-island/view.ts#createRingIslandView": 1,
     "src/entities/ring-steel/view.ts#createRingSteel": 1,
     "src/entities/route-greybox/leg-view.ts#createLegView": 1,
-    "src/entities/route-greybox/massing-bell.ts#bellExtras": 1,
     "src/entities/town/curio-shelf.ts#createCurioShelf": 1,
     "src/entities/town/rooms.ts#createRooms": 1,
     "src/entities/town/view.ts#createTownView": 1,

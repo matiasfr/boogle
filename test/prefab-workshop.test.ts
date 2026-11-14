@@ -1,3 +1,4 @@
+import { prefabGolden } from './helpers/prefab-golden.ts';
 // Capture the real makeWorkshop boundary before conversion; browser services are explicit recording dependencies.
 // This owner-requested conversion golden exercises no renderer, DOM, network or physics engine.
 import test from 'node:test';
@@ -17,8 +18,10 @@ import type { Plan } from '../src/place/building-plans.ts';
 import { names } from '../src/prefab/names.ts';
 import {
   validateArtifact,
+  loadPrefabArtifact,
   validateLevel,
   validateLevelArtifact,
+  loadLevelArtifact,
   validatePrefab,
   validateColliderWorldTransforms,
   validatePlacement,
@@ -80,11 +83,13 @@ export function captureWorkshop() {
     gorge,
     names,
     validateArtifact,
+    loadPrefabArtifact,
     validateColliderWorldTransforms,
     validatePlacement,
     validatePrefab,
     validateLevel,
     validateLevelArtifact,
+    loadLevelArtifact,
     builders: new Map([
       ['seat.chair', () => chair],
       ['greybox.box', () => chair],
@@ -148,7 +153,7 @@ export function captureWorkshop() {
   view.dispose();
   return { colliders, placement };
 }
-test('workshop collider and placement bytes match the pre-conversion code', () => {
+test('workshop collider and placement values match the pre-conversion code', () => {
   const actual = captureWorkshop();
   for (const [file, value] of [
     ['test/fixtures/prefab-colliders.json', actual.colliders],
@@ -156,7 +161,7 @@ test('workshop collider and placement bytes match the pre-conversion code', () =
   ] as const) {
     const bytes = JSON.stringify(value, null, 2) + '\n';
     if (process.env.GOLDEN === '1') fs.writeFileSync(file, bytes);
-    assert.equal(bytes, fs.readFileSync(file, 'utf8'), file);
+    prefabGolden(JSON.parse(bytes), JSON.parse(fs.readFileSync(file, 'utf8')), file);
   }
 });
 
@@ -189,13 +194,15 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
       THREE,
       artifact: data,
       workshop: input?.level ?? workshop,
-      gorge: input ? { ...gorge, placements: [] } : gorge,
+      gorge: input ? { ...metadata, format: 'boogle-level', place: 'gorge', placements: [] } : gorge,
       names,
       validateArtifact,
+      loadPrefabArtifact,
       validateColliderWorldTransforms,
       validatePlacement,
       validateLevel,
       validateLevelArtifact,
+      loadLevelArtifact,
       validatePrefab,
       builders: new Map<string, () => THREE.Object3D>([
         ['greybox.box', () => new THREE.Group()],

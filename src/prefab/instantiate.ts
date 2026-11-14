@@ -8,8 +8,8 @@ import { names } from './names.ts';
 import type { BuilderName } from './names.ts';
 import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
 import {
-  validateArtifact,
-  validateLevelArtifact,
+  loadPrefabArtifact,
+  loadLevelArtifact,
   validatePlacement,
   validatePrefab,
   validateColliderWorldTransforms,
@@ -17,22 +17,17 @@ import {
 import './builders/seat-chair.ts';
 import './builders/greybox-box.ts';
 import { builders } from './builders.ts';
+import { makeGreyboxLabel } from './builders/greybox-label.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
 import { ROOM_GROUP, staticBody } from '../place/land.ts';
 import type { Body, Shape } from '../physics/engine.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import type { Platform } from '../physics/platforms.ts';
 
-const compiled = (() => {
-  const value: unknown = artifact;
-  validateArtifact(value);
-  return value;
-})();
-const room: unknown = workshop;
-validateLevelArtifact(room, compiled.prefabs);
+const compiled = loadPrefabArtifact(artifact);
+const room = loadLevelArtifact(workshop, compiled.prefabs);
 export const workshopChair = room.placements[0]!;
-const gorgeLevel: unknown = gorge;
-validateLevelArtifact(gorgeLevel, compiled.prefabs);
+const gorgeLevel = loadLevelArtifact(gorge, compiled.prefabs);
 export const gorgePlacements = gorgeLevel.placements;
 for (const name of names.builders)
   if (!builders.has(name as BuilderName)) throw new Error(`prefabs: missing builder ${name}`);
@@ -64,6 +59,7 @@ export function instantiate(
     batch?: { target: PrefabBatch; index: number };
     /** The existing moving platform owns physics; its drawn frame owns this record's root. */
     parent?: { platform: Platform; root: THREE.Object3D; frame?: THREE.Object3D };
+    texts?: Readonly<Record<string, readonly string[]>>;
   },
 ) {
   const owner = options.owner;
@@ -82,6 +78,8 @@ export function instantiate(
   if ('asset' in def.visual || def.material)
     throw new Error('prefabs: asset and material implementations await their conversion steps');
   const batch = options.batch;
+  const parts = 'builder' in def.visual ? def.visual.instances : undefined;
+  const slots = parts?.length ?? 1;
   const batchVisual = batch && compiled.prefabs[batch.target.key]?.visual;
   if ('builder' in def.visual && def.visual.batch) {
     if (
@@ -93,11 +91,19 @@ export function instantiate(
       batchVisual.batch !== def.visual.batch ||
       !Number.isInteger(batch.index) ||
       batch.index < 0 ||
-      batch.index >= batch.target.mesh.count ||
-      batch.target.slots.has(batch.index)
+      batch.index + slots > batch.target.mesh.count ||
+      Array.from({ length: slots }, (_, i) => batch.target.slots.has(batch.index + i)).some(Boolean)
     )
       throw new Error('prefabs: missing, mismatched or occupied batch slot');
   } else if (batch) throw new Error('prefabs: unexpected batch');
+  const labels = Object.entries(def.attach ?? {}).flatMap(([name, a]) => {
+    if (a.kind !== 'label') return [];
+    const key = placement.labels![name]!;
+    const lines = options.texts && Object.hasOwn(options.texts, key) ? options.texts[key] : undefined;
+    if (!lines?.length || lines.some((line) => typeof line !== 'string'))
+      throw new Error(`prefabs: missing label text ${key}`);
+    return [{ a, lines }];
+  });
   const gates = new Map<string, () => boolean>();
   for (const interaction of def.interactions ?? []) {
     if (interaction.action !== 'seat.sit') throw new Error('prefabs: missing interaction implementation');
@@ -169,6 +175,13 @@ export function instantiate(
       case 'trunk':
         add({ kind: 'cylinder', rTop: c.r * scale.x, rBottom: c.r * scale.x, h: c.h * scale.y, segments: 12 });
         break;
+      case 'trimesh':
+        add({
+          kind: 'trimesh',
+          vertices: c.vertices.map((n, i) => n * scale.getComponent(i % 3)),
+          indices: [...c.indices],
+        });
+        break;
       case 'capsule':
         // No capsule shape in today's staticBody API; do not silently approximate a future record.
         throw new Error('prefabs: capsule implementation awaits an authored user');
@@ -182,12 +195,19 @@ export function instantiate(
   root.rotation.copy(euler(placement.rot));
   root.scale.fromArray(placement.scale ?? [1, 1, 1]);
   if ('builder' in def.visual) {
-    const visual = builders.get(def.visual.builder)!(
-      { ...def.visual.params, ...placement.params },
-      batch ? { mesh: batch.target.mesh, index: batch.index } : undefined,
-    );
-    if (!batch) root.add(visual);
-    else batch.target.slots.add(batch.index);
+    for (let i = 0; i < slots; i++) {
+      const visual = builders.get(def.visual.builder)!(
+        { ...def.visual.params, ...placement.params },
+        batch ? { mesh: batch.target.mesh, index: batch.index + i } : undefined,
+      );
+      if (!batch) root.add(visual);
+      else batch.target.slots.add(batch.index + i);
+    }
+  }
+  for (const { a, lines } of labels) {
+    const label = makeGreyboxLabel(a, lines);
+    root.add(label.mesh);
+    owner.cleanup(label.dispose);
   }
   owner.add(root);
   if (parent) parent.root.add(root);
@@ -221,7 +241,21 @@ export function instantiate(
     enabled = on;
     root.visible = on;
     if (batch) {
-      batch.target.mesh.setMatrixAt(batch.index, on ? localMatrix : new THREE.Matrix4().makeScale(0, 0, 0));
+      for (let i = 0; i < slots; i++) {
+        const part = parts?.[i];
+        const matrix = part
+          ? localMatrix
+              .clone()
+              .multiply(
+                new THREE.Matrix4().compose(
+                  new THREE.Vector3().fromArray(part.pos),
+                  new THREE.Quaternion().setFromEuler(euler(part.rot)),
+                  new THREE.Vector3().fromArray(part.scale ?? [1, 1, 1]),
+                ),
+              )
+          : localMatrix;
+        batch.target.mesh.setMatrixAt(batch.index + i, on ? matrix : new THREE.Matrix4().makeScale(0, 0, 0));
+      }
       batch.target.mesh.instanceMatrix.needsUpdate = true;
       batch.target.mesh.computeBoundingBox();
       batch.target.mesh.computeBoundingSphere();
@@ -237,7 +271,7 @@ export function instantiate(
     setEnabled(false);
     disposed = true;
     for (const unseat of unseats) unseat();
-    if (batch) batch.target.slots.delete(batch.index);
+    if (batch) for (let i = 0; i < slots; i++) batch.target.slots.delete(batch.index + i);
     root.removeFromParent();
   }
   owner.cleanup(dispose);

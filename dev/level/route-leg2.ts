@@ -1,5 +1,5 @@
 // Greybox leg 2's level report (docs/plans/greybox-leg2-massing.md, step 1 and its design review's changes 2 and 3):
-// the planned boxes of Bell Rock and Home's West landing (src/entities/route-greybox/leg2-layout.ts) on a height grid,
+// the placed colliders of Bell Rock and Home's West landing (content/built/levels/*.json) on a height grid,
 // walked and swum with the controller's limits (./flood.ts, MOVER). Run from `npm run level-check`, or alone:
 //   node --import ./dev/sim/hooks.ts dev/level/route-leg2.ts
 //
@@ -12,77 +12,93 @@ import { H } from '../../src/place/terrain.ts';
 import { inside, layout, parseMapPage, type XZ as MapXZ } from '../../src/sickle/map-data.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
-import {
-  LEG2,
-  PAD_SIZE,
-  bellRockOutlines,
-  type Piece,
-  type Reserve,
-  type XZ,
-} from '../../src/entities/route-greybox/leg2-layout.ts';
+import type { XZ } from '../../src/entities/route-greybox/leg2-layout.ts';
+import type { Leg2Analysis, Reserve } from '../../src/content/levels/leg2.ts';
+import artifact from '../../content/built/prefabs.json' with { type: 'json' };
+import { validateArtifact, loadLevelArtifact } from '../../src/prefab/validate.ts';
 import { flood, type Grid } from './flood.ts';
-import { MOVER } from './rules.ts';
+import { MOVER } from './mover.ts';
+import { Matrix4, Vector3 } from 'three';
+import {
+  resolvePlacedColliders,
+  boxVolume,
+  heightAt,
+  reserveVolume,
+  volumesOverlap,
+  type Volume,
+} from './prefab-colliders.ts';
 
+const records = (() => {
+  const value: unknown = artifact;
+  validateArtifact(value);
+  return value;
+})();
+type Surface = { id: string; volume: Volume; solid: boolean; over: boolean };
+function readArea<K extends keyof Leg2Analysis>(id: K) {
+  const value = loadLevelArtifact(
+    JSON.parse(fs.readFileSync(`content/built/levels/${id}.json`, 'utf8')),
+    records.prefabs,
+  );
+  if (!value.analysis) throw new Error(`route-leg2: missing analysis for ${id}`);
+  const analysis = value.analysis as unknown as Leg2Analysis[K];
+  const byId = new Map(value.placements.map((p) => [p.id, p]));
+  const placement = (id: string) => {
+    const p = byId.get(id);
+    if (!p) throw new Error(`route-leg2: missing surface ${id}`);
+    return p;
+  };
+  const resolved = resolvePlacedColliders(value, records.prefabs);
+  const pieces = analysis.surfaces.flatMap<Surface>((s) => {
+    const p = placement(s.id);
+    const colliders = resolved.colliders.filter((c) => c.placement.id === p.id);
+    if (colliders.some((c) => c.definition.shape !== 'box'))
+      throw new Error(`route-leg2: unsupported reserve surface ${s.id}`);
+    return colliders.length
+      ? colliders.map((c) => ({ id: s.name, volume: c.volume, solid: true, over: s.over }))
+      : [{ id: s.name, volume: resolved.visualBounds(p), solid: false, over: s.over }];
+  });
+  const point = (s: { id: string; name: string }, pad: boolean) => {
+    const p = placement(s.id),
+      world = resolved.world(p),
+      at = new Vector3().applyMatrix4(world);
+    let volume: Volume;
+    if (pad) volume = resolved.visualBounds(p);
+    else {
+      const label = Object.values(records.prefabs[p.prefab]!.attach ?? {}).find((a) => a.kind === 'label');
+      if (!label || label.kind !== 'label') throw new Error(`route-leg2: missing placed label ${s.id}`);
+      const top = label.at[1] + label.h;
+      volume = boxVolume(
+        world
+          .clone()
+          .multiply(new Matrix4().makeTranslation(label.at[0], top / 2, label.at[2]))
+          .multiply(new Matrix4().makeRotationY(Math.atan2(label.facing[0], label.facing[2]))),
+        [label.w / 2, top / 2, 0.25],
+      );
+    }
+    return { id: s.name, x: at.x, y: at.y, z: at.z, volume };
+  };
+  const { pads, posts, ...context } = analysis;
+  return {
+    ...context,
+    pieces,
+    colliders: resolved.colliders,
+    pads: pads.map((s) => point(s, true)),
+    posts: posts.map((s) => point(s, false)),
+  };
+}
+const LEG2 = { bell: readArea('bell'), west: readArea('west'), gorge: readArea('gorge') };
 type Entry = { kind: 'fact' | 'section'; message: string } | { kind: 'assertion'; passed: boolean; message: string };
 const f1 = (x: number) => x.toFixed(1);
 const SEA = -6;
 
-/** Where `p` is in a piece's own frame: metres along its length and across, from its centre. */
-function local(b: { x: number; z: number; yaw: number }, p: XZ) {
-  const dx = p.x - b.x,
-    dz = p.z - b.z,
-    s = Math.sin(b.yaw),
-    c = Math.cos(b.yaw);
-  return { along: dx * s + dz * c, across: dx * c - dz * s };
-}
-/** The piece's top at `p`, or null outside it. */
-function topAt(b: Piece, p: XZ) {
-  const l = local(b, p);
-  if (Math.abs(l.along) > b.d / 2 || Math.abs(l.across) > b.w / 2) return null;
-  return b.top + (b.rise ?? 0) * (l.along / b.d + 0.5);
-}
-const corners = (b: { x: number; z: number; yaw: number; w: number; d: number }) => {
-  const s = Math.sin(b.yaw),
-    c = Math.cos(b.yaw);
-  return [
-    [1, 1],
-    [1, -1],
-    [-1, -1],
-    [-1, 1],
-  ].map(([i, j]) => ({
-    x: b.x + (s * i! * b.d) / 2 + (c * j! * b.w) / 2,
-    z: b.z + (c * i! * b.d) / 2 - (s * j! * b.w) / 2,
-  }));
-};
-type Rect = { x: number; z: number; yaw: number; w: number; d: number };
-/** Whether two rectangles on the ground overlap by more than a centimetre (separating axes). */
-function overlaps(a: Rect, b: Rect) {
-  const ca = corners(a),
-    cb = corners(b);
-  for (const r of [a, b])
-    for (const axis of [
-      { x: Math.sin(r.yaw), z: Math.cos(r.yaw) },
-      { x: Math.cos(r.yaw), z: -Math.sin(r.yaw) },
-    ]) {
-      const pa = ca.map((p) => p.x * axis.x + p.z * axis.z),
-        pb = cb.map((p) => p.x * axis.x + p.z * axis.z);
-      if (Math.min(...pa) >= Math.max(...pb) - 0.01 || Math.min(...pb) >= Math.max(...pa) - 0.01) return false;
-    }
-  return true;
-}
-/** Every leg 2 thing that stands in a reserve: boxes, pads and sign posts. */
+/** Geometry comes from placed collider/visual transforms; analysis supplies only ids and intent. */
 function intruders(area: (typeof LEG2)['bell' | 'west' | 'gorge'], r: Reserve): string[] {
-  const out: string[] = [];
-  for (const b of area.pieces) {
-    const lo = Math.min(b.top, b.top + (b.rise ?? 0)) - b.h,
-      hi = Math.max(b.top, b.top + (b.rise ?? 0));
-    if (hi > r.y0 + 0.01 && lo < r.y1 - 0.01 && overlaps(b, r)) out.push(b.id);
-  }
-  for (const p of area.pads)
-    if (p.y < r.y1 && p.y + 3 > r.y0 && overlaps({ ...p, w: PAD_SIZE.across, d: PAD_SIZE.along }, r)) out.push(p.id);
-  for (const p of area.posts)
-    if (p.y < r.y1 && p.y + 3 > r.y0 && overlaps({ x: p.x, z: p.z, yaw: 0, w: 0.5, d: 0.5 }, r)) out.push(p.id);
-  return out;
+  const reserve = reserveVolume(r);
+  return [
+    ...new Set(
+      [...area.pieces, ...area.pads, ...area.posts].filter((p) => volumesOverlap(p.volume, reserve)).map((p) => p.id),
+    ),
+  ];
 }
 
 /** A square grid of `half` metres each way about `o`, and the lookups the checks share. */
@@ -96,7 +112,7 @@ function gridAbout(o: XZ, half: number, cell: number) {
     if (i < 0 || j < 0 || i >= n || j >= n) throw new Error(`route-leg2: (${f1(p.x)}, ${f1(p.z)}) is off the grid`);
     return i * n + j;
   };
-  const heights = (ground: (p: XZ) => number, pieces: readonly Piece[]) => {
+  const heights = (ground: (p: XZ) => number, pieces: readonly Surface[]) => {
     const h = new Float32Array(n * n);
     for (let i = 0; i < n; i++)
       for (let j = 0; j < n; j++) {
@@ -104,7 +120,7 @@ function gridAbout(o: XZ, half: number, cell: number) {
         let y = ground(p);
         for (const b of pieces) {
           if (b.solid === false) continue;
-          const t = topAt(b, p);
+          const t = heightAt(b.volume.triangles, p);
           if (t !== null && t > y) y = t;
         }
         h[i * n + j] = y;
@@ -147,14 +163,14 @@ function bell(entries: Entry[]) {
     M = B.marks;
   const g = gridAbout(B.origin, 140, 0.5);
   const page = fs.readFileSync('docs/world/map-prototypes.html', 'utf8');
-  // The rock as the massing makes it solid (the lands' own outlines), and as the map draws it (read again here).
-  const lands = bellRockOutlines(page).map((o) => o.map((p): MapXZ => [p.x, p.z]));
+  // Only triangles from actual placements count; absence and every world transform affect coverage.
+  const rockTriangles = B.colliders.filter((c) => c.definition.shape === 'trimesh').flatMap((c) => c.volume.triangles);
   const drawn = layout(parseMapPage(page), 'sickle')
     .land.filter((l) => l.on?.includes('bell'))
     .map((l) => l.outline);
-  if (lands.length !== 2 || drawn.length !== 2)
+  if (drawn.length !== 2)
     throw new Error(`route-leg2: expected Bell Rock's two lands in the map, found ${drawn.length}`);
-  const rockAt = (p: XZ) => (lands.some((poly) => inside([p.x, p.z], poly)) ? B.rockTop : SEA);
+  const rockAt = (p: XZ) => heightAt(rockTriangles, p) ?? SEA;
   const under = g.heights(
       rockAt,
       B.pieces.filter((p) => !p.over),
@@ -232,8 +248,13 @@ function bell(entries: Entry[]) {
     for (let j = 0; j < n; j++) {
       const k = i * n + j,
         p: MapXZ = [g.x(i) - ORIGIN.x, g.z(j) - ORIGIN.z];
-      if (over.h[k]! > SEA) solid[k] = 1;
-      else if (drawn.some((poly) => inside(p, poly))) rim[k] = 1;
+      const world = { x: g.x(i), z: g.z(j) };
+      const support = heightAt(rockTriangles, world, B.rockTop + 0.1);
+      const drawnRock = drawn.some((poly) => inside(p, poly));
+      const supported = support !== null && support >= B.rockTop - 0.1;
+      // A displaced top above/below the drawn surface cannot be its own nearest valid support.
+      if (drawnRock ? supported : over.h[k]! > SEA) solid[k] = 1;
+      if (drawnRock && !supported) rim[k] = 1;
     }
   const toSolid = distances(solid, n, g.cell),
     toRim = distances(rim, n, g.cell);
@@ -255,7 +276,8 @@ function bell(entries: Entry[]) {
     `the widest unsolid rim (drawn rock with nothing solid under it) is ${f1(widest)} m${widest ? ` from the nearest solid ground, at (${f1(g.x(wi))}, ${f1(g.z(wj))})` : ''}; ${Math.round(area * g.cell * g.cell)} m² of rim in all (needs under 3 m)`,
   );
   // Change 2: every ramp foot, the step's foot and the pinnacle's foot stand on the rock, 6 m from any unsolid rim.
-  for (const [name, p] of Object.entries(M.feet)) {
+  for (const name of B.footOrder) {
+    const p = M.feet[name as keyof typeof M.feet]!;
     const k = g.node(p),
       rock = over.h[k]! >= B.rockTop - 0.1;
     assertion(
@@ -327,7 +349,7 @@ function west(entries: Entry[]) {
   const y = (p: XZ) => grid.h[g.node(p)]!;
   entries.push({
     kind: 'fact',
-    message: `  ground under the root ${f1(H(W.at(0, 0).x, W.at(0, 0).z))} m, under the stop ${f1(H(W.origin.x, W.origin.z))} m, under the platforms' sea end ${f1(H(W.at(40, 0).x, W.at(40, 0).z))} m; the commons mark stands at ${f1(y(M.commons))} m`,
+    message: `  ground under the root ${f1(H(M.root.x, M.root.z))} m, under the stop ${f1(H(W.origin.x, W.origin.z))} m, under the platforms' sea end ${f1(H(M.seaEnd.x, M.seaEnd.z))} m; the commons mark stands at ${f1(y(M.commons))} m`,
   });
   // Change 3. The flood passes the 56 degree cliff by a thin margin: step 5's walk, up and down, is the proof
   // (change 1), and a plain grey stair the fix if the way up fails.
