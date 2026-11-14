@@ -1,8 +1,9 @@
 // Where Home's footpaths run, as a distance field over the land's grid: the pure half of path-surface.ts, so a test can
-// check it without a renderer. Built from the same points the terrain grades its treads from (PATHS and the shore path),
-// with each footbridge's span left out. It reads the layout only: nothing here moves a height (docs/plans/terrain-pass.md).
-import { GRID, PATHS, type Pt } from './layout.ts';
+// check it without a renderer. Built from PATHS and the shore path, with each footbridge's span left out, plus the
+// Round's painted streets. It reads the layout only: nothing here moves a height (docs/plans/terrain-pass.md).
+import { GRID, PATHS, VILLAGE, type Pt } from './layout.ts';
 import { SHORE_COAST, SHORE_PATH } from './shore-layout.ts';
+import { TOWN_RING, TOWN_STREETS, slotPoint } from './town-plan.ts';
 
 /** Half the drawn tread's width, metres: inside the level strip the terrain grades (3.6 m and 2.4 m), so the tread
  * ends before a cut wall starts. */
@@ -24,6 +25,16 @@ export const PATH_RUNS: { pts: Pt[]; half: number }[] = [
     ];
   }),
   ...(SHORE_COAST ? [{ pts: SHORE_PATH, half: TREAD_HALF.bold }] : []),
+  // The Round's paint also needs a tread in the terrain pass: it replaces the old pathMask colour layer.
+  // A closed 64-segment ring differs from the authored circle by at most 2.1 cm, below the field's 1 m texels.
+  {
+    pts: Array.from({ length: 65 }, (_, i): Pt => {
+      const p = slotPoint((i % 64) * (360 / 64), (TOWN_RING.inner + TOWN_RING.outer) / 2);
+      return [p.x, p.z, VILLAGE.y];
+    }),
+    half: (TOWN_RING.outer - TOWN_RING.inner) / 2,
+  },
+  { pts: TOWN_STREETS.dock.line.map((p): Pt => [p.x, p.z, VILLAGE.y]), half: TOWN_STREETS.dock.width / 2 },
 ];
 
 /** Signed distance to the nearest tread's edge at a Place-local point (negative on the tread), the unit direction away
