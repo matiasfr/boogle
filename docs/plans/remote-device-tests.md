@@ -144,7 +144,7 @@ card is `device`:
   The owner makes one by opening the same link in his own Chrome on the Mac when it is quiet.
 
 **Automatic.** `new --wait` polls `GET /playdata` every 10 s for up to 30 minutes, then pulls and prints.
-`npm run heartbeat` gains one line, "device runs not pulled: N", and the orchestrate skill's check-in runs
+`npm run heartbeat` gains one line, "device runs not pulled: N", and the orchestrate-boogle skill's check-in runs
 `npm run device -- pull --new`. No daemon and no launchd job: a poll is one small request.
 
 **`report.md`** leads with a line an agent can paste: `Tested on a device: iPad (Apple GPU), Safari 26, build
@@ -259,7 +259,7 @@ review stamp for the ship queue; the rest ships on one green run.
   - `dev/device/cli.ts`: `baseline <id>`, `new --wait`, `pull --new`; `dev/device/report.ts` adds the baseline
     columns and ratios, and, when `~/.boogle/daily/perf/history.jsonl` has an entry for the same commit, a line
     comparing draw calls and triangles per pose with the bench's exact counts.
-  - `dev/heartbeat.sh`: one line, device runs on the server not yet pulled. `.claude/skills/orchestrate/SKILL.md`:
+  - `dev/heartbeat.sh`: one line, device runs on the server not yet pulled. `.claude/skills/orchestrate-boogle/SKILL.md`:
     the check-in runs `npm run device -- pull --new`. `docs/agents/owner-calls.md`, "The Mac and mobile are the
     targets": add that a report cites the newest device run for the area it changed when one exists, and says "not
     tested on a device" only when none does (the owner's call of 10 November, quoted).
