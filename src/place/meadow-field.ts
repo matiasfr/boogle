@@ -59,7 +59,7 @@ import {
   SPIRE,
   TOWN,
   lineAt,
-  upLat,
+  offsetLat,
   type LinePoint,
 } from './layout.ts';
 import { FIELD_H, FIELD_W, pathAt } from './path-field.ts';
@@ -201,14 +201,14 @@ export function* bakeMeadowKeep(): Generator<void, Uint8Array> {
       Array.from(line.xs, (x, k) => ({ x, z: line.zs[k]! })),
       RAIL_HALF,
     );
-  // The second track of each double formation runs up to 4.35 m aside (layout.ts upLat, as terrain.ts beds it), and
+  // The second track of each double formation runs up to 4.35 m aside (layout.ts offsetLat, as terrain.ts beds it), and
   // the crossover lies between the two: the same width about its own centre line, turnouts included.
   const rail: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   for (const link of LINKS) {
     const formation = FORMATION[link.id];
     const up: { x: number; z: number }[] = [];
     for (let s = formation.from; s <= formation.to; s += 0.5) {
-      const lat = upLat(formation, s);
+      const lat = offsetLat(formation, s);
       if (lat === null) continue;
       lineAt(link.line, s, rail);
       up.push({ x: rail.x - rail.uz * lat, z: rail.z + rail.ux * lat });

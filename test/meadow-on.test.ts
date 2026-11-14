@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 const flags = await import('../src/place/meadow-flags.ts');
 const { homeGroundMaterial } = await import('../src/place/ground-material.ts');
 const { KEEP_REACH, KEEP_W, keepBakeByFrame, meadowKeep } = await import('../src/place/meadow-field.ts');
-const { FORMATION, GRID, LINES, LINKS, lineAt, upLat } = await import('../src/place/layout.ts');
+const { FORMATION, GRID, LINES, LINKS, lineAt, offsetLat } = await import('../src/place/layout.ts');
 const { TOWN_CENTRE, TOWN_RING, TOWN_SLOTS, slotPoint, townBuilding } = await import('../src/place/town-plan.ts');
 const { DEVICES, LEVER, SECRETS } = await import('../src/place/tech-layout.ts');
 const { pathAt } = await import('../src/place/path-field.ts');
@@ -74,7 +74,7 @@ test('both tracks of a double formation are clear, sleeper ends and turnouts inc
   const on = { x: 0, z: 0, ux: 0, uz: 1 };
   /** A point `across` metres off the up track's centre at `s` along a line. */
   const upTrack = (link: (typeof LINKS)[number], s: number, across: number) => {
-    const lat = upLat(FORMATION[link.id], s);
+    const lat = offsetLat(FORMATION[link.id], s);
     if (lat === null) return null;
     lineAt(link.line, s, on);
     return { x: on.x - on.uz * (lat + across), z: on.z + on.ux * (lat + across) };
