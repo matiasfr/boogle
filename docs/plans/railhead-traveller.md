@@ -186,7 +186,8 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       Verify: those files; `node dev/ship-check.ts`. The view still slides as today (it ignores the fields).
 - [ ] **Checkpoint A (step 2 ships on the shared v45, between sessions, never mid-session).** Proofs, once:
       `npm run loop -- run` (the `bents` beat: bill, supply and cue unchanged); `npm run test:net`; the ring bot
-      (`dev/look/evals/railway-ring-bot.ts`, which sets all fourteen footings from stage `deck-laid`). Independent review before merge (sim, world, server): a fresh Codex
+      (`dev/look/evals/railway-ring-bot.ts` with `--rail-seed deck-laid`: its route sets the fourteen bent footings and
+      waits out each haul). Independent review before merge (sim, world, server): a fresh Codex
       review job, gpt-6-astra, a failing test per suspected defect. Code review before shipping: Codex review job on
       the committed branch, gpt-6-astra high.
 - [ ] **3. The deck is a car. Tier: view (physics, Owner). Row: player-visible implementation, implementer agent,
