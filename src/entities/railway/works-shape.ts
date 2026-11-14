@@ -146,6 +146,10 @@ export const { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL
   slabZ: -2.9,
   rim: toWorld(openStall.rim),
 });
+/** The stall roads' rail height (as layout.railY) from each stall's door to its back: sleepers on the yard's ground
+ * (18 m). From the table's rim (the lines' 18.3) each road ramps down to it at the door. The station draws the roads
+ * (./home-station-view.ts); the shunt rides them (./roundhouse-view.ts). */
+export const STALL_RAIL = 18.06;
 const pier = metres(PIER_FRAME);
 export const PIER_SOCKETS = Array.from({ length: 12 }, (_, i) => ({
   x: pier.x + (i % 2 ? 2.5 : -2.5),

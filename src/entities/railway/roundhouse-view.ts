@@ -23,10 +23,10 @@ import {
   STALL_BOXES,
   STALL_SLAB,
   STALL_ROAD,
+  STALL_RAIL,
   STALL_SOCKETS,
   STALL_YAW,
   stallPoint,
-  beam,
   box,
   type WorksBox,
 } from './works-shape.ts';
@@ -44,7 +44,7 @@ const BUILD_S = 3,
   TARP_S = 1.1,
   TURN_S = 2;
 const FLOOR = 18.05,
-  RAIL = 18.35;
+  RAIL = STALL_RAIL;
 /** Rule ticks per second (the railway sim runs at 10 Hz, as cart-view.ts says). */
 const TICKS_PER_S = 10;
 /** The roll-out's turn, as fractions of its `rollTicks` (11 s): push on, turn, back down the spur and push off. */
@@ -73,10 +73,6 @@ export async function createRailwayRoundhouse(
   ]);
   const toWorld = (p: { x: number; z: number }) => ({ x: p.x + layout.ORIGIN.x, z: p.z });
   const boxes: WorksBox[] = [...STALL_BOXES];
-  const part = (x: number, y: number, z: number, w: number, h: number, d: number, colour: `#${string}`) => {
-    const p = stallPoint(x, z);
-    boxes.push({ ...box(p.x, y, p.z, w, h, d, STALL_YAW), colour, solid: false });
-  };
   for (const p of STALL_SOCKETS) {
     boxes.push({ ...box(p.x, 18.05, p.z, 0.9, 0.1, 0.9, STALL_YAW), colour: '#373c3b', solid: false });
     // The rim's four edge strips, squared to the stall (its local x and z turned by STALL_YAW).
@@ -95,19 +91,7 @@ export async function createRailwayRoundhouse(
       });
     }
   }
-  for (let i = 1; i < STALL_ROAD.length; i++)
-    for (const offset of [-0.75, 0.75]) {
-      const a = STALL_ROAD[i - 1]!,
-        b = STALL_ROAD[i]!;
-      const length = Math.hypot(b.x - a.x, b.z - a.z);
-      const side = { x: (offset * (b.z - a.z)) / length, z: (-offset * (b.x - a.x)) / length };
-      boxes.push({
-        ...beam({ x: a.x + side.x, z: a.z + side.z }, { x: b.x + side.x, z: b.z + side.z }, RAIL, 0.12, 0.14),
-        colour: '#555b5b',
-        solid: false,
-      });
-    }
-  for (let z = -5; z < 5; z += 1) part(0, 18.2, z, 2, 0.15, 0.25, '#827c6e');
+  // The stall road itself is the station's to draw, with the other yard track (./home-station-view.ts).
   await drawWorksBoxes(owner, boxes);
 
   // ---------------------------------------------------------------- the turntable (Place's junction disc is not
@@ -165,7 +149,8 @@ export async function createRailwayRoundhouse(
   pathPts.push(new THREE.Vector3(parked.x, RAIL, parked.z));
   const door = stallPoint(0, -4);
   pathPts.push(new THREE.Vector3(door.x, RAIL, door.z));
-  pathPts.push(new THREE.Vector3(rim.x, (RAIL + tableY) / 2, rim.z));
+  // The road ramps from the stall's ground-level rails at the door up to the deck's at the rim.
+  pathPts.push(new THREE.Vector3(rim.x, tableY, rim.z));
   pathPts.push(new THREE.Vector3(table.x, tableY, table.z));
   const lengths = (pts: THREE.Vector3[]) => {
     const out: number[] = [0];
@@ -468,9 +453,9 @@ export async function createRailwayRoundhouse(
     const off = tarp * 3.2,
       slump = tarp * tarp * 1.6;
     for (const [z, y, w, h, d] of [
-      [PARK.wagon + PARK.gap + 1, 21.4, 2.2, 0.18, 1.9],
-      [PARK.wagon + PARK.gap, 20.0, 2.6, 0.6, 3.6],
-      [PARK.wagon, 19.1, 2.8, 0.55, 3.3],
+      [PARK.wagon + PARK.gap + 1, RAIL + 3.05, 2.2, 0.18, 1.9],
+      [PARK.wagon + PARK.gap, RAIL + 1.65, 2.6, 0.6, 3.6],
+      [PARK.wagon, RAIL + 0.75, 2.8, 0.55, 3.3],
     ] as const) {
       const pt = stallPoint(off, z);
       batch.box(pt.x, y - slump, pt.z, w, h * (1 - tarp * 0.6), d, '#87968b', STALL_YAW, 0, tarp * 0.6);
@@ -497,12 +482,14 @@ export async function createRailwayRoundhouse(
     // The garage turns the bridge with its works copy (the garage's camera pose, the show-off turn); the accepted
     // table and the prompts keep `tableYaw`.
     const drawn = garageView.deckYaw() ?? tableYaw;
+    // The bridge's rails at the yard track's gauge and height (./yard-track.ts: a metre apart, heads 0.235 over the
+    // rail height), a hand short of the rim at each end, so the spur and the stall road run straight on.
     for (const side of [-1, 1]) {
-      const ox = Math.cos(drawn) * side * 0.63,
-        oz = -Math.sin(drawn) * side * 0.63;
-      batch.box(table.x + ox, tableY + 0.1, table.z + oz, 0.1, 0.1, R * 2 - 0.6, '#3f4145', drawn);
+      const ox = Math.cos(drawn) * side * 0.5,
+        oz = -Math.sin(drawn) * side * 0.5;
+      batch.box(table.x + ox, tableY + 0.1675, table.z + oz, 0.1, 0.135, R * 2 - 0.1, '#4c5058', drawn);
     }
-    batch.box(table.x, tableY + 0.04, table.z, 1.5, 0.08, R * 2 - 0.3, '#5c5046', drawn);
+    batch.box(table.x, tableY + 0.05, table.z, 1.5, 0.1, R * 2 - 0.3, '#5c5046', drawn);
     // A handle on the rim that travels with the disc: what you turn.
     const hx = table.x + Math.sin(drawn + Math.PI / 2) * (R - 0.4),
       hz = table.z + Math.cos(drawn + Math.PI / 2) * (R - 0.4);
