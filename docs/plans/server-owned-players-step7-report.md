@@ -1,5 +1,36 @@
 # Step 7: present and puff reactions
 
+## Rebase verification (2026-11-13)
+
+The moving-main failure below is resolved. Branch `codex/server-players-step-7-2` rebases the four original commits onto `00050e64c`, including simplify pass 2 and the workshop/shop prefab conversion. The original branch remains at `33847124c`. Tested runtime tip: `205a1a1b3886733b644983ad90161b870cbc0987`, tree `f26ac42e19afe6145e012530bf4ad43607f5f3d5`; the final follow-up commit changes only this report. No push or ship.
+
+There was one conflicted file, `server/src/host/world-host.ts`, with two hunks. Status keeps main's cached `worldStatus()` and `requests.failed()` reads and adds `booglerRefused`. Departure keeps main's early return and carried-load helpers, then releases the departed player's reaction cadence. Main guarantees that `requests.depart` removed the player's one session, so the old repeated `requests.active` guard was not restored. [Range diff](../../.look/step7-2-range-diff.txt).
+
+No removed API was reintroduced. `Ctx.env` stays removed; reaction validation reads `ctx.actor`. Reactions use the existing sync instance's `roomStep()`, not a removed singleton export. Main's `SyncView.onSnapshot` is retained for the existing Boogler snapshot handler. `src/world/sync.ts`, `rules/types.ts`, prefab sources/builds and the prefab debt list have no diff against the new base. Nothing in the prefab debt list was regenerated. v43 and its dated history entry are unchanged. Per the orchestrator's review and design call B14, a refused present intentionally remains consumed: no rollback was added. The gift catalogue remains byte-identical, with the SHA-256 recorded below.
+
+All requested checks pass on the rebased runtime, after formatting the conflict resolution:
+
+| Check | Result |
+| --- | --- |
+| `npm run check` | Fully passed: 1,909 tests, one existing TODO; lint, types, registry, assets and build passed. [Log](../../.look/step7-2-check.log) |
+| `npm --prefix server test` | 362/362. [Log](../../.look/step7-2-server.log) |
+| `npm run test:net` directly in the worktree | 191/191. [Log](../../.look/step7-2-net.log) |
+| `npm run scenario -- boogler-tag boogler-talk-pad interact one-hand smoke second-tab` | All six passed, zero failures/skips. [Verdict](../../.look/step7-2-scenarios-verdict.json) |
+| `node dev/ship-check.ts origin/main HEAD` | Registry, 15 lint files, types and 874 tests from 87 affected test files passed. [Log](../../.look/step7-2-ship-check.log) |
+| `npm run registry` | Passed with the default current-main baseline; no allowance override. [Log](../../.look/step7-2-registry.log) |
+| `npm run review-stamp -- . --no-fetch` | `e4d448634d65`, 11 review files. [Stamp](../../.look/step7-2-stamp.txt) |
+
+The server suite repeats the latency budgets at RTT 0/80/200 ms: hearts 10/90/210 ms, minimum puff lead 740/660/540 ms, original puff deadline 750 ms. No check failed in this follow-up. The local main ref was refreshed externally before the rebase; this follow-up performed no fetch.
+
+Fresh broker evidence supersedes the older images for this integration:
+
+- [Seed present, 80 ms RTT](../../.look/evidence/1794626706432-10723/evidence.json): opened both player stills and the motion sheet. Hearts are visible on both screens, and the giver's seed dialogue is unchanged. First local draw was 3.9 ms after click, friend receipt 101.3 ms and friend draw 114.4 ms.
+- [Mid-walk ride, 200 ms RTT](../../.look/evidence/1794626707586-11039/evidence.json): opened both player stills, the motion sheet and [12 consecutive encoded frames](../../.look/evidence/1794626707586-11039/puff-launch-consecutive.png). Inflation is visible before launch, the rider stays aboard until launch, and the orb disappears as the rider rises. The speech bubble covers part of the orb, but the consecutive frames show its growth. Local puff starts in the command's frame and ends in the launch frame; the friend's first draw is 533.9 ms before launch and its end is 17.2 ms before the rider's launch, within frame/clock estimation. It is not extended by another 750 ms from receipt.
+
+Both new captures report WebGPU, advancing frames, no page/console/graphics errors, clean unchanged source, and the tested runtime tip above. Those execution checks are separate from the visual observations. The broker's frozen harness remains `d87c05719`; its manifests distinguish that harness from the rebased game. No new playthrough run was required; the earlier playthrough is historical evidence, not proof of this new tree. Subjective real-time smoothness and the broader Checkpoint B gaps remain unverified. Not tested on a device.
+
+## Original implementation record (superseded integration status)
+
 Built on 2026-11-13 in `codex/server-players-step-7`, from `c69b9afb6`. Runtime tip: `0fce11d1f7ad21d9c3374e860d74f88db415a7e6`, tree `53bb68b6e0752d714aad59ad2bef28b8358a0a5a`. This report is a documentation-only follow-up. Implementation and targeted proof are complete; the latest check and ship-check are blocked by an unrelated moving-main prefab ratchet, detailed below. No push or ship.
 
 ## Change and scope
