@@ -378,11 +378,6 @@
       "exports": ["createCurioShelf"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/entities/town/museum.ts": {
-      "count": 2,
-      "exports": ["createMuseum"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/entities/town/rooms.ts": {
       "count": 8,
       "exports": [

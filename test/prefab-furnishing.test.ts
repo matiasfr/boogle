@@ -18,6 +18,7 @@ import * as validation from '../src/prefab/validate.ts';
 import { names } from '../src/prefab/names.ts';
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
+import museumLevel from '../content/built/levels/museum.json' with { type: 'json' };
 import shopLevel from '../content/built/levels/shop.json' with { type: 'json' };
 import kitGolden from './fixtures/prefab-workshop-kit.json' with { type: 'json' };
 import shopGolden from './fixtures/prefab-shop.json' with { type: 'json' };
@@ -343,7 +344,7 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
     near: new THREE.Group(),
     over: new THREE.Group(),
     outside: new THREE.Group(),
-    furnishings: [],
+    furnishings: [] as ReturnType<typeof import('../src/prefab/instantiate.ts').instantiate>[],
   };
   const cleanups: (() => void)[] = [];
   const root = new THREE.Group();
@@ -437,11 +438,66 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
       return new THREE.Mesh(new THREE.PlaneGeometry(a[1] as number, a[2] as number));
     },
   };
+  const activeBodies = new Set<unknown>(),
+    bodies: unknown[] = [];
+  const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.ts').createOwnedView>(
+    'src/render/owned-view.ts',
+    'createOwnedView',
+    {
+      THREE,
+      owners: new WeakMap(),
+      addBody(b: unknown) {
+        activeBodies.add(b);
+      },
+      removeBody(b: unknown) {
+        activeBodies.delete(b);
+      },
+    },
+  );
+  const builders = new Map<string, import('../src/prefab/builders.ts').Builder>(
+    names.builders.map((name) => [name, () => new THREE.Group()]),
+  );
+  const registerBuilder = (name: string, build: import('../src/prefab/builders.ts').Builder) =>
+    builders.set(name, build);
+  sourceModule(fs.readFileSync('src/prefab/builders/museum-parts.ts', 'utf8'), { ...bindings, registerBuilder });
+  sourceModule(fs.readFileSync('src/prefab/builders/museum-exhibit.ts', 'utf8'), {
+    ...bindings,
+    ...museumTsl,
+    registerBuilder,
+  });
+  const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
+    fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
+    {
+      THREE,
+      artifact,
+      workshop,
+      gorge,
+      names,
+      builders,
+      ...validation,
+      staticBody: (shape: { hx: number; hy: number; hz: number }, at: THREE.Vector3, q?: THREE.Quaternion) => {
+        solids.push([at.x, at.z, shape.hx, shape.hz, shape.hy * 2]);
+        bodies.push({ shape, position: at.toArray(), ...(q ? { rotation: q.toArray() } : {}) });
+        return {};
+      },
+    },
+  );
+
   const matrices = recordMatrices();
   const { createMuseum } = sourceModule<{
     createMuseum: (...a: unknown[]) => { update(dt: number): void; shown(): number };
-  }>(fs.readFileSync('src/entities/town/museum.ts', 'utf8'), { ...bindings, ...museumTsl });
+  }>(fs.readFileSync('src/entities/town/museum.ts', 'utf8'), {
+    ...bindings,
+    ...museumTsl,
+    artifact,
+    level: museumLevel,
+    loadPrefabArtifact,
+    loadLevelArtifact,
+    createOwnedView,
+    instantiate: runtime.instantiate,
+  });
   const museum = createMuseum(owner, { rooms: { museum: r } }, env);
+  for (const p of r.furnishings) p.setEnabled(true);
   const geometry = (g: THREE.BufferGeometry) => ({
     index: g.index ? Array.from(g.index.array) : null,
     attributes: Object.fromEntries(
@@ -501,5 +557,53 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
   if (process.env.GOLDEN === '1') fs.writeFileSync(file, JSON.stringify(value) + '\n');
   matrices.restore();
   prefabGolden(value, JSON.parse(fs.readFileSync(file, 'utf8')), 'museum');
+  assert.equal(activeBodies.size, 10, 'six interior solids and four columns');
+  const localBodies = bodies.slice();
+  for (const p of r.furnishings) {
+    assert.deepEqual(p.targets(), [], 'the museum adds no E action');
+    p.setEnabled(false);
+    assert.equal(p.root.visible, false);
+  }
+  assert.equal(activeBodies.size, 0, 'unready/removed museum removes every furnishing body');
+  for (const p of r.furnishings) {
+    p.setEnabled(true);
+    p.setEnabled(true);
+  }
+  assert.equal(activeBodies.size, 10, 'restoring readiness creates each body exactly once');
+  prefabGolden(bodies.slice(10), localBodies, 'museum restored bodies');
+  const worldOwner = createOwnedView();
+  const frame = { x: 675, y: 18.14, z: -8, yaw: 0.97 };
+  worldOwner.root.position.set(frame.x, frame.y, frame.z);
+  worldOwner.root.rotation.y = frame.yaw;
+  const start = bodies.length;
+  for (const placement of loadLevelArtifact(museumLevel, loadPrefabArtifact(artifact).prefabs).placements)
+    runtime
+      .instantiate(placement.prefab, placement, { owner: worldOwner, makeLabel: () => new THREE.Group() })
+      .setEnabled(true);
+  const roomToWorld = sourceFunction<typeof import('../src/entities/town/rooms.ts').roomToWorld>(
+    'src/entities/town/rooms.ts',
+    'roomToWorld',
+    {},
+  );
+  const rotation = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, frame.yaw).toArray();
+  const oldSolids = JSON.parse(fs.readFileSync(file, 'utf8')).staticState.solids as number[][];
+  prefabGolden(
+    bodies.slice(start),
+    oldSolids.map(([x, z, hx, hz, h]) => ({
+      shape: { kind: 'box', hx, hy: h! / 2, hz },
+      position: roomToWorld(
+        frame as import('../src/entities/town/rooms.ts').Room,
+        x!,
+        h! / 2,
+        z!,
+        new THREE.Vector3(),
+      ).toArray(),
+      rotation,
+    })),
+    'museum world bodies',
+  );
+  worldOwner.dispose();
+
   for (const cleanup of cleanups.reverse()) cleanup();
+  assert.equal(activeBodies.size, 0, 'museum disposal removes bodies');
 });

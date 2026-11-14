@@ -9,21 +9,20 @@
 // `createMuseum` mounts it in `rooms`' museum on an owner, reading the world through `MuseumEnv`: the town entity's in the
 // live game (src/entities/town/), from the shared railway; ?proto=place's in ./town-life.ts, from Place's own modules.
 import * as THREE from 'three/webgpu';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { abs, float, mix, normalView, positionWorld, sin, time, uv, vertexColor } from 'three/tsl';
-import { smoothstep } from '../../math.ts';
-import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { me } from '../../player/player.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
-import { H } from '../../place/land.ts';
-import { FORGE, GRID, ORIGIN, SPIRE, railY, toWorld, type Line } from '../../place/layout.ts';
-import { addSolid, plate, roomMesh, type Part, type Rooms } from './rooms.ts';
+import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
+import { H } from '../../place/terrain.ts';
+import { FORGE, ORIGIN, railY, toWorld, type Line } from '../../place/layout.ts';
+import { plate, roomMesh, type Rooms } from './rooms.ts';
 import type { Plan } from '../../place/sites.ts';
-import { pathMask, heights, at as cellAt, NX, NZ, cellX, cellZ, gorgeD } from '../../place/terrain.ts';
 import { mulberry32 } from '../../sim/rng.ts';
-import { softGlow } from '../../place/look.ts';
 import { BOARDS } from './town-lines.ts';
-
+import { instantiate } from '../../prefab/instantiate.ts';
+import { loadLevelArtifact, loadPrefabArtifact } from '../../prefab/validate.ts';
+import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import level from '../../../content/built/levels/museum.json' with { type: 'json' };
+const definitions = loadPrefabArtifact(artifact).prefabs;
+const placements = loadLevelArtifact(level, definitions).placements;
 /** What the miniature shows, in world metres. The live game reads the shared railway; Place reads its own modules. */
 export type MuseumEnv = {
   /** Every building there is, and how far up it is (0..1). */
@@ -39,144 +38,7 @@ export type MuseumEnv = {
   people(): number;
 };
 
-const STONE = '#c8c3b4',
-  STONE2 = '#b2ad9f';
 const TABLE = { x: 0, z: 1.05, w: 6.0, d: 4.0, top: 1.0 };
-const SPEC = { x: 0, z: -3.75 };
-
-// ---------------------------------------------------------------- the specimen's making
-function jitter(g: THREE.BufferGeometry, amount: number) {
-  const p = g.getAttribute('position');
-  for (let k = 0; k < p.count; k++) {
-    const x = p.getX(k),
-      y = p.getY(k),
-      z = p.getZ(k);
-    // Same point, same push: seams stay shut.
-    const n = Math.sin(x * 7.3 + y * 3.1) * Math.cos(z * 6.1 - y * 4.7) + 0.6 * Math.sin(x * 13.1 - z * 11.3);
-    const f = 1 + n * amount;
-    p.setXYZ(k, x * f, y * f, z * f);
-  }
-  return g;
-}
-const paint = (g: THREE.BufferGeometry, fn: (x: number, y: number, z: number, out: THREE.Color) => void) => {
-  const p = g.getAttribute('position'),
-    col = new Float32Array(p.count * 3),
-    c = new THREE.Color();
-  for (let k = 0; k < p.count; k++) {
-    fn(p.getX(k), p.getY(k), p.getZ(k), c);
-    col.set([c.r, c.g, c.b], k * 3);
-  }
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  return g;
-};
-const R = 1.42;
-const ROCK_A = new THREE.Color('#57524a'),
-  ROCK_B = new THREE.Color('#3d3a35');
-function halfShell() {
-  const g = jitter(new THREE.SphereGeometry(R, 14, 10, Math.PI, Math.PI).toNonIndexed(), 0.05);
-  return paint(g, (x, y, z, c) => {
-    c.copy(ROCK_A).lerp(ROCK_B, 0.5 + 0.5 * Math.sin(x * 5 + y * 4 + z * 3));
-  });
-}
-/** The cut face's rim: bands of agate round the edge. */
-function rim() {
-  const g = new THREE.RingGeometry(R * 0.72, R * 1.02, 22, 5).toNonIndexed();
-  jitter(g, 0.035);
-  const a = new THREE.Color('#e9e4f5'),
-    b = new THREE.Color('#6c5bb0'),
-    e = new THREE.Color('#3b2f73');
-  paint(g, (x, y, _z, c) => {
-    const q = (Math.hypot(x, y) / R - 0.72) / 0.3;
-    c.copy(Math.sin(q * 18) > 0 ? a : b).lerp(e, smoothstep(0.7, 1, q));
-  });
-  // The ring's plane is z = 0, which is where the cut is.
-  return g;
-}
-const CRYSTAL = {
-  deep: new THREE.Color('#1c3dbb'),
-  mid: new THREE.Color('#3f8ee0'),
-  tip: new THREE.Color('#8fe0ff'),
-  warm: new THREE.Color('#9a6bff'),
-};
-function liningOf(count: number, rng: () => number) {
-  const out: THREE.BufferGeometry[] = [];
-  const m = new THREE.Matrix4(),
-    q = new THREE.Quaternion(),
-    from = new THREE.Vector3(0, 1, 0),
-    n = new THREE.Vector3(),
-    pos = new THREE.Vector3();
-  for (let k = 0; k < count; k++) {
-    // On the inside of the back half of a ball, pointing in.
-    const u = rng() * 2 - 1,
-      a = rng() * Math.PI * 2,
-      s = Math.sqrt(1 - u * u);
-    n.set(s * Math.cos(a), u, -Math.abs(s * Math.sin(a)) - 0.02).normalize();
-    const big = rng();
-    const len = 0.32 + big * big * 0.95,
-      rad = 0.07 + big * 0.14;
-    pos.copy(n).multiplyScalar(R * 0.98 - len / 2);
-    const g = new THREE.ConeGeometry(rad, len, 5, 1).toNonIndexed();
-    // Pointing at the middle, with a little scatter.
-    n.negate();
-    n.x += (rng() - 0.5) * 0.4;
-    n.y += (rng() - 0.5) * 0.4;
-    n.normalize();
-    q.setFromUnitVectors(from, n);
-    m.compose(pos, q, new THREE.Vector3(1, 1, 1));
-    const tone = rng();
-    paint(g, (_x, y, _z, c) => {
-      const t = y / len + 0.5;
-      c.copy(tone < 0.16 ? CRYSTAL.warm : CRYSTAL.deep)
-        .lerp(CRYSTAL.mid, t)
-        .lerp(CRYSTAL.tip, t * t * t);
-    });
-    g.applyMatrix4(m);
-    out.push(g);
-  }
-  return mergeGeometries(out)!;
-}
-// Shared materials, built once whoever mounts the museum (owned-view: shared materials stay with their caches).
-const rockMat = new THREE.MeshStandardNodeMaterial({
-  vertexColors: true,
-  roughness: 0.95,
-  flatShading: true,
-  side: THREE.DoubleSide,
-});
-const crystalMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.28, flatShading: true });
-{
-  // Light going slowly up through it: built once, and it runs on the clock.
-  const band = sin(positionWorld.y.mul(2.4).sub(time.mul(0.8)))
-    .mul(0.5)
-    .add(0.5);
-  crystalMat.emissiveNode = vertexColor().mul(mix(float(0.22), float(1.5), band.mul(band).mul(band)));
-  readableGlow(crystalMat);
-}
-const coreMat = readableGlow(
-  new THREE.MeshStandardNodeMaterial({
-    color: '#bff1ff',
-    emissive: '#6fc8ff',
-    emissiveIntensity: 3,
-    flatShading: true,
-  }),
-);
-const hazeMat = softGlow('#4fa8ff', 0.1).mat;
-// A pool of its light on the floor, and up the screen behind.
-const poolMat = readableUnlit(
-  new THREE.MeshBasicNodeMaterial({
-    color: '#3f8ee0',
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  }),
-);
-{
-  const f = float(1).sub(uv().sub(0.5).length().mul(2)).clamp(0, 1);
-  poolMat.opacityNode = f.mul(f).mul(0.75).mul(abs(normalView.z));
-}
-const landMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92, flatShading: true });
-const bitsMat = new THREE.MeshStandardNodeMaterial({ roughness: 0.7 });
-
-// ---------------------------------------------------------------- the miniature's land
 const SCALE = 1 / 120,
   UP = SCALE * 1.5;
 const SPAN = { x0: -220, x1: 480, z0: -238, z1: 222 };
@@ -184,50 +46,6 @@ const toTableX = (x: number) => (x - (SPAN.x0 + SPAN.x1) / 2) * SCALE + TABLE.x;
 const toTableZ = (z: number) => (z - (SPAN.z0 + SPAN.z1) / 2) * SCALE + TABLE.z;
 const seaY = TABLE.top + 0.012;
 const tableY = (h: number) => seaY + Math.max(0, h) * UP;
-function relief() {
-  const every = 3; // cells of the land's 2 m grid
-  const i0 = Math.max(0, Math.round((SPAN.x0 - GRID.x0) / GRID.cell)),
-    i1 = Math.min(NX - 1, Math.round((SPAN.x1 - GRID.x0) / GRID.cell)),
-    j0 = Math.max(0, Math.round((SPAN.z0 - GRID.z0) / GRID.cell)),
-    j1 = Math.min(NZ - 1, Math.round((SPAN.z1 - GRID.z0) / GRID.cell));
-  const cols = Math.floor((i1 - i0) / every) + 1,
-    rows = Math.floor((j1 - j0) / every) + 1;
-  const pos = new Float32Array(cols * rows * 3),
-    col = new Float32Array(cols * rows * 3),
-    index: number[] = [];
-  const c = new THREE.Color();
-  const GRASS = new THREE.Color('#6c9a42'),
-    GRASS2 = new THREE.Color('#568740'),
-    ROCK_ = new THREE.Color('#a08a70'),
-    SAND = new THREE.Color('#e8d39a'),
-    DIRT = new THREE.Color('#e0b271'),
-    SEA = new THREE.Color('#2e7fb8');
-  for (let b = 0; b < rows; b++)
-    for (let a = 0; a < cols; a++) {
-      const i = i0 + a * every,
-        j = j0 + b * every,
-        k = cellAt(i, j),
-        h = heights[k]!,
-        x = cellX(i),
-        z = cellZ(j);
-      const n = a + b * cols;
-      pos.set([toTableX(x), tableY(h), toTableZ(z)], n * 3);
-      const slope = Math.abs(heights[cellAt(Math.min(NX - 1, i + every), j)]! - h) / (every * GRID.cell);
-      c.copy(GRASS).lerp(GRASS2, 0.5 + 0.5 * Math.sin(x * 0.03) * Math.cos(z * 0.04));
-      if (slope > 0.5) c.copy(ROCK_);
-      if (h < 3) c.lerp(SAND, smoothstep(3, 1, h));
-      if (h <= 0.05) c.copy(SEA);
-      else if (gorgeD(x, z) < 5 && h < 1) c.copy(SEA);
-      c.lerp(DIRT, pathMask[k]!);
-      col.set([c.r, c.g, c.b], n * 3);
-      if (a < cols - 1 && b < rows - 1) index.push(n, n + cols, n + 1, n + 1, n + cols, n + cols + 1);
-    }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  g.setIndex(index);
-  return g.toNonIndexed();
-}
 const inTable = (x: number, z: number) => x > SPAN.x0 && x < SPAN.x1 && z > SPAN.z0 && z < SPAN.z1;
 const peopleAt = (() => {
   const q = mulberry32(551);
@@ -238,138 +56,74 @@ const peopleAt = (() => {
   });
 })();
 
-/** The museum in `rooms`' museum, owned by `owner`. The caller calls `update` each frame; it draws only while the room's
- * interior does (rooms.ts `cull`). */
+/** The museum's record-owned furnishing. The caller still updates the table only while the interior draws. */
 export function createMuseum(owner: OwnedView, rooms: Rooms, env: MuseumEnv) {
   const r = rooms.rooms.museum;
-  const { w, d, high } = r;
+  if (r.w !== 13 || r.d !== 12 || r.high !== 5) throw new Error('museum: room dimensions differ from authored records');
+  const fixtureOwner = createOwnedView();
+  r.near.add(fixtureOwner.root);
+  owner.cleanup(fixtureOwner.dispose);
+  const pieces = new Map(
+    placements.map((p) => {
+      const instance = instantiate(p.prefab, p, {
+        owner: fixtureOwner,
+        makeLabel(a, key) {
+          if (key !== 'specimen' && key !== 'table' && key !== 'museum')
+            throw new Error('museum: unknown label reference');
+          return plate(BOARDS[key], a.w, a.h, a.at[0], a.at[1], a.at[2]);
+        },
+      });
+      r.furnishings.push(instance);
+      return [p.id.slice('museum-'.length), instance] as const;
+    }),
+  );
+  const get = (id: string) => {
+    const p = pieces.get(id);
+    if (!p) throw new Error(`museum: missing piece ${id}`);
+    return p;
+  };
+  const parts = (...ids: string[]) => ids.flatMap((id) => get(id).parts);
   const made: THREE.BufferGeometry[] = [];
-  const keep = <T extends THREE.Mesh>(mesh: T) => (made.push(mesh.geometry), mesh);
-
-  // ---------------------------------------------------------------- the room
-  const floor: Part[] = [];
-  for (let i = 0; i < 7; i++)
-    for (let j = 0; j < 6; j++)
-      floor.push([
-        'b',
-        -w / 2 + (i + 0.5) * (w / 7),
-        0.015,
-        -d / 2 + (j + 0.5) * (d / 6),
-        w / 7 - 0.03,
-        0.03,
-        d / 6 - 0.03,
-        (i + j) % 2 ? '#a9a497' : '#979286',
-      ]);
-  const fixtures: Part[] = [
-    ...floor,
-    // The dark alcove behind the stone: a screen of its own, so it stands whichever wall is out of the way.
-    ['b', SPEC.x, 2.1, -5.65, 8.6, 4.2, 0.14, '#1d2340'],
-    ['b', SPEC.x - 4.3, 2.1, -5.2, 0.14, 4.2, 1.0, '#1d2340'],
-    ['b', SPEC.x + 4.3, 2.1, -5.2, 0.14, 4.2, 1.0, '#1d2340'],
-    // The stone's plinth, low and wide.
-    ['b', SPEC.x, 0.18, SPEC.z, 6.6, 0.36, 2.9, '#6f6b63'],
-    ['b', SPEC.x, 0.42, SPEC.z, 6.2, 0.12, 2.5, '#4f4c47'],
-    // The table: a wide, plain thing, with a rim to hold the sea in.
-    ['b', TABLE.x, 0.46, TABLE.z, TABLE.w + 0.1, 0.92, TABLE.d + 0.1, '#5c4530'],
-    ['b', TABLE.x, TABLE.top - 0.03, TABLE.z - TABLE.d / 2 - 0.05, TABLE.w + 0.3, 0.1, 0.1, '#7f5630'],
-    ['b', TABLE.x, TABLE.top - 0.03, TABLE.z + TABLE.d / 2 + 0.05, TABLE.w + 0.3, 0.1, 0.1, '#7f5630'],
-    ['b', TABLE.x - TABLE.w / 2 - 0.05, TABLE.top - 0.03, TABLE.z, 0.1, 0.1, TABLE.d + 0.3, '#7f5630'],
-    ['b', TABLE.x + TABLE.w / 2 + 0.05, TABLE.top - 0.03, TABLE.z, 0.1, 0.1, TABLE.d + 0.3, '#7f5630'],
-    // A bench for two, facing the stone.
-    ['b', -3.9, 0.42, -1.3, 2.4, 0.12, 0.7, '#7f5630'],
-    ['b', -4.9, 0.2, -1.3, 0.14, 0.4, 0.6, '#5c4530'],
-    ['b', -2.9, 0.2, -1.3, 0.14, 0.4, 0.6, '#5c4530'],
-    // Labels on their stands.
-    ['b', -2.8, 0.55, -2.5, 0.08, 1.1, 0.08, '#3f4145'],
-    ['b', TABLE.x, 0.55, TABLE.z + TABLE.d / 2 + 0.55, 0.08, 1.1, 0.08, '#3f4145'],
-    // Brass-lined display cabinetry: the island is an exhibit, not a crate.
-    ['b', 0, 0.17, TABLE.z + TABLE.d / 2 + 0.06, 5.8, 0.04, 0.025, '#d9a23a'],
-    ['b', 0, 0.79, TABLE.z + TABLE.d / 2 + 0.06, 5.8, 0.04, 0.025, '#d9a23a'],
-    // Cushions on the existing visitor bench, clear of the walkway.
-    ['b', -4.5, 0.52, -1.3, 1.05, 0.08, 0.58, '#356b74'],
-    ['b', -3.3, 0.52, -1.3, 1.05, 0.08, 0.58, '#356b74'],
-  ];
-  for (const x of [-2, 0, 2])
-    fixtures.push(
-      ['b', x, 0.48, TABLE.z + TABLE.d / 2 + 0.06, 1.75, 0.48, 0.025, '#7f6244'],
-      ['b', x, 0.52, TABLE.z + TABLE.d / 2 + 0.09, 0.22, 0.04, 0.04, '#d9a23a'],
-    );
-  // Mounts and warm reflector dishes sit on the specimen's plinth, within its existing solid.
-  for (const x of [-2.7, 2.7])
-    fixtures.push(
-      ['c', x, 0.51, SPEC.z + 0.85, 0.16, 0.08, 0.16, '#3f4145'],
-      ['k', x, 0.65, SPEC.z + 0.85, 0.2, 0.22, 0.2, '#d9a23a', Math.PI],
-      ['c', x, 0.77, SPEC.z + 0.85, 0.14, 0.015, 0.14, '#fff0c9'],
-    );
-  addSolid(r, SPEC.x, SPEC.z, 3.3, 1.45, 3.4);
-  addSolid(r, TABLE.x, TABLE.z, TABLE.w / 2 + 0.1, TABLE.d / 2 + 0.1, TABLE.top);
-  addSolid(r, -3.9, -1.3, 1.2, 0.35, 0.5);
-  addSolid(r, SPEC.x, -5.65, 4.3, 0.1, 4.2);
-  addSolid(r, SPEC.x - 4.3, -5.2, 0.1, 0.55, 4.2);
-  addSolid(r, SPEC.x + 4.3, -5.2, 0.1, 0.55, 4.2);
+  const keep = (mesh: THREE.Mesh) => {
+    made.push(mesh.geometry);
+    return mesh;
+  };
+  owner.cleanup(() => {
+    for (const geometry of made) geometry.dispose();
+  });
+  const fixtures = parts(
+    'floor',
+    'alcove-back',
+    'alcove-left',
+    'alcove-right',
+    'plinth',
+    'table',
+    'bench',
+    'label-specimen',
+    'label-table',
+    'cabinet-trim',
+    'cushion-0',
+    'cushion-1',
+    'drawer-0',
+    'drawer-1',
+    'drawer-2',
+    'reflector-0',
+    'reflector-1',
+  );
+  // Preserve the original merged draws and mesh submission order, including the two plaques.
   r.near.add(
     keep(roomMesh(fixtures)),
-    keep(plate(BOARDS.specimen, 1.6, 0.6, -2.8, 1.3, -2.45)),
-    keep(plate(BOARDS.table, 2.1, 0.5, TABLE.x, 1.3, TABLE.z + TABLE.d / 2 + 0.6)),
+    get('label-specimen').root,
+    get('label-table').root,
+    get('specimen').root,
+    get('pool').root,
+    get('relief').root,
+    keep(roomMesh(parts('spire'), false)),
+    get('bits').root,
   );
-
-  // ---------------------------------------------------------------- the specimen
-  const rng = mulberry32(7741);
-  const specimen = new THREE.Group();
-  specimen.position.set(SPEC.x, 1.95, SPEC.z);
-  const CRACK = 1.62, // each half's middle from the gap: two halves, side by side, as a cut stone is shown
-    OPEN = 0.38; // turned in a little, towards whoever's in front
-  for (const side of [-1, 1]) {
-    const half = new THREE.Group();
-    half.position.x = side * CRACK;
-    half.rotation.y = -side * OPEN;
-    const shell = keep(new THREE.Mesh(halfShell(), rockMat));
-    shell.castShadow = true;
-    const band = keep(new THREE.Mesh(rim(), rockMat));
-    const lining = keep(new THREE.Mesh(liningOf(90, rng), crystalMat));
-    half.add(shell, band, lining);
-    specimen.add(half);
-  }
-  const core = keep(new THREE.Mesh(new THREE.OctahedronGeometry(0.34, 0).toNonIndexed(), coreMat));
-  core.scale.set(0.8, 1.7, 0.8);
-  core.position.set(0, 0.25, 0.1);
-  const haze = keep(new THREE.Mesh(new THREE.SphereGeometry(1.2, 18, 12), hazeMat));
-  haze.position.set(0, 0.25, 0.1);
-  specimen.add(core, haze);
-  const pool = keep(new THREE.Mesh(new THREE.PlaneGeometry(9, 9), poolMat));
-  pool.rotation.x = -Math.PI / 2;
-  pool.position.set(SPEC.x, 0.06, SPEC.z + 0.4);
-  r.near.add(specimen, pool);
-
-  // ---------------------------------------------------------------- the miniature's land
-  const land = keep(new THREE.Mesh(relief(), landMat));
-  land.receiveShadow = true;
-  land.geometry.computeVertexNormals();
-  r.near.add(land);
-  // The spire, as a real thing on it.
-  r.near.add(
-    keep(
-      roomMesh(
-        [
-          ['k', toTableX(SPIRE.x), TABLE.top + 0.42, toTableZ(SPIRE.z), 0.09, 0.84, 0.09, '#8d8a80', 0.08],
-          ['s', toTableX(SPIRE.x), TABLE.top + 0.06, toTableZ(SPIRE.z), 0.11, 0.08, 0.11, '#6d6f78'],
-        ],
-        false,
-      ),
-    ),
-  );
-
-  // ---------------------------------------------------------------- what's on it now
-  const MAX = 720;
-  const bits = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), bitsMat, MAX);
-  made.push(bits.geometry);
-  bits.frustumCulled = false;
-  bits.count = 0;
-  r.near.add(bits);
-  owner.cleanup(() => {
-    bits.dispose();
-    for (const g of made) g.dispose();
-  });
+  const core = get('specimen').root.getObjectByName('museum-core')!;
+  const bits = get('bits').root.children[0] as THREE.InstancedMesh;
+  const MAX = bits.instanceMatrix.count;
   const m_ = new THREE.Matrix4(),
     q_ = new THREE.Quaternion(),
     p_ = new THREE.Vector3(),
@@ -475,30 +229,8 @@ export function createMuseum(owner: OwnedView, rooms: Rooms, env: MuseumEnv) {
     if (bits.instanceColor) bits.instanceColor.needsUpdate = true;
   }
 
-  // ---------------------------------------------------------------- what it looks like from the street
-  const COLS = [-5.2, -2.6, 2.6, 5.2];
-  const front: Part[] = [];
-  for (const x of COLS) {
-    front.push(
-      ['c', x, high / 2, d / 2 + 1.5, 0.34, high, 0.34, STONE],
-      ['b', x, 0.1, d / 2 + 1.5, 0.95, 0.2, 0.95, STONE2],
-      ['b', x, high - 0.1, d / 2 + 1.5, 0.95, 0.22, 0.95, STONE2],
-    );
-    addSolid(r, x, d / 2 + 1.5, 0.36, 0.36, high);
-  }
-  front.push(['b', 0, 0.05, d / 2 + 1.6, w + 1, 0.1, 3.2, '#b2ad9f']); // a stone apron, flush
-  r.outside.add(keep(roomMesh(front)));
-  r.over.add(
-    keep(
-      roomMesh([
-        ['b', 0, high + 0.25, d / 2 + 1.5, w + 0.6, 0.5, 1.6, STONE],
-        ['b', 0, high + 0.7, d / 2 + 1.5, w + 0.2, 0.42, 1.3, STONE2],
-        ['b', 0, high + 1.08, d / 2 + 1.5, w * 0.62, 0.36, 1.1, STONE],
-      ]),
-    ),
-    keep(plate(BOARDS.museum, 5.4, 0.95, 0, high + 0.32, d / 2 + 2.33)),
-  );
-
+  r.outside.add(keep(roomMesh(parts('column-0', 'column-1', 'column-2', 'column-3', 'apron'))));
+  r.over.add(keep(roomMesh(parts('cornice'))), get('sign').root);
   // ---------------------------------------------------------------- the frame
   let acc = 0;
   return {
