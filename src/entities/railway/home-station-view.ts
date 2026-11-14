@@ -87,7 +87,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
 
   // ---------------------------------------------------------------- the hall: posts, low end walls, roof, on its floor
   {
-    const { a, c, w, d, height, endWall, floor } = home.HALL;
+    const { a, c, w, d, height, endWall, floor, posts } = home.HALL;
     const mid = at(a, c);
     add(box(mid.x, floor - 0.12, mid.z, w + 0.2, 0.24, d + 0.2, yaw), STONE, true);
     // The way in from the square: the slab's top is 0.12 m over the highest ground under the hall, so over the sand
@@ -132,7 +132,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
       }
     }
     for (const i of [-1, 1])
-      for (const x of [-(w / 2 - 0.15), -w / 4, 0, w / 4, w / 2 - 0.15]) {
+      for (const x of i < 0 ? posts.front : posts.back) {
         const post = at(a + i * (d / 2 - 0.2), c + x);
         add(box(post.x, floor + height / 2, post.z, 0.35, height, 0.35, yaw), POST, true);
       }

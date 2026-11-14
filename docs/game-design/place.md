@@ -113,7 +113,10 @@ All motion and sparkle are Local; accepted contacts still own harvest sounds, ch
 
 **Home's one station (13 November, home-flip X1/X2).** The terminus is the only Home. Two buffer roads share a
 4.3 m island, an apron and an open hall; the shelf faces the square from the hall, and Sleeves stands beside its
-north bay. Stone treads across the open north bays walk up the slab's front from the square (it stands 0.34 m over
+north bay. The shelf stands whole in one open bay of the hall's front (owner playtest, 14 November: it "seemed to be
+intersecting with the station"): two front posts stood 5 cm off its crown, across its second and fifth columns, and
+are gone. The front keeps its corner posts and the one between the way in's two bays, where Sleeves stands (1.83 m
+north of the crown and 1.53 m south of it are clear); the back keeps five. The shelf did not move. Stone treads across the open north bays walk up the slab's front from the square (it stands 0.34 m over
 the sand there); spawn faces the bay, so Sleeves is whole in frame beside Buddy, at phone width too. The rack leaves the accepted 1.97 m lane; the goods door reaches the forge. The table is on its own spur,
 with one open radial stall and two ruin outlines. Board crossing s 2.0–3.6 on road 2 marks the ramp way to the stall;
 it and the shunt have no collider. Each island lever calls its own line and the knobs stay 3.70 m apart.

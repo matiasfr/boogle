@@ -122,7 +122,11 @@ export const ISLAND_C = ROAD_GAP / 2;
 
 /** The concourse: an open hall on posts with end walls, its long side across the axis, 1 m behind the buffers. Its
  * roof stands `height` up on posts; the end walls stop at `endWall`, so the hall stays open to the forge yard beside it
- * (owner, 9 November: "Lower end walls"). `floor` is its slab's top: 0.12 m over the highest ground under it. */
+ * (owner, 9 November: "Lower end walls"). `floor` is its slab's top: 0.12 m over the highest ground under it.
+ * `posts` are the post lines across, from the hall's centreline: five along the back; the front keeps its corners and
+ * the one between the way in's two bays (Sleeves stands before it). No front post stands before the curio shelf
+ * (owner playtest, 14 November: the shelf "seemed to be intersecting with the station"; two posts stood 5 cm off its
+ * crown, across its second and fifth columns), so the shelf and its side way share one open bay. */
 export const HALL = (() => {
   const w = 13,
     d = 6,
@@ -130,7 +134,21 @@ export const HALL = (() => {
   const yaw = Math.atan2(AXIS.d.x, AXIS.d.z);
   /** The goods door: a 1.5 m gap in the north end wall's back half, behind road 1's buffer, toward the forge. */
   const goodsDoor = { a0: -8.9, a1: -7.4 };
-  return { ...axisPoint(a, ISLAND_C), a, c: ISLAND_C, w, d, yaw, height: 4.6, endWall: 2.4, floor: 18.34, goodsDoor };
+  const corner = w / 2 - 0.15,
+    posts = { front: [-corner, -w / 4, corner], back: [-corner, -w / 4, 0, w / 4, corner] };
+  return {
+    ...axisPoint(a, ISLAND_C),
+    a,
+    c: ISLAND_C,
+    w,
+    d,
+    yaw,
+    height: 4.6,
+    endWall: 2.4,
+    floor: 18.34,
+    goodsDoor,
+    posts,
+  };
 })();
 
 // ---------------------------------------------------------------- the engine spur, the table and the stalls
@@ -285,7 +303,7 @@ export const PROPS = {
  * November; curio placement plan, 10 November). */
 export const SHELF_SIZE = { crown: 2.95, sideWay: 1.4, front: 0.59, back: 0.35, top: 3.47 };
 /** The curio shelf (owner, 9 November: "move shelf off north wall"): in the hall's front, south of the way in, just
- * behind the front posts and facing the square, its side way toward the south wall. North of it the way in from the
+ * behind the front posts' line (none stands before it: `HALL.posts`) and facing the square, its side way toward the south wall. North of it the way in from the
  * square to the trains stays open, nearly 5 m wide; it keeps off the back span (the line map, step 12) and leaves the
  * south wall 0.15 m clear for the works board (call 29). */
 export const SHELF_B = (() => {
