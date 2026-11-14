@@ -59,6 +59,8 @@ export function outOf(f: Foot, p: { x: number; z: number }, r: number) {
 
 // ---------------------------------------------------------------- building them, all in one mesh
 type Span = [from: number, to: number, seconds: number];
+type RecordBodies = { readonly bodies: readonly Body[]; setEnabled(on: boolean): void };
+type SiteRecords = { hulls: readonly RecordBodies[]; poles: readonly RecordBodies[] };
 export type Site = {
   plan: Plan;
   k0: number; // its scaffold starts here in the shared mesh
@@ -77,12 +79,13 @@ export type Site = {
   foot: Foot;
 };
 const boxes: Box[] = [];
+const records = new WeakMap<Site, SiteRecords>();
 export const sites: Site[] = [];
 let set: DropSet | null = null;
 let owned: OwnedView | undefined;
 /** Sites before this one were there at the last buildSites. */
 let built = 0;
-export function addSite(id: string, plan: Plan, pace = 1): Site {
+export function addSite(id: string, plan: Plan, pace = 1, parts?: SiteRecords): Site {
   const k0 = boxes.length;
   boxes.push(...plan.scaffold);
   const pole1 = boxes.length;
@@ -115,6 +118,7 @@ export function addSite(id: string, plan: Plan, pace = 1): Site {
     id,
     foot: { x: plan.x, z: plan.z, c: Math.cos(plan.yaw), s: Math.sin(plan.yaw), hw: plan.hw, hd: plan.hd },
   };
+  if (parts) records.set(site, parts);
   feet.push(site.foot);
   sites.push(site);
   return site;
@@ -143,12 +147,16 @@ export function hullBodies(plan: Plan, hulls: Hull[], owner: OwnedView) {
 }
 const unbody = (b: Body) => (owned ? owned.removeBody(b) : removeBody(b));
 const polesOff = (site: Site) => {
-  for (const b of site.poleBodies) unbody(b);
+  const parts = records.get(site);
+  if (parts) for (const part of parts.poles) part.setEnabled(false);
+  else for (const b of site.poleBodies) unbody(b);
   site.poleBodies.length = 0;
 };
 function solid(site: Site, on: boolean) {
+  const parts = records.get(site);
   if (!on) {
-    for (const b of site.bodies) unbody(b);
+    if (parts) for (const part of parts.hulls) part.setEnabled(false);
+    else for (const b of site.bodies) unbody(b);
     site.bodies.length = 0;
     return;
   }
@@ -156,8 +164,20 @@ function solid(site: Site, on: boolean) {
   const { x, y, z, yaw, hulls } = site.plan;
   const cos = Math.cos(yaw),
     sin = Math.sin(yaw);
-  site.bodies.push(...hullBodies(site.plan, hulls, owned));
-  if (site.state === 'building') site.poleBodies.push(...hullBodies(site.plan, site.plan.poles, owned));
+  if (parts) {
+    for (const part of parts.hulls) {
+      part.setEnabled(true);
+      site.bodies.push(...part.bodies);
+    }
+    if (site.state === 'building')
+      for (const part of parts.poles) {
+        part.setEnabled(true);
+        site.poleBodies.push(...part.bodies);
+      }
+  } else {
+    site.bodies.push(...hullBodies(site.plan, hulls, owned));
+    if (site.state === 'building') site.poleBodies.push(...hullBodies(site.plan, site.plan.poles, owned));
+  }
   // Standing in the plot when the walls go up: you're moved to the nearest edge.
   const me_ = me.body;
   if (!me_) return;
