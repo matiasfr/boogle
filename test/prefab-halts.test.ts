@@ -268,6 +268,14 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
   const actual = JSON.parse(JSON.stringify({ catalogs: catalog.RAIL_HALTS, boxValues, meshes, states }));
   if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual, null, 2) + '\n');
   prefabGolden(actual, JSON.parse(fs.readFileSync(fixture, 'utf8')), 'halts');
+  // Capture actual accepted local request arguments before changing the lever/interaction construction path.
+  for (const p of [...halt.inspect().halts.flatMap((h) => h.lever), ...halt.inspect().ringLevers]) {
+    me.body = { position: new THREE.Vector3(p.x, p.y, p.z) };
+    for (const target of halt.targets()) target.run?.();
+  }
+  const requests = 'test/fixtures/prefab-halt-requests.json';
+  if (process.env.GOLDEN === '1') fs.writeFileSync(requests, JSON.stringify(calls, null, 2) + '\n');
+  assert.deepEqual(calls, JSON.parse(fs.readFileSync(requests, 'utf8')));
   assert.equal(levers.length, 19);
   owner.dispose();
   assert.equal(active.size, 0);
