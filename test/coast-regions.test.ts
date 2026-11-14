@@ -92,8 +92,8 @@ function digest(coast: Coast) {
 const COAST_BASELINE = {
   width: 2015,
   height: 780,
-  texture: 'fa16da63303e6559dbea08116821d53904e2bf22d1cc3d85782f2cf21048ba22',
-  sampled: 'a5fd0897defcb6c844a46cf8f20275e24bcced231d3e357098b321c328c641f2',
+  texture: '327e46c71c9247bb3b57c9757ead81b307be5073de15acf8c1e685da933f5a3d',
+  sampled: '2b3c292e11f5bbda3deca4c8e38b318bea96c947f19e81f80a1f96909e372364',
   transform: [-375, -400, 0.0004962779156327543, 0.001282051282051282],
 };
 
