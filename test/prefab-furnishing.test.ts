@@ -864,3 +864,173 @@ test('house furnishing retains old parts, solids, copy and every fact stage', ()
   prefabGolden(value, JSON.parse(fs.readFileSync(houseFixture, 'utf8')), 'house');
   for (const fn of cleanups.reverse()) fn();
 });
+
+test('site body records retain the old construction, ejection, snap and teardown lifecycle', () => {
+  function run(useRecords: boolean) {
+    const events: unknown[] = [],
+      states: unknown[] = [],
+      active = new Set<import('../src/physics/engine.ts').Body>(),
+      ids = new Map<import('../src/physics/engine.ts').Body, number>();
+    let nextId = 0;
+    const player = {
+      position: { x: 70, y: 18.9, z: 31 },
+      velocity: new THREE.Vector3(),
+    };
+    const ground = () => 18;
+    const owner = {
+      cleanup() {},
+      removeBody(body: import('../src/physics/engine.ts').Body) {
+        assert.ok(active.delete(body), 'each body is removed exactly once');
+        events.push(['remove', ids.get(body)]);
+      },
+    };
+    const addStatic = (
+      shape: unknown,
+      at: { x: number; y: number; z: number },
+      q: THREE.Quaternion,
+      group?: number,
+    ) => {
+      const body = {} as import('../src/physics/engine.ts').Body;
+      const id = nextId++;
+      ids.set(body, id);
+      active.add(body);
+      events.push(['add', id, shape, [at.x, at.y, at.z], q.toArray(), group ?? null]);
+      return body;
+    };
+    const sites = sourceModule<typeof import('../src/place/sites.ts')>(fs.readFileSync('src/place/sites.ts', 'utf8'), {
+      THREE,
+      PLAYER_R: 0.45,
+      ROOM_GROUP: 8,
+      me: { body: player },
+      H: ground,
+      addStatic,
+      removeBody: owner.removeBody,
+      teleport: (_body: unknown, x: number, y: number, z: number) => {
+        player.position = { x, y, z };
+        events.push(['teleport', x, y, z]);
+      },
+      paintSite() {},
+      dustRing() {},
+      thump() {},
+      dropSet: () => ({
+        mesh: {},
+        snap: (k: number, on: boolean) => events.push(['snap', k, on]),
+        drop: (k: number, height: number, at: number) => events.push(['drop', k, height, at]),
+        update() {},
+        busy: () => false,
+      }),
+    });
+    const box = () => ({
+      x: 70,
+      y: 18,
+      z: 31,
+      local: new THREE.Matrix4(),
+      color: new THREE.Color('#7f5630'),
+      tall: false,
+      pop: 0.7,
+    });
+    const plan: import('../src/place/sites.ts').Plan = {
+      x: 70,
+      y: 18,
+      z: 31,
+      yaw: 0.7,
+      scaffold: Array.from({ length: 3 }, box),
+      pieces: Array.from({ length: 4 }, box),
+      FRAME: 1,
+      WALLS: 2,
+      ROOFED: 3,
+      hulls: [
+        { dx: -2, dy: 2, dz: 0, hx: 0.14, hy: 2, hz: 3, room: true },
+        { dx: 0, dy: 0.07, dz: 0, hx: 2.8, hy: 0.07, hz: 3.8 },
+      ],
+      poles: [
+        { dx: -2.7, dy: 3, dz: -3.7, hx: 0.13, hy: 3, hz: 0.13 },
+        { dx: 2.7, dy: 3, dz: 3.7, hx: 0.13, hy: 3, hz: 0.13 },
+      ],
+      keepOut: { dx: 0, dy: 2, dz: 0, hx: 2.1, hy: 2, hz: 3.1 },
+      hw: 2.8,
+      hd: 3.8,
+      smoke: null,
+      top: { x: 70, y: 24, z: 31 },
+    };
+    const record = (h: import('../src/place/sites.ts').Hull) => {
+      const bodies: import('../src/physics/engine.ts').Body[] = [];
+      let enabled = false;
+      return {
+        bodies,
+        setEnabled(on: boolean) {
+          if (on === enabled) return;
+          enabled = on;
+          if (!on) {
+            for (const body of bodies) owner.removeBody(body);
+            bodies.length = 0;
+            return;
+          }
+          const c = Math.cos(plan.yaw),
+            s = Math.sin(plan.yaw);
+          bodies.push(
+            addStatic(
+              { kind: 'box', hx: h.hx, hy: h.hy, hz: h.hz },
+              { x: plan.x + h.dx * c + h.dz * s, y: plan.y + h.dy, z: plan.z - h.dx * s + h.dz * c },
+              new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, plan.yaw),
+              h.room ? 8 : undefined,
+            ),
+          );
+        },
+      };
+    };
+    const site = sites.addSite(
+      'room-lifecycle',
+      plan,
+      1.5,
+      useRecords ? { hulls: plan.hulls.map(record), poles: plan.poles.map(record) } : undefined,
+    );
+    const dispose = sites.buildSites(owner as unknown as import('../src/render/owned-view.ts').OwnedView);
+    const state = () =>
+      states.push({
+        state: site.state,
+        t: site.t,
+        bodies: site.bodies.map((b) => ids.get(b)),
+        poles: site.poleBodies.map((b) => ids.get(b)),
+        active: [...active].map((b) => ids.get(b)),
+        struck: site.struck,
+        player: { ...player.position },
+      });
+    sites.snapSite(site, false);
+    state();
+    sites.snapSite(site, true);
+    state();
+    sites.snapSite(site, true);
+    state();
+    sites.snapSite(site, false);
+    player.position = { x: 70, y: 18.9, z: 31 };
+    sites.startSite(site, 0.4);
+    state();
+    sites.updateSites(0.4 + site.solidAt - 0.1);
+    state();
+    sites.updateSites(0.1);
+    state();
+    sites.updateSites(1);
+    state();
+    sites.updateSites(site.doneAt + 2);
+    state();
+    sites.snapSite(site, false);
+    state();
+    sites.snapSite(site, true);
+    state();
+    dispose();
+    dispose();
+    state();
+    assert.equal(active.size, 0, 'disposal leaves no hull or scaffold body');
+    assert.equal(sites.sites.length, 0);
+    assert.equal(sites.feet.length, 0);
+    return JSON.parse(JSON.stringify({ events, states }));
+  }
+  const legacy = run(false),
+    recorded = run(true);
+  const siteFixture = 'test/fixtures/prefab-site-lifecycle.json';
+  if (process.env.GOLDEN === '1') fs.writeFileSync(siteFixture, JSON.stringify(legacy) + '\n');
+  const old = JSON.parse(fs.readFileSync(siteFixture, 'utf8'));
+  prefabGolden(legacy, old, 'legacy site lifecycle');
+  prefabGolden(recorded, old, 'record site lifecycle');
+});
