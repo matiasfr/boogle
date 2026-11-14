@@ -19,7 +19,7 @@ import type { Store } from '../store.ts';
 import { isRailwayRoom, RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
 import { LINE1_CATALOG } from '../../../src/sim/railway-line-layout.ts';
 import type { RailwayPosition } from './railway-supply.ts';
-import { railAwayCredit, RAIL_AWAY } from '../../../src/sim/railway-away.ts';
+import { createHostAway } from './host-away.ts';
 export type { RailwayPosition } from './railway-supply.ts';
 import { install as installRailway, type Actor } from '../../../src/world/railway-server.ts';
 import { railCadence, RAIL_CADENCE_SLACK_MS } from '../../../src/world/railway-predict.ts';
@@ -211,11 +211,7 @@ export function createRailwayWorldHost({
     positions,
     active: () => running && hasPlayers(),
   });
-  // The 100 ms marker at which the room stopped simulating, or null while it runs. A save while paused is stamped
-  // with it, so neither a reload nor a crash counts the paused time as hosted.
-  let awayMarker: number | null = null;
-  let savedAt = now();
-  let savedTick = 0;
+  const away = createHostAway(api, now);
   // The actor owns their body (docs/plans/replication.md, revision 1): a client action carries its own position
   // (`at`, centimetres) and action time (`ms`, the client's monotonic clock), and reach and cadence are judged from
   // those, never from presence or arrival time. They are validation facts only, never saved or replicated.
@@ -270,22 +266,14 @@ export function createRailwayWorldHost({
           read() {
             const doc = store.readSync(roomId);
             if (!doc) return null;
-            savedAt = Date.parse(doc.updatedAt);
-            savedTick = doc.tick;
-            if (!Number.isFinite(savedAt) || savedAt > now() || !Number.isSafeInteger(savedTick) || savedTick < 0)
-              throw new Error('invalid railway recovery timestamp/tick');
+            away.read(doc);
             return doc.data;
           },
           async write(data) {
             // Once an apply fails, no newly started write may persist its partial mutation;
             // an already-started safe write can finish.
             if (requests.failed()) throw new Error('server command storage failed');
-            // Until startup has applied the offline catch-up, a save must not claim the absent time as passed.
-            const updatedAt = startup
-              ? Math.max(savedAt, api.resumeMarker() * 100)
-              : awayMarker !== null
-                ? awayMarker * 100
-                : now();
+            const updatedAt = away.updatedAt(startup);
             const result = await store.write(roomId, {
               tick: data.checkpoint.tick,
               writerId: SERVER_ID,
@@ -334,32 +322,18 @@ export function createRailwayWorldHost({
     // No session survives a server restart: a held beam's carrier is away from now (maintainBeam), and keeps it if they
     // come back within the grace.
     // The room stood still from its last checkpoint: the away credit waits for a join.
-    awayMarker = Math.min(
-      Math.floor(now() / 100),
-      Math.max(Math.floor(savedAt / 100), api.resumeMarker()) + (sync.world.tick - savedTick),
-    );
+    away.restore(sync.world.tick);
     startup = false;
-    if (present) credit(); // whoever's joining sees the credited world in the startup checkpoint
+    if (present) away.credit(); // whoever's joining sees the credited world in the startup checkpoint
     api.touchAll(); // every component, from change tick 0, for whoever joins
     sync.saveNow(true);
     await sync.whenDurable();
     loaded = !closed;
     if (present) wakeNow();
   })();
-  // The one away credit for the time since awayMarker; consumed once (railResume's marker), never read from a client.
-  function credit() {
-    if (awayMarker === null) return false;
-    const marker = Math.floor(now() / 100);
-    const away = Math.max(0, marker - awayMarker);
-    awayMarker = null;
-    if (away <= 0) return false;
-    // api.resume caps the job's ticks at what the funded job has left: a whole absence finishes it.
-    api.resume(away >= RAIL_AWAY.finishTicks ? Number.MAX_SAFE_INTEGER : away, marker, railAwayCredit(away));
-    return true;
-  }
   function wakeNow() {
     if (!loaded || closed || running || requests.failed() || sync.worldStatus().recoveryError) return;
-    const credited = credit();
+    const credited = away.credit();
     running = true;
     supply.maintain(); // regrowth and drop recovery catch up on the join, not a rule tick later
     if (credited) sync.saveNow(true);
@@ -446,7 +420,7 @@ export function createRailwayWorldHost({
       seats.clear();
       if (!running || closed || requests.failed()) return;
       running = false;
-      awayMarker = Math.floor(now() / 100);
+      away.pause();
       sync.saveNow(true);
     },
     paused: () => !running,
