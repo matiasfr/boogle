@@ -122,14 +122,15 @@ export function coveLayersMaterial() {
  * darker wet band at the sea; paths are the shared path surface (place/path-surface.ts), laid over it by the caller. Rock only where the collider is unwalkable: the cove's sandstone pigment
  * and triplanar tile (shared, already resident), beds keyed to the drawn 1 m ledges at about a third of the cove's
  * contrast, no rust bed. Fades to today's material over the wedge's last 24 m. */
-export function roundTwoMaterial() {
+export function roundTwoMaterial(whole = false) {
   const m = groundMaterial();
-  const inside = region(24);
+  const inside: N = whole ? float(1) : region(24);
   const p = positionWorld.sub(vec3(ORIGIN.x, 0, ORIGIN.z));
   const wx: N = positionWorld.x;
   const steep: N = attribute('tpSteep', 'float'),
     foot: N = attribute('tpFoot', 'float'),
-    soil: N = attribute('tpSoil', 'float');
+    soil: N = attribute('tpSoil', 'float'),
+    gorge: N = attribute('tpGorge', 'float');
   // Today's lawn, sand and path (look.ts groundMaterial's grass branch, world coordinates), so colours match outside.
   const slow: N = sin(wx.mul(0.031).add(1.3))
     .mul(sin(p.z.mul(0.027).sub(0.4)))
@@ -137,8 +138,14 @@ export function roundTwoMaterial() {
   const mid: N = sin(wx.mul(0.11).add(p.z.mul(0.07))).mul(0.42);
   const fine: N = sin(wx.mul(0.37).sub(p.z.mul(0.29))).mul(0.2);
   const breathe: N = slow.add(mid).add(fine).mul(0.5).add(0.5);
-  const v: N = vertexColor().rgb;
-  const sandy: N = smoothstep(-0.05, 0.1, v.r.sub(v.g));
+  // Low ground is drawn per pixel, not from the 2 m vertex blend (which washed the lower slopes to a pale, milky
+  // green): under 3 m the vertex colour gives way to one mean green, and the beach is a line that wanders with height.
+  const raw: N = vertexColor().rgb;
+  const v: N = mix(raw, linear('#618f41'), smoothstep(3, 3.6, p.y).oneMinus());
+  const shoreLine: N = sin(p.x.mul(0.19).add(p.z.mul(0.13)))
+    .mul(0.3)
+    .add(sin(p.x.mul(0.53).sub(p.z.mul(0.47))).mul(0.12));
+  const sandy: N = smoothstep(2.15, 2.45, p.y.add(shoreLine)).oneMinus();
   const dry: N = smoothstep(
     0.25,
     0.75,
@@ -155,9 +162,11 @@ export function roundTwoMaterial() {
   // Sand a little darker than today's: on a sun-facing smooth slope today's pigment tone-maps to near white (today's
   // facet rock hid it). Darker still where the broad slope is steep, so a bank reads damp, not bright.
   const sandTone: N = smoothstep(0.75, 0.95, soil).mul(0.12).add(0.68);
-  const ground: N = mix(selectiveColour(lawn, 'grass'), paletteNode(v.mul(sandTone), 'sand'), sandy);
+  // The beach is sand by the sea; the gorge's low floor keeps its grey-green bank.
+  const low: N = mix(linear('#e8d39a').mul(sandTone), linear('#8e9a78').mul(0.85), gorge);
+  const ground: N = mix(selectiveColour(lawn, 'grass'), paletteNode(low, 'sand'), sandy);
   // The sea's wet band, on sand only and only ever darker than today's sand.
-  const wet: N = smoothstep(0.05, 0.6, p.y).oneMinus().mul(sandy);
+  const wet: N = smoothstep(0.05, 0.6, p.y).oneMinus().mul(sandy).mul(gorge.oneMinus());
   // Rock: unwalkable only, with a little wander so the border isn't the grid's.
   const wander: N = sin(p.x.mul(0.37).add(p.z.mul(0.23)))
     .mul(0.5)
@@ -184,16 +193,20 @@ export function roundTwoMaterial() {
   const bed: N = mix(pigment('strata'), pigment('sediment'), smoothstep(0.6, 0.61, tone));
   // Halfway between the cove's sandstone and today's tan rock (look.ts), so the gorge stays the same family of rock.
   const today: N = mix(linear('#a98558'), linear('#d0a872'), smoothstep(2, 18, p.y));
+  // Beds you can see from the path, still subtle (10 November: "subtle layers"): two in three take the bed pigment at
+  // just over half strength, every bed is a little lighter or darker than the next, and a thin dark seam parts them.
   const layered: N = mix(
     mix(pigment('rock'), today, 0.5),
     mix(bed, today, 0.5),
-    smoothstep(0.35, 0.36, tone).mul(0.35),
-  );
+    smoothstep(0.35, 0.36, tone).mul(0.55),
+  ).mul(fract(tone.mul(7.7)).mul(0.16).add(0.92));
   const tread: N = smoothstep(0.05, 0.3, fract(q)).oneMinus();
+  const seam: N = smoothstep(0.02, 0.07, fract(q)).mul(smoothstep(0.93, 0.98, fract(q)).oneMinus());
   const rockColour: N = layered
-    .mul(mix(vec3(1), paint, coveU('pigmentStrength')))
+    .mul(mix(vec3(1), paint, 0.45))
     .mul(smoothstep(0, 0.45, foot).mul(0.2).add(0.8))
-    .mul(tread.mul(0.05).add(1));
+    .mul(tread.mul(0.05).add(1))
+    .mul(seam.mul(0.14).add(0.86));
   // A dry lip only at the rim.
   const lip: N = smoothstep(0.02, 0.12, steep)
     .mul(rock.oneMinus())
@@ -208,5 +221,6 @@ export function roundTwoMaterial() {
   patchNode(m, 'normalNode', (previous: N) =>
     mix(previous, mix(normalViewGeometry, normalFlat, rock).normalize(), inside).normalize(),
   );
-  return registerWaterReceiver(m);
+  // The whole land registers with the sea through its cove layers (land.ts); a wedge of its own does it here.
+  return whole ? m : registerWaterReceiver(m);
 }
