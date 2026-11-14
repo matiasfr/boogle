@@ -11,6 +11,7 @@ import { RAIL_HEAD, SHUNT } from './works-shape.ts';
 export type TrackPose = { x: number; z: number; yaw: number; y: number };
 /** A track by metres along it. */
 export type TrackPath = (l: number) => TrackPose;
+type RailEnd = { x: number; z: number; y: number };
 
 /** The kit's sleeper and rail, metres. */
 const SLEEPER_SIZE = { length: 2.3, depth: 0.42 },
@@ -73,38 +74,45 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
       sleeper(path(l), slope(path, l, from, to));
     }
   }
-  /** Both rails from `from` to `to` in equal lengths of about 3 m, each a chord between its own ends (so they meet on
-   * a curve and follow a ramp). */
+  /** One rail between two points at rail height (`y`), `w` its width as a share of a plain rail's: a chord between its
+   * own ends, so pieces laid end to end meet on a curve and follow a ramp. */
+  function rail(a: RailEnd, b: RailEnd, w = 1) {
+    const run = Math.hypot(b.x - a.x, b.z - a.z),
+      rise = b.y - a.y;
+    rails.push(
+      matrix(
+        (a.x + b.x) / 2,
+        (a.y + b.y) / 2 + FOOT,
+        (a.z + b.z) / 2,
+        Math.atan2(b.x - a.x, b.z - a.z),
+        Math.atan2(rise, run),
+        w,
+        1,
+        Math.hypot(run, rise) / RAIL_LENGTH,
+      ),
+    );
+  }
+  /** Both rails from `from` to `to` in equal lengths of about 3 m. */
   function railsAlong(path: TrackPath, from: number, to: number) {
     if (to - from < 0.2) return;
     const n = Math.max(1, Math.round((to - from) / 3));
     for (let k = 0; k < n; k++) {
       const p0 = path(from + ((to - from) * k) / n),
         p1 = path(from + ((to - from) * (k + 1)) / n);
-      for (const r of [-GAUGE, GAUGE]) {
-        const a = across(p0, r),
-          b = across(p1, r);
-        const run = Math.hypot(b.x - a.x, b.z - a.z),
-          rise = p1.y - p0.y;
-        rails.push(
-          matrix(
-            (a.x + b.x) / 2,
-            (p0.y + p1.y) / 2 + FOOT,
-            (a.z + b.z) / 2,
-            Math.atan2(b.x - a.x, b.z - a.z),
-            Math.atan2(rise, run),
-            1,
-            1,
-            Math.hypot(run, rise) / RAIL_LENGTH,
-          ),
-        );
-      }
+      for (const r of [-GAUGE, GAUGE]) rail({ ...across(p0, r), y: p0.y }, { ...across(p1, r), y: p1.y });
     }
   }
   /** Where `path`, between `from` and `to`, runs beside another track's sleepers (`theirs`, each on that track's
    * centreline), it lays none of its own: each of theirs is carried on under this track's rails as one long timber, a
-   * centimetre lower and thinner so theirs hides its half. Returns the stretch of `path` they carry, or null. */
-  function timbers(theirs: (TrackPose & { depth: number })[], path: TrackPath, from: number, to: number) {
+   * centimetre lower and thinner so theirs hides its half. A sleeper with a `span` (its timber's two ends, metres to its
+   * track's right: a turnout's, src/place/turnout.ts) is cut to that instead. Returns the stretch of `path` they
+   * carry, or null. */
+  function timbers(
+    theirs: (TrackPose & { depth: number; span?: readonly [number, number] | null })[],
+    path: TrackPath,
+    from: number,
+    to: number,
+  ) {
     let lo = Infinity,
       hi = -Infinity;
     for (const p of theirs) {
@@ -138,8 +146,12 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
       if (Math.abs(lat) > SHARED) continue;
       lo = Math.min(lo, a);
       hi = Math.max(hi, a);
-      if (Math.abs(lat) < 0.05 || p.depth < SLEEPER_SIZE.depth) continue;
-      const mid = across(p, lat / 2);
+      if ((!p.span && Math.abs(lat) < 0.05) || p.depth < SLEEPER_SIZE.depth) continue;
+      const [end0, end1] = p.span ?? [
+        Math.min(0, lat) - SLEEPER_SIZE.length / 2,
+        Math.max(0, lat) + SLEEPER_SIZE.length / 2,
+      ];
+      const mid = across(p, (end0 + end1) / 2);
       sleepers.push(
         matrix(
           mid.x,
@@ -147,7 +159,7 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
           mid.z,
           p.yaw,
           0,
-          (SLEEPER_SIZE.length + Math.abs(lat)) / SLEEPER_SIZE.length,
+          (end1 - end0) / SLEEPER_SIZE.length,
           1,
           (p.depth - 0.02) / SLEEPER_SIZE.depth,
         ),
@@ -173,6 +185,7 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
   return {
     sleeper,
     sleepersAlong,
+    rail,
     railsAlong,
     timbers,
     clearOf,

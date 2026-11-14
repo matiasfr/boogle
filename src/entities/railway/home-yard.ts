@@ -1,9 +1,11 @@
 // Home's yard track, laid: which track the station has that is not a line, as yard track (./yard-track.ts) from the
-// station's data (src/place/home-station.ts). The buffer stubs, the spur and the three stall roads, then (shown once
-// line 2 has its first stretch) the cart's leg. Geometry only, no scene: the station view draws it
+// station's data (src/place/home-station.ts). The buffer stubs, the spur with its turnout off road 2 and the three
+// stall roads, then (shown once line 2 has its first stretch) the cart's leg and the turnout's parts on road 2. Geometry only, no scene: the station view draws it
 // (./home-station-view.ts) and the yard test reads the same rails the shunt rides (test/roundhouse-yard.test.ts).
 import * as home from '../../place/home-station.ts';
+import { junctions } from '../../place/junctions.ts';
 import { LINES, LINKS, ORIGIN, railY } from '../../place/layout.ts';
+import { KIT, turnout, type RailPiece } from '../../place/turnout.ts';
 import { sleeperStations } from './track-panels.ts';
 import { stallRoadY } from './works-shape.ts';
 import { createYardTrack, type TrackPath, type TrackPose } from './yard-track.ts';
@@ -34,14 +36,33 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
     yard.railsAlong(stub, home.BUFFERS[road] + 0.3, 0);
     for (let s = first - 1.2; s > home.BUFFERS[road] + 0.5; s -= 1.2) yard.sleeper(stub(s));
   }
+  // The spur leaves road 2 at a turnout (J1: src/place/junctions.ts; docs/plans/turnouts.md), drawn for the through
+  // road. Its parts on the spur's own rails stand from the start; those beside road 2's rails are laid with road 2's
+  // track, at the end of this function.
+  const j1 = junctions().find((j) => j.id === 'J1')!,
+    points = turnout(j1.through, j1.diverging, j1.lever);
+  // Both wing rails wait for road 2: the one beside the spur's vee leg springs from road 2's rail.
+  const withSpur = (r: RailPiece) => r.road === 'diverging' && r.role !== 'wing';
   {
-    // Where the spur leaves road 2 it shares road 2's sleepers, carried on under it as long timbers (no blades, frog
-    // or lever yet: docs/plans/home-station.md, step 10); its rails begin beside road 2's and run to the table's rim.
     const start = home.roadAt(1, home.SPUR.s),
       len = home.SPUR.segs.reduce((n, seg) => n + seg.len, 0);
     const spur: TrackPath = (l) => poseOf(home.march(start, home.SPUR.segs, l), deck);
-    const shared = yard.timbers(lineSleepers(1, home.SPUR.s, home.SPUR.s + 14), spur, 0, Math.min(len, 14));
-    yard.railsAlong(spur, yard.clearOf(spur, 0, 6, roadPath(1), home.SPUR.s, home.SPUR.s + 8), len);
+    // Through the turnout road 2's sleepers are its timbers, each cut to carry all four rails (the two at the toe run
+    // out toward the lever); past it the spur has its own.
+    const shared = yard.timbers(
+      sleeperStations(LINKS[1]!, j1.s - KIT.head, j1.s + 14).map((t) => ({
+        ...roadPath(1)(t.s),
+        depth: t.depth,
+        span: points.span(t.s - j1.s),
+      })),
+      spur,
+      -KIT.head,
+      Math.min(len, 14),
+    );
+    // The stock rail from the toe, the open blade, the closure rail, the vee's leg and a check rail; then plain track
+    // to the table's rim.
+    for (const r of points.rails) if (withSpur(r)) yard.rail(r.a, r.b, r.w);
+    yard.railsAlong(spur, points.plainD, len);
     yard.sleepersAlong(spur, shared ? shared.hi + 0.7 : 0, len);
   }
   // The stall roads: off the table's rim at the lines' height, down a ramp to ground-level rails at the door
@@ -81,5 +102,8 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
     );
     yard.sleepersAlong(leg, off ? off.hi + 0.7 : 0, on ? on.lo - 0.7 : len);
   }
+  // The spur turnout's parts beside road 2's own rails (the wing rails and a check rail): road 2 past s 7 is laid
+  // with line 2's first stretch, as the leg is.
+  for (const r of points.rails) if (!withSpur(r)) yard.rail(r.a, r.b, r.w);
   return yard;
 }
