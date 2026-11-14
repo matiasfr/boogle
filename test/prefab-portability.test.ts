@@ -5,6 +5,8 @@ import { prefabs as rock } from '../src/content/prefabs/bell-rock.ts';
 import { levels as leg2 } from '../src/content/levels/leg2.ts';
 import { levels as gorge } from '../src/content/levels/gorge.ts';
 import { levels as workshop } from '../src/content/levels/workshop.ts';
+import { levels as kitLevels } from '../src/content/levels/workshop-kit.ts';
+import { prefabs as kit } from '../src/content/prefabs/workshop-kit.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -30,7 +32,7 @@ test('artifact serialization is independent of runtime native transcendental res
       Math[key] = (...args: number[]) => f(...args) + 1e-15;
     }
     writeArtifacts(
-      compile([...greybox, ...town, ...rock, ...railway], [...leg2, ...gorge, ...workshop]),
+      compile([...greybox, ...town, ...rock, ...railway, ...kit], [...leg2, ...gorge, ...workshop, ...kitLevels]),
       'content/built',
       true,
     );

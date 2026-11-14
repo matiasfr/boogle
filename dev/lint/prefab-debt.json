@@ -400,7 +400,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/workshop.ts": {
-      "count": 8,
+      "count": 6,
       "exports": ["WORKSHOP_DOOR", "makeWorkshop"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },

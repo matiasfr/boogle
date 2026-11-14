@@ -715,6 +715,87 @@
         "none": true
       }
     },
+    "town.workshop-anvil": {
+      "colliders": [
+        {
+          "at": [
+            -0.4,
+            0.445,
+            0.35
+          ],
+          "half": [
+            0.65,
+            0.445,
+            0.2
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.workshop-anvil",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.workshop-parts",
+        "params": {
+          "hd": 4,
+          "hw": 5,
+          "piece": "anvil"
+        }
+      }
+    },
+    "town.workshop-bellows": {
+      "colliders": [
+        {
+          "at": [
+            2.6,
+            0.35,
+            3.1
+          ],
+          "half": [
+            0.6,
+            0.35,
+            0.3
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.workshop-bellows",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.workshop-parts",
+        "params": {
+          "hd": 4,
+          "hw": 5,
+          "piece": "bellows"
+        }
+      }
+    },
+    "town.workshop-bench": {
+      "colliders": [
+        {
+          "at": [
+            1,
+            0.45,
+            -3.35
+          ],
+          "half": [
+            1.6,
+            0.45,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.workshop-bench",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.workshop-parts",
+        "params": {
+          "hd": 4,
+          "hw": 5,
+          "piece": "bench"
+        }
+      }
+    },
     "town.workshop-chair": {
       "attach": {
         "seat": {
@@ -772,6 +853,140 @@
       "visual": {
         "builder": "seat.chair",
         "params": {}
+      }
+    },
+    "town.workshop-chimney": {
+      "colliders": [
+        {
+          "at": [
+            -3.6,
+            1.35,
+            -2.8
+          ],
+          "half": [
+            0.575,
+            1.35,
+            0.575
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.workshop-chimney",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.workshop-parts",
+        "params": {
+          "hd": 4,
+          "hw": 5,
+          "piece": "chimney"
+        }
+      }
+    },
+    "town.workshop-floor": {
+      "colliders": [],
+      "key": "town.workshop-floor",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.workshop-parts",
+        "params": {
+          "hd": 4,
+          "hw": 5,
+          "piece": "floor"
+        }
+      }
+    },
+    "town.workshop-lanterns": {
+      "colliders": [],
+      "key": "town.workshop-lanterns",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.workshop-parts",
+        "params": {
+          "hd": 4,
+          "hw": 5,
+          "piece": "lanterns"
+        }
+      }
+    },
+    "town.workshop-logs": {
+      "colliders": [
+        {
+          "at": [
+            4.3,
+            0.5,
+            -2.82
+          ],
+          "half": [
+            0.5,
+            0.5,
+            0.96
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.workshop-logs",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.workshop-parts",
+        "params": {
+          "hd": 4,
+          "hw": 5,
+          "piece": "logs"
+        }
+      }
+    },
+    "town.workshop-rails": {
+      "colliders": [
+        {
+          "at": [
+            -4.45,
+            1,
+            1.65
+          ],
+          "half": [
+            0.35,
+            1,
+            0.9
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.workshop-rails",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.workshop-parts",
+        "params": {
+          "hd": 4,
+          "hw": 5,
+          "piece": "rails"
+        }
+      }
+    },
+    "town.workshop-tub": {
+      "colliders": [
+        {
+          "at": [
+            0.95,
+            0.31,
+            0.25
+          ],
+          "half": [
+            0.45,
+            0.31,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.workshop-tub",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.workshop-parts",
+        "params": {
+          "hd": 4,
+          "hw": 5,
+          "piece": "tub"
+        }
       }
     }
   },

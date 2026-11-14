@@ -1,7 +1,9 @@
 import type { Object3D, InstancedMesh } from 'three/webgpu';
 import type { BuilderName } from './names.ts';
 import type { JsonObject } from './types.ts';
-export type Builder = (params: JsonObject, batch?: { mesh: InstancedMesh; index: number }) => Object3D;
+import type { Part } from '../render/part-geometry.ts';
+export type PartBuild = { parts: Part[]; glass?: { x: number; y: number; z: number }[] };
+export type Builder = (params: JsonObject, batch?: { mesh: InstancedMesh; index: number }) => Object3D | PartBuild;
 export const builders = new Map<BuilderName, Builder>();
 export function registerBuilder(name: BuilderName, build: Builder) {
   if (builders.has(name)) throw new Error(`prefabs: duplicate builder ${name}`);

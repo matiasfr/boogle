@@ -16,6 +16,8 @@ import {
 } from './validate.ts';
 import './builders/seat-chair.ts';
 import './builders/greybox-box.ts';
+import './builders/workshop-parts.ts';
+import type { Part } from '../render/part-geometry.ts';
 import { builders } from './builders.ts';
 import { makeGreyboxLabel } from './builders/greybox-label.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
@@ -190,6 +192,8 @@ export function instantiate(
   let enabled = false,
     disposed = false;
   const root = new THREE.Group();
+  const furnishingParts: Part[] = [],
+    glass: { x: number; y: number; z: number }[] = [];
   root.visible = enabled;
   root.position.fromArray(placement.pos);
   root.rotation.copy(euler(placement.rot));
@@ -200,7 +204,12 @@ export function instantiate(
         { ...def.visual.params, ...placement.params },
         batch ? { mesh: batch.target.mesh, index: batch.index + i } : undefined,
       );
-      if (!batch) root.add(visual);
+      if ('parts' in visual) {
+        if (batch || placement.rot || placement.scale || placement.pos.some((v) => v !== 0))
+          throw new Error('prefabs: merged parts require an identity local placement');
+        furnishingParts.push(...visual.parts);
+        glass.push(...(visual.glass ?? []));
+      } else if (!batch) root.add(visual);
       else batch.target.slots.add(batch.index + i);
     }
   }
@@ -277,6 +286,8 @@ export function instantiate(
   owner.cleanup(dispose);
   return {
     root,
+    parts: furnishingParts,
+    glass,
     bodies,
     seats,
     attach(name: string): { definition: Attach; at: THREE.Vector3 } {

@@ -1,7 +1,7 @@
 // The finished forge's walk-in reward. Local geometry/cutaway; no production, payment or freight state.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
-import { addBody, getMask, removeBody, type Body } from '../../physics/engine.ts';
+import { getMask, type Body } from '../../physics/engine.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
 import { camConstraints, me } from '../../player/player.ts';
 import { camera, scene } from '../../render/scene.ts';
@@ -54,7 +54,9 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   );
   // Furnishing: one merged mesh (the floor, bench, anvil, logs, rails...) and one for the lanterns' glass; the glass
   // shares the furnace mouth's material, so neither adds a shader program.
-  const kit = workshopKit(hw, hd);
+  const kitOwner = createOwnedView();
+  g.add(kitOwner.root);
+  const kit = workshopKit(hw, hd, kitOwner);
   const furnishing = new THREE.Mesh(kit.geometry, kitMaterial);
   furnishing.castShadow = furnishing.receiveShadow = true;
   g.add(furnishing);
@@ -63,7 +65,6 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
     fire.material,
   );
   g.add(panes);
-  for (const k of kit.solids) solidSpecs.push({ ...k, room: false });
   const chairIndex = solidSpecs.length;
   const chairOwner = createOwnedView();
   g.add(chairOwner.root);
@@ -87,6 +88,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   proxy.mesh.visible = false;
   scene.add(proxy.mesh);
   const bodies: Body[] = [];
+  const bodyOwner = createOwnedView();
   let wasReady = false,
     inside = false;
   const hidden = new Float32Array(plan.pieces.length);
@@ -103,10 +105,12 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   return {
     /** Undo everything it added (the production forge's view ends; Place's forge lives for the page). */
     dispose() {
+      kitOwner.dispose();
       chairOwner.dispose();
       const i = camConstraints.indexOf(constraint);
       if (i >= 0) camConstraints.splice(i, 1);
-      for (const b of bodies) removeBody(b);
+      for (const b of bodies) bodyOwner.removeBody(b);
+      bodyOwner.dispose();
       bodies.length = 0;
       scene.remove(g);
       g.traverse((o) => {
@@ -127,19 +131,23 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
         if (open)
           for (const [index, s] of solidSpecs.entries()) {
             // Keep today's body insertion order: furnishing, chair, then room walls.
-            if (index === chairIndex) chair.setEnabled(true);
+            if (index === chairIndex) {
+              kit.setEnabled(true);
+              chair.setEnabled(true);
+            }
             const body = staticBody(
               { kind: 'box', hx: s.w / 2, hy: s.h / 2, hz: s.d / 2 },
               { x: x + s.x, y: floor + s.y, z: z + s.z },
               undefined,
               s.room ? ROOM_GROUP : undefined,
             );
-            addBody(body);
+            bodyOwner.addBody(body);
             bodies.push(body);
           }
         else {
+          kit.setEnabled(false);
           chair.setEnabled(false);
-          for (const b of bodies) removeBody(b);
+          for (const b of bodies) bodyOwner.removeBody(b);
           bodies.length = 0;
         }
       }

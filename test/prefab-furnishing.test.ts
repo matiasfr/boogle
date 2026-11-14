@@ -7,13 +7,40 @@ import { prefabGolden } from './helpers/prefab-golden.ts';
 import { STOCK } from '../src/render/cosmetic-parts.ts';
 import { BOARDS, SHOP } from '../src/entities/town/town-lines.ts';
 import type { Part } from '../src/render/part-geometry.ts';
+import artifact from '../content/built/prefabs.json' with { type: 'json' };
+import level from '../content/built/levels/workshop-kit.json' with { type: 'json' };
+import { loadLevelArtifact, loadPrefabArtifact } from '../src/prefab/validate.ts';
+
+const { workshopParts } = sourceModule<typeof import('../src/prefab/builders/workshop-parts.ts')>(
+  fs.readFileSync('src/prefab/builders/workshop-parts.ts', 'utf8'),
+  { registerBuilder() {} },
+);
 
 test('workshop furnishing matches the old authored parts, solids and glass', () => {
   const { workshopKit } = sourceModule<{ workshopKit(w: number, d: number): unknown }>(
     fs.readFileSync('src/entities/town/workshop-kit.ts', 'utf8'),
-    { merged: (parts: Part[]) => parts },
+    {
+      merged: (parts: Part[]) => parts,
+      artifact,
+      level,
+      loadLevelArtifact,
+      loadPrefabArtifact,
+      instantiate: (key: string) => {
+        const def = loadPrefabArtifact(artifact).prefabs[key]!;
+        if (!('builder' in def.visual)) throw new Error('expected parts');
+        const p = def.visual.params;
+        return { ...workshopParts(p.piece as string, p.hw as number, p.hd as number), setEnabled() {} };
+      },
+    },
   );
-  golden('workshop-kit', workshopKit(5, 4));
+  const actual = workshopKit(5, 4) as { geometry: Part[]; glass: unknown };
+  const solids = loadLevelArtifact(level, loadPrefabArtifact(artifact).prefabs).placements.flatMap((p) =>
+    loadPrefabArtifact(artifact).prefabs[p.prefab]!.colliders.map((c) => {
+      if (c.shape !== 'box') throw new Error('expected box');
+      return { x: c.at[0], y: c.at[1], z: c.at[2], w: c.half[0] * 2, h: c.half[1] * 2, d: c.half[2] * 2 };
+    }),
+  );
+  golden('workshop-kit', { geometry: actual.geometry, solids, glass: actual.glass });
 });
 
 test('shop furnishing matches the old parts, solids and sign references in order', () => {
