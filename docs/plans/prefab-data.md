@@ -563,3 +563,18 @@ Seven deck records also replace all deck/base/pile kit construction in `halts-vi
 original pre-conversion golden remains unchanged. Collider debt drops another seven units, 488 to 481. Ramps,
 request levers/plaques and signal/map attachments remain; step 10 stays unchecked. Rebase/shared catalogue status
 and fresh verification are recorded in the [follow-up report](prefab-data-step-10-2-report.md).
+
+### Step 10 third pass: shared catalogue and complete ramps
+
+Rebased onto main's shared catalogue on `codex/prefab-data-step-10-3`. Seven shared halt specifications now cover
+the retained deck/base/pile, shelter, bench, canopy/posts and mast pieces plus all 17 kit ramps. Generated placements
+hold authored operands; native geometry resolves at runtime. Ten consumers share exactly one catalogue validation.
+Actual content is 188 records / 334,626 canonical bytes, within unchanged 200 / 350,000 ceilings. The reviewed
+catalog-mutation freshness regression and original pre-conversion golden pass; neither sim catalogs nor namespace
+change. Collider debt against current main shrinks 490 to 475 units, with no list growth.
+
+Levers/plaques and interactions, signal attachments, map stands and plank crossings remain; step 10 stays unchecked.
+Prefab suites pass 224/224 normal and perturbed, full check has 1,919 passes plus one existing TODO, server 371,
+direct net 190 and ship-check 458. Opened fresh Home-at-both-edges, stack and Gorge stills match fresh main
+references; an actual stack-head lever request is accepted and a train stops; T1 passes. [Proof, budgets, copy,
+debt, checks, timing limits and manifests](prefab-data-step-10-3-report.md). No push or ship; not tested on a device.
