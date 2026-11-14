@@ -68,6 +68,9 @@ let brain: ReturnType<typeof createBooglerShadow> | null = null;
 let localTick = 0;
 let localTime = 0;
 const presentation = createBooglerPresentation();
+// One presenter for the page lifetime. A slow frame alone is not evidence that nobody was watching.
+presentation.visibility(document.hidden, performance.now());
+document.addEventListener('visibilitychange', () => presentation.visibility(document.hidden, performance.now()));
 const disp = presentation.pose;
 let received = false;
 

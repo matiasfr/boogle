@@ -126,11 +126,11 @@ test('a mid-walk rider leg preserves the shown pose, then converges; refill plac
 
 const frame = 1 / 60;
 const stepBound = 3 * frame; // calm/ridden catch-up: at most twice the ordinary 1.5 m/s walk speed
-function boundedStep(p: ReturnType<typeof createBooglerPresentation>, run: () => void) {
+function boundedStep(p: ReturnType<typeof createBooglerPresentation>, run: () => void, bound = stepBound) {
   const before = { ...p.pose };
   run();
   const distance = Math.hypot(p.pose.x - before.x, p.pose.z - before.z);
-  assert.ok(distance <= stepBound + 1e-9, `one frame moved ${distance} m; bound ${stepBound} m`);
+  assert.ok(distance <= bound + 1e-9, `one frame moved ${distance} m; bound ${bound} m`);
   return distance;
 }
 
@@ -143,7 +143,7 @@ test('a session outage freezes the shown pose; a distant restart leg catches up 
   assert.equal(p.pose.walking, false);
   const restored = { ...walk, z0: 10, z1: 10, speed: 0, start: 0 };
   for (let i = 0; i < 600; i++) {
-    const moved = boundedStep(p, () => p.update(restored, i / 6, frame, false, undefined, true));
+    const moved = boundedStep(p, () => p.update(restored, i / 6, frame, false, undefined, true), (13 / 2.5) * frame);
     if (moved > 0.001) assert.equal(p.pose.walking, true, 'catch-up must not slide with idle feet');
   }
   assert.ok(Math.abs(p.pose.z - 10) < 0.001);
@@ -155,11 +155,11 @@ test('a clock re-anchor before the replacement leg cannot cut, and converges to 
   p.update(walk, 20, 0, true);
   boundedStep(p, () => p.update(walk, 60, frame)); // clock changes first, same immutable leg
   const refill = { ...walk };
-  for (let i = 1; i <= 360; i++) boundedStep(p, () => p.update(refill, 60 + i / 6, frame));
+  for (let i = 1; i <= 360; i++) boundedStep(p, () => p.update(refill, 60 + i / 6, frame), 4 * frame);
   assert.ok(Math.abs(p.pose.z - booglerPose(refill, 120).z) < 0.001);
 });
 
-test('returning from a hidden tab spends one frame of catch-up, not seven seconds', () => {
+test('a long frame while visible stays continuous instead of assuming the page was hidden', () => {
   const p = createBooglerPresentation();
   p.update(walk, 20, 0, true);
   boundedStep(p, () => p.update(walk, 90, 7));
@@ -178,7 +178,7 @@ test('ridden talk hold release starts gently and every correction stays within t
 });
 
 for (const speed of [1.5, 2.3, 3.4])
-  test(`hidden return at ${speed} m/s uses raw time despite the game's 50 ms delta clamp`, () => {
+  test(`a visible stall at ${speed} m/s uses raw time despite the game's 50 ms delta clamp`, () => {
     const p = createBooglerPresentation();
     const moving = { ...walk, speed };
     p.update(moving, 20, 0, true, undefined, true, 1000);
@@ -187,4 +187,63 @@ for (const speed of [1.5, 2.3, 3.4])
     const distance = Math.hypot(p.pose.x - before.x, p.pose.z - before.z);
     const bound = Math.max(3, speed * 1.2) / 60;
     assert.ok(distance <= bound + 1e-9, `hidden return moved ${distance} m; bound ${bound} m`);
+  });
+
+test('a seven-second hidden interval places the first visible frame exactly on authority with no catch-up', () => {
+  const p = createBooglerPresentation();
+  p.update(walk, 20, 0, true, undefined, true, 1000);
+  p.talk(true);
+  p.visibility(true, 1000);
+  p.visibility(false, 8000);
+  p.update(walk, 90, 0.05, false, undefined, true, 8000);
+  assert.deepEqual(p.pose, { ...booglerPose(walk, 90), mode: walk.mode });
+  p.update(walk, 90 + 1 / 6, frame, false, undefined, true, 8000 + 1000 / 60);
+  assert.equal(p.pose.z, booglerPose(walk, 90 + 1 / 6).z, 'no trailing correction on the next frame');
+  boundedStep(p, () => p.update(walk, 130, frame), 3.9 * frame);
+});
+
+test('a brief hidden interval does not grant a later visible clock jump permission to cut', () => {
+  const p = createBooglerPresentation();
+  p.update(walk, 20, 0, true);
+  p.visibility(true, 1000);
+  p.visibility(false, 1400);
+  boundedStep(p, () => p.update(walk, 60, frame));
+});
+
+test('a visible reconnect six metres behind a walking leg catches up within three seconds at at most 3.9 m/s', () => {
+  const p = createBooglerPresentation();
+  p.update(walk, 20, 0, true);
+  p.update(walk, 60, frame, false, undefined, false);
+  const held = p.pose.z;
+  p.update(walk, 60, 0); // six-metre gap; arm catch-up without a rendered step
+  assert.equal(p.pose.z, held);
+  let caughtAt = 0,
+    maxStep = 0;
+  for (let i = 1; i <= 180; i++) {
+    maxStep = Math.max(
+      maxStep,
+      boundedStep(p, () => p.update(walk, 60 + i / 6, frame), 3.9 * frame),
+    );
+    if (!caughtAt && Math.abs(p.pose.z - booglerPose(walk, 60 + i / 6).z) < 1e-6) caughtAt = i * frame;
+  }
+  assert.ok(caughtAt > 0 && caughtAt <= 3, `catch-up took ${caughtAt || '>3'} seconds`);
+  assert.ok(maxStep > stepBound, 'a long visible correction raises the ordinary catch-up cap');
+});
+
+for (const gap of [6, 60])
+  test(`flee replans preserve catch-up across a ${gap}-metre correction`, () => {
+    const p = createBooglerPresentation();
+    let leg = { ...walk, z1: -200, speed: 3.4, mode: 1 };
+    p.update(leg, 0, 0, true);
+    p.update(leg, 0, frame, false, undefined, false);
+    leg = { ...leg, z0: -gap };
+    p.update(leg, 0, 0);
+    let caughtAt = 0;
+    for (let i = 1; i <= 186; i++) {
+      const tick = i / 6;
+      if (i % 48 === 0) leg = { ...leg, z0: booglerPose(leg, tick).z, start: tick };
+      boundedStep(p, () => p.update(leg, tick, frame), (3.4 + gap / 2.5) * frame);
+      if (!caughtAt && Math.abs(p.pose.z - booglerPose(leg, tick).z) < 1e-6) caughtAt = i * frame;
+    }
+    assert.ok(caughtAt > 0, 'continuous flee replans must not stretch catch-up beyond about three seconds');
   });

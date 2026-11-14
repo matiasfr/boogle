@@ -11,9 +11,14 @@ show only while you are on his island (dry land of its grid; Local presentation)
 
 - **Sync kind.** Server. His 10 Hz brain publishes a `booglerLeg` only when the walk, mode or look target changes.
   Every client computes the continuous walk against the room presentation clock and approaches that pose with
-  bounded movement, including when the clock re-anchors before a new leg. Calm/ridden catch-up is capped at 3 m/s
-  with a 12 m/s² acceleration bound; fleeing permits 20% above its leg speed. Corrections never teleport, even
-  beyond 3 m, and moving corrections animate his feet. Joining clients start at the server pose. Sessionless
+  bounded movement, including when the clock re-anchors before a new leg. Calm/ridden catch-up normally caps at 3 m/s
+  with a 12 m/s² acceleration bound; fleeing permits 20% above its leg speed. A visible correction that would take
+  over three seconds raises that correction's cap to target speed plus gap / 2.5 seconds (3.9 m/s for a six-metre
+  gap behind his ordinary walk), retaining the closing rate across leg changes until caught up. Extreme gaps also
+  raise acceleration enough to reach the cap within half a second. Watched corrections never teleport,
+  and moving corrections animate his feet. After the page was hidden for at least 500 ms, its first visible live
+  frame places him on the authoritative pose immediately: nobody saw the intervening movement. A return while
+  offline still holds, then eases on reconnect. Joining clients start at the server pose. Sessionless
   previews run the same brain locally; a non-live session holds his shown pose idle until authority returns. His position and facing
   are saved, revalidated against dry unblocked land on load, and reset to his start by a room reset or world bump.
   He stands still while the room is empty and resumes there. He has a kinematic body, so the ball

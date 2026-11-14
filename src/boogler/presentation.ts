@@ -1,4 +1,4 @@
-// Local presentation only: authoritative legs are targets, never permission to cut the shown pose.
+// Local presentation only: keep watched movement continuous; replace an unseen pose on returning to the tab.
 import { turnBooglerToward } from '../world/boogler-walk.ts';
 import { booglerPose, type BooglerLeg } from '../world/boogler-shadow.ts';
 
@@ -8,15 +8,26 @@ export function createBooglerPresentation() {
   let talking = false,
     held = false;
   let heldFor = 0,
-    speed = 0;
+    speed = 0,
+    catchUp = 0;
   let lastNow: number | undefined;
+  let hiddenAt: number | null = null;
+  let placeOnReturn = false;
   return {
     pose,
+    visibility(hidden: boolean, now: number) {
+      if (hidden) hiddenAt ??= now;
+      else if (hiddenAt !== null) {
+        placeOnReturn = now - hiddenAt >= 500;
+        hiddenAt = null;
+      }
+    },
     talk(open: boolean) {
       if (open && !talking) {
         held = true;
         heldFor = 0;
         speed = 0;
+        catchUp = 0;
         pose.walking = false;
       }
       talking = open;
@@ -31,13 +42,21 @@ export function createBooglerPresentation() {
       live = true,
       now?: number,
     ) {
-      // FrameCtx.dt is already capped at 50 ms. Only the raw timestamp reveals a hidden-tab pause.
+      // FrameCtx.dt is already capped at 50 ms. Raw time also catches visible stalls, which must not cut.
       const elapsed = now !== undefined && lastNow !== undefined ? Math.max(0, (now - lastNow) / 1000) : dt;
       lastNow = now;
+      const place = placeOnReturn;
+      placeOnReturn = false;
       if (!live) {
         pose.walking = false;
         speed = 0;
+        catchUp = 0;
         return;
+      }
+      // Only the first visible frame can place. If it is offline, the subsequent visible reconnect must ease.
+      if (place) {
+        immediate = true;
+        held = false;
       }
       const next = booglerPose(leg, tick);
       if (held && !immediate) {
@@ -53,22 +72,30 @@ export function createBooglerPresentation() {
       if (immediate) {
         Object.assign(pose, next, { mode: leg.mode });
         speed = next.walking ? leg.speed : 0;
+        catchUp = 0;
         return;
       }
-      // Hidden tabs can return with seconds of elapsed time. Spend one display frame, not that whole gap.
+      // A visible stall spends one display frame, not its whole elapsed gap. Actual visibility is handled above.
       dt = elapsed > 0.25 ? 1 / 60 : Math.max(0, dt);
       const dx = next.x - pose.x,
         dz = next.z - pose.z,
         distance = Math.hypot(dx, dz);
-      // Main slid to corrections. Keep that continuity, but bound the entire shown movement, including clock
-      // re-anchors that precede a new leg. Calm/ridden catch-up tops out at 3 m/s; flee allows 20% headroom.
-      const limit = Math.max(3, leg.speed * 1.2);
-      const travel = Math.min(distance, Math.min(limit, speed + 12 * dt) * dt);
+      // Account for the target walking away. Latch a faster rate for long corrections, leaving about half a
+      // second of the three-second budget for acceleration. Keep the closing rate across replans/mode changes
+      // until we reach authority; restarting it for each leg would decay into an endless tail.
+      const base = Math.max(3, leg.speed * 1.2);
+      const targetSpeed = next.walking ? leg.speed : 0;
+      if (!catchUp && distance > (base - targetSpeed) * 3) catchUp = distance / 2.5;
+      const limit = Math.max(base, targetSpeed + catchUp);
+      // Extreme gaps must not spend the whole budget accelerating to their raised cap.
+      const acceleration = Math.max(12, limit / 0.5);
+      const travel = Math.min(distance, Math.min(limit, speed + acceleration * dt) * dt);
       if (distance > 0) {
         pose.x += (dx / distance) * travel;
         pose.z += (dz / distance) * travel;
       }
       if (dt > 0) speed = travel / dt;
+      if (travel === distance) catchUp = 0;
       if (!next.walking && face) turnBooglerToward(pose, Math.atan2(-(face.x - pose.x), -(face.z - pose.z)), dt);
       else turnBooglerToward(pose, next.yaw, dt);
       // A correction toward a standing leg still moves his feet, rather than sliding an idle body.
