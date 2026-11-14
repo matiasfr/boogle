@@ -19,12 +19,13 @@ import { remotes } from '../../netplay/net.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { splash } from '../../render/splash.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
 import { dustRing } from '../../render/particle-effects.ts';
-import { SEA } from '../../constants.ts';
+import { SEA, reducedMotion } from '../../constants.ts';
 import { H, slab } from '../../place/land.ts';
 import { UP_LAT } from '../../place/layout.ts';
 import { CROSSING_FOOT_OFF, WORKS } from '../../sim/railway-works-layout.ts';
-import { RING_HEAD, RING_HOOK } from '../../sim/railway-ring-layout.ts';
+import { RING_BRACE, RING_BRACE_PLATFORM, RING_HEAD, RING_HOOK } from '../../sim/railway-ring-layout.ts';
 import { account, aperture, beam, boiler, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { q7Laid } from '../../sim/railway-queries.ts';
@@ -71,6 +72,8 @@ const COLOURS = {
   gold: '#ffc83a',
   black: '#2a2a2a',
 };
+/** The glider's own cloth (src/render/gear-models.ts canopyGeometry): cloth in these two means "glide". */
+const CLOTH = { cream: '#f2e6c8', teal: '#2fb7a0' };
 const OFF = CROSSING_FOOT_OFF / 100;
 const TOP = 0.1;
 const RISE_S = 2,
@@ -295,6 +298,28 @@ export function createRailwayRailhead(
   /** The kit is where the sim has it: the railhead has caught up with the bents and nothing is sliding. */
   const settled = () => stood() === simHead() && Math.abs(shownU - headU(stood())) < 0.05;
 
+  // ---------------------------------------------------------------- the rack's tag
+  // An empty rack with work still owed says where its next load is (gap-readability, step 7; 55 s idle at an empty
+  // rack on 14 November): a plate standing in the rack's empty bed, facing across the platform, gone the moment a
+  // footing lands. Draft copy, not The Boogler's.
+  const RACK_TAG = 'Next load: on the wagon';
+  const tag = instantiate(
+    'railway.rack-tag',
+    { id: 'railhead-rack-tag', prefab: 'railway.rack-tag', pos: [0, 0, 0], labels: { sign: 'load' } },
+    { owner, texts: { load: [RACK_TAG] } },
+  ).root;
+  tag.visible = false;
+  let tagOn = false;
+  function placeTag() {
+    tagOn = opened && jibOffered(set, cw) && Math.max(0, rack - deps.toRing()) === 0;
+    tag.visible = tagOn;
+    if (!tagOn) return;
+    const u = shownU - RACK_BACK;
+    world(u, 4.8);
+    tag.position.set(q.x, platY(u) + 0.04, q.z);
+    tag.rotation.y = yawAt(u) + Math.PI / 2;
+  }
+
   // ---------------------------------------------------------------- the jib and the rack, at the shown railhead
   const platY = (u: number) => yAt(u) + PLATFORM.up;
   const rackSlot = (k: number, out: THREE.Vector3) => {
@@ -400,6 +425,23 @@ export function createRailwayRailhead(
       c,
       Math.atan2(dx, dz),
       -Math.atan2(yb - ya, len),
+    );
+  }
+  /** A bar between two world points. */
+  function bar(ax: number, ay: number, az: number, bx: number, by: number, bz: number, w: number, c: string) {
+    const dx = bx - ax,
+      dz = bz - az,
+      run = Math.hypot(dx, dz);
+    live.box(
+      (ax + bx) / 2,
+      (ay + by) / 2,
+      (az + bz) / 2,
+      w,
+      w,
+      Math.hypot(run, by - ay),
+      c,
+      Math.atan2(dx, dz),
+      -Math.atan2(by - ay, run),
     );
   }
   function drawBent(j: number) {
@@ -619,6 +661,92 @@ export function createRailwayRailhead(
       -Math.atan2(jibHead.y - top.y, run),
     );
   }
+  /** Which way is forward (gap-readability, section 4): the glide is the crossing and cloth means glide. A take-off
+   * board juts 2 m off the platform's end toward the folk's brace platform, through a gap in an end rail; a windsock
+   * in the glider's own cream and teal streams toward the gold strut; and a square of the same cloth lies pegged on
+   * the brace platform beside the strut as the place to land. Drawn only: the board adds no reach. */
+  function drawTakeOff() {
+    const yaw = yawAt(shownU),
+      pitch = pitchAt(shownU);
+    const BOARD = { lat: 5, w: 1.1, out: 2 };
+    // The end rail, open where the board goes out.
+    for (const [a, b] of [
+      [SIDE.lat0 + 0.2, BOARD.lat - BOARD.w / 2 - 0.1],
+      [BOARD.lat + BOARD.w / 2 + 0.1, SIDE.lat1 - 0.2],
+    ] as const) {
+      seg(shownU - 0.2, a, shownU - 0.2, b, 0.1, 0.1, PLATFORM.up + 1.0, COLOURS.edge);
+      for (const lat of [a, b]) {
+        world(shownU - 0.2, lat);
+        live.box(q.x, platY(shownU) + 0.55, q.z, 0.12, 1, 0.12, COLOURS.iron);
+      }
+    }
+    // The board: a plank on two brackets, banded in the cloth's colours at its lip.
+    const mid = shownU - 0.5 + (BOARD.out + 0.5) / 2;
+    world(mid, BOARD.lat);
+    live.box(q.x, platY(mid) + 0.1, q.z, BOARD.w, 0.1, BOARD.out + 0.5, COLOURS.daisTop, yaw, pitch);
+    for (const [k, c] of [CLOTH.cream, CLOTH.teal, CLOTH.cream].entries()) {
+      const u = shownU + BOARD.out - 0.2 - k * 0.3;
+      world(u, BOARD.lat);
+      live.box(q.x, platY(u) + 0.155, q.z, BOARD.w, 0.02, 0.28, c, yaw, pitch);
+    }
+    for (const side of [-0.4, 0.4]) {
+      world(shownU + 0.5, BOARD.lat + side);
+      const bx = q.x,
+        bz = q.z;
+      world(shownU - 0.05, BOARD.lat + side);
+      bar(bx, platY(shownU + 0.5) + 0.02, bz, q.x, platY(shownU) - 0.6, q.z, 0.1, COLOURS.iron);
+    }
+    // The windsock on its pole beside the board, on the sea side: it streams out over the gap toward the strut,
+    // quartering to seaward so its length and bands show from the deck behind it, and flutters.
+    world(shownU - 0.45, BOARD.lat + BOARD.w / 2 + 0.3);
+    const px = q.x,
+      pz = q.z,
+      py = platY(shownU - 0.45) + 0.06;
+    live.box(px, py + 2.3, pz, 0.12, 4.6, 0.12, COLOURS.post);
+    const strut = { x: RING_BRACE.x / 100, z: RING_BRACE.z / 100 };
+    const way = Math.atan2(strut.x - px, strut.z - pz) - 0.8;
+    let sx = px,
+      sy = py + 4.25,
+      sz = pz;
+    for (let k = 0; k < 6; k++) {
+      const flap = reducedMotion ? 0 : Math.sin(clock * 5 - k * 0.9) * 0.05 * (k + 1),
+        a = way + flap,
+        len = 0.6,
+        girth = 0.75 - k * 0.08;
+      const nx = sx + Math.sin(a) * len,
+        nz = sz + Math.cos(a) * len,
+        ny = sy - 0.07 * k;
+      live.box(
+        (sx + nx) / 2,
+        (sy + ny) / 2,
+        (sz + nz) / 2,
+        girth,
+        girth,
+        len + 0.02,
+        k % 2 ? CLOTH.teal : CLOTH.cream,
+        a,
+      );
+      sx = nx;
+      sy = ny;
+      sz = nz;
+    }
+    // The landing cloth on the brace platform, 2 m beyond the strut's foot: four quarters, pegged at the corners.
+    const lu = RING_BRACE_PLATFORM.u0 / 100 + 3,
+      llat = RING_BRACE_PLATFORM.lat0 / 100 + 3.6,
+      ly = RING_BRACE_PLATFORM.y / 100 + 0.03,
+      lyaw = yawAt(lu);
+    for (const [i, du, dl] of [
+      [0, -0.6, -0.6],
+      [1, -0.6, 0.6],
+      [1, 0.6, -0.6],
+      [0, 0.6, 0.6],
+    ] as const) {
+      world(lu + du, llat + dl);
+      live.box(q.x, ly, q.z, 1.2, 0.04, 1.2, i ? CLOTH.teal : CLOTH.cream, lyaw);
+      world(lu + du * 2.05, llat + dl * 2.05);
+      live.box(q.x, ly + 0.08, q.z, 0.1, 0.2, 0.1, COLOURS.iron, lyaw);
+    }
+  }
   function drawGap(next: number) {
     // Stakes at the bents to come, the next bent's two sockets glowing until the gap is footed.
     for (let j = 0; j < BENTS; j++) {
@@ -676,6 +804,15 @@ export function createRailwayRailhead(
         const pu = RING_HOOK.pad.u / 100;
         world(pu, RING_HOOK.pad.lat / 100);
         live.box(q.x, yAt(pu) + PLATFORM.up + 0.1, q.z, 2.4, 0.04, 2.4, COLOURS.gold, yawAt(pu), pitchAt(pu));
+        // The ring's line home (gap-readability, H-A): a taut rope from the ring down to a short post and pulley at
+        // the pad's rear sea corner (clear of the take-off), so the ring reads as one end of a line whose other end
+        // is the pad. Drawn only.
+        world(pu - 0.95, RING_HOOK.pad.lat / 100 + 0.95);
+        const py = yAt(pu) + PLATFORM.up + 0.1;
+        live.box(q.x, py + 0.55, q.z, 0.2, 1.1, 0.2, COLOURS.post, yawAt(pu));
+        live.box(q.x, py + 1.16, q.z, 0.34, 0.34, 0.12, COLOURS.iron, yawAt(pu) + 0.35);
+        bar(q.x, py + 1.16, q.z, pile.x, pile.ringY - 0.6, pile.z, 0.07, COLOURS.rope);
+        drawTakeOff();
       }
       for (const l of lowering) drawLowering(l);
     }
@@ -781,6 +918,7 @@ export function createRailwayRailhead(
       }
       deps.hookRing(opened && decked[BENTS - 1]! && set >= WORKS.ring);
       writeLeaf();
+      placeTag();
       drawLive();
     },
     accepted(e: RailwayAccepted) {
@@ -854,6 +992,7 @@ export function createRailwayRailhead(
         decked: decked.filter(Boolean).length,
         shownU,
         settled: settled(),
+        rackTag: tagOn ? RACK_TAG : null,
         lowering: lowering.length,
         inSea: inSea(),
         rack: Math.max(0, rack - deps.toRing()),

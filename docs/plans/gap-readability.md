@@ -1,4 +1,10 @@
-> **Status: proposed (2026-11-14). Design only; nothing built.** Readability of the railhead stretch, the gap and the
+> **Status: steps 1, 3 and 7 are built (2026-11-14: the hook ring's rule and rope, the take-off board, windsock and
+> landing cloth, the rack's tag). Steps 2 and 4 (the railhead's move, redesigned as a construction traveller that
+> carries its riders) are built on branch `worktree-agent-af55e2f2172764ff8` and held back after three reviews of its
+> shared clock; 5, 6, 6b and 8 are not built.** The owner answered the three questions on 14 November
+> ([decision](../decisions-rail.md#d-2026-11-14-gap-readability-answered)): the hook stays the line home, players ride
+> the railhead and its move is construction apparatus, and a resident's line is wanted in his wording (held).
+> Proposed 2026-11-14 as design only. Readability of the railhead stretch, the gap and the
 > arrival on Ring Island, after the owner's 14 November session. Base: `origin/main` at `4fc3dc35d`. Every recommended
 > step is view-only (local views, local colliders, local hook rules) and needs no `WORLD_NS` bump. Two things named here
 > but not recommended now would touch more: moving the hook pile (layout data read by level-check, the bot and a test;
@@ -237,6 +243,22 @@ Each is one dispatch, view-only, with its proof look. Stills: `npm run look -- -
 | 8 | Marks and docs: playtest marks `gap splash` (a swim begun between u 255 and 300) and `railhead slide` (with whether the player was aboard); `npm run loop` cues for `bents` and `brace`; place.md | The next session's trace answers "how many falls" |
 
 Not in these steps: H-B (owner question 1); the kit loading from the leaf going down (sim, v45).
+
+### Built (2026-11-14)
+
+- [x] **1** H-A(1): the island ring sleeps on our deck (`hook-shot.ts` `onLandingDeck`); it also shows gold and turns
+  to the brace platform while asleep (H-A(3), `hook-view.ts`).
+- [x] **3** the take-off board, windsock and landing cloth; H-A(2) the rope from the ring to the pad. The windsock
+  quarters to seaward rather than streaming straight at the strut, which was invisible from the deck behind it.
+- [x] **7** the rack's tag, as a prefab record (`railway.rack-tag`).
+- [ ] **2 and 4** the railhead's move. Built on `worktree-agent-af55e2f2172764ff8` as a launching traveller (bogies on
+  runner rails, a winch on a haul line, chocks, lamps, a bell, a luffing jib, two crew) that carries its riders, and
+  held back: making every tab agree on its clock needed the actor's confirmed tick from the adapter and a step
+  fraction the collider lint keeps out of views, and its concurrent and backed-up cases were still failing review.
+  What it wants: a moving (kinematic) collider through the prefab door, or an approved engine step-fraction export.
+- [ ] **5** the strike beat. **6** the island's arrival cues. **6b** the upright halt display. **8** the playdata
+  marks. Not built.
+- Held: the resident's line (question 3) is not in `lines.ts`; the draft stays above for the owner's wording.
 
 ## Draft strings (UI copy, none The Boogler's; no existing line changes)
 

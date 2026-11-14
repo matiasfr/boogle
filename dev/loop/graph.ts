@@ -818,6 +818,7 @@ export const NODES: readonly LoopNode[] = [
         'the railhead, its rack and jib moving out a bent each pair',
         'src/entities/railway/railhead-view.ts',
       ),
+      onMain('world', "the empty rack's tag while a load is owed", 'src/entities/railway/railhead-view.ts'),
     ],
   },
   {
@@ -831,7 +832,14 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'leaf braced' },
     stops: ['gap', 'braced'],
     requires: [dec('bents', 'rules', `${RULES_RING} brace: set === 14`)],
-    cue: [onMain('world', 'the gold strut on the brace platform', 'src/entities/railway/leaf-view.ts')],
+    cue: [
+      onMain('world', 'the gold strut on the brace platform', 'src/entities/railway/leaf-view.ts'),
+      onMain(
+        'world',
+        "the take-off board and windsock at the platform's end and the landing cloth by the strut (cloth means glide); the island ring asleep from our deck, roped to the gold pad",
+        'src/entities/railway/railhead-view.ts',
+      ),
+    ],
   },
   {
     id: 'weights',

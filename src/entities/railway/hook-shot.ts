@@ -24,6 +24,7 @@ import {
   type Pull,
 } from './hook-path.ts';
 import { createRailwayHookView } from './hook-view.ts';
+import { RING_S, line2At, line2World } from './line2-path.ts';
 import { registerHookProbe } from './state.ts';
 import { playMark } from '../../proto/mark.ts';
 
@@ -59,6 +60,19 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     from = new THREE.Vector3(),
     end = new THREE.Vector3();
   const hit = rayHit();
+  // Ring Island's ring is the line home from the folk's brace platform, never a way forward (owner, 14 November: "the
+  // hook does not carry you forward across the gap"): it is not offered from the deck it lands on. Our deck is the
+  // line short of u 262 m out, within 3 m of the gold pad's height.
+  const OUR_DECK_U = 262;
+  const deckAt = { x: 0, z: 0, ux: 0, uz: 1 },
+    deckFrom = { x: 0, z: 0 };
+  line2At(RING_S + OUR_DECK_U, deckAt);
+  line2World(RING_S + OUR_DECK_U, 0, deckFrom);
+  const onLandingDeck = (r: HookRing, x: number, y: number, z: number) =>
+    r.id === 'island' &&
+    (x - deckFrom.x) * deckAt.ux + (z - deckFrom.z) * deckAt.uz < 0 &&
+    Math.abs(r.pad.top + 1 - y) < 3;
+  let asleep: HookRing | null = null;
   // Not with a footing on your back (docs/plans/works-late-game.md, step 2b): carrying one opens no new travel edge.
   const canPress = () =>
     owned &&
@@ -106,6 +120,7 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
   }
   function pickRing(now: number) {
     range.clear();
+    asleep = null;
     const b = me.body;
     if (!owned || !b || pull) {
       pick = null;
@@ -116,6 +131,11 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
       bestScore = Infinity,
       currentScore = Infinity;
     for (const r of view.rings) {
+      // Asleep is about where you stand, not how near: from anywhere on its landing deck, the pad included.
+      if (onLandingDeck(r, b.position.x, b.position.y, b.position.z)) {
+        asleep = r;
+        continue;
+      }
       if (Math.hypot(r.at.x - b.position.x, r.at.y - b.position.y, r.at.z - b.position.z) > MOVE.hookRange) continue;
       if (
         Math.hypot(r.land.x - b.position.x, r.land.z - b.position.z) < r.pad.hx + 0.6 &&
@@ -256,11 +276,12 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
         }
       }
       pickRing(now);
-      view.update(dt, now, owned, pick, pull?.ring ?? null, range, pulls);
+      view.update(dt, now, owned, pick, pull?.ring ?? null, range, pulls, asleep);
     },
     inspect: () => ({
       owned,
       pick: pick?.id ?? null,
+      asleep: asleep?.id ?? null,
       pulling: !!pull,
       ring: pull?.ring.id ?? null,
       pulls,

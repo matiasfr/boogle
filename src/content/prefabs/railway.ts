@@ -1,4 +1,6 @@
 // Seat anchors inside the existing vehicle GLBs. Visuals and bodies stay with the vehicles until step 12.
+// The railhead rack's tag (docs/plans/gap-readability.md, step 7): a standing plate in the rack's empty bed; the view
+// (src/entities/railway/railhead-view.ts) owns its text, where it stands and when it shows.
 import { definePrefab } from '../../prefab/types.ts';
 import { PLAYER_R } from '../../constants.ts';
 
@@ -49,5 +51,12 @@ export const prefabs = [
       ),
     },
     interactions: [0, 1, 2, 3].map((i) => ({ action: 'seat.sit' as const, at: `seat${i}`, gate: 'open' as const })),
+  }),
+  definePrefab({
+    key: 'railway.rack-tag',
+    visual: { none: true },
+    colliders: [],
+    scope: 'owner',
+    attach: { sign: { kind: 'label', at: [0, 0.75, 0], facing: [0, 0, 1], w: 2.3, h: 0.5, posts: 'two' } },
   }),
 ];
