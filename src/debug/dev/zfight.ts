@@ -13,7 +13,7 @@ import {
 import { camera, scene } from '../../render/scene.ts';
 import { defineKind, spawn, despawn, type GameEntity } from '../../entity/entity.ts';
 import { sceneFaces } from '../../geometry/drawn-faces.ts';
-import { findZfights, ZFIGHT } from '../../geometry/zfight.ts';
+import { findZfights, ZFIGHT, type Point } from '../../geometry/zfight.ts';
 import { classifyZfights, className, type Finding } from '../../geometry/zfight-classify.ts';
 import { el, note, command } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
@@ -59,13 +59,24 @@ function scan(args: Record<string, unknown>) {
   const groups = classifyZfights(findZfights(faces, { includeHidden: true }));
   const counts = { a: 0, b: 0, c: 0 };
   for (const g of groups) counts[g.class]++;
-  const findings = args.all === true ? groups : groups.filter((f) => f.class === 'a');
+  const distance = (p: Point) => at.distanceToSquared(new Vector3(...p));
+  const findings = (args.all === true ? groups : groups.filter((f) => f.class === 'a')).map((finding) => {
+    // Offline ranking uses the largest contact. A spot diagnosis must name the member under the crosshair,
+    // even when the same part touches several neighbours in one group.
+    const member = finding.members
+      .filter((m) => args.all === true || (!m.hidden && m.differences?.length !== 0))
+      .sort((a, b) => distance(a.position) - distance(b.position))[0]!;
+    return {
+      ...finding,
+      a: member.a,
+      b: member.b,
+      position: member.position,
+      normal: member.normal,
+      separation: member.separation,
+    };
+  });
   // Prefer a contact at the crosshair over a large one at the edge of the neighbourhood.
-  findings.sort(
-    (a, b) =>
-      new Vector3(...a.position).distanceToSquared(at) - new Vector3(...b.position).distanceToSquared(at) ||
-      b.area - a.area,
-  );
+  findings.sort((a, b) => distance(a.position) - distance(b.position) || b.area - a.area);
   latest = { at: at.toArray(), faces: faces.length, findings, counts };
   const group = new Group();
   group.userData.zfightOverlay = true;
@@ -116,7 +127,7 @@ function scan(args: Record<string, unknown>) {
     ? selected
         .map(
           (c, i) =>
-            `${i + 1}. [${c.class} ${className[c.class]}; ${c.count} rows] ${c.a}\n   ↔ ${c.b}\n   ${c.area.toFixed(4)} m²; ${(c.separation * 1000).toFixed(3)} mm; (${c.position.map((v) => v.toFixed(2)).join(', ')})`,
+            `${i + 1}. [${c.class} ${className[c.class]}; ${c.count} rows; nearest member] ${c.a}\n   ↔ ${c.b}\n   group ${c.area.toFixed(4)} m²; ${(c.separation * 1000).toFixed(3)} mm; (${c.position.map((v) => v.toFixed(2)).join(', ')})`,
         )
         .join('\n')
     : 'No coplanar pair found within 5 m of the crosshair hit / camera.';
