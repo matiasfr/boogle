@@ -1,8 +1,9 @@
 # Turnouts: real points wherever tracks merge or cross
 
-> **Status: plan only (14 November 2026). Nothing built.** Written on `origin/main` at 9036299a8. It builds on the
-> view-only track tidy pass (one sleeper set through overlaps, one track kit, the stall road seated) and does not redo
-> it; that pass was not on any branch `npm run inflight` could see when this was written (open question 4).
+> **Status: step 1 built (14 November 2026): J1, the spur's turnout, static.** Checkpoint A is next; nothing else is
+> built. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
+> overlaps, one track kit, the stall road seated: PR 1793, `yard-track.ts` and `home-yard.ts`) and does not redo it;
+> step 1 extends that pass's shared timbers rather than drawing through `track.ts` (see step 1's departures).
 
 ## Goal
 
@@ -273,7 +274,51 @@ Each step is view-only, leaves `node dev/ship-check.ts` green, and ships live. B
 review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and the checkpoint runner: the
 **implementation of an approved plan** and **runner** rows (Codex, gpt-6.1-sol medium).
 
-- [ ] **1. The proof: the spur's turnout on road 2 (J1), static.** Rebase on the tidy pass first.
+- [x] **1. The proof: the spur's turnout on road 2 (J1), static.** Rebase on the tidy pass first.
+  **Built 14 November 2026, with these departures** (the bullets below are the plan as written):
+  - **Drawn by the yard, not `track.ts`.** The tidy pass already carries road 2's sleepers under the spur as long
+    timbers and draws the spur in the kit's pieces (`yard-track.ts`), so J1's parts go into those batches:
+    `yard.rail()` for each `RailPiece`, and `yard.timbers()` takes a `span` per sleeper from `turnout().span`. No
+    `'timber'` piece kind, no `turnoutRails` set, no edit to `track.ts`, `look-kit.ts`, `track-chunks.ts` or
+    `home-station-view.ts`. The spur's own sleepers start after the last shared timber, as they did.
+  - **One rail is cut.** The spur's inner rail is the yard's, so its closure rail stops a flangeway short of road 2's
+    inner rail and takes up again past it as the vee's leg (role `closure`, added to `RailPiece`); road 2's rails are
+    the line's and stay whole, so the vee's other leg is road 2's rail itself and there is one `vee` piece, not two.
+    Net: 15 added rail pieces (4 stock, 2 blade, 2 closure, 1 vee, 2 wing, 4 check), each wing one length.
+  - **`Turnout` has no `toe`, `blades` or `lever` yet** (step 6 needs them; nothing reads them now). It has `nose`
+    and `plainD` (where the diverging road's plain rails begin). `turnout()` takes the lever's side; `RailPiece` has
+    `road` and `w` (a blade is 0.45 then 0.75 of a rail's width). `offset(d)` projects the diverging point at `d`;
+    `span(d)` uses the diverging centre where it crosses that timber's line.
+  - **Headblocks are the stations within 1.5 m behind the toe** (s 4.2 and 5.4), not "the two nearest the toe"
+    (s 5.4 and 6.5): the lever stands 1.5 m behind the toe and only those reach it.
+  - **Early state.** The long timbers and the spur's parts stand from the start; the two wing rails and road 2's check
+    rail show with the yard's later part (`line2Completed >= 1`, as the leg does). They appear, they do not drop.
+  - **The eval** has `at=spur | spur-top | spur-frog`; the other framings are added with their junctions.
+  - **Render counts at Home** (`npm run perf -- --render`, from spawn): 363 calls before and 363 after in the paired
+    runs, 492,980 and 495,164 triangles; a later baseline run read 385 calls and 498,266 triangles, so the scene's own
+    moving parts drift more than the change. No batch is added (the pieces join the yard's rail and sleeper batches),
+    so the draw count is flat by construction; about 15 × 228 triangles are added close up, less the spur's two plain
+    rail lengths the turnout replaces.
+  - **Seen** (`.look/turnout-j1-*.png`): from above and at eye height it reads as points. Not seen: a train running
+    through the frog (line 2's train backs in and stops with its tail at the frog's edge).
+  - **What the remaining junctions need that J1 did not:**
+    1. *A through road the line draws and lays.* J4 to J9 have both roads in `track.ts`, panelled and dropped: there
+       the plan's `'timber'` kind, the `turnoutRails` set kept out of `nearestPair`, and pieces added after the
+       existing loops are still needed, and the pieces must drop with their panel rather than appear.
+    2. *A cut in a line's rail.* J1 cut only the yard's rail. Where both roads are the line's, either the diverging
+       rail is split across the frog (a remnant rule for the gantry's pairs) or the frog stays an uncut crossing with
+       wings laid over it; decide at step 3 from the look.
+    3. *A curved through road* (J4 on line 1's 18 m curve, J2 against road 2's): `turnout()` frames by finite
+       differences and should hold, but it is only tested on a straight through road. Timbers square to a curving
+       road fan; check they do not touch.
+    4. *Left hands and `dir: -1`* (J2 to J6 leave left; J3, J5, J9 run against `s`): `hand` is carried through the
+       maths, untested at -1.
+    5. *Overlapping zones* (J3 with J4): the union of spans, one timber per station.
+    6. *Tie plates under the turnout's own rails.* The yard plates a timber for the spur only once the roads are
+       1.3 m apart; between the toe and there the spur's rails sit on bare timber.
+    7. *Short kit rails.* A kit rail scaled under about 1 m squeezes its joint plates and bolts to hatch marks (seen
+       at the check rails' ends). A plain rail length without hardware would fix it for every junction.
+    8. *The leg (J2, J3)* still uses the tidy pass's `clearOf` square rail ends; it moves to `turnout()` in step 3.
   - Create `src/place/turnout.ts` (`KIT`, `turnout()`, as above) and `src/place/junctions.ts` with J1 only.
   - `test/turnout.test.ts`: "the toe is tangent" (under 2.5° at 0.3 m); "the frog is where the inner rails cross"
     (J1: 5.5 m ± 0.1, 21.2° ± 0.5, right hand); "a timber spans all four rails" (each rail centre at least 0.5 m
