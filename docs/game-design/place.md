@@ -134,6 +134,19 @@ existing clearance assertions. Trees are planted against frozen v35 exclusions i
 survive, with no removed trees; Q1/Q2 wood and both hardwoods keep their identities and positions. One v36 reset covers
 the flip; save resets are never a development cost. [Proof and owed views](../reviews/home-flip-x1.md).
 
+**Home's yard track (14 November; owner: "a little bit messy with the rails").** The buffer stubs, the spur, the three
+stall roads and the cart's leg are laid in the lines' own pieces: the same sleeper, tie plates and rail, a metre
+between the rails, the same heights, and posts under a sleeper that stands clear of the ground. The table's bridge
+rails are at that gauge and height too. Each stall road leaves the rim at the lines' height and ramps down to
+ground-level rails at the door, then runs level: to the back wall of the open stall (the shunter and wagon ride 0.29 m
+lower than they did) and a rail's length onto each ruin's floor. Where two tracks run side by side they share one set
+of sleepers: the spur off road 2, the leg off line 1 and onto road 2, and each line's up track at its turnouts lie on
+the through track's sleepers, carried on as long timbers until the tracks are clear of each other; the branch's rails
+start beside the through track's. There are still no blades, frogs or working levers, and the table has no pit: that is
+the station's art pass (home-station steps 9 and 10). Each ruin's floor and near wall stop 0.3 m short of the built
+stall's eave. Drawn only: no rule, collider or save changes, except that the parked wagon's stand-on box sits 0.29 m
+lower with it. Not tested on a device.
+
 **Track-layer clearance (5 November iPhone follow-up).** With no first panel target, the empty boom now parks
 along the track instead of pointing through its own origin and cutting sideways into the camp chimney. The
 working trolley, flanged wheels and whole prefabricated panels retain their model, dimensions and choreography.
