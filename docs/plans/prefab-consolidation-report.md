@@ -299,14 +299,47 @@ Together, the first three steps plus Round/first rotunda provisionally add **40�
 
 Every existing test and runtime golden is unchanged. A baseline snapshot of all 193 resolved records and all 12 resolved levels compares exactly with the final loader output, with no numeric tolerance. No fixture was regenerated. The authored-operands tripwire, existing native-math portability test and both budget assertions remain unchanged. New pure loader/compiler tests cover reference errors, exact round trips, default-solid omission and the shared visual/collider dimension source; no new UI harness, Git subprocess test or wall-clock assertion was added.
 
-The full check passes: **1,922 active unit tests**, one existing TODO, zero failures; lint, typecheck, registry, level-check, assets, artifact freshness and build pass. Dedicated prefab runs pass **227/227**, including a one-ULP native-math run; pre-import perturbed compiler freshness passes at **193 / 12 / 243,652**. Exact native 0 and ±1 endpoints are preserved by the perturbation, as in step 10b. Final evidence and server-suite outcome are recorded below after broker verification.
+The full check passes: **1,922 active unit tests**, one existing TODO, zero failures; lint, typecheck, registry, level-check, assets, artifact freshness and build pass. Dedicated prefab runs pass **227/227**, including a one-ULP native-math run; pre-import perturbed compiler freshness passes at **193 / 12 / 243,652**. Exact native 0 and ±1 endpoints are preserved by the perturbation, as in step 10b. The unchanged server-suite rerun passes **371/371**. The first CORS-header failure is retained as a transient observation, not attributed to this change.
 
-Review-stamp was run with `--no-fetch --base origin/main` to obey local-only networking. It reports **no review stamp needed**: no sim/net/world/ecs/server source or associated tests changed. Debt and registration files are byte-unchanged; the ratchets pass. This stamp result is not an independent review. The diff was reread locally.
+Review-stamp was run with `--no-fetch --base origin/main` to obey local-only networking. After committing, it reports **`7dc63ed8d818`**, covering only the new `test/prefab-consolidation.test.ts` assertions. The pre-commit invocation did not include the then-untracked test and reported no stamp; the committed-file result supersedes it. No sim/net/world/ecs/server source or existing tests changed. Debt and registration files are byte-unchanged; the ratchets pass. This stamp result is not an independent review. The diff was reread locally.
 
-Prettier ran on every changed file, followed by the compiler to restore the canonical generated-artifact format, then `npm run check`. An initial lint run caught unused destructuring variables and a regex spacing rule; the first full check caught two TypeScript errors. They were fixed before the passing check. The first server run passed 370/371 and failed the unchanged default-CORS header assertion; the original failure log is retained and the unchanged suite is being repeated.
+Prettier ran on every changed file, followed by the compiler to restore the canonical generated-artifact format, then `npm run check`. An initial lint run caught unused destructuring variables and a regex spacing rule; the first full check caught two TypeScript errors. They were fixed before the passing check. The first server run passed 370/371 and failed the unchanged default-CORS header assertion; the original failure log is retained and the unchanged suite then passed all 371 tests.
 
 `npm run inflight` attempted its implicit fetch and failed on FETCH_HEAD before substantial work; it was not retried. All later Git commands use local refs, and all browser/network checks use the local broker/server. No push or ship.
 
 Suspect placeholder copy remains unchanged: `Stall: High Gorge (placeholder)`, `Stall: Ring Island (placeholder)`, `Stall: Home (placeholder)`, `Stall: Canopy Town (placeholder)`, `Stall: Port Quay (placeholder)`, `Not connected yet`, `Market board (placeholder)`, `LINE TO BELL ROCK` / `UNDER CONSTRUCTION`; existing halt name repetition and `Village, line 2` suffix handling remain as authored. The Boogler's copy is untouched.
 
 Not tested on a device. Real-time smoothness, Linux and independent review remain unverified.
+
+
+## Final source and evidence status
+
+Implementation **`a8f34e2a54bd68e605f24a98e838f7db71b77658`**, rebased onto local **`origin/main` `7e2fa099b`**. The rebase brought only `docs/agent-calls.md` and `docs/plans/roundhouse-rotunda.md` changes: `git diff f51cb6351 HEAD -- src content dev test server` was empty immediately afterward. No production source changed after the passing checks; the closing commit changes this report only. No fetch, push or ship.
+
+The direct in-memory comparison against **`90bf3cabe`**'s original compiled inputs also passes for every record and level, including signed zero; no serialization or tolerance hides a numeric difference. This is a manual verification script, not a new Git-dependent unit test.
+
+| Check | Result | Local log |
+| --- | --- | --- |
+| Full `npm run check` | Pass; 1922 active unit passes, one existing TODO | [check](../../.look/consolidation/check-final.log) |
+| Dedicated prefab suite | 227/227 | [prefabs](../../.look/consolidation/prefabs-final.log) |
+| Final pre-import one-ULP suite | 227/227 | [ULP](../../.look/consolidation/ulp-verified.log) |
+| Pre-import perturbed compiler freshness | 193 records / 12 levels / 243652 bytes, fresh | [freshness](../../.look/consolidation/ulp-fresh.log) |
+| Server tests | Rerun 371/371; first run 370/371, transient CORS-header failure | [final](../../.look/consolidation/server-final.log), [first](../../.look/consolidation/server.log) |
+| Explicit registry | Pass, debt unchanged | [registry](../../.look/consolidation/registry.log) |
+| Explicit level-check | Pass, 13 reports; existing planned continuity diagnostics remain | [levels](../../.look/consolidation/level.log) |
+| Review stamp | `7dc63ed8d818`, one new pure test file | [stamp](../../.look/consolidation/stamp-final.log) |
+| Direct in-memory old/new comparison | Exact, including signed zero | [equality](../../.look/consolidation/exact-final.log) |
+
+### Queued broker work: not visual or bot proof
+
+Both commands were submitted on the clean rebased implementation. No source was edited while they were queued. At handoff, neither has acquired a browser slot; the shared queue snapshot contains no held ticket. Other sessions were left undisturbed. The bot-check queue contract says to enqueue and return rather than manually wait for the machine gate ([bot checks](../agents/test-details/bot-segments.md)). Browser verification remains **pending**; code/check completion is separate from that missing evidence.
+
+- **Gorge visual question:** do the decks, stair and ramp joins remain intact after operand consolidation? The existing `stack-at.ts` stages Buddy at `-105,5,-1987` with a fixed elevated camera `-60,40,-1930` looking at `-100,15,-2000`; expected visible result: continuous original deck/stair/ramp assembly. [Queued look request](../../.look/see/1794645895200-26684.json).
+- **Required T1 gameplay segment:** `node .look/see-client.ts playthrough --to t1-done`. [Queued bot request](../../.look/see/1794645896338-26749.json).
+- **Images actually opened:** none; neither job has produced PNGs. **Visual observation:** unverified. **Bot failures:** none observed because the bot has not started; this is not a pass. No report/verdict exists yet to inspect.
+- **Broker evidence manifests:** none produced yet. The request JSON links above are queue records, not evidence manifests. Their expected evidence directories are `.look/evidence/1794645895200-26684/` and `.look/evidence/1794645896338-26749/`; do not treat an empty directory as completed evidence.
+
+Overall delivery is **partial only for browser evidence**. Finish by reading both returned manifests, the bot report/verdict even on failure, and opening the PNGs; then append the actual observations. No Chromium bypass, new scenario or harness was introduced. Not tested on a device; full campaign playthrough, real-time feel/smoothness, Linux and independent review remain unverified.
+
+
+Final local rebase: the implementation is now **`422e69125`**, on local **`origin/main` `45b5efc5f570a95f8440726d0c519c4492bde216`**. The additional upstream changes are documentation only (`docs/agent-calls.md`, the level-pacing plan and train-progression plan). `git diff a8f34e2a5 HEAD -- src content dev test server` remains empty. The source tested above and submitted to the broker is unchanged; the final report commit is documentation only. Review stamp remains **`7dc63ed8d818`**. Working tree is clean after this report commit; neither browser request has started as of handoff.
