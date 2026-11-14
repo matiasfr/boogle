@@ -1,10 +1,11 @@
-// The terrain pass, a look experiment on one wedge of Place (docs/plans/terrain-pass.md). `?terrain=1` (or a bare
-// `?terrain`) is round two; without the parameter this returns before touching anything and the land is exactly today's. On, the wedge's cells leave
-// the main ground's index and a separate mesh draws them. The collider, H, the shore texture, the tree catalog and the
-// level check never see it: they keep terrain.ts's grid. Delete this folder and its one call in land.ts to remove it.
-//   1  — round two, on the owner's answers (10 November): today's 2 m triangles on walkable ground and 1 m strata ledges
-//        on unwalkable cells only; today's grass, sand and path colours with worn paths, a wet band at the sea, and the
-//        cove's textured sandstone, subtle beds, on unwalkable rock only.
+// The terrain pass on Home's ground (docs/plans/terrain-pass.md). Without a parameter (or `?terrain`, `?terrain=1`) the
+// pass covers all of Home, in the land's own geometry and material (home.ts, island.ts; owner, 10 November). `?terrain=0`
+// is the land before the pass. The other values keep the earlier rounds on one wedge south of the village, for
+// comparison: the wedge's cells leave the land's index (and its far tiles) and a separate mesh draws them. The collider,
+// H, the shore texture, the tree catalog and the level check never see any of it: they keep terrain.ts's grid.
+//   wedge — round two on the wedge alone: today's 2 m triangles on walkable ground and 1 m strata ledges on unwalkable
+//        cells only; grass down to a beach, a wet band at the sea, and the cove's textured sandstone, subtle beds, on
+//        unwalkable rock only.
 //   a  — a 0.5 m drawn mesh (strata ledges on rock, smooth-surface normals on grass) with colour bands from position
 //        and normal, no textures.
 //   b  — today's 2 m mesh with the west cove's textured layers.
@@ -17,16 +18,26 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { GRID, ORIGIN } from '../../place/layout.ts';
 import { CELL, NX, NZ, at } from '../../place/terrain.ts';
 import { groundMaterial } from '../../place/look.ts';
+import { applyPathSurface } from '../../place/path-surface.ts';
 import { bandsMaterial, coveLayersMaterial, roundTwoMaterial } from './materials.ts';
 import { buildSteepSurface, buildWedgeSurface, edgeFade, wedgeCell } from './surface.ts';
 
 const query = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
 const asked = query.get('terrain');
-const variant = asked === '' ? '1' : (asked ?? '');
+// No parameter, a bare `?terrain` or `?terrain=1`: the pass on all of Home (home.ts). `0`: the land before the pass.
+const variant = asked === null || asked === '' || asked === '1' ? 'home' : asked;
+/** Whether the pass is applied to all of Home's ground (the default). */
+export const homePassOn = variant === 'home';
+export { applyHomePass } from './home.ts';
+export { roundTwoMaterial } from './materials.ts';
+
+const wedgeOn = variant === 'wedge' || variant === 'a' || variant === 'b' || variant === 'ab';
+/** Whether the wedge's own mesh draws cell (i, j), so the land (and its far tiles) must leave it out. */
+export const wedgeDraws = (i: number, j: number) => wedgeOn && wedgeCell(i, j);
 
 /** Draw the wedge in place of `mesh`'s cells, when `?terrain=` asks for it. `mesh` is Place's ground (land.ts). */
 export function applyTerrainPass(mesh: THREE.Mesh, owner?: OwnedView) {
-  if (variant !== '1' && variant !== 'a' && variant !== 'b' && variant !== 'ab') return;
+  if (!wedgeOn) return;
   const fine = variant !== 'b';
   const sub = fine ? Math.max(1, Math.min(8, Math.round(Number(query.get('terrainSub') ?? 4)))) : 1;
   const ground = mesh.geometry;
@@ -48,7 +59,7 @@ export function applyTerrainPass(mesh: THREE.Mesh, owner?: OwnedView) {
   ground.setIndex(kept);
 
   // 2. The wedge's own mesh, its border sharing the main ground's positions, colours and normals.
-  const s = variant === '1' ? buildSteepSurface() : buildWedgeSurface(sub, fine);
+  const s = variant === 'wedge' ? buildSteepSurface() : buildWedgeSurface(sub, fine);
   const count = s.position.length / 3;
   const mainColour = ground.getAttribute('color'),
     mainNormal = ground.getAttribute('normal');
@@ -97,8 +108,11 @@ export function applyTerrainPass(mesh: THREE.Mesh, owner?: OwnedView) {
   geo.setAttribute('tpFoot', new THREE.BufferAttribute(s.foot, 1));
   geo.setAttribute('tpGorge', new THREE.BufferAttribute(s.gorge, 1));
   geo.setAttribute('tpSoil', new THREE.BufferAttribute(s.soil, 1));
+  const layers = new Float32Array(count * 4);
+  for (let k = 0; k < count; k++) layers.set([s.steep[k]!, s.foot[k]!, s.soil[k]!, s.gorge[k]!], k * 4);
+  geo.setAttribute('tpLayers', new THREE.BufferAttribute(layers, 4)); // round two's inputs, packed
   geo.setIndex(new THREE.BufferAttribute(s.index, 1));
-  const pick = query.get('terrainMat') ?? (variant === '1' ? 'round2' : variant === 'a' ? 'bands' : 'cove');
+  const pick = query.get('terrainMat') ?? (variant === 'wedge' ? 'round2' : variant === 'a' ? 'bands' : 'cove');
   const material =
     pick === 'base'
       ? groundMaterial()
@@ -107,6 +121,7 @@ export function applyTerrainPass(mesh: THREE.Mesh, owner?: OwnedView) {
         : pick === 'round2'
           ? roundTwoMaterial()
           : coveLayersMaterial();
+  applyPathSurface(material); // Home's paths, as on the land around the wedge
   const wedge = new THREE.Mesh(geo, material);
   wedge.name = `terrain-pass-${variant}`;
   wedge.receiveShadow = true;

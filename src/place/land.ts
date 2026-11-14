@@ -38,7 +38,14 @@ import { buildCove } from './cove-view.ts';
 import { dressCoveGround } from './cove-ground.ts';
 import { addFarGround } from './far-ground.ts';
 import { setFarHills } from './far-hills.ts';
-import { applyTerrainPass } from '../proto/terrain-pass/index.ts';
+import { applyPathSurface } from './path-surface.ts';
+import {
+  applyHomePass,
+  applyTerrainPass,
+  homePassOn,
+  roundTwoMaterial,
+  wedgeDraws,
+} from '../proto/terrain-pass/index.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -94,6 +101,7 @@ function buildMesh(owner: OwnedView) {
     ROCK = new THREE.Color('#a08a70'),
     ROCK_LOW = new THREE.Color('#6d6f78'),
     DIRT = new THREE.Color('#e0b271'),
+    WORN = new THREE.Color('#7f8448'),
     BANK = new THREE.Color('#8e9a78');
   for (let j = 0; j < NZ; j++)
     for (let i = 0; i < NX; i++) {
@@ -111,14 +119,17 @@ function buildMesh(owner: OwnedView) {
       );
       if (h < 3.2) c.lerp(gorgeD(x, z) < 18 ? BANK : SAND, smoothstep(3.2, 1.6, h));
       if (!LOOK.ground) c.lerp(h < 9 ? ROCK_LOW : ROCK, smoothstep(0.55, 1.1, slope)); // with it, rock is per pixel
-      c.lerp(DIRT, pathMask[k]!);
+      // With the look on, paths are drawn per pixel from their distance field (path-surface.ts), not from this 2 m blend.
+      // Beside one the grass is trampled dry, which also keeps a narrow ledge beside a cut tread from turning lawn green.
+      if (LOOK.ground) c.lerp(WORN, 0.75 * pathMask[k]!);
+      else c.lerp(DIRT, pathMask[k]!);
       if (coveWeight(x, z) > 0 && pathMask[k]! < 0.01) {
         // Wetness stays in the production receiver; this is dry surface coverage only.
         const tint = h < 2 ? new THREE.Color(0.72, 0.57, 0.32) : new THREE.Color(0.19, 0.32, 0.04);
         c.lerp(tint, coveWeight(x, z));
       }
       col.set([c.r, c.g, c.b], k * 3);
-      paths[k] = pathMask[k]!;
+      paths[k] = LOOK.ground ? 0 : pathMask[k]!;
     }
   const idx: number[] = [];
   for (let j = 0; j < NZ - 1; j++)
@@ -181,7 +192,7 @@ function buildMesh(owner: OwnedView) {
       pos.set([x + ORIGIN.x, f.heights[k]!, z + ORIGIN.z], index * 3);
       for (let channel = 0; channel < 3; channel++)
         col[index * 3 + channel] = samples.reduce((sum, id, n) => sum + col[id * 3 + channel]! * weights[n]!, 0);
-      paths[index] = samples.reduce((sum, id, n) => sum + pathMask[id]! * weights[n]!, 0);
+      paths[index] = LOOK.ground ? 0 : samples.reduce((sum, id, n) => sum + pathMask[id]! * weights[n]!, 0);
       const boundary = i === 0 || j === 0 || i === f.nx - 1 || j === f.nz - 1;
       ids[k] = boundary && u === 0 && v === 0 ? at(ci, cj) : index;
     }
@@ -229,11 +240,18 @@ function buildMesh(owner: OwnedView) {
     if (joined) normals.setXYZ(k, joined[0]!, joined[1]!, joined[2]!);
   }
   geo.setAttribute('coveCapJoin', new THREE.BufferAttribute(capJoin, 2));
+  const inCove = (i: number, j: number) =>
+    cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
+  // The terrain pass on all of Home (docs/plans/terrain-pass.md): 1 m ledges on unwalkable cells, in this same
+  // geometry, and round two's material. The collider below never sees it. `?terrain=0` is the land before it.
+  const pass = LOOK.ground && homePassOn ? applyHomePass(geo, mainEnd, inCove) : null;
   const mesh = new THREE.Mesh(
     geo,
-    LOOK.ground
-      ? groundMaterial()
-      : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
+    pass
+      ? roundTwoMaterial(true)
+      : LOOK.ground
+        ? groundMaterial()
+        : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
   );
   mesh.receiveShadow = true;
   mesh.material.flatShading = false;
@@ -243,13 +261,13 @@ function buildMesh(owner: OwnedView) {
     mesh.material.colorNode = null;
   }
   dressCoveGround(mesh.material, (x, z) => macroSlopeY(x - ORIGIN.x, z - ORIGIN.z));
+  if (LOOK.ground) applyPathSurface(mesh.material as THREE.MeshStandardNodeMaterial); // last: the tread wins
   owner.cleanup(() => mesh.material.dispose());
   mesh.frustumCulled = false;
   owner.add(mesh);
-  const inCove = (i: number, j: number) =>
-    cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
-  addFarGround(mesh, NX, NZ, mainEnd, inCove, owner);
-  applyTerrainPass(mesh, owner); // ?terrain=a|b|ab look experiment; off by default (docs/plans/terrain-pass.md)
+  // The far tiles leave out what the terrain pass's wedge draws itself, as they do the cove's patch.
+  addFarGround(mesh, NX, NZ, pass?.mainEnd ?? mainEnd, (i, j) => inCove(i, j) || wedgeDraws(i, j), owner, pass?.near);
+  applyTerrainPass(mesh, owner); // ?terrain=wedge|a|b|ab: the earlier rounds on one wedge, for comparison
 
   for (const tile of terrainCollisionTiles()) {
     const groundBody = addStatic(

@@ -1,6 +1,6 @@
 # Terrain pass: geometry fidelity and texturing (scope and prototype)
 
-> **Status:** look experiment behind `?terrain=1` (round two; `a`, `b` and `ab` stay for comparison), off without the parameter. Round one shipped behind the flag (#1453); round two is on its branch. Not tested on a device. Owner, 10 November: fix round two's problems on the wedge, then apply it to all of Home after a quiet-machine performance run; start Ring Island's first landform step (below).
+> **Status:** round three, 14 November: Home's paths are drawn as paths (no flag), round two's problems are fixed, and the pass covers all of Home by default (`?terrain=0` is the land before it; `?terrain=wedge`, `a`, `b`, `ab` keep the earlier rounds on the wedge). See [round three](#round-three-14-november-paths-first-then-the-wedge-then-all-of-home). Open: a real-time clip for shimmer on the ledges and a quiet-machine timing run (the bench below ran under load: counts only); the cliff kit and the ground reshaping listed there are separate steps. Not tested on a device. Rounds one and two below are the record of how it got here.
 > **Owner's ask (10 November 2026):** "Should we do a pass on terrain geometry if we're filling things out? I think we should have more terrain fidelity so things look better, and do texturing pass, both on the existing island, and also on ring island now that we're building it out."
 
 Binding calls this works inside: [smooth, textured terrain](../decisions.md#look) (5 November: Odyssey-style smooth forms, rock by slope, Sunshine strata as a tunable height band), [terrain follows gameplay](../decisions.md#look) (5 November), "the ground keeps its current soft edges" (4 November), islands sit close to the sea with cliffs the exception (3 November), the Fresh palette, baseline Standard shading again (10 November, toon B removed), no rim light, the M1 Max as the average target and the M4 iPad Pro as the floor, and "what looks solid is solid". Research it builds on: [stylized-terrain](../research/stylized-terrain.md), [terrain-texturing](../research/terrain-texturing.md), [terrain-art](../research/terrain-art.md), the [terrain pilot](terrain-pilot.md) and [look-pass](look-pass.md).
@@ -162,6 +162,106 @@ Not started. To apply round two to the whole island:
 3. **Proof of heights:** `prove.ts` generalised from the wedge to the island (it already reads only the collider's grid and protection masks); `npm run level-check` and the grounding audit unchanged by construction.
 4. **Performance:** a quiet-machine `npm run daily -- perf` (1-minute load under about 6, bot queue empty) before and after, at town, T1 and the cove, desktop and phone tier. Watch triangles (+~22 k), shader cost of three extra samples on every ground pixel, and draws (should be +0).
 5. **Looks:** the same four framings plus the cove, the village from spawn and a real-time clip passing the gorge at 12 m/s for shimmer on the ledges; update `docs/game-design/graphics.md`; one proof still in the ship. Not a `WORLD_NS` change.
+
+## Round three (14 November): paths first, then the wedge, then all of Home
+
+1. **Owner, 14 November:** "One thing I want to call out of many of the things that we could improve, is that the trail could have basically more of a distinction between the path, and the geometry can be more intentional. For example, when you're going up the canyon path, it's the same texture and color as the sides of the valley wall, but it should be more clearly looking like a path, I think."
+
+Also binding from the same day: [Place for the look, not the cost; terrain may change](../agents/owner-calls.md). For this job the hard constraint above stays (drawn mesh and material only); ground that would need real reshaping is listed below as proposals, not done.
+
+### Step 1: paths
+
+- [x] Before stills, the canyon path (the bold path's climb up the gorge's east wall, Place-local (−41.5, −88) to (−61, −147)): walking up, looking back down, from across the valley.
+- [x] Diagnosis.
+- [x] Every trail drawn as a path, all of Home, no flag.
+
+**Why the canyon path and the valley wall looked the same.** The path was in `PATHS` and its mask was not lost: three things added up.
+
+1. **The same pigment.** The path was the vertex colour `#e0b271` × 0.85 through the `sand` palette; the rock was `#a98558`..`#d0a872` through `stone`. Under Fresh that is path (188, 163, 119) against rock (158, 139, 108)..(195, 176, 140): the path's colour sits inside the rock's range, same hue.
+2. **The same texture: none.** Both were flat colour; the only difference was that rock is flat-shaded per facet.
+3. **No edge.** The mask was a 2 m vertex blend that reached half-way up the cut walls (0.5 at 4 m from the centre line, where the wall is already 3 to 10 m up), and the per-pixel facet-rock rule overrode it wherever a facet was steeper than ny 0.82: 17 to 38% of the painted width on the gorge stretches. So the tread ended wherever a facet happened to turn, in a 2 m sawtooth, with nothing marking it.
+
+The collider is not the problem on the bold path: it already has a level bench about 6 m wide cut into the wall there.
+
+**What paths are now** (`src/place/path-field.ts`, `src/place/path-surface.ts`; one call in `land.ts` after every other ground layer, one in the wedge):
+
+- A distance field of the paths (`PATHS` and the shore path, footbridge spans left out) baked once into one RGBA16F texture, 1 m texels over the land's grid (781 × 541, 3.4 MB, no mips): distance to the tread's edge, the stretch's grade, the path's own height. Bilinear filtering of a distance field gives an edge far finer than the 2 m cells; the feather is one pixel wide (`fwidth`), so it holds from across the sea.
+- The tread is 6 m wide on bold paths and 3.8 m on the others, inside the level strip the terrain grades (7.2 m and 4.8 m), with a hand-cut wander of about ±0.3 m. It wins over slope rock within its width wherever a facet is ground (ny > 0.66); a wall cut beside it stays rock.
+- Brown compacted earth, lighter down the middle, mottled, fine grit up close. A dark cut edge with a painted bank (the normal leans in over the last 0.4 m, so one side catches the sun and the other is shaded), a darker verge out to about a metre (grass, or the foot of a cut wall), small stones along the edge, and timber risers square across the tread on climbs steeper than 1 in 8, one per 0.6 m of the path's own height.
+- The 2 m vertex blend no longer paints the path; it tints the grass beside it dry.
+- **Drawn against collider: 0.** No vertex moves; the bank and risers are shading. A real inset of a few centimetres would show only through its normals, which is what the painted bank gives, and the 2 m mesh cannot carry a sub-metre lip.
+
+### Ground that needs real reshaping (proposals for a later ground step; not done here)
+
+From `node dev/terrain-pass/path-ground.ts` (the collider across each tread every 2 m; Place-local metres, add 1000 to x for world):
+
+| Where | What the ground does | Proposal |
+| --- | --- | --- |
+| Quarry path, west descent, (−71, 139) to (−49, 148), y 12.9 to 7.5 | 34 m with almost no level tread (0 m of 3.8 m at (−60, 148), 2.9 m cross fall) between walls 4 to 7 m high | Cut a 4 m bench: widen the graded strip from 2.4 m to 3.6 m half width here and move the centre line 1 m off the wall |
+| Quarry path, east climb, (−19, 117) to (5, 155), y 1.7 to 11 | Level tread 0.5 to 1.5 m of 3.8 m, a 7 to 9 m wall on one side, a drop on the other | The same 4 m bench; a landing (6 m, level) at the turn near (−10, 150) |
+| Bold path, west descent, (−101, −118) to (−57, −78), y 17 to 1.7 | Level width 1.5 to 3.5 m of 6 m, cross fall up to 1.4 m at the foot (−61, −80) | Level the tread across its width; a landing where it turns at (−82, −95) |
+| Bold path, the canyon climb, (−42, −88) to (−61, −121), y 1.7 to 12 | Level 2.5 to 3 m of 6 m on the lower third, 1.25 m cross fall at (−56, −112) | Level across; keep the 6 m bench |
+| Bold path, the top of the climb, (−61, −145) to (−76, −167), y 18.5 to 22.7 | Level 1 to 2 m, cross fall up to 1.4 m as it leaves the wall | Level across, ease the bend at (−80, −166) |
+| Shore path, (−177, 27) to (−159, 32), y 9 to 15.6 | Level 0.5 m of 6 m: the climb from the landing is a tilted ramp | A levelled tread with a real cut bank uphill (0.3 to 0.5 m) |
+| Every gorge bench | The wall beside the tread is one or two 2 m cells of sliver triangles | The cliff kit (plan step 4): retaining edges and rock faces with their own colliders |
+
+Each is a heights change: collider, `H`, level-check and the tree catalog move with it, so it is its own step.
+
+### Step 2: round two's problems on the wedge
+
+- [x] **Faint strata beds.** Two beds in three now take the bed pigment at 0.55 (was 0.35), each bed is 8% lighter or darker than its neighbours, a thin dark seam parts them, and the cove's rock tile reads at 0.45 (was the cove's 0.2). Still no rust bed: subtle, as asked.
+- [x] **The pale, damp-looking strip on the lowest sand.** It was the 2 m vertex blend from grass to sand, which the lawn recipe turned a milky green on the lower slopes. Low ground is now per pixel: under 3 m the vertex colour gives way to one mean green, the beach starts at a line near 2.3 m that wanders ±0.4 m, and the gorge's floor keeps its grey-green bank.
+- [x] **Not drawn with the far ground on** (found in this round; `farGround` became the default on 11 November, after round two, so `?terrain=1` on main drew the wedge on top of the far tiles). The far tiles now leave out the wedge's cells as they do the cove's patch.
+- [x] **The green coast patch from the sea, and the warm-to-grey fade where the gorge wall leaves the wedge.** Both are the wedge's border, not a fault inside it; they go only when the same rule covers the island, which is step 3. Not fixable on the wedge alone.
+- [ ] **A real-time clip passing the cliff at 12 m/s for shimmer on the ledges:** not taken (the machine's load stayed above 30 for the whole session; a clip under that load says nothing about shimmer).
+
+### Step 3: all of Home
+
+- [x] One material: `roundTwoMaterial(true)` is Home's ground material (`land.ts`), with the cove's layers over its region and the paths over everything. No wedge fade.
+- [x] 1 m ledges on every unwalkable cell outside the cove's patch, **in the land's own geometry** (`home.ts`, `island.ts`): 3,619 cells leave the main grid's quads and come back as eight triangles each; 12,480 new vertices are appended to the same buffers and 1,995 grid vertices move. **+21,714 triangles (241,836 to 263,550), +0 draws with the far ground off.**
+- [x] The far ground learnt the mixed cells (`far-ground.ts` `NearGround`): a tile's nearest level draws its 1 m cells; from 180 m the same cells draw plainly at 2 m and coarser. A vertex moves only when every cell it touches is a 1 m cell and it is not on a tile's border, so neighbours of any level still meet on shared vertices (`test/terrain-pass-island.test.ts`).
+- [x] Heights proved for the island, independently of the pass's own classification (`node dev/terrain-pass/prove.ts home`, `dev/terrain-pass/drawn.ts`, `test/terrain-pass-island.test.ts`): every changed triangle is measured against the one collider triangle it lies in, and the drawn ground is sampled under and 1 m around everything in the keep list. **Walkable faces (3,280 triangles inside 1 m cells): max 0.** **Kept footprints (3,456 keeps, 295,136 samples): max 0.** Unwalkable rock (32,910 triangles): max **0.25 m** along the face's normal and, separately, max 0.76 m of height (0.25 m of height within reach of walkable ground: see the contact cap below). (Zeros are to 32-bit float precision, about 2 µm.) Built in about 0.13 s.
+- [x] **Review fixes (14 November; an independent review found the drawn ground off the collider in two places players stand).** (1) `vertexNy` probed four diagonals, and six triangles meet at a grid vertex, so a walkable face beside rock could be ledged: the face centred at (29.333, −139.667), normal Y 0.5734, sank 0.4856 m at a corner. It now probes eight directions, one strictly inside each incident face; a vertex moves only if every face touching it is unwalkable. The first proof repeated the same classification and so passed; the proof above does not. (2) The keep set was trees, rocks and the terrain's clear mask, and pads skip cells beside the gorge: under the awakened timber camp's block at (32, −144) the drawn ground sank 0.8063 m. `terrain.ts` now records every footprint it grades for (`GRADED`: each pad, each metre of every strip, each support box; a record only, heights unchanged, checked by hash), and the pass keeps the drawn ground on the collider within each, plus a metre, plus the reach of a 1 m triangle (`island.ts` `GROUND_KEEPS`, the one list the test iterates). A second test names buildings and stations from the layout's own catalogs (every town, room and camp plot, the forge, station frames and props, halts) and asserts the same under each. A building that takes its level ground from `terrain.ts` is covered without being named; one placed on ungraded ground beside rock would not be, and is not in the second test until its catalog is added there.
+- [x] **Second review (14 November), two more.** (3) Platforms and other placements that take no grading were not kept: 1 m outside the jump course's platform p1, at (−50.504, −65.445), the drawn ground sank 0.116 m. `placements.ts` now lists the live catalogs (the ancient technology's pads, pillars, devices, gates, posts, secrets and service walks; every town, room and camp plot by name; the forge and its frame; station props, turntable and curio bays; station frames; every halt and up-halt deck; footbridge abutments; the shore landing) and `GROUND_KEEPS` is `GRADED` plus that list plus trees and rocks: 3,456 keeps, each with its footprint plus 1 m, all iterated by the test. A catalog missing from that file is still missed by the Node test; `dev/terrain-pass/census.ts` is the sweep for those: in the running game it walks every static body, takes the ones whose base is on the terrain and samples the drawn ground under and 1 m around each (see below for what it found). (4) The proof's vertical maximum only updated when the normal offset won, and reported 0.688 m where a triangle sweep found 0.827 m: the two maxima are now tracked separately, with where each occurs, and a test holds both to a per-triangle sweep.
+- [x] **Rock a body can touch (contact cap).** Rock is drawn up to 0.25 m from its collider along its normal. On near-vertical faces that is most of a metre of height (0.83 m at normal Y 0.09) for only 0.08 m of real separation; the separation a body shows is the normal one, worst (0.25 m) on faces around normal Y 0.36, at the foot of the gorge's walls and under rims (`node dev/terrain-pass/contact.ts --no-cap` lists them). So within 1.5 m of any walkable collider face the ledge is held to 0.25 m of height (`island.ts` `capNearWalkable`; vertices are held 1.5 m further out so every drawn point in reach is on capped corners, then freed over a metre). After it: within reach of walkable ground, max **0.25 m vertical, 0.12 m along the normal**; island-wide, 0.25 m along the normal and 0.76 m vertical, both more than 1.5 m from anywhere to stand. 19,614 of the 32,910 unwalkable triangles are within reach, so most ledges are now shallow. `?terrainCap=0` draws them uncapped to compare.
+- **The census, run once (14 November, load 23 to 21, a fresh arrival's world):** 805 static bodies, 2,018 box, cylinder and sphere shapes, 607 with their base on the terrain; **none** has drawn ground more than 5 cm off the collider under it or within 1 m. (Its first pass flagged the spire's lowest drum and one 5 m cylinder, both from a footprint radius it overstated for round shapes; the spire is now in `placements.ts` all the same.) Limits: it sees one state of the world (later towns, awakened camps and built track add bodies; run it with a seed for those), and it skips triangle-mesh bodies. It is a look eval on the bot queue, not a Node test: `npm run look -- --eval dev/terrain-pass/census.ts --query dev=1`, read its `TERRAIN_CENSUS` line.
+- **Buddy at the worst face (one run, with and without the cap):** at the foot of the gorge wall by the south footbridge, Place-local (−43.33, 102.67), where the uncapped rock was 0.25 m from its collider along the normal. His feet are on the floor in both (the floor is walkable: collider 1.30, drawn 1.30); no float. Along the face his leading foot's toe meets the rock at its foot in both, a little into it; uncapped the wall stands about 0.3 m further out at head height. The second pose cropped his feet. These two frames do not show a clear float or sink; the cap rests on the geometry above, not on them.
+- **Follows the layout at load.** The path field, `GRADED`, the keep list and the 1 m cells are all computed when the page loads from `PATHS`, the terrain grid and the catalogs: nothing is baked into a committed file, so a layout change (the Round's ground) needs nothing regenerated. The numbers in this document (cell and triangle counts, the reshaping table's coordinates) describe the layout of 14 November and would need rereading.
+- [x] `?terrain=0` is the land before the pass; `?terrain=wedge` is round two on the wedge alone; `a`, `b`, `ab` as before.
+- Not done from round two's list: grass normals from the smooth surface (the island keeps the land's own vertex normals; problem 5, the faint 2 m diamonds, stands).
+
+### Costs (round three)
+
+`npm run bench -- --no-load --poses spawn,town,far,bay`, 1280 × 800 at DPR 2, the same checkout with `--query terrain=0` (before the pass, new paths) and without (after), back to back on 14 November. **1-minute load 26 falling to 15 for the before run, 15 rising to 30 for the after run: not a quiet machine, so the times are not evidence** (the bench's GPU times vary about 10% run to run even when quiet); the counts are exact.
+
+| Pose | Draw calls | Triangles in the frame | Textures | Geometries | GPU ms (under load) |
+| --- | --- | --- | --- | --- | --- |
+| spawn | 355 → 355 | 476,440 → 488,638 (+12,198) | 119 → 119 | 1,150 → 1,150 | 13.4 → 13.4 |
+| town | 305 → 305 | 632,999 → 645,323 (+12,324) | 119 → 119 | 1,150 → 1,150 | 14.9 → 16.1 |
+| far (over Home) | 283 → 283 | 729,101 → 734,969 (+5,868) | 119 → 119 | 1,152 → 1,152 | 12.9 → 13.3 |
+| bay (the cove) | 242 → 242 | 666,489 → 670,643 (+4,154) | 119 → 119 | 1,152 → 1,152 | 10.8 → 10.7 |
+
+- **Draws: +0 at every pose.** Triangles: at most +12,324 in a frame (+2%); the whole pass is +21,714 in the land's buffers, and far tiles do not draw the 1 m cells.
+- **Textures: +0 from the pass** (the rock tile is the cove's). The paths' field is one RGBA16F texture, 3.4 MB, in both columns (it came with step 1).
+- **Shader:** on every ground pixel the pass adds three reads of the rock tile and the paths add one read of the field. The cove's nine reads were already paid on every ground pixel (its region is a blend, not a branch).
+- The bench's shadow-pass figures swung both ways between the two runs (shadow calls 65 ↔ 164 at town, 186 ↔ 65 at far); the ground casts no shadow in either, so that is the bench under load, not the pass.
+- **Still owed:** a quiet-machine timing run (1-minute load under about 6) at the same poses, desktop and the phone profile, and a device. Nothing in the counts blocks the pass; by the owner's call of 14 November performance is fixed where it is measured to hurt, and town's +1.1 ms under load is inside the noise but is the number to re-measure.
+
+### Stills (round three; desktop 1280 × 800, frozen frames)
+
+Same poses each time (`dev/terrain-pass/paths-shots.ts`). Before: `/Users/matiasfranco/Developer/boogle/.claude/worktrees/agent-a13e3bd53ec7e7056/.look/shots/tp-paths-before2/group-0/cN-v0.png` (main before this round; load 63 to 29 at capture). After: `/Users/matiasfranco/Developer/boogle/.claude/worktrees/agent-a13e3bd53ec7e7056/.look/shots/tp-final-1/group-0/cN-v0.png` (load 81 to 9). The land before the pass with the new paths (`?terrain=0`): `/Users/matiasfranco/Developer/boogle/.claude/worktrees/agent-a13e3bd53ec7e7056/.look/shots/tp-final-1/group-1/cN-v1.png`. N: 0 canyon path walking up, 1 looking back down, 2 from across the valley, 3 town path, 4 shore path, 5 wedge wide, 6 quarry path into the gorge, 7 far across the water, 8 the island from the north-west, 9 the wedge's gorge wall from its foot, 10 the wedge's shore.
+
+What I saw, against the owner's words:
+
+- **Canyon path, walking up (0).** Before: tread, wall and far wall are one pale tan; the path is wherever the facets flatten. After: a brown tread with risers every 2 m and a dark edge, between orange sandstone walls with bed seams. It reads as a built path. The walls are still long 2 m slivers (the collider's shape: cliff kit).
+- **Looking back down (1), across the valley (2).** The bench reads as a path from 40 m across the gorge; the risers show its line. Under it, grass runs down walkable facets between the bench and the river as ragged green tongues on the rock: true to the rule, a little busy.
+- **Town (3).** Was a sand apron with a 2 m soft edge; now paths with a cut edge and verge meeting at the centre. The town reads less like a plaza: if the Round wants a paved centre, that is its own surface.
+- **Shore path (4).** In the cove's region the path lies over the cove's layers; risers on the climb from the landing.
+- **Wedge (5, 9, 10).** Beds and seams now show on the gorge wall from its foot, though the face is still smooth between them (a 1 m facet patchwork, no rock texture to speak of); the shore has a warm sand beach with a soft wandering edge in place of the pale strip.
+- **Far (7, 8).** No green patch: the whole coast is grass down to a beach, sandstone on the gorge and the cliffs, paths as thin brown lines (clear in town, thin elsewhere). On the south-east coast slope the broad-slope rule shows as a few blocky tan patches at 2 m.
+- **Quarry path into the gorge (6).** The pose is hard against a wall; it shows the grass-to-rock border up close: crisp and ragged, with the 2 m interpolation visible in its shape.
+
+Not judged: motion, shimmer, phone width, a second player.
 
 ## Ring Island: a landform people could live on
 

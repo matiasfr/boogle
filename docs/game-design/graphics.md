@@ -135,10 +135,20 @@
   tile border so there are no cracks ([far-ground.ts](../../src/place/far-ground.ts); the pattern is Chunked LOD, see
   [rendering](../agents/rendering.md)). Matched stills: [performance research](../research/performance.md), section 10.
   `?dev=1&graphics=farGround:false` is the old one-mesh ground. (`farSea` went with Ultra Water.)
-- **Terrain pass experiment (flag only, off).** `?terrain=1` redraws one wedge of Place south of the village on the
-  owner's terrain answers (grass to a beach, sandstone with subtle beds and 1 m ledges only on unwalkable cliffs, worn
-  paths); `a`, `b` and `ab` keep the first round's candidates. The collider and every ground
-  query are unchanged; not supported with `farGround` on (its tiles still draw the wedge). [Plan and stills](../plans/terrain-pass.md).
+- **Home's ground: the terrain pass (the default since 14 November).** Grass runs down to a beach line drawn per
+  pixel; sandstone, with subtle beds, thin seams and the cove's rock tile, only where the collider is unwalkable (or the
+  broad slope is); those 3,619 cells are drawn at 1 m with strata ledges in the land's own geometry (+21,714 triangles,
+  no extra draw; the far tiles draw them at 1 m only on their nearest level). The collider and every ground query are
+  unchanged: every walkable face and the ground under and 1 m around everything the terrain grades for (buildings,
+  pads, rail beds, paths, supports, platforms and other catalogued placements, trees, rocks) is exact; rock nobody can
+  stand on strays at most 0.25 m along its face, and within 1.5 m of anywhere to stand at most 0.25 m of height (`node dev/terrain-pass/prove.ts home`, measured triangle by triangle against the collider). `?terrain=0` is the land before the pass; `?terrain=wedge`, `a`, `b` and
+  `ab` keep the earlier rounds on one wedge. Not tested on a device. [Plan and stills](../plans/terrain-pass.md).
+- **Paths read as paths (14 November; owner: "it should be more clearly looking like a path").** Every footpath on
+  Home is drawn per pixel from a distance field of the path lines ([path-surface.ts](../../src/place/path-surface.ts);
+  one 781 × 541 RGBA16F texture, 3.4 MB), over whatever ground is underneath and winning over slope rock within its
+  width: brown compacted earth, lighter where feet go, a dark cut edge with a painted bank, a darker verge, small
+  stones, and timber risers square across the tread on climbs steeper than 1 in 8. Bold paths are 6 m wide, the others
+  3.8 m. No vertex moves; where a tread needs real reshaping the plan lists it for a ground step.
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon
   style B live as the default). No stepped light, cool shade side or rim on characters or the world. The comparison
   is kept as research: [toon-shading](../research/toon-shading.md).

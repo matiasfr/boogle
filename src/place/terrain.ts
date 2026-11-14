@@ -114,8 +114,15 @@ function ground(x: number, z: number) {
   return Math.max(h, head(x, z));
 }
 
+/** Every footprint this file grades the ground for (a pad's disc, each metre of a strip, a support's box as its
+ * circle), Place-local, in the order graded. A record only: no height reads it. Whatever stands on Home's ground gets its
+ * level ground from one of these three functions, so the terrain pass keeps its drawn ground on the collider under each
+ * (src/proto/terrain-pass/island.ts), including where a pad skipped cells beside the gorge. */
+export const GRADED: { kind: 'pad' | 'strip' | 'support'; x: number; z: number; r: number }[] = [];
+
 /** Pulls the ground toward y within a soft disc. */
 function pad(x0: number, z0: number, y: number, r: number, soft: number) {
+  GRADED.push({ kind: 'pad', x: x0, z: z0, r });
   const i0 = Math.max(0, Math.floor((x0 - r - soft - GRID.x0) / CELL)),
     i1 = Math.min(NX - 1, Math.ceil((x0 + r + soft - GRID.x0) / CELL)),
     j0 = Math.max(0, Math.floor((z0 - r - soft - GRID.z0) / CELL)),
@@ -159,6 +166,7 @@ function strip(
   const best = new Map<number, [number, number]>();
   const cells = Math.ceil(outer / CELL) + 1;
   for (const [x, z, y] of samples) {
+    GRADED.push({ kind: 'strip', x, z, r: inner });
     const ci = Math.round((x - GRID.x0) / CELL),
       cj = Math.round((z - GRID.z0) / CELL);
     for (let j = Math.max(0, cj - cells); j <= Math.min(NZ - 1, cj + cells); j++)
@@ -330,6 +338,7 @@ function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, y
     c = Math.cos(yaw),
     s = Math.sin(yaw),
     r = Math.hypot(w, d) / 2 + CELL + 4;
+  GRADED.push({ kind: 'support', x, z, r: Math.hypot(w, d) / 2 });
   for (
     let j = Math.max(0, Math.floor((z - r - GRID.z0) / CELL));
     j <= Math.min(NZ - 1, Math.ceil((z + r - GRID.z0) / CELL));

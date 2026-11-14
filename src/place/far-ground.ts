@@ -18,9 +18,18 @@ import { camera, scene } from '../render/scene.ts';
 import { registerGraphics, graphicsInitial } from '../graphics-settings.ts';
 import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
 import { lodLevel } from '../render/lod-level.ts';
-import { tileIndex } from './far-ground-index.ts';
+import { tileIndex, type TileCells } from './far-ground-index.ts';
 
-const TILE = 96; // cells per tile side (192 m)
+/** Cells per tile side (192 m). */
+export const GROUND_TILE = 96;
+const TILE = GROUND_TILE;
+/** Cells the nearest level draws finer than the grid (the terrain pass's 1 m rock): `skip` names them, `triangles`
+ * gives a tile's own, and the full mesh's index holds them from `restEnd` on. Coarser levels draw those cells plainly. */
+export type NearGround = {
+  skip: (i: number, j: number) => boolean;
+  triangles: (cells: TileCells) => number[];
+  restEnd: number;
+};
 // [step in cells, from this distance (m) between the camera and the tile's bounds]. Step 1 is the full grid.
 const LEVELS: readonly [step: number, from: number][] = [
   [1, 0],
@@ -97,9 +106,10 @@ export function addFarGround(
   mainEnd: number,
   skip: (i: number, j: number) => boolean,
   owner?: OwnedView,
+  near?: NearGround,
 ) {
   const made: THREE.BufferGeometry[] = [];
-  const view: View = { full, build: () => build(full, nx, nz, mainEnd, skip, made, owner), built: null };
+  const view: View = { full, build: () => build(full, nx, nz, mainEnd, skip, made, owner, near), built: null };
   const dispose = () => {
     views.delete(view);
     for (const geo of made) geo.dispose();
@@ -118,6 +128,7 @@ function build(
   skip: (i: number, j: number) => boolean,
   made: THREE.BufferGeometry[],
   owner?: OwnedView,
+  near?: NearGround,
 ): Built {
   const source = full.geometry;
   const index = source.getIndex()!.array;
@@ -153,7 +164,14 @@ function build(
     for (let i0 = 0; i0 < nx - 1; i0 += TILE) {
       const i1 = Math.min(i0 + TILE, nx - 1),
         j1 = Math.min(j0 + TILE, nz - 1);
-      const levels = LEVELS.map(([s]) => compact(tileIndex(nx, [i0, j0, i1, j1], s, skip)));
+      const cells: TileCells = [i0, j0, i1, j1];
+      const levels = LEVELS.map(([s], level) =>
+        compact(
+          level === 0 && near
+            ? [...tileIndex(nx, cells, s, (i, j) => skip(i, j) || near.skip(i, j)), ...near.triangles(cells)]
+            : tileIndex(nx, cells, s, skip),
+        ),
+      );
       const mesh = new THREE.Mesh(levels[0]!, full.material);
       mesh.receiveShadow = full.receiveShadow;
       mesh.castShadow = full.castShadow;
@@ -165,7 +183,7 @@ function build(
   // four sides, the four corners and the middle (the cove). Each has its own bounds, so a side behind the camera is dropped.
   if (mainEnd < index.length) {
     const position = source.getAttribute('position') as THREE.BufferAttribute;
-    const triangles = Array.from(index.subarray(mainEnd));
+    const triangles = Array.from(index.subarray(mainEnd, near?.restEnd ?? index.length));
     const centre = (t: number, axis: 'getX' | 'getZ') =>
       (position[axis](triangles[t]!) + position[axis](triangles[t + 1]!) + position[axis](triangles[t + 2]!)) / 3;
     const lo = [Infinity, Infinity],

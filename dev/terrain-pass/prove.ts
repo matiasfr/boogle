@@ -1,10 +1,15 @@
-// Proves the terrain pass's tolerance in Node: how far each drawn wedge vertex (src/proto/terrain-pass/surface.ts) strays
-// from the collider it never touches. `node dev/terrain-pass/prove.ts [1|a2|a4 ...]` (default all three): 1 is round
-// two, aN variant a at N vertices per 2 m cell side. A drawn triangle lies inside one collider triangle, so the offset is
-// linear across it and the vertex maxima bound every drawn point. No browser.
+// Proves the terrain pass's tolerance in Node: how far the drawn ground strays from the collider it never touches.
+// `node dev/terrain-pass/prove.ts [home|1|a2|a4 ...]` (default all four). `home` is the pass on all of Home, measured
+// independently of the code under test (drawn.ts: every changed triangle against the one collider triangle it lies in,
+// and the drawn ground under and 1 m around everything in the keep list); it exits 1 if a walkable face or a kept
+// footprint is more than 5 cm off. `1` is round two on the wedge and `aN` variant a at N vertices per 2 m cell side,
+// by vertex: there a drawn triangle lies inside one collider triangle, so the vertex maxima bound every drawn point.
+// No browser.
 import { WALKABLE_NY } from '../../src/constants.ts';
 import { LAND_TREES } from '../../src/place/tree-catalog.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
+import { GROUND_KEEPS } from '../../src/proto/terrain-pass/island.ts';
+import { drawnHome, measureHome, measureKeeps } from './drawn.ts';
 import {
   KEEPS,
   TOLERANCE,
@@ -17,7 +22,44 @@ import {
 } from '../../src/proto/terrain-pass/surface.ts';
 
 const asked = process.argv.slice(2);
-for (const name of asked.length ? asked : ['1', 'a2', 'a4']) {
+/** All of Home, by triangle and by footprint (drawn.ts). */
+function home() {
+  const started = performance.now();
+  const drawn = drawnHome();
+  const buildMs = Math.round(performance.now() - started);
+  const faces = measureHome(drawn),
+    kept = measureKeeps(drawn, GROUND_KEEPS);
+  const round = (v: number) => +v.toFixed(4);
+  console.log(
+    JSON.stringify({
+      variant: 'home',
+      fineCells: drawn.surface.fineCells,
+      newVertices: drawn.surface.position.length / 3,
+      buildMs,
+      walkableTriangles: faces.walkable.triangles,
+      walkableMaxVertical: round(faces.walkable.gap),
+      walkableWorstAt: faces.walkable.at.map(round),
+      steepTriangles: faces.steep.triangles,
+      steepMaxAlongNormal: round(faces.steep.alongNormal.alongNormal),
+      steepMaxAlongNormalAt: faces.steep.alongNormal.at.map(round),
+      steepMaxVertical: round(faces.steep.vertical.vertical),
+      steepMaxVerticalAt: faces.steep.vertical.at.map(round),
+      steepMaxVerticalNy: round(faces.steep.vertical.ny),
+      keeps: kept.keeps,
+      keepSamples: kept.samples,
+      keepMax: round(kept.gap),
+      keepWorst: kept.kind,
+      tolerance: TOLERANCE,
+    }),
+  );
+  if (faces.walkable.gap > 0.05 || kept.gap > 0.05 || faces.steep.alongNormal.alongNormal > TOLERANCE.steep + 1e-5)
+    process.exitCode = 1;
+}
+for (const name of asked.length ? asked : ['home', '1', 'a2', 'a4']) {
+  if (name === 'home') {
+    home();
+    continue;
+  }
   const started = performance.now();
   const s = name === '1' ? buildSteepSurface() : buildWedgeSurface(Number(name.slice(1)), true);
   const ms = performance.now() - started;
