@@ -2,7 +2,38 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 14 November 2026 about 17:30 UTC (09:30 PST), after the owner's whole-route playtest and the fixes below. Local `origin/main` is `c6c64cfb6` (#1811); world v44 remains shipped. The shared v45 reset is not shipped and needs the owner's go-ahead, never mid-session. Mode: withCodex. CI, deploy and smoke were not refreshed for this snapshot.
+**Updated:** 14 November 2026 about 23:00 UTC (15:00 PST), at the end of the 12–14 November orchestrate session. The owner is moving orchestration to a new harness; this section is the hand-off. Mode: withCodex. World **v45** is live (#1827).
+
+## Start here (hand-off, 14 November evening)
+
+**Pick-up in five steps.**
+
+1. Read [the backlog](../backlog.md): the ranked list of everything the owner has committed to, each row with its status and next step. "What's next" comes from there, by rank. It is also the public dashboard at https://boogle.club/development (built from the file on every deploy; Owner words never published).
+2. Run `npm run heartbeat` and `npm run inflight` from any current checkout. Check main CI first (a red main beats new work).
+3. Check the three branches below that were in flight at hand-off.
+4. Work from your own worktree off `origin/main`. The repo-root checkout at `~/Developer/boogle` is a detached launcher hundreds of commits behind: never read plans from it or edit it.
+5. Models and effort come from `npm run models` (withCodex). The owner said on 14 November that Claude usage is low until 5 am PST 15 November: route Claude work to Opus until then.
+
+**In flight at hand-off** (check each; none was killed):
+
+- **Main typecheck fix**, branch `fix/meadow-offsetlat` (worktree `../boogle-codex/fix-meadow-offsetlat`): main went red at #1830 because the meadow imported `upLat`, which v45 had renamed `offsetLat` (d1601e31e). Five-line rename, reviewed (Codex Astra: ship), queued in `ship-queue` with `--main-known`. If main is still red, confirm it landed (`git cherry origin/main fix/meadow-offsetlat`) and re-run CI.
+- **Z-fighting detector**, Codex job `zfight-detector`, branch `codex/zfight-detector-2` (worktree `../boogle-codex/zfight-detector`): approved after two Astra rounds (205 likely-visible groups, 61 joints, 545 hidden; the owner's two Home spots found). Its first ship failed typecheck: `dev/level/drawn-geometry.ts` imported the removed `src/proto/terrain-pass/*`; Codex is porting it to `src/place/ground-layers.ts`, `ground-material.ts` and `dev/ground/drawn.ts`. Then: a short re-review of that port, ship. After it lands: a job to fix the top twenty visible spots in `docs/research/zfighting-2026-11-14.md`.
+- **Local backlog board**, Codex job `backlog-board` from branch `plan/backlog-board` (plan `docs/plans/backlog-board.md`, commit 0b0c9c0c5, not yet on main): steps 1 to 6 (P1–P5 ranks with a stable id column; a read-only kanban on boogle.club/development; `npm run board` on localhost for the owner's drags, ranks and notes; `npm run board -- ship` with no model in the loop). Proceeding on the plan's three recommendations (re-rank and four "blocked on owner" statuses; shipped rows kept seven days; his Notes are his words, never edited by agents). Owner words: "I just dont want tokens going to the development page." Needs an independent review, then ship it (plan + build together) at a pause, and have the owner try one note end to end.
+
+**Shipped 14 November afternoon and evening** (each code change after an independent Codex Astra review): #1821 terrain ledge removal; #1822 glider wisps and wind; #1823 The Boogler's statue on the green; #1824 meadow flags; #1825 Home station fixes; #1826 the backlog; #1827 **world v45** (rotunda steps 1a and 1b, right-hand running steps 3 to 6 with the Pier's west platform, destination plaques off their masts, edge stripes seated; network suite 190/190); #1828 the development page from the backlog; #1829 decisions (backlog dashboard, accounts committed, v45 "ship at will"); #1830 meadow everywhere, default on (`?meadow=0` off). v45 was confirmed live: server deploy and smoke passed, boogle.club loaded with no console errors.
+
+**Lessons from today** (add to the numbered rules below):
+
+- After a ship lands, the next queued branch was checked against the old main. When two branches touch neighbouring code (v45 renamed a helper the meadow used), re-run `node dev/ship-check.ts origin/main HEAD` on the second after the first lands, before shipping it.
+- `dev/codex/run.ts review` takes `--ref-branch` only; `--base-ref` is for tasks.
+- The heartbeat's STALLED mark on a Codex job is often false (low CPU while waiting on the model): check `.look/codex/<topic>/events.jsonl` mtime.
+- `npm run server -- reset <room>` resets a room (backup first); the owner asked how, for future playtests.
+
+**Owner questions still open** (each proceeds on its recommendation): the board plan's three (above); suspect strings owed to him in one list (footings board lines in `src/entities/railway/footing-cues.ts`, "Next load: on the wagon", kiln, cradle, seal, great tree, rack and wagon prompts); the statue's facing and size, the glider trail's brightness and the wind sound (his walk); the right-hand running plan's three questions; walk the Round blockout. Items the backlog agent could not tell were commitments (train ladder, short turn, co-op abilities E, great beam, 2D economy prototype, express and east bay, yards, production-core slices 6 and 7, the target-quality pass, the 12 November hold list, mini-golf, critters) were put to him on 14 November and are unanswered: ask once.
+
+**Next work by the backlog's ranks** after the three in-flight items: the v46 reset (traveller step 2 rows `moved` and `from`, great tree move, rack move; the train ladder if he confirms it), a planner for accounts (`docs/plans/accounts.md`), terrain clean-up Part 2 (2a view-only can start), rotunda Checkpoint A timing then steps 2 to 5, prefab steps 11 to 13. HOTBOX has been down since 12 November.
+
+**Older status below** (morning snapshot, kept for its detail; the hand-off above supersedes it where they differ).
 
 ## Links
 
@@ -18,7 +49,7 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 ## Where the work stands
 
-**Status at 14 November about 17:30 UTC (read this first).** Main is `c6c64cfb6` (#1811), `WORLD_NS` **v44**. **v45 is one shared reset, not shipped.** The Round blockout is ready for the owner's walk. HOTBOX has been down since 12 November.
+**Status at 14 November about 17:30 UTC (morning snapshot; see Start here).** Main is `c6c64cfb6` (#1811), `WORLD_NS` **v44**. **v45 is one shared reset, not shipped.** The Round blockout is ready for the owner's walk. HOTBOX has been down since 12 November.
 
 *On main on 14 November after the playtest, newest last.* Each code change below had an independent Codex Astra review, two to five rounds (orchestrator's handoff). Numbers and titles below were checked against local `git log origin/main`; the descriptions say what each batch did, rather than treating its last fix's title as the whole batch.
 
@@ -49,7 +80,7 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 *In work at about 17:30 UTC (the handoff, not a live agent poll):*
 
 - **Rotunda step 1a:** local `codex/rotunda-1a-2`, tip `0e1a87f7f`; two reviews, ready to combine, network suite 190/190. Bumps `WORLD_NS` to v45; **not shipped**. A Claude implementer is building step 1b, the blockout, on top. [Plan](../plans/roundhouse-rotunda.md).
-- **Summit path step 2:** a Claude implementer is building the 28 m footbridge. Step 1 is on main; the bridge is not. [Plan](../plans/ring-summit-path.md).
+- **Summit path step 2:** the 28 m footbridge landed later on 14 November (#1814, #1815). [Plan](../plans/ring-summit-path.md).
 
 *Parked:* the moving railhead traveller's view-side implementation, local `worktree-agent-af55e2f2172764ff8` and local tag `archive/worktree/railhead-traveller` (both `9b9845fbb`). Superseded by [railhead-traveller](../plans/railhead-traveller.md). Its step 1 helpers are on main without live callers; step 2 moves row fields `moved` and `from` and needs v45.
 
