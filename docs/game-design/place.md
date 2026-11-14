@@ -1418,6 +1418,11 @@ resolves at load. The existing platform frame, piece reveal order, merged draws,
 remain. Request levers/plaques, signal attachments, plank crossings and board stands still use their existing
 builders ([prefab step 10 third pass](../plans/prefab-data-step-10-3-report.md)); no halt or interaction moves.
 
+Home's two destination plaques hang 0.8 m inward beside their signal masts, clear of the pictograms; the masts stay
+in place. These are the kit's only road plaques (the Pier's second platform has no mast or road plaque). All kit
+platform edge stripes, including the Pier's second platform, sit 1 cm above the deck with their outer faces 2 cm
+inside the slab edge, avoiding coincident slab faces. Walkable deck colliders are unchanged.
+
 **Signs at the stations and racks** (owner, 9 November: signs in the world before hovering text; the second pass after
 the halts). The station bills, the depot rack's stock count, the rails shelf's count and the cart's service tag were
 labels hanging in the air, turned to the camera. Each is now a painted board in a timber frame on its own post or

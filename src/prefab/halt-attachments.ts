@@ -11,8 +11,11 @@ export function haltAttachmentPose(p: JsonObject): { pos: Vec3; rot: Vec3 } {
     ds = half - 0.8,
     y = low;
   if (p.piece === 'signal') y += 4.2;
-  else if (p.piece === 'road-plaque') y += 2.9;
-  else if (p.up) {
+  else if (p.piece === 'road-plaque') {
+    // Hang inward over the platform: the 1.4 m face clears the 0.14 m mast by 3 cm.
+    dl -= sign * 0.8;
+    y += 2.9;
+  } else if (p.up) {
     // A second platform is the homeward train's (right-hand running, running-side.md step 4): its lever stands at the
     // -s end, the way that train leaves, whichever end the plank crossing is at.
     dl = sign * (1.25 - 0.8);
