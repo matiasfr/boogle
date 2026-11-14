@@ -20,7 +20,7 @@ const SLEEPER_SIZE = { length: 2.3, depth: 0.42 },
 // over the rail height, the kit rail's 0.135 m under its head (0.1, as buildTrack's TOP).
 const GAUGE = SHUNT.gauge,
   BASE = -0.02,
-  FOOT = RAIL_HEAD - 0.135;
+  FOOT = RAIL_HEAD - 0.135 + 0.01; // same 1 cm drawn clearance as the main-line rails
 /** Another track nearer than this (centre to centre) shares its sleepers: a sleeper is 2.3 m long. */
 const SHARED = 2.4;
 

@@ -23,7 +23,7 @@ import { lookTrack } from '../../place/look-kit.ts';
 import { carriedPiece, sleeperStations, trackPanels, type TrackPanel } from './track-panels.ts';
 
 // ---------------------------------------------------------------- track: pieces and the solid top
-const TOP = 0.1; // the sleepers' top over the rail height
+const TOP = 0.11; // drawn rail foot: 1 cm clear of the sleepers' top (no collider change)
 const DECK_W = 3.6,
   BED_W = 2.8;
 type Solid = {
