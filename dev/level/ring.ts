@@ -232,25 +232,25 @@ function brakingCarry(brake: number, approach: number) {
 type Entry =
   { kind: 'section' | 'fact'; message: string } | { kind: 'assertion' | 'report'; passed: boolean; message: string };
 
-/** Step 1 reports the severed walk without failing level-check. Step 2 promotes these two reports to assertions. */
+/** The drawn walk to the lookout: off its footbridge it stays on uncut, walkable ground (docs/plans/ring-summit-path.md). */
 function summitPathReport(section: (message: string) => void, fact: (message: string) => void, entries: Entry[]) {
   const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z },
     facts = summitPathFacts(createIslandGround(RING_CONES, centre), centre),
     b = facts.bridge;
   section('The summit path');
   fact(
-    `  today's path: ${f1(facts.length)} m; future bridge span ${f1(b.span)} m, grade ${f1(b.grade * 100)} %, clearance ${f1(b.clearance)} m, abutment cut ${b.abutmentCut.toFixed(3)} m`,
+    `  path: ${f1(facts.length)} m; bridge span ${f1(b.span)} m, grade ${f1(b.grade * 100)} %, clearance ${f1(b.clearance)} m, abutment cut ${b.abutmentCut.toFixed(3)} m`,
   );
   entries.push(
     {
-      kind: 'report',
+      kind: 'assertion',
       passed: facts.cut.depth < 0.2,
-      message: `off the bridge, cut within 1.3 m of the path under 0.2 m: ${facts.cut.depth.toFixed(2)} m at ${f1(facts.cut.at)} m (step 2)`,
+      message: `off the bridge, cut within 1.3 m of the path under 0.2 m: ${facts.cut.depth.toFixed(2)} m at ${f1(facts.cut.at)} m`,
     },
     {
-      kind: 'report',
+      kind: 'assertion',
       passed: facts.steepest.grade <= MOVER.walkSlope,
-      message: `off the bridge, grade at most ${f1(MOVER.walkSlope * 100)} %: ${f1(facts.steepest.grade * 100)} % at ${f1(facts.steepest.at)} m (step 2)`,
+      message: `off the bridge, grade at most ${f1(MOVER.walkSlope * 100)} %: ${f1(facts.steepest.grade * 100)} % at ${f1(facts.steepest.at)} m`,
     },
   );
 }

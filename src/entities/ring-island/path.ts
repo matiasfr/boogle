@@ -1,4 +1,4 @@
-// Ring Island's summit walk and its future bridge (docs/plans/ring-summit-path.md, step 1).
+// Ring Island's summit walk and its footbridge over the stack line's cutting (docs/plans/ring-summit-path.md).
 // Local place data only: world metres, no renderer, physics, shared state or saves.
 import { RING_HALT, ringAt } from '../../sim/railway-ring-layout.ts';
 import { ROW_SHIFT, rowPoint } from '../../sim/railway-route.ts';
@@ -41,21 +41,25 @@ export function summitBridge(g: IslandGround) {
   };
 }
 
-export function summitPath(_g: IslandGround, centre: { x: number; z: number }) {
-  const foot = summitPathFoot();
-  // Step 1 deliberately preserves today's drawn walk. Step 2 replaces (1380, -870) with approach, a, b
-  // from summitBridge and sets bridgeLeg to 3; the reviewed approach points straight onto the deck.
+export function summitPath(g: IslandGround, centre: { x: number; z: number }) {
+  const foot = summitPathFoot(),
+    { approach, a, b } = summitBridge(g);
+  // The approach stands 8 m behind a on the deck's own axis, so the last metres point down the deck and not at the
+  // rim (the plan's design review, finding 1). Leg `bridgeLeg` (a to b) is the deck: the view lays no ground path
+  // there and the facts skip it.
   const way: [number, number][] = [
     [foot.x, foot.z],
     [foot.x - 18, foot.z - 8],
-    [1380, -870],
+    [approach.x, approach.z],
+    [a.x, a.z],
+    [b.x, b.z],
     [1395, -930],
     [1360, -975],
     [1372, -1035],
     [1345, -1075],
     [centre.x + 4, centre.z + 6],
   ];
-  return { way, bridgeLeg: -1 };
+  return { way, bridgeLeg: 3 };
 }
 
 /** Half-metre centreline samples (including leg ends); cut depth across the full 2.6 m path width.
