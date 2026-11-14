@@ -58,6 +58,9 @@ export const VIEWS: Record<string, Pose> = {
   telescope: { cam: [870, 72, 65], look: [1080, 0, -500], fov: 24 },
   // Home's lawn wedge south of the village from play distance (dev/ground/meadow-shots.ts).
   wedge: { cam: [921, 24, 90], look: [927, 16, 118], fov: 55 },
+  // The meadow's other two cost views: the Round's green by the statue, and an open hill east of the gorge.
+  'home-green': { cam: [885, 34, 48], look: [885, 18, 20], fov: 55 },
+  'home-hill': { cam: [1086, 30.5, -128], look: [1104, 24, -150], fov: 55 },
 };
 
 export const freePort = () =>
