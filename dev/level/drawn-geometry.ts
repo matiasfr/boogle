@@ -29,8 +29,9 @@ import type { LevelArtifact, Placement, Transform } from '../../src/prefab/types
 import type { Part } from '../../src/render/part-geometry.ts';
 import { buildIslandSurface } from '../../src/proto/terrain-pass/island.ts';
 import { describeGround } from '../../src/proto/terrain-pass/surface.ts';
-import { geometryFaces } from '../../src/geometry/drawn-faces.ts';
+import { geometryFaces, materialSurface } from '../../src/geometry/drawn-faces.ts';
 import type { Face } from '../../src/geometry/zfight.ts';
+import type { Surface } from '../../src/geometry/zfight-surface.ts';
 import { sourceFunction, sourceModule } from './source.ts';
 import { collectTrackGeometry } from './track-geometry.ts';
 import { timberDecks } from './timber-track.ts';
@@ -55,20 +56,60 @@ export async function collectDrawnGeometry() {
     'Distant islands/Works and unconverted legacy decoration are not yet in the offline adapter; use the live scan there.',
     'Service walkways, footbridges and tech pads use level-check timberDecks oriented-box adapters, not their detailed decoration.',
   ];
-  const addGeometry = (geometry: THREE.BufferGeometry, matrix: THREE.Matrix4, id: string) => {
-    faces.push(...geometryFaces(geometry, matrix, id));
+  const addGeometry = (
+    geometry: THREE.BufferGeometry,
+    matrix: THREE.Matrix4,
+    id: string,
+    surface?: Surface,
+    family?: string,
+  ) => {
+    faces.push(...geometryFaces(geometry, matrix, id, false, surface, family));
     geometry.dispose();
   };
   const addBox = (b: Box, id: string) =>
-    addGeometry(partGeometry(b.taper), new THREE.Matrix4().makeTranslation(b.x, b.y, b.z).multiply(b.local), id);
+    addGeometry(
+      partGeometry(b.taper),
+      new THREE.Matrix4().makeTranslation(b.x, b.y, b.z).multiply(b.local),
+      id,
+      {
+        material: `site board/${b.palette ?? 'authored'}`,
+        uncertain: 'procedural board instance shading',
+        color: [b.color.r, b.color.g, b.color.b],
+        castShadow: true,
+        receiveShadow: true,
+        vertexColors: false,
+      },
+      id.replace(/\/[^/]+$/, '/box'),
+    );
   const addParts = (parts: Part[], matrix: THREE.Matrix4, id: string) =>
-    parts.forEach((part, i) => addGeometry(merged([part]), matrix, `${id}/part-${i}`));
+    parts.forEach((part, i) =>
+      addGeometry(
+        merged([part]),
+        matrix,
+        `${id}/part-${i}`,
+        {
+          material: id.startsWith('railway.halt') ? 'halt board' : 'room furnishing',
+          ...(id.startsWith('railway.halt') ? { uncertain: 'procedural board instance shading' } : {}),
+          color: [1, 1, 1],
+          castShadow: true,
+          receiveShadow: true,
+          vertexColors: true,
+        },
+        `${id}/part/${part[0]}/${part.slice(4, 8).join(',')}`,
+      ),
+    );
   const addObject = (object: THREE.Object3D, matrix: THREE.Matrix4, id: string) => {
     object.updateWorldMatrix(true, true);
     let index = 0;
     object.traverse((o) => {
       if (o instanceof THREE.Mesh)
-        addGeometry(o.geometry.clone(), matrix.clone().multiply(o.matrixWorld), `${id}/${o.name || o.type}-${index++}`);
+        addGeometry(
+          o.geometry.clone(),
+          matrix.clone().multiply(o.matrixWorld),
+          `${id}/${o.name || o.type}-${index++}`,
+          materialSurface(Array.isArray(o.material) ? o.material[0]! : o.material, o.castShadow, o.receiveShadow),
+          id,
+        );
     });
   };
   for (const { id, boxes } of openingBuildings()) boxes.forEach((b, i) => addBox(b, `${id}/${i}`));
@@ -105,7 +146,23 @@ export async function collectDrawnGeometry() {
     const matrix = frame.clone().multiply(transform(p));
     if (visual.builder === 'greybox.box') {
       for (const [i, t] of (visual.instances ?? [{ pos: [0, 0, 0] as const }]).entries())
-        addGeometry(new THREE.BoxGeometry(1, 1, 1), matrix.clone().multiply(transform(t)), `${p.id}/instance-${i}`);
+        addGeometry(
+          new THREE.BoxGeometry(1, 1, 1),
+          matrix.clone().multiply(transform(t)),
+          `${p.id}/instance-${i}`,
+          {
+            material: 'greybox stone',
+            color: new THREE.Color((p.params?.colour ?? visual.params.colour) as string).toArray() as [
+              number,
+              number,
+              number,
+            ],
+            castShadow: p.id.startsWith('town.'),
+            receiveShadow: true,
+            vertexColors: false,
+          },
+          p.id,
+        );
       return;
     }
     const build = builders.get(visual.builder);
@@ -139,7 +196,13 @@ export async function collectDrawnGeometry() {
             new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(part[8] ?? 0, p.params!.yaw as number, 0, 'YXZ')),
           )
           .multiply(new THREE.Matrix4().makeTranslation(-x, -y, -z));
-        addGeometry(geometry, m, `${p.id}/part-${i}`);
+        addGeometry(
+          geometry,
+          m,
+          `${p.id}/part-${i}`,
+          { material: 'halt ramp', color: [1, 1, 1], castShadow: true, receiveShadow: true, vertexColors: true },
+          p.id,
+        );
       }
     } else prefab(p, frame);
   }
@@ -166,6 +229,14 @@ export async function collectDrawnGeometry() {
       new THREE.BoxGeometry(p.w, p.h, p.d),
       transform({ pos: [p.x, p.base + p.h / 2, p.z], rot: [p.yaw, 0, 0] }),
       p.id,
+      {
+        material: 'opening flat',
+        color: new THREE.Color(p.color).toArray() as [number, number, number],
+        castShadow: true,
+        receiveShadow: true,
+        vertexColors: false,
+      },
+      p.id.replace(/\/[^/]+$/, '/part'),
     );
   for (const face of await collectTrackGeometry()) faces.push(face);
   for (const d of timberDecks().filter((d) =>

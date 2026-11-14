@@ -1,50 +1,67 @@
-// Turn a saved `node --import ./dev/sim/hooks.ts dev/level/zfight.ts --json` into a reviewable census.
-// node dev/level/zfight-report.ts <report.json> > docs/research/zfighting-2026-11-14.md
+// node dev/level/zfight-report.ts <classified-report.json> > docs/research/zfighting-2026-11-14.md
 import fs from 'node:fs';
 import type { checkZfights } from './zfight.ts';
 const report = JSON.parse(fs.readFileSync(process.argv[2]!, 'utf8')) as Awaited<ReturnType<typeof checkZfights>>;
+const proofFile = 'docs/research/zfighting-2026-11-14-visual.json';
+const proofs = fs.existsSync(proofFile)
+  ? (JSON.parse(fs.readFileSync(proofFile, 'utf8')) as { rank: number; manifest: string; observation: string }[])
+  : [];
 const row = (c: (typeof report.findings)[number], i: number) =>
-  `| ${i + 1} | ${c.a} | ${c.b} | ${c.area.toFixed(4)} | ${(c.separation * 1000).toFixed(4)} | ${c.position.map((v) => v.toFixed(3)).join(', ')} |`;
+  `| ${i + 1} | ${c.a} | ${c.b} | ${c.area.toFixed(4)} | ${c.count} | ${c.position.map((v) => v.toFixed(3)).join(', ')} | ${c.reasons.filter((r) => !r.startsWith('occluded')).join(', ')} |`;
 const reported = report.findings.flatMap((c, i) =>
-  c.a.includes('door-step-1') || (c.a === 'Home/station/batch-0/43' && c.b === 'railway.halt-0-down-deck/part-5')
+  c.members.some(
+    (m) =>
+      m.a.includes('door-step-1') || (m.a === 'Home/station/batch-0/43' && m.b === 'railway.halt-0-down-deck/part-5'),
+  )
     ? [row(c, i)]
     : [],
 );
 console.log(
   [
-    '# Z-fighting census, 14 November 2026',
+    '# Classified z-fighting census, 14 November 2026',
     '',
-    `Geometry source: local origin/main \`fceb07f6115d854628bd14e3bb677b46866075b4\`. Tool run at commit \`${report.build.commit}\`, source hash \`${report.build.sourceHash}\`. All geometry-producing game files match that base; tooling never fixes the two reported placements.`,
+    `Geometry remains the launch origin/main snapshot \`fceb07f6115d854628bd14e3bb677b46866075b4\`; no geometry fixes are made here. Run commit \`${report.build.commit}\`, source hash \`${report.build.sourceHash}\`.`,
     '',
-    `${report.count} candidate oriented face-pair rows across ${report.pieces} pieces and ${report.faces} triangles. This run took ${report.timingMs} ms (not a performance benchmark). Both reported contacts were found; the supplied screenshot references 1.png and 2.png were opened.`,
+    `Grouped findings: **a likely visible ${report.counts.a}; b same-appearance joints ${report.counts.b}; c proved hidden ${report.counts.c}**. Raw oriented rows: a ${report.rawCounts.a}, b ${report.rawCounts.b}, c ${report.rawCounts.c}. New since baseline: **${report.newSinceBaseline}**. ${report.pieces} pieces, ${report.faces} triangles, ${report.timingMs} ms (not a performance benchmark).`,
     '',
-    'The [full ranked JSON](zfighting-findings-2026-11-14.json) lists every other candidate with world coordinates, normal, exposed area and separation. Opposite sides of a pair are separate rows. No candidates are allowlisted. The ten largest are below; coordinates are supplied for owner review, not visually approved.',
+    'The old 3,151-row list lacked appearance and omitted buried portions. This pass preserves authored/instance colours, vertex colours, texture/UV evidence and shadow flags. Hidden counts now include clipped buried portions, so raw totals are not the old count partitioned. Any exposed portion with differing or unresolved appearance keeps the whole grouped contact in a. Downward normals alone never imply hidden.',
     '',
-    '| Rank | Piece A | Piece B | Area m² | Separation mm | World x, y, z |',
-    '| --- | --- | --- | ---: | ---: | --- |',
-    ...report.findings.slice(0, 10).map(row),
+    'Orientations of an exact piece pair collapse first (maximum face area, not a double count). One anchor against repeated part instances groups next. Track assemblies additionally group repeated pairs of the same kit-part families as one recurring pattern; every member and coordinate remains in the JSON. Areas for such groups sum member pair areas; coordinates identify the largest representative contact, not the average of an entire line.',
     '',
-    '## Reported regressions',
+    '## New top twenty: class a only',
     '',
-    'Home: the old station kerb against the platform foundation, next to the engine spur. Forge: the upper stone door step against the workshop slab. These are geometry-confirmed correspondences to the supplied stills, not fixes.',
+    'Names below are representative pieces; count includes all oriented/hidden member rows within the group. The [committed JSON](zfighting-findings-2026-11-14.json) contains the complete class-a list and member coordinates. `npm run zfight -- --all` exposes b/c as well.',
     '',
-    '| Rank | Piece A | Piece B | Area m² | Separation mm | World x, y, z |',
-    '| --- | --- | --- | ---: | ---: | --- |',
+    '| Rank | Piece A | Piece B | Area m² | Rows | World x, y, z | Evidence for class a |',
+    '| --- | --- | --- | ---: | ---: | --- | --- |',
+    ...report.findings.slice(0, 20).map(row),
+    '',
+    '## The two owner reports',
+    '',
+    'Both remain **class a**. Home is the kerb against the platform foundation beside the spur; Forge is the upper door step against its slab. Their current ranks and representative coordinates are:',
+    '',
+    '| Rank | Piece A | Piece B | Area m² | Rows | World x, y, z | Evidence for class a |',
+    '| --- | --- | --- | ---: | ---: | --- | --- |',
     ...reported,
     '',
-    '## False positives and coverage',
+    '## New visual review of the top ten',
     '',
-    'Treat every row as a diagnostic candidate. Many track-kit contacts are intended construction joints: matching material/UVs can make them harmless. Downward-facing greybox/track overlaps can be exposed into an inaccessible void, so local exterior exposure overstates player-visible defects. Non-convex or open geometry can leave occluded contacts in the output. The two supplied screenshots establish visible defects; the remaining rows are not individually visually adjudicated.',
+    'All captures use the existing broker and in-game scan tint. Each also clears the tint after 1.2 seconds, allowing late motion-sheet frames to show the underlying seam/colours. These are still-image observations: none proves temporal flicker. Free-camera underside views do not establish that the normal player camera can reach that view. Missing or ambiguous evidence remains in a.',
     '',
-    `Rows involving main track: ${report.findings.filter((c) => c.a.startsWith('track/') || c.b.startsWith('track/')).length}. Downward normals (y < -0.9): ${report.findings.filter((c) => c.normal[1] < -0.9).length}. These sets overlap; neither is an automatically safe baseline.`,
+    '| Rank | Manifest under .look/evidence | Inspected observation |',
+    '| --- | --- | --- |',
+    ...proofs.map((p) => `| ${p.rank} | ${p.manifest} | ${p.observation} |`),
     '',
-    `Tolerances: ${report.tolerances.separation * 1000} mm, normal dot ${report.tolerances.normalDot}, area ${report.tolerances.minArea} m². The tolerance covers transformed-buffer noise without treating ordinary centimetre offsets as coincident. See [how to run, place pieces, and adopt a baseline](../agents/test-details/zfighting.md).`,
+    'The loaded rail asset has a negative signed volume on its main shell (bottom triangles face upward), while plank/sleeper shells have positive volume. Rail/deck contacts also have different steel/wood appearance, so they cannot honestly be labelled harmless same-material joints. They are grouped recurring suspects, not thousands of default lines. Procedural grain phases, unknown legacy shader/material details and uncertain camera accessibility remain class a.',
+    '',
+    '## Baseline, limits and validation',
+    '',
+    'The committed `dev/level/zfight-baseline.json` contains only class-a member pairs. New member pairs inside an existing pattern count as new findings; grouping cannot silently absorb new debt. Fixing a contact leaves a stale baseline pair to remove. Level-check remains report-only; `--strict` fails on new findings only. [Rules, commands and baseline workflow](../agents/test-details/zfighting.md).',
     '',
     report.coverage,
     '',
     ...report.excluded.map((s) => `- ${s}`),
     '',
-    'No ROM data was added. Not tested on a device.',
-    '',
+    'Known limits: geometry-only legacy adapters lack some appearance details and remain conservative a; arbitrary TSL colour/deformation and procedural grain are not proven equal. Only closed convex connected solids and drawn terrain prove occlusion. No general player-camera visibility oracle exists. No ROM data added; not tested on a device.',
   ].join('\n'),
 );

@@ -12,6 +12,8 @@ import { sleeperStations } from '../../src/entities/railway/track-panels.ts';
 import { H } from '../../src/place/terrain.ts';
 import { geometryFaces } from '../../src/geometry/drawn-faces.ts';
 import type { Face } from '../../src/geometry/zfight.ts';
+import type { Surface } from '../../src/geometry/zfight-surface.ts';
+import type { Paint } from '../../src/place/look.ts';
 import { sourceFunction, sourceModule } from './source.ts';
 import { trackBoxes } from './grounding-track.ts';
 
@@ -31,10 +33,11 @@ export async function collectTrackGeometry() {
     .setMeshoptDecoder(MeshoptDecoder)
     .parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
   asset.scene.updateMatrixWorld(true);
+  const bakeContact = sourceFunction('src/place/look.ts', 'bakeContact', { THREE });
   const bake = sourceFunction<(mesh: THREE.Mesh, name: string) => THREE.BufferGeometry>(
     'src/place/look-kit.ts',
     'bake',
-    { THREE, LOOK: { contact: false } },
+    { THREE, LOOK: { contact: true }, bakeContact },
   );
   const cached = new Map<string, THREE.BufferGeometry>();
   const kit = (name: string) => {
@@ -51,6 +54,29 @@ export async function collectTrackGeometry() {
   };
   const kitSize = sourceFunction<Record<string, [number, number, number]>>('src/place/look-kit.ts', 'KIT_SIZE', {});
   const kitName = sourceFunction<Record<string, string>>('src/place/look-kit.ts', 'KIT_NAME', {});
+  const woodKinds = sourceFunction<Record<string, { axis: 'x' | 'y' | 'z' }>>(
+    'src/place/look-kit.ts',
+    'WOOD_KINDS',
+    {},
+  );
+  const steel = sourceFunction<Paint>('src/place/look.ts', 'STEEL', {});
+  const honeyOf = sourceFunction<(color: string) => string>('src/place/look.ts', 'honeyOf', {});
+  const paintSurface = (paint: Paint, casts: boolean): Surface => ({
+    material: JSON.stringify([
+      'track paint',
+      paint.steel ? 'steel' : (paint.grain?.axis ?? 'flat'),
+      paint.steel ? 0.45 : (paint.rough ?? 0.85),
+    ]),
+    color: new THREE.Color(paint.steel ? '#59616b' : (paint.grain?.honey ?? paint.color)).toArray() as [
+      number,
+      number,
+      number,
+    ],
+    castShadow: casts,
+    receiveShadow: true,
+    vertexColors: true,
+    ...(paint.grain ? { uncertain: 'procedural grain phase' } : {}),
+  });
   for (const { spec, mode, boxes, kinds } of trackBoxes())
     if (mode === 'panels')
       boxes.forEach((b, i) => {
@@ -61,21 +87,38 @@ export async function collectTrackGeometry() {
           .makeTranslation(b.x, b.y, b.z)
           .multiply(b.local)
           .scale(new THREE.Vector3(1 / size[0], 1 / size[1], 1 / size[2]));
-        for (const name of [kitName[kind] ?? kind, ...(kind === 'sleeper' ? ['sleeper_steel'] : [])])
-          faces.push(...geometryFaces(kit(name), matrix, `track/${spec.id}/${name}/${i}`));
+        for (const name of [kitName[kind] ?? kind, ...(kind === 'sleeper' ? ['sleeper_steel'] : [])]) {
+          const wood = woodKinds[kind];
+          const color = '#' + b.color.getHexString(THREE.SRGBColorSpace);
+          const paint =
+            wood && name !== 'sleeper_steel' ? { color, grain: { axis: wood.axis, honey: honeyOf(color) } } : steel;
+          faces.push(
+            ...geometryFaces(
+              kit(name),
+              matrix,
+              `track/${spec.id}/${name}/${i}`,
+              false,
+              paintSurface(paint, !['rail', 'sleeper', 'sleeper_steel'].includes(name)),
+              `track/${spec.id}/${name}`,
+              `track/${spec.id}`,
+            ),
+          );
+        }
       });
   const { createYardTrack } = capturedModule<typeof import('../../src/entities/railway/yard-track.ts')>(
     'src/entities/railway/yard-track.ts',
     { THREE, ...shape },
     {
       '../../place/look-kit.ts': {
-        kitBatch(name: string, _paint: unknown, count: number) {
+        kitBatch(name: string, paint: Paint, count: number) {
           const mesh = new THREE.InstancedMesh(kit(name), new THREE.MeshBasicNodeMaterial(), count);
           mesh.name = name;
+          mesh.receiveShadow = true;
+          mesh.userData.zfightSurface = paintSurface(paint, true);
           return mesh;
         },
       },
-      '../../place/look.ts': { LOOK: { contact: false }, STEEL: {}, honeyOf: () => 0 },
+      '../../place/look.ts': { LOOK: { contact: true }, STEEL: steel, honeyOf, addBlob: () => -1, setBlob() {} },
     },
   );
   const { layHomeYard } = sourceModule<typeof import('../../src/entities/railway/home-yard.ts')>(
@@ -88,7 +131,17 @@ export async function collectTrackGeometry() {
       const matrix = new THREE.Matrix4();
       for (let i = 0; i < mesh.count; i++) {
         mesh.getMatrixAt(i, matrix);
-        faces.push(...geometryFaces(mesh.geometry, matrix, `Home/yard/${mesh.name}/${i}`));
+        faces.push(
+          ...geometryFaces(
+            mesh.geometry,
+            matrix,
+            `Home/yard/${mesh.name}/${i}`,
+            false,
+            { ...(mesh.userData.zfightSurface as Surface), castShadow: mesh.castShadow },
+            `Home/yard/${mesh.name}`,
+            'Home/yard',
+          ),
+        );
       }
       for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) material.dispose();
       mesh.dispose();
@@ -109,7 +162,22 @@ export async function collectTrackGeometry() {
             new THREE.Vector3(b.w, b.h, b.d),
           );
           const geometry = new THREE.BoxGeometry(1, 1, 1);
-          faces.push(...geometryFaces(geometry, matrix, `Home/station/batch-${batch}/${i}`));
+          faces.push(
+            ...geometryFaces(
+              geometry,
+              matrix,
+              `Home/station/batch-${batch}/${i}`,
+              false,
+              {
+                material: 'greybox stone',
+                color: new THREE.Color(b.colour ?? '#b7b0a0').toArray() as [number, number, number],
+                castShadow: true,
+                receiveShadow: true,
+                vertexColors: false,
+              },
+              `Home/station/batch-${batch}/box/${[b.w, b.h, b.d].map((v) => v.toFixed(4)).join(',')}`,
+            ),
+          );
           geometry.dispose();
         }
         batch++;
