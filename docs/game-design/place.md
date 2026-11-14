@@ -118,10 +118,10 @@ through every bay from the square. The curio shelf left it (in the hall's front 
 it "seemed to be intersecting with the station"; then "the shelf could be somewhere else... That way the station feels
 more inviting and open", and "It's the other blue rack. Maybe they should be next to each other"). **The curio pair**
 stands beside the hall's south end, facing the square: the finders' bay (the teal-banded rack) 1 m off the south wall
-at (−88.00, 21.37), and the curio shelf beside it at (−85.88, 27.19), 0.3 m between their crowns, fronts in line and
-both on one level (y 18), their faces 0.9 m behind the hall's front edge, with open ground in front. The bay took the
-Round's spot for it early, 1.27 m further back so the shelf stays 1.09 m off the Round's plot 3; its boxes and the
-trophy plinth came with it in its frame, the plinth 6.57 m out so it keeps the Round's spot (−94.17, 23.61). Neither has a prompt; both are looked at. Stone treads across
+at (−87.86, 21.31), and the curio shelf beside it at (−85.74, 27.14), 0.3 m between their crowns, fronts in line and
+both on one level (y 18), their faces 1.06 m behind the hall's front edge, with open ground in front. The bay took the
+Round's spot for it early, 1.42 m further back so the shelf's drawn crown stays 1.15 m off the Round's plot 3; its boxes and the
+trophy plinth came with it in its frame, the plinth 6.72 m out so it keeps the Round's spot (−94.17, 23.61). Neither has a prompt; both are looked at. Stone treads across
 the whole open front walk up the slab from the square (it stands 0.34 m over the sand at the north end and meets
 the ground at the south); spawn faces the bay, so Sleeves is whole in frame beside Buddy, at phone width too. The rack leaves the accepted 1.97 m lane; the goods door reaches the forge. The table is on its own spur,
 with one open radial stall and two ruin outlines. Board crossing s 2.0–3.6 on road 2 marks the ramp way to the stall;
@@ -1402,7 +1402,7 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
   9 November): a drop from the plateau east of the alcove, and a double jump down from the stack-return slab onto the
   sea stack, whose crate therefore stands without the glider.
 - **The finders' bay** stands beside the curio shelf, drawn with it (no draws of its own): beside the hall's south end
-  at (−88.00, 21.37), facing the square, the shelf on its far side from the hall (owner, 14 November: "next to each
+  at (−87.86, 21.31), facing the square, the shelf on its far side from the hall (owner, 14 November: "next to each
   other"; "The place", Home's one station). Its 10 November "for now" spot across the square at (−106.76, 18.88) is
   superseded ([curio placement](../plans/curio-shelves-placement.md)). The secrets'
   gifts under sheets until they're yours. A secret you went on past without turns up there as a second crate, in the

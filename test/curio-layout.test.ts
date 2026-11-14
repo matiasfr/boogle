@@ -53,7 +53,7 @@ test('the bay is at the Round’s spot beside the hall, the shelf beside it in i
   // Side by side (owner, 14 November): one line across the axis, the shelf on the bay's far side from the hall.
   assert.ok(Math.abs(b.a - s.a) < 1e-9 && s.c > b.c && b.c > HALL.c + HALL.w / 2);
   assert.equal(FINDERS_B.yaw, SHELF_B.yaw);
-  assert.ok(Math.hypot(FINDERS_B.x + 88.0, FINDERS_B.z - 21.37) < 0.01, 'the bay is at (-88.00, 21.37)');
+  assert.ok(Math.hypot(FINDERS_B.x + 87.86, FINDERS_B.z - 21.31) < 0.01, 'the bay is at (-87.86, 21.31)');
   const plinth = bayPoint(0, PLINTH_OUT);
   assert.ok(Math.hypot(plinth.x + 94.17, plinth.z - 23.61) < 0.01, 'the plan put the plinth at (-94.17, 23.61)');
   // The shelf is on the bay's own front line, to its side, and the boxes stand between the bay and the plinth.

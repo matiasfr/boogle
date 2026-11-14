@@ -296,18 +296,21 @@ export const PROPS = {
   dock: { x: -76.07, z: -1.73 }, // retain 2 m between the dock and the pedestal
   yard: { x: -46, z: 22 },
 };
-/** The curio shelf's footprint in its own frame (`curio-shelf.ts`): the crown's half-width, how far the crown reaches in
- * front and the back panel behind, and the crown's top over its foot. The finders' bay's frame is the same but lower. */
-export const SHELF_SIZE = { crown: 2.95, front: 0.59, back: 0.35, top: 3.47 };
+/** The curio shelf's footprint in its own frame, as drawn (`src/prefab/builders/curio-parts.ts`; town-plan.test.ts
+ * holds these to the drawn parts): the crown's half-width, how far the crown reaches in front and behind (it is 1.1 m
+ * deep, 0.04 m forward of the frame's centre), and the crown's top over its foot. The finders' bay's frame has the
+ * same plan and is lower. */
+export const SHELF_SIZE = { crown: 2.95, front: 0.59, back: 0.51, top: 3.47 };
 /** The level both curio frames stand on: the flat ground south of the hall. The bay's hall end is set up to 0.2 m into
  * the rise toward the hall's slab, so the two fronts and feet line up. */
 export const CURIO_Y = 18;
 /** The finders' bay, at the Round's spot for it (docs/plans/town-layout.md, call 9), taken early so the pair below
  * stands together (owner, 14 November): beside the hall's south end, 1 m from its wall, facing the square. It is
- * 1.27 m further back than the Round first put it (its face 0.9 m behind the hall's front edge), so the shelf beside
- * it stays over a metre off the Round's plot 3. Its boxes and the trophy plinth are in its frame and came with it. */
+ * 1.42 m further back than the Round first put it (its face 1.06 m behind the hall's front edge), so the drawn crown
+ * of the shelf beside it stays over a metre off the Round's plot 3. Its boxes and the trophy plinth are in its frame
+ * and came with it. */
 export const FINDERS_B = {
-  ...axisPoint(HALL.a - 1.5, HALL.c + 10.45),
+  ...axisPoint(HALL.a - 1.35, HALL.c + 10.45),
   yaw: Math.atan2(-AXIS.d.x, -AXIS.d.z),
   y: CURIO_Y,
 };
@@ -327,9 +330,9 @@ export function bayPoint(across: number, out: number): XZ {
 export const BAY_BOXES = { across: [0, -1.1, 1.1], out: [1.5, 2.6, 3.7] } as const;
 /** The bay box for missed secret k (0–8), Place-local. */
 export const bayBoxPoint = (k: number) => bayPoint(BAY_BOXES.across[k % 3]!, BAY_BOXES.out[Math.floor(k / 3)]!);
-/** The jump trophy's plinth: outermost on the bay's centreline, on the street's edge where people pass. 1.27 m further
+/** The jump trophy's plinth: outermost on the bay's centreline, on the street's edge where people pass. 1.42 m further
  * out than its old 5.3 m, as far as the bay stands back, so it keeps the Round's spot for it (−94.17, 23.61). */
-export const PLINTH_OUT = 6.57;
+export const PLINTH_OUT = 6.72;
 /** The two village halts become one island: each line's platform edge, by its own `s`. */
 export const ISLAND_HALTS = [
   { s0: ISLAND_A.deck0, s1: ISLAND_A.deck1, lat: ISLAND_C },

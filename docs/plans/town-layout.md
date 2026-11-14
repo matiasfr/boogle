@@ -135,8 +135,8 @@ Written for all three options; it holds for the Round, with the design review's 
 - **The ticket window** is inside the hall's north end, at about (−92.1, 5.6). Every rider's walk ends there, then
   goes through the hall to the island (29 m to the middle of the platform).
 - _Done early and amended, 14 November (owner: the curio shelf leaves the hall and stands "next to" the bay): the bay
-  is at (−88.00, 21.37), 1.27 m further back along the station's axis than below, with the curio shelf beside it on
-  its far side from the hall at (−85.88, 27.19), 1.09 m off plot 3; the plinth is 6.57 m out, so it stays at
+  is at (−87.86, 21.31), 1.42 m further back along the station's axis than below, with the curio shelf beside it on
+  its far side from the hall at (−85.74, 27.14), its drawn crown 1.15 m off plot 3; the plinth is 6.72 m out, so it stays at
   (−94.17, 23.61). `TOWN_PROPS.bay` and `.shelf` read `home-station.ts`. The roof-perch probe (R2) should be re-run
   with both frames there._
 - **The finders' bay** moves beside the hall's south end on the hall's front line, facing the square as the shelf does:

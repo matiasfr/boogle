@@ -3,7 +3,9 @@
 // drawn, and nothing in the game imports town-plan.ts yet.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AXIS, HALL, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
+import { AXIS, HALL, SHELF_SIZE, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
+import { prefabs as curioRecords } from '../src/content/prefabs/curio.ts';
+import { curioParts } from '../src/prefab/builders/curio-parts.ts';
 import { LINES, VILLAGE, lineAt } from '../src/place/layout.ts';
 import { LAND_TREES } from '../src/place/tree-catalog.ts';
 import {
@@ -155,8 +157,8 @@ test('every building is 2.4 m or more from every other, and 1 m or more from the
   const others: [string, TownBuilding][] = [
     ['the hall', hall],
     ['the forge', FORGE],
-    ['the bay', { ...TOWN_PROPS.bay, w: 5.9, d: 1 }],
-    ['the shelf', { ...TOWN_PROPS.shelf, w: 5.9, d: 1 }],
+    ['the bay', TOWN_PROPS.bay.foot],
+    ['the shelf', TOWN_PROPS.shelf.foot],
     ...STALLS.bearings.map((b): [string, TownBuilding] => {
       const f = stallFrame(b);
       return [`the ${b} stall`, { ...f.centre, yaw: f.yaw, w: STALLS.width, d: STALLS.depth }];
@@ -243,8 +245,34 @@ test('the yard find is 4.5 m behind the gate cottage, and the forge door and the
   near(pointGap(TOWN_PROPS.yard, gate), 4.5, 0.05, 'the yard find behind the back wall');
   assert.deepEqual(TOWN_PROPS.forgeDoor, { x: -92, z: -3, w: 2.8 });
   assert.deepEqual({ x: TOWN_PROPS.clock.x, z: TOWN_PROPS.clock.z }, TOWN_CENTRE);
-  near(TOWN_PROPS.bay.x, -88.0, 0.01, 'bay.x');
-  near(TOWN_PROPS.bay.z, 21.37, 0.01, 'bay.z');
+  near(TOWN_PROPS.bay.x, -87.86, 0.01, 'bay.x');
+  near(TOWN_PROPS.bay.z, 21.31, 0.01, 'bay.z');
+});
+
+test('the curio frames’ footprints are the drawn crowns’: SHELF_SIZE agrees with the parts the records build', () => {
+  for (const piece of ['shelf', 'bay'] as const) {
+    const record = curioRecords.find((r) => r.key === `town.curio-${piece}`);
+    assert.ok(record && 'builder' in record.visual, `${piece} record`);
+    const { parts } = curioParts(record.visual.params);
+    // A box part is [kind, x, y, z, w, h, d, colour], in the frame's own space (+z its front).
+    const lo = (at: 1 | 3, size: 4 | 6) => Math.min(...parts.map((p) => Number(p[at]) - Number(p[size]) / 2)),
+      hi = (at: 1 | 3, size: 4 | 6) => Math.max(...parts.map((p) => Number(p[at]) + Number(p[size]) / 2));
+    near(hi(1, 4), SHELF_SIZE.crown, 1e-9, `${piece} half-width`);
+    near(lo(1, 4), -SHELF_SIZE.crown, 1e-9, `${piece} half-width`);
+    near(hi(3, 6), SHELF_SIZE.front, 1e-9, `${piece} front`);
+    near(-lo(3, 6), SHELF_SIZE.back, 1e-9, `${piece} back`);
+    const foot = TOWN_PROPS[piece].foot;
+    near(foot.w, hi(1, 4) - lo(1, 4), 1e-9, `${piece} footprint width`);
+    near(foot.d, hi(3, 6) - lo(3, 6), 1e-9, `${piece} footprint depth`);
+    // The footprint's centre is the drawn crown's: forward of the frame's by half the difference.
+    const face = { x: Math.sin(foot.yaw), z: Math.cos(foot.yaw) },
+      off = (foot.x - TOWN_PROPS[piece].x) * face.x + (foot.z - TOWN_PROPS[piece].z) * face.z;
+    near(off, (hi(3, 6) + lo(3, 6)) / 2, 1e-9, `${piece} footprint centre`);
+  }
+  near(SHELF_SIZE.top, 3.47, 1e-9, 'the shelf’s top');
+  // The shelf's drawn crown clears the Round's plot 3 by a metre with a little over.
+  const plot3 = gap(B('plot3'), TOWN_PROPS.shelf.foot);
+  assert.ok(plot3 >= 1.1, `the shelf is ${plot3.toFixed(3)} m from plot 3`);
 });
 
 test('the tree catalog retains its stable planting order (length, first and last rows)', () => {
