@@ -27,6 +27,7 @@ import {
 } from '../src/sim/railway-ring-layout.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { ringHead } from '../src/sim/railway-queries.ts';
+import { railCallReady, trainStops } from '../src/sim/railway-queries-trains.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
 import {
   LEVER_YIELD,
@@ -243,11 +244,13 @@ test("a lever's prompt guard is the server's rail.call position test, by reach a
   // And it is the server's answer, for every halt's lever ask both ways, over a grid round each platform, in worlds
   // with the railhead at its first head and at its last.
   for (const stage of ['trains-on', 'deck-laid', 'ring-joined'] as const) {
-    const w = buildSeedWorld(stage).w;
+    const { w, t } = buildSeedWorld(stage);
     let asked = 0;
     for (const [id, h] of LINE_HALTS.entries())
       for (const dir of [-1, 1] as const) {
-        const plat = leverPlatform(w, id, dir);
+        const plat = leverPlatform(w, id, dir, t);
+        const stops = trainStops(w, h.line);
+        const chained = !railCallReady(w, h.line, h.stop, dir, t, stops);
         for (const dx of [-1400, -1261, -1259, -600, 0, 700, 1259, 1261])
           for (const dy of [-400, -221, -220, 0, 299, 300, 301, 500]) {
             const at = [plat.x + dx, plat.y + dy, plat.z + Math.round(dx / 7)] as const;
@@ -256,8 +259,8 @@ test("a lever's prompt guard is the server's rail.call position test, by reach a
               height: (y, r) => Math.abs(at[1] - y) <= r,
               cadence: () => true,
             };
-            const server = railValid(w as never, { op: 'rail.call', id, dir } as never, actor);
-            const client = leverAskTaken(plat, at[0] / 100, at[1] / 100, at[2] / 100);
+            const server = railValid(w as never, { op: 'rail.call', id, dir } as never, actor, t);
+            const client = !chained && leverAskTaken(plat, at[0] / 100, at[1] / 100, at[2] / 100);
             assert.equal(client, server, `${stage} ${h.name} way ${dir} at ${at.join(', ')} cm`);
             asked++;
           }

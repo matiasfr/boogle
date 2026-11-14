@@ -812,7 +812,10 @@ the pier is laid); a second platform's lever calls the train home and stands at 
 lever was already there; Far Head's west lever moved 19.2 m from the crossing end). **While a halt is the line's open
 end** both ways stand at its first platform, so that platform's lever calls the train home from the Village end, and
 the second platform's lever hangs chained, plaqued Village; when the line grows past it the first platform's lever
-slides to the far end (7 m/s, no prompt while it moves) with the next end's name on it and the second one unchains.
+slides to the far end (7 m/s, no prompt while it moves) with the next end's name on it and the second one unchains,
+after any retained old-end train has cleared. An old-side standing train or committed inbound turn keeps the
+homeward lever live; after it departs, both levers chain until full block clearance. Accepted server reach and
+train selection use the same rule, so an old-side lever cannot invite a future train onto the other platform.
 That is Far Head before and after the pier, the Railhead before and after the rivet (its east lever goes from 0.6 m
 off the home end to 6 m short of the far end, where it stood before 14 November: nothing is set at the jib by then)
 and Ring Island before and after the stack line opens. The joint's and Ring Island's levers stand 9.5 m from their
@@ -823,8 +826,8 @@ Camp's, the Pier's and the Home island's levers are where they were, and the sta
 lever each way. The signal on a first platform drops for its lever's way. The plaque's arrow and the prompt follow
 the way the lever calls now. **The Pier after Q7 (14 November, step 5):** its homeward-only service boards a new west
 platform, s 719–741 at lateral -6.95, on piles. The platform and its plank crossing appear with Q7; before then the
-east terminal platform still serves the train home. After Q7 the east lever chains and its signal stays up; the west
-lever offers the existing **Request stop: to Village**. Its start ramp meets a plank crossing at s 711.8, 0.8 m clear
+east terminal platform still serves the train home. After Q7 and any retained departure clears, the east lever
+chains and its signal stays up; the west lever offers the existing **Request stop: to Village**. Its start ramp meets a plank crossing at s 711.8, 0.8 m clear
 of the full stopped train, with no ramp to the seabed or off the far end. Level-check checks this geometry, its Q7
 gate and the maximum jump/glide from its roof against the railhead gap.
 **Departure origin (14 November, review fix):** the Server train row now keeps the far-end departure

@@ -1,11 +1,12 @@
 // Right-hand platform authority (running-side step 3). Physical sides are named independently of tuple order;
 // validate the server's reach check and then the unchanged request rule against played seed worlds.
+import { railPlatformEnd } from '../src/sim/railway-queries-trains.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RAIL_HALTS, haltPlatform, type RailPlatform } from '../src/sim/railway-lines.ts';
 import { RING_FORMATION, RING_HALT, RING_HEAD, RING_JOINT_UP } from '../src/sim/railway-ring-layout.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
-import { act, buildSeedWorld, restore, type Seed, type SeedStage } from './helpers/rail.ts';
+import { act, buildSeedWorld, railTick, restore, type Seed, type SeedStage } from './helpers/rail.ts';
 
 // Build each played fixture once, outside individual validation tests (as in railway-install.test.ts).
 const stages = ['trains-on', 'q6-done', 'deck-laid', 'leaf-raised', 'ring-joined', 'gorge-mid'] as const;
@@ -53,6 +54,11 @@ test('Far Head uses the east platform at the end, then east outbound and west ho
   assert.equal(ask(end, 'Far Head', -1, farEast), true);
   assert.equal(ask(end, 'Far Head', 1, farEast), false, 'the rule still refuses the way into an end');
   const middle = at('q6-done');
+  // The seeded Far Head departure still owns the old side at Q6 completion. Test normal middle service after it clears.
+  for (let n = 0; railPlatformEnd(middle.w, 1, 2, middle.t); n++) {
+    assert.ok(n < 1000, 'the retained Far Head departure clears');
+    railTick(middle.w, ++middle.t);
+  }
   assert.equal(ask(middle, 'Far Head', 1, farEast), true);
   assert.equal(ask(middle, 'Far Head', -1, farWest), true);
   // Reach circles overlap at the centres. Pin the selected platform too, without claiming side-exclusive bounds.

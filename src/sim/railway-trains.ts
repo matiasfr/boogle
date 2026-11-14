@@ -216,6 +216,17 @@ export function trainServes(
   tick: number,
 ) {
   if (trainPassesBy(line, stop, dir, stops.length)) return -1;
+  // A former end still boards its committed arrival/departure on the original side. Once it has left,
+  // no new lever ask may promise a future train on the other side until the old block clears.
+  if (stop < stops.length - 1)
+    for (const slot of servingSlots(rows, line)) {
+      const r = rows(slot),
+        b = retainedEndBlock(r, line, tick);
+      if (b?.stop === stop && b.to === stops[stop])
+        return dir === -1 && ((r.phase === TRAIN_PHASE.STAND && r.at === stop) || (r.turn && r.to === stop))
+          ? slot
+          : -1;
+    }
   const c = circuitLen(stops),
     at = circuitCm(stops, dir > 0 ? 0 : 1, stops[stop]!) % c,
     kin = stopKin(line, stop, dir > 0 ? 0 : 1),

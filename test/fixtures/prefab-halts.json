@@ -9729,22 +9729,22 @@
           "cue": false,
           "lever": [
             {
-              "dir": 1,
+              "dir": -1,
               "platform": "down",
-              "label": "Pier",
-              "on": true,
-              "chained": false,
+              "label": "Village",
+              "on": false,
+              "chained": true,
               "over": false,
-              "x": 1371.3990107467669,
+              "x": 1354.98529906769,
               "y": 26.36119853622232,
-              "z": -168.78579533992348
+              "z": -158.82436627998754
             },
             {
               "dir": -1,
               "platform": "up",
               "label": "Village",
-              "on": true,
-              "chained": false,
+              "on": false,
+              "chained": true,
               "over": false,
               "x": 1350.3418204173554,
               "y": 26.36119853622232,
@@ -10032,7 +10032,7 @@
           ]
         }
       ],
-      "plaqueText": ["<", "Pier", ">", "Pier", ">", "Pier", ">", "Pier", ">", "Pier", ">", "Pier"],
+      "plaqueText": ["<", "Pier", ">", "Pier", ">", "Pier", ">", "Pier", ">", "Pier"],
       "targets": [
         [
           {
@@ -10074,22 +10074,8 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-4-down",
-            "verb": "Request stop: to Pier",
-            "at": [1371.3990107467669, 26.36119853622232, -168.78579533992348],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-up",
-            "verb": "Request stop: to Village",
-            "at": [1350.3418204173554, 26.36119853622232, -166.47554958872388],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
         [
           {
             "id": "railway-request-5-down",

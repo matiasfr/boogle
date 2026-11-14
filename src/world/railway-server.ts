@@ -30,7 +30,7 @@ import {
 import { railCounts, line2Active, line2GateOpen, line2Completed } from '../sim/railway-queries-line2.ts';
 import { railMaxDuration, railPanelCount, railPanelStock, railPhase } from '../sim/railway-queries-line1.ts';
 import { trainAlong, trainSpeed } from '../sim/railway-train.ts';
-import { LINE2, RAIL_HALTS, RAIL_TRAINS, haltPlatform } from '../sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { BOILER_MAX } from '../sim/railway-train.ts';
 import { RING_BRACE, RING_HEAD, RING_RIVET, RING_STEEL_WORKS, RING_STEEL_YARD } from '../sim/railway-ring-layout.ts';
 import { railLinePoint } from '../sim/railway-line-path.ts';
@@ -70,8 +70,8 @@ import { railLine2Active, ringHead } from '../sim/railway-queries.ts';
 import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
 import { railSession, railSettle, remember } from '../sim/railway-sys-core.ts';
 import { RAIL_ARRIVAL, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, railPos } from '../sim/railway-route.ts';
-import { haltHead, legOpen, legRow } from '../sim/railway-queries-route.ts';
-import { trainStops } from '../sim/railway-queries-trains.ts';
+import { legOpen, legRow } from '../sim/railway-queries-route.ts';
+import { railCallPlatform, railCallReady, trainStops } from '../sim/railway-queries-trains.ts';
 import type { World } from '../ecs/index.ts';
 import { GLOBAL_CELL, cellOf, type Fields } from './replicate.ts';
 import { touchChanges, worldProjections } from './replicate-world.ts';
@@ -230,8 +230,10 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
         );
       // The open far end serves homeward asks from its original side too. The Railhead's original platform and
       // a greybox leg's platform move with their heads: judge where the head stands now.
-      const end = h.stop === trainStops(w, h.line).length - 1;
-      const p = haltPlatform(h, e.dir, haltHead(w, e.id!, ringHead(w)), end);
+      const stops = trainStops(w, h.line);
+      // A former end keeps its old-side boarding window, then waits for clearance before offering the new sides.
+      if (!railCallReady(w, h.line, h.stop, e.dir, tick, stops)) return false;
+      const p = railCallPlatform(w, e.id!, e.dir, tick);
       return height(p.y) && near(p.x, p.z, p.reach);
     }
     case 'rail.beamTake': {

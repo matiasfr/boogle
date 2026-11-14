@@ -14,7 +14,7 @@ import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { trainAlong, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
-import { railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
+import { railCallReady, railPlatformEnd, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { ringHead } from '../../sim/railway-queries.ts';
@@ -329,9 +329,13 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   /** The way a first platform's lever calls (the original track's side, where `haltPlatform` puts the train going on):
    * out from the Home end; home from the line's open far end, where both ways stand, and from a halt trains stop at
    * homeward only (the Pier); on at any other middle halt. */
+  const platformEnd = (line: number, stop: number) =>
+    railPlatformEnd(adapter.read.world(), line, stop, adapter.read.tickNow(), stopsNow[line]);
   const mainWay = (line: number, stop: number): -1 | 1 => {
     if (stop === 0) return 1;
-    return stop >= stopsNow[line]!.length - 1 || RAIL_LINES[line]!.halts[stop]!.only === -1 ? -1 : 1;
+    return stop >= stopsNow[line]!.length - 1 || platformEnd(line, stop) || RAIL_LINES[line]!.halts[stop]!.only === -1
+      ? -1
+      : 1;
   };
   /** Every platform's lever: halt `id` (its row, or its RAIL_HALTS id for the Railhead and Ring Island), its line and
    * stop, the way it asks for now (`dir`, from `way` each frame: a first platform's changes when its line grows past
@@ -542,7 +546,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const at = x.lever.knob(0, new THREE.Vector3());
     if (Math.hypot(p.x - at.x, p.z - at.z) > LEVER_REACH || Math.abs(p.y - at.y) > 1.6) return [];
     // No prompt from where the server would refuse the ask: it judges from the platform's middle, by reach and height.
-    if (!leverAskTaken(leverPlatform(wd0(), x.id, x.dir), p.x, p.y, p.z)) return [];
+    if (!leverAskTaken(leverPlatform(wd0(), x.id, x.dir, adapter.read.tickNow()), p.x, p.y, p.z)) return [];
     const id = `railway-request-${x.id}-${x.up ? 'up' : 'down'}`;
     // Every lever's prompt names where its train goes (running-side.md, step 2; draft wording, not The Boogler's).
     const verb = `Request stop: to ${label(x)}`;
@@ -584,9 +588,12 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   function chained(x: Spot) {
     const n = stopsNow[x.line]!.length;
     if (x.stop === 0) return x.dir < 0;
-    // A homeward-only middle halt has no service at its original-side platform (the Pier after Q7).
-    if (!x.west && x.stop < n - 1 && RAIL_LINES[x.line]!.halts[x.stop]!.only === -1) return true;
-    return x.stop === n - 1 && (x.dir > 0 || x.west);
+    if (!railCallReady(adapter.read.world(), x.line, x.stop, x.dir, adapter.read.tickNow(), stopsNow[x.line]))
+      return true;
+    const end = platformEnd(x.line, x.stop);
+    // Keep the old side live until the last accepted arrival/departure clears, including the Pier after Q7.
+    if (!x.west && !end && x.stop < n - 1 && RAIL_LINES[x.line]!.halts[x.stop]!.only === -1) return true;
+    return end && (x.dir > 0 || x.west);
   }
   /** The end a lever's way goes to: the line's open end that way (a chained second platform's lever reads the Home
    * end, where its train will go). A chained lever for the way on names the halt that opens next, or the line's last
