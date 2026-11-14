@@ -1,7 +1,8 @@
 # Step 7: preserve step 8 across the rebase
 
-Rebased on local `origin/main` **7c39307b7**, which includes moving-seat prefab step 8 (#1750), Boogler step 5,
-and the latest owner call. New branch: **codex/prefab-data-step-7-4**. Implementation: **acb1c285e**.
+Initially rebased on local `origin/main` **7c39307b7**, which includes moving-seat prefab step 8 (#1750), Boogler
+step 5 and the latest owner call. Refreshed without conflicts onto **3c76e55b1** after its server-address fix landed
+during captures. New branch: **codex/prefab-data-step-7-4**. Replayed implementation: **58b2636e4** (previously acb1c285e).
 No fetch, push or ship. DESIGN.md: **Clear authority**, **Determinism from day one**.
 
 ## Conflicts and retained behavior
@@ -55,22 +56,23 @@ No debt or exception budget grows.
 After the last implementation edit and Prettier (canonical generated JSON restored through the compiler):
 
 - Prefabs **195 passing** normally; **206** including the eleven unit-selection guards.
-  [Normal log](../../.look/rebase4/prefabs-final.log).
+  [Normal log](../../.look/rebase4/prefabs-latest-main.log).
 - Every prefab test with native sin/cos/atan2/hypot results shifted by one ULP, retaining exact zero/one
-  identities: **195 passing**. [Runtime perturbation log](../../.look/rebase4/ulp-prefabs-final.log).
+  identities: **195 passing**. [Runtime perturbation log](../../.look/rebase4/ulp-prefabs-latest-main.log).
 - Actual compiler `--check` with the prior stronger `+1e-15` perturbation loaded **before** authoring:
-  fresh, identical bytes. [Perturbed build](../../.look/rebase4/perturbed-build-final.log),
-  [normal freshness](../../.look/rebase4/fresh-final.log). Linux itself was not run. Artifact independence is by
+  fresh, identical bytes. [Perturbed build](../../.look/rebase4/perturbed-build-latest-main.log),
+  [normal freshness](../../.look/rebase4/fresh-latest-main.log). Linux itself was not run. Artifact independence is by
   construction: only authored operands serialize; native-derived runtime results never do.
 - `npm run check`: **1,860 passing**, zero failures, one existing fleet-wait TODO; lint, types, registry,
-  thirteen level reports, assets, prefab freshness and build pass. [Log](../../.look/rebase4/check-final.log).
-- `npm --prefix server test`: **296 passing**. [Log](../../.look/rebase4/server-final.log).
+  thirteen level reports, assets, prefab freshness and build pass. [Log](../../.look/rebase4/check-latest-main.log).
+- `npm --prefix server test`: **344 passing** after the server-only rebase (296 beforehand).
+  [Log](../../.look/rebase4/server-latest-main.log).
 - `node dev/ship-check.ts origin/main HEAD`: **410 passing**, 44 affected test files, 37 lint files.
-  [Log](../../.look/rebase4/ship-check.log).
-- Explicit [registry](../../.look/rebase4/registry-final.log) and
-  [level-check](../../.look/rebase4/level-check-final.log) pass; **13 reports**.
+  [Log](../../.look/rebase4/ship-check-latest-main.log).
+- Explicit [registry](../../.look/rebase4/registry-latest-main.log) and
+  [level-check](../../.look/rebase4/level-check-latest-main.log) pass; **13 reports**.
 - Review stamp **6df79dd94f4b**, 17 reviewed test/fixture files since origin/main.
-  [Stamp](../../.look/rebase4/stamp.log). Independent review here covered the merge and conversion; no new external
+  [Stamp](../../.look/rebase4/stamp-latest-main.log). Independent review here covered the merge and conversion; no new external
   Astra approval is claimed.
 
 An initial global `+1e-15` runtime experiment changed exact sin(0)/cos(0) identities, introducing a rotation field
@@ -79,9 +81,9 @@ weakened. Runtime variation instead uses adjacent floating results while preserv
 the stronger compiler-only stress check remains. An accidental extra fixture-read site was fixed by reusing its
 result, without increasing the selector exception.
 
-## New images opened and judged
+## Images opened on the first main base
 
-All captures use the restarted broker and fingerprint clean implementation **acb1c285e**, tree
+The first seven captures use the restarted broker and fingerprint clean implementation **acb1c285e**, tree
 `bafe218ae0c215f699f1f074f1d48f076b4fd1d9`; every manifest says no changes during the run. The separately
 identified trusted harness is d87c05719. No source changed while any run was pending or active.
 
@@ -113,3 +115,22 @@ cargo-obscured despite successful seat setup. All were opened and retained as un
 Corrected runs answer the questions; no expected stool beat was missed in the corrected run. No full route was
 played. Motion sheets/videos were not opened, so real-time movement/feel and smoothness remain unverified.
 No quiet performance result is claimed. Not tested on a device. No external network use, push or ship.
+
+## Fresh checks and images after the final server-only rebase
+
+All checks above were repeated on **3c76e55b1**. The game, content, dev and test files are byte-identical to
+the reviewed acb1c285e implementation; only main's server fix and its tests were added. That main change was
+retained unmodified. The expanded server suite passes 344 tests; no further rebase conflicts occurred.
+
+Both refreshed captures fingerprint clean **1ab744572** (58b2636e4 plus the first report), with no change during
+either run. Both passed WebGPU/frame/error health checks; both PNGs were opened:
+
+- [Bench manifest](../../.look/evidence/1794618588439-90869/evidence.json),
+  [opened PNG](../../.look/evidence/1794618588439-90869/prefab7-4-bench-latest-still.png): the server confirms the
+  same seat; hips remain supported at the bench, feet over the deck, with no visible displacement.
+- [Bell manifest](../../.look/evidence/1794618589434-90870/evidence.json),
+  [opened PNG](../../.look/evidence/1794618589434-90870/prefab7-4-bell-latest-still.png): rock, decks, ramp, pads and
+  signs remain aligned. Draws stay 304/292 (+12).
+
+West and the corrected T1 stool images above precede this server-only refresh; their game-source files are
+unchanged. No full route, Linux run, motion/smoothness verdict or device test is claimed.
