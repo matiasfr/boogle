@@ -1,0 +1,242 @@
+{
+  "baseCommit": "8bf382a5d8c7ed96a027c8e4598821677c5f0710",
+  "geometryCommit": "e29f6887fc75b2e104e2d4acb639624f76b944cc",
+  "before": {
+    "counts": {
+      "a": 167,
+      "b": 61,
+      "c": 548
+    },
+    "rawCounts": {
+      "a": 361,
+      "b": 172,
+      "c": 2444
+    }
+  },
+  "after": {
+    "counts": {
+      "a": 151,
+      "b": 61,
+      "c": 540
+    },
+    "rawCounts": {
+      "a": 330,
+      "b": 172,
+      "c": 2421
+    },
+    "newSinceBaseline": 14
+  },
+  "removed": [
+    {
+      "a": "gorge.massing.14/instance-0",
+      "b": "gorge.massing.26/instance-0",
+      "area": 3.8414132630293105,
+      "position": [
+        -93.79017629163228,
+        3.8999999999999995,
+        -1969.9418903245082
+      ]
+    },
+    {
+      "a": "gorge.massing.16/instance-0",
+      "b": "gorge.massing.26/instance-0",
+      "area": 3.064907297859636,
+      "position": [
+        -97.0999267286851,
+        3.9,
+        -1972.111409762265
+      ]
+    },
+    {
+      "a": "gorge.massing.26/instance-0",
+      "b": "gorge.massing.74/instance-0",
+      "area": 1.9921499646841525,
+      "position": [
+        -92.91734922130146,
+        3.899999999999999,
+        -1969.2738497432904
+      ]
+    },
+    {
+      "a": "gorge.massing.18/instance-0",
+      "b": "gorge.massing.27/instance-0",
+      "area": 1.912439373192073,
+      "position": [
+        -104.5593756089377,
+        3.8999999999999995,
+        -1976.8712056336087
+      ]
+    },
+    {
+      "a": "gorge.massing.16/instance-0",
+      "b": "gorge.massing.27/instance-0",
+      "area": 1.716082737063565,
+      "position": [
+        -100.36423564032704,
+        3.8999999999999995,
+        -1974.210635779318
+      ]
+    },
+    {
+      "a": "gorge.massing.48/instance-0",
+      "b": "gorge.massing.51/instance-0",
+      "area": 1.4992822035637723,
+      "position": [
+        -78.35718059199864,
+        85.10000000000002,
+        -2025.9823572025434
+      ]
+    },
+    {
+      "a": "gorge.massing.18/instance-0",
+      "b": "gorge.massing.20/instance-0",
+      "area": 1.1729050851932394,
+      "position": [
+        -107.39670488416749,
+        3.9,
+        -1980.9660515954554
+      ]
+    },
+    {
+      "a": "gorge.massing.26/instance-0",
+      "b": "gorge.massing.73/instance-0",
+      "area": 1.071958236299036,
+      "position": [
+        -101.41678536570693,
+        3.8999999999999995,
+        -1968.3230970247114
+      ]
+    },
+    {
+      "a": "halt-crossing-0-visual/part-3",
+      "b": "track/quarry/rail/1661",
+      "area": 0.23544282680325165,
+      "position": [
+        1052.2347412109375,
+        24.399922868271826,
+        34.055424423194275
+      ]
+    },
+    {
+      "a": "halt-crossing-1-visual/part-1",
+      "b": "track/quarry/rail/1178",
+      "area": 0.17449333434509331,
+      "position": [
+        1374.1383268724692,
+        24.399922868271826,
+        -174.9821583857274
+      ]
+    },
+    {
+      "a": "halt-crossing-0-visual/part-1",
+      "b": "track/quarry/rail/900",
+      "area": 0.14792395927578497,
+      "position": [
+        1051.9026958314205,
+        24.399922868271823,
+        38.0499194203435
+      ]
+    },
+    {
+      "a": "halt-crossing-1-visual/part-3",
+      "b": "track/quarry/rail/1958",
+      "area": 0.13985071612337013,
+      "position": [
+        1371.6035887408982,
+        24.399922868271823,
+        -176.58572532358278
+      ]
+    },
+    {
+      "a": "halt-crossing-1-visual/part-4",
+      "b": "track/quarry/rail/1957",
+      "area": 0.12569274775120456,
+      "position": [
+        1371.0139899997396,
+        24.399922868271823,
+        -177.38639563686388
+      ]
+    },
+    {
+      "a": "halt-crossing-1-visual/part-0",
+      "b": "track/quarry/rail/1179",
+      "area": 0.11563399479437352,
+      "position": [
+        1374.7986037473838,
+        24.399922868271826,
+        -174.23031103351454
+      ]
+    },
+    {
+      "a": "halt-crossing-1-visual/part-2",
+      "b": "track/quarry/rail/1178",
+      "area": 0.08921460971606768,
+      "position": [
+        1373.8887419087628,
+        24.399922868271826,
+        -174.77048336790634
+      ]
+    },
+    {
+      "a": "halt-crossing-0-visual/part-0",
+      "b": "track/quarry/rail/901",
+      "area": 0.08368964626448613,
+      "position": [
+        1051.8397217964134,
+        24.399922868271823,
+        39.04808295848575
+      ]
+    }
+  ],
+  "preservation": {
+    "crossingCollidersBefore": "d8539a116224986626e7a84b9e2fc1ce487aa355f4c3e48d5459598cc4d3163b",
+    "crossingCollidersAfter": "d8539a116224986626e7a84b9e2fc1ce487aa355f4c3e48d5459598cc4d3163b",
+    "crossingBoardTopsChecked": 15,
+    "gorgeTopRays": 2052,
+    "maxTopDeltaM": 0,
+    "gorgeColliderFixtureHash": "fe0e7e59f0d18db13ff6a1f974af33c61d28eb55e88d6d263b537a3635aff74d",
+    "gorgeColliderRecordsCanonicalHash": "1c0e316b35bc3aff8131499cac9bf59b75abb919e49356062f1ed6418711b5ec",
+    "haltStageColliderRecordsCanonicalHash": "c27d9b7af102e60b5a7de0f33923f1a9ce9163aa29eaad314a792ce831536537",
+    "haltStages": 8
+  },
+  "captures": [
+    {
+      "before": ".look/gorge-before-1-still.png",
+      "after": ".look/gorge-after-1-still.png",
+      "opened": true,
+      "limit": "Static stills do not establish temporal flicker."
+    },
+    {
+      "before": ".look/gorge-before-2-still.png",
+      "after": ".look/gorge-after-2-still.png",
+      "opened": true,
+      "limit": "Static stills do not establish temporal flicker."
+    },
+    {
+      "before": ".look/gorge-before-3-still.png",
+      "after": ".look/gorge-after-3-still.png",
+      "opened": true,
+      "limit": "Static stills do not establish temporal flicker."
+    },
+    {
+      "before": ".look/gorge-before-4-still.png",
+      "after": ".look/gorge-after-4-still.png",
+      "opened": true,
+      "limit": "Static stills do not establish temporal flicker."
+    },
+    {
+      "before": ".look/gorge-clear-before-still.png",
+      "after": ".look/gorge-clear-after-still.png",
+      "opened": true,
+      "limit": "Foreground rail/crossing is clear; a moving train changes background occlusion. Static stills do not establish temporal flicker.",
+      "beforeSource": "git archive 8bf382a5d8c7ed96a027c8e4598821677c5f0710 in /tmp/boogle-gorge-before-8bf382a5 with its own npm ci"
+    }
+  ],
+  "reservedFilesUnchanged": [
+    "src/place/path-surface.ts",
+    "src/place/ground-material.ts",
+    "src/place/terrain.ts"
+  ],
+  "deferred": "Historical spot 16 needs the reserved path-surface.ts pad geometry.",
+  "device": "not tested on a device"
+}
