@@ -62,21 +62,21 @@ stop overlapping. World metres (x, z). Radii of the line turnouts are `npm run l
 | J1 | Spur off road 2, s 5.5 | (922.5, 10.5) | right | 5.5 m, 21.2° (1:2.6) | 8.4 m | 15 m off a straight | `home-station-view` + `track.ts` (road 2) | the shunt |
 | J2 | Leg onto road 2, s 26 (body s 26 to 32) | (941.8, 3.5) | left | 4.1 m, 29.1° (1:1.8) | 6.4 m | 15 m, against road 2's 18 m the other way | same | the cart |
 | J3 | Leg off line 1, s 54 (body s 54 down to 42) | (952.3, −30.0) | left | 6.2 m, 12.7° (1:4.4) | 12.1 m | 15 m for 3.3 m, then straight | same | the cart |
-| J4 | Line 1 up track, Home, s 36 to 56 | (948.3, −12.5) | left | 6.5 m, 14.8° (1:3.8) | 11.1 m | 9.5 m (on line 1's 18 m curve, same way) | `track.ts` | trains |
-| J5 | Line 1 up track, Camp, s 182 down to 162 | (984.9, −147.4) | right | 6.5 m, 14.8° | 11.1 m | 11.1 m | `track.ts` | trains |
-| J6 | Line 2 up track, Home, s 34 to 54 | (949.7, 2.9) | left | 6.5 m, 14.8° | 11.1 m | 18.0 m | `track.ts` | trains |
-| J7 | Far Head crossover, up-track end, s 490 | (1331.3, −150.8) | right | 7.2 m, 13.5° (1:4.2) | 12.2 m | 24.3 m | `track.ts` | trains |
+| J4 | Line 1 offset track, Home, s 36 to 56 | (948.3, −12.5) | left | 6.5 m, 14.8° (1:3.8) | 11.1 m | 9.5 m (on line 1's 18 m curve, same way) | `track.ts` | trains |
+| J5 | Line 1 offset track, Camp, s 182 down to 162 | (984.9, −147.4) | right | 6.5 m, 14.8° | 11.1 m | 11.1 m | `track.ts` | trains |
+| J6 | Line 2 offset track, Home, s 34 to 54 | (949.7, 2.9) | left | 6.5 m, 14.8° | 11.1 m | 18.0 m | `track.ts` | trains |
+| J7 | Far Head crossover, offset-track end, s 490 | (1331.3, −150.8) | right | 7.2 m, 13.5° (1:4.2) | 12.2 m | 24.3 m | `track.ts` | trains |
 | J8 | Far Head crossover, down-track end, s 512 | (1351.8, −159.8) | right | 7.2 m, 13.4° | 12.2 m | 24.3 m | `track.ts` | trains |
-| J9 | Line 2 up track, pier root, s 556 down to 536 | (1385.5, −187.4) | right | 6.5 m, 14.8° | 11.1 m | 15.4 m | `track.ts`; `retire()` removes it at Q7 | trains |
+| J9 | Line 2 offset track, pier root, s 556 down to 536 | (1385.5, −187.4) | right | 6.5 m, 14.8° | 11.1 m | 15.4 m | `track.ts`; `retire()` removes it at Q7 | trains |
 | J10 | Railhead stub, moves with the head: merge s 832 to 972 in 20 m steps | (1404.5, −462.0) to (1408.3, −601.9) | — | not measured | — | straight deck | `railhead-view.ts` (`crossoverSpan`) | trains |
 | J11 | Ring Island crossover, s 1137 to 1159 | (1412.7, −766.9) | — | not measured | — | straight | `src/entities/ring-island/view.ts` | trains |
 | J12 | Stack heads 1 to 3 (merge s 1670, 2180, 2690) and High Gorge's crossover (s 3195) | on the greybox row | — | not measured | — | — | the greybox route's views (not read) | trains |
 | T1 | Table rim, the spur (bearing 310° from the centre) | table (942.1, 17.1), r 4.8 | — | a butt join | — | straight 1.5 m | `home-station-view`, `roundhouse-view` | the shunt |
 | T2 to T4 | Table rim, stall roads at 160°, 190° (open), 220° | rims (943.7, 21.6), (941.3, 21.8), (939.0, 20.8) | — | butt joins | — | straight 3.7 m | same | the shunt (190° only) |
 
-**None found:** a diamond (no two tracks only cross: the leg leaves line 1 on the east and the up track on the west;
-on road 2 the up track lies between the leg and road 2). Passing loops at halts (the double track runs through; the
-up platforms stand on the plain up track). Leg 2 (`src/content/levels/leg2.ts` is an unlaid bed). Ring Island's balloon
+**None found:** a diamond (no two tracks only cross: the leg leaves line 1 on the east and the offset track on the west;
+on road 2 the offset track lies between the leg and road 2). Passing loops at halts (the double track runs through; the
+offset platforms stand on the plain offset track). Leg 2 (`src/content/levels/leg2.ts` is an unlaid bed). Ring Island's balloon
 loop (`RING_LOOP`, overruled 10 November, kept for tools only). The tentative lines `ns`, `bay`, `cave` have crossovers
 and loops in the catalog, no track drawn and no train.
 
@@ -87,10 +87,10 @@ overlapping.
 ### Do today's centrelines make valid turnouts? Yes
 
 - **Correction, 14 November (the Quarry's bend, not a junction):** the table's 9.5 m was not the tightest drawn
-  track. Between its turnouts the up track ran a flat 4 m inside line 2's bend at the Quarry (the line's own radius
+  track. Between its turnouts the offset track ran a flat 4 m inside line 2's bend at the Quarry (the line's own radius
   6.5 m there, s 175 to 181), which made it a bend of under 3 m; an up train's engine stood in its first car at that
   stop. It is eased in Place data (`upFull` in `src/place/layout.ts`, `src/place/track-ease.ts`): through s 156 to
-  200 the up track's offset runs 3.91 to 4.35 m, so it turns no tighter than 10 m. `upLat` carries it, so anything
+  200 the offset track's offset runs 3.91 to 4.35 m, so it turns no tighter than 10 m. `upLat` carries it, so anything
   generated from the two centrelines there follows; the line's own 6.5 m bend is the sim's data and is unchanged.
 - **Tangent at the toe:** every junction leaves at 0.8° to 2.1° measured 0.3 m in (zero in the data: the smoothstep
   has zero slope at its start, the spur and leg are arcs tangent to their roads).
@@ -180,7 +180,7 @@ the shared catalogue (99% full by bytes). The pieces ride the track's existing i
 
 - **A. Keep every centreline; generate from them (recommended).** View-only. No sim, wire or catalog change, no
   `WORLD_NS`. The data is already valid turnout geometry (above).
-- **B. Reshape the up track's ease in the view** (`upLat`, `crossLat` in `src/place/layout.ts`): an arc of 22 m radius,
+- **B. Reshape the offset track's ease in the view** (`upLat`, `crossLat` in `src/place/layout.ts`): an arc of 22 m radius,
   7.4 m straight at 17° (1:3.3) through the frog, an arc back, in the same 20 m from the same merge. Trains read the
   same functions, so they follow; the sim is untouched (it holds the merge, the 20 m and the track index, not the
   shape). Gain: a straight frog, and J4 eases from 9.5 m to about 9.9 m. Cost: `crossingPlanks` where a board crossing
@@ -343,7 +343,7 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
   `dev/level/track-continuity.ts`: replace the "turnouts and crossover" lines with one row per junction (toe, hand,
   frog distance and angle, clear, tightest radius) and add the spur and leg, which the tool does not know today.
   Verify: `npm run level-check` prints the table above. No player-visible change.
-- [ ] **3. Home's throat: J4, J6, then J2 and J3.** `track.ts` for both lines; the up track's sleeper loop skips
+- [ ] **3. Home's throat: J4, J6, then J2 and J3.** `track.ts` for both lines; the offset track's sleeper loop skips
   inside a zone; `span()` takes the union where zones overlap (J3 with J4). `home-station-view.ts`: the leg's sleepers
   start at `clearD` at both ends; its turnout pieces show with the leg (`legLaid()`). Proof look: `at=throat-top` (the
   framing of `late-topdown-throat.png`); `at=throat` (of `late-throat-eye-level.png`) to the reviewer. If the frog on
@@ -358,8 +358,8 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
 - [ ] **6. Blades that move, and levers that throw with them.** New `src/entities/railway/turnout-blades.ts`: one
   `createBoxBatch` for every junction's two blades, tie bar and lever arm, rewritten only while a junction changes
   (0.4 s ease, a clank through the existing sound helper). Pure `routeOf(junction, rows)` beside it with
-  `test/turnout-route.test.ts`: "an up train within 60 m sets the stub for the up track", "no train rests it for the
-  through road", "a down train trailing through sets it back", "Far Head's crossover follows `crossing()`". `track.ts`:
+  `test/turnout-route.test.ts`: "a homeward train within 60 m sets the stub for the offset track", "no train rests it for the
+  through road", "an outward train trailing through sets it back", "Far Head's crossover follows `crossing()`". `track.ts`:
   cut the through-side blade out of the plain inner rail (split the piece; a remnant under 1 m joins `turnoutRails`).
   The shunt's and the cart's positions come out of their views as pure helpers over the rows they already read, not by
   one view reading another. Line levers are drawn in the batch with no collider; Home's three keep their boxes and
@@ -384,7 +384,7 @@ about the junctions:
 2. Fouling zones (tracks closer than 2.3 m): line 1 s 36 to 48 and s 171 to 182, line 2 s 34 to 46 and s 545 to 556.
    These are the timbered zones.
 3. The tool does not know the spur or the leg (step 2 adds them).
-4. If option B or C is taken, rerun it: B changes the up track's radii and the Quarry and Far Head platform clearances
+4. If option B or C is taken, rerun it: B changes the offset track's radii and the Quarry and Far Head platform clearances
    are beyond the 20 m and should not move; C moves a signal and a block edge.
 
 ## Risks

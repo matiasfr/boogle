@@ -597,6 +597,7 @@ export async function boilerToPier(
     const dir = destination > halt.stop ? 1 : -1;
     const handle = view().halts[haltId]!.lever.find((h) => h.on && h.dir === dir);
     check(handle, `${halt.name} has a handle toward stop ${destination}`);
+    check(await bot.walk(handle!.x, handle!.z, 0.6), `walked onto ${halt.name}'s lever platform`);
     if (!handle!.over)
       check(await bot.use(handle!.x, handle!.z, `request a train at ${halt.name}`, /^Request stop/), 'lever offered');
     await until(() => view().halts[haltId]!.calling, `${halt.name} halt calls a train`);

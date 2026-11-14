@@ -1,9 +1,9 @@
 // Request stops with two trains on line 2 (docs/plans/generic-lines.md, 7; v26), two players from `--rail-seed
-// trains-on`: player 1 crosses the Quarry's plank crossing to its up platform and pulls its lever (toward Far Head); the
-// next up train that can brake for it lights its amber lamp and stands at the up platform, while line 2's other train
+// trains-on`: player 1 crosses the Quarry's plank crossing to its south outbound platform and pulls its lever (toward Far Head); the
+// next up train that can brake for it lights its amber lamp and stands at the south outbound platform, while line 2's other train
 // runs home past the down platform dark. Player 2 asks at the village, boards whichever train stops and asks for the
 // quarry aboard ("Request stop: Quarry"), so the cord names its own train. Player 1's still is taken with the served
-// train standing at the up platform; player 2's once its engine lamp is lit.
+// train standing at the south outbound platform; player 2's once its engine lamp is lit.
 // BOOGLE_BOT_RANK=1 npm run look -- --players 2 --rail-seed trains-on --query shot=play \
 //   --eval dev/look/evals/railway-request-stop.ts --until window.__placeDone --hud --name request-stop
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
@@ -53,6 +53,7 @@ const lever = (haltId: number, dir: number) => view().halts[haltId]!.lever.find(
 const pull = async (haltId: number, dir: number) => {
   const handle = lever(haltId, dir);
   check(handle, `${view().halts[haltId]!.name} has a lever ${dir}`);
+  check(await bot.walk(handle!.x, handle!.z, 0.6), 'walked onto the lever platform');
   check(await bot.use(handle!.x, handle!.z, 'the lever', /^Request stop/), 'lever offered');
   await until(() => view().halts[haltId]!.lever.find((h) => h.dir === dir)!.over, 'the lever stays over', 30000);
   return handle!;
@@ -64,15 +65,11 @@ background(
     await until(() => railRead()?.ready() && me.body && me.coyote > 0, 'seed arrived', 300000);
     await until(() => view().halts[QUARRY]?.up && view().halts[2]?.up, 'line 2 halts stand', 60000);
     if (player === '1') {
-      // Over the plank crossing to the up platform (the walk from it, reversed), then its lever toward Far Head.
-      const up = view().upPlatforms.find((u) => u.pair === QUARRY)!;
-      const halt = view().halts[QUARRY]!;
-      check(await bot.walk(halt.x, halt.z, 1), 'walked to the quarry halt');
-      for (const [i, p] of [...up.path].reverse().entries())
-        check(await bot.straight(p.x, p.z, 0.5, 15000), `over the plank crossing, step ${i + 1}`);
-      check(await bot.straight(up.x, up.z, 0.5, 15000), 'onto the up platform');
+      // Right-hand outbound running serves the original south platform, beside the Quarry.
+      const up = view().halts[QUARRY]!;
+      check(await bot.walk(up.x, up.z, 0.5), 'onto the south outbound platform');
       const h = await pull(QUARRY, 1);
-      check(h.platform === 'up', "the quarry's up lever is on the up platform");
+      check(h.platform === 'down', "the quarry's outward lever is on the south platform");
       check(h.label === 'Far Head', `its plaque names Far Head (${h.label})`);
       // Stand back along the deck so the lever and the incoming train are both in frame.
       await bot.straight(up.x + (h.x - up.x) * 0.2, up.z + (h.z - up.z) * 0.2, 0.6, 8000);
@@ -90,7 +87,7 @@ background(
             passedDown.push(k);
         }
         return served >= 0;
-      }, 'an up train lights its lamp for the up lever');
+      }, 'an up train lights its lamp for the outward lever');
       console.log(`SERVED ${JSON.stringify({ served, row: trains(rw())[served], lines: lines(rw()) })}`);
       await until(() => {
         const r = trains(rw())[served]!;
@@ -108,8 +105,8 @@ background(
           check(!(o.track === 1 && o.phase === 0 && o.at === 1), 'no down train stands at the quarry for an up ask');
         }
         return r.phase === 0 && r.at === 1 && r.track === 0;
-      }, 'the served train stands at the up platform');
-      // Frame the standing train across both tracks, from beyond the down track: the train at the up platform, the
+      }, 'the served train stands at the south outbound platform');
+      // Frame the standing train across both tracks, from beyond the down track: the train at the south outbound platform, the
       // asker and the lever behind it.
       const car = view().trains[served]!.cars[1]!,
         me0 = me.body!.position;
@@ -160,7 +157,19 @@ background(
       releaseJump();
     }
     check(aboard(), 'boarded line 2 by a real jump');
-    await until(() => interactTarget()?.id === 'railway-request-aboard', 'Request stop offered aboard', 60000);
+    let turnedAt = -Infinity;
+    await until(
+      () => {
+        const target = interactTarget();
+        if (target?.id === 'place-sit' && performance.now() - turnedAt >= 150) {
+          cam.yaw = me.yaw = me.yaw + Math.PI / 6;
+          turnedAt = performance.now();
+        }
+        return target?.id === 'railway-request-aboard';
+      },
+      'Request stop offered aboard',
+      60000,
+    );
     console.log(`ABOARD PROMPT ${interactTarget()?.verb} ${interactTarget()?.blocked ?? ''}`);
     check(interactTarget()?.verb === 'Request stop: Quarry', 'the prompt names the quarry');
     if (interactTarget()?.run) bot.press();

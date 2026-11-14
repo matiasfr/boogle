@@ -79,6 +79,7 @@ function platforms() {
   const all = [...HALTS.map((h) => ({ ...h, up: false })), ...UP_HALTS.map((h) => ({ ...h, up: true }))];
   for (const h of all) {
     const L = LIVE[h.line]!;
+    // Physical report keys: down = original, up = offset; train directions swapped in v45.
     for (const track of ['down', 'up'] as const) {
       let best = { c: Infinity, s: h.s0 };
       for (let s = h.s0; s <= h.s1; s += 0.5) {

@@ -4,7 +4,7 @@
 // teleports only; every measured move is the controller's. Prints `CROSS ...` lines, sets `window.__crossDone`.
 // `cross=` picks the part:
 //   walk      three tries each way (`crossfrom=east|west` for one, `crosstries=<n>`): aboard a train braking into one platform (seated on
-//             the east, homeward one; standing on the west one, where Interact keeps offering the next request stop),
+//             the east, outward one; standing on the west one, where Interact keeps offering the next request stop),
 //             from its stand to standing on the far platform by the foot crossing at the platforms' south end
 //             (docs/plans/ring-island-crossing.md: down the ramp, over the planks, up the far ramp; no jump), then
 //             beside where a car stops and aboard the far train if it still stands, else the next one's boarding
@@ -16,7 +16,7 @@
 //   above | platform   a still from above the crossing or from the west platform beside where a car stops, looking
 //             south at it, once both tracks' trains are in the halt (one standing); up to 9000 ticks of waiting
 //             (`crosswait=<ticks>` for less), then whichever train stands next
-//   door      a still at eye height from the east platform beside the standing down train's passenger car, looking
+//   door      a still at eye height from the east platform beside the standing outward train's passenger car, looking
 //             south along the train at the crossing (the first sight on stepping off)
 //   npm run look -- --rail-seed stack-laid-4 --real --query cross=walk --eval dev/look/evals/ring-crossing-walk.ts \
 //     --until window.__crossDone --wall 3500 --name cross-walk
@@ -151,7 +151,7 @@ background(
       ((inspectRailway()!.line2View as unknown as { trains: ViewTrain[] }).trains ?? []).filter(
         (t) => t.line === LINE2,
       );
-    /** The train standing at Ring Island on `track` (0 up: the west platform; 1 down: the east), its view and extent. */
+    /** The train standing at Ring Island on `track` (0 outward: the east platform; 1 homeward: the west), its view and extent. */
     const standing = (track: number) => {
       const t = viewTrains().find((t) => t.phase === 0 && t.at === RING_STOP && t.track === track);
       if (!t) return null;
@@ -181,9 +181,9 @@ background(
     async function pull(dir: number) {
       const l = levers().find((l) => l.dir === dir)!;
       const k = ul(l.x, l.z);
-      await stage(k.u - 1.5, dir > 0 ? WEST.mid : EAST.mid, PLAT_Y);
+      await stage(k.u - 1.5, dir > 0 ? EAST.mid : WEST.mid, PLAT_Y);
       const ok = await bot.use(l.x, l.z, 'the Ring Island lever', /^Request stop/);
-      say(`lever ${dir > 0 ? 'west (up)' : 'east (down)'} pulled ${ok} at ${railAt()}`);
+      say(`lever ${dir > 0 ? 'east (outward)' : 'west (homeward)'} pulled ${ok} at ${railAt()}`);
       return ok;
     }
     /** Live line 2 trains are spaced so an up and a down train seldom stand here together (dwell 50 ticks): pulls
@@ -195,7 +195,7 @@ background(
         const due = etas(track).find((e) => e > 40 && e < 300);
         if (due !== undefined) {
           say(
-            `due ${track ? 'east (down)' : 'west (up)'} in ${due.toFixed(0)} ticks at ${railAt()}; ` +
+            `due ${track ? 'west (homeward)' : 'east (outward)'} in ${due.toFixed(0)} ticks at ${railAt()}; ` +
               `other side due ${etas(1 - track).map((n) => n.toFixed(0))}`,
           );
           await pull(track ? -1 : 1);
@@ -217,13 +217,13 @@ background(
           (t as unknown as { to: number }).to === RING_STOP &&
           Math.abs((t as unknown as { along: number }).along - RING_S) < 3000,
       );
-    const trainState = () => ({ westTrain: !!standing(0), eastTrain: !!standing(1) });
+    const trainState = () => ({ westTrain: !!standing(1), eastTrain: !!standing(0) });
 
     // ------------------------------------------------------------ cross=walk
     /** One crossing, starting aboard the train standing on `from`'s side (seated, for the east one). */
     async function crossing(fromTrack: number, seat: boolean) {
-      const from = fromTrack === 1 ? EAST : WEST,
-        to = fromTrack === 1 ? WEST : EAST,
+      const from = fromTrack === 0 ? EAST : WEST,
+        to = fromTrack === 0 ? WEST : EAST,
         toTrack = 1 - fromTrack;
       const coming = approaching(fromTrack) ?? standing(fromTrack)?.t;
       if (!coming) return { ok: false, why: 'no train coming in or standing to start from' };
@@ -261,7 +261,7 @@ background(
         log.stood = railAt() - t0;
       }
       // Off the car onto our platform, beside it.
-      const offLat = fromTrack === 1 ? from.lat0 + 1.0 : from.lat1 - 1.0;
+      const offLat = fromTrack === 0 ? from.lat0 + 1.0 : from.lat1 - 1.0;
       let ok = await go(st.carU, offLat, 0.5, 200, (p) => p.y < PLAT_Y - 0.2 && Math.abs(p.lat - offLat) < 1.6);
       log.off = { ticks: railAt() - t0, ok, ...trainState(), at: where() };
       if (!ok) return { ok, why: 'never got off the car', log, ticks: railAt() - t0 };
@@ -336,11 +336,11 @@ background(
     async function walkPart() {
       const res: Record<string, unknown>[] = [];
       for (const [fromTrack, seat] of [
-        [1, true],
-        [0, false],
+        [0, true],
+        [1, false],
       ] as const) {
         const only = new URLSearchParams(location.search).get('crossfrom');
-        if (only && only !== (fromTrack === 1 ? 'east' : 'west')) continue;
+        if (only && only !== (fromTrack === 0 ? 'east' : 'west')) continue;
         const tries = Number(new URLSearchParams(location.search).get('crosstries') ?? 3);
         for (let k = 0; k < tries; k++) {
           if (!(await startStands(fromTrack))) {
@@ -348,8 +348,8 @@ background(
             continue;
           }
           const r = await crossing(fromTrack, seat);
-          say(`walk ${fromTrack === 1 ? 'east->west' : 'west->east'} try ${k} ${JSON.stringify(r)}`);
-          res.push({ from: fromTrack === 1 ? 'east' : 'west', ...r });
+          say(`walk ${fromTrack === 0 ? 'east->west' : 'west->east'} try ${k} ${JSON.stringify(r)}`);
+          res.push({ from: fromTrack === 0 ? 'east' : 'west', ...r });
         }
       }
       return res;
@@ -406,9 +406,9 @@ background(
     async function bedPart() {
       const res: Record<string, unknown>[] = [];
       const cases = [
-        { name: 'stopping up train, standing on the up track', track: 0, lat: -4, stop: true },
-        { name: 'passing up train, standing on the up track', track: 0, lat: -4, stop: false },
-        { name: 'passing down train, standing on the down track', track: 1, lat: 0, stop: false },
+        { name: 'stopping outward train, standing on the original track', track: 0, lat: 0, stop: true },
+        { name: 'passing outward train, standing on the original track', track: 0, lat: 0, stop: false },
+        { name: 'passing homeward train, standing on the offset track', track: 1, lat: -4, stop: false },
       ];
       for (const c of cases) {
         // Wait for a train of that track due in 30 to 80 ticks, pull the lever if it is to stop, stand in its way.
@@ -571,7 +571,7 @@ background(
     async function still(view: 'above' | 'platform' | 'door') {
       // Stand out of the frame, on the works yard behind the east platform, then wait for both tracks' trains in the
       // halt at once (both standing, or one standing and the other running through), pulling both levers as trains
-      // come; at most 9000 ticks, then whatever stands. `door` waits for the down train alone.
+      // come; at most 9000 ticks, then whatever stands. `door` waits for the outward train alone.
       const inHalt = (track: number) =>
         viewTrains().find(
           (t) =>
@@ -584,7 +584,7 @@ background(
       let got = false;
       const giveUp = railAt() + Number(new URLSearchParams(location.search).get('crosswait') ?? 9000);
       for (;;) {
-        if (view === 'door' ? standing(1) : (standing(0) && inHalt(1)) || (standing(1) && inHalt(0))) {
+        if (view === 'door' ? standing(0) : (standing(0) && inHalt(1)) || (standing(1) && inHalt(0))) {
           got = true;
           break;
         }
@@ -605,8 +605,8 @@ background(
           await stage(452, 12, PLAT_Y);
         await ticks(1);
       }
-      const a = standing(0),
-        d = standing(1);
+      const a = standing(1),
+        d = standing(0);
       const cars = viewTrains()
         .filter((t) => inHalt(t.track))
         .map((t) => ({ track: t.track, phase: t.phase, cars: t.cars.map((c) => f2(ul(c.x, c.z).u)) }));

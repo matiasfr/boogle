@@ -91,7 +91,8 @@ export const LIVE = [
 ] as const;
 
 /** Ring Island's lat (cm east of track 1) for a track. */
-const RING_TRACK_LAT = { down: RING_FORMATION.tracks[1], up: RING_FORMATION.tracks[0] } as const;
+// These keys name physical sides in this report, not the train's direction: the offset side is homeward.
+const RING_TRACK_LAT = { down: RING_FORMATION.tracks[0], up: RING_FORMATION.tracks[1] } as const;
 /** u (cm) along the crossing of a world point: the pier head's datum, line 2's heading (inverse of ringAt). */
 function ringU(x: number, z: number) {
   const ux = 0.0272,
@@ -156,7 +157,7 @@ export function tracks(): Track[] {
     out.push({
       id: `${L.id}-down`,
       line: L.id,
-      label: `${L.name}, today's track (down; single where the up track merges)`,
+      label: `${L.name}, original outward track (single where the offset track merges)`,
       status: 'live',
       kind: 'down',
       nominal: 1,
@@ -167,7 +168,7 @@ export function tracks(): Track[] {
     out.push({
       id: `${L.id}-up`,
       line: L.id,
-      label: `${L.name}, up track (s ${L.f.from}-${L.f.to}, drawn; trains from v26)`,
+      label: `${L.name}, offset homeward track (s ${L.f.from}-${L.f.to}, drawn; trains from v26)`,
       status: 'v26',
       kind: 'up',
       nominal: 1,
@@ -473,17 +474,24 @@ export function liveHalts(): LiveHalt[] {
       down: span(p('Village, line 2')),
       status: 'live',
     },
-    { name: 'Quarry', line: 'line2', stop: l2[1]!, up: span(u('Quarry, up')), down: span(p('Quarry')), status: 'live' },
+    { name: 'Quarry', line: 'line2', stop: l2[1]!, up: span(p('Quarry')), down: span(u('Quarry, up')), status: 'live' },
     {
       name: 'Far Head',
       line: 'line2',
       stop: l2[2]!,
-      up: span(u('Far Head, up')),
-      down: span(p('Far Head')),
+      up: span(p('Far Head')),
+      down: span(u('Far Head, up')),
       status: 'live',
     },
-    // Place's pier halt (layout.ts PIER: s 719-741, lat -2.9 on the rack side); v27 adds the up platform at lat -6.9.
-    { name: 'Pier', line: 'line2', stop: l2[3]!, up: null, down: { s0: 719, s1: 741, lat: -2.9 }, status: 'live' },
+    // After Q7: homeward-only on the piled west platform. Before Q7: the east terminal deck.
+    {
+      name: 'Pier',
+      line: 'line2',
+      stop: l2[3]!,
+      up: null,
+      down: span(UP_HALTS.find((h) => h.pair === 5)!),
+      status: 'live',
+    },
   ];
 }
 /** Along-line obstacles a standing train must clear (s in m), per live line. */

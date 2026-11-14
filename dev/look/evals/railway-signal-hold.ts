@@ -1,7 +1,7 @@
 // A train held at a stub end's signal while the other leaves the end (review of v26, P2-1; docs/plans/generic-lines.md,
 // 4b), from `--rail-seed q6-done`: the up train comes to the pier's signal (s 529.8 m, the turnout's 20 m plus the
 // engine's reach short of the merge at 556 m) while the other is still in the pier's block, and waits; the still is
-// taken as the leaving train runs past it on the down track, the camera broadside from beyond the down track. Logs where
+// taken as the leaving train runs past it on the offset homeward track, the camera broadside from beyond the original outbound track. Logs where
 // each stands and the clear lateral gap between them. The Village's signal is the same rule at the other end; play
 // with two trains doesn't bunch them there (test/review-v26.test.ts holds a train at it headlessly).
 // npm run look -- --rail-seed q6-done --eval dev/look/evals/railway-signal-hold.ts --until window.__placeDone --real \
@@ -28,7 +28,7 @@ const tick = setInterval(() => {
     hs = held.along / 100,
     ls = leaving.along / 100;
   if (!aim) {
-    // Broadside from beyond the down track, 12 m up, over the turnout's start: the held train, the leaving one past
+    // Broadside from beyond the original outbound track, 12 m up, over the turnout's start: the held train, the leaving one past
     // it, and the turnout ahead.
     layout.lineAt(line, hs + 4, P);
     const lat = 20,

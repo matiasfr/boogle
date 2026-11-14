@@ -239,7 +239,7 @@ async function runChecks() {
     failed += leg2.failures;
     report.push(leg2);
     if (!json) printLeg2(leg2);
-    // Track continuity: kinks, curves, grades and joins over every line as the game draws it (docs/plans/rail-map.md).
+    // Track continuity measures physical original/offset sides independently of train direction (rail-map.md).
     const { checkContinuity, printContinuity } = await import('./track-continuity.ts');
     const continuity = checkContinuity();
     failed += continuity.failures;

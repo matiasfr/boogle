@@ -132,7 +132,7 @@ const shunt = home.shuntPath(9.6).pts as P[];
 const train1 = run((s) => road(0, s), 1.3, 22.2);
 const train2 = run((s) => road(1, s), 4.3, 25.2);
 
-// ---- option A: the east bay, the outbound track carried straight back
+// ---- option A: the east bay, the homeward track carried straight back
 const u54 = up2at(54),
   u60 = up2at(60);
 const bu: P = { x: (u60.x - u54.x) / 6, z: (u60.z - u54.z) / 6 };
@@ -414,11 +414,11 @@ svg text { font-family: system-ui, sans-serif; fill: var(--ink); paint-order: st
 const factsA: [string, string][] = [
   [
     'Where it leaves and ends',
-    `A dead-straight ${m0(a.track)} m track across the open ground past the end of the island. It ends at buffers ${m0(a.footToBuf)} m beyond the island's end ramp, and joins line 2's outbound track 54 m out along line 2, where line 2 has just become double. It is that outbound track carried straight back toward the station.`,
+    `A dead-straight ${m0(a.track)} m track across the open ground past the end of the island. It ends at buffers ${m0(a.footToBuf)} m beyond the island's end ramp, and joins line 2's homeward track 54 m out along line 2, where line 2 has just become double. It is that homeward track carried straight back toward the station.`,
   ],
   [
     'Points and curves, against the track rules',
-    `No new curve and no new points to bend through. The bay is the straight; the curve that already swings platform 2's road onto the outbound track (18 m radius, leaving at up to 16.7°) becomes the points. That curve misses the 7° rule for every train at Home today; the bay adds nothing to it. No kink. It ends, so it gets buffers and an end board: a marked terminal.`,
+    `No new curve and no new points to bend through. The bay is the straight; the curve that already swings platform 2's road onto the homeward track (18 m radius, leaving at up to 16.7°) becomes the points. That curve misses the 7° rule for every train at Home today; the bay adds nothing to it. No kink. It ends, so it gets buffers and an end board: a marked terminal.`,
   ],
   [
     'Where the train stands',
@@ -434,7 +434,7 @@ const factsA: [string, string][] = [
   ],
   [
     'What it does to the running lines',
-    `Leaving, it rolls straight onto the outbound track. It never stands at a platform or on the single track in front of them, so it can wait with its doors open for the full 20 s while service trains come and go beside it. It takes the next gap on the outbound track; if a service train is already pulling out, it follows it. Coming home it arrives at platform 2 like any train, lets riders off on the island, then backs into the bay from the outbound track (15 to 20 s, my estimate). It should never hold a service train longer than any train ahead would. Line 1 is untouched; the set cannot reach Camp from here.`,
+    `The former outward departure proposal needs routing review: the bay now joins the homeward track. It never stands at a platform or on the single track in front of them, so it can wait with its doors open for the full 20 s while service trains come and go beside it. It takes the next gap on the homeward track; if a service train is already pulling out, it follows it. Coming home it arrives at platform 2 like any train, lets riders off on the island, then backs into the bay from the homeward track (15 to 20 s, my estimate). It should never hold a service train longer than any train ahead would. Line 1 is untouched; the set cannot reach Camp from here.`,
   ],
   [
     'What it displaces',
@@ -579,7 +579,7 @@ const html = `<title>Home's bay for the passenger train</title>
 <li><b>In the Roundhouse, out by the engine spur.</b> Your ruling. Measured as well: the track behind the spur's points is ${m1(home.SPUR.s - home.BUFFERS[1])} m and an engine with one coach is 8.5 m, so it could not have turned back there without moving the buffers into the hall.</li>
 <li><b>A bay beside the hall, south of platform 2's road.</b> It would be 5 m from the hall, but the engine spur swings across that ground 16 m along, and joining the two would need a 7 m curve or a moved table. It also sits on the ground kept free to relay the spur wider when the Roundhouse grows, with Q1's frame in the way.</li>
 <li><b>North of line 1's road.</b> That is the forge's goods side: the boiler stand is 3.4 m from the track, with the dock and crane beside it.</li>
-<li><b>A through track across the gap, line 1 to line 2's outbound track, no buffers.</b> It can be drawn at about 55 m radius, near the 60 m rule, but only about 7 m of it is far enough from both lines to stand a train on, and the set is 8.5 m.</li>
+<li><b>A through track across the gap, line 1 to line 2's homeward track, no buffers.</b> It can be drawn at about 55 m radius, near the 60 m rule, but only about 7 m of it is far enough from both lines to stand a train on, and the set is 8.5 m.</li>
 <li><b>The rule for designed stations (a 40 m bay road with 65 m of parallel track).</b> Home's two roads are parallel for 22 and 25 m before they curve apart. Home is the exception whichever option you pick.</li>
 </ul>
 
@@ -593,7 +593,7 @@ const html = `<title>Home's bay for the passenger train</title>
 <ul>
 <li>Whether the cart's track stays as track after the cart retires. The plans say the cart stops serving after Q6; they do not say the rails are lifted.</li>
 <li>What becomes of Q2's delivery frame once its job is done.</li>
-<li>That outbound trains really run on the left-hand track from 54 m out. The layout draws it there (the double-track work); I read the drawing, not how trains are posed on it. A depends on it.</li>
+<li>Under v45 right-hand running this bay joins the offset homeward track. Outward access and the backing move need a routing review before construction.</li>
 <li>Every time above that is marked as an estimate. They come from distances; no simulation runs a train that belongs to no line yet.</li>
 <li>West landing's layout. It is not drawn; its distances are straight lines to the blockout's two halts.</li>
 <li>The ground under the bay is from the terrain data (level within about 0.9 m of the rails), not from a look in the game. The level check does not know the spur, the cart's track or a bay.</li>
