@@ -46,7 +46,7 @@ const hash = (cell: N): N => fract(sin(dot(cell, vec2(127.1, 311.7))).mul(43758.
 
 let field: THREE.DataTexture | null = null;
 /** The paths' distance field, one RGBA16F texture (1 m texels over the land's grid, 3.4 MB, no mips), made once. */
-function pathFieldTexture() {
+export function pathFieldTexture() {
   if (field) return field;
   const baked = bakePathField(),
     half = new Uint16Array(baked.length);
