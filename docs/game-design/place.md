@@ -1156,6 +1156,17 @@ Not tested on a device.
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
+**Rotunda step 1a (14 November, local branch; v45 not shipped).** The shared kit is data: 20° wedge bays,
+doors at radius 14 m, 11 m depth, 3.6 × 4.6 m door openings. Home reserves seven bays centred on 190°,
+with site-owned counts 0/3/5/7; stage triggers and the continuous building arrive in later steps. The existing
+disc is now 16 m across, moved 3.2 m along the unchanged engine spur; its reach is 10 m. The stall and cracked
+slab rule points follow the new door, the steel-home landing lies outside the future 8.6 m kerb, and the
+garage's post, stand, jib and crew move out with it. The current 15° garage camera and no-try-on behavior stay.
+The jib arm is 12.2 m so the closed bystander's install hook and trolley remain supported with that camera pose.
+The show-off turn lasts 3 s within the locked install moment (rest at c+4800, skip still from c+800).
+The level pad under the bay arc is already graded to 18 m, because the relocated yard rails otherwise sank into
+the old slope. There is no pit or rotunda shell yet. [Step 1a report](../plans/roundhouse-rotunda-1a-report.md).
+
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's
 plume and whistle. **Take the breaker** is once for the room; like the boiler before it, its prompt measures to the
 pedestal's edge, so logs set down against the pedestal don't take the prompt from it (12 November). **Strike the seam** at the cracked slab by Home's
@@ -1172,7 +1183,7 @@ deliberate "before": they raise the stall frame and pull its tarp off. The cradl
 (**Fit the cradle**), which turn it brass (it took two footings too until 10 November;
 [works-late-game](../plans/works-late-game.md), step 2). **Turn the table** is accepted only when ready (owner, 10
 November): once the cradle is fitted and before the wagon rolls out, so the one turn there is sends the shunter
-and wagon over the spur in 110 ticks (11 s). The deck turns 120°, the pair backs down shunter first, rests at the
+and wagon over the spur in 140 ticks (14 s). The deck turns 120° over 5.04 s, the pair backs down shunter first, rests at the
 cusp, then the shunter pushes the wagon out to line 2 at the unchanged coupling mark. Earlier, while it rolls out,
 and after line 2 couples it, a turn is refused
 and the prompt isn't offered (until 10 November a turn before the fit was accepted and did nothing, and after
@@ -1180,7 +1191,7 @@ coupling the table was a toy). **The cradle asks in the open (14 November,
 [footings-signalling](../plans/footings-signalling.md) A1 and A2; owner: "There is never any prompt to bring 8 rails to
 the cradle stall").** From the stall's second footing (after its build and tarp on a live edge) until the wagon rolls
 out: a station-style bill on the Roundhouse apron, **Footing wagon** / **rails 0/8**, its count rising, then
-**Turn the table** once fitted. It is the kiln's own board, idle since the kiln lit, moved 7.5 m from the table's
+**Turn the table** once fitted. It is the kiln's own board, idle since the kiln lit, moved 11.3 m from the table's
 centre onto the bisector between the open stall's road and its forge-side neighbour, edge-on to both roads and
 facing the walk from the forge rack. Eight dashed gold rail ghosts stand on the wagon's cradle, each going as its
 rail bolts on; the forge's rail rack gives off the gold motes while rails are wanted; fitted, the table's handle
