@@ -121,8 +121,8 @@ No world placements, geometry, new simulation ticks or gameplay controls; level 
 
 - [x] Required briefs, current source seams, nested instructions and model rows inspected; three sign-in options compared.
 - [x] Local branch-overlap check completed. `npm run inflight` failed opening `FETCH_HEAD` before fetching; no retry because non-local network is prohibited. Local unmerged branches overlap future implementation: `codex/room-fast-forward-server`, `codex/server-players-step-8`, `codex/slice2-supply-history`. None touches this new plan. Their activity/remote status is unverified.
-- [ ] Prettier, scoped lint, required `npm run check`, links and final diff checked.
-- [ ] Committed on `codex/accounts-plan` and rebased onto locally available `origin/main`; no push or ship. Remote freshness unverified because fetching is prohibited.
+- [x] Final validation: Prettier (explicit ignore override because the repository ignores Markdown), scoped lint, local link targets and final diff passed. Both full `npm run check` runs exited 0 within their 600-second bounds. Rebased tree: **2,154 tests passed, zero gating failures, one existing TODO** (`railway-install` longer-fleet wait bound: 1,146 ticks against 1,050; not fixed by this docs-only task). Registry, level, assets, prefabs and production build passed. First run before rebase: 2,137 pass and the same TODO. Logs: `.look/accounts-check.log` and `.look/accounts-check-rebased.log`. These are correctness results, not performance evidence.
+- [x] Committed on `codex/accounts-plan` and rebased onto locally available `origin/main` (`cb76b4a1e`); no push or ship. The shared local ref advanced during this job; its geometry-tooling changes do not alter the identity seams. Remote freshness unverified because this task cannot fetch.
 
 Opened images: **0**. Browser/bot/scenario/performance runs: **0**, deliberately unnecessary for a documentation-only change. No visual verdict, bot failure or timing measurement is claimed. Account functionality is unimplemented and **not tested on a device**. The launcher owns `handoff.md`/`evidence.json`; no browser evidence manifest is invented for this plan.
 
