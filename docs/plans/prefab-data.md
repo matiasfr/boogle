@@ -554,3 +554,12 @@ perturbed prefab suites pass 216/216. Collider debt drops 494 to 488 units witho
 Decks/bases/piles, ramps/crossings, request levers with plaques/interactions and map-display stands remain;
 step 10 stays unchecked. [Proof, exact placeholder strings, checks and opened comparison stills](prefab-data-step-10-report.md).
 No push or ship; not tested on a device.
+
+### Step 10 follow-up: catalog freshness and complete deck pieces
+
+A catalog/location dependency fingerprint closes the reviewed freshness gap: changing `HALTS[1].lat` by one metre
+now fails the committed artifact check. Home contributes authored frame operands, never derived native-math values.
+Seven deck records also replace all deck/base/pile kit construction in `halts-view.ts` and `up-platforms.ts`; the
+original pre-conversion golden remains unchanged. Collider debt drops another seven units, 488 to 481. Ramps,
+request levers/plaques and signal/map attachments remain; step 10 stays unchecked. Rebase/shared catalogue status
+and fresh verification are recorded in the [follow-up report](prefab-data-step-10-2-report.md).

@@ -161,7 +161,7 @@ test('authored full-precision values round-trip losslessly; no decimal quantizat
   assert.equal(JSON.parse(outputs.get('levels/exact.json')!).analysis.authored, n);
 });
 test('authored halt collider expressions reject coercion, unknown operations and mixed expanded data', () => {
-  const record = haltKitContent().prefabs[0]!;
+  const record = haltKitContent().prefabs.find((p) => p.key.endsWith('-canopy'))!;
   const load = (layout: unknown, colliders: unknown = []) =>
     validation.loadPrefabArtifact({
       ...metadata,

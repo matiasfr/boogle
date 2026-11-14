@@ -4,7 +4,7 @@ import { canonical } from './compiler.ts';
 import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
 import { HALTS, UP_HALTS } from '../../src/place/layout.ts';
 import { ISLAND, HEADS, BUFFERS, LINE_ORIGIN, AXIS } from '../../src/place/home-station.ts';
-import { haltPiece, type HaltPiece } from '../../src/content/prefabs/halts.ts';
+import { haltDeck, haltPiece, type HaltPiece } from '../../src/content/prefabs/halts.ts';
 import type { LevelDef, Placement, PrefabDef } from '../../src/prefab/types.ts';
 
 export function haltKitContent() {
@@ -27,14 +27,14 @@ export function haltKitContent() {
     const hw = h.island ? ISLAND.width / 2 : 1.25;
     const pieces: HaltPiece[] = h.island
       ? h.line === 0
-        ? ['canopy', 'mast']
+        ? ['deck', 'canopy', 'mast']
         : ['mast']
       : h.up
-        ? ['shelter', 'bench']
-        : ['shelter', 'bench', 'mast'];
+        ? ['deck', 'shelter', 'bench']
+        : ['deck', 'shelter', 'bench', 'mast'];
     for (const piece of pieces) {
       const key = `railway.halt-${id}-${h.up ? 'up' : 'down'}-${piece}` as const;
-      prefabs.push(haltPiece(key, piece, Math.sign(h.lat), hw, half));
+      prefabs.push(piece === 'deck' ? haltDeck(key, h.row, h.up) : haltPiece(key, piece, Math.sign(h.lat), hw, half));
       placements.push({ id: key, prefab: key, pos: [0, 0, 0], params: { row: h.row, up: h.up, halt: id, piece } });
     }
   }

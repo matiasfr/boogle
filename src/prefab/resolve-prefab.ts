@@ -1,5 +1,6 @@
 // Authored headings and collider operands stay in JSON; derived values exist only in the validated runtime record.
 import type { Attach, JsonObject, PrefabDef } from './types.ts';
+import { resolveHaltDeck } from './halt-deck.ts';
 import { evaluate } from './resolve-layout.ts';
 function object(value: unknown): JsonObject {
   if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -71,6 +72,7 @@ export function resolvePrefab(record: PrefabDef): PrefabDef {
     return resolved;
   }
 
+  if (layout.kind === 'halt-deck') return resolveHaltDeck(record);
   if (layout.kind === 'colliders') {
     if (!Array.isArray(record.colliders) || record.colliders.length || !Array.isArray(layout.colliders))
       throw new Error('prefabs: collider layout requires an empty collider list and authored recipes');

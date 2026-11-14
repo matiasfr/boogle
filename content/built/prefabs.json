@@ -798,6 +798,22 @@
         }
       }
     },
+    "railway.halt-0-down-deck": {
+      "colliders": [],
+      "key": "railway.halt-0-down-deck",
+      "layout": {
+        "kind": "halt-deck",
+        "row": 0,
+        "up": false
+      },
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "deck"
+        }
+      }
+    },
     "railway.halt-0-down-mast": {
       "colliders": [],
       "key": "railway.halt-0-down-mast",
@@ -871,6 +887,22 @@
           "hw": 1.25,
           "piece": "bench",
           "sign": 1
+        }
+      }
+    },
+    "railway.halt-1-down-deck": {
+      "colliders": [],
+      "key": "railway.halt-1-down-deck",
+      "layout": {
+        "kind": "halt-deck",
+        "row": 1,
+        "up": false
+      },
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "deck"
         }
       }
     },
@@ -1047,6 +1079,22 @@
         }
       }
     },
+    "railway.halt-3-down-deck": {
+      "colliders": [],
+      "key": "railway.halt-3-down-deck",
+      "layout": {
+        "kind": "halt-deck",
+        "row": 3,
+        "up": false
+      },
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "deck"
+        }
+      }
+    },
     "railway.halt-3-down-mast": {
       "colliders": [],
       "key": "railway.halt-3-down-mast",
@@ -1176,6 +1224,22 @@
         }
       }
     },
+    "railway.halt-3-up-deck": {
+      "colliders": [],
+      "key": "railway.halt-3-up-deck",
+      "layout": {
+        "kind": "halt-deck",
+        "row": 0,
+        "up": true
+      },
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "deck"
+        }
+      }
+    },
     "railway.halt-3-up-shelter": {
       "colliders": [],
       "key": "railway.halt-3-up-shelter",
@@ -1258,6 +1322,22 @@
           "hw": 1.25,
           "piece": "bench",
           "sign": 1
+        }
+      }
+    },
+    "railway.halt-4-down-deck": {
+      "colliders": [],
+      "key": "railway.halt-4-down-deck",
+      "layout": {
+        "kind": "halt-deck",
+        "row": 4,
+        "up": false
+      },
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "deck"
         }
       }
     },
@@ -1390,6 +1470,22 @@
         }
       }
     },
+    "railway.halt-4-up-deck": {
+      "colliders": [],
+      "key": "railway.halt-4-up-deck",
+      "layout": {
+        "kind": "halt-deck",
+        "row": 1,
+        "up": true
+      },
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "deck"
+        }
+      }
+    },
     "railway.halt-4-up-shelter": {
       "colliders": [],
       "key": "railway.halt-4-up-shelter",
@@ -1472,6 +1568,22 @@
           "hw": 1.25,
           "piece": "bench",
           "sign": 1
+        }
+      }
+    },
+    "railway.halt-5-down-deck": {
+      "colliders": [],
+      "key": "railway.halt-5-down-deck",
+      "layout": {
+        "kind": "halt-deck",
+        "row": 5,
+        "up": false
+      },
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "deck"
         }
       }
     },

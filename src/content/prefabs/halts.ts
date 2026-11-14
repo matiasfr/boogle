@@ -4,7 +4,7 @@ import type { JsonObject, PrefabDef } from '../../prefab/types.ts';
 
 // Generated variants are added by the compiler, after joining the sim catalog with the view layout.
 export const prefabs: PrefabDef[] = [];
-export type HaltPiece = 'shelter' | 'bench' | 'canopy' | 'mast';
+export type HaltPiece = 'deck' | 'shelter' | 'bench' | 'canopy' | 'mast';
 export function haltPiece(key: PrefabDef['key'], piece: HaltPiece, sign: number, hw: number, half: number): PrefabDef {
   const solid = (x: Scalar, y: Scalar, z: Scalar, hx: number, hy: number, hz: number) => ({
     shape: 'box',
@@ -24,6 +24,16 @@ export function haltPiece(key: PrefabDef['key'], piece: HaltPiece, sign: number,
     visual: { builder: 'railway.halt-parts', params: { piece, sign, hw, half } },
     colliders: [],
     layout: { kind: 'colliders', colliders },
+    scope: 'owner',
+  };
+}
+
+export function haltDeck(key: PrefabDef['key'], row: number, up: boolean): PrefabDef {
+  return {
+    key,
+    visual: { builder: 'railway.halt-parts', params: { piece: 'deck' } },
+    colliders: [],
+    layout: { kind: 'halt-deck', row, up },
     scope: 'owner',
   };
 }

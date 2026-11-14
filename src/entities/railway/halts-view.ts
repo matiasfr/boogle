@@ -68,7 +68,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     import('../../place/home-station.ts'),
   ]);
   const { box, place } = boxModule,
-    { H, addStatic: staticBody, slab: staticSlab } = landModule,
+    { H, slab: staticSlab } = landModule,
     { dropSet, dustRing } = piecesModule;
   const { ORIGIN, lineAt, railY } = layout;
   // The up track's platforms and plank crossings, standing with today's halt beside each (generic-lines step 2).
@@ -86,11 +86,6 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     0.8,
     RAIL_TRAINS.map((t) => t.line),
   );
-  const addStatic = (
-    shape: Parameters<typeof staticBody>[0],
-    at: Parameters<typeof staticBody>[1],
-    q: THREE.Quaternion,
-  ) => staticBody(shape, at, q, GROUP.SCENERY, owner);
   const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number, width = 2.5) =>
     staticSlab(ax, az, bx, bz, ya, yb, width, owner, undefined, 'grass');
 
@@ -174,19 +169,6 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       ramp(H(b.x, b.z) + 0.05);
       return out;
     };
-    // The deck, in lengths, with its edge stones.
-    const lengths = deck ? Math.ceil((half * 2) / 6) : 0;
-    for (let k = 0; k < lengths; k++) {
-      const ds = -half + ((k + 0.5) * half * 2) / lengths;
-      part(0, -0.5, ds, hw * 2, 0.5, (half * 2) / lengths + 0.02, STONE);
-    }
-    // A bright edge: this is the place.
-    if (deck) for (const sl of [-1, 1]) part(sl * (hw - 0.15), -0.04, 0, 0.3, 0.05, half * 2, '#f2d36a');
-    // Under it, down to the ground; over the sea, timber piles to the sea floor like the trestle's.
-    if (deck && !overWater) part(0, ground - low, 0, hw * 2, low - 0.5 - ground, half * 2, '#9a9184');
-    else if (deck)
-      for (let ds = -half + 1; ds <= half - 1 + 1e-6; ds += (half * 2 - 2) / 3)
-        for (const dl of [-0.9, 0.9]) part(dl, ground - low, ds, 0.4, low - 0.5 - ground, 0.4, '#a2743f');
     // Local +sign x points toward the rails. Face the train from the outer edge,
     // along from the middle entrance so the rear ramp and the aisle stay clear.
     const shelter = -4.8;
@@ -292,22 +274,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
 
     let bodies: Body[] = [];
     const addBodies = () => {
-      const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-      const at = (dl: number, dy: number, ds: number) => ({
-        x: c.x + dl * cosY + ds * sinY,
-        y: low + dy,
-        z: c.z - dl * sinY + ds * cosY,
-      });
-      if (deck) bodies.push(addStatic({ kind: 'box', hx: hw, hy: 0.25, hz: half }, at(0, -0.25, 0), q));
-      if (deck && !overWater)
-        bodies.push(
-          addStatic(
-            { kind: 'box', hx: hw, hy: (low - 0.5 - ground) / 2 + 0.2, hz: half },
-            at(0, (ground - low - 0.5) / 2, 0),
-            q,
-          ),
-        );
-      for (const piece of ['shelter', 'bench', 'canopy', 'mast']) bodies.push(...kit.enable(piece));
+      for (const piece of ['deck', 'shelter', 'bench', 'canopy', 'mast']) bodies.push(...kit.enable(piece));
       for (const r of rampEnds()) bodies.push(slab(r.bx, r.bz, r.ax, r.az, r.foot, low, hw * 2));
       // A halt can arrive around someone, including a partner who did not fit the boiler. Rapier cannot
       // lift a sphere already trapped between the ground and a new ramp. Only displace actual overlaps,

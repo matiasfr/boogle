@@ -7,6 +7,21 @@
   "place": "halt-kit",
   "placements": [
     {
+      "id": "railway.halt-0-down-deck",
+      "params": {
+        "halt": 0,
+        "piece": "deck",
+        "row": 0,
+        "up": false
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "railway.halt-0-down-deck"
+    },
+    {
       "id": "railway.halt-0-down-canopy",
       "params": {
         "halt": 0,
@@ -35,6 +50,21 @@
         0
       ],
       "prefab": "railway.halt-0-down-mast"
+    },
+    {
+      "id": "railway.halt-1-down-deck",
+      "params": {
+        "halt": 1,
+        "piece": "deck",
+        "row": 1,
+        "up": false
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "railway.halt-1-down-deck"
     },
     {
       "id": "railway.halt-1-down-shelter",
@@ -97,6 +127,21 @@
       "prefab": "railway.halt-2-down-mast"
     },
     {
+      "id": "railway.halt-3-down-deck",
+      "params": {
+        "halt": 3,
+        "piece": "deck",
+        "row": 3,
+        "up": false
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "railway.halt-3-down-deck"
+    },
+    {
       "id": "railway.halt-3-down-shelter",
       "params": {
         "halt": 3,
@@ -140,6 +185,21 @@
         0
       ],
       "prefab": "railway.halt-3-down-mast"
+    },
+    {
+      "id": "railway.halt-4-down-deck",
+      "params": {
+        "halt": 4,
+        "piece": "deck",
+        "row": 4,
+        "up": false
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "railway.halt-4-down-deck"
     },
     {
       "id": "railway.halt-4-down-shelter",
@@ -187,6 +247,21 @@
       "prefab": "railway.halt-4-down-mast"
     },
     {
+      "id": "railway.halt-5-down-deck",
+      "params": {
+        "halt": 5,
+        "piece": "deck",
+        "row": 5,
+        "up": false
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "railway.halt-5-down-deck"
+    },
+    {
       "id": "railway.halt-5-down-shelter",
       "params": {
         "halt": 5,
@@ -232,6 +307,21 @@
       "prefab": "railway.halt-5-down-mast"
     },
     {
+      "id": "railway.halt-3-up-deck",
+      "params": {
+        "halt": 3,
+        "piece": "deck",
+        "row": 0,
+        "up": true
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "railway.halt-3-up-deck"
+    },
+    {
       "id": "railway.halt-3-up-shelter",
       "params": {
         "halt": 3,
@@ -260,6 +350,21 @@
         0
       ],
       "prefab": "railway.halt-3-up-bench"
+    },
+    {
+      "id": "railway.halt-4-up-deck",
+      "params": {
+        "halt": 4,
+        "piece": "deck",
+        "row": 1,
+        "up": true
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "railway.halt-4-up-deck"
     },
     {
       "id": "railway.halt-4-up-shelter",

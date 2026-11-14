@@ -8,8 +8,9 @@ declare module '../names.ts' {
   }
 }
 export function haltParts(p: JsonObject): { parts: Part[] } {
-  const { piece, sign, hw, half } = p;
-  if (typeof sign !== 'number' || typeof hw !== 'number' || typeof half !== 'number')
+  const { piece, hw, half } = p;
+  const sign = p.sign as number;
+  if ((piece !== 'deck' && typeof sign !== 'number') || typeof hw !== 'number' || typeof half !== 'number')
     throw new Error('halt kit: missing frame dimensions');
   const parts: Part[] = [];
   const part = (x: number, y: number, z: number, w: number, h: number, d: number, colour: string) =>
@@ -20,7 +21,19 @@ export function haltParts(p: JsonObject): { parts: Part[] } {
   const post = 3.2,
     shelter = -4.8,
     CANOPY = 4.6;
-  if (piece === 'shelter') {
+  if (piece === 'deck') {
+    const { ground, low, overWater } = p;
+    if (typeof ground !== 'number' || typeof low !== 'number' || typeof overWater !== 'boolean')
+      throw new Error('halt kit: missing resolved deck dimensions');
+    const lengths = Math.ceil((half * 2) / 6);
+    for (let k = 0; k < lengths; k++)
+      part(0, -0.5, -half + ((k + 0.5) * half * 2) / lengths, hw * 2, 0.5, (half * 2) / lengths + 0.02, '#bdb8ac');
+    for (const sl of [-1, 1]) part(sl * (hw - 0.15), -0.04, 0, 0.3, 0.05, half * 2, '#f2d36a');
+    if (!overWater) part(0, ground - low, 0, hw * 2, low - 0.5 - ground, half * 2, '#9a9184');
+    else
+      for (let ds = -half + 1; ds <= half - 1 + 1e-6; ds += (half * 2 - 2) / 3)
+        for (const dl of [-0.9, 0.9]) part(dl, ground - low, ds, 0.4, low - 0.5 - ground, 0.4, '#a2743f');
+  } else if (piece === 'shelter') {
     for (const ds of [-3, 3]) part(-sign * 0.95, 0, shelter + ds, 0.22, post, 0.22, POST);
     part(-sign * 0.4, post, shelter, 2.4, 0.16, 8, WOOD);
     part(-sign * 0.4, post + 0.16, shelter, 2.7, 0.14, 8.4, ROOF);

@@ -1097,10 +1097,10 @@ Home hall's board) in `src/entities/railway/island-boards.ts`: every face is a 3
 rings are two instanced quad meshes over the faces, so a moving train never redraws a texture. One draw per display
 in view plus two for all the markers and rings. Local over accepted train state. Not tested on a device.
 
-The shelter, bench, island canopy/posts and signal mast now come from compiled halt-kit records. The compiler
+The decks/bases/piles, shelter, bench, island canopy/posts and signal mast now come from compiled halt-kit records. The compiler
 joins the unchanged halt catalog and platform layout; the existing platform frame, piece reveal order, merged
-draws and collider order remain. Decks, terrain ramps, request levers/plaques and board stands still use their
-existing builders ([prefab step 10](../plans/prefab-data-step-10-report.md)); no halt or interaction moves.
+draws and collider order remain. Terrain ramps, request levers/plaques and board stands still use their
+existing builders ([prefab step 10 follow-up](../plans/prefab-data-step-10-2-report.md)); no halt or interaction moves.
 
 **Signs at the stations and racks** (owner, 9 November: signs in the world before hovering text; the second pass after
 the halts). The station bills, the depot rack's stock count, the rails shelf's count and the cart's service tag were

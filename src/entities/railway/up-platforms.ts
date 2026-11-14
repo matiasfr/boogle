@@ -6,7 +6,6 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Body } from '../../physics/engine.ts';
-import { GROUP } from '../../physics/physics.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { createHaltKit } from './halt-kit.ts';
 
@@ -19,8 +18,6 @@ type Deps = {
 };
 
 const STONE = '#bdb8ac',
-  BASE = '#9a9184',
-  EDGE = '#f2d36a',
   PLANK = '#a97a45';
 
 export function createUpPlatforms(owner: OwnedView, deps: Deps) {
@@ -54,45 +51,21 @@ export function createUpPlatforms(owner: OwnedView, deps: Deps) {
     // stones, a shelter with a bench at its back edge, ramps off its ends and back.
     const hw = 1.25,
       mid = (h.s0 + h.s1) / 2,
-      half = (h.s1 - h.s0) / 2,
       sign = Math.sign(h.lat),
       low = Math.min(railY(line, h.s0), railY(line, h.s1)) + 0.72;
     lineAt(line, mid, P);
     const yaw = Math.atan2(P.ux, P.uz);
     const c = at(line, mid, h.lat);
-    const ground = land.H(c.x, c.z);
     const part = (dl: number, dy: number, ds: number, w: number, hh: number, d: number, color: string) => {
       const b = box(c.x, c.z, place(dl, dy, ds, w, hh, d, yaw), color);
       b.y = low;
       piece(b);
     };
-    const lengths = Math.ceil((half * 2) / 6);
-    for (let k = 0; k < lengths; k++)
-      part(0, -0.5, -half + ((k + 0.5) * half * 2) / lengths, hw * 2, 0.5, (half * 2) / lengths + 0.02, STONE);
-    for (const sl of [-1, 1]) part(sl * (hw - 0.15), -0.04, 0, 0.3, 0.05, half * 2, EDGE);
-    part(0, ground - low, 0, hw * 2, low - 0.5 - ground, half * 2, BASE);
     const kit = createHaltKit(owner, row, true, c.x, low, c.z, yaw);
     g.kit = kit;
     for (const [, x, y, z, w, h, d, colour] of kit.parts) part(x, y - h / 2, z, w, h, d, colour);
-    const cosY = Math.cos(yaw),
-      sinY = Math.sin(yaw);
-    const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-    const local = (dl: number, dy: number, ds: number) => ({
-      x: c.x + dl * cosY + ds * sinY,
-      y: low + dy,
-      z: c.z - dl * sinY + ds * cosY,
-    });
     g.solids.push(
-      () => [land.addStatic({ kind: 'box', hx: hw, hy: 0.25, hz: half }, local(0, -0.25, 0), q, GROUP.SCENERY, owner)],
-      () => [
-        land.addStatic(
-          { kind: 'box', hx: hw, hy: (low - 0.5 - ground) / 2 + 0.2, hz: half },
-          local(0, (ground - low - 0.5) / 2, 0),
-          q,
-          GROUP.SCENERY,
-          owner,
-        ),
-      ],
+      () => kit.enable('deck'),
       () => kit.enable('bench'),
       () => kit.enable('shelter'),
     );
