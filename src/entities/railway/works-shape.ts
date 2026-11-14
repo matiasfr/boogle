@@ -158,10 +158,27 @@ export const RAIL_HEAD = 0.235;
  * they were in the frame (the wagon's 0.475, what stands on it unchanged), so the wagon's deck stays level with the
  * train's (railY + 0.5, ./cars.ts) that it couples to; the wheels and slabs are shallower, to clear the rails. */
 export const SHUNT = (() => {
-  const wagon = { wheel: { y: 0.3425, h: 0.265 }, body: { y: 0.3975, h: 0.155 } },
-    shunter = { wheel: { y: 0.36, h: 0.3 }, body: { y: 0.46, h: 0.28 } };
-  return { gauge: 0.5, wagon, shunter, ride: RAIL_HEAD - (wagon.wheel.y - wagon.wheel.h / 2) };
+  // `z` is each wheel's place along the frame (and its mirror), `d` a block's or slab's length along it.
+  const wagon = { wheel: { y: 0.3425, h: 0.265, z: 1, d: 0.5 }, body: { y: 0.3975, h: 0.155, d: 3.2 } },
+    shunter = { wheel: { y: 0.36, h: 0.3, z: 1, d: 0.55 }, body: { y: 0.46, h: 0.28, d: 3.4 } };
+  return { gauge: 0.5, bogie: 1, wagon, shunter, ride: RAIL_HEAD - (wagon.wheel.y - wagon.wheel.h / 2) };
 })();
+type RailPoint = { x: number; y: number; z: number };
+/** A shunt vehicle's frame from its two bogie points on the track (`SHUNT.bogie` either side of its middle, each at
+ * the track's rail height there), as the trains are posed on a chord: midway between them, heading and pitched along
+ * them, riding `SHUNT.ride` over, so every wheel stands on its rail head on a ramp as on the level. `pitch` lifts the
+ * front. */
+export function shuntPose(front: RailPoint, rear: RailPoint) {
+  const dx = front.x - rear.x,
+    dz = front.z - rear.z;
+  return {
+    x: (front.x + rear.x) / 2,
+    y: (front.y + rear.y) / 2 + SHUNT.ride,
+    z: (front.z + rear.z) / 2,
+    yaw: Math.atan2(dx, dz),
+    pitch: Math.atan2(front.y - rear.y, Math.hypot(dx, dz) || 1),
+  };
+}
 /** A stall road's rail height `l` metres out from the table's rim, whose rail height is `deck`: the ramp down to the
  * door, then level. */
 export function stallRoadY(l: number, deck: number) {

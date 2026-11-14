@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { H } from '../src/place/terrain.ts';
 import { LINES, ORIGIN, railY } from '../src/place/layout.ts';
 import { BUFFERS, STALLS, TABLE, roadAt, spurPoints, stallFrame } from '../src/place/home-station.ts';
-import { RAIL_HEAD, SHUNT, STALL_RAIL, stallRoadY } from '../src/entities/railway/works-shape.ts';
+import { RAIL_HEAD, SHUNT, STALL_RAIL, shuntPose, stallRoadY } from '../src/entities/railway/works-shape.ts';
 import { garageRow, mastFrom, polarAt } from '../src/entities/railway/garage-geo.ts';
 import { MOMENT } from '../src/entities/railway/garage-data.ts';
 import { ENGINE_BOILER } from '../src/entities/railway/engine.ts';
@@ -78,6 +78,57 @@ test('the shunter and the wagon stand on the rail heads, clear of the ground and
   }
   // The wheels are on the rails: the lines' gauge, a metre between the rails.
   assert.equal(SHUNT.gauge, 0.5);
+});
+
+test('on the stall road each wheel stands on the rail head under it: off the deck, down the ramp, into the stall', () => {
+  // The stall road as one straight track, `l` metres out from the rim (the deck is level before it), the vehicle
+  // posed from its two bogie points as the view poses it (shuntPose), its front toward the table.
+  const stall = stallFrame(STALLS.open);
+  const rail = (l: number) => (l <= 0 ? deck : stallRoadY(l, deck));
+  const yard = (l: number) => ground({ x: stall.rim.x + stall.u.x * l, z: stall.rim.z + stall.u.z * l });
+  const end = STALLS.door + STALLS.depth - TABLE.r;
+  let steepest = 0;
+  for (const [name, v] of [
+    ['wagon', SHUNT.wagon],
+    ['shunter', SHUNT.shunter],
+  ] as const)
+    for (let l = -3; l <= end - 2; l += 0.05) {
+      const pose = shuntPose(
+        { x: 0, y: rail(l - SHUNT.bogie), z: -(l - SHUNT.bogie) },
+        { x: 0, y: rail(l + SHUNT.bogie), z: -(l + SHUNT.bogie) },
+      );
+      steepest = Math.max(steepest, Math.abs(pose.pitch));
+      /** A point of the vehicle's frame (up `ly`, ahead `lz`) on the track: how far out it is and how high. */
+      const at = (ly: number, lz: number) => ({
+        l: -(pose.z + lz * Math.cos(pose.pitch) - ly * Math.sin(pose.pitch)),
+        y: pose.y + ly * Math.cos(pose.pitch) + lz * Math.sin(pose.pitch),
+      });
+      const where = `${name} at ${l.toFixed(2)} m`;
+      for (const side of [-1, 1]) {
+        // Each wheel block's bottom against the rail head under that point: on it at the block's middle (within a
+        // centimetre), and at its two ends no further in
+        // than a flat block half a metre long must be where the grade breaks (6.5% over a quarter metre).
+        for (const dz of [-v.wheel.d / 2, 0, v.wheel.d / 2]) {
+          const p = at(v.wheel.y - v.wheel.h / 2, side * v.wheel.z + dz),
+            gap = p.y - (rail(p.l) + RAIL_HEAD);
+          assert.ok(
+            gap > (dz ? -0.02 : -0.01) && gap < 0.03,
+            `${where}: wheel ${side} is ${gap.toFixed(3)} m over its rail head`,
+          );
+        }
+        // The slab's underside, at its middle and its ends, clear of the rail heads and the yard.
+        for (const lz of [0, (side * v.body.d) / 2]) {
+          const p = at(v.body.y - v.body.h / 2, lz);
+          assert.ok(
+            p.y - (rail(p.l) + RAIL_HEAD) > 0.05,
+            `${where}: slab ${(p.y - rail(p.l) - RAIL_HEAD).toFixed(3)} m over the rails`,
+          );
+          if (p.l > 0) assert.ok(p.y - yard(p.l) > 0.25, `${where}: slab near the ground`);
+        }
+      }
+    }
+  // The ramp is a real grade (the test would pass on a level road without it).
+  assert.ok(steepest > 0.05, `the vehicles pitch ${steepest.toFixed(3)} rad on the ramp`);
 });
 
 test("the jib's arm stays over a part held up for the server's answer, with the jib on the yard's ground", () => {

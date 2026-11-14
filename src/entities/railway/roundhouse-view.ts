@@ -25,6 +25,7 @@ import {
   STALL_ROAD,
   STALL_RAIL,
   SHUNT,
+  shuntPose,
   STALL_SOCKETS,
   STALL_YAW,
   stallPoint,
@@ -230,7 +231,7 @@ export async function createRailwayRoundhouse(
   const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
   const turnBy = wrap(hOut - hIn);
   /** Half the bogie spacing of the wagon and the shunter (their wheels sit at z ±1). */
-  const BOGIE = 1;
+  const BOGIE = SHUNT.bogie;
   let deckK: number | null = null;
   /** The point `c` metres ahead of the wagon's centre along the pair (its bogies ±1; the shunter's centre
    * `PARK.gap` behind) when the wagon's distance is `a`. Up to its seat on the deck the pair is on the stall road or
@@ -415,15 +416,16 @@ export async function createRailwayRoundhouse(
       c = shunter ? -PARK.gap : 0;
     pairAt(wagon, c + BOGIE, front);
     pairAt(wagon, c - BOGIE, rear);
-    p.addVectors(front, rear).multiplyScalar(0.5);
-    // The path is the track's rail height: the frame rides over it so the wheels stand on the rail heads.
-    p.y += SHUNT.ride;
-    return out.compose(p, q.setFromEuler(e.set(0, headingOf(rear, front), 0)), s.set(1, 1, 1));
+    // The path is the track's rail height: the frame rides over it, pitched along its two bogies, so the wheels stand
+    // on the rail heads on the stall road's ramp too.
+    const pose = shuntPose(front, rear);
+    return out.compose(p.set(pose.x, pose.y, pose.z), q.setFromEuler(e.set(-pose.pitch, pose.yaw, 0)), s.set(1, 1, 1));
   }
   function drawWagon(frame: THREE.Matrix4) {
-    batch.part(frame, 0, SHUNT.wagon.body.y, 0, 2.2, SHUNT.wagon.body.h, 3.2, '#77766b');
+    batch.part(frame, 0, SHUNT.wagon.body.y, 0, 2.2, SHUNT.wagon.body.h, SHUNT.wagon.body.d, '#77766b');
     for (const x of [-SHUNT.gauge, SHUNT.gauge])
-      for (const z of [-1, 1]) batch.part(frame, x, SHUNT.wagon.wheel.y, z, 0.25, SHUNT.wagon.wheel.h, 0.5, '#3a3c3c');
+      for (const z of [-SHUNT.wagon.wheel.z, SHUNT.wagon.wheel.z])
+        batch.part(frame, x, SHUNT.wagon.wheel.y, z, 0.25, SHUNT.wagon.wheel.h, SHUNT.wagon.wheel.d, '#3a3c3c');
     const fitted = shed(wd).fitted >= 0;
     // Cradle: two footing seats on the deck and eight arms that hold the footings upright.
     const seats = Math.min(2, shed(wd).cradle);
@@ -449,15 +451,15 @@ export async function createRailwayRoundhouse(
     if (fitted) for (const x of [-0.95, 0.95]) batch.part(frame, x, 1.62, 0, 0.12, 0.12, 2.9, BRASS);
   }
   function drawShunter(frame: THREE.Matrix4) {
-    batch.part(frame, 0, SHUNT.shunter.body.y, 0, 2.2, SHUNT.shunter.body.h, 3.4, '#4e5352');
+    batch.part(frame, 0, SHUNT.shunter.body.y, 0, 2.2, SHUNT.shunter.body.h, SHUNT.shunter.body.d, '#4e5352');
     // The cab at the back; boiler, chimney and buffer beam forward, toward the wagon it pushes.
     batch.part(frame, 0, 1.75, -1.0, 2, 2.3, 1.4, '#87968b');
     batch.part(frame, 0, 3.0, -1.0, 2.2, 0.16, 1.7, '#4e5352');
     batch.part(frame, 0, 2.15, 1.25, 0.32, 0.8, 0.32, '#3c3f3e');
     batch.part(frame, 0, 0.55, 1.8, 2.3, 0.3, 0.2, '#a33a2c');
     for (const x of [-SHUNT.gauge, SHUNT.gauge])
-      for (const z of [-1.1, 1.1])
-        batch.part(frame, x, SHUNT.shunter.wheel.y, z, 0.25, SHUNT.shunter.wheel.h, 0.55, '#2f3131');
+      for (const z of [-SHUNT.shunter.wheel.z, SHUNT.shunter.wheel.z])
+        batch.part(frame, x, SHUNT.shunter.wheel.y, z, 0.25, SHUNT.shunter.wheel.h, SHUNT.shunter.wheel.d, '#2f3131');
     f.multiplyMatrices(frame, m.makeTranslation(0, 1.35, 0.45));
     boiler.matrixAutoUpdate = false;
     boiler.matrix.copy(f);
