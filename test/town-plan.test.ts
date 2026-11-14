@@ -324,7 +324,7 @@ test('the ground under the Round footprints and their 3 m aprons is level', () =
         const door = townLocal(room, 0, room.d / 2);
         return Math.hypot(cellX(i) - door.x, cellZ(j) - door.z) <= 3;
       });
-      const lift = threshold && heights[at(i, j)]! > 18 ? ROOM_FLOOR : 0.05;
+      const lift = threshold && r > TOWN_RING.outer && heights[at(i, j)]! > 18 ? ROOM_FLOOR : 0.05;
       near(heights[at(i, j)]!, 18, hall ? 0.25 : lift, `Round ${cellX(i)},${cellZ(j)}`);
       if (r <= TOWN_RING.outer) assert.ok(pathMask[at(i, j)]! >= 0.99, 'the ring is painted');
     }
