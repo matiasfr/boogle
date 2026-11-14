@@ -187,6 +187,10 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   test holds those. `ringview=rim` retaken: five rocks stand in a row along the edge either side of the bridge, so
   the line of the rim now reads; the drop itself still cannot be seen from there. The walk still reaches the lookout
   (393.1 m in 73.1 s, `swamFrames` 0, `longestAirS` 0.1). Not tested on a device.
+  **Review fix (P2):** the rocks' boxes stood up to 0.16 m outside the drawn stones at their corners. Each box is now
+  inscribed in its stone (`summitRimRockShape`: the dodecahedron's inner cube, scaled as the stone), and a test holds
+  every collider corner inside the drawn faces. The stone's edges overhang the box, so a player can brush through
+  the outer 0.2 m or so of a rock and stands about 0.1 m into its top.
 - [ ] **3. The witness and the stills.** In `dev/look/evals/ring-island-walk.ts` import `summitPath` from
   `/src/entities/ring-island/path.ts` for `way` (its last two points, the lookout ramp's foot and the deck, stay the
   eval's own), add `bridge` and `cut` to `VIEWS` and to the `ringview` branch, and add `bridge: { onDeck, y }` to the

@@ -33,7 +33,7 @@ import {
   type RingLanding,
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
-import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot, summitRimRocks } from './path.ts';
+import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot, summitRimRockShape, summitRimRocks } from './path.ts';
 import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks, ringIslandPose } from './state.ts';
 import { addFarGround } from '../../place/far-ground.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
@@ -685,14 +685,16 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   // The cutting's summit-side rim, marked: a sparse line of pale rocks 1.5 m behind the edge where the path runs near
   // it, because from uphill the rim is a convex edge that hides the drop. Low enough to step round or hop, and solid.
   for (const r of summitRimRocks(g, centre)) {
-    const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw),
-      c = new THREE.Vector3(r.x, r.y + r.h * 0.3, r.z);
+    const { radius, lift, drawn, box } = summitRimRockShape(r),
+      q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw),
+      c = new THREE.Vector3(r.x, r.y + lift, r.z);
     parts.add(
       STONE,
-      new THREE.DodecahedronGeometry(0.62),
-      new THREE.Matrix4().compose(c, q, new THREE.Vector3(r.w, r.h, r.w * 0.8)),
+      new THREE.DodecahedronGeometry(radius),
+      new THREE.Matrix4().compose(c, q, new THREE.Vector3(drawn.x, drawn.y, drawn.z)),
     );
-    parts.solid(r.w * 0.9, r.h, r.w * 0.72, new THREE.Matrix4().compose(c, q, new THREE.Vector3(1, 1, 1)));
+    // The box is inscribed in the drawn stone (test/ring-island-path.test.ts): nothing solid stands outside it.
+    parts.solid(box.x, box.y, box.z, new THREE.Matrix4().compose(c, q, new THREE.Vector3(1, 1, 1)));
   }
   const summit = g.islandH(CX, CZ) + 0.3;
   {
