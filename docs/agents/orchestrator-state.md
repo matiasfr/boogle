@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 14 November 09:45 UTC (01:45 PST), after the owner's solo playtest of the whole built route. Main is `4a5d2b9ff` (#1785), world v44, CI, deploy and smoke green on it. Mode: withCodex. Older "Updated" text: the 12–13 November session ran from 11:50 PST on 12 November.
+**Updated:** 14 November 2026 about 17:30 UTC (09:30 PST), after the owner's whole-route playtest and the fixes below. Local `origin/main` is `c6c64cfb6` (#1811); world v44 remains shipped. The shared v45 reset is not shipped and needs the owner's go-ahead, never mid-session. Mode: withCodex. CI, deploy and smoke were not refreshed for this snapshot.
 
 ## Links
 
@@ -17,117 +17,57 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 ## Where the work stands
 
-**Status at 14 November 09:45 UTC (read this first; the 03:30 block below is older).** Mode: withCodex. `WORLD_NS` is **v44** and the live game runs it. **v45 is planned as one shared bump** for the Roundhouse rotunda, right-hand running, the train ladder and the great tree's move (footings option B and the turnouts would join it if chosen); nothing has taken it. Main is at #1785 (`4a5d2b9ff`).
+**Status at 14 November about 17:30 UTC (read this first).** Main is `c6c64cfb6` (#1811), `WORLD_NS` **v44**. **v45 is one shared reset, not shipped.** The Round blockout is ready for the owner's walk. HOTBOX has been down since 12 November.
 
-*On main since the 03:30 block, newest last:*
+*On main on 14 November after the playtest, newest last.* Each code change below had an independent Codex Astra review, two to five rounds (orchestrator's handoff). Numbers and titles below were checked against local `git log origin/main`; the descriptions say what each batch did, rather than treating its last fix's title as the whole batch.
 
-- Server-owned players ([plan](../plans/server-owned-players.md)): **complete.** Step 7 The Boogler's reactions as server commands #1759 (v43); step 8 the client lead removed #1762 (v44; [report, with the owner's wording drafts](../plans/server-owned-players-step8-report.md)). #1764 split the server host's closure into parts and uses one world interface in hosted rooms.
-- Prefab data ([plan](../plans/prefab-data.md)): **steps 1 to 10 done** (9b to 9f rooms, curio shelf, museum, town shells #1760, #1761, #1765; step 10 halts and stations #1766, #1772). The catalogue is consolidated (#1781) and its unmeasured ceilings are removed (#1784, owner call "No limits ahead of a measured problem"). Steps 11 to 13 remain.
-- Home: interiors draw by one 48 m radius from the door #1769; town plan sheets drawn from layout data #1768 (how the Round is judged from above); the Round is built blockout first, with its design review #1770; the curio shelf beside the finders' bay and five hall posts #1771, #1778.
-- Railway fixes from the playtest: Far Head's shot plays for a seated rider #1782; seated Request stop, the cab roof only when inside, vehicles standing apart on bends #1783.
-- Plans from the playtest (design only, nothing built): [turnouts](../plans/turnouts.md) #1773, [roundhouse-rotunda](../plans/roundhouse-rotunda.md) #1774 with design review #1775, [level-pacing-1114](../plans/level-pacing-1114.md) #1776, [train-progression](../plans/train-progression.md) #1777, [running-side](../plans/running-side.md) #1779, [footings-signalling](../plans/footings-signalling.md) #1780, [gap-readability](../plans/gap-readability.md) #1785.
-- Owner calls recorded on 14 November ([owner-calls](owner-calls.md)): don't over-engineer against attackers; place for the look, not the cost, and terrain may change; block out spacing first, details later; the Roundhouse is a real rotunda; no limits ahead of a measured problem.
+- **#1791 — Regenerate the rail map after the rebase onto #1789 (+5 more).** Forge fixes.
+- **#1792 — Terrain pass: keep catalogued placements, report both maxima, cap rock a body can touch (+5 more).** Terrain pass default on Home.
+- **#1793 — One source for the stall ramp, the shunt's path and the yard's rails (+10 more).** Roundhouse yard tidy.
+- **#1794 — Garage selection: dispose the ghost car with the view; a wagon under the cradle; Looks and Whistle hold still (+2 more).** Garage without try-on.
+- **#1795 — Return: keep the train's destination through landing dedupe; closed stack heads do not stand (+8 more).** Reload where you were.
+- **#1796 — Record the Round rebase resolution and fresh visual proof (+10 more).** The Round B1 and B2.
+- **#1797 — The take-off board, windsock and landing cloth; the empty railhead rack's tag; docs and loop cues (+3 more).** Gap cues without the traveller: hook ring, take-off board, windsock, landing cloth and rack tag.
+- **#1798 — Commuters wake beyond their draw radius, so nobody is seen to jump (+8 more).** Track layer retimed; commuters step off for trains.
+- **#1799 — A frame stood back up for a friend after a load is drawn only (+14 more).** Honest prompts; construction frames fold.
+- **#1800 — The Round B3: the little guys walk round the footing and the blocks (+1 more).** The Round B3: eight plot blocks and the clock footing.
+- **#1801 — Docs and loop graph: the footings boards and the map mark (+2 more).** Footings signalling steps 3 to 5: Works rack board, pier bill and map mark.
+- **#1802 — Turnouts plan: step 1 ticked with its departures and what the other junctions still need (+1 more).** Engine spur turnout J1, turnouts step 1.
+- **#1803 — Record B4 measurements and remaining proof gaps (+1 more).** B4 checkpoint report and town plan sheet (docs).
+- **#1804 — Round B4: the designer's ruling on the level findings.** Designer B4 ruling (docs).
+- **#1805 — Round blockout: the door mat stays 1.6 m wide (+1 more).** Block shadows and darker door mats.
+- **#1806 — Round B4: the network suite passes outside the runner sandbox (+1 more).** B4 owed runs, including the network suite 190/190 outside the Codex sandbox (docs).
+- **#1807 — Share town plan point formatting (+2 more).** Simplify pass 3; range reviewed through `12ba8f7ba`, the last pass end.
+- **#1808 — Plan: name the ring bot's seed for the bents proof (+1 more).** Railhead traveller plan (docs); also names the ring bot's seed for the bents proof.
+- **#1809 — Ring summit path: design review (+1 more).** Ring Island summit path plan and design review (docs).
+- **#1810 — Preserve exact railhead poses across integer replan stamps (+1 more).** Traveller step 1: pure haul helpers in `src/sim/railway-ring-haul.ts`, no live callers.
+- **#1811 — Extract the summit path and report its severed leg.** Summit path step 1: path as data, no visible change.
 
-*The playtest is done.* The owner played the whole built route alone, wake to High Gorge's barrier and the powered pick, 08:07 to 09:35 UTC on an iPad with a keyboard: about 63 minutes played across thirteen page loads. 54 notes are ranked in [the tracker](../plans/round-4-notes.md#owner-solo-session-14-november-ipad-with-a-keyboard-the-whole-built-route-ranked) (10 P1, 25 P2, 19 P3); the [log](../playtests.md#2026-11-14-owner-solo-the-whole-built-route-wake-to-high-gorge-and-the-powered-pick) has the timeline. Nothing fixed today has been replayed by him, and nothing was tested on a second device.
+*The playtest is done.* The owner played the whole built route alone, wake to High Gorge's barrier and the powered pick, 08:07 to 09:35 UTC on an iPad with a keyboard: about 63 minutes played across thirteen page loads. The 54 ranked notes and timeline remain in [the tracker](../plans/round-4-notes.md#owner-solo-session-14-november-ipad-with-a-keyboard-the-whole-built-route-ranked) and [playtests](../playtests.md#2026-11-14-owner-solo-the-whole-built-route-wake-to-high-gorge-and-the-powered-pick). That play predates these fixes; it is not their device proof. Owner stills are under `.look/owner/`: `terrain-pass-1114`, `round-b1b2`, `round-b3`, `round-b4`, `footings-cues`, `turnout-j1`.
 
-*In work at 09:40 UTC (as the orchestrator reported it; check `npm run heartbeat` and `npm run inflight` before trusting any line):*
+*In work at about 17:30 UTC (the handoff, not a live agent poll):*
 
-- In independent review: the yard track tidy (`review-roundhouse-tidy`, 6 commits ahead; also removes the dark rectangles by the table).
-- In proof: the Round's blockout B1 (`codex/round-blockout-b1-2`). Its Codex run showed STALLED for 38 minutes in the 09:38 heartbeat: find it, rerun its check alone, tell its agent.
-- P1 in work: the kiln's prompt (set amounts of each); the cue after "the crossing has begun" (Station 7's frame); the cradle's bill and cues (footings signalling option A).
-- P2 in work: the terrain pass on all of Home's ground and trails that read as paths; the forge (fire, bench, rails through both lines); little guys on the track while trains pass; the request levers' steps and the lever beside the footing deposit; the Quarry bend's easing and the drawbar; the garage with no try-on, install when the resources are there, and a visual change when browsing wagons; the railhead's construction animation; the hook ring as the line home; the track through Ring Island's rock wall; a proper passenger car; the great tree's blocked prompt; the pinnacle's seal; the rack's tag numbers; finished frames packing up.
-- P3 in work: little guys walking backwards; the track layer's speed on the second track.
-- Being written: the plan for a reload returning you to where you were (P1).
+- **Rotunda step 1a:** local `codex/rotunda-1a-2`, tip `0e1a87f7f`; two reviews, ready to combine, network suite 190/190. Bumps `WORLD_NS` to v45; **not shipped**. A Claude implementer is building step 1b, the blockout, on top. [Plan](../plans/roundhouse-rotunda.md).
+- **Summit path step 2:** a Claude implementer is building the 28 m footbridge. Step 1 is on main; the bridge is not. [Plan](../plans/ring-summit-path.md).
 
-*Next:* the P1s not yet dispatched (below, under Leftovers, 14 November); the owner's five tap questions, which unblock v45; the independent reviews owed for #1771, #1782, #1783 and #1784; prefab steps 11 to 13; Home flip R1 to R3 after the blockout's proof. Parked by the owner: the Becsy migration.
+*Parked:* the moving railhead traveller's view-side implementation, local `worktree-agent-af55e2f2172764ff8` and local tag `archive/worktree/railhead-traveller` (both `9b9845fbb`). Superseded by [railhead-traveller](../plans/railhead-traveller.md). Its step 1 helpers are on main without live callers; step 2 moves row fields `moved` and `from` and needs v45.
 
-*Of the 03:30 block's lists, still open:* the structural problems (2) to (4) (operator room mutation twice; "built" prefab artifacts not expanded; check (3), stale transport wording, against #1762's tooling and doc commits) and every 03:30 leftover except the Sit before Request stop item, which #1783 answers.
+**The shared v45 reset — one bump, owner's go-ahead, never mid-session.** Combine rotunda 1a and 1b and traveller step 2. Still to build for it: [running-side](../plans/running-side.md) steps 3 to 6; [the train ladder](../plans/train-progression.md); [the great tree move and kit loading from the leaf](../plans/level-pacing-1114.md); the railhead rack move. No part of that combined reset is shipped.
 
-**Status at 14 November 03:30 UTC (older; superseded where the 09:45 block above differs).** Mode: withCodex. `WORLD_NS` is v42; v43 is taken by a branch in review (The Boogler's reactions); next free v44. Main is at #1757. The live game runs v42.
+*Ready for the owner:* walk the Round blockout; the three [home-flip](../plans/home-flip.md) questions are the rooftop run to the balcony gift until D4 (recommended yes), the south-east street (keep as built) and plot 8 (leave it). Other questions are below; each proceeds on its recommendation.
 
-*On main since the 18:45 block, newest last:*
+*Earlier work still relevant:* server-owned players is complete through removal of the client lead (v44). Prefab data steps 1 to 10 are done; 11 to 13 remain. Becsy is parked by the owner. The earlier simplify candidates still need checking against current code before dispatch: duplicate operator room mutation, stale transport wording in tooling and binding instructions (owner's wording), and unexpanded built prefab artifacts. Two-device join, reconnect and restart proof is still owed. Earlier ranked leftovers remain below unless today's results supersede them.
 
-- Prefab data: step 5 lint rules #1741 (eight review rounds; the design is an importer COUNT ratchet per construction export plus a capability-specifier guard; a stricter taint design was rejected for blocking ordinary code); step 6 High Gorge massing #1743; step 8 stools and train bench #1750; step 7 leg 2 #1753; step 9 first part (workshop kit and shop, plus a sign and interaction lint rule). Rule since step 7: committed prefab artifacts hold AUTHORED operands only (degrees, positions as written) and transcendental math runs at load, because sine-derived numbers differed in the last digit between macOS arm64 and CI's Linux x64 ([portability](../plans/prefab-data-step-7-portability.md)); goldens of runtime values compare within a tolerance.
-- Server-owned players ([plan](../plans/server-owned-players.md), with design review): step 1 shadow seats #1738; step 2 seats server-owned #1744 (v41); steps 3–4 Boogler land bake and headless brain #1747; step 5 server shadow brain #1749; step 6 The Boogler server-driven #1755 (v42; legs replicated, pose computed per client, held still while offline, placed exactly on return from a hidden tab).
-- Room fast-forward ([plan](../plans/room-fast-forward.md)): server side #1748, Dev dock control and countdown (60fcb9b26). Off on production until `ADVANCE_KEY` (32+ random characters) is set there; `server/fly.toml` enables the Fly client-address trust flag.
-- Server: every rate limit and quota resolves the real client address behind Fly #1752.
-- Simplify pass 2 #1757 (**last pass ends at 00050e64c**; covered server-owned state, the server, the prefab runtime and lint tooling, retirement debris; it did not cover The Boogler's code, the room-replace client or town-room files).
-- Owner calls recorded: #1740 (small rulings are the orchestrator's; Becsy over a Rust core), then "Becsy later" and "the dev key holder may replace any room", #1745 (clean up worktrees diligently), "Don't over-engineer against attackers". CI: the long unit job is green again (#1739 fixed a fuzz helper).
+Prefab portability still matters: committed artifacts hold authored operands only; transcendental math runs at load, because macOS arm64 and Linux x64 differed in the last digit. Runtime goldens compare within a tolerance ([record](../plans/prefab-data-step-7-portability.md)). Room fast-forward remains off on production until `ADVANCE_KEY` is set there; its Dev dock control and countdown are on main.
 
-*In flight (Codex):* The Boogler's present and puff reactions as server commands, v43, reviewed with no regression, rebasing as `codex/server-players-step-7-2`; prefab step 9 second sitting (rooms, curio shelf, museum) as `codex/prefab-data-step-9b`.
+**Open owner questions** (each proceeding as stated): today's recommendations are under "Open owner questions" below. Earlier calls not settled by this handoff stay open:
 
-*Next:* server-owned players step 8 (delete `addHostField` and the lead; the DESIGN.md sync-table text is the owner's to commit then, with the Host row gone); prefab step 10 (halts and stations), then 11–13; Home flip R1–R3; the pre-playtest list (terrain on Home, Sit before Request stop, small fixes, playtest guide). Parked by the owner: the Becsy migration.
+- Leg 1 shipped under the 1,600 cap (agent call 109): keep it, or revisit train spacing. The earlier 48-seed settled worst was 1,553 heavy and 1,535 light; the 1,400 gate held on four seeds only. Candidate A added waits on main's stages; candidate B helped light asks only. The short turn still needs its own plan; preserve the `scratch/spacing-*` sheets and record the results in the spacing plan.
+- After the rivet, should the footing wagon's train stop for stone (call 108)? The earlier measurement was 2,884 ticks between loads because its train never takes stone.
+- Does the shared pool replace halt yards for upgrades, or cover only goods carried to a hub ([entry](../decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool))?
+- Maps compress the leg to about 30% of its true length; Home shrinks after the rivet and names have leaders. His call on that trade.
+- Suspect copy still his: "It runs faster and pulls one more car", "Look at the engine", "Railhead" beside "Stack railhead", and the leg labels. The fourth car is now built; the old "no fourth car yet" note is superseded.
 
-*Structural problems the simplify pass named and left (candidates for the next cleanup, ranked):* (1) `createRailwayWorldHost` is a ~470-line closure owning away credit, supply pulses, carry graces, command durability, Boogler wiring and stats; (2) operator room mutation exists twice (`admin.ts` reset/restore and `replace.ts`/`replacements.ts`); (3) tooling and agent docs still model the deleted transport: `dev/lint/policy.ts` and `dev/scan/read.ts` mention `registerOp`/`submitEdit`/`onApplied`, and so do `server/AGENTS.md:6`, `src/features/AGENTS.md`, `src/entities/AGENTS.md`, `.claude/rules/state-consumers.md`, `.claude/agents/planner.md`, root `AGENTS.md:3` ("hosts lockstep rooms"), `docs/agents/safety-audit.md`, `docs/game-design/multiplayer.md` §8.4 (binding instructions: the owner sets the wording; the orchestrator can draft); (4) "built" prefab artifacts are not expanded (`gorge.json` ships as a recipe the browser evaluates on load); (5) the non-railway `createWorldHost` is a vestige.
-
-*Leftovers added since 18:45 (ranked):*
-
-- P2: Checkpoint B of the server-state plan and Checkpoint S/B/C of the players plan still owe a two-device play (join, reconnect, server restart). Nothing in this session was tested on a device.
-- P3 (owner call "Don't over-engineer against attackers": logged, not fixed): equivalent address spellings (IPv4 and IPv4-mapped IPv6) get separate rate budgets; an operator sharing an address with a flooder is throttled; the client-address fix assumes Fly's edge overwrites `Fly-Client-IP`.
-- P3, The Boogler: opening Talk on him while a friend rides shows him up to 86 cm behind the rider for about 1.5 s on the talker's screen; a friend sees a rider drawn about 30 cm further back on him than before; a real backgrounded tab (not the emulated one) is untested.
-- P3: the guard test against derived-looking numbers in prefab artifacts rejects thirds and float sums and can miss a short derived value; a tiny scale change on leg 2's rim can trip the six-metre clearance rule.
-- P3: on a passenger car "Request stop" takes the interact prompt before "Sit" (the Sit before Request stop item); the Dev dock's Room tab clips "New empty room" when a status line shows; `docs/atlas/stories/opening.json` cites only deleted files (`npm run atlas -- --check` reports it and about 14 older problems).
-- Suspect placeholder copy for the owner, added: every string in the Room tab, the countdown ("This room will be replaced with <label> in N seconds. What you carry and your finds here will be lost.") and the notice after a replacement (list in `docs/game-design/dev-menu.md`, "Replace room with stage"); The Boogler's frisbee line (`src/sim/gift-catalog.ts:24`) cannot be heard since nothing gives a frisbee.
-- Worktrees: the owner's call is to remove each as soon as its branch lands. Archive tags `archive/worktree/*` (local, 75 of them) hold every unmerged or uncommitted tip removed on 13 November, including `codex/hook-swing-prototype-wip`, `codex/two-player-track-wip` and `review/leaf-coop` (its test is not on main). Daily-job checkouts under `~/.boogle/daily` are untouched; one points at a missing folder.
-- HOTBOX (the Windows machine): down; its worktrees hold nothing main lacks; not needed.
-
-**Status at 13 November 18:45 UTC (read this first; paragraphs below are older and may be superseded).** Mode: withCodex. `WORLD_NS` is v40; next free v41. Main is at #1734.
-
-*On main on 13 November UTC, newest last (each reviewed independently where its stamp asked):*
-
-- Owner-call records #1694–#1715; research docs #1704, #1707, #1716 (dev saves and stage jumps, engine long term, ECS alternatives live); ECS-facade and input lint rules #1701; simplify pass 1 (d7fb4d713, reviewed up to 1b6d7a93f for its areas).
-- Railway: fourth car (v33), Ring Island foot crossing #1712, train spacing with six trains and the Ring Island hold (v34), leg 1 step 5 seeds and bot, leg 2 massing, the lost-ask fix #1723 (v35; leg 1 playable end to end by bot), stack-head lever plaques and order #1725.
-- Home flip: F1/F2 #1721, X1/X2 #1729 (v36): layout B is the only Home, `?home=` is gone, hall treads, spawn faces the open bay. Generated world pages now cap numbers at three decimals (a Linux/macOS byte difference failed CI once).
-- Prefab data ([plan](../plans/prefab-data.md)): steps 1–3 #1726 (six review rounds on the collider scale rule), step 4 #1727 (High Gorge north platform from compiled records).
-- Server-owned state ([plan](../plans/server-owned-state.md)): steps 1–2 #1722, step 3 #1730 (30 rail tunables, v37), step 4 #1732 (live roster, v38; 3 s per-player rename limit, coalesced roster snapshots), step 5 #1733 (seven classic states retired, v39, 12,455 lines), step 9 #1734 (classic lockstep transport deleted, v40). Steps 6–8 are skipped (owner chose Retire). Checkpoint B (`npm run check:full`, a two-device play of join, reconnect and restart) is not done.
-- CI: eight balanced unit shards #1724; smoke waits up to 12 minutes for the server deploy #1731 (passed first time on #1732–#1733).
-
-*In flight:* prefab step 5 (lint rules that force placed content through prefab records) on `codex/prefab-data-step-5-4`, in its sixth review round; it needs a rebase after #1734. Design fixed by the orchestrator: an importer COUNT ratchet per construction export, not a full edge list (the full list was 23,539 edges and reached `engine`, `entity`, `physics`); importer swaps and reflection are accepted gaps.
-
-*Next:* seats and The Boogler off the lead tab (owner: right after server-state); Home flip R1–R3 (the Round's first step; the gate cottage opens empty); prefab steps 6 on; the engine decision (Bevy ECS in Rust, needs Rust installed and the owner's go, or checked Becsy) is still the owner's.
-
-*Owner calls made on 13 November* are in [owner-calls](owner-calls.md) and the decision logs: playtest before bespoke functionality; pre-playtest list; one live game with fast-forward instead of jump-in rooms; development is live (not a live-service game, no flags hiding unfinished work); save resets never block development; no ship holds for online sessions unless he says so; engine foundations first; retire the seven classic states and move authority now; Home flip and prefab steps approved.
-
-*Open for the owner (13 November):* where players cross line 1 at Home's terminus (the walking plank at s 30 now lies on grass past the island's end, P3); the lighthouse frisbee prop is gone and nothing gives a frisbee (P3); the classic island lost its Section plaques, signs and track machine (P3); the proposed DESIGN.md sync-table text in `docs/plans/server-owned-state-step9-report.md` is his to commit; who may replace a room, and going back (fast-forward build held); fender on every line or the Ring Island halt only; Bell Rock cut and incline tunnel; suspect placeholder lines: "Request stop: to <end>" in all its forms ("to Camp", "to Far Head", "to Village", "to Stack railhead"), the Steel car tile strings, and the archived "Opening day happened while you were away".
-
-*Leftovers from 13 November (ranked):*
-
-- P2 harness: `reconnect-edit`'s last assertion (rewritten in #1734) can fail in an idle room when two tabs never sample the same server step; it passed on rerun. Compare the latest stable sample or trigger a shared change first.
-- P2: Ring Island walk to the lookout fails about 60 m north of the platforms. P2: the workshop chair's sit pose faces the wall.
-- P3 tooling: the Codex broker's net and world-inputs harness is stale (imports deleted files; with `--url` its `roomHost` is a stub); run `npm run test:net` in the worktree instead (140/140 on #1734).
-- P3: a seated rider is stood up when the lead tab changes (goes away with server-owned seats). P3: a swapped-out held item disappears instead of dropping. P3: the follow camera goes inside a standing train on Home's island; canopy posts and the map board stand on the deck's centreline. P3: `dev/look/evals/railway-works-at.ts` and `railway-works-act.ts` hold old-Home coordinates.
-- P3 docs: stale text after the retirements: `docs/game-design/haul.md`, `docs/game-design/net.md`, `docs/atlas/stories/opening.json`, comments citing deleted files (`src/features/acts.ts:13`, `src/net/ws-room.ts:5`, `src/features/syncsafety.ts`, `src/pois/lighthouse/index.ts:34`), `.claude/skills/new-feature/SKILL.md:16`, `.claude/skills/look/references/scenarios.md`.
-- Not started: simplify pass 2 over sim, net and server; Sit before Request stop; the small fixes (Boogler bubble distance, cosmetics fit, the "Connecting to the railway" toast); the playtest guide; the failing long weekly job; worktree housekeeping (48-hour archive rule; due from the evening of 13 November).
-
-**On main since 17:30 PST on 11 November (12 November UTC, newest last):**
-
-- #1622 rail kit levels and split rings. #1623–#1626 M13e–M13g close the ECS migration. #1628 the `?home=b` boot crash. #1630 the adapter's clock is `adapter.read.tickNow()`.
-- #1633–#1636: campaign outline fix, slice 5 plan with design review, the breaker prompt fix, R5b (both Ring Island jump-ins). #1638 greybox route plan. #1639 the owner's 14 answers. #1640 slice 5 stone-stop ruling. #1641 slice 5 R1+R2 (v28). #1642 greybox leg 1 step 1. #1643 hub towns decision. #1644 market hub; #1645 its answer. #1646 economy-stops ruling. #1647 greybox leg 1 step 2 (`src/sim/railway-route.ts`).
-- Since 07:00 UTC: #1649 host hotfix (every room socket has an error listener, typeof checks, dropped count in status). #1650 slice 5 R2b, the Quarry stone stop (v29). #1651 Wall and Bell Rock design rulings. #1652 slice 5 R3, riders and fares (v30). #1653 greybox map rails and the economy model on the ruled route. #1654 Fares paid landing. #1655, #1656, #1658 greybox leg 1 step 3 design rulings. #1659 step 4 design answers and catalog positions. #1657 the ride-home fix (carry keeps the deck you ride; the parked track layer is stowed once Q7 is laid).
-
-**Owner decisions, 12 November UTC** (all in the log): the 14 answers ([core loop](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered), [rail](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered), [town economy](../decisions-rewards.md#d-2026-11-12-town-economy-answered)); hub towns (Home, Ring Island, High Gorge, Canopy Town, Port Quay; the others are sources: [entry](../decisions-rewards.md#d-2026-11-12-hub-towns-grow-and-receive-freight)); the market hub at Bell Rock, built out in stages ([entry](../decisions-rewards.md#d-2026-11-12-market-hub-answered)); the seed-fixture regeneration call (owner-calls).
-
-**On main from this session (12 November 19:50 UTC on, newest last):** #1671 ship-check runs the registry check on every diff. #1672 Ring Island build 2 (v31). #1673 the owner's ten answers ([rail](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered), [rewards](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered), [shared pool](../decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool)). #1674 the designer's gate 5 and 9 rulings. #1675 greybox leg 1 step 3 (v32; two independent reviews, four P2s fixed; HOTBOX's suites green). The [garage install-moment plan](../plans/garage-install-moment.md) with its design review. #1677 the server keeps `leg` and `id` for the leg's three ops, and the position bound follows the route catalog (`railPos`, `RAIL_POSITION_MAX` in `src/sim/railway-route.ts`). #1678 leg 1 step 4, the views. `d295602ef` the garage's G1 to G3 (the works copy on today's table, the real Install). `895700ca0` step 4b's maps. `7b8e11017` the garage's G4, G5 and portrait camera rows.
-
-**The wait limit (owner, 12 November):** he picked "A looser rate for the greybox" ("waits up to about 2 minutes 15"). Leg 1 then measured worse on 48 seeds than on the gate's four: settled worst 1,553 (heavy asks) and 1,535 (light), 7.2% and 3.0% of waits over 1,050; whole leg worst 1,548. It shipped under the 1,600 cap only, on the orchestrator's recommendation, logged as [call 109](../agent-calls.md); **his to keep or reverse.** Train spacing: candidate A dies on main's stages (a passed ask waits 340 to 380 ticks extra against 250; the lamp goes out); candidate B (a Ring Island hold, on 15%, cap 200) cuts light settled 3.0% to 0.4% and does nothing under heavy asks, so by the designer's rule it is not built; the plan's next step is the short turn, which needs its own plan. Sheets and harness on `scratch/spacing-e0`, `-a`, `-leg1-e0`, `-leg1-b` (pushed; never merged). The train-spacing plan does not yet carry these results.
-
-**Owner's word, 12 November: "Don't hold any ship".** v32 shipped without waiting for his play sessions. Asked whether that retires the 9 November mid-session rule for good; no answer, so it is read as that day only and AGENTS.md's line stands. _13 November: he answered, "don't ever stop deploying a change because you see a session online"; it is standing, see [owner calls](owner-calls.md#save-resets-never-block-development-or-architecture)._
-
-**Nothing is running.** HOTBOX is idle (its `wip/greybox-leg1-step3` and `greybox/leg1-step3-v2` are superseded by main; keep 48 hours). Its evidence is in `C:/Users/matia/boogle-evidence/`.
-
-**Next, in order:** leg 1 step 4b's rest (Ring Island's own map table, kit cars' number boards, the joining train's scale-in and board marker, the kit's hop to the rack, the `STEEL KIT` plate); the fourth car (the next Ring Island step: it moves line 2's stop mark, a rules change with its own bump); the short turn's plan; leg 1 step 5 (the bot segment and catalog stages, replacing `dev/look/stack-seed.ts`); record the spacing results in the train-spacing plan; Ring Island R6 docs; a frame-time pass and device run ([owner call](owner-calls.md#frame-time-60)).
-
-**Open owner questions** (each proceeding as stated):
-
-- Call 109 above: keep leg 1 live under the 1,600 cap, or hold it for train spacing.
-- Is 2 min 20 inside "about 2 minutes 15" (call 105)? Moot while call 109 stands.
-- After the rivet, should the footing wagon's train stop for stone (call 108)? Today one of line 2's three trains never takes stone, so loads come 2,884 ticks apart.
-- The shared pool: does it replace "a yard at each halt, taken where it lies" for upgrades, or only cover what trains have carried to a hub ([entry](../decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool))?
-- "Don't hold any ship": that day, or for good.
-- The garage: the plain grey post's prompt is gone at today's table (the designer ruled it needs no owner; shown to him); `test/garage-geo.test.ts` is a feature test kept as a diet exception until the Home flip; the frame as built (barrel lower left, player in front of the buffer).
-- The maps: the leg is drawn at about 30% of true length so one map holds the line; the Home island shrinks after the rivet and names carry leaders. His call whether that trade is right.
-- Suspect copy: "It runs faster and pulls one more car." (no fourth car yet); "Look at the engine" with the boiler ready; "Railhead" beside "Stack railhead"; every leg label in step 4's as-built list.
-- Train spacing's plan questions 2 and 3; the session's end time.
 
 
 **Rules learned** (the lessons; the orchestrator keeps them):
@@ -162,9 +102,9 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 27. The smoke test gives up after five minutes and the server deploy often takes six: a smoke failure on "server deployed source commit" right after a server-path merge is the race; rerun it once the deploy is done.
 28. A change to label or layout costs must be diffed against main for the states most rooms are in (the pre-rivet maps), not only the new state.
 
-**Peers.** HOTBOX is the owner's Windows desktop; its peer session since the 12 November restart is "Reconnect with orchestrator and resume work" (the owner confirmed it, 12 November; SendMessage by that name from ListAgents; delivery is never confirmed but it answers). The old session "Orchestrator coordination for development" (`bridge:session_013GeHMBXhojhecCo8EUn8eh`) is offline. It shares the build load ([owner call](owner-calls.md)). D3D12 looks run there with `LOOK_CHANNEL=msedge`. `gh` and ffmpeg are installed there.
+**Peers.** HOTBOX, the owner's Windows desktop, has been down since 12 November. Do not queue proofs there.
 
-**Housekeeping.** Cleared at wind-down (12 November 19:00 UTC): 84 clean, fully merged worktrees with their branches, and every landed branch with no worktree. Left, 41 worktrees and about 80 branches: `ring2/v3-garage` (build 2, keep); the unmerged `review/*` test branches (`review/ring2-rules-tests`, `-r3-tests`, `-r4-tests`, `review/ring2-final`, `review/leaf-coop`, `review/m12e`, `review/m12b-1`, `review/unit-speed`), the `ecs/m12e`/`m12f` and `batch/1111-b`/`-c` worktrees, `feature/ring-r4e`, `ring2/before-rebase-2` and `-3`, `ring2/rules*`, `ring2/v1-works`, `ring2/v2-train` and about 20 one-commit `worktree-agent-*` branches: check each one's tests are on main, then archive-tag and remove once 48 hours old (from 13 November evening). Three with uncommitted changes stay for the owner (`codex/hook-swing-prototype`, `codex/two-player-track`, `worktree-agent-aad5cd795cee72677`). The daily-job checkouts are never touched. The five `archive/review/*` tags and `archive/place` are local only.
+**Housekeeping.** The 13 November cleanup archived removed tips under local `archive/worktree/*` tags, including `codex/hook-swing-prototype-wip`, `codex/two-player-track-wip` and `review/leaf-coop` (its test was not on main). Old worktree counts are superseded; inspect current worktrees before cleanup. Daily-job checkouts under `~/.boogle/daily` stay untouched. The parked traveller branch and tag above are kept.
 
 **Leftovers from 11–12 November, by rank:**
 - P2 (12 November evening): the request guard test is blind to `kind` on every op and to `rail.wake`'s `tk` (`server/test/railway-steel-host.test.ts`, the baseline subtraction): subtract the baseline from `railValid`'s reads only.
@@ -227,27 +167,33 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 `../boogle-trusted/node_modules` symlinks to the main checkout's node_modules; an `npm ci` there empties it. Reinstall with `npm ci` in the main checkout if `node dev/playtest/cli.ts` can't find playwright.
 
-**Process, 14 November.** The orchestrator shipped four code changes on its own read in place of the independent review the gate's stamp requires: #1771 (hall posts), #1782 (Far Head's shot for a seated rider), #1783 (seated Request stop, cab roof, vehicle spacing) and #1784 (catalogue ceilings). The permission system blocked a fifth. The rule stands: a change whose stamp asks for an independent review gets one before it ships, whoever is playing and however small it looks. The reviews of #1782 and #1783 are owed after the fact (open owner questions, 14 November); #1771 and #1784 should have the same.
+**Process, 14 November.** Every code change ships only after an independent review; docs-only changes ship with `--orchestrator-read`. Today's code batches above received independent Codex Astra reviews, two to five rounds. That does not settle the earlier after-the-fact reviews owed for the hall posts, Far Head's seated shot, seated Request stop/cab roof/vehicle spacing and catalogue ceilings; keep those with the owner.
+
+The Codex sandbox cannot launch a browser: the orchestrator runs `npm run test:net` in the job worktree itself; do not treat a sandbox launch failure as a network regression. The B4 outside-sandbox run was 190/190, as was rotunda 1a's reported run.
+
+The repo-root main checkout is a detached launcher hundreds of commits behind `origin/main`. Agents work in their own worktrees from `origin/main`, never read plans from the launcher, and fetch and reset first when told to start from `origin/main`. For this docs-only snapshot, no fetch was run: the job forbids network access beyond its local server. Local refs and log were checked; active jobs, review rounds and live deployment were not independently polled.
 
 ## Leftovers
 
-- **14 November (the owner's solo playtest; every item below is not yet dispatched; ranks and his words are in [the tracker](../plans/round-4-notes.md#owner-solo-session-14-november-ipad-with-a-keyboard-the-whole-built-route-ranked)):**
-  - **P1, arriving on Ring Island** (note 26; [gap-readability](../plans/gap-readability.md)): designed, not dispatched. Nothing says the trains bring the kit; the steel kit landed 1 min 57 s after the join. A resident's line is drafted for the owner's wording.
-  - **P1, the content ends on a refusal** (row 41): "No line beyond yet" pressed five times at High Gorge's barrier after the powered pick. No job, no design. Both barrier lines are suspect copy for the owner.
-  - **P1, reloads** (note 33, row 38): twelve reloads in 88 minutes, each costing one to two minutes back to the work. The plan is being written; nothing is dispatched. Process half: eighteen ships landed while he played.
-  - **P2, the leaf's strike beat** (note 25) and **P3, the island's map table** (note 28): designed in gap-readability, not dispatched.
-  - **P2, the undrawn crossover at the second pier** (note 21): waits for the [turnouts](../plans/turnouts.md) build, which is planned and not dispatched.
-  - **P2, the rotunda** (note 2; [roundhouse-rotunda](../plans/roundhouse-rotunda.md)) and **P2, the train ladder** (note 11; [train-progression](../plans/train-progression.md), step 0 measures the lone train first): planned, not dispatched; both take v45 and wait on owner answers.
-  - **P2, right-hand running** (note 13; [running-side](../plans/running-side.md)): the lever steps are in work; swapping the ways is not dispatched (v45, owner answer).
-  - **P2, the great tree's move** (note 30; level-pacing step A2): not dispatched (v45, owner answer on the shorter haul).
-  - **P3, yards at halts** (note 10; station-deposit build 1, decided on 10 November): not dispatched; one bump.
-  - **P3, the garage's "choose what to add" brief** (note 22): not started; it is also what a Roundhouse bay is for.
-  - **P2, "Stop requested"** (row 39): 19 refusals; nothing shows that a request is held. No job.
-  - **P2, the steel works never fed or lit** (row 40): find out whether the route is meant to pass it. No job.
-  - **P2, tumbles around trains and footings** (row 42): 21 across five sessions; cause unknown. No job.
-  - **P2, the trace's wake row** (row 36): `npm run loop -- trace` puts activity outside any node (the start of a reloaded session, the end of the content) under "wake", so "wake is the most confused step" is not a finding. Fix the tool before the next trace is quoted.
-  - **P3, recorder gaps** (rows 45, 48): no mark for why a page reloaded, for High Gorge opening, for the cart or for a talk; "Hang the weight" pressed with no showing recorded.
-  - **P3, level-pacing's Q5 text**: the plan says one shipment unloads 24 logs and 24 rails; the session shows 16 rails taken at Q5's rack before it was funded. Correct the plan or the cart when the rack tags land.
+- **14 November, after the fixes (ranked, in this order; nothing in this list was tested on a device):**
+  - **P2, the Round's shadows:** from above only half the Round has shadows; the shadow map covers the area near the player.
+  - **P2, the Round's performance:** no reading; `npm run perf` has no town view.
+  - **P2, J1:** no train yet seen running through the frog; the blade is hard to read.
+  - **P2, frame fold:** never seen with a second player.
+  - **P2, reload:** fade-then-move variant and the Gorge, deck, swim, window-0 and two-player cases not seen in a browser since the fixes.
+  - **P3, commuters:** may be clipped by a train just after a hard camera cut (accepted).
+  - **P3, friend's frame:** walk-through of a frame drawn for a friend on a tab loaded after the stretch was laid (accepted).
+  - **P3, canyon tread:** dotted line across it predates the terrain pass.
+  - **P3, bot:** stalls at the canyon bend near (939, −121).
+  - **P3, garage:** older teardown leak.
+
+- **Other playtest notes still open:** the content ending on a refusal at High Gorge; the leaf's strike beat and island map table; other junctions after J1; yards at halts; the garage's "choose what to add" brief; "Stop requested" with no held-request cue; the steel works never fed or lit; tumbles around trains and footings (cause unknown); the trace's catch-all "wake" row; recorder gaps. Keep their original ranks and owner words in [the tracker](../plans/round-4-notes.md#owner-solo-session-14-november-ipad-with-a-keyboard-the-whole-built-route-ranked). Rotunda, running-side, train ladder, great tree and rack moves are tracked with the shared v45 reset above, not undispatched fixes. Reload, the gap cues, footings cues and finished-frame packing are shipped, with the proof gaps listed here.
+
+- **Earlier 13–14 November findings still open (not re-tested for this snapshot):**
+  - **P2:** two-device join, reconnect and server-restart checkpoints; `reconnect-edit` can fail in an idle room when two tabs never sample the same server step (passed on rerun); workshop chair faces the wall. The summit walk's severed leg is now measured, with its bridge in work above.
+  - **P3:** equivalent address spellings get separate rate budgets; an operator sharing a flooder's address is throttled; the Fly edge must overwrite `Fly-Client-IP` (accepted under the owner's attacker call). The Boogler can trail a rider by 86 cm for about 1.5 s during Talk and draws a friend's rider about 30 cm farther back; a real backgrounded tab is untested. The prefab numeric guard rejects thirds and float sums and can miss a short derived value; a small leg 2 scale change can trip the six-metre clearance rule.
+  - **P3:** Dev dock Room tab clips its new-room button when a status line shows; atlas opening cites deleted files. A swapped-out held item disappears instead of dropping; the camera enters a standing train at Home; canopy posts and map board stand on the deck centreline; Works evals retain old-Home coordinates. Stale retirement wording remains in haul/net docs, atlas, code comments and skill references; check current files before fixing it.
+  - **Suspect copy for the owner:** Room tab strings, replacement countdown and notice (listed in the Dev menu's "Replace room with stage"); The Boogler's unheard frisbee line; the request-stop destinations, Steel car tiles and archived "Opening day happened while you were away". The Boogler's copy stays his.
 
 - **10 November:**
   - **Ring Island gap, measured (step 0, #1443, eval fixed in #1446):** the "2.0 m past the model" reading was an eval artifact (the landing was recorded after more sprinting). Rerun: apex u 276.4 (model 276.4), late press u 278.7 (model 279.3), so only a glide crosses. A braking train's kept carry did cross in review, so trains ease into the end stop at 2 m/s² (`RING_END_BRAKE_CMS2`). The last bent's ramp walks in 11.2 s against a 10 s bound (P3). The greybox hook ring is scenery, so the hook from the brace platform is measured in R4b.
@@ -333,29 +279,31 @@ From 5–6 November; drop each when answered.
 3. **Brief questions** in money, cart first and first evening.
 4. **Suspect copy:** `SHOP.kept[0]` says "the hat" for any item; "Chops trees, breaks rocks, and more" appears before rocks exist in T1; the Works verbs under Leftovers.
 5. **Museum:** inspect the miniature, the crystal specimen, or both.
-6. **Worktrees left after the 9 November cleanup** (30 archived as local `archive/worktree/<branch>` tags, 39 merged ones removed): three with uncommitted changes (`codex/hook-swing-prototype`, `codex/two-player-track`, `worktree-agent-aad5cd795cee72677`) and four recent ones (`claude/godot-assumptions`, `claude/glider-b-plan`, `claude/idea-land-ack`, `claude/playtest-jump-in-plan`). Commit-and-archive, or keep?
+6. **Worktree archives:** the 13 November cleanup supersedes the old keep-or-archive question; inspect the local archive tags before recovering any experiment (Housekeeping above).
 7. **From 10 November** (one lever per platform side and the passenger car at four are answered; see the [decision log](../decisions-rail.md#current-rules)): end-game train direction ([mock-ups](../brainstorms/engine-endgame-mockups.md)): steam to modern (freight or high speed) or the dark plated sci-fi train, or that one as a rival; lengthen halts and gates past 6 m or articulate short cars; a tender on the largest current-era engine or not. The glider banner wording is still his to reword.
 
-8. **From 14 November** (the playtest; answered today and not to be asked again: the gap's three questions, the record ceiling, no try-on in the garage). The first five are the tap questions drafted for him, each with the plan's recommendation:
-   1. **Right-hand running, the lever rule and the Pier's platform** ([running-side](../plans/running-side.md)). Recommended: yes to right-hand running on every line by swapping ways; yes to the lever rule; a small west platform at the Pier for the homeward train.
-   2. **The rotunda's bay count at Home, and what a bay is for** ([roundhouse-rotunda](../plans/roundhouse-rotunda.md)). Recommended: a foundation arc at arrival, then three, five and seven bays, stopping at seven; a bay arrives with the thing that stands in it, not bought for itself.
-   3. **The train ladder's three** ([train-progression](../plans/train-progression.md)). Recommended: the step to 20 m/s happens by itself when the table turns; seven trains stays the busy end; "choose what to add at the garage" is the next design to brief.
-   4. **The great tree's shorter haul** ([level-pacing-1114](../plans/level-pacing-1114.md)). Recommended: yes, keep the 35 m haul the move gives.
-   5. **The pinnacle's seal** (level-pacing). Recommended: the seal that counts down first; wake the glider at the first summit pull only if the next session is still flat at the top.
-   6. **Should the pier refuse a hand-carried footing until the wagon is out?** ([footings-signalling](../plans/footings-signalling.md); v45). Recommended: not yet. Today's data shows two carried to the pier by hand before the cradle was found.
-   7. **Apply the DESIGN.md sync-table text and the agent-instruction drafts** ([step 8 report](../plans/server-owned-players-step8-report.md)): his to commit.
-   8. **After-the-fact independent review of #1782 and #1783**, which the orchestrator shipped on its own read: run them now, or accept them as shipped?
-   9. Also his, smaller: level-pacing's "should the cart ever be ridden" (recommended: no) and "are the yards still the drop box you mean" (recommended: yes); the resident's line about the wagon (recommended: not now); suspect copy "No line beyond yet", "Needs the powered pick", "Stop requested".
+8. **From 14 November, proceeding on the recommendations** (the gap's earlier three questions, the record ceiling and no try-on are answered; do not ask again):
+   1. **The Round walk and home-flip:** rooftop run to the balcony gift until D4 (yes); south-east street (keep as built); plot 8 (leave it). [Plan](../plans/home-flip.md).
+   2. **Summit path:** footbridge versus east path (bridge); fence the cutting rim (not now); P2 or P1 (P2). [Plan](../plans/ring-summit-path.md).
+   3. **Traveller:** joins v45 (yes); deck built in `line2-view` (yes); haul timing (keep). [Plan](../plans/railhead-traveller.md).
+   4. **Terrain pass:** geometric ledges add little for 21,714 triangles and cause a one-frame hairline. His call; dropping them reverses his 10 November answer.
+   5. **Track layer:** the hand crosses 4 m in 0.1 s at Q5 and Q6 speed; a second hand or slower laying.
+   6. **Footings:** the pier still accepts a hand-carried footing although the bill says by wagon (recommended: do not refuse it yet); "stall" versus "rotunda" on the footings board.
+   7. **Turnouts:** J1 proof looks rough from above; the other junctions wait for his look.
+   8. **Draft strings to word:** "Next load: on the wagon"; the kiln, cradle, seal, great tree, rack and wagon prompts from the honest-prompts batch; the footings board lines in `src/entities/railway/footing-cues.ts`.
+   9. **Shared v45 reset:** his go-ahead before the combined reset ships, never mid-session. Rotunda 1a is ready to combine, 1b is building; the remaining pieces are listed above.
+   10. **Earlier unresolved calls:** apply the DESIGN.md sync-table text and agent-instruction drafts ([step 8 report](../plans/server-owned-players-step8-report.md)); settle the earlier after-the-fact independent reviews; level-pacing's "should the cart ever be ridden" (no), "are the yards still the drop box you mean" (yes), the resident's wagon line (not now), and suspect copy "No line beyond yet", "Needs the powered pick", "Stop requested".
 
-- **Tidy:** last code pass `ca3212d0` (render/audio, #1248, 9 November). Next: the other areas since `1af61213`, then architecture, docs, memory.
+- **Tidy:** simplify pass 3 is on main; **last pass end `12ba8f7ba`**. Start the next range after it, not from the old pass 1 or 2 endpoints.
 
 ## Next moves
 
-- The order is in "Where the work stands". Start a fresh orchestrator session from this file at the next pause: this one is very long.
-- Keep about three agents running; no more than two browser looks at once on HOTBOX.
+- The order is in "Where the work stands": review and combine rotunda 1a/1b, finish the summit footbridge, build the remaining shared-reset pieces, and get the owner's v45 go-ahead. Do not ship that reset mid-session.
+- Give the owner the Round blockout walk and its three questions; retain the proof gaps under Leftovers.
+- Keep about three agents running; HOTBOX is down, so proofs stay local.
 - Report perf work in frame time as well as triangles ([owner call](owner-calls.md#frame-time-60)).
 - Keep the playtest guide current: https://claude.ai/artifact/Ud7yddruEMLszCgModu4WC
-- First: reach HOTBOX and get the train-spacing results to the owner with the wait-limit question; then ship build 2 on his answer.
+- Next orchestrator: start from a current `origin/main` worktree, not the detached launcher; run the network suite in the job worktree and require independent review for code, `--orchestrator-read` for docs.
 
 ## Peers
 
