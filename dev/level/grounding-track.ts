@@ -4,7 +4,7 @@ import { boxAt, place, type Box } from '../../src/render/box-plan.ts';
 import { FORMATION, LINKS, ORIGIN, STUB, UP_LAT, crossLat, lineAt, railY, upLat } from '../../src/place/layout.ts';
 import { H, surfaceHeight } from '../../src/place/terrain.ts';
 import { sampleFootprint } from '../../src/place/support.ts';
-import { carriedPiece, trackPanels } from '../../src/entities/railway/track-panels.ts';
+import { carriedPiece, sleeperStations, trackPanels } from '../../src/entities/railway/track-panels.ts';
 import { chunkOf } from '../../src/entities/railway/track-chunks.ts';
 import { sourceFunction } from './source.ts';
 
@@ -18,32 +18,37 @@ export function trackBoxes() {
   const lateral = sourceFunction('src/entities/railway/line-geometry.ts', 'lateral', { P, ORIGIN });
   const complete = new Error('Track geometry captured');
   const captured: { boxes: Box[]; kinds: string[] }[] = [];
-  const buildTrack = sourceFunction<typeof import('../../src/entities/railway/rail-kit.ts').buildTrack>(file, 'buildTrack', {
-    THREE,
-    P,
-    lateral,
-    STUB,
-    lineAt,
-    railY,
-    H,
-    place,
-    trackPanels,
-    carriedPiece,
-    chunkOf,
-    TOP: sourceFunction<number>(file, 'TOP', {}),
-    DECK_W: sourceFunction<number>(file, 'DECK_W', {}),
-    BED_W: sourceFunction<number>(file, 'BED_W', {}),
-    FORMATION,
-    UP_LAT,
-    upLat,
-    crossLat,
-    box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
-    dropSet: (boxes: Box[]) => boxes,
-    lookTrack: (boxes: Box[], kinds: string[]) => {
-      captured.push({ boxes, kinds });
-      throw complete;
+  const buildTrack = sourceFunction<typeof import('../../src/entities/railway/rail-kit.ts').buildTrack>(
+    file,
+    'buildTrack',
+    {
+      THREE,
+      P,
+      lateral,
+      STUB,
+      lineAt,
+      railY,
+      H,
+      place,
+      trackPanels,
+      carriedPiece,
+      sleeperStations,
+      chunkOf,
+      TOP: sourceFunction<number>(file, 'TOP', {}),
+      DECK_W: sourceFunction<number>(file, 'DECK_W', {}),
+      BED_W: sourceFunction<number>(file, 'BED_W', {}),
+      FORMATION,
+      UP_LAT,
+      upLat,
+      crossLat,
+      box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
+      dropSet: (boxes: Box[]) => boxes,
+      lookTrack: (boxes: Box[], kinds: string[]) => {
+        captured.push({ boxes, kinds });
+        throw complete;
+      },
     },
-  });
+  );
   return LINKS.flatMap((spec) =>
     (['panels', 'continuous'] as const).map((mode) => {
       try {

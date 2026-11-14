@@ -33,6 +33,7 @@ import {
   panelEase,
   trackPanels,
   carriedPiece,
+  sleeperStations,
   MAX_PANEL_LENGTH,
 } from '../../src/entities/railway/track-panels.ts';
 import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
@@ -442,6 +443,7 @@ export async function checkMachineClearance() {
       place,
       trackPanels,
       carriedPiece,
+      sleeperStations,
       chunkOf,
       TOP: sourceFunction(trackFile, 'TOP', {}),
       DECK_W: sourceFunction(trackFile, 'DECK_W', {}),

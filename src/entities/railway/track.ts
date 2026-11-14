@@ -10,7 +10,7 @@ import { dropSet, type DropSet } from '../../place/pieces.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { chunkOf } from './track-chunks.ts';
 import { lookTrack } from '../../place/look-kit.ts';
-import { carriedPiece, trackPanels, type TrackPanel } from './track-panels.ts';
+import { carriedPiece, sleeperStations, trackPanels, type TrackPanel } from './track-panels.ts';
 
 // ---------------------------------------------------------------- track: pieces and the solid top
 const TOP = 0.1; // the sleepers' top over the rail height
@@ -310,17 +310,37 @@ export function buildTrack(
     );
   };
   const upAt = (s: number) => upLat(formation, s);
-  // Sleepers: just under today's where the turnout still overlaps them, so neither flickers through the other.
+  // Sleepers. On a turnout the two tracks share them (one set through the overlap, not two interleaved): the up track
+  // has none of its own while today's reach under both its rails (0.65 m apart or less); from there until it is clear
+  // of today's (2.4 m), one beside each of today's and in line with it, a centimetre under it so neither flickers
+  // through the other and the pair reads as one long timber. Clear of today's, its own, square to itself.
+  const COVERED = -0.65,
+    CLEAR = -2.4;
+  const half = 0.21;
+  const beside = (
+    panelled
+      ? sleeperStations(spec, formation.from, formation.to)
+          .filter((t) => t.depth >= 2 * half)
+          .map((t) => t.s)
+      : Array.from({ length: Math.ceil(line.len / 1.2) }, (_, k) => 0.6 + k * 1.2)
+  ).filter((s) => {
+    const l = upAt(s);
+    return l !== null && l <= COVERED && l > CLEAR && !deck(s);
+  });
+  const own: number[] = [];
   for (let s = formation.from + 0.6; s < formation.to; s += 1.2) {
     const l = upAt(s);
-    if (l === null || l > -0.3 || deck(s)) continue;
-    const half = 0.21;
+    if (l !== null && l <= CLEAR && !deck(s) && !beside.some((t) => Math.abs(t - s) < 0.6)) own.push(s);
+  }
+  const ups = [...beside.map((t) => [t, true] as const), ...own.map((t) => [t, false] as const)];
+  for (const [s, shared] of ups.sort((a, b) => a[0] - b[0])) {
+    const l = upAt(s)!;
     offsetBox(
       'sleeper',
       s - half,
-      upAt(s - half) ?? l,
+      shared ? l : (upAt(s - half) ?? l),
       s + half,
-      upAt(s + half) ?? l,
+      shared ? l : (upAt(s + half) ?? l),
       2.3,
       0.12,
       -0.03,
@@ -733,7 +753,6 @@ function growSolids(t: Track, to: number) {
   }
 }
 function removeBodies(so: Solid, owner: OwnedView) {
-  for (const b of [so.on].flat())
-    if (b) owner.removeBody(b);
+  for (const b of [so.on].flat()) if (b) owner.removeBody(b);
   so.on = null;
 }
