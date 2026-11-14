@@ -43,6 +43,7 @@ import { createUpPlatforms } from './up-platforms.ts';
 import { displayYaw, haltDisplays, haltMap, haltRows, stackDisplays } from './halt-map.ts';
 import { createBoxBatch } from './works-box-view.ts';
 import { createRingMapTable } from './ring-map-table.ts';
+import { footingMark } from './footing-cues.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 import { createHaltKit, createHaltAttachment } from './halt-kit.ts';
 
@@ -667,6 +668,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         wk.breaker === 2 && !(wk.seams & [SEAM_STALL, SEAM_THROAT][i]!) ? { x: p.x / 100, z: p.z / 100 } : null,
       ),
       wk.seams & SEAM_THROAT && wk.lit < 0 ? { x: WORKS_KILN.x / 100, z: WORKS_KILN.z / 100 } : null,
+      // Lit, the same dashed square stands where the next footing is wanted: the stall, then the pier (A4).
+      footingMark(w),
     );
     // The glider waiting on Needle Bell's summit: woken (Q5 laid) and not yet taken by the room.
     boards.glider(

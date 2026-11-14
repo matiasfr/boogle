@@ -53,6 +53,8 @@ import {
   wagonGhost,
 } from './cradle-cues.ts';
 import { LINE2_FORGE } from '../../sim/railway-line2-layout.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
+import { FOOTING_COPY, footingBoardLine } from './footing-cues.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
@@ -301,6 +303,29 @@ export async function createRailwayWorks(
       (a, b) =>
         Math.hypot(a.at.x - forgeRack.x, a.at.z - forgeRack.z) - Math.hypot(b.at.x - forgeRack.x, b.at.z - forgeRack.z),
     )[0]!;
+  // The Works rack's board (footings-signalling A3): where the footings on this rack go, how many are in and how they
+  // travel, from the kiln's lighting on. It stands off the rack's far end, clear of the rollers, the trodden path and
+  // the broken sample, and faces the Quarry platform. A plate from the record door, repainted as the count moves.
+  const rackBoard = instantiate(
+    'railway.footings-bill',
+    { id: 'works-rack-board', prefab: 'railway.footings-bill', pos: [0, 0, 0], labels: { sign: 'footings' } },
+    { owner, texts: { footings: [FOOTING_COPY.board] } },
+  );
+  {
+    const x = rack.x + rackAxis.x * 2.8 + rackSide.x * 1.2,
+      z = rack.z + rackAxis.z * 2.8 + rackSide.z * 1.2;
+    rackBoard.root.position.set(x, H(x, z) - 0.05, z);
+    rackBoard.root.rotation.y = Math.atan2(haltAt.x - x, haltAt.z - z);
+  }
+  rackBoard.root.visible = false;
+  let boardPainted: string | null = null;
+  function drawRackBoard() {
+    const line = footingBoardLine(wd);
+    rackBoard.root.visible = line !== null;
+    if (line === null || line === boardPainted) return;
+    boardPainted = line;
+    rackBoard.relabel('sign', [FOOTING_COPY.board, line]);
+  }
   // The table's handle as roundhouse-view.ts draws it on a still deck (its yaw by `shed.table`: toward the stall's rim,
   // or down the spur), and the wagon's wait on road 2 (WAGON_S), for the gold ghosts.
   const line2 = layout.LINKS[1]!.line;
@@ -801,6 +826,7 @@ export async function createRailwayWorks(
     solid(!open);
     ghostKey = '';
     billPainted = '';
+    boardPainted = null;
     stallUnbuilt = false;
     cueFrom = 0;
   }
@@ -848,6 +874,7 @@ export async function createRailwayWorks(
         cueFrom = performance.now() + CRADLE_CUE_DELAY_S * 1000;
       }
       drawBill();
+      drawRackBoard();
       cradleMotes(dt);
       drawKiln();
       drawKilnFlights(dt);
@@ -999,6 +1026,13 @@ export async function createRailwayWorks(
       ghosts: { logs: ghostLogs, stone: ghostStone, dashes: ghosts.count },
       path: sign.visible,
       bill: bill.mesh.visible ? billPainted : null,
+      rackBoard: rackBoard.root.visible
+        ? {
+            text: `${FOOTING_COPY.board}|${boardPainted}`,
+            at: rackBoard.root.position.toArray(),
+            yaw: rackBoard.root.rotation.y,
+          }
+        : null,
       cradleCues: {
         stage: cueStage(),
         ghosts: cueGhosts,

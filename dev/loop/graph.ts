@@ -718,7 +718,13 @@ export const NODES: readonly LoopNode[] = [
       dec('slab', 'rules', `${RULES_WORKS} footSet site 0: the stall slab struck`),
       dec('kiln', 'rules', `${RULES_WORKS} worksTick: footings are cast by the lit kiln`),
     ],
-    cue: [onMain('prompt-only', '"Set the footing" at the stall', 'src/entities/railway/roundhouse-view.ts:645-653')],
+    cue: [
+      onMain(
+        'world',
+        'the Works rack board "Footings / stall n/2 by hand" and the dashed gold square at the stall on the halts\' maps; two gold ghost footings in the sockets',
+        'src/entities/railway/footing-cues.ts; src/entities/railway/works-view.ts; src/entities/railway/halts-view.ts',
+      ),
+    ],
   },
   {
     id: 'cradle',
@@ -789,8 +795,8 @@ export const NODES: readonly LoopNode[] = [
     cue: [
       onMain(
         'world',
-        'twelve empty footing sockets and a stake at each bent',
-        'src/entities/railway/crossing-view.ts:1-3',
+        'twelve empty footing sockets and a stake at each bent; the pier bill "Pier / footings n/12 by wagon", the Works rack board "pier n/12 by wagon" and the gold square at the pier on the halts\' maps',
+        'src/entities/railway/crossing-view.ts:1-3; src/entities/railway/footing-cues.ts',
       ),
     ],
   },

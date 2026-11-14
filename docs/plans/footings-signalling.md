@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-14). Design only; nothing built.** Signalling for the footings sequence, from the kiln to
+> **Status: option A built (2026-11-14), steps 1 to 5; see "Built" under the build steps.** Signalling for the footings sequence, from the kiln to
 > the pier's twelfth footing, after the owner's 14 November session. Base: `origin/main` at `d5a3ada6d`. Option A
 > (recommended) is view-only and needs no bump; options B and C change sim rules and take the next free `WORLD_NS`
 > (v45, which [level-pacing-1114](level-pacing-1114.md) step A2 has also asked for: whichever ships first takes it).
@@ -197,6 +197,25 @@ Each is one dispatch, view-only, with its proof. Stills with `npm run look -- --
 | 3 | **A3**: the Works rack board and its four states | Seeds `works-lit`, `stall-done`, `wagon-on`, and a railhead seed: one still each from the quarry platform end |
 | 4 | **A4**: pier bill; the map's footing mark | Seed `works-lit` at the pier head and at a halt display; `crossing-done`: both gone |
 | 5 | **A5** and docs: loop graph cues; place.md's Works section | `npm run loop` lists no `stall`, `cradle`, `table` or `kiln` under No cue; `npm run loop -- run` unchanged |
+
+### Built (14 November)
+
+- [x] **1 (A1)** and [x] **2 (A2)**: on main (`cradle-cues.ts`, drawn in `works-view.ts`). The bill is the kiln's own
+      board, moved to the Roundhouse apron.
+- [x] **3 (A3)**: the Works rack board (`footing-cues.ts` `footingBoardLine`, drawn in `works-view.ts`). Departures:
+      it is a grey plate from the prefab record door (`railway.footings-bill`, the railhead rack tag's kind), not the
+      bills' cream board or the depot rack's stock board: a new `signBoard` call would raise the shrink-only sign debt,
+      and `stockSign` takes no new consumer. The door gained `relabel` so a record's label can repaint a count. It
+      shows from the kiln's lighting (not the first cast, 8 s later), keeps **pier 12/12 by wagon** between the
+      twelfth footing and Q7, and comes down when the fourth weight hangs. Looked at: `works-lit`, `stall-done`,
+      `wagon-on`, `deck-laid`.
+- [x] **4 (A4)**: the pier bill (`pierBillLine`, drawn in `crossing-view.ts`) and the map mark (`footingMark`, drawn by
+      `island-boards.ts`). Departures: the bill reads **footings n/12 by wagon**, not the plan's bare count (the
+      owner's later note at the pier: "the supports are there, but I don't know what to do next"); it needs the pier
+      laid (Q6), so it cannot show "from the first cast" in a room that lit the kiln first. The map mark is the kiln's
+      own dashed gold square moved to where the next footing is wanted, not a new footing glyph: the two never show
+      together, so it costs no draw.
+- [x] **5 (A5)**: the loop graph's `stall` and `crossing` cues; place.md, "Where footings go".
 
 ## Draft strings (UI copy, none The Boogler's; no existing line changes)
 

@@ -33,5 +33,10 @@ export function makeGreyboxLabel(a: Extract<Attach, { kind: 'label' }>, lines: r
   s.mesh.name = 'route-greybox:sign';
   s.mesh.position.set(a.at[0], 0, a.at[2]);
   s.mesh.rotation.y = Math.atan2(a.facing[0], a.facing[2]);
-  return s;
+  /** The same plate with new words (a count that moves): repainted in place, no new board. */
+  const repaint = (next: readonly string[]) => {
+    paint(s, next);
+    s.painted();
+  };
+  return { ...s, repaint };
 }

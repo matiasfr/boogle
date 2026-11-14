@@ -1172,7 +1172,20 @@ wears a dashed gold outline and motes; and a dashed gold wagon stands on line 2 
 cradle** shows greyed to a back without rails, "Bring rails from the forge", and a footing carried to the raised stall
 meets **Set the footing** greyed, "The wagon carries the rest". Motes are off under reduced motion; the bill and
 ghosts stay. Local over accepted state (`cradle-cues.ts`, drawn in `works-view.ts`); the action's guard is unchanged.
-All draft UI copy. From then the wagon is line 2's fourth car: arriving at the quarry, up to six
+All draft UI copy. **Where footings go (14 November, footings-signalling A3 and A4; owner: "Do I have to bring all
+the footings to the pier by hand?"; at the pier, "the supports are there, but I don't know what to do next").** From
+the kiln's lighting a board stands off the Works rack's far end, facing the Quarry platform: **Footings** over one
+line that says where the next ones go, how many are in and how they travel: **stall 0/2 by hand**, then **pier 0/12
+by wagon** (from the stall standing, before there is a wagon: the apron bill answers "what wagon?"), then, with Q7
+laid, **railhead 0/14 by wagon** and **weights 0/4**; it comes down when the last weight hangs. On the pier head's
+pad, at its seaward far corner beside the jib and facing the walk from the platform, a bill reads **Pier** /
+**footings 0/12 by wagon** from the kiln's lighting (once Q6 has laid the pier) to the twelfth footing; the Railhead
+finger takes that corner after. On the halts' maps the kiln's dashed gold square, idle once the kiln is lit, moves to
+where the next footing is wanted: the stall until the wagon has rolled out, then the pier's jib, gone at the twelfth.
+Both boards are grey plates from the prefab record door (`railway.footings-bill`, the railhead rack tag's kind),
+repainted as the count moves; the by-hand road to the pier stays open (no rule changed). Local over accepted state
+(`footing-cues.ts`, drawn in `works-view.ts`, `crossing-view.ts` and `halts-view.ts`). All draft UI copy. From then
+the wagon is line 2's fourth car: arriving at the quarry, up to six
 footings hop from the Works rack onto its cradle; arriving at the new **Pier** halt (open once Q6 is laid), they hop
 onto the pier rack. Line 2 stands there 3.5 m short of the halt's middle, so its engine stops clear of the
 track layer parked at the rails' end (engine A, 10 November: 1.0 m nearer than the old loco, and at least the 1 m wanted
