@@ -30,7 +30,13 @@ export default {
         { name: 'Wedge, the gorge wall from its foot', cam: [957.5, 2.6, 165], look: [950, 6, 157], fov: 55 },
         { name: 'Wedge, the shore', cam: [928, 3.5, 202], look: [957, 1.5, 180], fov: 55 },
       ],
-      variants: [{ name: label, query, graphics: { resolution: 1 } }],
+      variants: [
+        { name: label, query, graphics: { resolution: 1 } },
+        // TP_BEFORE=1 adds the land before the terrain pass (it keeps the paths) from the same poses.
+        ...(process.env.TP_BEFORE
+          ? [{ name: 'Before the pass (terrain=0)', query: 'terrain=0', graphics: { resolution: 1 } }]
+          : []),
+      ],
     },
   ],
 } satisfies ShotList;
