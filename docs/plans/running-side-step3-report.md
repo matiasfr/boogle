@@ -51,6 +51,9 @@ correct player-facing railway. No compatibility flag or second reset was added t
   selection does not imply strict platform-side exclusion. Quarry centres are far enough apart to distinguish sides.
 - `npm run inflight` failed before fetching because the sandbox could not open `FETCH_HEAD`; no retry was made
   because this task forbids external network use. Local worktree refs supplied the ownership check.
+- The default review-stamp invocation also stopped at the sandbox's `FETCH_HEAD` write; the completed stamp uses
+  `--no-fetch`. Required formatting was run on every changed file; the generated halt JSON was then regenerated
+  into its compiler's canonical format so artifact freshness remains exact.
 - `test:net` is deliberately left to the orchestrator, as explicitly requested.
 
 ## What steps 4 to 6 need
@@ -78,5 +81,64 @@ No migration, op/state shape change or additional namespace bump.
 
 ## Verification
 
-Results and evidence will be recorded after the final checks. Not tested on a device. Real-time feel and smoothness
-are unverified; timings under load are not evidence.
+Implementation commit: `ce0e4ea23d8348d4f75177e5e12c14a9fd542293`, tree
+`42d322f49ce5652ff61ce2d6efa75617bb1f3ada`. The follow-up commit changes only this report and the plan checkbox.
+Local logs and numbers: [verification manifest](../../.look/running-side-3/verification.json).
+
+| Command | Timeout | Result |
+| --- | --- | --- |
+| Targeted running-side, lines, placement and existing lever parity tests | 180 s; 5 s per test | 28 passed, 0 failed; six new running-side tests |
+| `npm run check` | 600 s | Exit 0; 2,053 passed, one existing TODO, zero failed; lint, typecheck, registry, level, assets, prefabs and build passed |
+| `node dev/ship-check.ts` | 600 s | Exit 0; 164 affected files, 1,628 passed, one existing TODO, zero failed; 55 lint files |
+| `npm run registry` | 180 s | Exit 0; 19 presence keys, nine message types, three ops, two states |
+| `npm run loop -- run` before and after | 240 s each | Exit 0; four player counts and 20 order variants; whole output identical except wall-clock duration, including waits |
+| `npm run level-check` | 180 s | Exit 0; 14 reports, 18 tracks, seven joins; zero timber/track, machine-clearance or grounding problems |
+| `npm --prefix server test` | 300 s | 371 passed, zero failed |
+| `npm run checkpoints` | 180 s | All 25 stages built through the host save path |
+
+The one TODO is the existing `railway-install` longer-fleet wait bound (`b011e7`, 75%, 1,146 ticks against 1,050),
+not a new failure. The first full check had six stale catalog/artifact expectations; the precise updates are listed
+above and the repeated full check passed. The first targeted run had one overstrong cross-platform refusal
+assertion at overlapping reach centres; it now tests distinct outer reach points without changing server reach.
+No replay golden changed; the replay tests pass. Timings under load are not evidence.
+
+**Independent review:** a fresh Astra high reviewer found no actionable step-3 defect. Its 30 targeted tests passed;
+an independent temporary probe verified 110 server platform selections across seven played stages. This review
+does not cover inherited rotunda work. Review-stamp output is preserved in
+[step-3 output](../../.look/running-side-3/review-stamp.log) and
+[combined-branch output](../../.look/running-side-3/review-stamp-main.log):
+
+```text
+review stamp 0f729781cf79 (14 files since v45/rotunda).
+review stamp 28242de3f03a (35 files since origin/main).
+```
+
+The second stamp includes the inherited rotunda changes and is not a claim that this reviewer reviewed them.
+The source was clean and unchanged throughout all broker runs; their outer manifests identify the worker commit
+above and launcher harness `d87c05719`. Some inner look/scenario verdicts print the harness commit, so use the outer
+manifest for worker provenance.
+
+**Browser evidence (all through the supplied broker):**
+
+- [Two-peer T2 manifest](../../.look/evidence/1794674475525-79452/evidence.json): exit 0. Both peers completed T2;
+  hashes matched at 224 sampled server steps, no missed expected beat or graphics error. Opened `end-still.png` and
+  `p2-end-still.png`: both players beside the completed T2 track and box. This is an opening segment, not a railway
+  ride. The report flags peak warp-clock deficits of 4.035 and 11.279 game seconds (world-tick deficit 0.133 seconds
+  each); completion/convergence passed, timing and smoothness are not established.
+- [Quarry manifest](../../.look/evidence/1794674833802-83448/evidence.json): exit 0 using `--real`, a `trains-on`
+  seed and a fixed overhead camera. Opened `quarry-step3-still.png` and `quarry-step3-motion.png`. Against the
+  placement question, both staggered platforms, roofs and the plank crossing remain present; a train stands on
+  the south track. This wide frame does not resolve lever text or verify pulling one, and the stationary two-second
+  sheet does not establish train direction or feel. Mesh and collider equality supplies the exact placement check.
+- [First look failure](../../.look/evidence/1794674427106-76644/evidence.json): the older launcher rejects
+  `--clock-url` for solo warp before rendering. Retried with its supported `--real`; no harness bypass or edit.
+- [World-inputs failure](../../.look/evidence/1794674475558-79456/evidence.json): one failed scenario, zero graphics
+  errors. It times out waiting for `window.boogle.land.layout.trees`, before any parity assertions. Verified with
+  `git show d87c05719:dev/scenarios/world-inputs.ts`: that trusted harness still requires the retired gifts layout;
+  this checkout's existing scenario already uses the empty client registry. Opened `inputs-final-still.png`, which
+  shows a rendered player by the Village platform. The orchestrator must restart the broker from reviewed current
+  code and rerun `world-inputs`; it remains unverified here. No unrelated scenario code was changed.
+
+No push or ship. `test:net` and the complete Village–Pier return ride remain for the orchestrator's combined
+checkpoint. Step 4's three action proofs and step 5's west-Pier level/gating check remain with their owners.
+Not tested on a device. Real-time feel and smoothness are unverified.

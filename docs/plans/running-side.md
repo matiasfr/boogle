@@ -170,7 +170,11 @@ Models are `npm run models` rows (withCodex).
       "Request stop: to Village" (the existing middle-halt wording, now also at Camp, Far Head, the Pier, the Railhead
       and Ring Island). No other new text. Proof look: the Pier's and Camp's prompts in a still.
       Row: player-visible implementation (fable medium); visual review by a fresh subagent.
-- [ ] **3. The catalog and the server's check. Tier: sim and world, high risk; `WORLD_NS`.**
+- [x] **3. The catalog and the server's check. Tier: sim and world, high risk; `WORLD_NS`.**
+      _Built locally 14 November on the rotunda's shared v45; not shipped. Independent review found no in-scope
+      defects. Step 4 is required before release; the old-way views and prompts are intentionally unfinished here.
+      [Step 3 report](running-side-step3-report.md) records fixtures, recommendations, checks and the stale broker
+      scenario failure._
       `src/sim/railway-lines.ts`: swap the `platforms` tuples of Quarry, Far Head, Railhead and Ring Island, rewrite
       the field's comment, `haltPlatform(halt, way, head, end)`; `src/world/railway-server.ts` line 232 passes whether
       the halt is its line's open far end (from `trainStops`); `src/world/railway-jump.ts` indexes (`QUARRY_LINE2`);
