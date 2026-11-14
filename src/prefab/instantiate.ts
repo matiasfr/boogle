@@ -16,6 +16,10 @@ import {
 } from './validate.ts';
 import './builders/seat-chair.ts';
 import './builders/greybox-box.ts';
+import './builders/workshop-parts.ts';
+import './builders/shop-parts.ts';
+import type { Interactable } from '../player/hands.ts';
+import type { Part } from '../render/part-geometry.ts';
 import { builders } from './builders.ts';
 import { makeGreyboxLabel } from './builders/greybox-label.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
@@ -60,6 +64,8 @@ export function instantiate(
     /** The existing moving platform owns physics; its drawn frame owns this record's root. */
     parent?: { platform: Platform; root: THREE.Object3D; frame?: THREE.Object3D };
     texts?: Readonly<Record<string, readonly string[]>>;
+    makeLabel?: (attachment: Extract<Attach, { kind: 'label' }>, key: string) => THREE.Object3D;
+    handlers?: Readonly<Record<string, (placement: Placement) => Interactable[]>>;
   },
 ) {
   const owner = options.owner;
@@ -100,13 +106,22 @@ export function instantiate(
     if (a.kind !== 'label') return [];
     const key = placement.labels![name]!;
     const lines = options.texts && Object.hasOwn(options.texts, key) ? options.texts[key] : undefined;
-    if (!lines?.length || lines.some((line) => typeof line !== 'string'))
+    if (!options.makeLabel && (!lines?.length || lines.some((line) => typeof line !== 'string')))
       throw new Error(`prefabs: missing label text ${key}`);
-    return [{ a, lines }];
+    return [{ a, lines, key }];
   });
   const gates = new Map<string, () => boolean>();
+  const handlers: (() => Interactable[])[] = [];
   for (const interaction of def.interactions ?? []) {
-    if (interaction.action !== 'seat.sit') throw new Error('prefabs: missing interaction implementation');
+    if (interaction.action !== 'seat.sit') {
+      const handler =
+        options.handlers && Object.hasOwn(options.handlers, interaction.action)
+          ? options.handlers[interaction.action]
+          : undefined;
+      if (typeof handler !== 'function') throw new Error('prefabs: missing interaction implementation');
+      handlers.push(() => handler(placement));
+      continue;
+    }
     if (!interaction.at || def.attach?.[interaction.at]?.kind !== 'seat')
       throw new Error('prefabs: seat action needs seat attachment');
     if (interaction.gate) {
@@ -190,6 +205,8 @@ export function instantiate(
   let enabled = false,
     disposed = false;
   const root = new THREE.Group();
+  const furnishingParts: Part[] = [],
+    glass: { x: number; y: number; z: number }[] = [];
   root.visible = enabled;
   root.position.fromArray(placement.pos);
   root.rotation.copy(euler(placement.rot));
@@ -200,14 +217,22 @@ export function instantiate(
         { ...def.visual.params, ...placement.params },
         batch ? { mesh: batch.target.mesh, index: batch.index + i } : undefined,
       );
-      if (!batch) root.add(visual);
+      if ('parts' in visual) {
+        if (batch || placement.rot || placement.scale || placement.pos.some((v) => v !== 0))
+          throw new Error('prefabs: merged parts require an identity local placement');
+        furnishingParts.push(...visual.parts);
+        glass.push(...(visual.glass ?? []));
+      } else if (!batch) root.add(visual);
       else batch.target.slots.add(batch.index + i);
     }
   }
-  for (const { a, lines } of labels) {
-    const label = makeGreyboxLabel(a, lines);
-    root.add(label.mesh);
-    owner.cleanup(label.dispose);
+  for (const { a, lines, key } of labels) {
+    if (options.makeLabel) root.add(options.makeLabel(a, key));
+    else {
+      const label = makeGreyboxLabel(a, lines!);
+      root.add(label.mesh);
+      owner.cleanup(label.dispose);
+    }
   }
   owner.add(root);
   if (parent) parent.root.add(root);
@@ -277,6 +302,9 @@ export function instantiate(
   owner.cleanup(dispose);
   return {
     root,
+    parts: furnishingParts,
+    glass,
+    targets: () => (enabled && !disposed ? handlers.flatMap((handler) => handler()) : []),
     bodies,
     seats,
     attach(name: string): { definition: Attach; at: THREE.Vector3 } {

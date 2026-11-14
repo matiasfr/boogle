@@ -1,0 +1,106 @@
+{
+  "signs": {
+    "src/entities/route-greybox/leg-view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": ["LEG_OBJECTIVES", "createLegView"],
+      "consumers": ["src/entities/railway/works-live.ts"]
+    },
+    "src/entities/ring-steel/view.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": ["createRingSteel"],
+      "consumers": ["src/entities/railway/works-live.ts"]
+    },
+    "src/entities/railway/cart-view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": ["createRailwayCart"],
+      "consumers": ["src/entities/railway/view.ts"]
+    },
+    "src/entities/railway/crossing-view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": ["createRailwayCrossing"],
+      "consumers": ["src/entities/railway/works-live.ts"]
+    },
+    "src/entities/railway/kit-board.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": ["PLATE_LOOK", "STEEL_MARK", "createKitBoard", "kitMarks", "legKitFlight", "paintPlate"],
+      "consumers": [
+        "src/entities/railway/train-view.ts",
+        "src/entities/ring-steel/view.ts",
+        "src/entities/route-greybox/leg-view.ts"
+      ]
+    },
+    "src/entities/railway/stations.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": ["buildStation", "frameBesideLine"],
+      "consumers": ["src/entities/railway/line2-view.ts", "src/entities/railway/view.ts"]
+    },
+    "src/entities/railway/stock-sign.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": ["stockSign"],
+      "consumers": ["src/entities/railway/line2-view.ts", "src/entities/railway/shelf-view.ts"]
+    },
+    "src/entities/railway/works-view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": ["createRailwayWorks"],
+      "consumers": ["src/entities/railway/works-live.ts"]
+    }
+  },
+  "interactions": {
+    "src/proto/crossing/index.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": [],
+      "consumers": ["src/features/proto-crossing.ts"]
+    },
+    "src/features/boogler.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": [],
+      "consumers": []
+    },
+    "src/features/dino.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": [],
+      "consumers": []
+    },
+    "src/features/mushrooms.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": [],
+      "consumers": []
+    },
+    "src/entities/town/index.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": [],
+      "consumers": []
+    },
+    "src/entities/railway/index.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": [],
+      "consumers": []
+    },
+    "src/entities/lookout/index.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": [],
+      "consumers": []
+    },
+    "src/entities/finds/index.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
+      "exports": [],
+      "consumers": []
+    }
+  }
+}

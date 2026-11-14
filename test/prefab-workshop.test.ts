@@ -10,7 +10,8 @@ import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import { H } from '../src/place/terrain.ts';
 import * as layout from '../src/place/layout.ts';
 import { housePlan, towerPlan, blockPlan } from '../src/place/building-plans.ts';
-import { workshopKit } from '../src/entities/town/workshop-kit.ts';
+import kitLevel from '../content/built/levels/workshop-kit.json' with { type: 'json' };
+import { merged } from '../src/render/part-geometry.ts';
 import { PLAYER_R } from '../src/constants.ts';
 import type { Body, Shape } from '../src/physics/engine.ts';
 import type { Seat } from '../src/entities/railway/seat.ts';
@@ -52,6 +53,10 @@ const opening = sourceModule<{ forgePlan(): Plan }>(fs.readFileSync('src/place/o
   planTower: towerPlan,
   planBlock: blockPlan,
 });
+const { workshopParts } = sourceModule<typeof import('../src/prefab/builders/workshop-parts.ts')>(
+  fs.readFileSync('src/prefab/builders/workshop-parts.ts', 'utf8'),
+  { registerBuilder() {} },
+);
 export function captureWorkshop() {
   const plan = opening.forgePlan();
   const colliders: unknown[] = [],
@@ -90,14 +95,24 @@ export function captureWorkshop() {
     validateLevel,
     validateLevelArtifact,
     loadLevelArtifact,
-    builders: new Map([
+    builders: new Map<string, import('../src/prefab/builders.ts').Builder>([
       ['seat.chair', () => chair],
       ['greybox.box', () => chair],
+      ['town.shop-parts', () => chair],
+      [
+        'town.workshop-parts',
+        (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
+      ],
     ]),
     registerSeat,
     ROOM_GROUP: 8,
     staticBody,
   });
+  const workshopKit = sourceFunction<typeof import('../src/entities/town/workshop-kit.ts').workshopKit>(
+    'src/entities/town/workshop-kit.ts',
+    'workshopKit',
+    { merged, instantiate: runtime.instantiate, artifact, level: kitLevel, loadLevelArtifact, loadPrefabArtifact },
+  );
   let chairRoot = chair;
   const instantiate: typeof runtime.instantiate = (...args) => {
     const instance = runtime.instantiate(...args);
@@ -206,6 +221,8 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
       validatePrefab,
       builders: new Map<string, () => THREE.Object3D>([
         ['greybox.box', () => new THREE.Group()],
+        ['town.workshop-parts', () => new THREE.Group()],
+        ['town.shop-parts', () => new THREE.Group()],
         [
           'seat.chair',
           () => {

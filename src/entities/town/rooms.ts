@@ -88,6 +88,8 @@ export type Room = {
   proxy: THREE.Mesh;
   solids: Solid[];
   bodies: Body[];
+  /** Record-owned furnishings follow the same standing/teardown transition as legacy solids. */
+  furnishings: { setEnabled(on: boolean): void }[];
   up: boolean;
   ready: boolean;
 };
@@ -341,6 +343,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       proxy,
       solids: [],
       bodies: [],
+      furnishings: [],
       up: false,
       ready: false,
     };
@@ -369,6 +372,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
   function setSolid(r: Room, on: boolean) {
     for (const b of r.bodies) owner.removeBody(b);
     r.bodies.length = 0;
+    for (const piece of r.furnishings) piece.setEnabled(on);
     if (!on) return;
     q_.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
     for (const s of r.solids) {
