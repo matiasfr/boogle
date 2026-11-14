@@ -73,7 +73,7 @@ const DOOR = { open: (100 * Math.PI) / 180, swingS: 0.25, near: 1.2, holdS: 0.6 
  * stay shut as drawn; true brings the swing back. They were never solid, so walking in doesn't wait on them. */
 const DOORS_SWING = false;
 /** The cab's cutaway (owner, 11 November: with Buddy in the cab the follow camera saw its back wall), the rooms' recipe
- * (src/entities/town/rooms.ts): while you're in a cab or in its doorway, its roof lifts off and each wall on the camera's
+ * (src/entities/town/rooms.ts): while you're inside a cab (engine.ts, `inEngineCab`), its roof lifts off and each wall on the camera's
  * side sinks to a kerb, on your tab alone. Colliders stay; a shadow-only shell keeps the cab's shade. Someone watching
  * from outside sees the cab whole, on theirs. Local: positions every tab already has, no state, op or presence. */
 const CUT = {
@@ -82,7 +82,6 @@ const CUT = {
   farWall: 1.5, // and it comes back only this far inside: no flicker at the line
   kerb: 0.1, // of a wall's height left standing, so the cab's outline still reads
   lift: 3, // m the roof rises as it goes
-  door: 0.7, // m out from a doorway that counts as getting on or off
 } as const;
 type FootPlace = (k: number, out: THREE.Vector3) => THREE.Vector3;
 
@@ -719,24 +718,10 @@ export async function createRailwayTrains(
   const cabLocal = new THREE.Vector3(),
     camLocal = new THREE.Vector3();
   let cutTrain: (typeof trains)[number] | null = null;
-  /** Your feet in `tr`'s cab, or in its doorway; `keep` widens it, so a step back out doesn't flicker it. */
+  /** You (`cabLocal`: your middle and feet in the car's frame) inside `tr`'s cab (engine.ts, `inEngineCab`); `keep`
+   * widens it, so a step back in the doorway doesn't flicker it. */
   function inCab(tr: (typeof trains)[number], keep: boolean) {
-    const c = shape.ENGINE_CAB,
-      p = cabLocal,
-      m = keep ? 0.25 : 0;
-    const inside =
-      Math.abs(p.x) < c.hx + m &&
-      p.z > c.zBack - m &&
-      p.z < c.zFront + m &&
-      p.y > c.floor - 0.3 &&
-      p.y < c.roofUnder - 0.6 + m;
-    const doorway =
-      Math.abs(p.x) < c.hx + CUT.door + m &&
-      p.z > c.door.z[0] - 0.15 - m &&
-      p.z < c.door.z[1] + 0.15 + m &&
-      p.y > c.step - 0.35 &&
-      p.y < c.floor + 0.5;
-    return tr.cars[0]!.mesh.visible && (inside || doorway);
+    return tr.cars[0]!.mesh.visible && shape.inEngineCab(cabLocal.x, cabLocal.y, cabLocal.z, keep);
   }
   function cutCab(dt: number) {
     const b = me.body;
@@ -748,6 +733,8 @@ export async function createRailwayTrains(
       for (const tr of trains) {
         if (!tr.cab) continue;
         const loco = tr.model.cars[0]!;
+        // This frame's pose (drawCar just moved it), not the last render's: a moving train is a step further on.
+        loco.updateWorldMatrix(true, false);
         toCar.copy(loco.matrixWorld).invert();
         cabLocal.set(p.x, p.y - PLAYER_R, p.z).applyMatrix4(toCar);
         if (inCab(tr, tr === cutTrain)) {
