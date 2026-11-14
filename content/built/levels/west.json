@@ -5,28 +5,7 @@
     "area": "west",
     "data": {
       "basis": {
-        "o": {
-          "x": 801,
-          "z": 10
-        },
-        "u": {
-          "axis": {
-            "x": -0.6155,
-            "z": -0.7881
-          },
-          "compute": "unit"
-        },
-        "v": {
-          "axis": {
-            "axis": {
-              "x": -0.6155,
-              "z": -0.7881
-            },
-            "compute": "unit"
-          },
-          "compute": "perp",
-          "sign": -1
-        }
+        "operand": 0
       },
       "marks": {
         "cliffFoot": {
@@ -48,28 +27,7 @@
             ],
             "compute": "point",
             "frame": {
-              "o": {
-                "x": 801,
-                "z": 10
-              },
-              "u": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "v": {
-                "axis": {
-                  "axis": {
-                    "x": -0.6155,
-                    "z": -0.7881
-                  },
-                  "compute": "unit"
-                },
-                "compute": "perp",
-                "sign": -1
-              }
+              "operand": 0
             }
           }
         },
@@ -80,28 +38,7 @@
           ],
           "compute": "point",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           }
         },
         "platformB": {
@@ -111,28 +48,7 @@
           ],
           "compute": "point",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           }
         },
         "rampFoot": {
@@ -142,28 +58,7 @@
           ],
           "compute": "point",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           }
         },
         "rampHead": {
@@ -173,28 +68,7 @@
           ],
           "compute": "point",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           }
         },
         "root": {
@@ -204,28 +78,7 @@
           ],
           "compute": "point",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           }
         },
         "seaEnd": {
@@ -235,28 +88,7 @@
           ],
           "compute": "point",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           }
         },
         "stairFoot": {
@@ -278,28 +110,7 @@
           ],
           "compute": "point",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           }
         }
       },
@@ -310,28 +121,7 @@
         ],
         "compute": "point",
         "frame": {
-          "o": {
-            "x": 801,
-            "z": 10
-          },
-          "u": {
-            "axis": {
-              "x": -0.6155,
-              "z": -0.7881
-            },
-            "compute": "unit"
-          },
-          "v": {
-            "axis": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "compute": "perp",
-            "sign": -1
-          }
+          "operand": 0
         }
       },
       "pads": [],
@@ -345,28 +135,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           },
           "h": 1,
           "id": "bed",
@@ -383,28 +152,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           },
           "h": 2,
           "id": "platform-a",
@@ -421,28 +169,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           },
           "h": 2,
           "id": "platform-b",
@@ -459,28 +186,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           },
           "h": 0.3,
           "id": "end-ramp",
@@ -501,28 +207,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           },
           "h": 2,
           "id": "apron",
@@ -538,18 +223,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 0,
-              "z": 0
-            },
-            "u": {
-              "x": 1,
-              "z": 0
-            },
-            "v": {
-              "x": 0,
-              "z": 1
-            }
+            "operand": 1
           },
           "h": 0.4,
           "id": "stair",
@@ -571,18 +245,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 0,
-              "z": 0
-            },
-            "u": {
-              "x": 1,
-              "z": 0
-            },
-            "v": {
-              "x": 0,
-              "z": 1
-            }
+            "operand": 1
           },
           "h": 1,
           "id": "stair-parapet-n",
@@ -603,18 +266,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 0,
-              "z": 0
-            },
-            "u": {
-              "x": 1,
-              "z": 0
-            },
-            "v": {
-              "x": 0,
-              "z": 1
-            }
+            "operand": 1
           },
           "h": 1,
           "id": "stair-parapet-s",
@@ -648,28 +300,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           },
           "id": "bay row",
           "y0": 3.9,
@@ -684,28 +315,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           },
           "id": "apron",
           "y0": 4.9,
@@ -720,28 +330,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           },
           "id": "platform-a lever end",
           "y0": 4.9,
@@ -756,28 +345,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "o": {
-              "x": 801,
-              "z": 10
-            },
-            "u": {
-              "axis": {
-                "x": -0.6155,
-                "z": -0.7881
-              },
-              "compute": "unit"
-            },
-            "v": {
-              "axis": {
-                "axis": {
-                  "x": -0.6155,
-                  "z": -0.7881
-                },
-                "compute": "unit"
-              },
-              "compute": "perp",
-              "sign": -1
-            }
+            "operand": 0
           },
           "id": "platform-b lever end",
           "y0": 4.9,
@@ -785,7 +353,47 @@
         }
       ]
     },
-    "kind": "leg2"
+    "kind": "leg2",
+    "operands": [
+      {
+        "o": {
+          "x": 801,
+          "z": 10
+        },
+        "u": {
+          "axis": {
+            "x": -0.6155,
+            "z": -0.7881
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -0.6155,
+              "z": -0.7881
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": -1
+        }
+      },
+      {
+        "o": {
+          "x": 0,
+          "z": 0
+        },
+        "u": {
+          "x": 1,
+          "z": 0
+        },
+        "v": {
+          "x": 0,
+          "z": 1
+        }
+      }
+    ]
   },
   "place": "west",
   "placements": [],

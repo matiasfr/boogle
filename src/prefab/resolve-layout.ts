@@ -3,6 +3,7 @@
 import type { Json, JsonObject, LevelDef, Placement, Vec3 } from './types.ts';
 import { LINE2_END_S, line2World, line2Y } from '../entities/railway/line2-path.ts';
 import { expandHaltKit } from './halt-layout.ts';
+import { expandOperands } from './operands.ts';
 import { PAD_SIZE } from './greybox-constants.ts';
 type XZ = { x: number; z: number };
 type Tone = 'grey' | 'light' | 'dark' | 'pale' | 'black';
@@ -208,7 +209,7 @@ function evaluate(value: Json): Json {
 }
 export function resolveLayout(level: LevelDef): LevelDef {
   if (level.layout === undefined) return level;
-  const layout = object(level.layout) as JsonObject;
+  const layout = expandOperands(object(level.layout) as JsonObject);
   if (!Array.isArray(level.placements)) throw new Error('prefabs: layout requires placements array');
   if (level.placements.length || level.analysis)
     throw new Error('prefabs: layout cannot coexist with expanded placements or analysis');

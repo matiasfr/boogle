@@ -5,9 +5,23 @@ function object(value: unknown): JsonObject {
     throw new Error('prefabs: expected authored seat attachment object');
   return value as JsonObject;
 }
-export function resolvePrefab(record: PrefabDef): PrefabDef {
+export function resolvePrefab(record: PrefabDef, records: Readonly<Record<string, PrefabDef>> = {}): PrefabDef {
   if (record.layout === undefined) return record;
-  const layout = record.layout;
+  let layout = record.layout;
+  if (layout?.source !== undefined) {
+    const source =
+      typeof layout.source === 'string' && Object.hasOwn(records, layout.source) ? records[layout.source] : undefined;
+    if (
+      layout.kind !== 'room-hull' ||
+      ['w', 'd', 'high', 'rise'].some((key) => Object.hasOwn(layout, key)) ||
+      !source ||
+      source.layout !== undefined ||
+      !('builder' in source.visual) ||
+      source.visual.builder !== 'town.room-shell'
+    )
+      throw new Error('prefabs: invalid room dimension source');
+    layout = { ...object(source.visual.params.spec), ...layout };
+  }
   if (layout?.kind === 'room-hull') {
     if (record.colliders.length || record.attach !== undefined)
       throw new Error('prefabs: room hull must be recipe-only');

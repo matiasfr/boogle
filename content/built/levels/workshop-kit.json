@@ -3,87 +3,15 @@
   "format": "boogle-level",
   "place": "workshop-kit",
   "placements": [
-    {
-      "id": "forge-workshop-floor",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.workshop-floor"
-    },
-    {
-      "id": "forge-workshop-chimney",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.workshop-chimney"
-    },
-    {
-      "id": "forge-workshop-anvil",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.workshop-anvil"
-    },
-    {
-      "id": "forge-workshop-tub",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.workshop-tub"
-    },
-    {
-      "id": "forge-workshop-bellows",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.workshop-bellows"
-    },
-    {
-      "id": "forge-workshop-bench",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.workshop-bench"
-    },
-    {
-      "id": "forge-workshop-logs",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.workshop-logs"
-    },
-    {
-      "id": "forge-workshop-rails",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.workshop-rails"
-    },
-    {
-      "id": "forge-workshop-lanterns",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.workshop-lanterns"
-    }
+    {"id":"forge-workshop-floor","pos":[0,0,0],"prefab":"town.workshop-floor"},
+    {"id":"forge-workshop-chimney","pos":[0,0,0],"prefab":"town.workshop-chimney"},
+    {"id":"forge-workshop-anvil","pos":[0,0,0],"prefab":"town.workshop-anvil"},
+    {"id":"forge-workshop-tub","pos":[0,0,0],"prefab":"town.workshop-tub"},
+    {"id":"forge-workshop-bellows","pos":[0,0,0],"prefab":"town.workshop-bellows"},
+    {"id":"forge-workshop-bench","pos":[0,0,0],"prefab":"town.workshop-bench"},
+    {"id":"forge-workshop-logs","pos":[0,0,0],"prefab":"town.workshop-logs"},
+    {"id":"forge-workshop-rails","pos":[0,0,0],"prefab":"town.workshop-rails"},
+    {"id":"forge-workshop-lanterns","pos":[0,0,0],"prefab":"town.workshop-lanterns"}
   ],
   "rotation": "yaw, pitch, roll in radians, order YXZ",
   "units": "metres",
