@@ -63,6 +63,12 @@ History for [decisions-rail.md](decisions-rail.md), verbatim.
 
 ### Agent calls the owner ruled on
 
+_Archived 14 November 2026; overruled by [The Boogler's statue replaces the town clock](decisions-rail.md#d-2026-11-14-the-boogler-s-statue-replaces-the-clock) (owner: "Yeah, the statue should replace the clock."). The row is verbatim, including its original status; its footing stays, under the statue._
+
+| Date | Call | Where | By | Why this pick | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-10 | New: the clock rises free on the green's centre when the trains run, on a stone footing that stands from the first arrival. Takes the planner's row (question 4) and adds the footing | [town-layout](plans/town-layout.md#design-review-designer-2026-11-10), call 7 | designer (town layout review); first proposed by the planner | Port check (owner call "Port from Place only what still fits"): keep, changed. The town's one tall landmark and the one thing that still grows because a train came; the footing keeps the centre from standing bare for about two hours | open |
+
 _Archived 14 November 2026; the owner accepts the listed [Round blockout](decisions-rail.md#d-2026-11-14-round-blockout-recommendations-accepted) and [summit path](decisions-rail.md#d-2026-11-14-summit-path-recommendations-accepted) recommendations. Rows are verbatim, including original statuses; acceptance covers the choices named in those entries, not every subsidiary default in a row._
 
 | Date | Call | Where | By | Why this pick | Status |

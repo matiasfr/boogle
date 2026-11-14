@@ -13,6 +13,8 @@ Plan and page only; no game code changed. Coordinates are Place-local metres (wo
 Bearings are degrees clockwise from north. A three.js `yaw` turns a building's door (local +z) to face bearing
 `180° − yaw`. Player walks are timed at 5.6 m/s, little guys at 1.7 m/s (`folk.ts`).
 
+> **14 November 2026: the statue replaces the clock.** The owner: "Yeah, the statue should replace the clock." This plan's clock at G (its footing, its rising when the trains run, calls 7 and question 4) is superseded: The Boogler's stone statue stands on the footing at G and no clock is built there or elsewhere. Read "the clock" below as the statue at G; the distances stand. [home-flip](home-flip.md#the-booglers-statue-on-the-footing-14-november), [decision](../decisions-rail.md#d-2026-11-14-the-boogler-s-statue-replaces-the-clock).
+
 ## The owner's words
 
 - 10 November, **the pick**, on the three options: "Ok sounds good, we can do the round, it's a lot more organic
