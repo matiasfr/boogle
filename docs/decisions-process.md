@@ -6,6 +6,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
+- 2026-11-14 · shared v45 reset may ship after right-hand running is fixed, re-reviewed and its checkpoints pass; never mid-session; tell the owner first ([entry](#d-2026-11-14-shared-v45-reset-go-ahead))
 - 2026-11-11 · The chunked far ground is on by default; the cheaper far sea stays behind its setting until its own stills ([entry](#d-2026-11-11-far-ground-on-by-default)). _Completes point 5 of 7 November's "keep going while the owner is away" for the ground._
 - 2026-11-11 · M13 deletes Place-only tools outright; a tool still needed is rebuilt as a native dev tool against rows and queries, not kept alive behind Place ([entry](#d-2026-11-11-native-dev-tools-not-place-only-ones)). _Completes the Place tools line of the ECS migration answers (10 November)._
 - 2026-11-13 · Server-owned state: the seven classic states are retired, not ported; authority moves to the server now on today's storage, before the ECS library decision; server-owned seats and The Boogler off the lead tab come right after checkpoint B, ahead of the passenger and train work ([entry](#d-2026-11-13-server-owned-state-answered)). _Supersedes, for the seats part, 10 November's "train seats are not made server-owned in this migration; do it with the passenger and train work"._
@@ -81,6 +82,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-14-shared-v45-reset-go-ahead"></a>**2026-11-14, the shared v45 reset has conditional go-ahead** (owner: "I will take your recommendations on the other decisions."). The listed shared v45 save-reset recommendation is accepted: go ahead once right-hand running is fixed and re-reviewed and its checkpoints pass. Never ship this reset while he is mid-session, and the orchestrator tells him before it ships. These are conditions on the shared v45 reset only, not a new standing hold on all development or resets; for this reset they narrow [Save resets never block development or architecture](agents/owner-calls.md#save-resets-never-block-development-or-architecture). This records authorization, not a claim that the fixes, review, checkpoints or notification have happened.
 
 - <a id="d-2026-11-11-far-ground-on-by-default"></a>**2026-11-11, far ground on by default** (owner, 11 November, after off/on stills at the village green and from Ring Island: "Yes, ship it on"). The chunked far ground (frustum-culled 192 m tiles, three LODs, stitched borders, `src/place/far-ground.ts`) becomes the default: the main island's terrain draw falls from 241,836 to about 105k triangles at the green with no visible difference in the stills. Measured in triangles and draws, not frame time; not tested on a device. To revert, set `default` back to `false` in `far-ground.ts`. The far sea half of 7 November's point 5 still waits for its stills.
 
