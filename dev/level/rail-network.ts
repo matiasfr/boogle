@@ -2,7 +2,7 @@
 // (./track-continuity.ts) and the rail map (./rail-map.ts, docs/world/rail-map.html). Read-only: every point comes from
 // the owning data, nothing here is a second copy of a layout.
 //   live lines   Place's rail splines (src/place/layout.ts LINES, 1 m samples): what the view draws and poses cars
-//                on (rail.ts poseCarOnLine), today's track (down) and the up track's lateral offset (FORMATION, upLat,
+//                on (rail.ts poseCarOnLine), today's track (down) and the offset track's lateral offset (FORMATION, offsetLat,
 //                crossLat: the stub turnouts, Far Head's crossover)
 //   sim paths    RAIL_LINES[...].path (src/sim/railway-lines.ts, 10 m samples): what railLinePoint reads (the server's
 //                near-train check only)
@@ -15,11 +15,11 @@ import {
   HALTS,
   LINES,
   ORIGIN,
-  UP_HALTS,
+  OFFSET_HALTS,
   crossLat,
   lineAt,
   railY,
-  upLat,
+  offsetLat,
   type Line,
   type LinePoint,
 } from '../../src/place/layout.ts';
@@ -48,6 +48,7 @@ import {
 import { ENGINE } from '../../src/entities/railway/engine.ts';
 import { BUFFERS, LEG, SPUR } from '../../src/place/home-station.ts';
 import { TRAILER, TRAIN_OFFSETS } from '../../src/entities/railway/cars.ts';
+import { line2World, line2Y } from '../../src/entities/railway/line2-path.ts';
 
 export type Pt = { x: number; z: number; y: number; s: number };
 /** Who runs it: `live` trains run on it today; `v26` drawn in the game today, trains from v26; `v27` Ring Island build
@@ -91,7 +92,8 @@ export const LIVE = [
 ] as const;
 
 /** Ring Island's lat (cm east of track 1) for a track. */
-const RING_TRACK_LAT = { down: RING_FORMATION.tracks[1], up: RING_FORMATION.tracks[0] } as const;
+// These keys name physical sides in this report, not the train's direction: the offset side is homeward.
+const RING_TRACK_LAT = { down: RING_FORMATION.tracks[0], up: RING_FORMATION.tracks[1] } as const;
 /** u (cm) along the crossing of a world point: the pier head's datum, line 2's heading (inverse of ringAt). */
 function ringU(x: number, z: number) {
   const ux = 0.0272,
@@ -99,14 +101,6 @@ function ringU(x: number, z: number) {
   const dx = x * 100 - 140200,
     dz = z * 100 - -37200;
   return { u: (ux * dx - dz) / n, lat: (dx + ux * dz) / n };
-}
-function ringTrack(lat: number, u0: number, u1: number, step = 1000): Pt[] {
-  const pts: Pt[] = [];
-  for (let u = u0; u <= u1; u += step) {
-    const p = ringAt(u, lat);
-    pts.push({ x: m(p.x), z: m(p.z), y: m(ringDeckY(u)), s: m(RING_S_HEAD + u) });
-  }
-  return pts;
 }
 /** The balloon loop as Ring Island's R1 lays it out: from the halt's north end 12 m on along the line, then straight to
  * the circle's west point (the greybox's straight links), round the circle and back. */
@@ -156,7 +150,7 @@ export function tracks(): Track[] {
     out.push({
       id: `${L.id}-down`,
       line: L.id,
-      label: `${L.name}, today's track (down; single where the up track merges)`,
+      label: `${L.name}, original outward track (single where the offset track merges)`,
       status: 'live',
       kind: 'down',
       nominal: 1,
@@ -167,11 +161,11 @@ export function tracks(): Track[] {
     out.push({
       id: `${L.id}-up`,
       line: L.id,
-      label: `${L.name}, up track (s ${L.f.from}-${L.f.to}, drawn; trains from v26)`,
+      label: `${L.name}, offset homeward track (s ${L.f.from}-${L.f.to}, drawn; trains from v26)`,
       status: 'v26',
       kind: 'up',
       nominal: 1,
-      pts: placeTrack(L.line, (s) => upLat(L.f, s), L.f.from, L.f.to),
+      pts: placeTrack(L.line, (s) => offsetLat(L.f, s), L.f.from, L.f.to),
       pose: 'spline',
       enforce: true,
     });
@@ -180,7 +174,7 @@ export function tracks(): Track[] {
       out.push({
         id: `${L.id}-crossover`,
         line: L.id,
-        label: `${L.name}, Far Head crossover (s ${c[0]}-${c[1]}, up to down)`,
+        label: `${L.name}, Far Head crossover (s ${c[0]}-${c[1]}, original to offset on departure)`,
         status: 'v26',
         kind: 'crossover',
         nominal: 0.5,
@@ -204,22 +198,24 @@ export function tracks(): Track[] {
       enforce: false,
     });
   }
-  // v27: line 2 on from the pier head. The view: Place's spline to its end, then ringAt's straight line; the up track
-  // on the widened pier (no merge at s 556 once Q7 is laid) and on over the bents.
-  const E = LINES.east;
+  // Sample the production 12 m Pier blend, rather than stitching the layout's s 743 end backwards onto ring u 0
+  // (s 742). That obsolete splice invented a short chord and kinks on the offset track. Same thresholds as before.
   for (const k of ['down', 'up'] as const) {
-    const pier = k === 'down' ? [] : placeTrack(E, () => -4, 556, E.len);
-    const ring = ringTrack(RING_TRACK_LAT[k], 0, 46800);
+    const pts: Pt[] = [];
+    for (let s = k === 'down' ? RING_S_HEAD / 100 : 556; s <= (RING_S_HEAD + 46800) / 100; s++) {
+      const p = line2World(s, RING_TRACK_LAT[k] / 100, { x: 0, z: 0 });
+      pts.push({ ...p, y: line2Y(s), s });
+    }
     out.push({
       id: `ring-${k}`,
       line: 'line2',
       label: `Line 2 to Ring Island, ${k} track (${k === 'up' ? 'the widened pier from s 556, then ' : ''}pier head u 0 to the island halt's north end, u 468 m)`,
-      status: 'v27',
+      status: 'live',
       kind: k,
-      nominal: 10,
-      pts: k === 'down' ? ring : [...pier.filter((p) => p.s <= E.len), ...ring.map((p) => ({ ...p }))],
-      pose: 'polyline',
-      enforce: false,
+      nominal: 1,
+      pts,
+      pose: 'spline',
+      enforce: true,
     });
   }
   // The sim's path in v27: line 2's RAIL_LINES path (to s 740) with RING_PATH appended (railLinePoint, 10 m).
@@ -460,7 +456,7 @@ export function liveHalts(): LiveHalt[] {
   const l1 = TRAIN_STOPS[0]!.map((s) => s / 100),
     l2 = TRAIN_STOPS[1]!.map((s) => s / 100);
   const p = (name: string) => HALTS.find((h) => h.name === name)!;
-  const u = (name: string) => UP_HALTS.find((h) => h.name === name)!;
+  const u = (name: string) => OFFSET_HALTS.find((h) => h.name === name)!;
   const span = (h: { s0: number; s1: number; lat: number }) => ({ s0: h.s0, s1: h.s1, lat: h.lat });
   return [
     { name: 'Village', line: 'line1', stop: l1[0]!, up: span(p('Village')), down: span(p('Village')), status: 'live' },
@@ -473,17 +469,24 @@ export function liveHalts(): LiveHalt[] {
       down: span(p('Village, line 2')),
       status: 'live',
     },
-    { name: 'Quarry', line: 'line2', stop: l2[1]!, up: span(u('Quarry, up')), down: span(p('Quarry')), status: 'live' },
+    { name: 'Quarry', line: 'line2', stop: l2[1]!, up: span(p('Quarry')), down: span(u('Quarry, up')), status: 'live' },
     {
       name: 'Far Head',
       line: 'line2',
       stop: l2[2]!,
-      up: span(u('Far Head, up')),
-      down: span(p('Far Head')),
+      up: span(p('Far Head')),
+      down: span(u('Far Head, up')),
       status: 'live',
     },
-    // Place's pier halt (layout.ts PIER: s 719-741, lat -2.9 on the rack side); v27 adds the up platform at lat -6.9.
-    { name: 'Pier', line: 'line2', stop: l2[3]!, up: null, down: { s0: 719, s1: 741, lat: -2.9 }, status: 'live' },
+    // After Q7: homeward-only on the piled west platform. Before Q7: the east terminal deck.
+    {
+      name: 'Pier',
+      line: 'line2',
+      stop: l2[3]!,
+      up: null,
+      down: span(OFFSET_HALTS.find((h) => h.pair === 5)!),
+      status: 'live',
+    },
   ];
 }
 /** Along-line obstacles a standing train must clear (s in m), per live line. */
@@ -523,7 +526,7 @@ export function obstacles(line: 'line1' | 'line2'): Obstacle[] {
   if (line === 'line2') {
     const c = FORMATION.quarry.crossover!;
     out.push({ s0: c[0], s1: c[1], what: `Far Head's crossover (s ${c[0]}-${c[1]})`, tracks: 'both' });
-    for (const h of UP_HALTS)
+    for (const h of OFFSET_HALTS)
       out.push({
         s0: h.crossS - 1.2,
         s1: h.crossS + 1.2,

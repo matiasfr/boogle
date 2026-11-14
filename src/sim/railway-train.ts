@@ -137,11 +137,11 @@ export const TRAIN_HOME: readonly number[] = RAIL_TRAINS.map((t) => t.home);
 /** The track each train (by slot) stands on before it wakes. */
 export const TRAIN_HOME_TRACK: readonly number[] = RAIL_TRAINS.map((t) => t.track);
 type LineHalt = { name: string; line: number; stop: number; x: number; z: number; y: number; reach: number };
-/** Every halt with v25's one platform, today's (the down track's): the id is the index (rail.call's `id`). Typed as
+/** Every halt with v25's original-side platform (v45's outbound side): the id is the index (rail.call's `id`). Typed as
  * v27's eight-halt tuple (v25's six, then the Railhead and Ring Island), which test/railway-lines.test.ts holds the
  * catalog to; the type goes when callers read RAIL_HALTS (v26 step 4b). The Railhead's here is its first head's
  * (haltPlatform reads the current one). */
-export const LINE_HALTS = RAIL_HALTS.map(({ name, line, stop, platforms: [, p] }) => ({
+export const LINE_HALTS = RAIL_HALTS.map(({ name, line, stop, platforms: [p] }) => ({
   name,
   line,
   stop,
@@ -168,6 +168,9 @@ export type RailTrain = {
   /** Running on track 0 to `to`, it turns back there though that halt is no longer an open end: it was on the end's
    * crossover when the line was extended past it (Far Head's, as Q6 opens the pier), so it has already crossed. */
   turn: boolean;
+  /** Far-end departure stop in cm, or 0: retained through replans and signal holds until the next halt.
+   * Server-owned so a late join/save draws the same departure track, including a moving railhead. */
+  origin: number;
   logs: number;
   rails: number;
   /** Line 2 only, one train at most: the footing wagon is coupled, and the footings aboard it. */
@@ -196,6 +199,7 @@ export function trainIdle(slot: number): RailTrain {
     v0: 0,
     dest: here,
     turn: false,
+    origin: TRAIN_HOME_TRACK[slot] === 1 && at === trainStopsOf(RAIL_TRAINS[slot]!.line, 0).length - 1 ? here : 0,
     logs: 0,
     rails: 0,
     wagon: false,

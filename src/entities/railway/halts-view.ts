@@ -1,17 +1,20 @@
 // The stations trains stop at: a platform, a roof, a bench, a signal, a request lever and a map display. The owner asked
 // "what is the platform", so they don't exist until there's a train to wait for: they drop into place, piece by piece,
 // when trains come. Trains stop on request (owner, 10 November; docs/plans/works-late-game.md, step 1): each platform
-// has a lever with one handle for its own way, plaqued with the end it goes to (docs/plans/generic-lines.md, v26: today's
-// platforms serve the down track, the up platforms at Quarry and Far Head the up track), and the next train heading that
-// way that can still brake stops; the signal's arm drops while a request stands. Far Head's up lever hangs chained until
-// the pier is laid. Local over the server's request bits (`Line.req`, each train's `req`).
+// has a lever with one handle for its own way, plaqued with the end it goes to, and the next train heading that way
+// that can still brake stops; the signal's arm drops while a request stands. Trains keep to the right
+// (docs/plans/running-side.md, v45), so the lever you pull is on the platform its train stops at: a halt's first
+// platform (the original track's, east) calls the train going on, and the train home while the halt is the line's open
+// end (both ways stand there then, and the lever is restood at the end that train leaves by); its second platform
+// (the offset track's, west) calls the train home, and hangs chained while the halt is the end. Local over the server's
+// request bits (`Line.req`, each train's `req`).
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { trainAlong, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
-import { railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
+import { railCallReady, railPlatformEnd, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { ringHead } from '../../sim/railway-queries.ts';
@@ -25,7 +28,7 @@ import {
   type ReadWorld,
 } from '../../sim/railway-rows.ts';
 import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
-import { leverAskTaken, leverPlatform, leverYield, railheadLever } from './lever-place.ts';
+import { LEVER_PLACE, RING_LEVER_OFF, leverAskTaken, leverPlatform, leverYield, railheadLever } from './lever-place.ts';
 import { line2World, line2Y, RING_S } from './line2-path.ts';
 import { createRequestLever, type RequestLever } from './request-lever.ts';
 import { LINE2_GLIDE, pierLaid } from '../../sim/railway-line2-layout.ts';
@@ -159,8 +162,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       sinY = Math.sin(yaw);
     arm.visible = false;
     // The request lever, by the boarding edge (halt-attachments.ts; no collider: it stops no one): one handle, this
-    // platform's way, the end halt's way out and the down track's at a middle one (its up platform has its own lever).
-    const dir: -1 | 1 = stop === 0 ? 1 : -1;
+    // platform's way (mainWay, below; set each frame from the line's open stops).
+    const dir = (stop === 0 ? 1 : -1) as -1 | 1;
     const lever = createRequestLever(owner, `halt-lever-${row}-down`, () => targetsFor(lever));
     lever.group.visible = false;
     // Where this edge's trains go, on its mast, facing along the deck.
@@ -232,6 +235,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       lever,
       island,
       dir,
+      half,
       x: c.x,
       y: low,
       z: c.z,
@@ -301,9 +305,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const halts = rows.map((h, row) =>
     makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop, h.island, row),
   );
-  // The up platforms' levers (one handle, the up way), at the platform's end nearer its plank crossing, where you
-  // come up onto it; standing with today's halt beside it.
-  const upLevers = layout.UP_HALTS.map((u, row) => {
+  // The second platforms' levers (one handle, the way home), at the platform's -s end, the way that train leaves
+  // (halt-attachments.ts); standing with the first platform's halt beside it.
+  const upLevers = layout.OFFSET_HALTS.map((u, row) => {
     const line = layout.LINKS[u.line]!.line,
       mid = (u.s0 + u.s1) / 2,
       low = Math.min(railY(line, u.s0), railY(line, u.s1)) + 0.72;
@@ -320,32 +324,82 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const path = [at(endS, u.lat), via, at(u.crossS, u.crossTo ?? layout.CROSSING_SPAN[1]), at(u.crossS, 1.5)];
     return { pair: u.pair, lever, centre: { x: c.x, y: low, z: c.z }, path };
   });
+  /** The open stops of each line, read once a frame through the read facade (refreshStops). */
+  let stopsNow: readonly (readonly number[])[] = [0, 1].map((line) => trainStops(adapter.read.world(), line));
+  /** The way a first platform's lever calls (the original track's side, where `haltPlatform` puts the train going on):
+   * out from the Home end; home from the line's open far end, where both ways stand, and from a halt trains stop at
+   * homeward only (the Pier); on at any other middle halt. */
+  const platformEnd = (line: number, stop: number) =>
+    railPlatformEnd(adapter.read.world(), line, stop, adapter.read.tickNow(), stopsNow[line]);
+  const mainWay = (line: number, stop: number): -1 | 1 => {
+    if (stop === 0) return 1;
+    return stop >= stopsNow[line]!.length - 1 || platformEnd(line, stop) || RAIL_LINES[line]!.halts[stop]!.only === -1
+      ? -1
+      : 1;
+  };
   /** Every platform's lever: halt `id` (its row, or its RAIL_HALTS id for the Railhead and Ring Island), its line and
-   * stop, the way it asks for, and whether it stands now. `ring` is set on those two halts' levers, which stand on
-   * platforms other views draw (the railhead's slides with `head`, the island's and the joint's are fixed). */
+   * stop, the way it asks for now (`dir`, from `way` each frame: a first platform's changes when its line grows past
+   * it), and whether it stands now. `up` is the second lever of its halt (the `-up` placement and prompt id); `west`
+   * that it stands on a second platform, the offset track's, which no train stands at while the halt is the end.
+   * `ring` is set on the Railhead's, Ring Island's and the stack heads' levers, which stand on platforms other views
+   * draw, at `u()` metres along the ring; `slide` on a generated halt's lever that is restood along its platform. */
   type Spot = {
     id: number;
     line: number;
     stop: number;
     dir: -1 | 1;
+    way: () => -1 | 1;
     lever: ReturnType<typeof createRequestLever>;
     up: boolean;
+    west: boolean;
     ring?: { lat: number; u: () => number; shown: number; need: () => boolean };
+    slide?: { z0: number; goal: () => number; shown: number };
   };
+  const HOME = () => -1 as const;
   const spots: Spot[] = [
-    ...halts.map((h, k) => ({ id: k, line: h.k, stop: h.stop, dir: h.dir, lever: h.lever, up: false })),
-    ...upLevers.map((u) => {
+    ...halts.map((h, k): Spot => {
+      const x: Spot = {
+        id: k,
+        line: h.k,
+        stop: h.stop,
+        dir: h.dir,
+        way: () => h.dir,
+        lever: h.lever,
+        up: false,
+        west: false,
+      };
+      // A halt with a second platform can be its line's open end (Far Head): its first platform's lever is generated
+      // at the +s end, for the train going on, and stands at the -s end while it calls the train home.
+      if (layout.OFFSET_HALTS.some((u) => u.pair === k) && RAIL_LINES[h.k]!.halts[h.stop]!.only !== -1)
+        x.slide = {
+          z0: h.lever.group.position.z,
+          goal: () => (h.dir < 0 ? -2 * (h.half - LEVER_PLACE.fromEnd / 100) : 0),
+          shown: 0,
+        };
+      return x;
+    }),
+    ...upLevers.map((u): Spot => {
       const h = halts[u.pair]!;
-      return { id: u.pair, line: h.k, stop: h.stop, dir: 1 as const, lever: u.lever, up: true };
+      return { id: u.pair, line: h.k, stop: h.stop, dir: -1, way: HOME, lever: u.lever, up: true, west: true };
     }),
   ];
   // Line 2's Railhead (stop 4) and Ring Island (stop 5): a lever on each platform, 2.45 m (east) or 0.5 m (west) off
-  // the rails and a little short of the platform's north end. The railhead's east lever stands on the platform that
-  // slides out with `head` (src/sim/railway-ring-layout.ts RING_HEAD), the other three are fixed.
+  // the rails. The railhead's east lever stands on the platform that slides out with `head`
+  // (src/sim/railway-ring-layout.ts RING_HEAD). East levers call the train home from the -s end while their halt is
+  // the open end and the train on from the +s end after; west levers call the train home from the -s end, each as
+  // near that end as the server's reach of the platform's middle allows (rail.call judges from there).
   const RAILHEAD = 4,
     RING_ISLAND = 5;
   const ringHaltId = (stop: number) => LINE_HALTS.findIndex((h) => h.line === LINE2 && h.stop === stop);
-  const ringSpot = (stop: number, up: boolean, lat: number, u: () => number, need: () => boolean): Spot => {
+  const ringSpot = (
+    stop: number,
+    up: boolean,
+    lat: number,
+    u: () => number,
+    need: () => boolean,
+    way: () => -1 | 1,
+    west = false,
+  ): Spot => {
     // The plaque faces away from the rails, onto the platform: the rails lie toward the centre line from `lat` (a stack
     // head's outward lever stands on the east platform too, so the side is the platform's, not the way's).
     const lever = createRequestLever(owner, `halt-ring-lever-${stop}-${up ? 'up' : 'down'}`, () => targetsFor(lever));
@@ -354,48 +408,59 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       id: ringHaltId(stop),
       line: LINE2,
       stop,
-      dir: up ? 1 : -1,
+      dir: way(),
+      way,
       lever,
       up,
+      west,
       ring: { lat, u, shown: u(), need },
     };
   };
   const wd0 = () => adapter.read.world();
   spots.push(
-    // The railhead's east platform moves with `head` and its lever rides with it, at the platform's home end, clear of
-    // the jib and the rack (lever-place.ts).
+    // The railhead's east platform moves with `head` and its lever rides with it: at the platform's home end while the
+    // railhead is the end, clear of the jib and the rack (lever-place.ts); once the rivet makes the line a through
+    // one, 6 m short of its far end, for the train on to Ring Island (no footing is worked at the jib by then).
     ringSpot(
       RAILHEAD,
       false,
       railheadLever(0).lat,
-      () => railheadLever(ringHead(wd0())).u,
+      () => railheadLever(ringHead(wd0()), mainWay(LINE2, RAILHEAD)).u,
       () => true,
+      () => mainWay(LINE2, RAILHEAD),
     ),
-    // The joint's west platform stands at bent 13 (footing 14); its lever is chained until the rivet.
+    // The joint's west platform (u 235 to 260) stands at bent 13 (footing 14); its lever is chained until the rivet,
+    // and calls the train home from 9.5 m toward home of the platform's middle (u 247.5), beside the plank crossing.
     ringSpot(
       RAILHEAD,
       true,
       -6.3,
-      () => 247.5 + 6,
+      () => 247.5 - RING_LEVER_OFF,
       () => aperture(wd0()).set >= 14,
+      HOME,
+      true,
     ),
-    // The island's levers stand at u 457: the server judges a lever ask from the halt's platform centre (u 448, reach
-    // 12.6 m: railway-server.ts), and u 466 was 18 m from it, so every ask was refused. 457 is inside that reach, east
-    // of the steel works' shed (u 448 to 455, lat 6.5 to 14), loader and yard stacks (lat 6.6 and 8.3) and 2.45 m
-    // (down) and -6.3 m (up) from the track, on the platforms (u 428 to 468).
+    // The island's levers: the server judges a lever ask from the halt's platform centre (u 448, reach 12.6 m:
+    // railway-server.ts), so a lever at the platforms' very end (u 428 to 468) would have every ask refused (u 466
+    // was). They stand 9.5 m from the middle: at u 438.5 for the train home (both, while the island is the end), and
+    // the east one at u 457.5 for the train on once the stack line opens; east of the steel works' shed (u 448 to 455,
+    // lat 6.5 to 14), loader and yard stacks (lat 6.6 and 8.3), 2.45 m (east) and -6.3 m (west) from the track.
     ringSpot(
       RING_ISLAND,
       false,
       2.45,
-      () => 457,
+      () => 448 + mainWay(LINE2, RING_ISLAND) * RING_LEVER_OFF,
       () => true,
+      () => mainWay(LINE2, RING_ISLAND),
     ),
     ringSpot(
       RING_ISLAND,
       true,
       -6.3,
-      () => 457,
+      () => 448 - RING_LEVER_OFF,
       () => true,
+      HOME,
+      true,
     ),
   );
   // The stack line's halts (docs/plans/greybox-route.md, leg 1 step 4; the design review's answer g): one homeward lever
@@ -419,6 +484,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         2.45,
         () => u,
         () => !shut(),
+        HOME,
       ),
     );
     if (stub)
@@ -429,6 +495,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
           2.45,
           () => u + 4,
           () => !shut() && stopsNow[LINE2]!.length > stop + 1,
+          () => 1,
         ),
       );
   }
@@ -473,12 +540,13 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const x = spotByLever.get(lever);
     if (!x) return [];
     if (!standing(x) || chained(x)) return [];
-    // The railhead's lever offers nothing while it slides out with the head.
+    // A lever offers nothing while it slides: the railhead's out with the head, any being restood.
     if (x.ring && Math.abs(x.ring.u() - x.ring.shown) > 0.05) return [];
+    if (x.slide && Math.abs(x.slide.goal() - x.slide.shown) > 0.05) return [];
     const at = x.lever.knob(0, new THREE.Vector3());
     if (Math.hypot(p.x - at.x, p.z - at.z) > LEVER_REACH || Math.abs(p.y - at.y) > 1.6) return [];
     // No prompt from where the server would refuse the ask: it judges from the platform's middle, by reach and height.
-    if (!leverAskTaken(leverPlatform(wd0(), x.id, x.dir), p.x, p.y, p.z)) return [];
+    if (!leverAskTaken(leverPlatform(wd0(), x.id, x.dir, adapter.read.tickNow()), p.x, p.y, p.z)) return [];
     const id = `railway-request-${x.id}-${x.up ? 'up' : 'down'}`;
     // Every lever's prompt names where its train goes (running-side.md, step 2; draft wording, not The Boogler's).
     const verb = `Request stop: to ${label(x)}`;
@@ -505,23 +573,31 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const PULL_HOLD_MS = 3000;
   const haltName = (line: number, stop: number) =>
     LINE_HALTS.find((r) => r.line === line && r.stop === stop)!.name.replace(/, line 2$/, '');
-  /** The open stops of each line, read once a frame through the read facade (refreshStops). */
-  let stopsNow: readonly (readonly number[])[] = [];
   const refreshStops = () => {
     const wd = adapter.read.world();
     stopsNow = [0, 1].map((line) => trainStops(wd, line));
+    for (const h of halts) h.dir = mainWay(h.k, h.stop);
+    for (const x of spots) x.dir = x.way();
   };
   refreshStops();
   /** Whether any train of `line` has the property `fn` reads off its row (no list built). */
   const someTrain = (w: ReadWorld, line: number, fn: (r: ReturnType<typeof trainRow>) => boolean) =>
     LINE_SLOTS[line]!.some((k) => fn(trainRow(w, k)));
-  /** No train stands at this platform yet: its way is its halt's way in while that halt is the line's open end. */
+  /** No train stands at this platform yet: its way is its halt's way in while that halt is the line's open end, or it
+   * is the end's second platform (both ways stand at the first one there). */
   function chained(x: Spot) {
     const n = stopsNow[x.line]!.length;
-    return (x.stop === 0 || x.stop === n - 1) && (x.stop === 0 ? x.dir < 0 : x.dir > 0);
+    if (x.stop === 0) return x.dir < 0;
+    if (!railCallReady(adapter.read.world(), x.line, x.stop, x.dir, adapter.read.tickNow(), stopsNow[x.line]))
+      return true;
+    const end = platformEnd(x.line, x.stop);
+    // Keep the old side live until the last accepted arrival/departure clears, including the Pier after Q7.
+    if (!x.west && !end && x.stop < n - 1 && RAIL_LINES[x.line]!.halts[x.stop]!.only === -1) return true;
+    return end && (x.dir > 0 || x.west);
   }
-  /** The end a lever's way goes to: the line's open end that way. A chained lever names the halt that opens next (the
-   * Pier at Far Head's, Ring Island at the joint's), or the line's last halt where none does. */
+  /** The end a lever's way goes to: the line's open end that way (a chained second platform's lever reads the Home
+   * end, where its train will go). A chained lever for the way on names the halt that opens next, or the line's last
+   * halt where none does. */
   function label(x: Spot) {
     if (x.dir < 0) return haltName(x.line, 0);
     // A chained lever never names a greybox route halt (a leg's, or a shut row's): Ring Island's reads Ring Island.
@@ -533,8 +609,13 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     return h.leg && h.end?.kind === 'stub' ? 'Stack railhead' : haltName(x.line, to);
   }
   /** Whether a lever stands: its halt is up and its frame shown (an up lever with today's halt's). */
+  const upWanted = (pair: number) =>
+    halts[pair]!.up &&
+    line2Completed(adapter.read.world()) >= (layout.OFFSET_HALTS.find((h) => h.pair === pair)?.laid ?? 0);
   const standing = (x: Spot) =>
-    x.ring ? x.stop < stopsNow[x.line]!.length && x.ring.need() : halts[x.id]!.up && halts[x.id]!.lever.group.visible;
+    x.ring
+      ? x.stop < stopsNow[x.line]!.length && x.ring.need()
+      : halts[x.id]!.up && halts[x.id]!.lever.group.visible && (!x.up || upWanted(x.id));
   /** Whether a lever stands over: the line's ask that way stands and no train of the line stands here leaving that way. */
   function over(x: Spot) {
     const w = adapter.read.world(),
@@ -546,8 +627,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       (r) => r.phase === TRAIN_PHASE.STAND && r.at === x.stop && (r.track ? -1 : 1) === x.dir,
     );
   }
-  /** Rides the railhead's lever to its platform's end at `u` metres (the slide is `dt`-eased at 7 m/s: a bent in
-   * about 3 s, with no prompt while it moves), and sets the others where they stand. */
+  /** Rides a ring lever to `u` metres (the slide is `dt`-eased at 7 m/s: a bent in about 3 s, with no prompt while it
+   * moves: the railhead's out with its platform, and any east one to its other end when its way changes). */
   const leverAt = { x: 0, z: 0 },
     leverAhead = { x: 0, z: 0 };
   function placeRing(x: Spot, dt: number, snap: boolean) {
@@ -571,6 +652,17 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         placeRing(x, dt, snap);
         x.lever.group.visible = standing(x);
       } else if (x.up) x.lever.group.visible = standing(x);
+      if (x.slide) {
+        // Restood along its platform at the same 7 m/s (local +z is the line's +s, halt-attachments.ts).
+        const goal = x.slide.goal(),
+          step = 7 * dt,
+          was = x.slide.shown;
+        x.slide.shown = snap ? goal : was + Math.max(-step, Math.min(step, goal - was));
+        if (x.slide.shown !== was || snap) {
+          x.lever.group.position.z = x.slide.z0 + x.slide.shown;
+          x.lever.group.updateMatrixWorld(true);
+        }
+      }
       x.lever.label(0, label(x), x.dir);
       x.lever.chained(lock);
       const until = pulled.get(x);
@@ -597,7 +689,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
    * its line) or a train of its line stands at it leaving that way. */
   function signals(quiet = false) {
     const w = adapter.read.world();
-    halts.forEach((h) => {
+    halts.forEach((h, id) => {
       const n = stopsNow[h.k]!.length;
       const asked =
         reqHas(lineRow(w, h.k).req, h.stop, h.dir, n) ||
@@ -608,7 +700,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
             reqHas(r.req, h.stop, h.dir, n) ||
             (r.phase === TRAIN_PHASE.STAND && r.at === h.stop && (r.track ? -1 : 1) === h.dir),
         );
-      h.signal(shown && h.up && asked, quiet);
+      h.signal(shown && h.up && !chained(spots[id]!) && asked, quiet);
     });
   }
   /** The boards: how far line 2 has got, every train where it is and whether it is held, each halt's ring
@@ -690,7 +782,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       joining.fill(-1);
       pulled.clear();
       halts.forEach((h, k) => h.snap(wanted(k)));
-      ups.update(0, (k) => halts[k]!.up, true);
+      ups.update(0, upWanted, true);
       clock = adapter.read.tickNow();
       signals(true);
       levers(0, true);
@@ -713,7 +805,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         if (want && !h.up) h.build(was ? 0.3 : 0.3 + k * 0.3);
         else if (!want && h.up) h.snap(false);
       });
-      ups.update(dt, (k) => halts[k]!.up);
+      ups.update(dt, upWanted);
       tick(dt);
       signals();
       levers(dt);
@@ -781,7 +873,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       ringMapTable: table.inspect(),
       markerGrow: grow.map((n) => +n.toFixed(3)),
       /** The up track's platforms (generic-lines step 2): each one's halt row, whether it stands, its deck's centre
-       * and the walk from it to today's side over the plank crossing (UP_HALTS order, as upLevers). */
+       * and the walk from it to today's side over the plank crossing (OFFSET_HALTS order, as upLevers). */
       upPlatforms: ups.inspect().map((g, i) => ({ ...g, ...upLevers[i]!.centre, path: upLevers[i]!.path })),
     }),
   };

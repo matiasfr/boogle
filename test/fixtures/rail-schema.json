@@ -1,5 +1,5 @@
 {
-  "worldNs": "v37",
+  "worldNs": "v45",
   "components": [
     {
       "kind": "rail",
@@ -355,6 +355,7 @@
         ["v0", "int"],
         ["dest", "int"],
         ["turn", "bool"],
+        ["origin", "int"],
         ["logs", "int"],
         ["rails", "int"],
         ["wagon", "bool"],

@@ -19,8 +19,8 @@ import {
   TURNTABLE,
   LINKS,
   FORMATION as PLACE_FORMATION,
-  UP_HALTS,
-  upLat,
+  OFFSET_HALTS,
+  offsetLat,
   TOWN,
   ROOM_PLOTS,
   FORGE_FRAME,
@@ -31,14 +31,8 @@ import { layout, parseMapPage } from '../../src/sickle/map-data.ts';
 import { RING_CONES, ringHeight } from '../../src/proto/greybox/ground.ts';
 import { WORLD_LINES, FORMATION } from '../../src/sim/railway-world-lines.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
-import {
-  RING_HALT,
-  RING_HEAD,
-  RING_LOOP,
-  RING_S_HEAD,
-  RING_PIER_UP,
-  ringAt,
-} from '../../src/sim/railway-ring-layout.ts';
+import { HALT_PIER } from '../../src/prefab/halt-deck.ts';
+import { RING_HALT, RING_HEAD, RING_LOOP, RING_S_HEAD, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
 import {
   BUFFERS,
@@ -101,8 +95,8 @@ const MARKS: Record<string, { s: number; why: string }> = {
   },
   'Far Head': { s: 526, why: "the long train's tail clear of the crossover (s 490-512)" },
   Pier: {
-    s: 725,
-    why: "the longer engine's nose clear of the parked track layer; measure the layer's position first (PIER_STOP_CM's note differs by 1.5 m)",
+    s: 726.5,
+    why: 'production mark: the full train clears the Q7 west-platform crossing by 0.8 m; the former s 725 proposal fouled it',
   },
 };
 
@@ -183,7 +177,7 @@ function lineRows(): LineRow[] {
       name: 'Line 1 (Village to Camp)',
       colour: COLOURS.line1!,
       status: 'live',
-      build: 'live; up track drawn, runs from v26',
+      build: 'live; offset track drawn, runs from v26',
       length: l1,
       halts: ['Village', 'Camp'],
       trains: '1 (v26 keeps 1)',
@@ -196,7 +190,7 @@ function lineRows(): LineRow[] {
       name: 'Line 2 (Village to the pier)',
       colour: COLOURS.line2!,
       status: 'live',
-      build: 'live; up track drawn, runs from v26; v27 on to Ring Island',
+      build: 'live; offset track drawn, runs from v26; v27 on to Ring Island',
       length: l2,
       halts: ['Village, line 2', 'Quarry', 'Far Head', 'Pier', '(v27) Railhead', '(v27) Ring Island halt'],
       trains: `1 today, 2 in v26, ${trainsFor(170)} for the v27 wait bound (plan: 3)`,
@@ -359,7 +353,7 @@ function ends(): End[] {
       dir: dirAt(E, 501, 2),
       before: 'crossover',
       beforeText:
-        "A facing crossover at s 490-512 turns up trains onto the down track short of Far Head (stop 524); the up track runs on past it to the laying frontier, and Far Head's up platform waits, chained.",
+        "A facing crossover at s 490-512 takes departing homeward trains from the original onto the offset track short of Far Head (stop 524); the offset track runs on past it to the laying frontier, and Far Head's offset platform waits, chained.",
       complies: 'partly',
       after: 'temporary',
       afterText:
@@ -425,7 +419,7 @@ function ends(): End[] {
         "R1's balloon loop, r 40 m, centred 48 m east of the halt; as laid out its neck runs 12 m on and then 30.6 m back south to the circle (a 165° reversal, then a 12° kink onto the circle): it can't be run as drawn.",
       complies: 'partly',
       after: 'buffers',
-      afterText: `Recommended (owner question 2): both tracks run on ${RING_END_U - RING_HALT.u1 / 100} m past the platforms to buffers and an end board at u ${RING_END_U}, facing the way the line will go on; a facing crossover on the Way before the halt (about u ${RING_X[0]}-${RING_X[1]}), as Far Head's; trains stand at the east platform (the works side); the west lever is chained and plaqued with the branch. No train is ever turned. The alternative, a turning loop, is undrawn: a circle wholly east of both tracks can't take the up (west) track without crossing the down track, so it needs a merge to one track first or a teardrop about 80 m wide astride the line, and it cuts up to 12 m into the cone.`,
+      afterText: `Recommended (owner question 2): both tracks run on ${RING_END_U - RING_HALT.u1 / 100} m past the platforms to buffers and an end board at u ${RING_END_U}, facing the way the line will go on; a facing crossover on the Way before the halt (about u ${RING_X[0]}-${RING_X[1]}), as Far Head's; trains stand at the east platform (the works side); the west lever is chained and plaqued with the branch. No train is ever turned. The alternative, a turning loop, is undrawn: a circle wholly east of both tracks can't take the homeward (west) track without crossing the original track, so it needs a merge to one track first or a teardrop about 80 m wide astride the line, and it cuts up to 12 m into the cone.`,
       cost: "A small R1 amendment (the crossover and buffer positions; RING_LOOP out of line 2's row); R2b drops the loop deck; R3a loses its loop leg. Then through when line 2 itself runs on.",
     },
   ];
@@ -557,7 +551,7 @@ const ROLE: Record<string, string> = {
   'Village, line 2': 'terminus (line 2); walk-between junction with line 1',
   Quarry: 'through halt (request)',
   'Far Head': 'terminus before Q6, then through halt (request)',
-  Pier: 'terminus Q6 to v27, then a homeward request stop only (the up platform is not built)',
+  Pier: 'terminus before Q7, then homeward-only on the piled west platform; east lever chained',
   Railhead: "moving terminus (v27), then the Meet's halt (through)",
   'Ring Island halt': 'terminus with buffers (v27), then through halt and junction',
   'High Gorge': "junction: the ring through, the N-S line's terminus",
@@ -617,9 +611,7 @@ function liveHaltRows(): HaltRow[] {
       ['down (−s, towards Home)', h.down],
     ] as const) {
       if (!plat) {
-        overhang.push(
-          `${dir}: no platform (v27 adds the pier's up platform, ${RING_PIER_UP.x / 100}, ${RING_PIER_UP.z / 100})`,
-        );
+        overhang.push(`${dir}: no service (the Pier is homeward-only; its west platform opens with Q7)`);
         continue;
       }
       // Engine always at +s today (train-view poses every car with sign 1; push-pull).
@@ -631,7 +623,8 @@ function liveHaltRows(): HaltRow[] {
         `${dir}: platform s ${r1(plat.s0)}-${r1(plat.s1)} (${r1(plat.s1 - plat.s0)} m, lat ${r1(plat.lat)}); stop s ${stop}: passenger car ${onPlat ? 'on it' : `OFF it (${r1(Math.max(plat.s0 - (stop - pass), stop + pass - plat.s1))} m over)`}; long train s ${r1(a)}-${r1(b)} (${r1(bb)} with the longer engine): ${r1(Math.max(0, plat.s0 - a))} m behind, ${r1(Math.max(0, bb - plat.s1))} m ahead of the platform`,
       );
       if (!onPlat) flags.push(`${dir}: passenger car off the platform at the shared mark s ${stop}`);
-      const tracks = dir.startsWith('up') ? ['both', 'up'] : ['both', 'down'];
+      // Obstacle keys are physical sides; halt fields above are directions.
+      const tracks = dir.startsWith('up') ? ['both', 'down'] : ['both', 'up'];
       for (const o of obs) {
         if (!tracks.includes(o.tracks)) continue;
         const foulLong = a < o.s1 && bb > o.s0;
@@ -665,6 +658,15 @@ function liveHaltRows(): HaltRow[] {
       plats: h.name.startsWith('Village')
         ? []
         : [
+            ...(h.name === 'Pier'
+              ? [
+                  {
+                    pts: liveSpan(L.line, HALT_PIER.s0, HALT_PIER.s1),
+                    lat: HALT_PIER.lat,
+                    label: 'east terminal before Q7; inactive after Q7',
+                  },
+                ]
+              : []),
             ...(h.up ? [{ pts: liveSpan(L.line, h.up.s0, h.up.s1), lat: h.up.lat, label: 'up' }] : []),
             ...(h.down && h.down !== h.up
               ? [{ pts: liveSpan(L.line, h.down.s0, h.down.s1), lat: h.down.lat, label: 'down' }]
@@ -681,7 +683,7 @@ function liveHaltRows(): HaltRow[] {
     x: r1(head.platform.x / 100),
     z: r1(head.platform.z / 100),
     platforms:
-      'down only, 25 m (u − 25 to u), lat +1.8 to +6.3; after the Meet an up platform on the last bent (call 14)',
+      'original east platform, 25 m (u − 25 to u), lat +1.8 to +6.3; both ways at the end, outward after extension; homeward on the offset platform',
     stops: 's = u − 10 m (engine nose u − 3.8; the buffer face u − 1.8)',
     turns: 'buffers (stub, moving)',
     turnsAfter: 'buffers, then through after the Meet',
@@ -701,20 +703,20 @@ function liveHaltRows(): HaltRow[] {
     status: 'v27',
     x: r1(ringAt(mid * 100).x / 100),
     z: r1(ringAt(mid * 100).z / 100),
-    platforms: `up (west, lat ${halt.upLat.join(' to ')} cm) and down (east, lat ${halt.downLat.join(' to ')} cm), each ${(halt.u1 - halt.u0) / 100} m`,
-    stops: `u ${mid} m, one mark; while the island is the end trains stand at the east (down) platform, the west lever chained and plaqued with the branch`,
+    platforms: `homeward (west, lat ${halt.offsetLat.join(' to ')} cm) and outward (east, lat ${halt.downLat.join(' to ')} cm), each ${(halt.u1 - halt.u0) / 100} m`,
+    stops: `u ${mid} m, one mark; while the island is the end both ways use the original east platform, the west lever chained and plaqued with the branch`,
     turns: "balloon loop (R1, can't be run as drawn)",
     turnsAfter: `buffers at u ${RING_END_U} on both tracks and a crossover on the Way (u ${RING_X[0]}-${RING_X[1]}); recommended over a turning loop (undrawn); through when line 2 runs on`,
     forWhat: FOR['Ring Island halt']!,
     role: ROLE['Ring Island halt']!,
     overhang: [
-      `down (east), with buffers: never turned, the engine stays at +s: long train u ${r1(mid + tail)} to u ${r1(mid + bigNose)}, inside the 40 m platform (u ${halt.u0 / 100}-${halt.u1 / 100}) with ${r1(mid + tail - halt.u0 / 100)} m and ${r1(halt.u1 / 100 - (mid + bigNose))} m to spare; the passenger car ${r1(RING_END_U - mid)} m from the buffers (at least ${TERMINAL_GAP})`,
+      `outward (east), with buffers: never turned, the engine stays at +s: long train u ${r1(mid + tail)} to u ${r1(mid + bigNose)}, inside the 40 m platform (u ${halt.u0 / 100}-${halt.u1 / 100}) with ${r1(mid + tail - halt.u0 / 100)} m and ${r1(halt.u1 / 100 - (mid + bigNose))} m to spare; the passenger car ${r1(RING_END_U - mid)} m from the buffers (at least ${TERMINAL_GAP})`,
       `with R1's loop instead, every train would come back turned (engine at −s): u ${r1(mid - bigNose)} to u ${r1(mid - tail)}, and the cargo cars would swap sides of the mark at every halt`,
     ],
     flags: [],
     plats: [
-      { pts: ringSpan(halt.u0, halt.u1), lat: -7.55, label: 'up (west)' },
-      { pts: ringSpan(halt.u0, halt.u1), lat: 3.55, label: 'down (east)' },
+      { pts: ringSpan(halt.u0, halt.u1), lat: -7.55, label: 'homeward (west)' },
+      { pts: ringSpan(halt.u0, halt.u1), lat: 3.55, label: 'outward (east)' },
     ],
   });
   return rows;
@@ -733,7 +735,7 @@ const TURNS_AFTER: Record<string, string> = {
   'Village, line 2': 'buffers and an end board; the table, on its spur, shows stop blocks',
   Quarry: 'nothing',
   'Far Head': 'crossover (temporary), then nothing',
-  Pier: 'buffers (temporary), then a homeward request stop only (no up platform)',
+  Pier: 'temporary terminal, then homeward-only on the Q7 west platform',
 };
 function futureHaltRows(): HaltRow[] {
   const by = new Map<string, { lines: string[]; x: number; z: number; ends: string[]; plats: HaltRow['plats'] }>();
@@ -744,7 +746,10 @@ function futureHaltRows(): HaltRow[] {
       const row = by.get(name) ?? { lines: [], x: h.x / 100, z: h.z / 100, ends: [], plats: [] };
       const span = worldSpan(l, l.stops[i]! - 2000, l.stops[i]! + 2000);
       const off = FORMATION.platformCm / 100;
-      row.plats.push({ pts: span, lat: -off, label: `${l.name} up` }, { pts: span, lat: off, label: `${l.name} down` });
+      row.plats.push(
+        { pts: span, lat: off, label: `${l.name} outward` },
+        { pts: span, lat: -off, label: `${l.name} homeward` },
+      );
       row.lines.push(l.name);
       const e = l.ends.find((x) => (x.at === 'start' && i === 0) || (x.at === 'end' && i === l.halts.length - 1));
       if (e) row.ends.push(`${l.name}: ${e.kind}`);
@@ -846,7 +851,7 @@ function loaders() {
     name: "Ring Island's steel works (build 2)",
     x: r1(sw.x / 100),
     z: r1(sw.z / 100),
-    text: `On the down (east, homeward) side of the island halt, where trains stand while it is the end. With buffers the train is never turned, so the cargo cars are Home-side of the mark as everywhere else: the loader at u ${r1((ringMid - 1110) / 100)} to ${r1((ringMid - 370) / 100)} m, east of the platform's south half.`,
+    text: `On the original (east, terminal before extension) side of the island halt, where trains stand while it is the end. With buffers the train is never turned, so the cargo cars are Home-side of the mark as everywhere else: the loader at u ${r1((ringMid - 1110) / 100)} to ${r1((ringMid - 370) / 100)} m, east of the platform's south half.`,
   });
   const g = WORLD_LINES.find((l) => l.id === 'ring')!.halts.find((h) => h.name === 'High Gorge')!;
   rows.push({
@@ -1058,8 +1063,8 @@ function corridors(): Corridor[] {
     for (const s of ss) {
       const p = beside(L.line, s, 0);
       pts.push([r1(p.x), r1(p.z)]);
-      // a: the up track's lateral offset (+ right of the drawn direction, Place's convention); b: today's track
-      const u = upLat(L.f, s);
+      // a: the offset track's lateral offset (+ right of the drawn direction, Place's convention); b: today's track
+      const u = offsetLat(L.f, s);
       a.push(u === null ? null : r1(u));
       b.push(0);
     }
@@ -1076,7 +1081,7 @@ function corridors(): Corridor[] {
       label: L.name,
     });
   }
-  // v27 crossing: down at lat 0, up at -4 (ringAt's lat is east; the line heads north, so east is right: + right), on
+  // v27 crossing: outward at lat 0, homeward at -4 (ringAt's lat is east; the line heads north, so east is right: + right), on
   // to the proposed buffers 15 m past the halt.
   const pts: [number, number][] = [],
     a: (number | null)[] = [],
@@ -1145,7 +1150,7 @@ function loopsAndCrossings() {
       status: 'v27',
       mode: 'after',
       alt: true,
-      label: `The alternative, undrawn: a turning loop beyond the halt (centre u ${RING_ALT.u} lat +${RING_ALT.lat}, r ${RING_ALT.r}). A circle wholly east of both tracks can't take the up (west) track without crossing the down track: it needs a merge to one track first, or a teardrop about 80 m wide astride the line. It cuts up to 12 m into the cone, turns every train round, and is lifted when the line goes on. Not in the continuity report.`,
+      label: `The alternative, undrawn: a turning loop beyond the halt (centre u ${RING_ALT.u} lat +${RING_ALT.lat}, r ${RING_ALT.r}). A circle wholly east of both tracks can't take the homeward (west) track without crossing the original track: it needs a merge to one track first, or a teardrop about 80 m wide astride the line. It cuts up to 12 m into the cone, turns every train round, and is lifted when the line goes on. Not in the continuity report.`,
     },
   ];
   const cross: { x: number; z: number; dir: number; status: Status; label: string; mode: Mode }[] = [];
@@ -1184,10 +1189,10 @@ function loopsAndCrossings() {
   const stubs = LIVE.flatMap((L) =>
     [L.f.from, L.f.to].map((s) => {
       const p = beside(L.line, s, 0);
-      return { x: r1(p.x), z: r1(p.z), label: `${L.name}: stub turnout at s ${s} (the up track merges)` };
+      return { x: r1(p.x), z: r1(p.z), label: `${L.name}: stub turnout at s ${s} (the offset track merges)` };
     }),
   );
-  const planks = UP_HALTS.map((h) => {
+  const planks = OFFSET_HALTS.map((h) => {
     const p = beside(LINES.east, h.crossS, -2);
     return { x: r1(p.x), z: r1(p.z), label: `${h.name.split(',')[0]}: plank crossing at s ${h.crossS}` };
   });
@@ -1356,8 +1361,8 @@ svg text { font-family: system-ui, sans-serif; paint-order: stroke; stroke: var(
 <main>
 <h1>Boogle rail map</h1>
 <p class="muted">The whole network at true plan position, from the data the game and the blockout read (generated by
-<code>dev/level/rail-map.ts</code>). World metres, north up. Every corridor is double track on 4 m centres, left-hand
-running (the up track, away from Home, on the left); at this scale the two tracks are spread apart so both stay
+<code>dev/level/rail-map.ts</code>). World metres, north up. Every corridor is double track on 4 m centres, right-hand
+running (outward on the original track, homeward on the offset track); at this scale the two tracks are spread apart so both stay
 visible, and come back to their true 4 m when you zoom in. Plan: <code>docs/plans/rail-map.md</code>.</p>
 <p class="muted"><b>Home has one terminus</b>, the owner's pick (9 November): both lines at buffer stops beside one island, the table on its own engine spur.</p>
 <div class="stats">
@@ -1390,7 +1395,7 @@ visible, and come back to their true 4 m when you zoom in. Plan: <code>docs/plan
 </div>
 <div class="mapbox" id="mapbox"><svg id="map" role="img" aria-label="Rail map of the whole Boogle network"></svg><div class="tip" id="tip" role="status"></div></div>
 <div class="legend">
-  <span><svg width="34" height="12"><line x1="0" y1="3" x2="34" y2="3" stroke="var(--ink)" stroke-width="2"/><line x1="0" y1="9" x2="34" y2="9" stroke="var(--ink)" stroke-width="2"/></svg>Live: trains run today (solid; up track drawn, runs from v26)</span>
+  <span><svg width="34" height="12"><line x1="0" y1="3" x2="34" y2="3" stroke="var(--ink)" stroke-width="2"/><line x1="0" y1="9" x2="34" y2="9" stroke="var(--ink)" stroke-width="2"/></svg>Live: trains run today (solid; offset track drawn, runs from v26)</span>
   <span><svg width="34" height="12"><line x1="0" y1="3" x2="34" y2="3" stroke="var(--ink)" stroke-width="2" stroke-dasharray="10 5"/><line x1="0" y1="9" x2="34" y2="9" stroke="var(--ink)" stroke-width="2" stroke-dasharray="10 5"/></svg>v27: Ring Island build 1 (planned data)</span>
   <span><svg width="34" height="12"><line x1="0" y1="3" x2="34" y2="3" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 4"/><line x1="0" y1="9" x2="34" y2="9" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 4"/></svg>Later: tentative lines (map stage in the table)</span>
   <span><svg width="34" height="12"><path d="M4 6h20M18 2l6 4-6 4" fill="none" stroke="var(--ink)" stroke-width="2"/></svg>Direction of running on each track</span>
@@ -1534,7 +1539,7 @@ function draw() {
     const svc = colourMode === 'lines' ? null : SVC[colourMode][c.leg];
     const colour = colourMode === 'lines' ? c.colour : svc ? svc.colour : 'var(--edge)';
     const faint = (colourMode !== 'lines' && !svc) || !!D.removed[c.leg];
-    for (const [lats, dirSign] of [[c.a, 1], [c.b, -1]]) {
+    for (const [lats, dirSign] of [[c.a, -1], [c.b, 1]]) {
       const line = offsetLine(c.pts, lats, k);
       for (const run of runs(line)) {
         const p = el('polyline', { points: run.map((q) => q.join(',')).join(' '), fill: 'none', stroke: colour, 'stroke-opacity': faint ? 0.55 : 1, 'stroke-width': faint ? W * 0.6 : W, 'stroke-linejoin': 'round', 'stroke-dasharray': c.dash ? c.dash.split(' ').map((v) => v * px).join(' ') : '' });
@@ -1553,7 +1558,7 @@ function draw() {
         }
       }
     }
-    // single (bidirectional) stretches of live lines: where the up track is absent, today's track carries both ways
+    // single (bidirectional) stretches of live lines: where the offset track is absent, today's track carries both ways
   }
   for (const L of D.extra.loops) {
     if (!modeOn(L.mode)) continue;

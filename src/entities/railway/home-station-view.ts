@@ -1,8 +1,9 @@
 // Home's terminus station in greybox (docs/plans/home-station.md): the hall, the buffer stops, the
 // apron, a kerb outline of the island (its deck drops in with the trains, as halts do: ./halts-view.ts), the stubs, the
-// spur, the stall roads and, once line 2 has its first stretch, the cart's leg, and the two ruined stalls beside the
-// open one (./roundhouse-view.ts). Its track that is not a line (the buffer stubs, the spur, the three stall roads and
-// the cart's leg) is yard track in the lines' own pieces (./yard-track.ts). Local view over the station's data rows.
+// spur, the stall roads and, once line 2 has its first stretch, the cart's leg. The rotunda's bays and its table are
+// the Roundhouse's (./roundhouse-view.ts, ./rotunda-view.ts). Its track that is not a line (the buffer stubs, the
+// spur, a stall road for each bay and the cart's leg) is yard track in the lines' own pieces (./yard-track.ts). Local
+// view over the station's data rows.
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
@@ -14,19 +15,19 @@ const STONE = '#c8c0b0',
   BRICK = '#a6614a',
   POST = '#5c4530',
   ROOF = '#c4453a',
-  RUIN = '#9a958b',
   RAIL = '#4c5058',
   BUFFER = '#a33a2c',
   BRASS = '#e6a33e',
   PLANK = '#b98a52';
 
 export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedView) {
-  const [{ H }, layout, home, { addFoot }, { layHomeYard }] = await Promise.all([
+  const [{ H }, layout, home, { addFoot }, { layHomeYard }, { ROTUNDA_KIT, bayFrame }] = await Promise.all([
     import('../../place/land.ts'),
     import('../../place/layout.ts'),
     import('../../place/home-station.ts'),
     import('../../place/sites.ts'),
     import('./home-yard.ts'),
+    import('../../place/rotunda.ts'),
   ]);
   const world = (p: { x: number; z: number }): WorksPoint => ({ x: p.x + layout.ORIGIN.x, z: p.z });
   const ground = (p: WorksPoint) => H(p.x, p.z);
@@ -176,7 +177,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     }
   }
 
-  // ---------------------------------------------------------------- the spur, the stall roads and the ruined stalls
+  // ---------------------------------------------------------------- the spur and the stall roads
   const lever = (p: WorksPoint, heading: number) => {
     add(box(p.x, ground(p) + 0.18, p.z, 0.5, 0.36, 0.8, heading), POST, true);
     add(box(p.x, ground(p) + 0.75, p.z, 0.08, 0.9, 0.08, heading), BRASS);
@@ -187,45 +188,13 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     return world({ x: p.x + n.x * lat, z: p.z + n.z * lat });
   };
   lever(side(1, home.SPUR.s - 1.5, 2.4), yaw);
-  const FLOOR = 18.05;
-  for (const bearing of home.STALLS.bearings) {
-    const f = home.stallFrame(bearing);
-    const open = bearing === home.STALLS.open;
-    // Its road is yard track (./home-yard.ts).
-    if (open) {
-      // The open stall is the Roundhouse's to draw (./roundhouse-view.ts); the little guys walk round it too.
-      const mid = world(f.centre);
-      addFoot(mid.x, mid.z, f.yaw, home.STALLS.width / 2, home.STALLS.depth / 2, owner);
-    } else {
-      // A ruin's outline: a cracked floor and broken low walls, the shape of the stall that isn't built.
-      const right = { x: Math.cos(f.yaw), z: -Math.sin(f.yaw) };
-      const p = (r: number, x: number) =>
-        world({ x: home.TABLE.x + f.u.x * r + right.x * x, z: home.TABLE.z + f.u.z * r + right.z * x });
-      const { door: d0, depth, width } = home.STALLS;
-      // The stalls' doors nearly touch (4.4 m frames 30° apart), and the built stall's roof overhangs its walls: the
-      // ruin's floor and its side wall on that side stop `TRIM` short, clear of the eave.
-      const TRIM = 0.3,
-        o = home.stallFrame(home.STALLS.open).centre,
-        near = Math.sign((o.x - f.centre.x) * right.x + (o.z - f.centre.z) * right.z);
-      const centre = p(d0 + depth / 2, 0),
-        floor = p(d0 + depth / 2, (-near * TRIM) / 2);
-      add(box(floor.x, FLOOR, floor.z, width - TRIM, 0.12, depth, f.yaw), '#8f8a80');
-      addFoot(centre.x, centre.z, f.yaw, width / 2, depth / 2, owner);
-      for (const x of [-1, 1]) {
-        const heights = x < 0 ? [0.9, 0.35, 0.6] : [0.5, 0.8, 0.3];
-        heights.forEach((h, k) => {
-          const q = p(d0 + (depth * (k + 0.5)) / 3, x * (width / 2 - 0.2 - (x === near ? TRIM : 0)));
-          add(box(q.x, FLOOR + h / 2, q.z, 0.4, h, depth / 3 - 0.4, f.yaw), RUIN, true);
-        });
-      }
-      for (const [x, h] of [
-        [-1, 0.7],
-        [1, 0.45],
-      ] as const) {
-        const q = p(d0 + depth - 0.2, (x * width) / 4);
-        add(box(q.x, FLOOR + h / 2, q.z, width / 2 - 0.3, h, 0.4, f.yaw), RUIN, true);
-      }
-    }
+  // Each bay's road is yard track (./home-yard.ts); the bays are the Roundhouse's to draw. The little guys walk round
+  // the arc the rotunda stands in from arrival, built or a ruin (five bays: the site's second stage), by footprints.
+  for (const bay of home.ROTUNDA_HOME.order.slice(0, home.ROTUNDA_HOME.stages[2])) {
+    const f = bayFrame(home.ROTUNDA_HOME, bay),
+      mid = world(f.centre);
+    const wide = (ROTUNDA_KIT.doorR + ROTUNDA_KIT.depth / 2) * Math.sin((ROTUNDA_KIT.bayDeg * Math.PI) / 360);
+    addFoot(mid.x, mid.z, f.yaw, wide, ROTUNDA_KIT.depth / 2, owner);
   }
   const statics = await drawWorksBoxes(owner, [...boxes, ...kerb]);
   statics.castShadow = true;

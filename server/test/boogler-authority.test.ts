@@ -7,6 +7,7 @@ import { loadBooglerLand } from '../src/host/land.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
+import { WORLD_NS } from '../../src/world/namespace.ts';
 
 test('two mirrors, late join and reconnect draw the same authoritative leg immediately', async (t) => {
   const f = await fixture(t);
@@ -95,12 +96,12 @@ test('a malformed pose load cannot overwrite the last verified checkpoint', asyn
   assert.deepEqual(f.store.readSync(f.roomId), before);
 });
 
-test('v44 host reads its new namespace and starts fresh despite a v43 saved position', async (t) => {
+test('the current host starts fresh despite a position saved in the previous namespace', async (t) => {
   const f = await fixture(t);
   f.run(240);
   await f.host.close();
   const old = f.store.readSync(f.roomId)!;
-  const previous = f.roomId.replace('v44', 'v43');
+  const previous = f.roomId.replace(WORLD_NS, `v${Number(WORLD_NS.slice(1)) - 1}`);
   assert.notEqual(previous, f.roomId, 'the fixture must target a different namespace');
   const reads: string[] = [];
   const host = createRailwayWorldHost({

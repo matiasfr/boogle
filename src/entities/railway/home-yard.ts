@@ -1,15 +1,18 @@
 // Home's yard track, laid: which track the station has that is not a line, as yard track (./yard-track.ts) from the
-// station's data (src/place/home-station.ts). The buffer stubs, the spur with its turnout off road 2 and the three
-// stall roads, then (shown once line 2 has its first stretch) the cart's leg and the turnout's parts on road 2. Geometry only, no scene: the station view draws it
+// station's data (src/place/home-station.ts). The buffer stubs, the spur with its turnout off road 2 and a stall road
+// for every bay of the rotunda, then (shown once line 2 has its first stretch) the cart's leg and the turnout's parts on road 2. Geometry only, no scene: the station view draws it
 // (./home-station-view.ts) and the yard test reads the same rails the shunt rides (test/roundhouse-yard.test.ts).
 import * as home from '../../place/home-station.ts';
 import { junctions } from '../../place/junctions.ts';
+import { bayFrame } from '../../place/rotunda.ts';
 import { LINES, LINKS, ORIGIN, railY } from '../../place/layout.ts';
 import { KIT, turnout, type RailPiece } from '../../place/turnout.ts';
 import { sleeperStations } from './track-panels.ts';
 import { stallRoadY } from './works-shape.ts';
 import { createYardTrack, type TrackPath, type TrackPose } from './yard-track.ts';
 
+/** Where a bay's road ends, from the table's centre (m): a metre and a half short of the back wall. */
+const STALL_ROAD_END = 23.5;
 /** `ground` is the terrain's height at a world point. */
 export function layHomeYard(ground: (x: number, z: number) => number) {
   const yard = createYardTrack(ground);
@@ -66,12 +69,12 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
     yard.sleepersAlong(spur, shared ? shared.hi + 0.7 : 0, len);
   }
   // The stall roads: off the table's rim at the lines' height, down a ramp to ground-level rails at the door
-  // (`stallRoadY`, which the shunt's path reads too), then level: to the back wall of the open stall, a rail's length
-  // onto a ruin's floor.
-  for (const bearing of home.STALLS.bearings) {
-    const f = home.stallFrame(bearing);
+  // (`stallRoadY`, which the shunt's path reads too), then level: to the back wall of the working bay, and in every
+  // other bay of the rotunda to `STALL_ROAD_END` from the table's centre, built or a ruin (rails in the grass).
+  for (const bay of home.ROTUNDA_HOME.order) {
+    const f = bayFrame(home.ROTUNDA_HOME, bay);
     const ramp = home.STALLS.door - home.TABLE.r,
-      end = ramp + (bearing === home.STALLS.open ? home.STALLS.depth - 0.3 : 3);
+      end = bay === home.ROTUNDA_HOME.order[0] ? ramp + home.STALLS.depth - 0.3 : STALL_ROAD_END - home.TABLE.r;
     const road: TrackPath = (l) => ({
       ...world({ x: f.rim.x + f.u.x * l, z: f.rim.z + f.u.z * l }),
       yaw: f.yaw,

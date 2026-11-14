@@ -93,11 +93,12 @@ export const RAIL_HALTS: readonly (RailHalt & { line: number; stop: number })[];
 
 ### 2. Two tracks per line, one direction each
 
-Every line has track 0 (**up**: +s, away from Home) and track 1 (**down**: −s, towards Home). **Left-hand running**,
-as the blockout's greybox rides: the new track is laid 4 m to the left of today's (the blockout's chosen side for both
-lines), so today's track becomes track 1 (down) and the new one track 0 (up). Today's platforms, all on the right of
-today's track except the two Village ones and the pier, keep serving the down track; the up track gets new platforms
-outside it (Level findings).
+Every line has track 0 (**up**: +s, away from Home) and track 1 (**down**: −s, towards Home). **Right-hand running**
+(running-side steps 3–6, v45): track 0 uses the original track and track 1 the offset track 4 m left in +s.
+Original-side platforms serve outward trains; offset-side platforms serve homeward trains. At an open far end both
+ways use the original platform until its retained departure clears. The Pier remains homeward-only and gains a piled
+west platform and crossing with Q7. Geometry is unchanged; historical step records and decision 22 below describe the
+superseded left-hand convention.
 
 In the sim a track is only a direction: `s` stays the line's centreline cm for both, and the 4 m is the view's lateral
 offset. The row stores `track` instead of v25's `sweep` (`sweep = track ? -1 : 1` wherever a sign is needed).
@@ -350,7 +351,7 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   both gates span both tracks (slab 10.4 m, centred 2 m left), Quarry's up platform is s 154–174.5, clear of the Q4
   frame, with no ramp off that end, p1's lip ends at the wider deck's edge (5.8 m), and the survey now checks pillars,
   gates and frames. Differences from the text above: the formation's merges and crossover live in
-  `src/proto/place/layout.ts` (`FORMATION`, `upLat`, `crossLat`) until 4a moves them into `RailHalt.end`, and the
+  `src/proto/place/layout.ts` (`FORMATION`, `offsetLat`, `crossLat`) until 4a moves them into `RailHalt.end`, and the
   blockout generator still reads `LIVE_SECOND_TRACK` from its own survey (its line-2 left side now reports only the
   turntable and the pier rack, both outside the formation); the greybox no longer draws lines 1 and 2's survey beds.
   The gantry carries both pairs of a double panel in one trip (seats today's pair, crosses, sets the up pair) on a
@@ -482,7 +483,7 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   crossover, latched as it nears the crossover so opening the pier mid-run moves no pose (`poseCarOnLine` takes a
   `lat(s)`). The amber lamp shows a lever ask its train serves and a rider's ask it can still brake for (dark for a
   rider's ask too late to serve, the review's P3c); a red hold lamp beside it shows a train standing past its dwell at a
-  signal or headway hold. Levers: one handle a platform direction; up platforms' levers stand at the end nearer the
+  signal or headway hold. Levers: one handle a platform direction; offset platforms' levers now stand at the leaving end, not nearer the
   plank crossing; an open end's way-in lever is chained (padlocked, no prompt, plaqued "Pier") until the pier opens.
   Departure boards and the island map draw each train, a held train with a red badge. Bots board the standing train of
   the line and cross the plank crossing to an up platform; the loop graph gets a per-platform lever cue; the peer test

@@ -17,10 +17,13 @@ import { RAIL_LINES, TRAIN_EXTENT, TURNOUT_CM } from '../../src/sim/railway-line
 import { TRAIN } from '../../src/sim/railway-train.ts';
 import { RING_CONES, ringHeight } from '../../src/proto/greybox/ring-cones.ts';
 import { CONCOURSE, HEAD as GREYBOX_HEAD, HX as GREYBOX_HX } from '../../src/proto/greybox/ring-house.ts';
-import { FAR, ORIGIN } from '../../src/place/layout.ts';
+import { FAR, ORIGIN, OFFSET_HALTS, CROSSING_WIDTH } from '../../src/place/layout.ts';
 import { createIslandGround } from '../../src/entities/ring-island/ground.ts';
 import { summitPathFacts } from '../../src/entities/ring-island/path.ts';
 import { MOVER } from './mover.ts';
+import { haltDeck, haltFrame } from '../../src/prefab/halt-deck.ts';
+import { haltRamps } from '../../src/prefab/halt-ramps.ts';
+import { haltCrossing } from '../../src/prefab/halt-crossing.ts';
 import { LIVE, beside, type Track } from './rail-network.ts';
 import { LIMITS, measure } from './track-continuity.ts';
 import {
@@ -525,6 +528,47 @@ export function checkRing() {
   const B = RING_BRACE_PLATFORM,
     head = RING_HEAD[7]!,
     [a1, a2] = apexes();
+
+  section('The Pier west platform after Q7 (running-side step 5)');
+  const pierRow = OFFSET_HALTS.findIndex((h) => h.pair === 5),
+    pier = OFFSET_HALTS[pierRow]!;
+  const deck = haltDeck(pierRow, true),
+    frame = haltFrame(pierRow, true),
+    pierRamps = haltRamps('pier-check', { row: pierRow, up: true }).filter((p) => p.params?.piece === 'ramp'),
+    crossing = haltCrossing('pier-check', { row: pierRow, up: true });
+  assertion(pier.laid === 7, 'west deck and crossing appear only once Q7 is laid; no early piled-deck landing');
+  assertion(
+    deck.params.overWater && deck.colliders.length === 1,
+    'west deck stands on visual piles, with no solid seabed wall to climb',
+  );
+  assertion(
+    pierRamps.length === 1 && !pier.endRamp,
+    'only the landward ramp connects the piled platform; no far or seabed ramp',
+  );
+  const ramp = pierRamps[0]!.params!.support as number[];
+  assertion(ramp[4]! >= frame.low - 1, `ramp foot stays at rail height (${f1(ramp[4]!)} m), not the seabed`);
+  assertion(
+    Math.abs(pier.crossS + CROSSING_WIDTH / 2 - (pier.s0 - 6)) < 1e-6 &&
+      (pier.crossTo ?? 0) <= pier.lat - frame.hw &&
+      crossing.length === 2,
+    'plank crossing meets the start ramp foot across both tracks, clear of the stopped train',
+  );
+  const trainTail = (RAIL_LINES[1]!.halts[3]!.s - TRAIN_EXTENT.behindCm) / 100,
+    crossingEnd = pier.crossS + CROSSING_WIDTH / 2;
+  assertion(
+    trainTail - crossingEnd >= 0.6,
+    `crossing clears the full stopped train by ${f1(trainTail - crossingEnd)} m`,
+  );
+  // Conservatively launch from the new shelter roof as well as the deck, including both jumps and the raw glide.
+  // The platform and all its ramps/crossing are landward of its s1: none advances the existing railhead's lip.
+  const pierTop = frame.low + 3.5,
+    pierU = pier.s1 - m(RING_S_HEAD),
+    pierNeed = m(RING_GAP.hinge) - pierU,
+    pierReach = SPRINT * a2.t + GLIDE_RAW(pierTop - m(ringDeckY(RING_GAP.hinge)) + a2.h) + SPRINT * COYOTE + PLAYER_R;
+  assertion(
+    pierReach < pierNeed && pier.crossS < pier.s0,
+    `west platform's roof cannot bypass the gap: ${f1(pierReach)} m raw double-jump glide against ${f1(pierNeed)} m`,
+  );
 
   section('The gap (bent 13 railhead, u 260 m, to the brace platform at u 284 m)');
   const takeoff = platTop(head.u),

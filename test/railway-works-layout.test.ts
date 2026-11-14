@@ -21,6 +21,7 @@ import {
   railY,
 } from '../src/place/layout.ts';
 import { H, PATH_SAMPLES } from '../src/place/terrain.ts';
+import { STALLS, TABLE, stallFrame } from '../src/place/home-station.ts';
 import { distToLine, parseMapPage, type XZ } from '../src/proto/greybox/map-data.ts';
 import { LINE2_BOILER, LINE2_LEVER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { LINE1_ROCKS } from '../src/sim/railway-line-layout.ts';
@@ -153,6 +154,18 @@ test('the wagon waits between the table and the train', () => {
   assert.equal(SHED_TABLE.x, Math.round((ORIGIN.x + TURNTABLE.x) * 100));
   assert.equal(SHED_TABLE.z, Math.round((ORIGIN.z + TURNTABLE.z) * 100));
   assert.deepEqual(SHED_ROAD, { stall: 0, line2: 1 });
+});
+test('the rotunda rule points pin its centre, doorway and working stall to centimetres', () => {
+  const frame = stallFrame(STALLS.open);
+  const pin = (p: Point) => [Math.round((ORIGIN.x + p.x) * 100), Math.round(p.z * 100)];
+  assert.deepEqual([SHED_TABLE.x, SHED_TABLE.z], pin(TABLE));
+  assert.deepEqual([WORKS_SEAMS[0].x, WORKS_SEAMS[0].z], pin(frame.door));
+  assert.deepEqual(
+    [SHED_STALL.x, SHED_STALL.z],
+    pin({ x: frame.door.x + frame.u.x * 3, z: frame.door.z + frame.u.z * 3 }),
+  );
+  assert.equal(SHED_TABLE.reach, 1000);
+  assert.equal(WORKS.rollTicks, 140);
 });
 test('the pier stop fits', () => {
   const p = railPoint(PIER_STOP_CM / 100),

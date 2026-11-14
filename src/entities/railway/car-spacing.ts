@@ -1,6 +1,6 @@
 // How far apart a train's vehicles stand on the track they are drawn on. No three.js: the layout test reads it.
 // A train's place is metres along its line (today's track); the up track is drawn up to 4 m beside it (layout.ts
-// `upLat`). On the inside of a bend that track is shorter than the line (line 1's 14.7 m bend is 10.7 m on the up
+// `offsetLat`). On the inside of a bend that track is shorter than the line (line 1's 14.7 m bend is 10.7 m on the up
 // track; the Quarry's was 2.8 m until layout.ts eased it), so cars spaced by the line's metres stood closer than their lengths and
 // the engine was drawn into the first car, 0.68 m on line 1 and 0.98 m at the Quarry's stop (owner, 14 November: "on
 // certain stops, especially with curves, the train car clips the train engine"). Two rules, view only (the sim's

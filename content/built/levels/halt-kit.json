@@ -1063,6 +1063,107 @@
       },
       {
         "colliders": [],
+        "id": "railway.halt-5-up-deck",
+        "params": {
+          "half": 11,
+          "halt": 5,
+          "hw": 1.25,
+          "island": false,
+          "piece": "deck",
+          "row": 2,
+          "sign": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-deck"
+      },
+      {
+        "colliders": [
+          {
+            "at": [
+              0.95,
+              1.6,
+              {
+                "a": -4.8,
+                "b": -3,
+                "compute": "add"
+              }
+            ],
+            "half": [
+              0.11,
+              1.6,
+              0.11
+            ]
+          },
+          {
+            "at": [
+              0.95,
+              1.6,
+              {
+                "a": -4.8,
+                "b": 3,
+                "compute": "add"
+              }
+            ],
+            "half": [
+              0.11,
+              1.6,
+              0.11
+            ]
+          }
+        ],
+        "id": "railway.halt-5-up-shelter",
+        "params": {
+          "half": 11,
+          "halt": 5,
+          "hw": 1.25,
+          "island": false,
+          "piece": "shelter",
+          "row": 2,
+          "sign": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-shelter"
+      },
+      {
+        "colliders": [
+          {
+            "at": [
+              0.8,
+              0.28,
+              -4.8
+            ],
+            "half": [
+              0.3,
+              0.28,
+              1.5
+            ]
+          }
+        ],
+        "id": "railway.halt-5-up-bench",
+        "params": {
+          "half": 11,
+          "halt": 5,
+          "hw": 1.25,
+          "island": false,
+          "piece": "bench",
+          "row": 2,
+          "sign": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-bench"
+      },
+      {
+        "id": "railway.halt-5-up-ramps",
+        "params": {
+          "halt": 5,
+          "piece": "ramps",
+          "row": 2,
+          "up": true
+        },
+        "prefab": "railway.halt-ramp"
+      },
+      {
+        "colliders": [],
         "id": "halt-signal-0",
         "params": {
           "piece": "signal",
@@ -1163,6 +1264,15 @@
         "params": {
           "piece": "crossing",
           "row": 1,
+          "up": true
+        },
+        "prefab": "railway.halt-parts"
+      },
+      {
+        "id": "halt-crossing-2",
+        "params": {
+          "piece": "crossing",
+          "row": 2,
           "up": true
         },
         "prefab": "railway.halt-parts"
@@ -1298,6 +1408,18 @@
           "piece": "lever",
           "plaque": 1,
           "row": 1,
+          "side": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-lever-2-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "row": 2,
           "side": -1,
           "up": true
         },
@@ -1448,7 +1570,7 @@
       }
     ],
     "kind": "halt-kit",
-    "sourceFingerprint": "8b9d67d0443ffe4fc7d8311160617714b48c18d7c5469c160bd08b8d89f11320"
+    "sourceFingerprint": "2442606c6b01c6c99824e2c055b1ad9bbffd8da02b11a6160eb501fdb69e807a"
   },
   "place": "halt-kit",
   "placements": [],

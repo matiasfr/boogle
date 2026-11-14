@@ -28,27 +28,27 @@ export type GarageGeo = {
 };
 
 /** The deck's radius, and the works copy's reach as the table turns it (its corners, 8.5 m of train on the centre). */
-export const DECK_R = 4.8;
+export const DECK_R = TABLE.r;
 /** The longer boiler lying on its stand: half its length and its radius (engine.ts: 3.15 m by 1.25 m). */
 export const STAND_PART = { half: 1.575, r: 0.625 } as const;
 /** A radial stand's two legs: their distances from the table's centre and their half width across the barrel. They
- * stand 6 m or further out and no wider than the barrel, so a car on line 2 clears the empty stand (design ruling on
+ * stand outside the kerb and no wider than the barrel, so a car on line 2 clears the empty stand (design ruling on
  * G2, R2). */
-export const STAND_LEGS = { at: [6.1, 7.6], half: 0.5 } as const;
+export const STAND_LEGS = { at: [9.9, 11.4], half: 0.5 } as const;
 
 /** The garage's radial arrangement at bearing 85° keeps the stand outside the deck's sweep and clear of the
  * jump-in landing, with the jib and crew behind it (docs/plans/home-flip.md, F1). */
 export const GARAGE_GEO: GarageGeo = {
-  post: { bearing: 60, r: 5.6 },
-  jib: { bearing: 85, r: 8.4 },
+  post: { bearing: 60, r: 9.4 },
+  jib: { bearing: 85, r: 12.2 },
   mast: 4.4,
-  arm: 10.6,
+  arm: 12.2, // Covers the bystander's closed pose with main's 15° camera, including the trolley and beam end inset.
   park: 67,
-  stand: { bearing: 85, r: 6.5 },
+  stand: { bearing: 85, r: 10.3 },
   standAlong: 'radius',
   crew: [
-    { bearing: 88, r: 9.4 },
-    { bearing: 81, r: 8.7 },
+    { bearing: 88, r: 13.2 },
+    { bearing: 81, r: 12.5 },
   ],
   camBearing: 15,
 };
@@ -66,6 +66,12 @@ export const polarAt = (centre: XZ, p: Polar): XZ => ({
  * arm's height over the deck (it clears the part held up over the engine's seat), so the post is longer by however
  * far the yard lies under the deck. */
 export const mastFrom = (geo: GarageGeo, deck: number, ground: number) => geo.mast + Math.max(0, deck - ground);
+
+/** Pick the bridge-aligned nose closest to the engine camera, keeping the engine left of its panel. */
+export function garageFlip(rest: number, cameraYaw: number): number {
+  const distance = (yaw: number) => Math.abs(Math.atan2(Math.sin(yaw - cameraYaw), Math.cos(yaw - cameraYaw)));
+  return distance(rest + Math.PI) < distance(rest) - 1e-6 ? Math.PI : 0;
+}
 
 /** The stand's two ends along the part (inner first for a radial stand), from the table's centre. */
 export function standEnds(centre: XZ, geo: GarageGeo): [XZ, XZ] {

@@ -50,7 +50,8 @@ export function haltParts(p: JsonObject): { parts: Part[] } {
     const lengths = Math.ceil((half * 2) / 6);
     for (let k = 0; k < lengths; k++)
       part(0, -0.5, -half + ((k + 0.5) * half * 2) / lengths, hw * 2, 0.5, (half * 2) / lengths + 0.02, '#bdb8ac');
-    for (const sl of [-1, 1]) part(sl * (hw - 0.15), -0.04, 0, 0.3, 0.05, half * 2, '#f2d36a');
+    // Top 1 cm above the deck; bury the bottom and inset the outer face 2 cm to avoid coincident slab faces.
+    for (const sl of [-1, 1]) part(sl * (hw - 0.17), -0.01, 0, 0.3, 0.02, half * 2, '#f2d36a');
     if (!overWater) part(0, ground - low, 0, hw * 2, low - 0.5 - ground, half * 2, '#9a9184');
     else
       for (let ds = -half + 1; ds <= half - 1 + 1e-6; ds += (half * 2 - 2) / 3)

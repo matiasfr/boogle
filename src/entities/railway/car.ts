@@ -178,7 +178,7 @@ export function drawCar(c: Car, alpha: number) {
   c.rock.rotation.x = -c.pitch;
   c.mesh.visible = c.y > -30; // a train not yet needed waits under the land: nothing to draw, nor to shadow
 }
-/** `lat` (optional) is the car's track's offset from the line at s, metres (the up track's, layout.ts upLat): each
+/** `lat` (optional) is the car's track's offset from the line at s, metres (the up track's, layout.ts offsetLat): each
  * axle end is set across by its own offset, so a car on a turnout's curve yaws with it. */
 export function poseCarOnLine(c: Car, line: Line, s: number, sign: number, lat?: (s: number) => number) {
   // Set across along the line's smooth heading (layout.ts lineSmoothAt; `lat` is the offset for it): along the

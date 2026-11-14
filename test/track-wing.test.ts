@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three/webgpu';
-import { FORMATION, LINKS, upLat } from '../src/place/layout.ts';
+import { FORMATION, LINKS, offsetLat } from '../src/place/layout.ts';
 import { MAX_PANEL_LENGTH, carriedPiece, trackPanels } from '../src/entities/railway/track-panels.ts';
 import { WING, WING_BEAM_LENGTH, panelMechanism, wingSide, wingState } from '../src/entities/railway/machine-panels.ts';
 
@@ -13,7 +13,7 @@ const bit = new THREE.BoxGeometry(0.1, 0.12, 3.05);
 const batch = (n: number) => new THREE.InstancedMesh(bit, new THREE.MeshBasicMaterial(), n);
 /** The up track's x in the machine's rig frame (+x its left) at line metre `s`, laying along `dir`. */
 const upX = (spec: (typeof LINKS)[number], s: number) => {
-  const lat = upLat(FORMATION[spec.id], s);
+  const lat = offsetLat(FORMATION[spec.id], s);
   // `lateral` is measured facing +s with negative to the left; the machine faces `dir` along s.
   return lat === null ? null : -lat * spec.dir;
 };
@@ -63,7 +63,7 @@ test('both hands stay inside the 5.8 m beam over every panel of both lines', () 
       for (let k = 0; k <= 40; k++) {
         const phase = (k / 40) * 0.98;
         const flatU = panel.from + phase * length - F;
-        const postGap = -(upLat(f, toS(flatU) + spec.dir * WING.postZ) ?? 0);
+        const postGap = -(offsetLat(f, toS(flatU) + spec.dir * WING.postZ) ?? 0);
         const postX = side * wingState(postGap).post;
         wing.setStackX(side * wingState(postGap).stack - postX);
         const at = (x: number, u: number) => new THREE.Vector3(x, 0, u - flatU);

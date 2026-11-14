@@ -1,7 +1,8 @@
 # Running side and request levers
 
-Planned 14 November 2026 from the owner's play session that day. Not built. Nothing here is decided until he answers
-the three questions at the end.
+Planned 14 November 2026 from the owner's play session that day. Steps 1–5 are built locally; the follow-up fix
+brief explicitly approves step 5 recommendation (a). The historical diagnosis and original departures below are
+retained; the [review-fix report](running-side-fix-report.md) records their resolution. Not shipped.
 
 **His words (verbatim; "query" is the Quarry halt, "peer" is the Pier halt):**
 
@@ -170,7 +171,11 @@ Models are `npm run models` rows (withCodex).
       "Request stop: to Village" (the existing middle-halt wording, now also at Camp, Far Head, the Pier, the Railhead
       and Ring Island). No other new text. Proof look: the Pier's and Camp's prompts in a still.
       Row: player-visible implementation (fable medium); visual review by a fresh subagent.
-- [ ] **3. The catalog and the server's check. Tier: sim and world, high risk; `WORLD_NS`.**
+- [x] **3. The catalog and the server's check. Tier: sim and world, high risk; `WORLD_NS`.**
+      _Built locally 14 November on the rotunda's shared v45; not shipped. Independent review found no in-scope
+      defects. Step 4 is required before release; the old-way views and prompts are intentionally unfinished here.
+      [Step 3 report](running-side-step3-report.md) records fixtures, recommendations, checks and the stale broker
+      scenario failure._
       `src/sim/railway-lines.ts`: swap the `platforms` tuples of Quarry, Far Head, Railhead and Ring Island, rewrite
       the field's comment, `haltPlatform(halt, way, head, end)`; `src/world/railway-server.ts` line 232 passes whether
       the halt is its line's open far end (from `trainStops`); `src/world/railway-jump.ts` indexes (`QUARRY_LINE2`);
@@ -181,7 +186,24 @@ Models are `npm run models` rows (withCodex).
       rule before and after the rivet". No change to train rules: `npm run loop -- run` must report the same waits.
       Row: high-risk implementation (gpt-6-astra high), then the independent review row (a fresh reviewer, a failing
       test per suspected defect).
-- [ ] **4. Trains on the right, levers and signals to match. Tier: view; ships with step 3.**
+- [x] **4. Trains on the right, levers and signals to match. Tier: view; ships with step 3.**
+      _Built locally 14 November on step 3's branch; not shipped. Departures:_ (a) **the rows do not carry enough**
+      for a train that stands at an end, or is turning back there, as the line grows past it: `turn` is cleared when
+      it comes to a stand and the row is then the same as one that stopped at the west platform. Rather than stop
+      (this step's own instruction) or let that train jump 4 m sideways under its riders, `train-view.ts` remembers
+      it per train on this tab (`left`, `line2-path.ts` `LeftFrom`) until it has left the halt; a tab that joins or
+      reloads in those seconds draws it on the homeward track. A row-pure fix is a sim change (keep a flag on the
+      standing and leaving row, as `turn` is for the running one) and needs the owner's or the orchestrator's call.
+      (b) `kit-board.ts` reads `row.track` as a direction, not a side, and `src/features/voice.ts` reads a media
+      track: neither changed. `railhead-view.ts` draws by lateral, not index: unchanged; `ring-island/view.ts` drew
+      its crossover from `TRACKS[0]`, which step 3 made the original track (a straight line): now `TRACKS[1]`.
+      (c) Ring levers cannot stand 1.4 m from a 25 or 40 m platform's end (the server's reach is 12.6 m from its
+      middle): they stand 9.5 m from the middle toward that end. (d) The Railhead's east lever for the train on
+      stands 6 m short of the far end, not 1.4 m (the jib's foot is 3 m from that end). (e) The Pier's lever keeps
+      calling home after Q7 (`only: -1`), and its train then stands on the far track until step 5. (f) No one top-down
+      still holds a train each way at the Quarry; the Far Head still does, and the Quarry has one still per way.
+      (g) `test/review-v26.test.ts` needed no change (it reads rows, not the view); `test/halt-lever-place.test.ts`
+      and the halt goldens did. Proof looks and what each shows: the step's handover.
       `src/entities/railway/line2-path.ts` (`line2Lat`: track 0 returns 0; track 1 takes today's end shapes, including
       a train turned short at the Pier easing out over the 20 m after its stop, which today is the 20 m before it; if
       the row does not carry enough to tell, say so and stop), `train-view.ts` (`latOf`, `crossing` on track 1),
@@ -192,15 +214,23 @@ Models are `npm run models` rows (withCodex).
       `test/railway-r4a-views.test.ts`, `test/review-v26.test.ts`. Proof looks: top-down at the Quarry with a train in
       each direction (pier-bound on the south track); the south lever pulled and the pier train stopping at the south
       platform; Far Head as the end with a train crossing out. Row: player-visible implementation (fable medium).
-- [ ] **5. The Pier after Q7 (per question 3).** If (a): a third `UP_HALTS` row for the Pier (s 719 to 741, lateral
+- [x] **5. The Pier after Q7 (per question 3).** Built locally under the review-fix brief, recommendation (a): a third `UP_HALTS` row for the Pier (s 719 to 741, lateral
       -6.95, on piles, a lever and a plank crossing), its `RailPlatform` in the catalog, `only: -1` kept. Run
       `npm run level-check` on it before review. Tier: sim catalog plus view; same bump. Row: gpt-6-astra high for the
       catalog, fable for the view.
-- [ ] **6. Bots, tools and words.** `dev/look/bots/railway.ts`, `railway-legs.ts`, `railway-ride.ts` (where they pick
+- [x] **6. Bots, tools and words.** Built locally 14 November; not shipped. [Step 6 report](running-side-step6-report.md)
+      records checks, browser evidence, remaining limits and departures: production-path sampling replaces the obsolete
+      ring splice; the seeded Works eval dismisses station-box cards by normal E; a new ride eval proves the Q7 Pier
+      return; the Home bay's future routing remains unresolved. The mechanical `offsetLat` / `OFFSET_LAT` /
+      `OFFSET_HALTS` rename is its own commit, `5398efe7b` (replayed from `d7d9d4e77`). No game behaviour or player copy changed.
+      The report's independent-review follow-up records the full Works proof through wagon coupling, reversed map
+      arrows, restored adjacent-stop prompt deadline and PR 1816 integration. The first fresh ride timed out; its
+      unchanged retry passed, with the cause left unconfirmed.
+      `dev/look/bots/railway.ts`, `railway-legs.ts`, `railway-ride.ts` (where they pick
       a platform or lever by way), `dev/level/check.ts`, `rail-map.ts`, `track-continuity.ts`,
       `home-passenger-bay.ts`; place.md's "The second track, drawn" and the halts' paragraphs, the comments in
-      `layout.ts` ("left-hand running"), `generic-lines.md` and `turnouts.md`. A mechanical rename of `upLat`,
-      `UP_LAT` and `UP_HALTS` (the offset track is no longer the up track) is its own later commit.
+      `layout.ts` ("left-hand running"), `generic-lines.md` and `turnouts.md`. The mechanical rename of `upLat`,
+      `UP_LAT` and `UP_HALTS` (the offset track is no longer the up track) is recorded in its own commit above.
       Row: quick mechanical jobs (gpt-6.1-sol medium).
 - [ ] **Checkpoint (steps 3 to 6, one ship with the v45 bump).** Proofs, once: `npm run loop -- run`; the railway ride
       bot from Village to the Pier and back; the three proof looks of step 4; `test:net`; `npm run level-check`.
@@ -212,14 +242,13 @@ Each step leaves `node dev/ship-check.ts` green.
 `npm run level-check` on origin/main (14 November): exit 0, 13 reports, "track continuity: ok (18 tracks, 7 joins)",
 "timber against track: 0 problems"; none of the reports is at a halt, platform or lever. Steps 1 to 4 place nothing
 new and gate nothing: levers have no collider and stay on their platforms, inside the server's reach (platform half
-length at most 12 m against a reach of 11.6 to 13.6 m; step 1's test holds this). Step 5's west platform at the Pier
-is not checked: it has no data yet, and its check is owed before that step is reviewed (does it give a way round the
-railhead's gap or onto the piled deck early).
+length at most 12 m against a reach of 11.6 to 13.6 m; step 1's test holds this). Step 5's west platform is now checked: Q7-gated deck/crossing, rail-height start ramp, no seabed wall or far ramp,
+0.8 m full-train crossing clearance, and a 65.4 m conservative roof glide against 278 m to the far deck. The
+[review-fix report](running-side-fix-report.md) records the source-linked checks and remaining evidence limits.
 
 ## Risks
 
-- **Room safety:** the server's acceptance changes (which platform a lever ask is taken from). No new effect, presence
-  or save field.
+- **Room safety:** the server's acceptance changes (which platform a lever ask is taken from). No new effect or presence. The authorized review fix adds the replicated/saved `Train.origin` field.
 - **Mixed builds:** dev phase, no compatibility code; an old tab would draw trains on the other track and have asks
   refused, which is what the bump is for.
 - **Hotspots:** `halts-view.ts`, `train-view.ts`, `railway-lines.ts`. `npm run inflight` shows one stale branch on

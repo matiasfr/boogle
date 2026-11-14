@@ -3,6 +3,7 @@
 // moved yard props. Place-local metres (world x = local x + 1000), north is -z, bearings in degrees clockwise from
 // north, `s` metres along a line from its start. Local, no three.js; the rules pin these anchors in centimetres.
 import type { Line } from './layout.ts';
+import { ROTUNDA_KIT, bayFrame, type RotundaSite } from './rotunda.ts';
 
 /** Both lines' first spline point. It was the turntable's centre; the table moves, the lines must not. */
 export const LINE_ORIGIN = { x: -82, z: 12 };
@@ -155,36 +156,43 @@ export const HALL = (() => {
 export const SPUR = { road: 1 as const, s: 5.5, segs: [arc((15 * Math.PI) / 3, 15, 1), straight(1.5)] };
 const spurStart = roadAt(1, SPUR.s);
 const spurEnd = march(spurStart, SPUR.segs, length(SPUR.segs));
-/** The 9.6 m table at the spur's end. */
+/** The 16 m table at the existing turnout spur's end. */
 export const TABLE = (() => {
   const u = dir(spurEnd.bearing),
-    r = 4.8;
+    r = 8;
   return { x: spurEnd.x + u.x * r, z: spurEnd.z + u.z * r, r, y: 18, spur: spurEnd.bearing + 180 };
 })();
-/** Stall roads, radial from the table: the middle one open, the others ruin outlines. Doors 8.5 m from the centre so
- * 4.4 m frames 30° apart don't overlap; 9 m deep; the door 3.6 m clear and 4 m high (today's frame). */
+export const ROTUNDA_HOME: RotundaSite = {
+  id: 'home',
+  centre: TABLE,
+  y: TABLE.y,
+  tableR: TABLE.r,
+  approach: TABLE.spur,
+  mid: 190,
+  order: [0, -1, 1, -2, 2, -3, 3],
+  stages: [0, 3, 5, 7],
+};
+/** Legacy three-stall API retained for the yard and level tools; the kit owns its dimensions. */
 export const STALLS = {
-  bearings: [160, 190, 220] as const,
-  open: 190,
-  door: 8.5,
-  depth: 9,
-  width: 4.4,
-  clear: 3.6,
-  high: 4,
+  bearings: [ROTUNDA_HOME.mid - ROTUNDA_KIT.bayDeg, ROTUNDA_HOME.mid, ROTUNDA_HOME.mid + ROTUNDA_KIT.bayDeg] as const,
+  open: ROTUNDA_HOME.mid,
+  door: ROTUNDA_KIT.doorR,
+  depth: ROTUNDA_KIT.depth,
+  width: 2 * ROTUNDA_KIT.doorR * Math.sin(rad(ROTUNDA_KIT.bayDeg / 2)),
+  clear: ROTUNDA_KIT.door.clear,
+  high: ROTUNDA_KIT.door.high,
 };
 /** One stall's frame: `u` out from the table, `yaw` turns local +z onto it (three.js rotation.y), the door and back. */
 export function stallFrame(bearing: number) {
-  const u = dir(bearing),
-    at = (r: number): XZ => ({ x: TABLE.x + u.x * r, z: TABLE.z + u.z * r });
-  const centre = at(STALLS.door + STALLS.depth / 2);
+  const frame = bayFrame(ROTUNDA_HOME, (bearing - ROTUNDA_HOME.mid) / ROTUNDA_KIT.bayDeg);
   return {
-    bearing,
-    u,
-    yaw: Math.atan2(u.x, u.z),
-    centre,
-    rim: at(TABLE.r),
-    door: at(STALLS.door),
-    back: at(STALLS.door + STALLS.depth),
+    bearing: frame.bearing,
+    u: frame.u,
+    yaw: frame.yaw,
+    centre: frame.centre,
+    rim: frame.rim,
+    door: frame.door,
+    back: frame.back,
   };
 }
 
@@ -296,7 +304,10 @@ export const PROPS = {
   pedestal: { x: -78.0, z: -1.17 }, // the existing 3.5 m rail clearance, including the pedestal's footprint
   crane: { x: -72.4, z: -3.1 },
   dock: { x: -76.07, z: -1.73 }, // retain 2 m between the dock and the pedestal
-  yard: { x: -46, z: 22 },
+  // North of the table, between its kerb and road 2 (350° from the table's centre, 10.5 m out: 1.9 m outside the kerb,
+  // 5.4 m from road 2's rails). Clear of the rotunda's arc, of the open east side the footings are carried in by and
+  // the garage stands on, and of the walk from the board crossing to the bays (design review of the rotunda, finding 3).
+  yard: { x: -57.3, z: 8.8 },
 };
 /** The curio shelf's footprint in its own frame, as drawn (`src/prefab/builders/curio-parts.ts`; town-plan.test.ts
  * holds these to the drawn parts): the crown's half-width, how far the crown reaches in front and behind (it is 1.1 m

@@ -145,8 +145,8 @@ stall roads and the cart's leg are laid in the lines' own pieces: the same sleep
 between the rails, the same heights, and posts under a sleeper that stands clear of the ground. The table's bridge
 rails are at that gauge and height too. Each stall road leaves the rim at the lines' height and ramps down to
 ground-level rails at the door, then runs level: to the back wall of the open stall (the shunter and wagon stand on its
-rail heads, wheels a metre apart on the rails, all along the shunt) and a rail's length onto each ruin's floor. Where two tracks run side by side they share one set
-of sleepers: the spur off road 2, the leg off line 1 and onto road 2, and each line's up track at its turnouts lie on
+rail heads, wheels a metre apart on the rails, all along the shunt) and a rail's length onto each ruin's floor (since the rotunda's blockout, 14 November: a road for each of its seven bays, to 23.5 m from the table's centre; the ruin outlines are replaced by the rotunda's own). Where two tracks run side by side they share one set
+of sleepers: the spur off road 2, the leg off line 1 and onto road 2, and each line's offset track at its turnouts lie on
 the through track's sleepers, carried on as long timbers until the tracks are clear of each other; the branch's rails
 start beside the through track's. There are still no blades, frogs or working levers, and the table has no pit: that is
 the station's art pass (home-station steps 9 and 10). Each ruin's floor and near wall stop 0.3 m short of the built
@@ -316,7 +316,7 @@ Shop clothes use the same remote validation as box gifts, so a partner also sees
 
 **Trail finds** (5 November owner choice, [solo design pass topic 1](../research/solo-design-pass.md)): yellow finds are flat stamped brass trinkets with a short metallic clank. Their existing personal IDs fill a small board beside the crystal row, including after reload. Blue crystals retain their specimen silhouette, magnet and chime. Neither collection awards currency, is spent, or gates progress. Presentation is Local; save ownership is unchanged.
 
-**The little guys** are mostly life, not labour; the depot's two are the one exception, a real but small job (the owner's "hungry" ladder). Round and stubby, in six colours, carrying logs, hammering at scaffolds, riding the machine and the trains' cab roofs, strolling, waving and following you for a few seconds (at most two at a time), and hopping at milestones. They stand on the ground at the frames. The village's number is how many you can see, up to 28, with someone new coming out of a cottage door each time it rises; three more at each camp, two helpers, four riders, five walking the first path, two at the cart. They walk round buildings and plots not yet built, by the nearer corner, give up on a goal that takes far too long, and have no colliders. The five on the first path walk line 1's track bed there and back, from s 36.7 (the first place past the Village's platform where something holds a little guy clear of the tracks) to the Camp's stub, facing the way they walk (until 14 November their heading was the path's toward the village while they walked away from it, so all five walked backwards the whole time; owner playtest). They keep off it for trains (owner, 14 November: "the little guys probably shouldn't be on the railroad when there's trains passing by"): 4.5 s before a line 1 train is alongside one, on either track, they step off at 3 m/s to a refuge, wait there facing the train and walk on once its last car is 3 m past. When a train is due is read off its own accepted leg (where it will be over the next 5 s: speeding up out of a halt, at speed or braking), not off its speed now. A train standing with no leg can leave at any tick at 3.5 m/s², so nobody walks the bed within 6 m of its ends (it takes 1.85 s to cover that from rest; the widest step off takes 1.2 s), and it is where they turn back. A refuge is at least 1.75 m from the middle of either track (the widest car's 1.1 m, its racks, the room a walker keeps from a wall and the swing of a car's corners on a bend), so a little guy at rest in one is never nudged by a passing car, and his feet are on what is drawn there, worked out where he stands: the rendered ground (`surfaceHeight`) within half a metre of the sleepers, or the trestle's own planks under him and both his sides. Tried in order: 2.4 m out on the side away from the up track (s 36.7 to 58.9 and from 111 on), then midway between the two tracks (on the ground s 58.9 to 72.7, on the ridge trestle's deck s 72.9 to 111); never beyond the up track, which would mean crossing it, perhaps into the very train. Where there is none (the 0.2 m between the ground and the deck) they hurry along the path to the nearest first. Little guys are drawn within 150 m of the camera and frozen beyond; a commuter is stepped out to 170 m, so he wakes in the 20 m between, not yet drawn, and only there is one who wakes (or is first put out) with a train already due stood in the nearest refuge at once. A camera that cuts straight back inside 150 m finds him where he froze, and he walks to his refuge like anyone: nobody is seen to jump. Walkers elsewhere are pushed out of a train car's box as they are out of the track layer's. View only (`folk.ts`, `opening-view.ts`, `path-refuge.ts` with `test/path-refuge.test.ts`, which walks the path every 0.1 m with the sim's own trains; look: `dev/look/evals/folk-on-the-line.ts`). Their walk is a waddle driven by how fast they really go: a rock from foot to foot, a bob over each step, feet that lift, hands swinging against them.
+**The little guys** are mostly life, not labour; the depot's two are the one exception, a real but small job (the owner's "hungry" ladder). Round and stubby, in six colours, carrying logs, hammering at scaffolds, riding the machine and the trains' cab roofs, strolling, waving and following you for a few seconds (at most two at a time), and hopping at milestones. They stand on the ground at the frames. The village's number is how many you can see, up to 28, with someone new coming out of a cottage door each time it rises; three more at each camp, two helpers, four riders, five walking the first path, two at the cart. They walk round buildings and plots not yet built, by the nearer corner, give up on a goal that takes far too long, and have no colliders. The five on the first path walk line 1's track bed there and back, from s 36.7 (the first place past the Village's platform where something holds a little guy clear of the tracks) to the Camp's stub, facing the way they walk (until 14 November their heading was the path's toward the village while they walked away from it, so all five walked backwards the whole time; owner playtest). They keep off it for trains (owner, 14 November: "the little guys probably shouldn't be on the railroad when there's trains passing by"): 4.5 s before a line 1 train is alongside one, on either track, they step off at 3 m/s to a refuge, wait there facing the train and walk on once its last car is 3 m past. When a train is due is read off its own accepted leg (where it will be over the next 5 s: speeding up out of a halt, at speed or braking), not off its speed now. A train standing with no leg can leave at any tick at 3.5 m/s², so nobody walks the bed within 6 m of its ends (it takes 1.85 s to cover that from rest; the widest step off takes 1.2 s), and it is where they turn back. A refuge is at least 1.75 m from the middle of either track (the widest car's 1.1 m, its racks, the room a walker keeps from a wall and the swing of a car's corners on a bend), so a little guy at rest in one is never nudged by a passing car, and his feet are on what is drawn there, worked out where he stands: the rendered ground (`surfaceHeight`) within half a metre of the sleepers, or the trestle's own planks under him and both his sides. Tried in order: 2.4 m out on the side away from the offset track (s 36.7 to 58.9 and from 111 on), then midway between the two tracks (on the ground s 58.9 to 72.7, on the ridge trestle's deck s 72.9 to 111); never beyond the offset track, which would mean crossing it, perhaps into the very train. Where there is none (the 0.2 m between the ground and the deck) they hurry along the path to the nearest first. Little guys are drawn within 150 m of the camera and frozen beyond; a commuter is stepped out to 170 m, so he wakes in the 20 m between, not yet drawn, and only there is one who wakes (or is first put out) with a train already due stood in the nearest refuge at once. A camera that cuts straight back inside 150 m finds him where he froze, and he walks to his refuge like anyone: nobody is seen to jump. Walkers elsewhere are pushed out of a train car's box as they are out of the track layer's. View only (`folk.ts`, `opening-view.ts`, `path-refuge.ts` with `test/path-refuge.test.ts`, which walks the path every 0.1 m with the sim's own trains; look: `dev/look/evals/folk-on-the-line.ts`). Their walk is a waddle driven by how fast they really go: a rock from foot to foot, a bob over each step, feet that lift, hands swinging against them.
 
 Their boots stay planted during each stance while the other foot returns, separately from the torso's smaller rock and bob; soles follow the ground or their existing deck. Idle weight shifts and bounded glances at a nearby player are Local poses. A wave raises its hand first; milestone cheers stagger a crouch, a small hop and a soft landing with a grounded pause between hops. Workers give one brief cheer when their building finishes. These poses follow existing routes and construction facts; they change no deliveries, costs or round timing (DESIGN.md 11, Show, don't tell; little-guys research recommendations 3 and 7).
 
@@ -798,6 +798,50 @@ at hand wins. Local view; no op, state, catalog or server change. Not tested on 
 _Known, not fixed here:_ a loose pile's pickup is offered as runnable while a footing fills your back, though the
 server refuses it (`sources.ts`); it should be greyed.
 
+**Trains keep to the right, and the lever you pull is on your train's platform (14 November 2026, view; [running-side](../plans/running-side.md), step 4, with step 3's catalog; local branch, ships with the v45 reset).**
+_Why (owner, 14 November: "the train then goes left-hand side instead of right-hand side towards the pier... the
+station directions should be swapped at the quarry")._ No rail, platform or deck moved; which way runs on which track
+swapped. A train going out (away from the Village) runs on the original track, the one the first platforms stand
+beside (the Quarry's south platform, Far Head's east, the Railhead's and Ring Island's east); a train going home runs
+on the second track, 4 m to the west, beside the second platforms. Line 1 does the same between its turnouts. At an
+end the arriving train runs straight in to the east platform and the leaving one takes the end's crossover (Far Head
+before the pier, Ring Island) or turnout (the Pier, the Railhead, a stack head) out to the homeward track; the engine
+still faces out, so it propels its cars home as before. **Levers:** a first platform's lever calls the train going
+on and stands at the platform's far end (the Quarry's south lever: **Request stop: to Pier**, or to Far Head before
+the pier is laid); a second platform's lever calls the train home and stands at its Village end (the Quarry's north
+lever was already there; Far Head's west lever moved 19.2 m from the crossing end). **While a halt is the line's open
+end** both ways stand at its first platform, so that platform's lever calls the train home from the Village end, and
+the second platform's lever hangs chained, plaqued Village; when the line grows past it the first platform's lever
+slides to the far end (7 m/s, no prompt while it moves) with the next end's name on it and the second one unchains,
+after any retained old-end train has cleared. An old-side standing train or committed inbound turn keeps the
+homeward lever live; after it departs, both levers chain until full block clearance. Accepted server reach and
+train selection use the same rule, so an old-side lever cannot invite a future train onto the other platform.
+That is Far Head before and after the pier, the Railhead before and after the rivet (its east lever goes from 0.6 m
+off the home end to 6 m short of the far end, where it stood before 14 November: nothing is set at the jib by then)
+and Ring Island before and after the stack line opens. The joint's and Ring Island's levers stand 9.5 m from their
+platform's middle toward the end their train leaves by, not at the very end: the server takes an ask within 12.6 m
+of the middle, and those platforms are 25 and 40 m long (Ring Island's home levers moved from u 457 to u 438.5,
+3.1 m clear of the steel yard's reach; the joint's west lever from u 253.5 to u 238, beside its plank crossing).
+Camp's, the Pier's and the Home island's levers are where they were, and the stack heads keep one platform with a
+lever each way. The signal on a first platform drops for its lever's way. The plaque's arrow and the prompt follow
+the way the lever calls now. **The Pier after Q7 (14 November, step 5):** its homeward-only service boards a new west
+platform, s 719–741 at lateral -6.95, on piles. The platform and its plank crossing appear with Q7; before then the
+east terminal platform still serves the train home. After Q7 and any retained departure clears, the east lever
+chains and its signal stays up; the west lever offers the existing **Request stop: to Village**. Its start ramp meets a plank crossing at s 711.8, 0.8 m clear
+of the full stopped train, with no ramp to the seabed or off the far end. Level-check checks this geometry, its Q7
+gate and the maximum jump/glide from its roof against the railhead gap.
+**Departure origin (14 November, review fix):** the Server train row now keeps the far-end departure
+coordinate in `origin`, replicated and saved. It survives a growing line, a moving stop and replans until the next
+halt. Train decks and shared rideable bodies read it directly; no tab remembers a different departure side, and
+the Railhead merge used by those bodies no longer slides on a tab-local clock. The complete old departure path stays
+until every car clears it, rather than easing only the reference point when the line grows. Its accepted old end
+block and signal also remain protected: a train cannot plan through that block until the whole retained departure
+clears. This includes an inbound train already committed to turn back at the old end. Tests: `test/railway-r4a-views.test.ts` (every stage's lateral, no sideways jump),
+`test/halt-lever-place.test.ts` (ends, the server's reach, 3 m from every worked site),
+`test/prefab-halts.test.ts` (every lever's ask is taken at eight stages); look:
+`dev/look/evals/running-side.ts`. The review fixes add the accepted origin field and the Pier west catalog entry
+to the shared v45 reset; no new op. Not tested on a device.
+
 The two Server-owned lines run at
 20 m/s: camp–village, and village–quarry–Far Head. Owner platform carry keeps a rider
 aboard; train schedules receive no away credit. The first line-2 service moves Q6's kit from the forge: 32 minted
@@ -820,39 +864,49 @@ pieces, the completed pier with rockets, and the northward Ring Island view (`gr
 
 ### The second track, drawn (10 November 2026, generic-lines step 2)
 
+**Running-side steps 3–6 (14 November, local branch; not shipped).** The server now accepts outbound
+Quarry requests from the south platform and homeward requests from the north. Far Head, the Railhead and Ring
+Island use original-side/outbound and offset-side/homeward platforms; at the open far end both ways use the original
+side, moving with the Railhead. Track geometry and train rules are unchanged. Catalog and views share the rotunda's v45 reset and now agree on right-hand running. The Pier remains
+homeward-only; after Q7 its piled west platform and crossing serve the return train and its east lever chains.
+Retained terminal trains keep their original platform authority until the whole departure clears. See the
+[step 3 report](../plans/running-side-step3-report.md) for the contract and remaining work. Step 4 (the views) is
+built on the same branch: "Trains keep to the right, and the lever you pull is on your train's platform" above. Tools and bots follow the same sides and retained authority (step 6).
+
 **A train's vehicles stand apart along the track they are drawn on** (owner, 14 November: "on certain stops,
 especially with curves, the train car clips the train engine"; `car-spacing.ts`). A train's place is metres along its
-line; the up track, 4 m inside a bend, is shorter than the line there, so an up train's cars used to close up: the
+line; the offset track, 4 m inside a bend, is shorter than the line there, so an up train's cars used to close up: the
 engine's deck stood 0.68 m into the first car on line 1's bend and 0.98 m into it at the Quarry's stop. Each vehicle
 now stands its offset along its own track from the first car, and where a bend is still too tight for two decks'
 inside corners the coupling stretches until they clear by 0.1 m (the engine's buffers counted): at most 0.27 m
-anywhere under way, 0.20 m at the Quarry's stop on today's track and 0.06 m on its up track, nothing at the other
+anywhere under way, 0.20 m at the Quarry's stop on today's track and 0.06 m on its offset track, nothing at the other
 stops. Buffers count: none stands in a deck or in another buffer (0.02 m at least between them). **A train on an up
 track is set across along the line's smooth heading** (`lineSmoothAt`): the line's own heading steps at each metre
 point, and along it a car 4 m beside the line stood back at every metre of a bend (0.58 m at the Quarry), a judder;
-rails and other fixed things keep the stepped heading the sim's platforms are pinned to, and both lie on one curve. The two readings agree to 3 cm along both up tracks and to 1 cm at every platform and crossing. **Wheels are not on the drawn rails round a bend**, on either track: each rail is a straight box 2 to 4 m long (today's track sets it at its middle's heading), so a wheel stands up to 12 cm off one on line 1's own track, 15 cm on line 2's, 16 cm and 12 cm on their up tracks (`test/train-wheel-rail.test.ts` pins these so they get no worse). Rails that bend, or shorter ones on bends, are the track view's piece model (the gantry carries one rail pair a panel) and are not done. **The Quarry's bend is eased on
-the up track** (`layout.ts` `upFull`, `track-ease.ts`): 4 m inside the line's 6.5 m bend it was a bend of under 3 m;
+rails and other fixed things keep the stepped heading the sim's platforms are pinned to, and both lie on one curve. The two readings agree to 3 cm along both offset tracks and to 1 cm at every platform and crossing. **Wheels are not on the drawn rails round a bend**, on either track: each rail is a straight box 2 to 4 m long (today's track sets it at its middle's heading), so a wheel stands up to 12 cm off one on line 1's own track, 15 cm on line 2's, 16 cm and 12 cm on their offset tracks (`test/train-wheel-rail.test.ts` pins these so they get no worse). Rails that bend, or shorter ones on bends, are the track view's piece model (the gantry carries one rail pair a panel) and are not done. **The Quarry's bend is eased on
+the offset track** (`layout.ts` `upFull`, `track-ease.ts`): 4 m inside the line's 6.5 m bend it was a bend of under 3 m;
 now it starts its turn earlier and ends it later (s 156 to 200), running between 3.91 and 4.35 m from the line, and
-turns no tighter than 10 m (10.4 m measured every 0.01 m, as the rails read it and as a train does). Rails, bed and trains follow it; the up platform (the track within 0.1 m of where it was
+turns no tighter than 10 m (10.4 m measured every 0.01 m, as the rails read it and as a train does). Rails, bed and trains follow it; the offset platform (the track within 0.1 m of where it was
 beside it), the plank crossing, the levers and the stopping marks are where they were. **A drawbar and buffers are drawn at each coupling** (`couplings.ts`): a dark iron bar from one headstock to the next and a pair of buffers on each car's end facing it (the engine's own are on its model), following the cars as drawn and stretching with the gap; no solid, no state, two instanced draws for every train. On straight track nothing
 moves. Local view and Place data; bodies, seats and the cab's cutaway follow the same poses;
 the sim's train, its stops and its extent are unchanged. Not tested on a device.
 
-Both lines are drawn double track ([generic-lines](../plans/generic-lines.md), step 2): the up track runs 4 m left of
-today's (left-hand running) from merge to merge, line 1 s 36–182 and line 2 s 34–556, easing in and out over a 20 m
+Both lines are drawn double track ([generic-lines](../plans/generic-lines.md), step 2): the offset track runs 4 m left of
+the original in the +s direction. Right-hand running puts outward trains on the original and homeward trains on the offset
+from merge to merge, line 1 s 36–182 and line 2 s 34–556, easing in and out over a 20 m
 stub turnout at each end, so the turntable, both Village platforms, the Camp end and the pier stay one track. Far Head
-has a facing crossover at s 490–512, up track to down, while it is line 2's end. On the ridge, gorge and sea trestles
-the deck spans both tracks (7.6 m) on bents that reach out under the up track. The track layer lays both tracks of
+has a departure crossover at s 490–512, original track to offset, while it is line 2's end. On the ridge, gorge and sea trestles
+the deck spans both tracks (7.6 m) on bents that reach out under the offset track. The track layer lays both tracks of
 each panel in one trip: the gantry lifts the top two pairs off its stack, seats today's track's pair, lets go, crosses
-4 m and sets the up track's pair down, so its stack empties by two a panel (bills, panel counts and timing are
-unchanged; the beam is 7.0 m). Quarry and Far Head each get an up platform outside the new track (Quarry's s 154–174.5,
+4 m and sets the offset track's pair down, so its stack empties by two a panel (bills, panel counts and timing are
+unchanged; the beam is 7.0 m). Quarry and Far Head each get an offset platform outside the new track (Quarry's s 154–174.5,
 clear of the Q4 frame, with no ramp off that end) and a plank crossing over both tracks: at Far Head by today's
-platform's end ramp, at the Quarry (whose two platforms overlap along the line) just before the up platform's start
-ramp, its planks running on to a pad at that ramp's foot so you step straight onto it; they drop in with today's halt and have no lever, signal or board yet. To make room the hook pillar p2 and its
+platform's end ramp, at the Quarry (whose two platforms overlap along the line) just before the offset platform's start
+ramp, its planks running on to a pad at that ramp's foot so you step straight onto it; they drop in with the original halt and have their homeward lever and signal, without a second board. To make room the hook pillar p2 and its
 walk stand 11 m out at s 89.5 (the hook device moved with it, accepted there by the server; the walk rises round
 the pillar's far side from t0, so t0 still needs the hook), p1's lip ends at the
 wider deck's edge, both line-2 gates span both tracks (slab 10.4 m, centred 2 m left) and the ridge trestle's left
-lamps stand at its new edge. Trains still run on today's track only (step 4). No `WORLD_NS` bump; not tested on a
+lamps stand at its new edge. Trains use both tracks under v45 (running-side); the original drawing step needed no `WORLD_NS` bump; not tested on a
 device.
 
 **The crossing, retimed (14 November 2026; owner playtest: "it feels like it's teleporting too quickly to the other
@@ -895,9 +949,9 @@ reduced motion). Station 6's bill takes the same two lines once trains run. The 
 hand-back still faces the sea, with the frame about 19 m behind you. Draft UI copy; Local view. **Q7's double deck** is laid over bents 1-6 a panel at
 a time (planks across both tracks, both tracks' rails, stringers, a 1.5 m plank footway along its east edge from the
 pad to where the railhead's walkway begins; solid as it is laid), with a finger board "Railhead" at the pad's corner.
-When Q7 is done the pier's **up track** drops in from the old merge out to the pier head as plain double track (the
+When Q7 is done the pier's **offset track** drops in from the old merge out to the pier head as plain double track (the
 turnout before s 556 is taken out of the picture). Trains run past the pier head on the ring's own path (the layout's
-line does not reach it), take the up track's 4 m offset from the open end's stub (the Pier's, the railhead's, sliding
+line does not reach it), take the offset track's 4 m offset from the open end's stub (the Pier's, the railhead's, sliding
 a bent with `head`) or crossover (Far Head's, Ring Island's), and a train Q7 turns at the Pier eases onto the down
 track instead of jumping across (it once jumped 4 m for a tick). The levers of the **Railhead** (east: way home, live
 once Q7 is laid, sliding with the railhead and offering no prompt while it moves; west: chained until the rivet) and
@@ -917,7 +971,7 @@ over the deck, east of the down track (lat +1.8 to +6.3) with a yellow safe line
 walkway** (deck height, 4.5 m wide, from u 95), so nobody on the platform is ever left over the sea: while it moves
 it has no collider and whoever is on it drops 0.9 m onto the walkway, and the rack's and the jib's prompts wait for
 the slide. The deck ends on a yellow and black striped beam and buffers on both tracks (a pair of points 50 to 30 m
-short of the end puts the up track on the down track; the up track runs on to its own buffer, so nothing has to appear
+short of the end puts the offset track on the down track; the offset track runs on to its own buffer, so nothing has to appear
 when the rivet makes the line a through one: the buffers and the stripes go then). The wagon's loads hop to the rack
 (three layers of six), a footing is shouldered at the rack and set at the jib with the pier's prompts ("Shoulder a
 footing", "Set the footing"; none once fourteen are set). With bent 13 come the **hook pile** 276 m out (three timbers
@@ -1156,6 +1210,49 @@ Not tested on a device.
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
+**Rotunda step 1a (14 November, local branch; v45 not shipped).** The shared kit is data: 20° wedge bays,
+doors at radius 14 m, 11 m depth, 3.6 × 4.6 m door openings. Home reserves seven bays centred on 190°,
+with site-owned counts 0/3/5/7; stage triggers and the continuous building arrive in later steps. The existing
+disc is now 16 m across, moved 3.2 m along the unchanged engine spur; its reach is 10 m. The stall and cracked
+slab rule points follow the new door, the steel-home landing lies outside the future 8.6 m kerb, and the
+garage's post, stand, jib and crew move out with it. The current 15° garage camera and no-try-on behavior stay.
+The jib arm is 12.2 m so the closed bystander's install hook and trolley remain supported with that camera pose.
+The show-off turn lasts 3 s within the locked install moment (rest at c+4800, skip still from c+800).
+The level pad under the bay arc is already graded to 18 m, because the relocated yard rails otherwise sank into
+the old slope. There is no pit or rotunda shell yet. [Step 1a report](../plans/roundhouse-rotunda-1a-report.md).
+The delivered steel pallet follows the site's table radius and the kit's kerb: its centre is on bearing 30° at Home,
+with at least 1 m between the pallet and kerb. Its base spans the shallow ground slope; neither steel nor pallet
+stands on the disc. The placement clears the spur, all seven future stall roads, the garage furniture and camera.
+
+**Rotunda step 1b, the blockout (14 November, local branch; ships with v45).** The Roundhouse is one curved
+building in plain blocks at the kit's true sizes, to walk the spacing before any art ([plan](../plans/roundhouse-rotunda.md)).
+The three separate stalls and their ruin outlines are gone.
+
+- **The table** is a dark 16 m disc flush with the yard (the pit is dug in a later step), with a pale kerb to 8.6 m
+  and an amber ring painted at 14 m across, the smaller table to compare against. The bridge is a 16 × 3.2 m deck
+  with the rails on it; it turns as the table did, and its brass handle rides its end. The deck is solid where it
+  rests and not while it turns. The kerb is drawn only.
+- **A bay** is a 20° wedge: a door wall 14 m out and 6.2 m high with a 3.6 × 4.6 m door between two piers, a roof
+  falling to a 4.8 m back wall 25 m out with a dark window band, and end walls where the building stops. Bays meet
+  edge to edge and are open to each other inside. A bay with nothing in it keeps its door shut.
+- **What stands when** reads the shed's accepted state, with no new shared state. On arrival: five bays as ruins
+  (190° and two each side), each a floor and two door piers broken at different heights, and bay 190° with no piers
+  at all: two empty sockets where they go, the cracked slab just behind them, the tarped shunter and wagon behind
+  that. The two footings set in the sockets raise bay 190°'s piers and lintel; when they stand, bays 170°, 190° and
+  210° stand as the building, with 190° open and working. When the first steel lands at Home, bays 150° and 230°
+  join them and ruins appear at 130° and 250°. A change of stage snaps for now; the rise is a later step. Seven
+  bays is held: it needs its own brief.
+- **Rails** fan from the table to every one of the seven bays from arrival, built or not.
+- **Painted on the ground** past each end, bays 110° and 270° in amber outline: what nine bays would take. The
+  270° one stands 3.2 m from road 2's buffer stub.
+- **The stone yard's spot** moves north of the table, between the kerb and road 2 (nothing is drawn there today):
+  off the arc, off the open east side the footings are carried in by, and off the walk from the board crossing.
+
+Local scenery and Owner collision from prefab records (`roundhouse.*-block`, `content/built/levels/rotunda-home.json`);
+no rule, wire, save or namespace change beyond step 1a's. Serves DESIGN.md 11 (Show, don't tell) and 7 (Telegraph
+everything). Not walked by a player: the roof is out of reach of one or two jumps from the ground (1.6 m and about
+2.9 m against a 5.1 m eave), and whether the glider reaches it is not measured. Not tested on a device.
+
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's
 plume and whistle. **Take the breaker** is once for the room; like the boiler before it, its prompt measures to the
 pedestal's edge, so logs set down against the pedestal don't take the prompt from it (12 November). **Strike the seam** at the cracked slab by Home's
@@ -1172,7 +1269,7 @@ deliberate "before": they raise the stall frame and pull its tarp off. The cradl
 (**Fit the cradle**), which turn it brass (it took two footings too until 10 November;
 [works-late-game](../plans/works-late-game.md), step 2). **Turn the table** is accepted only when ready (owner, 10
 November): once the cradle is fitted and before the wagon rolls out, so the one turn there is sends the shunter
-and wagon over the spur in 110 ticks (11 s). The deck turns 120°, the pair backs down shunter first, rests at the
+and wagon over the spur in 140 ticks (14 s). The deck turns 120° over 5.04 s, the pair backs down shunter first, rests at the
 cusp, then the shunter pushes the wagon out to line 2 at the unchanged coupling mark. Earlier, while it rolls out,
 and after line 2 couples it, a turn is refused
 and the prompt isn't offered (until 10 November a turn before the fit was accepted and did nothing, and after
@@ -1180,7 +1277,7 @@ coupling the table was a toy). **The cradle asks in the open (14 November,
 [footings-signalling](../plans/footings-signalling.md) A1 and A2; owner: "There is never any prompt to bring 8 rails to
 the cradle stall").** From the stall's second footing (after its build and tarp on a live edge) until the wagon rolls
 out: a station-style bill on the Roundhouse apron, **Footing wagon** / **rails 0/8**, its count rising, then
-**Turn the table** once fitted. It is the kiln's own board, idle since the kiln lit, moved 7.5 m from the table's
+**Turn the table** once fitted. It is the kiln's own board, idle since the kiln lit, moved 11.3 m from the table's
 centre onto the bisector between the open stall's road and its forge-side neighbour, edge-on to both roads and
 facing the walk from the forge rack. Eight dashed gold rail ghosts stand on the wagon's cradle, each going as its
 rail bolts on; the forge's rail rack gives off the gold motes while rails are wanted; fitted, the table's handle
@@ -1320,6 +1417,11 @@ compiled halt-kit records. The compiler joins the unchanged halt catalog and pla
 resolves at load. The existing platform frame, piece reveal order, merged draws, grass support and collider order
 remain. Request levers/plaques, signal attachments, plank crossings and board stands still use their existing
 builders ([prefab step 10 third pass](../plans/prefab-data-step-10-3-report.md)); no halt or interaction moves.
+
+Home's two destination plaques hang 0.8 m inward beside their signal masts, clear of the pictograms; the masts stay
+in place. These are the kit's only road plaques (the Pier's second platform has no mast or road plaque). All kit
+platform edge stripes, including the Pier's second platform, sit 1 cm above the deck with their outer faces 2 cm
+inside the slab edge, avoiding coincident slab faces. Walkable deck colliders are unchanged.
 
 **Signs at the stations and racks** (owner, 9 November: signs in the world before hovering text; the second pass after
 the halts). The station bills, the depot rack's stock count, the rails shelf's count and the cart's service tag were

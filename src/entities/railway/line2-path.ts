@@ -7,7 +7,7 @@ import {
   LINKS,
   ORIGIN,
   TURNOUT,
-  UP_LAT,
+  OFFSET_LAT,
   crossLat,
   upFull,
   lineAt,
@@ -178,7 +178,10 @@ export function line2World(s: number, lat: number, out: { x: number; z: number }
 }
 const tmp: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 
-// ---------------------------------------------------------------- the up track's lateral, from the room's rows
+// ---------------------------------------------------------------- a train's lateral, from the room's rows
+// Right-hand running (docs/plans/running-side.md, v45): a train going out (+s, track 0) keeps the original track
+// (lateral 0, the east platforms'), one going home (-s, track 1) the offset track (OFFSET_LAT, the west platforms'). No rail
+// moved: at an end the arriving train runs straight in and the leaving one takes the end's turnout or crossover out.
 const QUARRY = FORMATION.quarry;
 const HALTS = RAIL_LINES[LINE2]!.halts;
 /** Far Head's stop on line 2: its facing crossover (s 490-512 m) is the first end the line has. */
@@ -186,7 +189,12 @@ const FAR_HEAD = 2;
 /** A crossover end's length along the line (metres): Far Head's 22 m, the island's 22 m. */
 const CROSS_LEN = QUARRY.crossover![1] - QUARRY.crossover![0];
 /** The part of a train row the lateral reads. */
-export type LatRow = { readonly track: number; readonly to: number; readonly turn: boolean; readonly dest: number };
+export type LatRow = { readonly track: number; readonly origin: number };
+/** The accepted departure coordinate identifies its catalog end, even after that end moves or extends. */
+export const departureHalt = (row: LatRow) =>
+  row.origin === 0
+    ? -1
+    : HALTS.findIndex((h, k) => k > 0 && h.end && (h.s === row.origin || h.heads?.includes(row.origin)));
 /** Where the open end's merge (a stub) or crossover (a crossover) starts, metres: the catalog's, moved with a moving
  * stop (the Railhead's by its head). */
 export const endMergeM = (stops: readonly number[]) => {
@@ -195,32 +203,22 @@ export const endMergeM = (stops: readonly number[]) => {
   return (end.mergeCm + stops[last]! - HALTS[last]!.s) / 100;
 };
 /**
- * The lateral of line 2's train on `row`'s track at `s` metres (0 is the down track, UP_LAT the up track; Local, from
- * rows alone, so a restore or a joining tab draws it the same).
- *  - Down track: 0.
- *  - Up track: UP_LAT between the turnouts (eased out over the 20 m after the layout's merge at s 34).
- *  - While the open end is Far Head, every up train takes its crossover onto the down track (s 490-512); so does one
- *    the pier's opening caught there (`turn`, bound for Far Head).
- *  - While it is a stub (the Pier, the Railhead), the two tracks merge over the 20 m before `merge`; at a crossover
- *    (Ring Island) up trains cross onto the down track after it.
- *  - A train Q7 turns at the Pier (`turn`, bound elsewhere than Far Head) is on a straight double track: it eases onto
- *    the down track over the 20 m before the stop it turns at. It is not on Far Head's crossover (a train past s 512
- *    on the up track, turned at the Pier stub, once jumped 4 m sideways there).
- * `merge` is endMergeM(stops), or a smoothed value for a moving railhead.
+ * A homeward train follows its accepted departure end's complete path until the next halt. Retaining the whole
+ * path (including the original merge) preserves every car and axle when Q7 or a moving Railhead extends the line.
+ * Below the old merge it is already the ordinary homeward track, so retaining it beyond clearance is harmless.
+ * With no retained origin, read today's open end. Outbound trains always follow the original track.
  */
 export function line2Lat(row: LatRow, s: number, stops: readonly number[], merge = endMergeM(stops), smooth = false) {
-  if (row.track) return 0;
-  const last = stops.length - 1;
-  const start = s <= QUARRY.from ? 0 : UP_LAT * ease((s - QUARRY.from) / TURNOUT);
-  if (last === FAR_HEAD || (row.turn && row.to === FAR_HEAD)) {
-    const c = QUARRY.crossover!;
-    return s >= c[0] ? (crossLat(QUARRY, s) ?? 0) : start;
-  }
+  if (!row.track) return 0;
+  const retained = departureHalt(row);
+  const halt = retained < 0 ? stops.length - 1 : retained;
+  const end = HALTS[halt]!.end!;
+  if (retained >= 0) merge = (end.mergeCm + row.origin - HALTS[halt]!.s) / 100;
+  const start = s <= QUARRY.from ? 0 : OFFSET_LAT * ease((s - QUARRY.from) / TURNOUT);
+  if (halt === FAR_HEAD) return s >= QUARRY.crossover![0] ? (crossLat(QUARRY, s) ?? 0) : start;
   let lat = start;
-  if (HALTS[last]!.end!.kind === 'stub')
-    lat = UP_LAT * Math.min(ease((s - QUARRY.from) / TURNOUT), ease((merge - s) / TURNOUT));
-  else if (s >= merge) lat = UP_LAT * (1 - ease((s - merge) / CROSS_LEN));
-  if (row.turn && row.to !== last) lat *= 1 - ease((s - (row.dest / 100 - TURNOUT)) / TURNOUT);
-  // Through the Quarry's bend the up track's full offset is the eased one (layout.ts upFull).
-  return (lat / UP_LAT) * upFull(QUARRY, s, smooth) + 0; // never -0
+  if (end.kind === 'stub') lat = OFFSET_LAT * Math.min(ease((s - QUARRY.from) / TURNOUT), ease((merge - s) / TURNOUT));
+  else if (s >= merge) lat = OFFSET_LAT * (1 - ease((s - merge) / CROSS_LEN));
+  // Through the Quarry's bend the offset track's full lateral is the eased one (layout.ts upFull).
+  return (lat / OFFSET_LAT) * upFull(QUARRY, s, smooth) + 0; // never -0
 }

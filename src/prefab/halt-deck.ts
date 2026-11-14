@@ -1,5 +1,5 @@
 // Runtime-only platform dimensions. The compiler keeps the row selector and authored-source fingerprint.
-import { HALTS, UP_HALTS, LINKS, ORIGIN, lineAt, railY } from '../place/layout.ts';
+import { HALTS, OFFSET_HALTS, LINKS, ORIGIN, lineAt, railY } from '../place/layout.ts';
 import { ISLAND } from '../place/home-station.ts';
 import { H } from '../place/terrain.ts';
 import { SEA } from '../constants.ts';
@@ -11,7 +11,7 @@ export const HALT_PIER = { s0: 719, s1: 741, lat: 2.9, island: false } as const;
 export function haltSource(row: number, up: boolean) {
   if (!Number.isInteger(row) || row < 0 || typeof up !== 'boolean')
     throw new Error('prefabs: invalid halt deck selector');
-  const sources = up ? UP_HALTS : [...HALTS, { line: 1 as const, ...HALT_PIER }];
+  const sources = up ? OFFSET_HALTS : [...HALTS, { line: 1 as const, ...HALT_PIER }];
   const h = sources[row];
   if (!h) throw new Error('prefabs: invalid halt deck recipe');
   return h;
@@ -41,7 +41,7 @@ export function haltDeck(row: number, up: boolean) {
   const { h, island, hw, half, low, c } = haltFrame(row, up);
   if (island && h.line !== 0) throw new Error('prefabs: only the first Home edge owns its deck');
   const ground = H(c.x, c.z);
-  const overWater = !up && ground < SEA;
+  const overWater = ('piles' in h && h.piles === true) || (!up && ground < SEA);
   const colliders: PrefabDef['colliders'][number][] = [{ shape: 'box', at: [0, -0.25, 0], half: [hw, 0.25, half] }];
   if (!overWater)
     colliders.push({

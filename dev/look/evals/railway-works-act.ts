@@ -33,7 +33,7 @@ const moves: Record<string, Move> = {
   strike1: [1119, 82, /Strike the seam/],
   foot: [1088, 50, /Shoulder a footing/],
   set: [socket.x, socket.z, /Set the footing/],
-  turn: [918, 12, /Turn the table/],
+  turn: [947.5, 15.5, /Turn the table/],
   kiln: [1128, 87, /Fill the kiln/],
   pier: [1398.94, -361.77, /Shoulder a footing/],
 };

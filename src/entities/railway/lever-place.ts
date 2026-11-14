@@ -3,8 +3,8 @@
 // I deposit the footings"). Pure numbers, so test/halt-lever-place.test.ts can hold the clearances.
 import { RING_HEAD, RING_PLATFORM_LAT } from '../../sim/railway-ring-layout.ts';
 import { PIER_FRAME, PIER_RACK, SHED_STALL, WORKS_RACK } from '../../sim/railway-works-layout.ts';
-import { haltPlatform, type RailPlatform } from '../../sim/railway-lines.ts';
-import { haltHead } from '../../sim/railway-queries-route.ts';
+import type { RailPlatform } from '../../sim/railway-lines.ts';
+import { railCallPlatform } from '../../sim/railway-queries-trains.ts';
 import { ringHead } from '../../sim/railway-queries.ts';
 type World = Parameters<typeof ringHead>[0];
 
@@ -12,20 +12,25 @@ type World = Parameters<typeof ringHead>[0];
  * generated halts' levers use the same two, src/prefab/halt-attachments.ts). The railhead's lever stands `railheadEnd`
  * from its platform's end instead: the rack is on the same 25 m platform, and every centimetre toward the end is
  * clearance from it. */
-export const LEVER_PLACE = { edge: 80, fromEnd: 140, railheadEnd: 60 } as const;
+export const LEVER_PLACE = { edge: 80, fromEnd: 140, railheadEnd: 60, railheadOn: 600 } as const;
 
-/** The railhead's east lever at head `head`, metres along the ring and off the down track: at its sliding platform's
- * home end, the way its train leaves. It stood 6 m short of the far end, 3.2 m from the jib's foot and inside its
- * reach; here the jib is 21.4 m off, and the knob is 6.35 m from the rack with the handle over (its nearest), so the
- * two prompts' reaches end 0.95 m apart at the least (test/halt-lever-place.test.ts). */
-export const railheadLever = (head: number) => ({
-  u: (RING_HEAD[head]!.u - RING_PLATFORM_LAT.len + LEVER_PLACE.railheadEnd) / 100,
+/** The railhead's east lever at head `head`, metres along the ring and off the original track. Calling the train
+ * home (`way` -1, while the railhead is the end) it stands at its sliding platform's home end, the way its train
+ * leaves. It stood 6 m short of the far end, 3.2 m from the jib's foot and inside its reach; here the jib is 21.4 m
+ * off, and the knob is 6.35 m from the rack with the handle over (its nearest), so the two prompts' reaches end 0.95 m
+ * apart at the least (test/halt-lever-place.test.ts). Calling the train on (`way` +1, after the rivet, when nothing is
+ * set at the jib) it stands `railheadOn` short of the far end. */
+export const railheadLever = (head: number, way: -1 | 1 = -1) => ({
+  u: (RING_HEAD[head]!.u - (way < 0 ? RING_PLATFORM_LAT.len - LEVER_PLACE.railheadEnd : LEVER_PLACE.railheadOn)) / 100,
   lat: (RING_PLATFORM_LAT.lat0 + LEVER_PLACE.edge) / 100,
 });
+/** How far (m) from its platform's middle a lever stands on the joint's and Ring Island's platforms, toward the end
+ * its train leaves by: the platforms are 25 and 40 m long and the server takes an ask within 12.6 m of the middle
+ * (rail.call), so the very end is out of reach; 9.5 m leaves the prompt's own 1.8 m reach inside it all round. */
+export const RING_LEVER_OFF = 9.5;
 
 /** The platform the server judges a lever's ask from: `rail.call`'s own choice (src/world/railway-server.ts). */
-export const leverPlatform = (w: World, halt: number, way: number) =>
-  haltPlatform(halt, way, haltHead(w, halt, ringHead(w)));
+export const leverPlatform = (w: World, halt: number, way: number, tick = 0) => railCallPlatform(w, halt, way, tick);
 /** Whether the server would take a lever ask from (x, y, z) metres: `rail.call`'s position test, both limits (flat
  * reach of the platform's middle, and within 2.6 m of 0.4 m over it), on the centimetres the adapter sends. A lever
  * offers no prompt where this is false. */

@@ -13,11 +13,12 @@ import {
   LINKS,
   ORIGIN,
   PATHS,
-  UP_HALTS,
+  OFFSET_HALTS,
+  OFFSET_LAT,
   crossingPlanks,
   lineAt,
   railY,
-  upLat,
+  offsetLat,
   type Line,
 } from '../../src/place/layout.ts';
 import { SHORE_COAST, SHORE_LANDING } from '../../src/place/shore-layout.ts';
@@ -281,8 +282,9 @@ export function timberDecks(): Deck[] {
     return { x: at.x - at.uz * l + ORIGIN.x, z: at.z + at.ux * l + ORIGIN.z };
   };
   // The up track's platforms too (src/entities/railway/up-platforms.ts), the Quarry's with no ramp off its far end.
-  for (const { name, line: which, s0, s1, lat, ...rest } of [...HALTS, ...UP_HALTS]) {
+  for (const { name, line: which, s0, s1, lat, ...rest } of [...HALTS, ...OFFSET_HALTS]) {
     const endRamp = !('endRamp' in rest) || rest.endRamp;
+    const piles = 'piles' in rest && rest.piles === true;
     // Layout B's two Village halts are one island (halts-view.ts): line 1's edge builds the one deck, 4.3 m wide,
     // with a canopy for a roof, a head ramp and an end ramp; no shelter and no ramp off the back, which would cross
     // a track.
@@ -296,7 +298,7 @@ export function timberDecks(): Deck[] {
     lineAt(line, mid, at);
     const yaw = Math.atan2(at.ux, at.uz);
     const c = lateral(line, mid, lat);
-    const ground = H(c.x, c.z);
+    const ground = piles ? low - 0.5 : H(c.x, c.z);
     const file = 'src/entities/railway/halts-view.ts';
     decks.push(
       standing(
@@ -321,12 +323,25 @@ export function timberDecks(): Deck[] {
     if (island) decks.push(standing(`${name}/roof`, file, c.x, low + 4.6, c.z, width + 1.3, 0.3, half * 2 + 0.3, yaw));
     else decks.push(standing(`${name}/roof`, file, rx, low + 3.2, rz, 2.7, 0.3, 8.4, yaw));
     const ramp = (id: string, from: { x: number; z: number }, to: { x: number; z: number }) =>
-      decks.push(between(`${name}/${id}`, file, from.x, from.z, to.x, to.z, H(from.x, from.z) + 0.05, low, width, 0.4));
+      decks.push(
+        between(
+          `${name}/${id}`,
+          file,
+          from.x,
+          from.z,
+          to.x,
+          to.z,
+          piles ? railY(line, s0 - 6) + 0.05 : H(from.x, from.z) + 0.05,
+          low,
+          width,
+          0.4,
+        ),
+      );
     const head = island ? ISLAND.headRamp : 6,
       end = island ? ISLAND.endRamp : 6;
     ramp('ramp-start', lateral(line, s0 - head, lat), lateral(line, s0, lat));
-    if (endRamp) ramp('ramp-end', lateral(line, s1 + end, lat), lateral(line, s1, lat));
-    if (!island) ramp('ramp-back', lateral(line, mid, lat + sign * 7), lateral(line, mid, lat + sign * 1.25));
+    if (endRamp && !piles) ramp('ramp-end', lateral(line, s1 + end, lat), lateral(line, s1, lat));
+    if (!island && !piles) ramp('ramp-back', lateral(line, mid, lat + sign * 7), lateral(line, mid, lat + sign * 1.25));
   }
   // The forge, its scaffold and the opening's buildings (opening-plans.ts).
   for (const b of [...openingBuildings(), { id: 'forge', boxes: forgePlan().scaffold }])
@@ -412,14 +427,14 @@ export function timberDecks(): Deck[] {
       );
     }
   // The plank crossings over both tracks at the up platforms (up-platforms.ts): flush with the rail tops, on the sleepers.
-  for (const h of UP_HALTS) {
+  for (const h of OFFSET_HALTS) {
     const line = LINKS[h.line]!.line;
     const top = railY(line, h.crossS) + 0.22;
     lineAt(line, h.crossS, at);
     const yaw = Math.atan2(at.ux, at.uz);
     for (const [l0, l1] of crossingPlanks(
-      upLat(FORMATION.quarry, h.crossS - CROSSING_WIDTH / 2) ?? 0,
-      upLat(FORMATION.quarry, h.crossS + CROSSING_WIDTH / 2) ?? 0,
+      h.piles ? OFFSET_LAT : (offsetLat(FORMATION.quarry, h.crossS - CROSSING_WIDTH / 2) ?? 0),
+      h.piles ? OFFSET_LAT : (offsetLat(FORMATION.quarry, h.crossS + CROSSING_WIDTH / 2) ?? 0),
       h.crossTo,
     )) {
       const c = lateral(line, h.crossS, (l0 + l1) / 2);

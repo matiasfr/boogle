@@ -1,19 +1,20 @@
 // Resolve crossing operands at load, preserving the old flangeways and slab endpoint order.
 import {
-  UP_HALTS,
+  OFFSET_HALTS,
   LINKS,
   ORIGIN,
   lineAt,
   railY,
-  upLat,
+  offsetLat,
   crossingPlanks,
   CROSSING_SPAN,
   CROSSING_WIDTH,
   FORMATION,
+  OFFSET_LAT,
 } from '../place/layout.ts';
 import type { JsonObject, Placement } from './types.ts';
 export function haltCrossing(id: string, params: JsonObject): Placement[] {
-  const h = UP_HALTS[params.row as number];
+  const h = OFFSET_HALTS[params.row as number];
   if (!h || params.up !== true) throw new Error('halt crossing: invalid row');
   const line = LINKS[h.line]!.line;
   const p = { x: 0, z: 0, ux: 0, uz: 1 };
@@ -24,7 +25,8 @@ export function haltCrossing(id: string, params: JsonObject): Placement[] {
   lineAt(line, (h.s0 + h.s1) / 2, p);
   const yaw = Math.atan2(p.ux, p.uz),
     s = h.crossS;
-  const edge = (d: number) => upLat(FORMATION.quarry, s + d) ?? 0;
+  // The Pier's platform opens with Q7, when the offset track continues past the old s 556 stub.
+  const edge = (d: number) => (h.piles ? OFFSET_LAT : (offsetLat(FORMATION.quarry, s + d) ?? 0));
   const top = railY(line, s) + 0.22,
     to = h.crossTo ?? CROSSING_SPAN[1];
   const planks = crossingPlanks(edge(-CROSSING_WIDTH / 2), edge(CROSSING_WIDTH / 2), to).map(([l0, l1]) => {

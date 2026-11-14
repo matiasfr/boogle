@@ -15,7 +15,7 @@ export const SUMMIT_BRIDGE = {
 } as const;
 
 export function summitPathFoot() {
-  const p = ringAt(RING_HALT.u1 - 400, RING_HALT.upLat[0] - 950);
+  const p = ringAt(RING_HALT.u1 - 400, RING_HALT.offsetLat[0] - 950);
   return { x: p.x / 100, z: p.z / 100 };
 }
 

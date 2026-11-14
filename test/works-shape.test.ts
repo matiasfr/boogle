@@ -4,7 +4,6 @@ import {
   SPLIT_ROCK_BOXES,
   THROAT_SLAB,
   WORKS_BOULDERS,
-  STALL_BOXES,
   STALL_SLAB,
   CLEFT,
   WORKS_WALK,
@@ -25,7 +24,7 @@ function samples(line: readonly WorksPoint[], step = 0.5) {
   }
   return points;
 }
-const boxes = [...SPLIT_ROCK_BOXES, ...THROAT_SLAB, ...WORKS_BOULDERS, ...STALL_BOXES, STALL_SLAB];
+const boxes = [...SPLIT_ROCK_BOXES, ...THROAT_SLAB, ...WORKS_BOULDERS, STALL_SLAB];
 test('the walk-in route is open', () => {
   assert.ok(CLEFT.width >= 1.2);
   for (const p of samples(WORKS_WALK))

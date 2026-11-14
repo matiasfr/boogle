@@ -32,7 +32,7 @@ const tick = setInterval(() => {
     const cx = P.x + layout.ORIGIN.x,
       cz = P.z + layout.ORIGIN.z,
       y = layout.railY(line, meet);
-    // 26 m off the up (left) side and 13 m over the rails, looking down at the meeting point over the trees.
+    // 26 m off the offset (homeward) side and 13 m over the rails, looking down at the meeting point over the trees.
     const lat = -26;
     const ex = cx - P.uz * lat,
       ez = cz + P.ux * lat;

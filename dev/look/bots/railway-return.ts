@@ -166,6 +166,7 @@ async function run() {
   }
   const body = me.body;
   const gorge = jumpOf('gorge-reached')!.land!;
+  // Use the production landing, including its current platform side; no left-hand coordinate fixture.
   const railhead = jumpOf('gap-footed')!.land!;
   if (mode === 'duo' && player === '2') return watch(railhead);
   const previous = sessionStorage.getItem(KEY);

@@ -58,6 +58,7 @@ import { FOOTING_COPY, footingBoardLine } from './footing-cues.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
+import { bridgeHandle, tableYaws } from './table-bridge.ts';
 
 /** Seconds a cast footing takes down the roller road, and its hop onto the rack. */
 const ROLL_S = 4,
@@ -289,15 +290,20 @@ export async function createRailwayWorks(
   bill.mesh.visible = false;
   const kilnBillAt = { at: bill.mesh.position.clone(), yaw: bill.mesh.rotation.y };
   // The same board asks for the footing wagon's rails once the kiln is lit and the stall stands (cradle-cues.ts): it
-  // moves to the Roundhouse apron, on the bisector between the open stall's road and its forge-side neighbour, 7.5 m
+  // moves to the Roundhouse apron, on the bisector between the open stall's road and its forge-side neighbour,
   // from the table's centre and edge-on to both roads, so it faces the walk round the table from the forge rack.
   const tableAt = { x: home.TABLE.x + layout.ORIGIN.x, z: home.TABLE.z };
   const forgeRack = { x: LINE2_FORGE.rackX / 100, z: LINE2_FORGE.rackZ / 100 };
   const forgeRackY = H(forgeRack.x, forgeRack.z);
-  const stallBillAt = [-15, 15]
+  const billRadius = (home.TABLE.r + 0.6 + home.STALLS.door) / 2;
+  const halfBay = (home.STALLS.bearings[1]! - home.STALLS.bearings[0]!) / 2;
+  const stallBillAt = [-halfBay, halfBay]
     .map((turn) => {
       const u = home.stallFrame(home.STALLS.open + turn).u;
-      return { at: new THREE.Vector3(tableAt.x + u.x * 7.5, 18.0, tableAt.z + u.z * 7.5), yaw: Math.atan2(u.z, -u.x) };
+      return {
+        at: new THREE.Vector3(tableAt.x + u.x * billRadius, 18.0, tableAt.z + u.z * billRadius),
+        yaw: Math.atan2(u.z, -u.x),
+      };
     })
     .sort(
       (a, b) =>
@@ -326,22 +332,15 @@ export async function createRailwayWorks(
     boardPainted = line;
     rackBoard.relabel('sign', [FOOTING_COPY.board, line]);
   }
-  // The table's handle as roundhouse-view.ts draws it on a still deck (its yaw by `shed.table`: toward the stall's rim,
-  // or down the spur), and the wagon's wait on road 2 (WAGON_S), for the gold ghosts.
+  // The table's handle as roundhouse-view.ts draws it on a still deck (one pose for both: ./table-bridge.ts; its yaw
+  // by `shed.table`: toward the working bay's road, or down the spur), and the wagon's wait on road 2 (WAGON_S), for
+  // the gold ghosts.
   const line2 = layout.LINKS[1]!.line;
-  const tableYaws = (() => {
-    const rim = home.stallFrame(home.STALLS.open).rim,
-      spur = (home.TABLE.spur * Math.PI) / 180;
-    return [Math.atan2(rim.x - home.TABLE.x, rim.z - home.TABLE.z), Math.atan2(Math.sin(spur), -Math.cos(spur))];
-  })();
+  const yaws = tableYaws();
   const tableHandle = () => {
-    const yaw = tableYaws[shed(wd).table] ?? tableYaws[0]!;
-    return {
-      x: tableAt.x + Math.sin(yaw + Math.PI / 2) * (home.TABLE.r - 0.4),
-      y: layout.railY(line2, 0) + 0.55,
-      z: tableAt.z + Math.cos(yaw + Math.PI / 2) * (home.TABLE.r - 0.4),
-      yaw,
-    };
+    const yaw = yaws[shed(wd).table] ?? yaws[0],
+      at = bridgeHandle(tableAt, home.TABLE.r, yaw);
+    return { x: at.x, y: layout.railY(line2, 0) + 0.6, z: at.z, yaw };
   };
   const wagonWait = (() => {
     const s = WAGON_S / 100,

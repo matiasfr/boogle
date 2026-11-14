@@ -2,7 +2,8 @@
 // Ring Island bot (railway-ring.ts: Village to the Railhead, the Railhead to the island). Inspection observes; it never
 // seeds a world or moves a player.
 import type { Bot } from '../bot.ts';
-import { inspectRailway, rw, trains as trainRows } from '../rail-read.ts';
+import { inspectRailway, rw, trainStops, trains as trainRows } from '../rail-read.ts';
+import { trainPassesBy } from '../../../src/sim/railway-lines.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
@@ -50,18 +51,30 @@ export function line2Rides(bot: Bot) {
    * ride ends with the train standing there and the rider aboard, and the caller steps off. */
   const ride = (haltId: number, destination: number, opts?: { askEach?: boolean }) => {
     const halt = () => view().halts[haltId]!;
+    const dir = destination > halt().stop ? 1 : -1;
+    const handle = () => halt().lever.find((h) => h.on && !h.chained && h.dir === dir);
+    const offset = () => view().upPlatforms.find((u) => u.pair === haltId && u.up);
+    const wait = () => (handle()?.platform === 'up' ? offset()! : halt());
     return rideFrom(
       {
         name: halt().name,
         stop: halt().stop,
         stands: () => halt().up,
-        handle: (dir) => halt().lever.find((h) => h.on && h.dir === dir),
+        handle: () => handle(),
         // The lever now stands at the leaving end. Finish the planned approach onto its platform before use's
         // short, unplanned reach-in; stopping 3 m away can leave the rider below the platform's side wall.
-        before: async (handle) =>
-          check(await bot.walk(handle.x, handle.z, 0.6), `walked onto ${halt().name}'s lever platform`),
-        calling: () => halt().calling,
-        wait: halt(),
+        before: async (lever) => {
+          if (handle()?.platform === 'up') {
+            const up = offset()!;
+            if (bot.dist(up.x, up.z) > bot.dist(halt().x, halt().z))
+              for (const [i, p] of [...up.path].reverse().entries())
+                check(await bot.walk(p.x, p.z, 0.5), `${halt().name} crossing to homeward platform, step ${i + 1}`);
+            check(await bot.walk(up.x, up.z, 0.5), `onto ${halt().name}'s homeward platform`);
+          }
+          check(await bot.walk(lever.x, lever.z, 0.6), `walked onto ${halt().name}'s lever platform`);
+        },
+        calling: () => !!handle()?.over,
+        wait,
       },
       destination,
       opts,
@@ -77,13 +90,14 @@ export function line2Rides(bot: Bot) {
     /** Before the lever press: a platform above the walk (the Railhead's outbound one) is climbed onto first. */
     before?: (lever: { x: number; z: number }) => Promise<void>;
     calling: () => boolean;
-    wait: { x: number; z: number };
+    wait: { x: number; z: number } | (() => { x: number; z: number });
   };
   /** `askEach`: the destination is not a Place halt (the stack line's), so
    * ask for each next stop the train offers aboard ("Request stop: ...") until it stands at the destination. */
   const rideFrom = async (halt: Departure, destination: number, opts: { askEach?: boolean } = {}) => {
     await until(halt.stands, `${halt.name} halt stands`);
     const dir: 1 | -1 = destination > halt.stop ? 1 : -1;
+    const waitAt = () => (typeof halt.wait === 'function' ? halt.wait() : halt.wait);
     const standing = () =>
       view()
         .trains.filter((t) => t.line === 1)
@@ -92,6 +106,7 @@ export function line2Rides(bot: Bot) {
           return r.phase === 0 && r.at === halt.stop && (r.track ? -1 : 1) === dir;
         })?.slot;
     const request = async () => {
+      await until(() => halt.handle(dir), `${halt.name} has an available handle toward stop ${destination}`);
       const handle = halt.handle(dir);
       check(handle, `${halt.name} has a handle toward stop ${destination}`);
       if (!handle!.over) await halt.before?.(handle!);
@@ -100,14 +115,14 @@ export function line2Rides(bot: Bot) {
       await until(() => halt.calling() || standing() !== undefined, `${halt.name} signal drops or train stands`);
     };
     if (standing() === undefined) await request();
-    check(await bot.walk(halt.wait.x, halt.wait.z, 0.5), `walked to ${halt.name}'s platform edge`);
+    check(await bot.walk(waitAt().x, waitAt().z, 0.5), `walked to ${halt.name}'s platform edge`);
     // Whichever of line 2's trains stops for the lever is the ride (v26).
     // The first train can leave during the walk to the edge. Re-read the signal and use the real lever again.
     const waitEnd = performance.now() + 2400000;
     while (standing() === undefined && performance.now() < waitEnd) {
       if (!halt.calling()) {
         await request();
-        check(await bot.walk(halt.wait.x, halt.wait.z, 0.5), `returned to ${halt.name}'s platform edge`);
+        check(await bot.walk(waitAt().x, waitAt().z, 0.5), `returned to ${halt.name}'s platform edge`);
       }
       await bot.wait(100);
     }
@@ -134,20 +149,45 @@ export function line2Rides(bot: Bot) {
     }
     check(aboard(), `boarded line 2 at ${halt.name} by a real jump`);
     const to = view().halts.find((h) => h.line === 1 && h.stop === destination);
-    if (to && to.lever.filter((h) => h.on).length === 2) {
-      // A middle halt stops only on request: ask aboard.
-      await until(() => requestPrompt(), `"Request stop: ${to.name}" offered aboard`, 20000);
-      check(interactTarget()?.verb === `Request stop: ${to.name}`, `the prompt names ${to.name}`);
-      if (interactTarget()?.run) bot.press();
-      await until(() => row().to === destination || row().at === destination, `the train will stop at ${to.name}`);
-    }
+    const stops = trainStops(rw(), 1);
+    const middle = destination > 0 && destination < stops.length - 1;
+    let destinationPrompt = false;
     let ran = false;
-    let sample: Promise<void> | undefined;
     const asked = new Set<string>();
+    if (to && middle && destination === halt.stop + dir && !trainPassesBy(1, destination, dir, stops.length)) {
+      // Adjacent requestable stops must offer the cord promptly, even when the train's arrival takes much longer.
+      // Keep PR 1816's Sit-aware selection and the original 20-second assertion separate from the arrival budget.
+      await until(
+        () => {
+          check(aboard() && !me.swimming, 'rider stays aboard the line-2 train');
+          ran ||= row().phase === 1;
+          return requestPrompt();
+        },
+        `"Request stop: ${to.name}" offered aboard`,
+        20000,
+      );
+      check(interactTarget()?.verb === `Request stop: ${to.name}`, `the prompt names ${to.name}`);
+      destinationPrompt = true;
+      if (interactTarget()?.run) bot.press();
+      asked.add(`Request stop: ${to.name}`);
+      await until(() => {
+        ran ||= row().phase === 1;
+        return row().to === destination || row().at === destination;
+      }, `the train will stop at ${to.name}`);
+    }
+    let sample: Promise<void> | undefined;
     await until(() => {
       check(aboard() && !me.swimming, 'rider stays aboard the line-2 train');
-      const ask = opts.askEach ? requestPrompt() : null;
-      if (ask?.run && !ask.blocked && !asked.has(ask.verb)) {
+      // The cord names the next requestable halt, which may precede our destination. Wait until it names ours;
+      // askEach deliberately serves every intermediate halt too (including the stack heads).
+      const ask = requestPrompt();
+      destinationPrompt ||= ask?.verb === `Request stop: ${to?.name}`;
+      if (
+        ask?.run &&
+        !ask.blocked &&
+        !asked.has(ask.verb) &&
+        (opts.askEach || ask.verb === `Request stop: ${to?.name}`)
+      ) {
         asked.add(ask.verb);
         bot.press();
       }
@@ -169,18 +209,23 @@ export function line2Rides(bot: Bot) {
         })();
       return ran && r.phase === 0 && r.at === destination;
     }, `line 2 arrives at stop ${destination} with its rider`);
+    if (to && middle) check(destinationPrompt, `the aboard prompt names ${to.name}`);
     await sample;
     if (!to) return { slot, row, train, aboard };
-    // Come in going up at a middle halt, the train stands at the up platform: step off onto it, then walk to today's
-    // side over the plank crossing (generic-lines, finding 5), never across the running tracks.
+    // Homeward at a middle halt: leave onto the offset platform and use its plank crossing. A retained old-end
+    // departure still stands on the original side; the live lever's platform follows that accepted origin.
     const arrivalId = view().halts.findIndex((h) => h.line === 1 && h.stop === destination);
     const arrival = view().halts[arrivalId]!;
     const up = view().upPlatforms.find((u) => u.pair === arrivalId);
-    if (up && row().track === 0) {
+    // A homeward-only destination (Pier after Q7) may be served after the outward train has turned back.
+    const arrivalDir = row().track ? -1 : 1;
+    const served = arrival.lever.find((h) => h.on && !h.chained && h.dir === arrivalDir);
+    if (up?.up && served?.platform === 'up') {
       // A straight walk can leave the car below the platform lip; hop onto the deck with the same real inputs
       // used to leave a car at the later halts.
       await hopTo(up.x, up.z, `stepped off onto the ${arrival.name} up platform`, 12000, 0.5);
       await until(() => !aboard() && me.coyote > 0, 'off the train, on the up platform', 10000);
+      if (arrivalId === HALT.pier) return { slot, row, train, aboard };
       for (const [i, p] of up.path.entries())
         check(await bot.straight(p.x, p.z, 0.5, 12000), `${arrival.name} plank crossing, step ${i + 1}`);
     }

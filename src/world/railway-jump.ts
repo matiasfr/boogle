@@ -49,14 +49,14 @@ const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
 const STEEL_LAND = near({ ...ringAt(44400, 400) }, 0, 0, RING_HALT.down.y / 100, RING_STEEL_WORKS);
 /** Beside Home's spur table, 5.2 m east and 1.7 m south, facing its centre. The garage's radial stand and the
  * stall roads clear this landing, inside the table's 6 m reach (home-flip X1). */
-const TABLE_LAND = near(SHED_TABLE, 5.2, 1.7, 18.1, SHED_TABLE);
+const TABLE_LAND = near(SHED_TABLE, 9.2, 1.7, 18.1, SHED_TABLE);
 /** Line 1's Village and Camp platforms (slice 5's freight-running lands on the first, facing the second). */
 const VILLAGE_LINE1 = RAIL_LINES[0]!.halts[0]!.platforms[0],
   CAMP_LINE1 = RAIL_LINES[0]!.halts[1]!.platforms[0];
 /** Line 2's Village and Quarry platforms (slice 5's fares-running lands on the first, where riders board, facing the
  * second: along the line; boiler-long lands there too, to ride out at 25 m/s). */
 const VILLAGE_LINE2 = RAIL_LINES[1]!.halts[0]!.platforms[0],
-  QUARRY_LINE2 = RAIL_LINES[1]!.halts[1]!.platforms[1];
+  QUARRY_LINE2 = RAIL_LINES[1]!.halts[1]!.platforms[0];
 
 /** The greybox route's leg 1 (step 5). Ring Island's first frame and rack stand on the island's west platform, 7 m
  * apart (deck 8.9 m): land between them, in the 4 m reach of both, facing the frame. The Gorge: the north platform at

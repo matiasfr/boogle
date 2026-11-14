@@ -95,6 +95,8 @@ for (const area of ['bell', 'west'] as const)
     builders.set('railway.halt-ramp', () => new THREE.Group());
     builders.set('railway.halt-lever', () => new THREE.Group());
     builders.set('railway.halt-attachment', () => new THREE.Group());
+    builders.set('roundhouse.bay-block', () => new THREE.Group());
+    builders.set('roundhouse.table-block', () => new THREE.Group());
     const { makeGreyboxLabel } = sourceModule<typeof import('../src/prefab/builders/greybox-label.ts')>(
       fs.readFileSync('src/prefab/builders/greybox-label.ts', 'utf8'),
       { signBoard },

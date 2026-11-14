@@ -9,7 +9,7 @@
 //   lever=near     both plaques from 2 m off on the platform (a player walking up to the pair)
 //   lever=out      the player at the outward lever, its prompt up; lever=home the same at the homeward one
 //   lever=press    the player at the outward lever with no train standing at the head: presses Interact (run with
-//                  `--real`), waits for a train to stand there on the up track and prints `PRESS ...` with the server
+//                  `--real`), waits for a train to stand there on the original outward track and prints `PRESS ...` with the server
 //                  ticks from the press to the stand
 // Prints `LEVERS ...`: each lever's place and plaque, the offered prompt, and how far the departure board's stand is.
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -109,7 +109,7 @@ console.log(
   }),
 );
 if (shotName === 'press') {
-  // The train a lever's outward ask stops: one standing at this stop on the up track (0), the way on to the railhead.
+  // The train a lever's outward ask stops: one standing at this stop on track 0, the original outward track.
   const standing = () => railTrainsOf(rw(), 1).some((r) => r.phase === 0 && r.at === halt && !r.track);
   const trains = () => railTrainsOf(rw(), 1).map((r) => ({ phase: r.phase, at: r.at, track: r.track }));
   for (let k = 0; standing(); k++) {
@@ -126,7 +126,8 @@ if (shotName === 'press') {
   const asked = levers().find((l) => l.dir === 1)!.over;
   const t0 = performance.now();
   while (!standing()) {
-    if (performance.now() - t0 > 420000) throw new Error(`stack-levers: no train stood in 7 min: ${JSON.stringify(trains())}`);
+    if (performance.now() - t0 > 420000)
+      throw new Error(`stack-levers: no train stood in 7 min: ${JSON.stringify(trains())}`);
     await wait(50);
   }
   const stood = railAt();

@@ -9,7 +9,7 @@
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { H, slab } from '../../place/land.ts';
-import { UP_LAT } from '../../place/layout.ts';
+import { OFFSET_LAT } from '../../place/layout.ts';
 import { LINE2_STATIONS, Q7 } from '../../sim/railway-line2-layout.ts';
 import { RING_WALK } from '../../sim/railway-ring-layout.ts';
 import { linePanelCount } from '../../sim/railway-line-schedule.ts';
@@ -18,7 +18,7 @@ import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createBoxBatch } from './works-box-view.ts';
 import { RING_S, line2At, line2World, line2Y } from './line2-path.ts';
 
-/** The formation: lat -5.8 to +1.8, the down track at 0 and the up track at UP_LAT (src/sim/railway-ring-layout.ts
+/** The formation: lat -5.8 to +1.8, the down track at 0 and the up track at OFFSET_LAT (src/sim/railway-ring-layout.ts
  * RING_FORMATION), 7.6 m across, planks on a 0.04 m-proud deck. */
 const LEFT = -5.8,
   RIGHT = 1.8,
@@ -64,11 +64,7 @@ type Piece = {
   born: number;
 };
 
-export function createRingDeck(
-  adapter: RailwayAdapter,
-  owner: OwnedView,
-  track: { retire(on: boolean): number },
-) {
+export function createRingDeck(adapter: RailwayAdapter, owner: OwnedView, track: { retire(on: boolean): number }) {
   const pieces: Piece[] = [];
   const P = { x: 0, z: 0, ux: 0, uz: 1 },
     q = { x: 0, z: 0 };
@@ -97,30 +93,39 @@ export function createRingDeck(
   // ---------------------------------------------------------------- the relay: the pier's up track
   const relayFrom = track.retire(false);
   for (let s = relayFrom; s < RING_S;) {
-    const sea = bed(s + 0.5, UP_LAT) > 1;
+    const sea = bed(s + 0.5, OFFSET_LAT) > 1;
     const len = Math.min(sea ? 1 : 1.2, RING_S - s),
       mid = s + len / 2;
     if (sea) put('relay', mid, (LEFT + -1.8) / 2, -0.02, 4, 0.12, Math.min(0.84, len), COLOURS.plank);
     else {
-      put('relay', mid, UP_LAT, -0.02, 2.3, 0.12, Math.min(0.42, len), COLOURS.sleeper);
+      put('relay', mid, OFFSET_LAT, -0.02, 2.3, 0.12, Math.min(0.42, len), COLOURS.sleeper);
       for (const side of [-0.75, 0.75]) {
-        line2World(mid, UP_LAT + side, q);
+        line2World(mid, OFFSET_LAT + side, q);
         const foot = H(q.x, q.z) - 0.08,
           top = line2Y(mid) - 0.02;
         if (top - foot > 0.18)
-          put('relay', mid, UP_LAT + side, foot - line2Y(mid) + (top - foot) / 2, 0.35, top - foot, 0.35, COLOURS.leg);
+          put(
+            'relay',
+            mid,
+            OFFSET_LAT + side,
+            foot - line2Y(mid) + (top - foot) / 2,
+            0.35,
+            top - foot,
+            0.35,
+            COLOURS.leg,
+          );
       }
     }
     s += len;
   }
   for (let s = relayFrom; s < RING_S; s += 3) {
     const len = Math.min(3, RING_S - s);
-    for (const r of [-0.5, 0.5]) put('relay', s + len / 2, UP_LAT + r, TOP, 0.1, 0.12, len, COLOURS.rail);
+    for (const r of [-0.5, 0.5]) put('relay', s + len / 2, OFFSET_LAT + r, TOP, 0.1, 0.12, len, COLOURS.rail);
   }
   // The trestle's bents (./track.ts: every 6.5 m from s 3) get the up track's half: a cap out to lat -5.8, two legs and
   // two stringers.
   for (let s = 3; s < RING_S; s += 6.5) {
-    if (s < relayFrom || bed(s, UP_LAT) < 1.2) continue;
+    if (s < relayFrom || bed(s, OFFSET_LAT) < 1.2) continue;
     const y = line2Y(s),
       capW = 3.5,
       capLat = LEFT + capW / 2;
@@ -144,7 +149,7 @@ export function createRingDeck(
   }
   for (let s = DECK_FROM; s < DECK_TO - 1e-6; s += PANEL_M / 2) {
     const g = panelOf(s + 0.1);
-    for (const track of [0, UP_LAT])
+    for (const track of [0, OFFSET_LAT])
       for (const r of [-0.5, 0.5]) put(g, s + PANEL_M / 4, track + r, TOP, 0.1, 0.12, PANEL_M / 2, COLOURS.rail);
     // The footway's bearers, out from the deck's edge under its planks.
     if (s + PANEL_M / 4 > WALK.from && s + PANEL_M / 4 < WALK.to)

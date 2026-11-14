@@ -143,6 +143,35 @@ export function trainPose(row: Readonly<RailTrain>, line: LineRef, stops: readon
 function inBlock(row: Readonly<RailTrain>, line: LineRef, b: EndBlock, tick: number) {
   return within(b, trainAlong(row, line, tick)) || (row.phase === TRAIN_PHASE.RUN && within(b, row.dest));
 }
+/** An accepted old-end arrival/departure still owns its original block until its entire extent clears it.
+ * `turn` protects an arrival already committed across the old points, before arrival sets `origin`. */
+export function retainedEndBlock(row: Readonly<RailTrain>, line: LineRef, tick: number): EndBlock | null {
+  const origin = row.origin || (row.turn ? row.dest : 0);
+  if (!origin || row.phase === TRAIN_PHASE.SHED) return null;
+  const halts = lineDef(line).halts;
+  const stop = halts.findIndex((h, k) => k > 0 && h.end && (h.s === origin || h.heads?.includes(origin)));
+  if (stop < 0) return null;
+  const h = halts[stop]!,
+    shift = origin - h.s,
+    end = h.end!;
+  const b = {
+    from: end.edgeCm + shift,
+    to: origin,
+    stop,
+    dir: 1,
+    signal: Math.min(end.signalCm + shift, origin - TRAIN.sepCm),
+  };
+  return inBlock(row, line, b, tick) ? b : null;
+}
+/** Current ends plus any old points still occupied by their accepted arrival/departure. */
+function protectedBlocks(rows: Rows, line: LineRef, stops: readonly number[], tick: number): EndBlock[] {
+  const blocks = [...endBlocks(line, stops)];
+  for (const slot of servingSlots(rows, line)) {
+    const b = retainedEndBlock(rows(slot), line, tick);
+    if (b && !blocks.some((a) => a.from === b.from && a.to === b.to)) blocks.push(b);
+  }
+  return blocks;
+}
 /** Whether train `slot`, now on `track`, may plan a leg to `dest` (cm): the circuit position it ends at is at least
  * `TRAIN.sepCm` behind the train ahead of it now (which only moves on, so the gap holds all leg), and an end block it
  * ends in has no other train of its line in it. */
@@ -164,8 +193,14 @@ export function blockFree(
     const gap = circuitAhead(me.c, trainPose(rows(other), line, stops, tick).c, c);
     if (leg + TRAIN.sepCm > gap) return false;
   }
-  for (const b of endBlocks(line, stops))
-    if (within(b, dest) && serving.some((k) => k !== slot && inBlock(rows(k), line, b, tick))) return false;
+  for (const b of protectedBlocks(rows, line, stops, tick))
+    // An old end is now in the middle: a leg can cross its whole block without ending inside it.
+    if (
+      Math.min(me.s, dest) - TRAIN_EXTENT.behindCm < b.to &&
+      Math.max(me.s, dest) + TRAIN_EXTENT.aheadCm > b.from &&
+      serving.some((k) => k !== slot && inBlock(rows(k), line, b, tick))
+    )
+      return false;
   return true;
 }
 /** The train a lever ask at `stop` heading `dir` is for: the one with the least circuit distance to that platform
@@ -181,6 +216,17 @@ export function trainServes(
   tick: number,
 ) {
   if (trainPassesBy(line, stop, dir, stops.length)) return -1;
+  // A former end still boards its committed arrival/departure on the original side. Once it has left,
+  // no new lever ask may promise a future train on the other side until the old block clears.
+  if (stop < stops.length - 1)
+    for (const slot of servingSlots(rows, line)) {
+      const r = rows(slot),
+        b = retainedEndBlock(r, line, tick);
+      if (b?.stop === stop && b.to === stops[stop])
+        return dir === -1 && ((r.phase === TRAIN_PHASE.STAND && r.at === stop) || (r.turn && r.to === stop))
+          ? slot
+          : -1;
+    }
   const c = circuitLen(stops),
     at = circuitCm(stops, dir > 0 ? 0 : 1, stops[stop]!) % c,
     kin = stopKin(line, stop, dir > 0 ? 0 : 1),
@@ -335,7 +381,7 @@ export function planLeg(
       trainCanBrake(s, v, dir, stops[j]!, at(j))
     )
       holds.push({ to: j, dest: stops[j]! });
-  for (const b of endBlocks(line, stops))
+  for (const b of protectedBlocks(rows, line, stops, tick))
     if (b.dir === dir && (goal - b.signal) * dir > 0 && trainCanBrake(s, v, dir, b.signal, kin))
       holds.push({ to: -1, dest: b.signal });
   // A line's block signals (RailLineDef.signals, the greybox route's long stretches): a hold between here and the goal,
@@ -486,6 +532,7 @@ export function fleetJoin<L extends LineRef>(io: TrainIO<L>, line: L, tick: numb
     v0: 0,
     dest: s0,
     turn: false,
+    origin: 0,
   });
 }
 export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
@@ -516,6 +563,7 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
           depart: arrival,
           arrived: arrival,
           turn: false,
+          origin: r.track === 0 && (r.to === n - 1 || turn) ? r.dest : at < 0 ? r.origin : 0,
         });
         if (at >= 0) io.arrive(slot);
         // At an end (or the one it had crossed over at: `turn`) it turns back onto the other track; its riders' asks
@@ -640,6 +688,12 @@ export function trainRowBroken(
     !int(r.at, last, -1) ||
     !int(r.to, last, -1) ||
     !int(r.track, 1) ||
+    !int(r.origin, st[last]!) ||
+    (r.origin !== 0 &&
+      (r.track !== 1 ||
+        !lineDef(line).halts.some(
+          (h, k) => k > 0 && k <= last && h.end && (h.s === r.origin || h.heads?.includes(r.origin)),
+        ))) ||
     !int(r.depart) ||
     !int(r.arrived, r.depart) ||
     !reqValid(r.req, st.length) ||
@@ -700,7 +754,7 @@ export function lineSpacing(rows: Rows, line: LineRef, st: readonly number[], ti
       if (gap < TRAIN.sepCm) return `railway: line ${name} trains ${gap} cm apart`;
     }
   }
-  for (const b of endBlocks(line, st))
+  for (const b of protectedBlocks(rows, line, st, tick))
     if (slots.filter((k) => inBlock(rows(k), line, b, tick)).length > 1)
       return `railway: line ${name} end block at ${b.stop} holds two trains`;
   return null;

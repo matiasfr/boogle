@@ -404,7 +404,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   }
 
   // ---------------------------------------------------------------- the island halt
-  const [upL0, upL1] = RING_HALT.upLat.map((l) => l / 100) as [number, number];
+  const [upL0, upL1] = RING_HALT.offsetLat.map((l) => l / 100) as [number, number];
   const [dnL0, dnL1] = RING_HALT.downLat.map((l) => l / 100) as [number, number];
   // The platforms, solid down to the fill (ground.ts), so no gap shows under them. They start at the foot crossing's
   // ramp tops (docs/plans/ring-island-crossing.md): their first 6.6 m are its landings and ramps.
@@ -600,11 +600,12 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
 
   // ---------------------------------------------------------------- the crossover's rails on the Way (R2d)
   {
-    // The up track's lateral eased from its own (-4) to the down track's (0) over RING_END.cross, as place/layout.ts's
-    // crossLat does at Far Head: ballast and a pair of rails, a metre at a time, on the Way's grade. Rails only.
+    // The offset track's lateral eased from its own (-4, TRACKS[1]: the homeward track since v45) to the original
+    // track's (0) over RING_END.cross, as place/layout.ts's crossLat does at Far Head: ballast and a pair of rails, a
+    // metre at a time, on the Way's grade. Rails only.
     const [c0, c1] = [RING_END.cross.u0 / 100, RING_END.cross.u1 / 100];
     const ease = (t: number) => t * t * (3 - 2 * t);
-    const lat = (u: number) => TRACKS[0]! * (1 - ease((u - c0) / (c1 - c0)));
+    const lat = (u: number) => TRACKS[1]! * (1 - ease((u - c0) / (c1 - c0)));
     for (let u = c0; u < c1 - 1e-6; u += 1) {
       const v = Math.min(c1, u + 1);
       beam(BED, p3(u, lat(u), deckY(u) + 0.08), p3(v, lat(v), deckY(v) + 0.08), 2.4, 0.1, false);

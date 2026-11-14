@@ -21,6 +21,9 @@ const { inspectRailway } = (await import(
 const { haltFrame } = (await import(
   '/src/prefab/halt-deck.ts' as string
 )) as typeof import('../../../src/prefab/halt-deck.ts');
+const { OFFSET_HALTS } = (await import(
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 const ring = (await import(
   '/src/sim/railway-ring-layout.ts' as string
 )) as typeof import('../../../src/sim/railway-ring-layout.ts');
@@ -28,7 +31,7 @@ const works = (await import(
   '/src/sim/railway-works-layout.ts' as string
 )) as typeof import('../../../src/sim/railway-works-layout.ts');
 const { railReady } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
-type Knob = { label: string; on: boolean; x: number; y: number; z: number };
+type Knob = { label: string; on: boolean; platform: 'up' | 'down'; x: number; y: number; z: number };
 type Halts = {
   halts?: { name: string; y: number; up: boolean; lever: Knob[] }[];
   ringLevers?: (Knob & { halt: number; platform: string; u: number; goal: number })[];
@@ -100,10 +103,13 @@ if (spot === 'camp' || spot === 'pier') {
   while (!view()?.halts?.find((h) => h.name === name)?.up && performance.now() < end) await bot.wait(100);
   await bot.wait(2500);
   const h = view()!.halts!.find((x) => x.name === name)!;
-  const { yaw, h: src } = haltFrame(row, false),
+  const knob = h.lever.find((k) => k.on);
+  if (!knob) throw new Error(`lever-places ${spot}: no active lever`);
+  const offset = knob.platform === 'up';
+  const { yaw, h: src } = haltFrame(offset ? OFFSET_HALTS.findIndex((h) => h.pair === row) : row, offset),
     sign = Math.sign(src.lat);
   await atLever(
-    h.lever[0]!,
+    knob,
     h.y,
     { x: -sign * Math.cos(yaw), z: sign * Math.sin(yaw) },
     { x: Math.sin(yaw), z: Math.cos(yaw) },

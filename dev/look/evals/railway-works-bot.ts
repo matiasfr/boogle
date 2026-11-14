@@ -27,6 +27,18 @@ const bot = makeBot({
   },
 });
 const shot = window as Window & { __railStop?: string; __placeDone?: boolean; __railPhoto?: boolean };
+// Match the full railway bot: a station box can interrupt this seeded segment too. Read its card, then use E.
+let boxCardAt = 0;
+setInterval(() => {
+  const reward = inspectRailway()?.reward;
+  if (!reward?.stationBoxes.showing || !reward.showing) return void (boxCardAt = 0);
+  boxCardAt ||= performance.now();
+  if (performance.now() - boxCardAt < 1600) return;
+  boxCardAt = 0;
+  bot.note(`put away the ${reward.stationBoxes.showing} from a station box`);
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+  window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+}, 100);
 setTimeout(() => window.__debugCam!.clear(), 100);
 background(
   (async () => {

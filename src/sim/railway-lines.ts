@@ -35,7 +35,8 @@ export type RailHalt = {
   s: number;
   /** The QJob slot whose completion opens it; -1 open from the start. */
   opens: number;
-  /** [up, down]: the platform a train going +s (track 0) and -s (track 1) stands at; equal until double track. */
+  /** [+s, -s]: original-side platform (track 0), offset-side platform (track 1), for right-hand running.
+   * At the open far end both ways use the original side; haltPlatform applies that and moving heads. */
   platforms: readonly [RailPlatform, RailPlatform];
   /** Set on a halt that can be the line's open end: how it turns trains back. */
   end?: RailEnd;
@@ -123,14 +124,16 @@ export const railEnd = (kind: RailEndKind, mergeCm: number, side: -1 | 1): RailE
     lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
   return { kind, mergeCm, edgeCm, signalCm: edgeCm - side * lead };
 };
-// Step 2's up platforms (src/place/layout.ts UP_HALTS, lat -6.95), at their deck: Quarry s 154-174.5, Far Head
-// s 513-535. Today's platforms serve the down track.
+// Step 2's up platforms (src/place/layout.ts OFFSET_HALTS, lat -6.95), at their deck: Quarry s 154-174.5, Far Head
+// s 513-535. These offset-side platforms serve homeward trains; the original side serves outbound trains.
 const QUARRY_UP: RailPlatform = { x: 106912, z: 3135, y: 2502, reach: 1160 };
 const FAR_HEAD_UP: RailPlatform = { x: 135850, z: -17195, y: 2502, reach: 1260 };
 /** The Pier's one platform from Q6 on (ring-island-build1, call 53): s 719-741 m, lat +2.9, east of the down track;
  * the pier rack stands on it. v26's west platform mirrored across the track at s 730, 2.9 m east of the path point
  * (140259, -35846). */
 export const PIER_EAST: RailPlatform = { x: 140549, z: -35859, y: 2502, reach: 1260 };
+/** The piled west platform after Q7: s 719-741 m, lateral -6.95, beside the homeward track. */
+const PIER_WEST: RailPlatform = { x: 139565, z: -35815, y: 2502, reach: 1260 };
 
 // ---------------------------------------------------------------- the greybox route's rows (greybox-route.md, step 3)
 // From ./railway-route.ts's catalog (RAIL_LEGS, derived from the generated WORLD_LINES), appended to the catalog below:
@@ -410,14 +413,14 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         name: 'Quarry',
         s: 17400,
         opens: -1,
-        platforms: [QUARRY_UP, { x: 108132, z: 4114, y: 2502, reach: 1160 }],
+        platforms: [{ x: 108132, z: 4114, y: 2502, reach: 1160 }, QUARRY_UP],
       },
       // The end until Q6 opens the pier: a facing crossover at s 490-512 m turns trains onto the down track.
       {
         name: 'Far Head',
         s: 52400,
         opens: -1,
-        platforms: [FAR_HEAD_UP, { x: 136361, z: -16353, y: 2502, reach: 1260 }],
+        platforms: [{ x: 136361, z: -16353, y: 2502, reach: 1260 }, FAR_HEAD_UP],
         end: railEnd('crossover', 49000, 1),
       },
       // s 719-741 m, lat +2.9, east of the down track; the pier rack stands on it. Open once Q6 (slot 5) is laid; the
@@ -427,7 +430,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         name: 'Pier',
         s: PIER_STOP_CM,
         opens: 5,
-        platforms: both(PIER_EAST),
+        platforms: [PIER_EAST, PIER_WEST],
         end: railEnd('stub', 55600, 1),
         only: -1,
       },
@@ -437,7 +440,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         name: 'Railhead',
         s: RING_HEAD[0]!.s,
         opens: 6,
-        platforms: [RING_JOINT_UP, RING_HEAD[0]!.platform],
+        platforms: [RING_HEAD[0]!.platform, RING_JOINT_UP],
         end: railEnd('stub', RING_HEAD[0]!.mergeCm, 1),
         heads: RING_HEAD.map((h) => h.s),
         brake: RING_END_BRAKE_CMS2 / 100,
@@ -447,7 +450,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         name: 'Ring Island',
         s: RING_END.s,
         opens: 6,
-        platforms: [RING_HALT.up, RING_HALT.down],
+        platforms: [RING_HALT.down, RING_HALT.up],
         end: railEnd('crossover', RING_END.mergeCm, 1),
         ring: true,
         // The Ring Island hold (short-turn's ruling on step 1's sheet, call 7): a middle halt once leg 1 opens.
@@ -493,13 +496,14 @@ export function trainPassesBy(line: LineRef, k: number, dir: number, n: number) 
   const only = h?.only;
   return only !== undefined && dir !== only && k !== 0 && k !== n - 1;
 }
-/** Halt `halt`'s platform (a RAIL_HALTS id, or a halt) for a train going `way` (+1 up, -1 down): a `heads` halt's
- * down side is the railhead's platform at `head` (the server's reach check and the lever's view read it); a leg's
- * railhead (the greybox route) has one platform a head, both ways. */
-export function haltPlatform(halt: number | RailHalt, way: number, head = 0): RailPlatform {
+/** Halt `halt`'s platform (a RAIL_HALTS id, or a halt) for a train going `way` (+1 out, -1 home).
+ * `end` means this halt is its line's open far end: both ways stand on the original side. The Ring Railhead's
+ * original side moves with `head`; a greybox railhead has one platform per head, both ways. */
+export function haltPlatform(halt: number | RailHalt, way: number, head = 0, end = false): RailPlatform {
   const h = typeof halt === 'number' ? RAIL_HALTS[halt]! : halt;
   if (h.headPlatforms) return h.headPlatforms[head] ?? h.headPlatforms[0]!;
-  return h.heads && way < 0 ? RING_HEAD[head]!.platform : h.platforms[way > 0 ? 0 : 1];
+  const original = end || way > 0;
+  return h.heads && original ? RING_HEAD[head]!.platform : h.platforms[original ? 0 : 1];
 }
 
 // ---------------------------------------------------------------- the circuit (generic-lines, "The state shape" 2)

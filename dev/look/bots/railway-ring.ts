@@ -186,7 +186,7 @@ export async function rideToIsland(bot: Bot, { rideFrom, hopTo, view, until }: R
       },
       calling: () => !!outward()?.over,
       before: async (lever) => {
-        // The outbound lever stands on the joint's west platform, 0.9 m above the deck the bot walked onto: hop up to it.
+        // The outbound lever stands on the original east platform, 0.9 m above the deck: hop up to its live position.
         await bot.walk(lever.x, lever.z, 3);
         const p = me.body!.position,
           d = Math.hypot(lever.x - p.x, lever.z - p.z) || 1;

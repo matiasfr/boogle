@@ -227,13 +227,19 @@ async function runChecks() {
     failed += ring.failures;
     report.push(ring);
     if (!json) printRing(ring);
+    // Home's rotunda: its keep-clear outline against the tracks, the town, the yard props and its own ground.
+    const { checkRotunda, printRotunda } = await import('./rotunda.ts');
+    const rotunda = checkRotunda();
+    failed += rotunda.failures;
+    report.push(rotunda);
+    if (!json) printRotunda(rotunda);
     // Greybox leg 2 (planned boxes): Bell Rock's two levels and Home's West landing (docs/plans/greybox-leg2-massing.md).
     const { checkLeg2, printLeg2 } = await import('./route-leg2.ts');
     const leg2 = checkLeg2();
     failed += leg2.failures;
     report.push(leg2);
     if (!json) printLeg2(leg2);
-    // Track continuity: kinks, curves, grades and joins over every line as the game draws it (docs/plans/rail-map.md).
+    // Track continuity measures physical original/offset sides independently of train direction (rail-map.md).
     const { checkContinuity, printContinuity } = await import('./track-continuity.ts');
     const continuity = checkContinuity();
     failed += continuity.failures;

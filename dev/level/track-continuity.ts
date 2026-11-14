@@ -23,20 +23,20 @@
 // measures; their would-be failures are listed as "planned, would fail" and do not fail the check, because no train
 // runs there yet and their data is a greybox draft (they become enforced as each line moves into RAIL_LINES).
 import { LIVE, beside, deg, joins, tracks, wrap, type Join, type Pt, type Track } from './rail-network.ts';
-import { HALTS, UP_HALTS, crossLat, upLat } from '../../src/place/layout.ts';
+import { HALTS, OFFSET_HALTS, crossLat, offsetLat } from '../../src/place/layout.ts';
 
 /** A car's half width and a platform's (src/entities/railway/halts-view.ts: 2.5 m decks). */
 const CAR_HX = 1.1,
   PLATFORM_HX = 1.25;
-/** The up track's turnouts and Far Head's crossover: how steeply each leaves today's track and its tightest radius
+/** The offset track's turnouts and Far Head's crossover: how steeply each leaves today's track and its tightest radius
  * (3-point, 2 m arms, 0.5 m steps), so the eased lateral shift's ends are measured, not assumed. */
 function turnouts() {
   const out: { line: string; what: string; s0: number; s1: number; diverge: number; minRadius: number; at: number }[] =
     [];
   for (const L of LIVE) {
     const zones: [string, number, number, (s: number) => number | null][] = [
-      [`stub turnout at s ${L.f.from}`, L.f.from, L.f.from + 20, (s) => upLat(L.f, s)],
-      [`stub turnout at s ${L.f.to}`, L.f.to - 20, L.f.to, (s) => upLat(L.f, s)],
+      [`stub turnout at s ${L.f.from}`, L.f.from, L.f.from + 20, (s) => offsetLat(L.f, s)],
+      [`stub turnout at s ${L.f.to}`, L.f.to - 20, L.f.to, (s) => offsetLat(L.f, s)],
     ];
     const c = 'crossover' in L.f ? L.f.crossover : undefined;
     if (c) zones.push([`crossover s ${c[0]}-${c[1]}`, c[0], c[1], (s) => crossLat(L.f, s)]);
@@ -76,13 +76,14 @@ function turnouts() {
  * runs into it), the closest along the platform. */
 function platforms() {
   const out: { name: string; track: string; clearance: number; at: number }[] = [];
-  const all = [...HALTS.map((h) => ({ ...h, up: false })), ...UP_HALTS.map((h) => ({ ...h, up: true }))];
+  const all = [...HALTS.map((h) => ({ ...h, up: false })), ...OFFSET_HALTS.map((h) => ({ ...h, up: true }))];
   for (const h of all) {
     const L = LIVE[h.line]!;
+    // Physical report keys: down = original, up = offset; train directions swapped in v45.
     for (const track of ['down', 'up'] as const) {
       let best = { c: Infinity, s: h.s0 };
       for (let s = h.s0; s <= h.s1; s += 0.5) {
-        const tl = track === 'down' ? 0 : upLat(L.f, s);
+        const tl = track === 'down' ? 0 : offsetLat(L.f, s);
         if (tl === null) continue;
         const c = Math.abs(h.lat - tl) - PLATFORM_HX - CAR_HX;
         if (c < best.c) best = { c, s };
@@ -352,7 +353,7 @@ export function measure(t: Track): { row: TrackRow; findings: Finding[] } {
   return { row, findings: f };
 }
 
-/** Where the up track's centre comes within FOUL of today's (or crosses it): its fouling points. */
+/** Where the offset track's centre comes within FOUL of today's (or crosses it): its fouling points. */
 function fouling(all: Track[]): Finding[] {
   const out: Finding[] = [];
   for (const up of all.filter((t) => t.kind === 'up' && t.status === 'v26')) {
@@ -492,7 +493,7 @@ export function printContinuity(r: ContinuityReport) {
   console.log('  joins:');
   for (const j of r.joins)
     console.log(`    [${j.status}] ${j.name}: gap ${j.gap.toFixed(2)} m, heading ${j.heading.toFixed(1)}° (${j.note})`);
-  console.log("  fouling zones (up track within 2.3 m of today's):");
+  console.log("  fouling zones (offset track within 2.3 m of today's):");
   for (const x of r.foul) console.log(`    ${x.track}: ${x.text}`);
   const line = (x: Finding) =>
     `    ${x.gross ? 'FAIL ' : ''}${x.track} [${x.status}] s ${x.s.toFixed(0)} (${x.x.toFixed(1)}, ${x.z.toFixed(1)}): ${x.text}`;

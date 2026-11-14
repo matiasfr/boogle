@@ -81,6 +81,7 @@ test('review: a train already on the Far Head crossover when the pier opens turn
       at: 1,
       to: 2,
       track: 0,
+      origin: 0,
       depart: w.t,
       req: 0,
       from: 50000,
@@ -92,6 +93,7 @@ test('review: a train already on the Far Head crossover when the pier opens turn
       at: 0,
       to: 0,
       track: 0,
+      origin: 0,
       depart: w.t,
       req: 0,
       from: TRAIN_STOPS[LINE2]![0]!,
@@ -149,12 +151,12 @@ test('review: the amber lamp is dark for a rider ask too late to stop for, lit f
 });
 
 // P2-1: the end blocks started at the merge (RailHalt.end.mergeCm) and a train that couldn't enter waited 10 m outside
-// it, but the drawn tracks only part over a 20 m turnout beyond the merge (src/place/layout.ts TURNOUT, upLat),
+// it, but the drawn tracks only part over a 20 m turnout beyond the merge (src/place/layout.ts TURNOUT, offsetLat),
 // and a train stretches 9 m behind its reference point (the wagon at -7.4 m, src/entities/railway/cars.ts): a train held at
 // a stub end's signal stood on the turnout, and the train leaving the end block passed through it. Checked on the
 // drawn footprint: each car's box at its pose and its track's offset.
 test('review: no two drawn trains overlap (a train held at a stub signal stands clear of the one leaving)', async () => {
-  const { FORMATION, LINKS, upLat, crossLat } = await import('../src/place/layout.ts');
+  const { FORMATION, LINKS, offsetLat, crossLat } = await import('../src/place/layout.ts');
   const { TRAIN_CARS, TRAIN_OFFSETS } = await import('../src/entities/railway/cars.ts');
   const { trainAlong } = await import('../src/sim/railway-train.ts');
   const w = unaudited(railwayAtTrains('q6-stocked'));
@@ -171,7 +173,7 @@ test('review: no two drawn trains overlap (a train held at a stub signal stands 
         ? 0
         : (r.turn || !open) && f.crossover && s >= f.crossover[0]
           ? (crossLat(f, s) ?? 0)
-          : (upLat(f, s) ?? 0);
+          : (offsetLat(f, s) ?? 0);
       return { s, lat, hx: TRAIN_CARS[n]!.hx, hz: TRAIN_CARS[n]!.hz };
     });
   };
@@ -190,6 +192,7 @@ test('review: no two drawn trains overlap (a train held at a stub signal stands 
         at: stop,
         to: stop,
         track,
+        origin: 0,
         depart,
         arrived: depart,
         req: 0,

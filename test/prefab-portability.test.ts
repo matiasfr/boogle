@@ -6,6 +6,8 @@ import { levels as blockoutLevels } from '../src/content/levels/town-blockout.ts
 import { HALTS } from '../src/place/layout.ts';
 import { prefabs as museum } from '../src/content/prefabs/museum.ts';
 import { haltKitContent } from '../dev/prefab/halts.ts';
+import { rotundaContent } from '../dev/prefab/rotunda.ts';
+import { prefabs as roundhouse } from '../src/content/prefabs/roundhouse.ts';
 import { levels as museumLevels } from '../src/content/levels/museum.ts';
 import { prefabs as curio } from '../src/content/prefabs/curio.ts';
 import { prefabs as shop } from '../src/content/prefabs/shop.ts';
@@ -130,6 +132,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...museum,
           ...rooms,
           ...house,
+          ...roundhouse,
           ...haltKitContent().prefabs,
         ],
         [
@@ -143,6 +146,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...houseLevels,
           ...blockoutLevels,
           ...haltKitContent().levels,
+          ...rotundaContent().levels,
         ],
       ),
       'content/built',

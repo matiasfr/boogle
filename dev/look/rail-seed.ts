@@ -14,15 +14,16 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
   const mid = ringMidStage(stage);
   const stack = stackStage(stage);
   const lay = layStage(stage);
-  if (mid === null && stack === null && lay === null && !isSeedStage(stage)) throw new Error(`Unknown railway seed: ${stage}`);
+  if (mid === null && stack === null && lay === null && !isSeedStage(stage))
+    throw new Error(`Unknown railway seed: ${stage}`);
   const doc =
     lay !== null
-      ? await buildLayDoc()
+      ? await buildLayDoc(lay)
       : stack !== null
-      ? await buildStackDoc(stack)
-      : mid !== null
-        ? await buildRingMidDoc(Number(mid))
-        : await buildSeedDoc(stage as never);
+        ? await buildStackDoc(stack)
+        : mid !== null
+          ? await buildRingMidDoc(Number(mid))
+          : await buildSeedDoc(stage as never);
   const store = createStore({ dataDir, maxRooms: 2 });
   await store.init();
   const result = await store.write(railwayRoomId(room), {
