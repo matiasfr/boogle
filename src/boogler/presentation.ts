@@ -9,6 +9,7 @@ export function createBooglerPresentation() {
     held = false;
   let heldFor = 0,
     speed = 0;
+  let lastNow: number | undefined;
   return {
     pose,
     talk(open: boolean) {
@@ -21,7 +22,18 @@ export function createBooglerPresentation() {
       talking = open;
       if (!open) held = false;
     },
-    update(leg: BooglerLeg, tick: number, dt: number, immediate = false, face?: { x: number; z: number }, live = true) {
+    update(
+      leg: BooglerLeg,
+      tick: number,
+      dt: number,
+      immediate = false,
+      face?: { x: number; z: number },
+      live = true,
+      now?: number,
+    ) {
+      // FrameCtx.dt is already capped at 50 ms. Only the raw timestamp reveals a hidden-tab pause.
+      const elapsed = now !== undefined && lastNow !== undefined ? Math.max(0, (now - lastNow) / 1000) : dt;
+      lastNow = now;
       if (!live) {
         pose.walking = false;
         speed = 0;
@@ -29,7 +41,7 @@ export function createBooglerPresentation() {
       }
       const next = booglerPose(leg, tick);
       if (held && !immediate) {
-        heldFor += dt;
+        heldFor += elapsed;
         // Talk is a short prediction: another actor can win, or no changed leg may arrive.
         if (leg !== last || heldFor + 1e-9 >= 0.3) held = false;
         else {
@@ -44,7 +56,7 @@ export function createBooglerPresentation() {
         return;
       }
       // Hidden tabs can return with seconds of elapsed time. Spend one display frame, not that whole gap.
-      dt = dt > 0.25 ? 1 / 60 : Math.max(0, dt);
+      dt = elapsed > 0.25 ? 1 / 60 : Math.max(0, dt);
       const dx = next.x - pose.x,
         dz = next.z - pose.z,
         distance = Math.hypot(dx, dz);

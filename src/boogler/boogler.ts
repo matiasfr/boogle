@@ -455,7 +455,7 @@ export function updateBoogler(dt: number, now: number) {
         ? me.body?.position
         : [...remotes.values()].find((r) => r.pid === leg.look)?.avatar?.position;
     const live = local || (net.state === 'live' && read?.status() === 'ready');
-    presentation.update(leg, tick, dt, !received, face, live);
+    presentation.update(leg, tick, dt, !received, face, live, now);
     if (live) received = true;
   }
 

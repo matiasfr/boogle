@@ -176,3 +176,15 @@ test('ridden talk hold release starts gently and every correction stays within t
   for (let i = 19; i <= 240; i++) boundedStep(p, () => p.update(ridden, 20 + i / 6, frame));
   assert.ok(Math.abs(p.pose.z - booglerPose(ridden, 60).z) < 0.001);
 });
+
+for (const speed of [1.5, 2.3, 3.4])
+  test(`hidden return at ${speed} m/s uses raw time despite the game's 50 ms delta clamp`, () => {
+    const p = createBooglerPresentation();
+    const moving = { ...walk, speed };
+    p.update(moving, 20, 0, true, undefined, true, 1000);
+    const before = { ...p.pose };
+    p.update(moving, 90, 0.05, false, undefined, true, 8000);
+    const distance = Math.hypot(p.pose.x - before.x, p.pose.z - before.z);
+    const bound = Math.max(3, speed * 1.2) / 60;
+    assert.ok(distance <= bound + 1e-9, `hidden return moved ${distance} m; bound ${bound} m`);
+  });
