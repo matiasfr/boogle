@@ -69,11 +69,15 @@ change: **`WORLD_NS` v45**, no migration, joining the shared v45 (rotunda, runni
     chock. The archived `MOVE` numbers, as integers.
   - `haulTravel(dist)` and `haulAlong(dist, t)`: the archived `travelSeconds` and `travelAt`, in cm and ticks.
   - `haulTarget(a)`: `RING_HEAD[min(7, floor(a.set / 2))].u`.
-  - `haulU(a, tick)`: `a.moved < 0 ? haulTarget(a) : a.from + haulAlong(haulTarget(a) - a.from, tick - a.moved - HAUL.after - HAUL.ready)`. `tick` may be fractional in a view.
+  - `haulU(a, tick)`: before any pair, `haulTarget(a)`; otherwise the canonical pose at a whole rule tick is
+    `a.from + Math.floor(haulAlong(haulTarget(a) - a.from, tick - a.moved - HAUL.after - HAUL.ready))`, in integer
+    centimetres. Fractional view ticks linearly interpolate the two surrounding whole-tick poses. A fractional
+    travel duration reaches the exact target on the next whole tick; the settlement calculation already rounds up.
   - `haulPhase(a, tick)`: ticks since told (`tick - a.moved - HAUL.after`), for cues; `haulEnd(a)`: the tick it is
     settled (`moved + after + ready + ceil(haulTravel) + settle`, or `-1`); `haulSettled(a, tick)`.
 - `src/sim/railway-sys-ring.ts`, `ringFootSet`, where `m.set % 2 === 0` (three lines, before `stopMoved`): read
-  `from = Math.floor(haulU(rowBeforeTheIncrement, tick))`, then `m.from = from; m.moved = tick`. As `stopMoved` replans
+  `from = haulU(rowBeforeTheIncrement, tick)`, the canonical integer pose at this whole rule tick, then
+  `m.from = from; m.moved = tick`. Do not quantize a separate fractional curve for the stamp. As `stopMoved` replans
   a running train "from its pose now", a pair completed while a haul is still running replans from where the traveller
   is: the pose is continuous for every accepted sequence. The UI cannot reach that case (prompts wait for
   `haulSettled`); seeds, bots and races can, and they must not make a jump.
@@ -171,8 +175,9 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       Codex gpt-6-astra high.** Edit `src/sim/railway-components.ts`, `src/sim/railway-sys-ring.ts`,
       `src/sim/railway-check-ring.ts`, `src/sim/railway-seed-ring.ts`, `src/world/namespace.ts`. Tests:
       - `test/railway-ring.test.ts`: `a bent's second footing stamps moved and from; its first does not`;
-        `a pair completed mid-haul replans from where the traveller is` (no jump: `haulU` equal the tick before and
-        after); `5,000 random ring ops keep the haul invariants`; each seed stage is settled and passes `railwayCheck`.
+        `a pair completed mid-haul replans from where the traveller is` (stamp the canonical integer pose; no jump:
+        `haulU(oldRow, tick) === haulU(newRow, tick)` at the same accepted rule tick before and after applying the pair);
+        `5,000 random ring ops keep the haul invariants`; each seed stage is settled and passes `railwayCheck`.
       - `test/railway-check-ring.test.ts`: each new invariant refused when broken.
       - `server/test/railway-ring-host.test.ts`, real host and two mirrors:
         `concurrent: two sessions set a pair's footings in one tick; both mirrors hold the server's set, moved and from`;

@@ -42,17 +42,32 @@ test('haul: holds for 60 ticks, told for 10, then never faster than 50 cm a tick
   assert.equal(haulPhase(first, 160), 0);
   assert.equal(haulPhase(first, 170), 10);
   assert.equal(haulTravel(2000), 48);
-  assert.equal(haulU(first, 171), 12003.125);
+  assert.equal(haulU(first, 171), 12003);
   assert.equal(haulU(first, 178), 12200);
   assert.equal(haulU(first, 194), 13000);
   assert.equal(haulU(first, 210), 13800);
-  assert.equal(haulU(first, 217), 13996.875);
+  assert.equal(haulU(first, 217), 13996);
   assert.equal(haulU(first, 218), 14000);
   assert.equal(haulEnd(first), 227);
   assert.equal(haulSettled(first, 218), false, 'arrival still owes nine ticks of chocking');
   for (let tick = 171; tick <= 218; tick++) {
     const step = haulU(first, tick) - haulU(first, tick - 1);
     assert.ok(step >= 0 && step <= 50);
+  }
+});
+
+test('haul: fractional view ticks interpolate canonical whole-tick poses', () => {
+  assert.equal(haulU(first, 170.5), 12001.5);
+  assert.equal(haulU(first, 171.5), 12007.5);
+  assert.equal(haulU(first, 217.5), 13998);
+  for (let tick = 100; tick <= 227; tick++) {
+    const before = haulU(first, tick);
+    const after = haulU(first, tick + 1);
+    for (const fraction of [0.125, 0.25, 0.5, 0.75, 0.875]) {
+      assert.equal(haulU(first, tick + fraction), before + (after - before) * fraction);
+    }
+    const across = haulU(first, tick + 1e-6) - haulU(first, tick - 1e-6);
+    assert.ok(across >= 0 && across <= 0.0001 + 1e-9, 'continuous across each canonical tick');
   }
 });
 
@@ -103,7 +118,7 @@ test('haul: a short remainder and a 140 m replan both end exactly on the target'
     assert.equal(haulAlong(dist, 0), 0);
     assert.equal(haulAlong(dist, travel), dist);
     assert.equal(haulAlong(dist, travel + 1), dist);
-    assert.equal(haulU(row, 170 + travel), 26000);
+    assert.equal(haulU(row, 170 + Math.ceil(travel)), 26000);
     assert.equal(haulEnd(row), end, 'round travel up before the nine whole chocking ticks');
     assert.equal(haulSettled(row, end - 0.001), false);
     assert.equal(haulSettled(row, end), true);
@@ -111,7 +126,7 @@ test('haul: a short remainder and a 140 m replan both end exactly on the target'
 });
 
 test('haul: replan mid-haul restarts from the current place with no jump', () => {
-  for (const tick of [160, 171, 178, 190.25, 217, 218, 227]) {
+  for (const tick of [160, 171, 178, 190, 217, 218, 227]) {
     const from = haulU(first, tick);
     const next = Object.freeze({ set: 4, moved: tick, from });
     assert.equal(haulU(next, tick), from);
@@ -121,16 +136,18 @@ test('haul: replan mid-haul restarts from the current place with no jump', () =>
   }
 });
 
-test('haul: integer-centimetre replan stamps lose less than one centimetre, not exact continuity', () => {
-  // Step 2 proposes Math.floor(haulU(old, tick)). Even integer rule ticks can have fractional cm.
-  // Preserve this counterexample so integration cannot assert exact equality with an integer from field.
+test('haul: integer-centimetre replan stamps preserve the pose exactly', () => {
+  // The review's counterexample: step 2 must stamp the same canonical pose the view evaluates.
   const from = haulU(first, 171);
-  assert.equal(from, 12003.125);
   const next = { set: 4, moved: 171, from: Math.floor(from) };
-  assert.equal(from - haulU(next, 171), 0.125);
-  for (let tick = 100; tick <= 227; tick++) {
-    const current = haulU(first, tick);
-    const replanned = haulU({ set: 4, moved: tick, from: Math.floor(current) }, tick);
-    assert.ok(current - replanned >= 0 && current - replanned < 1);
+  assert.equal(haulU(next, 171), from);
+  for (const dist of [0, 1, 166, 167, 199, 200, 399, 400, 401, 2000, 14000]) {
+    const row = { set: 14, moved: 100, from: 26000 - dist };
+    for (let tick = 100; tick <= haulEnd(row); tick++) {
+      const current = haulU(row, tick);
+      assert.ok(Number.isInteger(current));
+      const replanned = haulU({ set: 14, moved: tick, from: Math.floor(current) }, tick);
+      assert.equal(replanned, current, `exact replan at tick ${tick}, distance ${dist}`);
+    }
   }
 });
