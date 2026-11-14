@@ -7493,7 +7493,7 @@
           "t": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "shown": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "proxy": false,
-          "near": false,
+          "near": true,
           "over": true,
           "outside": true
         },
@@ -7594,7 +7594,7 @@
           "t": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "shown": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "proxy": false,
-          "near": false,
+          "near": true,
           "over": true,
           "outside": true
         },
@@ -7696,7 +7696,7 @@
           "t": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "shown": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "proxy": false,
-          "near": false,
+          "near": true,
           "over": true,
           "outside": true
         },
@@ -8445,7 +8445,7 @@
           "t": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "shown": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "proxy": false,
-          "near": false,
+          "near": true,
           "over": true,
           "outside": true
         },
@@ -8552,7 +8552,7 @@
           "t": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "shown": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "proxy": false,
-          "near": false,
+          "near": true,
           "over": true,
           "outside": true
         },
@@ -8660,7 +8660,7 @@
           "t": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "shown": { "roof": 0, "front": 0, "back": 0, "left": 0, "right": 0 },
           "proxy": false,
-          "near": false,
+          "near": true,
           "over": true,
           "outside": true
         },

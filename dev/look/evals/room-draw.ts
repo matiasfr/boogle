@@ -98,9 +98,14 @@ if (query.get('player') === '2') {
 } else {
   const out = Number(camAt);
   put(spot(out - 4, 3));
-  const eye = spot(out),
+  // drawside=<m> swings the camera that far along the wall at the same distance from the door, round whatever stands
+  // on the axis; drawup=<m> is its height over the ground (2.2); drawfov=<deg> (50).
+  const side = Number(query.get('drawside') ?? 0),
+    up = Number(query.get('drawup') ?? 2.2);
+  const eye = spot(Math.sqrt(out * out - side * side), side),
     to = spot(-p.d / 2);
-  const setCam = () => window.__debugCam?.set([eye.x, eye.y + 2.2, eye.z], [to.x, to.y + 1.2, to.z], 50);
+  const fov = Number(query.get('drawfov') ?? 50);
+  const setCam = () => window.__debugCam?.set([eye.x, eye.y + up, eye.z], [to.x, to.y + 1.2, to.z], fov);
   setCam();
   const hold = setInterval(setCam, 200);
   setTimeout(() => clearInterval(hold), 6000);

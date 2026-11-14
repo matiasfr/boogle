@@ -10,8 +10,8 @@
 // from clearance (the research doc's table); so does this, with the cutaway as the shot's half.
 //
 // Interiors draw only with the camera near their door (`near`), so a village you're not in pays for its walls and
-// nothing behind them, and a building seen from its back or across the green pays for nothing inside; what's outside
-// and over the door, a little further out, measured from the building. Local; which rooms exist comes from
+// nothing behind them, and a building seen from well behind pays for nothing inside; what's outside and over the
+// door, a little further out, measured from the building. Local; which rooms exist comes from
 // `env.up`, read from what's shared. `createRooms` mounts them on the town entity's owner (src/entities/town/).
 import * as THREE from 'three/webgpu';
 import { registerStepFloor } from '../../render/locomotion-surfaces.ts';
@@ -56,7 +56,10 @@ export const ROOM_CAM = {
   pitch: -0.4, // rad: a modest look down, suggested as you come in
   pitchRate: 2.6, // 1/s
   camClear: 1.8, // m the camera has to be outside a building before its walls come back, so they don't rise at the lens
-  drawWithin: 18, // m: interiors draw while the camera is within this of their door (or you're inside)
+  // m: interiors draw while the camera is within this of their door (or you're inside). One radius for every room,
+  // chosen for the look, not by what a room costs (owner, 14 November): it covers door to door across the green.
+  drawWithin: 48,
+  drawSlack: 1, // m further before a drawn interior goes again, so a camera on the line doesn't toggle it every frame
   dressWithin: 60, // m: and what's outside and over the door (a mat, a window box, a sign) while it's within this
 };
 export const DOOR = { w: 2.6, rows: 3 };
@@ -494,7 +497,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
   }
   /** What's drawn near the camera that's about to render: interiors within `drawWithin` of their door (or the one
    * you're in), and what's outside and over the door within `dressWithin` of the building, so a far view of the
-   * village, or one from behind a building, pays for none of it (place-retirement T2's draw budget; town-layout
+   * village, or one from well behind a building, pays for none of it (place-retirement T2's draw budget; town-layout
    * step 7). Only `near`'s visibility changes: furnishing records stay enabled, so their solids stay. Call after anything that moves the camera this frame, after `update`. */
   function cull() {
     const cx = camera.position.x,
@@ -502,7 +505,8 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
     for (const r of LIST) {
       const fromCam = Math.hypot(cx - r.x, cz - r.z);
       const door = doors.get(r)!;
-      const near = r.ready && (r === indoors.room || Math.hypot(cx - door.x, cz - door.z) < ROOM_CAM.drawWithin);
+      const within = ROOM_CAM.drawWithin + (r.near.visible ? ROOM_CAM.drawSlack : 0);
+      const near = r.ready && (r === indoors.room || Math.hypot(cx - door.x, cz - door.z) < within);
       if (r.near.visible !== near) r.near.visible = near;
       if (!r.ready) continue;
       const dressed = fromCam < ROOM_CAM.dressWithin;

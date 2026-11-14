@@ -859,7 +859,9 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     };
     const within = ROOM_CAM.drawWithin;
     assert.equal(camAt(r.d / 2 + within - 1), true, `${r.id}: drawn approaching the door`);
-    assert.equal(camAt(r.d / 2 + within + 1), false, `${r.id}: not drawn from beyond the door's radius`);
+    assert.equal(camAt(r.d / 2 + within + 0.5), true, `${r.id}: still drawn inside the slack past the line`);
+    assert.equal(camAt(r.d / 2 + within + 2), false, `${r.id}: not drawn from beyond the door's radius`);
+    assert.equal(camAt(r.d / 2 + within + 0.5), false, `${r.id}: not drawn again until inside the line`);
     assert.equal(camAt(-r.d / 2 - within + 2), false, `${r.id}: not drawn from as near behind`);
     const at = (z: number) => {
       const v = new THREE.Vector3(0, 0, z).applyAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
