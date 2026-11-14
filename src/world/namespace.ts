@@ -90,13 +90,15 @@
 // v42 (2026-11-13): The Boogler's Server leg and saved position/facing replace the lead's g presence.
 // v43 (2026-11-13): present/puff server commands and timed reaction events; bg shrinks to [act, wary].
 // v44 (2026-11-13): remove the lead election, welcome field and notification; all shared authority is server-owned.
-// v45 (2026-11-14, shared reset, not yet shipped): rotunda 1a moves the table, stall and seam reach points,
+// v45 (2026-11-14, shipped #1827): rotunda 1a moves the table, stall and seam reach points,
 // the table landing and the shunt's 140-tick rule. No shape change or migration.
 // Running-side step 3 adds right-hand platform acceptance and directional ring-track order; views follow in step 4.
 // Running-side review adds Train.origin (accepted departure stop, replicated and saved), and step 5 adds
 // the Pier west platform catalog entry for homeward service after Q7. Retained departures keep their old
 // block and original-side boarding authority until the entire train clears; no second reset or migration.
-export const WORLD_NS = 'v45';
+// v46 (2026-11-14, shared reset): the Aperture row carries the railhead haul's start tick and origin.
+// No migration; the great tree and rack moves will join this reset.
+export const WORLD_NS = 'v46';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
