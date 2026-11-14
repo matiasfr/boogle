@@ -1,20 +1,9 @@
-// One room's world, run by the server: a headless clock/checkpoint attached to an in-process room adapter,
-// ticking with or without clients and saving through the
-// store (the same file and shape GET /rooms/:id/snapshot serves).
-//
-//   const wh = createWorldHost({ roomId, store, saveMs })
-//   wh.onSend((msg) => ...)       the sync's outgoing clock messages, for the hosted room to fan out
-//   wh.deliver(msg, from)         a client's message into the sync (from = its selfId)
-//   wh.step(dt)                   advance dt seconds of the 60 Hz room clock by hand (tests pass tick: false; otherwise a
-//                                 step timer does it)
-//   wh.status()                   worldStatus() plus the tick
-//   await wh.close({ save })      stop ticking; with save, write the last tick and wait for the file
-//
+// Compose one authoritative railway room. Each host service owns its transient state;
+// the callbacks below are its explicit cross-service contracts. Registration and startup order are intentional.
+import type { WorldHostOptions } from './ordinary-host.ts';
+export { createWorldHost } from './ordinary-host.ts';
+export type { WorldHost, WorldHostOptions } from './ordinary-host.ts';
 import { createSync } from '../../../src/world/sync.ts';
-import { STEP_MS } from '../../../src/world/room-clock.ts';
-import { SERVER_ID } from '../../../src/net/ids.ts';
-import type { StepMeter } from './step-meter.ts';
-import type { Store } from '../store.ts';
 import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { createHostStatus } from './host-status.ts';
 import { createHostCheckpoint } from './host-checkpoint.ts';
@@ -34,110 +23,7 @@ import { createHostMaintenance } from './host-maintenance.ts';
 import { createHostSupply } from './host-supply.ts';
 import { createHostBoogler } from './host-boogler.ts';
 
-// The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
-// Saves skip unchanged state, but persist the advancing room clock at least this often, and always on close.
-const TICK_SAVE_MS = 30000;
-
 type Msg = Record<string, unknown>;
-export type WorldHostOptions = {
-  roomId: string;
-  store: Store;
-  saveMs?: number;
-  tick?: boolean; // run the step timer (default true)
-  meter?: StepMeter; // the step timer's lateness, for the status route (step-meter.ts)
-  pidOf?: (sid: string) => string | null; // the hosted room's binding of each session to its player
-  tuneController?: (sid: string) => boolean; // explicit operator assignment, never elected from room leadership
-  log?: (...a: unknown[]) => void;
-};
-
-export function createWorldHost({
-  roomId,
-  store,
-  saveMs = 2000,
-  tick = true,
-  meter,
-  log = () => {},
-}: WorldHostOptions) {
-  const sync = createSync();
-  const sendFns = new Set<(msg: Msg) => void>();
-  const msgFns = new Set<(msg: unknown, from: string) => void>();
-  let writing: Promise<unknown> = Promise.resolve();
-  let writeError: Error | null = null;
-  let writeSequence = 0;
-
-  // Synchronous like localStorage: the sync reads it once on becoming host, and writes on every save.
-  const storage = {
-    getItem() {
-      const doc = store.readSync(roomId);
-      return doc ? JSON.stringify(doc.data) : null;
-    },
-    setItem(_key: string, json: string) {
-      const data = JSON.parse(json);
-      const doc = { tick: data.tick, writerId: SERVER_ID, data, updatedAt: new Date().toISOString() };
-      const sequence = ++writeSequence;
-      writing = store
-        .write(roomId, doc)
-        .then((r) => {
-          if (r.status !== 200) throw new Error(`save refused (${r.status}): ${JSON.stringify(r.body)}`);
-          if (sequence === writeSequence) writeError = null;
-        })
-        .catch((error: unknown) => {
-          const failure = error instanceof Error ? error : new Error(String(error));
-          if (sequence === writeSequence) writeError = failure;
-          log(`world ${roomId}: save failed`, failure.message);
-        });
-    },
-  };
-  sync.attachWorld(
-    {
-      selfId: SERVER_ID,
-      send: (msg) => {
-        for (const fn of sendFns) fn(msg as Msg);
-      },
-      onMessage: (h) => (msgFns.add(h), () => msgFns.delete(h)),
-      onConnection: (h) => (h(true), () => {}),
-    },
-    { roomId, host: true, storage, now: Date.now, saveMs },
-  );
-
-  let last = performance.now(),
-    tickSaved = last;
-  const timer = tick
-    ? setInterval(() => {
-        const now = performance.now();
-        meter?.timer(now);
-        sync.stepWorld(Math.min(now - last, 1000));
-        last = now;
-        if (now - tickSaved > TICK_SAVE_MS) {
-          tickSaved = now;
-          sync.saveNow(true);
-        }
-      }, STEP_MS)
-    : null;
-  timer?.unref();
-
-  return {
-    sync,
-    onSend(fn: (msg: Msg) => void) {
-      sendFns.add(fn);
-      return () => sendFns.delete(fn);
-    },
-    deliver(msg: unknown, from: string) {
-      for (const h of msgFns) h(msg, from);
-    },
-    step: (dt: number) => sync.stepWorld(dt * 1000),
-    status: () => ({ tick: sync.world.tick, ...sync.worldStatus() }),
-    async close({ save = true } = {}) {
-      if (timer) clearInterval(timer);
-      if (save) sync.saveNow(true);
-      sync.detachWorld();
-      await writing;
-      if (save && writeError) throw writeError;
-      if (save && sync.worldStatus().badSave) throw new Error(`world ${roomId}: saved state did not load cleanly`);
-    },
-  };
-}
-export type WorldHost = ReturnType<typeof createWorldHost>;
 
 export type RailwayHostOptions = WorldHostOptions & {
   /** Every connected session, including unknown poses. Unknown blocks maintenance. */
@@ -279,6 +165,16 @@ export function createRailwayWorldHost({
     },
     step: status.step,
     status: status.status,
+    roomStatus() {
+      const ws = status.status();
+      return {
+        noSave: ws.badSave,
+        railway: status.stats,
+        seats: ws.seats,
+        boogler: ws.boogler,
+        booglerMeter: ws.booglerMeter,
+      };
+    },
     whenReady: () => ready,
     wake: checkpoint.wake,
     pause: checkpoint.pause,
