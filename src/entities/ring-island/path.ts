@@ -19,14 +19,19 @@ export function summitPathFoot() {
   return { x: p.x / 100, z: p.z / 100 };
 }
 
-export function summitBridge(g: IslandGround) {
-  // The same formation middle as ground.ts's STACK_CUT: 2 m west of the down track.
-  const p = rowPoint('ring', SUMMIT_BRIDGE.sCm + ROW_SHIFT.ring),
-    q = rowPoint('ring', SUMMIT_BRIDGE.sCm + ROW_SHIFT.ring + 100),
+/** The formation's middle at `sCm` along the stack line (the same as ground.ts's STACK_CUT: 2 m west of the down
+ * track), the unit normal toward the halt side, and the rail's height. */
+function formation(sCm: number) {
+  const p = rowPoint('ring', sCm + ROW_SHIFT.ring),
+    q = rowPoint('ring', sCm + ROW_SHIFT.ring + 100),
     len = Math.hypot(q.x - p.x, q.z - p.z),
     nx = (q.z - p.z) / len,
     nz = -(q.x - p.x) / len;
-  const middle = { x: p.x / 100 + nx * 2, z: p.z / 100 + nz * 2 };
+  return { middle: { x: p.x / 100 + nx * 2, z: p.z / 100 + nz * 2 }, nx, nz, rail: p.y / 100 };
+}
+
+export function summitBridge(g: IslandGround) {
+  const { middle, nx, nz, rail } = formation(SUMMIT_BRIDGE.sCm);
   const at = (off: number) => {
     const x = middle.x + nx * off,
       z = middle.z + nz * off;
@@ -37,8 +42,49 @@ export function summitBridge(g: IslandGround) {
     b: at(-SUMMIT_BRIDGE.off),
     approach: at(SUMMIT_BRIDGE.off + SUMMIT_BRIDGE.approach),
     middle,
-    rail: p.y / 100,
+    rail,
   };
+}
+
+/** The marker rocks on the cutting's summit-side rim (the plan's design review, finding 3: from uphill the rim is a
+ * convex edge that hides the drop): one every `step` cm of the line from `s0` to `s1`, the stretch where the path runs
+ * within about 25 m of the rim, each at least `back` m behind the rim on uncut ground. None within `bridge` m of the
+ * deck's axis along the line, or `path` m of the path's centreline. */
+export const SUMMIT_RIM_ROCKS = { s0: 124150, s1: 131200, step: 350, back: 1.5, bridge: 4.5, path: 3 } as const;
+
+/** The rim rocks: centre on the ground (`y`), `w` across and `h` high, yawed. Uneven by a fixed sequence, not chance. */
+export function summitRimRocks(g: IslandGround, centre: { x: number; z: number }) {
+  const R = SUMMIT_RIM_ROCKS,
+    { way, bridgeLeg } = summitPath(g, centre);
+  const fromPath = (x: number, z: number) => {
+    let best = Infinity;
+    for (let i = 0; i < way.length - 1; i++) {
+      if (i === bridgeLeg) continue;
+      const [ax, az] = way[i]!,
+        [bx, bz] = way[i + 1]!,
+        dx = bx - ax,
+        dz = bz - az,
+        t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+      best = Math.min(best, Math.hypot(x - ax - dx * t, z - az - dz * t));
+    }
+    return best;
+  };
+  const cut = (x: number, z: number) => g.cone(x, z) - g.islandH(x, z);
+  const out: { x: number; y: number; z: number; w: number; h: number; yaw: number }[] = [];
+  for (let sCm = R.s0, k = 0; sCm <= R.s1; sCm += R.step, k++) {
+    if (Math.abs(sCm - SUMMIT_BRIDGE.sCm) < R.bridge * 100) continue;
+    const { middle, nx, nz } = formation(sCm),
+      f = (k * 0.618034) % 1;
+    // Out from the formation on the summit side until the ground is the uncut hill: that is the rim.
+    let d = 5;
+    while (d < 40 && cut(middle.x - nx * d, middle.z - nz * d) > 0.05) d += 0.25;
+    d += R.back + f * 0.5;
+    const x = middle.x - nx * d,
+      z = middle.z - nz * d;
+    if (fromPath(x, z) < R.path) continue;
+    out.push({ x, y: g.islandH(x, z), z, w: 0.8 + 0.4 * f, h: 0.55 + 0.3 * ((f * 7) % 1), yaw: f * Math.PI });
+  }
+  return out;
 }
 
 export function summitPath(g: IslandGround, centre: { x: number; z: number }) {

@@ -4,7 +4,13 @@ import assert from 'node:assert/strict';
 import { FAR, ORIGIN } from '../src/place/layout.ts';
 import { RING_CONES } from '../src/proto/greybox/ring-cones.ts';
 import { createIslandGround } from '../src/entities/ring-island/ground.ts';
-import { summitBridge, summitPath, summitPathFacts, summitPathFoot } from '../src/entities/ring-island/path.ts';
+import {
+  summitBridge,
+  summitPath,
+  summitPathFacts,
+  summitPathFoot,
+  summitRimRocks,
+} from '../src/entities/ring-island/path.ts';
 import { MOVER } from '../dev/level/mover.ts';
 
 const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
@@ -60,4 +66,34 @@ test('the path crosses the cutting on the bridge leg and is about 330 m', () => 
   assert.deepEqual(way[bridgeLeg], [a.x, a.z]);
   assert.deepEqual(way[bridgeLeg + 1], [b.x, b.z]);
   assert.ok(Math.abs(facts.length - 330) < 2, `${facts.length} m`);
+});
+
+test('the rim rocks stand on uncut ground behind the summit-side rim, off the path and the bridge', () => {
+  const rocks = summitRimRocks(g, centre),
+    { a, b } = summitBridge(g),
+    { way, bridgeLeg } = summitPath(g, centre);
+  assert.ok(rocks.length >= 12 && rocks.length <= 24, `${rocks.length} rocks`);
+  for (const r of rocks) {
+    // Nothing cut within a metre of a rock's centre (the largest is 0.75 m from centre to corner): none overhangs.
+    for (let k = 0; k < 16; k++) {
+      const x = r.x + Math.cos((k * Math.PI) / 8),
+        z = r.z + Math.sin((k * Math.PI) / 8);
+      assert.ok(g.cone(x, z) - g.islandH(x, z) < 0.05, `cut ground by the rock at ${r.x}, ${r.z}`);
+    }
+    assert.ok(r.h <= 0.85 && r.w <= 1.2, 'low enough to hop (the jump is 1.6 m)');
+    // Clear of the deck's line by 4 m, so the bridge's approach stays open.
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      off = Math.abs((r.x - a.x) * dz - (r.z - a.z) * dx) / Math.hypot(dx, dz);
+    assert.ok(off > 4, `${off} m from the deck's axis`);
+    for (let i = 0; i < way.length - 1; i++) {
+      if (i === bridgeLeg) continue;
+      const [ax, az] = way[i]!,
+        [bx, bz] = way[i + 1]!,
+        ex = bx - ax,
+        ez = bz - az,
+        t = Math.max(0, Math.min(1, ((r.x - ax) * ex + (r.z - az) * ez) / (ex * ex + ez * ez)));
+      assert.ok(Math.hypot(r.x - ax - ex * t, r.z - az - ez * t) >= 3, 'three metres off the path');
+    }
+  }
 });
