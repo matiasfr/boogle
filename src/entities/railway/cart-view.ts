@@ -16,6 +16,7 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { CART, CART_PHASE, cartAlong } from '../../sim/railway-cart.ts';
 import type { Car } from './car.ts';
+import { cartTagLine } from './cart-tag.ts';
 import { playMark } from '../../proto/mark.ts';
 import {
   line2Active,
@@ -330,9 +331,11 @@ export async function createRailwayCart(
         tag.mesh.position.set(-1.2, 0, 1.65).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw).add(rackAt);
         tag.mesh.position.y = rackAt.y - 0.16;
         tag.mesh.rotation.y = yaw + Math.PI / 2;
-        if (tagText !== title) {
-          tagText = title;
-          paintTwoLines(tag, title, 'More coming', { ground: '#493522', ink: '#fff5dc', color, rim: '#edcf8c' });
+        // The shipment's numbers under the status (cart-tag.ts), never a bare "More coming".
+        const load = cartTagLine(w);
+        if (tagText !== title + '|' + load) {
+          tagText = title + '|' + load;
+          paintTwoLines(tag, title, load, { ground: '#493522', ink: '#fff5dc', color, rim: '#edcf8c' });
           tag.painted();
         }
       }
@@ -351,6 +354,7 @@ export async function createRailwayCart(
           along: cartAlong(c, adapter.read.tickNow()),
           riding: carry.on === car.platform,
           status: line2CartStatus(w),
+          tag: tag.mesh.visible ? { text: tagText, at: tag.mesh.position.toArray(), yaw: tag.mesh.rotation.y } : null,
         },
       };
     },
