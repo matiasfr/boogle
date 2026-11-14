@@ -15,6 +15,7 @@ import { inspectRailway, rail, railRead, rw } from '../rail-read.ts';
 import { teleport } from '../../../src/physics/engine.ts';
 import { PLAYER_R } from '../../../src/constants.ts';
 import { background } from '../../../src/async.ts';
+import { holdCamera } from '../../../src/render/buddy-frame.ts';
 
 const SUMMIT = { x: 1015, y: 102.4, z: -6 }; // tech-layout's summit pad (x + ORIGIN.x)
 const page = window as Window & { __placeDone?: boolean; __glideResult?: unknown };
@@ -163,7 +164,24 @@ export async function fly() {
     }
     const sink = samples.reduce((a, s) => a + s.sink, 0) / samples.length,
       speed = samples.reduce((a, s) => a + s.speed, 0) / samples.length;
-    const { camDist, canopies, rolls } = glider();
+    const { camDist, canopies, rolls, wisps, wind } = glider();
+    // The wind is at full by 10 m/s (glide-wind.ts). Its nodes exist only once a gesture has unlocked audio: logged.
+    if (wind.level < 0.95) throw new Error(`GLIDE no wind at full stick: ${JSON.stringify(wind)}`);
+    console.log(`GLIDE wind ${JSON.stringify(wind)}`);
+    // A second and more at full stick: the wingtips have shed their threads of air (glide-wisps.ts).
+    if (wisps < 50) throw new Error(`GLIDE no wingtip wisps while gliding at speed: ${wisps}`);
+    // A full-screen moment over the flight (a shot, a card: the camera's one list) quiets both, and they come back.
+    const moment = {};
+    holdCamera(moment, true, 5);
+    await wait(200);
+    const quietFrom = glider().wisps;
+    await wait(300);
+    const quiet = glider();
+    holdCamera(moment, false);
+    await wait(300);
+    const back = glider();
+    if (quiet.wisps !== quietFrom || quiet.wind.level !== 0 || back.wisps <= quiet.wisps || back.wind.level < 0.95)
+      throw new Error(`GLIDE the air ignores a moment: ${JSON.stringify({ quietFrom, quiet, back })}`);
     // Jump while it's open does nothing.
     pressJump();
     await wait(120);
@@ -208,6 +226,7 @@ export async function fly() {
     };
     console.log(`GLIDE landed ${JSON.stringify(landed)}`);
     if (landed.open) throw new Error('GLIDE canopy still open on the ground');
+    if (glider().wind.level !== 0) throw new Error('GLIDE the wind still blows on the ground');
     if (landed.swimming) throw new Error('GLIDE the first flight ended in the sea');
     page.__glideResult = { ...result, landed };
   } finally {
