@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { assertAuthoredNumbers } from './authored.ts';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { compile, writeArtifacts } from './compiler.ts';
+import { canonical, compile, writeArtifacts } from './compiler.ts';
 import { names } from '../../src/prefab/names.ts';
 import type { LevelDef, PrefabDef } from '../../src/prefab/types.ts';
 import { readManifest } from '../assets/manifest.ts';
@@ -34,3 +34,14 @@ writeArtifacts(outputs, path.join(root, 'content/built'), check);
 console.log(
   `prefabs: ${prefabs.length} records, ${levels.length} levels, ${[...outputs.values()].reduce((n, s) => n + Buffer.byteLength(s), 0)} bytes${check ? ', fresh' : ''}`,
 );
+const areas = new Map<string, { records: number; bytes: number }>();
+const artifact = JSON.parse(outputs.get('prefabs.json')!) as { prefabs: Record<string, PrefabDef> };
+for (const def of Object.values(artifact.prefabs)) {
+  const area = def.key.startsWith('railway.halt-') ? 'halts' : def.key.split('.')[0]!;
+  const total = areas.get(area) ?? { records: 0, bytes: 0 };
+  total.records++;
+  total.bytes += Buffer.byteLength(canonical(def));
+  areas.set(area, total);
+}
+for (const [area, total] of [...areas].sort())
+  console.log(`area ${area}: ${total.records} records, ${total.bytes} definition bytes (standalone canonical records)`);
