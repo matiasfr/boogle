@@ -241,3 +241,23 @@ export function commuterFeet(c: Commuter, lane: number, y: number) {
   const span = Math.abs(c.refLat - lane);
   return y + (c.refY - y) * (span > 0.01 ? Math.min(1, Math.abs(c.lat - lane) / span) : 0);
 }
+
+// ---------------------------------------------------------------- far from the camera
+/** folk.ts draws a little guy within DRAW_WITHIN m of the camera (its SLEEP). A commuter thinks out to WAKE_WITHIN, so
+ * the band between is where he wakes: stepped but not drawn, and the only place a woken one is stood in his refuge
+ * (`stepCommuter`'s `woke`). Past it he is asleep, frozen where he stood. A camera that crosses the band in one frame
+ * (a cut) finds him drawn and still marked asleep: he walks to his refuge like anyone, with no jump. */
+export const DRAW_WITHIN = 150,
+  WAKE_WITHIN = 170;
+export type CommuterBand = 'asleep' | 'hidden' | 'drawn';
+export const commuterBand = (distance: number): CommuterBand =>
+  distance > WAKE_WITHIN ? 'asleep' : distance > DRAW_WITHIN ? 'hidden' : 'drawn';
+/** A waking commuter's step in his band (`slept`: not stepped since he slept or was put on the path). */
+export const frameCommuter = (
+  c: Commuter,
+  slept: boolean,
+  band: Exclude<CommuterBand, 'asleep'>,
+  lane: number,
+  dt: number,
+  path: CommuterPath,
+) => stepCommuter(c, lane, dt, path, slept && band === 'hidden');

@@ -16,7 +16,15 @@ import { flat } from '../render/flat.ts';
 import { babble, CHATTER } from './chatter.ts';
 import { H } from './land.ts';
 import { MACHINE_CHAIR_SEAT } from '../entities/railway/machine-model.ts';
-import { commuterFeet, stepCommuter, type Commuter, type Due, type Refuge } from '../entities/railway/path-refuge.ts';
+import {
+  DRAW_WITHIN,
+  commuterBand,
+  commuterFeet,
+  frameCommuter,
+  type Commuter,
+  type Due,
+  type Refuge,
+} from '../entities/railway/path-refuge.ts';
 import { merged } from '../render/part-geometry.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import { TOWN, toWorld, FORGE } from './layout.ts';
@@ -82,8 +90,10 @@ type Job =
   | 'looker';
 type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
-  /** Not thought since he was put out or slept far from the camera: the commuters' first step after reads it. */
+  /** A commuter not stepped since he was put out or slept far from the camera, and one stepped this frame but too
+   * far to draw (path-refuge.ts commuterBand): only there is a woken one stood in his refuge. */
   slept?: boolean;
+  hidden?: boolean;
   k: number;
   job: Job;
   mood: Mood;
@@ -710,23 +720,17 @@ function brain(g: Guy, dt: number) {
       if (!e?.path) return;
       // There and back along it; `a.x` is where along, `a.z` which way, `b.x` how far to the side, and `home` the last
       // refuge (its lateral and the height of what holds him there). The first run out's at a run. The path is line
-      // 1's track bed, so the walk itself, and keeping clear of trains, is path-refuge.ts `stepCommuter`.
+      // 1's track bed, so the walk itself, and keeping clear of trains, is path-refuge.ts `frameCommuter`.
       const lane = commuterLane(g);
       const c: Commuter = { u: g.a.x, way: g.a.z > 0 ? 1 : -1, lat: g.b.x, refLat: g.home.x, refY: g.home.z };
-      const { aside, hurry, toward } = stepCommuter(
-        c,
-        lane,
-        dt,
-        {
-          len: PATH_LEN,
-          speed: commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3,
-          across: SPEED.walk,
-          due: (u) => e.pathTrain?.(u) ?? null,
-          refuge: (u) => e.pathRefuge?.(u) ?? null,
-          go: (u) => e.pathGo?.(u) ?? 0,
-        },
-        g.slept,
-      );
+      const { aside, hurry, toward } = frameCommuter(c, !!g.slept, g.hidden ? 'hidden' : 'drawn', lane, dt, {
+        len: PATH_LEN,
+        speed: commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3,
+        across: SPEED.walk,
+        due: (u) => e.pathTrain?.(u) ?? null,
+        refuge: (u) => e.pathRefuge?.(u) ?? null,
+        go: (u) => e.pathGo?.(u) ?? 0,
+      });
       g.slept = false;
       g.a.x = c.u;
       g.a.z = c.way;
@@ -977,7 +981,7 @@ function pose(g: Guy) {
 }
 const tr = new THREE.Matrix4();
 const NEAR_CAM = 2.5; // m
-const SLEEP = 150; // m from the camera past which they stop updating and aren't drawn
+const SLEEP = DRAW_WITHIN; // m from the camera past which they stop updating and aren't drawn
 const BEHIND = 6; // m behind the camera's plane before someone isn't drawn: past their shadow's reach into the view
 const look = new THREE.Vector3();
 const wp = new THREE.Vector3();
@@ -1317,6 +1321,14 @@ export function updateFolk(dt: number) {
     // Past what the camera can pick out they sleep: no brain, no matrices, frozen where they stood (nothing shared reads
     // them: folk are local to each client, drawn only here). They are drawn from the same distance, so waking is unseen.
     // Riders and pushers follow a vehicle, so they keep their place there but aren't posed.
+    // A commuter thinks a little further out than he is drawn, so he wakes unseen (path-refuge.ts commuterBand).
+    g.hidden = g.job === 'commuter' && commuterBand(Math.sqrt(d2)) === 'hidden';
+    if (g.hidden) {
+      brain(g, dt);
+      g.px = g.x;
+      g.pz = g.z;
+      continue;
+    }
     if (far && g.mood !== 'ride' && g.job !== 'rider' && g.job !== 'driver' && g.job !== 'pusher') {
       g.px = g.x;
       g.pz = g.z;

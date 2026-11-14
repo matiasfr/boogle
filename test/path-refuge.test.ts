@@ -25,6 +25,8 @@ import {
   commuterFeet,
   pathRefuges,
   plankTops,
+  commuterBand,
+  frameCommuter,
   stepCommuter,
   trainDue,
   type Commuter,
@@ -296,6 +298,70 @@ test('a commuter woken with a train already close never walks into it', () => {
           result.hit,
           0,
           `${result.hit} of ${result.commuters} walked into the train: dir ${dir}, up track ${upTrack}, woken ${wake} s in`,
+        );
+      }
+});
+
+test('a commuter the camera loses and finds again is never seen to jump', () => {
+  // folk.ts draws within 150 m and wakes a commuter in a band beyond that. The reviewer's case: s 72.7, a train due,
+  // and the camera's distance crossing the draw radius for one frame and coming back. Whatever the camera does (out
+  // for one frame, out for a second, out past the wake radius and back slowly, or cut straight back in), no two
+  // frames he is drawn in, one culled frame or more apart, show him more than a walked step from where he was.
+  const sim = train(1, 20);
+  const pathS = (u: number) => FROM + u * LEN;
+  const dt = 1 / 60;
+  // Each camera move, starting at each sixth of a second from 2 s to 5 s: before, during and after his step off.
+  const cameras = Array.from({ length: 19 }, (_, k) => 120 + k * 10).flatMap(
+    (from): [string, (f: number) => number][] => [
+      [`out for one frame at ${from}`, (f) => (f === from ? 150.5 : 149.5)],
+      [`out for a second from ${from}`, (f) => (f >= from && f < from + 60 ? 160 : 149)],
+      [
+        `out past the wake radius at ${from} and slowly back`,
+        (f) => (f < from ? 149 : Math.max(140, 200 - (f - from) * 0.4)),
+      ],
+      [`cut far out at ${from} and straight back in`, (f) => (f >= from && f < from + 110 ? 400 : 100)],
+    ],
+  );
+  for (const [label, distance] of cameras)
+    for (const lane of [-1.15, 0.45])
+      for (const s0 of [72.7, 60, 100, 130]) {
+        const c: Commuter = { u: (s0 - FROM) / LEN, way: 1, lat: lane, refLat: lane, refY: 0 };
+        let slept = false,
+          last: { x: number; z: number; frame: number } | null = null,
+          worst = 0;
+        for (let frame = 0; frame < 600; frame++) {
+          const t = frame * dt;
+          const at = Array.from({ length: 52 }, (_, k) => sim.along(t * 10 + k));
+          const ahead: TrainAhead = (sec) => {
+            const f = sec * 10,
+              k = Math.min(50, Math.floor(f)),
+              a = at[k]! + (at[k + 1]! - at[k]!) * (f - k);
+            return { lo: a + LO, hi: a + HI };
+          };
+          const band = commuterBand(distance(frame));
+          if (band === 'asleep') {
+            slept = true;
+            continue;
+          }
+          frameCommuter(c, slept, band, lane, dt, {
+            len: LEN,
+            speed: 1.7 * 1.3,
+            across: 1.7,
+            due: (u) => trainDue(pathS(u), [ahead]),
+            refuge: (u) => refuges.at(pathS(u)),
+            go: (u) => refuges.go(pathS(u)),
+          });
+          slept = false;
+          if (band !== 'drawn') continue;
+          const here = besideLine(line, pathS(c.u), c.lat);
+          // Between two drawn frames he may have walked: 3 m/s along or across for each frame apart, and no more.
+          if (last)
+            worst = Math.max(worst, Math.hypot(here.x - last.x, here.z - last.z) - (frame - last.frame) * dt * 3 * 1.5);
+          last = { ...here, frame };
+        }
+        assert.ok(
+          worst <= 0.01,
+          `${label}, s ${s0}, lane ${lane}: seen to jump ${worst.toFixed(2)} m more than a walk`,
         );
       }
 });
