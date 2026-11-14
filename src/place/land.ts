@@ -37,6 +37,7 @@ import { coveJoinCoverage, coveJoinNormal, coveWeight } from './cove.ts';
 import { buildCove } from './cove-view.ts';
 import { dressCoveGround } from './cove-ground.ts';
 import { addFarGround } from './far-ground.ts';
+import { setFarHills } from './far-hills.ts';
 import { applyTerrainPass } from '../proto/terrain-pass/index.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
@@ -563,12 +564,16 @@ function buildFar(owner: OwnedView) {
     [190, 30, 190, 95, LAND2],
     [40, -90, 130, 150, LAND],
   ];
-  for (const [dx, dz, r, h, color] of hills) {
+  const cones = hills.map(([dx, dz, r, h, color]) => {
     const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), FLAT(color));
     m.position.set(X + dx, h / 2 - 4, Z + dz);
     m.rotation.y = dx;
     owner.add(m);
-  }
+    return m;
+  });
+  // Hidden while Ring Island's near ground is up (./far-hills.ts): the cones have no cuttings and nothing solid.
+  setFarHills(cones);
+  owner.cleanup(() => setFarHills([]));
   const ring = new THREE.Mesh(new THREE.TorusGeometry(120, 13, 6, 22, Math.PI * 1.45), FLAT('#2c2e3a'));
   ring.position.set(X + 10, 120, Z);
   ring.rotation.set(0, -0.3, 0.45);

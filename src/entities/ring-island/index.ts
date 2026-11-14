@@ -2,7 +2,8 @@
 // scenery: the island's ground (./ground.ts) and its shore for the sea (./shore.ts) from startup, and the folk's side
 // (./view.ts), mounted (meshes in the scene, colliders built) once the camera is within 500 m of the hinge or the island
 // halt, or while ringIslandNear.keep is set (R4a, once Q7 is laid); unmounted past 650 m. ?ring=greybox and
-// ?blockout=world draw their own island, so neither gets this. Place's buildFar cones stay as the far view.
+// ?blockout=world draw their own island, so neither gets this. Place's buildFar cones are the far view: they hide
+// while the near view is mounted (src/place/far-hills.ts), whose ground has the cuttings they lack.
 import { productionRailway } from '../../proto/flags.ts';
 import { background } from '../../async.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
@@ -14,6 +15,7 @@ import { registerRingShore } from './shore.ts';
 import { islandGround, ringIslandNear } from './state.ts';
 import type { RingIslandView } from './view.ts';
 import { setNearViewMounted } from '../ring-island-far/view.ts';
+import { showFarHills } from '../../place/far-hills.ts';
 
 /** Mount and unmount distances (m, horizontal, from the camera; design review call 13). */
 const MOUNT = { near: 500, far: 650 };
@@ -73,11 +75,14 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
   const mount = (v: RingIslandView) => {
     near = spawn({ kind: 'ring-island-near', mesh: v.root, bodies: v.bodies, update: (ctx) => v.update(ctx) });
     ringIslandNear.mounted = true;
+    // The near ground is the hills now, cuttings and all: Place's cones (no cuttings, nothing solid) stand down.
+    showFarHills(false);
   };
   const unmount = () => {
     if (near) despawn(near);
     near = null;
     ringIslandNear.mounted = false;
+    showFarHills(true);
   };
   spawn({
     kind: 'ring-island',

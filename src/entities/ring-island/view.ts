@@ -93,6 +93,7 @@ const TIMBER = '#8a6a48',
   HAT = '#ff8a1f',
   LAND = '#4a4d5c', // buildFar's cones
   LAND2 = '#3b3e4c',
+  ROCK = '#7d7a78', // the cuttings' faces
   SKY = '#8fc4e0',
   NIGHT = '#2c2e3a';
 
@@ -692,6 +693,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     const land = new THREE.Color(LAND),
       land2 = new THREE.Color(LAND2),
       sand = new THREE.Color(SAND),
+      rock = new THREE.Color(ROCK),
       c = new THREE.Color();
     for (let j = 0; j < nz; j++)
       for (let i = 0; i < nx; i++) {
@@ -699,7 +701,8 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
           x = x0 + i * cell,
           z = z0 + j * cell,
           h = g.at(i, j);
-        pos.set([x, h + 0.03, z], k * 3); // a hair over buildFar's faceted cones, which it hides
+        // A hair over buildFar's faceted cones, which hide while this view is mounted (src/place/far-hills.ts).
+        pos.set([x, h + 0.03, z], k * 3);
         // buildFar's colour of whichever cone stands highest here, sand along the shore and on the halt's fill.
         let best = -Infinity,
           which = 0;
@@ -714,6 +717,9 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
         const shore = 1 - THREE.MathUtils.smoothstep(h, 1.6, 2.6);
         const fill = g.fillOut(x, z) < 12 && h > g.cone(x, z) + 0.2 ? 1 : 0;
         c.lerp(sand, Math.max(shore, fill * 0.85));
+        // Cut rock where the railway's cuttings took the hillside away (the run-off's notch and the stack line's
+        // walls and floor): paler than the hill's skin, so a cutting reads as cut from the track and from above.
+        c.lerp(rock, THREE.MathUtils.smoothstep(g.cone(x, z) - h, 0.3, 1.5));
         col.set([c.r, c.g, c.b], k * 3);
       }
     // Cells entirely under the sea are left out of the mesh (and so out of its tiles).
