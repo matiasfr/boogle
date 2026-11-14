@@ -281,9 +281,13 @@ export type FolkEnv = {
    * open. */
   path: ((u: number, lat: number) => { x: number; y: number; z: number; yaw: number } | null) | null;
   /** The nearest train on the path's line, seen from `u`: `eta` seconds until it is alongside (0 alongside, Infinity
-   * when it stands or runs away), `gap` metres of path to it, `toward` which way along the path it is (+1 the far
-   * end) and `clear` the lateral where someone stands clear of both tracks there. Null with no train on the line. */
-  pathTrain?: (u: number) => { eta: number; gap: number; toward: 1 | -1; clear: number } | null;
+   * when it stands or runs away), `gap` metres of path to it and `toward` which way along the path it is (+1 the far
+   * end). `clear` is the lateral of the refuge at `u`, clear of every car on both tracks, and `y` the height of what
+   * holds his feet there; with no supported refuge at `u`, `clear` is null and `go` is the way along the path to the
+   * nearest one. Null with no train on the line. */
+  pathTrain?: (
+    u: number,
+  ) => { eta: number; gap: number; toward: 1 | -1; clear: number | null; y: number; go: -1 | 0 | 1 } | null;
   /** The cart they push: null while it's at rest. */
   cart: () => { mesh: THREE.Object3D; top: number; hz: number } | null;
   /** Something's on that nobody should talk over (a crate opening, a moment). */
@@ -704,15 +708,19 @@ function brain(g: Guy, dt: number) {
     case 'commuter': {
       if (!e?.path) return;
       // There and back along it; `a.x` is where along, `a.z` which way, `b.x` how far to the side. The first run out's
-      // at a run. The path is line 1's track bed, so with a train due (TRAIN_WARN) they step off to the clear side,
-      // wait there facing it and walk on when it has gone; a train standing on the path is where they turn back.
+      // at a run. The path is line 1's track bed, so with a train due (TRAIN_WARN) they step off to the refuge there,
+      // wait facing the train and walk on when it has gone; a train standing on the path is where they turn back.
+      // Where nothing clear of the tracks would hold them (`clear` null: a deck's narrow end, a drop beside the bed)
+      // they hurry on along the path to the nearest refuge first. `home` keeps the last refuge's lateral and height.
       const lane = commuterLane(g);
       const train = e.pathTrain?.(g.a.x) ?? null;
       const aside = !!train && train.eta < TRAIN_WARN;
-      const want = aside ? train.clear : lane;
-      const off = want - g.b.x;
+      const refuge = aside ? train.clear : null;
+      if (refuge !== null && train) g.home = { x: refuge, z: train.y };
+      const off = (refuge ?? lane) - g.b.x;
       g.b.x += Math.sign(off) * Math.min(Math.abs(off), (aside ? STEP_OFF : SPEED.walk) * dt);
-      if (!aside) {
+      if (aside && refuge === null) g.a.x = Math.max(0, Math.min(1, g.a.x + (train.go * STEP_OFF * dt) / PATH_LEN));
+      else if (!aside) {
         if (train && train.gap < 2 && g.a.z === train.toward) g.a.z = -g.a.z;
         const speed = commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3;
         g.a.x += (g.a.z * speed * dt) / PATH_LEN;
@@ -737,8 +745,10 @@ function brain(g: Guy, dt: number) {
       g.yaw += moved >= 2 ? dy : dy * Math.min(1, dt * 9);
       g.x = q.x;
       g.z = q.z;
-      g.fy = q.y;
-      g.mood = !walking ? 'idle' : commuteRun > 0 && !aside ? 'run' : 'walk';
+      // Feet: the path's height in the lane, the refuge's own support at the refuge, eased across the step between.
+      const span = Math.abs(g.home.x - lane);
+      g.fy = q.y + (g.home.z - q.y) * (span > 0.01 ? Math.min(1, Math.abs(g.b.x - lane) / span) : 0);
+      g.mood = !walking ? 'idle' : (commuteRun > 0 && !aside) || (aside && refuge === null) ? 'run' : 'walk';
       return;
     }
     case 'pusher':
@@ -763,8 +773,9 @@ function brain(g: Guy, dt: number) {
   }
 }
 const PATH_LEN = 190;
-/** Seconds ahead of a train that a commuter leaves the track bed, and how fast they step off it (m/s). The widest step,
- * from the far lane to the clear side, is 3.6 m. */
+/** Seconds ahead of a train that a commuter leaves the track bed, and how fast they step off it or hurry on to a
+ * refuge (m/s). The widest step, from the far lane to the side away from the up track, is 3.6 m; the longest stretch
+ * with no refuge is the path's first 7 m (test/path-refuge.test.ts holds both inside the warning). */
 const TRAIN_WARN = 4.5,
   STEP_OFF = 3;
 /** A commuter's own lane on the path: 0.45 to 1.15 m either side of its middle. */
@@ -1115,6 +1126,7 @@ export function setCommuters(on: boolean, run = 0) {
       g.a = { x: run ? -0.02 * k : (k * 0.37) % 1, z: 1 };
       if (g.a.x < 0) g.a.x = 0;
       g.b = { x: commuterLane(g), z: 0 };
+      g.home = { x: commuterLane(g), z: 0 };
     }
     g.on = on;
   });

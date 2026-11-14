@@ -4,6 +4,8 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { townPopulation, townRead } from '../../sim/town-facts.ts';
 import { createTownGreeter, type GreeterRead } from './greeter.ts';
 import { forgePoles } from './forge-finish.ts';
+import { pathRefuges } from './path-refuge.ts';
+import type { FolkEnv } from '../../place/folk.ts';
 
 type OpeningEnv = {
   machine: () => { mesh: THREE.Object3D; top: number };
@@ -135,16 +137,12 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   const platform = rail.besideLine(line, 19, -2.9),
     gather = rail.besideLine(line, 6, -4.6);
   const pathS = (u: number) => 30 + u * (layout.STUB.camp - 30);
-  /** Where a little guy stands clear of both of line 1's tracks at `s`: 2.4 m out on the side away from the up track
-   * (a car is 1.25 m wide from its middle with its racks), or on the ridge trestle, whose deck ends 1.8 m out on that
-   * side, midway between the two tracks. */
-  const clearOf = (s: number) => {
-    const out = -Math.sign(layout.UP_LAT) * 2.4;
-    const at = rail.besideLine(line, s, out);
-    if (land.H(at.x, at.z) > layout.railY(line, s) - 0.7) return out;
-    const up = layout.upLat(layout.FORMATION[layout.LINKS[0]!.id], s);
-    return up !== null && Math.abs(up) >= 3 ? up / 2 : -Math.sign(layout.UP_LAT) * 1.5;
-  };
+  // Where a commuter stands while a train passes, sampled once along the whole path (path-refuge.ts).
+  const refuges = pathRefuges(line, pathS(0), pathS(1), {
+    H: land.H,
+    up: (s) => layout.upLat(layout.FORMATION[layout.LINKS[0]!.id], s) ?? 0,
+    beside: rail.besideLine,
+  });
   folk.mountFolk(owner, {
     station: () => (env.awake() ? env.station() : null),
     machineBusy: env.busy,
@@ -168,16 +166,21 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     },
     pathTrain: (u) => {
       const s = pathS(u);
-      let best: { eta: number; gap: number; toward: 1 | -1; clear: number } | null = null;
+      let best: ReturnType<NonNullable<FolkEnv['pathTrain']>> = null;
       for (const t of env.pathTrains()) {
         // A train's ends plus 3 m; inside that it is alongside.
         const gap = Math.max(0, s - t.hi - 3, t.lo - 3 - s);
         const closing = s > t.hi ? t.vel : -t.vel;
         const eta = gap === 0 ? 0 : closing > 0.5 ? gap / closing : Infinity;
         if (!best || eta < best.eta || (eta === best.eta && gap < best.gap))
-          best = { eta, gap, toward: (t.lo + t.hi) / 2 > s ? 1 : -1, clear: 0 };
+          best = { eta, gap, toward: (t.lo + t.hi) / 2 > s ? 1 : -1, clear: null, y: 0, go: 0 };
       }
-      if (best) best.clear = clearOf(s);
+      if (best) {
+        const refuge = refuges.at(s);
+        best.clear = refuge?.lat ?? null;
+        best.y = refuge?.y ?? 0;
+        best.go = refuges.go(s);
+      }
       return best;
     },
     cart: () => null,
