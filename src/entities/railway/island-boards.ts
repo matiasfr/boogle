@@ -136,7 +136,8 @@ export function createIslandBoards(
     rings.geometry.dispose();
   });
   // The Works' gold marks (docs/plans/works-signposting-2.md): a zigzag at each seam still to strike and a dashed
-  // square at the cold kiln, in the breaker's gold, still under reduced motion and never blinking. One quad each.
+  // square at the cold kiln (then, lit, where the next footing is wanted: footing-cues.ts), in the breaker's gold,
+  // still under reduced motion and never blinking. One quad each.
   const goldTex = (draw: (g: CanvasRenderingContext2D) => void) => {
     const c = document.createElement('canvas');
     c.width = c.height = 64;
@@ -232,11 +233,10 @@ export function createIslandBoards(
     gliders.geometry.dispose();
   });
   let glider: { x: number; z: number } | null = null;
-  /** World x/z of each seam still to strike (null: struck, or the breaker not out), and the cold kiln's (null: none). */
-  const works: { seams: ({ x: number; z: number } | null)[]; kiln: { x: number; z: number } | null } = {
-    seams: [],
-    kiln: null,
-  };
+  /** World x/z of each seam still to strike (null: struck, or the breaker not out), the cold kiln's (null: none), and
+   * where the next footing is wanted once it is lit (null: none). */
+  type Spot = { x: number; z: number } | null;
+  const works: { seams: Spot[]; kiln: Spot; footing: Spot } = { seams: [], kiln: null, footing: null };
   const hide = new THREE.Matrix4().makeScale(0, 0, 0);
   for (let k = 0; k < marks.count; k++) marks.setMatrixAt(k, hide);
   for (let k = 0; k < holds.count; k++) holds.setMatrixAt(k, hide);
@@ -347,13 +347,20 @@ export function createIslandBoards(
       stepped = clock;
       at.forEach((a, k) => (along[k] = a));
     },
-    /** The Works' gold marks: world x/z of each seam still to strike (null for none), and of the cold kiln. */
-    works(seams: readonly ({ x: number; z: number } | null)[], kiln: { x: number; z: number } | null) {
+    /** The Works' gold marks: world x/z of each seam still to strike (null for none), of the cold kiln, and of where
+     * the next footing is wanted (footings-signalling A4). The kiln's dashed square moves there once the kiln is lit:
+     * the two never show together, so it is the same quad. */
+    works(seams: readonly Spot[], kiln: Spot, footing: Spot = null) {
       works.seams = seams.slice(0, SEAMS);
       works.kiln = kiln;
+      works.footing = footing;
     },
-    /** How many gold marks each shown display carries now (seams, kiln). */
-    goldMarks: () => ({ seams: works.seams.filter(Boolean).length, kiln: !!works.kiln }),
+    /** How many gold marks each shown display carries now (seams, kiln), and where the footing mark stands. */
+    goldMarks: () => ({
+      seams: works.seams.filter(Boolean).length,
+      kiln: !!works.kiln,
+      footing: works.kiln ? null : works.footing,
+    }),
     /** The glider's mark: world x/z of the woken, untaken device (null: sealed or taken). */
     glider(at: { x: number; z: number } | null) {
       glider = at;
@@ -418,7 +425,7 @@ export function createIslandBoards(
           mesh.setMatrixAt(k, m4.compose(p, q, sc.set(1, 1, 1)));
         };
         for (let i = 0; i < SEAMS; i++) gold(zigs, b * SEAMS + i, works.seams[i]);
-        gold(squares, b, works.kiln);
+        gold(squares, b, works.kiln ?? works.footing);
         gold(gliders, b, glider, gliderPx);
       });
       gliders.instanceMatrix.needsUpdate = true;

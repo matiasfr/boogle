@@ -39,6 +39,8 @@ import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts'
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { signBoard } from '../../render/sign-board.ts';
 import { Q7 } from '../../sim/railway-line2-layout.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
+import { FOOTING_COPY, pierBillLine } from './footing-cues.ts';
 
 /** The rockets' launch height over the sea, and the pieces' timings in seconds. */
 const LAUNCH = SEA + 4;
@@ -228,6 +230,26 @@ export async function createRailwayCrossing(
   const frame = { x: PIER_FRAME.x / 100, z: PIER_FRAME.z / 100 };
   const jibYaw = Math.atan2(first.x / 100 - frame.x, first.z / 100 - frame.z);
   const jibHead = new THREE.Vector3(frame.x + Math.sin(jibYaw) * 3.2, deckY + 4.6, frame.z + Math.cos(jibYaw) * 3.2);
+  // The pier's bill (footings-signalling A4): how many footings the crossing has of its twelve and how they come, a
+  // plaque hung on the jib's mast over head height, on the side away from the arm, facing the walk from the platform
+  // and the rack. From the kiln's lighting to the twelfth footing. A plate from the record door.
+  const pierBill = instantiate(
+    'railway.footings-plaque',
+    { id: 'pier-footings-bill', prefab: 'railway.footings-plaque', pos: [0, 0, 0], labels: { sign: 'pier' } },
+    { owner, texts: { pier: [FOOTING_COPY.pier] } },
+  );
+  layout.lineAt(line, 743, P);
+  pierBill.root.position.set(frame.x - P.ux * 0.24, deckY, frame.z - P.uz * 0.24);
+  pierBill.root.rotation.y = Math.atan2(-P.ux, -P.uz);
+  pierBill.root.visible = false;
+  let pierBillPainted: string | null = null;
+  function drawPierBill() {
+    const text = open() ? pierBillLine(wd) : null;
+    pierBill.root.visible = text !== null;
+    if (text === null || text === pierBillPainted) return;
+    pierBillPainted = text;
+    pierBill.relabel('sign', [FOOTING_COPY.pier, text]);
+  }
 
   // ---------------------------------------------------------------- live pieces
   type Lowering = { slot: number; from: THREE.Vector3; t: number };
@@ -287,6 +309,7 @@ export async function createRailwayCrossing(
     rockets = [];
     finaleCamera.reset();
     solidDecks(open());
+    pierBillPainted = null;
   }
   snap();
 
@@ -581,6 +604,7 @@ export async function createRailwayCrossing(
       refresh();
       solidDecks(open());
       finger.mesh.visible = started;
+      drawPierBill();
       stepLowering(dt);
       // A bent whose pair arrived without a lowering here (a correction, a late accept) still rises.
       const pairs = Math.floor(inSea() / 2);
@@ -670,6 +694,13 @@ export async function createRailwayCrossing(
         bents: rise.filter((t) => t >= RISE_S).length,
         rising: rise.filter((t) => t >= 0 && t < RISE_S).length,
         pierRack: Math.max(0, worksRow(wd).pierRack - deps.toPier()),
+        pierBill: pierBill.root.visible
+          ? {
+              text: `${FOOTING_COPY.pier}|${pierBillPainted}`,
+              at: pierBill.root.position.toArray(),
+              yaw: pierBill.root.rotation.y,
+            }
+          : null,
         show: show >= 0,
         shows,
         rockets: rockets.length,
