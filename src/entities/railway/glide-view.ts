@@ -1,5 +1,5 @@
 // The glider's Local view, ported from Place's moves-view.ts: the canopy overhead with the arms up to it, the folded roll on
-// every back once the room has the glider, the open and close sounds, your wingtip wisps (glide-wisps.ts), and the camera
+// every back once the room has the glider, the open and close sounds, your wingtip wisps (glide-wisps.ts) and wind, and the camera
 // easing out to 5.2 m while it holds you. A partner's open canopy comes from presence `railwayGlide` (Owner); the roll is derived from the shared fact, so
 // no presence key carries it. Authored shapes only; never Place's campaign, moves or tech owners.
 import * as THREE from 'three/webgpu';
@@ -8,12 +8,15 @@ import { reducedMotion } from '../../constants.ts';
 import { cam, camConstraints, me } from '../../player/player.ts';
 import { backSeam } from '../../player/haul-back.ts';
 import { frameOf } from '../../render/haul-bundle.ts';
+import { getAudio } from '../../render/audio.ts';
+import { noiseBuffer } from '../../render/noise.ts';
 import { emit } from '../../render/particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { warmDraw } from '../../render/precompile.ts';
 import { camera } from '../../render/scene.ts';
 import { onRemotePresence, onPeerRemoved, remotes, type Remote } from '../../netplay/net.ts';
 import { WISP, createGlideWisps } from './glide-wisps.ts';
+import { WIND, windGain, windHz, windLevel } from './glide-wind.ts';
 
 type RemoteView = { presence: (r: Remote, value: unknown) => void; removed: (peer: string) => void };
 let activeRemote: RemoteView | null = null;
@@ -135,7 +138,46 @@ export async function createRailwayGlideView(owner: OwnedView) {
       drag: 0,
       fade: WISP.fade,
     });
+  // ---------------------------------------------------------------- the wind while it holds you (glide-wind.ts)
+  type Wind = { src: AudioBufferSourceNode; band: BiquadFilterNode; gain: GainNode };
+  let wind: Wind | null = null,
+    windNow = 0;
+  function windAt(level: number, speed: number) {
+    windNow = level;
+    if (!wind && level > WIND.audible) {
+      const au = getAudio('ambience');
+      if (au) {
+        const { ctx, out } = au;
+        const src = ctx.createBufferSource();
+        src.buffer = noiseBuffer(ctx, WIND.seconds);
+        src.loop = true;
+        const band = ctx.createBiquadFilter();
+        band.type = 'bandpass';
+        band.Q.value = WIND.q;
+        const gain = ctx.createGain();
+        gain.gain.value = 0;
+        src.connect(band).connect(gain).connect(out);
+        src.start();
+        wind = { src, band, gain };
+      }
+    }
+    if (!wind) return;
+    const t = wind.gain.context.currentTime;
+    wind.gain.gain.setTargetAtTime(windGain(level), t, WIND.gainTau);
+    wind.band.frequency.setTargetAtTime(windHz(speed), t, WIND.hzTau);
+  }
+  /** The view is going: Place's wind had the page's lifetime, this one ends with its owner. */
+  function stopWind() {
+    if (!wind) return;
+    wind.src.stop();
+    wind.src.disconnect();
+    wind.band.disconnect();
+    wind.gain.disconnect();
+    wind = null;
+    windNow = 0;
+  }
   owner.cleanup(() => {
+    stopWind();
     if (activeRemote === remoteView) activeRemote = null;
     const i = camConstraints.indexOf(constraint);
     if (i >= 0) camConstraints.splice(i, 1);
@@ -160,7 +202,9 @@ export async function createRailwayGlideView(owner: OwnedView) {
       if (me.avatar && me.entered) dress(me.avatar, has, open, dt, now);
       // Two threads of air off the wing's tips while you're moving (glide-wisps.ts): yours only, as in Place.
       const v = me.body?.velocity;
-      if (p && v) wisps += wispStep(dt, hold && !reducedMotion, p, me.yaw, Math.hypot(v.x, v.z), wispAt);
+      const speed = v ? Math.hypot(v.x, v.z) : 0;
+      if (p) wisps += wispStep(dt, hold && !reducedMotion, p, me.yaw, speed, wispAt);
+      windAt(windLevel(hold && !!v, speed), speed);
       for (const r of remotes.values()) {
         if (!r.avatar) continue;
         if (!r.visible || !r.entered) {
@@ -184,6 +228,8 @@ export async function createRailwayGlideView(owner: OwnedView) {
       camDist: camW ? cam.dist : null,
       /** Wingtip wisps emitted since the view was built. */
       wisps,
+      /** The glide wind: its level now (0 on the ground, 1 from 10 m/s) and whether its nodes exist (audio unlocked). */
+      wind: { level: windNow, nodes: !!wind },
     }),
   };
 }

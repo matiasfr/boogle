@@ -163,7 +163,10 @@ export async function fly() {
     }
     const sink = samples.reduce((a, s) => a + s.sink, 0) / samples.length,
       speed = samples.reduce((a, s) => a + s.speed, 0) / samples.length;
-    const { camDist, canopies, rolls, wisps } = glider();
+    const { camDist, canopies, rolls, wisps, wind } = glider();
+    // The wind is at full by 10 m/s (glide-wind.ts). Its nodes exist only once a gesture has unlocked audio: logged.
+    if (wind.level < 0.95) throw new Error(`GLIDE no wind at full stick: ${JSON.stringify(wind)}`);
+    console.log(`GLIDE wind ${JSON.stringify(wind)}`);
     // A second and more at full stick: the wingtips have shed their threads of air (glide-wisps.ts).
     if (wisps < 50) throw new Error(`GLIDE no wingtip wisps while gliding at speed: ${wisps}`);
     // Jump while it's open does nothing.
@@ -210,6 +213,7 @@ export async function fly() {
     };
     console.log(`GLIDE landed ${JSON.stringify(landed)}`);
     if (landed.open) throw new Error('GLIDE canopy still open on the ground');
+    if (glider().wind.level !== 0) throw new Error('GLIDE the wind still blows on the ground');
     if (landed.swimming) throw new Error('GLIDE the first flight ended in the sea');
     page.__glideResult = { ...result, landed };
   } finally {
