@@ -1,5 +1,42 @@
 # Server-owned players, step 6
 
+## Follow-up: bound the local talk prediction
+
+2026-11-13, runtime fix **54b9553f5**. The independent step 6 review's P2 is fixed in
+`src/boogler/presentation.ts:29`: any new authoritative leg releases the hold, including a moving leg or a
+stationary leg attending somebody else. With no new leg, the hold expires at 300 ms. Both paths use the existing
+positional easing. Re-rendering an answer does not extend the prediction. The obsolete self-id argument was removed
+from the presentation helper and its caller. WORLD_NS remains v42; no copy or server rule changed.
+
+Main's talk behavior is preserved: the talker sees him resume authoritative movement while the talk box stays
+usable. An ordinary talk closes through the existing `play.ts` leave path when the distance exceeds 4.6 m; the
+launch telling-off retains its distance exemption. No new message or dialogue rule was introduced.
+
+Ported the review's exact brain/presentation reproduction first: it failed with a **4.6 m gap after two seconds**
+([red log](../../.look/step6-talk-review-red.log)). Added simultaneous talkers, launch-time talk, and walk-away/no-ack
+regressions before the fix; all four failed before it. All six presentation tests now pass, including the original
+same-frame hold and rider easing cases. The old acknowledgement test now samples the initial hold at 200 ms instead
+of requiring an indefinite hold past 300 ms. The new timeout test verifies release by frame 18 at 60 Hz and easing;
+the ported rider test now converges within 0.1 m.
+
+Checks rerun after the last source/test edit: `npm run check` **1,843 passing / one existing TODO**;
+server tests **307/307**; direct worktree `npm run test:net` **191/191**;
+`node dev/ship-check.ts origin/main HEAD` **777/777**; `npm run registry` passes.
+Prettier ran on all follow-up files. Review stamp **2bb50cd01473** (22 classified files, `--no-fetch`).
+Logs: [check](../../.look/step6-talk-check.log), [server](../../.look/step6-talk-server.log),
+[network](../../.look/step6-talk-net.log), [ship-check](../../.look/step6-talk-ship-check.log),
+[registry](../../.look/step6-talk-registry.log), [stamp](../../.look/step6-talk-stamp.txt).
+
+No captures, looks, bots or reinstall were started in this follow-up. The requested direct network suite waited
+behind the Claude runner in the shared queue. Opened its new walk still, gait sheet, Talk still and third rider
+still: the walk retains the low body/hat sway, the Talk card is readable, and the rider is above the compressed
+body. [Copied observations and source log](../../.look/step6-talk-runner/branch-solo.log). That run began at
+208c7b34a and ended at 54b9553f5, explicitly **CHANGED DURING THE RUN**; its execution passed, but these images
+do not establish the final fix's visual quality. Fresh real-time validation remains with the Claude runner.
+Earlier evidence below is historical, not re-certified for this fix. Not tested on a device. No push or ship.
+
+## Original implementation report
+
 2026-11-13. Runtime tip **693975297**, on `codex/server-players-step-6`, based on local main **27c988886** (after c4515361c). No push or ship. Implementation complete; **Checkpoint B remains open for the browser limitations below**.
 
 ## Change and boundaries
