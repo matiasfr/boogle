@@ -46,7 +46,7 @@ import { onTuneRecord } from '../../tunables/events.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
 import { background } from '../../async.ts';
 import { bootMarks } from '../../boot/timeline.ts';
-import { roomSeed } from '../../netplay/room-seed.ts';
+import { roomReplaced, roomSeed } from '../../netplay/room-seed.ts';
 import { stepWaterEpisode, waterEpisode } from './water-episode.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
@@ -204,10 +204,12 @@ function resolution() {
 }
 let lastSession = '';
 let seed = ''; // the stage a playtest jump room was seeded at (docs/plans/playtest-jump-in.md), from the room
+let replaced = ''; // the stage the room was last replaced with (docs/plans/room-fast-forward.md), from the room
 function sayWho() {
   const fields = {
     name: me.name || '',
     seed,
+    replaced,
     railway: productionRailway,
     room: getRoomId(),
     card,
@@ -233,8 +235,9 @@ function sayWho() {
 sayWho();
 console.info(`[playdata] session ${session}`);
 background(
-  roomSeed().then((s) => {
+  Promise.all([roomSeed(), roomReplaced()]).then(([s, r]) => {
     seed = s?.stage ?? '';
+    replaced = r?.stage ?? '';
     sayWho();
   }),
   'playdata seed',

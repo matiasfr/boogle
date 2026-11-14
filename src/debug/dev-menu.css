@@ -248,6 +248,32 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
 }
+/* Room → Replace room with stage (src/debug/dev/room.ts): one field a row, inside the dock's width. */
+[data-dev-replace] {
+  min-width: 0;
+}
+[data-dev-replace] ol {
+  padding-left: 18px;
+}
+[data-dev-replace] label {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0;
+  min-width: 0;
+}
+[data-dev-replace] label[hidden] {
+  display: none;
+}
+[data-dev-replace] select,
+[data-dev-replace] input:not([type='checkbox']) {
+  width: 100%;
+  min-width: 0;
+}
+[data-dev-replace] label:has(input[type='checkbox']) {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
 .dev-drag {
   min-height: 130px;
   border: 1px dashed #a8c5c9;

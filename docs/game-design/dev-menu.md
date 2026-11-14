@@ -12,7 +12,7 @@ The separate-page island picker (Starting area, Lower home island, Current home 
 2. **Free camera** is a global Local session toggle, independent of dock/tool visibility. Scene drag looks; WASD moves, Space/Shift moves up/down, held touch buttons move, and pad sticks move/look with LB/RB down/up and B Return. Speed is adjustable. It suppresses avatar movement/actions before gameplay input runs, clears held input on blur, and restores the saved camera pose/FOV on Return/Off/leaving. Friends see the ordinary avatar at its physical location; the body may still be affected by normal physics. Camera commands never teleport it. Named classic-island viewpoints (refused in the live game) and six saved, validated route-specific bookmarks are available; live camera state is never saved. There is no player teleport.
 3. **Inspect** samples entity costs/counts, player/place state, water runtime and synchronous water body/query validity/age only while shown. Optional outlines show at most 64 nearby static box/sphere colliders and decks within 30 m. Heightfields and moving platforms are not outlined. No GPU readback is enabled by inspection. Closing removes sampling and geometry.
 4. **Performance and startup** retains the developer-only Load details and Copy last load view, backed by the same boot marks even without profiling. It also reads the existing CPU window, copies data and runs the existing five-second hardware measurement when `prof=1` was enabled at load. Reload buttons enable profiling/startup or disable capture. Unsupported GPU values and actual presentation time stay unavailable; reload does not establish a cold Metal cache.
-5. **Room health** reads connection, transport, local lead status, observed builds, queue/drop/hash status and, in the live game, the railway's server authority. Unexposed rejection and remote-lead identifiers are labelled unavailable. It sends no diagnostic messages.
+5. **Room health** reads connection, transport, local lead status, observed builds, queue/drop/hash status and, in the live game, the railway's server authority. Unexposed rejection and remote-lead identifiers are labelled unavailable. It sends no diagnostic messages. In the live game the same tab holds [Replace room with stage](#replace-room-with-stage).
 6. **Copy test report** includes build, world namespace, effective flags, player/camera pose, loaded tool settings, inspection, room health and the last 40 command outcomes. Clipboard failure leaves selectable text and a JSON download. PNG download captures the existing game canvas, excluding menu DOM. It is not exact world replay. Existing `record=1` input trace controls remain optional and are not a complete world snapshot.
 
 Place's Go to, Test scenarios, disposable TEST runs and setup links were deleted with Place (11 November,
@@ -22,14 +22,57 @@ Place's Go to, Test scenarios, disposable TEST runs and setup links were deleted
 
 **Agent API:** `boogle.dev.tools()`, `open(tool?)`, `run(tool, command, args?)`, `snapshot()` and `close()` use the same bounded tool descriptors and result path as the UI. Tool ids are `water`, `camera`, `inspect`, `performance`, `room`, `report`, `tunables`, `graphics`, `looks`. No arbitrary scripting or property setter is provided.
 
+## Replace room with stage
+
+The owner's way to a later stage is to replace the room he is in, on the server, for everyone in it
+([plan](../plans/room-fast-forward.md); owner call "One live game; fast-forward the room instead of jump-in rooms").
+Only the holder of the server's dev key can do it, for any room, the shared island included where the server allows
+it. Serves **How we work: playtest constantly** and **Clear authority**.
+
+- **The control** is in Dev → Room, in the live game: one line ("Replaces this room's world for everyone in it. What
+  players carry and their finds here are lost."), a closed disclosure "What a replacement loses" holding the four
+  categories (the world; what is carried; what is personal to the room in each browser, wardrobe and finds included;
+  what an operator restore does), so the fields and the button show without scrolling, a list of
+  the stages (the Jump in catalog's seed rows, in route order), a field to type the room's name, a Key field and the
+  button "Replace this room with <label>". With others in the room it says "N others are here now" with a checkbox
+  "Replace it under them"; alone, the typed name is the confirmation. On the shared island it adds "This is the shared
+  island. Everyone who plays here gets this world." A "New empty room" button opens a fresh private room and replaces
+  nothing. The same command is `boogle.dev.run('room', 'replace', { stage, confirm, override })`, and operators have
+  `npm run server -- replace` ([server/README.md](../../server/README.md#operator-tools)). There is no action, key,
+  pad slot, touch button, guide row or URL flag for it.
+- **The key** is the server's `ADVANCE_KEY`. The Key field keeps it in that tab's `sessionStorage` only, so the reload
+  a replacement causes does not ask again; closing the tab forgets it. It is sent only in the `Authorization` header
+  of the one request. It is never in a URL, an invite, a command's arguments or result, the dock snapshot, a report,
+  playdata, a save or a log, and the API cannot be given one.
+- **Refusals** are the server's, shown in plain words under the button: wrong key; wrong room name; the room is
+  already being replaced; players are here and the box is not ticked; the shared island is not enabled; the stage is
+  unknown, unavailable or failed the server's check; the room was already replaced with a later stage (going back is
+  an operator restore of the pinned backup); too many attempts; no key set on the server. A refusal changes nothing
+  and tells nobody.
+- **The countdown.** Everyone in the room, and anyone who joins during it, sees one notice in the notification lane,
+  counting down each second: "This room will be replaced with <label> in 10 seconds. What you carry and your finds
+  here will be lost." The unit agrees ("in 1 second") and zero reads "now". The room then closes. If the server cancels, the notice leaves by itself 8 s after zero.
+- **After.** Each browser that was in the room reconnects, finds the new world and reloads by itself, so nothing held
+  or ridden carries over. That load forgets what was personal to the room (the existing room reset), skips the fall
+  and the card, lands the player at the stage's landing as a jump room does (the usual spawn for a stage with none),
+  and shows one line: "The shared island was replaced with <label> for testing. The world changed for everyone, and
+  what you carried and found here is gone." (a private room: "This room was replaced…"). A browser that was never in
+  the room gets the normal arrival and no line.
+- **Playtests.** A session in a replaced room records the stage and is summarised as "Started: a room replaced with
+  "<label>"".
+
+**Sync kinds:** the world change is the railway's Server kind, through the room's save; the countdown is a one-off
+event from the server (`replacing`, which no client can send); the control, the notice, the landing and the line are
+Local. No op, no lockstep state, no `WORLD_NS` change.
+
+Files: `src/debug/dev/room.ts`, `src/debug/dev/room-replace.ts`, `src/features/room-replace.ts`,
+`src/features/room-reset.ts`, `src/netplay/replace-countdown.ts`, `src/netplay/room-seed.ts`; proof:
+`npm run scenario -- room-replace`.
+
 ## Jump in
 
-**Server replacement is available to operators** through `npm run server -- replace` or the authenticated endpoint
-in [server/README.md](../../server/README.md#replace-room-with-stage). It replaces the same room for everyone,
-including the shared island when enabled, after typed-name confirmation and an occupied-room override/countdown.
-A pinned backup restores the previous world; room birth changes reset personal state under the existing reset rules.
-The countdown event and exact notice-text hooks are built; visible notifications, stage landing and the Dev dock
-control remain client work. Jump in rows stay for now. Replaced jump rooms leave the automatic expiry pool.
+Jump in rows stay until the owner has replaced a room himself ([plan](../plans/room-fast-forward.md), step 7).
+Replaced jump rooms leave the automatic expiry pool.
 
 A playtest jump-in opens a fresh private room on the real server, seeded at a stage of the route, so a beat can be played without replaying everything before it ([plan](../plans/playtest-jump-in.md)). The shared `boogle` world is never touched: the server refuses any room that isn't a new jump room, has a save or is loaded. Links work for anyone and land in a new room each time, for example https://boogle.club/?from=hook-taken (right after the hook, before Q3), https://boogle.club/?from=hook-earned (the quarry gate) and https://boogle.club/?from=start (from the beginning, a fresh private room with no fall). Pause → More → **Jump in** lists the same rows; it shows with Dev on, and inside any jump room, where its header reads "This room started at …" with a way back to the shared island.
 

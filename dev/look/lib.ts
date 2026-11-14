@@ -87,6 +87,8 @@ export async function startStack({
     MAX_HOSTED_ROOMS: '1000',
     PLAY_RATE_PER_MIN: '1000000', // a warped page's five-second batches arrive many times a second
     TUNE_CONTROLLER_KEY: process.env.TUNE_CONTROLLER_KEY ?? '',
+    // Replace room with stage (server/README.md): off unless the run sets a key (dev/scenarios/room-replace.ts makes one).
+    ADVANCE_KEY: process.env.ADVANCE_KEY ?? '',
   };
   const child = warp ? await startWarpServer(env) : null;
   const server = child ? null : createService(loadConfig(env, { log: () => {} }));

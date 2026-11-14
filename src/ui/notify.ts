@@ -7,6 +7,8 @@
 //     ttl     ms on screen (default 2500); 0 stays until dismiss(), behind anything newer
 //     key     de-duplicates (default: the text): the same key again refreshes the one queued or showing
 //     action  { label, run }: a button on the notice (a sticker: pressable)
+//     quiet   no sound (a countdown refreshing its own notice each second)
+//     urgent  takes the lane at once and shows even where the HUD is hidden (./notify-order.ts)
 //
 // One notice at a time; at most MAX_QUEUED wait (the oldest drops). A 'deny' answers a press, so it goes first and cuts
 // the one showing short (that one comes back after it if it had time left). Sticky notices (ttl 0) wait under the queue.
@@ -14,6 +16,7 @@ import './ui-kit.css';
 import './notify.css';
 import { uiSound, replay, type UiSound } from './ui-sound.ts';
 import { padGlyph } from '../player/glyphs.ts';
+import { placement } from './notify-order.ts';
 
 export type NotifyKind = 'info' | 'deny' | 'news';
 export type NotifyOpts = {
@@ -21,12 +24,17 @@ export type NotifyOpts = {
   ttl?: number;
   key?: string;
   action?: { label: string; pad?: string; run: () => void };
+  quiet?: boolean; // no sound: a refresh of a notice already heard (a countdown's next second)
+  /** A warning that cannot wait: it takes the lane from whatever shows, and stays visible where the HUD is hidden (the
+   * lobby and the arrival fall, src/fall/fall.css). The room-replacement countdown (src/features/room-replace.ts). */
+  urgent?: boolean;
 };
 type Notice = Required<Pick<NotifyOpts, 'kind' | 'ttl' | 'key'>> &
   Pick<NotifyOpts, 'action'> & {
     text: string;
     left?: number; // ms still to show, when a deny cut it short
     seen?: boolean; // shown once already: coming back (after a deny, or a sticky under a note) stays quiet
+    urgent?: boolean;
   };
 
 const TTL = 2500;
@@ -63,6 +71,7 @@ function show(n: Notice | null): void {
   const el = lane ?? build();
   clearTimeout(timer);
   showing = n;
+  el.toggleAttribute('data-urgent', !!n?.urgent);
   if (!n) {
     el.classList.remove('shown');
     return;
@@ -102,6 +111,8 @@ export function notify(text: string, opts: NotifyOpts = {}): () => void {
     ttl: opts.ttl ?? TTL,
     key: opts.key ?? text,
     action: opts.action,
+    seen: opts.quiet,
+    urgent: opts.urgent,
   };
   const dismiss = () => {
     for (const list of [queue, sticky]) {
@@ -115,26 +126,32 @@ export function notify(text: string, opts: NotifyOpts = {}): () => void {
     const i = list.findIndex((o) => o.key === n.key);
     if (i >= 0) list.splice(i, 1);
   }
-  if (showing?.key === n.key) {
+  const place = placement(n, showing);
+  // Cutting in: the one it cuts short resumes after it, if it had time left.
+  const cut = () => {
+    const left = showing?.ttl ? until - performance.now() : 0;
+    if (showing?.ttl && left > 600) queue.unshift(Object.assign(showing, { left }));
+  };
+  if (place === 'refresh') {
     if (!n.ttl) sticky.push(n);
     show(n);
     return dismiss;
   }
   if (!n.ttl) {
     sticky.push(n);
-    if (!showing || !showing.ttl) show(n);
+    if (place === 'cut-in') cut();
+    if (place !== 'wait') show(n);
     return dismiss;
   }
-  if (n.kind === 'deny') {
-    // It answers a press: now, ahead of anything waiting; the one it cuts short resumes after it.
-    const left = showing?.ttl ? until - performance.now() : 0;
-    if (showing?.ttl && left > 600) queue.unshift(Object.assign(showing, { left }));
+  if (place === 'cut-in' || n.kind === 'deny') {
+    // It answers a press (a deny) or cannot wait: now, ahead of anything waiting.
+    cut();
     queue.unshift(n);
     next();
     return dismiss;
   }
   queue.push(n);
   if (queue.length > MAX_QUEUED) queue.shift();
-  if (!showing || !showing.ttl) next();
+  if (place === 'show') next();
   return dismiss;
 }

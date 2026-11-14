@@ -16,6 +16,7 @@ import { getRoomId, remotes } from '../../netplay/net.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { createPoseReadiness } from './pose-readiness.ts';
 import { roomSeed } from '../../netplay/room-seed.ts';
+import { replacedStage } from '../../boot/world-reset.ts';
 import { jumpOf, type JumpLand } from '../../world/railway-jump.ts';
 
 type RecoveryPoint = { x: number; y: number; z: number };
@@ -86,8 +87,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   // skips the first visit's fall (src/features/fall.ts); a page that showed one anyway (`intro=1`) keeps where it fell.
   let landing: JumpLand | null | undefined;
   let fell = fallArrival.active;
+  // A room just replaced by a stage lands its players the same way (docs/plans/room-fast-forward.md): the reset took
+  // their saved pose. A stage with no landing uses the usual spawn.
   void roomSeed().then((seed) => {
-    landing = seed ? (jumpOf(seed.stage)?.land ?? null) : null;
+    landing = jumpOf(seed?.stage ?? replacedStage)?.land ?? null;
   });
   // The surface must be where the catalog says (a sphere swept down meets it within 0.5 m), else the usual spawn. A
   // friend already standing there moves you to a spot on a 1.4 m ring around it, so nobody lands on someone's head.

@@ -7,6 +7,7 @@
 //
 //   isFirstVisit()          no identity saved on this device, or the world was reset since: show the card
 //   showCard()              the card shows this load: a first visit
+//   fallsIn()               the fall plays this load: a first visit, unless the room was just replaced by a stage
 //   lastVisit               { at, room } of the previous visit (ms since 1970), or null; read at load
 //   roomMemory(room)        what the welcome items remembered about `room` at the last visit, or null
 //   addWelcomeItem(item)    one more thing a returning player hears about (persistent progress, mail, ... later)
@@ -17,8 +18,9 @@
 //   leaveIsland()           the pause view's Leave: out to the menu page (/menu/), where the game isn't running
 //   startFresh()            the pause view's Start fresh: forget this person on this device and fall in as someone new
 
-import { worldWasReset } from '../boot/world-reset.ts';
+import { replacedStage, worldWasReset } from '../boot/world-reset.ts';
 import { PROTO } from '../proto/flags.ts';
+import { arrivalPlan } from './world-reset.ts';
 
 const NAME = 'boogle.name'; // also written by the lobby (src/player/hud.ts) and the pause view's You editor
 const LAST = 'boogle.lastVisit';
@@ -62,9 +64,14 @@ try {
   // no storage: every visit is a first visit
 }
 // The first load after a world reset is a new game too: the fall and the card, pre-filled with the saved name and
-// colour (docs/decisions.md, 2026-11-09). A reload after that is a returning visit again.
-const first = !saved || worldWasReset;
+// colour (docs/decisions.md, 2026-11-09). A reload after that is a returning visit again. A room replaced by a stage
+// is the exception (arrivalPlan, docs/plans/room-fast-forward.md): its players land at the stage with no fall, and no
+// card either unless they had not picked a name yet.
+const plan = arrivalPlan({ saved: !!saved, worldWasReset, replacedStage });
+const first = plan.card;
 export const isFirstVisit = () => first;
+/** The first visit's fall plays this load (src/features/fall.ts): a first visit, except into a room just replaced. */
+export const fallsIn = () => plan.fall;
 export const showCard = () => first || PROTO === 'fall'; // ?proto=fall replays the first visit
 const lastRead = readJson(LAST);
 export const lastVisit: LastVisit | null = okVisit(lastRead) ? lastRead : null;

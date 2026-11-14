@@ -154,9 +154,9 @@ sitting and leaves `node dev/ship-check.ts` green. 1 to 3 are high-risk server w
   their mirrored hashes equal the seed's".
 - [x] **4. CLI** (tooling). `dev/server-admin.ts`: `replace` (prints the four categories and the count, asks for the
   room name, prints the pin and the restore command), `release`, pins in `rooms`; `server/README.md`.
-- [ ] **5. Notice, line, landing, playdata** (client view). The Client paragraph's files and `dev/playtest/summary.ts`.
+- [x] **5. Notice, line, landing, playdata** (client view). The Client paragraph's files and `dev/playtest/summary.ts`.
   Proof: `/look` stills of the countdown and of the line after a local replacement; a no-`land` row at the spawn.
-- [ ] **6. Dev → Room control** (client view). `src/debug/dev/room.ts`, `docs/game-design/dev-menu.md` (adds "Replace
+- [x] **6. Dev → Room control** (client view). `src/debug/dev/room.ts`, `docs/game-design/dev-menu.md` (adds "Replace
   room with stage"; "Jump in" stays). Proof: a `/look` still; the API with no key is refused and changes nothing.
 - [ ] **Checkpoint: replacement and restore together** (`npm run check:full`, `npm run checkpoints`, and one two-peer
   run kept as evidence with the pre-change, seed and restored hashes). A played room at a higher tick is replaced by a
