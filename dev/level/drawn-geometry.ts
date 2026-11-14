@@ -1,3 +1,4 @@
+import { gorgeSurfaces } from '../../src/entities/route-greybox/gorge-surfaces.ts';
 // Headless adapters stop existing builders at the geometry boundary, before physics/lifecycle.
 // This deliberately shares the level tool's sourceFunction seam rather than maintaining box recipes.
 import fs from 'node:fs';
@@ -142,6 +143,7 @@ export async function collectDrawnGeometry() {
   scene.children[0]!.children.forEach((o, i) =>
     addObject(o, new THREE.Matrix4(), `forge/${i < 2 ? 'door-step' : 'guard'}-${i}`),
   );
+  const gorgeTrimmed = gorgeSurfaces(readLevel('gorge'));
   const prefab = (p: Placement, frame = new THREE.Matrix4()) => {
     const def = compiled.prefabs[p.prefab]!;
     if (!('builder' in def.visual)) return;
@@ -150,7 +152,7 @@ export async function collectDrawnGeometry() {
     if (visual.builder === 'greybox.box') {
       for (const [i, t] of (visual.instances ?? [{ pos: [0, 0, 0] as const }]).entries())
         addGeometry(
-          new THREE.BoxGeometry(1, 1, 1),
+          gorgeTrimmed.get(p.id) ?? new THREE.BoxGeometry(1, 1, 1),
           matrix.clone().multiply(transform(t)),
           `${p.id}/instance-${i}`,
           {

@@ -1,3 +1,6 @@
+import * as THREE from 'three/webgpu';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { gorgeSurfaces } from './gorge-surfaces.ts';
 // Static massing uses compiled placements. GreyBox/span remain only for the dynamic leg's descriptor API.
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
@@ -68,6 +71,44 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
     index += slots(p);
     instance.setEnabled(true);
     solids += instance.bodies.length;
+  }
+  const trimmed = gorgeSurfaces(placements);
+  if (trimmed.size) {
+    // Preserve the instance records and physics exactly; render their clipped exterior
+    // as one vertex-coloured draw under the same owner instead of duplicate faces.
+    const pieces: THREE.BufferGeometry[] = [];
+    let slot = 0;
+    for (const p of placements) {
+      for (let part = 0; part < slots(p); part++) {
+        const source = trimmed.get(p.id) ?? new THREE.BoxGeometry(1, 1, 1);
+        const geometry = source.index ? source.toNonIndexed() : source.clone();
+        const matrix = new THREE.Matrix4();
+        batch.mesh.getMatrixAt(slot, matrix);
+        geometry.applyMatrix4(matrix);
+        const colour = new THREE.Color();
+        batch.mesh.getColorAt(slot++, colour);
+        const colours = new Float32Array(geometry.getAttribute('position').count * 3);
+        for (let i = 0; i < colours.length; i += 3) colours.set(colour.toArray(), i);
+        geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
+        geometry.deleteAttribute('uv');
+        pieces.push(geometry);
+        if (!trimmed.has(p.id)) source.dispose();
+      }
+    }
+    const geometry = mergeGeometries(pieces);
+    if (!geometry) throw new Error('Gorge clipped surfaces have incompatible attributes');
+    const mat = (batch.mesh.material as THREE.MeshStandardNodeMaterial).clone();
+    mat.vertexColors = true;
+    const mesh = new THREE.Mesh(geometry, mat);
+    mesh.name = 'gorge:trimmed-surfaces';
+    mesh.receiveShadow = batch.mesh.receiveShadow;
+    mesh.castShadow = batch.mesh.castShadow;
+    owner.add(mesh);
+    owner.cleanup(() => mat.dispose());
+    batch.mesh.visible = false;
+    geometry.dispose();
+    for (const piece of pieces) piece.dispose();
+    for (const source of trimmed.values()) source.dispose();
   }
   batch.mesh.computeBoundingBox();
   batch.mesh.computeBoundingSphere();
