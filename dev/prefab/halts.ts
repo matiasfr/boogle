@@ -14,7 +14,7 @@ export function haltKitContent() {
   const down = [...HALTS, { name: pier.name, line: pier.line, stop: pier.stop, ...HALT_PIER }];
   const sources = [
     ...down.map((h, row) => ({ ...h, row, up: false })),
-    ...UP_HALTS.map((h, row) => ({ ...h, stop: HALTS[h.pair]!.stop, island: false, row, up: true })),
+    ...UP_HALTS.map((h, row) => ({ ...h, stop: down[h.pair]!.stop, island: false, row, up: true })),
   ];
   for (const h of sources) {
     const id = RAIL_HALTS.findIndex((r) => r.line === h.line && r.stop === h.stop);

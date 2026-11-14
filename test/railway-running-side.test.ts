@@ -98,3 +98,17 @@ test('ring tracks keep their physical locations and assign the original track to
   assert.deepEqual(RING_FORMATION.tracks, [0, -400]);
   assert.deepEqual([RING_FORMATION.left, RING_FORMATION.right, RING_FORMATION.mid], [-580, 180, -200]);
 });
+
+test('the Pier keeps homeward service on its boarding side when Q7 opens the Railhead', () => {
+  const east = { x: 140549, z: -35859, y: 2502, reach: 1260 },
+    west = { x: 139565, z: -35815, y: 2502, reach: 1260 };
+  assert.deepEqual(haltPlatform(idOf('Pier'), -1, 0, true), east, 'the terminal still boards east before Q7');
+  assert.equal(ask(at('q6-done'), 'Pier', -1, east), true);
+  assert.deepEqual(haltPlatform(idOf('Pier'), -1), west, 'after Q7 the homeward track boards west');
+  const s = at('deck-laid');
+  assert.equal(ask(s, 'Pier', -1, west), true);
+  assert.equal(ask(s, 'Pier', 1, east), false, 'outbound trains still pass the Pier');
+  // The centres' reach circles overlap; their outer edges distinguish which platform the server accepts.
+  assert.equal(valid(s, 'Pier', -1, { ...west, x: west.x - 1000 }), true);
+  assert.equal(valid(s, 'Pier', -1, { ...east, x: east.x + 1000 }), false);
+});

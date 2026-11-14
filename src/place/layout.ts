@@ -497,6 +497,10 @@ export type UpHalt = {
   crossS: number;
   crossTo?: number;
   endRamp: boolean;
+  /** A deck on piles, with only a start ramp to rail height; never a ramp to the seabed. */
+  piles?: true;
+  /** Completed Q jobs needed before this platform and its crossing stand. */
+  laid?: number;
 };
 export const UP_HALTS: UpHalt[] = [
   {
@@ -519,6 +523,19 @@ export const UP_HALTS: UpHalt[] = [
     pair: 4,
     crossS: EAST.headStop + 14.5,
     endRamp: true,
+  },
+  {
+    name: 'Pier, up',
+    line: 1,
+    s0: 719,
+    s1: 741,
+    lat: -6.95,
+    pair: 5,
+    crossS: 711.8,
+    crossTo: -8.2,
+    endRamp: false,
+    piles: true,
+    laid: 7,
   },
 ];
 /** A plank crossing's span across the formation, lateral metres (today's side, up side), and its width along the line.

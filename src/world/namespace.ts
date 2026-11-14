@@ -93,7 +93,8 @@
 // v45 (2026-11-14, shared reset, not yet shipped): rotunda 1a moves the table, stall and seam reach points,
 // the table landing and the shunt's 140-tick rule. No shape change or migration.
 // Running-side step 3 adds right-hand platform acceptance and directional ring-track order; views follow in step 4.
-// Running-side review adds Train.origin (accepted departure stop, replicated and saved); no second reset.
+// Running-side review adds Train.origin (accepted departure stop, replicated and saved), and step 5 adds
+// the Pier west platform catalog entry for homeward service after Q7; no second reset or migration.
 export const WORLD_NS = 'v45';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps

@@ -234,15 +234,15 @@ test("line 2 keeps its halt order and pinned platforms after Home's move", () =>
     const v = HALT_PINS[k + 2]!;
     assert.deepEqual(h.platforms[0], { x: v.x, z: v.z, y: v.y, reach: v.reach }, `${h.name}: pinned original platform`);
   });
-  // The Pier's one platform, both ways: 2.9 m east of line 2's path at s 730 m (x greater: east), its lever's reach.
+  // Before Q7 both ways use the east terminal; after it only the west platform serves the homeward train.
   const [px, pz] = [line2.path[73 * 2]!, line2.path[73 * 2 + 1]!];
   assert.deepEqual([px, pz], [140259, -35846]);
-  for (const p of halts[3]!.platforms) {
-    assert.equal(p, PIER_EAST);
-    assert.ok(Math.abs(Math.sqrt((p.x - px) ** 2 + (p.z - pz) ** 2) - 290) <= 2, 'about 2.9 m off the path');
-    assert.ok(p.x > px, 'east');
-    assert.equal(p.reach, 1260);
-  }
+  const [east, west] = halts[3]!.platforms;
+  assert.equal(east, PIER_EAST);
+  assert.ok(Math.abs(Math.sqrt((east.x - px) ** 2 + (east.z - pz) ** 2) - 290) <= 2, 'east: 2.9 m off the path');
+  assert.ok(Math.abs(Math.sqrt((west.x - px) ** 2 + (west.z - pz) ** 2) - 695) <= 2, 'west: 6.95 m off the path');
+  assert.ok(east.x > px && west.x < px, 'opposite boarding sides');
+  assert.equal(west.reach, 1260);
   assert.equal(halts[3]!.only, -1);
   // The path runs on: line 2's, then RING_PATH, then the greybox route's LINE2_ON, its index still s / 1000.
   assert.equal(line2.path.length, V25_PATHS[1]!.length + RING_PATH.length + LINE2_ON.length);

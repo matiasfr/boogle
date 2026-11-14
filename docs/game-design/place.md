@@ -821,16 +821,21 @@ of the middle, and those platforms are 25 and 40 m long (Ring Island's home leve
 3.1 m clear of the steel yard's reach; the joint's west lever from u 253.5 to u 238, beside its plank crossing).
 Camp's, the Pier's and the Home island's levers are where they were, and the stack heads keep one platform with a
 lever each way. The signal on a first platform drops for its lever's way. The plaque's arrow and the prompt follow
-the way the lever calls now. **Known, for step 5:** once Q7 is laid the Pier is a middle halt with one platform on the
-east side, and its homeward train stands on the far track, 4 m beyond the near one; its lever still calls it and the
-server still takes the ask, but you cross a track to board. **Departure origin (14 November, review fix):** the Server train row now keeps the far-end departure
+the way the lever calls now. **The Pier after Q7 (14 November, step 5):** its homeward-only service boards a new west
+platform, s 719–741 at lateral -6.95, on piles. The platform and its plank crossing appear with Q7; before then the
+east terminal platform still serves the train home. After Q7 the east lever chains and its signal stays up; the west
+lever offers the existing **Request stop: to Village**. Its start ramp meets a plank crossing at s 711.8, 0.8 m clear
+of the full stopped train, with no ramp to the seabed or off the far end. Level-check checks this geometry, its Q7
+gate and the maximum jump/glide from its roof against the railhead gap.
+**Departure origin (14 November, review fix):** the Server train row now keeps the far-end departure
 coordinate in `origin`, replicated and saved. It survives a growing line, a moving stop and replans until the next
 halt. Train decks and shared rideable bodies read it directly; no tab remembers a different departure side, and
-the Railhead merge used by those bodies no longer slides on a tab-local clock. Tests: `test/railway-r4a-views.test.ts` (every stage's lateral, no sideways jump),
+the Railhead merge used by those bodies no longer slides on a tab-local clock. The complete old departure path stays
+until every car clears it, rather than easing only the reference point when the line grows. Tests: `test/railway-r4a-views.test.ts` (every stage's lateral, no sideways jump),
 `test/halt-lever-place.test.ts` (ends, the server's reach, 3 m from every worked site),
 `test/prefab-halts.test.ts` (every lever's ask is taken at eight stages); look:
-`dev/look/evals/running-side.ts`. Local view over step 3's catalog; no op, state or server change in this step. Not
-tested on a device.
+`dev/look/evals/running-side.ts`. The review fixes add the accepted origin field and the Pier west catalog entry
+to the shared v45 reset; no new op. Not tested on a device.
 
 The two Server-owned lines run at
 20 m/s: camp–village, and village–quarry–Far Head. Owner platform carry keeps a rider

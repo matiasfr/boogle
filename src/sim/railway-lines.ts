@@ -132,6 +132,8 @@ const FAR_HEAD_UP: RailPlatform = { x: 135850, z: -17195, y: 2502, reach: 1260 }
  * the pier rack stands on it. v26's west platform mirrored across the track at s 730, 2.9 m east of the path point
  * (140259, -35846). */
 export const PIER_EAST: RailPlatform = { x: 140549, z: -35859, y: 2502, reach: 1260 };
+/** The piled west platform after Q7: s 719-741 m, lateral -6.95, beside the homeward track. */
+const PIER_WEST: RailPlatform = { x: 139565, z: -35815, y: 2502, reach: 1260 };
 
 // ---------------------------------------------------------------- the greybox route's rows (greybox-route.md, step 3)
 // From ./railway-route.ts's catalog (RAIL_LEGS, derived from the generated WORLD_LINES), appended to the catalog below:
@@ -428,7 +430,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         name: 'Pier',
         s: PIER_STOP_CM,
         opens: 5,
-        platforms: both(PIER_EAST),
+        platforms: [PIER_EAST, PIER_WEST],
         end: railEnd('stub', 55600, 1),
         only: -1,
       },

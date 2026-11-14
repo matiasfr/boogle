@@ -245,6 +245,12 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
     bodies.length = plaqueText.length = 0;
     halt.restore();
     const info = halt.inspect();
+    const pier = info.halts.find((h) => h.name === 'Pier')!,
+      west = info.upPlatforms.find((h) => h.pair === 5)!;
+    const pastPier = !['trains-on', 'q6-done'].includes(name);
+    assert.equal(west.up, pastPier, `${name}: no west platform or crossing before Q7`);
+    assert.equal(pier.lever[0]!.chained, pastPier, `${name}: east lever chains when service boards west`);
+    assert.equal(pier.lever[1]!.on, pastPier, `${name}: only the west lever asks for the homeward train after Q7`);
     const knobs = [...info.halts.flatMap((h) => h.lever), ...info.ringLevers];
     const targets = knobs.map((p) => {
       me.body = { position: new THREE.Vector3(p.x, p.y, p.z) };
@@ -300,7 +306,7 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   const requests = 'test/fixtures/prefab-halt-requests.json';
   if (process.env.GOLDEN === '1') fs.writeFileSync(requests, JSON.stringify(calls, null, 2) + '\n');
   assert.deepEqual(calls, JSON.parse(fs.readFileSync(requests, 'utf8')));
-  assert.equal(levers.length, 19);
+  assert.equal(levers.length, 20);
   owner.dispose();
   assert.equal(active.size, 0);
 });

@@ -102,7 +102,7 @@ test("Camp's and the Pier's levers stand within 1.5 m of the platform's -s end a
     // The boarding half: toward the rails from the centre line, 0.8 m in from the edge.
     assert.ok(Math.abs(hw - across - 0.8) < 1e-9, `${name}: ${hw - across} m from the boarding edge`);
     const id = RAIL_HALTS.findIndex((r) => r.name === name);
-    const plat = haltPlatform(id, -1);
+    const plat = haltPlatform(id, -1, 0, true);
     // Anywhere the prompt is offered (LEVER_REACH of any knob) is inside the server's flat reach.
     for (const k of knobs(lever.pos[0], lever.pos[2], Math.sin(yaw), Math.cos(yaw))) {
       const d = Math.hypot(k.x - plat.x / 100, k.z - plat.z / 100);
@@ -112,7 +112,7 @@ test("Camp's and the Pier's levers stand within 1.5 m of the platform's -s end a
 });
 
 test("every halt's generated lever keeps 3 m between its knob's reach and every footing, rack and frame's reach", () => {
-  assert.equal(levers.length, 8);
+  assert.equal(levers.length, 9);
   assert.ok(sites.some((s) => s.name === 'PIER_FRAME') && sites.some((s) => s.name === 'PIER_RACK'));
   let least = Infinity,
     tight = '';
@@ -137,7 +137,7 @@ test("the second platforms' levers stand within 1.5 m of the -s end, inside the 
     const { c, yaw, half } = haltFrame(row, true);
     const along = (lever.pos[0] - c.x) * Math.sin(yaw) + (lever.pos[2] - c.z) * Math.cos(yaw);
     assert.ok(along < 0 && along + half <= 1.5 && along + half >= 1, `row ${row}: ${along + half} m from its -s end`);
-    const name = HALTS[u.pair]!.name,
+    const name = u.pair === HALTS.length ? 'Pier' : HALTS[u.pair]!.name,
       plat = haltPlatform(
         RAIL_HALTS.findIndex((r) => r.name === name),
         -1,

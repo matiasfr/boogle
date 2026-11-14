@@ -15,7 +15,7 @@ export function haltRamps(id: string, params: JsonObject): Placement[] {
     lineAt(line, s, p);
     return { x: p.x - p.uz * lat + ORIGIN.x, z: p.z + p.ux * lat + ORIGIN.z };
   };
-  const water = !up && H(c.x, c.z) < SEA;
+  const water = ('piles' in h && h.piles === true) || (!up && H(c.x, c.z) < SEA);
   const placements: Placement[] = [];
   let index = 0;
   const ramp = (top: { x: number; z: number }, foot: { x: number; z: number }, footY = H(foot.x, foot.z) + 0.05) => {

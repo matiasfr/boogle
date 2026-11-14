@@ -1,7 +1,8 @@
 // Right-hand running and the lever on its train's platform (docs/plans/running-side.md, step 4). One spot a run:
 //   npm run look -- --hud --rail-seed q6-done --query 'debugcam=1&spot=quarry&way=out' \
 //     --eval dev/look/evals/running-side.ts --until window.__runningSide --name running-quarry-out
-//   spot: village | quarry | farhead (halts of line 2); way: out | home (the train asked for).
+//   spot: village | quarry | farhead | pier (halts of line 2); way: out | home (the train asked for).
+//   Pier after Q7: --rail-seed deck-laid --query 'debugcam=1&spot=pier&way=home&mode=parked'
 //   mode=arrive flags as the asked train runs in, 90 m out (for --video); mode=out (the Village) looks out along the
 //   line as the train leaves for the double track; mode=leave (an end halt) looks back along the line as a train
 //   leaves by the end's crossover, `far` metres from its stand; the default flags as it draws up, 25 m out.
@@ -46,7 +47,7 @@ const q = new URLSearchParams(location.search);
 const spot = q.get('spot') ?? 'quarry',
   dir = q.get('way') === 'home' ? -1 : 1,
   mode = q.get('mode') ?? 'stand';
-const NAME = { village: 'Village', quarry: 'Quarry', farhead: 'Far Head' }[spot];
+const NAME = { village: 'Village', quarry: 'Quarry', farhead: 'Far Head', pier: 'Pier' }[spot];
 if (!NAME) throw new Error(`running-side: no spot ${spot}`);
 const bot = makeBot();
 const view = () => (inspectRailway()?.line2View ?? null) as View | null;
@@ -67,7 +68,7 @@ const upRow = layout.UP_HALTS.findIndex((u) => u.pair === row());
 const second = k.platform === 'up';
 const frame = haltFrame(second ? upRow : row(), second);
 const along = { x: Math.sin(frame.yaw), z: Math.cos(frame.yaw) };
-const lat = Math.sign(second ? layout.UP_HALTS[upRow]!.lat : layout.HALTS[row()]!.lat);
+const lat = Math.sign(frame.h.lat);
 const rails = { x: along.z * lat, z: -along.x * lat };
 teleport(me.body!, k.x - rails.x * 0.9 - along.x * dir * 0.6, k.y + 0.6, k.z - rails.z * 0.9 - along.z * dir * 0.6);
 me.body!.velocity.set(0, 0, 0);
@@ -78,6 +79,11 @@ let shot = {
   camera: [c.x - rails.x * 13, k.y + 13, c.z - rails.z * 13] as [number, number, number],
   target: [c.x + rails.x * 3, k.y - 1, c.z + rails.z * 3] as [number, number, number],
 };
+if (spot === 'pier')
+  shot = {
+    camera: [c.x - rails.x * 18 - along.x * 12, k.y + 12, c.z - rails.z * 18 - along.z * 12],
+    target: [c.x + rails.x * 3 - along.x * 5, k.y - 2, c.z + rails.z * 3 - along.z * 5],
+  };
 setInterval(() => window.__debugCam?.set(shot.camera, shot.target, 62), 50);
 await bot.wait(800);
 if (!(await bot.use(k.x, k.z, 'the lever', /^Request stop: to /)))
@@ -132,7 +138,7 @@ if (mode === 'out') {
   if (!(await bot.until(gone, 2400000, 'it leaves'))) throw new Error('running-side: it never left');
   say({ left: report(gone()!) });
 } else {
-  const m = mode === 'arrive' ? 90 : 25;
+  const m = mode === 'parked' ? 0 : mode === 'arrive' ? 90 : 25;
   if (!(await bot.until(() => asked(m), 2400000, 'the asked train comes'))) throw new Error('running-side: no train');
   say({ asked: report(asked(m)!) });
 }

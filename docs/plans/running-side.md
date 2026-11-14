@@ -1,7 +1,8 @@
 # Running side and request levers
 
-Planned 14 November 2026 from the owner's play session that day. Not built. Nothing here is decided until he answers
-the three questions at the end.
+Planned 14 November 2026 from the owner's play session that day. Steps 1–5 are built locally; the follow-up fix
+brief explicitly approves step 5 recommendation (a). The historical diagnosis and original departures below are
+retained; the [review-fix report](running-side-fix-report.md) records their resolution. Not shipped.
 
 **His words (verbatim; "query" is the Quarry halt, "peer" is the Pier halt):**
 
@@ -213,7 +214,7 @@ Models are `npm run models` rows (withCodex).
       `test/railway-r4a-views.test.ts`, `test/review-v26.test.ts`. Proof looks: top-down at the Quarry with a train in
       each direction (pier-bound on the south track); the south lever pulled and the pier train stopping at the south
       platform; Far Head as the end with a train crossing out. Row: player-visible implementation (fable medium).
-- [ ] **5. The Pier after Q7 (per question 3).** If (a): a third `UP_HALTS` row for the Pier (s 719 to 741, lateral
+- [x] **5. The Pier after Q7 (per question 3).** Built locally under the review-fix brief, recommendation (a): a third `UP_HALTS` row for the Pier (s 719 to 741, lateral
       -6.95, on piles, a lever and a plank crossing), its `RailPlatform` in the catalog, `only: -1` kept. Run
       `npm run level-check` on it before review. Tier: sim catalog plus view; same bump. Row: gpt-6-astra high for the
       catalog, fable for the view.
@@ -233,14 +234,13 @@ Each step leaves `node dev/ship-check.ts` green.
 `npm run level-check` on origin/main (14 November): exit 0, 13 reports, "track continuity: ok (18 tracks, 7 joins)",
 "timber against track: 0 problems"; none of the reports is at a halt, platform or lever. Steps 1 to 4 place nothing
 new and gate nothing: levers have no collider and stay on their platforms, inside the server's reach (platform half
-length at most 12 m against a reach of 11.6 to 13.6 m; step 1's test holds this). Step 5's west platform at the Pier
-is not checked: it has no data yet, and its check is owed before that step is reviewed (does it give a way round the
-railhead's gap or onto the piled deck early).
+length at most 12 m against a reach of 11.6 to 13.6 m; step 1's test holds this). Step 5's west platform is now checked: Q7-gated deck/crossing, rail-height start ramp, no seabed wall or far ramp,
+0.8 m full-train crossing clearance, and a 65.4 m conservative roof glide against 278 m to the far deck. The
+[review-fix report](running-side-fix-report.md) records the source-linked checks and remaining evidence limits.
 
 ## Risks
 
-- **Room safety:** the server's acceptance changes (which platform a lever ask is taken from). No new effect, presence
-  or save field.
+- **Room safety:** the server's acceptance changes (which platform a lever ask is taken from). No new effect or presence. The authorized review fix adds the replicated/saved `Train.origin` field.
 - **Mixed builds:** dev phase, no compatibility code; an old tab would draw trains on the other track and have asks
   refused, which is what the bump is for.
 - **Hotspots:** `halts-view.ts`, `train-view.ts`, `railway-lines.ts`. `npm run inflight` shows one stale branch on

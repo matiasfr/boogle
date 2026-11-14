@@ -10,6 +10,7 @@ import {
   CROSSING_SPAN,
   CROSSING_WIDTH,
   FORMATION,
+  UP_LAT,
 } from '../place/layout.ts';
 import type { JsonObject, Placement } from './types.ts';
 export function haltCrossing(id: string, params: JsonObject): Placement[] {
@@ -24,7 +25,8 @@ export function haltCrossing(id: string, params: JsonObject): Placement[] {
   lineAt(line, (h.s0 + h.s1) / 2, p);
   const yaw = Math.atan2(p.ux, p.uz),
     s = h.crossS;
-  const edge = (d: number) => upLat(FORMATION.quarry, s + d) ?? 0;
+  // The Pier's platform opens with Q7, when the offset track continues past the old s 556 stub.
+  const edge = (d: number) => (h.piles ? UP_LAT : (upLat(FORMATION.quarry, s + d) ?? 0));
   const top = railY(line, s) + 0.22,
     to = h.crossTo ?? CROSSING_SPAN[1];
   const planks = crossingPlanks(edge(-CROSSING_WIDTH / 2), edge(CROSSING_WIDTH / 2), to).map(([l0, l1]) => {

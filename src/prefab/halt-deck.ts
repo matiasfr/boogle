@@ -41,7 +41,7 @@ export function haltDeck(row: number, up: boolean) {
   const { h, island, hw, half, low, c } = haltFrame(row, up);
   if (island && h.line !== 0) throw new Error('prefabs: only the first Home edge owns its deck');
   const ground = H(c.x, c.z);
-  const overWater = !up && ground < SEA;
+  const overWater = ('piles' in h && h.piles === true) || (!up && ground < SEA);
   const colliders: PrefabDef['colliders'][number][] = [{ shape: 'box', at: [0, -0.25, 0], half: [hw, 0.25, half] }];
   if (!overWater)
     colliders.push({
