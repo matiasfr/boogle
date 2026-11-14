@@ -41,7 +41,10 @@ show only while you are on his island (dry land of its grid; Local presentation)
 ## Talk
 
 - Your own talk holds him at his shown spot immediately and turns him toward you, then eases to the server's
-  attending leg. Activity changes send presence immediately; its four fields and local copy are unchanged.
+  next leg, even if a rider or another talker wins. With no new leg, the hold expires after 300 ms and eases back to
+  the current server leg. The dialogue stays usable while he moves; the existing 4.6 m leave distance still closes
+  ordinary talks (the kick-off telling-off remains exempt). Activity changes send presence immediately; its four
+  fields and local copy are unchanged.
 
 - Open with E / pad X within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
   second, pausing on punctuation, and lists answers, with button hints along the bottom; its controls are the shared NPC talk input

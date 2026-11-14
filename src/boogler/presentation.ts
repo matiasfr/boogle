@@ -8,6 +8,7 @@ export function createBooglerPresentation() {
   let last: BooglerLeg | null = null;
   let talking = false,
     held = false;
+  let heldFor = 0;
   let ox = 0,
     oz = 0,
     oy = 0;
@@ -16,16 +17,20 @@ export function createBooglerPresentation() {
     talk(open: boolean) {
       if (open && !talking) {
         held = true;
+        heldFor = 0;
         pose.walking = false;
       }
       if (!open && talking) last = null; // release eases from the held pose
       talking = open;
       if (!open) held = false;
     },
-    update(leg: BooglerLeg, tick: number, dt: number, immediate = false, face?: { x: number; z: number }, self = '') {
+    update(leg: BooglerLeg, tick: number, dt: number, immediate = false, face?: { x: number; z: number }) {
       const next = booglerPose(leg, tick);
       if (held && !immediate) {
-        if (leg !== last && !leg.speed && leg.look === self && self) {
+        heldFor += dt;
+        // Talk is a short prediction, not authority: a rider or another talker can win.
+        // Unchanged legs send no packet, so a missing acknowledgement must expire too.
+        if (leg !== last || heldFor + 1e-9 >= 0.3) {
           held = false;
           last = null;
         } else {

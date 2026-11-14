@@ -454,7 +454,7 @@ export function updateBoogler(dt: number, now: number) {
       boogler.me.act === ACT.TALK || leg.look === self
         ? me.body?.position
         : [...remotes.values()].find((r) => r.pid === leg.look)?.avatar?.position;
-    presentation.update(leg, tick, dt, !received, face, self);
+    presentation.update(leg, tick, dt, !received, face);
     received = true;
   }
 
