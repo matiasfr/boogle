@@ -1,6 +1,5 @@
 // Dev-key-only whole-room replacement. No client command or lead-tab identity grants this authority.
 import crypto from 'node:crypto';
-import { isIP } from 'node:net';
 import express from 'express';
 import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import { isSeedStage, SEED_STAGES } from '../../src/sim/railway-seeds.ts';
@@ -22,12 +21,6 @@ export type ReplaceConfig = {
   /** Test-only wall-clock override. Production always gives ten seconds. */
   replaceCountdownMs?: number;
 };
-
-// Enable only behind Fly's edge, which replaces this header. Never infer trust from client-supplied XFF.
-export function replacementClientAddress(req: Pick<Request, 'get' | 'socket'>, fromFly: boolean): string {
-  const edge = fromFly ? req.get('fly-client-ip')?.trim() : undefined;
-  return edge && isIP(edge) ? edge : req.socket.remoteAddress || 'unknown';
-}
 
 export function addReplace(
   app: Express,

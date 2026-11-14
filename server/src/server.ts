@@ -13,7 +13,8 @@ import { addPlaydata } from './playdata.ts';
 import { addReviews } from './reviews.ts';
 import { addAdmin } from './admin.ts';
 import { addJump, type JumpConfig } from './jump.ts';
-import { addReplace, replacementClientAddress, type ReplaceConfig } from './replace.ts';
+import { addReplace, type ReplaceConfig } from './replace.ts';
+import { clientAddress, rememberAddress } from './client-address.ts';
 import { createReplacements } from './replacements.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
@@ -146,11 +147,11 @@ export type ServerConfig = ReplaceConfig & {
 function createRateLimiter({
   perMinute,
   global = false,
-  address,
+  fromFly = false,
 }: {
   perMinute: number;
   global?: boolean;
-  address?: (req: Request) => string;
+  fromFly?: boolean;
 }) {
   const buckets = new Map<string, { tokens: number; t: number }>();
   const refillPerMs = perMinute / 60000;
@@ -161,14 +162,12 @@ function createRateLimiter({
   sweep.unref();
   const middleware = (req: Request, res: Response, next: NextFunction) => {
     const now = Date.now();
-    const key = global ? 'server' : address ? address(req) : req.ip || 'unknown';
+    const key = global ? 'server' : clientAddress(req, fromFly);
     let b = buckets.get(key);
-    buckets.delete(key); // Refresh insertion order for the bounded LRU, even on refusal.
-    if (buckets.size >= 1024) buckets.delete(buckets.keys().next().value!);
     if (!b) b = { tokens: perMinute, t: now };
     b.tokens = Math.min(perMinute, b.tokens + (now - b.t) * refillPerMs);
     b.t = now;
-    buckets.set(key, b);
+    rememberAddress(buckets, key, b);
     if (b.tokens < 1) {
       res.set('Retry-After', String(Math.ceil((1 - b.tokens) / refillPerMs / 1000)));
       return res.status(429).json({ error: 'rate limited' });
@@ -307,7 +306,7 @@ export function createService(cfg: ServerConfig) {
 
   app.post(
     '/report',
-    createRateLimiter({ perMinute: cfg.reportRatePerMin }),
+    createRateLimiter({ perMinute: cfg.reportRatePerMin, fromFly: cfg.replaceFlyProxy }),
     express.json({ limit: '8kb', type: ['application/json', 'text/plain'] }),
     async (req: Request, res: Response, next: NextFunction) => {
       if (req.body?.kind === 'review-v1') return reviewReport(req, res);
@@ -370,8 +369,8 @@ export function createService(cfg: ServerConfig) {
   const reviewReport = addReviews(app, cfg, {
     authed,
     withLock,
-    readLimit: createRateLimiter({ perMinute: 60 }),
-    uploadLimit: createRateLimiter({ perMinute: 6 }),
+    readLimit: createRateLimiter({ perMinute: 60, fromFly: cfg.replaceFlyProxy }),
+    uploadLimit: createRateLimiter({ perMinute: 6, fromFly: cfg.replaceFlyProxy }),
   });
 
   // Read back one day's reports.
@@ -389,14 +388,18 @@ export function createService(cfg: ServerConfig) {
   });
 
   // ---- playtest data (./playdata.ts) ----
-  addPlaydata(app, cfg, { limit: createRateLimiter({ perMinute: cfg.playRatePerMin }), authed, withLock });
+  addPlaydata(app, cfg, {
+    limit: createRateLimiter({ perMinute: cfg.playRatePerMin, fromFly: cfg.replaceFlyProxy }),
+    authed,
+    withLock,
+  });
   // ---- playtest jump-ins (./jump.ts) ----
   const jumps = addJump(app, cfg, {
     store,
     roomHost: () => roomHost,
     replaced: (id) => !!replacements.read(id),
     reserved: (id) => replacements.busy(id),
-    limit: createRateLimiter({ perMinute: cfg.jumpRatePerMin }),
+    limit: createRateLimiter({ perMinute: cfg.jumpRatePerMin, fromFly: cfg.replaceFlyProxy }),
   });
   const replace = addReplace(app, cfg, {
     store,
@@ -405,7 +408,7 @@ export function createService(cfg: ServerConfig) {
     replacements,
     ipLimit: createRateLimiter({
       perMinute: cfg.replaceRatePerMin,
-      address: (req) => replacementClientAddress(req, cfg.replaceFlyProxy),
+      fromFly: cfg.replaceFlyProxy,
     }),
     failedAuthLimit: createRateLimiter({ perMinute: 24, global: true }),
     operatorLimit: createRateLimiter({ perMinute: 24, global: true }),

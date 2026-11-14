@@ -39,8 +39,10 @@ import {
   type RoomSeed,
 } from '../../src/world/railway-jump.ts';
 import { isSeedStage, type SeedStage } from '../../src/sim/railway-seeds.ts';
+import { clientAddress, MAX_CLIENT_ADDRESSES, rememberAddress } from './client-address.ts';
 
 export type JumpConfig = {
+  replaceFlyProxy?: boolean;
   dataDir: string;
   build: string;
   serverRooms: string[];
@@ -269,8 +271,13 @@ export function addJump(
           [day, today] = [utc, 0];
           byAddress.clear();
         }
-        const who = addressKey(req.ip);
+        const who = addressKey(clientAddress(req, cfg.replaceFlyProxy));
+        const used = byAddress.get(who) ?? 0;
+        if (used) rememberAddress(byAddress, who, used);
         if (today + reserving >= cfg.jumpMaxPerDay) return res.status(429).json({ error: JUMP_DAY_ERROR });
+        // Never evict a live reservation: its completion must still release exactly its own count.
+        if (!pending.has(who) && pending.size >= MAX_CLIENT_ADDRESSES)
+          return res.status(429).json({ error: JUMP_DAY_ERROR });
         if ((byAddress.get(who) ?? 0) + (pending.get(who) ?? 0) >= cfg.jumpMaxPerAddressDay)
           return res.status(429).json({ error: JUMP_ADDRESS_ERROR });
         if (seeds.size + reservedRooms >= cfg.jumpMaxRooms)
@@ -313,7 +320,7 @@ export function addJump(
             return res.status(result.status).json({ error: result.error });
           }
           today++;
-          byAddress.set(who, (byAddress.get(who) ?? 0) + 1);
+          rememberAddress(byAddress, who, (byAddress.get(who) ?? 0) + 1);
           cfg.log(`jump ${stage} -> ${id}`);
           const reply: JumpReply = { room: name, stage };
           res.set('Cache-Control', 'no-store').json(reply);

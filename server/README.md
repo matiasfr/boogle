@@ -61,7 +61,7 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 | `ADVANCE_KEY` | unset | Randomly generated bearer, at least 32 characters, for room replacement only. A shorter nonempty key disables replacement with a warning; the game server keeps running. `REPORT_TOKEN` cannot authorize it. |
 | `ADVANCE_SHARED` | off | `1` permits replacing the shared `boogle` island behind `ADVANCE_KEY`. |
 | `REPLACE_RATE_PER_MIN` | `30` | Per-IP replacement requests, before authentication. Failed authentication and authenticated operators have separate fixed server-wide 24/minute token buckets. |
-| `REPLACE_FLY_PROXY` | off | `1` trusts Fly's edge-set `Fly-Client-IP` for replacement admission. Set in `server/fly.toml`; never enable on a directly exposed listener or a proxy that preserves client-supplied values. |
+| `REPLACE_FLY_PROXY` | off | `1` trusts Fly's edge-set `Fly-Client-IP` for every HTTP limiter, session/day quota and WebSocket admission. The historical flag name is retained. Set in `server/fly.toml`; never enable on a directly exposed listener or a proxy that preserves client-supplied values. |
 | `PLAY_RATE_PER_MIN`          | `240`       | Per-IP token bucket for `POST /playdata` (a tab sends a batch every 5 s; friends may share an IP).                                                                     |
 | `PLAY_NEW_SESSIONS_PER_HOUR` | `40`        | New sessions per IP per hour on `POST /playdata`; each page load is one.                                                                                               |
 | `PLAY_MAX_SESSION_BYTES`     | `4194304`   | Cap on one session's file (4 MB); further batches get 507.                                                                                                             |
@@ -73,7 +73,7 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 | `JUMP_BUILD`                 | `any`       | Where seeds come from: `any` builds a missing one in a worker thread (local, tests), `prebuilt` serves only the image's `server/seeds/` (the image sets it; 503 otherwise).    |
 | `JUMP_IDLE_DAYS`             | `3`         | A jump room nobody has touched this long is deleted, with its sidecar (at boot and before each jump).                                                                  |
 | `JUMP_MAX_ROOMS`             | `200`       | Jump rooms at once; past it `POST /jump` gets 507, so jump-ins can't fill `MAX_ROOMS`.                                                                                 |
-| `TRUST_PROXY`                | `1`         | Express proxy trust for existing non-replacement paths. A multi-hop Fly chain can group clients at the app-side hop; those limiters need separate review. Replacement uses its own trusted-address resolver. |
+| `TRUST_PROXY`                | `1`         | Express proxy metadata only; never selects an admission or quota key. All address-based limits use `REPLACE_FLY_PROXY` instead. |
 | `SERVER_ROOMS`               | `*`         | Rooms this server hosts (above): `*` for every valid room id (production, `npm run dev` and the test harnesses), or a comma-separated list (loaded at start and kept). |
 | `ROOM_IDLE_MS`               | `600000`    | With `*`: a room nobody has been in this long is saved and unloaded (it loads again on the next join).                                                                 |
 | `MAX_HOSTED_ROOMS`           | `20`        | With `*`: rooms loaded at once; a join past it gets `full` with `rooms: true`.                                                                                         |
@@ -189,10 +189,23 @@ refusal spends neither global budget. Failed guesses cannot drain operator capac
 so one operator can use the full 24/minute operator budget; an exhausted shared IP still throttles all its callers.
 Each IP limiter tracks at most 1,024 addresses, evicting the least recently seen. Credentials are never logged or
 echoed; wrong credentials share generic responses without length/prefix hints.
-On Fly, replacement admission uses the edge-set `Fly-Client-IP`, not any `X-Forwarded-For` entry. Missing or
+On Fly, all address-based admission uses the edge-set `Fly-Client-IP`, not any `X-Forwarded-For` entry. Missing or
 invalid Fly headers fall back to the socket address. With `REPLACE_FLY_PROXY` off (local/dev), all forwarding
 headers are ignored. This relies on Fly's edge replacing the header on every public request; live deployment
-behavior has not been verified by the local tests. Other server limiters still use Express `req.ip` unchanged.
+behavior has not been verified by the local tests. `src/client-address.ts` is the sole address reader for HTTP and
+WebSockets. `test/client-address.test.ts` checks each limiter against the header chain and rejects direct address
+or forwarding-header reads elsewhere in server source.
+
+Address state is memory-only; no server-derived addresses are added to reports, playdata, review receipts,
+replacement journals or logs. HTTP buckets (reports, review reads/uploads, playdata, jump, replacement) each
+remain capped at 1,024, with oldest-seen eviction; replacement's two global buckets each retain only one key.
+New-session tracking previously grew with all distinct callers in an hour; it now evicts oldest-seen at 1,024.
+Socket upgrade tracking previously grew with all distinct callers between minute sweeps; it now also caps at 1,024.
+Jump success tracking previously grew up to the configured daily successes (default 500); it now also caps at 1,024
+and evicts oldest-seen. Pending jump addresses were bounded by concurrent reservations (the configured daily and
+room caps, defaults 500 and 200); they now also cap at 1,024. Active reservations cannot safely be evicted: at
+capacity a new address is refused until one completes, then that entry is removed. Existing global budgets and
+IPv6 /64 daily grouping are unchanged. As with the existing token buckets, an evicted address loses its history.
 Generate `ADVANCE_KEY` with `openssl rand -base64 32` and store it as a secret. Length alone cannot establish
 randomness: use random output, never a memorable phrase. Fewer than 32 characters disables replacement at
 startup with a warning that contains no credential; health checks and gameplay remain available.

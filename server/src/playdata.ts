@@ -19,6 +19,7 @@ import readline from 'node:readline';
 import express from 'express';
 import type { Express, Request, RequestHandler, Response, NextFunction } from 'express';
 import { cleanText } from './clean-text.ts';
+import { clientAddress, rememberAddress } from './client-address.ts';
 
 /** One thing that happened: `t` seconds since the page loaded, `k` its kind, the rest flat primitives. */
 export type PlayEvent = { t: number; k: string } & Record<string, string | number | boolean | null>;
@@ -38,6 +39,7 @@ export type PlaySession = {
 };
 
 export type PlayConfig = {
+  replaceFlyProxy?: boolean;
   dataDir: string;
   playRatePerMin: number;
   playNewSessionsPerHour: number;
@@ -167,9 +169,9 @@ export function addPlaydata(
     const now = Date.now();
     for (const [k, v] of newByIp) if (now - v.since > HOUR_MS) newByIp.delete(k);
     const b = newByIp.get(ip) ?? { n: 0, since: now };
+    rememberAddress(newByIp, ip, b);
     if (b.n >= cfg.playNewSessionsPerHour) return false;
     b.n++;
-    newByIp.set(ip, b);
     return true;
   }
 
@@ -206,7 +208,7 @@ export function addPlaydata(
           const all = await index();
           const was = all.get(b.s);
           if ((was?.bytes ?? 0) + bytes > cfg.playMaxSessionBytes) return 507;
-          if (!was && !allowNew(req.ip || 'unknown')) return 429;
+          if (!was && !allowNew(clientAddress(req, cfg.replaceFlyProxy))) return 429;
           await makeRoom(all, b.s, bytes, !was);
           await fs.appendFile(fileFor(b.s), text);
           let meta = was?.meta ?? null;
