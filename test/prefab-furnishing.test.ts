@@ -553,10 +553,10 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
   museum.update(0.1);
   states.push(state());
   const value = JSON.parse(JSON.stringify({ staticState, states }));
-  const file = 'test/fixtures/prefab-museum.json';
-  if (process.env.GOLDEN === '1') fs.writeFileSync(file, JSON.stringify(value) + '\n');
+  const museumFixture = 'test/fixtures/prefab-museum.json';
+  if (process.env.GOLDEN === '1') fs.writeFileSync(museumFixture, JSON.stringify(value) + '\n');
   matrices.restore();
-  prefabGolden(value, JSON.parse(fs.readFileSync(file, 'utf8')), 'museum');
+  prefabGolden(value, JSON.parse(fs.readFileSync(museumFixture, 'utf8')), 'museum');
   assert.equal(activeBodies.size, 10, 'six interior solids and four columns');
   const localBodies = bodies.slice();
   for (const p of r.furnishings) {
@@ -586,7 +586,7 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
     {},
   );
   const rotation = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, frame.yaw).toArray();
-  const oldSolids = JSON.parse(fs.readFileSync(file, 'utf8')).staticState.solids as number[][];
+  const oldSolids = JSON.parse(fs.readFileSync(museumFixture, 'utf8')).staticState.solids as number[][];
   prefabGolden(
     bodies.slice(start),
     oldSolids.map(([x, z, hx, hz, h]) => ({
