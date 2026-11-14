@@ -210,3 +210,115 @@ Run on the planned positions before review (`npm run level-check` on main, plus 
    again after the next playtest.
 3. **The bridge's look for now.** Recommended: the folk's orange steel parapets on a timber deck as plain blocks,
    with the truss, lamps and any sign left to a later look job ("Block out spacing first, details later").
+
+## Design review (designer, 2026-11-14)
+
+**Ruling: build option A, the footbridge at s 1260, with one change to the path's data (finding 1).** No rim fence
+now. The blockout look stands. Nothing here is direction, new scope or irreversible, so nothing waits for the owner.
+
+Read for this: DESIGN.md; owner-calls ("Place for the look, not the cost; terrain may change", "Block out spacing
+first, details later", "Rank every note", "Playtest before bespoke functionality", "A recent reload puts you back where
+you were", "No limits ahead of a measured problem"); decisions-rail's Current rules; `ground.ts`, `view.ts`,
+`railway-ring-layout.ts` and the greybox's `ring-house.ts`; [level-design](../research/level-design.md),
+[route-contract](../research/route-contract.md) and
+[progression-flow-layout](../research/progression-flow-layout.md). The plan's abutment heights were re-computed from
+`createIslandGround` and match (a 14.81 m, b 16.60 m, 5.23 m under mid-span; the summit is 66 m).
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | The drawn walk from the west platform to the summit lookout stays and is made true, not removed | Decided | As built in Ring Island build 1 (R2b: the path and the lookout); DESIGN 7 |
+| 2 | A footbridge over the cutting (A), not the path moved east (B) or steps and planks (C) | New | A. See "Why A, and why not B" |
+| 3 | The site: square to the line at s 1260, abutments 3 m behind each rim, span 28 m, rise 6.4 %, deck 9.5 m over the rails | Default | Ships. The rims are closest and most level there, and it is where the drawn path already vanishes under the shard (the halt still) |
+| 4 | The site is chosen for how it looks and walks, not for the cheapest crossing (the shallow end at s 1210 to 1220) | Decided | Owner call, 14 November, "Place for the look, not the cost; terrain may change" |
+| 5 | The bridge is the folk's and stands from the island's first load, before the stack line is laid; trains pass under it only once stack section 1 is laid | Default | Ships. Before that it spans an empty cutting 29 m past the buffers, which says a line goes on here (DESIGN 7) |
+| 6 | Deck 3.0 m wide in timber (the path is 2.6 m) | Default | Ships. Two players pass or walk abreast |
+| 7 | Parapets 1.05 m high, solid, and low enough to jump (the jump is 1.60 m) | Default | Ships. Hopping the parapet onto the line is a toy, not a failure (DESIGN 10) |
+| 8 | Two bents stand in the cutting, 0.3 m outside its flat floor | Default | Ships. They are clear of the formation; the checkpoint's `ringview=cut` still confirms |
+| 9 | Everything on the bridge that looks solid is solid | Decided | Rail, 2 November, "what looks solid is solid" |
+| 10 | Plain blocks at true size now; truss, lamps and signs in a later look job | Decided | Owner call, 14 November, "Block out spacing first, details later" |
+| 11 | Colours: the folk's orange parapets, timber deck, concrete abutments, dark steel bents | Default | Ships. Same orange as the Way's trusses, so it reads as theirs |
+| 12 | No sign, prompt, control or copy on or about the bridge | Default | Ships. Matches the halt's foot crossing ("nothing marks it but the timber"); DESIGN 11 |
+| 13 | The cutting's rims stay unfenced (up to 23 m, 330 m long) | Default | No fence. See finding 3 |
+| 14 | A fall lands on the track bed and the player walks out along the line; no damage, no rescue, and a passing train shoves as it does today | Default | Ships as today's behaviour. From under the bridge the shallow end is 45 m, 8 s |
+| 15 | Nothing gated, found or rewarded stands on the bridge or the hill; the bridge shortens a walk and opens no ground | Decided | [route-contract](../research/route-contract.md), adopted 6 November: movement may skip distance, never work. Checked: the deck (16.6 m) is lower than ground already walked (the summit, 66 m), so it is no perch |
+| 16 | The path meets the bridge at a 51° turn on abutment a, with the rim 5.75 m straight on | Default | Change it: finding 1 |
+| 17 | The rest of the path is unchanged: about 326 m, 58 s at the walk, steepest 21 % | Default | Ships |
+| 18 | A reload on the deck returns the player to a recovery point (the path's foot is one, about 55 m away), not to the deck | Default | Ships for now. [resume-where-you-were](resume-where-you-were.md) owns the fix under the owner's 14 November call; a deck pose there should restore at the nearer abutment |
+
+Decided 5, Default 12, New 1.
+
+### Why A, and why not B
+
+- **It is the moment the island's first view already sets up.** The halt still (`--query ringview=halt`, read for
+  this review) shows the cream path leaving the platform's north end, turning uphill and vanishing into the pale
+  notch directly under the ring and the shard. A bridge at that spot is the middle of a reveal chain, hill, then
+  structure, then landmark ([level-design](../research/level-design.md), rule 3), with the shard as the area's one
+  tall landmark (rule 5). An arriving train faces it too: it crosses the line dead ahead, beyond the buffers.
+- **A footbridge over a working line belongs in a railway game.** Once section 1 is laid it is the island's place to
+  watch trains from above, and in co-op the place where one player on foot and one on a train meet eyes. It is also a
+  spot a group can name ("meet at the bridge"; progression-flow's meeting-place lens).
+- **B is safer and duller.** B never comes within 1.3 m of cut ground, which is its one real advantage. It gives up
+  the start beside the station house terrace, the only view down into the cutting, and needs 55 m of today's path
+  removed or it still leads to the edge. The hazard B avoids is mild (finding 3). B stays the fallback.
+- **C** adds a second live-track crossing on a blind curve. Agreed: no.
+- **Not in the plan, considered here:** roofing the cutting for 10 m as a land bridge ("terrain may change" allows
+  it). Rejected: it changes heights and the collider, and brings back the track running into a hill face, which is the
+  owner's note this cutting answered.
+
+### Findings
+
+1. **Change before step 1 fixes the path's data: straighten the uphill approach.** As planned the path climbs to
+   abutment a heading almost due south and the deck leaves 51° to the left. A player who runs straight on reaches the
+   rim in 5.75 m and an 8 m drop 3 m after it. The drawn path would still point over the edge, at a smaller scale than
+   today. Add one waypoint 8 m behind a on the deck's own axis, computed like a and b and not a literal: about
+   (1374.5, -872.3), ground 14.19 m, uncut. The way becomes foot, foot + (-18, -8), that point, a, b, and on;
+   `bridgeLeg` becomes 3. The turn (64°) then happens 12 m from the rim and the last 8 m point down the deck. Grades
+   stay at most 21 %; the path grows by about 3.6 m, so the tests' expected length becomes about 330 m. The downhill
+   side needs nothing: straight on from b runs along the east rim and meets only the shallow end after 15 m. Lens:
+   end a beat facing the next. Evidence: measured on `createIslandGround`, not walked.
+2. **"Trains passing under" is true only from stack section 1.** At the `crossing-done` seed the buffers stand at
+   u 483 and the bridge is at u 512, so proof look `ringview=bridge` shows no train and that is correct. Add the
+   existing `ringview=halt` still to the checkpoint's looks: it is the player's first sight of the bridge and the one
+   that says whether it reads from the platform under the shard.
+3. **No fence: agreed, on different grounds.** The plan cites "No limits ahead of a measured problem", which is about
+   content budgets. The grounds that hold: there is no fall damage, the floor walks out at both ends (flow rule 3,
+   nobody stranded, by the plan's reverse flood), a tumble into the cutting is slapstick (DESIGN 10), and a fence is
+   detail on a blockout. With finding 1 the path no longer aims at the rim; it runs 8 to 23 m from it and only the
+   last metres to each abutment come within 4 m. One thing to look at, not to build: from the uphill (south) side the
+   rim is a convex edge that may not show until a player is on it. Take one still at the checkpoint from 15 m uphill
+   of the south rim looking down; if the edge cannot be seen, a line of rocks along it is the cheap answer, logged as
+   a P3.
+4. **The leaning station house looks through the bridge's airspace.** The greybox house (`ring-house.ts`, u 474,
+   lat -16) aims its window at the shard on a bearing of -12°; the bridge's middle is 38 m away at -9°, with its ends
+   at -30° and +7°. The deck sits about 10° above the bench's eye and the shard about 25°, so the bridge does not
+   cover the shard; it is an orange bar under it, against the hill. Probably a gain (folk and players crossing under
+   the shard), but it was not seen: the house is a `?ring=greybox` proposal and the bridge is not built. The house's
+   production job should take that still. It does not crowd the terrace (the path passes 8.5 m west of it) or the
+   foot crossing (80 m south).
+5. **Rank.** The tracker and the state file log this as P2 ("walk to the lookout fails", and note 27's follow-up).
+   By the rank meanings it is P2: the drawn way looks broken and drops you on the line, but nothing on the route needs
+   the lookout. The plan should state its rank in Status. It is small and view-only, so building it now is right at
+   either rank.
+6. **Order and fit.** Static scenery on a greybox island: it is layout, not a bespoke mechanic, so "Playtest before
+   bespoke functionality" does not hold it. Port from Place: nothing is ported; agreed.
+7. **Co-op and solo.** No rule differs. Not checked by anything: whether a player who jumps from the deck can land on
+   a train's roof and ride it, and the follow camera of a rider passing under the deck (the plan's Level finding 6
+   puts one ride-under at the checkpoint; keep it, and try the jump once).
+8. **After the bridge the walk is quiet:** about 246 m, 44 s, of plain path to the lookout with only the view. Not
+   this plan's job; it is the terrain pass's. Logged as a P3.
+9. **What this review could not see.** Stills with `--cam` on this seed draw only the far cones (the island's near
+   view loads round the player), so the cutting and the rims were not seen at close range. Read instead: the halt
+   still, three far-view stills (platform end to the site, the rim, the house's spot to the shard), PR 1788's
+   description and the ground's numbers. The walk was not re-run. No playtest data covers Ring Island's hill.
+
+**Suspect copy:** none; the plan adds no words.
+
+### Owner questions
+
+1. **A footbridge over the cutting, or the path moved east of it?** Recommended: the footbridge. Building proceeds
+   on it.
+2. **Leave the cutting's rims unfenced for now?** Recommended: yes. Falls cost a short walk out along the line; look
+   again if play shows people falling in by accident.
+3. **Is this a P2, as logged, or a P1?** Recommended: P2. It is being built now either way.
