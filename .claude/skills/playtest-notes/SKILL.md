@@ -32,7 +32,8 @@ Add an entry to `docs/playtests.md` from: $ARGUMENTS
    players settle on, an objection someone drops, "keep that" after a debate. List each as a candidate
    with its timestamp and the words that settle it. Record only the owner's unmistakable ones in their
    owning repo document; anything that only might be a call goes to step 5. A teammate's suggestion is
-   not an owner decision.
+   not an owner decision. An effort the owner unmistakably commits to on the call ("we want this built")
+   becomes a row in `docs/backlog.md` with his words and the date; bugs and notes stay in the tracker.
 5. Only after reading the call and data, ask **at most five** unanswered questions (zero is fine).
    Possible decisions from step 4 come first, each phrased as the call you think was made, so
    confirming it is one tap. Give each a recommended answer first and a field for anything else. Use

@@ -17,6 +17,10 @@ docs/agents/owner-calls.md and the routing table in docs/decisions.md; read the
 Current rules of the topics this question touches and open their entries as needed. Running as Codex also requires
 docs/agents/codex.md. Read nested instructions before reviewing high-risk code.
 
+Pick next work from docs/backlog.md by rank: it lists every effort the owner has
+committed to, with its status and next step. An effort that is not a row there is
+not committed; say so instead of treating a plan or an idea as owed.
+
 Read docs/direction.md if present. Treat it as a derived view: compare its reviewed
 commit and cited sources with the current checkout and relevant local changes.
 Refresh changed facts from their owning files. If it is absent or stale, answer
@@ -78,7 +82,7 @@ only the owner can change the binding design choice.
 
 Read-only by default. When asked to update direction, keep docs/direction.md, the one roadmap, a small
 current view of phase, gate, next proofs and evidence links, with reviewed commit and
-source revisions. Existing plans own tasks. DESIGN owns principles; docs/decisions.md owns
+source revisions. docs/backlog.md owns the list of committed efforts. Existing plans own tasks. DESIGN owns principles; docs/decisions.md owns
 design decisions; owner-calls owns standing preferences; playtests and game-design
 own observations and as-built behavior. Write an authorized decision to its owner
 first, then refresh links. Never store binding decisions only in agent memory or

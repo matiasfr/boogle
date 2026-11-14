@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Co-develop Boogle with the owner as the orchestrator. Decide what to build, dispatch Claude subagents or Codex jobs in parallel, review and merge their branches one at a time, run the playtest cycle, turn the owner's remarks into recorded rules, coordinate other sessions, and keep the Line Map board and state file current. Use at the start of any coordinating session, whenever the owner asks what to work on, to spin out or parallelize work, to use spare Codex usage, for status ("how are agents progressing"), or to take over from another orchestrator, Claude or Codex, even without the word "orchestrate".
+description: Co-develop Boogle with the owner as the orchestrator. Decide what to build, dispatch Claude subagents or Codex jobs in parallel, review and merge their branches one at a time, run the playtest cycle, turn the owner's remarks into recorded rules and backlog rows, coordinate other sessions, and keep the backlog, the Line Map board and state file current. Use at the start of any coordinating session, whenever the owner asks what to work on, to spin out or parallelize work, to use spare Codex usage, for status ("how are agents progressing"), or to take over from another orchestrator, Claude or Codex, even without the word "orchestrate".
 ---
 
 # Orchestrate
@@ -11,7 +11,7 @@ Start a fresh orchestrator session each working day, from the state file. A sess
 
 ## 1. Decide
 
-- Ordering and what's next: the roadmap in [direction.md](../../../docs/direction.md) and the [game-direction skill](../game-direction/SKILL.md), against the [decision log](../../../docs/decisions.md#decided) (one topic's Current rules) and [production core](../../../docs/plans/production-core.md).
+- What's next is picked from [docs/backlog.md](../../../docs/backlog.md) by rank: it is the one list of efforts the owner has committed to, each with its status and next step. Phase and ordering questions: the roadmap in [direction.md](../../../docs/direction.md) and the [game-direction skill](../game-direction/SKILL.md), against the [decision log](../../../docs/decisions.md#decided) (one topic's Current rules) and [production core](../../../docs/plans/production-core.md).
 - Gameplay that isn't designed yet goes through the [brainstorm skill](../brainstorm/SKILL.md) first ("Brainstorm new gameplay first"). Art, fixes, technical work and ports of accepted behaviour don't.
 - A port from Place gets the designer's fit check before it is planned or built (owner call "Port from Place only what still fits"). The check takes minutes; on 9 November the gold finds took an hour to build and were cut the same day because it ran afterwards.
 - A plan that places anything in the world carries its level-check findings (the planner runs `npm run level-check` on the planned positions), so the designer rules on reach and order with the plan. On 9 November F2's three secrets reachable before their ability reached the designer after the build.
@@ -80,6 +80,7 @@ Every agent follows the repo, not this conversation ("Decisions live in the repo
 
 - A standing working preference ("try things early", "every model gets detail references") becomes an [owner call](../../../docs/agents/owner-calls.md).
 - A game decision ("regrowth only needs to be slow") becomes a dated entry at the top of its topic file's "Decided" with a line in its "Current rules", as [decisions.md](../../../docs/decisions.md#recording-a-decision) says; an entry it supersedes in full moves verbatim to [the archive](../../../docs/decisions-archive.md). An answer to a logged call moves that row from [agent-calls](../../../docs/agent-calls.md) to its topic's archive section. `npm run decisions` checks it.
+- An owner "we want this" (an effort he commits to, in whatever words) becomes a row in [docs/backlog.md](../../../docs/backlog.md) that turn, with his words and the date; if it was a line in `docs/ideas.md`, delete that line. A row leaves only when it ships or he drops it (then one line under its "Dropped" heading).
 - An answer about one feature updates its brief's status and text.
 - Ship these as docs right away.
 - If a remark is ambiguous, record your reading and say so; if it reverses a recorded decision, check with the owner first.
@@ -90,7 +91,8 @@ List peers with ListAgents, and message them with SendMessage: what you're doing
 
 ## 8. Keep the owner informed
 
-- Update the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C) (database `items`: sections `running`, `queued`, `call`, `road`, `phase`) and the state file as jobs start, merge and finish. The board is the live status; fold state-file edits into the next ship, and ship the file alone only at a pause, a session's end or an owner decision (13 of 104 merges from 7 to 9 November were bookkeeping, each through CI and a deploy). Leftovers a job reports but doesn't fix go in the state file's "Leftovers" section the same day, not in session notes: the next orchestrator can't read those.
+- [docs/backlog.md](../../../docs/backlog.md) is the main status of committed work: update a row's status and next step when its job starts, merges or blocks, and delete the row when the effort ships. The Line Map board and the state file point to it and do not keep their own list of committed efforts.
+- Update the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C) (database `items`: sections `running`, `queued`, `call`, `road`, `phase`) and the state file as jobs start, merge and finish. The board is the live view of running jobs; fold state-file edits into the next ship, and ship the file alone only at a pause, a session's end or an owner decision (13 of 104 merges from 7 to 9 November were bookkeeping, each through CI and a deploy). Leftovers a job reports but doesn't fix go in the state file's "Leftovers" section the same day, not in session notes: the next orchestrator can't read those.
 - Send only the images worth seeing, stitched into one where you can, and give complete links, never bare flags.
 - Rank every note and bug P1, P2 or P3 when you log it (owner call "Rank every note"), in the tracker, the board title and the state file; pick work by rank and never drop a note for ranking low.
 - Say "not tested on a device" where it applies. Report failures and your own mistakes plainly, and correct a wrong status as soon as you find it.

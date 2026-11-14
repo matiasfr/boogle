@@ -37,6 +37,7 @@ Report and fix:
 - `npm run map` routes and AGENTS.md table rows pointing at missing or renamed files;
 - skills, agents and docs that contradict `docs/agents/owner-calls.md` or `dev/models.ts`;
 - plans whose jobs have all merged but still read as open (mark them done with the PRs), and briefs whose status lags;
+- `docs/backlog.md` against the plans: each row's status and next step agree with its plan's status line and tick marks; a row whose effort has shipped is deleted; a plan that says the owner approved it has a row; list any row with no owner words for the owner instead of deleting it;
 - `docs/direction.md`'s Now/Next older than the newest merges;
 - research docs missing from `docs/research/README.md` or without a top block;
 - `docs/agent-calls.md`: count the open calls (one table per topic) and list any older than a week for the owner; `npm run decisions` must pass (no ruled row left in the live tables, every entry with its Current rules line).

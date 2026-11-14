@@ -7,4 +7,5 @@ argument-hint: '<the idea>'
 Add to `docs/ideas.md`: $ARGUMENTS
 
 1. Read `docs/ideas.md`. Append one bullet, `- <idea>, <why it's interesting> (YYYY-MM-DD)` with today's date, under the heading it fits best; add a heading if none fits. Use the user's words; only add a "why" they gave. Mention a file path if the idea is about one spot in the code.
-2. Don't plan, research or implement it. Commit just that file with "Park an idea: <short>" and don't ship unless asked.
+2. An idea stays in `docs/ideas.md` until the owner commits to it. When he does ("we want this"), it becomes a row in `docs/backlog.md` that turn, with his words and the date, and its line here is deleted; parking an idea never adds a backlog row.
+3. Don't plan, research or implement it. Commit just that file with "Park an idea: <short>" and don't ship unless asked.
