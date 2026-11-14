@@ -44,7 +44,10 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   };
   // Two shallow steps over the existing foundation. They end to the left of the rack/output lane.
   box(door.x, -0.375, hd + 1.25, door.w, 0.25, 0.9, '#9e9686');
-  box(door.x, -0.125, hd + 0.7, door.w, 0.25, 0.4, '#b6aa92');
+  // The upper one is level with the foundation, whose apron reaches hd + 0.8: only its nosing past that edge is drawn,
+  // so its top never shares a plane with the foundation's (they fought). Its solid is the whole tread, as it was.
+  box(door.x, -0.125, hd + 0.85, door.w, 0.25, 0.1, '#b6aa92', false);
+  solidSpecs.push({ x: door.x, y: -0.125, z: hd + 0.7, w: door.w, h: 0.25, d: 0.4, room: false });
   // Furnace remains on its existing output axis. A solid guard keeps visitors out of the rail flight.
   box(0, 0.6, hd - 1.65, 3.3, 1.2, 0.16, '#536567');
   box(-1.65, 0.6, hd - 0.85, 0.16, 1.2, 1.6, '#536567');
