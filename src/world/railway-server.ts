@@ -71,6 +71,7 @@ import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
 import { railSession, railSettle, remember } from '../sim/railway-sys-core.ts';
 import { RAIL_ARRIVAL, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, railPos } from '../sim/railway-route.ts';
 import { haltHead, legOpen, legRow } from '../sim/railway-queries-route.ts';
+import { trainStops } from '../sim/railway-queries-trains.ts';
 import type { World } from '../ecs/index.ts';
 import { GLOBAL_CELL, cellOf, type Fields } from './replicate.ts';
 import { touchChanges, worldProjections } from './replicate-world.ts';
@@ -217,7 +218,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.call': {
       // From the request lever on the halt's platform for that way (docs/plans/generic-lines.md, 7), or aboard the
       // train `train` names, which must run on that halt's line. The rule refuses an open end's way in (no train
-      // stands at that platform: Far Head's up one until Q6 opens the pier) and a rider's ask the other way.
+      // departs that way: Far Head's outbound ask until Q6 opens the pier) and a rider's ask the other way.
       const h = railInt(e.id, RAIL_HALTS.length - 1) ? RAIL_HALTS[e.id] : undefined;
       if (!h || (e.dir !== -1 && e.dir !== 1)) return false;
       if (e.train !== undefined)
@@ -227,9 +228,10 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
           nearTrain(w, e.train, tick, actor) &&
           actor.cadence(e.op)
         );
-      // The Railhead's down platform moves out with its head (v27), a leg's railhead with its sections laid (the greybox
-      // route): judged where the head stands now.
-      const p = haltPlatform(h, e.dir, haltHead(w, e.id!, ringHead(w)));
+      // The open far end serves homeward asks from its original side too. The Railhead's original platform and
+      // a greybox leg's platform move with their heads: judge where the head stands now.
+      const end = h.stop === trainStops(w, h.line).length - 1;
+      const p = haltPlatform(h, e.dir, haltHead(w, e.id!, ringHead(w)), end);
       return height(p.y) && near(p.x, p.z, p.reach);
     }
     case 'rail.beamTake': {

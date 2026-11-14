@@ -87,14 +87,14 @@
       "opens": -1,
       "platforms": [
         {
-          "x": 106912,
-          "z": 3135,
+          "x": 108132,
+          "z": 4114,
           "y": 2502,
           "reach": 1160
         },
         {
-          "x": 108132,
-          "z": 4114,
+          "x": 106912,
+          "z": 3135,
           "y": 2502,
           "reach": 1160
         }
@@ -108,14 +108,14 @@
       "opens": -1,
       "platforms": [
         {
-          "x": 135850,
-          "z": -17195,
+          "x": 136361,
+          "z": -16353,
           "y": 2502,
           "reach": 1260
         },
         {
-          "x": 136361,
-          "z": -16353,
+          "x": 135850,
+          "z": -17195,
           "y": 2502,
           "reach": 1260
         }
@@ -163,15 +163,15 @@
       "opens": 6,
       "platforms": [
         {
-          "x": 140103,
-          "z": -61962,
-          "y": 1610,
-          "reach": 1260
-        },
-        {
           "x": 140897,
           "z": -47935,
           "y": 2170,
+          "reach": 1260
+        },
+        {
+          "x": 140103,
+          "z": -61962,
+          "y": 1610,
           "reach": 1260
         }
       ],
@@ -192,14 +192,14 @@
       "opens": 6,
       "platforms": [
         {
-          "x": 140663,
-          "z": -82004,
+          "x": 141773,
+          "z": -81974,
           "y": 890,
           "reach": 1260
         },
         {
-          "x": 141773,
-          "z": -81974,
+          "x": 140663,
+          "z": -82004,
           "y": 890,
           "reach": 1260
         }
@@ -8515,22 +8515,8 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-3-down",
-            "verb": "Request stop: to Village",
-            "at": [1089.6770153578898, 26.36119853622232, 40.41931290617495],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-3-up",
-            "verb": "Request stop: to Far Head",
-            "at": [1060.0830708790284, 26.36119853622232, 32.29328548679393],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
         [
           {
             "id": "railway-request-4-down",
@@ -9402,38 +9388,10 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-3-down",
-            "verb": "Request stop: to Village",
-            "at": [1089.6770153578898, 26.36119853622232, 40.41931290617495],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-3-up",
-            "verb": "Request stop: to Pier",
-            "at": [1060.0830708790284, 26.36119853622232, 32.29328548679393],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-down",
-            "verb": "Request stop: to Village",
-            "at": [1371.3990107467669, 26.36119853622232, -168.78579533992348],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-up",
-            "verb": "Request stop: to Pier",
-            "at": [1366.755532096432, 26.36119853622232, -176.43697864865982],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
+        [],
+        [],
         [
           {
             "id": "railway-request-5-down",
@@ -10320,38 +10278,10 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-3-down",
-            "verb": "Request stop: to Village",
-            "at": [1089.6770153578898, 26.36119853622232, 40.41931290617495],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-3-up",
-            "verb": "Request stop: to Railhead",
-            "at": [1060.0830708790284, 26.36119853622232, 32.29328548679393],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-down",
-            "verb": "Request stop: to Village",
-            "at": [1371.3990107467669, 26.36119853622232, -168.78579533992348],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-up",
-            "verb": "Request stop: to Railhead",
-            "at": [1366.755532096432, 26.36119853622232, -176.43697864865982],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
+        [],
+        [],
         [
           {
             "id": "railway-request-5-down",
@@ -11228,38 +11158,10 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-3-down",
-            "verb": "Request stop: to Village",
-            "at": [1089.6770153578898, 26.36119853622232, 40.41931290617495],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-3-up",
-            "verb": "Request stop: to Railhead",
-            "at": [1060.0830708790284, 26.36119853622232, 32.29328548679393],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-down",
-            "verb": "Request stop: to Village",
-            "at": [1371.3990107467669, 26.36119853622232, -168.78579533992348],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-up",
-            "verb": "Request stop: to Railhead",
-            "at": [1366.755532096432, 26.36119853622232, -176.43697864865982],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
+        [],
+        [],
         [
           {
             "id": "railway-request-5-down",
@@ -12151,38 +12053,10 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-3-down",
-            "verb": "Request stop: to Village",
-            "at": [1089.6770153578898, 26.36119853622232, 40.41931290617495],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-3-up",
-            "verb": "Request stop: to Ring Island",
-            "at": [1060.0830708790284, 26.36119853622232, 32.29328548679393],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-down",
-            "verb": "Request stop: to Village",
-            "at": [1371.3990107467669, 26.36119853622232, -168.78579533992348],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-up",
-            "verb": "Request stop: to Ring Island",
-            "at": [1366.755532096432, 26.36119853622232, -176.43697864865982],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
+        [],
+        [],
         [
           {
             "id": "railway-request-5-down",
@@ -12191,14 +12065,7 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-6-down",
-            "verb": "Request stop: to Village",
-            "at": [1411.004668886533, 17.92119853622232, -607.2204147692836],
-            "blocked": null
-          }
-        ],
+        [],
         [
           {
             "id": "railway-request-6-up",
@@ -13088,38 +12955,10 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-3-down",
-            "verb": "Request stop: to Village",
-            "at": [1089.6770153578898, 26.36119853622232, 40.41931290617495],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-3-up",
-            "verb": "Request stop: to Stack railhead",
-            "at": [1060.0830708790284, 26.36119853622232, 32.29328548679393],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-down",
-            "verb": "Request stop: to Village",
-            "at": [1371.3990107467669, 26.36119853622232, -168.78579533992348],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-up",
-            "verb": "Request stop: to Stack railhead",
-            "at": [1366.755532096432, 26.36119853622232, -176.43697864865982],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
+        [],
+        [],
         [
           {
             "id": "railway-request-5-down",
@@ -13128,14 +12967,7 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-6-down",
-            "verb": "Request stop: to Village",
-            "at": [1411.004668886533, 17.92119853622232, -607.2204147692836],
-            "blocked": null
-          }
-        ],
+        [],
         [
           {
             "id": "railway-request-6-up",
@@ -13144,22 +12976,8 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-7-down",
-            "verb": "Request stop: to Village",
-            "at": [1416.8747192485848, 10.241198536222322, -828.5444633794849],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-7-up",
-            "verb": "Request stop: to Stack railhead",
-            "at": [1408.1279068808528, 10.241198536222322, -828.7806273134137],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
         [
           {
             "id": "railway-request-8-down",
@@ -14038,38 +13856,10 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-3-down",
-            "verb": "Request stop: to Village",
-            "at": [1089.6770153578898, 26.36119853622232, 40.41931290617495],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-3-up",
-            "verb": "Request stop: to Stack railhead",
-            "at": [1060.0830708790284, 26.36119853622232, 32.29328548679393],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-down",
-            "verb": "Request stop: to Village",
-            "at": [1371.3990107467669, 26.36119853622232, -168.78579533992348],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-up",
-            "verb": "Request stop: to Stack railhead",
-            "at": [1366.755532096432, 26.36119853622232, -176.43697864865982],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
+        [],
+        [],
         [
           {
             "id": "railway-request-5-down",
@@ -14078,14 +13868,7 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-6-down",
-            "verb": "Request stop: to Village",
-            "at": [1411.004668886533, 17.92119853622232, -607.2204147692836],
-            "blocked": null
-          }
-        ],
+        [],
         [
           {
             "id": "railway-request-6-up",
@@ -14094,22 +13877,8 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-7-down",
-            "verb": "Request stop: to Village",
-            "at": [1416.8747192485848, 10.241198536222322, -828.5444633794849],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-7-up",
-            "verb": "Request stop: to Stack railhead",
-            "at": [1408.1279068808528, 10.241198536222322, -828.7806273134137],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
         [],
         [],
         [
@@ -15005,38 +14774,10 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-3-down",
-            "verb": "Request stop: to Village",
-            "at": [1089.6770153578898, 26.36119853622232, 40.41931290617495],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-3-up",
-            "verb": "Request stop: to High Gorge",
-            "at": [1060.0830708790284, 26.36119853622232, 32.29328548679393],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-down",
-            "verb": "Request stop: to Village",
-            "at": [1371.3990107467669, 26.36119853622232, -168.78579533992348],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-4-up",
-            "verb": "Request stop: to High Gorge",
-            "at": [1366.755532096432, 26.36119853622232, -176.43697864865982],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
+        [],
+        [],
         [
           {
             "id": "railway-request-5-down",
@@ -15045,14 +14786,7 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-6-down",
-            "verb": "Request stop: to Village",
-            "at": [1411.004668886533, 17.92119853622232, -607.2204147692836],
-            "blocked": null
-          }
-        ],
+        [],
         [
           {
             "id": "railway-request-6-up",
@@ -15061,22 +14795,8 @@
             "blocked": null
           }
         ],
-        [
-          {
-            "id": "railway-request-7-down",
-            "verb": "Request stop: to Village",
-            "at": [1416.8747192485848, 10.241198536222322, -828.5444633794849],
-            "blocked": null
-          }
-        ],
-        [
-          {
-            "id": "railway-request-7-up",
-            "verb": "Request stop: to High Gorge",
-            "at": [1408.1279068808528, 10.241198536222322, -828.7806273134137],
-            "blocked": null
-          }
-        ],
+        [],
+        [],
         [],
         [],
         [],

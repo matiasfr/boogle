@@ -40,8 +40,8 @@ export function ringDeckY(ucm: number) {
   if (ucm <= 2000) return 2430;
   return Math.max(800, 2430 - Math.round((4 * (ucm - 2000)) / 100));
 }
-/** The double formation (generic lines): lat -5.8..+1.8, tracks at lat 0 (down, track 1) and -4 (up, track 0). */
-export const RING_FORMATION = { left: -580, right: 180, mid: -200, tracks: [-400, 0] } as const;
+/** The double formation: lat -5.8..+1.8, tracks indexed by direction: 0 (+s) at lat 0, 1 (-s) at lat -4 m. */
+export const RING_FORMATION = { left: -580, right: 180, mid: -200, tracks: [0, -400] } as const;
 
 /** Bents 7..13 at u 140..260 m: each centre is the formation's middle (lat -2), y its deck top. */
 export const RING_BENTS: readonly XYZ[] = Array.from({ length: 7 }, (_, i) => {

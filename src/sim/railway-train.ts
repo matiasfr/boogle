@@ -137,11 +137,11 @@ export const TRAIN_HOME: readonly number[] = RAIL_TRAINS.map((t) => t.home);
 /** The track each train (by slot) stands on before it wakes. */
 export const TRAIN_HOME_TRACK: readonly number[] = RAIL_TRAINS.map((t) => t.track);
 type LineHalt = { name: string; line: number; stop: number; x: number; z: number; y: number; reach: number };
-/** Every halt with v25's one platform, today's (the down track's): the id is the index (rail.call's `id`). Typed as
+/** Every halt with v25's original-side platform (v45's outbound side): the id is the index (rail.call's `id`). Typed as
  * v27's eight-halt tuple (v25's six, then the Railhead and Ring Island), which test/railway-lines.test.ts holds the
  * catalog to; the type goes when callers read RAIL_HALTS (v26 step 4b). The Railhead's here is its first head's
  * (haltPlatform reads the current one). */
-export const LINE_HALTS = RAIL_HALTS.map(({ name, line, stop, platforms: [, p] }) => ({
+export const LINE_HALTS = RAIL_HALTS.map(({ name, line, stop, platforms: [p] }) => ({
   name,
   line,
   stop,

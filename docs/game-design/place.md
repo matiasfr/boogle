@@ -820,6 +820,14 @@ pieces, the completed pier with rockets, and the northward Ring Island view (`gr
 
 ### The second track, drawn (10 November 2026, generic-lines step 2)
 
+**Running-side step 3 (14 November, local branch; incomplete until step 4).** The server now accepts outbound
+Quarry requests from the south platform and homeward requests from the north. Far Head, the Railhead and Ring
+Island use original-side/outbound and offset-side/homeward platforms; at the open far end both ways use the original
+side, moving with the Railhead. Track geometry and train rules are unchanged. This is the catalog half of the
+right-hand swap, sharing the rotunda's v45 reset: the existing train and lever views still use the old ways and must
+ship with step 4, not alone. The Pier remains homeward-only; its west platform after Q7 is step 5. See the
+[step 3 report](../plans/running-side-step3-report.md) for the contract and remaining work.
+
 **A train's vehicles stand apart along the track they are drawn on** (owner, 14 November: "on certain stops,
 especially with curves, the train car clips the train engine"; `car-spacing.ts`). A train's place is metres along its
 line; the up track, 4 m inside a bend, is shorter than the line there, so an up train's cars used to close up: the

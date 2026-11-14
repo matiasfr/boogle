@@ -124,7 +124,7 @@ test("the fares-running row lands on line 2's Village platform, where riders boa
   assert.equal(TRADE.routes[0]!.line, 1, 'riders ride line 2');
   assert.equal(TRADE.routes[0]!.a, 0, "from the line's first halt, the Village");
   const at = RAIL_LINES[1]!.halts[0]!.platforms[0],
-    quarry = RAIL_LINES[1]!.halts[1]!.platforms[1];
+    quarry = RAIL_LINES[1]!.halts[1]!.platforms[0];
   const land = row.land!;
   // Five metres ahead along Home's island axis from where riders board, with the canopy behind the camera.
   const { AXIS, ISLAND, ISLAND_A, ISLAND_C, toAxis } = await import('../src/place/home-station.ts');

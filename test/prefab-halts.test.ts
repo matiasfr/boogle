@@ -33,7 +33,7 @@ import kitLevel from '../content/built/levels/halt-kit.json' with { type: 'json'
 import * as validation from '../src/prefab/validate.ts';
 import { names } from '../src/prefab/names.ts';
 
-test('all halt kit placements, colliders, lever plaques and ordered prompts retain the old code', async () => {
+test('halt kit placements, colliders, lever plaques and ordered prompts match the committed catalog stage', async () => {
   const bodies: unknown[] = [],
     sets: Box[][] = [],
     levers: ReturnType<typeof import('../src/entities/railway/request-lever.ts').createRequestLever>[] = [];

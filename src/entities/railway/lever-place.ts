@@ -3,8 +3,9 @@
 // I deposit the footings"). Pure numbers, so test/halt-lever-place.test.ts can hold the clearances.
 import { RING_HEAD, RING_PLATFORM_LAT } from '../../sim/railway-ring-layout.ts';
 import { PIER_FRAME, PIER_RACK, SHED_STALL, WORKS_RACK } from '../../sim/railway-works-layout.ts';
-import { haltPlatform, type RailPlatform } from '../../sim/railway-lines.ts';
+import { RAIL_HALTS, haltPlatform, type RailPlatform } from '../../sim/railway-lines.ts';
 import { haltHead } from '../../sim/railway-queries-route.ts';
+import { trainStops } from '../../sim/railway-queries-trains.ts';
 import { ringHead } from '../../sim/railway-queries.ts';
 type World = Parameters<typeof ringHead>[0];
 
@@ -24,8 +25,10 @@ export const railheadLever = (head: number) => ({
 });
 
 /** The platform the server judges a lever's ask from: `rail.call`'s own choice (src/world/railway-server.ts). */
-export const leverPlatform = (w: World, halt: number, way: number) =>
-  haltPlatform(halt, way, haltHead(w, halt, ringHead(w)));
+export const leverPlatform = (w: World, halt: number, way: number) => {
+  const h = RAIL_HALTS[halt]!;
+  return haltPlatform(h, way, haltHead(w, halt, ringHead(w)), h.stop === trainStops(w, h.line).length - 1);
+};
 /** Whether the server would take a lever ask from (x, y, z) metres: `rail.call`'s position test, both limits (flat
  * reach of the platform's middle, and within 2.6 m of 0.4 m over it), on the centimetres the adapter sends. A lever
  * offers no prompt where this is false. */

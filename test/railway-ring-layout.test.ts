@@ -153,8 +153,8 @@ test('the island ends in buffers 15 m past the platforms, a crossover before the
   // is the extent from v33 (fourth-car, R1: the steel car behind the wagon).
   assert.deepEqual(TRAIN_EXTENT, { aheadCm: 820, behindCm: 1270 });
   assert.equal(E.bufferU, RING_HALT.u1 + 1500);
-  assert.deepEqual(E.buffers[0], { ...ringAt(E.bufferU, -400), y: 940 });
-  assert.deepEqual(E.buffers[1], { ...ringAt(E.bufferU, 0), y: 940 });
+  assert.deepEqual(E.buffers[0], { ...ringAt(E.bufferU, 0), y: 940 });
+  assert.deepEqual(E.buffers[1], { ...ringAt(E.bufferU, -400), y: 940 });
   assert.equal(E.u, (RING_HALT.u0 + RING_HALT.u1) / 2);
   assert.equal(E.s, RING_S_HEAD + E.u);
   assert.equal(E.mergeCm, RING_S_HEAD + E.cross.u0);
@@ -184,8 +184,8 @@ test('the island ends in buffers 15 m past the platforms, a crossover before the
   for (const p of [...E.buffers, E.board]) assert.ok(lat(p.x, p.z) >= -581, `(${p.x}, ${p.z})`);
   // The world positions, pinned once.
   const pinned: [{ x: number; z: number }, number, number][] = [
-    [E.buffers[0], 141113, -85493],
-    [E.buffers[1], 141513, -85482],
+    [E.buffers[0], 141513, -85482],
+    [E.buffers[1], 141113, -85493],
     [E.board, 141317, -85638],
   ];
   for (const [p, x, z] of pinned) assert.ok(dist(p.x, p.z, x, z) <= 1, `(${p.x}, ${p.z}) against (${x}, ${z})`);

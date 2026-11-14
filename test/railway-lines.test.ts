@@ -110,7 +110,7 @@ test("stop, home and halt tables are catalog views, including Home's shared isla
   RAIL_HALTS.slice(0, 5).forEach((h, id) => {
     assert.equal(h.s, V25_STOPS[h.line]![h.stop], `halt ${id} stands at its stop`);
     // Today's platform serves the down track; Quarry and Far Head have an up one (step 2), the stubs' ends one.
-    assert.deepEqual(h.platforms[1], {
+    assert.deepEqual(h.platforms[0], {
       x: HALT_PINS[id]!.x,
       z: HALT_PINS[id]!.z,
       y: HALT_PINS[id]!.y,
@@ -232,7 +232,7 @@ test("line 2 keeps its halt order and pinned platforms after Home's move", () =>
   halts.slice(0, 4).forEach((h, k) => assert.equal(h.s, V25_STOPS[1]![k], `${h.name} stands where v26's did`));
   halts.slice(0, 3).forEach((h, k) => {
     const v = HALT_PINS[k + 2]!;
-    assert.deepEqual(h.platforms[1], { x: v.x, z: v.z, y: v.y, reach: v.reach }, `${h.name}: pinned down platform`);
+    assert.deepEqual(h.platforms[0], { x: v.x, z: v.z, y: v.y, reach: v.reach }, `${h.name}: pinned original platform`);
   });
   // The Pier's one platform, both ways: 2.9 m east of line 2's path at s 730 m (x greater: east), its lever's reach.
   const [px, pz] = [line2.path[73 * 2]!, line2.path[73 * 2 + 1]!];
@@ -259,20 +259,21 @@ test("line 2 keeps its halt order and pinned platforms after Home's move", () =>
   );
   assert.deepEqual(head.heads, [85200, 87200, 89200, 91200, 93200, 95200, 97200, 99200]);
   assert.equal(head.s, RING_HEAD[0]!.s);
-  assert.deepEqual(head.platforms, [RING_JOINT_UP, RING_HEAD[0]!.platform]);
+  assert.deepEqual(head.platforms, [RING_HEAD[0]!.platform, RING_JOINT_UP]);
   assert.equal(head.brake, RING_END_BRAKE_CMS2 / 100);
   assert.deepEqual(head.end, { kind: 'stub', mergeCm: 83200, edgeCm: 81200, signalCm: 80380 });
   // Ring Island: the crossover on the Way, the buffers 15 m on.
   const island = halts[5]!;
   assert.equal(island.s, RING_END.s);
   assert.equal(island.s, 119000);
-  assert.deepEqual(island.platforms, [RING_HALT.up, RING_HALT.down]);
+  assert.deepEqual(island.platforms, [RING_HALT.down, RING_HALT.up]);
   assert.equal(island.ring, true);
   assert.deepEqual(island.end, { kind: 'crossover', mergeCm: 113700, edgeCm: 113700, signalCm: 112880 });
-  // A heads halt's down side is the railhead's platform where it stands now.
+  // A heads halt's original side is the railhead's platform where it stands now, both ways at the open end.
   for (let k = 0; k < RING_HEAD.length; k++) {
-    assert.equal(haltPlatform(head, -1, k), RING_HEAD[k]!.platform);
-    assert.equal(haltPlatform(head, 1, k), RING_JOINT_UP);
+    assert.equal(haltPlatform(head, 1, k), RING_HEAD[k]!.platform);
+    assert.equal(haltPlatform(head, -1, k), RING_JOINT_UP);
+    assert.equal(haltPlatform(head, -1, k, true), RING_HEAD[k]!.platform);
   }
   assert.equal(haltPlatform(halts[3]!, 1), PIER_EAST);
 });
