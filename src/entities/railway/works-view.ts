@@ -58,6 +58,7 @@ import { FOOTING_COPY, footingBoardLine } from './footing-cues.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
+import { bridgeHandle, tableYaws } from './table-bridge.ts';
 
 /** Seconds a cast footing takes down the roller road, and its hop onto the rack. */
 const ROLL_S = 4,
@@ -331,22 +332,15 @@ export async function createRailwayWorks(
     boardPainted = line;
     rackBoard.relabel('sign', [FOOTING_COPY.board, line]);
   }
-  // The table's handle as roundhouse-view.ts draws it on a still deck (its yaw by `shed.table`: toward the stall's rim,
-  // or down the spur), and the wagon's wait on road 2 (WAGON_S), for the gold ghosts.
+  // The table's handle as roundhouse-view.ts draws it on a still deck (one pose for both: ./table-bridge.ts; its yaw
+  // by `shed.table`: toward the working bay's road, or down the spur), and the wagon's wait on road 2 (WAGON_S), for
+  // the gold ghosts.
   const line2 = layout.LINKS[1]!.line;
-  const tableYaws = (() => {
-    const rim = home.stallFrame(home.STALLS.open).rim,
-      spur = (home.TABLE.spur * Math.PI) / 180;
-    return [Math.atan2(rim.x - home.TABLE.x, rim.z - home.TABLE.z), Math.atan2(Math.sin(spur), -Math.cos(spur))];
-  })();
+  const yaws = tableYaws();
   const tableHandle = () => {
-    const yaw = tableYaws[shed(wd).table] ?? tableYaws[0]!;
-    return {
-      x: tableAt.x + Math.sin(yaw + Math.PI / 2) * (home.TABLE.r - 0.4),
-      y: layout.railY(line2, 0) + 0.55,
-      z: tableAt.z + Math.cos(yaw + Math.PI / 2) * (home.TABLE.r - 0.4),
-      yaw,
-    };
+    const yaw = yaws[shed(wd).table] ?? yaws[0],
+      at = bridgeHandle(tableAt, home.TABLE.r, yaw);
+    return { x: at.x, y: layout.railY(line2, 0) + 0.6, z: at.z, yaw };
   };
   const wagonWait = (() => {
     const s = WAGON_S / 100,

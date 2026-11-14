@@ -45,6 +45,7 @@ import { PARK, createShuntPath } from './shunt-path.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
 import { createRotundaBlocks } from './rotunda-view.ts';
+import { BRIDGE, bridgeHalf, bridgeHandle, clearOfBridge } from './table-bridge.ts';
 import { rotundaStage } from './rotunda-stage.ts';
 
 /** Seconds: the door piers' build, the tarp's slide, the table's quarter turn. */
@@ -112,13 +113,10 @@ export async function createRailwayRoundhouse(
   const yaws = [Math.atan2(rim.x - table.x, rim.z - table.z), 0];
   const spur = (home.TABLE.spur * Math.PI) / 180;
   yaws[1] = Math.atan2(Math.sin(spur), -Math.cos(spur));
-  /** The bridge: its deck's width and depth (m), from the pit's floor up to the rails' feet, and where its handle
-   * stands when the deck's yaw is `yaw`: beside the deck's far end, on it. */
-  const DECK = { w: 3.2, h: 0.4 };
-  const handleAt = (yaw: number) => ({
-    x: table.x + Math.sin(yaw) * (R - 0.8) + Math.cos(yaw) * (DECK.w / 2 - 0.15),
-    z: table.z + Math.cos(yaw) * (R - 0.8) - Math.sin(yaw) * (DECK.w / 2 - 0.15),
-  });
+  /** The bridge's deck and where its handle stands when the deck's yaw is `yaw` (./table-bridge.ts, which the turn's
+   * cue reads too). */
+  const DECK = BRIDGE;
+  const handleAt = (yaw: number) => bridgeHandle(table, R, yaw);
 
   // The train garage: the works copy stands on the table after coupling; the lever post opens its framed view.
   // Local: nothing is sent or saved. Every Install hold starts inside the server's reach.
@@ -422,16 +420,17 @@ export async function createRailwayRoundhouse(
     const handle = handleAt(drawn);
     batch.box(handle.x, tableY + 0.6, handle.z, 0.16, 1, 0.16, BRASS, drawn);
     // The deck is solid where it rests, never while it turns (a turning deck would shove whoever stands by it): it
-    // is taken away with the first step of a turn and put back at the yaw it stops at.
+    // is taken away with the first step of a turn and put back at the yaw it stops at, once this tab's player is
+    // clear of its volume (someone who dropped onto the disc during the turn is never lifted through it).
     const still = !tableTurning && drawn === deckDrawn;
     deckDrawn = drawn;
     if (deckBody && (!still || drawn !== deckBodyYaw)) {
       owner.removeBody(deckBody);
       deckBody = null;
     }
-    if (still && !deckBody) {
+    if (still && !deckBody && clearOfBridge(table, R, drawn, deckY + DECK.h / 2, me.body?.position)) {
       deckBody = addStatic(
-        { kind: 'box', hx: DECK.w / 2, hy: DECK.h / 2, hz: R - 0.15 },
+        { kind: 'box', ...bridgeHalf(R) },
         { x: table.x, y: deckY, z: table.z },
         new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), drawn),
         undefined,
@@ -768,7 +767,7 @@ export async function createRailwayRoundhouse(
         Math.hypot(pos.x - stallAt.x, pos.z - stallAt.z) <= SHED_STALL.reach / 100 - 0.4 &&
         Math.abs(pos.y - SHED_STALL.y / 100) <= 2.6;
       // The garage's post, offered in every state. It keeps the reach test (2.6 m of the post,
-      // inside the server's 6 m of the table less 0.4 m), and the player is held while the garage is open, so every
+      // inside the server's 10 m of the table less 0.4 m), and the player is held while the garage is open, so every
       // Install hold is sent from inside the reach.
       if (
         !garageView.isOpen() &&
