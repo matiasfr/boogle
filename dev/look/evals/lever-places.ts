@@ -21,6 +21,9 @@ const { inspectRailway } = (await import(
 const { haltFrame } = (await import(
   '/src/prefab/halt-deck.ts' as string
 )) as typeof import('../../../src/prefab/halt-deck.ts');
+const { OFFSET_HALTS } = (await import(
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 const ring = (await import(
   '/src/sim/railway-ring-layout.ts' as string
 )) as typeof import('../../../src/sim/railway-ring-layout.ts');
@@ -102,7 +105,8 @@ if (spot === 'camp' || spot === 'pier') {
   const h = view()!.halts!.find((x) => x.name === name)!;
   const knob = h.lever.find((k) => k.on);
   if (!knob) throw new Error(`lever-places ${spot}: no active lever`);
-  const { yaw, h: src } = haltFrame(row, knob.platform === 'up'),
+  const offset = knob.platform === 'up';
+  const { yaw, h: src } = haltFrame(offset ? OFFSET_HALTS.findIndex((h) => h.pair === row) : row, offset),
     sign = Math.sign(src.lat);
   await atLever(
     knob,

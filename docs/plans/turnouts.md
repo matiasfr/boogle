@@ -42,7 +42,7 @@ over 0.12 m). A lever box already stands at the spur and at each end of the leg.
 - **Lines:** `src/place/layout.ts` `LINES.north` / `LINES.east`, 1 m samples; Home's first metres are arcs and
   straights from `src/place/home-station.ts` `HEADS`. The sim keeps a 10 m copy (`RAIL_LINES[].path`) for the
   near-train check only.
-- **The second track** is not a second spline: it is a lateral offset from the line, `upLat(f, s)` and
+- **The second track** is not a second spline: it is a lateral offset from the line, `offsetLat(f, s)` and
   `crossLat(f, s)` in `layout.ts` (4 m left, a smoothstep over 20 m at each merge). `track.ts` draws it; `train-view.ts`
   (`latOf`) and `line2-path.ts` (`line2Lat`) pose trains with the same functions.
 - **The sim knows a junction only as** `RailHalt.end` (`railEnd(kind, mergeCm, side)` in `src/sim/railway-lines.ts`:
@@ -90,7 +90,7 @@ overlapping.
   track. Between its turnouts the offset track ran a flat 4 m inside line 2's bend at the Quarry (the line's own radius
   6.5 m there, s 175 to 181), which made it a bend of under 3 m; an up train's engine stood in its first car at that
   stop. It is eased in Place data (`upFull` in `src/place/layout.ts`, `src/place/track-ease.ts`): through s 156 to
-  200 the offset track's offset runs 3.91 to 4.35 m, so it turns no tighter than 10 m. `upLat` carries it, so anything
+  200 the offset track's offset runs 3.91 to 4.35 m, so it turns no tighter than 10 m. `offsetLat` carries it, so anything
   generated from the two centrelines there follows; the line's own 6.5 m bend is the sim's data and is unchanged.
 - **Tangent at the toe:** every junction leaves at 0.8° to 2.1° measured 0.3 m in (zero in the data: the smoothstep
   has zero slope at its start, the spur and leg are arcs tangent to their roads).
@@ -166,7 +166,7 @@ export function turnout(through: Centre, diverging: Centre): Turnout;
 
 **New:** `src/place/junctions.ts`, the one list. `junctions(): Junction[]` with
 `{ id, line: LineSpec['id'], s, dir: 1 | -1, kind: 'stub' | 'crossover' | 'spur', through, diverging, when? }`:
-J4 to J9 are built from `FORMATION`, `upLat` and `crossLat`; J1 to J3 from `SPUR`, `LEG` and `roadAt` (J2 and J3 carry
+J4 to J9 are built from `FORMATION`, `offsetLat` and `crossLat`; J1 to J3 from `SPUR`, `LEG` and `roadAt` (J2 and J3 carry
 `when: 'leg'`, shown with the leg). `line` and `s` say whose track view draws it and where its pieces fall in the
 laying order. A test holds the list against the sim's catalog: every `RailHalt.end` of lines 0 and 1 that the layout
 draws has a junction at its `mergeCm`.
@@ -180,7 +180,7 @@ the shared catalogue (99% full by bytes). The pieces ride the track's existing i
 
 - **A. Keep every centreline; generate from them (recommended).** View-only. No sim, wire or catalog change, no
   `WORLD_NS`. The data is already valid turnout geometry (above).
-- **B. Reshape the offset track's ease in the view** (`upLat`, `crossLat` in `src/place/layout.ts`): an arc of 22 m radius,
+- **B. Reshape the offset track's ease in the view** (`offsetLat`, `crossLat` in `src/place/layout.ts`): an arc of 22 m radius,
   7.4 m straight at 17° (1:3.3) through the frog, an arc back, in the same 20 m from the same merge. Trains read the
   same functions, so they follow; the sim is untouched (it holds the merge, the 20 m and the track index, not the
   shape). Gain: a straight frog, and J4 eases from 9.5 m to about 9.9 m. Cost: `crossingPlanks` where a board crossing

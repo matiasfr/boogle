@@ -351,7 +351,7 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   both gates span both tracks (slab 10.4 m, centred 2 m left), Quarry's up platform is s 154–174.5, clear of the Q4
   frame, with no ramp off that end, p1's lip ends at the wider deck's edge (5.8 m), and the survey now checks pillars,
   gates and frames. Differences from the text above: the formation's merges and crossover live in
-  `src/proto/place/layout.ts` (`FORMATION`, `upLat`, `crossLat`) until 4a moves them into `RailHalt.end`, and the
+  `src/proto/place/layout.ts` (`FORMATION`, `offsetLat`, `crossLat`) until 4a moves them into `RailHalt.end`, and the
   blockout generator still reads `LIVE_SECOND_TRACK` from its own survey (its line-2 left side now reports only the
   turntable and the pier rack, both outside the formation); the greybox no longer draws lines 1 and 2's survey beds.
   The gantry carries both pairs of a double panel in one trip (seats today's pair, crosses, sets the up pair) on a

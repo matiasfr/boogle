@@ -48,6 +48,7 @@ import {
 import { ENGINE } from '../../src/entities/railway/engine.ts';
 import { BUFFERS, LEG, SPUR } from '../../src/place/home-station.ts';
 import { TRAILER, TRAIN_OFFSETS } from '../../src/entities/railway/cars.ts';
+import { line2World, line2Y } from '../../src/entities/railway/line2-path.ts';
 
 export type Pt = { x: number; z: number; y: number; s: number };
 /** Who runs it: `live` trains run on it today; `v26` drawn in the game today, trains from v26; `v27` Ring Island build
@@ -100,14 +101,6 @@ function ringU(x: number, z: number) {
   const dx = x * 100 - 140200,
     dz = z * 100 - -37200;
   return { u: (ux * dx - dz) / n, lat: (dx + ux * dz) / n };
-}
-function ringTrack(lat: number, u0: number, u1: number, step = 1000): Pt[] {
-  const pts: Pt[] = [];
-  for (let u = u0; u <= u1; u += step) {
-    const p = ringAt(u, lat);
-    pts.push({ x: m(p.x), z: m(p.z), y: m(ringDeckY(u)), s: m(RING_S_HEAD + u) });
-  }
-  return pts;
 }
 /** The balloon loop as Ring Island's R1 lays it out: from the halt's north end 12 m on along the line, then straight to
  * the circle's west point (the greybox's straight links), round the circle and back. */
@@ -205,22 +198,24 @@ export function tracks(): Track[] {
       enforce: false,
     });
   }
-  // v27: line 2 on from the pier head. The view: Place's spline to its end, then ringAt's straight line; the offset track
-  // on the widened pier (no merge at s 556 once Q7 is laid) and on over the bents.
-  const E = LINES.east;
+  // Sample the production 12 m Pier blend, rather than stitching the layout's s 743 end backwards onto ring u 0
+  // (s 742). That obsolete splice invented a short chord and kinks on the offset track. Same thresholds as before.
   for (const k of ['down', 'up'] as const) {
-    const pier = k === 'down' ? [] : placeTrack(E, () => -4, 556, E.len);
-    const ring = ringTrack(RING_TRACK_LAT[k], 0, 46800);
+    const pts: Pt[] = [];
+    for (let s = k === 'down' ? RING_S_HEAD / 100 : 556; s <= (RING_S_HEAD + 46800) / 100; s++) {
+      const p = line2World(s, RING_TRACK_LAT[k] / 100, { x: 0, z: 0 });
+      pts.push({ ...p, y: line2Y(s), s });
+    }
     out.push({
       id: `ring-${k}`,
       line: 'line2',
       label: `Line 2 to Ring Island, ${k} track (${k === 'up' ? 'the widened pier from s 556, then ' : ''}pier head u 0 to the island halt's north end, u 468 m)`,
-      status: 'v27',
+      status: 'live',
       kind: k,
-      nominal: 10,
-      pts: k === 'down' ? ring : [...pier.filter((p) => p.s <= E.len), ...ring.map((p) => ({ ...p }))],
-      pose: 'polyline',
-      enforce: false,
+      nominal: 1,
+      pts,
+      pose: 'spline',
+      enforce: true,
     });
   }
   // The sim's path in v27: line 2's RAIL_LINES path (to s 740) with RING_PATH appended (railLinePoint, 10 m).

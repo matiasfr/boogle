@@ -1,3 +1,4 @@
+// npm run look -- --real --rail-seed deck-laid --eval dev/look/evals/railway-ride-bot.ts --until window.__placeDone
 // Accepted-seed return ride, ordinary inputs only. q6-done exercises the Pier terminal; deck-laid exercises its
 // second platform: --real --rail-seed deck-laid --eval dev/look/evals/railway-ride-bot.ts --until window.__placeDone.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
