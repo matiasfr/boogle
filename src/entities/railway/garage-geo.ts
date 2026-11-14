@@ -42,7 +42,7 @@ export const GARAGE_GEO: GarageGeo = {
   post: { bearing: 60, r: 9.4 },
   jib: { bearing: 85, r: 12.2 },
   mast: 4.4,
-  arm: 11.0,
+  arm: 12.2, // Covers the bystander's closed pose with main's 15° camera, including the trolley and beam end inset.
   park: 67,
   stand: { bearing: 85, r: 10.3 },
   standAlong: 'radius',
@@ -66,6 +66,12 @@ export const polarAt = (centre: XZ, p: Polar): XZ => ({
  * arm's height over the deck (it clears the part held up over the engine's seat), so the post is longer by however
  * far the yard lies under the deck. */
 export const mastFrom = (geo: GarageGeo, deck: number, ground: number) => geo.mast + Math.max(0, deck - ground);
+
+/** Pick the bridge-aligned nose closest to the engine camera, keeping the engine left of its panel. */
+export function garageFlip(rest: number, cameraYaw: number): number {
+  const distance = (yaw: number) => Math.abs(Math.atan2(Math.sin(yaw - cameraYaw), Math.cos(yaw - cameraYaw)));
+  return distance(rest + Math.PI) < distance(rest) - 1e-6 ? Math.PI : 0;
+}
 
 /** The stand's two ends along the part (inner first for a radial stand), from the table's centre. */
 export function standEnds(centre: XZ, geo: GarageGeo): [XZ, XZ] {

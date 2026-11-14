@@ -30,7 +30,7 @@ import {
   type RoomFacts,
 } from './garage-data.ts';
 import { garage, type GarageSnap } from './garage-state.ts';
-import { polarAt, STAND_LEGS, type GarageGeo } from './garage-geo.ts';
+import { garageFlip, polarAt, STAND_LEGS, type GarageGeo } from './garage-geo.ts';
 
 /** The table's centre and rail height, the post (the row's, placed by the caller), and the ground the post, jib, stand
  * and crew stand on. */
@@ -431,18 +431,10 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   const camYaw = (s: number) => Math.PI - rad(row.camBearing) - s * camPhi;
   const baseYaw = () => camYaw(side);
   function pickPose(rest: number) {
-    let best = Infinity;
     // One side only: the engine shot puts the engine on the screen's left, clear of the panel on the right. Seen from
     // the other side it stands under the panel (looked at in G3's capture), so only the nose is picked.
-    for (const s of [1] as const)
-      for (const f of [0, Math.PI]) {
-        const d = Math.abs(wrap(rest + f - camYaw(s)));
-        if (d < best - 1e-6) {
-          best = d;
-          side = s;
-          flip = f;
-        }
-      }
+    side = 1;
+    flip = garageFlip(rest, camYaw(side));
     restPose = rest + flip;
   }
   // One static box per vehicle, at the rest pose: it does not turn with the table (design review, call 23), and each

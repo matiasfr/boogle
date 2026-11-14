@@ -2,11 +2,13 @@
 // review): inside the server's reach for the install, off the turning deck, off both lines and off the jump-in landing.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { sourceFunction } from '../dev/level/source.ts';
 import {
   DECK_R,
   GARAGE_GEO,
   STAND_LEGS,
   STAND_PART,
+  garageFlip,
   garageRow,
   installHere,
   polarAt,
@@ -16,7 +18,7 @@ import {
 import { SHED_TABLE } from '../src/sim/railway-works-layout.ts';
 import { ROTUNDA_KIT } from '../src/place/rotunda.ts';
 import { STEEL_CAR, steelCarOffset } from '../src/entities/railway/cars.ts';
-import { ENGINE } from '../src/entities/railway/engine.ts';
+import { ENGINE, ENGINE_BOILER, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { TRAILER, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
 import { TRAIN_STOPS } from '../src/sim/railway-train.ts';
 
@@ -81,11 +83,23 @@ test('nothing within the deck’s sweep, legs under the barrel, off every track 
   assert.ok(Math.abs(dist(inner, tableB) - 8.725) < 0.01, 'the stand’s inner end, 8.725 m out');
   for (const r of STAND_LEGS.at) assert.ok(Math.abs(r - b.stand.r) <= STAND_PART.half, 'a leg under the barrel');
   const shift = (TRAIN_OFFSETS[0]! + ENGINE.hz - TRAILER.hz) / 2;
-  const seat = polarAt(tableB, { bearing: 130, r: TRAIN_OFFSETS[0]! - shift });
-  assert.ok(
-    b.arm >= dist(polarAt(tableB, b.jib), seat),
-    'the arm reaches the seat with the copy nose toward 130 degrees',
-  );
+  // Execute the actual nose choice: the retained camera chooses a different closed pose from the old plan's 130°.
+  // A bystander's accepted install uses that pose; the installer uses the camera pose. Both need a supported hook.
+  const cams = sourceFunction<{ engine: { pos: number[] } }>('src/entities/railway/garage-view.ts', 'CAMS', {});
+  const camPhi = Math.atan2(cams.engine.pos[0]!, cams.engine.pos[2]! - shift);
+  const camYaw = (s: number) => Math.PI - (b.camBearing * Math.PI) / 180 - s * camPhi;
+  const rest = stallFrame(STALLS.open).yaw;
+  const pose = rest + garageFlip(rest, camYaw(1));
+  const hookAlong = TRAIN_OFFSETS[0]! - shift + (ENGINE_BOILER.zBack + ENGINE_BOILER.zFront + ENGINE_LONG_AHEAD) / 2;
+  const jib = polarAt({ x: 0, z: 0 }, b.jib);
+  for (const yaw of [pose, camYaw(1)]) {
+    const dx = Math.sin(yaw) * hookAlong - jib.x,
+      dz = Math.cos(yaw) * hookAlong - jib.z;
+    const reach = Math.hypot(dx, dz);
+    // The beam ends 0.2 m before its nominal length; the 0.3 m trolley remains world-axis aligned.
+    const trolleyHalf = (0.15 * (Math.abs(dx) + Math.abs(dz))) / reach;
+    assert.ok(reach + trolleyHalf <= b.arm - 0.2, `hook ${reach.toFixed(3)} m plus trolley must stay on the arm`);
+  }
   // The jib and the crew stand behind the stand, on its bearing or within 4° of it.
   assert.ok(b.jib.r > b.stand.r + STAND_PART.half && b.jib.bearing === b.stand.bearing);
   for (const p of b.crew) assert.ok(p.r > b.stand.r + STAND_PART.half && Math.abs(p.bearing - b.stand.bearing) <= 4);
