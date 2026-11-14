@@ -4,7 +4,7 @@
 // no peer ids, no URLs beyond the script path. Deduped (the same report at most MAX_SAME times), at most MAX_REPORTS
 // per page load, batched into one POST every FLUSH_MS (and on pagehide) via navigator.sendBeacon.
 //
-// Connection reports carry `role` (lead or client) and `transport` ('server'). A good join also says `rttMs`, the round
+// Connection reports carry `role` ('client') and `transport` ('server'). A good join also says `rttMs`, the round
 // trip to the server; a non-owner sees the ball about rtt (owner -> server -> them) + INTERP_MS late. They also
 // say whether the room was running mixed builds (`mixedBuilds`, src/netplay/builds.ts; a yes or no, never the ids).
 // Serves DESIGN.md "Understandable at a glance". Sync kind: Local
@@ -78,7 +78,7 @@ if (SERVER) {
   let stuckSent = false;
   let stuckTimer: ReturnType<typeof setTimeout> | undefined;
   const base = () => ({
-    role: net.room ? (net.room.isLead() ? 'lead' : 'client') : '?', // the lead can move without a state change
+    role: 'client',
     transport: net.room?.transport ?? null,
     mixedBuilds: mixedBuilds(),
     gfx: gfx(),

@@ -1,6 +1,6 @@
 // The Boogler: a squished, smiling NPC who waddles around the island.
 //
-// Authority: Server legs, evaluated against the railway presentation clock. Only sessionless tabs run a local
+// Authority: Server legs, evaluated against the railway presentation clock. Prototypes and offline tabs run a local
 // 10 Hz brain. Animation RNG is private and cannot change his decisions. Your own talk holds him immediately.
 //
 // He has a kinematic physics body, so the ball bounces off him and players can bump into him or hop on his head.
@@ -29,7 +29,7 @@ import type { BooglerVisitor } from '../world/boogler-brain.ts';
 import type { BooglerLand } from '../world/boogler-land.ts';
 export { ACT, MODE, W_R } from '../world/boogler-brain.ts';
 
-/** A remote player as he sees them: their bg presence (src/boogler/play.ts: act, wary, ev, evN). */
+/** A remote player as he sees them: their bg presence (src/boogler/play.ts: act, wary). */
 export type BgRemote = Remote & { bg?: number[] | null };
 export type Mood = 'smile' | 'joy' | 'grump' | 'worry' | 'puff' | 'talk';
 
@@ -443,6 +443,7 @@ export function updateBoogler(dt: number, now: number) {
   const read = railwayWorldRead();
   let leg = railwayMirror?.boogler.leg() ?? null;
   let tick = read?.tickNow() ?? 0;
+  // Explicit ?proto pages never have the production mirror: each tab runs its own Boogler, even in a shared room.
   const local = !railwayMirror || (!net.room && !leg);
   if (local && brain) {
     localTime += dt * 10;

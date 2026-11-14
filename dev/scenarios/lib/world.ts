@@ -10,17 +10,14 @@ const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 export const EDIT_WAIT_MS = 180000;
 export const MET = `window.boogle.net.room && window.boogle.remotes.size >= 1`;
 const ROLE = `(() => { const w = window.boogle.sync.worldStatus(); return w.ready && w.mode; })()`;
-const LEAD = `window.boogle.net.room.isLead()`;
 
 // Waits until both tabs hold the world; `ok` when both follow the server's world (src/net/ws-room.ts: the server hosts
-// every room). `host` is the lead tab (it runs the Boogler, addHostField), `client` the other; tests that only need two
-// tabs use them as "this one" and "that one".
+// every room). The historical handle names `host` and `client` mean first and second tab; neither owns shared state.
 export async function roles(A: Game, B: Game) {
   for (const g of [A, B]) await g.waitFor(ROLE, { timeout: 60000 });
   const modes = [await A.eval(`return ${ROLE};`), await B.eval(`return ${ROLE};`)];
   const ok = modes.every((m) => m === 'client');
-  const [host, client] = (await A.eval(`return ${LEAD};`)) ? [A, B] : [B, A];
-  return { modes, ok, host, client };
+  return { modes, ok, host: A, client: B };
 }
 
 // Compare published server replicas at a shared server step. Sampling exists only during this check,

@@ -8,6 +8,8 @@ import { createRailwayMirror } from './railway-replicate.ts';
 export const land: Land = { n: GRID_RES, layout: { trees: [], perches: [] } };
 // The railway is Server-kind state (docs/plans/replication.md, R1a): no rules here, only the mirror the server fills.
 const mirror = createRailwayMirror();
+// Explicit prototypes keep LOCAL, unarbitrated seats and a per-tab Boogler. A generic room connection does not
+// opt them into server gameplay: seat.ts and boogler.ts use their local paths when this mirror is absent.
 export const railwayMirror = productionRailway ? mirror : null;
 // Non-production previews have an empty read-only roster; a client never allocates a player ordinal.
 export const rules = { roster: mirror.roster };

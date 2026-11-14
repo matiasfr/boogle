@@ -43,6 +43,7 @@ let sitting: Seat | null = null;
 let claims: ReturnType<typeof createSeatSession> | null = null;
 const remoteSeats = new Map<string, Seat>();
 const remotePoses = new Map<string, SeatPose>();
+// ?proto pages have no production mirror: sitting stays LOCAL and unarbitrated, even with other tabs connected.
 const occupants = railwayMirror?.seats;
 if (occupants) recordSeats(occupants);
 const pose: Local = { x: 0, y: 0, z: 0, yaw: 0 };

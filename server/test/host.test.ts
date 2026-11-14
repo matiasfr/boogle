@@ -15,7 +15,7 @@ import { findStart } from '../../src/world/boogler-brain.ts';
 import { loadBooglerLand } from '../src/host/land.ts';
 
 type Msg = Record<string, any>;
-const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
+const FAST = { reconnectGraceMs: 200, housekeepMs: 50, log: () => {} };
 
 async function start(env: Record<string, string> = {}, dataDir?: string, reconnectGraceMs = FAST.reconnectGraceMs) {
   dataDir ??= await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-host-'));
@@ -203,10 +203,10 @@ async function rename(client: ReturnType<typeof connect>, name: string) {
   await client.next((m) => isWorld('s')(m) && m.d.ack?.[0] === session.epoch && m.d.ack?.[1] >= session.next);
 }
 
-test('v42 clients receive a clean refusal after the v43 Boogler reaction commands', async () => {
+test('v43 clients receive a clean refusal after the v44 wire removal', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
-    for (const room of ['v42-boogle', 'rail-v42-boogle']) {
+    for (const room of ['v43-boogle', 'rail-v43-boogle']) {
       const client = connect(base, room, 'oldtab');
       assert.deepEqual(await client.next(is('peer')), { t: 'peer' });
       assert.equal(await client.closed, 4000);
@@ -284,12 +284,13 @@ test('ordinary rail-demo and production demo select distinct hosts and saves', a
   }
 });
 
-test('join: welcome then list, presence relays with ids, left after a close, the lead moves', async () => {
+test('join: welcome then list, presence relays with ids, and no tab is special after a close', async () => {
   const { svc, base } = await start();
   try {
     const a = connect(base, 'beach', 'aaa');
     const w = await a.next(is('welcome'));
-    assert.deepEqual([w.v, w.max, w.lead, typeof w.boot], [1, 8, 'aaa', 'string']);
+    assert.deepEqual([w.v, w.max, typeof w.boot], [1, 8, 'string']);
+    assert.equal(Object.hasOwn(w, 'lead'), false);
     assert.deepEqual(await a.next(is('list')), { t: 'list', peers: [], last: true });
     assert.ok(a.msgs.indexOf(w) < a.msgs.findIndex(is('list')));
     a.send({ t: 'p', s: 1, d: { v: 1, x: 3 } });
@@ -302,13 +303,85 @@ test('join: welcome then list, presence relays with ids, left after a close, the
     a.send({ t: 'hb', at: 42 });
     assert.equal((await a.next((m) => m.t === 'hb' && m.at === 42)).at, 42);
     a.ws.close();
-    assert.deepEqual(await b.next(is('lead')), { t: 'lead', id: 'bbb' });
     assert.equal((await b.next(is('left'))).id, 'aaa');
+    assert.equal(b.msgs.some(is('lead')), false);
     b.ws.close();
   } finally {
     await svc.close({ save: false });
   }
 });
+
+for (const order of ['ab', 'ba', 'abc', 'acb', 'bac', 'bca', 'cab', 'cba']) {
+  test(`no special tab: ${order.length} players hide, then leave in order ${order}`, async () => {
+    const id = railwayRoomId(`ordinary-${order}`);
+    const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*' });
+    const clients = new Map<string, ReturnType<typeof connect>>();
+    try {
+      for (const name of [...order].sort()) {
+        const client = connect(base, id, name);
+        clients.set(name, client);
+        assert.equal(Object.hasOwn(await client.next(is('welcome')), 'lead'), false);
+      }
+      const room = svc.roomHost()!.room(id)!;
+      const world = room.world as RailwayWorldHost;
+      await world.whenReady();
+      assert.equal(Object.hasOwn(room.status(), 'lead'), false);
+      for (const [name, client] of clients) {
+        client.send({ t: 'm', d: { t: 'r:open' } });
+        const session = (await client.next(isWorld('r:session'))).d;
+        for (const [index, edit] of [
+          { op: 'who.set', n: `Player ${name}`, c: 2 },
+          { op: 'seat.sit', id: `chair-${name}` },
+        ].entries()) {
+          const request = session.next + index;
+          client.send({
+            t: 'm',
+            d: { t: 'r:edit', e: { ...edit, epoch: session.epoch, request, at: [0, 0, 0], ms: 0 } },
+          });
+          const reply = await client.next((m) => isWorld('s')(m) && m.d.ack?.[1] === request);
+          assert.equal(reply.d.rej?.length ?? 0, 0, 'the command was accepted');
+        }
+        client.send({ t: 'p', s: 1, d: { v: 0, p: [0, 0, 0] } });
+        // The removed server-to-client message is harmless as either a raw frame or a forged game message.
+        client.send({ t: 'lead', id: name });
+        client.send({ t: 'm', d: { t: 'lead', id: name } });
+        client.send({ t: 'hb', at: name });
+        await client.next((m) => m.t === 'hb' && m.at === name);
+      }
+      const ticks = world.status().booglerMeter.ticks;
+      await sleep(150);
+      assert.ok(world.status().booglerMeter.ticks > ticks, 'the hidden clients do not own brain ticking');
+      assert.equal(world.status().seats.length, order.length, 'hiding keeps every occupied chair');
+      for (const name of order) {
+        const departing = clients.get(name)!;
+        const remaining = [...clients].filter(([peer]) => peer !== name).map(([, c]) => c);
+        departing.ws.close();
+        await departing.closed;
+        if (remaining.length) await Promise.all(remaining.map((c) => c.next((m) => m.t === 'left' && m.id === name)));
+        else await sleep(FAST.reconnectGraceMs + FAST.housekeepMs * 2);
+        clients.delete(name);
+        assert.deepEqual(
+          world.status().seats,
+          [...clients.keys()].sort().map((peer) => ({ id: `chair-${peer}`, pid: `${peer}pid` })),
+          'departure frees only that player, in every order',
+        );
+        for (const client of remaining) {
+          assert.equal(
+            client.msgs.some((m) => m.t === 'lead' || (m.t === 'm' && m.d?.t === 'lead')),
+            false,
+          );
+          client.send({ t: 'hb', at: name });
+          await client.next((m) => m.t === 'hb' && m.at === name);
+        }
+      }
+      assert.equal((world.sync.snapshot().data.roster as unknown[]).length, order.length, 'the roster remains saved');
+    } finally {
+      for (const client of clients.values()) client.ws.close();
+      await svc.close({ save: false });
+      await fs.rm(dataDir, { recursive: true, force: true });
+    }
+  });
+}
 
 test('refusals: unhosted room, bad ids, a full room (a known id still gets in)', async () => {
   const { svc, base } = await start({ MAX_PLAYERS: '2' });

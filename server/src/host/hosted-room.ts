@@ -1,5 +1,5 @@
-// The clients of one server-hosted room (docs/plans/server-host.md, "Joining", "Presence relay", "Leaving", "Lead"):
-// the cap, presence and message relay, heartbeats, the lead, and the room adapter the world host's sync talks through.
+// The clients of one server-hosted room: the cap, presence and message relay, heartbeats,
+// and the room adapter the world host's sync talks through. Every tab is an equal client.
 // Wire shapes: src/net/ws-wire.ts.
 //
 //   const room = createHostedRoom({ roomId, store, cfg, boot, log })
@@ -9,7 +9,7 @@
 //   room.replication             the room's replicator (src/world/replicate-server.ts): states define projections on it;
 //                                every client is subscribed on join (late join from change tick -1), and at the end of
 //                                each 60 Hz step what changed goes out, skipping sockets over HIGH_WATER (coalescing)
-//   room.status()                { boot, tick, players, max, dropped, lead, noSave, steps }  (steps: step-meter.ts)
+//   room.status()                { boot, tick, players, max, dropped, noSave, steps }  (steps: step-meter.ts)
 //   room.idleMs()                how long nobody has been in the room (0 while anyone is, or is reconnecting)
 //   A railway room is paused (world.pause(), the paused world) once idleMs() passes cfg.roomPauseMs, and woken with its
 //   away credit by the next join. A hidden tab is still a client (until hiddenDeadMs), so it keeps the room running.
@@ -36,7 +36,6 @@ export type HostCfg = {
   reconnectGraceMs?: number;
   deadMs?: number;
   hiddenDeadMs?: number;
-  leadHiddenMs?: number;
   housekeepMs?: number;
   roomPauseMs?: number; // a railway room stops simulating this long after it empties (RAIL_AWAY.pauseMs)
 };
@@ -57,7 +56,6 @@ type Client = {
   pid: string; // the player (src/player/identity.ts), bound at the upgrade; the sync stamps edits with it
   key: string; // the browser's secret behind that pid: only the same key takes the pid over
   ws: WebSocket;
-  joinedAt: number;
   seen: number; // last message
   s: number; // presence sequence
   d: unknown; // latest presence
@@ -115,7 +113,6 @@ export function createHostedRoom({
   const deadMs = cfg.deadMs ?? 20000;
   // A hidden tab (its presence says v 0) may be throttled or frozen by its browser far longer: give it more.
   const hiddenDeadMs = cfg.hiddenDeadMs ?? 120000;
-  const leadHiddenMs = cfg.leadHiddenMs ?? 5000;
   const clients = new Map<string, Client>(); // ready clients by selfId
   const railway = isRailwayRoom(roomId);
   const poseAt = new Map<string, number>();
@@ -162,7 +159,6 @@ export function createHostedRoom({
     if (railway) (world as RailwayWorldHost).depart(sid);
   };
   const gone = new Map<string, { s: number; pid: string; key: string; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
-  let lead: string | null = null;
   const retired = new Set<string>(); // sessions a newer tab of their player replaced: turned away if they come back
   let closing = false;
   let replacement: { label: string; until: number } | null = null;
@@ -244,26 +240,6 @@ export function createHostedRoom({
     if (!c.timer) flush(c);
   }
 
-  function pickLead() {
-    let best: Client | null = null;
-    for (const c of clients.values())
-      if (!best || (visible(c) && !visible(best)) || (visible(c) === visible(best) && c.joinedAt < best.joinedAt))
-        best = c;
-    return best?.id ?? null;
-  }
-  function checkLead() {
-    const cur = lead ? clients.get(lead) : null;
-    let next = lead;
-    if (!cur) next = pickLead();
-    else if (!visible(cur) && cur.hiddenSince && performance.now() - cur.hiddenSince >= leadHiddenMs) {
-      const better = pickLead();
-      if (better && visible(clients.get(better)!)) next = better;
-    }
-    if (next === lead) return;
-    lead = next;
-    toAll(encode({ t: 'lead', id: lead }));
-  }
-
   function onMessage(c: Client, data: unknown) {
     if (clients.get(c.id) !== c) return; // a replaced socket's frames still in flight
     const text = String(data);
@@ -283,7 +259,6 @@ export function createHostedRoom({
       c.hiddenSince = visible(c) ? 0 : c.hiddenSince || now;
       const out = encode({ t: 'p', id: c.id, s: c.s, d: c.d });
       for (const to of audience(c.id)) queuePresence(to, c.id, out);
-      if (c.id === lead || !lead) checkLead();
       return;
     }
     if (m.t !== 'm') return;
@@ -331,10 +306,8 @@ export function createHostedRoom({
       depart(c.id);
       if (!clients.size && !gone.size) emptySince = performance.now();
       toAll(encode({ t: 'left', id: c.id, s: c.s }));
-      checkLead();
     }, graceMs);
     gone.set(c.id, { s: c.s, pid: c.pid, key: c.key, timer });
-    if (lead === c.id) checkLead(); // the lead does not wait out the grace period
   }
 
   // Takes c out of the room now, without the grace period (its close is then not a leave).
@@ -367,7 +340,6 @@ export function createHostedRoom({
       depart(gid);
       retire(gid, g.s);
     }
-    if (lead && !clients.has(lead)) checkLead();
   }
   // Whether another session holds pid under a different key: someone else claiming a player who is here.
   function taken(id: string, pid: string, key: string) {
@@ -400,7 +372,6 @@ export function createHostedRoom({
       pid,
       key,
       ws,
-      joinedAt: old?.joinedAt ?? now,
       seen: now,
       s: old?.s ?? back?.s ?? -1,
       d: old?.d ?? null,
@@ -427,8 +398,7 @@ export function createHostedRoom({
       }
     });
     ws.on('close', () => leave(c));
-    if (!lead) lead = id;
-    ws.send(encode({ t: 'welcome', v: 1, boot, ...(born === null ? {} : { born }), lead, max: cfg.maxPlayers }));
+    ws.send(encode({ t: 'welcome', v: 1, boot, ...(born === null ? {} : { born }), max: cfg.maxPlayers }));
     let peers: { id: string; s: number; d: unknown }[] = [];
     let chars = 0;
     const sendList = (last: boolean) => {
@@ -447,7 +417,6 @@ export function createHostedRoom({
     sendList(true);
     const notice = replacingNotice();
     if (notice) ws.send(encode(notice));
-    if (lead !== id) checkLead();
     if (railway) (world as RailwayWorldHost).wake(); // a paused room applies its away credit before anyone sees it
   }
 
@@ -458,7 +427,6 @@ export function createHostedRoom({
       if (now - c.seen > (c.hiddenSince ? hiddenDeadMs : deadMs)) c.ws.terminate();
       else write(c, hb);
     }
-    checkLead();
     if (railway && !clients.size && !gone.size && now - emptySince > pauseMs) (world as RailwayWorldHost).pause();
   }, cfg.housekeepMs ?? 1000);
   housekeep.unref();
@@ -484,7 +452,6 @@ export function createHostedRoom({
         max: cfg.maxPlayers,
         // Malformed, over-rate or throwing messages dropped from the sockets connected now.
         dropped: [...clients.values()].reduce((n, c) => n + c.dropped, 0),
-        lead,
         noSave: ws.badSave, // a failed-load fallback must not replace the durable save
         steps: meter.report(world.sync.stepsDropped()),
         replication: { ...repStats, entities: replication.size() },

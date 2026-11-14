@@ -79,7 +79,7 @@ const clocksReady = async (group: Page[]) =>
 
 let exitCode = 1;
 try {
-  // 1. join: all on the server, nobody the lockstep host, the first page the lead
+  // 1. join: every tab follows the server; no tab is special.
   const A = await open('A'),
     B = await open('B'),
     C = await open('C');
@@ -89,11 +89,7 @@ try {
     'every page is on the server transport',
     snaps.every((s) => s.transport === 'server'),
   );
-  check(
-    'no page is the lockstep host',
-    snaps.every((s) => !s.host),
-  );
-  check('only the first page is the lead', snaps.map((s) => s.lead).join() === 'true,false,false');
+  check('every page follows the server', (await waitFor(() => clocksReady(all), 5000)) >= 0);
   check('each page sees the other two', (await waitFor(() => seesAll(all), 5000)) >= 0);
   check('default room does not install the railway registry', (await ev(A.page, () => window.T.rail())) === null);
 
@@ -177,16 +173,15 @@ try {
   D = D2;
   all = [B, C, D];
 
-  // 6. the lead leaves: the next page leads, and the others see it leave
+  // 6. the first tab leaves: the others keep following the server and see it leave.
   await A.page.close();
-  const leadMs = await waitFor(async () => (await snap(B)).lead, 2000);
-  check('B becomes the lead within 2 s', leadMs >= 0, leadMs + ' ms');
   const leftMs = await waitFor(async () => {
     for (const p of all)
       if (!(await ev(p.page, () => window.T.left)).some((l: { peer: string }) => l.peer === A.selfId)) return false;
     return true;
   }, 3000);
   check('A is left on the others within 3 s', leftMs >= 0, leftMs + ' ms');
+  check('the remaining tabs still follow the server', await clocksReady(all));
 
   // 7. a graceful server restart: everyone reconnects, the plot is kept, little time is lost, edits flow again
   const before = (await world(B)).tick;
@@ -253,7 +248,7 @@ try {
     dataDir,
   };
   await railwayChecks(ctx);
-  await railwaySeats(ctx); // Server-kind chairs survive a hidden/closed lead and a sitter's reconnect.
+  await railwaySeats(ctx); // Server-kind chairs survive hidden/closed peers and a sitter's reconnect.
   await railwayJumpIn(ctx); // a seeded playtest room, two players, through a restart
   await railwayRequestStop(ctx); // a lever request, mirrored on three tabs, and the train stopping for it
   await railwayLeaf(ctx); // Ring Island's leaf: two players bring it down, a late joiner, a reload and a restart

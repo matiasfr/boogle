@@ -129,10 +129,14 @@ export async function railwaySeats(c: Ctx) {
   await Promise.all([A, B, C].map((p) => ev(p.page, () => window.T.room.presence({ v: 1 }))));
   await ev(A.page, () => window.T.room.presence({ v: 0 }));
   check(
-    'hiding the first tab moves the lead',
-    (await waitFor(() => ev(B.page, () => window.T.room.isLead()), 10000)) >= 0,
+    'the other tabs receive the first tab hiding',
+    (await waitFor(async () =>
+      (await ev(B.page, () => window.T.room.peers())).some(
+        (p: { peer: string; presence: Record<string, unknown> }) => p.peer === A.selfId && p.presence.v === 0,
+      ),
+    )) >= 0,
   );
-  check('a hidden tab and a new lead do not free seats', (await agree([A, B, C], held)) >= 0);
+  check('a hidden tab does not free seats', (await agree([A, B, C], held)) >= 0);
   const before = await ev(B.page, () => window.T.conn.length);
   await ev(B.page, () => window.T.room.pause(400));
   check('a sitter keeps its chair inside the reconnect grace', (await agree([C], held)) >= 0);

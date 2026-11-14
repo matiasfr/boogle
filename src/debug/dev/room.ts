@@ -25,8 +25,6 @@ export async function roomSummary() {
     room: getRoomId(),
     connection: net.state,
     transport: net.room?.transport ?? 'none',
-    roomLead: net.room?.isLead() ? net.myPeer : 'another tab; identifier unavailable',
-    localIsLead: net.room?.isLead() ?? false,
     build: BUILD,
     remoteBuilds: [...remotes].map(([peer, p]) => ({ peer, build: p.build ?? 'unavailable' })),
     peers: net.room?.peers().map((p) => p.peer) ?? [],

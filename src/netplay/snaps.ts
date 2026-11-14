@@ -1,4 +1,4 @@
-// Snapshot buffer for Owner and Host state: keep the last few timestamped samples from a peer and find the pair to
+// Snapshot buffer for Owner state: keep the last few timestamped samples from a peer and find the pair to
 // interpolate between. Pure (no three.js), so it is unit-tested.
 //
 //   const snaps = createSnaps();

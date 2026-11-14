@@ -22,7 +22,7 @@ onStart(() => {
     el.textContent =
       `sync ${s.mode}${s.ready ? '' : ' (waiting for clock)'}  tick ${world.tick}\n` +
       'shared state: server replication\n' +
-      `room ${net.room?.transport ?? 'none'}${net.room?.isLead() ? '  (lead)' : ''}${rtt != null ? `  rtt ${rtt} ms` : ''}` +
+      `room ${net.room?.transport ?? 'none'}${rtt != null ? `  rtt ${rtt} ms` : ''}` +
       `\nbuild ${BUILD}  ${other ? `mixed: ${other}` : 'same as everyone heard'}`;
   }, 500);
 });

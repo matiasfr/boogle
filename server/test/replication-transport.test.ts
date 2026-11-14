@@ -9,7 +9,7 @@ import { createService, loadConfig } from '../src/server.ts';
 import { defineReplicated, GLOBAL_CELL } from '../../src/world/replicate.ts';
 
 type Msg = Record<string, any>;
-const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
+const FAST = { reconnectGraceMs: 200, housekeepMs: 50, log: () => {} };
 
 function connect(base: string, room: string, self: string) {
   const ws = new WebSocket(`${base}/room/${room}?self=${self}&pid=${self}pid&key=${self}key00000000000&b=test`, [

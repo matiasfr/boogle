@@ -1,6 +1,5 @@
 // ws-room: the room every tab joins (src/net/README.md; docs/plans/server-host.md). Our server hosts every room and runs
-// its world; this is the room interface over one WebSocket to it, plus the lead the server picks (the tab that
-// publishes Host fields: addHostField in src/netplay/net.ts). Wire shapes: ./ws-wire.ts.
+// its world; every tab uses the same room interface over one WebSocket to it. Wire shapes: ./ws-wire.ts.
 //
 // The server runs the world and its clock (its messages come from SERVER_ID). The first connect resolves after `welcome` and the last `list` chunk, or rejects with room_full (+ max), peer_hosted (a
 // server that doesn't host this room), unreachable or browser-incompatible. After that the room reconnects by itself
@@ -54,7 +53,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
   const table = createPeerTable(SELF_ID);
   const connHandlers = new Set<(c: boolean) => void>(),
     msgHandlers = new Set<(m: unknown, from: string) => void>(),
-    leadHandlers = new Set<(lead: boolean) => void>(),
     replacingHandlers = new Set<(notice: ReplacingNotice) => void>(),
     errHandlers = new Set<(e: RoomError) => void>();
   let replacement: { label: string; until: number } | null = null;
@@ -68,7 +66,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
     stopped = false, // refused (full, bad): no reconnecting
     pausedUntil = 0, // pause(): no reconnect before this
     openedAt = 0,
-    lead: string | null = null,
     born: string | null = null, // the id of the room's world: new when the room was reset (server/src/store.ts)
     mine: Msg = {}, // my presence, patched in place (no copy per send)
     mineJson = '{}', // JSON.stringify(mine), made once per presence() and reused by every push of it
@@ -103,11 +100,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
     if (ws.readyState === WebSocket.OPEN) ws.send('{"t":"p","s":' + mySeq + ',"d":' + mineJson + '}');
   }
   const undoMine = () => (mine = JSON.parse(mineJson) as Msg); // back to the last good presence (a rare refusal)
-  function setLead(id: string | null) {
-    const was = lead === SELF_ID;
-    lead = id;
-    if (was !== (lead === SELF_ID)) call(leadHandlers, lead === SELF_ID);
-  }
 
   // One socket's life. `first` settles the first connect; later sockets only reconnect.
   function open(first?: { resolve: () => void; reject: (e: RoomError) => void }) {
@@ -123,7 +115,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
       if (!m) return;
       switch (m.t) {
         case 'welcome':
-          setLead(typeof m.lead === 'string' ? m.lead : null);
           if (typeof m.born === 'string' && m.born.length <= 16) born = m.born;
           if (!first) table.expectBack(GRACE_MS); // before the list: what it names is back
           return;
@@ -155,9 +146,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
           return;
         case 'hb':
           if (m.at === hbAt) rttMs = Math.round(performance.now() - hbAt);
-          return;
-        case 'lead':
-          setLead(typeof m.id === 'string' ? m.id : null);
           return;
         case 'replacing':
           if (
@@ -333,13 +321,8 @@ export async function createWsRoom(opts: WsRoomOptions) {
       if (notice) h(notice); // the joining socket can receive its notice before createWsRoom resolves
       return () => replacingHandlers.delete(h);
     },
-    isLead: () => lead === SELF_ID,
     /** The room's world as of the last welcome (before onConnection(true)); null from a server that sends none. */
     born: () => born,
-    onLeadChange(h: (isLead: boolean) => void) {
-      leadHandlers.add(h);
-      return () => leadHandlers.delete(h);
-    },
     // Tests (dev/scenarios/reconnect-edit.ts): drop the socket as a network loss would, and hold reconnects for `ms`.
     pause(ms: number) {
       pausedUntil = performance.now() + ms;
