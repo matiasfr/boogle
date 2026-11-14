@@ -10,12 +10,13 @@ import { backSeam } from '../../player/haul-back.ts';
 import { frameOf } from '../../render/haul-bundle.ts';
 import { getAudio } from '../../render/audio.ts';
 import { noiseBuffer } from '../../render/noise.ts';
-import { emit } from '../../render/particles.ts';
+import { momentBusy } from '../../render/buddy-frame.ts';
+import { emit, type Particle } from '../../render/particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { warmDraw } from '../../render/precompile.ts';
 import { camera } from '../../render/scene.ts';
 import { onRemotePresence, onPeerRemoved, remotes, type Remote } from '../../netplay/net.ts';
-import { WISP, createGlideWisps } from './glide-wisps.ts';
+import { WISP, createGlideWisps, glideAir } from './glide-wisps.ts';
 import { WIND, windGain, windHz, windLevel } from './glide-wind.ts';
 
 type RemoteView = { presence: (r: Remote, value: unknown) => void; removed: (peer: string) => void };
@@ -123,21 +124,28 @@ export async function createRailwayGlideView(owner: OwnedView) {
   let wasOpen = false,
     wisps = 0;
   const wispStep = createGlideWisps();
-  const wispAt = (x: number, y: number, z: number) =>
-    emit({
-      x,
-      y,
-      z,
-      vx: 0,
-      vy: WISP.rise,
-      vz: 0,
-      life: WISP.life,
-      size: WISP.size,
-      color: WISP_COLOR,
-      alpha: WISP.alpha,
-      drag: 0,
-      fade: WISP.fade,
-    });
+  // One payload for every wisp: the pool's emit copies its fields into the spawn queue before it returns
+  // (render/particle-pool.ts), so a flight allocates nothing per wisp.
+  const wisp: Particle = {
+    x: 0,
+    y: 0,
+    z: 0,
+    vx: 0,
+    vy: WISP.rise,
+    vz: 0,
+    life: WISP.life,
+    size: WISP.size,
+    color: WISP_COLOR,
+    alpha: WISP.alpha,
+    drag: 0,
+    fade: WISP.fade,
+  };
+  const wispAt = (x: number, y: number, z: number) => {
+    wisp.x = x;
+    wisp.y = y;
+    wisp.z = z;
+    emit(wisp);
+  };
   // ---------------------------------------------------------------- the wind while it holds you (glide-wind.ts)
   type Wind = { src: AudioBufferSourceNode; band: BiquadFilterNode; gain: GainNode };
   let wind: Wind | null = null,
@@ -203,8 +211,10 @@ export async function createRailwayGlideView(owner: OwnedView) {
       // Two threads of air off the wing's tips while you're moving (glide-wisps.ts): yours only, as in Place.
       const v = me.body?.velocity;
       const speed = v ? Math.hypot(v.x, v.z) : 0;
-      if (p) wisps += wispStep(dt, hold && !reducedMotion, p, me.yaw, speed, wispAt);
-      windAt(windLevel(hold && !!v, speed), speed);
+      // Quiet while a shot, a card or the pause view has the screen (the shared momentBusy), and back after it.
+      const air = glideAir(hold, momentBusy());
+      if (p) wisps += wispStep(dt, air && !reducedMotion, p, me.yaw, speed, wispAt);
+      windAt(windLevel(air && !!v, speed), speed);
       for (const r of remotes.values()) {
         if (!r.avatar) continue;
         if (!r.visible || !r.entered) {

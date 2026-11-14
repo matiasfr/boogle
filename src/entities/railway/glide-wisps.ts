@@ -15,6 +15,13 @@ export const WISP = {
   fade: 0.5,
 };
 
+/**
+ * The air of a flight (the wisps and glide-wind.ts's wind) shows while the canopy has the body and nothing full-screen
+ * has the screen: a shot, a reward card or the pause view over a flight is quiet, and the air resumes after it. Place
+ * had no such gate and kept both going through its celebration shots.
+ */
+export const glideAir = (holding: boolean, momentBusy: boolean) => holding && !momentBusy;
+
 export type WispAt = (x: number, y: number, z: number) => void;
 
 export function createGlideWisps() {
@@ -35,11 +42,11 @@ export function createGlideWisps() {
     const sx = Math.cos(yaw) * WISP.span,
       sz = -Math.sin(yaw) * WISP.span;
     let n = 0;
-    for (owed += dt * WISP.rate * Math.min(1, speed / WISP.fullAt); owed >= 1; owed--)
-      for (const side of [-1, 1]) {
-        at(p.x + sx * side, p.y + WISP.up, p.z + sz * side);
-        n++;
-      }
+    for (owed += dt * WISP.rate * Math.min(1, speed / WISP.fullAt); owed >= 1; owed--) {
+      at(p.x - sx, p.y + WISP.up, p.z - sz);
+      at(p.x + sx, p.y + WISP.up, p.z + sz);
+      n += 2;
+    }
     return n;
   };
 }

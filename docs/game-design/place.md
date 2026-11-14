@@ -650,7 +650,8 @@ spends the double jump first. The flight is piece A's, now read from eight room 
 120 ms, `railGlideTurnMax` 360°/s, `railGlideDeploy` 100 ms). While the canopy holds you, two threads of air trail
 off its tips, thicker with speed up to 8 m/s (Place's wisps, restored 14 November after the port dropped them; yours
 only, off under reduced motion), and the air going past is a low band of noise on the ambience bus that rises with
-speed to 10 m/s (Place's glide wind, restored the same day; silent once you land).
+speed to 10 m/s (Place's glide wind, restored the same day; silent once you land). Both stop while a shot, a reward card or the pause view has the screen
+and resume after it.
 
 Taking it faces you west over the device toward the forge, where the plume stands over the new boiler, so the natural
 step-off heads home. The first flight lands on the forge apron only if you let go of the stick over it: letting go

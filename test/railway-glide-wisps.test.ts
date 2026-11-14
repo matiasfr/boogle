@@ -37,5 +37,18 @@ test('no wisps when the canopy is not holding you; fewer when slow, none at rest
 test("the glider's view emits them (the port from Place dropped the call once)", () => {
   const view = readFileSync(new URL('../src/entities/railway/glide-view.ts', import.meta.url), 'utf8');
   assert.match(view, /createGlideWisps\(\)/);
-  assert.match(view, /emit\(\{/);
+  assert.match(view, /emit\(wisp\)/);
+});
+test('a shot, a card or the pause view over a flight quiets the wisps and the wind; they resume after', async () => {
+  const { glideAir } = await import('../src/entities/railway/glide-wisps.ts');
+  assert.equal(typeof glideAir, 'function', 'glide-wisps.ts exports the gate');
+  assert.equal(glideAir(true, false), true);
+  assert.equal(glideAir(true, true), false, 'held by the canopy, but a moment has the screen');
+  assert.equal(glideAir(false, false), false);
+  const view = readFileSync(new URL('../src/entities/railway/glide-view.ts', import.meta.url), 'utf8');
+  // The shared full-screen check (render/buddy-frame.ts), as the prompt and the act card ask it.
+  assert.match(view, /glideAir\(hold, momentBusy\(\)\)/);
+  // One gate feeds both effects, so neither can be wired past it.
+  assert.doesNotMatch(view, /wispStep\([^)]*\bhold\b/);
+  assert.doesNotMatch(view, /windLevel\(hold\b/);
 });
