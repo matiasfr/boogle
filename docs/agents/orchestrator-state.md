@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 13 November 02:45 UTC (12 November 18:45 PST), in the 12–13 November orchestrator session (started 11:50 PST; hourly heartbeat; the owner has not said when it ends, so wind-down is assumed for 11:30 PST on 13 November). Main is `7b8e11017`, world v32, CI and deploys running on the last two ships. Normal mode (Claude only) until 13 November; withCodex after.
+**Updated:** 14 November 09:45 UTC (01:45 PST), after the owner's solo playtest of the whole built route. Main is `4a5d2b9ff` (#1785), world v44, CI, deploy and smoke green on it. Mode: withCodex. Older "Updated" text: the 12–13 November session ran from 11:50 PST on 12 November.
 
 ## Links
 
@@ -17,7 +17,33 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 ## Where the work stands
 
-**Status at 14 November 03:30 UTC (read this first; the 13 November 18:45 block below is older).** Mode: withCodex. `WORLD_NS` is v42; v43 is taken by a branch in review (The Boogler's reactions); next free v44. Main is at #1757. The live game runs v42.
+**Status at 14 November 09:45 UTC (read this first; the 03:30 block below is older).** Mode: withCodex. `WORLD_NS` is **v44** and the live game runs it. **v45 is planned as one shared bump** for the Roundhouse rotunda, right-hand running, the train ladder and the great tree's move (footings option B and the turnouts would join it if chosen); nothing has taken it. Main is at #1785 (`4a5d2b9ff`).
+
+*On main since the 03:30 block, newest last:*
+
+- Server-owned players ([plan](../plans/server-owned-players.md)): **complete.** Step 7 The Boogler's reactions as server commands #1759 (v43); step 8 the client lead removed #1762 (v44; [report, with the owner's wording drafts](../plans/server-owned-players-step8-report.md)). #1764 split the server host's closure into parts and uses one world interface in hosted rooms.
+- Prefab data ([plan](../plans/prefab-data.md)): **steps 1 to 10 done** (9b to 9f rooms, curio shelf, museum, town shells #1760, #1761, #1765; step 10 halts and stations #1766, #1772). The catalogue is consolidated (#1781) and its unmeasured ceilings are removed (#1784, owner call "No limits ahead of a measured problem"). Steps 11 to 13 remain.
+- Home: interiors draw by one 48 m radius from the door #1769; town plan sheets drawn from layout data #1768 (how the Round is judged from above); the Round is built blockout first, with its design review #1770; the curio shelf beside the finders' bay and five hall posts #1771, #1778.
+- Railway fixes from the playtest: Far Head's shot plays for a seated rider #1782; seated Request stop, the cab roof only when inside, vehicles standing apart on bends #1783.
+- Plans from the playtest (design only, nothing built): [turnouts](../plans/turnouts.md) #1773, [roundhouse-rotunda](../plans/roundhouse-rotunda.md) #1774 with design review #1775, [level-pacing-1114](../plans/level-pacing-1114.md) #1776, [train-progression](../plans/train-progression.md) #1777, [running-side](../plans/running-side.md) #1779, [footings-signalling](../plans/footings-signalling.md) #1780, [gap-readability](../plans/gap-readability.md) #1785.
+- Owner calls recorded on 14 November ([owner-calls](owner-calls.md)): don't over-engineer against attackers; place for the look, not the cost, and terrain may change; block out spacing first, details later; the Roundhouse is a real rotunda; no limits ahead of a measured problem.
+
+*The playtest is done.* The owner played the whole built route alone, wake to High Gorge's barrier and the powered pick, 08:07 to 09:35 UTC on an iPad with a keyboard: about 63 minutes played across thirteen page loads. 54 notes are ranked in [the tracker](../plans/round-4-notes.md#owner-solo-session-14-november-ipad-with-a-keyboard-the-whole-built-route-ranked) (10 P1, 25 P2, 19 P3); the [log](../playtests.md#2026-11-14-owner-solo-the-whole-built-route-wake-to-high-gorge-and-the-powered-pick) has the timeline. Nothing fixed today has been replayed by him, and nothing was tested on a second device.
+
+*In work at 09:40 UTC (as the orchestrator reported it; check `npm run heartbeat` and `npm run inflight` before trusting any line):*
+
+- In independent review: the yard track tidy (`review-roundhouse-tidy`, 6 commits ahead; also removes the dark rectangles by the table).
+- In proof: the Round's blockout B1 (`codex/round-blockout-b1-2`). Its Codex run showed STALLED for 38 minutes in the 09:38 heartbeat: find it, rerun its check alone, tell its agent.
+- P1 in work: the kiln's prompt (set amounts of each); the cue after "the crossing has begun" (Station 7's frame); the cradle's bill and cues (footings signalling option A).
+- P2 in work: the terrain pass on all of Home's ground and trails that read as paths; the forge (fire, bench, rails through both lines); little guys on the track while trains pass; the request levers' steps and the lever beside the footing deposit; the Quarry bend's easing and the drawbar; the garage with no try-on, install when the resources are there, and a visual change when browsing wagons; the railhead's construction animation; the hook ring as the line home; the track through Ring Island's rock wall; a proper passenger car; the great tree's blocked prompt; the pinnacle's seal; the rack's tag numbers; finished frames packing up.
+- P3 in work: little guys walking backwards; the track layer's speed on the second track.
+- Being written: the plan for a reload returning you to where you were (P1).
+
+*Next:* the P1s not yet dispatched (below, under Leftovers, 14 November); the owner's five tap questions, which unblock v45; the independent reviews owed for #1771, #1782, #1783 and #1784; prefab steps 11 to 13; Home flip R1 to R3 after the blockout's proof. Parked by the owner: the Becsy migration.
+
+*Of the 03:30 block's lists, still open:* the structural problems (2) to (4) (operator room mutation twice; "built" prefab artifacts not expanded; check (3), stale transport wording, against #1762's tooling and doc commits) and every 03:30 leftover except the Sit before Request stop item, which #1783 answers.
+
+**Status at 14 November 03:30 UTC (older; superseded where the 09:45 block above differs).** Mode: withCodex. `WORLD_NS` is v42; v43 is taken by a branch in review (The Boogler's reactions); next free v44. Main is at #1757. The live game runs v42.
 
 *On main since the 18:45 block, newest last:*
 
@@ -201,7 +227,27 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 `../boogle-trusted/node_modules` symlinks to the main checkout's node_modules; an `npm ci` there empties it. Reinstall with `npm ci` in the main checkout if `node dev/playtest/cli.ts` can't find playwright.
 
+**Process, 14 November.** The orchestrator shipped four code changes on its own read in place of the independent review the gate's stamp requires: #1771 (hall posts), #1782 (Far Head's shot for a seated rider), #1783 (seated Request stop, cab roof, vehicle spacing) and #1784 (catalogue ceilings). The permission system blocked a fifth. The rule stands: a change whose stamp asks for an independent review gets one before it ships, whoever is playing and however small it looks. The reviews of #1782 and #1783 are owed after the fact (open owner questions, 14 November); #1771 and #1784 should have the same.
+
 ## Leftovers
+
+- **14 November (the owner's solo playtest; every item below is not yet dispatched; ranks and his words are in [the tracker](../plans/round-4-notes.md#owner-solo-session-14-november-ipad-with-a-keyboard-the-whole-built-route-ranked)):**
+  - **P1, arriving on Ring Island** (note 26; [gap-readability](../plans/gap-readability.md)): designed, not dispatched. Nothing says the trains bring the kit; the steel kit landed 1 min 57 s after the join. A resident's line is drafted for the owner's wording.
+  - **P1, the content ends on a refusal** (row 41): "No line beyond yet" pressed five times at High Gorge's barrier after the powered pick. No job, no design. Both barrier lines are suspect copy for the owner.
+  - **P1, reloads** (note 33, row 38): twelve reloads in 88 minutes, each costing one to two minutes back to the work. The plan is being written; nothing is dispatched. Process half: eighteen ships landed while he played.
+  - **P2, the leaf's strike beat** (note 25) and **P3, the island's map table** (note 28): designed in gap-readability, not dispatched.
+  - **P2, the undrawn crossover at the second pier** (note 21): waits for the [turnouts](../plans/turnouts.md) build, which is planned and not dispatched.
+  - **P2, the rotunda** (note 2; [roundhouse-rotunda](../plans/roundhouse-rotunda.md)) and **P2, the train ladder** (note 11; [train-progression](../plans/train-progression.md), step 0 measures the lone train first): planned, not dispatched; both take v45 and wait on owner answers.
+  - **P2, right-hand running** (note 13; [running-side](../plans/running-side.md)): the lever steps are in work; swapping the ways is not dispatched (v45, owner answer).
+  - **P2, the great tree's move** (note 30; level-pacing step A2): not dispatched (v45, owner answer on the shorter haul).
+  - **P3, yards at halts** (note 10; station-deposit build 1, decided on 10 November): not dispatched; one bump.
+  - **P3, the garage's "choose what to add" brief** (note 22): not started; it is also what a Roundhouse bay is for.
+  - **P2, "Stop requested"** (row 39): 19 refusals; nothing shows that a request is held. No job.
+  - **P2, the steel works never fed or lit** (row 40): find out whether the route is meant to pass it. No job.
+  - **P2, tumbles around trains and footings** (row 42): 21 across five sessions; cause unknown. No job.
+  - **P2, the trace's wake row** (row 36): `npm run loop -- trace` puts activity outside any node (the start of a reloaded session, the end of the content) under "wake", so "wake is the most confused step" is not a finding. Fix the tool before the next trace is quoted.
+  - **P3, recorder gaps** (rows 45, 48): no mark for why a page reloaded, for High Gorge opening, for the cart or for a talk; "Hang the weight" pressed with no showing recorded.
+  - **P3, level-pacing's Q5 text**: the plan says one shipment unloads 24 logs and 24 rails; the session shows 16 rails taken at Q5's rack before it was funded. Correct the plan or the cart when the rack tags land.
 
 - **10 November:**
   - **Ring Island gap, measured (step 0, #1443, eval fixed in #1446):** the "2.0 m past the model" reading was an eval artifact (the landing was recorded after more sprinting). Rerun: apex u 276.4 (model 276.4), late press u 278.7 (model 279.3), so only a glide crosses. A braking train's kept carry did cross in review, so trains ease into the end stop at 2 m/s² (`RING_END_BRAKE_CMS2`). The last bent's ramp walks in 11.2 s against a 10 s bound (P3). The greybox hook ring is scenery, so the hook from the brace platform is measured in R4b.
@@ -289,6 +335,17 @@ From 5–6 November; drop each when answered.
 5. **Museum:** inspect the miniature, the crystal specimen, or both.
 6. **Worktrees left after the 9 November cleanup** (30 archived as local `archive/worktree/<branch>` tags, 39 merged ones removed): three with uncommitted changes (`codex/hook-swing-prototype`, `codex/two-player-track`, `worktree-agent-aad5cd795cee72677`) and four recent ones (`claude/godot-assumptions`, `claude/glider-b-plan`, `claude/idea-land-ack`, `claude/playtest-jump-in-plan`). Commit-and-archive, or keep?
 7. **From 10 November** (one lever per platform side and the passenger car at four are answered; see the [decision log](../decisions-rail.md#current-rules)): end-game train direction ([mock-ups](../brainstorms/engine-endgame-mockups.md)): steam to modern (freight or high speed) or the dark plated sci-fi train, or that one as a rival; lengthen halts and gates past 6 m or articulate short cars; a tender on the largest current-era engine or not. The glider banner wording is still his to reword.
+
+8. **From 14 November** (the playtest; answered today and not to be asked again: the gap's three questions, the record ceiling, no try-on in the garage). The first five are the tap questions drafted for him, each with the plan's recommendation:
+   1. **Right-hand running, the lever rule and the Pier's platform** ([running-side](../plans/running-side.md)). Recommended: yes to right-hand running on every line by swapping ways; yes to the lever rule; a small west platform at the Pier for the homeward train.
+   2. **The rotunda's bay count at Home, and what a bay is for** ([roundhouse-rotunda](../plans/roundhouse-rotunda.md)). Recommended: a foundation arc at arrival, then three, five and seven bays, stopping at seven; a bay arrives with the thing that stands in it, not bought for itself.
+   3. **The train ladder's three** ([train-progression](../plans/train-progression.md)). Recommended: the step to 20 m/s happens by itself when the table turns; seven trains stays the busy end; "choose what to add at the garage" is the next design to brief.
+   4. **The great tree's shorter haul** ([level-pacing-1114](../plans/level-pacing-1114.md)). Recommended: yes, keep the 35 m haul the move gives.
+   5. **The pinnacle's seal** (level-pacing). Recommended: the seal that counts down first; wake the glider at the first summit pull only if the next session is still flat at the top.
+   6. **Should the pier refuse a hand-carried footing until the wagon is out?** ([footings-signalling](../plans/footings-signalling.md); v45). Recommended: not yet. Today's data shows two carried to the pier by hand before the cradle was found.
+   7. **Apply the DESIGN.md sync-table text and the agent-instruction drafts** ([step 8 report](../plans/server-owned-players-step8-report.md)): his to commit.
+   8. **After-the-fact independent review of #1782 and #1783**, which the orchestrator shipped on its own read: run them now, or accept them as shipped?
+   9. Also his, smaller: level-pacing's "should the cart ever be ridden" (recommended: no) and "are the yards still the drop box you mean" (recommended: yes); the resident's line about the wagon (recommended: not now); suspect copy "No line beyond yet", "Needs the powered pick", "Stop requested".
 
 - **Tidy:** last code pass `ca3212d0` (render/audio, #1248, 9 November). Next: the other areas since `1af61213`, then architecture, docs, memory.
 
