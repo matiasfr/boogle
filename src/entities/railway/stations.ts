@@ -16,6 +16,7 @@ import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint, setBlob } from '../../p
 import { dustRing } from '../../render/particle-effects.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { reducedMotion } from '../../constants.ts';
+import { packSolid, packStep, type PackState } from './frame-pack.ts';
 import { kitBatch, stationKit } from '../../place/look-kit.ts';
 import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from '../../place/pieces.ts';
@@ -33,8 +34,9 @@ import {
 export { frameBesideLine, type FrameAt } from '../../place/spatial-station.ts';
 
 export type StationRun = ReturnType<typeof buildStation>;
-/** Seconds a finished frame takes to fold away. */
-const PACK_S = 1;
+/** Seconds a finished frame takes to fold away, and how far from its middle counts as on it (frame, feeder, bearers). */
+const PACK_S = 1,
+  PACK_CLEAR = Math.hypot(FRAME_D / 2 + SPAN + 0.6, FRAME_W / 2 + 0.6);
 /** The bill's paint: ink on paper, like the village's boards (src/place/signs.ts). */
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
@@ -169,7 +171,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   const bearers: THREE.Mesh[] = [];
   for (const solid of solids.frame)
     frameBodies.push(addStatic(solid.shape, solid.position, turn, GROUP.SCENERY, owner));
-  addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3, owner);
+  let unfoot = addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3, owner);
   frameBodies.push(
     addStatic(
       solids.feeder.shape,
@@ -290,7 +292,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   let stockBody: Body | null = null;
   let stockRows = 0;
   // Packing up (settle, below): standing, folding flat, or gone; and whether this tab saw the stretch being laid.
-  let pack: 'up' | 'folding' | 'gone' = 'up',
+  let pack: PackState = 'up',
     foldAt = 0,
     sawWork = false;
   /** The frame, its feeder and the bearers pressed toward the ground: 1 standing, 0 not drawn. */
@@ -384,41 +386,52 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
      * November: the boxes "should either go away once that area is built"; level-pacing-1114, D1): it folds flat in
      * about a second with a puff, then draws nothing and is no longer solid. Only a tab that watched the stretch being
      * laid sees the fold; a join or a reload finds it already gone. Local, from accepted completions. */
-    settle(state: 'open' | 'working' | 'laid') {
-      if (state !== 'laid') {
-        if (state === 'working') sawWork = true;
-        if (pack === 'up') return;
-        pack = 'up';
-        for (const body of frameBodies) owner.addBody(body);
-        for (const [k, bx, bz, w, d, turned] of blobs) setBlob(k, bx, y, bz, w, d, turned, owner);
-        rails.visible = true;
-        if (stones) stones.visible = true;
-        stand(1);
-        return;
+    settle(state: 'open' | 'working' | 'laid', occupied: () => boolean) {
+      if (state === 'working') sawWork = true;
+      const fold = pack === 'folding' ? Math.min(1, (performance.now() - foldAt) / (PACK_S * 1000)) : 0;
+      const was = pack;
+      pack = packStep(pack, { laid: state === 'laid', sawWork, occupied, fold, reducedMotion });
+      // Solid, and in the footprints, until it is gone: nobody standing on it is dropped (frame-pack.ts), and the
+      // cleared ground is then free for the little guys and for a saved return pose (arrival.ts reads `feet`).
+      if (packSolid(pack) !== packSolid(was)) {
+        if (packSolid(pack)) {
+          for (const body of frameBodies) owner.addBody(body);
+          for (const [k, bx, bz, w, d, turned] of blobs) setBlob(k, bx, y, bz, w, d, turned, owner);
+          unfoot = addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3, owner);
+        } else {
+          for (const body of frameBodies) owner.removeBody(body);
+          if (stockBody) owner.removeBody(stockBody);
+          stockBody = null;
+          stockRows = 0;
+          for (const [k] of blobs) setBlob(k, 0, -999, 0, 0.01, 0.01, 0, owner);
+          unfoot();
+        }
       }
       if (pack === 'up') {
-        for (const body of frameBodies) owner.removeBody(body);
-        if (stockBody) owner.removeBody(stockBody);
-        stockBody = null;
-        stockRows = 0;
-        for (const [k] of blobs) setBlob(k, 0, -999, 0, 0.01, 0.01, 0, owner);
-        pack = sawWork && !reducedMotion ? 'folding' : 'gone';
-        foldAt = performance.now();
-        if (pack === 'folding') {
-          placeSound('cartStop', x, z);
-          dustRing(x, y + 0.2, z, 14, 2.4, 0.4);
-        } else stand(0);
+        if (was !== 'up') {
+          rails.visible = true;
+          if (stones) stones.visible = true;
+          stand(1);
+        }
+        return;
       }
-      // Whatever a late deposit drew, a packed frame shows no stock.
+      // Whatever a late deposit drew, a finished frame shows no stock.
       logs.visible = rails.visible = false;
       if (stones) stones.visible = false;
       if (beam) beam.visible = false;
-      if (pack !== 'folding') return;
-      const t = Math.min(1, (performance.now() - foldAt) / (PACK_S * 1000));
-      stand(1 - t * t);
-      if (t >= 1) pack = 'gone';
+      if (pack === 'folding' && was !== 'folding') {
+        foldAt = performance.now();
+        placeSound('cartStop', x, z);
+        dustRing(x, y + 0.2, z, 14, 2.4, 0.4);
+      }
+      if (pack === 'folding') stand(1 - fold * fold);
+      else if (pack !== was) stand(pack === 'gone' ? 0 : 1);
     },
-    packed: () => pack !== 'up',
+    /** Whether a point (a player's body) is on or in the frame, its feeder or its bearers: the fold waits for it. */
+    holds(p: { x: number; y: number; z: number }) {
+      return p.y > y - 0.6 && p.y < y + 3 && Math.hypot(p.x - x, p.z - z) < PACK_CLEAR;
+    },
+    packed: () => pack === 'gone',
     need: (kind: Goods) => run.spec[kind] ?? 0,
     full: () => GOODS.every((g) => run.have[g] >= run.need(g)),
     wants: (kind: Goods) => run.need(kind) - run.have[kind] - run.coming[kind],

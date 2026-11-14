@@ -547,9 +547,12 @@ Both beam grips use `currentCoopPeer` from `coop-identity.ts`, the same bounded 
 at deposit boxes should either go away once that area is built, or they should act as shared resource drop boxes". A
 station's frame (T1 to T3, Q1 to Q6) no longer stands as an empty prop once its stretch is laid: on the accepted
 completion it folds flat in one second with a dust puff and a settling knock, then draws nothing and has no collider
-(posts, floor, board, feeder, rail bearers, contact blobs; `stations.ts` `settle`). It leaves nothing behind: the
+(posts, floor, board, feeder, rail bearers, contact blobs, its walk-round footprint; `stations.ts` `settle`). It leaves nothing behind: the
 plan's three-sleeper stack would be new placed content and waits for a prefab record. Only a tab that watched the
-stretch being laid sees the fold; a join, a reload or reduced motion finds it gone. The forge's frame and Q7's frame
+stretch being laid sees the fold; a join, a reload or reduced motion finds it gone. A frame somebody stands on or
+in (you, or a friend's avatar, within about 3.5 m of its middle) keeps its colliders and waits; it folds only while
+clear, stands back up if someone steps on mid-fold, and gives up its colliders and its footprint together once gone
+(`frame-pack.ts`, tested), so nobody is dropped and the cleared ground is a valid place to be saved and to return to. The forge's frame and Q7's frame
 on the pier deck stay. Local view; the shared drop box he also asked for is the decided yard at each halt
 (station-deposit build 1), not this.
 
