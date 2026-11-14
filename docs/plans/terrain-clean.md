@@ -1,6 +1,6 @@
 # Terrain clean: no cliff ledges, clean walkable ground, then custom meshes
 
-_Plan, 14 November 2026. Not approved, not started. Measured on main at `b2157fb6b`; every still was taken under load
+_Plan, 14 November 2026. Part 1 implemented and checkpoint A recorded; Parts 2 and 3 not started. Original survey measured on main at `b2157fb6b`; every still was taken under load
 (1-minute load 16 to 34), so stills are evidence of shape and colour only, not of timing, shimmer or motion. Not tested
 on a device._
 
@@ -46,7 +46,11 @@ faces and broken silhouettes). Departs from none.
 
 **Models:** steps 1 to 4, implementation of an approved plan: Codex `gpt-6.1-sol` medium. Proofs at the checkpoint,
 runner: Codex `gpt-6.1-sol` medium. Visual review of the checkpoint stills: a fresh general-purpose subagent, fable
-medium. No independent review is triggered (nothing under `src/sim`, `src/net`, `src/world`, `server/`).
+medium. No source under `src/sim`, `src/net`, `src/world` or `server/` changes. At the original Part 1 tip `75049e8be`,
+the review-stamp tool nevertheless
+classifies deletion of `test/terrain-pass-island.test.ts` as assertions removed: **`fb731dd370a5`**, one review file.
+This corrects the original prediction that no review would trigger. The review gate remains for a future merge;
+this job performs only the requested local commits and does not push, ship or bypass it.
 
 **Goes with the ledges**
 
@@ -90,12 +94,37 @@ by construction, so the proof is that heights did not change and that the drawn 
 3. **Census of static bodies against drawn ground**, in the running game, at the checkpoint:
    `npm run look -- --eval dev/ground/census.ts --query dev=1` (moved from `dev/terrain-pass/census.ts`). On 14
    November it found 805 static bodies, 607 with their base on the terrain, none more than 5 cm off. After Part 1 its
-   `TERRAIN_CENSUS` line must report a worst gap of 0 to float precision; any non-zero gap is a defect.
+   `TERRAIN_CENSUS` line preserves the body report and adds unrounded footing and walkable-grid worst gaps, their
+   locations and counts over 1 cm. Per the owner's follow-up, the worst after removal must be no larger than before;
+   where the contact cap used to apply the drawn surface should equal the collider to float precision.
 4. **Counts.** The page's ground triangle count is 241,836 and the `TERRAIN_PASS` console line is gone.
 
 ### Steps
 
-- [ ] **1. Move what stays to `src/place/`, no behaviour change.**
+- [x] **0. Independent drawn-ground proof (owner-authorized departure, 14 November).**
+  `dev/ground/drawn.ts` reads the actual built render mesh's position and index buffers, transformed into world
+  coordinates, plus both rendered cove kit meshes. It never imports or reconstructs the ledge recipe. The census
+  requires `graphics=farGround:false` and asserts that the sampled full-resolution Home mesh is visible: distant
+  simplified LOD is deliberately outside this contact proof. Collider heights come independently from the actual
+  `terrainCollisionTiles()` heightfield arrays (including their closed boundary), composed with the cove kit's shared
+  collider triangle query. `surfaceHeight` was trialled but uses an outside fallback at the grid's outermost edge.
+  The tool samples terrain-grounded static shapes' projected footings and 1 m around them at 0.5 m spacing, plus a
+  regular 0.5 m lattice over Home's walkable surface. No gap floor or rounding hides discrepancies; reports retain
+  `bodies`, `shapes`, `grounded`, `misses` and `worst`, with `footing`, `grid`, triangle and vertex counts added.
+  Baseline game source is exactly local `origin/main` `22b331dba` (`git diff origin/main -- src` empty): 805 bodies,
+  2,018 shapes, 612 terrain-grounded; 97,399 footing samples, worst **0.000001787839970290861 m** at world
+  (961.0125037718327, -219.1128101434796), none over 1 cm. Corrected grid proof: 1,639,930 samples, worst
+  **8.597842645619025e-06 m** at (802.5, 49.5), none over 1 cm. Ground: 263,550 triangles, 134,980 vertices.
+  The grounded count differs from the old 607 because this reference includes the physical cove kit.
+  Original baseline footing/count evidence: `.look/evidence/1794681188591-58295/evidence.json`; load 20.57 to 17.69.
+  Its grid classification is superseded; corrected grid evidence is listed in the P2 correction below.
+  Four before stills (cameras 0, 2, 9, 5) opened; loads 14.28 to 27.81. Baseline cove render: 266 calls,
+  178 shadow calls, 652,455 frame triangles (`.look/evidence/1794681305151-60481/evidence.json`).
+  `node dev/ship-check.ts`: pass. Heights and five collision-tile hashes saved before any ground changes;
+  baseline level-check passes with 5,266 placements, zero problems and 13 reports. The original grid classification
+  used central differences and was invalid; its grid figures are withdrawn and replaced by the face-normal rerun
+  recorded below. The original height, placement, footing and triangle-count proofs are unaffected.
+- [x] **1. Move what stays to `src/place/`, no behaviour change.**
   - Create `src/place/ground-layers.ts` (pure, no three.js) with `colliderHeight`, `colliderNy`, `vertexNy`,
     `steepness`, `describeGround` and `STRATA`, moved verbatim from `src/proto/terrain-pass/surface.ts`.
   - Create `src/place/ground-material.ts` with `homeGroundMaterial()`: `roundTwoMaterial` from `materials.ts` with the
@@ -103,7 +132,10 @@ by construction, so the proof is that heights did not change and that the drawn 
   - `dev/terrain-pass/path-ground.ts`, `paths-shots.ts`, `paths-setup.ts` and `census.ts` move to `dev/ground/` with
     their imports repointed; add `dev/ground/heights-hash.ts`.
   - Verify: `node dev/ship-check.ts`; heights hash equal to main.
-- [ ] **2. The land draws its own grid.**
+  - Completed: material and numeric helpers moved, tools repointed, all six hashes identical to the pinned
+    `origin/main` baseline `22b331dba`. Local `origin/main` is advancing in other sessions; measurements keep this
+    original baseline rather than silently changing the comparison target.
+- [x] **2. The land draws its own grid.**
   - `src/place/land.ts`: replace `applyHomePass(geo, mainEnd, inCove)` with a local `addGroundLayers(geo)` that packs
     `steep, foot, soil, gorge` for every existing vertex (grid vertices from `describeGround(cellX(i), cellZ(j))`, the
     cove patch's vertices described where they stand, offshore rings `0, 1, 1, 0`, `gorge` as `home.ts` computes it
@@ -113,22 +145,106 @@ by construction, so the proof is that heights did not change and that the drawn 
     `far-ground-index.ts` only it used); `test/far-ground-index.test.ts` stays green.
   - Delete `src/proto/terrain-pass/` (tag the parent commit `archive/terrain-pass-wedge` first, local tag, pushed with
     the ship), `test/terrain-pass-island.test.ts`, and `dev/terrain-pass/`.
-  - Verify: `node dev/ship-check.ts`; heights hash equal; `grep -r "terrain-pass\|terrainCap\|NearGround" src dev test`
-    finds nothing.
-- [ ] **3. Remove `GRADED` from `src/place/terrain.ts`** (the constant and three `push` lines; nothing else). Its own
+  - Verify: `node dev/ship-check.ts`; heights hash equal. The search for `terrain-pass`, `terrainCap` and
+    `NearGround` under src, dev and test must find no runtime import, flag, call or test of the removed ledge code.
+    Documentation/plan references and comments linking to plan history are allowed. Comments pointing to removed
+    source files must be updated or deleted; the `GRADED` comment is removed in step 3.
+  - **Owner-authorized departure:** the zero-match requirement above is for live code, not retained history.
+    Step 2 passes ship-check, registry and the full check; hashes match and normalized level-check diff is empty.
+    The local archive tag names `5baaad151`, immediately before deletion.
+  - **Accepted visible difference:** the lower gorge wall has broader, more continuous green patches without
+    the ledges (cameras 2 and 9). The implementing agent opened all four matched before/after views; the orchestrator
+    also opened camera 9 before/after and agrees the wall reads the same. Warm rock bands and large facets remain.
+- [x] **3. Remove `GRADED` from `src/place/terrain.ts`** (the constant and three `push` lines; nothing else). Its own
   small commit, last, because four branches in flight touch this file. Verify: heights hash equal; `npm run level-check`
   diff empty.
-- [ ] **4. Docs.** `docs/game-design/graphics.md`: rewrite the "Home's ground: the terrain pass" bullet (no 1 m cells,
+  - Exact deleted lines against baseline `22b331dba` (also the step-2 parent): 119–123 (comment and constant),
+    124 (separating blank), 127 (`pad` push), 171 (`strip` push), 396 (`gradeSupport` push). No other terrain.ts
+    edit, height calculation, collider or placement change. The in-flight branches' whole-word `GRADED` readers
+    were only the old terrain record and retired ledge implementation/tests. Hashes and normalized level diff verified.
+- [x] **4. Docs.** `docs/game-design/graphics.md`: rewrite the "Home's ground: the terrain pass" bullet (no 1 m cells,
   no tolerance sentence, flags reduced to `?terrain=0`). `docs/plans/terrain-pass.md`: status line points here.
   `docs/decisions-look.md`: a dated entry with the owner's words above, its Current rules line, and an italic note on
   the 10 November "density only where it's steep" line. `dev/decisions/topics.ts`: `'plans/terrain-clean.md': 'look'`.
   Verify: `npm run decisions`.
+  - Completed: the graphics section describes the collider grid and retained material; the earlier plan is marked
+    historical; the existing 14 November decision and 10 November supersession note are retained, with the owner's
+    proof and accepted-appearance follow-up appended. The new topic route is registered.
 
-**Checkpoint A (end of Part 1), four proofs, run once:** the level-check diff; the census; one bench run
-(`npm run bench -- --no-load --poses spawn,town,far,bay`, counts exact, times reported with the load they were taken
-under); one proof look, `dev/ground/paths-shots.ts` cameras 0, 2, 9 and 5 beside the owner's stills in
+**Checkpoint A (end of Part 1), four proofs:** the level-check diff; the census; matched brokered perf render counts
+(draw calls, shadow calls and triangles at the same camera poses before/after); one proof look,
+`dev/ground/paths-shots.ts` cameras 0, 2, 9 and 5 beside the owner's stills in
 `/Users/matiasfranco/Developer/boogle/.look/owner/terrain-pass-1114/`, opened by the visual reviewer, who names any
-wall that reads worse without ledges. One ship for steps 1 to 4.
+wall that reads worse without ledges. **Owner-authorized departure:** brokered render counts replace the requested
+bench because this broker has no bench operation; no frame timing is measured for this comparison, and no direct
+Chromium bypass is allowed. The matched cove camera is (809, 3, 49), looking at (760, 0, 15), FOV 62, 960 × 600,
+fixed DPR 1, MSAA 4. Baseline/after: 266/266 draws, 178/178 shadow draws, 652,455/649,905 frame triangles.
+No push or ship in this job; the owner requested local commits only.
+
+### Checkpoint A results, 14 November
+
+- [x] All six hashes equal the original `origin/main` baseline `22b331dba`: raw heights plus five complete collision
+  tiles. The normalized level-check diff is empty: 5,266 placements, zero grounding problems, 13 reports. No height,
+  collider or placed object moved. Exact terrain.ts deletions are listed under step 3 for sibling branches.
+- [x] Independent actual-render-buffer census repeated after steps 3 and 4: 805 static bodies, 612 terrain-grounded,
+  97,399 footing samples and 1,639,930 correctly classified walkable-grid samples. Footing worst gap before/after:
+  **0.000001787839970290861 / 7.860379014346108e-14 m**; grid worst:
+  **8.597842645619025e-06 / 8.597842645619025e-06 m**. Counts over 1 cm: footings **0 / 0**, grid **0 / 0**.
+  The after grid maximum is on the cove kit at world (802.5, 49.5), where Float32 rendered coordinates meet the
+  original collider recipe. The footing maximum is numerical zero to float precision. Original footing/count manifest:
+  `.look/evidence/1794682704266-91488/evidence.json`, load 20.35 to 20.96; its wall PNG was opened. Its grid
+  classification is superseded by the corrected P2 rerun below.
+- [x] Full ground: **263,550 to 241,836 triangles**, **134,980 to 122,500 vertices**: exactly **21,714 fewer
+  triangles and 12,480 fewer vertices**. Matched cove render counts: **266 to 266 draws**, **178 to 178 shadow
+  draws**, **652,455 to 649,905 frame triangles**. Camera pose, FOV, dimensions, DPR and MSAA match the baseline
+  exactly. Fresh after manifest: `.look/evidence/1794682728925-92853/evidence.json`; baseline manifest:
+  `.look/evidence/1794681305151-60481/evidence.json`. No frame timing was measured for this comparison.
+- [x] Cameras 0, 2, 9 and 5 opened before/after and compared with the owner's stills. The walls still read as warm,
+  banded rock with large facets; the accepted difference is broader green patches on the lower gorge wall. No new
+  hole or major wall-silhouette break was observed. Existing jagged path borders remain Part 2 work. The
+  orchestrator independently opened camera 9 and accepted the same reading. Capture loads were 14.28 to 28.46;
+  these are still/colour observations, not motion or performance evidence.
+
+Final-tip revalidation (four fresh stills, census, matched count run, production T1 bot segment and the required
+static checks with a 600-second timeout) is recorded with exact manifests, logs and any failures in
+`.look/terrain-clean/report.md`. No ROM data added. Not tested on a device. No push or ship.
+
+Original game-code verification at `baeaa4897` (before the P2 tool correction): ship-check (63 affected test files), registry, level-check and full
+`npm run check` all passed; 2,047 unit cases, 2,046 passes, zero failures and one existing todo. All six hashes match,
+and the normalized level diff is empty. Four fresh checkpoint stills (cameras 0, 2, 9, 5) were opened, with capture
+loads 6.08 to 8.75. The production T1 segment passed with every expected beat, no missed beat or timeout; its end
+still was opened. This was an accelerated bot run, not real-time feel evidence. That final note changed only plan
+text; renderer, physics and placements remain identical to that tested commit. The diagnostic tool is corrected
+separately below. Original review stamp `fb731dd370a5` is
+reported for the retired test deletion, not represented as an independent review having been completed.
+
+### Verification-tool P2 correction, 14 November
+
+Independent review found that central differences averaged different collider faces into a fictitious normal at
+triangle boundaries, admitting unwalkable points and excluding genuinely walkable boundary samples. The prior
+claim of a large gap on walkable ground is withdrawn: at world (899, -177), the actual incident normal Y values
+are **0.4237982267933741** and **0.43468170591155497**, both unwalkable. The game change itself checked out.
+
+The owner-requested regression first failed with the old classifier (`true` instead of `false`). The corrected
+tool enumerates actual incident heightfield and cove triangles, including both sides of diagonals, edges, vertices
+and tile joins. A point is walkable if any incident face at the physical top surface is walkable; a buried face
+cannot qualify it. Five pure tool tests cover the reported point, preserved walkable boundaries, tile edges and
+cove faces. No game source, height, collider, catalogue or placement changed for this fix.
+
+Corrected reruns on `origin/main` **`fceb07f6115d`** and this branch both sample **1,639,930** walkable-grid points:
+worst absolute gap **8.597842645619025e-06 m (0.008597842645619025 mm)** at world (802.5, 49.5), **zero** over
+1 cm, before **and** after ledge removal. This is float-coordinate noise at the cove, not a walkable-ground defect.
+The before ground source is unchanged from the original `22b331dba` baseline. The archive was served locally through
+the existing broker with only the corrected diagnostics overlaid; in-browser SHA256 checks verified the served
+terrain and land source. Archive-only Vite file access was set for the existing read-only package assets after an
+initial resource-403 health failure; the successful rerun had no page or graphics errors.
+
+Corrected before/after manifests: `.look/evidence/1794685011817-36305/evidence.json` and
+`.look/evidence/1794685037164-37521/evidence.json`; loads **19.34 to 16.18** and **15.92 to 15.62**. Both new wall
+PNGs were opened: warm banded rock remains, with the previously accepted broader green patches after removal.
+Execution health and this visual observation are separate from the numerical proof. Superseded central-difference
+grid outputs are invalidated in the local report; they must not be used as walkable-ground measurements.
+The added regression test can change the branch's review stamp; the current output belongs in the final report.
 
 ## Part 2: geometry clean-up, walkable ground first
 

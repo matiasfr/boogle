@@ -1,14 +1,13 @@
-// Page setup for dev/terrain-pass/contact-shots.ts, in two parts.
-// 1. Buddy at the foot of the rock face where the terrain pass's drawn ground was furthest from its collider along the
-//    normal with walkable ground below (dev/terrain-pass/contact.ts --no-cap): Place-local (-43.33, 102.67), on the
-//    gorge's floor by the south footbridge. He is dropped against the face and left to settle on the collider.
-// 2. A census of the running game's static bodies: every one whose base is on the terrain gets the drawn ground
-//    sampled under it and 1 m around, against the collider. A body the keep list (island.ts GROUND_KEEPS) missed shows
-//    up here as a gap over 5 cm. It sees the bodies of this page's state only (a fresh arrival unless a seed is given).
+// Independent static-footing and 0.5 m walkable-grid census; see dev/ground/drawn.ts.
+// Keep the original body-report shape, but retain every nonzero gap, without rounding or a tolerance floor.
+// A fresh arrival unless seeded: this reports this page's static bodies, not future construction states.
+// Run through the broker with --real --query 'dev=1&graphics=farGround:false'. Buddy settles by the gorge wall.
 const { me, cam } = await import('/src/player/player.ts' as string);
 const { teleport, forEachStatic } = await import('/src/physics/engine.ts' as string);
 const { H } = await import('/src/place/terrain.ts' as string);
-const { drawnHome, collider } = await import('/dev/terrain-pass/drawn.ts' as string);
+const { drawnGround, gapReport, recordGap, walkableGrid, colliderHeight, onHome } = await import(
+  '/dev/ground/drawn.ts' as string
+);
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 while (!me.body) await wait(80);
 const x = 957.15,
@@ -37,7 +36,8 @@ const times = (a: Q, b: Q): Q => ({
   y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
   z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
 });
-const home = drawnHome(new URLSearchParams(location.search).get('terrainCap') !== '0');
+const home = drawnGround();
+const footing = gapReport();
 const ORIGIN_X = 1000;
 let bodies = 0,
   shapes = 0,
@@ -74,16 +74,24 @@ forEachStatic(-1, (body: { position: V; quaternion: Q }, list: AnyShape[]) => {
     if (lx < -255 || lx > 515 || lz < -275 || lz > 255) continue; // off Home's grid
     // On the terrain: somewhere under its footprint the collider ground is between its base (less 0.3 m) and its top.
     let onGround = false;
+    const sampled = gapReport();
     let gap = 0,
-      where = [0, 0];
+      where = [lx, lz];
     const reach = r + 1;
     for (let dz = -reach; dz <= reach; dz += 0.5)
       for (let dx = -reach; dx <= reach; dx += 0.5) {
         const d = Math.hypot(dx, dz);
         if (d > reach) continue;
-        const ground = collider(lx + dx, lz + dz).height;
+        if (!onHome(centre.x + dx, centre.z + dz)) continue;
+        const ground = colliderHeight(centre.x + dx, centre.z + dz);
         if (d <= r && ground >= base - 0.3 && ground <= top + 0.1) onGround = true;
-        const found = Math.abs(home.heightAt(lx + dx, lz + dz) - ground);
+        const found = recordGap(
+          sampled,
+          centre.x + dx,
+          centre.z + dz,
+          home.heightAt(centre.x + dx, centre.z + dz),
+          ground,
+        );
         if (found > gap) {
           gap = found;
           where = [lx + dx, lz + dz];
@@ -91,20 +99,34 @@ forEachStatic(-1, (body: { position: V; quaternion: Q }, list: AnyShape[]) => {
       }
     if (!onGround) continue;
     grounded++;
-    if (gap > 0.05)
+    const samples = footing.samples + sampled.samples;
+    const over1cm = footing.over1cm + sampled.over1cm;
+    if (sampled.worstGap > footing.worstGap) Object.assign(footing, sampled);
+    Object.assign(footing, { samples, over1cm });
+    if (gap > 0)
       misses.push({
         at: [lx, base, lz].map((v) => +v.toFixed(2)),
         kind: shape.kind,
         r: +r.toFixed(2),
-        gap: +gap.toFixed(3),
-        where: where.map((v) => +v.toFixed(2)),
+        gap,
+        where,
       });
   }
 });
 misses.sort((a, b) => b.gap - a.gap);
 console.log(
   'PLAY TERRAIN_CENSUS ' +
-    JSON.stringify({ bodies, shapes, grounded, misses: misses.length, worst: misses.slice(0, 25) }),
+    JSON.stringify({
+      bodies,
+      shapes,
+      grounded,
+      misses: misses.length,
+      worst: misses.slice(0, 25),
+      footing,
+      grid: walkableGrid(home),
+      triangles: home.triangles,
+      vertices: home.vertices,
+    }),
 );
 // Buddy against the face: where his body is, the collider under him and the drawn ground under him.
 const p = me.body.position;
@@ -112,8 +134,8 @@ console.log(
   'PLAY TERRAIN_CONTACT ' +
     JSON.stringify({
       body: [p.x - ORIGIN_X, p.y, p.z].map((v: number) => +v.toFixed(3)),
-      collider: +collider(p.x - ORIGIN_X, p.z).height.toFixed(3),
-      drawn: +home.heightAt(p.x - ORIGIN_X, p.z).toFixed(3),
+      collider: colliderHeight(p.x, p.z),
+      drawn: home.heightAt(p.x, p.z),
     }),
 );
 export {};

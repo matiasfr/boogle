@@ -1,9 +1,9 @@
 // Where the walkable ground under a path is not yet a clean tread (docs/plans/terrain-pass.md, the paths round): a
 // report for a later ground step, not a check. Along each run of path, every 2 m, it measures the collider across the
 // tread: the level width around the centre line, the cross fall, and the wall or drop beside it.
-// `node dev/terrain-pass/path-ground.ts` (add `--all` for every station).
+// `node dev/ground/path-ground.ts` (add `--all` for every station).
 import { PATH_RUNS } from '../../src/place/path-field.ts';
-import { colliderHeight } from '../../src/proto/terrain-pass/surface.ts';
+import { colliderHeight } from '../../src/place/ground-layers.ts';
 
 const all = process.argv.includes('--all');
 type Station = { x: number; z: number; y: number; level: number; fall: number; left: number; right: number };

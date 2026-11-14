@@ -335,6 +335,7 @@ export const CALL_DOC_TOPIC: Record<string, TopicId> = {
   'plans/water-sunshine.md': 'look',
   'game-design/water.md': 'look',
   'plans/terrain-pass.md': 'look',
+  'plans/terrain-clean.md': 'look',
   'plans/playtest-jump-in.md': 'process',
   'brainstorms/loop-graph.md': 'process',
   'plans/place-retirement.md': 'process',
