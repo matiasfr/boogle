@@ -158,6 +158,10 @@ async function runChecks() {
       );
   }
   if (checkPlace) {
+    const { checkZfights, printZfights } = await import('./zfight.ts');
+    const zfights = await checkZfights();
+    report.push(zfights);
+    if (!json) printZfights(zfights);
     const { checkMachineClearance } = await import('./machine-clearance.ts');
     const clearance = await checkMachineClearance();
     failed += clearance.failures;
