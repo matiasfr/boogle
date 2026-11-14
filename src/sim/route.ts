@@ -1,10 +1,10 @@
 // The preset railway (SETTLED: a route like Death Stranding 2's highways, built in short sections). Static and the
 // same on every peer: a pure module rather than JSON so the rules may import it. 0.1 testbed: three wood-age sections
 // from the court toward the lighthouse (docs/plans/0.1-groundwork.md). Positions are world metres (x, z); each section
-// runs from its site to `to`. Append only once shipped: a section's index is its id in lockstep state.
+// runs from its site to `to`. Append only once shipped.
 
 // Per age: what a section costs and what a helper hut costs (brief 7 section 3: ~x3 per age, helper ~0.6 of a
-// section), in that age's material (src/sim/materials.ts).
+// section), in that age's material (src/sim/materials.ts). No rule reads these since the work sites retired (32bd6a38a).
 export const AGES = [60, 180, 550, 1600, 5000, 15000, 45000].map((cost) => ({ cost, helper: Math.round(cost * 0.6) }));
 
 export const ROUTE = [

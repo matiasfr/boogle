@@ -12,9 +12,6 @@ import type { Body } from '../../physics/engine.ts';
 export type Obstacle = { x: number; z: number; r: number };
 
 export const placements: PropPlacement[] = scatterProps({ groundHeight, keptOut: island.keptOut });
-// Home palms in a fixed order (the same on every client). Their cells are the wood age's log spots
-// (src/features/log-sources.ts). Mainland trees are scenery and obstacles only.
-export const trees = placements.filter(isHomePalm);
 
 // Footprints of trees, rocks and POIs ({ x, z, r } on the ground plane), for things that walk around them. POIs keep
 // their ground clear and are walked around. Push freely; blockedAt() re-indexes when the list grows.

@@ -122,7 +122,7 @@
     },
     "src/entities/props/state.ts": {
       "count": 4,
-      "exports": ["blockedAt", "obstacles", "placements", "propBodies", "trees"],
+      "exports": ["blockedAt", "obstacles", "placements", "propBodies"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/arrival.ts": {
@@ -588,7 +588,7 @@
     },
     "src/pois/lighthouse/index.ts": {
       "count": 8,
-      "exports": ["DECK_Y", "FRISBEE_SPOT"],
+      "exports": ["DECK_Y"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/pois/windmills/index.ts": {

@@ -7,7 +7,7 @@
 //
 // The pid is 10 random [a-z0-9] characters in localStorage `boogle.pid`, shared by every room and every tab of this
 // browser, with a secret key in `boogle.key`. The tab sends both when it connects (src/net/ws-room.ts); the server
-// binds the pid to that socket and stamps it on every edit (src/world/sync.ts), and refuses a pid that is in the room
+// binds the pid to that socket and stamps it on every command (server/src/host/railway-requests.ts), and refuses a pid that is in the room
 // under another key, so nobody can take over a player who is there by copying the pid from presence. Two tabs of one
 // browser are one player: the newer one takes over and the older one stops (src/features/identity.ts says so). Where storage is blocked
 // (private mode, blocked site data) every load is a new player. Nothing here is personal data: a random id next to

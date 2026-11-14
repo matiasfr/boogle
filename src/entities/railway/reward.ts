@@ -1,6 +1,6 @@
 // T1's conductor hat and T2's scarf: profiles commit before the common-box reveal begins. The boxes after them are
 // ./crates-view.ts, mounted here on the same reveal queue.
-// Construction is Lockstep; eligibility is read-only, claims are personal Local. A claimed hat or scarf goes into the
+// Construction is Server; eligibility is read-only, claims are personal Local. A claimed hat or scarf goes into the
 // wardrobe (../wardrobe/state.ts), which owns what is worn and shows it to others.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';

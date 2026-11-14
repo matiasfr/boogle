@@ -1,4 +1,4 @@
-// The track machine's sounds (src/features/track-machine.ts): a steam chuff, a sleeper's thump, a rail's clank and the
+// The track machine's sounds (src/entities/railway/track-machine.ts): a steam chuff, a sleeper's thump, a rail's clank and the
 // end-of-run whistle, synthesized on the shared audio context (./audio.ts), quieter with distance from the camera.
 // Local and cosmetic: never read by the simulation, so Math.random is fine.
 import { dbToGain, getAudio } from './audio.ts';

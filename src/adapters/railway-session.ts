@@ -451,7 +451,7 @@ export function createRailwayAdapter({
       lose(railInt(message.request, RAILWAY_MAX_INT, 1) && message.epoch === epoch ? message.request : next);
       return;
     }
-    // The room's lockstep clock stamps (w:c and friends, every 200 ms) keep the step estimate fresh between packets.
+    // The room clock's stamps (w:c, every 200 ms) keep the step estimate fresh between packets.
     if (typeof message.t === 'string' && message.t.startsWith('w:') && Number.isSafeInteger(message.ht))
       rail.mirror.stamp((message.ht as number) * RULE_STEPS, now());
     if (
