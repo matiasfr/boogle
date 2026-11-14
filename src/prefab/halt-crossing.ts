@@ -31,7 +31,8 @@ export function haltCrossing(id: string, params: JsonObject): Placement[] {
     to = h.crossTo ?? CROSSING_SPAN[1];
   const planks = crossingPlanks(edge(-CROSSING_WIDTH / 2), edge(CROSSING_WIDTH / 2), to).map(([l0, l1]) => {
     const a = at(s, (l0 + l1) / 2);
-    return [a.x, top - 0.12, a.z, l0 - l1, 0.12, CROSSING_WIDTH];
+    // Keep the walking top fixed; inset only the underside 1 cm from the rail foot plane.
+    return [a.x, top - 0.11, a.z, l0 - l1, 0.11, CROSSING_WIDTH];
   });
   const a0 = at(s, CROSSING_SPAN[0]),
     a1 = at(s, to);
