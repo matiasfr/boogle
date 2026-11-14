@@ -126,3 +126,14 @@ test("every corner of a rim rock's collider is inside the drawn stone", () => {
     }
   }
 });
+
+test("every rim rock's collider top stands at least 0.45 m over its ground", () => {
+  // src/place/pose.ts's safe() sweeps down to 0.4 m over the ground: a lower box would let a saved pose return
+  // inside a rock (test/ring-island-rim-pose.test.ts runs that policy on the real colliders).
+  for (const r of summitRimRocks(g, centre)) {
+    const { lift, box } = summitRimRockShape(r),
+      top = lift + box.y / 2;
+    assert.equal(r.y, g.islandH(r.x, r.z));
+    assert.ok(top >= 0.45, `collider top ${top.toFixed(3)} m over the ground at ${r.x}, ${r.z}`);
+  }
+});

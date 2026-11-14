@@ -191,6 +191,10 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   inscribed in its stone (`summitRimRockShape`: the dodecahedron's inner cube, scaled as the stone), and a test holds
   every collider corner inside the drawn faces. The stone's edges overhang the box, so a player can brush through
   the outer 0.2 m or so of a rock and stands about 0.1 m into its top.
+  **Second review fix (P2):** the smallest rock's inscribed box top fell to 0.36 m, under the return-pose policy's
+  0.4 m sweep, so a saved pose at its centre was accepted. The rocks are now 0.70 to 0.85 m high (were 0.55 to 0.85),
+  every box top at least 0.46 m over its ground; a test holds 0.45 m, and `test/ring-island-rim-pose.test.ts` runs
+  `createPosePolicy.safe()` on the real colliders and refuses all 19 centres. Rim still retaken: unchanged read.
 - [ ] **3. The witness and the stills.** In `dev/look/evals/ring-island-walk.ts` import `summitPath` from
   `/src/entities/ring-island/path.ts` for `way` (its last two points, the lookout ramp's foot and the deck, stay the
   eval's own), add `bridge` and `cut` to `VIEWS` and to the `ringview` branch, and add `bridge: { onDeck, y }` to the

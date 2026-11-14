@@ -93,7 +93,9 @@ export function summitRimRocks(g: IslandGround, centre: { x: number; z: number }
     const x = middle.x - nx * d,
       z = middle.z - nz * d;
     if (fromPath(x, z) < R.path) continue;
-    out.push({ x, y: g.islandH(x, z), z, w: 0.8 + 0.4 * f, h: 0.55 + 0.3 * ((f * 7) % 1), yaw: f * Math.PI });
+    // At least 0.7 high: the inscribed box's top is 0.66 h over the ground, and under 0.45 m a saved pose could
+    // return inside a rock (src/place/pose.ts's safe() sweeps down to 0.4 m).
+    out.push({ x, y: g.islandH(x, z), z, w: 0.8 + 0.4 * f, h: 0.7 + 0.15 * ((f * 7) % 1), yaw: f * Math.PI });
   }
   return out;
 }
