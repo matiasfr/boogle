@@ -29,7 +29,8 @@ const chip = (t: Interactable) =>
   `<span class="prompt-chip${t.blocked ? ' blocked' : ''}">${glyph('interact')}<span>${t.verb}</span></span>` +
   (t.blocked ? `<span class="prompt-why">${t.blocked}</span>` : '') +
   // A second control (hands.ts, `also`), small, over the chip; on touch its button carries the word (prompt.css).
-  (t.also ? `<span class="prompt-chip prompt-also">${glyph(t.also.action)}<span>${t.also.verb}</span></span>` : '');
+  (t.also ? `<span class="prompt-chip prompt-also">${glyph(t.also.action)}<span>${t.also.verb}</span></span>` : '') +
+  (t.note ? `<span class="prompt-note">${t.note}</span>` : '');
 
 function build() {
   const root = (ui.root = document.createElement('div'));

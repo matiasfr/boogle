@@ -26,6 +26,7 @@ import { SEAM_THROAT } from '../../sim/railway-works.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { LINE_HALTS } from '../../sim/railway-train.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
+import { kilnBill, kilnPrompt } from './kiln-prompt.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
@@ -261,7 +262,7 @@ export async function createRailwayWorks(
     bill.mesh.visible = on;
     if (!on) return;
     const k = worksRow(wd);
-    const small = `logs ${Math.min(k.logs, WORKS.kilnLogs)}/${WORKS.kilnLogs}  stone ${Math.min(k.stone, WORKS.kilnStone)}/${WORKS.kilnStone}`;
+    const small = kilnBill(k.logs, k.stone, WORKS.kilnLogs, WORKS.kilnStone);
     if (small === billPainted) return;
     billPainted = small;
     paintTwoLines(bill, 'Kiln', small, BILL_LOOK);
@@ -807,24 +808,19 @@ export async function createRailwayWorks(
         Math.abs(p.y - WORKS_KILN.y / 100) <= 2.6
       ) {
         const c = at(3.2, 0);
-        const fills =
-          ((mine?.carry ?? 0) > 0 && w.logs < WORKS.kilnLogs) || ((mine?.stone ?? 0) > 0 && w.stone < WORKS.kilnStone);
-        // Part 2, beat 9: an empty or wrong back meets the prompt with its reason, never silence.
-        out.push(
-          fills
-            ? {
-                id: 'railway-kiln',
-                verb: 'Fill the kiln',
-                at: new THREE.Vector3(c.x, kilnGround + 2.2, c.z),
-                run: () => void adapter.fillKiln(),
-              }
-            : {
-                id: 'railway-kiln',
-                verb: 'Fill the kiln',
-                at: new THREE.Vector3(c.x, kilnGround + 2.2, c.z),
-                blocked: 'Bring logs or stone',
-              },
+        // The bill, what a press adds, and a plain reason when it adds nothing (kiln-prompt.ts); never silence.
+        const say = kilnPrompt(
+          w,
+          { logs: WORKS.kilnLogs, stone: WORKS.kilnStone },
+          { logs: mine?.carry ?? 0, stone: mine?.stone ?? 0, rails: mine?.rails ?? 0 },
         );
+        const target = {
+          id: 'railway-kiln',
+          verb: 'Fill the kiln',
+          at: new THREE.Vector3(c.x, kilnGround + 2.2, c.z),
+          note: say.note,
+        };
+        out.push(say.blocked ? { ...target, blocked: say.blocked } : { ...target, run: () => void adapter.fillKiln() });
       }
       if (w.rack > 0 && Math.hypot(p.x - rack.x, p.z - rack.z) <= WORKS_RACK.reach / 100 - 0.4) {
         const top = slotAt(Math.max(0, w.rack - 1), new THREE.Vector3()).add(new THREE.Vector3(0, 1.6, 0));

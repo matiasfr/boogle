@@ -70,6 +70,17 @@ body.touch .prompt-chip {
 body.touch .prompt-chip.prompt-also {
   display: none;
 }
+/* A bill over the chip (the kiln's logs and stone): paper, not a refusal; above the reason when both show. */
+.prompt-note {
+  order: -3;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  font: 800 15px/1 var(--font-body);
+  white-space: pre;
+}
 .prompt-why {
   order: -1;
   padding: 4px 10px;
