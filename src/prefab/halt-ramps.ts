@@ -1,26 +1,21 @@
 // Resolve the old platform ramp endpoints at load time; no native geometry enters the artifact.
-import { LINKS, ORIGIN, lineAt, railY } from '../place/layout.ts';
+import { ORIGIN, lineAt, railY } from '../place/layout.ts';
 import { ISLAND } from '../place/home-station.ts';
 import { H } from '../place/terrain.ts';
 import { SEA } from '../constants.ts';
-import { haltSource } from './halt-deck.ts';
+import { haltFrame } from './halt-deck.ts';
 import type { JsonObject, Placement } from './types.ts';
 
 export function haltRamps(id: string, params: JsonObject): Placement[] {
-  const h = haltSource(params.row as number, params.up as boolean);
+  const { h, island, line, mid, low, c } = haltFrame(params.row as number, params.up as boolean);
   const up = params.up === true,
-    island = 'island' in h && h.island,
-    line = LINKS[h.line]!.line,
-    mid = (h.s0 + h.s1) / 2,
-    width = island ? ISLAND.width : 2.5,
-    low = Math.min(railY(line, h.s0), railY(line, h.s1)) + 0.72;
+    width = island ? ISLAND.width : 2.5;
   const p = { x: 0, z: 0, ux: 0, uz: 1 };
   const at = (s: number, lat: number) => {
     lineAt(line, s, p);
     return { x: p.x - p.uz * lat + ORIGIN.x, z: p.z + p.ux * lat + ORIGIN.z };
   };
-  const c = at(mid, h.lat),
-    water = !up && H(c.x, c.z) < SEA;
+  const water = !up && H(c.x, c.z) < SEA;
   const placements: Placement[] = [];
   let index = 0;
   const ramp = (top: { x: number; z: number }, foot: { x: number; z: number }, footY = H(foot.x, foot.z) + 0.05) => {

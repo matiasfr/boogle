@@ -302,24 +302,21 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
   const mw = (bounds.x1 - bounds.x0) * SCALE,
     mh = (bounds.z1 - bounds.z0) * SCALE;
   const project = (p: Point) => ({ x: px + (p.x - bounds.x0) * SCALE, y: py + (p.z - bounds.z0) * SCALE });
-  const path = (pts: readonly Point[], stroke: string, width = 1, extra = '') =>
-    `<polyline points="${pts
+  const points = (pts: readonly Point[]) =>
+    pts
       .map((p) => {
         const q = project(p);
         return `${n(q.x)},${n(q.y)}`;
       })
-      .join(' ')}" fill="none" stroke="${stroke}" stroke-width="${n(width)}" ${extra}/>`;
+      .join(' ');
+  const path = (pts: readonly Point[], stroke: string, width = 1, extra = '') =>
+    `<polyline points="${points(pts)}" fill="none" stroke="${stroke}" stroke-width="${n(width)}" ${extra}/>`;
   const circle = (p: Point, r: number, fill: string, stroke: string, extra = '') => {
     const q = project(p);
     return `<circle cx="${n(q.x)}" cy="${n(q.y)}" r="${n(r * SCALE)}" fill="${fill}" stroke="${stroke}" ${extra}/>`;
   };
   const shape = (b: TownBuilding, fill: string, stroke: string, extra = '') =>
-    `<polygon points="${corners(b)
-      .map((p) => {
-        const q = project(p);
-        return `${n(q.x)},${n(q.y)}`;
-      })
-      .join(' ')}" fill="${fill}" stroke="${stroke}" stroke-width="1.4" ${extra}/>`;
+    `<polygon points="${points(corners(b))}" fill="${fill}" stroke="${stroke}" stroke-width="1.4" ${extra}/>`;
   out.push(`<rect x="${ox}" y="${oy}" width="770" height="650" rx="8" fill="#fffef9" stroke="#d4d9d3"/>`);
   out.push(
     text(

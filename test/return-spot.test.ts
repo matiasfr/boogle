@@ -229,10 +229,8 @@ test('the search gives up for Home once its time budget is spent, however many h
   const all = haltLandings();
   const search = createReturnSearch({ x: 0, y: 5, z: 0, yaw: 0, at: 1000 }, all, built);
   const p = { settled: () => false, standable: () => false, near: () => null };
-  let tried = 0;
   for (let t = 0; t <= RETURN_BUDGET_S; t += 0.5) {
     assert.deepEqual(search.step(t, p), { kind: 'hold' });
-    tried = Math.max(tried, 1);
   }
   assert.deepEqual(search.step(RETURN_BUDGET_S + 0.01, p), { kind: 'home' });
   assert.ok(returnCandidates({ x: 0, y: 5, z: 0, yaw: 0, at: 1000 }, all, built).length > 4);

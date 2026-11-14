@@ -195,7 +195,7 @@ export function houseParts(p: JsonObject): { parts: Part[] } {
         ],
       };
     case 'cabinet-pulls':
-      return { parts: [...[0.35, 0.75, 1.15].map((y): Part => ['b', 3.15, y, -2.65, 0.23, 0.045, 0.055, '#d9a23a'])] };
+      return { parts: [0.35, 0.75, 1.15].map((y): Part => ['b', 3.15, y, -2.65, 0.23, 0.045, 0.055, '#d9a23a']) };
     default:
       throw new Error('house: unknown furnishing');
   }

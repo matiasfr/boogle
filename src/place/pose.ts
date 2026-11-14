@@ -13,8 +13,7 @@ export function createPosePolicy(
   blockedFoot: (pose: Pose) => boolean,
   probe?: Pick<typeof import('../physics/engine.ts'), 'rayHit' | 'raycastClosest'>,
 ) {
-  const blocked = (x: number, z: number) =>
-    blockedFoot({ x, z, yaw: 0 }) ||
+  const inRoom = (x: number, z: number) =>
     Object.values(ROOM_PLOTS).some((room) => {
       const c = Math.cos(room.yaw),
         s = Math.sin(room.yaw),
@@ -22,6 +21,7 @@ export function createPosePolicy(
         dz = z - room.z;
       return Math.abs(dx * c - dz * s) < room.w / 2 + PLAYER_R && Math.abs(dx * s + dz * c) < room.d / 2 + PLAYER_R;
     });
+  const blocked = (x: number, z: number) => blockedFoot({ x, z, yaw: 0 }) || inRoom(x, z);
   const hit = probe?.rayHit();
   function surfaceY(x: number, y: number, z: number, head: number) {
     if (!probe || !hit) return null;
@@ -89,17 +89,7 @@ export function createPosePolicy(
   }
   function safe(p: Pose) {
     if (![p.x, p.z, p.yaw].every(finite) || !inside(p.x, p.z) || ground(p.x, p.z) <= 1.6) return false;
-    if (blockedFoot(p)) return false;
-    if (
-      Object.values(ROOM_PLOTS).some((room) => {
-        const c = Math.cos(room.yaw),
-          s = Math.sin(room.yaw),
-          x = p.x - toWorld(room.x),
-          z = p.z - room.z;
-        return Math.abs(x * c - z * s) < room.w / 2 + PLAYER_R && Math.abs(x * s + z * c) < room.d / 2 + PLAYER_R;
-      })
-    )
-      return false;
+    if (blockedFoot(p) || inRoom(p.x, p.z)) return false;
     const h = ground(p.x, p.z);
     const from = { x: p.x, y: h + 128, z: p.z };
     const to = { x: p.x, y: h + PLAYER_R + 0.4, z: p.z };

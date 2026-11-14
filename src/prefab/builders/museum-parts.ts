@@ -88,23 +88,23 @@ export function museumParts(p: JsonObject): { parts: Part[] } {
     case 'cushion':
       return { parts: [['b', p.x as number, 0.52, -1.3, 1.05, 0.08, 0.58, '#356b74']] };
     case 'drawer': {
-      const parts: Part[] = [];
-      for (const x of [p.x as number])
-        parts.push(
+      const x = p.x as number;
+      return {
+        parts: [
           ['b', x, 0.48, TABLE.z + TABLE.d / 2 + 0.06, 1.75, 0.48, 0.025, '#7f6244'],
           ['b', x, 0.52, TABLE.z + TABLE.d / 2 + 0.09, 0.22, 0.04, 0.04, '#d9a23a'],
-        );
-      return { parts };
+        ],
+      };
     }
     case 'reflector': {
-      const parts: Part[] = [];
-      for (const x of [p.x as number])
-        parts.push(
+      const x = p.x as number;
+      return {
+        parts: [
           ['c', x, 0.51, SPEC.z + 0.85, 0.16, 0.08, 0.16, '#3f4145'],
           ['k', x, 0.65, SPEC.z + 0.85, 0.2, 0.22, 0.2, '#d9a23a', Math.PI],
           ['c', x, 0.77, SPEC.z + 0.85, 0.14, 0.015, 0.14, '#fff0c9'],
-        );
-      return { parts };
+        ],
+      };
     }
     case 'column': {
       const x = p.x as number;
