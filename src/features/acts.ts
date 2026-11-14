@@ -10,7 +10,7 @@
 // The card is a variant of the moment banner (src/ui/moment-banner.ts), which also says whether another full-screen
 // moment (a pull-out, a reward card, the finale's banner, the pause view) is showing: the act waits behind them.
 // Local presentation of Server-replicated state. Serves DESIGN.md 7 (Telegraph everything) and 6 (Communal world).
-import '../world/game-world.ts'; // first, as welcome-back.ts does: the lockstep rules register before anything else
+import '../world/game-world.ts'; // first, as welcome-back.ts does: the server mirrors exist before anything reads them
 import * as THREE from 'three/webgpu';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { me, cam } from '../player/player.ts';

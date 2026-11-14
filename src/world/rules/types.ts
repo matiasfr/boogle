@@ -1,7 +1,7 @@
 // Headless server registration and command context. State hashes verify checkpoints, never client lockstep.
 type Cell = { i: number; j: number };
 
-export type Ctx = { from: string; tick: number; env: Record<string, unknown> };
+export type Ctx = { from: string; tick: number };
 export type StateHandlers = {
   serialize: () => unknown;
   load: (json: unknown) => void;

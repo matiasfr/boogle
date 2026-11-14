@@ -1,4 +1,4 @@
-// The game with no browser: the real ground, the lockstep rules on the server's land, Rapier, and every entity that has
+// The game with no browser: the real ground, the server's land, Rapier, and every entity that has
 // a src/entities/*/headless.ts. One world per process (the game's state is module-level), so two players are two
 // processes. A frame is main.ts's without its update and late phases, which only draw:
 //

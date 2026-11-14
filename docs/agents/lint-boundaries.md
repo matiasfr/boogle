@@ -38,7 +38,7 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   declared instantiate API stays open for record-authored content. Existing construction APIs are additionally
   constrained by the importer ratchet below; public names alone are not permission for new consumers.
 - `dev/lint/prefab-constructors.ts` computes construction capabilities in debt files and discovered
-  OwnedView-producing factories. The call fixed point includes their private helpers; ordinary service/loader
+  OwnedView-producing factories (found from resolved ownership calls and `OwnedView` return annotations). The call fixed point includes their private helpers; ordinary service/loader
   bodies elsewhere do not expand the closure. The record-only instantiate door remains open.
   `prefab-values.ts` tracks resolved module/callable identities through await, Promise.all/allSettled, array/object
   patterns (including aliases/rest), then callbacks, local assignments and aggregate fields. Function results
@@ -49,8 +49,10 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   retain leaf selection. Only an opaque/escaped namespace falls back to its whole construction surface;
   passing an already selected value to another API does not acquire its module's other members.
   Unknown consumers, opaque arguments, unresolved imports and value-analysis bounds fail closed: importing or
-  module-carrying debt exports are counted as both capabilities. Lint/registry print the affected files;
-  [the complete current list and before/after audit](../plans/prefab-data-step-5-dynamic-audit.md) shows what to simplify.
+  module-carrying debt exports are counted as both capabilities. A source import of ignored or unanalysed project
+  code fails closed too. Lint/registry print the affected files; the current list is `legacy` in
+  `dev/lint/prefab-debt.json`, and [the dynamic-import audit](../plans/prefab-data-step-5-dynamic-audit.md) records
+  the value model (its counts are history).
   The bounded value domain allows eight aggregate levels and 24 fixed-point passes; exceeding either is not a waiver.
   `NOT_CONSTRUCTORS` and `NOT_CONSTRUCTION_EXPORTS` are exemption **candidates**, never unconditional stops.
   Their unpruned debt-local closure must reach neither allocation/seat-registration endpoints nor unresolved
@@ -61,7 +63,8 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   caller, never every invocation of the generic receiving helper. Query-only physics/terrain calls and pure
   geometry/positioning helpers do not consume construction budgets. The terminal implementations and instantiate are closed doors, not ordinary
   placed-content factories. Query/attachment APIs create no bodies by those contracts.
-  `legacy["file#export"]` stores only the number of distinct importing files, including forwarding barrels.
+  `legacy["file#export"]` stores only the number of distinct importing files, including forwarding barrels and
+  static whole-namespace imports (an `import * as` acquires every construction export of its module).
   Named, namespace, dynamic and require acquisitions resolve through aliases/barrels. Higher counts fail naming
   `src/prefab/instantiate.ts`; lower counts fail with **lower the count**. Computed export keys must match the
   record; registry ratchets each count and forbids new keys. The full OwnedView + instantiate + entity/onStart
@@ -82,7 +85,8 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   parameters, private helper results or stored references are tainted. Normal debt counts combine these units
   with existing module-edge/direct-call checks. Named doors have separate `doorCounts` for this binding set.
   The round-six `createBody as allocate` addition fails at the import-only step, before hiddenMaker exists.
-- `boogle/records-are-data`: content imports/re-exports only prefab `types.ts`/`names.ts`, `src/constants.ts`,
+- `boogle/records-are-data`: content imports/re-exports only prefab
+  `types.ts`/`names.ts`/`authoring.ts`/`greybox-constants.ts`, `src/constants.ts`,
   `src/math-pure.ts`, and explicitly listed pure layout helpers (`place/layout.ts`, `entities/railway/line2-path.ts`,
   `entities/route-greybox/massing.ts`'s shared coordinates, `entities/route-greybox/leg2-layout.ts`'s coordinates/copy,
   and `content/levels/leg2.ts`'s pure authoring shared with the Gorge level).
@@ -92,7 +96,8 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   ambient `declare`, type bindings and erased imports do not. Local `origin` and local `globalThis` objects are
   allowed. The compiler separately
   rejects non-JSON exported values; compiled JSON remains committed.
-- `dev/lint/prefab-debt.json` version 7 lists collider/seat files with `{ count, reason, exports }`, fixed door
+- `dev/lint/prefab-debt.json` version 7 lists collider/seat files with `{ count, reason, exports }` (counts are
+  lint violations: module acquisitions and direct calls, not runtime collider instances), fixed door
   public surfaces and compact computed construction/importer counts. Dropping the schema or counts fails. Lint and registry
   reject excess violations and require fewer violations to **lower the count** (remove a zero entry). Registry
   also rejects any new file identity or per-file count growth, even when another file/count shrinks. Against a
@@ -110,6 +115,7 @@ The owner accepts these prefab-enforcement residuals:
 - Reflection.
 - Deliberate indirection inside an already-exempt file without a new capability specifier.
 - Count-preserving rewrites, including additional calls from an already-counted legacy importer.
+- Arbitrary wrappers outside the analysed debt and ownership files.
 
 `npm run lint -- [files...]` runs native Oxlint, oxlint-tsgolint and the repo's oxc-parser safety checks together.
 Use that command in hooks and CI: calling Oxlint alone omits custom protections. `.oxlintrc.json` holds the native

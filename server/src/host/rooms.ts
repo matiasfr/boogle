@@ -3,13 +3,13 @@
 // unloaded after cfg.roomIdleMs with nobody in it; at most cfg.maxHostedRooms are loaded at once. A listed room loads
 // with the process and stays. A railway room simulates only while someone is in it: hosted-room.ts pauses it
 // cfg.roomPauseMs after it empties and the next join applies its away credit (world-host.ts, the paused world). A
-// classic room still ticks until it unloads.
+// room outside the railway namespace still runs its clock until it unloads.
 //
 //   const roomHost = createRoomHost(cfg, store)
 //   roomHost.upgrade(req, socket, head)   a /room/:id upgrade: checks, then the room's join (or a refusal)
 //   roomHost.room(id)                     the hosted room, or undefined
 //   roomHost.hosts(id), status(id)       whether it hosts that room; GET /rooms/:id/host
-//   await roomHost.offline(id, fn)        admin.ts: close the room unsaved, run fn while joins are refused; 'busy' if closing
+//   await roomHost.offline(id, fn, { save })   admin.ts: close the room, run fn while joins are refused; 'busy' if closing
 //   await roomHost.close({ save })
 //   roomHost.closing()                    the ids still closing (index.ts names them if shutdown overruns)
 import crypto from 'node:crypto';
@@ -129,7 +129,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
     maxPayload: 64 * 1024,
     handleProtocols: (protocols) => (protocols.has(WS_PROTOCOL) ? WS_PROTOCOL : false),
   });
-  const upgrades = new Map<string, { n: number; at: number }>(); // ip -> upgrades this minute
+  const upgrades = new Map<string, { n: number }>(); // ip -> upgrades this minute
   const sweep = setInterval(() => upgrades.clear(), 60000);
   sweep.unref();
   if (all || listed.size) cfg.log(`hosting rooms: ${all ? 'all' : [...listed].join(', ')} (boot ${boot})`);
@@ -184,8 +184,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       if (!cfg.allowedOrigins.includes('*') && !(origin && cfg.allowedOrigins.includes(origin)))
         return refuse(socket, '403 Forbidden');
       const ip = clientAddress(req, cfg.replaceFlyProxy);
-      const now = Date.now();
-      const u = upgrades.get(ip) ?? { n: 0, at: now };
+      const u = upgrades.get(ip) ?? { n: 0 };
       rememberAddress(upgrades, ip, u);
       if (++u.n > cfg.upgradesPerMin) return refuse(socket, '429 Too Many Requests');
 

@@ -4,5 +4,3 @@ export const WAGON_ACCEL = 30; // ticks to reach full speed from a stop, and to 
 export const WAGON_DWELL = 60; // ticks standing at each stop (layout export)
 export const WAGON_MAX_GRADE = 0.25; // static route grade checked by level-check
 
-/** Cruise in cm per tick; accel in ticks to reach it from a stop. */
-export type WagonPace = { cruise: number; accel: number };

@@ -180,7 +180,6 @@ test('server ops validate authenticated identity, return results, and reject unk
   const ctx = {
     from: 'socket',
     tick: 12,
-    env: {},
     protoRoom: true,
     tuneController: () => true,
     actor: { reach: () => true, height: () => true, cadence: () => true },

@@ -6,7 +6,7 @@ import type { ModuleResolver } from './prefab-boundaries.ts';
 
 type Value = { refs: Set<string>; fields: Map<string, Value>; origins: Set<number> };
 const empty = (): Value => ({ refs: new Set(), fields: new Map(), origins: new Set() });
-export type ValueModule = { file: string; program: Program; refs: Map<number, string>; defs: Map<number, string> };
+type ValueModule = { file: string; program: Program; refs: Map<number, string>; defs: Map<number, string> };
 export function moduleValues(
   modules: ValueModule[],
   aliases: Map<string, Set<string>>,
@@ -28,14 +28,8 @@ export function moduleValues(
   const parents = new Map<Node, Node>();
   const clipped = new Set<number>();
   const merge = (into: Value, from: Value, depth = 0): void => {
-    for (const r of from.refs)
-      if (!into.refs.has(r)) {
-        into.refs.add(r);
-      }
-    for (const o of from.origins)
-      if (!into.origins.has(o)) {
-        into.origins.add(o);
-      }
+    for (const r of from.refs) into.refs.add(r);
+    for (const o of from.origins) into.origins.add(o);
     if (depth >= 8) {
       for (const origin of originSet(from)) {
         into.origins.add(origin);

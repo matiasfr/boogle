@@ -2,7 +2,7 @@
 // its world; this is the room interface over one WebSocket to it, plus the lead the server picks (the tab that
 // publishes Host fields: addHostField in src/netplay/net.ts). Wire shapes: ./ws-wire.ts.
 //
-// The server's sync is the lockstep host (its messages come from SERVER_ID). The first connect resolves after `welcome` and the last `list` chunk, or rejects with room_full (+ max), peer_hosted (a
+// The server runs the world and its clock (its messages come from SERVER_ID). The first connect resolves after `welcome` and the last `list` chunk, or rejects with room_full (+ max), peer_hosted (a
 // server that doesn't host this room), unreachable or browser-incompatible. After that the room reconnects by itself
 // (backoff 250 ms to 3 s, +-30%; 500-1500 ms after a graceful `bye`; through a deploy that briefly doesn't host the
 // room too), reports onConnection(false/true), re-sends its presence with a new seq, flushes what send() held

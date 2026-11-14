@@ -1,4 +1,4 @@
-// Classic commands' Server-kind boundary (server-owned-state, step 2). Rail tune commands use this boundary.
+// The Server-kind command boundary (server-owned-state, step 2). Roster, seat and rail tune commands use it.
 // Validation sees authenticated identity and host facts; apply only receives the edit and rule tick. Results stay
 // local to the host; the existing railway receipt carries acceptance (ok=1), never an arbitrary result on the wire.
 import type { Actor } from './railway-server.ts';

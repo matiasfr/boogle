@@ -27,8 +27,6 @@ export const MAX_RECOVERY_BYTES = 128000;
 export type WorldRoom = {
   selfId: string;
   send(m: unknown): void;
-  peers?: () => readonly { peer: string }[];
-  pidOf?: (sid: string) => string | null;
   onMessage(h: (m: unknown, from: string) => void): () => void;
   onConnection(h: (connected: boolean) => void): () => void;
 };
@@ -64,7 +62,6 @@ export function createSync() {
   const world = { tick: 0, seed: 20261028, epochMs: 0 };
   const states = new Map<string, State>();
   const tickFns: ((tick: number) => void)[] = [];
-  const afterFns: ((tick: number) => void)[] = [];
   const snapFns: ((tick: number) => void)[] = [];
   const stepFns: ((step: number) => void)[] = [];
   const labels = new Map<unknown, string>();
@@ -117,7 +114,6 @@ export function createSync() {
     try {
       world.tick++;
       for (const fn of tickFns) fn(world.tick);
-      for (const fn of afterFns) fn(world.tick);
       if (mode === 'host' && world.tick % CLOCK_EVERY === 0) send({ t: 'w:c', ht: world.tick });
     } catch (e) {
       failRecovery('server tick failed');
@@ -132,11 +128,8 @@ export function createSync() {
     wall += dt * 1000;
     if (!ready || !connected) return;
     const tick = stepEstimate.tick(wall);
-    if (tick !== world.tick && tick >= 0) {
-      world.tick = tick;
-      // View notifications only: clients never execute onTick shared rules.
-      for (const fn of afterFns) fn(tick);
-    }
+    // Clients follow the clock only: they never execute onTick shared rules.
+    if (tick !== world.tick && tick >= 0) world.tick = tick;
   }
   function stepWorld(ms: number) {
     if (mode === 'client') throw new Error('stepWorld drives the host clock; a client follows it with updateWorld');
@@ -255,7 +248,6 @@ export function createSync() {
         undo.push(() => (list[k] = fn));
       });
     swapAll(tickFns, 'sim', 'tick');
-    swapAll(afterFns, 'view', 'after');
     return {
       stop() {
         if (active) profiling = active = false;
@@ -419,7 +411,6 @@ export function createSync() {
     registerState,
     registry,
     onTick: (fn: (tick: number) => void, label?: string) => addHandler(tickFns, fn, label),
-    onAfterTick: (fn: (tick: number) => void, label?: string) => addHandler(afterFns, fn, label),
     onSnapshot: (fn: (tick: number) => void) => void snapFns.push(fn),
     updateWorld,
     stepWorld,
@@ -440,16 +431,10 @@ export function createSync() {
 const S = createSync();
 export const world = S.world;
 export const {
-  registerState,
   registry,
-  onTick,
-  onAfterTick,
   onSnapshot,
   updateWorld,
-  roomStep,
   snapshot,
-  loadSnapshot,
-  saveNow,
   attachWorld,
   detachWorld,
   worldStatus,

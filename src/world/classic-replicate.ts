@@ -14,13 +14,15 @@ export const TUNE_REV = defineReplicated('tuneRev', { revision: 'int' });
 export const PLAYER = defineReplicated('player', { pid: 'str', name: 'str', color: 'u8' });
 export const CLASSIC_SCHEMAS = [TUNE_VALUE, TUNE_REV, PLAYER];
 const rows = TUNABLES.flatMap((spec, id) => (spec.key.startsWith('rail') ? [{ ...spec, id }] : []));
+const rowIds = rows.map((row) => row.id);
+const rowById = new Map(rows.map((row) => [row.id, row]));
 
 export function projectRailTune(replication: Replicator, api: RailTuneApi) {
   replication.define({
     schema: TUNE_VALUE,
-    ids: () => rows.map((row) => row.id),
+    ids: () => rowIds,
     project: (id) => {
-      const row = rows.find((row) => row.id === id);
+      const row = typeof id === 'number' ? rowById.get(id) : undefined;
       return row ? { key: row.key, v: api.get(row.key) } : null;
     },
     cell: () => GLOBAL_CELL,
@@ -73,11 +75,8 @@ export function createRosterMirror(mirror: Mirror) {
   return {
     roster,
     indexOf: (pid: unknown) => indexOf(roster, pid),
-    // Inactive classic readers may look up ordinals, but a client never allocates one.
-    ensure: (pid: string) => indexOf(roster, pid),
     nameOf: (k: number) => roster.names[k] ?? '',
     colorOf: (k: number) => roster.colors[k] ?? 0,
-    size: () => roster.pids.length,
     onChange(fn: (event: { rows: RosterJson; tick: number }) => void) {
       listeners.add(fn);
       return () => listeners.delete(fn);

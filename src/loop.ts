@@ -17,7 +17,7 @@
 //   world   -290 player: fall respawn
 //   update  -290 player-view: own avatar         -280 remote-player: remote avatars
 //           -200 camera                          -190 cloud                       -150 assets.ts: glTF clips
-//           -60 conversation                     -10 world.ts: lockstep ticks     -5 sky, guest
+//           -60 conversation                     -10 world.ts: room clock         -5 sky, guest
 //           (features: -10 and up; the beach ball, a toy, runs there: src/entities/ball/headless.ts)
 //   late    -200 throw-preview                   -190 hud                         -20 particles.ts: particles
 //           (features: -10 to 2000)
@@ -43,8 +43,8 @@
 // dynamic import(), e.g. `onStart(() => import('../pois/caves/index.ts'))` (src/features/pois.ts) or
 // `if (flag) import('../debug/netdebug.ts')` (src/features/syncsafety.ts). The lazy module registers its own hooks when
 // it arrives: onStart then runs at once, and onFrame hooks slot in by order (ties: after the eager ones). Never lazy:
-// anything that registers sync ops or state (src/world/sync.ts), the rules modules (src/world/rules/), or anything a
-// player sees in the first seconds near spawn. Lockstep must not depend on load timing.
+// anything the server mirrors need at boot (src/world/game-world.ts), or anything a
+// player sees in the first seconds near spawn. Shared state must not depend on load timing.
 
 import { beginStartupFrame, recordStartupFrame } from './boot/startup-frames.ts';
 

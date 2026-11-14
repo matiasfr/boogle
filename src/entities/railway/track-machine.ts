@@ -1,4 +1,4 @@
-// The track-laying machine, solid, with its rack and its cradle in plain sight (moved from the rail of ?proto=place). Its rhythm is ?proto=lay's (src/features/track-machine.ts).
+// The track-laying machine, solid, with its rack and its cradle in plain sight (moved from the rail of ?proto=place). Its rhythm is the retired ?proto=lay's.
 import { BOTTOM, drawCar, makeCar, poseCarOnLine, snapCar } from './car.ts';
 import type { Track } from './track.ts';
 import * as THREE from 'three/webgpu';

@@ -290,6 +290,21 @@ test('review regression: unsupported capsule is rejected without orphaning a mes
   }
 });
 
+test('simplify review: a record mutated after load is re-validated on every instantiation', () => {
+  const h = runtimeHarness();
+  h.data.prefabs['town.workshop-chair']!.colliders = [{ shape: 'box', at: [0, 0, 0], half: [-1, 1, 1] }];
+  try {
+    assert.throws(() => h.spawn());
+    assert.equal(h.owner.root.children.length, 0);
+    assert.equal(h.allocations, 0);
+    assert.equal(h.seats.length, 0);
+    assert.equal(h.active.size, 0);
+    assert.equal(h.physicsSpecs.length, 0);
+  } finally {
+    h.owner.dispose();
+  }
+});
+
 test('review regression: rotated collider rejects sheared unequal axes', () => {
   const h = runtimeHarness();
   h.data.prefabs['town.workshop-chair']!.colliders = [

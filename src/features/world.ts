@@ -1,4 +1,4 @@
-// Shared deterministic world: ticks from the frame loop, and from a worker clock while the tab is hidden.
+// The room clock: follows the server's step from the frame loop, and from a worker clock while the tab is hidden.
 import { onFrame, onStart } from '../loop.ts';
 import { updateWorld } from '../world/sync.ts';
 import { createBackgroundAdvance, startBackgroundClock } from '../world/background.ts';

@@ -1,6 +1,6 @@
 // The roster: every player (pid) a room has seen, with the name and colour they last used, in order of first sight.
-// A player's index is the stable replicated player id; the retained classic transport hashes integer folds
-// and a plaque can still print "Ana" after Ana has gone home. Pure and deterministic (lockstep).
+// A player's index is the stable replicated player id; the server checkpoint hashes integer folds
+// and a plaque can still print "Ana" after Ana has gone home. Pure and deterministic (a server rule).
 
 import { FNV_SEED, fold, foldStr } from './hash.ts';
 
@@ -9,7 +9,7 @@ export const NAME_MAX = 16;
 export const N_COLORS = 8; // src/constants.ts COLORS
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 
-// A player id (pid, src/player/identity.ts): the one rule, shared by sync, the roster and the pid source.
+// A player id (pid, src/player/identity.ts): the one rule, shared by the roster and the pid source.
 export const okPid = (u: unknown): u is string => typeof u === 'string' && /^[a-z0-9]{1,32}$/.test(u);
 
 // The lobby's own name rule (src/math.ts sanitizeName): no control or format characters, one space at a time, 16 chars.

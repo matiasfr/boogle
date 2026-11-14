@@ -153,7 +153,6 @@ export function createReplacements(
         await fs.writeFile(path.join(pinDir, backup), text, { flag: 'wx' });
         const copied = await fs.readFile(path.join(pinDir, backup), 'utf8');
         if (copied !== text) throw new Error('replacement backup verification failed');
-        JSON.parse(copied);
         if (cfg.replaceFailAt === 'save') throw new Error('injected replacement save failure');
         await store.replace(id, doc);
         if (cfg.replaceFailAt === 'record') throw new Error('injected replacement record failure');

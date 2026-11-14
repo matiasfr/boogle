@@ -2,8 +2,8 @@
 import { defineLevel } from '../../prefab/types.ts';
 
 import { frame, unit, perp, mix, offset, sub, layoutData, type Evaluated } from '../../prefab/authoring.ts';
-type Reserve = { id: string; x: number; z: number; yaw: number; w: number; d: number; y0: number; y1: number };
-export type { Reserve };
+/** Room kept clear for the rules plan: a rectangle and the heights a leg 2 box may not enter. */
+export type Reserve = { id: string; x: number; z: number; yaw: number; w: number; d: number; y0: number; y1: number };
 /** The unlaid bed: 7.6 m wide, 0.1 m under rail height (no rails are drawn until a leg lays them). */
 const BED = 3.8,
   /** Platforms: 4 m deep, 3.8 to 7.8 m off the row, 0.9 m over the rail (the blockout's). */
@@ -71,8 +71,9 @@ function bell() {
     // Call 119: the deck stays 1.9 m over the rock, with a short ramp down.
     en.ramp('upper-step', -46, UPPER, -50, ROCK, -15, -11, 'grey'),
   ];
-  // The rock itself is not a box here: ./massing-bell.ts makes the map's two Bell Rock lands solid as drawn (their
-  // own outlines, top at `rockTop`), so no drawn rock is left without a collider. The pinnacle's collider is the box
+  // The rock itself is not a box here: the `greybox.bell-rock` prefab (../prefabs/bell-rock.ts, placed by `extras`
+  // below) makes the map's two Bell Rock lands solid as drawn (their own outlines, top at `rockTop`), so no drawn
+  // rock is left without a collider. The pinnacle's collider is the box
   // the backdrop draws (22 m east to west, 18 m north to south, square to the map).
   pieces.push({
     id: 'pinnacle',

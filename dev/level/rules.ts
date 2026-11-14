@@ -20,7 +20,7 @@ export type Issue = {
   fix: string; // what to do
 };
 
-const TRACK_HALF = 1; // m each side the wagon needs: its deck is 0.8 (src/features/track-machine.ts)
+const TRACK_HALF = 1; // m each side the wagon needs: its deck is 0.8 (src/entities/railway/track-machine.ts)
 const GRADE_RUN = 2.5; // m: grades are measured over about the wagon's length, so one bump in the ground doesn't count
 const PLAYER_HEIGHT = 1.7; // m: what's higher up than this over the ground, you walk under
 const UNREACHED_AREA = 60; // m²: smaller scraps of land nobody can reach don't matter

@@ -159,6 +159,7 @@ export function instantiate(
     return { x: p.x, y: p.y, z: p.z, yaw: Math.atan2(facing.x, facing.z) };
   };
   const recipes: { shape: Shape; at: THREE.Vector3; q?: THREE.Quaternion; group?: number }[] = [];
+  const identityOwner = owner.root.matrixWorld.equals(new THREE.Matrix4());
   for (const [i, c] of def.colliders.entries()) {
     // Use the checked collider basis itself: rotations can permute unequal world-axis lengths.
     const [x, y, z] = colliderBases[i]!;
@@ -169,7 +170,7 @@ export function instantiate(
       .decompose(new THREE.Vector3(), q, scale);
     // With an identity owner and no collider rotation, retain the authored TRS exactly rather than
     // introducing decomposition ulps. The full world basis above still validates every collider first.
-    if (!c.rot && owner.root.matrixWorld.equals(new THREE.Matrix4())) {
+    if (!c.rot && identityOwner) {
       q.setFromEuler(euler(placement.rot));
       scale.fromArray(placement.scale ?? [1, 1, 1]);
     }
@@ -240,15 +241,12 @@ export function instantiate(
   const bodies: Body[] = [],
     seats: Seat[] = [],
     unseats: (() => void)[] = [];
+  const soleSeat = Object.values(def.attach ?? {}).filter((a) => a.kind === 'seat').length === 1;
   for (const [name, a] of Object.entries(def.attach ?? {})) {
     if (a.kind !== 'seat') continue;
     const seat: Seat = {
       id:
-        a.idSuffix !== undefined
-          ? `${placement.id}${a.idSuffix}`
-          : Object.values(def.attach ?? {}).filter((a) => a.kind === 'seat').length === 1
-            ? placement.id
-            : `${placement.id}/${name}`,
+        a.idSuffix !== undefined ? `${placement.id}${a.idSuffix}` : soleSeat ? placement.id : `${placement.id}/${name}`,
       group: a.group ?? placement.id,
       ...(parent ? { platform: parent.platform, ...(parent.frame ? { frame: parent.frame } : {}) } : {}),
       ...(a.anchorView ? { anchorView: true } : {}),

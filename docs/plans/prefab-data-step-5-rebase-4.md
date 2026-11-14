@@ -1,5 +1,7 @@
 # Prefab enforcement: main rebase and ordinary-feature audit
 
+> **History for the totals; the model is current.** Totals are superseded by the [precise audit](prefab-data-step-5-precise-audit.md) (schema 7 binding units; selected-member dynamic imports). The allocation-endpoint construction model and the reasons for the removed exports remain current. Current contract: [lint-boundaries](../agents/lint-boundaries.md); current counts: `dev/lint/prefab-debt.json`.
+
 Base: `721fcffcabc98b43f24567d758ceb5dfa3d07254`; branch `codex/prefab-data-step-5-4`. No game-source edits in this correction.
 
 | Metric | Before | After |

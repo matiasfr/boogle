@@ -15,7 +15,7 @@ export type PrefabDebt = {
   forwards?: Record<string, string[]>;
   doorCounts?: Record<string, Partial<Record<'colliders' | 'seats', number>>>;
 };
-export const CAPABILITIES = {
+const CAPABILITIES = {
   colliders: [
     'src/physics/engine.ts',
     'src/physics/backend-rapier.ts',
@@ -41,7 +41,7 @@ export const isCapability = (kind: keyof typeof CAPABILITIES, target: string) =>
   (kind === 'colliders' && /^node_modules\/@dimforge\/rapier3d(?:-simd)?\//.test(target));
 
 // This mixed helper module also exports a pure descriptor function. Never grant its namespace/constructors.
-export const SAFE_HELPER_EXPORTS: Record<string, readonly string[]> = {
+const SAFE_HELPER_EXPORTS: Record<string, readonly string[]> = {
   'src/entities/route-greybox/boxes.ts': ['span'],
 };
 export function pureHelperEdge(edge: ModuleEdge, target: string): boolean {
