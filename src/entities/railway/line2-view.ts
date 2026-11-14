@@ -1082,6 +1082,8 @@ export async function createRailwayLine2(
           now && k === active && job.start < 0 && !owed,
           waiting ? `Pull the ${spec.gate === 'quarry' ? 'lever' : 'switch'} to start` : undefined,
         );
+        // A laid stretch's frame packs up; Q7's own frame on the pier deck stays (level-pacing-1114, D1).
+        if (machined(k)) frame.settle(job.completion ? 'laid' : job.start >= 0 ? 'working' : 'open');
         if (now && k === activeIndex(active)) {
           const entered = feed.filter((f) => f.kind === 'log' && f.landMs <= feedMs).length;
           const fraction = Math.min(
@@ -1231,6 +1233,7 @@ export async function createRailwayLine2(
         working: working(),
         ...seaGate.inspect(),
         ...glideDevice.inspect(),
+        framesPacked: frames.map((frame) => frame.packed()),
         switchCamera: { ...switchCamera.inspect(), kind: switchKind },
         ...farHead.inspect(),
         ...boiler.inspect(),

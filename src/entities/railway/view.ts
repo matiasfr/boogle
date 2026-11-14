@@ -507,6 +507,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
           beam: Math.max(0, station.have.beam - launched.filter((f) => f.kind === 'beam').length - stockOf(2)),
         });
         station.setTag(index === active && !job.completion && phase !== 'asleep' && phase !== 'waking');
+        station.settle(job.completion ? 'laid' : job.start >= 0 ? 'working' : 'open');
         if (index === active) {
           const entered = feed.filter((f) => f.kind === 'log' && f.landMs <= feedMs).length;
           const fraction = Math.min(

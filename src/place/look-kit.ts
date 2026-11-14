@@ -479,8 +479,14 @@ export function stationKit(
   // Every station's pieces go in one batch per piece: nothing here moves, and six stations are no more draws than one.
   g.updateMatrix();
   const feederAt = new THREE.Matrix4().makeTranslation(-away * (FRAME_D / 2 + SPAN / 2), 0, 0).premultiply(g.matrix);
+  // This station's own instances in the shared batches, with where each stands: `fold` flattens them (below).
+  const mine: [THREE.InstancedMesh, number, THREE.Matrix4][] = [];
+  const put = (name: string, p: Paint, m: THREE.Matrix4) => {
+    const placed = stationPiece(name, p, m, stationBatches, owner);
+    if (placed) mine.push([placed[0], placed[1], m.clone()]);
+  };
   const at = (name: string, p: Paint, x: number, y: number, z: number, frame = g.matrix) =>
-    stationPiece(name, p, stationM.makeTranslation(x, y, z).premultiply(frame), stationBatches, owner);
+    put(name, p, stationM.makeTranslation(x, y, z).premultiply(frame));
   for (const sx of [-1, 1])
     for (const sz of [-1, 1]) {
       at('frame_post', POST, (sx * FRAME_D) / 2, 0, (sz * FRAME_W) / 2);
@@ -490,11 +496,11 @@ export function stationKit(
   for (const sz of [-1, 1]) at('beam_short', SHORT, 0, 0.16, (sz * FRAME_W) / 2);
   at('frame_floor', FLOOR, 0, 0.01, 0);
   at('frame_board', CREAM, away * (FRAME_D / 2 + 0.1), 0.15, 0);
-  if (stationPict.count < stationPict.instanceMatrix.count)
-    stationPict.setMatrixAt(
-      stationPict.count++,
-      stationM.makeTranslation(away * (FRAME_D / 2 + 0.15), 0.42, 0).premultiply(g.matrix),
-    );
+  if (stationPict.count < stationPict.instanceMatrix.count) {
+    stationM.makeTranslation(away * (FRAME_D / 2 + 0.15), 0.42, 0).premultiply(g.matrix);
+    mine.push([stationPict, stationPict.count, stationM.clone()]);
+    stationPict.setMatrixAt(stationPict.count++, stationM);
+  }
   stationPict.instanceMatrix.needsUpdate = true;
   stationPict.computeBoundingSphere();
   // With mats enabled BED and ROLLER have identical effective steel colour,
@@ -508,12 +514,24 @@ export function stationKit(
     const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, Math.PI / 2);
     for (const side of [-1, 1]) {
       runner.compose(new THREE.Vector3(0, 0.16, side * 0.38), turn, new THREE.Vector3(1, 1, SPAN / 2.6));
-      stationPiece('beam_long', LONG, runner.premultiply(feederAt), stationBatches, owner);
+      put('beam_long', LONG, runner.premultiply(feederAt));
     }
   }
   const rollers = Math.round(SPAN / 0.3);
   if (!LOOK.mats) for (let k = 0; k < rollers; k++) at('roller', ROLLER, (k + 0.5) * 0.3 - SPAN / 2, 0.58, 0, feederAt);
   for (const dx of [-SPAN / 2 + 0.2, SPAN / 2 - 0.2]) at('feeder_leg', DARK, dx, 0, 0, feederAt);
+  // A finished frame packs up (src/entities/railway/stations.ts): every piece pressed flat toward the ground by
+  // `height` (1 standing, 0 gone). The batches' bounds are left as they were: a superset still culls correctly.
+  const ground = g.position.y;
+  const press = new THREE.Matrix4();
+  return function fold(height: number) {
+    press.makeScale(1, height, 1).setPosition(0, ground * (1 - height), 0);
+    if (height <= 0) press.makeScale(0, 0, 0);
+    for (const [batch, k, m] of mine) {
+      batch.setMatrixAt(k, stationM.multiplyMatrices(press, m));
+      batch.instanceMatrix.needsUpdate = true;
+    }
+  };
 }
 const STATION_PIECES = 64, // the most of a piece, all stations together; only what's placed is drawn
   ROLLERS = 256;
@@ -535,10 +553,12 @@ function stationPiece(
     stationBatches.set(name, b);
     owner.add(b);
   }
-  if (b.count >= b.instanceMatrix.count) return;
-  b.setMatrixAt(b.count++, m);
+  if (b.count >= b.instanceMatrix.count) return null;
+  const k = b.count++;
+  b.setMatrixAt(k, m);
   b.instanceMatrix.needsUpdate = true;
   if (b.frustumCulled) b.computeBoundingSphere();
+  return [b, k] as const;
 }
 // The board's log pictogram.
 function createStationView(owner: OwnedView) {
