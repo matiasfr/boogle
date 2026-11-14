@@ -100,7 +100,7 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   exact records. A missing/older schema bootstraps with internal consistency only. No merge base, deep history,
   fetch or namespace exemption is needed; this supports CI's depth-one trees.
   Every entry needs `YYYY-MM-DD: reason`; reasons do not authorize growth. All four prefab rules cannot be
-  disabled by comments. Signs/interactions are deferred to prefab step 9; Godot proof to step 14.
+  disabled by comments. Signs/interactions use the step-9 registration ratchet below; Godot proof remains step 14.
   Zero binding counts are valid for named doors; all counts and public names still only shrink against a
   current-schema base. Versions 5/6 used different counting contracts and bootstrap as older schemas.
 
@@ -130,3 +130,21 @@ All misused-promise checks stay enabled, including void callbacks. The only know
 are still checked. Use `src/async.ts`'s `background(task, label)` for non-blocking work that needs rejection reporting;
 use explicit `void` only when failure is already handled or the operation cannot reject. Never add an await to a
 frame/tick dispatch just to pass lint. Classification and rationale: `docs/research/linter-replacement.md`.
+
+### Sign and interaction records (prefab step 9)
+
+`boogle/signs-from-records` and `boogle/interactions-from-records` reject raw `signBoard` and
+`registerInteractable` acquisition/calls outside their runtime implementations and counted legacy files.
+Named aliases, namespace/dynamic acquisitions, re-exports and direct member calls are included; comment
+suppressions cannot open these doors. Named query helpers in the same modules stay free. Existing public
+surfaces are frozen, so a new exported wrapper needs the record door. As with the earlier rules, deliberate
+indirection inside an already-counted module and count-preserving rewrites remain trusted-code residuals.
+
+`dev/lint/prefab-registrations.json` seeds only existing APIs from the task's local base, in separate sign and
+interaction lists so it cannot inflate collider/seat debt. Registry verifies the initial entries against the
+base's actual source when that file is absent, then ratchets file identities, counts, public exports and their existing runtime consumer files.
+New consumers of legacy registration factories are rejected, as are direct imports of the sign builder
+outside `instantiate`. These new consumer lists use exact file identities, a stricter guard than the
+earlier collider/seat importer counts.
+Zero entries are removed. New handler names live on records; their functions and unchanged authored copy
+stay in the owning view. `instantiate` returns enabled targets for the view's existing interaction provider.

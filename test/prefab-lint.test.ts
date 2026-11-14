@@ -15,6 +15,7 @@ import debt from '../dev/lint/prefab-debt.json' with { type: 'json' };
 import { lintSafety } from '../dev/lint/safety.ts';
 import type { PrefabDebt } from '../dev/lint/safety.ts';
 import { comparePrefabDebt, checkPrefabDebt, PREFAB_DEBT_FILE } from '../dev/registry/prefab-debt.ts';
+import { checkPrefabRegistrations } from '../dev/registry/prefab-registrations.ts';
 
 for (const fixture of legacyFixtures)
   test(fixture.name, () =>
@@ -324,4 +325,64 @@ test('registry bootstraps internal consistency, then rejects growth against a cu
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+// Owner-requested step 9: raw sign/interaction registrations now use the same record door.
+for (const [api, module, rule] of [
+  ['signBoard', './render/sign-board.ts', 'boogle/signs-from-records'],
+  ['registerInteractable', './player/hands.ts', 'boogle/interactions-from-records'],
+] as const) {
+  for (const code of [
+    `${api}();`,
+    `import { ${api} as create } from '${module}'; create();`,
+    `import * as api from '${module}'; api['${api}']();`,
+    `export { ${api} as wrapper } from '${module}';`,
+    `// boogle-disable-next-line ${rule} -- not another door\n${api}();`,
+  ])
+    test(`step 9 rejects ${api}: ${code.split('\n').at(-1)}`, () => {
+      assert.ok(lintSafety(code, 'src/step9-probe.ts').some((d) => d.rule === rule));
+    });
+}
+
+test('step 9 registry rejects registration budget growth and file substitution', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-registration-'));
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe' });
+  const budget = { count: 1, reason: '2026-11-13: Existing owner-approved registration.', exports: [], consumers: [] };
+  const file = path.join(root, 'dev/lint/prefab-registrations.json');
+  const write = (source: string, count: number) =>
+    fs.writeFileSync(file, JSON.stringify({ signs: { [source]: { ...budget, count } }, interactions: {} }));
+  try {
+    fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(path.join(root, 'src/old.ts'), 'signBoard();');
+    write('src/old.ts', 1);
+    git('init', '-q');
+    git('add', '.');
+    git('-c', 'user.name=Prefab test', '-c', 'user.email=prefab@test.local', 'commit', '-qm', 'Baseline');
+    assert.deepEqual(checkPrefabRegistrations(root, 'HEAD'), []);
+    fs.writeFileSync(path.join(root, 'src/old.ts'), 'signBoard(); signBoard();');
+    write('src/old.ts', 2);
+    assert.ok(checkPrefabRegistrations(root, 'HEAD').some((e) => e.includes('debt grew')));
+    fs.writeFileSync(path.join(root, 'src/new.ts'), 'signBoard();');
+    write('src/new.ts', 1);
+    assert.ok(checkPrefabRegistrations(root, 'HEAD').some((e) => e.includes('debt grew')));
+    fs.writeFileSync(path.join(root, 'src/old.ts'), 'signBoard();');
+    fs.writeFileSync(path.join(root, 'src/consumer.ts'), "import './old.ts';");
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ signs: { 'src/old.ts': { ...budget, consumers: ['src/consumer.ts'] } }, interactions: {} }),
+    );
+    assert.ok(checkPrefabRegistrations(root, 'HEAD').some((e) => e.includes('consumer grew')));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('step 9 rejects new consumers of a legacy sign factory and the sign builder', () => {
+  for (const source of ['./entities/railway/stock-sign.ts', './prefab/builders/greybox-label.ts'])
+    assert.ok(
+      lintSafety(`import * as api from '${source}';`, 'src/step9-probe.ts').some(
+        (d) => d.rule === 'boogle/signs-from-records',
+      ),
+    );
 });

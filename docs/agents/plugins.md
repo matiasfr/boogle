@@ -7,7 +7,7 @@ Before adding or changing feature/entity lifecycle, DOM ownership or loading, re
 owning entity's `OwnedView`. Procedural visuals live in `src/prefab/builders/`; collider and seat recipes live in
 the record. Commit the compiled JSON (`npm run prefabs`). Existing hand-built files are explicit shrink-only debt
 in `dev/lint/prefab-debt.json`; never add an exemption or raise its violation count, and lower the count when
-removing legacy imports/calls. Signs/interactions join this enforcement in prefab step 9.
+removing legacy imports/calls. Signs and interactions use the same record door; existing registrations are shrink-only debt in `dev/lint/prefab-registrations.json`.
 
 `src/features/<name>.ts`, auto-loaded by `src/main.ts`. Frame work goes in an entity's methods (below), or `onFrame(fn, { phase, order })` only for a service on the allow-list; one-time setup in `onStart(fn)` (`src/loop.ts` lists phases and taken orders; features use `order` -10 and up). CSS in `src/features/<name>.css`, imported by the feature; DOM built in JS (append to `.hud` or `body`), never in `index.html`. Heavy or rarely used parts (far-off decor, dialogue, debug tools) load with a dynamic `import()` from the small eager feature file ("Lazy parts" in `src/loop.ts`); never lazy: sync ops or state, `src/world/rules/`, or anything visible in the first seconds. Hotspots (`src/main.ts`, `src/style.css`, `index.html`, `src/world/rules/index.ts`): a line or two at most. Plain modules (TypeScript); a new dependency needs a reason in the commit.
 

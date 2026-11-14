@@ -4,6 +4,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { lintSafety } from '../lint/safety.ts';
 import type { PrefabDebt } from '../lint/safety.ts';
+import { checkPrefabRegistrations } from './prefab-registrations.ts';
 import { parseSync } from 'oxc-parser';
 import { createModuleResolver, runtimeExports, PREFAB_DOORS } from '../lint/prefab-boundaries.ts';
 import {
@@ -148,5 +149,5 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
     errors.push(...checkConstructionForwards(graph, head.forwards));
   } else if (head.version === 7)
     errors.push('Missing computed legacy construction set and importer counts; use src/prefab/instantiate.ts.');
-  return [...errors, ...comparePrefabDebt(comparable ? oldLists : head, head)];
+  return [...errors, ...comparePrefabDebt(comparable ? oldLists : head, head), ...checkPrefabRegistrations(root, ref)];
 }

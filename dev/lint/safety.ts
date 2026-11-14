@@ -8,6 +8,8 @@ import ignore from 'ignore';
 import globals from 'globals';
 import { analyze } from '@typescript-eslint/scope-manager';
 import prefabDebt from './prefab-debt.json' with { type: 'json' };
+import registrationDebt from './prefab-registrations.json' with { type: 'json' };
+import { registrationKinds, registrationSites } from './prefab-registrations.ts';
 import { policy, ENTITY_MESSAGE, INPUT_MESSAGE, INPUT_SELECTORS, RETIRED_RAILWAY_NAMES } from './policy.ts';
 import type { ImportBan, ImportOptions, Restriction, Rule } from './policy.ts';
 import {
@@ -35,6 +37,8 @@ export const customRules = new Set([
   'boogle/retired-railway-names',
   'boogle/colliders-from-records',
   'boogle/seats-from-records',
+  'boogle/signs-from-records',
+  'boogle/interactions-from-records',
   'boogle/records-are-data',
   'boogle/prefab-public-surface',
 ]);
@@ -153,6 +157,43 @@ export function lintSafety(
   const edges = file.startsWith('src/') ? moduleEdges(parsed.program) : [];
   const targets = edges.map((edge) => (edge.source === undefined ? null : resolve(file, edge.source)));
   const calls = file.startsWith('src/') ? select('CallExpression') : [];
+  for (const kind of ['signs', 'interactions'] as const) {
+    const config = registrationKinds[kind];
+    if (!file.startsWith('src/') || (config.doors as readonly string[]).includes(file)) continue;
+    const sites = registrationSites(parsed.program, file, resolve, kind);
+    const providers = registrationDebt[kind] as Record<
+      string,
+      { count: number; exports: string[]; consumers: string[] }
+    >;
+    const budget = providers[file];
+    for (const [i, edge] of edges.entries()) {
+      if (edge.erased || !targets[i]) continue;
+      const provider = providers[targets[i]!];
+      if (provider && !provider.consumers.includes(file))
+        report(edge.node, config.rule, `New legacy registration consumer. ${prefabDoor}`);
+      if (
+        kind === 'signs' &&
+        targets[i] === 'src/prefab/builders/greybox-label.ts' &&
+        file !== 'src/prefab/instantiate.ts'
+      )
+        report(edge.node, config.rule, `Sign builders are reached through instantiate. ${prefabDoor}`);
+    }
+    if (budget) {
+      if (sites.length !== budget.count)
+        report(
+          { start: 0 },
+          config.rule,
+          `Registration debt is ${sites.length}, budget ${budget.count}; lower removed debt, never grow it. ${prefabDoor}`,
+        );
+      const actual = runtimeExports(parsed.program);
+      if (JSON.stringify(actual) !== JSON.stringify(budget.exports))
+        report(
+          { start: 0 },
+          config.rule,
+          `Registration public surfaces may only shrink; update removed exports. ${prefabDoor}`,
+        );
+    } else for (const site of sites) report(site, config.rule, prefabDoor);
+  }
   for (const { kind, rule, names } of prefabRules) {
     const door = PREFAB_DOORS[kind].includes(file);
     if (!rules[rule] && !door) continue;
@@ -386,6 +427,8 @@ export function lintSafety(
       [
         'boogle/colliders-from-records',
         'boogle/seats-from-records',
+        'boogle/signs-from-records',
+        'boogle/interactions-from-records',
         'boogle/records-are-data',
         'boogle/prefab-public-surface',
       ].includes(d.rule)
