@@ -876,6 +876,23 @@ both tracks at u 240. **The lookout's buoys lift** as the railhead reaches them:
 (not built). Once Q7 is laid the island's near view stays mounted at any distance, so the Way is there under the trains;
 the leaf's own view now swings it (below). Not tested on a device.
 
+**The ring's line home, the take-off and the rack's tag (14 November 2026;
+[gap-readability](../plans/gap-readability.md) steps 1, 3 and 7; owner: the hook does not carry you forward across the
+gap, the glide stays the crossing).** Ring Island's hook ring is the way home from the folk's brace platform and
+nothing else. From our own deck (short of u 262 m, within 3 m of the gold pad's height) it is asleep: gold and small
+like a ring before the hook, turned to face the brace platform, never in range, no key chip, and a Hook press is the
+deny flick. Past the gap it wakes as any ring. A taut rope runs from the ring down to a short post and pulley at the
+gold pad's rear sea corner, so the ring reads as one end of a line whose other end is the pad. Which way is forward is
+said in cloth: with bent 13 a **take-off board** juts 2 m off the platform's end at the gold pad's lat, through a gap
+in a new end rail, banded at its lip in the glider's cream and teal; a **windsock** in the same cloth stands beside it
+on the sea side, 4.6 m up, and streams out over the gap toward the gold strut, quartering to seaward so its bands show
+from the deck behind it (no flutter under reduced motion); and a 2.4 m **square of the same cloth** lies pegged on the
+brace platform 3 m in from its near edge, as the place to land. All drawn only: the board has no collider and adds no
+reach. The railhead's empty rack, while footings or weights are still owed, carries a standing plate: **"Next load: on
+the wagon"** (draft copy), gone when a footing lands. The railhead itself still slides out as described above; its
+move as a construction traveller that carries its riders (the owner's 14 November answer) is built on a separate
+branch and not shipped. Not tested on a device.
+
 **The bridge leaf (11 November 2026, R4c, first part; calls 8, 9, 35).** The leaf rests raised (78 degrees) on its pawl.
 Braced, each counterweight footing hung dips it a quarter (0.7 s); the last one, or the pawl knocked out with all four
 hung, swings it down onto the bents in 2.5 s, ease-in, with a thump at the toe. A page that loads after the leaf is down,

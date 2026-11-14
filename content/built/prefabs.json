@@ -874,6 +874,32 @@
         "none": true
       }
     },
+    "railway.rack-tag": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            0.75,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 0.5,
+          "kind": "label",
+          "posts": "two",
+          "w": 2.3
+        }
+      },
+      "colliders": [],
+      "key": "railway.rack-tag",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
     "town.curio-bay": {
       "colliders": [
         {
