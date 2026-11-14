@@ -484,7 +484,7 @@ export function buildTrack(
           0,
           0.8,
           0.4,
-          6.6,
+          6.3, // 20 cm end gap at the 6.5 m bent spacing, including the curve's inner edge
           yaw,
           new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0),
         ),
