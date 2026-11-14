@@ -1,13 +1,43 @@
 // Step 1a's explicit spatial contract: the reusable kit and Home's full seven-bay keep-clear.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ROTUNDA_KIT, bayFrame, rotundaBays, rotundaFootprint } from '../src/place/rotunda.ts';
-import { BUFFERS, ROTUNDA_HOME, legPoints, roadAt, type XZ } from '../src/place/home-station.ts';
-import { LINKS } from '../src/place/layout.ts';
+import { sourceFunction } from '../dev/level/source.ts';
+import { ROTUNDA_KIT, bayFrame, rotundaBays, rotundaFootprint, rotundaSteelPallet } from '../src/place/rotunda.ts';
+import { BUFFERS, ROTUNDA_HOME, legPoints, roadAt, spurPoints, type XZ } from '../src/place/home-station.ts';
+import { LINKS, ORIGIN } from '../src/place/layout.ts';
+import { H } from '../src/place/terrain.ts';
+import { GARAGE_GEO, polarAt } from '../src/entities/railway/garage-geo.ts';
+import { ENGINE } from '../src/entities/railway/engine.ts';
+import { TRAILER, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
 import { TOWN_SLOTS, townBuilding, townLocal } from '../src/place/town-plan.ts';
 
 const dist = (a: XZ, b: XZ) => Math.hypot(a.x - b.x, a.z - b.z);
 const near = (a: number, b: number, epsilon = 1e-9) => assert.ok(Math.abs(a - b) < epsilon, `${a} ≈ ${b}`);
+
+test('the delivered steel pallet clears the full table and kerb', () => {
+  const centre = { x: ROTUNDA_HOME.centre.x + ORIGIN.x, z: ROTUNDA_HOME.centre.z };
+  const p = sourceFunction<{ x: number; y: number; bottom: number; z: number; w: number; d: number }>(
+    'src/entities/railway/boiler-install-view.ts',
+    'PALLET',
+    { ROTUNDA_HOME, rotundaSteelPallet, ORIGIN, H },
+  );
+  const edge = Math.hypot(
+    Math.max(0, Math.abs(p.x - centre.x) - p.w / 2),
+    Math.max(0, Math.abs(p.z - centre.z) - p.d / 2),
+  );
+  assert.ok(edge > ROTUNDA_HOME.tableR + ROTUNDA_KIT.rim, `nearest pallet edge ${edge.toFixed(3)} m is inside the rim`);
+  for (const x of [-p.w / 2, 0, p.w / 2])
+    for (const z of [-p.d / 2, 0, p.d / 2]) {
+      const ground = H(p.x + x, p.z + z);
+      assert.ok(ground >= p.bottom && ground <= p.y, 'the base spans the supporting ground, below the pallet top');
+    }
+  assert.ok(p.y - p.bottom < 0.15, 'only a shallow foundation is needed');
+  const larger = rotundaSteelPallet({ ...ROTUNDA_HOME, tableR: ROTUNDA_HOME.tableR + 2 });
+  near(dist(larger, rotundaSteelPallet(ROTUNDA_HOME)), 2);
+  console.log(
+    `steel pallet: world (${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}), inner edge ${edge.toFixed(3)} m`,
+  );
+});
 
 test('the kit has 4.86 m door chords, 8.68 m backs and shared edges between 20 degree bays', () => {
   const frames = ROTUNDA_HOME.order.map((bay) => bayFrame(ROTUNDA_HOME, bay));
@@ -82,6 +112,52 @@ function clearance(outline: XZ[], line: XZ[], closed = false) {
       gap = Math.min(gap, segmentGap(outline[i - 1]!, outline[i]!, line[j - 1]!, line[j]!));
   return gap;
 }
+
+test('the steel pallet leaves the approach, all seven stall roads and garage furniture clear', () => {
+  const p = rotundaSteelPallet(ROTUNDA_HOME);
+  const outline = [
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+    [-1, 1],
+    [-1, -1],
+  ].map(([x, z]) => ({
+    x: p.x + (x! * p.w) / 2,
+    z: p.z + (z! * p.d) / 2,
+  }));
+  const paths = LINKS.map(({ line }) => Array.from(line.xs, (x, i) => ({ x, z: line.zs[i]! })));
+  paths.push(legPoints(), spurPoints());
+  for (const road of [0, 1] as const) paths.push([roadAt(road, BUFFERS[road]), roadAt(road, 0)]);
+  for (const bay of ROTUNDA_HOME.order) {
+    const f = bayFrame(ROTUNDA_HOME, bay);
+    paths.push([f.rim, f.back]);
+  }
+  const rail = Math.min(...paths.map((line) => clearance(outline, line)));
+  assert.ok(rail >= 3.5, `pallet edge is ${rail.toFixed(3)} m from a track centre`);
+  for (const [name, at] of Object.entries({ post: GARAGE_GEO.post, jib: GARAGE_GEO.jib, stand: GARAGE_GEO.stand })) {
+    const point = polarAt(ROTUNDA_HOME.centre, at);
+    const gap = clearance(outline, [point, point]);
+    assert.ok(gap > 3, `${name}: ${gap.toFixed(3)} m`);
+  }
+  type Cameras = Record<string, { pos: [number, number, number] }>;
+  const cams = sourceFunction<Cameras>('src/entities/railway/garage-view.ts', 'CAMS', {});
+  const portrait = sourceFunction<Cameras>('src/entities/railway/garage-view.ts', 'PORTRAIT', {});
+  const shift = (TRAIN_OFFSETS[0]! + ENGINE.hz - TRAILER.hz) / 2;
+  const yaw =
+    Math.PI - (GARAGE_GEO.camBearing * Math.PI) / 180 - Math.atan2(cams.engine!.pos[0], cams.engine!.pos[2] - shift);
+  let cameraGap = Infinity;
+  for (const c of [...Object.values(cams), ...Object.values(portrait)]) {
+    const [x, , z] = c.pos;
+    const at = {
+      x: ROTUNDA_HOME.centre.x + Math.cos(yaw) * x + Math.sin(yaw) * (z - shift),
+      z: ROTUNDA_HOME.centre.z - Math.sin(yaw) * x + Math.cos(yaw) * (z - shift),
+    };
+    cameraGap = Math.min(cameraGap, clearance(outline, [at, at]));
+  }
+  assert.ok(cameraGap > 2, `garage camera ${cameraGap.toFixed(3)} m from pallet`);
+  console.log(`steel pallet: camera clearance ${cameraGap.toFixed(3)} m`);
+  console.log(`steel pallet: ${paths.length} track paths, minimum edge clearance ${rail.toFixed(3)} m`);
+});
 
 test('the full Home footprint clears every LINKS track, the leg and both stubs by 3.5 m, town footprints by 4 m', () => {
   const footprint = rotundaFootprint(ROTUNDA_HOME, 7);

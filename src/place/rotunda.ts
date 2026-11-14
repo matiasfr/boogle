@@ -62,6 +62,15 @@ export function rotundaBays(site: RotundaSite, stage: number): number[] {
   return site.order.slice(0, site.stages[stage] ?? 0);
 }
 
+/** Steel waits on the open apron, 80° off the approach road, between the camera and garage post at Home.
+ * A metre of walking space outside the kerb,
+ * measured to the pallet's bounding circle, follows the site's table size rather than the old disc offsets. */
+export function rotundaSteelPallet(site: RotundaSite) {
+  const w = 1.5,
+    d = 2.1;
+  return { ...at(site, site.approach + 80, site.tableR + ROTUNDA_KIT.rim + Math.hypot(w, d) / 2 + 1), w, d };
+}
+
 /** A closed keep-clear outline: pit including kerb, bay arc and the apron joining them. Includes gaps in an arc.
  * The pit is circumscribed at <=5-degree intervals, so clearance checks never understate its circular edge.
  * Bay count selects the first entries in build order, independently of the site's stage ladder. */

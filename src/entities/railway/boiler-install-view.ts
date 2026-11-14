@@ -3,7 +3,10 @@
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
-import { SHED_TABLE } from '../../sim/railway-works-layout.ts';
+import { ROTUNDA_HOME } from '../../place/home-station.ts';
+import { rotundaSteelPallet } from '../../place/rotunda.ts';
+import { ORIGIN } from '../../place/layout.ts';
+import { H } from '../../place/terrain.ts';
 import { STEEL } from '../../sim/railway-ring-layout.ts';
 import { LINE2 } from '../../sim/railway-lines.ts';
 import { aperture, line, shed } from '../../sim/railway-rows.ts';
@@ -11,8 +14,13 @@ import { createBoxBatch } from './works-box-view.ts';
 
 const GREY_DARK = '#6f7275',
   STEEL_BLOCK = '#e8742c'; // the island's steel (ring-steel/view.ts)
-const TABLE = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100, y: SHED_TABLE.y / 100 - 0.2 };
-export const PALLET = { x: TABLE.x + 6.3, z: TABLE.z - 3.05, w: 1.5, d: 2.1 };
+export const PALLET = (() => {
+  const p = rotundaSteelPallet(ROTUNDA_HOME),
+    x = p.x + ORIGIN.x;
+  const ground = [-p.w / 2, 0, p.w / 2].flatMap((dx) => [-p.d / 2, 0, p.d / 2].map((dz) => H(x + dx, p.z + dz)));
+  // Seat the base through the shallow slope: its bottom meets the low edge, its top clears the high edge.
+  return { ...p, x, y: Math.max(...ground), bottom: Math.min(...ground) };
+})();
 
 export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
   const batch = createBoxBatch(owner, STEEL.total + 1, false);
@@ -31,9 +39,10 @@ export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
     const r = rows();
     batch.mesh.visible = !!r && r.shown;
     if (!r || !r.shown) return;
-    const y = TABLE.y;
+    const y = PALLET.y;
     batch.begin();
-    batch.box(PALLET.x, y + 0.09, PALLET.z, PALLET.w, 0.18, PALLET.d, GREY_DARK);
+    const height = y - PALLET.bottom + 0.18;
+    batch.box(PALLET.x, PALLET.bottom + height / 2, PALLET.z, PALLET.w, height, PALLET.d, GREY_DARK);
     for (let i = 0; i < Math.min(r.steel, STEEL.total); i++) {
       const row = i % 3,
         side = Math.floor(i / 3) % 2,

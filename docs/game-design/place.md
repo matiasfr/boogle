@@ -1166,6 +1166,9 @@ The jib arm is 12.2 m so the closed bystander's install hook and trolley remain 
 The show-off turn lasts 3 s within the locked install moment (rest at c+4800, skip still from c+800).
 The level pad under the bay arc is already graded to 18 m, because the relocated yard rails otherwise sank into
 the old slope. There is no pit or rotunda shell yet. [Step 1a report](../plans/roundhouse-rotunda-1a-report.md).
+The delivered steel pallet follows the site's table radius and the kit's kerb: its centre is on bearing 30° at Home,
+with at least 1 m between the pallet and kerb. Its base spans the shallow ground slope; neither steel nor pallet
+stands on the disc. The placement clears the spur, all seven future stall roads, the garage furniture and camera.
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's
 plume and whistle. **Take the breaker** is once for the room; like the boiler before it, its prompt measures to the
