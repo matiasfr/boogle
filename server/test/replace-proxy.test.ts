@@ -7,7 +7,7 @@ import path from 'node:path';
 import { createService, loadConfig } from '../src/server.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import type { Request } from 'express';
-import { replacementClientAddress } from '../src/replace.ts';
+import { clientAddress } from '../src/client-address.ts';
 
 const KEY = 'replace-proxy-test-key-01234567890123456789';
 async function fixture(t: test.TestContext, key = KEY, fly = true) {
@@ -109,9 +109,9 @@ test('missing Fly headers fall back to the socket, never spoofed forwarded addre
 
 test('replacement address selection handles IPv6, missing and malformed edge headers', () => {
   const address = (fromFly: boolean, headers: Record<string, string>, socket = '::1') =>
-    replacementClientAddress(
+    clientAddress(
       {
-        get: ((name: string) => headers[name.toLowerCase()]) as Request['get'],
+        headers,
         socket: { remoteAddress: socket } as Request['socket'],
       },
       fromFly,

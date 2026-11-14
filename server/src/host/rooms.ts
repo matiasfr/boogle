@@ -22,6 +22,7 @@ import { okPid } from '../../../src/sim/roster.ts';
 import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.ts';
 import type { Store } from '../store.ts';
 import { currentRoomId, roomNamespaces } from '../room-ids.ts';
+import { clientAddress, rememberAddress } from '../client-address.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 
@@ -33,6 +34,7 @@ export type RoomHostCfg = HostCfg & {
   upgradesPerMin: number; // per IP
   allowedOrigins: string[];
   trustProxy: unknown;
+  replaceFlyProxy?: boolean;
   log: (...a: unknown[]) => void;
 };
 
@@ -181,11 +183,10 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       const origin = req.headers.origin;
       if (!cfg.allowedOrigins.includes('*') && !(origin && cfg.allowedOrigins.includes(origin)))
         return refuse(socket, '403 Forbidden');
-      // Fly's proxy sets fly-client-ip; without a trusted proxy in front a client could set it to dodge the limit.
-      const ip = String((cfg.trustProxy && req.headers['fly-client-ip']) || req.socket.remoteAddress || '?');
+      const ip = clientAddress(req, cfg.replaceFlyProxy);
       const now = Date.now();
       const u = upgrades.get(ip) ?? { n: 0, at: now };
-      upgrades.set(ip, u);
+      rememberAddress(upgrades, ip, u);
       if (++u.n > cfg.upgradesPerMin) return refuse(socket, '429 Too Many Requests');
 
       // Split, never `new URL(req.url)`: a target like `//[` throws, and a throw in the upgrade listener crashes the
