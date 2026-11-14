@@ -607,3 +607,260 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
   for (const cleanup of cleanups.reverse()) cleanup();
   assert.equal(activeBodies.size, 0, 'museum disposal removes bodies');
 });
+
+// Old-code room-shell proof: recipes, stake painting/geometry, camera cutaways and ready/unready transitions.
+test('town rooms retain old shells, plot boards and state-driven transitions', () => {
+  const geometry = (g: THREE.BufferGeometry) => ({
+    index: g.index ? Array.from(g.index.array) : null,
+    attributes: Object.fromEntries(
+      Object.entries(g.attributes).map(([key, a]) => [key, { size: a.itemSize, array: Array.from(a.array) }]),
+    ),
+  });
+  const boxes = sourceModule<typeof import('../src/render/box-plan.ts')>(
+    fs.readFileSync('src/render/box-plan.ts', 'utf8'),
+    { THREE },
+  );
+  const plans = sourceModule<typeof import('../src/place/building-plans.ts')>(
+    fs.readFileSync('src/place/building-plans.ts', 'utf8'),
+    { THREE, ...boxes },
+  );
+  const plots = sourceFunction<typeof import('../src/place/layout.ts').ROOM_PLOTS>(
+    'src/place/layout.ts',
+    'ROOM_PLOTS',
+    {},
+  );
+  const added: THREE.Object3D[] = [],
+    cleanups: (() => void)[] = [],
+    sitePlans: unknown[] = [],
+    paint: unknown[] = [],
+    bodyCalls: unknown[] = [],
+    pieceWrites: unknown[] = [],
+    floorQueries: ((x: number, z: number) => unknown)[] = [];
+  const activeBodies = new Set<unknown>();
+  const owner = {
+    add(g: THREE.Object3D) {
+      added.push(g);
+      return g;
+    },
+    cleanup(fn: () => void) {
+      cleanups.push(fn);
+    },
+    removeBody(b: unknown) {
+      assert.ok(activeBodies.delete(b));
+    },
+  };
+  const up = { house: true, shop: false, museum: false };
+  const player = { body: null as { interpolatedPosition: { x: number; y: number; z: number } } | null };
+  const camera = new THREE.PerspectiveCamera();
+  const cam = { pitch: 0, yaw: 0 };
+  const constraints: unknown[] = [];
+  let nextPole = 0;
+  const ground = (x: number, z: number) => 18 + (x - 800) * 0.001 + z * 0.002;
+  const { createRooms } = sourceModule<typeof import('../src/entities/town/rooms.ts')>(
+    fs.readFileSync('src/entities/town/rooms.ts', 'utf8'),
+    {
+      THREE,
+      vertexColor: museumTsl.vertexColor,
+      reducedMotion: false,
+      merged,
+      mergeGeometries,
+      H: ground,
+      ROOM_GROUP: 8,
+      ROOM_PLOTS: plots,
+      toWorld: (x: number) => x + 800,
+      housePlan: (spec: import('../src/place/building-plans.ts').HouseSpec) =>
+        plans.housePlan(spec, ground(spec.x, spec.z)),
+      addSite: (id: string, plan: import('../src/place/building-plans.ts').Plan, speed: number) => {
+        sitePlans.push({ id, plan, speed });
+        const site = { pole1: nextPole, state: 'none' };
+        nextPole += plan.pieces.length + 20;
+        return site;
+      },
+      registerStepFloor: (fn: (x: number, z: number) => unknown) => {
+        floorQueries.push(fn);
+        return () => {};
+      },
+      paintBoard: (...args: unknown[]) => {
+        paint.push(args);
+        return new THREE.MeshBasicNodeMaterial();
+      },
+      woodV: sourceFunction('src/place/signs.ts', 'woodV', { WOOD_ROWS: 64 }),
+      addStatic: (shape: unknown, at: unknown, q: THREE.Quaternion) => {
+        const b = {};
+        activeBodies.add(b);
+        bodyCalls.push({ shape, at, rotation: q.toArray() });
+        return b;
+      },
+      snapSite: (site: { state: string }, on: boolean) => {
+        site.state = on ? 'done' : 'none';
+      },
+      startSite: (site: { state: string }) => {
+        site.state = 'building';
+      },
+      showPiece: (...args: unknown[]) => pieceWrites.push(['show', ...args]),
+      liftPiece: (...args: unknown[]) => pieceWrites.push(['lift', ...args]),
+      precompile: () => Promise.resolve(),
+      makeCameraArm: () => ({ reset() {}, solve() {} }),
+      me: player,
+      cam,
+      camConstraints: constraints,
+      camera,
+      getMask: () => 0xffff,
+    },
+  );
+  const rooms = createRooms(owner as unknown as import('../src/render/owned-view.ts').OwnedView, {
+    up: (id) => up[id],
+  });
+  rooms.stakeBoard(rooms.rooms.shop, BOARDS.shopPlot);
+  rooms.stakeBoard(rooms.rooms.museum, BOARDS.museumPlot);
+  const staticMeshes = added.flatMap((g) => {
+    const out: unknown[] = [];
+    g.updateWorldMatrix(true, true);
+    g.traverse((m) => {
+      if (m instanceof THREE.Mesh)
+        out.push({
+          matrix: m.matrixWorld.toArray(),
+          castShadow: m.castShadow,
+          receiveShadow: m.receiveShadow,
+          frustumCulled: m.frustumCulled,
+          geometry: geometry(m.geometry),
+        });
+    });
+    return out;
+  });
+  const roomList = Object.values(rooms.rooms);
+  const callbacks: unknown[] = [];
+  rooms.onRoom((r, inside) => callbacks.push([r.id, inside]));
+  const states: unknown[] = [];
+  const snap = (name: string) =>
+    states.push({
+      name,
+      rooms: roomList.map((r) => ({
+        id: r.id,
+        up: r.up,
+        ready: r.ready,
+        site: r.site.state,
+        pieces: r.pieces,
+        corners: r.corners,
+        t: r.t,
+        shown: r.shown,
+        proxy: r.proxy.visible,
+        near: r.near.visible,
+        over: r.over.visible,
+        outside: r.outside.visible,
+      })),
+      indoors: rooms.indoors.room?.id ?? null,
+      inside: rooms.indoors.inside?.id ?? null,
+      bodies: activeBodies.size,
+      callbacks: [...callbacks],
+      floors: roomList.map((r, k) => floorQueries[k]!(r.x, r.z)),
+    });
+  // Freeze each snapshot before the next transition changes the view's objects.
+  const capture = (name: string) => {
+    snap(name);
+    states[states.length - 1] = JSON.parse(JSON.stringify(states.at(-1)));
+  };
+  rooms.snap();
+  rooms.update(0.1);
+  rooms.cull();
+  capture('initial');
+  for (const r of roomList) {
+    up[r.id] = true;
+    rooms.update(0.1);
+    capture(`${r.id}-building`);
+    r.site.state = 'done';
+    rooms.update(0.1);
+    capture(`${r.id}-ready`);
+    const at = (z: number) => {
+      const v = new THREE.Vector3(0, 0, z).applyAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
+      player.body = { interpolatedPosition: { x: r.x + v.x, y: r.y + 0.5, z: r.z + v.z } };
+    };
+    camera.position.set(r.x, r.y + 8, r.z + 10);
+    at(r.d / 2 + 0.3);
+    rooms.update(0.12);
+    rooms.cull();
+    capture(`${r.id}-threshold`);
+    at(0);
+    rooms.update(0.12);
+    rooms.cull();
+    capture(`${r.id}-inside`);
+    rooms.update(0.12);
+    rooms.cull();
+    capture(`${r.id}-cutaway`);
+    at(r.d / 2 + 20);
+    camera.position.set(r.x + 100, r.y + 8, r.z + 100);
+    rooms.update(0.3);
+    rooms.cull();
+    capture(`${r.id}-left`);
+    up[r.id] = false;
+    rooms.update(0.1);
+    rooms.cull();
+    capture(`${r.id}-removed`);
+    rooms.snap();
+    rooms.update(0.1);
+    rooms.cull();
+    capture(`${r.id}-snap-removed`);
+    up[r.id] = true;
+    rooms.snap();
+    rooms.update(0.1);
+    rooms.cull();
+    capture(`${r.id}-snap-restored`);
+  }
+  const value = JSON.parse(
+    JSON.stringify({ plans: sitePlans, meshes: staticMeshes, paint, bodyCalls, states, pieceWrites }),
+  );
+  const roomFixture = 'test/fixtures/prefab-rooms.json';
+  if (process.env.GOLDEN === '1') fs.writeFileSync(roomFixture, JSON.stringify(value) + '\n');
+  prefabGolden(value, JSON.parse(fs.readFileSync(roomFixture, 'utf8')), 'rooms');
+  for (const fn of cleanups.reverse()) fn();
+  assert.equal(constraints.length, 0, 'room disposal unregisters the indoor camera');
+});
+
+test('house furnishing retains old parts, solids, copy and every fact stage', () => {
+  const parts: Part[][] = [],
+    solids: unknown[] = [],
+    plates: unknown[] = [];
+  const room = {
+    w: 7.4,
+    d: 7.4,
+    near: new THREE.Group(),
+    over: new THREE.Group(),
+    outside: new THREE.Group(),
+    furnishings: [],
+  };
+  const cleanups: (() => void)[] = [];
+  let facts = 0;
+  const { createHouse } = sourceModule<{ createHouse: (...args: unknown[]) => { update(): void; stage(): number } }>(
+    fs.readFileSync('src/entities/town/house.ts', 'utf8'),
+    {
+      BOARDS,
+      DOOR: { w: 2.6, rows: 3 },
+      plankFloor: sourceFunction('src/entities/town/rooms.ts', 'plankFloor', {}),
+      addSolid: (_r: unknown, ...args: unknown[]) => solids.push(args),
+      roomMesh: (p: Part[]) => {
+        parts.push(p);
+        return new THREE.Mesh(new THREE.BufferGeometry());
+      },
+      plate: (...args: unknown[]) => {
+        plates.push(args);
+        return new THREE.Group();
+      },
+    },
+  );
+  const house = createHouse({ cleanup: (fn: () => void) => cleanups.push(fn) }, room, {
+    has: (fact: string) => !!(facts & (1 << ['path', 'forge', 'trains', 'town'].indexOf(fact))),
+  });
+  const stages: number[] = [];
+  for (facts = 0; facts < 16; facts++) {
+    house.update();
+    stages.push(house.stage());
+    const count = parts.length;
+    house.update();
+    assert.equal(parts.length, count, 'unchanged facts do not redraw');
+  }
+  const value = JSON.parse(JSON.stringify({ parts, solids, plates, stages }));
+  const houseFixture = 'test/fixtures/prefab-house.json';
+  if (process.env.GOLDEN === '1') fs.writeFileSync(houseFixture, JSON.stringify(value) + '\n');
+  prefabGolden(value, JSON.parse(fs.readFileSync(houseFixture, 'utf8')), 'house');
+  for (const fn of cleanups.reverse()) fn();
+});
