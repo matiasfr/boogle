@@ -930,6 +930,19 @@ Before steel the Longer boiler's panel shows its bill where the button would be 
 is in) and no button; Interact and the hold do nothing there. Its pale ghost still marks its seat on the engine, and
 the rows still show what it will change. With steel home the bill is gone and the button reads "Install". "Try it",
 "Trying it on", the part resting on the engine and coming off again are removed.
+**Choosing a tile changes the picture (owner, 14 November 2026: "Also, I feel like there should be some visual change,
+and I'm looking through the different wagons, whatever makes sense."):** the camera eases to a newly chosen tab or
+part instead of cutting (about a third of a second); the chosen part gets a gold frame on the works copy that settles
+onto it from a little oversize: a whole frame when the room has the part, the game's dashed "a part goes here" frame
+when it does not; and a car the room owns that the copy does not carry (the rail and kit car, the footing wagon once
+coupled, the steel car once the longer boiler is on) is drawn as a pale ghost flatbed where it rides behind the first
+car, the Cargo camera sliding back along the train to it. A replaced part has no frame. The frame and ghost hide
+through a hold and a moment. There is no button and nothing is tried on: no real train changes until an install.
+Local: nobody else sees a selection. Per tab: Engine frames the barrel (Boiler, Longer boiler, with its seat ghost)
+or the nose (Plough and headlamp, dashed); Cars frames the bench on the first car; Cargo frames each car's place in
+the train, with the ghost for an owned one, and the Bigger cradle's place over the wagon's; Looks frames the roof's
+place over the first car (dashed); Whistle frames the chimney's cap, where the whistle's steam leaves, but the Whistle
+shot is close on the cab and does not show it (the shot needs its own camera row).
 **The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
 steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
 for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go

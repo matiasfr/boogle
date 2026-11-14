@@ -443,7 +443,55 @@ lifts the part", 10 November), a server op needs someone inside the table's reac
 plays on arrival would take the camera of whoever walked up without asking. If he wants it automatic, the smallest
 version is opening the garage with the part ready starting the lift by itself.
 
-**Looked at (14 November):** see the hand-over; the stills are named there.
+**Looked at (14 November):** `noTry-ready-still.png` (steel home: "Ready", the yellow ghost, "Install"),
+`noTry-needs-still.png` (before steel: "Needs steel", the pale ghost, the bill "STEEL 0/1" in a dashed frame, no
+button; the idle turn has carried the engine's nose under the panel, as it did before this change).
+
+<a id="choosing-a-tile-changes-the-picture-14-november-2026"></a>
+
+### Choosing a tile changes the picture (owner, 14 November 2026)
+
+His words (dictated; "and" is likely "when"): "Also, I feel like there should be some visual change, and I'm looking
+through the different wagons, whatever makes sense." Before this, changing tab cut the camera to that tab's row and
+changing part within a tab changed nothing in the world except the Longer boiler's ghost.
+
+**Built, view only (`garage-view.ts`).**
+
+- **The camera eases** to a newly chosen tab or part (`CAM_EASE`, most of the way in a third of a second; a cut under
+  reduced motion and on opening).
+- **A frame on the chosen part**, drawn with the game's own gold outline (`src/render/ghost-outline.ts`): whole edges
+  when the room has the part (Installed, Free, Owned), the dashed "a part goes here" when it does not (Ready, Needs
+  steel, Later, Waits in the stall). It settles from 14% oversize in 0.28 s. No frame for a Replaced part, or through
+  a hold or a moment.
+- **A ghost car where it rides**: an owned car the copy does not carry (the copy is the engine and the first car) is a
+  pale translucent flatbed at its place in the train (`TRAIN_OFFSETS`, `steelCarOffset`), dropping in 0.35 m; the
+  Cargo row slides along the train to the chosen car.
+- **Sound**: the existing `tick` on a change of tab or part. Nothing new.
+- **Not shared**: selection is Local, as before; another player in the garage sees nothing of it.
+- **Not a try-on**: no button, no hold, no rows counting; nothing goes onto the copy's engine or car.
+
+| Tab | On a change of selection |
+| --- | --- |
+| Engine | The frame moves between the barrel (Boiler whole; Longer boiler dashed with its seat ghost until fitted) and the nose (Plough and headlamp, dashed). The camera row is the same for all three, so the install's framing is untouched |
+| Cars | The camera eases to the first car; a whole frame round the bench |
+| Cargo | The camera eases to the tail and slides to each car: Rail and kit car and (once coupled) Footing wagon as ghost flatbeds in whole frames; Steel car dashed until the longer boiler is on, then a ghost; Bigger cradle a dashed box over the wagon's place |
+| Looks | The camera eases to the whole train; a dashed frame where the roof and lamps go over the first car |
+| Whistle | The camera eases to the Whistle shot; the frame is round the chimney's cap (whole for Toot, dashed for Two-tone), which that shot does not show: it is close on the cab, as before |
+
+**Wrong in it, for a later pass.** The cars behind the first run off the table toward the stall at the garage's
+pose: the steel car's frame stands in the stall's stone apron and the Cargo camera has the stall's wall filling its
+right side. The Bigger cradle's box floats with no wagon drawn under it. On the Engine tab the dashed frame and the
+seat ghost are two marks on one part. On Looks and Whistle the table's idle turn carries the frame behind the engine
+for part of each turn, and the Whistle shot (unchanged) never shows the chimney: sliding it forward to the cap was
+tried and looked at (`sel-whistle-three.png`: still the cab and the car) and taken out again; it wants its own row.
+
+**Looked at (14 November, real time, `wagon-on`):** `sel-cargo-realtime.webm`, `sel-cargo-strip.png` and
+`sel-cargo-four.png` (the camera eases from the engine to the tail in about half a second; the kit car and the
+footing wagon are pale flatbeds in whole gold frames behind the first car; the steel car and the cradle are dashed
+boxes; Cars frames the bench); `sel-tabs-realtime.webm` and `sel-tabs-four.png` (Engine: a whole frame round the
+barrel, a dashed box at the nose; Looks: the engine's front fills the shot and the roof's frame is behind it; Whistle:
+the cab fills the shot). After an install (`noTry-install-strip.png`) the fitted barrel wears the whole frame.
+Not seen: a phone-width frame, reduced motion, a second player, the steel car owned (its ghost).
 
 ## 6. Steps
 
