@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { Leg } from '../src/sim/railway-components.ts';
+import { ringRivetSequence } from './helpers/railway-rivet-sequence.ts';
 import {
   aboard,
   account,
@@ -72,7 +73,7 @@ test('review: a save and load every 7 ticks through the kit out, the casts and t
 });
 
 test('review: a bill fed from backs while its kit rides leaves no kit riding the trains for good', () => {
-  const s = seed(railwayAtRing('ring-joined'));
+  const s = ringRivetSequence();
   assert.equal(aboard(s.w, 'logs'), STEEL.logs, 'the kit is aboard at the seed');
   // Eight ordinary logs off a pile into the bill before the train arrives ("any logs and rails count").
   for (let k = 0; k < 40 && steel(s.w).logs < STEEL.logs; k++) {

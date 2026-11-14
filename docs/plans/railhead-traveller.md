@@ -1,7 +1,9 @@
-> **Status: proposed 2026-11-14, design only; nothing here is built.** Base: `origin/main` at `35e1c3431`. Replaces
+> **Status: 2026-11-14, steps 1 and 2 implemented; Checkpoint A and the view work remain.** Design base:
+> `origin/main` at `35e1c3431`. Replaces
 > steps 2 and 4 of [gap-readability](gap-readability.md) (the railhead's move), which were built on branch
 > `worktree-agent-af55e2f2172764ff8` (tag `archive/worktree/railhead-traveller`, tip `9b9845fbb`) and failed three
-> independent reviews on timing agreement between tabs. Needs `WORLD_NS` v45 (the shared bump). Not a port from Place:
+> independent reviews on timing agreement between tabs. Uses `WORLD_NS` v46 (the shared bump; v45 shipped in #1827).
+> Not a port from Place:
 > no fit check applies.
 
 # The railhead traveller: one move on every tab
@@ -54,7 +56,8 @@ invented.
 **Decision: accepted state, not a view record on an existing row.** No existing accepted row holds the tick: `set` is
 a count, and `stopMoved` stamps `depart` only on a train that happens to be running to the railhead. A late joiner or
 a reload mid-haul can only know the start from state. So the row grows two integers, which is a saved and wire shape
-change: **`WORLD_NS` v45**, no migration, joining the shared v45 (rotunda, running-side, great tree).
+change: **`WORLD_NS` v46**, no migration, starting the shared reset that the great tree and rack moves will join.
+The owner requested the namespace bump in its own commit; v45 shipped on 14 November (#1827).
 
 ### Sim
 
@@ -87,7 +90,7 @@ change: **`WORLD_NS` v45**, no migration, joining the shared v45 (rotunda, runni
   `moved < 0` implies `from === 0`; otherwise `RING_HEAD[0].u <= from <= haulTarget(a)`.
 - `src/sim/railway-seed-ring.ts`: after each `setFootings`, advance until `haulSettled` (a new `settleHaul(s)`), so a
   seeded room and every still open at rest. The seeds set footings through the op, so the stamps are real.
-- `src/world/namespace.ts`: v45 with a dated line: "the Aperture row carries the railhead haul's start tick and origin".
+- `src/world/namespace.ts`: v46 with a dated line: "the Aperture row carries the railhead haul's start tick and origin".
 - Prediction (`rail.footSet` is in `RAIL_PREDICTED`) runs the same apply on the clone, so the acting tab's row holds
   its predicted tick until the server's row replaces it. No adapter change.
 
@@ -163,7 +166,7 @@ What remains is the clock estimate's error (`tickNow`), the same few millisecond
 
 Rows are from `npm run models` (mode withCodex, 14 November).
 
-- [ ] **1. The haul's pure functions. Tier: sim. Row: high-risk implementation, Codex gpt-6-astra high.** Create
+- [x] **1. The haul's pure functions. Tier: sim. Row: high-risk implementation, Codex gpt-6-astra high.** Create
       `src/sim/railway-ring-haul.ts` as above and `test/railway-ring-haul.test.ts`:
       - `haul: at rest before any pair, and at the target once settled`
       - `haul: holds for 60 ticks, told for 10, then never faster than 50 cm a tick, eased at both ends`
@@ -171,7 +174,7 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       - `haul: learned late joins part-way; learned after the end is at rest` (the reviewers' late case, pure)
       - `haul: a short remainder and a 140 m replan both end exactly on the target`
       Verify: the test file; `node dev/ship-check.ts`. No row reads it yet, so no bump.
-- [ ] **2. The row, the stamp, the invariants, the bump. Tier: sim, world, server; high risk; `WORLD_NS` v45. Row:
+- [x] **2. The row, the stamp, the invariants, the bump. Tier: sim, world, server; high risk; `WORLD_NS` v46. Row:
       Codex gpt-6-astra high.** Edit `src/sim/railway-components.ts`, `src/sim/railway-sys-ring.ts`,
       `src/sim/railway-check-ring.ts`, `src/sim/railway-seed-ring.ts`, `src/world/namespace.ts`. Tests:
       - `test/railway-ring.test.ts`: `a bent's second footing stamps moved and from; its first does not`;
@@ -189,7 +192,7 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       - `test/world-replay.test.ts` stays green; if a pinned result changes, name the changed input (the two fields)
         in the commit.
       Verify: those files; `node dev/ship-check.ts`. The view still slides as today (it ignores the fields).
-- [ ] **Checkpoint A (step 2 ships on the shared v45, between sessions, never mid-session).** Proofs, once:
+- [ ] **Checkpoint A (step 2 ships on the shared v46, between sessions, never mid-session).** Proofs, once:
       `npm run loop -- run` (the `bents` beat: bill, supply and cue unchanged); `npm run test:net`; the ring bot
       (`dev/look/evals/railway-ring-bot.ts` with `--rail-seed deck-laid`: its route sets the fourteen bent footings and
       waits out each haul). Independent review before merge (sim, world, server): a fresh Codex
@@ -226,6 +229,25 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       Then: `docs/game-design/place.md` (the railhead's section), [gap-readability](gap-readability.md)'s status
       block, an agent-calls row for the `HAUL` timings.
 
+## Step 2 implementation notes (14 November)
+
+The namespace bump is separate (`c75066e98`), as the owner requested. The row, accepted stamp, load invariants and
+settled jump-ins are implemented; no view or adapter behavior was changed. The focused sim/replay/host run passes
+40 tests, including both mirrors, prediction correction, 15/150-tick delivery delays and a verified checkpoint with
+a noninitial replan origin. Checkpoint A remains the orchestrator's work; the worker does not run `test:net` or ship.
+
+The deliberate hash inputs are `Aperture.moved` and `Aperture.from` (including their defaults in every world).
+Schema, seed, tick-order, op-stream and client-read trace goldens were regenerated for v46. Every recorded tick's
+system sequence and every scripted op's label/result are unchanged. Settling moves `gap-footed`, `leaf-raised` and
+`ring-joined` by 127 rule ticks; later steel/Gorge seeds inherit the different fleet phase. The halt fixture changes
+only request/calling state and its lever pose/target, not catalog, colliders or plaque copy.
+
+The original train pacing workloads now use `test/helpers/railway-rivet-sequence.ts`: the same accepted actions,
+including a rivet during the haul (still legal), independent of settled dev jump-ins. Their existing time limits
+remain unchanged. The load-check corruption fixtures subtract rails from the seed's actual forge rack, and the
+host-read literals reflect that the settled `ring-joined` seed has not loaded its steel kit yet. The 180 affected
+regression tests pass with those explicit inputs. These are simulated rule ticks, not performance measurements.
+
 ## Level findings
 
 Nothing is placed or moved: the platform, rack, jib and lever rest where `RING_HEAD[k]` already puts them, and no gate
@@ -238,11 +260,11 @@ on its way, exactly as today; prompts stay hidden until settled.
 - **Room safety.** No effect in `apply` (it writes two integers); no wall clock or per-peer counter (the stamp is the
   rule tick); cues follow the row, and the setter's predicted cue does not replay on confirmation because cues latch
   on phase time, not on receipts. No presence field is added (`riding` is the existing one).
-- **Mixed builds.** Dev phase: no compatibility code. The row shape breaks saves and the wire: v45 with a dated line.
+- **Mixed builds.** Dev phase: no compatibility code. The row shape breaks saves and the wire: v46 with a dated line.
   Step 2 must not ship mid-session.
 - **Hotspots.** `railhead-view.ts` (1,005 lines; PR 1797 and the lever branch touched it), `halts-view.ts`,
-  `railway-components.ts` and `namespace.ts` (every v45 plan). `npm run inflight` shows only stale `ship/*` branches;
-  the v45 plans (rotunda 1a, running-side 3 to 6, level-pacing A2) are the real neighbours.
+  `railway-components.ts` and `namespace.ts`. The great tree and rack moves will stack on step 2's branch and share
+  v46; the rotunda and running-side changes already shipped on v45.
 - **The lint ratchet.** A kinematic body cannot come through the prefab door yet ("moving colliders await their
   conversion") and a new `makeCar` importer is refused (measured: `6 > 5` when `railhead-view.ts` or `view.ts`
   receives the kit). Building the car in `line2-view.ts` passes with no ratchet change (measured); handing the
@@ -253,8 +275,9 @@ on its way, exactly as today; prompts stay hidden until settled.
 
 ## Open questions
 
-1. **v45: join the shared bump?** Recommended: yes. Step 1 builds now; step 2 lands with whichever v45 work ships
-   first, between sessions; if none is ready, it takes v45 alone.
+1. **Reset: resolved by the owner, 14 November.** Step 2 starts v46 in its own namespace commit; the great tree and
+   rack moves stack later. v45 shipped in #1827. No push or ship from the step 2 worker; Checkpoint A belongs to the
+   orchestrator, including `test:net` outside the sandbox.
 2. **Build the deck in `line2-view.ts` (no ratchet change), or approve one more `makeCar` importer so the railhead
    view owns it?** Recommended: `line2-view.ts`; the ratchet stays untouched.
 3. **The haul's timing: 6 s after the footing, 1 s told, about 4.8 s at 5 m/s, 0.9 s to chock (about 12.7 s with the

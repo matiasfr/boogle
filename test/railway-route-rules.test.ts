@@ -77,6 +77,8 @@ import {
 import { checkRoute } from '../src/sim/railway-check-route.ts';
 import { railLegKitHolders, railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
 import { ROUTE_GATES, fuzzTicks, routeTicks } from './helpers/fuzz.ts';
+import { ringRivetSequence } from './helpers/railway-rivet-sequence.ts';
+import { laySection } from '../src/sim/railway-seed-legs.ts';
 
 const STACK = 0;
 const LEG = RAIL_LEGS[STACK]!;
@@ -88,7 +90,7 @@ const RING = halt('Ring Island'),
 const haltId = (line: number, stop: number) => RAIL_HALTS.findIndex((h) => h.line === line && h.stop === stop);
 // Built at module scope, outside the test timeout (as the golden shards do).
 const LEAF = buildSeedWorld('leaf-raised');
-const JOINED = buildSeedWorld('ring-joined');
+const JOINED = ringRivetSequence();
 const copy = (s: Seed): Seed => ({ w: restore(s.w), t: s.t });
 const plain = (w: World) => {
   const out = createRailwayWorld();
@@ -1426,7 +1428,12 @@ if (process.env.LEG_ASK_FUZZ === '1') {
 }
 
 // Shared replay fixture, outside the timeout as LEAF/JOINED above.
-const HEAD2_LAY = unaudited(buildSeedWorld('gorge-mid'));
+const HEAD2_LAY = unaudited(copy(JOINED));
+while (legRow(HEAD2_LAY.w, STACK).laid < 2) laySection(HEAD2_LAY);
+for (let guard = 0; !trains(HEAD2_LAY.w).some((r) => r.legKit && r.logs + r.rails > 0); guard++) {
+  assert.ok(guard < 3000, 'a kit aboard before the third section');
+  advance(HEAD2_LAY, 1);
+}
 feedSection(HEAD2_LAY);
 test('lost ask: a rider arriving one second after section 3 lays gets an outward train within 1,200 ticks', (t) => {
   const result = headWait(HEAD2_LAY, [10], false, 1201);
