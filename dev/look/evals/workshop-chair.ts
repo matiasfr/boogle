@@ -1,7 +1,8 @@
 // npm run look -- --rail-seed q1-done --eval dev/look/evals/workshop-chair.ts --query 'chair=front' --name chair-front
 //  (chair=front|side|high frames the forge workshop's chair; &sit=1 walks nothing: it stands the player at the chair's
 //   exit, presses Interact when "Sit" is offered and holds the seated pose; &sit=2 then presses again and holds the
-//   stood-up pose). Prints `CHAIR ...` lines: the seat state, the body's position and the avatar's yaw.
+//   stood-up pose; &sit=3 only stands the player there, for --action dev/look/evals/workshop-sit-action.ts with
+//   --video). Prints `CHAIR ...` lines: the seat state, the body's position and the avatar's yaw.
 // The chair is at room-local (2.7, 0, 0.3), facing +z (the front wall); positions below are local to the forge's centre.
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
@@ -74,7 +75,7 @@ background(
       [X + look![0]!, floor + look![1]!, Z + look![2]!],
       fov,
     );
-    if (sit) {
+    if (sit && sit !== 3) {
       say('before');
       await until(() => interactTarget()?.verb === 'Sit', 'Sit offered at the chair');
       interact();

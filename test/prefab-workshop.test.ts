@@ -224,13 +224,17 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
     'registerSeat',
     { seats, sitting: null, standUp: () => {} },
   );
-  const data = input ? structuredClone(input.prefabs) : (structuredClone(artifact) as unknown as PrefabArtifact);
+  const source = input ? structuredClone(input.prefabs) : (structuredClone(artifact) as unknown as PrefabArtifact);
+  // The chair's seat is authored as a layout (yawDegrees), which loading resolves into a new record: hand the tests
+  // the loaded records, so a mutation still reaches what instantiate reads.
+  const compiled = loadPrefabArtifact(source);
+  const data = { ...source, prefabs: compiled.prefabs } as PrefabArtifact;
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
     fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
     {
       THREE,
       artifact: data,
-      compiled: loadPrefabArtifact(data),
+      compiled,
       workshop: input?.level ?? workshop,
       gorge: input ? { ...metadata, format: 'boogle-level', place: 'gorge', placements: [] } : gorge,
       names,
@@ -575,9 +579,11 @@ for (const row of worldTransformCases)
               'body orientation must follow the collider world basis',
             );
           }
-          const forward = new THREE.Vector3(0, 0, 1).transformDirection(instance.root.matrixWorld);
+          // The chair's seat is authored at 180°: it faces the root's -z.
+          const forward = new THREE.Vector3(0, 0, -1).transformDirection(instance.root.matrixWorld);
+          const turn = instance.seats[0]!.at.yaw - Math.atan2(forward.x, forward.z);
           assert.ok(
-            Math.abs(instance.seats[0]!.at.yaw - Math.atan2(forward.x, forward.z)) < 1e-9,
+            Math.abs(Math.atan2(Math.sin(turn), Math.cos(turn))) < 1e-9,
             'seat facing must use the full world frame',
           );
         }
