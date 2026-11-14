@@ -6,6 +6,7 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 ## Links
 
+- [Backlog](../backlog.md): every effort the owner has committed to, ranked, with its status and next step. This file holds live job status, proof gaps and leftovers; it does not repeat that list.
 - [Owner calls](owner-calls.md), [decision index](../decisions.md#current-decision-index), [direction](../direction.md) (the one roadmap)
 - Current plans: [Ring Island build 2](../plans/ring-island-build2.md), [slice 5 town economy](../plans/slice5-town-economy.md), [greybox route](../plans/greybox-route.md), [campaign outline](../plans/campaign-outline.md) (hub towns), [remote runner](../plans/remote-runner.md); the ECS migration is done.
 - [Production core](../plans/production-core.md), [Round 4 tracker](../plans/round-4-notes.md), [playtests](../playtests.md), [replay guide](https://claude.ai/artifact/TAb4PhNz2E9g1DiZD5bHoF)
