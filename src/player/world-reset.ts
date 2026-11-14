@@ -16,8 +16,15 @@ const ROOM_PREFIXES = [
   'boogle.room-born.v0:', // roomReborn below: the world this browser last joined in a room
 ];
 const ROOM_BORN = 'boogle.room-born.v0:';
-/** sessionStorage, `<room id> <room name>`: this room's world started over, so the next load starts the player over. */
+/** sessionStorage, `<room id> <room name>[ <stage>]`: this room's world started over, so the next load starts the
+ * player over. The stage is there when the new world is a replacement by that stage (docs/plans/room-fast-forward.md). */
 export const ROOM_RESET_KEY = 'boogle.roomReset';
+export type RoomReset = { id: string; name: string; stage: string };
+export const roomResetNote = (id: string, name: string, stage = '') => [id, name, ...(stage ? [stage] : [])].join(' ');
+export function readRoomReset(text: string | null): RoomReset | null {
+  const [id, name, stage = ''] = (text ?? '').split(' ');
+  return id && name ? { id, name, stage: /^[a-z0-9-]{1,40}$/.test(stage) ? stage : '' } : null;
+}
 
 export function staleKeys(keys: string[], marker: string | null, ns: Namespace): string[] {
   const changed = marker !== null && marker !== ns.world;

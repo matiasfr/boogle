@@ -178,6 +178,9 @@ function perfBySection(s: Session, steps: Step[]) {
 const seedLabel = (stage: string) => jumpOf(stage)?.label ?? stage;
 export function startedAs(m: Session['meta']): string {
   const stage = str(m.seed);
+  // The room was replaced with a stage (docs/plans/room-fast-forward.md): the same room, its world a seed's.
+  if (!stage && str(m.replaced))
+    return `a room replaced with "${seedLabel(str(m.replaced))}" (${str(m.replaced)}), not a first run`;
   if (!stage) return '';
   if (stage === 'start') return 'from the beginning, in a fresh private room';
   return `jump-in "${seedLabel(stage)}" (${stage}), a seeded private room, not a first run`;
@@ -341,7 +344,9 @@ export function summarize(s: Session, others: Session[], places: Place[]): strin
     for (const [label, re] of beats) (namesSeen.some((n) => re.test(n)) ? did : never).push(label);
     out.push('', `Did: ${did.join(', ') || 'none of the beats'}`);
     const seeded =
-      str(m.seed) && str(m.seed) !== 'start' ? `(seeded: beats before ${seedLabel(str(m.seed))} were not played here) ` : '';
+      str(m.seed) && str(m.seed) !== 'start'
+        ? `(seeded: beats before ${seedLabel(str(m.seed))} were not played here) `
+        : '';
     out.push(`Never (or this build doesn't mark it): ${seeded}${never.join(', ') || 'nothing'}`);
   }
 

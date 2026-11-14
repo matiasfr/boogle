@@ -17,7 +17,7 @@
 //   leaveIsland()           the pause view's Leave: out to the menu page (/menu/), where the game isn't running
 //   startFresh()            the pause view's Start fresh: forget this person on this device and fall in as someone new
 
-import { worldWasReset } from '../boot/world-reset.ts';
+import { replacedStage, worldWasReset } from '../boot/world-reset.ts';
 import { PROTO } from '../proto/flags.ts';
 
 const NAME = 'boogle.name'; // also written by the lobby (src/player/hud.ts) and the pause view's You editor
@@ -62,8 +62,9 @@ try {
   // no storage: every visit is a first visit
 }
 // The first load after a world reset is a new game too: the fall and the card, pre-filled with the saved name and
-// colour (docs/decisions.md, 2026-11-09). A reload after that is a returning visit again.
-const first = !saved || worldWasReset;
+// colour (docs/decisions.md, 2026-11-09). A reload after that is a returning visit again. A room replaced by a stage
+// is the exception: its players land at the stage with no fall and no card (docs/plans/room-fast-forward.md).
+const first = !saved || (worldWasReset && !replacedStage);
 export const isFirstVisit = () => first;
 export const showCard = () => first || PROTO === 'fall'; // ?proto=fall replays the first visit
 const lastRead = readJson(LAST);

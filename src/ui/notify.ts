@@ -7,6 +7,7 @@
 //     ttl     ms on screen (default 2500); 0 stays until dismiss(), behind anything newer
 //     key     de-duplicates (default: the text): the same key again refreshes the one queued or showing
 //     action  { label, run }: a button on the notice (a sticker: pressable)
+//     quiet   no sound (a countdown refreshing its own notice each second)
 //
 // One notice at a time; at most MAX_QUEUED wait (the oldest drops). A 'deny' answers a press, so it goes first and cuts
 // the one showing short (that one comes back after it if it had time left). Sticky notices (ttl 0) wait under the queue.
@@ -21,6 +22,7 @@ export type NotifyOpts = {
   ttl?: number;
   key?: string;
   action?: { label: string; pad?: string; run: () => void };
+  quiet?: boolean; // no sound: a refresh of a notice already heard (a countdown's next second)
 };
 type Notice = Required<Pick<NotifyOpts, 'kind' | 'ttl' | 'key'>> &
   Pick<NotifyOpts, 'action'> & {
@@ -102,6 +104,7 @@ export function notify(text: string, opts: NotifyOpts = {}): () => void {
     ttl: opts.ttl ?? TTL,
     key: opts.key ?? text,
     action: opts.action,
+    seen: opts.quiet,
   };
   const dismiss = () => {
     for (const list of [queue, sticky]) {
