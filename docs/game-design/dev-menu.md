@@ -22,6 +22,17 @@ Place's Go to, Test scenarios, disposable TEST runs and setup links were deleted
 
 **Agent API:** `boogle.dev.tools()`, `open(tool?)`, `run(tool, command, args?)`, `snapshot()` and `close()` use the same bounded tool descriptors and result path as the UI. Tool ids are `water`, `camera`, `inspect`, `performance`, `room`, `report`, `tunables`, `graphics`, `looks`. No arbitrary scripting or property setter is provided.
 
+## Z-fighting inspection (14 November 2026)
+
+On the Vite dev server, Dev adds **Z-fighting**. Aim at a flickering surface and tap **Scan at crosshair**:
+the nearest three coplanar pairs receive different tints and a screenshot-readable banner with both scene piece
+ids, coordinates, overlap area and separation. Scan again to refresh; Clear or closing the panel removes it.
+This is Local, off by default, has no continuous sampler and does not change source geometry/materials or gameplay.
+The same snapshot is `boogle.dev.run('zfight', 'scan')`. See [diagnosis and limits](../agents/test-details/zfighting.md).
+The scan now shows appearance/visibility classes and grouped counts: likely-visible contacts by default, with an
+explicit second scan button for same-appearance joints and proved-hidden overlaps. Unknown appearance stays actionable.
+Within each group the banner names the member nearest the crosshair; the labelled area remains the group's total.
+
 ## Replace room with stage
 
 The owner's way to a later stage is to replace the room he is in, on the server, for everyone in it
