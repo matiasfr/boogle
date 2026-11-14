@@ -84,7 +84,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     reward.youGot,
     () => demo(),
     reward.gettingItem,
-    () => !!seats.seated(),
   );
   const hook = await createRailwayHook(adapter, owner);
   demo = hook.demo;
@@ -112,7 +111,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const works = worksPreview()
     ? await import('./works-live.ts').then((m) =>
         m.createRailwayWorksLive(adapter, owner, {
-          seated: () => !!seats.seated(),
           busy: () => reward.inspect().busy,
           toPier: () => trains.footFlying().toPier,
           toRing: () => trains.footFlying().toRing,

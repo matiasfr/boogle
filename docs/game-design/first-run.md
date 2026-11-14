@@ -123,7 +123,8 @@ spaced, a thin rule, a slow fade with a slight drift, no panel, no input taken. 
   same slot for a late joiner, who sees the room's current act. Nobody else in the room is held. Reduced motion or a
   seated player: no move, the title over the plain view. Automated browsers skip it like the fall (`intro=1` asks for it).
 - **A live change** (the room lays Q5): every page's existing Far Head shot (5 s) carries the card from 1.5 s in.
-  No second camera move. The act waits for any other full-screen moment (`momentBusy`: a playing pull-out, a reward
+  No second camera move. The shot plays for a player riding the track layer in its chair too (14 November: the owner
+  arrived at Far Head that way and got the card with no camera move; [place](place.md), "The way back"). The act waits for any other full-screen moment (`momentBusy`: a playing pull-out, a reward
   card, a banner more than half shown, the open pause view). A banner raised in the same moment (the glider's) waits
   until the card has finished; world prompts stay down while the card shows.
 - **Returning player:** the act ("Act 2") is the first line of the Welcome back card, not a second full-screen card.

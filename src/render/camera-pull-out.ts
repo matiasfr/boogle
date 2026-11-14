@@ -64,8 +64,11 @@ type Shot = {
   lift?: THREE.Vector3;
   blend?: number;
 };
-export function createCameraPullOut(busy = () => false, behindBuddy = false, seated = () => false) {
-  const inSeat = () => inputState.seated || seated();
+/** A shot plays for a player sitting in a railway chair or on a train's bench: the follow camera is still theirs there,
+ * and the track layer's rider is who arrives at Far Head as Q5 is laid (the owner's session, 14 November 2026: he rode it
+ * in and got no shot). Only a vehicle's seat, whose chase camera owns the view (`inputState.seated`), goes without. */
+export function createCameraPullOut(busy = () => false, behindBuddy = false) {
+  const inSeat = () => inputState.seated;
   const listeners = new AbortController();
   const self = {};
   let shot: Shot | null = null,

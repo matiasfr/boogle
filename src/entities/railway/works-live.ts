@@ -22,7 +22,6 @@ export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
   owner: OwnedView,
   deps: {
-    seated: () => boolean;
     busy: () => boolean;
     toPier: () => number;
     toRing: () => number;
@@ -33,7 +32,7 @@ export async function createRailwayWorksLive(
   const shapes = await import('../../render/part-geometry.ts');
   const breaker = createRailwayBreaker(adapter, owner, shapes);
   const [works, roundhouse, crossing, steel, leg] = await Promise.all([
-    createRailwayWorks(adapter, owner, { contactIn: breaker.contactIn, seated: deps.seated, busy: deps.busy }),
+    createRailwayWorks(adapter, owner, { contactIn: breaker.contactIn, busy: deps.busy }),
     createRailwayRoundhouse(adapter, owner, { contactIn: breaker.contactIn }),
     createRailwayCrossing(adapter, owner, deps),
     createRingSteel(adapter, owner),

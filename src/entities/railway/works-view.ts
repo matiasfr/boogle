@@ -43,7 +43,6 @@ export async function createRailwayWorks(
   owner: OwnedView,
   deps: {
     contactIn: (id: number) => number;
-    seated: () => boolean;
     busy: () => boolean;
   },
 ) {
@@ -288,7 +287,7 @@ export async function createRailwayWorks(
   mouth.visible = false;
   owner.add(mouth);
   owner.cleanup(() => glowMat.dispose());
-  const throatCamera = createCameraPullOut(deps.busy, true, deps.seated);
+  const throatCamera = createCameraPullOut(deps.busy, true);
   const later = createLater();
   owner.cleanup(() => throatCamera.dispose());
 
