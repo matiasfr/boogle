@@ -57,3 +57,59 @@ export function surfaceDifferences(a: Face, b: Face, at: Point): string[] {
   if (x.uncertain || y.uncertain) reasons.push(x.uncertain ?? y.uncertain!);
   return reasons;
 }
+
+/** Structural material snapshot: accepts three.js materials without importing the renderer into pure tests. */
+export type DrawMaterial = {
+  type: string;
+  visible: boolean;
+  transparent: boolean;
+  opacity: number;
+  colorWrite: boolean;
+  depthWrite: boolean;
+  color?: { toArray(): number[] };
+  roughness?: number;
+  metalness?: number;
+  emissive?: { toArray(): number[] };
+  emissiveIntensity?: number;
+  vertexColors?: boolean;
+  colorNode?: unknown;
+  positionNode?: unknown;
+  opacityNode?: unknown;
+  maskNode?: unknown;
+  emissiveNode?: unknown;
+  normalNode?: unknown;
+  flatShading?: boolean;
+  side?: number;
+};
+
+/** Shared eligibility for collected triangles and the crosshair's first opaque hit. */
+export const isOpaqueMaterial = (m: DrawMaterial) =>
+  m.visible && !m.transparent && m.opacity === 1 && m.colorWrite && m.depthWrite;
+
+export function materialSurface(
+  material: DrawMaterial,
+  castShadow: boolean,
+  receiveShadow: boolean,
+  multiplier: Point = [1, 1, 1],
+): Surface {
+  const m = material;
+  return {
+    material: JSON.stringify([
+      m.type,
+      m.roughness,
+      m.metalness,
+      m.emissive?.toArray(),
+      m.emissiveIntensity,
+      m.side,
+      m.flatShading,
+    ]),
+    color: (m.color?.toArray() ?? [1, 1, 1]).map((v, i) => v * multiplier[i]!) as unknown as Point,
+    castShadow,
+    receiveShadow,
+    vertexColors: m.vertexColors === true,
+    occlusionUncertain: !!(m.positionNode || m.opacityNode || m.maskNode),
+    ...(m.colorNode || m.positionNode || m.opacityNode || m.maskNode || m.emissiveNode || m.normalNode
+      ? { uncertain: 'unresolved shader appearance' }
+      : {}),
+  };
+}

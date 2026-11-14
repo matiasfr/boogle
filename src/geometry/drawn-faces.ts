@@ -9,43 +9,11 @@ import {
   type BufferGeometry,
   type Object3D,
   type Material,
-  type Color,
 } from 'three/webgpu';
 import type { Face, Point } from './zfight.ts';
-import type { Surface } from './zfight-surface.ts';
+import { materialSurface, isOpaqueMaterial, type Surface } from './zfight-surface.ts';
+export { materialSurface, isOpaqueMaterial } from './zfight-surface.ts';
 const connectivity = new WeakMap<BufferGeometry, number[]>();
-
-export function materialSurface(
-  material: Material,
-  castShadow: boolean,
-  receiveShadow: boolean,
-  multiplier: Point = [1, 1, 1],
-): Surface {
-  const m = material as Material & {
-    color?: Color;
-    roughness?: number;
-    metalness?: number;
-    emissive?: Color;
-    vertexColors?: boolean;
-    colorNode?: unknown;
-    positionNode?: unknown;
-    opacityNode?: unknown;
-    maskNode?: unknown;
-    flatShading?: boolean;
-    map?: { uuid: string } | null;
-  };
-  return {
-    material: JSON.stringify([m.type, m.roughness, m.metalness, m.emissive?.toArray(), m.side, m.flatShading]),
-    color: (m.color?.toArray() ?? [1, 1, 1]).map((v, i) => v * multiplier[i]!) as unknown as Point,
-    castShadow,
-    receiveShadow,
-    vertexColors: m.vertexColors === true,
-    occlusionUncertain: !!(m.positionNode || m.opacityNode || m.maskNode),
-    ...(m.colorNode || m.positionNode || m.opacityNode || m.maskNode
-      ? { uncertain: 'unresolved shader appearance' }
-      : {}),
-  };
-}
 
 export function geometryFaces(
   geometry: BufferGeometry,
@@ -141,11 +109,7 @@ export function sceneFaces(root: Object3D, at: Vector3, radius: number) {
   root.updateWorldMatrix(true, true);
   root.traverseVisible((object) => {
     if (!(object instanceof Mesh) || object instanceof SkinnedMesh || object.userData.zfightOverlay) return;
-    if (
-      (Array.isArray(object.material) ? object.material : [object.material]).some(
-        (m) => !m.visible || m.transparent || m.opacity < 1,
-      )
-    )
+    if ((Array.isArray(object.material) ? object.material : [object.material]).some((m) => !isOpaqueMaterial(m)))
       return;
     const label: string[] = [];
     for (let p: Object3D | null = object; p && p !== root; p = p.parent) if (p.name) label.unshift(p.name);

@@ -12,7 +12,7 @@ import {
 } from 'three/webgpu';
 import { camera, scene } from '../../render/scene.ts';
 import { defineKind, spawn, despawn, type GameEntity } from '../../entity/entity.ts';
-import { sceneFaces } from '../../geometry/drawn-faces.ts';
+import { sceneFaces, isOpaqueMaterial } from '../../geometry/drawn-faces.ts';
 import { findZfights, ZFIGHT, type Point } from '../../geometry/zfight.ts';
 import { classifyZfights, className, type Finding } from '../../geometry/zfight-classify.ts';
 import { el, note, command } from './ui.ts';
@@ -39,9 +39,7 @@ function scan(args: Record<string, unknown>) {
     for (let o = object; o; o = o.parent!) if (!o.visible || o.userData.zfightOverlay) return false;
     return (
       object instanceof Mesh &&
-      (Array.isArray(object.material) ? object.material : [object.material]).every(
-        (m) => m.visible && !m.transparent && m.opacity === 1,
-      )
+      (Array.isArray(object.material) ? object.material : [object.material]).every(isOpaqueMaterial)
     );
   });
   const requested = args.at;

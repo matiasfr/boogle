@@ -29,7 +29,7 @@ import type { LevelArtifact, Placement, Transform } from '../../src/prefab/types
 import type { Part } from '../../src/render/part-geometry.ts';
 import { buildIslandSurface } from '../../src/proto/terrain-pass/island.ts';
 import { describeGround } from '../../src/proto/terrain-pass/surface.ts';
-import { geometryFaces, materialSurface } from '../../src/geometry/drawn-faces.ts';
+import { geometryFaces, materialSurface, isOpaqueMaterial } from '../../src/geometry/drawn-faces.ts';
 import type { Face } from '../../src/geometry/zfight.ts';
 import type { Surface } from '../../src/geometry/zfight-surface.ts';
 import { sourceFunction, sourceModule } from './source.ts';
@@ -101,15 +101,17 @@ export async function collectDrawnGeometry() {
   const addObject = (object: THREE.Object3D, matrix: THREE.Matrix4, id: string) => {
     object.updateWorldMatrix(true, true);
     let index = 0;
-    object.traverse((o) => {
-      if (o instanceof THREE.Mesh)
-        addGeometry(
-          o.geometry.clone(),
-          matrix.clone().multiply(o.matrixWorld),
-          `${id}/${o.name || o.type}-${index++}`,
-          materialSurface(Array.isArray(o.material) ? o.material[0]! : o.material, o.castShadow, o.receiveShadow),
-          id,
-        );
+    object.traverseVisible((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      const pieceIndex = index++;
+      if (!(Array.isArray(o.material) ? o.material : [o.material]).every(isOpaqueMaterial)) return;
+      addGeometry(
+        o.geometry.clone(),
+        matrix.clone().multiply(o.matrixWorld),
+        `${id}/${o.name || o.type}-${pieceIndex}`,
+        materialSurface(Array.isArray(o.material) ? o.material[0]! : o.material, o.castShadow, o.receiveShadow),
+        id,
+      );
     });
   };
   for (const { id, boxes } of openingBuildings()) boxes.forEach((b, i) => addBox(b, `${id}/${i}`));

@@ -62,6 +62,12 @@ off. Tints draw through occluders deliberately; source materials and geometry ar
 absent from production builds. Unnamed pieces retain exact scene/instance/component ids, which can be selected
 with three.js `getObjectById`; match their coordinates to the offline report for source placement ids.
 
+The collector and crosshair picker share one material predicate: visible, non-transparent, opacity exactly 1,
+with both colour and depth writes enabled. Shadow-only, colour-disabled and non-depth-writing proxies cannot
+be candidates, occluders or crosshair hits. The offline built-object collector applies the same predicate.
+Material recipes include emissive intensity; unresolved `emissiveNode` and `normalNode` graphs, like the existing
+colour/position/opacity/mask slots, keep a contact in class a rather than proving equal shading.
+
 Limitations: local exterior exposure does not establish a playable camera viewpoint, flicker or visual severity.
 The banner names each group's nearest actionable member, rather than the largest member used for offline ranking.
 Its labelled group area still sums the group. This distinction matters at Home: the final reviewed scan identifies
