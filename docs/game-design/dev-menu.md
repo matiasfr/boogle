@@ -29,9 +29,10 @@ the nearest three coplanar pairs receive different tints and a screenshot-readab
 ids, coordinates, overlap area and separation. Scan again to refresh; Clear or closing the panel removes it.
 This is Local, off by default, has no continuous sampler and does not change source geometry/materials or gameplay.
 The same snapshot is `boogle.dev.run('zfight', 'scan')`. See [diagnosis and limits](../agents/test-details/zfighting.md).
+The scan now shows appearance/visibility classes and grouped counts: likely-visible contacts by default, with an
+explicit second scan button for same-appearance joints and proved-hidden overlaps. Unknown appearance stays actionable.
 
 ## Replace room with stage
-
 
 The owner's way to a later stage is to replace the room he is in, on the server, for everyone in it
 ([plan](../plans/room-fast-forward.md); owner call "One live game; fast-forward the room instead of jump-in rooms").
