@@ -1,11 +1,11 @@
-// Broker look, --rail-seed trains-on --query 'haltEdge=0|1' --real --until window.__haltReady.
+// npm run look -- --rail-seed trains-on --query 'haltEdge=0' --real --eval dev/look/evals/prefab-halts.ts --until window.__haltReady
 // Fixed Home island frame; wait for an actual train at the selected edge before capturing.
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const layout = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
-const { railReady, rw, trains, inspectRailway } = (await import(
+const { railReady, rw, trains } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
 const { TRAIN_PHASE } = (await import(
@@ -33,6 +33,6 @@ while (!trains(rw()).some((t) => RAIL_TRAINS[t.slot]!.line === edge && t.at === 
   if (performance.now() > end) throw new Error(`No train stood at Home edge ${edge}`);
   await new Promise((r) => setTimeout(r, 100));
 }
-console.log('HALT HOME', edge, JSON.stringify(inspectRailway()?.line2View));
+console.log('HALT HOME', edge, JSON.stringify(trains(rw()).map(({ slot, phase, at }) => ({ slot, phase, at }))));
 (window as unknown as { __haltReady: boolean }).__haltReady = true;
 export {};

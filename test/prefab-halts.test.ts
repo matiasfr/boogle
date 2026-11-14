@@ -26,6 +26,12 @@ import { HEAD_OFFSET, PLAYER_R, SEA } from '../src/constants.ts';
 import type { Box } from '../src/render/box-plan.ts';
 import type { Body, Shape } from '../src/physics/engine.ts';
 import type { OwnedView } from '../src/render/owned-view.ts';
+import artifact from '../content/built/prefabs.json' with { type: 'json' };
+import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
+import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
+import kitLevel from '../content/built/levels/halt-kit.json' with { type: 'json' };
+import * as validation from '../src/prefab/validate.ts';
+import { names } from '../src/prefab/names.ts';
 
 test('all halt kit placements, colliders, lever plaques and ordered prompts retain the old code', async () => {
   const bodies: unknown[] = [],
@@ -50,7 +56,10 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
     _group?: number,
     owned?: OwnedView,
   ) => {
-    bodies.push({ shape, at: [at.x, at.y, at.z], rotation: q.toArray() });
+    // Old yaw quaternions have positive w; decomposition can choose -q. At a half-turn use positive y:
+    // an ULP perturbation of atan2 can put the tiny w on either side of zero without changing the rotation.
+    const flip = Math.abs(q.w) < 1e-12 ? q.y < 0 : q.w < 0;
+    bodies.push({ shape, at: [at.x, at.y, at.z], rotation: q.toArray().map((n) => (flip ? -n : n)) });
     const b = { position: new THREE.Vector3(at.x, at.y, at.z), quaternion: q.clone() } as unknown as Body;
     owned?.addBody(b);
     return b;
@@ -90,8 +99,22 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
     levers.push(lever);
     return lever;
   };
+  const builders = new Map(names.builders.map((name) => [name, () => new THREE.Group()]));
+  sourceModule(fs.readFileSync('src/prefab/builders/halt-parts.ts', 'utf8'), {
+    registerBuilder: (name: string, build: () => THREE.Group) => builders.set(name, build),
+  });
+  const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
+    fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
+    { THREE, artifact, workshop, gorge, names, ...validation, builders, staticBody: addStatic },
+  );
+  const createHaltKit = sourceFunction('src/entities/railway/halt-kit.ts', 'createHaltKit', {
+    createOwnedView,
+    instantiate: runtime.instantiate,
+    placements: validation.loadLevelArtifact(kitLevel, validation.loadPrefabArtifact(artifact).prefabs).placements,
+  });
   const createUpPlatforms = sourceFunction('src/entities/railway/up-platforms.ts', 'createUpPlatforms', {
     THREE,
+    createHaltKit,
     GROUP: { SCENERY: 1 },
     STONE: '#bdb8ac',
     BASE: '#9a9184',
@@ -141,6 +164,7 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
       SEA,
       me,
       createUpPlatforms,
+      createHaltKit,
       createRequestLever,
       GROUP: { SCENERY: 1 },
       clank() {},

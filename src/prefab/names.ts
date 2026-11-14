@@ -38,6 +38,7 @@ export const names: NameRegistry = {
     'town.house-parts',
     'town.room-shell',
     'town.room-proxy',
+    'railway.halt-parts',
   ],
   interactions: ['seat.sit', 'town.shop-stock', 'town.shop-rail'],
   gates: ['open'],

@@ -3,6 +3,7 @@ import { levels as roomLevels } from '../src/content/levels/rooms.ts';
 import { prefabs as house } from '../src/content/prefabs/house.ts';
 import { levels as houseLevels } from '../src/content/levels/house.ts';
 import { prefabs as museum } from '../src/content/prefabs/museum.ts';
+import { haltKitContent } from '../dev/prefab/halts.ts';
 import { levels as museumLevels } from '../src/content/levels/museum.ts';
 import { prefabs as curio } from '../src/content/prefabs/curio.ts';
 import { prefabs as shop } from '../src/content/prefabs/shop.ts';
@@ -116,8 +117,8 @@ test('artifact serialization is independent of runtime native transcendental res
     }
     writeArtifacts(
       compile(
-        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop, ...curio, ...museum, ...rooms, ...house],
-        [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels, ...museumLevels, ...roomLevels, ...houseLevels],
+        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop, ...curio, ...museum, ...rooms, ...house, ...haltKitContent().prefabs],
+        [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels, ...museumLevels, ...roomLevels, ...houseLevels, ...haltKitContent().levels],
       ),
       'content/built',
       true,
@@ -130,6 +131,25 @@ test('authored full-precision values round-trip losslessly; no decimal quantizat
   const n = 0.7312345678901234;
   const outputs = compile([], [{ place: 'exact', placements: [], analysis: { authored: n } }]);
   assert.equal(JSON.parse(outputs.get('levels/exact.json')!).analysis.authored, n);
+});
+test('authored halt collider expressions reject coercion, unknown operations and mixed expanded data', () => {
+  const record = haltKitContent().prefabs[0]!;
+  const load = (layout: unknown, colliders: unknown = []) =>
+    validation.loadPrefabArtifact({
+      ...metadata,
+      format: 'boogle-prefabs',
+      prefabs: { [record.key]: { ...record, layout, colliders } },
+    });
+  for (const bad of [
+    null,
+    { kind: 'colliders', colliders: null },
+    { kind: 'colliders', colliders: [{ shape: 'box', at: [0, { compute: 'add', a: '1', b: 2 }, 0], half: [1, 1, 1] }] },
+    { kind: 'colliders', colliders: [{ shape: 'box', at: [0, { compute: 'unknown' }, 0], half: [1, 1, 1] }] },
+    { kind: 'colliders', colliders: [{ shape: 'box', at: [0, 0, 0], half: [1, 0, 1] }] },
+  ])
+    assert.throws(() => load(bad));
+  assert.throws(() => load(record.layout, [{ shape: 'box', at: [0, 0, 0], half: [1, 1, 1] }]));
+  assert.equal(load(record.layout).prefabs[record.key]!.colliders.length, 4);
 });
 test('runtime golden permits only tight numeric error and preserves structural contracts', () => {
   prefabGolden(

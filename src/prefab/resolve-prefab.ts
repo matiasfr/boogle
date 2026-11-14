@@ -1,5 +1,6 @@
-// Authored seat headings stay in degrees in JSON; runtime attachments keep their existing radians contract.
+// Authored headings and collider operands stay in JSON; derived values exist only in the validated runtime record.
 import type { Attach, JsonObject, PrefabDef } from './types.ts';
+import { evaluate } from './resolve-layout.ts';
 function object(value: unknown): JsonObject {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('prefabs: expected authored seat attachment object');
@@ -7,7 +8,7 @@ function object(value: unknown): JsonObject {
 }
 export function resolvePrefab(record: PrefabDef): PrefabDef {
   if (record.layout === undefined) return record;
-  const layout = record.layout;
+  const layout = object(record.layout);
   if (layout?.kind === 'room-hull') {
     if (record.colliders.length || record.attach !== undefined)
       throw new Error('prefabs: room hull must be recipe-only');
@@ -70,6 +71,13 @@ export function resolvePrefab(record: PrefabDef): PrefabDef {
     return resolved;
   }
 
+  if (layout.kind === 'colliders') {
+    if (!Array.isArray(record.colliders) || record.colliders.length || !Array.isArray(layout.colliders))
+      throw new Error('prefabs: collider layout requires an empty collider list and authored recipes');
+    const resolved = { ...record, colliders: evaluate(layout.colliders) as unknown as PrefabDef['colliders'] };
+    delete resolved.layout;
+    return resolved;
+  }
   if (
     !layout ||
     typeof layout !== 'object' ||

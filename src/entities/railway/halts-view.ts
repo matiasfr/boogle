@@ -43,6 +43,7 @@ import { displayYaw, haltDisplays, haltMap, haltRows, stackDisplays } from './ha
 import { createBoxBatch } from './works-box-view.ts';
 import { createRingMapTable } from './ring-map-table.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
+import { createHaltKit } from './halt-kit.ts';
 
 type Box = import('../../render/boxes.ts').Box;
 type Line = import('../../place/layout.ts').Line;
@@ -94,11 +95,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     staticSlab(ax, az, bx, bz, ya, yb, width, owner, undefined, 'grass');
 
   const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  const WOOD = '#a9794c',
-    POST = '#7f5630',
+  const POST = '#7f5630',
     STONE = '#bdb8ac',
-    ROOF = '#c4453a',
-    IRON = '#3a3d44';
+    ROOF = '#c4453a';
   const lateral = (l: number, out: { x: number; z: number }) => {
     out.x = P.x - P.uz * l + ORIGIN.x;
     out.z = P.z + P.ux * l + ORIGIN.z;
@@ -117,6 +116,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     lat: number,
     stop: number,
     island = false,
+    row = 0,
   ) {
     const boxes: Box[] = [];
     const hw = island ? ISLAND.width / 2 : 1.25,
@@ -189,27 +189,11 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         for (const dl of [-0.9, 0.9]) part(dl, ground - low, ds, 0.4, low - 0.5 - ground, 0.4, '#a2743f');
     // Local +sign x points toward the rails. Face the train from the outer edge,
     // along from the middle entrance so the rear ramp and the aisle stay clear.
-    const post = 3.2,
-      shelter = -4.8;
-    const CANOPY = 4.6,
-      canopyPosts = [-0.75, -0.25, 0.25, 0.75].map((f) => f * (half * 2 - 2));
-    if (!island) {
-      for (const ds of [-3, 3]) part(-sign * 0.95, 0, shelter + ds, 0.22, post, 0.22, POST);
-      part(-sign * 0.4, post, shelter, 2.4, 0.16, 8, WOOD);
-      part(-sign * 0.4, post + 0.16, shelter, 2.7, 0.14, 8.4, ROOF);
-      part(-sign * 0.75, 0, shelter - 1.2, 0.5, 0.42, 0.16, POST);
-      part(-sign * 0.75, 0, shelter + 1.2, 0.5, 0.42, 0.16, POST);
-      part(-sign * 0.75, 0.42, shelter, 0.56, 0.1, 3, WOOD);
-      part(-sign * 1.02, 0.5, shelter, 0.1, 0.5, 3, WOOD);
-    } else if (deck) {
-      // The island's canopy, on posts down its middle, its roof 4.6 m up (clear of every jump from the deck).
-      for (const ds of canopyPosts) part(0, 0, ds, 0.24, CANOPY, 0.24, POST);
-      part(0, CANOPY, 0, hw * 2 + 1, 0.16, half * 2, WOOD);
-      part(0, CANOPY + 0.16, 0, hw * 2 + 1.3, 0.14, half * 2 + 0.3, ROOF);
-    }
+    const shelter = -4.8;
+    const kit = createHaltKit(owner, row, false, c.x, low, c.z, yaw);
+    for (const [, x, y, z, w, h, d, colour] of kit.parts) part(x, y - h / 2, z, w, h, d, colour);
     // The signal's mast, at the end the train comes in, on this edge.
     const mast = sign * (hw - 0.3);
-    part(mast, 0, half - 0.8, 0.14, 4.4, 0.14, IRON);
     // The map display: a little stand at reading height with the island map on its face and both trains moving on
     // it (owner, 9 November: a real sign, not floating text; "Island map"; 10 November: "on a little display at the
     // station" rather than up the mast). Two short legs, a dark frame whose back is the plain panel, a roof-red cap.
@@ -323,16 +307,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
             q,
           ),
         );
-      if (!island) {
-        for (const ds of [-3, 3])
-          bodies.push(
-            addStatic({ kind: 'box', hx: 0.11, hy: post / 2, hz: 0.11 }, at(-sign * 0.95, post / 2, shelter + ds), q),
-          );
-        bodies.push(addStatic({ kind: 'box', hx: 0.3, hy: 0.28, hz: 1.5 }, at(-sign * 0.8, 0.28, shelter), q));
-      } else if (deck)
-        for (const ds of canopyPosts)
-          bodies.push(addStatic({ kind: 'box', hx: 0.12, hy: CANOPY / 2, hz: 0.12 }, at(0, CANOPY / 2, ds), q));
-      bodies.push(addStatic({ kind: 'box', hx: 0.07, hy: 2.2, hz: 0.07 }, at(mast, 2.2, half - 0.8), q));
+      for (const piece of ['shelter', 'bench', 'canopy', 'mast']) bodies.push(...kit.enable(piece));
       for (const r of rampEnds()) bodies.push(slab(r.bx, r.bz, r.ax, r.az, r.foot, low, hw * 2));
       // A halt can arrive around someone, including a partner who did not fit the boiler. Rapier cannot
       // lift a sphere already trapped between the ground and a new ramp. Only displace actual overlaps,
@@ -417,7 +392,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       snap(on: boolean) {
         reveal = -1;
         set.clear();
-        for (const b of bodies) owner.removeBody(b);
+        const removed = kit.disable();
+        for (const b of bodies) if (!removed.has(b)) owner.removeBody(b);
         bodies = [];
         halt.up = on;
         boxes.forEach((_, k) => set.snap(k, on));
@@ -462,8 +438,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   // Place's halts, then line 2's Pier halt, which opens with Q6 (by name: the Railhead and Ring Island follow it in the
   // catalog but have no row here, their platforms are other views').
   const PIER = rows.findIndex((r) => r.name === 'Pier');
-  const halts = rows.map((h) =>
-    makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop, h.island),
+  const halts = rows.map((h, row) =>
+    makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop, h.island, row),
   );
   // The up platforms' levers (one handle, the up way), at the platform's end nearer its plank crossing, where you
   // come up onto it; standing with today's halt beside it.
@@ -521,14 +497,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const RAILHEAD = 4,
     RING_ISLAND = 5;
   const ringHaltId = (stop: number) => LINE_HALTS.findIndex((h) => h.line === LINE2 && h.stop === stop);
-  const ringSpot = (
-    stop: number,
-    up: boolean,
-    lat: number,
-    u: () => number,
-    need: () => boolean,
-    plaque = 1,
-  ): Spot => {
+  const ringSpot = (stop: number, up: boolean, lat: number, u: () => number, need: () => boolean, plaque = 1): Spot => {
     // The plaque faces away from the rails, onto the platform: the rails lie toward the centre line from `lat` (a stack
     // head's outward lever stands on the east platform too, so the side is the platform's, not the way's).
     const lever = createRequestLever(owner, 1, lat < 0 ? -1 : 1, plaque);
