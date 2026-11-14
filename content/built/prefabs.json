@@ -2295,13 +2295,10 @@
       "colliders": [],
       "key": "town.room-house-hulls-0",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 0,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2312,13 +2309,10 @@
       "colliders": [],
       "key": "town.room-house-hulls-1",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 1,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2329,13 +2323,10 @@
       "colliders": [],
       "key": "town.room-house-hulls-2",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 2,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2346,13 +2337,10 @@
       "colliders": [],
       "key": "town.room-house-hulls-3",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 3,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2363,13 +2351,10 @@
       "colliders": [],
       "key": "town.room-house-hulls-4",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 4,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2380,13 +2365,10 @@
       "colliders": [],
       "key": "town.room-house-hulls-5",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 5,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2397,13 +2379,10 @@
       "colliders": [],
       "key": "town.room-house-hulls-6",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 6,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2414,13 +2393,10 @@
       "colliders": [],
       "key": "town.room-house-hulls-7",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 7,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2431,13 +2407,10 @@
       "colliders": [],
       "key": "town.room-house-poles-0",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 0,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2448,13 +2421,10 @@
       "colliders": [],
       "key": "town.room-house-poles-1",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 1,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2465,13 +2435,10 @@
       "colliders": [],
       "key": "town.room-house-poles-2",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 2,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2482,13 +2449,10 @@
       "colliders": [],
       "key": "town.room-house-poles-3",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 3,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2499,13 +2463,10 @@
       "colliders": [],
       "key": "town.room-house-poles-4",
       "layout": {
-        "d": 7.4,
-        "high": 3.7,
         "index": 4,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.5,
-        "w": 7.4
+        "source": "town.room-house-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2636,13 +2597,10 @@
       "colliders": [],
       "key": "town.room-museum-hulls-0",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 0,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2653,13 +2611,10 @@
       "colliders": [],
       "key": "town.room-museum-hulls-1",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 1,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2670,13 +2625,10 @@
       "colliders": [],
       "key": "town.room-museum-hulls-2",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 2,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2687,13 +2639,10 @@
       "colliders": [],
       "key": "town.room-museum-hulls-3",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 3,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2704,13 +2653,10 @@
       "colliders": [],
       "key": "town.room-museum-hulls-4",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 4,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2721,13 +2667,10 @@
       "colliders": [],
       "key": "town.room-museum-hulls-5",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 5,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2738,13 +2681,10 @@
       "colliders": [],
       "key": "town.room-museum-hulls-6",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 6,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2755,13 +2695,10 @@
       "colliders": [],
       "key": "town.room-museum-hulls-7",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 7,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2772,13 +2709,10 @@
       "colliders": [],
       "key": "town.room-museum-poles-0",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 0,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2789,13 +2723,10 @@
       "colliders": [],
       "key": "town.room-museum-poles-1",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 1,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2806,13 +2737,10 @@
       "colliders": [],
       "key": "town.room-museum-poles-2",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 2,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2823,13 +2751,10 @@
       "colliders": [],
       "key": "town.room-museum-poles-3",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 3,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -2840,13 +2765,10 @@
       "colliders": [],
       "key": "town.room-museum-poles-4",
       "layout": {
-        "d": 12,
-        "high": 5,
         "index": 4,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.8,
-        "w": 13
+        "source": "town.room-museum-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3017,13 +2939,10 @@
       "colliders": [],
       "key": "town.room-shop-hulls-0",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 0,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3034,13 +2953,10 @@
       "colliders": [],
       "key": "town.room-shop-hulls-1",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 1,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3051,13 +2967,10 @@
       "colliders": [],
       "key": "town.room-shop-hulls-2",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 2,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3068,13 +2981,10 @@
       "colliders": [],
       "key": "town.room-shop-hulls-3",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 3,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3085,13 +2995,10 @@
       "colliders": [],
       "key": "town.room-shop-hulls-4",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 4,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3102,13 +3009,10 @@
       "colliders": [],
       "key": "town.room-shop-hulls-5",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 5,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3119,13 +3023,10 @@
       "colliders": [],
       "key": "town.room-shop-hulls-6",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 6,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3136,13 +3037,10 @@
       "colliders": [],
       "key": "town.room-shop-hulls-7",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 7,
         "kind": "room-hull",
         "phase": "hulls",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3153,13 +3051,10 @@
       "colliders": [],
       "key": "town.room-shop-poles-0",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 0,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3170,13 +3065,10 @@
       "colliders": [],
       "key": "town.room-shop-poles-1",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 1,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3187,13 +3079,10 @@
       "colliders": [],
       "key": "town.room-shop-poles-2",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 2,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3204,13 +3093,10 @@
       "colliders": [],
       "key": "town.room-shop-poles-3",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 3,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {
@@ -3221,13 +3107,10 @@
       "colliders": [],
       "key": "town.room-shop-poles-4",
       "layout": {
-        "d": 8,
-        "high": 3.9,
         "index": 4,
         "kind": "room-hull",
         "phase": "poles",
-        "rise": 2.6,
-        "w": 10
+        "source": "town.room-shop-shell"
       },
       "scope": "owner",
       "visual": {

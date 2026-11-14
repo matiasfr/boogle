@@ -290,7 +290,7 @@ export function validatePlacement(
   if (p.params !== undefined) object(p.params);
   if (p.parent !== undefined) text(p.parent);
   const labels = p.labels === undefined ? {} : object(p.labels);
-  const attachments = resolvePrefab(prefabs[text(p.prefab)]!).attach ?? {};
+  const attachments = resolvePrefab(prefabs[text(p.prefab)]!, prefabs).attach ?? {};
   for (const [name, key] of Object.entries(labels)) {
     if (attachments[name]?.kind !== 'label') fail('unknown label attachment');
     text(key);
@@ -356,8 +356,9 @@ function header(value: unknown, format: string) {
 export function validateArtifact(value: unknown, registry: NameRegistry = names): asserts value is PrefabArtifact {
   const a = header(value, 'boogle-prefabs');
   for (const [key, prefab] of Object.entries(object(a.prefabs))) {
-    validatePrefab(prefab, registry);
-    if (key !== prefab.key) fail('prefab key mismatch');
+    const record = resolvePrefab(prefab as PrefabDef, a.prefabs as Record<string, PrefabDef>);
+    validatePrefab(record, registry);
+    if (key !== record.key) fail('prefab key mismatch');
   }
 }
 export function validateLevelArtifact(
@@ -382,7 +383,10 @@ export function loadPrefabArtifact(value: unknown, registry: NameRegistry = name
   const resolved = {
     ...raw,
     prefabs: Object.fromEntries(
-      Object.entries(object(raw.prefabs)).map(([key, record]) => [key, resolvePrefab(record as PrefabDef)]),
+      Object.entries(object(raw.prefabs)).map(([key, record]) => [
+        key,
+        resolvePrefab(record as PrefabDef, raw.prefabs as Record<string, PrefabDef>),
+      ]),
     ),
   };
   validateArtifact(resolved, registry);

@@ -3,276 +3,35 @@
   "format": "boogle-level",
   "place": "museum",
   "placements": [
-    {
-      "id": "museum-plinth",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-plinth"
-    },
-    {
-      "id": "museum-table",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-table"
-    },
-    {
-      "id": "museum-bench",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-bench"
-    },
-    {
-      "id": "museum-alcove-back",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-alcove-back"
-    },
-    {
-      "id": "museum-alcove-left",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-alcove-left"
-    },
-    {
-      "id": "museum-alcove-right",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-alcove-right"
-    },
-    {
-      "id": "museum-floor",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-floor"
-    },
-    {
-      "id": "museum-cabinet-trim",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-cabinet-trim"
-    },
-    {
-      "id": "museum-cushion-0",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-cushion-0"
-    },
-    {
-      "id": "museum-cushion-1",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-cushion-1"
-    },
-    {
-      "id": "museum-drawer-0",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-drawer-0"
-    },
-    {
-      "id": "museum-drawer-1",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-drawer-1"
-    },
-    {
-      "id": "museum-drawer-2",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-drawer-2"
-    },
-    {
-      "id": "museum-reflector-0",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-reflector-0"
-    },
-    {
-      "id": "museum-reflector-1",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-reflector-1"
-    },
-    {
-      "id": "museum-apron",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-apron"
-    },
-    {
-      "id": "museum-cornice",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-cornice"
-    },
-    {
-      "id": "museum-spire",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-spire"
-    },
-    {
-      "id": "museum-label-specimen",
-      "labels": {
-        "sign": "specimen"
-      },
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-label-specimen"
-    },
-    {
-      "id": "museum-label-table",
-      "labels": {
-        "sign": "table"
-      },
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-label-table"
-    },
-    {
-      "id": "museum-specimen",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-specimen"
-    },
-    {
-      "id": "museum-pool",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-pool"
-    },
-    {
-      "id": "museum-relief",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-relief"
-    },
-    {
-      "id": "museum-bits",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-bits"
-    },
-    {
-      "id": "museum-column-0",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-column-0"
-    },
-    {
-      "id": "museum-column-1",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-column-1"
-    },
-    {
-      "id": "museum-column-2",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-column-2"
-    },
-    {
-      "id": "museum-column-3",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-column-3"
-    },
-    {
-      "id": "museum-sign",
-      "labels": {
-        "sign": "museum"
-      },
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "town.museum-sign"
-    }
+    {"id":"museum-plinth","pos":[0,0,0],"prefab":"town.museum-plinth"},
+    {"id":"museum-table","pos":[0,0,0],"prefab":"town.museum-table"},
+    {"id":"museum-bench","pos":[0,0,0],"prefab":"town.museum-bench"},
+    {"id":"museum-alcove-back","pos":[0,0,0],"prefab":"town.museum-alcove-back"},
+    {"id":"museum-alcove-left","pos":[0,0,0],"prefab":"town.museum-alcove-left"},
+    {"id":"museum-alcove-right","pos":[0,0,0],"prefab":"town.museum-alcove-right"},
+    {"id":"museum-floor","pos":[0,0,0],"prefab":"town.museum-floor"},
+    {"id":"museum-cabinet-trim","pos":[0,0,0],"prefab":"town.museum-cabinet-trim"},
+    {"id":"museum-cushion-0","pos":[0,0,0],"prefab":"town.museum-cushion-0"},
+    {"id":"museum-cushion-1","pos":[0,0,0],"prefab":"town.museum-cushion-1"},
+    {"id":"museum-drawer-0","pos":[0,0,0],"prefab":"town.museum-drawer-0"},
+    {"id":"museum-drawer-1","pos":[0,0,0],"prefab":"town.museum-drawer-1"},
+    {"id":"museum-drawer-2","pos":[0,0,0],"prefab":"town.museum-drawer-2"},
+    {"id":"museum-reflector-0","pos":[0,0,0],"prefab":"town.museum-reflector-0"},
+    {"id":"museum-reflector-1","pos":[0,0,0],"prefab":"town.museum-reflector-1"},
+    {"id":"museum-apron","pos":[0,0,0],"prefab":"town.museum-apron"},
+    {"id":"museum-cornice","pos":[0,0,0],"prefab":"town.museum-cornice"},
+    {"id":"museum-spire","pos":[0,0,0],"prefab":"town.museum-spire"},
+    {"id":"museum-label-specimen","labels":{"sign":"specimen"},"pos":[0,0,0],"prefab":"town.museum-label-specimen"},
+    {"id":"museum-label-table","labels":{"sign":"table"},"pos":[0,0,0],"prefab":"town.museum-label-table"},
+    {"id":"museum-specimen","pos":[0,0,0],"prefab":"town.museum-specimen"},
+    {"id":"museum-pool","pos":[0,0,0],"prefab":"town.museum-pool"},
+    {"id":"museum-relief","pos":[0,0,0],"prefab":"town.museum-relief"},
+    {"id":"museum-bits","pos":[0,0,0],"prefab":"town.museum-bits"},
+    {"id":"museum-column-0","pos":[0,0,0],"prefab":"town.museum-column-0"},
+    {"id":"museum-column-1","pos":[0,0,0],"prefab":"town.museum-column-1"},
+    {"id":"museum-column-2","pos":[0,0,0],"prefab":"town.museum-column-2"},
+    {"id":"museum-column-3","pos":[0,0,0],"prefab":"town.museum-column-3"},
+    {"id":"museum-sign","labels":{"sign":"museum"},"pos":[0,0,0],"prefab":"town.museum-sign"}
   ],
   "rotation": "yaw, pitch, roll in radians, order YXZ",
   "units": "metres",
