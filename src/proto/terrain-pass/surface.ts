@@ -4,7 +4,7 @@
 import { smoothstep } from '../../math.ts';
 import { WALKABLE_NY } from '../../constants.ts';
 import { GRID, ORIGIN, ROCKS } from '../../place/layout.ts';
-import { CELL, NX, NZ, at, cellX, cellZ, clearMask, gorgeD, heights, pathMask } from '../../place/terrain.ts';
+import { CELL, GRADED, NX, NZ, at, cellX, cellZ, clearMask, gorgeD, heights, pathMask } from '../../place/terrain.ts';
 import { LAND_TREES } from '../../place/tree-catalog.ts';
 
 /** The wedge, Place-local metres on the 2 m grid: the village's south slope, the path's switchback down into the
@@ -90,10 +90,13 @@ function mask(field: Float32Array, x: number, z: number) {
   );
 }
 
-/** Placed things inside the wedge whose ground must not move: trees and rocks, Place-local, with a keep radius. */
+/** Placed things inside the wedge whose ground must not move, Place-local, with a keep radius. */
 export const KEEPS: { x: number; z: number; r: number }[] = [
   ...LAND_TREES.map((t) => ({ x: t.x - ORIGIN.x, z: t.z - ORIGIN.z, r: 2.5 + t.size })),
   ...ROCKS.map((r) => ({ x: r.x, z: r.z, r: r.r + 2 })),
+  // Whatever the terrain graded ground for (pads, rail beds, paths, supports), with a metre around and the reach of a
+  // drawn triangle beyond that, as island.ts keeps them for all of Home.
+  ...GRADED.map((g) => ({ x: g.x, z: g.z, r: g.r + 2.5 })),
 ].filter((k) => k.x > WEDGE.x0 - 6 && k.x < WEDGE.x1 + 6 && k.z > WEDGE.z0 - 6 && k.z < WEDGE.z1 + 6);
 
 /** 1 where the drawn ground must equal the collider exactly (paths, pads, graded beds, trees, rocks). */
@@ -105,15 +108,27 @@ export function protection(x: number, z: number) {
 
 /** The flattest collider triangle touching (x, z): a vertex on a rim belongs to the grass as much as to the rock, and
  * its offset must satisfy the stricter of the two. Offsets are linear inside a drawn triangle, which lies inside one
- * collider triangle, so bounding every vertex by its flattest neighbour bounds every drawn point. */
+ * collider triangle, so bounding every vertex by its flattest neighbour bounds every drawn point.
+ *
+ * Every incident face counts. Six triangles meet at a grid vertex (the anti-diagonal split gives two of the four cells
+ * both their triangles there), so four diagonal probes are not enough: a probe along a cell's own diagonal lands on one
+ * of its two triangles and never sees the other (review, 14 November: a walkable face sank 0.49 m that way). These
+ * eight directions fall strictly inside each of the six, and inside both faces at an edge's midpoint or a cell's centre. */
 export function vertexNy(x: number, z: number) {
   const e = 1e-3;
-  return Math.max(
-    colliderNy(x + e, z + e),
-    colliderNy(x - e, z + e),
-    colliderNy(x + e, z - e),
-    colliderNy(x - e, z - e),
-  );
+  let flattest = 0;
+  for (const [dx, dz] of [
+    [2, 1],
+    [1, 2],
+    [-1, 2],
+    [-2, 1],
+    [-2, -1],
+    [-1, -2],
+    [1, -2],
+    [2, -1],
+  ] as const)
+    flattest = Math.max(flattest, colliderNy(x + dx * e, z + dz * e));
+  return flattest;
 }
 
 /** How unwalkable the collider is here: 0 on walkable ground, 1 on rock you can't stand on. */

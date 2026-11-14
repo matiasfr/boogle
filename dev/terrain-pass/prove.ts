@@ -1,13 +1,15 @@
-// Proves the terrain pass's tolerance in Node: how far each drawn vertex (src/proto/terrain-pass/surface.ts, island.ts)
-// strays from the collider it never touches. `node dev/terrain-pass/prove.ts [home|1|a2|a4 ...]` (default all four):
-// home is the pass on all of Home (every new or moved vertex), 1 round two on the wedge, aN variant a at N vertices per
-// 2 m cell side. A drawn triangle lies inside one collider triangle, so the offset is
-// linear across it and the vertex maxima bound every drawn point. No browser.
+// Proves the terrain pass's tolerance in Node: how far the drawn ground strays from the collider it never touches.
+// `node dev/terrain-pass/prove.ts [home|1|a2|a4 ...]` (default all four). `home` is the pass on all of Home, measured
+// independently of the code under test (drawn.ts: every changed triangle against the one collider triangle it lies in,
+// and the drawn ground under and 1 m around everything in the keep list); it exits 1 if a walkable face or a kept
+// footprint is more than 5 cm off. `1` is round two on the wedge and `aN` variant a at N vertices per 2 m cell side,
+// by vertex: there a drawn triangle lies inside one collider triangle, so the vertex maxima bound every drawn point.
+// No browser.
 import { WALKABLE_NY } from '../../src/constants.ts';
 import { LAND_TREES } from '../../src/place/tree-catalog.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
-import { COVE_FINE, NX, NZ, cellX, cellZ } from '../../src/place/terrain.ts';
-import { buildIslandSurface, protectionAt } from '../../src/proto/terrain-pass/island.ts';
+import { GROUND_KEEPS } from '../../src/proto/terrain-pass/island.ts';
+import { drawnHome, measureHome, measureKeeps } from './drawn.ts';
 import {
   KEEPS,
   TOLERANCE,
@@ -20,22 +22,42 @@ import {
 } from '../../src/proto/terrain-pass/surface.ts';
 
 const asked = process.argv.slice(2);
-const inCove = (i: number, j: number) =>
-  cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
-/** All of Home: the new 1 m vertices and the grid vertices the ledges move (no other vertex changes). */
+/** All of Home, by triangle and by footprint (drawn.ts). */
 function home() {
-  const island = buildIslandSurface(NX * NZ, inCove, 96);
-  const position = [...island.position];
-  for (const [id, y] of island.moved)
-    position.push(cellX(id % NX) + ORIGIN.x, y, cellZ(Math.floor(id / NX)) + ORIGIN.z);
-  const triangles = [...island.triangles.values()].reduce((n, list) => n + list.length / 3, 0);
-  return { position, index: { length: triangles * 3 }, fineCells: island.fineCells };
+  const started = performance.now();
+  const drawn = drawnHome();
+  const buildMs = Math.round(performance.now() - started);
+  const faces = measureHome(drawn),
+    kept = measureKeeps(drawn, GROUND_KEEPS);
+  const round = (v: number) => +v.toFixed(4);
+  console.log(
+    JSON.stringify({
+      variant: 'home',
+      fineCells: drawn.surface.fineCells,
+      newVertices: drawn.surface.position.length / 3,
+      buildMs,
+      walkableTriangles: faces.walkable.triangles,
+      walkableMaxVertical: round(faces.walkable.gap),
+      walkableWorstAt: faces.walkable.at.map(round),
+      steepTriangles: faces.steep.triangles,
+      steepMaxAlongNormal: round(faces.steep.gap),
+      steepMaxVertical: round(faces.steep.vertical),
+      keeps: kept.keeps,
+      keepSamples: kept.samples,
+      keepMax: round(kept.gap),
+      keepWorst: kept.kind,
+      tolerance: TOLERANCE,
+    }),
+  );
+  if (faces.walkable.gap > 0.05 || kept.gap > 0.05 || faces.steep.gap > TOLERANCE.steep + 1e-5) process.exitCode = 1;
 }
 for (const name of asked.length ? asked : ['home', '1', 'a2', 'a4']) {
+  if (name === 'home') {
+    home();
+    continue;
+  }
   const started = performance.now();
-  const s =
-    name === 'home' ? home() : name === '1' ? buildSteepSurface() : buildWedgeSurface(Number(name.slice(1)), true);
-  const keep = name === 'home' ? protectionAt : protection;
+  const s = name === '1' ? buildSteepSurface() : buildWedgeSurface(Number(name.slice(1)), true);
   const ms = performance.now() - started;
   const count = s.position.length / 3;
   let walk = 0,
@@ -52,7 +74,7 @@ for (const name of asked.length ? asked : ['home', '1', 'a2', 'a4']) {
     const offset = y - colliderHeight(x, z),
       ny = vertexNy(x, z);
     if (Math.abs(offset) > 1e-4) moved++;
-    if (keep(x, z) > 0.999) {
+    if (protection(x, z) > 0.999) {
       kept = Math.max(kept, Math.abs(offset));
       keptN++;
     } else if (ny >= WALKABLE_NY) {

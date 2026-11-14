@@ -139,8 +139,9 @@
   pixel; sandstone, with subtle beds, thin seams and the cove's rock tile, only where the collider is unwalkable (or the
   broad slope is); those 3,619 cells are drawn at 1 m with strata ledges in the land's own geometry (+21,714 triangles,
   no extra draw; the far tiles draw them at 1 m only on their nearest level). The collider and every ground query are
-  unchanged: walkable and protected ground is exact, rock strays at most 0.25 m along its face
-  (`node dev/terrain-pass/prove.ts home`). `?terrain=0` is the land before the pass; `?terrain=wedge`, `a`, `b` and
+  unchanged: every walkable face and the ground under and 1 m around everything the terrain grades for (buildings,
+  pads, rail beds, paths, supports, trees, rocks) is exact; rock nobody can stand on strays at most 0.25 m along its
+  face (`node dev/terrain-pass/prove.ts home`, measured triangle by triangle against the collider). `?terrain=0` is the land before the pass; `?terrain=wedge`, `a`, `b` and
   `ab` keep the earlier rounds on one wedge. Not tested on a device. [Plan and stills](../plans/terrain-pass.md).
 - **Paths read as paths (14 November; owner: "it should be more clearly looking like a path").** Every footpath on
   Home is drawn per pixel from a distance field of the path lines ([path-surface.ts](../../src/place/path-surface.ts);

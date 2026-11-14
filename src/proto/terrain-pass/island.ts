@@ -5,23 +5,43 @@
 import { smoothstep } from '../../math.ts';
 import { WALKABLE_NY } from '../../constants.ts';
 import { GRID, ORIGIN, ROCKS } from '../../place/layout.ts';
-import { CELL, NX, NZ, at, cellX, cellZ, clearMask, pathMask } from '../../place/terrain.ts';
+import { CELL, GRADED, NX, NZ, at, cellX, cellZ, clearMask, pathMask } from '../../place/terrain.ts';
 import { LAND_TREES } from '../../place/tree-catalog.ts';
 import { colliderHeight, colliderNy, describeGround, ledgeOffset } from './surface.ts';
 
-/** Placed things whose ground must not move (every tree and rock on the land), bucketed so a lookup reads its
- * neighbourhood only. */
+/** One thing standing on Home's ground: the drawn ground is the collider's everywhere within `r` of it (Place-local
+ * metres; `r` already includes KEEP_MARGIN around the footprint). */
+export type GroundKeep = { kind: 'pad' | 'strip' | 'support' | 'tree' | 'rock'; x: number; z: number; r: number };
+/** How far past a footprint the drawn ground stays exact, metres. */
+export const KEEP_MARGIN = 1;
+/** A 1 m drawn triangle that reaches into a keep has its far corner at most this much further out, so vertices are held
+ * this far beyond `r`: then every point within `r` lies on triangles whose corners are all exact. */
+const KEEP_REACH = 1.5;
+/**
+ * Everything standing on Home's ground, the one list the pass protects and test/terrain-pass-island.test.ts iterates:
+ * every footprint the terrain grades for (terrain.ts GRADED: the village, camps, yard and head pads, every town, room
+ * and camp plot, the shore landing, each metre of rail bed and path, station frames, bridge abutments, the bank cart),
+ * every tree and every rock, each with a metre around it. A building reaches this list by getting its level ground from
+ * terrain.ts, which every plot does; nothing here names buildings one by one. Read from the live layout at load.
+ */
+export const GROUND_KEEPS: GroundKeep[] = [
+  ...GRADED.map((g) => ({ ...g, r: g.r + KEEP_MARGIN })),
+  ...LAND_TREES.map((t) => ({ kind: 'tree' as const, x: t.x - ORIGIN.x, z: t.z - ORIGIN.z, r: t.size + KEEP_MARGIN })),
+  ...ROCKS.map((r) => ({ kind: 'rock' as const, x: r.x, z: r.z, r: r.r + KEEP_MARGIN })),
+];
+/** The keeps by 16 m bucket: each is filed under every bucket its fade reaches, so a lookup reads one bucket. */
 const BUCKET = 16;
-const keeps = new Map<number, { x: number; z: number; r: number }[]>();
+const keeps = new Map<number, GroundKeep[]>();
 const bucket = (x: number, z: number) => Math.floor(x / BUCKET) + 4096 * Math.floor(z / BUCKET);
-for (const k of [
-  ...LAND_TREES.map((t) => ({ x: t.x - ORIGIN.x, z: t.z - ORIGIN.z, r: 2.5 + t.size })),
-  ...ROCKS.map((r) => ({ x: r.x, z: r.z, r: r.r + 2 })),
-]) {
-  const key = bucket(k.x, k.z);
-  const list = keeps.get(key) ?? [];
-  list.push(k);
-  keeps.set(key, list);
+for (const k of GROUND_KEEPS) {
+  const reach = k.r + KEEP_REACH + 1;
+  for (let bz = Math.floor((k.z - reach) / BUCKET); bz <= Math.floor((k.z + reach) / BUCKET); bz++)
+    for (let bx = Math.floor((k.x - reach) / BUCKET); bx <= Math.floor((k.x + reach) / BUCKET); bx++) {
+      const key = bx + 4096 * bz;
+      const list = keeps.get(key) ?? [];
+      list.push(k);
+      keeps.set(key, list);
+    }
 }
 function gridMask(field: Float32Array, x: number, z: number) {
   const fx = Math.max(0, Math.min(NX - 1.0001, (x - GRID.x0) / CELL)),
@@ -40,10 +60,11 @@ function gridMask(field: Float32Array, x: number, z: number) {
 /** 1 where the drawn ground must equal the collider exactly (paths, pads, graded beds, trees, rocks), anywhere on Home. */
 export function protectionAt(x: number, z: number) {
   let keep = Math.max(smoothstep(0, 0.05, gridMask(clearMask, x, z)), smoothstep(0, 0.05, gridMask(pathMask, x, z)));
-  for (let dj = -1; dj <= 1; dj++)
-    for (let di = -1; di <= 1; di++)
-      for (const k of keeps.get(bucket(x + di * BUCKET, z + dj * BUCKET)) ?? [])
-        keep = Math.max(keep, smoothstep(k.r + 1, k.r, Math.hypot(x - k.x, z - k.z)));
+  for (const k of keeps.get(bucket(x, z)) ?? []) {
+    if (keep >= 1) break;
+    const held = k.r + KEEP_REACH;
+    keep = Math.max(keep, smoothstep(held + 1, held, Math.hypot(x - k.x, z - k.z)));
+  }
   return keep;
 }
 
