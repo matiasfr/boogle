@@ -924,7 +924,28 @@ clank), the longer boiler lies there under its hook and two crew figures wait by
 of the post. Interact at the post opens
 the garage ("Look at the engine") on a camera from bearing 15°, and the deck turns the copy a quarter turn for it, nose
 to the stand. In the garage the Longer boiler tile reads "Needs steel", then "Ready", then "Installed", and the old
-Boiler "Replaced". **The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
+Boiler "Replaced". **No try-on (owner, 14 November 2026: "I don't think the try it on part makes sense. That should
+just be installed when I have the necessary resources."):** a part installs directly when the room has what it needs.
+Before steel the Longer boiler's panel shows its bill where the button would be ("STEEL 0/1": what it needs, how much
+is in) and no button; Interact and the hold do nothing there. Its pale ghost still marks its seat on the engine, and
+the rows still show what it will change. With steel home the bill is gone and the button reads "Install". "Try it",
+"Trying it on", the part resting on the engine and coming off again are removed.
+**Choosing a tile changes the picture (owner, 14 November 2026: "Also, I feel like there should be some visual change,
+and I'm looking through the different wagons, whatever makes sense."):** the camera eases to a newly chosen tab or
+part instead of cutting (about a third of a second); the chosen part gets a gold frame on the works copy that settles
+onto it from a little oversize: a whole frame when the room has the part, the game's dashed "a part goes here" frame
+when it does not; and a car the room owns that the copy does not carry (the rail and kit car, the footing wagon once
+coupled, the steel car once the longer boiler is on) is drawn as a pale ghost flatbed where it rides behind the first
+car, the Cargo camera sliding back along the train to it. A replaced part has no frame. The frame and ghost hide
+through a hold and a moment. There is no button and nothing is tried on: no real train changes until an install.
+Local: nobody else sees a selection. Per tab: Engine frames the barrel (Boiler, Longer boiler, with its seat ghost)
+or the nose (Plough and headlamp, dashed); Cars frames the bench on the first car; Cargo frames each car's place in
+the train, with the ghost for an owned one, and the Bigger cradle's place over the wagon's; Looks frames the roof's
+place over the first car (dashed); Whistle frames the chimney's cap, where the whistle's steam leaves. The Bigger
+cradle's dashed box stands over a ghost of the footing wagon once the wagon has coupled. On Looks and Whistle the
+table holds still (it used to turn idly there, carrying the frame behind the engine), and the Whistle shot is its own
+camera row on the chimney (it was close on the cab).
+**The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
 steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
 for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go
 lowers it. While the Longer boiler is chosen and ready the table does not turn idly: the engine stays at the opening
@@ -933,8 +954,7 @@ breathing, until the server answers; then it drops, clanks, the button reads "In
 steam, the wheels run up, the whistle blows, and the table turns the engine once
 round. Skip is offered from 0.8 s after the commit. With no answer in 2.5 s, a refusal or a lost connection the barrel
 lowers with the deny sound and the hold can be made again at once. After it the copy wears the longer boiler, the knob
-is green, the stand is empty and the jib's arm swings back to its park. A Try it (before steel) has no whistle and no
-turn. **Everyone else (G4, 12 November):** a friend at the table, or with the garage open, sees the same moment from
+is green, the stand is empty and the jib's arm swings back to its park. **Everyone else (G4, 12 November):** a friend at the table, or with the garage open, sees the same moment from
 the server's accept: the barrel lifts off its stand in 0.4 s, drops, the bolts go on, the whistle blows (it carries
 across the island, quiet at distance) and the table turns the engine once round. Nothing is taken from them: their
 camera and input are theirs and Back still leaves the garage. A friend more than 30 m from the table with the garage

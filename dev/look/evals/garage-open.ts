@@ -3,7 +3,7 @@
 // action, so the garage opens as a player opens it.
 //   npm run look -- --rail-seed wagon-on --hud --eval dev/look/evals/garage-open.ts \
 //     --action dev/look/evals/garage-act.ts --question "..."
-// `?garage=<cat>/<part>` picks what is chosen on entry (default engine/long); `&hold=<ms>` holds Try it that long;
+// `?garage=<cat>/<part>` picks what is chosen on entry (default engine/long); `&hold=<ms>` holds Install that long;
 // `&cam=<bearing>` tries another camera bearing for this look only;
 // `&train=1` first waits for a line 2 train to stand at the Village (the camera's still with a train on line 2).
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');

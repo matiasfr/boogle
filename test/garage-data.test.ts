@@ -66,7 +66,14 @@ test('the lift follows the ring and pushes back in the last third', () => {
 });
 
 test('the wagon is free only once it has coupled; the longer boiler waits on steel', () => {
-  const room = { boilerFitted: true, wagonCoupled: true, tableBusy: false, steelHome: false, longFitted: false };
+  const room = {
+    boilerFitted: true,
+    wagonCoupled: true,
+    tableBusy: false,
+    steelHome: false,
+    steel: 0,
+    longFitted: false,
+  };
   const find = (c: boolean) => partsOf({ ...room, wagonCoupled: c, boilerRev: 0 });
   assert.equal(find(true).find((p) => p.id === 'wagon')!.standing, 'free');
   assert.equal(find(false).find((p) => p.id === 'wagon')!.standing, 'later');
@@ -76,18 +83,41 @@ test('the wagon is free only once it has coupled; the longer boiler waits on ste
 test('the longer boiler reads Needs steel, then Ready, then Installed, and the old boiler Replaced', () => {
   const base = { boilerFitted: true, wagonCoupled: true, tableBusy: false };
   const of = (steelHome: boolean, longFitted: boolean) => {
-    const parts = partsOf({ ...base, steelHome, longFitted, boilerRev: longFitted ? 1 : 0 });
+    const parts = partsOf({ ...base, steelHome, steel: steelHome ? 1 : 0, longFitted, boilerRev: longFitted ? 1 : 0 });
     const pick = (id: string) => parts.find((p) => p.id === id)!;
     return { long: pick('long'), boiler: pick('boiler') };
   };
   const none = of(false, false),
     home = of(true, false),
     fitted = of(true, true);
-  assert.deepEqual([none.long.standing, none.long.pill, none.long.tryable], ['steel', 'Needs steel', true]);
-  assert.deepEqual([home.long.standing, home.long.pill, home.long.tryable], ['ready', 'Ready', true]);
-  assert.deepEqual([fitted.long.standing, fitted.long.pill, fitted.long.tryable], ['installed', 'Installed', false]);
+  assert.deepEqual([none.long.standing, none.long.pill], ['steel', 'Needs steel']);
+  assert.deepEqual([home.long.standing, home.long.pill], ['ready', 'Ready']);
+  assert.deepEqual([fitted.long.standing, fitted.long.pill], ['installed', 'Installed']);
   assert.deepEqual([none.boiler.standing, home.boiler.standing], ['installed', 'installed']);
   assert.deepEqual([fitted.boiler.standing, fitted.boiler.pill], ['replaced', 'Replaced']);
+});
+
+test('no try-on: a part short of its bill says what it needs and what is in; nothing else carries a bill', () => {
+  const room = { boilerFitted: true, wagonCoupled: true, tableBusy: false, boilerRev: 0 };
+  const long = (steel: number, longFitted = false) =>
+    partsOf({ ...room, steelHome: steel >= 1, steel, longFitted }).find((p) => p.id === 'long')!;
+  assert.deepEqual(long(0).needs, { what: 'Steel', need: 1, have: 0 });
+  assert.equal(long(1).needs, undefined, 'steel home: nothing is missing, the tile offers Install');
+  assert.equal(long(6).needs, undefined);
+  assert.equal(long(1, true).needs, undefined, 'fitted');
+  const all = partsOf({ ...room, steelHome: false, steel: 0, longFitted: false });
+  assert.deepEqual(
+    all.filter((p) => p.needs).map((p) => p.id),
+    ['long'],
+  );
+  assert.ok(all.every((p) => !('tryable' in p)));
+});
+
+test('a row has no state for a part tried on: it previews until the moment, then counts to ink', () => {
+  const [speed] = rowsFor('engine', 'long');
+  assert.deepEqual(shownRow(speed!, 0, 'idle', 0), { value: 25, arrow: true, preview: true });
+  assert.deepEqual(shownRow(speed!, 0, 'holding', 0), { value: 25, arrow: true, preview: true });
+  assert.deepEqual(shownRow(speed!, 0, 'moment', 5000), { value: 25, arrow: false, preview: true });
 });
 
 test('a fitted room’s rows are the longer boiler’s, with no arrow', () => {

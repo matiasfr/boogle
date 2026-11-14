@@ -1,3 +1,6 @@
+> **14 November 2026: there is no try-on.** The owner's call replaces every "Try it" below (call 3, the tables and
+> the as-built notes, which are kept as the record): [no try-on](#no-try-on-14-november-2026).
+>
 > **Status: cleared to build by the design review below (12 November 2026); G1 and G2 are built, G3 to G5 and the
 > checkpoint are not.** G2's stand does not fit as the review placed it: [G2 as built](#g2-as-built-12-november-2026). The next Ring
 > Island item after greybox leg 1 step 3 (owner, 12 November: "yes, plain for now", "but prioritize the garage
@@ -390,6 +393,127 @@ in portrait and the moment in portrait were not looked at. Not tested on a devic
   - The other player's name tag sits over the engine through a watcher's moment.
   - One frame with the camera inside the smokebox on leaving the garage. The leave blend is the one G2 and G3
     shipped (this branch does not touch it), so main has it by the code; it was not captured on main.
+
+<a id="no-try-on-14-november-2026"></a>
+
+### No try-on (owner, 14 November 2026)
+
+His words, just after unlocking the garage screen on the live game: "Okay, just unlocked the garage screen. It looks
+pretty cool. One thing though is I don't think the try it on part makes sense. That should just be installed when I
+have the necessary resources." Recorded in [core loop](../decisions-core-loop.md#d-2026-11-14-no-try-on-in-the-garage);
+it replaces call 3. View only: no sim, server, wire or `WORLD_NS` change; `rail.install` and `deps.install` are
+untouched.
+
+**What a tile and its panel show now.**
+
+| The part's standing | Tile pill | Panel, where the button was | Hold / Interact |
+| --- | --- | --- | --- |
+| Short of its bill (Longer boiler before steel) | "Needs steel" | The bill: "STEEL 0/1" (what, how much is in over how much it needs), dashed frame, no button | Nothing |
+| Ready (steel home) | "Ready" | "Install"; "Keep holding" while the press is down | The hold is the install, as G3 built it |
+| Going on | "Ready", then "Installed" at the hit | "Install", then "Installed" | Skip from c+800 |
+| Installed, Free, Owned, Replaced, Later, Waits in the stall | As before | Nothing (they never had a button) | Nothing |
+| Whistle tab | As before | "Hear it" | Plays the whistle |
+
+**Removed.** The "Try it" button and its "Hold to try it" label; the "Trying it on" tag and button text; `Part.tryable`;
+the phases `rest` and `undo` (the tried part resting on the engine for 2.5 s and coming off again), `MOMENT.tryRest`
+and `MOMENT.undo`, their row states in `shownRow`; `GarageSnap.trying`; the hold with no steel (the lift, the drop,
+the bolts and the counted rows of a part the room did not have); the wheels running at the longer boiler's speed
+while it was only chosen. `holdStart` now needs `canInstall`, and a hold in progress lowers if the room stops having
+what the part needs.
+
+**Kept.** The whole install: the hold's lift, the hang for the server's answer, the drop, the moment, Skip, everyone
+else's view, the brief version. The ghost on the engine's seat while the Longer boiler is chosen and not fitted, and
+under the hanging part: it shows where the part goes, and it is pale until steel is home, the install's yellow after
+(the pale tint was in the code for a state that could not happen; it now means "not yet"). The rows' preview
+("20 → 25 m/s") for a part not yet fitted.
+
+**Cosmetic previews (Looks, Whistle): nothing depended on Try it.** No part there was ever tryable: "Roof and lamps"
+and "Two-tone" are "Later" with no model shown and no button; "Toot" has "Hear it", which plays today's whistle and
+is unchanged. So no cosmetic can be previewed before it is owned, now as before. For the owner when the first look
+or whistle is built: does a look or a sound get a preview before it is owned (a "Hear it" on a whistle you do not
+have is the same act as today's)?
+
+**New strings, drafts for the owner.** "Steel" (the bill's label, drawn in capitals), `src/entities/railway/garage-data.ts`,
+the Longer boiler's `needs`. The count is "0/1", as the leg boards write "LOGS 3/4". No character's line changed.
+
+**Owner question: should it install by itself?** "That should just be installed when I have the necessary resources"
+can also mean the boiler goes on with no press: on steel coming home, or on opening the garage. Built: the direct
+Install hold. Recommended: keep the hold. It is the player's one act in the moment the screen exists for ("the hold
+lifts the part", 10 November), a server op needs someone inside the table's reach to send it, and an install that
+plays on arrival would take the camera of whoever walked up without asking. If he wants it automatic, the smallest
+version is opening the garage with the part ready starting the lift by itself.
+
+**Looked at (14 November):** `noTry-ready-still.png` (steel home: "Ready", the yellow ghost, "Install"),
+`noTry-needs-still.png` (before steel: "Needs steel", the pale ghost, the bill "STEEL 0/1" in a dashed frame, no
+button; the idle turn has carried the engine's nose under the panel, as it did before this change).
+
+<a id="choosing-a-tile-changes-the-picture-14-november-2026"></a>
+
+### Choosing a tile changes the picture (owner, 14 November 2026)
+
+His words (dictated; "and" is likely "when"): "Also, I feel like there should be some visual change, and I'm looking
+through the different wagons, whatever makes sense." Before this, changing tab cut the camera to that tab's row and
+changing part within a tab changed nothing in the world except the Longer boiler's ghost.
+
+**Built, view only (`garage-view.ts`).**
+
+- **The camera eases** to a newly chosen tab or part (`CAM_EASE`, most of the way in a third of a second; a cut under
+  reduced motion and on opening).
+- **A frame on the chosen part**, drawn with the game's own gold outline (`src/render/ghost-outline.ts`): whole edges
+  when the room has the part (Installed, Free, Owned), the dashed "a part goes here" when it does not (Ready, Needs
+  steel, Later, Waits in the stall). It settles from 14% oversize in 0.28 s. No frame for a Replaced part, or through
+  a hold or a moment.
+- **A ghost car where it rides**: an owned car the copy does not carry (the copy is the engine and the first car) is a
+  pale translucent flatbed at its place in the train (`TRAIN_OFFSETS`, `steelCarOffset`), dropping in 0.35 m; the
+  Cargo row slides along the train to the chosen car.
+- **Sound**: the existing `tick` on a change of tab or part. Nothing new.
+- **Not shared**: selection is Local, as before; another player in the garage sees nothing of it.
+- **Not a try-on**: no button, no hold, no rows counting; nothing goes onto the copy's engine or car.
+
+| Tab | On a change of selection |
+| --- | --- |
+| Engine | The frame moves between the barrel (Boiler whole; Longer boiler dashed with its seat ghost until fitted) and the nose (Plough and headlamp, dashed). The camera row is the same for all three, so the install's framing is untouched |
+| Cars | The camera eases to the first car; a whole frame round the bench |
+| Cargo | The camera eases to the tail and slides to each car: Rail and kit car and (once coupled) Footing wagon as ghost flatbeds in whole frames; Steel car dashed until the longer boiler is on, then a ghost; Bigger cradle a dashed box over the wagon's place |
+| Looks | The camera eases to the whole train; a dashed frame where the roof and lamps go over the first car |
+| Whistle | The camera eases to the chimney (its own row since the review; the table holds still); the frame is round the cap, whole for Toot, dashed for Two-tone |
+
+**Wrong in it, for a later pass.** The cars behind the first run off the table toward the stall at the garage's
+pose: the steel car's frame stands in the stall's stone apron and the Cargo camera has the stall's wall filling its
+right side. On the Engine tab the dashed frame and the seat ghost are two marks on one part. (The floating cradle
+box and the hidden Looks and Whistle frames are fixed below.)
+
+**Looked at (14 November, real time, `wagon-on`):** `sel-cargo-realtime.webm`, `sel-cargo-strip.png` and
+`sel-cargo-four.png` (the camera eases from the engine to the tail in about half a second; the kit car and the
+footing wagon are pale flatbeds in whole gold frames behind the first car; the steel car and the cradle are dashed
+boxes; Cars frames the bench); `sel-tabs-realtime.webm` and `sel-tabs-four.png` (Engine: a whole frame round the
+barrel, a dashed box at the nose; Looks: the engine's front fills the shot and the roof's frame is behind it; Whistle:
+the cab fills the shot). After an install (`noTry-install-strip.png`) the fitted barrel wears the whole frame.
+Not seen: a phone-width frame, reduced motion, a second player, the steel car owned (its ghost).
+
+**After the review (14 November; one P2, no P1).**
+
+- **Teardown (the P2).** The ghost car hung under the train's group, which the owner never traversed (`owner.add(root)`
+  runs while the root is empty), so its geometry and its private material outlived the view. The frames and the ghost
+  car are now `garage-selection.ts`, which shares one deck and one wheel geometry and disposes both and the material
+  in the owner's cleanup; the two gold frames were already the owner's (`createGhostOutlines` adds them through it).
+  `test/garage-selection.test.ts` steps the selection through the tabs against the real `owned-view.ts`, disposes,
+  and finds every geometry, the material and both instanced frames disposed and the ghost off the train.
+- **The same fault, older and not fixed here:** everything else the garage hangs under that root after it was added
+  (the copy's wheels, deck, ghost boiler, jib, stand, crew, bolts, and the private materials `iron`, `brass`,
+  `ghostMat`, `flashMat`, the wheel and crew paints) is unregistered in the same way. One `owner.add(root)` at the
+  end of `createGarageView` would register the geometry; it changes which geometry the copy draws (the owner's
+  clones), so it wants its own look and is left for a follow-up.
+- **Heights.** The frames, the ghost car and the camera rows are all in the train's own frame, which stands at the
+  deck's rail height (`geo.y`); none reads `geo.ground`, which the post, stand, jib and crew use. When the yard tidy
+  passes the terrain's height as the ground, they stay on the rails with the copy. A ghost car beyond the deck's rim
+  rides at rail height, so it will stand 0.3 m higher over the lowered grass than it does today.
+- **The Bigger cradle** stands over a ghost of the footing wagon once the wagon has coupled.
+- **Looks and Whistle hold the table still** (`turns: false`), and the Whistle shot is a new row on the chimney's cap.
+  Looked at (`sel-fix-four.png`, real time): the cradle's dashed box on the pale wagon; Looks side on, the dashed roof
+  frame over the first car, clear of the engine; Whistle on the chimney from the front quarter, the frame round its
+  cap, whole for Toot and dashed for Two-tone. Wrong in it: the Whistle frame's box is larger than the cap and reads
+  as a cage round the chimney's top; in Looks the stall's doorway stands behind the roof's frame.
 
 ## 6. Steps
 

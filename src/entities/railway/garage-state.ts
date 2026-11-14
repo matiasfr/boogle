@@ -18,6 +18,7 @@ export function roomFacts(w: ReadWorld): RoomFacts {
     // The roll-out owns the table from the commission until the wagon has coupled.
     tableBusy: shed(w).ready >= 0 && !wagonCoupled,
     steelHome: shed(w).steel >= 1,
+    steel: shed(w).steel,
     longFitted: boiler >= 1,
     boilerRev: boiler,
   };
@@ -30,16 +31,15 @@ export type GarageSnap = {
   phase: Phase;
   /** The hold's ring, 0..1. */
   ring: number;
-  /** Ms since the commit (`moment`, `rest`) or since the part started coming off (`undo`). */
+  /** Ms since the commit (`moment`). */
   ms: number;
-  /** A part is on the works copy for a Try it, or going on for real. */
-  trying: boolean;
+
   /** The hold's press is down (false while the ring drains: let go, or the part lowering after a refusal). */
   held: boolean;
-  /** This moment is this tab's own hold (a Try it, or its install): its camera and Back are held until it ends. A
-   * moment that is not `mine` is someone else's install, watched: nothing is taken. */
+  /** This moment is this tab's own install: its camera and Back are held until it ends. A moment that is not
+   * `mine` is someone else's install, watched: nothing is taken. */
   mine: boolean;
-  /** This moment is an install sent to the server (not a Try it). */
+  /** An install is in the air or playing: sent to the server by this tab, or someone's accepted one, watched. */
   real: boolean;
   /** The part hangs over its seat waiting for the server's answer. */
   waiting: boolean;
@@ -58,7 +58,7 @@ export type GarageApi = {
   close(): void;
   snap(): GarageSnap;
   choose(cat: CatId, part?: PartId): void;
-  /** A press began on Install / Try it (Interact held, the button held). */
+  /** A press began on Install (Interact held, the button held). Nothing happens unless the part can be installed. */
   holdStart(): void;
   holdEnd(): void;
   skip(): void;

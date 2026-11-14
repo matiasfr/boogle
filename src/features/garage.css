@@ -41,8 +41,7 @@
   gap: 8px;
   align-items: center;
 }
-.g-where,
-.g-tag {
+.g-where {
   font: 400 17px/1 var(--font-display);
   letter-spacing: 0.4px;
   background: var(--g-glass);
@@ -55,14 +54,7 @@
   color: var(--g-ink);
   font-weight: 400;
 }
-.g-tag {
-  background: var(--g-sun);
-  color: #13243f;
-  border-color: var(--g-line);
-}
-.g-tag[hidden] {
-  display: none;
-}
+
 .g-back,
 .g-cat,
 .g-part,
@@ -271,6 +263,28 @@
   font-weight: 500;
 }
 .g-note:empty {
+  display: none;
+}
+/* What a part still needs, as a bill: where Install would be. */
+.g-need {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 2px dashed var(--g-edge);
+  border-radius: 12px;
+  color: var(--g-soft);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.g-need b {
+  color: var(--g-ink);
+  font-size: 18px;
+  font-weight: 800;
+}
+.g-need[hidden] {
   display: none;
 }
 /* The hold button: the ring is the crank. */
