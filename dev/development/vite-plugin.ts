@@ -1,9 +1,10 @@
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin } from 'vite';
 import { escapeHtml, renderMarkdown } from './markdown.ts';
+import { BACKLOG, renderBacklog } from './backlog.ts';
 
 const SOURCE = 'docs/agents/orchestrator-state.md';
 
@@ -33,28 +34,26 @@ export function developmentPage(): Plugin {
       order: 'pre',
       handler(html, context) {
         if (context.filename !== path.join(root, 'development/index.html')) return;
+        const backlog = path.join(root, BACKLOG);
+        if (!existsSync(backlog)) throw new Error(`${BACKLOG}:1: Missing Committed work table (file not found)`);
+        let content = renderBacklog(readFileSync(backlog, 'utf8'));
         const file = path.join(root, SOURCE);
-        let content = '<p>The development status has not been published yet.</p>';
-        let updated = 'Awaiting the first status update.';
         if (existsSync(file)) {
-          const markdown = readFileSync(file, 'utf8');
-          content = renderMarkdown(markdown);
-          let date = statSync(file).mtime.toISOString();
-          let label = 'Local file updated';
-          try {
-            const git = (...args: string[]) =>
-              execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-            if (git('show', `HEAD:${SOURCE}`) === markdown.trim()) {
-              const committed = git('log', '-1', '--format=%cI', '--', SOURCE);
-              if (committed) {
-                date = new Date(committed).toISOString();
-                label = 'Last updated';
-              }
-            }
-          } catch {
-            /* Source archives and untracked local previews use the file timestamp, explicitly labelled. */
+          content += `<section class="running" aria-labelledby="running"><h2 id="running">Running now</h2>${renderMarkdown(readFileSync(file, 'utf8'), 2)}</section>`;
+        }
+        let updated = 'Backlog commit date unavailable.';
+        try {
+          const committed = execFileSync('git', ['log', '-1', '--format=%cI', '--', BACKLOG], {
+            cwd: root,
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore'],
+          }).trim();
+          if (committed) {
+            const date = new Date(committed).toISOString();
+            updated = `Last updated: <time datetime="${escapeHtml(date)}">${escapeHtml(date.replace('T', ' ').replace(/\.\d+Z$/, ' UTC'))}</time>`;
           }
-          updated = `${label}: <time datetime="${escapeHtml(date)}">${escapeHtml(date.replace('T', ' ').replace(/\.\d+Z$/, ' UTC'))}</time>`;
+        } catch {
+          /* Source archives without Git history cannot supply a commit date. */
         }
         // Callback replacement keeps Markdown dollar signs literal.
         return html
