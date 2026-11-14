@@ -146,7 +146,8 @@
 - **Paths read as paths (14 November; owner: "it should be more clearly looking like a path").** Every footpath on
   Home is drawn per pixel from a distance field of the path lines ([path-surface.ts](../../src/place/path-surface.ts);
   one 781 × 541 RGBA16F texture, 3.4 MB), over whatever ground is underneath and winning over slope rock within its
-  width: brown compacted earth, lighter where feet go, a dark cut edge with a painted bank, a darker verge, small
+  width: cool grey-brown packed earth (Fresh edge `#6e5f50`, middle `#93836f`), lighter where feet go and distinct
+  from the warm sandstone; a dark cut edge with a painted bank, a darker verge, small
   stones, and timber risers square across the tread on climbs steeper than 1 in 8. Bold paths are 6 m wide, the others
   3.8 m. No vertex moves; where a tread needs real reshaping the plan lists it for a ground step.
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon

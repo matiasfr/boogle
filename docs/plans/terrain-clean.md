@@ -286,7 +286,7 @@ Town paths on level ground (`H/c3-v0.png`, `H/c4-v0.png`) read clean: no finding
 
 ### 2a. View-only fixes, in order (no height moves; heights hash stays equal)
 
-- [ ] **1. The path is a different material from the rock (finding 1).** `src/place/path-surface.ts`: lift the
+- [x] **1. The path is a different material from the rock (finding 1).** `src/place/path-surface.ts`: lift the
   pigments into one exported `PATH_PIGMENT` record and move the earth away from the rock's hue and value: a cooler,
   darker packed earth (start: edge `#6e5f50`, middle `#93836f`, cut `#4b3c30`, timber `#5f4630`; today `#8f6f4a`,
   `#a98a5f`, `#5e4833`, `#6f5236`). Keep the lighter middle, mottle and grit. Capture two candidates on the three
@@ -294,6 +294,19 @@ Town paths on level ground (`H/c3-v0.png`, `H/c4-v0.png`) read clean: no finding
   the one that separates best from both rock and grass under Fresh, logged in `docs/agent-calls.md`. Verify: from the
   still, report the mean tread and mean wall colours; the tread is darker and greyer than the wall (target: at least
   30 of 255 apart in value, and visibly less orange); grass and tread still differ at `H/c3`'s framing.
+  - Completed in `codex/terrain-2a`: independent reviewer opened the matched three-camera sheet and chose the
+    start packed-earth pigments; gravel reads chalky/near white under Fresh. Town remains clearly distinct from
+    grass. Baseline and packed/gravel manifests: `.look/evidence/1794697324782-58718/evidence.json`,
+    `.look/evidence/1794697846901-84067/evidence.json`, `.look/evidence/1794698045430-91537/evidence.json`.
+    Opened baseline c0–c5 (paths cameras 0,1,2,3,7,10), packed c0–c3 and the three-row candidate sheet
+    `.look/terrain-2a/packed-left-gravel-right.png`. Fixed c0 pixel rectangles (x,y,w,h): tread (330,690,270,80),
+    lit wall (980,10,100,150); mean sRGB **(182,171,158)** / **(213,159,99)**. HSV value differs by **31/255**;
+    R minus B is 24 versus 114. This is a region comparison, not a whole-material average under matched normals.
+    Ship-check passed (56 affected test files); all six hashes match baseline `902217fc7`.
+    Survey worktree H was removed, so the retained `paths-shots.ts` canyon/town/far/shore poses substitute for its
+    unavailable camera definitions. Broker single-player warp was rejected; supported `--real` captured the same
+    frozen shot action. One queued attempt timed out; retry passed. Shared load: no timing or motion conclusion.
+    Independent review used the available model because Fable was unavailable. Not tested on a device.
 - [ ] **2. The tread's edge is the path's, not the triangles' (findings 2 and 5).** `path-surface.ts`:
   - Replace the facet test `ground = smoothstep(0.5, 0.66, facetUp)` in `tread` with a bench test from the field's own
     height: `bench = (1 - smoothstep(0.6, 0.9, p.y - along)) * (1 - smoothstep(0.9, 1.2, along - p.y))`. A wall rising

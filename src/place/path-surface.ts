@@ -34,6 +34,15 @@ import { FIELD_CELL, FIELD_H, FIELD_W, bakePathField } from './path-field.ts';
 // oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
 
+/** Fresh packed-earth pigments, independent of the cliff's sandstone. */
+export const PATH_PIGMENT = {
+  edge: '#6e5f50',
+  middle: '#93836f',
+  cut: '#4b3c30',
+  timber: '#5f4630',
+  stone: '#b3a892',
+} as const;
+
 /** A colour as it should look under the Fresh palette, written as the 'sand' family's anchor so the other palettes
  * still move it. */
 function sand(hex: string): N {
@@ -102,7 +111,7 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
     .sub(0.5)
     .mul(0.05)
     .mul(smoothstep(8, 22, positionView.z.negate()).oneMinus());
-  const earth: N = mix(sand('#8f6f4a'), sand('#a98a5f'), middle).mul(mottle.add(grit).add(1));
+  const earth: N = mix(sand(PATH_PIGMENT.edge), sand(PATH_PIGMENT.middle), middle).mul(mottle.add(grit).add(1));
   // Timber risers across the tread on the climbs: one every 0.6 m of the path's own height, so each lies square across it.
   const climb: N = smoothstep(0.1, 0.16, grade);
   const rise: N = fract(along.div(0.6));
@@ -112,10 +121,10 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
     .mul(climb)
     .mul(smoothstep(0.25, 0.5, d.negate()));
   const lit: N = smoothstep(0.13, riserWidth.add(0.13), rise).mul(smoothstep(0.2, 0.34, rise).oneMinus());
-  const timber: N = sand('#6f5236');
+  const timber: N = sand(PATH_PIGMENT.timber);
   // The cut edge: dark earth just inside the line.
   const cut: N = smoothstep(0.06, 0.34, d.negate()).oneMinus().mul(tread);
-  const soil: N = sand('#5e4833');
+  const soil: N = sand(PATH_PIGMENT.cut);
   // Small stones along the edge, one cell in four.
   const cell: N = floor(p.xz.div(0.42));
   const centre: N = cell
@@ -134,7 +143,7 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
     .mul(smoothstep(0.2, 0.55, d).oneMinus())
     .mul(ground)
     .mul(near);
-  const pebble: N = sand('#b3a892').mul(
+  const pebble: N = sand(PATH_PIGMENT.stone).mul(
     dot(offset, vec2(-0.6, -0.8))
       .div(radius)
       .mul(0.16)
