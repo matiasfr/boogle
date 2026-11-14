@@ -1,0 +1,56 @@
+// Owner-requested pure place checks (docs/plans/ring-summit-path.md, step 1).
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { FAR, ORIGIN } from '../src/place/layout.ts';
+import { RING_CONES } from '../src/proto/greybox/ring-cones.ts';
+import { createIslandGround } from '../src/entities/ring-island/ground.ts';
+import { summitBridge, summitPathFacts, summitPathFoot } from '../src/entities/ring-island/path.ts';
+import { MOVER } from '../dev/level/mover.ts';
+
+const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
+const g = createIslandGround(RING_CONES, centre);
+const facts = summitPathFacts(g, centre);
+const near = (actual: number, expected: number) =>
+  assert.ok(Math.abs(actual - expected) < 0.1, `${actual} vs ${expected}`);
+
+test('the summit path starts at the west platform ramp foot', () => {
+  const foot = summitPathFoot();
+  near(foot.x, 1395.8);
+  near(foot.z, -836.3);
+});
+
+test('the future summit bridge clears the railway and stands on uncut ground', () => {
+  const { a, b, middle, approach } = summitBridge(g);
+  near(a.x, 1381.2);
+  near(a.y, 14.93);
+  near(a.z, -876.7);
+  near(b.x, 1404.7);
+  near(b.y, 16.72);
+  near(b.z, -892.0);
+  near(middle.x, 1392.9);
+  near(middle.z, -884.3);
+  near(facts.bridge.span, 28);
+  assert.ok(facts.bridge.grade < 0.08);
+  assert.ok(facts.bridge.clearance > 8);
+  assert.ok(facts.bridge.abutmentCut < 0.1);
+  near(approach.x, 1374.5);
+  near(approach.z, -872.3);
+  near(Math.hypot(approach.x - a.x, approach.z - a.z), 8);
+  // The approach is behind a on the deck's axis, with no turn at the abutment.
+  const cross = (a.x - approach.x) * (b.z - a.z) - (a.z - approach.z) * (b.x - a.x);
+  assert.ok(Math.abs(cross) < 1e-8);
+  assert.ok((a.x - approach.x) * (b.x - a.x) + (a.z - approach.z) * (b.z - a.z) > 0);
+  assert.ok(g.cone(approach.x, approach.z) - g.islandH(approach.x, approach.z) < 0.1);
+});
+
+test(
+  'off the bridge the path is never within 1.3 m of cut ground (under 0.2 m)',
+  { todo: 'Step 2 builds the bridge' },
+  () => {
+    assert.ok(facts.cut.depth < 0.2, `${facts.cut.depth} m cut at ${facts.cut.at} m`);
+  },
+);
+
+test('off the bridge the path is never steeper than MOVER.walkSlope', { todo: 'Step 2 re-points the path' }, () => {
+  assert.ok(facts.steepest.grade <= MOVER.walkSlope, `${facts.steepest.grade} at ${facts.steepest.at} m`);
+});

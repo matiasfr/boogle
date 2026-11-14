@@ -15,9 +15,12 @@ import { CARRY } from '../../src/physics/platforms.ts';
 import { TUNABLES } from '../../src/sim/tune.ts';
 import { RAIL_LINES, TRAIN_EXTENT, TURNOUT_CM } from '../../src/sim/railway-lines.ts';
 import { TRAIN } from '../../src/sim/railway-train.ts';
-import { ringHeight } from '../../src/proto/greybox/ring-cones.ts';
+import { RING_CONES, ringHeight } from '../../src/proto/greybox/ring-cones.ts';
 import { CONCOURSE, HEAD as GREYBOX_HEAD, HX as GREYBOX_HX } from '../../src/proto/greybox/ring-house.ts';
-import { ORIGIN } from '../../src/place/layout.ts';
+import { FAR, ORIGIN } from '../../src/place/layout.ts';
+import { createIslandGround } from '../../src/entities/ring-island/ground.ts';
+import { summitPathFacts } from '../../src/entities/ring-island/path.ts';
+import { MOVER } from './mover.ts';
 import { LIVE, beside, type Track } from './rail-network.ts';
 import { LIMITS, measure } from './track-continuity.ts';
 import {
@@ -226,7 +229,31 @@ function brakingCarry(brake: number, approach: number) {
   return rows.sort((a, b) => b.spare - a.spare);
 }
 
-type Entry = { kind: 'section' | 'fact'; message: string } | { kind: 'assertion'; passed: boolean; message: string };
+type Entry =
+  { kind: 'section' | 'fact'; message: string } | { kind: 'assertion' | 'report'; passed: boolean; message: string };
+
+/** Step 1 reports the severed walk without failing level-check. Step 2 promotes these two reports to assertions. */
+function summitPathReport(section: (message: string) => void, fact: (message: string) => void, entries: Entry[]) {
+  const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z },
+    facts = summitPathFacts(createIslandGround(RING_CONES, centre), centre),
+    b = facts.bridge;
+  section('The summit path');
+  fact(
+    `  today's path: ${f1(facts.length)} m; future bridge span ${f1(b.span)} m, grade ${f1(b.grade * 100)} %, clearance ${f1(b.clearance)} m, abutment cut ${b.abutmentCut.toFixed(3)} m`,
+  );
+  entries.push(
+    {
+      kind: 'report',
+      passed: facts.cut.depth < 0.2,
+      message: `off the bridge, cut within 1.3 m of the path under 0.2 m: ${facts.cut.depth.toFixed(2)} m at ${f1(facts.cut.at)} m (step 2)`,
+    },
+    {
+      kind: 'report',
+      passed: facts.steepest.grade <= MOVER.walkSlope,
+      message: `off the bridge, grade at most ${f1(MOVER.walkSlope * 100)} %: ${f1(facts.steepest.grade * 100)} % at ${f1(facts.steepest.at)} m (step 2)`,
+    },
+  );
+}
 
 /** The eased lateral shift of a crossover (src/place/layout.ts crossLat's smoothstep): up track (lat -4 m) at u0 to the
  * down track at u1, metres. */
@@ -700,6 +727,7 @@ export function checkRing() {
   }
   terminus(fact, section, assertion);
   footCrossing(section, assertion);
+  summitPathReport(section, fact, entries);
   fact(`  (stepped at 1/${Math.round(1 / DT)} s; the controller steps at 1/${Math.round(1 / FIXED)} s)`);
   const failures = entries.filter((e) => e.kind === 'assertion' && !e.passed).length;
   return { level: 'ring (planned)', entries, failures };
@@ -708,7 +736,11 @@ export function checkRing() {
 export function printRing(report: ReturnType<typeof checkRing>) {
   console.log('\nRing Island (planned)');
   for (const e of report.entries)
-    console.log(e.kind === 'assertion' ? `${e.passed ? '  ok  ' : ' FAIL '} ${e.message}` : e.message);
+    console.log(
+      e.kind === 'assertion' || e.kind === 'report'
+        ? `${e.passed ? '  ok  ' : e.kind === 'report' ? 'REPORT FAIL' : ' FAIL '} ${e.message}`
+        : e.message,
+    );
   console.log(`ring (planned): ${report.failures ? `${report.failures} PROBLEMS` : 'ok'}`);
 }
 

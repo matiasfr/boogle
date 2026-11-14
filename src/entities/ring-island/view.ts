@@ -31,6 +31,7 @@ import {
   type RingLanding,
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
+import { summitPath, summitPathFoot } from './path.ts';
 import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks, ringIslandPose } from './state.ts';
 import { addFarGround } from '../../place/far-ground.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
@@ -434,7 +435,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     );
   }
   // The west platform's ramp off its north end, down onto the slope where the path starts.
-  const pathFoot = at(HALT[1] - 4, upL0 - 9.5);
+  const pathFoot = summitPathFoot();
   beam(
     CONCRETE,
     p3(HALT[1] - 4, upL0 + 0.2, PLATFORM_Y),
@@ -611,16 +612,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   const CX = centre.x,
     CZ = centre.z;
   {
-    const way: [number, number][] = [
-      [pathFoot.x, pathFoot.z],
-      [pathFoot.x - 18, pathFoot.z - 8],
-      [1380, -870],
-      [1395, -930],
-      [1360, -975],
-      [1372, -1035],
-      [1345, -1075],
-      [CX + 4, CZ + 6],
-    ];
+    const { way } = summitPath(g, centre);
     for (let i = 0; i < way.length - 1; i++) {
       const [ax, az] = way[i]!,
         [bx, bz] = way[i + 1]!;

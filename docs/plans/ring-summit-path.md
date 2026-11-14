@@ -5,7 +5,8 @@ stack line's cutting; put a footbridge there so the path the world draws can be 
 (Telegraph everything: a drawn path is a promise) and 11 (Show, don't tell: the way up is seen, not explained). No
 principle is bent.
 
-**Status.** Plan only, not reviewed, nothing built. Written 14 November 2026 from origin/main `35e1c3431`, world v44.
+**Status. P2.** Design reviewed below; step 1 built (path data and diagnostic checks only). The bridge is not built.
+Written 14 November 2026 from origin/main `35e1c3431`, world v44.
 
 **Research:** [level-design-tools](../research/level-design-tools.md) (one inspectable description per place, checked
 by queries: step 1 moves the path out of the view into data the level check reads);
@@ -80,16 +81,18 @@ no op, no state key, no `src/world/rules/types.ts` entry, no `env` fact, no cont
 **The path as data: new `src/entities/ring-island/path.ts`** (pure: no three.js, no physics; imports
 `railway-ring-layout.ts`, `railway-route.ts` and `./ground.ts`, as `ground.ts` does).
 
-- `SUMMIT_BRIDGE = { sCm: 126000, off: 14, width: 3, thick: 0.3, parapet: 1.05, bents: [7.1, 20.9] } as const`.
+- `SUMMIT_BRIDGE = { sCm: 126000, off: 14, approach: 8, width: 3, thick: 0.3, parapet: 1.05, bents: [7.1, 20.9] } as const`.
 - `summitPathFoot()`: `ringAt(RING_HALT.u1 - 400, RING_HALT.upLat[0] - 950)` in metres (today's `pathFoot` in
   `view.ts`, (1395.8, -836.3)).
 - `summitBridge(g)`: the formation's middle at `sCm` computed as `STACK_CUT` computes it (`rowPoint('ring', sCm +
   ROW_SHIFT.ring)` and the point 1 m on, 2 m to the west of the down track), then `off` metres either side along the
   normal: `a` (halt side) and `b` (summit side), each `{ x, y, z }` with `y = g.islandH(x, z) + 0.12` (the path
   beams' top), plus `rail` (the row's y there, 6.05 m). Expected: a (1381.2, 14.93, -876.7), b (1404.7, 16.72,
-  -892.0), middle (1392.9, -884.3).
-- `summitPath(g, centre)`: `{ way, bridgeLeg: 2 }` with `way` = foot, foot + (-18, -8), a, b, (1395, -930),
-  (1360, -975), (1372, -1035), (1345, -1075), (centre.x + 4, centre.z + 6). Only the old (1380, -870) is replaced.
+  -892.0), middle (1392.9, -884.3). Also returns `approach`, computed on the same axis 8 m behind a (22 m from
+  middle), near (1374.5, -872.3) on uncut ground, so the last approach points straight onto the deck (design review 1).
+- `summitPath(g, centre)`: `{ way, bridgeLeg: 3 }` with `way` = foot, foot + (-18, -8), approach, a, b, (1395, -930),
+  (1360, -975), (1372, -1035), (1345, -1075), (centre.x + 4, centre.z + 6). Only the old (1380, -870) is replaced;
+  the reviewed route is about 330 m. Step 1 retains today's waypoints and `bridgeLeg: -1` until the bridge is built.
 - `summitPathFacts(g, centre)`: samples every 0.5 m and returns `{ length, steepest: { grade, at }, cut: { depth, at },
   bridge: { span, grade, clearance, abutmentCut } }`, where `cut` is the largest `g.cone - g.islandH` within 1.3 m of
   the line off the bridge leg, `abutmentCut` the same within 2 m of `a` and `b`, and `clearance` the deck's underside
@@ -118,7 +121,7 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
 
 - [ ] **0. Design review of this plan** before any build: the designer rules on the option, the Level findings and
   the open questions. *Row: design review of a plan (designer agent: fable medium).*
-- [ ] **1. The path as data, and the check that fails today.** Create `src/entities/ring-island/path.ts` as under
+- [x] **1. The path as data, and the check that fails today.** Create `src/entities/ring-island/path.ts` as under
   Design, but with `summitPath` still returning **today's** waypoints (`bridgeLeg: -1`), and have `view.ts` build its
   path from it (delete the `way` literal and the local `pathFoot` expression; no visible change). Create
   `test/ring-island-path.test.ts` with: `summitPathFoot` is (1395.8, -836.3) within 0.1 m; `summitBridge` gives the
@@ -129,12 +132,25 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   `node --test test/ring-island-path.test.ts test/ring-island-ground.test.ts`; `npm run level-check` prints the
   section with the two failures as reports; `node dev/ship-check.ts` green. *Row: implementation of an approved plan
   (Codex: gpt-6.1-sol medium).*
+  **Step 1 record (14 November).** Today's path stays 314.275 m, `bridgeLeg: -1`, with unchanged beam generation.
+  The computed approach is (1374.493, -872.342), 8 m behind a; the future reviewed route measures 330.111 m.
+  Bridge facts: span 28.000 m, grade 6.386 %, clearance 9.476 m, maximum cut within 2 m of either abutment 0.045 m.
+  The new tests pass with two intentionally failing TODOs; the level check stays at 13 reports and prints both
+  summit failures without failing its exit. `ship-check`, registry, `timeout 180 npm run level-check` and the full
+  `npm run check` pass. Not tested on a device.
+  **Departures:** half-metre samples restart at each leg and include its endpoint; the cut sweep includes both
+  1.3 m edges (and 0.5 m interior offsets). This measures 14.555 m at 75.950 m and 263.583 % at 81.950 m, slightly
+  different from the earlier 14.51 m / 75 m and 264 % / 81 m measurements. Abutment margins use concentric 0.5 m
+  rings with 32 directions, including the 2 m boundary. The reviewed approach is returned by `summitBridge`, ready
+  for step 2, but is deliberately not used by today's walk. `npm run inflight` failed writing fetch metadata;
+  subsequent branch inspection and review-stamp use local refs only. No game-design update: no visible change.
 - [ ] **2. The bridge and the re-pointed path.** In `path.ts` switch `summitPath` to the new waypoints and
-  `bridgeLeg: 2`. In `view.ts` skip the bridge leg in the path loop and add the deck, parapets, abutments and bents
+  `bridgeLeg: 3`, including the computed approach 8 m behind a required by design review 1. In `view.ts` skip the
+  bridge leg in the path loop and add the deck, parapets, abutments and bents
   from the table. Un-`todo` the test; turn the level check's two reports into `check`s that fail. Update
   `src/entities/ring-island/view.ts`'s header comment and `docs/game-design/place.md` (the paragraph on the stack
   line's cutting, by "they now hide while the island's own ground is up": add the footbridge and its numbers).
-  Verify: the test passes with length 326 m, steepest 21 %, cut 0.03 m; `npm run level-check` shows "The summit path"
+  Verify: the test passes with length about 330 m, steepest 21 %, cut about 0.03 m; `npm run level-check` shows "The summit path"
   ok and stays at its present report count otherwise; `node dev/ship-check.ts` green. *Row: player-visible
   implementation (implementer agent, model fable: fable medium).*
 - [ ] **3. The witness and the stills.** In `dev/look/evals/ring-island-walk.ts` import `summitPath` from
