@@ -62,25 +62,42 @@ test('page startup has exactly one catalogue validation owner shared by every co
     );
 });
 
-// Port of the review's alternating, warmed load regression probe. The structural test above fixes the
-// production pass count; this generous delta gate detects startup regressions without a hardware-specific limit.
-test('one page catalogue validation adds no more than 30 ms over main startup validation', () => {
-  const old: unknown = JSON.parse(
-    execFileSync('git', ['show', 'origin/main:content/built/prefabs.json'], { encoding: 'utf8' }),
+// A fresh Node process prevents other unit tests' ESM caches from hiding duplicate startup validation.
+// This executes consumer imports under a validator spy; it needs no Git refs or timing assumptions.
+test('importing all nine page consumers validates the catalogue exactly once', () => {
+  const preloads = process.execArgv.flatMap((arg, k, args) =>
+    arg === '--import' ? [arg, args[k + 1]!] : arg.startsWith('--import=') ? [arg] : [],
   );
-  const samples: number[][] = [[], []];
-  const values: unknown[] = [old, artifact];
-  const passes = [5, 1];
-  for (let round = 0; round < 24; round++)
-    for (const k of [round % 2, 1 - (round % 2)]) {
-      const start = performance.now();
-      for (let pass = 0; pass < passes[k]!; pass++) validation.loadPrefabArtifact(values[k]);
-      if (round > 3) samples[k]!.push(performance.now() - start);
-    }
-  const median = samples.map((values) => values.sort((a, b) => a - b)[10]!);
+  const result = JSON.parse(
+    execFileSync(
+      process.execPath,
+      [...preloads, '--experimental-test-module-mocks', 'test/helpers/prefab-startup.ts'],
+      { encoding: 'utf8' },
+    ),
+  );
+  assert.deepEqual(result, { consumers: 9, catalogueValidations: 1, directValidations: 0 });
+});
+
+// Current committed content: 181 records / 312,535 canonical bytes, including all levels.
+// Around 10-12% headroom permits small additions; repeated per-placement definitions must not return.
+const MAX_PREFAB_RECORDS = 200;
+const MAX_COMPILED_ARTIFACT_BYTES = 350_000;
+function assertCatalogueBudget(records: number, bytes: number) {
+  const guidance = 'Share prefabs through placements instead of duplicating definitions.';
+  assert.ok(records <= MAX_PREFAB_RECORDS, `${records} prefab records exceed ${MAX_PREFAB_RECORDS}. ${guidance}`);
   assert.ok(
-    median[1]! - median[0]! <= 30,
-    `startup validation regression: main five passes ${median[0]!.toFixed(3)} ms; shared one pass ${median[1]!.toFixed(3)} ms`,
+    bytes <= MAX_COMPILED_ARTIFACT_BYTES,
+    `${bytes} compiled bytes exceed ${MAX_COMPILED_ARTIFACT_BYTES}. ${guidance}`,
+  );
+}
+test('compiled catalogue stays inside deterministic record and byte budgets', () => {
+  const records = Object.keys(artifact.prefabs).length;
+  const bytes = fs.globSync('content/built/**/*.json').reduce((sum, file) => sum + fs.statSync(file).size, 0);
+  assertCatalogueBudget(records, bytes);
+  assert.throws(() => assertCatalogueBudget(records + 367, bytes), /Share prefabs through placements/);
+  assert.throws(
+    () => assertCatalogueBudget(records, MAX_COMPILED_ARTIFACT_BYTES + 1),
+    /Share prefabs through placements/,
   );
 });
 
