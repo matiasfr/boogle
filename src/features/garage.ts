@@ -29,7 +29,7 @@ import {
 let root: HTMLElement | null = null;
 let els: {
   where: HTMLElement;
-  tag: HTMLElement;
+
   rail: HTMLElement;
   parts: HTMLElement;
   name: HTMLElement;
@@ -37,6 +37,7 @@ let els: {
   desc: HTMLElement;
   rows: HTMLElement;
   note: HTMLElement;
+  need: HTMLElement;
   btn: HTMLButtonElement;
   skip: HTMLButtonElement;
 } | null = null;
@@ -57,7 +58,7 @@ function build() {
     <div class="g-top">
       <span class="g-where">Roundhouse · <b></b></span>
       <button class="g-back" type="button">Back</button>
-      <span class="g-tag" hidden>Trying it on</span>
+
     </div>
     <nav class="g-rail" role="tablist" aria-label="Categories"></nav>
     <div class="g-parts" role="listbox" aria-label="Parts"></div>
@@ -66,14 +67,15 @@ function build() {
       <p class="g-desc"></p>
       <div class="g-rows" aria-live="polite"></div>
       <p class="g-note"></p>
-      <button class="g-btn" type="button"><span class="g-label">Try it</span></button>
+      <div class="g-need" hidden></div>
+      <button class="g-btn" type="button" hidden><span class="g-label">Install</span></button>
     </aside>
     <button class="g-skip" type="button" hidden>Skip</button>`;
   (document.querySelector('.hud') ?? document.body).append(root);
   const q = <T extends HTMLElement>(s: string) => root!.querySelector<T>(s)!;
   els = {
     where: q('.g-where b'),
-    tag: q('.g-tag'),
+
     rail: q('.g-rail'),
     parts: q('.g-parts'),
     name: q('.g-head h2'),
@@ -81,6 +83,7 @@ function build() {
     desc: q('.g-desc'),
     rows: q('.g-rows'),
     note: q('.g-note'),
+    need: q('.g-need'),
     btn: q<HTMLButtonElement>('.g-btn'),
     skip: q<HTMLButtonElement>('.g-skip'),
   };
@@ -109,15 +112,16 @@ function partsIn(cat: CatId): Part[] {
 function pickCat(cat: CatId) {
   const first = partsIn(cat)[0];
   garage.api?.choose(cat, first?.id);
-  // Land on the part you could do something with: the upgrade, else the one you have.
-  const pick = partsIn(cat).find((p) => p.tryable) ?? first;
+  // Land on the part you could do something with: the upgrade (ready, or still short of its bill), else the one you
+  // have.
+  const pick = partsIn(cat).find((p) => p.standing === 'ready' || p.standing === 'steel') ?? first;
   if (pick) garage.api?.choose(cat, pick.id);
 }
 function leave() {
   const snap = garage.api?.snap();
   // Your own moment holds you to its end; someone else's install, watched from here, never does.
   const watched = snap?.phase === 'moment' && !snap.mine;
-  if (!snap || (!watched && (snap.phase === 'moment' || snap.phase === 'rest' || snap.phase === 'undo'))) return;
+  if (!snap || (!watched && snap.phase === 'moment')) return;
   garage.api?.close();
   uiSound('pop');
 }
@@ -174,7 +178,7 @@ const f = (v: number, digits = 0) => v.toFixed(digits);
 function rowHtml(row: Row, i: number, snap: ReturnType<NonNullable<typeof garage.api>['snap']>) {
   if (row.kind === 'text') return `<div class="g-row"><span>${h(row.label)}</span><b>${h(row.text ?? '')}</b></div>`;
   const live = reducedMotion ? 1e6 : snap.ms;
-  const s = shownRow(row, i, snap.phase, snap.phase === 'moment' || snap.phase === 'undo' ? live : 0);
+  const s = shownRow(row, i, snap.phase, snap.phase === 'moment' ? live : 0);
   const cls = s.preview ? ' preview' : '';
   if (row.kind === 'pips') {
     const had = Math.round(row.now),
@@ -241,6 +245,11 @@ function refresh() {
     els.pill.className = `g-pill pill ${part.standing}`;
     els.desc.textContent = part.desc;
     els.note.textContent = part.price ?? (snap.cat === 'looks' ? 'A look never changes what the train does.' : '');
+    // What is missing, as a bill (what is needed, how many are in): shown where Install would be, with no button.
+    els.need.hidden = !part.needs;
+    els.need.innerHTML = part.needs
+      ? `<span>${h(part.needs.what)}</span><b>${part.needs.have}/${part.needs.need}</b>`
+      : '';
   }
   // Through a real install the rows count from the old numbers to the new, though the room's rows already say fitted.
   const landing = snap.real && snap.phase === 'moment';
@@ -250,35 +259,30 @@ function refresh() {
     shownKey = html;
     els.rows.innerHTML = html;
   }
-  const busy = snap.phase === 'moment' || snap.phase === 'rest' || snap.phase === 'undo';
+  const busy = snap.phase === 'moment';
   const label = els.btn.querySelector('.g-label')!;
-  const act = snap.cat === 'whistle' ? 'hear' : part.tryable || landing ? 'try' : 'none';
+  // No try-on (owner, 14 November 2026): the button is there only when the part can go on now, or is going on. A
+  // part the room cannot install yet shows its bill instead, and no button.
+  const act = snap.cat === 'whistle' ? 'hear' : landing || (snap.canInstall && part.id === 'long') ? 'install' : 'none';
   els.btn.dataset.act = act;
   els.btn.hidden = act === 'none';
-  // The Install's own words where this post can install; "Installed" lands with the hit, as the tile's pill turns.
-  const install = landing || (snap.canInstall && snap.sel === 'long');
+  // "Installed" lands with the hit, as the tile's pill turns.
   const text =
     act === 'hear'
       ? 'Hear it'
-      : landing
-        ? snap.ms >= MOMENT.hit
-          ? 'Installed'
-          : 'Install'
-        : busy
-          ? 'Trying it on'
-          : snap.phase === 'holding' && snap.held
-            ? 'Keep holding'
-            : install
-              ? 'Install'
-              : 'Try it';
+      : landing && snap.ms >= MOMENT.hit
+        ? 'Installed'
+        : snap.phase === 'holding' && snap.held
+          ? 'Keep holding'
+          : 'Install';
   if (text === 'Installed' && label.textContent === 'Install') uiSound('pop');
   if (label.textContent !== text) label.textContent = text;
-  els.btn.disabled = busy && act === 'try';
+  els.btn.disabled = busy && act === 'install';
   root.style.setProperty('--ring', String(snap.phase === 'moment' ? 1 : snap.ring));
   root.classList.toggle('holding', snap.phase === 'holding');
   root.classList.toggle('moment', snap.phase === 'moment');
   root.classList.toggle('waiting', snap.waiting);
-  els.tag.hidden = !snap.trying || snap.real;
+
   els.skip.hidden = !snap.canSkip;
   const skipHtml = `${glyph('interact')} Skip`.trim();
   if (els.skip.dataset.html !== skipHtml) {
@@ -287,7 +291,7 @@ function refresh() {
   }
   if (snap.tapped && performance.now() - snap.tapped < 700) els.btn.classList.add('pulse');
   else els.btn.classList.remove('pulse');
-  els.btn.setAttribute('aria-label', act === 'try' ? (install ? 'Hold to install' : 'Hold to try it') : text);
+  els.btn.setAttribute('aria-label', act === 'install' ? 'Hold to install' : text);
 }
 
 defineKind('garage', { update: 40 });

@@ -924,7 +924,13 @@ clank), the longer boiler lies there under its hook and two crew figures wait by
 of the post. Interact at the post opens
 the garage ("Look at the engine") on a camera from bearing 15°, and the deck turns the copy a quarter turn for it, nose
 to the stand. In the garage the Longer boiler tile reads "Needs steel", then "Ready", then "Installed", and the old
-Boiler "Replaced". **The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
+Boiler "Replaced". **No try-on (owner, 14 November 2026: "I don't think the try it on part makes sense. That should
+just be installed when I have the necessary resources."):** a part installs directly when the room has what it needs.
+Before steel the Longer boiler's panel shows its bill where the button would be ("STEEL 0/1": what it needs, how much
+is in) and no button; Interact and the hold do nothing there. Its pale ghost still marks its seat on the engine, and
+the rows still show what it will change. With steel home the bill is gone and the button reads "Install". "Try it",
+"Trying it on", the part resting on the engine and coming off again are removed.
+**The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
 steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
 for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go
 lowers it. While the Longer boiler is chosen and ready the table does not turn idly: the engine stays at the opening
@@ -933,8 +939,7 @@ breathing, until the server answers; then it drops, clanks, the button reads "In
 steam, the wheels run up, the whistle blows, and the table turns the engine once
 round. Skip is offered from 0.8 s after the commit. With no answer in 2.5 s, a refusal or a lost connection the barrel
 lowers with the deny sound and the hold can be made again at once. After it the copy wears the longer boiler, the knob
-is green, the stand is empty and the jib's arm swings back to its park. A Try it (before steel) has no whistle and no
-turn. **Everyone else (G4, 12 November):** a friend at the table, or with the garage open, sees the same moment from
+is green, the stand is empty and the jib's arm swings back to its park. **Everyone else (G4, 12 November):** a friend at the table, or with the garage open, sees the same moment from
 the server's accept: the barrel lifts off its stand in 0.4 s, drops, the bolts go on, the whistle blows (it carries
 across the island, quiet at distance) and the table turns the engine once round. Nothing is taken from them: their
 camera and input are theirs and Back still leaves the garage. A friend more than 30 m from the table with the garage

@@ -1,3 +1,6 @@
+> **14 November 2026: there is no try-on.** The owner's call replaces every "Try it" below (call 3, the tables and
+> the as-built notes, which are kept as the record): [no try-on](#no-try-on-14-november-2026).
+>
 > **Status: cleared to build by the design review below (12 November 2026); G1 and G2 are built, G3 to G5 and the
 > checkpoint are not.** G2's stand does not fit as the review placed it: [G2 as built](#g2-as-built-12-november-2026). The next Ring
 > Island item after greybox leg 1 step 3 (owner, 12 November: "yes, plain for now", "but prioritize the garage
@@ -390,6 +393,57 @@ in portrait and the moment in portrait were not looked at. Not tested on a devic
   - The other player's name tag sits over the engine through a watcher's moment.
   - One frame with the camera inside the smokebox on leaving the garage. The leave blend is the one G2 and G3
     shipped (this branch does not touch it), so main has it by the code; it was not captured on main.
+
+<a id="no-try-on-14-november-2026"></a>
+
+### No try-on (owner, 14 November 2026)
+
+His words, just after unlocking the garage screen on the live game: "Okay, just unlocked the garage screen. It looks
+pretty cool. One thing though is I don't think the try it on part makes sense. That should just be installed when I
+have the necessary resources." Recorded in [core loop](../decisions-core-loop.md#d-2026-11-14-no-try-on-in-the-garage);
+it replaces call 3. View only: no sim, server, wire or `WORLD_NS` change; `rail.install` and `deps.install` are
+untouched.
+
+**What a tile and its panel show now.**
+
+| The part's standing | Tile pill | Panel, where the button was | Hold / Interact |
+| --- | --- | --- | --- |
+| Short of its bill (Longer boiler before steel) | "Needs steel" | The bill: "STEEL 0/1" (what, how much is in over how much it needs), dashed frame, no button | Nothing |
+| Ready (steel home) | "Ready" | "Install"; "Keep holding" while the press is down | The hold is the install, as G3 built it |
+| Going on | "Ready", then "Installed" at the hit | "Install", then "Installed" | Skip from c+800 |
+| Installed, Free, Owned, Replaced, Later, Waits in the stall | As before | Nothing (they never had a button) | Nothing |
+| Whistle tab | As before | "Hear it" | Plays the whistle |
+
+**Removed.** The "Try it" button and its "Hold to try it" label; the "Trying it on" tag and button text; `Part.tryable`;
+the phases `rest` and `undo` (the tried part resting on the engine for 2.5 s and coming off again), `MOMENT.tryRest`
+and `MOMENT.undo`, their row states in `shownRow`; `GarageSnap.trying`; the hold with no steel (the lift, the drop,
+the bolts and the counted rows of a part the room did not have); the wheels running at the longer boiler's speed
+while it was only chosen. `holdStart` now needs `canInstall`, and a hold in progress lowers if the room stops having
+what the part needs.
+
+**Kept.** The whole install: the hold's lift, the hang for the server's answer, the drop, the moment, Skip, everyone
+else's view, the brief version. The ghost on the engine's seat while the Longer boiler is chosen and not fitted, and
+under the hanging part: it shows where the part goes, and it is pale until steel is home, the install's yellow after
+(the pale tint was in the code for a state that could not happen; it now means "not yet"). The rows' preview
+("20 → 25 m/s") for a part not yet fitted.
+
+**Cosmetic previews (Looks, Whistle): nothing depended on Try it.** No part there was ever tryable: "Roof and lamps"
+and "Two-tone" are "Later" with no model shown and no button; "Toot" has "Hear it", which plays today's whistle and
+is unchanged. So no cosmetic can be previewed before it is owned, now as before. For the owner when the first look
+or whistle is built: does a look or a sound get a preview before it is owned (a "Hear it" on a whistle you do not
+have is the same act as today's)?
+
+**New strings, drafts for the owner.** "Steel" (the bill's label, drawn in capitals), `src/entities/railway/garage-data.ts`,
+the Longer boiler's `needs`. The count is "0/1", as the leg boards write "LOGS 3/4". No character's line changed.
+
+**Owner question: should it install by itself?** "That should just be installed when I have the necessary resources"
+can also mean the boiler goes on with no press: on steel coming home, or on opening the garage. Built: the direct
+Install hold. Recommended: keep the hold. It is the player's one act in the moment the screen exists for ("the hold
+lifts the part", 10 November), a server op needs someone inside the table's reach to send it, and an install that
+plays on arrival would take the camera of whoever walked up without asking. If he wants it automatic, the smallest
+version is opening the garage with the part ready starting the lift by itself.
+
+**Looked at (14 November):** see the hand-over; the stills are named there.
 
 ## 6. Steps
 

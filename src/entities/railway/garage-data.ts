@@ -31,6 +31,8 @@ export type RoomFacts = {
   tableBusy: boolean;
   /** Steel has come home (`Shed.steel` of 1 or more): the longer boiler can be installed. */
   steelHome: boolean;
+  /** How much steel is home (`Shed.steel`): the count a part's bill shows as in. */
+  steel: number;
   /** The room's line 2 wears the longer boiler (`Line.boiler` of 1 or more). */
   longFitted: boolean;
   /** The boiler fit this tab last saw (`Line.boiler`): the revision an install is sent on. */
@@ -46,7 +48,7 @@ export type Standing =
   | 'installed'
   /** Came with an unlock and is on the train. */
   | 'free'
-  /** Cannot be installed yet because the material is missing (the part still shows as a ghost to try on). */
+  /** Cannot be installed yet because the material is missing: the tile says what it needs and what is in. */
   | 'steel'
   /** The material is home: it can be installed now. */
   | 'ready'
@@ -54,6 +56,10 @@ export type Standing =
   | 'replaced'
   /** Not built yet: shown so the category reads true, with no picture of its own. */
   | 'later';
+/** One line of a part's bill: the material, how many it needs and how many are home. */
+export type Bill = { what: string; need: number; have: number };
+/** The longer boiler needs steel home (`Shed.steel` of 1 or more: the server's rule for `rail.install`). */
+export const LONG_NEEDS_STEEL = 1;
 export type Part = {
   id: PartId;
   cat: CatId;
@@ -63,8 +69,9 @@ export type Part = {
   /** The words on its tile (the brief's strings). */
   pill: string;
   size: Size;
-  /** Whether "Try it" can put it on the works copy (a part with a model and a rule the first build can show). */
-  tryable: boolean;
+  /** What it still needs before it can be installed, as a bill: what, how many, how many are in. Absent when
+   * nothing is missing. There is no try-on (owner, 14 November 2026): a part installs when the room has this. */
+  needs?: Bill;
   /** The note under the title when the part costs nothing but a gate. */
   price?: string;
 };
@@ -79,7 +86,6 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: room.longFitted ? 'replaced' : 'installed',
       pill: room.longFitted ? 'Replaced' : 'Installed',
       size: 'large',
-      tryable: false,
     },
     {
       id: 'long',
@@ -89,7 +95,9 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: room.longFitted ? 'installed' : room.steelHome ? 'ready' : 'steel',
       pill: room.longFitted ? 'Installed' : room.steelHome ? 'Ready' : 'Needs steel',
       size: 'large',
-      tryable: !room.longFitted,
+      ...(room.longFitted || room.steelHome
+        ? {}
+        : { needs: { what: 'Steel', need: LONG_NEEDS_STEEL, have: Math.min(room.steel, LONG_NEEDS_STEEL) } }),
       price: 'Free: the reward for reaching steel',
     },
     {
@@ -100,7 +108,6 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: 'later',
       pill: 'Later',
       size: 'medium',
-      tryable: false,
     },
     {
       id: 'four',
@@ -110,7 +117,6 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: 'installed',
       pill: 'Installed',
       size: 'medium',
-      tryable: false,
     },
     {
       id: 'kitcar',
@@ -120,7 +126,6 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: 'installed',
       pill: 'Installed',
       size: 'medium',
-      tryable: false,
     },
     room.wagonCoupled
       ? {
@@ -131,7 +136,6 @@ export function partsOf(room: RoomFacts): Part[] {
           standing: 'free',
           pill: 'Free with the kiln',
           size: 'medium',
-          tryable: false,
         }
       : {
           id: 'wagon',
@@ -141,7 +145,6 @@ export function partsOf(room: RoomFacts): Part[] {
           standing: 'later',
           pill: 'Waits in the stall',
           size: 'medium',
-          tryable: false,
         },
     // Steel's own car (docs/plans/fourth-car.md, V2): free with the longer boiler, so the screen shows it owned once
     // the line is fitted and as a later part until then. Placeholder strings, for the owner's list.
@@ -154,7 +157,6 @@ export function partsOf(room: RoomFacts): Part[] {
           standing: 'free',
           pill: 'Owned',
           size: 'medium',
-          tryable: false,
         }
       : {
           id: 'steelcar',
@@ -164,7 +166,6 @@ export function partsOf(room: RoomFacts): Part[] {
           standing: 'later',
           pill: 'Later',
           size: 'medium',
-          tryable: false,
         },
     {
       id: 'cradle',
@@ -174,7 +175,6 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: 'later',
       pill: 'Later',
       size: 'medium',
-      tryable: false,
     },
     {
       id: 'roof',
@@ -184,7 +184,6 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: 'later',
       pill: 'Later',
       size: 'small',
-      tryable: false,
     },
     {
       id: 'toot',
@@ -194,7 +193,6 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: 'installed',
       pill: 'Installed',
       size: 'small',
-      tryable: false,
     },
     {
       id: 'two',
@@ -204,7 +202,6 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: 'later',
       pill: 'Later',
       size: 'small',
-      tryable: false,
     },
   ];
 }
@@ -323,10 +320,7 @@ export const MOMENT = {
   answer: 1450, // c+1450: the safety valve, the wheels run up
   whistle: 1800,
   rest: 4000,
-  /** Try it rests this long, then comes off. */
-  tryRest: 2500,
-  /** And comes off again over this long. */
-  undo: 1200,
+
   /** Each row starts counting this far after the one above, and counts for `count` ms. */
   rowGap: 150,
   count: 500,
@@ -364,13 +358,11 @@ export function countAt(now: number, then: number, u: number, digits = 0) {
 export const rowProgress = (ms: number, index: number) => (ms - MOMENT.bolts - index * MOMENT.rowGap) / MOMENT.count;
 
 // ---------------------------------------------------------------- what a row shows through an install
-/** Where the garage is in an install: idle, the hold lifting the part, the moment after the commit, the rest of a
- * Try it, and the part coming off again. */
-export type Phase = 'idle' | 'holding' | 'moment' | 'rest' | 'undo';
+/** Where the garage is in an install: idle, the hold lifting the part, and the moment after the commit. */
+export type Phase = 'idle' | 'holding' | 'moment';
 /** What a row reads: its value, whether "old →" is still in front of it, and whether it is in the preview colour. */
 export type Shown = { value: number; arrow: boolean; preview: boolean };
-/** `ms` is since the commit during `moment`, since the part started coming off during `undo`. A row the part does not
- * change is always ink, with no arrow. */
+/** `ms` is since the commit during `moment`. A row the part does not change is always ink, with no arrow. */
 export function shownRow(row: Row, index: number, phase: Phase, ms: number): Shown {
   if (!rowChanged(row)) return { value: row.then, arrow: false, preview: false };
   const digits = row.digits ?? 0;
@@ -379,11 +371,6 @@ export function shownRow(row: Row, index: number, phase: Phase, ms: number): Sho
     if (u <= 0) return { value: row.then, arrow: true, preview: true };
     return { value: countAt(row.now, row.then, u, digits), arrow: false, preview: true };
   }
-  if (phase === 'rest') return { value: row.then, arrow: false, preview: true };
-  if (phase === 'undo') {
-    const u = ms / 300;
-    if (u >= 1) return { value: row.then, arrow: true, preview: true };
-    return { value: countAt(row.then, row.now, u, digits), arrow: false, preview: true };
-  }
+
   return { value: row.then, arrow: true, preview: true };
 }
