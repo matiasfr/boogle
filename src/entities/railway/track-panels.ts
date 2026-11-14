@@ -78,21 +78,26 @@ const sweepIn = (t: number) => {
   const x = Math.max(0, Math.min(1, t));
   return x < 0.2 ? (x * x * 2.5) / 0.9 : (x - 0.1) / 0.9;
 };
-/** Distance-phase choreography of one panel cycle (storyboard beats). Contact is phase 1; the seat completes
- * at 0.97 so a follower holding at 0.98 rests on it. No animation callback into game state. A rail-pair cycle lasts
- * about half a second and its runs along the short beam are a few metres, so the pick (lower, grip, lift to gauge)
- * and the seat get a larger share than the old 14 m panels gave them. */
-export function panelPose(phase: number) {
+/** Where each beat of a panel cycle ends, as a share of the panel: return to the stack, lower, grip (the pick),
+ * lift to gauge, travel out, sweep, seat. */
+export type PanelBeats = readonly [number, number, number, number, number, number, number];
+/** One pair a panel. The seat completes at 0.97 so a follower holding at 0.98 rests on it. */
+export const SINGLE_BEATS: PanelBeats = [0.24, 0.33, 0.39, 0.48, 0.64, 0.84, 0.97];
+/** Distance-phase choreography of one panel cycle (storyboard beats). Contact is phase 1. No animation callback into
+ * game state. A rail-pair cycle lasts about half a second and its runs along the short beam are a few metres, so the
+ * pick (lower, grip, lift to gauge) and the seat get a larger share than the old 14 m panels gave them. */
+export function panelPose(phase: number, beats: PanelBeats = SINGLE_BEATS) {
   const t = Math.max(0, Math.min(1, phase));
+  const [back, lower, grip, gauge, travel, sweep, seat] = beats;
   const at = (from: number, to: number) => panelEase((t - from) / (to - from));
   return {
-    returnT: panelGlide(t / 0.24),
-    lower: at(0.24, 0.33),
-    grip: at(0.33, 0.39),
-    picked: t >= 0.39,
-    gauge: at(0.39, 0.48),
-    travel: panelGlide((t - 0.48) / 0.16),
-    sweep: sweepIn((t - 0.64) / 0.2),
-    seat: at(0.84, 0.97),
+    returnT: panelGlide(t / back),
+    lower: at(back, lower),
+    grip: at(lower, grip),
+    picked: t >= grip,
+    gauge: at(grip, gauge),
+    travel: panelGlide((t - gauge) / (travel - gauge)),
+    sweep: sweepIn((t - travel) / (sweep - travel)),
+    seat: at(sweep, seat),
   };
 }

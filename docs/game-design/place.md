@@ -823,6 +823,20 @@ wider deck's edge, both line-2 gates span both tracks (slab 10.4 m, centred 2 m 
 lamps stand at its new edge. Trains still run on today's track only (step 4). No `WORLD_NS` bump; not tested on a
 device.
 
+**The crossing, retimed (14 November 2026; owner playtest: "it feels like it's teleporting too quickly to the other
+track to lay it down").** Cause: the hand's whole down-track cycle took the first 80% of a double panel and the 4 m crossing
+the next 9%. A panel lasts 0.33 s on line 2's fast stretches (Q5 and Q6, 9 m/s) and 0.6 s on line 1 (5 m/s), so the
+crossing took 0.03 to 0.05 s: two drawn frames at 60 Hz, up to 3.2 m in one frame, measured on Q5. Now the down pair is
+seated by 64% of the panel, the crossing takes 32% of it on a trapezoid ease (a quarter speeding up, a quarter
+braking) with a 0.6 m hop, and the hand is back over the stack 27% into the next panel. Measured on Q5: the crossing
+is drawn over six frames (0.1 s), at most 0.92 m a frame, and the way back over five; on line 1 it is about 0.19 s. The
+hand's place is still a pure function of where the head is along the panel, so nothing lags the accepted panels: both
+pairs are down at the panel's commit as before, and a reload, a hidden tab or a reconnect shows it exactly where it
+would be. Laying speed, panel counts and the machine's own run are the sim's and unchanged. One hand still serves two
+tracks in a third of a second, so at Q5's speed it is a quick swing, not a slow one: the wing below, a hand standing
+over each track with no crossing, is the fix for that. View only (`machine-panels.ts` `DOUBLE_BEATS`, `UP_CROSS`;
+look: `--rail-seed q5-held` with `dev/look/evals/track-layer-cross.ts`). Not tested on a device.
+
 **The wing, modelled (11 November, behind `?layer=wing`).** The second hand is a built model, `assets/src/track-wing.py`
 (`assets/built/track-wing.glb`, 2,636 triangles, 32 KB): a post with a header on a truck that sets down on the up rails once the
 gap beside the flatbed is 1.8 m and lifts as it closes, a three-stage telescoping arm from the flatbed header's end to the post
