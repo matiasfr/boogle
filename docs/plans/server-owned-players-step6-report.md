@@ -1,5 +1,95 @@
 # Server-owned players, step 6
 
+## Follow-up: continuous presentation through outages and corrections
+
+2026-11-13. Runtime **ff7dfa43f**, following **386d928da**. These client-only fixes supersede the presentation
+claims below. Rebased cleanly onto local `origin/main` **86a2945d8** so the current prefab registry baseline and
+test harness apply; no fetch, reinstall, push or ship. Inherited main changes are not edits to prefabs, seats or
+room replacement by this task. WORLD_NS stays v42; server brain, wire legs, dialogue and lead consumers are unchanged.
+No copy moved (old/new file:line: none).
+
+The reconnect cut came from evaluating the raw presentation tick after its clock re-anchor while the old leg
+object was still present. The old presenter rebased its easing offset only when the leg object changed, so the
+clock jump appeared first, then the replacement leg glided back. Its explicit correction-over-6-m snap also cut
+on restart. It had no live-session gate, so the old leg kept advancing during the outage.
+
+- `src/boogler/boogler.ts:457` freezes the drawn pose/collider and idles his feet until the session is live and its
+  mirror ready. Only the first placement is immediate; reconnect never resets that placement flag.
+- `src/boogler/presentation.ts:35` detects hidden-tab gaps from raw frame time: production already clamps `dt`
+  to 50 ms, which made a delta-only hidden-gap test insufficient. Return spends one 60 Hz display frame.
+- `src/boogler/presentation.ts:65` bounds the whole displayed displacement, whether caused by a new leg, a clock
+  re-anchor or release of the 300 ms talk prediction. Calm/ridden catch-up is at most **3 m/s**, fleeing **4.08 m/s**,
+  with acceleration up to **12 m/s²**. This retains main's sliding correction as a bounded walking catch-up,
+  including corrections over 3 m; a distant correction can take seconds. Corrections animate feet instead of
+  sliding a standing body. Talk release starts from zero speed on its first frame.
+
+Talk behavior remains main's: he can move away while the talk box stays usable; ordinary talk closes at the
+existing 4.6 m leave distance. The launch telling-off keeps its distance exemption. No new copy or dialogue rule.
+
+Tests were red first: outage/restart, same-leg re-anchor, hidden return and ridden hold release all reproduced
+the old failures. Independent review then caught the production delta-clamp gap; three more red-first cases
+cover calm, ridden and fleeing returns with `dt=0.05` and raw timestamps seven seconds apart. All **13 presentation
+tests** pass, including simultaneous talkers, launch-time talk and walking away. Reviewer verified the final
+raw-time fix and found no remaining issue. The launch convergence assertion now allows two seconds instead of
+one because catch-up is speed-bounded, and asserts its per-frame flee bound; no golden fixture was repinned.
+
+At 60 Hz, the per-frame bound is **5 cm calm/ridden**, **6.8 cm fleeing** (speed × frame time):
+
+| Synthetic regression | Before | After |
+| --- | ---: | ---: |
+| Travel during five seconds offline | 7.5 m | 0 |
+| Largest step on distant restart | 20.5 m | 5 cm |
+| Same-leg clock re-anchor step | 6 m | 2.83 cm |
+| Seven-second hidden return step | 10.5 m | 2.83 cm |
+| Ridden talk-release first step | 15.26 cm | 0.33 cm |
+| Largest ridden correction step | 15.72 cm | 5 cm |
+
+These are controlled synthetic cases, not the runner's observed 7.2–7.5 m restart cut. With production's 50 ms
+clamp, hidden return before/after is **10.5→2.83 cm calm, 14.5→4.17 cm ridden, 20→6 cm fleeing**.
+[Measurements](../../.look/step6-continuity-metrics.json), [initial red tests](../../.look/step6-continuity-red.log),
+[clamped-delta red tests](../../.look/step6-hidden-clamp-red.log), [final presentation tests](../../.look/step6-continuity-unit-final.log).
+
+### Fresh restart observation
+
+[Final broker manifest](../../.look/evidence/1794620956789-32552/evidence.json), exact runtime ff7dfa43f, clean before
+and after. A worker-local ignored helper stopped a real local server for 4.9 seconds, then restarted its saved
+room; reconnect backoff left the client connecting for 7.87 seconds. The trusted broker owned the browser.
+**745 sampled frames: zero offline travel, largest step 11.62 cm under load, max displacement/bound ratio 0.8652**;
+the slowest frame had the production 50 ms cap (15 cm movement bound). These are correctness observations under
+load, not performance evidence. [Measurements](../../.look/evidence/1794620956789-32552/restart-measurements.json).
+
+Opened the final still, motion sheet and a 12-frame return strip: he remains beside the yellow player throughout
+the connecting interval, then moves away continuously without the old multi-metre cut. The strip samples 12 fps;
+the per-frame telemetry covers the intervening frames. Also opened the earlier runner's restart strip and both
+preliminary sheets; the first preliminary capture missed the NPC and supplies no visual verdict.
+[Final still](../../.look/evidence/1794620956789-32552/boogler-restart-final-still.png),
+[motion sheet](../../.look/evidence/1794620956789-32552/boogler-restart-final-motion.png),
+[return strip](../../.look/evidence/1794620956789-32552/restart-return-frames.png).
+
+The capture's overall verdict is **failure**: the deliberate shutdown produced `ERR_CONNECTION_REFUSED` console
+errors, which the trusted health gate rejects. Motion assertions passed; errors were retained, not filtered.
+Fresh browser reconnect/hidden/ridden-hold looks and subjective real-time smoothness remain unverified; those
+regressions are covered headlessly here. The speed cap covers the reported calm/ridden spikes; tiny standing
+corrections now animate feet, but their perceptual quality is not established by this restart strip.
+Not tested on a device.
+
+### Final checks
+
+After the last source/test edit: `npm run check` **1,874 passing / one existing TODO**; server tests **355/355**;
+ship-check **786/786**, 27 lint files, 80 affected test files; registry passes. Review stamp **3b9aab84db7e**,
+22 classified files, `--no-fetch`. Prettier ran on every changed file. Direct worktree `npm run test:net` passes
+**191/191**. Direct `npm run scenario -- boogler-tag boogler-talk-pad interact` passes **all three scenarios** on
+ff7dfa43f, with no page or graphics errors. Earlier evidence and stamps below are historical.
+
+[Check](../../.look/step6-continuity-check-final.log), [server](../../.look/step6-continuity-server-final.log),
+[ship-check](../../.look/step6-continuity-ship-check-final.log), [registry](../../.look/step6-continuity-registry-final.log),
+[stamp](../../.look/step6-continuity-stamp-final.txt), [network](../../.look/step6-continuity-net-final.log),
+[scenarios](../../.look/step6-continuity-scenarios-final.log).
+
+The orchestrator's current-harness rerun passed all original scenarios and network tests on branch and main.
+The four original failures recorded below came from the old frozen harness copy, not this branch; that earlier
+failure attribution is superseded. The new follow-up checks use the requested worktree npm scripts directly.
+
 ## Follow-up: bound the local talk prediction
 
 2026-11-13, runtime fix **54b9553f5**. The independent step 6 review's P2 is fixed in
