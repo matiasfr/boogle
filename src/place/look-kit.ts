@@ -101,6 +101,23 @@ function bake(mesh: THREE.Mesh, name: string) {
   copy('normal');
   g.setIndex(src.index);
   g.applyMatrix4(mesh.matrixWorld);
+  if (name === 'rail') {
+    // The rail foot seats on timber. Its redundant bottom cap is wound upward in the
+    // kit and shares the timber's drawn top; omit that cap, preserving head height.
+    const p = g.getAttribute('position');
+    let bottom = Infinity;
+    for (let i = 0; i < p.count; i++) bottom = Math.min(bottom, p.getY(i));
+    const index = g.index!;
+    const kept: number[] = [];
+    for (let i = 0; i < index.count; i += 3) {
+      const a = index.getX(i),
+        b = index.getX(i + 1),
+        c = index.getX(i + 2);
+      if ([a, b, c].every((v) => p.getY(v) < bottom + 0.001)) continue;
+      kept.push(a, b, c);
+    }
+    g.setIndex(kept);
+  }
   if (name === 'log') logColors(g);
   if (LOOK.contact && name !== 'log') bakeContact(g);
   return g;
