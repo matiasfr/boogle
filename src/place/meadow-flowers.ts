@@ -35,7 +35,8 @@ import type { OwnedView } from '../render/owned-view.ts';
 import { GRID, ORIGIN } from './layout.ts';
 import { selectiveColour } from './look.ts';
 import { MEADOW_BOUNDS, MEADOW_H, MEADOW_W } from './meadow-field.ts';
-import { MEADOW, meadowFieldTexture, meadowGreen, meadowGrid, meadowTap } from './meadow.ts';
+import { MEADOW } from './meadow-flags.ts';
+import { meadowFieldTexture, meadowGreen, meadowGrid, meadowTap } from './meadow.ts';
 import { FIELD_CELL, FIELD_H, FIELD_W } from './path-field.ts';
 import { pathFieldTexture } from './path-surface.ts';
 

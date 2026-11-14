@@ -1,18 +1,13 @@
 // Two look experiments on one lawn wedge of Home, off by default (docs/research/small-magic-look.md, "What was
 // built"). `?meadow=tint` blends four of the lawn's own greens in large soft patches; `?meadow=flowers` plants flower
-// drifts and grass tufts (meadow-flowers.ts); `?meadow=tint,flowers` (or `all`) does both. With no flag neither the
-// ground's graph nor the scene changes. Local view only: no sim, world, net or saved state.
+// drifts and grass tufts (meadow-flowers.ts); `?meadow=tint,flowers` (or `all`) does both (meadow-flags.ts). This
+// file is the tint and the field's texture, and loads only when a flag asks for it: with no flag it is never
+// evaluated, and neither the ground's graph nor the scene changes. Local view only: no sim, world, net or saved state.
 import * as THREE from 'three/webgpu';
 import { mix, smoothstep, texture, vec2, vec3 } from 'three/tsl';
 import { ORIGIN } from './layout.ts';
 import { CELL } from './terrain.ts';
 import { MEADOW_H, MEADOW_W, MEADOW_WEDGE, bakeMeadowField } from './meadow-field.ts';
-
-const asked = new Set((new URLSearchParams(location.search).get('meadow') ?? '').split(','));
-export const MEADOW = {
-  tint: asked.has('tint') || asked.has('all'),
-  flowers: asked.has('flowers') || asked.has('all'),
-};
 
 // TSL's types don't follow these graphs; kept loose like look.ts.
 // oxlint-disable-next-line typescript/no-explicit-any
