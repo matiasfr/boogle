@@ -252,7 +252,7 @@ test('authored layouts reject malformed geometry and mixed expanded data before 
     /coexist/,
   );
   const resolved = validation.loadLevelArtifact(bell, definitions);
-  assert.equal(resolved.placements.length, 68);
+  assert.equal(resolved.placements.length, 70); // two separate visual undersides retain the original colliders
   assert.ok(!('layout' in resolved));
   assert.deepEqual(
     { ...metadata, format: 'boogle-level', place: 'empty', placements: [] },
