@@ -16,6 +16,15 @@ import { flat } from '../render/flat.ts';
 import { babble, CHATTER } from './chatter.ts';
 import { H } from './land.ts';
 import { MACHINE_CHAIR_SEAT } from '../entities/railway/machine-model.ts';
+import {
+  DRAW_WITHIN,
+  commuterBand,
+  commuterFeet,
+  frameCommuter,
+  type Commuter,
+  type Due,
+  type Refuge,
+} from '../entities/railway/path-refuge.ts';
 import { merged } from '../render/part-geometry.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import { TOWN, toWorld, FORGE } from './layout.ts';
@@ -81,6 +90,10 @@ type Job =
   | 'looker';
 type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
+  /** A commuter not stepped since he was put out or slept far from the camera, and one stepped this frame but too
+   * far to draw (path-refuge.ts commuterBand): only there is a woken one stood in his refuge. */
+  slept?: boolean;
+  hidden?: boolean;
   k: number;
   job: Job;
   mood: Mood;
@@ -277,8 +290,15 @@ export type FolkEnv = {
   gather: { x: number; z: number; ux: number; uz: number; lx: number; lz: number; len: number };
   platform: { x: number; y: number; z: number; ux: number; uz: number; up: () => boolean };
   forgeLit: () => boolean;
-  /** A place along the first path: `u` 0 the village end to 1 the far end; null until it's open. */
+  /** A place along the first path: `u` 0 the village end to 1 the far end, `yaw` facing the far end; null until it's
+   * open. */
   path: ((u: number, lat: number) => { x: number; y: number; z: number; yaw: number } | null) | null;
+  /** For the five on the path, which is line 1's track bed (path-refuge.ts): the nearest train seen from `u` by its
+   * own plan, the refuge at `u` (clear of every car on both tracks, on something drawn) and, where there is none, the
+   * way along the path to the nearest. */
+  pathTrain?: (u: number) => Due | null;
+  pathRefuge?: (u: number) => Refuge | null;
+  pathGo?: (u: number) => -1 | 0 | 1;
   /** The cart they push: null while it's at rest. */
   cart: () => { mesh: THREE.Object3D; top: number; hz: number } | null;
   /** Something's on that nobody should talk over (a crate opening, a moment). */
@@ -697,20 +717,42 @@ function brain(g: Guy, dt: number) {
       g.mood = 'ride';
       return;
     case 'commuter': {
-      const q = e?.path?.(g.a.x, g.side * (0.45 + (g.seat % 3) * 0.35));
+      if (!e?.path) return;
+      // There and back along it; `a.x` is where along, `a.z` which way, `b.x` how far to the side, and `home` the last
+      // refuge (its lateral and the height of what holds him there). The first run out's at a run. The path is line
+      // 1's track bed, so the walk itself, and keeping clear of trains, is path-refuge.ts `frameCommuter`.
+      const lane = commuterLane(g);
+      const c: Commuter = { u: g.a.x, way: g.a.z > 0 ? 1 : -1, lat: g.b.x, refLat: g.home.x, refY: g.home.z };
+      const { aside, hurry, toward } = frameCommuter(c, !!g.slept, g.hidden ? 'hidden' : 'drawn', lane, dt, {
+        len: PATH_LEN,
+        speed: commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3,
+        across: SPEED.walk,
+        due: (u) => e.pathTrain?.(u) ?? null,
+        refuge: (u) => e.pathRefuge?.(u) ?? null,
+        go: (u) => e.pathGo?.(u) ?? 0,
+      });
+      g.slept = false;
+      g.a.x = c.u;
+      g.a.z = c.way;
+      g.b.x = c.lat;
+      g.home.x = c.refLat;
+      g.home.z = c.refY;
+      const q = e.path(g.a.x, g.b.x);
       if (!q) return;
-      // There and back along it; `a.x` is where along, `a.z` which way. The first run out's at a run.
-      const speed = commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3;
-      g.a.x += (g.a.z * speed * dt) / PATH_LEN;
-      if (g.a.x > 1 || g.a.x < 0) {
-        g.a.z = -g.a.z;
-        g.a.x = Math.max(0, Math.min(1, g.a.x));
-      }
+      const dx = q.x - g.x,
+        dz = q.z - g.z,
+        moved = Math.hypot(dx, dz);
+      // They face the way they move; standing aside, the train. A first placement (or a wake far off) turns at once.
+      const walking = moved > 0.002 && moved < 2;
+      const face = walking ? Math.atan2(dx, dz) : q.yaw + ((aside ? toward > 0 : g.a.z > 0) ? 0 : Math.PI);
+      let dy = face - g.yaw;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      g.yaw += moved >= 2 ? dy : dy * Math.min(1, dt * 9);
       g.x = q.x;
       g.z = q.z;
-      g.fy = q.y;
-      g.yaw = q.yaw + (g.a.z > 0 ? 0 : Math.PI);
-      g.mood = commuteRun > 0 ? 'run' : 'walk';
+      g.fy = commuterFeet(c, lane, q.y);
+      g.mood = !walking ? 'idle' : (commuteRun > 0 && !aside) || hurry ? 'run' : 'walk';
       return;
     }
     case 'pusher':
@@ -735,6 +777,8 @@ function brain(g: Guy, dt: number) {
   }
 }
 const PATH_LEN = 190;
+/** A commuter's own lane on the path: 0.45 to 1.15 m either side of its middle. */
+const commuterLane = (g: Guy) => g.side * (0.45 + (g.seat % 3) * 0.35);
 let commuteRun = 0;
 const hammering = (s: Site) => {
   let n = 0;
@@ -937,7 +981,7 @@ function pose(g: Guy) {
 }
 const tr = new THREE.Matrix4();
 const NEAR_CAM = 2.5; // m
-const SLEEP = 150; // m from the camera past which they stop updating and aren't drawn
+const SLEEP = DRAW_WITHIN; // m from the camera past which they stop updating and aren't drawn
 const BEHIND = 6; // m behind the camera's plane before someone isn't drawn: past their shadow's reach into the view
 const look = new THREE.Vector3();
 const wp = new THREE.Vector3();
@@ -1080,6 +1124,9 @@ export function setCommuters(on: boolean, run = 0) {
     if (on && !g.on) {
       g.a = { x: run ? -0.02 * k : (k * 0.37) % 1, z: 1 };
       if (g.a.x < 0) g.a.x = 0;
+      g.b = { x: commuterLane(g), z: 0 };
+      g.home = { x: commuterLane(g), z: 0 };
+      g.slept = true;
     }
     g.on = on;
   });
@@ -1274,9 +1321,18 @@ export function updateFolk(dt: number) {
     // Past what the camera can pick out they sleep: no brain, no matrices, frozen where they stood (nothing shared reads
     // them: folk are local to each client, drawn only here). They are drawn from the same distance, so waking is unseen.
     // Riders and pushers follow a vehicle, so they keep their place there but aren't posed.
+    // A commuter thinks a little further out than he is drawn, so he wakes unseen (path-refuge.ts commuterBand).
+    g.hidden = g.job === 'commuter' && commuterBand(Math.sqrt(d2)) === 'hidden';
+    if (g.hidden) {
+      brain(g, dt);
+      g.px = g.x;
+      g.pz = g.z;
+      continue;
+    }
     if (far && g.mood !== 'ride' && g.job !== 'rider' && g.job !== 'driver' && g.job !== 'pusher') {
       g.px = g.x;
       g.pz = g.z;
+      g.slept = true;
       continue;
     }
     if (g.mood === 'walk' || g.mood === 'carry' || g.mood === 'run') {

@@ -37,6 +37,7 @@ import { BOTTOM, type Car } from './car.ts';
 import { STEEL_CAR, ridesOn, steelCarOffset } from './cars.ts';
 import { CAR_BUFFERS, ENGINE_BUFFERS, couplingCapacity, trainPlaces, type Vehicle } from './car-spacing.ts';
 import { createCouplings } from './couplings.ts';
+import type { TrainAhead } from './path-refuge.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
@@ -299,6 +300,8 @@ export async function createRailwayTrains(
       count: -1,
       puffs: 0,
       speed: 0,
+      /** Whether it is drawn on its line (not hidden, joining from the shed or waiting under the land). */
+      out: false,
     };
   });
   /** The platform beat's times, seconds from the row's change: the swap under the puff, the squash's length, the toot. */
@@ -485,6 +488,7 @@ export async function createRailwayTrains(
         pose(c, standAt[n]!);
         if (hidden) c.y = -60;
       });
+      tr.out = !hidden;
       if (tr === coupled) {
         pose(wagonCar, standAt[stock.indexOf(wagonCar)]!);
         if (hidden) wagonCar.y = -60;
@@ -886,6 +890,18 @@ export async function createRailwayTrains(
       const st = shape.ENGINE_STOOL;
       return { mesh: tr.model.cars[0]!, top: st.footrest, up: st.seat - st.footrest - 0.035, x: st.x, z: st.z, yaw: 0 };
     },
+    /** Every car a train can have, for the little guys' give-way (folk.ts `traffic`): one out of use waits under the
+     * land. */
+    cars: () => [...trains.flatMap((tr) => [...tr.cars, ...(tr.steel ? [tr.steel] : [])]), wagonCar],
+    /** The trains drawn on line `k` now, each as its ends along the line (m) some seconds from now by its accepted
+     * row: the leg it is on, or where it stands (path-refuge.ts TrainAhead). */
+    onLine: (k: number): TrainAhead[] =>
+      trains
+        .filter((tr) => tr.line === k && tr.out)
+        .map((tr) => (sec: number) => {
+          const along = trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock + sec * 10) / 100;
+          return { lo: along + offsets[2]! - tr.cars[2]!.spec.hz, hi: along + offsets[0]! + tr.cars[0]!.spec.hz };
+        }),
     isTrain: (platform: Platform | null) =>
       platform === wagonCar.platform ||
       trains.some((tr) => tr.steel?.platform === platform || tr.cars.some((c) => c.platform === platform)),

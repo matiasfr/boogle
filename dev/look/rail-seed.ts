@@ -8,13 +8,17 @@ import { isSeedStage } from '../../src/sim/railway-seeds.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { buildRingMidDoc, ringMidStage } from './ring-mid-seed.ts';
 import { buildStackDoc, stackStage } from './stack-seed.ts';
+import { buildLayDoc, layStage } from './lay-seed.ts';
 
 export async function writeRailSeed(dataDir: string, room: string, stage: string) {
   const mid = ringMidStage(stage);
   const stack = stackStage(stage);
-  if (mid === null && stack === null && !isSeedStage(stage)) throw new Error(`Unknown railway seed: ${stage}`);
+  const lay = layStage(stage);
+  if (mid === null && stack === null && lay === null && !isSeedStage(stage)) throw new Error(`Unknown railway seed: ${stage}`);
   const doc =
-    stack !== null
+    lay !== null
+      ? await buildLayDoc()
+      : stack !== null
       ? await buildStackDoc(stack)
       : mid !== null
         ? await buildRingMidDoc(Number(mid))
