@@ -22,3 +22,10 @@ observations, unchecked halt rings, distinct halts, all-failed and unsettled tim
 records, and room/world reset clearing. The existing real Rapier surface and stale-broad-phase checks remain.
 The eval now asserts Gorge return distance below 2 m and has a seated departing-train reload mode. Browser
 execution and image observations are reported with this run's broker manifests, not inherited from earlier evidence.
+
+Step 6 updates first-run and Place's as-built return rules, removes the terrain-only reload limitation, and records
+the owner's exact words in Controls' decision log with a partial-supersession note on 2 November. The 30-minute
+window, Home after a long absence and train-to-halt rule remain three open default rows in agent-calls. The decision
+check passes, retaining all 892 historical lines and 679 quotations. The plan marks steps 4 and 6 done and step 5
+pending. The old DESIGN.md 8 title was corrected to Enjoyable alone and together. Targeted return/surface/reset
+tests pass 28/28; step 4 ship-check passes (registry, scoped lint, typecheck and affected tests).

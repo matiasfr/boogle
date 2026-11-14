@@ -49,17 +49,24 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   ([src/features/room-reset.ts](../../src/features/room-reset.ts)). A restore brings the backup's world back under its own id, so it starts over only
   browsers that joined a different world in between.
 - **Returning visit.** With a name saved (and no world reset since the last load), there is no card and no fall: the game goes in on its own as soon as the island
-  can be drawn, with the saved name and colour, where you last stood in this room and facing the same way (the pause view's Get unstuck forgets that spot)
+  can be drawn, with the saved name and colour, where you last stood in this room and facing the same way
   ([src/features/return-spot.ts](../../src/features/return-spot.ts), classic mode). The production railway now records
   standing ground, decks and platforms in Local `boogle.railway-pose.v1:<room>:<pid>` memory, every 5 s, on page hide
   and on tab hiding; unchanged spots are written at least once a minute. Aboard, seated, swimming, falling or down,
   it retains the last standing spot and refreshes the time and current `ride` position; it never writes null. The
   first-visit fall and unready scenery do not save. A record is read only within `railway.returnMinutes` (Local,
-  default 30; 0 disables returns), with no migration from v0. Get unstuck records its checked surface. Steps 1–3 of
-  [the return plan](../plans/resume-where-you-were.md) now build saving and return placement: the spot, nearby rings,
-  the two nearest halts, then Home, with live mounted-scenery validation and a 2.5 s timeout per candidate. Step 5's
-  loading-cover hold and fade remain pending. In classic mode, only standing terrain counts, excluding a deck, seat
-  or water. With no record, a different world namespace, or ground that has moved or gone under the sea, you get
+  default 30; 0 disables returns), with no migration from v0. Get unstuck records its checked surface. A recent
+  return tries the remembered spot, then free rings 1.4, 3 and 6 m beside it, then the two nearest distinct halts,
+  then Home. A `ride` over 25 m from the standing spot skips it and uses the nearest halts to that observation, so
+  leaving on a train, cart or in the sea returns beside the route. Each candidate is held in place while nearby
+  scenery mounts and one physics step completes; it must pass the live standable-surface test, with a 2.5 s limit
+  per candidate. Checked catalogue halt landings are reused; other halts probe 3, 4.5, 6 and 8 m rings for the highest
+  surface between 0.5 m below and 1.5 m above the platform datum. Occupied points are skipped. Expired, disabled or
+  malformed records go Home; a room with no record uses its jump-in landing, else Home. Room replacement, Start fresh
+  and world-version changes clear the room memory. The [return plan](../plans/resume-where-you-were.md)'s step 5
+  loading-cover hold and fade remain pending: these moves are not yet guaranteed hidden. In classic mode, only
+  standing terrain counts, excluding a deck, seat or water; Get unstuck forgets its spot. With no record, a different
+  world namespace, or ground that has moved or gone under the sea, you get
   the usual spawn (or the room or prototype's own, from the URL). A bare launch of the Home Screen app goes straight back to
   the room or prototype it was last in.
 - **Leaving and starting fresh.** The pause view's Leave goes to a small menu page (`/menu/`) with the game stopped: nothing

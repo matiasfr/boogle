@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-14). Design only; nothing built.** Base: `origin/main` at `4a5d2b9ff`. Every step is
+> **Status: steps 1–4 and 6 built (2026-11-14); step 5 and its cover proofs remain pending.** Original design base: `origin/main` at `4a5d2b9ff`. Every step is
 > Local (this browser's body and its own localStorage): no server code, no wire field, no op, no saved state and no
 > `WORLD_NS` bump. Owner call: [A recent reload puts you back where you were](../agents/owner-calls.md#a-recent-reload-returns-you-where-you-were).
 
@@ -8,8 +8,7 @@
 
 A player who reloads or rejoins soon after leaving stands where they stood (or at the nearest safe spot to it), anywhere
 on the built route, not only on Home island's open ground; after a long absence, or with no remembered place, they
-arrive at Home. Serves DESIGN.md 8 (Designed for drop-in, drop-out: "joining, leaving, reconnecting must remain
-reliable"). It bends nothing.
+arrive at Home. Serves DESIGN.md 8 (Enjoyable alone and together: "Joining, leaving, reconnecting and saving must remain reliable"). It bends nothing.
 
 ## The owner's words (14 November 2026, verbatim)
 
@@ -264,7 +263,7 @@ first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: st
   `arrivalPlan`). Verify: `/look` stills at the frame the cover lifts, for a High Gorge return and a train return:
   Buddy is on the platform, facing as saved, with no frame at Home; a real-time capture of the lift for the visual
   review.
-- [ ] **6. Docs and the decision** (sol medium). Update `docs/game-design/first-run.md` ("Returning visit": decks and
+- [x] **6. Docs and the decision** (sol medium). Update `docs/game-design/first-run.md` ("Returning visit": decks and
   platforms count, the window, the fallback chain; delete "not a deck"), delete `place.md`'s "Reload limitation" line
   and amend its T1 return-pose sentence, record the Decided entry drafted above with whatever the owner answered, and
   run `npm run decisions`. Add the pick-and-log rows to `docs/agent-calls.md` for anything still unanswered (window
