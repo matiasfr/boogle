@@ -300,7 +300,7 @@ function draw() {
     const svc = colourMode === 'lines' ? null : SVC[colourMode][c.leg];
     const colour = colourMode === 'lines' ? c.colour : svc ? svc.colour : 'var(--edge)';
     const faint = (colourMode !== 'lines' && !svc) || !!D.removed[c.leg];
-    for (const [lats, dirSign] of [[c.a, 1], [c.b, -1]]) {
+    for (const [lats, dirSign] of [[c.a, -1], [c.b, 1]]) {
       const line = offsetLine(c.pts, lats, k);
       for (const run of runs(line)) {
         const p = el('polyline', { points: run.map((q) => q.join(',')).join(' '), fill: 'none', stroke: colour, 'stroke-opacity': faint ? 0.55 : 1, 'stroke-width': faint ? W * 0.6 : W, 'stroke-linejoin': 'round', 'stroke-dasharray': c.dash ? c.dash.split(' ').map((v) => v * px).join(' ') : '' });
