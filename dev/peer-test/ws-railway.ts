@@ -934,7 +934,7 @@ export async function railwayRequestStop(c: Ctx) {
   const { railwayCheck } = await import('../../src/sim/railway-check.ts');
   const { LINE_HALTS, TRAIN_PHASE, reqHas } = await import('../../src/sim/railway-train.ts');
   const { trainStops } = await import('../../src/sim/railway-queries-trains.ts');
-  const { LINE2, RAIL_LINES, lineRows } = await import('../../src/sim/railway-lines.ts');
+  const { LINE2, RAIL_LINES, haltPlatform, lineRows } = await import('../../src/sim/railway-lines.ts');
   const { LINE_SLOTS, trainServes } = await import('../../src/sim/railway-trains.ts');
   const seed = railwayAtTrains('trains-on');
   const roomId = railwayRoomId(`${c.room}-request`);
@@ -959,7 +959,8 @@ export async function railwayRequestStop(c: Ctx) {
   const leverReq = () => lineRow(live(), LINE2).req;
   const n = trainStops(live(), 1).length;
   const quarry = LINE_HALTS.findIndex((h) => h.name === 'Quarry');
-  const h = LINE_HALTS[quarry]!;
+  // The homeward ask is taken from the platform the homeward train stops at (v45: the offset side at a middle halt).
+  const h = { ...LINE_HALTS[quarry]!, ...haltPlatform(quarry, -1) };
   const asked = (req: number) => reqHas(req, h.stop, -1, n);
   // Accepted requests by this tab's own player (every tab hears everyone's).
   const accepted = async (p: Page, pid: string) =>
