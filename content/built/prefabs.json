@@ -3742,6 +3742,74 @@
         }
       }
     },
+    "town.statue": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.15,
+            0
+          ],
+          "h": 0.3,
+          "r": 2.45,
+          "shape": "trunk"
+        },
+        {
+          "at": [
+            0,
+            0.75,
+            0
+          ],
+          "h": 0.9,
+          "r": 2.3,
+          "shape": "trunk"
+        },
+        {
+          "at": [
+            0,
+            2.085,
+            0
+          ],
+          "h": 1.77,
+          "r": 2.4,
+          "shape": "trunk"
+        },
+        {
+          "at": [
+            -0.0929,
+            4.2492,
+            0
+          ],
+          "h": 2.655,
+          "r": 0.42,
+          "rot": [
+            0,
+            0,
+            0.07
+          ],
+          "shape": "trunk"
+        }
+      ],
+      "key": "town.statue",
+      "scope": "place",
+      "visual": {
+        "builder": "town.boogler-statue",
+        "params": {
+          "colour": "#a3a29c",
+          "plinth": [
+            [
+              2.45,
+              0.3
+            ],
+            [
+              2.3,
+              0.9
+            ]
+          ],
+          "scale": 3
+        }
+      }
+    },
     "town.workshop-anvil": {
       "colliders": [
         {

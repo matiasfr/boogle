@@ -1,6 +1,6 @@
 // The Round's blockout (docs/plans/home-flip.md, B3): plain grey blocks at the true size and place of the eight bought
-// plots, a pale door panel and a dark mat on each door side, and the clock's footing at G. Local and static: the blocks read
-// no fact. Where each stands is src/place/town-blockout.ts; a block leaves when its real building is mounted.
+// plots, a pale door panel and a dark mat on each door side, and the footing at G with The Boogler's statue on it
+// (owner, 14 November). Local and static: the blocks read no fact. Where each stands is src/place/town-blockout.ts; a block leaves when its real building is mounted.
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
@@ -10,13 +10,21 @@ import { H } from '../../place/terrain.ts';
 import { addFoot } from '../../place/sites.ts';
 import { blockoutFeet, standBlockout } from '../../place/town-blockout.ts';
 
-/** Draw every block and mark in one batch; the blocks and the footing are solid and walked round, the marks are not. */
+/** Draw every block and mark in one batch and the statue; the blocks, the footing and the statue are solid and walked
+ * round, the marks are not. */
 export function createTownBlockout(owner: OwnedView) {
   const placements = standBlockout(loadLevelArtifact(level, definitions).placements, H);
-  const batch = createPrefabBatch('greybox.box', placements.length, owner);
-  let solids = 0;
-  placements.forEach((p, index) => {
-    const instance = instantiate(p.prefab, p, { owner, batch: { target: batch, index } });
+  // The boxes share one draw; the statue is its own mesh (it casts and receives through its builder).
+  const boxed = (p: { prefab: string }) => p.prefab !== 'town.statue';
+  const batch = createPrefabBatch('greybox.box', placements.filter(boxed).length, owner);
+  let solids = 0,
+    index = 0;
+  placements.forEach((p) => {
+    const instance = instantiate(
+      p.prefab,
+      p,
+      boxed(p) ? { owner, batch: { target: batch, index: index++ } } : { owner },
+    );
     instance.setEnabled(true);
     solids += instance.bodies.length;
   });

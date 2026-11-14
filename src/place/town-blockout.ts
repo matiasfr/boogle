@@ -2,7 +2,7 @@
 // town-blockout.ts) are in each building's own frame: x across its front, z out of its door, y above its ground. This
 // stands each at its `TOWN_BLOCKS` or `TOWN_FOOTING` row, on the ground under that building's centre (the plots' level
 // pads; the green's floor under the footing). Pure: the view and the tests share it.
-import { TOWN_BLOCKS, TOWN_FOOTING, toWorld } from './layout.ts';
+import { TOWN_BLOCKS, TOWN_FOOTING, TOWN_STATUE, toWorld } from './layout.ts';
 import { townLocal } from './town-plan.ts';
 
 type Frame = { x: number; z: number; yaw: number; w: number; d: number };
@@ -10,6 +10,7 @@ type Vec3 = readonly [number, number, number];
 const FRAMES = new Map<string, Frame>([
   ...TOWN_BLOCKS.map((b): [string, Frame] => [`town.block.${b.id}`, b]),
   ['town.footing', TOWN_FOOTING],
+  ['town.statue', TOWN_STATUE],
 ]);
 
 /** The plan row a blockout placement belongs to: its own id, or its block's for a door panel or mat. */

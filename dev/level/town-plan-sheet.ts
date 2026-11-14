@@ -15,6 +15,7 @@ import {
   TOWN,
   TOWN_BLOCKS,
   TOWN_FOOTING,
+  TOWN_STATUE,
 } from '../../src/place/layout.ts';
 import { CELL, H as groundHeight, NX, NZ, at, cellX, cellZ, heights, pathMask } from '../../src/place/terrain.ts';
 import { SECRETS, YARD_DRESSING, padById } from '../../src/place/tech-layout.ts';
@@ -188,7 +189,7 @@ const measures = [
   { name: 'Village fallback (SPAWN) ↔ gate door', a: SPAWN, b: gateDoor },
 ];
 const missing = [
-  'Plot prices, stake/board sites and clock build trigger are not in town-plan.ts.',
+  'Plot prices and stake/board sites are not in town-plan.ts.',
   'Forge west steps have no geometry in town-plan.ts; only its door is specified.',
 ];
 const notes = [
@@ -197,11 +198,11 @@ const notes = [
   'Unused TOWN.wood/stone growth rows and distant camps are excluded.',
   'Paint and height cells are baked data; dashed paths are authored centrelines.',
   'B1 streets/cottage/yard built; bay and shelf already moved on main (#1778).',
-  'B2 rooms and balcony built. B3: plots 1–8 and the clock footing stand as blocks.',
+  'B2 rooms and balcony built. B3: plots 1–8 and the footing stand as blocks.',
   'Doors have slab-matching thresholds; yard dressing follows the gift anchor.',
   'Distances are straight, horizontal metres, not walked routes or terrain slopes.',
   'Forge frame stands on arrival; free finish at F2. Shop/museum boards: arrival.',
-  'Clock footing 5 × 5 m: arrival; clock: free with trains. Hall tick: town front.',
+  'Footing 5 × 5 m with The Boogler statue (no clock). Hall tick: town front.',
 ];
 const esc = (s: string) =>
   s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
@@ -392,7 +393,12 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
       ),
     );
   }
-  if (mode === 'today') out.push(shape(TOWN_FOOTING, '#e0e3e0', color.today));
+  if (mode === 'today') {
+    out.push(shape(TOWN_FOOTING, '#e0e3e0', color.today));
+    // The statue's plinth foot, and a line from the centre to the side he faces.
+    out.push(circle(TOWN_CENTRE, TOWN_STATUE.w / 2, '#c9ccc9', color.today));
+    out.push(path([TOWN_CENTRE, townLocal(TOWN_STATUE, 0, TOWN_STATUE.d / 2)], color.today, 1.5));
+  }
   if (mode !== 'today') {
     out.push(
       circle(
@@ -413,7 +419,7 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
     }
     out.push(
       shape(
-        { ...TOWN_PROPS.clock, w: TOWN_PROPS.clock.footing, d: TOWN_PROPS.clock.footing, yaw: 0 },
+        { ...TOWN_PROPS.statue, w: TOWN_PROPS.statue.footing, d: TOWN_PROPS.statue.footing, yaw: 0 },
         '#fff',
         color.arrival,
       ),
@@ -481,10 +487,10 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
     { p: island, name: 'Station island', c: '#58615d' },
     { p: TABLE, name: 'Turntable', c: '#58615d' },
   );
-  if (mode === 'today') labels.push({ p: TOWN_CENTRE, name: 'Footing', c: '#58615d' });
+  if (mode === 'today') labels.push({ p: TOWN_CENTRE, name: 'Statue', c: '#58615d' });
   if (mode !== 'today')
     labels.push(
-      { p: TOWN_CENTRE, name: 'G · green / clock footing', c: color.arrival },
+      { p: TOWN_CENTRE, name: 'G · green / statue footing', c: color.arrival },
       ...(['camp', 'quarry'] as const).map((key) => ({
         p: slotPoint(TOWN_STREETS[key].bearing, TOWN_STREETS[key].radius),
         name: `${key} mouth`,

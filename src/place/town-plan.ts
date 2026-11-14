@@ -97,7 +97,8 @@ export const TOWN_STREETS = {
 const SHOP = townBuilding('shop');
 const GATE = townBuilding('gate');
 const GATE_BACK = slotPoint(280, TOWN_FRONT + GATE.d + 4.5);
-/** What stands in the town that is not a building: the clock on its 5 by 5 m footing at G; the finders' bay beside
+/** What stands in the town that is not a building: The Boogler's statue on its 5 by 5 m footing at G (owner, 14
+ * November: the statue replaces the clock that was planned here); the finders' bay beside
  * the hall's south end and the curio shelf beside the bay; the balcony pad in the shop's frame; the `yard` find behind the gate cottage; the forge's west
  * door. */
 /** A curio frame's place and its drawn footprint (`foot`): the crown's plan from `SHELF_SIZE`, which reaches further in
@@ -114,7 +115,7 @@ function curioFrame(at: { x: number; z: number; yaw: number }) {
   return { ...here, foot };
 }
 export const TOWN_PROPS = {
-  clock: { ...TOWN_CENTRE, footing: 5 },
+  statue: { ...TOWN_CENTRE, footing: 5 },
   bay: curioFrame(FINDERS_B),
   /** The curio shelf, beside the bay on its far side from the hall (owner, 14 November). */
   shelf: curioFrame(SHELF_B),
