@@ -1,6 +1,6 @@
-// Two-player seed hearts or a mid-walk ride through puff/launch. Production inputs; teleports only stage proximity.
-// look --players 2 --real --query 'reactionLook=seed&railLag=80' --eval dev/look/evals/boogler-reactions.ts
+// npm run look -- --players 2 --real --query 'reactionLook=seed&railLag=80' --eval dev/look/evals/boogler-reactions.ts
 // --action dev/look/evals/boogler-reactions-action.ts --video --curves --seconds 7 --warm 0 --hud
+// Two-player seed hearts or a mid-walk ride through puff/launch. Production inputs; teleports only stage proximity.
 const { boogler } = (await import(
   '/src/boogler/boogler.ts' as string
 )) as typeof import('../../../src/boogler/boogler.ts');
@@ -66,7 +66,7 @@ session.onRefused((e) => {
   if (e.op.startsWith('boogler.')) throw new Error(`reaction refused: ${JSON.stringify(e)}`);
 }, 'command');
 railwayMirror!.boogler.onReact((e) => log('received', { ...e, tick: session.read.tickNow() }));
-let recording = false;
+let recording = player === '2';
 let lastHearts = 0,
   lastOrb = false,
   launched = false;

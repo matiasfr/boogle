@@ -77,7 +77,9 @@ function spawnHeart(size: number, spread: number, speed: number, delay: number) 
   h.size = size * (0.7 + Math.random() * 0.6);
   h.sway = Math.random() * Math.PI * 2;
   h.delay = delay;
-  h.s.visible = false;
+  h.s.scale.setScalar(h.size * 0.4 * 1.45); // the age-zero size, also on the frame a delayed heart becomes visible
+  h.s.material.opacity = 1;
+  h.s.visible = delay <= 0;
 }
 
 // Gifts use a couple of small hearts.

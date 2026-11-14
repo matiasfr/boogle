@@ -67,10 +67,11 @@ function play(kind: number, start = performance.now()) {
   } else if (kind === EV.YUCK) booglerReact('grump');
 }
 
-function emit(kind: number, gift?: number) {
-  play(kind);
+function emit(kind: number, gift?: number, now = performance.now()) {
+  play(kind, now);
   const session = railwayCommands();
-  if (kind === EV.PUFF) session?.act('boogler.puff', { end: session.read.tickNow() + PUFF_MS / 100 });
+  if (kind === EV.PUFF)
+    session?.act('boogler.puff', { end: session.read.tickNow() + (PUFF_MS - (performance.now() - now)) / 100 });
   else session?.act('boogler.gift', { kind: gift });
 }
 
@@ -169,7 +170,7 @@ function updateRide(dt: number, now: number) {
     if (frac >= 1) {
       ride.puffAt = now;
       booglerSay(RIDE[RIDE.length - 1]!, PUFF_MS + 200);
-      emit(EV.PUFF);
+      emit(EV.PUFF, undefined, now);
     }
   } else if (!on && !ride.puffAt) {
     ride.t = Math.max(0, ride.t - dt * 0.5);
