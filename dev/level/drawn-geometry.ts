@@ -21,18 +21,18 @@ import '../../src/prefab/builders/house-parts.ts';
 import '../../src/prefab/builders/shop-parts.ts';
 import '../../src/prefab/builders/museum-parts.ts';
 import '../../src/prefab/builders/room-shell.ts';
+import '../../src/prefab/builders/boogler-statue.ts';
 import { haltFrame } from '../../src/prefab/halt-deck.ts';
 import { forgePlan, openingBuildings, openForgeMouth } from '../../src/place/opening-plans.ts';
 import { openingStops } from '../../src/place/opening-stops.ts';
 import { standBlockout } from '../../src/place/town-blockout.ts';
 import type { LevelArtifact, Placement, Transform } from '../../src/prefab/types.ts';
 import type { Part } from '../../src/render/part-geometry.ts';
-import { buildIslandSurface } from '../../src/proto/terrain-pass/island.ts';
-import { describeGround } from '../../src/proto/terrain-pass/surface.ts';
+import { describeGround } from '../../src/place/ground-layers.ts';
 import { geometryFaces, materialSurface, isOpaqueMaterial } from '../../src/geometry/drawn-faces.ts';
 import type { Face } from '../../src/geometry/zfight.ts';
 import type { Surface } from '../../src/geometry/zfight-surface.ts';
-import { sourceFunction, sourceModule } from './source.ts';
+import { sourceFunction } from './source.ts';
 import { collectTrackGeometry } from './track-geometry.ts';
 import { timberDecks } from './timber-track.ts';
 
@@ -251,22 +251,8 @@ export async function collectDrawnGeometry() {
     addGeometry(new THREE.BoxGeometry(1, 1, 1), matrix, `${d.owner}:${d.id}`);
   }
 
-  // Execute land.buildMesh to its first owner.add, including the DEFAULT Home terrain pass.
-  const groundTile = sourceFunction<number>('src/place/far-ground.ts', 'GROUND_TILE', {});
-  const { applyHomePass } = sourceModule<typeof import('../../src/proto/terrain-pass/home.ts')>(
-    fs.readFileSync('src/proto/terrain-pass/home.ts', 'utf8'),
-    {
-      THREE,
-      ...layout,
-      ...terrain,
-      smoothstep,
-      GROUND_TILE: groundTile,
-      buildIslandSurface,
-      describeGround,
-      location: { search: '' },
-      console: { log() {} },
-    },
-  );
+  // Capture the actual full-resolution land buffers, as dev/ground/drawn.ts samples in-game.
+  // Ground layers pack attributes without rewriting positions; shaders remain beyond this capture door.
   const bindings = {
     THREE,
     ...layout,
@@ -274,9 +260,10 @@ export async function collectDrawnGeometry() {
     ...cove,
     smoothstep,
     LOOK: { ground: true },
-    homePassOn: true,
-    applyHomePass,
-    roundTwoMaterial: () => flat('#ffffff'),
+    location: { search: '' },
+    describeGround,
+    homeGroundMaterial: () => flat('#ffffff'),
+    meadowLawnLayer: () => undefined,
     SEA,
     shoreApronHeight,
     dressCoveGround: () => {},
@@ -288,6 +275,7 @@ export async function collectDrawnGeometry() {
   const buildMesh = sourceFunction<(owner: unknown) => void>('src/place/land.ts', 'buildMesh', {
     ...bindings,
     macroSlopeY,
+    addGroundLayers: sourceFunction('src/place/land.ts', 'addGroundLayers', bindings),
   });
   try {
     buildMesh({

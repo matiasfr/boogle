@@ -6,6 +6,7 @@ import { MeshoptDecoder } from 'meshoptimizer';
 import * as home from '../../src/place/home-station.ts';
 import * as layout from '../../src/place/layout.ts';
 import * as turnout from '../../src/place/turnout.ts';
+import { ROTUNDA_KIT, bayFrame } from '../../src/place/rotunda.ts';
 import * as shape from '../../src/entities/railway/works-shape.ts';
 import { junctions } from '../../src/place/junctions.ts';
 import { sleeperStations } from '../../src/entities/railway/track-panels.ts';
@@ -123,7 +124,7 @@ export async function collectTrackGeometry() {
   );
   const { layHomeYard } = sourceModule<typeof import('../../src/entities/railway/home-yard.ts')>(
     fs.readFileSync('src/entities/railway/home-yard.ts', 'utf8'),
-    { home, ...layout, ...turnout, junctions, sleeperStations, ...shape, createYardTrack },
+    { home, ...layout, ...turnout, bayFrame, junctions, sleeperStations, ...shape, createYardTrack },
   );
   const yard = layHomeYard(H);
   const owner = {
@@ -154,6 +155,7 @@ export async function collectTrackGeometry() {
     {
       ...shape,
       line2Completed: () => 1,
+      line2Trains: () => true,
       drawWorksBoxes(_owner: unknown, boxes: shape.WorksBox[]) {
         for (const [i, b] of boxes.entries()) {
           const matrix = new THREE.Matrix4().compose(
@@ -188,6 +190,7 @@ export async function collectTrackGeometry() {
       '../../place/land.ts': { H },
       '../../place/layout.ts': layout,
       '../../place/home-station.ts': home,
+      '../../place/rotunda.ts': { ROTUNDA_KIT, bayFrame },
       '../../place/sites.ts': { addFoot() {} },
       './home-yard.ts': { layHomeYard: () => ({ draw: () => ({ showLater() {} }) }) },
     },
