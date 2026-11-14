@@ -176,6 +176,11 @@ export async function createRailwayTrains(
       // so the aisle and a walk along the deck stay open, and Sit snaps you on, as the stools did.
       // On the car's rock, so the bench takes the deck's pitch on a grade and its shudder (owner, 10 November: "the
       // sitting and bench do not follow the normal of the rail"); the rock's origin sits under the mesh's.
+      // Its own body (owner, 14 November: "clearly just overlaid on a cargo car ... those spokes that stick out"):
+      // the kit's flatbed keeps its deck boards and loses its second piece, the underframe with the rail rack's arms
+      // (look-kit.ts kitCars: flat_deck, then flat_black); the fit brings the underframe, sides and steps instead.
+      const bed = car.rock.children[0];
+      if (bed?.children.length === 2) bed.children[1]!.visible = false; // the kit's flatbed is exactly those two
       const fit = carKit.passengerCar(PASSENGER_CAR_UPGRADED);
       fit.position.y = car.hy - carKit.CAR_DECK - car.rock.position.y;
       owner.add(fit);

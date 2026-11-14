@@ -364,7 +364,13 @@ the deck, two seats a side, riders facing out over the halt decks, at Z -0.85 an
 low stool's numbers (seat top 0.32 m over the deck, rider anchor `lowStoolAnchor`, 0.45 m from the middle, hips on the seat,
 feet on the deck), so Buddy sits as at the track layer. The car is still the flatbed's 3.2 m by 2.2 m: the first car is
 natural wood and dark iron with boarded end panels, rails at hand height and a board under each side of the deck (the
-`passenger-car` kit asset, `car_fit`, src/entities/railway/car-kit.ts). The upgrade (red and brass, a canopy roof with a
+`passenger-car` kit asset, `car_fit`, src/entities/railway/car-kit.ts). **It has its own body** (owner, 14 November:
+"it's clearly just overlaid on a cargo car, and it's weird that it has those spokes that stick out. It should look
+more properly like a little passenger car"): the flatbed's rail rack (the arms down each side) is not drawn on this
+car, and the fit brings an underframe with a headstock at each end, a low panelled side with a waist rail fore and aft
+of a 1.2 m open boarding gap at the middle of each side, a knobbed post at each edge of the gap and a step under it.
+Same footprint, seats, deck collider and camera; the sides, like the end panels and the bench, have no solid, so you
+still walk and jump on anywhere along the deck. Not tested on a device. The upgrade (red and brass, a canopy roof with a
 cream fringe, two lamps: `car_upgrade`) is built and switched off, as no upgrade rule exists yet; `PASSENGER_CAR_UPGRADED`
 in train-view.ts is its hook. Like the track layer's, the bench has no solid: walking and the bots' boarding pass through
 it. Stand up puts you 0.4 m out in front of your seat, on the deck by its edge. A seated rider is drawn 0.16 m
