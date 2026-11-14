@@ -220,6 +220,35 @@ Local only: no shared state or friend-following; construction and remote poses r
 `telescopeTuning` in `src/entities/lookout/view.ts`. The [brief](../brainstorms/telescope.md) remains proposed;
 recurrence/fun needs the owner's playtest. `?proto=place` keeps its own copy until D1.
 
+## The meadow (14 November 2026)
+
+Home's lawn is a meadow by default (owner, 14 November: "I love the meadow. It'd be really nice if there was that kind of texture around the bugler statue and just widespread in the map in general"; [decision](../decisions-look.md#d-2026-11-14-the-meadow-is-the-default-ground)). Three layers, all Local view: no sim, world, net or saved state, no colliders, nothing a player uses. How it came about, and the reference it answers: [small-magic-look](../research/small-magic-look.md).
+
+- **Tint.** Everywhere grass is drawn, the lawn is a blend of four greens the game already had, in soft patches of 20 to 60 m. One texture tap a pixel in the ground material.
+- **Flowers and tufts.** Low-poly, flat-shaded, instanced; four flowers (white, yellow, pink, blue), each keeping to its own patches, and chunky grass tufts in the ground's own green. Placement is a function of the world position alone, so every player sees the same meadow.
+- **Far flowers.** Past about 40 m the planted flowers have thinned out and the lawn paints colour specks where they would stand, then a faint wash of their colour past about 150 m.
+
+**Where it grows** (`src/place/meadow-field.ts`, the keep map; `test/meadow-on.test.ts` holds the rules). On lawn only: not rock, sand or the gorge's bank. Flowers and tufts keep about a metre (0.7 m at the least) from everything listed here, and start 0.45 m off a path's tread:
+
+- streets and treads (the ring road, the dock street and every footpath: the path field);
+- railways for their whole length, 4.8 m either side of each track's centre line, the second track of a double formation and its turnouts included (rails are laid along them), the spur, the cart's leg and road, the turntable and the roundhouse stalls;
+- platforms, the hall, every town slot whether built or still a plot, the older buildings and camps, the statue's footing, the finders' bay and its boxes, the curio shelf, the balcony pad, the `yard` find, the forge and its door;
+- where players work: the forge frame, axe stand, heap, rack, crane, dock, stone yard, pedestal, spawn, every station's frame (8 m), every halt's platform, the works' split rock, kiln, rack, breaker, cleft, shed and seams, the banded rocks, the arches and the bank cart;
+- 6 m round every pad, device, secret, gate, switch and lever, and the pillars' feet (terrain-clean's design review: nothing that hides a find or a prompt);
+- outside the Round, every other levelled footing (`clearMask`, as for the trees), less the paths' own strips.
+
+`dev/ground/meadow-audit.ts` checks the map against the world's colliders: at the start of the game 639 of 70,521 growable square metres had something solid on them before the works' rock, the spire's foot and the arches were added to the list; with them, 164 of 68,008, never more than three in a 4 m block, which is what a tree trunk gives. It sees only colliders: a sign, a socket's marker or a dropped log is not found by it.
+
+**Density** is a design call. Open ground has drifts and bare stretches at full strength: a drift is about 1.7 flowers a square metre. The Round (the green round the statue and the gaps between its buildings) carries flowers everywhere but at four tenths of that, so the statue, the houses and the little guys still read. Within 3.8 m of a path the flowers thin to under half, so the tread stays the line to follow. Tufts are thicker where the ground is lush and a little thinner in the town.
+
+**Cost** (`src/place/meadow-flowers.ts`). Only what is near is drawn in full: a near ring (a 32 m tile round a point 9 m ahead of the camera) of whole flowers (12 triangles) and tufts (10), and a far ring (96 m) of four-triangle flowers and two-triangle tufts that grow in where the near ones shrink away. Four draws and 105,400 triangles on a desktop. A touch device draws about half (54,940); a phone-sized screen (under 500 CSS pixels on its short side) draws the near ring thinly, a third of the far flowers and no far tufts (three draws, 31,760). Nothing is in the shadow pass and there is no per-frame CPU work. One timing, taken under load and so only a pointer (`npm run perf -- --hardware --view home-hill`, the open hill in a full drift, 960 × 600, Apple M1 Max, load averages 16 to 40, one 5 s run each): GPU render 1.97 ms a frame with the meadow off, 2.04 ms with the tint alone, 3.00 ms with all of it; main-thread CPU 4.8 ms either way. So the flowers and specks cost about 1 ms there on that machine; an iPad or a phone has not been measured. The tint's map (4 m texels) bakes in about 5 ms before the land is drawn; the keep map (1 m texels, 1.7 MB) starts baking only once a frame has been drawn and then takes about 3 ms of each frame (about 120 ms in all, measured in Node on the Mac), and flowers appear when it is in.
+
+**Flags.** None: the meadow is on. `?meadow=0` (or `off`) turns it off for comparison: no meadow module is evaluated and the ground's node graph is the graph before the meadow (`test/meadow-off.test.ts`). `?meadow=tint` or `?meadow=flowers` draws one part alone. `?meadowTier=desktop`, `touch` or `phone` forces the cost tier.
+
+**Not covered.** Ring Island's ground is its own vertex-coloured mesh with no lawn layer and its own heights (it is still blockout), so it has no meadow; nor has the classic island. Only Home's land uses the lawn material.
+
+**Known limits.** A dropped log or crate in an open drift stands among 0.4 m flowers; nothing clears round dropped things. Flowers and tufts pass through Buddy and the little guys. The keep map lists what stands from layout data, so a new building or work place needs a line there (the audit finds what was missed).
+
 ## The run
 
 **Owner decision, 8 November: great-beam visual inertia (option 1 of [the Godot comparison](../research/beam-carry-godot-comparison.md)).**

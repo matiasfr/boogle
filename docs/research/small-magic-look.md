@@ -66,6 +66,8 @@ Next if these land: crown tone (ramp by outward direction as vertex colour on th
 
 ## What was built (14 November)
 
+> **Since then** (owner, 14 November: "I love the meadow"): the meadow is Home's default ground dressing across the lawn, not a flagged wedge. What it is now, with its rules, cost and flags: [place.md, "The meadow"](../game-design/place.md#the-meadow-14-november-2026). The rest of this section records the two experiments as first built.
+
 Experiments 1 and 2, on the wedge, each off by default (owner call "Try things early"). Nothing was copied from the reference: the code is Boogle's own TSL, on the ground material now in `src/place/ground-material.ts`. Experiment 3 (air) was not built.
 
 **Flags.** `?meadow=tint`, `?meadow=flowers`, or both as a comma list: `?meadow=tint,flowers` (`?meadow=all` is the same). With no flag the ground's node graph is today's, nothing is added to the scene, and none of the experiments' modules is evaluated: only `src/place/meadow-flags.ts` (the flags, no three.js) loads on every visit. The tint's module is fetched before the land is built, in the railway view's existing async setup, and handed to the ground material as an optional lawn layer; the usual start awaits nothing more. `test/meadow-off.test.ts` holds both facts. Local view only: no sim, world, net or server change, nothing saved, no colliders, nothing to interact with.

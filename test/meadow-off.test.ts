@@ -1,7 +1,8 @@
-// The meadow experiments are off by default (docs/research/small-magic-look.md, "What was built"): with no flag the
-// ground material must not evaluate their modules, and the seam they join through must add nothing to its graph.
-// Asked for by the experiments' review (14 November): a still cannot show a module that loaded and did nothing, so
-// this one test builds the material's node graph in Node. It draws nothing.
+// The meadow is Home's default ground dressing (docs/game-design/place.md, "The meadow"), and `?meadow=0` turns it
+// off for comparison: with that flag the ground material must not evaluate the meadow's modules, and the seam they
+// join through must add nothing to its graph, so "off" is the ground before the meadow. test/meadow-on.test.ts holds
+// the default. Asked for by the meadow's review (14 November): a still cannot show a module that loaded and did
+// nothing, so this test builds the material's node graph in Node. It draws nothing.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -14,12 +15,12 @@ registerHooks({
     return next(url, context);
   },
 });
-(globalThis as { location?: unknown }).location = { search: '' };
+(globalThis as { location?: unknown }).location = { search: '?meadow=0' };
 const { homeGroundMaterial } = await import('../src/place/ground-material.ts');
 const { applyPathSurface } = await import('../src/place/path-surface.ts');
 const flags = await import('../src/place/meadow-flags.ts');
-const EXPERIMENT = /\/meadow(?:-field|-flowers)?\.ts$/;
-const loadedOff = loaded.filter((url) => EXPERIMENT.test(url));
+const MEADOW_MODULE = /\/meadow(?:-field|-flowers)?\.ts$/;
+const loadedOff = loaded.filter((url) => MEADOW_MODULE.test(url));
 
 type Layer = Parameters<typeof homeGroundMaterial>[0];
 /** The finished ground material's graph with its random ids numbered in order of appearance. */
@@ -38,34 +39,30 @@ function graph(layer?: Layer) {
   return canonical(applyPathSurface(homeGroundMaterial(layer)).toJSON()) as { textures?: { name: string }[] };
 }
 
-test('with no meadow flag the ground material evaluates no meadow experiment module', () => {
+test('with meadow=0 the ground material evaluates no meadow module', () => {
   assert.deepEqual(loadedOff, []);
-  assert.deepEqual(flags.MEADOW, { tint: false, flowers: false });
+  assert.deepEqual(flags.MEADOW, { tint: false, flowers: false, tier: '' });
   assert.equal(flags.meadowBeforeLand(), null);
   assert.equal(flags.meadowLawnLayer(), undefined);
 });
 
-test('the land, the ground material and the flags import no meadow experiment statically', () => {
+test('the land, the ground material and the flags import no meadow module statically', () => {
   for (const file of ['land.ts', 'ground-material.ts', 'meadow-flags.ts', 'path-surface.ts']) {
     const source = fs.readFileSync(new URL(`../src/place/${file}`, import.meta.url), 'utf8');
     const imports = [...source.matchAll(/^import\s+(?!type\b)[^;]*?from\s+'([^']+)';/gm)].map((match) => match[1]!);
     assert.deepEqual(
-      imports.filter((path) => EXPERIMENT.test(path)),
+      imports.filter((path) => MEADOW_MODULE.test(path)),
       [],
       file,
     );
   }
 });
 
-test('the lawn-layer seam adds nothing to the flag-off graph, and the tint does change it', async () => {
-  const off = graph();
+test('with meadow=0 the ground graph is the graph before the meadow: the lawn-layer seam adds nothing', () => {
+  const off = graph(flags.meadowLawnLayer());
   assert.deepEqual(
     graph((lawn) => lawn),
     off,
   );
-  const { meadowLawn } = await import('../src/place/meadow.ts');
-  const tinted = graph(meadowLawn);
-  assert.notDeepEqual(tinted, off);
-  assert.ok(tinted.textures?.some((texture) => texture.name === 'place-meadow-field'));
-  assert.ok(!off.textures?.some((texture) => texture.name === 'place-meadow-field'));
+  assert.ok(!off.textures?.some((texture) => texture.name.startsWith('place-meadow')));
 });
