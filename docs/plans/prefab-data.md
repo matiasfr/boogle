@@ -442,3 +442,13 @@ No designer call: nothing a player sees or does changes. No Place port is involv
 ## Not read
 
 `src/entities/ring-island/view.ts`, `halts-view.ts`, `leg-view.ts`, `train-view.ts`, `track-machine.ts` and `seat.ts` were grepped for declarations, not read through; `src/place/layout.ts` and the sim catalogs were loaded for counts only; `src/entity/walker.ts`, `inspect.ts`, `src/render/assets.ts`, `dev/level/*` beyond `level.ts`'s head, `dev/assets/build.ts`, the asset-author skill, `docs/agents/rendering.md`, `typescript.md`, `sync.md`, `room-safety.md`, `mixed-builds.md`, `docs/plans/asset-pipeline.md`, `entity-components.md` and `level-design-tools.md` were not read. `npm run loop` was not run (no rail beat changes). Unity, Unreal and Godot facts were not re-fetched from their docs. `registerAsset` coverage of the 12 GLBs and the manifest's lack of node names are from grep and the file's head.
+
+### Step 7 Linux portability correction
+
+The arm64 byte proof did not establish cross-platform equality of native-derived runtime values. The Linux CI
+failure was two one-ULP Bell quaternion differences. The owner chose authored-only artifacts: JSON now stores
+frame/bounds/span/path operands and resolves native math on load through the same validated loader used by the
+checker. Authored numbers remain lossless; no quantization. All runtime prefab goldens use tight numeric tolerance
+with exact structure, strings, flags, order, counts and topology. A significant-digit artifact tripwire and native-math
+perturbation freshness test prevent recurrence. This supersedes earlier runtime byte-equality claims.
+See [diagnosis, construction proof, checks and opened stills](prefab-data-step-7-portability.md).
