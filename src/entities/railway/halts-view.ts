@@ -10,7 +10,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { trainAlong, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, haltPlatform } from '../../sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
@@ -25,7 +25,7 @@ import {
   type ReadWorld,
 } from '../../sim/railway-rows.ts';
 import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
-import { LEVER_YIELD, railheadLever } from './lever-place.ts';
+import { leverAskTaken, leverPlatform, leverYield, railheadLever } from './lever-place.ts';
 import { line2World, line2Y, RING_S } from './line2-path.ts';
 import { createRequestLever, type RequestLever } from './request-lever.ts';
 import { LINE2_GLIDE, pierLaid } from '../../sim/railway-line2-layout.ts';
@@ -476,17 +476,13 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     if (x.ring && Math.abs(x.ring.u() - x.ring.shown) > 0.05) return [];
     const at = x.lever.knob(0, new THREE.Vector3());
     if (Math.hypot(p.x - at.x, p.z - at.z) > LEVER_REACH || Math.abs(p.y - at.y) > 1.6) return [];
-    // The railhead's lever stands near its platform's end: no prompt from where the server would refuse the ask (it
-    // judges from the platform's middle, railway-server.ts rail.call).
-    if (x.ring && x.stop === RAILHEAD && !x.up) {
-      const plat = haltPlatform(x.id, x.dir, ringHead(wd0()));
-      if (Math.hypot(p.x - plat.x / 100, p.z - plat.z / 100) > plat.reach / 100) return [];
-    }
+    // No prompt from where the server would refuse the ask: it judges from the platform's middle, by reach and height.
+    if (!leverAskTaken(leverPlatform(wd0(), x.id, x.dir), p.x, p.y, p.z)) return [];
     const id = `railway-request-${x.id}-${x.up ? 'up' : 'down'}`;
     // Every lever's prompt names where its train goes (running-side.md, step 2; draft wording, not The Boogler's).
     const verb = `Request stop: to ${label(x)}`;
-    // With a footing on your back the lever yields the pick to whatever the footing is for (lever-place.ts).
-    const r = account(wd0(), adapter.read.pid)?.foot ? -LEVER_YIELD : 0;
+    // With a footing on your back, where a footing is worked, the lever yields the pick (lever-place.ts).
+    const r = leverYield(!!account(wd0(), adapter.read.pid)?.foot, p.x, p.z, ringHead(wd0()));
     if (over(x) || pulled.has(x)) out.push({ id, verb, at, r, blocked: 'Stop requested' });
     else
       out.push({

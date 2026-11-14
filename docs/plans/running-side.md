@@ -155,7 +155,7 @@ Models are `npm run models` rows (withCodex).
 - [x] **1. Levers at the leaving end, ahead of the swap. Tier: view and Place data; no bump.**
       _Built 14 November, with two departures._ The lever already stood 0.8 m from the boarding edge (`+sign` is
       toward the rails, so `sign * (hw - 1.7)` below would have put it in the back half): only `ds` changed. The
-      Railhead's east lever moved too, to its sliding platform's home end (it stood 3.2 m from the jib: the owner's
+      Railhead's east lever moved too, to 0.6 m from its sliding platform's home end (it stood 3.2 m from the jib: the owner's
       footing report of the same day); it calls home in every state today, and step 4 restands it with Far Head's.
       `src/prefab/halt-attachments.ts`: for a main platform's lever, `ds = way * (half - 1.4)` with `way` the way it
       calls today (Camp and the Pier: -1; the island: unchanged), and `dl = sign * (hw - 1.7)` (0.8 m from the boarding

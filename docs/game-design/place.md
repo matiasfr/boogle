@@ -719,8 +719,9 @@ reach 12.6 m). Not tested on a device.
 The lever rule: a lever stands on the platform its train stops at, 0.8 m in from the boarding edge and 1.4 m from the
 end that train leaves toward. Built so far for the halts with one platform, whose train goes home: **Camp**'s lever
 moved from the buffers' end to the Village end (21.2 m along the platform), **the Pier**'s from the seaward end to the
-landward end by the ramp (19.2 m), and **the Railhead**'s from 6 m short of its sliding platform's far end to 1.4 m
-from its home end (17.6 m), riding out with the railhead as before. The Quarry's, Far Head's, Ring Island's and the
+landward end by the ramp (19.2 m), and **the Railhead**'s from 6 m short of its sliding platform's far end to 0.6 m
+from its home end (18.4 m; nearer the end than the rule's 1.4 m, to stand off the rack on the same platform), riding
+out with the railhead as before. The Quarry's, Far Head's, Ring Island's and the
 island's levers have not moved (the first three wait for right-hand running, which changes the way they call). Every
 plaque now carries a solid arrow at the end it points to, the way that train leaves along the platform, beside the
 name, and every lever's prompt names where its train goes: **Request stop: to Village** (draft wording, the middle
@@ -729,13 +730,19 @@ _Why (owner, 14 November: "the signal to request a stop is right next to where I
 lever stood 3.1 m from the pier head's jib and the Railhead's 3.2 m from its jib, both inside the jib's 4.6 m prompt
 reach, so with a footing on your back the nearer of "Request stop" and "Set the footing" won the button. Now the
 Pier's lever is 22 m from the jib and 13.1 m from the pier rack (7.3 m between the two reaches), and the Railhead's is
-20.6 m from its jib and 6.0 m from its rack at every bent (the reaches end 0.6 m apart: the 25 m platform cannot give
-more and stay inside the reach the server judges a lever ask from, so the Railhead's lever offers no prompt from
-outside that reach). Every generated halt lever keeps at least 3 m between its reach and the reach of every rack,
-jib, frame, seam and kiln (`test/halt-lever-place.test.ts`). And while you carry a footing a lever counts 8 m further
-off for the Interact pick, so anything the footing is for wins wherever both are in reach; a lever alone in reach
-still answers, and with an empty back the lever at hand wins as before. Local view; no op, state, catalog or server
-change. Not tested on a device.
+21 m from its jib at every bent. Its rack is on the same 25 m platform, so 3 m is not to be had there: measured from
+the knob (the prompt follows the handle), the two prompts' reaches end 1.58 m apart with the handle at rest and 0.96 m
+with it pulled over, the least there is. Every generated halt lever keeps at least 3 m between its knob's reach and
+the reach of every rack, jib, frame, seam and kiln, over the handle's whole travel (`test/halt-lever-place.test.ts`).
+**No lever offers an ask the server would refuse:** the prompt uses the server's own position test for a lever ask
+(within the platform's reach of its middle, and no more than 2.6 m above or below 0.4 m over it), so jumping above a
+lever or standing past a platform's end shows no prompt instead of one that is denied. And while you carry a footing
+**and stand where a footing is worked** (inside the reach of a rack, the stall and cradle, the pier's frame or the
+railhead's jib), a lever counts 8 m further off for the Interact pick, so the footing's action wins there; anywhere
+else the lever competes as it always did (a loose pile beside it does not beat it), and with an empty back the lever
+at hand wins. Local view; no op, state, catalog or server change. Not tested on a device.
+_Known, not fixed here:_ a loose pile's pickup is offered as runnable while a footing fills your back, though the
+server refuses it (`sources.ts`); it should be greyed.
 
 The two Server-owned lines run at
 20 m/s: camp–village, and village–quarry–Far Head. Owner platform carry keeps a rider

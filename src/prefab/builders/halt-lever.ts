@@ -29,6 +29,9 @@ const REST = -0.35,
   OVER = 0.75,
   SWING_S = 0.12;
 const HANDLE_GAP = 0.26;
+/** How far the knob (the prompt's centre) stands from the frame's origin along its local +z (m): back at rest, forward
+ * with the handle over. The knob is 0.64 m up the rod from the pivot. */
+export const KNOB_TRAVEL = [0.64 * Math.sin(REST), 0.64 * Math.sin(OVER)] as const;
 
 /** `arrow` is -1 for an arrow at the plaque's left end pointing left, +1 for one at its right end pointing right, 0 for
  * none: the way that train leaves along the platform, as you read the plaque (running-side.md, step 2). */

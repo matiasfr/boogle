@@ -116,7 +116,7 @@ if (spot === 'camp' || spot === 'pier') {
   const lever = () => view()?.ringLevers?.find((l) => l.halt === 4 && l.platform === 'down');
   const end = performance.now() + 30000;
   while (!lever()?.on && performance.now() < end) await bot.wait(100);
-  const k = ring.RING_HEAD.findIndex((h) => Math.abs((h.u - 2500 + 140) / 100 - lever()!.goal) < 0.01),
+  const k = ring.RING_HEAD.findIndex((h) => Math.abs((h.u - 2500 + 60) / 100 - lever()!.goal) < 0.01),
     head = ring.RING_HEAD[k]!;
   const at = (du: number, lat: number) => {
     const p = ring.ringAt(head.u + du, lat);
