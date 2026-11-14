@@ -374,7 +374,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/curio-shelf.ts": {
-      "count": 3,
+      "count": 1,
       "exports": ["createCurioShelf"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },

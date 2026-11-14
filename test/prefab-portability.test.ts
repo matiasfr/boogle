@@ -1,3 +1,4 @@
+import { prefabs as curio } from '../src/content/prefabs/curio.ts';
 import { prefabs as shop } from '../src/content/prefabs/shop.ts';
 import { levels as shopLevels } from '../src/content/levels/shop.ts';
 import { prefabs as railway } from '../src/content/prefabs/railway.ts';
@@ -35,7 +36,7 @@ test('artifact serialization is independent of runtime native transcendental res
     }
     writeArtifacts(
       compile(
-        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop],
+        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop, ...curio],
         [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels],
       ),
       'content/built',

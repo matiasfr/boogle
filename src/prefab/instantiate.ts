@@ -18,6 +18,7 @@ import './builders/seat-chair.ts';
 import './builders/greybox-box.ts';
 import './builders/workshop-parts.ts';
 import './builders/shop-parts.ts';
+import './builders/curio-parts.ts';
 import type { Interactable } from '../player/hands.ts';
 import type { Part } from '../render/part-geometry.ts';
 import { builders } from './builders.ts';

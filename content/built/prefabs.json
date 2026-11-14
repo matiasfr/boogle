@@ -715,6 +715,407 @@
         "none": true
       }
     },
+    "town.curio-bay": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            1.4,
+            0
+          ],
+          "half": [
+            2.8,
+            1.4,
+            0.4
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.curio-bay",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "footHalf": [
+            3,
+            0.6
+          ],
+          "piece": "bay",
+          "wide": 5.4
+        }
+      }
+    },
+    "town.curio-dust-skirt": {
+      "colliders": [],
+      "key": "town.curio-dust-skirt",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "piece": "dust-skirt"
+        }
+      }
+    },
+    "town.curio-gift-aviator": {
+      "colliders": [],
+      "key": "town.curio-gift-aviator",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 1.31,
+          "gift": "aviator",
+          "piece": "gift",
+          "x": 1.08
+        }
+      }
+    },
+    "town.curio-gift-beanie": {
+      "colliders": [],
+      "key": "town.curio-gift-beanie",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 2.36,
+          "gift": "beanie",
+          "piece": "gift",
+          "x": -1.35
+        }
+      }
+    },
+    "town.curio-gift-bucket": {
+      "colliders": [],
+      "key": "town.curio-gift-bucket",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 1.31,
+          "gift": "bucket",
+          "piece": "gift",
+          "x": -2.16
+        }
+      }
+    },
+    "town.curio-gift-critter": {
+      "colliders": [],
+      "key": "town.curio-gift-critter",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 1.32,
+          "gift": "critter",
+          "piece": "gift",
+          "x": 0.45
+        }
+      }
+    },
+    "town.curio-gift-diving": {
+      "colliders": [],
+      "key": "town.curio-gift-diving",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 1.31,
+          "gift": "diving",
+          "piece": "gift",
+          "x": 2.16
+        }
+      }
+    },
+    "town.curio-gift-egg": {
+      "colliders": [],
+      "key": "town.curio-gift-egg",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 1.32,
+          "gift": "egg",
+          "piece": "gift",
+          "x": 1.35
+        }
+      }
+    },
+    "town.curio-gift-festival": {
+      "colliders": [],
+      "key": "town.curio-gift-festival",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 1.32,
+          "gift": "festival",
+          "piece": "gift",
+          "x": -0.45
+        }
+      }
+    },
+    "town.curio-gift-glasses": {
+      "colliders": [],
+      "key": "town.curio-gift-glasses",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 2.36,
+          "gift": "glasses",
+          "piece": "gift",
+          "x": 1.35
+        }
+      }
+    },
+    "town.curio-gift-goggles": {
+      "colliders": [],
+      "key": "town.curio-gift-goggles",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 2.19,
+          "gift": "goggles",
+          "piece": "gift",
+          "x": 2.16
+        }
+      }
+    },
+    "town.curio-gift-hardhat": {
+      "colliders": [],
+      "key": "town.curio-gift-hardhat",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 1.31,
+          "gift": "hardhat",
+          "piece": "gift",
+          "x": 0
+        }
+      }
+    },
+    "town.curio-gift-hat": {
+      "colliders": [],
+      "key": "town.curio-gift-hat",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 2.36,
+          "gift": "hat",
+          "piece": "gift",
+          "x": -2.25
+        }
+      }
+    },
+    "town.curio-gift-headphones": {
+      "colliders": [],
+      "key": "town.curio-gift-headphones",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 2.36,
+          "gift": "headphones",
+          "piece": "gift",
+          "x": 2.25
+        }
+      }
+    },
+    "town.curio-gift-lampcap": {
+      "colliders": [],
+      "key": "town.curio-gift-lampcap",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 2.19,
+          "gift": "lampcap",
+          "piece": "gift",
+          "x": -1.08
+        }
+      }
+    },
+    "town.curio-gift-mossscarf": {
+      "colliders": [],
+      "key": "town.curio-gift-mossscarf",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 2.19,
+          "gift": "mossscarf",
+          "piece": "gift",
+          "x": 0
+        }
+      }
+    },
+    "town.curio-gift-overalls": {
+      "colliders": [],
+      "key": "town.curio-gift-overalls",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 1.32,
+          "gift": "overalls",
+          "piece": "gift",
+          "x": -2.25
+        }
+      }
+    },
+    "town.curio-gift-pennant": {
+      "colliders": [],
+      "key": "town.curio-gift-pennant",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 1.31,
+          "gift": "pennant",
+          "piece": "gift",
+          "x": -1.08
+        }
+      }
+    },
+    "town.curio-gift-raincoat": {
+      "colliders": [],
+      "key": "town.curio-gift-raincoat",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 1.32,
+          "gift": "raincoat",
+          "piece": "gift",
+          "x": -1.35
+        }
+      }
+    },
+    "town.curio-gift-scarf": {
+      "colliders": [],
+      "key": "town.curio-gift-scarf",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 2.36,
+          "gift": "scarf",
+          "piece": "gift",
+          "x": 0.45
+        }
+      }
+    },
+    "town.curio-gift-scope": {
+      "colliders": [],
+      "key": "town.curio-gift-scope",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 1.32,
+          "gift": "scope",
+          "piece": "gift",
+          "x": 2.25
+        }
+      }
+    },
+    "town.curio-gift-strawhat": {
+      "colliders": [],
+      "key": "town.curio-gift-strawhat",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 2.19,
+          "gift": "strawhat",
+          "piece": "gift",
+          "x": -2.16
+        }
+      }
+    },
+    "town.curio-gift-teacup": {
+      "colliders": [],
+      "key": "town.curio-gift-teacup",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": false,
+          "boardY": 2.36,
+          "gift": "teacup",
+          "piece": "gift",
+          "x": -0.45
+        }
+      }
+    },
+    "town.curio-gift-whistle": {
+      "colliders": [],
+      "key": "town.curio-gift-whistle",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "bay": true,
+          "boardY": 2.19,
+          "gift": "whistle",
+          "piece": "gift",
+          "x": 1.08
+        }
+      }
+    },
+    "town.curio-shelf": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            1.7,
+            0
+          ],
+          "half": [
+            2.8,
+            1.7,
+            0.4
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.curio-shelf",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.curio-parts",
+        "params": {
+          "footHalf": [
+            3,
+            0.6
+          ],
+          "piece": "shelf",
+          "wide": 5.4
+        }
+      }
+    },
     "town.shop-awning": {
       "colliders": [],
       "key": "town.shop-awning",

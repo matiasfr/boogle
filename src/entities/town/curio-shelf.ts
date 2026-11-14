@@ -14,31 +14,31 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { me } from '../../player/player.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
+import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
+import { loadPrefabArtifact } from '../../prefab/validate.ts';
+import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { GIFTS, type Gift, type GiftId, type Part } from '../../render/cosmetic-parts.ts';
 import type { WardrobeApi } from '../wardrobe/state.ts';
+const definitions = loadPrefabArtifact(artifact).prefabs;
 
-const COLS = 6,
-  WIDE = 5.4,
-  ROWS_Y = [1.32, 2.36],
-  TOP_BOARD = ROWS_Y[1]! - 0.06,
+const WIDE = 5.4,
   CRYSTAL_Y = 0.82;
 /** What stands on it: the boxes' gifts, not the finds (the finders' bay) nor the shop's stock (its rail). */
 const ON_SHELF = GIFTS.filter((g) => !g.area);
 /** What stands on the finders' bay: the secrets' gifts, five to a board. Its boards are Place's (2.14 and 1.26 m). */
 const ON_BAY = GIFTS.filter((g) => !!g.area);
-const BAY_ROWS_Y = [1.31, 2.19];
 
 export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi) {
-  const [{ merged }, { H, addStatic }, { SHELF, toWorld }, { addFoot }, { FINDERS_B: FINDERS, bayBoxPoint }] =
+  const [{ merged }, { H }, { SHELF, toWorld }, { addFoot }, { FINDERS_B: FINDERS, bayBoxPoint }, { instantiate }] =
     await Promise.all([
       import('../../render/part-geometry.ts'),
       import('../../place/land.ts'),
       import('../../place/layout.ts'),
       import('../../place/sites.ts'),
       import('../../place/home-station.ts'),
+      import('../../prefab/instantiate.ts'),
     ]);
   const SX = toWorld(SHELF.x),
     SZ = SHELF.z,
@@ -71,77 +71,63 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi) 
   };
   const giftMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
   const sheetMat = new THREE.MeshStandardNodeMaterial({ color: '#ded5c2', roughness: 1, flatShading: true });
-  const frameGeo = (() => {
-    const o = '#7f5630',
-      b = '#a9794c',
-      back = '#5c4530';
-    const parts: Part[] = [
-      ['b', 0, 1.65, -0.3, WIDE, 3.1, 0.1, back],
-      ['b', -WIDE / 2, 1.65, 0, 0.18, 3.3, 0.7, o],
-      ['b', WIDE / 2, 1.65, 0, 0.18, 3.3, 0.7, o],
-      ['b', 0, 0.42, 0.04, WIDE, 0.1, 0.68, b],
-      ['b', 0, 1.26, 0.04, WIDE, 0.1, 0.68, b],
-      ['b', 0, TOP_BOARD, 0.04, WIDE, 0.1, 0.68, b],
-      ['b', 0, 3.1, 0.04, WIDE + 0.5, 0.14, 1.1, o],
-      ['b', 0, 3.3, 0, WIDE + 0.1, 0.34, 0.5, '#c4453a'],
-      ['b', 0, 0.12, 0.04, WIDE, 0.22, 0.68, o],
-    ];
-    // The finders' bay's frame (Place's), in bay space, with its teal band.
-    const bo = '#6a5a48',
-      bb = '#8f7a60';
-    const bay = merged([
-      ['b', 0, 1.3, -0.3, WIDE, 2.4, 0.1, '#4c4238'],
-      ['b', -WIDE / 2, 1.3, 0, 0.18, 2.6, 0.7, bo],
-      ['b', WIDE / 2, 1.3, 0, 0.18, 2.6, 0.7, bo],
-      ['b', 0, 1.26, 0.04, WIDE, 0.1, 0.68, bb],
-      ['b', 0, 2.14, 0.04, WIDE, 0.1, 0.68, bb],
-      ['b', 0, 2.62, 0.04, WIDE + 0.5, 0.14, 1.1, bo],
-      ['b', 0, 2.76, 0, WIDE + 0.1, 0.16, 0.5, '#2fb7a0'],
-    ]);
-    return join(merged(parts), inBay(bay));
-  })();
+  // Identity-local records return parts for the original three merged draws. Their owners supply world frames.
+  const shelfOwner = createOwnedView(),
+    bayOwner = createOwnedView();
+  shelfOwner.root.position.set(SX, SY, SZ);
+  shelfOwner.root.rotation.y = SHELF.yaw;
+  bayOwner.root.position.set(FX, FY, FZ);
+  bayOwner.root.rotation.y = FINDERS.yaw;
+  owner.add(shelfOwner.root, bayOwner.root);
+  owner.cleanup(() => {
+    shelfOwner.dispose();
+    bayOwner.dispose();
+  });
+  const build = (name: string, view = shelfOwner) => {
+    const key = `town.curio-${name}` as const;
+    return instantiate(key, { id: `curio-${name}`, prefab: key, pos: [0, 0, 0] }, { owner: view });
+  };
+  const shelfPiece = build('shelf'),
+    bayPiece = build('bay', bayOwner);
+  const bayGeo = merged(bayPiece.parts);
+  const frameGeo = join(merged(shelfPiece.parts), inBay(bayGeo));
   const frame = new THREE.Mesh(frameGeo, giftMat);
   frame.castShadow = frame.receiveShadow = true;
   shelf.add(frame);
-  addStatic(
-    { kind: 'box', hx: WIDE / 2 + 0.1, hy: 1.7, hz: 0.4 },
-    { x: SX, y: SY + 1.7, z: SZ },
-    new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, SHELF.yaw),
-    undefined,
-    owner,
-  );
-  addFoot(SX, SZ, SHELF.yaw, WIDE / 2 + 0.3, 0.6, owner);
-  const bayYaw = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, FINDERS.yaw);
-  addStatic(
-    { kind: 'box', hx: WIDE / 2 + 0.1, hy: 1.4, hz: 0.4 },
-    { x: FX, y: FY + 1.4, z: FZ },
-    bayYaw,
-    undefined,
-    owner,
-  );
-  addFoot(FX, FZ, FINDERS.yaw, WIDE / 2 + 0.3, 0.6, owner);
+  const foot = (name: 'shelf' | 'bay', x: number, z: number, yaw: number) => {
+    const def = definitions[`town.curio-${name}`]!;
+    if (!('builder' in def.visual)) throw new Error('curio: expected frame recipe');
+    const half = def.visual.params.footHalf;
+    if (!Array.isArray(half) || typeof half[0] !== 'number' || typeof half[1] !== 'number')
+      throw new Error('curio: expected footprint');
+    addFoot(x, z, yaw, half[0], half[1], owner);
+  };
+  shelfPiece.setEnabled(true);
+  foot('shelf', SX, SZ, SHELF.yaw);
+  bayPiece.setEnabled(true);
+  foot('bay', FX, FZ, FINDERS.yaw);
+  const giftParts = new Map([...ON_SHELF, ...ON_BAY].map((g) => [g.id, build(`gift-${g.id}`).parts]));
+  const dustSkirt = build('dust-skirt').parts;
 
   // Two meshes, whatever's uncovered and whatever's still under its sheet, remade when a sheet comes off: two draws
   // however many shapes it holds, the bay's included. A bay slot is in bay space.
   const slots = new Map<GiftId, { x: number; y: number; bay: boolean }>();
   /** Lifted by however far its shape reaches below its origin, so it stands on the board rather than through it. */
   const lift = (g: Gift) => {
-    const shape = merged(g.parts);
+    const shape = merged(giftParts.get(g.id)!);
     shape.computeBoundingBox();
     const by = Math.max(0, -shape.boundingBox!.min.y);
     shape.dispose();
     return by;
   };
-  ON_SHELF.forEach((g, k) => {
-    const col = k % COLS,
-      row = Math.floor(k / COLS);
-    slots.set(g.id, { x: (col - (COLS - 1) / 2) * (WIDE / COLS), y: ROWS_Y[1 - row]! + lift(g), bay: false });
-  });
-  ON_BAY.forEach((g, k) => {
-    const col = k % 5,
-      row = Math.floor(k / 5);
-    slots.set(g.id, { x: (col - 2) * (WIDE / 5), y: BAY_ROWS_Y[1 - row]! + lift(g), bay: true });
-  });
+  for (const g of [...ON_SHELF, ...ON_BAY]) {
+    const def = definitions[`town.curio-gift-${g.id}`]!;
+    if (!('builder' in def.visual)) throw new Error('curio: expected gift recipe');
+    const { x, boardY, bay } = def.visual.params;
+    if (typeof x !== 'number' || typeof boardY !== 'number' || typeof bay !== 'boolean')
+      throw new Error('curio: expected gift slot');
+    slots.set(g.id, { x, y: boardY + lift(g), bay });
+  }
   const placed = (g: Gift, parts: Part[]): Part[] => {
     const at = slots.get(g.id)!;
     return parts.map((p) => {
@@ -186,9 +172,9 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi) 
     const covered = all.filter((g) => !wardrobe.isOwned(g.id));
     real.geometry.dispose();
     cover.geometry.dispose();
-    real.geometry = drawn(out, (g) => g.parts);
+    real.geometry = drawn(out, (g) => giftParts.get(g.id)!);
     // Under its sheet: the same shape, a little fuller, in cloth, with a skirt to the shelf.
-    cover.geometry = drawn(covered, (g) => [...g.parts, ['k', 0, 0.2, 0, 0.36, 0.4, 0.36, '#fff']], 1.12);
+    cover.geometry = drawn(covered, (g) => [...giftParts.get(g.id)!, ...dustSkirt], 1.12);
     real.visible = out.length > 0;
     cover.visible = covered.length > 0;
   }
