@@ -747,7 +747,7 @@ today's track and 0.40 m on an up track, under way, and nothing at any up-track 
 the up track** (`layout.ts` `upFull`, `track-ease.ts`): 4 m inside the line's 6.5 m bend it was a bend of under 3 m;
 now it starts its turn earlier and ends it later (s 156 to 200), running between 3.91 and 4.35 m from the line, and
 turns no tighter than 10 m. Rails, bed and trains follow it; the up platform (the track within 0.1 m of where it was
-beside it), the plank crossing, the levers and the stopping marks are where they were. On straight track nothing
+beside it), the plank crossing, the levers and the stopping marks are where they were. **A drawbar and buffers are drawn at each coupling** (`couplings.ts`): a dark iron bar from one headstock to the next and a pair of buffers on each car's end facing it (the engine's own are on its model), following the cars as drawn and stretching with the gap; no solid, no state, two instanced draws for every train. On straight track nothing
 moves. Local view and Place data; bodies, seats and the cab's cutaway follow the same poses;
 the sim's train, its stops and its extent are unchanged. Not tested on a device.
 

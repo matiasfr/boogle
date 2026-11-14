@@ -36,6 +36,7 @@ import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import { STEEL_CAR, steelCarOffset } from './cars.ts';
 import { ENGINE_BUFFERS, trainPlaces, type Vehicle } from './car-spacing.ts';
+import { createCouplings } from './couplings.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
@@ -386,6 +387,7 @@ export async function createRailwayTrains(
     made: Vehicle[] = [],
     stock: Car[] = [],
     standAt: number[] = [];
+  const couplings = createCouplings(owner);
   const seatMatrix = new THREE.Matrix4();
   const askAt = new THREE.Vector3(),
     riderAt = new THREE.Vector3();
@@ -825,6 +827,13 @@ export async function createRailwayTrains(
       if (tr.steel) rail.drawCar(tr.steel, stepAlpha());
     });
     rail.drawCar(wagonCar, stepAlpha());
+    // A drawbar and buffers between each pair of vehicles as they are drawn (couplings.ts).
+    couplings.begin();
+    for (const tr of trains) {
+      const list = carsOf(tr);
+      for (let n = 1; n < list.length; n++) couplings.link(list[n - 1]!, list[n]!, n === 1);
+    }
+    couplings.end();
     swingDoors(dt);
     cutCab(dt);
     drawWagon();
