@@ -22,6 +22,7 @@ const entries: DockPanel[] = [
   { id: 'room', label: 'Room', load: () => import('./dev/room.ts') },
   { id: 'report', label: 'Report', load: () => import('./dev/report.ts') },
 ];
+if (import.meta.env.DEV) entries.push({ id: 'zfight', label: 'Z-fighting', load: () => import('./dev/zfight.ts') });
 /** Register a lazy panel before or after installation, using the same bounded commands as its agent API. */
 export function registerDockPanel(panel: DockPanel) {
   if (entries.some((entry) => entry.id === panel.id)) throw new Error(`Dev panel already registered: ${panel.id}`);
