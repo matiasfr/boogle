@@ -66,7 +66,7 @@ export async function createRailwayRoundhouse(
   owner: OwnedView,
   deps: { contactIn: (id: number) => number },
 ) {
-  const [{ addStatic }, layout, home] = await Promise.all([
+  const [{ addStatic, H }, layout, home] = await Promise.all([
     import('../../place/land.ts'),
     import('../../place/layout.ts'),
     import('../../place/home-station.ts'),
@@ -123,16 +123,25 @@ export async function createRailwayRoundhouse(
   // Local: nothing is sent or saved. Every Install hold starts inside the server's reach.
   const garageGeo = garageRow().geo;
   const garagePost = polarAt(table, garageGeo.post);
-  const garageView = await createGarageView(owner, { table, y: tableY, post: garagePost, ground: tableY }, garageGeo, {
-    // The deck is at rest when no choreography turns it, it is not catching up, and the shunter is home in the stall.
-    restYaw: () =>
-      (deckK === null || deckK <= 0) && !tableTurning && Math.abs(shunterA - (PARKED_A - PARK.gap)) < 0.05
-        ? tableYaw
-        : null,
-    install: (rev) => adapter.installBoiler(rev),
-    installHere: true,
-    online: () => adapter.read.ready(),
-  });
+  // The post, jib, stand and crew stand on the yard's ground beside the table, 0.3 m under the deck's rail height
+  // (at the deck's height the empty stand's legs and the mast hung in the air).
+  const garageStand = polarAt(table, garageGeo.stand);
+  const garageGround = H(garageStand.x, garageStand.z);
+  const garageView = await createGarageView(
+    owner,
+    { table, y: tableY, post: garagePost, ground: garageGround },
+    garageGeo,
+    {
+      // The deck is at rest when no choreography turns it, it is not catching up, and the shunter is home in the stall.
+      restYaw: () =>
+        (deckK === null || deckK <= 0) && !tableTurning && Math.abs(shunterA - (PARKED_A - PARK.gap)) < 0.05
+          ? tableYaw
+          : null,
+      install: (rev) => adapter.installBoiler(rev),
+      installHere: true,
+      online: () => adapter.read.ready(),
+    },
+  );
   owner.cleanup(garageView.dispose);
   // The install is not predicted, so a refusal is no correction: the adapter says so directly and the part lowers.
   owner.cleanup(
