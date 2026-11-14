@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-14). Design only; nothing built.** Base: `origin/main` at `4a5d2b9ff`. Every step is
+> **Status: steps 1–6 built (2026-11-14); Checkpoint R's reload proofs run in a browser, the ship pending.** Original design base: `origin/main` at `4a5d2b9ff`. Every step is
 > Local (this browser's body and its own localStorage): no server code, no wire field, no op, no saved state and no
 > `WORLD_NS` bump. Owner call: [A recent reload puts you back where you were](../agents/owner-calls.md#a-recent-reload-returns-you-where-you-were).
 
@@ -8,8 +8,7 @@
 
 A player who reloads or rejoins soon after leaving stands where they stood (or at the nearest safe spot to it), anywhere
 on the built route, not only on Home island's open ground; after a long absence, or with no remembered place, they
-arrive at Home. Serves DESIGN.md 8 (Designed for drop-in, drop-out: "joining, leaving, reconnecting must remain
-reliable"). It bends nothing.
+arrive at Home. Serves DESIGN.md 8 (Enjoyable alone and together: "Joining, leaving, reconnecting and saving must remain reliable"). It bends nothing.
 
 ## The owner's words (14 November 2026, verbatim)
 
@@ -207,12 +206,12 @@ approved plan" (Codex, gpt-6.1-sol medium), step 5 is player-visible (implemente
 review on fable medium). Steps 2 and 3 edit `src/player/world-reset.ts`: read `.claude/rules/state-consumers.md`
 first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: steps 1 to 3, then 4 to 6.
 
-- [ ] **1. Reproduce and pin the gap** (sol medium). Add `dev/look/evals/railway-return.ts` on the pattern of
+- [x] **1. Reproduce and pin the gap** (sol medium). Eval written; baseline browser run unverified (see [batch report](resume-return-steps-1-3-report.md)). Add `dev/look/evals/railway-return.ts` on the pattern of
   `dev/look/evals/railway-reload.ts` (a real reload, re-attached by `--until`): in a `?from=gorge-reached` room, stand
   on High Gorge's north platform for 6 s, reload, and report `{ before, after, distance }` on
   `document.documentElement.dataset.railwayReturn`. Expected today: after is the village. No game code changes.
   Verify: the eval's output shows the failure this plan fixes; paste it in the report.
-- [ ] **2. The surface test and the record, pure** (sol medium). Create `src/place/return-spot.ts`:
+- [x] **2. The surface test and the record, pure** (sol medium). Create `src/place/return-spot.ts`:
   `type ReturnSpot`; `readReturnSpot(value: unknown, now: number, windowMs: number): ReturnSpot | null` (finite
   numbers, `|x|, |z| <= 5000`, `-50 <= y <= 500`, `0 <= now - at <= windowMs`, `ride` validated the same way, else
   `null`; never throws); `captureReturnSpot(prev, state, now)` implementing the saving table from
@@ -232,7 +231,7 @@ first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: st
   12 m over ground, and a slab with another 2 m above it; refuses a spot under a 1 m ceiling, mid-air, and a deck that
   has been removed (after a step); `standableNear` finds the deck 3 m aside. `test/world-reset.test.ts`: a `v1` key is
   cleared.
-- [ ] **3. Save everywhere you can stand** (sol medium). Edit `src/entities/railway/arrival.ts`: replace `poseKey`,
+- [x] **3. Save everywhere you can stand** (sol medium). Browser proof unverified; see [batch report](resume-return-steps-1-3-report.md). Edit `src/entities/railway/arrival.ts`: replace `poseKey`,
   `capturePose` and `savePose` with the record above (`captureReturnSpot`, `standing` = `me.coyote > 0 &&
   !me.swimming && !me.down && !aboard() && !inputState.seated`); write when the spot changes, at least every 60 s, on
   `pagehide` and on `visibilitychange` to hidden; never write `null`; keep skipping while `fallArrival.active` or
@@ -241,7 +240,7 @@ first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: st
   `createPosePolicy.read` and the `ground` sample go; `posePolicy.safe` stays for Get unstuck's ground search.
   Verify: the step 1 eval now shows a `v1` record with High Gorge's coordinates after 6 s on the platform, unchanged
   after stepping onto a train (with `ride` set), and unchanged after 5 s in the sea.
-- [ ] **4. Return in place, with the fallback chain** (sol medium). Edit `src/entities/railway/arrival.ts`: replace
+- [x] **4. Return in place, with the fallback chain** (sol medium). Implemented; browser proofs recorded in the follow-up report. Edit `src/entities/railway/arrival.ts`: replace
   `restorePose` with a small state machine `returning: { list, k, since } | null`: on `loaded`, read the record with
   `readReturnSpot(..., Date.now(), tune.railReturnMinutes * 60000)`; if `null`, today's path (jump landing, else
   spawn). Else for candidate `k`: hold the body at it each update; when `areasSettled(x, z)` and `scenery.ready()`,
@@ -257,14 +256,23 @@ first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: st
   spawn; a candidate that never settles times out at 2.5 s; an expired record goes straight to spawn. One more eval
   mode (`?mode=train`): reload while seated on a moving train between two halts and land on a platform of the nearer
   one.
-- [ ] **5. Nobody sees the move** (implementer, fable medium; visual review, fable medium). Find where the loading
+- **After the independent review (14 November), as built:** the halt fallback lists only halts standing in the
+  room's accepted state, one a physical landing, and keeps trying the next nearest inside an 8 s budget (not "the two
+  nearest"); a train reload goes to the halt the train was running to and a fallback halt faces its track; every
+  read and write of the record goes through a guard that treats blocked storage as no record.
+- [x] **5. Nobody sees the move** (implementer, fable medium; visual review, fable medium). As built: the hold is
+  asked for at boot, before the railway view exists (`src/features/return-cover.ts` reads the record;
+  `src/boot/cover-hold.ts`, awaited in `src/main.ts` for at most 10 s; `src/place/return-settle.ts` is ended by the
+  arrival once the body has touched down), not through `arrival.settling()`; and the tab publishes no pose while it is
+  pending (`holdPresencePose`, `src/netplay/net.ts`: Local, no wire change), because `enterIsland` sends the spawn's
+  position at once and a friend would otherwise see you at Home first. The plan's text: Find where the loading
   cover lifts for the railway view and hold it while `returning` is non-null (expose `arrival.settling(): boolean`
   from `createRailwayArrival` and read it where the cover's lift is decided); if the cover has already lifted, play a
   250 ms fade out and in round the placement. Confirm the Act card and crane do not play on a return (they should not:
   `arrivalPlan`). Verify: `/look` stills at the frame the cover lifts, for a High Gorge return and a train return:
   Buddy is on the platform, facing as saved, with no frame at Home; a real-time capture of the lift for the visual
   review.
-- [ ] **6. Docs and the decision** (sol medium). Update `docs/game-design/first-run.md` ("Returning visit": decks and
+- [x] **6. Docs and the decision** (sol medium). Update `docs/game-design/first-run.md` ("Returning visit": decks and
   platforms count, the window, the fallback chain; delete "not a deck"), delete `place.md`'s "Reload limitation" line
   and amend its T1 return-pose sentence, record the Decided entry drafted above with whatever the owner answered, and
   run `npm run decisions`. Add the pick-and-log rows to `docs/agent-calls.md` for anything still unanswered (window

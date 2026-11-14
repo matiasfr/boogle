@@ -88,6 +88,11 @@ A playtest jump-in opens a fresh private room on the real server, seeded at a st
 
 ## Tunables agent proof
 
+`railway.returnMinutes` is a Local preference (default 30 minutes; 0 disables remembered returns), stored in this
+browser for the next load. It is available through the tunables API and survives reloads
+([resume-where-you-were](../plans/resume-where-you-were.md); [first-run](first-run.md), "Returning visit"). The
+harness flag `returncover=0` lets the loading screen lift on time, to look at a late placement's fade to black.
+
 Shared URL edits wait for both appearance restoration and the initial authoritative room snapshot, then submit once. A later snapshot or reconnect never repeats that intent. Local-only URL edits do not wait for the room.
 
 The bounded `tunables` API has no new panel. `boogle.dev.run('tunables', command, args)` lists owner-adjacent definitions, reads effective values, validates and sets values, checks a queued request's status, exports a snapshot or defaults diff, and resets Local settings. `post.centre` changes only this browser's exposure; `feel.spring.stiffness` is owner-written cosmetic state captured at the next action; `railway.regrowMinutes` requests a server command. An action already underway keeps its captured profile. The API's queued result is not an accepted change: inspect `status` before reporting success. Confirmed server rejection is distinct from an unknown outcome after disconnect or timeout. A defaults diff is review material, never an automatic change to source defaults.

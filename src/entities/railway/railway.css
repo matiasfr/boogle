@@ -263,3 +263,19 @@ body.touch .railway-connecting {
     text-align: center;
   }
 }
+/* A late return's placement (arrival.ts): black while the body is moved, only when the loading cover is already gone. */
+.railway-return-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s linear;
+}
+.railway-return-veil.on {
+  opacity: 1;
+}
+.railway-return-veil.cut {
+  transition: none;
+}
