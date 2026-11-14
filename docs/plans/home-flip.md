@@ -103,14 +103,16 @@ Each is one sitting, leaves `node dev/ship-check.ts` green and main playable. Ru
   - **B4 runner, 14 November:** [numbers, failures, inspected images and manifests](../reviews/round-blockout-b4.md). No game source changed; overall checkpoint remains incomplete.
   - **B4 designer ruling, 14 November:** [rulings on the six level findings](#b4-level-findings-design-ruling-designer-2026-11-14). No row changes before the owner's walk; block shadows and a larger, darker door mat are the one view change asked for. The walkway probe is dropped and the museum hop is closed as reachable. Still owed before sign-off (D4), not before the walk: the two stills with the blocks hidden and the arrival still from spawn's camera (design review findings 1 and 2).
     - [ ] `check:full` passed: unit/build/server portions pass; direct network browser launch fails, broker retry fails on missing trusted-harness import.
+    - [ ] `check:full` passed: unit/build/server portions pass; follow-up offline reinstall passed, but direct network launch still fails in sandbox and broker net still fails on absent `src/world/rules/index.ts`; zero net passes reported.
     - [x] Explicit `level-check`: 13 reports, zero reported problems.
     - [x] Generate, inspect and commit source-stamped sheet under `docs/world/round-blockout-b4/`.
     - [x] Production bot through `forge-lit`: passed, zero pushing stalls/errors.
     - [x] Yard on real ground and balcony by actual glide: both collected.
     - [x] Measure flat-ground double jump against plot 1 house and cottages 4, 5, 7: house not mounted; all three cottages mounted (3.151 m observed rise).
-    - [ ] Prove the transient shop-walkway → plot 1 route and plot 4 → museum roof: first not staged; one valid museum approach failed, universal reach unresolved.
+    - [ ] Prove the transient shop-walkway → plot 1 route and plot 4 → museum roof: no existing seed/jump-in preserves the shop transient; one additional 4.183 m sprint-run-up museum retry failed, closest 1.249 m to the inset target. Neither reach is passed; see the review's B4 follow-up.
     - [x] Bay → hall roof and one safe descent: feet 23.240 → 17.200 m.
     - [ ] Town-pose perf: CLI rejects `town`; zero samples.
+    - [x] Supported-pose perf follow-up reported: nearest camera `telescope`, render-only exit 0 on an unchanged worker fingerprint, 257 calls / 408,924 triangles. It faces away from town; loaded-machine timing is not performance evidence. Full perf's sim phase fails on `stateHashes is not a function`; actual town cost remains unmeasured. Earlier `cove` sample and rejected first telescope run are retained in the review.
     - [x] Inspect overhead, 375×812 dock, east-street and Fine Prices-side gap stills.
     - [x] Record and inspect full ring circuit: 106.764 m / 360.691° / 19.108 s; normal camera, motion sheet/curves/consecutive video frames inspected. Not timing/feel evidence on this loaded machine; not tested on a device.
   - **Finding for the designer from B3's independent review (14 November), not a change:** the reviewer estimates the double jump's rise at 3.00 m against cottage blocks 3.00 m tall (plots 4, 5, 7), so a cottage block's top may be reachable by double jump; the plan's level finding 5 took 3.3 m for the second jump and only considered the 3.84 m house blocks. Unmeasured in the live game: B4's probes measure the jump onto a cottage block as well as onto plot 1's house block.
