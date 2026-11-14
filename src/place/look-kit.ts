@@ -102,21 +102,53 @@ function bake(mesh: THREE.Mesh, name: string) {
   g.setIndex(src.index);
   g.applyMatrix4(mesh.matrixWorld);
   if (name === 'rail') {
-    // The rail foot seats on timber. Its redundant bottom cap is wound upward in the
-    // kit and shares the timber's drawn top; omit that cap, preserving head height.
+    // The authored rail shell is inward-wound. Weld positions for connectivity (the
+    // GLB splits vertices at hard normals), then orient each closed shell outward.
+    // Hardware is a separate shell: never reverse the whole combined mesh.
     const p = g.getAttribute('position');
-    let bottom = Infinity;
-    for (let i = 0; i < p.count; i++) bottom = Math.min(bottom, p.getY(i));
     const index = g.index!;
-    const kept: number[] = [];
-    for (let i = 0; i < index.count; i += 3) {
-      const a = index.getX(i),
-        b = index.getX(i + 1),
-        c = index.getX(i + 2);
-      if ([a, b, c].every((v) => p.getY(v) < bottom + 0.001)) continue;
-      kept.push(a, b, c);
+    const indices = Array.from(index.array);
+    const at = (v: number) => new THREE.Vector3().fromBufferAttribute(p, v);
+    const keys = Array.from({ length: p.count }, (_, v) =>
+      [p.getX(v), p.getY(v), p.getZ(v)].map((n) => n.toFixed(5)).join(','),
+    );
+    const touching = new Map<string, number[]>();
+    for (let t = 0; t < indices.length; t += 3)
+      for (const v of indices.slice(t, t + 3)) {
+        const list = touching.get(keys[v]!) ?? [];
+        list.push(t);
+        touching.set(keys[v]!, list);
+      }
+    const seen = new Set<number>();
+    const reversedVertices = new Set<number>();
+    for (let seed = 0; seed < indices.length; seed += 3) {
+      if (seen.has(seed)) continue;
+      const pending = [seed],
+        shell: number[] = [];
+      let volume = 0;
+      while (pending.length) {
+        const t = pending.pop()!;
+        if (seen.has(t)) continue;
+        seen.add(t);
+        shell.push(t);
+        const a = indices[t]!,
+          b = indices[t + 1]!,
+          c = indices[t + 2]!;
+        volume += at(a).dot(at(b).cross(at(c)));
+        for (const v of [a, b, c])
+          for (const neighbour of touching.get(keys[v]!)!) if (!seen.has(neighbour)) pending.push(neighbour);
+      }
+      if (volume >= 0) continue;
+      for (const t of shell) {
+        const b = indices[t + 1]!;
+        indices[t + 1] = indices[t + 2]!;
+        indices[t + 2] = b;
+        for (const v of indices.slice(t, t + 3)) reversedVertices.add(v);
+      }
     }
-    g.setIndex(kept);
+    g.setIndex(indices);
+    const normals = g.getAttribute('normal');
+    for (const v of reversedVertices) normals.setXYZ(v, -normals.getX(v), -normals.getY(v), -normals.getZ(v));
   }
   if (name === 'log') logColors(g);
   if (LOOK.contact && name !== 'log') bakeContact(g);
