@@ -31,6 +31,7 @@ import { H } from '../../src/place/terrain.ts';
 import {
   panelPose,
   panelEase,
+  panelGlide,
   trackPanels,
   carriedPiece,
   sleeperStations,
@@ -48,7 +49,7 @@ export async function checkMachineClearance() {
   const material = () => new THREE.MeshBasicNodeMaterial();
   const panels = sourceModule<typeof import('../../src/entities/railway/machine-panels.ts')>(
     fs.readFileSync('src/entities/railway/machine-panels.ts', 'utf8'),
-    { THREE, carriedPiece, panelPose, panelEase },
+    { THREE, carriedPiece, panelPose, panelEase, panelGlide },
   );
   const model = sourceModule<typeof import('../../src/entities/railway/machine-model.ts')>(
     fs.readFileSync('src/entities/railway/machine-model.ts', 'utf8'),
