@@ -460,3 +460,18 @@ compound label/batch support; regenerated the conflicted JSON from both record s
 seat headings in degrees and resolves radians through the validated prefab loader. Both main seat fixtures remain
 byte-identical (31 ids); runtime poses use tight numeric tolerance. Debt only shrinks. See
 [merge, conversion, checks and newly opened seat/leg images](prefab-data-step-7-rebase4.md).
+
+
+### Step 9 partial as built: workshop kit and shop
+
+The owner-requested partial boundary is complete: nine workshop-kit and seventeen shop records own furnishing
+parts, solids, sign references and named shop interactions. Old-code goldens were committed first at `063cea718`;
+they remain unchanged. Runtime values use the shared tight tolerance; committed artifacts hold authored operands.
+The original merged draws, copy, stock/target order and E actions remain. `rooms.ts` gains only the readiness
+lifecycle hook: its shell conversion, the curio shelf and museum remain, so step 9 stays unchecked.
+Collider debt drops 500 → 498 units; seat debt stays 15. New sign/interaction baselines are verified against old
+source and ratchet their raw API budgets, public exports and existing consumer identities. Neither converted kit
+nor shop had a direct debt entry to remove; workshop's remaining guard/shell work still holds its service exemption.
+Normal and one-ULP-perturbed prefab suites pass; additive native perturbation keeps compiled artifact bytes fresh.
+[Full strings inventory, old-code proof, checks, review stamp, opened before/after images and preserved probe failures](prefab-data-step-9-report.md).
+No push or ship; not tested on a device.
