@@ -54,7 +54,6 @@ async function rulesOf(root: string) {
       states[key] = { module: current };
     },
     onTick() {},
-    onSnapshot() {},
   };
   const commands = {
     define(op: string) {

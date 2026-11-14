@@ -47,7 +47,6 @@ test('roster server commands preserve admission, normalization and ordinal order
     const actual = ops.run(input.from, input.edit, {
       from: input.from,
       tick: i,
-      env: {},
       protoRoom: false,
       tuneController: () => false,
       actor: { reach: () => true, height: () => true, cadence: () => true },
@@ -82,7 +81,6 @@ test('accepted roster names mirror exactly without repeated change records', () 
     {
       from: 'alice',
       tick: 0,
-      env: {},
       protoRoom: false,
       tuneController: () => false,
       actor: { reach: () => true, height: () => true, cadence: () => true },

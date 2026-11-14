@@ -5,12 +5,11 @@ import { productionRailway } from '../proto/flags.ts';
 import { createRailwayMirror } from './railway-replicate.ts';
 
 // Static and the same on every peer. layout is filled by reference before tick 1 (rules must not read it at install).
-/** @type {import('./rules/types.ts').Land} */
 export const land: Land = { n: GRID_RES, layout: { trees: [], perches: [] } };
 // The railway is Server-kind state (docs/plans/replication.md, R1a): no rules here, only the mirror the server fills.
 const mirror = createRailwayMirror();
 export const railwayMirror = productionRailway ? mirror : null;
-// Non-production previews have an empty read-only roster; they never allocate classic ordinals.
+// Non-production previews have an empty read-only roster; a client never allocates a player ordinal.
 export const rules = { roster: mirror.roster };
 
 export const railTune = railwayMirror?.tune ?? null;

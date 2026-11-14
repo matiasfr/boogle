@@ -40,7 +40,6 @@ export function serverWorld() {
       return ops.run(pid, edit, {
         from: pid,
         tick: sync.world.tick,
-        env: {},
         protoRoom: true,
         tuneController: () => true,
         actor: { reach: () => true, height: () => true, cadence: () => true },

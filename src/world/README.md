@@ -41,7 +41,6 @@ registerState(key, {
   hash() {},            // deterministic uint32 for checkpoint integrity, not peer comparison
 }, { server: true })    // duplicate keys and client registration fail
 onTick(fn, label?)      // server/local rule ticks, in registration order
-onAfterTick(fn, label?) // presentation notifications; clients never execute onTick rules
 registry()             // { states }, in checkpoint order
 snapshot()             // { tick, seed, epochMs, data }; server-owned checkpoint state
 ```

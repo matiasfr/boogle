@@ -2,7 +2,7 @@
 // ticking with or without clients and saving through the
 // store (the same file and shape GET /rooms/:id/snapshot serves).
 //
-//   const wh = createWorldHost({ roomId, store, saveMs, pidOf })   pidOf(selfId): that session's player id, or null
+//   const wh = createWorldHost({ roomId, store, saveMs })
 //   wh.onSend((msg) => ...)       the sync's outgoing clock messages, for the hosted room to fan out
 //   wh.deliver(msg, from)         a client's message into the sync (from = its selfId)
 //   wh.step(dt)                   advance dt seconds of the 60 Hz room clock by hand (tests pass tick: false; otherwise a
@@ -66,7 +66,6 @@ export function createWorldHost({
   store,
   saveMs = 2000,
   tick = true,
-  pidOf = () => null,
   meter,
   log = () => {},
 }: WorldHostOptions) {
@@ -108,7 +107,6 @@ export function createWorldHost({
       },
       onMessage: (h) => (msgFns.add(h), () => msgFns.delete(h)),
       onConnection: (h) => (h(true), () => {}),
-      pidOf,
     },
     { roomId, host: true, storage, now: Date.now, saveMs },
   );
@@ -331,7 +329,6 @@ export function createRailwayWorldHost({
         },
         onMessage: () => () => {},
         onConnection: (fn) => (fn(true), () => {}),
-        pidOf,
       },
       {
         roomId,
@@ -384,7 +381,7 @@ export function createRailwayWorldHost({
     actor,
     commands: {
       ops,
-      context: (from, actor) => ({ from, tick: sync.world.tick, env: {}, actor, ...env }),
+      context: (from, actor) => ({ from, tick: sync.world.tick, actor, ...env }),
       async save() {
         // saveNow is a no-op while an older checkpoint is pending. Drain it first, then capture this command and
         // its receipt; waiting only for that older write would falsely acknowledge unsaved state.

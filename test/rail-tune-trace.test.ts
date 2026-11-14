@@ -44,7 +44,6 @@ test('server tuning requires explicit controller and a proto room', () => {
       {
         from: 'alice',
         tick: 0,
-        env: {},
         protoRoom: protoRoom!,
         tuneController: () => controlled!,
         actor: { reach: () => true, height: () => true, cadence: () => true },

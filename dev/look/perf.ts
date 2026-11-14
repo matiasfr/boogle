@@ -6,7 +6,7 @@
 // Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it.
 // Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
-// Sim: CPU ms per lockstep tick (average, p95, max), split per op, onApplied/onTick/onAfterTick handler and state hash (see
+// Sim: CPU ms per rule tick (average, p95, max), split per onTick handler and state hash (see
 // profileTicks in src/world/sync.ts), on the idle island. The page runs the ticks back to back (updateWorld), so slow
 // headless frames don't starve the sample; the numbers are still wall clock on a machine that is also software
 // rendering, so compare before/after on your change, not absolute numbers.
@@ -98,9 +98,7 @@ function stat(vals: number[]): Stat {
   const avg = s.reduce((a, b) => a + b, 0) / Math.max(1, s.length);
   return { 'avg ms': fmt(avg), 'p95 ms': fmt(s[Math.floor(0.95 * (s.length - 1))] ?? 0), 'max ms': fmt(s.at(-1) ?? 0) };
 }
-// Rows are split by the registry each handler sits in (profileTicks' kinds): op applies, onTick handlers and hashes
-// are the sim; onAfterTick handlers update meshes and textures from it; onApplied listeners are both (the rules' own,
-// and render adapters).
+// Every row is the sim (profileTicks' one kind): onTick handlers and state hashes.
 type Row = Record<string, number>;
 function summarize(rows: Row[], kinds: Record<string, string>) {
   const sum = (r: Row, keep: (l: string) => boolean) =>
@@ -108,9 +106,7 @@ function summarize(rows: Row[], kinds: Record<string, string>) {
   const of = (kind: string) => stat(rows.map((r) => sum(r, (l) => kinds[l] === kind)));
   const table: Record<string, Stat> = {
     'whole tick (sum)': stat(rows.map((r) => sum(r, () => true))),
-    'sim: ops, onTick, hashes': of('sim'),
-    'onApplied listeners (sim + render)': of('applied'),
-    'view: onAfterTick (main thread)': of('view'),
+    'sim: onTick, hashes': of('sim'),
   };
   const labels = [...new Set(rows.flatMap((r) => Object.keys(r)))];
   const per = labels.map((l): [string, Stat] => [l, stat(rows.map((r) => r[l] ?? 0))]);

@@ -8,7 +8,7 @@ edit generators and lockstep transport retired at v40; they are not recipes for 
 
 `roster.ts` exports `installServer(sync, ops, replication, now)`; `tune.ts` exports
 `installRailTune(sync, ops, replication)`. The host calls them before the railway registration and projections.
-`SyncView` in `types.ts` exposes the world clock, `registerState(..., { server: true })`, `onTick` and `onSnapshot`.
+`SyncView` in `types.ts` exposes the world clock, `registerState(..., { server: true })`, and `onTick`.
 Checkpoint order is deterministic; clients install none of these state owners.
 
 Commands use `ops.define(op, { validate, apply, durable? })` from `../server-ops.ts`. The request coordinator supplies

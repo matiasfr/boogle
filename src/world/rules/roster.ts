@@ -37,7 +37,8 @@ export function installServer(sync: SyncView, ops: ServerOps, replication: Repli
     },
     apply: (e) => {
       const result = setWho(roster, e.u, e.n as string, (e.c as number) || 0);
-      changed();
+      // One command changes one player's row; only load replaces the whole table.
+      if (result) replication.touch('player', result.idx);
       return result;
     },
   });
