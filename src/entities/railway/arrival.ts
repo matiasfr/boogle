@@ -7,7 +7,22 @@ import { softWall } from '../player/state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { physicsTime, raycastClosest, rayHit, setCcd, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
-import { carry } from '../../physics/platforms.ts';
+import { aboard, carry } from '../../physics/platforms.ts';
+import { inputState } from '../../player/input-state.ts';
+import {
+  captureReturnSpot,
+  createReturnSearch,
+  haltLandings,
+  yawToward,
+  type ReturnSpot,
+  type ReturnPosition,
+} from '../../place/return-spot.ts';
+import { routeAreasPending } from '../route-greybox/state.ts';
+import type { ReturnHalts } from './return-halts.ts';
+import { returnKey, returnSettle, storedReturn, writeReturn } from '../../place/return-settle.ts';
+import { localStore } from '../../place/return-tuning.ts';
+import { coverLifted } from '../../boot/cover-hold.ts';
+import { bootMark } from '../../boot/timeline.ts';
 import { camera } from '../../render/scene.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { registerRailwayRecovery } from './state.ts';
@@ -20,7 +35,11 @@ import { replacedStage } from '../../boot/world-reset.ts';
 import { jumpOf, type JumpLand } from '../../world/railway-jump.ts';
 
 type RecoveryPoint = { x: number; y: number; z: number };
-export async function createRailwayArrival(owner: OwnedView, laidPath: () => readonly RecoveryPoint[]) {
+export async function createRailwayArrival(
+  owner: OwnedView,
+  laidPath: () => readonly RecoveryPoint[],
+  halts: ReturnHalts,
+) {
   const [
     { H: placeH, insidePlace: inPlace, PATH_SAMPLES },
     { SPAWN, toWorld, ORIGIN, VILLAGE },
@@ -60,27 +79,99 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   };
   camConstraints.push(constraint);
   let placed: Body | null = null;
-  const posePolicy = createPosePolicy(H, insidePlace, (p) =>
-    feet.some((foot) => outOf(foot, { x: p.x, z: p.z }, PLAYER_R + 0.2)),
+  const posePolicy = createPosePolicy(
+    H,
+    insidePlace,
+    (p) => feet.some((foot) => outOf(foot, { x: p.x, z: p.z }, PLAYER_R + 0.2)),
+    { raycastClosest, rayHit },
   );
-  const poseKey = `boogle.railway-pose.v0:${railwayRoomId(getRoomId())}:${identity.pid}`;
-  let savedPose: ReturnType<typeof posePolicy.read> = null;
+  const poseKey = returnKey(railwayRoomId(getRoomId()), identity.pid);
+  // Read before first placement, so a pending return is not discarded by the Home-only spawn guard.
+  let hadRecord = false;
+  const readSavedPose = (): ReturnSpot | null => {
+    const stored = storedReturn(localStore(), poseKey, Date.now());
+    hadRecord = stored.had;
+    return stored.spot;
+  };
+  let savedPose = readSavedPose();
+  let returning: ReturnType<typeof createReturnSearch> | null = null;
+  let heldCandidate: ReturnPosition | null = null;
+  if (!savedPose) returnSettle.done();
+  owner.cleanup(returnSettle.done);
+  // Nobody sees the move (docs/plans/resume-where-you-were.md, step 5). The loading cover waits for the search
+  // (src/features/return-cover.ts). If the world is already on screen when a candidate is tried (a slow room: the
+  // cover gave up waiting), the screen goes black first: a 250 ms fade when the body has not moved yet, a cut when it
+  // is already being held somewhere, and a 250 ms fade back once it stands where it will stay.
+  const VEIL_MS = 250;
+  const veil = document.createElement('div');
+  veil.className = 'railway-return-veil';
+  veil.setAttribute('aria-hidden', 'true');
+  owner.cleanup(() => veil.remove());
+  let veilAt = -1;
+  const veiled = (cut: boolean) => {
+    if (veilAt < 0) {
+      veilAt = performance.now() - (cut ? VEIL_MS : 0);
+      veil.classList.toggle('cut', cut);
+      document.body.append(veil);
+      void veil.offsetWidth; // the style is computed at 0 before the class turns it on, so the fade plays
+      veil.classList.add('on');
+    }
+    return performance.now() - veilAt >= VEIL_MS;
+  };
+  const unveil = () => {
+    if (veilAt < 0) return;
+    veilAt = -1;
+    veil.classList.remove('on', 'cut');
+    setTimeout(() => veil.remove(), VEIL_MS + 50);
+  };
+  // The body is placed 0.4 m above its surface: the cover and the pose stay held until it has touched down (or
+  // 0.6 s on), so the last of the placement is not a small drop on screen.
+  let touchdown: { kind: string; at: number } | null = null;
+  const settled = (kind: string) => {
+    touchdown = null;
+    returnSettle.done();
+    unveil();
+    bootMark('return-settled', { kind });
+  };
+  const areasSettled = (x: number, z: number) => !routeAreasPending(x, z) && !ring.ringAreaPending(x, z);
+  const placeReturn = (p: ReturnPosition) => {
+    const body = me.body;
+    if (!body) return;
+    teleport(body, p.x, p.y + PLAYER_R + 0.4, p.z);
+    body.velocity.set(0, 0, 0);
+  };
   const scenery = createPoseReadiness(physicsTime);
+  let lastWritten = '',
+    lastWriteAt = 0;
   let loaded = false,
-    restorePending = false,
+    restorePending = !!savedPose,
     poseClock = 0;
   const capturePose = () => {
     const body = me.body;
-    if (!body || fallArrival.active || !scenery.ready()) return;
-    const p = { x: body.position.x, z: body.position.z, yaw: me.yaw };
-    savedPose = !carry.on && !me.swimming && posePolicy.safe(p) ? p : null;
+    if (!body || fallArrival.active || !scenery.ready()) return false;
+    const pos = { x: body.position.x, y: body.position.y - PLAYER_R, z: body.position.z };
+    const standing = me.coyote > 0 && !me.swimming && !me.down && !aboard() && !inputState.seated;
+    savedPose = captureReturnSpot(
+      savedPose,
+      {
+        standing,
+        pos,
+        yaw: me.yaw,
+        standable: standing && posePolicy.standableAt(pos.x, pos.y, pos.z),
+        halt: halts.next(aboard()?.id), // riding a train: a reload gets off where it was going
+      },
+      Date.now(),
+    );
+    return true;
   };
-  const savePose = () => {
-    try {
-      localStorage.setItem(poseKey, JSON.stringify(savedPose && { ...savedPose, ground: H(savedPose.x, savedPose.z) }));
-    } catch {
-      // Unavailable local storage leaves the next visit at the ordinary spawn.
-    }
+  const savePose = (force = false) => {
+    if (!savedPose || fallArrival.active || !scenery.ready()) return;
+    const fingerprint = JSON.stringify({ ...savedPose, at: 0 });
+    if (!force && fingerprint === lastWritten && savedPose.at - lastWriteAt < 60000) return;
+    // Unavailable local storage leaves the next visit at the ordinary spawn.
+    if (!writeReturn(poseKey, savedPose)) return;
+    lastWritten = fingerprint;
+    lastWriteAt = savedPose.at;
   };
   // A jump room's landing (docs/plans/playtest-jump-in.md): with no saved pose here, everyone starts at the segment the
   // room was seeded for, standing on its terrain, pad or deck. undefined until the room's seed is known. A jump room
@@ -102,21 +193,7 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
   // spot's centre must meet the surface as well, so a ring spot past a deck's edge (where the sphere's side still
   // touches it) is refused; a ray that starts inside a shape (an overhang over the spot) meets it at once and fails.
   // The ray runs a centimetre off the spot: one straight down a terrain cell's edge can miss the heightfield.
-  const hit = rayHit();
-  const surfaceAt = (x: number, y: number, z: number) => {
-    const from = { x, y: y + 3, z };
-    const hits = (['skip', 'only'] as const)
-      .map((thin) => sweepSphere(from, { x, y: y - 1, z }, PLAYER_R, { mask: GROUP.SCENERY, thin }))
-      .filter((h) => h >= 0);
-    if (!hits.length || Math.abs(from.y - Math.min(...hits) - PLAYER_R - y) > 0.5) return false;
-    const ray = raycastClosest(
-      { x: x + 0.01, y: y + 3, z: z + 0.01 },
-      { x: x + 0.01, y: y - 1, z: z + 0.01 },
-      { mask: GROUP.SCENERY },
-      hit,
-    );
-    return ray && hit.distance > 0 && Math.abs(hit.hitPointWorld.y - y) <= 0.5;
-  };
+  const surfaceAt = posePolicy.surfaceAt;
   const taken = (x: number, y: number, z: number) =>
     [...remotes.values()].some((r) => {
       const p = r.entered ? r.avatar?.position : undefined;
@@ -137,20 +214,17 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     if (to.yaw !== undefined) cam.yaw = me.yaw = to.yaw;
     cam.pitch = -0.14;
   };
-  const restorePose = () => {
-    const body = me.body;
-    if (!body || fallArrival.active || !scenery.ready() || !savedPose || !posePolicy.safe(savedPose)) return;
-    teleport(body, savedPose.x, H(savedPose.x, savedPose.z) + PLAYER_R + 0.4, savedPose.z);
-    body.velocity.set(0, 0, 0);
-    cam.yaw = me.yaw = savedPose.yaw;
-  };
   const pagehide = () => {
-    if (!loaded || !placed) return;
-    capturePose();
-    savePose();
+    if (!loaded || !placed || restorePending) return;
+    if (capturePose()) savePose(true);
+  };
+  const visibility = () => {
+    if (document.visibilityState === 'hidden') pagehide();
   };
   window.addEventListener('pagehide', pagehide);
+  document.addEventListener('visibilitychange', visibility);
   owner.cleanup(() => window.removeEventListener('pagehide', pagehide));
+  owner.cleanup(() => document.removeEventListener('visibilitychange', visibility));
   const atSpawn = () => {
     const body = me.body;
     if (!body) return;
@@ -165,11 +239,21 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     if (!body || !scenery.ready()) return;
     carry.on = null;
     carry.x = carry.y = carry.z = carry.spin = 0;
+    // Recovery found this surface explicitly; the coyote timer need not have caught up yet.
+    const remember = (x: number, y: number, z: number) => {
+      savedPose = captureReturnSpot(
+        savedPose,
+        { standing: true, standable: posePolicy.standableAt(x, y, z), pos: { x, y, z }, yaw: me.yaw },
+        Date.now(),
+      );
+      savePose(true);
+    };
     const home = ring.ringUnstuck(island, body.position.x, body.position.z);
     if (home) {
       teleport(body, home.x, home.y + PLAYER_R + 0.4, home.z);
       body.velocity.set(0, 0, 0);
       if (home.yaw !== undefined) cam.yaw = me.yaw = home.yaw;
+      remember(home.x, home.y, home.z);
       return;
     }
     for (let radius = 2; radius <= 40; radius += 2) {
@@ -197,8 +281,9 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
           )
         )
           continue;
-        savedPose = { x, z, yaw: me.yaw };
-        restorePose();
+        teleport(body, x, h + PLAYER_R + 0.4, z);
+        body.velocity.set(0, 0, 0);
+        remember(x, h, z);
         return;
       }
     }
@@ -217,8 +302,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         if (point[2] > 1.6) consider({ x: point[0] + ORIGIN.x, y: point[2], z: point[1] });
       }
     for (const point of laidPath()) consider(point);
-    teleport(body, best.x, Math.max(H(best.x, best.z), best.y + 0.12) + PLAYER_R + 0.4, best.z);
+    const y = Math.max(H(best.x, best.z), best.y + 0.12);
+    teleport(body, best.x, y + PLAYER_R + 0.4, best.z);
     body.velocity.set(0, 0, 0);
+    remember(best.x, y, best.z);
   };
   owner.cleanup(registerRailwayRecovery(getUnstuck));
   owner.cleanup(() => {
@@ -237,10 +324,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
       if (body && body !== placed) {
         placed = body;
         setCcd(body, false);
-        if (!fallArrival.active && !insidePlace(body.position.x, body.position.z)) atSpawn();
+        if (!fallArrival.active && !savedPose && !insidePlace(body.position.x, body.position.z)) atSpawn();
         restorePending = true;
       }
-      if (body && insidePlace(body.position.x, body.position.z)) {
+      if (body && !restorePending && insidePlace(body.position.x, body.position.z)) {
         const h = H(body.position.x, body.position.z);
         if (body.position.y < h - 0.8) {
           teleport(body, body.position.x, h + PLAYER_R + 0.3, body.position.z);
@@ -251,15 +338,50 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
       // colliders in this same update, before the broad phase knows a partner's new track exists.
       const poseReady = ready && tick > 0 && scenery.ready();
       fell ||= fallArrival.active;
-      if (!loaded && poseReady) {
+      if (!loaded && ready && tick > 0 && body) {
         loaded = true;
-        try {
-          savedPose = posePolicy.read(JSON.parse(localStorage.getItem(poseKey) ?? 'null'));
-        } catch {
-          savedPose = null;
-        }
+        savedPose = readSavedPose();
+        if (savedPose && !fell)
+          returning = createReturnSearch(savedPose, haltLandings(), (halt) =>
+            halts.stands(halt.line ?? -1, halt.stop ?? -1),
+          );
+        else returnSettle.done();
         restorePending = true;
       }
+      if (returning && body && !fallArrival.active) {
+        if (coverLifted() && !veiled(heldCandidate !== null)) return; // on screen: black before the body moves
+        const candidate = returning.current();
+        if (candidate) {
+          if (heldCandidate !== candidate) {
+            heldCandidate = candidate;
+            scenery.rebuilt();
+          }
+          placeReturn(candidate);
+        }
+        const result = returning.step(performance.now() / 1000, {
+          settled: (p) => ready && tick > 0 && scenery.ready() && areasSettled(p.x, p.z),
+          standable: (p) => !taken(p.x, p.y, p.z) && posePolicy.standableAt(p.x, p.y, p.z),
+          near: (p, radii) => posePolicy.standableNear(p.x, p.y, p.z, radii, (x, y, z) => !taken(x, y, z)),
+        });
+        if (result.kind !== 'hold') {
+          if (result.kind === 'land') {
+            placeReturn(result.at);
+            // Your own spot keeps the way you faced; a fallback halt faces its track, the boarding edge.
+            const track = result.from.track;
+            const beside = track && Math.hypot(result.at.x - track.x, result.at.z - track.z) > 0.5;
+            cam.yaw = me.yaw = beside ? yawToward(result.at, track) : savedPose!.yaw;
+            cam.pitch = -0.14;
+          } else atSpawn();
+          touchdown = { kind: result.kind, at: performance.now() };
+          returning = null;
+          restorePending = false;
+          landing = null;
+        }
+        return; // Never capture the held body, or query a second candidate in the same frame.
+      }
+      // Not before 150 ms: the coyote timer from wherever the body stood before the move has run out by then.
+      const placedFor = touchdown ? performance.now() - touchdown.at : 0;
+      if (touchdown && ((placedFor > 150 && me.coyote > 0) || placedFor > 600)) settled(touchdown.kind);
       // An empty pose waits for the room's seed (one fetch, at most ten seconds) before it settles for the spawn.
       if (
         loaded &&
@@ -269,8 +391,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         !fallArrival.active &&
         (savedPose || landing !== undefined)
       ) {
-        if (savedPose) restorePose();
-        else if (landing && !fell) land(landing);
+        if (!fell) {
+          atSpawn();
+          if (!hadRecord && landing) land(landing);
+        }
         landing = null; // once
         restorePending = false;
       }
@@ -278,9 +402,7 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         poseClock += dt;
         if (poseClock >= 5) {
           poseClock = 0;
-          const before = JSON.stringify(savedPose);
-          capturePose();
-          if (JSON.stringify(savedPose) !== before) savePose();
+          if (capturePose()) savePose();
         }
       }
     },

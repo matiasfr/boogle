@@ -28,6 +28,7 @@ import { initInput } from './player/input.ts';
 import { createStall } from './adapters/mushrooms.ts';
 import { runFrame, runStart, beginFrame, mark, endFrame, frameCtx as ctx } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
+import { coverReleased } from './boot/cover-hold.ts';
 import { bootMark } from './boot/timeline.ts';
 import { preloadBootChunks } from './boot/boot-chunks.ts';
 import { prefetchAssets } from './render/asset-manifest.ts';
@@ -113,6 +114,8 @@ async function play() {
   await new Promise((r) => requestAnimationFrame(r)); // one frame drawn: the output and shadow pipelines exist too
   await Promise.race([gpuDone().then(lateBuilt), giveUp]); // the GPU caught up, and what the warm-up missed is built
   bootMark('first');
+  // A recent return is placed behind the loading screen (src/features/return-cover.ts): nobody is seen at Home first.
+  await coverReleased(10000);
   splashDone();
   bootMark('interactive');
   prefetchAssets(); // the content manifest's `soon` files, in idle time (src/render/asset-manifest.ts)

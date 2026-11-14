@@ -8,7 +8,7 @@ const PROFILE_PREFIX = 'boogle.railway-profile.v0.';
 // src/entities/finds/state.ts; the jump-in arrival line's is SEEN in src/features/jump-in.ts.
 const ROOM_PREFIXES = [
   'boogle.railway-seen.v0:',
-  'boogle.railway-pose.v0:',
+  'boogle.railway-pose.',
   'boogle.railway-wardrobe.v0:',
   'boogle.railway-town.v0:',
   'boogle.railway-finds.v0:',
@@ -38,10 +38,16 @@ export function staleKeys(keys: string[], marker: string | null, ns: Namespace):
   const changed = marker !== null && marker !== ns.world;
   return keys.filter((key) => {
     const prefix = ROOM_PREFIXES.find((p) => key.startsWith(p));
-    if (prefix) return !key.slice(prefix.length).split(':')[0]!.startsWith(`${ns.rail}-`);
+    if (prefix) return !roomKey(key, prefix).startsWith(`${ns.rail}-`);
     return changed && (key.startsWith('boogle.visit.') || key === 'boogle.boogler');
   });
 }
+
+const roomKey = (key: string, prefix: string) =>
+  key
+    .slice(prefix.length)
+    .replace(/^v\d+:/, '')
+    .split(':')[0]!;
 
 // Preserve unreadable profiles so the normal reward reader can report them, rather than hiding a broken save.
 export function pruneClaims(text: string, rail: string, resetRoom?: string): string | null | undefined {
@@ -143,9 +149,7 @@ export function resetForRoom(storage: Storage, id: string, name: string): string
   const removed: string[] = [];
   for (const key of storageKeys(storage)) {
     const prefix = ROOM_PREFIXES.find((p) => p !== ROOM_BORN && key.startsWith(p));
-    const mine = prefix
-      ? key.slice(prefix.length).split(':')[0] === id
-      : key === `boogle.visit.${name}` || key === 'boogle.boogler';
+    const mine = prefix ? roomKey(key, prefix) === id : key === `boogle.visit.${name}` || key === 'boogle.boogler';
     if (!mine) continue;
     try {
       storage.removeItem(key);

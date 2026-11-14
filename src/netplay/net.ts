@@ -98,6 +98,8 @@ function peerColor(peer: string) {
 //   onNetState(fn)                 fn(state, prev) on every setNet call, after net.state changed. It also fires when
 //                                  state === prev: 'solo' -> 'solo' is a retry that failed before reaching a room.
 //                                  Details are on net (error, retries, room). Local only; never sends anything.
+//   holdPresencePose(fn)           keep this tab's pose (n, c, p, r, s) unpublished while fn() is true: Local, for a
+//                                  body that is not yet where it will stand (src/features/return-cover.ts).
 //   keepPresenceWhile(fn)          keep sending presence while fn() is true, even off the island (./owner-sync.ts: this tab
 //                                  owns the ball). Checked after `entered`, in registration order, before hosting.
 //   onPeerAdded(fn)                fn(remote) as a Remote is created, before anything can read it: add your fields here.
@@ -115,6 +117,13 @@ function addFieldOrWarn(key: string, getter: () => unknown) {
 const presenceReasons: (() => boolean)[] = [];
 export function keepPresenceWhile(fn: () => boolean) {
   presenceReasons.push(fn);
+}
+const poseHolds: (() => boolean)[] = [];
+/** Local: while fn() is true this tab is not yet where it will stand (a recent return being placed,
+ * src/features/return-cover.ts), so its pose stays unpublished: peers see "in the room, not on the island", exactly
+ * as before it entered. No new key and no new meaning on the wire. */
+export function holdPresencePose(fn: () => boolean) {
+  poseHolds.push(fn);
 }
 const remoteHooks: RemoteHook[] = [];
 const roomHooks: ((room: Room) => void)[] = [];
@@ -183,7 +192,7 @@ function buildPresence() {
   out.v = tabHidden() ? 0 : 1;
   out.t = Math.round(performance.now());
   out.n = out.c = out.p = out.r = out.s = null;
-  if (local?.entered && local.body) {
+  if (local?.entered && local.body && !poseHolds.some((fn) => fn())) {
     const p = local.body.position;
     out.n = local.name;
     out.c = local.colorIdx;

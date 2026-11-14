@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readReturnSpot, createReturnSearch } from '../src/place/return-spot.ts';
 import {
   WORLD_SEEN_KEY,
   staleKeys,
@@ -56,6 +57,27 @@ test('same-world boots keep progress', () => {
     staleKeys(['boogle.visit.a', 'boogle.boogler', 'boogle.railway-pose.v0:rail-v19-a:p'], 'v19', ns),
     [],
   );
+});
+
+test('v0 and v1 return spots obey room and world reset boundaries', () => {
+  const mine = ['boogle.railway-pose.v0:rail-v19-a:p', 'boogle.railway-pose.v1:rail-v19-a:p'];
+  const other = 'boogle.railway-pose.v1:rail-v19-ab:p';
+  const s = storage(Object.fromEntries([...mine, other].map((key) => [key, 'value'])));
+  assert.deepEqual(staleKeys([...mine, other], 'v19', ns), []);
+  assert.deepEqual(resetForRoom(s, 'rail-v19-a', 'a').sort(), mine);
+  assert.equal(s.getItem(other), 'value');
+  const resume = (key: string) =>
+    createReturnSearch(readReturnSpot(JSON.parse(s.getItem(key) ?? 'null'), 1000, 1800000), []).step(0, {
+      settled: () => {
+        throw new Error('cleared records must not probe');
+      },
+      standable: () => false,
+      near: () => null,
+    });
+  assert.deepEqual(resume(mine[1]!), { kind: 'home' }, 'room replacement clears the pending return');
+  resetForWorld(s, { world: 'v20', rail: 'rail-v20' });
+  assert.deepEqual(resume(other), { kind: 'home' }, 'world version change clears the return');
+  assert.deepEqual(staleKeys([...mine, other], 'v19', { world: 'v20', rail: 'rail-v20' }), [...mine, other]);
 });
 
 test('a world bump clears the old world wardrobe and keeps this one', () => {

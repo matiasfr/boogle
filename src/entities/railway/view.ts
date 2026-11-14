@@ -19,6 +19,7 @@ import { createRailwaySources } from './sources.ts';
 import { createRailwayReward } from './reward.ts';
 import { railwaySession, registerRailwayYouGot, type RailwayScene, type RailwayViewInspection } from './state.ts';
 import { createRailwayArrival } from './arrival.ts';
+import { createReturnHalts } from './return-halts.ts';
 import { createRailwayOpening } from './opening-view.ts';
 import { createRailwayPath } from './path.ts';
 import { createRailwayPanelView } from './panel-view.ts';
@@ -31,6 +32,8 @@ import { createRailwayHook } from './hook-shot.ts';
 import { createRailwayGlide } from './glide.ts';
 import { stepMoves } from './move-order.ts';
 import { worksPreview } from './works-flag.ts';
+import { onRouteSceneryMounted } from '../route-greybox/state.ts';
+import { onRingSceneryMounted } from '../ring-island/state.ts';
 
 export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
@@ -62,13 +65,18 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   machine.snap();
   machine.setRack(T1.starterRails);
   track.snapTo(track.u(T1.fromCm / 100));
-  const arrival = await createRailwayArrival(owner, () =>
-    track.solids.flatMap((solid) => {
-      if (!solid.on || solid.s === undefined) return [];
-      const at = layout.lineAt(line.line, solid.s, { x: 0, z: 0, ux: 0, uz: 0 });
-      return [{ x: at.x + layout.ORIGIN.x, y: layout.railY(line.line, solid.s) + 0.2, z: at.z }];
-    }),
+  const arrival = await createRailwayArrival(
+    owner,
+    () =>
+      track.solids.flatMap((solid) => {
+        if (!solid.on || solid.s === undefined) return [];
+        const at = layout.lineAt(line.line, solid.s, { x: 0, z: 0, ux: 0, uz: 0 });
+        return [{ x: at.x + layout.ORIGIN.x, y: layout.railY(line.line, solid.s) + 0.2, z: at.z }];
+      }),
+    createReturnHalts(adapter.read.world),
   );
+  owner.cleanup(onRouteSceneryMounted(arrival.sceneryRebuilt));
+  owner.cleanup(onRingSceneryMounted(arrival.sceneryRebuilt));
   const sources = await createRailwaySources(adapter, owner);
   // The reward owns the one reveal queue; line two's devices show through it too.
   const reward = await createRailwayReward(adapter, owner, (out) =>
