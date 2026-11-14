@@ -17,6 +17,34 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 ## Where the work stands
 
+**Status at 14 November 03:30 UTC (read this first; the 13 November 18:45 block below is older).** Mode: withCodex. `WORLD_NS` is v42; v43 is taken by a branch in review (The Boogler's reactions); next free v44. Main is at #1757. The live game runs v42.
+
+*On main since the 18:45 block, newest last:*
+
+- Prefab data: step 5 lint rules #1741 (eight review rounds; the design is an importer COUNT ratchet per construction export plus a capability-specifier guard; a stricter taint design was rejected for blocking ordinary code); step 6 High Gorge massing #1743; step 8 stools and train bench #1750; step 7 leg 2 #1753; step 9 first part (workshop kit and shop, plus a sign and interaction lint rule). Rule since step 7: committed prefab artifacts hold AUTHORED operands only (degrees, positions as written) and transcendental math runs at load, because sine-derived numbers differed in the last digit between macOS arm64 and CI's Linux x64 ([portability](../plans/prefab-data-step-7-portability.md)); goldens of runtime values compare within a tolerance.
+- Server-owned players ([plan](../plans/server-owned-players.md), with design review): step 1 shadow seats #1738; step 2 seats server-owned #1744 (v41); steps 3–4 Boogler land bake and headless brain #1747; step 5 server shadow brain #1749; step 6 The Boogler server-driven #1755 (v42; legs replicated, pose computed per client, held still while offline, placed exactly on return from a hidden tab).
+- Room fast-forward ([plan](../plans/room-fast-forward.md)): server side #1748, Dev dock control and countdown (60fcb9b26). Off on production until `ADVANCE_KEY` (32+ random characters) is set there; `server/fly.toml` enables the Fly client-address trust flag.
+- Server: every rate limit and quota resolves the real client address behind Fly #1752.
+- Simplify pass 2 #1757 (**last pass ends at 00050e64c**; covered server-owned state, the server, the prefab runtime and lint tooling, retirement debris; it did not cover The Boogler's code, the room-replace client or town-room files).
+- Owner calls recorded: #1740 (small rulings are the orchestrator's; Becsy over a Rust core), then "Becsy later" and "the dev key holder may replace any room", #1745 (clean up worktrees diligently), "Don't over-engineer against attackers". CI: the long unit job is green again (#1739 fixed a fuzz helper).
+
+*In flight (Codex):* The Boogler's present and puff reactions as server commands, v43, reviewed with no regression, rebasing as `codex/server-players-step-7-2`; prefab step 9 second sitting (rooms, curio shelf, museum) as `codex/prefab-data-step-9b`.
+
+*Next:* server-owned players step 8 (delete `addHostField` and the lead; the DESIGN.md sync-table text is the owner's to commit then, with the Host row gone); prefab step 10 (halts and stations), then 11–13; Home flip R1–R3; the pre-playtest list (terrain on Home, Sit before Request stop, small fixes, playtest guide). Parked by the owner: the Becsy migration.
+
+*Structural problems the simplify pass named and left (candidates for the next cleanup, ranked):* (1) `createRailwayWorldHost` is a ~470-line closure owning away credit, supply pulses, carry graces, command durability, Boogler wiring and stats; (2) operator room mutation exists twice (`admin.ts` reset/restore and `replace.ts`/`replacements.ts`); (3) tooling and agent docs still model the deleted transport: `dev/lint/policy.ts` and `dev/scan/read.ts` mention `registerOp`/`submitEdit`/`onApplied`, and so do `server/AGENTS.md:6`, `src/features/AGENTS.md`, `src/entities/AGENTS.md`, `.claude/rules/state-consumers.md`, `.claude/agents/planner.md`, root `AGENTS.md:3` ("hosts lockstep rooms"), `docs/agents/safety-audit.md`, `docs/game-design/multiplayer.md` §8.4 (binding instructions: the owner sets the wording; the orchestrator can draft); (4) "built" prefab artifacts are not expanded (`gorge.json` ships as a recipe the browser evaluates on load); (5) the non-railway `createWorldHost` is a vestige.
+
+*Leftovers added since 18:45 (ranked):*
+
+- P2: Checkpoint B of the server-state plan and Checkpoint S/B/C of the players plan still owe a two-device play (join, reconnect, server restart). Nothing in this session was tested on a device.
+- P3 (owner call "Don't over-engineer against attackers": logged, not fixed): equivalent address spellings (IPv4 and IPv4-mapped IPv6) get separate rate budgets; an operator sharing an address with a flooder is throttled; the client-address fix assumes Fly's edge overwrites `Fly-Client-IP`.
+- P3, The Boogler: opening Talk on him while a friend rides shows him up to 86 cm behind the rider for about 1.5 s on the talker's screen; a friend sees a rider drawn about 30 cm further back on him than before; a real backgrounded tab (not the emulated one) is untested.
+- P3: the guard test against derived-looking numbers in prefab artifacts rejects thirds and float sums and can miss a short derived value; a tiny scale change on leg 2's rim can trip the six-metre clearance rule.
+- P3: on a passenger car "Request stop" takes the interact prompt before "Sit" (the Sit before Request stop item); the Dev dock's Room tab clips "New empty room" when a status line shows; `docs/atlas/stories/opening.json` cites only deleted files (`npm run atlas -- --check` reports it and about 14 older problems).
+- Suspect placeholder copy for the owner, added: every string in the Room tab, the countdown ("This room will be replaced with <label> in N seconds. What you carry and your finds here will be lost.") and the notice after a replacement (list in `docs/game-design/dev-menu.md`, "Replace room with stage"); The Boogler's frisbee line (`src/sim/gift-catalog.ts:24`) cannot be heard since nothing gives a frisbee.
+- Worktrees: the owner's call is to remove each as soon as its branch lands. Archive tags `archive/worktree/*` (local, 75 of them) hold every unmerged or uncommitted tip removed on 13 November, including `codex/hook-swing-prototype-wip`, `codex/two-player-track-wip` and `review/leaf-coop` (its test is not on main). Daily-job checkouts under `~/.boogle/daily` are untouched; one points at a missing folder.
+- HOTBOX (the Windows machine): down; its worktrees hold nothing main lacks; not needed.
+
 **Status at 13 November 18:45 UTC (read this first; paragraphs below are older and may be superseded).** Mode: withCodex. `WORLD_NS` is v40; next free v41. Main is at #1734.
 
 *On main on 13 November UTC, newest last (each reviewed independently where its stamp asked):*
