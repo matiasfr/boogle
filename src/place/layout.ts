@@ -11,7 +11,7 @@ import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/rai
 import { LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
-import { TOWN_STREETS, townBuilding } from './town-plan.ts';
+import { TOWN_PLOTS, TOWN_PROPS, TOWN_SLOTS, TOWN_STREETS, townBuilding } from './town-plan.ts';
 import { ISLAND_HALTS, LINE_ORIGIN, PROPS, SHELF_B, TABLE, headPoints, spliceHead } from './home-station.ts';
 
 /** Far from today's island, past its soft wall, as the crossing does. */
@@ -700,5 +700,25 @@ export const ROOM_PLOTS: Record<RoomId, { x: number; z: number; yaw: number; w: 
   shop: { ...townBuilding('shop'), high: 3.9 },
   museum: { ...townBuilding('museum'), high: 5 },
 };
+/** The blockout's eaves above the ground, read from the kits so what can be climbed is what the real building will
+ * allow: a house's slab and wall (`ROOM_FLOOR` + `ROOM_PLOTS.house.high`), a cottage's wall (`planOf`'s `high`).
+ * Literals, because the level's records hold authored numbers; test/town-plan.test.ts ties them to the kits. */
+export const TOWN_EAVE = { house: 3.84, cottage: 3 } as const;
+/** The Round's bought plots as plain blocks until each is detailed (docs/plans/home-flip.md, B3): a row leaves this
+ * list in the commit that mounts the real building at the same `townBuilding(id)` pose. */
+export const TOWN_BLOCKS = TOWN_PLOTS.order.map((id) => {
+  const kit = TOWN_SLOTS.find((s) => s.id === id)!.kit;
+  if (kit !== 'house' && kit !== 'cottage') throw new Error(`no blockout eave for ${kit}`);
+  return { id, ...townBuilding(id), kit, high: TOWN_EAVE[kit] };
+});
+/** The clock's footing at G: a slab on the green's floor, no clock yet. */
+export const TOWN_FOOTING = {
+  x: TOWN_PROPS.clock.x,
+  z: TOWN_PROPS.clock.z,
+  yaw: 0,
+  w: TOWN_PROPS.clock.footing,
+  d: TOWN_PROPS.clock.footing,
+  high: 0.3,
+} as const;
 /** What stands across the sea: too far to reach, north-east of the ridge. */
 export const FAR = { x: 330, z: -1120 };

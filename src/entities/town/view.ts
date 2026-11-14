@@ -25,6 +25,7 @@ import type { TownLook } from './town-read.ts';
 import type { TownInspection } from './state.ts';
 type Fact = import('./town-lines.ts').Fact;
 import { createCurioShelf } from './curio-shelf.ts';
+import { createTownBlockout } from './blockout.ts';
 
 /** What every town piece reads of the world. All of it comes from the shared railway or is this tab's own moment. */
 export type TownEnv = {
@@ -159,6 +160,8 @@ export async function createTownView(read: () => TownLook | null) {
   });
   // Your wardrobe, stood up in the village: what you own on it, the rest under dust sheets (C1).
   const shelf = clothes ? await createCurioShelf(owner, clothes) : null;
+  // The Round's unbuilt plots and the clock's footing as plain blocks, in every town state (the blocks read no fact).
+  createTownBlockout(owner);
   sites.buildSites(owner);
   rooms.snap();
   rooms.warm();

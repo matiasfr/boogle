@@ -3,11 +3,26 @@
 // drawn here; the ground and streets consume the same plan rows.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import blockoutLevel from '../content/built/levels/town-blockout.json' with { type: 'json' };
+import { blockoutFeet, standBlockout } from '../src/place/town-blockout.ts';
 import { AXIS, HALL, SHELF_SIZE, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
 import { prefabs as curioRecords } from '../src/content/prefabs/curio.ts';
 import { curioParts } from '../src/prefab/builders/curio-parts.ts';
-import { LINES, ORIGIN, PATHS, ROOM_FLOOR, ROOM_PLOTS, TOWN, VILLAGE, lineAt } from '../src/place/layout.ts';
-import { H, CELL, NX, NZ, at, cellX, cellZ, heights, pathMask } from '../src/place/terrain.ts';
+import {
+  LINES,
+  ORIGIN,
+  PATHS,
+  ROOM_FLOOR,
+  ROOM_PLOTS,
+  TOWN,
+  TOWN_BLOCKS,
+  TOWN_EAVE,
+  TOWN_FOOTING,
+  VILLAGE,
+  lineAt,
+} from '../src/place/layout.ts';
+import { H, CELL, NX, NZ, at, cellX, cellZ, heights, pathMask, surfaceHeight } from '../src/place/terrain.ts';
 import { SHORE_PATH } from '../src/place/shore-layout.ts';
 import { SECRETS, padById } from '../src/place/tech-layout.ts';
 import { LAND_TREES } from '../src/place/tree-catalog.ts';
@@ -396,4 +411,120 @@ test('the gate is the one cottage, the yard is behind it and the shore ends at t
     SHORE_PATH.slice(-2),
     TOWN_STREETS.dock.line.map((p) => [p.x, p.z, 18]),
   );
+});
+
+// B3, the blockout: the eight bought plots as plain blocks and the clock's footing (docs/plans/home-flip.md).
+type Stood = { id: string; prefab: string; pos: readonly number[]; rot: readonly number[]; scale?: readonly number[] };
+const stood: Stood[] = standBlockout(blockoutLevel.placements, H);
+const piece = (id: string) => stood.find((p) => p.id === id)!;
+
+test('every slot is drawn once: a room, the gate cottage or a block', () => {
+  for (const s of TOWN_SLOTS) {
+    const drawn = [
+      Object.hasOwn(ROOM_PLOTS, s.id),
+      s.id === 'gate' && TOWN.start.length === 1,
+      TOWN_BLOCKS.some((b) => b.id === s.id),
+    ].filter(Boolean).length;
+    assert.equal(drawn, 1, `${s.id} is drawn ${drawn} times`);
+  }
+  assert.deepEqual(
+    TOWN_BLOCKS.map((b) => b.id),
+    TOWN_PLOTS.order,
+  );
+});
+
+test("a block's height is its kit's eave: a house's slab and wall, a cottage's wall", () => {
+  near(TOWN_EAVE.house, ROOM_FLOOR + ROOM_PLOTS.house.high, 1e-9, 'house eave');
+  // The cottage kit's wall height is `planOf`'s (a view module the test does not load).
+  const cottage = /case 'cottage':\s+return housePlan\(\{[^}]*?high: (\d+(?:\.\d+)?),/.exec(
+    fs.readFileSync('src/place/opening-plans.ts', 'utf8'),
+  );
+  assert.equal(TOWN_EAVE.cottage, Number(cottage?.[1]));
+  for (const b of TOWN_BLOCKS) assert.equal(b.high, TOWN_EAVE[b.kit]);
+  assert.deepEqual(TOWN_FOOTING, { ...TOWN_CENTRE, yaw: 0, w: 5, d: 5, high: 0.3 });
+});
+
+test('the built level is the plan: eight solid blocks at their rows, a door panel and a mat on each door side', () => {
+  assert.equal(blockoutLevel.placements.length, 25);
+  assert.equal(stood.filter((p) => p.prefab === 'greybox.box').length, 9, 'eight blocks and the footing are solid');
+  for (const b of TOWN_BLOCKS) {
+    const plan = townBuilding(b.id),
+      block = piece(`town.block.${b.id}`),
+      door = piece(`town.block.${b.id}.door`),
+      mat = piece(`town.block.${b.id}.mat`);
+    assert.equal(block.prefab, 'greybox.box');
+    near(block.pos[0]!, plan.x + ORIGIN.x, 0.01, `${b.id} x`);
+    near(block.pos[2]!, plan.z, 0.01, `${b.id} z`);
+    near(block.rot[0]!, plan.yaw, 0.01, `${b.id} yaw`);
+    assert.deepEqual(block.scale, [plan.w, b.high, plan.d]);
+    near(block.pos[1]! - b.high / 2, VILLAGE.y, 0.001, `${b.id} stands on the ground`);
+    // The marks are not solid, and stand on the door side: the panel proud of the door face, the mat outside it.
+    for (const mark of [door, mat]) assert.equal(mark.prefab, 'greybox.decoration');
+    const face = townLocal(plan, 0, plan.d / 2 + door.scale![2]! / 2);
+    near(door.pos[0]!, face.x + ORIGIN.x, 0.001, `${b.id} door x`);
+    near(door.pos[2]!, face.z, 0.001, `${b.id} door z`);
+    near(door.pos[1]! - door.scale![1]! / 2, VILLAGE.y, 0.001, `${b.id} door foot`);
+    const out = { x: mat.pos[0]! - ORIGIN.x - plan.x, z: mat.pos[2]! - plan.z };
+    const along = out.x * Math.sin(plan.yaw) + out.z * Math.cos(plan.yaw),
+      across = out.x * Math.cos(plan.yaw) - out.z * Math.sin(plan.yaw);
+    near(across, 0, 0.001, `${b.id} mat is centred on the door`);
+    assert.ok(along - mat.scale![2]! / 2 > plan.d / 2 - 1e-9, `${b.id} mat is outside the door`);
+    assert.ok(along + mat.scale![2]! / 2 < plan.d / 2 + 2, `${b.id} mat is within 2 m of the door`);
+    near(mat.pos[1]! - mat.scale![1]! / 2, VILLAGE.y, 0.001, `${b.id} mat lies on the ground`);
+  }
+  const footing = piece('town.footing');
+  assert.deepEqual(footing.scale, [TOWN_FOOTING.w, TOWN_FOOTING.high, TOWN_FOOTING.d]);
+  near(footing.pos[0]!, TOWN_CENTRE.x + ORIGIN.x, 0.001, 'footing x');
+  near(footing.pos[2]!, TOWN_CENTRE.z, 0.001, 'footing z');
+  near(footing.pos[1]! - TOWN_FOOTING.high / 2, VILLAGE.y - TOWN_GROUND.green.drop, 0.001, 'footing on the green');
+});
+
+test('every block, mat and the footing stands on drawn ground: nothing floats, no terrain comes through', () => {
+  for (const b of [...TOWN_BLOCKS, { id: 'footing', ...TOWN_FOOTING }]) {
+    const base = H(b.x + ORIGIN.x, b.z);
+    // The footprint and the 1.5 m outside the door the mat lies on, every 0.2 m, on both height reads.
+    for (let x = -b.w / 2; x <= b.w / 2 + 1e-9; x += b.w / 40)
+      for (let z = -b.d / 2; z <= b.d / 2 + 1.5; z += 0.2) {
+        const p = townLocal(b, x, z);
+        for (const h of [H(p.x + ORIGIN.x, p.z), surfaceHeight(p.x + ORIGIN.x, p.z)])
+          near(h, base, 0.02, `${b.id} ground at ${x.toFixed(1)},${z.toFixed(1)}`);
+      }
+  }
+});
+
+test("no block's mat lies on a road: each is off the ring and outside the quarry road's 2.4 m half width", () => {
+  const quarry = TOWN_STREETS.quarry.head;
+  for (const b of TOWN_BLOCKS) {
+    const mat = piece(`town.block.${b.id}.mat`);
+    const p = { x: mat.pos[0]! - ORIGIN.x, z: mat.pos[2]! };
+    for (const c of corners({ ...p, yaw: b.yaw, w: mat.scale![0]!, d: mat.scale![2]! })) {
+      const r = Math.hypot(c.x - TOWN_CENTRE.x, c.z - TOWN_CENTRE.z);
+      assert.ok(r > TOWN_RING.outer, `${b.id} mat is off the ring road (${r.toFixed(2)} m from G)`);
+      for (let i = 0; i + 1 < quarry.length; i++)
+        assert.ok(toSegment(c, quarry[i]!, quarry[i + 1]!) >= 2.4, `${b.id} mat is off the quarry road`);
+    }
+  }
+});
+
+test('the little guys walk round the footing and the blocks: every solid has an avoidance footprint', () => {
+  // folk.ts steers round `feet` (src/place/sites.ts), not colliders: each solid piece registers its footprint.
+  const feet = blockoutFeet(stood);
+  assert.equal(feet.length, 9);
+  for (const b of [...TOWN_BLOCKS, TOWN_FOOTING]) {
+    const foot = feet.find((f) => Math.hypot(f.x - b.x - ORIGIN.x, f.z - b.z) < 0.001);
+    assert.ok(foot, 'a footprint at each solid');
+    assert.deepEqual([foot.yaw, foot.hw, foot.hd], [b.yaw, b.w / 2, b.d / 2]);
+  }
+  // The walk the review found: the green's wander points (-6, -6) and (6, 6) from G cross the footing.
+  const foot = feet.find((f) => Math.hypot(f.x - TOWN_CENTRE.x - ORIGIN.x, f.z - TOWN_CENTRE.z) < 0.001)!;
+  let crossed = false;
+  for (let t = 0; t <= 1; t += 0.01) {
+    const x = TOWN_CENTRE.x + ORIGIN.x - 6 + 12 * t - foot.x,
+      z = TOWN_CENTRE.z - 6 + 12 * t - foot.z;
+    crossed ||= Math.abs(x) <= foot.hw && Math.abs(z) <= foot.hd;
+  }
+  assert.ok(crossed, 'the diagonal across the green meets the footing footprint');
+  // The view registers every one of them with its owner, so they leave with the blocks.
+  const view = fs.readFileSync('src/entities/town/blockout.ts', 'utf8');
+  assert.match(view, /for \(const f of blockoutFeet\(placements\)\) addFoot\(f\.x, f\.z, f\.yaw, f\.hw, f\.hd, owner\);/);
 });
