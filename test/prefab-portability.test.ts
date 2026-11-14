@@ -81,8 +81,8 @@ test('importing all ten page consumers validates the catalogue exactly once', ()
   assert.deepEqual(result, { consumers: 10, catalogueValidations: 1, directValidations: 0 });
 });
 
-// Current committed content: 181 records / 312,535 canonical bytes, including all levels.
-// Around 10-12% headroom permits small additions; repeated per-placement definitions must not return.
+// Current committed content: 188 records / 334,626 canonical bytes, including all levels.
+// Shared halt specifications fit the existing limits; repeated per-placement definitions must not return.
 const MAX_PREFAB_RECORDS = 200;
 const MAX_COMPILED_ARTIFACT_BYTES = 350_000;
 function assertCatalogueBudget(records: number, bytes: number) {

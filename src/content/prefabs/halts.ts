@@ -10,6 +10,12 @@ export const prefabs: PrefabDef[] = [
     scope: 'owner',
   })),
   {
+    key: 'railway.halt-ramp',
+    visual: { builder: 'railway.halt-ramp', params: {} },
+    colliders: [],
+    scope: 'owner',
+  },
+  {
     key: 'railway.halt-solid',
     visual: { none: true },
     colliders: [{ shape: 'box', at: [0, 0, 0], half: [0.5, 0.5, 0.5] }],

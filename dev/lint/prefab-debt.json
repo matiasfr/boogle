@@ -201,7 +201,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/halts-view.ts": {
-      "count": 9,
+      "count": 8,
       "exports": ["createRailwayHalts"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -329,7 +329,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/railway/up-platforms.ts": {
-      "count": 2,
+      "count": 1,
       "exports": ["createUpPlatforms"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },

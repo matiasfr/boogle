@@ -103,6 +103,11 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
   sourceModule(fs.readFileSync('src/prefab/builders/halt-parts.ts', 'utf8'), {
     registerBuilder: (name: string, build: () => THREE.Group) => builders.set(name, build),
   });
+  sourceModule(fs.readFileSync('src/prefab/builders/halt-ramp.ts', 'utf8'), {
+    THREE,
+    flat,
+    registerBuilder: (name: string, build: () => THREE.Group) => builders.set(name, build),
+  });
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
     fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
     {
@@ -118,6 +123,11 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
   );
   const createHaltKit = sourceFunction('src/entities/railway/halt-kit.ts', 'createHaltKit', {
     createOwnedView,
+    Euler: THREE.Euler,
+    boxAt,
+    place,
+    tagStepSupport: (b: unknown) => b,
+    segmentStepSupport() {},
     instantiate: runtime.instantiate,
     placements: validation.loadLevelArtifact(kitLevel, validation.loadPrefabArtifact(artifact).prefabs).placements,
   });

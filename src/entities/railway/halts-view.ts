@@ -33,7 +33,7 @@ import { clank, thump } from '../../render/machine-sfx.ts';
 import { forEachStatic, teleport, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';
-import { HEAD_OFFSET, PLAYER_R, SEA } from '../../constants.ts';
+import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import { me } from '../../player/player.ts';
 import { roadPlaque } from './home-pictogram.ts';
@@ -68,7 +68,6 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     import('../../place/home-station.ts'),
   ]);
   const { box, place } = boxModule,
-    { H, slab: staticSlab } = landModule,
     { dropSet, dustRing } = piecesModule;
   const { ORIGIN, lineAt, railY } = layout;
   // The up track's platforms and plank crossings, standing with today's halt beside each (generic-lines step 2).
@@ -86,12 +85,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     0.8,
     RAIL_TRAINS.map((t) => t.line),
   );
-  const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number, width = 2.5) =>
-    staticSlab(ax, az, bx, bz, ya, yb, width, owner, undefined, 'grass');
-
   const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   const POST = '#7f5630',
-    STONE = '#bdb8ac',
     ROOF = '#c4453a';
   const lateral = (l: number, out: { x: number; z: number }) => {
     out.x = P.x - P.uz * l + ORIGIN.x;
@@ -114,8 +109,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     row = 0,
   ) {
     const boxes: Box[] = [];
-    const hw = island ? ISLAND.width / 2 : 1.25,
-      deck = !island || k === 0;
+    const hw = island ? ISLAND.width / 2 : 1.25;
     const mid = (s0 + s1) / 2,
       half = (s1 - s0) / 2,
       sign = Math.sign(lat);
@@ -138,36 +132,6 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       b.y = low;
       boxes.push(b);
       return b;
-    };
-    const ground = H(c.x, c.z);
-    // The Pier halt stands over the sea: its one ramp comes up off the trestle's deck at its landward end.
-    const overWater = ground < SEA;
-    /** Ramps: off each end, and off the back at the middle; over the sea, only the landward end, from the deck. */
-    const rampEnds = () => {
-      const out: { ax: number; az: number; bx: number; bz: number; foot: number }[] = [];
-      const a = { x: 0, z: 0 },
-        b = { x: 0, z: 0 };
-      const ramp = (foot: number) => out.push({ ax: a.x, az: a.z, bx: b.x, bz: b.z, foot });
-      if (!deck) return out;
-      const head = island ? ISLAND.headRamp : 6,
-        end = island ? ISLAND.endRamp : 6;
-      lineAt(line, s0, P);
-      lateral(lat, a);
-      lineAt(line, s0 - head, P);
-      lateral(lat, b);
-      ramp(overWater ? railY(line, s0 - head) + 0.05 : H(b.x, b.z) + 0.05);
-      if (overWater) return out;
-      lineAt(line, s1, P);
-      lateral(lat, a);
-      lineAt(line, s1 + end, P);
-      lateral(lat, b);
-      ramp(H(b.x, b.z) + 0.05);
-      if (island) return out;
-      lineAt(line, mid, P);
-      lateral(lat + sign * 1.25, a);
-      lateral(lat + sign * 7, b);
-      ramp(H(b.x, b.z) + 0.05);
-      return out;
     };
     // Local +sign x points toward the rails. Face the train from the outer edge,
     // along from the middle entrance so the rear ramp and the aisle stay clear.
@@ -275,7 +239,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     let bodies: Body[] = [];
     const addBodies = () => {
       for (const piece of ['deck', 'shelter', 'bench', 'canopy', 'mast']) bodies.push(...kit.enable(piece));
-      for (const r of rampEnds()) bodies.push(slab(r.bx, r.bz, r.ax, r.az, r.foot, low, hw * 2));
+      bodies.push(...kit.enable('ramp'));
       // A halt can arrive around someone, including a partner who did not fit the boiler. Rapier cannot
       // lift a sphere already trapped between the ground and a new ramp. Only displace actual overlaps,
       // testing in each box's frame so the pitched ramps and every halt's orientation are covered.
@@ -313,24 +277,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         carry.x = carry.y = carry.z = 0;
       }
     };
-    // Drawn ramps, one mesh each: they're long, plain and don't change.
-    const ramps = new THREE.Group();
-    const rampMesh = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number) => {
-      const dx = bx - ax,
-        dz = bz - az,
-        len = Math.hypot(dx, dz),
-        dy = yb - ya,
-        full = Math.hypot(len, dy);
-      const m = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 0.4, full), flat(STONE));
-      m.quaternion.setFromEuler(new THREE.Euler(-Math.atan2(dy, len), Math.atan2(dx, dz), 0, 'YXZ'));
-      m.position.set((ax + bx) / 2, (ya + yb) / 2 - 0.2, (az + bz) / 2);
-      m.castShadow = m.receiveShadow = true;
-      ramps.add(m);
-    };
-    for (const r of rampEnds()) rampMesh(r.bx, r.bz, r.ax, r.az, r.foot, low);
-    lineAt(line, mid, P);
-    ramps.visible = false;
-    owner.add(ramps);
+    kit.createRamps();
     let reveal = -1;
 
     const halt = {
@@ -364,7 +311,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         bodies = [];
         halt.up = on;
         boxes.forEach((_, k) => set.snap(k, on));
-        ramps.visible = arm.visible = lever.group.visible = boardOn = on;
+        kit.showRamps(on);
+        arm.visible = lever.group.visible = boardOn = on;
         if (plaque) plaque.mesh.visible = on;
         if (on) addBodies();
       },
@@ -392,7 +340,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         if (reveal >= 0) {
           reveal -= dt;
           if (reveal <= 0) {
-            ramps.visible = arm.visible = lever.group.visible = boardOn = true;
+            kit.showRamps(true);
+            arm.visible = lever.group.visible = boardOn = true;
             if (plaque) plaque.mesh.visible = true;
           }
         }

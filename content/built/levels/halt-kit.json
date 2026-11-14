@@ -168,6 +168,16 @@
         "prefab": "railway.halt-mast"
       },
       {
+        "id": "railway.halt-0-down-ramps",
+        "params": {
+          "halt": 0,
+          "piece": "ramps",
+          "row": 0,
+          "up": false
+        },
+        "prefab": "railway.halt-ramp"
+      },
+      {
         "colliders": [],
         "id": "railway.halt-1-down-deck",
         "params": {
@@ -293,6 +303,16 @@
           "up": false
         },
         "prefab": "railway.halt-mast"
+      },
+      {
+        "id": "railway.halt-1-down-ramps",
+        "params": {
+          "halt": 1,
+          "piece": "ramps",
+          "row": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-ramp"
       },
       {
         "colliders": [
@@ -461,6 +481,16 @@
         "prefab": "railway.halt-mast"
       },
       {
+        "id": "railway.halt-3-down-ramps",
+        "params": {
+          "halt": 3,
+          "piece": "ramps",
+          "row": 3,
+          "up": false
+        },
+        "prefab": "railway.halt-ramp"
+      },
+      {
         "colliders": [],
         "id": "railway.halt-4-down-deck",
         "params": {
@@ -586,6 +616,16 @@
           "up": false
         },
         "prefab": "railway.halt-mast"
+      },
+      {
+        "id": "railway.halt-4-down-ramps",
+        "params": {
+          "halt": 4,
+          "piece": "ramps",
+          "row": 4,
+          "up": false
+        },
+        "prefab": "railway.halt-ramp"
       },
       {
         "colliders": [],
@@ -715,6 +755,16 @@
         "prefab": "railway.halt-mast"
       },
       {
+        "id": "railway.halt-5-down-ramps",
+        "params": {
+          "halt": 5,
+          "piece": "ramps",
+          "row": 5,
+          "up": false
+        },
+        "prefab": "railway.halt-ramp"
+      },
+      {
         "colliders": [],
         "id": "railway.halt-3-up-deck",
         "params": {
@@ -803,6 +853,16 @@
         "prefab": "railway.halt-bench"
       },
       {
+        "id": "railway.halt-3-up-ramps",
+        "params": {
+          "halt": 3,
+          "piece": "ramps",
+          "row": 0,
+          "up": true
+        },
+        "prefab": "railway.halt-ramp"
+      },
+      {
         "colliders": [],
         "id": "railway.halt-4-up-deck",
         "params": {
@@ -889,6 +949,16 @@
           "up": true
         },
         "prefab": "railway.halt-bench"
+      },
+      {
+        "id": "railway.halt-4-up-ramps",
+        "params": {
+          "halt": 4,
+          "piece": "ramps",
+          "row": 1,
+          "up": true
+        },
+        "prefab": "railway.halt-ramp"
       }
     ],
     "kind": "halt-kit",

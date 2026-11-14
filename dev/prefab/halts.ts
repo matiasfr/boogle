@@ -40,6 +40,12 @@ export function haltKitContent() {
         colliders: haltSolids(piece, Math.sign(h.lat), hw, half),
       });
     }
+    if (!h.island || h.line === 0)
+      entries.push({
+        id: `railway.halt-${id}-${h.up ? 'up' : 'down'}-ramps`,
+        prefab: 'railway.halt-ramp',
+        params: { row: h.row, up: h.up, halt: id, piece: 'ramps' },
+      });
   }
   // Frame construction still lives in the views. Keep its authored inputs in the freshness contract too.
   // Home s/lat are native-derived: fingerprint their authored operands, never those derived results.

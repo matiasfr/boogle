@@ -723,6 +723,15 @@
         }
       }
     },
+    "railway.halt-ramp": {
+      "colliders": [],
+      "key": "railway.halt-ramp",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-ramp",
+        "params": {}
+      }
+    },
     "railway.halt-shelter": {
       "colliders": [],
       "key": "railway.halt-shelter",

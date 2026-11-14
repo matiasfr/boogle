@@ -19,6 +19,7 @@ import './builders/house-parts.ts';
 import './builders/room-shell.ts';
 import './builders/room-proxy.ts';
 import './builders/halt-parts.ts';
+import './builders/halt-ramp.ts';
 import type { Interactable } from '../player/hands.ts';
 import type { Part } from '../render/part-geometry.ts';
 import { builders, type ConstructionBuild } from './builders.ts';

@@ -3,7 +3,6 @@
 // from one to the other. They drop in with today's halt beside them; the up track's trains stand here (v26), and each
 // one's request lever is halts-view.ts's (no signal or board of its own). Local: the shapes come from layout.ts's
 // UP_HALTS, as dev/level/timber-track.ts checks them.
-import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Body } from '../../physics/engine.ts';
 import { thump } from '../../render/machine-sfx.ts';
@@ -17,8 +16,7 @@ type Deps = {
   pieces: typeof import('../../place/pieces.ts');
 };
 
-const STONE = '#bdb8ac',
-  PLANK = '#a97a45';
+const PLANK = '#a97a45';
 
 export function createUpPlatforms(owner: OwnedView, deps: Deps) {
   const { layout, land } = deps;
@@ -49,9 +47,7 @@ export function createUpPlatforms(owner: OwnedView, deps: Deps) {
     };
     // The platform, as today's halts are built (halts-view.ts makeHalt): a stone deck 2.5 m wide on a base, its edge
     // stones, a shelter with a bench at its back edge, ramps off its ends and back.
-    const hw = 1.25,
-      mid = (h.s0 + h.s1) / 2,
-      sign = Math.sign(h.lat),
+    const mid = (h.s0 + h.s1) / 2,
       low = Math.min(railY(line, h.s0), railY(line, h.s1)) + 0.72;
     lineAt(line, mid, P);
     const yaw = Math.atan2(P.ux, P.uz);
@@ -69,35 +65,8 @@ export function createUpPlatforms(owner: OwnedView, deps: Deps) {
       () => kit.enable('bench'),
       () => kit.enable('shelter'),
     );
-    // Ramps: off the start end, the far end (not at the Quarry, where the Q4 frame stands) and the back.
-    const ramp = (top: { x: number; z: number }, foot: { x: number; z: number }) => {
-      const footY = land.H(foot.x, foot.z) + 0.05;
-      const dx = top.x - foot.x,
-        dz = top.z - foot.z,
-        len = Math.hypot(dx, dz),
-        dy = low - footY;
-      const b = box(
-        (top.x + foot.x) / 2,
-        (top.z + foot.z) / 2,
-        place(
-          0,
-          0,
-          0,
-          hw * 2,
-          0.4,
-          Math.hypot(len, dy),
-          Math.atan2(dx, dz),
-          new THREE.Euler(-Math.atan2(dy, len), 0, 0),
-        ),
-        STONE,
-      );
-      b.y = (low + footY) / 2 - 0.4;
-      piece(b);
-      g.solids.push(() => [land.slab(foot.x, foot.z, top.x, top.z, footY, low, hw * 2, owner, undefined, 'grass')]);
-    };
-    ramp(at(line, h.s0, h.lat), at(line, h.s0 - 6, h.lat));
-    if (h.endRamp) ramp(at(line, h.s1, h.lat), at(line, h.s1 + 6, h.lat));
-    ramp(at(line, mid, h.lat + sign * hw), at(line, mid, h.lat + sign * 7));
+    kit.rampBoxes.forEach(piece);
+    g.solids.push(() => kit.enable('ramp'));
 
     // The plank crossing over both tracks, flush with the rail tops, a flangeway beside each rail.
     const s = h.crossS;

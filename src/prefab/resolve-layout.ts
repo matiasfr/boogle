@@ -138,7 +138,7 @@ function area(value: unknown): Area {
   return a as unknown as Area;
 }
 // A closed expression vocabulary. JSON is checked before this evaluator; output geometry is checked afterward.
-export function evaluate(value: Json): Json {
+function evaluate(value: Json): Json {
   if (Array.isArray(value)) return value.map(evaluate);
   if (!value || typeof value !== 'object') return value;
   const o = Object.fromEntries(Object.entries(value).map(([k, v]) => [k, evaluate(v)]));

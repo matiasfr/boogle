@@ -5,12 +5,16 @@ import { H } from '../place/terrain.ts';
 import { SEA } from '../constants.ts';
 import type { PrefabDef } from './types.ts';
 
-export function haltDeck(row: number, up: boolean) {
+export function haltSource(row: number, up: boolean) {
   if (!Number.isInteger(row) || row < 0 || typeof up !== 'boolean')
     throw new Error('prefabs: invalid halt deck selector');
   const sources = up ? UP_HALTS : [...HALTS, { line: 1 as const, s0: 719, s1: 741, lat: 2.9, island: false }];
   const h = sources[row];
   if (!h) throw new Error('prefabs: invalid halt deck recipe');
+  return h;
+}
+export function haltDeck(row: number, up: boolean) {
+  const h = haltSource(row, up);
   const island = 'island' in h && h.island;
   if (island && h.line !== 0) throw new Error('prefabs: only the first Home edge owns its deck');
   const line = LINKS[h.line]!.line;
