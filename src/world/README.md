@@ -2,11 +2,11 @@
 
 Railway state, rail tuning, roster and seats are Server kind. Since v40, no lockstep state or classic edit transport
 remains. Clients mirror the server and may predict declared railway actions; a client predicting nothing is correct.
-The Boogler still uses the lead tab's Host field. Player movement and seat pose remain Owner kind.
+The Boogler uses Server legs and a saved pose. Player movement and seat pose remain Owner kind.
 
-Players step 5 also runs a private 10 Hz server shadow from the baked Boogler land. It has independent decision RNG,
-continuous legs and bounded presence inputs; it pauses with no connected players. Nothing from it is saved or
-replicated. `/rooms/:id/host` exposes its pose/leg, elapsed tick cost and a bounded comparison with the lead's `g`.
+Players step 6 makes the 10 Hz brain authoritative against baked land, with independent decision RNG and bounded
+presence inputs. It saves only position/facing and publishes a global `booglerLeg` on decisions, never each tick.
+It pauses with no connected players. `/rooms/:id/host` exposes pose/leg and elapsed tick cost.
 
 ## Pieces
 

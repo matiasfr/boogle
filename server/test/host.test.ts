@@ -11,6 +11,8 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { HALF } from '../../src/world/grid.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
+import { findStart } from '../../src/world/boogler-brain.ts';
+import { loadBooglerLand } from '../src/host/land.ts';
 
 type Msg = Record<string, any>;
 const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
@@ -201,10 +203,10 @@ async function rename(client: ReturnType<typeof connect>, name: string) {
   await client.next((m) => isWorld('s')(m) && m.d.ack?.[0] === session.epoch && m.d.ack?.[1] >= session.next);
 }
 
-test('v40 clients receive a clean refusal after the v41 seat authority flip', async () => {
+test('v41 clients receive a clean refusal after the v42 Boogler authority flip', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
-    for (const room of ['v40-boogle', 'rail-v40-boogle']) {
+    for (const room of ['v41-boogle', 'rail-v41-boogle']) {
       const client = connect(base, room, 'oldtab');
       assert.deepEqual(await client.next(is('peer')), { t: 'peer' });
       assert.equal(await client.closed, 4000);
@@ -696,6 +698,9 @@ test('admin: reset backs the save up and starts the room fresh; restore brings t
     assert.equal((await refused.json()).players, 1);
     assert.ok(named());
 
+    const beforeReset = svc.roomHost()!.room(room)!.world as RailwayWorldHost;
+    for (let i = 0; i < 50; i++) beforeReset.step(0.1);
+    assert.notDeepEqual(beforeReset.sync.snapshot().data.boogler, [10, 22, 0], 'walked before reset');
     const reset = await (await admin(`/${room}/reset?force=1`)).json();
     assert.equal(reset.kicked, 1);
     assert.equal(await a.closed, 1012);
@@ -706,6 +711,9 @@ test('admin: reset backs the save up and starts the room fresh; restore brings t
     assert.notEqual(reborn, born, 'a reset room is a new world to its players');
     await b.next(isWorld('w:c'));
     assert.ok(!named(), 'the reset room is a fresh world');
+    const startSpot = findStart(loadBooglerLand());
+    const resetPose = (svc.roomHost()!.room(room)!.world as RailwayWorldHost).sync.snapshot().data.boogler;
+    assert.deepEqual(resetPose, [startSpot.x, startSpot.z, 0], 'room reset returns The Boogler to his start');
     b.ws.close();
     await b.closed;
     await sleep(400); // past the reconnect grace: the room is empty

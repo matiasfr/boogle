@@ -25,6 +25,7 @@ export function booglerVisitors(positions: readonly (RailwayPosition | null)[], 
     // Finite extreme coordinates remain far away; clamping bounds all distance arithmetic and loop work.
     return [
       {
+        pid: p.pid,
         x: Math.max(-HALF, Math.min(HALF, p.x)),
         z: Math.max(-HALF, Math.min(HALF, p.z)),
         ...booglerActivity([p.act, p.wary]),

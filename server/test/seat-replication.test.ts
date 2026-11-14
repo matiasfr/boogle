@@ -30,7 +30,7 @@ test('server seat rows agree across client mirrors, late joins, departure and pa
   f.host.pause();
   f.run(3);
   assert.deepEqual(b.mirror.seats.rows(), []);
-  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway']);
+  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway', 'boogler']);
 });
 
 test('seat mirror publishes only complete packet sets and retains its view during refill', () => {

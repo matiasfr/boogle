@@ -19,4 +19,4 @@ outside `src/sim/`, remain three.js-free where appropriate, and never feed autho
 Narrowing the trig ban needs an audited prediction dependency boundary; step 9 leaves `dev/lint` unchanged.
 Never re-pin replay fixtures without identifying the changed inputs and behavior.
 
-The Boogler's trig stays in `src/world`: Host/local and injected server shadow (step 5), never railway prediction.
+The Boogler's trig stays in `src/world`: injected Server brain and Local leg presentation, never railway prediction.

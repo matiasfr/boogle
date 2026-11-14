@@ -140,11 +140,6 @@ export function createHostedRoom({
         replication,
         awake: false, // the first join wakes it, with the away credit since its last save
         hasPlayers: () => clients.size > 0,
-        leadBoogler() {
-          const client = lead ? clients.get(lead) : null;
-          const at = lead ? poseAt.get(lead) : undefined;
-          return client && at !== undefined ? { value: (client.d as { g?: unknown } | null)?.g, at } : null;
-        },
         positions() {
           return [...clients].map(([sid, client]) => {
             const p = client.d && typeof client.d === 'object' ? (client.d as { p?: unknown }).p : null;

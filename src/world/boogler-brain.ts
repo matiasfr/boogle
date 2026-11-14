@@ -8,7 +8,7 @@ export const W_R = 0.8;
 export const MIN_H = 0.45;
 export const ACT = { NONE: 0, TALK: 1, RIDE: 2 };
 export const MODE = { CALM: 0, FLEE: 1, RIDDEN: 2 };
-export type BooglerVisitor = { x: number; z: number; act: number; wary: boolean };
+export type BooglerVisitor = { pid?: string; x: number; z: number; act: number; wary: boolean };
 export type BooglerState = {
   x: number;
   z: number;
@@ -20,6 +20,7 @@ export type BooglerState = {
   mode: number;
   fleeCheck: number;
   trip: { x: number; z: number } | null;
+  look: string;
 };
 
 const MAX_H = 30; // the whole island, massif included
@@ -42,6 +43,9 @@ function blocked(land: BooglerLand, x: number, z: number, pad = 0, fromX = NaN, 
   if (h < MIN_H || h > MAX_H) return true;
   return land.blocked(x, z, W_R + pad) && !land.blocked(fromX, fromZ, W_R + pad);
 }
+
+export const validBooglerSpot = (land: BooglerLand, x: number, z: number) =>
+  Number.isFinite(x) && Number.isFinite(z) && !blocked(land, x, z);
 
 function pathClear(land: BooglerLand, x0: number, z0: number, x1: number, z1: number) {
   const len = Math.hypot(x1 - x0, z1 - z0);
@@ -93,6 +97,7 @@ export function createBooglerBrain({
     mode: MODE.CALM,
     fleeCheck: 0,
     trip: null,
+    look: '',
   };
   const canBlock = (x: number, z: number, pad: number, fromX: number, fromZ: number) =>
     blocked(land, x, z, pad, fromX, fromZ);
@@ -180,6 +185,7 @@ export function createBooglerBrain({
       }
     }
     sim.mode = threat ? MODE.FLEE : ridden ? MODE.RIDDEN : MODE.CALM;
+    sim.look = (focus && !ridden ? focus : !sim.walking ? nearest : null)?.pid ?? '';
 
     if (focus && !ridden) {
       sim.walking = false;

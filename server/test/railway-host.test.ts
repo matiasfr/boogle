@@ -233,7 +233,7 @@ test('ordinary rooms keep only the clock; a railway room holds only server state
     await ordinary.close({ save: false });
     assert.ok(f.host.sync.registry().states.includes('railway'));
     assert.ok('railway' in f.host.sync.snapshot().data, 'server state is checkpointed');
-    assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway']);
+    assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway', 'boogler']);
     await f.open('a');
     // Missing reach (no position) is a recorded rejection, refused to the actor, and survives a restart.
     const rejected = await f.edit('a', { op: 'rail.wake' });
@@ -314,7 +314,7 @@ test('the railway registry accepts bounded identity but rejects classic-channel 
     for (const op of ['who.set', 'tune.set', 'tune.commit', 'rail.chop'])
       f.host.deliver({ t: 'w:edit', e: { op, i: 0, j: 0, id: 0, n: 8, k: 0, epoch: 1, request: 1 } }, 'a');
     f.host.deliver({ t: 'placeCoop', shared: { back: { logs: 24 } } }, 'a');
-    await f.step(4);
+    // Delivery is synchronous; advancing ticks would legitimately move the now-saved Boogler.
     assert.equal(JSON.stringify(f.host.sync.snapshot().data), before);
     await f.restart();
     assert.equal(f.host.rules.roster.nameOf(0), 'Alice');

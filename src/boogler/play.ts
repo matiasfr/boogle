@@ -9,7 +9,7 @@ import { clamp } from '../math.ts';
 import { background } from '../async.ts';
 import { forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.ts';
-import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
+import { remotes, addPresenceField, onRemotePresence, sendPresence } from '../netplay/net.ts';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.ts';
 import { booglerHearts, booglerPuff } from './fx.ts';
 import { booglerSay, setTagWary, setTagPrompt } from './hud.ts';
@@ -243,6 +243,8 @@ function render() {
   const v = talk && talkApi!.talkView(talk);
   if (!v) return hangUp();
   boogler.me.mood = v.mood;
+  boogler.holdTalk(true);
+  sendPresence();
   showDialogue(v, answer, leave);
 }
 
@@ -272,6 +274,8 @@ function leave() {
 }
 
 function hangUp() {
+  boogler.holdTalk(false);
+  sendPresence();
   talk = null;
   boogler.me.mood = null;
   closeDialogue();
@@ -309,12 +313,15 @@ onRemotePresence((rr, pr) => {
 });
 
 export function updateBooglerPlay(dt: number, now: number) {
+  const previousAct = boogler.me.act,
+    previousWary = boogler.me.wary;
   if (now >= waryCheckAt) {
     waryCheckAt = now + 1000;
     boogler.me.wary = isWary(f(), Date.now());
   }
   if (me.entered && me.body) updateRide(dt, now);
   boogler.me.act = dialogue.open ? ACT.TALK : riding() ? ACT.RIDE : ACT.NONE;
+  if (previousAct !== boogler.me.act || previousWary !== boogler.me.wary) sendPresence();
   playRemoteEvents();
 
   const d = dist();

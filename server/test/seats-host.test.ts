@@ -433,7 +433,7 @@ test('server seat receipts: first free, one seat per pid, duplicate, taken and r
   assert.equal(f.send('b', { op: 'seat.stand' }), null);
   f.step(1000);
   assert.equal(f.send('b', { op: 'seat.sit', id: 'next' }), null);
-  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway']);
+  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway', 'boogler']);
   assert.equal('seats' in f.host.sync.snapshot().data, false);
 });
 

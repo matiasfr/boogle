@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { createStore } from '../../src/store.ts';
-import { createRailwayWorldHost } from '../../src/host/world-host.ts';
+import { createRailwayWorldHost, type RailwayHostOptions } from '../../src/host/world-host.ts';
 import { railwayRoomId } from '../../../src/world/railway-namespace.ts';
 import { createRailwayMirror } from '../../../src/world/railway-replicate.ts';
 import {
@@ -29,7 +29,7 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-export async function fixture(t: TestContext) {
+export async function fixture(t: TestContext, options: Pick<RailwayHostOptions, 'positions' | 'hasPlayers'> = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-rail-tune-'));
   const store = createStore({ dataDir: dir, maxRooms: 1 });
   await store.init();
@@ -39,6 +39,7 @@ export async function fixture(t: TestContext) {
   let serverNow = 1800000000000;
   const makeHost = () =>
     createRailwayWorldHost({
+      ...options,
       roomId,
       tick: false,
       now: () => serverNow,
@@ -136,10 +137,10 @@ export async function fixture(t: TestContext) {
     adapter.attach(room);
     return c;
   }
-  function run(n = 1) {
+  function run(n = 1, ms = 17) {
     for (let i = 0; i < n; i++) {
       for (const { sid, message } of up.splice(0)) host.deliver(message, sid);
-      host.step(0.017);
+      host.step(ms / 1000);
       const step = host.sync.roomStep();
       host.replication.commit(step);
       host.replication.flush(step, (sid, packet) => {
@@ -147,8 +148,8 @@ export async function fixture(t: TestContext) {
         c?.packets.push(structuredClone(packet));
         c?.hear(packet);
       });
-      now += 17;
-      serverNow += 17;
+      now += ms;
+      serverNow += ms;
       for (const c of clients.values()) c.adapter.update(now);
     }
   }

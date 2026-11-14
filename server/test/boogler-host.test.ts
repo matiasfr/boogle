@@ -49,7 +49,7 @@ async function fixture(t: TestContext) {
   };
 }
 
-test('shadow walks, attends talk, flees and rides; nothing saved or projected', async (t) => {
+test('authority walks, attends talk, flees and rides; only pose is saved', async (t) => {
   const f = await fixture(t);
   f.run(30);
   const s = f.host.status().boogler!;
@@ -66,22 +66,26 @@ test('shadow walks, attends talk, flees and rides; nothing saved or projected', 
   f.run();
   assert.equal(f.host.status().boogler!.mode, 2);
   assert.equal(f.host.status().boogler!.leg!.speed, 2.3);
-  assert.equal(Object.hasOwn(f.host.sync.snapshot().data, 'boogler'), false);
-  assert.equal(JSON.stringify(f.host.sync.snapshot()).includes('boogler'), false);
+  assert.deepEqual(f.host.sync.snapshot().data.boogler, [
+    f.host.status().boogler.x,
+    f.host.status().boogler.z,
+    f.host.status().boogler.yaw,
+  ]);
 });
 
 test('empty sockets and paused rooms do no brain work, and resume has no catch-up walk', async (t) => {
   const f = await fixture(t);
   f.occupied(false);
   f.run(30);
-  assert.equal(f.host.status().boogler, null);
+  assert.equal(f.host.status().boogler.leg!.speed, 0);
   assert.equal(f.host.status().booglerMeter.ticks, 0);
   f.occupied(true);
   f.run(30);
   const before = f.host.status().boogler!;
   f.occupied(false);
   f.run(100);
-  assert.deepEqual(f.host.status().boogler, before);
+  assert.deepEqual(f.host.sync.snapshot().data.boogler, [before.x, before.z, before.yaw]);
+  assert.equal(f.host.status().boogler.leg!.speed, 0);
   f.occupied(true);
   f.run();
   const after = f.host.status().boogler!;
@@ -168,7 +172,7 @@ test('flee cadence is exactly eight rule ticks', () => {
   }
 });
 
-test('real relayed bg reaches only the shadow; malformed and missing fields heal; g stays lead-owned', async (t) => {
+test('real relayed bg reaches authority; malformed and missing fields heal; legs reach both clients', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogler-relay-'));
   const svc = createService(loadConfig({ DATA_DIR: dir, SERVER_ROOMS: '*' }, { log: () => {} }));
   const port = await svc.listen(0);
@@ -222,16 +226,16 @@ test('real relayed bg reaches only the shadow; malformed and missing fields heal
   send({ act: 'bad' }, [null, {}, 'bad']);
   await wait(() => world.status().boogler!.mode === 0);
   send(null);
-  await wait(() => world.status().booglerMeter.samples > 0);
+  await wait(() => world.status().booglerMeter.ticks > 0);
   assert.ok(
     messages.some((m) => m.t === 'p' && m.id === 'alice'),
     'original presence still relayed',
   );
-  assert.equal(JSON.stringify(world.sync.snapshot()).includes('boogler'), false);
+  assert.equal(JSON.stringify(world.sync.snapshot()).includes('boogler'), true);
   const packets = messages.filter((m) => m.t === 'm').map((m) => JSON.stringify(m.d));
   assert.equal(
     packets.some((m) => m.includes('boogler')),
-    false,
-    'no shadow row or event on the wire',
+    true,
+    'authoritative leg on the wire',
   );
 });
