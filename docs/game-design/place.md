@@ -138,16 +138,17 @@ the flip; save resets are never a development cost. [Proof and owed views](../re
 stall roads and the cart's leg are laid in the lines' own pieces: the same sleeper, tie plates and rail, a metre
 between the rails, the same heights, and posts under a sleeper that stands clear of the ground. The table's bridge
 rails are at that gauge and height too. Each stall road leaves the rim at the lines' height and ramps down to
-ground-level rails at the door, then runs level: to the back wall of the open stall (the shunter and wagon ride 0.29 m
-lower than they did) and a rail's length onto each ruin's floor. Where two tracks run side by side they share one set
+ground-level rails at the door, then runs level: to the back wall of the open stall (the shunter and wagon stand on its
+rail heads, wheels a metre apart on the rails, all along the shunt) and a rail's length onto each ruin's floor. Where two tracks run side by side they share one set
 of sleepers: the spur off road 2, the leg off line 1 and onto road 2, and each line's up track at its turnouts lie on
 the through track's sleepers, carried on as long timbers until the tracks are clear of each other; the branch's rails
 start beside the through track's. There are still no blades, frogs or working levers, and the table has no pit: that is
 the station's art pass (home-station steps 9 and 10). Each ruin's floor and near wall stop 0.3 m short of the built
 stall's eave. The garage's stand, jib, lever post and crew stand on the yard's ground beside the table (they hung
 0.3 m over it, at the deck's height), and a rail along each side joins the stand's two legs so it reads as a trestle
-when its part has gone. Drawn only: no rule, collider or save changes, except that the parked wagon's stand-on box sits 0.29 m
-lower with it. Not tested on a device.
+when its part has gone; the jib's mast is 0.3 m longer, so its arm is where it was over the deck. Drawn only: no rule,
+collider or save changes, except that the parked wagon's stand-on box rides with it (0.15 m higher in the stall,
+0.44 m higher at its wait on line 2). Not tested on a device.
 
 **Track-layer clearance (5 November iPhone follow-up).** With no first panel target, the empty boom now parks
 along the track instead of pointing through its own origin and cutting sideways into the camp chimney. The
