@@ -40,8 +40,11 @@ import {
 } from '../../sim/railway-rows.ts';
 import { activeStation, carryMax } from '../../sim/railway-queries.ts';
 import { Pile } from '../../sim/railway-components.ts';
-import { freeCarryIgnoringBig, railPhase, treeGrowth } from '../../sim/railway-queries-line1.ts';
+import { freeCarryIgnoringBig, railBeamChoppable, railPhase, treeGrowth } from '../../sim/railway-queries-line1.ts';
 import { insideSplitRock } from './works-shape.ts';
+
+/** Why the great tree's Chop is greyed until Station 3 opens. Draft UI copy for the owner. */
+const GREAT_TREE_WAITS = "For Station 3's beam";
 
 type AvatarData = { inner?: THREE.Object3D; loadFit?: { frame: THREE.Object3D } };
 const visualFrame = (avatar: THREE.Object3D | null) => {
@@ -837,6 +840,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           at: tree.at,
           click: true,
           run: () => start(tree),
+          // The great tree before Station 3 opens (level-pacing-1114, A1): the chip is greyed with its reason; a press
+          // still swings and rebounds, so the refusal is heard and read. Draft UI copy.
+          ...(tree.great && !railBeamChoppable(world()) ? { blocked: GREAT_TREE_WAITS } : null),
         });
       }
     for (const pile of listPiles()) {

@@ -12,7 +12,11 @@ import { flat } from '../../render/flat.ts';
 import { GOLD_ROPE, createRope } from '../../render/gold-rope.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { H, addStatic } from '../../place/land.ts';
-import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from '../../place/look.ts';
+import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint, setBlob } from '../../place/look.ts';
+import { dustRing } from '../../render/particle-effects.ts';
+import { placeSound } from '../../render/place-sfx.ts';
+import { reducedMotion } from '../../constants.ts';
+import { packDrawn, packLoaded, packSolid, packStep, type PackState } from './frame-pack.ts';
 import { kitBatch, stationKit } from '../../place/look-kit.ts';
 import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from '../../place/pieces.ts';
@@ -30,6 +34,11 @@ import {
 export { frameBesideLine, type FrameAt } from '../../place/spatial-station.ts';
 
 export type StationRun = ReturnType<typeof buildStation>;
+/** Seconds a finished frame takes to fold away, and how far from its middle counts as on it (frame, feeder, bearers). */
+const PACK_S = 1,
+  /** After a load finds a stretch laid and clear: seconds a friend's avatar arriving on it still stands it up. */
+  PACK_SETTLE_S = 3,
+  PACK_CLEAR = Math.hypot(FRAME_D / 2 + SPAN + 0.6, FRAME_W / 2 + 0.6);
 /** The bill's paint: ink on paper, like the village's boards (src/place/signs.ts). */
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
@@ -92,20 +101,17 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
     return m;
   };
   const away = lx * Math.cos(yaw) - lz * Math.sin(yaw) > 0 ? 1 : -1; // the track's on the frame's -away side
+  // The two contact blobs under the frame and its feeder, as [handle, x, z, w, d, yaw]: a packed-up frame lifts them.
+  const blobs: [number, number, number, number, number, number][] = [];
   if (LOOK.contact) {
-    addBlob(x, y, z, FRAME_D + 1.4, FRAME_W + 1.4, yaw, owner);
-    addBlob(
-      x - lx * (FRAME_D / 2 + SPAN / 2),
-      y,
-      z - lz * (FRAME_D / 2 + SPAN / 2),
-      SPAN + 1,
-      1.5,
-      yaw + Math.PI / 2,
-      owner,
-    );
+    const fx = x - lx * (FRAME_D / 2 + SPAN / 2),
+      fz = z - lz * (FRAME_D / 2 + SPAN / 2);
+    blobs.push([addBlob(x, y, z, FRAME_D + 1.4, FRAME_W + 1.4, yaw, owner), x, z, FRAME_D + 1.4, FRAME_W + 1.4, yaw]);
+    blobs.push([addBlob(fx, y, fz, SPAN + 1, 1.5, yaw + Math.PI / 2, owner), fx, fz, SPAN + 1, 1.5, yaw + Math.PI / 2]);
   }
+  let foldKit: ((height: number) => void) | null = null;
   if (LOOK.kit)
-    stationKit(
+    foldKit = stationKit(
       g,
       away,
       FRAME_D,
@@ -162,24 +168,32 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   // trap the player or collapse the camera just as the first path opens. Stock gets its own body below.
   const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
   const solids = stationColliders(place, y, !!spec0.rails);
-  for (const solid of solids.frame) addStatic(solid.shape, solid.position, turn, GROUP.SCENERY, owner);
-  addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3, owner);
-  addStatic(
-    solids.feeder.shape,
-    solids.feeder.position,
-    new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, solids.feeder.yaw),
-    GROUP.SCENERY,
-    owner,
+  // Every solid of the empty frame, and the bearers' meshes: a packed-up frame gives them back (settle, below).
+  const frameBodies: Body[] = [];
+  const bearers: THREE.Mesh[] = [];
+  for (const solid of solids.frame)
+    frameBodies.push(addStatic(solid.shape, solid.position, turn, GROUP.SCENERY, owner));
+  let unfoot = addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3, owner);
+  frameBodies.push(
+    addStatic(
+      solids.feeder.shape,
+      solids.feeder.position,
+      new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, solids.feeder.yaw),
+      GROUP.SCENERY,
+      owner,
+    ),
   );
   // The rails' bearers, beside the frame on the far side, for stations that ask for rails.
   const railAt = new THREE.Vector3(x + lx * RAIL_OUT, y, z + lz * RAIL_OUT);
   if (solids.rails) {
-    addStatic(
-      solids.rails.shape,
-      solids.rails.position,
-      new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, solids.rails.yaw),
-      GROUP.SCENERY,
-      owner,
+    frameBodies.push(
+      addStatic(
+        solids.rails.shape,
+        solids.rails.position,
+        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, solids.rails.yaw),
+        GROUP.SCENERY,
+        owner,
+      ),
     );
     for (const off of [-0.9, 0.9]) {
       const b = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.2, 0.2), flat('#8a6236'));
@@ -187,6 +201,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
       b.rotation.y = yaw;
       b.castShadow = true;
       owner.add(b);
+      bearers.push(b);
     }
   }
 
@@ -278,6 +293,22 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
     one = new THREE.Vector3(1, 1, 1);
   let stockBody: Body | null = null;
   let stockRows = 0;
+  // Packing up (settle, below): standing, folding flat, or gone; and whether this tab saw the stretch being laid.
+  let pack: PackState = 'up',
+    foldAt = 0,
+    laidAt = 0,
+    loadedLaid = false,
+    sawWork = false;
+  /** The frame, its feeder and the bearers pressed toward the ground: 1 standing, 0 not drawn. */
+  const stand = (height: number) => {
+    foldKit?.(height);
+    g.visible = height > 0;
+    g.scale.y = Math.max(height, 0.001);
+    for (const b of bearers) {
+      b.visible = height > 0;
+      b.scale.y = Math.max(height, 0.001);
+    }
+  };
   // Slots are fixed for this station; only a count change needs new instance data.
   let drawnLogs = -1,
     drawnRails = -1,
@@ -355,6 +386,75 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
       paintTwoLines(bill, big, small, BILL_LOOK);
       bill.painted();
     },
+    /** Called every frame after drawStock with where the stretch is. A laid stretch's frame packs up (owner, 14
+     * November: the boxes "should either go away once that area is built"; level-pacing-1114, D1): it folds flat in
+     * about a second with a puff, then draws nothing and is no longer solid. It never goes from under anyone: while
+     * `occupied` it stays solid and drawn on every tab, whatever that tab watched. A join or a reload that finds it
+     * clear skips the fold and opens the ground (colliders, footprint) at once; `remote` alone can stand it back up
+     * for a few seconds. Local, from accepted completions. */
+    settle(state: 'open' | 'working' | 'laid', occupied: () => boolean, remote: () => boolean) {
+      if (state === 'working') sawWork = true;
+      const now = performance.now();
+      if (state !== 'laid') laidAt = 0;
+      else if (!laidAt) laidAt = now;
+      const fold = pack === 'folding' ? Math.min(1, (now - foldAt) / (PACK_S * 1000)) : 0;
+      const was = pack;
+      pack = packStep(pack, {
+        laid: state === 'laid',
+        sawWork,
+        occupied,
+        remote,
+        fold,
+        settled: now - laidAt >= PACK_SETTLE_S * 1000,
+        reducedMotion,
+      });
+      // Solid, and in the footprints, until it is gone: nobody standing on it is dropped, whatever this tab watched
+      // (frame-pack.ts), and the cleared ground is then free for the little guys and for a saved return pose
+      // (arrival.ts reads `feet`).
+      const wasSolid = packSolid(was, loadedLaid);
+      loadedLaid = packLoaded(loadedLaid, pack);
+      const solid = packSolid(pack, loadedLaid);
+      if (solid !== wasSolid) {
+        if (solid) {
+          for (const body of frameBodies) owner.addBody(body);
+          unfoot = addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3, owner);
+        } else {
+          for (const body of frameBodies) owner.removeBody(body);
+          if (stockBody) owner.removeBody(stockBody);
+          stockBody = null;
+          stockRows = 0;
+          unfoot();
+        }
+      }
+      if (packDrawn(pack) !== packDrawn(was)) {
+        if (packDrawn(pack)) for (const [k, bx, bz, w, d, turned] of blobs) setBlob(k, bx, y, bz, w, d, turned, owner);
+        else for (const [k] of blobs) setBlob(k, 0, -999, 0, 0.01, 0.01, 0, owner);
+      }
+      if (pack === 'up') {
+        if (was !== 'up') {
+          rails.visible = true;
+          if (stones) stones.visible = true;
+          stand(1);
+        }
+        return;
+      }
+      // Whatever a late deposit drew, a finished frame shows no stock.
+      logs.visible = rails.visible = false;
+      if (stones) stones.visible = false;
+      if (beam) beam.visible = false;
+      if (pack === 'folding' && was !== 'folding') {
+        foldAt = now;
+        placeSound('cartStop', x, z);
+        dustRing(x, y + 0.2, z, 14, 2.4, 0.4);
+      }
+      if (pack === 'folding') stand(1 - fold * fold);
+      else if (pack !== was) stand(packDrawn(pack) ? 1 : 0);
+    },
+    /** Whether a point (a player's body) is on or in the frame, its feeder or its bearers: the fold waits for it. */
+    holds(p: { x: number; y: number; z: number }) {
+      return p.y > y - 0.6 && p.y < y + 3 && Math.hypot(p.x - x, p.z - z) < PACK_CLEAR;
+    },
+    packed: () => pack === 'gone',
     need: (kind: Goods) => run.spec[kind] ?? 0,
     full: () => GOODS.every((g) => run.have[g] >= run.need(g)),
     wants: (kind: Goods) => run.need(kind) - run.have[kind] - run.coming[kind],

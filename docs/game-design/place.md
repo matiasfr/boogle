@@ -46,7 +46,7 @@ Serves DESIGN.md **7. Telegraph everything** and **11. Show, don't tell**.
 fund the 260 m trestle from the rim to Far Head (286 → 546 m, 96 rail pairs). Laying waits for the Server-kind
 `rail.seaSwitch`: the first reached summit pull opens it, and the server checks the actor's reach and height at Needle Bell's summit
 (world 1011.8, 102.4, −6 m). Your pull is predicted; a friend's earlier pull stands without a correction effect.
-The cart serves Q5 as soon as Q4 completes, even with the gate up; its 24 rails take two trips of 16 and 8, moved
+The cart serves Q5 as soon as Q4 completes, even with the gate up; its 24 rails come in one shipment (the cart holds 24 since glider piece B), moved
 from the forge. Leftover shelf rails return to the forge when Q5 funds. The sea flag and fifth station persist
 through restart; `WORLD_NS` v20 resets development worlds. The gate/switch views and summit access are separate
 jobs; this rules slice adds only the frame's deposit guard. Serves DESIGN.md **Clear authority** and **Enjoyable
@@ -482,7 +482,7 @@ The forge rack holds 24 rails, including reserved slots for rails still flying o
 
 *`?proto=place` only: the live railway's handle is cut (owner, 9 November); this one goes when Place is retired.* After the depot opens and before trains, a chunky amber handle beside the turntable stop offers **Call cart to forge**, in solo and co-op. A loaded delivery finishes unloading before returning; the handle drops immediately and reads **Call sent** while awaiting the authority, then **After unloading / Then back to forge** when accepted. An empty cart returns directly. Its round trip can be ridden in either direction, loaded or empty. **Load the cart** sends up to 16 needed rails from the forge rack onto its logs; it leaves three seconds after loading (eight seconds if empty). Rails fly onto the frontier rack, and a partner can ride the cart. A cart loaded by hand runs at **13 m/s while ridden**, accelerating at the existing 3 m/s²; automatic loads and unridden carts keep **9 m/s**. Manual eligibility lasts only until unloading. Bills stay fixed.
 
-The frontier rack's persistent status distinguishes **Loading**, **On the way**, **Unloading** and **Waiting for forge**, with **More coming** while service remains. **Delivered / Ready on the rack** appears only after cargo and unloading flights are empty and the rack covers the remaining automatically served bill. This Local view reads phase, cargo, pending unloads and rack stock beside the cart in `depot.ts`; zero `railsOwed()` alone never means delivery is done. At station 5 it stays active between the 16-rail and final shipments, including after the player takes the last rail. This is approved cart-whistle variant A: no frontier request or helper salute; capacity, bills and speed are unchanged.
+The frontier rack's persistent status distinguishes **Loading**, **On the way**, **Unloading** and **Waiting for forge**, with the shipment's numbers under it while service remains (14 November: `logs 24 of 24  rails 24 of 24`, what this trip carries of what the bill still waits for; `cart-tag.ts`; it read **More coming** before). **Delivered / Ready on the rack** appears only after cargo and unloading flights are empty and the rack covers the remaining automatically served bill. This Local view reads phase, cargo, pending unloads and rack stock beside the cart in `depot.ts`; zero `railsOwed()` alone never means delivery is done. At station 5 it stays active between the 16-rail and final shipments, including after the player takes the last rail. This is approved cart-whistle variant A: no frontier request or helper salute; capacity, bills and speed are unchanged.
 
 The prototype authority accepts `cartRecall` requests and broadcasts `cartRecallAccepted`; simultaneous requests are idempotent. `depot.recallQueued` snapshot/save state carries the accepted call through correction and authority departure. All peers finish their own cargo flights before returning. Capability negotiation and the immediate `cartCall` fallback are removed. Presentation acknowledgement is Local; it never claims an unaccepted request completed. Device readability and whether the player trusts the next shipment remain owner playtest questions; not tested on a device.
 
@@ -529,7 +529,7 @@ If a partner leaves holding the great beam or the boiler, it returns to its orig
 
 **Owner decision, 5 November (topics 8–9):** Station 3 still costs **40 logs and one beam**. Its great tree has broad buttress roots, pale ridged bark and a split crown. Every standing tree can be attempted: without the proper axe, or while Station 3 is inactive or no longer needs its beam, contact rebounds without shared work. Felling requires all three conditions; its effort stays twelve strokes. Shouldering still requires Station 3 active and needing the beam. Solo and the co-op authority apply the same harvest gate. Current accepted cargo can still be dropped to free the back; historical save recovery is no longer maintained. The axe stand is derived from Station 3's placement; no save or message fields were added. Serves DESIGN.md 7 (Telegraph everything), 8 (Designed for drop-in, drop-out) and 11 (Show, don't tell).
 
-**Owner decision, 7 November (the great beam pass, [brief](../brainstorms/great-beam-clarity.md)):** supersedes the paragraph above's axe gate. The first axe fells the great tree as soon as Station 3 opens, and logs and beam arrive in either order; the rule and the client share one check (`railBeamChoppable`), so a stroke it would refuse rebounds on the next frame with its sound and no chips. Station 3's frame shows two empty saddles with loose gold lashings that tie off when the beam lands, and the great tree wears the same gold rope from the moment Station 3 opens. The trunk is dragged on that rope: a towed-rod follow with its far end on the ground (Local presentation from the carrier's smoothed pose, no new presence), and a friend's Help carry lifts the end level between two shoulders, with a thump when they let go. Your own Pick up takes the rope on the press, before the server answers. The proper axe moves to a stand by the lit forge (`LINE1_AXE_STAND`, Place's `AXE_STAND`). World reset to `v16`. Serves DESIGN.md 7 (Telegraph everything) and 11 (Show, don't tell).
+**Owner decision, 7 November (the great beam pass, [brief](../brainstorms/great-beam-clarity.md)):** supersedes the paragraph above's axe gate. The first axe fells the great tree as soon as Station 3 opens, and logs and beam arrive in either order; the rule and the client share one check (`railBeamChoppable`), so a stroke it would refuse rebounds on the next frame with its sound and no chips. Before Station 3 opens the tree's **Chop** chip is greyed with "For Station 3's beam" (14 November, level-pacing A1; draft UI copy); a press still swings and rebounds. Station 3's frame shows two empty saddles with loose gold lashings that tie off when the beam lands, and the great tree wears the same gold rope from the moment Station 3 opens. The trunk is dragged on that rope: a towed-rod follow with its far end on the ground (Local presentation from the carrier's smoothed pose, no new presence), and a friend's Help carry lifts the end level between two shoulders, with a thump when they let go. Your own Pick up takes the rope on the press, before the server answers. The proper axe moves to a stand by the lit forge (`LINE1_AXE_STAND`, Place's `AXE_STAND`). World reset to `v16`. Serves DESIGN.md 7 (Telegraph everything) and 11 (Show, don't tell).
 
 Big-cargo requests retain their original revision, generation, destination authority and drop position until answered. A follower retries that same request once a second while synchronized, including after a short reconnect's same-generation snapshot; changed revisions, generations or authority end the old request instead of manufacturing a new claim. A retry can spend the original revision only once. Ordinary logs, rails and stone unload independently of pending big cargo, so even missing replies cannot lock their delivery; a beam deposit or boiler fit still waits for its competing Drop to settle. No wire or save shape changed for this recovery.
 
@@ -542,6 +542,24 @@ Big-cargo requests retain their original revision, generation, destination autho
 The optional **9 m beam** starts at the village's west edge (868, -30). **Lift** an end or **Let go** with Interact. Alone, one end lifts while the other stays planted; two people carry it at walking speed. Being more than 11 m apart for a second drops it. A departing partner leaves it at its last midpoint, saved, with the remaining player's grip intact. Carrying its midpoint within 5 m of (944, 6) sets it on a fulcrum. Nothing in progression requires it or pays for it. Once set, it is a see-saw: land from a jump on one end to launch a partner on the other at 15 m/s (pads 3.6 m from its centre, 1.6 m reach; minimum landing speed 5 m/s; 0.5 s cooldown). Alone it only tilts and thumps. The neutral beam is solid; tilt is local and cosmetic, and each tab launches only its own player.
 
 Both beam grips use `currentCoopPeer` from `coop-identity.ts`, the same bounded participation-tick check as railway peer election. The stable `placeCoop` presence/message tag is not a build version. Existing co-op look fixtures check malformed ticks, release and departure; generation checks and beam ownership remain unchanged. Saved beam runs use `saved=1` and real movement after checkpoint restoration.
+
+**Finished frames pack up (14 November 2026, [level-pacing](../plans/level-pacing-1114.md) D1).** Owner: "the station
+at deposit boxes should either go away once that area is built, or they should act as shared resource drop boxes". A
+station's frame (T1 to T3, Q1 to Q6) no longer stands as an empty prop once its stretch is laid: on the accepted
+completion it folds flat in one second with a dust puff and a settling knock, then draws nothing and has no collider
+(posts, floor, board, feeder, rail bearers, contact blobs, its walk-round footprint; `stations.ts` `settle`). It leaves nothing behind: the
+plan's three-sleeper stack would be new placed content and waits for a prefab record. Only a tab that watched the
+stretch being laid sees the fold; a join, a reload or reduced motion finds it gone. A frame somebody stands on or
+in (you, or a friend's avatar, within about 3.5 m of its middle) keeps its colliders and waits; it folds only while
+clear, stands back up if someone steps on mid-fold, and gives up its colliders and its footprint together once gone
+(`frame-pack.ts`, tested), so nobody is dropped and the cleared ground is a valid place to be saved and to return to. That holds on every tab whatever it watched: a tab that was in the background while the stretch was laid, or a
+friend who joins while you stand on the frame, keeps it solid and drawn under you. A load that finds the frame clear
+never draws it and opens the ground at once (colliders and footprint retire on the first laid frame, so a saved
+return pose on that ground is accepted); for 3 s a friend's avatar arriving on it still stands it back up, and your
+own restored body never does. A frame stood back up that way is drawn only: on that tab it stays open ground, with no
+collider and no footprint, so nothing closes round a player restored there. The forge's frame and Q7's frame
+on the pier deck stay. Local view; the shared drop box he also asked for is the decided yard at each halt
+(station-deposit build 1), not this.
 
 ### Production Needle Bell hook climb (8 November 2026)
 
@@ -568,7 +586,7 @@ The production railway shows eight rings from the start: p2, t0–t5 and the sum
 Job A supplies Q5's Server state: the summit switch opens the sea gate whenever reached; Q5's
 24-log/24-rail bill still waits for Q4 to complete and Q5 to become active. The active Q4/Q5 frame accepts logs and rails before its gate is down (owner playtest call, 8 November).
 Hand-carried and depot-cart materials stock the bill; a full gated frame keeps its physical stock and counters,
-with “Pull the lever / switch to start”. The cart's “More coming” board hides when the bill is full.
+with “Pull the lever / switch to start”. The cart's service board hides when the bill is full.
 Pulling funds a full bill; otherwise the last deposit after the pull funds it.
 Automatic unloading retries in reach at the ordinary cadence, logs then rails, without a drop/pickup cycle.
 The Server rule and client prediction share this acceptance rule; funding stays authoritative. Existing partly
@@ -597,8 +615,14 @@ campaign or real-time smoothness verdict. The long route and owner playtest rema
 
 [Plan](../plans/glider-b-home-flow.md); [placement brief](../brainstorms/glider-placement.md). The glider waits
 sealed on Needle Bell's summit at world (1016, 102.4, −4.5), 4.5 m from the sea switch: a dark drum with a brass cap
-and a short mast carrying a furled vane in dark cloth, pointing west at the forge. It has no ring, no light, no shaft
-and no prompt, so on the first climb it reads as a thing that isn't on yet.
+and a short mast carrying a furled vane, pointing west at the forge. It has no ring, no light and no shaft.
+
+**The seal (14 November, [level-pacing](../plans/level-pacing-1114.md) B1; reverses the 9 November default of a dark
+vane and no prompt).** The furled cloth is the glider's own cream with teal edging, bound by three brass bands; the
+drum stays dark. One band lets go as each of Q3, Q4 and Q5 is laid (the last is the wake): it tumbles off with a
+latch sound and, for the first two, the locator flares for 2 s at opacity 0.3 and 1.5 times its width, so line 2 sees
+the summit answer. Within reach, **Take it** shows greyed with "Sealed until the line reaches Far Head" (draft UI
+copy). Local over accepted completions: a join, a reload or reduced motion snaps to the band count with no fall.
 
 Q5's completion wakes it, on the same edge that casts the boiler (no summit cinematic). The vane takes the worn roll's
 teal and cream, Place's two rings and core light up and turn, and a teal locator shaft rises 70 m (radius 0.45,
@@ -854,7 +878,13 @@ side. Past the platform's north end the pier head's side deck shrinks to a **pad
 under the platform's north end (a drop going out, a plain jump coming back); the jump-ins land on the platform's
 south end. South of the ramp a **piled deck** (s 703-713, lat +1.8 to +6.0) carries **Station 7**'s frame (the
 sim's, s 710), its log rack, the rails' shelf and its box; Q7's kit unloads there from the train that stands at the
-Pier, and the frame, rack and shelf stand once the pier is laid. **Q7's double deck** is laid over bents 1-6 a panel at
+Pier, and the frame, rack and shelf stand once the pier is laid. **After the crossing's finale (14 November; owner: "the
+supports are there, but I don't know what to do next ... I missed those resources").** While Station 7 is the open
+stretch and short, its bill's big line says where the kit is, **On the rack** (logs or rails lie on the rack or
+shelf beside it) or **On the way** (a train still brings it; the cart tag's words), over the usual have/need line, and
+the rack and the shelf give off the works' gold motes while the frame still wants what lies on them (off under
+reduced motion). Station 6's bill takes the same two lines once trains run. The finale's shot is unchanged: its
+hand-back still faces the sea, with the frame about 19 m behind you. Draft UI copy; Local view. **Q7's double deck** is laid over bents 1-6 a panel at
 a time (planks across both tracks, both tracks' rails, stringers, a 1.5 m plank footway along its east edge from the
 pad to where the railhead's walkway begins; solid as it is laid), with a finger board "Railhead" at the pad's corner.
 When Q7 is done the pier's **up track** drops in from the old merge out to the pier head as plain double track (the
@@ -1128,7 +1158,19 @@ and wagon over the spur in 110 ticks (11 s). The deck turns 120°, the pair back
 cusp, then the shunter pushes the wagon out to line 2 at the unchanged coupling mark. Earlier, while it rolls out,
 and after line 2 couples it, a turn is refused
 and the prompt isn't offered (until 10 November a turn before the fit was accepted and did nothing, and after
-coupling the table was a toy). From then the wagon is line 2's fourth car: arriving at the quarry, up to six
+coupling the table was a toy). **The cradle asks in the open (14 November,
+[footings-signalling](../plans/footings-signalling.md) A1 and A2; owner: "There is never any prompt to bring 8 rails to
+the cradle stall").** From the stall's second footing (after its build and tarp on a live edge) until the wagon rolls
+out: a station-style bill on the Roundhouse apron, **Footing wagon** / **rails 0/8**, its count rising, then
+**Turn the table** once fitted. It is the kiln's own board, idle since the kiln lit, moved 7.5 m from the table's
+centre onto the bisector between the open stall's road and its forge-side neighbour, edge-on to both roads and
+facing the walk from the forge rack. Eight dashed gold rail ghosts stand on the wagon's cradle, each going as its
+rail bolts on; the forge's rail rack gives off the gold motes while rails are wanted; fitted, the table's handle
+wears a dashed gold outline and motes; and a dashed gold wagon stands on line 2 at its wait throughout. **Fit the
+cradle** shows greyed to a back without rails, "Bring rails from the forge", and a footing carried to the raised stall
+meets **Set the footing** greyed, "The wagon carries the rest". Motes are off under reduced motion; the bill and
+ghosts stay. Local over accepted state (`cradle-cues.ts`, drawn in `works-view.ts`); the action's guard is unchanged.
+All draft UI copy. From then the wagon is line 2's fourth car: arriving at the quarry, up to six
 footings hop from the Works rack onto its cradle; arriving at the new **Pier** halt (open once Q6 is laid), they hop
 onto the pier rack. Line 2 stands there 3.5 m short of the halt's middle, so its engine stops clear of the
 track layer parked at the rails' end (engine A, 10 November: 1.0 m nearer than the old loco, and at least the 1 m wanted
@@ -1194,8 +1236,11 @@ the kiln lights a dashed gold square marks the kiln (kept whole on the face). St
 motion; two instanced quads on top of the displays' draws. When the stall slab falls, each empty socket shows a
 dashed gold ghost footing, a little smaller than a footing, each going as its footing is set. From the throat strike
 until the kiln lights a station-style bill stands 4 m back from the path's end beside its last leg, facing down it:
-**Kiln** / **logs 0/16  stone 0/16**, its counts rising as the kiln fills (no collider, no shadow). Pressing at the
-kiln with nothing it wants on your back shows **Fill the kiln** greyed, "Bring logs or stone". A resident in the
+**Kiln** / **logs 0/16  stone 0/16**, its counts rising as the kiln fills (no collider, no shadow). **Fill the kiln**
+always carries that same bill on a paper line over the chip (owner, 14 November: "it says place stone or wood, when
+really it needs a specific amount of stone and wood"; `kiln-prompt.ts`): with something it takes on your back,
+"logs 3/16  stone 0/16 · adds 8 logs"; otherwise greyed with a plain reason: "Bring logs and stone" (or the one it
+still lacks), "Logs are full: bring stone", "Takes logs and stone, not rails", "The kiln is full". All draft UI copy. A resident in the
 street says once, after the breaker is taken: "That big hammer's for cracks. One by the turntable, and a jealous one
 past the quarry." (a town-side fact, `breaker`, newest after the pier, so the residents' own pier notices are then
 quiet). The kiln's logs come from the grove 30–46 m outside the throat; `npm run loop` no longer counts the trees the
@@ -1261,8 +1306,8 @@ words are unchanged.
   board on one post beside the rack, facing its open log ends and the approach; it replaces the rack's old bare sign
   post. A nudge rocks the post once in the board's plane instead of bobbing the label; the steam puff is unchanged.
 - **The rails shelf's board** is the same board beside the shelf's end, facing along the line.
-- **The cart's service tag** ("Loading", "On the way", "Unloading" or "Waiting for forge" in its colour, "More coming"
-  under it) is a dark 1.6 × 0.7 m board on a post at the rack's other side, facing the same way as the rack's board,
+- **The cart's service tag** ("Loading", "On the way", "Unloading" or "Waiting for forge" in its colour, the shipment
+  under it: "logs 24 of 24  rails 24 of 24", draft UI copy) is a dark 1.6 × 0.7 m board on a post at the rack's other side, facing the same way as the rack's board,
   instead of a 6 m label 4.8 m above the rack. It is read at the rack, not from afar.
 Not tested on a device.
 

@@ -38,6 +38,15 @@ const UNFURL_S = 0.6;
  * in the room saw it, so it must read as a few pixels from the village and line 2 (about 110 m) and not be heavy up
  * close. `opacity` breathes between its two values; `flare` is the wake edge's brief bright column and its seconds. */
 const LOCATOR = { r: 0.45, h: 70, opacity: [0.2, 0.32], flare: 0.85, flareS: 4 } as const;
+/** The seal (level-pacing-1114, B1): three brass bands on the furled cloth, one falling as each of Q3, Q4 and Q5 is
+ * laid (line 2's completed count 3, 4 and 5; the last is the wake). A band's fall flares the locator at about a third
+ * of the wake's: `flare` opacity, `wide` times the shaft, over `flareS`. `fallS`: how long a loose band is drawn. */
+const SEAL = { bandX: [-0.72, -0.25, 0.22], first: 3, flare: 0.3, wide: 1.5, flareS: 2, fallS: 0.7 } as const;
+/** How many bands still hold with `completed` stretches of line 2 laid. */
+const sealBands = (completed: number) =>
+  Math.max(0, Math.min(SEAL.bandX.length, SEAL.first + SEAL.bandX.length - 1 - completed));
+/** Why "Take it" is greyed while sealed. Draft UI copy for the owner (not a Boogler line). */
+const SEALED = 'Sealed until the line reaches Far Head';
 /** The wake banner, a draft for the owner to reword (not a Boogler line). */
 const WAKE_BANNER = ['The glider is awake', "Up on Needle Bell's summit"] as const;
 
@@ -75,13 +84,26 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   // A short dark mast at the drum's east edge, and the vane at its top pointing west (-x), at the forge.
   const MAST = { x: 0.48, top: 2.35 };
   const mast = mesh(shapes.merged([['b', MAST.x, (MAST.top + 0.93) / 2, 0, 0.08, MAST.top - 0.93, 0.08, '#3d3c38']]));
+  // Sealed (level-pacing-1114, B1): the furled cloth already shows the glider's cream and teal, so it reads as the
+  // glider rolled up, bound by three brass bands that fall as Q3, Q4 and Q5 are laid. The drum stays dark.
   const furled = mesh(
     shapes.merged([
-      ['b', -0.25, 0, 0, 1.3, 0.16, 0.2, '#3d3c38'],
+      ['b', -0.25, 0, 0, 1.3, 0.22, 0.28, '#efe4c8'],
+      ['b', -0.25, 0.115, 0, 1.3, 0.02, 0.12, '#39e6c6'],
+      ['b', -0.25, 0, 0.145, 1.3, 0.09, 0.02, '#39e6c6'],
+      ['b', -0.25, 0, -0.145, 1.3, 0.09, 0.02, '#39e6c6'],
       ['b', 0.42, 0, 0, 0.12, 0.22, 0.24, '#33322e'],
     ]),
   );
   furled.position.set(MAST.x, MAST.top - 0.1, 0);
+  const bandShape = shapes.merged([['b', 0, 0, 0, 0.09, 0.3, 0.36, '#c79a3e']]);
+  /** West to east along the roll; the westmost falls first. `fall` is seconds since it let go, -1 while it holds. */
+  const bands = SEAL.bandX.map((x) => {
+    const view = mesh(bandShape);
+    view.position.set(MAST.x + x, MAST.top - 0.1, 0);
+    device.add(view);
+    return { view, x: MAST.x + x, fall: -1 };
+  });
   // Woken: the cloth opens to the worn roll's teal and cream, its leading edge west.
   const vane = mesh(
     shapes.merged([
@@ -134,6 +156,8 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   let unfurlT = -1;
   /** Seconds since the wake edge's flare began, -1 when none. */
   let flareT = -1;
+  /** Seconds since a band's smaller flare began (still sealed), -1 when none. */
+  let bandFlareT = -1;
   let t = 0;
   const isWoken = (completed: number) => completed >= 5;
   const taken = () => rail(adapter.read.world()).glide;
@@ -141,8 +165,19 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   function draw(completed: number) {
     const gone = taken();
     const awake = isWoken(completed) && !gone;
-    for (const o of [ring, ring2, core, shaft]) o.visible = awake;
+    for (const o of [ring, ring2, core]) o.visible = awake;
+    // The locator stands while woken, and for a band's brief flare while still sealed.
+    shaft.visible = awake || (!gone && bandFlareT >= 0);
     mast.visible = !gone;
+    // The bands that still hold sit on the roll; a loose one tumbles off for a moment, then is not drawn.
+    const holding = gone ? 0 : sealBands(completed);
+    bands.forEach((band, k) => {
+      const held = k >= bands.length - holding;
+      band.view.visible = !gone && (held || band.fall >= 0);
+      const f = held ? 0 : Math.max(0, band.fall);
+      band.view.position.set(band.x, MAST.top - 0.1 - 4.9 * f * f, 0.5 * f);
+      band.view.rotation.x = 5 * f;
+    });
     const u = unfurlT < 0 ? 1 : Math.min(1, unfurlT / UNFURL_S);
     vane.visible = awake;
     furled.visible = !gone && (!awake || u < 0.15);
@@ -169,7 +204,8 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
     /** A restore (load, rejoin, resync) snaps to state: no wake show. */
     restore(completed: number) {
       seenCompleted = completed;
-      unfurlT = flareT = -1;
+      unfurlT = flareT = bandFlareT = -1;
+      for (const band of bands) band.fall = -1;
       draw(completed);
     },
     update(dt: number, completed: number) {
@@ -183,7 +219,30 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
         showMomentBanner(WAKE_BANNER[0], WAKE_BANNER[1], 4.5);
         playMark('glider woken', { authority: 'local' });
       }
+      // A band lets go on the live edge of Q3, Q4 or Q5 being laid (the last with the wake above); the two earlier
+      // ones flare the locator briefly so line 2 sees the summit answer. A restore or a late join snaps, no show.
+      if (seenCompleted >= 0 && completed > seenCompleted && !taken()) {
+        for (let done = seenCompleted + 1; done <= completed; done++) {
+          const band = bands[done - SEAL.first];
+          if (!band) continue;
+          band.fall = reducedMotion ? -1 : 0;
+          placeSound('hookLatch', at.x, at.z);
+          if (done < SEAL.first + bands.length - 1) {
+            bandFlareT = 0;
+            playMark('glider band fell', { authority: 'local' });
+          }
+        }
+      }
       if (adapter.read.ready()) seenCompleted = completed;
+      for (const band of bands)
+        if (band.fall >= 0) {
+          band.fall += dt;
+          if (band.fall >= SEAL.fallS) band.fall = -1;
+        }
+      if (bandFlareT >= 0) {
+        bandFlareT += dt;
+        if (bandFlareT >= SEAL.flareS || isWoken(completed)) bandFlareT = -1;
+      }
       if (unfurlT >= 0) {
         unfurlT += dt;
         if (unfurlT >= UNFURL_S) unfurlT = -1;
@@ -198,6 +257,12 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
       const f = flareT < 0 ? 0 : 1 - flareT / LOCATOR.flareS;
       shaftMat.opacity = breath + (LOCATOR.flare - breath) * f * f;
       shaft.scale.set(1 + f * 1.5, 1, 1 + f * 1.5);
+      if (bandFlareT >= 0) {
+        // Sealed: only the band's flare shows the shaft, fading out from SEAL.flare.
+        const b = 1 - bandFlareT / SEAL.flareS;
+        shaftMat.opacity = SEAL.flare * b * b;
+        shaft.scale.set(SEAL.wide, 1, SEAL.wide);
+      }
       const spin = unfurlT >= 0 ? 6 : 1;
       ring.rotation.z += dt * 0.7 * spin;
       ring2.rotation.y += dt * spin;
@@ -206,7 +271,9 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
       draw(completed);
     },
     targets(p: V3, completed: number): Interactable[] {
-      if (!available(completed) || Math.hypot(p.x - at.x, p.z - at.z) > 3 || Math.abs(p.y - at.y) > 2.2) return [];
+      if (taken() || Math.hypot(p.x - at.x, p.z - at.z) > 3 || Math.abs(p.y - at.y) > 2.2) return [];
+      // Sealed, the prompt shows greyed with when it opens, never silence (level-pacing-1114, B1).
+      if (!available(completed)) return [{ id: 'railway-glide-device', verb: 'Take it', at: target, blocked: SEALED }];
       return [{ id: 'railway-glide-device', verb: 'Take it', at: target, run: () => void adapter.claimGlide() }];
     },
     inspect: () => {
@@ -222,6 +289,8 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
           locator: shaft.visible,
           unfurling: unfurlT >= 0,
           flaring: flareT >= 0,
+          bands: rail(w).glide ? 0 : sealBands(line2Completed(w)),
+          bandFlaring: bandFlareT >= 0,
         },
       };
     },

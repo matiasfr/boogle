@@ -60,6 +60,8 @@ export { NO_TARGETS };
 export type Interactable = InteractTarget & {
   id: string;
   verb: string;
+  /** A line over the chip that is not a refusal: a bill and its progress (the kiln). Shown blocked or not. */
+  note?: string;
   at: THREE.Vector3;
   click?: boolean;
   show?: (html: string) => void; // draws the prompt itself (the Boogler's name tag); src/features/prompt.ts

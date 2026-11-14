@@ -15,7 +15,9 @@ import { stockSign } from './stock-sign.ts';
 import { waitsForTrain } from './forge-offer.ts';
 import { line2Active } from '../../sim/railway-queries-line2.ts';
 import { freeCarryIgnoringBig } from '../../sim/railway-queries-line1.ts';
-import { account, rail } from '../../sim/railway-rows.ts';
+import { account, qjob, rail } from '../../sim/railway-rows.ts';
+import { goldMote } from './breaker-view.ts';
+import { reducedMotion } from '../../constants.ts';
 
 const MAX_RAILS = Math.max(...LINE2_STATIONS.map((station) => station.bill[1]));
 const REACH = 3.2;
@@ -128,6 +130,8 @@ export async function createRailwayShelf(
   }
   /** World position of the top rail on the shelf (where a take flies from). */
   const top = (n: number, out: THREE.Vector3) => shelf.localToWorld(slot(Math.max(0, n - 1), out));
+  const motePoint = new THREE.Vector3();
+  let moteAt = 0;
 
   // ---------------------------------------------------------------- the survey stake at the stretch's far end
   const stakeGeo = new THREE.CylinderGeometry(0.07, 0.09, 3.2, 6),
@@ -223,6 +227,16 @@ export async function createRailwayShelf(
       const k = line2Active(w);
       draw(k, k >= 0 ? Math.max(0, rail(w).depotRails - inFlight().rails) : 0, waitsForTrain(w, k));
       drawStake(k);
+      // Station 7's shelf gives off the works' gold motes while its frame still wants the rails lying on it (the
+      // rack does the same for logs, line2-view.ts). Off under reduced motion.
+      if (k === Q7 && !reducedMotion && rail(w).depotRails > 0) {
+        const job = qjob(w, k);
+        if (job.start < 0 && job.railStock < LINE2_STATIONS[k]!.bill[1] && performance.now() >= moteAt) {
+          moteAt = performance.now() + 200;
+          top(rail(w).depotRails, motePoint);
+          goldMote(motePoint.x + (Math.random() - 0.5) * 1.6, motePoint.y + 0.5, motePoint.z, 1, 0.3);
+        }
+      }
     },
     targets(): Interactable[] {
       const w = adapter.read.world(),

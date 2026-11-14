@@ -44,6 +44,8 @@ const poses: Record<
   rack: { body: [1094, 57], camera: [1098, 27.5, 61], aim: [1090.5, 24.2, 52.5] },
   // The plume over the forge as seen from the pier (Home flow finding 3: it calls you back).
   call: { body: [1405, -366], camera: [1404, 30, -358], aim: [919, 40, 5] },
+  // In reach of "Fill the kiln" (with --hud): the prompt's bill and its reason.
+  kilnface: { body: [1124.7, 85.2], camera: [1120.5, 28.5, 82.5], aim: [1128, 25.5, 87.5] },
   callmid: { body: [1000, -60], camera: [1150, 40, -200], aim: [919, 40, 5] },
   callnear: { body: [1000, -60], camera: [1000, 32, -60], aim: [919, 35, 5] },
   // J5: the crossing from the pier head, the Pier halt's rack and jib, and the wagon behind line 2's train at home.

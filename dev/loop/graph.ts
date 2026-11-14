@@ -698,9 +698,9 @@ export const NODES: readonly LoopNode[] = [
     requires: [dec('throat', 'rules', `${RULES_WORKS} kiln: throat struck; railway-server.ts railValid rail.kiln`)],
     cue: [
       onMain(
-        'prompt-only',
-        '"Fill the kiln", only to a loaded back within 4.1 m',
-        'src/entities/railway/works-view.ts:609-623',
+        'world',
+        'the Kiln bill at the cut (logs n/16  stone n/16), gold ghosts of the missing load, and "Fill the kiln" to any back within 4.1 m with the same bill and a plain reason',
+        'src/entities/railway/works-view.ts drawBill, drawGhosts; src/entities/railway/kiln-prompt.ts',
       ),
     ],
   },
@@ -732,7 +732,13 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'cradle rails', nth: 'last' },
     stops: [],
     requires: [dec('stall', 'rules', `${RULES_WORKS} cradle: the stall stands`)],
-    cue: [onMain('prompt-only', '"Fit the cradle" at the stall', 'src/entities/railway/roundhouse-view.ts:654-675')],
+    cue: [
+      onMain(
+        'world',
+        'the apron bill "Footing wagon / rails n/8", eight gold rail ghosts on the cradle, motes on the forge rail rack, and "Fit the cradle" greyed to a back without rails',
+        'src/entities/railway/cradle-cues.ts; src/entities/railway/works-view.ts',
+      ),
+    ],
   },
   {
     id: 'table',
@@ -751,7 +757,13 @@ export const NODES: readonly LoopNode[] = [
       dec('cradle', 'rules', `${RULES_WORKS} commission(): fitted and table at line 2`, 'finish'),
       dec('trains', 'rules', `${RULES_TRAINS} wagonArrives: the wagon couples at line 2's train`, 'finish'),
     ],
-    cue: [onMain('prompt-only', '"Turn the table"', 'src/entities/railway/roundhouse-view.ts:676-694')],
+    cue: [
+      onMain(
+        'world',
+        'the apron bill turns to "Turn the table", the handle wears a gold outline and motes, a ghost wagon waits on line 2',
+        'src/entities/railway/cradle-cues.ts; src/entities/railway/works-view.ts',
+      ),
+    ],
   },
   {
     id: 'crossing',

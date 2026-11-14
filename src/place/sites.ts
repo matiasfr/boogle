@@ -36,10 +36,13 @@ export const feet: Foot[] = [];
 export function addFoot(x: number, z: number, yaw: number, hw: number, hd: number, owner?: OwnedView) {
   const foot = { x, z, c: Math.cos(yaw), s: Math.sin(yaw), hw, hd };
   feet.push(foot);
-  owner?.cleanup(() => {
+  /** Retires the footprint early (a station frame that packed up); safe to call twice. */
+  const remove = () => {
     const index = feet.indexOf(foot);
     if (index >= 0) feet.splice(index, 1);
-  });
+  };
+  owner?.cleanup(remove);
+  return remove;
 }
 /** Moves a point out of a footprint it's in, by the shortest way. True if it had to. */
 export function outOf(f: Foot, p: { x: number; z: number }, r: number) {
