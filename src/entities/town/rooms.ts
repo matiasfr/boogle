@@ -32,7 +32,7 @@ import museumShell from '../../../content/built/levels/room-museum.json' with { 
 import { merged } from '../../render/part-geometry.ts';
 import { ROOM_GROUP } from '../../place/land.ts';
 import { H } from '../../place/terrain.ts';
-import { ROOM_PLOTS, toWorld, type RoomId } from '../../place/layout.ts';
+import { ROOM_FLOOR, ROOM_PLOTS, toWorld, type RoomId } from '../../place/layout.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { paintBoard, woodV } from '../../place/signs.ts';
 import {
@@ -63,7 +63,7 @@ export const ROOM_CAM = {
   dressWithin: 60, // m: and what's outside and over the door (a mat, a window box, a sign) while it's within this
 };
 export const DOOR = { w: 2.6, rows: 3 };
-const FLOOR = 0.14;
+const FLOOR = ROOM_FLOOR;
 
 /** What rooms are made of: their own colours, a little warm light of their own so a shaded room still reads, one material for
  * all three. */

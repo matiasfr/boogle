@@ -17,7 +17,7 @@ import level from '../content/built/levels/workshop-kit.json' with { type: 'json
 import { loadLevelArtifact, loadPrefabArtifact } from '../src/prefab/validate.ts';
 import * as validation from '../src/prefab/validate.ts';
 import { names } from '../src/prefab/names.ts';
-import { ROOM_PLOTS } from '../src/place/layout.ts';
+import { ROOM_FLOOR, ROOM_PLOTS } from '../src/place/layout.ts';
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
 import museumLevel from '../content/built/levels/museum.json' with { type: 'json' };
@@ -733,6 +733,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       H: ground,
       ROOM_GROUP: 8,
       ROOM_PLOTS: plots,
+      ROOM_FLOOR,
       toWorld: (x: number) => x + 800,
       artifact,
       compiled,

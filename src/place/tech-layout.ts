@@ -92,7 +92,7 @@ export const PADS: Pad[] = [
   // Keep the original bank approach north of the slab, so its underside cannot mask the ring.
   { id: 'alcove', x: -40, z: -80.5, top: 12, hx: 2.2, hz: 1.6, look: 'wood', ring: 'bridge' },
   { id: 'loft', x: 110.5, z: 64, top: 28.4, hx: 2.4, hz: 2.8, look: 'stone', ring: 'camp' },
-  { id: 'balcony', x: -122, z: 36, top: 24.4, hx: 3, hz: 3, look: 'wood' },
+  { id: 'balcony', ...TOWN_PROPS.balcony, top: 24.4, hx: 3, hz: 3, look: 'wood' },
   { id: 'stack', x: 326.8, z: -123.4, top: 15, hx: 3.6, hz: 3.6, look: 'stone' },
   // A hook back up from the sea stack, meeting the trestle. Append so existing presence ring indices stay stable.
   {
@@ -240,13 +240,22 @@ export type Secret = {
   from: { x: number; z: number; y?: number };
 };
 const top = (id: string) => padById(id).top;
+/** One anchor for the gift, laundry pole and both solid fences. Offsets retain the yard's open east side. */
+export const YARD_DRESSING = {
+  anchor: TOWN_PROPS.yard,
+  laundry: { x: TOWN_PROPS.yard.x - 2.5, z: TOWN_PROPS.yard.z - 3.5, yaw: 0.25 },
+  fences: [
+    { x: TOWN_PROPS.yard.x - 3.1, z: TOWN_PROPS.yard.z + 0.5, w: 0.14, d: 8 },
+    { x: TOWN_PROPS.yard.x, z: TOWN_PROPS.yard.z + 4.7, w: 6.2, d: 0.14 },
+  ],
+} as const;
 export const SECRETS: Secret[] = [
   {
     id: 'yard',
     gift: 'strawhat',
     area: 'village',
     how: 'walk',
-    ...TOWN_PROPS.yard,
+    ...YARD_DRESSING.anchor,
     y: null,
     after: 'hook',
     from: { x: -136, z: 22 },
@@ -333,8 +342,7 @@ export const SECRETS: Secret[] = [
     gift: 'aviator',
     area: 'village',
     how: 'glide',
-    x: -122,
-    z: 36,
+    ...TOWN_PROPS.balcony,
     y: top('balcony'),
     after: 'trains',
     from: { x: 18, z: -6, y: 102.4 },

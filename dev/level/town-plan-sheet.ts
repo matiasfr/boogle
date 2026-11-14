@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { sourceFunction } from './source.ts';
 import { FORGE, LANDING, ORIGIN, PATHS, ROOM_PLOTS, SPAWN, TOWN } from '../../src/place/layout.ts';
 import { CELL, H as groundHeight, NX, NZ, at, cellX, cellZ, heights, pathMask } from '../../src/place/terrain.ts';
-import { SECRETS } from '../../src/place/tech-layout.ts';
+import { SECRETS, YARD_DRESSING, padById } from '../../src/place/tech-layout.ts';
 import { LAND_TREES } from '../../src/place/tree-catalog.ts';
 import {
   HALL,
@@ -179,7 +179,8 @@ const notes = [
   'Unused TOWN.wood/stone growth rows and distant camps are excluded.',
   'Paint and height cells are baked data; dashed paths are authored centrelines.',
   'B1 streets/cottage/yard built; bay and shelf already moved on main (#1778).',
-  'Rooms await B2; bought-plot blocks and clock footing await B3.',
+  'B2 rooms and balcony built; bought-plot blocks and clock footing await B3.',
+  'Doors have slab-matching thresholds; yard dressing follows the gift anchor.',
   'Distances are straight, horizontal metres, not walked routes or terrain slopes.',
   'Forge frame stands on arrival; free finish at F2. Shop/museum boards: arrival.',
   'Clock footing 5 × 5 m: arrival; clock: free with trains. Hall tick: town front.',
@@ -252,6 +253,12 @@ function footprintGap(a: TownBuilding, b: TownBuilding) {
     streetGap(a, [...corners(b), corners(b)[0]!]),
   );
 }
+const narrowGaps = TOWN_SLOTS.flatMap((a, i) =>
+  TOWN_SLOTS.slice(i + 1).flatMap((b) => {
+    const metres = footprintGap(townBuilding(a.id), townBuilding(b.id));
+    return metres < 4 ? [{ a: a.id, b: b.id, metres }] : [];
+  }),
+);
 const curioClearances = curioFrames.map((b) => {
   const near = pointToFoot(TOWN_CENTRE, b),
     far = Math.max(...corners(b).map((p) => distance(p, TOWN_CENTRE)));
@@ -268,6 +275,7 @@ const curioClearances = curioFrames.map((b) => {
 const yardSecret = SECRETS.find((s) => s.id === 'yard');
 if (!yardSecret) throw new Error('missing yard find');
 const yard: Point = { x: yardSecret.x, z: yardSecret.z };
+const balcony = padById('balcony');
 
 function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
   const out: string[] = [];
@@ -416,6 +424,16 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
   };
   if (mode === 'overlay') today.forEach((b) => draw(b, true));
   active.forEach((b) => draw(b));
+  for (const fence of YARD_DRESSING.fences) out.push(shape({ ...fence, yaw: 0 }, '#8a6238', '#8a6238'));
+  out.push(circle(YARD_DRESSING.laundry, 0.3, '#8a6238', '#8a6238'));
+  out.push(
+    shape(
+      { x: balcony.x, z: balcony.z, yaw: 0, w: balcony.hx * 2, d: balcony.hz * 2 },
+      'none',
+      '#8b7049',
+      'stroke-dasharray="2 2"',
+    ),
+  );
   if (mode === 'overlay')
     for (const m of moves) out.push(path([m.from, m.to], '#a34c67', 2, 'marker-end="url(#arrow)"'));
   if (mode === 'round') for (const m of measures) out.push(path([m.a, m.b], '#718677', 1, 'stroke-dasharray="2 3"'));
@@ -441,6 +459,7 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
   }));
   labels.push(
     { p: yard, name: 'yard find', c: '#9b527b' },
+    { p: balcony, name: 'balcony / aviator', c: '#8b7049' },
     { p: LANDING, name: 'LANDING · shore spawn', c: '#354b3c' },
     { p: SPAWN, name: 'SPAWN', c: '#354b3c' },
     { p: island, name: 'Station island', c: '#58615d' },
@@ -513,7 +532,12 @@ const parts = [
   '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10" fill="#a34c67"/></marker><marker id="north" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10" fill="#26332f"/></marker></defs>',
   `<rect width="${W}" height="${H}" fill="#f3f5ef"/>`,
   text(30, 38, 'Home · town plan sheet', 26),
-  text(30, 64, `B1 as built / later Round plan · source ${git('rev-parse', '--short', 'HEAD')} · stamp ${stamp}`, 14),
+  text(
+    30,
+    64,
+    `B1+B2 as built / later Round plan · source ${git('rev-parse', '--short', 'HEAD')} · stamp ${stamp}`,
+    14,
+  ),
   panel('today', 20, 86),
   panel('round', 810, 86),
   panel('overlay', 20, 754),
@@ -543,6 +567,17 @@ for (const m of moves) {
 }
 parts.push(text(840, y + 4, 'Other three opening cottages are removed, not assigned to bought plots.', 13));
 y += 38;
+parts.push(text(840, y, 'WALL GAPS < 4 m · including future plots', 15));
+y += 26;
+for (const g of narrowGaps) {
+  parts.push(text(840, y, `${g.a} / ${g.b}: ${g.metres.toFixed(3)} m`, 13));
+  y += 23;
+}
+if (!narrowGaps.length) {
+  parts.push(text(840, y, 'None; every planned wall gap is at least 4 m.', 13));
+  y += 23;
+}
+y += 10;
 parts.push(text(840, y, 'CURIO CROWNS · metres clear, as built = plan', 15));
 y += 26;
 for (const c of curioClearances) {
@@ -622,6 +657,7 @@ const manifest = {
   sourceHashes,
   groundHash,
   curioClearances,
+  narrowGaps,
   command: 'npm run town-plan-sheet',
   artifacts: { svg: ROOT + svg, png: renderer ? ROOT + png : null },
   counts: { today: today.length, round: round.length, plots: TOWN_PLOTS.order.length },

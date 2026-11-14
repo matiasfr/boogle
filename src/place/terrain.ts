@@ -18,6 +18,7 @@ import {
   LOBE,
   ORIGIN,
   PATHS,
+  ROOM_FLOOR,
   ROOM_PLOTS,
   SPIRE,
   TOWN,
@@ -230,6 +231,32 @@ function bake() {
     TOWN_GROUND.green.flat,
     TOWN_RING.inner - TOWN_GROUND.green.flat,
   );
+  // Meet each 14 cm slab at its door without lifting the room's centre datum or the ring road.
+  // The shallow threshold stays below the interior floor and fades to level within the 2 m setback.
+  for (const p of Object.values(ROOM_PLOTS)) {
+    const r = Math.max(p.w, p.d) / 2 + 4,
+      c = Math.cos(p.yaw),
+      s = Math.sin(p.yaw);
+    for (
+      let j = Math.max(0, Math.floor((p.z - r - GRID.z0) / CELL));
+      j <= Math.min(NZ - 1, Math.ceil((p.z + r - GRID.z0) / CELL));
+      j++
+    )
+      for (
+        let i = Math.max(0, Math.floor((p.x - r - GRID.x0) / CELL));
+        i <= Math.min(NX - 1, Math.ceil((p.x + r - GRID.x0) / CELL));
+        i++
+      ) {
+        const dx = cellX(i) - p.x,
+          dz = cellZ(j) - p.z;
+        const across = dx * c - dz * s,
+          out = dx * s + dz * c - p.d / 2;
+        const weight = smoothstep(2.4, 1.6, Math.abs(across)) * smoothstep(-2.8, -1.6, out) * smoothstep(2, 0, out);
+        if (!weight) continue;
+        const k = at(i, j);
+        heights[k] = heights[k]! + (VILLAGE.y + ROOM_FLOOR - 0.015 - heights[k]!) * weight;
+      }
+  }
   TOWN.camps.forEach((c, k) => {
     for (const p of [...c.asleep, ...c.awake])
       pad(p.x, p.z, LINKS[k]!.camp.y, Math.max(p.w ?? 6, p.d ?? 6) * 0.7 + 1.5, 5);

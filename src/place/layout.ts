@@ -693,10 +693,12 @@ export const TOWN: {
 /** The buildings you can walk into (./rooms.ts). Their doors are local +z, so `yaw` turns each door to face the street. Sizes
  * are the outside; docs/research/town-interiors.md, "How little room is enough?". */
 export type RoomId = 'house' | 'shop' | 'museum';
+/** The shells' slab top above their ground datum; door grading and the room view share it. */
+export const ROOM_FLOOR = 0.14;
 export const ROOM_PLOTS: Record<RoomId, { x: number; z: number; yaw: number; w: number; d: number; high: number }> = {
-  house: { x: -114, z: 11, yaw: 1.42, w: 7.4, d: 7.4, high: 3.7 },
-  shop: { x: -116, z: 31, yaw: 2.05, w: 10, d: 8, high: 3.9 },
-  museum: { x: -125, z: -8, yaw: 0.97, w: 13, d: 12, high: 5 },
+  house: { ...townBuilding('house'), high: 3.7 },
+  shop: { ...townBuilding('shop'), high: 3.9 },
+  museum: { ...townBuilding('museum'), high: 5 },
 };
 /** What stands across the sea: too far to reach, north-east of the ridge. */
 export const FAR = { x: 330, z: -1120 };

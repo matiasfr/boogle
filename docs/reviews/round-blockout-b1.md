@@ -1,5 +1,7 @@
 # The Round B1: built ground and streets
 
+**Superseded by the [B1+B2 repair proof](round-blockout-b1-b2.md).** Independent review found two missed regressions: terrain through occupied rooms and yard dressing left at the removed cottage. The observations and verdict below describe the earlier tree only, not the repaired build.
+
 14 November 2026. Branch `codex/round-blockout-b1-2`, in the original worktree. Rebased onto local `origin/main` at `753f0b4d8`, including #1778. The original B1 branch is preserved. Nothing pushed or shipped. Browser evidence below tested the clean source commit `eeda9397922c3d097b609a969d7176f8eca7195a`; the completion commit adds this report and ticks B1, without changing game source.
 
 ## What is built

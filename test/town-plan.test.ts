@@ -6,10 +6,10 @@ import assert from 'node:assert/strict';
 import { AXIS, HALL, SHELF_SIZE, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
 import { prefabs as curioRecords } from '../src/content/prefabs/curio.ts';
 import { curioParts } from '../src/prefab/builders/curio-parts.ts';
-import { LINES, ORIGIN, PATHS, TOWN, VILLAGE, lineAt } from '../src/place/layout.ts';
+import { LINES, ORIGIN, PATHS, ROOM_FLOOR, ROOM_PLOTS, TOWN, VILLAGE, lineAt } from '../src/place/layout.ts';
 import { H, CELL, NX, NZ, at, cellX, cellZ, heights, pathMask } from '../src/place/terrain.ts';
 import { SHORE_PATH } from '../src/place/shore-layout.ts';
-import { SECRETS } from '../src/place/tech-layout.ts';
+import { SECRETS, padById } from '../src/place/tech-layout.ts';
 import { LAND_TREES } from '../src/place/tree-catalog.ts';
 import {
   TOWN_CENTRE,
@@ -21,6 +21,7 @@ import {
   TOWN_SLOTS,
   TOWN_STREETS,
   townBuilding,
+  townLocal,
   slotPoint,
   type TownBuilding,
   type TownId,
@@ -84,6 +85,21 @@ function pointGap(p: XZ, b: TownBuilding) {
 
 const ids = TOWN_SLOTS.map((s) => s.id);
 const B = (id: TownId) => townBuilding(id);
+
+test('the occupied rooms and the balcony use their Round poses', () => {
+  for (const [id, high] of [
+    ['house', 3.7],
+    ['shop', 3.9],
+    ['museum', 5],
+  ] as const)
+    assert.deepEqual(ROOM_PLOTS[id], { ...B(id), high });
+  const balcony = padById('balcony'),
+    secret = SECRETS.find((s) => s.id === 'balcony')!;
+  assert.deepEqual({ x: balcony.x, z: balcony.z }, TOWN_PROPS.balcony);
+  assert.deepEqual({ x: secret.x, z: secret.z }, TOWN_PROPS.balcony);
+  assert.equal(balcony.top, 24.4);
+  assert.equal(secret.y, 24.4);
+});
 
 test('the axis runs at 70 degrees and the centre is where the plan says, so a change at the flip fails loudly', () => {
   assert.equal(AXIS.bearing, 70);
@@ -304,7 +320,12 @@ test('the ground under the Round footprints and their 3 m aprons is level', () =
       if (r < TOWN_RING.inner || r > TOWN_GROUND.r) continue;
       const bearing = ((Math.atan2(dx, -dz) * 180) / Math.PI + 360) % 360;
       const hall = bearing >= 60 && bearing <= 100;
-      near(heights[at(i, j)]!, 18, hall ? 0.25 : 0.05, `Round ${cellX(i)},${cellZ(j)}`);
+      const threshold = Object.values(ROOM_PLOTS).some((room) => {
+        const door = townLocal(room, 0, room.d / 2);
+        return Math.hypot(cellX(i) - door.x, cellZ(j) - door.z) <= 3;
+      });
+      const lift = threshold && heights[at(i, j)]! > 18 ? ROOM_FLOOR : 0.05;
+      near(heights[at(i, j)]!, 18, hall ? 0.25 : lift, `Round ${cellX(i)},${cellZ(j)}`);
       if (r <= TOWN_RING.outer) assert.ok(pathMask[at(i, j)]! >= 0.99, 'the ring is painted');
     }
   for (let r = 20; r <= 36; r += CELL) level(slotPoint(250, r), `dock r${r}`);

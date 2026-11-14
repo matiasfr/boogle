@@ -150,7 +150,8 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
   };
   // The yard sits behind the cottage: laundry and its gift invite a detour, leaving the shore-to-town approach clear.
   // The fence keeps its opening on the east.
-  const gy = H(-127.5 + ox, 25.5);
+  const { anchor: yard, laundry, fences } = tech.YARD_DRESSING;
+  const gy = H(yard.x + ox, yard.z);
   prop(
     [
       ['b', 0, 1.1, 0, 0.12, 2.2, 0.12, '#7f5630'],
@@ -159,18 +160,15 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
       ['b', 2.6, 1.7, -0.7, 0.55, 0.65, 0.04, '#3f6fb0'],
       ['b', 4.0, 1.68, -1.0, 0.6, 0.7, 0.04, '#f2e6c8'],
     ],
-    -130,
+    laundry.x,
     gy,
-    22,
-    0.25,
+    laundry.z,
+    laundry.yaw,
     true,
   );
-  for (const [x, z, hx, hz] of [
-    [-130.6, 26, 0.14, 8],
-    [-127.5, 30.2, 6.2, 0.14],
-  ] as const) {
-    put([['b', 0, 0, 0, hx, 1, hz, '#8a6238']], v.set(x + ox, gy + 0.5, z));
-    addStatic({ kind: 'box', hx: hx / 2, hy: 0.5, hz: hz / 2 }, v, undefined, undefined, owner);
+  for (const { x, z, w, d } of fences) {
+    put([['b', 0, 0, 0, w, 1, d, '#8a6238']], v.set(x + ox, gy + 0.5, z));
+    addStatic({ kind: 'box', hx: w / 2, hy: 0.5, hz: d / 2 }, v, undefined, undefined, owner);
   }
   // The lookout: a scarf caught on a dead branch, over the shelf you'd pass under.
   prop(
