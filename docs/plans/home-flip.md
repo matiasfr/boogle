@@ -100,6 +100,7 @@ Each is one sitting, leaves `node dev/ship-check.ts` green and main playable. Ru
     - `test/prefab-portability.test.ts` has no budget comment any more (no hard ceilings, owner call 14 November); the level joined its serialization list instead.
 - [ ] **B4. Checkpoint: the blockout walked and measured. Runner: Codex, gpt-6.1-sol medium; visual review by a fresh subagent, fable medium.** Once: `npm run check:full`; `npm run level-check`; `npm run town-plan-sheet` with the sheet committed under `docs/world/`; the bot's `playthrough --to forge-lit` (its Home waypoints cross the old square); `dev/look/evals/railway-finds.ts` (the `yard` find on real ground, the balcony by glide); one probe eval kept out of the repo, as step 0b was (the second jump onto plot 1's house block; plot 4's cottage block to the museum's roof; the bay to the hall's roof and down); `npm run perf` at the `town` pose, reported. Looks: from above; the top of the dock street at phone size; a real-time video once round the ring road (107 m, 19 s). Then the designer rules on the level findings, and the owner walks it live. A spacing change after that is an edit to a `town-plan.ts` row and a re-run of the sheet.
   - **B4 runner, 14 November:** [numbers, failures, inspected images and manifests](../reviews/round-blockout-b4.md). No game source changed; overall checkpoint remains incomplete.
+  - **B4 designer ruling, 14 November:** [rulings on the six level findings](#b4-level-findings-design-ruling-designer-2026-11-14). No row changes before the owner's walk; block shadows and a larger, darker door mat are the one view change asked for. The walkway probe is dropped and the museum hop is closed as reachable. Still owed before sign-off (D4), not before the walk: the two stills with the blocks hidden and the arrival still from spawn's camera (design review findings 1 and 2).
     - [ ] `check:full` passed: unit/build/server portions pass; direct network browser launch fails, broker retry fails on missing trusted-harness import.
     - [x] Explicit `level-check`: 13 reports, zero reported problems.
     - [x] Generate, inspect and commit source-stamped sheet under `docs/world/round-blockout-b4/`.
@@ -324,6 +325,39 @@ At 5.6 m/s walking and 9.5 m/s sprinting:
 2. **A level town, or the green as a shallow bowl in the blockout?** Recommended: **the bowl, 0.8 m, built as a tunable** so you can walk it and set it to zero. It is the one ground move that makes the Round readable from the ground, and it undoes in one number.
 
 The plan's question 3 (the gate cottage) is ruled above and need not be asked.
+
+### B4 level findings: design ruling (designer, 2026-11-14)
+
+**Read:** the [B4 report](../reviews/round-blockout-b4.md) in full; the four owner stills (from above at B3 and B4, the east street, the dock street at phone size); `town-plan.ts`, `TOWN_BLOCKS` and the sheet's manifest; `npm run loop` for the order of abilities (second jump, then hook, then glider); DESIGN.md 2, 6 and 10; the core-loop rule that the second jump comes after station 3; owner calls "Block out spacing first, details later" and "Place for the look, not the cost; terrain may change". One measurement of my own: roof-to-roof gaps from the plan rows. **Not seen:** nothing walked live; no reach-probe image; the hook against blocks; air speed while sprinting; the ground under any moved row.
+
+| # | Finding | Ruling | Kind |
+| --- | --- | --- | --- |
+| 1 | Cottage blocks on plots 4, 5 and 7 are mounted from flat ground with the second jump (rise 3.151 m); house blocks are not | Fine as is. Already called on 10 November (cottage roofs may be climbed with the second jump). Nothing is reached before the second jump (one jump rises about 1.55 m). Plot 7's block is 14.8 m from pad j7 at 26.4 m, with an apex of about 24.0 m: no reach | Default (10 November), now measured |
+| 2 | The bay's crown to the hall's roof lands at 23.24 m | Fine as is: a perch, as ruled. One proven way down is enough; "a way down on each side" is withdrawn, since a roof edge over open ground traps nobody. The owner steps off the track side once on his walk | Default |
+| 3 | Plot 4's block to the museum's roof: one miss | Closed without another probe. Treat it as reachable (eave 23.14 m, measured apex 24.01 m, gap 3.67 m); nothing is on that roof | Default |
+| 4 | The shop's site walkway to plot 1: untested | Dropped. Finding 1 opens a standing route that makes the 7 s window irrelevant (below); it is accepted until D4 | New |
+| 5 | The east street is enclosed; plots 1, 2 and 8 stand 3.0 to 3.76 m from Fine Prices; the east and south are denser than the west | No row changes before the walk. The street reads as a street in the still (3.84 m walls 7.3 m apart, the lane and verges clear) and the 2.8 and 2.9 m alleys pass the 2.4 m rule. The feel is the owner's on the walk; the row edits are ready (below) | Default |
+| 6 | From above the door marks are small and pale, and the blocks cast no shadow | Blocks cast and receive shadows; the door mat grows to the door's width by 1.5 m deep in a dark tone. View-only; before the walk if it is a small change | Default |
+
+**The rooftop route to the balcony (by arithmetic, not probed).** Plot 5's cottage block is mounted from the ground. Plots 3 and 6 stand 2.8 and 2.9 m from it and 0.84 m higher. Plot 6 is 7.40 m from plot 2 across the quarry road (plot 5 is 7.93 m). Plot 2 is 3.0 m from Fine Prices, whose roof (ridge 23.86 m) meets the balcony pad (24.4 m). Plot 8 is 4.20 m from the pad and 2.56 m below it. A second jump's airtime is about 1.3 to 1.4 s: 7.4 to 7.9 m at a walk, about 12.6 m at a sprint if sprint speed carries in the air. So while the blocks stand, the balcony find can probably be reached with the second jump alone, before the hook and the glider. This amends call 11 above and the 10 November call "the balcony stays a glider find", for the life of the blocks only. Accepted because the balcony is a personal cosmetic find and not a gate; no owner decision is contradicted (the second jump's own order is untouched); the chain cannot be broken without a false height (call 4) or 1.8 m alleys; and the blocks go at D4, after which a bought house always follows the glider. A rooftop run across the south-east is in the spirit of DESIGN 2 and 10. The owner may overrule it (question 1).
+
+**Row edits ready for after the walk** (`TOWN_SLOTS` in `src/place/town-plan.ts`, each followed by a sheet re-run):
+
+- Open the alleys to 4.0 m: `plot5` `at.z` 42.2 to 43.4 and `plot6` `at.z` 51.5 to 53.8. Plot 3 stays (the shelf's 1.1 m minimum). Plot 6's far corner reaches r 46.9 and needs its plot pad; the ground there is not measured.
+- Or close them into one terrace: `plot5` `at.z` 39.4 and `plot6` `at.z` 45.8.
+- Loosen the south: `plot8` `at.z` 56.0 to 59.0 (5.83 m to the shop, 6.33 m to plot 2; the pad gap stays 4.20 m; far corner r 43.9, ground not measured).
+
+**For the D steps.** Eaves are reach: a cottage's 3.0 m is climbed from the ground with the second jump and a house's 3.84 m is not, so a kit that changes an eave or adds a lip or overhang changes reach and is a designer call. Every roof in the Round up to about 24.8 m counts as reachable with the second jump once a climbable neighbour stands within about 8 m: nothing gated or rewarded goes on a roof unless that is intended, and roofs stay walkable. D4 removes the blocks and with them the balcony chain; from D4 the balcony is a glider find again.
+
+**Still owed before sign-off (D4), not before the walk:** the two stills with the eight blocks hidden and the arrival still from spawn's camera (design review findings 1 and 2); the bot's Home idle has no before and after, and `forge-lit` passing with 0 s pushing is taken as enough for the walk.
+
+**Owner questions.**
+
+1. **While the blocks stand, a rooftop run with the second jump probably reaches the balcony find before the glider. OK until D4?** Recommended: **yes**.
+2. **Does the south-east feel like a street or a squeeze?** Recommended: **keep it as built**; if the alleys pinch, open them to 4 m.
+3. **Is plot 8 too tight behind Fine Prices and the balcony?** Recommended: **leave it**; if it crowds, move it 3 m south.
+
+Default 4, New 1; finding 1 rests on the 10 November Default.
 
 ## Level findings
 
