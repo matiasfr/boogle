@@ -402,6 +402,23 @@ export function createRailwayRailhead(
       -Math.atan2(yb - ya, len),
     );
   }
+  /** A bar between two world points. */
+  function bar(ax: number, ay: number, az: number, bx: number, by: number, bz: number, w: number, c: string) {
+    const dx = bx - ax,
+      dz = bz - az,
+      run = Math.hypot(dx, dz);
+    live.box(
+      (ax + bx) / 2,
+      (ay + by) / 2,
+      (az + bz) / 2,
+      w,
+      w,
+      Math.hypot(run, by - ay),
+      c,
+      Math.atan2(dx, dz),
+      -Math.atan2(by - ay, run),
+    );
+  }
   function drawBent(j: number) {
     const t = rise[j]!;
     if (t < 0) return;
@@ -676,6 +693,13 @@ export function createRailwayRailhead(
         const pu = RING_HOOK.pad.u / 100;
         world(pu, RING_HOOK.pad.lat / 100);
         live.box(q.x, yAt(pu) + PLATFORM.up + 0.1, q.z, 2.4, 0.04, 2.4, COLOURS.gold, yawAt(pu), pitchAt(pu));
+        // The ring's line home (gap-readability, H-A): a taut rope from the ring down to a short post and pulley at
+        // the pad's sea corner, so the ring reads as one end of a line whose other end is the pad. Drawn only.
+        world(pu + 0.95, RING_HOOK.pad.lat / 100 + 0.95);
+        const py = yAt(pu) + PLATFORM.up + 0.1;
+        live.box(q.x, py + 0.55, q.z, 0.2, 1.1, 0.2, COLOURS.post, yawAt(pu));
+        live.box(q.x, py + 1.16, q.z, 0.34, 0.34, 0.12, COLOURS.iron, yawAt(pu) + 0.35);
+        bar(q.x, py + 1.16, q.z, pile.x, pile.ringY - 0.6, pile.z, 0.07, COLOURS.rope);
       }
       for (const l of lowering) drawLowering(l);
     }

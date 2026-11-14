@@ -9,7 +9,8 @@ import { hookRings, type HookRing } from './hook-path.ts';
 import { me, camForward } from '../../player/player.ts';
 import { glyph } from '../../player/glyphs.ts';
 import { placeSound } from '../../render/place-sfx.ts';
-import { RING_HOOK } from '../../sim/railway-ring-layout.ts';
+import { RING_BRACE_PLATFORM, RING_HOOK } from '../../sim/railway-ring-layout.ts';
+import { RING_S, line2World } from './line2-path.ts';
 import { onRemotePresence, onPeerRemoved, type Remote } from '../../netplay/net.ts';
 
 type RemoteView = { presence: (r: Remote, value: unknown) => void; removed: (peer: string) => void };
@@ -143,6 +144,13 @@ export async function createRailwayHookView(owner: OwnedView) {
     ringMesh.count = rings.length;
   }
   const camAt = new THREE.Vector3();
+  // Where the island's ring faces while it sleeps: out over the gap, to the folk's brace platform it brings you home from.
+  const islandFaces = new THREE.Vector3();
+  {
+    const B = RING_BRACE_PLATFORM;
+    const brace = line2World(RING_S + (B.u0 + B.u1) / 200, (B.lat0 + B.lat1) / 200, { x: 0, z: 0 });
+    islandFaces.set(brace.x, B.y / 100 + 1, brace.z);
+  }
   const cableMat = readableGlow(
     new THREE.MeshStandardNodeMaterial({ color: '#2b2a33', emissive: '#39e6c6', emissiveIntensity: 0.5 }),
   );
@@ -239,19 +247,23 @@ export async function createRailwayHookView(owner: OwnedView) {
     pull: HookRing | null = null,
     range: Set<HookRing> = new Set(),
     pulls = 0,
+    /** A ring that cannot help from where you stand (the island's, from the deck it lands on): gold and small, as
+     * before the hook, and turned to the far side it serves rather than to you. */
+    asleep: HookRing | null = null,
   ) {
     camera.getWorldPosition(camAt);
     rings.forEach((r, k) => {
       const bright = r === pick || r === pull || (now < blinkUntil && range.has(r)),
         inRange = range.has(r);
       pose.position.set(r.at.x, r.at.y, r.at.z);
-      pose.lookAt(camAt);
+      if (r === asleep) pose.lookAt(islandFaces);
+      else pose.lookAt(camAt);
       pose.scale.setScalar(bright ? 1.18 + Math.sin(now * 0.012) * 0.05 : inRange ? 1.05 : 0.92);
       pose.updateMatrix();
       ringMesh.setMatrixAt(k, pose.matrix);
       ringMesh.setColorAt(
         k,
-        color.copy(bright ? hot : inRange || owned ? near : dim).multiplyScalar(bright ? 1.6 : inRange ? 1.2 : 0.75),
+        color.copy(bright ? hot : r === asleep ? dim : inRange || owned ? near : dim).multiplyScalar(bright ? 1.6 : inRange ? 1.2 : 0.75),
       );
     });
     ringMesh.instanceMatrix.needsUpdate = true;
