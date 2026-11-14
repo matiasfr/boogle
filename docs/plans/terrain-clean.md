@@ -46,7 +46,10 @@ faces and broken silhouettes). Departs from none.
 
 **Models:** steps 1 to 4, implementation of an approved plan: Codex `gpt-6.1-sol` medium. Proofs at the checkpoint,
 runner: Codex `gpt-6.1-sol` medium. Visual review of the checkpoint stills: a fresh general-purpose subagent, fable
-medium. No independent review is triggered (nothing under `src/sim`, `src/net`, `src/world`, `server/`).
+medium. No source under `src/sim`, `src/net`, `src/world` or `server/` changes. The final review-stamp tool nevertheless
+classifies deletion of `test/terrain-pass-island.test.ts` as assertions removed: **`fb731dd370a5`**, one review file.
+This corrects the original prediction that no review would trigger. The review gate remains for a future merge;
+this job performs only the requested local commits and does not push, ship or bypass it.
 
 **Goes with the ledges**
 
@@ -200,6 +203,14 @@ No push or ship in this job; the owner requested local commits only.
 Final-tip revalidation (four fresh stills, census, matched count run, production T1 bot segment and the required
 static checks with a 600-second timeout) is recorded with exact manifests, logs and any failures in
 `.look/terrain-clean/report.md`. No ROM data added. Not tested on a device. No push or ship.
+
+Final game-code verification at `baeaa4897`: ship-check (63 affected test files), registry, level-check and full
+`npm run check` all passed; 2,047 unit cases, 2,046 passes, zero failures and one existing todo. All six hashes match,
+and the normalized level diff is empty. Four fresh checkpoint stills (cameras 0, 2, 9, 5) were opened, with capture
+loads 6.08 to 8.75. The production T1 segment passed with every expected beat, no missed beat or timeout; its end
+still was opened. This was an accelerated bot run, not real-time feel evidence. This final note changes only plan
+text; renderer, physics, placements and tools are identical to that tested commit. Review stamp `fb731dd370a5` is
+reported for the retired test deletion, not represented as an independent review having been completed.
 
 ## Part 2: geometry clean-up, walkable ground first
 
