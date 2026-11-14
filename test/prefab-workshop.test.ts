@@ -102,6 +102,9 @@ export function captureWorkshop() {
       ['town.curio-parts', () => chair],
       ['town.museum-parts', () => chair],
       ['town.museum-exhibit', () => chair],
+      ['town.house-parts', () => chair],
+      ['town.room-shell', () => chair],
+      ['town.room-proxy', () => chair],
       [
         'town.workshop-parts',
         (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
@@ -229,6 +232,9 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
         ['town.curio-parts', () => new THREE.Group()],
         ['town.museum-parts', () => new THREE.Group()],
         ['town.museum-exhibit', () => new THREE.Group()],
+        ['town.house-parts', () => new THREE.Group()],
+        ['town.room-shell', () => new THREE.Group()],
+        ['town.room-proxy', () => new THREE.Group()],
         [
           'seat.chair',
           () => {

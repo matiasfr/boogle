@@ -1,3 +1,7 @@
+import { prefabs as rooms } from '../src/content/prefabs/rooms.ts';
+import { levels as roomLevels } from '../src/content/levels/rooms.ts';
+import { prefabs as house } from '../src/content/prefabs/house.ts';
+import { levels as houseLevels } from '../src/content/levels/house.ts';
 import { prefabs as museum } from '../src/content/prefabs/museum.ts';
 import { levels as museumLevels } from '../src/content/levels/museum.ts';
 import { prefabs as curio } from '../src/content/prefabs/curio.ts';
@@ -17,6 +21,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { assertAuthoredNumbers } from '../dev/prefab/authored.ts';
 import { compile, writeArtifacts } from '../dev/prefab/compiler.ts';
+import type { JsonObject } from '../src/prefab/types.ts';
 import { metadata } from '../src/prefab/types.ts';
 import * as validation from '../src/prefab/validate.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
@@ -38,8 +43,8 @@ test('artifact serialization is independent of runtime native transcendental res
     }
     writeArtifacts(
       compile(
-        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop, ...curio, ...museum],
-        [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels, ...museumLevels],
+        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop, ...curio, ...museum, ...rooms, ...house],
+        [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels, ...museumLevels, ...roomLevels, ...houseLevels],
       ),
       'content/built',
       true,
@@ -157,4 +162,22 @@ test('seat degree recipes resolve before attachment validation and preserve auth
   const duplicate = JSON.parse(bytes);
   duplicate.layout.attach.seat.yaw = 0;
   assert.throws(() => validation.validatePrefab(duplicate), /authored yawDegrees/);
+});
+
+test('room hull operands fail closed before runtime geometry', () => {
+  const base = rooms.find((r) => r.key === 'town.room-house-hulls-0')!;
+  const load = (r: typeof base) =>
+    validation.loadPrefabArtifact({ ...metadata, format: 'boogle-prefabs', prefabs: { [r.key]: r } });
+  const patches: JsonObject[] = [
+    { w: '7.4' },
+    { index: '0' },
+    { index: 8 },
+    { index: -1 },
+    { index: 0.5 },
+    { phase: 'unknown' },
+    { high: 0.2 },
+    { rise: Infinity },
+  ];
+  for (const patch of patches) assert.throws(() => load({ ...base, layout: { ...base.layout, ...patch } }), /prefabs:/);
+  assert.throws(() => load({ ...base, colliders: [{ shape: 'box', at: [0, 0, 0], half: [1, 1, 1] }] }), /recipe-only/);
 });
