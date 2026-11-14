@@ -5,8 +5,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import test from 'node:test';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
+import * as museumTsl from 'three/tsl';
 import { sourceModule, sourceFunction } from '../dev/level/source.ts';
-import { prefabGolden } from './helpers/prefab-golden.ts';
+import { recordMatrices, prefabGolden } from './helpers/prefab-golden.ts';
 import { GIFTS, STOCK } from '../src/render/cosmetic-parts.ts';
 import { BOARDS, SHOP } from '../src/entities/town/town-lines.ts';
 import type { Part } from '../src/render/part-geometry.ts';
@@ -327,5 +328,178 @@ test('curio frames, every covered/uncovered gift, pegs, footprints and bodies ma
   );
   if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(value, null, 2) + '\n');
   prefabGolden(value, JSON.parse(fs.readFileSync(fixture, 'utf8')), 'curio');
+  for (const cleanup of cleanups.reverse()) cleanup();
+});
+
+// Old-code museum proof: all primitive parts, full exhibit geometry, labels, solids and live table states.
+test('museum furnishing and live displays retain the old geometry, copy, order and state behavior', () => {
+  const parts: Part[][] = [],
+    solids: unknown[] = [],
+    plates: unknown[] = [];
+  const r = {
+    w: 13,
+    d: 12,
+    high: 5,
+    near: new THREE.Group(),
+    over: new THREE.Group(),
+    outside: new THREE.Group(),
+    furnishings: [],
+  };
+  const cleanups: (() => void)[] = [];
+  const root = new THREE.Group();
+  const owner = { add: (g: THREE.Object3D) => root.add(g), cleanup: (f: () => void) => cleanups.push(f) };
+  const terrain = {
+    NX: 4,
+    NZ: 4,
+    GRID: { x0: -220, z0: -238, cell: 150 },
+    heights: Array.from({ length: 16 }, (_, k) => (k % 5 === 0 ? 0 : k * 2)),
+    pathMask: Array.from({ length: 16 }, (_, k) => (k % 3) / 2),
+    cellAt: (i: number, j: number) => i + j * 4,
+    cellX: (i: number) => -220 + i * 150,
+    cellZ: (j: number) => -238 + j * 150,
+    gorgeD: () => 20,
+  };
+  const mesh = (p: Part[], shadow = true) => {
+    parts.push(p);
+    const m = new THREE.Mesh(merged(p));
+    m.castShadow = shadow;
+    m.receiveShadow = true;
+    return m;
+  };
+  const player = { body: null as null | { position: { x: number; y: number; z: number } } };
+  let populated = true,
+    lit = false;
+  const env = {
+    buildings: () =>
+      populated
+        ? [0, 0.4, 1, 2].map((grow, k) => ({
+            grow,
+            plan: {
+              x: 800 + k * 10,
+              z: 10,
+              y: 18,
+              top: { y: 24 },
+              hw: 3,
+              hd: 2,
+              yaw: 0.2,
+              FRAME: 0,
+              ROOFED: 2,
+              pieces: [{ color: new THREE.Color('#c8c3b4') }],
+            },
+          }))
+        : [],
+    forgeLit: () => lit,
+    trees: () =>
+      populated
+        ? [
+            { x: 800, z: 20, great: true },
+            { x: 830, z: 30, great: false },
+            { x: 5000, z: 20, great: false },
+          ]
+        : [],
+    rails: () =>
+      populated
+        ? [{ line: { len: 21, xs: Array.from({ length: 22 }, (_, k) => k), zs: Array(22).fill(0) }, lo: -5, hi: 25 }]
+        : [],
+    people: () => (populated ? 35 : 0),
+    movers: () =>
+      populated
+        ? [
+            { x: 800, y: 24, z: 20, kind: 'machine' },
+            { x: 830, y: 20, z: 20, kind: 'train' },
+          ]
+        : [],
+  };
+  const bindings = {
+    THREE,
+    mergeGeometries,
+    ...terrain,
+    me: player,
+    smoothstep: (lo: number, hi: number, x: number) => {
+      const t = Math.max(0, Math.min(1, (x - lo) / (hi - lo)));
+      return t * t * (3 - 2 * t);
+    },
+    mulberry32: sourceFunction('src/sim/rng.ts', 'mulberry32', {}),
+    readableGlow: (m: unknown) => m,
+    readableUnlit: (m: unknown) => m,
+    softGlow: () => ({ mat: new THREE.MeshBasicNodeMaterial() }),
+    H: () => 18,
+    toWorld: (x: number) => x + 800,
+    railY: () => 24,
+    ORIGIN: { x: 800, z: 0 },
+    FORGE: { x: 0, z: 0 },
+    SPIRE: { x: 100, z: 20 },
+    BOARDS,
+    roomMesh: mesh,
+    addSolid: (_r: unknown, ...a: unknown[]) => solids.push(a),
+    plate: (...a: unknown[]) => {
+      plates.push(a);
+      return new THREE.Mesh(new THREE.PlaneGeometry(a[1] as number, a[2] as number));
+    },
+  };
+  const matrices = recordMatrices();
+  const { createMuseum } = sourceModule<{
+    createMuseum: (...a: unknown[]) => { update(dt: number): void; shown(): number };
+  }>(fs.readFileSync('src/entities/town/museum.ts', 'utf8'), { ...bindings, ...museumTsl });
+  const museum = createMuseum(owner, { rooms: { museum: r } }, env);
+  const geometry = (g: THREE.BufferGeometry) => ({
+    index: g.index ? Array.from(g.index.array) : null,
+    attributes: Object.fromEntries(
+      Object.entries(g.attributes).map(([key, a]) => [key, { size: a.itemSize, array: Array.from(a.array) }]),
+    ),
+  });
+  const meshes = (group: THREE.Group) => {
+    const out: unknown[] = [];
+    group.updateWorldMatrix(true, true);
+    group.traverse((g) => {
+      if (g instanceof THREE.Mesh)
+        out.push({
+          matrix: g.matrixWorld.toArray(),
+          castShadow: g.castShadow,
+          receiveShadow: g.receiveShadow,
+          frustumCulled: g.frustumCulled,
+          geometry: geometry(g.geometry),
+        });
+    });
+    return out;
+  };
+  const staticState = { parts, solids, plates, near: meshes(r.near), over: meshes(r.over), outside: meshes(r.outside) };
+  const bits = (() => {
+    let found: THREE.InstancedMesh | undefined;
+    r.near.traverse((g) => {
+      if (g instanceof THREE.InstancedMesh) found = g;
+    });
+    return found!;
+  })();
+  const state = () => ({
+    count: museum.shown(),
+    matrices: Array.from({ length: bits.count }, (_, k) => matrices.get(bits, k).toArray()),
+    colors: Array.from({ length: bits.count }, (_, k) => matrices.colour(bits, k).toArray()),
+  });
+  const states = [state()];
+  museum.update(0.04);
+  states.push(state());
+  museum.update(0.06);
+  states.push(state());
+  lit = true;
+  player.body = { position: { x: 805, y: 18, z: 12 } };
+  museum.update(0.1);
+  states.push(state());
+  r.near.visible = false;
+  populated = false;
+  museum.update(1);
+  states.push(state());
+  r.near.visible = true;
+  museum.update(0.1);
+  states.push(state());
+  player.body = null;
+  lit = false;
+  museum.update(0.1);
+  states.push(state());
+  const value = JSON.parse(JSON.stringify({ staticState, states }));
+  const file = 'test/fixtures/prefab-museum.json';
+  if (process.env.GOLDEN === '1') fs.writeFileSync(file, JSON.stringify(value) + '\n');
+  matrices.restore();
+  prefabGolden(value, JSON.parse(fs.readFileSync(file, 'utf8')), 'museum');
   for (const cleanup of cleanups.reverse()) cleanup();
 });
