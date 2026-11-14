@@ -36,6 +36,7 @@ export function createHost(pids: readonly string[], from?: { snapshot: unknown; 
     onTick(fn: (tick: number) => void) {
       onTick = fn;
     },
+    onSnapshot() {},
     roomStep: () => world.tick,
   };
   const defaults = new Map<string, number>(TUNABLES.map((t) => [t.key, t.def]));
