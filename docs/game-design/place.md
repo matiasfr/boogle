@@ -731,6 +731,17 @@ pieces, the completed pier with rockets, and the northward Ring Island view (`gr
 
 ### The second track, drawn (10 November 2026, generic-lines step 2)
 
+**A train's vehicles stand apart along the track they are drawn on** (owner, 14 November: "on certain stops,
+especially with curves, the train car clips the train engine"; `car-spacing.ts`). A train's place is metres along its
+line; the up track, 4 m inside a bend, is shorter than the line there, so an up train's cars used to close up: the
+engine's deck stood 0.68 m into the first car on line 1's bend and 0.98 m into it at the Quarry's stop. Each vehicle
+now stands its offset along its own track from the first car, and where a bend is still too tight for two decks'
+inside corners the coupling stretches until they clear by 0.1 m (the engine's buffers counted): at most 0.24 m on
+today's track and 0.42 m on line 1's up track, and 2.2 m at the Quarry's up-track stop, where the up track is drawn
+round a 2.8 m bend (the line's own is 6.8 m). That gap is open air with no drawbar yet, and the bend wants easing in
+the layout. On straight track nothing moves. Local view; bodies, seats and the cab's cutaway follow the same poses;
+the sim's train, its stops and its extent are unchanged. Not tested on a device.
+
 Both lines are drawn double track ([generic-lines](../plans/generic-lines.md), step 2): the up track runs 4 m left of
 today's (left-hand running) from merge to merge, line 1 s 36–182 and line 2 s 34–556, easing in and out over a 20 m
 stub turnout at each end, so the turntable, both Village platforms, the Camp end and the pier stay one track. Far Head

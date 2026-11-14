@@ -35,6 +35,7 @@ import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-que
 import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import { STEEL_CAR, steelCarOffset } from './cars.ts';
+import { ENGINE_BUFFERS, trainPlaces, type Vehicle } from './car-spacing.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
@@ -375,6 +376,11 @@ export async function createRailwayTrains(
     c.y = (ya + yb) / 2 + BOTTOM + c.hy;
     c.pitch = Math.atan2(ya - yb, 2.2);
   }
+  // A train's vehicles and where each stands along its line, engine first (car-spacing.ts), reused each step.
+  const vehicles: Vehicle[] = [],
+    made: Vehicle[] = [],
+    stock: Car[] = [],
+    standAt: number[] = [];
   const seatMatrix = new THREE.Matrix4();
   const askAt = new THREE.Vector3(),
     riderAt = new THREE.Vector3();
@@ -438,21 +444,49 @@ export async function createRailwayTrains(
       const lat = (x: number) => latOf(tr, row, x);
       // A fleet row in the shed (the greybox route) is not on the line until it joins.
       const hidden = !shown || (tr.line !== 0 && !secondVisible) || row.phase === TRAIN_PHASE.SHED;
+      // The track the train is drawn on: its line, set across by `lat` (the up track). Each car stands its offset
+      // along that track, not along the line, and a coupling stretches where a bend would put one deck in the next
+      // (car-spacing.ts: inside a bend the up track is the shorter, and cars spaced by the line's metres closed up
+      // into each other). Bodies, seats, the cab's cutaway and the camera all read the cars these poses move.
+      const trackAt = (s: number, out: { x: number; z: number }) => {
+        if (tr.line === LINE2) line2At(s, a2);
+        else layout.lineAt(line, s, a2);
+        const l = lat(s);
+        out.x = a2.x - a2.uz * l;
+        out.z = a2.z + a2.ux * l;
+      };
       const pose = (c: Car, at: number) =>
         tr.line === LINE2 ? poseOnLine2(c, at, lat) : rail.poseCarOnLine(c, line, at, 1, lat);
       // Joining, the cars grow from the train's middle (car 1's spot): each car's place along the track closes in
       // by its scale, so the couplings stay shut.
+      made.length = 0;
+      stock.length = 0;
+      const put = (c: Car, d: number, back = c.spec.hz) => {
+        const v = (vehicles[made.length] ??= { d: 0, hx: 0, back: 0, front: 0 });
+        v.d = d;
+        v.hx = c.spec.hx;
+        v.back = back;
+        v.front = c.spec.hz;
+        made.push(v);
+        stock.push(c);
+      };
+      tr.cars.forEach((c, n) => put(c, offsets[n]! * c.mesh.scale.x, c.spec.hz + (n === 0 ? ENGINE_BUFFERS : 0)));
+      if (tr === coupled) put(wagonCar, offsets[WAGON]!);
+      if (tr.steel) put(tr.steel, steelCarOffset(row.wagon) * tr.steel.mesh.scale.x);
+      // On today's track the line's metres are the track's.
+      const spaced = lat(along + made[0]!.d) !== 0 || lat(along + made.at(-1)!.d) !== 0 || lat(along) !== 0;
+      trainPlaces(trackAt, along, made, standAt, spaced);
       tr.cars.forEach((c, n) => {
-        pose(c, along + offsets[n]! * c.mesh.scale.x);
+        pose(c, standAt[n]!);
         if (hidden) c.y = -60;
       });
       if (tr === coupled) {
-        pose(wagonCar, along + offsets[WAGON]!);
+        pose(wagonCar, standAt[stock.indexOf(wagonCar)]!);
         if (hidden) wagonCar.y = -60;
       }
       if (tr.steel) {
         const was = tr.steel.y > -30;
-        pose(tr.steel, along + steelCarOffset(row.wagon) * tr.steel.mesh.scale.x);
+        pose(tr.steel, standAt[stock.indexOf(tr.steel)]!);
         if (hidden || !tr.carOn) tr.steel.y = -60;
         else if (!was) standClear(tr.steel);
       }
