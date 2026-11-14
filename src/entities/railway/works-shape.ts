@@ -1,6 +1,7 @@
 // Local greybox geometry, world metres. J1's centimetre catalog remains the authority for interaction anchors.
 import { WORKS_SEAMS, WORKS_CLEFT, WORKS_RACK, WORKS_ROCKS, PIER_FRAME } from '../../sim/railway-works-layout.ts';
-import { stallFrame, STALLS, TABLE } from '../../place/home-station.ts';
+import { ROTUNDA_HOME, STALLS, TABLE } from '../../place/home-station.ts';
+import { ROTUNDA_BLOCK, ROTUNDA_KIT, bayFrame } from '../../place/rotunda.ts';
 import { ORIGIN } from '../../place/layout.ts';
 export type WorksPoint = { x: number; z: number };
 export type WorksBox = WorksPoint & {
@@ -106,46 +107,55 @@ export const ROLLER_ROAD: WorksPoint[] = [
   { x: 1096, z: 50 },
   metres(WORKS_RACK),
 ];
-/** The stall in its own frame: local +z runs from the door (z -4.5) to the back, `yaw` turns it into the world. */
-export type StallFrame = { centre: WorksPoint; yaw: number; slabZ: number; rim: WorksPoint };
-/** The stall's greybox, anchors and road from its frame. */
-export function stallShape({ centre, yaw, slabZ, rim }: StallFrame) {
+/** The working bay in its own frame: the origin is the bay's middle, local +z runs from the door to the back, `yaw`
+ * turns it into the world. `pier` is a door pier's place (across the bay, and along it): where a footing goes. */
+export type StallFrame = {
+  centre: WorksPoint;
+  yaw: number;
+  rim: WorksPoint;
+  door: WorksPoint;
+  back: WorksPoint;
+  pier: { x: number; z: number };
+};
+/** The working bay's anchors and road from its frame. Its walls and roof are the rotunda's own blocks
+ * (src/content/prefabs/roundhouse.ts); what is here is what the story works on: the two sockets where the bay's door
+ * piers go, and the cracked slab that seals it just behind them. */
+export function stallShape({ centre, yaw, rim, door, back, pier }: StallFrame) {
   const STALL_YAW = yaw;
   const stallPoint = (x: number, z: number): WorksPoint => ({
     x: centre.x + Math.sin(yaw) * z + Math.cos(yaw) * x,
     z: centre.z + Math.cos(yaw) * z - Math.sin(yaw) * x,
   });
-  const STALL_BOXES = [
-    ...[-2, 2].map((x) => {
-      const p = stallPoint(x, 0);
-      return box(p.x, 18.7, p.z, 0.4, 1.4, 9, STALL_YAW);
-    }),
-    ...[-4, 0, 4].map((z) => {
-      const p = stallPoint(0, z);
-      return box(p.x, 22.5, p.z, 4.4, 0.35, 0.35, STALL_YAW);
-    }),
-    ...[-2, 2].flatMap((x) =>
-      [-4, 0, 4].map((z) => {
-        const p = stallPoint(x, z);
-        return box(p.x, 20.2, p.z, 0.4, 4.4, 0.4, STALL_YAW);
-      }),
-    ),
-  ];
-  const slab = stallPoint(0, slabZ);
+  // The sockets take the footings the door piers stand on; the sealed slab stands a pier's depth behind them, across
+  // the doorway, and never over a socket or under a waiting vehicle.
+  const STALL_SOCKETS = [-pier.x, pier.x].map((x) => stallPoint(x, pier.z));
+  const SLAB_Z = pier.z + 0.8;
+  const slab = stallPoint(0, SLAB_Z);
   const STALL_SLAB = box(slab.x, 19.9, slab.z, 4.4, 3.8, 0.65, STALL_YAW);
-  const STALL_ROAD = [rim, stallPoint(0, -4), stallPoint(0, 4.5)];
-  // Footing sockets occupy the clear apron in front of the sealed slab, never underneath a waiting vehicle.
-  const STALL_SOCKETS = [-1.5, 1.5].map((x) => stallPoint(x, -3.7));
-  return { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL_SOCKETS };
+  const STALL_ROAD = [rim, door, back];
+  return { STALL_YAW, stallPoint, STALL_SLAB, STALL_ROAD, STALL_SOCKETS, SLAB_Z, PIER: pier };
 }
-const openStall = stallFrame(STALLS.open);
 const toWorld = (p: WorksPoint): WorksPoint => ({ x: p.x + ORIGIN.x, z: p.z });
-export const { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL_SOCKETS } = stallShape({
-  centre: toWorld(openStall.centre),
-  yaw: openStall.yaw,
-  slabZ: -2.9,
-  rim: toWorld(openStall.rim),
-});
+/** Home's working bay: the first in the rotunda's build order (190°). The piers' places are the kit's: across, midway
+ * between the door's clear edge and the bay's own edge; along, the middle of the door reveal behind the flat door
+ * wall (the chord between the door ring's corners). */
+const workingBay = (() => {
+  const f = bayFrame(ROTUNDA_HOME, ROTUNDA_HOME.order[0]!),
+    half = (ROTUNDA_KIT.bayDeg * Math.PI) / 360,
+    wallR = ROTUNDA_KIT.doorR * Math.cos(half);
+  return {
+    centre: toWorld(f.centre),
+    yaw: f.yaw,
+    rim: toWorld(f.rim),
+    door: toWorld(f.door),
+    back: toWorld(f.back),
+    pier: {
+      x: (ROTUNDA_KIT.door.clear / 2 + wallR * Math.tan(half)) / 2,
+      z: wallR + ROTUNDA_BLOCK.reveal / 2 - (ROTUNDA_KIT.doorR + ROTUNDA_KIT.depth / 2),
+    },
+  };
+})();
+export const { STALL_YAW, stallPoint, STALL_SLAB, STALL_ROAD, STALL_SOCKETS, SLAB_Z, PIER } = stallShape(workingBay);
 /** The stall roads' rail height (as layout.railY) from each stall's door to its back: sleepers on the yard's ground
  * (18 m). From the table's rim (the lines' 18.3) each road ramps down to it at the door. The station draws the roads
  * (./home-station-view.ts); the shunt rides them (./roundhouse-view.ts). */

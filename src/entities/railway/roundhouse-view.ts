@@ -1,7 +1,8 @@
-// The smallest Roundhouse, live from accepted state: the cracked slab opens on a strike, two footings raise the stall
-// frame and the tarp slides off the shunter and wagon, the cradle bolts on, and the table turns for the shunter to push
-// the wagon onto line 2. Local view: effects play on the press, accepted events and live edges, and restore snaps
-// them; the shunt's pose comes only from `shed.ready` and the adapter's mover clock.
+// The Roundhouse, live from accepted state: a rotunda of bays round the table, in blocks (./rotunda-view.ts), which
+// stand by stage (./rotunda-stage.ts). In its working bay the cracked slab opens on a strike, two footings raise the
+// bay's door piers and the tarp slides off the shunter and wagon, the cradle bolts on, and the table's bridge turns
+// for the shunter to push the wagon onto line 2. Local view: effects play on the press, accepted events and live
+// edges, and restore snaps them; the shunt's pose comes only from `shed.ready` and the adapter's mover clock.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
@@ -20,8 +21,9 @@ import { uiSound } from '../../ui/ui-sound.ts';
 import { WORKS, SHED_STALL, SHED_TABLE } from '../../sim/railway-works-layout.ts';
 import { SEAM_STALL } from '../../sim/railway-works.ts';
 import {
-  STALL_BOXES,
   STALL_SLAB,
+  SLAB_Z,
+  PIER,
   STALL_ROAD,
   STALL_RAIL,
   RAIL_HEAD,
@@ -41,8 +43,11 @@ import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { garageRow, mastFrom, polarAt } from './garage-geo.ts';
 import { PARK, createShuntPath } from './shunt-path.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
+import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
+import { createRotundaBlocks } from './rotunda-view.ts';
+import { rotundaStage } from './rotunda-stage.ts';
 
-/** Seconds: the stall frame's build, the tarp's slide, the table's quarter turn. */
+/** Seconds: the door piers' build, the tarp's slide, the table's quarter turn. */
 const BUILD_S = 3,
   TARP_S = 1.1,
   TURN_S = 2;
@@ -73,7 +78,7 @@ export async function createRailwayRoundhouse(
     import('../../place/home-station.ts'),
   ]);
   const toWorld = (p: { x: number; z: number }) => ({ x: p.x + layout.ORIGIN.x, z: p.z });
-  const boxes: WorksBox[] = [...STALL_BOXES];
+  const boxes: WorksBox[] = [];
   for (const p of STALL_SOCKETS) {
     boxes.push({ ...box(p.x, 18.05, p.z, 0.9, 0.1, 0.9, STALL_YAW), colour: '#373c3b', solid: false });
     // The rim's four edge strips, squared to the stall (its local x and z turned by STALL_YAW).
@@ -95,8 +100,9 @@ export async function createRailwayRoundhouse(
   // The stall road itself is the station's to draw, with the other yard track (./home-station-view.ts).
   await drawWorksBoxes(owner, boxes);
 
-  // ---------------------------------------------------------------- the turntable (Place's junction disc is not
-  // loaded in production: the Roundhouse draws its own at the same place and size)
+  // ---------------------------------------------------------------- the turntable: the pit and its kerb are the
+  // rotunda's table block (flush with the yard until the pit is dug); the bridge across it is drawn here, since it turns
+  const rotunda = createRotundaBlocks(owner);
   const anchor = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
   const table = toWorld(home.TABLE);
   const line2 = layout.LINKS[1]!.line;
@@ -106,19 +112,13 @@ export async function createRailwayRoundhouse(
   const yaws = [Math.atan2(rim.x - table.x, rim.z - table.z), 0];
   const spur = (home.TABLE.spur * Math.PI) / 180;
   yaws[1] = Math.atan2(Math.sin(spur), -Math.cos(spur));
-  const discGeo = new THREE.CylinderGeometry(R, R, 0.24, 24);
-  const disc = new THREE.Mesh(discGeo, material('stone', { colour: '#7f7a70' }));
-  discGeo.dispose();
-  disc.position.set(table.x, tableY - 0.1, table.z);
-  disc.receiveShadow = true;
-  owner.add(disc);
-  addStatic(
-    { kind: 'cylinder', rTop: R, rBottom: R, h: 0.24, segments: 12 },
-    { x: table.x, y: tableY - 0.1, z: table.z },
-    undefined,
-    undefined,
-    owner,
-  );
+  /** The bridge: its deck's width and depth (m), from the pit's floor up to the rails' feet, and where its handle
+   * stands when the deck's yaw is `yaw`: beside the deck's far end, on it. */
+  const DECK = { w: 3.2, h: 0.4 };
+  const handleAt = (yaw: number) => ({
+    x: table.x + Math.sin(yaw) * (R - 0.8) + Math.cos(yaw) * (DECK.w / 2 - 0.15),
+    z: table.z + Math.cos(yaw) * (R - 0.8) - Math.sin(yaw) * (DECK.w / 2 - 0.15),
+  });
 
   // The train garage: the works copy stands on the table after coupling; the lever post opens its framed view.
   // Local: nothing is sent or saved. Every Install hold starts inside the server's reach.
@@ -177,7 +177,10 @@ export async function createRailwayRoundhouse(
   let wd: ReadWorld = adapter.read.world();
   let slabBody: Body | null = null,
     wagonBody: Body | null = null,
-    wagonBodyAt = NaN;
+    wagonBodyAt = NaN,
+    deckBody: Body | null = null,
+    deckBodyYaw = NaN,
+    deckDrawn = NaN;
   let slabOpen = false,
     pop = -1, // seconds into the slab popping apart
     popDelay = 0,
@@ -202,27 +205,29 @@ export async function createRailwayRoundhouse(
     e = new THREE.Euler(0, 0, 0, 'YXZ');
   const gold = new THREE.Color('#ffdc7a');
 
-  /** Frame pieces in build order, stall-local: two portal posts on the set footings, then the walls and roof. The
-   * side walls stand on the ruin's low walls (top 19.4) up under its cross beams (22.33); the back wall rises to the
-   * same line. The two roof slopes rise inward (a positive roll lifts a slab's +x end in the batch's YXZ Euler), so
-   * their eaves land on the ruin's posts at about 22.4 and they meet under the ridge pole at 23.65. */
+  /** The working bay's door frame in build order, bay-local: the two door piers on the set footings, then the lintel
+   * over the door (the kit's sizes). When they stand, the rotunda's first stage stands with them: the bay's own block
+   * has the same piers, so these stop being drawn. */
+  const pierW = 2 * (PIER.x - ROTUNDA_KIT.door.clear / 2),
+    over = ROTUNDA_BLOCK.wall - ROTUNDA_KIT.door.high;
   const FRAME: [x: number, y: number, z: number, w: number, h: number, d: number, roll: number][] = [
-    [-1.5, 20.45, -3.7, 0.42, 3.9, 0.42, 0],
-    [1.5, 20.45, -3.7, 0.42, 3.9, 0.42, 0],
-    [0, 22.55, -3.7, 3.8, 0.42, 0.42, 0],
-    [-2, 20.865, 0, 0.32, 2.93, 9, 0],
-    [2, 20.865, 0, 0.32, 2.93, 9, 0],
-    [0, 20.465, 4.5, 4.4, 3.73, 0.3, 0],
-    [0, 23.65, 0.3, 0.3, 0.3, 9.6, 0],
-    [-1.15, 23.05, 0.3, 2.6, 0.12, 9.6, 0.5],
-    [1.15, 23.05, 0.3, 2.6, 0.12, 9.6, -0.5],
+    [-PIER.x, 18 + ROTUNDA_BLOCK.wall / 2, PIER.z, pierW, ROTUNDA_BLOCK.wall, ROTUNDA_BLOCK.reveal, 0],
+    [PIER.x, 18 + ROTUNDA_BLOCK.wall / 2, PIER.z, pierW, ROTUNDA_BLOCK.wall, ROTUNDA_BLOCK.reveal, 0],
+    [0, 18 + ROTUNDA_KIT.door.high + over / 2, PIER.z, ROTUNDA_KIT.door.clear, over, ROTUNDA_BLOCK.reveal, 0],
   ];
+  /** The stage shown: the rotunda's own, but its first stage waits for the door piers to finish rising. */
+  const shownStage = () => {
+    const stage = rotundaStage(wd);
+    return stage >= 1 && build < 1 ? 0 : stage;
+  };
   const frameFrom = (k: number) => k / FRAME.length;
   function drawFrame(dt: number) {
     const prior = build;
     const target = shed(wd).stall >= WORKS.stall ? 1 : 0;
     if (build < target) build = Math.min(target, build + dt / BUILD_S);
     else if (build > target) build = Math.max(target, build - dt / 0.6);
+    rotunda.show(shownStage());
+    if (build >= 1 && prior >= 1) return;
     FRAME.forEach(([x, y, z, w, h, d, roll], k) => {
       const start = frameFrom(k),
         span = 1 / FRAME.length;
@@ -231,7 +236,7 @@ export async function createRailwayRoundhouse(
       // Each piece drops in from above and lands (Place's physical build, never a scale).
       const drop = (1 - u * u) * 3;
       const pt = stallPoint(x, z);
-      batch.box(pt.x, y + drop, pt.z, w, h, d, k < 3 ? '#6b5238' : '#8d8576', STALL_YAW, 0, roll);
+      batch.box(pt.x, y + drop, pt.z, w, h, d, '#cfc8ba', STALL_YAW, 0, roll);
       if (prior < start + span && build >= start + span && target === 1) {
         placeSound('shoulder', pt.x, pt.z);
         thump(pt.x, pt.z);
@@ -255,7 +260,7 @@ export async function createRailwayRoundhouse(
       // Three pieces: the sides tip outward about their outer feet, the middle drops and crumbles.
       const w = b.w / 3,
         base = b.y - b.h / 2,
-        doorZ = -2.9,
+        doorZ = SLAB_Z,
         down = Math.min(1, sink) * 4;
       for (const k of [-1, 0, 1]) {
         if (k === 0) {
@@ -275,10 +280,10 @@ export async function createRailwayRoundhouse(
       return;
     }
     if (slabOpen) {
-      // Rubble either side of the open door.
+      // Rubble inside the open door, either side of the road and clear of the vehicles on it.
       for (const k of [-1, 1])
         for (let i = 0; i < 3; i++) {
-          const pt = stallPoint(k * (2.6 + i * 0.35), -3.4 - i * 0.4);
+          const pt = stallPoint(k * (1.95 + i * 0.1), SLAB_Z + 0.8 + i * 0.45);
           batch.box(pt.x, FLOOR + 0.2, pt.z, 0.9 - i * 0.2, 0.45 - i * 0.08, 0.8, '#8f8a80', i + k);
         }
       return;
@@ -286,7 +291,7 @@ export async function createRailwayRoundhouse(
     batch.box(b.x, b.y, b.z, b.w, b.h, b.d, '#9a958b', b.yaw);
     // Cracks across the door's outer face.
     for (let i = 0; i < 3; i++) {
-      const pt = stallPoint(-0.1 + (i % 2) * 0.22, -3.26);
+      const pt = stallPoint(-0.1 + (i % 2) * 0.22, SLAB_Z - 0.36);
       batch.box(pt.x, 18.8 + i * 0.8, pt.z, 0.14, 0.95, 0.14, '#464640', STALL_YAW);
     }
   }
@@ -410,11 +415,30 @@ export async function createRailwayRoundhouse(
         oz = -Math.sin(drawn) * side * SHUNT.gauge;
       batch.box(table.x + ox, tableY + RAIL_HEAD - 0.135 / 2, table.z + oz, 0.1, 0.135, R * 2 - 0.1, '#4c5058', drawn);
     }
-    batch.box(table.x, tableY + 0.05, table.z, 1.5, 0.1, R * 2 - 0.3, '#5c5046', drawn);
-    // A handle on the rim that travels with the disc: what you turn.
-    const hx = table.x + Math.sin(drawn + Math.PI / 2) * (R - 0.4),
-      hz = table.z + Math.cos(drawn + Math.PI / 2) * (R - 0.4);
-    batch.box(hx, tableY + 0.55, hz, 0.16, 1, 0.16, BRASS);
+    // The deck, from the pit's floor (the yard's level for now) up to the rails' feet.
+    const deckY = tableY + 0.1 - DECK.h / 2;
+    batch.box(table.x, deckY, table.z, DECK.w, DECK.h, R * 2 - 0.3, '#5c5046', drawn);
+    // A handle on the bridge's end that travels with it: what you turn.
+    const handle = handleAt(drawn);
+    batch.box(handle.x, tableY + 0.6, handle.z, 0.16, 1, 0.16, BRASS, drawn);
+    // The deck is solid where it rests, never while it turns (a turning deck would shove whoever stands by it): it
+    // is taken away with the first step of a turn and put back at the yaw it stops at.
+    const still = !tableTurning && drawn === deckDrawn;
+    deckDrawn = drawn;
+    if (deckBody && (!still || drawn !== deckBodyYaw)) {
+      owner.removeBody(deckBody);
+      deckBody = null;
+    }
+    if (still && !deckBody) {
+      deckBody = addStatic(
+        { kind: 'box', hx: DECK.w / 2, hy: DECK.h / 2, hz: R - 0.15 },
+        { x: table.x, y: deckY, z: table.z },
+        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), drawn),
+        undefined,
+        owner,
+      );
+      deckBodyYaw = drawn;
+    }
   }
   /**
    * Where the wagon and shunter stand and how far the deck has turned, from `ready` and the mover clock alone (so a
@@ -586,6 +610,7 @@ export async function createRailwayRoundhouse(
     build = shed(wd).stall >= WORKS.stall ? 1 : 0;
     tarp = build;
     builtShown = build >= 1;
+    rotunda.show(shownStage());
     fittedShown = shed(wd).fitted >= 0;
     tableTurning = false;
     lowering.length = 0;
@@ -803,8 +828,7 @@ export async function createRailwayRoundhouse(
         Math.abs(pos.y - SHED_TABLE.y / 100) <= 2.6
       ) {
         const to = (1 - sh.table) as 0 | 1;
-        const hx = table.x + Math.sin(tableYaw + Math.PI / 2) * (R - 0.4),
-          hz = table.z + Math.cos(tableYaw + Math.PI / 2) * (R - 0.4);
+        const { x: hx, z: hz } = handleAt(tableYaw);
         out.push({
           id: 'railway-turn',
           verb: 'Turn the table',
@@ -824,6 +848,7 @@ export async function createRailwayRoundhouse(
       centreAt(wagonA, false, w);
       return {
         garageView: { ...garageView.inspect(), here: true, post: garagePost, deckYaw: garageView.deckYaw() },
+        rotunda: rotunda.inspect(),
         slab: !slabOpen,
         slabSolid: !!slabBody,
         socketGhosts: socketGhosts.count,
