@@ -16,7 +16,7 @@ import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint, setBlob } from '../../p
 import { dustRing } from '../../render/particle-effects.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { reducedMotion } from '../../constants.ts';
-import { packSolid, packStep, type PackState } from './frame-pack.ts';
+import { packDrawn, packSolid, packStep, type PackState } from './frame-pack.ts';
 import { kitBatch, stationKit } from '../../place/look-kit.ts';
 import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from '../../place/pieces.ts';
@@ -36,6 +36,8 @@ export { frameBesideLine, type FrameAt } from '../../place/spatial-station.ts';
 export type StationRun = ReturnType<typeof buildStation>;
 /** Seconds a finished frame takes to fold away, and how far from its middle counts as on it (frame, feeder, bearers). */
 const PACK_S = 1,
+  /** After a load finds a stretch laid: seconds the unseen frame stays solid while friends' avatars arrive. */
+  PACK_SETTLE_S = 3,
   PACK_CLEAR = Math.hypot(FRAME_D / 2 + SPAN + 0.6, FRAME_W / 2 + 0.6);
 /** The bill's paint: ink on paper, like the village's boards (src/place/signs.ts). */
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
@@ -294,6 +296,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   // Packing up (settle, below): standing, folding flat, or gone; and whether this tab saw the stretch being laid.
   let pack: PackState = 'up',
     foldAt = 0,
+    laidAt = 0,
     sawWork = false;
   /** The frame, its feeder and the bearers pressed toward the ground: 1 standing, 0 not drawn. */
   const stand = (height: number) => {
@@ -384,28 +387,42 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
     },
     /** Called every frame after drawStock with where the stretch is. A laid stretch's frame packs up (owner, 14
      * November: the boxes "should either go away once that area is built"; level-pacing-1114, D1): it folds flat in
-     * about a second with a puff, then draws nothing and is no longer solid. Only a tab that watched the stretch being
-     * laid sees the fold; a join or a reload finds it already gone. Local, from accepted completions. */
+     * about a second with a puff, then draws nothing and is no longer solid. It never goes from under anyone: while
+     * `occupied` it stays solid and drawn on every tab, whatever that tab watched. A join or a reload that finds it
+     * clear skips the fold. Local, from accepted completions. */
     settle(state: 'open' | 'working' | 'laid', occupied: () => boolean) {
       if (state === 'working') sawWork = true;
-      const fold = pack === 'folding' ? Math.min(1, (performance.now() - foldAt) / (PACK_S * 1000)) : 0;
+      const now = performance.now();
+      if (state !== 'laid') laidAt = 0;
+      else if (!laidAt) laidAt = now;
+      const fold = pack === 'folding' ? Math.min(1, (now - foldAt) / (PACK_S * 1000)) : 0;
       const was = pack;
-      pack = packStep(pack, { laid: state === 'laid', sawWork, occupied, fold, reducedMotion });
-      // Solid, and in the footprints, until it is gone: nobody standing on it is dropped (frame-pack.ts), and the
-      // cleared ground is then free for the little guys and for a saved return pose (arrival.ts reads `feet`).
+      pack = packStep(pack, {
+        laid: state === 'laid',
+        sawWork,
+        occupied,
+        fold,
+        settled: now - laidAt >= PACK_SETTLE_S * 1000,
+        reducedMotion,
+      });
+      // Solid, and in the footprints, until it is gone: nobody standing on it is dropped, whatever this tab watched
+      // (frame-pack.ts), and the cleared ground is then free for the little guys and for a saved return pose
+      // (arrival.ts reads `feet`).
       if (packSolid(pack) !== packSolid(was)) {
         if (packSolid(pack)) {
           for (const body of frameBodies) owner.addBody(body);
-          for (const [k, bx, bz, w, d, turned] of blobs) setBlob(k, bx, y, bz, w, d, turned, owner);
           unfoot = addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3, owner);
         } else {
           for (const body of frameBodies) owner.removeBody(body);
           if (stockBody) owner.removeBody(stockBody);
           stockBody = null;
           stockRows = 0;
-          for (const [k] of blobs) setBlob(k, 0, -999, 0, 0.01, 0.01, 0, owner);
           unfoot();
         }
+      }
+      if (packDrawn(pack) !== packDrawn(was)) {
+        if (packDrawn(pack)) for (const [k, bx, bz, w, d, turned] of blobs) setBlob(k, bx, y, bz, w, d, turned, owner);
+        else for (const [k] of blobs) setBlob(k, 0, -999, 0, 0.01, 0.01, 0, owner);
       }
       if (pack === 'up') {
         if (was !== 'up') {
@@ -420,12 +437,12 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
       if (stones) stones.visible = false;
       if (beam) beam.visible = false;
       if (pack === 'folding' && was !== 'folding') {
-        foldAt = performance.now();
+        foldAt = now;
         placeSound('cartStop', x, z);
         dustRing(x, y + 0.2, z, 14, 2.4, 0.4);
       }
       if (pack === 'folding') stand(1 - fold * fold);
-      else if (pack !== was) stand(pack === 'gone' ? 0 : 1);
+      else if (pack !== was) stand(packDrawn(pack) ? 1 : 0);
     },
     /** Whether a point (a player's body) is on or in the frame, its feeder or its bearers: the fold waits for it. */
     holds(p: { x: number; y: number; z: number }) {

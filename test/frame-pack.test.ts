@@ -2,17 +2,25 @@
 // (src/entities/railway/frame-pack.ts; review of the 14 November honest-feedback branch, two P2s).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { packSolid, packStep, type PackState } from '../src/entities/railway/frame-pack.ts';
+import { packDrawn, packSolid, packStep, type PackState } from '../src/entities/railway/frame-pack.ts';
 
 const step = (
   state: PackState,
-  o: Partial<{ laid: boolean; sawWork: boolean; occupied: boolean; fold: number; reducedMotion: boolean }>,
+  o: Partial<{
+    laid: boolean;
+    sawWork: boolean;
+    occupied: boolean;
+    fold: number;
+    settled: boolean;
+    reducedMotion: boolean;
+  }>,
 ) =>
   packStep(state, {
     laid: o.laid ?? true,
     sawWork: o.sawWork ?? true,
     occupied: () => o.occupied ?? false,
     fold: o.fold ?? 0,
+    settled: o.settled ?? false,
     reducedMotion: o.reducedMotion ?? false,
   });
 
@@ -41,10 +49,43 @@ test('stepping on mid-fold stands it back up; it is gone only after a whole clea
   assert.equal(packSolid(s), false, 'colliders and footprint retire together, once gone');
 });
 
-test('a join or a reload finds a laid frame gone at once, footprint retired, whoever stands there', () => {
-  const s = step('up', { sawWork: false, occupied: true });
+test('a backgrounded tab that missed the work keeps the frame under whoever stands on it', () => {
+  // The tab saw the stretch open, then nothing until it was laid: sawWork is false and you are still on the frame.
+  let s = step('up', { sawWork: false, occupied: true, settled: true });
+  assert.equal(s, 'held');
+  assert.equal(packSolid(s), true, 'support does not depend on what the tab watched');
+  assert.equal(packDrawn(s), true);
+  for (let frame = 0; frame < 300; frame++) s = step(s, { sawWork: false, occupied: true, settled: true });
+  assert.equal(s, 'held');
+  s = step(s, { sawWork: false, settled: true });
+  assert.equal(s, 'folding', 'it folds once you step off');
+});
+
+test('a joining observer keeps a frame a friend stands on, even when the friend appears after the load', () => {
+  // The load: laid, nobody drawn yet. Solid but not shown while the room's avatars arrive.
+  let s = step('up', { sawWork: false });
+  assert.equal(s, 'checking');
+  assert.equal(packSolid(s), true);
+  assert.equal(packDrawn(s), false, 'no frame flashes up on a plain load');
+  // The friend's avatar arrives standing on it, before the wait is over: the frame is drawn and solid under them.
+  s = step(s, { sawWork: false, occupied: true });
+  assert.equal(s, 'held');
+  assert.equal(packSolid(s) && packDrawn(s), true);
+  s = step(s, { sawWork: false, occupied: true, settled: true });
+  assert.equal(s, 'held');
+  // A friend already drawn when the stretch is first seen laid is held at once.
+  assert.equal(step('up', { sawWork: false, occupied: true }), 'held');
+});
+
+test('a plain reload with nobody there: never drawn, no fold, gone once the room has settled', () => {
+  let s = step('up', { sawWork: false });
+  const seen: string[] = [s];
+  for (let frame = 0; frame < 5; frame++) seen.push((s = step(s, { sawWork: false })));
+  s = step(s, { sawWork: false, settled: true });
+  seen.push(s);
   assert.equal(s, 'gone');
-  assert.equal(packSolid(s), false);
+  assert.equal(packSolid(s), false, 'colliders and footprint retired');
+  assert.ok(!seen.includes('folding') && !seen.some((state) => packDrawn(state as PackState)), 'no animation on load');
 });
 
 test('reduced motion skips the fold but still waits for a clear frame; an un-laid stretch stands again', () => {

@@ -552,7 +552,9 @@ plan's three-sleeper stack would be new placed content and waits for a prefab re
 stretch being laid sees the fold; a join, a reload or reduced motion finds it gone. A frame somebody stands on or
 in (you, or a friend's avatar, within about 3.5 m of its middle) keeps its colliders and waits; it folds only while
 clear, stands back up if someone steps on mid-fold, and gives up its colliders and its footprint together once gone
-(`frame-pack.ts`, tested), so nobody is dropped and the cleared ground is a valid place to be saved and to return to. The forge's frame and Q7's frame
+(`frame-pack.ts`, tested), so nobody is dropped and the cleared ground is a valid place to be saved and to return to. That holds on every tab whatever it watched: a tab that was in the background while the stretch was laid, or a
+friend who joins while you stand on the frame, keeps it solid and drawn under you. A load that finds the frame clear
+never draws it: it stays solid but unseen for 3 s while the room's avatars arrive, then goes without the fold. The forge's frame and Q7's frame
 on the pier deck stay. Local view; the shared drop box he also asked for is the decided yard at each halt
 (station-deposit build 1), not this.
 
