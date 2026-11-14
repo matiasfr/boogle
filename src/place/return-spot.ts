@@ -129,18 +129,17 @@ export function returnCandidates(
   const distance = (p: Position) => Math.hypot(p.x - near.x, p.z - near.z);
   const seenHalt = new Set<string>(),
     seenLanding = new Set<string>();
-  const nearest = halts
-    .filter(stands)
-    .sort((a, b) => distance(a) - distance(b))
-    .filter((p) => {
-      const landing = `${p.x}:${p.y}:${p.z}`;
-      if (seenLanding.has(landing) || (p.halt && seenHalt.has(p.halt))) return false;
-      seenLanding.add(landing);
-      if (p.halt) seenHalt.add(p.halt);
-      return true;
-    });
-  const next = spot.ride?.halt === undefined ? undefined : nearest.find((p) => p.halt === spot.ride!.halt);
-  const order = next ? [next, ...nearest.filter((p) => p !== next)] : nearest;
+  const standing = halts.filter(stands).sort((a, b) => distance(a) - distance(b));
+  // The halt the train was running to goes first, before duplicates are dropped: another line's halt on the same
+  // landing (the Village's two lines) must not take its place and lose it.
+  const next = spot.ride?.halt === undefined ? undefined : standing.find((p) => p.halt === spot.ride!.halt);
+  const order = (next ? [next, ...standing.filter((p) => p !== next)] : standing).filter((p) => {
+    const landing = `${p.x}:${p.y}:${p.z}`;
+    if (seenLanding.has(landing) || (p.halt && seenHalt.has(p.halt))) return false;
+    seenLanding.add(landing);
+    if (p.halt) seenHalt.add(p.halt);
+    return true;
+  });
   return !spot.ride || distance(spot) <= 25 ? [{ x: spot.x, y: spot.y, z: spot.z }, ...order] : order;
 }
 

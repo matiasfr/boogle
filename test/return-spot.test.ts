@@ -12,6 +12,7 @@ import {
   type ReturnPosition,
 } from '../src/place/return-spot.ts';
 import { RAIL_LINES } from '../src/sim/railway-lines.ts';
+import { haltStands } from '../src/entities/railway/return-halts.ts';
 import { JUMPS } from '../src/world/railway-jump.ts';
 
 const spot = { x: 10, y: 12, z: 20, yaw: 1, at: 1000 };
@@ -264,6 +265,36 @@ test('a train reload goes to the halt it was running to, falling back to the nea
     captureReturnSpot(spot, { standing: false, standable: false, pos: ride, yaw: 0, halt: 'bad id' }, 5)!.ride!.halt,
     undefined,
   );
+});
+test('the halt the train was running to keeps its place when another line shares its landing', () => {
+  const all = haltLandings();
+  const village = all.find((p) => p.halt === 'line2:0')!,
+    quarry = all.find((p) => p.halt === 'line2:1')!;
+  assert.ok(
+    all.some((p) => p.halt === 'line1:0' && p.x === village.x && p.y === village.y && p.z === village.z),
+    'the fixture needs the two Village halts on one landing',
+  );
+  // On line 2 just out of the Quarry, bound for the Village: the Quarry is nearest, the Village is where it is going.
+  const ride = { x: quarry.x - 20, y: quarry.y, z: quarry.z, halt: 'line2:0' };
+  const list = returnCandidates({ ...spot, x: -900, ride }, all, built);
+  assert.equal(list[0]!.halt, 'line2:0');
+  assert.deepEqual([list[0]!.x, list[0]!.y, list[0]!.z], [village.x, village.y, village.z]);
+  assert.equal(list.filter((p) => p.x === village.x && p.z === village.z && p.y === village.y).length, 1);
+});
+test('a stack head closed behind the railhead is not a standing halt', () => {
+  const line2 = RAIL_LINES.findIndex((l) => l.id === 'line2');
+  const heads = RAIL_LINES[line2]!.halts.flatMap((h, k) => (h.closesAt === undefined ? [] : [{ k, at: h.closesAt }]));
+  assert.ok(heads.length >= 2, 'the fixture needs the stack line heads that close behind');
+  for (const { k, at } of heads) {
+    assert.equal(haltStands(line2, k, k), false, 'not open yet');
+    assert.equal(haltStands(line2, k, at - 1), true, 'open, the railhead');
+    assert.equal(haltStands(line2, k, at), false, 'closed behind');
+    assert.equal(haltStands(line2, k, RAIL_LINES[line2]!.halts.length), false, 'closed with the whole line open');
+  }
+  const last = RAIL_LINES[line2]!.halts.length - 1;
+  assert.equal(haltStands(line2, last, last + 1), true, 'High Gorge stands');
+  assert.equal(haltStands(line2, -1, 5), false);
+  assert.equal(haltStands(99, 0, 5), false);
 });
 test('a fallback halt faces its track, which lies beside its platform', () => {
   // Forward is (-sin yaw, -cos yaw): facing +x from the origin is yaw -pi/2.

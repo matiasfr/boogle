@@ -57,7 +57,8 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   first-visit fall and unready scenery do not save. A record is read only within `railway.returnMinutes` (Local,
   default 30; 0 disables returns), with no migration from v0. Get unstuck records its checked surface. A recent
   return tries the remembered spot, then free rings 1.4, 3 and 6 m beside it, then halts, then Home. Only halts that
-  stand in this room now are tried (open stops of their line, from the accepted state), one landing a halt and one
+  stand in this room now are tried (open stops of their line, from the accepted state, and not a stack head closed
+  behind the railhead), with the halt a train was running to placed first, one landing a halt and one
   halt a physical landing, nearest first, for as long as the search's 8 s budget lasts: a failed landing goes on to
   the next standing halt, never straight Home. A `ride` over 25 m from the standing spot skips it and uses the halts
   nearest that observation, so leaving on a cart or in the sea returns beside the route. Aboard a train the record
