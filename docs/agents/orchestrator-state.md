@@ -4,6 +4,13 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 **Updated:** 14 November 2026 about 23:00 UTC (15:00 PST), at the end of the 12–14 November orchestrate session. The owner is moving orchestration to a new harness; this section is the hand-off. Mode: withCodex. World **v45** is live (#1827).
 
+## Night of 14–15 November (Opus orchestrating in T3 Code)
+
+- **Routing until 5 am PST Sunday 15 November** (owner, 14 November evening: "let's use codex models until 5 am sunday and keep opus orchestrating here as our usage is dwindling"): every hands-on, planning, design-review and review job goes to Codex (Sol by the models table's rows, Astra for high-risk, planning and review); only orchestration runs on Claude (Opus, this session). After 5 am, back to `npm run models`.
+- **Hand-off items:** the main typecheck fix landed (#1833, main green). The z-fighting detector port was reviewed (Astra `review-zfight-port`: ship; census 176/61/541; `zfight --strict` stays report-only) and is in `ship-queue` from `codex/zfight-detector-3`. The backlog board is in review (Astra `review-backlog-board`).
+- **Dispatched (Codex):** `accounts-plan` (Astra high, writes `docs/plans/accounts.md`); `traveller-step2` (Astra high, railhead traveller step 2, the first v46 piece, bump in its own commit); `terrain-2a` (Sol medium, terrain Part 2a steps 1–3, view only); `rotunda-checkpoint-a` resumed (rebase, the works bot's missing Quarry-stop prompt, perf, frame timing).
+- **Clean-up:** nine stale daily-run worktrees (3–10 November) and the merged `meadow/everywhere` agent worktree were removed at the owner's request; their uncommitted files are in `~/.boogle/daily/salvage-2026-11-14/`.
+
 ## Start here (hand-off, 14 November evening)
 
 **Pick-up in five steps.**
