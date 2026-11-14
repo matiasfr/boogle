@@ -170,9 +170,23 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   **Found, not fixed:** `reload.restored` is false: the pose is saved beside the lookout and the reloaded page stands
   at (903, 18.7, 14) on Home. `ringview=perf` reads 0 draw calls with and without the near view, so it measures
   nothing today. From the halt still the bridge shows only as two thin orange uprights and a pale sliver in the
-  notch; the fingerpost stands in front of it. Ground stands through the deck's uphill edge for the first 3 m at a.
+  notch; the fingerpost stands in front of it (fixed in the follow-up below). Ground stands through the deck's uphill
+  edge for the first 3 m at a.
   One staged drop from the deck onto the seed's passing train (about 20 m/s) touched it and was thrown 2.7 m aside
   onto the track bed; no ride. The ride under the deck with the follow camera could not be staged.
+  **Follow-up record (14 November): the bridge on arrival (P2) and the rim rocks (P3).** View and place data only.
+  *The fingerpost* moved 2.8 m west, off the platform onto the fill 1.3 m outside its west edge (u 436, lat -10.6; it
+  stood at lat -7.5 with both arms across the sightline). Its arms, wording and bearings are unchanged and now point
+  away from the deck. Checked from three arrival eyes: the crossing ramp (`ringview=halt`, u 432), stepping off a
+  standing train's tail door (`ringview=step`, u 438) and the top of the platform ramp where the path starts
+  (`ringview=ramp`, u 464): the whole deck, both bents and the path show in all three; in the halt still the post
+  stands left of the bridge. *The rim rocks* (design review finding 3): `summitRimRocks` in `path.ts`, 19 pale
+  dodecahedra in the island's merged mesh (no new draw call, mesh or material; 684 triangles) and 19 box shapes on
+  the one scenery body, about every 3.5 m along the summit-side rim from s 1241.5 to 1311.5, 1.5 to 2 m behind the
+  edge, none within 4.4 m of the deck's axis (a 12 m gap at the bridge) or 3 m of the path, at most 0.84 m high. A new
+  test holds those. `ringview=rim` retaken: five rocks stand in a row along the edge either side of the bridge, so
+  the line of the rim now reads; the drop itself still cannot be seen from there. The walk still reaches the lookout
+  (393.1 m in 73.1 s, `swamFrames` 0, `longestAirS` 0.1). Not tested on a device.
 - [ ] **3. The witness and the stills.** In `dev/look/evals/ring-island-walk.ts` import `summitPath` from
   `/src/entities/ring-island/path.ts` for `way` (its last two points, the lookout ramp's foot and the deck, stay the
   eval's own), add `bridge` and `cut` to `VIEWS` and to the `ringview` branch, and add `bridge: { onDeck, y }` to the
