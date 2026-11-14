@@ -145,7 +145,7 @@ stall roads and the cart's leg are laid in the lines' own pieces: the same sleep
 between the rails, the same heights, and posts under a sleeper that stands clear of the ground. The table's bridge
 rails are at that gauge and height too. Each stall road leaves the rim at the lines' height and ramps down to
 ground-level rails at the door, then runs level: to the back wall of the open stall (the shunter and wagon stand on its
-rail heads, wheels a metre apart on the rails, all along the shunt) and a rail's length onto each ruin's floor. Where two tracks run side by side they share one set
+rail heads, wheels a metre apart on the rails, all along the shunt) and a rail's length onto each ruin's floor (since the rotunda's blockout, 14 November: a road for each of its seven bays, to 23.5 m from the table's centre; the ruin outlines are replaced by the rotunda's own). Where two tracks run side by side they share one set
 of sleepers: the spur off road 2, the leg off line 1 and onto road 2, and each line's up track at its turnouts lie on
 the through track's sleepers, carried on as long timbers until the tracks are clear of each other; the branch's rails
 start beside the through track's. There are still no blades, frogs or working levers, and the table has no pit: that is
@@ -1169,6 +1169,35 @@ the old slope. There is no pit or rotunda shell yet. [Step 1a report](../plans/r
 The delivered steel pallet follows the site's table radius and the kit's kerb: its centre is on bearing 30° at Home,
 with at least 1 m between the pallet and kerb. Its base spans the shallow ground slope; neither steel nor pallet
 stands on the disc. The placement clears the spur, all seven future stall roads, the garage furniture and camera.
+
+**Rotunda step 1b, the blockout (14 November, local branch; ships with v45).** The Roundhouse is one curved
+building in plain blocks at the kit's true sizes, to walk the spacing before any art ([plan](../plans/roundhouse-rotunda.md)).
+The three separate stalls and their ruin outlines are gone.
+
+- **The table** is a dark 16 m disc flush with the yard (the pit is dug in a later step), with a pale kerb to 8.6 m
+  and an amber ring painted at 14 m across, the smaller table to compare against. The bridge is a 16 × 3.2 m deck
+  with the rails on it; it turns as the table did, and its brass handle rides its end. The deck is solid where it
+  rests and not while it turns. The kerb is drawn only.
+- **A bay** is a 20° wedge: a door wall 14 m out and 6.2 m high with a 3.6 × 4.6 m door between two piers, a roof
+  falling to a 4.8 m back wall 25 m out with a dark window band, and end walls where the building stops. Bays meet
+  edge to edge and are open to each other inside. A bay with nothing in it keeps its door shut.
+- **What stands when** reads the shed's accepted state, with no new shared state. On arrival: five bays as ruins
+  (190° and two each side), each a floor and two door piers broken at different heights, and bay 190° with no piers
+  at all: two empty sockets where they go, the cracked slab just behind them, the tarped shunter and wagon behind
+  that. The two footings set in the sockets raise bay 190°'s piers and lintel; when they stand, bays 170°, 190° and
+  210° stand as the building, with 190° open and working. When the first steel lands at Home, bays 150° and 230°
+  join them and ruins appear at 130° and 250°. A change of stage snaps for now; the rise is a later step. Seven
+  bays is held: it needs its own brief.
+- **Rails** fan from the table to every one of the seven bays from arrival, built or not.
+- **Painted on the ground** past each end, bays 110° and 270° in amber outline: what nine bays would take. The
+  270° one stands 3.2 m from road 2's buffer stub.
+- **The stone yard's spot** moves north of the table, between the kerb and road 2 (nothing is drawn there today):
+  off the arc, off the open east side the footings are carried in by, and off the walk from the board crossing.
+
+Local scenery and Owner collision from prefab records (`roundhouse.*-block`, `content/built/levels/rotunda-home.json`);
+no rule, wire, save or namespace change beyond step 1a's. Serves DESIGN.md 11 (Show, don't tell) and 7 (Telegraph
+everything). Not walked by a player: the roof is out of reach of one or two jumps from the ground (1.6 m and about
+2.9 m against a 5.1 m eave), and whether the glider reaches it is not measured. Not tested on a device.
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's
 plume and whistle. **Take the breaker** is once for the room; like the boiler before it, its prompt measures to the
