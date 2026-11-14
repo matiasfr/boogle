@@ -31,14 +31,16 @@ import bell from '../content/built/levels/bell.json' with { type: 'json' };
 
 test('page startup has exactly one catalogue validation owner shared by every consumer', () => {
   const catalogue = 'src/prefab/catalogue.ts';
+  const sourceRoot = new URL('../src/', import.meta.url);
   const loads: string[] = [],
     imports: string[] = [];
-  for (const file of fs.globSync('src/**/*.ts')) {
-    if (file === 'src/prefab/validate.ts') continue;
-    const source = fs.readFileSync(file, 'utf8');
+  for (const relative of fs.globSync('**/*.ts', { cwd: sourceRoot })) {
+    const sourcePath = `src/${relative}`;
+    if (sourcePath === 'src/prefab/validate.ts') continue;
+    const source = fs.readFileSync(new URL(relative, sourceRoot), 'utf8');
     const calls = source.match(/\b(?:loadPrefabArtifact|validateArtifact)\s*\(/g)?.length ?? 0;
-    loads.push(...Array.from({ length: calls }, () => file));
-    if (/from\s+['"][^'"]*content\/built\/prefabs\.json['"]/.test(source)) imports.push(file);
+    loads.push(...Array.from({ length: calls }, () => sourcePath));
+    if (/from\s+['"][^'"]*content\/built\/prefabs\.json['"]/.test(source)) imports.push(sourcePath);
   }
   assert.deepEqual(loads.sort(), [catalogue], 'full catalogue validation must happen only in the shared module');
   assert.deepEqual(imports.sort(), [catalogue], 'consumers must use the validated catalogue, not reload raw JSON');
