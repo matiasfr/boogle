@@ -18,7 +18,7 @@ import type { WebSocket } from 'ws';
 import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/ws-wire.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { createStepMeter } from './step-meter.ts';
-import { createWorldHost, createRailwayWorldHost, type RailwayWorldHost } from './world-host.ts';
+import { createRoomWorldHost } from './room-world-host.ts';
 import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
 import { validatePing, honkShape } from '../../../src/sim/social.ts';
@@ -131,33 +131,29 @@ export function createHostedRoom({
     tuneController: (sid: string) => !!cfg.tuneControllerKey && clients.get(sid)?.key === cfg.tuneControllerKey,
   };
   const pauseMs = cfg.roomPauseMs ?? RAIL_AWAY.pauseMs;
-  const world = railway
-    ? createRailwayWorldHost({
-        ...hostOptions,
-        replication,
-        awake: false, // the first join wakes it, with the away credit since its last save
-        hasPlayers: () => clients.size > 0,
-        positions() {
-          return [...clients].map(([sid, client]) => {
-            const p = client.d && typeof client.d === 'object' ? (client.d as { p?: unknown }).p : null;
-            const at = poseAt.get(sid);
-            return Array.isArray(p) && typeof p[0] === 'number' && typeof p[2] === 'number' && at !== undefined
-              ? {
-                  x: p[0],
-                  y: typeof p[1] === 'number' ? p[1] : undefined,
-                  z: p[2],
-                  at,
-                  pid: client.pid,
-                  ...booglerActivity((client.d as { bg?: unknown }).bg),
-                }
-              : null;
-          });
-        },
-      })
-    : createWorldHost(hostOptions);
-  const depart = (sid: string) => {
-    if (railway) (world as RailwayWorldHost).depart(sid);
-  };
+  const world = createRoomWorldHost({
+    ...hostOptions,
+    replication,
+    awake: false, // the first join wakes it, with the away credit since its last save
+    hasPlayers: () => clients.size > 0,
+    positions() {
+      return [...clients].map(([sid, client]) => {
+        const p = client.d && typeof client.d === 'object' ? (client.d as { p?: unknown }).p : null;
+        const at = poseAt.get(sid);
+        return Array.isArray(p) && typeof p[0] === 'number' && typeof p[2] === 'number' && at !== undefined
+          ? {
+              x: p[0],
+              y: typeof p[1] === 'number' ? p[1] : undefined,
+              z: p[2],
+              at,
+              pid: client.pid,
+              ...booglerActivity((client.d as { bg?: unknown }).bg),
+            }
+          : null;
+      });
+    },
+  });
+  const depart = world.depart;
   const gone = new Map<string, { s: number; pid: string; key: string; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
   const retired = new Set<string>(); // sessions a newer tab of their player replaced: turned away if they come back
   let closing = false;
@@ -417,7 +413,7 @@ export function createHostedRoom({
     sendList(true);
     const notice = replacingNotice();
     if (notice) ws.send(encode(notice));
-    if (railway) (world as RailwayWorldHost).wake(); // a paused room applies its away credit before anyone sees it
+    world.wake(); // a paused room applies its away credit before anyone sees it
   }
 
   const housekeep = setInterval(() => {
@@ -427,7 +423,7 @@ export function createHostedRoom({
       if (now - c.seen > (c.hiddenSince ? hiddenDeadMs : deadMs)) c.ws.terminate();
       else write(c, hb);
     }
-    if (railway && !clients.size && !gone.size && now - emptySince > pauseMs) (world as RailwayWorldHost).pause();
+    if (!clients.size && !gone.size && now - emptySince > pauseMs) world.pause();
   }, cfg.housekeepMs ?? 1000);
   housekeep.unref();
 
@@ -444,7 +440,7 @@ export function createHostedRoom({
     },
     status: () => {
       // One world status per request: a railway status walks seats, The Boogler and the meter.
-      const ws = world.status();
+      const { noSave, ...details } = world.roomStatus();
       return {
         boot,
         tick: world.sync.world.tick,
@@ -452,17 +448,10 @@ export function createHostedRoom({
         max: cfg.maxPlayers,
         // Malformed, over-rate or throwing messages dropped from the sockets connected now.
         dropped: [...clients.values()].reduce((n, c) => n + c.dropped, 0),
-        noSave: ws.badSave, // a failed-load fallback must not replace the durable save
+        noSave, // a failed-load fallback must not replace the durable save
         steps: meter.report(world.sync.stepsDropped()),
         replication: { ...repStats, entities: replication.size() },
-        ...(railway
-          ? {
-              railway: (world as RailwayWorldHost).stats,
-              seats: (ws as ReturnType<RailwayWorldHost['status']>).seats,
-              boogler: (ws as ReturnType<RailwayWorldHost['status']>).boogler,
-              booglerMeter: (ws as ReturnType<RailwayWorldHost['status']>).booglerMeter,
-            }
-          : {}),
+        ...details,
       };
     },
     idleMs: () => (replacement || clients.size || gone.size ? 0 : performance.now() - emptySince),
