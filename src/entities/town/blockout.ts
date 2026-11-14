@@ -1,5 +1,5 @@
 // The Round's blockout (docs/plans/home-flip.md, B3): plain grey blocks at the true size and place of the eight bought
-// plots, a pale door panel and mat on each door side, and the clock's footing at G. Local and static: the blocks read
+// plots, a pale door panel and a dark mat on each door side, and the clock's footing at G. Local and static: the blocks read
 // no fact. Where each stands is src/place/town-blockout.ts; a block leaves when its real building is mounted.
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
@@ -22,6 +22,8 @@ export function createTownBlockout(owner: OwnedView) {
   });
   // The little guys steer round footprints, not colliders: one for each block and the footing, gone with the owner.
   for (const f of blockoutFeet(placements)) addFoot(f.x, f.z, f.yaw, f.hw, f.hd, owner);
+  // This batch is the blockout's own draw, so casting costs one more draw in each shadow pass and none in the main one.
+  batch.mesh.castShadow = true;
   batch.mesh.computeBoundingBox();
   batch.mesh.computeBoundingSphere();
   return { boxes: placements.length, solids };

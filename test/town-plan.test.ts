@@ -414,7 +414,14 @@ test('the gate is the one cottage, the yard is behind it and the shore ends at t
 });
 
 // B3, the blockout: the eight bought plots as plain blocks and the clock's footing (docs/plans/home-flip.md).
-type Stood = { id: string; prefab: string; pos: readonly number[]; rot: readonly number[]; scale?: readonly number[] };
+type Stood = {
+  id: string;
+  prefab: string;
+  pos: readonly number[];
+  rot: readonly number[];
+  scale?: readonly number[];
+  params?: { colour?: string };
+};
 const stood: Stood[] = standBlockout(blockoutLevel.placements, H);
 const piece = (id: string) => stood.find((p) => p.id === id)!;
 
@@ -470,6 +477,11 @@ test('the built level is the plan: eight solid blocks at their rows, a door pane
     near(across, 0, 0.001, `${b.id} mat is centred on the door`);
     assert.ok(along - mat.scale![2]! / 2 > plan.d / 2 - 1e-9, `${b.id} mat is outside the door`);
     assert.ok(along + mat.scale![2]! / 2 < plan.d / 2 + 2, `${b.id} mat is within 2 m of the door`);
+    // As wide as the door panel, against the wall, 1.5 m deep; plot 6's stops at the quarry road's 1.25 m verge.
+    assert.equal(mat.scale![0], door.scale![0], `${b.id} mat is the door's width`);
+    near(along - mat.scale![2]! / 2, plan.d / 2, 1e-9, `${b.id} mat lies against the wall`);
+    assert.equal(mat.scale![2], b.id === 'plot6' ? 1.25 : 1.5, `${b.id} mat depth`);
+    assert.notEqual(mat.params?.colour, door.params?.colour, `${b.id} mat is not the door's pale`);
     near(mat.pos[1]! - mat.scale![1]! / 2, VILLAGE.y, 0.001, `${b.id} mat lies on the ground`);
   }
   const footing = piece('town.footing');
@@ -501,7 +513,7 @@ test("no block's mat lies on a road: each is off the ring and outside the quarry
       const r = Math.hypot(c.x - TOWN_CENTRE.x, c.z - TOWN_CENTRE.z);
       assert.ok(r > TOWN_RING.outer, `${b.id} mat is off the ring road (${r.toFixed(2)} m from G)`);
       for (let i = 0; i + 1 < quarry.length; i++)
-        assert.ok(toSegment(c, quarry[i]!, quarry[i + 1]!) >= 2.4, `${b.id} mat is off the quarry road`);
+        assert.ok(toSegment(c, quarry[i]!, quarry[i + 1]!) >= 2.4 - 1e-9, `${b.id} mat is off the quarry road`);
     }
   }
 });
@@ -526,5 +538,8 @@ test('the little guys walk round the footing and the blocks: every solid has an 
   assert.ok(crossed, 'the diagonal across the green meets the footing footprint');
   // The view registers every one of them with its owner, so they leave with the blocks.
   const view = fs.readFileSync('src/entities/town/blockout.ts', 'utf8');
-  assert.match(view, /for \(const f of blockoutFeet\(placements\)\) addFoot\(f\.x, f\.z, f\.yaw, f\.hw, f\.hd, owner\);/);
+  assert.match(
+    view,
+    /for \(const f of blockoutFeet\(placements\)\) addFoot\(f\.x, f\.z, f\.yaw, f\.hw, f\.hd, owner\);/,
+  );
 });
