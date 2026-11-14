@@ -81,22 +81,12 @@ test('importing all ten page consumers validates the catalogue exactly once', ()
   assert.deepEqual(result, { consumers: 10, catalogueValidations: 1, directValidations: 0 });
 });
 
-// Global ceiling includes every area and every compiled level; attribution below never grants a local ceiling.
-// Shared halt specifications fit the existing limits; repeated per-placement definitions must not return.
-const MAX_PREFAB_RECORDS = 200;
-const MAX_COMPILED_ARTIFACT_BYTES = 350_000;
-function assertCatalogueBudget(records: number, bytes: number) {
-  const guidance = 'Share prefabs through placements instead of duplicating definitions.';
-  assert.ok(records <= MAX_PREFAB_RECORDS, `${records} prefab records exceed ${MAX_PREFAB_RECORDS}. ${guidance}`);
-  assert.ok(
-    bytes <= MAX_COMPILED_ARTIFACT_BYTES,
-    `${bytes} compiled bytes exceed ${MAX_COMPILED_ARTIFACT_BYTES}. ${guidance}`,
-  );
-}
-test('compiled catalogue stays inside deterministic record and byte budgets', (t) => {
+// Report growth without a content ceiling: owner-calls.md, "No limits ahead of a measured problem" (14 November).
+// Startup validation, shared-record goldens and artifact freshness remain defect checks, independent of size.
+test('compiled catalogue reports total and per-area records and bytes', (t) => {
   const records = Object.keys(artifact.prefabs).length;
   const bytes = fs.globSync('content/built/**/*.json').reduce((sum, file) => sum + fs.statSync(file).size, 0);
-  t.diagnostic(`GLOBAL: ${records}/${MAX_PREFAB_RECORDS} records, ${bytes}/${MAX_COMPILED_ARTIFACT_BYTES} bytes`);
+  t.diagnostic(`GLOBAL: ${records} records, ${bytes} bytes`);
   const areas = new Map<string, { records: number; bytes: number }>();
   for (const def of Object.values(artifact.prefabs)) {
     const area = def.key.startsWith('railway.halt-') ? 'halts' : def.key.split('.')[0]!;
@@ -111,12 +101,6 @@ test('compiled catalogue stays inside deterministic record and byte budgets', (t
     );
   for (const file of fs.globSync('content/built/**/*.json').sort())
     t.diagnostic(`${file}: ${fs.statSync(file).size} bytes`);
-  assertCatalogueBudget(records, bytes);
-  assert.throws(() => assertCatalogueBudget(records + 367, bytes), /Share prefabs through placements/);
-  assert.throws(
-    () => assertCatalogueBudget(records, MAX_COMPILED_ARTIFACT_BYTES + 1),
-    /Share prefabs through placements/,
-  );
 });
 
 test('every committed prefab artifact holds authored numbers, never long derived geometry', () => {

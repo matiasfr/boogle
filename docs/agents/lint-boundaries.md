@@ -96,6 +96,11 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   ambient `declare`, type bindings and erased imports do not. Local `origin` and local `globalThis` objects are
   allowed. The compiler separately
   rejects non-JSON exported values; compiled JSON remains committed.
+- Catalogue record/byte totals and per-area numbers are reported by the prefab tests and `npm run prefabs -- --check`,
+  without hard content ceilings ([owner call, 14 November](owner-calls.md#no-limits-ahead-of-a-measured-problem)).
+  Add a content limit only for a measured performance problem, sized from and citing that measurement.
+  Duplicate validation, accidental per-placement definition duplication and stale artifacts remain defects.
+  The construction/importer/registration ratchets below count architectural violations, not allowed content.
 - `dev/lint/prefab-debt.json` version 7 lists collider/seat files with `{ count, reason, exports }` (counts are
   lint violations: module acquisitions and direct calls, not runtime collider instances), fixed door
   public surfaces and compact computed construction/importer counts. Dropping the schema or counts fails. Lint and registry

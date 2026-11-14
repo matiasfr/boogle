@@ -6,6 +6,14 @@ _Plan, 13 November 2026. Not approved, not started. Counts are from commands at 
 
 **Execution, 13 November:** owner approved steps 1-3 only, on the three open questions' recommendations: approved debt at step 5, committed JSON at runtime, one later Godot export. The original plan status above is historical.
 
+**Content budgets, 14 November:** [No limits ahead of a measured problem](../agents/owner-calls.md#no-limits-ahead-of-a-measured-problem)
+retires the 200-record and 350,000-byte failures introduced below, and the proposed replacement of 320 records.
+Tests and compiler `--check` report total and per-area records/bytes; only a measured performance problem justifies
+a content limit, sized from and citing that measurement. Startup's ten consumers / one catalogue validation / zero
+direct revalidations, shared-record goldens, authored-number validation and artifact freshness stay enforced.
+No replacement numeric tripwire is introduced. Current consolidated totals: **193 records, 12 levels, 243,652 bytes**.
+Historical measurements below retain their dates; their ceilings are superseded. [Budget change and audit](prefab-budget-relax-report.md).
+
 Each thing placed in the world (a chair, a platform, a sign post, a tree) is one typed record: its visual, colliders, attachment points, interactions, components and lifetime. The world's static content is placement files that name records. Both compile to versioned JSON that a headless tool, the level check or an engine importer can read. It serves **Understandable at a glance** and the owner's first criterion for the foundation, enforceability ("having all our models adhere to a system"), and keeps a later move to Unity, Unreal or Godot mechanical. It bends **Small and readable** ("no build step of ours"): see open question 2.
 
 **Research:** [engine-long-term](../research/engine-long-term.md): uses target 5 ("Prefabs compile typed authoring into portable data: stable keys, component initializers, relationships, asset references and collider recipes"), "Scene/prefab data: yes, for gameplay composition" and stage H's proofs (collider and placement goldens, native visual checks, no reset); departs by pulling stage H's prefab half ahead of its scopes and scheduler half. [engine-portability](../research/engine-portability.md): departs from its row 6 ("a scene file format ... not worth it"), which the second study and the owner's 13 November call supersede. [level-design-tools](../research/level-design-tools.md) ("one inspectable description per place", partly adopted): index line only.
@@ -536,8 +544,8 @@ No push or ship; not tested on a device.
 
 The shallow-CI failure of the 9e startup timing test is corrected on codex/prefab-data-step-9f. It no longer
 uses Git refs or a clock. A fresh isolated ESM import spy evaluates all nine real consumer modules and asserts
-one catalogue validation, with zero direct revalidations. Deterministic ceilings of 200 records and 350,000
-compiled bytes allow modest room above the current 181 / 312,535 and reject the former duplication pattern.
+one catalogue validation, with zero direct revalidations. At that step, deterministic ceilings of 200 records and
+350,000 compiled bytes guarded the then-current 181 / 312,535; the 14 November owner call above retires both ceilings.
 The existing owner import chain avoids adding constructor consumers; no scanner/debt allowance grows.
 Runtime code, authored artifacts, copy, old-code goldens and per-placement validation remain unchanged.
 Prefab tests pass 221/221 normally and perturbed; full check has 1,916 passes and one existing TODO; ship-check
@@ -569,7 +577,7 @@ and fresh verification are recorded in the [follow-up report](prefab-data-step-1
 Rebased onto main's shared catalogue on `codex/prefab-data-step-10-3`. Seven shared halt specifications now cover
 the retained deck/base/pile, shelter, bench, canopy/posts and mast pieces plus all 17 kit ramps. Generated placements
 hold authored operands; native geometry resolves at runtime. Ten consumers share exactly one catalogue validation.
-Actual content is 188 records / 334,626 canonical bytes, within unchanged 200 / 350,000 ceilings. The reviewed
+Actual content was 188 records / 334,626 canonical bytes, within the then-current 200 / 350,000 ceilings (since retired). The reviewed
 catalog-mutation freshness regression and original pre-conversion golden pass; neither sim catalogs nor namespace
 change. Collider debt against current main shrinks 490 to 475 units, with no list growth.
 
@@ -587,8 +595,8 @@ Static attachment poses resolve from authored row recipes; dynamic requests, lab
 railhead transforms retain their view owners. Pier/frame operands and post visual/collider dimensions are shared.
 Step 10 is complete; no sim catalog value/order or namespace changes.
 
-The unchanged original golden and pre-conversion request-call fixture pass. Shared totals are **193/200 records /
-347,058/350,000 bytes**, including all 12 levels; per-area budget output grants no separate ceiling. Collider debt
+The unchanged original golden and pre-conversion request-call fixture pass. Shared totals at that step were **193 records /
+347,058 bytes**, including all 12 levels; the then-current 200 / 350,000 ceilings are since retired, and per-area output is diagnostic. Collider debt
 shrinks **103 files/475 units to 102/473**. Full check has 1,919 active passes plus its existing TODO, prefab suites
 224/224 normal and perturbed, and server tests 371/371. T1 and actual stack/Quarry requests pass; the co-op harness
 reports clock drift, so timing and smoothness remain unverified. [Report, checks, opened images and manifests](prefab-data-step-10b-report.md).

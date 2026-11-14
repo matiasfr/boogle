@@ -2,16 +2,19 @@
 
 Measured baseline: local origin/main and initial HEAD `90bf3cabe`. Sync kind **Local**; no state, IDs, op meaning, sim/net/server or WORLD_NS changes. DESIGN.md: **Small and readable**.
 
+**14 November budget follow-up:** [No limits ahead of a measured problem](../agents/owner-calls.md#no-limits-ahead-of-a-measured-problem)
+retires both catalogue ceilings and the 320-record recommendation below. The consolidation measurements are retained;
+tests and compiler `--check` report growth without a content ceiling. [Change, other-ceiling audit and checks](prefab-budget-relax-report.md).
+
 ## Totals
 
-| Measure | Before | After | Ceiling |
-| --- | --- | --- | --- |
-| Records | 193 | 193 | 200 |
-| Compiled JSON bytes (all files) | 347058 | 243652 | 350000 |
-| Free bytes | 2942 | 106348 |  |
-| Levels | 12 | 12 |  |
+| Measure | Before | After |
+| --- | --- | --- |
+| Records | 193 | 193 |
+| Compiled JSON bytes (all files) | 347058 | 243652 |
+| Levels | 12 | 12 |
 
-Saved **103406 bytes**: **58,281** from shared data/default omission and **45,125** from compact placement-row formatting. Reprinting the new data with the old canonical whitespace alone is **288,777 bytes**, so structural consolidation alone clears the 40 kB target. No complete records were identical after excluding their key, so none were removed. The seven remaining record slots are still insufficient for the remaining plan. Neither budget assertion changed.
+Saved **103406 bytes**: **58,281** from shared data/default omission and **45,125** from compact placement-row formatting. Reprinting the new data with the old canonical whitespace alone is **288,777 bytes**, so structural consolidation alone clears the 40 kB target. No complete records were identical after excluding their key, so none were removed. The consolidation left both budget assertions unchanged; the 14 November follow-up removes them rather than constraining the remaining plan to record slots or byte headroom.
 
 ## Per-area definitions
 
@@ -278,9 +281,11 @@ Standalone canonical bytes, the same convention as the budget test.
 | town.workshop-rails | 366 | 366 |
 | town.workshop-tub | 368 | 368 |
 
-## Capacity recommendation
+## Capacity estimates (ceiling recommendation superseded)
 
-Keep **350,000 bytes** for now and recommend a separately approved record-ceiling change to **320**. Do not change either assertion in this work. This is a bloat tripwire, not a design constraint: the owner's **Place for the look, not the cost** call applies, and a measured larger design should raise the guard rather than shrink the design.
+The consolidation originally recommended keeping **350,000 bytes** and raising the record ceiling to **320**.
+The owner's 14 November **No limits ahead of a measured problem** call supersedes that recommendation: neither
+ceiling is a failure now. A future limit requires a measured performance problem, sized from and citing that measurement.
 
 These are planning ranges, not compiled measurements; steps 11–13 have no finished records to measure. Step 11 has three PROP_BLUEPRINTS families plus authored LAND_TREES/scatter sources; its plan explicitly retains a seeded generator. Dumping evaluated random/native coordinates would defeat both size and portability. Step 12's GLB payload remains in the asset manifest, outside this catalogue; only asset IDs, shapes and attachment recipes count here. Step 13 is the largest uncertainty: lighthouse, windmills, caves, Ring Island, mushroom stall, lookout and secrets have not yet been converted.
 
@@ -293,11 +298,13 @@ These are planning ranges, not compiled measurements; steps 11–13 have no fini
 | Rotunda kit (brief estimate) | about 8–12 | about 5 kB |
 | Each further rotunda hub | reuse kit / possibly 0 | about 1.5 kB |
 
-Together, the first three steps plus Round/first rotunda provisionally add **40–84 kB**, leaving **22,348–66,348 bytes**, before further hubs. That fits the present byte ceiling; it is not a promise about unbuilt content. The estimated **59–122 records** would put the catalogue at **252–315**, which is why 320 is the proposed record guard. Re-measure each conversion; if step 13 or the desired kit needs more, raise the ceiling with evidence. No layout, radius or feature should be cut to meet these estimates.
+Together, the first three steps plus Round/first rotunda provisionally add **40–84 kB**, before further hubs.
+The estimated **59–122 records** would put the catalogue at **252–315**. These remain estimates about unbuilt content,
+not limits. Re-measure each conversion and report growth. No layout, radius or feature should be cut to meet these estimates.
 
 ## Verification and limitations
 
-Every existing test and runtime golden is unchanged. A baseline snapshot of all 193 resolved records and all 12 resolved levels compares exactly with the final loader output, with no numeric tolerance. No fixture was regenerated. The authored-operands tripwire, existing native-math portability test and both budget assertions remain unchanged. New pure loader/compiler tests cover reference errors, exact round trips, default-solid omission and the shared visual/collider dimension source; no new UI harness, Git subprocess test or wall-clock assertion was added.
+At consolidation completion, every existing test and runtime golden was unchanged. A baseline snapshot of all 193 resolved records and all 12 resolved levels compares exactly with the final loader output, with no numeric tolerance. No fixture was regenerated. The authored-operands tripwire and existing native-math portability test remain unchanged; the two budget assertions were unchanged by consolidation and are removed by the 14 November follow-up. New pure loader/compiler tests cover reference errors, exact round trips, default-solid omission and the shared visual/collider dimension source; no new UI harness, Git subprocess test or wall-clock assertion was added.
 
 The full check passes: **1,922 active unit tests**, one existing TODO, zero failures; lint, typecheck, registry, level-check, assets, artifact freshness and build pass. Dedicated prefab runs pass **227/227**, including a one-ULP native-math run; pre-import perturbed compiler freshness passes at **193 / 12 / 243,652**. Exact native 0 and ±1 endpoints are preserved by the perturbation, as in step 10b. The unchanged server-suite rerun passes **371/371**. The first CORS-header failure is retained as a transient observation, not attributed to this change.
 
