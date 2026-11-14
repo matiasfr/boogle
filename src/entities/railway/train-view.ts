@@ -4,7 +4,7 @@ import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Platform } from '../../physics/platforms.ts';
-import { carry } from '../../physics/platforms.ts';
+import { aboard, carry } from '../../physics/platforms.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
@@ -850,7 +850,9 @@ export async function createRailwayTrains(
       const w = adapter.read.world(),
         b = me.body;
       if (!line2Trains(w) || !b) return [];
-      const tr = trains.find((t) => carsOf(t).some((c) => c.platform === carry.on));
+      // Standing on a car or sitting in one of its chairs (a sitter is off the deck: carry.seat).
+      const on = aboard();
+      const tr = on && trains.find((t) => carsOf(t).some((c) => c.platform === on));
       if (!tr) return [];
       const k = tr.line;
       // The open stops, not their count: a count reads the railhead at its last head.

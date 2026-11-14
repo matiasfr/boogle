@@ -7,6 +7,7 @@ import { onPreStep, teleport } from '../../physics/engine.ts';
 import { carry, carryVerticalSpeed, fromPlatform, type Local, type Platform } from '../../physics/platforms.ts';
 import { addPresenceField, onPeerRemoved, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { me } from '../../player/player.ts';
+import { setJumpLabel } from '../../player/input.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { pop } from '../../render/fanfare.ts';
 import { flat } from '../../render/flat.ts';
@@ -192,19 +193,37 @@ function standUp(reason = 'stand input') {
   me.body.velocity.set(s.platform ? carry.x : 0, s.platform ? carry.y : 0, s.platform ? carry.z : 0);
 }
 const promptAt = new THREE.Vector3();
-/** The Interact button around chairs, for a view without Place's verbs (the production railway): seated, the press
- * only stands you up; otherwise Sit joins the other targets when none of them acts (far down the pick's order). */
+const STAND = 'Stand up';
+/** The one target that goes with a chair: the train's "Request stop: <halt>" (train-view.ts), offered anywhere aboard. */
+const ABOARD = 'railway-request-aboard';
+/** How near a chair Sit beats Request stop: the chair counts this much nearer than it is (and the pick's nudge
+ * toward where you look adds 0.6 m), so Sit is the press facing a chair within 1.4 m, or beside one within 0.8 m;
+ * anywhere else aboard the press requests the stop. */
+const SIT_EDGE = 0.8;
+/** The Interact button around chairs, for a view without Place's verbs (the production railway).
+ * Seated: jump stands you up (onPreStep below), so Interact is free for the train's Request stop when the train
+ * offers one (owner, 14 November: he couldn't request a stop sitting down); its prompt names both, and once the stop
+ * is requested it stays, greyed, so a second press doesn't stand you up. With nothing to request, the press stands you.
+ * Standing: Sit joins the other targets when none of them acts, and beside Request stop the nearer chair wins. */
 export function withSeatTargets(others: Interactable[]): Interactable[] {
   if (!me.body) return others;
   const p = me.body.interpolatedPosition;
   promptAt.set(p.x, p.y + 1.1, p.z);
-  if (seated())
-    return [{ id: 'place-stand', verb: 'Stand up', at: promptAt, r: 100, fadeAfter: 3, run: () => standUp() }];
-  if (others.some((t) => t.run)) return others;
+  if (seated()) {
+    const ask = others.find((t) => t.id === ABOARD);
+    if (ask) return [{ ...ask, at: promptAt, also: { action: 'jump', verb: STAND } }];
+    return [{ id: 'place-stand', verb: STAND, at: promptAt, r: 100, fadeAfter: 3, run: () => standUp() }];
+  }
+  if (others.some((t) => t.run && t.id !== ABOARD)) return others;
   const seat = freeSeat();
   if (!seat) return others;
-  return [...others, { id: 'place-sit', verb: 'Sit', at: promptAt, r: -100, run: () => sitDown(seat) }];
+  if (!others.some((t) => t.run))
+    return [...others, { id: 'place-sit', verb: 'Sit', at: promptAt, r: -100, run: () => sitDown(seat) }];
+  const w = world(seat);
+  sitAt.set(w.x, w.y + 0.9, w.z);
+  return [...others, { id: 'place-sit', verb: 'Sit', at: sitAt, r: SIT_EDGE, run: () => sitDown(seat) }];
 }
+const sitAt = new THREE.Vector3();
 addPresenceField('placeSeatPose', () => sitting?.id ?? null);
 onRemotePresence((r, pr) => {
   const seated = find(pr.placeSeatPose);
@@ -269,6 +288,8 @@ onFrame(
 );
 onFrame(
   () => {
+    // Seated, jump stands you up: the touch Jump button says so.
+    setJumpLabel(sitting ? STAND : undefined);
     if (sitting && me.avatar) {
       me.avatar.userData.seatedAt = performance.now();
       me.avatar.userData.seatRise = seatRise(sitting);

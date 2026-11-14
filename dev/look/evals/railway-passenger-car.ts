@@ -1,6 +1,6 @@
 // The passenger car's knifeboard (docs/plans/passenger-car-previz.md, Four) in real time, from `--rail-seed trains-on`: walk
-// onto line 2's village halt, board the standing train by a real jump, ask for the quarry, sit by Interact, ride the
-// stretch seated, then at the quarry stand up and walk off. `window.__car` marks each beat for the stills.
+// onto line 2's village halt, board the standing train by a real jump, sit by Interact, ask for the quarry seated, ride the
+// stretch seated, then at the quarry stand up by Jump and walk off. `window.__car` marks each beat for the stills.
 // npm run look -- --rail-seed trains-on --query shot=play --action dev/look/evals/railway-passenger-car.ts \
 //   --real --warm 5 --video --name passenger-car
 // Run as `--action`, so the journey is inside the real-time recording.
@@ -87,12 +87,26 @@ await (async () => {
   }
   check(aboard(), 'boarded line 2 by a real jump');
   mark('boarded');
-  await until(() => interactTarget()?.id === 'railway-request-aboard', 'Request stop offered aboard', 60000);
-  bot.press();
-  await until(() => view().trains[slot]!.stopLamp, 'the engine lamp lights', 30000);
-  mark('requested');
+  // Standing aboard, Sit and Request stop share the Interact button (seat.ts, withSeatTargets): facing a chair close
+  // by it is Sit, turned away it is Request stop. Turn on the spot until each has shown.
+  await until(() => interactTarget(), 'something offered aboard', 60000);
+  const seen = new Set<string>();
+  for (let k = 0; k < 24 && seen.size < 2; k++) {
+    cam.yaw = me.yaw = me.yaw + Math.PI / 6;
+    await bot.wait(150);
+    const id = interactTarget()?.id ?? '';
+    if (!seen.has(id)) console.log(`CAR prompt ${JSON.stringify({ id, verb: interactTarget()?.verb, yaw: me.yaw })}`);
+    seen.add(id);
+  }
+  check(seen.has('place-sit') && seen.has('railway-request-aboard'), 'standing aboard: Sit and Request stop each win');
   // Sit by Interact: the nearest free seat of the knifeboard.
-  await until(() => interactTarget()?.id === 'place-sit', 'Sit offered', 30000);
+  for (let k = 0; k < 24 && interactTarget()?.id !== 'place-sit'; k++) {
+    cam.yaw = me.yaw = me.yaw + Math.PI / 6;
+    await bot.wait(150);
+  }
+  check(interactTarget()?.id === 'place-sit', 'Sit offered facing a chair');
+  mark('near-seat');
+  await bot.wait(700);
   bot.press();
   await until(() => seatState().sitting, 'seated', 10000);
   await until(
@@ -101,6 +115,23 @@ await (async () => {
     10000,
   );
   mark('seated');
+  await until(() => row().phase === 1, 'the train is under way', 120000);
+  await bot.wait(1000);
+  mark('under-way');
+  // Seated, Interact requests the stop (owner, 14 November) and the prompt names Jump's Stand up beside it.
+  await until(
+    () => interactTarget()?.id === 'railway-request-aboard' && interactTarget()?.run && interactTarget()?.also,
+    'Request stop offered seated',
+    60000,
+  );
+  await bot.wait(700);
+  bot.press();
+  await until(() => view().trains[slot]!.stopLamp, 'the engine lamp lights', 30000);
+  await until(() => interactTarget()?.blocked === 'Stop requested', 'the prompt greys once requested', 10000);
+  bot.press();
+  await bot.wait(300);
+  check(seatState().sitting, 'a second press neither asks again nor stands you up');
+  mark('requested');
   // A camera 4 m out in front of the rider, 35 degrees round from straight on, re-aimed each frame so it rides the deck:
   // the rider, their bench and the car's rail read together. The follow camera comes back when they stand up.
   const aim = setInterval(() => {
@@ -114,8 +145,10 @@ await (async () => {
   await until(() => row().phase === 0 && row().at === 1, 'the train halts at the quarry', 300000);
   await bot.wait(1500);
   mark('halted');
-  await until(() => interactTarget()?.id === 'place-stand', 'Stand up offered', 30000);
-  bot.press();
+  // Jump stands you up (the prompt's second chip, the touch Jump button's word).
+  pressJump();
+  await bot.wait(100);
+  releaseJump();
   await until(() => !seatState().sitting, 'stood up', 10000);
   clearInterval(aim);
   window.__debugCam!.clear();
