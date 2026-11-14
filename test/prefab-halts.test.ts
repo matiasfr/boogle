@@ -7,7 +7,6 @@ import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 import * as layout from '../src/place/layout.ts';
 import * as home from '../src/place/home-station.ts';
-import { H } from '../src/place/terrain.ts';
 import { boxAt, place } from '../src/render/box-plan.ts';
 import * as catalog from '../src/sim/railway-lines.ts';
 import * as train from '../src/sim/railway-train.ts';
@@ -64,13 +63,6 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
     owned?.addBody(b);
     return b;
   };
-  const slab = sourceFunction('src/place/land.ts', 'slab', {
-    THREE,
-    GROUP: { SCENERY: 1 },
-    addStatic,
-    tagStepSupport: (b: unknown) => b,
-    segmentStepSupport() {},
-  });
   const flat = (color: string) => new THREE.MeshBasicNodeMaterial({ color });
   const dropSet = (boxes: Box[]) => {
     sets.push(boxes);
@@ -83,9 +75,19 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
     };
   };
   const plaqueText: string[] = [];
-  const leverModule = sourceModule<typeof import('../src/entities/railway/request-lever.ts')>(
-    fs.readFileSync('src/entities/railway/request-lever.ts', 'utf8'),
+  const builders = new Map(names.builders.map((name) => [name, () => new THREE.Group()]));
+  sourceModule(fs.readFileSync('src/prefab/builders/halt-parts.ts', 'utf8'), {
+    registerBuilder: (name: string, build: () => THREE.Group) => builders.set(name, build),
+  });
+  sourceModule(fs.readFileSync('src/prefab/builders/halt-ramp.ts', 'utf8'), {
+    THREE,
+    flat,
+    registerBuilder: (name: string, build: () => THREE.Group) => builders.set(name, build),
+  });
+  const leverModule = sourceModule<typeof import('../src/prefab/builders/halt-lever.ts')>(
+    fs.readFileSync('src/prefab/builders/halt-lever.ts', 'utf8'),
     {
+      registerBuilder: (name: string, build: () => THREE.Group) => builders.set(name, build),
       THREE,
       document: {
         createElement: () => ({
@@ -94,18 +96,10 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
       },
     },
   );
-  const createRequestLever: typeof leverModule.createRequestLever = (...args) => {
-    const lever = leverModule.createRequestLever(...args);
-    levers.push(lever);
-    return lever;
-  };
-  const builders = new Map(names.builders.map((name) => [name, () => new THREE.Group()]));
-  sourceModule(fs.readFileSync('src/prefab/builders/halt-parts.ts', 'utf8'), {
-    registerBuilder: (name: string, build: () => THREE.Group) => builders.set(name, build),
-  });
-  sourceModule(fs.readFileSync('src/prefab/builders/halt-ramp.ts', 'utf8'), {
+  sourceModule(fs.readFileSync('src/prefab/builders/halt-attachment.ts', 'utf8'), {
     THREE,
     flat,
+    roadPlaque: () => ({ mesh: new THREE.Group(), dispose() {} }),
     registerBuilder: (name: string, build: () => THREE.Group) => builders.set(name, build),
   });
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
@@ -121,6 +115,20 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
       staticBody: addStatic,
     },
   );
+  const { createRequestLever: makeLever } = sourceModule<typeof import('../src/entities/railway/request-lever.ts')>(
+    fs.readFileSync('src/entities/railway/request-lever.ts', 'utf8'),
+    {
+      haltKitPlacements: validation.loadLevelArtifact(kitLevel, validation.loadPrefabArtifact(artifact).prefabs)
+        .placements,
+      instantiate: runtime.instantiate,
+      leverControl: leverModule.leverControl,
+    },
+  );
+  const createRequestLever: typeof makeLever = (...args) => {
+    const lever = makeLever(...args);
+    levers.push(lever);
+    return lever;
+  };
   const createHaltKit = sourceFunction('src/entities/railway/halt-kit.ts', 'createHaltKit', {
     createOwnedView,
     Euler: THREE.Euler,
@@ -128,6 +136,10 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
     place,
     tagStepSupport: (b: unknown) => b,
     segmentStepSupport() {},
+    instantiate: runtime.instantiate,
+    placements: validation.loadLevelArtifact(kitLevel, validation.loadPrefabArtifact(artifact).prefabs).placements,
+  });
+  const createHaltAttachment = sourceFunction('src/entities/railway/halt-kit.ts', 'createHaltAttachment', {
     instantiate: runtime.instantiate,
     placements: validation.loadLevelArtifact(kitLevel, validation.loadPrefabArtifact(artifact).prefabs).placements,
   });
@@ -145,9 +157,7 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
     thump() {},
   });
   const dependencies = [
-    { flat },
     { place, box: (x: number, z: number, m: THREE.Matrix4, color: string) => boxAt(x, 0, z, m, color) },
-    { H, addStatic, slab },
     layout,
     { boardMaterial: (m: unknown) => m },
     { dropSet, dustRing() {} },
@@ -159,7 +169,7 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
   const { createRailwayHalts } = sourceModule<typeof import('../src/entities/railway/halts-view.ts')>(
     fs
       .readFileSync('src/entities/railway/halts-view.ts', 'utf8')
-      .replace(/await Promise\.all\(\[[\s\S]*?\]\)/, 'dependencies'),
+      .replace(/await Promise\.all\(\s*\[[\s\S]*?\],?\s*\)/, 'dependencies'),
     {
       THREE,
       dependencies,
@@ -184,6 +194,7 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
       me,
       createUpPlatforms,
       createHaltKit,
+      createHaltAttachment,
       createRequestLever,
       GROUP: { SCENERY: 1 },
       clank() {},
@@ -268,6 +279,14 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
   const actual = JSON.parse(JSON.stringify({ catalogs: catalog.RAIL_HALTS, boxValues, meshes, states }));
   if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual, null, 2) + '\n');
   prefabGolden(actual, JSON.parse(fs.readFileSync(fixture, 'utf8')), 'halts');
+  // Capture actual accepted local request arguments before changing the lever/interaction construction path.
+  for (const p of [...halt.inspect().halts.flatMap((h) => h.lever), ...halt.inspect().ringLevers]) {
+    me.body = { position: new THREE.Vector3(p.x, p.y, p.z) };
+    for (const target of halt.targets()) target.run?.();
+  }
+  const requests = 'test/fixtures/prefab-halt-requests.json';
+  if (process.env.GOLDEN === '1') fs.writeFileSync(requests, JSON.stringify(calls, null, 2) + '\n');
+  assert.deepEqual(calls, JSON.parse(fs.readFileSync(requests, 'utf8')));
   assert.equal(levers.length, 19);
   owner.dispose();
   assert.equal(active.size, 0);

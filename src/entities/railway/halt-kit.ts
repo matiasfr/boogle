@@ -20,7 +20,15 @@ export function createHaltKit(
   frame.root.rotation.y = yaw;
   owner.add(frame.root);
   owner.cleanup(frame.dispose);
-  const selected = placements.filter((p) => p.params?.row === row && p.params.up === up);
+  const selected = placements.filter(
+    (p) =>
+      p.params?.row === row &&
+      p.params.up === up &&
+      p.params.piece !== 'lever' &&
+      p.params.piece !== 'stack-display' &&
+      p.params.piece !== 'signal' &&
+      p.params.piece !== 'road-plaque',
+  );
   const make = (p: Placement) => ({
     piece: p.params!.piece,
     params: p.params!,
@@ -29,12 +37,21 @@ export function createHaltKit(
   // Keep the original scene traversal order: the down ramp meshes follow the signal and lever.
   const instances = selected.filter((p) => up || p.params!.piece !== 'ramp-visual').map(make);
   return {
-    parts: instances.filter((i) => i.piece !== 'ramp-visual').flatMap(({ instance }) => instance.parts),
+    parts: instances
+      .filter((i) => i.piece !== 'ramp-visual' && i.piece !== 'crossing-visual')
+      .flatMap(({ instance }) => instance.parts),
     rampBoxes: instances
       .filter((i) => i.piece === 'ramp-visual')
       .flatMap(({ instance, params }) =>
         instance.parts.map(([, x, y, z, w, h, d, colour, pitch]) =>
           boxAt(x, y - h / 2, z, place(0, 0, 0, w, h, d, params.yaw as number, new Euler(pitch, 0, 0)), colour),
+        ),
+      ),
+    crossingBoxes: instances
+      .filter((i) => i.piece === 'crossing-visual')
+      .flatMap(({ instance, params }) =>
+        instance.parts.map(([, x, y, z, w, h, d, colour]) =>
+          boxAt(x, y - h / 2, z, place(0, 0, 0, w, h, d, params.yaw as number), colour),
         ),
       ),
     createRamps() {
@@ -62,4 +79,13 @@ export function createHaltKit(
       return removed;
     },
   };
+}
+
+/** Attachment and stand construction happens at its original point in the scene/batch traversal. */
+export function createHaltAttachment(owner: OwnedView, id: string) {
+  const p = placements.find((p) => p.id === id);
+  if (!p) throw new Error(`halt attachment: missing placement ${id}`);
+  const instance = instantiate(p.prefab, p, { owner });
+  instance.setEnabled(true);
+  return instance;
 }
