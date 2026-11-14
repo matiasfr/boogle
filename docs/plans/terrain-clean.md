@@ -128,7 +128,7 @@ by construction, so the proof is that heights did not change and that the drawn 
   - Completed: material and numeric helpers moved, tools repointed, all six hashes identical to the pinned
     `origin/main` baseline `22b331dba`. Local `origin/main` is advancing in other sessions; measurements keep this
     original baseline rather than silently changing the comparison target.
-- [ ] **2. The land draws its own grid.**
+- [x] **2. The land draws its own grid.**
   - `src/place/land.ts`: replace `applyHomePass(geo, mainEnd, inCove)` with a local `addGroundLayers(geo)` that packs
     `steep, foot, soil, gorge` for every existing vertex (grid vertices from `describeGround(cellX(i), cellZ(j))`, the
     cove patch's vertices described where they stand, offshore rings `0, 1, 1, 0`, `gorge` as `home.ts` computes it
@@ -138,8 +138,16 @@ by construction, so the proof is that heights did not change and that the drawn 
     `far-ground-index.ts` only it used); `test/far-ground-index.test.ts` stays green.
   - Delete `src/proto/terrain-pass/` (tag the parent commit `archive/terrain-pass-wedge` first, local tag, pushed with
     the ship), `test/terrain-pass-island.test.ts`, and `dev/terrain-pass/`.
-  - Verify: `node dev/ship-check.ts`; heights hash equal; `grep -r "terrain-pass\|terrainCap\|NearGround" src dev test`
-    finds nothing.
+  - Verify: `node dev/ship-check.ts`; heights hash equal. The search for `terrain-pass`, `terrainCap` and
+    `NearGround` under src, dev and test must find no runtime import, flag, call or test of the removed ledge code.
+    Documentation/plan references and comments linking to plan history are allowed. Comments pointing to removed
+    source files must be updated or deleted; the `GRADED` comment is removed in step 3.
+  - **Owner-authorized departure:** the zero-match requirement above is for live code, not retained history.
+    Step 2 passes ship-check, registry and the full check; hashes match and normalized level-check diff is empty.
+    The local archive tag names `5baaad151`, immediately before deletion.
+  - **Accepted visible difference:** the lower gorge wall has broader, more continuous green patches without
+    the ledges (cameras 2 and 9). The implementing agent opened all four matched before/after views; the orchestrator
+    also opened camera 9 before/after and agrees the wall reads the same. Warm rock bands and large facets remain.
 - [ ] **3. Remove `GRADED` from `src/place/terrain.ts`** (the constant and three `push` lines; nothing else). Its own
   small commit, last, because four branches in flight touch this file. Verify: heights hash equal; `npm run level-check`
   diff empty.
@@ -149,11 +157,15 @@ by construction, so the proof is that heights did not change and that the drawn 
   the 10 November "density only where it's steep" line. `dev/decisions/topics.ts`: `'plans/terrain-clean.md': 'look'`.
   Verify: `npm run decisions`.
 
-**Checkpoint A (end of Part 1), four proofs, run once:** the level-check diff; the census; one bench run
-(`npm run bench -- --no-load --poses spawn,town,far,bay`, counts exact, times reported with the load they were taken
-under); one proof look, `dev/ground/paths-shots.ts` cameras 0, 2, 9 and 5 beside the owner's stills in
+**Checkpoint A (end of Part 1), four proofs:** the level-check diff; the census; matched brokered perf render counts
+(draw calls, shadow calls and triangles at the same camera poses before/after); one proof look,
+`dev/ground/paths-shots.ts` cameras 0, 2, 9 and 5 beside the owner's stills in
 `/Users/matiasfranco/Developer/boogle/.look/owner/terrain-pass-1114/`, opened by the visual reviewer, who names any
-wall that reads worse without ledges. One ship for steps 1 to 4.
+wall that reads worse without ledges. **Owner-authorized departure:** brokered render counts replace the requested
+bench because this broker has no bench operation; no frame timing is measured for this comparison, and no direct
+Chromium bypass is allowed. The matched cove camera is (809, 3, 49), looking at (760, 0, 15), FOV 62, 960 × 600,
+fixed DPR 1, MSAA 4. Baseline/after: 266/266 draws, 178/178 shadow draws, 652,455/649,905 frame triangles.
+No push or ship in this job; the owner requested local commits only.
 
 ## Part 2: geometry clean-up, walkable ground first
 

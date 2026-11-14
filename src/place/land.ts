@@ -39,13 +39,8 @@ import { dressCoveGround } from './cove-ground.ts';
 import { addFarGround } from './far-ground.ts';
 import { setFarHills } from './far-hills.ts';
 import { applyPathSurface } from './path-surface.ts';
-import {
-  applyHomePass,
-  applyTerrainPass,
-  homePassOn,
-  roundTwoMaterial,
-  wedgeDraws,
-} from '../proto/terrain-pass/index.ts';
+import { describeGround } from './ground-layers.ts';
+import { homeGroundMaterial } from './ground-material.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -81,6 +76,27 @@ function macroSlopeY(x: number, z: number) {
     dz += weight * (soilHeight(x + offset, z + 3) - soilHeight(x + offset, z - 3));
   }
   return 1 / Math.hypot(1, dx / 24, dz / 24);
+}
+
+/** Pack the material inputs on the existing grid, cove patch and offshore rings; never rewrite geometry. */
+function addGroundLayers(geo: THREE.BufferGeometry) {
+  const position = geo.getAttribute('position');
+  const count = position.count;
+  const layers = {
+    steep: new Float32Array(count),
+    foot: new Float32Array(count).fill(1),
+    soil: new Float32Array(count).fill(1),
+  };
+  const packed = new Float32Array(count * 4);
+  for (let k = 0; k < count; k++) {
+    const x = k < NX * NZ ? cellX(k % NX) : position.getX(k) - ORIGIN.x;
+    const z = k < NX * NZ ? cellZ(Math.floor(k / NX)) : position.getZ(k) - ORIGIN.z;
+    const inside = x >= GRID.x0 && x <= GRID.x1 && z >= GRID.z0 && z <= GRID.z1;
+    if (inside) describeGround(x, z, k, layers);
+    const gorge = inside ? smoothstep(20, 16, gorgeD(x, z)) : 0;
+    packed.set([layers.steep[k]!, layers.foot[k]!, layers.soil[k]!, gorge], k * 4);
+  }
+  geo.setAttribute('groundLayers', new THREE.BufferAttribute(packed, 4));
 }
 
 function buildMesh(owner: OwnedView) {
@@ -242,13 +258,13 @@ function buildMesh(owner: OwnedView) {
   geo.setAttribute('coveCapJoin', new THREE.BufferAttribute(capJoin, 2));
   const inCove = (i: number, j: number) =>
     cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
-  // The terrain pass on all of Home (docs/plans/terrain-pass.md): 1 m ledges on unwalkable cells, in this same
-  // geometry, and round two's material. The collider below never sees it. `?terrain=0` is the land before it.
-  const pass = LOOK.ground && homePassOn ? applyHomePass(geo, mainEnd, inCove) : null;
+  // Material layers on the collider's own triangles. `?terrain=0` keeps the earlier ground material.
+  const layered = LOOK.ground && new URLSearchParams(location.search).get('terrain') !== '0';
+  if (layered) addGroundLayers(geo);
   const mesh = new THREE.Mesh(
     geo,
-    pass
-      ? roundTwoMaterial(true)
+    layered
+      ? homeGroundMaterial()
       : LOOK.ground
         ? groundMaterial()
         : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
@@ -265,9 +281,7 @@ function buildMesh(owner: OwnedView) {
   owner.cleanup(() => mesh.material.dispose());
   mesh.frustumCulled = false;
   owner.add(mesh);
-  // The far tiles leave out what the terrain pass's wedge draws itself, as they do the cove's patch.
-  addFarGround(mesh, NX, NZ, pass?.mainEnd ?? mainEnd, (i, j) => inCove(i, j) || wedgeDraws(i, j), owner, pass?.near);
-  applyTerrainPass(mesh, owner); // ?terrain=wedge|a|b|ab: the earlier rounds on one wedge, for comparison
+  addFarGround(mesh, NX, NZ, mainEnd, inCove, owner);
 
   for (const tile of terrainCollisionTiles()) {
     const groundBody = addStatic(
