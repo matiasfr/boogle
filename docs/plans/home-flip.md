@@ -75,11 +75,11 @@ Each is one sitting, leaves `node dev/ship-check.ts` green and main playable. Ru
   - `src/place/folk.ts`: `WANDER` moves onto the ring road and the green (`slotPoint(b, 17)` at 45° steps, and G ± 6 m).
   - `test/town-plan.test.ts`, new cases: "the ground under the Round is level" (within 0.05 m of 18 at every footprint corner and 3 m apron, on the ring road, and on the dock street to r 36; the hall's apron, bearings 60° to 100° beyond r 18, may rise 0.25 m); "the tree table is main's" (`LAND_TREES.length` 362, no trunk within 46 m of G); "no footprint corner is within 2.4 m of a road's centre line" (both path heads and the dock street); "the quarry path's bridge still spans the river" (`pts[bridgeAt]` is (−36.5, 112.4)).
   - Verify: that test, `test/railway.test.ts` (the tree pin: if it fails, shrink the pad, do not bump), `test/curio-layout.test.ts`; `npm run level-check -- --place=place` exits 0. **Look:** from the top of the dock street (−150.7, 33.1) at eye height toward 70°: the street, the gate cottage on the left, the ring, the hall. **Sheet:** the gate cottage, the `yard` find, both path heads, the dock street and the ring read "as built = plan"; no ground cell inside r 38 is off 18 m except the hall's apron.
-- [ ] **B2. Rooms, the balcony and the bay move, as they are. View-only data; normal review. Builds: Codex, gpt-6.1-sol medium.**
+- [ ] **B2. Rooms and the balcony move, as they are. View-only data; normal review. Builds: Codex, gpt-6.1-sol medium.**
   - `src/place/layout.ts`: `ROOM_PLOTS.house`, `.shop` and `.museum` become `{ ...townBuilding(id), high }` (3.7, 3.9, 5 kept). The real shells, interiors, residents and plot boards go with them (they are in each room's own frame).
   - `src/place/tech-layout.ts`: the `balcony` pad and secret at `TOWN_PROPS.balcony` (−119.20, 53.49), top 24.4 kept.
-  - `src/place/home-station.ts`: `FINDERS_B` becomes `{ ...axisPoint(HALL.a − 2.77, HALL.c + 10.45), yaw: SHELF_B.yaw }` ((−89.19, 21.80), facing 250°); `town-plan.ts`'s `TOWN_PROPS.bay` reads it (one source). The boxes and the plinth follow through `bayPoint`.
-  - Tests: `test/curio-layout.test.ts:54-55` (the bay's yaw is the shelf's, its place (−89.19, 21.80), 1 m off the hall's south wall; the plinth is within 1.5 m of the ring road's outer edge, which replaces "near the quarry road"); `test/prefab-furnishing.test.ts:636` ("town rooms retain old shells…" reads `ROOM_PLOTS` as a literal: give it the evaluated table; it is the one test that failed in the trial); `test/town-plan.test.ts` gains "what stands is where the plan puts it" (the three rooms, the balcony, the bay, the gate cottage).
+  - **Bay move already built on main, #1778 (14 November). Do not move it again.** `FINDERS_B` is at (−87.86, 21.31), 1.42 m behind the original plan along the hall's axis; the shelf stands beside it at (−85.74, 27.14), both facing 250°. `TOWN_PROPS.bay/shelf` read these frames and expose their drawn-crown footprints. The boxes followed the bay; the plinth stays at (−94.17, 23.61), through `PLINTH_OUT = 6.72`. See [town-layout's amendment](town-layout.md#what-stands-and-when).
+  - Tests: retain `test/curio-layout.test.ts` and the drawn-crown assertions in `test/town-plan.test.ts` (shelf to plot 3 at least 1.1 m); add "what stands is where the plan puts it" for the three moved rooms and balcony. B1 already fixed `test/prefab-furnishing.test.ts` to import the evaluated `ROOM_PLOTS` table honestly. Gate cottage and bay/shelf are already at their plan poses.
   - `docs/game-design/place.md` (the town's section) for B1 and B2 together.
   - Verify: those tests; `npm run level-check -- --place=place` exits 0 with "the balcony: 147 m away, budget 187 m". **Look:** from above G, about 70 m up, north at the top. **Sheet:** Pip's house, Fine Prices, the museum, the balcony pad and the bay read "as built = plan"; every wall-to-wall gap under 4 m is printed and none is under 2.4 m.
 - [ ] **B3. The blocks: eight plots, their door sides, the clock's footing. Player-visible; normal review. Builds: implementer agent, fable medium.**
@@ -123,7 +123,7 @@ Planner, 14 November 2026. Replaces R2 and R3. Plan only: the positions were app
 | The ring road | Path paint on the ground, 14 to 20 m from G | B1 |
 | The dock street | Path paint, 8 m wide, levelled at 18 m from r 38 to r 20 | B1 |
 | The camp and quarry roads | Today's paths, their heads moved to the ring's mouths at 40° and 130° | B1 |
-| The finders' bay | As it is, moved beside the hall's south end, (−89.19, 21.80), facing 250° | B2 |
+| The finders' bay and curio shelf | Already built on main (#1778): bay (−87.86, 21.31), shelf (−85.74, 27.14), facing 250°; drawn crowns are the footprint authority | Built before B1 |
 
 Block heights are the kits' eaves, so what can be climbed is what the real building will allow. Roads and the green are paint on the terrain's path mask: no mesh, no collider, no record.
 
@@ -143,16 +143,27 @@ Reshaping, in B1: one level pad at G (r 38, 8 m soft edge, 18 m), a pad under ea
 
 ### What moves with gameplay attached
 
+**B1 reconciliation after #1778 (14 November).** The bay and shelf are already built at their amended Round poses; B2 moves neither. This replaces the earlier bay-position estimates in the dated trial findings and design review below. B1 leaves `FINDERS_B`, `SHELF_B` and their drawn-crown footprint data unchanged. Minimum horizontal clearances, from the actual crown edges (ring outer edge r20, dock street's 8 m edge, bowl bank edge r14):
+
+| Crown | Ring road | Dock street | Plot 3 | Bowl edge | Ground under centre/corners |
+| --- | --- | --- | --- | --- | --- |
+| Bay | 5.622 m | 41.128 m | 5.011 m | 11.622 m | 18.000–18.210 m; its hall end sits in the existing rise |
+| Shelf | 8.070 m | 42.561 m | 1.149 m | 14.070 m | 18.000 m |
+
+The shelf-to-plot-3 assertion retains its 1.1 m minimum. The hall/rail apron reaches inward to about r17, not only beyond r18 as estimated; B1 retains its 0.22 m rise and tests that measured exception. The later shore grading preserves the r38 pad, rather than cutting four west-edge cells back down. The sheet now shows both crowns in the built and planned layers, baked height/paint cells, trees and the `yard` find; only the still-unmoved rooms have movement arrows.
+
+**Future rotunda: no B1 ground conflict.** [roundhouse-rotunda](roundhouse-rotunda.md#design) proposes a 25 m outer-radius arc at (−55.445, 19.178), bearings 120°–260°. Its nearest point is 35.111 m from G: 21.111 m clear of the bowl and 15.111 m clear of the ring. The planned 7.5 m gap from its back wall to plot 3 is unchanged. B1's level pad is compatible with the future 18 m arc pad; the proposed arc still spans ground about 17.848–18.652 m and needs its own grading and pit. No rotunda geometry, terrain or rules are built by B1.
+
 | Thing | How it survives |
 | --- | --- |
 | The `yard` find | Moves behind the gate cottage to (−145.44, 14.71), 30.5 m from G, ground 18.00. Found before any ability, as today. B1; `railway-finds.ts` at B4 |
 | The balcony pad and its find | Stay in the shop's frame: (−119.20, 53.49), top 24.4. The level check: 147 m from the summit, budget 187 m; out of reach without the glider by terrain. B2 |
 | The roof hop to the balcony (0b, a) | Closes in B1: the cottage it starts from is removed, and the shop moves 21 m from the nearest cottage in B2 |
-| The hall's roof from the bay (0b, c) | Opens in B2, as ruled on 10 November ("leave it"): a perch, a way down on every side |
+| The hall's roof from the bay (0b, c) | Bay already moved on main (#1778); B4 re-probes the paired bay/shelf at the 1.42 m setback: a perch, a way down on every side |
 | The double-jump course | Untouched. Its nearest pad, j7 at (−94.5, −36.8), 8.4 m up, is 14.8 m from plot 7's block; nothing stands north of z −30 |
 | Spawn | Unchanged: (−97, 14), yaw −0.62, in front of the hall, 19.0 m from G on the ring road's outer edge. The bold camp path now starts 9.9 m away at the 40° mouth; the ring road's paint runs under spawn to it |
 | The first-run landing and the walk in | `SHORE_LANDING` unchanged; the shore path ends as the dock street at the ring instead of bending between cottages |
-| The finders' bay, its boxes and plinth | Move together through `bayPoint`; the plinth is 1.1 m off the ring road's outer edge. B2 |
+| The finders' bay, its boxes and plinth | Already moved on main (#1778) through `bayPoint`; the setback bay keeps the plinth's old Round position with `PLINTH_OUT = 6.72`. B2 leaves all of them in place |
 | Trees | All 362 kept, same ids (above) |
 | Little guys | One door (the gate cottage); they wander the ring road and the green. B1 |
 | A saved pose inside a new footprint | Refused by the pose policy: `ROOM_PLOTS` for rooms, the collider sweep for blocks and the cottage; the player returns at spawn |
@@ -194,7 +205,7 @@ After B4 and the owner's walk, each construction is its own commit: its row leav
 - **Hotspots:** `src/place/layout.ts`, `terrain.ts` and `tech-layout.ts` are read by the railway views, the level tools, the bots and the pages; B1 and B2 are one short branch each, in order. `npm run inflight` (14 November) names no branch on those files (its file lists are cut short, so check again before B1). In flight beside this: R1 on `src/entities/town/rooms.ts` (B3 edits `view.ts` and adds a file, not `rooms.ts`), `codex/town-plan-sheet`, `codex/prefab-data-step-10b`.
 - **The catalogue's byte ceiling.** 15.4 kB are free on main and 2.9 kB after step 10b; the blockout level is about 3 kB. The ceiling is a test constant; raising it is the orchestrator's ruling, not a reason to drop blocks.
 - **Mixed builds:** two tabs on different builds stand on different ground and see different buildings until they reload. Accepted in development; no compatibility code.
-- **Between B1 and B2** Pip's house and the bay stand on the green and Fine Prices on the ring road's inner edge (about 3 m of road stays clear). A day's oddity on the live game; nothing is blocked.
+- **Between B1 and B2** Pip's house stands on the green and Fine Prices on the ring road's inner edge (about 3 m of road stays clear). The bay and shelf already stand together beside the hall (#1778), outside the bowl and ring. A day's oddity on the live game; nothing is blocked.
 - **Performance:** three cottages fewer (164 boxes), 25 instanced boxes more in one batch, no light; `npm run perf` once at B4, reported.
 
 ### Calls for the designer (blockout)
