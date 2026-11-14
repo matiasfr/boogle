@@ -14,6 +14,8 @@ import { kitMaterial } from '../railway/seat.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { instantiate, workshopChair } from '../../prefab/instantiate.ts';
 import { workshopKit } from './workshop-kit.ts';
+import { fireboxParts, makeForgeFire } from './workshop-fire.ts';
+import { merged } from '../../render/part-geometry.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Plan } from '../../place/building-plans.ts';
 import type { DropSet } from '../../place/pieces.ts';
@@ -47,13 +49,17 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   box(0, 0.6, hd - 1.65, 3.3, 1.2, 0.16, '#536567');
   box(-1.65, 0.6, hd - 0.85, 0.16, 1.2, 1.6, '#536567');
   box(1.65, 0.6, hd - 0.85, 0.16, 1.2, 1.6, '#536567');
-  box(0, 1, hd - 0.85, 2.8, 1.8, 0.65, '#854a39');
-  const fire = box(0, 1.15, hd - 1.2, 2.1, 0.8, 0.04, '#ff9a38', false);
-  fire.material = readableGlow(
+  // The firebox: the same solid, drawn as brick round a real sooty recess with a hood and flue; the flames, coals,
+  // sparks and light in it are the fire's own (workshop-fire.ts).
+  solidSpecs.push({ x: 0, y: 1, z: hd - 0.85, w: 2.8, h: 1.8, d: 0.65, room: false });
+  const firebox = new THREE.Mesh(merged(fireboxParts(hd - 0.85)), kitMaterial);
+  firebox.castShadow = firebox.receiveShadow = true;
+  g.add(firebox);
+  const flames = makeForgeFire(g, hd - 0.85, g.position);
+  const glass = readableGlow(
     new THREE.MeshStandardNodeMaterial({ color: '#7a310c', emissive: '#ff5a0a', emissiveIntensity: 0.8 }),
   );
-  // Furnishing: one merged mesh (the floor, bench, anvil, logs, rails...) and one for the lanterns' glass; the glass
-  // shares the furnace mouth's material, so neither adds a shader program.
+  // Furnishing: one merged mesh (the floor, bench, anvil, logs, rails...) and one for the lanterns' glass.
   const kitOwner = createOwnedView();
   g.add(kitOwner.root);
   const kit = workshopKit(hw, hd, kitOwner);
@@ -62,7 +68,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   g.add(furnishing);
   const panes = new THREE.Mesh(
     mergeGeometries(kit.glass.map((p) => new THREE.BoxGeometry(0.22, 0.28, 0.22).translate(p.x, p.y, p.z)))!,
-    fire.material,
+    glass,
   );
   g.add(panes);
   const chairIndex = solidSpecs.length;
@@ -107,6 +113,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
     dispose() {
       kitOwner.dispose();
       chairOwner.dispose();
+      flames.dispose();
       const i = camConstraints.indexOf(constraint);
       if (i >= 0) camConstraints.splice(i, 1);
       for (const b of bodies) bodyOwner.removeBody(b);
@@ -116,6 +123,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
       g.traverse((o) => {
         if (o instanceof THREE.Mesh) o.geometry.dispose();
       });
+      glass.dispose();
       proxy.mesh.removeFromParent();
       proxy.mesh.geometry.dispose();
       (proxy.mesh.material as THREE.Material).dispose();
@@ -155,6 +163,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
       const inBounds = !!p && p.y < y + high && Math.abs(p.x - x) < hw && Math.abs(p.z - z) < hd + ROOM_CAM.enter;
       const atDoor = !!p && Math.abs(p.x - x - door.x) < door.w / 2 + 0.5 && p.z < z + hd + ROOM_CAM.enter;
       inside = open && inBounds && (inside || atDoor || p!.z < z + hd);
+      flames.update(dt, open, inside);
       if (!open) {
         hidden.fill(0);
         proxy.mesh.visible = false;

@@ -172,6 +172,10 @@ export function captureWorkshop() {
       seatMesh: () => chair,
       workshopKit,
       mergeGeometries,
+      merged,
+      // The fire is cosmetic (flames, sparks, light): its drawn firebox adds no collider or seat.
+      fireboxParts: () => [['b', 0, 0, 0, 1, 1, 1, '#ffffff']],
+      makeForgeFire: () => ({ update() {}, dispose() {} }),
     },
   );
   const view = makeWorkshop(
