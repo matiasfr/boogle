@@ -1,6 +1,6 @@
 # Terrain clean: no cliff ledges, clean walkable ground, then custom meshes
 
-_Plan, 14 November 2026. Not approved, not started. Measured on main at `b2157fb6b`; every still was taken under load
+_Plan, 14 November 2026. Part 1 approved, in progress; Parts 2 and 3 not started. Original survey measured on main at `b2157fb6b`; every still was taken under load
 (1-minute load 16 to 34), so stills are evidence of shape and colour only, not of timing, shimmer or motion. Not tested
 on a device._
 
@@ -90,11 +90,33 @@ by construction, so the proof is that heights did not change and that the drawn 
 3. **Census of static bodies against drawn ground**, in the running game, at the checkpoint:
    `npm run look -- --eval dev/ground/census.ts --query dev=1` (moved from `dev/terrain-pass/census.ts`). On 14
    November it found 805 static bodies, 607 with their base on the terrain, none more than 5 cm off. After Part 1 its
-   `TERRAIN_CENSUS` line must report a worst gap of 0 to float precision; any non-zero gap is a defect.
+   `TERRAIN_CENSUS` line preserves the body report and adds unrounded footing and walkable-grid worst gaps, their
+   locations and counts over 1 cm. Per the owner's follow-up, the worst after removal must be no larger than before;
+   where the contact cap used to apply the drawn surface should equal the collider to float precision.
 4. **Counts.** The page's ground triangle count is 241,836 and the `TERRAIN_PASS` console line is gone.
 
 ### Steps
 
+- [x] **0. Independent drawn-ground proof (owner-authorized departure, 14 November).**
+  `dev/ground/drawn.ts` reads the actual built render mesh's position and index buffers, transformed into world
+  coordinates, plus both rendered cove kit meshes. It never imports or reconstructs the ledge recipe. The census
+  requires `graphics=farGround:false` and asserts that the sampled full-resolution Home mesh is visible: distant
+  simplified LOD is deliberately outside this contact proof. Collider heights come independently from the actual
+  `terrainCollisionTiles()` heightfield arrays (including their closed boundary), composed with the cove kit's shared
+  collider triangle query. `surfaceHeight` was trialled but uses an outside fallback at the grid's outermost edge.
+  The tool samples terrain-grounded static shapes' projected footings and 1 m around them at 0.5 m spacing, plus a
+  regular 0.5 m lattice over Home's walkable surface. No gap floor or rounding hides discrepancies; reports retain
+  `bodies`, `shapes`, `grounded`, `misses` and `worst`, with `footing`, `grid`, triangle and vertex counts added.
+  Baseline game source is exactly local `origin/main` `22b331dba` (`git diff origin/main -- src` empty): 805 bodies,
+  2,018 shapes, 612 terrain-grounded; 97,399 footing samples, worst **0.000001787839970290861 m** at world
+  (961.0125037718327, -219.1128101434796), none over 1 cm. Grid: 1,633,313 samples, worst
+  **0.25000011920928955 m** at (899, -177), 41 over 1 cm. Ground: 263,550 triangles, 134,980 vertices.
+  The grounded count differs from the old 607 because this reference includes the physical cove kit.
+  Baseline census evidence: `.look/evidence/1794681188591-58295/evidence.json`; load 20.57 to 17.69.
+  Four before stills (cameras 0, 2, 9, 5) opened; loads 14.28 to 27.81. Baseline cove render: 266 calls,
+  178 shadow calls, 652,455 frame triangles (`.look/evidence/1794681305151-60481/evidence.json`).
+  `node dev/ship-check.ts`: pass. Heights and five collision-tile hashes saved before any ground changes;
+  baseline level-check passes with 5,266 placements, zero problems and 13 reports.
 - [ ] **1. Move what stays to `src/place/`, no behaviour change.**
   - Create `src/place/ground-layers.ts` (pure, no three.js) with `colliderHeight`, `colliderNy`, `vertexNy`,
     `steepness`, `describeGround` and `STRATA`, moved verbatim from `src/proto/terrain-pass/surface.ts`.
