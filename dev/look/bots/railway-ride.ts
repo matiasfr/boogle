@@ -32,6 +32,17 @@ export function line2Rides(bot: Bot) {
     const p = me.body!.position;
     cam.yaw = me.yaw = Math.atan2(-(x - p.x), -(z - p.z));
   };
+  // Boarding faces the bench. Sit can win Interact there (seat.ts); look away as a rider would before pulling
+  // the bell cord. Only press once the game's actual request prompt wins, never the competing chair or lever.
+  let turnedAt = -Infinity;
+  const requestPrompt = () => {
+    const target = interactTarget();
+    if (target?.id === 'place-sit' && performance.now() - turnedAt >= 150) {
+      cam.yaw = me.yaw = me.yaw + Math.PI / 6;
+      turnedAt = performance.now();
+    }
+    return target?.id === 'railway-request-aboard' ? target : null;
+  };
 
   /** Request a line-2 train at `haltId` by its lever, the handle the way to `destination`, board it by a real jump,
    * ask for a middle `destination` aboard ("Request stop: <halt>"), ride there. The Pier and the Works' halts are in
@@ -45,6 +56,10 @@ export function line2Rides(bot: Bot) {
         stop: halt().stop,
         stands: () => halt().up,
         handle: (dir) => halt().lever.find((h) => h.on && h.dir === dir),
+        // The lever now stands at the leaving end. Finish the planned approach onto its platform before use's
+        // short, unplanned reach-in; stopping 3 m away can leave the rider below the platform's side wall.
+        before: async (handle) =>
+          check(await bot.walk(handle.x, handle.z, 0.6), `walked onto ${halt().name}'s lever platform`),
         calling: () => halt().calling,
         wait: halt(),
       },
@@ -121,11 +136,7 @@ export function line2Rides(bot: Bot) {
     const to = view().halts.find((h) => h.line === 1 && h.stop === destination);
     if (to && to.lever.filter((h) => h.on).length === 2) {
       // A middle halt stops only on request: ask aboard.
-      await until(
-        () => interactTarget()?.id === 'railway-request-aboard',
-        `"Request stop: ${to.name}" offered aboard`,
-        20000,
-      );
+      await until(() => requestPrompt(), `"Request stop: ${to.name}" offered aboard`, 20000);
       check(interactTarget()?.verb === `Request stop: ${to.name}`, `the prompt names ${to.name}`);
       if (interactTarget()?.run) bot.press();
       await until(() => row().to === destination || row().at === destination, `the train will stop at ${to.name}`);
@@ -135,8 +146,8 @@ export function line2Rides(bot: Bot) {
     const asked = new Set<string>();
     await until(() => {
       check(aboard() && !me.swimming, 'rider stays aboard the line-2 train');
-      const ask = interactTarget();
-      if (opts.askEach && ask?.id === 'railway-request-aboard' && ask.run && !ask.blocked && !asked.has(ask.verb)) {
+      const ask = opts.askEach ? requestPrompt() : null;
+      if (ask?.run && !ask.blocked && !asked.has(ask.verb)) {
         asked.add(ask.verb);
         bot.press();
       }
@@ -166,12 +177,14 @@ export function line2Rides(bot: Bot) {
     const arrival = view().halts[arrivalId]!;
     const up = view().upPlatforms.find((u) => u.pair === arrivalId);
     if (up && row().track === 0) {
-      check(await bot.straight(up.x, up.z, 0.5, 12000), `stepped off onto the ${arrival.name} up platform`);
+      // A straight walk can leave the car below the platform lip; hop onto the deck with the same real inputs
+      // used to leave a car at the later halts.
+      await hopTo(up.x, up.z, `stepped off onto the ${arrival.name} up platform`, 12000, 0.5);
       await until(() => !aboard() && me.coyote > 0, 'off the train, on the up platform', 10000);
       for (const [i, p] of up.path.entries())
         check(await bot.straight(p.x, p.z, 0.5, 12000), `${arrival.name} plank crossing, step ${i + 1}`);
     }
-    check(await bot.straight(arrival.x, arrival.z, 0.5, 12000), `stepped across to the ${arrival.name} halt`);
+    await hopTo(arrival.x, arrival.z, `stepped across to the ${arrival.name} halt`, 12000, 0.5);
     await until(() => !aboard() && me.coyote > 0, 'stepped off the train onto the halt', 10000);
     return { slot, row, train, aboard };
   };
