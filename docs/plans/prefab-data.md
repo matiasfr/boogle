@@ -452,3 +452,11 @@ checker. Authored numbers remain lossless; no quantization. All runtime prefab g
 with exact structure, strings, flags, order, counts and topology. A significant-digit artifact tripwire and native-math
 perturbation freshness test prevent recurrence. This supersedes earlier runtime byte-equality claims.
 See [diagnosis, construction proof, checks and opened stills](prefab-data-step-7-portability.md).
+
+### Step 7 rebase with step 8
+
+Rebased onto main's moving-seat records and Boogler step 5. Retained both moving-parent seat fields and step 7's
+compound label/batch support; regenerated the conflicted JSON from both record sets. Step 8 now stores authored
+seat headings in degrees and resolves radians through the validated prefab loader. Both main seat fixtures remain
+byte-identical (31 ids); runtime poses use tight numeric tolerance. Debt only shrinks. See
+[merge, conversion, checks and newly opened seat/leg images](prefab-data-step-7-rebase4.md).
