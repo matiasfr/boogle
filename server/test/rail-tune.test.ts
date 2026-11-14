@@ -75,7 +75,7 @@ test('rail tune: two mirrors, late join, stale revision and wrong controller', a
   assert.equal(a.refused.at(-1)?.reason, 'refused');
   assert.equal(b.refused.at(-1)?.reason, 'refused');
   assert.equal(f.host.rules.railTune.get('railRegrowMinutes'), 44);
-  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway']);
+  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway', 'boogler']);
   assert.equal(Object.hasOwn(f.host.sync.snapshot().data, 'tune'), false, 'haul state is retired');
 });
 

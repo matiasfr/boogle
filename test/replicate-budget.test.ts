@@ -9,9 +9,56 @@ import { defineReplicated, cellOf, cellsNear, type EntityId, type Fields } from 
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createMirror, createPredictor } from '../src/world/replicate-client.ts';
 import { budgetWarning, hardLimitFailure, measureWithinBudget } from './helpers/budget.ts';
+import { createBooglerShadow } from '../src/world/boogler-shadow.ts';
+import { projectBoogler } from '../src/world/boogler-replicate.ts';
+import { loadBooglerLand } from '../server/src/host/land.ts';
 
 const N = 3000;
 const CLIENTS = 6;
+
+test('Boogler leg packets per minute: empty, quiet wandering, and busy talk/ride/wary', () => {
+  for (const activity of ['empty', 'wander', 'busy']) {
+    const brain = createBooglerShadow(loadBooglerLand(), mulberry32(123), 0);
+    const rep = createReplicator();
+    const project = projectBoogler(rep, brain.leg);
+    rep.addClient('observer');
+    project();
+    rep.commit(0);
+    rep.flush(0, () => {}); // exclude the initial whole-state packet
+    let packets = 0,
+      bytes = 0,
+      changes = 0;
+    for (let tick = 1; tick <= 600; tick++) {
+      const s = brain.snapshot();
+      const phase = Math.floor(tick / 20) % 4;
+      if (activity !== 'empty')
+        brain.step(
+          tick,
+          activity === 'busy'
+            ? [
+                {
+                  pid: 'friend',
+                  x: s.x + (phase === 1 ? 0 : 2),
+                  z: s.z,
+                  act: phase === 0 ? 1 : phase === 1 ? 2 : 0,
+                  wary: phase === 2,
+                },
+              ]
+            : [],
+        );
+      project();
+      rep.commit(tick * 6);
+      rep.flush(tick * 6, (_cid, packet, json) => {
+        packets++;
+        bytes += Buffer.byteLength(json);
+        if (JSON.stringify(packet).includes('booglerLeg')) changes++;
+      });
+    }
+    console.log('BOOGLER_PACKETS', JSON.stringify({ activity, seconds: 60, clients: 1, packets, bytes, changes }));
+    assert.ok(changes < 120, 'legs change on decisions, not every 10 Hz tick');
+    if (activity === 'empty') assert.equal(changes, 0);
+  }
+});
 const thing = defineReplicated('thing', { x: 'i32', z: 'i32', left: 'u8', work: 'u8', fell: 'bool', yaw: 'q16' });
 type Thing = { x: number; z: number; left: number; work: number; fell: boolean; yaw: number };
 

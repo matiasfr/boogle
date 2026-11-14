@@ -349,7 +349,7 @@ test('production admits rail tune and roster commands with only server states re
   for (const op of ['tune.set', 'tune.commit', 'who.set']) {
     assert.equal(f.host.ops.has(op), true);
   }
-  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway']);
+  assert.deepEqual(f.host.sync.registry().states, ['roster', 'railTune', 'railway', 'boogler']);
   f.edit(1, { op: 'who.set', n: '' });
   assert.deepEqual(f.flush().rej, [[1, 1, 'refused']]);
   assert.equal(f.applies(), 0);

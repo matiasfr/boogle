@@ -87,7 +87,8 @@
 // checkpoints replace the classic recovery tail. Rail tune row ids now start at zero; no migration.
 // v41 (2026-11-13): transient Server seat rows replace the lead's placeSeatGrants and placeSeatRequest presence;
 // placeSeatPose stays Owner. No migration.
-export const WORLD_NS = 'v41';
+// v42 (2026-11-13): The Boogler's Server leg and saved position/facing replace the lead's g presence.
+export const WORLD_NS = 'v42';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

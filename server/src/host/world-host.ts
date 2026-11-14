@@ -36,9 +36,10 @@ import { installSeats } from '../../../src/world/rules/seats.ts';
 import { projectSeats } from '../../../src/world/seat-replicate.ts';
 import { installBoogler } from '../../../src/world/rules/boogler.ts';
 import { createBooglerShadow } from '../../../src/world/boogler-shadow.ts';
+import { projectBoogler } from '../../../src/world/boogler-replicate.ts';
 import { loadBooglerLand } from './land.ts';
 import { booglerVisitors } from './boogler-presence.ts';
-import { createBooglerMeter, type LeadBoogler } from './boogler-meter.ts';
+import { createBooglerMeter } from './boogler-meter.ts';
 
 // One immutable baked land per process, shared by awake rooms.
 let booglerLand: ReturnType<typeof loadBooglerLand> | undefined;
@@ -155,7 +156,6 @@ export type RailwayHostOptions = WorldHostOptions & {
   /** Every connected session, including unknown poses. Unknown blocks maintenance. */
   positions?: () => (RailwayPosition | null)[];
   hasPlayers?: () => boolean;
-  leadBoogler?: () => LeadBoogler | null;
   now?: () => number;
   /** The room's replicator (hosted-room.ts flushes it each step); a host of its own makes one. */
   replication?: Replicator;
@@ -182,7 +182,6 @@ export function createRailwayWorldHost({
   tuneController = () => false,
   positions = () => [null],
   hasPlayers = () => true,
-  leadBoogler = () => null,
   now = Date.now,
   meter,
   log = () => {},
@@ -213,22 +212,26 @@ export function createRailwayWorldHost({
   let loaded = false; // startup finished without error
   let present = awake; // someone is here (or the caller simulates without a room): wake once loaded
   const booglerMeter = createBooglerMeter();
+  let publishBoogler = () => {};
   const boogler = installBoogler(
     sync,
     (rng, tick) => {
       const brain = createBooglerShadow((booglerLand ??= loadBooglerLand()), rng, tick);
+      publishBoogler = projectBoogler(replication, brain.leg);
       return {
+        ...brain,
         snapshot: brain.snapshot,
         step(t: number) {
           const started = performance.now();
           const time = now();
           brain.step(t, booglerVisitors(positions(), time));
           const cost = performance.now() - started;
-          booglerMeter.measure(cost, brain.snapshot(), leadBoogler(), time);
+          booglerMeter.measure(cost);
         },
       };
     },
     () => running && hasPlayers(),
+    () => publishBoogler(),
   );
   // The 100 ms marker at which the room stopped simulating, or null while it runs. A save while paused is stamped
   // with it, so neither a reload nor a crash counts the paused time as hosted.
@@ -602,6 +605,7 @@ export function createRailwayWorldHost({
     /** Nobody is here (after the hosted room's grace): stop simulating and save the stamp the away credit counts from. */
     pause() {
       present = false;
+      boogler.pause();
       seats.clear();
       if (!running || closed || requests.failed()) return;
       running = false;
