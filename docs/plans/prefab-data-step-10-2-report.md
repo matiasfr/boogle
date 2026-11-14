@@ -47,10 +47,18 @@ None changed. Repeated names and the existing `, line 2` suffix removal remain e
 
 ## Rebase and verification
 
-Pending final verification. Local `origin/main` is still `20004bc6e`, without the shared catalogue.
-The requested new branch exists, but fetching current main awaits clarification because the earlier instruction
-permits network only for local servers. The shared-catalogue change is available on local branch `66b5738a7`,
-but that unmerged branch has not been substituted for the requested current-main base.
-No claim of one validation per startup or a final shared-loader median is made before that integration.
+Rebased cleanly onto locally updated `origin/main` **`7c35b7466`**, on the requested new branch. The old-code
+capture rebases to `746aebc7a`; freshness fix to `48f62cfb0`; deck conversion to `dfed253d0`. No external fetch.
+The current local base contains the host split but **does not contain `src/prefab/catalogue.ts` or the rooms
+conversion**. The shared implementation exists locally at `66b5738a7`, but that unmerged branch has not been
+substituted for the requested current-main base. Shared-catalogue integration is therefore still outstanding.
+
+The current source has five full loader call sites plus two direct raw validators in the other consumers;
+the halt kit adds none, retaining only its level-reference check. This is not the requested one-pass startup
+result. No final shared-loader median is claimed. A current-main ref containing the reviewed catalogue, or
+permission to fetch it despite the earlier local-only network restriction, is needed to finish that integration.
+The new runtime deck recipe should then resolve in the single shared catalogue exactly like existing recipes.
+
+Full checks and new browser evidence for the rebased deck boundary are recorded below when complete.
 
 Not tested on a device. Real-time feel, cold startup, Linux and the remaining kit conversions are unverified.
