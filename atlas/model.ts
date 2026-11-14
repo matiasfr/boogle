@@ -2,10 +2,9 @@
 //
 // kindOf is a reading aid, not a contract. It goes by what a file registers, never by folder. First match wins:
 //   lock     ops, states or ticks registered, a `w:` wire message, or the file is in the lint policy's LOCKSTEP_FILES
-//   host     addHostField
 //   owner    addPresenceField (or the core keys of buildPresence)
 //   msg      room messages (send/onMessage)
-//   adapter  submitEdit
+//   adapter  command act
 //   local    everything else
 import { LAYERS } from './layout.ts';
 import type { Cite, FileFacts, Facts, Hook, Kind, Layer, Model, ModelFile, Narrative } from './types.ts';
@@ -25,13 +24,12 @@ export function dirOf(path: string): string {
   return p[0]!;
 }
 
-// The lockstep wire messages (w:edit, w:hash, ...) belong to the lock channel; every other message type is a one-off.
-const isLockMsg = (m: string) => m.startsWith('w:');
+// `lock` is the stable atlas id for the Server channel; it carries replication and the server clock.
+const isLockMsg = (m: string) => m.startsWith('r:') || m === 'w:c';
 
 export function kindOf(file: Partial<FileFacts>): Kind {
   if (file.lockstep || file.ops?.length || file.states?.length || file.ticks?.length || file.msgs?.some(isLockMsg))
     return 'lock';
-  if (file.host?.length) return 'host';
   if (file.owner?.length) return 'owner';
   if (file.msgs?.length || file.onMessage) return 'msg';
   if (file.submits) return 'adapter';
@@ -71,13 +69,11 @@ export function buildModel(facts: Facts): Model {
 export const fileAt = (model: Model, path: string | null | undefined): ModelFile | undefined =>
   path ? (model.byPath.get(path) ?? model.byBare.get(bare(path))) : undefined;
 
-// The wire channels a file puts keys on: [[channel, keys]]. Room plumbing and debug tools are skipped. The lockstep
-// wire messages (w:*) belong to the lock channel.
+// The wire channels a file puts keys on: [[channel, keys]]. Room plumbing and debug tools are skipped.
 export function wireOf(file: FileFacts): [string, string[]][] {
   if (/^src\/(net|debug)\//.test(file.f)) return [];
   const out: [string, string[]][] = [];
   if (file.owner.length) out.push(['owner', file.owner]);
-  if (file.host.length) out.push(['host', file.host]);
   const lock = [...file.ops, ...file.states, ...file.msgs.filter(isLockMsg)];
   if (lock.length) out.push(['lock', lock]);
   const msgs = file.msgs.filter((m) => !isLockMsg(m));
@@ -119,9 +115,9 @@ export function hooks(model: Model): Hook[] {
   return out;
 }
 
-const CITE_KEYS = ['file', 'dir', 'op', 'state', 'presence', 'hostField', 'message', 'action', 'route'];
+const CITE_KEYS = ['file', 'dir', 'op', 'state', 'presence', 'message', 'action', 'route'];
 
-// A cite names one thing in the code: { file, symbol? } | { dir } | { op } | { state } | { presence } | { hostField }
+// A cite names one thing in the code: { file, symbol? } | { dir } | { op } | { state } | { presence }
 // | { message } | { action } | { route: 'PUT /rooms/:roomId/snapshot' }. Never throws: a bad cite gets an error.
 export function resolveCite(cite: unknown, model: Model): { files: string[]; error: string | null } {
   try {
@@ -162,8 +158,6 @@ export function resolveCite(cite: unknown, model: Model): { files: string[]; err
         return match((f) => f.states.includes(v), `registers state ${v}`);
       case 'presence':
         return match((f) => f.owner.includes(v), `adds presence key ${v}`);
-      case 'hostField':
-        return match((f) => f.host.includes(v), `adds host field ${v}`);
       case 'message':
         return match((f) => f.msgs.includes(v), `sends or reads message ${v}`);
       case 'action':
@@ -196,7 +190,7 @@ export function searchIndex(model: Model, narrative?: Narrative): SearchEntry[] 
       text: d,
     })),
     ...model.files.flatMap((f) =>
-      [...f.owner, ...f.host, ...f.ops, ...f.states, ...f.msgs, ...f.actions].map((k) => ({
+      [...f.owner, ...f.ops, ...f.states, ...f.msgs, ...f.actions].map((k) => ({
         key: 'f:' + f.f,
         label: k,
         hint: f.name,
@@ -229,7 +223,6 @@ export function registrations(f: FileFacts): [string, string][] {
   const r: [string, string][] = [];
   const add = (k: string, v: string[]) => v.length && r.push([k, v.join(', ')]);
   add('presence', f.owner);
-  add('host field', f.host);
   add('ops', f.ops);
   add('state', f.states);
   add('messages', f.msgs);

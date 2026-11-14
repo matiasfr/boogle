@@ -1,21 +1,18 @@
 {
   "intro": {
     "title": "Boogle in one picture",
-    "lead": "Every player runs the whole game in their own browser tab. Our server hosts every room: it relays between tabs, runs the shared world, and picks one tab as the host.",
-    "question": "So the key question for any feature is how its state is shared. There are five answers, and the colours everywhere in this atlas follow them:",
-    "foot": "Cheapest first: pick the simplest one that works.",
+    "lead": "Every player runs the game in their own browser tab. Our server hosts every room: it relays between tabs and owns the shared world. No tab is special.",
+    "question": "The key question for any feature is how its state is shared. There are three kinds:",
+    "foot": "Cheapest first: pick the simplest one that works. One-off events such as honks and pings are messages, not state.",
     "ways": [
       { "kind": "local", "says": "Only you see it", "eg": "particles, sky, sounds" },
       { "kind": "owner", "says": "One player drives it, others watch", "eg": "your avatar, the ball, what you hold" },
-      { "kind": "host", "says": "The host decides for everyone", "eg": "the Boogler" },
-      { "kind": "lock", "says": "Everyone agrees exactly, and it lasts", "eg": "gifts, piles, prototype flags" },
-      { "kind": "msg", "says": "A one-off event, nothing kept", "eg": "honk, ping" }
+      { "kind": "lock", "says": "The server decides, every tab reads", "eg": "railway, roster, seats, The Boogler" }
     ]
   },
   "kinds": {
-    "lock": "Deterministic shared state; every peer runs the same ticks. Persists.",
-    "adapter": "Submits edits to lockstep state and reacts once they apply.",
-    "host": "The host decides and broadcasts; restarts with the next host.",
+    "lock": "Server-owned state, replicated to client mirrors. Seats are transient; declared checkpoint states persist.",
+    "adapter": "Submits server commands and reads mirrors; declared prediction shows on the press and reconciles with receipts.",
     "owner": "One player drives it and streams it at 20 Hz; latest wins.",
     "msg": "One-off events over the room: reliable, ordered.",
     "local": "Only this tab sees it. No sync."
@@ -26,15 +23,10 @@
       "d": "Each player streams a few numbers at 20 Hz. Latest wins; a missing key means off.",
       "tag": "20 Hz · per player"
     },
-    "host": {
-      "name": "Host fields",
-      "d": "The host owns the value; it restarts with the next host.",
-      "tag": "host → all"
-    },
     "lock": {
-      "name": "Lockstep",
-      "d": "Ops are edits the server orders and every tab applies; states are snapshotted and hashed.",
-      "tag": "ordered · persisted"
+      "name": "Server",
+      "d": "The server authenticates commands, applies shared rules and sends changed components. Clients read mirrors and may predict declared actions.",
+      "tag": "commands · replication"
     },
     "msg": {
       "name": "Messages",
@@ -59,9 +51,9 @@
     "fall": "A first visit's fall into the world: the cart, the rail and the BOOGLE title in the sky, loaded only then.",
     "debug": "Dev tools behind URL flags, loaded lazily.",
     "(core)": "main.ts boots the game; loop.ts runs the frame phases.",
-    "adapters": "The game side of lockstep state: meshes that follow it, edits submitted.",
-    "world": "Edit sync, snapshots and hashing.",
-    "world/rules": "One module per lockstep system, in an append-only order.",
+    "adapters": "The game side of Server state: commands, mirrors and declared prediction.",
+    "world": "Server commands, replication, checkpoint integrity and presentation clocks.",
+    "world/rules": "Headless shared rules and server command registration.",
     "sim": "Pure deterministic logic, unit-tested.",
     "netplay": "Presence fields, the remotes table, peer lifecycle hooks.",
     "net": "The room interface over one WebSocket to our server.",
@@ -74,14 +66,14 @@
     "you.registries": "controls · interact · particles",
     "you.loop": "input → physics → world → update → late → draw",
     "you.systems": "player · physics · rendering · characters · places",
-    "you.world": "gifts · piles · prototype flags",
+    "you.world": "railway · roster · seat mirrors",
     "you.netplay": "presence and the room",
     "you.input": "keys · pad · touch",
     "you.screen": "three.js draws it",
     "fr.features": "the same plug-ins",
     "fr.systems": "player · physics · rendering",
     "fr.netplay": "presence and the room",
-    "fr.world": "the same copy, kept in step",
+    "fr.world": "replicas from the same server",
     "fr.screen": "three.js draws it",
     "server": "hosts rooms · runs the world · saves · problem reports · playtest data"
   },
@@ -199,9 +191,9 @@
       "one": "Our service that hosts every room: it relays presence and messages, runs the shared world, saves it to its own disk, and collects problem reports.",
       "like": "The house at a board-game café: it keeps the board, rules on every move, and leaves the board set up when everyone goes home.",
       "rules": [
-        "Every room goes through one WebSocket per tab; the island keeps ticking while nobody is online.",
-        "It orders and stamps every edit, and saves the world every 2 s when it changed.",
-        "It picks the lead tab that runs host fields such as the Boogler.",
+        "Every room goes through one WebSocket per tab; an empty room pauses.",
+        "It authenticates commands, replicates changed components and saves verified checkpoints.",
+        "Seats and The Boogler belong to the server. Joining, leaving or hiding a tab transfers no authority.",
         "The game talks only to the room interface in src/net, never to the WebSocket."
       ],
       "code": [{ "dir": "server" }]

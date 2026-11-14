@@ -1,43 +1,46 @@
 {
   "id": "boogler",
   "title": "The Boogler wanders",
-  "kind": "host",
+  "kind": "lock",
   "order": 50,
   "steps": [
     {
-      "hl": ["fr.systems"],
-      "text": "Only the host runs the Boogler’s brain: the tab the server picks as lead. Your friend’s tab is the host here.",
-      "code": "src/boogler/boogler.ts",
+      "hl": ["server"],
+      "text": "The server runs The Boogler’s brain at 10 Hz while the room is awake. It decides a new leg when his intent changes.",
+      "code": "installBoogler",
       "cite": [
         {
-          "file": "src/boogler/boogler.ts"
+          "file": "src/world/rules/boogler.ts",
+          "symbol": "installBoogler"
         }
       ]
     },
     {
-      "go": [["fr.systems", "fr.netplay", "lane:host", "you.netplay"]],
-      "text": "The host publishes his state as a host field called g.",
-      "code": "addHostField('g', publish, hear)",
+      "go": [
+        ["server", "you.world"],
+        ["server", "fr.world"]
+      ],
+      "text": "One replicated leg reaches every tab. Each computes his pose from that leg and the room clock, without steady walking packets.",
+      "code": "booglerPose(leg, tick)",
       "cite": [
         {
-          "hostField": "g"
+          "file": "src/world/boogler-shadow.ts",
+          "symbol": "booglerPose"
         }
       ]
     },
     {
-      "go": [["you.netplay", "you.screen"]],
-      "text": "Every other tab shows him where the host says he is.",
-      "code": "hear(value)",
+      "go": [["you.features", "server", "fr.world"]],
+      "text": "Talk and ride are Owner facts. Presents and puffs are server commands; accepted reactions reach friends, while the presser sees the prediction immediately.",
       "cite": [
         {
-          "hostField": "g"
+          "op": "boogler.gift"
         }
       ]
     },
     {
-      "hl": ["fr.systems", "you.systems"],
-      "text": "If the host leaves, the server picks another tab as host and the Boogler carries on from there.",
-      "code": "Host state restarts with the next host",
+      "hl": ["server", "fr.systems", "you.systems"],
+      "text": "No tab runs his shared decisions. A tab closing or hiding leaves the server in charge. Prototype pages keep a local Boogler per tab and local, unarbitrated seats.",
       "cite": [
         {
           "file": "src/boogler/boogler.ts"

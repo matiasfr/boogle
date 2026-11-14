@@ -6,7 +6,7 @@
 //   checkRegistry(reg)        -> [error] for clashes inside one tree
 //
 // registry = {
-//   presence: { key: [path] }        net.js core keys + addPresenceField / addHostField (one namespace)
+//   presence: { key: [path] }        net.ts core keys + addPresenceField (one namespace)
 //   messages: { type: [path] }       `t: '...'` in files that call .send(, outside src/net/: who sends each type
 //   pads:     { slot: [path:id] }    registerAction pad slots (describeControl rows only describe, they may share)
 //   protoPads: { slot: [path:id] }   the same in src/proto/: a slot free on normal pages stays free, and a prototype
@@ -54,7 +54,7 @@ export function scanSources(files: Source[]): Registry {
     const r = readFile(path, text);
     if (r.parseError) (reg.parseErrors ??= []).push(`${path}: ${r.parseError}`);
     if (bare(path) === CORE_PRESENCE_FILE) for (const key of r.corePresence) add(reg.presence, key, `${path} (core)`);
-    for (const { key, line } of [...r.owner, ...r.host]) add(reg.presence, key, `${path}:${line}`);
+    for (const { key, line } of r.owner) add(reg.presence, key, `${path}:${line}`);
     if (!path.startsWith('src/net/')) for (const type of r.sends) add(reg.messages, type, path);
     const pads = path.startsWith('src/proto/') ? reg.protoPads : reg.pads;
     for (const a of r.actions) if (a.pad !== null) add(pads, a.pad, `${path}:${a.id ?? '?'}`);

@@ -22,18 +22,18 @@ Where boxes, lanes, colours and geometry live: `atlas/layout.ts` (code, not narr
 ```json
 {
   "intro": { "title": "…", "lead": "…", "question": "…", "foot": "…", "ways": [{ "kind": "local", "says": "…", "eg": "…" }] },
-  "kinds": { "lock": "…", "adapter": "…", "host": "…", "owner": "…", "msg": "…", "local": "…" },
-  "channels": { "owner": { "name": "Presence", "d": "…", "tag": "20 Hz · per player" }, "host": {}, "lock": {}, "msg": {} },
+  "kinds": { "lock": "…", "adapter": "…", "owner": "…", "msg": "…", "local": "…" },
+  "channels": { "owner": { "name": "Presence", "d": "…", "tag": "20 Hz · per player" }, "lock": {}, "msg": {} },
   "folders": { "features": "one line per src/ folder (and \"server\")" },
   "boxes": { "you.features": "{features} plug-ins: …" },
   "concepts": [
     { "id": "world", "title": "Shared world", "one": "…", "like": "An analogy", "rules": ["…"],
-      "code": [{ "dir": "src/world" }, { "file": "src/world/sync.ts", "symbol": "submitEdit" }], "view": "flow" }
+      "code": [{ "dir": "src/world" }, { "file": "src/world/server-ops.ts", "symbol": "createServerOps" }], "view": "flow" }
   ]
 }
 ```
 
-- `kinds` has exactly the keys of `KINDS` in `atlas/layout.ts`; `channels` exactly `owner host lock msg`.
+- `kinds` has exactly the keys of `KINDS` in `atlas/layout.ts`; `channels` exactly `owner lock msg`. `lock` is the stable diagram id for the Server channel; adapters and messages are reading aids, not extra state kinds. The three state kinds are Local, Owner and Server.
 - `boxes` keys are the box ids of `BOX` in `atlas/layout.ts`. `{features}` becomes the number of `src/features/*.{js,ts}`
   files, so the count never goes stale.
 - Each concept needs `title`, `one`, `like`, non-empty `rules` and `code`. `view` (optional) is one of
@@ -42,21 +42,21 @@ Where boxes, lanes, colours and geometry live: `atlas/layout.ts` (code, not narr
 ## stories/<id>.json
 
 ```json
-{ "id": "mush", "title": "You plant a mushroom", "kind": "lock", "order": 40,
+{ "id": "seat", "title": "You sit down", "kind": "lock", "order": 40,
   "steps": [
-    { "go": [["you.features", "you.world"]], "text": "It submits the edit. …",
-      "code": "submitEdit({ op: 'mush.plant', i, j })",
-      "cite": [{ "file": "src/world/sync.ts", "symbol": "submitEdit" }, { "op": "mush.plant" }] },
-    { "hl": ["you.world", "fr.world"], "text": "…", "cite": [{ "file": "src/world/rules/mushrooms.ts" }] }
+    { "go": [["you.features", "server"]], "text": "It submits the command. …",
+      "code": "railwayCommands()?.act('seat.sit', { id })",
+      "cite": [{ "file": "src/entities/railway/seat.ts" }, { "op": "seat.sit" }] },
+    { "hl": ["you.world", "fr.world"], "text": "…", "cite": [{ "file": "src/world/rules/seats.ts" }] }
   ] }
 ```
 
-- `id` equals the file name. `kind` is a sync kind (`lock adapter host owner msg local`) or `null`. `order` sorts the
+- `id` equals the file name. `kind` is a reading category (`lock adapter owner msg local`) or `null`. `order` sorts the
   story chips. 1 to 10 steps.
 - `text` is at most 240 characters. `go` is a list of routes (each at least 2 refs: a box id, or `lane:` plus
-  `msg owner host lock`); `hl` lists box ids to highlight. A step has `go` and/or `hl`.
+  `msg owner lock`); `hl` lists box ids to highlight. A step has `go` and/or `hl`.
 - `code` is a free-text snippet shown in mono. `cite` is the structured proof, shown as chips: exactly one key per
-  cite. `file` (+ optional `symbol`), `dir`, `op`, `state`, `presence`, `hostField`, `message`, `action`, `route`
+  cite. `file` (+ optional `symbol`), `dir`, `op`, `state`, `presence`, `message`, `action`, `route`
   (e.g. `"PUT /rooms/:roomId/snapshot"`). A cite that no longer resolves shows as a grey "stale" chip.
 
 ## changes.md

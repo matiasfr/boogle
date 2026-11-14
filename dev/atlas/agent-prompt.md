@@ -15,7 +15,7 @@ blocks anything: a stale explanation is your chore, never a red build.
    never reorder or reword working copy, and keep the JSON formatting (`npx prettier --write` on the files you
    touched).
 5. Add a story (3 to 7 steps, every step cited, existing boxes and lanes only) for any new sync system (a new op,
-   state, presence key, host field or message type that belongs to a new system) or major feature (a new
+   state, presence key or message type that belongs to a new system) or major feature (a new
    `src/features/` file a player sees that has its own sync, or a new folder). Add a folder note for any folder the
    output lists. When a story needs a box that does not exist, say so in the PR body instead of editing
    `atlas/layout.ts`.

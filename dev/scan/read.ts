@@ -44,7 +44,6 @@ export interface FileRecord {
   frames: Frame[]; // onFrame, onPreStep / onPostStep (phases fixedPre, fixedPost), and each entry of a defineKind
   badKinds: string[]; // a defineKind the reader can't read, with why: orders must be literals
   owner: Keyed[]; // addPresenceField
-  host: Keyed[]; // addHostField
   corePresence: string[]; // keys of the object buildPresence() builds
   ops: string[];
   states: string[];
@@ -277,7 +276,6 @@ function emptyRecord(f: string, loc: number): FileRecord {
     frames: [],
     badKinds: [],
     owner: [],
-    host: [],
     corePresence: [],
     ops: [],
     states: [],
@@ -397,7 +395,7 @@ export function readFile(file: string, text: string): FileRecord {
       if (name === 'send' || name === 'onMessage') sendsOrListens = true;
       if (name === 'send' && unwrap(n.callee)?.type !== 'Identifier') rec.memberSend = true;
       if (name === 'onMessage') rec.onMessage = true;
-      else if (name === 'submitEdit') rec.submits = true;
+      else if (name === 'act' && unwrap(n.callee)?.type === 'MemberExpression') rec.submits = true;
       else if (name === 'onFrame') rec.frames.push(frameOf(n, file, lineOf));
       else if (name === 'onPreStep' || name === 'onPostStep') {
         const f = frameOf(n, file, lineOf);
@@ -405,8 +403,7 @@ export function readFile(file: string, text: string): FileRecord {
         rec.frames.push({ ...f, phase, order: f.explicit ? f.order : DEFAULT_STEP_ORDER });
       } else if (name === 'defineKind') kindOf(n, lineOf, rec);
       else if (name === 'addPresenceField' && s0 !== undefined) rec.owner.push({ key: s0, line: lineOf(n) });
-      else if (name === 'addHostField' && s0 !== undefined) rec.host.push({ key: s0, line: lineOf(n) });
-      else if (name === 'registerOp' && s0 !== undefined) rec.ops.push(s0);
+      else if (name === 'define' && s0 !== undefined && unwrap(n.callee)?.type === 'MemberExpression') rec.ops.push(s0);
       else if (name === 'registerState' && s0 !== undefined) rec.states.push(s0);
       else if (name === 'onTick' && strOf(n.arguments[1]) !== undefined) rec.ticks.push(strOf(n.arguments[1])!);
       else if (name === 'registerInteractable') rec.interact++;

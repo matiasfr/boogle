@@ -18,8 +18,7 @@ import * as THREE from 'three';
 export { b } from './z.js';
 onStart(() => import('../lazy/part.js'));
 addPresenceField('zz', () => null);
-addHostField('hh', get, hear);
-sync.registerOp('x.poke', {});
+ops.define('x.poke', { validate() {}, apply() {} });
 sync.registerState('x', {});
 sync.onTick(fn, 'x');
 onFrame(
@@ -33,7 +32,7 @@ room.onMessage((m) => {
   if (m?.t !== 'yo') return;
 });
 net.room?.send({ t: 'yo' });
-submitEdit({ op });
+commands.act('x.poke', {});
 export function honkNow() {}
 `;
 
@@ -47,13 +46,12 @@ test('extractFile reads every registration kind', () => {
     imports: ['src/x/y.js', 'src/features/z.js'],
     lazy: ['src/lazy/part.js'],
     exports: ['b', 'honkNow'],
-    names: ['honkNow'],
+    names: ['validate', 'apply', 'honkNow'],
     frames: [
       { phase: 'world', order: -280, name: 'update', core: false },
       { phase: 'update', order: 0, name: 'tick', core: false },
     ],
     owner: ['zz'],
-    host: ['hh'],
     ops: ['x.poke'],
     states: ['x'],
     ticks: ['x'],
@@ -97,7 +95,7 @@ function buildPresence() {
   return pr;
 }
 addPresenceField('zz' as const, (): number | null => null);
-sync.registerOp<string>('x.poke', {} satisfies object);
+ops.define<string>('x.poke', {} satisfies object);
 onFrame(
   () => update(dt!),
   { phase: 'world', order: -280 } as const,
@@ -164,7 +162,7 @@ function good() {
       { path: 'src/main.ts', text: MAIN },
       {
         path: 'src/world/rules/mushrooms.js',
-        text: "sync.registerOp('mush.plant', {});\nsync.registerState('mushrooms', {});\nexport function apply() {}\n",
+        text: "ops.define('mush.plant', {});\nsync.registerState('mushrooms', {});\nexport function apply() {}\n",
       },
       {
         path: 'src/features/honk.ts',
@@ -294,7 +292,6 @@ test('kindOf classifies', () => {
     ops: [],
     states: [],
     ticks: [],
-    host: [],
     owner: [],
     msgs: [],
     onMessage: false,
@@ -302,8 +299,7 @@ test('kindOf classifies', () => {
     ...extra,
   });
   assert.equal(kindOf(rec('src/features/x.js', { ops: ['a'] })), 'lock');
-  assert.equal(kindOf(rec('src/world/sync.js', { msgs: ['w:edits'], onMessage: true })), 'lock');
-  assert.equal(kindOf(rec('src/boogler/b.js', { host: ['g'] })), 'host');
+  assert.equal(kindOf(rec('src/world/sync.js', { msgs: ['w:c'], onMessage: true })), 'lock');
   assert.equal(kindOf(rec('src/netplay/net.js', { owner: ['v', 'p'] })), 'owner');
   assert.equal(kindOf(rec('src/world/grid.js', { lockstep: true })), 'lock');
   assert.equal(kindOf(rec('src/netplay/snaps.js')), 'local');
@@ -328,12 +324,12 @@ test('changes parse and render, escaping everything', () => {
 test('diffFacts reports files, folders and keys gained and lost', () => {
   const mk = (sources: { path: string; text: string }[]) => extractFacts({ git: false, sources });
   const before = mk([
-    { path: 'src/features/old.js', text: "sync.registerOp('a.x', {});\naddPresenceField('k', f);\n" },
+    { path: 'src/features/old.js', text: "ops.define('a.x', {});\naddPresenceField('k', f);\n" },
     { path: 'src/features/keep.js', text: "registerAction('keep', { pad: 'y' });\n" },
   ]);
   const after = mk([
     { path: 'src/features/keep.js', text: "registerAction('keep', { pad: 'y' });\nroom.send({ t: 'yo' });\n" },
-    { path: 'src/guest/new.js', text: "addHostField('hf', f, g);\n" },
+    { path: 'src/guest/new.js', text: "addPresenceField('newOwner', f);\n" },
   ]);
   assert.deepEqual(diffFacts(before, after), {
     filesAdded: ['src/guest/new.js'],
@@ -342,8 +338,7 @@ test('diffFacts reports files, folders and keys gained and lost', () => {
     foldersRemoved: [],
     keys: {
       ops: { added: [], removed: ['a.x'] },
-      owner: { added: [], removed: ['k'] },
-      host: { added: ['hf'], removed: [] },
+      owner: { added: ['newOwner'], removed: ['k'] },
       msgs: { added: ['yo'], removed: [] },
     },
   });

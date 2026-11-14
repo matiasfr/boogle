@@ -63,7 +63,6 @@ const project = (r: FileRecord, lockstep: string[]): FileFacts => {
     names: r.names,
     frames: r.frames.map(({ phase, order, name }) => ({ phase, order, name, core: isCoreHook(file, order) })),
     owner: uniq([...r.corePresence, ...keys(r.owner)]),
-    host: keys(r.host),
     ops: r.ops,
     states: r.states,
     ticks: r.ticks,
@@ -150,7 +149,7 @@ export function factsAt(root: string, ref: string): Facts {
 }
 
 // The kinds of key diffFacts compares: each is a list of names on a file record.
-const KEY_KINDS: KeyKind[] = ['ops', 'states', 'owner', 'host', 'msgs', 'actions', 'routes'];
+const KEY_KINDS: KeyKind[] = ['ops', 'states', 'owner', 'msgs', 'actions', 'routes'];
 
 // What changed between two facts objects: files and folders added or removed, and keys added or removed per kind.
 // A file that only changed extension (.js to .ts) is the same file: files compare without it.

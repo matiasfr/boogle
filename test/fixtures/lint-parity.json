@@ -104,7 +104,7 @@
     {
       "group": "sync named",
       "file": "src/lint-probe.ts",
-      "code": "import {registerOp} from './world/sync.ts';",
+      "code": "import {registerState} from './world/sync.ts';",
       "rule": "no-restricted-imports",
       "expected": true,
       "eslint": true
@@ -272,7 +272,7 @@
     {
       "group": "sync allowed name",
       "file": "src/lint-probe.ts",
-      "code": "import {submitEdit} from './world/sync.ts';",
+      "code": "import {worldStatus} from './world/sync.ts';",
       "rule": "no-restricted-imports",
       "expected": false,
       "eslint": false

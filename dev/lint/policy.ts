@@ -32,12 +32,12 @@ const RULES_GLOBALS = [
   'setTimeout',
   'setInterval',
 ];
-// Lockstep registration belongs to the rules modules; everything else in src/ reacts to them (B1, docs/tech-plan.md).
+// Server checkpoint registration and ticks belong to headless owners; clients read mirrors and submit commands.
 const syncBan = {
   group: ['**/world/sync.js', '**/world/sync.ts', './sync.js', './sync.ts'],
-  importNames: ['registerOp', 'registerState', 'onTick'],
+  importNames: ['registerState', 'onTick'],
   message:
-    'Lockstep ops/state/ticks live in src/world/rules/<name>.ts (docs/agents/lockstep.md). Adapters use submitEdit, onApplied, onAfterTick, onSnapshot.',
+    'Server checkpoint state and ticks live in headless owners (docs/agents/sync.md). Commands use ops.define; clients read mirrors and call railwayCommands().act, with acceptance/refusal receipts and declared prediction.',
 };
 // src/world/ runs on the server too (server/src/host/world-host.ts) and src/net/ is only the room layer: neither may
 // reach the renderer, the player or a feature.
@@ -554,7 +554,6 @@ const policyBlocks: PolicyBlock[] = [
                 'addBody',
                 'removeBody',
                 'addPresenceField',
-                'addHostField',
                 'keepPresenceWhile',
                 'setLocalPresence',
                 'onRemotePresence',

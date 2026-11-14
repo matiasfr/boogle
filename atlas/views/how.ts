@@ -67,11 +67,10 @@ export function howView(ctx: Ctx, el: HTMLElement): Update {
     x: number,
     w: number,
     title: string,
-    host?: boolean,
   ) => `<g><rect x="${x}" y="20" width="${w}" height="420" rx="14" fill="var(--sunk)" stroke="var(--line)"/>
     <circle cx="${x + 16}" cy="38" r="4" fill="var(--line)"/><circle cx="${x + 29}" cy="38" r="4" fill="var(--line)"/><circle cx="${x + 42}" cy="38" r="4" fill="var(--line)"/>
-    <text x="${x + 56}" y="42" style="font:600 13px var(--sans)">${title}</text>${host ? `<rect x="${x + w - 62}" y="29" width="48" height="18" rx="9" fill="${kc('host')}"/><text x="${x + w - 38}" y="42" text-anchor="middle" style="font:600 10px var(--sans);fill:#fff;letter-spacing:.06em">HOST</text>` : ''}</g>`;
-  let s = frame(20, 560, 'Your browser tab') + frame(710, 270, 'A friend’s tab', true);
+    <text x="${x + 56}" y="42" style="font:600 13px var(--sans)">${title}</text></g>`;
+  let s = frame(20, 560, 'Your browser tab') + frame(710, 270, 'A friend’s tab');
   s += `<text x="645" y="42" text-anchor="middle" style="font:600 13px var(--sans)">The room</text><text x="645" y="60" text-anchor="middle" style="font:11px var(--sans);fill:var(--mute)">tab to tab</text>`;
   s += `<line x1="645" x2="645" y1="72" y2="420" stroke="var(--line)" stroke-dasharray="3 4"/>`;
   for (const [k, L] of Object.entries(LANES)) {
@@ -138,7 +137,7 @@ export function howView(ctx: Ctx, el: HTMLElement): Update {
       <p>${esc(step.text ?? '')}</p>${step.code ? `<code>${esc(step.code)}</code>` : ''}
       ${Array.isArray(step.cite) && step.cite.length ? `<div class="chips">${step.cite.map((c) => citeChip(ctx, c)).join('')}</div>` : ''}
       ${outdated ? '<span class="oldnote">Part of this picture is out of date.</span>' : ''}`
-        : `<p>Each player runs the whole game in their own browser tab, and tabs talk to each other directly. Pick a story above to watch one action travel through the system, or click any box to learn what it is.</p>`
+        : `<p>Each player draws the game in their own browser tab. Tabs connect through the room server, which owns shared outcomes and sends replicas. Pick a story above to watch one action travel through the system, or click any box to learn what it is.</p>`
     }</div></div>`;
   const at = (i: number, p: SVGPathElement, L: number) => {
     const q = p.getPointAtLength(L);
