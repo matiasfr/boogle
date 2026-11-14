@@ -64,6 +64,162 @@ Each is one sitting, leaves `node dev/ship-check.ts` green and main playable. Ru
 - [x] **R1. Interiors draw by the door. View-only.** town-layout step 7 as written (`src/entities/town/rooms.ts`: `ROOM_CAM.drawWithin` from the door, about 18 m). Verify: a look walking into Pip's house; `npm run bench` at `town`, reported. **Built 14 November:** `cull` measures the camera to the door's threshold. The radius is 48 m for every room, not the plan's 18 m: the owner ruled one radius chosen for the look, not by cost ([decision](../decisions-rail.md#d-2026-11-14-interiors-draw-by-one-radius)), and 48 m covers door to door across the green. A drawn interior stays until 49 m. The toggle is the room's `near` group, so record instances stay enabled and their solids stay (a record's `setEnabled` also removes its bodies, so it is not the draw toggle). No stand-in for the museum's blue: past 48 m its doorway is too small to read ([place](../game-design/place.md), "Interiors draw by the door").
 - [ ] **R2. Move what stands, and open the gate cottage. View-only unless the tree pin moves.** town-layout step 2 as written (`TOWN.start` is the one gate cottage at (−138.84, 15.87); `ROOM_PLOTS` from `town-plan.ts`; `PATHS` and `SHORE_PATH` to the ring; `FINDERS_B` beside the hall; the `yard` find at (−145.44, 14.71)). The first sealed building: `RoomId` gains `gate`, a cottage-kit room through `createRooms` with a plain greybox interior and a door that opens. If `PATHS` changes the tree table (`railway.test.ts:137` fails), the table and a bump ride this step and it becomes sim-class with a review. Verify: `town-plan.test.ts`; `npm run level-check`; looks **from the commons** and **arrival** (the top of the dock street, also at phone size) at `q6-done`; `dev/look/evals/railway-finds.ts`; segment `--to forge-lit`; `npm run loop -- run`.
 - [ ] **R3. The green, the ring road and the streets. View-only.** town-layout step 3 as written (`src/entities/town/streets.ts`). Verify: one look from the hall's front, one from above; `npm run perf`, reported. Steps 4b and 5 of town-layout follow in its own order.
+- [ ] **R1. Interiors draw by the door. View-only.** town-layout step 7 as written (`src/entities/town/rooms.ts`: `ROOM_CAM.drawWithin` from the door, about 18 m). Verify: a look walking into Pip's house; `npm run bench` at `town`, reported.
+- **R2 and R3 are replaced by the blockout steps B1 to B4 and the detail steps D1 to D5 (planner, 14 November; owner: "I think it'll be easier to block out the spacing first and then fill in the details of the constructions later.").** What they build, the terrain, the level findings, the calls and the questions are in [The Round, blockout first](#the-round-blockout-first-14-november). Where the design review below says R2 or R3, read B1 to B3 and D1 to D2. Every B step is `src/place`, `src/content` and `src/entities/town` only: no `src/sim`, `src/world`, `src/net` or `server/` file, no `WORLD_NS` bump. Each has one proof look at `--rail-seed q6-done` and one plan-sheet check (`npm run town-plan-sheet`); the full check, the bot and the probes are B4's.
+- [ ] **B1. The ground, the streets and the one cottage. View and collision data (`src/place`); normal review. Builds: Codex, gpt-6.1-sol medium.**
+  - `src/place/town-plan.ts`: add `TOWN_GROUND = { r: 38, soft: 8 }` and the street lines as data: `TOWN_STREETS.camp.head = slotPoint(40, 17)` (−104.07, 7.05), `TOWN_STREETS.quarry.head = [slotPoint(130, 17), (−97.85, 38), (−97.85, 58)]`, `TOWN_STREETS.dock.line = [slotPoint(250, 38), slotPoint(250, 20)]` ((−150.71, 33.07) to (−133.79, 26.91)).
+  - `src/place/layout.ts`: `TOWN.start` is the one gate cottage, `cottage(g.x, g.z, g.yaw, true)` with `g = townBuilding('gate')`; `PATHS[0].pts[0]` becomes the camp head (the next point stays (−98, −6)); `PATHS[1].pts[0]` is replaced by the three quarry head points, then (−100, 62) as today, and **`bridgeAt` becomes 8** (two points are added before the bridge).
+  - `src/place/shore-layout.ts`: the six points after (−165, 32, 14) become the dock street's two.
+  - `src/place/tech-layout.ts`: the `yard` secret at `TOWN_PROPS.yard` (−145.44, 14.71), `from` (−136, 22).
+  - `src/place/terrain.ts`, in `bake()`: after the village pad, `pad(TOWN_CENTRE.x, TOWN_CENTRE.z, VILLAGE.y, TOWN_GROUND.r, TOWN_GROUND.soft)`; the plots loop also pads every `TOWN_SLOTS` row (same radius rule); after the `PATHS` strips, paint the ring road into `pathMask` (cells 14 to 20 m from G, 1 m soft edges, heights untouched) and lay the dock street with `strip(samplePath(dock), 4, 6, true, undefined, false)` (8 m wide, level at 18, `clearMask` untouched).
+  - `src/place/folk.ts`: `WANDER` moves onto the ring road and the green (`slotPoint(b, 17)` at 45° steps, and G ± 6 m).
+  - `test/town-plan.test.ts`, new cases: "the ground under the Round is level" (within 0.05 m of 18 at every footprint corner and 3 m apron, on the ring road, and on the dock street to r 36; the hall's apron, bearings 60° to 100° beyond r 18, may rise 0.25 m); "the tree table is main's" (`LAND_TREES.length` 362, no trunk within 46 m of G); "no footprint corner is within 2.4 m of a road's centre line" (both path heads and the dock street); "the quarry path's bridge still spans the river" (`pts[bridgeAt]` is (−36.5, 112.4)).
+  - Verify: that test, `test/railway.test.ts` (the tree pin: if it fails, shrink the pad, do not bump), `test/curio-layout.test.ts`; `npm run level-check -- --place=place` exits 0. **Look:** from the top of the dock street (−150.7, 33.1) at eye height toward 70°: the street, the gate cottage on the left, the ring, the hall. **Sheet:** the gate cottage, the `yard` find, both path heads, the dock street and the ring read "as built = plan"; no ground cell inside r 38 is off 18 m except the hall's apron.
+- [ ] **B2. Rooms, the balcony and the bay move, as they are. View-only data; normal review. Builds: Codex, gpt-6.1-sol medium.**
+  - `src/place/layout.ts`: `ROOM_PLOTS.house`, `.shop` and `.museum` become `{ ...townBuilding(id), high }` (3.7, 3.9, 5 kept). The real shells, interiors, residents and plot boards go with them (they are in each room's own frame).
+  - `src/place/tech-layout.ts`: the `balcony` pad and secret at `TOWN_PROPS.balcony` (−119.20, 53.49), top 24.4 kept.
+  - `src/place/home-station.ts`: `FINDERS_B` becomes `{ ...axisPoint(HALL.a − 2.77, HALL.c + 10.45), yaw: SHELF_B.yaw }` ((−89.19, 21.80), facing 250°); `town-plan.ts`'s `TOWN_PROPS.bay` reads it (one source). The boxes and the plinth follow through `bayPoint`.
+  - Tests: `test/curio-layout.test.ts:54-55` (the bay's yaw is the shelf's, its place (−89.19, 21.80), 1 m off the hall's south wall; the plinth is within 1.5 m of the ring road's outer edge, which replaces "near the quarry road"); `test/prefab-furnishing.test.ts:636` ("town rooms retain old shells…" reads `ROOM_PLOTS` as a literal: give it the evaluated table; it is the one test that failed in the trial); `test/town-plan.test.ts` gains "what stands is where the plan puts it" (the three rooms, the balcony, the bay, the gate cottage).
+  - `docs/game-design/place.md` (the town's section) for B1 and B2 together.
+  - Verify: those tests; `npm run level-check -- --place=place` exits 0 with "the balcony: 147 m away, budget 187 m". **Look:** from above G, about 70 m up, north at the top. **Sheet:** Pip's house, Fine Prices, the museum, the balcony pad and the bay read "as built = plan"; every wall-to-wall gap under 4 m is printed and none is under 2.4 m.
+- [ ] **B3. The blocks: eight plots, their door sides, the clock's footing. Player-visible; normal review. Builds: implementer agent, fable medium.**
+  - `src/place/layout.ts` (the one layout helper content may import): `TOWN_BLOCKS`, generated from `TOWN_PLOTS.order` through `townBuilding`: `{ id, x, z, yaw, w, d, high }`, `high` the kit's eave above the ground, read from the kits (house: 0.14 m slab + 3.7 m wall = 3.84; cottage: the eave the 0b probe stood on, 3.0); `TOWN_FOOTING = { ...TOWN_PROPS.clock, w: 5, d: 5, high: 0.3 }`.
+  - `src/content/levels/town-blockout.ts` (new, written by hand; `prefab:new` would add a record): `defineLevel({ place: 'town-blockout', placements })`, generated from `TOWN_BLOCKS`. Per plot: `town.block.<id>`, prefab `greybox.box` (the shared unit box with its collider), `pos [toWorld(x), 18 + high / 2, z]`, `rot [yaw, 0, 0]`, `scale [w, high, d]`, colour `#9c9ea1`; `town.block.<id>.door`, prefab `greybox.decoration` (no collider), 1.2 × 2.0 × 0.12 m on the door face (local z = d / 2 + 0.06, y 1.0), colour `#e4e5e6`; `town.block.<id>.mat`, `greybox.decoration`, 1.6 × 0.06 × 1.2 m on the ground outside the door (so the door side reads from above). `town.footing`: `greybox.box`, 5 × 0.3 × 5 m at G. 25 placements, **no new record**. `npm run prefabs` writes `content/built/levels/town-blockout.json`.
+  - `src/entities/town/blockout.ts` (new): `createTownBlockout(owner)` loads the artifact (`loadLevelArtifact(level, definitions)`) and instantiates the placements in one batch, as `src/entities/route-greybox/boxes.ts` `drawGreyBoxes` does for `massing-west.ts`; mounted from `src/entities/town/view.ts` in every town state (the blocks read no fact).
+  - `test/town-plan.test.ts`: "every slot is drawn once" (each `TOWN_SLOTS` id is exactly one of a `ROOM_PLOTS` key, the `TOWN.start` cottage or a `TOWN_BLOCKS` row); "the built level is the plan" (eight solid boxes whose pose and scale equal `townBuilding(id)` within 0.01, each door mark on its door face). `test/prefab-portability.test.ts`: the budget comment's new counts.
+  - Verify: those tests; `node dev/ship-check.ts`. **Look:** from the hall's front (−94, 13) at eye height toward 250°: the green, the footing, the ring of blocks with their door marks. **Sheet:** eight block rows with a door tick each; the footing at G.
+- [ ] **B4. Checkpoint: the blockout walked and measured. Runner: Codex, gpt-6.1-sol medium; visual review by a fresh subagent, fable medium.** Once: `npm run check:full`; `npm run level-check`; `npm run town-plan-sheet` with the sheet committed under `docs/world/`; the bot's `playthrough --to forge-lit` (its Home waypoints cross the old square); `dev/look/evals/railway-finds.ts` (the `yard` find on real ground, the balcony by glide); one probe eval kept out of the repo, as step 0b was (the second jump onto plot 1's house block; plot 4's cottage block to the museum's roof; the bay to the hall's roof and down); `npm run perf` at the `town` pose, reported. Looks: from above; the top of the dock street at phone size; a real-time video once round the ring road (107 m, 19 s). Then the designer rules on the level findings, and the owner walks it live. A spacing change after that is an edit to a `town-plan.ts` row and a re-run of the sheet.
+- [ ] **D1. The gate cottage opens. View-only.** `RoomId` gains `gate`; a cottage-kit room through `createRooms` with a plain greybox interior and a door that opens (design review call 12). Look: its open door from the dock street, also at phone size. Builds: implementer agent, fable medium.
+- [ ] **D2. The green and the kerb. View-only; render.** town-layout step 3 as written (`src/entities/town/streets.ts`): one merged kerb and green mesh over B1's paint. Look: from the hall's front; `npm run perf`, reported.
+- [ ] **D3. The forge's west door.** town-layout step 4b as written.
+- [ ] **D4. Stakes, boards, the footing and the clock.** town-layout step 5 as written. The eight plot rows leave `TOWN_BLOCKS` here, once the owner has signed off the spacing (question 1), and the footing's block gives way to the stone one.
+- [ ] **D5. A bought house.** town-layout step 6, the passenger trade's; held by "Playtest before bespoke functionality" and "Engine foundations first".
+
+## The Round, blockout first (14 November)
+
+Planner, 14 November 2026. Replaces R2 and R3. Plan only: the positions were applied to a scratch copy of `src/place`, measured and checked, and reverted.
+
+**The owner's words (14 November 2026).** "At what stage are we implementing the new town layout? It should be helpful to be able to plan from the top down, right?" "I wouldn't draw the radius by cost. It should just be well placed, and we should be able to modify terrain even if needed to achieve our vision." "I think it'll be easier to block out the spacing first and then fill in the details of the constructions later." Standing calls: [Block out spacing first, details later](../agents/owner-calls.md) and "Place for the look, not the cost; terrain may change".
+
+**Goal.** Stand the whole Round in the live game as plain blocks at true size and position, on ground shaped for it, so the spacing is judged by walking it and from a top-down sheet before any construction is detailed. Serves "Understandable at a glance" and **7. Telegraph everything**; it bends the decided "unbought plots stay empty ground" for the length of the blockout (question 1).
+
+**Research:** as [town-layout](town-layout.md) cites (growing-towns: street widths, the plaza, the 30 to 60 s loop; level-design: walk-seconds, a hub). No departure. No doc in `docs/research/` covers blockout practice. Not a port from Place. `npm run loop -- node` was not run: no bill, supply, cue or rail rule changes.
+
+### What the blockout builds
+
+| Thing | In the blockout | Step |
+| --- | --- | --- |
+| The hall, the island, the Roundhouse | As they are; they do not move | |
+| The forge | As it is at (−87, −3); its west door is D3 | |
+| Pip's house | The real room, moved 16.6 m to (−110.54, −5.23), facing 190° | B2 |
+| Fine Prices | The real room and its balcony, moved 15.1 m to (−119.52, 45.68); a stake board there before T3, as today | B2 |
+| The museum | The real room, moved 0.3 m and turned 36°, at (−125.27, −8.11); a stake board before T3 | B2 |
+| The gate cottage | The real cottage, moved 9.0 m to (−138.84, 15.87), still sealed; it opens in D1 | B1 |
+| The other three cottages | Removed | B1 |
+| Plots 1, 2, 3, 6, 8 (houses) | Blocks, 7.4 × 7.4 × 3.84 m, a pale door panel and a mat on the door side | B3 |
+| Plots 4, 5, 7 (cottages) | Blocks, 5.4 × 4.4 × 3.0 m, the same marks | B3 |
+| The clock | A footing block, 5 × 5 × 0.3 m, at G; no clock | B3 |
+| The green | Grass inside 14 m of G: the unpainted middle of the ring | B1 |
+| The ring road | Path paint on the ground, 14 to 20 m from G | B1 |
+| The dock street | Path paint, 8 m wide, levelled at 18 m from r 38 to r 20 | B1 |
+| The camp and quarry roads | Today's paths, their heads moved to the ring's mouths at 40° and 130° | B1 |
+| The finders' bay | As it is, moved beside the hall's south end, (−89.19, 21.80), facing 250° | B2 |
+
+Block heights are the kits' eaves, so what can be climbed is what the real building will allow. Roads and the green are paint on the terrain's path mask: no mesh, no collider, no record.
+
+**Records.** Placed content comes from records, and the shared catalogue is at 188 of 200 records and 334,626 of 350,000 bytes (`test/prefab-portability.test.ts`). The blocks need **no new record**: one shared definition, `greybox.box` (and `greybox.decoration` for the marks), with 25 generated placements in one new level, about 3 kB. `codex/prefab-data-step-10b` stands at 347,058 bytes, so whichever lands second meets the byte ceiling (Risks).
+
+### Terrain
+
+Measured on the 2 m grid at the planned positions, on main:
+
+- **The Round already fits.** Every footprint and its 3 m apron is at 18.00 m, except plot 1's back apron (17.73) and plot 8's (17.98). The green is 18.00; the ring road 18.00 to 18.10.
+- **The west and south-west rim is low.** Between 20 and 36 m from G the ground is 17.50 to 18.25, lowest at bearing 224°, r 36. Past r 37 it falls to the cove: 15.7 m at 262°, r 44; along the dock street 17.3 m at r 40 and 14.5 m at r 50.
+- **The hall's apron rises.** On bearing 70° the ground is 18.07 at r 22 and 18.21 at r 26 (the hall's floor is 18.34). Once the quarry path no longer starts in front of the hall, the ring road's east edge at 90° reads 18.22. A slope, not a lip.
+
+Reshaping, in B1: one level pad at G (r 38, 8 m soft edge, 18 m), a pad under each road plot, and the dock street 8 m wide and level to r 36. With them every footprint and apron is 18.00, the fronts 17.85 to 18.22, and the street's top is flat. That is all the Round needs. A bolder move (a terrace or steps where the ground falls west of r 37, a raised or sunken green) is the owner's to ask for (question 2).
+
+**No `WORLD_NS` bump.** Place's ground is client data: no file under `src/sim`, `src/world` or `server/` reads `src/place/terrain.ts`, and the server's baked land (`home-land.json`, `boogler-land.json`) is the home island. The sim's one tie to this ground is the tree table (`RAILWAY_SOURCES`, pinned by `test/railway.test.ts`), and with the pad at r 38 it is identical: all 362 trees, none within 49 m of G. A pad of r 40 with a 10 m edge removes tree 169 at (−158.45, −2.85), which would break the pin and need v45. If the owner wants ground that covers a tree, that step regenerates the table, bumps to v45 (the next free) with a dated history line, is built by gpt-6-astra high with an independent review, and ships when ready.
+
+### What moves with gameplay attached
+
+| Thing | How it survives |
+| --- | --- |
+| The `yard` find | Moves behind the gate cottage to (−145.44, 14.71), 30.5 m from G, ground 18.00. Found before any ability, as today. B1; `railway-finds.ts` at B4 |
+| The balcony pad and its find | Stay in the shop's frame: (−119.20, 53.49), top 24.4. The level check: 147 m from the summit, budget 187 m; out of reach without the glider by terrain. B2 |
+| The roof hop to the balcony (0b, a) | Closes in B1: the cottage it starts from is removed, and the shop moves 21 m from the nearest cottage in B2 |
+| The hall's roof from the bay (0b, c) | Opens in B2, as ruled on 10 November ("leave it"): a perch, a way down on every side |
+| The double-jump course | Untouched. Its nearest pad, j7 at (−94.5, −36.8), 8.4 m up, is 14.8 m from plot 7's block; nothing stands north of z −30 |
+| Spawn | Unchanged: (−97, 14), yaw −0.62, in front of the hall, 19.0 m from G on the ring road's outer edge. The bold camp path now starts 9.9 m away at the 40° mouth; the ring road's paint runs under spawn to it |
+| The first-run landing and the walk in | `SHORE_LANDING` unchanged; the shore path ends as the dock street at the ring instead of bending between cottages |
+| The finders' bay, its boxes and plinth | Move together through `bayPoint`; the plinth is 1.1 m off the ring road's outer edge. B2 |
+| Trees | All 362 kept, same ids (above) |
+| Little guys | One door (the gate cottage); they wander the ring road and the green. B1 |
+| A saved pose inside a new footprint | Refused by the pose policy: `ROOM_PLOTS` for rooms, the collider sweep for blocks and the cottage; the player returns at spawn |
+| The bot | Reads `PATHS`; its Home waypoints are re-run at B4 |
+
+### The plan sheet
+
+`npm run town-plan-sheet` (`dev/level/town-plan-sheet.ts`, branch `codex/town-plan-sheet`) is the proof for spacing. For that, it must show:
+
+1. **Two layers from source:** the plan (`town-plan.ts`: slots, ring, green, streets, props) and what is built (`ROOM_PLOTS`, `TOWN.start`, `TOWN_BLOCKS`, `PATHS`, `SHORE_PATH`, `FINDERS_B`, the `yard` and balcony secrets, spawn, the hall, the forge). Any built outline more than 0.05 m or 0.5° off its plan row is listed, and `--check` exits 1 on it.
+2. **Every footprint to scale** with a tick on its door side, its id, kit and state (room, cottage, block, stake board).
+3. **Spacing as numbers:** each wall-to-wall gap under 4 m; each door's distance to its road's edge; street widths; the radii 14, 20 and 22 m and the 30° grid.
+4. **The ground:** every 2 m cell inside r 46 that is off 18 m by more than 0.05 m, tinted with its height; the pad's edge; the trees.
+5. **Gameplay marks:** spawn and its yaw, the `yard` find, the balcony pad, the bay with its boxes and plinth, the jump course's pads, the shelf, Sleeves.
+6. A scale bar, north, the source commit and a stamp.
+
+### Details replace blocks, one building at a time
+
+After B4 and the owner's walk, each construction is its own commit: its row leaves `TOWN_BLOCKS` in the commit that mounts the real thing at the same `townBuilding(id)` pose. The test "every slot is drawn once" keeps a slot from being drawn twice or not at all; the sheet shows each slot's state; the proof is one look from that building's door side. Order: D1 to D5 in Steps.
+
+### Level findings (blockout)
+
+`npm run level-check -- --place=place`, run on cc5e3dcfa with B1 and B2 applied (rooms, gate cottage, three cottages removed, both finds, both path heads, the dock street, the pad and plot pads):
+
+1. **Exits 0, 0 problems.** Against main: production grounding 5,278 to 5,275 placements; timber against track 563 to 399 decks (the three cottages); the balcony 143 to 147 m from the summit (budget 187 m); village to the machine the long way 431 to 430 m; the commons mark 17.4 to 17.5 m. Every progression line is the same: nothing is reached earlier by terrain.
+2. **The quarry road as planned clips plot 2.** A straight line from the 130° mouth to (−100, 62) passes 0.48 m from plot 2's east corner (today's path passes it at 2.2 m, inside the 2.4 m half width). B1 threads the road down the 7.3 m gap between plot 2's corner and the fronts of plots 3 and 6, at x −97.85: 3.65 m each side. New (designer).
+3. **`bridgeAt` is an index.** Adding two points to the quarry path's head without moving `bridgeAt` from 6 to 8 puts the footbridge on the wrong segment, and the level check still exits 0. B1 pins it with a test.
+4. **Road clearances** (nearest footprint corner to a centre line): camp road, the forge 6.08 m, Pip's house 6.39, plot 7 6.48, the hall 7.58; dock street, plot 1 7.80, the gate cottage 8.66.
+5. **Not seen by the tool** (it floods terrain and knows no blocks, roofs, props or paint), by arithmetic:
+   - A house block's top is 3.84 m; the second jump's best rise is 3.3 m. It cannot be mounted from the ground, with 0.54 m to spare.
+   - **Plots 1 and 2 now stand from arrival, 3.0 m from Fine Prices.** The 10 November review closed this because a plot was bought after the glider. During the shop's own site (a 2.04 m walkway for about 7 s at T3) a second jump reaches 5.3 m, over the block's 3.84; from the block's top 7.1 m, over the shop's roof at 5.86 and on to the balcony. A narrow window, once a world: P3. B4 probes it.
+   - Plot 4's cottage block (3.0 m) is 3.67 m from the museum (5 m walls): the museum's roof is probably a perch with the second jump. No reward there.
+   - Plot 7's cottage block is 14.8 m from the jump course: no reach.
+6. **Reachable before the ability that should gate it:** nothing new by terrain; the balcony by finding 5's window, unproven.
+
+### Risks (blockout)
+
+- **Room safety:** nothing writes shared state; no op, state key or wire shape. Views read constants.
+- **Hotspots:** `src/place/layout.ts`, `terrain.ts` and `tech-layout.ts` are read by the railway views, the level tools, the bots and the pages; B1 and B2 are one short branch each, in order. `npm run inflight` (14 November) names no branch on those files (its file lists are cut short, so check again before B1). In flight beside this: R1 on `src/entities/town/rooms.ts` (B3 edits `view.ts` and adds a file, not `rooms.ts`), `codex/town-plan-sheet`, `codex/prefab-data-step-10b`.
+- **The catalogue's byte ceiling.** 15.4 kB are free on main and 2.9 kB after step 10b; the blockout level is about 3 kB. The ceiling is a test constant; raising it is the orchestrator's ruling, not a reason to drop blocks.
+- **Mixed builds:** two tabs on different builds stand on different ground and see different buildings until they reload. Accepted in development; no compatibility code.
+- **Between B1 and B2** Pip's house and the bay stand on the green and Fine Prices on the ring road's inner edge (about 3 m of road stays clear). A day's oddity on the live game; nothing is blocked.
+- **Performance:** three cottages fewer (164 boxes), 25 instanced boxes more in one batch, no light; `npm run perf` once at B4, reported.
+
+### Calls for the designer (blockout)
+
+| Call | Kind |
+| --- | --- |
+| Block out spacing first; the blockout ships live | Decided (owner, 14 November) |
+| Terrain may be reshaped for the layout | Decided (owner, 14 November) |
+| Blocks stand on the eight unbought plots during the blockout | New (question 1) |
+| Block height is the kit's eave; a pale door panel and a ground mat mark the door side | Default |
+| The pad at G is r 38 with an 8 m edge: the largest that keeps every tree | Default |
+| The dock street is 8 m wide to r 38, then the shore path's own width down the climb | Default |
+| The hall's apron keeps its 0.1 to 0.2 m rise onto the ring road | Default |
+| The quarry road runs at x −97.85 between plot 2 and plots 3, 5 and 6 | New (finding 2) |
+| The bold camp path starts at the 40° mouth, 9.9 m from spawn, joined by the ring road's paint | New |
+| The plinth's rule becomes "beside the ring road" (1.1 m), not "near the quarry road" | Default |
+| House blocks beside Fine Prices from arrival (finding 5): leave, raise them, or hold plots 1 and 2 as stakes | New |
+| Fine Prices and the museum stay stake boards before T3, not blocks | Default |
+| The gate cottage stays sealed until D1 | New (question 3) |
+
+### Open questions for the owner (blockout)
+
+1. **Do blocks stand on the eight unbought plots, live, until you sign off the spacing?** The decided rule is that an unbought plot is empty ground. Recommended: **yes**, so the whole town's spacing can be walked now; after your sign-off they become stakes (D4).
+2. **Is a level town enough for the blockout, or do you want a bolder ground move now?** The Round already sits on flat ground; B1 only fills dips of up to 0.5 m and widens the top of the dock street. Recommended: **level for now**; walk it, then say where the ground should rise or step (the west rim, where it falls to the cove, is the natural place).
+3. **Can the gate cottage wait one step to open?** On 12 November the sealed buildings were to open with the Round's first build. Recommended: **yes**: its place should be signed off first, and D1 is the first detail step.
 
 ## Level findings
 
@@ -75,7 +231,7 @@ Run today on `de19c85a3`, `npm run level-check -- --place=place`:
 4. **Progression is identical in both layouts:** every "ok" and gate line of the place states matches; nothing became reachable before its ability; machine clearance 61,660 poses, 0 problems.
 5. **Reported, not failed, for the designer:** line 1's stub turnout at s 36 tightens from an 18.0 m to a 9.5 m radius (line 2's eases from 10.7 to 18.0); four new "straight into an 18 to 23 m curve, no easing" notes at s 45 to 70 on the new heads. The platform edge stands 1.45 m from the rail (0.55 and 0.75 m today).
 6. **Not seen by the tool** (it floods terrain at 2 m and knows no props): the hall, the goods door, the garage's pieces, Sleeves. Checked by arithmetic here and by F1's tests.
-7. **The Round's positions were not re-run today;** town-layout's findings of 10 November stand (the roof hop to the balcony closes when cottage 2 goes; the hall roof becomes a free perch from the moved bay, ruled "leave it"; the `yard` find is reachable before any ability either way). R2 re-runs the check.
+7. **The Round's positions were not re-run today;** town-layout's findings of 10 November stand (the roof hop to the balcony closes when cottage 2 goes; the hall roof becomes a free perch from the moved bay, ruled "leave it"; the `yard` find is reachable before any ability either way). **Re-run on 14 November with the Round applied:** [Level findings (blockout)](#level-findings-blockout).
 8. **Carried from home-station:** footings walk 19 m with a hop or 36 m by the ramp (11 m today); the pedestal-to-stall-seam walk is 32 m (14 m today).
 
 ## Risks
@@ -107,6 +263,8 @@ Run today on `de19c85a3`, `npm run level-check -- --place=place`:
 1. **Does the flip go ahead under "Engine foundations first"?** Recommended: **yes.** It changes rule constants and one data table, adds no component, op or system, and so leaves nothing to migrate; you agreed to the flip today.
 2. **Is one bump at X1, and possibly a second at R2 if the town's paths move trees, fine?** Recommended: **yes**, each ships when ready.
 3. **The first sealed building opens empty (greybox walls, a door, nothing inside yet)?** Recommended: **yes**; residents and dressing wait for the details phase.
+
+The blockout's three questions (14 November) are under [The Round, blockout first](#open-questions-for-the-owner-blockout).
 
 ## Design review (designer, 2026-11-13)
 
