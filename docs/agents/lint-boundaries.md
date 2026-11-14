@@ -100,7 +100,7 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   without hard content ceilings ([owner call, 14 November](owner-calls.md#no-limits-ahead-of-a-measured-problem)).
   Add a content limit only for a measured performance problem, sized from and citing that measurement.
   Duplicate validation, accidental per-placement definition duplication and stale artifacts remain defects.
-  The construction/importer/registration ratchets below count architectural violations, not allowed content.
+  Prefab construction/importer/registration ratchets count architectural violations, not allowed content.
 - `dev/lint/prefab-debt.json` version 7 lists collider/seat files with `{ count, reason, exports }` (counts are
   lint violations: module acquisitions and direct calls, not runtime collider instances), fixed door
   public surfaces and compact computed construction/importer counts. Dropping the schema or counts fails. Lint and registry

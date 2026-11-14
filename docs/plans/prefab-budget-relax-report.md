@@ -38,10 +38,31 @@ invariants were excluded. No other guard was changed.
 
 ## Validation and evidence
 
-Pending final checks. No browser run is required by the docs/tooling routes: this changes no player-visible
+Rebased implementation commit: `b2f9846df2adb6c5c3b0f10a033179b09b8ac900`, onto local `origin/main`
+`4fc3dc35d69d3d97ffa01c07f71ed89a7a0ae2f2` (#1782, including #1781's consolidation). No conflicts.
+
+- `npx prettier --write` ran on every changed file (the repo's `.prettierignore` excludes Markdown).
+  Changed-file lint passed with zero problems; `git diff --check` passed.
+- [Rebased full check](../../.look/prefab-budget-relax/check-rebased.log): **1,926 passing tests**, one existing
+  TODO, zero failures; lint, typecheck, registry, level-check, assets, compiler freshness and production build passed.
+- [Rebased prefab suite](../../.look/prefab-budget-relax/prefab-tests-rebased.log): **227/227 passed**, zero failures,
+  using `UNIT_ONLY` with `npm run test:unit` and the repo's local test settings. The first, pre-rebase dedicated run
+  also passed 227/227 with the sim import hook. No goldens were regenerated.
+- [Rebased standalone registry](../../.look/prefab-budget-relax/registry-rebased.log): passed.
+- [Review stamp](../../.look/prefab-budget-relax/review-stamp-rebased.log): **`0bef3cebfba2`**, unchanged by rebase.
+  `test/prefab-portability.test.ts` is classified `review` for the removed assertions because its import closure
+  reaches review paths. This is the tool's classification, not an independent review; that review remains for
+  the caller before any future merge. No push or ship was run.
+- Compiler and test diagnostics agree: greybox **7 / 7,200**, halts **12 / 2,414**, railway **2 / 2,442**, town
+  **172 / 46,724** (records / standalone compiled definition bytes). Physical total remains **243,652 bytes**.
+
+No browser run is required by the docs/tooling routes: this changes no player-visible
 output or runtime behavior. No images opened, visual question, bot failures or broker evidence manifests;
 visuals, real-time feel, device performance and remote CI are unverified.
 
 Work stayed on `codex/prefab-budget-relax` in this worktree. Network was restricted to the local broker by the
-brief, so no fetch, GitHub query, push or ship was run. `npm run inflight` was replaced with local ref/status
-inspection because its implementation fetches and calls GitHub. Rebase uses the locally available `origin/main`.
+brief. `npm run inflight` was replaced with local ref/status inspection because its implementation fetches and
+calls GitHub. The requested default `npm run review-stamp -- .` failed locally opening `FETCH_HEAD` with
+`Operation not permitted`; its successful invocation used the supported `--no-fetch` flag to respect the network
+restriction. No successful fetch or GitHub query was made. Rebase used the locally available `origin/main`;
+its remote freshness was not independently verified.
