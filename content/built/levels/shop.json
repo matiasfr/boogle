@@ -1,0 +1,166 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "shop",
+  "placements": [
+    {
+      "id": "shop-floor",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-floor"
+    },
+    {
+      "id": "shop-counter",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-counter"
+    },
+    {
+      "id": "shop-step",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-step"
+    },
+    {
+      "id": "shop-rug",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-rug"
+    },
+    {
+      "id": "shop-rail",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-rail"
+    },
+    {
+      "id": "shop-counter-detail",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-counter-detail"
+    },
+    {
+      "id": "shop-hangers",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-hangers"
+    },
+    {
+      "id": "shop-stand-0",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-stand-0"
+    },
+    {
+      "id": "shop-stand-1",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-stand-1"
+    },
+    {
+      "id": "shop-stand-2",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-stand-2"
+    },
+    {
+      "id": "shop-stand-3",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-stand-3"
+    },
+    {
+      "id": "shop-stand-4",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-stand-4"
+    },
+    {
+      "id": "shop-highlight",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-highlight"
+    },
+    {
+      "id": "shop-awning",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-awning"
+    },
+    {
+      "id": "shop-front-table",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-front-table"
+    },
+    {
+      "id": "shop-front-box",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-front-box"
+    },
+    {
+      "id": "shop-sign",
+      "labels": {
+        "sign": "shop"
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.shop-sign"
+    }
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

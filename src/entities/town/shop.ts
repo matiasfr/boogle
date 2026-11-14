@@ -18,18 +18,15 @@ import { STOCK, cosmetic, type Stock } from '../../render/cosmetic-parts.ts';
 import { CLOTHES_SLOTS, type ClothesSlot, type WardrobeApi } from '../wardrobe/state.ts';
 import { playMark } from '../../proto/mark.ts';
 import { merged } from '../../render/part-geometry.ts';
-import {
-  DOOR,
-  addSolid,
-  plate,
-  plankFloor,
-  roomMesh,
-  roomToWorld,
-  worldToRoom,
-  type Part,
-  type Rooms,
-} from './rooms.ts';
+import { plate, roomMesh, roomToWorld, worldToRoom, type Part, type Rooms } from './rooms.ts';
 import { BOARDS, SHOP, type Fact } from './town-lines.ts';
+import { createOwnedView } from '../../render/owned-view.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
+import { loadLevelArtifact, loadPrefabArtifact } from '../../prefab/validate.ts';
+import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import level from '../../../content/built/levels/shop.json' with { type: 'json' };
+const definitions = loadPrefabArtifact(artifact).prefabs;
+const placements = loadLevelArtifact(level, definitions).placements;
 
 /** What the shop needs of the wardrobe. */
 export type ShopWardrobe = Pick<
@@ -46,16 +43,18 @@ export type ShopEnv = {
 /** Who answers in the shop: Button, through the residents (T2), or nobody yet. */
 export type ShopSay = (id: 'button', line: string) => void;
 
-const OAK = '#8a4a2c',
-  CREAM = '#fff3d6';
-/** Where each thing stands, in the stock's order; the tag faces back into the room. */
-const STANDS: { x: number; z: number; yaw: number }[] = [
-  { x: 3.8, z: -1.9, yaw: -Math.PI / 2 },
-  { x: 3.8, z: 0.2, yaw: -Math.PI / 2 },
-  { x: 3.8, z: 2.3, yaw: -Math.PI / 2 },
-  { x: -3.8, z: 0.2, yaw: Math.PI / 2 },
-  { x: -3.8, z: 2.3, yaw: Math.PI / 2 },
-];
+const CREAM = '#fff3d6';
+/** Stock order and authored headings come from the same records as the stands' parts and solids. */
+const STANDS = placements
+  .filter((p) => p.id.startsWith('shop-stand-'))
+  .map((p) => {
+    const def = definitions[p.prefab]!;
+    if (!('builder' in def.visual)) throw new Error('shop: expected stand builder');
+    const { x, z, headingDegrees } = def.visual.params;
+    if (typeof x !== 'number' || typeof z !== 'number' || typeof headingDegrees !== 'number')
+      throw new Error('shop: expected stand coordinates');
+    return { x, z, yaw: (headingDegrees / 180) * Math.PI };
+  });
 const RAIL_X: Record<ClothesSlot, number> = { hat: -0.2, accessory: 0.65, outfit: 1.5 };
 
 /** Fine Prices in `rooms`' shop, owned by `owner`. The caller registers `targets` and calls `update` each frame. */
@@ -67,50 +66,40 @@ export function createShop(owner: OwnedView, rooms: Rooms, env: ShopEnv, wardrob
   const listPrice = (s: Stock) => s.price + Math.round(env.money()) * 1000;
 
   // ---------------------------------------------------------------- the room
-  const fixtures = plankFloor(r, '#a57d51', '#b0875a');
-  fixtures.push(
-    // The counter and its till, with one enormous button.
-    ['b', -3.0, 0.52, -2.45, 3.6, 1.04, 1.0, OAK],
-    ['b', -3.0, 1.06, -2.45, 3.8, 0.08, 1.15, '#c9a86a'],
-    ['b', -3.9, 1.3, -2.45, 0.8, 0.42, 0.6, '#3f4145'],
-    ['c', -3.9, 1.55, -2.3, 0.2, 0.08, 0.2, '#d8392b'],
-    // Button's step behind it.
-    ['b', -3.0, 0.24, -3.3, 1.2, 0.48, 0.75, '#7f5630'],
-    // A fitting rug, where a friend can see you.
-    ['c', 0.5, 0.04, 0.5, 1.4, 0.03, 1.4, '#3f8ee0'],
-    ['c', 0.5, 0.05, 0.5, 1.05, 0.03, 1.05, '#8fd0ff'],
-    // The rail: anything you own.
-    ['b', 1.0, 1.7, -3.45, 3.4, 0.08, 0.08, '#3f4145'],
-    ['b', -0.65, 0.85, -3.45, 0.08, 1.7, 0.08, '#3f4145'],
-    ['b', 2.65, 0.85, -3.45, 0.08, 1.7, 0.08, '#3f4145'],
-    ['b', -0.2, 1.45, -3.45, 0.04, 0.5, 0.04, '#d9a23a'],
-    ['b', 0.65, 1.45, -3.45, 0.04, 0.5, 0.04, '#d9a23a'],
-    ['b', 1.5, 1.45, -3.45, 0.04, 0.5, 0.04, '#d9a23a'],
-    ['b', 2.3, 1.45, -3.45, 0.04, 0.5, 0.04, '#d9a23a'],
-    // Panelled counter, folded cloth and a receipt roll: a little haberdashery.
-    ['b', -3, 0.52, -1.94, 3.3, 0.72, 0.03, '#b77a4c'],
-    ['b', -3, 0.52, -1.91, 0.08, 0.78, 0.04, OAK],
-    ['b', -2.05, 1.15, -2.55, 0.75, 0.12, 0.55, '#3f6fb0'],
-    ['b', -2.02, 1.26, -2.55, 0.7, 0.1, 0.5, '#e4574a'],
-    ['b', -2.02, 1.32, -2.55, 0.1, 0.025, 0.5, CREAM],
-    ['c', -3.4, 1.28, -2.35, 0.1, 0.32, 0.1, CREAM, 0, Math.PI / 2],
+  if (w !== 10 || d !== 8) throw new Error('shop: room dimensions differ from authored records');
+  const fixtureOwner = createOwnedView();
+  r.near.add(fixtureOwner.root);
+  owner.cleanup(fixtureOwner.dispose);
+  const pieces = placements.map((p) => {
+    const instance = instantiate(p.prefab, p, {
+      owner: fixtureOwner,
+      makeLabel: (a, key) => {
+        if (key !== 'shop') throw new Error('shop: unknown sign reference');
+        return plate(BOARDS.shop, a.w, a.h, a.at[0], a.at[1], a.at[2]);
+      },
+      handlers: {
+        'town.shop-stock': (at) => {
+          const stock = STOCK[Number(at.id.slice('shop-stand-'.length))]!;
+          return targets().filter((t) => t.id === `place-stock-${stock.id}`);
+        },
+        'town.shop-rail': () => targets().filter((t) => t.id.startsWith('place-rail-')),
+      },
+    });
+    r.furnishings.push(instance);
+    if (p.id === 'shop-sign') r.over.add(instance.root);
+    return { id: p.id, instance };
+  });
+  const parts = (...ids: string[]) => pieces.filter((p) => ids.includes(p.id)).flatMap((p) => p.instance.parts);
+  const fixtures = parts(
+    'shop-floor',
+    'shop-counter',
+    'shop-step',
+    'shop-rug',
+    'shop-rail',
+    'shop-counter-detail',
+    'shop-hangers',
+    ...STANDS.map((_, k) => `shop-stand-${k}`),
   );
-  for (const x of [-0.2, 0.65, 1.5, 2.3])
-    fixtures.push(
-      ['b', x - 0.11, 1.29, -3.45, 0.3, 0.035, 0.05, '#d9a23a', 0, 0.5],
-      ['b', x + 0.11, 1.29, -3.45, 0.3, 0.035, 0.05, '#d9a23a', 0, -0.5],
-      ['b', x, 1.22, -3.45, 0.5, 0.035, 0.05, '#d9a23a'],
-    );
-  for (const s of STANDS)
-    fixtures.push(
-      ['b', s.x, 0.45, s.z, 0.8, 0.9, 0.8, '#c9a86a'],
-      ['b', s.x, 0.92, s.z, 0.9, 0.05, 0.9, OAK],
-      // The tag's post, on the wall side.
-      ['b', s.x + Math.sign(s.x) * 0.55, 1.0, s.z, 0.08, 2.0, 0.08, OAK],
-    );
-  addSolid(r, -3.0, -2.45, 1.9, 0.58, 1.1);
-  addSolid(r, 1.0, -3.45, 1.7, 0.08, 1.75);
-  for (const s of STANDS) addSolid(r, s.x, s.z, 0.45, 0.45, 1.0);
   const room = roomMesh(fixtures);
   r.near.add(room);
 
@@ -227,11 +216,7 @@ export function createShop(owner: OwnedView, rooms: Rooms, env: ShopEnv, wardrob
   }
   const prompts = STOCK.map(() => new THREE.Vector3());
   const rail = new Map<ClothesSlot, THREE.Vector3>();
-  const hangerHighlight = roomMesh([
-    ['b', -0.11, 1.29, -3.4, 0.34, 0.07, 0.06, '#fff0a0', 0, 0.5],
-    ['b', 0.11, 1.29, -3.4, 0.34, 0.07, 0.06, '#fff0a0', 0, -0.5],
-    ['b', 0, 1.22, -3.4, 0.55, 0.07, 0.06, '#fff0a0'],
-  ]);
+  const hangerHighlight = roomMesh(parts('shop-highlight'));
   hangerHighlight.visible = false;
   r.near.add(hangerHighlight);
   function targets(): Interactable[] {
@@ -303,48 +288,10 @@ export function createShop(owner: OwnedView, rooms: Rooms, env: ShopEnv, wardrob
   }
 
   // ---------------------------------------------------------------- what it looks like from the street
-  const STRIPES = 8,
-    AW = DOOR.w + 3.2;
-  const awning: Part[] = [];
-  for (let k = 0; k < STRIPES; k++)
-    awning.push([
-      'b',
-      -AW / 2 + (k + 0.5) * (AW / STRIPES),
-      2.72,
-      d / 2 + 0.85,
-      AW / STRIPES,
-      0.08,
-      1.8,
-      k % 2 ? '#fff3d6' : '#c4453a',
-      0.36,
-    ]);
-  // A scalloped valance makes the shop's silhouette readable from along the street.
-  for (let k = 0; k < STRIPES; k++)
-    awning.push([
-      's',
-      -AW / 2 + ((k + 0.5) * AW) / STRIPES,
-      2.36,
-      d / 2 + 1.7,
-      AW / STRIPES / 2,
-      0.18,
-      0.055,
-      k % 2 ? CREAM : '#c4453a',
-    ]);
-  const awningMesh = roomMesh(awning);
-  r.over.add(awningMesh, plate(BOARDS.shop, 4.4, 0.72, 0, 3.42, d / 2 + 0.34));
-  const front = roomMesh([
-    // A table of things out front, as a shop has, with a tag bigger than any of them.
-    ['b', -DOOR.w / 2 - 1.5, 0.45, d / 2 + 1.0, 1.7, 0.9, 0.9, OAK],
-    ['s', -DOOR.w / 2 - 1.9, 1.02, d / 2 + 1.0, 0.2, 0.14, 0.2, '#f0c030'],
-    ['s', -DOOR.w / 2 - 1.2, 1.02, d / 2 + 1.05, 0.2, 0.14, 0.2, '#3f8ee0'],
-    ['b', DOOR.w / 2 + 1.4, 0.4, d / 2 + 1.0, 0.8, 0.8, 0.8, '#a9794c'],
-    ['b', DOOR.w / 2 + 1.4, 1.05, d / 2 + 1.0, 0.1, 0.5, 0.1, '#7f5630'],
-    ['b', DOOR.w / 2 + 1.4, 1.4, d / 2 + 1.05, 0.9, 0.5, 0.04, CREAM],
-    ['b', DOOR.w / 2 + 1.4, 1.4, d / 2 + 1.08, 0.7, 0.14, 0.02, '#c4453a'],
-  ]);
+  const awningMesh = roomMesh(parts('shop-awning'));
+  r.over.add(awningMesh);
+  const front = roomMesh(parts('shop-front-table', 'shop-front-box'));
   r.outside.add(front);
-  addSolid(r, -DOOR.w / 2 - 1.5, d / 2 + 1.0, 0.85, 0.45, 1.0);
-  addSolid(r, DOOR.w / 2 + 1.4, d / 2 + 1.0, 0.45, 0.45, 1.7);
 
   // The rooms' groups were owned empty, so what's added to them here is released here.
   owner.cleanup(() => {
@@ -353,6 +300,12 @@ export function createShop(owner: OwnedView, rooms: Rooms, env: ShopEnv, wardrob
     tagMat.dispose();
     gotMat.dispose();
   });
-  return { targets, update };
+  return {
+    targets: () =>
+      [...pieces.filter((p) => p.id.startsWith('shop-stand-')), ...pieces.filter((p) => p.id === 'shop-rail')].flatMap(
+        (p) => p.instance.targets(),
+      ),
+    update,
+  };
 }
 export type Shop = ReturnType<typeof createShop>;

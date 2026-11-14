@@ -715,6 +715,434 @@
         "none": true
       }
     },
+    "town.shop-awning": {
+      "colliders": [],
+      "key": "town.shop-awning",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "awning"
+        }
+      }
+    },
+    "town.shop-counter": {
+      "colliders": [
+        {
+          "at": [
+            -3,
+            0.55,
+            -2.45
+          ],
+          "half": [
+            1.9,
+            0.55,
+            0.58
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.shop-counter",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "counter"
+        }
+      }
+    },
+    "town.shop-counter-detail": {
+      "colliders": [],
+      "key": "town.shop-counter-detail",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "counter-detail"
+        }
+      }
+    },
+    "town.shop-floor": {
+      "colliders": [],
+      "key": "town.shop-floor",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "floor"
+        }
+      }
+    },
+    "town.shop-front-box": {
+      "colliders": [
+        {
+          "at": [
+            2.7,
+            0.85,
+            5
+          ],
+          "half": [
+            0.45,
+            0.85,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.shop-front-box",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "front-box"
+        }
+      }
+    },
+    "town.shop-front-table": {
+      "colliders": [
+        {
+          "at": [
+            -2.8,
+            0.5,
+            5
+          ],
+          "half": [
+            0.85,
+            0.5,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.shop-front-table",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "front-table"
+        }
+      }
+    },
+    "town.shop-hangers": {
+      "colliders": [],
+      "key": "town.shop-hangers",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "hangers"
+        }
+      }
+    },
+    "town.shop-highlight": {
+      "colliders": [],
+      "key": "town.shop-highlight",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "highlight"
+        }
+      }
+    },
+    "town.shop-rail": {
+      "colliders": [
+        {
+          "at": [
+            1,
+            0.875,
+            -3.45
+          ],
+          "half": [
+            1.7,
+            0.875,
+            0.08
+          ],
+          "shape": "box"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "town.shop-rail"
+        }
+      ],
+      "key": "town.shop-rail",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "rail"
+        }
+      }
+    },
+    "town.shop-rug": {
+      "colliders": [],
+      "key": "town.shop-rug",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "rug"
+        }
+      }
+    },
+    "town.shop-sign": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            3.42,
+            4.34
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 0.72,
+          "kind": "label",
+          "posts": "none",
+          "w": 4.4
+        }
+      },
+      "colliders": [],
+      "key": "town.shop-sign",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.shop-stand-0": {
+      "attach": {
+        "target": {
+          "at": [
+            3.8,
+            1.5,
+            -1.9
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            3.8,
+            0.5,
+            -1.9
+          ],
+          "half": [
+            0.45,
+            0.5,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "town.shop-stock",
+          "at": "target"
+        }
+      ],
+      "key": "town.shop-stand-0",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "headingDegrees": -90,
+          "piece": "stand",
+          "x": 3.8,
+          "z": -1.9
+        }
+      }
+    },
+    "town.shop-stand-1": {
+      "attach": {
+        "target": {
+          "at": [
+            3.8,
+            1.5,
+            0.2
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            3.8,
+            0.5,
+            0.2
+          ],
+          "half": [
+            0.45,
+            0.5,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "town.shop-stock",
+          "at": "target"
+        }
+      ],
+      "key": "town.shop-stand-1",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "headingDegrees": -90,
+          "piece": "stand",
+          "x": 3.8,
+          "z": 0.2
+        }
+      }
+    },
+    "town.shop-stand-2": {
+      "attach": {
+        "target": {
+          "at": [
+            3.8,
+            1.5,
+            2.3
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            3.8,
+            0.5,
+            2.3
+          ],
+          "half": [
+            0.45,
+            0.5,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "town.shop-stock",
+          "at": "target"
+        }
+      ],
+      "key": "town.shop-stand-2",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "headingDegrees": -90,
+          "piece": "stand",
+          "x": 3.8,
+          "z": 2.3
+        }
+      }
+    },
+    "town.shop-stand-3": {
+      "attach": {
+        "target": {
+          "at": [
+            -3.8,
+            1.5,
+            0.2
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            -3.8,
+            0.5,
+            0.2
+          ],
+          "half": [
+            0.45,
+            0.5,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "town.shop-stock",
+          "at": "target"
+        }
+      ],
+      "key": "town.shop-stand-3",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "headingDegrees": 90,
+          "piece": "stand",
+          "x": -3.8,
+          "z": 0.2
+        }
+      }
+    },
+    "town.shop-stand-4": {
+      "attach": {
+        "target": {
+          "at": [
+            -3.8,
+            1.5,
+            2.3
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            -3.8,
+            0.5,
+            2.3
+          ],
+          "half": [
+            0.45,
+            0.5,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "town.shop-stock",
+          "at": "target"
+        }
+      ],
+      "key": "town.shop-stand-4",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "headingDegrees": 90,
+          "piece": "stand",
+          "x": -3.8,
+          "z": 2.3
+        }
+      }
+    },
+    "town.shop-step": {
+      "colliders": [],
+      "key": "town.shop-step",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.shop-parts",
+        "params": {
+          "piece": "step"
+        }
+      }
+    },
     "town.workshop-anvil": {
       "colliders": [
         {

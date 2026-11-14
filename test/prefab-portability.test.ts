@@ -1,3 +1,5 @@
+import { prefabs as shop } from '../src/content/prefabs/shop.ts';
+import { levels as shopLevels } from '../src/content/levels/shop.ts';
 import { prefabs as railway } from '../src/content/prefabs/railway.ts';
 import { prefabs as greybox } from '../src/content/prefabs/greybox.ts';
 import { prefabs as town } from '../src/content/prefabs/town.ts';
@@ -32,7 +34,10 @@ test('artifact serialization is independent of runtime native transcendental res
       Math[key] = (...args: number[]) => f(...args) + 1e-15;
     }
     writeArtifacts(
-      compile([...greybox, ...town, ...rock, ...railway, ...kit], [...leg2, ...gorge, ...workshop, ...kitLevels]),
+      compile(
+        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop],
+        [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels],
+      ),
       'content/built',
       true,
     );

@@ -98,6 +98,7 @@ export function captureWorkshop() {
     builders: new Map<string, import('../src/prefab/builders.ts').Builder>([
       ['seat.chair', () => chair],
       ['greybox.box', () => chair],
+      ['town.shop-parts', () => chair],
       [
         'town.workshop-parts',
         (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
@@ -221,6 +222,7 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
       builders: new Map<string, () => THREE.Object3D>([
         ['greybox.box', () => new THREE.Group()],
         ['town.workshop-parts', () => new THREE.Group()],
+        ['town.shop-parts', () => new THREE.Group()],
         [
           'seat.chair',
           () => {
