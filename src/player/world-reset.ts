@@ -19,6 +19,14 @@ const ROOM_BORN = 'boogle.room-born.v0:';
 /** sessionStorage, `<room id> <room name>[ <stage>]`: this room's world started over, so the next load starts the
  * player over. The stage is there when the new world is a replacement by that stage (docs/plans/room-fast-forward.md). */
 export const ROOM_RESET_KEY = 'boogle.roomReset';
+/** How a load arrives (src/player/arrival.ts). `card`: the name-and-colour card shows: nobody is saved on this device,
+ * or the world was reset. `fall`: the card's fall plays. A room replaced by a stage (`replacedStage`) comes first for
+ * where the player lands: never the fall, always the stage's landing; a saved player skips the card too, and one who
+ * had not picked a name yet (replaced while still in the lobby) keeps the card and lands at the stage after it. */
+export function arrivalPlan(o: { saved: boolean; worldWasReset: boolean; replacedStage: string }) {
+  const card = !o.saved || (o.worldWasReset && !o.replacedStage);
+  return { card, fall: card && !o.replacedStage };
+}
 export type RoomReset = { id: string; name: string; stage: string };
 export const roomResetNote = (id: string, name: string, stage = '') => [id, name, ...(stage ? [stage] : [])].join(' ');
 export function readRoomReset(text: string | null): RoomReset | null {

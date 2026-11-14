@@ -33,8 +33,9 @@ function tick() {
     return;
   }
   if (notice.seconds === shown) return;
-  // The first one pops; each second after refreshes it quietly.
-  dismiss = notify(countdownText(notice), { kind: 'news', ttl: 0, key: KEY, quiet: shown >= 0 });
+  // The first one pops; each second after refreshes it quietly. Urgent: it takes the lane from whatever shows (the
+  // line of a replacement just before this one) and is seen in the lobby and the fall, where the HUD is hidden.
+  dismiss = notify(countdownText(notice), { kind: 'news', ttl: 0, key: KEY, quiet: shown >= 0, urgent: true });
   shown = notice.seconds;
 }
 

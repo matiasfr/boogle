@@ -11,7 +11,8 @@ import {
   replacedReply,
 } from '../src/debug/dev/room-replace.ts';
 import { HOLD_MS, countdownAt, countdownText, startCountdown } from '../src/netplay/replace-countdown.ts';
-import { readRoomReset, roomResetNote } from '../src/player/world-reset.ts';
+import { arrivalPlan, readRoomReset, roomResetNote } from '../src/player/world-reset.ts';
+import { placement } from '../src/ui/notify-order.ts';
 import { hostMeta } from '../src/netplay/room-seed.ts';
 import { replacedText, replacingText } from '../src/net/ws-wire.ts';
 import { OFFERED_STAGES } from '../src/world/railway-jump.ts';
@@ -166,6 +167,31 @@ test('host status: the replacement record is read with its born, and junk reads 
   assert.deepEqual(hostMeta({ seed: { stage: 'awake', at: 't' } }).seed, { stage: 'awake', at: 't' });
   for (const junk of [null, 'x', { replaced: 'awake' }, { replaced: { stage: 1, born: 'b' } }, { replaced: null }])
     assert.equal(hostMeta(junk).replaced, null);
+});
+
+test('the countdown takes the lane at once, over the line of the replacement before it', () => {
+  const countdown = { key: 'room-replacing', ttl: 0, kind: 'news', urgent: true } as const;
+  const line = { key: 'room-replaced', ttl: 12000 };
+  assert.equal(placement(countdown, line), 'cut-in'); // never queued behind the twelve-second line
+  assert.equal(placement(countdown, null), 'show');
+  assert.equal(placement(countdown, { key: 'offline', ttl: 0 }), 'show'); // over another sticky
+  assert.equal(placement(countdown, { key: 'room-replacing', ttl: 0 }), 'refresh'); // its own next second
+  // What it was before, for everything else: a plain sticky waits under a transient; a deny cuts in; a note queues.
+  assert.equal(placement({ key: 'update', ttl: 0, kind: 'news' }, line), 'wait');
+  assert.equal(placement({ key: 'no', ttl: 2500, kind: 'deny' }, line), 'cut-in');
+  assert.equal(placement({ key: 'note', ttl: 2500, kind: 'info' }, line), 'wait');
+  assert.equal(placement({ key: 'note', ttl: 2500, kind: 'info' }, { key: 'room-replacing', ttl: 0 }), 'show');
+});
+
+test('arrival: a replacement decides the landing even for a player with no saved name', () => {
+  const plan = (saved: boolean, worldWasReset: boolean, replacedStage = '') =>
+    arrivalPlan({ saved, worldWasReset, replacedStage });
+  assert.deepEqual(plan(false, false), { card: true, fall: true }); // a first visit
+  assert.deepEqual(plan(true, false), { card: false, fall: false }); // returning
+  assert.deepEqual(plan(true, true), { card: true, fall: true }); // an ordinary reset starts over
+  assert.deepEqual(plan(true, true, 'q1-done'), { card: false, fall: false }); // replaced: straight to the stage
+  // Replaced while still in the lobby: the card (a name is still needed), no fall, so the stage's landing holds.
+  assert.deepEqual(plan(false, true, 'q1-done'), { card: true, fall: false });
 });
 
 test('a playtest summary says the room was replaced with a stage', () => {

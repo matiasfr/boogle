@@ -34,6 +34,12 @@
     opacity var(--dur-pop) var(--ease-out),
     transform var(--dur-pop) var(--ease-pop);
 }
+/* An urgent notice (the room-replacement countdown) shows where the HUD is hidden, the lobby and the arrival fall
+   (src/fall/fall.css hides .hud by visibility), and above the lobby's card. */
+.notify[data-urgent] {
+  visibility: visible;
+  z-index: 60;
+}
 .notify-text {
   min-width: 0;
   overflow-wrap: anywhere;
