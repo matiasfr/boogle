@@ -82,6 +82,27 @@ export const ENGINE_STOOL = {
 /** The longer boiler's frame (the upgrade, not yet in the game): 0.5 m longer ahead, the cab where it is. */
 export const ENGINE_LONG_AHEAD = spec.long.ahead * S;
 
+/** How far past the cab's inner faces (and under its floor, onto the step) someone already in it still counts as in:
+ * through the wall's thickness and a little beyond, so a step back in the doorway doesn't flicker the cutaway. */
+export const CAB_KEEP = 0.25;
+/** Is a body in the cab's interior, for the cutaway (train-view.ts)? `x`, `z` are its middle and `feet` its feet, in
+ * the car's frame. In means the middle is inside the walls' inner faces with the feet between the floor and the
+ * roof's underside: beside the cab on a platform, in the air next to a doorway, on the step, on the roof, on the
+ * coupling or on the footplate ahead is out (owner, 14 November: the roof came off when he jumped close to the cab).
+ * `keep` is for whoever was in on the last frame: CAB_KEEP wider, and down to the step. */
+export function inEngineCab(x: number, feet: number, z: number, keep = false) {
+  const c = ENGINE_CAB,
+    m = keep ? CAB_KEEP : 0,
+    hxIn = c.hx - c.wall;
+  return (
+    Math.abs(x) < hxIn + m &&
+    z > c.zBack + c.wall - m &&
+    z < c.zFront - c.wall + m &&
+    feet > (keep ? c.step : c.floor) - 0.15 &&
+    feet < c.roofUnder
+  );
+}
+
 type Box = { x: [number, number]; y: [number, number]; z: [number, number] };
 /** The engine's solid parts beyond its deck box, in the car's frame (y from the rail line): the boiler (when fitted),
  * the cab's walls either side of each doorway, its front and back walls, the roof, the steps. The doors are not solid:

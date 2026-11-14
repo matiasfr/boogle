@@ -24,6 +24,11 @@ export function setSeated(on: boolean, jumpLabel = 'Jump') {
   document.body.classList.toggle('seated', on);
   dom.jumpBtn.textContent = on ? jumpLabel : 'Jump';
 }
+/** What the touch Jump button says while a press of it does something else (sitting in a chair: 'Stand up');
+ * no argument puts 'Jump' back. Only the word: the button still presses jump. */
+export function setJumpLabel(label = 'Jump') {
+  if (dom.jumpBtn.textContent !== label) dom.jumpBtn.textContent = label;
+}
 // Radians per pixel of a two-finger trackpad scroll (wheel deltas; a mouse wheel's lines are scaled to pixels).
 const WHEEL_YAW = 0.0035;
 const WHEEL_PITCH = 0.0028;

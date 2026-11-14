@@ -9,6 +9,9 @@
 //   ride    Buddy boards before the capture and the game's own camera rides out with him (use --video --seconds 8)
 //   onboard Buddy on the halt on the follow camera; the --action walks him into the cab (the cutaway, train-view.ts)
 //   alight  Buddy in the cab on the follow camera; the --action walks him out onto the halt
+//   beside  Buddy on the halt against the cab by the near door, on the follow camera; the --action jumps him once
+//           where he stands (the cab must stay whole: owner, 14 November), then walks him in (the roof lifts)
+//           (--video --seconds 4; ENGINE CUT lines give his place in the car's frame and the cutaway's faces)
 //   watch   --players 2: the first in the cab, the second on the halt, whose view keeps the cab whole
 // npm run look -- --rail-seed trains-on --query 'engineShot=halt&engineLine=0&engineStop=0' \
 //   --eval dev/look/evals/railway-engine.ts --until window.__placeDone --question "..."
@@ -65,11 +68,13 @@ if (w.__engineFrame) {
   // The --action: Buddy walks from the halt through the near doorway to the middle of the cab.
   const f = w.__engineFrame;
   const bot = makeBot();
+  if (shot === 'beside') for (const ms of [100]) setTimeout(() => (me.jumpQueued = 0.2), ms);
   // `alight` walks the other way: out of the cab onto the halt.
   const [ix, , iz] = at(f, f.side * (shot === 'alight' ? 2.6 : 0.2), ENGINE_CAB.floor, doorZ);
   background(
     (async () => {
       if (shot === 'alight') await wait(1200);
+      if (shot === 'beside') await wait(1000);
       const ok = await bot.walk(ix, iz, 0.35, { limit: 6000 });
       const p = me.body!.position;
       console.log(
@@ -90,7 +95,21 @@ if (w.__engineFrame) {
       const cam = (p: [number, number, number], t: [number, number, number], fov = 50) =>
         window.__debugCam?.set(p, t, fov);
       const deck = 0.72;
-      if (shot === 'onboard' || shot === 'alight') {
+      if (shot === 'beside') {
+        // On the halt, 0.18 m off the cab's wall at the near doorway (the train stands 5 s: no walk up to it).
+        teleport(me.body!, ...at(f, f.side * (ENGINE_CAB.hx + 0.45 + 0.18), deck + 0.6, doorZ));
+        const clear = () => window.__debugCam?.clear();
+        clear();
+        setTimeout(clear, 0);
+        setInterval(() => {
+          const g = frame(),
+            p = me.body!.position,
+            dx = p.x - g.x,
+            dz = p.z - g.z;
+          const local = [g.fz * dx - g.fx * dz, p.y - 0.45 - g.y, g.fx * dx + g.fz * dz].map((v) => +v.toFixed(2));
+          console.log(`ENGINE CUT ${JSON.stringify({ local, cut: train().cut })}`);
+        }, 250);
+      } else if (shot === 'onboard' || shot === 'alight') {
         // The game's own follow camera: Buddy on the halt by the near door (onboard) or in the cab (alight), and the
         // --action walks him in (or out) as the train stands.
         const [x, y, z] =

@@ -64,6 +64,10 @@ export type Interactable = InteractTarget & {
   click?: boolean;
   show?: (html: string) => void; // draws the prompt itself (the Boogler's name tag); src/features/prompt.ts
   fadeAfter?: number; // seconds before the floating hint fades; the interaction stays available
+  /** A second control shown over the prompt, for something another button does meanwhile (seated in a chair aboard a
+   * train: Interact requests the stop, Jump stands you up). `action` is a control id for its glyph; the prompt only
+   * shows it, the control's own handler does it. */
+  also?: { action: string; verb: string };
 };
 
 const USE_VERB: Record<string, string> = { seeds: 'Sprout' };

@@ -56,6 +56,20 @@ body.touch .prompt-chip {
 .prompt-chip.blocked .g {
   opacity: 0.45;
 }
+/* A second control over the chip (hands.ts, `also`): smaller, no arrow; hidden on touch, where its button says it. */
+.prompt-in > .prompt-chip.prompt-also {
+  order: -2;
+  font-size: 15px;
+  padding: 3px 11px 3px 4px;
+  border-width: 2px;
+  box-shadow: 0 2px 0 var(--ink);
+}
+.prompt-in > .prompt-chip.prompt-also::after {
+  content: none;
+}
+body.touch .prompt-chip.prompt-also {
+  display: none;
+}
 .prompt-why {
   order: -1;
   padding: 4px 10px;
