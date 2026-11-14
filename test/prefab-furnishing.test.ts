@@ -17,6 +17,7 @@ import level from '../content/built/levels/workshop-kit.json' with { type: 'json
 import { loadLevelArtifact, loadPrefabArtifact } from '../src/prefab/validate.ts';
 import * as validation from '../src/prefab/validate.ts';
 import { names } from '../src/prefab/names.ts';
+import { ROOM_PLOTS } from '../src/place/layout.ts';
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
 import museumLevel from '../content/built/levels/museum.json' with { type: 'json' };
@@ -633,11 +634,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     fs.readFileSync('src/place/building-plans.ts', 'utf8'),
     { THREE, ...boxes },
   );
-  const plots = sourceFunction<typeof import('../src/place/layout.ts').ROOM_PLOTS>(
-    'src/place/layout.ts',
-    'ROOM_PLOTS',
-    {},
-  );
+  const plots = ROOM_PLOTS;
   const added: THREE.Object3D[] = [],
     cleanups: (() => void)[] = [],
     sitePlans: unknown[] = [],

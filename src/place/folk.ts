@@ -19,6 +19,7 @@ import { MACHINE_CHAIR_SEAT } from '../entities/railway/machine-model.ts';
 import { merged } from '../render/part-geometry.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import { TOWN, toWorld, FORGE } from './layout.ts';
+import { TOWN_CENTRE, slotPoint } from './town-plan.ts';
 import { feet, outOf, underway, type Foot, type Site } from './sites.ts';
 
 // ---------------------------------------------------------------- the meshes
@@ -188,21 +189,9 @@ const DOORS = TOWN.start.map((p) => {
 });
 const door = (k: number) => DOORS[k % DOORS.length]!;
 const WANDER = [
-  [-103, 24],
-  [-103, 2],
-  [-92, 17],
-  [-115, 4],
-  [-117, 22],
-  [-101, -18],
-  [-112, -15],
-  [-90, -13],
-  [-78, -14],
-  [-74, -4],
-  [-97, 28],
-  [-116, 34],
-  [-80, 18],
-  [-90, 44],
-].map(([x, z]) => ({ x: X(x!), z: z! }));
+  ...Array.from({ length: 8 }, (_, i) => slotPoint(i * 45, 17)),
+  ...[-6, 6].flatMap((x) => [-6, 6].map((z) => ({ x: TOWN_CENTRE.x + x, z: TOWN_CENTRE.z + z }))),
+].map(({ x, z }) => ({ x: X(x), z }));
 const FORGE_X = X(FORGE.x),
   FORGE_Z = FORGE.z;
 const FORGE_Y = H(FORGE_X, FORGE_Z);

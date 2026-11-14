@@ -1,22 +1,27 @@
 // The Round as data (docs/plans/town-layout.md, step 1): the centre derives from the hall, each building sits where the
 // plan's table says, and the gaps, alleys, doors, pads and the balcony's glide hold. Pure numbers: nothing here is
-// drawn, and nothing in the game imports town-plan.ts yet.
+// drawn here; the ground and streets consume the same plan rows.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AXIS, HALL, SHELF_SIZE, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
 import { prefabs as curioRecords } from '../src/content/prefabs/curio.ts';
 import { curioParts } from '../src/prefab/builders/curio-parts.ts';
-import { LINES, VILLAGE, lineAt } from '../src/place/layout.ts';
+import { LINES, ORIGIN, PATHS, TOWN, VILLAGE, lineAt } from '../src/place/layout.ts';
+import { H, CELL, NX, NZ, at, cellX, cellZ, heights, pathMask } from '../src/place/terrain.ts';
+import { SHORE_PATH } from '../src/place/shore-layout.ts';
+import { SECRETS } from '../src/place/tech-layout.ts';
 import { LAND_TREES } from '../src/place/tree-catalog.ts';
 import {
   TOWN_CENTRE,
   TOWN_FRONT,
+  TOWN_GROUND,
   TOWN_PLOTS,
   TOWN_PROPS,
   TOWN_RING,
   TOWN_SLOTS,
   TOWN_STREETS,
   townBuilding,
+  slotPoint,
   type TownBuilding,
   type TownId,
 } from '../src/place/town-plan.ts';
@@ -280,4 +285,94 @@ test('the tree catalog retains its stable planting order (length, first and last
   assert.equal(LAND_TREES.length, 362);
   assert.deepEqual(at(0), [1081.13, -89.07]);
   assert.deepEqual(at(LAND_TREES.length - 1), [1426.55, -214.11]);
+});
+
+test('the ground under the Round footprints and their 3 m aprons is level', () => {
+  const level = (p: XZ, label: string) => near(H(p.x + ORIGIN.x, p.z), VILLAGE.y, 0.05, label);
+  for (const s of TOWN_SLOTS) {
+    const b = B(s.id);
+    for (const apron of [0, 3])
+      for (const p of corners({ ...b, w: b.w + apron * 2, d: b.d + apron * 2 })) level(p, `${s.id}, apron ${apron}`);
+  }
+  // Test the baked road cells, avoiding the bowl bank's interpolation across the inner boundary.
+  // The existing hall/rail apron reaches inward to r17 (not just r18 as the plan estimated).
+  for (let j = 0; j < NZ; j++)
+    for (let i = 0; i < NX; i++) {
+      const dx = cellX(i) - TOWN_CENTRE.x,
+        dz = cellZ(j) - TOWN_CENTRE.z;
+      const r = Math.hypot(dx, dz);
+      if (r < TOWN_RING.inner || r > TOWN_RING.outer) continue;
+      const bearing = ((Math.atan2(dx, -dz) * 180) / Math.PI + 360) % 360;
+      const hall = bearing >= 60 && bearing <= 100;
+      near(heights[at(i, j)]!, 18, hall ? 0.25 : 0.05, `ring ${cellX(i)},${cellZ(j)}`);
+      assert.ok(pathMask[at(i, j)]! >= 0.99, 'the ring is painted');
+    }
+  for (let r = 20; r <= 36; r += CELL) level(slotPoint(250, r), `dock r${r}`);
+});
+
+test('the green has one 0.8 m drop tunable and a shallow bank to the level ring', () => {
+  assert.deepEqual(TOWN_GROUND, { r: 38, soft: 8, green: { drop: 0.8, flat: 10 } });
+  near(H(TOWN_CENTRE.x + ORIGIN.x, TOWN_CENTRE.z), 18 - TOWN_GROUND.green.drop, 0.001, 'bowl floor');
+  for (let bearing = 0; bearing < 360; bearing += 30) {
+    const floor = slotPoint(bearing, TOWN_GROUND.green.flat - CELL);
+    near(H(floor.x + ORIGIN.x, floor.z), 17.2, 0.001, 'flat green');
+  }
+});
+
+test('the tree table keeps all 362 trunks outside the Round pad and edge', () => {
+  assert.equal(LAND_TREES.length, 362);
+  for (const t of LAND_TREES)
+    assert.ok(Math.hypot(t.x - ORIGIN.x - TOWN_CENTRE.x, t.z - TOWN_CENTRE.z) > TOWN_GROUND.r + TOWN_GROUND.soft);
+});
+
+test("no footprint corner is within 2.4 m of a road's centre line", () => {
+  const roads = [
+    PATHS[0]!.pts.slice(0, 2).map(([x, z]) => ({ x, z })),
+    PATHS[1]!.pts.slice(0, 4).map(([x, z]) => ({ x, z })),
+    TOWN_STREETS.dock.line,
+  ];
+  for (const s of TOWN_SLOTS)
+    for (const p of corners(B(s.id)))
+      for (const road of roads)
+        for (let i = 1; i < road.length; i++)
+          assert.ok(toSegment(p, road[i - 1]!, road[i]!) >= 2.4, `${s.id} clears the road`);
+  const quarry = roads[1]!;
+  for (const [id, expected] of [
+    ['plot2', 3.6248],
+    ['plot3', 3.8746],
+    ['plot6', 3.65],
+  ] as const) {
+    const clearance = Math.min(
+      ...corners(B(id)).flatMap((p) => quarry.slice(1).map((b, i) => toSegment(p, quarry[i]!, b))),
+    );
+    near(clearance, expected, 0.001, `${id} to threaded quarry centre line`);
+  }
+});
+
+test("the quarry path's bridge still spans the river after adding two head points", () => {
+  const quarry = PATHS[1]!;
+  assert.equal(quarry.bridgeAt, 8);
+  assert.deepEqual(quarry.pts[quarry.bridgeAt], [-36.5, 112.4, 1.7]);
+  assert.deepEqual(quarry.pts[quarry.bridgeAt + 1], [-19.2, 117.4, 1.7]);
+});
+
+test('the gate is the one cottage, the yard is behind it and the shore ends at the dock street', () => {
+  const gate = B('gate');
+  assert.equal(TOWN.start.length, 1);
+  assert.deepEqual(TOWN.start[0], {
+    type: 'cottage',
+    x: gate.x,
+    z: gate.z,
+    yaw: gate.yaw,
+    w: gate.w,
+    d: gate.d,
+    smoke: true,
+  });
+  const yard = SECRETS.find((s) => s.id === 'yard')!;
+  assert.deepEqual({ x: yard.x, z: yard.z }, TOWN_PROPS.yard);
+  assert.deepEqual(yard.from, { x: -136, z: 22 });
+  assert.deepEqual(
+    SHORE_PATH.slice(-2),
+    TOWN_STREETS.dock.line.map((p) => [p.x, p.z, 18]),
+  );
 });

@@ -2,6 +2,7 @@
 // Node. Research: docs/research/movement-abilities.md, sections 5 and 6, with its coordinates moved to what the land really is.
 // All local metres, x z y like `Pt` in ./layout.ts; `top` is the surface you stand on. All of it hypotheses until played.
 import { LINES, UP_LAT, lineAt, railY, type Line, type LinePoint } from './layout.ts';
+import { TOWN_PROPS } from './town-plan.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 /** A point `side * d` metres off the line at `s`: +1 is the side ./rail.ts's `besideLine` calls +1. */
@@ -245,11 +246,10 @@ export const SECRETS: Secret[] = [
     gift: 'strawhat',
     area: 'village',
     how: 'walk',
-    x: -127.5,
-    z: 25.5,
+    ...TOWN_PROPS.yard,
     y: null,
     after: 'hook',
-    from: { x: -120, z: 25.5 },
+    from: { x: -136, z: 22 },
   },
   {
     id: 'block',

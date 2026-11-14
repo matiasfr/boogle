@@ -5,6 +5,7 @@ import { smoothstep } from '../math.ts';
 import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from './spatial-station.ts';
 import { coveFront, coveGround, coveSurface, coveWeight, fitCoveBacking } from './cove.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
+import { TOWN_CENTRE, TOWN_GROUND, TOWN_RING, TOWN_SLOTS, TOWN_STREETS, townBuilding } from './town-plan.ts';
 import {
   ARMS,
   BANK_CART,
@@ -208,13 +209,27 @@ export const SHORE_SAMPLES = SHORE_COAST ? samplePath(SHORE_PATH) : [];
 function bake() {
   for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) heights[at(i, j)] = ground(cellX(i), cellZ(j));
   pad(VILLAGE.x, VILLAGE.z, VILLAGE.y, VILLAGE.r, 18);
+  pad(TOWN_CENTRE.x, TOWN_CENTRE.z, VILLAGE.y, TOWN_GROUND.r, TOWN_GROUND.soft);
   for (const l of LINKS) pad(l.camp.x, l.camp.z, l.camp.y, 34, 22);
   pad(-82, 2, VILLAGE.y, 26, 10);
   pad(YARD.x, YARD.z, VILLAGE.y, 14, 8);
   pad(HEAD.x, HEAD.z + 10, HEAD.y, 42, 14);
   // Every plot sits on a level pad, which also keeps the random trees out of it.
-  const plots = [TOWN.start, ...TOWN.wood, ...TOWN.stone, Object.values(ROOM_PLOTS)].flat();
+  const plots = [
+    TOWN.start,
+    ...TOWN.wood,
+    ...TOWN.stone,
+    Object.values(ROOM_PLOTS),
+    TOWN_SLOTS.map((s) => townBuilding(s.id)),
+  ].flat();
   for (const p of plots) pad(p.x, p.z, VILLAGE.y, Math.max(p.w ?? 6, p.d ?? 6) * 0.7 + 1.5, 5);
+  pad(
+    TOWN_CENTRE.x,
+    TOWN_CENTRE.z,
+    VILLAGE.y - TOWN_GROUND.green.drop,
+    TOWN_GROUND.green.flat,
+    TOWN_RING.inner - TOWN_GROUND.green.flat,
+  );
   TOWN.camps.forEach((c, k) => {
     for (const p of [...c.asleep, ...c.awake])
       pad(p.x, p.z, LINKS[k]!.camp.y, Math.max(p.w ?? 6, p.d ?? 6) * 0.7 + 1.5, 5);
@@ -285,6 +300,16 @@ function bake() {
     const samples = [...samplePath(p.pts.slice(0, p.bridgeAt + 1)), ...samplePath(p.pts.slice(p.bridgeAt + 1))];
     strip(samples, p.bold ? 3.6 : 2.4, p.bold ? 6.5 : 4.8, true);
   });
+  // Paint only: the ring follows the existing terrain, including the hall's gentle apron.
+  for (let j = 0; j < NZ; j++)
+    for (let i = 0; i < NX; i++) {
+      const d = Math.hypot(cellX(i) - TOWN_CENTRE.x, cellZ(j) - TOWN_CENTRE.z);
+      const paint =
+        smoothstep(TOWN_RING.inner - 1, TOWN_RING.inner, d) * smoothstep(TOWN_RING.outer + 1, TOWN_RING.outer, d);
+      pathMask[at(i, j)] = Math.max(pathMask[at(i, j)]!, paint);
+    }
+  const dock = TOWN_STREETS.dock.line.map((p): Pt => [p.x, p.z, VILLAGE.y]);
+  strip(samplePath(dock), 4, 6, true, undefined, false);
 }
 bake();
 
