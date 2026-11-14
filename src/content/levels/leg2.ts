@@ -51,10 +51,30 @@ function bell() {
     { ...bayIn.box('bay-bed-in', -4, 70, -BED, BED, BAY_RAIL - 0.1, sub(BAY_RAIL - 0.1, ROCK), 'dark'), over: true },
     { ...bayOut.box('bay-bed-out', -4, 70, -BED, BED, BAY_RAIL - 0.1, sub(BAY_RAIL - 0.1, ROCK), 'dark'), over: true },
     // The two on the inside of the kink start at t 2: from t -3 their corners stood in the other half's bed.
-    { ...bayIn.box('upper-in-n', -3, 20, BED, PLAT, UPPER, sub(UPPER, ROCK), 'light'), over: true, provisional: true },
+    // Keep the original collision volume and walkable top. Only the drawn underside is inset 1 cm
+    // from the other bay's bed, whose bottom also lies at ROCK.
+    {
+      ...bayIn.box('upper-in-n-collider', -3, 20, BED, PLAT, UPPER, sub(UPPER, ROCK), 'light'),
+      hidden: true,
+      over: true,
+      provisional: true,
+    },
+    {
+      ...bayIn.box('upper-in-n', -3, 20, BED, PLAT, UPPER, sub(UPPER, ROCK + 0.01), 'light'),
+      solid: false,
+      over: true,
+      provisional: true,
+    },
     { ...bayIn.box('upper-in-s', 2, 20, -PLAT, -BED, UPPER, sub(UPPER, ROCK), 'light'), over: true, provisional: true },
     {
-      ...bayOut.box('upper-out-n', -3, 30, BED, PLAT, UPPER, sub(UPPER, ROCK), 'light'),
+      ...bayOut.box('upper-out-n-collider', -3, 30, BED, PLAT, UPPER, sub(UPPER, ROCK), 'light'),
+      hidden: true,
+      over: true,
+      provisional: true,
+    },
+    {
+      ...bayOut.box('upper-out-n', -3, 30, BED, PLAT, UPPER, sub(UPPER, ROCK + 0.01), 'light'),
+      solid: false,
       over: true,
       provisional: true,
     },

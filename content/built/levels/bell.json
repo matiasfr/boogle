@@ -578,9 +578,33 @@
             "b": 14,
             "compute": "sub"
           },
+          "hidden": true,
+          "id": "upper-in-n-collider",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -3,
+            20,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14.01,
+            "compute": "sub"
+          },
           "id": "upper-in-n",
           "over": true,
           "provisional": true,
+          "solid": false,
           "tone": "light",
           "top": 15.9
         },
@@ -622,9 +646,33 @@
             "b": 14,
             "compute": "sub"
           },
+          "hidden": true,
+          "id": "upper-out-n-collider",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -3,
+            30,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 2
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14.01,
+            "compute": "sub"
+          },
           "id": "upper-out-n",
           "over": true,
           "provisional": true,
+          "solid": false,
           "tone": "light",
           "top": 15.9
         },
