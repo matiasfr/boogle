@@ -180,13 +180,15 @@ Tier is the review tier of `npm run review-stamp`. Model rows are from `npm run 
     - **Proofs taken:** the top-down still and one from the spur at eye height on `steel-home`, plus bay 190° at `works-open` and `stall-done` and the back from the south. **Still owed from finding 2:** eye-height stills from the green's centre, the hall's front and the footing carry's approach at each stage.
     - **Roof reach, estimated not walked:** the eave is 5.1 m at the back and 6.5 m at the doors; one jump is 1.6 m and two about 2.9 m, and nothing nearby stands higher than the 3.1 m ruin piers, which two jumps do not top. The glider is not measured.
 - [ ] **Checkpoint A (the v45 bump; 1a and 1b ship together).** Proofs, once: the works bot segment (`dev/look/bots/railway-works.ts`: strike, two footings, cradle, turn, the wagon couples); `dev/look/evals/garage-open.ts` and `garage-two.ts` on `steel-home` (the install from the post, and a bystander's view); `test:net`; `npm run perf` reported. Then the owner walks it and rules on questions 1, 2 and 4. A changed diameter is one number in `ROTUNDA_HOME` and a second bump.
-  - Runner results, 14 November: [Checkpoint A review](../reviews/rotunda-checkpoint-a.md). Combined worker base `89569327e`; no game source changed, not shipped. The owner walk is feedback, not a hold (design review finding 6).
-  - [ ] Works bot through two footings, cradle, turn and wagon coupling: failed twice at the missing Quarry stop prompt after the stall strike; later beats unproved.
+  - Runner results, 14 November: [Checkpoint A review](../reviews/rotunda-checkpoint-a.md). Initial base `89569327e`; follow-up rebased onto main `902217fc7` (#1833), tested worker `b5fdd9dc5`. No game source changed by this runner; no push or ship. The owner walk is feedback, not a hold (design review finding 6).
+  - [x] Works bot through two footings, cradle, turn and wagon coupling: rebased rerun passed, `stall=2`, `cradleRails=8`, `table=1`, slot 1 `wagon=true`. Old Quarry failure was stale bot selection (Sit won Interact), repaired upstream. Recorded 321.9 s is under load and not timing evidence.
   - [x] `garage-open.ts` on `steel-home`: longer boiler installed; still and motion sheet inspected.
   - [x] `garage-two.ts` on `steel-home`: bystander camera preserved, install observed; both stills and motion sheet inspected. Additional own-camera post view inspected.
   - [ ] `test:net`: deliberately skipped by runner; orchestrator runs it.
-  - [x] Perf render counts reported with view and load: summit, 409 calls, 221 shadow calls, 902,067 triangles. No timing or performance approval implied.
-  - [ ] Complete perf invocation: trusted sim profiler failed with `stateHashes is not a function`; sim cost unverified.
+  - [x] Perf render counts reported with view and load: rebased summit, 415 calls, 93 shadow-call difference, 996,237 triangles. No timing or performance approval implied.
+  - [x] Complete perf invocation: restarted harness passed; old `stateHashes` API error is gone. Its sim section samples 0 client ticks, so server simulation cost remains unmeasured.
+  - [x] Frame sample executed and reported: warmed five-bay table, 301 frames / 5.0094 s; CPU average 8.931 ms, GPU span average 8.620 ms. Load 28.57 → 38.90; these are loaded diagnostics, not performance evidence.
+  - [ ] Quiet-machine Checkpoint A frame timing: still owed; the loaded sample cannot establish a frame-budget pass or smoothness.
   - [x] `npm run loop -- run`: exit 0; solo canonical model 37:51 straight-line / 44:13 calibrated.
   - [x] `npm run level-check`: exit 0, 14 reports.
   - [x] `npm run town-plan-sheet`: exit 0; generated PNG opened.
