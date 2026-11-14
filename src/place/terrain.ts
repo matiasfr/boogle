@@ -28,7 +28,6 @@ import {
   lineAt,
   railY,
   upLat,
-  YARD,
   type LinePoint,
   type Pt,
 } from './layout.ts';
@@ -207,7 +206,9 @@ function bake() {
   pad(TOWN_CENTRE.x, TOWN_CENTRE.z, VILLAGE.y, TOWN_GROUND.r, TOWN_GROUND.soft);
   for (const l of LINKS) pad(l.camp.x, l.camp.z, l.camp.y, 34, 22);
   pad(-82, 2, VILLAGE.y, 26, 10);
-  pad(YARD.x, YARD.z, VILLAGE.y, 14, 8);
+  // The stone yard's old pad, kept where it was graded when the starter trees were planted on this grid (the yard
+  // itself moved clear of the rotunda: home-station.ts `PROPS.yard`); the rotunda's own pad, below, covers the rest.
+  pad(-46, 22, VILLAGE.y, 14, 8);
   pad(HEAD.x, HEAD.z + 10, HEAD.y, 42, 14);
   // Every plot sits on a level pad, which also keeps the random trees out of it.
   const plots = [

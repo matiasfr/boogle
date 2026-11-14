@@ -304,7 +304,10 @@ export const PROPS = {
   pedestal: { x: -78.0, z: -1.17 }, // the existing 3.5 m rail clearance, including the pedestal's footprint
   crane: { x: -72.4, z: -3.1 },
   dock: { x: -76.07, z: -1.73 }, // retain 2 m between the dock and the pedestal
-  yard: { x: -46, z: 22 },
+  // North of the table, between its kerb and road 2 (350° from the table's centre, 10.5 m out: 1.9 m outside the kerb,
+  // 5.4 m from road 2's rails). Clear of the rotunda's arc, of the open east side the footings are carried in by and
+  // the garage stands on, and of the walk from the board crossing to the bays (design review of the rotunda, finding 3).
+  yard: { x: -57.3, z: 8.8 },
 };
 /** The curio shelf's footprint in its own frame, as drawn (`src/prefab/builders/curio-parts.ts`; town-plan.test.ts
  * holds these to the drawn parts): the crown's half-width, how far the crown reaches in front and behind (it is 1.1 m
