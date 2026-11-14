@@ -2,7 +2,7 @@
 // (src/entities/railway/frame-pack.ts; review of the 14 November honest-feedback branch, two P2s).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { packDrawn, packSolid, packStep, type PackState } from '../src/entities/railway/frame-pack.ts';
+import { packDrawn, packLoaded, packSolid, packStep, type PackState } from '../src/entities/railway/frame-pack.ts';
 
 const step = (
   state: PackState,
@@ -109,4 +109,34 @@ test("a reload onto a retired frame's ground: the footprint is gone before the s
   // Only a friend's avatar, drawn where the frame stands, brings it back during the wait.
   assert.equal(step(s, { sawWork: false, occupied: true, remote: true }), 'held');
   assert.equal(step(s, { sawWork: false, occupied: true, remote: false, settled: true }), 'gone');
+});
+
+test('a friend standing a frame back up after a load never puts colliders round your restored body', () => {
+  // The reload: clear, so the ground opens and arrival restores you onto it. Then a friend's avatar arrives on the
+  // frame inside the wait. It is drawn for them; on this tab it stays open ground for good (no collider, no
+  // footprint), through the hold, the fold and after, wherever you stand.
+  let s: PackState = 'up',
+    loaded = false;
+  const next = (o: Parameters<typeof step>[1]) => {
+    s = step(s, { sawWork: false, ...o });
+    loaded = packLoaded(loaded, s);
+    return s;
+  };
+  assert.equal(next({}), 'checking');
+  assert.equal(packSolid(s, loaded), false);
+  assert.equal(next({ occupied: true, remote: true }), 'held');
+  assert.equal(packDrawn(s), true, 'the friend is not seen standing on nothing');
+  assert.equal(packSolid(s, loaded), false, 'no collider returns under or around the local player');
+  for (let frame = 0; frame < 60; frame++) {
+    next({ occupied: true, remote: frame < 30 });
+    assert.equal(packSolid(s, loaded), false);
+  }
+  next({});
+  assert.equal(s, 'folding');
+  assert.equal(packSolid(s, loaded), false);
+  // A frame this tab watched being used keeps its colliders while held and folding, as before.
+  assert.equal(packSolid('held', false) && packSolid('folding', false), true);
+  // A stretch un-laid again (a dev jump back) stands a real, solid frame.
+  assert.equal(next({ laid: false }), 'up');
+  assert.equal(packSolid(s, loaded), true);
 });

@@ -16,7 +16,7 @@ import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint, setBlob } from '../../p
 import { dustRing } from '../../render/particle-effects.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { reducedMotion } from '../../constants.ts';
-import { packDrawn, packSolid, packStep, type PackState } from './frame-pack.ts';
+import { packDrawn, packLoaded, packSolid, packStep, type PackState } from './frame-pack.ts';
 import { kitBatch, stationKit } from '../../place/look-kit.ts';
 import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from '../../place/pieces.ts';
@@ -297,6 +297,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   let pack: PackState = 'up',
     foldAt = 0,
     laidAt = 0,
+    loadedLaid = false,
     sawWork = false;
   /** The frame, its feeder and the bearers pressed toward the ground: 1 standing, 0 not drawn. */
   const stand = (height: number) => {
@@ -410,8 +411,11 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
       // Solid, and in the footprints, until it is gone: nobody standing on it is dropped, whatever this tab watched
       // (frame-pack.ts), and the cleared ground is then free for the little guys and for a saved return pose
       // (arrival.ts reads `feet`).
-      if (packSolid(pack) !== packSolid(was)) {
-        if (packSolid(pack)) {
+      const wasSolid = packSolid(was, loadedLaid);
+      loadedLaid = packLoaded(loadedLaid, pack);
+      const solid = packSolid(pack, loadedLaid);
+      if (solid !== wasSolid) {
+        if (solid) {
           for (const body of frameBodies) owner.addBody(body);
           unfoot = addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3, owner);
         } else {

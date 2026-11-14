@@ -41,6 +41,11 @@ export function packStep(state: PackState, input: PackInput): PackState {
 }
 /** Drawn while in use, held or folding. */
 export const packDrawn = (state: PackState) => state === 'up' || state === 'held' || state === 'folding';
+/** Whether this tab found the frame already laid on a load (it went through `checking`): latched until the stretch is
+ * un-laid. Such a frame may be drawn again for a friend's avatar, but it is open ground here for good. */
+export const packLoaded = (loaded: boolean, state: PackState) =>
+  state === 'checking' ? true : state === 'up' ? false : loaded;
 /** The frame's colliders and its footprint (the little guys' walk-round and the saved return pose's exclusion) stand
- * exactly while it is drawn: never an unseen wall, never a pose refused for a frame that is not there. */
-export const packSolid = packDrawn;
+ * while it is drawn, except a frame found laid on a load: its ground was opened and you may be standing on it, so a
+ * friend standing it back up never puts a collider under or round you. */
+export const packSolid = (state: PackState, loaded = false) => packDrawn(state) && !loaded;
