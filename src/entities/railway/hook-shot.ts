@@ -131,16 +131,17 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
       bestScore = Infinity,
       currentScore = Infinity;
     for (const r of view.rings) {
+      // Asleep is about where you stand, not how near: from anywhere on its landing deck, the pad included.
+      if (onLandingDeck(r, b.position.x, b.position.y, b.position.z)) {
+        asleep = r;
+        continue;
+      }
       if (Math.hypot(r.at.x - b.position.x, r.at.y - b.position.y, r.at.z - b.position.z) > MOVE.hookRange) continue;
       if (
         Math.hypot(r.land.x - b.position.x, r.land.z - b.position.z) < r.pad.hx + 0.6 &&
         Math.abs(r.pad.top + 1 - b.position.y) < 2.2
       )
         continue;
-      if (onLandingDeck(r, b.position.x, b.position.y, b.position.z)) {
-        asleep = r;
-        continue;
-      }
       range.add(r);
       const sc = score(r);
       if (sc < 0 || whyNot(r) !== 'nothing') continue;

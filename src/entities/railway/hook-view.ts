@@ -263,7 +263,9 @@ export async function createRailwayHookView(owner: OwnedView) {
       ringMesh.setMatrixAt(k, pose.matrix);
       ringMesh.setColorAt(
         k,
-        color.copy(bright ? hot : r === asleep ? dim : inRange || owned ? near : dim).multiplyScalar(bright ? 1.6 : inRange ? 1.2 : 0.75),
+        color
+          .copy(bright ? hot : r === asleep ? dim : inRange || owned ? near : dim)
+          .multiplyScalar(bright ? 1.6 : inRange ? 1.2 : 0.75),
       );
     });
     ringMesh.instanceMatrix.needsUpdate = true;
