@@ -48,6 +48,11 @@ the existing look/bot harness. Update the owning game-design chapter for player-
 The railway's rule ticks and action set live in `../railway-server.ts`; its state is also registered Server kind.
 `../README.md` owns the clock and checkpoint contract. The Boogler remains a lead-tab Host field.
 
+`boogler.ts` installs only the 10 Hz shadow tick. Its injected native-trig brain lives in `../boogler-shadow.ts`,
+outside the guarded math paths; its private decision RNG uses the recovered world seed and first awake tick.
+It registers no state, op or projection. The host gates it on connected players, even during the empty-room grace,
+and supplies validated fresh Owner facts. Diagnostics compare with the lead but never feed that pose to the brain.
+
 `installSeats(ops, replication, now)` has no checkpoint registration. Seat commands bind the socket's pid,
 validate opaque ids, choose the first free requested chair, and rate-limit
 accepted sits to one per 400 ms of host time. `taken` and `rate` are nonfatal receipt reasons; the command adapter
