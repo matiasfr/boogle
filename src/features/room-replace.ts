@@ -8,8 +8,8 @@
 // The words are the plan's (src/net/ws-wire.ts), UI text and not The Boogler's. Local, DOM only.
 import { productionRailway } from '../proto/flags.ts';
 import { getRoomId, onRoomReady } from '../netplay/net.ts';
-import { countdownAt, startCountdown, type Countdown } from '../netplay/replace-countdown.ts';
-import { replacedText, replacingText } from '../net/ws-wire.ts';
+import { countdownAt, countdownText, startCountdown, type Countdown } from '../netplay/replace-countdown.ts';
+import { replacedText } from '../net/ws-wire.ts';
 import { replacedStage } from '../boot/world-reset.ts';
 import { jumpOf } from '../world/railway-jump.ts';
 import { notify } from '../ui/notify.ts';
@@ -34,7 +34,7 @@ function tick() {
   }
   if (notice.seconds === shown) return;
   // The first one pops; each second after refreshes it quietly.
-  dismiss = notify(replacingText(notice), { kind: 'news', ttl: 0, key: KEY, quiet: shown >= 0 });
+  dismiss = notify(countdownText(notice), { kind: 'news', ttl: 0, key: KEY, quiet: shown >= 0 });
   shown = notice.seconds;
 }
 

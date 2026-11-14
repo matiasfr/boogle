@@ -92,9 +92,11 @@ function mountReplace(parent: HTMLElement, ctx: Parameters<Tool['mount']>[1]) {
   group.append(el('h3', 'Replace room with stage'));
   const room = getRoomId();
   if (room === 'boogle') note(group, 'This is the shared island. Everyone who plays here gets this world.');
+  note(group, "Replaces this room's world for everyone in it. What players carry and their finds here are lost.");
+  // Closed by default, so the fields and the button show without scrolling at the dock's default size.
   const list = el('ol', '', 'dev-note');
   for (const loss of LOSSES) list.append(el('li', loss));
-  group.append(list);
+  more(group, 'What a replacement loses').append(list);
 
   const stage = field(group, 'Stage', el('select'));
   for (const j of REPLACE_STAGES) {

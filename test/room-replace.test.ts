@@ -10,7 +10,7 @@ import {
   replaceRequest,
   replacedReply,
 } from '../src/debug/dev/room-replace.ts';
-import { HOLD_MS, countdownAt, startCountdown } from '../src/netplay/replace-countdown.ts';
+import { HOLD_MS, countdownAt, countdownText, startCountdown } from '../src/netplay/replace-countdown.ts';
 import { readRoomReset, roomResetNote } from '../src/player/world-reset.ts';
 import { hostMeta } from '../src/netplay/room-seed.ts';
 import { replacedText, replacingText } from '../src/net/ws-wire.ts';
@@ -120,6 +120,20 @@ test('the countdown reads whole seconds down to zero, holds, then gives up', () 
   assert.equal(
     replacingText(countdownAt(c, 1000)!),
     'This room will be replaced with Just woke in 10 seconds. What you carry and your finds here will be lost.',
+  );
+});
+
+test('the countdown sentence: the unit agrees, and zero reads "now"', () => {
+  const tail = ' What you carry and your finds here will be lost.';
+  const say = (seconds: number, label = 'Just woke') => countdownText({ label, seconds });
+  assert.equal(say(10), replacingText({ label: 'Just woke', seconds: 10 })); // the plan's sentence, untouched
+  assert.equal(say(2), `This room will be replaced with Just woke in 2 seconds.${tail}`);
+  assert.equal(say(1), `This room will be replaced with Just woke in 1 second.${tail}`);
+  assert.equal(say(0), `This room will be replaced with Just woke now.${tail}`);
+  // A label that holds the same words is left alone; only the sentence's own unit changes.
+  assert.equal(
+    say(1, 'Back in 1 seconds. Ha'),
+    `This room will be replaced with Back in 1 seconds. Ha in 1 second.${tail}`,
   );
 });
 

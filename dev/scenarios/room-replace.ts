@@ -109,7 +109,7 @@ export default {
     // 3. The right name: both screens count down.
     await name.fill(room);
     await A.page.click(BUTTON);
-    const counting = new RegExp(`^This room will be replaced with ${LABEL} in \\d+ seconds\\. `).source;
+    const counting = new RegExp(`^This room will be replaced with ${LABEL} (in \\d+ seconds?|now)\\. `).source;
     const [sawA, sawB] = await Promise.all(
       [A, B].map((g) => g.waitFor(`/${counting}/.test(${NOTE})`, { timeout: 60000 })),
     );

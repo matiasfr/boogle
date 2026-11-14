@@ -29,8 +29,10 @@ The owner's way to a later stage is to replace the room he is in, on the server,
 Only the holder of the server's dev key can do it, for any room, the shared island included where the server allows
 it. Serves **How we work: playtest constantly** and **Clear authority**.
 
-- **The control** is in Dev → Room, in the live game: the four things a replacement loses (the world; what is carried;
-  what is personal to the room in each browser, wardrobe and finds included; what an operator restore does), a list of
+- **The control** is in Dev → Room, in the live game: one line ("Replaces this room's world for everyone in it. What
+  players carry and their finds here are lost."), a closed disclosure "What a replacement loses" holding the four
+  categories (the world; what is carried; what is personal to the room in each browser, wardrobe and finds included;
+  what an operator restore does), so the fields and the button show without scrolling, a list of
   the stages (the Jump in catalog's seed rows, in route order), a field to type the room's name, a Key field and the
   button "Replace this room with <label>". With others in the room it says "N others are here now" with a checkbox
   "Replace it under them"; alone, the typed name is the confirmation. On the shared island it adds "This is the shared
@@ -49,7 +51,7 @@ it. Serves **How we work: playtest constantly** and **Clear authority**.
   and tells nobody.
 - **The countdown.** Everyone in the room, and anyone who joins during it, sees one notice in the notification lane,
   counting down each second: "This room will be replaced with <label> in 10 seconds. What you carry and your finds
-  here will be lost." The room then closes. If the server cancels, the notice leaves by itself 8 s after zero.
+  here will be lost." The unit agrees ("in 1 second") and zero reads "now". The room then closes. If the server cancels, the notice leaves by itself 8 s after zero.
 - **After.** Each browser that was in the room reconnects, finds the new world and reloads by itself, so nothing held
   or ridden carries over. That load forgets what was personal to the room (the existing room reset), skips the fall
   and the card, lands the player at the stage's landing as a jump room does (the usual spawn for a stage with none),
