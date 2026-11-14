@@ -319,7 +319,7 @@ export const MOMENT = {
   boltEvery: 200,
   answer: 1450, // c+1450: the safety valve, the wheels run up
   whistle: 1800,
-  rest: 4000,
+  rest: 4800,
 
   /** Each row starts counting this far after the one above, and counts for `count` ms. */
   rowGap: 150,

@@ -902,7 +902,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     const poised = real || (sel === 'long' && canInstall());
     const turns = open && CAMS[cat].turns && phase !== 'holding' && phase !== 'moment' && !reducedMotion && !poised;
     if (showTurn >= 0) {
-      showTurn += dt / 2.2;
+      showTurn += (dt * 1000) / (MOMENT.rest - MOMENT.whistle);
       turnYaw = smooth(clamp01(showTurn)) * TAU;
       if (showTurn >= 1) {
         showTurn = -1;

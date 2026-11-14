@@ -289,15 +289,20 @@ export async function createRailwayWorks(
   bill.mesh.visible = false;
   const kilnBillAt = { at: bill.mesh.position.clone(), yaw: bill.mesh.rotation.y };
   // The same board asks for the footing wagon's rails once the kiln is lit and the stall stands (cradle-cues.ts): it
-  // moves to the Roundhouse apron, on the bisector between the open stall's road and its forge-side neighbour, 7.5 m
+  // moves to the Roundhouse apron, on the bisector between the open stall's road and its forge-side neighbour,
   // from the table's centre and edge-on to both roads, so it faces the walk round the table from the forge rack.
   const tableAt = { x: home.TABLE.x + layout.ORIGIN.x, z: home.TABLE.z };
   const forgeRack = { x: LINE2_FORGE.rackX / 100, z: LINE2_FORGE.rackZ / 100 };
   const forgeRackY = H(forgeRack.x, forgeRack.z);
-  const stallBillAt = [-15, 15]
+  const billRadius = (home.TABLE.r + 0.6 + home.STALLS.door) / 2;
+  const halfBay = (home.STALLS.bearings[1]! - home.STALLS.bearings[0]!) / 2;
+  const stallBillAt = [-halfBay, halfBay]
     .map((turn) => {
       const u = home.stallFrame(home.STALLS.open + turn).u;
-      return { at: new THREE.Vector3(tableAt.x + u.x * 7.5, 18.0, tableAt.z + u.z * 7.5), yaw: Math.atan2(u.z, -u.x) };
+      return {
+        at: new THREE.Vector3(tableAt.x + u.x * billRadius, 18.0, tableAt.z + u.z * billRadius),
+        yaw: Math.atan2(u.z, -u.x),
+      };
     })
     .sort(
       (a, b) =>

@@ -1,5 +1,5 @@
 {
-  "worldNs": "v37",
+  "worldNs": "v45",
   "ticks": 1200,
   "stages": {
     "awake": {
@@ -169,73 +169,73 @@
     },
     "wagon-on": {
       "tick": 4484,
-      "stage": 1376268299,
-      "after": 1116072331
+      "stage": 3561804299,
+      "after": 767758219
     },
     "crossing-finishing": {
       "tick": 6086,
-      "stage": 3010339775,
-      "after": 3702576751
+      "stage": 2341495231,
+      "after": 427465839
     },
     "crossing-done": {
       "tick": 6086,
-      "stage": 1327973331,
-      "after": 2845778339
+      "stage": 1454538195,
+      "after": 887203747
     },
     "deck-laid": {
       "tick": 7699,
-      "stage": 3023698203,
-      "after": 997599115
+      "stage": 3839803163,
+      "after": 336639371
     },
     "gap-footed": {
       "tick": 10731,
-      "stage": 1236939766,
-      "after": 1480299478
+      "stage": 1711674870,
+      "after": 2548647382
     },
     "leaf-raised": {
       "tick": 10731,
-      "stage": 1236939766,
-      "after": 1480299478
+      "stage": 1711674870,
+      "after": 2548647382
     },
     "ring-joined": {
       "tick": 10831,
-      "stage": 4187709400,
-      "after": 2594128429
+      "stage": 505404888,
+      "after": 220378157
     },
     "steel-kit": {
       "tick": 11482,
-      "stage": 4088088575,
-      "after": 847216704
+      "stage": 3985071615,
+      "after": 3810418240
     },
     "steel-lit": {
       "tick": 11562,
-      "stage": 1450359955,
-      "after": 1929909620
+      "stage": 378783379,
+      "after": 2214839156
     },
     "steel-home": {
       "tick": 12654,
-      "stage": 2471146356,
-      "after": 1049557620
+      "stage": 2253285748,
+      "after": 3976648820
     },
     "boiler-long": {
       "tick": 13564,
-      "stage": 1724998439,
-      "after": 3605426807
+      "stage": 119295271,
+      "after": 149568631
     },
     "gorge-open": {
       "tick": 11960,
-      "stage": 1754281645,
-      "after": 3344458208
+      "stage": 2083110061,
+      "after": 2257337312
     },
     "gorge-mid": {
       "tick": 13121,
-      "stage": 1690476839,
-      "after": 4043951302
+      "stage": 152287015,
+      "after": 3403291334
     },
     "gorge-reached": {
       "tick": 15349,
-      "stage": 683267621,
-      "after": 3790823465
+      "stage": 1947622437,
+      "after": 4245572137
     }
   }
 }

@@ -28,27 +28,27 @@ export type GarageGeo = {
 };
 
 /** The deck's radius, and the works copy's reach as the table turns it (its corners, 8.5 m of train on the centre). */
-export const DECK_R = 4.8;
+export const DECK_R = TABLE.r;
 /** The longer boiler lying on its stand: half its length and its radius (engine.ts: 3.15 m by 1.25 m). */
 export const STAND_PART = { half: 1.575, r: 0.625 } as const;
 /** A radial stand's two legs: their distances from the table's centre and their half width across the barrel. They
- * stand 6 m or further out and no wider than the barrel, so a car on line 2 clears the empty stand (design ruling on
+ * stand outside the kerb and no wider than the barrel, so a car on line 2 clears the empty stand (design ruling on
  * G2, R2). */
-export const STAND_LEGS = { at: [6.1, 7.6], half: 0.5 } as const;
+export const STAND_LEGS = { at: [9.9, 11.4], half: 0.5 } as const;
 
 /** The garage's radial arrangement at bearing 85° keeps the stand outside the deck's sweep and clear of the
  * jump-in landing, with the jib and crew behind it (docs/plans/home-flip.md, F1). */
 export const GARAGE_GEO: GarageGeo = {
-  post: { bearing: 60, r: 5.6 },
-  jib: { bearing: 85, r: 8.4 },
+  post: { bearing: 60, r: 9.4 },
+  jib: { bearing: 85, r: 12.2 },
   mast: 4.4,
-  arm: 10.6,
+  arm: 11.0,
   park: 67,
-  stand: { bearing: 85, r: 6.5 },
+  stand: { bearing: 85, r: 10.3 },
   standAlong: 'radius',
   crew: [
-    { bearing: 88, r: 9.4 },
-    { bearing: 81, r: 8.7 },
+    { bearing: 88, r: 13.2 },
+    { bearing: 81, r: 12.5 },
   ],
   camBearing: 15,
 };

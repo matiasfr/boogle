@@ -6,6 +6,8 @@ import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from './spatial-station.ts';
 import { coveFront, coveGround, coveSurface, coveWeight, fitCoveBacking } from './cove.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
 import { TOWN_CENTRE, TOWN_GROUND, TOWN_RING, TOWN_SLOTS, TOWN_STREETS, townBuilding } from './town-plan.ts';
+import { ROTUNDA_HOME } from './home-station.ts';
+import { ROTUNDA_KIT } from './rotunda.ts';
 import {
   ARMS,
   BANK_CART,
@@ -335,6 +337,29 @@ bake();
 // Harvest IDs were planted on this grid. Put later terrain edits after this snapshot to keep tree IDs stable.
 export const catalogHeights = SHORE_COAST ? heights.slice() : heights;
 export const catalogClearMask = SHORE_COAST ? clearMask.slice() : clearMask;
+
+// Rotunda pad, brought forward from step 1b: the moved stall's rails must not sink into the old slope.
+// After the harvest snapshot; no tree IDs change. Level to r 27 across Home's seven-bay arc, with a 4 m soft edge.
+{
+  const site = ROTUNDA_HOME,
+    r = ROTUNDA_KIT.doorR + ROTUNDA_KIT.depth + CELL;
+  const lo = Math.min(...site.order) * ROTUNDA_KIT.bayDeg - ROTUNDA_KIT.bayDeg / 2;
+  const hi = Math.max(...site.order) * ROTUNDA_KIT.bayDeg + ROTUNDA_KIT.bayDeg / 2;
+  for (let j = 0; j < NZ; j++)
+    for (let i = 0; i < NX; i++) {
+      const dx = cellX(i) - site.centre.x,
+        dz = cellZ(j) - site.centre.z;
+      const distance = Math.hypot(dx, dz);
+      if (distance > r + 4) continue;
+      const bearing = (((Math.atan2(dx, -dz) * 180) / Math.PI - site.mid + 540) % 360) - 180;
+      const outside = Math.max(lo - bearing, bearing - hi, 0);
+      const side = distance * Math.sin((Math.min(90, outside) * Math.PI) / 180);
+      const weight = smoothstep(r + 4, r, distance) * smoothstep(4, 0, side);
+      const k = at(i, j);
+      heights[k] = heights[k]! + (site.y - heights[k]!) * weight;
+      clearMask[k] = Math.max(clearMask[k]!, weight);
+    }
+}
 
 if (SHORE_COAST) {
   // A shallow way back from the water beside the level landing. Blend into the original coast beyond

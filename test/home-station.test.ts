@@ -215,7 +215,7 @@ function overlaps(a: Rect, b: Rect) {
 }
 type Rect = { c: XZ; u: XZ; hw: number; hd: number };
 
-test('the table and stalls are radial: the spur and each stall road point at its centre, stalls 30 degrees apart', () => {
+test('the table and stalls are radial: the spur and each stall road point at its centre, stalls 20 degrees apart', () => {
   const end = march(
     roadAt(1, SPUR.s),
     SPUR.segs,
@@ -224,8 +224,8 @@ test('the table and stalls are radial: the spur and each stall road point at its
   assert.ok(Math.abs(dist(end, TABLE) - TABLE.r) < 1e-6, "the spur ends at the table's rim");
   assert.ok(angleGap(bearingOf(TABLE.x - end.x, TABLE.z - end.z), end.bearing) < 0.01, 'the spur runs at the centre');
   assert.ok(
-    Math.abs(TABLE.x + 57.9) < 0.05 && Math.abs(TABLE.z - 17.12) < 0.05,
-    'the plan put the table at (-57.90, 17.12)',
+    Math.abs(TABLE.x + 55.445) < 0.005 && Math.abs(TABLE.z - 19.178) < 0.005,
+    'the table follows the unchanged spur end by its 8 m radius',
   );
   const frames = STALLS.bearings.map(stallFrame);
   for (const f of frames) {
@@ -234,7 +234,7 @@ test('the table and stalls are radial: the spur and each stall road point at its
     assert.ok(Math.abs(dist(f.door, TABLE) - STALLS.door) < 1e-9);
   }
   for (let k = 1; k < frames.length; k++) {
-    assert.equal(frames[k]!.bearing - frames[k - 1]!.bearing, 30);
+    assert.equal(frames[k]!.bearing - frames[k - 1]!.bearing, 20);
     const rect = (f: (typeof frames)[number]): Rect => ({
       c: f.centre,
       u: f.u,
@@ -249,7 +249,7 @@ test('the table and stalls are radial: the spur and each stall road point at its
   // The open stall is not straight through from the spur, so a turn shows: it swings 60 degrees.
   assert.equal(angleGap(TABLE.spur, STALLS.open), 120);
   const open = frames[1]!;
-  assert.ok(dist(open.door, { x: -59.37, z: 25.49 }) < 0.05 && dist(open.back, { x: -60.94, z: 34.35 }) < 0.05);
+  assert.ok(dist(open.door, { x: -57.88, z: 32.97 }) < 0.01 && dist(open.back, { x: -59.79, z: 43.8 }) < 0.01);
 });
 
 test('no track centre comes within 2.8 m of a building', () => {
@@ -327,7 +327,8 @@ test('the shunt fits the stub, over the cart forge stop', () => {
   assert.ok(shunter - SHUNTER_HZ >= BUFFERS[1] + 0.25, 'the shunter stops short of the buffer');
   assert.ok(SHUNT_CUSP_S + WAGON_CAR.hz < SPUR.s, "the wagon's rear clears the points");
   const path = shuntPath(WAGON_S / 100);
-  for (let k = 1; k < path.pts.length; k++) assert.ok(dist(path.pts[k - 1]!, path.pts[k]!) < 9.1, `shunt step ${k}`);
+  for (let k = 1; k < path.pts.length; k++)
+    assert.ok(dist(path.pts[k - 1]!, path.pts[k]!) <= STALLS.depth + 0.01, `shunt step ${k}`);
   // The stub move and the cart's forge stop share road 2's first metres: safe only because by the Works the cart
   // serves nothing (its stretches are train-fed) and rests at the camp. test/railway-works.test.ts asserts that
   // against the cart's phase through the roll-out, so a rule that wakes the cart then fails there.
@@ -415,8 +416,11 @@ test('the rack stands on the apron and leaves a lane along road 1; its posts cle
   const lane = near - 1.15;
   assert.ok(lane >= 1.9, `the lane beside road 1 is ${lane.toFixed(2)} m`);
   assert.ok(near - (ISLAND_C - half) >= 1.4, 'and 1.4 m of it is on the apron itself');
-  assert.ok(far <= ISLAND_C + half, 'inside the apron\'s road 2 edge');
-  assert.ok(ROAD_GAP - 1.15 - far >= 0.5, `the far posts are ${(ROAD_GAP - 1.15 - far).toFixed(2)} m off road 2's sleeper ends`);
+  assert.ok(far <= ISLAND_C + half, "inside the apron's road 2 edge");
+  assert.ok(
+    ROAD_GAP - 1.15 - far >= 0.5,
+    `the far posts are ${(ROAD_GAP - 1.15 - far).toFixed(2)} m off road 2's sleeper ends`,
+  );
   assert.ok(
     far <= ROAD_GAP - CART.hx - 0.2,
     `the far posts are ${(ROAD_GAP - CART.hx - far).toFixed(2)} m off the cart`,
@@ -489,7 +493,10 @@ test('the board crossing over road 2: behind a standing train’s tail, off the 
     assert.ok(dist(p, TABLE) > TABLE.r + 0.5, 'west of the table');
     for (const r of spurPoints()) assert.ok(dist(p, r) > 1.5, `clear of the spur at step ${k}`);
   }
-  assert.ok(dist(start, door) < 25, `${dist(start, door).toFixed(1)} m from the boards to the stall's door`);
+  assert.ok(
+    dist(start, door) > 29 && dist(start, door) < 30,
+    `${dist(start, door).toFixed(1)} m from the boards to the moved stall's door`,
+  );
 });
 
 test('the island’s two levers stand more than twice the prompt’s reach apart, each on its own edge of the deck', () => {

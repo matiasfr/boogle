@@ -152,7 +152,7 @@ test('every wheel stands on the rail head drawn under it, and the slabs clear ra
       );
     }
   // The ramp is a real grade (this would pass on a level road without it), and the wheels' middles stay within 2 cm.
-  assert.ok(steepest > 0.05, `the vehicles pitch ${steepest.toFixed(3)} rad on the ramp`);
+  assert.ok(steepest > 0.03, `the vehicles pitch ${steepest.toFixed(3)} rad on the longer rotunda apron ramp`);
   assert.ok(highest < 0.02 && deepest > -0.01, `wheel middles from ${deepest.toFixed(4)} to ${highest.toFixed(4)} m`);
   assert.ok(nearest > 0.2);
   // Most of the shunt is on yard track: most wheel probes found a laid rail under them.

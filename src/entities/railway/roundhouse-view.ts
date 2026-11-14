@@ -51,9 +51,9 @@ const FLOOR = 18.05,
 /** Rule ticks per second (the railway sim runs at 10 Hz, as cart-view.ts says). */
 const TICKS_PER_S = 10;
 /** The roll-out's turn, as fractions of its `rollTicks` (11 s): push on, turn, back down the spur and push off. */
-const ROLL = { turn: [0.36, 0.69] } as const;
+const ROLL = { turn: [0.34, 0.7] } as const;
 /** The shunter's way home after the wagon waits on line 2 (ticks), and its turn back as fractions of it. */
-const BACK_TICKS = 100;
+const BACK_TICKS = 130;
 const BACK = { turn: [0.3, 0.5] } as const;
 /** The longer boiler's banner for a player away from the table (placeholder lines, on main since build 2; none is The
  * Boogler's), and how far "away" is, in metres from the table's centre. */
@@ -101,7 +101,7 @@ export async function createRailwayRoundhouse(
   const table = toWorld(home.TABLE);
   const line2 = layout.LINKS[1]!.line;
   const tableY = layout.railY(line2, 0);
-  const R = 4.8;
+  const R = home.TABLE.r;
   const rim = STALL_ROAD[0]!;
   const yaws = [Math.atan2(rim.x - table.x, rim.z - table.z), 0];
   const spur = (home.TABLE.spur * Math.PI) / 180;

@@ -49,7 +49,7 @@ const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
 const STEEL_LAND = near({ ...ringAt(44400, 400) }, 0, 0, RING_HALT.down.y / 100, RING_STEEL_WORKS);
 /** Beside Home's spur table, 5.2 m east and 1.7 m south, facing its centre. The garage's radial stand and the
  * stall roads clear this landing, inside the table's 6 m reach (home-flip X1). */
-const TABLE_LAND = near(SHED_TABLE, 5.2, 1.7, 18.1, SHED_TABLE);
+const TABLE_LAND = near(SHED_TABLE, 9.2, 1.7, 18.1, SHED_TABLE);
 /** Line 1's Village and Camp platforms (slice 5's freight-running lands on the first, facing the second). */
 const VILLAGE_LINE1 = RAIL_LINES[0]!.halts[0]!.platforms[0],
   CAMP_LINE1 = RAIL_LINES[0]!.halts[1]!.platforms[0];

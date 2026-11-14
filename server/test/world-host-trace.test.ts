@@ -1,4 +1,6 @@
 // Frozen on origin/main 20004bc6e, before the host split. Compare the entire ordered JSONL byte stream.
+// 2026-11-14 rotunda 1a: only the 205 checkpoint envelope namespaces and their checksums repinned for v45;
+// their serialized snapBytes counters follow checksum width. All inputs, snapshots, state hashes and packets stay.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
