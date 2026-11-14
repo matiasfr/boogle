@@ -129,3 +129,7 @@ Visual question: **does one sprinting double jump from plot 4 land on the museum
 Skipped `npm run inflight` because it unconditionally fetches remote refs (`dev/inflight.ts:43`), contrary to this job's network restriction. Checked local branch and clean starting status instead. B4 remains incomplete: network, actual town perf, transient walkway route, museum roof landing, designer ruling and owner walk are not passed. The supported proxy render sample ran and passed capture health only.
 
 Follow-up `npx prettier --write --ignore-path /dev/null` ran on both changed Markdown files (via offline npx); unrelated whole-plan table reformatting was removed. Scoped lint: **0 problems**. `timeout 1800 npm run check`: **exit 0**, **2,039 unit tests / 2,038 passed / 0 failed / 1 existing TODO**; lint, typecheck, registry, level, assets, prefab freshness and production build passed. [Full output](../../.look/check-b4-gaps.log). Load before check **26.74 / 21.80 / 18.62**, sampled during it as high as **155.29 / 92.26 / 50.25**, after **161.09 / 98.68 / 53.78**. Durations are not performance evidence. This check does not contain the failed network suite. Only the two requested documentation files are tracked changes.
+
+## Network suite, run outside the runner sandbox (orchestrator, 14 November)
+
+`timeout 1800 npm run test:net` in this worktree at `5b157b7a6` (origin/main at #1803 plus this report): **190/190 checks passed**, launch load 4.00 / 17.61 / 25.31. The two earlier zero-pass results were the sandbox refusing a browser launch, not the game.
