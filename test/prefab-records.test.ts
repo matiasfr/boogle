@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateArtifact, loadLevelArtifact } from '../src/prefab/validate.ts';
+import { loadPrefabArtifact, loadLevelArtifact } from '../src/prefab/validate.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import type { ColliderDef, Vec3, PrefabDef } from '../src/prefab/types.ts';
 import { FORGE } from '../src/place/layout.ts';
@@ -28,8 +28,7 @@ function inside(point: Vec3, c: ColliderDef) {
   }
 }
 test('every compiled record has valid geometry, names and clear seat exits', () => {
-  const value: unknown = artifact;
-  validateArtifact(value);
+  const value = loadPrefabArtifact(artifact);
   for (const prefab of Object.values(value.prefabs)) {
     for (const attachment of Object.values(prefab.attach ?? {})) {
       if (attachment.kind !== 'seat') continue;

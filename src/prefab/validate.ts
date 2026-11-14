@@ -1,3 +1,4 @@
+import { resolvePrefab } from './resolve-prefab.ts';
 import { resolveLayout } from './resolve-layout.ts';
 import { names, type NameRegistry } from './names.ts';
 import {
@@ -163,7 +164,12 @@ export function validateJson(value: unknown, ancestors = new Set<object>()): voi
 }
 export function validatePrefab(value: unknown, registry: NameRegistry = names): asserts value is PrefabDef {
   validateJson(value);
-  const p = object(value),
+  const raw = object(value);
+  if (raw.layout !== undefined) {
+    validatePrefab(resolvePrefab(raw as unknown as PrefabDef), registry);
+    return;
+  }
+  const p = raw,
     key = text(p.key);
   if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail('key needs area.name');
   if (registry.retired.includes(key)) fail(`retired key ${key}`);
@@ -284,7 +290,7 @@ export function validatePlacement(
   if (p.params !== undefined) object(p.params);
   if (p.parent !== undefined) text(p.parent);
   const labels = p.labels === undefined ? {} : object(p.labels);
-  const attachments = prefabs[text(p.prefab)]!.attach ?? {};
+  const attachments = resolvePrefab(prefabs[text(p.prefab)]!).attach ?? {};
   for (const [name, key] of Object.entries(labels)) {
     if (attachments[name]?.kind !== 'label') fail('unknown label attachment');
     text(key);
@@ -367,5 +373,18 @@ export function loadLevelArtifact(value: unknown, prefabs: Readonly<Record<strin
   header(value, 'boogle-level');
   const resolved = resolveLayout(value as LevelArtifact) as LevelArtifact;
   validateLevel(resolved, prefabs);
+  return resolved;
+}
+
+/** The shared prefab-artifact door: derive only in memory, then validate before runtime allocation. */
+export function loadPrefabArtifact(value: unknown, registry: NameRegistry = names): PrefabArtifact {
+  const raw = header(value, 'boogle-prefabs');
+  const resolved = {
+    ...raw,
+    prefabs: Object.fromEntries(
+      Object.entries(object(raw.prefabs)).map(([key, record]) => [key, resolvePrefab(record as PrefabDef)]),
+    ),
+  };
+  validateArtifact(resolved, registry);
   return resolved;
 }

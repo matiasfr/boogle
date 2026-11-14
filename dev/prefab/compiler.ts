@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { metadata, type LevelDef, type PrefabDef } from '../../src/prefab/types.ts';
 import { names, type NameRegistry } from '../../src/prefab/names.ts';
-import { validateArtifact, validateLevelArtifact } from '../../src/prefab/validate.ts';
+import { loadPrefabArtifact, validateLevelArtifact } from '../../src/prefab/validate.ts';
 
 /** Canonical portable bytes: sorted keys, authored array order, lossless JSON number representations.
  * Decimal quantization can turn accepted rotations or compensating scales into shear. Retaining the full
@@ -28,17 +28,16 @@ export function compile(prefabs: readonly PrefabDef[], levels: readonly LevelDef
     records[prefab.key] = prefab;
   }
   const artifact = { ...metadata, format: 'boogle-prefabs', prefabs: records };
-  validateArtifact(artifact, registry);
+  const resolved = loadPrefabArtifact(artifact, registry);
   const outputs = new Map<string, string>([['prefabs.json', canonical(artifact)]]);
   // Verify the actual bytes the runtime will load, including all record and level references.
-  const serialized: unknown = JSON.parse(outputs.get('prefabs.json')!);
-  validateArtifact(serialized, registry);
+  const serialized = loadPrefabArtifact(JSON.parse(outputs.get('prefabs.json')!), registry);
   for (const level of levels) {
     if (!/^[a-z0-9][a-z0-9-]*$/.test(level.place)) throw new Error('unsafe level name');
     const file = `levels/${level.place}.json`;
     if (outputs.has(file)) throw new Error(`duplicate level ${level.place}`);
     const artifact = { ...metadata, format: 'boogle-level', ...level };
-    validateLevelArtifact(artifact, records);
+    validateLevelArtifact(artifact, resolved.prefabs);
     const bytes = canonical(artifact);
     validateLevelArtifact(JSON.parse(bytes), serialized.prefabs);
     outputs.set(file, bytes);

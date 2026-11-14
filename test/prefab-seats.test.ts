@@ -1,3 +1,4 @@
+import { prefabGolden } from './helpers/prefab-golden.ts';
 // Owner-requested step-8 goldens: execute the old seat construction blocks with recording services.
 // The blocks stay source-owned across conversion; no renderer, network or physics engine runs here.
 import test from 'node:test';
@@ -107,7 +108,7 @@ function captureSeats() {
   return { owner, registered, flatbed, cars, bodies };
 }
 
-test('all 31 seat ids and poses match the pre-prefab construction bytes', () => {
+test('all 31 seat ids match bytes and poses match the pre-prefab construction numerically', () => {
   const h = captureSeats();
   const moving = h.registered.map((s) => ({
     id: s.id,
@@ -133,7 +134,9 @@ test('all 31 seat ids and poses match the pre-prefab construction bytes', () => 
     const file = `test/fixtures/prefab-seat-${name}.json`;
     const bytes = JSON.stringify(value, null, 2) + '\n';
     if (process.env.GOLDEN === '1') fs.writeFileSync(file, bytes);
-    assert.equal(bytes, fs.readFileSync(file, 'utf8'), file);
+    const expected = fs.readFileSync(file, 'utf8');
+    if (name === 'ids') assert.equal(bytes, expected, file);
+    else prefabGolden(JSON.parse(bytes), JSON.parse(expected), file);
   }
   h.owner.dispose();
   assert.equal(h.registered.length, 0);

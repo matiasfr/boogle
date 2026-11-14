@@ -13,7 +13,6 @@ export type ColliderDef = { at: Vec3; rot?: Vec3; group?: 'scenery' | 'room' } &
   | { shape: 'trimesh'; vertices: readonly number[]; indices: readonly number[] }
 );
 export type Attach =
-
   | {
       kind: 'seat';
       at: Vec3;
@@ -36,6 +35,8 @@ export type PrefabDef = {
     | { none: true };
   colliders: readonly ColliderDef[];
   attach?: Readonly<Record<string, Attach>>;
+  /** Authored-only recipe; the loader derives runtime attachments before validation/allocation. */
+  layout?: JsonObject;
   interactions?: readonly { action: InteractionName; at?: string; gate?: GateName }[];
   components?: Partial<ComponentInits>;
   scope: 'owner' | 'place' | 'room';

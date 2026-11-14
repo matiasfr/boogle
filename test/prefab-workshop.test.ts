@@ -18,6 +18,7 @@ import type { Plan } from '../src/place/building-plans.ts';
 import { names } from '../src/prefab/names.ts';
 import {
   validateArtifact,
+  loadPrefabArtifact,
   validateLevel,
   validateLevelArtifact,
   loadLevelArtifact,
@@ -82,6 +83,7 @@ export function captureWorkshop() {
     gorge,
     names,
     validateArtifact,
+    loadPrefabArtifact,
     validateColliderWorldTransforms,
     validatePlacement,
     validatePrefab,
@@ -195,6 +197,7 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
       gorge: input ? { ...metadata, format: 'boogle-level', place: 'gorge', placements: [] } : gorge,
       names,
       validateArtifact,
+      loadPrefabArtifact,
       validateColliderWorldTransforms,
       validatePlacement,
       validateLevel,

@@ -1,3 +1,4 @@
+import { prefabs as railway } from '../src/content/prefabs/railway.ts';
 import { prefabs as greybox } from '../src/content/prefabs/greybox.ts';
 import { prefabs as town } from '../src/content/prefabs/town.ts';
 import { prefabs as rock } from '../src/content/prefabs/bell-rock.ts';
@@ -28,7 +29,11 @@ test('artifact serialization is independent of runtime native transcendental res
       const f: (...args: number[]) => number = original[key];
       Math[key] = (...args: number[]) => f(...args) + 1e-15;
     }
-    writeArtifacts(compile([...greybox, ...town, ...rock], [...leg2, ...gorge, ...workshop]), 'content/built', true);
+    writeArtifacts(
+      compile([...greybox, ...town, ...rock, ...railway], [...leg2, ...gorge, ...workshop]),
+      'content/built',
+      true,
+    );
   } finally {
     Object.assign(Math, original);
   }
@@ -115,4 +120,31 @@ test('null layouts reject without recursive revalidation', () => {
     changed.layout.data.extras[0].id = id;
     assert.throws(() => validation.loadLevelArtifact(changed, records.prefabs), /nonempty string/);
   }
+});
+
+test('seat degree recipes resolve before attachment validation and preserve authored data', () => {
+  const source = structuredClone(railway[0]!);
+  const bytes = JSON.stringify(source);
+  const compiled = validation.loadPrefabArtifact({
+    ...metadata,
+    format: 'boogle-prefabs',
+    prefabs: { [source.key]: source },
+  });
+  assert.equal(compiled.prefabs[source.key]!.attach!.seat!.kind, 'seat');
+  const seat = compiled.prefabs[source.key]!.attach!.seat!;
+  assert.ok(seat.kind === 'seat');
+  assert.equal(seat.yaw, Math.PI);
+  assert.equal(JSON.stringify(source), bytes);
+  assert.ok(!('layout' in compiled.prefabs[source.key]!));
+  for (const degrees of ['180', null, Infinity]) {
+    const bad = JSON.parse(bytes);
+    bad.layout.attach.seat.yawDegrees = degrees;
+    assert.throws(
+      () => validation.loadPrefabArtifact({ ...metadata, format: 'boogle-prefabs', prefabs: { [source.key]: bad } }),
+      /prefabs:/,
+    );
+  }
+  const duplicate = JSON.parse(bytes);
+  duplicate.layout.attach.seat.yaw = 0;
+  assert.throws(() => validation.validatePrefab(duplicate), /authored yawDegrees/);
 });

@@ -8,7 +8,7 @@ import { names } from './names.ts';
 import type { BuilderName } from './names.ts';
 import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
 import {
-  validateArtifact,
+  loadPrefabArtifact,
   loadLevelArtifact,
   validatePlacement,
   validatePrefab,
@@ -24,11 +24,7 @@ import type { Body, Shape } from '../physics/engine.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import type { Platform } from '../physics/platforms.ts';
 
-const compiled = (() => {
-  const value: unknown = artifact;
-  validateArtifact(value);
-  return value;
-})();
+const compiled = loadPrefabArtifact(artifact);
 const room = loadLevelArtifact(workshop, compiled.prefabs);
 export const workshopChair = room.placements[0]!;
 const gorgeLevel = loadLevelArtifact(gorge, compiled.prefabs);
