@@ -1,10 +1,13 @@
-// Proves the terrain pass's tolerance in Node: how far each drawn wedge vertex (src/proto/terrain-pass/surface.ts) strays
-// from the collider it never touches. `node dev/terrain-pass/prove.ts [1|a2|a4 ...]` (default all three): 1 is round
-// two, aN variant a at N vertices per 2 m cell side. A drawn triangle lies inside one collider triangle, so the offset is
+// Proves the terrain pass's tolerance in Node: how far each drawn vertex (src/proto/terrain-pass/surface.ts, island.ts)
+// strays from the collider it never touches. `node dev/terrain-pass/prove.ts [home|1|a2|a4 ...]` (default all four):
+// home is the pass on all of Home (every new or moved vertex), 1 round two on the wedge, aN variant a at N vertices per
+// 2 m cell side. A drawn triangle lies inside one collider triangle, so the offset is
 // linear across it and the vertex maxima bound every drawn point. No browser.
 import { WALKABLE_NY } from '../../src/constants.ts';
 import { LAND_TREES } from '../../src/place/tree-catalog.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
+import { COVE_FINE, NX, NZ, cellX, cellZ } from '../../src/place/terrain.ts';
+import { buildIslandSurface, protectionAt } from '../../src/proto/terrain-pass/island.ts';
 import {
   KEEPS,
   TOLERANCE,
@@ -17,9 +20,22 @@ import {
 } from '../../src/proto/terrain-pass/surface.ts';
 
 const asked = process.argv.slice(2);
-for (const name of asked.length ? asked : ['1', 'a2', 'a4']) {
+const inCove = (i: number, j: number) =>
+  cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
+/** All of Home: the new 1 m vertices and the grid vertices the ledges move (no other vertex changes). */
+function home() {
+  const island = buildIslandSurface(NX * NZ, inCove, 96);
+  const position = [...island.position];
+  for (const [id, y] of island.moved)
+    position.push(cellX(id % NX) + ORIGIN.x, y, cellZ(Math.floor(id / NX)) + ORIGIN.z);
+  const triangles = [...island.triangles.values()].reduce((n, list) => n + list.length / 3, 0);
+  return { position, index: { length: triangles * 3 }, fineCells: island.fineCells };
+}
+for (const name of asked.length ? asked : ['home', '1', 'a2', 'a4']) {
   const started = performance.now();
-  const s = name === '1' ? buildSteepSurface() : buildWedgeSurface(Number(name.slice(1)), true);
+  const s =
+    name === 'home' ? home() : name === '1' ? buildSteepSurface() : buildWedgeSurface(Number(name.slice(1)), true);
+  const keep = name === 'home' ? protectionAt : protection;
   const ms = performance.now() - started;
   const count = s.position.length / 3;
   let walk = 0,
@@ -36,7 +52,7 @@ for (const name of asked.length ? asked : ['1', 'a2', 'a4']) {
     const offset = y - colliderHeight(x, z),
       ny = vertexNy(x, z);
     if (Math.abs(offset) > 1e-4) moved++;
-    if (protection(x, z) > 0.999) {
+    if (keep(x, z) > 0.999) {
       kept = Math.max(kept, Math.abs(offset));
       keptN++;
     } else if (ny >= WALKABLE_NY) {

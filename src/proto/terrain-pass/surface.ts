@@ -169,8 +169,14 @@ export type WedgeSurface = {
 type Layers = Pick<WedgeSurface, 'steep' | 'foot' | 'path' | 'soil' | 'gorge'>;
 /** The material's per-vertex inputs at a Place-local point, all read from the collider's grid. */
 function describe(x: number, z: number, k: number, out: Layers) {
-  out.steep[k] = steepness(x, z);
+  describeGround(x, z, k, out);
   out.path[k] = mask(pathMask, x, z);
+  out.gorge[k] = smoothstep(20, 16, gorgeD(x, z)) * smoothstep(3.6, 2.8, colliderHeight(x, z));
+}
+
+/** Round two's per-vertex inputs (how unwalkable, foot-to-rim, the broad soil slope) at a Place-local point. */
+export function describeGround(x: number, z: number, k: number, out: Pick<WedgeSurface, 'steep' | 'foot' | 'soil'>) {
+  out.steep[k] = steepness(x, z);
   // Foot-to-rim position within a 6 m neighbourhood of the collider.
   let lo = Infinity,
     hi = -Infinity;
@@ -194,7 +200,15 @@ function describe(x: number, z: number, k: number, out: Layers) {
     gz += w * (colliderHeight(x + o, z + 3) - colliderHeight(x + o, z - 3));
   }
   out.soil[k] = 1 / Math.hypot(1, gx / 24, gz / 24);
-  out.gorge[k] = smoothstep(20, 16, gorgeD(x, z)) * smoothstep(3.6, 2.8, colliderHeight(x, z));
+}
+
+/** The strata ledges' vertical offset at a Place-local point, for ground kept by `keep` (0 free .. 1 exact): nothing on
+ * walkable ground, at most TOLERANCE.steep along the face's normal on rock you can't stand on. */
+export function ledgeOffset(x: number, z: number, keep: number) {
+  const collider = colliderHeight(x, z),
+    ny = vertexNy(x, z);
+  const rock = Math.max(-TOLERANCE.steep / ny, Math.min(TOLERANCE.steep / ny, ledge(x, z, collider) - collider));
+  return (1 - keep) * steepness(x, z) * rock;
 }
 
 /** The wedge drawn `sub` vertices per 2 m cell side. sub 1 with `fine` false is today's mesh exactly. */

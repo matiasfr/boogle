@@ -39,7 +39,13 @@ import { dressCoveGround } from './cove-ground.ts';
 import { addFarGround } from './far-ground.ts';
 import { setFarHills } from './far-hills.ts';
 import { applyPathSurface } from './path-surface.ts';
-import { applyTerrainPass } from '../proto/terrain-pass/index.ts';
+import {
+  applyHomePass,
+  applyTerrainPass,
+  homePassOn,
+  roundTwoMaterial,
+  wedgeDraws,
+} from '../proto/terrain-pass/index.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -234,11 +240,18 @@ function buildMesh(owner: OwnedView) {
     if (joined) normals.setXYZ(k, joined[0]!, joined[1]!, joined[2]!);
   }
   geo.setAttribute('coveCapJoin', new THREE.BufferAttribute(capJoin, 2));
+  const inCove = (i: number, j: number) =>
+    cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
+  // The terrain pass on all of Home (docs/plans/terrain-pass.md): 1 m ledges on unwalkable cells, in this same
+  // geometry, and round two's material. The collider below never sees it. `?terrain=0` is the land before it.
+  const pass = LOOK.ground && homePassOn ? applyHomePass(geo, mainEnd, inCove) : null;
   const mesh = new THREE.Mesh(
     geo,
-    LOOK.ground
-      ? groundMaterial()
-      : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
+    pass
+      ? roundTwoMaterial(true)
+      : LOOK.ground
+        ? groundMaterial()
+        : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
   );
   mesh.receiveShadow = true;
   mesh.material.flatShading = false;
@@ -252,10 +265,9 @@ function buildMesh(owner: OwnedView) {
   owner.cleanup(() => mesh.material.dispose());
   mesh.frustumCulled = false;
   owner.add(mesh);
-  const inCove = (i: number, j: number) =>
-    cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
-  addFarGround(mesh, NX, NZ, mainEnd, inCove, owner);
-  applyTerrainPass(mesh, owner); // ?terrain=a|b|ab look experiment; off by default (docs/plans/terrain-pass.md)
+  // The far tiles leave out what the terrain pass's wedge draws itself, as they do the cove's patch.
+  addFarGround(mesh, NX, NZ, pass?.mainEnd ?? mainEnd, (i, j) => inCove(i, j) || wedgeDraws(i, j), owner, pass?.near);
+  applyTerrainPass(mesh, owner); // ?terrain=wedge|a|b|ab: the earlier rounds on one wedge, for comparison
 
   for (const tile of terrainCollisionTiles()) {
     const groundBody = addStatic(

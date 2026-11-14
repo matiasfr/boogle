@@ -207,6 +207,23 @@ From `node dev/terrain-pass/path-ground.ts` (the collider across each tread ever
 
 Each is a heights change: collider, `H`, level-check and the tree catalog move with it, so it is its own step.
 
+### Step 2: round two's problems on the wedge
+
+- [x] **Faint strata beds.** Two beds in three now take the bed pigment at 0.55 (was 0.35), each bed is 8% lighter or darker than its neighbours, a thin dark seam parts them, and the cove's rock tile reads at 0.45 (was the cove's 0.2). Still no rust bed: subtle, as asked.
+- [x] **The pale, damp-looking strip on the lowest sand.** It was the 2 m vertex blend from grass to sand, which the lawn recipe turned a milky green on the lower slopes. Low ground is now per pixel: under 3 m the vertex colour gives way to one mean green, the beach starts at a line near 2.3 m that wanders ±0.4 m, and the gorge's floor keeps its grey-green bank.
+- [x] **Not drawn with the far ground on** (found in this round; `farGround` became the default on 11 November, after round two, so `?terrain=1` on main drew the wedge on top of the far tiles). The far tiles now leave out the wedge's cells as they do the cove's patch.
+- [x] **The green coast patch from the sea, and the warm-to-grey fade where the gorge wall leaves the wedge.** Both are the wedge's border, not a fault inside it; they go only when the same rule covers the island, which is step 3. Not fixable on the wedge alone.
+- [ ] **A real-time clip passing the cliff at 12 m/s for shimmer on the ledges:** not taken (the machine's load stayed above 30 for the whole session; a clip under that load says nothing about shimmer).
+
+### Step 3: all of Home
+
+- [x] One material: `roundTwoMaterial(true)` is Home's ground material (`land.ts`), with the cove's layers over its region and the paths over everything. No wedge fade.
+- [x] 1 m ledges on every unwalkable cell outside the cove's patch, **in the land's own geometry** (`home.ts`, `island.ts`): 3,619 cells leave the main grid's quads and come back as eight triangles each; 12,480 new vertices are appended to the same buffers and 1,995 grid vertices move. **+21,714 triangles (241,836 to 263,550), +0 draws with the far ground off.**
+- [x] The far ground learnt the mixed cells (`far-ground.ts` `NearGround`): a tile's nearest level draws its 1 m cells; from 180 m the same cells draw plainly at 2 m and coarser. A vertex moves only when every cell it touches is a 1 m cell and it is not on a tile's border, so neighbours of any level still meet on shared vertices (`test/terrain-pass-island.test.ts`).
+- [x] Heights proved for the island (`node dev/terrain-pass/prove.ts home`): 14,475 vertices new or moved; walkable max **0**, unwalkable max **0.25 m** along the face's normal (7,081 vertices), protected (paths, pads, beds, every tree and rock; 4,533 vertices) **0.0002 m**. Built in about 0.1 s.
+- [x] `?terrain=0` is the land before the pass; `?terrain=wedge` is round two on the wedge alone; `a`, `b`, `ab` as before.
+- Not done from round two's list: grass normals from the smooth surface (the island keeps the land's own vertex normals; problem 5, the faint 2 m diamonds, stands).
+
 ## Ring Island: a landform people could live on
 
 Proposal only, not built. Owner: "For the ring island, the terrain should be more detailed and organic most likely, especially if people live there."

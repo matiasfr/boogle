@@ -27,6 +27,8 @@ export default {
         { name: 'Wedge, quarry path into the gorge', cam: [931, 15, 150], look: [958, 3, 128], fov: 55 },
         { name: 'Far, across the water', cam: [970, 30, 450], look: [960, 8, 140], fov: 45 },
         { name: 'Far, the island from the north-west', cam: [760, 150, -520], look: [1010, 0, -40], fov: 45 },
+        { name: 'Wedge, the gorge wall from its foot', cam: [957.5, 2.6, 165], look: [950, 6, 157], fov: 55 },
+        { name: 'Wedge, the shore', cam: [928, 3.5, 202], look: [957, 1.5, 180], fov: 55 },
       ],
       variants: [{ name: label, query, graphics: { resolution: 1 } }],
     },
