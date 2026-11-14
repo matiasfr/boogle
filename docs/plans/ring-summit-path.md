@@ -5,7 +5,8 @@ stack line's cutting; put a footbridge there so the path the world draws can be 
 (Telegraph everything: a drawn path is a promise) and 11 (Show, don't tell: the way up is seen, not explained). No
 principle is bent.
 
-**Status. P2.** Design reviewed below; step 1 built (path data and diagnostic checks only). The bridge is not built.
+**Status. P2.** Design reviewed below; steps 1 and 2 built (the bridge stands and the path is re-pointed); most of
+step 3 rode with step 2. The checkpoint (step 4) is open.
 Written 14 November 2026 from origin/main `35e1c3431`, world v44.
 
 **Research:** [level-design-tools](../research/level-design-tools.md) (one inspectable description per place, checked
@@ -144,7 +145,7 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   rings with 32 directions, including the 2 m boundary. The reviewed approach is returned by `summitBridge`, ready
   for step 2, but is deliberately not used by today's walk. `npm run inflight` failed writing fetch metadata;
   subsequent branch inspection and review-stamp use local refs only. No game-design update: no visible change.
-- [ ] **2. The bridge and the re-pointed path.** In `path.ts` switch `summitPath` to the new waypoints and
+- [x] **2. The bridge and the re-pointed path.** In `path.ts` switch `summitPath` to the new waypoints and
   `bridgeLeg: 3`, including the computed approach 8 m behind a required by design review 1. In `view.ts` skip the
   bridge leg in the path loop and add the deck, parapets, abutments and bents
   from the table. Un-`todo` the test; turn the level check's two reports into `check`s that fail. Update
@@ -153,6 +154,25 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   Verify: the test passes with length about 330 m, steepest 21 %, cut about 0.03 m; `npm run level-check` shows "The summit path"
   ok and stays at its present report count otherwise; `node dev/ship-check.ts` green. *Row: player-visible
   implementation (implementer agent, model fable: fable medium).*
+  **Step 2 record (14 November).** Path 330.111 m, `bridgeLeg: 3`, steepest 21.0 % at 327.6 m, cut 0.022 m; the two
+  TODO tests are real and pass with a third (the bridge leg and the length); the level check's "The summit path" is
+  ok with both lines as assertions, 13 reports as before. The bridge is 11 boxes in the island's merged mesh (deck,
+  2 parapets, 2 abutments, 2 bent caps, 4 bent posts) and 11 static box shapes on the island's one scenery body: no
+  new mesh, material or body. The real-input walk (seed `crossing-done`) reaches the lookout: `walk.ok` and
+  `onLookout` true, 393.1 m in 73.1 s, `swamFrames` 0, `longestAirS` 0.1, `bridge.onDeck` true. Not tested on a
+  device.
+  **Departures:** 11 boxes and 11 colliders, not "about 14" and 9 (each bent's cap and both its posts are solid).
+  The bents' posts stop at the cap's underside, 0.4 m under the deck. The abutments follow the deck's 6.4 % line.
+  Step 3 rode along except its log wording: the walk eval imports `summitPath`, has `ringview=bridge` and `cut` as
+  planned plus `deck` and `rim` (design review findings 2 and 3), and logs `bridge: { onDeck, y }` once, on arriving
+  at b. Its saved-pose read now matches the game's key (`boogle.railway-pose.`; it read the old v0 name and always
+  printed null). New `dev/look/evals/ring-bridge-train.ts` (`bridgetrain=probe`, `drop`) for design review finding 7.
+  **Found, not fixed:** `reload.restored` is false: the pose is saved beside the lookout and the reloaded page stands
+  at (903, 18.7, 14) on Home. `ringview=perf` reads 0 draw calls with and without the near view, so it measures
+  nothing today. From the halt still the bridge shows only as two thin orange uprights and a pale sliver in the
+  notch; the fingerpost stands in front of it. Ground stands through the deck's uphill edge for the first 3 m at a.
+  One staged drop from the deck onto the seed's passing train (about 20 m/s) touched it and was thrown 2.7 m aside
+  onto the track bed; no ride. The ride under the deck with the follow camera could not be staged.
 - [ ] **3. The witness and the stills.** In `dev/look/evals/ring-island-walk.ts` import `summitPath` from
   `/src/entities/ring-island/path.ts` for `way` (its last two points, the lookout ramp's foot and the deck, stay the
   eval's own), add `bridge` and `cut` to `VIEWS` and to the `ringview` branch, and add `bridge: { onDeck, y }` to the

@@ -8,6 +8,10 @@
 //     --until "window.__ringIslandDone ?? (import('/dev/look/evals/ring-island-walk.ts'), false)"
 // The reload half runs only through --until (look re-imports this file in the reloaded page). Stills alone:
 //   ringview=halt   the island halt's west platform toward the shard and the ring
+//   ringview=bridge the summit path's footbridge from the halt-side rim, along the deck
+//   ringview=deck   standing on the deck 5 m from the halt-side end, looking along it
+//   ringview=cut    the bridge from track level in the cutting (use --rail-seed stack-laid-1 for the laid line)
+//   ringview=rim    from 15 m uphill of the cutting's south rim, looking back down at the edge and the bridge
 //   ringview=pier   the pier head toward the island's shore (the foam lip and shallows of the coast's second region)
 //   ringview=perf   diagnostic counts at the pier view: draws with the near view and without, its CPU rows, the coast
 //   npm run look -- --rail-seed crossing-done --query ringview=pier --eval dev/look/evals/ring-island-walk.ts
@@ -29,6 +33,9 @@ const ring = (await import(
 const layout = (await import(
   '/src/sim/railway-ring-layout.ts' as string
 )) as typeof import('../../../src/sim/railway-ring-layout.ts');
+const { summitBridge, summitPath } = (await import(
+  '/src/entities/ring-island/path.ts' as string
+)) as typeof import('../../../src/entities/ring-island/path.ts');
 const { PLAYER_R } = (await import('/src/constants.ts' as string)) as typeof import('../../../src/constants.ts');
 
 type Done = { __ringIslandDone?: boolean; __ringIslandResult?: Record<string, unknown> };
@@ -57,7 +64,10 @@ const CENTRE = { x: 1330, z: -1120 };
 const VIEWS = {
   halt: { cam: { ...at(432, -8.6), y: 8.9 + 2.2 }, look: { x: 1338, y: 70, z: -1120 } },
   pier: { cam: { ...at(-2, 6), y: 30 }, look: { ...at(440, -20), y: 3 } },
+  bridge: { cam: { x: 1374, y: 17.5, z: -872 }, look: { x: 1404.7, y: 17, z: -892 } },
+  cut: { cam: { x: 1411, y: 10.6, z: -852 }, look: { x: 1392.9, y: 14, z: -884.3 } },
 };
+type View = { cam: { x: number; y: number; z: number }; look: { x: number; y: number; z: number } };
 // The first document runs this once from --eval and again from --until's import: only one of them acts.
 const first = !reloaded && !view && !(page as unknown as { __ringWalkStarted?: boolean }).__ringWalkStarted;
 (page as unknown as { __ringWalkStarted?: boolean }).__ringWalkStarted = true;
@@ -78,8 +88,8 @@ if (view || reloaded || first) {
     await wait(800);
   };
   const where = () => ({ x: f2(b.position.x), y: f2(b.position.y), z: f2(b.position.z) });
-  const setView = (name: keyof typeof VIEWS) => {
-    const v = VIEWS[name];
+  const setView = (name: keyof typeof VIEWS | View) => {
+    const v = typeof name === 'string' ? VIEWS[name] : name;
     window.__debugCam!.set([v.cam.x, v.cam.y, v.cam.z], [v.look.x, v.look.y, v.look.z]);
     window.__debugCam!.set = () => {}; // look places its own camera after the eval; this one is the capture
   };
@@ -182,6 +192,31 @@ if (view || reloaded || first) {
     await until(() => ring.ringIslandNear.mounted, 'near view mounted');
     setView(view);
     say(`view ${view} ${JSON.stringify({ mounted: ring.ringIslandNear.mounted })}`);
+  } else if (view === 'bridge' || view === 'cut' || view === 'deck' || view === 'rim') {
+    // The footbridge (docs/plans/ring-summit-path.md). You stand at the path's foot, out of every frame, so the near
+    // view is mounted; `deck` and `rim` are computed from the bridge's own ends at eye height.
+    const { a, b: far, middle } = summitBridge(g),
+      span = Math.hypot(far.x - a.x, far.z - a.z),
+      ux = (far.x - a.x) / span,
+      uz = (far.z - a.z) / span;
+    const rimAt = { x: far.x + ux * 12, z: far.z + uz * 12 }; // b stands 3 m behind the south rim
+    const v: View =
+      view === 'deck'
+        ? {
+            cam: { x: a.x + ux * 5, y: a.y + ((far.y - a.y) * 5) / span + 1.7, z: a.z + uz * 5 },
+            look: { x: far.x, y: far.y + 1.2, z: far.z },
+          }
+        : view === 'rim'
+          ? {
+              cam: { ...rimAt, y: g.islandH(rimAt.x, rimAt.z) + 1.7 },
+              look: { x: middle.x, y: a.y, z: middle.z },
+            }
+          : VIEWS[view];
+    const foot = at(464, -19.6);
+    await stage(foot.x, g.islandH(foot.x, foot.z), foot.z);
+    await until(() => ring.ringIslandNear.mounted, 'near view mounted');
+    setView(v);
+    say(`view ${view} ${JSON.stringify({ mounted: ring.ringIslandNear.mounted, cam: v.cam, look: v.look })}`);
   } else if (first) {
     // ---------------------------------------------------------------- the walk
     let swam = 0,
@@ -226,15 +261,13 @@ if (view || reloaded || first) {
       { name: 'ramp top', to: at(464, -9.6), tol: 0.8 },
       { name: 'west platform', to: at(458, -7.6), tol: 1 },
     ];
-    const pathFoot = at(464, -19.6);
+    // The view's own waypoints (src/entities/ring-island/path.ts), so the witness cannot drift from the drawn path;
+    // the last two, the lookout ramp's foot and the deck, are this eval's.
+    const bridge = summitBridge(g);
     const way = [
-      { x: pathFoot.x, z: pathFoot.z },
-      { x: pathFoot.x - 18, z: pathFoot.z - 8 },
-      { x: 1380, z: -870 },
-      { x: 1395, z: -930 },
-      { x: 1360, z: -975 },
-      { x: 1372, z: -1035 },
-      { x: 1345, z: -1075 },
+      ...summitPath(g, CENTRE)
+        .way.slice(0, -1)
+        .map(([x, z]) => ({ x, z })),
       { x: CENTRE.x + (4 / Math.hypot(4, 6)) * 12, z: CENTRE.z + (6 / Math.hypot(4, 6)) * 12 },
       { x: CENTRE.x + 1.5, z: CENTRE.z + 2 },
     ];
@@ -255,6 +288,14 @@ if (view || reloaded || first) {
       for (const [k, p] of [at(464, -8.6), ...way].entries()) {
         const hit = await walkTo(p.x, p.z, k === way.length ? 1 : 1.6, 60000);
         log.push({ leg: `path ${k}`, ok: hit, at: where(), swimming: me.swimming });
+        // Arrived at the bridge's far end: was it the deck that carried you there?
+        if (p.x === bridge.b.x && p.z === bridge.b.z)
+          log.push({
+            bridge: {
+              onDeck: hit && me.coyote > 0 && Math.abs(b.position.y - PLAYER_R - bridge.b.y) < 0.4,
+              y: f2(b.position.y),
+            },
+          });
         if (!hit) {
           ok = false;
           break;
@@ -289,7 +330,7 @@ if (view || reloaded || first) {
     };
     say(`beside ${JSON.stringify(result.beside)}`);
     dispatchEvent(new Event('pagehide')); // the arrival saves the pose on pagehide, as on a real unload
-    const stored = Object.keys(localStorage).find((k) => k.startsWith('boogle.railway-pose.v0:'));
+    const stored = Object.keys(localStorage).find((k) => k.startsWith('boogle.railway-pose.'));
     result.saved = stored ? JSON.parse(localStorage.getItem(stored)!) : null;
     result.before = where();
     say(`saved ${JSON.stringify(result.saved)}`);
