@@ -149,7 +149,9 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
       const s = 30 + u * (layout.STUB.camp - 30);
       const at = rail.besideLine(line, s, lat);
       const tangent = layout.lineAt(line, s, { x: 0, z: 0, ux: 0, uz: 1 });
-      return { x: at.x, y: layout.railY(line, s) + 0.2, z: at.z, yaw: Math.atan2(-tangent.ux, -tangent.uz) };
+      // Facing the far end, the way `u` grows (until 14 November this faced the village, so every commuter walked
+      // backwards; owner playtest).
+      return { x: at.x, y: layout.railY(line, s) + 0.2, z: at.z, yaw: Math.atan2(tangent.ux, tangent.uz) };
     },
     cart: () => null,
     hush: env.hush,

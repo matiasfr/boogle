@@ -277,7 +277,8 @@ export type FolkEnv = {
   gather: { x: number; z: number; ux: number; uz: number; lx: number; lz: number; len: number };
   platform: { x: number; y: number; z: number; ux: number; uz: number; up: () => boolean };
   forgeLit: () => boolean;
-  /** A place along the first path: `u` 0 the village end to 1 the far end; null until it's open. */
+  /** A place along the first path: `u` 0 the village end to 1 the far end, `yaw` facing the far end; null until it's
+   * open. */
   path: ((u: number, lat: number) => { x: number; y: number; z: number; yaw: number } | null) | null;
   /** The cart they push: null while it's at rest. */
   cart: () => { mesh: THREE.Object3D; top: number; hz: number } | null;
@@ -706,10 +707,19 @@ function brain(g: Guy, dt: number) {
         g.a.z = -g.a.z;
         g.a.x = Math.max(0, Math.min(1, g.a.x));
       }
+      const dx = q.x - g.x,
+        dz = q.z - g.z,
+        moved = Math.hypot(dx, dz);
+      // They face the way they move, turning round over a few steps at each end. A first placement (or a wake far off)
+      // turns at once.
+      const face = moved > 0.002 && moved < 2 ? Math.atan2(dx, dz) : q.yaw + (g.a.z > 0 ? 0 : Math.PI);
+      let dy = face - g.yaw;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      g.yaw += moved >= 2 ? dy : dy * Math.min(1, dt * 9);
       g.x = q.x;
       g.z = q.z;
       g.fy = q.y;
-      g.yaw = q.yaw + (g.a.z > 0 ? 0 : Math.PI);
       g.mood = commuteRun > 0 ? 'run' : 'walk';
       return;
     }
