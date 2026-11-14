@@ -58,11 +58,11 @@ const PULLED_OUT = 'crossing';
 export function createRingMeet(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  deps: { seated: () => boolean; busy: () => boolean; landed: () => boolean },
+  deps: { busy: () => boolean; landed: () => boolean },
 ) {
   // A reward card or an act card has the screen: the shot waits for it (it joins the camera's one list while it plays or
   // waits, buddy-frame.ts), and the banner queues behind an act card (moment-banner.ts).
-  const shot = createCameraPullOut(() => deps.busy() || actShowing(), true, deps.seated);
+  const shot = createCameraPullOut(() => deps.busy() || actShowing(), true);
   const seen = createSeen('boogle.ring-meet.v0');
   /** The first whole state is in (`read.whole()`, a latch): never `read.ready()`, which is also false with a full pending window. */
   const firstReady = () => adapter.read.whole();
@@ -132,7 +132,7 @@ export function createRingMeet(
     } else studMat.emissiveIntensity = 0;
   }
   /** The ride over the joint, once per player per room: the pull-out for a player who saw the Meet, the Meet's framing for
-   * one who missed it (joined late, was seated, reduced motion). Marked only when a shot was actually queued. */
+   * one who missed it (joined late, reduced motion). Marked only when a shot was actually queued. */
   function crossing() {
     const p = me.body?.position,
       riding = !!p && !!carry.on;

@@ -74,7 +74,6 @@ export async function createRailwayLine2(
   youGot: (got: Got) => boolean,
   hookShown?: () => void,
   rewardBusy: () => boolean = () => false,
-  seated: () => boolean = () => false,
 ) {
   const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit, props, carry] =
     await Promise.all([
@@ -96,7 +95,7 @@ export async function createRailwayLine2(
   const { flat } = flatMod;
   const ox = layout.ORIGIN.x;
   // The same pull-out as Place's glider reveal, now owned by this view and queued behind its reward cards.
-  const switchCamera = createCameraPullOut(rewardBusy, true, seated);
+  const switchCamera = createCameraPullOut(rewardBusy, true);
   owner.cleanup(() => switchCamera.dispose());
   let switchKind: 'sea' | 'quarry' | 'farHead' | null = null;
   function showSwitch(kind: 'sea' | 'quarry') {

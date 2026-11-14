@@ -56,7 +56,6 @@ export async function createRailwayCrossing(
     toPier: () => number;
     /** A reward card has the screen: the finale's shot, rockets and banner wait for it (the whistle doesn't). */
     busy: () => boolean;
-    seated: () => boolean;
   },
 ) {
   const [{ H, addStatic }, layout, sounds] = await Promise.all([
@@ -65,8 +64,8 @@ export async function createRailwayCrossing(
     import('../../render/fanfare.ts'),
   ]);
   // The finale's shot: every pull-out's rules (plays to the end, the one highlighted Interact skip from 0.8 s; none for
-  // reduced motion or a seated player, who still get the rockets).
-  const finaleCamera = createCameraPullOut(deps.busy, true, deps.seated);
+  // reduced motion, which still gets the rockets).
+  const finaleCamera = createCameraPullOut(deps.busy, true);
   owner.cleanup(() => finaleCamera.dispose());
   const line = layout.LINKS[1]!.line;
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
@@ -501,7 +500,7 @@ export async function createRailwayCrossing(
       });
     }
     // For the playtest data: that it played, whether the bursts' height over the far end was on screen as it began,
-    // and whether this page took the shot (reduced motion and a seated player don't).
+    // and whether this page took the shot (reduced motion doesn't).
     const burst = new THREE.Vector3(b.x, LAUNCH + 30, b.z);
     const metres = Math.round(camera.position.distanceTo(burst));
     burst.project(camera);

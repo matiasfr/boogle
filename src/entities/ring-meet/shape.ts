@@ -131,7 +131,7 @@ export type Crossing = {
   sawMeet: boolean;
 };
 /** Which shot a crossing earns, if any: the pull-out for a player who saw the Meet; the Meet's framing for one who
- * missed it (joined late, was seated, reduced motion); never twice (call 11). */
+ * missed it (joined late, reduced motion); never twice (call 11). */
 export function crossingShot(c: Crossing): 'pull-out' | 'meet' | null {
   if (!c.joined || !c.riding || !c.crossed || c.pulledOut) return null;
   return c.sawMeet ? 'pull-out' : 'meet';

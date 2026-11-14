@@ -7,6 +7,7 @@ import type { Body } from '../../physics/engine.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity, readableUnlit } from '../../render/readable-unlit.ts';
 import { whistle } from '../../render/machine-sfx.ts';
+import { farHeadEnd, farHeadShot } from './far-head-show.ts';
 
 type Deps = {
   layout: typeof import('../../place/layout.ts');
@@ -19,19 +20,10 @@ type Deps = {
   /** The line's camera pull-out (createCameraPullOut): from, drifting to, looking at, seconds. */
   shot: (from: THREE.Vector3, to: THREE.Vector3, at: THREE.Vector3, seconds: number) => void;
 };
-/** The pull-out over Far Head's rockets: from back along the trestle (metres along the line, beside it, above the rail),
- * drifting further out, looking this far over the rail's end. */
-const FAR_HEAD_SHOT = {
-  seconds: 5,
-  from: { s: 482, side: 22, up: 24 },
-  to: { s: 474, side: 27, up: 31 },
-  aimUp: 32,
-} as const;
 export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, flat, sounds, busy, shot }: Deps) {
   const line = layout.LINKS[1]!.line;
-  // besideLine already includes ORIGIN, as it does for every production rail view.
-  const end = rail.besideLine(line, 546, 0);
-  const farHead = { x: end.x, y: layout.railY(line, 546), z: end.z };
+  // The rail's end, in world metres (besideLine already includes ORIGIN, as it does for every production rail view).
+  const farHead = farHeadEnd();
   const slots: THREE.Vector3[] = [];
   // Rim outward, preserving Place's 27 stations (490, 483, ... 308), two lamps each, 1.72 m in from each edge of the
   // deck: on the left that is the up track's edge since the second track (generic-lines step 2).
@@ -82,10 +74,7 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
     show = -1,
     secondWhistle = false,
     waiting = false; // the edge came while a reward card had the screen
-  const along = (s: number, side: number, up: number) => {
-    const p = rail.besideLine(line, s, side);
-    return new THREE.Vector3(p.x, layout.railY(line, s) + up, p.z);
-  };
+  const v = (p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z);
   function celebrate() {
     waiting = false;
     show = 0;
@@ -94,13 +83,8 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
     whistle(farHead.x, farHead.z);
     barrage(farHead.x, farHead.y + 6, farHead.z, 10, 0.4, 36, 2.2);
     barrage(layout.VILLAGE.x + layout.ORIGIN.x, layout.VILLAGE.y, layout.VILLAGE.z, 5, 0.6, 26, 1.6);
-    const { from, to, aimUp, seconds } = FAR_HEAD_SHOT;
-    shot(
-      along(from.s, from.side, from.up),
-      along(to.s, to.side, to.up),
-      new THREE.Vector3(farHead.x, farHead.y + aimUp, farHead.z),
-      seconds,
-    );
+    const { from, to, at, seconds } = farHeadShot();
+    shot(v(from), v(to), v(at), seconds);
   }
   function barrage(x: number, y: number, z: number, count: number, gap: number, spread: number, size: number) {
     for (let k = 0; k < count; k++)
