@@ -143,6 +143,9 @@
   The lower gorge wall has broader, more continuous green patches without the ledges; the orchestrator accepted that
   difference after opening matched camera-9 stills. The cliffs retain their warm banded-rock character. Not tested on
   a device. [Plan and proofs](../plans/terrain-clean.md); earlier rounds are [history](../plans/terrain-pass.md).
+  Sand meets the gorge's bank across a nominal 7 m distance blend with per-pixel wander. The same packed attribute
+  carries unsaturated gorge distance; no extra texture or geometry is added. The broad-slope rock rule remains
+  unchanged: its proposed gate failed visual review and is unfinished in Part 2a.
 - **Paths read as paths (14 November; owner: "it should be more clearly looking like a path").** Every footpath on
   Home is drawn per pixel from a distance field of the path lines ([path-surface.ts](../../src/place/path-surface.ts);
   one 781 × 541 RGBA16F texture, 3.4 MB), over whatever ground is underneath and winning over slope rock within its

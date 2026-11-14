@@ -54,7 +54,7 @@ export function homeGroundMaterial(lawnLayer?: LawnLayer) {
   const steep: N = layers.x,
     foot: N = layers.y,
     soil: N = layers.z,
-    gorge: N = layers.w;
+    gorgeDistance: N = layers.w;
   // Today's lawn, sand and path (look.ts groundMaterial's grass branch, world coordinates), so colours match outside.
   const slow: N = sin(wx.mul(0.031).add(1.3))
     .mul(sin(p.z.mul(0.027).sub(0.4)))
@@ -92,6 +92,11 @@ export function homeGroundMaterial(lawnLayer?: LawnLayer) {
   // a warm beach (today's pale pigment tone-maps to white on a sunlit slope) and a damp, mossy bank on the gorge's floor.
   const beach: N = freshSand('#d2b680').mul(sandTone.add(0.25));
   const bank: N = freshSand('#7d8760').mul(mottle.mul(2).add(1));
+  // Seven metres of blend in the original gorge-distance field, with a small per-pixel wander.
+  const gorgeWander: N = sin(p.x.mul(0.19).add(p.z.mul(0.13)))
+    .mul(0.4)
+    .add(sin(p.x.mul(0.37).sub(p.z.mul(0.29))).mul(0.2));
+  const gorge: N = smoothstep(14.5, 21.5, gorgeDistance.add(gorgeWander)).oneMinus();
   const low: N = mix(beach, bank, gorge);
   const ground: N = mix(selectiveColour(lawn, 'grass'), paletteNode(low, 'sand'), sandy);
   // The sea's wet band, on sand only and only ever darker than today's sand.

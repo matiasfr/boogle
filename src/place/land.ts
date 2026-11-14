@@ -95,7 +95,8 @@ function addGroundLayers(geo: THREE.BufferGeometry) {
     const z = k < NX * NZ ? cellZ(Math.floor(k / NX)) : position.getZ(k) - ORIGIN.z;
     const inside = x >= GRID.x0 && x <= GRID.x1 && z >= GRID.z0 && z <= GRID.z1;
     if (inside) describeGround(x, z, k, layers);
-    const gorge = inside ? smoothstep(20, 16, gorgeD(x, z)) : 0;
+    // Keep distance unsaturated so the material can blend across a wider, per-pixel shore border.
+    const gorge = inside ? gorgeD(x, z) : 1e6;
     packed.set([layers.steep[k]!, layers.foot[k]!, layers.soil[k]!, gorge], k * 4);
   }
   geo.setAttribute('groundLayers', new THREE.BufferAttribute(packed, 4));

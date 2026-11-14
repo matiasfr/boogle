@@ -332,6 +332,22 @@ Town paths on level ground (`H/c3-v0.png`, `H/c4-v0.png`) read clean: no finding
   broad-slope rock rule (`broad`) applies only where the interpolated vertex `steep` input is above 0.05, that is on triangles that
   touch truly unwalkable rock, so lone tan patches on walkable coast slope and lone rock triangles in grass go. Verify: `H/c7` and
   `H/c1` cameras; the far camera (paths-shots 7) shows no new patches.
+  - [x] Shore blend implemented and opened: `.look/evidence/1794699791806-48979/evidence.json`, c0–c5, against
+    step 2's matched views. Sand meets bank more softly; original cliff/coast rock is preserved. Distance thresholds
+    are 14.5–21.5 m, with bounded 0.6 m per-pixel wander. **Small source-scope departure:** `land.ts` passes raw
+    `gorgeD` through the existing fourth attribute component (outside sentinel 1e6); the former saturated 4 m mask
+    cannot express a 7 m blend. No new attribute, texture, height or collider. Six hashes remain equal.
+  - [ ] Broad-rule cleanup remains unfinished after three inspected source iterations. Literal `steep > 0.05`
+    gating made vertical cliff strips green (`1794699239260-34226`, c0–c5 opened), because this vertex field records
+    the flattest adjacent face. A true rendered-face guard restored cliffs but introduced speckled boundaries
+    (`1794699414365-41449`, c0–c5 opened); softening it made large angular coast slabs at far LOD
+    (`1794699702563-48370`, c0–c5 opened). Both author and independent reviewer rejected these. The original rock
+    rule is restored; no claim that coastal tan patches or grass/rock zigzags are removed. Stop at the look's
+    iteration limit; a consistent true-face input across full-resolution and far terrain needs a later plan repair.
+
+Part 2a local result: step 1 complete; step 2 implemented with visual acceptance partial; step 3 shore complete,
+rock-border cleanup unfinished. Checkpoint B is **not complete** and no ship is authorized in this job. The Boogler's
+copy is unchanged; no suspect line encountered. No ROM data added. Not tested on a device.
 
 **Checkpoint B (end of 2a):** one proof look (canyon walking up, from above, across the valley, shore, town), opened
 by the visual reviewer against the owner's sentence; heights hash equal; one ship. Update the paths bullet in
