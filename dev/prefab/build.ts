@@ -26,7 +26,8 @@ for (const file of fs.globSync('src/content/{prefabs,levels}/*.ts', { cwd: root 
 }
 assertAuthoredNumbers({ prefabs, levels }, 'authored content');
 const outputs = compile(prefabs, levels, { ...names, assets: readManifest() });
-writeArtifacts(outputs, path.join(root, 'content/built'), process.argv.includes('--check'));
+const check = process.argv.includes('--check');
+writeArtifacts(outputs, path.join(root, 'content/built'), check);
 console.log(
-  `prefabs: ${prefabs.length} records, ${levels.length} levels, ${[...outputs.values()].reduce((n, s) => n + Buffer.byteLength(s), 0)} bytes${process.argv.includes('--check') ? ', fresh' : ''}`,
+  `prefabs: ${prefabs.length} records, ${levels.length} levels, ${[...outputs.values()].reduce((n, s) => n + Buffer.byteLength(s), 0)} bytes${check ? ', fresh' : ''}`,
 );

@@ -30,8 +30,6 @@ type Surface = {
   /** May move with a later plan (design review, finding 5 and change 5). */
   provisional?: true;
 };
-/** Room kept clear for the rules plan: a rectangle and the heights a leg 2 box may not enter. */
-export type Reserve = { id: string; x: number; z: number; yaw: number; w: number; d: number; y0: number; y1: number };
 /** A labelled pad (Ruling 2): a 6 by 4 m pale outline and one sign. */
 type PadInput = { id: string; x: number; z: number; y: number; yaw: number; label: string };
 /** A sign on its own post or posts, facing (nx, nz). */
@@ -194,22 +192,7 @@ function evaluate(value: Json): Json {
       return compute === 'slab' ? { ...rect, y: (n('y0') + n('y1')) / 2, h: n('y1') - n('y0') } : rect;
     }
     case 'span': {
-      const a = xyz(o.a),
-        b = xyz(o.b);
-      const dx = b.x - a.x,
-        dz = b.z - a.z,
-        dy = b.y - a.y,
-        run = Math.hypot(dx, dz),
-        pitch = Math.atan2(dy, run);
-      return {
-        ...rest,
-        x: (a.x + b.x) / 2,
-        y: (a.y + b.y) / 2 - (n('h') / 2) * Math.cos(pitch),
-        z: (a.z + b.z) / 2,
-        d: Math.hypot(run, dy),
-        yaw: Math.atan2(dx, dz),
-        pitch,
-      };
+      return { ...rest, ...spanOf(xyz(o.a), xyz(o.b), n('h')) };
     }
     case 'line2Point': {
       const p = { x: 0, z: 0 };
@@ -218,8 +201,6 @@ function evaluate(value: Json): Json {
     }
     case 'line2EndY':
       return line2Y(LINE2_END_S) + n('offset');
-    case 'box':
-      return rest;
     default:
       throw new Error(`prefabs: unknown layout expression ${compute}`);
   }
@@ -260,11 +241,11 @@ export function resolveLayout(level: LevelDef): LevelDef {
   }
   const base: Placement[] = boxes.map((b, i) => ({
     id: i < 10 && i % 2 === 0 ? `gorge.platform-n.${i / 2}` : `gorge.massing.${i}`,
-    prefab: b.hidden ? 'greybox.collider' : b.solid === false ? 'greybox.decoration' : 'greybox.box',
+    prefab: boxPrefab(b),
     pos: [b.x, b.y, b.z],
     rot: [b.yaw, -(b.pitch ?? 0), 0],
     scale: [b.w, b.h, b.d],
-    params: { colour: b.colour ?? '#9c9ea1' },
+    params: { colour: b.colour ?? COLOURS.grey },
   }));
   const incline = expandLeg2('gorge', area(evaluate(layout.incline!)));
   const ids = new Map(incline.placements.map((p, i) => [p.id, `gorge.massing.${base.length + i}`]));
@@ -284,6 +265,26 @@ const COLOURS: Record<Tone, string> = {
   pale: '#e4e5e6',
   black: '#101113',
 };
+type XYZ = { x: number; y: number; z: number };
+/** A box of thickness h whose top face runs from a to b: its centre, length, heading and pitch. */
+function spanOf(a: XYZ, b: XYZ, h: number) {
+  const dx = b.x - a.x,
+    dz = b.z - a.z,
+    dy = b.y - a.y,
+    run = Math.hypot(dx, dz),
+    pitch = Math.atan2(dy, run);
+  return {
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2 - (h / 2) * Math.cos(pitch),
+    z: (a.z + b.z) / 2,
+    d: Math.hypot(run, dy),
+    yaw: Math.atan2(dx, dz),
+    pitch,
+  };
+}
+/** Hidden boxes only collide, non-solid ones only draw. */
+const boxPrefab = (b: { hidden?: unknown; solid?: unknown }) =>
+  b.hidden ? 'greybox.collider' : b.solid === false ? 'greybox.decoration' : 'greybox.box';
 function surface(p: Surface): Placement {
   let pos: Vec3 = [p.x, p.top - p.h / 2, p.z],
     rot: Vec3 = [p.yaw, 0, 0],
@@ -293,18 +294,14 @@ function surface(p: Surface): Placement {
       uz = (Math.cos(p.yaw) * p.d) / 2;
     const a = { x: p.x - ux, y: p.top, z: p.z - uz },
       b = { x: p.x + ux, y: p.top + p.rise, z: p.z + uz };
-    const dx = b.x - a.x,
-      dz = b.z - a.z,
-      dy = b.y - a.y,
-      run = Math.hypot(dx, dz),
-      pitch = Math.atan2(dy, run);
-    pos = [(a.x + b.x) / 2, (a.y + b.y) / 2 - (p.h / 2) * Math.cos(pitch), (a.z + b.z) / 2];
-    rot = [Math.atan2(dx, dz), -pitch, 0];
-    depth = Math.hypot(run, dy);
+    const s = spanOf(a, b, p.h);
+    pos = [s.x, s.y, s.z];
+    rot = [s.yaw, -s.pitch, 0];
+    depth = s.d;
   }
   return {
     id: p.id,
-    prefab: p.hidden ? 'greybox.collider' : p.solid === false ? 'greybox.decoration' : 'greybox.box',
+    prefab: boxPrefab(p),
     pos,
     rot,
     scale: [p.w, p.h, depth],
