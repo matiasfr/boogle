@@ -1,0 +1,171 @@
+{
+  "kind": "static dev tooling; no game browser or bot",
+  "status": "generated; visual inspection separate",
+  "commit": "99c52f429c75c025fc6ba46d55951b72d276c0e6",
+  "tree": "d558f01bad41d18a53563136734fc1cbb5c6e74c",
+  "stamp": "ccdcc3ab44f3",
+  "sourceHashes": {
+    "dev/level/town-plan-sheet.ts": "251d3627188741ddab0348c2eaa6d09f98aa66540eafdd9b0c73c5dbc2513810",
+    "package.json": "e9610ac81e61470b89f7940ad4dfd2113b2433ea5db1c86f331ab8cc249972f5",
+    "src/place/layout.ts": "da376c5545aa0a4c7aa7702ba5af17d36f126cb656688fb6fe0cd188740e0661",
+    "src/place/town-plan.ts": "b4a2bfb8fc7d4666168ddbeb338300e651bb918a812756589b5a381fc1c0e8fa",
+    "src/place/home-station.ts": "501dcf8203b9c08adf291e23987cb49a00756086773832257efebf6e9e4d818d",
+    "src/place/shore-layout.ts": "4dc547081a456f722ae3118f870a830ed2806962b76177253efed6c5332a65a0",
+    "src/place/terrain.ts": "2f8ee15cae9effc2d0f3193c717f0495c3af1ac39e5253c309a8ec7eef8a6486",
+    "src/place/tech-layout.ts": "8e27f1fb9c6878f3e399d06c9c0659f44d555ad259881f3c3a560e0cbde9c350",
+    "src/place/tree-catalog.ts": "e1e292f3080b55e66c0fe048785a7e0e4ec413a393ef89e7f6405accd37a7275",
+    "src/place/opening-plans.ts": "479414dea7fb20204671f52ac5f4355882ca8bc7cd15a7625c1f8917585c8f3b",
+    "src/place/town-blockout.ts": "3dc4d48a53e1235d59a35b40a80ba0c03d42b1bd55a97406de1931fa2b9adfca",
+    "src/content/levels/town-blockout.ts": "8ae1c49961fa749fb11cc00bf70767eee8c9118dadce45d798dcd5dbdd2c8617",
+    "src/entities/town/workshop.ts": "59f7a85d0ef63cdb025535bf0b6b0e76e5ce8210b0a65cf49443be764374d63b",
+    "docs/plans/town-layout.md": "9207dbe2e0959ce10fdbba0bb8f050865834a1a215b24d7be57d418c3318cec6",
+    "docs/plans/home-flip.md": "37bca632eb1035bb9f62745528bbadaa1640f75cfced5e5bef540998f9770313"
+  },
+  "groundHash": "64157157046ec304cc9266732b34851f99b08e6ad1577dd7f7b789569c7ceeb3",
+  "curioClearances": [
+    {
+      "id": "bay",
+      "ring": 5.6222559506379035,
+      "dock": 41.12759687818531,
+      "plot3": 5.011269253902589,
+      "bowl": 11.622255950637904,
+      "ground": [18, 18.210387778443824]
+    },
+    {
+      "id": "shelf",
+      "ring": 8.070268969142415,
+      "dock": 42.561142597663995,
+      "plot3": 1.1487196506989898,
+      "bowl": 14.070268969142415,
+      "ground": [18, 18]
+    }
+  ],
+  "narrowGaps": [
+    {
+      "a": "house",
+      "b": "museum",
+      "metres": 2.670834875401143
+    },
+    {
+      "a": "museum",
+      "b": "plot4",
+      "metres": 3.670834875401154
+    },
+    {
+      "a": "shop",
+      "b": "plot1",
+      "metres": 3.003389597885625
+    },
+    {
+      "a": "shop",
+      "b": "plot2",
+      "metres": 3.0033895978856426
+    },
+    {
+      "a": "shop",
+      "b": "plot8",
+      "metres": 3.7577461115315582
+    },
+    {
+      "a": "plot2",
+      "b": "plot8",
+      "metres": 3.331219279544193
+    },
+    {
+      "a": "plot3",
+      "b": "plot5",
+      "metres": 2.799999999999997
+    },
+    {
+      "a": "plot5",
+      "b": "plot6",
+      "metres": 2.8999999999999915
+    }
+  ],
+  "command": "npm run town-plan-sheet",
+  "artifacts": {
+    "svg": "/Users/matiasfranco/Developer/boogle-codex/round-blockout-b4/.look/town-plan-sheet/town-plan-sheet.svg",
+    "png": "/Users/matiasfranco/Developer/boogle-codex/round-blockout-b4/.look/town-plan-sheet/town-plan-sheet.png"
+  },
+  "counts": {
+    "today": 17,
+    "round": 17,
+    "plots": 8
+  },
+  "units": "Place-local horizontal metres; north = -z",
+  "bounds": {
+    "x0": -210,
+    "x1": -40,
+    "z0": -40,
+    "z1": 70
+  },
+  "pixelsPerMetre": 4.176470588235294,
+  "measures": [
+    {
+      "name": "Pip's house ↔ Fine Prices doors",
+      "a": {
+        "x": -111.18679014638003,
+        "z": -1.5894274272234465
+      },
+      "b": {
+        "x": -118.82730996372496,
+        "z": 41.742113705313706
+      },
+      "metres": 43.99999999999999
+    },
+    {
+      "name": "Hall front ↔ green centre",
+      "a": {
+        "x": -92.9806550238308,
+        "z": 12.059390979491452
+      },
+      "b": {
+        "x": -115.00705005505249,
+        "z": 20.07634313904513
+      },
+      "metres": 23.43999999999999
+    },
+    {
+      "name": "Shore spawn (LANDING) ↔ gate door",
+      "a": {
+        "x": -199,
+        "z": 10,
+        "yaw": -1.7707963267948965
+      },
+      "b": {
+        "x": -136.67282062132105,
+        "z": 16.25608323037267
+      },
+      "metres": 62.64036930516433
+    },
+    {
+      "name": "Village fallback (SPAWN) ↔ gate door",
+      "a": {
+        "x": -97,
+        "z": 14,
+        "yaw": -0.62
+      },
+      "b": {
+        "x": -136.67282062132105,
+        "z": 16.25608323037267
+      },
+      "metres": 39.736917439503095
+    }
+  ],
+  "missing": [
+    "Plot prices, stake/board sites and clock build trigger are not in town-plan.ts.",
+    "Forge west steps have no geometry in town-plan.ts; only its door is specified."
+  ],
+  "notes": [
+    "All panels use the same scale; north = −z. Footprints are outside walls, not roofs.",
+    "TODAY = opening cottages + rooms + forge + layout B station; all build stages.",
+    "Unused TOWN.wood/stone growth rows and distant camps are excluded.",
+    "Paint and height cells are baked data; dashed paths are authored centrelines.",
+    "B1 streets/cottage/yard built; bay and shelf already moved on main (#1778).",
+    "B2 rooms and balcony built. B3: plots 1–8 and the clock footing stand as blocks.",
+    "Doors have slab-matching thresholds; yard dressing follows the gift anchor.",
+    "Distances are straight, horizontal metres, not walked routes or terrain slopes.",
+    "Forge frame stands on arrival; free finish at F2. Shop/museum boards: arrival.",
+    "Clock footing 5 × 5 m: arrival; clock: free with trains. Hall tick: town front."
+  ]
+}
