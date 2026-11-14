@@ -526,8 +526,9 @@ test("no block's mat lies on a road: each is off the ring and outside the quarry
 test('the little guys walk round the footing and the blocks: every solid has an avoidance footprint', () => {
   // folk.ts steers round `feet` (src/place/sites.ts), not colliders: each solid piece registers its footprint.
   const feet = blockoutFeet(stood);
-  assert.equal(feet.length, 10);
-  for (const b of [...TOWN_BLOCKS, TOWN_FOOTING, TOWN_STATUE]) {
+  // The monument has one footprint, the footing's: it encloses the statue's plinth (town-statue-folk.test.ts).
+  assert.equal(feet.length, 9);
+  for (const b of [...TOWN_BLOCKS, TOWN_FOOTING]) {
     const foot = feet.find(
       (f) => Math.hypot(f.x - b.x - ORIGIN.x, f.z - b.z) < 0.001 && f.hw === b.w / 2 && f.yaw === b.yaw,
     );
@@ -571,7 +572,7 @@ test("The Boogler's statue stands on the footing at G, facing the hall", () => {
   const front = townLocal({ ...TOWN_STATUE }, 0, 1);
   const bearing = (Math.atan2(front.x - TOWN_CENTRE.x, -(front.z - TOWN_CENTRE.z)) * 180) / Math.PI;
   near(bearing, 70, 0.001, 'the bearing he faces');
-  // The plinth's foot is inside the footing, and the footprint the little guys walk round covers it.
+  // The plinth's foot is inside the footing, whose footprint is the one the little guys walk round.
   for (const [r] of STATUE_PLINTH) assert.ok(r <= TOWN_FOOTING.w / 2, 'the plinth stands on the footing');
   assert.equal(TOWN_STATUE.w, 2 * STATUE_PLINTH[0]![0]);
   assert.equal(TOWN_STATUE.d, TOWN_STATUE.w);

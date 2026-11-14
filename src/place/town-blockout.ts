@@ -37,10 +37,12 @@ export function standBlockout<P extends { id: string; pos: readonly number[] }>(
 }
 
 /** The footprints the little guys walk round (src/place/sites.ts `addFoot`): one per solid piece, since they steer
- * by footprints and not by colliders. Takes the stood placements; the marks have no footprint. */
+ * by footprints and not by colliders. Takes the stood placements; the marks have no footprint. The monument at G has
+ * one: the footing's, which encloses the statue's plinth. A second, turned footprint for the statue overlapped it and
+ * left a villager pacing between their corners (review, 14 November; test/town-statue-folk.test.ts). */
 export function blockoutFeet(stood: readonly { id: string; pos: readonly number[] }[]) {
   return stood
-    .filter((p) => !/\.(door|mat)$/.test(p.id))
+    .filter((p) => !/\.(door|mat)$/.test(p.id) && p.id !== 'town.statue')
     .map((p) => {
       const frame = blockoutFrame(p.id);
       return { x: p.pos[0]!, z: p.pos[2]!, yaw: frame.yaw, hw: frame.w / 2, hd: frame.d / 2 };

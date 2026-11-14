@@ -721,7 +721,8 @@ export const TOWN_FOOTING = {
   high: 0.3,
 } as const;
 /** The Boogler's statue on the footing: he faces the hall and spawn, bearing 70 from G (a yaw is 180 degrees less the
- * bearing faced); `w` and `d` are its plinth's foot, the footprint the little guys walk round. */
+ * bearing faced); `w` and `d` are its plinth's foot, inside the footing, whose footprint is the one the little
+ * guys walk round. */
 export const TOWN_STATUE = {
   x: TOWN_PROPS.statue.x,
   z: TOWN_PROPS.statue.z,
