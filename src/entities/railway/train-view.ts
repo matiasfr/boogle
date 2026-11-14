@@ -34,8 +34,8 @@ import { aperture, rail as railRow, train as trainRow, works as worksRow } from 
 import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
-import { STEEL_CAR, steelCarOffset } from './cars.ts';
-import { ENGINE_BUFFERS, trainPlaces, type Vehicle } from './car-spacing.ts';
+import { STEEL_CAR, ridesOn, steelCarOffset } from './cars.ts';
+import { CAR_BUFFERS, ENGINE_BUFFERS, couplingCapacity, trainPlaces, type Vehicle } from './car-spacing.ts';
 import { createCouplings } from './couplings.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
@@ -178,11 +178,8 @@ export async function createRailwayTrains(
       // On the car's rock, so the bench takes the deck's pitch on a grade and its shudder (owner, 10 November: "the
       // sitting and bench do not follow the normal of the rail"); the rock's origin sits under the mesh's.
       // Its own body (owner, 14 November: "clearly just overlaid on a cargo car ... those spokes that stick out"):
-      // the kit's flatbed keeps its deck boards and loses its second piece, the underframe with the rail rack's arms
-      // (look-kit.ts kitCars: flat_deck, then flat_black); the fit brings the underframe, sides and steps instead.
-      const bed = car.rock.children[0];
-      if (bed?.children.length === 2) bed.children[1]!.visible = false; // the kit's flatbed is exactly those two
-      const fit = carKit.passengerCar(PASSENGER_CAR_UPGRADED);
+      // the fit brings an underframe, sides and steps, and takes the flatbed's rail rack off this car (car-kit.ts).
+      const fit = carKit.passengerCar(PASSENGER_CAR_UPGRADED, car.rock);
       fit.position.y = car.hy - carKit.CAR_DECK - car.rock.position.y;
       owner.add(fit);
       car.rock.add(fit);
@@ -346,12 +343,12 @@ export async function createRailwayTrains(
     merge2 = endMergeM(stops2),
     mergeShown = merge2;
   function latOf(tr: (typeof trains)[number], row: Readonly<RailTrain>, s: number) {
-    if (tr.line === LINE2) return line2Lat(row, s, stops2, mergeShown);
+    if (tr.line === LINE2) return line2Lat(row, s, stops2, mergeShown, true);
     if (row.track) return 0;
     const f = formations[tr.line]!,
       c = f.crossover;
     if (crossing(tr, row) && c && s >= c[0]) return layout.crossLat(f, s) ?? 0;
-    return layout.upLat(f, s) ?? 0;
+    return layout.upLat(f, s, true) ?? 0;
   }
   /** Whether a train on the up track takes a crossover, from the room's rows alone (a restore or a joining tab draws
    * it the same): Far Head's while it is line 2's end, or for a train the pier's opening caught on it (`turn` and
@@ -366,8 +363,8 @@ export async function createRailwayTrains(
   const a2 = { x: 0, z: 0, ux: 0, uz: 1 },
     b2 = { x: 0, z: 0, ux: 0, uz: 1 };
   function poseOnLine2(c: Car, s: number, lat: (s: number) => number) {
-    line2At(s + 1.1, a2);
-    line2At(s - 1.1, b2);
+    line2At(s + 1.1, a2, true);
+    line2At(s - 1.1, b2, true);
     const la = lat(s + 1.1),
       lb = lat(s - 1.1);
     a2.x -= a2.uz * la;
@@ -387,13 +384,14 @@ export async function createRailwayTrains(
     made: Vehicle[] = [],
     stock: Car[] = [],
     standAt: number[] = [];
-  const couplings = createCouplings(owner);
+  const couplings = createCouplings(owner, couplingCapacity(RAIL_TRAINS.length));
   const seatMatrix = new THREE.Matrix4();
   const askAt = new THREE.Vector3(),
     riderAt = new THREE.Vector3();
   /** Whether `pid` rides `tr` (your own feet on one of its cars; a friend's avatar within 6 m of one). */
   function riderOf(tr: (typeof trains)[number], pid: string) {
-    if (pid === adapter.read.pid) return carsOf(tr).some((c) => c.platform === carry.on);
+    // Standing on a car or sitting in one of its chairs: a seated rider's own ask rang no bell (review, 14 November).
+    if (pid === adapter.read.pid) return ridesOn(aboard(), carsOf(tr));
     const avatar = [...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar;
     if (!avatar) return false;
     avatar.getWorldPosition(riderAt);
@@ -456,8 +454,8 @@ export async function createRailwayTrains(
       // (car-spacing.ts: inside a bend the up track is the shorter, and cars spaced by the line's metres closed up
       // into each other). Bodies, seats, the cab's cutaway and the camera all read the cars these poses move.
       const trackAt = (s: number, out: { x: number; z: number }) => {
-        if (tr.line === LINE2) line2At(s, a2);
-        else layout.lineAt(line, s, a2);
+        if (tr.line === LINE2) line2At(s, a2, true);
+        else layout.lineSmoothAt(line, s, a2);
         const l = lat(s);
         out.x = a2.x - a2.uz * l;
         out.z = a2.z + a2.ux * l;
@@ -468,16 +466,16 @@ export async function createRailwayTrains(
       // by its scale, so the couplings stay shut.
       made.length = 0;
       stock.length = 0;
-      const put = (c: Car, d: number, back = c.spec.hz) => {
+      const put = (c: Car, d: number, buffers: Vehicle['buffers'] = CAR_BUFFERS) => {
         const v = (vehicles[made.length] ??= { d: 0, hx: 0, back: 0, front: 0 });
         v.d = d;
         v.hx = c.spec.hx;
-        v.back = back;
-        v.front = c.spec.hz;
+        v.back = v.front = c.spec.hz;
+        v.buffers = buffers;
         made.push(v);
         stock.push(c);
       };
-      tr.cars.forEach((c, n) => put(c, offsets[n]! * c.mesh.scale.x, c.spec.hz + (n === 0 ? ENGINE_BUFFERS : 0)));
+      tr.cars.forEach((c, n) => put(c, offsets[n]! * c.mesh.scale.x, n === 0 ? ENGINE_BUFFERS : CAR_BUFFERS));
       if (tr === coupled) put(wagonCar, offsets[WAGON]!);
       if (tr.steel) put(tr.steel, steelCarOffset(row.wagon) * tr.steel.mesh.scale.x);
       // On today's track the line's metres are the track's.

@@ -7,6 +7,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import url from '../../../assets/built/passenger-car.glb?url';
 import { paint } from '../../place/look.ts';
+import { FLAT_RACK } from './cars.ts';
 
 const kit = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);
 kit.scene.updateMatrixWorld(true);
@@ -47,11 +48,17 @@ const NEW = { color: '#ffffff', own: true, rough: 0.6 } as const;
  * The passenger car's fittings for one flatbed: a group whose origin is the rail line, so place it at
  * `car.hy - CAR_DECK` in the car's mesh frame. Geometry and paint are the kit's (never dispose them).
  *
+ * `flatbed` is the kit flatbed it is fitted to (the car's rock): its rail rack, the arms that stuck out down each
+ * side, is left undrawn (owner, 14 November: "it should look more properly like a little passenger car").
+ *
  * `upgraded` is the upgrade hook: the roof, posts, lamps and trim (`car_upgrade`). It is built and switched off: no
  * rule turns it on yet, and the fit's repaint (red backs, brass rails) waits with it. Its roof is 2.77 m over the rail
  * line and overhangs the deck to 2.55 m wide, which the upgrade's own plan checks against the halts.
  */
-export function passengerCar(upgraded = false) {
+export function passengerCar(upgraded = false, flatbed?: THREE.Object3D) {
+  // The flatbed's underframe and rail rack, by the name the place kit gives it: this car has its own underframe.
+  const rack = flatbed?.getObjectByName(FLAT_RACK);
+  if (rack) rack.visible = false;
   const g = new THREE.Group();
   g.name = 'passenger_car';
   const parts: [CarPart, typeof AGED | typeof NEW][] = [['car_fit', AGED]];

@@ -3,7 +3,8 @@
 // stretch seated, then at the quarry stand up by Jump and walk off. `window.__car` marks each beat for the stills.
 // npm run look -- --rail-seed trains-on --query shot=play --action dev/look/evals/railway-passenger-car.ts \
 //   --real --warm 5 --video --name passenger-car
-// Run as `--action`, so the journey is inside the real-time recording.
+// Run as `--action`, so the journey is inside the real-time recording. `&carShot=1` plays a camera pull-out for the
+// seated rider under way and checks the view, chair, prompt and controls after it.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { inspectRailway, railRead, rw, trains } = (await import(
   '/dev/look/rail-read.ts' as string
@@ -143,6 +144,54 @@ const ride = async () => {
   await bot.wait(300);
   check(seatState().sitting, 'a second press neither asks again nor stands you up');
   mark('requested');
+  // A camera pull-out played for a rider seated on a moving train (#1782 let a railway chair keep its shots; review,
+  // 14 November: not seen on a moving train). `&carShot=1`: play one over the train, then check it gave the view back
+  // to the rider with the chair, the prompt and the controls as they were.
+  if (new URLSearchParams(location.search).has('carShot')) {
+    const { createCameraPullOut } = (await import(
+      '/src/render/camera-pull-out.ts' as string
+    )) as typeof import('../../../src/render/camera-pull-out.ts');
+    const { inputState } = (await import(
+      '/src/player/input.ts' as string
+    )) as typeof import('../../../src/player/input.ts');
+    const scene = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
+    const seat = seatState().sitting,
+      before = { phase: row().phase, target: interactTarget()?.id, seated: inputState.seated };
+    top = true;
+    window.__debugCam!.clear();
+    await bot.wait(300);
+    const pull = createCameraPullOut();
+    const p = me.body!.position;
+    const v = (x: number, y: number, z: number) => scene.camera.position.clone().set(x, y, z);
+    pull.play(v(p.x + 9, p.y + 9, p.z + 9), v(p.x + 12, p.y + 12, p.z + 12), v(p.x, p.y, p.z), 2.6);
+    let last = performance.now(),
+      peak = 0,
+      far = 0;
+    const tick = setInterval(() => {
+      const now = performance.now();
+      pull.update((now - last) / 1000);
+      last = now;
+      peak = Math.max(peak, pull.inspect().weight);
+      far = Math.max(far, scene.camera.position.distanceTo(me.body!.position));
+    }, 16);
+    await until(() => pull.inspect().active, 'the pull-out starts', 3000);
+    await until(() => !pull.active(), 'the pull-out ends', 12000);
+    await bot.wait(400);
+    clearInterval(tick);
+    const back = scene.camera.position.distanceTo(me.body!.position);
+    const after = { phase: row().phase, target: interactTarget()?.id, seated: inputState.seated };
+    console.log(`CAR shot ${JSON.stringify({ peak, far, back, seat, before, after, sitting: seatState().sitting })}`);
+    pull.dispose();
+    check(peak > 0.9 && far > 8, 'the pull-out took the view from the seated rider');
+    check(back < 8, 'the view came back to the rider');
+    check(seatState().sitting === seat, 'the rider kept the chair through the pull-out');
+    check(after.target === before.target && !after.seated, 'the prompt and the controls are as they were');
+    bot.press();
+    await bot.wait(200);
+    check(seatState().sitting === seat, 'Interact still answers (Stop requested: nothing happens)');
+    top = false;
+    mark('shot');
+  }
   mark('riding');
   await until(() => row().phase === 0 && row().at === 1, 'the train halts at the quarry', 300000);
   await bot.wait(1500);

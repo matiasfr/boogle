@@ -1,21 +1,22 @@
 // The couplings between a train's vehicles: a drawbar from one headstock to the next, and a pair of buffers on each
 // car's end facing it, so the gap between two vehicles reads as a coupling and not a detached car (owner, 14 November,
-// after the cars were spaced along their own track: car-spacing.ts stretches a coupling up to 0.4 m round a bend,
+// after the cars were spaced along their own track: car-spacing.ts stretches a coupling up to 0.27 m round a bend,
 // and the bar stretches with it). Drawn only: no collider, no state; two instanced batches for every train.
 import * as THREE from 'three/webgpu';
 import { guardInstances } from '../../render/draw-count.ts';
 import { flat } from '../../render/flat.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { BOTTOM, type Car } from './car.ts';
+import { CAR_BUFFER } from './car-spacing.ts';
 
-/** Three trains of at most five vehicles. */
-const MAX = 12;
 /** The bar's section and its height over the rail at a car's headstock and under the engine's frame; a buffer: its
  * radius, how far it stands out from a car's end, how far off the middle, and its height. */
 const BAR = { w: 0.12, h: 0.1, y: 0.42, engine: 0.52 },
-  BUFFER = { r: 0.11, out: 0.2, x: 0.55, y: 0.46 };
+  BUFFER = { ...CAR_BUFFER, y: 0.46 };
 
-export function createCouplings(owner: OwnedView) {
+/** `links`: the most couplings shown at once (car-spacing.ts couplingCapacity of the fleet). */
+export function createCouplings(owner: OwnedView, links: number) {
+  const MAX = links;
   const iron = flat('#2c2e34', 0.6);
   const barGeo = new THREE.BoxGeometry(1, 1, 1),
     bufferGeo = new THREE.CylinderGeometry(BUFFER.r, BUFFER.r, 1, 10).rotateX(Math.PI / 2);

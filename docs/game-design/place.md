@@ -742,11 +742,15 @@ especially with curves, the train car clips the train engine"; `car-spacing.ts`)
 line; the up track, 4 m inside a bend, is shorter than the line there, so an up train's cars used to close up: the
 engine's deck stood 0.68 m into the first car on line 1's bend and 0.98 m into it at the Quarry's stop. Each vehicle
 now stands its offset along its own track from the first car, and where a bend is still too tight for two decks'
-inside corners the coupling stretches until they clear by 0.1 m (the engine's buffers counted): at most 0.24 m on
-today's track and 0.40 m on an up track, under way, and nothing at any up-track stop. **The Quarry's bend is eased on
+inside corners the coupling stretches until they clear by 0.1 m (the engine's buffers counted): at most 0.27 m
+anywhere under way, 0.20 m at the Quarry's stop on today's track and 0.06 m on its up track, nothing at the other
+stops. Buffers count: none stands in a deck or in another buffer (0.02 m at least between them). **A train on an up
+track is set across along the line's smooth heading** (`lineSmoothAt`): the line's own heading steps at each metre
+point, and along it a car 4 m beside the line stood back at every metre of a bend (0.58 m at the Quarry), a judder;
+rails and other fixed things keep the stepped heading the sim's platforms are pinned to, and both lie on one curve. **The Quarry's bend is eased on
 the up track** (`layout.ts` `upFull`, `track-ease.ts`): 4 m inside the line's 6.5 m bend it was a bend of under 3 m;
 now it starts its turn earlier and ends it later (s 156 to 200), running between 3.91 and 4.35 m from the line, and
-turns no tighter than 10 m. Rails, bed and trains follow it; the up platform (the track within 0.1 m of where it was
+turns no tighter than 10 m (10.4 m measured every 0.01 m, as the rails read it and as a train does). Rails, bed and trains follow it; the up platform (the track within 0.1 m of where it was
 beside it), the plank crossing, the levers and the stopping marks are where they were. **A drawbar and buffers are drawn at each coupling** (`couplings.ts`): a dark iron bar from one headstock to the next and a pair of buffers on each car's end facing it (the engine's own are on its model), following the cars as drawn and stretching with the gap; no solid, no state, two instanced draws for every train. On straight track nothing
 moves. Local view and Place data; bodies, seats and the cab's cutaway follow the same poses;
 the sim's train, its stops and its extent are unchanged. Not tested on a device.

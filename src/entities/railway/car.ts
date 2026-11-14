@@ -5,10 +5,18 @@ import { FIXED } from '../../constants.ts';
 import { angleLerp } from '../../math.ts';
 import { BODY, createBody, onPreStep, teleport, type Body } from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
-import { carry, CARRY, fromPlatform, registerPlatform, toPlatform, yawOf, type Platform } from '../../physics/platforms.ts';
+import {
+  carry,
+  CARRY,
+  fromPlatform,
+  registerPlatform,
+  toPlatform,
+  yawOf,
+  type Platform,
+} from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
 import { type CarSpec } from '../../render/wagon-look.ts';
-import { ORIGIN, TUNE, lineAt, railY, type Line } from '../../place/layout.ts';
+import { ORIGIN, TUNE, lineAt, lineSmoothAt, railY, type Line } from '../../place/layout.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 
 // ---------------------------------------------------------------- a car: a kinematic body following a planned pose
@@ -173,8 +181,10 @@ export function drawCar(c: Car, alpha: number) {
 /** `lat` (optional) is the car's track's offset from the line at s, metres (the up track's, layout.ts upLat): each
  * axle end is set across by its own offset, so a car on a turnout's curve yaws with it. */
 export function poseCarOnLine(c: Car, line: Line, s: number, sign: number, lat?: (s: number) => number) {
-  lineAt(line, s + 1.1, a);
-  lineAt(line, s - 1.1, b);
+  // Set across along the line's smooth heading (layout.ts lineSmoothAt; `lat` is the offset for it): along the
+  // stepped one an axle beside the line stood back at every metre of a bend.
+  (lat ? lineSmoothAt : lineAt)(line, s + 1.1, a);
+  (lat ? lineSmoothAt : lineAt)(line, s - 1.1, b);
   if (lat) {
     const la = lat(s + 1.1),
       lb = lat(s - 1.1);

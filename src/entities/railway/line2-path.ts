@@ -11,6 +11,7 @@ import {
   crossLat,
   upFull,
   lineAt,
+  lineSmoothAt,
   railY,
   type LinePoint,
 } from '../../place/layout.ts';
@@ -139,9 +140,11 @@ const stackLocal = (s: number, out: LinePoint) => {
   return out;
 };
 const stackY = (s: number) => stackPoint(s, here).y;
-/** Local coordinates (the layout's, without ORIGIN) and heading of `s` metres along line 2, past the pier head too. */
-export function line2At(s: number, out: LinePoint) {
-  if (s < RING_S - BLEND) return lineAt(LINE, s, out);
+/** Local coordinates (the layout's, without ORIGIN) and heading of `s` metres along line 2, past the pier head too.
+ * `smooth`: the layout's smooth heading (lineSmoothAt), for a train on the up track. */
+export function line2At(s: number, out: LinePoint, smooth = false) {
+  const at = smooth ? lineSmoothAt : lineAt;
+  if (s < RING_S - BLEND) return at(LINE, s, out);
   if (s >= STACK_S) return stackLocal(s, out);
   ringLocal(s, ring);
   if (s >= RING_S) {
@@ -151,7 +154,7 @@ export function line2At(s: number, out: LinePoint) {
     out.uz = ring.uz;
     return out;
   }
-  lineAt(LINE, s, out);
+  at(LINE, s, out);
   const w = ease((s - (RING_S - BLEND)) / BLEND);
   out.x += (ring.x - out.x) * w;
   out.z += (ring.z - out.z) * w;
@@ -205,7 +208,7 @@ export const endMergeM = (stops: readonly number[]) => {
  *    on the up track, turned at the Pier stub, once jumped 4 m sideways there).
  * `merge` is endMergeM(stops), or a smoothed value for a moving railhead.
  */
-export function line2Lat(row: LatRow, s: number, stops: readonly number[], merge = endMergeM(stops)) {
+export function line2Lat(row: LatRow, s: number, stops: readonly number[], merge = endMergeM(stops), smooth = false) {
   if (row.track) return 0;
   const last = stops.length - 1;
   const start = s <= QUARRY.from ? 0 : UP_LAT * ease((s - QUARRY.from) / TURNOUT);
@@ -219,5 +222,5 @@ export function line2Lat(row: LatRow, s: number, stops: readonly number[], merge
   else if (s >= merge) lat = UP_LAT * (1 - ease((s - merge) / CROSS_LEN));
   if (row.turn && row.to !== last) lat *= 1 - ease((s - (row.dest / 100 - TURNOUT)) / TURNOUT);
   // Through the Quarry's bend the up track's full offset is the eased one (layout.ts upFull).
-  return (lat / UP_LAT) * upFull(QUARRY, s) + 0; // never -0
+  return (lat / UP_LAT) * upFull(QUARRY, s, smooth) + 0; // never -0
 }

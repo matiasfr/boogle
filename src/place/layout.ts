@@ -5,7 +5,7 @@
 // docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim; it
 // reads the sim's station rows (LINE1_STATIONS, LINE2_STATIONS) and turnout length, never the other way round.
 import { smoothstep } from '../math.ts';
-import { easeBend, easedAt, type Eased } from './track-ease.ts';
+import { easeBend, easedAt, easedSmoothAt, type Eased } from './track-ease.ts';
 import { TURNOUT_CM } from '../sim/railway-lines.ts';
 import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/railway-line-layout.ts';
 import { LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
@@ -190,6 +190,45 @@ export function lineAt(l: Line, s: number, out: LinePoint) {
   out.z = l.zs[k]! + (l.zs[k + 1]! - l.zs[k]!) * t + dz * past;
   out.ux = dx;
   out.uz = dz;
+  return out;
+}
+/** `lineAt` with a heading that turns smoothly through each metre point (the mean of the two spans' at the point,
+ * eased across the span) instead of stepping there. For what moves along a track drawn beside the line: set across
+ * along the stepped heading, a point `lat` beside the line stands back `lat` times the step at every metre of a bend
+ * (0.58 m on the Quarry's up track, a train's judder there). Fixed things keep `lineAt`: the sim's catalog pins the
+ * platforms where its stepped heading puts them. */
+export function lineSmoothAt(l: Line, s: number, out: LinePoint) {
+  lineAt(l, s, out);
+  const n = l.xs.length;
+  const f = s / STEP;
+  if (f <= 0 || f >= n - 1.001) return out;
+  const k = Math.floor(f),
+    t = f - k,
+    dx = out.ux,
+    dz = out.uz;
+  const a = spanHeading(l, k - 1, dx, dz, before),
+    b = spanHeading(l, k + 1, dx, dz, after);
+  const ux = (a.x + dx) * (1 - t) + (b.x + dx) * t,
+    uz = (a.z + dz) * (1 - t) + (b.z + dz) * t,
+    h = Math.hypot(ux, uz) || 1;
+  out.ux = ux / h;
+  out.uz = uz / h;
+  return out;
+}
+const before = { x: 0, z: 1 },
+  after = { x: 0, z: 1 };
+/** Span `k`'s unit direction, or (dx, dz) past either end of the line. */
+function spanHeading(l: Line, k: number, dx: number, dz: number, out: { x: number; z: number }) {
+  if (k < 0 || k > l.xs.length - 2) {
+    out.x = dx;
+    out.z = dz;
+    return out;
+  }
+  const x = l.xs[k + 1]! - l.xs[k]!,
+    z = l.zs[k + 1]! - l.zs[k]!,
+    len = Math.hypot(x, z) || 1;
+  out.x = x / len;
+  out.z = z / len;
   return out;
 }
 /** Rail height at `s`. */
@@ -408,24 +447,32 @@ export const UP_BEND_MIN = 10;
 const bends = new Map<Formation, Eased | null>();
 /** The up track's full offset at `s`: UP_LAT, but through a formation's `bend` the eased offset (4.35 m at most,
  * 3.91 m at least at the Quarry), so the track starts its turn earlier and ends it later. */
-export function upFull(f: Formation, s: number) {
+export function upFull(f: Formation, s: number, smooth = false) {
   if (!f.bend || s <= f.bend[0] || s >= f.bend[1]) return UP_LAT;
   let e = bends.get(f);
   if (e === undefined) {
     const line = LINKS.find((l) => FORMATION[l.id] === f)!.line;
-    e = easeBend((at, out) => lineAt(line, at, out), f.bend[0], f.bend[1], UP_LAT, UP_BEND_MIN);
+    e = easeBend(
+      (at, out) => lineAt(line, at, out),
+      (at, out) => lineSmoothAt(line, at, out),
+      f.bend[0],
+      f.bend[1],
+      UP_LAT,
+      UP_BEND_MIN,
+    );
     bends.set(f, e);
   }
-  return e ? easedAt(e, s, UP_LAT) : UP_LAT;
+  return e ? (smooth ? easedSmoothAt(e, s, UP_LAT) : easedAt(e, s, UP_LAT)) : UP_LAT;
 }
 const ease = (t: number) => {
   const x = Math.max(0, Math.min(1, t));
   return x * x * (3 - 2 * x);
 };
-/** The up track's lateral offset at `s` (UP_LAT between the turnouts), or null where the line is single. */
-export function upLat(f: Formation, s: number): number | null {
+/** The up track's lateral offset at `s` (UP_LAT between the turnouts), or null where the line is single. `smooth`:
+ * the offset to set across `lineSmoothAt`'s heading (what moves along the track), not `lineAt`'s. */
+export function upLat(f: Formation, s: number, smooth = false): number | null {
   if (s < f.from || s > f.to) return null;
-  return upFull(f, s) * Math.min(ease((s - f.from) / TURNOUT), ease((f.to - s) / TURNOUT));
+  return upFull(f, s, smooth) * Math.min(ease((s - f.from) / TURNOUT), ease((f.to - s) / TURNOUT));
 }
 /** The crossover's lateral offset at `s`: from the up track at its start to today's track at its end; null off it. */
 export function crossLat(f: Formation, s: number): number | null {
