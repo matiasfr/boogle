@@ -3746,22 +3746,6 @@
       }
     },
     "town.workshop-chair": {
-      "attach": {
-        "seat": {
-          "at": [
-            0,
-            1,
-            0.25
-          ],
-          "exit": [
-            0,
-            0.46,
-            1.1
-          ],
-          "kind": "seat",
-          "yaw": 0
-        }
-      },
       "colliders": [
         {
           "at": [
@@ -3775,19 +3759,6 @@
             0.325
           ],
           "shape": "box"
-        },
-        {
-          "at": [
-            0,
-            0.95,
-            -0.3
-          ],
-          "half": [
-            0.4,
-            0.4,
-            0.06
-          ],
-          "shape": "box"
         }
       ],
       "interactions": [
@@ -3798,6 +3769,25 @@
         }
       ],
       "key": "town.workshop-chair",
+      "layout": {
+        "attach": {
+          "seat": {
+            "at": [
+              0,
+              1.18,
+              0.2
+            ],
+            "exit": [
+              0,
+              0.46,
+              1.1
+            ],
+            "kind": "seat",
+            "yawDegrees": 180
+          }
+        },
+        "kind": "seat-attachments"
+      },
       "scope": "owner",
       "visual": {
         "builder": "seat.chair",

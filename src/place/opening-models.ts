@@ -38,6 +38,7 @@ export function rackModel() {
     RY = H(RX, RZ);
   const rackPosts = new THREE.Group();
   rackPosts.position.set(RX, RY, RZ);
+  rackPosts.rotation.y = RACK.yaw;
   for (const dz of [-1.2, 1.2])
     for (const dx of [-1.25, 1.25]) {
       const m = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.8, 0.2), flat(WOOD2));
@@ -51,5 +52,5 @@ export function rackModel() {
     m.position.set(0, 0.32, dz);
     rackPosts.add(m);
   }
-  return { RX, RY, RZ, rackPosts };
+  return { RX, RY, RZ, yaw: RACK.yaw, rackPosts };
 }

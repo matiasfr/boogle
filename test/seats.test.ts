@@ -70,7 +70,9 @@ test('SEAT_ID accepts every current machine, train and compiled prefab seat id',
   for (const file of readdirSync(new URL('levels/', built)).filter((f) => f.endsWith('.json'))) {
     const level = JSON.parse(readFileSync(new URL(`levels/${file}`, built), 'utf8')) as LevelArtifact;
     for (const p of level.placements) {
-      const attachments = Object.entries(prefabs.prefabs[p.prefab]!.attach ?? {}).filter(([, a]) => a.kind === 'seat');
+      // A seat is authored directly or in a seat-attachments layout (yawDegrees); both compile to the same ids.
+      const record = prefabs.prefabs[p.prefab]! as { attach?: Record<string, { kind: string }>; layout?: { attach?: Record<string, { kind: string }> } };
+      const attachments = Object.entries(record.attach ?? record.layout?.attach ?? {}).filter(([, a]) => a.kind === 'seat');
       for (const [name] of attachments) prefabIds.push(attachments.length === 1 ? p.id : `${p.id}/${name}`);
     }
   }

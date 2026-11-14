@@ -102,7 +102,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   land.addStatic(
     { kind: 'box', hx: 1.35, hy: 0.45, hz: 1.3 },
     { x: rack.RX, y: rack.RY + 0.45, z: rack.RZ },
-    undefined,
+    new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, rack.yaw),
     undefined,
     owner,
   );

@@ -186,9 +186,13 @@ export async function createRailwayLine2(
     owner,
   );
   // The rails rack the forge pours onto: posts come from the opening view; the steel is drawn here.
-  const RX = LINE2_FORGE.rackX / 100,
-    RZ = LINE2_FORGE.rackZ / 100,
-    RY = land.H(RX, RZ);
+  // Drawn where the yard's rack stands (layout.RACK, square to the station's axis); the sim's pinned point, 0.28 m
+  // off it, still decides who is in reach, so a press the view offers is one the server accepts.
+  const RX = layout.toWorld(layout.RACK.x),
+    RZ = layout.RACK.z,
+    RY = land.H(RX, RZ),
+    rackCos = Math.cos(layout.RACK.yaw),
+    rackSin = Math.sin(layout.RACK.yaw);
   const RACK_SHOWN = 48;
   const racked = look.LOOK.kit
     ? kit.kitBatch('rail', look.STEEL, RACK_SHOWN, owner)
@@ -202,8 +206,10 @@ export async function createRailwayLine2(
   racked.castShadow = true;
   racked.frustumCulled = false;
   racked.count = 0;
-  const rackSlot = (k: number, out: THREE.Vector3) =>
-    out.set(RX - 1 + (k % 8) * 0.285, RY + 0.46 + Math.floor(k / 8) * 0.19, RZ);
+  const rackSlot = (k: number, out: THREE.Vector3) => {
+    const across = -1 + (k % 8) * 0.285;
+    return out.set(RX + across * rackCos, RY + 0.46 + Math.floor(k / 8) * 0.19, RZ - across * rackSin);
+  };
   const rackFrom = new THREE.Vector3(RX, RY + 1.6, RZ);
   const m4 = new THREE.Matrix4();
   const tmp = new THREE.Vector3();
@@ -213,7 +219,7 @@ export async function createRailwayLine2(
     if (n === drawnRack) return;
     drawnRack = n;
     racked.count = n;
-    for (let k = 0; k < n; k++) racked.setMatrixAt(k, m4.makeTranslation(rackSlot(k, tmp)));
+    for (let k = 0; k < n; k++) racked.setMatrixAt(k, m4.makeRotationY(layout.RACK.yaw).setPosition(rackSlot(k, tmp)));
     racked.instanceMatrix.needsUpdate = true;
   }
 
@@ -1169,7 +1175,7 @@ export async function createRailwayLine2(
       if (
         forgeRow(w).rack > 0 &&
         forgeRailsOffered(active, line2Trains(w), shedRow(w).cradleRails, account(w, rd.pid)?.rails ?? 0) &&
-        Math.hypot(p.x - RX, p.z - RZ) <= 3
+        Math.hypot(p.x - LINE2_FORGE.rackX / 100, p.z - LINE2_FORGE.rackZ / 100) <= 3
       )
         out.push({
           id: 'railway-forge-rails',

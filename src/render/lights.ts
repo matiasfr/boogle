@@ -7,27 +7,14 @@ import * as THREE from 'three';
 import { scene, camera } from './scene.ts';
 import { onFrame } from '../loop.ts';
 import { registerGraphics } from '../graphics-settings.ts';
+import { lightSources as sources, type LightSource } from './light-sources.ts';
+
+export { addLightSource, removeLightSource, type LightSource } from './light-sources.ts';
 
 const POOL = 2;
-/** Something that glows: the pool lights the nearest few. on() scales it, 0..1. */
-export type LightSource = {
-  position: THREE.Vector3;
-  color: THREE.Color;
-  intensity: number;
-  distance: number;
-  on?: () => number;
-};
 const pool: THREE.PointLight[] = [];
-const sources: LightSource[] = [];
 let enabled = true;
 
-// source: { position: Vector3, color, intensity, distance, on?: () => 0..1 }. Returns it (change fields freely).
-export function addLightSource(spec: Omit<LightSource, 'color'> & { color?: THREE.ColorRepresentation }) {
-  const src = spec as LightSource; // the caller's own object: it may change its fields later
-  src.color = new THREE.Color(spec.color ?? '#ffcf8a');
-  sources.push(src);
-  return src;
-}
 
 for (let k = 0; k < POOL; k++) {
   const l = new THREE.PointLight('#ffffff', 0, 10, 2);
