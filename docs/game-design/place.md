@@ -915,7 +915,11 @@ On the west platform stand a rack with a "KIT 1" plate, an empty frame 7 m north
 GORGE / SECTION 1 OF 4 / LOGS 0/20  RAILS 0/20 / KIT: ON A TRAIN" (then "ON THE RACK", then "LAYING THE SECTION"),
 with the section's number in a black square on the sign and the plate. A train sets the kit on the rack; **Take logs**
 and **Take rails** at the rack, **Feed the frame** at the frame (blocked with "Bring logs or rails" on an empty back).
-The island's run-off now curves west onto the stack line through a rock cutting in the hillside; its buffers stand at
+The island's run-off now curves west onto the stack line through a rock cutting in the hillside: an open notch 13 m
+wide at the floor for both tracks, 0.6 m under the rails, with paler rock walls rising 3 in 1 for up to 23 m and open
+sky over the line for its 350 m (owner, 14 November: "the track is going through seemingly like a mountain wall" that
+he walked through. The far view's hill cones, which have no cutting and nothing solid, were drawn over the cut ground;
+they now hide while the island's own ground is up, so what looks solid there is solid). Its buffers stand at
 the line's end with a board, "LINE TO HIGH GORGE / UNDER CONSTRUCTION" once the rivet is struck. **A section laid**
 grows the deck out over its 30 s lay clock: a grey slab with two tracks on bents over the sea, 510 m a section. At
 each railhead stand a 25 m platform on the right going out with a lever home, a ramp down into the sea, the rack and
