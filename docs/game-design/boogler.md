@@ -9,9 +9,12 @@ show only while you are on his island (dry land of its grid; Local presentation)
 
 ## Wander
 
-- **Sync kind.** Host. The lead tab's brain publishes `g: { p: [x, z], r, w, m }` with `addHostField`; others
-  interpolate. The lead is the host on a peer room, and the tab the server picks on a server-hosted room (8.1). Solo
-  tabs and clients that hear no lead for 3 s walk him locally. He has a kinematic body, so the ball
+- **Sync kind.** Server. His 10 Hz brain publishes a `booglerLeg` only when the walk, mode or look target changes.
+  Every client computes the continuous walk against the room presentation clock, easing from the shown pose on
+  a changed leg (snapping beyond 6 m). Joining clients start at the server pose. Sessionless previews run the same
+  brain locally; a disconnected live client finishes its leg without inventing a new walk. His position and facing
+  are saved, revalidated against dry unblocked land on load, and reset to his start by a room reset or world bump.
+  He stands still while the room is empty and resumes there. He has a kinematic body, so the ball
   bounces off him and you can stand on him.
 - **Behaviour.** Starts on dry land near (6, 22). Home is the meadow (30, 2.5): he potters within 22 m and is
   pulled back the further he strays; each stop near home has an 8 % chance to start a trip, 70 % of the time to a POI
@@ -21,13 +24,13 @@ show only while you are on his island (dry land of its grid; Local presentation)
   hurries at 2.3 m/s while ridden; flees at 3.4 m/s from wary players within 9 m.
 - **Files.** [src/boogler/boogler.ts](../../src/boogler/boogler.ts), [src/boogler/hud.ts](../../src/boogler/hud.ts),
   [src/boogler/fx.ts](../../src/boogler/fx.ts), [src/features/boogler.ts](../../src/features/boogler.ts).
-  The lead's pure brain and frame-sized walk live in `src/world/boogler-brain.ts` and `boogler-walk.ts`;
-  its frame cadence, live terrain, shared animation RNG and `g` payload are unchanged. The server does not run it yet.
+  His pure brain and continuous travel live in `src/world/boogler-brain.ts` and `boogler-shadow.ts` (the name comes
+  from its pre-authority validation). Decisions use a private seeded RNG; cosmetic hops cannot change his walks.
 
 ## What he remembers
 
 - **Sync kind.** Local (localStorage `boogle.boogler`, one global key); each player publishes `bg: [act, wary, ev, evN]`
-  so the lead's brain knows who is talking, riding or wary, and clients play ride and gift reactions.
+  so the server's brain knows who is talking, riding or wary, and clients play ride and gift reactions.
 - **Memory** ([src/boogler/memory.ts](../../src/boogler/memory.ts)): whether you have met, learned chapters, answer
   flags, bookmarks, recent small-talk topics, presents and the short-lived grudge after rides. There is no score or
   relationship progression. Existing saves keep their story progress; positive old points or any learned chapters
@@ -36,6 +39,9 @@ show only while you are on his island (dry land of its grid; Local presentation)
   over 20 minutes for his repeat/capped remarks. Presents still forgive rides; they do not unlock conversations.
 
 ## Talk
+
+- Your own talk holds him at his shown spot immediately and turns him toward you, then eases to the server's
+  attending leg. Activity changes send presence immediately; its four fields and local copy are unchanged.
 
 - Open with E / pad X within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
   second, pausing on punctuation, and lists answers, with button hints along the bottom; its controls are the shared NPC talk input
@@ -90,7 +96,7 @@ show only while you are on his island (dry land of its grid; Local presentation)
 
 ## Known issues and limits
 
-His position restarts with whoever leads next. His memory is per browser, shared by every room. The `bg` presence
+Lead changes no longer restart his position or trip. His memory is per browser, shared by every room. The `bg` presence
 shape and all `ACT`/`EV` numbers stay reserved, including retired reactions sent by older tabs. The `ACT` value 3
 (old PET) must never be reused. His existing dialogue is preserved, including lines that assume closeness or
 patting; inaccessible lines are parked outside the player bundle for the owner's later narrative pass.

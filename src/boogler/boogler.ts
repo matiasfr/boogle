@@ -1,18 +1,14 @@
 // The Boogler: a squished, smiling NPC who waddles around the island.
 //
-// Authority: Host state. The host decides where he walks and publishes it as the host field `g: { p:[x,z], r, w, m }`
-// (r = yaw, w = 1 while walking, m = MODE; missing means CALM). Everyone else interpolates those snapshots, like a
-// remote player. He is not part of the deterministic world sim (he never changes terrain or crops), so his brain
-// can use floats; it still uses the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that
-// hear nothing from a host for a few seconds, walk him locally so he never freezes. Animation (waddle, breathing, hops)
-// is cosmetic and local.
+// Authority: Server legs, evaluated against the railway presentation clock. Only sessionless tabs run a local
+// 10 Hz brain. Animation RNG is private and cannot change his decisions. Your own talk holds him immediately.
 //
 // He has a kinematic physics body, so the ball bounces off him and players can bump into him or hop on his head.
-// Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.ts): the host stops for
+// Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.ts): the server stops for
 // players who talk to him, hurries while someone rides him, and runs from players he's wary of.
 import * as THREE from 'three';
-import { INTERP_MS, HALF, reducedMotion } from '../constants.ts';
-import { lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
+import { reducedMotion } from '../constants.ts';
+import { lerp, mulberry32 } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { camera, toScreen } from '../render/scene.ts';
 import { chaseKinematic, playerMat, NOT_SCENERY } from '../physics/physics.ts';
@@ -21,20 +17,20 @@ import { blockedAt } from '../entities/props/state.ts';
 import { island } from '../island/index.ts';
 import { MAINLAND } from '../island/shape.ts';
 import { me } from '../player/player.ts';
-import { net, remotes, addHostField, isLead } from '../netplay/net.ts';
-import { createSnaps } from '../netplay/snaps.ts';
+import { remotes } from '../netplay/net.ts';
 import type { Remote } from '../netplay/net.ts';
 import type { Body } from '../physics/engine.ts';
-import { ACT, MODE, W_R, MIN_H, createBooglerBrain, findStart } from '../world/boogler-brain.ts';
+import { ACT, MODE, W_R, MIN_H, findStart } from '../world/boogler-brain.ts';
+import { createBooglerShadow } from '../world/boogler-shadow.ts';
+import { createBooglerPresentation } from './presentation.ts';
+import { railwayMirror } from '../world/game-world.ts';
+import { railwayWorldRead } from '../entities/railway/state.ts';
 import type { BooglerVisitor } from '../world/boogler-brain.ts';
 import type { BooglerLand } from '../world/boogler-land.ts';
 export { ACT, MODE, W_R } from '../world/boogler-brain.ts';
 
 /** A remote player as he sees them: their bg presence (src/boogler/play.ts: act, wary, ev, evN). */
 export type BgRemote = Remote & { bg?: number[] | null };
-/** His pose as the lead publishes it (presence g). */
-type Wire = { p: number[]; r: number; w: number; m: number };
-type Pose = { x: number; z: number; r: number; w: boolean; m: number };
 export type Mood = 'smile' | 'joy' | 'grump' | 'worry' | 'puff' | 'talk';
 
 // Shape: about three times as wide as he is tall.
@@ -46,7 +42,6 @@ const FACE_HEX = '#1d1640';
 
 /** Dry land of his island under x, z: the ground he walks on. Off its grid (the railway world, the sea) is the seabed. */
 export const onBooglerIsland = (x: number, z: number) => groundHeight(x, z) >= MIN_H;
-const STALE_MS = 3000; // no host snapshot for this long: walk him locally
 // His top hat, comically tall: the brim is a third of his radius (it sits on top of his head, covering none of it), the
 // crown half the brim's radius, and the whole hat about one and a half times his height.
 const BRIM_R = W_R / 3;
@@ -60,7 +55,7 @@ export const PUFF_MS = 750;
 const rng = mulberry32((Date.now() ^ 0x5eed) | 0);
 const range = (a: number, b: number) => a + rng() * (b - a);
 
-// Keep the same RNG shared with the cosmetic hop below: its draws are part of today's wander sequence.
+// Sessionless terrain is live; the server uses its pinned bake of this same land.
 const land: BooglerLand = {
   height: groundHeight,
   blocked: blockedAt,
@@ -69,15 +64,12 @@ const land: BooglerLand = {
   },
   mainland: MAINLAND,
 };
-const brain = createBooglerBrain({ land, rng, start: { x: 0, z: 0 } });
-const sim = brain.state;
-const disp = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
-const target = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
-const snaps = createSnaps<Pose>();
-let src: string | null = null;
-let lastSnapAt = 0;
-let simulating = false;
-const bootAt = performance.now();
+let brain: ReturnType<typeof createBooglerShadow> | null = null;
+let localTick = 0;
+let localTime = 0;
+const presentation = createBooglerPresentation();
+const disp = presentation.pose;
+let received = false;
 
 let group: THREE.Group | null = null;
 let modelParts: Parts | null = null;
@@ -90,55 +82,32 @@ export const boogler = {
   center: new THREE.Vector3(),
   body: null as Body | null,
   me: { act: ACT.NONE, wary: false, mood: null as Mood | null, speaking: false },
+  // Local talk owner calls this in the press frame, before showing the dialogue.
+  holdTalk(open: boolean) {
+    presentation.talk(open);
+    boogler.me.act = open ? ACT.TALK : ACT.NONE;
+  },
 };
 
 // ---------------------------------------------------------------- brain (authority only)
 // The players near him this frame, refilled into reused entries for the headless brain.
 const seen: BooglerVisitor[] = [];
 let seenCount = 0;
-function visitor(x: number, z: number, act: number, wary: boolean) {
+function visitor(x: number, z: number, act: number, wary: boolean, pid: string) {
   const v = seen[seenCount] ?? (seen[seenCount] = { x, z, act, wary });
   v.x = x;
   v.z = z;
   v.act = act;
   v.wary = wary;
+  v.pid = pid;
   seenCount++;
 }
 function visitors() {
   seenCount = 0;
-  if (me.entered && me.body) visitor(me.body.position.x, me.body.position.z, boogler.me.act, boogler.me.wary);
+  if (me.entered && me.body) visitor(me.body.position.x, me.body.position.z, boogler.me.act, boogler.me.wary, 'local');
   for (const r of remotes.values() as Iterable<BgRemote>)
-    if (r.entered && r.avatar) visitor(r.target.x, r.target.z, r.bg?.[0] ?? 0, r.bg?.[1] === 1);
-}
-
-// ---------------------------------------------------------------- network
-function publish() {
-  return simulating ? { p: [r2(sim.x), r2(sim.z)], r: r2(sim.yaw), w: sim.walking ? 1 : 0, m: sim.mode } : null;
-}
-
-function hear(v: unknown, time: number, peer: string) {
-  const g = v as Wire | null;
-  if (!g || !finiteArr(g.p, 2) || !Number.isFinite(g.r)) return;
-  if (Math.abs(g.p[0]!) > HALF || Math.abs(g.p[1]!) > HALF) return;
-  if (peer !== src) {
-    src = peer;
-    snaps.clear();
-  }
-  snaps.push(time, { x: g.p[0]!, z: g.p[1]!, r: g.r, w: g.w === 1, m: Number.isInteger(g.m) ? g.m : MODE.CALM });
-  lastSnapAt = performance.now();
-}
-
-addHostField('g', publish, hear);
-
-function sampleSnaps(t: number) {
-  const s = snaps.sample(t);
-  if (!s) return;
-  const { a, b, u } = s;
-  target.x = lerp(a!.x, b!.x, u);
-  target.z = lerp(a!.z, b!.z, u);
-  target.yaw = angleLerp(a!.r, b!.r, u);
-  target.walking = b!.w;
-  target.mode = b!.m;
+    if (r.entered && r.avatar) visitor(r.target.x, r.target.z, r.bg?.[0] ?? 0, r.bg?.[1] === 1, r.pid ?? '');
+  seen.length = seenCount;
 }
 
 // ---------------------------------------------------------------- model
@@ -304,8 +273,9 @@ type Parts = ReturnType<typeof buildModel>;
 // rocks are.
 export function createBoogler() {
   const s = findStart(land);
-  sim.x = disp.x = target.x = s.x;
-  sim.z = disp.z = target.z = s.z;
+  disp.x = s.x;
+  disp.z = s.z;
+  brain = createBooglerShadow(land, mulberry32(0x5eed), 0);
   modelParts = buildModel();
   group = modelParts.root;
 
@@ -467,34 +437,24 @@ function animateHat(dt: number) {
 
 export function updateBoogler(dt: number, now: number) {
   if (!group || !modelParts) return;
-  const isHost = isLead(); // the tab that runs him for everyone
-  const solo = !net.room || net.state === 'solo';
-  const stale = now - Math.max(lastSnapAt, bootAt) > STALE_MS;
-  const shouldSim = solo || isHost || stale;
-
-  if (shouldSim && !simulating) {
-    // Taking over (became host, went solo, or the host went quiet): continue from where he is on screen.
-    brain.takeover(disp);
-  }
-  simulating = shouldSim;
-
-  if (simulating) {
+  const read = railwayWorldRead();
+  let leg = railwayMirror?.boogler.leg() ?? null;
+  let tick = read?.tickNow() ?? 0;
+  if (!read && brain) {
+    localTime += dt * 10;
     visitors();
-    brain.step(dt, seen, seenCount);
-    disp.x = sim.x;
-    disp.z = sim.z;
-    disp.yaw = sim.yaw;
-    disp.walking = sim.walking;
-    disp.mode = sim.mode;
-  } else if (snaps.length) {
-    sampleSnaps(now - INTERP_MS);
-    const far = Math.hypot(target.x - disp.x, target.z - disp.z) > 6;
-    const k = far ? 1 : 1 - Math.exp(-dt * 15);
-    disp.x = lerp(disp.x, target.x, k);
-    disp.z = lerp(disp.z, target.z, k);
-    disp.yaw = angleLerp(disp.yaw, target.yaw, k);
-    disp.walking = target.walking;
-    disp.mode = target.mode;
+    while (localTick < Math.floor(localTime)) brain.step(++localTick, seen);
+    leg = brain.leg();
+    tick = localTime;
+  }
+  if (leg) {
+    const self = read?.pid ?? 'local';
+    const face =
+      boogler.me.act === ACT.TALK || leg.look === self
+        ? me.body?.position
+        : [...remotes.values()].find((r) => r.pid === leg.look)?.avatar?.position;
+    presentation.update(leg, tick, dt, !received, face, self);
+    received = true;
   }
 
   const gy = groundHeight(disp.x, disp.z);
