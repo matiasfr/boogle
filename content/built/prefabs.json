@@ -679,6 +679,92 @@
         "none": true
       }
     },
+    "railway.halt-bench": {
+      "colliders": [],
+      "key": "railway.halt-bench",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "bench"
+        }
+      }
+    },
+    "railway.halt-canopy": {
+      "colliders": [],
+      "key": "railway.halt-canopy",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "canopy"
+        }
+      }
+    },
+    "railway.halt-deck": {
+      "colliders": [],
+      "key": "railway.halt-deck",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "deck"
+        }
+      }
+    },
+    "railway.halt-mast": {
+      "colliders": [],
+      "key": "railway.halt-mast",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "mast"
+        }
+      }
+    },
+    "railway.halt-ramp": {
+      "colliders": [],
+      "key": "railway.halt-ramp",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-ramp",
+        "params": {}
+      }
+    },
+    "railway.halt-shelter": {
+      "colliders": [],
+      "key": "railway.halt-shelter",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.halt-parts",
+        "params": {
+          "piece": "shelter"
+        }
+      }
+    },
+    "railway.halt-solid": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "half": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "railway.halt-solid",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
     "railway.machine-chair": {
       "colliders": [],
       "interactions": [

@@ -2,6 +2,7 @@
 // Local scenery math, outside lockstep. Full numeric validation runs on the result before allocation.
 import type { Json, JsonObject, LevelDef, Placement, Vec3 } from './types.ts';
 import { LINE2_END_S, line2World, line2Y } from '../entities/railway/line2-path.ts';
+import { expandHaltKit } from './halt-layout.ts';
 import { PAD_SIZE } from './greybox-constants.ts';
 type XZ = { x: number; z: number };
 type Tone = 'grey' | 'light' | 'dark' | 'pale' | 'black';
@@ -211,6 +212,7 @@ export function resolveLayout(level: LevelDef): LevelDef {
   if (!Array.isArray(level.placements)) throw new Error('prefabs: layout requires placements array');
   if (level.placements.length || level.analysis)
     throw new Error('prefabs: layout cannot coexist with expanded placements or analysis');
+  if (layout.kind === 'halt-kit') return expandHaltKit(level, evaluate(layout.entries!), layout.sourceFingerprint);
   if (layout.kind === 'leg2') {
     if (layout.area !== level.place) throw new Error('prefabs: layout place mismatch');
     const header = { ...level };

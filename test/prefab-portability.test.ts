@@ -2,7 +2,9 @@ import { prefabs as rooms } from '../src/content/prefabs/rooms.ts';
 import { levels as roomLevels } from '../src/content/levels/rooms.ts';
 import { prefabs as house } from '../src/content/prefabs/house.ts';
 import { levels as houseLevels } from '../src/content/levels/house.ts';
+import { HALTS } from '../src/place/layout.ts';
 import { prefabs as museum } from '../src/content/prefabs/museum.ts';
+import { haltKitContent } from '../dev/prefab/halts.ts';
 import { levels as museumLevels } from '../src/content/levels/museum.ts';
 import { prefabs as curio } from '../src/content/prefabs/curio.ts';
 import { prefabs as shop } from '../src/content/prefabs/shop.ts';
@@ -54,6 +56,7 @@ test('page startup has exactly one catalogue validation owner shared by every co
     'src/entities/route-greybox/boxes.ts',
     'src/entities/route-greybox/leg2-draw.ts',
     'src/prefab/instantiate.ts',
+    'src/entities/railway/halt-kit.ts',
   ])
     assert.match(
       fs.readFileSync(file, 'utf8'),
@@ -64,7 +67,7 @@ test('page startup has exactly one catalogue validation owner shared by every co
 
 // A fresh Node process prevents other unit tests' ESM caches from hiding duplicate startup validation.
 // This executes consumer imports under a validator spy; it needs no Git refs or timing assumptions.
-test('importing all nine page consumers validates the catalogue exactly once', () => {
+test('importing all ten page consumers validates the catalogue exactly once', () => {
   const preloads = process.execArgv.flatMap((arg, k, args) =>
     arg === '--import' ? [arg, args[k + 1]!] : arg.startsWith('--import=') ? [arg] : [],
   );
@@ -75,11 +78,11 @@ test('importing all nine page consumers validates the catalogue exactly once', (
       { encoding: 'utf8' },
     ),
   );
-  assert.deepEqual(result, { consumers: 9, catalogueValidations: 1, directValidations: 0 });
+  assert.deepEqual(result, { consumers: 10, catalogueValidations: 1, directValidations: 0 });
 });
 
-// Current committed content: 181 records / 312,535 canonical bytes, including all levels.
-// Around 10-12% headroom permits small additions; repeated per-placement definitions must not return.
+// Current committed content: 188 records / 334,626 canonical bytes, including all levels.
+// Shared halt specifications fit the existing limits; repeated per-placement definitions must not return.
 const MAX_PREFAB_RECORDS = 200;
 const MAX_COMPILED_ARTIFACT_BYTES = 350_000;
 function assertCatalogueBudget(records: number, bytes: number) {
@@ -116,8 +119,30 @@ test('artifact serialization is independent of runtime native transcendental res
     }
     writeArtifacts(
       compile(
-        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop, ...curio, ...museum, ...rooms, ...house],
-        [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels, ...museumLevels, ...roomLevels, ...houseLevels],
+        [
+          ...greybox,
+          ...town,
+          ...rock,
+          ...railway,
+          ...kit,
+          ...shop,
+          ...curio,
+          ...museum,
+          ...rooms,
+          ...house,
+          ...haltKitContent().prefabs,
+        ],
+        [
+          ...leg2,
+          ...gorge,
+          ...workshop,
+          ...kitLevels,
+          ...shopLevels,
+          ...museumLevels,
+          ...roomLevels,
+          ...houseLevels,
+          ...haltKitContent().levels,
+        ],
       ),
       'content/built',
       true,
@@ -126,10 +151,57 @@ test('artifact serialization is independent of runtime native transcendental res
     Object.assign(Math, original);
   }
 });
+test('moving a catalog platform makes the committed halt artifact stale', () => {
+  const outputs = () => {
+    const halts = haltKitContent();
+    // Use the same compiled level bytes and freshness comparison as build --check.
+    return compile(halts.prefabs, halts.levels).get('levels/halt-kit.json')!;
+  };
+  const committed = new Map(
+    [...fs.globSync('**/*.json', { cwd: 'content/built' })].map((file) => [
+      file,
+      fs.readFileSync(`content/built/${file}`, 'utf8'),
+    ]),
+  );
+  const check = () => {
+    committed.set('levels/halt-kit.json', outputs());
+    writeArtifacts(committed, 'content/built', true);
+  };
+  check();
+  const row = HALTS[1]!,
+    old = row.lat;
+  try {
+    row.lat += 1;
+    assert.throws(check, /prefab artifact differs: levels\/halt-kit.json/);
+  } finally {
+    row.lat = old;
+  }
+  check();
+});
 test('authored full-precision values round-trip losslessly; no decimal quantization', () => {
   const n = 0.7312345678901234;
   const outputs = compile([], [{ place: 'exact', placements: [], analysis: { authored: n } }]);
   assert.equal(JSON.parse(outputs.get('levels/exact.json')!).analysis.authored, n);
+});
+test('authored halt collider expressions reject coercion and invalid geometry', () => {
+  const level = haltKitContent().levels[0]!;
+  const load = (entry: unknown) =>
+    validation.loadLevelArtifact(
+      { ...metadata, format: 'boogle-level', ...level, layout: { ...level.layout, entries: [entry] } },
+      validation.loadPrefabArtifact(artifact).prefabs,
+    );
+  const source = (level.layout!.entries as readonly import('../src/prefab/types.ts').JsonObject[]).find(
+    (p) => (p.params as import('../src/prefab/types.ts').JsonObject).piece === 'canopy',
+  )!;
+  for (const bad of [
+    null,
+    { ...source, colliders: null },
+    { ...source, colliders: [{ at: [0, { compute: 'add', a: '1', b: 2 }, 0], half: [1, 1, 1] }] },
+    { ...source, colliders: [{ at: [0, { compute: 'unknown' }, 0], half: [1, 1, 1] }] },
+    { ...source, colliders: [{ at: [0, 0, 0], half: [1, 0, 1] }] },
+  ])
+    assert.throws(() => load(bad));
+  assert.equal(load(source).placements.length, 5);
 });
 test('runtime golden permits only tight numeric error and preserves structural contracts', () => {
   prefabGolden(

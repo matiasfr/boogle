@@ -108,6 +108,8 @@ export function captureWorkshop() {
       ['town.house-parts', () => chair],
       ['town.room-shell', () => chair],
       ['town.room-proxy', () => chair],
+      ['railway.halt-parts', () => chair],
+      ['railway.halt-ramp', () => chair],
       [
         'town.workshop-parts',
         (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
@@ -248,6 +250,8 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
         ['town.house-parts', () => new THREE.Group()],
         ['town.room-shell', () => new THREE.Group()],
         ['town.room-proxy', () => new THREE.Group()],
+        ['railway.halt-parts', () => new THREE.Group()],
+        ['railway.halt-ramp', () => new THREE.Group()],
         [
           'seat.chair',
           () => {
