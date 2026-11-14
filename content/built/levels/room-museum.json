@@ -1,0 +1,1612 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "room-museum",
+  "placements": [
+    {
+      "id": "room-museum-scaffold-0",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-0"
+    },
+    {
+      "id": "room-museum-scaffold-1",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-1"
+    },
+    {
+      "id": "room-museum-scaffold-2",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-2"
+    },
+    {
+      "id": "room-museum-scaffold-3",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-3"
+    },
+    {
+      "id": "room-museum-scaffold-4",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-4"
+    },
+    {
+      "id": "room-museum-scaffold-5",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-5"
+    },
+    {
+      "id": "room-museum-scaffold-6",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-6"
+    },
+    {
+      "id": "room-museum-scaffold-7",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-7"
+    },
+    {
+      "id": "room-museum-scaffold-8",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-8"
+    },
+    {
+      "id": "room-museum-scaffold-9",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-9"
+    },
+    {
+      "id": "room-museum-scaffold-10",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-10"
+    },
+    {
+      "id": "room-museum-scaffold-11",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-11"
+    },
+    {
+      "id": "room-museum-scaffold-12",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-12"
+    },
+    {
+      "id": "room-museum-scaffold-13",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-13"
+    },
+    {
+      "id": "room-museum-scaffold-14",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-14"
+    },
+    {
+      "id": "room-museum-scaffold-15",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-15"
+    },
+    {
+      "id": "room-museum-scaffold-16",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-16"
+    },
+    {
+      "id": "room-museum-scaffold-17",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-17"
+    },
+    {
+      "id": "room-museum-scaffold-18",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-18"
+    },
+    {
+      "id": "room-museum-scaffold-19",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-19"
+    },
+    {
+      "id": "room-museum-scaffold-20",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-20"
+    },
+    {
+      "id": "room-museum-scaffold-21",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-scaffold-21"
+    },
+    {
+      "id": "room-museum-pieces-0",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-0"
+    },
+    {
+      "id": "room-museum-pieces-1",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-1"
+    },
+    {
+      "id": "room-museum-pieces-2",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-2"
+    },
+    {
+      "id": "room-museum-pieces-3",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-3"
+    },
+    {
+      "id": "room-museum-pieces-4",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-4"
+    },
+    {
+      "id": "room-museum-pieces-5",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-5"
+    },
+    {
+      "id": "room-museum-pieces-6",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-6"
+    },
+    {
+      "id": "room-museum-pieces-7",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-7"
+    },
+    {
+      "id": "room-museum-pieces-8",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-8"
+    },
+    {
+      "id": "room-museum-pieces-9",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-9"
+    },
+    {
+      "id": "room-museum-pieces-10",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-10"
+    },
+    {
+      "id": "room-museum-pieces-11",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-11"
+    },
+    {
+      "id": "room-museum-pieces-12",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-12"
+    },
+    {
+      "id": "room-museum-pieces-13",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-13"
+    },
+    {
+      "id": "room-museum-pieces-14",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-14"
+    },
+    {
+      "id": "room-museum-pieces-15",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-15"
+    },
+    {
+      "id": "room-museum-pieces-16",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-16"
+    },
+    {
+      "id": "room-museum-pieces-17",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-17"
+    },
+    {
+      "id": "room-museum-pieces-18",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-18"
+    },
+    {
+      "id": "room-museum-pieces-19",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-19"
+    },
+    {
+      "id": "room-museum-pieces-20",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-20"
+    },
+    {
+      "id": "room-museum-pieces-21",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-21"
+    },
+    {
+      "id": "room-museum-pieces-22",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-22"
+    },
+    {
+      "id": "room-museum-pieces-23",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-23"
+    },
+    {
+      "id": "room-museum-pieces-24",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-24"
+    },
+    {
+      "id": "room-museum-pieces-25",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-25"
+    },
+    {
+      "id": "room-museum-pieces-26",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-26"
+    },
+    {
+      "id": "room-museum-pieces-27",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-27"
+    },
+    {
+      "id": "room-museum-pieces-28",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-28"
+    },
+    {
+      "id": "room-museum-pieces-29",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-29"
+    },
+    {
+      "id": "room-museum-pieces-30",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-30"
+    },
+    {
+      "id": "room-museum-pieces-31",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-31"
+    },
+    {
+      "id": "room-museum-pieces-32",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-32"
+    },
+    {
+      "id": "room-museum-pieces-33",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-33"
+    },
+    {
+      "id": "room-museum-pieces-34",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-34"
+    },
+    {
+      "id": "room-museum-pieces-35",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-35"
+    },
+    {
+      "id": "room-museum-pieces-36",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-36"
+    },
+    {
+      "id": "room-museum-pieces-37",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-37"
+    },
+    {
+      "id": "room-museum-pieces-38",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-38"
+    },
+    {
+      "id": "room-museum-pieces-39",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-39"
+    },
+    {
+      "id": "room-museum-pieces-40",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-40"
+    },
+    {
+      "id": "room-museum-pieces-41",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-41"
+    },
+    {
+      "id": "room-museum-pieces-42",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-42"
+    },
+    {
+      "id": "room-museum-pieces-43",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-43"
+    },
+    {
+      "id": "room-museum-pieces-44",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-44"
+    },
+    {
+      "id": "room-museum-pieces-45",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-45"
+    },
+    {
+      "id": "room-museum-pieces-46",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-46"
+    },
+    {
+      "id": "room-museum-pieces-47",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-47"
+    },
+    {
+      "id": "room-museum-pieces-48",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-48"
+    },
+    {
+      "id": "room-museum-pieces-49",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-49"
+    },
+    {
+      "id": "room-museum-pieces-50",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-50"
+    },
+    {
+      "id": "room-museum-pieces-51",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-51"
+    },
+    {
+      "id": "room-museum-pieces-52",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-52"
+    },
+    {
+      "id": "room-museum-pieces-53",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-53"
+    },
+    {
+      "id": "room-museum-pieces-54",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-54"
+    },
+    {
+      "id": "room-museum-pieces-55",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-55"
+    },
+    {
+      "id": "room-museum-pieces-56",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-56"
+    },
+    {
+      "id": "room-museum-pieces-57",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-57"
+    },
+    {
+      "id": "room-museum-pieces-58",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-58"
+    },
+    {
+      "id": "room-museum-pieces-59",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-59"
+    },
+    {
+      "id": "room-museum-pieces-60",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-60"
+    },
+    {
+      "id": "room-museum-pieces-61",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-61"
+    },
+    {
+      "id": "room-museum-pieces-62",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-62"
+    },
+    {
+      "id": "room-museum-pieces-63",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-63"
+    },
+    {
+      "id": "room-museum-pieces-64",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-64"
+    },
+    {
+      "id": "room-museum-pieces-65",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-65"
+    },
+    {
+      "id": "room-museum-pieces-66",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-66"
+    },
+    {
+      "id": "room-museum-pieces-67",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-67"
+    },
+    {
+      "id": "room-museum-pieces-68",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-68"
+    },
+    {
+      "id": "room-museum-pieces-69",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-69"
+    },
+    {
+      "id": "room-museum-pieces-70",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-70"
+    },
+    {
+      "id": "room-museum-pieces-71",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-71"
+    },
+    {
+      "id": "room-museum-pieces-72",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-72"
+    },
+    {
+      "id": "room-museum-pieces-73",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-73"
+    },
+    {
+      "id": "room-museum-pieces-74",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-74"
+    },
+    {
+      "id": "room-museum-pieces-75",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-75"
+    },
+    {
+      "id": "room-museum-pieces-76",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-76"
+    },
+    {
+      "id": "room-museum-pieces-77",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-77"
+    },
+    {
+      "id": "room-museum-pieces-78",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-78"
+    },
+    {
+      "id": "room-museum-pieces-79",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-79"
+    },
+    {
+      "id": "room-museum-pieces-80",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-80"
+    },
+    {
+      "id": "room-museum-pieces-81",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-81"
+    },
+    {
+      "id": "room-museum-pieces-82",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-82"
+    },
+    {
+      "id": "room-museum-pieces-83",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-83"
+    },
+    {
+      "id": "room-museum-pieces-84",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-84"
+    },
+    {
+      "id": "room-museum-pieces-85",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-85"
+    },
+    {
+      "id": "room-museum-pieces-86",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-86"
+    },
+    {
+      "id": "room-museum-pieces-87",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-87"
+    },
+    {
+      "id": "room-museum-pieces-88",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-88"
+    },
+    {
+      "id": "room-museum-pieces-89",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-89"
+    },
+    {
+      "id": "room-museum-pieces-90",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-90"
+    },
+    {
+      "id": "room-museum-pieces-91",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-91"
+    },
+    {
+      "id": "room-museum-pieces-92",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-92"
+    },
+    {
+      "id": "room-museum-pieces-93",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-93"
+    },
+    {
+      "id": "room-museum-pieces-94",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-94"
+    },
+    {
+      "id": "room-museum-pieces-95",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-95"
+    },
+    {
+      "id": "room-museum-pieces-96",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-96"
+    },
+    {
+      "id": "room-museum-pieces-97",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-97"
+    },
+    {
+      "id": "room-museum-pieces-98",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-98"
+    },
+    {
+      "id": "room-museum-pieces-99",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-99"
+    },
+    {
+      "id": "room-museum-pieces-100",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-100"
+    },
+    {
+      "id": "room-museum-pieces-101",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-101"
+    },
+    {
+      "id": "room-museum-pieces-102",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-102"
+    },
+    {
+      "id": "room-museum-pieces-103",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-103"
+    },
+    {
+      "id": "room-museum-pieces-104",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-104"
+    },
+    {
+      "id": "room-museum-pieces-105",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-105"
+    },
+    {
+      "id": "room-museum-pieces-106",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-106"
+    },
+    {
+      "id": "room-museum-pieces-107",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-107"
+    },
+    {
+      "id": "room-museum-pieces-108",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-108"
+    },
+    {
+      "id": "room-museum-pieces-109",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-109"
+    },
+    {
+      "id": "room-museum-pieces-110",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-110"
+    },
+    {
+      "id": "room-museum-pieces-111",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-111"
+    },
+    {
+      "id": "room-museum-pieces-112",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-112"
+    },
+    {
+      "id": "room-museum-pieces-113",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-113"
+    },
+    {
+      "id": "room-museum-pieces-114",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-114"
+    },
+    {
+      "id": "room-museum-pieces-115",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-115"
+    },
+    {
+      "id": "room-museum-pieces-116",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-116"
+    },
+    {
+      "id": "room-museum-pieces-117",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-117"
+    },
+    {
+      "id": "room-museum-pieces-118",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-118"
+    },
+    {
+      "id": "room-museum-pieces-119",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-119"
+    },
+    {
+      "id": "room-museum-pieces-120",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-120"
+    },
+    {
+      "id": "room-museum-pieces-121",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-121"
+    },
+    {
+      "id": "room-museum-pieces-122",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-122"
+    },
+    {
+      "id": "room-museum-pieces-123",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-123"
+    },
+    {
+      "id": "room-museum-pieces-124",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-124"
+    },
+    {
+      "id": "room-museum-pieces-125",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-125"
+    },
+    {
+      "id": "room-museum-pieces-126",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-126"
+    },
+    {
+      "id": "room-museum-pieces-127",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-127"
+    },
+    {
+      "id": "room-museum-pieces-128",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-128"
+    },
+    {
+      "id": "room-museum-pieces-129",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-129"
+    },
+    {
+      "id": "room-museum-pieces-130",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-130"
+    },
+    {
+      "id": "room-museum-pieces-131",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-131"
+    },
+    {
+      "id": "room-museum-pieces-132",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-132"
+    },
+    {
+      "id": "room-museum-pieces-133",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-133"
+    },
+    {
+      "id": "room-museum-pieces-134",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-134"
+    },
+    {
+      "id": "room-museum-pieces-135",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-pieces-135"
+    },
+    {
+      "id": "room-museum-hulls-0",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-hulls-0"
+    },
+    {
+      "id": "room-museum-hulls-1",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-hulls-1"
+    },
+    {
+      "id": "room-museum-hulls-2",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-hulls-2"
+    },
+    {
+      "id": "room-museum-hulls-3",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-hulls-3"
+    },
+    {
+      "id": "room-museum-hulls-4",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-hulls-4"
+    },
+    {
+      "id": "room-museum-hulls-5",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-hulls-5"
+    },
+    {
+      "id": "room-museum-hulls-6",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-hulls-6"
+    },
+    {
+      "id": "room-museum-hulls-7",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-hulls-7"
+    },
+    {
+      "id": "room-museum-poles-0",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-poles-0"
+    },
+    {
+      "id": "room-museum-poles-1",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-poles-1"
+    },
+    {
+      "id": "room-museum-poles-2",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-poles-2"
+    },
+    {
+      "id": "room-museum-poles-3",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-poles-3"
+    },
+    {
+      "id": "room-museum-poles-4",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-poles-4"
+    },
+    {
+      "id": "room-museum-proxy-0",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-proxy-0"
+    },
+    {
+      "id": "room-museum-proxy-1",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-proxy-1"
+    },
+    {
+      "id": "room-museum-proxy-2",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-proxy-2"
+    },
+    {
+      "id": "room-museum-proxy-3",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-proxy-3"
+    },
+    {
+      "id": "room-museum-proxy-4",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-proxy-4"
+    },
+    {
+      "id": "room-museum-proxy-5",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-proxy-5"
+    },
+    {
+      "id": "room-museum-proxy-6",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.room-museum-proxy-6"
+    }
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}
