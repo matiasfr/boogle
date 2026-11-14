@@ -155,11 +155,14 @@ by construction, so the proof is that heights did not change and that the drawn 
     124 (separating blank), 127 (`pad` push), 171 (`strip` push), 396 (`gradeSupport` push). No other terrain.ts
     edit, height calculation, collider or placement change. The in-flight branches' whole-word `GRADED` readers
     were only the old terrain record and retired ledge implementation/tests. Hashes and normalized level diff verified.
-- [ ] **4. Docs.** `docs/game-design/graphics.md`: rewrite the "Home's ground: the terrain pass" bullet (no 1 m cells,
+- [x] **4. Docs.** `docs/game-design/graphics.md`: rewrite the "Home's ground: the terrain pass" bullet (no 1 m cells,
   no tolerance sentence, flags reduced to `?terrain=0`). `docs/plans/terrain-pass.md`: status line points here.
   `docs/decisions-look.md`: a dated entry with the owner's words above, its Current rules line, and an italic note on
   the 10 November "density only where it's steep" line. `dev/decisions/topics.ts`: `'plans/terrain-clean.md': 'look'`.
   Verify: `npm run decisions`.
+  - Completed: the graphics section describes the collider grid and retained material; the earlier plan is marked
+    historical; the existing 14 November decision and 10 November supersession note are retained, with the owner's
+    proof and accepted-appearance follow-up appended. The new topic route is registered.
 
 **Checkpoint A (end of Part 1), four proofs:** the level-check diff; the census; matched brokered perf render counts
 (draw calls, shadow calls and triangles at the same camera poses before/after); one proof look,

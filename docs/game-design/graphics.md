@@ -135,14 +135,14 @@
   tile border so there are no cracks ([far-ground.ts](../../src/place/far-ground.ts); the pattern is Chunked LOD, see
   [rendering](../agents/rendering.md)). Matched stills: [performance research](../research/performance.md), section 10.
   `?dev=1&graphics=farGround:false` is the old one-mesh ground. (`farSea` went with Ultra Water.)
-- **Home's ground: the terrain pass (the default since 14 November).** Grass runs down to a beach line drawn per
-  pixel; sandstone, with subtle beds, thin seams and the cove's rock tile, only where the collider is unwalkable (or the
-  broad slope is); those 3,619 cells are drawn at 1 m with strata ledges in the land's own geometry (+21,714 triangles,
-  no extra draw; the far tiles draw them at 1 m only on their nearest level). The collider and every ground query are
-  unchanged: every walkable face and the ground under and 1 m around everything the terrain grades for (buildings,
-  pads, rail beds, paths, supports, platforms and other catalogued placements, trees, rocks) is exact; rock nobody can
-  stand on strays at most 0.25 m along its face, and within 1.5 m of anywhere to stand at most 0.25 m of height (`node dev/terrain-pass/prove.ts home`, measured triangle by triangle against the collider). `?terrain=0` is the land before the pass; `?terrain=wedge`, `a`, `b` and
-  `ab` keep the earlier rounds on one wedge. Not tested on a device. [Plan and stills](../plans/terrain-pass.md).
+- **Home's ground (14 November).** Grass runs down to a per-pixel beach line; sandstone, with subtle beds, thin
+  seams and the cove's rock tile, appears where the collider is unwalkable or the broad slope is steep. The material
+  inputs are packed on the land's own vertices; geometric cliff ledges and the wedge variants are removed. The land
+  draws the collider's own grid, including the unchanged fine cove patch, with the far-ground tiles described above.
+  Every height, collider, ground query and placed object is unchanged. `?terrain=0` keeps the earlier ground material.
+  The lower gorge wall has broader, more continuous green patches without the ledges; the orchestrator accepted that
+  difference after opening matched camera-9 stills. The cliffs retain their warm banded-rock character. Not tested on
+  a device. [Plan and proofs](../plans/terrain-clean.md); earlier rounds are [history](../plans/terrain-pass.md).
 - **Paths read as paths (14 November; owner: "it should be more clearly looking like a path").** Every footpath on
   Home is drawn per pixel from a distance field of the path lines ([path-surface.ts](../../src/place/path-surface.ts);
   one 781 × 541 RGBA16F texture, 3.4 MB), over whatever ground is underneath and winning over slope rock within its
