@@ -280,6 +280,10 @@ export type FolkEnv = {
   /** A place along the first path: `u` 0 the village end to 1 the far end, `yaw` facing the far end; null until it's
    * open. */
   path: ((u: number, lat: number) => { x: number; y: number; z: number; yaw: number } | null) | null;
+  /** The nearest train on the path's line, seen from `u`: `eta` seconds until it is alongside (0 alongside, Infinity
+   * when it stands or runs away), `gap` metres of path to it, `toward` which way along the path it is (+1 the far
+   * end) and `clear` the lateral where someone stands clear of both tracks there. Null with no train on the line. */
+  pathTrain?: (u: number) => { eta: number; gap: number; toward: 1 | -1; clear: number } | null;
   /** The cart they push: null while it's at rest. */
   cart: () => { mesh: THREE.Object3D; top: number; hz: number } | null;
   /** Something's on that nobody should talk over (a crate opening, a moment). */
@@ -698,21 +702,35 @@ function brain(g: Guy, dt: number) {
       g.mood = 'ride';
       return;
     case 'commuter': {
-      const q = e?.path?.(g.a.x, g.side * (0.45 + (g.seat % 3) * 0.35));
-      if (!q) return;
-      // There and back along it; `a.x` is where along, `a.z` which way. The first run out's at a run.
-      const speed = commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3;
-      g.a.x += (g.a.z * speed * dt) / PATH_LEN;
-      if (g.a.x > 1 || g.a.x < 0) {
-        g.a.z = -g.a.z;
-        g.a.x = Math.max(0, Math.min(1, g.a.x));
+      if (!e?.path) return;
+      // There and back along it; `a.x` is where along, `a.z` which way, `b.x` how far to the side. The first run out's
+      // at a run. The path is line 1's track bed, so with a train due (TRAIN_WARN) they step off to the clear side,
+      // wait there facing it and walk on when it has gone; a train standing on the path is where they turn back.
+      const lane = commuterLane(g);
+      const train = e.pathTrain?.(g.a.x) ?? null;
+      const aside = !!train && train.eta < TRAIN_WARN;
+      const want = aside ? train.clear : lane;
+      const off = want - g.b.x;
+      g.b.x += Math.sign(off) * Math.min(Math.abs(off), (aside ? STEP_OFF : SPEED.walk) * dt);
+      if (!aside) {
+        if (train && train.gap < 2 && g.a.z === train.toward) g.a.z = -g.a.z;
+        const speed = commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3;
+        g.a.x += (g.a.z * speed * dt) / PATH_LEN;
+        if (g.a.x > 1 || g.a.x < 0) {
+          g.a.z = -g.a.z;
+          g.a.x = Math.max(0, Math.min(1, g.a.x));
+        }
       }
+      const q = e.path(g.a.x, g.b.x);
+      if (!q) return;
       const dx = q.x - g.x,
         dz = q.z - g.z,
         moved = Math.hypot(dx, dz);
-      // They face the way they move, turning round over a few steps at each end. A first placement (or a wake far off)
-      // turns at once.
-      const face = moved > 0.002 && moved < 2 ? Math.atan2(dx, dz) : q.yaw + (g.a.z > 0 ? 0 : Math.PI);
+      // They face the way they move; standing aside, the train. A first placement (or a wake far off) turns at once.
+      const walking = moved > 0.002 && moved < 2;
+      const face = walking
+        ? Math.atan2(dx, dz)
+        : q.yaw + ((aside ? train.toward > 0 : g.a.z > 0) ? 0 : Math.PI);
       let dy = face - g.yaw;
       while (dy > Math.PI) dy -= Math.PI * 2;
       while (dy < -Math.PI) dy += Math.PI * 2;
@@ -720,7 +738,7 @@ function brain(g: Guy, dt: number) {
       g.x = q.x;
       g.z = q.z;
       g.fy = q.y;
-      g.mood = commuteRun > 0 ? 'run' : 'walk';
+      g.mood = !walking ? 'idle' : commuteRun > 0 && !aside ? 'run' : 'walk';
       return;
     }
     case 'pusher':
@@ -745,6 +763,12 @@ function brain(g: Guy, dt: number) {
   }
 }
 const PATH_LEN = 190;
+/** Seconds ahead of a train that a commuter leaves the track bed, and how fast they step off it (m/s). The widest step,
+ * from the far lane to the clear side, is 3.6 m. */
+const TRAIN_WARN = 4.5,
+  STEP_OFF = 3;
+/** A commuter's own lane on the path: 0.45 to 1.15 m either side of its middle. */
+const commuterLane = (g: Guy) => g.side * (0.45 + (g.seat % 3) * 0.35);
 let commuteRun = 0;
 const hammering = (s: Site) => {
   let n = 0;
@@ -1090,6 +1114,7 @@ export function setCommuters(on: boolean, run = 0) {
     if (on && !g.on) {
       g.a = { x: run ? -0.02 * k : (k * 0.37) % 1, z: 1 };
       if (g.a.x < 0) g.a.x = 0;
+      g.b = { x: commuterLane(g), z: 0 };
     }
     g.on = on;
   });

@@ -14,6 +14,8 @@ type OpeningEnv = {
   awake: () => boolean;
   hush: () => boolean;
   pathOpen: () => boolean;
+  /** The trains on line 1 now (train-view.ts `onLine`): the commuters on its track bed step off for them. */
+  pathTrains: () => readonly { lo: number; hi: number; vel: number }[];
   /** The railway as the views see it (the read facade's world and ready, view.ts's phase this frame). */
   progress: GreeterRead;
   /** The engines' driving stools (train-view.ts), for the little guy at the controls. */
@@ -132,6 +134,17 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   layout.lineAt(line, 19, p);
   const platform = rail.besideLine(line, 19, -2.9),
     gather = rail.besideLine(line, 6, -4.6);
+  const pathS = (u: number) => 30 + u * (layout.STUB.camp - 30);
+  /** Where a little guy stands clear of both of line 1's tracks at `s`: 2.4 m out on the side away from the up track
+   * (a car is 1.25 m wide from its middle with its racks), or on the ridge trestle, whose deck ends 1.8 m out on that
+   * side, midway between the two tracks. */
+  const clearOf = (s: number) => {
+    const out = -Math.sign(layout.UP_LAT) * 2.4;
+    const at = rail.besideLine(line, s, out);
+    if (land.H(at.x, at.z) > layout.railY(line, s) - 0.7) return out;
+    const up = layout.upLat(layout.FORMATION[layout.LINKS[0]!.id], s);
+    return up !== null && Math.abs(up) >= 3 ? up / 2 : -Math.sign(layout.UP_LAT) * 1.5;
+  };
   folk.mountFolk(owner, {
     station: () => (env.awake() ? env.station() : null),
     machineBusy: env.busy,
@@ -146,12 +159,26 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     forgeLit: () => forgePoles.down >= 1,
     path: (u, lat) => {
       if (!env.pathOpen()) return null;
-      const s = 30 + u * (layout.STUB.camp - 30);
+      const s = pathS(u);
       const at = rail.besideLine(line, s, lat);
       const tangent = layout.lineAt(line, s, { x: 0, z: 0, ux: 0, uz: 1 });
       // Facing the far end, the way `u` grows (until 14 November this faced the village, so every commuter walked
       // backwards; owner playtest).
       return { x: at.x, y: layout.railY(line, s) + 0.2, z: at.z, yaw: Math.atan2(tangent.ux, tangent.uz) };
+    },
+    pathTrain: (u) => {
+      const s = pathS(u);
+      let best: { eta: number; gap: number; toward: 1 | -1; clear: number } | null = null;
+      for (const t of env.pathTrains()) {
+        // A train's ends plus 3 m; inside that it is alongside.
+        const gap = Math.max(0, s - t.hi - 3, t.lo - 3 - s);
+        const closing = s > t.hi ? t.vel : -t.vel;
+        const eta = gap === 0 ? 0 : closing > 0.5 ? gap / closing : Infinity;
+        if (!best || eta < best.eta || (eta === best.eta && gap < best.gap))
+          best = { eta, gap, toward: (t.lo + t.hi) / 2 > s ? 1 : -1, clear: 0 };
+      }
+      if (best) best.clear = clearOf(s);
+      return best;
     },
     cart: () => null,
     hush: env.hush,

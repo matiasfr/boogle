@@ -299,6 +299,10 @@ export async function createRailwayTrains(
       count: -1,
       puffs: 0,
       speed: 0,
+      /** Where the view has it along its line (m), its signed speed along it (m/s), and whether it is drawn there. */
+      along: 0,
+      vel: 0,
+      out: false,
     };
   });
   /** The platform beat's times, seconds from the row's change: the swap under the puff, the squash's length, the toot. */
@@ -445,7 +449,9 @@ export async function createRailwayTrains(
         line = layout.LINKS[tr.line]!.line;
       // Asleep, a row stands at its home; awake, wherever the room's clock puts it.
       const along = trainAlong(row, tr.line, clock) / 100;
-      tr.speed = on ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
+      tr.vel = on ? trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock) : 0;
+      tr.speed = Math.abs(tr.vel);
+      tr.along = along;
       const lat = (x: number) => latOf(tr, row, x);
       // A fleet row in the shed (the greybox route) is not on the line until it joins.
       const hidden = !shown || (tr.line !== 0 && !secondVisible) || row.phase === TRAIN_PHASE.SHED;
@@ -485,6 +491,7 @@ export async function createRailwayTrains(
         pose(c, standAt[n]!);
         if (hidden) c.y = -60;
       });
+      tr.out = !hidden;
       if (tr === coupled) {
         pose(wagonCar, standAt[stock.indexOf(wagonCar)]!);
         if (hidden) wagonCar.y = -60;
@@ -886,6 +893,18 @@ export async function createRailwayTrains(
       const st = shape.ENGINE_STOOL;
       return { mesh: tr.model.cars[0]!, top: st.footrest, up: st.seat - st.footrest - 0.035, x: st.x, z: st.z, yaw: 0 };
     },
+    /** Every car a train can have, for the little guys' give-way (folk.ts `traffic`): one out of use waits under the
+     * land. */
+    cars: () => [...trains.flatMap((tr) => [...tr.cars, ...(tr.steel ? [tr.steel] : [])]), wagonCar],
+    /** The trains drawn on line `k` now: each one's ends along the line (m) and signed speed along it (m/s). */
+    onLine: (k: number) =>
+      trains
+        .filter((tr) => tr.line === k && tr.out)
+        .map((tr) => ({
+          lo: tr.along + offsets[2]! - tr.cars[2]!.spec.hz,
+          hi: tr.along + offsets[0]! + tr.cars[0]!.spec.hz,
+          vel: tr.vel,
+        })),
     isTrain: (platform: Platform | null) =>
       platform === wagonCar.platform ||
       trains.some((tr) => tr.steel?.platform === platform || tr.cars.some((c) => c.platform === platform)),
