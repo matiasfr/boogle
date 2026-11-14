@@ -12,7 +12,7 @@ for (const [index, finding] of report.findings.slice(0, 10).entries()) {
   const [x, y, z] = finding.position,
     [nx, ny, nz] = finding.normal;
   const cam = ny > 0.7 ? [x + 4, y + 4, z + 5] : ny < -0.7 ? [x + 4, y - 5, z + 5] : [x + nx * 7, y + 0.6, z + nz * 7];
-  // Home is already loaded in the normal opening. A late seed runs a wagon across this contact.
+  // Home needs its built platform. Keep the player away and let the first wagon clear the side view.
   const home = finding.a.startsWith('Home/station/');
   const setup = `.look/zfight-top-ten/${tag}-setup.ts`,
     action = `.look/zfight-top-ten/${tag}-action.ts`;
@@ -31,7 +31,8 @@ for (const [index, finding] of report.findings.slice(0, 10).entries()) {
       '.look/see-client.ts',
       'look',
       '--real',
-      ...(home ? [] : ['--rail-seed', 'q6-done']),
+      '--rail-seed',
+      'q6-done',
       '--query',
       'dev=1',
       '--eval',
@@ -39,7 +40,7 @@ for (const [index, finding] of report.findings.slice(0, 10).entries()) {
       '--action',
       action,
       '--warm',
-      '3',
+      home ? '10' : '3',
       '--cam',
       cam.join(','),
       '--look',
