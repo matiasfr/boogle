@@ -343,3 +343,158 @@ For the owner (recommended answer first):
 
 Not for the owner (logged calls): the pass leaves `src/proto/`; the wedge variants are archived by tag;
 `?terrain=0` stays one more round; findings 9, 11, 13, 14 and 15 stay written down as P3.
+
+## Design review (designer, 2026-11-14)
+
+Parts 2 and 3 only; Part 1 is being built and was not reviewed. Read: DESIGN.md, the look, rail and core-loop Current
+rules, the owner calls named below, [level-design](../research/level-design.md),
+[route-contract](../research/route-contract.md), [progression-flow-layout](../research/progression-flow-layout.md) and
+the three terrain research docs the plan cites. Looked at: the survey stills `canyon-tread-hue.png`,
+`tread-sawtooth-edge.png` and `quarry-path-no-tread.png`. Ran: `npm run level-check` on main (`22b331dba`): exit 0,
+422 second-jump cells, as the plan says; and two read-only scripts over `tree-catalog.ts`, `terrain.ts` and
+`tech-layout.ts` (the tree and pad tables below). **Not done:** the step 5 trial was not repeated (this review may not
+edit game source), so the plan's trial numbers are the planner's, unverified here; no new stills were taken.
+
+**Owner, 14 November 2026**, asked the plan's three questions with the recommendations: "I'll take your
+recommendations above." Recorded in [decisions-look](../decisions-look.md#d-2026-11-14-terrain-clean-three-recommendations-accepted).
+Bench levelling, packed earth and the kit's start are therefore decided. He accepted the recommendations, not the
+details; those are ruled here. He also shared a look reference for terrain and vegetation that day
+(https://patch.gg/games/blendi/small-magic/source); its research note (`docs/research/small-magic-look.md`, being
+written separately, not reviewed here) is an input to Part 3's previz.
+
+No route, gate, beat or travel edge is added or moved by these parts, so there is no leg table: the flow checks that
+apply are rule 1 (the path as the thing that says where to go) and rule 2 (a gate keeps its meaning), both below.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Unwalkable ground needs no complex geometry; clean walkable ground first | Decided | [look, 14 November](../decisions-look.md#d-2026-11-14-terrain-simple-geometry-cleanup-first) |
+| 2 | The path must read as a path, not as the valley wall (steps 1 and 2) | Decided | the owner's words in that entry's plan quote; DESIGN 11 |
+| 3 | Benches are levelled by widening each path's graded strip (step 5) | Decided | [look, 14 November answers](../decisions-look.md#d-2026-11-14-terrain-clean-three-recommendations-accepted), question 1 |
+| 4 | The path is a cooler, darker packed earth, not pale gravel | Decided | same entry, question 2 |
+| 5 | The kit starts on the canyon wedge once the path and shore fixes ship, previz first | Decided | same entry, question 3 |
+| 6 | Rock only where the ground is truly unwalkable; lone rock patches on walkable slope go (step 3b) | Decided | [terrain pass, 10 November](../decisions-look.md#d-2026-11-10-terrain-pass-grass-to-the-beach): "rock only on real cliffs" |
+| 7 | Heights may move for the look, with level findings | Decided | owner call "Place for the look, not the cost; terrain may change" |
+| 8 | Nothing may be reached before its ability; the second jump stays after station 3 | Decided | [loop orders, 9 November](../decisions-core-loop.md#d-2026-11-09-loop-orders); the trial's "At the start" list is identical |
+| 9 | Previz from a real still before modelling; our own recipe; an asset viewer entry per piece | Decided | owner calls "Previz before modelling", "Our own assets first", "Show new machines and models in the asset viewer" |
+| 10 | Ring Island's summit path is the footbridge, so its abutment is worth cleaning (step 7) | Decided | [rail, 14 November](../decisions-rail.md#d-2026-11-14-summit-path-recommendations-accepted) |
+| 11 | The kit's cost is reported, not gated | Decided | owner calls "No limits ahead of a measured problem", "Performance guides, it doesn't gate" |
+| 12 | Every survey finding keeps its rank and stays written down | Decided | owner call "Rank every note" |
+| 13 | The exact pigment: the plan's start values, with a grass-side number added | Default | finding 5 |
+| 14 | The tread's edge comes from the path's own height; a 1.2 m band of cut earth at a wall's foot, never grass slivers | Default | agree: it is the "more intentional" edge he asked for; the painted tread keeps today's width (finding 4) |
+| 15 | Sand meets the gorge bank over 6 to 8 m with a wander | Default | agree; a P2 look fix, cheap to retune |
+| 16 | Strip widths: level to 5.9 m (bold) and 4.8 m (plain), fading by 8.8 m and 7.7 m | Default | agree for the level width; the cleared and painted widths are separate questions (findings 2 and 4) |
+| 17 | Order: pigment, edge, shore borders; then benches, quarry benches, Ring cap | Default | agree, with one change: step 6's trial is run beside step 5's (finding 7) |
+| 18 | Ring footbridge cap: deck footprint plus 0.5 m, first 4 m, 0.1 m under the deck | Default | agree. The 0.1 m expectation is kept where a player feels it: the step onto the deck at the walk-on line stays at or under 0.1 m. The cut under the deck may be as deep as the cap needs; report it as its own figure |
+| 19 | Painted risers stay; the timber kerb is used only at edges | Default | agree: real steps change how the climb walks and belong to a feel pass ("Feel first") |
+| 20 | No kit pieces on Ring Island now, except the abutment cheek when its bridge is dressed | Default | agree: it is still blockout ("Block out spacing first, details later") |
+| 21 | How he picks: a two-style previz of the wedge from two directions, then the chosen kit live on the wedge with matched stills and a walk clip | Default | agree; add the Small Magic note as a third input to the sheet, and let him pick the style from the sheet (the plan's "chunky Sunshine blocks" is only the planner's lean) |
+| 22 | Second place for the kit: the gorge rims seen from the village | Default | agree, his to redirect after the wedge |
+| 23 | Findings 9, 11, 13, 14 and 15 stay P3 leftovers | Default | agree; 13 (greybox posts in the shore tread) is passed on, not dropped |
+| 24 | Which trees step 5 removes, and that the starter tree catalog changes | New | finding 1 and 2: the loss is acceptable and none must be kept; name them, count the shore ones, say what happens to saves |
+| 25 | The second jump reaches 23 more cells | New | finding 3: accept, on three stated checks |
+| 26 | The quarry path gets a 4 m bench on both gorge descents and a 6 m landing at the turn (step 6) | New | go ahead: it is the one P1 where the walkable ground itself is missing. It reshapes walkable ground in the gorge, untrialled, so its level findings come back here before it is built |
+| 27 | Kit pieces are solid scenery: no mechanic, and never a route | New | finding 6 |
+
+12 decided, 11 default, 4 new.
+
+### Findings
+
+Ranked; 1 to 4 change the plan before Part 2b starts. 2a (steps 1 to 3) can start now with finding 5's number added.
+
+1. **P1. Step 5 changes the starter tree catalog, and the plan does not say so.** The 12 trees leave `LAND_TREES`,
+   which `test/railway.test.ts` pins tree by tree ("catalog exactly pins ... every starter source to centimetres") and
+   which `tree-catalog.ts` guards in words ("Only the new station ground may remove an already planted tree"; "all 362
+   survive"). The trial did not run the unit tests, and the plan's Risks say "No `WORLD_NS` bump: heights are not saved
+   state". Heights are not, but the tree catalog is what harvest state hangs on. Before step 5 starts the plan must
+   say: the catalog loses these ids on purpose; whether a saved room still loads (the test "a saved world loads all or
+   nothing: archetypes, catalog, keys"); and whether that means a `WORLD_NS` bump. A bump is allowed and never a
+   reason to shrink the step ("Save resets never block development or architecture"); an unstated one is the defect.
+   The 13 November Home flip entry already expected "possibly a second [bump] when the town's paths move trees".
+2. **P1. The trees, named. The loss is acceptable; none must be kept; all must be listed in the plan before the step
+   ships (agreed with the planner and the owner's answer).** A read-only estimate from the catalog and the new radii
+   (the implementer confirms it against the real run):
+   - Leave the catalog (path strips, 12 or 13): ids 44, 319, 59, 313 (canyon path, trunks 7.3 to 8.6 m from the centre
+     line); 97, 227 (quarry path near (-87, 78) and (-102, 71)); 69, 75, 241, 317, 323, 205 (quarry path at the gorge
+     turn, (-8, 137) to (23, 166)).
+   - **Not counted by the plan:** five more by the shore path, ids 55, 203, 291, 296, 348 near (-195, 3) to (-170, 32).
+     The shore strip is graded after the catalog snapshot, so these stay in the catalog and are hidden locally
+     (`shoreTreeCleared`): they vanish for the player all the same. The plan's "12" should read "12 from the catalog
+     and about 5 hidden by the shore".
+   - None is a hardwood, the oak or the great tree, and none stands in a grove. 12 of 362 is 3% of ordinary wood, and
+     trees regrow; no bill is at risk.
+   - Every trunk stands 2.9 m or more outside the tread's edge. They go because clearing rides on the same number as
+     levelling, not because they block the walk. Trees beside a path are the medium shapes that frame it
+     ([level-design](../research/level-design.md), three sizes of shape). **Recommendation, not a condition:** where it
+     is small work, keep the ones whose ground barely moves (59, 313, 317, 323, 296: the new strip touches them at
+     under 0.2) and let the rest go. One check is a condition: a before and after still of the quarry turn near
+     (-5, 150), which loses up to six trees in one place and gets step 6's landing on top. If it reads bald, two trees
+     are kept or replanted on the landing's outer edge.
+   - The 3 unidentified placements and the 1 timber piece: agreed, named before the step ships. If the timber piece is
+     a rail, sleeper or plank on a line a player rides or walks, that is a level finding and comes back here.
+3. **P1. The 23 cells: accept, on three checks, because the wider strips now reach three gated things.** Within the
+   new fade distance of a path's centre line stand the lookout secret's pad (2.6 m, inside today's strip already), the
+   alcove secret's pad at (-40, -80.5), a hook secret (6.9 m from the canyon path: outside today's 6.5 m, inside the
+   new 8.8 m), and gate 1's lever and apron pad at (97, 42) and (99, 44) (6.6 and 7.3 m from the quarry path: outside
+   today's 4.8 m, inside the new 7.7 m). The trial reports their assertions still pass, which is the proof that
+   matters ([route-contract](../research/route-contract.md): movement may skip distance, never the work). The
+   implementer's run must also show: (a) the 23 cells' positions, none adjoining those three pads, the device pillars
+   or the jump course; (b) the ground height under and beside the alcove and the apron before and after, with the
+   height still to climb, so a pass by centimetres is seen; (c) the lines "apron is out of reach: gate 1's ledge needs
+   two jumps", "lookout is out of reach" and the "At the start" list unchanged. If the margin at the alcove or the
+   apron shrinks, the strip skips those cells (the `skip` hook) instead of the gate losing its meaning. More wall and
+   shore to hop up with the second jump is otherwise welcome: that is what the jump is for.
+4. **P2. `inner` does three jobs.** In `strip()` the same number levels the ground, clears trees and paints
+   `pathMask` (`smoothstep(inner + 1, inner - 0.5, d)`). The call here is only that the bench is level across the
+   tread. The path a player sees must stay 6 m and 3.8 m wide: on the Round's lawns and the commons a path that grew
+   to 12 m would stop being a line to follow (flow rule 1). The step states that the painted width is unchanged and
+   shows the town framing (`H/c3`) before and after.
+5. **P2. The pigment needs a grass-side number, not only a rock-side one.** From the stills the wall is a warm orange
+   tan and the tread a pale warm tan: the two differ mostly in lightness, which is why the canyon reads as one
+   surface. Packed earth fixes that side (the start middle `#93836f` is about 30 of 255 darker than the wall and far
+   less orange). But the same value sits within about 10 of the lawn's lightness, where today's pale tread stands out
+   strongly, and the bold path is "the way you're sent first" from spawn. Ruling: the start values stand as candidate
+   one. Add to step 1's check: at the town framing the tread's middle is at least 15 of 255 lighter than the grass
+   beside it, or its pale stones and verge carry the line; and the riser bands stay visibly darker than the tread. If
+   the lawn check fails, lighten the middle toward `#a09080` before touching the hue. Pale gravel stays on the sheet
+   only as the comparison; it is not picked.
+6. **P2. Part 3's first wedge starts at a secret.** The wedge runs from (-42, -88); the alcove (hook, "after glide")
+   is at (-40, -80.5) with its stand point at (-41, -84), the bell secret at (-36, -78) and the first device pad at
+   (-46, -69). Boulders of 0.8 to 3 m and rock faces with colliders are steps: one jump is 1.7 m and two are 3.0 m.
+   Rules for the kit, all cheap to state now:
+   - No piece is a new way up: `npm run level-check` runs on the placements, and no piece's top stands within two
+     jumps below a pad, secret, rim or wall top that is gated today.
+   - No piece within 6 m of the alcove, the bell or a device pad on the first wedge.
+   - The tread keeps its full width (the plan's 3 m floor is right).
+   - The river side of a bench stays open: no kerb or wall whose collider stops a fall. Falling off the climb into the
+     river is a joke the game wants (DESIGN 10), and a friend can follow you down.
+   - Dress by purpose ("Gameplay shapes the environment"): retaining wall and rock face on the uphill side say "not
+     this way"; the kerb marks the tread's edge; nothing is placed where it reads as an invitation to climb.
+   - Art only stands: no climbing, breaking or use, as the plan says. A piece that later gains a use goes through
+     `/brainstorm` first.
+7. **P2. Order.** The three P1s are the right first targets: two are the owner's own sentence about the canyon path,
+   and the third is the one path that is not there to walk on. Two view-only P1s first is right, since they are safe
+   and judged against his words. But step 6 is P1 and sits last and untrialled, behind a P2 (step 5), and both clear
+   trees at the same gorge turn. Run step 6's trial beside step 5's so the turn's trees, the gorge's second-jump flood
+   and one possible `WORLD_NS` bump are decided once, not twice. Step 7 is independent and can ship whenever it is
+   ready.
+8. **P3. Step 3b and the rock tell.** Rock means "you can't walk here". Removing lone rock from walkable slope serves
+   that. The check to add: no unwalkable face loses its rock, from the far camera and the shore camera.
+9. **P3. Co-op and solo.** Nothing here differs by player count. Wider level benches help two walking abreast on the
+   climb; no finding.
+
+### Suspect lines
+
+None: these parts carry no character copy.
+
+### Owner questions
+
+The plan's three are answered. What is left, recommended answer first:
+
+1. **The river side of the canyon climb stays open when the kit goes in, so you can still fall off?** **Yes**: kerbs
+   and walls go on the uphill side and at the tread's edge as low marks, never as a rail.
+2. **Rebuild the quarry path's benches in the gorge now (step 6), though it reshapes walkable ground there?** **Yes**:
+   it is the only path with no level tread at all; its level findings are reviewed before it is built.
+3. **The kit's style:** picked by you from the previz sheet, with the Small Magic reference beside the two styles?
+   **Yes**; the planner's lean is chunky Sunshine blocks.
