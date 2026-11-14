@@ -4,6 +4,12 @@ Every note from Matias and Grant's call of 3 November ([log and evidence](../pla
 
 Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
+## Owner session, 14 November evening (desktop Safari, live build, after v45; ranked)
+
+| P | Note (his words where quoted) | What it is | Status |
+| --- | --- | --- | --- |
+| P3 | "bell floats on water" (with a screenshot: the canyon river, the bell's bent post standing in the water beside a crate) | The hanging bell of the "look under the bridge" secret (`src/entities/finds/secrets-view.ts`, `bellAt` at about (-36.4, by + 1, -78)): its post stands in the river with nothing under it. Not yet checked whether the water, the bridge or the post moved | Logged; not dispatched |
+
 ## Fixed and shipped (still to be played)
 
 - [x] Grant's freeze: forge rack overflow fixed and instance counts capped. Not proven to be Grant's exact case; Grant's video still to come.
