@@ -52,7 +52,7 @@ export type Placement = {
   /** Attachment name -> authored text key. Text stays with its copy author, outside the prefab. */
   labels?: Readonly<Record<string, string>>;
 };
-export type LevelDef = { place: string; placements: readonly Placement[]; analysis?: JsonObject };
+export type LevelDef = { place: string; placements: readonly Placement[]; layout?: JsonObject; analysis?: JsonObject };
 export const definePrefab = <T extends PrefabDef>(record: T): T => record;
 export const defineLevel = <T extends LevelDef>(record: T): T => record;
 export const metadata = {
@@ -66,5 +66,6 @@ export type LevelArtifact = typeof metadata & {
   format: 'boogle-level';
   place: string;
   placements: readonly Placement[];
+  layout?: JsonObject;
   analysis?: JsonObject;
 };

@@ -2,15 +2,15 @@
 import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
 import type { OwnedView } from '../../render/owned-view.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
-import { validateArtifact, validateLevelArtifact } from '../../prefab/validate.ts';
+import { validateArtifact, loadLevelArtifact } from '../../prefab/validate.ts';
 import { LEG2_TEXT } from './leg2-layout.ts';
 const records = (() => {
   const value: unknown = artifact;
   validateArtifact(value);
   return value;
 })();
-function compiled(value: unknown) {
-  validateLevelArtifact(value, records.prefabs);
+function compiled(input: unknown) {
+  const value = loadLevelArtifact(input, records.prefabs);
   for (const p of value.placements)
     for (const key of Object.values(p.labels ?? {}))
       if (!Object.hasOwn(LEG2_TEXT, key)) throw new Error(`prefabs: missing label text ${key}`);

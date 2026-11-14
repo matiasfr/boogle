@@ -1,5 +1,5 @@
 import { definePrefab } from '../../prefab/types.ts';
-import { PAD_SIZE } from '../../entities/route-greybox/leg2-layout.ts';
+import { PAD_SIZE } from '../../prefab/greybox-constants.ts';
 export const prefabs = [
   definePrefab({
     key: 'greybox.pad',

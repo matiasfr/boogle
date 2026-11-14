@@ -1,1777 +1,2278 @@
 {
-  "analysis": {
-    "footOrder": [
-      "upper-in-n-end",
-      "upper-in-s-end",
-      "upper-out-n-end",
-      "upper-out-s-end",
-      "upper-step",
-      "the pinnacle's foot"
-    ],
-    "marks": {
-      "eastRock": {
-        "x": -11.299014079825362,
-        "z": -827.5894290834339
-      },
-      "feet": {
-        "the pinnacle's foot": {
-          "x": -24.740856515123227,
-          "z": -853.4605881596063
-        },
-        "upper-in-n-end": {
-          "x": -26.046922497929884,
-          "z": -842.2449965712566
-        },
-        "upper-in-s-end": {
-          "x": -32.06616089700254,
-          "z": -832.3289101912814
-        },
-        "upper-out-n-end": {
-          "x": -84.29694411508478,
-          "z": -843.1000272198544
-        },
-        "upper-out-s-end": {
-          "x": -80.15534028902425,
-          "z": -832.2645707113375
-        },
-        "upper-step": {
-          "x": -99.60971382355781,
-          "z": -866.0663092944427
-        }
-      },
-      "lowerEast": {
-        "x": -43.611997263557406,
-        "z": -849.6083100215707
-      },
-      "lowerWest": {
-        "x": -55.17711188860531,
-        "z": -860.3362233186431
-      },
-      "rampFoot": {
-        "x": -72.15181432465809,
-        "z": -856.3676622182613
-      },
-      "rampHead": {
-        "x": -70.74417846467779,
-        "z": -879.3245470523519
-      },
-      "seaEast": {
-        "x": -41.563185069401925,
-        "z": -889.5578077479887
-      },
-      "seaOutside": {
-        "x": -42.0437973131548,
-        "z": -979.7563055839902
-      },
-      "seaWest": {
-        "x": -68.41806920628963,
-        "z": -811.054207843307
-      },
-      "seeds": {
-        "x": -64.72707517701902,
-        "z": -854.9105250972203
-      },
-      "slipwayFoot": {
-        "x": -53.61134200010932,
-        "z": -897.3097052300926
-      },
-      "upperDeck": {
-        "x": -89.12939683408169,
-        "z": -865.423692923582
-      },
-      "upperInN": {
-        "x": -38.442030472898864,
-        "z": -849.7690445700974
-      },
-      "upperInS": {
-        "x": -44.46126887197151,
-        "z": -839.8529581901222
-      },
-      "upperOutN": {
-        "x": -66.08216808783658,
-        "z": -850.062206065387
-      },
-      "upperOutS": {
-        "x": -61.94056426177605,
-        "z": -839.2267495568701
-      },
-      "westRock": {
-        "x": -107.09565453032647,
-        "z": -866.5253209879145
-      }
-    },
-    "origin": {
-      "x": -50,
-      "z": -850
-    },
-    "pads": [
-      {
-        "id": "bell.pad-gorge",
-        "name": "pad-gorge"
-      },
-      {
-        "id": "bell.pad-ring",
-        "name": "pad-ring"
-      },
-      {
-        "id": "bell.pad-home",
-        "name": "pad-home"
-      },
-      {
-        "id": "bell.pad-canopy",
-        "name": "pad-canopy"
-      },
-      {
-        "id": "bell.pad-quay",
-        "name": "pad-quay"
-      }
-    ],
-    "posts": [
-      {
-        "id": "bell.market",
-        "name": "market"
-      }
-    ],
-    "reserves": [
-      {
-        "d": 120,
-        "id": "ns row",
-        "w": 7.6,
-        "x": -50,
-        "y0": 3.9,
-        "y1": 9,
-        "yaw": -0.06123983007960637,
-        "z": -850
-      },
-      {
-        "d": 70,
-        "id": "bay row, in",
-        "w": 7.6,
-        "x": -20.08077385352316,
-        "y0": 14.9,
-        "y1": 20,
-        "yaw": 1.0252328389739946,
-        "z": -831.8385048303842
-      },
-      {
-        "d": 70,
-        "id": "bay row, out",
-        "w": 7.6,
-        "x": -82.69318774121473,
-        "y0": 14.9,
-        "y1": 20,
-        "yaw": -1.205704776173795,
-        "z": -837.5037815593001
-      },
-      {
-        "d": 3,
-        "id": "seeds spot",
-        "w": 3,
-        "x": -64.72707517701902,
-        "y0": 4.9,
-        "y1": 7.9,
-        "yaw": -0.06123983007960637,
-        "z": -854.9105250972203
-      },
-      {
-        "d": 5,
-        "id": "Canopy frame and barrier",
-        "w": 6,
-        "x": -76.97998732393197,
-        "y0": 15.9,
-        "y1": 18.9,
-        "yaw": -0.06123983007960637,
-        "z": -851.153379382714
-      },
-      {
-        "d": 3,
-        "id": "lower-east lever end",
-        "w": 5.2,
-        "x": -42.4797684196602,
-        "y0": 4.9,
-        "y1": 7.9,
-        "yaw": -0.06123983007960637,
-        "z": -868.0736304316
-      },
-      {
-        "d": 3,
-        "id": "lower-west lever end",
-        "w": 4,
-        "x": -54.167286162967265,
-        "y0": 4.9,
-        "y1": 7.9,
-        "yaw": -0.06123983007960637,
-        "z": -876.8052928735342
-      },
-      {
-        "d": 3,
-        "id": "upper-in-n lever end",
-        "w": 4,
-        "x": -31.175932694468774,
-        "y0": 15.9,
-        "y1": 18.9,
-        "yaw": 1.0252328389739946,
-        "z": -845.3583957431907
-      },
-      {
-        "d": 3,
-        "id": "upper-in-s lever end",
-        "w": 4,
-        "x": -37.195171093541425,
-        "y0": 15.9,
-        "y1": 18.9,
-        "yaw": 1.0252328389739946,
-        "z": -835.4423093632155
-      },
-      {
-        "d": 3,
-        "id": "upper-out-n lever end",
-        "w": 4,
-        "x": -50.66966529554963,
-        "y0": 15.9,
-        "y1": 18.9,
-        "yaw": -1.205704776173795,
-        "z": -855.9532804731456
-      },
-      {
-        "d": 3,
-        "id": "upper-out-s lever end",
-        "w": 4,
-        "x": -51.198516861091214,
-        "y0": 15.9,
-        "y1": 18.9,
-        "yaw": -1.205704776173795,
-        "z": -843.3326499016715
-      }
-    ],
-    "rockBase": -10,
-    "rockTop": 14,
-    "surfaces": [
-      {
-        "id": "bell.ns-bed",
-        "name": "ns-bed",
-        "over": false
-      },
-      {
-        "id": "bell.lower-east",
-        "name": "lower-east",
-        "over": false
-      },
-      {
-        "id": "bell.lower-west",
-        "name": "lower-west",
-        "over": false
-      },
-      {
-        "id": "bell.lower-deck",
-        "name": "lower-deck",
-        "over": false
-      },
-      {
-        "id": "bell.slipway",
-        "name": "slipway",
-        "over": false
-      },
-      {
-        "id": "bell.ramp",
-        "name": "ramp",
-        "over": false
-      },
-      {
-        "id": "bell.ramp-parapet",
-        "name": "ramp-parapet",
-        "over": false
-      },
-      {
-        "id": "bell.ramp-landing",
-        "name": "ramp-landing",
-        "over": false
-      },
-      {
-        "id": "bell.bay-bed-in",
-        "name": "bay-bed-in",
-        "over": true
-      },
-      {
-        "id": "bell.bay-bed-out",
-        "name": "bay-bed-out",
-        "over": true
-      },
-      {
-        "id": "bell.upper-in-n",
-        "name": "upper-in-n",
-        "over": true
-      },
-      {
-        "id": "bell.upper-in-s",
-        "name": "upper-in-s",
-        "over": true
-      },
-      {
-        "id": "bell.upper-out-n",
-        "name": "upper-out-n",
-        "over": true
-      },
-      {
-        "id": "bell.upper-out-s",
-        "name": "upper-out-s",
-        "over": true
-      },
-      {
-        "id": "bell.upper-in-n-end",
-        "name": "upper-in-n-end",
-        "over": true
-      },
-      {
-        "id": "bell.upper-in-s-end",
-        "name": "upper-in-s-end",
-        "over": true
-      },
-      {
-        "id": "bell.upper-out-n-end",
-        "name": "upper-out-n-end",
-        "over": true
-      },
-      {
-        "id": "bell.upper-out-s-end",
-        "name": "upper-out-s-end",
-        "over": true
-      },
-      {
-        "id": "bell.upper-deck",
-        "name": "upper-deck",
-        "over": false
-      },
-      {
-        "id": "bell.upper-step",
-        "name": "upper-step",
-        "over": false
-      },
-      {
-        "id": "bell.pinnacle",
-        "name": "pinnacle",
-        "over": false
-      }
-    ]
-  },
   "axes": "x east, y up, z south, right-handed",
   "format": "boogle-level",
+  "layout": {
+    "area": "bell",
+    "data": {
+      "basis": {
+        "o": {
+          "x": -50,
+          "z": -850
+        },
+        "u": {
+          "axis": {
+            "x": -0.0612,
+            "z": 0.9981
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -0.0612,
+              "z": 0.9981
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": 1
+        }
+      },
+      "extras": [
+        {
+          "id": "rock",
+          "pos": [
+            0,
+            0,
+            0
+          ],
+          "prefab": "greybox.bell-rock"
+        }
+      ],
+      "footOrder": [
+        "upper-in-n-end",
+        "upper-in-s-end",
+        "upper-out-n-end",
+        "upper-out-s-end",
+        "upper-step",
+        "the pinnacle's foot"
+      ],
+      "marks": {
+        "eastRock": {
+          "at": [
+            20,
+            40
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "feet": {
+          "the pinnacle's foot": {
+            "at": [
+              -5,
+              25
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": -0.0612,
+                    "z": 0.9981
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              }
+            }
+          },
+          "upper-in-n-end": {
+            "at": [
+              24.5,
+              5.8
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": 0.855,
+                    "z": 0.519
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              }
+            }
+          },
+          "upper-in-s-end": {
+            "at": [
+              24.5,
+              -5.8
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": 0.855,
+                    "z": 0.519
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              }
+            }
+          },
+          "upper-out-n-end": {
+            "at": [
+              34.5,
+              5.8
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": -0.934,
+                    "z": 0.357
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": -1
+              }
+            }
+          },
+          "upper-out-s-end": {
+            "at": [
+              34.5,
+              -5.8
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": -0.934,
+                    "z": 0.357
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": -1
+              }
+            }
+          },
+          "upper-step": {
+            "at": [
+              -13,
+              -50.5
+            ],
+            "compute": "point",
+            "frame": {
+              "o": {
+                "x": -50,
+                "z": -850
+              },
+              "u": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "v": {
+                "axis": {
+                  "axis": {
+                    "x": -0.0612,
+                    "z": 0.9981
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              }
+            }
+          }
+        },
+        "lowerEast": {
+          "at": [
+            0,
+            6.4
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "lowerWest": {
+          "at": [
+            -10,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "rampFoot": {
+          "at": [
+            -5,
+            -22.5
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "rampHead": {
+          "at": [
+            -28,
+            -22.5
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "seaEast": {
+          "at": [
+            -40,
+            6
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "seaOutside": {
+          "at": [
+            -130,
+            0
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "seaWest": {
+          "at": [
+            40,
+            -16
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "seeds": {
+          "at": [
+            -4,
+            -15
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "slipwayFoot": {
+          "at": [
+            -47,
+            -6.5
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "upperDeck": {
+          "at": [
+            -13,
+            -40
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "upperInN": {
+          "at": [
+            10,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "upperInS": {
+          "at": [
+            10,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        },
+        "upperOutN": {
+          "at": [
+            15,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "upperOutS": {
+          "at": [
+            15,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          }
+        },
+        "westRock": {
+          "at": [
+            -13,
+            -58
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          }
+        }
+      },
+      "origin": {
+        "x": -50,
+        "z": -850
+      },
+      "pads": [
+        {
+          "at": [
+            -20,
+            -14
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-gorge",
+          "label": "bell.pad-gorge",
+          "y": 4.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        },
+        {
+          "at": [
+            -12,
+            -14
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-ring",
+          "label": "bell.pad-ring",
+          "y": 4.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        },
+        {
+          "at": [
+            -22,
+            -34
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-home",
+          "label": "bell.pad-home",
+          "y": 15.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        },
+        {
+          "at": [
+            -13,
+            -34
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-canopy",
+          "label": "bell.pad-canopy",
+          "y": 15.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        },
+        {
+          "at": [
+            -4,
+            -34
+          ],
+          "compute": "point",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "pad-quay",
+          "label": "bell.pad-quay",
+          "y": 15.9,
+          "yaw": {
+            "axis": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "compute": "yaw"
+          }
+        }
+      ],
+      "pieces": [
+        {
+          "bounds": [
+            -60,
+            60,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.4,
+          "id": "ns-bed",
+          "posts": true,
+          "tone": "dark",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            -20,
+            20,
+            3.8,
+            9
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.5,
+          "id": "lower-east",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            -28,
+            20,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.5,
+          "id": "lower-west",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            -26,
+            26,
+            -24,
+            -7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.5,
+          "id": "lower-deck",
+          "posts": true,
+          "tone": "grey",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            -48,
+            -28,
+            -7.7,
+            -5.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "slipway",
+          "rise": {
+            "a": 4.9,
+            "b": -1.4,
+            "compute": "sub"
+          },
+          "tone": "light",
+          "top": -1.4
+        },
+        {
+          "bounds": [
+            -5.6,
+            -26,
+            -24,
+            -21
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "ramp",
+          "rise": {
+            "a": 4.9,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -5.6,
+            -26,
+            -21.2,
+            -21
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 1,
+          "id": "ramp-parapet",
+          "rise": {
+            "a": 5.9,
+            "b": 16.9,
+            "compute": "sub"
+          },
+          "tone": "pale",
+          "top": 16.9
+        },
+        {
+          "bounds": [
+            -30,
+            -26,
+            -24,
+            -21
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.4,
+          "id": "ramp-landing",
+          "posts": true,
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -4,
+            70,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-in",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -4,
+            70,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-out",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -3,
+            20,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-in-n",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            2,
+            20,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-in-s",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -3,
+            30,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-out-n",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            2,
+            30,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-out-s",
+          "over": true,
+          "provisional": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            20,
+            24,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "upper-in-n-end",
+          "over": true,
+          "provisional": true,
+          "rise": {
+            "a": 14,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            20,
+            24,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "upper-in-s-end",
+          "over": true,
+          "provisional": true,
+          "rise": {
+            "a": 14,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            30,
+            34,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": 0.3,
+          "id": "upper-out-n-end",
+          "over": true,
+          "provisional": true,
+          "rise": {
+            "a": 14,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            30,
+            34,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": 0.3,
+          "id": "upper-out-s-end",
+          "over": true,
+          "provisional": true,
+          "rise": {
+            "a": 14,
+            "b": 15.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -30,
+            3,
+            -46,
+            -24
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-deck",
+          "provisional": true,
+          "tone": "grey",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -46,
+            -50,
+            -15,
+            -11
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            },
+            "v": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            }
+          },
+          "h": 0.3,
+          "id": "upper-step",
+          "rise": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 14
+        },
+        {
+          "d": 18,
+          "h": 40,
+          "hidden": true,
+          "id": "pinnacle",
+          "tone": "grey",
+          "top": 54,
+          "w": 22,
+          "x": -24,
+          "yaw": 0,
+          "z": -870
+        }
+      ],
+      "posts": [
+        {
+          "at": [
+            -28,
+            -24
+          ],
+          "compute": "point",
+          "facing": {
+            "axis": {
+              "a": {
+                "axis": {
+                  "axis": {
+                    "x": -0.0612,
+                    "z": 0.9981
+                  },
+                  "compute": "unit"
+                },
+                "compute": "perp",
+                "sign": 1
+              },
+              "b": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "mix",
+              "wa": 1,
+              "wb": 1
+            },
+            "compute": "unit"
+          },
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "high": true,
+          "id": "market",
+          "label": "bell.market",
+          "y": 15.9
+        }
+      ],
+      "reserves": [
+        {
+          "bounds": [
+            -60,
+            60,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "ns row",
+          "y0": 3.9,
+          "y1": 9
+        },
+        {
+          "bounds": [
+            0,
+            70,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "bay row, in",
+          "y0": 14.9,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            0,
+            70,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "bay row, out",
+          "y0": 14.9,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            -5.5,
+            -2.5,
+            -16.5,
+            -13.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "seeds spot",
+          "y0": 4.9,
+          "y1": 7.9
+        },
+        {
+          "bounds": [
+            -2,
+            3,
+            -30,
+            -24
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "Canopy frame and barrier",
+          "y0": 15.9,
+          "y1": 18.9
+        },
+        {
+          "bounds": [
+            -20,
+            -17,
+            3.8,
+            9
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "lower-east lever end",
+          "y0": 4.9,
+          "y1": 7.9
+        },
+        {
+          "bounds": [
+            -28,
+            -25,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.0612,
+                "z": 0.9981
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.0612,
+                  "z": 0.9981
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "lower-west lever end",
+          "y0": 4.9,
+          "y1": 7.9
+        },
+        {
+          "bounds": [
+            17,
+            20,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "upper-in-n lever end",
+          "y0": 15.9,
+          "y1": 18.9
+        },
+        {
+          "bounds": [
+            17,
+            20,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": 0.855,
+                "z": 0.519
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 0.855,
+                  "z": 0.519
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "upper-in-s lever end",
+          "y0": 15.9,
+          "y1": 18.9
+        },
+        {
+          "bounds": [
+            -3,
+            0,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "upper-out-n lever end",
+          "y0": 15.9,
+          "y1": 18.9
+        },
+        {
+          "bounds": [
+            2,
+            5,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -50,
+              "z": -850
+            },
+            "u": {
+              "axis": {
+                "x": -0.934,
+                "z": 0.357
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -0.934,
+                  "z": 0.357
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "upper-out-s lever end",
+          "y0": 15.9,
+          "y1": 18.9
+        }
+      ],
+      "rockBase": -10,
+      "rockTop": 14
+    },
+    "kind": "leg2"
+  },
   "place": "bell",
-  "placements": [
-    {
-      "id": "bell.ns-bed",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -50,
-        3.6999999999999997,
-        -850
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        7.6,
-        0.4,
-        120
-      ]
-    },
-    {
-      "id": "bell.lower-east",
-      "params": {
-        "colour": "#b4b6b8"
-      },
-      "pos": [
-        -43.611997263557406,
-        4.65,
-        -849.6083100215707
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        5.2,
-        0.5,
-        40
-      ]
-    },
-    {
-      "id": "bell.lower-west",
-      "params": {
-        "colour": "#b4b6b8"
-      },
-      "pos": [
-        -55.54432124338278,
-        4.65,
-        -854.3474707532282
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        4,
-        0.5,
-        48
-      ]
-    },
-    {
-      "id": "bell.lower-deck",
-      "params": {
-        "colour": "#9c9ea1"
-      },
-      "pos": [
-        -65.87019429834956,
-        4.65,
-        -850.9731047901603
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        16.2,
-        0.5,
-        52
-      ]
-    },
-    {
-      "id": "bell.slipway",
-      "params": {
-        "colour": "#b4b6b8"
-      },
-      "pos": [
-        -54.162156032275526,
-        1.6069302031453043,
-        -888.3265763819702
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -0.061239830079606726,
-        -0.30516082461586086,
-        0
-      ],
-      "scale": [
-        2.4000000000000004,
-        0.3,
-        20.96878632634703
-      ]
-    },
-    {
-      "id": "bell.ramp",
-      "params": {
-        "colour": "#b4b6b8"
-      },
-      "pos": [
-        -71.49083748605865,
-        10.267970920959005,
-        -867.1474168360082
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -0.061239830079607066,
-        0.4945258223889786,
-        0
-      ],
-      "scale": [
-        3,
-        0.3,
-        23.17671245021604
-      ]
-    },
-    {
-      "id": "bell.ramp-parapet",
-      "params": {
-        "colour": "#e4e5e6"
-      },
-      "pos": [
-        -70.09346188746184,
-        10.959903069863348,
-        -867.0617346532267
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -0.061239830079607066,
-        0.4945258223889785,
-        0
-      ],
-      "scale": [
-        0.1999999999999993,
-        1,
-        23.17671245021604
-      ]
-    },
-    {
-      "id": "bell.ramp-landing",
-      "params": {
-        "colour": "#9c9ea1"
-      },
-      "pos": [
-        -70.74417846467779,
-        15.700000000000001,
-        -879.3245470523519
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        3,
-        0.4,
-        4
-      ]
-    },
-    {
-      "id": "bell.bay-bed-in",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -21.79044391903612,
-        14.45,
-        -832.8763045543623
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        1.0252328389739946,
-        0,
-        0
-      ],
-      "scale": [
-        7.6,
-        0.9000000000000004,
-        74
-      ]
-    },
-    {
-      "id": "bell.bay-bed-out",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -80.82500558457389,
-        14.45,
-        -838.217851184483
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -1.205704776173795,
-        0,
-        0
-      ],
-      "scale": [
-        7.6,
-        0.9000000000000004,
-        74
-      ]
-    },
-    {
-      "id": "bell.upper-in-n",
-      "params": {
-        "colour": "#b4b6b8"
-      },
-      "pos": [
-        -39.72428302203358,
-        14.95,
-        -850.5473943630809
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        1.0252328389739946,
-        0,
-        0
-      ],
-      "scale": [
-        4,
-        1.9000000000000004,
-        23
-      ]
-    },
-    {
-      "id": "bell.upper-in-s",
-      "params": {
-        "colour": "#b4b6b8"
-      },
-      "pos": [
-        -43.60643383921503,
-        14.95,
-        -839.3340583281331
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        1.0252328389739946,
-        0,
-        0
-      ],
-      "scale": [
-        4,
-        1.9000000000000004,
-        18
-      ]
-    },
-    {
-      "id": "bell.upper-out-n",
-      "params": {
-        "colour": "#b4b6b8"
-      },
-      "pos": [
-        -64.68103147035595,
-        14.95,
-        -850.5977582842743
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -1.205704776173795,
-        0,
-        0
-      ],
-      "scale": [
-        4,
-        1.9000000000000004,
-        33
-      ]
-    },
-    {
-      "id": "bell.upper-out-s",
-      "params": {
-        "colour": "#b4b6b8"
-      },
-      "pos": [
-        -62.874655340096474,
-        14.95,
-        -838.8697147442788
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -1.205704776173795,
-        0,
-        0
-      ],
-      "scale": [
-        4,
-        1.9000000000000004,
-        28
-      ]
-    },
-    {
-      "id": "bell.upper-in-n-end",
-      "params": {
-        "colour": "#9c9ea1"
-      },
-      "pos": [
-        -28.184010079821086,
-        14.814508374346856,
-        -843.5422462262292
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        1.0252328389739782,
-        0.44344833641973425,
-        0
-      ],
-      "scale": [
-        4,
-        0.3,
-        4.4283179650969435
-      ]
-    },
-    {
-      "id": "bell.upper-in-s-end",
-      "params": {
-        "colour": "#9c9ea1"
-      },
-      "pos": [
-        -34.20324847889374,
-        14.814508374346856,
-        -833.6261598462539
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        1.0252328389739773,
-        0.4434483364197348,
-        0
-      ],
-      "scale": [
-        4,
-        0.3,
-        4.428317965096937
-      ]
-    },
-    {
-      "id": "bell.upper-out-n-end",
-      "params": {
-        "colour": "#9c9ea1"
-      },
-      "pos": [
-        -81.96171641928373,
-        14.814508374346856,
-        -843.9926142513328
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -1.2057047761737703,
-        0.44344833641973463,
-        0
-      ],
-      "scale": [
-        4,
-        0.3,
-        4.428317965096939
-      ]
-    },
-    {
-      "id": "bell.upper-out-s-end",
-      "params": {
-        "colour": "#9c9ea1"
-      },
-      "pos": [
-        -77.8201125932232,
-        14.814508374346856,
-        -833.1571577428159
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -1.2057047761737703,
-        0.44344833641973463,
-        0
-      ],
-      "scale": [
-        4,
-        0.3,
-        4.428317965096939
-      ]
-    },
-    {
-      "id": "bell.upper-deck",
-      "params": {
-        "colour": "#9c9ea1"
-      },
-      "pos": [
-        -84.10816891667112,
-        14.95,
-        -865.6167478417188
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        22,
-        1.9000000000000004,
-        33
-      ]
-    },
-    {
-      "id": "bell.upper-step",
-      "params": {
-        "colour": "#9c9ea1"
-      },
-      "pos": [
-        -97.11440025463493,
-        14.814508374346856,
-        -865.9133053966187
-      ],
-      "prefab": "greybox.box",
-      "rot": [
-        1.509556496715283,
-        -0.4434483364197374,
-        0
-      ],
-      "scale": [
-        4,
-        0.3,
-        4.428317965096914
-      ]
-    },
-    {
-      "id": "bell.pinnacle",
-      "params": {
-        "colour": "#9c9ea1"
-      },
-      "pos": [
-        -24,
-        34,
-        -870
-      ],
-      "prefab": "greybox.collider",
-      "rot": [
-        0,
-        0,
-        0
-      ],
-      "scale": [
-        22,
-        40,
-        18
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.0",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -46.36462738770304,
-        -2.25,
-        -909.2886503976079
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.1",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -47.09170191016243,
-        -2.25,
-        -897.4309203180862
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.2",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -47.818776432621824,
-        -2.25,
-        -885.5731902385647
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.3",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -48.545850955081214,
-        -2.25,
-        -873.7154601590431
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.4",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -49.27292547754061,
-        -2.25,
-        -861.8577300795216
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.5",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -50,
-        -2.25,
-        -850
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.6",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -50.72707452245939,
-        -2.25,
-        -838.1422699204784
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.7",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -51.454149044918786,
-        -2.25,
-        -826.2845398409569
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.8",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -52.181223567378176,
-        -2.25,
-        -814.4268097614353
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.9",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -52.90829808983757,
-        -2.25,
-        -802.5690796819138
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ns-bed.post.10",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -53.63537261229696,
-        -2.25,
-        -790.7113496023921
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        11.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-east.post.0",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -42.424687016443585,
-        -1.7999999999999998,
-        -868.9719433164123
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-east.post.1",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -43.01834214000049,
-        -1.7999999999999998,
-        -859.2901266689914
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-east.post.2",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -43.611997263557406,
-        -1.7999999999999998,
-        -849.6083100215707
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-east.post.3",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -44.20565238711432,
-        -1.7999999999999998,
-        -839.9264933741499
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-east.post.4",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -44.79930751067123,
-        -1.7999999999999998,
-        -830.244676726729
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-west.post.0",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -54.11220475975065,
-        -1.7999999999999998,
-        -877.7036057583464
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-west.post.1",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -54.82826300156671,
-        -1.7999999999999998,
-        -866.0255382557873
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-west.post.2",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -55.54432124338278,
-        -1.7999999999999998,
-        -854.3474707532282
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-west.post.3",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -56.260379485198854,
-        -1.7999999999999998,
-        -842.6694032506691
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-west.post.4",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -56.97643772701492,
-        -1.7999999999999998,
-        -830.99133574811
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.0",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -71.80161540322692,
-        -1.7999999999999998,
-        -876.7845023438887
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.1",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -72.42342324398344,
-        -1.7999999999999998,
-        -866.643547999786
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.2",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -73.04523108473997,
-        -1.7999999999999998,
-        -856.5025936556834
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.3",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -73.66703892549647,
-        -1.7999999999999998,
-        -846.3616393115809
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.4",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -74.288846766253,
-        -1.7999999999999998,
-        -836.2206849674783
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.5",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -74.91065460700952,
-        -1.7999999999999998,
-        -826.0797306233757
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.6",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -56.82973398968959,
-        -1.7999999999999998,
-        -875.8664789569449
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.7",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -57.45154183044611,
-        -1.7999999999999998,
-        -865.7255246128423
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.8",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -58.07334967120264,
-        -1.7999999999999998,
-        -855.5845702687396
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.9",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -58.695157511959145,
-        -1.7999999999999998,
-        -845.4436159246371
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.10",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -59.31696535271568,
-        -1.7999999999999998,
-        -835.3026615805345
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.lower-deck.post.11",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -59.938773193472194,
-        -1.7999999999999998,
-        -825.1617072364319
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        12.4,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ramp-landing.post.0",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -70.65849628189638,
-        3.75,
-        -880.7219226509487
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        23.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.ramp-landing.post.1",
-      "params": {
-        "colour": "#6f7275"
-      },
-      "pos": [
-        -70.8298606474592,
-        3.75,
-        -877.9271714537551
-      ],
-      "prefab": "greybox.decoration",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ],
-      "scale": [
-        0.5,
-        23.5,
-        0.5
-      ]
-    },
-    {
-      "id": "bell.pad-gorge",
-      "pos": [
-        -62.74972480337661,
-        4.9,
-        -870.8193303791971
-      ],
-      "prefab": "greybox.pad",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.pad-ring",
-      "pos": [
-        -63.239337276413224,
-        4.9,
-        -862.8343269586439
-      ],
-      "prefab": "greybox.pad",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.pad-home",
-      "pos": [
-        -82.58983023650055,
-        15.9,
-        -874.0396124169271
-      ],
-      "prefab": "greybox.pad",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.pad-canopy",
-      "pos": [
-        -83.14064426866676,
-        15.9,
-        -865.0564835688047
-      ],
-      "prefab": "greybox.pad",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.pad-quay",
-      "pos": [
-        -83.69145830083296,
-        15.9,
-        -856.0733547206823
-      ],
-      "prefab": "greybox.pad",
-      "rot": [
-        -0.06123983007960637,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.rock",
-      "pos": [
-        0,
-        0,
-        0
-      ],
-      "prefab": "greybox.bell-rock"
-    },
-    {
-      "id": "bell.pad-gorge.sign",
-      "labels": {
-        "label": "bell.pad-gorge"
-      },
-      "pos": [
-        -64.74597565851492,
-        4.9,
-        -870.9417334974563
-      ],
-      "prefab": "greybox.sign-post",
-      "rot": [
-        1.509556496715283,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.pad-ring.sign",
-      "labels": {
-        "label": "bell.pad-ring"
-      },
-      "pos": [
-        -65.23558813155154,
-        4.9,
-        -862.9567300769031
-      ],
-      "prefab": "greybox.sign-post",
-      "rot": [
-        1.509556496715283,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.pad-home.sign",
-      "labels": {
-        "label": "bell.pad-home"
-      },
-      "pos": [
-        -84.58608109163886,
-        15.9,
-        -874.1620155351862
-      ],
-      "prefab": "greybox.sign-post",
-      "rot": [
-        1.509556496715283,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.pad-canopy.sign",
-      "labels": {
-        "label": "bell.pad-canopy"
-      },
-      "pos": [
-        -85.13689512380508,
-        15.9,
-        -865.1788866870638
-      ],
-      "prefab": "greybox.sign-post",
-      "rot": [
-        1.509556496715283,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.pad-quay.sign",
-      "labels": {
-        "label": "bell.pad-quay"
-      },
-      "pos": [
-        -85.68770915597128,
-        15.9,
-        -856.1957578389415
-      ],
-      "prefab": "greybox.sign-post",
-      "rot": [
-        1.509556496715283,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bell.market",
-      "labels": {
-        "label": "bell.market"
-      },
-      "pos": [
-        -72.24136660603153,
-        15.9,
-        -879.4163493910462
-      ],
-      "prefab": "greybox.sign-post-high",
-      "rot": [
-        0.724158333317842,
-        0,
-        0
-      ]
-    }
-  ],
+  "placements": [],
   "rotation": "yaw, pitch, roll in radians, order YXZ",
   "units": "metres",
   "version": 1

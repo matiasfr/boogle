@@ -1,104 +1,9 @@
 // Leg 2 authoring. Private frame inputs compile to placements; the checker reads the same JSON.
-import { defineLevel, type Placement, type Vec3 } from '../../prefab/types.ts';
-import { PAD_SIZE } from '../../entities/route-greybox/leg2-layout.ts';
+import { defineLevel } from '../../prefab/types.ts';
 
-type XZ = { x: number; z: number };
-type Tone = 'grey' | 'light' | 'dark' | 'pale' | 'black';
-/** One box: a rectangle on the ground (centre, yaw of its length, `w` across, `d` along) under a top face that is
- * level at `top`, or runs from `top` at its -d/2 end to `top + rise` at its +d/2 end (a ramp), `h` thick. */
-type Surface = {
-  id: string;
-  x: number;
-  z: number;
-  /** Radians: atan2(dx, dz) of its length. */
-  yaw: number;
-  w: number;
-  d: number;
-  top: number;
-  rise?: number;
-  h: number;
-  tone: Tone;
-  /** No collider (a post, a pad's outline, the portal). */
-  solid?: false;
-  /** A collider only (the rock under the backdrop's mesh). */
-  hidden?: true;
-  /** Stands over other pieces (the bridge over the cut): the level report walks under it as well as on it. */
-  over?: true;
-  /** Stands over the sea: the massing puts posts under it. */
-  posts?: true;
-  /** May move with a later plan (design review, finding 5 and change 5). */
-  provisional?: true;
-};
-/** Room kept clear for the rules plan: a rectangle and the heights a leg 2 box may not enter. */
-export type Reserve = { id: string; x: number; z: number; yaw: number; w: number; d: number; y0: number; y1: number };
-/** A labelled pad (Ruling 2): a 6 by 4 m pale outline and one sign. */
-type PadInput = { id: string; x: number; z: number; y: number; yaw: number; label: string };
-/** A sign on its own post or posts, facing (nx, nz). */
-type SignInput = {
-  id: string;
-  x: number;
-  z: number;
-  y: number;
-  nx: number;
-  nz: number;
-  label: string;
-  /** On one tall post, the board overhead, where it stands in a walkway. */
-  high?: true;
-};
-
-const unit = (x: number, z: number): XZ => {
-  const l = Math.hypot(x, z);
-  return { x: x / l, z: z / l };
-};
-/** A frame: `a` metres along `u` and `b` metres along `v` from `o`. */
-function frame(o: XZ, u: XZ, v: XZ) {
-  const at = (a: number, b: number): XZ => ({ x: o.x + u.x * a + v.x * b, z: o.z + u.z * a + v.z * b });
-  const rect = (a0: number, a1: number, b0: number, b1: number) => ({
-    ...at((a0 + a1) / 2, (b0 + b1) / 2),
-    yaw: Math.atan2(u.x, u.z),
-    w: Math.abs(b1 - b0),
-    d: Math.abs(a1 - a0),
-  });
-  return {
-    at,
-    /** A level box over a0..a1, b0..b1 with its top at `top`. */
-    box: (id: string, a0: number, a1: number, b0: number, b1: number, top: number, h: number, tone: Tone): Surface => ({
-      id,
-      ...rect(a0, a1, b0, b1),
-      top,
-      h,
-      tone,
-    }),
-    /** A ramp over b0..b1 whose top runs from `y0` at `a0` to `y1` at `a1` (either may be the higher end). */
-    ramp: (
-      id: string,
-      a0: number,
-      y0: number,
-      a1: number,
-      y1: number,
-      b0: number,
-      b1: number,
-      tone: Tone,
-    ): Surface => ({
-      id,
-      ...rect(a0, a1, b0, b1),
-      top: a0 < a1 ? y0 : y1,
-      rise: a0 < a1 ? y1 - y0 : y0 - y1,
-      h: 0.3,
-      tone,
-    }),
-    reserve: (id: string, a0: number, a1: number, b0: number, b1: number, y0: number, y1: number): Reserve => ({
-      id,
-      ...rect(a0, a1, b0, b1),
-      y0,
-      y1,
-    }),
-    yaw: Math.atan2(u.x, u.z),
-    u,
-    v,
-  };
-}
-
+import { frame, unit, perp, mix, offset, sub, layoutData, type Evaluated } from '../../prefab/authoring.ts';
+type Reserve = { id: string; x: number; z: number; yaw: number; w: number; d: number; y0: number; y1: number };
+export type { Reserve };
 /** The unlaid bed: 7.6 m wide, 0.1 m under rail height (no rails are drawn until a leg lays them). */
 const BED = 3.8,
   /** Platforms: 4 m deep, 3.8 to 7.8 m off the row, 0.9 m over the rail (the blockout's). */
@@ -111,15 +16,15 @@ const BED = 3.8,
 // ---------------------------------------------------------------- Bell Rock
 const BELL_O = { x: -50, z: -850 },
   BELL_N = unit(-0.0612, 0.9981),
-  BELL_E = { x: BELL_N.z, z: -BELL_N.x },
+  BELL_E = perp(BELL_N),
   IN = unit(0.855, 0.519),
   OUT = unit(-0.934, 0.357);
 const ne = frame(BELL_O, BELL_N, BELL_E),
   // The same frame with `e` first, for a box whose length runs across.
   en = frame(BELL_O, BELL_E, BELL_N),
   // `lat` + on each half's north side (the outside of the 52 degree kink).
-  bayIn = frame(BELL_O, IN, { x: IN.z, z: -IN.x }),
-  bayOut = frame(BELL_O, OUT, { x: -OUT.z, z: OUT.x });
+  bayIn = frame(BELL_O, IN, perp(IN)),
+  bayOut = frame(BELL_O, OUT, perp(OUT, -1));
 const LOWER = 4.9,
   UPPER = 15.9,
   ROCK = 14,
@@ -129,7 +34,7 @@ const LOWER = 4.9,
 const PINNACLE = { x: -24, z: -870 };
 
 function bell() {
-  const pieces: Surface[] = [
+  const pieces: unknown[] = [
     // The lower level, in the cut (the cut is sea: everything here stands on posts).
     { ...ne.box('ns-bed', -60, 60, -BED, BED, NS_RAIL - 0.1, 0.4, 'dark'), posts: true },
     { ...ne.box('lower-east', -20, 20, BED, 9, LOWER, 0.5, 'light'), posts: true },
@@ -143,18 +48,26 @@ function bell() {
     { ...ne.box('ramp-landing', -30, -26, -24, -21, UPPER, 0.4, 'grey'), posts: true },
     // The upper level. PROVISIONAL (design review, change 5): the four upper platforms and the deck's south edge move
     // when the track plan eases the 52 degree kink (about 11 m south at a 100 m radius), so they get no polish.
-    { ...bayIn.box('bay-bed-in', -4, 70, -BED, BED, BAY_RAIL - 0.1, BAY_RAIL - 0.1 - ROCK, 'dark'), over: true },
-    { ...bayOut.box('bay-bed-out', -4, 70, -BED, BED, BAY_RAIL - 0.1, BAY_RAIL - 0.1 - ROCK, 'dark'), over: true },
+    { ...bayIn.box('bay-bed-in', -4, 70, -BED, BED, BAY_RAIL - 0.1, sub(BAY_RAIL - 0.1, ROCK), 'dark'), over: true },
+    { ...bayOut.box('bay-bed-out', -4, 70, -BED, BED, BAY_RAIL - 0.1, sub(BAY_RAIL - 0.1, ROCK), 'dark'), over: true },
     // The two on the inside of the kink start at t 2: from t -3 their corners stood in the other half's bed.
-    { ...bayIn.box('upper-in-n', -3, 20, BED, PLAT, UPPER, UPPER - ROCK, 'light'), over: true, provisional: true },
-    { ...bayIn.box('upper-in-s', 2, 20, -PLAT, -BED, UPPER, UPPER - ROCK, 'light'), over: true, provisional: true },
-    { ...bayOut.box('upper-out-n', -3, 30, BED, PLAT, UPPER, UPPER - ROCK, 'light'), over: true, provisional: true },
-    { ...bayOut.box('upper-out-s', 2, 30, -PLAT, -BED, UPPER, UPPER - ROCK, 'light'), over: true, provisional: true },
+    { ...bayIn.box('upper-in-n', -3, 20, BED, PLAT, UPPER, sub(UPPER, ROCK), 'light'), over: true, provisional: true },
+    { ...bayIn.box('upper-in-s', 2, 20, -PLAT, -BED, UPPER, sub(UPPER, ROCK), 'light'), over: true, provisional: true },
+    {
+      ...bayOut.box('upper-out-n', -3, 30, BED, PLAT, UPPER, sub(UPPER, ROCK), 'light'),
+      over: true,
+      provisional: true,
+    },
+    {
+      ...bayOut.box('upper-out-s', 2, 30, -PLAT, -BED, UPPER, sub(UPPER, ROCK), 'light'),
+      over: true,
+      provisional: true,
+    },
     { ...bayIn.ramp('upper-in-n-end', 20, UPPER, 24, ROCK, BED, PLAT, 'grey'), over: true, provisional: true },
     { ...bayIn.ramp('upper-in-s-end', 20, UPPER, 24, ROCK, -PLAT, -BED, 'grey'), over: true, provisional: true },
     { ...bayOut.ramp('upper-out-n-end', 30, UPPER, 34, ROCK, BED, PLAT, 'grey'), over: true, provisional: true },
     { ...bayOut.ramp('upper-out-s-end', 30, UPPER, 34, ROCK, -PLAT, -BED, 'grey'), over: true, provisional: true },
-    { ...ne.box('upper-deck', -30, 3, -46, -24, UPPER, UPPER - ROCK, 'grey'), provisional: true },
+    { ...ne.box('upper-deck', -30, 3, -46, -24, UPPER, sub(UPPER, ROCK), 'grey'), provisional: true },
     // Call 119: the deck stays 1.9 m over the rock, with a short ramp down.
     en.ramp('upper-step', -46, UPPER, -50, ROCK, -15, -11, 'grey'),
   ];
@@ -164,6 +77,7 @@ function bell() {
   pieces.push({
     id: 'pinnacle',
     ...PINNACLE,
+
     yaw: 0,
     w: 22,
     d: 18,
@@ -172,7 +86,7 @@ function bell() {
     tone: 'grey',
     hidden: true,
   });
-  const pad = (id: string, n: number, e: number, y: number): PadInput => ({
+  const pad = (id: string, n: number, e: number, y: number) => ({
     id,
     ...ne.at(n, e),
     y,
@@ -181,10 +95,11 @@ function bell() {
   });
   return {
     origin: BELL_O,
-    at: ne.at,
+    basis: ne.basis,
     /** The rock's top (the map's `top` for both lands) and how far down its solid walls go. */
     rockTop: ROCK,
     rockBase: -10,
+    extras: [{ id: 'rock', prefab: 'greybox.bell-rock', pos: [0, 0, 0] }],
     pieces,
     pads: [
       pad('pad-gorge', -20, -14, LOWER),
@@ -199,12 +114,11 @@ function bell() {
         id: 'market',
         ...ne.at(-28, -24),
         y: UPPER,
-        nx: (BELL_E.x + BELL_N.x) * Math.SQRT1_2,
-        nz: (BELL_E.z + BELL_N.z) * Math.SQRT1_2,
+        facing: { compute: 'unit', axis: mix(BELL_E, BELL_N, 1, 1) },
         label: 'bell.market',
         high: true,
       },
-    ] as SignInput[],
+    ],
     reserves: [
       ne.reserve('ns row', -60, 60, -BED, BED, NS_RAIL - 0.1, NS_RAIL + LOADING),
       bayIn.reserve('bay row, in', 0, 70, -BED, BED, BAY_RAIL - 0.1, BAY_RAIL + LOADING),
@@ -248,7 +162,7 @@ function bell() {
         'upper-step': ne.at(-13, -50.5),
         // South of the collider's face, on the walk from the in half's end ramps.
         "the pinnacle's foot": ne.at(-5, 25),
-      } as Record<string, XZ>,
+      },
     },
   };
 }
@@ -256,7 +170,7 @@ function bell() {
 // ---------------------------------------------------------------- Home's West landing
 const WEST_ROOT = { x: 801, z: 10 },
   WEST_S = unit(-0.6155, -0.7881),
-  WEST_LAT = { x: -WEST_S.z, z: WEST_S.x };
+  WEST_LAT = perp(WEST_S, -1);
 const sl = frame(WEST_ROOT, WEST_S, WEST_LAT);
 // World axes, for what follows the cliff and not the row: `a` is x (east), `b` is z (south).
 const xz = frame({ x: 0, z: 0 }, { x: 1, z: 0 }, { x: 0, z: 1 });
@@ -273,7 +187,7 @@ function west() {
   return {
     /** The stop, s 20. */
     origin: sl.at(20, 0),
-    at: sl.at,
+    basis: sl.basis,
     pieces: [
       { ...sl.box('bed', 0, 60, -BED, BED, WEST_RAIL - 0.1, 1, 'dark'), posts: true },
       // Platform A is the landward one; past s 20 the ground falls under the sea and both stand on posts.
@@ -315,8 +229,8 @@ function west() {
         ),
         h: 1,
       },
-    ] as Surface[],
-    pads: [] as PadInput[],
+    ],
+    pads: [],
     // Change 4: beside the stair's foot, facing east, so the walk down from the commons reads it before the platform.
     posts: [
       {
@@ -328,7 +242,7 @@ function west() {
         nz: 0,
         label: 'west.board',
       },
-    ] as SignInput[],
+    ],
     reserves: [
       sl.reserve('bay row', 0, 60, -BED, BED, WEST_RAIL - 0.1, WEST_RAIL + LOADING),
       // The rack and the first frame.
@@ -352,7 +266,7 @@ function west() {
       cliffFoot: { x: 808, z: -3 },
       cliffTop: { x: 830, z: -3 },
       /** The commons, 60 m east of the stop, on the cliff's top. */
-      commons: { x: sl.at(20, 0).x + 60, z: sl.at(20, 0).z },
+      commons: offset(sl.at(20, 0), 60, 0),
     },
   };
 }
@@ -361,8 +275,8 @@ function west() {
 const GORGE_O = { x: -103, z: -1988 },
   GORGE_A = { x: 0.8565, z: 0.5162 },
   GORGE_C = { x: -0.5162, z: 0.8565 },
-  GORGE_T = unit(GORGE_A.x * 0.741 + GORGE_C.x * 0.672, GORGE_A.z * 0.741 + GORGE_C.z * 0.672);
-const tl = frame(GORGE_O, GORGE_T, { x: -GORGE_T.z, z: GORGE_T.x }),
+  GORGE_T = { compute: 'unit' as const, axis: mix(GORGE_A, GORGE_C, 0.741, 0.672) };
+const tl = frame(GORGE_O, GORGE_T, perp(GORGE_T, -1)),
   ac = frame(GORGE_O, GORGE_A, GORGE_C);
 const GORGE_RAIL = 3,
   GORGE_DECK = 3.9;
@@ -370,16 +284,16 @@ const GORGE_RAIL = 3,
 function gorge() {
   return {
     origin: GORGE_O,
-    at: tl.at,
+    basis: tl.basis,
     // Built on call 118 (the stop moves to about t 36): if the owner reverses it, these two boxes move.
     pieces: [
       { ...tl.box('incline-n', 16, 56, BED, PLAT, GORGE_DECK, 0.5, 'light'), posts: true },
       { ...tl.box('incline-s', 16, 56, -PLAT, -BED, GORGE_DECK, 0.5, 'light'), posts: true },
       // Call 116: the tunnel's mouth is marked on the south wall where the row enters the rock; nothing is bored.
       { ...ac.box('portal', 45.1, 54.1, 44.7, 45, GORGE_RAIL + 7, 7, 'black'), solid: false },
-    ] as Surface[],
-    pads: [] as PadInput[],
-    posts: [] as SignInput[],
+    ],
+    pads: [],
+    posts: [],
     reserves: [
       // To 5 m short of the wall, where the mouth's mark stands across the row.
       tl.reserve('ns row', 16, 62, -BED, BED, GORGE_RAIL - 0.1, GORGE_RAIL + LOADING),
@@ -390,113 +304,16 @@ function gorge() {
   };
 }
 
-const COLOURS: Record<Tone, string> = {
-  grey: '#9c9ea1',
-  light: '#b4b6b8',
-  dark: '#6f7275',
-  pale: '#e4e5e6',
-  black: '#101113',
-};
-function surface(p: Surface): Placement {
-  let pos: Vec3 = [p.x, p.top - p.h / 2, p.z],
-    rot: Vec3 = [p.yaw, 0, 0],
-    depth = p.d;
-  if (p.rise) {
-    const ux = (Math.sin(p.yaw) * p.d) / 2,
-      uz = (Math.cos(p.yaw) * p.d) / 2;
-    const a = { x: p.x - ux, y: p.top, z: p.z - uz },
-      b = { x: p.x + ux, y: p.top + p.rise, z: p.z + uz };
-    const dx = b.x - a.x,
-      dz = b.z - a.z,
-      dy = b.y - a.y,
-      run = Math.hypot(dx, dz),
-      pitch = Math.atan2(dy, run);
-    pos = [(a.x + b.x) / 2, (a.y + b.y) / 2 - (p.h / 2) * Math.cos(pitch), (a.z + b.z) / 2];
-    rot = [Math.atan2(dx, dz), -pitch, 0];
-    depth = Math.hypot(run, dy);
-  }
-  return {
-    id: p.id,
-    prefab: p.hidden ? 'greybox.collider' : p.solid === false ? 'greybox.decoration' : 'greybox.box',
-    pos,
-    rot,
-    scale: [p.w, p.h, depth],
-    params: { colour: COLOURS[p.tone] },
-  };
-}
-function supports(p: Surface): Placement[] {
-  const out: Placement[] = [],
-    s = Math.sin(p.yaw),
-    c = Math.cos(p.yaw),
-    count = Math.max(2, Math.ceil(p.d / 12) + 1);
-  for (const across of p.w > 8 ? [-p.w / 2 + 0.6, p.w / 2 - 0.6] : [0])
-    for (let k = 0; k < count; k++) {
-      const along = -p.d / 2 + 0.6 + ((p.d - 1.2) * k) / (count - 1),
-        under = p.top + (p.rise ?? 0) * (along / p.d + 0.5) - p.h;
-      out.push({
-        id: `${p.id}.post.${out.length}`,
-        prefab: 'greybox.decoration',
-        pos: [p.x + s * along + c * across, (under - 8) / 2, p.z + c * along - s * across],
-        rot: [p.yaw, 0, 0],
-        scale: [0.5, under + 8, 0.5],
-        params: { colour: COLOURS.dark },
-      });
-    }
-  return out;
-}
-function sign(p: SignInput): Placement {
-  return {
-    id: p.id,
-    prefab: p.high ? 'greybox.sign-post-high' : 'greybox.sign-post',
-    pos: [p.x, p.y, p.z],
-    rot: [Math.atan2(p.nx, p.nz), 0, 0],
-    labels: { label: p.label },
-  };
-}
 const bellData = bell();
 const data = { bell: { ...bellData, footOrder: Object.keys(bellData.marks.feet) }, west: west(), gorge: gorge() };
 export type Leg2Analysis = {
-  [K in keyof typeof data]: Omit<(typeof data)[K], 'at' | 'pieces' | 'pads' | 'posts'> & {
+  [K in keyof typeof data]: Omit<Evaluated<(typeof data)[K]>, 'basis' | 'pieces' | 'pads' | 'posts'> & {
     surfaces: { id: string; name: string; over: boolean }[];
     pads: { id: string; name: string }[];
     posts: { id: string; name: string }[];
   };
 };
-function level(id: keyof typeof data) {
-  const { at, pieces, pads, posts, ...context } = data[id];
-  const placements: Placement[] = [...pieces.map(surface), ...pieces.filter((p) => p.posts).flatMap(supports)];
-  for (const p of pads) placements.push({ id: p.id, prefab: 'greybox.pad', pos: [p.x, p.y, p.z], rot: [p.yaw, 0, 0] });
-  if (id === 'bell') placements.push({ id: 'rock', prefab: 'greybox.bell-rock', pos: [0, 0, 0] });
-  const o = at(0, 0),
-    east = at(0, 1),
-    nx = east.x - o.x,
-    nz = east.z - o.z;
-  for (const p of pads)
-    placements.push(
-      sign({
-        id: `${p.id}.sign`,
-        x: p.x - nx * (PAD_SIZE.across / 2),
-        y: p.y,
-        z: p.z - nz * (PAD_SIZE.across / 2),
-        nx,
-        nz,
-        label: p.label,
-      }),
-    );
-  placements.push(...posts.map(sign));
-  return defineLevel({
-    place: id,
-    placements: placements.map((p) => ({ ...p, id: `${id}.${p.id}` })),
-    // Only checker marks, reserved space and placement references: geometry has ONE compiled authority.
-    analysis: {
-      ...context,
-      surfaces: pieces.map((p) => ({ id: `${id}.${p.id}`, name: p.id, over: p.over === true })),
-      pads: pads.map((p) => ({ id: `${id}.${p.id}`, name: p.id })),
-      posts: posts.map((p) => ({ id: `${id}.${p.id}`, name: p.id })),
-    },
-  });
-}
+const level = (id: keyof typeof data) =>
+  defineLevel({ place: id, placements: [], layout: layoutData({ kind: 'leg2', area: id, data: data[id] }) });
 export const levels = [level('bell'), level('west')];
-const incline = level('gorge');
-export const inclinePlacements = incline.placements;
-export const inclineAnalysis = incline.analysis;
+export const inclineLayout = layoutData(data.gorge);

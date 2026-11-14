@@ -8,9 +8,9 @@ import { inside, layout, parseMapPage } from '../src/sickle/map-data.ts';
 import { ORIGIN } from '../src/place/layout.ts';
 import { WORLD_LINES } from '../src/sim/railway-world-lines.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
-import bell from '../content/built/levels/bell.json' with { type: 'json' };
-import west from '../content/built/levels/west.json' with { type: 'json' };
-import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
+import bellRaw from '../content/built/levels/bell.json' with { type: 'json' };
+import westRaw from '../content/built/levels/west.json' with { type: 'json' };
+import gorgeRaw from '../content/built/levels/gorge.json' with { type: 'json' };
 import * as validation from '../src/prefab/validate.ts';
 import { flood } from '../dev/level/flood.ts';
 import { Matrix4, Vector3 } from 'three';
@@ -18,6 +18,10 @@ import * as placed from '../dev/level/prefab-colliders.ts';
 import { metadata, type LevelArtifact, type PrefabDef } from '../src/prefab/types.ts';
 import { MOVER } from '../dev/level/mover.ts';
 
+validation.validateArtifact(artifact);
+const bell = validation.loadLevelArtifact(bellRaw, artifact.prefabs),
+  west = validation.loadLevelArtifact(westRaw, artifact.prefabs),
+  gorge = validation.loadLevelArtifact(gorgeRaw, artifact.prefabs);
 function report(level: unknown, definitions: unknown = artifact) {
   const source = fs.readFileSync('dev/level/route-leg2.ts', 'utf8');
   assert.ok(source.includes('if (import.meta.main)'));
@@ -60,13 +64,13 @@ test('compiled leg 2 still matches the old level report bytes', () => {
 });
 for (const mutation of ['remove', 'move', 'height', 'lower', 'rotate', 'scale'] as const)
   test(`review P2: ${mutation} bell.rock fails with a rim finding`, () => {
-    const changed = structuredClone(bell);
+    const changed = { ...structuredClone(bell), placements: structuredClone([...bell.placements]) };
     if (mutation === 'remove') changed.placements = changed.placements.filter((p) => p.id !== 'bell.rock');
     else {
       const rock = changed.placements.find((p) => p.id === 'bell.rock')!;
-      if (mutation === 'move') rock.pos[0]! += 1000;
-      else if (mutation === 'height') rock.pos[1]! += 20;
-      else if (mutation === 'lower') rock.pos[1]! -= 1;
+      if (mutation === 'move') rock.pos = [rock.pos[0] + 1000, rock.pos[1], rock.pos[2]];
+      else if (mutation === 'height') rock.pos = [rock.pos[0], rock.pos[1] + 20, rock.pos[2]];
+      else if (mutation === 'lower') rock.pos = [rock.pos[0], rock.pos[1] - 1, rock.pos[2]];
       else if (mutation === 'rotate') rock.rot = [Math.PI / 2, 0, 0];
       else rock.scale = [0.5, 1, 0.5];
     }
@@ -90,7 +94,7 @@ test('West and Gorge clearance use placed box dimensions, not assumed unit colli
 });
 
 test('pad clearance follows the placed scale', () => {
-  const changed = structuredClone(bell);
+  const changed = { ...structuredClone(bell), placements: structuredClone([...bell.placements]) };
   changed.placements.find((p) => p.id === 'bell.pad-gorge')!.scale = [20, 1, 1];
   assert.ok(
     report(changed).entries.some((e) => e.kind === 'assertion' && !e.passed && e.message.includes('pad-gorge')),
@@ -122,3 +126,13 @@ test('placed box geometry composes instance TRS, collider offset, rotation and h
   level.placements[1]!.parent = 'frame';
   assert.throws(() => placed.resolvePlacedColliders(level, { [box.key]: box, [frame.key]: frame }), /parented greybox/);
 });
+
+for (const mutation of ['remove', 'move'] as const)
+  test(`raw authored artifact: ${mutation} rock fails rim coverage`, () => {
+    const changed = structuredClone(bellRaw);
+    if (mutation === 'remove') changed.layout.data.extras = [];
+    else changed.layout.data.extras[0]!.pos[0] = 1000;
+    const result = report(changed);
+    assert.ok(result.failures > 0);
+    assert.ok(result.entries.some((e) => e.kind === 'assertion' && !e.passed && /widest unsolid rim/.test(e.message)));
+  });

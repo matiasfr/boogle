@@ -1,5 +1,6 @@
 // Typed authoring runs only here. The browser reads the committed, validated JSON.
 import fs from 'node:fs';
+import { assertAuthoredNumbers } from './authored.ts';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { compile, writeArtifacts } from './compiler.ts';
@@ -23,6 +24,7 @@ for (const file of fs.globSync('src/content/{prefabs,levels}/*.ts', { cwd: root 
     levels.push(...source.levels);
   }
 }
+assertAuthoredNumbers({ prefabs, levels }, 'authored content');
 const outputs = compile(prefabs, levels, { ...names, assets: readManifest() });
 writeArtifacts(outputs, path.join(root, 'content/built'), process.argv.includes('--check'));
 console.log(

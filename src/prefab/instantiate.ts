@@ -9,7 +9,7 @@ import type { BuilderName } from './names.ts';
 import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
 import {
   validateArtifact,
-  validateLevelArtifact,
+  loadLevelArtifact,
   validatePlacement,
   validatePrefab,
   validateColliderWorldTransforms,
@@ -29,11 +29,9 @@ const compiled = (() => {
   validateArtifact(value);
   return value;
 })();
-const room: unknown = workshop;
-validateLevelArtifact(room, compiled.prefabs);
+const room = loadLevelArtifact(workshop, compiled.prefabs);
 export const workshopChair = room.placements[0]!;
-const gorgeLevel: unknown = gorge;
-validateLevelArtifact(gorgeLevel, compiled.prefabs);
+const gorgeLevel = loadLevelArtifact(gorge, compiled.prefabs);
 export const gorgePlacements = gorgeLevel.placements;
 for (const name of names.builders)
   if (!builders.has(name as BuilderName)) throw new Error(`prefabs: missing builder ${name}`);

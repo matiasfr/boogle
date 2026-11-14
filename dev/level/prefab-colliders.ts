@@ -1,7 +1,7 @@
 // Headless geometry from the compiled instances: no renderer, body service or parallel layout authority.
 import { Box3, Euler, Matrix4, Quaternion, Vector3 } from 'three';
 import type { ColliderDef, LevelArtifact, Placement, PrefabDef, Transform, Vec3 } from '../../src/prefab/types.ts';
-import { validateLevelArtifact } from '../../src/prefab/validate.ts';
+import { loadLevelArtifact } from '../../src/prefab/validate.ts';
 
 export type Triangle = {
   a: Vector3;
@@ -60,7 +60,7 @@ export function boxVolume(matrix: Matrix4, half: Vec3): Volume {
   };
 }
 export function resolvePlacedColliders(level: LevelArtifact, prefabs: Readonly<Record<string, PrefabDef>>) {
-  validateLevelArtifact(level, prefabs);
+  level = loadLevelArtifact(level, prefabs);
   // route-greybox's runtime instantiates every placement under the area's identity owner; it does not mount parents.
   // Reject that unsupported shape instead of predicting a hierarchy the game would not instantiate.
   if (level.placements.some((p) => p.parent))

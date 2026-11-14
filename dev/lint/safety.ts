@@ -64,6 +64,8 @@ const prefabRules = [
 const defaultResolver = createModuleResolver(process.cwd());
 const contentImports = new Set([
   'src/prefab/types.ts',
+  'src/prefab/authoring.ts',
+  'src/prefab/greybox-constants.ts',
   'src/prefab/names.ts',
   'src/constants.ts',
   'src/math-pure.ts',

@@ -1,3 +1,4 @@
+import { resolveLayout } from './resolve-layout.ts';
 import { names, type NameRegistry } from './names.ts';
 import {
   metadata,
@@ -293,7 +294,12 @@ export function validatePlacement(
 }
 export function validateLevel(value: unknown, prefabs: Readonly<Record<string, PrefabDef>>): asserts value is LevelDef {
   validateJson(value);
-  const level = object(value);
+  const raw = object(value);
+  if (raw.layout !== undefined) {
+    validateLevel(resolveLayout(raw as unknown as LevelDef), prefabs);
+    return;
+  }
+  const level = raw;
   text(level.place);
   const placements = list(level.placements),
     ids = new Set<string>();
@@ -354,4 +360,12 @@ export function validateLevelArtifact(
 ): asserts value is LevelArtifact {
   header(value, 'boogle-level');
   validateLevel(value, prefabs);
+}
+
+/** Resolve the same authored artifact for runtime, tools and checks, then validate every world basis. */
+export function loadLevelArtifact(value: unknown, prefabs: Readonly<Record<string, PrefabDef>>): LevelArtifact {
+  header(value, 'boogle-level');
+  const resolved = resolveLayout(value as LevelArtifact) as LevelArtifact;
+  validateLevel(resolved, prefabs);
+  return resolved;
 }

@@ -1,3 +1,4 @@
+import { prefabGolden, recordMatrices } from './helpers/prefab-golden.ts';
 // Owner-requested migration proof. Record the old draw boundary before changing its authoring.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,9 +13,12 @@ import { names } from '../src/prefab/names.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
-import bellLevel from '../content/built/levels/bell.json' with { type: 'json' };
-import westLevel from '../content/built/levels/west.json' with { type: 'json' };
+import bellRaw from '../content/built/levels/bell.json' with { type: 'json' };
+import westRaw from '../content/built/levels/west.json' with { type: 'json' };
 
+validation.validateArtifact(artifact);
+const bellLevel = validation.loadLevelArtifact(bellRaw, artifact.prefabs),
+  westLevel = validation.loadLevelArtifact(westRaw, artifact.prefabs);
 const expected = {
   bell: {
     colliders: fs.readFileSync('test/fixtures/prefab-bell-colliders.json', 'utf8'),
@@ -29,7 +33,8 @@ const expected = {
 };
 
 for (const area of ['bell', 'west'] as const)
-  test(`${area} collider and placement bytes match the old leg 2`, async () => {
+  test(`${area} collider and placement values match the old leg 2`, async () => {
+    const matrices = recordMatrices();
     const colliders: unknown[] = [],
       signs: { mesh: THREE.Group; options: unknown; lines: string[] }[] = [];
     const active = new Set<unknown>();
@@ -108,10 +113,8 @@ for (const area of ['bell', 'west'] as const)
     await massing[`${area}Extras`]!(owner);
     owner.root.updateWorldMatrix(true, true);
     const placements = Array.from({ length: mesh.count }, (_, i) => {
-      const matrix = new THREE.Matrix4(),
-        colour = new THREE.Color();
-      mesh.getMatrixAt(i, matrix);
-      mesh.getColorAt(i, colour);
+      const matrix = matrices.get(mesh, i),
+        colour = matrices.colour(mesh, i);
       return { matrix: matrix.toArray(), colour: colour.toArray() };
     });
     for (const [suffix, value] of [
@@ -138,8 +141,9 @@ for (const area of ['bell', 'west'] as const)
       const file = `test/fixtures/prefab-${area}-${suffix}.json`,
         bytes = JSON.stringify(value, null, 2) + '\n';
       if (process.env.GOLDEN === '1') fs.writeFileSync(file, bytes);
-      assert.equal(bytes, expected[area][suffix], file);
+      prefabGolden(JSON.parse(bytes), JSON.parse(process.env.GOLDEN === '1' ? bytes : expected[area][suffix]), file);
     }
+    matrices.restore();
     owner.dispose();
     assert.equal(active.size, 0, 'all boxes and rim colliders leave with the owner');
     if (area === 'bell') {

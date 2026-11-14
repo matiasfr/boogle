@@ -17,4 +17,4 @@ export const AREA_CENTRES = {
   bell: { x: -50, z: -850 },
   west: { x: 801 + (-0.6155 / westLength) * 20, z: 10 + (-0.7881 / westLength) * 20 },
 } as const;
-export const PAD_SIZE = { along: 6, across: 4 };
+export { PAD_SIZE } from '../../prefab/greybox-constants.ts';

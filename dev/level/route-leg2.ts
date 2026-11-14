@@ -15,7 +15,7 @@ import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
 import type { XZ } from '../../src/entities/route-greybox/leg2-layout.ts';
 import type { Leg2Analysis, Reserve } from '../../src/content/levels/leg2.ts';
 import artifact from '../../content/built/prefabs.json' with { type: 'json' };
-import { validateArtifact, validateLevelArtifact } from '../../src/prefab/validate.ts';
+import { validateArtifact, loadLevelArtifact } from '../../src/prefab/validate.ts';
 import { flood, type Grid } from './flood.ts';
 import { MOVER } from './mover.ts';
 import { Matrix4, Vector3 } from 'three';
@@ -35,8 +35,10 @@ const records = (() => {
 })();
 type Surface = { id: string; volume: Volume; solid: boolean; over: boolean };
 function readArea<K extends keyof Leg2Analysis>(id: K) {
-  const value: unknown = JSON.parse(fs.readFileSync(`content/built/levels/${id}.json`, 'utf8'));
-  validateLevelArtifact(value, records.prefabs);
+  const value = loadLevelArtifact(
+    JSON.parse(fs.readFileSync(`content/built/levels/${id}.json`, 'utf8')),
+    records.prefabs,
+  );
   if (!value.analysis) throw new Error(`route-leg2: missing analysis for ${id}`);
   const analysis = value.analysis as unknown as Leg2Analysis[K];
   const byId = new Map(value.placements.map((p) => [p.id, p]));
@@ -275,7 +277,7 @@ function bell(entries: Entry[]) {
   );
   // Change 2: every ramp foot, the step's foot and the pinnacle's foot stand on the rock, 6 m from any unsolid rim.
   for (const name of B.footOrder) {
-    const p = M.feet[name]!;
+    const p = M.feet[name as keyof typeof M.feet]!;
     const k = g.node(p),
       rock = over.h[k]! >= B.rockTop - 0.1;
     assertion(
