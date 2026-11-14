@@ -1,5 +1,5 @@
 ---
-name: orchestrate
+name: orchestrate-boogle
 description: Co-develop Boogle with the owner as the orchestrator. Decide what to build, dispatch Claude subagents or Codex jobs in parallel, review and merge their branches one at a time, run the playtest cycle, turn the owner's remarks into recorded rules and backlog rows, coordinate other sessions, and keep the backlog, the Line Map board and state file current. Use at the start of any coordinating session, whenever the owner asks what to work on, to spin out or parallelize work, to use spare Codex usage, for status ("how are agents progressing"), or to take over from another orchestrator, Claude or Codex, even without the word "orchestrate".
 ---
 
@@ -31,7 +31,19 @@ For every job, in either mode:
 - A built branch that only owes proofs (a rebase, bot runs, stills, tick marks) goes to the runner row of `npm run models`, not an implementer.
 - One plan file per job. A job's agent reads its own plan, not a 1,200-line plan shared by every job in the area.
 
-### Claude subagents (normal mode)
+### In T3 Code: T3's delegates (owner call "In T3 Code, dispatch T3's way")
+
+Every job, Claude or Codex, is a T3 delegate (owner, 14 November: "I trust the T3 approach so let's fully switch to that"). The two sections after this one are only for a session with no T3 tools (a plain terminal, or a Codex orchestrator outside T3).
+
+- Call `orchestrator_capabilities` once per session, then start each job with `delegate_task`: the provider, model and effort from `npm run models` in `target.options`, and `isolation: "worktree"` for anything that commits. Give the brief a topic name, and tell the child to name its branch `codex/<topic>` (Codex) or `claude/<topic>` (Claude).
+- The brief is the same as below (plan file and step, files, done, checks, binding rules) and ends: commit on your branch, rebase onto origin/main, don't push or ship, end with a report (what changed, what you opened, numbers, unverified, "not tested on a device") and the worktree path.
+- Don't poll a delegate (no `task_status` loops, sleeps or watchers): follow its `next`, and act when it reports. `npm run heartbeat` still lists its worktree. Stop one with `task_cancel`.
+- Fixes to a builder go to the same child thread; every review or re-check is a new `delegate_task` (a fresh reviewer per the review row of `npm run models`), never a message to the author's thread. The review stamp for `ship-queue --reviewed` is the same: `npm run review-stamp -- <worktree>` plus who reviewed and what they found.
+- Stagger Codex launches and never launch while a ship is fetching (ref-lock errors), and keep about three browser-heavy jobs, as below. If a child can't reach the bot broker or a browser, it says so and the orchestrator runs that check; don't count a sandbox launch failure as a regression.
+- Jobs started with `dev/codex/run.ts` before the switch finish their current turn; their fixes, follow-ups and reviews are new delegates on the same branch, not `resume`.
+- If Codex usage runs out, pause and tell the owner; don't move the work to Claude.
+
+### Claude subagents (normal mode, outside T3)
 
 - Start each with the Agent tool: `isolation: "worktree"`, in the background, the agent type by role (`planner`, `designer`, `implementer`, or `general-purpose` for research and reviews), and the model and effort from `npm run models`.
 - A brief names the plan file and the step, the files it may touch, what done looks like (the stills or numbers to bring back), which checks to run (for a build step `node dev/ship-check.ts`, plus its one proof look if a player sees it: owner-calls.md, "Build more, test less", (1); you run `npm run check` or `ship --full` only at a checkpoint), and the binding rules below. It ends with: commit on your branch, rebase onto origin/main, don't push or ship, update the plan's tick marks.

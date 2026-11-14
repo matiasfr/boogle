@@ -4,7 +4,7 @@
 # The orchestrator's merge queue, for Claude or Codex: one ship at a time across every session on this machine.
 #   1. The review trigger is dev/review-stamp.ts (its REVIEW_PATHS and test rules; each file's rule is printed). Refuses
 #      a branch with a file that needs review unless --reviewed starts with the review stamp of exactly those files'
-#      diff, recomputed here before any rebase, so a fix pushed after the review needs a new review (orchestrate skill,
+#      diff, recomputed here before any rebase, so a fix pushed after the review needs a new review (orchestrate-boogle skill,
 #      "Review"). A branch whose review-path files are only tests with no assertion change needs --orchestrator-read.
 #   1b. Holds a review-path branch (either kind) while the last scenarios verdict (the weekly job, or `npm run daily --
 #      scenarios` by hand) is not a pass, unless --nightly-known says why, and while a `red-main` issue is open, unless
@@ -50,7 +50,7 @@ if [ -n "$risky" ]; then
   if [ -z "$reviewed" ]; then
     echo "ship-queue: needs an independent review before it ships (rule per file; the stamp covers the read files too):"
     echo "$verdicts" | sed "s/^/  /"
-    echo "Review it (orchestrate skill, \"Review\"), then pass --reviewed \"$stamp <who, what they found>\"."
+    echo "Review it (orchestrate-boogle skill, \"Review\"), then pass --reviewed \"$stamp <who, what they found>\"."
     exit 4
   elif ! [[ "$given" =~ ^[0-9a-f]{12}$ ]]; then
     echo "ship-queue: --reviewed must start with the review stamp of the code that was read (npm run review-stamp -- $wt)."

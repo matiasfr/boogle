@@ -15,7 +15,7 @@ export const codexFrom: string | null = '2026-11-12';
 export const codexWhy =
   'Codex allowance is back (owner, 12 November): Codex takes the work below Opus on Sol, and Astra the high-risk and review work';
 
-const codex = (model: string, effort: string): Pick => ({ who: 'Codex (dev/codex/run.ts)', model, effort });
+const codex = (model: string, effort: string): Pick => ({ who: 'Codex (T3 delegate_task)', model, effort });
 const claude = (who: string, model: string, effort: string): Pick => ({ who, model, effort });
 
 export const routes: Route[] = [
@@ -62,7 +62,7 @@ export const routes: Route[] = [
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     withCodex: {
-      who: "a fresh reviewer with none of the author's context: a Codex review job or a Claude general-purpose subagent",
+      who: "a fresh reviewer with none of the author's context: a fresh Codex review delegate or a Claude delegate (T3 delegate_task)",
       model: 'gpt-6-astra first, or fable or opus',
       effort: 'high for astra (xhigh for one unresolved question), medium for fable or opus',
     },
@@ -71,7 +71,7 @@ export const routes: Route[] = [
   {
     work: 'Code review before shipping (/code-review, e.g. on src/net*, src/world/ or server/)',
     withCodex: {
-      who: 'a Codex review job on the committed branch (node dev/codex/run.ts review), not the main session',
+      who: 'a fresh Codex review delegate on the committed branch (T3 delegate_task), not the main session',
       model: 'gpt-6-astra',
       effort: 'high',
     },
