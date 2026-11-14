@@ -484,3 +484,15 @@ in its authoring files. The same merged meshes, E behavior, obtainable/unobtaina
 pegs remain. Collider debt drops 498 to 496 units, with no list growth. The room shells in `rooms.ts` and the museum
 remain untouched, so step 9 stays unchecked. [Copy inventory, golden proof, checks, stamp, opened before/after stills,
 finds/wardrobe probes and limits](prefab-data-step-9b-report.md). No push or ship; not tested on a device.
+
+### Step 9 follow-up as built: museum
+
+The complete museum furnishing now uses 29 records, including ten solids, three label attachments, the procedural
+specimen and relief, and the live table's instance mesh. Furniture builders return the original parts; merged draws,
+copy, body order and state-driven displays remain. Old-code golden `e6e66812d` stays unchanged. Normal and perturbed
+prefab suites pass 214/214, the full check passes 1,911 tests with one existing TODO, and ship-check passes 448 assertions.
+Collider debt shrinks 104 files/496 units to 103/494; no other debt grows. Opened old/final museum stills align;
+Moss/Wren E actions and walking through the doorway pass. The room shells in `rooms.ts` remain, and workshop's
+remaining guard/shell work retains its service exemption, so step 9 stays unchecked.
+[Copy inventory, golden proof, checks, stamp, opened images, broker manifests and limits](prefab-data-step-9c-report.md).
+No push or ship; not tested on a device.
