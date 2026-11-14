@@ -14,6 +14,7 @@ import {
   fwidth,
   length,
   mix,
+  normalFlat,
   positionView,
   positionWorld,
   sin,
@@ -96,11 +97,14 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
   const d: N = raw.add(wobble);
   // One pixel of feather, so the edge stays clean from across the sea as well as underfoot.
   const soft: N = fwidth(raw).max(0.05);
-  // The path's own height defines its bench: small steep facets within it stay tread, while a rising wall cuts one line.
+  // Bound paint to the path's height and its ground-facing facets: height alone also admits the wall's lowest strip.
+  const facetUp: N = cameraViewMatrix.transpose().mul(vec4(normalFlat, 0)).y;
   const bench: N = smoothstep(0.6, 0.9, p.y.sub(along))
     .oneMinus()
-    .mul(smoothstep(0.9, 1.2, along.sub(p.y)).oneMinus());
-  const tread: N = smoothstep(soft.negate(), soft, d).oneMinus().mul(bench);
+    .mul(smoothstep(0.9, 1.2, along.sub(p.y)).oneMinus())
+    .mul(smoothstep(0.5, 0.66, facetUp));
+  const coverage: N = smoothstep(soft.negate(), soft, d).oneMinus();
+  const tread: N = coverage.mul(bench);
   const near: N = smoothstep(30, 70, positionView.z.negate()).oneMinus(); // detail too small to draw from afar
   // Compacted earth: brown and smooth, lighter down the middle where feet go, mottled, with a fine grit up close.
   const middle: N = smoothstep(0.3, 1.5, d.negate());
@@ -149,20 +153,13 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
       .mul(0.16)
       .add(hash(cell.add(2.3)).mul(0.2).add(0.86)),
   );
-  // The verge: the ground beside the path a little darker, grass or the foot of a cut wall alike, out to about a metre.
+  // Darken only the bench beside the painted edge. A missing tread on a wall is not a verge.
   const verge: N = smoothstep(0, 1.1, d.add(sin(p.x.mul(3.7).add(p.z.mul(2.9))).mul(0.12)))
     .oneMinus()
-    .mul(tread.oneMinus());
-  // Just outside the tread, a wall cut exposes dark earth instead of a sliver of underlying grass.
-  const cutBank: N = smoothstep(soft.negate(), soft, d)
-    .mul(smoothstep(1.05, 1.2, d).oneMinus())
-    .mul(bench.oneMinus())
-    // Only a rising wall's foot: the horizontal field otherwise paints tall strips and downhill undersides.
-    .mul(smoothstep(0.3, 0.6, p.y.sub(along)))
-    .mul(smoothstep(0.9, 1.2, p.y.sub(along)).oneMinus());
+    .mul(coverage.oneMinus())
+    .mul(bench);
   patchNode(material, 'colorNode', (previous: N) => {
     let c: N = mix(previous, previous.mul(vec3(0.7, 0.78, 0.64)), verge.mul(0.75));
-    c = mix(c, soil, cutBank.mul(0.5));
     let path: N = mix(earth, timber, riser.mul(0.85));
     path = mix(path, path.mul(1.12), lit.mul(climb).mul(0.5));
     path = mix(path, soil, cut.mul(0.8));

@@ -1,6 +1,6 @@
 # Terrain clean: no cliff ledges, clean walkable ground, then custom meshes
 
-_Plan, 14 November 2026. Part 1 implemented and checkpoint A recorded; Parts 2 and 3 not started. Original survey measured on main at `b2157fb6b`; every still was taken under load
+_Plan, 14 November 2026. Part 1 implemented and checkpoint A recorded; Part 2a partially implemented, with its wall-foot regression repaired; Parts 2b and 3 not started. Original survey measured on main at `b2157fb6b`; every survey still was taken under load
 (1-minute load 16 to 34), so stills are evidence of shape and colour only, not of timing, shimmer or motion. Not tested
 on a device._
 
@@ -327,6 +327,20 @@ Town paths on level ground (`H/c3-v0.png`, `H/c4-v0.png`) read clean: no finding
     An unchanged retry passed health (`1794698886579-22035`). A height cap alone still drew black stripes and
     downhill patches (opened c0–c2 from `1794698933745-23570`); the third source iteration restricts paint to the
     uphill 0.6–1.2 m foot at half strength. No further autonomous tuning; residual dots are recorded, not hidden.
+  - [x] **P2 wall-foot regression repair (`codex/terrain-2a-fix`, owner-authorized follow-up).** Supersedes the
+    exterior cut-bank treatment above: remove that paint entirely. Keep the path-height bench and restore the
+    original `smoothstep(0.5, 0.66, facetUp)` ground-facing mask for tread, stones and painted normals. The verge
+    uses horizontal tread coverage, then the bench; rejected wall fragments no longer become a dark verge.
+    Opened matched 1280×800 c0, c1, c2 and c5 from `.look/terrain-2a-fix/round2/shots/`, against retained baseline
+    `1794697324782-58718` and reviewed branch `1794700012427-59122`: charcoal scallops and vertical grey wall-foot
+    paint are gone; the warm sandstone meets a distinct grey-brown tread. Shore blend remains intact.
+    Round 1 removed the scallops but retained grey paint on slanted facets, so it was rejected. Round 2 restores
+    the established facet cutoff; both captures passed health and exact-repeat checks at the original viewport,
+    without a screenshot timeout. All six heights/collision hashes match the original baseline. `terrain.ts` is
+    untouched. Full static checks pass (2,155 passes, one existing TODO); final ship-check and T1 proof are recorded
+    in `.look/terrain-2a-fix/`. No push or ship; no timing conclusion; not tested on a device.
+  - [ ] **P3 dotted crease remains.** Visible beside the right wall in c0, with narrow green slivers at some folds;
+    not closed by this wall-foot repair. The step-2 parent remains open, and Part 2b owns reshaping the tread.
 - [ ] **3. Shore and rock borders (findings 6 and 8).** `src/place/ground-material.ts`: (a) the gorge-floor mask
   takes a per-pixel wander and a wider blend so sand meets bank over 6 to 8 m, not on a 2 m vertex line; (b) the
   broad-slope rock rule (`broad`) applies only where the interpolated vertex `steep` input is above 0.05, that is on triangles that
@@ -345,7 +359,8 @@ Town paths on level ground (`H/c3-v0.png`, `H/c4-v0.png`) read clean: no finding
     rule is restored; no claim that coastal tan patches or grass/rock zigzags are removed. Stop at the look's
     iteration limit; a consistent true-face input across full-resolution and far terrain needs a later plan repair.
 
-Part 2a local result: step 1 complete; step 2 implemented with visual acceptance partial; step 3 shore complete,
+Part 2a local result: step 1 complete; step 2 implemented with its wall-foot regression repaired but visual acceptance
+still partial (dotted crease and green slivers remain); step 3 shore complete,
 rock-border cleanup unfinished. Checkpoint B is **not complete** and no ship is authorized in this job. The Boogler's
 copy is unchanged; no suspect line encountered. No ROM data added. Not tested on a device.
 
