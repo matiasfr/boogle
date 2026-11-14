@@ -474,7 +474,8 @@ export function buildTrack(
     // over the metre-wide cap, never halfway across an unsupported span.
     const nextS = Math.min(s + 6.5, line.len);
     const nextUl = ulOf(nextS);
-    for (const side of wide ? [-1, 1, -2, -3] : [-1, 1]) {
+    const nextBent = nextS < line.len && bed(nextS) >= 1.2;
+    for (const side of nextBent ? (wide ? [-1, 1, -2, -3] : [-1, 1]) : []) {
       const l0 = side === -2 ? ul - 1.2 : side === -3 ? ul + 1.2 : side * 1.2;
       const l1 = side === -2 ? nextUl - 1.2 : side === -3 ? nextUl + 1.2 : side * 1.2;
       offsetAt(s, l0, wa);
