@@ -547,7 +547,11 @@ The production bot now marks `hook taken` after the demo lands on t0, requires t
 
 **Falling and returning:** the gorge has an existing exit. From its low floor, follow the low quarry footbridge and graded quarry path up the east bank. Round the north side of Q3's frame and the parked track layer, then use a normal jump over the raised timber track edge at s=112 and walk back to s=84. A summit fall can land on the upper bank and join this route directly. Both drop returns have passed without relocation recovery; no new stair, ramp, ladder or other exit geometry was added. Surface swimming is allowed in the bot's return mode, while the successful t3 route needed walking and a ground jump. The p2 ring is outside its 24 m range at the observed drop landings (about 62 m from t3's floor landing, 44 m from the summit's bank landing).
 
-**Reload limitation:** production railway arrival currently remembers terrain positions, rejecting saved positions beneath tower slabs. A real reload during the t2→t3 pull did not restore the last standing slab, so the plan's t2 return and downward-pull proof remains unmet. The hook implementation has not changed that Local save policy.
+**Reload limitation:** production railway now remembers standable ground, decks and platforms in a timed v1 Local
+record, retaining the last standing spot while aboard or swimming and saving when the tab hides. Steps 1–3 of
+[the return plan](../plans/resume-where-you-were.md) build that capture policy; restoration still uses the old
+ground policy until step 4 adds distance-resident validation and fallback landings. The t2 return and downward-pull
+reload proof remains unmet. The hook implementation is unchanged.
 
 Only the finder gets a demonstration: 0.3 s after dismissing the hook card, standing on p2 with a clear body path automatically pulls them to t0. A friend gets the existing shared-ability flourish and chooses their own pulls. The demo never runs from a late join or a reconstructed unlock.
 

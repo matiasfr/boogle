@@ -50,8 +50,15 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   browsers that joined a different world in between.
 - **Returning visit.** With a name saved (and no world reset since the last load), there is no card and no fall: the game goes in on its own as soon as the island
   can be drawn, with the saved name and colour, where you last stood in this room and facing the same way (the pause view's Get unstuck forgets that spot)
-  ([src/features/return-spot.ts](../../src/features/return-spot.ts)). Only a place you were standing counts, not a deck, a
-  seat or the water; with no record, a different world namespace, or ground that has moved or gone under the sea, you get
+  ([src/features/return-spot.ts](../../src/features/return-spot.ts), classic mode). The production railway now records
+  standing ground, decks and platforms in Local `boogle.railway-pose.v1:<room>:<pid>` memory, every 5 s, on page hide
+  and on tab hiding; unchanged spots are written at least once a minute. Aboard, seated, swimming, falling or down,
+  it retains the last standing spot and refreshes the time and current `ride` position; it never writes null. The
+  first-visit fall and unready scenery do not save. A record is read only within `railway.returnMinutes` (Local,
+  default 30; 0 disables returns), with no migration from v0. Get unstuck records its checked surface. Steps 1–3 of
+  [the return plan](../plans/resume-where-you-were.md) build saving; restoration still uses the old open-ground policy
+  until step 4 adds residency and fallbacks. In classic mode, only standing terrain counts, excluding a deck, seat
+  or water. With no record, a different world namespace, or ground that has moved or gone under the sea, you get
   the usual spawn (or the room or prototype's own, from the URL). A bare launch of the Home Screen app goes straight back to
   the room or prototype it was last in.
 - **Leaving and starting fresh.** The pause view's Leave goes to a small menu page (`/menu/`) with the game stopped: nothing

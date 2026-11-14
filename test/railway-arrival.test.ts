@@ -21,7 +21,7 @@ test('return-pose validation waits for a physics step after initial and replacem
   const restore = () => {
     if (!scenery.ready()) return undefined;
     reads++;
-    return policy.read(point);
+    return policy.safe(point);
   };
   for (const reconstruction of ['initial', 'snapshot']) {
     const deck = physics.createBody({
@@ -35,14 +35,14 @@ test('return-pose validation waits for a physics step after initial and replacem
     try {
       // This is the original failure: the partner's newly constructed deck is still
       // absent from Rapier's broad phase, so an immediate safety query accepts ground below it.
-      assert.ok(policy.read(point), `${reconstruction}: unguarded stale query wrongly accepts the pose`);
+      assert.ok(policy.safe(point), `${reconstruction}: unguarded stale query wrongly accepts the pose`);
       const before = reads;
       assert.equal(restore(), undefined, `${reconstruction}: do not validate before stepping`);
       physics.stepPhysics(0);
       assert.equal(restore(), undefined, `${reconstruction}: a zero-delta frame is not readiness`);
       assert.equal(reads, before, 'no stale safety query was made');
       physics.stepFixed();
-      assert.equal(restore(), null, `${reconstruction}: the indexed deck rejects the saved ground pose`);
+      assert.equal(restore(), false, `${reconstruction}: the indexed deck rejects the saved ground pose`);
     } finally {
       physics.removeBody(deck);
       physics.stepFixed();
@@ -90,6 +90,7 @@ test('standing surfaces include decks and stacked slabs, with headroom and curre
     assert.equal(policy.standableAt(1030, 10, 1000), false, '1m ceiling');
     assert.equal(policy.standableAt(1000, 15, 1000), false, 'midair');
     assert.ok(policy.standableNear(1040, 22, 1000, [1.4, 3, 6]), 'deck 3m aside');
+    assert.ok(policy.standableNear(1020, 10, 1000, [1.4]), 'nearby floor beneath a slab 2m above');
     const sea = createPosePolicy(
       () => 1,
       () => true,

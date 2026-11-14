@@ -232,7 +232,7 @@ first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: st
   12 m over ground, and a slab with another 2 m above it; refuses a spot under a 1 m ceiling, mid-air, and a deck that
   has been removed (after a step); `standableNear` finds the deck 3 m aside. `test/world-reset.test.ts`: a `v1` key is
   cleared.
-- [ ] **3. Save everywhere you can stand** (sol medium). Edit `src/entities/railway/arrival.ts`: replace `poseKey`,
+- [x] **3. Save everywhere you can stand** (sol medium). Browser proof unverified; see [batch report](resume-return-steps-1-3-report.md). Edit `src/entities/railway/arrival.ts`: replace `poseKey`,
   `capturePose` and `savePose` with the record above (`captureReturnSpot`, `standing` = `me.coyote > 0 &&
   !me.swimming && !me.down && !aboard() && !inputState.seated`); write when the spot changes, at least every 60 s, on
   `pagehide` and on `visibilitychange` to hidden; never write `null`; keep skipping while `fallArrival.active` or

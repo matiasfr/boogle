@@ -7,7 +7,10 @@ import { softWall } from '../player/state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { physicsTime, raycastClosest, rayHit, setCcd, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
-import { carry } from '../../physics/platforms.ts';
+import { aboard, carry } from '../../physics/platforms.ts';
+import { inputState } from '../../player/input-state.ts';
+import { captureReturnSpot, readReturnSpot, type ReturnSpot } from '../../place/return-spot.ts';
+import { readReturnMinutes } from '../../place/return-tuning.ts';
 import { camera } from '../../render/scene.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { registerRailwayRecovery } from './state.ts';
@@ -66,21 +69,44 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     (p) => feet.some((foot) => outOf(foot, { x: p.x, z: p.z }, PLAYER_R + 0.2)),
     { raycastClosest, rayHit },
   );
-  const poseKey = `boogle.railway-pose.v0:${railwayRoomId(getRoomId())}:${identity.pid}`;
-  let savedPose: ReturnType<typeof posePolicy.read> = null;
+  const poseKey = `boogle.railway-pose.v1:${railwayRoomId(getRoomId())}:${identity.pid}`;
+  // Read before first placement, so a pending return is not discarded by the Home-only spawn guard.
+  let savedPose: ReturnSpot | null = null;
+  try {
+    savedPose = readReturnSpot(
+      JSON.parse(localStorage.getItem(poseKey) ?? 'null'),
+      Date.now(),
+      readReturnMinutes(localStorage) * 60000,
+    );
+  } catch {
+    // Malformed or unavailable browser memory is the ordinary no-record arrival.
+  }
   const scenery = createPoseReadiness(physicsTime);
+  let lastWritten = '',
+    lastWriteAt = 0;
   let loaded = false,
-    restorePending = false,
+    restorePending = !!savedPose,
     poseClock = 0;
   const capturePose = () => {
     const body = me.body;
-    if (!body || fallArrival.active || !scenery.ready()) return;
-    const p = { x: body.position.x, z: body.position.z, yaw: me.yaw };
-    savedPose = !carry.on && !me.swimming && posePolicy.safe(p) ? p : null;
+    if (!body || fallArrival.active || !scenery.ready()) return false;
+    const pos = { x: body.position.x, y: body.position.y - PLAYER_R, z: body.position.z };
+    const standing = me.coyote > 0 && !me.swimming && !me.down && !aboard() && !inputState.seated;
+    savedPose = captureReturnSpot(
+      savedPose,
+      { standing, pos, yaw: me.yaw, standable: standing && posePolicy.standableAt(pos.x, pos.y, pos.z) },
+      Date.now(),
+    );
+    return true;
   };
-  const savePose = () => {
+  const savePose = (force = false) => {
+    if (!savedPose || fallArrival.active || !scenery.ready()) return;
+    const fingerprint = JSON.stringify({ ...savedPose, at: 0 });
+    if (!force && fingerprint === lastWritten && savedPose.at - lastWriteAt < 60000) return;
     try {
-      localStorage.setItem(poseKey, JSON.stringify(savedPose && { ...savedPose, ground: H(savedPose.x, savedPose.z) }));
+      localStorage.setItem(poseKey, JSON.stringify(savedPose));
+      lastWritten = fingerprint;
+      lastWriteAt = savedPose.at;
     } catch {
       // Unavailable local storage leaves the next visit at the ordinary spawn.
     }
@@ -134,12 +160,16 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     cam.yaw = me.yaw = savedPose.yaw;
   };
   const pagehide = () => {
-    if (!loaded || !placed) return;
-    capturePose();
-    savePose();
+    if (!loaded || !placed || restorePending) return;
+    if (capturePose()) savePose(true);
+  };
+  const visibility = () => {
+    if (document.visibilityState === 'hidden') pagehide();
   };
   window.addEventListener('pagehide', pagehide);
+  document.addEventListener('visibilitychange', visibility);
   owner.cleanup(() => window.removeEventListener('pagehide', pagehide));
+  owner.cleanup(() => document.removeEventListener('visibilitychange', visibility));
   const atSpawn = () => {
     const body = me.body;
     if (!body) return;
@@ -154,11 +184,21 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     if (!body || !scenery.ready()) return;
     carry.on = null;
     carry.x = carry.y = carry.z = carry.spin = 0;
+    // Recovery found this surface explicitly; the coyote timer need not have caught up yet.
+    const remember = (x: number, y: number, z: number) => {
+      savedPose = captureReturnSpot(
+        savedPose,
+        { standing: true, standable: posePolicy.standableAt(x, y, z), pos: { x, y, z }, yaw: me.yaw },
+        Date.now(),
+      );
+      savePose(true);
+    };
     const home = ring.ringUnstuck(island, body.position.x, body.position.z);
     if (home) {
       teleport(body, home.x, home.y + PLAYER_R + 0.4, home.z);
       body.velocity.set(0, 0, 0);
       if (home.yaw !== undefined) cam.yaw = me.yaw = home.yaw;
+      remember(home.x, home.y, home.z);
       return;
     }
     for (let radius = 2; radius <= 40; radius += 2) {
@@ -186,8 +226,9 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
           )
         )
           continue;
-        savedPose = { x, z, yaw: me.yaw };
-        restorePose();
+        teleport(body, x, h + PLAYER_R + 0.4, z);
+        body.velocity.set(0, 0, 0);
+        remember(x, h, z);
         return;
       }
     }
@@ -206,8 +247,10 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         if (point[2] > 1.6) consider({ x: point[0] + ORIGIN.x, y: point[2], z: point[1] });
       }
     for (const point of laidPath()) consider(point);
-    teleport(body, best.x, Math.max(H(best.x, best.z), best.y + 0.12) + PLAYER_R + 0.4, best.z);
+    const y = Math.max(H(best.x, best.z), best.y + 0.12);
+    teleport(body, best.x, y + PLAYER_R + 0.4, best.z);
     body.velocity.set(0, 0, 0);
+    remember(best.x, y, best.z);
   };
   owner.cleanup(registerRailwayRecovery(getUnstuck));
   owner.cleanup(() => {
@@ -226,7 +269,7 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
       if (body && body !== placed) {
         placed = body;
         setCcd(body, false);
-        if (!fallArrival.active && !insidePlace(body.position.x, body.position.z)) atSpawn();
+        if (!fallArrival.active && !savedPose && !insidePlace(body.position.x, body.position.z)) atSpawn();
         restorePending = true;
       }
       if (body && insidePlace(body.position.x, body.position.z)) {
@@ -242,11 +285,6 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
       fell ||= fallArrival.active;
       if (!loaded && poseReady) {
         loaded = true;
-        try {
-          savedPose = posePolicy.read(JSON.parse(localStorage.getItem(poseKey) ?? 'null'));
-        } catch {
-          savedPose = null;
-        }
         restorePending = true;
       }
       // An empty pose waits for the room's seed (one fetch, at most ten seconds) before it settles for the spawn.
@@ -267,9 +305,7 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         poseClock += dt;
         if (poseClock >= 5) {
           poseClock = 0;
-          const before = JSON.stringify(savedPose);
-          capturePose();
-          if (JSON.stringify(savedPose) !== before) savePose();
+          if (capturePose()) savePose();
         }
       }
     },

@@ -35,7 +35,10 @@ function localBinding(id: string) {
     return {
       get: () => readReturnMinutes(localStorage),
       set: (value: unknown) => {
-        if (validValue(railReturnMinutes, value)) localStorage.setItem(RETURN_MINUTES_KEY, JSON.stringify(value));
+        if (validValue(railReturnMinutes, value)) {
+          localStorage.setItem(RETURN_MINUTES_KEY, JSON.stringify(value));
+          localChanged();
+        }
       },
     };
   const key = audioSettingKey(id);
