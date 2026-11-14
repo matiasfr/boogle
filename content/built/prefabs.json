@@ -1116,6 +1116,500 @@
         }
       }
     },
+    "town.house-bed": {
+      "colliders": [
+        {
+          "at": [
+            -2.55,
+            0.6,
+            -2.25
+          ],
+          "half": [
+            0.8,
+            0.6,
+            1.25
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.house-bed",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "bed",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-board": {
+      "attach": {
+        "sign": {
+          "at": [
+            -0.2,
+            1.5,
+            -3.15
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 1,
+          "kind": "label",
+          "posts": "none",
+          "w": 1.4
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            -0.2,
+            1.05,
+            -3.22
+          ],
+          "half": [
+            0.8,
+            1.05,
+            0.06
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.house-board",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "board",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-cabinet": {
+      "colliders": [
+        {
+          "at": [
+            3.15,
+            0.75,
+            -3.1
+          ],
+          "half": [
+            0.4,
+            0.75,
+            0.4
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.house-cabinet",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "cabinet",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-cabinet-pulls": {
+      "colliders": [],
+      "key": "town.house-cabinet-pulls",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "cabinet-pulls",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-chair": {
+      "colliders": [
+        {
+          "at": [
+            -3.15,
+            1.1,
+            1.2
+          ],
+          "half": [
+            0.42,
+            1.1,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.house-chair",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "chair",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-chair-trim": {
+      "colliders": [],
+      "key": "town.house-chair-trim",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "chair-trim",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-desk": {
+      "colliders": [
+        {
+          "at": [
+            1.6,
+            0.525,
+            -2
+          ],
+          "half": [
+            1.35,
+            0.525,
+            0.58
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.house-desk",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "desk",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-drawers": {
+      "colliders": [],
+      "key": "town.house-drawers",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "drawers",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-filed": {
+      "colliders": [],
+      "key": "town.house-filed",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "filed",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-floor": {
+      "colliders": [],
+      "key": "town.house-floor",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "floor",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-lamp": {
+      "colliders": [],
+      "key": "town.house-lamp",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "lamp",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-later-bridge": {
+      "colliders": [],
+      "key": "town.house-later-bridge",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "later-bridge",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-later-mug": {
+      "colliders": [],
+      "key": "town.house-later-mug",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "later-mug",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-later-rail": {
+      "colliders": [],
+      "key": "town.house-later-rail",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "later-rail",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-later-train": {
+      "colliders": [],
+      "key": "town.house-later-train",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "later-train",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-leaf": {
+      "colliders": [],
+      "key": "town.house-leaf",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "leaf",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-mat": {
+      "colliders": [],
+      "key": "town.house-mat",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "mat",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-mug": {
+      "colliders": [],
+      "key": "town.house-mug",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "mug",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-plant": {
+      "colliders": [
+        {
+          "at": [
+            3,
+            0.6,
+            3
+          ],
+          "half": [
+            0.26,
+            0.6,
+            0.26
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.house-plant",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "plant",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-postbox": {
+      "colliders": [
+        {
+          "at": [
+            2.8,
+            0.7,
+            5.2
+          ],
+          "half": [
+            0.25,
+            0.7,
+            0.22
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.house-postbox",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "postbox",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-quilt": {
+      "colliders": [],
+      "key": "town.house-quilt",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "quilt",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-rug": {
+      "colliders": [],
+      "key": "town.house-rug",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "rug",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-sign": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            3.15,
+            4.04
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 0.7,
+          "kind": "label",
+          "posts": "none",
+          "w": 2
+        }
+      },
+      "colliders": [],
+      "key": "town.house-sign",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.house-step": {
+      "colliders": [],
+      "key": "town.house-step",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "step",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-stove": {
+      "colliders": [
+        {
+          "at": [
+            2.8,
+            0.6,
+            1.45
+          ],
+          "half": [
+            0.5,
+            0.6,
+            0.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.house-stove",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "stove",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-stove-trim": {
+      "colliders": [],
+      "key": "town.house-stove-trim",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "stove-trim",
+          "w": 7.4
+        }
+      }
+    },
+    "town.house-window-box": {
+      "colliders": [],
+      "key": "town.house-window-box",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.house-parts",
+        "params": {
+          "d": 7.4,
+          "piece": "window-box",
+          "w": 7.4
+        }
+      }
+    },
     "town.museum-alcove-back": {
       "colliders": [
         {
@@ -1635,6 +2129,1068 @@
         "builder": "town.museum-parts",
         "params": {
           "piece": "table"
+        }
+      }
+    },
+    "town.room-house-hulls-0": {
+      "colliders": [],
+      "key": "town.room-house-hulls-0",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 0,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-hulls-1": {
+      "colliders": [],
+      "key": "town.room-house-hulls-1",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 1,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-hulls-2": {
+      "colliders": [],
+      "key": "town.room-house-hulls-2",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 2,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-hulls-3": {
+      "colliders": [],
+      "key": "town.room-house-hulls-3",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 3,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-hulls-4": {
+      "colliders": [],
+      "key": "town.room-house-hulls-4",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 4,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-hulls-5": {
+      "colliders": [],
+      "key": "town.room-house-hulls-5",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 5,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-hulls-6": {
+      "colliders": [],
+      "key": "town.room-house-hulls-6",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 6,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-hulls-7": {
+      "colliders": [],
+      "key": "town.room-house-hulls-7",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 7,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-poles-0": {
+      "colliders": [],
+      "key": "town.room-house-poles-0",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 0,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-poles-1": {
+      "colliders": [],
+      "key": "town.room-house-poles-1",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 1,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-poles-2": {
+      "colliders": [],
+      "key": "town.room-house-poles-2",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 2,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-poles-3": {
+      "colliders": [],
+      "key": "town.room-house-poles-3",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 3,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-poles-4": {
+      "colliders": [],
+      "key": "town.room-house-poles-4",
+      "layout": {
+        "d": 7.4,
+        "high": 3.7,
+        "index": 4,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.5,
+        "w": 7.4
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-house-proxy-0": {
+      "colliders": [],
+      "key": "town.room-house-proxy-0",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 7.4,
+          "high": 3.7,
+          "index": 0,
+          "w": 7.4
+        }
+      }
+    },
+    "town.room-house-proxy-1": {
+      "colliders": [],
+      "key": "town.room-house-proxy-1",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 7.4,
+          "high": 3.7,
+          "index": 1,
+          "w": 7.4
+        }
+      }
+    },
+    "town.room-house-proxy-2": {
+      "colliders": [],
+      "key": "town.room-house-proxy-2",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 7.4,
+          "high": 3.7,
+          "index": 2,
+          "w": 7.4
+        }
+      }
+    },
+    "town.room-house-proxy-3": {
+      "colliders": [],
+      "key": "town.room-house-proxy-3",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 7.4,
+          "high": 3.7,
+          "index": 3,
+          "w": 7.4
+        }
+      }
+    },
+    "town.room-house-proxy-4": {
+      "colliders": [],
+      "key": "town.room-house-proxy-4",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 7.4,
+          "high": 3.7,
+          "index": 4,
+          "w": 7.4
+        }
+      }
+    },
+    "town.room-house-proxy-5": {
+      "colliders": [],
+      "key": "town.room-house-proxy-5",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 7.4,
+          "high": 3.7,
+          "index": 5,
+          "w": 7.4
+        }
+      }
+    },
+    "town.room-house-proxy-6": {
+      "colliders": [],
+      "key": "town.room-house-proxy-6",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 7.4,
+          "high": 3.7,
+          "index": 6,
+          "w": 7.4
+        }
+      }
+    },
+    "town.room-house-shell": {
+      "colliders": [],
+      "key": "town.room-house-shell",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-shell",
+        "params": {
+          "spec": {
+            "d": 7.4,
+            "high": 3.7,
+            "post": "#7f5630",
+            "postPalette": "timber",
+            "rise": 2.5,
+            "roof": "#c9a86a",
+            "smoke": true,
+            "w": 7.4,
+            "wall": "#e8dcc0",
+            "wallPalette": "walls"
+          }
+        }
+      }
+    },
+    "town.room-museum-hulls-0": {
+      "colliders": [],
+      "key": "town.room-museum-hulls-0",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 0,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-hulls-1": {
+      "colliders": [],
+      "key": "town.room-museum-hulls-1",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 1,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-hulls-2": {
+      "colliders": [],
+      "key": "town.room-museum-hulls-2",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 2,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-hulls-3": {
+      "colliders": [],
+      "key": "town.room-museum-hulls-3",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 3,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-hulls-4": {
+      "colliders": [],
+      "key": "town.room-museum-hulls-4",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 4,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-hulls-5": {
+      "colliders": [],
+      "key": "town.room-museum-hulls-5",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 5,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-hulls-6": {
+      "colliders": [],
+      "key": "town.room-museum-hulls-6",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 6,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-hulls-7": {
+      "colliders": [],
+      "key": "town.room-museum-hulls-7",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 7,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-poles-0": {
+      "colliders": [],
+      "key": "town.room-museum-poles-0",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 0,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-poles-1": {
+      "colliders": [],
+      "key": "town.room-museum-poles-1",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 1,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-poles-2": {
+      "colliders": [],
+      "key": "town.room-museum-poles-2",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 2,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-poles-3": {
+      "colliders": [],
+      "key": "town.room-museum-poles-3",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 3,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-poles-4": {
+      "colliders": [],
+      "key": "town.room-museum-poles-4",
+      "layout": {
+        "d": 12,
+        "high": 5,
+        "index": 4,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.8,
+        "w": 13
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-museum-proxy-0": {
+      "colliders": [],
+      "key": "town.room-museum-proxy-0",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 12,
+          "high": 5,
+          "index": 0,
+          "w": 13
+        }
+      }
+    },
+    "town.room-museum-proxy-1": {
+      "colliders": [],
+      "key": "town.room-museum-proxy-1",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 12,
+          "high": 5,
+          "index": 1,
+          "w": 13
+        }
+      }
+    },
+    "town.room-museum-proxy-2": {
+      "colliders": [],
+      "key": "town.room-museum-proxy-2",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 12,
+          "high": 5,
+          "index": 2,
+          "w": 13
+        }
+      }
+    },
+    "town.room-museum-proxy-3": {
+      "colliders": [],
+      "key": "town.room-museum-proxy-3",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 12,
+          "high": 5,
+          "index": 3,
+          "w": 13
+        }
+      }
+    },
+    "town.room-museum-proxy-4": {
+      "colliders": [],
+      "key": "town.room-museum-proxy-4",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 12,
+          "high": 5,
+          "index": 4,
+          "w": 13
+        }
+      }
+    },
+    "town.room-museum-proxy-5": {
+      "colliders": [],
+      "key": "town.room-museum-proxy-5",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 12,
+          "high": 5,
+          "index": 5,
+          "w": 13
+        }
+      }
+    },
+    "town.room-museum-proxy-6": {
+      "colliders": [],
+      "key": "town.room-museum-proxy-6",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 12,
+          "high": 5,
+          "index": 6,
+          "w": 13
+        }
+      }
+    },
+    "town.room-museum-shell": {
+      "colliders": [],
+      "key": "town.room-museum-shell",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-shell",
+        "params": {
+          "spec": {
+            "d": 12,
+            "high": 5,
+            "post": "#b2ad9f",
+            "postPalette": "stone",
+            "rise": 2.8,
+            "roof": "#4d5560",
+            "smoke": false,
+            "w": 13,
+            "wall": "#c8c3b4",
+            "wallPalette": "stone"
+          }
+        }
+      }
+    },
+    "town.room-plot-board": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 1.1,
+          "kind": "label",
+          "posts": "one",
+          "w": 2.2
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            0,
+            1.1,
+            0
+          ],
+          "half": [
+            1.2,
+            1.1,
+            0.1
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.room-plot-board",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-hulls-0": {
+      "colliders": [],
+      "key": "town.room-shop-hulls-0",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 0,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-hulls-1": {
+      "colliders": [],
+      "key": "town.room-shop-hulls-1",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 1,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-hulls-2": {
+      "colliders": [],
+      "key": "town.room-shop-hulls-2",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 2,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-hulls-3": {
+      "colliders": [],
+      "key": "town.room-shop-hulls-3",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 3,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-hulls-4": {
+      "colliders": [],
+      "key": "town.room-shop-hulls-4",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 4,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-hulls-5": {
+      "colliders": [],
+      "key": "town.room-shop-hulls-5",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 5,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-hulls-6": {
+      "colliders": [],
+      "key": "town.room-shop-hulls-6",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 6,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-hulls-7": {
+      "colliders": [],
+      "key": "town.room-shop-hulls-7",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 7,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-poles-0": {
+      "colliders": [],
+      "key": "town.room-shop-poles-0",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 0,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-poles-1": {
+      "colliders": [],
+      "key": "town.room-shop-poles-1",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 1,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-poles-2": {
+      "colliders": [],
+      "key": "town.room-shop-poles-2",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 2,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-poles-3": {
+      "colliders": [],
+      "key": "town.room-shop-poles-3",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 3,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-poles-4": {
+      "colliders": [],
+      "key": "town.room-shop-poles-4",
+      "layout": {
+        "d": 8,
+        "high": 3.9,
+        "index": 4,
+        "kind": "room-hull",
+        "phase": "poles",
+        "rise": 2.6,
+        "w": 10
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-shop-proxy-0": {
+      "colliders": [],
+      "key": "town.room-shop-proxy-0",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 8,
+          "high": 3.9,
+          "index": 0,
+          "w": 10
+        }
+      }
+    },
+    "town.room-shop-proxy-1": {
+      "colliders": [],
+      "key": "town.room-shop-proxy-1",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 8,
+          "high": 3.9,
+          "index": 1,
+          "w": 10
+        }
+      }
+    },
+    "town.room-shop-proxy-2": {
+      "colliders": [],
+      "key": "town.room-shop-proxy-2",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 8,
+          "high": 3.9,
+          "index": 2,
+          "w": 10
+        }
+      }
+    },
+    "town.room-shop-proxy-3": {
+      "colliders": [],
+      "key": "town.room-shop-proxy-3",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 8,
+          "high": 3.9,
+          "index": 3,
+          "w": 10
+        }
+      }
+    },
+    "town.room-shop-proxy-4": {
+      "colliders": [],
+      "key": "town.room-shop-proxy-4",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 8,
+          "high": 3.9,
+          "index": 4,
+          "w": 10
+        }
+      }
+    },
+    "town.room-shop-proxy-5": {
+      "colliders": [],
+      "key": "town.room-shop-proxy-5",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 8,
+          "high": 3.9,
+          "index": 5,
+          "w": 10
+        }
+      }
+    },
+    "town.room-shop-proxy-6": {
+      "colliders": [],
+      "key": "town.room-shop-proxy-6",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 8,
+          "high": 3.9,
+          "index": 6,
+          "w": 10
+        }
+      }
+    },
+    "town.room-shop-shell": {
+      "colliders": [],
+      "key": "town.room-shop-shell",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-shell",
+        "params": {
+          "spec": {
+            "d": 8,
+            "high": 3.9,
+            "post": "#8a4a2c",
+            "postPalette": "timber",
+            "rise": 2.6,
+            "roof": "#c4453a",
+            "smoke": false,
+            "w": 10,
+            "wall": "#f0c98a"
+          }
         }
       }
     },

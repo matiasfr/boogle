@@ -1,0 +1,259 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "house",
+  "placements": [
+    {
+      "id": "house-floor",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-floor"
+    },
+    {
+      "id": "house-rug",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-rug"
+    },
+    {
+      "id": "house-bed",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-bed"
+    },
+    {
+      "id": "house-desk",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-desk"
+    },
+    {
+      "id": "house-step",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-step"
+    },
+    {
+      "id": "house-leaf",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-leaf"
+    },
+    {
+      "id": "house-filed",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-filed"
+    },
+    {
+      "id": "house-mug",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-mug"
+    },
+    {
+      "id": "house-cabinet",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-cabinet"
+    },
+    {
+      "id": "house-chair",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-chair"
+    },
+    {
+      "id": "house-stove",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-stove"
+    },
+    {
+      "id": "house-plant",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-plant"
+    },
+    {
+      "id": "house-board",
+      "labels": {
+        "sign": "pipDesk"
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-board"
+    },
+    {
+      "id": "house-quilt",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-quilt"
+    },
+    {
+      "id": "house-drawers",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-drawers"
+    },
+    {
+      "id": "house-lamp",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-lamp"
+    },
+    {
+      "id": "house-chair-trim",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-chair-trim"
+    },
+    {
+      "id": "house-stove-trim",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-stove-trim"
+    },
+    {
+      "id": "house-cabinet-pulls",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-cabinet-pulls"
+    },
+    {
+      "id": "house-later-bridge",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-later-bridge"
+    },
+    {
+      "id": "house-later-rail",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-later-rail"
+    },
+    {
+      "id": "house-later-train",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-later-train"
+    },
+    {
+      "id": "house-later-mug",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-later-mug"
+    },
+    {
+      "id": "house-mat",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-mat"
+    },
+    {
+      "id": "house-postbox",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-postbox"
+    },
+    {
+      "id": "house-window-box",
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-window-box"
+    },
+    {
+      "id": "house-sign",
+      "labels": {
+        "sign": "pip"
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "prefab": "town.house-sign"
+    }
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

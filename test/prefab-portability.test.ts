@@ -1,3 +1,7 @@
+import { prefabs as rooms } from '../src/content/prefabs/rooms.ts';
+import { levels as roomLevels } from '../src/content/levels/rooms.ts';
+import { prefabs as house } from '../src/content/prefabs/house.ts';
+import { levels as houseLevels } from '../src/content/levels/house.ts';
 import { prefabs as museum } from '../src/content/prefabs/museum.ts';
 import { levels as museumLevels } from '../src/content/levels/museum.ts';
 import { prefabs as curio } from '../src/content/prefabs/curio.ts';
@@ -15,13 +19,87 @@ import { prefabs as kit } from '../src/content/prefabs/workshop-kit.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { assertAuthoredNumbers } from '../dev/prefab/authored.ts';
 import { compile, writeArtifacts } from '../dev/prefab/compiler.ts';
+import type { JsonObject } from '../src/prefab/types.ts';
 import { metadata } from '../src/prefab/types.ts';
 import * as validation from '../src/prefab/validate.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import bell from '../content/built/levels/bell.json' with { type: 'json' };
+
+test('page startup has exactly one catalogue validation owner shared by every consumer', () => {
+  const catalogue = 'src/prefab/catalogue.ts';
+  const sourceRoot = new URL('../src/', import.meta.url);
+  const loads: string[] = [],
+    imports: string[] = [];
+  for (const relative of fs.globSync('**/*.ts', { cwd: sourceRoot })) {
+    const sourcePath = `src/${relative}`;
+    if (sourcePath === 'src/prefab/validate.ts') continue;
+    const source = fs.readFileSync(new URL(relative, sourceRoot), 'utf8');
+    const calls = source.match(/\b(?:loadPrefabArtifact|validateArtifact)\s*\(/g)?.length ?? 0;
+    loads.push(...Array.from({ length: calls }, () => sourcePath));
+    if (/from\s+['"][^'"]*content\/built\/prefabs\.json['"]/.test(source)) imports.push(sourcePath);
+  }
+  assert.deepEqual(loads.sort(), [catalogue], 'full catalogue validation must happen only in the shared module');
+  assert.deepEqual(imports.sort(), [catalogue], 'consumers must use the validated catalogue, not reload raw JSON');
+  for (const file of [
+    'src/entities/town/workshop-kit.ts',
+    'src/entities/town/shop.ts',
+    'src/entities/town/curio-shelf.ts',
+    'src/entities/town/museum.ts',
+    'src/entities/town/rooms.ts',
+    'src/entities/town/house.ts',
+    'src/entities/route-greybox/boxes.ts',
+    'src/entities/route-greybox/leg2-draw.ts',
+    'src/prefab/instantiate.ts',
+  ])
+    assert.match(
+      fs.readFileSync(file, 'utf8'),
+      /from\s+['"][^'"]*catalogue\.ts['"]/,
+      `${file}: share the page catalogue`,
+    );
+});
+
+// A fresh Node process prevents other unit tests' ESM caches from hiding duplicate startup validation.
+// This executes consumer imports under a validator spy; it needs no Git refs or timing assumptions.
+test('importing all nine page consumers validates the catalogue exactly once', () => {
+  const preloads = process.execArgv.flatMap((arg, k, args) =>
+    arg === '--import' ? [arg, args[k + 1]!] : arg.startsWith('--import=') ? [arg] : [],
+  );
+  const result = JSON.parse(
+    execFileSync(
+      process.execPath,
+      [...preloads, '--experimental-test-module-mocks', 'test/helpers/prefab-startup.ts'],
+      { encoding: 'utf8' },
+    ),
+  );
+  assert.deepEqual(result, { consumers: 9, catalogueValidations: 1, directValidations: 0 });
+});
+
+// Current committed content: 181 records / 312,535 canonical bytes, including all levels.
+// Around 10-12% headroom permits small additions; repeated per-placement definitions must not return.
+const MAX_PREFAB_RECORDS = 200;
+const MAX_COMPILED_ARTIFACT_BYTES = 350_000;
+function assertCatalogueBudget(records: number, bytes: number) {
+  const guidance = 'Share prefabs through placements instead of duplicating definitions.';
+  assert.ok(records <= MAX_PREFAB_RECORDS, `${records} prefab records exceed ${MAX_PREFAB_RECORDS}. ${guidance}`);
+  assert.ok(
+    bytes <= MAX_COMPILED_ARTIFACT_BYTES,
+    `${bytes} compiled bytes exceed ${MAX_COMPILED_ARTIFACT_BYTES}. ${guidance}`,
+  );
+}
+test('compiled catalogue stays inside deterministic record and byte budgets', () => {
+  const records = Object.keys(artifact.prefabs).length;
+  const bytes = fs.globSync('content/built/**/*.json').reduce((sum, file) => sum + fs.statSync(file).size, 0);
+  assertCatalogueBudget(records, bytes);
+  assert.throws(() => assertCatalogueBudget(records + 367, bytes), /Share prefabs through placements/);
+  assert.throws(
+    () => assertCatalogueBudget(records, MAX_COMPILED_ARTIFACT_BYTES + 1),
+    /Share prefabs through placements/,
+  );
+});
 
 test('every committed prefab artifact holds authored numbers, never long derived geometry', () => {
   for (const file of fs.globSync('content/built/**/*.json'))
@@ -38,8 +116,8 @@ test('artifact serialization is independent of runtime native transcendental res
     }
     writeArtifacts(
       compile(
-        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop, ...curio, ...museum],
-        [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels, ...museumLevels],
+        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop, ...curio, ...museum, ...rooms, ...house],
+        [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels, ...museumLevels, ...roomLevels, ...houseLevels],
       ),
       'content/built',
       true,
@@ -157,4 +235,22 @@ test('seat degree recipes resolve before attachment validation and preserve auth
   const duplicate = JSON.parse(bytes);
   duplicate.layout.attach.seat.yaw = 0;
   assert.throws(() => validation.validatePrefab(duplicate), /authored yawDegrees/);
+});
+
+test('room hull operands fail closed before runtime geometry', () => {
+  const base = rooms.find((r) => r.key === 'town.room-house-hulls-0')!;
+  const load = (r: typeof base) =>
+    validation.loadPrefabArtifact({ ...metadata, format: 'boogle-prefabs', prefabs: { [r.key]: r } });
+  const patches: JsonObject[] = [
+    { w: '7.4' },
+    { index: '0' },
+    { index: 8 },
+    { index: -1 },
+    { index: 0.5 },
+    { phase: 'unknown' },
+    { high: 0.2 },
+    { rise: Infinity },
+  ];
+  for (const patch of patches) assert.throws(() => load({ ...base, layout: { ...base.layout, ...patch } }), /prefabs:/);
+  assert.throws(() => load({ ...base, colliders: [{ shape: 'box', at: [0, 0, 0], half: [1, 1, 1] }] }), /recipe-only/);
 });

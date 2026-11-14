@@ -1,3 +1,4 @@
+import { compiled, definitions } from '../src/prefab/catalogue.ts';
 import { prefabGolden, recordMatrices } from './helpers/prefab-golden.ts';
 // Owner-requested migration proof. Record the old draw boundary before changing its authoring.
 import test from 'node:test';
@@ -86,21 +87,36 @@ for (const area of ['bell', 'west'] as const)
     builders.set('town.curio-parts', () => new THREE.Group());
     builders.set('town.museum-parts', () => new THREE.Group());
     builders.set('town.museum-exhibit', () => new THREE.Group());
+    builders.set('town.house-parts', () => new THREE.Group());
+    builders.set('town.room-shell', () => new THREE.Group());
+    builders.set('town.room-proxy', () => new THREE.Group());
     const { makeGreyboxLabel } = sourceModule<typeof import('../src/prefab/builders/greybox-label.ts')>(
       fs.readFileSync('src/prefab/builders/greybox-label.ts', 'utf8'),
       { signBoard },
     );
     const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
       fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
-      { THREE, artifact, workshop, gorge, names, ...validation, builders, makeGreyboxLabel, staticBody: record },
+      {
+        THREE,
+        artifact,
+        compiled,
+        definitions,
+        workshop,
+        gorge,
+        names,
+        ...validation,
+        builders,
+        makeGreyboxLabel,
+        staticBody: record,
+      },
     );
     const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
       fs.readFileSync('src/entities/route-greybox/boxes.ts', 'utf8'),
-      { ...runtime, artifact, ...validation },
+      { ...runtime, artifact, compiled, definitions, ...validation },
     );
     const draw = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
       fs.readFileSync('src/entities/route-greybox/leg2-draw.ts', 'utf8'),
-      { ...runtime, artifact, ...validation, LEG2_TEXT },
+      { ...runtime, artifact, compiled, definitions, records: compiled, ...validation, LEG2_TEXT },
     );
     type Massing = Record<string, (owner?: ReturnType<typeof createOwnedView>) => unknown>;
     const massing = {

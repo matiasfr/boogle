@@ -1,3 +1,4 @@
+import { compiled, definitions } from '../src/prefab/catalogue.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 // Capture the real makeWorkshop boundary before conversion; browser services are explicit recording dependencies.
 // This owner-requested conversion golden exercises no renderer, DOM, network or physics engine.
@@ -84,6 +85,8 @@ export function captureWorkshop() {
   }>(fs.readFileSync('src/prefab/instantiate.ts', 'utf8'), {
     THREE,
     artifact,
+    compiled,
+    definitions,
     workshop,
     gorge,
     names,
@@ -102,6 +105,9 @@ export function captureWorkshop() {
       ['town.curio-parts', () => chair],
       ['town.museum-parts', () => chair],
       ['town.museum-exhibit', () => chair],
+      ['town.house-parts', () => chair],
+      ['town.room-shell', () => chair],
+      ['town.room-proxy', () => chair],
       [
         'town.workshop-parts',
         (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
@@ -114,7 +120,16 @@ export function captureWorkshop() {
   const workshopKit = sourceFunction<typeof import('../src/entities/town/workshop-kit.ts').workshopKit>(
     'src/entities/town/workshop-kit.ts',
     'workshopKit',
-    { merged, instantiate: runtime.instantiate, artifact, level: kitLevel, loadLevelArtifact, loadPrefabArtifact },
+    {
+      merged,
+      instantiate: runtime.instantiate,
+      artifact,
+      compiled,
+      definitions,
+      level: kitLevel,
+      loadLevelArtifact,
+      loadPrefabArtifact,
+    },
   );
   let chairRoot = chair;
   const instantiate: typeof runtime.instantiate = (...args) => {
@@ -211,6 +226,7 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
     {
       THREE,
       artifact: data,
+      compiled: loadPrefabArtifact(data),
       workshop: input?.level ?? workshop,
       gorge: input ? { ...metadata, format: 'boogle-level', place: 'gorge', placements: [] } : gorge,
       names,
@@ -229,6 +245,9 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
         ['town.curio-parts', () => new THREE.Group()],
         ['town.museum-parts', () => new THREE.Group()],
         ['town.museum-exhibit', () => new THREE.Group()],
+        ['town.house-parts', () => new THREE.Group()],
+        ['town.room-shell', () => new THREE.Group()],
+        ['town.room-proxy', () => new THREE.Group()],
         [
           'seat.chair',
           () => {

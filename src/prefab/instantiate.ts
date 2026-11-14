@@ -1,19 +1,13 @@
 // The only runtime door: compiled data becomes owned meshes, bodies and seat registrations.
 // Local only. Seat authority, ids and registration lifetime retain the existing seat service's contract.
 import * as THREE from 'three/webgpu';
-import artifact from '../../content/built/prefabs.json' with { type: 'json' };
+import { compiled } from './catalogue.ts';
 import workshop from '../../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../../content/built/levels/gorge.json' with { type: 'json' };
 import { names } from './names.ts';
 import type { BuilderName } from './names.ts';
 import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
-import {
-  loadPrefabArtifact,
-  loadLevelArtifact,
-  validatePlacement,
-  validatePrefab,
-  validateColliderWorldTransforms,
-} from './validate.ts';
+import { loadLevelArtifact, validatePlacement, validatePrefab, validateColliderWorldTransforms } from './validate.ts';
 import './builders/seat-chair.ts';
 import './builders/greybox-box.ts';
 import './builders/workshop-parts.ts';
@@ -21,9 +15,12 @@ import './builders/shop-parts.ts';
 import './builders/curio-parts.ts';
 import './builders/museum-parts.ts';
 import './builders/museum-exhibit.ts';
+import './builders/house-parts.ts';
+import './builders/room-shell.ts';
+import './builders/room-proxy.ts';
 import type { Interactable } from '../player/hands.ts';
 import type { Part } from '../render/part-geometry.ts';
-import { builders } from './builders.ts';
+import { builders, type ConstructionBuild } from './builders.ts';
 import { makeGreyboxLabel } from './builders/greybox-label.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
 import { ROOM_GROUP, staticBody } from '../place/land.ts';
@@ -31,7 +28,6 @@ import type { Body, Shape } from '../physics/engine.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import type { Platform } from '../physics/platforms.ts';
 
-const compiled = loadPrefabArtifact(artifact);
 const room = loadLevelArtifact(workshop, compiled.prefabs);
 export const workshopChair = room.placements[0]!;
 const gorgeLevel = loadLevelArtifact(gorge, compiled.prefabs);
@@ -209,6 +205,7 @@ export function instantiate(
   let enabled = false,
     disposed = false;
   const root = new THREE.Group();
+  const construction: ConstructionBuild['construction'][] = [];
   const furnishingParts: Part[] = [],
     glass: { x: number; y: number; z: number }[] = [];
   root.visible = enabled;
@@ -221,7 +218,11 @@ export function instantiate(
         { ...def.visual.params, ...placement.params },
         batch ? { mesh: batch.target.mesh, index: batch.index + i } : undefined,
       );
-      if ('parts' in visual) {
+      if ('construction' in visual) {
+        if (batch || parent || placement.rot || placement.scale || placement.pos.some((v) => v !== 0))
+          throw new Error('prefabs: construction parts require an identity local placement');
+        construction.push(visual.construction);
+      } else if ('parts' in visual) {
         if (batch || placement.rot || placement.scale || placement.pos.some((v) => v !== 0))
           throw new Error('prefabs: merged parts require an identity local placement');
         furnishingParts.push(...visual.parts);
@@ -304,6 +305,7 @@ export function instantiate(
   return {
     root,
     parts: furnishingParts,
+    construction,
     glass,
     targets: () => (enabled && !disposed ? handlers.flatMap((handler) => handler()) : []),
     bodies,

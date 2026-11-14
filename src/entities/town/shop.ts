@@ -22,10 +22,9 @@ import { plate, roomMesh, roomToWorld, worldToRoom, type Part, type Rooms } from
 import { BOARDS, SHOP, type Fact } from './town-lines.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
-import { loadLevelArtifact, loadPrefabArtifact } from '../../prefab/validate.ts';
-import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
+import { loadLevelArtifact } from '../../prefab/validate.ts';
+import { definitions } from '../../prefab/catalogue.ts';
 import level from '../../../content/built/levels/shop.json' with { type: 'json' };
-const definitions = loadPrefabArtifact(artifact).prefabs;
 const placements = loadLevelArtifact(level, definitions).placements;
 
 /** What the shop needs of the wardrobe. */
