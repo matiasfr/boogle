@@ -95,3 +95,59 @@ export function rotundaFootprint(site: RotundaSite, bays: number): XZ[] {
   out.push(out[0]!);
   return out;
 }
+
+// ---------------------------------------------------------------- the blockout (docs/plans/roundhouse-rotunda.md, 1b)
+/** The blockout's own sizes, beside the kit's: the door wall and back wall heights, the roof slab, a pier's depth
+ * (the door reveal), the kerb's rise, and the ring painted on the table for the smaller diameter the owner compares. */
+export const ROTUNDA_BLOCK = { wall: 6.2, back: 4.8, roof: 0.3, reveal: 0.8, kerb: 0.15, compareR: 7 } as const;
+export type RotundaPart = 'table' | 'shell' | 'ruin' | 'door' | 'wall' | 'outline';
+/** One piece of a site's blockout: `turn` is where it stands round the table in bays from `mid` (a bay's own offset;
+ * an end wall stands on the edge between two, at a half). */
+export type RotundaPiece = { id: string; part: RotundaPart; turn: number };
+/** How many bays past the site's last the blockout paints on the ground each side, to show what a wider arc takes. */
+export const ROTUNDA_PREVIEW = 1;
+/** Every piece a site's blockout can show, in a fixed order: the table; then for each bay its shell, its ruin (door
+ * piers at broken heights) and its closed door; a wall for each edge of the arc; and painted outlines past its ends.
+ * The first bay in build order is the working one: the view owns its ruin and its door (the cracked slab, the
+ * sockets), so it has neither here. */
+export function rotundaPieces(site: RotundaSite): RotundaPiece[] {
+  const name = (turn: number) => String(site.mid + turn * ROTUNDA_KIT.bayDeg);
+  const bays = [...site.order].sort((a, b) => a - b),
+    lo = bays[0]!,
+    hi = bays.at(-1)!;
+  const out: RotundaPiece[] = [{ id: 'table', part: 'table', turn: 0 }];
+  for (const bay of bays) {
+    out.push({ id: `bay-${name(bay)}`, part: 'shell', turn: bay });
+    if (bay === site.order[0]) continue;
+    out.push({ id: `ruin-${name(bay)}`, part: 'ruin', turn: bay });
+    out.push({ id: `door-${name(bay)}`, part: 'door', turn: bay });
+  }
+  for (let edge = lo - 0.5; edge <= hi + 0.5; edge++) out.push({ id: `wall-${name(edge)}`, part: 'wall', turn: edge });
+  for (let k = 1; k <= ROTUNDA_PREVIEW; k++)
+    for (const bay of [lo - k, hi + k]) out.push({ id: `outline-${name(bay)}`, part: 'outline', turn: bay });
+  return out;
+}
+/** Whether a piece stands at a stage. Built bays are the stage's; a built bay other than the working one keeps its
+ * door shut (nothing stands in it); an unbuilt bay stands as a ruin while it is within the arc promised next, which
+ * at arrival is already the second stage's (design review, finding 1: five standing ruins at arrival); an end wall
+ * stands where a built bay meets an unbuilt one. */
+export function rotundaShows(site: RotundaSite, stage: number, piece: RotundaPiece): boolean {
+  const built = new Set(rotundaBays(site, stage));
+  const promised = new Set(site.order.slice(0, site.stages[Math.max(stage + 1, 2)] ?? site.order.length));
+  switch (piece.part) {
+    case 'table':
+    case 'outline':
+      return true;
+    case 'shell':
+    case 'door':
+      return built.has(piece.turn);
+    case 'ruin':
+      return !built.has(piece.turn) && promised.has(piece.turn);
+    case 'wall':
+      return built.has(piece.turn - 0.5) !== built.has(piece.turn + 0.5);
+  }
+}
+/** Where a piece stands: the site's centre on its ground, turned so the piece's own +z runs out along its bearing. */
+export function rotundaPose(site: RotundaSite, turn: number): { x: number; y: number; z: number; yaw: number } {
+  return { x: site.centre.x, y: site.y, z: site.centre.z, yaw: bayFrame(site, turn).yaw };
+}

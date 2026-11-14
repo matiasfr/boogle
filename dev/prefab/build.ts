@@ -8,6 +8,7 @@ import { names } from '../../src/prefab/names.ts';
 import type { LevelDef, PrefabDef } from '../../src/prefab/types.ts';
 import { readManifest } from '../assets/manifest.ts';
 import { haltKitContent } from './halts.ts';
+import { rotundaContent } from './rotunda.ts';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const prefabs: PrefabDef[] = [],
@@ -27,6 +28,7 @@ for (const file of fs.globSync('src/content/{prefabs,levels}/*.ts', { cwd: root 
 }
 const halts = haltKitContent();
 levels.push(...halts.levels);
+levels.push(...rotundaContent().levels);
 assertAuthoredNumbers({ prefabs, levels }, 'authored content');
 const outputs = compile(prefabs, levels, { ...names, assets: readManifest() });
 const check = process.argv.includes('--check');

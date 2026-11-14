@@ -952,6 +952,243 @@
         "none": true
       }
     },
+    "roundhouse.bay-block": {
+      "colliders": [
+        {
+          "at": [
+            -2.12,
+            3.1,
+            14.2
+          ],
+          "half": [
+            0.31,
+            3.1,
+            0.4
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            2.12,
+            3.1,
+            14.2
+          ],
+          "half": [
+            0.31,
+            3.1,
+            0.4
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            5.4,
+            14.2
+          ],
+          "half": [
+            1.8,
+            0.8,
+            0.4
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            2.4,
+            24.47
+          ],
+          "half": [
+            4.34,
+            2.4,
+            0.15
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            6.116,
+            15.6
+          ],
+          "half": [
+            3.07,
+            0.15,
+            1.82
+          ],
+          "rot": [
+            0,
+            0.129,
+            0
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            5.65,
+            19.2
+          ],
+          "half": [
+            3.7,
+            0.15,
+            1.82
+          ],
+          "rot": [
+            0,
+            0.129,
+            0
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            5.184,
+            22.81
+          ],
+          "half": [
+            4.34,
+            0.15,
+            1.82
+          ],
+          "rot": [
+            0,
+            0.129,
+            0
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.bay-block",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.bay-block",
+        "params": {
+          "part": "bay"
+        }
+      }
+    },
+    "roundhouse.bay-door-block": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            2.3,
+            14.2
+          ],
+          "half": [
+            1.8,
+            2.3,
+            0.1
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.bay-door-block",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.bay-block",
+        "params": {
+          "part": "bay-door"
+        }
+      }
+    },
+    "roundhouse.bay-outline-block": {
+      "colliders": [],
+      "key": "roundhouse.bay-outline-block",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.bay-block",
+        "params": {
+          "part": "bay-outline"
+        }
+      }
+    },
+    "roundhouse.bay-ruin-block": {
+      "colliders": [
+        {
+          "at": [
+            -2.12,
+            1.55,
+            14.2
+          ],
+          "half": [
+            0.31,
+            1.55,
+            0.4
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            2.12,
+            1.55,
+            14.2
+          ],
+          "half": [
+            0.31,
+            1.55,
+            0.4
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.bay-ruin-block",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.bay-block",
+        "params": {
+          "part": "bay-ruin"
+        }
+      }
+    },
+    "roundhouse.end-wall-block": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            2.4,
+            19.5
+          ],
+          "half": [
+            0.15,
+            2.4,
+            5.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.end-wall-block",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.bay-block",
+        "params": {
+          "part": "end-wall"
+        }
+      }
+    },
+    "roundhouse.table-block": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.03,
+            0
+          ],
+          "h": 0.06,
+          "r": 8.15,
+          "shape": "trunk"
+        }
+      ],
+      "key": "roundhouse.table-block",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.table-block",
+        "params": {}
+      }
+    },
     "town.curio-bay": {
       "colliders": [
         {
