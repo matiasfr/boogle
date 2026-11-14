@@ -68,5 +68,29 @@ if (mode === 'cart') {
   // --rail-seed crossing-done: where the finale leaves you, at the pier head (1399.7, -356) on the 26 m deck, looking
   // back landward at Station 7's frame (1407.9, -338.7), its rack and shelf.
   pose([1399.7, -356], [1396.6, 29.2, -362.5], [1407.9, 27.4, -338.7], 26);
-} else throw new Error('Choose hf=cart|tree|frames|seal');
+} else if (mode === 'worksrack' || mode === 'pierbill') {
+  // Where footings go (footings-signalling A3, A4). `worksrack` with --rail-seed works-lit|stall-done|wagon-on|ring-*:
+  // the Works rack's board from the Quarry platform's rack end. `pierbill` with works-lit|wagon-on: the pier's bill
+  // from the platform's seaward end, on the walk to the jib. Each is framed from what the view reports.
+  type Plate = { text: string; at: V3; yaw: number } | null;
+  const plate = () =>
+    (mode === 'worksrack'
+      ? (view().worksView as { rackBoard?: Plate } | undefined)?.rackBoard
+      : (view().crossingView as { pierBill?: Plate } | undefined)?.pierBill) ?? null;
+  const end = performance.now() + 15000;
+  while (!plate() && performance.now() < end) await wait(100);
+  const t = plate();
+  if (!t) throw new Error(`hf=${mode}: the board is not up in this seed`);
+  const fx = Math.sin(t.yaw),
+    fz = Math.cos(t.yaw);
+  const far = Number(new URLSearchParams(location.search).get('hfdist') ?? (mode === 'worksrack' ? 11 : 7));
+  // The body a little to one side and nearer, so the player stands in frame without covering the plate.
+  pose(
+    [t.at[0] + fx * (far - 4) + fz * 2.2, t.at[2] + fz * (far - 4) - fx * 2.2],
+    [t.at[0] + fx * far, t.at[1] + 3.2, t.at[2] + fz * far],
+    [t.at[0], t.at[1] + 1.6, t.at[2]],
+    mode === 'pierbill' ? t.at[1] + 0.9 : undefined,
+  );
+  console.log(`HF ${mode} ${JSON.stringify(t)}`);
+} else throw new Error('Choose hf=cart|tree|frames|seal|door|rack|fitted|q7|worksrack|pierbill');
 export {};

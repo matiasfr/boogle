@@ -111,8 +111,9 @@ export function instantiate(
     const lines = options.texts && Object.hasOwn(options.texts, key) ? options.texts[key] : undefined;
     if (!options.makeLabel && (!lines?.length || lines.some((line) => typeof line !== 'string')))
       throw new Error(`prefabs: missing label text ${key}`);
-    return [{ a, lines, key }];
+    return [{ a, lines, key, name }];
   });
+  const repaints = new Map<string, (lines: readonly string[]) => void>();
   const gates = new Map<string, () => boolean>();
   const handlers: (() => Interactable[])[] = [];
   for (const interaction of def.interactions ?? []) {
@@ -238,12 +239,13 @@ export function instantiate(
       else batch.target.slots.add(batch.index + i);
     }
   }
-  for (const { a, lines, key } of labels) {
+  for (const { a, lines, key, name } of labels) {
     if (options.makeLabel) root.add(options.makeLabel(a, key));
     else {
       const label = makeGreyboxLabel(a, lines!);
       root.add(label.mesh);
       owner.cleanup(label.dispose);
+      repaints.set(name, label.repaint);
     }
   }
   owner.add(root);
@@ -321,6 +323,14 @@ export function instantiate(
       const a = def.attach?.[name];
       if (!a) throw new Error(`prefabs: missing attachment ${name}`);
       return { definition: a, at: parent ? root.localToWorld(new THREE.Vector3().fromArray(a.at)) : world(a.at) };
+    },
+    /** Repaint a standing label's words in place (a count that moves); labels built by `makeLabel` are the caller's. */
+    relabel(name: string, lines: readonly string[]) {
+      const repaint = repaints.get(name);
+      if (!repaint) throw new Error(`prefabs: no repaintable label ${name}`);
+      if (!lines.length || lines.some((line) => typeof line !== 'string'))
+        throw new Error(`prefabs: missing label text ${name}`);
+      repaint(lines);
     },
     setEnabled,
     dispose,

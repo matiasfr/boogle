@@ -679,6 +679,58 @@
         "none": true
       }
     },
+    "railway.footings-bill": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            1.4,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 1,
+          "kind": "label",
+          "posts": "two",
+          "w": 2.2
+        }
+      },
+      "colliders": [],
+      "key": "railway.footings-bill",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "railway.footings-plaque": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            2.4,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 0.8,
+          "kind": "label",
+          "posts": "none",
+          "w": 1.8
+        }
+      },
+      "colliders": [],
+      "key": "railway.footings-plaque",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
     "railway.halt-bench": {
       "colliders": [],
       "key": "railway.halt-bench",

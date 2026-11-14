@@ -59,4 +59,20 @@ export const prefabs = [
     scope: 'owner',
     attach: { sign: { kind: 'label', at: [0, 0.75, 0], facing: [0, 0, 1], w: 2.3, h: 0.5, posts: 'two' } },
   }),
+  // Boards whose second line is a count the owning view repaints (footings-signalling A3, A4): the Works rack's
+  // "Footings" bill on its posts, and the pier's plaque, hung on the jib's mast.
+  definePrefab({
+    key: 'railway.footings-bill',
+    visual: { none: true },
+    colliders: [],
+    scope: 'owner',
+    attach: { sign: { kind: 'label', at: [0, 1.4, 0], facing: [0, 0, 1], w: 2.2, h: 1, posts: 'two' } },
+  }),
+  definePrefab({
+    key: 'railway.footings-plaque',
+    visual: { none: true },
+    colliders: [],
+    scope: 'owner',
+    attach: { sign: { kind: 'label', at: [0, 2.4, 0], facing: [0, 0, 1], w: 1.8, h: 0.8, posts: 'none' } },
+  }),
 ];
