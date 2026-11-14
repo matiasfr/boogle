@@ -454,8 +454,9 @@ export function updateBoogler(dt: number, now: number) {
       boogler.me.act === ACT.TALK || leg.look === self
         ? me.body?.position
         : [...remotes.values()].find((r) => r.pid === leg.look)?.avatar?.position;
-    presentation.update(leg, tick, dt, !received, face);
-    received = true;
+    const live = local || (net.state === 'live' && read?.status() === 'ready');
+    presentation.update(leg, tick, dt, !received, face, live);
+    if (live) received = true;
   }
 
   const gy = groundHeight(disp.x, disp.z);

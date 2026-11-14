@@ -81,8 +81,12 @@ test('talk at a rider launch yields to the next authoritative moving leg without
   p.update(fleeing, 21, 0, false, { x: 0, z: 12 });
   assert.equal(p.pose.z, held.z);
   assert.equal(p.pose.walking, true, 'superseding movement releases the hold immediately');
-  for (let i = 1; i <= 60; i++) p.update(fleeing, 21 + i / 6, 1 / 60);
-  assert.ok(Math.abs(p.pose.z - booglerPose(fleeing, 31).z) < 0.001);
+  for (let i = 1; i <= 120; i++) {
+    const z = p.pose.z;
+    p.update(fleeing, 21 + i / 6, 1 / 60);
+    assert.ok(Math.abs(p.pose.z - z) <= (3.4 * 1.2) / 60 + 1e-9);
+  }
+  assert.ok(Math.abs(p.pose.z - booglerPose(fleeing, 41).z) < 0.001);
 });
 
 test('a talker walking away with no acknowledging leg releases within 300 ms', () => {
@@ -118,4 +122,57 @@ test('a mid-walk rider leg preserves the shown pose, then converges; refill plac
   assert.ok(Math.abs(p.pose.z - booglerPose(ridden, 42).z) < 0.001);
   p.update(walk, 80, 0, true);
   assert.equal(p.pose.z, booglerPose(walk, 80).z);
+});
+
+const frame = 1 / 60;
+const stepBound = 3 * frame; // calm/ridden catch-up: at most twice the ordinary 1.5 m/s walk speed
+function boundedStep(p: ReturnType<typeof createBooglerPresentation>, run: () => void) {
+  const before = { ...p.pose };
+  run();
+  const distance = Math.hypot(p.pose.x - before.x, p.pose.z - before.z);
+  assert.ok(distance <= stepBound + 1e-9, `one frame moved ${distance} m; bound ${stepBound} m`);
+  return distance;
+}
+
+test('a session outage freezes the shown pose; a distant restart leg catches up within the frame bound', () => {
+  const p = createBooglerPresentation();
+  p.update(walk, 20, 0, true);
+  const before = { ...p.pose };
+  for (let i = 1; i <= 300; i++) p.update(walk, 20 + i / 6, frame, false, undefined, false);
+  assert.equal(p.pose.z, before.z, 'do not extrapolate while the session is not live');
+  assert.equal(p.pose.walking, false);
+  const restored = { ...walk, z0: 10, z1: 10, speed: 0, start: 0 };
+  for (let i = 0; i < 600; i++) {
+    const moved = boundedStep(p, () => p.update(restored, i / 6, frame, false, undefined, true));
+    if (moved > 0.001) assert.equal(p.pose.walking, true, 'catch-up must not slide with idle feet');
+  }
+  assert.ok(Math.abs(p.pose.z - 10) < 0.001);
+  assert.equal(p.pose.walking, false);
+});
+
+test('a clock re-anchor before the replacement leg cannot cut, and converges to the live pose', () => {
+  const p = createBooglerPresentation();
+  p.update(walk, 20, 0, true);
+  boundedStep(p, () => p.update(walk, 60, frame)); // clock changes first, same immutable leg
+  const refill = { ...walk };
+  for (let i = 1; i <= 360; i++) boundedStep(p, () => p.update(refill, 60 + i / 6, frame));
+  assert.ok(Math.abs(p.pose.z - booglerPose(refill, 120).z) < 0.001);
+});
+
+test('returning from a hidden tab spends one frame of catch-up, not seven seconds', () => {
+  const p = createBooglerPresentation();
+  p.update(walk, 20, 0, true);
+  boundedStep(p, () => p.update(walk, 90, 7));
+});
+
+test('ridden talk hold release starts gently and every correction stays within the frame bound', () => {
+  const p = createBooglerPresentation();
+  const ridden = { ...walk, speed: 2.3, mode: 2 };
+  p.update(ridden, 20, 0, true);
+  p.talk(true);
+  for (let i = 1; i <= 17; i++) p.update(ridden, 20 + i / 6, frame);
+  const first = boundedStep(p, () => p.update(ridden, 23, frame));
+  assert.ok(first < 0.01, `first release step ${first} m must ease out of rest`);
+  for (let i = 19; i <= 240; i++) boundedStep(p, () => p.update(ridden, 20 + i / 6, frame));
+  assert.ok(Math.abs(p.pose.z - booglerPose(ridden, 60).z) < 0.001);
 });

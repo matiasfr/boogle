@@ -1,5 +1,4 @@
-// Local presentation only: preserve position across changed Server legs and hold your own talk on the press.
-import { angleLerp } from '../math.ts';
+// Local presentation only: authoritative legs are targets, never permission to cut the shown pose.
 import { turnBooglerToward } from '../world/boogler-walk.ts';
 import { booglerPose, type BooglerLeg } from '../world/boogler-shadow.ts';
 
@@ -8,53 +7,60 @@ export function createBooglerPresentation() {
   let last: BooglerLeg | null = null;
   let talking = false,
     held = false;
-  let heldFor = 0;
-  let ox = 0,
-    oz = 0,
-    oy = 0;
+  let heldFor = 0,
+    speed = 0;
   return {
     pose,
     talk(open: boolean) {
       if (open && !talking) {
         held = true;
         heldFor = 0;
+        speed = 0;
         pose.walking = false;
       }
-      if (!open && talking) last = null; // release eases from the held pose
       talking = open;
       if (!open) held = false;
     },
-    update(leg: BooglerLeg, tick: number, dt: number, immediate = false, face?: { x: number; z: number }) {
+    update(leg: BooglerLeg, tick: number, dt: number, immediate = false, face?: { x: number; z: number }, live = true) {
+      if (!live) {
+        pose.walking = false;
+        speed = 0;
+        return;
+      }
       const next = booglerPose(leg, tick);
       if (held && !immediate) {
         heldFor += dt;
-        // Talk is a short prediction, not authority: a rider or another talker can win.
-        // Unchanged legs send no packet, so a missing acknowledgement must expire too.
-        if (leg !== last || heldFor + 1e-9 >= 0.3) {
-          held = false;
-          last = null;
-        } else {
-          last = leg;
+        // Talk is a short prediction: another actor can win, or no changed leg may arrive.
+        if (leg !== last || heldFor + 1e-9 >= 0.3) held = false;
+        else {
           if (face) turnBooglerToward(pose, Math.atan2(-(face.x - pose.x), -(face.z - pose.z)), dt);
           return;
         }
       }
-      if (leg !== last || immediate) {
-        const snap = immediate || Math.hypot(pose.x - next.x, pose.z - next.z) > 6;
-        ox = snap ? 0 : pose.x - next.x;
-        oz = snap ? 0 : pose.z - next.z;
-        oy = snap ? 0 : angleLerp(next.yaw, pose.yaw, 1) - next.yaw;
-        last = leg;
+      last = leg;
+      if (immediate) {
+        Object.assign(pose, next, { mode: leg.mode });
+        speed = next.walking ? leg.speed : 0;
+        return;
       }
-      const ease = Math.exp(-dt * 15);
-      ox *= ease;
-      oz *= ease;
-      oy *= ease;
-      pose.x = next.x + ox;
-      pose.z = next.z + oz;
+      // Hidden tabs can return with seconds of elapsed time. Spend one display frame, not that whole gap.
+      dt = dt > 0.25 ? 1 / 60 : Math.max(0, dt);
+      const dx = next.x - pose.x,
+        dz = next.z - pose.z,
+        distance = Math.hypot(dx, dz);
+      // Main slid to corrections. Keep that continuity, but bound the entire shown movement, including clock
+      // re-anchors that precede a new leg. Calm/ridden catch-up tops out at 3 m/s; flee allows 20% headroom.
+      const limit = Math.max(3, leg.speed * 1.2);
+      const travel = Math.min(distance, Math.min(limit, speed + 12 * dt) * dt);
+      if (distance > 0) {
+        pose.x += (dx / distance) * travel;
+        pose.z += (dz / distance) * travel;
+      }
+      if (dt > 0) speed = travel / dt;
       if (!next.walking && face) turnBooglerToward(pose, Math.atan2(-(face.x - pose.x), -(face.z - pose.z)), dt);
-      else pose.yaw = next.yaw + oy;
-      pose.walking = next.walking;
+      else turnBooglerToward(pose, next.yaw, dt);
+      // A correction toward a standing leg still moves his feet, rather than sliding an idle body.
+      pose.walking = next.walking || travel > 1e-6;
       pose.mode = leg.mode;
     },
   };
