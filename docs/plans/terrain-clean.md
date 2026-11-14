@@ -148,9 +148,13 @@ by construction, so the proof is that heights did not change and that the drawn 
   - **Accepted visible difference:** the lower gorge wall has broader, more continuous green patches without
     the ledges (cameras 2 and 9). The implementing agent opened all four matched before/after views; the orchestrator
     also opened camera 9 before/after and agrees the wall reads the same. Warm rock bands and large facets remain.
-- [ ] **3. Remove `GRADED` from `src/place/terrain.ts`** (the constant and three `push` lines; nothing else). Its own
+- [x] **3. Remove `GRADED` from `src/place/terrain.ts`** (the constant and three `push` lines; nothing else). Its own
   small commit, last, because four branches in flight touch this file. Verify: heights hash equal; `npm run level-check`
   diff empty.
+  - Exact deleted lines against baseline `22b331dba` (also the step-2 parent): 119–123 (comment and constant),
+    124 (separating blank), 127 (`pad` push), 171 (`strip` push), 396 (`gradeSupport` push). No other terrain.ts
+    edit, height calculation, collider or placement change. The in-flight branches' whole-word `GRADED` readers
+    were only the old terrain record and retired ledge implementation/tests. Hashes and normalized level diff verified.
 - [ ] **4. Docs.** `docs/game-design/graphics.md`: rewrite the "Home's ground: the terrain pass" bullet (no 1 m cells,
   no tolerance sentence, flags reduced to `?terrain=0`). `docs/plans/terrain-pass.md`: status line points here.
   `docs/decisions-look.md`: a dated entry with the owner's words above, its Current rules line, and an italic note on
