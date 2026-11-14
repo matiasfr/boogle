@@ -29,10 +29,13 @@ const poses: Record<
   halt: { body: [1081.3, 41.1], camera: [1078, 29, 35], aim: [1119, 28, 82] },
   ledge: { body: [1164, 124], camera: [1171, 26, 131], aim: [1156, 24, 116] },
   bowl: { body: [1140, 102], camera: [1146, 29, 110], aim: [1128, 27, 87] },
-  stall: { body: [903, 14], camera: [901, 23, 11], aim: [909.5, 20, 18.5] },
-  table: { body: [920, 14], camera: [923, 25, 8], aim: [909.5, 20, 20.5] },
-  // The whole turn from above: the stall door, the deck and line 2's first ten metres (works-late-game step 5).
-  turn: { body: [920, 14], camera: [934, 31, 0], aim: [916, 18.5, 17] },
+  // Home as one station (docs/plans/home-flip.md): the table is at (942.1, 17.1), the open stall's door at
+  // (940.6, 25.5), the spur runs west from the table to road 2 at (922.5, 10.5).
+  stall: { body: [948, 20], camera: [947, 22.5, 18.5], aim: [940.3, 19.8, 27] },
+  table: { body: [948, 10], camera: [950, 25, 6], aim: [941, 19.5, 22] },
+  // The whole turn from above: the stall door, the deck, the spur and line 2's first ten metres (works-late-game
+  // step 5; the shunt backs down the spur to road 2's buffer stub).
+  turn: { body: [948, 10], camera: [933, 40, -8], aim: [932, 18.3, 15] },
   pier: { body: [1405, -366], camera: [1412, 31, -352], aim: [1403, 24, -390] },
   // J4: the boiler's pedestal (the breaker), the kiln at the open cut, and the throat from inside the bowl.
   forge: { body: [922, 9], camera: [925, 22.5, 13], aim: [918.5, 18.5, 5] },
