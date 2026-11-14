@@ -9,8 +9,9 @@
 // look of yours ends that at once. Unity's deoccluder, Unreal's spring arm and Godot's SpringArm3D all separate the wanted shot
 // from clearance (the research doc's table); so does this, with the cutaway as the shot's half.
 //
-// Interiors draw only with the camera near their building (`near`), so a village you're not in pays for its walls and
-// nothing behind them; what's outside and over the door, a little further out. Local; which rooms exist comes from
+// Interiors draw only with the camera near their door (`near`), so a village you're not in pays for its walls and
+// nothing behind them, and a building seen from its back or across the green pays for nothing inside; what's outside
+// and over the door, a little further out, measured from the building. Local; which rooms exist comes from
 // `env.up`, read from what's shared. `createRooms` mounts them on the town entity's owner (src/entities/town/).
 import * as THREE from 'three/webgpu';
 import { registerStepFloor } from '../../render/locomotion-surfaces.ts';
@@ -55,7 +56,7 @@ export const ROOM_CAM = {
   pitch: -0.4, // rad: a modest look down, suggested as you come in
   pitchRate: 2.6, // 1/s
   camClear: 1.8, // m the camera has to be outside a building before its walls come back, so they don't rise at the lens
-  drawWithin: 34, // m: interiors draw while the camera is within this of their building
+  drawWithin: 18, // m: interiors draw while the camera is within this of their door (or you're inside)
   dressWithin: 60, // m: and what's outside and over the door (a mat, a window box, a sign) while it's within this
 };
 export const DOOR = { w: 2.6, rows: 3 };
@@ -295,6 +296,8 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
     museum: makeRoom('museum'),
   };
   const LIST = Object.values(rooms);
+  /** Each door's threshold in the world: where `drawWithin` is measured from. */
+  const doors = new Map(LIST.map((r) => [r, roomToWorld(r, 0, 0, r.d / 2, new THREE.Vector3())]));
   for (const r of LIST) {
     owner.cleanup(
       registerStepFloor((x, z) => {
@@ -489,15 +492,17 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       r.proxy.visible = any;
     }
   }
-  /** What's drawn near the camera that's about to render: interiors within `drawWithin` (or the one you're in), and
-   * what's outside and over the door within `dressWithin`, so a far view of the village pays for none of it
-   * (place-retirement T2's draw budget). Call after anything that moves the camera this frame, after `update`. */
+  /** What's drawn near the camera that's about to render: interiors within `drawWithin` of their door (or the one
+   * you're in), and what's outside and over the door within `dressWithin` of the building, so a far view of the
+   * village, or one from behind a building, pays for none of it (place-retirement T2's draw budget; town-layout
+   * step 7). Only `near`'s visibility changes: furnishing records stay enabled, so their solids stay. Call after anything that moves the camera this frame, after `update`. */
   function cull() {
     const cx = camera.position.x,
       cz = camera.position.z;
     for (const r of LIST) {
       const fromCam = Math.hypot(cx - r.x, cz - r.z);
-      const near = r.ready && (r === indoors.room || fromCam < ROOM_CAM.drawWithin);
+      const door = doors.get(r)!;
+      const near = r.ready && (r === indoors.room || Math.hypot(cx - door.x, cz - door.z) < ROOM_CAM.drawWithin);
       if (r.near.visible !== near) r.near.visible = near;
       if (!r.ready) continue;
       const dressed = fromCam < ROOM_CAM.dressWithin;
