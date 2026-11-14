@@ -1,10 +1,14 @@
-// `?meadow=flowers` (docs/research/small-magic-look.md, "What was built"): low-poly flowers in drifts and chunky grass
-// tufts on one lawn wedge of Home, two instanced draws. Nothing is planted on the CPU: each instance has a seed in a
-// square tile that wraps round the camera, and the vertex stage reads the meadow field (meadow-field.ts) and the path
-// field to decide where it stands, how big it is and whether it exists at all. A seed's world position is the seed
-// plus whole tiles, so it does not depend on the camera: every player sees the same meadow, and a touch device draws
-// the first half of the same list. Each instance shrinks to nothing at its own distance, so there is no line where
-// the meadow stops and nothing pops as the tile wraps. No colliders, no shadow casting, no per-frame CPU work. Local.
+// The meadow's planted flowers and grass tufts across Home's lawn (docs/game-design/place.md, "The meadow"): low-poly,
+// flat-shaded, instanced. Nothing is planted on the CPU: each instance has a seed in a square tile that wraps round a
+// point just ahead of the camera, and the vertex stage reads the meadow's maps (meadow-field.ts) and the path field to
+// decide where it stands, how big it is and whether it exists at all. A seed's world position is the seed plus whole
+// tiles, so it does not depend on the camera: every player sees the same meadow, and a cheaper tier draws the first
+// part of the same shuffled list.
+// Two rings, so only what is near is drawn in full: a near tile of whole flowers (12 triangles) and tufts (10), and a
+// far tile of four-triangle flowers and two-triangle tufts that grow in where the near ones shrink away. Each
+// instance shrinks to nothing at its own distance, so no ring has an edge and nothing pops as a tile wraps; beyond
+// the far ring the lawn's own specks carry the colour (meadow.ts). No colliders, no shadow casting, no per-frame CPU
+// work. The keep map bakes here, a slice at a time after the first frame; until it is in, nothing grows. Local.
 import * as THREE from 'three/webgpu';
 import {
   attribute,
@@ -13,8 +17,8 @@ import {
   cameraWorldMatrix,
   clamp as tslClamp,
   cos,
-  float,
   floor,
+  float,
   length,
   mix,
   normalFlat,
@@ -34,11 +38,22 @@ import { mulberry32 } from '../math.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import { GRID, ORIGIN } from './layout.ts';
 import { selectiveColour } from './look.ts';
-import { MEADOW_BOUNDS, MEADOW_H, MEADOW_W } from './meadow-field.ts';
+import { bakeMeadowKeep } from './meadow-field.ts';
 import { MEADOW } from './meadow-flags.ts';
-import { meadowFieldTexture, meadowGreen, meadowGrid, meadowTap } from './meadow.ts';
+import {
+  byKind,
+  flowerDrift,
+  flowerKind,
+  heartColour,
+  meadowGreen,
+  meadowKeepAt,
+  meadowNoiseAt,
+  petalColour,
+  setMeadowKeep,
+} from './meadow.ts';
 import { FIELD_CELL, FIELD_H, FIELD_W } from './path-field.ts';
 import { pathFieldTexture } from './path-surface.ts';
+import { CELL, NX, NZ, heights } from './terrain.ts';
 
 // TSL's types don't follow these graphs; kept loose like look.ts.
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -48,18 +63,30 @@ const linear = (hex: string) => {
   return vec3(c.r, c.g, c.b);
 };
 
-/** The tile's side, metres; an instance is gone by half of it. */
-const TILE = 72,
-  REACH = TILE / 2;
-/** Seeds in the tile, before the field thins them: the drawn count is well under these. Halved on touch devices. */
-const FLOWERS = 9000,
-  TUFTS = 12000;
+/** A ring: its tile's side (an instance is gone by half of it), how far ahead of the camera its centre sits when the
+ * camera looks level, and its seeds before the maps thin them (the drawn count is well under these). */
+const NEAR = { tile: 32, lead: 9, flowers: 1700, tufts: 2300 },
+  FAR = { tile: 96, lead: 19, flowers: 12000, tufts: 7000 };
+/** Metres from the near ring's centre over which the far ring's instances grow in, as the near ones shrink away. */
+const HANDOVER = { from: 10.5, to: 16 };
+/** The share of each list a device draws. A touch device (the owner's iPad) draws about half; a phone-sized screen
+ * draws the near ring thinly, a third of the far flowers and no far tufts. */
+const TIERS = {
+  desktop: { near: 1, farFlowers: 1, farTufts: 1 },
+  touch: { near: 0.6, farFlowers: 0.5, farTufts: 0.35 },
+  phone: { near: 0.4, farFlowers: 0.3, farTufts: 0 },
+} as const;
+function tier() {
+  if (MEADOW.tier === 'desktop' || MEADOW.tier === 'touch' || MEADOW.tier === 'phone') return TIERS[MEADOW.tier];
+  if (!isTouch) return TIERS.desktop;
+  return Math.min(screen.width, screen.height) < 500 ? TIERS.phone : TIERS.touch;
+}
 
 /** `count` seeds, evenly spread over the tile and then shuffled, so any leading part of the list is evenly spread
  * too: x, z in the tile and two random numbers. */
-function seeds(count: number, salt: number) {
+function seeds(count: number, tile: number, salt: number) {
   const side = Math.ceil(Math.sqrt(count)),
-    step = TILE / side,
+    step = tile / side,
     random = mulberry32(salt);
   const all: number[][] = [];
   for (let k = 0; k < side * side; k++)
@@ -71,9 +98,26 @@ function seeds(count: number, salt: number) {
   return new THREE.InstancedBufferAttribute(new Float32Array(all.slice(0, count).flat()), 4);
 }
 
-type Tri = [number, number, number][];
-/** A non-indexed, instanced geometry from triangles, each with one `part` number per corner. */
-function instanced(tris: { at: Tri; part: [number, number, number] }[], seed: THREE.InstancedBufferAttribute) {
+type Corner = [number, number, number];
+type Tri = { at: [Corner, Corner, Corner]; part: [number, number, number] };
+let bounds: THREE.Box3 | null = null;
+/** The lawn's real bounds: the land's grid and its heights. */
+function lawnBounds() {
+  if (bounds) return bounds;
+  let low = Infinity,
+    high = -Infinity;
+  for (const h of heights) {
+    low = Math.min(low, h);
+    high = Math.max(high, h);
+  }
+  return (bounds = new THREE.Box3(
+    new THREE.Vector3(ORIGIN.x + GRID.x0, Math.max(low, 0), ORIGIN.z + GRID.z0),
+    new THREE.Vector3(ORIGIN.x + GRID.x1, high + 1.5, ORIGIN.z + GRID.z1),
+  ));
+}
+/** A non-indexed, instanced geometry from triangles, each with one `part` number per corner, drawing `share` of its
+ * seeds. */
+function instanced(tris: Tri[], seed: THREE.InstancedBufferAttribute, share: number) {
   const geo = new THREE.InstancedBufferGeometry();
   geo.setAttribute(
     'position',
@@ -90,30 +134,29 @@ function instanced(tris: { at: Tri; part: [number, number, number] }[], seed: TH
     ),
   );
   geo.setAttribute('meadowSeed', seed);
-  geo.instanceCount = isTouch ? Math.floor(seed.count / 2) : seed.count;
-  // Real bounds, so the frustum drops both draws when the wedge is out of view.
-  const box = new THREE.Box3(new THREE.Vector3(...MEADOW_BOUNDS.min), new THREE.Vector3(...MEADOW_BOUNDS.max));
-  geo.boundingBox = box;
-  geo.boundingSphere = box.getBoundingSphere(new THREE.Sphere());
+  geo.instanceCount = Math.floor(seed.count * share);
+  geo.boundingBox = lawnBounds();
+  geo.boundingSphere = lawnBounds().getBoundingSphere(new THREE.Sphere());
   return geo;
 }
 
+const ring = (n: number, r: number, y: (k: number) => number, turn = 0) =>
+  Array.from({ length: n }, (_, k): Corner => {
+    const a = turn + (k / n) * Math.PI * 2;
+    return [Math.cos(a) * r, y(k), Math.sin(a) * r];
+  });
+const TOP = 0.4,
+  TILT = 0.3;
+/** A head's corner, tipped a little off level about the stem's top. */
+const tipped = (x: number, y: number, z: number): Corner => [
+  x * Math.cos(TILT) - (y - TOP) * Math.sin(TILT),
+  TOP + x * Math.sin(TILT) + (y - TOP) * Math.cos(TILT),
+  z,
+];
 /** One flower, metres, 12 triangles: a three-sided stem (part 0), a six-sided head whose rim rises and falls so each
- * petal is its own facet (part 1), and a small three-sided heart (part 2). The head tips a little off level. */
+ * petal is its own facet (part 1), and a small three-sided heart (part 2). */
 function flowerTriangles() {
-  const tris: { at: Tri; part: [number, number, number] }[] = [];
-  const TOP = 0.4,
-    tilt = 0.3;
-  const tipped = (x: number, y: number, z: number): [number, number, number] => [
-    x * Math.cos(tilt) - (y - TOP) * Math.sin(tilt),
-    TOP + x * Math.sin(tilt) + (y - TOP) * Math.cos(tilt),
-    z,
-  ];
-  const ring = (n: number, r: number, y: (k: number) => number, turn = 0) =>
-    Array.from({ length: n }, (_, k): [number, number, number] => {
-      const a = turn + (k / n) * Math.PI * 2;
-      return [Math.cos(a) * r, y(k), Math.sin(a) * r];
-    });
+  const tris: Tri[] = [];
   const foot = ring(3, 0.035, () => -0.06);
   for (let k = 0; k < 3; k++) tris.push({ at: [foot[k]!, foot[(k + 1) % 3]!, [0, TOP, 0]], part: [0, 0, 0] });
   const rim = ring(6, 0.2, (k) => TOP + (k % 2 ? 0.06 : -0.005)).map((p) => tipped(...p));
@@ -124,11 +167,27 @@ function flowerTriangles() {
     tris.push({ at: [heart[k]!, tipped(0, TOP + 0.085, 0), heart[(k + 1) % 3]!], part: [2, 2, 2] });
   return tris;
 }
-
+/** The far flower, 4 triangles: one for the stem and a five-cornered head of the same span, tipped the same way. */
+function farFlowerTriangles(): Tri[] {
+  const rim = ring(5, 0.2, () => TOP + 0.02, 0.4).map((p) => tipped(...p));
+  return [
+    {
+      at: [
+        [-0.04, -0.06, 0],
+        [0.04, -0.06, 0],
+        [0, TOP, 0],
+      ],
+      part: [0, 0, 0],
+    },
+    { at: [rim[0]!, rim[1]!, rim[2]!], part: [1, 1, 1] },
+    { at: [rim[0]!, rim[2]!, rim[3]!], part: [1, 1, 1] },
+    { at: [rim[0]!, rim[3]!, rim[4]!], part: [1, 1, 1] },
+  ];
+}
 /** One tuft, metres, 10 triangles: five chunky blades leaning out, each folded down its spine so its two faces
  * catch the light differently. `part` is the height up the blade, 0 at the root and 1 at the tip. */
 function tuftTriangles() {
-  const tris: { at: Tri; part: [number, number, number] }[] = [];
+  const tris: Tri[] = [];
   const blades = [
     { turn: 0.2, lean: 0.1, tall: 0.34, wide: 0.24 },
     { turn: 1.5, lean: 0.22, tall: 0.25, wide: 0.26 },
@@ -139,43 +198,88 @@ function tuftTriangles() {
   for (const b of blades) {
     const out: [number, number] = [Math.cos(b.turn), Math.sin(b.turn)],
       across: [number, number] = [-out[1], out[0]];
-    const root = (side: number, forward: number): [number, number, number] => [
+    const root = (side: number, forward: number): Corner => [
       out[0] * (0.03 + forward) + across[0] * side * b.wide * 0.5,
       -0.05,
       out[1] * (0.03 + forward) + across[1] * side * b.wide * 0.5,
     ];
-    const tip: [number, number, number] = [out[0] * (0.03 + b.lean), b.tall, out[1] * (0.03 + b.lean)];
+    const tip: Corner = [out[0] * (0.03 + b.lean), b.tall, out[1] * (0.03 + b.lean)];
     const spine = root(0, 0.045);
     tris.push({ at: [root(-1, 0), spine, tip], part: [0, 0, 1] }, { at: [spine, root(1, 0), tip], part: [0, 0, 1] });
   }
   return tris;
 }
+/** The far tuft, 2 triangles: two fat blades crossed, about the whole tuft's span. */
+function farTuftTriangles(): Tri[] {
+  return [
+    {
+      at: [
+        [-0.2, -0.05, -0.05],
+        [0.2, -0.05, 0.05],
+        [0.04, 0.33, 0],
+      ],
+      part: [0, 0, 1],
+    },
+    {
+      at: [
+        [0.05, -0.05, -0.2],
+        [-0.05, -0.05, 0.2],
+        [-0.03, 0.28, 0.04],
+      ],
+      part: [0, 0, 1],
+    },
+  ];
+}
 
-/** Where an instance stands and how much of it there is: its world xz, the collider's height there, the field's
- * sample, and a 0..1 presence that folds in the path, the wedge's rules and the distance fade (`thin`: how much of
- * the reach each instance keeps, so the planting thins toward its edge instead of ending on a ring). */
-function standing(seed: N, thin: number) {
-  // The tile sits a little ahead of the camera, by how level it looks, so most of the planting is in view.
-  const eye: N = cameraPosition.xz.add(cameraWorldMatrix.mul(vec4(0, 0, -1, 0)).xz.mul(REACH * 0.4));
-  const world: N = seed.xy.add(floor(eye.sub(seed.xy).div(TILE).add(0.5)).mul(TILE));
-  const grid: N = meadowGrid(world);
-  const cell: N = tslClamp(floor(grid), vec2(0, 0), vec2(MEADOW_W - 2, MEADOW_H - 2));
+let heightMap: THREE.DataTexture | null = null;
+/** The land's heights on its own 2 m grid, as two half floats a texel that add up to the height: quarter metres and
+ * the rest. One half float alone is 6 cm coarse on the high ground; a stem would float or sink. */
+function heightTexture() {
+  if (heightMap) return heightMap;
+  const data = new Uint16Array(NX * NZ * 4);
+  for (let k = 0; k < NX * NZ; k++) {
+    const coarse = Math.floor(heights[k]! * 4) / 4;
+    data[k * 4] = THREE.DataUtils.toHalfFloat(coarse);
+    data[k * 4 + 1] = THREE.DataUtils.toHalfFloat(heights[k]! - coarse);
+  }
+  heightMap = new THREE.DataTexture(data, NX, NZ, THREE.RGBAFormat, THREE.HalfFloatType);
+  heightMap.name = 'place-meadow-heights';
+  heightMap.minFilter = heightMap.magFilter = THREE.LinearFilter;
+  heightMap.generateMipmaps = false;
+  heightMap.colorSpace = THREE.NoColorSpace;
+  heightMap.needsUpdate = true;
+  return heightMap;
+}
+
+type Ring = typeof NEAR;
+/** A ring's centre: a little ahead of the camera, by how level it looks, so most of the planting is in view. */
+const centreOf = (r: Ring): N => cameraPosition.xz.add(cameraWorldMatrix.mul(vec4(0, 0, -1, 0)).xz.mul(r.lead));
+
+/** Where an instance stands and how much of it there is: its world xz, the collider's height there, the noise and
+ * keep samples, how far off a path it is (0 at the verge's start, 1 well clear) and a 0..1 presence that folds in the
+ * path, the keep map and the ring's distance fades. `thin` is how much of the reach each instance keeps, so a ring
+ * thins toward its edge instead of ending on a line. */
+function standing(seed: N, r: Ring, thin: number) {
+  const eye: N = centreOf(r);
+  const world: N = seed.xy.add(floor(eye.sub(seed.xy).div(r.tile).add(0.5)).mul(r.tile));
+  const grid: N = world.sub(vec2(ORIGIN.x + GRID.x0, ORIGIN.z + GRID.z0)).div(CELL);
+  const cell: N = tslClamp(floor(grid), vec2(0, 0), vec2(NX - 2, NZ - 2));
   const part: N = tslClamp(grid.sub(cell), 0, 1);
-  const size = vec2(MEADOW_W, MEADOW_H);
   // Texel centres of a linear texture give the texels themselves: the cell's four corner heights.
-  const corner = (dx: number, dz: number): N =>
-    texture(meadowFieldTexture(), cell.add(vec2(dx + 0.5, dz + 0.5)).div(size)).r;
-  const a: N = corner(0, 0),
-    b: N = corner(1, 0),
-    c: N = corner(0, 1),
-    d: N = corner(1, 1);
+  const cornerHeight = (dx: number, dz: number): N => {
+    const texel: N = texture(heightTexture(), cell.add(vec2(dx + 0.5, dz + 0.5)).div(vec2(NX, NZ)));
+    return texel.r.add(texel.g);
+  };
+  const a: N = cornerHeight(0, 0),
+    b: N = cornerHeight(1, 0),
+    c: N = cornerHeight(0, 1),
+    d: N = cornerHeight(1, 1);
   // The collider's own two triangles (ground-layers.ts colliderHeight), so a stem meets the ground it stands on.
   const height: N = select(
     part.x.add(part.y).lessThanEqual(1),
     a.add(b.sub(a).mul(part.x)).add(c.sub(a).mul(part.y)),
     d.add(c.sub(d).mul(part.x.oneMinus())).add(b.sub(d).mul(part.y.oneMinus())),
   );
-  const sample: N = meadowTap(grid);
   const pathUv: N = world
     .sub(vec2(ORIGIN.x + GRID.x0, ORIGIN.z + GRID.z0))
     .div(FIELD_CELL)
@@ -183,12 +287,25 @@ function standing(seed: N, thin: number) {
     .div(vec2(FIELD_W, FIELD_H));
   // Metres off the nearest tread's edge (negative on it). The drawn edge wanders by up to 0.31 m (path-surface.ts)
   // and its verge is darker out to about a metre: planting starts beyond the wander, thin at first.
-  const offPath: N = smoothstep(0.45, 1.3, texture(pathFieldTexture(), pathUv).r);
-  const allowed: N = smoothstep(0.8, 0.97, sample.g);
+  const offTread: N = texture(pathFieldTexture(), pathUv).r;
+  const kept: N = meadowKeepAt(world);
+  // About a metre off a wall, a kerb or a footing: 0.7 m at the least, full size by 1.2 m.
+  const open: N = smoothstep(0.175, 0.3, kept.r);
   const away: N = length(world.sub(eye));
-  const gone: N = seed.z.mul(thin).oneMinus().mul(REACH);
-  const near: N = smoothstep(gone.sub(7), gone, away).oneMinus();
-  return { world, height, sample, presence: offPath.mul(allowed).mul(near) };
+  const gone: N = seed.z
+    .mul(thin)
+    .oneMinus()
+    .mul(r.tile / 2);
+  const near: N = smoothstep(gone.sub(r.tile / 8), gone, away).oneMinus();
+  const grownIn: N = r === FAR ? smoothstep(HANDOVER.from, HANDOVER.to, length(world.sub(centreOf(NEAR)))) : float(1);
+  return {
+    world,
+    height,
+    kept,
+    sample: meadowNoiseAt(world),
+    clearOfPath: smoothstep(1.3, 3.8, offTread),
+    presence: smoothstep(0.45, 1.3, offTread).mul(open).mul(near).mul(grownIn),
+  };
 }
 
 /** The instance's corner, moved to where it stands: turned about its stem, scaled, and leant by a slow gust that
@@ -220,63 +337,81 @@ function material(up: number) {
   return m;
 }
 
-/** Flowers: four kinds, each keeping to its own band of the zone noise, in drifts where the `sun` noise is high. */
-function flowerMesh() {
+/** Flowers: four kinds, each keeping to its own band of the zone noise. Thick drifts and bare stretches on open
+ * ground, thin and even on the town's green, and lighter along a path's edge so the tread stays the line to follow. */
+function flowerMesh(r: Ring, tris: Tri[], share: number, salt: number) {
   const seed: N = attribute('meadowSeed', 'vec4');
-  const s = standing(seed, 0.5);
-  // A drift: nothing below the threshold, thick above it. Each seed has its own threshold, so a drift's edge is loose.
+  const s = standing(seed, r, 0.5);
+  // Each seed has its own threshold, so a drift's edge is loose.
   const own: N = seed.z.mul(7.31).fract();
-  const drift: N = smoothstep(0.38, 0.72, s.sample.b);
+  const drift: N = flowerDrift(s.sample, s.kept).mul(mix(0.45, 1, s.clearOfPath));
   const grown: N = smoothstep(0, 0.1, drift.sub(own.mul(0.9).add(0.05)));
-  // Four bands of the zone noise; a seed strays a little, so two kinds mingle only along a border.
-  const kind: N = floor(tslClamp(s.sample.a.mul(4).add(own.sub(0.5).mul(0.5)), 0, 3.99));
-  const pick = (values: N[]): N =>
-    select(
-      kind.lessThan(1),
-      values[0],
-      select(kind.lessThan(2), values[1], select(kind.lessThan(3), values[2], values[3])),
-    );
-  const petal: N = varying(pick([linear('#f3efe2'), linear('#f2c531'), linear('#ee86b0'), linear('#6f8ff0')]));
-  const heart: N = varying(pick([linear('#f0b92c'), linear('#de7f1c'), linear('#f6e7a0'), linear('#f3ecc4')]));
-  const tall: N = pick([float(1), float(0.8), float(1.15), float(0.95)]);
+  const kind: N = flowerKind(s.sample, own);
+  const petal: N = varying(petalColour(kind));
+  const heart: N = varying(heartColour(kind));
+  const tall: N = byKind(kind, [float(1), float(0.8), float(1.15), float(0.95)]);
   const scale: N = grown.mul(s.presence).mul(seed.w.mul(3.7).fract().mul(0.5).add(0.85)).mul(tall);
   const m = material(0.8);
   m.positionNode = planted(seed, s.world, s.height, scale, 0.1);
   const stem: N = selectiveColour(linear('#568740'), 'grass');
   const part: N = attribute('meadowPart', 'float');
   m.colorNode = select(part.lessThan(0.5), stem, select(part.lessThan(1.5), petal, heart));
-  const mesh = new THREE.Mesh(instanced(flowerTriangles(), seeds(FLOWERS, 0x5ca1ab1e)), m);
-  mesh.name = 'place-meadow-flowers';
+  const mesh = new THREE.Mesh(instanced(tris, seeds(r.flowers, r.tile, salt), share), m);
+  mesh.name = r === NEAR ? 'place-meadow-flowers' : 'place-meadow-flowers-far';
   return mesh;
 }
 
-/** Tufts: everywhere on the wedge's lawn, thicker where the ground is lush, in the ground's own green. */
-function tuftMesh() {
+/** Tufts: everywhere on the lawn, thicker where the ground is lush and thinner in the town, in the ground's own green. */
+function tuftMesh(r: Ring, tris: Tri[], share: number, salt: number) {
   const seed: N = attribute('meadowSeed', 'vec4');
-  const s = standing(seed, 0.6);
+  const s = standing(seed, r, 0.6);
   const own: N = seed.z.mul(5.17).fract();
-  const lush: N = smoothstep(0.2, 0.75, s.sample.b).oneMinus().mul(0.6).add(0.4);
+  const lush: N = smoothstep(0.2, 0.75, s.sample.r)
+    .oneMinus()
+    .mul(0.6)
+    .add(0.4)
+    .mul(mix(0.55, 1, s.kept.g));
   const grown: N = smoothstep(0, 0.12, lush.sub(own));
   const scale: N = grown.mul(s.presence).mul(seed.w.mul(2.9).fract().mul(0.5).add(0.8));
   const m = material(2.5);
   m.positionNode = planted(seed, s.world, s.height, scale, 0.16);
-  // The ground's own green here (the tint's with `?meadow=tint`, else the plain lawn's mean: ground-material.ts),
-  // darker at the root and lighter, a little yellower, at the tip.
+  // The ground's own green here (the tint's, or without it the plain lawn's mean: ground-material.ts), darker at the
+  // root and lighter, a little yellower, at the tip.
   const green: N = MEADOW.tint ? varying(meadowGreen(s.sample)) : linear('#618f41').mul(vec3(0.89, 0.97, 0.8));
   const up: N = attribute('meadowPart', 'float');
   m.colorNode = selectiveColour(green.mul(mix(vec3(0.84, 0.9, 0.86), vec3(1.2, 1.18, 0.94), up)), 'grass');
-  const mesh = new THREE.Mesh(instanced(tuftTriangles(), seeds(TUFTS, 0x7af7ed)), m);
-  mesh.name = 'place-meadow-tufts';
+  const mesh = new THREE.Mesh(instanced(tris, seeds(r.tufts, r.tile, salt), share), m);
+  mesh.name = r === NEAR ? 'place-meadow-tufts' : 'place-meadow-tufts-far';
   return mesh;
 }
 
-/** Plant the wedge: two draws that leave with `owner`. */
+/** Bake the keep map a few milliseconds at a time, so no frame waits on it, then hand it to the texture. */
+async function bakeKeep(owner: OwnedView) {
+  const baking = bakeMeadowKeep();
+  for (;;) {
+    const started = performance.now();
+    let step = baking.next();
+    while (!step.done && performance.now() - started < 5) step = baking.next();
+    if (!owner.alive) return;
+    if (step.done) return setMeadowKeep(step.value);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
+
+/** Plant Home's lawn: up to four draws that leave with `owner`, and the keep map's bake. */
 export function addMeadowFlowers(owner: OwnedView) {
-  meadowFieldTexture(); // bakes the field, which sets the wedge's bounds
-  for (const mesh of [flowerMesh(), tuftMesh()]) {
+  const share = tier();
+  const meshes = [
+    flowerMesh(NEAR, flowerTriangles(), share.near, 0x5ca1ab1e),
+    tuftMesh(NEAR, tuftTriangles(), share.near, 0x7af7ed),
+    flowerMesh(FAR, farFlowerTriangles(), share.farFlowers, 0x0f10e25),
+    ...(share.farTufts ? [tuftMesh(FAR, farTuftTriangles(), share.farTufts, 0x7af7ee)] : []),
+  ];
+  for (const mesh of meshes) {
     mesh.castShadow = false;
     mesh.receiveShadow = true;
     owner.cleanup(() => (mesh.material as THREE.Material).dispose());
     owner.add(mesh);
   }
+  return bakeKeep(owner);
 }

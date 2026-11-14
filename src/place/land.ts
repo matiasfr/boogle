@@ -284,12 +284,10 @@ function buildMesh(owner: OwnedView) {
   mesh.frustumCulled = false;
   owner.add(mesh);
   addFarGround(mesh, NX, NZ, mainEnd, inCove, owner);
-  // `?meadow=flowers`: an experiment, off by default and loaded only when asked for (meadow-flowers.ts).
+  // The meadow's flowers and tufts (meadow-flowers.ts): loaded and baked after the land is up, so no frame waits.
   if (MEADOW.flowers && layered)
     background(
-      import('./meadow-flowers.ts').then((m) => {
-        if (owner.alive) m.addMeadowFlowers(owner);
-      }),
+      import('./meadow-flowers.ts').then((m) => (owner.alive ? m.addMeadowFlowers(owner) : undefined)),
       'meadow flowers',
     );
 
