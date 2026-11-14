@@ -21,7 +21,8 @@ Home's reported base/kerb contact is **a, rank 4**; the forge door step is **a, 
 
 - **a likely visible:** material recipe, authored/instance colour, sampled vertex colour, texture/UV, or cast/receive
   shadow flags differ. Missing appearance or unresolved shader/procedural-grain effects also stay here. Triangle
-  vertex colours and UVs are barycentrically sampled at the overlap, not compared by a mesh-wide average.
+  vertex colours and UVs are compared as interpolated fields, including three non-collinear samples;
+  crossing gradients cannot become a harmless joint merely by matching at the centroid.
 - **b joints:** all captured appearance fields agree, including shadow flags. These count but do not print by default.
   Being a track-kit piece alone is never sufficient: a steel/wood contact stays a.
 - **c hidden:** the overlap is proved buried by the drawn terrain or a closed convex connected solid at a point

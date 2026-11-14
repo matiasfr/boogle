@@ -80,6 +80,18 @@ test('texture identity AND sampled UV matter; vertex interpolation compares the 
     [0.9, 1, 1],
   ] as const;
   assert.equal(classifyZfights(findZfights([face('a', { vertex }), face('b', { vertex })]))[0]!.class, 'b');
+  // Same centroid colour/UV, different gradients across the overlapping face.
+  const reversed = [vertex[2], vertex[1], vertex[0]];
+  assert.equal(classifyZfights(findZfights([face('a', { vertex }), face('b', { vertex: reversed })]))[0]!.class, 'a');
+  assert.equal(
+    classifyZfights(
+      findZfights([
+        face('a', { texture }),
+        face('b', { texture: { ...texture, uv: [texture.uv[2], texture.uv[1], texture.uv[0]] } }),
+      ]),
+    )[0]!.class,
+    'a',
+  );
 });
 const contact = (b: string, patch: Partial<Contact> = {}): Contact => ({
   a: 'anchor',
@@ -126,6 +138,8 @@ test('baseline identifies new member pairs even within an existing group and ret
   assert.equal(baselineDelta(old, baseline).newFindings.length, 0);
   assert.equal(baselineDelta(classifyZfights([contact('part-1'), contact('part-2')]), baseline).newFindings.length, 1);
   assert.equal(baselineDelta([], baseline).stalePairs.length, 1);
+  assert.equal(baselineDelta(classifyZfights([contact('part-1', { hidden: true })]), baseline).stalePairs.length, 1);
+  assert.equal(baselineDelta(classifyZfights([contact('part-1', { differences: [] })]), baseline).stalePairs.length, 1);
 });
 test('repeated family-pair patterns group only within an explicitly declared assembly', () => {
   const a = contact('part-1', { assembly: 'line-one' });

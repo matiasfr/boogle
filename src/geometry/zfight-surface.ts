@@ -39,18 +39,19 @@ export function surfaceDifferences(a: Face, b: Face, at: Point): string[] {
     y = b.surface;
   if (!x || !y) return ['unknown appearance'];
   const reasons: string[] = [];
+  // Interpolated attributes are affine on a triangle. Equal values at the centroid alone can hide
+  // crossing gradients. Agreement at three non-collinear points proves agreement on the overlap.
+  const sameField = (left: readonly Point[], right: readonly Point[]) =>
+    [at, ...a.points.slice(0, 3)].every((p) => close(sample(a, left, p), sample(b, right, p)));
   if (x.material !== y.material) reasons.push('material');
   if (!close(x.color, y.color)) reasons.push('colour');
-  if (!close(x.vertex ? sample(a, x.vertex, at) : [1, 1, 1], y.vertex ? sample(b, y.vertex, at) : [1, 1, 1]))
-    reasons.push('vertex colour');
+  if (!sameField(x.vertex ?? [[1, 1, 1]], y.vertex ?? [[1, 1, 1]])) reasons.push('vertex colour');
   if (x.castShadow !== y.castShadow || x.receiveShadow !== y.receiveShadow) reasons.push('shadow flags');
   if ((x.texture && x.texture.uv.length < 3) || (y.texture && y.texture.uv.length < 3))
     reasons.push('unknown texture coordinates');
   else if (
     !!x.texture !== !!y.texture ||
-    (x.texture &&
-      y.texture &&
-      (x.texture.id !== y.texture.id || !close(sample(a, x.texture.uv, at), sample(b, y.texture.uv, at))))
+    (x.texture && y.texture && (x.texture.id !== y.texture.id || !sameField(x.texture.uv, y.texture.uv)))
   )
     reasons.push('texture/UV');
   if (x.uncertain || y.uncertain) reasons.push(x.uncertain ?? y.uncertain!);

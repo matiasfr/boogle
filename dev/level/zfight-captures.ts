@@ -11,12 +11,14 @@ for (const [index, finding] of report.findings.slice(0, 10).entries()) {
     tag = `zfight-ranked-${String(rank).padStart(2, '0')}`;
   const [x, y, z] = finding.position,
     [nx, ny, nz] = finding.normal;
-  const cam = ny > 0.7 ? [x + 4, y + 4, z + 5] : ny < -0.7 ? [x + 4, y - 5, z + 5] : [x + nx * 7, y + 2.5, z + nz * 7];
+  const cam = ny > 0.7 ? [x + 4, y + 4, z + 5] : ny < -0.7 ? [x + 4, y - 5, z + 5] : [x + nx * 7, y + 0.6, z + nz * 7];
+  // Home is already loaded in the normal opening. A late seed runs a wagon across this contact.
+  const home = finding.a.startsWith('Home/station/');
   const setup = `.look/zfight-top-ten/${tag}-setup.ts`,
     action = `.look/zfight-top-ten/${tag}-action.ts`;
   fs.writeFileSync(
     setup,
-    `const {putPlayer}=await import('/src/debug/perf-poses.ts'); await putPlayer(${x},${y + 3},${z}); await window.boogle.dev.open('zfight'); window.boogle.dev.close();\nexport {};\n`,
+    `${home ? '' : `const {putPlayer}=await import('/src/debug/perf-poses.ts'); await putPlayer(${x},${y + 3},${z});`} await window.boogle.dev.open('zfight'); window.boogle.dev.close();\nexport {};\n`,
   );
   fs.writeFileSync(
     action,
@@ -29,8 +31,7 @@ for (const [index, finding] of report.findings.slice(0, 10).entries()) {
       '.look/see-client.ts',
       'look',
       '--real',
-      '--rail-seed',
-      'q6-done',
+      ...(home ? [] : ['--rail-seed', 'q6-done']),
       '--query',
       'dev=1',
       '--eval',

@@ -104,7 +104,9 @@ export function makeBaseline(findings: readonly Finding[]): Baseline {
 export function baselineDelta(findings: readonly Finding[], baseline: Baseline) {
   const known = new Set(baseline.entries.flatMap((e) => e.pairs));
   const actionable = findings.filter((f) => f.class === 'a');
-  const present = new Set(actionable.flatMap((f) => f.members.map(pairKey)));
+  const present = new Set(
+    actionable.flatMap((f) => f.members.filter((m) => !m.hidden && m.differences?.length !== 0).map(pairKey)),
+  );
   return {
     newFindings: actionable.filter((f) =>
       f.members.some((m) => !m.hidden && m.differences?.length !== 0 && !known.has(pairKey(m))),
