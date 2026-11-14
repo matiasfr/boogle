@@ -30,7 +30,9 @@ const REST = -0.35,
   SWING_S = 0.12;
 const HANDLE_GAP = 0.26;
 
-function plaqueTexture(text: string) {
+/** `arrow` is -1 for an arrow at the plaque's left end pointing left, +1 for one at its right end pointing right, 0 for
+ * none: the way that train leaves along the platform, as you read the plaque (running-side.md, step 2). */
+function plaqueTexture(text: string, arrow: number) {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = 96;
@@ -44,7 +46,22 @@ function plaqueTexture(text: string) {
   g.font = 'bold 46px sans-serif';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText(text, 128, 50, 232);
+  if (arrow) {
+    // A solid arrow 44 px long in the end it points to; the name takes the rest.
+    const tip = arrow > 0 ? 240 : 16,
+      back = -arrow;
+    g.beginPath();
+    g.moveTo(tip, 48);
+    g.lineTo(tip + back * 24, 24);
+    g.lineTo(tip + back * 24, 40);
+    g.lineTo(tip + back * 44, 40);
+    g.lineTo(tip + back * 44, 56);
+    g.lineTo(tip + back * 24, 56);
+    g.lineTo(tip + back * 24, 72);
+    g.closePath();
+    g.fill();
+    g.fillText(text, 128 - arrow * 24, 50, 180);
+  } else g.fillText(text, 128, 50, 232);
   const map = new THREE.CanvasTexture(c);
   map.colorSpace = THREE.SRGBColorSpace;
   return map;
@@ -77,7 +94,7 @@ function buildLever(p: JsonObject) {
   const lamp = box(0.14, 0.14, 0.14, lampMat);
   lamp.position.set(0, 0.84, width / 2 - 0.05);
   group.add(lamp);
-  const plaques: { mesh: THREE.Mesh; map: THREE.CanvasTexture | null; text: string }[] = [];
+  const plaques: { mesh: THREE.Mesh; map: THREE.CanvasTexture | null; text: string; way: number }[] = [];
   const arms = Array.from({ length: handles }, (_, i) => {
     const z = (i - (handles - 1) / 2) * HANDLE_GAP;
     const pivot = new THREE.Group();
@@ -94,7 +111,7 @@ function buildLever(p: JsonObject) {
     face.position.set(-side * 0.115, 0.5, z);
     face.rotation.y = -side * (Math.PI / 2);
     group.add(face);
-    plaques.push({ mesh: face, map: null, text: '' });
+    plaques.push({ mesh: face, map: null, text: '', way: 0 });
     return { pivot, angle: REST };
   });
   // The chain: links from the first handle's rod down to the plinth, and a padlock on it. Hidden unless chained.
@@ -132,13 +149,16 @@ function buildLever(p: JsonObject) {
   const knobAt = new THREE.Vector3();
   const control = {
     group,
-    /** Handle `i`'s plaque: the end its way goes to (empty hides it). */
-    label(i: number, text: string) {
+    /** Handle `i`'s plaque: the end its way goes to (empty hides it), with an arrow pointing the way that train leaves
+     * along the platform (`way`: +1 toward the frame's local +z, the line's +s; -1 toward -s; 0 for no arrow). */
+    label(i: number, text: string, way = 0) {
       const p = plaques[i];
-      if (!p || p.text === text) return;
+      if (!p || (p.text === text && p.way === way)) return;
       p.text = text;
+      p.way = way;
       p.map?.dispose();
-      p.map = text ? plaqueTexture(text) : null;
+      // The plaque's face looks away from the rails, so its right-hand end lies toward +z when `side` is +1.
+      p.map = text ? plaqueTexture(text, Math.sign(way) * side) : null;
       const mat = p.mesh.material as THREE.MeshBasicNodeMaterial;
       mat.map = p.map;
       mat.needsUpdate = true;
@@ -178,7 +198,7 @@ function buildLever(p: JsonObject) {
 }
 export type RequestLever = {
   group: THREE.Group;
-  label(i: number, text: string): void;
+  label(i: number, text: string, way?: number): void;
   shown(i: number, on: boolean): void;
   chained(on: boolean): void;
   update(dt: number, over: readonly boolean[], snap?: boolean): void;
