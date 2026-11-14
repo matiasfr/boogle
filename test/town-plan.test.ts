@@ -477,8 +477,8 @@ test('the built level is the plan: eight solid blocks at their rows, a door pane
     near(across, 0, 0.001, `${b.id} mat is centred on the door`);
     assert.ok(along - mat.scale![2]! / 2 > plan.d / 2 - 1e-9, `${b.id} mat is outside the door`);
     assert.ok(along + mat.scale![2]! / 2 < plan.d / 2 + 2, `${b.id} mat is within 2 m of the door`);
-    // As wide as the door panel, against the wall, 1.5 m deep; plot 6's stops at the quarry road's 1.25 m verge.
-    assert.equal(mat.scale![0], door.scale![0], `${b.id} mat is the door's width`);
+    // Wider than the 1.2 m door panel, against the wall, 1.5 m deep; plot 6's stops at the quarry road's 1.25 m verge.
+    assert.equal(mat.scale![0], 1.6, `${b.id} mat width`);
     near(along - mat.scale![2]! / 2, plan.d / 2, 1e-9, `${b.id} mat lies against the wall`);
     assert.equal(mat.scale![2], b.id === 'plot6' ? 1.25 : 1.5, `${b.id} mat depth`);
     assert.notEqual(mat.params?.colour, door.params?.colour, `${b.id} mat is not the door's pale`);
