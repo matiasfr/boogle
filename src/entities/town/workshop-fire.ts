@@ -2,7 +2,7 @@
 // sparks, a flue's smoke and a warm flickering light. Local and cosmetic; the furnace's solid stays with workshop.ts.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
-import { addLightSource } from '../../render/lights.ts';
+import { addLightSource, removeLightSource } from '../../render/lights.ts';
 import type { Part } from '../../render/part-geometry.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity, readableUnlit } from '../../render/readable-unlit.ts';
@@ -156,8 +156,7 @@ export function makeForgeFire(parent: THREE.Object3D, zc: number, world: THREE.V
         });
     },
     dispose() {
-      light.intensity = 0;
-      light.on = () => 0;
+      removeLightSource(light);
       flames.removeFromParent();
       coals.removeFromParent();
       flames.geometry.dispose();
