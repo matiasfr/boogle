@@ -647,7 +647,9 @@ The first time you fall faster than 4 m/s with the glider shut, the Glide action
 like the jump teach) pulses at your back until you open it or land. It shows Glide, not Jump, because at Q5 Jump
 spends the double jump first. The flight is piece A's, now read from eight room tunables (`railGlideSpeed` 1000 cm/s,
 `railGlideSink` 320 cm/s, `railGlideAccel` 1800, `railGlideBrake` 1200, `railGlideOver` 800 cm/s², `railGlideTurnTau`
-120 ms, `railGlideTurnMax` 360°/s, `railGlideDeploy` 100 ms).
+120 ms, `railGlideTurnMax` 360°/s, `railGlideDeploy` 100 ms). While the canopy holds you, two threads of air trail
+off its tips, thicker with speed up to 8 m/s (Place's wisps, restored 14 November after the port dropped them; yours
+only, off under reduced motion).
 
 Taking it faces you west over the device toward the forge, where the plume stands over the new boiler, so the natural
 step-off heads home. The first flight lands on the forge apron only if you let go of the stick over it: letting go

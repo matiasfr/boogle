@@ -1,6 +1,6 @@
 // The glider's Local view, ported from Place's moves-view.ts: the canopy overhead with the arms up to it, the folded roll on
-// every back once the room has the glider, the open and close sounds, and the camera easing out to 5.2 m while it holds
-// you. A partner's open canopy comes from presence `railwayGlide` (Owner); the roll is derived from the shared fact, so
+// every back once the room has the glider, the open and close sounds, your wingtip wisps (glide-wisps.ts), and the camera
+// easing out to 5.2 m while it holds you. A partner's open canopy comes from presence `railwayGlide` (Owner); the roll is derived from the shared fact, so
 // no presence key carries it. Authored shapes only; never Place's campaign, moves or tech owners.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -8,10 +8,12 @@ import { reducedMotion } from '../../constants.ts';
 import { cam, camConstraints, me } from '../../player/player.ts';
 import { backSeam } from '../../player/haul-back.ts';
 import { frameOf } from '../../render/haul-bundle.ts';
+import { emit } from '../../render/particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { warmDraw } from '../../render/precompile.ts';
 import { camera } from '../../render/scene.ts';
 import { onRemotePresence, onPeerRemoved, remotes, type Remote } from '../../netplay/net.ts';
+import { WISP, createGlideWisps } from './glide-wisps.ts';
 
 type RemoteView = { presence: (r: Remote, value: unknown) => void; removed: (peer: string) => void };
 let activeRemote: RemoteView | null = null;
@@ -22,6 +24,7 @@ let warmed = false;
 
 /** BotW's normal framing (5.2 m, 50 degrees): Place's `frame` pick, docs/game-design/place.md. */
 const GLIDE_CAM = { dist: 5.2, fov: 50 };
+const WISP_COLOR = new THREE.Color('#f4efe4');
 
 export async function createRailwayGlideView(owner: OwnedView) {
   const gear = await import('../../render/gear-models.ts');
@@ -114,7 +117,24 @@ export async function createRailwayGlideView(owner: OwnedView) {
   }
   camConstraints.push(constraint);
 
-  let wasOpen = false;
+  let wasOpen = false,
+    wisps = 0;
+  const wispStep = createGlideWisps();
+  const wispAt = (x: number, y: number, z: number) =>
+    emit({
+      x,
+      y,
+      z,
+      vx: 0,
+      vy: WISP.rise,
+      vz: 0,
+      life: WISP.life,
+      size: WISP.size,
+      color: WISP_COLOR,
+      alpha: WISP.alpha,
+      drag: 0,
+      fade: WISP.fade,
+    });
   owner.cleanup(() => {
     if (activeRemote === remoteView) activeRemote = null;
     const i = camConstraints.indexOf(constraint);
@@ -138,6 +158,9 @@ export async function createRailwayGlideView(owner: OwnedView) {
         if (p) placeSound(open ? 'gliderOpen' : 'gliderClose', p.x, p.z);
       }
       if (me.avatar && me.entered) dress(me.avatar, has, open, dt, now);
+      // Two threads of air off the wing's tips while you're moving (glide-wisps.ts): yours only, as in Place.
+      const v = me.body?.velocity;
+      if (p && v) wisps += wispStep(dt, hold && !reducedMotion, p, me.yaw, Math.hypot(v.x, v.z), wispAt);
       for (const r of remotes.values()) {
         if (!r.avatar) continue;
         if (!r.visible || !r.entered) {
@@ -159,6 +182,8 @@ export async function createRailwayGlideView(owner: OwnedView) {
       rolls: [...worn.values()].filter((w) => w.roll.visible && w.roll.parent).length,
       canopies: [...worn.values()].filter((w) => w.canopy.g.visible).length,
       camDist: camW ? cam.dist : null,
+      /** Wingtip wisps emitted since the view was built. */
+      wisps,
     }),
   };
 }

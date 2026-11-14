@@ -163,7 +163,9 @@ export async function fly() {
     }
     const sink = samples.reduce((a, s) => a + s.sink, 0) / samples.length,
       speed = samples.reduce((a, s) => a + s.speed, 0) / samples.length;
-    const { camDist, canopies, rolls } = glider();
+    const { camDist, canopies, rolls, wisps } = glider();
+    // A second and more at full stick: the wingtips have shed their threads of air (glide-wisps.ts).
+    if (wisps < 50) throw new Error(`GLIDE no wingtip wisps while gliding at speed: ${wisps}`);
     // Jump while it's open does nothing.
     pressJump();
     await wait(120);
