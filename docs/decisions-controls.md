@@ -6,6 +6,8 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
+- 2026-11-14 · near a chair, Interact sits; seated, Interact requests an offered stop and Jump stands you up; try the built behaviour and revisit after the owner plays ([entry](#d-2026-11-14-sit-first-stop-when-seated))
+
 - 2026-11-14 · a recent reload returns you where you were; a long absence starts at Home ([entry](#d-2026-11-14-a-recent-reload-returns-you-where))
 
 - 2026-11-11 · the game has acts: a title and a short aerial move at the first landing, the next act at Far Head's show; "Act 1 · The beginning" is the only titled act, the rest show their number alone, with no line under it ([entry](#d-2026-11-11-the-game-has-acts))
@@ -28,6 +30,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · first visit and returning visit are different ([entry](#d-2026-11-01-first-visit-and-returning-visit-are))
 
 ## Decided
+
+- <a id="d-2026-11-14-sit-first-stop-when-seated"></a>**2026-11-14, Sit first; Request stop when seated** (owner: "For number 4, I feel like sit should win, but then once you are sitting, the stop should win instead of standing. But you could always jump to exit the sit. Maybe we should try that."). Question 4 was that, standing on a wagon beside a chair, the Sit prompt hides Request stop. Near a chair, Sit is the Interact press; once seated, Interact requests the stop when the train offers one, and Jump stands you up. This confirms the built behaviour on main since PR #1783: [seat.ts](../src/entities/railway/seat.ts), `withSeatTargets`, uses `SIT_EDGE` for Sit beside Request stop and, in the seated branch, returns the stop target with `also: { action: 'jump', verb: STAND }` ("Stand up"). With no stop offered, Interact still stands you up. This is a try ("Maybe we should try that"), to be revisited after the owner plays.
 
 - <a id="d-2026-11-14-a-recent-reload-returns-you-where"></a>**2026-11-14, a recent reload returns you where you were; a long absence starts at Home** (owner: "I really think if I'm just refreshing my browser in a recent enough time, I should go back to where I was rather than the town. Because for now that the distances are pretty vast, we'll want to remember where the player was, I think."). A player who reloads or rejoins within the return window (30 minutes, `railway.returnMinutes`) stands where they last stood in that room, on ground, a deck or a platform, or at the nearest safe spot: beside it, else the nearest standing halt (a reload aboard a train puts you at the halt it was running to), else Home. After the window, or with no remembered place, you arrive at Home. The memory is this browser's, per room. Narrows [2 November](#d-2026-11-02-a-return-goes-straight-in-and), which had no time limit. _The exact window, Home after a long absence and train-to-halt placement are implementation defaults, still open with the owner in [agent-calls](agent-calls.md#controls-hud-and-arrival); the quote decides recent returns, not those numbers or fallback details._
 

@@ -271,6 +271,8 @@ From 5–7 November and not on the roadmap anywhere else, so kept here; check ea
 
 ## Open owner questions
 
+- **Answered, 14 November, question 4 (Sit beside Request stop):** Sit wins near a chair; seated, Interact requests an offered stop and Jump stands you up. Confirms #1783 as a try; revisit after he plays ([decision](../decisions-controls.md#d-2026-11-14-sit-first-stop-when-seated)).
+
 Answered questions are in the decision log, not here.
 From 5–6 November; drop each when answered.
 
@@ -283,23 +285,25 @@ From 5–6 November; drop each when answered.
 7. **From 10 November** (one lever per platform side and the passenger car at four are answered; see the [decision log](../decisions-rail.md#current-rules)): end-game train direction ([mock-ups](../brainstorms/engine-endgame-mockups.md)): steam to modern (freight or high speed) or the dark plated sci-fi train, or that one as a rival; lengthen halts and gates past 6 m or articulate short cars; a tender on the largest current-era engine or not. The glider banner wording is still his to reword.
 
 8. **From 14 November, proceeding on the recommendations** (the gap's earlier three questions, the record ceiling and no try-on are answered; do not ask again):
-   1. **The Round walk and home-flip:** rooftop run to the balcony gift until D4 (yes); south-east street (keep as built); plot 8 (leave it). [Plan](../plans/home-flip.md).
-   2. **Summit path:** footbridge versus east path (bridge); fence the cutting rim (not now); P2 or P1 (P2). [Plan](../plans/ring-summit-path.md).
-   3. **Traveller:** joins v45 (yes); deck built in `line2-view` (yes); haul timing (keep). [Plan](../plans/railhead-traveller.md).
-   4. **Terrain pass:** geometric ledges add little for 21,714 triangles and cause a one-frame hairline. His call; dropping them reverses his 10 November answer.
-   5. **Track layer:** the hand crosses 4 m in 0.1 s at Q5 and Q6 speed; a second hand or slower laying.
+   1. **Answered, Round walk and home-flip:** rooftop run until D4, south-east street as built, plot 8 kept; all revisitable after his walk ([decision](../decisions-rail.md#d-2026-11-14-round-blockout-recommendations-accepted)).
+   2. **Answered, summit path:** footbridge, no rim fence for now, P2 ([decision](../decisions-rail.md#d-2026-11-14-summit-path-recommendations-accepted)).
+   3. **Answered, traveller:** shared v45 reset, deck in `line2-view`, haul timing kept ([decision](../decisions-rail.md#d-2026-11-14-traveller-recommendations-accepted)).
+   4. **Answered, terrain:** no complex unwalkable geometry; remove geometric ledges, material carries the look; geometry clean-up next, walkable ground first; consider custom meshes afterward ([decision](../decisions-look.md#d-2026-11-14-terrain-simple-geometry-cleanup-first)).
+   5. **Open orchestrator default, track layer:** add a second hand so Q5/Q6 motion reads; keep laying speed. Newly stated after the owner answer; not owner-confirmed ([agent calls](../agent-calls.md#rail-construction-levels-and-travel)).
    6. **Footings:** the pier still accepts a hand-carried footing although the bill says by wagon (recommended: do not refuse it yet); "stall" versus "rotunda" on the footings board.
    7. **Turnouts:** J1 proof looks rough from above; the other junctions wait for his look.
-   8. **Draft strings to word:** "Next load: on the wagon"; the kiln, cradle, seal, great tree, rack and wagon prompts from the honest-prompts batch; the footings board lines in `src/entities/railway/footing-cues.ts`.
-   9. **Shared v45 reset:** his go-ahead before the combined reset ships, never mid-session. Rotunda 1a is ready to combine, 1b is building; the remaining pieces are listed above.
+   8. **Open orchestrator default, draft strings:** stay live until he edits them; keep one consolidated list of new strings owed to him ([agent calls](../agent-calls.md#controls-hud-and-arrival)): "Next load: on the wagon"; kiln, cradle, seal, great tree, rack and wagon prompts; footings board lines in `src/entities/railway/footing-cues.ts`.
+   9. **Answered, shared v45 reset:** go ahead once right-hand running is fixed, re-reviewed and its checkpoints pass; never mid-session; tell him before shipping ([decision](../decisions-process.md#d-2026-11-14-shared-v45-reset-go-ahead)).
    10. **Earlier unresolved calls:** apply the DESIGN.md sync-table text and agent-instruction drafts ([step 8 report](../plans/server-owned-players-step8-report.md)); settle the earlier after-the-fact independent reviews; level-pacing's "should the cart ever be ridden" (no), "are the yards still the drop box you mean" (yes), the resident's wagon line (not now), and suspect copy "No line beyond yet", "Needs the powered pick", "Stop requested".
+
+- **Answered, rotunda visibility:** no town sightline required; no sightline note in detail steps ([decision](../decisions-rail.md#d-2026-11-14-rotunda-needs-no-town-sightline)).
 
 - **Tidy:** simplify pass 3 is on main; **last pass end `12ba8f7ba`**. Start the next range after it, not from the old pass 1 or 2 endpoints.
 
 ## Next moves
 
-- The order is in "Where the work stands": review and combine rotunda 1a/1b, finish the summit footbridge, build the remaining shared-reset pieces, and get the owner's v45 go-ahead. Do not ship that reset mid-session.
-- Give the owner the Round blockout walk and its three questions; retain the proof gaps under Leftovers.
+- The order is in "Where the work stands": review and combine rotunda 1a/1b, finish the summit footbridge, build the remaining shared-reset pieces, and satisfy the recorded v45 conditions: right-hand running fixed, re-reviewed and checkpoints passing; tell the owner before shipping, never mid-session.
+- Give the owner the Round blockout walk; its three recommendations are accepted and may change after his walk. Retain the proof gaps under Leftovers.
 - Keep about three agents running; HOTBOX is down, so proofs stay local.
 - Report perf work in frame time as well as triangles ([owner call](owner-calls.md#frame-time-60)).
 - Keep the playtest guide current: https://claude.ai/artifact/Ud7yddruEMLszCgModu4WC
