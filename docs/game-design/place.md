@@ -831,7 +831,9 @@ gate and the maximum jump/glide from its roof against the railhead gap.
 coordinate in `origin`, replicated and saved. It survives a growing line, a moving stop and replans until the next
 halt. Train decks and shared rideable bodies read it directly; no tab remembers a different departure side, and
 the Railhead merge used by those bodies no longer slides on a tab-local clock. The complete old departure path stays
-until every car clears it, rather than easing only the reference point when the line grows. Tests: `test/railway-r4a-views.test.ts` (every stage's lateral, no sideways jump),
+until every car clears it, rather than easing only the reference point when the line grows. Its accepted old end
+block and signal also remain protected: a train cannot plan through that block until the whole retained departure
+clears. This includes an inbound train already committed to turn back at the old end. Tests: `test/railway-r4a-views.test.ts` (every stage's lateral, no sideways jump),
 `test/halt-lever-place.test.ts` (ends, the server's reach, 3 m from every worked site),
 `test/prefab-halts.test.ts` (every lever's ask is taken at eight stages); look:
 `dev/look/evals/running-side.ts`. The review fixes add the accepted origin field and the Pier west catalog entry
