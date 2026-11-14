@@ -55,6 +55,10 @@ export const CORE_TESTS = [
  * The guard also counts an fs read whose path is built into src/, dev/, server/, protos/ or test/fixtures and that the
  * walk does not follow, in a file a non-core test reaches (its call name: `readFileSync`, `readdir`, ...). */
 export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: string; count?: number }> = {
+  'test/meadow-on.test.ts: import': {
+    reaches: ['src/place/meadow-flags.ts'],
+    why: 'evaluates the flags module again under a query string, once for each address it must read; the same file is also imported plainly',
+  },
   'test/meadow-off.test.ts: registerHooks': {
     reaches: ['src/place/land.ts'],
     why: 'the hook only records which modules the imports already followed evaluate; land.ts is the one source it reads as text and never imports',
