@@ -3,8 +3,8 @@
 // (./home-station-view.ts). Static and drawn only: one batch a piece, no colliders, no drop. Local and cosmetic.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { kitBatch } from '../../place/look-kit.ts';
-import { LOOK, STEEL, addBlob, honeyOf, setBlob, type Paint } from '../../place/look.ts';
+import type { Paint } from '../../place/look.ts';
+import { RAIL_HEAD, SHUNT } from './works-shape.ts';
 
 /** A point on a track's centreline: world metres, `yaw` the way it runs (three.js rotation.y) and `y` its rail height
  * (layout.railY: the sleeper's base is 0.02 under it, the rail's foot 0.1 over it, as buildTrack lays them). */
@@ -12,14 +12,14 @@ export type TrackPose = { x: number; z: number; yaw: number; y: number };
 /** A track by metres along it. */
 export type TrackPath = (l: number) => TrackPose;
 
-const SLEEPER: Paint = { color: '#8a6236', grain: { axis: 'x', honey: honeyOf('#8a6236') } },
-  POST: Paint = { color: '#a2743f', grain: { axis: 'y', honey: honeyOf('#a2743f') } };
 /** The kit's sleeper and rail, metres. */
 const SLEEPER_SIZE = { length: 2.3, depth: 0.42 },
   RAIL_LENGTH = 3.05;
-const GAUGE = 0.5, // each rail from the centreline
+// One source with what rides the yard's rails (./works-shape.ts): each rail's place from the centreline, and its foot
+// over the rail height, the kit rail's 0.135 m under its head (0.1, as buildTrack's TOP).
+const GAUGE = SHUNT.gauge,
   BASE = -0.02,
-  FOOT = 0.1;
+  FOOT = RAIL_HEAD - 0.135;
 /** Another track nearer than this (centre to centre) shares its sleepers: a sleeper is 2.3 m long. */
 const SHARED = 2.4;
 
@@ -180,7 +180,17 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
     later() {
       split = [sleepers.length, plates.length, rails.length, posts.length, blobs.length];
     },
-    draw(owner: OwnedView) {
+    /** The rails laid so far, each a kit rail's matrix (its foot's middle, 3.05 m along its own z before scaling):
+     * what a vehicle on the yard's track stands on. */
+    rails: (): readonly THREE.Matrix4[] => rails,
+    /** Draws what was collected. The kit and its paints load here, so collecting needs no scene or asset. */
+    async draw(owner: OwnedView) {
+      const [{ kitBatch }, { LOOK, STEEL, addBlob, honeyOf, setBlob }] = await Promise.all([
+        import('../../place/look-kit.ts'),
+        import('../../place/look.ts'),
+      ]);
+      const SLEEPER: Paint = { color: '#8a6236', grain: { axis: 'x', honey: honeyOf('#8a6236') } },
+        POST: Paint = { color: '#a2743f', grain: { axis: 'y', honey: honeyOf('#a2743f') } };
       const cut = split ?? [sleepers.length, plates.length, rails.length, posts.length, blobs.length];
       const batch = (name: string, paint: Paint, list: THREE.Matrix4[], casts: boolean) => {
         const mesh = kitBatch(name, paint, list.length, owner);

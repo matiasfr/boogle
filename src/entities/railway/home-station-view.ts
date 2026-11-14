@@ -7,9 +7,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { line2Completed } from '../../sim/railway-queries-line2.ts';
 import { drawWorksBoxes } from './works-box-view.ts';
-import { box, stallRoadY, type WorksBox, type WorksPoint } from './works-shape.ts';
-import { sleeperStations } from './track-panels.ts';
-import type { TrackPath, TrackPose } from './yard-track.ts';
+import { box, type WorksBox, type WorksPoint } from './works-shape.ts';
 
 const STONE = '#c8c0b0',
   KERB = '#ddd6c6',
@@ -23,12 +21,12 @@ const STONE = '#c8c0b0',
   PLANK = '#b98a52';
 
 export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedView) {
-  const [{ H }, layout, home, { addFoot }, { createYardTrack }] = await Promise.all([
+  const [{ H }, layout, home, { addFoot }, { layHomeYard }] = await Promise.all([
     import('../../place/land.ts'),
     import('../../place/layout.ts'),
     import('../../place/home-station.ts'),
     import('../../place/sites.ts'),
-    import('./yard-track.ts'),
+    import('./home-yard.ts'),
   ]);
   const world = (p: { x: number; z: number }): WorksPoint => ({ x: p.x + layout.ORIGIN.x, z: p.z });
   const ground = (p: WorksPoint) => H(p.x, p.z);
@@ -42,29 +40,12 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
 
   const railAt = (road: 0 | 1, s: number) =>
     layout.railY(road ? layout.LINES.east : layout.LINES.north, Math.max(0, s));
-  const TABLE_RAIL = layout.railY(layout.LINES.east, 0);
-  // Yard track: the lines' sleepers, tie plates and rails at their gauge and heights (./yard-track.ts).
-  const yard = createYardTrack(H);
-  /** A station pose (Place-local, bearing in degrees) as a track pose at rail height `y`. */
-  const poseOf = (p: { x: number; z: number; bearing: number }, y: number): TrackPose => {
-    const b = (p.bearing * Math.PI) / 180;
-    return { ...world(p), yaw: Math.atan2(Math.sin(b), -Math.cos(b)), y };
-  };
-  const roadPath =
-    (road: 0 | 1): TrackPath =>
-    (s) =>
-      poseOf(home.roadAt(road, s), railAt(road, s));
-  /** A line's own sleepers between two of its `s`, as poses: where another track runs beside it, they carry both. */
-  const lineSleepers = (road: 0 | 1, from: number, to: number) =>
-    sleeperStations(layout.LINKS[road]!, from, to).map((t) => ({ ...roadPath(road)(t.s), depth: t.depth }));
+  // Yard track (the stubs, the spur, the stall roads and the cart's leg): the lines' sleepers, tie plates and rails
+  // at their gauge and heights, laid from the station's data (./home-yard.ts).
+  const yard = layHomeYard(H);
 
-  // ---------------------------------------------------------------- the stubs and the buffer stops
+  // ---------------------------------------------------------------- the buffer stops
   for (const road of [0, 1] as const) {
-    // The line's own track starts at s 0: the stub carries its rails and its sleepers' spacing back to the buffer.
-    const stub = roadPath(road),
-      first = sleeperStations(layout.LINKS[road]!, 0, 3)[0]?.s ?? 0.6;
-    yard.railsAlong(stub, home.BUFFERS[road] + 0.3, 0);
-    for (let s = first - 1.2; s > home.BUFFERS[road] + 0.5; s -= 1.2) yard.sleeper(stub(s));
     const p = world(home.roadAt(road, home.BUFFERS[road])),
       y = railAt(road, 0);
     const off = (x: number, ahead: number) => ({
@@ -190,16 +171,6 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   }
 
   // ---------------------------------------------------------------- the spur, the stall roads and the ruined stalls
-  {
-    // Where the spur leaves road 2 it shares road 2's sleepers, carried on under it as long timbers (no blades, frog
-    // or lever yet: docs/plans/home-station.md, step 10); its rails begin beside road 2's and run to the table's rim.
-    const start = home.roadAt(1, home.SPUR.s),
-      len = home.SPUR.segs.reduce((n, seg) => n + seg.len, 0);
-    const spur: TrackPath = (l) => poseOf(home.march(start, home.SPUR.segs, l), TABLE_RAIL);
-    const shared = yard.timbers(lineSleepers(1, home.SPUR.s, home.SPUR.s + 14), spur, 0, Math.min(len, 14));
-    yard.railsAlong(spur, yard.clearOf(spur, 0, 6, roadPath(1), home.SPUR.s, home.SPUR.s + 8), len);
-    yard.sleepersAlong(spur, shared ? shared.hi + 0.7 : 0, len);
-  }
   const lever = (p: WorksPoint, heading: number) => {
     add(box(p.x, ground(p) + 0.18, p.z, 0.5, 0.36, 0.8, heading), POST, true);
     add(box(p.x, ground(p) + 0.75, p.z, 0.08, 0.9, 0.08, heading), BRASS);
@@ -214,22 +185,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   for (const bearing of home.STALLS.bearings) {
     const f = home.stallFrame(bearing);
     const open = bearing === home.STALLS.open;
-    // The stall road: off the table's rim at the lines' height, down a ramp to ground-level rails at the door, then
-    // level: to the back wall of the open stall, a rail's length onto a ruin's floor.
-    const ramp = home.STALLS.door - home.TABLE.r,
-      end = ramp + (open ? home.STALLS.depth - 0.3 : 3);
-    const road: TrackPath = (l) => ({
-      ...world({ x: f.rim.x + f.u.x * l, z: f.rim.z + f.u.z * l }),
-      yaw: f.yaw,
-      y: stallRoadY(l, TABLE_RAIL),
-    });
-    for (const [from, to] of [
-      [0, ramp],
-      [ramp, end],
-    ] as const) {
-      yard.railsAlong(road, from, to);
-      yard.sleepersAlong(road, from, to);
-    }
+    // Its road is yard track (./home-yard.ts).
     if (open) {
       // The open stall is the Roundhouse's to draw (./roundhouse-view.ts); the little guys walk round it too.
       const mid = world(f.centre);
@@ -269,24 +225,8 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   statics.castShadow = true;
 
   // ---------------------------------------------------------------- the cart's leg, laid with line 2's first stretch
-  // Yard track too, shown once it is laid. At each end it runs beside a line and shares that line's sleepers, as the
-  // spur does; between them it has its own, on posts over the dip it crosses.
-  yard.later();
-  {
-    const { from, to, start, segs, len } = home.LEG;
-    const fromY = railAt(0, from),
-      toY = railAt(1, to);
-    const leg: TrackPath = (l) => poseOf(home.march(start, segs, l), fromY + ((toY - fromY) * l) / len);
-    const off = yard.timbers(lineSleepers(0, from - 14, from), leg, 0, 14),
-      on = yard.timbers(lineSleepers(1, to, to + 14), leg, len - 14, len);
-    yard.railsAlong(
-      leg,
-      yard.clearOf(leg, 0, 6, roadPath(0), from - 8, from),
-      yard.clearOf(leg, len, len - 6, roadPath(1), to, to + 8),
-    );
-    yard.sleepersAlong(leg, off ? off.hi + 0.7 : 0, on ? on.lo - 0.7 : len);
-  }
-  const yardTrack = yard.draw(owner);
+  // Its track is the yard's later part (./home-yard.ts); its two levers stand here.
+  const yardTrack = await yard.draw(owner);
   const legMesh = await drawWorksBoxes(
     owner,
     [side(0, home.LEG.from + 1.5, -2.4), side(1, home.LEG.to + 1.5, 2.4)].flatMap((p): WorksBox[] => [
