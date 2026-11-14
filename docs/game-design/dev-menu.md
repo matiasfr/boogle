@@ -89,8 +89,9 @@ A playtest jump-in opens a fresh private room on the real server, seeded at a st
 ## Tunables agent proof
 
 `railway.returnMinutes` is a Local preference (default 30 minutes; 0 disables remembered returns), stored in this
-browser for the next load. It is available through the tunables API and survives reloads. The return implementation
-is staged in [resume-where-you-were](../plans/resume-where-you-were.md); the fallback chain is not built in steps 1–3.
+browser for the next load. It is available through the tunables API and survives reloads
+([resume-where-you-were](../plans/resume-where-you-were.md); [first-run](first-run.md), "Returning visit"). The
+harness flag `returncover=0` lets the loading screen lift on time, to look at a late placement's fade to black.
 
 Shared URL edits wait for both appearance restoration and the initial authoritative room snapshot, then submit once. A later snapshot or reconnect never repeats that intent. Local-only URL edits do not wait for the room.
 

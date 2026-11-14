@@ -117,7 +117,11 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     veil.classList.remove('on', 'cut');
     setTimeout(() => veil.remove(), VEIL_MS + 50);
   };
+  // The body is placed 0.4 m above its surface: the cover and the pose stay held until it has touched down (or
+  // 0.6 s on), so the last of the placement is not a small drop on screen.
+  let touchdown: { kind: string; at: number } | null = null;
   const settled = (kind: string) => {
+    touchdown = null;
     returnSettle.done();
     unveil();
     bootMark('return-settled', { kind });
@@ -352,13 +356,16 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
             cam.yaw = me.yaw = savedPose!.yaw;
             cam.pitch = -0.14;
           } else atSpawn();
-          settled(result.kind);
+          touchdown = { kind: result.kind, at: performance.now() };
           returning = null;
           restorePending = false;
           landing = null;
         }
         return; // Never capture the held body, or query a second candidate in the same frame.
       }
+      // Not before 150 ms: the coyote timer from wherever the body stood before the move has run out by then.
+      const placedFor = touchdown ? performance.now() - touchdown.at : 0;
+      if (touchdown && ((placedFor > 150 && me.coyote > 0) || placedFor > 600)) settled(touchdown.kind);
       // An empty pose waits for the room's seed (one fetch, at most ten seconds) before it settles for the spawn.
       if (
         loaded &&

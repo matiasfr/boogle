@@ -90,6 +90,8 @@ function shown(after: P) {
     settledMs: settled,
     settledBeforeLift: settled !== null && interactive !== null ? settled <= interactive : null,
     veilShown: samples.some((s) => s.veil),
+    veilMs: samples.filter((s) => s.veil).length * 25,
+    veilFarthest: round(Math.max(0, ...samples.filter((s) => s.veil && s.p).map((s) => flat(s.p!, after)))),
     shownSamples: open.length,
     maxShownDistance: round(Math.max(0, ...open.map((s) => flat(s.p!, after)))),
     maxShownDrop: round(Math.max(0, ...open.map((s) => s.p!.y - after.y))),

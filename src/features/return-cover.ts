@@ -8,7 +8,7 @@ import { getRoomId, holdPresencePose } from '../netplay/net.ts';
 import { returnKey, returnSettle, storedReturn } from '../place/return-settle.ts';
 import { fallsIn } from '../player/arrival.ts';
 import { identity } from '../player/identity.ts';
-import { productionRailway } from '../proto/flags.ts';
+import { pageQuery, productionRailway } from '../proto/flags.ts';
 import { railwayRoomId } from '../world/railway-namespace.ts';
 
 if (productionRailway) {
@@ -16,6 +16,7 @@ if (productionRailway) {
     () =>
       !fallsIn() && !!storedReturn(localStorage, returnKey(railwayRoomId(getRoomId()), identity.pid), Date.now()).spot,
   );
-  holdCover(() => returnSettle.pending());
+  // `returncover=0` (a harness flag, like `intro=`) lets the cover lift on time, to look at the late placement's fade.
+  if (pageQuery().get('returncover') !== '0') holdCover(() => returnSettle.pending());
   holdPresencePose(() => returnSettle.pending());
 }

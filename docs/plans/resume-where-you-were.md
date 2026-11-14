@@ -1,4 +1,4 @@
-> **Status: steps 1–4 and 6 built (2026-11-14); step 5 and its cover proofs remain pending.** Original design base: `origin/main` at `4a5d2b9ff`. Every step is
+> **Status: steps 1–6 built (2026-11-14); Checkpoint R's reload proofs run in a browser, the ship pending.** Original design base: `origin/main` at `4a5d2b9ff`. Every step is
 > Local (this browser's body and its own localStorage): no server code, no wire field, no op, no saved state and no
 > `WORLD_NS` bump. Owner call: [A recent reload puts you back where you were](../agents/owner-calls.md#a-recent-reload-returns-you-where-you-were).
 
@@ -256,7 +256,12 @@ first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: st
   spawn; a candidate that never settles times out at 2.5 s; an expired record goes straight to spawn. One more eval
   mode (`?mode=train`): reload while seated on a moving train between two halts and land on a platform of the nearer
   one.
-- [ ] **5. Nobody sees the move** (implementer, fable medium; visual review, fable medium). Find where the loading
+- [x] **5. Nobody sees the move** (implementer, fable medium; visual review, fable medium). As built: the hold is
+  asked for at boot, before the railway view exists (`src/features/return-cover.ts` reads the record;
+  `src/boot/cover-hold.ts`, awaited in `src/main.ts` for at most 10 s; `src/place/return-settle.ts` is ended by the
+  arrival once the body has touched down), not through `arrival.settling()`; and the tab publishes no pose while it is
+  pending (`holdPresencePose`, `src/netplay/net.ts`: Local, no wire change), because `enterIsland` sends the spawn's
+  position at once and a friend would otherwise see you at Home first. The plan's text: Find where the loading
   cover lifts for the railway view and hold it while `returning` is non-null (expose `arrival.settling(): boolean`
   from `createRailwayArrival` and read it where the cover's lift is decided); if the cover has already lifted, play a
   250 ms fade out and in round the placement. Confirm the Act card and crane do not play on a return (they should not:
