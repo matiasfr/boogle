@@ -117,7 +117,7 @@ by construction, so the proof is that heights did not change and that the drawn 
   178 shadow calls, 652,455 frame triangles (`.look/evidence/1794681305151-60481/evidence.json`).
   `node dev/ship-check.ts`: pass. Heights and five collision-tile hashes saved before any ground changes;
   baseline level-check passes with 5,266 placements, zero problems and 13 reports.
-- [ ] **1. Move what stays to `src/place/`, no behaviour change.**
+- [x] **1. Move what stays to `src/place/`, no behaviour change.**
   - Create `src/place/ground-layers.ts` (pure, no three.js) with `colliderHeight`, `colliderNy`, `vertexNy`,
     `steepness`, `describeGround` and `STRATA`, moved verbatim from `src/proto/terrain-pass/surface.ts`.
   - Create `src/place/ground-material.ts` with `homeGroundMaterial()`: `roundTwoMaterial` from `materials.ts` with the
@@ -125,6 +125,9 @@ by construction, so the proof is that heights did not change and that the drawn 
   - `dev/terrain-pass/path-ground.ts`, `paths-shots.ts`, `paths-setup.ts` and `census.ts` move to `dev/ground/` with
     their imports repointed; add `dev/ground/heights-hash.ts`.
   - Verify: `node dev/ship-check.ts`; heights hash equal to main.
+  - Completed: material and numeric helpers moved, tools repointed, all six hashes identical to the pinned
+    `origin/main` baseline `22b331dba`. Local `origin/main` is advancing in other sessions; measurements keep this
+    original baseline rather than silently changing the comparison target.
 - [ ] **2. The land draws its own grid.**
   - `src/place/land.ts`: replace `applyHomePass(geo, mainEnd, inCove)` with a local `addGroundLayers(geo)` that packs
     `steep, foot, soil, gorge` for every existing vertex (grid vertices from `describeGround(cellX(i), cellZ(j))`, the

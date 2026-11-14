@@ -90,7 +90,7 @@ export function applyHomePass(
   // Packed into one attribute: a pipeline takes at most eight vertex buffers, and the land already carries five.
   const packed = new Float32Array(total * 4);
   for (let k = 0; k < total; k++) packed.set([layers.steep[k]!, layers.foot[k]!, layers.soil[k]!, gorge[k]!], k * 4);
-  geo.setAttribute('tpLayers', new THREE.BufferAttribute(packed, 4));
+  geo.setAttribute('groundLayers', new THREE.BufferAttribute(packed, 4));
   // The index: the main grid without its 1 m cells, then the rest as it was (offshore rings, the cove), then the 1 m cells.
   const old = geo.getIndex()!.array;
   const index: number[] = [];

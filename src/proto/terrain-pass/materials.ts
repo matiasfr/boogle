@@ -1,6 +1,7 @@
 // The terrain pass's wedge materials (docs/plans/terrain-pass.md). Each starts from Place's own groundMaterial() and
 // blends to it over the wedge's last metres, so the wedge has no seam at region 0. Local look experiment.
 import * as THREE from 'three/webgpu';
+import { homeGroundMaterial } from '../../place/ground-material.ts';
 import {
   abs,
   attribute,
@@ -131,6 +132,7 @@ export function coveLayersMaterial() {
  * and triplanar tile (shared, already resident), beds keyed to the drawn 1 m ledges at about a third of the cove's
  * contrast, no rust bed. Fades to today's material over the wedge's last 24 m. */
 export function roundTwoMaterial(whole = false) {
+  if (whole) return homeGroundMaterial();
   const m = groundMaterial();
   const inside: N = whole ? float(1) : region(24);
   const p = positionWorld.sub(vec3(ORIGIN.x, 0, ORIGIN.z));

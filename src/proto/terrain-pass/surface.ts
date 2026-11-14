@@ -18,7 +18,8 @@ export const wedgeCell = (i: number, j: number) =>
  * collider face's normal. Protected ground (paths, pads, trees, rocks): none. */
 export const TOLERANCE = { walkable: 0.05, steep: 0.25, protectedGround: 0 };
 /** Strata period, metres: the cove's `bandScale`, so geometric ledges and painted beds can share one rhythm. */
-export const STRATA = 2.4;
+export { STRATA, colliderHeight, colliderNy, vertexNy, steepness, describeGround } from '../../place/ground-layers.ts';
+import { STRATA, colliderHeight, colliderNy, vertexNy, steepness, describeGround } from '../../place/ground-layers.ts';
 /** The wedge's border blends back to the collider's own triangles over this many metres. */
 const EDGE_FADE = 6;
 
@@ -26,35 +27,8 @@ const corner = (i: number, j: number) =>
   heights[at(Math.max(0, Math.min(NX - 1, i)), Math.max(0, Math.min(NZ - 1, j)))]!;
 
 /** The collider's (and today's drawn) surface: the grid's anti-diagonal triangles. */
-export function colliderHeight(x: number, z: number) {
-  const fx = (x - GRID.x0) / CELL,
-    fz = (z - GRID.z0) / CELL;
-  const i = Math.min(Math.floor(fx), NX - 2),
-    j = Math.min(Math.floor(fz), NZ - 2),
-    u = fx - i,
-    v = fz - j;
-  const a = corner(i, j),
-    b = corner(i + 1, j),
-    c = corner(i, j + 1),
-    d = corner(i + 1, j + 1);
-  return u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
-}
 
 /** Up component of the collider triangle's normal under (x, z). */
-export function colliderNy(x: number, z: number) {
-  const fx = (x - GRID.x0) / CELL,
-    fz = (z - GRID.z0) / CELL;
-  const i = Math.min(Math.floor(fx), NX - 2),
-    j = Math.min(Math.floor(fz), NZ - 2),
-    u = fx - i,
-    v = fz - j;
-  const a = corner(i, j),
-    b = corner(i + 1, j),
-    c = corner(i, j + 1),
-    d = corner(i + 1, j + 1);
-  const [gx, gz] = u + v <= 1 ? [(b - a) / CELL, (c - a) / CELL] : [(d - c) / CELL, (d - b) / CELL];
-  return 1 / Math.hypot(1, gx, gz);
-}
 
 function cubic(a: number, b: number, c: number, d: number, t: number) {
   return b + 0.5 * t * (c - a + t * (2 * a - 5 * b + 4 * c - d + t * (3 * (b - c) + d - a)));
@@ -114,27 +88,8 @@ export function protection(x: number, z: number) {
  * both their triangles there), so four diagonal probes are not enough: a probe along a cell's own diagonal lands on one
  * of its two triangles and never sees the other (review, 14 November: a walkable face sank 0.49 m that way). These
  * eight directions fall strictly inside each of the six, and inside both faces at an edge's midpoint or a cell's centre. */
-export function vertexNy(x: number, z: number) {
-  const e = 1e-3;
-  let flattest = 0;
-  for (const [dx, dz] of [
-    [2, 1],
-    [1, 2],
-    [-1, 2],
-    [-2, 1],
-    [-2, -1],
-    [-1, -2],
-    [1, -2],
-    [2, -1],
-  ] as const)
-    flattest = Math.max(flattest, colliderNy(x + dx * e, z + dz * e));
-  return flattest;
-}
 
 /** How unwalkable the collider is here: 0 on walkable ground, 1 on rock you can't stand on. */
-export function steepness(x: number, z: number) {
-  return smoothstep(WALKABLE_NY, WALKABLE_NY - 0.15, vertexNy(x, z));
-}
 
 /** Height-keyed strata ledges: flat treads, steep risers, one per STRATA metres, wandering gently sideways. */
 function ledge(x: number, z: number, h: number) {
@@ -190,32 +145,6 @@ function describe(x: number, z: number, k: number, out: Layers) {
 }
 
 /** Round two's per-vertex inputs (how unwalkable, foot-to-rim, the broad soil slope) at a Place-local point. */
-export function describeGround(x: number, z: number, k: number, out: Pick<WedgeSurface, 'steep' | 'foot' | 'soil'>) {
-  out.steep[k] = steepness(x, z);
-  // Foot-to-rim position within a 6 m neighbourhood of the collider.
-  let lo = Infinity,
-    hi = -Infinity;
-  for (const [dx, dz] of [
-    [-6, 0],
-    [6, 0],
-    [0, -6],
-    [0, 6],
-    [0, 0],
-  ]) {
-    const s = colliderHeight(x + dx!, z + dz!);
-    lo = Math.min(lo, s);
-    hi = Math.max(hi, s);
-  }
-  out.foot[k] = hi - lo > 0.5 ? (colliderHeight(x, z) - lo) / (hi - lo) : 1;
-  let gx = 0,
-    gz = 0;
-  for (const o of [-1.5, 0, 1.5]) {
-    const w = o === 0 ? 2 : 1;
-    gx += w * (colliderHeight(x + 3, z + o) - colliderHeight(x - 3, z + o));
-    gz += w * (colliderHeight(x + o, z + 3) - colliderHeight(x + o, z - 3));
-  }
-  out.soil[k] = 1 / Math.hypot(1, gx / 24, gz / 24);
-}
 
 /** The strata ledges' vertical offset at a Place-local point, for ground kept by `keep` (0 free .. 1 exact): nothing on
  * walkable ground, at most TOLERANCE.steep along the face's normal on rock you can't stand on. */

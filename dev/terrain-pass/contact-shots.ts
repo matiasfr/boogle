@@ -10,8 +10,8 @@ export default {
   beats: [
     {
       name: 'Contact',
-      query: 'dev=1',
-      setup: 'dev/terrain-pass/census.ts',
+      query: 'dev=1&graphics=farGround:false',
+      setup: 'dev/ground/census.ts',
       warm: 3,
       cameras: [
         { name: 'Along the face', cam: [957.6, 3.1, 99.6], look: [956.6, 2.7, 102.7], fov: 45 },

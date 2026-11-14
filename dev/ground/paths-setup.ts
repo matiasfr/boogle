@@ -1,4 +1,4 @@
-// Page setup for the paths stills (dev/terrain-pass/paths-shots.ts): Buddy stands on the canyon path, part-way up the
+// Page setup for the paths stills (dev/ground/paths-shots.ts): Buddy stands on the canyon path, part-way up the
 // bench cut into the gorge's east wall, for scale.
 const { me, cam } = await import('/src/player/player.ts' as string);
 const { teleport } = await import('/src/physics/engine.ts' as string);

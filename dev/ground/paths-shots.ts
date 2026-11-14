@@ -2,7 +2,7 @@
 // the gorge's east wall (walking up, looking back down, from across the valley), a town path, the shore path, the wedge
 // and the island from afar. Run it on the commit before and the commit after; TP_LABEL names the cells and TP_QUERY adds
 // a query (`terrain=0` is the ground before the pass).
-// `TP_LABEL=before node dev/look/shots.ts dev/terrain-pass/paths-shots.ts --name tp-paths-before`.
+// `TP_LABEL=before node dev/look/shots.ts dev/ground/paths-shots.ts --name tp-paths-before`.
 import type { ShotList } from '../look/shot-types.ts';
 
 const label = process.env.TP_LABEL ?? 'now';
@@ -15,7 +15,7 @@ export default {
     {
       name: 'Paths',
       query: 'dev=1',
-      setup: 'dev/terrain-pass/paths-setup.ts',
+      setup: 'dev/ground/paths-setup.ts',
       warm: 3,
       cameras: [
         { name: 'Canyon path, walking up', cam: [957.6, 5.2, -91.5], look: [946, 8.5, -112], fov: 55 },
