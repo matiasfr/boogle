@@ -271,6 +271,8 @@ flag, with matched before and after stills and a walk clip. He judges the wedge,
 
 **Not in this proposal:** climbing, breakable rocks, anything a player uses. Pieces are scenery with colliders.
 
+**Reference:** [small-magic-look](../research/small-magic-look.md) (owner's look reference, 14 November): what makes a code-drawn meadow's ground and vegetation read well, and three flagged experiments for a lawn wedge.
+
 **Open questions for Part 3 (recommended answer first)**
 
 1. Start the kit after Part 2a ships? **Yes**: the path and material are settled first, so the kit is judged against
