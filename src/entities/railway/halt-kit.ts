@@ -1,12 +1,7 @@
 // Compiled kit in the existing platform frame. The view still owns drop animation and its original body order.
-import artifact from '../../../content/built/prefabs.json' with { type: 'json' };
-import level from '../../../content/built/levels/halt-kit.json' with { type: 'json' };
-import type { PrefabArtifact } from '../../prefab/types.ts';
-import { loadLevelArtifact } from '../../prefab/validate.ts';
+import { haltKitPlacements as placements } from '../../prefab/catalogue.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
-// instantiate already loads/validates the one prefab catalogue. Validate only this level's references here.
-const placements = loadLevelArtifact(level, (artifact as unknown as PrefabArtifact).prefabs).placements;
 export function createHaltKit(
   owner: OwnedView,
   row: number,
@@ -30,10 +25,12 @@ export function createHaltKit(
   return {
     parts: instances.flatMap(({ instance }) => instance.parts),
     enable(piece: string) {
-      const item = instances.find((i) => i.piece === piece)?.instance;
-      if (!item) return [];
-      item.setEnabled(true);
-      return item.bodies;
+      return instances
+        .filter((i) => i.piece === piece)
+        .flatMap(({ instance }) => {
+          instance.setEnabled(true);
+          return instance.bodies;
+        });
     },
     disable() {
       const removed = new Set(instances.flatMap(({ instance }) => instance.bodies));

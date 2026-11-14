@@ -4,12 +4,11 @@ import { canonical } from './compiler.ts';
 import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
 import { HALTS, UP_HALTS } from '../../src/place/layout.ts';
 import { ISLAND, HEADS, BUFFERS, LINE_ORIGIN, AXIS } from '../../src/place/home-station.ts';
-import { haltDeck, haltPiece, type HaltPiece } from '../../src/content/prefabs/halts.ts';
-import type { LevelDef, Placement, PrefabDef } from '../../src/prefab/types.ts';
+import { prefabs as shared, haltSolids, type HaltPiece } from '../../src/content/prefabs/halts.ts';
+import type { JsonObject, LevelDef } from '../../src/prefab/types.ts';
 
 export function haltKitContent() {
-  const prefabs: PrefabDef[] = [],
-    placements: Placement[] = [];
+  const entries: JsonObject[] = [];
   const pier = RAIL_HALTS.find((h) => h.name === 'Pier')!;
   const down = [
     ...HALTS,
@@ -34,8 +33,12 @@ export function haltKitContent() {
         : ['deck', 'shelter', 'bench', 'mast'];
     for (const piece of pieces) {
       const key = `railway.halt-${id}-${h.up ? 'up' : 'down'}-${piece}` as const;
-      prefabs.push(piece === 'deck' ? haltDeck(key, h.row, h.up) : haltPiece(key, piece, Math.sign(h.lat), hw, half));
-      placements.push({ id: key, prefab: key, pos: [0, 0, 0], params: { row: h.row, up: h.up, halt: id, piece } });
+      entries.push({
+        id: key,
+        prefab: `railway.halt-${piece}`,
+        params: { row: h.row, up: h.up, halt: id, piece, sign: Math.sign(h.lat), hw, half },
+        colliders: haltSolids(piece, Math.sign(h.lat), hw, half),
+      });
     }
   }
   // Frame construction still lives in the views. Keep its authored inputs in the freshness contract too.
@@ -47,6 +50,8 @@ export function haltKitContent() {
     home: { heads: HEADS, buffers: BUFFERS, island: ISLAND, origin: LINE_ORIGIN, bearing: AXIS.bearing },
   };
   const sourceFingerprint = createHash('sha256').update(canonical(dependencies)).digest('hex');
-  const levels: LevelDef[] = [{ place: 'halt-kit', placements, analysis: { sourceFingerprint } }];
-  return { prefabs, levels };
+  const levels: LevelDef[] = [
+    { place: 'halt-kit', placements: [], layout: { kind: 'halt-kit', sourceFingerprint, entries } },
+  ];
+  return { prefabs: shared, levels };
 }

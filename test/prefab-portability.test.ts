@@ -56,6 +56,7 @@ test('page startup has exactly one catalogue validation owner shared by every co
     'src/entities/route-greybox/boxes.ts',
     'src/entities/route-greybox/leg2-draw.ts',
     'src/prefab/instantiate.ts',
+    'src/entities/railway/halt-kit.ts',
   ])
     assert.match(
       fs.readFileSync(file, 'utf8'),
@@ -66,7 +67,7 @@ test('page startup has exactly one catalogue validation owner shared by every co
 
 // A fresh Node process prevents other unit tests' ESM caches from hiding duplicate startup validation.
 // This executes consumer imports under a validator spy; it needs no Git refs or timing assumptions.
-test('importing all nine page consumers validates the catalogue exactly once', () => {
+test('importing all ten page consumers validates the catalogue exactly once', () => {
   const preloads = process.execArgv.flatMap((arg, k, args) =>
     arg === '--import' ? [arg, args[k + 1]!] : arg.startsWith('--import=') ? [arg] : [],
   );
@@ -77,7 +78,7 @@ test('importing all nine page consumers validates the catalogue exactly once', (
       { encoding: 'utf8' },
     ),
   );
-  assert.deepEqual(result, { consumers: 9, catalogueValidations: 1, directValidations: 0 });
+  assert.deepEqual(result, { consumers: 10, catalogueValidations: 1, directValidations: 0 });
 });
 
 // Current committed content: 181 records / 312,535 canonical bytes, including all levels.
@@ -118,8 +119,30 @@ test('artifact serialization is independent of runtime native transcendental res
     }
     writeArtifacts(
       compile(
-        [...greybox, ...town, ...rock, ...railway, ...kit, ...shop, ...curio, ...museum, ...rooms, ...house, ...haltKitContent().prefabs],
-        [...leg2, ...gorge, ...workshop, ...kitLevels, ...shopLevels, ...museumLevels, ...roomLevels, ...houseLevels, ...haltKitContent().levels],
+        [
+          ...greybox,
+          ...town,
+          ...rock,
+          ...railway,
+          ...kit,
+          ...shop,
+          ...curio,
+          ...museum,
+          ...rooms,
+          ...house,
+          ...haltKitContent().prefabs,
+        ],
+        [
+          ...leg2,
+          ...gorge,
+          ...workshop,
+          ...kitLevels,
+          ...shopLevels,
+          ...museumLevels,
+          ...roomLevels,
+          ...houseLevels,
+          ...haltKitContent().levels,
+        ],
       ),
       'content/built',
       true,
@@ -160,24 +183,25 @@ test('authored full-precision values round-trip losslessly; no decimal quantizat
   const outputs = compile([], [{ place: 'exact', placements: [], analysis: { authored: n } }]);
   assert.equal(JSON.parse(outputs.get('levels/exact.json')!).analysis.authored, n);
 });
-test('authored halt collider expressions reject coercion, unknown operations and mixed expanded data', () => {
-  const record = haltKitContent().prefabs.find((p) => p.key.endsWith('-canopy'))!;
-  const load = (layout: unknown, colliders: unknown = []) =>
-    validation.loadPrefabArtifact({
-      ...metadata,
-      format: 'boogle-prefabs',
-      prefabs: { [record.key]: { ...record, layout, colliders } },
-    });
+test('authored halt collider expressions reject coercion and invalid geometry', () => {
+  const level = haltKitContent().levels[0]!;
+  const load = (entry: unknown) =>
+    validation.loadLevelArtifact(
+      { ...metadata, format: 'boogle-level', ...level, layout: { ...level.layout, entries: [entry] } },
+      validation.loadPrefabArtifact(artifact).prefabs,
+    );
+  const source = (level.layout!.entries as readonly import('../src/prefab/types.ts').JsonObject[]).find(
+    (p) => (p.params as import('../src/prefab/types.ts').JsonObject).piece === 'canopy',
+  )!;
   for (const bad of [
     null,
-    { kind: 'colliders', colliders: null },
-    { kind: 'colliders', colliders: [{ shape: 'box', at: [0, { compute: 'add', a: '1', b: 2 }, 0], half: [1, 1, 1] }] },
-    { kind: 'colliders', colliders: [{ shape: 'box', at: [0, { compute: 'unknown' }, 0], half: [1, 1, 1] }] },
-    { kind: 'colliders', colliders: [{ shape: 'box', at: [0, 0, 0], half: [1, 0, 1] }] },
+    { ...source, colliders: null },
+    { ...source, colliders: [{ at: [0, { compute: 'add', a: '1', b: 2 }, 0], half: [1, 1, 1] }] },
+    { ...source, colliders: [{ at: [0, { compute: 'unknown' }, 0], half: [1, 1, 1] }] },
+    { ...source, colliders: [{ at: [0, 0, 0], half: [1, 0, 1] }] },
   ])
     assert.throws(() => load(bad));
-  assert.throws(() => load(record.layout, [{ shape: 'box', at: [0, 0, 0], half: [1, 1, 1] }]));
-  assert.equal(load(record.layout).prefabs[record.key]!.colliders.length, 4);
+  assert.equal(load(source).placements.length, 5);
 });
 test('runtime golden permits only tight numeric error and preserves structural contracts', () => {
   prefabGolden(

@@ -5,15 +5,12 @@ import { H } from '../place/terrain.ts';
 import { SEA } from '../constants.ts';
 import type { PrefabDef } from './types.ts';
 
-export function resolveHaltDeck(record: PrefabDef): PrefabDef {
-  if (!('builder' in record.visual) || record.visual.builder !== 'railway.halt-parts')
-    throw new Error('prefabs: halt deck needs its parts builder');
-  const { row, up } = record.layout!;
-  if (typeof row !== 'number' || !Number.isInteger(row) || row < 0 || typeof up !== 'boolean')
+export function haltDeck(row: number, up: boolean) {
+  if (!Number.isInteger(row) || row < 0 || typeof up !== 'boolean')
     throw new Error('prefabs: invalid halt deck selector');
   const sources = up ? UP_HALTS : [...HALTS, { line: 1 as const, s0: 719, s1: 741, lat: 2.9, island: false }];
   const h = sources[row];
-  if (!h || record.colliders.length) throw new Error('prefabs: invalid halt deck recipe');
+  if (!h) throw new Error('prefabs: invalid halt deck recipe');
   const island = 'island' in h && h.island;
   if (island && h.line !== 0) throw new Error('prefabs: only the first Home edge owns its deck');
   const line = LINKS[h.line]!.line;
@@ -31,11 +28,5 @@ export function resolveHaltDeck(record: PrefabDef): PrefabDef {
       at: [0, (ground - low - 0.5) / 2, 0],
       half: [hw, (low - 0.5 - ground) / 2 + 0.2, half],
     });
-  const resolved: PrefabDef = {
-    ...record,
-    colliders,
-    visual: { ...record.visual, params: { ...record.visual.params, hw, half, low, ground, overWater } },
-  };
-  delete resolved.layout;
-  return resolved;
+  return { colliders, params: { hw, half, low, ground, overWater } };
 }

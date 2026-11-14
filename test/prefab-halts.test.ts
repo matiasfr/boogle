@@ -105,7 +105,16 @@ test('all halt kit placements, colliders, lever plaques and ordered prompts reta
   });
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
     fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
-    { THREE, artifact, workshop, gorge, names, ...validation, builders, staticBody: addStatic },
+    {
+      THREE,
+      compiled: validation.loadPrefabArtifact(artifact),
+      workshop,
+      gorge,
+      names,
+      ...validation,
+      builders,
+      staticBody: addStatic,
+    },
   );
   const createHaltKit = sourceFunction('src/entities/railway/halt-kit.ts', 'createHaltKit', {
     createOwnedView,

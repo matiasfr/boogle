@@ -18,6 +18,7 @@ const consumerPaths = [
   'entities/route-greybox/boxes.ts',
   'entities/route-greybox/leg2-draw.ts',
   'prefab/instantiate.ts',
+  'entities/railway/halt-kit.ts',
 ];
 const bootstrapPaths = ['entities/town/index.ts', 'entities/town/view.ts'];
 const real = new Set(
@@ -70,7 +71,7 @@ mock.module(new URL('../../src/prefab/validate.ts', import.meta.url), {
   exports: { ...validation, loadPrefabArtifact: load, validateArtifact: rawValidation },
   cache: true,
 });
-// Verify and evaluate all nine real modules without acquiring their legacy constructor exports.
+// Verify and evaluate all ten real modules without acquiring their legacy constructor exports.
 const consumerFixture = new URL('./prefab-consumers.ts', import.meta.url);
 const fixtureImports = parseSync('prefab-consumers.ts', fs.readFileSync(consumerFixture, 'utf8'))
   .program.body.filter((node) => node.type === 'ImportDeclaration')
@@ -93,7 +94,7 @@ for (const file of consumerPaths)
   assert.ok(reached.has(new URL(file, sourceRoot).href), `${file}: real startup import is missing`);
 const { roomCamera } = await import('./prefab-consumers.ts');
 assert.equal(typeof roomCamera.enter, 'number');
-assert.equal(load.mock.callCount(), 1, 'all nine consumer imports must share one catalogue validation');
+assert.equal(load.mock.callCount(), 1, 'all ten consumer imports must share one catalogue validation');
 assert.equal(rawValidation.mock.callCount(), 0, 'no consumer may directly revalidate the shared catalogue');
 // A repeated import must reuse the already validated catalogue too.
 await import('../../src/prefab/catalogue.ts');

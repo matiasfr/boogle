@@ -1,13 +1,23 @@
-// Compiler-authored halt-local records. Catalog selectors stay in dev/prefab/halts.ts.
+// Shared kit specifications. All halt-specific operands belong to generated level placements.
 import { add, sub, mul, type Scalar } from '../../prefab/authoring.ts';
 import type { JsonObject, PrefabDef } from '../../prefab/types.ts';
-
-// Generated variants are added by the compiler, after joining the sim catalog with the view layout.
-export const prefabs: PrefabDef[] = [];
 export type HaltPiece = 'deck' | 'shelter' | 'bench' | 'canopy' | 'mast';
-export function haltPiece(key: PrefabDef['key'], piece: HaltPiece, sign: number, hw: number, half: number): PrefabDef {
+export const prefabs: PrefabDef[] = [
+  ...(['deck', 'shelter', 'bench', 'canopy', 'mast'] as const).map((piece): PrefabDef => ({
+    key: `railway.halt-${piece}`,
+    visual: { builder: 'railway.halt-parts', params: { piece } },
+    colliders: [],
+    scope: 'owner',
+  })),
+  {
+    key: 'railway.halt-solid',
+    visual: { none: true },
+    colliders: [{ shape: 'box', at: [0, 0, 0], half: [0.5, 0.5, 0.5] }],
+    scope: 'owner',
+  },
+];
+export function haltSolids(piece: HaltPiece, sign: number, hw: number, half: number): JsonObject[] {
   const solid = (x: Scalar, y: Scalar, z: Scalar, hx: number, hy: number, hz: number) => ({
-    shape: 'box',
     at: [x, y, z],
     half: [hx, hy, hz],
   });
@@ -19,21 +29,5 @@ export function haltPiece(key: PrefabDef['key'], piece: HaltPiece, sign: number,
     for (const f of [-0.75, -0.25, 0.25, 0.75])
       colliders.push(solid(0, 2.3, mul(f, sub(mul(half, 2), 2)), 0.12, 2.3, 0.12));
   if (piece === 'mast') colliders.push(solid(mul(sign, sub(hw, 0.3)), 2.2, sub(half, 0.8), 0.07, 2.2, 0.07));
-  return {
-    key,
-    visual: { builder: 'railway.halt-parts', params: { piece, sign, hw, half } },
-    colliders: [],
-    layout: { kind: 'colliders', colliders },
-    scope: 'owner',
-  };
-}
-
-export function haltDeck(key: PrefabDef['key'], row: number, up: boolean): PrefabDef {
-  return {
-    key,
-    visual: { builder: 'railway.halt-parts', params: { piece: 'deck' } },
-    colliders: [],
-    layout: { kind: 'halt-deck', row, up },
-    scope: 'owner',
-  };
+  return colliders;
 }

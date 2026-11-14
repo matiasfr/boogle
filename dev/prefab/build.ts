@@ -26,7 +26,6 @@ for (const file of fs.globSync('src/content/{prefabs,levels}/*.ts', { cwd: root 
   }
 }
 const halts = haltKitContent();
-prefabs.push(...halts.prefabs);
 levels.push(...halts.levels);
 assertAuthoredNumbers({ prefabs, levels }, 'authored content');
 const outputs = compile(prefabs, levels, { ...names, assets: readManifest() });
