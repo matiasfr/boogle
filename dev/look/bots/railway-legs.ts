@@ -27,6 +27,27 @@ export async function legRoute({ bot, checkpoint, leg = 0 }: LegRoute) {
   const row = () => legRow(rw(), leg);
   const laid = () => row().laid;
   const island = cm(RING_HALT.down);
+  const islandWest = cm(RING_HALT.up);
+  const nearerEast = () => bot.dist(island.x, island.z) < bot.dist(islandWest.x, islandWest.z);
+  const crossIsland = async (toWest: boolean) => {
+    const east = (RING_HALT.downLat[0] + RING_HALT.downLat[1]) / 200,
+      west = (RING_HALT.offsetLat[0] + RING_HALT.offsetLat[1]) / 200,
+      from = toWest ? east : west,
+      to = toWest ? west : east,
+      planks = (RING_CROSSING.u0 + RING_CROSSING.u1) / 2;
+    for (const [u, lat] of [
+      [RING_CROSSING.rampTop + 0.5, from],
+      [planks, from],
+      [planks, to],
+      [RING_CROSSING.rampTop + 0.5, to],
+    ] as const) {
+      const p = cm(ringAt(u * 100, lat * 100));
+      check(
+        await bot.walk(p.x, p.z, 0.5),
+        `Ring Island foot crossing toward the ${toWest ? 'west frame' : 'outward platform'}`,
+      );
+    }
+  };
   const near = (p: { x: number; z: number }, r: number) =>
     !!me.body && Math.hypot(me.body.position.x - p.x / 100, me.body.position.z - p.z / 100) < r;
   const untilTicks = async (fn: () => unknown, beat: string, ticks: number) => {
@@ -100,17 +121,7 @@ export async function legRoute({ bot, checkpoint, leg = 0 }: LegRoute) {
       await until(() => me.coyote > 0 && !me.swimming, `standing at section ${k + 1}'s halt`, 10000);
     }
     // Outward arrivals now stand east. Reach the west-side frame by the south foot crossing, never over live rails.
-    if (k === 0 && near(RING_HALT.down, 25)) {
-      for (const [u, lat] of [
-        [RING_CROSSING.rampTop + 0.5, (RING_HALT.downLat[0] + RING_HALT.downLat[1]) / 200],
-        [(RING_CROSSING.u0 + RING_CROSSING.u1) / 2, (RING_HALT.downLat[0] + RING_HALT.downLat[1]) / 200],
-        [(RING_CROSSING.u0 + RING_CROSSING.u1) / 2, (RING_HALT.offsetLat[0] + RING_HALT.offsetLat[1]) / 200],
-        [RING_CROSSING.rampTop + 0.5, (RING_HALT.offsetLat[0] + RING_HALT.offsetLat[1]) / 200],
-      ] as const) {
-        const p = cm(ringAt(u * 100, lat * 100));
-        check(await bot.walk(p.x, p.z, 0.5), 'crossed to the west-side frame by the foot crossing');
-      }
-    }
+    if (k === 0 && nearerEast()) await crossIsland(true);
     check(await bot.walk(frame.x / 100, frame.z / 100, 3), `walked to section ${k + 1}'s frame`);
     await checkpoint(`section ${k + 1} frame reached`);
 
@@ -168,8 +179,12 @@ export async function legRoute({ bot, checkpoint, leg = 0 }: LegRoute) {
         stop: here,
         stands,
         handle: () => lever(),
+        before: async (handle) => {
+          if (k === 0 && !nearerEast()) await crossIsland(false);
+          check(await bot.walk(handle.x, handle.z, 0.6), 'walked onto the outward lever platform');
+        },
         calling: () => !!lever()?.over,
-        wait: cm(legFrame(L, k)),
+        wait: k === 0 ? island : cm(legFrame(L, k)),
       },
       stop,
       { askEach: true },

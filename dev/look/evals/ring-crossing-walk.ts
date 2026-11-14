@@ -440,8 +440,8 @@ background(
         const st = standing(c.track);
         const inside = st ? mid.u > st.u0 && mid.u < st.u1 && Math.abs(mid.lat - c.lat) < 1.4 : false;
         // Then try to get out: up the nearer platform's kerb by the plain jump.
-        const plat = c.track === 0 ? WEST : EAST,
-          face = c.track === 0 ? WEST.lat1 : EAST.lat0;
+        const plat = c.track === 0 ? EAST : WEST,
+          face = c.track === 0 ? EAST.lat0 : WEST.lat1;
         const t1 = railAt();
         const out = await go(mid.u, plat.mid, 0.6, 300, (p) => p.y < PLAT_Y - 0.3 && Math.abs(p.lat - face) < 0.95);
         const r = {

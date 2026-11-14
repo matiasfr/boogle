@@ -31,6 +31,7 @@ import { layout, parseMapPage } from '../../src/sickle/map-data.ts';
 import { RING_CONES, ringHeight } from '../../src/proto/greybox/ground.ts';
 import { WORLD_LINES, FORMATION } from '../../src/sim/railway-world-lines.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
+import { HALT_PIER } from '../../src/prefab/halt-deck.ts';
 import { RING_HALT, RING_HEAD, RING_LOOP, RING_S_HEAD, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
 import {
@@ -622,7 +623,8 @@ function liveHaltRows(): HaltRow[] {
         `${dir}: platform s ${r1(plat.s0)}-${r1(plat.s1)} (${r1(plat.s1 - plat.s0)} m, lat ${r1(plat.lat)}); stop s ${stop}: passenger car ${onPlat ? 'on it' : `OFF it (${r1(Math.max(plat.s0 - (stop - pass), stop + pass - plat.s1))} m over)`}; long train s ${r1(a)}-${r1(b)} (${r1(bb)} with the longer engine): ${r1(Math.max(0, plat.s0 - a))} m behind, ${r1(Math.max(0, bb - plat.s1))} m ahead of the platform`,
       );
       if (!onPlat) flags.push(`${dir}: passenger car off the platform at the shared mark s ${stop}`);
-      const tracks = dir.startsWith('up') ? ['both', 'up'] : ['both', 'down'];
+      // Obstacle keys are physical sides; halt fields above are directions.
+      const tracks = dir.startsWith('up') ? ['both', 'down'] : ['both', 'up'];
       for (const o of obs) {
         if (!tracks.includes(o.tracks)) continue;
         const foulLong = a < o.s1 && bb > o.s0;
@@ -656,6 +658,15 @@ function liveHaltRows(): HaltRow[] {
       plats: h.name.startsWith('Village')
         ? []
         : [
+            ...(h.name === 'Pier'
+              ? [
+                  {
+                    pts: liveSpan(L.line, HALT_PIER.s0, HALT_PIER.s1),
+                    lat: HALT_PIER.lat,
+                    label: 'east terminal before Q7; inactive after Q7',
+                  },
+                ]
+              : []),
             ...(h.up ? [{ pts: liveSpan(L.line, h.up.s0, h.up.s1), lat: h.up.lat, label: 'up' }] : []),
             ...(h.down && h.down !== h.up
               ? [{ pts: liveSpan(L.line, h.down.s0, h.down.s1), lat: h.down.lat, label: 'down' }]
@@ -672,7 +683,7 @@ function liveHaltRows(): HaltRow[] {
     x: r1(head.platform.x / 100),
     z: r1(head.platform.z / 100),
     platforms:
-      'down only, 25 m (u − 25 to u), lat +1.8 to +6.3; after the Meet an offset platform on the last bent (call 14)',
+      'original east platform, 25 m (u − 25 to u), lat +1.8 to +6.3; both ways at the end, outward after extension; homeward on the offset platform',
     stops: 's = u − 10 m (engine nose u − 3.8; the buffer face u − 1.8)',
     turns: 'buffers (stub, moving)',
     turnsAfter: 'buffers, then through after the Meet',
@@ -735,7 +746,10 @@ function futureHaltRows(): HaltRow[] {
       const row = by.get(name) ?? { lines: [], x: h.x / 100, z: h.z / 100, ends: [], plats: [] };
       const span = worldSpan(l, l.stops[i]! - 2000, l.stops[i]! + 2000);
       const off = FORMATION.platformCm / 100;
-      row.plats.push({ pts: span, lat: -off, label: `${l.name} up` }, { pts: span, lat: off, label: `${l.name} down` });
+      row.plats.push(
+        { pts: span, lat: off, label: `${l.name} outward` },
+        { pts: span, lat: -off, label: `${l.name} homeward` },
+      );
       row.lines.push(l.name);
       const e = l.ends.find((x) => (x.at === 'start' && i === 0) || (x.at === 'end' && i === l.halts.length - 1));
       if (e) row.ends.push(`${l.name}: ${e.kind}`);

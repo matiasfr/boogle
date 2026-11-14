@@ -65,8 +65,9 @@ export function line2Rides(bot: Bot) {
         before: async (lever) => {
           if (handle()?.platform === 'up') {
             const up = offset()!;
-            for (const [i, p] of [...up.path].reverse().entries())
-              check(await bot.walk(p.x, p.z, 0.5), `${halt().name} crossing to homeward platform, step ${i + 1}`);
+            if (bot.dist(up.x, up.z) > bot.dist(halt().x, halt().z))
+              for (const [i, p] of [...up.path].reverse().entries())
+                check(await bot.walk(p.x, p.z, 0.5), `${halt().name} crossing to homeward platform, step ${i + 1}`);
             check(await bot.walk(up.x, up.z, 0.5), `onto ${halt().name}'s homeward platform`);
           }
           check(await bot.walk(lever.x, lever.z, 0.6), `walked onto ${halt().name}'s lever platform`);
@@ -193,12 +194,15 @@ export function line2Rides(bot: Bot) {
     const arrivalId = view().halts.findIndex((h) => h.line === 1 && h.stop === destination);
     const arrival = view().halts[arrivalId]!;
     const up = view().upPlatforms.find((u) => u.pair === arrivalId);
-    const served = arrival.lever.find((h) => h.on && !h.chained && h.dir === dir);
+    // A homeward-only destination (Pier after Q7) may be served after the outward train has turned back.
+    const arrivalDir = row().track ? -1 : 1;
+    const served = arrival.lever.find((h) => h.on && !h.chained && h.dir === arrivalDir);
     if (up?.up && served?.platform === 'up') {
       // A straight walk can leave the car below the platform lip; hop onto the deck with the same real inputs
       // used to leave a car at the later halts.
       await hopTo(up.x, up.z, `stepped off onto the ${arrival.name} up platform`, 12000, 0.5);
       await until(() => !aboard() && me.coyote > 0, 'off the train, on the up platform', 10000);
+      if (arrivalId === HALT.pier) return { slot, row, train, aboard };
       for (const [i, p] of up.path.entries())
         check(await bot.straight(p.x, p.z, 0.5, 12000), `${arrival.name} plank crossing, step ${i + 1}`);
     }
