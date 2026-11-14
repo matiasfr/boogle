@@ -1,6 +1,6 @@
 # Terrain clean: no cliff ledges, clean walkable ground, then custom meshes
 
-_Plan, 14 November 2026. Part 1 approved, in progress; Parts 2 and 3 not started. Original survey measured on main at `b2157fb6b`; every still was taken under load
+_Plan, 14 November 2026. Part 1 implemented and checkpoint A recorded; Parts 2 and 3 not started. Original survey measured on main at `b2157fb6b`; every still was taken under load
 (1-minute load 16 to 34), so stills are evidence of shape and colour only, not of timing, shimmer or motion. Not tested
 on a device._
 
@@ -173,6 +173,33 @@ bench because this broker has no bench operation; no frame timing is measured fo
 Chromium bypass is allowed. The matched cove camera is (809, 3, 49), looking at (760, 0, 15), FOV 62, 960 × 600,
 fixed DPR 1, MSAA 4. Baseline/after: 266/266 draws, 178/178 shadow draws, 652,455/649,905 frame triangles.
 No push or ship in this job; the owner requested local commits only.
+
+### Checkpoint A results, 14 November
+
+- [x] All six hashes equal the original `origin/main` baseline `22b331dba`: raw heights plus five complete collision
+  tiles. The normalized level-check diff is empty: 5,266 placements, zero grounding problems, 13 reports. No height,
+  collider or placed object moved. Exact terrain.ts deletions are listed under step 3 for sibling branches.
+- [x] Independent actual-render-buffer census repeated after steps 3 and 4: 805 static bodies, 612 terrain-grounded,
+  97,399 footing samples and 1,633,313 walkable-grid samples. Footing worst gap before/after:
+  **0.000001787839970290861 / 7.860379014346108e-14 m**; grid worst:
+  **0.25000011920928955 / 8.597842645619025e-06 m**. Counts over 1 cm: footings **0 / 0**, grid **41 / 0**.
+  The after grid maximum is on the cove kit at world (802.5, 49.5), where Float32 rendered coordinates meet the
+  original collider recipe. The footing maximum is numerical zero to float precision. Fresh census manifest:
+  `.look/evidence/1794682704266-91488/evidence.json`, load 20.35 to 20.96; its wall PNG was opened.
+- [x] Full ground: **263,550 to 241,836 triangles**, **134,980 to 122,500 vertices**: exactly **21,714 fewer
+  triangles and 12,480 fewer vertices**. Matched cove render counts: **266 to 266 draws**, **178 to 178 shadow
+  draws**, **652,455 to 649,905 frame triangles**. Camera pose, FOV, dimensions, DPR and MSAA match the baseline
+  exactly. Fresh after manifest: `.look/evidence/1794682728925-92853/evidence.json`; baseline manifest:
+  `.look/evidence/1794681305151-60481/evidence.json`. No frame timing was measured for this comparison.
+- [x] Cameras 0, 2, 9 and 5 opened before/after and compared with the owner's stills. The walls still read as warm,
+  banded rock with large facets; the accepted difference is broader green patches on the lower gorge wall. No new
+  hole or major wall-silhouette break was observed. Existing jagged path borders remain Part 2 work. The
+  orchestrator independently opened camera 9 and accepted the same reading. Capture loads were 14.28 to 28.46;
+  these are still/colour observations, not motion or performance evidence.
+
+Final-tip revalidation (four fresh stills, census, matched count run, production T1 bot segment and the required
+static checks with a 600-second timeout) is recorded with exact manifests, logs and any failures in
+`.look/terrain-clean/report.md`. No ROM data added. Not tested on a device. No push or ship.
 
 ## Part 2: geometry clean-up, walkable ground first
 
