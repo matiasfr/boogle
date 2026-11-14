@@ -308,6 +308,8 @@ Fine Prices in place, but has nowhere to gather.
 
 ## Steps
 
+> **14 November: the Round is built blockout first** (owner: "I think it'll be easier to block out the spacing first and then fill in the details of the constructions later."). Steps 2 and 3 below are replaced by [home-flip](home-flip.md#the-round-blockout-first-14-november)'s B1 to B4: the ground, the streets, what stands moved as it is, and plain blocks on the eight plots, judged by walking it and from the plan sheet (`npm run town-plan-sheet`). Step 3's kerb and green mesh, 4b, 5 and 6 follow as its detail steps D2 to D5, one building at a time. Two changes to step 2's text: the quarry road runs at x −97.85 (a straight line from its mouth passes 0.48 m from plot 2's corner), and the ground gets one level pad at G (r 38).
+
 Each step ships alone and leaves `npm run check` green. Tiers are from the paths touched; none touches `src/sim`,
 `src/world`, `src/net` or `server/` until step 6. Steps 0b and 1 were added or expanded by the design review, which
 also split step 4 and ordered step 7; its build-order ruling is in
