@@ -1,0 +1,92 @@
+[
+  {
+    "rank": 1,
+    "manifest": "1794691190967-89390",
+    "manifestPath": ".look/evidence/1794691190967-89390/evidence.json",
+    "still": ".look/evidence/1794691190967-89390/zfight-ranked-01-still.png",
+    "comparison": ".look/evidence/1794691190967-89390/zfight-ranked-01-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Tint identifies the rail/plank crossing on the trestle. Cleared frames show continuous dark rails on pale decking; no obvious damaged seam at this angle. Suspect only; no flicker established."
+  },
+  {
+    "rank": 2,
+    "manifest": "1794691447268-98252",
+    "manifestPath": ".look/evidence/1794691447268-98252/evidence.json",
+    "still": ".look/evidence/1794691447268-98252/zfight-ranked-02-still.png",
+    "comparison": ".look/evidence/1794691447268-98252/zfight-ranked-02-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Tint identifies rails against sleepers at the quarry turnout. Cleared frames show the expected steel/wood boundary without an obvious striped patch. Suspect only; no flicker established."
+  },
+  {
+    "rank": 3,
+    "manifest": "1794691748816-99680",
+    "manifestPath": ".look/evidence/1794691748816-99680/evidence.json",
+    "still": ".look/evidence/1794691748816-99680/zfight-ranked-03-still.png",
+    "comparison": ".look/evidence/1794691748816-99680/zfight-ranked-03-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Tint identifies rail/sleeper contacts on the Home-side turnout. Cleared comparison is partly covered by a passing train; no obvious striped patch in the exposed portion. Suspect only."
+  },
+  {
+    "rank": 4,
+    "manifest": "1794691933185-4035",
+    "manifestPath": ".look/evidence/1794691933185-4035/evidence.json",
+    "still": ".look/evidence/1794691933185-4035/zfight-home-final-still.png",
+    "comparison": ".look/evidence/1794691933185-4035/zfight-home-final-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Final built-stage low view shows the platform, but the nearest-three banner/tints select top/track neighbours rather than the static base pair. Rail foreground masks part of the base edge. No new striped patch established; live isolation remains unverified. The opening-stage attempt omitted the built deck; the earlier built-stage view was wagon-obstructed."
+  },
+  {
+    "rank": 5,
+    "manifest": "1794691857003-987",
+    "manifestPath": ".look/evidence/1794691857003-987/evidence.json",
+    "still": ".look/evidence/1794691857003-987/zfight-ranked-05-still.png",
+    "comparison": ".look/evidence/1794691857003-987/zfight-ranked-05-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Underside view tints a stringer joint near the coordinate (live representative y 24.28 versus static y 23.88). Cleared beam looks continuous without an obvious striped seam. Exact static contact and ordinary camera access remain unverified; procedural grain is conservative a."
+  },
+  {
+    "rank": 6,
+    "manifest": "1794691910189-3656",
+    "manifestPath": ".look/evidence/1794691910189-3656/evidence.json",
+    "still": ".look/evidence/1794691910189-3656/zfight-ranked-06-still.png",
+    "comparison": ".look/evidence/1794691910189-3656/zfight-ranked-06-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Tint shows the overlapping gorge slabs as a grouped neighbourhood. Cleared frames show a broad, faint grey colour boundary where the slabs meet. Visible seam for owner review; stills do not establish flicker."
+  },
+  {
+    "rank": 7,
+    "manifest": "1794691933323-4091",
+    "manifestPath": ".look/evidence/1794691933323-4091/evidence.json",
+    "still": ".look/evidence/1794691933323-4091/zfight-ranked-07-still.png",
+    "comparison": ".look/evidence/1794691933323-4091/zfight-ranked-07-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Tint groups nearby gorge slab contacts; the banner representatives differ from the individual offline row. Cleared frames show angled grey colour boundaries. Visible seam for owner review; exact pair is not isolated from its grouped neighbours."
+  },
+  {
+    "rank": 8,
+    "manifest": "1794692028083-4870",
+    "manifestPath": ".look/evidence/1794692028083-4870/evidence.json",
+    "still": ".look/evidence/1794692028083-4870/zfight-ranked-08-still.png",
+    "comparison": ".look/evidence/1794692028083-4870/zfight-ranked-08-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Tint identifies the Bell underside pair at the recorded coordinate. Cleared frames show adjoining dark/light underside patches, without clear fine striping at this representative. Player-camera accessibility and flicker remain unverified."
+  },
+  {
+    "rank": 9,
+    "manifest": "1794692051486-5155",
+    "manifestPath": ".look/evidence/1794692051486-5155/evidence.json",
+    "still": ".look/evidence/1794692051486-5155/zfight-ranked-09-still.png",
+    "comparison": ".look/evidence/1794692051486-5155/zfight-ranked-09-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Tint identifies the Bell underside pair at the recorded coordinate. Cleared 1.43/1.72-second sheet frames show a small horizontally striped dark patch at the overlap. A real rendering-defect suspect in this free-camera view; stills cannot prove temporal flicker or a reachable player camera."
+  },
+  {
+    "rank": 10,
+    "manifest": "1794692075809-5474",
+    "manifestPath": ".look/evidence/1794692075809-5474/evidence.json",
+    "still": ".look/evidence/1794692075809-5474/zfight-ranked-10-still.png",
+    "comparison": ".look/evidence/1794692075809-5474/zfight-ranked-10-motion.png",
+    "sourceCommit": "77aec085f5030e22dec10f49c61d6d483d98bb6e",
+    "observation": "Tint groups the same gorge slab neighbourhood seen at rank 6. Cleared frames show a faint polygonal colour seam across the floor; exact pair is not isolated from the grouped neighbours. Visible seam, no flicker established."
+  }
+]

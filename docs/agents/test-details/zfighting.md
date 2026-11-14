@@ -18,6 +18,8 @@ centroids, which can fall between fragments if an occluder cuts a hole. Separati
 The 14 November classified snapshot has **a 205, b 61, c 545 grouped findings** and **0 new since baseline**.
 Home's reported base/kerb contact is **a, rank 4**; the forge door step is **a, rank 28**. Raw oriented counts are
 **a 2,974, b 172, c 2,422**; raw counts include buried portions omitted by the old 3,151-row report.
+Of the 205 class-a groups, **82 have unresolved appearance without a measured appearance-field difference**.
+They are conservative suspects, not 82 confirmed visual defects. Eight class-a findings are recurring track patterns.
 
 - **a likely visible:** material recipe, authored/instance colour, sampled vertex colour, texture/UV, or cast/receive
   shadow flags differ. Missing appearance or unresolved shader/procedural-grain effects also stay here. Triangle
@@ -61,6 +63,9 @@ absent from production builds. Unnamed pieces retain exact scene/instance/compon
 with three.js `getObjectById`; match their coordinates to the offline report for source placement ids.
 
 Limitations: local exterior exposure does not establish a playable camera viewpoint, flicker or visual severity.
+In the dated Home review the live nearest-three selection showed neighbouring top/track contacts rather than
+isolating the static base pair. Do not interpret that absence as a clean bill of health: use the all-classes button
+and compare the source census and coordinates. Its live isolation remains unverified.
 Identical material/UV joins can be harmless. Open/non-convex meshes do not act
 as solid occluders, so hidden contacts can remain. The live component splitter can join two authored pieces that
 share a whole edge and miss their conflict; clipped neighbourhoods can also open an occluder. Skins, transparent
@@ -92,7 +97,11 @@ unrelated entries or refresh the file to hide a regression. `npm run zfight -- -
 the snapshot and is for an intentional reviewed reset, including the initial baseline requested for this task.
 No ordinary scan writes it. `--strict` already fails on new class-a member pairs only; level-check can later adopt
 that same predicate as a failing assertion after the owner enables it. It presently reports, and fixes do not fail.
+Keys identify piece pairs, not an area or plane budget: enlarging an existing pair's overlap does not count as a new
+entry. The ranked area diff still needs review.
 
 `node dev/level/zfight-captures.ts <classified-report.json>` runs the existing broker at each top-ten coordinate,
 using the normal in-game scan. Stills contain tints; middle motion-sheet frames clear them, then rescan at 1.8 seconds. Inspect every PNG and
 write observations in the census. A successful capture is not a visual verdict, and a still cannot show flicker.
+Home uses the built `q6-done` stage, a 10-second warm-up and no player warp; an opening-stage shot has no built
+platform to diagnose. The other sites use the same stage with a 3-second warm-up and the existing player pose helper.
