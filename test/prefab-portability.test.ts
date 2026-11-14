@@ -19,6 +19,7 @@ import { prefabs as kit } from '../src/content/prefabs/workshop-kit.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { assertAuthoredNumbers } from '../dev/prefab/authored.ts';
 import { compile, writeArtifacts } from '../dev/prefab/compiler.ts';
 import type { JsonObject } from '../src/prefab/types.ts';
@@ -27,6 +28,59 @@ import * as validation from '../src/prefab/validate.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import bell from '../content/built/levels/bell.json' with { type: 'json' };
+
+test('page startup has exactly one catalogue validation owner shared by every consumer', () => {
+  const catalogue = 'src/prefab/catalogue.ts';
+  const loads: string[] = [],
+    imports: string[] = [];
+  for (const file of fs.globSync('src/**/*.ts')) {
+    if (file === 'src/prefab/validate.ts') continue;
+    const source = fs.readFileSync(file, 'utf8');
+    const calls = source.match(/\b(?:loadPrefabArtifact|validateArtifact)\s*\(/g)?.length ?? 0;
+    loads.push(...Array.from({ length: calls }, () => file));
+    if (/from\s+['"][^'"]*content\/built\/prefabs\.json['"]/.test(source)) imports.push(file);
+  }
+  assert.deepEqual(loads.sort(), [catalogue], 'full catalogue validation must happen only in the shared module');
+  assert.deepEqual(imports.sort(), [catalogue], 'consumers must use the validated catalogue, not reload raw JSON');
+  for (const file of [
+    'src/entities/town/workshop-kit.ts',
+    'src/entities/town/shop.ts',
+    'src/entities/town/curio-shelf.ts',
+    'src/entities/town/museum.ts',
+    'src/entities/town/rooms.ts',
+    'src/entities/town/house.ts',
+    'src/entities/route-greybox/boxes.ts',
+    'src/entities/route-greybox/leg2-draw.ts',
+    'src/prefab/instantiate.ts',
+  ])
+    assert.match(
+      fs.readFileSync(file, 'utf8'),
+      /from\s+['"][^'"]*catalogue\.ts['"]/,
+      `${file}: share the page catalogue`,
+    );
+});
+
+// Port of the review's alternating, warmed load regression probe. The structural test above fixes the
+// production pass count; this generous delta gate detects startup regressions without a hardware-specific limit.
+test('one page catalogue validation adds no more than 30 ms over main startup validation', () => {
+  const old: unknown = JSON.parse(
+    execFileSync('git', ['show', 'origin/main:content/built/prefabs.json'], { encoding: 'utf8' }),
+  );
+  const samples: number[][] = [[], []];
+  const values: unknown[] = [old, artifact];
+  const passes = [5, 1];
+  for (let round = 0; round < 24; round++)
+    for (const k of [round % 2, 1 - (round % 2)]) {
+      const start = performance.now();
+      for (let pass = 0; pass < passes[k]!; pass++) validation.loadPrefabArtifact(values[k]);
+      if (round > 3) samples[k]!.push(performance.now() - start);
+    }
+  const median = samples.map((values) => values.sort((a, b) => a - b)[10]!);
+  assert.ok(
+    median[1]! - median[0]! <= 30,
+    `startup validation regression: main five passes ${median[0]!.toFixed(3)} ms; shared one pass ${median[1]!.toFixed(3)} ms`,
+  );
+});
 
 test('every committed prefab artifact holds authored numbers, never long derived geometry', () => {
   for (const file of fs.globSync('content/built/**/*.json'))
