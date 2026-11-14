@@ -89,7 +89,8 @@
 // placeSeatPose stays Owner. No migration.
 // v42 (2026-11-13): The Boogler's Server leg and saved position/facing replace the lead's g presence.
 // v43 (2026-11-13): present/puff server commands and timed reaction events; bg shrinks to [act, wary].
-export const WORLD_NS = 'v43';
+// v44 (2026-11-13): remove the lead election, welcome field and notification; all shared authority is server-owned.
+export const WORLD_NS = 'v44';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

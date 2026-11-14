@@ -11,7 +11,7 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 
 type Msg = Record<string, any>;
-const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
+const FAST = { reconnectGraceMs: 200, housekeepMs: 50, log: () => {} };
 async function start() {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-voice-relay-'));
   const svc = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, FAST));

@@ -76,7 +76,7 @@ test('fixture assertions retain every ESLint catch and enforce current policy; J
 });
 
 test('registration imports remain restricted at every fixed sync path', () => {
-  for (const name of ['registerOp', 'registerState', 'onTick']) {
+  for (const name of ['registerState', 'onTick']) {
     for (const ext of ['js', 'ts']) {
       for (const [file, source] of [
         ['src/probe.ts', `./world/sync.${ext}`],
@@ -135,7 +135,7 @@ test('custom directives suppress only their rule and report stale entries', () =
 
 test('import restrictions include re-exports, namespace imports and mixed physics type/value imports', () => {
   for (const code of [
-    "export { registerOp } from './world/sync.ts';",
+    "export { registerState } from './world/sync.ts';",
     "export * from './world/sync.ts';",
     "import * as sync from './world/sync.ts';",
   ])

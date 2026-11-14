@@ -16,7 +16,7 @@ test('the scan ignores calls in strings and comments, and definitions', () => {
   const reg = scanSources([
     file(
       'src/features/a.js',
-      "const s = \"addPresenceField('x', f)\"; // addHostField('y', f)\nexport function addPresenceField(key, fn) {}\naddPresenceField('z', () => 1, { a: [1, 2] });",
+      "const s = \"addPresenceField('x', f)\"; // addPresenceField('y', f)\nexport function addPresenceField(key, fn) {}\naddPresenceField('z', () => 1, { a: [1, 2] });",
     ),
   ]);
   assert.deepEqual(Object.keys(reg.presence), ['z']);
@@ -84,7 +84,7 @@ test('a presence key taken twice (core or field) fails', () => {
   const reg = scanSources([
     NET,
     file('src/features/a.js', "addPresenceField('hd', () => 1);"),
-    file('src/features/b.js', "addHostField('hd', get, on);\naddPresenceField('p', get);"),
+    file('src/features/b.js', "addPresenceField('hd', get);\naddPresenceField('p', get);"),
   ]);
   const errors = checkRegistry(reg);
   assert.equal(errors.length, 2);

@@ -95,7 +95,6 @@ const T = (window.T = {
   msgs: {} as Record<string, number[]>,
   lat: [] as number[],
   conn: [] as { at: number; c: boolean }[],
-  leads: [] as { at: number; lead: boolean }[],
   errors: [] as string[],
   fatal: null as string | null, // a fatal room error's code (elsewhere, room_full)
   got: 0,
@@ -130,7 +129,6 @@ const T = (window.T = {
       (c) => T.conn.push({ at: Date.now(), c }),
       (e) => (T.fatal = e.code ?? null),
     );
-    room.onLeadChange((lead) => T.leads.push({ at: Date.now(), lead }));
     room.onMessage((m, from) => {
       const msg = m as { t?: unknown; from?: string; n: number };
       if (msg.t === 'r:session' && from === SERVER_ID) {
@@ -183,7 +181,6 @@ const T = (window.T = {
     const r = T.room!;
     return {
       self: r.selfId,
-      lead: r.isLead(),
       transport: r.transport,
       peers: r.peers().map((p) => ({ peer: p.peer, sameTab: p.sameTab, presence: p.presence })),
     };

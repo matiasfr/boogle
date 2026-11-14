@@ -11,7 +11,6 @@
   --accent-soft: #e3eafa;
   --k-lock: #1f9d6b;
   --k-adapter: #6cbf98;
-  --k-host: #8a5cf0;
   --k-owner: #e08a1e;
   --k-msg: #dd4479;
   --k-local: #a3acb8;
@@ -109,7 +108,7 @@ input:focus-visible,
   width: 18px;
   height: 18px;
   border-radius: 5px;
-  background: conic-gradient(var(--k-lock) 0 25%, var(--k-owner) 0 50%, var(--k-host) 0 75%, var(--k-msg) 0);
+  background: conic-gradient(var(--k-lock) 0 33%, var(--k-owner) 0 66%, var(--k-msg) 0);
 }
 .brand small {
   font: 400 12px var(--mono);

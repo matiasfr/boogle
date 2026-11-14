@@ -2,9 +2,11 @@
 
 `src/netplay/net.ts` uses only `ws-room.ts` for multiplayer: `createWsRoom({ roomId, server, build, debug })`.
 The server hosts every room (docs/plans/server-host.md), owns shared state and sends clock/replication `from`
-`SERVER_ID` over one WebSocket per tab (`ws-wire.ts`). The oldest visible tab leads Host-kind fields.
+`SERVER_ID` over one WebSocket per tab (`ws-wire.ts`). Every tab is a client; no tab is elected to compute shared state.
 Rooms reconnect automatically (`ws-room.ts` header); `peer-table.ts` tracks peers. Keep this interface;
 run `npm run test:net` after edits (`dev/peer-test/ws-run.ts` uses the real server).
+
+## Room interface
 
 ```js
 const room = await createWsRoom({ roomId, server /* our server's http(s) base */, pid /* this player */, build /* optional */, debug /* optional */ });
@@ -20,8 +22,6 @@ room.send(msg)         // reliable, ordered JSON message to every OTHER tab (rel
 room.onMessage(handler) // handler(msg, fromId). returns unsubscribe
 room.onReplacing(h)    // server-only {label, seconds}; late joins get remainder; returns unsubscribe
 room.transport         // 'server'
-room.isLead()          // true when this tab publishes Host-kind fields (addHostField)
-room.onLeadChange(h)   // h(isLead); returns unsubscribe
 room.linkStats()       // Promise<[{ peer: 'server', rttMs }]>: the heartbeat round trip
 room.pause(ms)         // tests: drop the socket as a network loss would, reconnects held for ms
 room.close()
@@ -31,6 +31,8 @@ room.close()
 The game uses `entry.sameTab` to learn its own id (`net.myPeer = entry.peer`) and `entry.peer` for ball-ownership
 tie-breaks, so `peer` must be the stable `selfId`.
 
+## Room identity and admission
+
 The room id comes from the effective page flags (`src/proto/flags.ts`): the bare URL and headless tools open the current game in `boogle`, and explicit prototypes retain their rooms. An explicit `?room=` wins, sanitized to `[a-z0-9-]{1,32}`.
 
 During development every client is assumed current. There is no catalog fingerprint or old-build admission fence;
@@ -38,6 +40,10 @@ wire/save reshapes use the dated `WORLD_NS` reset described in [mixed builds](..
 The server validates all messages and bounds input. Railway commands use ordered `r:*` requests and `s` packets;
 the only remaining `w:*` message is the server-origin `w:c` clock. Client-origin legacy or malformed `w:*` data
 is ignored or refused without entering simulation. Clients mirror state and never persist server checkpoints.
-The existing room namespace admission refuses a v40 client at v41; no migration or alternate transport is retained.
+The existing room namespace admission refuses a v43 client at v44; no migration or alternate transport is retained.
 Shared tuning writes require an explicit server `TUNE_CONTROLLER_KEY` matching the sender's bound socket key,
-a current revision and valid values; being the room lead grants nothing.
+a current revision and valid values. Joining first grants no additional authority.
+
+Effective prototype pages retain their ordinary presence/message connection, but seats are Local and unarbitrated and each
+tab runs its own Boogler. They do not use the production railway command boundary for those features.
+The retired `?proto=place` alias remains the production game with Server authority.

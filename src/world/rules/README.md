@@ -13,7 +13,7 @@ Checkpoint order is deterministic; clients install none of these state owners.
 
 Commands use `ops.define(op, { validate, apply, durable? })` from `../server-ops.ts`. The request coordinator supplies
 authenticated session/player identities, tick and Actor facts; tune validation receives `protoRoom` and
-`tuneController` directly. A lead tab has no tuning authority. Apply changes state and returns a result; effects
+`tuneController` directly. No client has authority merely by joining first. Apply changes state and returns a result; effects
 belong to accepted receipts, replicated events or declared prediction. A thrown apply is fatal, never a safe refusal.
 Durable commands hold their receipt until a safe checkpoint succeeds.
 
@@ -63,5 +63,7 @@ accepted sits to one per 400 ms of host time. `taken` and `rate` are nonfatal re
 preserves them without reopening its session. Clients predict sitting and standing immediately; only `taken` steps a
 predicted rider off, while `rate` holds the pose until the once-a-second reconcile retries, including alternates.
 Actual departure after the reconnect grace releases the pid, and pause clears every chair. Occupancy is transient:
-a restart starts empty, and seated clients reclaim. Remote riders require both the Server row and Owner
-`placeSeatPose` to name the chair. v41 removed the lead's seat grants and seat-request presence; no seat is saved.
+a restart starts empty, and seated clients reclaim. The Server row keeps a remote rider seated even when presence
+goes quiet. Fresh Owner `placeSeatPose` can bridge a predicted re-sit while no conflicting occupant, fresh pose or
+local prediction holds the chair; otherwise the row wins. No seat is saved. Prototype pages use Local unarbitrated
+seats and a per-tab Boogler; no prototype command boundary is added.

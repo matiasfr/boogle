@@ -139,7 +139,6 @@ export type ServerConfig = ReplaceConfig & {
   // Test-only timing overrides, passed through to the room host (./host/hosted-room.ts, HostCfg).
   reconnectGraceMs?: number;
   deadMs?: number;
-  leadHiddenMs?: number;
   housekeepMs?: number;
 };
 

@@ -6,6 +6,10 @@
 > The implementations went in `32bd6a38a`; the eight haul tuning keys and the classic transport retired at v40 (`75852d2a9`), so links to deleted files below are dead on purpose. The Boogler's copy is preserved in
 > [gift-catalog.ts](../../src/sim/gift-catalog.ts); see [retired copy](retired-classic-copy.md).
 
+Current prototype policy (players step 8, v44): effective prototype pages use Local, unarbitrated seats and their own Boogler.
+There is no lead tab and no production server command session for those features. This does not restore the retired
+net/wagon gameplay described below.
+
 *A greybox prototype for [find-the-fun](../plans/find-the-fun.md), step 6, from the owner's rail-loop direction in
 [decisions.md](../decisions.md) ("Trains and the world", 2026-11-02), after Death Stranding's auto-pavers and
 monorails: building infrastructure makes it easier to build more. Gut question: "When the village steps up, do you want

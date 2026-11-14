@@ -319,7 +319,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       copy: 'registerAction with key, touch, free pad slot and guide metadata',
       mustRead: [...core, registers, '.claude/rules/state-consumers.md'],
       readIf: [{ when: 'Changing documented input mapping', refs: ['docs/game-design/controls.md'] }],
-      sync: 'Local input; action chooses message/Owner/Host/Lockstep as needed',
+      sync: 'Local input; action chooses Owner presence, a Server command or a one-off message as needed',
       checks: `${look}; registry --json before choosing a pad slot; check all three input modes`,
       lookalikes: ['src/player/input.ts'],
       warning:
@@ -370,8 +370,9 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       owners: ['src/features', 'src/netplay/net.ts'],
       example: 'src/features/ping.ts',
       copy: 'onRoomReady room.onMessage and room.send, validation/rate limit on receipt',
-      mustRead: [...core, sync, safety, mixed, 'src/net/README.md'],
+      mustRead: [...core, sync, safety, mixed, 'src/net/README.md#room-interface'],
       readIf: [
+        { when: 'Changing room identity or admission', refs: ['src/net/README.md#room-identity-and-admission'] },
         { when: 'Changing documented social messages', refs: ['docs/game-design/social.md'] },
         { when: 'Changing network topology', refs: ['docs/game-design/multiplayer.md#81-topology'] },
       ],
@@ -384,7 +385,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
   ],
   'presence-field': [
     {
-      scope: 'Current Owner value (or Host field)',
+      scope: 'Current Owner value',
       owners: ['src/netplay/net.ts', 'src/netplay/snaps.ts', 'src/features'],
       example: 'src/features/held.ts',
       copy: 'addPresenceField and onRemotePresence with null/missing off state',
@@ -397,7 +398,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
         },
         { when: 'Changing held-item presence', refs: ['docs/game-design/held.md'] },
       ],
-      sync: 'Owner, 20 Hz latest wins; Host via addHostField; changing owner via createOwnerSync',
+      sync: 'Owner, 20 Hz latest wins; changing owner via createOwnerSync',
       checks: `${look}; registry --json; npm run load before/after presence changes; two-player cleanup/interpolation`,
       lookalikes: ['src/net/ws-room.ts', 'src/netplay/owner-sync.ts'],
       warning:

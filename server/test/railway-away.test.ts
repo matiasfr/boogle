@@ -328,7 +328,7 @@ test('a hosted room keeps simulating through the reload grace, then pauses until
   const svc = createService(
     loadConfig(
       { DATA_DIR: dataDir, SERVER_ROOMS: '*', ROOM_PAUSE_MS: '400' },
-      { reconnectGraceMs: 100, leadHiddenMs: 300, housekeepMs: 50, log: () => {} },
+      { reconnectGraceMs: 100, housekeepMs: 50, log: () => {} },
     ),
   );
   const port = await svc.listen(0);

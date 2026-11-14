@@ -49,7 +49,6 @@ async function run() {
       `${sum('ops')} ops`,
       `${sum('states')} states`,
       `${sum('owner')} presence keys`,
-      `${sum('host')} host fields`,
       `${new Set(facts.files.flatMap((f) => f.msgs)).size} message types`,
       `${sum('actions')} actions`,
       `${sum('frames')} hooks`,

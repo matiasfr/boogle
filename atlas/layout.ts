@@ -27,7 +27,7 @@ export const LAYERS: Layer[] = [
     short: 'World',
     c: '--l2',
     dirs: ['adapters', 'world', 'world/rules', 'sim'],
-    note: 'Lockstep state every peer agrees on, and the meshes that follow it.',
+    note: 'Server state, client mirrors and prediction, and the meshes that follow them.',
   },
   {
     id: 'L3',
@@ -35,16 +35,22 @@ export const LAYERS: Layer[] = [
     short: 'Network',
     c: '--l3',
     dirs: ['netplay', 'net'],
-    note: 'Presence, remote players and the room over PeerJS.',
+    note: 'Presence, remote players and the room over WebSocket.',
   },
-  { id: 'L4', name: 'Server', short: 'Server', c: '--l4', dirs: ['server'], note: 'Signaling and the snapshot store.' },
+  {
+    id: 'L4',
+    name: 'Server',
+    short: 'Server',
+    c: '--l4',
+    dirs: ['server'],
+    note: 'Room authority, relay and checkpoint store.',
+  },
 ];
 
 // Sync kinds: display name and CSS variable. Descriptions live in concepts.json "kinds".
 export const KINDS: Record<string, { name: string; c: string }> = {
-  lock: { name: 'Lockstep', c: '--k-lock' },
-  adapter: { name: 'Lockstep adapter', c: '--k-adapter' },
-  host: { name: 'Host', c: '--k-host' },
+  lock: { name: 'Server', c: '--k-lock' },
+  adapter: { name: 'Server adapter', c: '--k-adapter' },
   owner: { name: 'Owner', c: '--k-owner' },
   msg: { name: 'Message', c: '--k-msg' },
   local: { name: 'Local', c: '--k-local' },
@@ -73,7 +79,6 @@ export const BOX: Record<string, { x: number; y: number; w: number; h: number; c
 export const LANES: Record<string, { y: number }> = {
   msg: { y: 97 },
   owner: { y: 222 },
-  host: { y: 262 },
   lock: { y: 362 },
 };
 
@@ -84,7 +89,7 @@ export const ROUTE_VIA = [{ a: 'you.world', b: 'lane:lock', via: [378, 362] }];
 export const validRef = (id: unknown): boolean =>
   typeof id === 'string' && (id.startsWith('lane:') ? id.slice(5) in LANES : id in BOX);
 
-export const CHANNEL_IDS = ['owner', 'host', 'lock', 'msg'];
+export const CHANNEL_IDS = ['owner', 'lock', 'msg'];
 export const VIEWS = ['how', 'map', 'focus', 'flow', 'frame'];
 
 // Where each view's idea comes from. They describe the atlas, not Boogle, so they stay in code.

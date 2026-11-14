@@ -9,7 +9,7 @@ import { worldRoomId } from '../world/namespace.ts';
 import { railwayRoomId } from '../world/railway-namespace.ts';
 import { identity } from '../player/identity.ts';
 import { createSnaps } from './snaps.ts';
-import { addField, mergeFields, hostField } from './presence-fields.ts';
+import { addField, mergeFields } from './presence-fields.ts';
 import { onFrame } from '../loop.ts';
 import type { Field, Presence } from './presence-fields.ts';
 
@@ -88,13 +88,11 @@ function peerColor(peer: string) {
 }
 
 // Extension hooks so features never edit buildPresence/upsertPeer (which kind to use: DESIGN.md, "Pick how each
-// feature shares state"). Presence goes out every SEND_MS on an unreliable channel, latest value wins, so keep fields
+// feature shares state"). Presence goes out every SEND_MS over the room's latest-wins relay, so keep fields
 // small; one that rarely changes costs next to nothing.
 //   addPresenceField(key, getter)  Owner state: merges a small JSON value (or null to omit) into our presence.
 //   onRemotePresence(fn)           fn(remote, pr, time) after each fresh update from a peer; time is the sample's
 //                                  local ms, ready for createSnaps (src/netplay/snaps.ts).
-//   addHostField(key, getter, onValue)  Host state: only the host publishes getter(); every tab hears onValue(value,
-//                                  time, peer) for each fresh value. A different peer means the host changed.
 //   onRoomReady(fn)                fn(room) once the room exists (immediately if it already does); one-off events go
 //                                  here as room.send/onMessage (reliable, ordered, not to self), not in presence.
 //   onNetState(fn)                 fn(state, prev) on every setNet call, after net.state changed. It also fires when
@@ -126,18 +124,6 @@ export function addPresenceField(key: string, getter: () => unknown) {
 }
 export function onRemotePresence(fn: RemoteHook) {
   remoteHooks.push(fn);
-}
-// Whether this tab publishes Host fields: the room's lead (on a peer room, its host; on the server's room, the tab the
-// server picked, since the server itself publishes no presence).
-export const isLead = () => !!net.room && net.room.isLead();
-export function addHostField(
-  key: string,
-  getter: () => unknown,
-  onValue: (v: unknown, time: number, peer: string) => void,
-) {
-  const h = hostField(getter, onValue, isLead);
-  addFieldOrWarn(key, h.get);
-  remoteHooks.push((r, pr, time) => h.hear(pr[key], time, r.peer));
 }
 export function onRoomReady(fn: (room: Room) => void) {
   if (net.room) fn(net.room);
@@ -405,20 +391,16 @@ export async function connectRoom() {
     if (net.state !== 'solo') setNet(connected ? 'live' : 'connecting');
   }, fail);
   room.onPeers(onPeersChange, fail);
-  // Host fields follow the lead at once: a demoted lead (even one still on the title
-  // screen, which sends no presence otherwise) clears them before it rejoins, and a new lead publishes them without
-  // waiting for its next send.
-  room.onLeadChange(() => sendPresence());
   sendPresence();
 }
 
 // ---------------------------------------------------------------- frame hooks (orders: top of src/loop.ts)
 // late 3000, after every other late hook (the caves camera is 2000), just before render: send presence every SEND_MS
-// while on the island, hosting, or a keepPresenceWhile reason holds.
+// while on the island or a keepPresenceWhile reason holds.
 onFrame(
   ({ now }: { now: number }) => {
     if (!net.room || now - net.lastSend < SEND_MS) return;
-    if (local?.entered || presenceReasons.some((fn) => fn()) || isLead()) sendPresence();
+    if (local?.entered || presenceReasons.some((fn) => fn())) sendPresence();
   },
   { phase: 'late', order: 3000 },
 );

@@ -19,7 +19,6 @@ export interface FileFacts {
   names: string[];
   frames: FrameFacts[];
   owner: string[];
-  host: string[];
   ops: string[];
   states: string[];
   ticks: string[];
@@ -33,7 +32,7 @@ export interface FileFacts {
   parseError?: string;
 }
 
-export type KeyKind = 'ops' | 'states' | 'owner' | 'host' | 'msgs' | 'actions' | 'routes';
+export type KeyKind = 'ops' | 'states' | 'owner' | 'msgs' | 'actions' | 'routes';
 
 export interface GitFacts {
   head: string;
@@ -57,7 +56,7 @@ export interface FactsDiff {
   keys: Partial<Record<KeyKind, { added: string[]; removed: string[] }>>;
 }
 
-export type Kind = 'lock' | 'adapter' | 'host' | 'owner' | 'msg' | 'local';
+export type Kind = 'lock' | 'adapter' | 'owner' | 'msg' | 'local';
 
 export interface ModelFile extends FileFacts {
   dir: string;
@@ -104,7 +103,6 @@ export interface Cite {
   op?: string;
   state?: string;
   presence?: string;
-  hostField?: string;
   message?: string;
   action?: string;
   route?: string;
