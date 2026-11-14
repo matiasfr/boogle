@@ -11,7 +11,18 @@ export type ColliderDef = { at: Vec3; rot?: Vec3; group?: 'scenery' | 'room' } &
   | { shape: 'trunk'; r: number; h: number }
 );
 export type Attach =
-  | { kind: 'seat'; at: Vec3; yaw: number; exit: Vec3; forward?: number; perch?: number }
+  | {
+      kind: 'seat';
+      at: Vec3;
+      yaw: number;
+      exit: Vec3;
+      forward?: number;
+      perch?: number;
+      /** Preserve pre-prefab wire ids and contention groups. Defaults retain workshop naming. */
+      idSuffix?: string;
+      group?: string;
+      anchorView?: true;
+    }
   | { kind: 'label'; at: Vec3; facing: Vec3; w: number; h: number }
   | { kind: 'point'; at: Vec3 };
 export type PrefabDef = {

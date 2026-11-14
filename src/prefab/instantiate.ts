@@ -21,6 +21,7 @@ import { registerSeat, type Seat } from '../entities/railway/seat.ts';
 import { ROOM_GROUP, staticBody } from '../place/land.ts';
 import type { Body, Shape } from '../physics/engine.ts';
 import type { OwnedView } from '../render/owned-view.ts';
+import type { Platform } from '../physics/platforms.ts';
 
 const compiled = (() => {
   const value: unknown = artifact;
@@ -61,6 +62,8 @@ export function instantiate(
     owner: OwnedView;
     gates?: Readonly<Record<string, () => boolean>>;
     batch?: { target: PrefabBatch; index: number };
+    /** The existing moving platform owns physics; its drawn frame owns this record's root. */
+    parent?: { platform: Platform; root: THREE.Object3D; frame?: THREE.Object3D };
   },
 ) {
   const owner = options.owner;
@@ -69,6 +72,12 @@ export function instantiate(
   if (!def || placement.prefab !== key) throw new Error(`prefabs: unknown or mismatched prefab ${key}`);
   validatePrefab(def);
   validatePlacement(placement, compiled.prefabs);
+  const parent = options.parent;
+  if (parent && (!placement.parent || placement.parent !== parent.platform.id))
+    throw new Error('prefabs: moving parent id mismatch');
+  if (parent && def.colliders.length) throw new Error('prefabs: moving colliders await their conversion');
+  if (!parent && Object.values(def.attach ?? {}).some((a) => a.kind === 'seat' && a.anchorView))
+    throw new Error('prefabs: anchored seat needs moving parent');
   // These fields have no authored users yet. Fail closed until their conversion step provides the implementation.
   if ('asset' in def.visual || def.material)
     throw new Error('prefabs: asset and material implementations await their conversion steps');
@@ -108,7 +117,7 @@ export function instantiate(
     new THREE.Vector3().fromArray(placement.scale ?? [1, 1, 1]),
   );
   owner.root.updateWorldMatrix(true, false);
-  const matrixWorld = new THREE.Matrix4().multiplyMatrices(owner.root.matrixWorld, localMatrix);
+  const matrixWorld = parent ? localMatrix : new THREE.Matrix4().multiplyMatrices(owner.root.matrixWorld, localMatrix);
   const e = matrixWorld.elements;
   const colliderBases = validateColliderWorldTransforms(def.colliders, [
     [
@@ -121,6 +130,8 @@ export function instantiate(
   const world = (at: Vec3) => new THREE.Vector3().fromArray(at).applyMatrix4(matrixWorld);
   const pose = (at: Vec3, yaw: number) => {
     const p = world(at);
+    // An untranslated facing in the moving frame is already authored exactly; do not round-trip its yaw.
+    if (parent && !placement.rot) return { x: p.x, y: p.y, z: p.z, yaw };
     const facing = new THREE.Vector3(0, 0, 1)
       .applyQuaternion(new THREE.Quaternion().setFromEuler(euler([yaw, 0, 0])))
       .transformDirection(matrixWorld);
@@ -179,6 +190,7 @@ export function instantiate(
     else batch.target.slots.add(batch.index);
   }
   owner.add(root);
+  if (parent) parent.root.add(root);
   root.updateWorldMatrix(true, true);
   const bodies: Body[] = [],
     seats: Seat[] = [],
@@ -187,10 +199,14 @@ export function instantiate(
     if (a.kind !== 'seat') continue;
     const seat: Seat = {
       id:
-        Object.values(def.attach ?? {}).filter((a) => a.kind === 'seat').length === 1
-          ? placement.id
-          : `${placement.id}/${name}`,
-      group: placement.id,
+        a.idSuffix !== undefined
+          ? `${placement.id}${a.idSuffix}`
+          : Object.values(def.attach ?? {}).filter((a) => a.kind === 'seat').length === 1
+            ? placement.id
+            : `${placement.id}/${name}`,
+      group: a.group ?? placement.id,
+      ...(parent ? { platform: parent.platform, ...(parent.frame ? { frame: parent.frame } : {}) } : {}),
+      ...(a.anchorView ? { anchorView: true } : {}),
       at: pose(a.at, a.yaw),
       exit: pose(a.exit, a.yaw),
       available: gates.get(name) ?? (() => true),
@@ -232,7 +248,7 @@ export function instantiate(
     attach(name: string): { definition: Attach; at: THREE.Vector3 } {
       const a = def.attach?.[name];
       if (!a) throw new Error(`prefabs: missing attachment ${name}`);
-      return { definition: a, at: world(a.at) };
+      return { definition: a, at: parent ? root.localToWorld(new THREE.Vector3().fromArray(a.at)) : world(a.at) };
     },
     setEnabled,
     dispose,

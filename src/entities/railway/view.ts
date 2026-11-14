@@ -98,7 +98,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     line2.depotSlot,
     shelf.railSlot,
   );
-  const trains = await createRailwayTrains(adapter, owner, seats, line2.depotPlace);
+  const trains = await createRailwayTrains(adapter, owner, line2.depotPlace);
   line2.boilerSeat(trains.boilerSeat);
   trains.holdBoiler(line2.boilerFlying);
   const halts = await createRailwayHalts(adapter, owner);

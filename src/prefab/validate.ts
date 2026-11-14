@@ -212,6 +212,9 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
         number(a.yaw);
         if (a.forward !== undefined) number(a.forward);
         if (a.perch !== undefined) number(a.perch);
+        if (a.idSuffix !== undefined) text(a.idSuffix);
+        if (a.group !== undefined) text(a.group);
+        if (a.anchorView !== undefined && a.anchorView !== true) fail('expected anchorView true');
         break;
       case 'label':
         vec(a.facing);

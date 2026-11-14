@@ -62,6 +62,143 @@
         }
       }
     },
+    "railway.car-bench": {
+      "attach": {
+        "seat0": {
+          "anchorView": true,
+          "at": [
+            0.45,
+            0.95,
+            -0.85
+          ],
+          "exit": [
+            0.85,
+            0.45,
+            -0.85
+          ],
+          "forward": 0.16,
+          "idSuffix": "-seat0",
+          "kind": "seat",
+          "perch": 0.32,
+          "yaw": -1.5707963267948966
+        },
+        "seat1": {
+          "anchorView": true,
+          "at": [
+            0.45,
+            0.95,
+            0.45
+          ],
+          "exit": [
+            0.85,
+            0.45,
+            0.45
+          ],
+          "forward": 0.16,
+          "idSuffix": "-seat1",
+          "kind": "seat",
+          "perch": 0.32,
+          "yaw": -1.5707963267948966
+        },
+        "seat2": {
+          "anchorView": true,
+          "at": [
+            -0.45,
+            0.95,
+            0.85
+          ],
+          "exit": [
+            -0.85,
+            0.45,
+            0.85
+          ],
+          "forward": 0.16,
+          "idSuffix": "-seat2",
+          "kind": "seat",
+          "perch": 0.32,
+          "yaw": 1.5707963267948966
+        },
+        "seat3": {
+          "anchorView": true,
+          "at": [
+            -0.45,
+            0.95,
+            -0.45
+          ],
+          "exit": [
+            -0.85,
+            0.45,
+            -0.45
+          ],
+          "forward": 0.16,
+          "idSuffix": "-seat3",
+          "kind": "seat",
+          "perch": 0.32,
+          "yaw": 1.5707963267948966
+        }
+      },
+      "colliders": [],
+      "interactions": [
+        {
+          "action": "seat.sit",
+          "at": "seat0",
+          "gate": "open"
+        },
+        {
+          "action": "seat.sit",
+          "at": "seat1",
+          "gate": "open"
+        },
+        {
+          "action": "seat.sit",
+          "at": "seat2",
+          "gate": "open"
+        },
+        {
+          "action": "seat.sit",
+          "at": "seat3",
+          "gate": "open"
+        }
+      ],
+      "key": "railway.car-bench",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "railway.machine-chair": {
+      "attach": {
+        "seat": {
+          "anchorView": true,
+          "at": [
+            0,
+            0.95,
+            -1.15
+          ],
+          "exit": [
+            0,
+            0.45,
+            -1.85
+          ],
+          "group": "machine-deck",
+          "kind": "seat",
+          "yaw": 3.141592653589793
+        }
+      },
+      "colliders": [],
+      "interactions": [
+        {
+          "action": "seat.sit",
+          "at": "seat",
+          "gate": "open"
+        }
+      ],
+      "key": "railway.machine-chair",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
     "town.workshop-chair": {
       "attach": {
         "seat": {

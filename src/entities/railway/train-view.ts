@@ -5,6 +5,7 @@ import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Platform } from '../../physics/platforms.ts';
 import { carry } from '../../physics/platforms.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
 type CabFace = import('./engine-kit.ts').CabFace;
@@ -88,7 +89,6 @@ type FootPlace = (k: number, out: THREE.Vector3) => THREE.Vector3;
 export async function createRailwayTrains(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  seats: typeof import('./seat.ts'),
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
   const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, carKit, shape, folk, land, { flat }] =
@@ -180,30 +180,20 @@ export async function createRailwayTrains(
       fit.position.y = car.hy - carKit.CAR_DECK - car.rock.position.y;
       owner.add(fit);
       car.rock.add(fit);
-      let i = 0;
-      for (const side of [1, -1])
-        for (const bz of carKit.BENCH.z) {
-          const z = side * bz;
-          // Facing out (+x on the +x side) is yaw -side * pi/2: the game's yaw 0 faces -z, and turns toward -x.
-          const yaw = -side * (Math.PI / 2);
-          owner.cleanup(
-            seats.registerSeat({
-              id: `railway:train${slot}-${n}-seat${i++}`,
-              group: `railway:train${slot}-${n}`,
-              platform: car.platform,
-              anchorView: true,
-              // The drawn rider leans with the bench on a grade; the seat, capsule and wire stay level.
-              frame: car.rock,
-              forward: carKit.BENCH.forward,
-              // The stowaway sits on the bench beside you (0.62 m to your right), not on the deck under it.
-              perch: carKit.BENCH.seatTop,
-              at: { x: side * carKit.BENCH.seatX, y: car.hy + seats.lowStoolAnchor, z, yaw },
-              // Standing up puts you 0.4 m out in front of your seat, on the deck by its edge.
-              exit: { x: side * 0.85, y: car.hy + PLAYER_R, z, yaw },
-              available: () => car.y > -30,
-            }),
-          );
-        }
+      instantiate(
+        'railway.car-bench',
+        {
+          id: `railway:train${slot}-${n}`,
+          prefab: 'railway.car-bench',
+          pos: [0, car.hy, 0],
+          parent: car.platform.id,
+        },
+        {
+          owner,
+          parent: { platform: car.platform, root: car.mesh, frame: car.rock },
+          gates: { open: () => car.y > -30 },
+        },
+      ).setEnabled(true);
     }
     // The fitted boiler: the same part that waits on its pedestal and is hauled on the rope (boiler-view.ts), set in
     // the engine's saddles with its back end in the cab as the backhead, and the gold rope lashed round it.
