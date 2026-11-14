@@ -344,16 +344,24 @@ test('the hall and shelf: 1 m behind the buffers, centred on the island; the she
     a1 = s.a + S.back,
     c0 = s.c - S.crown,
     c1 = s.c + S.crown;
-  // Backed onto the front posts' line, 5 cm clear of their inner face, and clear of every post.
+  // Backed onto the front posts' line, 5 cm behind where their inner faces run, and clear of every post.
   const front = HALL.a - HALL.d / 2 + 0.2;
   assert.ok(Math.abs(a0 - (front + 0.175 + 0.05)) < 1e-9, 'just behind the front posts');
   for (const i of [-1, 1])
-    for (const x of [-(HALL.w / 2 - 0.15), -HALL.w / 4, 0, HALL.w / 4, HALL.w / 2 - 0.15]) {
+    for (const x of i < 0 ? HALL.posts.front : HALL.posts.back) {
       const pa = HALL.a + i * (HALL.d / 2 - 0.2),
         pc = HALL.c + x;
       const apart = pa + 0.175 <= a0 || pa - 0.175 >= a1 || pc + 0.175 <= c0 || pc - 0.175 >= c1;
       assert.ok(apart, `clear of the post at a ${pa.toFixed(2)}, c ${pc.toFixed(2)}`);
     }
+  // No front post stands before the shelf (owner playtest, 14 November: two stood 5 cm off its crown and read as
+  // running through it): the nearest is over 1.5 m off either end of the crown, more than a player's width.
+  for (const x of HALL.posts.front) {
+    const pc = HALL.c + x,
+      off = Math.max(c0 - (pc + 0.175), pc - 0.175 - c1);
+    assert.ok(off > 1.5, `the front post at c ${pc.toFixed(2)} is ${off.toFixed(2)} m off the shelf's crown`);
+  }
+  assert.equal(HALL.posts.back.length, 5, 'the back keeps its five posts');
   // The south wall's inside face keeps 0.15 m for the works board; the back span (the line map) keeps 3 m clear.
   assert.ok(c1 + S.sideWay <= HALL.c + HALL.w / 2 - 0.3 - 0.15 + 1e-9, 'the side way and the works board fit');
   assert.ok(HALL.a + HALL.d / 2 - 0.2 - a1 > 3, 'off the line map span at the back');
@@ -401,7 +409,7 @@ test('the greeter stands in front of the hall, before a post and not in a bay, o
   const at = toAxis(PROPS.greeter);
   assert.ok(at.a < HALL.a - HALL.d / 2 - 1, 'out on the square, over a metre in front of the hall');
   // The front posts' lines across; the way in is the two bays north of the shelf, either side of the second post.
-  const posts = [-(HALL.w / 2 - 0.15), -HALL.w / 4, 0, HALL.w / 4, HALL.w / 2 - 0.15].map((x) => HALL.c + x);
+  const posts = HALL.posts.front.map((x) => HALL.c + x);
   const before = Math.min(...posts.map((c) => Math.abs(c - at.c)));
   assert.ok(before < 0.3, `he stands ${before.toFixed(2)} m off a post's line, beside the open bay`);
   assert.ok(at.c < toAxis(SHELF_B).c - SHELF_SIZE.crown, 'north of the shelf');
