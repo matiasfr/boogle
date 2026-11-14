@@ -17,7 +17,7 @@ import { RAIL_LINES, TRAIN_EXTENT, TURNOUT_CM } from '../../src/sim/railway-line
 import { TRAIN } from '../../src/sim/railway-train.ts';
 import { RING_CONES, ringHeight } from '../../src/proto/greybox/ring-cones.ts';
 import { CONCOURSE, HEAD as GREYBOX_HEAD, HX as GREYBOX_HX } from '../../src/proto/greybox/ring-house.ts';
-import { FAR, ORIGIN, UP_HALTS, CROSSING_WIDTH } from '../../src/place/layout.ts';
+import { FAR, ORIGIN, OFFSET_HALTS, CROSSING_WIDTH } from '../../src/place/layout.ts';
 import { createIslandGround } from '../../src/entities/ring-island/ground.ts';
 import { summitPathFacts } from '../../src/entities/ring-island/path.ts';
 import { MOVER } from './mover.ts';
@@ -530,8 +530,8 @@ export function checkRing() {
     [a1, a2] = apexes();
 
   section('The Pier west platform after Q7 (running-side step 5)');
-  const pierRow = UP_HALTS.findIndex((h) => h.pair === 5),
-    pier = UP_HALTS[pierRow]!;
+  const pierRow = OFFSET_HALTS.findIndex((h) => h.pair === 5),
+    pier = OFFSET_HALTS[pierRow]!;
   const deck = haltDeck(pierRow, true),
     frame = haltFrame(pierRow, true),
     pierRamps = haltRamps('pier-check', { row: pierRow, up: true }).filter((p) => p.params?.piece === 'ramp'),

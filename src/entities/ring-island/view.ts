@@ -404,7 +404,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   }
 
   // ---------------------------------------------------------------- the island halt
-  const [upL0, upL1] = RING_HALT.upLat.map((l) => l / 100) as [number, number];
+  const [upL0, upL1] = RING_HALT.offsetLat.map((l) => l / 100) as [number, number];
   const [dnL0, dnL1] = RING_HALT.downLat.map((l) => l / 100) as [number, number];
   // The platforms, solid down to the fill (ground.ts), so no gap shows under them. They start at the foot crossing's
   // ramp tops (docs/plans/ring-island-crossing.md): their first 6.6 m are its landings and ramps.

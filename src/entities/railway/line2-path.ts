@@ -7,7 +7,7 @@ import {
   LINKS,
   ORIGIN,
   TURNOUT,
-  UP_LAT,
+  OFFSET_LAT,
   crossLat,
   upFull,
   lineAt,
@@ -180,7 +180,7 @@ const tmp: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 
 // ---------------------------------------------------------------- a train's lateral, from the room's rows
 // Right-hand running (docs/plans/running-side.md, v45): a train going out (+s, track 0) keeps the original track
-// (lateral 0, the east platforms'), one going home (-s, track 1) the offset track (UP_LAT, the west platforms'). No rail
+// (lateral 0, the east platforms'), one going home (-s, track 1) the offset track (OFFSET_LAT, the west platforms'). No rail
 // moved: at an end the arriving train runs straight in and the leaving one takes the end's turnout or crossover out.
 const QUARRY = FORMATION.quarry;
 const HALTS = RAIL_LINES[LINE2]!.halts;
@@ -214,11 +214,11 @@ export function line2Lat(row: LatRow, s: number, stops: readonly number[], merge
   const halt = retained < 0 ? stops.length - 1 : retained;
   const end = HALTS[halt]!.end!;
   if (retained >= 0) merge = (end.mergeCm + row.origin - HALTS[halt]!.s) / 100;
-  const start = s <= QUARRY.from ? 0 : UP_LAT * ease((s - QUARRY.from) / TURNOUT);
+  const start = s <= QUARRY.from ? 0 : OFFSET_LAT * ease((s - QUARRY.from) / TURNOUT);
   if (halt === FAR_HEAD) return s >= QUARRY.crossover![0] ? (crossLat(QUARRY, s) ?? 0) : start;
   let lat = start;
-  if (end.kind === 'stub') lat = UP_LAT * Math.min(ease((s - QUARRY.from) / TURNOUT), ease((merge - s) / TURNOUT));
-  else if (s >= merge) lat = UP_LAT * (1 - ease((s - merge) / CROSS_LEN));
+  if (end.kind === 'stub') lat = OFFSET_LAT * Math.min(ease((s - QUARRY.from) / TURNOUT), ease((merge - s) / TURNOUT));
+  else if (s >= merge) lat = OFFSET_LAT * (1 - ease((s - merge) / CROSS_LEN));
   // Through the Quarry's bend the offset track's full lateral is the eased one (layout.ts upFull).
-  return (lat / UP_LAT) * upFull(QUARRY, s, smooth) + 0; // never -0
+  return (lat / OFFSET_LAT) * upFull(QUARRY, s, smooth) + 0; // never -0
 }

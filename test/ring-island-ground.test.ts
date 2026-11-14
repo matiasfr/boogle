@@ -96,7 +96,7 @@ test('the ground stays 50 cm under every planned deck on the folk side', () => {
       under(p.x, p.z, ringDeckY(Math.round(u * 100)) / 100, `the Way, u ${u}`);
     }
   // The halt's platforms, 0.9 m over its deck.
-  for (const [l0, l1] of [RING_HALT.upLat, RING_HALT.downLat])
+  for (const [l0, l1] of [RING_HALT.offsetLat, RING_HALT.downLat])
     for (let u = RING_HALT.u0 / 100; u <= RING_HALT.u1 / 100; u += 0.5)
       for (let lat = l0 / 100; lat <= l1 / 100 + 1e-6; lat += 0.35) {
         const p = w(u, lat);

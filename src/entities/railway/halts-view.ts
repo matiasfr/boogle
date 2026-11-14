@@ -307,7 +307,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   );
   // The second platforms' levers (one handle, the way home), at the platform's -s end, the way that train leaves
   // (halt-attachments.ts); standing with the first platform's halt beside it.
-  const upLevers = layout.UP_HALTS.map((u, row) => {
+  const upLevers = layout.OFFSET_HALTS.map((u, row) => {
     const line = layout.LINKS[u.line]!.line,
       mid = (u.s0 + u.s1) / 2,
       low = Math.min(railY(line, u.s0), railY(line, u.s1)) + 0.72;
@@ -370,7 +370,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       };
       // A halt with a second platform can be its line's open end (Far Head): its first platform's lever is generated
       // at the +s end, for the train going on, and stands at the -s end while it calls the train home.
-      if (layout.UP_HALTS.some((u) => u.pair === k) && RAIL_LINES[h.k]!.halts[h.stop]!.only !== -1)
+      if (layout.OFFSET_HALTS.some((u) => u.pair === k) && RAIL_LINES[h.k]!.halts[h.stop]!.only !== -1)
         x.slide = {
           z0: h.lever.group.position.z,
           goal: () => (h.dir < 0 ? -2 * (h.half - LEVER_PLACE.fromEnd / 100) : 0),
@@ -611,7 +611,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   /** Whether a lever stands: its halt is up and its frame shown (an up lever with today's halt's). */
   const upWanted = (pair: number) =>
     halts[pair]!.up &&
-    line2Completed(adapter.read.world()) >= (layout.UP_HALTS.find((h) => h.pair === pair)?.laid ?? 0);
+    line2Completed(adapter.read.world()) >= (layout.OFFSET_HALTS.find((h) => h.pair === pair)?.laid ?? 0);
   const standing = (x: Spot) =>
     x.ring
       ? x.stop < stopsNow[x.line]!.length && x.ring.need()
@@ -873,7 +873,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       ringMapTable: table.inspect(),
       markerGrow: grow.map((n) => +n.toFixed(3)),
       /** The up track's platforms (generic-lines step 2): each one's halt row, whether it stands, its deck's centre
-       * and the walk from it to today's side over the plank crossing (UP_HALTS order, as upLevers). */
+       * and the walk from it to today's side over the plank crossing (OFFSET_HALTS order, as upLevers). */
       upPlatforms: ups.inspect().map((g, i) => ({ ...g, ...upLevers[i]!.centre, path: upLevers[i]!.path })),
     }),
   };

@@ -425,11 +425,11 @@ export const HALTS: Halt[] = [
   { name: 'Far Head', line: 1, s0: EAST.headStop - 11, s1: EAST.headStop + 11, lat: 2.9, stop: 2 },
 ];
 
-/** The double formation: right-hand running, +s on the original track and -s on the offset track, `UP_LAT` m
+/** The double formation: right-hand running, +s on the original track and -s on the offset track, `OFFSET_LAT` m
  * left of the original in the +s direction. Geometry is unchanged from generic-lines step 2, easing
  * in and out over a 20 m stub turnout at each end; line 2 also has Far Head's departure crossover, original to offset,
  * while Far Head is its end. Metres along each line. Step 4a moves the merges into the sim catalog's `RailHalt.end`. */
-export const UP_LAT = -4;
+export const OFFSET_LAT = -4;
 export const TURNOUT = TURNOUT_CM / 100; // the sim's: its end blocks and signals reach past it
 /** `bend`: a stretch where the offset track, 4 m inside the line's bend, would turn too tightly and is eased (below). */
 export type Formation = {
@@ -446,10 +446,10 @@ export const FORMATION: Record<LineSpec['id'], Formation> = {
  * offset track 4 m inside it was 2.8 m, which stood a train's engine in its first car; ./track-ease.ts). */
 export const UP_BEND_MIN = 10;
 const bends = new Map<Formation, Eased | null>();
-/** The offset track's full offset at `s`: UP_LAT, but through a formation's `bend` the eased offset (4.35 m at most,
+/** The offset track's full offset at `s`: OFFSET_LAT, but through a formation's `bend` the eased offset (4.35 m at most,
  * 3.91 m at least at the Quarry), so the track starts its turn earlier and ends it later. */
 export function upFull(f: Formation, s: number, smooth = false) {
-  if (!f.bend || s <= f.bend[0] || s >= f.bend[1]) return UP_LAT;
+  if (!f.bend || s <= f.bend[0] || s >= f.bend[1]) return OFFSET_LAT;
   let e = bends.get(f);
   if (e === undefined) {
     const line = LINKS.find((l) => FORMATION[l.id] === f)!.line;
@@ -458,20 +458,20 @@ export function upFull(f: Formation, s: number, smooth = false) {
       (at, out) => lineSmoothAt(line, at, out),
       f.bend[0],
       f.bend[1],
-      UP_LAT,
+      OFFSET_LAT,
       UP_BEND_MIN,
     );
     bends.set(f, e);
   }
-  return e ? (smooth ? easedSmoothAt(e, s, UP_LAT) : easedAt(e, s, UP_LAT)) : UP_LAT;
+  return e ? (smooth ? easedSmoothAt(e, s, OFFSET_LAT) : easedAt(e, s, OFFSET_LAT)) : OFFSET_LAT;
 }
 const ease = (t: number) => {
   const x = Math.max(0, Math.min(1, t));
   return x * x * (3 - 2 * x);
 };
-/** The offset track's lateral offset at `s` (UP_LAT between the turnouts), or null where the line is single. `smooth`:
+/** The offset track's lateral offset at `s` (OFFSET_LAT between the turnouts), or null where the line is single. `smooth`:
  * the offset to set across `lineSmoothAt`'s heading (what moves along the track), not `lineAt`'s. */
-export function upLat(f: Formation, s: number, smooth = false): number | null {
+export function offsetLat(f: Formation, s: number, smooth = false): number | null {
   if (s < f.from || s > f.to) return null;
   return upFull(f, s, smooth) * Math.min(ease((s - f.from) / TURNOUT), ease((f.to - s) / TURNOUT));
 }
@@ -479,7 +479,7 @@ export function upLat(f: Formation, s: number, smooth = false): number | null {
 export function crossLat(f: Formation, s: number): number | null {
   const c = f.crossover;
   if (!c || s < c[0] || s > c[1]) return null;
-  return UP_LAT * (1 - ease((s - c[0]) / (c[1] - c[0])));
+  return OFFSET_LAT * (1 - ease((s - c[0]) / (c[1] - c[0])));
 }
 /** The offset track's platforms, outside it (a lever each, halts-view.ts; no board or signal), and the plank crossing over both
  * tracks at each pair's end (`crossS`), from today's platform to the up one. Quarry's stands clear of the Q4 frame
@@ -502,7 +502,7 @@ export type UpHalt = {
   /** Completed Q jobs needed before this platform and its crossing stand. */
   laid?: number;
 };
-export const UP_HALTS: UpHalt[] = [
+export const OFFSET_HALTS: UpHalt[] = [
   {
     name: 'Quarry, up',
     line: 1,
@@ -565,7 +565,7 @@ export function crossingPlanks(upA: number, upB = upA, to: number = CROSSING_SPA
 
 /** The lamps along the ridge trestle's edges, s 116 back to 60 every 7 m, 1.72 m in from each edge of the deck: on the
  * left that edge is the offset track's since the second track (generic-lines step 2), so they stand outside both tracks.
- * `up` is the offset track's offset at `s` (layout.ts upLat), 0 where the line is single. */
+ * `up` is the offset track's offset at `s` (layout.ts offsetLat), 0 where the line is single. */
 export const pathLamps = (up: (s: number) => number) => {
   const out: { s: number; l: number }[] = [];
   for (let s = 116; s >= 60; s -= 7)

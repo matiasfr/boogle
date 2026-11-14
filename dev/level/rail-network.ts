@@ -2,7 +2,7 @@
 // (./track-continuity.ts) and the rail map (./rail-map.ts, docs/world/rail-map.html). Read-only: every point comes from
 // the owning data, nothing here is a second copy of a layout.
 //   live lines   Place's rail splines (src/place/layout.ts LINES, 1 m samples): what the view draws and poses cars
-//                on (rail.ts poseCarOnLine), today's track (down) and the up track's lateral offset (FORMATION, upLat,
+//                on (rail.ts poseCarOnLine), today's track (down) and the up track's lateral offset (FORMATION, offsetLat,
 //                crossLat: the stub turnouts, Far Head's crossover)
 //   sim paths    RAIL_LINES[...].path (src/sim/railway-lines.ts, 10 m samples): what railLinePoint reads (the server's
 //                near-train check only)
@@ -15,11 +15,11 @@ import {
   HALTS,
   LINES,
   ORIGIN,
-  UP_HALTS,
+  OFFSET_HALTS,
   crossLat,
   lineAt,
   railY,
-  upLat,
+  offsetLat,
   type Line,
   type LinePoint,
 } from '../../src/place/layout.ts';
@@ -172,7 +172,7 @@ export function tracks(): Track[] {
       status: 'v26',
       kind: 'up',
       nominal: 1,
-      pts: placeTrack(L.line, (s) => upLat(L.f, s), L.f.from, L.f.to),
+      pts: placeTrack(L.line, (s) => offsetLat(L.f, s), L.f.from, L.f.to),
       pose: 'spline',
       enforce: true,
     });
@@ -461,7 +461,7 @@ export function liveHalts(): LiveHalt[] {
   const l1 = TRAIN_STOPS[0]!.map((s) => s / 100),
     l2 = TRAIN_STOPS[1]!.map((s) => s / 100);
   const p = (name: string) => HALTS.find((h) => h.name === name)!;
-  const u = (name: string) => UP_HALTS.find((h) => h.name === name)!;
+  const u = (name: string) => OFFSET_HALTS.find((h) => h.name === name)!;
   const span = (h: { s0: number; s1: number; lat: number }) => ({ s0: h.s0, s1: h.s1, lat: h.lat });
   return [
     { name: 'Village', line: 'line1', stop: l1[0]!, up: span(p('Village')), down: span(p('Village')), status: 'live' },
@@ -489,7 +489,7 @@ export function liveHalts(): LiveHalt[] {
       line: 'line2',
       stop: l2[3]!,
       up: null,
-      down: span(UP_HALTS.find((h) => h.pair === 5)!),
+      down: span(OFFSET_HALTS.find((h) => h.pair === 5)!),
       status: 'live',
     },
   ];
@@ -531,7 +531,7 @@ export function obstacles(line: 'line1' | 'line2'): Obstacle[] {
   if (line === 'line2') {
     const c = FORMATION.quarry.crossover!;
     out.push({ s0: c[0], s1: c[1], what: `Far Head's crossover (s ${c[0]}-${c[1]})`, tracks: 'both' });
-    for (const h of UP_HALTS)
+    for (const h of OFFSET_HALTS)
       out.push({
         s0: h.crossS - 1.2,
         s1: h.crossS + 1.2,

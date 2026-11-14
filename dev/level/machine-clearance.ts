@@ -15,12 +15,12 @@ import {
   RACK,
   ROCKS,
   STUB,
-  UP_LAT,
+  OFFSET_LAT,
   crossLat,
   lineAt,
   pathLamps,
   railY,
-  upLat,
+  offsetLat,
 } from '../../src/place/layout.ts';
 import { openingBuildings, openingStops, forgePlan, WOOD2 } from '../../src/place/opening-plans.ts';
 import { frameBesideLine, stationColliders, stationStockCollider, OUT } from '../../src/place/spatial-station.ts';
@@ -450,8 +450,8 @@ export async function checkMachineClearance() {
       DECK_W: sourceFunction(trackFile, 'DECK_W', {}),
       BED_W: sourceFunction(trackFile, 'BED_W', {}),
       FORMATION,
-      UP_LAT,
-      upLat,
+      OFFSET_LAT,
+      offsetLat,
       crossLat,
       box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
       dropSet: () => ({}),
@@ -533,7 +533,7 @@ export async function checkMachineClearance() {
     if (index === schedule.length - 1 || schedule[index + 1]!.stage !== panel.stage) {
       if (index === schedule.length - 1) {
         // Production path.ts enables these only after T3, behind the already passed machine.
-        for (const { s, l } of pathLamps((s) => upLat(FORMATION.timber, s) ?? 0)) {
+        for (const { s, l } of pathLamps((s) => offsetLat(FORMATION.timber, s) ?? 0)) {
           const at = besideLine(line.line, s, l);
           obstacle(
             `path-lamp/${s}/${l}`,

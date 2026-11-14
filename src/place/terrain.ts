@@ -27,7 +27,7 @@ import {
   VILLAGE,
   lineAt,
   railY,
-  upLat,
+  offsetLat,
   type LinePoint,
   type Pt,
 } from './layout.ts';
@@ -294,7 +294,7 @@ function bake() {
       line = link.line;
     const samples: [number, number, number][] = [];
     for (let s = formation.from; s <= formation.to; s += 1) {
-      const lat = upLat(formation, s);
+      const lat = offsetLat(formation, s);
       if (lat === null || lat > -0.6) continue;
       lineAt(line, s, P);
       samples.push([P.x - P.uz * lat, P.z + P.ux * lat, railY(line, s) - 0.08]);

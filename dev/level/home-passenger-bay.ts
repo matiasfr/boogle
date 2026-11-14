@@ -49,8 +49,8 @@ const run = (f: (s: number) => P, s0: number, s1: number, step = 0.5) => {
 };
 const road1 = run((s) => road(0, s), home.BUFFERS[0], 68);
 const road2 = run((s) => road(1, s), home.BUFFERS[1], 96);
-const up2at = (s: number) => lineP(east, s, layout.upLat(layout.FORMATION.quarry, s)!);
-const up1at = (s: number) => lineP(north, s, layout.upLat(layout.FORMATION.timber, s)!);
+const up2at = (s: number) => lineP(east, s, layout.offsetLat(layout.FORMATION.quarry, s)!);
+const up1at = (s: number) => lineP(north, s, layout.offsetLat(layout.FORMATION.timber, s)!);
 const up2 = run(up2at, 34, 96);
 const up1 = run(up1at, 36, 68);
 const eased2 = run(up2at, 34, 53.75, 0.25);

@@ -186,7 +186,7 @@ export const RING_HALT = {
   y: 800,
   up: { ...ringAt(44800, -755), y: 890, reach: 1260 } satisfies RailPlatform,
   down: { ...ringAt(44800, 355), y: 890, reach: 1260 } satisfies RailPlatform,
-  upLat: [-930, -580],
+  offsetLat: [-930, -580],
   downLat: [180, 530],
 } as const;
 /** The island's end (R1b; owner, 10 November: "Buffers about 15 m past the halt, with a crossover before it"), Far

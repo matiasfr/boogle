@@ -1,5 +1,5 @@
 // Runtime-only platform dimensions. The compiler keeps the row selector and authored-source fingerprint.
-import { HALTS, UP_HALTS, LINKS, ORIGIN, lineAt, railY } from '../place/layout.ts';
+import { HALTS, OFFSET_HALTS, LINKS, ORIGIN, lineAt, railY } from '../place/layout.ts';
 import { ISLAND } from '../place/home-station.ts';
 import { H } from '../place/terrain.ts';
 import { SEA } from '../constants.ts';
@@ -11,7 +11,7 @@ export const HALT_PIER = { s0: 719, s1: 741, lat: 2.9, island: false } as const;
 export function haltSource(row: number, up: boolean) {
   if (!Number.isInteger(row) || row < 0 || typeof up !== 'boolean')
     throw new Error('prefabs: invalid halt deck selector');
-  const sources = up ? UP_HALTS : [...HALTS, { line: 1 as const, ...HALT_PIER }];
+  const sources = up ? OFFSET_HALTS : [...HALTS, { line: 1 as const, ...HALT_PIER }];
   const h = sources[row];
   if (!h) throw new Error('prefabs: invalid halt deck recipe');
   return h;

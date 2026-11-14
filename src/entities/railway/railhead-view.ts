@@ -23,7 +23,7 @@ import { instantiate } from '../../prefab/instantiate.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { SEA, reducedMotion } from '../../constants.ts';
 import { H, slab } from '../../place/land.ts';
-import { UP_LAT } from '../../place/layout.ts';
+import { OFFSET_LAT } from '../../place/layout.ts';
 import { CROSSING_FOOT_OFF, WORKS } from '../../sim/railway-works-layout.ts';
 import { RING_BRACE, RING_BRACE_PLATFORM, RING_HEAD, RING_HOOK } from '../../sim/railway-ring-layout.ts';
 import { account, aperture, beam, boiler, type ReadWorld } from '../../sim/railway-rows.ts';
@@ -540,7 +540,7 @@ export function createRailwayRailhead(
   }
   /** The rails from Q7's end (u 120) to the railhead's buffer, both tracks, and the stub's crossover. */
   function drawRails(end: number) {
-    for (const lat of [0, UP_LAT])
+    for (const lat of [0, OFFSET_LAT])
       for (const r of [-0.5, 0.5])
         for (let u = 120; u < end - 1e-6; u += 4)
           seg(u, lat + r, Math.min(end, u + 4), lat + r, 0.1, 0.12, TOP, COLOURS.rail);
@@ -554,9 +554,9 @@ export function createRailwayRailhead(
             u1 = c0 + ((c1 - c0) * (i + 1)) / N;
           seg(
             u0,
-            UP_LAT * (1 - ease(i / N)) + r,
+            OFFSET_LAT * (1 - ease(i / N)) + r,
             u1,
-            UP_LAT * (1 - ease((i + 1) / N)) + r,
+            OFFSET_LAT * (1 - ease((i + 1) / N)) + r,
             0.1,
             0.12,
             TOP + 0.005,
@@ -568,9 +568,9 @@ export function createRailwayRailhead(
         const u = c0 + ((c1 - c0) * i) / N;
         seg(
           u - 0.21,
-          UP_LAT * (1 - ease(i / N)),
+          OFFSET_LAT * (1 - ease(i / N)),
           u + 0.21,
-          UP_LAT * (1 - ease(i / N)),
+          OFFSET_LAT * (1 - ease(i / N)),
           2.3,
           0.12,
           -0.02,
@@ -582,7 +582,7 @@ export function createRailwayRailhead(
   function drawEnd(end: number, bare: boolean) {
     // Buffers on both tracks at the railhead, until the rivet makes the line a through one.
     if (!bare) {
-      for (const lat of [0, UP_LAT]) {
+      for (const lat of [0, OFFSET_LAT]) {
         seg(end - BUFFER_BACK - 0.3, lat, end - BUFFER_BACK + 0.3, lat, 1.9, 0.9, TOP + 0.5, COLOURS.iron);
         seg(end - BUFFER_BACK - 0.35, lat, end - BUFFER_BACK - 0.25, lat, 1.6, 0.5, TOP + 0.55, COLOURS.buffer);
       }

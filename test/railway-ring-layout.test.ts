@@ -108,7 +108,7 @@ test('every recovery point stands on a planned deck or on island ground over 50 
   };
   const decks = [
     { ...RING_BRACE_PLATFORM },
-    { u0: RING_HALT.u0, u1: RING_HALT.u1, lat0: RING_HALT.upLat[0], lat1: RING_HALT.upLat[1], y: 890 },
+    { u0: RING_HALT.u0, u1: RING_HALT.u1, lat0: RING_HALT.offsetLat[0], lat1: RING_HALT.offsetLat[1], y: 890 },
     { u0: RING_HALT.u0, u1: RING_HALT.u1, lat0: RING_HALT.downLat[0], lat1: RING_HALT.downLat[1], y: 890 },
   ];
   for (const p of RING_RECOVERY) {

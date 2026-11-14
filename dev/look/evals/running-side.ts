@@ -64,7 +64,7 @@ const k = knob()!,
   halt = view()!.halts![row()]!;
 // The platform's frame: +s along the line, and across toward the rails. A platform at lateral `lat` stands
 // (-uz, ux) * lat off the line, so the rails are the other way.
-const upRow = layout.UP_HALTS.findIndex((u) => u.pair === row());
+const upRow = layout.OFFSET_HALTS.findIndex((u) => u.pair === row());
 const second = k.platform === 'up';
 const frame = haltFrame(second ? upRow : row(), second);
 const along = { x: Math.sin(frame.yaw), z: Math.cos(frame.yaw) };

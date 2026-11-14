@@ -344,7 +344,7 @@ export async function createRailwayTrains(
   function latOf(tr: (typeof trains)[number], row: Readonly<RailTrain>, s: number) {
     if (tr.line === LINE2) return line2Lat(row, s, stops2, merge2, true);
     if (!row.track) return 0;
-    return layout.upLat(formations[tr.line]!, s, true) ?? 0;
+    return layout.offsetLat(formations[tr.line]!, s, true) ?? 0;
   }
   /** Whether a homeward train takes a crossover out: Far Head's while it is line 2's end, Ring Island's once it is,
    * and either for a train that stood there (or was turning back there) as the line grew past it (`left`). */

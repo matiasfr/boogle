@@ -31,20 +31,25 @@ export function approachPlanks(
 }
 
 export async function createRailwayPath(owner: OwnedView) {
-  const [{ LINKS, FORMATION, railY, upLat, pathLamps }, { besideLine }, { addStatic, plank, H }, { flat }, { pop }] =
-    await Promise.all([
-      import('../../place/layout.ts'),
-      import('./rail-kit.ts'),
-      import('../../place/land.ts'),
-      import('../../render/flat.ts'),
-      import('../../render/fanfare.ts'),
-    ]);
+  const [
+    { LINKS, FORMATION, railY, offsetLat, pathLamps },
+    { besideLine },
+    { addStatic, plank, H },
+    { flat },
+    { pop },
+  ] = await Promise.all([
+    import('../../place/layout.ts'),
+    import('./rail-kit.ts'),
+    import('../../place/land.ts'),
+    import('../../render/flat.ts'),
+    import('../../render/fanfare.ts'),
+  ]);
   const row = new THREE.Group();
   row.visible = false;
   const glow = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(3, 2.1, 0.9) }));
   const line = LINKS[0]!.line;
   const slots: { x: number; y: number; z: number }[] = [];
-  for (const { s, l } of pathLamps((s) => upLat(FORMATION.timber, s) ?? 0)) {
+  for (const { s, l } of pathLamps((s) => offsetLat(FORMATION.timber, s) ?? 0)) {
     const p = besideLine(line, s, l);
     slots.push({ x: p.x, y: railY(line, s) + 0.75, z: p.z });
   }

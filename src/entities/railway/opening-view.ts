@@ -144,7 +144,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   const refuges = pathRefuges(line, 30, layout.STUB.camp, {
     ground: terrain.surfaceHeight,
     deckTop: plankTops(env.pathPlanks()),
-    up: (s) => layout.upLat(layout.FORMATION[layout.LINKS[0]!.id], s) ?? 0,
+    up: (s) => layout.offsetLat(layout.FORMATION[layout.LINKS[0]!.id], s) ?? 0,
     beside: rail.besideLine,
   });
   const pathS = (u: number) => refuges.first + u * (layout.STUB.camp - refuges.first);

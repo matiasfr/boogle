@@ -38,7 +38,7 @@ import {
   SPAWN,
   lineAt,
   railY,
-  upLat,
+  offsetLat,
   type Line,
   type LinePoint,
 } from '../../src/place/layout.ts';
@@ -273,7 +273,7 @@ export function runPlaceLevelCheck() {
           pillar &&
           lip &&
           lipTrack &&
-          Math.hypot(lip.x - P.x, lip.z - P.z) <= 1.85 - (upLat(FORMATION.timber, 92) ?? 0) &&
+          Math.hypot(lip.x - P.x, lip.z - P.z) <= 1.85 - (offsetLat(FORMATION.timber, 92) ?? 0) &&
           Math.abs(pillar.top - 0.04 - (railY(N, 92) + 0.1)) <= 0.3 &&
           Math.abs(pillar.x - p.x) < p.hx &&
           Math.abs(pillar.z - p.z) < p.hz &&

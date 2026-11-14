@@ -1,7 +1,17 @@
 // Audit the actual settled buildTrack boxes, stopping before scene/physics construction.
 import * as THREE from 'three/webgpu';
 import { boxAt, place, type Box } from '../../src/render/box-plan.ts';
-import { FORMATION, LINKS, ORIGIN, STUB, UP_LAT, crossLat, lineAt, railY, upLat } from '../../src/place/layout.ts';
+import {
+  FORMATION,
+  LINKS,
+  ORIGIN,
+  STUB,
+  OFFSET_LAT,
+  crossLat,
+  lineAt,
+  railY,
+  offsetLat,
+} from '../../src/place/layout.ts';
 import { H, surfaceHeight } from '../../src/place/terrain.ts';
 import { sampleFootprint } from '../../src/place/support.ts';
 import { carriedPiece, sleeperStations, trackPanels } from '../../src/entities/railway/track-panels.ts';
@@ -38,8 +48,8 @@ export function trackBoxes() {
       DECK_W: sourceFunction<number>(file, 'DECK_W', {}),
       BED_W: sourceFunction<number>(file, 'BED_W', {}),
       FORMATION,
-      UP_LAT,
-      upLat,
+      OFFSET_LAT,
+      offsetLat,
       crossLat,
       box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
       dropSet: (boxes: Box[]) => boxes,

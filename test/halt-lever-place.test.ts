@@ -9,7 +9,7 @@ import { haltFrame } from '../src/prefab/halt-deck.ts';
 import { loadLevelArtifact, loadPrefabArtifact } from '../src/prefab/validate.ts';
 import { KNOB_TRAVEL } from '../src/prefab/builders/halt-lever.ts';
 import { LEVER_REACH } from '../src/place/home-station.ts';
-import { HALTS, UP_HALTS } from '../src/place/layout.ts';
+import { HALTS, OFFSET_HALTS } from '../src/place/layout.ts';
 import { LINE_HALTS } from '../src/sim/railway-train.ts';
 import { LINE2, RAIL_HALTS, haltPlatform } from '../src/sim/railway-lines.ts';
 import * as works from '../src/sim/railway-works-layout.ts';
@@ -133,7 +133,7 @@ test("every halt's generated lever keeps 3 m between its knob's reach and every 
 // Right-hand running (docs/plans/running-side.md, step 4): a second platform is the homeward train's, and its lever
 // stands at the -s end, the way that train leaves.
 test("the second platforms' levers stand within 1.5 m of the -s end, inside the server's reach of the homeward platform", () => {
-  UP_HALTS.forEach((u, row) => {
+  OFFSET_HALTS.forEach((u, row) => {
     const lever = levers.find((p) => p.id === `halt-lever-${row}-up`)!;
     const { c, yaw, half } = haltFrame(row, true);
     const along = (lever.pos[0] - c.x) * Math.sin(yaw) + (lever.pos[2] - c.z) * Math.cos(yaw);

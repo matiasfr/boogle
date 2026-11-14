@@ -1,6 +1,6 @@
 // Static attachment poses resolve from authored row selectors, in the same world frame as the old views.
 import { ISLAND_LEVER } from '../place/home-station.ts';
-import { UP_HALTS } from '../place/layout.ts';
+import { OFFSET_HALTS } from '../place/layout.ts';
 import { haltFrame } from './halt-deck.ts';
 import type { JsonObject, Vec3 } from './types.ts';
 export function haltAttachmentPose(p: JsonObject): { pos: Vec3; rot: Vec3 } {
@@ -22,7 +22,7 @@ export function haltAttachmentPose(p: JsonObject): { pos: Vec3; rot: Vec3 } {
     // leaves toward. A halt with one platform (Camp, the Pier) calls the train home, so its lever stands at the -s
     // end, clear of whatever is worked at the line's far end. A halt with a second platform calls the train on, at
     // the +s end; while it is the line's open end it calls the train home and halts-view.ts stands it at the -s end.
-    const home = !island && !UP_HALTS.some((u) => u.pair === p.row && !u.piles);
+    const home = !island && !OFFSET_HALTS.some((u) => u.pair === p.row && !u.piles);
     dl = island ? sign * (hw - ISLAND_LEVER.edge) : mast - sign * 0.5;
     ds = island ? half - ISLAND_LEVER.fromEnd : (home ? -1 : 1) * (half - 0.8 - 0.6);
   }

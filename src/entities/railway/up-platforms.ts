@@ -2,7 +2,7 @@
 // track at Quarry and Far Head, beside today's halt there, and planks across both tracks at the pair's end, the walk
 // from one to the other. They drop in with today's halt beside them; the up track's trains stand here (v26), and each
 // one's request lever is halts-view.ts's (no signal or board of its own). Local: the shapes come from layout.ts's
-// UP_HALTS, as dev/level/timber-track.ts checks them.
+// OFFSET_HALTS, as dev/level/timber-track.ts checks them.
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Body } from '../../physics/engine.ts';
 import { thump } from '../../render/machine-sfx.ts';
@@ -34,7 +34,7 @@ export function createUpPlatforms(owner: OwnedView, deps: Deps) {
     kit?: ReturnType<typeof createHaltKit>;
   };
   const groups: Group[] = [];
-  for (const [row, h] of layout.UP_HALTS.entries()) {
+  for (const [row, h] of layout.OFFSET_HALTS.entries()) {
     const g: Group = { pair: h.pair, pieces: [], solids: [], bodies: [], up: false };
     groups.push(g);
     const line = layout.LINKS[h.line]!.line;

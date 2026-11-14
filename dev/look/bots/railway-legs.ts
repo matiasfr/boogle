@@ -104,8 +104,8 @@ export async function legRoute({ bot, checkpoint, leg = 0 }: LegRoute) {
       for (const [u, lat] of [
         [RING_CROSSING.rampTop + 0.5, (RING_HALT.downLat[0] + RING_HALT.downLat[1]) / 200],
         [(RING_CROSSING.u0 + RING_CROSSING.u1) / 2, (RING_HALT.downLat[0] + RING_HALT.downLat[1]) / 200],
-        [(RING_CROSSING.u0 + RING_CROSSING.u1) / 2, (RING_HALT.upLat[0] + RING_HALT.upLat[1]) / 200],
-        [RING_CROSSING.rampTop + 0.5, (RING_HALT.upLat[0] + RING_HALT.upLat[1]) / 200],
+        [(RING_CROSSING.u0 + RING_CROSSING.u1) / 2, (RING_HALT.offsetLat[0] + RING_HALT.offsetLat[1]) / 200],
+        [RING_CROSSING.rampTop + 0.5, (RING_HALT.offsetLat[0] + RING_HALT.offsetLat[1]) / 200],
       ] as const) {
         const p = cm(ringAt(u * 100, lat * 100));
         check(await bot.walk(p.x, p.z, 0.5), 'crossed to the west-side frame by the foot crossing');

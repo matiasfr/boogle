@@ -32,7 +32,7 @@ export type Land = {
   /** The top of the drawn plank under a world point, a sole of radius `r` bridging gaps; -Infinity with none
    * (`plankTops` over the line's own track pieces). */
   deckTop: (x: number, z: number, r: number) => number;
-  /** The up track's lateral at `s`, 0 where the line is single (layout upLat). */
+  /** The up track's lateral at `s`, 0 where the line is single (layout offsetLat). */
   up: (s: number) => number;
   /** A world point `l` beside the line at `s` (line-geometry.ts besideLine). */
   beside: (line: Line, s: number, l: number) => { x: number; z: number };

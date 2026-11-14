@@ -83,7 +83,7 @@ const at = (u: number, lat: number) => {
 const H = layout.RING_HALT;
 const BED_Y = H.y / 100,
   PLAT_Y = H.up.y / 100;
-const WEST = { lat0: H.upLat[0] / 100, lat1: H.upLat[1] / 100, mid: (H.upLat[0] + H.upLat[1]) / 200 };
+const WEST = { lat0: H.offsetLat[0] / 100, lat1: H.offsetLat[1] / 100, mid: (H.offsetLat[0] + H.offsetLat[1]) / 200 };
 const EAST = { lat0: H.downLat[0] / 100, lat1: H.downLat[1] / 100, mid: (H.downLat[0] + H.downLat[1]) / 200 };
 const RING_STOP = RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'Ring Island');
 const RING_S = layout.RING_END.s;

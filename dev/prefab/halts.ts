@@ -3,7 +3,7 @@ import { canonical } from './compiler.ts';
 // Placement authority: join, never rewrite, the sim catalog and the existing view-only platform layout.
 import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
 import { HALT_PIER } from '../../src/prefab/halt-deck.ts';
-import { HALTS, UP_HALTS, CROSSING_SPAN, CROSSING_WIDTH, FORMATION } from '../../src/place/layout.ts';
+import { HALTS, OFFSET_HALTS, CROSSING_SPAN, CROSSING_WIDTH, FORMATION } from '../../src/place/layout.ts';
 import { ISLAND, HEADS, BUFFERS, LINE_ORIGIN, AXIS, ISLAND_LEVER } from '../../src/place/home-station.ts';
 import { prefabs as shared, haltSolids, type HaltPiece } from '../../src/content/prefabs/halts.ts';
 import type { JsonObject, LevelDef } from '../../src/prefab/types.ts';
@@ -14,7 +14,7 @@ export function haltKitContent() {
   const down = [...HALTS, { name: pier.name, line: pier.line, stop: pier.stop, ...HALT_PIER }];
   const sources = [
     ...down.map((h, row) => ({ ...h, row, up: false })),
-    ...UP_HALTS.map((h, row) => ({ ...h, stop: down[h.pair]!.stop, island: false, row, up: true })),
+    ...OFFSET_HALTS.map((h, row) => ({ ...h, stop: down[h.pair]!.stop, island: false, row, up: true })),
   ];
   for (const h of sources) {
     const id = RAIL_HALTS.findIndex((r) => r.line === h.line && r.stop === h.stop);
@@ -98,7 +98,7 @@ export function haltKitContent() {
   const dependencies = {
     catalog: RAIL_HALTS,
     platforms: HALTS.filter((h) => !h.island),
-    upPlatforms: UP_HALTS,
+    upPlatforms: OFFSET_HALTS,
     crossing: { span: CROSSING_SPAN, width: CROSSING_WIDTH, formation: FORMATION },
     lever: ISLAND_LEVER,
     home: { heads: HEADS, buffers: BUFFERS, island: ISLAND, origin: LINE_ORIGIN, bearing: AXIS.bearing },

@@ -9,11 +9,11 @@ import {
   FORMATION,
   LINKS,
   UP_BEND_MIN,
-  UP_LAT,
+  OFFSET_LAT,
   lineAt,
   lineSmoothAt,
   upFull,
-  upLat,
+  offsetLat,
   type LinePoint,
 } from '../src/place/layout.ts';
 import { tightest } from '../src/place/track-ease.ts';
@@ -56,7 +56,7 @@ function trackOf(k: number, up: boolean, plain = false) {
     if (plain) lineAt(LINKS[k]!.line, s, p);
     else if (k === 1) line2At(s, p, true);
     else lineSmoothAt(LINKS[k]!.line, s, p);
-    const l = up ? (plain ? ((upLat(f, s) ?? 0) / upFull(f, s)) * UP_LAT : (upLat(f, s, true) ?? 0)) : 0;
+    const l = up ? (plain ? ((offsetLat(f, s) ?? 0) / upFull(f, s)) * OFFSET_LAT : (offsetLat(f, s, true) ?? 0)) : 0;
     out.x = p.x - p.uz * l;
     out.z = p.z + p.ux * l;
   };
@@ -189,14 +189,14 @@ test("the Quarry's bend: the up track is eased to 10 m and the up train stands t
     }
     return out;
   };
-  assert.ok(tightest(path(true, () => UP_LAT)) < 4, 'the plain offset was a bend under 4 m');
+  assert.ok(tightest(path(true, () => OFFSET_LAT)) < 4, 'the plain offset was a bend under 4 m');
   for (const smooth of [false, true])
     for (const step of [0.05, 0.01, 0.25]) {
-      const r = tightest(path(smooth, (s) => upLat(f, s, smooth)!, step));
+      const r = tightest(path(smooth, (s) => offsetLat(f, s, smooth)!, step));
       assert.ok(r >= UP_BEND_MIN, `${smooth ? 'smooth' : 'stepped'} at ${step} m: ${r.toFixed(2)}`);
     }
   // A train's point never steps back along the track (the stepped heading stood it back 0.58 m a metre here).
-  const run = path(true, (s) => upLat(f, s, true)!);
+  const run = path(true, (s) => offsetLat(f, s, true)!);
   for (let i = 2; i < run.length; i++) {
     const a = run[i - 2]!,
       b = run[i - 1]!,
@@ -205,12 +205,12 @@ test("the Quarry's bend: the up track is eased to 10 m and the up train stands t
   }
   for (let s = 60; s <= 480; s += 0.25)
     for (const smooth of [false, true]) {
-      const l = upLat(f, s, smooth)!;
-      if (s <= 156 || s >= 200) assert.equal(l, UP_LAT, `plain at ${s}`);
+      const l = offsetLat(f, s, smooth)!;
+      if (s <= 156 || s >= 200) assert.equal(l, OFFSET_LAT, `plain at ${s}`);
       else assert.ok(l > -4.45 && l < -3.85, `at ${s}: ${l}`);
     }
   // The up platform (s 154-174.5, outside the up track): the track stays within 0.1 m of where it was.
-  for (let s = 154; s <= 174.5; s += 0.25) assert.ok(Math.abs(upLat(f, s)! - UP_LAT) < 0.1, `platform at ${s}`);
+  for (let s = 154; s <= 174.5; s += 0.25) assert.ok(Math.abs(offsetLat(f, s)! - OFFSET_LAT) < 0.1, `platform at ${s}`);
   // The up train at the Quarry's stop: no coupling out more than 0.1 m (0.06 m at the engine, for its buffers).
   const at = trackOf(1, true);
   const a = { x: 0, z: 0 },

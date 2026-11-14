@@ -124,7 +124,7 @@ export const railEnd = (kind: RailEndKind, mergeCm: number, side: -1 | 1): RailE
     lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
   return { kind, mergeCm, edgeCm, signalCm: edgeCm - side * lead };
 };
-// Step 2's up platforms (src/place/layout.ts UP_HALTS, lat -6.95), at their deck: Quarry s 154-174.5, Far Head
+// Step 2's up platforms (src/place/layout.ts OFFSET_HALTS, lat -6.95), at their deck: Quarry s 154-174.5, Far Head
 // s 513-535. These offset-side platforms serve homeward trains; the original side serves outbound trains.
 const QUARRY_UP: RailPlatform = { x: 106912, z: 3135, y: 2502, reach: 1160 };
 const FAR_HEAD_UP: RailPlatform = { x: 135850, z: -17195, y: 2502, reach: 1260 };

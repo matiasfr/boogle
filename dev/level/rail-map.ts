@@ -19,8 +19,8 @@ import {
   TURNTABLE,
   LINKS,
   FORMATION as PLACE_FORMATION,
-  UP_HALTS,
-  upLat,
+  OFFSET_HALTS,
+  offsetLat,
   TOWN,
   ROOM_PLOTS,
   FORGE_FRAME,
@@ -692,7 +692,7 @@ function liveHaltRows(): HaltRow[] {
     status: 'v27',
     x: r1(ringAt(mid * 100).x / 100),
     z: r1(ringAt(mid * 100).z / 100),
-    platforms: `up (west, lat ${halt.upLat.join(' to ')} cm) and down (east, lat ${halt.downLat.join(' to ')} cm), each ${(halt.u1 - halt.u0) / 100} m`,
+    platforms: `up (west, lat ${halt.offsetLat.join(' to ')} cm) and down (east, lat ${halt.downLat.join(' to ')} cm), each ${(halt.u1 - halt.u0) / 100} m`,
     stops: `u ${mid} m, one mark; while the island is the end trains stand at the east (down) platform, the west lever chained and plaqued with the branch`,
     turns: "balloon loop (R1, can't be run as drawn)",
     turnsAfter: `buffers at u ${RING_END_U} on both tracks and a crossover on the Way (u ${RING_X[0]}-${RING_X[1]}); recommended over a turning loop (undrawn); through when line 2 runs on`,
@@ -1050,7 +1050,7 @@ function corridors(): Corridor[] {
       const p = beside(L.line, s, 0);
       pts.push([r1(p.x), r1(p.z)]);
       // a: the up track's lateral offset (+ right of the drawn direction, Place's convention); b: today's track
-      const u = upLat(L.f, s);
+      const u = offsetLat(L.f, s);
       a.push(u === null ? null : r1(u));
       b.push(0);
     }
@@ -1178,7 +1178,7 @@ function loopsAndCrossings() {
       return { x: r1(p.x), z: r1(p.z), label: `${L.name}: stub turnout at s ${s} (the up track merges)` };
     }),
   );
-  const planks = UP_HALTS.map((h) => {
+  const planks = OFFSET_HALTS.map((h) => {
     const p = beside(LINES.east, h.crossS, -2);
     return { x: r1(p.x), z: r1(p.z), label: `${h.name.split(',')[0]}: plank crossing at s ${h.crossS}` };
   });

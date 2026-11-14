@@ -29,7 +29,7 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
   // deck: on the left that is the up track's edge since the second track (generic-lines step 2).
   for (let s = 308; s <= 490; s += 7)
     for (const side of [-1, 1]) {
-      const up = side < 0 ? (layout.upLat(layout.FORMATION.quarry, s) ?? 0) : 0;
+      const up = side < 0 ? (layout.offsetLat(layout.FORMATION.quarry, s) ?? 0) : 0;
       const p = rail.besideLine(line, s, side * 1.72 + up);
       slots.push(new THREE.Vector3(p.x, layout.railY(line, s) + 0.75, p.z));
     }

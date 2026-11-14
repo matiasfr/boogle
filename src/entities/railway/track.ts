@@ -5,7 +5,17 @@ import type { Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { box, place } from '../../render/boxes.ts';
 import { H, addStatic, slab } from '../../place/land.ts';
-import { FORMATION, ORIGIN, STUB, UP_LAT, crossLat, lineAt, railY, upLat, type LineSpec } from '../../place/layout.ts';
+import {
+  FORMATION,
+  ORIGIN,
+  STUB,
+  OFFSET_LAT,
+  crossLat,
+  lineAt,
+  railY,
+  offsetLat,
+  type LineSpec,
+} from '../../place/layout.ts';
 import { dropSet, type DropSet } from '../../place/pieces.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { chunkOf } from './track-chunks.ts';
@@ -73,7 +83,7 @@ export function buildTrack(
   const panelled = mode === 'panels';
   const { line, dir } = spec;
   const formation = FORMATION[spec.id];
-  const ulOf = (s: number) => upLat(formation, s) ?? 0;
+  const ulOf = (s: number) => offsetLat(formation, s) ?? 0;
   const u = (s: number) => (dir > 0 ? s : line.len - s);
   const panels = panelled ? trackPanels(spec) : [];
   const stubbed = (s: number) =>
@@ -312,7 +322,7 @@ export function buildTrack(
       fall,
     );
   };
-  const upAt = (s: number) => upLat(formation, s);
+  const upAt = (s: number) => offsetLat(formation, s);
   // Sleepers. On a turnout the two tracks share them (one set through the overlap, not two interleaved): the up track
   // has none of its own while today's reach under both its rails (0.65 m apart or less); from there until it is clear
   // of today's (2.4 m), one beside each of today's and in line with it, a centimetre under it so neither flickers
@@ -352,7 +362,7 @@ export function buildTrack(
       1.1,
     );
     // A sleeper (and its legs) on the curve of the merge turnout goes with the rails when Q7 relays it.
-    const inMerge = s > formation.to - 60 && l > UP_LAT + 0.01;
+    const inMerge = s > formation.to - 60 && l > OFFSET_LAT + 0.01;
     if (inMerge) merge.push({ k: boxes.length - 1, from: s - half });
     // Low sleepers need support too, as today's (the trestle's bents only start beyond a metre of clearance).
     const y = railY(line, s) - 0.03;
@@ -381,7 +391,7 @@ export function buildTrack(
     // Long timbers under the crossover where it crosses the gap between the tracks.
     for (let s = c0 + 0.6; s < c1; s += 1.2) {
       const l = crossLat(formation, s)!;
-      if (l > -1.2 || l < UP_LAT + 1.2) continue;
+      if (l > -1.2 || l < OFFSET_LAT + 1.2) continue;
       offsetBox(
         'sleeper',
         s - 0.21,
@@ -420,8 +430,8 @@ export function buildTrack(
         for (const r of [-0.5, 0.5]) {
           offsetBox('rail', a, la + r, b, lb + r, 0.1, 0.12, TOP, '#4c5058', -2.2, 0.8);
           upRails.add(boxes.length - 1);
-          // A rail piece that is not on the straight up track (UP_LAT) at one end is in the merge turnout.
-          if (a > formation.to - 60 && (la > UP_LAT + 0.01 || lb > UP_LAT + 0.01))
+          // A rail piece that is not on the straight up track (OFFSET_LAT) at one end is in the merge turnout.
+          if (a > formation.to - 60 && (la > OFFSET_LAT + 0.01 || lb > OFFSET_LAT + 0.01))
             merge.push({ k: boxes.length - 1, from: a });
         }
     }

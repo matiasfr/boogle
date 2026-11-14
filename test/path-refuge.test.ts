@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as THREE from 'three/webgpu';
 import { trackBoxes } from '../dev/level/grounding-track.ts';
-import { FORMATION, LINKS, STUB, lineAt, railY, upLat } from '../src/place/layout.ts';
+import { FORMATION, LINKS, STUB, lineAt, railY, offsetLat } from '../src/place/layout.ts';
 import { surfaceHeight } from '../src/place/terrain.ts';
 import { besideLine } from '../src/entities/railway/line-geometry.ts';
 import { STEEL_CAR, TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
@@ -34,7 +34,7 @@ import {
 } from '../src/entities/railway/path-refuge.ts';
 
 const line = LINKS[0]!.line;
-const up = (s: number) => upLat(FORMATION[LINKS[0]!.id], s) ?? 0;
+const up = (s: number) => offsetLat(FORMATION[LINKS[0]!.id], s) ?? 0;
 const built = trackBoxes().find((t) => t.spec.id === 'timber' && t.mode === 'panels')!;
 const drawn = built.boxes.filter((_, k) => built.kinds[k] === 'plank');
 const refuges = pathRefuges(line, 30, STUB.camp, {

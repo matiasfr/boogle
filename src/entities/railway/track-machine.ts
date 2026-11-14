@@ -12,7 +12,7 @@ import wingUrl from '../../../assets/built/track-wing.glb?url';
 import { stepAlpha } from '../../physics/engine.ts';
 import { type Platform } from '../../physics/platforms.ts';
 import { wagonLook, LOCO, TRAILER } from '../../render/wagon-look.ts';
-import { FORMATION, LINKS, upLat, type Line } from '../../place/layout.ts';
+import { FORMATION, LINKS, offsetLat, type Line } from '../../place/layout.ts';
 import { RAIL_SIZE, dustRing, logStackMesh, setStackLog } from '../../place/pieces.ts';
 import { flat } from '../../render/flat.ts';
 import { LOOK, STEEL, paint, rustU, softGlow } from '../../place/look.ts';
@@ -354,7 +354,7 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
     const link = LINKS.find((l) => l.line === pose.line);
     if (!link) return 0;
     const sPost = pose.s - pose.sign * pose.back + pose.sign * WING.postZ;
-    return -(upLat(FORMATION[link.id], sPost) ?? 0);
+    return -(offsetLat(FORMATION[link.id], sPost) ?? 0);
   };
   /** Stow or open the wing for where the machine stands. The side is the up seat's once a panel has shown it; before
    * that the machine's heading says it (laid toward Home the up track is on its right, away from Home on its left). */

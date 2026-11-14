@@ -7,7 +7,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three/webgpu';
-import { FORMATION, HALTS, LINKS, ORIGIN, UP_HALTS, lineAt, lineSmoothAt, upLat } from '../src/place/layout.ts';
+import { FORMATION, HALTS, LINKS, ORIGIN, OFFSET_HALTS, lineAt, lineSmoothAt, offsetLat } from '../src/place/layout.ts';
 import { trackBoxes } from '../dev/level/grounding-track.ts';
 
 type P = { x: number; z: number };
@@ -16,7 +16,7 @@ const p = { x: 0, z: 0, ux: 0, uz: 1 };
 function trackAt(k: number, s: number, up: boolean, smooth: boolean): P {
   const link = LINKS[k]!;
   (smooth ? lineSmoothAt : lineAt)(link.line, s, p);
-  const l = up ? (upLat(FORMATION[link.id], s, smooth) ?? 0) : 0;
+  const l = up ? (offsetLat(FORMATION[link.id], s, smooth) ?? 0) : 0;
   return { x: p.x - p.uz * l + ORIGIN.x, z: p.z + p.ux * l + ORIGIN.z };
 }
 const toSegment = (q: P, a: P, b: P) => {
@@ -106,7 +106,7 @@ test('the two readings of an up track are one curve: 3 cm at most, 1 cm at every
     assert.ok(all < 0.03, `line ${k + 1}: ${all.toFixed(4)} m`);
   }
   for (const h of HALTS) assert.ok(apart(h.line, h.s0, h.s1, false) < 1e-6, h.name);
-  for (const h of UP_HALTS) {
+  for (const h of OFFSET_HALTS) {
     assert.ok(apart(h.line, h.s0, h.s1, true) < 0.01, h.name);
     assert.ok(apart(h.line, h.crossS - 1.2, h.crossS + 1.2, true) < 0.01, `${h.name} crossing`);
   }
