@@ -33,7 +33,8 @@ const wait = async (fn: () => unknown, label: string) => {
   if (!fn()) throw new Error(label);
 };
 const player = new URLSearchParams(location.search).get('player') ?? '1';
-await wait(() => me.body && railwayWorldRead()?.ready() && remotes.size, 'two players ready');
+const solo = new URLSearchParams(location.search).has('soloLook');
+await wait(() => me.body && railwayWorldRead()?.ready() && (solo || remotes.size), 'players ready');
 const place = (dx: number, dy = 0.7) => {
   const p = boogler.disp;
   teleport(me.body!, p.x + dx, groundHeight(p.x, p.z) + dy, p.z);

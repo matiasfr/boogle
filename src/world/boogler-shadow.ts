@@ -102,6 +102,8 @@ export function createBooglerShadow(land: BooglerLand, rng: () => number, startT
     validate(t: number) {
       tick = t;
       if (!validBooglerSpot(land, brain.state.x, brain.state.z)) brain.takeover({ ...findStart(land), yaw: 0 });
+      // Recovery verifies the saved hash first. Then keep a finite but enormous yaw wire-safe.
+      if (!Number.isSafeInteger(Math.round(brain.state.yaw * 1000))) brain.state.yaw %= Math.PI * 2;
       leg = stand(t);
     },
     leg: () => leg!,

@@ -17,7 +17,7 @@ import { blockedAt } from '../entities/props/state.ts';
 import { island } from '../island/index.ts';
 import { MAINLAND } from '../island/shape.ts';
 import { me } from '../player/player.ts';
-import { remotes } from '../netplay/net.ts';
+import { net, remotes } from '../netplay/net.ts';
 import type { Remote } from '../netplay/net.ts';
 import type { Body } from '../physics/engine.ts';
 import { ACT, MODE, W_R, MIN_H, findStart } from '../world/boogler-brain.ts';
@@ -440,7 +440,8 @@ export function updateBoogler(dt: number, now: number) {
   const read = railwayWorldRead();
   let leg = railwayMirror?.boogler.leg() ?? null;
   let tick = read?.tickNow() ?? 0;
-  if (!read && brain) {
+  const local = !railwayMirror || (!net.room && !leg);
+  if (local && brain) {
     localTime += dt * 10;
     visitors();
     while (localTick < Math.floor(localTime)) brain.step(++localTick, seen);
@@ -448,7 +449,7 @@ export function updateBoogler(dt: number, now: number) {
     tick = localTime;
   }
   if (leg) {
-    const self = read?.pid ?? 'local';
+    const self = local ? 'local' : (read?.pid ?? '');
     const face =
       boogler.me.act === ACT.TALK || leg.look === self
         ? me.body?.position

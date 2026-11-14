@@ -41,6 +41,19 @@ test('checkpoint saves only position and facing, and restart restores them befor
   assert.deepEqual(f.host.sync.snapshot().data.boogler, saved);
 });
 
+test('a verified finite facing outside wire precision is normalized before projection', async (t) => {
+  const f = await fixture(t);
+  const snap = f.host.sync.snapshot();
+  const start = findStart(loadBooglerLand());
+  snap.data.boogler = [start.x, start.z, 1e13];
+  assert.ok(f.host.sync.loadSnapshot(snap));
+  await f.restart();
+  const peer = f.join('observer');
+  f.run(1);
+  assert.ok(Math.abs(peer.mirror.boogler.leg()!.yaw0) < Math.PI * 2);
+  assert.equal(f.host.status().badSave, false);
+});
+
 for (const [label, spot] of [
   ['wet', [0, -300, 1]],
   ['off land', [10000, 10000, 2]],
