@@ -3,12 +3,14 @@
 // their serialized snapBytes counters follow checksum width. All inputs, snapshots, state hashes and packets stay.
 // v45 departure origin: 205 train checkpoints gain seven zero origins; only hashes/checksums and 5,667
 // snapBytes samples change. All 8,596 ordered records, inputs, messages and replica packets are preserved.
+// v46 traveller: 205 checkpoints gain Aperture.moved/from and v46 namespaces, hashes and checksums; 5,667 snapBytes
+// samples follow. All 8,596 ordered records, inputs, messages and packets stay. Regenerate with HOST_TRACE_RECORD=1.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { gunzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { setImmediate } from 'node:timers/promises';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
@@ -180,6 +182,7 @@ test('host reproduces the pre-split room trace byte for byte', async (t) => {
   sample('closed');
   const actual = lines.join('\n') + '\n';
   const fixture = new URL('./fixtures/world-host-trace.jsonl.gz', import.meta.url);
+  if (process.env.HOST_TRACE_RECORD === '1') await fs.writeFile(fixture, gzipSync(actual));
   assert.equal(actual, gunzipSync(await fs.readFile(fixture)).toString());
   t.diagnostic(
     `${lines.length} ordered records; 4550 active ticks, 300 paused attempts; all status fields, checkpoint documents and replica packets (including hashes)`,

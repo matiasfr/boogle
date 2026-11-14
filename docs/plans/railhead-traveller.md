@@ -231,7 +231,7 @@ Rows are from `npm run models` (mode withCodex, 14 November).
 
 ## Step 2 implementation notes (14 November)
 
-The namespace bump is separate (`c75066e98`), as the owner requested. The row, accepted stamp, load invariants and
+The namespace bump is a separate commit, as the owner requested. The row, accepted stamp, load invariants and
 settled jump-ins are implemented; no view or adapter behavior was changed. The focused sim/replay/host run passes
 40 tests, including both mirrors, prediction correction, 15/150-tick delivery delays and a verified checkpoint with
 a noninitial replan origin. Checkpoint A remains the orchestrator's work; the worker does not run `test:net` or ship.
@@ -247,6 +247,12 @@ including a rivet during the haul (still legal), independent of settled dev jump
 remain unchanged. The load-check corruption fixtures subtract rails from the seed's actual forge rack, and the
 host-read literals reflect that the settled `ring-joined` seed has not loaded its steel kit yet. The 180 affected
 regression tests pass with those explicit inputs. These are simulated rule ticks, not performance measurements.
+
+The server hold-cap tests use that same explicit sequence. The frozen host trace retains all 8,596 ordered records:
+only its 205 checkpoints' namespace, added Aperture columns, hashes/checksums and 5,667 snapshot-byte samples change.
+All inputs, messages and replica packets are identical. The 18 steel-host/trace regressions pass; the full local
+check passes (2,142 tests plus one existing TODO), as does the rebased ship-check (1,478 plus that TODO). The loop
+run passes for 1–4 players. Browser runs remain separate evidence; no timing or device claim follows from these checks.
 
 ## Level findings
 
