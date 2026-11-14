@@ -51,12 +51,16 @@ if (mode === 'cart') {
   console.log(`HF frames packed ${JSON.stringify((view().line2View as { framesPacked?: boolean[] }).framesPacked)}`);
 } else if (mode === 'seal') {
   // Needle Bell's summit deck (102.4 m): beside the sealed drum at world (1016, -4.5), in reach of its prompt.
-  pose([1013.7, -4.2], [1011.6, 104.5, -1.2], [1016.3, 104.2, -4.5], 102.4 + 0.85);
+  // North of the drum, out of the sea switch's reach (its runnable Pull would win the prompt), the roll side-on.
+  pose([1016.3, -2.2], [1014.2, 104.6, 1.6], [1016.4, 104.2, -4.5], 102.4 + 0.85);
   console.log(`HF seal ${JSON.stringify((view().line2View as { glideDevice?: unknown }).glideDevice)}`);
 } else if (mode === 'door' || mode === 'rack' || mode === 'fitted') {
   // The cradle's cues (footings-signalling A1, A2): `door` and `rack` with --rail-seed stall-done, `fitted` with
   // cradle-fitted. The stall door is 8.5 m from the table (942.1, 17.1) on bearing 190; the forge rack at (915.5, 10).
-  if (mode === 'door') pose([940.8, 24.6], [934.2, 21, 20.6], [940.4, 20, 26.2]);
+  // `door`: from the table side, looking in through the door at the wagon's cradle (hfside=1: the apron from the forge side).
+  if (mode === 'door' && new URLSearchParams(location.search).get('hfside') === '1')
+    pose([940.8, 24.6], [934.2, 21, 20.6], [940.4, 20, 26.2]);
+  else if (mode === 'door') pose([941.6, 24.9], [941.2, 20.8, 22.2], [940, 19.5, 29]);
   else if (mode === 'rack') pose([913.6, 8.2], [909.5, 21.6, 5.2], [924, 19.6, 14.5]);
   else pose([945.6, 21.6], [949.5, 24, 12], [939.5, 18.6, 22.5]);
   console.log(`HF cradle ${JSON.stringify((view().worksView as { cradleCues?: unknown }).cradleCues)}`);
