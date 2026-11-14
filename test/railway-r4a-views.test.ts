@@ -136,12 +136,12 @@ test('line 2 lateral: out on the original track, home on the offset one, and eac
   assert.equal(line2Lat({ ...HOME, origin: farLeft ? farLeft.s * 100 : 0 }, 480, pier), -4);
   assert.ok(worstStep(pier, 30, 524, farLeft) < 0.3, "no jump for the train the pier's opening caught at Far Head");
   // Q7 laid: the Pier is a middle halt on straight double track. A homeward train from beyond is on the offset track
-  // there; one that stood at the Pier as the end eases out over the 20 m after its stop.
+  // there; one that stood at the Pier as the end keeps the old stub to its original merge at s 556.
   const pierLeft = { halt: 3, s: PIER_STOP_CM / 100 };
-  assert.equal(line2Lat(HOME, PIER_STOP_CM / 100, head), -4, "the far track from the Pier's one platform (step 5)");
+  assert.equal(line2Lat(HOME, PIER_STOP_CM / 100, head), -4, 'the offset track beside the Pier west platform');
   assert.equal(line2Lat({ ...HOME, origin: pierLeft ? pierLeft.s * 100 : 0 }, PIER_STOP_CM / 100, head), 0);
-  assert.equal(line2Lat({ ...HOME, origin: pierLeft ? pierLeft.s * 100 : 0 }, PIER_STOP_CM / 100 - 20, head), -4);
-  assert.equal(line2Lat({ ...HOME, origin: pierLeft ? pierLeft.s * 100 : 0 }, 600, head), -4);
+  assert.equal(line2Lat({ ...HOME, origin: pierLeft ? pierLeft.s * 100 : 0 }, PIER_STOP_CM / 100 - 20, head), 0);
+  assert.equal(line2Lat({ ...HOME, origin: pierLeft ? pierLeft.s * 100 : 0 }, 600, head), 0);
   assert.ok(worstStep(head, 30, PIER_STOP_CM / 100, pierLeft) < 0.3, 'no jump for the train turned at the Pier');
   // The accepted origin changes nothing while its halt is still the end and its stop has not moved.
   for (let s = 500; s <= 740; s += 3)
@@ -161,11 +161,11 @@ test('line 2 lateral: out on the original track, home on the offset one, and eac
     assert.ok(worstStep(stops, 700, 1000) < 0.3, `no jump over the stub at head ${k}`);
   }
   // The railhead moves on a bent under a standing train: it stays on the original track where it stands and eases
-  // out over the 20 m after.
+  // out over the 20 m before its original merge.
   const stood = { halt: 4, s: head[4]! / 100 },
     moved = OPEN(7, 1);
   assert.equal(line2Lat({ ...HOME, origin: stood ? stood.s * 100 : 0 }, stood.s, moved), 0);
-  assert.equal(line2Lat({ ...HOME, origin: stood ? stood.s * 100 : 0 }, stood.s - 20, moved), -4);
+  assert.equal(line2Lat({ ...HOME, origin: stood ? stood.s * 100 : 0 }, stood.s - 20, moved), 0);
   assert.ok(worstStep(moved, 700, stood.s, stood) < 0.3, 'no jump for the train the railhead moved on from');
   // Ring Island the end (the rivet struck): the homeward train crosses out at RING_END.cross.
   assert.equal(endMergeM(island), RING_END.mergeCm / 100);

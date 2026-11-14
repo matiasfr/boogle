@@ -203,39 +203,22 @@ export const endMergeM = (stops: readonly number[]) => {
   return (end.mergeCm + stops[last]! - HALTS[last]!.s) / 100;
 };
 /**
- * The lateral of line 2's train on `row`'s track at `s` metres (0 is the original track, UP_LAT the offset one;
- * Local, from accepted rows alone).
- *  - Going out (track 0): 0, everywhere. It runs straight in to an end's east platform.
- *  - Going home (track 1): UP_LAT between the ends (eased in over the 20 m after the layout's merge at s 34).
- *  - While the open end is Far Head, a train leaving it takes its crossover out (s 512 back to 490).
- *  - While it is a stub (the Pier, the Railhead), the leaving train is on the one terminal track to `merge` and eases
- *    out over the 20 m before it; at a crossover (Ring Island) it crosses out over the 22 m after `merge`.
- *  - `origin`: a train leaving a halt the line has grown past (or whose stop has moved on) from the original track. At
- *    a crossover halt (Far Head, Ring Island) it takes that crossover; anywhere else it eases out over the 20 m after
- *    where it stood.
- * `merge` is endMergeM(stops); rideable bodies use accepted rows, never a tab-local slide.
+ * A homeward train follows its accepted departure end's complete path until the next halt. Retaining the whole
+ * path (including the original merge) preserves every car and axle when Q7 or a moving Railhead extends the line.
+ * Below the old merge it is already the ordinary homeward track, so retaining it beyond clearance is harmless.
+ * With no retained origin, read today's open end. Outbound trains always follow the original track.
  */
 export function line2Lat(row: LatRow, s: number, stops: readonly number[], merge = endMergeM(stops), smooth = false) {
   if (!row.track) return 0;
-  const halt = departureHalt(row);
-  const left = halt < 0 ? null : { halt, s: row.origin / 100 };
-  const last = stops.length - 1;
+  const retained = departureHalt(row);
+  const halt = retained < 0 ? stops.length - 1 : retained;
+  const end = HALTS[halt]!.end!;
+  if (retained >= 0) merge = (end.mergeCm + row.origin - HALTS[halt]!.s) / 100;
   const start = s <= QUARRY.from ? 0 : UP_LAT * ease((s - QUARRY.from) / TURNOUT);
-  const c = QUARRY.crossover!;
-  if (last === FAR_HEAD) return s >= c[0] ? (crossLat(QUARRY, s) ?? 0) : start;
+  if (halt === FAR_HEAD) return s >= QUARRY.crossover![0] ? (crossLat(QUARRY, s) ?? 0) : start;
   let lat = start;
-  if (HALTS[last]!.end!.kind === 'stub')
-    lat = UP_LAT * Math.min(ease((s - QUARRY.from) / TURNOUT), ease((merge - s) / TURNOUT));
+  if (end.kind === 'stub') lat = UP_LAT * Math.min(ease((s - QUARRY.from) / TURNOUT), ease((merge - s) / TURNOUT));
   else if (s >= merge) lat = UP_LAT * (1 - ease((s - merge) / CROSS_LEN));
-  if (left && (left.halt !== last || Math.abs(stops[last]! / 100 - left.s) > 1e-6)) {
-    const end = HALTS[left.halt]!.end;
-    if (left.halt === FAR_HEAD) {
-      if (s >= c[0]) return crossLat(QUARRY, s) ?? 0;
-    } else if (end?.kind === 'crossover') {
-      const m = end.mergeCm / 100;
-      if (s >= m) lat = UP_LAT * (1 - ease((s - m) / CROSS_LEN));
-    } else lat *= ease((left.s - s) / TURNOUT);
-  }
   // Through the Quarry's bend the offset track's full lateral is the eased one (layout.ts upFull).
   return (lat / UP_LAT) * upFull(QUARRY, s, smooth) + 0; // never -0
 }
