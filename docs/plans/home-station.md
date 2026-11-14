@@ -233,8 +233,11 @@ as a plan of ways and places, as built in step 3 (2.4 m end walls, the shelf in 
 - **Scale.** 13 × 6 m under a 4.6 m roof holds four small players and a 7.3 m shelf: the shelf fills just over half the
   front, the doorway the rest, and the 2.4 m walls read as low walls under a big roof, not rooms. Nothing is cramped
   inside. Two front posts stand 5 cm in front of the shelf's face, by its hat and pet slots: step 8's model should
-  space the front posts to the shelf's bays (done in the greybox, 14 November, after the owner's playtest: those two
-  posts are gone, `HALL.posts.front`, and the shelf stands in one open bay). Outside, the forecourt is tight (finding 6): spawn is 4.9 m from the
+  space the front posts to the shelf's bays. **Superseded 14 November (owner):** the shelf left the hall ("the shelf
+  could be somewhere else... That way the station feels more inviting and open"; "the other blue rack... next to each
+  other") and stands beside the finders' bay at the hall's south end; the hall keeps five posts front and back
+  (`HALL.posts`) and nothing stands in its front, so calls 14 and 29's shelf clearances and this section's shelf
+  figures no longer apply ([place](../game-design/place.md), "Home's one station"). Outside, the forecourt is tight (finding 6): spawn is 4.9 m from the
   shelf's face and Sleeves 2.3 m, in front of its north end.
 - **How the parts relate.** Passengers: hall, apron, ramp, deck, straight on. Town: its plots all lie off the hall's open
   front, across the square. Goods: road 1 is the forge's dock (pedestal, dock and crane on its north side, the forge

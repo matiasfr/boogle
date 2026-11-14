@@ -524,7 +524,7 @@ export const DOCK = PROPS.dock; // where crates off the train land for the crane
 export const HEAP = { x: -78, z: -9.5 }; // the village's timber heap, once the forge has what it needs
 export const RACK = PROPS.rack; // where the forge's rails stack
 export const YARD = PROPS.yard; // where the stone lands
-/** The curio shelf stands on the hall's floor, facing the square. */
+/** The curio shelf stands beside the finders' bay at the hall's south end, facing the square. */
 export const SHELF: { x: number; z: number; yaw: number; y?: number } = SHELF_B;
 /** Sleeves stands in front of the hall's north end, beside its open bay. */
 export const GREETER = PROPS.greeter;

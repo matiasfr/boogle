@@ -5,7 +5,7 @@
 // (local +z). The ring is regular on purpose (owner, 10 November: "I don't need the houses to be clumsily laid"): one
 // setback, 30 degrees apart on the station's own 30 degree grid (the Roundhouse's stalls use it too), every door
 // facing the green squarely.
-import { HALL, SHELF_B, axisPoint, type XZ } from './home-station.ts';
+import { FINDERS_B, HALL, SHELF_B, SHELF_SIZE, axisPoint, type XZ } from './home-station.ts';
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -96,11 +96,26 @@ const SHOP = townBuilding('shop');
 const GATE = townBuilding('gate');
 const GATE_BACK = slotPoint(280, TOWN_FRONT + GATE.d + 4.5);
 /** What stands in the town that is not a building: the clock on its 5 by 5 m footing at G; the finders' bay beside
- * the hall's south end; the balcony pad in the shop's frame; the `yard` find behind the gate cottage; the forge's west
+ * the hall's south end and the curio shelf beside the bay; the balcony pad in the shop's frame; the `yard` find behind the gate cottage; the forge's west
  * door. */
+/** A curio frame's place and its drawn footprint (`foot`): the crown's plan from `SHELF_SIZE`, which reaches further in
+ * front of the frame's centre than behind, so the footprint's centre is forward of the frame's. */
+function curioFrame(at: { x: number; z: number; yaw: number }) {
+  const { crown, front, back } = SHELF_SIZE;
+  const here = { x: at.x, z: at.z, yaw: at.yaw };
+  const foot: TownBuilding = {
+    ...townLocal({ ...here, w: 0, d: 0 }, 0, (front - back) / 2),
+    yaw: at.yaw,
+    w: 2 * crown,
+    d: front + back,
+  };
+  return { ...here, foot };
+}
 export const TOWN_PROPS = {
   clock: { ...TOWN_CENTRE, footing: 5 },
-  bay: { ...axisPoint(HALL.a - 2.77, HALL.c + 10.45), yaw: SHELF_B.yaw },
+  bay: curioFrame(FINDERS_B),
+  /** The curio shelf, beside the bay on its far side from the hall (owner, 14 November). */
+  shelf: curioFrame(SHELF_B),
   balcony: townLocal(SHOP, -1.67, -7.63),
   yard: GATE_BACK,
   forgeDoor: { x: -92, z: -3, w: 2.8 },

@@ -91,13 +91,13 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     const mid = at(a, c);
     add(box(mid.x, floor - 0.12, mid.z, w + 0.2, 0.24, d + 0.2, yaw), STONE, true);
     // The way in from the square: the slab's top is 0.12 m over the highest ground under the hall, so over the sand
-    // at the open north bays its front stands a third of a metre up, more than a walking step. Stone treads across
-    // those bays, from the north wall to the shelf's end, each rise a walking step; the kerb stays everywhere else.
+    // at the north bays its front stands a third of a metre up, more than a walking step. Stone treads across the
+    // whole open front, wall to wall, each rise a walking step; toward the south end the ground rises to meet them.
     {
       const STEP = 0.115,
         TREAD = 0.4;
       const c0 = c - w / 2 + 0.3,
-        c1 = home.toAxis(home.SHELF_B).c - home.SHELF_SIZE.crown,
+        c1 = c + w / 2 - 0.3,
         edge = a - d / 2 - 0.1;
       const low = Math.min(...[c0, (c0 + c1) / 2, c1].map((cc) => ground(at(edge - TREAD, cc))));
       const n = Math.ceil((floor - low) / STEP);
@@ -132,7 +132,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
       }
     }
     for (const i of [-1, 1])
-      for (const x of i < 0 ? posts.front : posts.back) {
+      for (const x of posts) {
         const post = at(a + i * (d / 2 - 0.2), c + x);
         add(box(post.x, floor + height / 2, post.z, 0.35, height, 0.35, yaw), POST, true);
       }

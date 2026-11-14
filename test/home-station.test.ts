@@ -18,6 +18,9 @@ import {
   PROPS,
   ROAD2_S,
   ROAD_GAP,
+  CURIO_GAP,
+  CURIO_Y,
+  FINDERS_B,
   SHELF_B,
   SHELF_SIZE,
   SHUNT_CUSP_S,
@@ -331,42 +334,47 @@ test('the shunt fits the stub, over the cart forge stop', () => {
   assert.ok(shunter - SHUNTER_HZ < CART.hz && SHUNT_CUSP_S + WAGON_CAR.hz > -CART.hz, 'they overlap on the road');
 });
 
-test('the hall and shelf: 1 m behind the buffers, centred on the island; the shelf in the front, facing the square', () => {
+test('the hall: 1 m behind the buffers, centred on the island, five posts in four even bays; the curio pair beside it', () => {
   assert.ok(Math.abs(HALL.a + HALL.d / 2 - (BUFFERS[0] - 1)) < 1e-9);
   assert.ok(dist(HALL, { x: -90.16, z: 11.03 }) < 0.05, 'the plan put the hall at (-90.16, 11.03)');
-  assert.equal(SHELF_B.y, HALL.floor, 'on the hall floor');
-  // Its footprint along the axis (front toward the square) and across (its side way on +x, toward the south wall).
+  // The same five post lines front and back, symmetric about the centreline, the bays within 0.15 m of each other.
+  assert.equal(HALL.posts.length, 5);
+  const bays = HALL.posts.slice(1).map((x, k) => x - HALL.posts[k]!);
+  assert.ok(Math.max(...bays) - Math.min(...bays) < 0.16, `bays ${bays.map((b) => b.toFixed(2)).join(', ')}`);
+  HALL.posts.forEach((x, k) => assert.ok(Math.abs(x + HALL.posts[4 - k]!) < 1e-9, 'symmetric'));
+  // Owner, 14 November: the shelf left the hall ("more inviting and open") and stands beside the finders' bay ("the
+  // other blue rack... next to each other"): the same facing and level, fronts in line, a small gap, the bay 1 m off
+  // the hall's south wall and the shelf beyond it. Nothing of either is inside the hall or under its roof.
   const s = toAxis(SHELF_B),
+    b = toAxis(FINDERS_B),
     S = SHELF_SIZE;
-  const face = { x: Math.sin(SHELF_B.yaw), z: Math.cos(SHELF_B.yaw) };
-  assert.ok(face.x * AXIS.d.x + face.z * AXIS.d.z < -0.999, 'it faces the square');
-  const a0 = s.a - S.front,
-    a1 = s.a + S.back,
-    c0 = s.c - S.crown,
-    c1 = s.c + S.crown;
-  // Backed onto the front posts' line, 5 cm behind where their inner faces run, and clear of every post.
-  const front = HALL.a - HALL.d / 2 + 0.2;
-  assert.ok(Math.abs(a0 - (front + 0.175 + 0.05)) < 1e-9, 'just behind the front posts');
-  for (const i of [-1, 1])
-    for (const x of i < 0 ? HALL.posts.front : HALL.posts.back) {
-      const pa = HALL.a + i * (HALL.d / 2 - 0.2),
-        pc = HALL.c + x;
-      const apart = pa + 0.175 <= a0 || pa - 0.175 >= a1 || pc + 0.175 <= c0 || pc - 0.175 >= c1;
-      assert.ok(apart, `clear of the post at a ${pa.toFixed(2)}, c ${pc.toFixed(2)}`);
-    }
-  // No front post stands before the shelf (owner playtest, 14 November: two stood 5 cm off its crown and read as
-  // running through it): the nearest is over 1.5 m off either end of the crown, more than a player's width.
-  for (const x of HALL.posts.front) {
-    const pc = HALL.c + x,
-      off = Math.max(c0 - (pc + 0.175), pc - 0.175 - c1);
-    assert.ok(off > 1.5, `the front post at c ${pc.toFixed(2)} is ${off.toFixed(2)} m off the shelf's crown`);
+  for (const p of [SHELF_B, FINDERS_B]) {
+    const face = { x: Math.sin(p.yaw), z: Math.cos(p.yaw) };
+    assert.ok(face.x * AXIS.d.x + face.z * AXIS.d.z < -0.999, 'it faces the square');
+    assert.equal(p.y, CURIO_Y, 'both on one level');
   }
-  assert.equal(HALL.posts.back.length, 5, 'the back keeps its five posts');
-  // The south wall's inside face keeps 0.15 m for the works board; the back span (the line map) keeps 3 m clear.
-  assert.ok(c1 + S.sideWay <= HALL.c + HALL.w / 2 - 0.3 - 0.15 + 1e-9, 'the side way and the works board fit');
-  assert.ok(HALL.a + HALL.d / 2 - 0.2 - a1 > 3, 'off the line map span at the back');
-  // The way in from the square, between the north end wall's inside face and the shelf's end, stays wide open.
-  assert.ok(c0 - (HALL.c - HALL.w / 2 + 0.3) > 4.5, 'the way in is over 4.5 m wide');
+  assert.ok(Math.abs(s.a - b.a) < 1e-9, 'fronts in line');
+  assert.ok(
+    Math.abs(s.c - b.c - (2 * S.crown + CURIO_GAP)) < 1e-9 && CURIO_GAP > 0.1 && CURIO_GAP < 0.5,
+    'a small gap',
+  );
+  const wall = HALL.c + HALL.w / 2;
+  assert.ok(Math.abs(b.c - S.crown - wall - 1) < 0.01, 'the bay is 1 m from the south wall');
+  assert.ok(b.c - S.crown > wall + (HALL.w + 0.8) / 2 - HALL.w / 2, 'clear of the roof’s eave');
+  // Set back a little from the hall's front edge (so the shelf clears the Round's plot 3), never in front of it.
+  const back = b.a - S.front - (HALL.a - HALL.d / 2);
+  assert.ok(back > 0.5 && back < 1.2, `the pair's face is ${back.toFixed(2)} m behind the hall's front edge`);
+  // Each frame's foot is at or under the ground all along it, never floating, and at most 0.25 m into it.
+  for (const [name, at] of [
+    ['shelf', s],
+    ['bay', b],
+  ] as const)
+    for (const x of [-S.crown, 0, S.crown])
+      for (const da of [-S.front, S.back]) {
+        const p = axisPoint(at.a + da, at.c + x),
+          g = H(p.x + 1000, p.z);
+        assert.ok(g - CURIO_Y > -0.02 && g - CURIO_Y < 0.25, `${name} foot at ${x}, ${da}: ground ${g.toFixed(2)}`);
+      }
   // The floor is a slab 0.1 to 0.2 m over the highest ground under the hall, so nothing stands in it.
   const ground = [-1, 0, 1].flatMap((i) =>
     [-1, 0, 1].map((j) => {
@@ -405,17 +413,15 @@ test('the rack stands on the apron and leaves a lane along road 1; its posts cle
   );
 });
 
-test('the greeter stands in front of the hall, before a post and not in a bay, outside the shelf’s reach', () => {
+test('the greeter stands in front of the hall, before a post and not in a bay, well off the curio pair', () => {
   const at = toAxis(PROPS.greeter);
   assert.ok(at.a < HALL.a - HALL.d / 2 - 1, 'out on the square, over a metre in front of the hall');
-  // The front posts' lines across; the way in is the two bays north of the shelf, either side of the second post.
-  const posts = HALL.posts.front.map((x) => HALL.c + x);
+  // The front posts' lines across: he stands before the second, so every bay of the open front is clear.
+  const posts = HALL.posts.map((x) => HALL.c + x);
   const before = Math.min(...posts.map((c) => Math.abs(c - at.c)));
   assert.ok(before < 0.3, `he stands ${before.toFixed(2)} m off a post's line, beside the open bay`);
-  assert.ok(at.c < toAxis(SHELF_B).c - SHELF_SIZE.crown, 'north of the shelf');
-  // The shelf's prompt reaches 4.4 m from its centre (the spatial review's figure).
-  const away = dist(PROPS.greeter, SHELF_B);
-  assert.ok(away > 4.4 + 1, `he is ${away.toFixed(2)} m from the shelf`);
+  for (const p of [SHELF_B, FINDERS_B])
+    assert.ok(dist(PROPS.greeter, p) > 10, 'the curio pair is the hall’s other end');
 });
 
 test('the goods door: 1.5 m in the north wall’s back half, behind road 1’s buffer, clear of the posts', () => {
