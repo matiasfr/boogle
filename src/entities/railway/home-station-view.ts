@@ -141,11 +141,12 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
         const a0 = apron + ((foot - apron) * k) / pieces,
           a1 = apron + ((foot - apron) * (k + 1)) / pieces;
         const p = at((a0 + a1) / 2, c + j * (half - 0.15));
-        kerb.push({ ...box(p.x, ground(p) + 0.1, p.z, 0.3, 0.24, a1 - a0 - 0.05, yaw), colour: KERB, solid: false });
+        // Inset the decoration 2 cm on each side of the later platform's footprint.
+        kerb.push({ ...box(p.x, ground(p) + 0.1, p.z, 0.26, 0.24, a1 - a0 - 0.05, yaw), colour: KERB, solid: false });
       }
     const end = at(foot - 0.15, c);
     kerb.push({
-      ...box(end.x, ground(end) + 0.1, end.z, home.ISLAND.width, 0.24, 0.3, yaw),
+      ...box(end.x, ground(end) + 0.1, end.z, home.ISLAND.width - 0.04, 0.24, 0.26, yaw),
       colour: KERB,
       solid: false,
     });

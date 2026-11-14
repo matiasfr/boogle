@@ -37,6 +37,36 @@ Names below are representative pieces; count includes all oriented/hidden member
 | 19   | railway.halt-1-down-deck/part-1           | railway.halt-1-down-deck/part-4           |   0.9624 |    4 | 1006.638, 31.000, -144.850 | vertex colour, procedural board instance shading                      |
 | 20   | railway.halt-1-down-deck/part-2           | railway.halt-1-down-deck/part-5           |   0.9624 |    4 | 1012.638, 31.000, -147.350 | vertex colour, procedural board instance shading                      |
 
+## Fixed — zfight-top20 implementation (partial)
+
+Fresh starting census: **a 176 / b 61 / c 541**. After the geometry changes and rebase:
+**a 159 / b 60 / c 538**, raw **345 / 127 / 1055**, new since baseline **14**.
+The historical top-twenty ranks below identify the requested spots, rather than the new ranking.
+
+| Requested ranks | Source and change | Result |
+| --- | --- | --- |
+| 1, 2, 3, 12 | `src/place/look-kit.ts`: omit the rail's redundant horizontal bottom cap at bake time (vertices within 1 mm of the minimum y); no rail translation, head-height or collider change | Rail/plank and rail/sleeper patterns absent from class a |
+| 4, 17; Home owner report | `src/entities/railway/home-station-view.ts`: inset side kerbs 2 cm on either side (0.30 → 0.26 m); end kerb width −4 cm and depth 0.30 → 0.26 m | Both kerb/platform and kerb/ramp groups absent |
+| 5 | `src/entities/railway/track.ts`: shorten drawn stringers 6.6 → 6.3 m (15 cm per end), at unchanged 6.5 m bent spacing | Quarry stringer pattern absent |
+| 8, 9 | `src/content/levels/leg2.ts`, generated `content/built/levels/bell.json`: move only the two upper north platforms' drawn undersides up 1 cm; preserve original collider boxes separately and keep tops fixed | Both underside groups absent; collider golden unchanged |
+| 19, 20; Forge owner report | Already absent on the starting main; no changes here | Remain absent |
+
+**Still unresolved:** Gorge ranks **6, 7, 10, 11, 13, 14, 15, 18** need actual polygon trimming/union of overlapping slab faces while preserving their walkable tops and collision coverage. No vertical ground nudge was applied. Rank **16** (jump recovery catch/return) needs the drawn pad geometry in reserved `src/place/path-surface.ts`; left for that file's owner. Neither `ground-material.ts` nor `terrain.ts` was edited. This is a partial implementation, not a completed top-twenty repair.
+
+No polygonOffset/depth bias, WORLD_NS, Boogler-copy or ROM-data changes. An attempted 3 cm rail lift was rejected by the wheel-grounding test and fully removed in favour of cap removal. Bell visual golden changes are limited to two thickness/centre matrices; the collider golden remains byte-identical. The baseline was not reset: its historical stale entries and newly retired contacts remain visible for selective maintenance.
+
+Visual evidence: two bounded capture attempts expired in the shared GPU queue/load gate without usable images. A subsequent existing `npm run look` capture with the documented load gate disabled succeeded on WebGPU, with no page/console/GPU errors. Opened `.look/zfight-top20-final-still.png`: continuous dark rails remain seated on pale trestle planks with no obvious striped patch at this angle. This is one after still, **not the requested five before/after pairs**; temporal flicker and other repaired sites remain visually unverified. Capture timing under load proves no performance or feel claim. **Not tested on a device.** Nothing pushed or shipped.
+
+## P2 corrections after independent review of e9db30f4e
+
+The earlier rail-cap removal and 6.3 m centred-stringer repairs are superseded. The review correctly found that cap removal left the visible rail shell facing inward and that centred short beams had unsupported mid-span gaps.
+
+- `src/place/look-kit.ts`: retain every rail triangle. Weld positions for connected-shell analysis, measure signed volume, and reverse indices and normals only on inward-wound shells. Hardware keeps its own orientation. Rail head heights, placement and all colliders stay unchanged. `test/rail-top.test.ts` ports the reviewer's scratch reproducer: it failed on the reviewed tip, passes after repair, and now also checks the downward hit is on the upward-facing 13.5 cm head rather than the foot.
+- `src/entities/railway/track.ts`: draw stringers on the actual chord between adjacent bent positions, sampling each endpoint's lateral offset and elevation. Trim 6 cm at each end so the 12 cm joint sits over the metre-wide cap. A span is drawn only when the next bent exists. The panelled-line endpoint probe (`.look/zfight-p2/support.ts`) checked all 20 timber and 158 quarry beams against actual cap transforms: zero unsupported endpoints, including graded spans. No ground or collider changes.
+- Fresh census: **a 167 / b 61 / c 548**, raw **361 / 172 / 2444**, new since baseline **22**. Against the invalid reviewed result 159/60/538, restoring the rail tops exposes eight smaller halt-crossing-board/rail groups; they were masked by the inward/open rail shell, not fixed by deleting it. The requested rail/plank, rail/sleeper and quarry-stringer patterns remain absent. The baseline was not reset. Gorge remains untouched in this follow-up.
+
+Opened final WebGPU stills on source commit `6ac4f966b`: `.look/zfight-p2-rail-final-still.png` (solid rail heads cover the planks from above), `.look/zfight-p2-curve-final-still.png` (continuous spans over the reported curve's caps), and `.look/zfight-p2-grade-final-still.png` (graded spans terminate over caps). All three waited for the splash to disappear and passed capture health with no page/console/GPU errors. The first preliminary rail capture showed the splash and is rejected as visual proof; queued preliminary underside captures were stopped/replaced. These stills do not establish temporal flicker or real-time smoothness. `node dev/ship-check.ts origin/main HEAD` passed: registry, six lint files, typecheck, 60 affected test files, **529/529 tests**. Final gates are rerun after committing this note and rebasing. No polygon offset, depth bias, copy, WORLD_NS or reserved ground-file changes. **Not tested on a device.** Nothing pushed or shipped.
+
 ## The two owner reports
 
 Both remain **class a**. Home is the kerb against the platform foundation beside the spur; Forge is the upper door step against its slab. Their current ranks and representative coordinates are:
