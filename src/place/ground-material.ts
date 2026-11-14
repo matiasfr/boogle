@@ -40,7 +40,12 @@ const freshSand = (hex: string) => {
   return vec3((c.r * anchor.r) / fresh.r, (c.g * anchor.g) / fresh.g, (c.b * anchor.b) / fresh.b);
 };
 
-export function homeGroundMaterial() {
+/** A layer over the lawn's colour alone, before rock, sand and paths are mixed over it: `p` is the Place-local
+ * position, `mottle` the lawn's close-up mottle. */
+export type LawnLayer = (lawn: N, p: N, mottle: N) => N;
+
+/** `lawnLayer` is an experiment's (land.ts passes `?meadow=tint`'s); without one the graph is exactly the lawn's own. */
+export function homeGroundMaterial(lawnLayer?: LawnLayer) {
   const m = groundMaterial();
   const p = positionWorld.sub(vec3(ORIGIN.x, 0, ORIGIN.z));
   const wx: N = positionWorld.x;
@@ -77,7 +82,8 @@ export function homeGroundMaterial() {
     .mul(sin(p.z.mul(2.9).sub(wx.mul(0.9))))
     .mul(0.05);
   const tint: N = mix(vec3(0.74, 0.9, 0.78), vec3(1.04, 1.04, 0.82), breathe);
-  const lawn: N = mix(v.mul(tint), v.mul(vec3(1.24, 1.1, 0.72)), dry.mul(0.55)).mul(mottle.add(1));
+  const plain: N = mix(v.mul(tint), v.mul(vec3(1.24, 1.1, 0.72)), dry.mul(0.55)).mul(mottle.add(1));
+  const lawn: N = lawnLayer ? lawnLayer(plain, p, mottle) : plain;
   // Sand a little darker than today's: on a sun-facing smooth slope today's pigment tone-maps to near white (today's
   // facet rock hid it). Darker still where the broad slope is steep, so a bank reads damp, not bright.
   const sandTone: N = smoothstep(0.75, 0.95, soil).mul(0.12).add(0.68);

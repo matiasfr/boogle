@@ -41,6 +41,8 @@ import { setFarHills } from './far-hills.ts';
 import { applyPathSurface } from './path-surface.ts';
 import { describeGround } from './ground-layers.ts';
 import { homeGroundMaterial } from './ground-material.ts';
+import { MEADOW, meadowLawnLayer } from './meadow-flags.ts';
+import { background } from '../async.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -264,7 +266,7 @@ function buildMesh(owner: OwnedView) {
   const mesh = new THREE.Mesh(
     geo,
     layered
-      ? homeGroundMaterial()
+      ? homeGroundMaterial(meadowLawnLayer())
       : LOOK.ground
         ? groundMaterial()
         : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
@@ -282,6 +284,14 @@ function buildMesh(owner: OwnedView) {
   mesh.frustumCulled = false;
   owner.add(mesh);
   addFarGround(mesh, NX, NZ, mainEnd, inCove, owner);
+  // `?meadow=flowers`: an experiment, off by default and loaded only when asked for (meadow-flowers.ts).
+  if (MEADOW.flowers && layered)
+    background(
+      import('./meadow-flowers.ts').then((m) => {
+        if (owner.alive) m.addMeadowFlowers(owner);
+      }),
+      'meadow flowers',
+    );
 
   for (const tile of terrainCollisionTiles()) {
     const groundBody = addStatic(

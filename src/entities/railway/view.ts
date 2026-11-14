@@ -44,7 +44,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   connection.hidden = true;
   document.body.append(connection);
   owner.cleanup(() => connection.remove());
-  const [land, rail, stations, pieces, layout, sounds, kit, look, seats] = await Promise.all([
+  const [land, rail, stations, pieces, layout, sounds, kit, look, seats, meadow] = await Promise.all([
     import('../../place/land.ts'),
     import('./rail-kit.ts'),
     import('./stations.ts'),
@@ -54,7 +54,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     import('../../place/look-kit.ts'),
     import('../../place/look.ts'),
     import('./seat.ts'),
+    import('../../place/meadow-flags.ts'),
   ]);
+  const experiment = meadow.meadowBeforeLand(); // null unless `?meadow=tint` asked for it: the usual start awaits nothing
+  if (experiment) await experiment;
   land.buildLand(owner);
   const line = layout.LINKS[0]!;
   const machine = rail.buildMachine(owner, 'panels');
