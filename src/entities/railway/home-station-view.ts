@@ -5,7 +5,7 @@
 // the cart's leg) is yard track in the lines' own pieces (./yard-track.ts). Local view over the station's data rows.
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
-import { line2Completed } from '../../sim/railway-queries-line2.ts';
+import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { drawWorksBoxes } from './works-box-view.ts';
 import { box, type WorksBox, type WorksPoint } from './works-shape.ts';
 
@@ -36,6 +36,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   const across = { x: Math.cos(yaw), z: -Math.sin(yaw) };
   const boxes: WorksBox[] = [];
   const add = (b: WorksBox, colour: `#${string}`, solid = false) => boxes.push({ ...b, colour, solid });
+  const kerb: WorksBox[] = [];
   const highest = (pts: WorksPoint[]) => Math.max(...pts.map(ground));
 
   const railAt = (road: 0 | 1, s: number) =>
@@ -131,17 +132,22 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     const top = highest(pts) + 0.1;
     const mid = at((buffers + apron) / 2, c);
     add(box(mid.x, top - 0.15, mid.z, home.ISLAND.width, 0.3, home.ISLAND.apron, yaw), STONE, true);
-    // The kerb, from the apron's end round the island's far end: a station waiting for its trains.
+    // The kerb, from the apron's end round the island's far end: a station waiting for its trains. Kept apart: it
+    // goes when the trains come and the deck and ramps drop in on its footprint (`update`, below).
     const pieces = Math.ceil((foot - apron) / 4);
     for (const j of [-1, 1])
       for (let k = 0; k < pieces; k++) {
         const a0 = apron + ((foot - apron) * k) / pieces,
           a1 = apron + ((foot - apron) * (k + 1)) / pieces;
         const p = at((a0 + a1) / 2, c + j * (half - 0.15));
-        add(box(p.x, ground(p) + 0.1, p.z, 0.3, 0.24, a1 - a0 - 0.05, yaw), KERB);
+        kerb.push({ ...box(p.x, ground(p) + 0.1, p.z, 0.3, 0.24, a1 - a0 - 0.05, yaw), colour: KERB, solid: false });
       }
     const end = at(foot - 0.15, c);
-    add(box(end.x, ground(end) + 0.1, end.z, home.ISLAND.width, 0.24, 0.3, yaw), KERB);
+    kerb.push({
+      ...box(end.x, ground(end) + 0.1, end.z, home.ISLAND.width, 0.24, 0.3, yaw),
+      colour: KERB,
+      solid: false,
+    });
   }
 
   // ---------------------------------------------------------------- the board crossing over road 2
@@ -221,7 +227,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
       }
     }
   }
-  const statics = await drawWorksBoxes(owner, boxes);
+  const statics = await drawWorksBoxes(owner, [...boxes, ...kerb]);
   statics.castShadow = true;
 
   // ---------------------------------------------------------------- the cart's leg, laid with line 2's first stretch
@@ -241,6 +247,13 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     legMesh.visible = laid;
     yardTrack.showLater(laid);
   };
-  showLeg();
-  return { update: showLeg };
+  // The island's kerb outline stands until the trains come: the deck and its ramps (./halts-view.ts) drop in on the
+  // same footprint, the island's full width, so the kerb's faces shared the deck base's planes and fought along the
+  // foot of the platform wall, and its end stood up through the ramps' feet. Its boxes are the batch's last.
+  const update = () => {
+    showLeg();
+    statics.count = line2Trains(adapter.read.world()) ? boxes.length : boxes.length + kerb.length;
+  };
+  update();
+  return { update };
 }
