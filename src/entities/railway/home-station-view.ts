@@ -7,7 +7,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { line2Completed } from '../../sim/railway-queries-line2.ts';
 import { drawWorksBoxes } from './works-box-view.ts';
-import { STALL_RAIL, box, type WorksBox, type WorksPoint } from './works-shape.ts';
+import { box, stallRoadY, type WorksBox, type WorksPoint } from './works-shape.ts';
 import { sleeperStations } from './track-panels.ts';
 import type { TrackPath, TrackPose } from './yard-track.ts';
 
@@ -221,7 +221,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     const road: TrackPath = (l) => ({
       ...world({ x: f.rim.x + f.u.x * l, z: f.rim.z + f.u.z * l }),
       yaw: f.yaw,
-      y: l < ramp ? TABLE_RAIL + ((STALL_RAIL - TABLE_RAIL) * l) / ramp : STALL_RAIL,
+      y: stallRoadY(l, TABLE_RAIL),
     });
     for (const [from, to] of [
       [0, ramp],

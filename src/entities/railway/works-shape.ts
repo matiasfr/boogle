@@ -1,6 +1,6 @@
 // Local greybox geometry, world metres. J1's centimetre catalog remains the authority for interaction anchors.
 import { WORKS_SEAMS, WORKS_CLEFT, WORKS_RACK, WORKS_ROCKS, PIER_FRAME } from '../../sim/railway-works-layout.ts';
-import { stallFrame, STALLS } from '../../place/home-station.ts';
+import { stallFrame, STALLS, TABLE } from '../../place/home-station.ts';
 import { ORIGIN } from '../../place/layout.ts';
 export type WorksPoint = { x: number; z: number };
 export type WorksBox = WorksPoint & {
@@ -150,6 +150,22 @@ export const { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL
  * (18 m). From the table's rim (the lines' 18.3) each road ramps down to it at the door. The station draws the roads
  * (./home-station-view.ts); the shunt rides them (./roundhouse-view.ts). */
 export const STALL_RAIL = 18.06;
+/** A rail's head over its track's rail height (./yard-track.ts and the lines: the foot 0.1 over it, the rail 0.135). */
+export const RAIL_HEAD = 0.235;
+/** The stall shunter and its wagon, in each one's own frame (origin on the track's centreline, y up): the wheels'
+ * centres across the track (on the rails, a metre apart), each vehicle's lowest wheel and lowest body face, and how
+ * far the frame rides over the rail height so the lowest wheel stands on the rail heads. */
+export const SHUNT = (() => {
+  const wagon = { wheel: { y: 0.05, h: 0.5 }, body: 0.3 - 0.35 / 2 },
+    shunter = { wheel: { y: 0.075, h: 0.55 }, body: 0.35 - 0.5 / 2 };
+  return { gauge: 0.5, wagon, shunter, ride: RAIL_HEAD - (wagon.wheel.y - wagon.wheel.h / 2) };
+})();
+/** A stall road's rail height `l` metres out from the table's rim, whose rail height is `deck`: the ramp down to the
+ * door, then level. */
+export function stallRoadY(l: number, deck: number) {
+  const ramp = STALLS.door - TABLE.r;
+  return l < ramp ? deck + ((STALL_RAIL - deck) * Math.max(0, l)) / ramp : STALL_RAIL;
+}
 const pier = metres(PIER_FRAME);
 export const PIER_SOCKETS = Array.from({ length: 12 }, (_, i) => ({
   x: pier.x + (i % 2 ? 2.5 : -2.5),

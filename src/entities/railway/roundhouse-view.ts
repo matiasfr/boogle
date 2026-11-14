@@ -24,6 +24,7 @@ import {
   STALL_SLAB,
   STALL_ROAD,
   STALL_RAIL,
+  SHUNT,
   STALL_SOCKETS,
   STALL_YAW,
   stallPoint,
@@ -36,7 +37,7 @@ import { createGarageView } from './garage-view.ts';
 import { roomFacts } from './garage-state.ts';
 import { playSharedMoment } from './shared-moment.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
-import { garageRow, polarAt } from './garage-geo.ts';
+import { garageRow, mastFrom, polarAt } from './garage-geo.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 
 /** Seconds: the stall frame's build, the tarp's slide, the table's quarter turn. */
@@ -130,7 +131,9 @@ export async function createRailwayRoundhouse(
   const garageView = await createGarageView(
     owner,
     { table, y: tableY, post: garagePost, ground: garageGround },
-    garageGeo,
+    // The mast is measured from the deck: it is taller by the deck's height over the yard, so the arm stays where it
+    // reaches the engine's seat and clears a boiler held up under it.
+    { ...garageGeo, mast: mastFrom(garageGeo, tableY, garageGround) },
     {
       // The deck is at rest when no choreography turns it, it is not catching up, and the shunter is home in the stall.
       restYaw: () =>
@@ -413,11 +416,14 @@ export async function createRailwayRoundhouse(
     pairAt(wagon, c + BOGIE, front);
     pairAt(wagon, c - BOGIE, rear);
     p.addVectors(front, rear).multiplyScalar(0.5);
+    // The path is the track's rail height: the frame rides over it so the wheels stand on the rail heads.
+    p.y += SHUNT.ride;
     return out.compose(p, q.setFromEuler(e.set(0, headingOf(rear, front), 0)), s.set(1, 1, 1));
   }
   function drawWagon(frame: THREE.Matrix4) {
     batch.part(frame, 0, 0.3, 0, 2.2, 0.35, 3.2, '#77766b');
-    for (const x of [-0.85, 0.85]) for (const z of [-1, 1]) batch.part(frame, x, 0.05, z, 0.25, 0.5, 0.5, '#3a3c3c');
+    for (const x of [-SHUNT.gauge, SHUNT.gauge])
+      for (const z of [-1, 1]) batch.part(frame, x, SHUNT.wagon.wheel.y, z, 0.25, SHUNT.wagon.wheel.h, 0.5, '#3a3c3c');
     const fitted = shed(wd).fitted >= 0;
     // Cradle: two footing seats on the deck and eight arms that hold the footings upright.
     const seats = Math.min(2, shed(wd).cradle);
@@ -449,8 +455,9 @@ export async function createRailwayRoundhouse(
     batch.part(frame, 0, 3.0, -1.0, 2.2, 0.16, 1.7, '#4e5352');
     batch.part(frame, 0, 2.15, 1.25, 0.32, 0.8, 0.32, '#3c3f3e');
     batch.part(frame, 0, 0.55, 1.8, 2.3, 0.3, 0.2, '#a33a2c');
-    for (const x of [-0.85, 0.85])
-      for (const z of [-1.1, 1.1]) batch.part(frame, x, 0.05, z, 0.25, 0.55, 0.55, '#2f3131');
+    for (const x of [-SHUNT.gauge, SHUNT.gauge])
+      for (const z of [-1.1, 1.1])
+        batch.part(frame, x, SHUNT.shunter.wheel.y, z, 0.25, SHUNT.shunter.wheel.h, 0.55, '#2f3131');
     f.multiplyMatrices(frame, m.makeTranslation(0, 1.35, 0.45));
     boiler.matrixAutoUpdate = false;
     boiler.matrix.copy(f);
@@ -462,9 +469,9 @@ export async function createRailwayRoundhouse(
     const off = tarp * 3.2,
       slump = tarp * tarp * 1.6;
     for (const [z, y, w, h, d] of [
-      [PARK.wagon + PARK.gap + 1, RAIL + 3.05, 2.2, 0.18, 1.9],
-      [PARK.wagon + PARK.gap, RAIL + 1.65, 2.6, 0.6, 3.6],
-      [PARK.wagon, RAIL + 0.75, 2.8, 0.55, 3.3],
+      [PARK.wagon + PARK.gap + 1, RAIL + SHUNT.ride + 3.05, 2.2, 0.18, 1.9],
+      [PARK.wagon + PARK.gap, RAIL + SHUNT.ride + 1.65, 2.6, 0.6, 3.6],
+      [PARK.wagon, RAIL + SHUNT.ride + 0.75, 2.8, 0.55, 3.3],
     ] as const) {
       const pt = stallPoint(off, z);
       batch.box(pt.x, y - slump, pt.z, w, h * (1 - tarp * 0.6), d, '#87968b', STALL_YAW, 0, tarp * 0.6);
@@ -844,7 +851,7 @@ export async function createRailwayRoundhouse(
           out.push({
             id: 'railway-garage',
             verb: facts.tableBusy ? 'The table’s busy' : 'Look at the engine',
-            at: new THREE.Vector3(garagePost.x, tableY + 1.7, garagePost.z),
+            at: new THREE.Vector3(garagePost.x, garageGround + 1.7, garagePost.z),
             ...(facts.tableBusy ? { blocked: 'The table’s busy' } : { run: () => garageView.open() }),
           });
       }
