@@ -5,8 +5,11 @@ import { readableUnlit } from '../../render/readable-unlit.ts';
 
 /** The two planks of each walking approach: grass up to the track's solid top, outside the 2.8 m bed, then a short landing
  * that stops at the sleepers' ends (they reach 1.15 m from the centre; the rails sit at 0.5 m), never across the track.
- * Pure, so the level check (dev/level/timber-track.ts) reads the same planks the game builds. */
-export const APPROACH = { stops: [14, 30], foot: 4, shoulder: 1.6, landing: 1.2, width: 2.3, thick: 0.14, top: 0.1 };
+ * Pure, so the level check (dev/level/timber-track.ts) reads the same planks the game builds.
+ * One approach, past the island's end ramp. There was a second at s 14, which the Home station's island now stands on
+ * (road 1's train stop): its ramp lay inside the deck's solid and its landing stuck out from under the platform's wall
+ * (owner, 14 November: "another home vestigial platform i think?"). */
+export const APPROACH = { stops: [30], foot: 4, shoulder: 1.6, landing: 1.2, width: 2.3, thick: 0.14, top: 0.1 };
 export function approachPlanks(
   line: unknown,
   besideLine: (line: never, s: number, l: number) => { x: number; z: number },
