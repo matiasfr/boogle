@@ -17,6 +17,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { GRID, ORIGIN } from '../../place/layout.ts';
 import { CELL, NX, NZ, at } from '../../place/terrain.ts';
 import { groundMaterial } from '../../place/look.ts';
+import { applyPathSurface } from '../../place/path-surface.ts';
 import { bandsMaterial, coveLayersMaterial, roundTwoMaterial } from './materials.ts';
 import { buildSteepSurface, buildWedgeSurface, edgeFade, wedgeCell } from './surface.ts';
 
@@ -107,6 +108,7 @@ export function applyTerrainPass(mesh: THREE.Mesh, owner?: OwnedView) {
         : pick === 'round2'
           ? roundTwoMaterial()
           : coveLayersMaterial();
+  applyPathSurface(material); // Home's paths, as on the land around the wedge
   const wedge = new THREE.Mesh(geo, material);
   wedge.name = `terrain-pass-${variant}`;
   wedge.receiveShadow = true;

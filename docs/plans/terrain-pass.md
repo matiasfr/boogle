@@ -163,6 +163,50 @@ Not started. To apply round two to the whole island:
 4. **Performance:** a quiet-machine `npm run daily -- perf` (1-minute load under about 6, bot queue empty) before and after, at town, T1 and the cove, desktop and phone tier. Watch triangles (+~22 k), shader cost of three extra samples on every ground pixel, and draws (should be +0).
 5. **Looks:** the same four framings plus the cove, the village from spawn and a real-time clip passing the gorge at 12 m/s for shimmer on the ledges; update `docs/game-design/graphics.md`; one proof still in the ship. Not a `WORLD_NS` change.
 
+## Round three (14 November): paths first, then the wedge, then all of Home
+
+1. **Owner, 14 November:** "One thing I want to call out of many of the things that we could improve, is that the trail could have basically more of a distinction between the path, and the geometry can be more intentional. For example, when you're going up the canyon path, it's the same texture and color as the sides of the valley wall, but it should be more clearly looking like a path, I think."
+
+Also binding from the same day: [Place for the look, not the cost; terrain may change](../agents/owner-calls.md). For this job the hard constraint above stays (drawn mesh and material only); ground that would need real reshaping is listed below as proposals, not done.
+
+### Step 1: paths
+
+- [x] Before stills, the canyon path (the bold path's climb up the gorge's east wall, Place-local (−41.5, −88) to (−61, −147)): walking up, looking back down, from across the valley.
+- [x] Diagnosis.
+- [x] Every trail drawn as a path, all of Home, no flag.
+
+**Why the canyon path and the valley wall looked the same.** The path was in `PATHS` and its mask was not lost: three things added up.
+
+1. **The same pigment.** The path was the vertex colour `#e0b271` × 0.85 through the `sand` palette; the rock was `#a98558`..`#d0a872` through `stone`. Under Fresh that is path (188, 163, 119) against rock (158, 139, 108)..(195, 176, 140): the path's colour sits inside the rock's range, same hue.
+2. **The same texture: none.** Both were flat colour; the only difference was that rock is flat-shaded per facet.
+3. **No edge.** The mask was a 2 m vertex blend that reached half-way up the cut walls (0.5 at 4 m from the centre line, where the wall is already 3 to 10 m up), and the per-pixel facet-rock rule overrode it wherever a facet was steeper than ny 0.82: 17 to 38% of the painted width on the gorge stretches. So the tread ended wherever a facet happened to turn, in a 2 m sawtooth, with nothing marking it.
+
+The collider is not the problem on the bold path: it already has a level bench about 6 m wide cut into the wall there.
+
+**What paths are now** (`src/place/path-field.ts`, `src/place/path-surface.ts`; one call in `land.ts` after every other ground layer, one in the wedge):
+
+- A distance field of the paths (`PATHS` and the shore path, footbridge spans left out) baked once into one RGBA16F texture, 1 m texels over the land's grid (781 × 541, 3.4 MB, no mips): distance to the tread's edge, the stretch's grade, the path's own height. Bilinear filtering of a distance field gives an edge far finer than the 2 m cells; the feather is one pixel wide (`fwidth`), so it holds from across the sea.
+- The tread is 6 m wide on bold paths and 3.8 m on the others, inside the level strip the terrain grades (7.2 m and 4.8 m), with a hand-cut wander of about ±0.3 m. It wins over slope rock within its width wherever a facet is ground (ny > 0.66); a wall cut beside it stays rock.
+- Brown compacted earth, lighter down the middle, mottled, fine grit up close. A dark cut edge with a painted bank (the normal leans in over the last 0.4 m, so one side catches the sun and the other is shaded), a darker verge out to about a metre (grass, or the foot of a cut wall), small stones along the edge, and timber risers square across the tread on climbs steeper than 1 in 8, one per 0.6 m of the path's own height.
+- The 2 m vertex blend no longer paints the path; it tints the grass beside it dry.
+- **Drawn against collider: 0.** No vertex moves; the bank and risers are shading. A real inset of a few centimetres would show only through its normals, which is what the painted bank gives, and the 2 m mesh cannot carry a sub-metre lip.
+
+### Ground that needs real reshaping (proposals for a later ground step; not done here)
+
+From `node dev/terrain-pass/path-ground.ts` (the collider across each tread every 2 m; Place-local metres, add 1000 to x for world):
+
+| Where | What the ground does | Proposal |
+| --- | --- | --- |
+| Quarry path, west descent, (−71, 139) to (−49, 148), y 12.9 to 7.5 | 34 m with almost no level tread (0 m of 3.8 m at (−60, 148), 2.9 m cross fall) between walls 4 to 7 m high | Cut a 4 m bench: widen the graded strip from 2.4 m to 3.6 m half width here and move the centre line 1 m off the wall |
+| Quarry path, east climb, (−19, 117) to (5, 155), y 1.7 to 11 | Level tread 0.5 to 1.5 m of 3.8 m, a 7 to 9 m wall on one side, a drop on the other | The same 4 m bench; a landing (6 m, level) at the turn near (−10, 150) |
+| Bold path, west descent, (−101, −118) to (−57, −78), y 17 to 1.7 | Level width 1.5 to 3.5 m of 6 m, cross fall up to 1.4 m at the foot (−61, −80) | Level the tread across its width; a landing where it turns at (−82, −95) |
+| Bold path, the canyon climb, (−42, −88) to (−61, −121), y 1.7 to 12 | Level 2.5 to 3 m of 6 m on the lower third, 1.25 m cross fall at (−56, −112) | Level across; keep the 6 m bench |
+| Bold path, the top of the climb, (−61, −145) to (−76, −167), y 18.5 to 22.7 | Level 1 to 2 m, cross fall up to 1.4 m as it leaves the wall | Level across, ease the bend at (−80, −166) |
+| Shore path, (−177, 27) to (−159, 32), y 9 to 15.6 | Level 0.5 m of 6 m: the climb from the landing is a tilted ramp | A levelled tread with a real cut bank uphill (0.3 to 0.5 m) |
+| Every gorge bench | The wall beside the tread is one or two 2 m cells of sliver triangles | The cliff kit (plan step 4): retaining edges and rock faces with their own colliders |
+
+Each is a heights change: collider, `H`, level-check and the tree catalog move with it, so it is its own step.
+
 ## Ring Island: a landform people could live on
 
 Proposal only, not built. Owner: "For the ring island, the terrain should be more detailed and organic most likely, especially if people live there."

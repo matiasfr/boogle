@@ -118,8 +118,8 @@ export function coveLayersMaterial() {
 
 /** Round two (owner, 10 November: the coast mostly grass down to a beach, sandstone only on unwalkable cliffs, subtle
  * rock layers). Ground you can stand on keeps today's colours, from the same vertex colours and recipe as look.ts's
- * groundMaterial, but without its per-pixel facet rock, which painted the whole walkable coast slope tan. On it: A's
- * worn paths and a darker wet band at the sea. Rock only where the collider is unwalkable: the cove's sandstone pigment
+ * groundMaterial, but without its per-pixel facet rock, which painted the whole walkable coast slope tan. On it: a
+ * darker wet band at the sea; paths are the shared path surface (place/path-surface.ts), laid over it by the caller. Rock only where the collider is unwalkable: the cove's sandstone pigment
  * and triplanar tile (shared, already resident), beds keyed to the drawn 1 m ledges at about a third of the cove's
  * contrast, no rust bed. Fades to today's material over the wedge's last 24 m. */
 export function roundTwoMaterial() {
@@ -129,7 +129,6 @@ export function roundTwoMaterial() {
   const wx: N = positionWorld.x;
   const steep: N = attribute('tpSteep', 'float'),
     foot: N = attribute('tpFoot', 'float'),
-    path: N = attribute('covePath', 'float'),
     soil: N = attribute('tpSoil', 'float');
   // Today's lawn, sand and path (look.ts groundMaterial's grass branch, world coordinates), so colours match outside.
   const slow: N = sin(wx.mul(0.031).add(1.3))
@@ -157,13 +156,6 @@ export function roundTwoMaterial() {
   // facet rock hid it). Darker still where the broad slope is steep, so a bank reads damp, not bright.
   const sandTone: N = smoothstep(0.75, 0.95, soil).mul(0.12).add(0.68);
   const ground: N = mix(selectiveColour(lawn, 'grass'), paletteNode(v.mul(sandTone), 'sand'), sandy);
-  // Paths: A's irregular edge and worn middle, in today's path pigment.
-  const edge: N = sin(p.x.mul(1.3).add(sin(p.z.mul(0.9)).mul(1.5)))
-    .mul(sin(p.z.mul(1.7).sub(p.x.mul(0.6))))
-    .mul(0.18);
-  const worn: N = smoothstep(0.42, 0.58, path.add(edge));
-  const rut: N = smoothstep(0.85, 1, path);
-  const dirt: N = paletteNode(linear('#e0b271').mul(0.85).mul(rut.mul(-0.12).add(1)), 'sand');
   // The sea's wet band, on sand only and only ever darker than today's sand.
   const wet: N = smoothstep(0.05, 0.6, p.y).oneMinus().mul(sandy);
   // Rock: unwalkable only, with a little wander so the border isn't the grid's.
@@ -208,7 +200,6 @@ export function roundTwoMaterial() {
     .mul(smoothstep(0.5, 0.8, foot));
   patchNode(m, 'colorNode', (previous: N) => {
     let c: N = mix(ground, ground.mul(vec3(1.12, 1.04, 0.8)), lip.mul(0.5));
-    c = mix(c, dirt, worn);
     c = mix(c, c.mul(0.72), wet);
     c = mix(c, rockColour, rock);
     return mix(previous, c, inside);
