@@ -475,3 +475,12 @@ nor shop had a direct debt entry to remove; workshop's remaining guard/shell wor
 Normal and one-ULP-perturbed prefab suites pass; additive native perturbation keeps compiled artifact bytes fresh.
 [Full strings inventory, old-code proof, checks, review stamp, opened before/after images and preserved probe failures](prefab-data-step-9-report.md).
 No push or ship; not tested on a device.
+
+### Step 9 follow-up as built: curio shelf and finders' bay
+
+The complete curio shelf and bay now use 25 records: both frames with bodies/footprints, each of 22 gifts with its
+slot operands, and the shared dust skirt. The old-code golden was committed first and stays unchanged; copy stays
+in its authoring files. The same merged meshes, E behavior, obtainable/unobtainable gift handling and crystal/find
+pegs remain. Collider debt drops 498 to 496 units, with no list growth. The room shells in `rooms.ts` and the museum
+remain untouched, so step 9 stays unchecked. [Copy inventory, golden proof, checks, stamp, opened before/after stills,
+finds/wardrobe probes and limits](prefab-data-step-9b-report.md). No push or ship; not tested on a device.
