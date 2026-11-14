@@ -72,14 +72,18 @@ export async function fixture(t: TestContext, options: Pick<RailwayHostOptions, 
       else for (const c of clients.values()) c.hear(m);
     });
   bindHost();
-  function join(sid: string, holdSession = false) {
+  function join(
+    sid: string,
+    holdSession = false,
+    pose = () => ({ x: RAILWAY_T1.wake.x / 100, y: 0, z: RAILWAY_T1.wake.z / 100 }),
+  ) {
     const sessionReplies: unknown[] = [];
     const mirror = createRailwayMirror();
     const adapter = createRailwayAdapter({
       mirror,
       pid: sid,
       movement: () => railMovement(mirror.tune),
-      pose: () => ({ x: RAILWAY_T1.wake.x / 100, y: 0, z: RAILWAY_T1.wake.z / 100 }),
+      pose,
       now: () => now,
     });
     const incoming = new Set<(m: unknown, from: string) => void>();

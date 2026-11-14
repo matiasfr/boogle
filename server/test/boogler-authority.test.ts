@@ -95,12 +95,12 @@ test('a malformed pose load cannot overwrite the last verified checkpoint', asyn
   assert.deepEqual(f.store.readSync(f.roomId), before);
 });
 
-test('v42 host reads its new namespace and starts fresh despite a v41 saved position', async (t) => {
+test('v43 host reads its new namespace and starts fresh despite a v42 saved position', async (t) => {
   const f = await fixture(t);
   f.run(240);
   await f.host.close();
   const old = f.store.readSync(f.roomId)!;
-  const previous = f.roomId.replace('v42', 'v41');
+  const previous = f.roomId.replace('v43', 'v42');
   const reads: string[] = [];
   const host = createRailwayWorldHost({
     roomId: f.roomId,

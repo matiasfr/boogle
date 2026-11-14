@@ -36,8 +36,14 @@ show only while you are on his island (dry land of its grid; Local presentation)
 
 ## What he remembers
 
-- **Sync kind.** Local (localStorage `boogle.boogler`, one global key); each player publishes `bg: [act, wary, ev, evN]`
-  so the server's brain knows who is talking, riding or wary, and clients play ride and gift reactions.
+- **Sync kind.** Local (localStorage `boogle.boogler`, one global key); each player publishes Owner `bg: [act, wary]`
+  so the server's brain knows who is talking, riding or wary. Presents and puffs play locally in the press frame,
+  then `boogler.gift` and `boogler.puff` ask the server to share a `boogler.react` event with friends, excluding the actor.
+  The server derives the reaction from the catalogue's taste, never from a claimed reaction or dialogue text.
+  Gifts require 5.6 m reach and 1,500 ms between accepted requests per player; puffs require 2.6 m and 2,000 ms.
+  Refusals only suppress the shared effect and are counted in room status (`booglerRefused`); local memory and hands
+  are not rolled back. Friends' hearts/grumpy budget is 250 ms. Puffs carry a room-clock launch deadline: friends
+  play only the remaining time, starting at least 350 ms before launch and popping at launch, not 750 ms after arrival.
 - **Memory** ([src/boogler/memory.ts](../../src/boogler/memory.ts)): whether you have met, learned chapters, answer
   flags, bookmarks, recent small-talk topics, presents and the short-lived grudge after rides. There is no score or
   relationship progression. Existing saves keep their story progress; positive old points or any learned chapters
@@ -50,8 +56,8 @@ show only while you are on his island (dry land of its grid; Local presentation)
 - Your own talk holds him at his shown spot immediately and turns him toward you, then eases to the server's
   next leg, even if a rider or another talker wins. With no new leg, the hold expires after 300 ms and eases back to
   the current server leg. The dialogue stays usable while he moves; the existing 4.6 m leave distance still closes
-  ordinary talks (the kick-off telling-off remains exempt). Activity changes send presence immediately; its four
-  fields and local copy are unchanged.
+  ordinary talks (the kick-off telling-off remains exempt). Activity changes send the two presence fields immediately.
+  Dialogue copy remains client-side and unchanged.
 
 - Open with E / pad X within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
   second, pausing on punctuation, and lists answers, with button hints along the bottom; its controls are the shared NPC talk input
@@ -107,9 +113,12 @@ show only while you are on his island (dry land of its grid; Local presentation)
 ## Known issues and limits
 
 Lead changes no longer restart his position or trip. His memory is per browser, shared by every room. The `bg` presence
-shape and all `ACT`/`EV` numbers stay reserved, including retired reactions sent by older tabs. The `ACT` value 3
+key and all `ACT`/`EV` numbers stay reserved; retired events 1 (pet) and 3 (celebration) are no longer rendered. The `ACT` value 3
 (old PET) must never be reused. His existing dialogue is preserved, including lines that assume closeness or
 patting; inaccessible lines are parked outside the player bundle for the owner's later narrative pass.
+The seed is the only giftable kind currently obtainable, and gives hearts. Frisbees remain valid but have no source.
+Grumpy and squish tastes have no gift in play; the host tests use temporary catalogue fixtures to cover them.
+The beach ball's refusal remains local and sends no command.
 
 ---
 

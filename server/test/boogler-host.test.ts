@@ -12,6 +12,176 @@ import { loadBooglerLand } from '../src/host/land.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
 import { stepBooglerWalk } from '../../src/world/boogler-walk.ts';
 import { createService, loadConfig } from '../src/server.ts';
+import { fixture as commandFixture } from './helpers/rail-tune.ts';
+import { GIFTS, giftIndex } from '../../src/sim/gift-catalog.ts';
+import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
+import type { ServerPacket } from '../../src/world/replicate.ts';
+
+for (const rtt of [0, 80, 200])
+  test(`reaction budgets at ${rtt} ms RTT: immediate command, bounded friend delay, puff deadline`, async (t) => {
+    let worst = 0;
+    let shortestPuff = Infinity;
+    for (const phase of [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]) {
+      const f = await commandFixture(t);
+      const a = f.join('alice', false, () => ({ ...f.host.status().boogler, y: 0 }));
+      const b = f.join('bob');
+      f.run(30 + phase / 10, 10);
+      const mirror = createRailwayMirror();
+      for (const packet of b.packets.splice(0)) mirror.mirror.apply(packet);
+      const reactions: { at: number; kind: number; end?: number }[] = [];
+      let elapsed = 0;
+      mirror.boogler.onReact((e) => reactions.push({ ...e, at: elapsed }));
+      const pressedTick = f.host.sync.roomStep() / 6;
+      const end = pressedTick + 7.5;
+      a.adapter.act('boogler.gift', { kind: 0 });
+      a.adapter.act('boogler.puff', { end });
+      // Deliver captured real-adapter requests after half the RTT; prevent its ordinary immediate uplink.
+      const wires = a.edits.splice(0).map((e) => ({ ...e }));
+      a.disconnect();
+      const queue: { at: number; packet: ServerPacket }[] = [];
+      for (; elapsed <= 800; elapsed += 10) {
+        if (elapsed === rtt / 2) for (const e of wires) f.host.deliver({ t: 'r:edit', e }, 'alice');
+        f.run(1, 10);
+        for (const packet of b.packets.splice(0)) queue.push({ at: elapsed + 10 + rtt / 2, packet });
+        while (queue.length && queue[0]!.at <= elapsed) mirror.mirror.apply(queue.shift()!.packet);
+      }
+      assert.equal(reactions.length, 2);
+      const hearts = reactions.find((e) => e.kind === 5)!;
+      const puff = reactions.find((e) => e.kind === 4)!;
+      assert.ok(hearts.at <= 250);
+      assert.equal(puff.end, end, 'the server preserves the original room-clock launch deadline');
+      const remaining = (puff.end! - pressedTick) * 100 - puff.at;
+      assert.ok(remaining >= 350);
+      assert.equal(puff.at + remaining, 750, 'remaining animation ends at launch, not arrival + 750');
+      worst = Math.max(worst, hearts.at);
+      shortestPuff = Math.min(shortestPuff, remaining);
+    }
+    t.diagnostic(JSON.stringify({ rtt, heartsWorstMs: worst, puffLeadMinMs: shortestPuff, puffEndMs: 750 }));
+  });
+
+test('gift commands derive taste, exclude the actor, deduplicate and never send copy', async (t) => {
+  const f = await commandFixture(t);
+  const a = f.join('alice', false, () => ({ ...f.host.status().boogler, y: 0 }));
+  const b = f.join('bob');
+  f.run(3);
+  const reactions: unknown[] = [];
+  b.mirror.boogler.onReact((e) => reactions.push(e));
+  const own: unknown[] = [];
+  a.mirror.boogler.onReact((e) => own.push(e));
+  a.adapter.act('boogler.gift', { kind: giftIndex('seeds'), taste: 'dislike', reaction: 6, pid: 'forged' });
+  f.run(2);
+  assert.equal(a.accepted.at(-1)?.op, 'boogler.gift');
+  assert.deepEqual(reactions, [{ op: 'boogler.react', pid: 'alice', kind: 5 }]);
+  assert.deepEqual(own, []);
+  f.host.deliver({ t: 'r:edit', e: a.edits.at(-1)! }, 'alice');
+  f.run(2);
+  assert.equal(reactions.length, 1);
+  f.advanceTime(1500);
+  a.adapter.act('boogler.gift', { kind: giftIndex('frisbee') });
+  f.run(2);
+  assert.equal(reactions.length, 2, 'frisbee remains accepted without an in-play source');
+  for (const packet of b.packets)
+    for (const gift of GIFTS) assert.equal(JSON.stringify(packet).includes(gift.line), false);
+});
+
+test('keys, unknown kinds, range, cadence and malformed facts refuse without events and are counted', async (t) => {
+  const f = await commandFixture(t);
+  let far = false;
+  const a = f.join('alice', false, () => ({
+    ...f.host.status().boogler,
+    y: 0,
+    x: f.host.status().boogler.x + (far ? 20 : 0),
+  }));
+  const b = f.join('bob');
+  f.run(3);
+  const send = (op: string, fields: Record<string, unknown>) => {
+    a.adapter.act(op, fields);
+    f.run(2);
+  };
+  for (const kind of [giftIndex('ball'), -1, 999, 0.5, '0', null]) send('boogler.gift', { kind });
+  far = true;
+  send('boogler.gift', { kind: 0 });
+  send('boogler.puff', { end: a.adapter.read.tickNow() + 7.5 });
+  far = false;
+  assert.equal(b.packets.flatMap((p) => p.ev ?? []).length, 0);
+  send('boogler.gift', { kind: 0 });
+  send('boogler.gift', { kind: 0 });
+  send('boogler.puff', { end: a.adapter.read.tickNow() + 7.5 });
+  send('boogler.puff', { end: a.adapter.read.tickNow() + 7.5 });
+  a.adapter.act('boogler.gift', { kind: 0 });
+  a.edits.at(-1)!.at = null;
+  f.run(2);
+  assert.equal(a.refused.length, 11);
+  assert.ok(a.refused.every((e) => e.reason === 'refused'));
+  assert.equal(b.packets.flatMap((p) => p.ev ?? []).length, 2);
+  assert.deepEqual(f.host.status().booglerRefused, { gift: 9, puff: 2 });
+});
+
+test('host-only catalogue taste fixtures prove grumpy and squish without adding items or copy', async (t) => {
+  const f = await commandFixture(t);
+  const a = f.join('alice', false, () => ({ ...f.host.status().boogler, y: 0 }));
+  const b = f.join('bob');
+  f.run(3);
+  const gift = GIFTS[0]!;
+  const original = gift.taste;
+  try {
+    for (const [taste, reaction] of [
+      ['love', 5],
+      ['dislike', 6],
+      ['meh', 2],
+    ] as const) {
+      gift.taste = taste; // Test-only catalogue fixture; the source file stays byte-identical.
+      a.adapter.act('boogler.gift', { kind: 0, reaction: 5 });
+      f.run(2);
+      assert.equal(b.packets.flatMap((p) => p.ev ?? []).at(-1)?.kind, reaction);
+      f.advanceTime(1500);
+    }
+  } finally {
+    gift.taste = original;
+  }
+});
+
+test('reaction reach and cadence boundaries are per player; puff deadline is bounded and never replayed', async (t) => {
+  const f = await commandFixture(t, { hasPlayers: () => false });
+  let offset = 5.61;
+  const pose = () => ({ ...f.host.status().boogler, y: 0, x: f.host.status().boogler.x + offset });
+  const a = f.join('alice', false, pose),
+    b = f.join('bob', false, pose);
+  f.run(3);
+  a.adapter.act('boogler.gift', { kind: 0 });
+  f.run(2);
+  assert.equal(a.refused.length, 1);
+  offset = 5.6;
+  a.adapter.act('boogler.gift', { kind: 0 });
+  b.adapter.act('boogler.gift', { kind: 0 });
+  f.run(2);
+  assert.equal(a.accepted.length, 1);
+  assert.equal(b.accepted.length, 1, 'one player does not spend another player cadence');
+  offset = 2.61;
+  a.adapter.act('boogler.puff', { end: 1e9 });
+  f.run(2);
+  assert.equal(a.refused.length, 2);
+  offset = 2.6;
+  for (const end of [undefined, '10', NaN, -1]) {
+    a.adapter.act('boogler.puff', { end });
+    f.run(2);
+  }
+  a.adapter.act('boogler.puff', { end: 1e9 });
+  const start = f.host.sync.roomStep() / 6;
+  f.run(2);
+  const event = b.packets.flatMap((p) => p.ev ?? []).find((e) => e.kind === 4)!;
+  assert.equal(event.end, start + 7.5);
+  f.host.deliver({ t: 'r:edit', e: a.edits.at(-1)! }, 'alice');
+  f.run(2);
+  assert.equal(b.packets.flatMap((p) => p.ev ?? []).filter((e) => e.kind === 4).length, 1);
+  const late = f.join('late');
+  f.run(2);
+  assert.equal(late.packets.flatMap((p) => p.ev ?? []).length, 0);
+  f.advanceTime(2000);
+  a.adapter.act('boogler.puff', { end: a.adapter.read.tickNow() + 7.5 });
+  f.run(2);
+  assert.equal(a.accepted.filter((e) => e.op === 'boogler.puff').length, 2);
+});
 
 async function fixture(t: TestContext) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogler-shadow-'));

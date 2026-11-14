@@ -4,6 +4,8 @@ import type { Replicator } from './replicate-server.ts';
 import type { Mirror } from './replicate-client.ts';
 import type { BooglerLeg } from './boogler-shadow.ts';
 
+export type BooglerReaction = { op: 'boogler.react'; pid: string; kind: 2 | 4 | 5 | 6; end?: number };
+
 export const BOOGLER_LEG = defineReplicated('booglerLeg', {
   x0: 'int',
   z0: 'int',
@@ -45,7 +47,20 @@ export function createBooglerMirror(mirror: Mirror) {
   let leg: BooglerLeg | null = null;
   let revision = 0;
   const listeners = new Set<() => void>();
+  const reactions = new Set<(event: BooglerReaction) => void>();
   mirror.onPacket((packet) => {
+    // Events are transient, consumed once per accepted packet, including chunks before the final leg publication.
+    for (const e of packet.ev ?? []) {
+      if (
+        e.op !== 'boogler.react' ||
+        typeof e.pid !== 'string' ||
+        typeof e.kind !== 'number' ||
+        ![2, 4, 5, 6].includes(e.kind)
+      )
+        continue;
+      if (e.kind === 4 && (typeof e.end !== 'number' || !Number.isFinite(e.end))) continue;
+      for (const fn of reactions) fn(e as BooglerReaction);
+    }
     if (!mirror.whole() || packet.m) return;
     const r = mirror.get(BOOGLER_LEG.kind, 0);
     const next = r
@@ -69,6 +84,10 @@ export function createBooglerMirror(mirror: Mirror) {
   return {
     leg: () => leg,
     revision: () => revision,
+    onReact(fn: (event: BooglerReaction) => void) {
+      reactions.add(fn);
+      return () => reactions.delete(fn);
+    },
     onLeg(fn: () => void) {
       listeners.add(fn);
       return () => listeners.delete(fn);
