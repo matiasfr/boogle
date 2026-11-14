@@ -207,7 +207,7 @@ approved plan" (Codex, gpt-6.1-sol medium), step 5 is player-visible (implemente
 review on fable medium). Steps 2 and 3 edit `src/player/world-reset.ts`: read `.claude/rules/state-consumers.md`
 first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: steps 1 to 3, then 4 to 6.
 
-- [ ] **1. Reproduce and pin the gap** (sol medium). Add `dev/look/evals/railway-return.ts` on the pattern of
+- [x] **1. Reproduce and pin the gap** (sol medium). Eval written; baseline browser run unverified (see [batch report](resume-return-steps-1-3-report.md)). Add `dev/look/evals/railway-return.ts` on the pattern of
   `dev/look/evals/railway-reload.ts` (a real reload, re-attached by `--until`): in a `?from=gorge-reached` room, stand
   on High Gorge's north platform for 6 s, reload, and report `{ before, after, distance }` on
   `document.documentElement.dataset.railwayReturn`. Expected today: after is the village. No game code changes.
