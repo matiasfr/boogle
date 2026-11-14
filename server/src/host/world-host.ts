@@ -17,10 +17,8 @@ import { isProtoRoom } from '../../../src/sim/tune.ts';
 import type { StepMeter } from './step-meter.ts';
 import type { Store } from '../store.ts';
 import { isRailwayRoom, RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
-import { RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
 import { LINE1_CATALOG } from '../../../src/sim/railway-line-layout.ts';
-import { railGrowthMask, railGrows, railGrowthAllowed, type SupplyPulse } from '../../../src/sim/railway-supply.ts';
-import { railNobodyNear, type RailwayPosition } from './railway-supply.ts';
+import type { RailwayPosition } from './railway-supply.ts';
 import { railAwayCredit, RAIL_AWAY } from '../../../src/sim/railway-away.ts';
 export type { RailwayPosition } from './railway-supply.ts';
 import { install as installRailway, type Actor } from '../../../src/world/railway-server.ts';
@@ -33,6 +31,7 @@ import { projectRailTune, projectRoster } from '../../../src/world/classic-repli
 import { createServerOps } from '../../../src/world/server-ops.ts';
 import { installSeats } from '../../../src/world/rules/seats.ts';
 import { projectSeats } from '../../../src/world/seat-replicate.ts';
+import { createHostSupply } from './host-supply.ts';
 import { createHostBoogler } from './host-boogler.ts';
 
 // The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
@@ -242,63 +241,12 @@ export function createRailwayWorldHost({
       return true;
     },
   });
-  const supplySafe = (e: SupplyPulse) => {
-    const people = positions();
-    const beam = api.beam();
-    const boiler = api.boiler();
-    return (
-      RAILWAY_SOURCES.every((_source, k) => !railGrows(e.grow, k) || railGrowthAllowed(k, true)) &&
-      (e.beam === undefined ||
-        (beam.state === 'ground' &&
-          beam.revision === e.beam &&
-          beam.age === 21 &&
-          railNobodyNear(people, now(), beam.x, beam.z))) &&
-      (e.boiler === undefined ||
-        (boiler.state === 'ground' &&
-          boiler.revision === e.boiler &&
-          boiler.age === 21 &&
-          railNobodyNear(people, now(), boiler.x, boiler.z))) &&
-      e.recover.every((id) => {
-        const pile = api.piles().find((p) => p.id === id);
-        return !!pile && railNobodyNear(people, now(), pile.x, pile.z);
-      })
-    );
-  };
-  // At most one supply pulse per rule tick: the wall-clock minute marker, regrowth and one recovered pile.
-  const maintainSupply = () => {
-    if (!running || closed || sync.worldStatus().recoveryError) return;
-    const marker = Math.floor(now() / 60000);
-    if (marker < api.supplyMarker()) return;
-    const people = positions();
-    const recover = api
-      .piles()
-      .filter(
-        (pile) => (marker > api.supplyMarker() || pile.age === 21) && railNobodyNear(people, now(), pile.x, pile.z),
-      )
-      .map((pile) => pile.id)
-      .sort((a, b) => a - b)
-      .slice(0, 1);
-    const ground = api.beam();
-    const beam =
-      ground.state === 'ground' && ground.age === 21 && railNobodyNear(people, now(), ground.x, ground.z)
-        ? ground.revision
-        : undefined;
-    const b = api.boiler();
-    const boiler =
-      b.state === 'ground' && b.age === 21 && railNobodyNear(people, now(), b.x, b.z) ? b.revision : undefined;
-    if (marker === api.supplyMarker() && !recover.length && beam === undefined && boiler === undefined) return;
-    const grow = railGrowthMask(
-      RAILWAY_SOURCES.flatMap((_source, k) => (api.felled(k) && railGrowthAllowed(k, true) ? [k] : [])),
-    );
-    const pulse: SupplyPulse = {
-      marker,
-      grow,
-      recover,
-      ...(beam === undefined ? {} : { beam }),
-      ...(boiler === undefined ? {} : { boiler }),
-    };
-    if (supplySafe(pulse)) api.supply(pulse);
-  };
+  const supply = createHostSupply({
+    api,
+    now,
+    positions,
+    available: () => running && !closed && !sync.worldStatus().recoveryError,
+  });
   let startupError: string | null = null;
   const attach = () =>
     sync.attachWorld(
@@ -348,15 +296,12 @@ export function createRailwayWorldHost({
         },
       },
     );
-  // New material may not inherit an unprocessed absence from the global supply marker.
-  // One minute is the deliberately conservative 21/31-minute quantization; marker zero has no elapsed age.
-  const supplyCurrent = () => !api.supplyMarker() || Math.floor(now() / 60000) - api.supplyMarker() <= 1;
   const requests = createRailwayRequests({
     api,
     pidOf,
     send,
     replication,
-    available: () => running && !closed && !sync.worldStatus().recoveryError && supplyCurrent(),
+    available: () => running && !closed && !sync.worldStatus().recoveryError && supply.current(),
     unavailable: () => (startupError || sync.worldStatus().recoveryError ? 'storage' : 'starting'),
     actor,
     commands: {
@@ -470,7 +415,7 @@ export function createRailwayWorldHost({
   );
   /** On rule ticks only, not 60 times a second; the order is part of the rules. */
   const maintain = () => {
-    maintainSupply();
+    supply.maintain();
     beamCarry.maintain();
     boilerCarry.maintain();
     footCarry.maintain();
@@ -509,7 +454,7 @@ export function createRailwayWorldHost({
     if (!loaded || closed || running || requests.failed() || sync.worldStatus().recoveryError) return;
     const credited = credit();
     running = true;
-    maintainSupply(); // regrowth and drop recovery catch up on the join, not a rule tick later
+    supply.maintain(); // regrowth and drop recovery catch up on the join, not a rule tick later
     if (credited) sync.saveNow(true);
   }
   // The caller can await readiness; the timer path also owns and reports startup failure.
@@ -552,7 +497,7 @@ export function createRailwayWorldHost({
       return () => sent.delete(fn);
     },
     deliver(message: unknown, from: string) {
-      if (!requests.failed() && !supplyCurrent()) maintainSupply();
+      if (!requests.failed() && !supply.current()) supply.maintain();
       const t0 = performance.now();
       requests.receive(message, from);
       const ms = performance.now() - t0;
