@@ -3,6 +3,84 @@
 14 November 2026. Base `790483990` (local v45/stack); implementation through `eea64750a` on
 `codex/running-side-6`. Local commits only. No push, ship, deployment or additional namespace bump.
 
+## Independent-review follow-up
+
+The three P2 findings are verified and addressed. This section supersedes the initial proof scope below; the
+earlier evidence remains a historical record, not evidence for this revised branch.
+
+1. **Works proof:** the new run completes the named `wagon coupled` segment from `works-arrive`, without shortening
+   the route or changing its assertions. All nine checkpoints pass: breaker, stall open, throat open, kiln lit,
+   first footing, stall built, cradle fitted, table turned, wagon coupled. Eight rails fit the cradle at tick 6889;
+   the table becomes state/revision 1 at tick 6928, ready at 7067; train slot 1 has the wagon at tick 7067. No further
+   bot repair or game change was necessary. This report update is the separate commit for the insufficient-proof
+   finding. [Manifest](../../.look/evidence/1794686073162-64693/evidence.json),
+   [accepted checkpoints](../../.look/running-side-6-review/works-checkpoints.json).
+2. **Map arrows:** `7763f36f5` reverses the renderer's directions to offset `c.a = -1`, original `c.b = +1`, for
+   both arrows and click labels. Regenerated the HTML with `dev/level/rail-map.ts` itself. The reviewer's generator
+   and committed-page regression passes. [Result](../../.look/running-side-6-review/map-regression.log).
+3. **Prompt deadline:** `9a05f8fcf` restores the separate 20-second assertion immediately after boarding for adjacent
+   requestable destinations. The production catalog's `trainPassesBy` excludes a homeward-only destination in the
+   wrong direction; nonadjacent destinations still wait for their own prompt later along the route. Sit-aware
+   selection remains, and movement observed during the prompt wait still counts toward the journey assertion.
+   The reviewer's fixture, supplied with the newly imported production catalog query, accepts a prompt at 19 seconds
+   and rejects one delayed until 21 seconds with the specific `"Request stop: Quarry" offered aboard` failure.
+   The old branch accepted that 21-second prompt. [Results](../../.look/running-side-6-review/prompt-deadline.json).
+
+**PR 1816 integration:** reproduced the four textual conflicts. Ported original `e888900be` as patch-identical
+`1d2fe97f1` before the existing unpushed step-6 commits, then replayed them and resolved their overlap retaining the
+right-hand changes and Sit/approach/hop handling. Before the new fixes, the resulting tree differed only by the
+original repair's review document. Git recognises this port as already on main (`git cherry` prints `-`). Every
+subsequent ride-file patch applies cleanly to `origin/main`, and the result equals this branch's file:
+[file replay verification](../../.look/running-side-6-review/pr1816-replay.json). This is a ride-file rebase check,
+not a claim of having rebased or reviewed every inherited game change against main. The mechanical rename's
+replayed commit is `5398efe7b` (formerly `d7d9d4e77`); its contents are preserved.
+
+Fresh checks, after the last executable edit, all have explicit timeouts. Logs are in
+[review verification](../../.look/running-side-6-review/). Loads below are the machine's one-minute averages;
+successful checks under load establish no timing or performance claim.
+
+| Check | Timeout | Result | Start load |
+| --- | --- | --- | --- |
+| `node dev/ship-check.ts` | 900 s | 1,675 tests: 1,674 pass, zero fail, one existing TODO; 129 lint files, typecheck, 168 affected files | 10.48 |
+| `npm run registry` | 180 s | 19 presence keys, nine message types, three ops, two states | 44.18 |
+| `npm run level-check` | 180 s | 14 reports, 18 tracks, seven joins; zero production failures, zero `ring-up` kinks over 2 degrees | 47.01 |
+| `npm run check` | 900 s | 2,100 tests: 2,099 pass, zero fail, one existing TODO; build passes | 63.92 |
+
+The TODO is still the existing longer-fleet wait bound. No `test:net`, push or ship. `git diff 127aedcb2 HEAD -- src server`
+is empty: this follow-up changes no game behaviour, namespace, player-facing string, Boogler copy or ROM data.
+
+All fresh broker runs used real time, accepted seeds, clean executable commit `9a05f8fcf` and trusted harness
+`d87c05719`. No source edits while any run was active; manifests report no change during execution. Outer command
+timeouts were 2,100 seconds, with the broker's existing seven-minute cutoff after acquisition.
+
+- [Works through coupling](../../.look/evidence/1794686073162-64693/evidence.json): pass, load 28.95 to 11.13.
+  Question: can the bot fit the cradle, operate the relocated table and commission the wagon? Opened
+  `works-through-wagon-still.png`: player on the turntable after the turn, train beyond it. Coupling is too distant
+  to resolve visually; the accepted checkpoint above establishes it. No graphics errors, recovery or missed beat.
+- [Request-stop](../../.look/evidence/1794686707227-79049/evidence.json): pass on both peers, load 26.74 to 14.05.
+  Opened `review-right-hand-request-still.png` and `p2-review-right-hand-request-still.png`: serving train beside
+  Quarry's south platform, second player aboard. The latter frame offers Sit; the log confirms the earlier
+  `Request stop: Quarry` prompt and slot 2 on track 0 at stop 1. Plaque/lamp detail is not resolved, and no homeward
+  pass was witnessed (`passedDown` empty). No graphics errors.
+- [Return-ride retry](../../.look/evidence/1794687766318-6168/evidence.json): pass, load 13.10 to 17.48, unchanged code.
+  Pier reached with track 1 and the active west homeward lever; Village return completed. Opened
+  `review-right-hand-return-retry-still.png`: rider back on Village's island platform beside the trains. Pier's
+  exact boarding side is diagnostic, not shown by that end still. No graphics errors or recovery.
+- The [first fresh ride](../../.look/evidence/1794686706077-79044/evidence.json) is **not a pass**: after reaching
+  Pier it did not report the Village return before the broker killed it at seven minutes (status 124). Load was
+  10.21 to 5.53, so it is not attributed to load. No final PNG was produced. The server was advancing; the log has
+  no earlier prompt/boarding error. The same proof was rerun once without source changes and passed as above.
+  The first timeout's cause remains unconfirmed; the retry does not establish absence of an intermittent bot issue.
+
+Four fresh PNGs opened. The three final required proofs pass; the earlier ride timeout remains an explicit
+reliability limit. No game defect was observed through the requested Works coupling segment, and no game was changed
+to obtain the result. Full Works-to-crossing, fresh full campaign, late join, net, real-time smoothness and performance
+remain unverified. Not tested on a device. Whole-branch and step-6 review stamps remain `85b625942046` (62 files)
+and `58072651ceba` (10 files): [whole branch output](../../.look/running-side-6-review/review-stamp.txt),
+[step-6 output](../../.look/running-side-6-review/review-stamp-step6.txt). These are identities, not a new independent review.
+
+## Initial implementation record
+
 ## What changed
 
 - Shared rides select the live lever and its physical platform, including retained terminal authority. Homeward

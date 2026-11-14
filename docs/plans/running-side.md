@@ -222,7 +222,10 @@ Models are `npm run models` rows (withCodex).
       records checks, browser evidence, remaining limits and departures: production-path sampling replaces the obsolete
       ring splice; the seeded Works eval dismisses station-box cards by normal E; a new ride eval proves the Q7 Pier
       return; the Home bay's future routing remains unresolved. The mechanical `offsetLat` / `OFFSET_LAT` /
-      `OFFSET_HALTS` rename is its own commit, `d7d9d4e77`. No game behaviour or player copy changed.
+      `OFFSET_HALTS` rename is its own commit, `5398efe7b` (replayed from `d7d9d4e77`). No game behaviour or player copy changed.
+      The report's independent-review follow-up records the full Works proof through wagon coupling, reversed map
+      arrows, restored adjacent-stop prompt deadline and PR 1816 integration. The first fresh ride timed out; its
+      unchanged retry passed, with the cause left unconfirmed.
       `dev/look/bots/railway.ts`, `railway-legs.ts`, `railway-ride.ts` (where they pick
       a platform or lever by way), `dev/level/check.ts`, `rail-map.ts`, `track-continuity.ts`,
       `home-passenger-bay.ts`; place.md's "The second track, drawn" and the halts' paragraphs, the comments in
