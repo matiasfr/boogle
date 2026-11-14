@@ -82,6 +82,8 @@ type Job =
   | 'looker';
 type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
+  /** Not thought since he was put out or slept far from the camera: the commuters' first step after reads it. */
+  slept?: boolean;
   k: number;
   job: Job;
   mood: Mood;
@@ -711,14 +713,21 @@ function brain(g: Guy, dt: number) {
       // 1's track bed, so the walk itself, and keeping clear of trains, is path-refuge.ts `stepCommuter`.
       const lane = commuterLane(g);
       const c: Commuter = { u: g.a.x, way: g.a.z > 0 ? 1 : -1, lat: g.b.x, refLat: g.home.x, refY: g.home.z };
-      const { aside, hurry, toward } = stepCommuter(c, lane, dt, {
-        len: PATH_LEN,
-        speed: commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3,
-        across: SPEED.walk,
-        due: (u) => e.pathTrain?.(u) ?? null,
-        refuge: (u) => e.pathRefuge?.(u) ?? null,
-        go: (u) => e.pathGo?.(u) ?? 0,
-      });
+      const { aside, hurry, toward } = stepCommuter(
+        c,
+        lane,
+        dt,
+        {
+          len: PATH_LEN,
+          speed: commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3,
+          across: SPEED.walk,
+          due: (u) => e.pathTrain?.(u) ?? null,
+          refuge: (u) => e.pathRefuge?.(u) ?? null,
+          go: (u) => e.pathGo?.(u) ?? 0,
+        },
+        g.slept,
+      );
+      g.slept = false;
       g.a.x = c.u;
       g.a.z = c.way;
       g.b.x = c.lat;
@@ -1113,6 +1122,7 @@ export function setCommuters(on: boolean, run = 0) {
       if (g.a.x < 0) g.a.x = 0;
       g.b = { x: commuterLane(g), z: 0 };
       g.home = { x: commuterLane(g), z: 0 };
+      g.slept = true;
     }
     g.on = on;
   });
@@ -1310,6 +1320,7 @@ export function updateFolk(dt: number) {
     if (far && g.mood !== 'ride' && g.job !== 'rider' && g.job !== 'driver' && g.job !== 'pusher') {
       g.px = g.x;
       g.pz = g.z;
+      g.slept = true;
       continue;
     }
     if (g.mood === 'walk' || g.mood === 'carry' || g.mood === 'run') {

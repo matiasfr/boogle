@@ -85,10 +85,18 @@ test('the path starts at its first refuge, and every refuge every 0.1 m stands o
   assert.ok(FROM > 30 && FROM < 40, `the first refuge is at s ${FROM.toFixed(1)}`);
   let ground = 0,
     deck = 0,
+    none = 0,
     worst = 0;
   for (const s of places) {
     const r = refuges.at(s);
-    assert.ok(r, `s ${s.toFixed(1)} has no refuge`);
+    if (!r) {
+      // A place with none (the two decimetres where the ground between the tracks ends short of the deck): the
+      // nearest refuge is a step along the path.
+      const way = refuges.go(s);
+      assert.ok(way !== 0 && refuges.at(s + way * 0.3), `s ${s.toFixed(1)} has no refuge within 0.3 m`);
+      none++;
+      continue;
+    }
     const support = supportAt(s, r.lat);
     worst = Math.max(worst, Math.abs(r.y - support));
     assert.ok(
@@ -102,10 +110,13 @@ test('the path starts at its first refuge, and every refuge every 0.1 m stands o
   // Both kinds are on the path: the ridge trestle's deck and the ground either side of it.
   assert.ok(deck > 100 && ground > 100, `${deck} deck, ${ground} ground`);
   // The reviewer's three places: past the drawn deck's end, on the rendered triangles, and off a table's sample.
-  for (const s of [115, 72.7, 84.2]) {
+  for (const s of [115, 72.6, 84.2]) {
     const r = refuges.at(s)!;
     assert.ok(Math.abs(r.y - supportAt(s, r.lat)) <= 0.05, `s ${s}`);
   }
+  assert.ok(none <= 3, `${none} places with no refuge`);
+  // No refuge is across a track from the lanes: none beyond the up track.
+  for (const s of places) assert.ok(!refuges.at(s) || refuges.at(s)!.lat > up(s) - 1e-9, `s ${s.toFixed(1)}`);
   assert.ok(worst <= 0.05);
 });
 
@@ -114,7 +125,8 @@ test('a commuter at rest in a refuge needs no give-way from a car standing or pa
   const point = { x: 0, z: 0, ux: 0, uz: 1 };
   let checked = 0;
   for (const s of places) {
-    const r = refuges.at(s)!;
+    const r = refuges.at(s);
+    if (!r) continue;
     const here = besideLine(line, s, r.lat);
     for (const track of up(s) < -0.5 ? [0, 1] : [0])
       for (const size of sizes)
@@ -163,14 +175,15 @@ const made: Vehicle[] = TRAIN_CARS.slice(0, 3).map((spec, n) => ({
 const LO = TRAIN_OFFSETS[2]! - TRAIN_CARS[2]!.hz,
   HI = TRAIN_OFFSETS[0]! + TRAIN_CARS[0]!.hz;
 
-/** A commuter starting every 0.1 m of the path (the two outer lanes and both ways by turns) through one timetable:
- * returns how many were ever inside a car's give-way box, and how many stood in a refuge. */
-function run(trains: { dir: 1 | -1; depart: number; upTrack: boolean }[]) {
+/** A commuter starting every 0.1 m of the path (the lanes and both ways by turns) through one timetable: returns how
+ * many were ever inside a car's give-way box, and how many stood in a refuge. With `wakeAt` (seconds) they are asleep
+ * until then, as folk.ts leaves anyone far from the camera: frozen where they stood, in their lanes. */
+function run(trains: { dir: 1 | -1; depart: number; upTrack: boolean }[], wakeAt = 0, lanes = [-1.15, 1.15]) {
   const sims = trains.map((t) => ({ ...t, ...train(t.dir, t.depart) }));
   const end = Math.max(...sims.map((t) => t.arrives)) / 10 + 2;
   const commuters = places.map((s, k) => {
-    const lane = k % 2 ? 1.15 : -1.15,
-      way = k % 4 < 2 ? 1 : -1;
+    const lane = lanes[k % lanes.length]!,
+      way = k % (lanes.length * 2) < lanes.length ? 1 : -1;
     return {
       lane,
       c: { u: (s - FROM) / LEN, way, lat: lane, refLat: lane, refY: 0 } as Commuter,
@@ -184,7 +197,8 @@ function run(trains: { dir: 1 | -1; depart: number; upTrack: boolean }[]) {
     dt = 1 / 60;
   let feet = 0,
     worstFeet = 0;
-  for (let t = 0; t <= end; t += dt) {
+  // Asleep, nothing of theirs is worked out; woken, eight seconds shows whether the train reaches them.
+  for (let t = wakeAt; t <= (wakeAt ? Math.min(end, wakeAt + 8) : end); t += dt) {
     // Each train's ends for the look-ahead, sampled once a step, and its cars as the view places them.
     const ahead: TrainAhead[] = sims.map((sim) => {
       const at = Array.from({ length: 52 }, (_, k) => sim.along(t * 10 + k));
@@ -205,14 +219,20 @@ function run(trains: { dir: 1 | -1; depart: number; upTrack: boolean }[]) {
       });
     });
     for (const m of commuters) {
-      const { aside } = stepCommuter(m.c, m.lane, dt, {
-        len: LEN,
-        speed: 1.7 * 1.3,
-        across: 1.7,
-        due: (u) => trainDue(pathS(u), ahead),
-        refuge: (u) => refuges.at(pathS(u)),
-        go: (u) => refuges.go(pathS(u)),
-      });
+      const { aside } = stepCommuter(
+        m.c,
+        m.lane,
+        dt,
+        {
+          len: LEN,
+          speed: 1.7 * 1.3,
+          across: 1.7,
+          due: (u) => trainDue(pathS(u), ahead),
+          refuge: (u) => refuges.at(pathS(u)),
+          go: (u) => refuges.go(pathS(u)),
+        },
+        wakeAt > 0 && t === wakeAt,
+      );
       const s = pathS(m.c.u);
       const near = cars.filter((car) => Math.abs(car.s - s) < 6);
       if (near.length) {
@@ -258,4 +278,24 @@ test('with real trains every commuter is in a refuge before the train is there',
     assert.equal(result.stood, result.commuters, `${result.commuters - result.stood} never stood aside: ${label}`);
     assert.ok(result.worstFeet <= 0.05, `feet ${result.worstFeet.toFixed(3)} m off a support: ${label}`);
   }
+});
+
+test('a commuter woken with a train already close never walks into it', () => {
+  // folk.ts sleeps anyone far from the camera and wakes them where they stood: by then the warning may be nearly
+  // spent. The reviewer's case is s 72.7, lane +0.45, woken 4 s into a departure from the Village on the up track:
+  // the only refuge there was beyond the up track, and he crossed into the train. Every lane, a commuter every 0.1 m,
+  // woken at four moments of a departure either way on either track.
+  // (the lanes go round by the decimetre: this order puts +0.45 on s 72.7)
+  const lanes = [0.45, -1.15, 1.15, -0.45];
+  assert.equal(Math.round((72.7 - FROM) * 10) % 4, 0);
+  for (const dir of [1, -1] as const)
+    for (const upTrack of [false, true])
+      for (const wake of [2, 4, 6, 9]) {
+        const result = run([{ dir, depart: 20, upTrack }], 2 + wake, lanes);
+        assert.equal(
+          result.hit,
+          0,
+          `${result.hit} of ${result.commuters} walked into the train: dir ${dir}, up track ${upTrack}, woken ${wake} s in`,
+        );
+      }
 });

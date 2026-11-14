@@ -102,14 +102,14 @@ function supportAt(line: Line, s: number, lat: number, land: Land): Refuge | nul
 
 /** The refuge at `s`, worked out there and then (its height is never carried from another `s`), or null where
  * nothing clear of both tracks is supported (he walks on to one that is). Tried in order: the side away from the up
- * track, between the two tracks, the far side of the up track. */
+ * track, then between the two tracks. Never beyond the up track: he would have to cross it, and the train he is
+ * keeping clear of may be the one on it. */
 export function refugeAt(line: Line, s: number, land: Land): Refuge | null {
   const ul = land.up(s),
     away = ul > 0 ? -1 : 1,
     out = Math.max(2.4, REFUGE_CLEAR + 0.3);
   const tries = [away * out];
   if (Math.abs(ul) >= 2 * REFUGE_CLEAR) tries.push(ul / 2);
-  if (Math.abs(ul) > 0.5) tries.push(ul - away * out);
   for (const lat of tries) {
     const found = supportAt(line, s, lat, land);
     if (found) return found;
@@ -205,10 +205,18 @@ export type CommuterPath = {
 };
 /** One step of his walk: there and back along the path in his `lane`; with a train due he steps off to the refuge
  * where he is, or, with none there, hurries along the path to the nearest first; a train standing on the path is where
- * he turns back. Returns whether he is keeping clear and whether he is hurrying on. */
-export function stepCommuter(c: Commuter, lane: number, dt: number, path: CommuterPath) {
+ * he turns back. Returns whether he is keeping clear and whether he is hurrying on. `woke`: this is his first step
+ * since he was put on the path or slept far from the camera (folk.ts freezes him where he stood, unseen); the warning
+ * may be nearly spent by then, so with a train due he is stood in the nearest refuge at once, as unseen as his sleep. */
+export function stepCommuter(c: Commuter, lane: number, dt: number, path: CommuterPath, woke = false) {
   const due = path.due(c.u);
   const aside = !!due && due.eta < TRAIN_WARN;
+  if (woke && aside) {
+    // Along the path to the nearest place with a refuge (a decimetre at a time, 15 m at most), and into it.
+    for (let k = 0; k < 150 && !path.refuge(c.u); k++)
+      c.u = Math.max(0, Math.min(1, c.u + (path.go(c.u) * 0.1) / path.len));
+    c.lat = path.refuge(c.u)?.lat ?? c.lat;
+  }
   const refuge = aside ? path.refuge(c.u) : null;
   if (refuge) {
     c.refLat = refuge.lat;
