@@ -80,6 +80,7 @@
     "sim": "node --import ./dev/sim/hooks.ts dev/sim/run.ts",
     "inspect": "node --import ./dev/sim/hooks.ts dev/sim/inspect.ts",
     "level-check": "node --import ./dev/sim/hooks.ts dev/level/check.ts",
+    "town-plan-sheet": "node --import ./dev/sim/hooks.ts dev/level/town-plan-sheet.ts",
     "transcript": "node dev/transcript.ts",
     "queue": "node dev/codex/queue.ts",
     "ship-watch": "node dev/codex/ship-watch.ts"
