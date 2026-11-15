@@ -364,6 +364,30 @@ still partial (dotted crease and green slivers remain); step 3 shore complete,
 rock-border cleanup unfinished. Checkpoint B is **not complete** and no ship is authorized in this job. The Boogler's
 copy is unchanged; no suspect line encountered. No ROM data added. Not tested on a device.
 
+### 15 November follow-up: view-only trials, rejected
+
+Implementation worktree `t3/503a4393`, starting at `bff2e6203`. Steps 2 and 3 remain **open**.
+The shore blend and owner-selected packed-earth pigments already exist and are retained.
+No steps 5 or 6, height, collider, tree or placement changes were made.
+
+- Removing the facet cutoff and adding bounded exterior cut-earth paint reproduced grey wall paint and dark
+  scallops (opened paths cameras 0, 1, 7 and 10 in `.look/shots/terrain-2a-round1-retry/group-0/`). Rejected.
+- A smooth-normal facing mask and a stricter smooth-normal exception to the `steep` gate remove the coastal tan
+  patches but make vertical canyon strips green; green tread fringes and some wall paint remain. Opened paths
+  cameras 0, 1, 2, 7 and 10 in `.look/shots/terrain-2a-round2/group-0/`. Rejected.
+- The latter implementation was kept briefly under `?terrainEdges=trial`, then removed from the branch by the orchestrator (no dead flag on main); it is archived at local tag `archive/worktree/t3/terrain-path-shore-borders-trial`. Next attempt: a Fable implementer (the models row for player-visible work) once that usage is back. Default uses the original facet cutoff and
+  broad rock rule. Final capture `.look/shots/terrain-2a-final/manifest.json`: group 0 default, group 1 rejected
+  trial, all 11 original plan cameras at 1280 × 800. Opened final c0/c1/c7 in both groups; default retains the dotted
+  crease and coastal patches, trial retains the regressions above. Before: `.look/shots/terrain-2a-before/`.
+  Capture health and exact-repeat probes pass. First queued attempt timed out and was invalidated by formatting;
+  it contains no usable after evidence. No motion or performance claim; not tested on a device.
+- `node dev/ground/heights-hash.ts` before and after prints six identical hashes. Raw heights:
+  `9ad1083c863f22a182bcc92a306c9001a954b3118b3209f2b853925fe9fc3e9d`.
+  All five complete tile hashes and source identities are in `.look/terrain-2a-proof/`.
+  `terrain.ts` and `layout.ts` also have an empty diff against `origin/main` at proof time (`5f49c65bd`).
+- Full static check and T1 pass on the first candidate. Final scoped lint/typecheck pass; final committed ship-check
+  is run separately. T1 is not proof of either rejected candidate's visual quality. No push or ship.
+
 **Checkpoint B (end of 2a):** one proof look (canyon walking up, from above, across the valley, shore, town), opened
 by the visual reviewer against the owner's sentence; heights hash equal; one ship. Update the paths bullet in
 `docs/game-design/graphics.md`.
