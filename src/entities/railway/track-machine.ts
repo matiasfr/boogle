@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
-import { FIXED } from '../../constants.ts';
+import { FIXED, reducedMotion } from '../../constants.ts';
 import { background } from '../../async.ts';
 import machineUrl from '../../../assets/built/track-layer.glb?url';
 import wingUrl from '../../../assets/built/track-wing.glb?url';
@@ -325,7 +325,8 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
   const st = { awake: false, moved: 0, bump: 0, idle: 0, shudder: 0, was: false };
   const smoke = new THREE.Color('#ece8e0'),
     v = new THREE.Vector3();
-  const flatY = flatRock.position.y;
+  const flatY = flatRock.position.y,
+    locoY = locoRock.position.y;
   function puff(heavy: number) {
     look.chimneyTop.getWorldPosition(v);
     chuff(v.x, v.z, heavy);
@@ -473,7 +474,7 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
       if (on && !silent) for (let k = 0; k < 3; k++) puff(1);
     },
     /** For the waking: how hard it shakes (0 stops), how rusty (1) or clean (0), the fire, the lamps. */
-    shudder: (a: number) => void (st.shudder = a),
+    shudder: (a: number) => void (st.shudder = reducedMotion ? 0 : a),
     setRust: (v: number) => void (rustU.value = v),
     setFire: (v: number) => void (fireOn = v),
     /** Rad/s the wheels slip with no ground going by. */
@@ -561,13 +562,16 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
         [flatRock, 0],
         [locoRock, 1.3],
       ] as const) {
-        rock.rotation.z = Math.sin(now * 0.073 + phase) * 0.018 * st.shudder;
-        rock.position.x = Math.sin(now * 0.097 + phase) * 0.035 * st.shudder;
+        // A slower body rock and upward kick survive the ordinary frame-to-engine viewing distance.
+        rock.rotation.z = Math.sin(now * 0.022 + phase) * 0.065 * st.shudder;
+        rock.position.x = Math.sin(now * 0.031 + phase) * 0.12 * st.shudder;
       }
     }
+    flatRock.position.y = flatY + Math.abs(Math.sin(now * 0.017)) * 0.12 * st.shudder;
+    locoRock.position.y = locoY + Math.abs(Math.sin(now * 0.017 + 1.3)) * 0.12 * st.shudder;
     if (st.bump > 0) {
       st.bump = Math.max(0, st.bump - dt * 7);
-      flatRock.position.y = flatY - st.bump * 0.04;
+      flatRock.position.y -= st.bump * 0.04;
       flatbed.mesh.scale.set(1 + st.bump * 0.02, 1 - st.bump * 0.04, 1 + st.bump * 0.02);
     }
     if (st.awake && flatbed.y > -30) {
@@ -599,6 +603,10 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
       gear.position.y = -(BOTTOM + flatbed.hy) / scale.y;
       rig.root.scale.set(1 / scale.x, 1 / scale.y, 1 / scale.z);
       rig.root.position.y = -(BOTTOM + flatbed.hy) / scale.y;
+      // The panelled machine's tall gantry/rack is outside flatRock; it must catch with the body too.
+      rig.root.rotation.z = flatRock.rotation.z;
+      rig.root.position.x = flatRock.position.x;
+      rig.root.position.y += flatRock.position.y - flatY;
       if (wing) {
         wing.group.scale.copy(rig.root.scale);
         wing.group.position.y = rig.root.position.y;

@@ -1,4 +1,4 @@
-// Setup for the instant-feedback capture (replication R1b): land, walk the opening path, wake the machine through
+// Setup for the instant-feedback capture (replication R1b): land, walk the opening path, accept the camp axe through
 // ordinary input, then stand facing the nearest reachable ordinary tree. Pair with railway-instant-act.ts and
 // &railLag=200 (added round trip on the railway's own messages), for example:
 //   npm run look -- --eval dev/look/evals/railway-instant.ts --action dev/look/evals/railway-instant-act.ts \
@@ -37,14 +37,19 @@ for (let i = 0; i < PATH_SAMPLES[0]!.length; i += 3) {
   if (!(await bot.walk(point[0] + layout.ORIGIN.x, point[1]))) throw new Error('Opening path blocked');
 }
 const machine = read().machine;
-if (phase() === 'asleep' && !(await bot.use(machine.x, machine.z, 'wake the machine', /^Wake it up$/)))
-  throw new Error('Wake was not offered');
+if (phase() === 'asleep') {
+  if (!(await bot.use(machine.x - 3, machine.z + 2, 'talk to the camp resident', /^Talk$/)))
+    throw new Error('Camp conversation was not offered');
+  await need(() => !document.querySelector('.place-talk-opts')?.hasAttribute('hidden'), 'Camp offer never finished');
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+  window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+}
 // Two frames after the press (the hands read it on the next frame): well inside one 100 ms leg of a 200 ms trip.
 const pressedAt = performance.now();
 await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 const wakeAtPress = { phase: phase(), ms: Math.round(performance.now() - pressedAt), pending: read().pending };
-await need(() => phase() === 'idle', 'The machine never woke');
-// The wake reveals the multi-axe; it holds the player until dismissed with Interact, as the route bot does.
+await need(() => phase() === 'idle', 'The axe handoff never finished');
+// The handoff reveals the multi-axe; it holds the player until dismissed with Interact, as the route bot does.
 await need(() => read().reward.showing, 'The multi-axe reveal never showed');
 await bot.wait(1600);
 window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));

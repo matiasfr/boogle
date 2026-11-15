@@ -24,12 +24,12 @@ import { createAbilityArrival } from './ability-arrival.ts';
 import { createTrophyPlinth } from './trophy-plinth.ts';
 import { createStationBoxes } from './crates-view.ts';
 import { job } from '../../sim/railway-rows.ts';
-import { railPhase } from '../../sim/railway-queries-line1.ts';
 
 export async function createRailwayReward(
   adapter: RailwayAdapter,
   owner: OwnedView,
   machineFrom?: (out: THREE.Vector3) => void,
+  starterFrom?: (out: THREE.Vector3) => void,
 ) {
   const [{ softGlow }, { fanfare, pop }, shapes, props] = await Promise.all([
     import('../../place/look.ts'),
@@ -40,7 +40,7 @@ export async function createRailwayReward(
   // One reveal queue owns input/camera holding for both personal boxes and shared tools.
   const reveal = createRewardReveal({ parent: owner.root, fanfare, pop, softGlow });
   owner.cleanup(() => reveal.dispose());
-  const first = await createStationReward(adapter, owner, reveal, 0, machineFrom);
+  const first = await createStationReward(adapter, owner, reveal, 0, machineFrom, starterFrom);
   const second = await createStationReward(adapter, owner, reveal, 1, machineFrom);
   // The personal boxes after the scarf (Q2–Q6), through the same reveal queue.
   const boxes = await createStationBoxes(adapter, owner, reveal.youGot, rewardSeat, machineFrom);
@@ -177,6 +177,7 @@ async function createStationReward(
   reveal: ReturnType<typeof createRewardReveal>,
   stationIndex: 0 | 1,
   machineFrom?: (out: THREE.Vector3) => void,
+  starterFrom?: (out: THREE.Vector3) => void,
 ) {
   const reward = stationIndex === 0 ? T1_REWARD : T2_REWARD;
   const stationId = stationIndex === 0 ? 'T1' : 'T2';
@@ -253,9 +254,8 @@ async function createStationReward(
   let previous = -1;
   let liveWake = false;
   let multiReveals = 0;
-  // The multi-axe card is the waker's alone (docs/brainstorms/coop-abilities.md, option E); a friend's flourish is
-  // ability-arrival.ts. The wake itself plays at once from the prediction, but the card waits for the server to
-  // accept it: a refused wake settles the machine back asleep and shows no card.
+  // The camp resident's handoff card belongs to the recipient; a friend's flourish is ability-arrival.ts.
+  // Historical rail.wake still activates the shared tool. Wait for acceptance, never show a refused handoff.
   const offAccepted = adapter.onAccepted((event) => {
     if (stationIndex === 0 && event.op === 'rail.wake' && event.accepted > 0 && event.pid === adapter.read.pid)
       liveWake = true;
@@ -387,23 +387,18 @@ async function createStationReward(
       ];
     },
     update(dt: number, now: number) {
-      const tickNow = adapter.read.tick();
-      const phase = railPhase(adapter.read.world(), tickNow, tickNow);
-      // No pending action: the server has answered every one of mine, the wake among them.
-      if (
-        liveWake &&
-        adapter.read.ready() &&
-        adapter.read.pending() === 0 &&
-        phase !== 'asleep' &&
-        phase !== 'waking'
-      ) {
+      // The receipt is enough: the retained 31-tick rule window is not a delay before a visible handoff.
+      if (liveWake && adapter.read.ready()) {
         liveWake = false;
+        const hand = new THREE.Vector3();
+        starterFrom?.(hand);
         if (
           reveal.youGot({
             key: MULTI_AXE_REWARD.key,
             name: MULTI_AXE_REWARD.name,
             line: MULTI_AXE_REWARD.line,
             model: new THREE.Mesh(multiGeo, material),
+            ...(starterFrom ? { from: hand, handoff: true } : {}),
           })
         )
           multiReveals++;

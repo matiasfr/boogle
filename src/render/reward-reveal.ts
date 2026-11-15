@@ -27,6 +27,8 @@ export type Got = {
   model: THREE.Object3D;
   /** Where it rises from (an opened crate); over your head when missing. */
   from?: THREE.Vector3;
+  /** A resident holds the visible item during anticipation, then gives it to Buddy. */
+  handoff?: boolean;
   done?: () => void;
 };
 
@@ -214,7 +216,7 @@ export function createRewardReveal({
     const rise = clamp((u - BUILD_S) / RISE_S, 0, 1),
       ease = outCubic(rise);
     holder.position.lerpVectors(cur.start, top, reducedMotion ? 1 : ease);
-    spin.visible = u >= BUILD_S;
+    spin.visible = !!cur.handoff || u >= BUILD_S;
     rays.visible = u >= REVEAL_S;
     setAloft(u >= BUILD_S);
     if (u >= REVEAL_S && box.hidden) {
@@ -224,7 +226,7 @@ export function createRewardReveal({
     }
     holder.position.y += reducedMotion ? 0 : Math.sin(u * 2.2) * 0.06 * rise;
     spin.rotation.y = reducedMotion ? 0 : Math.max(0, u - BUILD_S) * 1.7;
-    spin.scale.setScalar(reducedMotion ? 1 : 0.4 + 0.6 * ease);
+    spin.scale.setScalar(reducedMotion || cur.handoff ? 1 : 0.4 + 0.6 * ease);
     // Turned towards the view, so the rays fan out around it.
     rays.quaternion.copy(camera.quaternion);
     if (!reducedMotion) rays.rotation.z += u * 0.5;
@@ -235,7 +237,7 @@ export function createRewardReveal({
     // a dismissal never starts another burst, and waiting on the card cannot keep emitting particles.
     if (!reducedMotion && cur.tint) {
       const before = u - dt;
-      if (before < 0.08 && u >= 0.08) acquisitionMotes(top, cur.tint, 'gather', 32);
+      if (before < 0.08 && u >= 0.08) acquisitionMotes(cur.handoff ? cur.start : top, cur.tint, 'gather', 32);
       if (before < REVEAL_S && u >= REVEAL_S) acquisitionMotes(holder.position, cur.tint, 'burst', 40);
       if (u >= BUILD_S && u < 1.1 && Math.floor(u * 24) !== Math.floor(before * 24))
         acquisitionMotes(holder.position, cur.tint, 'settle', 3);

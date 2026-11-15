@@ -1,4 +1,4 @@
-// Local town welcome. Reads accepted progress; talking never changes the railway.
+// Local conversations and unread cues; the camp handoff submits the existing shared starter-tool action.
 import * as THREE from 'three/webgpu';
 import { angleLerp } from '../../math.ts';
 import { conversation } from '../../player/conversation.ts';
@@ -6,16 +6,21 @@ import { me } from '../../player/player.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { ReadWorld } from '../../sim/railway-rows.ts';
-import { forge } from '../../sim/railway-rows.ts';
+import { createSpeechCue } from '../../components/speech-cue/view.ts';
+import { RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
+import { railEngineStart } from '../../sim/railway-queries-line1.ts';
+import { forge, rail } from '../../sim/railway-rows.ts';
 import { line2Completed, line2SeaOpen } from '../../sim/railway-queries-line2.ts';
 import type { railPhase } from '../../sim/railway-queries-line1.ts';
 
+// New opening lines are drafts for the owner; the later authored lines stay verbatim.
 export const GREETER_LINES = {
   asleep: [
-    'Follow the path up to the machine. We need a hand getting the rail running. Mine are mostly sleeves.',
-    "Track layer's asleep. Very qualified. Just needs someone to wake it up.",
+    'Follow the path up to the camp. Someone there has an axe for you.',
+    'Fill the first frame with logs. That should get the track layer going.',
     "I'm in charge of welcoming. You're doing splendidly at arriving.",
   ],
+  logs: ['You have the axe. The first frame needs logs before the engine can start.'],
   forge: [
     "It's awake! Keep feeding those frames up the path. The forge is waiting for its big moment.",
     "A railway! With places to go! I've been practising leaving and coming back.",
@@ -44,6 +49,7 @@ export type GreeterRead = {
   world: () => ReadWorld;
   phase: () => ReturnType<typeof railPhase>;
   ready: () => boolean;
+  takeAxe: () => void;
 };
 export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
   const [folk, talk, layout, land] = await Promise.all([
@@ -52,7 +58,8 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
     import('../../place/layout.ts'),
     import('../../place/land.ts'),
   ]);
-  if (!owner.alive) return { update: () => {}, targets: (): Interactable[] => [] };
+  if (!owner.alive)
+    return { update: () => {}, targets: (): Interactable[] => [], handoff: (out: THREE.Vector3) => void out };
   const g = folk.addGreeter(layout.toWorld(layout.GREETER.x), layout.VILLAGE.y, layout.GREETER.z);
   // Ground the original shore worker beside the path, without adding a blocking body.
   g.fy = land.H(g.x, g.z);
@@ -75,6 +82,36 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
   let speaking = false;
   let lastStage = '';
   let cursor = 0;
+  const cue = createSpeechCue(owner);
+  // Beside the existing wake reach, on the camp side of the parked machine; no collider or new shared state.
+  const camp = folk.addGreeter(T1.wake.x / 100 - 3, 0, T1.wake.z / 100 + 4.2);
+  camp.fy = land.H(camp.x, camp.z);
+  const campAt = new THREE.Vector3(camp.x, camp.fy + 1.5, camp.z);
+  const campCue = createSpeechCue(owner);
+  let campSpeaking = false;
+  let handing = 0;
+  const openCamp = () => {
+    if (!read.ready() || rail(read.world()).awake >= 0) return;
+    campSpeaking = talk.startTalk(
+      { ...who, name: 'Camp resident', x: camp.x, z: camp.z },
+      {
+        say: 'Take this axe. Fill the first frame with logs and we can get the engine going.',
+        answers: [
+          {
+            label: 'Take axe',
+            then: () => {
+              if (read.ready() && rail(read.world()).awake < 0) read.takeAxe();
+              return null;
+            },
+          },
+          { label: 'Bye', then: () => null },
+        ],
+      },
+      () => {
+        campSpeaking = false;
+      },
+    );
+  };
   const stage = () => {
     const phase = read.phase();
     if (phase === 'asleep' || phase === 'waking') return 'asleep';
@@ -82,7 +119,7 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
     if (line2SeaOpen(w)) return 'onward';
     if (line2Completed(w) >= 2) return 'needle';
     if (forge(w).lit >= 0) return 'cart';
-    return 'forge';
+    return railEngineStart(w) < 0 ? 'logs' : 'forge';
   };
   const open = () => {
     const current = stage();
@@ -106,28 +143,57 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
     }
   };
   owner.cleanup(() => {
-    if (speaking) talk.endTalk();
-    const k = folk.folk.guys.indexOf(g);
-    if (k >= 0) folk.folk.guys.splice(k, 1);
+    if (speaking || campSpeaking) talk.endTalk();
+    for (const person of [g, camp]) {
+      const k = folk.folk.guys.indexOf(person);
+      if (k >= 0) folk.folk.guys.splice(k, 1);
+    }
   });
   return {
+    handoff(out: THREE.Vector3) {
+      handing = 0.9;
+      // The same right hand reached by folk's give pose, in the resident's facing frame.
+      out.set(
+        camp.x + 0.22 * Math.cos(camp.yaw) + 0.48 * Math.sin(camp.yaw),
+        camp.fy! + 0.65,
+        camp.z - 0.22 * Math.sin(camp.yaw) + 0.48 * Math.cos(camp.yaw),
+      );
+    },
     update(dt: number) {
+      handing = Math.max(0, handing - dt);
       const p = me.body?.position;
       if (p && Math.hypot(p.x - g.x, p.z - g.z) < 8) {
         g.yaw = angleLerp(g.yaw, Math.atan2(p.x - g.x, p.z - g.z), Math.min(1, dt * 5));
         g.mood = speaking ? 'chat' : 'wave';
       } else g.mood = 'idle';
+      const needsAxe = read.ready() && rail(read.world()).awake < 0;
+      if (p && Math.hypot(p.x - camp.x, p.z - camp.z) < 8) {
+        camp.yaw = angleLerp(camp.yaw, Math.atan2(p.x - camp.x, p.z - camp.z), Math.min(1, dt * 5));
+        camp.mood = handing > 0 ? 'give' : campSpeaking ? 'chat' : needsAxe ? 'wave' : 'idle';
+      } else camp.mood = 'idle';
+      cue(
+        g.x,
+        g.fy!,
+        g.z,
+        read.ready() && !conversation.open && (lastStage !== stage() || cursor < GREETER_LINES[stage()].length),
+      );
+      campCue(camp.x, camp.fy!, camp.z, needsAxe && !conversation.open);
       talk.updateTalkCard();
     },
     targets(): Interactable[] {
       const p = me.body?.position;
-      return p &&
-        read.ready() &&
-        !conversation.open &&
-        Math.hypot(p.x - g.x, p.z - g.z) < 3.3 &&
-        Math.abs(p.y - g.fy!) < 3
-        ? [{ id: 'railway-talk-greeter', verb: 'Talk', at, run: open }]
-        : [];
+      if (!p || !read.ready() || conversation.open) return [];
+      const targets: Interactable[] = [];
+      if (Math.hypot(p.x - g.x, p.z - g.z) < 3.3 && Math.abs(p.y - g.fy!) < 3)
+        targets.push({ id: 'railway-talk-greeter', verb: 'Talk', at, run: open });
+      if (
+        rail(read.world()).awake < 0 &&
+        Math.hypot(p.x - camp.x, p.z - camp.z) < 3.3 &&
+        Math.abs(p.y - camp.fy!) < 3 &&
+        Math.hypot(p.x - T1.wake.x / 100, p.z - T1.wake.z / 100) <= T1.wake.reach / 100
+      )
+        targets.push({ id: 'railway-talk-camp', verb: 'Talk', at: campAt, run: openCamp });
+      return targets;
     },
   };
 }

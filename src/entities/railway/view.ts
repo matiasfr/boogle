@@ -4,9 +4,9 @@ import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
-import { account as accountRow, beam as beamRow, job as jobRow, rail as railRow } from '../../sim/railway-rows.ts';
+import { account as accountRow, beam as beamRow, job as jobRow } from '../../sim/railway-rows.ts';
 import { activeStation, railJobs, timingOf } from '../../sim/railway-queries.ts';
-import { railPanelCount, railPanelStock, railPhase } from '../../sim/railway-queries-line1.ts';
+import { railEngineStart, railPanelCount, railPanelStock, railPhase } from '../../sim/railway-queries-line1.ts';
 import { railCounts } from '../../sim/railway-queries-line2.ts';
 import { lineFeed, lineSchedule, lineLayDistance, type LineTiming } from '../../sim/railway-line-schedule.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
@@ -82,8 +82,11 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   owner.cleanup(onRingSceneryMounted(arrival.sceneryRebuilt));
   const sources = await createRailwaySources(adapter, owner);
   // The reward owns the one reveal queue; line two's devices show through it too.
-  const reward = await createRailwayReward(adapter, owner, (out) =>
-    out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
+  const reward = await createRailwayReward(
+    adapter,
+    owner,
+    (out) => out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
+    (out) => opening.handoff(out),
   );
   owner.cleanup(registerRailwayYouGot(reward.youGot));
   let demo = () => {};
@@ -175,10 +178,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     busy: () => phaseNow() === 'feeding' || phaseNow() === 'laying',
     // The station hands ride the chairs while it lays: one gives way to a player in their chair (folk seat k = chair k).
     chairTaken: (seat) => seats.seatHeld(`machine-deck-${seat}`),
-    awake: () => phaseNow() !== 'asleep' && phaseNow() !== 'waking',
+    awake: () => railEngineStart(world()) >= 0,
     hush: () => reward.inspect().busy,
     pathOpen: opened,
-    progress: { world, phase: phaseNow, ready },
+    progress: { world, phase: phaseNow, ready, takeAxe: () => void adapter.wake() },
     driver: trains.driverSeat,
   });
   // hard: rebuild from the state (first join); soft: the state came again after a lost connection or a resync, and
@@ -192,14 +195,13 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     setback = 2.4;
   let unload = 0,
     wasReady = false,
-    liveWake = false,
-    previousPhase = phaseNow(),
+    engineStart = -1,
+    engineRunning = false,
     previousOpen = false;
   const feedLaunched = [0, 0, 0];
   let deposits: { active: () => boolean; station: number; kind: number }[] = [];
   const from = new THREE.Vector3(),
-    to = new THREE.Vector3(),
-    wakeAt = new THREE.Vector3();
+    to = new THREE.Vector3();
   const jobElapsed = (index: number) => {
     const { job, run } = jobAt(index);
     return run.elapsed + (index === activeNow() && job.start >= 0 && !job.completion && ready() ? sinceTick * 10 : 0);
@@ -281,11 +283,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     beginFrame();
     trains.accepted(event);
     works?.accepted(event);
-    if (event.op === 'rail.wake') {
-      liveWake = true;
-      wake.start();
-      return;
-    }
     if (event.op !== 'rail.deposit' && event.op !== 'rail.beamDeposit') return;
     const index = event.op === 'rail.beamDeposit' ? 2 : LINE1_STATIONS.findIndex((spec) => spec.id === event.station);
     const station = frames[index],
@@ -321,20 +318,12 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     }
   }
   owner.cleanup(adapter.onAccepted(accepted));
-  // A predicted wake or deposit the server did not take (replication R1b; Local presentation): the machine settles back
-  // asleep with a thump; logs you were shown going into a frame lift out and return to your back.
+  // Refused deposits return their logs; the derived ignition edge below restores a cold machine if funding is lost.
   owner.cleanup(
     adapter.onCorrected((c: RailwayCorrection) => {
       beginFrame();
       works?.corrected(c);
       const e = c.event;
-      if (e.op === 'rail.wake') {
-        liveWake = false;
-        wake.reset(-1);
-        machine.wake(false, true);
-        thump(machine.flatbed.x, machine.flatbed.z);
-        return;
-      }
       if (e.op !== 'rail.deposit') return;
       const index = LINE1_STATIONS.findIndex((spec) => spec.id === e.station);
       const station = frames[index];
@@ -368,10 +357,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   function snapshot() {
     deposits = [];
     pieces.clearTrips(owner);
-    liveWake = false;
-    machine.wake(phaseNow() !== 'asleep' && phaseNow() !== 'waking', true);
-    const awake = railRow(world()).awake;
-    wake.reset(awake < 0 ? -1 : (tick() - awake) / 10);
+    engineStart = railEngineStart(world());
+    engineRunning = engineStart >= 0 && tick() >= engineStart + T1.wakeTicks;
+    machine.wake(engineRunning, true);
+    wake.reset(engineStart < 0 ? -1 : (tick() - engineStart) / 10);
     railJobs(world(), tick()).forEach(({ job, run }, index) => {
       const timing = timingOf(job);
       const schedule = lineSchedule(LINE1_STATIONS[index]!, timing);
@@ -385,7 +374,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     restoreMotion();
     panels.restore();
     arrival.sceneryRebuilt();
-    previousPhase = phaseNow();
     previousOpen = opened();
     path.update(opened(), true);
     line2.snapshot();
@@ -454,9 +442,17 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       wasReady = sessionReady;
       everReady ||= sessionReady;
       const phase = phaseNow();
-      if (previousPhase === 'waking' && phase !== 'waking' && phase !== 'asleep') {
-        machine.wake(true, !liveWake);
-        liveWake = false;
+      const ignition = railEngineStart(world());
+      if (ignition !== engineStart) {
+        engineStart = ignition;
+        engineRunning = false;
+        machine.wake(false, true);
+        if (ignition < 0 || reconstructed) wake.reset(ignition < 0 ? -1 : (tick() - ignition) / 10);
+        else wake.start();
+      }
+      if (!engineRunning && ignition >= 0 && tick() >= ignition + T1.wakeTicks) {
+        engineRunning = true;
+        machine.wake(true, true);
       }
       deposits = deposits.filter((flight) => flight.active());
       const active = activeNow();
@@ -546,7 +542,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       }
       path.update(opened(), reconstructed);
       previousOpen = opened();
-      previousPhase = phase;
       unload -= dt;
       const p = me.body?.position,
         station = frames[activeNow()]!;
@@ -609,19 +604,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         ...halts.targets(),
         ...trains.targets(),
       ];
-      const p = me.body?.position;
-      if (
-        p &&
-        ready() &&
-        phaseNow() === 'asleep' &&
-        Math.hypot(p.x * 100 - T1.wake.x, p.z * 100 - T1.wake.z) < T1.wake.reach
-      )
-        targets.push({
-          id: 'place-wake',
-          verb: 'Wake it up',
-          at: wakeAt.set(machine.flatbed.x, machine.flatbed.y + 2.4, machine.flatbed.z),
-          run: () => void adapter.wake(),
-        });
       // The track layer's two chairs: Sit aboard with nothing else to press for; seated, Interact stands you up.
       return seats.withSeatTargets(targets);
     },

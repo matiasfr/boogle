@@ -333,7 +333,7 @@ const steelKit = (foot: HandSupply): Supply => ({
 export const NODES: readonly LoopNode[] = [
   {
     id: 'wake',
-    label: 'Wake the track layer',
+    label: 'Receive the camp resident’s axe',
     area: 'line 1',
     at: p(T1.wake),
     bill: {},
@@ -343,13 +343,7 @@ export const NODES: readonly LoopNode[] = [
     stops: ['wake'],
     requires: [],
     cue: [
-      onMain('prompt-only', '"Wake it up" within 6 m of the flatbed', 'src/entities/railway/view.ts:541-552'),
-      {
-        kind: 'unknown',
-        state: 'unknown',
-        what: 'the arrival framing of the parked machine (not confirmed from code)',
-        source: 'src/entities/railway/arrival.ts',
-      },
+      onMain('world', 'Speech bubble over the camp resident; Talk, then Take axe', 'src/entities/railway/greeter.ts'),
     ],
   },
   lineStation('T1', [dec('wake', 'rules', `${RULES_QUERIES} ready(): awake + wakeTicks`)], ['t1-done']),
