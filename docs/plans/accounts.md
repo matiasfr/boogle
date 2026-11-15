@@ -126,7 +126,16 @@ No world placements, geometry, new simulation ticks or gameplay controls; level 
 
 Opened images: **0**. Browser/bot/scenario/performance runs: **0**, deliberately unnecessary for a documentation-only change. No visual verdict, bot failure or timing measurement is claimed. Account functionality is unimplemented and **not tested on a device**. The launcher owns `handoff.md`/`evidence.json`; no browser evidence manifest is invented for this plan.
 
-## Open questions for the owner
+## Owner answers (15 November 2026)
+
+Put to the owner as four questions with the plan's recommendations (question 5 is the orchestrator's, not his). His picks:
+
+1. **Sign-in: a short PIN instead of the 26-character code** (he chose "Short PIN instead" over the recommended code). Orchestrator's reading: the code becomes a short PIN that is easy to type, sized for a casual game under [don't over-engineer against attackers](../agents/owner-calls.md): simple server-side rate limits on sign-in, nothing heavier. Immediate guest play stays; password and email recovery stay out. Open for the plan's revision, not decided here: how a PIN finds its account (a PIN alone must then be unique and is easier to guess; a name plus PIN is not), and its length.
+2. **Fresh identity at the cutover: yes** (recommended). One `WORLD_NS` bump at the authentication cutover, server-issued pids, no import of old browser pids.
+3. **First slice carries identity only** (recommended). Nickname, colour, wardrobe and finds, settings, conversations and recent position stay on the device for now.
+4. **Lost PIN with every device signed out: a new account** (recommended), with clear copy before dismissal; a still-signed-in device can replace the PIN and sign the others out. Email recovery waits for demand.
+
+### Questions as asked
 
 1. **Use a generated sign-in code?** Recommend optional code sign-in plus immediate guest play. It is 26 grouped characters to copy/save, not a short PIN; password/email recovery stays out of the first slice.
 2. **Accept a fresh identity at the authentication cutover?** Recommend the one-time development namespace reset and server-issued guest pid; thereafter guest promotion keeps that pid. Importing old unverified pids would create an ownership loophole. This is not an account-to-room progress migration.
