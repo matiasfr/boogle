@@ -6,6 +6,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
+- 2026-11-15 · Signposting the sea gate from the summit: a tall gold pennant on the gate's jamb, no change to the summit deck; Q4's install gets a shared camera shot ([entry](decisions-controls.md#d-2026-11-15-q4-gets-a-camera-shot))
 - 2026-11-15 · Fly first: the glider is lit and usable on the first summit climb; the sea switch moves to the gate, one hook pull up its far jamb, and arrives with Q4. Home needs no glider and Needle Bell is optional for now; preserve progressed saves ([entry](#d-2026-11-15-fly-first))
 - 2026-11-15 · Grant's queue answered: a scaffold on the statue footing for now (statue asset kept, the swap on meeting The Boogler later); the heavy-load prototype goes in the main game (its own room only if the change is big); the glider is usable when taken, and the hook, summit, glider and gate order may be redesigned; Far Head's shot may run about 8.5 s; the camp resident hands over the axe and the engine starts on the last log ([entry](#d-2026-11-15-grant-queue-answered))
 - 2026-11-14 · No try-on in the garage: a part installs directly when the room has what it needs; a part it cannot install yet shows what it needs and what is in, with no button ([entry](#d-2026-11-14-no-try-on-in-the-garage))
