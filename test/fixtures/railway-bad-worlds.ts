@@ -73,7 +73,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
   // ------------------------------------------------ railwayCheck's own (src/sim/railway-check.ts)
   { site: 'check catalog', message: 'railway: catalog', stage: A, break: (w) => set(w, Tree, { left: 16 }, 0) },
   { site: 'check fall state', message: 'railway: fall state', stage: A, break: (w) => set(w, Tree, { yaw: 1 }, 0) },
-  { site: 'check accounts', message: 'railway: accounts', stage: A, break: (w) => set(w, Account, { carry: 9 }, 'a') },
+  { site: 'check accounts', message: 'railway: accounts', stage: A, break: (w) => set(w, Account, { carry: 13 }, 'a') },
   { site: 'check piles', message: 'railway: piles', stage: X, break: (w) => set(w, Pile, { n: 0 }, firstPile(w, 2)) },
   { site: 'check tick', message: 'railway: tick', stage: A, break: (w) => set(w, Rail, { awake: -2 }) },
   {

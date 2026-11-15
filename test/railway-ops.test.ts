@@ -1,3 +1,4 @@
+// 2026-11-15 v48: axe trace second hardwood now accepts 4 above comfort (formerly 0); four hashes follow.
 // The scripted op stream (docs/plans/ecs-migration-railway.md, M0 follow-up): the railway ops and lifecycle entry
 // points that no seed stage runs (or runs only to be refused), each driven here on a world a seed stage or the route's
 // own opening leaves, with the world hash after every step recorded in test/fixtures/railway-ops-golden.json. Like

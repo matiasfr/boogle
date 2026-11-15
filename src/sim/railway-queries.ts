@@ -2,7 +2,7 @@
 // `(world)` or `(world, tick)` that the systems share. Queries never write. Each fact lives here or in its domain's
 // file (railway-queries-line1.ts, -line2.ts, -trains.ts, -works.ts).
 import type { RowOf, World } from '../ecs/index.ts';
-import { RAILWAY_T1 as T1 } from './railway-layout.ts';
+import { RAILWAY_T1 as T1, HEAVY_LOAD } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { LINE2_PACK as PACK, LINE2_STATIONS, Q7, type Line2Station } from './railway-line2-layout.ts';
 import { layProgress, lineSchedule, type LineTiming } from './railway-line-schedule.ts';
@@ -71,9 +71,26 @@ export type AccountRow = Row<typeof Account>;
 /** A big thing fills your back: the great beam, the boiler or a footing. */
 export const heldBig = (w: World, a: Readonly<AccountRow>) => held(w, a.pid) || boilerHeld(w, a.pid) || a.foot > 0;
 export const carried = (a: Readonly<AccountRow>) => a.carry + a.stone + a.rails;
-/** What a back carries (railCarryMax): the pack is shared progression, like the axe. */
-export const carryMax = (w: World) => (w.get(Rail, railId(w))!.pack ? PACK.carry : T1.carry);
-export const free = (w: World, a: Readonly<AccountRow>) => (heldBig(w, a) ? 0 : Math.max(0, carryMax(w) - carried(a)));
+/** Comfortable cargo: the pack is shared progression, like the axe. */
+export const carryComfort = (w: World) => (w.get(Rail, railId(w))!.pack ? PACK.carry : T1.carry);
+/** Hard ceiling including the optional heavy load. All source transfers and save validation use this. */
+export const carryMax = (w: World) => carryComfort(w) + Math.floor(carryComfort(w) * HEAVY_LOAD.extra);
+/** Derived only: no new row, clock, prediction state or saved flag. */
+export const heavyLoad = (w: World, pid: string) => {
+  const a = w.get(Account, w.lookup(Account, pid) ?? -1);
+  return !!a && carried(a) > carryComfort(w);
+};
+export const carrySpeed = (w: World, pid: string) => {
+  const a = w.get(Account, w.lookup(Account, pid) ?? -1);
+  const extra = Math.max(0, (a ? carried(a) : 0) - carryComfort(w));
+  return 1 - Math.min(1, extra / (carryMax(w) - carryComfort(w))) * (1 - HEAVY_LOAD.minSpeed);
+};
+/** One take stops at comfort first; another deliberate take opts into the heavy allowance. */
+export const free = (w: World, a: Readonly<AccountRow>) => {
+  const n = carried(a);
+  const target = n < carryComfort(w) ? carryComfort(w) : carryMax(w);
+  return heldBig(w, a) ? 0 : Math.max(0, target - n);
+};
 /** Pile kinds: 0 logs, 1 stone, 2 rails, 3 a footing (one to a pile, one to a back). */
 export const FOOT = 3;
 /** What a back can take of a kind: a footing only onto an empty back. */

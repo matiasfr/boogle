@@ -1,5 +1,6 @@
 // The shared hook fact grants an Owner pull. Local targeting/presentation never changes the railway ledger.
 import * as THREE from 'three/webgpu';
+import { heavyLoad } from '../../sim/railway-queries.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { line2Routes } from '../../sim/railway-line2-layout.ts';
 import { line2Completed } from '../../sim/railway-queries-line2.ts';
@@ -85,7 +86,8 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     !inputState.seated &&
     !inputState.held &&
     !me.down &&
-    !account(adapter.read.world(), adapter.read.pid)?.foot;
+    !account(adapter.read.world(), adapter.read.pid)?.foot &&
+    !heavyLoad(adapter.read.world(), adapter.read.pid);
   function score(r: HookRing) {
     const b = me.body!;
     // The player's aim, never a cinematic's camera: a switch shot must not steer or blank the pick.
@@ -214,7 +216,14 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     fixedPre() {
       if (!pull) return false;
       const b = me.body;
-      if (!b || fallArrival.active || me.swimming || inputState.seated || me.down) {
+      if (
+        !b ||
+        fallArrival.active ||
+        me.swimming ||
+        inputState.seated ||
+        me.down ||
+        heavyLoad(adapter.read.world(), adapter.read.pid)
+      ) {
         cancel();
         return false;
       }

@@ -38,7 +38,7 @@ import {
   rail as railRow,
   tree as treeRow,
 } from '../../sim/railway-rows.ts';
-import { activeStation, carryMax } from '../../sim/railway-queries.ts';
+import { activeStation, carryMax, carryComfort, carrySpeed } from '../../sim/railway-queries.ts';
 import { Pile } from '../../sim/railway-components.ts';
 import { freeCarryIgnoringBig, railBeamChoppable, railPhase, treeGrowth } from '../../sim/railway-queries-line1.ts';
 import { insideSplitRock } from './works-shape.ts';
@@ -651,6 +651,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       stone: mine?.stone ?? 0,
       big: heldBeam() ? ('beam' as const) : null,
       capacity: carryMax(world()),
+      comfortable: carryComfort(world()),
       flyingLogs: Math.min(logs, harvestFlights.length),
       attention: swing.response === 'full' && swing.t < 0.55,
     };
@@ -920,7 +921,10 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   return {
     update,
     lateUpdate: cargo.lateUpdate,
-    prePhysics: cargo.prePhysics,
+    prePhysics() {
+      cargo.prePhysics();
+      me.wish.multiplyScalar(carrySpeed(world(), adapter.read.pid));
+    },
     targets,
     dispose,
     bundleOrigin,

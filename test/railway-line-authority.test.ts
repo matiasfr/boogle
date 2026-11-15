@@ -225,7 +225,8 @@ test('mixed back, final deposit races and exact station identity cannot overflow
   }
   act(s, 'a', 'rail.mine', { id: 0 });
   assert.equal(account(s, 'a')!.carry + account(s, 'a')!.stone!, 8);
-  assert.equal(act(s, 'a', 'rail.mine', { id: 0 }).r.accepted, 0);
+  assert.equal(act(s, 'a', 'rail.mine', { id: 0 }).r.accepted, 2, 'a second take opts into heavy cargo');
+  assert.equal(act(s, 'a', 'rail.drop', { n: 2, kind: 1, x: 0, y: 0, z: 0 }).r.accepted, 2);
   assert.equal(act(s, 'a', 'rail.deposit', { station: 'T1', n: 8 }).r.accepted, 0);
   act(s, 'a', 'rail.deposit', { station: 'T2', n: 6 });
   act(s, 'a', 'rail.deposit', { station: 'T2', kind: 1, n: 2 });

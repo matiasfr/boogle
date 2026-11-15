@@ -1,3 +1,5 @@
+// 2026-11-15 v48: refresh for intentional heavy-load acceptance. All 82 trace lengths stay equal;
+// 78 hashes change as formerly refused pickups can now fill the extra allowance. No trace fields are removed.
 // Proof of M12 (docs/plans/ecs-migration-railway.md, M12): the client's read chain moved off the `Railway` read model
 // (the predictor and the mirror on worlds, the adapter's own reads on rows) and nothing a view, a press or an effect
 // sees changed. The oracle is a trace recorded on main before the change (test/fixtures/railway-m12-trace.json, made

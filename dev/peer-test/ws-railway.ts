@@ -449,22 +449,28 @@ export async function railwayChecks(c: Ctx) {
     RAILWAY_SOURCES[0]![0],
   );
   railCheck('a stroke sooner than the swing cadence is not sent', burst[0] === true && burst[1] === false);
-  // Five strokes a swing apart: four fill the eight carry slots at once; the fifth is not yet.
+  // A tree holds ten logs: move to a fresh tree after the burst stroke, then test the full back
+  // against another unspent tree so refusal proves the carry bound, not source exhaustion.
+  await pose(AA, 'source', RAILWAY_SOURCES[1]![0]);
   const incoming = await ev(
     AA.page,
-    async ({ id, every }: { id: number; every: number }) => {
+    async ({ id, spare, every }: { id: number; spare: number; every: number }) => {
       const queued: boolean[] = [];
-      for (let n = 0; n < 5; n++) {
+      for (let n = 0; n < 7; n++) {
         await new Promise((r) => setTimeout(r, every));
-        queued.push(window.T.railIntent({ op: 'rail.chop', id, yaw: 0, collapsed: false }));
+        if (n === 5) window.T.railPose('source', spare);
+        queued.push(window.T.railIntent({ op: 'rail.chop', id: n < 5 ? id : spare, yaw: 0, collapsed: false }));
       }
       return { queued, probe: window.T.railAdapter() };
     },
-    { id: RAILWAY_SOURCES[0]![0], every: RAILWAY_T1.swingMs + 10 },
+    { id: RAILWAY_SOURCES[1]![0], spare: RAILWAY_SOURCES[2]![0], every: RAILWAY_T1.swingMs + 10 },
   );
   railCheck(
-    'predicted strokes cannot offer more than eight carry slots',
-    incoming.queued.filter(Boolean).length === 3 && backOf(incoming.probe) === 8 && incoming.probe.rows.freeCarry === 0,
+    'predicted strokes cannot offer more than twelve carry slots',
+    incoming.queued.filter(Boolean).length === 5 &&
+      backOf(incoming.probe) === 12 &&
+      incoming.probe.rows.freeCarry === 0,
+    JSON.stringify({ queued: incoming.queued, carry: backOf(incoming.probe), free: incoming.probe.rows.freeCarry }),
   );
   railCheck(
     'every burst stroke retires; what was shown minus what was given back is what is carried',
@@ -481,7 +487,8 @@ export async function railwayChecks(c: Ctx) {
       );
     })) >= 0,
   );
-  while (backOf(await adapter(AA)) < 8) {
+  await pose(AA, 'source');
+  while (backOf(await adapter(AA)) < 12) {
     await sleep(RAILWAY_T1.swingMs);
     const before = backOf(await adapter(AA));
     await ev(
@@ -496,7 +503,7 @@ export async function railwayChecks(c: Ctx) {
     AA.page,
     async (every: number) => {
       const queued: boolean[] = [];
-      for (let n = 0; n < 9; n++) {
+      for (let n = 0; n < 13; n++) {
         await new Promise((r) => setTimeout(r, every));
         queued.push(window.T.railIntent({ op: 'rail.deposit', station: 'T1', n: 1 }));
       }
@@ -505,10 +512,10 @@ export async function railwayChecks(c: Ctx) {
     RAILWAY_T1.unloadMs + 10,
   );
   railCheck(
-    'eight predicted deposits show at once and prevent a ninth spend',
-    outgoing.queued.filter(Boolean).length === 8 &&
+    'twelve predicted deposits show at once and prevent a thirteenth spend',
+    outgoing.queued.filter(Boolean).length === 12 &&
       backOf(outgoing.probe) === 0 &&
-      outgoing.probe.rows.jobs[0]!.job.stock === 8,
+      outgoing.probe.rows.jobs[0]!.job.stock === 12,
   );
   railCheck(
     'every deposit retires and only accepted logs leave carry, in both mirrors',
@@ -521,7 +528,7 @@ export async function railwayChecks(c: Ctx) {
         states.every(
           (p) =>
             p.rows.counts.stock === s.counts.stock &&
-            p.rows.counts.carry === 8 - s.counts.stock &&
+            p.rows.counts.carry === 12 - s.counts.stock &&
             p.rows.counts.total === INITIAL + p.rows.counts.produced,
         )
       );

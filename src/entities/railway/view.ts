@@ -9,9 +9,10 @@ import {
   beam as beamRow,
   boiler as boilerRow,
   job as jobRow,
+  rail as railRow,
   works as worksRow,
 } from '../../sim/railway-rows.ts';
-import { activeStation, railJobs, timingOf } from '../../sim/railway-queries.ts';
+import { activeStation, railJobs, timingOf, heavyLoad } from '../../sim/railway-queries.ts';
 import { railEngineStart, railPanelCount, railPanelStock, railPhase } from '../../sim/railway-queries-line1.ts';
 import { railCounts } from '../../sim/railway-queries-line2.ts';
 import { lineFeed, lineSchedule, lineLayDistance, type LineTiming } from '../../sim/railway-line-schedule.ts';
@@ -436,7 +437,12 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       stepMoves(hook, reward, glide);
     },
     /** Railway-glide fixedPre (23), before the controller. */
-    noteVelocity: glide.noteVelocity,
+    noteVelocity() {
+      // The railway's pre-controller step gates ground jumps as well as the later air moves.
+      // Swimming ascent stays available, including the stroke needed to leave the water.
+      if (!me.swimming && heavyLoad(adapter.read.world(), adapter.read.pid)) me.jumpQueued = 0;
+      glide.noteVelocity();
+    },
     update(ctx: FrameCtx) {
       const { dt, now } = ctx;
       beginFrame();

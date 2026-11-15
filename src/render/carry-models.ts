@@ -2,14 +2,17 @@
 import * as THREE from 'three/webgpu';
 import { material } from './materials.ts';
 import { flat } from './flat.ts';
+import { HEAVY_LOAD } from '../sim/railway-layout.ts';
 import { PACK, TUNE } from '../place/layout.ts';
 import { merged } from './part-geometry.ts';
 import { sideCarryOffset } from './head-clearance.ts';
 import { makeProp } from './prop-kit.ts';
 
+const MAX_CARGO = PACK.carry * (1 + HEAVY_LOAD.extra);
+
 export type CargoKind = 'logs' | 'rails' | 'stone' | 'beam' | 'boiler';
 export const cargoCapacity = (kind: CargoKind, frame: boolean): number =>
-  kind === 'beam' || kind === 'boiler' ? 1 : frame ? PACK.carry : TUNE.carry;
+  kind === 'beam' || kind === 'boiler' ? 1 : (frame ? PACK.carry : TUNE.carry) * (1 + HEAVY_LOAD.extra);
 /** One length of steel, shared with the world piece view. */
 export const RAIL_SIZE = new THREE.Vector3(0.14, 0.16, 2.6);
 export const BEAM_CARRY_POSITION = [sideCarryOffset(0.26), 0.85, 0.2] as const;
@@ -30,7 +33,7 @@ export function makeCarryModels() {
       ['b', 0, 0, 0.04, 0.085, 0.68, 0.02, '#ffffff'],
     ]),
     new THREE.MeshStandardNodeMaterial({ color: '#899baa', roughness: 0.55, metalness: 0.25 }),
-    PACK.carry,
+    MAX_CARGO,
   );
   rails.name = 'wear_carried_rails';
   rails.frustumCulled = false;
@@ -44,7 +47,7 @@ export function makeCarryModels() {
   function setRails(amount: number, frame: boolean) {
     if (packed !== frame) {
       packed = frame;
-      for (let k = 0; k < PACK.carry; k++) {
+      for (let k = 0; k < MAX_CARGO; k++) {
         if (frame) {
           // Upright steel rests on the pack shelf in two banks beside the log bundle.
           worn.position.set(k % 2 ? 0.38 : -0.38, 0.505, 0.29 + Math.floor(k / 2) * 0.065);
@@ -67,11 +70,11 @@ export function makeCarryModels() {
     railSeat.visible = frame && rails.visible;
   }
   setRails(0, false);
-  const stone = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.16, 0), material('stone').clone(), PACK.carry);
+  const stone = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.16, 0), material('stone').clone(), MAX_CARGO);
   stone.name = 'wear_carried_stone';
   stone.frustumCulled = false;
   stone.count = 0;
-  for (let k = 0; k < PACK.carry; k++) {
+  for (let k = 0; k < MAX_CARGO; k++) {
     worn.rotation.set(k, k * 2, 0);
     worn.position.set((k % 3) * 0.2 - 0.2, 0.3 + Math.floor(k / 6) * 0.22, 0.42 + (Math.floor(k / 3) % 2) * 0.2);
     worn.updateMatrix();

@@ -1562,6 +1562,19 @@ Both sealed gates have paired stone leaves, recessed courses, pale edge strips a
 
 ## Carried-resource display
 
+**Heavy load (15 November, first decisions prototype).** In the main game, logs, stone and rails share a
+comfortable load of 8 (16 with the shared pack), with optional overfill to 12 (24). A pickup stops at comfort;
+a further press opts into the extra allowance. Above comfort, movement
+slows linearly from full speed to 60% at maximum; ground/air jump, hook and glide are unavailable. Jump-held
+swimming ascent remains available. Drop (right click / R3 / touch; hold for all) puts cargo down as ordinary
+recoverable piles; dropping or depositing back to comfort restores mobility immediately. Pack acquisition
+re-evaluates the threshold for everyone. Big objects keep their existing exclusive carry rules. No sway or spill.
+The steady bundle fills out; steel and stone render up to 24. Extra HUD cells have amber borders, a warning at
+comfort announces the cost, and a heavy-load reason with a Drop reminder remains visible while overloaded.
+This supersedes the older 8/16 hard cap and quiet-walking tag fade **only while heavy**. No special prototype
+room or new control. Server counts remain authoritative; movement is Owner and presentation Local.
+[Plan and limits](../plans/heavy-load.md). Whether early hauls offer a meaningful route trade-off is unproven.
+
 **Pack steel (8 November).** With the pack, carried rails stand in two banks on its shelf beside the log bundle,
 leaving both materials readable from behind and the side. Without it, the existing crosswise hold stays.
 The same seating and independent steel count apply to the player and friends as they take and deposit;

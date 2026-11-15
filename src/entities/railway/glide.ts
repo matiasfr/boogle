@@ -8,7 +8,7 @@ import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { account, rail } from '../../sim/railway-rows.ts';
-import { boilerHeld, held } from '../../sim/railway-queries.ts';
+import { boilerHeld, held, heavyLoad } from '../../sim/railway-queries.ts';
 import { GRAVITY, PLAYER_MASS } from '../../constants.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { me } from '../../player/player.ts';
@@ -47,7 +47,7 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
   const shouldered = () => {
     const w = adapter.read.world(),
       pid = adapter.read.pid;
-    return held(w, pid) || boilerHeld(w, pid) || !!account(w, pid)?.foot;
+    return held(w, pid) || boilerHeld(w, pid) || !!account(w, pid)?.foot || heavyLoad(w, pid);
   };
   const canAct = () =>
     owned &&

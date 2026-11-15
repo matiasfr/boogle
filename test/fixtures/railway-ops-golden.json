@@ -63,10 +63,10 @@
     ["chop 5", 1, 3489399245],
     ["drop 5", 1, 1543810950],
     ["chop a hardwood", 1, 578238355],
-    ["chop the other hardwood", 0, 299279636],
-    ["supply pulse 1", 0, 1099539732],
-    ["supply pulse 2 regrows", 0, 3322041620],
-    ["supply pulse 3 regrows", 0, 2201713940]
+    ["chop the other hardwood", 4, 2817959188],
+    ["supply pulse 1", 0, 4079592724],
+    ["supply pulse 2 regrows", 0, 719475988],
+    ["supply pulse 3 regrows", 0, 1666940180]
   ],
   "boiler": [
     ["boilerTake", 1, 1067004962],

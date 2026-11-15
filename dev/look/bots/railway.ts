@@ -673,7 +673,7 @@ export async function boilerToPier(
     'Q6 train unloads all 32 logs and 32 rails',
   );
   await checkpoint('Q6 stocked');
-  check(R.carryMax(R.rw()) === 16, 'Q6 back holds sixteen');
+  check(R.carryComfort(R.rw()) === 16, 'Q6 comfortable load is sixteen');
   const job = () => R.line2Station(5);
   const frame = view().frames[5]!;
   const deliver = async () => {
@@ -1668,7 +1668,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       const friendPack = async () => {
         await until(() => R.rail(R.rw()).pack, 'leader opens the pack', 1800000);
         await bot.wait(1500);
-        require(R.carryMax(R.rw()) === 16, "the friend's back carries 16");
+        require(R.carryComfort(R.rw()) === 16, "the friend's comfortable load is 16");
         require(read().reward.arrival.seen.includes('pack'), "friend's pack flourish played");
         await checkpoint('pack');
       };
@@ -1713,7 +1713,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await walkTrack(92, 30);
     await walkBypass(bypass.slice(1));
     mark('line two started');
-    const fill = async (max: number = R.carryMax(R.rw())) => {
+    const fill = async (max: number = R.carryComfort(R.rw())) => {
       let attempts = 0;
       while (R.railBack().carry < max) {
         require(++attempts <= 24, 'found enough reachable logs for line two');
@@ -1755,14 +1755,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       require(await bot.work(() => R.rail(R.rw()).pack, 5000, 380), 'pack accepted after bounded retries');
       await bot.wait(1200);
       if (read().reward.showing || !coop) await dismiss('pack reveal');
-      require(R.carryMax(R.rw()) === 16, 'every back carries 16 with the pack');
+      require(R.carryComfort(R.rw()) === 16, 'every back comfortably carries 16 with the pack');
       await checkpoint('pack');
     };
     for (let load = 0; R.forge(R.rw()).used < 56; load++) {
       require(load < 12, 'forge bills fill in bounded loads');
       // A player opens the pack as soon as its chest appears, beside the forge they are filling.
       if (!legacy && R.forge(R.rw()).used >= 24 && !R.rail(R.rw()).pack) await openPack();
-      await fill(Math.min(R.carryMax(R.rw()), 56 - R.forge(R.rw()).used));
+      await fill(Math.min(R.carryComfort(R.rw()), 56 - R.forge(R.rw()).used));
       await walk(forge.x, forge.z, 2.4);
       await until(() => R.railBack().carry === 0 && read().pending === 0, 'forge frame unloads automatically', 20000);
       mark(`forge load ${load + 1} (${R.forge(R.rw()).used}/56)`);
@@ -1805,7 +1805,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     const rack = v2().forgeRack;
     const takeRails = async (n: number) => {
       await until(
-        () => R.forge(R.rw()).rack >= Math.min(n, R.carryMax(R.rw())),
+        () => R.forge(R.rw()).rack >= Math.min(n, R.carryComfort(R.rw())),
         'forge has poured enough rails',
         60000,
       );
@@ -1826,7 +1826,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     // Q1, by hand beside the turntable: 16 logs and 6 rails.
     const q1 = v2().frames[0]!;
     while (R.line2Station(0).start < 0 && R.line2Station(0).stock < 16) {
-      await fill(Math.min(R.carryMax(R.rw()), 16 - R.line2Station(0).stock));
+      await fill(Math.min(R.carryComfort(R.rw()), 16 - R.line2Station(0).stock));
       await deliver(0, q1);
     }
     await takeRails(6);
