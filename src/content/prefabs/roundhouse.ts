@@ -38,6 +38,19 @@ const BAY_SOLIDS = [
 
 export const prefabs = [
   definePrefab({
+    key: 'roundhouse.bay-ruin',
+    visual: { builder: 'roundhouse.bay', params: { part: 'ruin' } },
+    // Placement-authored broken tops are all >=3.2 m; keep the 1b solid at 3.1 m.
+    colliders: [box(-PIER_X, 1.55, PIER_Z, 0.31, 1.55, 0.4), box(PIER_X, 1.55, PIER_Z, 0.31, 1.55, 0.4)],
+    scope: 'owner',
+  }),
+  definePrefab({
+    key: 'roundhouse.bay-outline',
+    visual: { builder: 'roundhouse.bay', params: { part: 'outline' }, batch: 'rotunda-outlines' },
+    colliders: [],
+    scope: 'owner',
+  }),
+  definePrefab({
     key: 'roundhouse.bay-doors',
     visual: { builder: 'roundhouse.bay', params: { part: 'doors' }, batch: 'rotunda-doors' },
     colliders: [box(0, 2.3, PIER_Z, 1.8, 2.3, 0.1)],

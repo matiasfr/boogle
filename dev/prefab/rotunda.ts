@@ -10,10 +10,10 @@ const SITES: readonly RotundaSite[] = [ROTUNDA_HOME];
 const RECORD: Record<RotundaPart, PrefabKey> = {
   table: 'roundhouse.table',
   shell: 'roundhouse.bay-block',
-  ruin: 'roundhouse.bay-ruin-block',
+  ruin: 'roundhouse.bay-ruin',
   door: 'roundhouse.bay-door-block',
   wall: 'roundhouse.end-wall',
-  outline: 'roundhouse.bay-outline-block',
+  outline: 'roundhouse.bay-outline',
 };
 /** A ruin's two door piers stand at broken heights, up to the full door wall (design review, call 8, which asked 2.5 m
  * up: the lowest here is 3.2 m, over the record's 3.1 m solid). Each bay takes the next pair, so no two neighbours

@@ -75,7 +75,7 @@ registerBuilder('roundhouse.bay', (params, batch) => {
     box(x, y, z, 0.07, h, 0.2, TRIM);
     box(x, y, z, w, 0.07, 0.2, TRIM);
   };
-  const piers = (left: number, right: number) => {
+  const piers = (left: number, right: number, ruined = false) => {
     for (const [side, height] of [
       [-1, left],
       [1, right],
@@ -84,7 +84,10 @@ registerBuilder('roundhouse.bay', (params, batch) => {
         x1 = side < 0 ? -1.8 : edge(front);
       stoneWall(x0, x1, front + 0.4, 0.8, 0, height);
       box((x0 + x1) / 2, 0.18, front + 0.4, x1 - x0, 0.36, 0.85, '#a69a7e');
-      box((x0 + x1) / 2, height - 0.13, front + 0.4, x1 - x0, 0.24, 0.86, TRIM);
+      if (ruined) {
+        const broken = Math.min(0.22, 6.2 - height);
+        if (broken > 0) box((x0 + x1) / 2, height + broken / 2, front + 0.3, (x1 - x0) * 0.55, broken, 0.5, STONE[2]);
+      } else box((x0 + x1) / 2, height - 0.13, front + 0.4, x1 - x0, 0.24, 0.86, TRIM);
       // Fill to the radial seam behind the flat facade.
       const g = new THREE.BoxGeometry(1, 1, 1),
         p = g.getAttribute('position');
@@ -199,7 +202,11 @@ registerBuilder('roundhouse.bay', (params, batch) => {
       doors(true);
       break;
     case 'ruin': {
-      piers(typeof params.left === 'number' ? params.left : 3.2, typeof params.right === 'number' ? params.right : 4.4);
+      piers(
+        typeof params.left === 'number' ? params.left : 3.2,
+        typeof params.right === 'number' ? params.right : 4.4,
+        true,
+      );
       wedge(
         front,
         back,

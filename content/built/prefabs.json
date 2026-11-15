@@ -1297,6 +1297,18 @@
         }
       }
     },
+    "roundhouse.bay-outline": {
+      "colliders": [],
+      "key": "roundhouse.bay-outline",
+      "scope": "owner",
+      "visual": {
+        "batch": "rotunda-outlines",
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "outline"
+        }
+      }
+    },
     "roundhouse.bay-outline-block": {
       "colliders": [],
       "key": "roundhouse.bay-outline-block",
@@ -1305,6 +1317,44 @@
         "builder": "roundhouse.bay-block",
         "params": {
           "part": "bay-outline"
+        }
+      }
+    },
+    "roundhouse.bay-ruin": {
+      "colliders": [
+        {
+          "at": [
+            -2.12,
+            1.55,
+            14.2
+          ],
+          "half": [
+            0.31,
+            1.55,
+            0.4
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            2.12,
+            1.55,
+            14.2
+          ],
+          "half": [
+            0.31,
+            1.55,
+            0.4
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.bay-ruin",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "ruin"
         }
       }
     },
