@@ -1,7 +1,7 @@
 // A railway save for watching the track layer at cruise: `--rail-seed q5-held` is Q4 laid and Q5's bill paid in full
 // with the sea switch not yet pulled, so the 260 m double-track stretch (9 m/s, 29 s of laying) starts when the page
 // pulls it (dev/look/evals/track-layer-cross.ts), not while the page is still mounting. Accepted ops only. Looks only.
-import { act, advance, logs, rails, railwayAtQ5 } from '../../src/sim/railway-seed-route.ts';
+import { act, advance, logs, rails, railwayAtQ4, railwayAtQ5 } from '../../src/sim/railway-seed-route.ts';
 import { railwayAtWorks, advanceWorks } from '../../src/sim/railway-seed-works.ts';
 import { need, restore } from '../../src/sim/railway-drive.ts';
 import { rail, qjob, trains } from '../../src/sim/railway-rows.ts';
@@ -10,12 +10,25 @@ import { retainedEndBlock } from '../../src/sim/railway-trains.ts';
 import { seedDoc } from './ring-mid-seed.ts';
 
 export const layStage = (stage: string) =>
-  stage === 'q5-held' || stage === 'q7-retained' || stage === 'q7-signal' ? stage : null;
+  stage === 'q5-held' || stage === 'q4-held' || stage === 'q7-retained' || stage === 'q7-signal' ? stage : null;
 export function buildLayDoc(stage = 'q5-held') {
+  if (stage === 'q4-held') return buildQ4Doc();
   if (stage !== 'q5-held') return buildQ7Doc(stage === 'q7-signal');
   const seed = railwayAtQ5('q4-done');
   logs(seed, 'a', 'Q5', 24);
   rails(seed, 'b', 'Q5', 24);
+  return seedDoc(seed);
+}
+
+/** Look-only: Q4's bill paid in full with the quarry lever not yet pulled, so its 17 s of laying, and the live edge
+ * that seats the sea gate's control and sends the room's camera to the jamb, start when the page pulls the lever
+ * (dev/look/evals/sea-install-shot.ts), not while it is still mounting. The hook is taken, the glider is not. */
+function buildQ4Doc() {
+  const seed = railwayAtQ4();
+  need(act(seed, 'a', 'rail.hook') === 1, 'Q4 look: the hook taken');
+  logs(seed, 'a', 'Q4', 16);
+  rails(seed, 'b', 'Q4', 16);
+  need(qjob(seed.w, 3).start < 0 && !rail(seed.w).lever, 'Q4 look: held at the quarry gate');
   return seedDoc(seed);
 }
 
