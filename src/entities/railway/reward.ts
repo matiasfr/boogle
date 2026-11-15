@@ -253,9 +253,8 @@ async function createStationReward(
   let previous = -1;
   let liveWake = false;
   let multiReveals = 0;
-  // The multi-axe card is the waker's alone (docs/brainstorms/coop-abilities.md, option E); a friend's flourish is
-  // ability-arrival.ts. The wake itself plays at once from the prediction, but the card waits for the server to
-  // accept it: a refused wake settles the machine back asleep and shows no card.
+  // The camp resident's handoff card belongs to the recipient; a friend's flourish is ability-arrival.ts.
+  // Historical rail.wake still activates the shared tool. Wait for acceptance, never show a refused handoff.
   const offAccepted = adapter.onAccepted((event) => {
     if (stationIndex === 0 && event.op === 'rail.wake' && event.accepted > 0 && event.pid === adapter.read.pid)
       liveWake = true;

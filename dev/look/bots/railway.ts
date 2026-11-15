@@ -1327,9 +1327,12 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         'friend completes opening walk',
       );
     if (!second) {
-      await until(() => interactTarget()?.id === 'place-wake', 'wake offered');
-      // A real keyboard tap, once, as soon as offered. No retry or held key can hide a refused wake.
+      await walk(machine.x - 3, machine.z + 2, 2);
+      await until(() => interactTarget()?.id === 'railway-talk-camp', 'camp resident offers Talk');
       interact();
+      await until(() => !document.querySelector('.place-talk-opts')?.hasAttribute('hidden'), 'camp offer finishes');
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
       require(R.railPhase(R.rw()) === 'waking' && read().pending === 1, 'single wake tap predicts immediately');
     }
     await until(() => R.railPhase(R.rw()) === 'idle', 'accepted wake ready');

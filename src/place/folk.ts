@@ -237,6 +237,8 @@ TOWN.camps.forEach((c, n) => {
     campGuys.push(g);
   }
 });
+// Local boarding legs: keep the crew visible between the frame and their chairs.
+const boarding = new Map<Guy, { x: number; y: number; z: number; t: number }>();
 const stationGuys = Array.from({ length: STATION }, (_, k) => make('station', X(-6 + k), -142, { seat: k }));
 const riders = Array.from({ length: RIDERS * 2 }, (_, k) =>
   make('rider', 0, 0, { on: false, seat: k % RIDERS, camp: k < RIDERS ? 0 : 1 }),
@@ -682,10 +684,29 @@ function brain(g: Guy, dt: number) {
       if (!e) return;
       const given = !!e.chairTaken?.(g.seat);
       if ((e.machineBusy() || !st) && !given) {
-        // Aboard for the stretch.
-        g.mood = 'ride';
+        if (g.mood === 'ride') return;
+        let leg = boarding.get(g);
+        if (!leg) {
+          leg = { x: g.x, y: g.fy ?? H(g.x, g.z), z: g.z, t: 0 };
+          boarding.set(g, leg);
+        }
+        const car = e.machine();
+        car.mesh.updateWorldMatrix(true, false);
+        wp.set(g.seat ? 0.55 : -0.55, car.top + 0.14 + MACHINE_CHAIR_SEAT - 0.035, -1.15).applyMatrix4(
+          car.mesh.matrixWorld,
+        );
+        leg.t = Math.min(1, leg.t + dt / 2.6);
+        const u = leg.t;
+        g.x = leg.x + (wp.x - leg.x) * u;
+        g.z = leg.z + (wp.z - leg.z) * u;
+        // Walk the ground first, then climb the broad rear step onto the deck.
+        const climb = Math.max(0, (u - 0.55) / 0.45);
+        g.fy = leg.y + (wp.y - leg.y) * climb;
+        g.yaw = Math.atan2(wp.x - leg.x, wp.z - leg.z);
+        g.mood = u < 1 ? 'walk' : 'ride';
         return;
       }
+      boarding.delete(g);
       if (!st) {
         // A player sat in their chair with no station to wait at: stand on the ground beside that side of the deck.
         const car = e.machine();
@@ -1158,6 +1179,7 @@ function resetFolk() {
   setRiders(1, false);
   setCommuters(false);
   setPushers(false);
+  boarding.clear();
   campBusy[0] = campBusy[1] = false;
   bolt = null;
   crew = null;
@@ -1369,7 +1391,7 @@ export function updateFolk(dt: number) {
       const car = e_.cart();
       if (!car) continue;
       ride(g, car, g.seat ? 0.35 : -0.35, -car.hz - 0.5, 0);
-    } else clearTraffic(g);
+    } else if (!boarding.has(g)) clearTraffic(g);
     g.poseTime = g.poseMood === g.mood ? g.poseTime + dt : 0;
     g.poseMood = g.mood;
     let glance = 0;

@@ -149,7 +149,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   });
   const pathS = (u: number) => refuges.first + u * (layout.STUB.camp - refuges.first);
   folk.mountFolk(owner, {
-    station: () => (env.awake() ? env.station() : null),
+    station: env.station,
     machineBusy: env.busy,
     chairTaken: env.chairTaken,
     machine: env.machine,
