@@ -94,4 +94,10 @@ four captures, logs and recursive comparison summary are retained locally in
 
 ## Evidence and results
 
-Pending full validation.
+The first full check found one additional integration oversight:
+`test/railway-cart.test.ts` still pinned room ids to v48 after the review moved
+the integrated namespace to v49. Updated that exact expected prefix to v49;
+the independent malformed cart-column rejection assertion is unchanged. This
+is a stale test expectation, not a new save behavior or an M12 difference.
+
+Pending completed full-check rerun and browser evidence.
