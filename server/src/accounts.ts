@@ -4,6 +4,7 @@ import type { Express, Request, RequestHandler, Response, NextFunction } from 'e
 import type { Account, AccountStore } from './account-store.ts';
 
 const SESSION_MS = 90 * 24 * 60 * 60 * 1000;
+const PIN_LENGTH = 5;
 const digest = (secret: string) => createHash('sha256').update(secret).digest('hex');
 export type AccountIdentity = { pid: string; expiresAt: number; accountId?: string };
 type AccountErrorCode = 'invalid_request' | 'unauthenticated' | 'already_account' | 'session_bound' | 'unavailable';
@@ -25,7 +26,7 @@ function tokenHash(token: unknown) {
 function pinHash(pin: unknown) {
   if (typeof pin !== 'string' || pin.length > 32) throw new AccountError(400, 'invalid_request');
   const digits = pin.replace(/[ -]/g, '');
-  if (!/^\d{8}$/.test(digits)) throw new AccountError(400, 'invalid_request');
+  if (digits.length !== PIN_LENGTH || !/^[0-9]+$/.test(digits)) throw new AccountError(400, 'invalid_request');
   return digest(digits);
 }
 function supported(account: Account | undefined) {
@@ -50,7 +51,7 @@ export function createAccounts(store: AccountStore, now: () => number = Date.now
   function newPin() {
     // Inside BEGIN IMMEDIATE, so checking uniqueness and assigning the PIN cannot race another writer.
     for (let attempt = 0; attempt < 32; attempt++) {
-      const pin = String(randomInt(100_000_000)).padStart(8, '0');
+      const pin = String(randomInt(10 ** PIN_LENGTH)).padStart(PIN_LENGTH, '0');
       if (!store.accountForPin(digest(pin))) return pin;
     }
     throw new AccountError(503, 'unavailable');

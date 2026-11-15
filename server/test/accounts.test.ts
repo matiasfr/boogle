@@ -29,7 +29,7 @@ test('account transactions preserve guest identity, unique PINs and retry bindin
   assert.equal(accounts.registerGuest(a).pid, guest.pid);
   const saved = accounts.createAccount(a);
   assert.equal(saved.pid, guest.pid);
-  assert.match(saved.pin, /^\d{8}$/);
+  assert.match(saved.pin, /^[0-9]{5}$/);
   rejects(() => accounts.createAccount(a), 'already_account');
   const b = token();
   const grouped = `${saved.pin.slice(0, 4)}-${saved.pin.slice(4)}`;
@@ -160,18 +160,18 @@ test('invalid PIN/token formats and unsupported profiles fail closed', async (t)
   const a = token();
   accounts.registerGuest(a);
   const saved = accounts.createAccount(a);
-  for (const bad of [undefined, '', 12345678, '1234567', '123456789', 'abcdefgh', '１２３４５６７８', '0'.repeat(33)])
+  for (const bad of [undefined, '', 12345, '1234', '12345678', 'abcde', '１２３４５', '0'.repeat(33)])
     rejects(() => accounts.signIn(bad, token()), 'invalid_request');
   for (const bad of [undefined, '', 'old-browser-key', 123, 'a'.repeat(63), 'a'.repeat(65)])
     rejects(() => accounts.registerGuest(bad), 'unauthenticated');
   // A leading-zero PIN stays a string through normalization and storage lookup.
   const db = new DatabaseSync(path.join(dataDir, 'accounts.sqlite'));
   try {
-    db.prepare('UPDATE accounts SET pin_hash = ? WHERE pid = ?').run(hash('00123456'), saved.pid);
-    assert.equal(accounts.signIn('0012 3456', token()).pid, saved.pid);
+    db.prepare('UPDATE accounts SET pin_hash = ? WHERE pid = ?').run(hash('04217'), saved.pid);
+    assert.equal(accounts.signIn('04 2-17', token()).pid, saved.pid);
     db.exec('PRAGMA ignore_check_constraints = ON; UPDATE accounts SET version = 2;');
     rejects(() => accounts.resolveSession(a), 'unavailable');
-    rejects(() => accounts.signIn('00123456', token()), 'unavailable');
+    rejects(() => accounts.signIn('04217', token()), 'unavailable');
     rejects(() => accounts.registerGuest(a), 'unavailable');
   } finally {
     db.close();
@@ -251,7 +251,7 @@ test('HTTP accounts: concurrent retries, restart, rotation and sign-out use dura
   assert.equal(session.headers.get('access-control-allow-origin'), 'https://boogle.club');
   assert.equal((await session.json()).accountId, saved.accountId);
   const rotated = await (await request('rotate-pin', a, {})).json();
-  assert.match(rotated.pin, /^\d{8}$/);
+  assert.match(rotated.pin, /^[0-9]{5}$/);
   assert.equal((await request('session', b)).status, 401);
   assert.equal((await request('sign-in', token(), { pin: saved.pin })).status, 401);
   assert.equal((await request('sign-out', a, {})).status, 204);
