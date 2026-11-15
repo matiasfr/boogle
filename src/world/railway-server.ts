@@ -211,7 +211,8 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       return near(LINE1_GREAT_TREE.x, LINE1_GREAT_TREE.z, 420);
     case 'rail.boilerTake': {
       const b = w.get(Boiler, w.single(Boiler))!;
-      return railInt(e.revision) && near(b.x, b.z, LINE2_BOILER.reach);
+      // The crane's waiting part reaches farther; a boiler put down mid-haul keeps its old pickup allowance.
+      return railInt(e.revision) && near(b.x, b.z, b.state === 'pedestal' ? LINE2_BOILER.reach : 420);
     }
     case 'rail.boilerFit':
       return railInt(e.revision) && near(LINE2_OLD_TRAIN.x, LINE2_OLD_TRAIN.z, LINE2_OLD_TRAIN.reach);

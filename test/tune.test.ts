@@ -55,9 +55,9 @@ test('retired haul tuning cannot be admitted', () => {
     assert.equal(okTune(key, 10), false, key);
 });
 
-test("the boiler's haul pace: appended after the glider's keys, 300 cm/s solo and 540 helped", () => {
+test("the boiler's haul pace: appended after the glider's keys, 380 cm/s solo and 540 helped", () => {
   const keys = TUNABLES.map((t) => t.key as string);
-  const boiler = { railBoilerSoloSpeed: 300, railBoilerHelpSpeed: 540 };
+  const boiler = { railBoilerSoloSpeed: 380, railBoilerHelpSpeed: 540 };
   const at = keys.indexOf('railGlideDeploy');
   assert.deepEqual(keys.slice(at + 1, at + 3), Object.keys(boiler), 'appended in order, after railGlideDeploy');
   for (const [key, def] of Object.entries(boiler)) {

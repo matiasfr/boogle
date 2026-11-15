@@ -263,6 +263,14 @@ Captures: `fx-pier-*` and `fx-far-head-*` in `.look/`.
 
 ### Sim work left (not built here)
 
+**D1 sim follow-up (15 November, `d1-sim`, not shipped):** the three rows below are now implemented on the follow-up
+branch. The waiting boiler and breaker have a 6 m prompt and 6.6 m server reach; the dropped boiler retains 3.6 m
+and 4.2 m (logged in agent-calls). The solo default is 380 cm/s; a room's saved tune remains its own. The recorder's
+`boiler approached` / `breaker approached` marks fire once per part per page, on the first frame within 30 m while
+it waits. Pair them with the existing server-confirmed `boiler taken` / `breaker taken` marks; `mine: true` identifies
+the local player's take. A dropped boiler or a second visit does not restart the measure. The original hand-off
+checklist is retained below. Independent review is arranged by the parent before any ship.
+
 | What | Needs |
 | --- | --- |
 | Prompt reach 6 m (step 2) | `reach: 420` to `660` on `LINE2_BOILER` (`src/sim/railway-line2-layout.ts`) and `WORKS_BREAKER` (`src/sim/railway-works-layout.ts`), which `src/world/railway-server.ts` checks; then the views' `<= 3.6` to `<= 6` in `boiler-view.ts` and `breaker-view.ts` (keeping the 0.6 m margin). The review's checks go with it: it must not win over the halt's lever or the forge's deposit, nor be offered to a seated rider. The boiler's reach also applies where it lies after a drop: decide whether 6 m holds there or only on the pedestal. Room-safety and mixed-builds reading; no saved field |

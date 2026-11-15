@@ -299,7 +299,7 @@ export function createRailwayBreaker(
       // Not while you haul the boiler (docs/plans/boiler-first-choice.md, Part 2); the rule refuses it too.
       if (!adapter.read.ready() || !p || swing.t >= 0 || (boiler(rows).state === 'held' && boiler(rows).holder === pid))
         return [];
-      if (w.breaker === 1 && Math.hypot(p.x - bx, p.z - bz) <= 3.6)
+      if (w.breaker === 1 && Math.hypot(p.x - bx, p.z - bz) <= 6)
         return [
           {
             id: 'railway-breaker',

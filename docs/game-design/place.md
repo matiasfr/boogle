@@ -478,8 +478,13 @@ has its own framing, 5 m off and low, looking up, so the hammer is tall against 
 pedestal for 3 s as its call sounds. Three little guys stand on the forge's side of the pedestal, off road 1,
 and wave at a player within 30 m, and at the camera while a cut stands there; they go when the part is taken. A board off the forge rack's end shows the waiting
 part in the saddle's gold dashes. The call repeats at 90, 180 and 270 s while the part still waits (never while you
-are within 30 m of the pedestal); the first repeat thickens the plume from 22 puffs to 33. The take's reach is
-unchanged (3.6 m; 6 m is planned sim work), and the row, its collider and a boiler put down mid-haul are as before.
+are within 30 m of the pedestal); the first repeat thickens the plume from 22 puffs to 33. The waiting part's take is
+offered within 6 m of the pedestal's centre, with a 6.6 m server allowance. A boiler put down mid-haul keeps its
+3.6 m prompt and 4.2 m server allowance. Seated riders keep their train request or stand prompt. The recorder marks
+`boiler approached` / `breaker approached` on first entering 30 m while that part waits, once per part per page;
+the existing server-confirmed `boiler taken` / `breaker taken` marks finish the measure (use `mine: true` for this
+player's take). A late join beside a waiting part starts the measure there; a dropped boiler does not restart it.
+The target is a take within 20 s of that approach, alongside 2 min 30 s from Q5 and 3 min from Q6.
 
 **Walking-in composition, 4 November:** Station 3's existing bill sits on the source side of its pile so
 the unchanged `great beam 0/1` row stays visible. The receiver, feeder, machine and crossing fit are retained;
@@ -738,7 +743,7 @@ its pedestal if that was outside the haul area (boiler-first-choice plan, step 5
 little faster"). The held boiler is drawn as the great beam is: a short, fat rod whose nose hangs a rope's length behind
 the hauler's hip, the gold rope running from their hand to it, the tail resting on the ground and swinging wide on turns,
 with the beam's dust and scrape. On a deck, a bridge or a car the tail rides at the hauler's feet height rather than
-dropping to the terrain below. The hauler takes the beam's rope pose, has sprint off and walks at 300 cm/s
+dropping to the terrain below. The hauler takes the beam's rope pose, has sprint off and walks at 380 cm/s by default
 (room tunable `railway.boilerSoloSpeed`; `railway.boilerHelpSpeed` is the helped pace). A friend with an empty back within 5 m of the grip (where the dragging end rests, from the hauler's pose) presses **Help carry** there and the boiler
 lifts between the two shoulders; the hauler then walks at 540 cm/s and the helper has sprint off; **Let go** ends it (an
 Owner value, `railwayBoilerHelp`, the holder's pid; it goes stale after 1.5 s). Once helping, the claim holds out to 8 m

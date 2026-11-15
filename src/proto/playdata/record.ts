@@ -27,7 +27,9 @@ import { BUILD } from '../../build-id.ts';
 import { IDLE_S } from '../../../protos/store.ts';
 import { CARD, protoV, pageQuery, productionRailway } from '../flags.ts';
 import { railwayWorldRead } from '../../entities/railway/state.ts';
-import { qjob } from '../../sim/railway-rows.ts';
+import { boiler, qjob, works } from '../../sim/railway-rows.ts';
+import { LINE2_BOILER } from '../../sim/railway-line2-layout.ts';
+import { WORKS_BREAKER } from '../../sim/railway-works-layout.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createRailwayJourneyMarks } from '../../adapters/railway-marks.ts';
 import { HEAD, ORIGIN } from '../../place/layout.ts';
@@ -364,7 +366,26 @@ let lastShownPrompt: { id: string; verb: string; at: number } | null = null;
 const seenPrompts = new Map<string, { verb: string; x: number; y: number; z: number }>();
 let reachedHead = false;
 const journeyMarks = createRailwayJourneyMarks();
+const approachedParts = new Set<string>();
 const promptsOf = new Map<string, number>();
+
+/** First approach per part per page, including a late join beside an already waiting part. Pair with the existing
+ * server-confirmed `boiler taken` / `breaker taken` marks (mine=true for this player); never mark a press as a take.
+ * Frame sampling catches an approach followed by a pickup between the one-second position samples. */
+function markWaitingParts() {
+  if (!productionRailway || !me.body || approachedParts.size === 2) return;
+  const read = railwayWorldRead();
+  if (!read?.ready()) return;
+  const w = read.world();
+  const part = boiler(w).state === 'pedestal' ? 'boiler' : works(w).breaker === 1 ? 'breaker' : null;
+  if (!part || approachedParts.has(part)) return;
+  const at = part === 'boiler' ? LINE2_BOILER : WORKS_BREAKER;
+  const p = me.body.position;
+  const distance = Math.hypot(p.x - at.x / 100, p.z - at.z / 100);
+  if (distance > 30) return;
+  approachedParts.add(part);
+  playMark(`${part} approached`, { authority: 'local', distance: Math.round(distance * 10) / 10 });
+}
 
 // ---------------------------------------------------------------- each frame: small comparisons, no garbage
 const intervals = new Float32Array(PERF_WINDOW);
@@ -451,6 +472,7 @@ onFrame(
     if (lastFrame && nIntervals < PERF_WINDOW) intervals[nIntervals++] = ms - lastFrame;
     lastFrame = ms;
     if (!me.entered || !me.body) return;
+    markWaitingParts();
     if (!wasEntered) {
       wasEntered = true;
       sayWho(); // now it has your name

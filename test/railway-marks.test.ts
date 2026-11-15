@@ -5,15 +5,7 @@ import {
   createRailwayProgressMarks,
   createRailwayJourneyMarks,
 } from '../src/adapters/railway-marks.ts';
-import {
-  Aperture,
-  Forge,
-  Job,
-  QJob,
-  Rail,
-  Works,
-  createRailwayWorld,
-} from '../src/sim/railway-components.ts';
+import { Aperture, Forge, Job, QJob, Rail, Works, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { parseSession } from '../dev/playtest/read.ts';
@@ -26,6 +18,7 @@ test('accepted railway actions map amounts and material without identifying the 
   assert.deepEqual(railwayActionMarks({ op: 'rail.wake' }, 0, true), []);
   for (const intent of [
     { op: 'rail.boilerTake', revision: 1 },
+    { op: 'rail.breaker' },
     { op: 'rail.boilerFit', revision: 2 },
     { op: 'rail.call', id: 4, dir: 1 },
   ] as const) {

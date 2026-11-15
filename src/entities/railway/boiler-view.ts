@@ -582,7 +582,10 @@ export function createRailwayBoiler(
       const { revision, holder } = b,
         bx = b.x / 100,
         bz = b.z / 100;
-      if ((b.state === 'pedestal' || b.state === 'ground') && Math.hypot(p.x - b.x / 100, p.z - b.z / 100) <= 3.6) {
+      if (
+        (b.state === 'pedestal' || b.state === 'ground') &&
+        Math.hypot(p.x - b.x / 100, p.z - b.z / 100) <= (b.state === 'pedestal' ? 6 : 3.6)
+      ) {
         const at = new THREE.Vector3(bx, b.y / 100 + 2 + (b.state === 'pedestal' ? pedestalHold.lift : 0), bz);
         // It takes rail.boilerTake's empty back (no load, footing or beam) and, like the beam, empty hands.
         // Say so rather than offer nothing: a back still loaded from station 5 is common here (the forge rack 4.5 m
