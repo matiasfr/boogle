@@ -1,12 +1,13 @@
 // Accepted rack transfers and staged renewal survive the existing store/host/manager process boundaries.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
-import { createRoomHost } from '../src/host/rooms.ts';
+import { createRoomHost } from './helpers/accounts.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';

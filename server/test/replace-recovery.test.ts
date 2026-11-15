@@ -6,9 +6,9 @@ import path from 'node:path';
 import { createStore, type RoomDoc } from '../src/store.ts';
 import { createReplacements } from '../src/replacements.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { createRoomHost } from '../src/host/rooms.ts';
+import { createRoomHost } from './helpers/accounts.ts';
 import { buildSeedDoc } from '../src/seeds/build.ts';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 
 const id = railwayRoomId('replace-recovery');

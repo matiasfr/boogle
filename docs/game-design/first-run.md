@@ -27,6 +27,11 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
 
 ## Existing arrival
 
+- **Identity before arrival.** Boot obtains a verified guest session before loading the game. It keeps the device
+  credential through reloads and room resets; the authentication cutover starts fresh server-issued identities.
+  A failed or five-second timed-out request stops at the existing reload-to-retry loading error, keeping the saved
+  credential. Blocked browser storage permits this visit only. Optional account controls and switching people remain
+  subsequent [accounts-plan](../plans/accounts.md) steps; no sign-in form gates a first guest visit.
 - **First visit.** With no name saved on this device (`boogle.name`), you fall into the world (below). The card asks for
   nothing but a name box already filled with a friendly random name ("Sunny Otter", "Jolly Puffin", ...), the eight colour
   swatches (one picked at random) and one big Jump in. Pressing Jump in straight away is fine. The loading screen covers it

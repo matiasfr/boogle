@@ -1,10 +1,11 @@
 // A room's world id (`born`, server/src/store.ts): what tells a client its room started over.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import { createStore, type RoomDoc } from '../src/store.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 

@@ -16,9 +16,10 @@ import crypto from 'node:crypto';
 import type http from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { WS_PROTOCOL, CLOSE, encode } from '../../../src/net/ws-wire.ts';
-import { SERVER_ID, okId, okKey } from '../../../src/net/ids.ts';
-import { okPid } from '../../../src/sim/roster.ts';
+import { WS_PROTOCOL, CLOSE, encode, decode } from '../../../src/net/ws-wire.ts';
+import { AUTH_MAX_BYTES, AUTH_TIMEOUT_MS, readRoomAuth } from '../../../src/net/account-wire.ts';
+import { SERVER_ID, okId } from '../../../src/net/ids.ts';
+import { AccountError, type AccountIdentity } from '../accounts.ts';
 import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.ts';
 import type { Store } from '../store.ts';
 import { currentRoomId, roomNamespaces } from '../room-ids.ts';
@@ -38,7 +39,7 @@ export type RoomHostCfg = HostCfg & {
   log: (...a: unknown[]) => void;
 };
 
-export function createRoomHost(cfg: RoomHostCfg, store: Store) {
+export function createRoomHost(cfg: RoomHostCfg, store: Store, resolveSession: (token: string) => AccountIdentity) {
   const boot = crypto.randomBytes(4).toString('hex');
   const rooms = new Map<string, HostedRoom>();
   const all = cfg.serverRooms.includes('*');
@@ -129,6 +130,16 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
     maxPayload: 64 * 1024,
     handleProtocols: (protocols) => (protocols.has(WS_PROTOCOL) ? WS_PROTOCOL : false),
   });
+  // Only digests are retained after admission. Revocation detaches the room client before closing its socket.
+  const admitted = new Map<WebSocket, { pid: string; hash: string; room: HostedRoom }>();
+  const digest = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
+  function revoke(matches: (session: { pid: string; hash: string }) => boolean) {
+    for (const [ws, session] of admitted) {
+      if (!matches(session)) continue;
+      session.room.revoke(ws);
+      admitted.delete(ws);
+    }
+  }
   const upgrades = new Map<string, { n: number }>(); // ip -> upgrades this minute
   const sweep = setInterval(() => upgrades.clear(), 60000);
   sweep.unref();
@@ -144,6 +155,14 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   };
 
   return {
+    revokeSession(token: string) {
+      const hash = digest(token);
+      revoke((session) => session.hash === hash);
+    },
+    revokeOthers(pid: string, exceptToken: string) {
+      const hash = digest(exceptToken);
+      revoke((session) => session.pid === pid && session.hash !== hash);
+    },
     room: (id: string) => rooms.get(id),
     hosts,
     rooms: () => rooms.size,
@@ -199,8 +218,6 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       }
       const params = new URLSearchParams(query);
       const self = params.get('self');
-      const pid = params.get('pid');
-      const key = params.get('key');
       wss.handleUpgrade(req, socket, head, (ws) => {
         // Before any refusal: a refused socket's bad frame (oversized, unmasked, bad opcode) emits 'error', and with
         // no listener that exits the process. hosted-room.ts's join adds its own for the sockets it takes.
@@ -211,15 +228,39 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
           !ROOM_ID_RE.test(id) ||
           !okId(self) ||
           self === SERVER_ID ||
-          !okPid(pid) ||
-          !okKey(key)
+          params.has('pid') ||
+          params.has('key')
         )
           return refuseWs(ws, { t: 'bad' }, CLOSE.BAD);
         if (!hosts(id)) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
-        if (closing.has(id)) return refuseWs(ws, { t: 'bye', why: 'restart' }, CLOSE.RESTART);
-        const room = rooms.get(id) ?? (rooms.size < cfg.maxHostedRooms ? load(id) : null);
-        if (!room) return refuseWs(ws, { t: 'full', max: cfg.maxPlayers, rooms: true }, CLOSE.FULL);
-        room.join(ws, self, pid, key);
+        // A frozen tab or delayed route is not a revoked identity: a handshake timeout remains retryable.
+        const timer = setTimeout(() => refuseWs(ws, { t: 'bye', why: 'auth_timeout' }, CLOSE.RESTART), AUTH_TIMEOUT_MS);
+        ws.once('close', () => {
+          clearTimeout(timer);
+          admitted.delete(ws);
+        });
+        ws.once('message', (data, binary) => {
+          clearTimeout(timer);
+          if (ws.readyState !== ws.OPEN) return;
+          if (binary || Buffer.byteLength(String(data)) > AUTH_MAX_BYTES) return refuseWs(ws, { t: 'bad' }, CLOSE.BAD);
+          const auth = readRoomAuth(decode(data));
+          if (!auth) return refuseWs(ws, { t: 'bad' }, CLOSE.BAD);
+          let principal: AccountIdentity;
+          try {
+            principal = resolveSession(auth.token);
+          } catch (error) {
+            // A temporary storage failure is retryable, never an identity refusal or a new guest.
+            return error instanceof AccountError && error.code === 'unauthenticated'
+              ? refuseWs(ws, { t: 'auth' }, CLOSE.AUTH)
+              : refuseWs(ws, { t: 'bye', why: 'restart' }, CLOSE.RESTART);
+          }
+          if (stopping || closing.has(id)) return refuseWs(ws, { t: 'bye', why: 'restart' }, CLOSE.RESTART);
+          const room = rooms.get(id) ?? (rooms.size < cfg.maxHostedRooms ? load(id) : null);
+          if (!room) return refuseWs(ws, { t: 'full', max: cfg.maxPlayers, rooms: true }, CLOSE.FULL);
+          const operator = !!cfg.tuneControllerKey && auth.tuneKey === cfg.tuneControllerKey;
+          room.join(ws, self, principal.pid, operator);
+          if (ws.readyState === ws.OPEN) admitted.set(ws, { pid: principal.pid, hash: digest(auth.token), room });
+        });
       });
     },
     // The operator replacing a room's save (../admin.ts). The room's state is being discarded; the slot stays

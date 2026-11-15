@@ -26,6 +26,9 @@ function flag(name: string) {
 function main() {
   const broker = flag('--broker');
   const session = flag('--session'); // Never starts a browser.
+  const controller = flag('--controller'); // Separate operator capability; never an account credential or URL field.
+  const controllerKey = controller ? process.env.TUNE_CONTROLLER_KEY : undefined;
+  if (controller && !controllerKey) throw new Error('--controller requires TUNE_CONTROLLER_KEY');
   flag('--json'); // Output is always structured JSON.
   const wait = flag('--wait');
   const query = option('--query');
@@ -35,7 +38,7 @@ function main() {
   const [command = 'list', id, value, ...extra] = argv;
   if (!(TUNE_COMMANDS as readonly string[]).includes(command) || extra.length)
     throw new Error(
-      'tune list|get|validate|set|status|snapshot|diff|reset-local [id] [JSON value] [--session|--broker]',
+      'tune list|get|validate|set|status|snapshot|diff|reset-local [id] [JSON value] [--session|--broker] [--controller]',
     );
   if (query && !broker) throw new Error('--query requires --broker (a fresh capture, not an existing session)');
   if (room && !broker) throw new Error('--room requires --broker (a fresh capture, not an existing session)');
@@ -63,6 +66,20 @@ function main() {
       await new Promise(resolve => setTimeout(resolve, 50));
     const api = window.boogle?.dev;
     if (!api) throw new Error('No Dev API. Open this session with dev=1 or tune=1.');
+    if (${controller}) {
+      const { net, connectRoom } = await import('/src/netplay/net.ts');
+      const { detachWorld } = await import('/src/world/sync.ts');
+      net.room?.close();
+      detachWorld();
+      net.room = null;
+      await connectRoom(${JSON.stringify(controllerKey ?? '')});
+      if (!net.room) throw new Error('Operator connection failed');
+      net.room.send({ t: 'r:resync' });
+      const { railwayCommands } = await import('/src/entities/railway/state.ts');
+      for (let attempt = 0; !railwayCommands()?.read.ready() && attempt < 200; attempt++)
+        await new Promise(resolve => setTimeout(resolve, 50));
+      if (!railwayCommands()?.read.ready()) throw new Error('Operator command session did not become ready');
+    }
     let result = await api.run('tunables', ${JSON.stringify(command)}, ${JSON.stringify(args)});
     if (${wait} && result.data?.status === 'pending' && result.data?.requestId) {
       const deadline = performance.now() + 10000;
@@ -110,12 +127,17 @@ function main() {
       fs.unlinkSync(script);
     }
   } else {
-    raw = execFileSync(process.execPath, ['dev/look/session.ts', 'eval', expression], {
-      cwd: root,
-      encoding: 'utf8',
-      maxBuffer: 16 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'inherit'],
-    }).trim();
+    try {
+      raw = execFileSync(process.execPath, ['dev/look/session.ts', 'eval', expression], {
+        cwd: root,
+        encoding: 'utf8',
+        maxBuffer: 16 * 1024 * 1024,
+        stdio: ['ignore', 'pipe', 'inherit'],
+      }).trim();
+    } catch {
+      // execFileSync's Error includes argv, which can contain the operator capability in the eval.
+      throw new Error('Tune session request failed; see the session diagnostic above.');
+    }
   }
   const result = JSON.parse(raw) as { ok?: boolean; data?: { status?: string } };
   const json = JSON.stringify(result, null, 2);

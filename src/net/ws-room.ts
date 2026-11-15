@@ -8,6 +8,7 @@
 // meanwhile, and drops the peers the server has not listed again within GRACE_MS. A reconnect turned away as full or
 // bad stops and reports a fatal error, and so does `elsewhere`: a newer tab of the same player (pid) joined.
 import { SELF_ID, SERVER_ID } from './ids.ts';
+import { readRoomAuth, type RoomAuth } from './account-wire.ts';
 import { WS_PROTOCOL, CLOSE, MAX_MSG, encode, decode, roomUrl, type WireMsg, type ReplacingNotice } from './ws-wire.ts';
 import { createPeerTable } from './peer-table.ts';
 import { worldRoomId } from '../world/namespace.ts';
@@ -20,8 +21,7 @@ type Msg = Record<string, unknown>;
 export type WsRoomOptions = {
   roomId?: string;
   server: string; // http(s) base of our server
-  pid: string; // the player this tab plays as (src/player/identity.ts); a newer tab with the same pid takes over
-  key: string; // this browser's secret behind pid: another key can't take a pid that is in the room
+  authenticate: () => RoomAuth; // the prepared device session; called again for each socket, never sent in its URL
   build?: string;
   debug?: number;
   openTimeoutMs?: number;
@@ -45,8 +45,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
   const roomId = String(opts.roomId ?? worldRoomId('default'));
   const url = roomUrl(opts.server, roomId, {
     self: SELF_ID,
-    pid: opts.pid,
-    key: opts.key,
     b: opts.build ?? 'dev',
   });
   const log = (...a: unknown[]) => (opts.debug ?? 0) > 1 && console.log('[ws-room]', ...a);
@@ -108,6 +106,17 @@ export async function createWsRoom(opts: WsRoomOptions) {
     let listed = false,
       graceful = false;
     heard = performance.now();
+    sock.onopen = () => {
+      if (ws !== sock || closed || stopped) return;
+      try {
+        const auth = readRoomAuth(opts.authenticate());
+        if (!auth) throw new Error('invalid authentication');
+        sock.send(encode(auth));
+      } catch {
+        refused(err('unauthenticated', 'sign in again to join this room'));
+        sock.close();
+      }
+    };
     sock.onmessage = (ev) => {
       if (ws !== sock) return;
       heard = performance.now();
@@ -172,6 +181,8 @@ export async function createWsRoom(opts: WsRoomOptions) {
           return refused(err('elsewhere', 'this player joined from another tab'));
         case 'taken':
           return refused(err('pid_taken', 'another browser is playing as this player here'));
+        case 'auth':
+          return refused(err('unauthenticated', 'sign in again to join this room'));
         case 'bad':
           return refused(err('bad', 'the server refused this room or id'));
       }
@@ -189,6 +200,8 @@ export async function createWsRoom(opts: WsRoomOptions) {
       ws = null;
       // The code alone is enough to stop, should the `elsewhere` frame before it have been lost.
       if (ev.code === CLOSE.ELSEWHERE && !stopped) refused(err('elsewhere', 'this player joined from another tab'));
+      if (ev.code === CLOSE.TAKEN && !stopped) refused(err('pid_taken', 'this connection belongs to another player'));
+      if (ev.code === CLOSE.AUTH && !stopped) refused(err('unauthenticated', 'sign in again to join this room'));
       if (first) {
         first.reject(err('unreachable', 'could not reach the server'));
         first = undefined;
@@ -208,6 +221,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
 
   await new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => {
+      closed = true;
       ws?.close();
       reject(err('unreachable', 'the server did not answer'));
     }, opts.openTimeoutMs ?? 5000);
@@ -234,6 +248,10 @@ export async function createWsRoom(opts: WsRoomOptions) {
     if (ws?.readyState === WebSocket.CONNECTING && performance.now() - openedAt > (opts.openTimeoutMs ?? 5000))
       return void ws.close(); // a reconnect stuck on a dead route: try again
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!connected) {
+      if (performance.now() - openedAt > (opts.openTimeoutMs ?? 5000)) ws.close();
+      return;
+    }
     if (performance.now() - heard > DEAD_MS) return void ws.close();
     hbAt = performance.now();
     raw({ t: 'hb', at: hbAt });
@@ -246,12 +264,12 @@ export async function createWsRoom(opts: WsRoomOptions) {
     clearTimeout(reconnectTimer);
     clearTimeout(holdTimer);
     table.clear();
-    raw({ t: 'bye' });
+    if (connected) raw({ t: 'bye' });
     ws?.close(1000);
     ws = null;
     connected = false;
   }
-  const onHide = () => raw({ t: 'bye' });
+  const onHide = () => connected && raw({ t: 'bye' });
   addEventListener('pagehide', onHide);
 
   return {

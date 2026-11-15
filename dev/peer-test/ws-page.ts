@@ -1,6 +1,6 @@
 // Test page for the server room (ws-run.ts): createWsRoom plus the real world sync and rules on the home land, and
-// records of everything the checks need. Query: ?room=&server=&pid=&key= (the player and its browser's key; default
-// one of each per page). Railway rooms also mirror the Server-kind railway (src/world/railway-replicate.ts); &lat=ms adds
+// records of everything the checks need. Query: ?room=&server=&pid= (a fixture label when fixture=1; otherwise
+// guest registration supplies the pid). Railway rooms mirror the Server-kind railway; &lat=ms adds
 // that much round trip to the railway's messages (half each way), &adapter=1 drives the real browser adapter.
 import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
@@ -83,7 +83,8 @@ declare global {
 const q = new URLSearchParams(location.search);
 const roomId = q.get('room') ?? worldRoomId('test');
 const LAT = Number(q.get('lat') || 0); // added railway round trip, ms (half each way)
-const PID = q.get('pid') ?? 'p' + Math.random().toString(36).slice(2, 10);
+let PID = q.get('pid') ?? 'p' + Math.random().toString(36).slice(2, 10);
+let token = '';
 
 // The railway actor's position in cm, set by railPose: what each railway action carries.
 let railAt: [number, number, number] | null = null;
@@ -113,11 +114,28 @@ const T = (window.T = {
   async start() {
     let room: Room;
     try {
+      // Named test principals are seeded in the fixture volume, never selected by production admission.
+      // Standalone staging-load gets a real guest instead; no production endpoint accepts a pid.
+      token = q.has('fixture')
+        ? Array.from(
+            new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`room-test:${PID}:${PID}`))),
+            (b) => b.toString(16).padStart(2, '0'),
+          ).join('')
+        : Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('');
+      if (!q.has('fixture')) {
+        const response = await fetch(new URL('/account/guest', q.get('server')!), {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: '{}',
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!response.ok) throw new Error('test guest registration failed');
+        PID = ((await response.json()) as { pid: string }).pid;
+      }
       room = T.room = await createWsRoom({
         roomId,
         server: q.get('server')!,
-        pid: PID,
-        key: q.get('key') ?? 'k' + PID.padEnd(16, '0'), // one browser per page unless the query says otherwise
+        authenticate: () => ({ t: 'auth', token }),
         build: 'test',
         debug: Number(q.get('debug') || 0),
       });

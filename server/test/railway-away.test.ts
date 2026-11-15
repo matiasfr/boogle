@@ -2,12 +2,13 @@
 // simulating after a short grace, and the next join applies one away credit (src/sim/railway-away.ts) to the forge
 // rack and the depot cart, finishes the funded job, and catches up regrowth and drop recovery.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createStore } from '../src/store.ts';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import type { World } from '../../src/ecs/index.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';

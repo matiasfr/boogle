@@ -1,10 +1,11 @@
 // Replace-room authority and checkpoint contracts, through the real HTTP service.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createService, loadConfig, type ServerConfig } from '../src/server.ts';
+import { createService, loadConfig, type ServerConfig } from './helpers/accounts.ts';
 import { buildSeedDoc } from '../src/seeds/build.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
