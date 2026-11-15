@@ -68,7 +68,7 @@ export function createRailwayPier(
     soundForgeCall();
   };
   function cutToForge() {
-    const { pos, to, at } = forgeCut();
+    const { pos, to, at } = forgeCut('breaker');
     holdForgeCall(PIER_CUT.hold);
     // The whole shot is the held end: it cuts in, drifts and cuts home; `onCut` is its first frame on screen.
     const queued = shot(v(pos), v(pos), v(at), FORGE_CUT.seconds, 0.01, {

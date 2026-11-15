@@ -12,6 +12,8 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { material } from '../../render/materials.ts';
 import { whistle } from '../../render/machine-sfx.ts';
 import { camera } from '../../render/scene.ts';
+import { emit } from '../../render/particles.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
 import { me } from '../../player/player.ts';
 import { reducedMotion } from '../../constants.ts';
 
@@ -24,6 +26,11 @@ const PLUME = { puffs: 22, thick: 33, rise: 11, height: 62, lean: 8 } as const;
  * waits, the whistle sounds again this many seconds after the first, three times at most, and the first repeat
  * thickens the plume. Never while you stand within `quiet` m of the pedestal. Local: a reload replays none. */
 export const FORGE_RECALL = { every: 90, most: 3, quiet: 30 } as const;
+/** The pedestal's hiss (the breaker's call): for `seconds` after a live call sounds, `rate` soft wisps a second blow
+ * out from under the part and curl up round the pedestal, staying under the hung part so they never veil it. The column's first puffs are one white ball in a show's 2.5 s cut; the
+ * wisps make it steam. Shared-pool particles are fine here: they live under 2 s, at the pedestal. */
+const HISS = { seconds: 3.2, rate: 28, ring: 1.1 } as const;
+const STEAM = new THREE.Color('#f6f4ee');
 /** Seconds a live call waits for a show to claim it before it sounds on its own (the views update in no fixed order). */
 const CLAIM_S = 0.25;
 
@@ -51,11 +58,14 @@ export const forgeCallHeld = () => nowS() < holdUntil;
  * column toward the boiler isn't flown blind (glider piece B, Proof 4: 11 s of a 28 s first flight inside it). */
 const PART_M = 3;
 
-/** `at` is where the plume rises; `near` the pedestal the thing waits on (the plume's own foot when left out). */
+/** `at` is where the plume rises; `near` the pedestal the thing waits on (the plume's own foot when left out).
+ * `hiss`: a live call also blows steam out round the plume's foot (the breaker's, whose plume rises off the pedestal;
+ * the boiler's rises from the forge's chimney and has its smoke). */
 export function createForgeCall(
   at: { x: number; y: number; z: number },
   owner: OwnedView,
   near: { x: number; z: number } = at,
+  hiss = false,
 ) {
   const geometry = new THREE.IcosahedronGeometry(1, 1);
   const puffs = new THREE.InstancedMesh(geometry, material('stone', { colour: '#f7f5f0' }), PLUME.thick);
@@ -81,10 +91,42 @@ export function createForgeCall(
     // Seconds since a live call sounded (-1: restored, or none), repeats made, and whether the plume has thickened.
     since = -1,
     recalls = 0,
-    thick = false;
+    thick = false,
+    // Seconds of hiss left, and the wisps owed.
+    hissing = 0,
+    owed = 0;
   function sound() {
     whistle(at.x, at.z, FORGE_CALL_HEAR);
     forgeCue.count++;
+    if (hiss && !reducedMotion) hissing = HISS.seconds;
+  }
+  function wisps(dt: number) {
+    if (hissing <= 0) return;
+    hissing -= dt;
+    // Strongest as the whistle sounds, dying away.
+    owed += dt * HISS.rate * Math.min(1, hissing / (HISS.seconds * 0.6) + 0.15);
+    for (; owed >= 1; owed--) {
+      const a = Math.random() * Math.PI * 2,
+        out = 1.2 + Math.random() * 2.2;
+      emit({
+        x: at.x + Math.cos(a) * HISS.ring,
+        y: at.y + 0.7 + Math.random() * 0.4,
+        z: at.z + Math.sin(a) * HISS.ring,
+        vx: Math.cos(a) * out,
+        vy: 1 + Math.random() * 1.8,
+        vz: Math.sin(a) * out,
+        life: 0.8 + Math.random() * 0.7,
+        size: 0.4 + Math.random() * 0.3,
+        grow: [1, 2.6],
+        alpha: 0.6,
+        fade: 0.5,
+        color: STEAM,
+        // Unlit particles are drawn before exposure: without this, white steam comes out soot grey.
+        intensity: readableIntensity(),
+        drag: 1.3,
+        gravity: 0,
+      });
+    }
   }
   function draw(dt: number) {
     clock += dt * (reducedMotion ? 0.3 : 1);
@@ -127,6 +169,7 @@ export function createForgeCall(
       due = since = -1;
       recalls = 0;
       thick = false;
+      hissing = 0;
     },
     update(dt: number, now: boolean) {
       if (waiting === null) {
@@ -158,6 +201,8 @@ export function createForgeCall(
           }
         }
       }
+      if (!now) hissing = 0;
+      wisps(dt);
       draw(dt);
     },
     get waiting() {

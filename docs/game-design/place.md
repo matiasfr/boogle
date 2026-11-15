@@ -471,9 +471,12 @@ and the plume starts with it. A player on foot comes home looking toward the for
 someone hauling keep their view. A banner queued behind the act card (the glider's) waits for the shot to end.
 
 While a part waits, the forge's crane holds it 1.6 m over the pedestal, turning slowly: the jib swings over on the
-cast and lifts on the call, which is what the cut shows; a reload shows it held. The boiler stays cold. The breaker is
-drawn at twice its carried size on the hook. Three little guys stand on the forge's side of the pedestal, off road 1,
-and wave at a player within 30 m; they go when the part is taken. A board off the forge rack's end shows the waiting
+cast and lifts on the call, which is what the cut shows; a reload shows it held. The boiler stays cold and is lifted
+side-on to the cut's camera, the hook on its dome. The breaker lies on the pedestal until the call, then the hook
+stands it up by its head: upright, head high (3.9 m over the pedestal's foot), at twice its carried size. Its cut
+has its own framing, 5 m off and low, looking up, so the hammer is tall against the sky; steam hisses out round the
+pedestal for 3 s as its call sounds. Three little guys stand on the forge's side of the pedestal, off road 1,
+and wave at a player within 30 m, and at the camera while a cut stands there; they go when the part is taken. A board off the forge rack's end shows the waiting
 part in the saddle's gold dashes. The call repeats at 90, 180 and 270 s while the part still waits (never while you
 are within 30 m of the pedestal); the first repeat thickens the plume from 22 puffs to 33. The take's reach is
 unchanged (3.6 m; 6 m is planned sim work), and the row, its collider and a boiler put down mid-haul are as before.

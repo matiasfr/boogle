@@ -82,6 +82,24 @@ test('the shot ends on the forge: the Act 2 card is gone before the cut, which h
   assert.deepEqual(forgeCut(), end);
 });
 
+// The pier's cut (visual review, 15 November): the breaker gets its own, nearer and lower, so the hammer stood up
+// under the hook is tall against the sky.
+test("the breaker's cut stands nearer and lower than the boiler's and looks up at the hung hammer", () => {
+  const foot = { x: LINE2_BOILER.x / 100, y: LINE2_BOILER.y / 100, z: LINE2_BOILER.z / 100 };
+  const cut = forgeCut('breaker'),
+    boiler = forgeCut('boiler');
+  assert.deepEqual(forgeCut(), boiler);
+  for (const [eye, far] of [
+    [cut.pos, boiler.pos],
+    [cut.to, boiler.to],
+  ] as const) {
+    const d = Math.hypot(eye.x - foot.x, eye.z - foot.z);
+    assert.ok(d > 3.6 && d < 6, `the camera stands ${d.toFixed(1)} m from the pedestal`);
+    assert.ok(d < Math.hypot(far.x - foot.x, far.z - foot.z) - 3, "well inside the boiler's view, clear of the halt");
+    assert.ok(eye.y > floor(eye) + 0.8 && eye.y < cut.at.y - 1, 'low, looking up');
+  }
+});
+
 test('the hand-back yaw looks from the player toward the pedestal', () => {
   const foot = { x: LINE2_BOILER.x / 100, z: LINE2_BOILER.z / 100 };
   // The follow camera's yaw is behind a Buddy facing that way: the look direction is (-sin yaw, -cos yaw).

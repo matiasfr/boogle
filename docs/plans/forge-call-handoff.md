@@ -253,6 +253,14 @@ blend across 500 m was a smear); the cut's camera stands 9.5 m from the pedestal
 6). `dev/look/evals/forge-handoff.ts` holds both cuts: Far Head's call at 6.05 s and the pier's at 3.6 s after the
 edge, the part lifted 1.6 m, the camera home within 0.2 rad of the forge.
 
+**After the visual review (15 November, branch `d1-visual-fix`).** The review said "fix first": in the pier's cut the
+breaker was a grey post with a stick. Now the hook stands the breaker up by its head (lying on the pedestal until the
+call), and the pier's cut has its own framing (`forgeCut('breaker')`: 5 m off, 1.3 m up, looking up), clear of the
+halt's roof that covered the top of the old frame. The little guys wave at the camera while a cut stands at the
+pedestal, not only at a player within 30 m. The boiler is lifted side-on (`HOIST.yaw0`) and the hook sits on its dome,
+not at its funnel's height. The breaker's call hisses steam round the pedestal for 3.2 s (`HISS`, forge-call.ts).
+Captures: `fx-pier-*` and `fx-far-head-*` in `.look/`.
+
 ### Sim work left (not built here)
 
 | What | Needs |

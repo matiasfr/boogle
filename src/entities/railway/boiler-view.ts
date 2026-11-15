@@ -120,6 +120,12 @@ export function createRailwayBoiler(
     drop: 'beamDrop',
   };
   const lift = -box.min.y; // the loose model's origin above the ground it rests on
+  // Where the crane's hook sits: the model's top over its own middle (the dome), not the funnel's rim at one end,
+  // which is the box's top and left the hook hanging in the air over the barrel.
+  loose.updateMatrixWorld(true);
+  const hookTop =
+    new THREE.Raycaster(new THREE.Vector3(0, box.max.y + 1, 0), new THREE.Vector3(0, -1, 0)).intersectObject(loose)[0]
+      ?.point.y ?? box.max.y;
   const onPedestal = 0.6 + lift; // ...and above the pedestal's origin (its plinth's top is 0.6 m up)
   const bx = LINE2_BOILER.x / 100,
     by = LINE2_BOILER.y / 100,
@@ -438,7 +444,7 @@ export function createRailwayBoiler(
     // On the pedestal the forge's crane holds it up, turning (part-hoist.ts); put down mid-haul it lies on the ground.
     const hung = b.state === 'pedestal' ? pedestalHold.lift : 0;
     loose.position.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift) + hung, b.z / 100);
-    if (b.state === 'pedestal') pedestalHold.top = loose.position.y + box.max.y;
+    if (b.state === 'pedestal') pedestalHold.top = loose.position.y + hookTop;
     frames++;
     mine.helping();
     haul(frameDt, now);

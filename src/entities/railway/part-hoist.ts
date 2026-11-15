@@ -7,6 +7,7 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { me } from '../../player/player.ts';
+import { camera } from '../../render/scene.ts';
 import { clank } from '../../render/machine-sfx.ts';
 import { reducedMotion } from '../../constants.ts';
 import { clamp, smoothstep } from '../../math-pure.ts';
@@ -14,12 +15,13 @@ import { LINE2_BOILER } from '../../sim/railway-line2-layout.ts';
 import { forgeCue } from './forge-call.ts';
 
 /** Metres the part hangs over its rest on the pedestal, seconds the lift and the jib's swing take, radians a second it
- * turns, and the range the little guys wave within. */
-export const HOIST = { lift: 1.6, liftS: 1.4, swingS: 1.6, turn: 0.45, wave: 30, guys: 3 } as const;
+ * turns, and the range the little guys wave within. `yaw0` is the heading it is lifted on: side-on to the hand-off
+ * cut's camera (forge-cut.ts) half-way through the cut's 2.5 s, so the cut never opens on the boiler's black end. */
+export const HOIST = { lift: 1.6, liftS: 1.4, swingS: 1.6, turn: 0.45, wave: 30, guys: 3, yaw0: 1.2 } as const;
 
 /** What the boiler's and the breaker's views read to draw the part held (and write: the world height of its top, where
  * the hook sits). `lift` is metres over its rest; `yaw` its slow turn. */
-export const pedestalHold = { lift: 0, yaw: 0, top: 0 };
+export const pedestalHold = { lift: 0, yaw: HOIST.yaw0 as number, top: 0 };
 
 type Crane = {
   jib: THREE.Object3D;
@@ -76,7 +78,8 @@ export function createPartHoist(owner: OwnedView, { crane, land, waits }: Deps) 
     });
   });
   owner.cleanup(() => {
-    pedestalHold.lift = pedestalHold.yaw = 0;
+    pedestalHold.lift = 0;
+    pedestalHold.yaw = HOIST.yaw0;
   });
   function pose() {
     const s = smoothstep(0, 1, swing);
@@ -92,13 +95,17 @@ export function createPartHoist(owner: OwnedView, { crane, land, waits }: Deps) 
     crane.rope.scale.y = Math.max(0.2, top - y);
   }
   function folkUpdate() {
-    const p = me.body?.position;
+    // They wave at whoever is looking: you within 30 m, or the camera while a show's cut stands at the pedestal (you
+    // are 500 m off at Far Head or the pier then, and the cut is the one time everyone sees them).
+    const body = me.body?.position,
+      eye = camera.position;
+    const p = body && Math.hypot(body.x - px, body.z - pz) <= HOIST.wave ? body : eye;
     for (const g of guys) {
       g.on = !!part;
       if (!part) continue;
-      const near = !!p && Math.hypot(p.x - g.x, p.z - g.z) <= HOIST.wave;
+      const near = Math.hypot(p.x - g.x, p.z - g.z) <= HOIST.wave;
       g.mood = near ? 'wave' : 'idle';
-      g.yaw = near && p ? Math.atan2(p.x - g.x, p.z - g.z) : Math.atan2(px - g.x, pz - g.z);
+      g.yaw = near ? Math.atan2(p.x - g.x, p.z - g.z) : Math.atan2(px - g.x, pz - g.z);
     }
   }
   return {
@@ -140,7 +147,7 @@ export function createPartHoist(owner: OwnedView, { crane, land, waits }: Deps) 
         if (lift >= 1) lifting = false;
       }
       pedestalHold.lift = smoothstep(0, 1, lift) * HOIST.lift;
-      pedestalHold.yaw = part && lift > 0 ? pedestalHold.yaw + dt * HOIST.turn * (reducedMotion ? 0.3 : 1) : 0;
+      pedestalHold.yaw = part && lift > 0 ? pedestalHold.yaw + dt * HOIST.turn * (reducedMotion ? 0.3 : 1) : HOIST.yaw0;
       pose();
       folkUpdate();
     },

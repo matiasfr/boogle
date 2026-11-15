@@ -20,7 +20,7 @@ const SLAB_SEAMS = [WORKS_SEAMS[0], WORKS_SEAMS[1]] as const;
 import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
 import { reducedMotion } from '../../constants.ts';
 import { createForgeCall } from './forge-call.ts';
-import { pedestalHold } from './part-hoist.ts';
+import { HOIST, pedestalHold } from './part-hoist.ts';
 import { STALL_SLAB, THROAT_SLAB } from './works-shape.ts';
 import { account, beam, boiler, works as worksRow } from '../../sim/railway-rows.ts';
 
@@ -50,6 +50,10 @@ export function goldMote(x: number, y: number, z: number, side: number, size = 0
 /** Seconds between motes on each unstruck seam while the breaker is out: under seven a second each,
  * far inside the pool's budget (the pier already runs about 440). */
 const SEAM_MOTE_S = 0.15;
+/** The head's height along the handle (its origin is the grip's end), and held by the crane: metres the head hangs
+ * over where it lay, and the turn that shows the head's broad face to the hand-off cut half-way through it. */
+const HEAD = 1.36,
+  HELD = { head: 2.85, yaw: -Math.PI / 2 } as const;
 const RAISED = -2.5,
   DOWN = 1.35;
 
@@ -77,7 +81,7 @@ export function createRailwayBreaker(
   owner.add(breaker);
   geometry.dispose();
   owner.cleanup(() => mat.dispose());
-  const call = createForgeCall({ x: bx, y: by, z: bz }, owner);
+  const call = createForgeCall({ x: bx, y: by, z: bz }, owner, undefined, true);
   let mote = 0,
     side = 1,
     shown = false,
@@ -186,21 +190,24 @@ export function createRailwayBreaker(
       breaker.visible = true;
       return;
     }
-    // Over the pedestal while the room has not taken it: lying level, held up by the forge's crane and turning
-    // (part-hoist.ts). At twice its carried size there, so the grey head reads against the grey apron from the halt.
+    // Over the pedestal while the room has not taken it: lying level until the forge's crane takes it by the head,
+    // then stood up under the hook, head high, and turning (part-hoist.ts). At twice its carried size there: lying
+    // level it was a grey post with a stick from the hand-off cut; upright it is a hammer's outline against the sky.
     if (w.breaker === 1) {
-      const yaw = pedestalHold.yaw,
-        size = 1 + pedestalHold.lift / 1.6;
+      const k = pedestalHold.lift / HOIST.lift,
+        size = 1 + k,
+        tilt = (k - 1) * (Math.PI / 2),
+        yaw = pedestalHold.yaw + HELD.yaw;
       breaker.visible = true;
-      // Its origin is the grip's end: the middle of its length stays over the pedestal as it turns.
-      breaker.position.set(
-        bx - Math.cos(yaw) * 0.7 * size,
-        by + 1.05 + pedestalHold.lift,
-        bz + Math.sin(yaw) * 0.7 * size,
-      );
-      breaker.quaternion.setFromAxisAngle(up, yaw).multiply(q.setFromAxisAngle(axis.set(0, 0, 1), -Math.PI / 2));
+      // The point of its length over the pedestal's middle: half-way along while it lies, the head once it hangs
+      // (its origin is the grip's end). The head rises `HELD.head` so the grip's end clears the pedestal.
+      const c = (0.7 + (HEAD - 0.7) * k) * size,
+        y = by + 1.05 + k * HELD.head;
+      breaker.quaternion.setFromAxisAngle(up, yaw).multiply(q.setFromAxisAngle(axis.set(0, 0, 1), tilt));
+      toward.set(0, c, 0).applyQuaternion(breaker.quaternion);
+      breaker.position.set(bx - toward.x, y - toward.y, bz - toward.z);
       breaker.scale.setScalar(size);
-      pedestalHold.top = by + 1.05 + pedestalHold.lift + 0.2 * size;
+      pedestalHold.top = y + 0.2 * size;
       return;
     }
     // Taken: slung on your back between strikes while your back is otherwise empty.
@@ -242,7 +249,8 @@ export function createRailwayBreaker(
       if (shown && mote <= 0) {
         mote = 0.35;
         side *= -1;
-        goldMote(bx + side * 0.42, by + 1.4 + pedestalHold.lift, bz + side * 0.5, side);
+        // Off the head, which hangs high once the crane has it.
+        goldMote(bx + side * 0.42, by + 1.4 + pedestalHold.lift * 1.6, bz + side * 0.5, side);
       }
       if (reducedMotion || w.breaker !== 2) return;
       seamMotes(dt, w.seams);
