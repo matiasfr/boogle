@@ -1,6 +1,6 @@
 {
   "baseCommit": "8bf382a5d8c7ed96a027c8e4598821677c5f0710",
-  "geometryCommit": "e29f6887fc75b2e104e2d4acb639624f76b944cc",
+  "geometryCommit": "6b45fa3f71f5367053f165f9a36f3cf88748fc17",
   "before": {
     "counts": {
       "a": 167,
@@ -193,11 +193,12 @@
     "crossingCollidersAfter": "d8539a116224986626e7a84b9e2fc1ce487aa355f4c3e48d5459598cc4d3163b",
     "crossingBoardTopsChecked": 15,
     "gorgeTopRays": 2052,
-    "maxTopDeltaM": 0,
     "gorgeColliderFixtureHash": "fe0e7e59f0d18db13ff6a1f974af33c61d28eb55e88d6d263b537a3635aff74d",
     "gorgeColliderRecordsCanonicalHash": "1c0e316b35bc3aff8131499cac9bf59b75abb919e49356062f1ed6418711b5ec",
     "haltStageColliderRecordsCanonicalHash": "c27d9b7af102e60b5a7de0f33923f1a9ce9163aa29eaad314a792ce831536537",
-    "haltStages": 8
+    "haltStages": 8,
+    "historicalLocalGeometryProbeMaxTopDeltaM": 0,
+    "historicalProbeLimit": "Did not measure the final visible draw or detect its T-junction cracks; superseded by seamCorrection."
   },
   "captures": [
     {
@@ -238,5 +239,32 @@
     "src/place/terrain.ts"
   ],
   "deferred": "Historical spot 16 needs the reserved path-surface.ts pad geometry.",
-  "device": "not tested on a device"
+  "device": "not tested on a device",
+  "initialGeometryCommit": "e29f6887fc75b2e104e2d4acb639624f76b944cc",
+  "seamCorrection": {
+    "regressionFailedOn": "4372df4f4",
+    "visibleEdgeProbes": 300,
+    "obliqueProbes": 300,
+    "measurement": {
+      "unchangedInstances": 74,
+      "originalInstances": 84,
+      "unchangedMatricesAndUnitVerticesBitIdentical": true,
+      "repairedVertices": 1815,
+      "maxRepairedSurfaceDeviationM": 5.999650887886092e-05,
+      "maxRepairedSurfaceDeviationMM": 0.05999650887886092
+    },
+    "colliderProof": {
+      "before": "1c0e316b35bc3aff8131499cac9bf59b75abb919e49356062f1ed6418711b5ec",
+      "after": "1c0e316b35bc3aff8131499cac9bf59b75abb919e49356062f1ed6418711b5ec",
+      "equal": true
+    },
+    "census": [
+      151,
+      61,
+      540
+    ],
+    "openedStill": ".look/gorge-seam-fixed-still.png",
+    "visibleDraws": 2,
+    "limit": "Static stills do not establish temporal flicker or smoothness. not tested on a device"
+  }
 }
