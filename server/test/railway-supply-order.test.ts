@@ -59,7 +59,7 @@ test('a fresh drop applies after the missed maintenance and starts at age zero',
     assert.equal(account(host.rules.railway.world(), 'supplier')!.carry, 2);
     const marker = railClock(host.rules.railway.world()).supplyMarker;
     now += 21 * 60000;
-    const drop = { op: 'rail.drop', request: 3, x: source[1], z: source[2], y: 3000, n: 2 };
+    const drop = { op: 'rail.drop', request: 3, x: source[1], z: source[2], y: 0, n: 2 };
     // Arrival before the next host step, with a genuinely fresh pose: the missed maintenance applies first (it is
     // a direct server rule now, not a stamp waiting for a tick), then the drop.
     send(drop);

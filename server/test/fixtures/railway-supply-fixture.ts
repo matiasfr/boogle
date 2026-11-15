@@ -64,7 +64,8 @@ export async function supplyFixture(
   position = { x: source[1] / 100, z: source[2] / 100, at: clock };
   for (let k = 0; k < 5; k++) {
     await action({ op: 'rail.chop', id: source[0], yaw: 0.5, collapsed: false });
-    await action({ op: 'rail.drop', x: source[1], z: source[2], y: 3000, n: 2 });
+    // This headless fixture sends its actor at y=0; drop at its feet, not thirty metres above it.
+    await action({ op: 'rail.drop', x: source[1], z: source[2], y: 0, n: 2 });
   }
   assert.equal(trees(host.rules.railway.world())[SUPPLY_SOURCE]!.left, 0);
   assert.equal(railCounts(host.rules.railway.world()).loose, 10);
