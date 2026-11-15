@@ -279,6 +279,7 @@ function renderOptions() {
   list.append(
     controls,
     button('Graphics', () => show('graphics')),
+    button('Account', () => show('account')),
     room,
     more,
     leave,
@@ -307,7 +308,7 @@ function renderMore() {
   sound.append(el('span', '', 'Volume'), volumeSlider());
   list.append(...freshButton(), sound);
   for (const extra of pausePages)
-    if (extra.id !== 'graphics' && !extra.start)
+    if (extra.id !== 'graphics' && extra.id !== 'account' && !extra.start)
       list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
   const back = backButton(() => OPTIONS);
   list.append(back);

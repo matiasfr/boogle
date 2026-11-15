@@ -11,6 +11,35 @@ export type PausePage = {
 };
 export const pausePages: PausePage[] = [
   {
+    id: 'account',
+    label: 'Account',
+    mount(parent, resume) {
+      let disposed = false;
+      let cleanup = () => {};
+      parent.textContent = 'Loading account…';
+      void import('./account-page.ts')
+        .then(({ mountAccount }) => {
+          if (!disposed) cleanup = mountAccount(parent, resume);
+        })
+        .catch(() => {
+          if (disposed) return;
+          parent.textContent = 'Account could not load. Go back and try again.';
+          const back = document.createElement('button');
+          back.className = 'pause-btn';
+          back.textContent = 'Back';
+          back.onclick = () => {
+            pauseNavigation.open?.('options');
+          };
+          parent.append(back);
+          back.focus();
+        });
+      return () => {
+        disposed = true;
+        cleanup();
+      };
+    },
+  },
+  {
     id: 'graphics',
     label: 'Graphics',
     mount(parent, resume) {

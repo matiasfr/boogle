@@ -65,22 +65,26 @@ function save(next: Credential): boolean {
   }
 }
 
-async function request(path: string, token: string, method = 'GET'): Promise<unknown> {
+async function request(path: string, token: string, method = 'GET', body: object = {}): Promise<unknown> {
   const server = import.meta.env.VITE_BOOGLE_SERVER;
   if (!server) throw new Error('The game server is not configured. Reload to retry.');
   const response = await fetch(new URL(`/account/${path}`, server), {
     method,
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    ...(method === 'POST' && { body: '{}' }),
+    ...(method === 'POST' && { body: JSON.stringify(body) }),
     cache: 'no-store',
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok)
     throw Object.assign(
       new Error(
-        response.status === 401
-          ? 'Sign-in expired or was replaced. Your saved identity was kept.'
-          : 'Sign-in is unavailable. Reload to retry.',
+        response.status === 429
+          ? 'Too many tries. Wait a minute and try again.'
+          : path === 'sign-in' && (response.status === 401 || response.status === 400)
+            ? 'That PIN did not work. Check the five digits and try again.'
+            : response.status === 401
+              ? 'Sign-in expired or was replaced. Your saved identity was kept.'
+              : 'Sign-in is unavailable. Reload to retry.',
       ),
       { status: response.status },
     );
@@ -191,6 +195,48 @@ export const accountProblem = () => problem;
 export const accountIsPersistent = () => persistent;
 export const accountStatus = () => ({ state, persistent, pid: credential?.pid, accountId: credential?.accountId });
 export const accountSwitching = () => switching;
+
+// PINs live only in the explicit form/reveal, never in the credential record or room state.
+export async function signInAccount(pin: string): Promise<void> {
+  if (switching) return;
+  const normalized = pin.replace(/[\s-]/g, '');
+  if (!/^[0-9]{5}$/.test(normalized)) throw new Error('Enter your five-digit PIN.');
+  const next = newCredential();
+  await request('sign-in', next.token, 'POST', { pin: normalized });
+  await installAccount(next.token);
+}
+
+export async function saveAccountPin(replace = false): Promise<string> {
+  const current = credential;
+  if (switching || !current?.pid || state !== 'ready') throw new Error('Reload to reconnect before saving a PIN.');
+  const keep = (value: unknown) => {
+    const next = resolved(current.token, value);
+    if (switching || credential?.token !== current.token || next.pid !== current.pid || !next.accountId)
+      throw new Error('Sign-in changed. Reload to check this account.');
+    credential = next;
+    save(next);
+    problem = undefined;
+    return next;
+  };
+  try {
+    const value = await request(replace ? 'rotate-pin' : 'create', current.token, 'POST');
+    keep(value);
+    const pin = (value as { pin?: unknown }).pin;
+    if (typeof pin !== 'string' || !/^[0-9]{5}$/.test(pin)) throw new Error('PIN unavailable.');
+    return pin;
+  } catch (error) {
+    // A lost create/rotate reply is not failure on the server. Recover status, never invent/reveal the old PIN.
+    try {
+      keep(await request('session', current.token));
+    } catch {
+      /* Keep the current identity; a reload can retry resolution. */
+    }
+    if ((error as { status?: number } | null)?.status === 429) throw error;
+    throw new Error('Could not show the PIN. If this account was saved, use Replace PIN; otherwise reload to retry.', {
+      cause: error,
+    });
+  }
+}
 
 /** A room can discover expiry/revocation after boot. Keep the same person, but stop offering that session. */
 export function accountRefused() {
