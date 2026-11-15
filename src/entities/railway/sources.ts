@@ -3,7 +3,7 @@ import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../sim/railway-layout.ts';
-import { RECOVERY_RACK } from '../../sim/railway-supply.ts';
+import { RECOVERY_RACK, LOOSE_PIECE_CAPACITY } from '../../sim/railway-supply.ts';
 import {
   createTreeView,
   createTreeSolids,
@@ -254,7 +254,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   const stonePiles = new THREE.InstancedMesh(
     new THREE.DodecahedronGeometry(0.2),
     flat('#b0ab9d'),
-    128 * RAILWAY_T1.carry,
+    LOOSE_PIECE_CAPACITY,
   );
   // Like the log and rail piles: never culled. Its bounds were computed once, at the first frame with no stones, and a
   // pile then showed only while the world origin was in view (6 November playtest).
@@ -264,14 +264,14 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   const railPiles = new THREE.InstancedMesh(
     new THREE.BoxGeometry(0.1, 0.12, 3),
     flat('#4c5058', 0.6),
-    128 * RAILWAY_T1.carry,
+    LOOSE_PIECE_CAPACITY,
   );
   railPiles.castShadow = true;
   railPiles.frustumCulled = false;
   railPiles.count = 0;
   owner.add(railPiles);
   const stoneMatrix = new THREE.Object3D();
-  const piles = pieces.logStackMesh(128 * RAILWAY_T1.carry, owner);
+  const piles = pieces.logStackMesh(LOOSE_PIECE_CAPACITY, owner);
   const pileFlights: { id: number; active: () => boolean; request: number }[] = []; // request: your own predicted drop
   const pilePoint = new THREE.Vector3();
 

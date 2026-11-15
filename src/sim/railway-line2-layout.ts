@@ -156,10 +156,13 @@ export const LINE2_DEPOT = { reach: 700 } as const;
 /** Q2 and Q5's 24-unit bills offer a short, optional heavy haul; other racks retain their placements.
  * Centimetres along the approach from the frame, outside its auto-unload radius. */
 export const depotOffset = (s: Line2Station) => (s.id === 'Q2' || s.id === 'Q5' ? 1000 : 340);
+/** Shelf lateral separation: Q5's 3.4 m plank clears the 1.6 m log rack and both signs. */
+export const depotShelfSide = (s: Line2Station) => (s.id === 'Q5' ? 400 : 150);
 /** The whole 3.2 m pickup zone, measured from the authoritative frame as the existing reach check is. */
 export const depotReach = (s: Line2Station) => {
   const offset = depotOffset(s);
-  return Math.max(LINE2_DEPOT.reach, Math.ceil(Math.sqrt(offset * offset + 150 * 150)) + 320);
+  const side = depotShelfSide(s);
+  return Math.max(LINE2_DEPOT.reach, Math.ceil(Math.sqrt(offset * offset + side * side)) + 320);
 };
 /** The pack chest beside the forge (Place ladder.ts CHEST_AT.pack): the forge's first bill (24 logs) puts it there, and
  * opening it gives everyone in the world a back that carries `carry` instead of RAILWAY_T1.carry. */

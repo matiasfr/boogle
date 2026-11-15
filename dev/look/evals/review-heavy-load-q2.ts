@@ -18,4 +18,16 @@ while (inspectRailway().line2View.depotShown < 24) {
   await wait(50);
 }
 console.log('REVIEW Q2 FULL ' + JSON.stringify({ depot, shown: inspectRailway().line2View.depotShown }));
+const { LEG, march } = await import('/src/place/home-station.ts' as string);
+let clearance = Infinity;
+for (let s = 0; s <= LEG.len; s += 0.05) {
+  const p = march(LEG.start, LEG.segs, s);
+  clearance = Math.min(clearance, Math.hypot(p.x + 1000 - depot[0], p.z - depot[2]));
+}
+// Conservative footprint: rack/logs within 1.8 m of centre, cart half width 1.1 m plus bend clearance.
+if (clearance < 3.5) throw new Error(`Q2 full rack intersects cart corridor: ${clearance} m`);
+const frame = inspectRailway().line2View.frames[1];
+const haul = Math.hypot(frame.x - depot[0], frame.z - depot[2]);
+if (Math.abs(haul - 10) > 0.01) throw new Error(`Q2 haul changed: ${haul} m`);
+console.log('REVIEW Q2 CLEAR ' + JSON.stringify({ clearance, haul }));
 export {};

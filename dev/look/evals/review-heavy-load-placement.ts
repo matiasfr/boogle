@@ -12,10 +12,16 @@ const v = inspectRailway().line2View;
 console.log('REVIEW Q5 ' + JSON.stringify({ depot: v.depot, shelf: v.shelf, frame: v.frames[4] }));
 const d = { x: v.depot[0], y: v.depot[1], z: v.depot[2] };
 const s = v.shelf;
-for (const p of [d, s]) {
+const separation = Math.hypot(s.x - d.x, s.z - d.z);
+if (separation < 3.8) throw new Error(`Q5 rack, shelf and prompts overlap: ${separation} m`);
+for (const [p, expected] of [
+  [d, 'railway-depot-logs'],
+  [s, 'railway-depot-rails'],
+] as const) {
   teleport(me.body, p.x, p.y + 0.6, p.z);
   await wait(300);
   console.log('REVIEW PICK ' + JSON.stringify({ at: p, pick: interactTarget()?.id }));
+  if (interactTarget()?.id !== expected) throw new Error(`Q5 expected ${expected}, got ${interactTarget()?.id}`);
 }
 teleport(me.body, d.x - 4, d.y + 0.6, d.z + 4);
 await wait(500);

@@ -6,6 +6,9 @@ import { RAILWAY_SOURCES } from './railway-layout.ts';
 export const REGROW_MINUTES = 31;
 export const RECOVERY_MINUTES = 21; // minute quantization still leaves at least twenty minutes
 export const RECOVERY_RACK = { x: 90500, z: 100 };
+/** Per cargo kind, matching the existing loose-piece GPU batches. The 1,025th log was invisible
+ * (heavy-load-f83e49fa8-review). Overflow recovers oldest piles before accepting another drop. */
+export const LOOSE_PIECE_CAPACITY = 1024;
 // Pinned centimetre bounds of the two initially laid stubs and T1's whole corridor, plus 8 m clearance.
 // Clear the eventual corridor throughout construction too; never recreate an obstruction around finished track.
 export const RAILWAY_TRACK_CLEARINGS = [

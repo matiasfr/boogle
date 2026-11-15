@@ -8,7 +8,7 @@ import { endMoved, trainStepLine, lineSpacing, cycleTicks } from '../src/sim/rai
 import { ringRivetSequence } from './helpers/railway-rivet-sequence.ts';
 import { apply, invariant, restore } from '../src/sim/railway-drive.ts';
 import { advance, type Seed } from '../src/sim/railway-seed-route.ts';
-import { account, trains, piles, trees } from '../src/sim/railway-rows.ts';
+import { account, trains, piles, trees, rail } from '../src/sim/railway-rows.ts';
 import { legRow } from '../src/sim/railway-queries-route.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
@@ -167,13 +167,21 @@ test('review: 2048 one-log drops conserve cargo through reload and chunked late 
     }
     assert.equal(send('rail.drop', { n: 1, kind: 0, x: 90000 + (i % 64), z: Math.floor(i / 64), y: 0 }), 1);
   }
-  assert.equal(piles(s.w).length, 2048);
+  assert.equal(piles(s.w).length, 1024, 'loose rows stop at the measured render capacity');
+  assert.equal(rail(s.w).rack, 1024, 'overflow returns to the recovery rack');
   assert.equal(
-    piles(s.w).reduce((sum, p) => sum + p.n, 0),
+    piles(s.w).reduce((sum, p) => sum + p.n, rail(s.w).rack),
     2048,
   );
   assert.equal(invariant(s.w), null);
   s.w = restore(s.w);
   const wire = lateJoin(s);
-  t.diagnostic(JSON.stringify({ piles: 2048, saveBytes: JSON.stringify(s.w.snapshot()).length, ...wire }));
+  t.diagnostic(
+    JSON.stringify({
+      piles: piles(s.w).length,
+      recovered: rail(s.w).rack,
+      saveBytes: JSON.stringify(s.w.snapshot()).length,
+      ...wire,
+    }),
+  );
 });

@@ -9,7 +9,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
-import { LINE2_STATIONS, Q7, depotOffset } from '../../sim/railway-line2-layout.ts';
+import { LINE2_STATIONS, Q7, depotOffset, depotShelfSide } from '../../sim/railway-line2-layout.ts';
 import { q7Spot } from './q7-site.ts';
 import { stockSign } from './stock-sign.ts';
 import { waitsForTrain } from './forge-offer.ts';
@@ -104,7 +104,8 @@ export async function createRailwayShelf(
     const side = quarry.stations[k]!.side;
     // Q5's rails share the short haul, beside its log rack on the approach. Other shelves stay at 3.36 m.
     const along = spec.id === 'Q5' ? -depotOffset(spec) / 100 : 3;
-    at.set(spec.x / 100 + p.ux * along - p.uz * side * 1.5, 0, spec.z / 100 + p.uz * along + p.ux * side * 1.5);
+    const across = depotShelfSide(spec) / 100;
+    at.set(spec.x / 100 + p.ux * along - p.uz * side * across, 0, spec.z / 100 + p.uz * along + p.ux * side * across);
     at.y = land.H(at.x, at.z);
     shelf.position.copy(at);
     shelf.rotation.y = Math.atan2(p.ux, p.uz) + Math.PI / 2;

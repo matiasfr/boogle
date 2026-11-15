@@ -334,6 +334,16 @@ export async function createRailwayLine2(
     // Q2/Q5 leave a short walk outside auto-unload, so a deliberate extra pickup buys a trip.
     const offset = depotOffset(LINE2_STATIONS[k]!) / 100;
     out.set(f.x - Math.sin(f.yaw) * offset, 0, f.z - Math.cos(f.yaw) * offset);
+    if (LINE2_STATIONS[k]!.id === 'Q2') {
+      // The cart's curved Home leg crosses the old straight-back spot. A 6 m approach / 8 m outward
+      // offset keeps the 10 m haul, with the whole loaded rack outside that curve and both running roads.
+      const side = quarry.stations[k]!.side;
+      out.set(
+        f.x - Math.sin(f.yaw) * 6 - Math.cos(f.yaw) * side * 8,
+        0,
+        f.z - Math.cos(f.yaw) * 6 + Math.sin(f.yaw) * side * 8,
+      );
+    }
     if (k === Q7) {
       // On the pier's piled deck, south of the frame (q7-site.ts), and over the sea: the deck's height, not the ground's.
       const d = q7Spot('rack', deck7);

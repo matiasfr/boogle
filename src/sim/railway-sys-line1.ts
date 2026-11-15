@@ -8,6 +8,7 @@ import { layProgress, type LineTiming } from './railway-line-schedule.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { railInt, RAILWAY_MAX_INT } from './railway.ts';
 import { railPos } from './railway-route.ts';
+import { LOOSE_PIECE_CAPACITY } from './railway-supply.ts';
 import {
   Account,
   Aperture,
@@ -22,6 +23,7 @@ import {
   Rail,
   Rock,
   Tree,
+  Works,
 } from './railway-components.ts';
 import { legKitPut } from './railway-sys-route-kit.ts';
 import {
@@ -39,6 +41,7 @@ import {
   roomFor,
   scheduleOf,
   timingOf,
+  worksId,
   type AccountRow,
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
@@ -166,7 +169,7 @@ const putDown = (w: World, aid: number, kind: number, n: number) =>
   legKitPut(w, aid, kind ? 0 : n, kind === RAILS ? n : 0);
 export const drop = defineSystem(
   'rail.drop',
-  { reads: [Aperture], writes: [Pile, Account, Leg], phase: 'act', order: 5 },
+  { reads: [Aperture], writes: [Pile, Account, Leg, Rail, Forge, Works], phase: 'act', order: 5 },
   (w, { a: aid, e }: Act) => {
     const kind = pileKind(e.kind),
       cap = pileCap(kind);
@@ -174,21 +177,38 @@ export const drop = defineSystem(
     if (kind === FOOT && e.n !== 1) return 0;
     const a = w.mut(Account, aid)!;
     const carry = balanceOf(a, kind);
-    let at = -1;
+    let at = -1,
+      loose = 0;
     w.each([Pile], (id, p) => {
+      if (p.kind === kind) loose += p.n;
       if (at < 0 && p.kind === kind && p.x === e.x && p.z === e.z && p.y === e.y && p.n < cap) at = id;
     });
+    const n = Math.min(e.n!, carry, at < 0 ? cap : cap - w.get(Pile, at)!.n);
+    if (n <= 0 || (at < 0 && w.nextId() >= RAILWAY_MAX_INT)) return 0;
+    // Keep Drop available on foot without growing state or drawing beyond the fixed piece batches.
+    // Recover whole oldest piles to the same stores as rail.supply; never recover the pile being topped up.
+    if (loose + n > LOOSE_PIECE_CAPACITY) {
+      // Confirmed ids grow with creation; predicted ids are -request, newest after all confirmed piles.
+      const oldest = [...w.ids(Pile)].sort((a, b) => (a < 0 === b < 0 ? (a < 0 ? b - a : a - b) : a < 0 ? 1 : -1));
+      for (const id of oldest) {
+        const p = w.get(Pile, id)!;
+        if (id === at || p.kind !== kind) continue;
+        if (kind === 1) w.mut(Rail, railId(w))!.stoneRack += p.n;
+        else if (kind === RAILS) w.mut(Forge, forgeId(w))!.rack += p.n;
+        else if (kind === FOOT) w.mut(Works, worksId(w))!.rack += p.n;
+        else w.mut(Rail, railId(w))!.rack += p.n;
+        loose -= p.n;
+        w.despawn(id);
+        if (loose + n <= LOOSE_PIECE_CAPACITY) break;
+      }
+    }
     if (at < 0) {
-      // Dropping is mobility recovery. Other players' piles must never consume that ability.
-      if (carry <= 0 || w.nextId() >= RAILWAY_MAX_INT) return 0;
-      const n = Math.min(e.n!, carry, cap);
       w.spawn([Pile, { x: e.x!, y: e.y!, z: e.z!, n, kind, age: 0 }]);
       credit(a, kind, -n);
       putDown(w, aid, kind, n);
       return n;
     }
     const p = w.mut(Pile, at)!;
-    const n = Math.min(e.n!, carry, cap - p.n);
     p.n += n;
     if (n) p.age = 0;
     credit(a, kind, -n);

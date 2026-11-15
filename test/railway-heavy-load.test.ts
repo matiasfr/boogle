@@ -4,7 +4,9 @@ import type { World } from '../src/ecs/index.ts';
 import { railValid } from '../src/world/railway-server.ts';
 import type { RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../src/sim/railway-layout.ts';
-import { Account, Rail } from '../src/sim/railway-components.ts';
+import { Account, Rail, Forge, Pile } from '../src/sim/railway-components.ts';
+import { LOOSE_PIECE_CAPACITY } from '../src/sim/railway-supply.ts';
+import { railPredict } from '../src/world/railway-predict.ts';
 import {
   account,
   apply,
@@ -144,6 +146,99 @@ test('the shared pack restores an existing heavy load and permits 24 with the sa
   assert.equal(heavyLoad(fresh, 'a'), false);
   assert.equal(carrySpeed(fresh, 'a'), 1);
 });
+
+for (const [kind, key] of ['carry', 'stone', 'rails'].entries()) {
+  for (const topUp of [false, true]) {
+    test(`overflow kind ${kind}, top-up ${topUp}: recover oldest whole piles, predict and reload without loss`, () => {
+      const { w, t } = buildSeedWorld('q1-done');
+      for (const [k, field] of ['carry', 'stone', 'rails'].entries())
+        while (account(w, 'a')![field as 'carry' | 'stone' | 'rails'])
+          act(w, 'a', 'rail.drop', { kind: k, n: 8, x: -100, y: 0, z: k });
+      const before = pilesWithIds(w)
+        .filter((p) => p.kind === kind)
+        .reduce((sum, p) => sum + p.n, 0);
+      // Conserved fixture at the measured buffer boundary, including a partial oldest pile.
+      const target = w.spawn([Pile, { kind, n: 1, x: 123, y: 0, z: 456, age: 0 }]);
+      let remaining = LOOSE_PIECE_CAPACITY - before - 1;
+      while (remaining > 0) {
+        const n = Math.min(8, remaining);
+        w.spawn([Pile, { kind, n, x: remaining, y: 0, z: 999, age: 0 }]);
+        remaining -= n;
+      }
+      const added = LOOSE_PIECE_CAPACITY - before + 16;
+      const r = w.mut(Rail, w.single(Rail))!;
+      const f = w.mut(Forge, w.single(Forge))!;
+      r.pack = true;
+      if (kind === 0) {
+        const produced = Math.ceil(added / 5) * 5;
+        r.produced += produced;
+        r.rack += produced - added;
+      } else if (kind === 1) r.stoneProduced += added;
+      else f.poured += added;
+      w.mut(Account, w.lookup(Account, 'a')!)![key as 'carry' | 'stone' | 'rails'] = 16;
+      assert.equal(invariant(w), null);
+      const oldIds = pilesWithIds(w)
+        .filter((p) => p.kind === kind)
+        .map((p) => p.id)
+        .sort((a, b) => a - b);
+      const stored = () => (kind === 0 ? r.rack : kind === 1 ? r.stoneRack : f.rack);
+      const oldStored = stored();
+      const a = account(w, 'a')!;
+      const e = {
+        op: 'rail.drop',
+        epoch: a.epoch,
+        request: a.request + 1,
+        kind,
+        n: 8,
+        x: topUp ? 123 : 987,
+        y: 0,
+        z: topUp ? 456 : 654,
+      };
+      const predicted = restore(w);
+      const n = topUp ? 7 : 8;
+      assert.equal(railPredict(predicted, 'a', e, t).n, n);
+      assert.equal(apply(w, 'a', e, t).accepted, n);
+      const compare = () => {
+        // A predicted new pile has a temporary negative id; its accepted contents and recoveries must agree.
+        const rows = (world: World) =>
+          pilesWithIds(world)
+            .map(({ x, y, z, n, kind, age }) => ({ x, y, z, n, kind, age }))
+            .sort((a, b) => a.x - b.x || a.z - b.z);
+        assert.deepEqual(rows(predicted), rows(w));
+        assert.deepEqual(account(predicted, 'a'), account(w, 'a'));
+        assert.deepEqual(predicted.get(Rail, predicted.single(Rail)), w.get(Rail, w.single(Rail)));
+        assert.deepEqual(predicted.get(Forge, predicted.single(Forge)), w.get(Forge, w.single(Forge)));
+      };
+      compare();
+      const loose = pilesWithIds(w)
+        .filter((p) => p.kind === kind)
+        .reduce((sum, p) => sum + p.n, 0);
+      assert.ok(loose <= LOOSE_PIECE_CAPACITY);
+      assert.equal(
+        loose + stored() - oldStored + account(w, 'a')![key as 'carry' | 'stone' | 'rails'],
+        LOOSE_PIECE_CAPACITY + 16,
+      );
+      assert.equal(
+        w.get(
+          Pile,
+          oldIds.find((id) => !topUp || id !== target)!,
+        ),
+        undefined,
+      );
+      if (topUp) assert.equal(w.get(Pile, target)!.n, 8);
+      assert.equal(invariant(w), null);
+      assert.equal(restore(w).hash(), w.hash());
+      const second = { ...e, request: e.request + 1, x: 888, z: 777 };
+      const replay = restore(w);
+      assert.equal(railPredict(predicted, 'a', second, t).n, 8);
+      assert.equal(apply(w, 'a', second, t).accepted, 8);
+      assert.equal(apply(replay, 'a', second, t).accepted, 8);
+      compare();
+      assert.equal(invariant(w), null);
+      assert.equal(replay.hash(), w.hash());
+    });
+  }
+}
 
 test('fixed input replay is identical across a save while overloaded', () => {
   const a = awake();

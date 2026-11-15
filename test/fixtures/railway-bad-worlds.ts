@@ -75,6 +75,14 @@ export const BAD_WORLDS: readonly BadWorld[] = [
   { site: 'check fall state', message: 'railway: fall state', stage: A, break: (w) => set(w, Tree, { yaw: 1 }, 0) },
   { site: 'check accounts', message: 'railway: accounts', stage: A, break: (w) => set(w, Account, { carry: 13 }, 'a') },
   { site: 'check piles', message: 'railway: piles', stage: X, break: (w) => set(w, Pile, { n: 0 }, firstPile(w, 2)) },
+  {
+    site: 'check piles capacity',
+    message: 'railway: piles',
+    stage: A,
+    break: (w) => {
+      for (let i = 0; i < 129; i++) w.spawn([Pile, { n: 8, kind: 0, x: i, y: 0, z: 0, age: 0 }]);
+    },
+  },
   { site: 'check tick', message: 'railway: tick', stage: A, break: (w) => set(w, Rail, { awake: -2 }) },
   {
     site: 'check sleeping harvest',
