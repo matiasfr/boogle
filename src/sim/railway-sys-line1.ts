@@ -215,9 +215,9 @@ export const take = defineSystem(
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     const kind = pileKind(e.kind);
-    const room = roomFor(w, a, kind);
-    const p = room > 0 && railInt(e.id, RAILWAY_MAX_INT, -RAILWAY_MAX_INT) ? w.mut(Pile, e.id) : undefined;
+    const p = railInt(e.id, RAILWAY_MAX_INT, -RAILWAY_MAX_INT) ? w.mut(Pile, e.id) : undefined;
     if (!p || kind !== p.kind) return 0;
+    const room = roomFor(w, a, kind, p.n);
     const n = Math.min(p.n, room);
     p.n -= n;
     credit(a, kind, n);

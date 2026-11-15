@@ -99,18 +99,23 @@ export function reservedDropSlots(w: World) {
 }
 /** Ordinary drops and new heavy pickups cannot consume another carrier's escape space. */
 export const spareDropSlots = (w: World) => LOOSE_PILE_CAPACITY - w.ids(Pile).length - reservedDropSlots(w);
-/** One take stops at comfort first; another deliberate take opts into the reserved heavy allowance. */
-export const free = (w: World, a: Readonly<AccountRow>) => {
+/** One take stops at comfort first; another deliberate take opts into the reserved heavy allowance.
+ * A source pile frees one slot only when this take can consume every piece. */
+export const free = (w: World, a: Readonly<AccountRow>, pilePieces = 0) => {
   const n = carried(a);
   const target = n < carryComfort(w) ? carryComfort(w) : carryMax(w);
   const room = Math.max(0, target - n);
-  return heldBig(w, a) ? 0 : n < carryComfort(w) ? room : Math.max(0, Math.min(room, spareDropSlots(w)));
+  if (heldBig(w, a)) return 0;
+  if (n < carryComfort(w)) return room;
+  const spare = spareDropSlots(w);
+  const freed = Number(pilePieces > 0 && pilePieces <= room && pilePieces <= spare + 1);
+  return Math.max(0, Math.min(room, spare + freed));
 };
 /** Pile kinds: 0 logs, 1 stone, 2 rails, 3 a footing (one to a pile, one to a back). */
 export const FOOT = 3;
 /** What a back can take of a kind: a footing only onto an empty back. */
-export const roomFor = (w: World, a: Readonly<AccountRow>, kind: number) =>
-  kind === FOOT ? Number(!heldBig(w, a) && carried(a) === 0) : free(w, a);
+export const roomFor = (w: World, a: Readonly<AccountRow>, kind: number, pilePieces = 0) =>
+  kind === FOOT ? Number(!heldBig(w, a) && carried(a) === 0) : free(w, a, pilePieces);
 export const qCompleted = (w: World) => LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjobId(w, k))!.completion).length;
 export const apertureId = (w: World) => w.single(Aperture);
 /** The railhead: bents footed past bent 6 (0-7), two footings a bent (ring-island-build1, R3). */

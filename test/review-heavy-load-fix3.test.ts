@@ -79,3 +79,32 @@ test('review fix3: only one of two predictions gets the last reservation; renewa
   assert.equal(invariant(w), null);
   assert.equal(restore(w).hash(), w.hash());
 });
+
+test('final: only whole-pile takes reclaim a slot, in prediction and after reload', () => {
+  for (const [count, pieces, carry, accepted] of [
+    [128, 2, 8, 0], // One freed slot cannot reserve two excess pieces.
+    [127, 2, 8, 2], // One spare plus one reclaimed slot fits the whole pile.
+    [127, 3, 8, 1], // A partial take may use only the pre-existing spare slot.
+    [125, 5, 8, 3], // The carry ceiling prevents emptying this pile, even with slot credit.
+    [128, 2, 7, 1], // The first take still stops at comfort, without reserving an excess piece.
+  ] as const) {
+    const { w, ids } = fixture(count);
+    const id = ids[0]!;
+    w.mut(Pile, id)!.n = pieces;
+    w.mut(Account, w.lookup(Account, 'reviewa')!)!.carry = carry;
+    w.mut(Rail, w.single(Rail))!.rack -= pieces - 1 + carry - 8;
+    assert.equal(invariant(w), null);
+    const e = { op: 'rail.take', epoch: 1, request: 1, id, kind: 0 };
+    const predicted = restore(w);
+    assert.equal(railPredict(predicted, 'reviewa', e, 100000).n, accepted);
+    assert.equal(apply(w, 'reviewa', e, 100000).accepted, accepted);
+    assert.equal(account(w, 'reviewa')!.carry, carry + accepted);
+    assert.equal(w.get(Pile, id)?.n ?? 0, pieces - accepted);
+    assert.equal(w.ids(Pile).length, count - Number(pieces === accepted));
+    assert.ok(spareDropSlots(w) >= 0);
+    assert.equal(invariant(w), null);
+    assert.equal(restore(w).hash(), w.hash());
+    assert.equal(account(predicted, 'reviewa')!.carry, account(w, 'reviewa')!.carry);
+    assert.equal(predicted.get(Pile, id)?.n, w.get(Pile, id)?.n);
+  }
+});

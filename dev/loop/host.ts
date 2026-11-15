@@ -16,11 +16,11 @@ export type Host = {
   snapshot(): unknown;
 };
 
-/** Stands at `at` (world cm); `y` undefined means on the ground, below every raised target. Cadence always passes:
+/** Stands at `at` (world cm); omitted `y` is the runner's ground plane, zero, as in clearBack's drops. Cadence always passes:
  * the runner spaces its presses by the action times it assumes. */
 const standingAt = (at: Point): Actor => ({
   reach: (x, z, r) => (at.x - x) ** 2 + (at.z - z) ** 2 <= r * r,
-  height: (y, r) => at.y !== undefined && Math.abs(at.y - y) <= r,
+  height: (y, r) => Math.abs((at.y ?? 0) - y) <= r,
   cadence: () => true,
 });
 
