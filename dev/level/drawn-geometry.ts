@@ -152,7 +152,11 @@ export async function collectDrawnGeometry() {
       for (const [i, t] of (visual.instances ?? [{ pos: [0, 0, 0] as const }]).entries())
         addGeometry(
           gorgeTrimmed.get(p.id) ?? new THREE.BoxGeometry(1, 1, 1),
-          matrix.clone().multiply(transform(t)),
+          gorgeTrimmed.has(p.id)
+            ? new THREE.Matrix4().makeTranslation(
+                ...(gorgeTrimmed.get(p.id)!.userData.gorgeOrigin as [number, number, number]),
+              )
+            : matrix.clone().multiply(transform(t)),
           `${p.id}/instance-${i}`,
           {
             material: 'greybox stone',
