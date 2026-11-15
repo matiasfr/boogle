@@ -43,7 +43,8 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     import('./rail-kit.ts'),
     import('../../place/terrain.ts'),
   ]);
-  if (!owner.alive) return { update: () => {}, numbers: () => {}, targets: () => [] };
+  if (!owner.alive)
+    return { update: () => {}, numbers: () => {}, targets: () => [], handoff: (out: THREE.Vector3) => void out };
   const footprints = new Set<(typeof sites.feet)[number]>();
   const foot = (x: number, z: number, yaw: number, hw: number, hd: number) => {
     sites.addFoot(x, z, yaw, hw, hd);
@@ -149,7 +150,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   });
   const pathS = (u: number) => refuges.first + u * (layout.STUB.camp - refuges.first);
   folk.mountFolk(owner, {
-    station: () => (env.awake() ? env.station() : null),
+    station: env.station,
     machineBusy: env.busy,
     chairTaken: env.chairTaken,
     machine: env.machine,
@@ -184,6 +185,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     /** The forge's crane, for the hoist that holds what the forge casts (part-hoist.ts). */
     crane,
     targets: greeter.targets,
+    handoff: greeter.handoff,
     numbers(score: { money: number; logs: number; metres: number }, snapshot = false) {
       signs.setNumbers(score, people(), snapshot);
     },

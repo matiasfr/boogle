@@ -94,11 +94,29 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 
 ## Production line 1 continuation (5 November 2026, slice 3 branch)
 
-**Single-press wake (8 November solo playtest fix).** The six-metre “Wake it up” prompt and the server's existing
-ten-metre allowance now share the parked machine's centre. Previously the server measured from the receiving frame, so a visible prompt on
-the far side could start a predicted wake and then be refused. One E tap starts the existing 3.1 s show; no hold
-or repeat is needed. Unready connections keep the existing connecting status and offer no wake action.
-Serves DESIGN.md 7 (Telegraph everything).
+**First five minutes (15 November, D4; supersedes prior opening wake descriptions in this chapter).** Talk to the camp resident
+beside the parked machine and choose **Take axe**. The room receives the starter multi-axe through the existing
+31-tick rule window; acceptance immediately starts the recipient's reveal, with the axe visible in the resident's
+outstretched hand for the anticipation beat before rising to the player. Its gathering glints start at that hand;
+partners keep their existing flourish. The resident stands roughly 4 m off the track centre, clear of the passing
+machine, with Talk offered only inside the existing server wake reach. The engine stays cold until Station 1's
+last log is accepted. Its existing 3.1-second fire, lamps and whistle reward funding the first frame, with a larger,
+slower body rock and upward kick readable from the frame (suppressed for reduced motion), while the frame feeds the
+machine. The two station hands walk and climb aboard over 2.6 seconds, easing their facing into the seated heading
+during the final climb and respecting player-occupied chairs. Station bills, tool yields, carry limits and player
+movement are unchanged.
+
+Unread speech bubbles mark Sleeves' remaining lines in the current stage and the camp's unclaimed axe. Town
+residents get the same cue inside their room for a first meeting or a new town-progress line. Cues are Local,
+hidden during conversation; the camp cue remains available after declining or a refused handoff. Existing town
+conversation memory is reused. Sleeves also has an axe-owned/engine-cold stage pointing at the first frame.
+
+Saved `Rail.awake` still grants the tool; Station 1's saved `Job.start` determines engine ignition. No saved
+shape, namespace, bill or command changes, and no migration: old awake saves keep their axe and progress;
+funded saves restore the engine silently. The retained wire name `rail.wake` now comes from the camp interaction.
+All new opening copy and the removed “Wake it up” prompt are drafts for the owner, listed in
+[first-five-minutes](../plans/first-five-minutes.md). The Boogler's copy is untouched.
+Serves DESIGN.md 7 (Telegraph everything) and 11 (Show, don't tell).
 
 **Current branch, unshipped:** the integrated slice-2 base is `f0be49a3`. The [slice-3 plan](../research/slice3-plan-2.md) now continues the same accepted material authority through T1's 24 logs, T2's 32 logs + 8 stone, and T3's 40 logs + one unique great beam. Stations accept only their own outstanding bill in order; a funded station pins its feed and departure/lay schedule. Local swings, flights, piles, stock displays and the one machine display accepted state. Rejoining reconstructs that state without replaying historical sounds or rewards. This entry supersedes the T1-only scope above for this branch; the earlier records remain historical evidence.
 

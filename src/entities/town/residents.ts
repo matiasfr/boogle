@@ -9,6 +9,7 @@
 // `createResidents` mounts them on an owner: the town entity's in the live game (src/entities/town/), with its memory in
 // src/entities/town/memory.ts.
 import * as THREE from 'three/webgpu';
+import { createSpeechCue } from '../../components/speech-cue/view.ts';
 import { conversation } from '../../player/conversation.ts';
 import { NO_TARGETS, interactTarget, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
@@ -153,6 +154,7 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
       if (k >= 0) folk.guys.splice(k, 1);
     }
   });
+  const cues = IDS.map((id) => ({ id, show: createSpeechCue(owner) }));
   const inRoom = (r: Room) => IDS.filter((id) => CAST[id].room === r.id);
   const seen = seenFrom(memory.load());
   const remember = () => memory.save(seen);
@@ -343,6 +345,19 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
     bark(best, line);
   }
   function update(dt: number) {
+    for (const { id, show } of cues) {
+      const g = guys[id];
+      show(
+        g.x,
+        g.fy ?? g.y,
+        g.z,
+        g.on &&
+          rooms.indoors.room?.id === CAST[id].room &&
+          !env.hush() &&
+          !conversation.open &&
+          (!seen.met[id] || noticeFor(id) !== null),
+      );
+    }
     for (const id of IDS) {
       const r = rooms.rooms[CAST[id].room];
       guys[id].on = r.near.visible && r.ready;

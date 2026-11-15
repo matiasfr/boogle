@@ -30,6 +30,9 @@ export const railMaxDuration = (w: World) =>
   scheduleOf(LINE1_STATIONS[activeStation(w)]!, w.get(Job, jobId(w, activeStation(w)))!).totalTicks;
 /** T3 is laid: line one is open. */
 export const railLineOpen = (w: World) => !!w.get(Job, jobId(w, 2))!.completion;
+/** Engine ignition belongs to the first full bill, not the starter-tool handoff (`Rail.awake`).
+ * Derived from the saved job so old saves retain their tools and progress without a migration. */
+export const railEngineStart = (w: World) => w.get(Job, jobId(w, 0))!.start;
 /** Rail pairs laid on line one (whole contacts from accepted elapsed ticks). */
 export const railPanelCount = (w: World, at?: number) =>
   railJobs(w, at).reduce(
