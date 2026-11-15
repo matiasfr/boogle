@@ -2439,18 +2439,6 @@
       "area": 3.9005596837675194
     },
     {
-      "id": "[\"a\",\"gorge.massing.14/instance-0\",\"gorge.massing.26\"]",
-      "pairs": ["[\"gorge.massing.14/instance-0\",\"gorge.massing.26/instance-0\"]"],
-      "position": [-93.79017629163228, 3.8999999999999995, -1969.9418903245082],
-      "area": 3.8414132630293105
-    },
-    {
-      "id": "[\"a\",\"gorge.massing.16/instance-0\",\"gorge.massing.26\"]",
-      "pairs": ["[\"gorge.massing.16/instance-0\",\"gorge.massing.26/instance-0\"]"],
-      "position": [-97.0999267286851, 3.9, -1972.111409762265],
-      "area": 3.064907297859636
-    },
-    {
       "id": "[\"a\",\"bell.bay-bed-out/instance-0\",\"bell.upper-in-n\"]",
       "pairs": ["[\"bell.bay-bed-out/instance-0\",\"bell.upper-in-n/instance-0\"]"],
       "position": [-47.9585227064306, 14.000000000000002, -853.8650434721714],
@@ -2461,18 +2449,6 @@
       "pairs": ["[\"bell.bay-bed-in/instance-0\",\"bell.upper-out-n/instance-0\"]"],
       "position": [-51.314570254980985, 14, -854.1687043102928],
       "area": 2.9477433082696645
-    },
-    {
-      "id": "[\"a\",\"gorge.massing.26/instance-0\",\"gorge.massing.74\"]",
-      "pairs": ["[\"gorge.massing.26/instance-0\",\"gorge.massing.74/instance-0\"]"],
-      "position": [-92.91734922130146, 3.899999999999999, -1969.2738497432904],
-      "area": 1.9921499646841525
-    },
-    {
-      "id": "[\"a\",\"gorge.massing.18/instance-0\",\"gorge.massing.27\"]",
-      "pairs": ["[\"gorge.massing.18/instance-0\",\"gorge.massing.27/instance-0\"]"],
-      "position": [-104.5593756089377, 3.8999999999999995, -1976.8712056336087],
-      "area": 1.912439373192073
     },
     {
       "id": "[\"a\",\"pattern\",\"[\\\"Home/yard\\\",\\\"Home/yard/rail\\\",\\\"Home/yard/sleeper\\\"]\"]",
@@ -2588,24 +2564,6 @@
       "area": 1.8495522030529092
     },
     {
-      "id": "[\"a\",\"gorge.massing.16/instance-0\",\"gorge.massing.27\"]",
-      "pairs": ["[\"gorge.massing.16/instance-0\",\"gorge.massing.27/instance-0\"]"],
-      "position": [-100.36423564032704, 3.8999999999999995, -1974.210635779318],
-      "area": 1.716082737063565
-    },
-    {
-      "id": "[\"a\",\"gorge.massing.48/instance-0\",\"gorge.massing.51\"]",
-      "pairs": ["[\"gorge.massing.48/instance-0\",\"gorge.massing.51/instance-0\"]"],
-      "position": [-78.35718059199864, 85.10000000000002, -2025.9823572025434],
-      "area": 1.4992822035637723
-    },
-    {
-      "id": "[\"a\",\"gorge.massing.18/instance-0\",\"gorge.massing.20\"]",
-      "pairs": ["[\"gorge.massing.18/instance-0\",\"gorge.massing.20/instance-0\"]"],
-      "position": [-107.39670488416749, 3.9, -1980.9660515954554],
-      "area": 1.1729050851932394
-    },
-    {
       "id": "[\"a\",\"src/place/tech-layout.ts:pad/jump-catch-6\",\"src/place/tech-layout.ts:pad/jump-return\"]",
       "pairs": ["[\"src/place/tech-layout.ts:pad/jump-catch-6\",\"src/place/tech-layout.ts:pad/jump-return\"]"],
       "position": [955.495773331522, 22.568775796516036, -59.49005105784662],
@@ -2619,12 +2577,6 @@
       ],
       "position": [919.1095283774376, 18.331361859403028, 9.94690630543376],
       "area": 1.1250155979106187
-    },
-    {
-      "id": "[\"a\",\"gorge.massing.26/instance-0\",\"gorge.massing.73\"]",
-      "pairs": ["[\"gorge.massing.26/instance-0\",\"gorge.massing.73/instance-0\"]"],
-      "position": [-101.41678536570693, 3.8999999999999995, -1968.3230970247114],
-      "area": 1.071958236299036
     },
     {
       "id": "[\"a\",\"railway.halt-1-down-deck/part-4\",\"railway.halt-1-down-deck/part/b/2.5,0.5,6.02,#bdb8ac\"]",
