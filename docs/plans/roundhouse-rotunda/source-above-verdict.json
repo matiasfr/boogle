@@ -1,0 +1,15 @@
+{
+  "verdict": "pass",
+  "view": "rotunda-above",
+  "commit": "bff2e620325e7860926687684cb05d4bcbdcb8cd",
+  "tree": "861adfe666245c287b5fd7953dd5edb4a1ba49d3",
+  "dirty": 0,
+  "loadAtStart": 18.67,
+  "loadAtEnd": 17.45,
+  "underLoad": false,
+  "queueWaitMs": 506,
+  "shared": true,
+  "startedAt": "2026-11-15T12:06:00.276Z",
+  "endedAt": "2026-11-15T12:07:00.174Z",
+  "command": "node dev/look/look.ts --rail-seed steel-home --cam 944.55,85,5 --look 944.55,18,29 --frames 2 --seconds 1 --name rotunda-above --question 'What footprint and palette must the seven bay concept retain?'"
+}

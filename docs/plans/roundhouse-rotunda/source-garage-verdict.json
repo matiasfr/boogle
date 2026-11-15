@@ -1,0 +1,15 @@
+{
+  "verdict": "pass",
+  "view": "rotunda-stage1-actual",
+  "commit": "bff2e620325e7860926687684cb05d4bcbdcb8cd",
+  "tree": "861adfe666245c287b5fd7953dd5edb4a1ba49d3",
+  "dirty": 0,
+  "loadAtStart": 17.19,
+  "loadAtEnd": 18.11,
+  "underLoad": false,
+  "queueWaitMs": 505,
+  "shared": false,
+  "startedAt": "2026-11-15T12:10:57.135Z",
+  "endedAt": "2026-11-15T12:11:24.283Z",
+  "command": "BOOGLE_BOT_MAX_LOAD=0 node dev/look/look.ts --rail-seed wagon-on --action .look/garage-camera-action.ts --frames 2 --seconds 1 --name rotunda-stage1-actual --question 'Actual garage camera: three-bay shell scale and palette'"
+}

@@ -1,0 +1,15 @@
+{
+  "verdict": "pass",
+  "view": "rotunda-stage0-spur",
+  "commit": "bff2e620325e7860926687684cb05d4bcbdcb8cd",
+  "tree": "861adfe666245c287b5fd7953dd5edb4a1ba49d3",
+  "dirty": 0,
+  "loadAtStart": 10.9,
+  "loadAtEnd": 23.21,
+  "underLoad": false,
+  "queueWaitMs": 509,
+  "shared": false,
+  "startedAt": "2026-11-15T12:05:51.216Z",
+  "endedAt": "2026-11-15T12:06:17.511Z",
+  "command": "node dev/look/look.ts --rail-seed works-open --cam 930,21,7 --look 944.555,20,28 --frames 2 --seconds 1 --name rotunda-stage0-spur --question 'How do the five ruin bays frame the 16 m table from the spur?'"
+}
