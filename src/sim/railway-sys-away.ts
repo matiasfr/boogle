@@ -248,7 +248,7 @@ export const supply = defineSystem(
       // Back to the tree: an abandoned beam recovers once its minutes are up (railBeamRecover).
       const g = w.get(Beam, beamId(w))!;
       if (e.beam !== undefined && g.revision === e.beam && g.age === 21 && g.revision < 2147483647) {
-        Object.assign(w.mut(Beam, beamId(w))!, { state: 'available', x: LINE1_GREAT_TREE.x, y: 3000, age: 0 });
+        Object.assign(w.mut(Beam, beamId(w))!, { state: 'available', x: LINE1_GREAT_TREE.x, y: 2970, age: 0 });
         const bm = w.mut(Beam, beamId(w))!;
         bm.z = LINE1_GREAT_TREE.z;
         bm.revision++;

@@ -592,7 +592,7 @@ export const GROVES = [
 /** One old tree by the forge, for trying the new axe on the spot. */
 export const OAK = { x: -74, z: -12 };
 /** The great tree, on the ridge, in sight of station 3. Its trunk is station 3's main beam. */
-export const GREAT_TREE = { x: -4, z: -138 };
+export const GREAT_TREE = { x: 0, z: -62 };
 /** Banded rocks, near station 2. */
 export const ROCKS = [
   { x: 1, z: -106, r: 1.7 },

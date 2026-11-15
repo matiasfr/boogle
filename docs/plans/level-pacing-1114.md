@@ -1,7 +1,7 @@
-> **Status: proposed (2026-11-14). Design only; nothing built.** Four notes from the owner's 14 November play session,
+> **Status: partly built (2026-11-14). A1 is on main; A2 is implemented on `codex/great-tree-v47`, unshipped.** Four notes from the owner's 14 November play session,
 > each with a diagnosis from the code and his session data, three options and one recommendation. Base: `origin/main`
 > at `643548676`. Steps A1, B1, C1, C2 and D1 are view-only and need no bump; step A2 moves a sim constant and takes the
-> next free `WORLD_NS` (v45).
+> next free `WORLD_NS` (originally v45; A2 now uses v47 after v45 and v46 shipped).
 
 # Level pacing, 14 November: the great tree, the pinnacle, Q5's rails and the station boxes
 
@@ -255,17 +255,26 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. Run `npm run infl
   `railBeamChoppable` is false and the tree stands, register its `Chop` prompt as blocked with the reason "For
   Station 3's beam" within the existing 4.6 m; the rebound is unchanged. Test: the prompt's state for T1 active, T3
   active and the tree felled. Proof look: `--rail-seed awake`, Buddy 3 m from the tree, the blocked prompt in frame.
-- [ ] **A2. The great tree on the prow. Sim tier, `WORLD_NS` v45 (not mid-session; batch with any other v45 work).**
+- [x] **A2. The great tree on the prow. Sim tier, `WORLD_NS` v47 (14 November; v45 and v46 already shipped).**
   `GREAT_TREE` to (0, −62) in `src/place/layout.ts`; `LINE1_GREAT_TREE` to `{ id: 28, x: 100000, z: -6200 }` and its
   ground height 2970 where 3000 is written beside it (`railway-line-layout.ts:45`, `railway-components.ts:87`,
   `railway-sys-line1.ts:283`, `railway-sys-away.ts:251`); re-derive `BEAM_AREA` so the prow and the 35 m to Station 3
   are inside it; regenerate the pinned source table and `test/fixtures/railway-golden.json`; `dev/loop/graph.ts` beam
-  1x35; `src/world/namespace.ts` v45 with a dated line; place.md's Station 3 paragraph. Verify: `npm run level-check --
+  1x35; `src/world/namespace.ts` v47 with a dated line; place.md's Station 3 paragraph. Verify: `npm run level-check --
   --place=place` ("the great tree" still `ok` at the start); `npm run loop -- run`; the bot's beam leg
   (`dev/look/bots/railway.ts`, which reads `LINE1_GREAT_TREE`). Proof looks (two): from the footbridge
   (world 952, 3.4, −82) looking up at the prow (world 1000, 45, −62), and `--rail-seed awake` from the wake spot looking north, to confirm the tree
   shows over Station 1's grove and that an ordinary tree is now the nearest. If the prow tree cannot fall clear in
   play, widen the search to (0, −60) to (2, −74) before changing the rule.
+  Implementation note (14 November): A1's blocked prompt is already on main. The great tree's live fall was fixed
+  eastward and its reload pose northward, unlike ordinary trees' `safeTreeFall`. All 45 one-metre candidates in the
+  requested search rectangle fail the eastward footprint check. Keep (0, −62) and use the existing fall search for
+  both the live great-tree fall and its restored pose; it selects south, clear of the cliff. Ordinary source IDs
+  and all 388 ordinary-source coordinates regenerate identically. The v47 beam defaults also require schema,
+  op-stream, tick-order, headway, client-read and host-trace fixture regeneration; no assertions are relaxed.
+  Proof limit: the footbridge still shows the crown partly behind a hook platform. At the wake spot an ordinary
+  tree is now nearest, but the foreground grove obscures the distant crown; the "shows over the grove" claim is
+  not established by that still. The solo bot completes the moved beam leg and T3.
 - [ ] **B1. The glider's seal. View tier, no bump.** `src/entities/railway/glide-device-view.ts`: sealed look in cream
   and teal under three brass bands; bands = 3 minus the laid count of Q3, Q4, Q5; the band flare; the blocked `Take it`
   prompt with its reason. Test: band count per seed (`hook-taken` 3, `q3-done` 2, `q4-done` 1, `q5-done` woken). Proof

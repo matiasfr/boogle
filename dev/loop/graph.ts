@@ -358,7 +358,7 @@ export const NODES: readonly LoopNode[] = [
     id: 'beam',
     label: 'Fell the great tree and drag the beam to T3',
     area: 'line 1',
-    // Reached where the beam goes: its carry is this node's, from the tree to T3's frame.
+    // Reached where the beam goes: one 35 m carry from the prow tree to T3's frame, derived from the catalog.
     at: p(T3_ID),
     bill: { beam: T3_ID.beam },
     supply: { beam: one(p(LINE1_GREAT_TREE), 'the great tree') },

@@ -84,7 +84,7 @@ export const Beam = defineComponent(
     z: 'int',
     age: 'int',
   },
-  { defaults: { state: 'standing', x: LINE1_GREAT_TREE.x, y: 3000, z: LINE1_GREAT_TREE.z } },
+  { defaults: { state: 'standing', x: LINE1_GREAT_TREE.x, y: 2970, z: LINE1_GREAT_TREE.z } },
 );
 /** The depot cart (./railway-cart.ts): sent only when its phase changes; its place on the road follows from the tick. */
 export const Cart = defineComponent('cart', {

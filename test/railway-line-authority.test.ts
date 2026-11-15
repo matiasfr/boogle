@@ -197,7 +197,9 @@ test('line-one bills, unique beam and funded completion survive every stage rest
   s = restore(s);
   assert.equal(act(s, 'a', 'rail.beamDrop', { revision: beam(s).revision, x: 0, y: -1000, z: 0 }).r.accepted, 1);
   assert.equal(beam(s).state, 'available');
-  assert.equal(beam(s).x, 99600, 'unsafe/unverified pose uses same source anchor');
+  assert.equal(beam(s).x, 100000, 'unsafe/unverified pose uses same source anchor');
+  assert.equal(beam(s).y, 2970, 'recovery uses the prow ground height');
+  assert.equal(beam(s).z, -6200, 'recovery uses the prow source');
   act(s, 'b', 'rail.beamTake', { revision: beam(s).revision });
   const heldRevision = beam(s).revision;
   assert.equal(act(s, 'b', 'rail.beamDeposit', { revision: heldRevision, station: 'T3' }).r.accepted, 1);
@@ -370,6 +372,7 @@ test('safe loose beam keeps its identity; recovery is slow, explicit, revision-f
   assert.equal(beam(s).state, 'ground');
   pulse(123, beam(s).revision);
   assert.equal(beam(s).state, 'available');
+  assert.deepEqual([beam(s).x, beam(s).y, beam(s).z], [100000, 2970, -6200], 'aged beam recovers to the prow');
   act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
   pulse(200, beam(s).revision);
   assert.equal(beam(s).state, 'held');
