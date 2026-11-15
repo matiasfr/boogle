@@ -184,3 +184,53 @@ test('re-review: array subclasses cannot compile as JSON data', () => {
   assert.throws(() => compile([record as PrefabDef], [], registry), /non-JSON/);
   validateJson([1, 2, 3]);
 });
+
+test('leaning trunk recipes and generator metadata reject malformed inputs', () => {
+  const palm: PrefabDef = {
+    ...prefab(),
+    key: 'scenery.palm',
+    footprint: 0.5,
+    colliders: [{ shape: 'trunk-chain', at: [0, 0, 0], segments: 7, r: 0.32, lift: 0.25 }],
+  };
+  const defs = { 'scenery.palm': palm, 'scenery.broadleaf': prefab(), 'scenery.rock': prefab() };
+  const level = {
+    place: 'island-props',
+    placements: [],
+    generator: {
+      name: 'island-props',
+      seeds: [20261028, 20261029],
+      prefabs: Object.keys(defs),
+    },
+  };
+  validatePrefab(palm, registry);
+  validateLevel(level, defs);
+  for (const change of [
+    { segments: 0 },
+    { segments: 1.5 },
+    { r: -1 },
+    { lift: NaN },
+    { at: [1, 0, 0] },
+    { rot: [0, 0, 0] },
+  ])
+    assert.throws(() => validatePrefab({ ...palm, colliders: [{ ...palm.colliders[0], ...change }] }, registry));
+  for (const change of [
+    { name: 'unknown' },
+    { seeds: [1] },
+    { seeds: [1, 0.5] },
+    { seeds: [1, -1] },
+    { seeds: [1, 2 ** 32] },
+    { prefabs: ['missing.prop'] },
+  ])
+    assert.throws(() => validateLevel({ ...level, generator: { ...level.generator, ...change } }, defs));
+  const p = {
+    id: 'palm',
+    prefab: 'scenery.palm',
+    pos: [0, 0, 0],
+    params: { lean: { angle: 1, amount: 0.2, height: 5 } },
+  };
+  validateLevel({ place: 'resolved', placements: [p] }, defs);
+  for (const lean of [undefined, {}, { angle: '1', amount: 0.2, height: 5 }, { angle: 1, amount: 0.2, height: 0 }])
+    assert.throws(() => validateLevel({ place: 'resolved', placements: [{ ...p, params: { lean } }] }, defs));
+  assert.throws(() => validateLevel({ ...level, placements: [p] }, defs));
+  assert.throws(() => validateLevel({ ...level, layout: { kind: 'gorge' } }, defs));
+});

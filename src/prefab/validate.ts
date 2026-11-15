@@ -74,7 +74,7 @@ export function validateColliderWorldTransforms(
       Math.abs(dot(unit[1], unit[2])) <= SCALE_RELATIVE_TOLERANCE;
     if (!orthogonal) fail('sheared collider world basis');
     const uniform = equal(scale[0], scale[1]) && equal(scale[0], scale[2]) && equal(scale[1], scale[2]);
-    if (c.shape === 'sphere' && !uniform) fail('sphere needs uniform scale');
+    if ((c.shape === 'sphere' || c.shape === 'trunk-chain') && !uniform) fail('sphere needs uniform scale');
     if (c.shape === 'trunk' && !equal(scale[0], scale[2])) fail('trunk needs equal radial scale');
     checked.push(basis);
   }
@@ -174,6 +174,8 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
   if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail('key needs area.name');
   if (registry.retired.includes(key)) fail(`retired key ${key}`);
   known(p.scope, ['owner', 'place', 'room']);
+  if (p.footprint !== undefined) number(p.footprint, true);
+  if (p.wet !== undefined && typeof p.wet !== 'boolean') fail('wet must be boolean');
   const v = object(p.visual);
   if (Object.hasOwn(v, 'builder')) {
     known(v.builder, registry.builders);
@@ -213,6 +215,13 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
       case 'trunk':
         number(c.r, true);
         number(c.h, true);
+        break;
+      case 'trunk-chain':
+        number(c.r, true);
+        number(c.lift);
+        number(c.segments, true);
+        if (!Number.isInteger(c.segments)) fail('trunk-chain segments must be integer');
+        if (c.rot !== undefined || (c.at as number[]).some((n) => n !== 0)) fail('trunk-chain origin must be identity');
         break;
       case 'trimesh': {
         const vertices = list(c.vertices),
@@ -290,7 +299,14 @@ export function validatePlacement(
   if (p.params !== undefined) object(p.params);
   if (p.parent !== undefined) text(p.parent);
   const labels = p.labels === undefined ? {} : object(p.labels);
-  const attachments = resolvePrefab(prefabs[text(p.prefab)]!, prefabs).attach ?? {};
+  const def = resolvePrefab(prefabs[text(p.prefab)]!, prefabs);
+  if (def.colliders.some((c) => c.shape === 'trunk-chain')) {
+    const lean = object(object(p.params).lean);
+    number(lean.angle);
+    number(lean.amount);
+    number(lean.height, true);
+  }
+  const attachments = def.attach ?? {};
   for (const [name, key] of Object.entries(labels)) {
     if (attachments[name]?.kind !== 'label') fail('unknown label attachment');
     text(key);
@@ -302,11 +318,28 @@ export function validateLevel(value: unknown, prefabs: Readonly<Record<string, P
   validateJson(value);
   const raw = object(value);
   if (raw.layout !== undefined) {
+    if (raw.generator !== undefined) fail('scenery generator cannot coexist with a layout');
     validateLevel(resolveLayout(raw as unknown as LevelDef), prefabs);
     return;
   }
   const level = raw;
   text(level.place);
+  if (level.generator !== undefined) {
+    const g = object(level.generator);
+    known(g.name, ['land-trees', 'island-props']);
+    if (level.place !== g.name || level.layout !== undefined || list(level.placements).length)
+      fail('scenery generator must own an unexpanded level');
+    const seeds = list(g.seeds);
+    if (
+      seeds.length !== 2 ||
+      seeds.some((s) => !Number.isInteger(s) || (s as number) < 0 || (s as number) > 0xffffffff)
+    )
+      fail('scenery generator needs two uint32 seeds');
+    const keys = list(g.prefabs);
+    const expected = g.name === 'land-trees' ? ['scenery.tree'] : ['scenery.palm', 'scenery.broadleaf', 'scenery.rock'];
+    if (JSON.stringify(keys) !== JSON.stringify(expected)) fail('scenery generator prefab order differs');
+    for (const key of keys) if (!Object.hasOwn(prefabs, text(key))) fail('unknown scenery prefab');
+  }
   const placements = list(level.placements),
     ids = new Set<string>();
   for (const value of placements) {

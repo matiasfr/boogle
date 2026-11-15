@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { BALL_SPAWN, CELL, COURT, GRID_RES, HALF, SPAWN } from '../../src/constants.ts';
-import { isHomePalm, scatterProps, type PropPlacement } from '../../src/blueprints/props.ts';
+import { isHomePalm, scatterProps, propSample, type PropSample } from '../../src/blueprints/props.ts';
 import { heightIn, islandBaseCm } from '../../src/island/ground.ts';
 import { clearedIn, moveSite, routeIn, type LayoutFile, type Section } from '../../src/island/layout.ts';
 import { createIsland, siteFrame } from '../../src/island/stamps.ts';
@@ -28,7 +28,7 @@ export type Level = {
   /** Metres at i * GRID_RES + j: x = i * CELL - HALF, z = HALF - j * CELL. */
   h: Float64Array;
   groundAt: (x: number, z: number) => number;
-  placements: PropPlacement[]; // what stands: a layout's `clear` is already applied
+  placements: PropSample[]; // what stands: generated records adapted for the legacy analysis, then cleared
   targets: Target[]; // what a player is meant to reach
   discs: Disc[]; // the ground things have claimed
   spawnNode: number;
@@ -64,9 +64,9 @@ export function loadLevel(layoutFile: string | null): Level {
   const fileRoute = layout?.route ?? [];
   const labSections = Math.max(0, fileRoute.length - ROUTE.length);
   const routeFile = layoutFile ?? 'src/sim/route.ts';
-  const placements = scatterProps({ groundHeight: groundAt, keptOut: island.keptOut }).filter(
-    (p) => isHomePalm(p) || !clearedIn(layout, route, p.x, p.z),
-  );
+  const placements = scatterProps({ groundHeight: groundAt, keptOut: island.keptOut })
+    .map(propSample)
+    .filter((p) => isHomePalm(p) || !clearedIn(layout, route, p.x, p.z));
 
   const targets: Target[] = [
     { name: 'spawn', ...SPAWN, file: 'src/constants.ts' },
