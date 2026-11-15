@@ -1,5 +1,5 @@
 // Railhead traveller, step 1: a pose derived only from the haul's inputs and the rule clock.
-// No row fields or live callers yet; docs/plans/railhead-traveller.md owns their later integration.
+// The accepted Aperture row carries these inputs; docs/plans/railhead-traveller.md owns the view integration.
 import { RING_HEAD } from './railway-ring-layout.ts';
 
 /** Rule ticks (100 ms), centimetres per tick. The archived MOVE timings, without the view's landed gate. */

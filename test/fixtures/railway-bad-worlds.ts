@@ -420,7 +420,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
   },
   // ------------------------------------------------ the steel works (src/sim/railway-check-steel.ts, ring-island-build2)
   // Each throws before the log count, which runs last, so a bill set by hand takes no logs from elsewhere; rails are
-  // counted earlier (line two's rail conservation), so they come off ring-joined's forge rack (20).
+  // counted earlier (line two's rail conservation), so they come off the current seed's forge rack.
   { site: 'steel bounds', message: 'railway: steel bounds', stage: X, break: (w) => set(w, Steel, { lit: -2 }) },
   {
     site: 'steel aboard (line 1)',
@@ -456,7 +456,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     message: 'railway: steel sent rails',
     stage: J,
     break: (w) => {
-      set(w, Forge, { rack: 19 });
+      set(w, Forge, { rack: w.get(Forge, w.single(Forge))!.rack - 1 });
       set(w, Steel, { yardRails: 1 });
     },
   },
@@ -466,7 +466,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     message: 'railway: steel cast clock',
     stage: J,
     break: (w) => {
-      set(w, Forge, { rack: 8 });
+      set(w, Forge, { rack: w.get(Forge, w.single(Forge))!.rack - 12 });
       set(w, Steel, { logs: 8, rails: 12, lit: 100 });
       set(w, SteelClock, { lastCast: 50 });
     },
@@ -482,7 +482,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     message: 'railway: steel conservation',
     stage: J,
     break: (w) => {
-      set(w, Forge, { rack: 8 });
+      set(w, Forge, { rack: w.get(Forge, w.single(Forge))!.rack - 12 });
       set(w, Steel, { logs: 8, rails: 12, lit: 100, poured: 1 });
       set(w, SteelClock, { lastCast: 100 });
     },

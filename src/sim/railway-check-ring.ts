@@ -11,6 +11,8 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { aperture } from './railway-rows.ts';
 import { q7Laid } from './railway-queries.ts';
+import { RING_HEAD } from './railway-ring-layout.ts';
+import { haulTarget } from './railway-ring-haul.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
@@ -23,9 +25,13 @@ export function checkRing(w: World) {
     !railInt(a.rack, WORKS.wagonCap) ||
     !railInt(a.cw, WORKS.counterweight) ||
     !railInt(a.brace, 2) ||
-    !railInt(a.joined, RAILWAY_MAX_INT, -1)
+    !railInt(a.joined, RAILWAY_MAX_INT, -1) ||
+    !railInt(a.moved, RAILWAY_MAX_INT, -1) ||
+    !railInt(a.from, RAILWAY_MAX_INT)
   )
     bad('ring bounds');
+  if (a.moved >= 0 !== a.set >= 2) bad('ring haul stamp');
+  if (a.moved < 0 ? a.from !== 0 : a.from < RING_HEAD[0]!.u || a.from > haulTarget(a)) bad('ring haul origin');
   if ((a.set || a.rack || a.cw) && !q7Laid(w)) bad('ring before Q7');
   // No counterweight and no brace before the gap is footed.
   if ((a.cw > 0 || a.brace !== 1) && a.set !== WORKS.ring) bad('counterweight before the gap');

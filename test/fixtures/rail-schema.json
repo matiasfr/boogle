@@ -1,5 +1,5 @@
 {
-  "worldNs": "v45",
+  "worldNs": "v46",
   "components": [
     {
       "kind": "rail",
@@ -449,14 +449,17 @@
       "requires": [],
       "defaults": {
         "brace": 1,
-        "joined": -1
+        "joined": -1,
+        "moved": -1
       },
       "fields": [
         ["set", "int"],
         ["rack", "int"],
         ["cw", "u8"],
         ["brace", "u8"],
-        ["joined", "int"]
+        ["joined", "int"],
+        ["moved", "int"],
+        ["from", "int"]
       ]
     },
     {

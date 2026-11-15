@@ -147,12 +147,14 @@ export const Train = defineComponent(
 /** Ring Island's gap (docs/plans/ring-island-build1.md, R3, v27; rules in ./railway-sys-ring.ts): `set` bent footings set
  * past bent 6 (0-14; the railhead is at bent 6 + floor(set / 2)), `rack` footings on the railhead rack, `cw`
  * counterweight footings hung on the jib (0-4), `brace` the raised leaf's pawl (1 raised on it, 2 braced, 0 down), and
- * `joined` the tick the rivet was struck (-1 not yet). Defined here with the other components (not beside its systems)
+ * `joined` the tick the rivet was struck (-1 not yet). `moved` is the last pair's accepted rule tick (-1 before any
+ * pair), and `from` the traveller end's integer u in cm at that tick (0 before any pair; v46).
+ * Defined here with the other components (not beside its systems)
  * so the schema has one module and no import cycle. */
 export const Aperture = defineComponent(
   'aperture',
-  { set: 'int', rack: 'int', cw: 'u8', brace: 'u8', joined: 'int' },
-  { defaults: { brace: 1, joined: -1 } },
+  { set: 'int', rack: 'int', cw: 'u8', brace: 'u8', joined: 'int', moved: 'int', from: 'int' },
+  { defaults: { brace: 1, joined: -1, moved: -1 } },
 );
 /** Ring Island's steel works (docs/plans/ring-island-build2.md, R1; rules in ./railway-sys-steel.ts): the kit lying in
  * the island yard off the train (`yardLogs`, `yardRails`), what has been fed into its bill (`logs`, `rails`, STEEL's
