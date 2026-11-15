@@ -143,12 +143,21 @@
   The lower gorge wall has broader, more continuous green patches without the ledges; the orchestrator accepted that
   difference after opening matched camera-9 stills. The cliffs retain their warm banded-rock character. Not tested on
   a device. [Plan and proofs](../plans/terrain-clean.md); earlier rounds are [history](../plans/terrain-pass.md).
+  Sand meets the gorge's bank across a nominal 7 m distance blend with per-pixel wander. The same packed attribute
+  carries unsaturated gorge distance; no extra texture or geometry is added. The broad-slope rock rule remains
+  unchanged: its proposed gate failed visual review and is unfinished in Part 2a.
 - **Paths read as paths (14 November; owner: "it should be more clearly looking like a path").** Every footpath on
   Home is drawn per pixel from a distance field of the path lines ([path-surface.ts](../../src/place/path-surface.ts);
   one 781 × 541 RGBA16F texture, 3.4 MB), over whatever ground is underneath and winning over slope rock within its
-  width: brown compacted earth, lighter where feet go, a dark cut edge with a painted bank, a darker verge, small
+  width: cool grey-brown packed earth (Fresh edge `#6e5f50`, middle `#93836f`), lighter where feet go and distinct
+  from the warm sandstone; a dark cut edge with a painted bank, a darker verge, small
   stones, and timber risers square across the tread on climbs steeper than 1 in 8. Bold paths are 6 m wide, the others
   3.8 m. No vertex moves; where a tread needs real reshaping the plan lists it for a ground step.
+  The path field's own height bounds the painted bench, with the original ground-facing facet cutoff retained so
+  tread colour, stones and painted normals do not climb the wall. The verge darkens only the bench outside the
+  horizontal tread footprint; a wall rejected by the bench never becomes a dark verge. Exterior cut-bank paint is
+  removed: the sandstone keeps its own colour right down to its foot. Existing folded treads, narrow green slivers
+  and a dotted crease remain height-work findings in Part 2b.
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon
   style B live as the default). No stepped light, cool shade side or rim on characters or the world. The comparison
   is kept as research: [toon-shading](../research/toon-shading.md).

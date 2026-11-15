@@ -34,6 +34,15 @@ import { FIELD_CELL, FIELD_H, FIELD_W, bakePathField } from './path-field.ts';
 // oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
 
+/** Fresh packed-earth pigments, independent of the cliff's sandstone. */
+export const PATH_PIGMENT = {
+  edge: '#6e5f50',
+  middle: '#93836f',
+  cut: '#4b3c30',
+  timber: '#5f4630',
+  stone: '#b3a892',
+} as const;
+
 /** A colour as it should look under the Fresh palette, written as the 'sand' family's anchor so the other palettes
  * still move it. */
 function sand(hex: string): N {
@@ -88,10 +97,14 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
   const d: N = raw.add(wobble);
   // One pixel of feather, so the edge stays clean from across the sea as well as underfoot.
   const soft: N = fwidth(raw).max(0.05);
-  // Only ground counts: where a wall is cut beside the tread, the wall's own facets stay rock.
+  // Bound paint to the path's height and its ground-facing facets: height alone also admits the wall's lowest strip.
   const facetUp: N = cameraViewMatrix.transpose().mul(vec4(normalFlat, 0)).y;
-  const ground: N = smoothstep(0.5, 0.66, facetUp);
-  const tread: N = smoothstep(soft.negate(), soft, d).oneMinus().mul(ground);
+  const bench: N = smoothstep(0.6, 0.9, p.y.sub(along))
+    .oneMinus()
+    .mul(smoothstep(0.9, 1.2, along.sub(p.y)).oneMinus())
+    .mul(smoothstep(0.5, 0.66, facetUp));
+  const coverage: N = smoothstep(soft.negate(), soft, d).oneMinus();
+  const tread: N = coverage.mul(bench);
   const near: N = smoothstep(30, 70, positionView.z.negate()).oneMinus(); // detail too small to draw from afar
   // Compacted earth: brown and smooth, lighter down the middle where feet go, mottled, with a fine grit up close.
   const middle: N = smoothstep(0.3, 1.5, d.negate());
@@ -102,7 +115,7 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
     .sub(0.5)
     .mul(0.05)
     .mul(smoothstep(8, 22, positionView.z.negate()).oneMinus());
-  const earth: N = mix(sand('#8f6f4a'), sand('#a98a5f'), middle).mul(mottle.add(grit).add(1));
+  const earth: N = mix(sand(PATH_PIGMENT.edge), sand(PATH_PIGMENT.middle), middle).mul(mottle.add(grit).add(1));
   // Timber risers across the tread on the climbs: one every 0.6 m of the path's own height, so each lies square across it.
   const climb: N = smoothstep(0.1, 0.16, grade);
   const rise: N = fract(along.div(0.6));
@@ -112,10 +125,10 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
     .mul(climb)
     .mul(smoothstep(0.25, 0.5, d.negate()));
   const lit: N = smoothstep(0.13, riserWidth.add(0.13), rise).mul(smoothstep(0.2, 0.34, rise).oneMinus());
-  const timber: N = sand('#6f5236');
+  const timber: N = sand(PATH_PIGMENT.timber);
   // The cut edge: dark earth just inside the line.
   const cut: N = smoothstep(0.06, 0.34, d.negate()).oneMinus().mul(tread);
-  const soil: N = sand('#5e4833');
+  const soil: N = sand(PATH_PIGMENT.cut);
   // Small stones along the edge, one cell in four.
   const cell: N = floor(p.xz.div(0.42));
   const centre: N = cell
@@ -132,18 +145,19 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
     .mul(hash(cell.add(9.7)).greaterThan(0.84))
     .mul(smoothstep(-0.9, -0.3, d))
     .mul(smoothstep(0.2, 0.55, d).oneMinus())
-    .mul(ground)
+    .mul(bench)
     .mul(near);
-  const pebble: N = sand('#b3a892').mul(
+  const pebble: N = sand(PATH_PIGMENT.stone).mul(
     dot(offset, vec2(-0.6, -0.8))
       .div(radius)
       .mul(0.16)
       .add(hash(cell.add(2.3)).mul(0.2).add(0.86)),
   );
-  // The verge: the ground beside the path a little darker, grass or the foot of a cut wall alike, out to about a metre.
+  // Darken only the bench beside the painted edge. A missing tread on a wall is not a verge.
   const verge: N = smoothstep(0, 1.1, d.add(sin(p.x.mul(3.7).add(p.z.mul(2.9))).mul(0.12)))
     .oneMinus()
-    .mul(tread.oneMinus());
+    .mul(coverage.oneMinus())
+    .mul(bench);
   patchNode(material, 'colorNode', (previous: N) => {
     let c: N = mix(previous, previous.mul(vec3(0.7, 0.78, 0.64)), verge.mul(0.75));
     let path: N = mix(earth, timber, riser.mul(0.85));
@@ -156,7 +170,7 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
   // other falls into shade, as a few centimetres of cut would. The drawn surface stays on the collider.
   const bank: N = smoothstep(-0.5, -0.12, d)
     .mul(smoothstep(-0.02, 0.14, d).oneMinus())
-    .mul(ground);
+    .mul(bench);
   const lean: N = cameraViewMatrix.mul(vec4(away.x.negate(), 0, away.y.negate(), 0)).xyz;
   patchNode(material, 'normalNode', (previous: N) =>
     previous.add(lean.mul(bank.mul(0.55)).mul(near.mul(0.6).add(0.4))).normalize(),

@@ -1,6 +1,6 @@
 # Terrain clean: no cliff ledges, clean walkable ground, then custom meshes
 
-_Plan, 14 November 2026. Part 1 implemented and checkpoint A recorded; Parts 2 and 3 not started. Original survey measured on main at `b2157fb6b`; every still was taken under load
+_Plan, 14 November 2026. Part 1 implemented and checkpoint A recorded; Part 2a partially implemented, with its wall-foot regression repaired; Parts 2b and 3 not started. Original survey measured on main at `b2157fb6b`; every survey still was taken under load
 (1-minute load 16 to 34), so stills are evidence of shape and colour only, not of timing, shimmer or motion. Not tested
 on a device._
 
@@ -286,7 +286,7 @@ Town paths on level ground (`H/c3-v0.png`, `H/c4-v0.png`) read clean: no finding
 
 ### 2a. View-only fixes, in order (no height moves; heights hash stays equal)
 
-- [ ] **1. The path is a different material from the rock (finding 1).** `src/place/path-surface.ts`: lift the
+- [x] **1. The path is a different material from the rock (finding 1).** `src/place/path-surface.ts`: lift the
   pigments into one exported `PATH_PIGMENT` record and move the earth away from the rock's hue and value: a cooler,
   darker packed earth (start: edge `#6e5f50`, middle `#93836f`, cut `#4b3c30`, timber `#5f4630`; today `#8f6f4a`,
   `#a98a5f`, `#5e4833`, `#6f5236`). Keep the lighter middle, mottle and grit. Capture two candidates on the three
@@ -294,6 +294,19 @@ Town paths on level ground (`H/c3-v0.png`, `H/c4-v0.png`) read clean: no finding
   the one that separates best from both rock and grass under Fresh, logged in `docs/agent-calls.md`. Verify: from the
   still, report the mean tread and mean wall colours; the tread is darker and greyer than the wall (target: at least
   30 of 255 apart in value, and visibly less orange); grass and tread still differ at `H/c3`'s framing.
+  - Completed in `codex/terrain-2a`: independent reviewer opened the matched three-camera sheet and chose the
+    start packed-earth pigments; gravel reads chalky/near white under Fresh. Town remains clearly distinct from
+    grass. Baseline and packed/gravel manifests: `.look/evidence/1794697324782-58718/evidence.json`,
+    `.look/evidence/1794697846901-84067/evidence.json`, `.look/evidence/1794698045430-91537/evidence.json`.
+    Opened baseline c0–c5 (paths cameras 0,1,2,3,7,10), packed c0–c3 and the three-row candidate sheet
+    `.look/terrain-2a/packed-left-gravel-right.png`. Fixed c0 pixel rectangles (x,y,w,h): tread (330,690,270,80),
+    lit wall (980,10,100,150); mean sRGB **(182,171,158)** / **(213,159,99)**. HSV value differs by **31/255**;
+    R minus B is 24 versus 114. This is a region comparison, not a whole-material average under matched normals.
+    Ship-check passed (56 affected test files); all six hashes match baseline `902217fc7`.
+    Survey worktree H was removed, so the retained `paths-shots.ts` canyon/town/far/shore poses substitute for its
+    unavailable camera definitions. Broker single-player warp was rejected; supported `--real` captured the same
+    frozen shot action. One queued attempt timed out; retry passed. Shared load: no timing or motion conclusion.
+    Independent review used the available model because Fable was unavailable. Not tested on a device.
 - [ ] **2. The tread's edge is the path's, not the triangles' (findings 2 and 5).** `path-surface.ts`:
   - Replace the facet test `ground = smoothstep(0.5, 0.66, facetUp)` in `tread` with a bench test from the field's own
     height: `bench = (1 - smoothstep(0.6, 0.9, p.y - along)) * (1 - smoothstep(0.9, 1.2, along - p.y))`. A wall rising
@@ -304,11 +317,52 @@ Town paths on level ground (`H/c3-v0.png`, `H/c4-v0.png`) read clean: no finding
   - Stones, verge and painted bank keep their rules, with `ground` replaced by `bench`.
   - Verify: `H/c1`'s camera from above shows one line on the wall side, no green between tread and rock; the dotted
     line at (951, -103) is gone at `c2`'s crop; `test/path-field.test.ts` green (the field is unchanged).
+  - [x] Implementation complete; visual acceptance is **partial**. The own-height bench removes the small green
+    tread holes, but a dark dotted crease remains in the walking-up view. Do not claim finding 5 closed: Part 2b
+    still owns the folded geometry. Final opened c0, c1 and c2: `.look/evidence/1794699138778-29298/evidence.json`,
+    against packed-earth c0–c2 from step 1. The cliff stays tan above a restrained cut-earth foot; isolated cut
+    pockets remain at mesh folds. No source height moved; six hashes match. Path-field tests and ship-check pass.
+  - Visual repair departure: the literal exterior band painted whole dark cliff strips (opened c0/c1 from
+    `.look/evidence/1794698304300-8309/evidence.json`; that run also failed an exact one-pixel/channel repeat).
+    An unchanged retry passed health (`1794698886579-22035`). A height cap alone still drew black stripes and
+    downhill patches (opened c0–c2 from `1794698933745-23570`); the third source iteration restricts paint to the
+    uphill 0.6–1.2 m foot at half strength. No further autonomous tuning; residual dots are recorded, not hidden.
+  - [x] **P2 wall-foot regression repair (`codex/terrain-2a-fix`, owner-authorized follow-up).** Supersedes the
+    exterior cut-bank treatment above: remove that paint entirely. Keep the path-height bench and restore the
+    original `smoothstep(0.5, 0.66, facetUp)` ground-facing mask for tread, stones and painted normals. The verge
+    uses horizontal tread coverage, then the bench; rejected wall fragments no longer become a dark verge.
+    Opened matched 1280×800 c0, c1, c2 and c5 from `.look/terrain-2a-fix/round2/shots/`, against retained baseline
+    `1794697324782-58718` and reviewed branch `1794700012427-59122`: charcoal scallops and vertical grey wall-foot
+    paint are gone; the warm sandstone meets a distinct grey-brown tread. Shore blend remains intact.
+    Round 1 removed the scallops but retained grey paint on slanted facets, so it was rejected. Round 2 restores
+    the established facet cutoff; both captures passed health and exact-repeat checks at the original viewport,
+    without a screenshot timeout. All six heights/collision hashes match the original baseline. `terrain.ts` is
+    untouched. Full static checks pass (2,155 passes, one existing TODO); final ship-check and T1 proof are recorded
+    in `.look/terrain-2a-fix/`. No push or ship; no timing conclusion; not tested on a device.
+  - [ ] **P3 dotted crease remains.** Visible beside the right wall in c0, with narrow green slivers at some folds;
+    not closed by this wall-foot repair. The step-2 parent remains open, and Part 2b owns reshaping the tread.
 - [ ] **3. Shore and rock borders (findings 6 and 8).** `src/place/ground-material.ts`: (a) the gorge-floor mask
   takes a per-pixel wander and a wider blend so sand meets bank over 6 to 8 m, not on a 2 m vertex line; (b) the
   broad-slope rock rule (`broad`) applies only where the interpolated vertex `steep` input is above 0.05, that is on triangles that
   touch truly unwalkable rock, so lone tan patches on walkable coast slope and lone rock triangles in grass go. Verify: `H/c7` and
   `H/c1` cameras; the far camera (paths-shots 7) shows no new patches.
+  - [x] Shore blend implemented and opened: `.look/evidence/1794699791806-48979/evidence.json`, c0–c5, against
+    step 2's matched views. Sand meets bank more softly; original cliff/coast rock is preserved. Distance thresholds
+    are 14.5–21.5 m, with bounded 0.6 m per-pixel wander. **Small source-scope departure:** `land.ts` passes raw
+    `gorgeD` through the existing fourth attribute component (outside sentinel 1e6); the former saturated 4 m mask
+    cannot express a 7 m blend. No new attribute, texture, height or collider. Six hashes remain equal.
+  - [ ] Broad-rule cleanup remains unfinished after three inspected source iterations. Literal `steep > 0.05`
+    gating made vertical cliff strips green (`1794699239260-34226`, c0–c5 opened), because this vertex field records
+    the flattest adjacent face. A true rendered-face guard restored cliffs but introduced speckled boundaries
+    (`1794699414365-41449`, c0–c5 opened); softening it made large angular coast slabs at far LOD
+    (`1794699702563-48370`, c0–c5 opened). Both author and independent reviewer rejected these. The original rock
+    rule is restored; no claim that coastal tan patches or grass/rock zigzags are removed. Stop at the look's
+    iteration limit; a consistent true-face input across full-resolution and far terrain needs a later plan repair.
+
+Part 2a local result: step 1 complete; step 2 implemented with its wall-foot regression repaired but visual acceptance
+still partial (dotted crease and green slivers remain); step 3 shore complete,
+rock-border cleanup unfinished. Checkpoint B is **not complete** and no ship is authorized in this job. The Boogler's
+copy is unchanged; no suspect line encountered. No ROM data added. Not tested on a device.
 
 **Checkpoint B (end of 2a):** one proof look (canyon walking up, from above, across the valley, shore, town), opened
 by the visual reviewer against the owner's sentence; heights hash equal; one ship. Update the paths bullet in
