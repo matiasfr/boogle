@@ -48,7 +48,16 @@ const placements: Placement[] = PLOTS.flatMap(([plot, kit, short]): Placement[] 
   ];
 });
 placements.push({ id: 'town.footing', prefab: 'greybox.box', pos: [0, 0.15, 0], scale: [5, 0.3, 5] });
-// The Boogler's statue stands on the footing (owner, 14 November); its plinth's foot is the footing's top.
-placements.push({ id: 'town.statue', prefab: 'town.statue', pos: [0, 0.3, 0] });
+/** Whether The Boogler's stone statue stands on the footing. Off (owner, 15 November): the statue shows what he looks
+ * like before he is met, so an unfinished statue under a sheet in a scaffold stands there instead, with the builders'
+ * notice. The statue's record and builder are kept. Planned and not built: this becomes "the room has met The
+ * Boogler" (docs/game-design/place.md, "Planned, not built"); no meeting logic exists yet. */
+export const BOOGLER_STATUE_UNVEILED: boolean = false;
+// Either stands at the same place under the same id; its plinth's foot is the footing's top.
+placements.push(
+  BOOGLER_STATUE_UNVEILED
+    ? { id: 'town.statue', prefab: 'town.statue', pos: [0, 0.3, 0] }
+    : { id: 'town.statue', prefab: 'town.statue-works', pos: [0, 0.3, 0], labels: { notice: 'statueWorks' } },
+);
 
 export const levels = [defineLevel({ place: 'town-blockout', placements })];
