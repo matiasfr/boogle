@@ -74,8 +74,8 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
   }
   const trimmed = gorgeSurfaces(placements);
   if (trimmed.size) {
-    // Preserve the instance records and physics exactly; render their clipped exterior
-    // as one vertex-coloured draw under the same owner instead of duplicate faces.
+    // Preserve the instance records and physics exactly. Only repaired slabs use the
+    // common-space draw; unrelated boxes retain their original instanced geometry.
     const pieces: THREE.BufferGeometry[] = [];
     const origin = new THREE.Vector3().fromArray(trimmed.values().next().value!.userData.gorgeOrigin as number[]);
     const remaining = placements.reduce((n, p) => n + (trimmed.has(p.id) ? 0 : slots(p)), 0);
