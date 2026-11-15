@@ -21,6 +21,7 @@
 import { replacedStage, worldWasReset } from '../boot/world-reset.ts';
 import { PROTO } from '../proto/flags.ts';
 import { arrivalPlan } from './world-reset.ts';
+import { accountSwitching, signOutAccount } from './account.ts';
 
 const NAME = 'boogle.name'; // also written by the lobby (src/player/hud.ts) and the pause view's You editor
 const LAST = 'boogle.lastVisit';
@@ -109,7 +110,7 @@ export function roomMemory(room: string): RoomMemory | null {
 // What this visit has remembered so far, per room: an item with nothing new this time keeps its latest value.
 const latest = new Map<string, Record<string, unknown>>();
 export function rememberVisit(room: string, at = Date.now()) {
-  if (fresh) return;
+  if (fresh || accountSwitching()) return;
   const then = roomMemory(room); // read first, so this visit's welcome still compares with the last one
   const out: Record<string, unknown> = { ...(latest.get(room) ?? then?.items) };
   for (const it of items) {
@@ -190,22 +191,20 @@ export function leaveIsland() {
 
 // Who you are on this device: your identity, and what's yours rather than the island's. Your settings stay: it's still
 // you at the keyboard.
-const PERSON = ['boogle.name', 'boogle.color', 'boogle.pid', 'boogle.key', 'boogle.lastVisit', 'boogle.boogler'];
-const PERSON_PREFIX = ['boogle.visit.', 'boogle.minis.', 'boogle.soapbox.'];
 let fresh = false;
 /** A place can clear its own saves and choose a fresh destination without resetting a partner's room. */
 export const freshStart = {
-  warning: "Are you sure? You'll fall in as someone new, and lose your own progress. The island keeps everything.",
+  warning:
+    'Start as a new guest? This signs out this device and forgets its visit. Your account and the island stay. Save your PIN first to return to your account.',
   prepare: (): string | undefined => undefined,
 };
 export function startFresh() {
-  fresh = true; // pagehide must not write the old person back
-  const destination = freshStart.prepare();
-  const s = store('localStorage');
-  if (s) {
-    for (const k of PERSON) s.removeItem(k);
-    for (const k of Object.keys(s)) if (PERSON_PREFIX.some((p) => k.startsWith(p))) s.removeItem(k);
-  }
-  if (destination) location.assign(destination);
-  else location.reload();
+  if (fresh) return;
+  fresh = true;
+  void signOutAccount(freshStart.prepare()).catch((error: unknown) => {
+    fresh = false;
+    // The existing confirmation stays usable when neither browser store can carry a new identity through reload.
+    const warning = document.querySelector('.pause-fresh-warn');
+    if (warning) warning.textContent = error instanceof Error ? error.message : 'Could not sign out. Try again.';
+  });
 }

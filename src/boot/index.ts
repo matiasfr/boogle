@@ -30,7 +30,7 @@ if (jump !== undefined) {
     await account.prepareAccount();
     if (!account.accountIsPersistent()) {
       const sub = document.getElementById('lobby-sub');
-      if (sub) sub.textContent = 'This identity is for this visit only; this browser could not save it.';
+      if (sub) sub.textContent = 'This identity is for this visit only; this browser could not remember it.';
     }
     await import('../main.ts');
   } catch (error) {

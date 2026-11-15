@@ -27,11 +27,14 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
 
 ## Existing arrival
 
-- **Identity before arrival.** Boot obtains a verified guest session before loading the game. It keeps the device
-  credential through reloads and room resets; the authentication cutover starts fresh server-issued identities.
-  A failed or five-second timed-out request stops at the existing reload-to-retry loading error, keeping the saved
-  credential. Blocked browser storage permits this visit only. Optional account controls and switching people remain
-  subsequent [accounts-plan](../plans/accounts.md) steps; no sign-in form gates a first guest visit.
+- **Identity before arrival.** Boot resolves the device session before loading the game, with a five-second limit.
+  An unavailable server or unreadable credential never prevents play: a previously verified pid can rejoin when
+  the room server answers; without one, this visit uses a local-only solo identity. Revoked sessions retain their
+  saved identity but cannot join a room. Reload retries resolution. Complete credentials survive room/namespace
+  resets. Blocked local storage permits a tab-only session where available, otherwise memory-only play. Switching
+  people closes the old room and reloads, clearing unkeyed visit memory before the new game loads; same-person
+  reloads keep the existing return policy. The optional Account page remains [accounts-plan](../plans/accounts.md)
+  step 4; no sign-in form gates a first guest visit.
 - **First visit.** With no name saved on this device (`boogle.name`), you fall into the world (below). The card asks for
   nothing but a name box already filled with a friendly random name ("Sunny Otter", "Jolly Puffin", ...), the eight colour
   swatches (one picked at random) and one big Jump in. Pressing Jump in straight away is fine. The loading screen covers it
@@ -86,11 +89,10 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   the room or prototype it was last in.
 - **Leaving and starting fresh.** The pause view's Leave goes to a small menu page (`/menu/`) with the game stopped: nothing
   renders and you leave the room. Back to the island returns to the same address; a lobby picker can go here if there are
-  ever more lobbies. Start fresh on the main pause page asks for confirmation, forgets you on this
-  device and replays the first visit ([identity.md](identity.md)). Round 4 also forgets all solo/co-op saves, including
-  personal slices, gifts and position. In co-op it reloads the same room as a new person, rejoining an existing partner's
-  railway through the normal snapshot. With no partner, the railway starts fresh too; the warning explains both cases.
-  It never sends the shared reset.
+  ever more lobbies. Start fresh asks for confirmation, signs this device out and reloads as a new guest, forgetting
+  its local visit ([identity.md](identity.md)). The warning says to save the account PIN first. The server account
+  and room remain; the new guest does not inherit the former person's belongings. Leave does not sign out.
+  If neither browser store can carry a new identity through reload, Start fresh keeps the current visit and says so.
 - **Welcome back.** A returning player gets a small paper card at the top centre (under the name tag on touch) for
   3.5 s, plus 0.8 s for each line: "Welcome back, <name>", then what changed in this room since this browser was last
   here, when that is known: "Ana and Bo were here" (players new to the room's roster, or whose plaque points rose),

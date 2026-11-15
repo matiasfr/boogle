@@ -318,6 +318,7 @@ function setNet(state: string) {
 // Keep trying while solo (the server unreachable or restarting, a flaky network), unless the browser can't open a
 // WebSocket at all. A full room is retried every few seconds, so a spot that opens is taken.
 let retryTimer: ReturnType<typeof setTimeout> | 0 = 0;
+let closing = false;
 const FULL_RETRY_MS = 4000;
 type NetError = { code?: string; type?: string; max?: number; fatal?: boolean } | null | undefined;
 function noteError(e: NetError, fallback: string) {
@@ -327,7 +328,14 @@ function noteError(e: NetError, fallback: string) {
 }
 function scheduleRetry(e: NetError) {
   // elsewhere: a newer tab of this player took over; coming back would only take it back (src/features/identity.ts)
-  if (e?.code === 'browser-incompatible' || e?.code === 'elsewhere' || e?.code === 'unauthenticated' || retryTimer)
+  if (
+    closing ||
+    e?.code === 'unverified' ||
+    e?.code === 'browser-incompatible' ||
+    e?.code === 'elsewhere' ||
+    e?.code === 'unauthenticated' ||
+    retryTimer
+  )
     return;
   net.retries += 1;
   const wait = net.full ? FULL_RETRY_MS : Math.min(5000 * net.retries, 30000);
@@ -352,6 +360,7 @@ function dropOldSaves() {
 }
 
 export async function connectRoom(tuneKey?: string) {
+  if (closing) return;
   // The room and its world live under the namespaced id; the plain name stays for the URL, titles and telemetry.
   dropOldSaves();
   const roomId = productionRailway ? railwayRoomId(getRoomId()) : worldRoomId(getRoomId());
@@ -362,6 +371,7 @@ export async function connectRoom(tuneKey?: string) {
     // own in-process one in `npm run dev` (vite.config.ts).
     const server = import.meta.env.VITE_BOOGLE_SERVER;
     if (!server) throw Object.assign(new Error('VITE_BOOGLE_SERVER is not set'), { code: 'no_server' });
+    roomAuthentication(tuneKey); // No socket for a local stand-in; HTTP registration retries on the next reload.
     room = await createWsRoom({
       roomId,
       server,
@@ -370,10 +380,15 @@ export async function connectRoom(tuneKey?: string) {
       build: BUILD,
     });
   } catch (e) {
+    if (closing) return;
     console.warn('[boogle] could not join room:', e);
     noteError(e as NetError, 'connect_failed');
     scheduleRetry(e as NetError);
     setNet('solo');
+    return;
+  }
+  if (closing) {
+    room.close();
     return;
   }
   net.retries = 0;
@@ -404,6 +419,19 @@ export async function connectRoom(tuneKey?: string) {
   }, fail);
   room.onPeers(onPeersChange, fail);
   sendPresence();
+}
+
+/** Permanently stop this page's room before switching identities; only a reload can connect again. */
+export function closeRoom() {
+  closing = true;
+  clearTimeout(retryTimer);
+  retryTimer = 0;
+  net.retryAt = 0;
+  const room = net.room;
+  net.room = null;
+  detachWorld();
+  room?.close(); // The closed transport cannot flush unsent commands or reconnect during the sign-out request.
+  setNet('solo');
 }
 
 // ---------------------------------------------------------------- frame hooks (orders: top of src/loop.ts)

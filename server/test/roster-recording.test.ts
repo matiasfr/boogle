@@ -22,9 +22,11 @@ async function record(client: Client) {
     './identity.css': '',
     '../loop.ts': 'export const onFrame=()=>{};',
     '../player/identity.ts': 'export const identity={pid:"test"};',
+    '../player/account.ts': 'export const accountRefused=()=>{}; export const onAccountReload=()=>{};',
     '../player/player.ts': 'export const me={};',
     '../math.ts': 'export const sanitizeName=String;',
-    '../netplay/net.ts': 'export const addPresenceField=()=>{}; export const onNetState=()=>{}; export const net={};',
+    '../netplay/net.ts':
+      'export const addPresenceField=()=>{}; export const closeRoom=()=>{}; export const onNetState=()=>{}; export const net={};',
     '../world/sync.ts': 'export const worldStatus=()=>({ready:true});',
     '../entities/railway/state.ts': `${access} export const railwayCommands=()=>c.client.adapter;`,
     '../proto/mark.ts': `${stripTypeScriptTypes(readFileSync(new URL('../../src/proto/mark.ts', import.meta.url), 'utf8'))}
