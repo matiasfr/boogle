@@ -39,6 +39,18 @@ Names below are representative pieces; count includes all oriented/hidden member
 
 ## Fixed — zfight-top20 implementation (partial)
 
+**Spot 16 independent-review repair:** the first adapter missed surviving geometry. It now also executes
+`line2-view.ts`'s pad/pillar section (apron, apron support, p2, p2 pillar) and `secrets-view.ts`'s pad/support section
+(lookout, stack, balcony, lookout support, loft support, balcony column, stack column), from the runtime source.
+The reviewed 21-piece tech capture becomes 32 pieces; no captured tech object is removed. The regression requires
+that exact inventory in both the direct capture and final census, and checks restored pads/supports at their authored
+locations. It fails on the reviewed adapter and passes on the repair. Census **166/61/548 → 166/61/548**, raw
+**360/172/2443 unchanged**, pieces/faces **6,259/543,691 → 6,270/544,464**. No group ids, classes or members change;
+two unrelated shop box groups differ only by floating-point clipping roundoff (below 1e-12 in areas/positions).
+The original pre-implementation census was **167/61/548**: only the retired catch-6 ↔ jump-return contact group goes.
+Object inventories, bounded regression logs and the full comparison are in `.look/zfight-spot16/review-*`.
+No game source changes; the earlier matched stills and six hashes remain applicable. Not tested on a device.
+
 **Spot 16 diagnosis corrected (14 November, `codex/zfight-spot16`):** not a live geometry defect. Commit
 `e6f2961e1633857c1598989af0adf56312e5d2a2` deleted `src/proto/place/tech.ts`, including the loop drawing
 `JUMP_RECOVERY.slabs` and its return ramp. Current `src/entities/railway/tools.ts:98–113` draws only the first

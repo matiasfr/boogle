@@ -72,5 +72,42 @@ export function collectTechGeometry(): Face[] {
     },
   });
   for (const mesh of meshes) capture(mesh, `tech/hook/${i++}`);
+  meshes.length = 0;
+  const partMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
+  runSection('src/entities/railway/line2-view.ts', '  const stonePad =', '  const hook = tech.DEVICES.hook;', {
+    THREE,
+    tech,
+    ox: layout.ORIGIN.x,
+    land,
+    owner: {},
+    shapes: { merged },
+    flat,
+    STONE: '#917b5e',
+    mesh: (geometry: THREE.BufferGeometry, material = partMat) => {
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = mesh.receiveShadow = true;
+      meshes.push(mesh);
+      return mesh;
+    },
+  });
+  meshes.forEach((mesh, i) => capture(mesh, `tech/line2/${i}`));
+  const parts: THREE.BufferGeometry[] = [];
+  runSection('src/entities/finds/secrets-view.ts', '  const m4 =', "  // The tower's boxes stand", {
+    THREE,
+    parts,
+    merged,
+    padById: tech.padById,
+    H,
+    ox: layout.ORIGIN.x,
+    STONE: '#917b5e',
+    BRASS: '#c79a3e',
+    addStatic() {},
+    owner: {},
+  });
+  parts.forEach((geometry, i) => {
+    const mesh = new THREE.Mesh(geometry, partMat);
+    mesh.castShadow = mesh.receiveShadow = true;
+    capture(mesh, `tech/secrets/${i}`);
+  });
   return faces;
 }
