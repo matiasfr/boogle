@@ -22,7 +22,7 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 2. Run `npm run heartbeat` and `npm run inflight` from any current checkout. Check main CI first (a red main beats new work).
 3. Check the three branches below that were in flight at hand-off.
 4. Work from your own worktree off `origin/main`. The repo-root checkout at `~/Developer/boogle` is a detached launcher hundreds of commits behind: never read plans from it or edit it.
-5. Models and effort come from `npm run models` (withCodex). The owner said on 14 November that Claude usage is low until 5 am PST 15 November: route Claude work to Opus until then.
+5. Models and effort come from `npm run models`: one table since 15 November, no modes; the owner edits its rows when the mix should change.
 
 **In flight at hand-off** (check each; none was killed):
 

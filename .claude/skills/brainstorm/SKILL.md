@@ -15,9 +15,9 @@ You are the director: you write the brief and make no design decisions the owner
    (design, systems, creative) and the docs they name, then writes each lens's three strongest ideas and the tensions
    between them, in one report.
    **Panel (`--panel`, for a new area or a big new mechanic):** three panelists, one per role file, run independently
-   in the background; when all three finish, each reads the other two reports and revises once. In withCodex mode
-   they are `node dev/codex/run.ts brainstorm $0-<role> --role <role> "<seed>"` jobs (resume each for the second round);
-   in normal mode, Claude subagents given the same role files and seed. At a usage limit, stop and tell the owner.
+   in the background; when all three finish, each reads the other two reports and revises once. On a Codex row they
+   are `node dev/codex/run.ts brainstorm $0-<role> --role <role> "<seed>"` jobs (resume each for the second round);
+   on a Claude row, Claude subagents given the same role files and seed. At a usage limit, stop and tell the owner.
 3. **Write the brief.** Run `npm run inflight` for branches touching the same files and the game-direction skill's fit
    and ordering check. Write `docs/brainstorms/$0.md` for an owner who reads it in two minutes, starting with
    `> **Status: proposed (YYYY-MM-DD).**`, then:
@@ -32,8 +32,8 @@ You are the director: you write the brief and make no design decisions the owner
    - **Parked**: good ideas for later, one line each.
 4. **Show the owner, then build.** Give the pitch, the top three suggestions and the open questions in chat, with the
    file path. Don't wait: the brief builds on its recommended answers, each logged in its topic's table in `docs/agent-calls.md` (owner,
-   9 November); only direction, unapproved scope or something irreversible waits for the owner. Commit the brief ("Brainstorm: <name>"), have the designer agent review it, and hand it to the implementer
-   (or a Codex `task` in withCodex mode) citing `docs/brainstorms/$0.md`. Record the owner's answers in the brief
+   9 November); only direction, unapproved scope or something irreversible waits for the owner. Commit the brief ("Brainstorm: <name>"), have the designer agent review it, and hand it to the implementation row of
+   `npm run models` citing `docs/brainstorms/$0.md`. Record the owner's answers in the brief
    whenever they come, and adjust what was built. Parked items the owner wants kept go to `docs/ideas.md`. When the owner commits to the brief's feature, or to work an answer creates, it becomes a row in `docs/backlog.md` that turn, with his words; a brief building on its recommended answers is not yet one. Remove any
    `.look/codex/$0-*` folders once the brief is committed.
 5. **Track it.** Status `building` when the build starts, `live` when it ships, `answered` with the owner's verdict
