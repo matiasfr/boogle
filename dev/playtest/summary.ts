@@ -198,6 +198,18 @@ export function summarize(s: Session, others: Session[], places: Place[]): strin
   out.push(`Played: ${span(playedS(s))}${hidden}; ${ended}`);
   if (str(m.v)) out.push(`Variant: ${str(m.v)}`);
   if (str(m.flags)) out.push(`Address: ?${str(m.flags)}`);
+  for (const e of s.events) {
+    if (e.k === 'net') {
+      const reason = e.s === 'solo' && str(e.why) ? ` (${str(e.why)})` : '';
+      const fatal = e.s === 'solo' && typeof e.fatal === 'boolean' ? `; fatal=${e.fatal}` : '';
+      out.push(`  ${clock(e.t)} net ${str(e.s)}${reason}${fatal}`);
+    } else if (e.k === 'm' && e.n === 'voice') {
+      out.push(
+        `  ${clock(e.t)} voice ${e.on ? 'on' : 'off'}${e.on ? (e.muted ? ' (muted)' : ' (unmuted)') : ''}` +
+          `${str(e.problem) ? `; ${str(e.problem)}` : ''}${e.failed ? '; link failed' : ''}`,
+      );
+    }
+  }
   const tuning = tuningSegments(s);
   if (tuning.length) {
     out.push('Tunables (resolved values, including defaults):');

@@ -21,7 +21,7 @@ import { carry } from '../../physics/platforms.ts';
 import { interactTarget, onInteractPress } from '../../player/hands.ts';
 import { actionIds, wrapAction } from '../../player/controls.ts';
 import { renderer, rendererReady, gfx } from '../../render/scene.ts';
-import { getRoomId, onNetState, onPeopleChanged, remotes } from '../../netplay/net.ts';
+import { net, getRoomId, onNetState, onPeopleChanged, remotes } from '../../netplay/net.ts';
 import { coarseUa, firstFrame, scrub } from '../../netplay/report-format.ts';
 import { BUILD } from '../../build-id.ts';
 import { IDLE_S } from '../../../protos/store.ts';
@@ -264,7 +264,7 @@ onPeopleChanged(() => {
   push('peers', { names });
 });
 onNetState((s) => {
-  push('net', { s });
+  push('net', s === 'solo' ? { s, why: net.error, fatal: net.fatal } : { s });
   sayWho(); // the room is settled by now
   if (s === 'live') recordTuning();
 });

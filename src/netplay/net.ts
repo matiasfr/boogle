@@ -58,6 +58,7 @@ export const net = {
   lastSend: 0,
   state: 'connecting',
   error: null as string | null,
+  fatal: false, // whether the last error stopped an established room
   full: 0 as number | true,
   retries: 0,
   retryAt: 0,
@@ -318,9 +319,10 @@ function setNet(state: string) {
 // WebSocket at all. A full room is retried every few seconds, so a spot that opens is taken.
 let retryTimer: ReturnType<typeof setTimeout> | 0 = 0;
 const FULL_RETRY_MS = 4000;
-type NetError = { code?: string; type?: string; max?: number } | null | undefined;
+type NetError = { code?: string; type?: string; max?: number; fatal?: boolean } | null | undefined;
 function noteError(e: NetError, fallback: string) {
   net.error = String(e?.code || e?.type || fallback);
+  net.fatal = e?.fatal === true;
   net.full = e?.code === 'room_full' ? e.max || true : 0;
 }
 function scheduleRetry(e: NetError) {
@@ -377,6 +379,7 @@ export async function connectRoom() {
   net.retries = 0;
   net.retryAt = 0;
   net.error = null;
+  net.fatal = false;
   net.full = 0;
   net.room = room;
   setNet('connecting');
