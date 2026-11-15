@@ -1327,7 +1327,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         'friend completes opening walk',
       );
     if (!second) {
-      await walk(machine.x - 3, machine.z + 2, 2);
+      // Approach inside both the resident's Talk radius and the unchanged server wake reach.
+      await walk(machine.x - 3, machine.z + 2.8, 0.7);
       await until(() => interactTarget()?.id === 'railway-talk-camp', 'camp resident offers Talk');
       interact();
       await until(() => !document.querySelector('.place-talk-opts')?.hasAttribute('hidden'), 'camp offer finishes');

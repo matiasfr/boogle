@@ -58,7 +58,8 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
     import('../../place/layout.ts'),
     import('../../place/land.ts'),
   ]);
-  if (!owner.alive) return { update: () => {}, targets: (): Interactable[] => [] };
+  if (!owner.alive)
+    return { update: () => {}, targets: (): Interactable[] => [], handoff: (out: THREE.Vector3) => void out };
   const g = folk.addGreeter(layout.toWorld(layout.GREETER.x), layout.VILLAGE.y, layout.GREETER.z);
   // Ground the original shore worker beside the path, without adding a blocking body.
   g.fy = land.H(g.x, g.z);
@@ -83,11 +84,12 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
   let cursor = 0;
   const cue = createSpeechCue(owner);
   // Beside the existing wake reach, on the camp side of the parked machine; no collider or new shared state.
-  const camp = folk.addGreeter(T1.wake.x / 100 - 3, 0, T1.wake.z / 100 + 2);
+  const camp = folk.addGreeter(T1.wake.x / 100 - 3, 0, T1.wake.z / 100 + 4.2);
   camp.fy = land.H(camp.x, camp.z);
   const campAt = new THREE.Vector3(camp.x, camp.fy + 1.5, camp.z);
   const campCue = createSpeechCue(owner);
   let campSpeaking = false;
+  let handing = 0;
   const openCamp = () => {
     if (!read.ready() || rail(read.world()).awake >= 0) return;
     campSpeaking = talk.startTalk(
@@ -148,7 +150,17 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
     }
   });
   return {
+    handoff(out: THREE.Vector3) {
+      handing = 0.9;
+      // The same right hand reached by folk's give pose, in the resident's facing frame.
+      out.set(
+        camp.x + 0.22 * Math.cos(camp.yaw) + 0.48 * Math.sin(camp.yaw),
+        camp.fy! + 0.65,
+        camp.z - 0.22 * Math.sin(camp.yaw) + 0.48 * Math.cos(camp.yaw),
+      );
+    },
     update(dt: number) {
+      handing = Math.max(0, handing - dt);
       const p = me.body?.position;
       if (p && Math.hypot(p.x - g.x, p.z - g.z) < 8) {
         g.yaw = angleLerp(g.yaw, Math.atan2(p.x - g.x, p.z - g.z), Math.min(1, dt * 5));
@@ -157,7 +169,7 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
       const needsAxe = read.ready() && rail(read.world()).awake < 0;
       if (p && Math.hypot(p.x - camp.x, p.z - camp.z) < 8) {
         camp.yaw = angleLerp(camp.yaw, Math.atan2(p.x - camp.x, p.z - camp.z), Math.min(1, dt * 5));
-        camp.mood = campSpeaking ? 'chat' : needsAxe ? 'wave' : 'idle';
+        camp.mood = handing > 0 ? 'give' : campSpeaking ? 'chat' : needsAxe ? 'wave' : 'idle';
       } else camp.mood = 'idle';
       cue(
         g.x,
@@ -174,7 +186,12 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
       const targets: Interactable[] = [];
       if (Math.hypot(p.x - g.x, p.z - g.z) < 3.3 && Math.abs(p.y - g.fy!) < 3)
         targets.push({ id: 'railway-talk-greeter', verb: 'Talk', at, run: open });
-      if (rail(read.world()).awake < 0 && Math.hypot(p.x - camp.x, p.z - camp.z) < 3.3 && Math.abs(p.y - camp.fy!) < 3)
+      if (
+        rail(read.world()).awake < 0 &&
+        Math.hypot(p.x - camp.x, p.z - camp.z) < 3.3 &&
+        Math.abs(p.y - camp.fy!) < 3 &&
+        Math.hypot(p.x - T1.wake.x / 100, p.z - T1.wake.z / 100) <= T1.wake.reach / 100
+      )
         targets.push({ id: 'railway-talk-camp', verb: 'Talk', at: campAt, run: openCamp });
       return targets;
     },

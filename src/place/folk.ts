@@ -6,6 +6,7 @@
 // the village's number is how many you can see, up to a cap an iPad is happy with. No colliders; they walk round buildings
 // (`feet`, ./sites.ts). The hop of the last round's villagers is their cheer. Local.
 import * as THREE from 'three/webgpu';
+import { angleLerp } from '../math.ts';
 import { mulberry32 } from '../sim/rng.ts';
 import { RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { emit } from '../render/particles.ts';
@@ -88,7 +89,7 @@ type Job =
   | 'resident'
   | 'greeter'
   | 'looker';
-type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
+type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat' | 'give';
 type Guy = {
   /** A commuter not stepped since he was put out or slept far from the camera, and one stepped this frame but too
    * far to draw (path-refuge.ts commuterBand): only there is a woken one stood in his refuge. */
@@ -702,7 +703,11 @@ function brain(g: Guy, dt: number) {
         // Walk the ground first, then climb the broad rear step onto the deck.
         const climb = Math.max(0, (u - 0.55) / 0.45);
         g.fy = leg.y + (wp.y - leg.y) * climb;
-        g.yaw = Math.atan2(wp.x - leg.x, wp.z - leg.z);
+        const approach = Math.atan2(wp.x - leg.x, wp.z - leg.z);
+        car.mesh.getWorldQuaternion(q);
+        const seated = Math.atan2(2 * (q.w * q.y + q.x * q.z), 1 - 2 * (q.y * q.y + q.z * q.z)) + (g.seat ? -0.7 : 0.7);
+        const turn = Math.max(0, (u - 0.6) / 0.4);
+        g.yaw = angleLerp(approach, seated, turn * turn * (3 - 2 * turn));
         g.mood = u < 1 ? 'walk' : 'ride';
         return;
       }
@@ -889,6 +894,11 @@ function pose(g: Guy) {
       hl = [-0.18, 0.42, 0.22];
       hr = [0.18, 0.42, 0.22];
       itemA = true;
+      break;
+    case 'give':
+      hr = [0.22, 0.65, 0.48];
+      hl = [-0.2, 0.4, 0.18];
+      pitch = -0.08;
       break;
     case 'hammer': {
       const u = t % 1,

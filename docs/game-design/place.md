@@ -96,10 +96,15 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 
 **First five minutes (15 November, D4; supersedes prior opening wake descriptions in this chapter).** Talk to the camp resident
 beside the parked machine and choose **Take axe**. The room receives the starter multi-axe through the existing
-31-tick handoff; the recipient gets its card and partners their flourish. The engine stays cold until Station 1's
-last log is accepted. Its existing 3.1-second shudder, fire, lamps and whistle now reward funding the first frame,
-while the frame feeds the machine. The two station hands walk and climb aboard over 2.6 seconds, respecting
-player-occupied chairs. Station bills, tool yields, carry limits and player movement are unchanged.
+31-tick rule window; acceptance immediately starts the recipient's reveal, with the axe visible in the resident's
+outstretched hand for the anticipation beat before rising to the player. Its gathering glints start at that hand;
+partners keep their existing flourish. The resident stands roughly 4 m off the track centre, clear of the passing
+machine, with Talk offered only inside the existing server wake reach. The engine stays cold until Station 1's
+last log is accepted. Its existing 3.1-second fire, lamps and whistle reward funding the first frame, with a larger,
+slower body rock and upward kick readable from the frame (suppressed for reduced motion), while the frame feeds the
+machine. The two station hands walk and climb aboard over 2.6 seconds, easing their facing into the seated heading
+during the final climb and respecting player-occupied chairs. Station bills, tool yields, carry limits and player
+movement are unchanged.
 
 Unread speech bubbles mark Sleeves' remaining lines in the current stage and the camp's unclaimed axe. Town
 residents get the same cue inside their room for a first meeting or a new town-progress line. Cues are Local,

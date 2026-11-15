@@ -82,8 +82,11 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   owner.cleanup(onRingSceneryMounted(arrival.sceneryRebuilt));
   const sources = await createRailwaySources(adapter, owner);
   // The reward owns the one reveal queue; line two's devices show through it too.
-  const reward = await createRailwayReward(adapter, owner, (out) =>
-    out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
+  const reward = await createRailwayReward(
+    adapter,
+    owner,
+    (out) => out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
+    (out) => opening.handoff(out),
   );
   owner.cleanup(registerRailwayYouGot(reward.youGot));
   let demo = () => {};
