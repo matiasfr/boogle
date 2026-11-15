@@ -1,4 +1,4 @@
-// The Roundhouse, live from accepted state: a rotunda of bays round the table, in blocks (./rotunda-view.ts), which
+// The Roundhouse, live from accepted state: a rotunda of finished bays round the table (./rotunda-view.ts), which
 // stand by stage (./rotunda-stage.ts). In its working bay the cracked slab opens on a strike, two footings raise the
 // bay's door piers and the tarp slides off the shunter and wagon, the cradle bolts on, and the table's bridge turns
 // for the shunter to push the wagon onto line 2. Local view: effects play on the press, accepted events and live
@@ -44,7 +44,7 @@ import { garageRow, mastFrom, polarAt } from './garage-geo.ts';
 import { PARK, createShuntPath } from './shunt-path.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
-import { createRotundaBlocks } from './rotunda-view.ts';
+import { createRotundaView } from './rotunda-view.ts';
 import { BRIDGE, bridgeHalf, bridgeHandle, clearOfBridge } from './table-bridge.ts';
 import { rotundaStage } from './rotunda-stage.ts';
 
@@ -103,7 +103,7 @@ export async function createRailwayRoundhouse(
 
   // ---------------------------------------------------------------- the turntable: the pit and its kerb are the
   // rotunda's fixed table record; the bridge across the shallow pit is drawn here, since it turns
-  const rotunda = createRotundaBlocks(owner);
+  const rotunda = createRotundaView(owner);
   const anchor = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
   const table = toWorld(home.TABLE);
   const line2 = layout.LINKS[1]!.line;
@@ -204,7 +204,7 @@ export async function createRailwayRoundhouse(
   const gold = new THREE.Color('#ffdc7a');
 
   /** The working bay's door frame in build order, bay-local: the two door piers on the set footings, then the lintel
-   * over the door (the kit's sizes). When they stand, the rotunda's first stage stands with them: the bay's own block
+   * over the door (the kit's sizes). When they stand, the rotunda's first stage stands with them: the bay's own shell
    * has the same piers, so these stop being drawn. */
   const pierW = 2 * (PIER.x - ROTUNDA_KIT.door.clear / 2),
     over = ROTUNDA_BLOCK.wall - ROTUNDA_KIT.door.high;

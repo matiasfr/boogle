@@ -1,4 +1,4 @@
-// Home's rotunda in blocks (docs/plans/roundhouse-rotunda.md, step 1b): the generated level's pieces, each stood
+// Home's finished rotunda (docs/plans/roundhouse-rotunda.md, step 4): the generated level's pieces, each stood
 // round the table from the site's row and shown by stage. Local and static: a piece reads no fact; the Roundhouse view
 // (./roundhouse-view.ts) says which stage to show and owns the working bay's slab, sockets and vehicles.
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -10,7 +10,7 @@ import { ROTUNDA_HOME } from '../../place/home-station.ts';
 import { ORIGIN } from '../../place/layout.ts';
 import { rotundaPieces, rotundaPose, rotundaShows } from '../../place/rotunda.ts';
 
-export function createRotundaBlocks(owner: OwnedView) {
+export function createRotundaView(owner: OwnedView) {
   const site = ROTUNDA_HOME;
   const placements = new Map(loadLevelArtifact(level, definitions).placements.map((p) => [p.id, p]));
   const batches = new Map<string, { target: ReturnType<typeof createPrefabBatch>; next: number }>();

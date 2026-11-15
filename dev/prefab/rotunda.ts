@@ -9,9 +9,9 @@ import type { LevelDef, Placement, PrefabKey } from '../../src/prefab/types.ts';
 const SITES: readonly RotundaSite[] = [ROTUNDA_HOME];
 const RECORD: Record<RotundaPart, PrefabKey> = {
   table: 'roundhouse.table',
-  shell: 'roundhouse.bay-block',
+  shell: 'roundhouse.bay',
   ruin: 'roundhouse.bay-ruin',
-  door: 'roundhouse.bay-door-block',
+  door: 'roundhouse.bay-doors',
   wall: 'roundhouse.end-wall',
   outline: 'roundhouse.bay-outline',
 };
@@ -37,12 +37,7 @@ export function rotundaContent(): { levels: LevelDef[] } {
         if (piece.part === 'ruin') ruins++;
         return {
           id: `rotunda-${site.id}.${piece.id}`,
-          prefab:
-            piece.part === 'shell' && Math.abs(piece.turn) <= 1
-              ? 'roundhouse.bay'
-              : piece.part === 'door' && Math.abs(piece.turn) <= 1
-                ? 'roundhouse.bay-doors'
-                : RECORD[piece.part],
+          prefab: piece.part === 'shell' && Math.abs(piece.turn) === 2 ? 'roundhouse.bay-steel' : RECORD[piece.part],
           pos: [0, 0, 0],
           ...(piece.part === 'table' && scale !== 1 ? { scale: [scale, 1, scale] as const } : {}),
           params: { turn: piece.turn, ...(piece.part === 'ruin' ? { left, right } : {}) },

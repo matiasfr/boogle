@@ -1257,9 +1257,9 @@ The delivered steel pallet follows the site's table radius and the kit's kerb: i
 with at least 1 m between the pallet and kerb. Its base spans the shallow ground slope; neither steel nor pallet
 stands on the disc. The placement clears the spur, all seven future stall roads, the garage furniture and camera.
 
-**Rotunda step 1b, the blockout (14 November, local branch; ships with v45).** The Roundhouse is one curved
-building in plain blocks at the kit's true sizes, to walk the spacing before any art ([plan](../plans/roundhouse-rotunda.md)).
-The three separate stalls and their ruin outlines are gone.
+**Rotunda, through step 4 (15 November).** The Roundhouse is one curved masonry building at the kit's true sizes
+([plan](../plans/roundhouse-rotunda.md)), following the owner's approved painted reference. The block records and
+builder are gone; stages still snap until step 5.
 
 - **The table (step 3, 15 November)** is a shallow pit: ground at 17.1 m inside r6, banking up to the masonry
   wall at r8.15. A pale segmented kerb reaches r8.6 and stands 0.15 m above the yard; 48 box colliders close the
@@ -1270,8 +1270,11 @@ The three separate stalls and their ruin outlines are gone.
   restored only once the local player clears their volume. The pit is escapable with the plain held jump,
   including carrying a footing; the level check sweeps the player's real spheres over the terrain and kerb.
 - **A bay** is a 20° wedge: a door wall 14 m out and 6.2 m high with a 3.6 × 4.6 m door between two piers, a roof
-  falling to a 4.8 m back wall 25 m out with a dark window band, and end walls where the building stops. Bays meet
-  edge to edge and are open to each other inside. A bay with nothing in it keeps its door shut.
+  falling to a 4.8 m back wall 25 m out with three large framed windows. Warm coursed stone, a shallow arch above
+  the rectangular clear opening, paired glazed timber doors, slate roof courses, a glazed monitor at r17–19 raised
+  0.9 m and one capped smoke jack at r21 repeat along the curve. End walls stand only where the built arc stops;
+  bays meet edge to edge and are open to each other inside. Empty bays have shut doors; the working bay's leaves
+  fold inward outside the clear opening. Bays 150° and 230° add exposed steel portal posts and beams over the masonry.
 - **What stands when** reads the shed's accepted state, with no new shared state. On arrival: five bays as ruins
   (190° and two each side), each a floor and two door piers broken at different heights, and bay 190° with no piers
   at all: two empty sockets where they go, the cracked slab just behind them, the tarped shunter and wagon behind
@@ -1285,8 +1288,15 @@ The three separate stalls and their ruin outlines are gone.
 - **The stone yard's spot** moves north of the table, between the kerb and road 2 (nothing is drawn there today):
   off the arc, off the open east side the footings are carried in by, and off the walk from the board crossing.
 
-Local scenery and Owner collision from prefab records (`roundhouse.table`, the remaining `roundhouse.*-block`,
-`content/built/levels/rotunda-home.json`);
+The garage keeps **camBearing 15°**, the angle in the approved garage previz. Step 4's proposed 30° camera comes
+within 0.44 m of the steel pallet (the owning test requires 2 m); 45° comes within 0.27 m, 85° within 1.67 m.
+15° keeps 2.26 m. The garage opens after the wagon couples, not at `stall-done`, when the shunter is still in its bay.
+
+Local scenery and Owner collision from eight prefab records (table, bay, steel bay, ruin, end wall, shut doors,
+open doors and the retained nine-bay outline; `content/built/levels/rotunda-home.json`). Repeated shells, doors,
+end walls and outlines use owner-local batches; ruins retain individually authored broken heights. The piers,
+lintel, back wall, end-wall collision and approach eaves retain the blockout's sizes; the raised monitor is solid.
+Ruin piers are at least 3.2 m above 3.1 m solids. The working footings, `BUILD_S` and tarp timing are unchanged;
 no rule, wire, save or namespace change beyond step 1a's. Serves DESIGN.md 11 (Show, don't tell) and 7 (Telegraph
 everything). Not walked by a player: the roof is out of reach of one or two jumps from the ground (1.6 m and about
 2.9 m against a 5.1 m eave), and whether the glider reaches it is not measured. Not tested on a device.

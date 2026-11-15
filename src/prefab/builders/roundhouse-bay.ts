@@ -227,7 +227,11 @@ registerBuilder('roundhouse.bay', (params, batch) => {
       add(g, STONE[0]);
       for (let y = 0.5; y < 4.8; y += 0.5) box(0, y, 19.5, 0.32, 0.018, 11, '#a88d66');
       // Close the exposed end of the monitor without dividing adjacent built bays.
-      box(0, 6.55, 18, 0.3, 1.05, 2, STONE[1]);
+      const cap = new THREE.BoxGeometry(0.3, 1, 2).translate(0, 0.5, 18),
+        cp = cap.getAttribute('position');
+      for (let i = 0; i < cp.count; i++) cp.setY(i, roofY(cp.getZ(i) * Math.cos(half)) + 0.3 + cp.getY(i) * 0.6);
+      cap.computeVertexNormals();
+      add(cap, STONE[1]);
       break;
     }
     case 'outline': {
