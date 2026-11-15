@@ -1261,10 +1261,14 @@ stands on the disc. The placement clears the spur, all seven future stall roads,
 building in plain blocks at the kit's true sizes, to walk the spacing before any art ([plan](../plans/roundhouse-rotunda.md)).
 The three separate stalls and their ruin outlines are gone.
 
-- **The table** is a dark 16 m disc flush with the yard (the pit is dug in a later step), with a pale kerb to 8.6 m
-  and an amber ring painted at 14 m across, the smaller table to compare against. The bridge is a 16 × 3.2 m deck
-  with the rails on it; it turns as the table did, and its brass handle rides its end. The deck is solid where it
-  rests and not while it turns. The kerb is drawn only.
+- **The table (step 3, 15 November)** is a shallow pit: ground at 17.1 m inside r6, banking up to the masonry
+  wall at r8.15. A pale segmented kerb reaches r8.6 and stands 0.15 m above the yard; 48 box colliders close the
+  wall and kerb. The dark floor follows the terrain triangles, with a ring rail at r7.4 and a central pivot.
+  The comparison disc and amber 14 m ring are gone. The moving bridge is a 16 × 3.2 m timber deck at 18.35 m,
+  with narrow end boards to clear the wall, 0.9 m steel girders, rails, stiffeners, fastenings and short handrails.
+  Its brass handle still rides the end. Deck and girders are solid at rest, removed during either turn, and
+  restored only once the local player clears their volume. The pit is escapable with the plain held jump,
+  including carrying a footing; the level check sweeps the player's real spheres over the terrain and kerb.
 - **A bay** is a 20° wedge: a door wall 14 m out and 6.2 m high with a 3.6 × 4.6 m door between two piers, a roof
   falling to a 4.8 m back wall 25 m out with a dark window band, and end walls where the building stops. Bays meet
   edge to edge and are open to each other inside. A bay with nothing in it keeps its door shut.
@@ -1281,7 +1285,8 @@ The three separate stalls and their ruin outlines are gone.
 - **The stone yard's spot** moves north of the table, between the kerb and road 2 (nothing is drawn there today):
   off the arc, off the open east side the footings are carried in by, and off the walk from the board crossing.
 
-Local scenery and Owner collision from prefab records (`roundhouse.*-block`, `content/built/levels/rotunda-home.json`);
+Local scenery and Owner collision from prefab records (`roundhouse.table`, the remaining `roundhouse.*-block`,
+`content/built/levels/rotunda-home.json`);
 no rule, wire, save or namespace change beyond step 1a's. Serves DESIGN.md 11 (Show, don't tell) and 7 (Telegraph
 everything). Not walked by a player: the roof is out of reach of one or two jumps from the ground (1.6 m and about
 2.9 m against a 5.1 m eave), and whether the glider reaches it is not measured. Not tested on a device.

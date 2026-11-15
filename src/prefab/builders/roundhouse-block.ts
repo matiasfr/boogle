@@ -9,7 +9,6 @@ import { registerBuilder, type ObjectBuild } from '../builders.ts';
 declare module '../names.ts' {
   interface BuilderNames {
     'roundhouse.bay-block': true;
-    'roundhouse.table-block': true;
   }
 }
 
@@ -20,11 +19,7 @@ const WALL = '#a9a39a',
   DOOR = '#6b5238',
   GLASS = '#3b4a55',
   RUIN = '#9a958b',
-  PAINT = '#e6a33e',
-  PIT = '#2b2d30',
-  KERB = '#ddd6c6';
-/** The table record is authored for an 8 m table; a placement scales it to its site's. */
-const TABLE_R = 8;
+  PAINT = '#e6a33e';
 
 type XZ = readonly [x: number, z: number];
 type Heights = number | readonly [number, number, number, number];
@@ -176,37 +171,4 @@ registerBuilder('roundhouse.bay-block', (params) => {
       throw new Error(`roundhouse.bay-block: unknown part ${String(params.part)}`);
   }
   return meshes(paint);
-});
-
-registerBuilder('roundhouse.table-block', () => {
-  const object = new THREE.Group(),
-    geometries: THREE.BufferGeometry[] = [];
-  const add = (geometry: THREE.BufferGeometry, colour: Hex, y: number) => {
-    geometries.push(geometry);
-    const mesh = new THREE.Mesh(geometry, material('stone', { colour }));
-    mesh.position.y = y;
-    mesh.receiveShadow = true;
-    object.add(mesh);
-  };
-  const wallR = TABLE_R + 0.15,
-    kerbR = TABLE_R + ROTUNDA_KIT.rim;
-  // The pit, as a dark disc flush with the yard until it is dug (the plan's step 3).
-  add(new THREE.CylinderGeometry(wallR, wallR, 0.06, 48), PIT, 0.03);
-  const paint: Paint = new Map(),
-    at = (r: number, k: number): XZ => [r * Math.sin((k * Math.PI) / 24), r * Math.cos((k * Math.PI) / 24)];
-  for (let k = 0; k < 48; k++)
-    prism(paint, KERB, [at(wallR, k), at(wallR, k + 1), at(kerbR, k + 1), at(kerbR, k)], 0, ROTUNDA_BLOCK.kerb);
-  const kerb = meshes(paint, false);
-  object.add(kerb.object);
-  // The smaller table the owner compares against, painted on this one.
-  const ring = new THREE.RingGeometry(ROTUNDA_BLOCK.compareR - 0.12, ROTUNDA_BLOCK.compareR, 64);
-  ring.rotateX(-Math.PI / 2);
-  add(ring, PAINT, 0.075);
-  return {
-    object,
-    dispose: () => {
-      geometries.forEach((g) => g.dispose());
-      kerb.dispose();
-    },
-  };
 });

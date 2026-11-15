@@ -3,7 +3,7 @@
   "format": "boogle-level",
   "place": "rotunda-home",
   "placements": [
-    {"id":"rotunda-home.table","params":{"turn":0},"pos":[0,0,0],"prefab":"roundhouse.table-block"},
+    {"id":"rotunda-home.table","params":{"turn":0},"pos":[0,0,0],"prefab":"roundhouse.table"},
     {"id":"rotunda-home.bay-130","params":{"turn":-3},"pos":[0,0,0],"prefab":"roundhouse.bay-block"},
     {"id":"rotunda-home.ruin-130","params":{"left":3.4,"right":6.2,"turn":-3},"pos":[0,0,0],"prefab":"roundhouse.bay-ruin-block"},
     {"id":"rotunda-home.door-130","params":{"turn":-3},"pos":[0,0,0],"prefab":"roundhouse.bay-door-block"},

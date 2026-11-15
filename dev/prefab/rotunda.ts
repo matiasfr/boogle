@@ -8,7 +8,7 @@ import type { LevelDef, Placement, PrefabKey } from '../../src/prefab/types.ts';
 
 const SITES: readonly RotundaSite[] = [ROTUNDA_HOME];
 const RECORD: Record<RotundaPart, PrefabKey> = {
-  table: 'roundhouse.table-block',
+  table: 'roundhouse.table',
   shell: 'roundhouse.bay-block',
   ruin: 'roundhouse.bay-ruin-block',
   door: 'roundhouse.bay-door-block',

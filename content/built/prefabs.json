@@ -1169,23 +1169,31 @@
         }
       }
     },
-    "roundhouse.table-block": {
+    "roundhouse.table": {
       "colliders": [
         {
           "at": [
             0,
-            0.03,
+            -0.65,
             0
           ],
-          "h": 0.06,
-          "r": 8.15,
+          "h": 0.5,
+          "r": 0.65,
           "shape": "trunk"
         }
       ],
-      "key": "roundhouse.table-block",
+      "key": "roundhouse.table",
+      "layout": {
+        "bottom": -0.9,
+        "inner": 8.15,
+        "kind": "pit-ring",
+        "outer": 8.6,
+        "segments": 48,
+        "top": 0.15
+      },
       "scope": "owner",
       "visual": {
-        "builder": "roundhouse.table-block",
+        "builder": "roundhouse.table",
         "params": {}
       }
     },

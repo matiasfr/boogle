@@ -362,6 +362,18 @@ export const catalogClearMask = SHORE_COAST ? clearMask.slice() : clearMask;
     }
 }
 
+// The table's shallow pit: a level floor to r6, then a bank up to the masonry wall at r8.15.
+// Keep this after the harvest snapshot, like the bay pad: only rendered/collision ground changes.
+{
+  const site = ROTUNDA_HOME;
+  for (let j = 0; j < NZ; j++)
+    for (let i = 0; i < NX; i++) {
+      const r = Math.hypot(cellX(i) - site.centre.x, cellZ(j) - site.centre.z);
+      if (r >= site.tableR + 0.15) continue;
+      heights[at(i, j)] = site.y - ROTUNDA_KIT.pit * (1 - smoothstep(6, site.tableR + 0.15, r));
+    }
+}
+
 if (SHORE_COAST) {
   // A shallow way back from the water beside the level landing. Blend into the original coast beyond
   // the cove; this modifies the finished grid shared by the mesh, heightfield and water shore provider.

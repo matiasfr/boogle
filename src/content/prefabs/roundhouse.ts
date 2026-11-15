@@ -1,9 +1,9 @@
-// The rotunda's blockout records (docs/plans/roundhouse-rotunda.md, step 1b): plain blocks at the kit's true sizes, to
+// The rotunda's finished table (step 3) and remaining bay blockout records (step 1b): plain bays at the kit's sizes, to
 // walk the spacing before any art. Every record is in a piece's own frame: the origin is the table's centre on the
 // ground, +z runs out along the piece's bearing and +x across it, so one record serves every bay of every hub and a
 // placement carries only where round the table it stands (dev/prefab/rotunda.ts). The drawn shapes come from the kit
 // (src/place/rotunda.ts) in src/prefab/builders/roundhouse-block.ts; the solids below are boxes sized to them by hand,
-// each within a hand of the drawn wedge. The finished kit replaces these records (the plan's step 4).
+// each within a hand of the drawn wedge. Step 4 replaces only the remaining bay block records.
 import { definePrefab } from '../../prefab/types.ts';
 import type { ColliderDef, PrefabDef } from '../../prefab/types.ts';
 
@@ -45,12 +45,12 @@ export const prefabs = [
   definePrefab(block('bay-door', [box(0, 2.3, PIER_Z, 1.8, 2.3, 0.1)])),
   definePrefab(block('end-wall', [box(0, 2.4, 19.5, 0.15, 2.4, 5.5)])),
   definePrefab(block('bay-outline', [])),
-  // The table is flush with the yard: a low disc to stand on. Its kerb is drawn only (a 0.15 m rise; design review,
-  // call 2: flush if it snags a walk), and the bridge is the Roundhouse view's, since it turns.
   definePrefab({
-    key: 'roundhouse.table-block',
-    visual: { builder: 'roundhouse.table-block', params: {} },
-    colliders: [{ shape: 'trunk', at: [0, 0.03, 0], r: 8.15, h: 0.06 }],
+    key: 'roundhouse.table',
+    visual: { builder: 'roundhouse.table', params: {} },
+    // The loader expands these authored dimensions to 48 tangent boxes; the floor is the terrain.
+    layout: { kind: 'pit-ring', inner: 8.15, outer: 8.6, bottom: -0.9, top: 0.15, segments: 48 },
+    colliders: [{ shape: 'trunk', at: [0, -0.65, 0], r: 0.65, h: 0.5 }],
     scope: 'owner',
   }),
 ];
