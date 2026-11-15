@@ -77,30 +77,44 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
     // Preserve the instance records and physics exactly; render their clipped exterior
     // as one vertex-coloured draw under the same owner instead of duplicate faces.
     const pieces: THREE.BufferGeometry[] = [];
-    let slot = 0;
+    const origin = new THREE.Vector3().fromArray(trimmed.values().next().value!.userData.gorgeOrigin as number[]);
+    const remaining = placements.reduce((n, p) => n + (trimmed.has(p.id) ? 0 : slots(p)), 0);
+    // Keep unrelated boxes instanced: their GPU geometry and matrices stay bit-identical.
+    const untouched = new THREE.InstancedMesh(batch.mesh.geometry, batch.mesh.material, remaining);
+    untouched.name = 'gorge:untrimmed-surfaces';
+    untouched.receiveShadow = batch.mesh.receiveShadow;
+    untouched.castShadow = batch.mesh.castShadow;
+    let slot = 0,
+      untrimmedSlot = 0;
     for (const p of placements) {
       for (let part = 0; part < slots(p); part++) {
-        const source = trimmed.get(p.id) ?? new THREE.BoxGeometry(1, 1, 1);
-        const geometry = source.index ? source.toNonIndexed() : source.clone();
         const matrix = new THREE.Matrix4();
         batch.mesh.getMatrixAt(slot, matrix);
-        geometry.applyMatrix4(matrix);
         const colour = new THREE.Color();
         batch.mesh.getColorAt(slot++, colour);
+        const source = trimmed.get(p.id);
+        if (!source) {
+          untouched.setMatrixAt(untrimmedSlot, matrix);
+          untouched.setColorAt(untrimmedSlot++, colour);
+          continue;
+        }
+        const geometry = source.clone();
         const colours = new Float32Array(geometry.getAttribute('position').count * 3);
         for (let i = 0; i < colours.length; i += 3) colours.set(colour.toArray(), i);
         geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
-        geometry.deleteAttribute('uv');
         pieces.push(geometry);
-        if (!trimmed.has(p.id)) source.dispose();
       }
     }
+    untouched.computeBoundingBox();
+    untouched.computeBoundingSphere();
+    owner.add(untouched);
     const geometry = mergeGeometries(pieces);
     if (!geometry) throw new Error('Gorge clipped surfaces have incompatible attributes');
     const mat = (batch.mesh.material as THREE.MeshStandardNodeMaterial).clone();
     mat.vertexColors = true;
     const mesh = new THREE.Mesh(geometry, mat);
     mesh.name = 'gorge:trimmed-surfaces';
+    mesh.position.copy(origin);
     mesh.receiveShadow = batch.mesh.receiveShadow;
     mesh.castShadow = batch.mesh.castShadow;
     owner.add(mesh);
