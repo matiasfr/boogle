@@ -1,4 +1,4 @@
-> **Status: queued (2026-11-15); D1 and D2 have design docs, nothing is built or dispatched.** The queue for Grant's
+> **Status: owner questions answered 2026-11-15 ([decision](../decisions-core-loop.md#d-2026-11-15-grant-queue-answered)); building.** The queue for Grant's
 > 14 November playtest ([rows G1 to G36](round-4-notes.md#grants-playtest-14-november-his-granola-call-ranked-queued-15-november),
 > [log](../playtests.md#2026-11-14-grant-solo-his-granola-notes)). Base: `bff2e6203`.
 
@@ -36,7 +36,7 @@ At most five. Each has a recommended answer first; none is recorded as his call.
    the footing on the green carries a scaffold and a sheeted shape that the builders say he commissioned and they
    ran out of materials for; the stone statue stands once he has been met. This keeps your 14 November statue and
    moves when it appears. Alternative: keep the statue as it is and accept that the ending is not a reveal of his
-   looks. The builders' words would be yours. Answer: ___
+   looks. The builders' words would be yours. Answer (owner, 15 November): Scaffold, yes. Keep the statue asset; no meeting logic now, document the swap for later.
 2. **May a flagged prototype, in its own room, try the first-line decisions (G5, G6, G21, G8)?** Recommended: yes, in
    this order: the heavy load in three variants (the designer's strongest: the one choice remade every trip), then
    pick your edge (1 log a chop and 8 on the back, then a whetstone or a sling first). It reopens the 1 November
@@ -44,20 +44,20 @@ At most five. Each has a recommended answer first; none is recorded as his call.
    made the first chosen upgrade; both only in the prototype room. The depot stake is held back: the cart already
    unloads 7 m from the open frame, so placing it saves no walking; Grant's "earned" is answered by the forge crew
    handing the depot over and by its sign (C2), and placing is tried only if the 2D page shows a better spot. Nothing reaches the live room until you have played
-   it. Alternative: the 2D page only. Answer: ___
+   it. Alternative: the 2D page only. Answer (owner, 15 November): Yes, built into the main game, not a prototype branch; its own room briefly only if the change is big. Heavy load first.
 3. **The glider: take it sealed on the first climb, and it opens at Far Head (G9, your row 31)?** Recommended: yes.
    Your spacing holds (no gliding before Far Head) and the second climb goes. It changes one rule and needs a world
    bump. The seal that shipped is what Grant met, and he still asked for this. Alternative: keep the seal.
-   Answer: ___
+   Answer (owner, 15 November): No. The glider must be usable when you get it. Redesign the order of hook, summit, glider and the gate instead; anything may move.
 4. **Far Head's shot: may it grow from 5 s to about 8.5 s, ending on a cut to the forge casting the boiler (D1)?**
    Recommended: yes. The designer's review found the Act 2 card would cover a cut placed inside today's 5 s, and
    that a longer shot changes the 11 November reading "trimmed to 5 s, never a second move after it". Until you
    answer, no cut is built there: the forge's whistle sounds as the camera hands back. The pier has no camera shot
-   today, so its cut is new and is built as a default. Answer: ___
+   today, so its cut is new and is built as a default. Answer (owner, 15 November): Yes, longer is fine.
 5. **The start: the camp's resident hands you the axe, and the engine starts when the last log is in (G10).**
    Recommended: brainstorm it. Grant's order gives the first conversation a job and makes the first whistle the
    payoff of the first bill; it changes the 5 November answer on where the axe comes from. Alternative: keep the
-   order and only fix the dead beat after the wake. Answer: ___
+   order and only fix the dead beat after the wake. Answer (owner, 15 November): Yes, take the recommendation.
 
 ## Suspect copy and words wanted, for the owner (nothing reworded)
 
