@@ -24,6 +24,7 @@ import {
   TOWN_EAVE,
   TOWN_FOOTING,
   TOWN_STATUE,
+  TOWN_STATUE_WORKS,
   VILLAGE,
   lineAt,
 } from '../src/place/layout.ts';
@@ -570,7 +571,13 @@ test("The Boogler's statue stands on the footing at G, facing the hall", () => {
   near(statue.pos[0]!, TOWN_CENTRE.x + ORIGIN.x, 0.001, 'statue x');
   near(statue.pos[2]!, TOWN_CENTRE.z, 0.001, 'statue z');
   near(statue.pos[1]!, VILLAGE.y - TOWN_GROUND.green.drop + TOWN_FOOTING.high, 0.001, "on the footing's top");
-  near(statue.rot[0]!, TOWN_STATUE.yaw, 1e-9, 'statue yaw');
+  near(statue.rot[0]!, (BOOGLER_STATUE_UNVEILED ? TOWN_STATUE : TOWN_STATUE_WORKS).yaw, 1e-9, 'statue yaw');
+  if (!BOOGLER_STATUE_UNVEILED) {
+    // The works' square frame lines up with the square footing, so its corner poles stand on the slab.
+    const quarter = Math.PI / 2,
+      off = (((statue.rot[0]! - TOWN_FOOTING.yaw) % quarter) + quarter) % quarter;
+    near(Math.min(off, quarter - off), 0, 1e-9, "the frame is square to the footing");
+  }
   // Its front (local +z) points along the hall's centreline, bearing 70 from G, toward where a player spawns.
   const front = townLocal({ ...TOWN_STATUE }, 0, 1);
   const bearing = (Math.atan2(front.x - TOWN_CENTRE.x, -(front.z - TOWN_CENTRE.z)) * 180) / Math.PI;

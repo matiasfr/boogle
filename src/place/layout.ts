@@ -747,5 +747,9 @@ export const TOWN_STATUE = {
   w: 4.9,
   d: 4.9,
 } as const;
+/** The unfinished statue that stands on the footing until The Boogler is met (owner, 15 November): its frame is
+ * square, so it turns square to the square footing (a quarter turn from it, 20 degrees off the statue's facing)
+ * or its corner poles stand off the slab in the air (review, 15 November). Its front faces bearing 90, not 70. */
+export const TOWN_STATUE_WORKS = { ...TOWN_STATUE, yaw: TOWN_FOOTING.yaw + Math.PI / 2 } as const;
 /** What stands across the sea: too far to reach, north-east of the ridge. */
 export const FAR = { x: 330, z: -1120 };
