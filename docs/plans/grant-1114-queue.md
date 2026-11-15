@@ -16,9 +16,9 @@ Ranks are the tracker's. Within a rank, items are in the order to pick them. "Wh
 
 | # | Item | Rank | Rows | Principle | Already decided? | Next step | Who |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | **D1. What next after Far Head and the pier** | P1 | G1, G4, part of G11 and G23 | 7, 11 | Yes, in favour: signs before hovering text; words and beacons sparingly; the marker only "where nothing else works" (10 November); the boiler stays the first chosen upgrade (9 November) | Build steps 1 and 2 of [forge-call-handoff](forge-call-handoff.md) (view-only) | Implementer agent, fable medium; visual review by a fresh subagent |
+| 1 | **D1. What next after Far Head and the pier** | P1 | G1, G4, part of G11 and G23 | 7, 11 | Yes, in favour: signs before hovering text; words and beacons sparingly; the marker only "where nothing else works" (10 November); the boiler stays the first chosen upgrade (9 November) | Designer-reviewed, ready with changes. Build steps 2 to 6 and the pier's cut of [forge-call-handoff](forge-call-handoff.md); Far Head's cut waits for owner question 4 | Implementer agent, fable medium; visual review by a fresh subagent |
 | 2 | **D3. The Boogler's reveal** | P1 | G2 | 7 | The statue is the owner's 14 November call ([rail](../decisions-rail.md#d-2026-11-14-the-boogler-s-statue-replaces-the-clock)); the ending is meeting The Boogler ([core loop](../decisions-core-loop.md#current-rules), "The ending") | Owner question 1 | Owner; then implementer agent |
-| 3 | **D2. Decisions on the first line** | P2, Grant's biggest | G5, G6, G8, G9, G21, G23, part of G7 | 6, 11, the core loop | Partly against: "no sway, and so no jump spill" (1 November); the glider at Far Head (3 and 8 November); "no routing or quotas" (DESIGN). In favour: "make it a player choice to upgrade" (9 November); danger is open | The 2D page from [first-line-decisions](../brainstorms/first-line-decisions.md); the prototype waits for owner questions 2 and 3 | 2D page: Codex, gpt-6.1-sol high; the prototype's plan: planner agent; its sim work: Codex, gpt-6-astra high |
+| 3 | **D2. Decisions on the first line** | P2, Grant's biggest | G5, G6, G8, G9, G21, G23, part of G7 | 6, 11, the core loop | Partly against: "no sway, and so no jump spill" (1 November); the glider at Far Head (3 and 8 November); "no routing or quotas" (DESIGN). In favour: "make it a player choice to upgrade" (9 November); danger is open | Designer-reviewed, ready with changes. The 2D page from [first-line-decisions](../brainstorms/first-line-decisions.md), listing each haul's short and long way; the prototype waits for owner questions 2 and 3 | 2D page: Codex, gpt-6.1-sol high; the prototype's plan: planner agent; its sim work: Codex, gpt-6-astra high |
 | 4 | **C1. The Detail ladder hunts and hitches** | P2 | G3, G36 | (technical) Small and readable | No decision needed | Fix both faults in `src/features/adaptive-res.ts`: stop stepping down on a machine at p50 6.2 ms, and remove the 260 to 330 ms frame when sun shadows switch (see Corrections) | Codex, gpt-6.1-sol high |
 | 5 | **D4. The first five minutes** | P2 | G10, G11, G16 | 11 | "Where your axe comes from" was answered on 5 November ([core loop](../decisions-core-loop.md#current-rules)); Grant's version changes it | Owner question 5; then a light brainstorm | Codex, gpt-6.1-sol high (brainstorm) |
 | 6 | **C2. Depots say what they are** | P2 | G7, G8 (the sign) | 11 | Yes: signs in the world; the cart is one full shipment ([level-pacing-1114](level-pacing-1114.md), problem 3) | The rail depot gets the log depot's board; the cart is seen to unload | Implementer agent, fable medium |
@@ -38,26 +38,35 @@ At most five. Each has a recommended answer first; none is recorded as his call.
    moves when it appears. Alternative: keep the statue as it is and accept that the ending is not a reveal of his
    looks. The builders' words would be yours. Answer: ___
 2. **May a flagged prototype, in its own room, try the first-line decisions (G5, G6, G21, G8)?** Recommended: yes, in
-   this order: pick your edge (1 log a chop and 8 on the back, then a whetstone or a sling first), the heavy load in
-   three variants, then the depot stake. It reopens the 1 November "no sway, no jump spill" for one variant only and
-   sits close to DESIGN's "no routing or quotas" for the stake. Nothing reaches the live room until you have played
+   this order: the heavy load in three variants (the designer's strongest: the one choice remade every trip), then
+   pick your edge (1 log a chop and 8 on the back, then a whetstone or a sling first). It reopens the 1 November
+   "no sway, no jump spill" for one variant, and the pick would come before the boiler, which your 9 November call
+   made the first chosen upgrade; both only in the prototype room. The depot stake is held back: the cart already
+   unloads 7 m from the open frame, so placing it saves no walking; Grant's "earned" is answered by the forge crew
+   handing the depot over and by its sign (C2), and placing is tried only if the 2D page shows a better spot. Nothing reaches the live room until you have played
    it. Alternative: the 2D page only. Answer: ___
 3. **The glider: take it sealed on the first climb, and it opens at Far Head (G9, your row 31)?** Recommended: yes.
    Your spacing holds (no gliding before Far Head) and the second climb goes. It changes one rule and needs a world
    bump. The seal that shipped is what Grant met, and he still asked for this. Alternative: keep the seal.
    Answer: ___
-4. **Words.** Three places want a line of yours: Sleeves at the pedestal while a part waits (D1), the forge rack's
-   reason when it gives no rails (D1), and "Wake it up" against Grant's "Start engine" (G10). Recommended: keep
-   "Wake it up" (the machine is asleep, and the wake is what the scene shows) and write the other two yourself.
-   Answer: ___
+4. **Far Head's shot: may it grow from 5 s to about 8.5 s, ending on a cut to the forge casting the boiler (D1)?**
+   Recommended: yes. The designer's review found the Act 2 card would cover a cut placed inside today's 5 s, and
+   that a longer shot changes the 11 November reading "trimmed to 5 s, never a second move after it". Until you
+   answer, no cut is built there: the forge's whistle sounds as the camera hands back. The pier has no camera shot
+   today, so its cut is new and is built as a default. Answer: ___
 5. **The start: the camp's resident hands you the axe, and the engine starts when the last log is in (G10).**
    Recommended: brainstorm it. Grant's order gives the first conversation a job and makes the first whistle the
    payoff of the first bill; it changes the 5 November answer on where the axe comes from. Alternative: keep the
    order and only fix the dead beat after the wake. Answer: ___
 
-## Suspect copy, for the owner (nothing reworded)
+## Suspect copy and words wanted, for the owner (nothing reworded)
+
+- Words wanted for D1: a line for Sleeves at the pedestal while a part waits, and the forge rack's reason when it
+  gives no rails. Neither is built until he writes or picks them.
 
 - "Wake it up" (the track layer's prompt). Grant: not what you do to a train; his suggestion is "Start engine".
+  My view: the machine is asleep and the scene shows a wake, so the line fits; the dead beat after it is the fault
+  (D4). His to pick.
 - "Sealed until the line reaches Far Head" (the glider). Marked as draft copy in level-pacing-1114; refused 4 times.
 - "Your back is full". Refused 6 times, beside G14's counts that did not match.
 - "Station 1" on later stations' signs (G13); to be checked in the build, it may be a bug and not copy.
@@ -83,7 +92,14 @@ At most five. Each has a recommended answer first; none is recorded as his call.
 - **G2.** The only statue of The Boogler in the code stands on the Round's green in Home's town
   (`TOWN_STATUE`), not on a road to Bell Rock. The row keeps Grant's wording.
 
+- **G7, from the designer's review.** The cart's rack already stands 7 m from the open frame. He walked to the
+  forge for rails because the rail depot had no board, not because it was far.
+- **D1's facts, from the designer's review.** The boiler's prompt is offered within 3.6 m (4.2 m is the server's
+  allowance); the boiler's plume rises from the forge's chimney about 15 m from the pedestal, and only the
+  breaker's rises from the pedestal; Far Head's shot and the pier show each sound two whistles of their own.
+
 ## Not done here
 
-No game code was changed. No agent-calls rows were added, because nothing was built on a default. The 2D page for
-D2 is not made.
+No game code was changed and nothing is dispatched. The designer agent reviewed both design docs ("ready with
+changes"; its sections are in each doc) and logged seven proposed calls in [agent-calls](../agent-calls.md). The 2D
+page for D2 is not made.
