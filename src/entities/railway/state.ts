@@ -77,6 +77,8 @@ export type RailwayScene = {
   reward: ReturnType<Awaited<ReturnType<typeof import('./reward.ts').createRailwayReward>>['inspect']>;
   hookShot: ReturnType<Awaited<ReturnType<typeof import('./hook-shot.ts').createRailwayHook>>['inspect']>;
   glider: ReturnType<Awaited<ReturnType<typeof import('./glide.ts').createRailwayGlide>>['inspect']>;
+  /** The crane's hold of what waits on the forge's pedestal (part-hoist.ts); null if the view was torn down early. */
+  hoist: ReturnType<ReturnType<typeof import('./part-hoist.ts').createPartHoist>['inspect']>['hoist'] | null;
   /** The Works and Roundhouse views' own inspection, and the crossing's; null with &works=0. */
   worksView: ReturnType<WorksLive['inspect']> | null;
   crossingView: ReturnType<WorksLive['crossingInspect']> | null;

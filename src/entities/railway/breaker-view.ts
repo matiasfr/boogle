@@ -20,6 +20,7 @@ const SLAB_SEAMS = [WORKS_SEAMS[0], WORKS_SEAMS[1]] as const;
 import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
 import { reducedMotion } from '../../constants.ts';
 import { createForgeCall } from './forge-call.ts';
+import { HOIST, pedestalHold } from './part-hoist.ts';
 import { STALL_SLAB, THROAT_SLAB } from './works-shape.ts';
 import { account, beam, boiler, works as worksRow } from '../../sim/railway-rows.ts';
 
@@ -49,6 +50,10 @@ export function goldMote(x: number, y: number, z: number, side: number, size = 0
 /** Seconds between motes on each unstruck seam while the breaker is out: under seven a second each,
  * far inside the pool's budget (the pier already runs about 440). */
 const SEAM_MOTE_S = 0.15;
+/** The head's height along the handle (its origin is the grip's end), and held by the crane: metres the head hangs
+ * over where it lay, and the turn that shows the head's broad face to the hand-off cut half-way through it. */
+const HEAD = 1.36,
+  HELD = { head: 2.85, yaw: -Math.PI / 2 } as const;
 const RAISED = -2.5,
   DOWN = 1.35;
 
@@ -76,7 +81,7 @@ export function createRailwayBreaker(
   owner.add(breaker);
   geometry.dispose();
   owner.cleanup(() => mat.dispose());
-  const call = createForgeCall({ x: bx, y: by, z: bz }, owner);
+  const call = createForgeCall({ x: bx, y: by, z: bz }, owner, undefined, true);
   let mote = 0,
     side = 1,
     shown = false,
@@ -185,12 +190,24 @@ export function createRailwayBreaker(
       breaker.visible = true;
       return;
     }
-    // On the pedestal: lying across its top while the room has not taken it.
+    // Over the pedestal while the room has not taken it: lying level until the forge's crane takes it by the head,
+    // then stood up under the hook, head high, and turning (part-hoist.ts). At twice its carried size there: lying
+    // level it was a grey post with a stick from the hand-off cut; upright it is a hammer's outline against the sky.
     if (w.breaker === 1) {
+      const k = pedestalHold.lift / HOIST.lift,
+        size = 1 + k,
+        tilt = (k - 1) * (Math.PI / 2),
+        yaw = pedestalHold.yaw + HELD.yaw;
       breaker.visible = true;
-      breaker.position.set(bx - 0.7, by + 1.05, bz);
-      breaker.quaternion.setFromAxisAngle(axis.set(0, 0, 1), -Math.PI / 2);
-      breaker.scale.setScalar(1);
+      // The point of its length over the pedestal's middle: half-way along while it lies, the head once it hangs
+      // (its origin is the grip's end). The head rises `HELD.head` so the grip's end clears the pedestal.
+      const c = (0.7 + (HEAD - 0.7) * k) * size,
+        y = by + 1.05 + k * HELD.head;
+      breaker.quaternion.setFromAxisAngle(up, yaw).multiply(q.setFromAxisAngle(axis.set(0, 0, 1), tilt));
+      toward.set(0, c, 0).applyQuaternion(breaker.quaternion);
+      breaker.position.set(bx - toward.x, y - toward.y, bz - toward.z);
+      breaker.scale.setScalar(size);
+      pedestalHold.top = y + 0.2 * size;
       return;
     }
     // Taken: slung on your back between strikes while your back is otherwise empty.
@@ -232,7 +249,8 @@ export function createRailwayBreaker(
       if (shown && mote <= 0) {
         mote = 0.35;
         side *= -1;
-        goldMote(bx + side * 0.42, by + 1.4, bz + side * 0.5, side);
+        // Off the head, which hangs high once the crane has it.
+        goldMote(bx + side * 0.42, by + 1.4 + pedestalHold.lift * 1.6, bz + side * 0.5, side);
       }
       if (reducedMotion || w.breaker !== 2) return;
       seamMotes(dt, w.seams);
@@ -281,12 +299,12 @@ export function createRailwayBreaker(
       // Not while you haul the boiler (docs/plans/boiler-first-choice.md, Part 2); the rule refuses it too.
       if (!adapter.read.ready() || !p || swing.t >= 0 || (boiler(rows).state === 'held' && boiler(rows).holder === pid))
         return [];
-      if (w.breaker === 1 && Math.hypot(p.x - bx, p.z - bz) <= 3.6)
+      if (w.breaker === 1 && Math.hypot(p.x - bx, p.z - bz) <= 6)
         return [
           {
             id: 'railway-breaker',
             verb: 'Take the breaker',
-            at: new THREE.Vector3(bx, by + 1.9, bz),
+            at: new THREE.Vector3(bx, by + 1.9 + pedestalHold.lift, bz),
             // `r`, the pedestal's radius, as the boiler's on it had (boiler-view.ts): measured to its edge, so a log
             // pile set down against the pedestal doesn't win the prompt from the breaker you face.
             r: 1.3,
@@ -319,6 +337,7 @@ export function createRailwayBreaker(
         state: worksRow(adapter.read.world()).breaker,
         shown: breaker.visible,
         swinging: swing.t >= 0,
+        call: call.inspect(),
         x: breaker.position.x,
         y: breaker.position.y,
         z: breaker.position.z,

@@ -2,7 +2,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { RailAction } from '../src/sim/railway.ts';
-import { Pile, Rail } from '../src/sim/railway-components.ts';
+import { Boiler, Pile, Rail } from '../src/sim/railway-components.ts';
+import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
+import { WORKS_BREAKER } from '../src/sim/railway-works-layout.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { RIDER_REACH, RIDER_SPAN, railValid } from '../src/world/railway-server.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
@@ -20,6 +22,35 @@ function sourceFixture() {
     apply(state, 'alice', { ...e, epoch: 1, request: ++request }, 100);
   return { state, action };
 }
+
+test('waiting forge parts accept the 6 m prompt plus 0.6 m margin; a dropped boiler keeps 4.2 m', () => {
+  const w = createRailway();
+  const b = w.mut(Boiler, w.single(Boiler))!;
+  const token = { epoch: 1, request: 1 };
+  for (const state of ['pedestal', 'ground'] as const) {
+    Object.assign(b, { state, x: LINE2_BOILER.x, y: LINE2_BOILER.y, z: LINE2_BOILER.z });
+    for (const cm of [360, 420, 421, 600, 660, 661]) {
+      const actor = {
+        reach: (x: number, z: number, r: number) => Math.hypot(b.x + cm - x, b.z - z) <= r,
+        height: () => true,
+        cadence: () => true,
+      };
+      assert.equal(
+        railValid(w, { ...token, op: 'rail.boilerTake', revision: b.revision }, actor),
+        cm <= (state === 'pedestal' ? 660 : 420),
+        `${state} boiler at ${cm} cm`,
+      );
+    }
+  }
+  for (const cm of [600, 660, 661]) {
+    const actor = {
+      reach: (x: number, z: number, r: number) => Math.hypot(WORKS_BREAKER.x + cm - x, WORKS_BREAKER.z - z) <= r,
+      height: (y: number, r: number) => Math.abs(WORKS_BREAKER.y - y) <= r,
+      cadence: () => true,
+    };
+    assert.equal(railValid(w, { ...token, op: 'rail.breaker' }, actor), cm <= 660, `breaker at ${cm} cm`);
+  }
+});
 
 test('wake accepts the whole machine prompt circle, including the side away from the receiving frame', () => {
   const w = createRailway();

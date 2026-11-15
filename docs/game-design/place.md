@@ -479,6 +479,31 @@ heading and finding clear ground to the south. The same pose is reconstructed on
 
 The 5 November prop art pass gives that shared boiler broad end bevels, two matching golden bands and sparse shining motes while waiting on its pedestal. While it waits, the forge's call (a tall pale steam plume and a whistle when it's cast, `forge-call.ts`; [home-flow](../reviews/home-flow.md) finding 2) rises from the forge's chimney, not the boiler: the owner found a steaming boiler that can't yet be taken read as an engine already running (9 November). The boiler first steams as the old train's chimney once fitted. Within 3.6 m the boiler always shows **Pick up** (the great beam's prompt; it was "Shoulder the boiler" until it moved onto the rope); with anything on your back or in your hand it is greyed with "Empty your back first", as for the great beam and footings. The train has solid saddle feet and posts supporting its existing roof. The low cart's grip now connects to its sidewalls, with shallow bearers under the existing four-log rows; every counted log still uses its original cargo transform. The Blender-authored rigid shells keep all existing world positions, collision, capacity, timing and train wheel/rod motion. [Art measurements and evidence](../research/boiler-cart-art.md).
 
+**The forge's hand-off (15 November, [forge-call-handoff](../plans/forge-call-handoff.md#as-built-15-november-2026)).**
+Far Head's shot and the pier's show end on the thing to touch next. Far Head's shot runs 8.5 s: 6 s over the trestle
+(the Act 2 card is up from 1.5 s to 6.0 s), then a 2.5 s cut to the forge's pedestal, then a cut home. The pier's show
+gets the same 2.5 s shot 3.5 s in, after its rockets; it is a shared moment (every page that sees the edge live, the
+one highlighted skip, behind a reward card, none under reduced motion or on a reload). The forge's call sounds as the
+cut lands, not under the show's own whistles (at the hand-back after a skip; 3 s into the show where no shot plays),
+and the plume starts with it. A player on foot comes home looking toward the forge; a rider, a glider in the air and
+someone hauling keep their view. A banner queued behind the act card (the glider's) waits for the shot to end.
+
+While a part waits, the forge's crane holds it 1.6 m over the pedestal, turning slowly: the jib swings over on the
+cast and lifts on the call, which is what the cut shows; a reload shows it held. The boiler stays cold and is lifted
+side-on to the cut's camera, the hook on its dome. The breaker lies on the pedestal until the call, then the hook
+stands it up by its head: upright, head high (3.9 m over the pedestal's foot), at twice its carried size. Its cut
+has its own framing, 5 m off and low, looking up, so the hammer is tall against the sky; steam hisses out round the
+pedestal for 3 s as its call sounds. Three little guys stand on the forge's side of the pedestal, off road 1,
+and wave at a player within 30 m, and at the camera while a cut stands there; they go when the part is taken. A board off the forge rack's end shows the waiting
+part in the saddle's gold dashes. The call repeats at 90, 180 and 270 s while the part still waits (never while you
+are within 30 m of the pedestal); the first repeat thickens the plume from 22 puffs to 33. The waiting part's take is
+offered within 6 m of the pedestal's centre, with a 6.6 m server allowance. A boiler put down mid-haul keeps its
+3.6 m prompt and 4.2 m server allowance. Seated riders keep their train request or stand prompt. The recorder marks
+`boiler approached` / `breaker approached` on first entering 30 m while that part waits, once per part per page;
+the existing server-confirmed `boiler taken` / `breaker taken` marks finish the measure (use `mine: true` for this
+player's take). A late join beside a waiting part starts the measure there; a dropped boiler does not restart it.
+The target is a take within 20 s of that approach, alongside 2 min 30 s from Q5 and 3 min from Q6.
+
 **Walking-in composition, 4 November:** Station 3's existing bill sits on the source side of its pile so
 the unchanged `great beam 0/1` row stays visible. The receiver, feeder, machine and crossing fit are retained;
 the 14 November prow move replaces the old 53 m uphill haul with 35 m from beyond Station 3. The proper-axe
@@ -736,7 +761,7 @@ its pedestal if that was outside the haul area (boiler-first-choice plan, step 5
 little faster"). The held boiler is drawn as the great beam is: a short, fat rod whose nose hangs a rope's length behind
 the hauler's hip, the gold rope running from their hand to it, the tail resting on the ground and swinging wide on turns,
 with the beam's dust and scrape. On a deck, a bridge or a car the tail rides at the hauler's feet height rather than
-dropping to the terrain below. The hauler takes the beam's rope pose, has sprint off and walks at 300 cm/s
+dropping to the terrain below. The hauler takes the beam's rope pose, has sprint off and walks at 380 cm/s by default
 (room tunable `railway.boilerSoloSpeed`; `railway.boilerHelpSpeed` is the helped pace). A friend with an empty back within 5 m of the grip (where the dragging end rests, from the hauler's pose) presses **Help carry** there and the boiler
 lifts between the two shoulders; the hauler then walks at 540 cm/s and the helper has sprint off; **Let go** ends it (an
 Owner value, `railwayBoilerHelp`, the holder's pid; it goes stale after 1.5 s). Once helping, the claim holds out to 8 m

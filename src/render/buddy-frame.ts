@@ -57,6 +57,14 @@ export function holdCamera(owner: object, on: boolean, secondsLeft = Infinity) {
   else holders.delete(owner);
 }
 export const cameraHeld = () => holders.size > 0;
+// A camera shot is on screen now (camera-pull-out.ts): a banner queued behind the act card waits for it too, so it
+// comes up over the player's own view and not over a shot's last cut (the glider's banner over the forge cut).
+const shots = new Set<object>();
+export function holdShot(owner: object, on: boolean) {
+  if (on) shots.add(owner);
+  else shots.delete(owner);
+}
+export const shotPlaying = () => shots.size > 0;
 /** Something full-screen is showing and has more than `slackS` seconds to go, or the pause view is open. The act card
  * asks it before it comes up (src/features/acts.ts), so two full-screen moments never stack. */
 export function momentBusy(slackS = 0) {

@@ -70,7 +70,7 @@ export const TUNABLES = [
   // The boiler's haul pace on its rope (docs/plans/boiler-first-choice.md, step 7; designer, 9 November).
   {
     key: 'railBoilerSoloSpeed',
-    def: 300,
+    def: 380,
     min: 10,
     max: 1000,
     label: 'Railway solo boiler speed (centimetres per second)',

@@ -3,12 +3,14 @@
 // stretch's rack shows the
 // `'train'` drawing until trains run (docs/plans/boiler-first-choice.md, step 1): the old train's own loco side-on, its
 // boiler a dashed gold outline (the rope's gold), pulling one wagon heaped with the log and rail icons, no number.
+// `'boiler'` and `'breaker'` are the forge rack's board while that part waits on the pedestal
+// (docs/plans/forge-call-handoff.md, step 3): the part alone in the same gold dashes, no number.
 import type { OwnedView } from '../../render/owned-view.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { signBoard } from '../../render/sign-board.ts';
 import { reducedMotion } from '../../constants.ts';
 
-export type StockSignKind = 'logs' | 'rails' | 'train';
+export type StockSignKind = 'logs' | 'rails' | 'train' | 'boiler' | 'breaker';
 const LINE = '#edcf8c';
 const PUFF_S = 0.9;
 const BOB_S = 0.5;
@@ -117,12 +119,40 @@ export function stockSign(owner: OwnedView, start: StockSignKind) {
       g.globalAlpha = 1;
     }
   };
+  /** The waiting part alone, in the saddle's and the train drawing's gold dashes: the boiler (barrel and chimney, as
+   * on the train drawing, larger) or the breaker (handle and broad head). */
+  const part = (which: 'boiler' | 'breaker') => {
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.strokeStyle = GOLD_ROPE;
+    g.lineWidth = 7;
+    g.setLineDash([12, 9]);
+    g.beginPath();
+    if (which === 'boiler') {
+      g.roundRect(62, 54, 132, 50, 20);
+      g.moveTo(150, 54);
+      g.lineTo(145, 20);
+      g.lineTo(175, 20);
+      g.lineTo(170, 54);
+    } else {
+      g.roundRect(150, 34, 46, 62, 8);
+      g.moveTo(150, 65);
+      g.lineTo(52, 65);
+    }
+    g.stroke();
+    g.setLineDash([]);
+  };
   let kind = start,
     n = 0,
     drawn = '',
     nudged = -1;
   const draw = (puff: number) => {
-    const key = kind === 'train' ? `train:${puff < 0 || puff >= 1 ? -1 : puff}` : `${kind}:${n}`;
+    const key =
+      kind === 'train'
+        ? `train:${puff < 0 || puff >= 1 ? -1 : puff}`
+        : kind === 'boiler' || kind === 'breaker'
+          ? kind
+          : `${kind}:${n}`;
     if (key === drawn) return;
     drawn = key;
     g.fillStyle = '#493522';
@@ -133,6 +163,7 @@ export function stockSign(owner: OwnedView, start: StockSignKind) {
     g.roundRect(6, 6, 244, 116, 12);
     g.stroke();
     if (kind === 'train') train(puff);
+    else if (kind === 'boiler' || kind === 'breaker') part(kind);
     else {
       if (kind === 'logs') logs(60, 68, 18);
       else rails(59, 64, 66, 10, 32);

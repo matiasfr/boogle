@@ -8,7 +8,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';
 import type { Got } from '../../render/reward-reveal.ts';
-import { me } from '../../player/player.ts';
+import { cam, me } from '../../player/player.ts';
 import { frameHasRemote, frameOccupied } from './frame-occupied.ts';
 import { goldMote } from './breaker-view.ts';
 import { reducedMotion } from '../../constants.ts';
@@ -17,7 +17,15 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
 import { commitPieces } from '../../render/haul-pieces.ts';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
-import { LINE2_FORGE, LINE2_STATIONS, Q7, line2Panels, line2Routes, pierLaid } from '../../sim/railway-line2-layout.ts';
+import {
+  LINE2_BOILER,
+  LINE2_FORGE,
+  LINE2_STATIONS,
+  Q7,
+  line2Panels,
+  line2Routes,
+  pierLaid,
+} from '../../sim/railway-line2-layout.ts';
 import {
   line2Active,
   line2Completed,
@@ -30,13 +38,19 @@ import { aboard, line2Jobs, q7Laid, type QJobRead } from '../../sim/railway-quer
 import { freeCarryIgnoringBig, railPhase } from '../../sim/railway-queries-line1.ts';
 import {
   account,
+  beam as beamRow,
+  boiler as boilerRow,
   forge as forgeRow,
   job as line1Job,
   qjob,
   rail as railRow,
   shed as shedRow,
+  works as worksRow,
   type ReadWorld,
 } from '../../sim/railway-rows.ts';
+import { worksPreview } from './works-flag.ts';
+import { railwayGlideOpen } from './glide.ts';
+import { yawToForge } from './forge-cut.ts';
 import { RING_Q7_FRAME } from '../../sim/railway-ring-layout.ts';
 import { Q7_DECK_UP, q7Spot } from './q7-site.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
@@ -63,6 +77,9 @@ type Machine = ReturnType<Rail['buildMachine']>;
  * unloads at Far Head, not at the fit 500 m away. Trains run, and the kit is still to load or still aboard. */
 /** A train-fed frame's bill while it is short: its kit lies beside it, or a train still brings it (the cart tag's own
  * words for stock in transit). Draft UI copy. */
+/** DRAFT, for the owner (queue question 4): why the forge rack gives no rails while the boiler waits and station 6's
+ * kit goes by train. null: the blocked prompt is not shown. Suggested: 'These go by train'. */
+const RACK_WAIT_REASON: string | null = null;
 const KIT_ON_RACK = 'On the rack',
   KIT_ON_WAY = 'On the way';
 const kitComing = (w: ReadWorld, active: number) => {
@@ -104,7 +121,22 @@ export async function createRailwayLine2(
   // The same pull-out as Place's glider reveal, now owned by this view and queued behind its reward cards.
   const switchCamera = createCameraPullOut(rewardBusy, true);
   owner.cleanup(() => switchCamera.dispose());
-  let switchKind: 'sea' | 'quarry' | 'farHead' | null = null;
+  let switchKind: 'sea' | 'quarry' | 'farHead' | 'pier' | null = null;
+  // The hand-back from a forge cut (far-head-view.ts, pier-view.ts): a player on foot whose camera the shot took comes
+  // home looking toward the forge (design review call 5). Not a rider, a glider in the air or someone hauling: their
+  // camera has a job already. Reduced motion plays no shot, so it never gets here.
+  let forgeTurns = 0,
+    seated = () => false; // view.ts's seats (riderIs)
+  function faceForge() {
+    const p = me.body?.position,
+      w = rd.world(),
+      b = boilerRow(w),
+      beam = beamRow(w);
+    if (!p || seated() || railwayGlideOpen()) return;
+    if ((b.state === 'held' && b.holder === rd.pid) || (beam.state === 'held' && beam.holder === rd.pid)) return;
+    cam.yaw = yawToForge(p.x, p.z);
+    forgeTurns++;
+  }
   function showSwitch(kind: 'sea' | 'quarry') {
     switchKind = kind;
     const gate = tech.GATES[kind];
@@ -218,6 +250,19 @@ export async function createRailwayLine2(
     return out.set(RX + across * rackCos, RY + 0.46 + Math.floor(k / 8) * 0.19, RZ - across * rackSin);
   };
   const rackFrom = new THREE.Vector3(RX, RY + 1.6, RZ);
+  // The rack's board (docs/plans/forge-call-handoff.md, step 3): while a part waits on the pedestal it shows that part
+  // in the gold dashes of the old train's saddle and station 6's sign. On its own post off the rack's end nearer the
+  // pedestal, its faces square to the way there, so it is read coming from the pedestal and from the rack's far side.
+  const rackSign = stockSign(owner, 'boiler');
+  {
+    const dx = LINE2_BOILER.x / 100 - RX,
+      dz = LINE2_BOILER.z / 100 - RZ,
+      d = Math.hypot(dx, dz) || 1;
+    rackSign.board.position.set(RX + (dx / d) * 2.3, 0, RZ + (dz / d) * 2.3);
+    rackSign.board.position.y = land.H(rackSign.board.position.x, rackSign.board.position.z);
+    rackSign.board.rotation.y = Math.atan2(dx, dz);
+  }
+  rackSign.board.visible = false;
   const m4 = new THREE.Matrix4();
   const tmp = new THREE.Vector3();
   let drawnRack = -1;
@@ -510,10 +555,11 @@ export async function createRailwayLine2(
     flat,
     sounds,
     busy: rewardBusy,
-    shot: (from, to, at, seconds) => {
+    shot: (from, to, at, seconds, drift, shape) => {
       switchKind = 'farHead';
-      switchCamera.play(from, to, at, seconds);
+      return switchCamera.play(from, to, at, seconds, drift, shape);
     },
+    handBack: faceForge,
   });
   const boiler = createRailwayBoiler(
     adapter,
@@ -521,7 +567,20 @@ export async function createRailwayLine2(
     { land, props, carry, engine: await import('./engine-kit.ts'), sounds, pieces, flat, youGot },
     chimneyTop,
   );
-  const pier = createRailwayPier(owner, { layout, rail, sounds, adapter, track });
+  const pier = createRailwayPier(owner, {
+    layout,
+    rail,
+    sounds,
+    adapter,
+    track,
+    busy: rewardBusy,
+    cast: () => worksPreview() && worksRow(rd.world()).breaker === 1,
+    shot: (from, to, at, seconds, drift, shape) => {
+      switchKind = 'pier';
+      return switchCamera.play(from, to, at, seconds, drift, shape);
+    },
+    handBack: faceForge,
+  });
   // The forge's roof, chimney cap and workshop once the crossing is done (works-late-game step 6).
   const finish = await createForgeFinish(adapter, owner, {
     plan,
@@ -1142,6 +1201,11 @@ export async function createRailwayLine2(
       syncSolids(w, completed);
       seaGate.update(dt, stock.sea);
       glideDevice.update(dt, completed);
+      // The rack's board: the part that waits on the pedestal, while it waits.
+      const partWaits =
+        boilerRow(w).state === 'pedestal' ? 'boiler' : worksPreview() && worksRow(w).breaker === 1 ? 'breaker' : null;
+      rackSign.board.visible = !!partWaits;
+      if (partWaits) rackSign.show(partWaits);
       farHead.update(dt, farHeadLaid(w));
       boiler.update(dt);
       pier.update(dt, jobs[5]!.job.completion === 1);
@@ -1199,6 +1263,10 @@ export async function createRailwayLine2(
     /** Which way the depot rack for stretch k is turned (its local -z end carries its boards). */
     depotYaw,
     depotSlot,
+    /** Whether you sit in a railway seat (view.ts owns the seats): a rider's camera isn't turned at a hand-back. */
+    riderIs(fn: () => boolean) {
+      seated = fn;
+    },
     /** Pieces the cart is heaving onto the rack (cart-view.ts): shown once they land. */
     holdDepot(fn: () => { logs: number }) {
       cartFlying = fn;
@@ -1213,6 +1281,16 @@ export async function createRailwayLine2(
         quarryRoute = line2Routes(completed).quarry;
       const out: Interactable[] = [...seaGate.targets(p, stock.sea), ...glideDevice.targets(p, completed)];
       out.push(...boiler.targets());
+      // Step 3's second half, built off: the rack answers a press with a reason while its rails go by train and the
+      // boiler waits. The words are the owner's (RACK_WAIT_REASON).
+      if (
+        RACK_WAIT_REASON &&
+        forgeRow(w).rack > 0 &&
+        boilerRow(w).state === 'pedestal' &&
+        waitsForTrain(w, active) &&
+        Math.hypot(p.x - LINE2_FORGE.rackX / 100, p.z - LINE2_FORGE.rackZ / 100) <= 3
+      )
+        out.push({ id: 'railway-forge-rails', verb: 'Take rails', at: rackFrom, blocked: RACK_WAIT_REASON });
       const full = freeCarryIgnoringBig(w, rd.pid) <= 0 ? { blocked: 'Your back is full' } : {};
       if (
         forgeRow(w).rack > 0 &&
@@ -1274,12 +1352,13 @@ export async function createRailwayLine2(
         ...seaGate.inspect(),
         ...glideDevice.inspect(),
         framesPacked: frames.map((frame) => frame.packed()),
-        switchCamera: { ...switchCamera.inspect(), kind: switchKind },
+        switchCamera: { ...switchCamera.inspect(), kind: switchKind, forgeTurns },
         ...farHead.inspect(),
         ...boiler.inspect(),
         ...pier.inspect(),
         trainOwed: waitsForTrain(w, active),
         q6Sign: { kind: depotSign.kind, visible: depotSign.board.visible, nudges },
+        rackSign: { kind: rackSign.kind, visible: rackSign.board.visible },
         q6Rack: (() => {
           const p = depotPlace(5, new THREE.Vector3());
           return {
