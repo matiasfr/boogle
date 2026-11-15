@@ -77,9 +77,9 @@ type Machine = ReturnType<Rail['buildMachine']>;
  * unloads at Far Head, not at the fit 500 m away. Trains run, and the kit is still to load or still aboard. */
 /** A train-fed frame's bill while it is short: its kit lies beside it, or a train still brings it (the cart tag's own
  * words for stock in transit). Draft UI copy. */
-/** DRAFT, for the owner (queue question 4): why the forge rack gives no rails while the boiler waits and station 6's
- * kit goes by train. null: the blocked prompt is not shown. Suggested: 'These go by train'. */
-const RACK_WAIT_REASON: string | null = null;
+/** Why the forge rack gives no rails while the boiler waits and station 6's kit goes by train (owner, 15 November:
+ * the draft lines "are good for now"). null would hide the blocked prompt. */
+const RACK_WAIT_REASON: string | null = 'These go by train';
 const KIT_ON_RACK = 'On the rack',
   KIT_ON_WAY = 'On the way';
 const kitComing = (w: ReadWorld, active: number) => {
