@@ -271,6 +271,18 @@ it waits. Pair them with the existing server-confirmed `boiler taken` / `breaker
 the local player's take. A dropped boiler or a second visit does not restart the measure. The original hand-off
 checklist is retained below. Independent review is arranged by the parent before any ship.
 
+**D1 checks:** `node dev/ship-check.ts 474c91e13` passed registry, changed-file lint, typecheck and 1,697 tests
+(one existing TODO). All nine railway golden shards passed: 47 stages unchanged, no regeneration or namespace bump.
+`npm run loop -- run` completed the canonical and alternate orders for 1–4 players. The two runs of
+`dev/look/evals/forge-reach.ts` passed on `q5-done` and `q6-done`: pickup at 5.9 m, none at 6.1 m, both pickups excluded
+by the real seated-player filter, approach once at 29 m followed by the server-confirmed take, and the dropped boiler
+offered at 3.5 m but not 4 m. The fixture starts the recorder outside 30 m (`notrack=1`, then imports the real recorder),
+since the ordinary spawn is already inside that radius. Both captures passed WebGPU/frame/error checks. Inspected
+[boiler still](../../.look/forge-boiler-proof-still.png) and [breaker still](../../.look/forge-breaker-proof-still.png)
+plus their motion sheets show the dropped boiler's pickup prompt and the taken breaker in hand; the reach and seat
+claims come from the eval's assertions. Logs are in `.look/d1-sim/`. Real-time haul feel and device testing remain
+unverified. No copy changes.
+
 | What | Needs |
 | --- | --- |
 | Prompt reach 6 m (step 2) | `reach: 420` to `660` on `LINE2_BOILER` (`src/sim/railway-line2-layout.ts`) and `WORKS_BREAKER` (`src/sim/railway-works-layout.ts`), which `src/world/railway-server.ts` checks; then the views' `<= 3.6` to `<= 6` in `boiler-view.ts` and `breaker-view.ts` (keeping the 0.6 m margin). The review's checks go with it: it must not win over the halt's lever or the forge's deposit, nor be offered to a seated rider. The boiler's reach also applies where it lies after a drop: decide whether 6 m holds there or only on the pedestal. Room-safety and mixed-builds reading; no saved field |

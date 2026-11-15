@@ -1,6 +1,8 @@
 // D1's real providers and seat filter, from q5-done or q6-done. No writes to the mirrored world.
-// npm run look -- --rail-seed q5-done --eval dev/look/evals/forge-reach.ts --hud --name forge-boiler-reach
-// npm run look -- --rail-seed q6-done --eval dev/look/evals/forge-reach.ts --hud --name forge-breaker-reach
+// The usual spawn is already within 30 m. notrack delays the recorder until this eval stands outside that radius;
+// then importing the real recorder exercises its first approach, without resetting its per-page observations.
+// npm run look -- --rail-seed q5-done --query notrack=1 --eval dev/look/evals/forge-reach.ts --hud --name forge-boiler-reach
+// npm run look -- --rail-seed q6-done --query notrack=1 --eval dev/look/evals/forge-reach.ts --hud --name forge-breaker-reach
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -11,7 +13,9 @@ const { interactTarget, interactDown } = (await import(
 const seats = (await import(
   '/src/entities/railway/seat.ts' as string
 )) as typeof import('../../../src/entities/railway/seat.ts');
-const { onPlayMark } = (await import('/src/proto/mark.ts' as string)) as typeof import('../../../src/proto/mark.ts');
+const { watchPlayMarks } = (await import(
+  '/src/proto/mark.ts' as string
+)) as typeof import('../../../src/proto/mark.ts');
 const { boiler, works, railRead, rw, inspectRailway } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
@@ -32,11 +36,12 @@ const until = async (ready: () => boolean, label: string) => {
   check(ready(), label);
 };
 await until(() => !!railRead()?.ready() && !!me.body, 'mounted');
+check(new URLSearchParams(location.search).has('notrack'), 'notrack delays recorder startup for the approach fixture');
 const part = works(rw()).breaker === 1 ? 'breaker' : 'boiler';
 const id = `railway-${part}`;
 check(part === 'breaker' || boiler(rw()).state === 'pedestal', 'part waiting');
 const marks: { name: string; mine?: boolean }[] = [];
-onPlayMark((name, data) => {
+watchPlayMarks((name, data) => {
   if (name === `${part} approached` || name === `${part} taken`) {
     marks.push({ name, mine: data?.mine as boolean | undefined });
     console.log(`FORGE MARK ${name} ${JSON.stringify(data)}`);
@@ -50,8 +55,11 @@ const move = async (distance: number, x = 922, z = -1.17) => {
   await wait(100);
 };
 await move(31);
+await import('/src/proto/playdata/record.ts' as string);
+await wait(100);
 check(!marks.length, 'outside 30 m does not start the approach measure');
 await move(29);
+console.log(`FORGE APPROACH position=${JSON.stringify(me.body!.position)} entered=${me.entered}`);
 await until(() => marks.some((m) => m.name === `${part} approached`), 'first approach marked');
 await move(31);
 await move(29);
