@@ -32,17 +32,17 @@ export const LINE1_ROCKS = [
   { id: 1, x: 100800, z: -10100, initial: 8 },
   { id: 2, x: 100700, z: -11000, initial: 8 },
 ] as const;
-export const LINE1_GREAT_TREE = { id: 28, x: 99600, z: -13800 } as const;
+export const LINE1_GREAT_TREE = { id: 28, x: 100000, z: -6200 } as const;
 /** Where the loose beam may lie: the authored dry approaches at the great tree and T3, or anywhere on the ground of
  * line one's work area (the box around its stations, tree and rocks, 30 m out, at land heights), so a beam put down or
  * left by an absent carrier stays where its carrier stood (owner, 6 November: you keep your load, or it goes down where
  * you stood; you are never pulled back). One left out of reach still recovers to the tree after `age` 21. */
-const BEAM_AREA = { x0: 94744, x1: 103800, z0: -17189, z1: -5777, y0: 1000, y1: 8000 } as const;
+const BEAM_AREA = { x0: 94744, x1: 103800, z0: -17189, z1: -3200, y0: 1000, y1: 8000 } as const;
 export const lineBeamGround = (x: number, y: number, z: number) => {
   if (x >= BEAM_AREA.x0 && x <= BEAM_AREA.x1 && z >= BEAM_AREA.z0 && z <= BEAM_AREA.z1)
     return y >= BEAM_AREA.y0 && y <= BEAM_AREA.y1;
   return [
-    [LINE1_GREAT_TREE.x, 3000, LINE1_GREAT_TREE.z],
+    [LINE1_GREAT_TREE.x, 2970, LINE1_GREAT_TREE.z],
     [LINE1_STATIONS[2]!.x, 3037, LINE1_STATIONS[2]!.z],
   ].some(([ax, ay, az]) => {
     const dx = x - ax!,

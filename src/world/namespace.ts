@@ -97,8 +97,10 @@
 // the Pier west platform catalog entry for homeward service after Q7. Retained departures keep their old
 // block and original-side boarding authority until the entire train clears; no second reset or migration.
 // v46 (2026-11-14, shared reset): the Aperture row carries the railhead haul's start tick and origin.
-// No migration; the great tree and rack moves will join this reset.
-export const WORLD_NS = 'v46';
+// No migration. This reset shipped before the great-tree move.
+// v47 (2026-11-14): move the great tree to the prow and its beam's initial/recovery ground to 29.7 m;
+// extend the beam work area around the new source. No migration.
+export const WORLD_NS = 'v47';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

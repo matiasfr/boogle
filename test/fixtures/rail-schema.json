@@ -1,5 +1,5 @@
 {
-  "worldNs": "v46",
+  "worldNs": "v47",
   "components": [
     {
       "kind": "rail",
@@ -58,9 +58,9 @@
       "requires": [],
       "defaults": {
         "state": "standing",
-        "x": 99600,
-        "y": 3000,
-        "z": -13800
+        "x": 100000,
+        "y": 2970,
+        "z": -6200
       },
       "fields": [
         ["state", "str"],

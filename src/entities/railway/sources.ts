@@ -363,6 +363,12 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     for (const tree of trees) fromState(tree);
     drawPiles();
   }
+  // The prow cannot support the old fixed eastward fall. Use the same authored-ground search on chop and reload.
+  function greatFallPose(tree: TreePose) {
+    const fall = safeTreeFall(tree.x, tree.z, tree.size, Math.PI / 2, true);
+    tree.fallYaw = fall.yaw;
+    tree.collapsed = fall.collapsed;
+  }
   // A tree's stable pose from the state it reads (no harvest, no effect).
   function fromState(tree: TreePose) {
     const k = sourceIndex.get(tree.index);
@@ -386,6 +392,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       const beam = beamRow(world());
       tree.work = beam.work;
       tree.fall = beam.state === 'standing' ? -1 : 1;
+      greatFallPose(tree);
     }
     tree.shake = 0;
     models.pose(tree, 0);
@@ -502,7 +509,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       placeSound('treeBite', tree.x, tree.z);
       if (!beamStanding() && tree.fall < 0) {
         tree.fall = 0;
-        tree.fallYaw = Math.PI / 2;
+        greatFallPose(tree);
       }
       models.pose(tree, tree.hitAt);
       solid(tree);

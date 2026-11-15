@@ -280,7 +280,7 @@ export const beamTake = defineSystem(
 /** The beam back at the great tree, available (railBeamRelease's effect). */
 function release(w: World) {
   const b = w.mut(Beam, beamId(w))!;
-  Object.assign(b, { state: 'available', holder: '', epoch: 0, age: 0, x: LINE1_GREAT_TREE.x, y: 3000 });
+  Object.assign(b, { state: 'available', holder: '', epoch: 0, age: 0, x: LINE1_GREAT_TREE.x, y: 2970 });
   b.z = LINE1_GREAT_TREE.z;
   b.revision++;
 }
