@@ -40,3 +40,15 @@ Checkpoints A/B stay unticked. Still comparisons, Gorge/Bell perf, leg-1 bot pla
 The final level check again passed with **15 reports**. Its findings match the pre-conversion report after excluding the source fingerprint and measured durations. Historical report-only drawn-face and planned track findings remain; they were not silently waived. Logs: `.look/prefab-step-11/level-before.log` and the full-check log above. Registry reports no new cycles or debt growth. `WORLD_NS` remains **v47**.
 
 The final committed-head gate is `node dev/ship-check.ts origin/main HEAD`; its execution result and final SHA are supplied in the handoff, with its local log at `.look/prefab-step-11/ship-check.log`. Nothing is pushed or shipped by this task.
+
+## Review follow-up: standalone scenery parity
+
+Cherry-picked the independent review tests from `8b61dbfcc` as `08e13af36`. Both failed before the fixes: 15 palm sphere heights differed in their last floating-point bits, and hardwood loose branches for ids 209/232 sampled the trunk height instead of terrain.
+
+The standalone trunk-chain path now evaluates translation-only frames at the world origin, preserving the direct collider path's addition order (world height, joint height, then lift). Rotated/scaled frames retain the existing local-to-world transformation. The standalone harvest-tree builder passes the real terrain sampler `H` to the tree view. The review test's dependency bindings include `H`; neither review assertion was relaxed.
+
+Added `test/fixtures/prefab-tree-interactions.json`, captured from **origin/main `55681aee115f96a502c679a4564624f43906231c`** before these fixes. The capture evaluates that revision's `tree-sources.ts` and `place-tree-view.ts`; its terrain, layout, tree catalogue, support and RNG dependencies match this checkout. Great tree 28 with its trunk carried emits only its stump and never reads the player. Ordinary tree 0 with a nearby player records one blocked sweep, a clear second sweep, teleport/velocity reset, and the fallen log body. These are exact JSON comparisons against the original code at the physics boundary, with scripted sweep responses; they do not claim live Rapier/browser coverage. Local capture recipe: `.look/prefab-step-11-review/capture-interactions.ts`.
+
+The original tree/scatter fixture retains the SHA-256 above. No WORLD_NS, production tree body path, scatter input, catalogue artifact or ceiling changed. Catalogue totals remain **207 records / 16 levels / 263,207 artifact bytes**.
+
+Validation: all **338 prefab and railway golden tests passed**, including both review tests and the two added golden cases. After making the new source load explicit for the test dependency scanner, the focused review/tree/selection run passed **18/18**. The preliminary integration gate caught only that scanner issue (935 passed, one failed); no dependency exemption was added. Logs are in `.look/prefab-step-11-review/`. The committed-head `node dev/ship-check.ts origin/main HEAD` result and review stamp are reported in the final handoff. Browser/device proof and Checkpoints A/B remain unverified as described above.

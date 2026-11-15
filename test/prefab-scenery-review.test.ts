@@ -35,6 +35,7 @@ function runtime(record: (shape: Shape, at: THREE.Vector3) => void = () => {}) {
     THREE,
     createTreeView,
     flat,
+    H,
     registerBuilder(name: string, build: Builder) {
       builders.set(name, build);
       return build;

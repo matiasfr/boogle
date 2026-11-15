@@ -17,9 +17,10 @@ import {
 } from '../src/blueprints/props.ts';
 import '../dev/sim/hooks.ts';
 import { createIsland } from '../src/island/stamps.ts';
-import { sourceFunction } from '../dev/level/source.ts';
+import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import type { TreePose } from '../src/render/place-tree-view.ts';
 import type { Body } from '../src/physics/engine.ts';
+import { treeColliderCase } from './helpers/tree-collider-case.ts';
 const { loadLevel } = await import('../dev/level/level.ts');
 
 test('tree identities, poses, scatter sequence and colliders are byte-identical to pre-prefab code', () => {
@@ -44,7 +45,7 @@ test('tree identities, poses, scatter sequence and colliders are byte-identical 
     () => {},
   );
   for (const t of trees) {
-    // Standing, growing, ordinary fall, compact fall, and carried great trunk use today's actual body code.
+    // Standing, growing, ordinary fall and compact fall use today's actual body code.
     for (const state of [
       { fall: -1 },
       { fall: -1, growth: 2 },
@@ -82,6 +83,28 @@ test('tree identities, poses, scatter sequence and colliders are byte-identical 
   if (process.env.GOLDEN === '1') fs.writeFileSync(file, actual);
   assert.equal(actual, fs.readFileSync(file, 'utf8'));
 });
+
+for (const carried of [true, false]) {
+  test(`tree collider golden preserves ${carried ? 'a carried great trunk' : 'player avoidance'}`, () => {
+    const golden = JSON.parse(
+      fs.readFileSync(new URL('./fixtures/prefab-tree-interactions.json', import.meta.url), 'utf8'),
+    );
+    const actual = treeColliderCase(
+      (bindings) =>
+        sourceModule<typeof import('../src/render/place-tree-view.ts')>(
+          fs.readFileSync('src/render/place-tree-view.ts', 'utf8'),
+          bindings,
+        ).createTreeSolids,
+      TREE_SOURCES,
+      H,
+      carried,
+    );
+    assert.equal(
+      JSON.stringify(actual),
+      JSON.stringify(golden.cases.find((c: { carried: boolean }) => c.carried === carried)),
+    );
+  });
+}
 
 test('resolved tree ids and scatter placements retain the authored generator inputs', async () => {
   const { TREE_PLACEMENTS } = await import('../src/place/tree-sources.ts');

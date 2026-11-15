@@ -149,6 +149,7 @@ export function instantiate(
   owner.root.updateWorldMatrix(true, false);
   const matrixWorld = parent ? localMatrix : new THREE.Matrix4().multiplyMatrices(owner.root.matrixWorld, localMatrix);
   const e = matrixWorld.elements;
+  const translationOnly = matrixWorld.equals(new THREE.Matrix4().makeTranslation(e[12]!, e[13]!, e[14]!));
   const colliderBases = validateColliderWorldTransforms(def.colliders, [
     [
       [e[0]!, e[1]!, e[2]!],
@@ -208,8 +209,22 @@ export function instantiate(
           lean.height <= 0
         )
           throw new Error('prefabs: trunk-chain needs finite lean and positive height');
-        const spheres = collidersOf({ ...def, colliders: [c] }, { x: 0, h: 0, z: 0, lean });
-        for (const s of spheres) add({ kind: 'sphere', r: s.r * scale.x }, [s.x, s.y, s.z]);
+        // The direct scatter path adds world height before each joint's lift. Translating
+        // already-lifted local spheres changes the last bits, so retain that order here.
+        const spheres = collidersOf(
+          { ...def, colliders: [c] },
+          { x: translationOnly ? e[12]! : 0, h: translationOnly ? e[13]! : 0, z: translationOnly ? e[14]! : 0, lean },
+        );
+        for (const s of spheres) {
+          const shape = { kind: 'sphere' as const, r: s.r * scale.x };
+          if (translationOnly)
+            recipes.push({
+              shape,
+              at: new THREE.Vector3(s.x, s.y, s.z),
+              ...(c.group === 'room' ? { group: ROOM_GROUP } : {}),
+            });
+          else add(shape, [s.x, s.y, s.z]);
+        }
         break;
       }
       case 'trimesh':
