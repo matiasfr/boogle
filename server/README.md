@@ -17,7 +17,51 @@ One small Node 26 service (Express + `ws`): Boogle's game server. It hosts every
 
 **Hosting rooms** (`SERVER_ROOMS`, `src/host/`; current contracts: `src/world/README.md`, `src/net/README.md`). Production hosts every room (`SERVER_ROOMS=*` in `fly.toml`); `npm run dev` runs the same service in-process (`vite.config.ts`, saves in `.boogle-data/`). The server runs shared rules and the room clock, accepts authenticated railway commands and publishes complete replicas. It checkpoints saved Server state every `SERVER_SAVE_MS` when needed and on shutdown as `writerId: 'server'`; empty railway rooms pause. Tabs join over `/room/:id`, with no client election. The server relays Owner presence and validated cosmetic messages; railway commands use `r:*`, and `w:c` is the server-only clock. Legacy client `w:*` messages never enter simulation. The `pid` and `key` in the upgrade URL bind the player to the socket; a newer session with the same pid and key closes the older with 4010, and another key while that pid is in the room is refused with 4011. `SIGTERM` says `bye`, saves and closes sockets with 1012.
 
-Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp file + rename). Reports are appended, one JSON line each with a server timestamp `at`, to `DATA_DIR/reports/YYYY-MM-DD.jsonl`; the first report of each UTC day deletes files older than 30 days. A jump room's stage is a sidecar, `DATA_DIR/jumps/<roomId>.json` (`{ stage, at, build }`), outside the world; the image prebuilds the offered seeds into `server/seeds/` (`server/src/seeds/prebuild.ts`, a `RUN` line in the Dockerfile). Playtest data is one JSON-lines file per session in `DATA_DIR/playdata/`; past the caps below the sessions written to longest ago are deleted, sessions that look played (a name, over a minute, not an automated browser) only after all the others. No database. CORS applies to every endpoint.
+Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp file + rename). Reports are appended, one JSON line each with a server timestamp `at`, to `DATA_DIR/reports/YYYY-MM-DD.jsonl`; the first report of each UTC day deletes files older than 30 days. A jump room's stage is a sidecar, `DATA_DIR/jumps/<roomId>.json` (`{ stage, at, build }`), outside the world; the image prebuilds the offered seeds into `server/seeds/` (`server/src/seeds/prebuild.ts`, a `RUN` line in the Dockerfile). Playtest data is one JSON-lines file per session in `DATA_DIR/playdata/`; past the caps below the sessions written to longest ago are deleted, sessions that look played (a name, over a minute, not an automated browser) only after all the others. Accounts alone use SQLite, described below; room storage stays JSON. CORS applies to every endpoint.
+
+## Accounts (step 1)
+
+`src/account-store.ts` persists principals, accounts and device sessions in `DATA_DIR/accounts.sqlite` using
+Node's built-in SQLite. It is independent of room JSON, room namespaces, cleanup and room reset/restore.
+Only SHA-256 digests of PINs and device tokens are stored. Transactions commit before a success response;
+startup refuses an unreadable, incomplete or unsupported account database instead of initializing over it.
+Back up this database separately from room saves, with the service stopped. Do not delete it to reset a room.
+The image already copies `server/src`; no shared imports or image manifest additions are needed.
+
+The [account plan](../docs/plans/accounts.md) recommends a unique, server-generated **eight-digit PIN used alone**,
+pending owner confirmation. Leading zeroes count; spaces/hyphens are accepted when signing in. A lost PIN means
+a new account; a remaining authenticated device can explicitly replace it. This first slice stores identity only.
+
+Every request uses `Authorization: Bearer <device token>`, with a random 256-bit token encoded as 64 lowercase
+hex characters. The client saves a fresh token **before** guest registration/sign-in, so retries use the same
+credential. POST bodies are JSON, at most 1 KiB; all responses are `Cache-Control: no-store`. Use HTTPS at the
+configured server origin (loopback HTTP for development; TLS terminates at the existing hosting proxy).
+Unapproved browser origins, including preflights, get 403. Missing Origin remains valid for native/dev callers.
+Existing per-address token buckets allow 60 account requests/minute and 10 sign-in attempts/minute (successes
+included); 429 includes `Retry-After`. No account lockouts or recovery service.
+
+| Route                      | Request body                       | Result                                                                                                                                   |
+| -------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /account/guest`      | `{}` and a fresh bearer            | `{pid, expiresAt}`; retry returns the existing principal, including its account if promoted. No caller-chosen pid.                       |
+| `GET /account/session`     | None                               | `{pid, expiresAt, accountId?}` for a verified session.                                                                                   |
+| `POST /account/create`     | `{}` and a verified guest bearer   | `{pid, expiresAt, accountId, pin}`; preserves the guest pid. A repeat returns `409 already_account` without the PIN.                     |
+| `POST /account/sign-in`    | `{pin}` and a fresh bearer         | `{pid, expiresAt, accountId}`; retry with the same PIN/token is idempotent. A token bound to another principal gets `409 session_bound`. |
+| `POST /account/rotate-pin` | `{}` and a verified account bearer | `{pid, expiresAt, accountId, pin}`; replaces the unique PIN and revokes other sessions atomically, retaining the caller.                 |
+| `POST /account/sign-out`   | `{}`                               | 204, idempotent; revokes the bearer.                                                                                                     |
+
+Sessions last 90 days, sliding on successful authenticated use. Revoked/expired token rows are retained and
+never reused for a new guest or another account: sign in with a fresh token. Invalid, expired or revoked
+credentials get `401 unauthenticated`; invalid input gets `400 invalid_request`, oversized JSON 413, and
+storage/unsupported-format failures `503 unavailable`. Credentials and underlying storage errors are not logged.
+A lost create/rotate response does not reveal the PIN again: resolve the session, then explicitly replace the PIN.
+
+**Step 1 only:** these HTTP operations do not authenticate game sockets yet. Existing pid/key room admission
+is unchanged; there is no namespace bump, account UI, browser credential preparation or cross-device gameplay
+claim. Step 2 must bind sockets to these sessions, close revoked sockets, retain newer-connection takeover and
+keep tuning/operator authority separate. The account API grants no room reset, restore or operator capability.
+
+Focused tests: `node --test server/test/accounts.test.ts`. They cover SQLite reopening, HTTP service restart,
+duplicates, token bindings, PIN replacement, expiry, rollback, failed storage, malformed input and request limits.
 
 ## Internal review cards
 
