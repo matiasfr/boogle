@@ -28,9 +28,15 @@ if (jump !== undefined) {
   try {
     const account = await import('../player/account.ts');
     await account.prepareAccount();
-    if (!account.accountIsPersistent()) {
+    const problem = account.accountStatus().pid ? undefined : account.accountProblem();
+    const notice =
+      problem ??
+      (!account.accountIsPersistent()
+        ? 'This identity is for this visit only; this browser could not remember it.'
+        : undefined);
+    if (notice) {
       const sub = document.getElementById('lobby-sub');
-      if (sub) sub.textContent = 'This identity is for this visit only; this browser could not save it.';
+      if (sub) sub.textContent = notice;
     }
     await import('../main.ts');
   } catch (error) {

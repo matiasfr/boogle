@@ -6,12 +6,18 @@ import { rules, railwayMirror } from '../world/game-world.ts';
 import './identity.css';
 import { onFrame } from '../loop.ts';
 import { identity } from '../player/identity.ts';
+import { accountRefused, onAccountReload } from '../player/account.ts';
 import { me } from '../player/player.ts';
 import { sanitizeName } from '../math.ts';
-import { addPresenceField, net, onNetState } from '../netplay/net.ts';
+import { addPresenceField, closeRoom, net, onNetState } from '../netplay/net.ts';
 import { worldStatus } from '../world/sync.ts';
 import { railwayCommands } from '../entities/railway/state.ts';
 import { playMark, recordRosterSnapshot, type RosterSnapshot } from '../proto/mark.ts';
+
+onAccountReload(() => {
+  closeRoom();
+  railwayCommands()?.dispose(); // Discard pending requests and predictions before another person can load.
+});
 
 // Every peer requests a bounded trailing snapshot; each changed row gets one budgeted timeline mark.
 // Complete initial/refill packets also notify when rows are unchanged, so reconnect recordings can recover.
@@ -49,6 +55,7 @@ onFrame(
 // The server dropped this tab for a newer one of the same player. Play here reloads, which makes this tab the newer one.
 let shown = false;
 onNetState((state) => {
+  if (state === 'solo' && net.error === 'unauthenticated') accountRefused();
   if (state !== 'solo' || net.error !== 'elsewhere' || shown) return;
   shown = true;
   const el = document.createElement('div');

@@ -16,6 +16,23 @@ const ROOM_PREFIXES = [
   'boogle.room-born.v0:', // roomReborn below: the world this browser last joined in a room
 ];
 const ROOM_BORN = 'boogle.room-born.v0:';
+const PERSON_KEY = 'boogle.visitPerson';
+const PERSON_KEYS = ['boogle.name', 'boogle.color', 'boogle.pid', 'boogle.key', 'boogle.lastVisit', 'boogle.boogler'];
+const PERSON_PREFIXES = ['boogle.visit.', 'boogle.minis.', 'boogle.soapbox.'];
+
+/** Run before main reads local caches, after the former page's unload writers. Pid-keyed wardrobe, finds, poses
+ * and claims already belong to their person; never copy them. Same-person reloads keep the existing spawn policy.
+ * The saved credential's pid supplies the first marker for browsers already playing before this marker existed. */
+export function resetForPerson(storage: Storage, pid: string, savedPid?: string): void {
+  const previous = storage.getItem(PERSON_KEY) ?? savedPid;
+  if (previous !== pid) {
+    for (const key of storageKeys(storage)) {
+      if (PERSON_KEYS.includes(key) || PERSON_PREFIXES.some((prefix) => key.startsWith(prefix)))
+        storage.removeItem(key);
+    }
+  }
+  storage.setItem(PERSON_KEY, pid);
+}
 /** sessionStorage, `<room id> <room name>[ <stage>]`: this room's world started over, so the next load starts the
  * player over. The stage is there when the new world is a replacement by that stage (docs/plans/room-fast-forward.md). */
 export const ROOM_RESET_KEY = 'boogle.roomReset';

@@ -1,98 +1,274 @@
-// Step 2's connection bootstrap only. Account UI and switching people belong to accounts step 3/4.
+// Device credentials are Local, outside the room namespace. Boot resolves them before any identity-keyed cache.
 import { isSessionToken, type RoomAuth } from '../net/account-wire.ts';
 import { okPid } from '../sim/roster.ts';
+import { resetForPerson } from './world-reset.ts';
 
 export const ACCOUNT_KEY = 'boogle.account';
-type Credential = { version: 1; token: string; pid?: string };
+type Credential = { version: 1; token: string; pid?: string; accountId?: string; expiresAt?: number };
+export type AccountState = 'ready' | 'offline' | 'revoked' | 'unreadable';
 let credential: Credential | undefined;
+let savedPid: string | undefined;
 let preparing: Promise<void> | undefined;
 let persistent = true;
-// Set when boot could not verify this device with the account server (offline, server down, a refused or unreadable
-// credential). The game still boots: with a previously verified pid it can rejoin rooms; without one it plays solo
-// under a local stand-in pid that is never sent to a room.
-let unverified: string | undefined;
+let visitStorage = false;
+let state: AccountState = 'offline';
+let problem: string | undefined;
 let standIn: string | undefined;
+let switching = false;
+let beforeReload = () => {};
 
-function save() {
-  try {
-    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(credential));
-  } catch {
-    persistent = false;
-  }
+const newCredential = (): Credential => ({
+  version: 1,
+  token: Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join(''),
+});
+const okAccount = (id: unknown): id is string => typeof id === 'string' && /^[a-f0-9-]{36}$/.test(id);
+function readCredential(text: string): Credential {
+  const value: unknown = JSON.parse(text);
+  const record = value as Partial<Credential> | null;
+  if (
+    !record ||
+    record.version !== 1 ||
+    !isSessionToken(record.token) ||
+    (record.pid !== undefined && !okPid(record.pid)) ||
+    (record.accountId !== undefined && (!record.pid || !okAccount(record.accountId))) ||
+    (record.expiresAt !== undefined && (!Number.isSafeInteger(record.expiresAt) || record.expiresAt < 0))
+  )
+    throw new Error('The saved sign-in could not be read.');
+  return {
+    version: 1,
+    token: record.token,
+    ...(record.pid && { pid: record.pid }),
+    ...(record.accountId && { accountId: record.accountId }),
+    ...(record.expiresAt !== undefined && { expiresAt: record.expiresAt }),
+  };
 }
 
-export function prepareAccount(): Promise<void> {
-  return (preparing ??= prepare().catch((error: unknown) => {
-    unverified = error instanceof Error ? error.message : String(error);
-    console.warn('[boogle] account unverified, playing on:', unverified);
-  }));
-}
-
-async function prepare() {
-  const server = import.meta.env.VITE_BOOGLE_SERVER;
-  if (!server) throw new Error('The game server is not configured.');
-  let saved: string | null = null;
-  try {
-    saved = localStorage.getItem(ACCOUNT_KEY);
-  } catch {
-    persistent = false;
-  }
-  if (saved !== null) {
-    let value: unknown;
+// A tab-only fallback can survive the switch's reload, but never promises to remember a future visit.
+// If both stores are denied, initial play still works entirely in memory.
+function save(next: Credential): boolean {
+  if (!visitStorage) {
     try {
-      value = JSON.parse(saved);
+      localStorage.setItem(ACCOUNT_KEY, JSON.stringify(next));
+      return true;
     } catch {
-      /* Refuse corrupt credentials without overwriting them. */
+      persistent = false;
+      visitStorage = true;
     }
-    const record = value as Partial<Credential> | null;
-    if (
-      !record ||
-      record.version !== 1 ||
-      !isSessionToken(record.token) ||
-      (record.pid !== undefined && !okPid(record.pid))
-    )
-      throw new Error('The saved sign-in could not be read.');
-    credential = { version: 1, token: record.token, ...(record.pid && { pid: record.pid }) };
-  } else {
-    const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join(
-      '',
-    );
-    credential = { version: 1, token };
-    save(); // Persist before registration: a lost response retries the same token, never makes a second person.
   }
-  const response = await fetch(new URL(credential.pid ? '/account/session' : '/account/guest', server), {
-    method: credential.pid ? 'GET' : 'POST',
-    headers: { Authorization: `Bearer ${credential.token}`, 'Content-Type': 'application/json' },
-    ...(credential.pid ? {} : { body: '{}' }),
+  try {
+    sessionStorage.setItem(ACCOUNT_KEY, JSON.stringify(next));
+    visitStorage = true;
+    persistent = false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function request(path: string, token: string, method = 'GET'): Promise<unknown> {
+  const server = import.meta.env.VITE_BOOGLE_SERVER;
+  if (!server) throw new Error('The game server is not configured. Reload to retry.');
+  const response = await fetch(new URL(`/account/${path}`, server), {
+    method,
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    ...(method === 'POST' && { body: '{}' }),
     cache: 'no-store',
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok)
-    throw new Error(
-      response.status === 401
-        ? 'Sign-in expired. Your saved identity was kept.'
-        : 'Sign-in is unavailable. Please reload to retry.',
+    throw Object.assign(
+      new Error(
+        response.status === 401
+          ? 'Sign-in expired or was replaced. Your saved identity was kept.'
+          : 'Sign-in is unavailable. Reload to retry.',
+      ),
+      { status: response.status },
     );
-  const result: unknown = await response.json();
-  const pid = (result as { pid?: unknown } | null)?.pid;
-  if (!okPid(pid) || (credential.pid && credential.pid !== pid))
-    throw new Error('The server returned a different identity.');
-  credential.pid = pid;
-  save();
+  return response.status === 204 ? null : response.json();
+}
+function resolved(token: string, value: unknown): Credential {
+  const result = value as { pid?: unknown; accountId?: unknown; expiresAt?: unknown } | null;
+  if (
+    !result ||
+    !okPid(result.pid) ||
+    typeof result.expiresAt !== 'number' ||
+    !Number.isSafeInteger(result.expiresAt) ||
+    result.expiresAt <= 0 ||
+    (result.accountId !== undefined && !okAccount(result.accountId))
+  )
+    throw new Error('The server returned an unreadable identity. Reload to retry.');
+  return {
+    version: 1,
+    token,
+    pid: result.pid,
+    expiresAt: result.expiresAt,
+    ...(result.accountId !== undefined && { accountId: result.accountId }),
+  };
+}
+
+export function prepareAccount(): Promise<void> {
+  return (preparing ??= prepare()
+    .catch(() => {
+      // Even corrupt/blocked storage, a refused session, bad JSON or a timed-out response must reach main.
+      problem ??= 'Sign-in is unavailable. Reload to retry.';
+      console.warn('[boogle] account unverified, playing on:', problem);
+    })
+    .then(() => {
+      try {
+        resetForPerson(localStorage, accountPid(), savedPid);
+      } catch {
+        // Storage is optional, including its global getter.
+      }
+    }));
+}
+async function prepare() {
+  let saved: string | null = null;
+  try {
+    saved = sessionStorage.getItem(ACCOUNT_KEY);
+    if (saved !== null) {
+      visitStorage = true;
+      persistent = false;
+    }
+  } catch {
+    /* Session storage is optional too. */
+  }
+  if (saved === null) {
+    try {
+      saved = localStorage.getItem(ACCOUNT_KEY);
+    } catch {
+      persistent = false;
+      visitStorage = true; // The unreadable store may contain an account: never overwrite it.
+    }
+  }
+  if (saved !== null) {
+    try {
+      credential = readCredential(saved);
+      savedPid = credential.pid;
+    } catch {
+      state = 'unreadable';
+      problem = 'The saved sign-in could not be read. It has been kept; this visit is solo.';
+      return;
+    }
+  } else {
+    credential = newCredential();
+    save(credential); // Lost registration responses retry this token, never create a second person.
+  }
+  try {
+    const next = resolved(
+      credential.token,
+      await request(credential.pid ? 'session' : 'guest', credential.token, credential.pid ? 'GET' : 'POST'),
+    );
+    if (credential.pid && credential.pid !== next.pid) throw new Error('The server returned a different identity.');
+    credential = next;
+    state = 'ready';
+    save(credential);
+  } catch (error) {
+    state = (error as { status?: number } | null)?.status === 401 ? 'revoked' : 'offline';
+    problem =
+      state === 'revoked'
+        ? 'Sign-in expired or was replaced. Your saved identity was kept.'
+        : 'Sign-in is unavailable. Reload to retry.';
+    throw error;
+  }
 }
 
 export function accountPid(): string {
   if (credential?.pid) return credential.pid;
   if (!preparing) throw new Error('Prepare the account before loading the game.');
-  // Unverified with no earlier pid: a local stand-in for this visit's solo play only.
+  // Local only: never allowed into a room, even if registration becomes reachable later in this visit.
   return (standIn ??=
     'local' + Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => (b % 36).toString(36)).join(''));
 }
 export function roomAuthentication(tuneKey?: string): RoomAuth {
-  // A stand-in pid must never reach a room: the server would bind the token to a different person.
-  if (!credential?.pid || !credential.token)
-    throw Object.assign(new Error('account unverified'), { code: 'unverified' });
+  if (!credential?.pid || state === 'revoked')
+    throw Object.assign(new Error('account unverified'), {
+      code: state === 'revoked' ? 'unauthenticated' : 'unverified',
+    });
+  // A previously verified pid may rejoin when HTTP is unavailable. Do not turn an outage into a fatal refusal.
   return { t: 'auth', token: credential.token, ...(tuneKey && { tuneKey }) };
 }
-export const accountProblem = () => unverified;
+export const accountProblem = () => problem;
 export const accountIsPersistent = () => persistent;
+export const accountStatus = () => ({ state, persistent, pid: credential?.pid, accountId: credential?.accountId });
+export const accountSwitching = () => switching;
+
+/** A room can discover expiry/revocation after boot. Keep the same person, but stop offering that session. */
+export function accountRefused() {
+  state = 'revoked';
+  problem = 'Sign-in expired or was replaced. Your saved identity was kept.';
+}
+
+/** The net owner closes the old room before navigation; reload disposes carry, seats, input and prediction. */
+export function onAccountReload(close: () => void) {
+  beforeReload = close;
+}
+function reload(destination?: string) {
+  if (!switching) {
+    switching = true;
+    beforeReload();
+  }
+  if (destination) location.assign(destination);
+  else location.reload();
+}
+/** Install only a server-verified device session. Never mutate the public identity of a running game. */
+export async function installAccount(token: string): Promise<void> {
+  if (switching) return;
+  if (!isSessionToken(token)) throw new Error('Invalid device session.');
+  const next = resolved(token, await request('session', token));
+  if (switching) return;
+  if (!save(next)) throw new Error('This browser cannot keep a sign-in through reload. Your current visit was kept.');
+  reload();
+}
+/** Start fresh/sign-out forgets this device, not the server account or any room. */
+export async function signOutAccount(destination?: string): Promise<void> {
+  if (switching) return;
+  const next = newCredential();
+  if (!save(next)) {
+    // With both stores blocked there is no safe way to replace a possibly saved session across reload.
+    throw new Error('This browser cannot save the sign-out. Your current visit was kept.');
+  }
+  if (visitStorage) {
+    try {
+      // A tab-only replacement must not reveal the old durable sign-in when this tab closes, even offline.
+      localStorage.removeItem(ACCOUNT_KEY);
+    } catch {
+      // The tab store just accepted a write, so put this visit back before reporting an incomplete sign-out.
+      if (credential) save(credential);
+      else sessionStorage.removeItem(ACCOUNT_KEY);
+      throw new Error('This browser cannot forget its saved sign-in. Your current visit was kept.');
+    }
+  }
+  switching = true;
+  beforeReload();
+  try {
+    if (credential) await request('sign-out', credential.token, 'POST');
+  } catch {
+    /* Local sign-out still completes offline; never wait longer than the bounded request. */
+  }
+  reload(destination);
+}
+
+// Another tab switched people or signed out. Do not let this tab write the former person's unkeyed visit memory.
+globalThis.addEventListener?.('storage', (event) => {
+  if (switching || event.key !== ACCOUNT_KEY) return;
+  let next: Credential | undefined;
+  try {
+    if (event.newValue) next = readCredential(event.newValue);
+  } catch {
+    /* Reload into the unreadable state. */
+  }
+  if (next?.token === credential?.token && next?.pid === credential?.pid) return;
+  if (visitStorage) {
+    try {
+      // Device sign-out applies to tab-only credentials too. Reload must not restore the stale fallback.
+      sessionStorage.removeItem(ACCOUNT_KEY);
+    } catch {
+      // If the browser cannot forget it, stop this tab's room and visit writers without reloading that person.
+      switching = true;
+      beforeReload();
+      problem = 'Sign-in changed in another tab. Close this tab to finish signing out.';
+      return;
+    }
+  }
+  reload();
+});
