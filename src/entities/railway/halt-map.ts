@@ -69,15 +69,10 @@ export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }):
         head = i === stage.open - 1 && i < last;
       // The stop the building frame stands at: the line's end from the rivet until High Gorge opens.
       const mark = leg && k === 1 && head ? { frame: true as const } : {};
-      if (!h.leg)
-        return { name: LINE_HALTS.find((x) => x.line === k && x.stop === i)!.name.split(',')[0]!, s, ...mark };
+      if (!h.leg) return { name: LINE_HALTS.find((x) => x.line === k && x.stop === i)!.name.split(',')[0]!, s, ...mark };
       if (i === last) return { name: h.name, s };
       if (closed(h, stage.open)) return { name: '', s, hide: true as const };
-      return {
-        name: head ? STACK_MAP.head : stage.open > last && h.closesAt === undefined ? STACK_MAP.halt : '',
-        s,
-        ...mark,
-      };
+      return { name: head ? STACK_MAP.head : stage.open > last && h.closesAt === undefined ? STACK_MAP.halt : '', s, ...mark };
     });
     const ring = { x: 0, z: 0 },
       ringS = L2_HALTS[RING_STOP]!.s / 100;
