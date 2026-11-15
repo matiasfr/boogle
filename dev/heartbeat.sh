@@ -31,7 +31,6 @@ case "$ci" in
     gh issue list --label red-main --state open --json number,url -q '.[] | "issue #\(.number) \(.url)"' 2>/dev/null
     ;;
 esac
-say "Mode"; node dev/models.ts 2>/dev/null | head -3
 say "Main"
 git log origin/main -3 --format='%h %s (%cr)'
 echo "main checkout: $(git -C "$main" rev-parse --abbrev-ref HEAD), $(git -C "$main" rev-list --count HEAD..origin/main) behind, $(git -C "$main" status --short | wc -l | tr -d ' ') uncommitted"

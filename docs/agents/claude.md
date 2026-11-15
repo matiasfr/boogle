@@ -24,7 +24,7 @@ For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relev
 
 ### Codex: bot runs, visual checks and follow-ups
 
-Which model does which work is in `npm run models` ([models](models.md)); in normal mode (Claude only) use Claude subagents instead of Codex. The complete command and evidence
+Which model does which work is in `npm run models` ([models](models.md)). The complete command and evidence
 contract is [dev/codex/README.md](../../dev/codex/README.md); visual framing and motion guidance is in
 [the look skill](../../.claude/skills/look/SKILL.md). Run the launcher in the background with Bash `run_in_background: true`.
 

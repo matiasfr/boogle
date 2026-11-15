@@ -37,7 +37,7 @@ Codex reads AGENTS.md and the docs its table triggers like you do, and can't pus
 | `task` | medium (high for server or sync work) | same worktree setup | commits on `codex/<topic>`, `npm run check` run, not pushed |
 | `review` | high | detached worktree at `--ref-branch` (default HEAD) | `codex exec review` against `origin/main`; an optional brief focuses it |
 
-Check `npm run models` first: it names the model and effort per kind of work, and in normal (Claude-only) mode the runner refuses everything but previz. Pass that row's `--model` and `--effort`; the table's defaults are only what `run.ts` uses when a flag is omitted.
+Check `npm run models` first: it names the model and effort per kind of work. Pass that row's `--model` and `--effort`; the table's defaults are only what `run.ts` uses when a flag is omitted.
 
 ## Previz
 

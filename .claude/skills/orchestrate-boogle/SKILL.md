@@ -5,7 +5,7 @@ description: Co-develop Boogle with the owner as the orchestrator. Decide what t
 
 # Orchestrate
 
-You run the studio and the owner is the director: they decide what the game is; you turn that into running work, reviewed merges and clear status. Choose Claude or Codex for hands-on work by task fit ([owner calls](../../../docs/agents/owner-calls.md)); the images preference is a soft suggestion. Nothing here depends on an earlier conversation: start by reading [the state file](../../../docs/agents/orchestrator-state.md), then run `npm run heartbeat` (mode, main, pull requests, CI and deploys, play sessions, the bot queue, the ship lock and every worktree with unmerged work in one report) and `npm run inflight`; in withCodex mode also `npm run codex-status`. Run the same report at each check-in instead of the separate commands, and `npm run device -- pull --new` when its device line says runs are waiting (the owner's phone runs, [dev/device](../../../dev/device/README.md); an unpulled run can be evicted). The weekly jobs on the owner's Mac (`~/.boogle/daily/*.log`: scenarios on Sundays; long, perf and scenarios on command with `npm run daily -- <job>`; owner call "Weekly or on command") are the only rendered two-player checks; a failed run is triaged that day like a red main (they failed five nights running to 9 November with nobody looking).
+You run the studio and the owner is the director: they decide what the game is; you turn that into running work, reviewed merges and clear status. Choose Claude or Codex for hands-on work by task fit ([owner calls](../../../docs/agents/owner-calls.md)); the images preference is a soft suggestion. Nothing here depends on an earlier conversation: start by reading [the state file](../../../docs/agents/orchestrator-state.md), then run `npm run heartbeat` (mode, main, pull requests, CI and deploys, play sessions, the bot queue, the ship lock and every worktree with unmerged work in one report) and `npm run inflight`; and `npm run codex-status` when Codex jobs are running. Run the same report at each check-in instead of the separate commands, and `npm run device -- pull --new` when its device line says runs are waiting (the owner's phone runs, [dev/device](../../../dev/device/README.md); an unpulled run can be evicted). The weekly jobs on the owner's Mac (`~/.boogle/daily/*.log`: scenarios on Sundays; long, perf and scenarios on command with `npm run daily -- <job>`; owner call "Weekly or on command") are the only rendered two-player checks; a failed run is triaged that day like a red main (they failed five nights running to 9 November with nobody looking).
 
 Start a fresh orchestrator session each working day, from the state file. A session that runs for days rereads its whole history on every turn (the 2–9 November session reached 890k tokens of context), and everything a new one needs is in the repo.
 
@@ -20,9 +20,9 @@ Start a fresh orchestrator session each working day, from the state file. A sess
 
 ## 2. Dispatch
 
-`npm run models` says who does the work: Claude subagents in normal mode, Codex jobs as well in withCodex mode.
+`npm run models` says who does each kind of work, Claude or Codex.
 
-For every job, in either mode:
+For every job:
 
 - Before a job, check `npm run inflight` and which files it will touch, so two jobs don't edit the same files. Jobs that do share files run one after another.
 - Browser-heavy jobs (bots, captures) compete for one Mac and one GPU. The [bot queue](../../../docs/agents/test-details/bot-segments.md) runs one at a time and lets short looks pass waiting long playthroughs; `npm run heartbeat` shows it. Above a load of about 30 on 10 cores, timing and bot results prove little.
@@ -43,7 +43,7 @@ Every job, Claude or Codex, is a T3 delegate (owner, 14 November: "I trust the T
 - Jobs started with `dev/codex/run.ts` before the switch finish their current turn; their fixes, follow-ups and reviews are new delegates on the same branch, not `resume`.
 - If Codex usage runs out, pause and tell the owner; don't move the work to Claude.
 
-### Claude subagents (normal mode, outside T3)
+### Claude subagents (outside T3)
 
 - Start each with the Agent tool: `isolation: "worktree"`, in the background, the agent type by role (`planner`, `designer`, `implementer`, or `general-purpose` for research and reviews), and the model and effort from `npm run models`.
 - A brief names the plan file and the step, the files it may touch, what done looks like (the stills or numbers to bring back), which checks to run (for a build step `node dev/ship-check.ts`, plus its one proof look if a player sees it: owner-calls.md, "Build more, test less", (1); you run `npm run check` or `ship --full` only at a checkpoint), and the binding rules below. It ends with: commit on your branch, rebase onto origin/main, don't push or ship, update the plan's tick marks.
@@ -51,7 +51,7 @@ Every job, Claude or Codex, is a T3 delegate (owner, 14 November: "I trust the T
 - Send corrections to the same agent with SendMessage, so it keeps its context. Start a new agent only for new work.
 - Keep about three browser-heavy jobs running; more queue behind the one GPU. Reviews, planning and tooling that need no browser don't count toward the three.
 
-### Codex jobs (withCodex mode)
+### Codex jobs (outside T3)
 
 Use the [codex skill](../codex/SKILL.md) and `node dev/codex/run.ts`, each job with Bash `run_in_background`.
 
