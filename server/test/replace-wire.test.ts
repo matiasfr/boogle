@@ -1,10 +1,11 @@
 // Server-only replacement announcements: both peers, late joins and hostile client frames.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 type Msg = { t: string; [key: string]: unknown };

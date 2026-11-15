@@ -13,6 +13,7 @@ export const SERVER_IMAGE_PATHS = [
   'src/math.ts',
   'src/net/ids.ts',
   'src/net/ws-wire.ts',
+  'src/net/account-wire.ts',
   'src/net/rtc-wire.ts',
   'package.json',
   '.dockerignore',

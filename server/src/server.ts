@@ -255,7 +255,23 @@ export function createService(cfg: ServerConfig) {
     requests: createRateLimiter({ perMinute: 60, fromFly: cfg.replaceFlyProxy }),
     signIn: createRateLimiter({ perMinute: 10, fromFly: cfg.replaceFlyProxy }),
   };
-  addAccountRoutes(app, accounts, accountLimits);
+  addAccountRoutes(
+    app,
+    {
+      ...accounts,
+      rotatePin(token: unknown) {
+        const result = accounts.rotatePin(token);
+        // The transaction committed before any live authority is removed.
+        roomHost?.revokeOthers(result.pid, token as string);
+        return result;
+      },
+      revokeSession(token: unknown) {
+        accounts.revokeSession(token);
+        roomHost?.revokeSession(token as string);
+      },
+    },
+    accountLimits,
+  );
   const replacements = createReplacements(cfg, store);
   const { readIfExists, withLock } = store;
   let roomHost: RoomHost | null = null; // the server-hosted rooms (./host/rooms.ts), made in listen() once the store is ready
@@ -468,7 +484,7 @@ export function createService(cfg: ServerConfig) {
       }
       // Before any room loads: old-namespace sidecars and idle test rooms go.
       await jumps.boot().catch((error: unknown) => cfg.log(`jump boot failed: ${String(error)}`));
-      roomHost ??= createRoomHost(cfg, store);
+      roomHost ??= createRoomHost(cfg, store, accounts.resolveSession);
       await new Promise<void>((resolve, reject) => {
         server.once('error', reject);
         server.listen(port, () => resolve());

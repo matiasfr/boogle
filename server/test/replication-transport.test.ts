@@ -1,11 +1,12 @@
 // Replication R0 over real sockets: the hosted room flushes what changed at the end of a 60 Hz step, sends a late
 // joiner everything whole, and sends only changed fields after that. No game state uses it yet; a toy projection does.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import { defineReplicated, GLOBAL_CELL } from '../../src/world/replicate.ts';
 
 type Msg = Record<string, any>;

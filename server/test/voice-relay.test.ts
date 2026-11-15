@@ -1,12 +1,13 @@
 // The voice signal relay (server/src/host/hosted-room.ts, src/net/rtc-wire.ts) against hostile clients, over real
 // sockets: from the independent review of voice chat (9 November). host.test.ts has the plain relay case.
 import test from 'node:test';
+import { WebSocket, fixtureAdmission } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { WebSocket as WsSocket } from 'ws';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 
@@ -152,8 +153,13 @@ test('BACKPRESSURE: voice signals are not queued without bound onto a socket tha
   } as typeof send;
   const sockets: WsSocket[] = [];
   try {
-    const url = (self: string) => roomUrl(base, railwayRoomId('bp'), self);
-    const victim = new WsSocket(url('vvv'), ['boogle.1']);
+    const open = (self: string) => {
+      const fixture = fixtureAdmission(roomUrl(base, railwayRoomId('bp'), self));
+      const ws = new WsSocket(fixture.url, ['boogle.1']);
+      ws.once('open', () => ws.send(fixture.auth));
+      return ws;
+    };
+    const victim = open('vvv');
     sockets.push(victim);
     await new Promise((r) => victim.once('open', r));
     victim.send(JSON.stringify(inVoice));
@@ -161,7 +167,7 @@ test('BACKPRESSURE: voice signals are not queued without bound onto a socket tha
     (victim as unknown as { _socket: { pause(): void } })._socket.pause(); // a client that stops reading
     const senders: WsSocket[] = [];
     for (let i = 0; i < 6; i++) {
-      const s = new WsSocket(url('snd' + i), ['boogle.1']);
+      const s = open('snd' + i);
       sockets.push(s);
       await new Promise((r) => s.once('open', r));
       s.send(JSON.stringify(inVoice));

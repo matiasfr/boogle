@@ -3,9 +3,8 @@
 // Wire shapes: src/net/ws-wire.ts.
 //
 //   const room = createHostedRoom({ roomId, store, cfg, boot, log })
-//   room.join(ws, selfId, pid, key)   an upgraded socket (rooms.ts has checked the room, ids, origin and rate). An
-//                                older session of the same player (same pid and key) is closed with ELSEWHERE and
-//                                leaves at once; a pid in the room under another key is refused with TAKEN
+//   room.join(ws, selfId, pid, operator)   rooms.ts verified the session and the separate operator capability.
+//                                An older connection of this pid leaves at once with ELSEWHERE.
 //   room.replication             the room's replicator (src/world/replicate-server.ts): states define projections on it;
 //                                every client is subscribed on join (late join from change tick -1), and at the end of
 //                                each 60 Hz step what changed goes out, skipping sockets over HIGH_WATER (coalescing)
@@ -53,8 +52,8 @@ const RTC_BURST = 60;
 type Bucket = { tokens: number; at: number };
 type Client = {
   id: string;
-  pid: string; // the player (src/player/identity.ts), bound at the upgrade; the sync stamps edits with it
-  key: string; // the browser's secret behind that pid: only the same key takes the pid over
+  pid: string; // the verified principal; the sync stamps edits with it
+  operator: boolean; // separately checked capability, never implied by account identity
   ws: WebSocket;
   seen: number; // last message
   s: number; // presence sequence
@@ -128,7 +127,7 @@ export function createHostedRoom({
     saveMs: cfg.serverSaveMs,
     log,
     pidOf: (sid: string) => clients.get(sid)?.pid ?? null,
-    tuneController: (sid: string) => !!cfg.tuneControllerKey && clients.get(sid)?.key === cfg.tuneControllerKey,
+    tuneController: (sid: string) => clients.get(sid)?.operator === true,
   };
   const pauseMs = cfg.roomPauseMs ?? RAIL_AWAY.pauseMs;
   const world = createRoomWorldHost({
@@ -154,7 +153,7 @@ export function createHostedRoom({
     },
   });
   const depart = world.depart;
-  const gone = new Map<string, { s: number; pid: string; key: string; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
+  const gone = new Map<string, { s: number; pid: string; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
   const retired = new Set<string>(); // sessions a newer tab of their player replaced: turned away if they come back
   let closing = false;
   let replacement: { label: string; until: number } | null = null;
@@ -303,7 +302,7 @@ export function createHostedRoom({
       if (!clients.size && !gone.size) emptySince = performance.now();
       toAll(encode({ t: 'left', id: c.id, s: c.s }));
     }, graceMs);
-    gone.set(c.id, { s: c.s, pid: c.pid, key: c.key, timer });
+    gone.set(c.id, { s: c.s, pid: c.pid, timer });
   }
 
   // Takes c out of the room now, without the grace period (its close is then not a leave).
@@ -337,14 +336,7 @@ export function createHostedRoom({
       retire(gid, g.s);
     }
   }
-  // Whether another session holds pid under a different key: someone else claiming a player who is here.
-  function taken(id: string, pid: string, key: string) {
-    for (const c of clients.values()) if (c.pid === pid && c.id !== id && c.key !== key) return true;
-    for (const [gid, g] of gone) if (g.pid === pid && gid !== id && g.key !== key) return true;
-    return false;
-  }
-
-  function join(ws: WebSocket, id: string, pid: string, key: string) {
+  function join(ws: WebSocket, id: string, pid: string, operator: boolean) {
     // From the first moment, before any refusal below: a bad frame on a socket without one exits the process.
     ws.on('error', () => {});
     if (closing) return void ws.close(CLOSE.RESTART);
@@ -352,10 +344,8 @@ export function createHostedRoom({
     const old = clients.get(id);
     const back = gone.get(id);
     const bound = old ?? back;
-    // Session ids are public presence ids. Only the bound player and secret may resume or replace that socket.
-    if (bound && (bound.pid !== pid || bound.key !== key))
-      return void (ws.send(encode({ t: 'taken' })), ws.close(CLOSE.TAKEN));
-    if (taken(id, pid, key)) return void (ws.send(encode({ t: 'taken' })), ws.close(CLOSE.TAKEN));
+    // Connection ids are public presence ids. Only the verified person may resume or replace that socket.
+    if (bound && bound.pid !== pid) return void (ws.send(encode({ t: 'taken' })), ws.close(CLOSE.TAKEN));
     dropOlder(id, pid);
     if (!old && !back && clients.size + gone.size >= cfg.maxPlayers) {
       ws.send(encode({ t: 'full', max: cfg.maxPlayers }));
@@ -366,7 +356,7 @@ export function createHostedRoom({
     const c: Client = {
       id,
       pid,
-      key,
+      operator,
       ws,
       seen: now,
       s: old?.s ?? back?.s ?? -1,
@@ -431,6 +421,17 @@ export function createHostedRoom({
     world,
     replication,
     join,
+    revoke(ws: WebSocket) {
+      for (const c of clients.values()) {
+        if (c.ws !== ws) continue;
+        write(c, encode({ t: 'auth' }));
+        depart(c.id);
+        drop(c, CLOSE.AUTH);
+        toAll(encode({ t: 'left', id: c.id, s: c.s }));
+        if (!clients.size && !gone.size) emptySince = performance.now();
+        return;
+      }
+    },
     replacing(label: string, seconds: number) {
       replacement = { label, until: performance.now() + seconds * 1000 };
       toAll(encode({ t: 'replacing', label, seconds }));

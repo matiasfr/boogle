@@ -35,12 +35,17 @@ async function get(url: URL, contentType: RegExp, timeoutMs = 5000) {
 type Version = { build: string; serverBuild: string; server: string };
 async function connect(server: string, room: string, build: string) {
   const id = randomBytes(8).toString('hex');
-  const ws = new WebSocket(
-    roomUrl(server, room, { self: id, pid: id, key: randomBytes(16).toString('hex'), b: build }),
-    WS_PROTOCOL,
-    { origin: site.origin },
-  );
+  const token = randomBytes(32).toString('hex');
+  const guest = await fetch(new URL('/account/guest', server), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Origin: site.origin },
+    body: '{}',
+    signal: AbortSignal.timeout(5000),
+  });
+  assert.equal(guest.status, 200, 'smoke guest registration');
+  const ws = new WebSocket(roomUrl(server, room, { self: id, b: build }), WS_PROTOCOL, { origin: site.origin });
   sockets.push(ws);
+  ws.once('open', () => ws.send(encode({ t: 'auth', token })));
   const messages: WireMsg[] = [];
   let failure = '';
   ws.addEventListener('message', (event) => {

@@ -19,6 +19,7 @@ const controlUrl = option('--url');
 const root = option('--root');
 // Install before loading any harness dependencies: they can import src transitively, too.
 useWorkerSource(root);
+const { fixtureToken, seedPrincipal } = await import('../../server/test/helpers/accounts.ts');
 const { startWeb, waitFor, ev, snap, seesAll, sleep } = await import('./harness.ts');
 const { freePort } = await import('../look/lib.ts');
 const { createService, loadConfig } = await import('../../server/src/server.ts');
@@ -70,6 +71,14 @@ async function serve(env: Record<string, string> = {}) {
 }
 let svc = await serve();
 const web = await startWeb('ws-page.ts', root);
+const openFixture = web.open;
+web.open = (name, query) => {
+  const params = new URLSearchParams(query);
+  const pid = params.get('pid');
+  if (!pid) throw new Error('room fixture requires a named principal');
+  seedPrincipal(dataDir, pid, fixtureToken(pid));
+  return openFixture(name, query + '&fixture=1');
+};
 // Each page is its own player (pid from its name) unless `pid` says otherwise.
 const open = (name: string, pid = 'pl' + name.toLowerCase()): Promise<Page> =>
   web.open(name, `room=${room}&server=http://127.0.0.1:${port}&pid=${pid}`);
@@ -79,6 +88,15 @@ const clocksReady = async (group: Page[]) =>
 
 let exitCode = 1;
 try {
+  const { accountAdmissionChecks } = await import('./ws-accounts.ts');
+  await accountAdmissionChecks({
+    base: () => `http://127.0.0.1:${port}`,
+    async restart() {
+      await svc.close({ save: true });
+      svc = await serve();
+    },
+    check,
+  });
   // 1. join: every tab follows the server; no tab is special.
   const A = await open('A'),
     B = await open('B'),

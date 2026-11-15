@@ -7,7 +7,7 @@ import { createWsRoom, type Room } from '../net/ws-room.ts';
 import { attachWorld, detachWorld } from '../world/sync.ts';
 import { worldRoomId } from '../world/namespace.ts';
 import { railwayRoomId } from '../world/railway-namespace.ts';
-import { identity } from '../player/identity.ts';
+import { roomAuthentication } from '../player/identity.ts';
 import { createSnaps } from './snaps.ts';
 import { addField, mergeFields } from './presence-fields.ts';
 import { onFrame } from '../loop.ts';
@@ -327,7 +327,8 @@ function noteError(e: NetError, fallback: string) {
 }
 function scheduleRetry(e: NetError) {
   // elsewhere: a newer tab of this player took over; coming back would only take it back (src/features/identity.ts)
-  if (e?.code === 'browser-incompatible' || e?.code === 'elsewhere' || retryTimer) return;
+  if (e?.code === 'browser-incompatible' || e?.code === 'elsewhere' || e?.code === 'unauthenticated' || retryTimer)
+    return;
   net.retries += 1;
   const wait = net.full ? FULL_RETRY_MS : Math.min(5000 * net.retries, 30000);
   net.retryAt = Date.now() + wait;
@@ -350,7 +351,7 @@ function dropOldSaves() {
   }
 }
 
-export async function connectRoom() {
+export async function connectRoom(tuneKey?: string) {
   // The room and its world live under the namespaced id; the plain name stays for the URL, titles and telemetry.
   dropOldSaves();
   const roomId = productionRailway ? railwayRoomId(getRoomId()) : worldRoomId(getRoomId());
@@ -364,8 +365,7 @@ export async function connectRoom() {
     room = await createWsRoom({
       roomId,
       server,
-      pid: identity.pid,
-      key: identity.key,
+      authenticate: () => roomAuthentication(tuneKey),
       debug,
       build: BUILD,
     });

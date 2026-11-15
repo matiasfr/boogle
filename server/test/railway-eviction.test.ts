@@ -1,14 +1,15 @@
 // Exercise the real room manager's idle eviction/rejoin boundary, sockets and store lock.
 // Keep T1's expected carry at two: every published chop must survive authority replacement.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer, request } from 'node:http';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import { createStore, type Store } from '../src/store.ts';
-import { createRoomHost } from '../src/host/rooms.ts';
+import { createRoomHost } from './helpers/accounts.ts';
 import type { HostedRoom } from '../src/host/hosted-room.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { isRailwayRoom, railwayRoomId } from '../../src/world/railway-namespace.ts';

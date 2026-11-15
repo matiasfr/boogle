@@ -1,10 +1,11 @@
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import type { ServerConfig } from '../src/server.ts';
 import { inventorySaves } from '../src/save-inventory.ts';
 import { WORLD_NS } from '../../src/world/namespace.ts';
