@@ -26,7 +26,7 @@ import './builders/halt-parts.ts';
 import './builders/halt-ramp.ts';
 import './builders/halt-lever.ts';
 import './builders/halt-attachment.ts';
-import './builders/roundhouse-block.ts';
+import './builders/roundhouse-bay.ts';
 import './builders/roundhouse-table.ts';
 import type { Interactable } from '../player/hands.ts';
 import type { Part } from '../render/part-geometry.ts';

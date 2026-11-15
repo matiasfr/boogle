@@ -42,7 +42,7 @@ export const GARAGE_GEO: GarageGeo = {
   post: { bearing: 60, r: 9.4 },
   jib: { bearing: 85, r: 12.2 },
   mast: 4.4,
-  arm: 12.2, // Covers the bystander's closed pose with main's 15° camera, including the trolley and beam end inset.
+  arm: 12.2, // Existing reach, including the trolley and beam-end inset; retained through the building pass.
   park: 67,
   stand: { bearing: 85, r: 10.3 },
   standAlong: 'radius',
@@ -50,6 +50,7 @@ export const GARAGE_GEO: GarageGeo = {
     { bearing: 88, r: 13.2 },
     { bearing: 81, r: 12.5 },
   ],
+  // Step 4: the 30/45/85° trials fail the steel-pallet camera clearance; 15° keeps 2.26 m and the doors behind it.
   camBearing: 15,
 };
 /** The garage's row, table centre (world metres) and ground beside the table. */

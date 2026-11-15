@@ -9,11 +9,11 @@ import type { LevelDef, Placement, PrefabKey } from '../../src/prefab/types.ts';
 const SITES: readonly RotundaSite[] = [ROTUNDA_HOME];
 const RECORD: Record<RotundaPart, PrefabKey> = {
   table: 'roundhouse.table',
-  shell: 'roundhouse.bay-block',
-  ruin: 'roundhouse.bay-ruin-block',
-  door: 'roundhouse.bay-door-block',
-  wall: 'roundhouse.end-wall-block',
-  outline: 'roundhouse.bay-outline-block',
+  shell: 'roundhouse.bay',
+  ruin: 'roundhouse.bay-ruin',
+  door: 'roundhouse.bay-doors',
+  wall: 'roundhouse.end-wall',
+  outline: 'roundhouse.bay-outline',
 };
 /** A ruin's two door piers stand at broken heights, up to the full door wall (design review, call 8, which asked 2.5 m
  * up: the lowest here is 3.2 m, over the record's 3.1 m solid). Each bay takes the next pair, so no two neighbours
@@ -37,11 +37,17 @@ export function rotundaContent(): { levels: LevelDef[] } {
         if (piece.part === 'ruin') ruins++;
         return {
           id: `rotunda-${site.id}.${piece.id}`,
-          prefab: RECORD[piece.part],
+          prefab: piece.part === 'shell' && Math.abs(piece.turn) === 2 ? 'roundhouse.bay-steel' : RECORD[piece.part],
           pos: [0, 0, 0],
           ...(piece.part === 'table' && scale !== 1 ? { scale: [scale, 1, scale] as const } : {}),
           params: { turn: piece.turn, ...(piece.part === 'ruin' ? { left, right } : {}) },
         };
+      });
+      placements.push({
+        id: `rotunda-${site.id}.open-doors`,
+        prefab: 'roundhouse.bay-open-doors',
+        pos: [0, 0, 0],
+        params: { turn: 0 },
       });
       return { place: `rotunda-${site.id}`, placements };
     }),

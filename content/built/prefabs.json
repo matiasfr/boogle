@@ -952,7 +952,7 @@
         "none": true
       }
     },
-    "roundhouse.bay-block": {
+    "roundhouse.bay": {
       "colliders": [
         {
           "at": [
@@ -1059,18 +1059,37 @@
             0
           ],
           "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            6.44,
+            17.72
+          ],
+          "half": [
+            3.12,
+            0.45,
+            1
+          ],
+          "rot": [
+            0,
+            0.129,
+            0
+          ],
+          "shape": "box"
         }
       ],
-      "key": "roundhouse.bay-block",
+      "key": "roundhouse.bay",
       "scope": "owner",
       "visual": {
-        "builder": "roundhouse.bay-block",
+        "batch": "rotunda-bays",
+        "builder": "roundhouse.bay",
         "params": {
           "part": "bay"
         }
       }
     },
-    "roundhouse.bay-door-block": {
+    "roundhouse.bay-doors": {
       "colliders": [
         {
           "at": [
@@ -1086,27 +1105,68 @@
           "shape": "box"
         }
       ],
-      "key": "roundhouse.bay-door-block",
+      "key": "roundhouse.bay-doors",
       "scope": "owner",
       "visual": {
-        "builder": "roundhouse.bay-block",
+        "batch": "rotunda-doors",
+        "builder": "roundhouse.bay",
         "params": {
-          "part": "bay-door"
+          "part": "doors"
         }
       }
     },
-    "roundhouse.bay-outline-block": {
+    "roundhouse.bay-open-doors": {
+      "colliders": [
+        {
+          "at": [
+            -2.03,
+            2.3,
+            15.08
+          ],
+          "half": [
+            0.1,
+            2.3,
+            0.89
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            2.03,
+            2.3,
+            15.08
+          ],
+          "half": [
+            0.1,
+            2.3,
+            0.89
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.bay-open-doors",
+      "scope": "owner",
+      "visual": {
+        "batch": "rotunda-open-doors",
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "open-doors"
+        }
+      }
+    },
+    "roundhouse.bay-outline": {
       "colliders": [],
-      "key": "roundhouse.bay-outline-block",
+      "key": "roundhouse.bay-outline",
       "scope": "owner",
       "visual": {
-        "builder": "roundhouse.bay-block",
+        "batch": "rotunda-outlines",
+        "builder": "roundhouse.bay",
         "params": {
-          "part": "bay-outline"
+          "part": "outline"
         }
       }
     },
-    "roundhouse.bay-ruin-block": {
+    "roundhouse.bay-ruin": {
       "colliders": [
         {
           "at": [
@@ -1135,16 +1195,154 @@
           "shape": "box"
         }
       ],
-      "key": "roundhouse.bay-ruin-block",
+      "key": "roundhouse.bay-ruin",
       "scope": "owner",
       "visual": {
-        "builder": "roundhouse.bay-block",
+        "builder": "roundhouse.bay",
         "params": {
-          "part": "bay-ruin"
+          "part": "ruin"
         }
       }
     },
-    "roundhouse.end-wall-block": {
+    "roundhouse.bay-steel": {
+      "colliders": [
+        {
+          "at": [
+            -2.12,
+            3.1,
+            14.2
+          ],
+          "half": [
+            0.31,
+            3.1,
+            0.4
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            2.12,
+            3.1,
+            14.2
+          ],
+          "half": [
+            0.31,
+            3.1,
+            0.4
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            5.4,
+            14.2
+          ],
+          "half": [
+            1.8,
+            0.8,
+            0.4
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            2.4,
+            24.47
+          ],
+          "half": [
+            4.34,
+            2.4,
+            0.15
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            6.116,
+            15.6
+          ],
+          "half": [
+            3.07,
+            0.15,
+            1.82
+          ],
+          "rot": [
+            0,
+            0.129,
+            0
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            5.65,
+            19.2
+          ],
+          "half": [
+            3.7,
+            0.15,
+            1.82
+          ],
+          "rot": [
+            0,
+            0.129,
+            0
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            5.184,
+            22.81
+          ],
+          "half": [
+            4.34,
+            0.15,
+            1.82
+          ],
+          "rot": [
+            0,
+            0.129,
+            0
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            6.44,
+            17.72
+          ],
+          "half": [
+            3.12,
+            0.45,
+            1
+          ],
+          "rot": [
+            0,
+            0.129,
+            0
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.bay-steel",
+      "scope": "owner",
+      "visual": {
+        "batch": "rotunda-steel-bays",
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "bay",
+          "steel": true
+        }
+      }
+    },
+    "roundhouse.end-wall": {
       "colliders": [
         {
           "at": [
@@ -1160,12 +1358,13 @@
           "shape": "box"
         }
       ],
-      "key": "roundhouse.end-wall-block",
+      "key": "roundhouse.end-wall",
       "scope": "owner",
       "visual": {
-        "builder": "roundhouse.bay-block",
+        "batch": "rotunda-end-walls",
+        "builder": "roundhouse.bay",
         "params": {
-          "part": "end-wall"
+          "part": "wall"
         }
       }
     },
