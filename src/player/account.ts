@@ -7,6 +7,11 @@ type Credential = { version: 1; token: string; pid?: string };
 let credential: Credential | undefined;
 let preparing: Promise<void> | undefined;
 let persistent = true;
+// Set when boot could not verify this device with the account server (offline, server down, a refused or unreadable
+// credential). The game still boots: with a previously verified pid it can rejoin rooms; without one it plays solo
+// under a local stand-in pid that is never sent to a room.
+let unverified: string | undefined;
+let standIn: string | undefined;
 
 function save() {
   try {
@@ -17,7 +22,10 @@ function save() {
 }
 
 export function prepareAccount(): Promise<void> {
-  return (preparing ??= prepare());
+  return (preparing ??= prepare().catch((error: unknown) => {
+    unverified = error instanceof Error ? error.message : String(error);
+    console.warn('[boogle] account unverified, playing on:', unverified);
+  }));
 }
 
 async function prepare() {
@@ -74,11 +82,17 @@ async function prepare() {
 }
 
 export function accountPid(): string {
-  if (!credential?.pid) throw new Error('Prepare the account before loading the game.');
-  return credential.pid;
+  if (credential?.pid) return credential.pid;
+  if (!preparing) throw new Error('Prepare the account before loading the game.');
+  // Unverified with no earlier pid: a local stand-in for this visit's solo play only.
+  return (standIn ??=
+    'local' + Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => (b % 36).toString(36)).join(''));
 }
 export function roomAuthentication(tuneKey?: string): RoomAuth {
-  accountPid();
-  return { t: 'auth', token: credential!.token, ...(tuneKey && { tuneKey }) };
+  // A stand-in pid must never reach a room: the server would bind the token to a different person.
+  if (!credential?.pid || !credential.token)
+    throw Object.assign(new Error('account unverified'), { code: 'unverified' });
+  return { t: 'auth', token: credential.token, ...(tuneKey && { tuneKey }) };
 }
+export const accountProblem = () => unverified;
 export const accountIsPersistent = () => persistent;
