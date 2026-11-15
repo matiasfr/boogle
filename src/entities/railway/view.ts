@@ -9,7 +9,6 @@ import {
   beam as beamRow,
   boiler as boilerRow,
   job as jobRow,
-  rail as railRow,
   works as worksRow,
 } from '../../sim/railway-rows.ts';
 import { activeStation, railJobs, timingOf, heavyLoad } from '../../sim/railway-queries.ts';

@@ -102,11 +102,12 @@
 // extend the beam work area around the new source. No migration.
 // v48 (2026-11-15): authenticated room admission uses server-issued principals and device sessions.
 // Fresh identities at this development cutover; accounts.sqlite stays independent of room resets. No migration.
-// v48 (2026-11-15): heavy loads widen the accepted cargo domain from 8/16 to 12/24. Current builds only.
+// v49 (2026-11-15 integration): main already uses v48 for authentication. Heavy loads widen the accepted cargo
+// domain from 8/16 to 12/24; retain the intended fresh checkpoint domain after rebase. Current builds only.
 // Before shipping that change: uncapped recovery piles, Q2/Q5 depot reach and stub-arrival continuation fixed.
-// Still before shipping v48 (2026-11-15): 128 local piles of <=8 pieces, with one reserved slot per excess
+// Still before shipping v49 (2026-11-15): 128 local piles of <=8 pieces, with one reserved slot per excess
 // carried piece. No drop-triggered recovery; at saturation pickups stop before unreserved overfill.
-export const WORLD_NS = 'v48';
+export const WORLD_NS = 'v49';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
