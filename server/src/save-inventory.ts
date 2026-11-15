@@ -5,7 +5,7 @@ import path from 'node:path';
 import { currentRoomFile, roomNamespace, type RoomNamespaces } from './room-ids.ts';
 
 type Count = { count: number; bytes: number };
-type Classification = 'current' | 'old-ns' | 'legacy' | 'tmp' | 'dir' | 'unknown';
+type Classification = 'current' | 'old-ns' | 'legacy' | 'tmp' | 'dir' | 'application' | 'unknown';
 export type Inventory = {
   ns: string;
   rail: string;
@@ -27,8 +27,10 @@ export type Inventory = {
 const ROOM = /^[a-z0-9-]{1,32}\.json$/;
 const TMP = /^[a-z0-9-]{1,32}\.json\.\d+\.[0-9a-f]{8}\.tmp$/;
 const DIRS = new Set(['reports', 'playdata', 'reviews', 'jumps', '.trash', '.backups']);
+const ACCOUNT_FILE = /^accounts\.sqlite(?:-wal|-shm|-journal)?$/;
 export function classify(name: string, ns: RoomNamespaces): Classification {
   if (DIRS.has(name)) return 'dir';
+  if (ACCOUNT_FILE.test(name)) return 'application';
   if (ROOM.test(name)) {
     if (currentRoomFile(name, ns)) return 'current';
     return 'old-ns';
@@ -108,6 +110,7 @@ export async function inventorySaves(
       inv.unknown.push(name);
       continue;
     }
+    if (kind === 'application') continue; // Account storage is independent of room inventory and cleanup.
     const stat = await statIfPresent(file);
     if (!stat) continue;
     if (kind === 'current') {

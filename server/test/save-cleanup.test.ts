@@ -40,6 +40,10 @@ test('cleanup moves old namespaces and their stale temps, preserves bare rooms, 
     'reports/x.jsonl',
     'playdata/x.jsonl',
     'reviews/r/card.json',
+    'accounts.sqlite',
+    'accounts.sqlite-wal',
+    'accounts.sqlite-shm',
+    'accounts.sqlite-journal',
   ];
   for (const name of keep) await put(f.dir, name, `keep:${name}`, name.includes('fresh') ? 0 : 40 * day);
   const moved = ['rail-v02-old.json', 'v01-old.json', 'v01-old.json.12.abcdef01.tmp'];
@@ -108,9 +112,12 @@ test('writer locks recheck live rooms and file type, and do not accept forged cu
   await put(f.dir, 'v01-fresh.json.12.abcdef01.tmp');
   await put(f.dir, `${ns.world}-a.json`);
   await put(f.dir, `${ns.rail}-a.json.12.abcdef01.tmp`);
+  const accountFiles = ['accounts.sqlite', 'accounts.sqlite-wal', 'accounts.sqlite-shm', 'accounts.sqlite-journal'];
+  for (const name of accountFiles) await put(f.dir, name);
   await f.store.init();
   const inv = await f.inventory();
   inv.files.push(`${ns.world}-a.json`, `${ns.rail}-a.json.12.abcdef01.tmp`, '../outside.json');
+  inv.files.push(...accountFiles); // A forged inventory cannot authorize moving account storage either.
   await fs.unlink(path.join(f.dir, 'v01-swap.json'));
   await fs.symlink(path.join(f.dir, `${ns.world}-a.json`), path.join(f.dir, 'v01-swap.json'));
   await put(f.dir, 'v01-fresh.json.12.abcdef01.tmp', 'fresh', 0);
@@ -133,6 +140,7 @@ test('writer locks recheck live rooms and file type, and do not accept forged cu
   assert.equal(await fs.readFile(path.join(f.dir, 'v01-live.json'), 'utf8'), 'data');
   assert.equal(await fs.readFile(path.join(f.dir, `${ns.world}-a.json`), 'utf8'), 'data');
   assert.equal(await fs.readFile(path.join(f.dir, `${ns.rail}-a.json.12.abcdef01.tmp`), 'utf8'), 'data');
+  for (const name of accountFiles) assert.equal(await fs.readFile(path.join(f.dir, name), 'utf8'), 'data');
   await assert.rejects(fs.stat(path.join(f.dir, '.trash')), { code: 'ENOENT' });
 });
 
@@ -143,6 +151,10 @@ test('purging preserves current/live files, unknown entries and symlinks in tras
     [9, `files/${ns.world}-a.json`],
     [10, 'v01-live.json'],
     [11, 'notes.txt'],
+    [13, 'files/accounts.sqlite'],
+    [14, 'files/accounts.sqlite-wal'],
+    [15, 'accounts.sqlite-shm'],
+    [16, 'accounts.sqlite-journal'],
   ] as const;
   for (const [age, name] of rows) await put(f.dir, `.trash/${stamp(age)}/${name}`);
   await put(f.dir, '.trash/unknown-folder/notes.txt');
@@ -152,7 +164,8 @@ test('purging preserves current/live files, unknown entries and symlinks in tras
   assert.deepEqual(result.purged, []);
   for (const [age, name] of rows)
     assert.equal(await fs.readFile(path.join(f.dir, `.trash/${stamp(age)}/${name}`), 'utf8'), 'data');
-  assert.equal(result.skipped.length, 2);
+  assert.equal(result.skipped.length, 6);
+  assert.equal(result.skipped.filter((file) => file.reason === 'application').length, 4);
   assert.equal(result.unknown.length, 3);
 });
 

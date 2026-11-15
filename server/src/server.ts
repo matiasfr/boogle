@@ -6,6 +6,8 @@ import path from 'node:path';
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { createStore } from './store.ts';
+import { createAccountStore } from './account-store.ts';
+import { createAccounts, addAccountRoutes } from './accounts.ts';
 import { inventorySaves, inventoryLine } from './save-inventory.ts';
 import { cleanupSaves, cleanupLine, type Cleanup } from './save-cleanup.ts';
 import { roomNamespaces } from './room-ids.ts';
@@ -218,6 +220,11 @@ export function createService(cfg: ServerConfig) {
   const anyOrigin = cfg.allowedOrigins.includes('*');
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.get('origin');
+    if (/^\/account(?:\/|$)/i.test(req.path)) {
+      res.set('Cache-Control', 'no-store');
+      if (origin && !anyOrigin && !cfg.allowedOrigins.includes(origin))
+        return res.status(403).json({ error: 'origin_denied' });
+    }
     if (anyOrigin) {
       res.set('Access-Control-Allow-Origin', '*');
     } else if (origin && cfg.allowedOrigins.includes(origin)) {
@@ -242,6 +249,13 @@ export function createService(cfg: ServerConfig) {
 
   // ---- snapshot storage (./store.ts) ----
   const store = createStore(cfg);
+  const accountStore = createAccountStore(cfg);
+  const accounts = createAccounts(accountStore);
+  const accountLimits = {
+    requests: createRateLimiter({ perMinute: 60, fromFly: cfg.replaceFlyProxy }),
+    signIn: createRateLimiter({ perMinute: 10, fromFly: cfg.replaceFlyProxy }),
+  };
+  addAccountRoutes(app, accounts, accountLimits);
   const replacements = createReplacements(cfg, store);
   const { readIfExists, withLock } = store;
   let roomHost: RoomHost | null = null; // the server-hosted rooms (./host/rooms.ts), made in listen() once the store is ready
@@ -438,6 +452,7 @@ export function createService(cfg: ServerConfig) {
     async listen(port = cfg.port) {
       if (server.listening) throw new Error('Service is already listening');
       await store.init();
+      accountStore.init(); // Fail startup rather than accept accounts against a fresh fallback database.
       await replacements.init();
       lastCleanup = null;
       try {
@@ -483,6 +498,9 @@ export function createService(cfg: ServerConfig) {
           });
           server.closeIdleConnections?.();
         });
+        accountStore.close();
+        accountLimits.requests.stop();
+        accountLimits.signIn.stop();
       }
     },
   };

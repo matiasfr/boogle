@@ -27,6 +27,10 @@ test('classify separates current, old railway/classic, legacy, temps, directorie
   }
   assert.equal(classify('rail-v19-b.json.123.abcdef01.tmp', ns), 'tmp');
   for (const name of ['reports', 'playdata', 'reviews', '.trash']) assert.equal(classify(name, ns), 'dir');
+  for (const name of ['accounts.sqlite', 'accounts.sqlite-wal', 'accounts.sqlite-shm', 'accounts.sqlite-journal'])
+    assert.equal(classify(name, ns), 'application');
+  for (const name of ['other.sqlite', 'accounts.sqlite-backup', 'accounts.sqlite-wal.tmp'])
+    assert.equal(classify(name, ns), 'unknown');
   for (const name of ['notes.txt', '../v18-a.json', 'v18-a.json.12.xyz.tmp', 'V18-a.json', 'a'.repeat(33) + '.json'])
     assert.equal(classify(name, ns), 'unknown');
 });
@@ -49,6 +53,10 @@ test('inventory measures without reading contents, keeps idle current rooms and 
     'playdata/x.jsonl': 'play',
     '.trash/old/save.json': 'trash',
     'notes.txt': 'unknown',
+    'accounts.sqlite': 'accounts',
+    'accounts.sqlite-wal': 'wal',
+    'accounts.sqlite-shm': 'shm',
+    'accounts.sqlite-journal': 'journal',
   };
   try {
     for (const [name, text] of Object.entries(files)) {
