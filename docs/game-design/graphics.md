@@ -146,10 +146,6 @@
   Sand meets the gorge's bank across a nominal 7 m distance blend with per-pixel wander. The same packed attribute
   carries unsaturated gorge distance; no extra texture or geometry is added. The broad-slope rock rule remains
   unchanged: its proposed gate failed visual review and is unfinished in Part 2a.
-- **Terrain-edge trial (15 November).** `?terrainEdges=trial` replaces the tread facet cutoff with smooth-normal
-  facing and gates broad-slope rock with vertex steepness plus smooth-normal cliff coverage. Rejected visual trial:
-  coastal patches disappear but canyon strips turn green and tread fringes remain. Defaults retain the established
-  rules; Part 2a steps 2 and 3 remain open. Heights, colliders and path pigments are unchanged. Not tested on a device.
 - **Paths read as paths (14 November; owner: "it should be more clearly looking like a path").** Every footpath on
   Home is drawn per pixel from a distance field of the path lines ([path-surface.ts](../../src/place/path-surface.ts);
   one 781 × 541 RGBA16F texture, 3.4 MB), over whatever ground is underneath and winning over slope rock within its

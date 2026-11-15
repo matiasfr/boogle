@@ -375,7 +375,7 @@ No steps 5 or 6, height, collider, tree or placement changes were made.
 - A smooth-normal facing mask and a stricter smooth-normal exception to the `steep` gate remove the coastal tan
   patches but make vertical canyon strips green; green tread fringes and some wall paint remain. Opened paths
   cameras 0, 1, 2, 7 and 10 in `.look/shots/terrain-2a-round2/group-0/`. Rejected.
-- Preserve the latter implementation only under `?terrainEdges=trial`. Default uses the original facet cutoff and
+- The latter implementation was kept briefly under `?terrainEdges=trial`, then removed from the branch by the orchestrator (no dead flag on main); it is archived at local tag `archive/worktree/t3/terrain-path-shore-borders-trial`. Next attempt: a Fable implementer (the models row for player-visible work) once that usage is back. Default uses the original facet cutoff and
   broad rock rule. Final capture `.look/shots/terrain-2a-final/manifest.json`: group 0 default, group 1 rejected
   trial, all 11 original plan cameras at 1280 × 800. Opened final c0/c1/c7 in both groups; default retains the dotted
   crease and coastal patches, trial retains the regressions above. Before: `.look/shots/terrain-2a-before/`.
