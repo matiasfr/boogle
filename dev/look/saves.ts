@@ -1,5 +1,5 @@
 // A save state per beat, written by `npm run playthrough` (./playthrough.ts) and read by `npm run look -- --at <beat>`: every
-// localStorage entry at that moment and where the player stood, from a real run of the bot. It comes back through the game's
+// non-credential localStorage entry at that moment and where the player stood, from a real run of the bot. It comes back through the game's
 // own restore, so it holds whatever the game saves, abilities and town included, with no skip to write for them. What it can't
 // hold is what the save doesn't: a train part way along, a moment mid-show. On the production route that is the pose and
 // personal things only: railway progress is server state, started from a `--rail-seed` (./rail-seed.ts).

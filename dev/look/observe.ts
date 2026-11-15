@@ -122,6 +122,9 @@ export function installObserver(ignore: string) {
         const storage: Record<string, string> = {};
         for (let k = 0; k < localStorage.length; k++) {
           const name = localStorage.key(k)!;
+          // This function is serialized into the page: keep the account key (src/player/account.ts)
+          // and the retired identity key out of evidence, without changing browser persistence.
+          if (name === 'boogle.account' || name === 'boogle.key') continue;
           storage[name] = localStorage.getItem(name)!;
         }
         saves.push({ beat, t: now(), pose: w.__observe.pose(), storage });
