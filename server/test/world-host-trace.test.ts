@@ -7,6 +7,8 @@
 // samples follow. All 8,596 ordered records, inputs, messages and packets stay. Regenerate with HOST_TRACE_RECORD=1.
 // v47 prow tree: beam x/y/z defaults and checkpoint namespaces change; hashes, checksums and snapBytes follow.
 // The record order, inputs and command results remain pinned.
+// v48 authentication cutover: only 205 checkpoint namespaces/checksums and 2,518 snapBytes samples change.
+// All 8,596 ordered records retain identical inputs, simulation state, hashes, messages and replica packets.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

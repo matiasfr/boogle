@@ -100,7 +100,9 @@
 // No migration. This reset shipped before the great-tree move.
 // v47 (2026-11-14): move the great tree to the prow and its beam's initial/recovery ground to 29.7 m;
 // extend the beam work area around the new source. No migration.
-export const WORLD_NS = 'v47';
+// v48 (2026-11-15): authenticated room admission uses server-issued principals and device sessions.
+// Fresh identities at this development cutover; accounts.sqlite stays independent of room resets. No migration.
+export const WORLD_NS = 'v48';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
