@@ -16,7 +16,17 @@ import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
 
-const baseRef = 'origin/main'; // main is the control; no dependency on a historical scratch commit
+// Main is the control; no dependency on a historical scratch commit. CI's unit shards check out shallow with no
+// main ref, so the tests skip there and run wherever main is known (ship-check, local runs).
+const baseRef = ['origin/main', 'main'].find((ref) => {
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+});
+const noBase = baseRef ? false : 'no main ref to compare against (shallow checkout)';
 const read = (file: string, base: boolean) =>
   base ? execFileSync('git', ['show', `${baseRef}:${file}`], { encoding: 'utf8' }) : fs.readFileSync(file, 'utf8');
 
@@ -62,7 +72,7 @@ async function drawn(base: boolean) {
   return { owner, visible };
 }
 
-test('clipped Gorge floor has no hole inside the former walkable top', async () => {
+test('clipped Gorge floor has no hole inside the former walkable top', { skip: noBase }, async () => {
   const before = await drawn(true);
   const after = await drawn(false);
   try {
@@ -89,7 +99,7 @@ test('clipped Gorge floor has no hole inside the former walkable top', async () 
 });
 
 // Probe the actual visible draw, never the retained hidden provenance batch.
-test('all six clipped slabs cover interior edge probes and oblique floor rays', async (t) => {
+test('all six clipped slabs cover interior edge probes and oblique floor rays', { skip: noBase }, async (t) => {
   const before = await drawn(true),
     after = await drawn(false);
   const ray = new THREE.Raycaster();
