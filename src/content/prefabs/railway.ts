@@ -97,6 +97,8 @@ export const prefabs = [
       { shape: 'box', at: [0, -7, 0], half: [0.9, 7, 0.9] },
       { shape: 'box', at: [1.1, -10.95, 0.35], half: [1.1, 3.05, 0.9] },
       { shape: 'box', at: [0, -0.3, 0], half: [2.2, 0.3, 2.2] },
+      // The hook ring's post (hook-view.ts draws it), under SEA_RING at the landing's near corner.
+      { shape: 'box', at: [-1.8, 0.925, 1.8], half: [0.13, 0.925, 0.13] },
     ],
     scope: 'owner',
   }),

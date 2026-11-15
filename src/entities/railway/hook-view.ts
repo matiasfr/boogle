@@ -82,7 +82,16 @@ export async function createRailwayHookView(owner: OwnedView) {
           hz,
           offset: { x: p.x + ox - p.hx + hx * (i * 2 + 1), y: p.top - thick / 2, z: p.z - p.hz + hz * (j * 2 + 1) },
         });
-    land.addStatics(tiles, { x: 0, y: 0, z: 0 }, owner);
+    // The summit deck has no slab above it to look up at, so it is one solid box: the camera's arm skips thin tiles
+    // (camera-arm.ts), and a camera pitched up at the last ring came to rest under the deck, looking at its underside.
+    const solid: Shape = {
+      kind: 'box',
+      hx: p.hx,
+      hy: thick / 2,
+      hz: p.hz,
+      offset: { x: p.x + ox, y: p.top - thick / 2, z: p.z },
+    };
+    land.addStatics(p.id === 'summit' ? [solid] : tiles, { x: 0, y: 0, z: 0 }, owner);
     if (p.look === 'float') {
       const under = add(new THREE.Mesh(new THREE.BoxGeometry(p.hx * 0.7, 0.1, p.hz * 0.7), glow));
       under.position.set(p.x + ox, p.top - thick - 0.04, p.z);
@@ -150,6 +159,23 @@ export async function createRailwayHookView(owner: OwnedView) {
     ringMesh.count = rings.length;
   }
   const setIslandRing = (on: boolean) => setRing(island, on);
+  // The jamb's post stands from the start, like the tower's, with a gold foot plate: the ring arrives on it with Q4.
+  // Its collider is the railway.sea-jamb prefab's.
+  {
+    const height = jamb.at.y - 0.55 - jamb.pad.top;
+    const post = add(
+      new THREE.Mesh(
+        shapes.merged([
+          ['b', 0, height / 2, 0, 0.26, height, 0.26, '#55524a'],
+          ['b', 0, 0.06, 0, 0.7, 0.12, 0.7, '#c79a3e'],
+          ['b', 0, height - 0.07, 0, 0.44, 0.14, 0.44, '#c79a3e'],
+        ]),
+        partMat,
+      ),
+    );
+    post.position.set(jamb.at.x, jamb.pad.top, jamb.at.z);
+    post.castShadow = true;
+  }
   let seaSwing = 1;
   const setSeaRing = (on: boolean, snap: boolean) => {
     if (on && !ringById.has(jamb.id)) seaSwing = snap ? 1 : 0;
@@ -272,7 +298,10 @@ export async function createRailwayHookView(owner: OwnedView) {
       if (r === asleep) pose.lookAt(islandFaces);
       else pose.lookAt(camAt);
       if (r === jamb) pose.rotateY(((1 - seaSwing) * Math.PI) / 2);
-      pose.scale.setScalar(bright ? 1.18 + Math.sin(now * 0.012) * 0.05 : inRange ? 1.05 : 0.92);
+      // The jamb's ring is first met from 13 m below, so it is drawn a third larger than the tower's.
+      pose.scale.setScalar(
+        (bright ? 1.18 + Math.sin(now * 0.012) * 0.05 : inRange ? 1.05 : 0.92) * (r === jamb ? 1.35 : 1),
+      );
       pose.updateMatrix();
       ringMesh.setMatrixAt(k, pose.matrix);
       ringMesh.setColorAt(

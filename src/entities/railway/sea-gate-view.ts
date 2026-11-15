@@ -9,10 +9,11 @@ import { rail } from '../../sim/railway-rows.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
 import { line2Completed } from '../../sim/railway-queries-line2.ts';
 import { LINE2_SEA, line2Routes } from '../../sim/railway-line2-layout.ts';
-import { clank, whistle } from '../../render/machine-sfx.ts';
+import { bell, clank, whistle } from '../../render/machine-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { playMark } from '../../proto/mark.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
+import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGateRig, gateEyes } from './gate-rig.ts';
 
 type Deps = {
@@ -27,7 +28,7 @@ type Deps = {
 };
 
 export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, deps: Deps) {
-  const { layout, tech, land, shapes, flat, partMat, glow } = deps;
+  const { layout, tech, land, shapes, flat, sounds, partMat, glow } = deps;
   const ox = layout.ORIGIN.x;
   const G = tech.GATES.sea;
   const SLAB = tech.GATE_SLAB;
@@ -71,18 +72,107 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     },
     { owner, batch: { target: jambBatch, index: 0 } },
   ).setEnabled(true);
-  // Snap on join/restore; only a live Q4 edge seats the control from above.
+  // The mount's hardware, there from the first minute and read from the gate's foot 13 m below: a gold collar round
+  // the landing, an open cradle frame behind the socket, and dashed gold "a part goes here" for the drum and the ring.
+  const CRADLE = { back: -0.83, half: 0.83, top: 3.6 };
+  const cradle = mesh(
+    shapes.merged([
+      ['b', -CRADLE.half, CRADLE.top / 2, CRADLE.back, 0.26, CRADLE.top, 0.26, '#55524a'],
+      ['b', CRADLE.half, CRADLE.top / 2, CRADLE.back, 0.26, CRADLE.top, 0.26, '#55524a'],
+      ['b', 0, CRADLE.top + 0.14, CRADLE.back, CRADLE.half * 2 + 0.6, 0.28, 0.3, '#55524a'],
+      ['b', 0, -0.3, 2.215, 4.46, 0.56, 0.05, '#c79a3e'],
+      ['b', 0, -0.3, -2.215, 4.46, 0.56, 0.05, '#c79a3e'],
+      ['b', 2.215, -0.3, 0, 0.05, 0.56, 4.46, '#c79a3e'],
+      ['b', -2.215, -0.3, 0, 0.05, 0.56, 4.46, '#c79a3e'],
+    ]),
+  );
+  cradle.position.copy(at);
+  owner.add(cradle);
+  // Lights that say the control is live: the cradle's beam and a strip down each face of the jamb the approach sees.
+  const lampMat = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: '#ffffff' }));
+  const lampDark = new THREE.Color('#285650'),
+    lampLit = new THREE.Color('#39e6c6').multiplyScalar(2.2),
+    lampHot = new THREE.Color('#ffffff').multiplyScalar(3);
+  const STRIP = { top: -0.7, bottom: -12.6 };
+  const beamLamp = mesh(new THREE.BoxGeometry(CRADLE.half * 2 + 0.2, 0.14, 0.34), lampMat);
+  beamLamp.position.set(at.x, at.y + CRADLE.top + 0.14, at.z + CRADLE.back);
+  const strips = mesh(
+    shapes.merged([
+      ['b', -0.915, -0.5, 0, 0.05, 1, 0.34, '#ffffff'],
+      ['b', -0.45, -0.5, 0.915, 0.34, 1, 0.05, '#ffffff'],
+    ]),
+    lampMat,
+  );
+  strips.position.set(at.x, at.y + STRIP.top, at.z);
+  beamLamp.castShadow = strips.castShadow = false;
+  owner.add(beamLamp, strips);
+  const ringAt = { ...tech.SEA_RING, x: tech.SEA_RING.x + ox };
+  const ghosts = createGhostOutlines(owner, 160, 0.26, 0.16, 0.08);
+  ghosts.mesh.frustumCulled = false;
+  function drawGhosts(on: boolean) {
+    ghosts.begin();
+    if (on) {
+      ghosts.box(at.x, at.y + 0.5, at.z, 0.9, 1, 0.9);
+      ghosts.box(at.x, at.y + 1.55, at.z, 0.34, 1.1, 0.34);
+      ghosts.box(ringAt.x, ringAt.y, ringAt.z, 1.3, 1.3, 0.2, -Math.PI / 4);
+    }
+    ghosts.commit();
+  }
+  drawGhosts(true);
+  // The seating's flash and shock ring, wide enough to clear the landing's edge from below.
+  const flashMat = readableUnlit(
+    new THREE.MeshBasicNodeMaterial({ color: '#e8fffa', transparent: true, opacity: 0, depthWrite: false }),
+  );
+  const flash = mesh(new THREE.SphereGeometry(1, 14, 10), flashMat);
+  const shock = mesh(new THREE.TorusGeometry(1, 0.07, 6, 30).rotateX(Math.PI / 2), flashMat);
+  flash.castShadow = shock.castShadow = flash.receiveShadow = shock.receiveShadow = false;
+  flash.position.set(at.x, at.y + 0.9, at.z);
+  shock.position.set(at.x, at.y + 0.3, at.z);
+  flash.visible = shock.visible = false;
+  owner.add(flash, shock);
+  const dust = new THREE.Color('#d8cdb4');
+  // Snap on join/restore; only a live Q4 edge lowers the control into its cradle, from high enough to be seen coming.
+  const DROP = { from: 9, time: 1.3 };
   let installed = false,
-    seating = 1;
+    ghosted = true,
+    seating = 1,
+    litT = 1; // seconds since the seat landed, for the flash and the lights' wipe; large when settled
+  const SETTLED = 10;
   const ready = () => line2Routes(line2Completed(adapter.read.world())).sea || rail(adapter.read.world()).sea;
   function install(snap: boolean, dt = 0) {
     const on = ready();
-    if (snap) seating = 1;
-    else if (on && !installed) seating = 0;
-    seating = Math.min(1, seating + dt / 0.8);
+    if (snap) {
+      seating = 1;
+      litT = SETTLED;
+    } else if (on && !installed) {
+      seating = 0;
+      bell(at.x, at.z);
+    }
+    const was = seating;
+    seating = Math.min(1, seating + dt / DROP.time);
+    if (on && was < 1 && seating === 1) {
+      litT = 0;
+      clank(at.x, at.z);
+      sounds.pop(4, 0.7);
+      sounds.puff(at.x, at.y + 0.3, at.z, 26, 3.2, dust, 0.5);
+    }
+    litT = Math.min(SETTLED, litT + dt);
     installed = on;
     drum.visible = on;
-    drum.position.y = at.y + (1 - seating) * (1 - seating) * 3;
+    drum.position.y = at.y + (1 - seating) * (1 - seating) * DROP.from;
+    if (ghosted !== !on) drawGhosts((ghosted = !on));
+    const seated = on && seating === 1;
+    const u = Math.min(1, litT / 0.5);
+    flash.visible = shock.visible = seated && u < 1;
+    flashMat.opacity = (1 - u) * 0.9;
+    flash.scale.setScalar(0.6 + u * 2.4);
+    shock.scale.setScalar(0.8 + u * 4.2);
+    // The lights wipe down from the cradle to the jamb's foot, hot first.
+    const wipe = seated ? Math.min(1, litT / 0.9) : 0;
+    strips.scale.y = Math.max(0.001, wipe * (STRIP.top - STRIP.bottom));
+    strips.visible = wipe > 0;
+    lampMat.color.copy(seated ? lampLit : lampDark);
+    if (seated && litT < 1.4) lampMat.color.lerpColors(lampHot, lampLit, litT / 1.4);
   }
   const target = at.clone().add(new THREE.Vector3(0, 1.7, 0));
   const drum = mesh(
@@ -116,7 +206,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
   }
   const capMat = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: '#ffffff' }));
   const postGeo = new THREE.BoxGeometry(0.5, 2.6, 0.5),
-    capGeo = new THREE.OctahedronGeometry(0.22);
+    capGeo = new THREE.OctahedronGeometry(0.5);
   geometry.push(postGeo, capGeo);
   const posts = new THREE.InstancedMesh(postGeo, flat('#403f3a', 0.9), tech.POSTS.length);
   const caps = new THREE.InstancedMesh(capGeo, capMat, tech.POSTS.length);
@@ -129,7 +219,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     o.rotation.y = k * 0.9;
     o.updateMatrix();
     posts.setMatrixAt(k, o.matrix);
-    o.position.y = y + 2.9;
+    o.position.y = y + 3.15;
     o.updateMatrix();
     caps.setMatrixAt(k, o.matrix);
     caps.setColorAt(k, dark);
@@ -157,7 +247,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
   }
   owner.cleanup(() => {
     for (const g of geometry) g.dispose();
-    capMat.dispose();
+    for (const m of [capMat, lampMat, flashMat]) m.dispose();
   });
   return {
     accepted(e: RailwayAccepted) {
@@ -199,7 +289,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
         lightT += dt;
         drawCaps(Math.min(tech.POSTS.length, 1 + Math.floor(lightT / (1.5 / tech.POSTS.length))));
         if (lightT >= 1.5) lightT = -1;
-      } else drawCaps(installed ? tech.POSTS.length : 0);
+      } else drawCaps(installed && seating === 1 ? tech.POSTS.length : 0);
     },
     targets(p: V3, sea: boolean): Interactable[] {
       if (!ready() || seating < 1 || sea || Math.hypot(p.x - at.x, p.z - at.z) >= 3 || Math.abs(p.y - at.y) >= 2.2)
