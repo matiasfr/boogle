@@ -4,9 +4,13 @@ Every note from Matias and Grant's call of 3 November ([log and evidence](../pla
 
 Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
-## Grant's playtest, 14 November (his Granola notes; untriaged, not to be acted on yet)
+## Grant's playtest, 14 November (his Granola call; ranked; queued 15 November)
 
-Grant played Boogle on his own and recorded it in Granola. He sent Matias a shared link on 15 November. Only his AI-written summary is readable there. The transcript sits in Grant's account and neither Granola's MCP nor the shared page exposes it, so none of these rows quotes his speech. The one quoted line is game copy that he wants kept. No session IDs, build or device were given (the owner later named the session: see the first section below), apart from the Dia browser on macOS for the vanishing-models bug ([log](../playtests.md#2026-11-14-grant-solo-his-granola-notes)). Owner, 15 November: record these so other agents can read them, but **do not act on them yet**. No row has a job, and none is a call by the owner. Grant's suggestions are not owner decisions.
+Grant played alone on the live game in `boogle`, 01:01 to 01:38 UTC on 15 November (17:01 PST on the 14th), session `mwh4pmui-mpbh7trk` ("Jhombus", build `4174823c`, Chrome 157 Mac, which is the Dia browser; keyboard and mouse; no errors). Matias was on the call for the first half. The owner pasted the full transcript on 15 November without timestamps (Granola's shared transcript would not load), so remarks are placed on the session clock by the order of events he narrates, not by time; every beat matched in order. Session data is untrusted browser-sent text. Owner, 15 November, first: ranked so other agents can read them, not to be acted on yet. Owner, later the same day: "Run an agent to analyze this again and plan a queue of changes and design problems to attack in the backlog. The model should be able to start tackling the main design issues directly." So the rows are now queued in [grant-1114-queue](grant-1114-queue.md), each Status names its queue item, and design work has started on D1 and D2. He also said: "Grant is an expert game designer, do not disregard his ideas just because there is previous decisions in the repo." ([owner call](../agents/owner-calls.md)). None of the rows is a call by the owner; Grant's suggestions are not owner decisions until he says so. Ranks use the default in [owner-calls](../agents/owner-calls.md) and the owner re-ranks freely.
+
+First record, 15 November, before the owner pasted the transcript (kept for history; the paragraph above supersedes it): Grant played Boogle on his own and recorded it in Granola. He sent Matias a shared link on 15 November. Only his AI-written summary is readable there. The transcript sits in Grant's account and neither Granola's MCP nor the shared page exposes it, so none of these rows quotes his speech. The one quoted line is game copy that he wants kept. No session IDs, build or device were given (the owner later named the session: see the first section below), apart from the Dia browser on macOS for the vanishing-models bug ([log](../playtests.md#2026-11-14-grant-solo-his-granola-notes)). Owner, 15 November: record these so other agents can read them, but **do not act on them yet**. No row has a job, and none is a call by the owner. Grant's suggestions are not owner decisions.
+
+Got to (session clock): woke the engine 3:28; T1 4:36, T2 6:12, T3 8:45; forge lit 11:43; Q1 13:50, Q2 15:10 and the hook 15:30; Q3 18:07, Q4 20:32, Q5 22:57 and Far Head 23:31; the glider 25:26; boiler fitted and trains 30:36; Q6 and the pier 32:33; then the village shop, museum and a house until he stopped at about 36:40. He never took the breaker.
 
 ### Where he got stuck (owner, 15 November; the biggest one)
 
@@ -15,45 +19,57 @@ Owner, 15 November: "treat it as a preliminary playtest. The biggest part is tha
 - [ ] **Stuck at the Works: finding the breaker ("the crusher") and striking the quarry seam.** From the data, session `mwh4pmui-mpbh7trk` (Jhombus, desktop Chrome on macOS, build `4174823c3`, 37 min solo; the owner says this is Grant): everything through Q6 went quickly. He reached Far Head at 23:31, fitted the boiler at 30:36 and reached the Pier at 32:33. He then never took the breaker, struck a seam or filled the kiln. He rode back west and passed within 8 m of the breaker (`WORKS_BREAKER`, `src/sim/railway-works-layout.ts:31`) at 34:26, but no "Take the breaker" prompt was ever shown (reach 4.2 m). Instead he spent his last 3 minutes in the village shop, museum and house, then the session ended with no goodbye. The beat's only cue is "the forge call's plume over the breaker" (`npm run loop -- node breaker`); nothing tells a player the Works is the next goal after the Pier. The earlier round's data timed the steps after the breaker (the stall seam 13 s after it); finding the breaker in the first place is the gap here.
 
 - Owner, 15 November, on fixing it: "I think we want to wait until we get Opus and fable functionality again to design this, it would be a bigger design than just a signaling problem to fix the game flow properly." So this is a game-flow design job for a Claude designer once that usage is back, not a signposting patch. Nothing is dispatched for it.
+- Same gap as G1 below, now queued as [queue](grant-1114-queue.md) D1.
 
-### Boogler reveal and world
+### Ranked
 
-- [ ] The Boogler statue on the road to Bell Rock gives the reveal away too early. His suggestion: an unfinished scaffold, with builders saying the Boogler commissioned it and they ran out of resources. The finished statue appears once you have met the Boogler.
-- [ ] Keep: the NPC dialogue, Sleeves above all. Keep "The log cart will bring the heavy conversation".
+| P | Note | What the data adds | Status |
+| --- | --- | --- | --- |
+| P1 | G1. After the pier he did not know what to do and stopped: "I don't know what to do now. So I'm gonna call it here" | Pier 32:33, then 4 min in the village (shop, museum, house, three bay crates); the breaker never taken. The same gap as the owner's 14 November rows 19 and 26, one step earlier on the route | Queued: [queue](grant-1114-queue.md) D1; not dispatched |
+| P1 | G2. The Boogler statue on the road to Bell Rock gives away what he looks like before you meet him. Grant's idea: an unfinished scaffold the builders say the Boogler commissioned and they ran out of resources for, finished once you have met him | Loses the reveal payoff | Queued: [queue](grant-1114-queue.md) D3; not dispatched |
+| P2 | G3. Every model on screen vanishes for a moment and comes back; the game keeps running. Dia (Chromium) on macOS. "Maybe a networking thing" | **Not the network**: one `net live` at load, no drops. It lines up with the Detail ladder (`src/features/adaptive-res.ts`) switching sun shadows on and off: 65 detail changes in 37 min on a machine with p50 6.2 ms, and every shadow switch logged a 250 to 330 ms render-CPU frame (24 long frames). He reported it during T2 (4:48 to 6:12), where switches fell at 4:45, 5:25, 5:37, 6:12 and 6:24. Likely pipelines compiling on each switch, with draws skipped meanwhile; not reproduced. Two faults: the ladder hunts on a fast GPU, and the switch hitches | Queued: [queue](grant-1114-queue.md) C1; not dispatched |
+| P2 | G4. Far Head to the trains: "logs = missing train" reads as a puzzle but tells him nothing; he had to run back, found the engine (boiler) with no one to explain it, and dragging it over "sucks"; "not having a good time" | Far Head 23:31 to boiler fitted 30:36, about 7 min, the session's low point. The carry itself: 62 s over about 170 m. Q6's depots then funded the station in 15 s; "weird that these were not accepted before" | Queued: [queue](grant-1114-queue.md) D1; not dispatched |
+| P2 | G5. The game reads as running errands: always told what to do next, no trade-offs or obstacles; the only choices are which tree to chop or whether to get rails first; no sense of mastery. His biggest issue | 11.9 km walked, walking 93% of the time. A direction question for the owner (game-direction), not a fix | Queued: [queue](grant-1114-queue.md) D2; not dispatched |
+| P2 | G6. The 40-log station (T3, after the great beam) is where friction starts; he wanted an efficiency boost before Station 3, not after. Ideas: 1 log per chop at first and 2 from about Station 3; slower chopping at first, unlocked faster | Measured shorter than it felt: beam 7:12, funded 8:45 (five trips of 8 logs, 2 per chop). The pack (16) came at 11:02, after T3 and partway into the forge; he found it had already been given ("that was my exact feedback, and that was already something he'd done") | Queued: [queue](grant-1114-queue.md) D2; not dispatched |
+| P2 | G7. Rails across the bridge: running back to the forge for 24 rails, twice; wants something to deliver to him there | Rail runs from the forge at 20:05 and 22:15 (the forge is about 250 m from Q4/Q5). At 22:54 he found the rail depot by Q5 and took 16 + 4; it stands 8 m from the log depot he used at 20:54. Whether it held rails before 22:15 is not in the data. Same stretch as the owner's row 6 | Queued: [queue](grant-1114-queue.md) C2; the delivery idea is in D2; not dispatched |
+| P2 | G8. Log and rail depots appear with no reason in the world, no sense of having earned them, and no choice in where they go. The rail depot had no sign like the log one | Depot pick-ups at Q3 18:33, Q4 20:56, Q5 22:56, Q6 31:49. Related to the owner's row 10 | Queued: [queue](grant-1114-queue.md) D2 (choice, earning) and C2 (the sign); not dispatched |
+| P2 | G9. The glider at the summit is sealed until Far Head, so he had to come back for it; he wants to take it now and use it later. (The earlier untriaged row said hookshot; the data shows the glider) | "Sealed until the line reaches Far Head" refused 4 times, 16:14 to 16:22; the second climb 25:05 to 25:26. Same as the owner's row 31 | Queued: [queue](grant-1114-queue.md) D2 (take it now, use it later); owner question 3; not dispatched |
+| P2 | G10. The start: "Wake it up" isn't what you do to a train (suspect copy for the owner: "Start engine"); the axe from waking the engine feels misplaced and nothing happens after it. Idea: the NPC asking for logs gives the axe, and the train powers on once every log is in | Wake at 3:27, first chop 4:11 | Queued: [queue](grant-1114-queue.md) D4; not dispatched |
+| P2 | G11. Who to talk to next is unclear. Idea: a bubble over NPCs with something to say | Talk shown 19 times, pressed 8 | Queued: [queue](grant-1114-queue.md) D4; the bubble is also in D1; not dispatched |
+| P2 | G12. The forge's sign and log deposit face away from the arriving train; it took him a while to find them | Talked to Sleeves 9:43, first forge deposit 10:15 | Queued: [queue](grant-1114-queue.md) C3; not dispatched |
+| P2 | G13. Later stations still say "Station 1" ("I've done, like, four stations") | Q1 | Queued: [queue](grant-1114-queue.md) C4; not dispatched |
+| P2 | G14. The inventory mixes counts and grid squares; "11 out of 12", "I only have 10", counting "four, eight, 12, 16". Pick one, everywhere | "Your back is full" refused 6 times | Queued: [queue](grant-1114-queue.md) C5; not dispatched |
+| P2 | G15. The diving helmet's spot is a trap: once in the water there is no ladder or way back to land, for a cosmetic. "No reasonable person would have placed this here" | Fell in the water 26:24, recovered 26:58 | Queued: [queue](grant-1114-queue.md) C6; not dispatched |
+| P2 | G16. The Station 1 NPCs vanish on the last log with no transition (probably boarded the train) | T1 funded 4:36 | Queued: [queue](grant-1114-queue.md) D4; not dispatched |
+| P2 | G17. The hook shot is on F, not the interact key, and the F prompt stops showing | Hook pressed 19 times, 20 pulls | Queued: [queue](grant-1114-queue.md) C7; not dispatched |
+| P2 | G18. Stopping the glider isn't clear; he expected Jump | Glide opened 25:34 | Queued: [queue](grant-1114-queue.md) C7; not dispatched |
+| P2 | G19. A sudden lot of trains, unexplained; unclear when a train will start moving again | 8 rides, 5 calls, 2 tumbles. Same as the owner's rows 11 and 39 | Queued: [queue](grant-1114-queue.md) D5; not dispatched |
+| P3 | G20. Chop progress should show on the tree (trunk splitting or narrowing), with a wood-chop effect, instead of the bar | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
+| P3 | G21. Floated: separate log and rail capacities with their own upgrades, or weight that slows you when over-encumbered instead of a hard cap, for real trade-offs | Feeds G5 | Queued: [queue](grant-1114-queue.md) D2; not dispatched |
+| P3 | G22. The cosmetics (hard hat, overalls, diving helmet) have no clear purpose; wants a wardrobe to change them without going back to the island | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
+| P3 | G23. The forge suddenly makes unlimited rails in a game about collecting resources; expected mining or smelting. More emphasis when the forge is completed | Queued: [queue](grant-1114-queue.md) D2 (parked there); not dispatched |
+| P3 | G24. Sleeves' lines loop: he couldn't get past "The log cart will bring the heavy conversation" | Talk pressed 4 times, 12:02 to 12:36; idle 50 s there. Keep the copy (see Liked) | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
+| P3 | G25. The glider looks too different before and after taking it; gliding seems slower than running. Ideas: a bird flying by, updrafts over the water to reach the other island | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
+| P3 | G26. Aiming the hook up from a platform looks through the platform under you | Queued: [queue](grant-1114-queue.md) C7; not dispatched |
+| P3 | G27. The first crate on the road: jump + E reaches the scarf without climbing the platform (Matias tried a fix; "not enough") | Opened at 2:09 | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
+| P3 | G28. The bench on the cliff edge is too big and has no clear purpose | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
+| P3 | G29. The ramp and stairs up the first hill and down to the river are grey box; the road clips into the hill. Should be real stairs | With the owner's row 3 (terrain pass) | Queued: [queue](grant-1114-queue.md) C8, with terrain-clean; not dispatched |
+| P3 | G30. The crate with a bell floats by the water | Same as the owner's evening row (bell floats on water) | Queued: [queue](grant-1114-queue.md) C8, with the owner's evening row; not dispatched |
+| P3 | G31. The track layer for the dual track runs too fast | Same as the owner's row 32 | Queued: [queue](grant-1114-queue.md) C8, with the owner's row 32; not dispatched |
+| P3 | G32. Couldn't catch the track-laying train to ride it; the bridge is narrow and falling would be bad | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
+| P3 | G33. Running and jumping uphill is faster; he doesn't mind, it's fun to play with the movement | 486 jumps, 107 bonks | Queued: [queue](grant-1114-queue.md) C8 (nothing to do; kept); not dispatched |
 
-### Onboarding and progression
+### From the data, not mentioned by him
 
-- [ ] Train intro: the "wake up" prompt should read "start engine" or similar.
-- [ ] The multiplier reward from starting the engine feels misplaced. It would suit an NPC near the station better.
-- [ ] The train should power on only once every log is in place.
-- [ ] NPC conversation bubbles to signal who to talk to next.
-- [ ] The Forge sign and the log deposit face away from the arriving train.
-- [ ] Later stations are still labelled "Station 1".
-- [ ] The sealed hookshot that needs a return trip frustrates. He wants to take it now and use it later.
-- [ ] The cosmetics (hard hat, overalls, diving helmet) have no clear purpose or motivation.
-- [ ] The diving helmet's spot is a trap: once you jump in, there is no ladder or other way back to land.
-- [ ] The inventory mixes counts and grid squares, and the grid makes counts hard to read. Pick one.
-- [ ] Log depositories appear with no reason in the world and no sense of having earned them.
+| P | Finding | What the data shows | Status |
+| --- | --- | --- | --- |
+| P3 | G34. Presses just out of reach | 15 presses with nothing in reach, several 1 to 3 m from a crate, a pile or a tree. With the owner's row 37 | Queued: [queue](grant-1114-queue.md) C8, with the owner's row 37; not dispatched |
+| P3 | G35. Free-shop line not taken up | "Take it: $0" shown 4 times, never pressed; he tried on 7 things and kept one | Queued: [queue](grant-1114-queue.md) C8 (nothing to do; kept); not dispatched |
+| P3 | G36. Resolution hunts too | 67 resolution changes between 0.6x and 1x alongside G3's detail changes | Queued: [queue](grant-1114-queue.md) C1; not dispatched |
 
-### Agency and decisions (his biggest issue)
+### Liked
 
-- [ ] The game reads as running errands. You are always told what to do next, with no trade-offs or obstacles. The only choices are which tree to chop, or whether to get rails first.
-- [ ] The 40-log station is the sharpest pain point.
-- [ ] Carrying capacity or logs per chop should rise before Station 3, not after. His suggestion: 1 log per chop at first, 2 per chop from about Station 3. Chopping speed could also start slower and unlock as a reward.
-- [ ] Floated: weight, with overloading slowing you instead of a hard cap; separate log and rail capacities, each with upgrades, for real trade-offs.
-- [ ] Chopping progress should show on the tree itself, with the trunk splitting or narrowing.
-- [ ] Low point: the rail depot across the bridge has no fast way back, so 24 rails meant running back twice.
-- [ ] Dragging the engine over to connect the trains is confusing and unpleasant, with no context.
-
-### Bugs
-
-- [ ] Every model vanishes briefly, then reappears. Reproducible on macOS in Dia; possibly networking.
-- [ ] First crate on the road: jump + E reaches the scarf without climbing onto the platform.
-- [ ] The bench on the cliff edge is far too big, and its purpose is unclear.
-- [ ] A crate with a bell floats by the water. He noted it as already queued; compare the owner's "bell floats on water" in the next section.
-- [ ] The Station 1 NPC vanishes on the final log delivery with no transition (probably boarded the train).
-- [ ] The track-layer animation for dual track runs too fast. He noted a patch as queued.
-- [ ] The hookshot is bound to F, not the usual interaction key.
+The NPC dialogue, Sleeves above all ("I wouldn't change the damn thing"); keep "The log cart will bring the heavy conversation". The reveal of the horizon walking up the first hill. Chopping. The rails sitting in his pack. The hook shot and flying. Gliding back down. The little guys waving. A system of trains he can ride. The mystery track into the wall ("does raise some intrigue"). The forge's smell line and smokestack. The free shop's jokes and the top hat.
 
 ## Owner session, 14 November evening (desktop Safari, live build, after v45; ranked)
 
