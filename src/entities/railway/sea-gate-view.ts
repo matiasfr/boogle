@@ -1,4 +1,4 @@
-// Local sea gate, summit switch and the signal running down Needle Bell. No shared state or Place campaign owner.
+// Local sea gate and its Q4-seated far-jamb switch. No shared state or Place campaign owner.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
@@ -6,7 +6,9 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body, V3 } from '../../physics/engine.ts';
 import { rail } from '../../sim/railway-rows.ts';
-import { LINE2_SEA } from '../../sim/railway-line2-layout.ts';
+import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
+import { line2Completed } from '../../sim/railway-queries-line2.ts';
+import { LINE2_SEA, line2Routes } from '../../sim/railway-line2-layout.ts';
 import { clank, whistle } from '../../render/machine-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { playMark } from '../../proto/mark.ts';
@@ -59,6 +61,29 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     slabT = -1,
     lightT = -1;
   const at = new THREE.Vector3(LINE2_SEA.x / 100, LINE2_SEA.y / 100, LINE2_SEA.z / 100);
+  const jambBatch = createPrefabBatch('railway.sea-jamb', 7, owner);
+  instantiate(
+    'railway.sea-jamb',
+    {
+      id: 'sea-jamb',
+      prefab: 'railway.sea-jamb',
+      pos: [at.x, at.y, at.z],
+    },
+    { owner, batch: { target: jambBatch, index: 0 } },
+  ).setEnabled(true);
+  // Snap on join/restore; only a live Q4 edge seats the control from above.
+  let installed = false,
+    seating = 1;
+  const ready = () => line2Routes(line2Completed(adapter.read.world())).sea || rail(adapter.read.world()).sea;
+  function install(snap: boolean, dt = 0) {
+    const on = ready();
+    if (snap) seating = 1;
+    else if (on && !installed) seating = 0;
+    seating = Math.min(1, seating + dt / 0.8);
+    installed = on;
+    drum.visible = on;
+    drum.position.y = at.y + (1 - seating) * (1 - seating) * 3;
+  }
   const target = at.clone().add(new THREE.Vector3(0, 1.7, 0));
   const drum = mesh(
     shapes.merged([
@@ -148,15 +173,17 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     },
     restore(sea: boolean) {
       slabT = lightT = -1;
+      install(true);
       solid(sea);
       slab.position.y = sea ? down : up;
       rig.pose(slab.position.y);
       handle.rotation.z = sea ? PULLED : READY;
       refusal = 1;
       drum.rotation.z = 0;
-      drawCaps(sea ? tech.POSTS.length : 0);
+      drawCaps(installed ? tech.POSTS.length : 0);
     },
     update(dt: number, sea: boolean) {
+      install(false, dt);
       solid(sea);
       refusal = Math.min(1, refusal + dt / 0.55);
       drum.rotation.z = Math.sin(refusal * Math.PI * 6) * (1 - refusal) * 0.12;
@@ -172,10 +199,11 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
         lightT += dt;
         drawCaps(Math.min(tech.POSTS.length, 1 + Math.floor(lightT / (1.5 / tech.POSTS.length))));
         if (lightT >= 1.5) lightT = -1;
-      } else drawCaps(sea ? tech.POSTS.length : 0);
+      } else drawCaps(installed ? tech.POSTS.length : 0);
     },
     targets(p: V3, sea: boolean): Interactable[] {
-      if (sea || Math.hypot(p.x - at.x, p.z - at.z) >= 3 || Math.abs(p.y - at.y) >= 2.2) return [];
+      if (!ready() || seating < 1 || sea || Math.hypot(p.x - at.x, p.z - at.z) >= 3 || Math.abs(p.y - at.y) >= 2.2)
+        return [];
       return [
         {
           id: 'railway-sea-switch',
@@ -196,6 +224,8 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
         y: at.y,
         z: at.z,
         pulled: rail(adapter.read.world()).sea,
+        installed,
+        seating,
         handleAngle: handle.rotation.z,
         refusal,
       },

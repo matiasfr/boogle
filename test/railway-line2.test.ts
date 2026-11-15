@@ -25,6 +25,7 @@ import {
   railSession,
   railSupplyPulse,
   railTick,
+  railwayAtHook,
   railwayAtQ4,
   railwayAtQ5,
   restore as restored,
@@ -198,7 +199,7 @@ test('Q1-Q3 fund atomically from logs and rails; depot, hook and lever follow ac
   rails(w, 'b', 'Q2', 12);
   restoreIn(w);
   finishQ(w, 1);
-  assert.deepEqual(line2Routes(line2Completed(w.w)), { hook: true, quarry: false });
+  assert.deepEqual(line2Routes(line2Completed(w.w)), { hook: true, quarry: false, sea: false });
   assert.equal(act(w, 'a', 'rail.lever'), 0, 'drive uncoupled before Q3');
   assert.equal(act(w, 'a', 'rail.hook'), 1);
   assert.equal(act(w, 'b', 'rail.hook'), 0, 'one shared device');
@@ -275,7 +276,6 @@ test('malformed line-two documents fail atomically', () => {
   const cases: [string, (j: Snap) => void][] = [
     ['lever before Q3', (j) => (col(j, Rail, 'lever')[0] = 1)],
     ['hook before Q2', (j) => (col(j, Rail, 'hook')[0] = 1)],
-    ['glide before Q5', (j) => (col(j, Rail, 'glide')[0] = 1)],
     ['minted rail', (j) => (col(j, Forge, 'rack')[0] = forge(w.w).rack + 1)],
     ['unlit pour', (j) => (col(j, Forge, 'lit')[0] = -1)],
     [
@@ -511,10 +511,14 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   restoreIn(w);
 });
 
-test('the early sea switch opens once and reloads while Q5 still refuses both materials until Q4', () => {
+test('a previously pulled sea switch survives load and Q5 still refuses both materials until Q4', () => {
   const early = railwayAtQ4();
   assert.equal(line2Completed(early.w), 3);
-  assert.equal(act(early, 'a', 'rail.seaSwitch'), 1);
+  assert.equal(act(early, 'a', 'rail.seaSwitch'), 0, 'a new pull before Q4 is refused');
+  // The old build allowed this flag at Q2/Q3. Preserve its saved value without a migration.
+  const previous = early.w.snapshot();
+  previous.c[Rail.kind]![1 + Rail.names.indexOf('sea')]![0] = 1;
+  early.w.load(previous, railwayCheck);
   assert.equal(act(early, 'b', 'rail.seaSwitch'), 0, 'the first pull is the only accepted pull');
   assert.equal(line2SeaOpen(early.w), true);
   restoreIn(early);
@@ -656,26 +660,46 @@ test("the away credit runs Q4's cart too: shelf rails come off the poured rack, 
   assert.equal(invariant(w.w), null);
 });
 
-test('the glider: sealed until Q5, one shared take after, kept through load; it opens no Works step early', () => {
-  const w = railwayAtQ5('q5-finishing');
-  assert.equal(act(w, 'a', 'rail.glide'), 0, 'sealed while Q5 is still laying');
-  assert.equal(rail(w.w).glide, false);
-  finishQ(w, 4);
-  assert.equal(line2Completed(w.w), 5);
+test('first-climb glider: shared, idempotent and persistent at Q2; opens no later job', () => {
+  const w = railwayAtHook();
+  restoreIn(w); // A room saved after the hook or after the old summit visit, before a glider take.
+  assert.equal(line2Completed(w.w), 2);
+  const oldSummit = w.w.snapshot();
+  oldSummit.c[Rail.kind]![1 + Rail.names.indexOf('sea')]![0] = 1;
+  const oldRoom = createRailwayWorld();
+  oldRoom.load(oldSummit, railwayCheck);
+  assert.equal(rail(oldRoom).sea, true, 'the old first-climb Q2 sea pull also loads unchanged');
+  assert.equal(line2Completed(oldRoom), 2);
+  assert.equal(qjob(oldRoom, 4).start, -1, 'an old Q2 sea pull never laid Q5 early');
   assert.equal(act(w, 'a', 'rail.glide'), 1);
-  assert.equal(act(w, 'b', 'rail.glide'), 0, 'one shared take: a second is a noop');
-  assert.equal(rail(w.w).glide, true);
+  assert.equal(act(w, 'b', 'rail.glide'), 0);
   restoreIn(w);
-  assert.equal(rail(w.w).glide, true, 'kept through load');
-  // Reaching places early is fine; funding or opening a Works step early is not (route-contract rec 1).
-  for (const id of [0, 1]) assert.equal(act(w, 'a', 'rail.strike', { id }), 0, `seam ${id}`);
+  assert.equal(rail(w.w).glide, true);
+  railSession(w.w, 'late', 1);
+  assert.equal(rail(w.w).glide, true, 'late join inherits the shared flag');
+  assert.equal(act(w, 'late', 'rail.glide'), 0);
+  assert.equal(act(w, 'a', 'rail.seaSwitch'), 0);
+  assert.equal(act(w, 'a', 'rail.lever'), 0);
+  assert.equal(act(w, 'a', 'rail.boilerTake', { revision: 0 }), 0);
+  for (const id of [0, 1]) assert.equal(act(w, 'a', 'rail.strike', { id }), 0);
   assert.equal(act(w, 'a', 'rail.kiln'), 0);
   assert.equal(act(w, 'a', 'rail.footTake', { rack: 0 }), 0);
-  // A document with the glider before Q5 is refused whole.
-  const early = railwayAtQ5('q4-done');
-  const was = hash(early.w);
-  const snap = early.w.snapshot();
-  snap.c[Rail.kind]![1 + Rail.names.indexOf('glide')]![0] = 1;
-  assert.throws(() => early.w.load(snap, railwayCheck), /railway: glide before Q5/);
-  assert.equal(hash(early.w), was);
+  chop(w, 'a');
+  assert.ok(act(w, 'b', 'rail.forgeTake') > 0, 'the early refusal is tested with rails in hand');
+  for (const station of ['Q4', 'Q5', 'Q6']) {
+    assert.equal(act(w, 'a', 'rail.deposit', { station, n: 8, kind: 0 }), 0);
+    assert.equal(act(w, 'b', 'rail.deposit', { station, n: 8, kind: 2 }), 0);
+  }
+  assert.equal(qj(w.w, 4).start, -1);
+});
+
+test('an old Q5 glider save retains both abilities and its open gate', () => {
+  const w = railwayAtQ5('q5-done');
+  assert.equal(act(w, 'a', 'rail.glide'), 1);
+  const before = hash(w.w);
+  restoreIn(w);
+  assert.equal(hash(w.w), before);
+  assert.equal(rail(w.w).glide && rail(w.w).hook && rail(w.w).sea, true);
+  assert.equal(act(w, 'b', 'rail.glide'), 0);
+  assert.equal(act(w, 'b', 'rail.seaSwitch'), 0);
 });

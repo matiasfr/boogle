@@ -147,7 +147,7 @@ for (const delay of [0, 1, 2, 3, 4, 5])
 
 // ---------------------------------------------------------------- waitsForTrain
 test('waitsForTrain: a train-fed active stretch with no bill waits for the train until the trains run or the bill starts', () => {
-  const w = buildSeedWorld('glide-earned').w as World;
+  const w = buildSeedWorld('q5-done').w as World;
   const rw = w as unknown as ReadWorld;
   const active = line2Active(rw);
   assert.equal(active, 5, 'the Pier stretch is active');

@@ -443,18 +443,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
     }
     if (k === 3) {
       assert.equal(qjob(w(), 3).completion, 0, 'Q4 has not been built');
-      const { adapter, mirror: seaMirror, corrections, effects } = racer('sea-predict', { x: 1011.8, y: 102.4, z: -6 });
-      assert.equal(adapter.pullSeaSwitch(), true, 'sea switch predicts on the press');
-      assert.equal(rail(adapter.read.world()).sea, true);
-      assert.equal(line2SeaOpen(adapter.read.world()), true, 'the early press immediately predicts the open gate');
-      assert.equal(rail(seaMirror.confirmed()).sea, false, 'confirmed mirror waits');
-      assert.equal(act('b', 'rail.seaSwitch'), 1, 'a friend pulled it first');
-      assert.equal(act('a', 'rail.seaSwitch'), 0, 'the pending press settles as noop');
-      assert.equal(corrections.length, 0, 'a shared flag that holds gives no correction effect');
-      assert.equal(effects.filter((e) => e.op === 'rail.seaSwitch').length, 1, 'the pull only plays once');
-      assert.equal(line2SeaOpen(adapter.read.world()), true);
-      assert.equal(adapter.read.pending(), 0, 'the noop acknowledges the predicted press');
-      adapter.dispose();
+      assert.equal(act('b', 'rail.seaSwitch'), 0, 'Q4 has not seated the control');
       chop('b');
       assert.ok(act('b', 'rail.forgeTake') > 0);
       const held = [acct('b').carry, acct('b').rails];
@@ -468,8 +457,31 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
       reload.join('returning');
       reload.pump();
       agree(reload, 'returning');
-      assert.equal(rail(reload.mirrors.get('returning')!.confirmed()).sea, true, 'reload keeps the early pull');
+      assert.equal(
+        rail(reload.mirrors.get('returning')!.confirmed()).sea,
+        false,
+        'reload keeps the gate shut before Q4',
+      );
       assert.equal(qjob(reload.api.world(), 3).completion, 0, 'reload did not complete Q4');
+    }
+    if (k === 4) {
+      const {
+        adapter,
+        mirror: seaMirror,
+        corrections,
+        effects,
+      } = racer('sea-predict', { x: 1174.02, y: 38, z: -36.27 });
+      assert.equal(adapter.pullSeaSwitch(), true, 'sea switch predicts on the press');
+      assert.equal(rail(adapter.read.world()).sea, true);
+      assert.equal(line2SeaOpen(adapter.read.world()), true, 'the Q4 press immediately predicts the open gate');
+      assert.equal(rail(seaMirror.confirmed()).sea, false, 'confirmed mirror waits');
+      assert.equal(act('b', 'rail.seaSwitch'), 1, 'a friend pulled it first');
+      assert.equal(act('a', 'rail.seaSwitch'), 0, 'the pending press settles as noop');
+      assert.equal(corrections.length, 0, 'a shared flag that holds gives no correction effect');
+      assert.equal(effects.filter((e) => e.op === 'rail.seaSwitch').length, 1, 'the pull only plays once');
+      assert.equal(line2SeaOpen(adapter.read.world()), true);
+      assert.equal(adapter.read.pending(), 0, 'the noop acknowledges the predicted press');
+      adapter.dispose();
     }
     if (spec.feed === 'train') {
       // Clear the remaining hand-carried units before shouldering the unique boiler.
@@ -508,7 +520,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
     advance(2000);
     assert.equal(qjob(w(), k).completion, 1, `Q${k + 1} complete`);
     if (k === 1) assert.equal(act('a', 'rail.hook'), 1);
-    if (k === 4) {
+    if (k === 1) {
       // Both take the glider within one round trip: the friend's take wins, a's predicted take settles as noop with
       // no correction, so a's arrival keeps its card and the reward plays once.
       const glide = racer('glide-predict', { x: 1016, y: 102.4, z: -4.5 });

@@ -88,7 +88,7 @@ export async function createRailwayHookView(owner: OwnedView) {
       under.position.set(p.x + ox, p.top - thick - 0.04, p.z);
     }
   }
-  const ringMesh = add(new THREE.InstancedMesh(new THREE.TorusGeometry(0.55, 0.09, 8, 22), ringMat, rings.length + 1));
+  const ringMesh = add(new THREE.InstancedMesh(new THREE.TorusGeometry(0.55, 0.09, 8, 22), ringMat, rings.length + 2));
   const climbRings = rings.length;
   const posts = add(
     new THREE.InstancedMesh(new THREE.BoxGeometry(0.22, 1, 0.22), flatMod.flat('#917b5e', 0.9), climbRings),
@@ -111,7 +111,7 @@ export async function createRailwayHookView(owner: OwnedView) {
     hot = new THREE.Color('#d6fff5'),
     color = new THREE.Color();
   // Allocate instanceColor before the first material compilation; later updates change its contents.
-  for (let k = 0; k <= climbRings; k++) ringMesh.setColorAt(k, dim);
+  for (let k = 0; k <= climbRings + 1; k++) ringMesh.setColorAt(k, dim);
   ringMesh.count = rings.length;
   /** Ring Island's ring (ring-island-build1, R4b): on a sea pile 276 m out, its pad the railhead platform's gold square. It
    * joins the rings once the gap is footed (set === 14), and leaves them if the room is rewound. */
@@ -132,17 +132,29 @@ export async function createRailwayHookView(owner: OwnedView) {
       land: { x: pad.x, y: pad.top + 0.45 + 0.2, z: pad.z },
     };
   })();
-  function setIslandRing(on: boolean) {
-    if (on === ringById.has('island')) return;
+  const jamb: HookRing = {
+    id: 'sea-jamb',
+    pad: tech.SEA_LEDGE,
+    at: { ...tech.SEA_RING, x: tech.SEA_RING.x + ox },
+    land: { x: tech.SEA_LEDGE.x + ox + 1.2, y: tech.SEA_LEDGE.top + 0.65, z: tech.SEA_LEDGE.z },
+  };
+  function setRing(ring: HookRing, on: boolean) {
+    if (on === ringById.has(ring.id)) return;
     if (on) {
-      rings.push(island);
-      ringById.set('island', island);
+      rings.push(ring);
+      ringById.set(ring.id, ring);
     } else {
-      rings.splice(rings.indexOf(island), 1);
-      ringById.delete('island');
+      rings.splice(rings.indexOf(ring), 1);
+      ringById.delete(ring.id);
     }
     ringMesh.count = rings.length;
   }
+  const setIslandRing = (on: boolean) => setRing(island, on);
+  let seaSwing = 1;
+  const setSeaRing = (on: boolean, snap: boolean) => {
+    if (on && !ringById.has(jamb.id)) seaSwing = snap ? 1 : 0;
+    setRing(jamb, on);
+  };
   const camAt = new THREE.Vector3();
   // Where the island's ring faces while it sleeps: out over the gap, to the folk's brace platform it brings you home from.
   const islandFaces = new THREE.Vector3();
@@ -251,6 +263,7 @@ export async function createRailwayHookView(owner: OwnedView) {
      * before the hook, and turned to the far side it serves rather than to you. */
     asleep: HookRing | null = null,
   ) {
+    seaSwing = Math.min(1, seaSwing + dt / 0.8);
     camera.getWorldPosition(camAt);
     rings.forEach((r, k) => {
       const bright = r === pick || r === pull || (now < blinkUntil && range.has(r)),
@@ -258,6 +271,7 @@ export async function createRailwayHookView(owner: OwnedView) {
       pose.position.set(r.at.x, r.at.y, r.at.z);
       if (r === asleep) pose.lookAt(islandFaces);
       else pose.lookAt(camAt);
+      if (r === jamb) pose.rotateY(((1 - seaSwing) * Math.PI) / 2);
       pose.scale.setScalar(bright ? 1.18 + Math.sin(now * 0.012) * 0.05 : inRange ? 1.05 : 0.92);
       pose.updateMatrix();
       ringMesh.setMatrixAt(k, pose.matrix);
@@ -320,6 +334,7 @@ export async function createRailwayHookView(owner: OwnedView) {
     rings,
     ringById,
     setIslandRing,
+    setSeaRing,
     update,
     fire,
     end,

@@ -1,6 +1,121 @@
-> **Status: proposed (2026-11-15). Design only; nothing built, nothing dispatched, no owner decision recorded.**
-> Answers the open half of [the owner's 15 November answer 3](../decisions-core-loop.md#d-2026-11-15-grant-queue-answered):
-> the order of the hook shot, Needle Bell's summit, the glider and the gate on the first line. Base: `303e30a8a`.
+> **Status: candidate A approved and implemented on 15 November 2026; validated for independent review, not shipped.**
+> Owner picks: "fly first" and "Yes, for now". Recorded first in
+> [the dated decision](../decisions-core-loop.md#d-2026-11-15-fly-first); supersessions and Current rules updated;
+> `npm run decisions` passed. Independent review belongs to the parent.
+>
+> **Save / mixed-build exception:** the owner's explicit instruction to preserve progressed rooms replaces this
+> proposal's namespace-reset item (review call 24). No saved shape, operation name or existing ring id changes;
+> `WORLD_NS` stays unchanged. Hook-only and past-summit rooms can take the now-live device; owned gliders remain
+> owned. An old `sea=true` at Q2/Q3 stays open and still cannot fund Q5 early. New pulls require Q4. The glider's
+> old `done >= 5` load invariant is removed; checksum, atomic-load and conservation guards stay. Old tabs must
+> reload: their summit sea-switch commands fail the new server's position check, and their old seal view remains
+> stale until reload. New early-glider saves cannot be rolled back to the old validator; update server and clients
+> together. No version fence, migration framework or promise of old-client presentation compatibility is added.
+>
+> **Designer items implemented:** empty socket from start; Q4 drum seating/ring swing and gate-post lights;
+> far-jamb landing above double-jump interaction reach even from the headstock; first-climb faint glider with no
+> shaft/seal/wake; forge-facing vane; Q5 retains boiler/Far Head; carry restrictions, shared take/flourish and Glide
+> glyph retained; alcove/firstpull bay availability deferred to trains; loop orders, bot and seeds updated.
+> Hook-to-glider timing and fun are not established by checks. The climb is optional and flight does not shorten
+> subsequent hauling, as the owner accepted. G17/G18 remain their separately queued control work.
+
+## Implementation evidence, 15 November
+
+The namespace remains `v47`, following the owner's explicit save requirement. No saved field was added or moved.
+Past-hook and past-summit saves load directly and may take the glider; previous Q5 gliders retain ownership;
+previous early sea pulls retain their open gate and continue to Q5 only after Q4. Host tests cover restart,
+old-summit position rejection, one shared Q2 take and duplicate requests; replica tests cover races and reload.
+
+The seed golden changes **only `glide-earned`** (Q2, tick 1582, rather than Q5, tick 3099). The adapter trace is
+re-recorded for the deliberate early-glider/Q4-sea rules and that seed: 33 client rows across fresh through
+`glide-earned` change; later stages, prediction-only trace and all tick-order fixtures stay identical. This is
+part of the owner's save-preserving rule-change exception, not a refactor golden refresh. The malformed-save
+corpus drops only the removed Q5-glider restriction. The train-wait test now uses `q5-done`, and the host-read
+expectation for `glide-earned` describes Q2. Independent review should check these keyed differences.
+
+**Checks:** `npm run decisions` passes (no quote loss); `npm run check` passes (2,172 unit tests, lint,
+typecheck, registry, level checks, assets, prefabs and Vite build); `npm --prefix server test` passes (387 tests);
+`npm run checkpoints` passes (25 server-save seeds); `npm run loop -- run` passes all modelled orders;
+`npm run test:net` passes 190/190 checks. The targeted line-two/replica tests passed 30/30 and host tests 8/8;
+after strengthening the material-carry refusal probe, line-two passed 17/17. Final tooling edits passed lint
+and typecheck again. After connecting the jamb masonry, lint, typecheck, prefab build, 15 prefab tests,
+place level-check and Vite build passed again.
+
+**Required level states:** `hook-glide-q2` passes with actual logs/rails carried: the balcony is reachable,
+Far Head and the sea stack are not, and no later gate, boiler, kiln or Q4/Q5/Q6 bill starts early.
+`second-jump-no-hook-q4` passes: even granting access to the machine gantry/headstock and nearby terrain,
+the double-jump interaction ceiling is 36.98 m, below the 38 m switch; the hook pull is 17.57 m of its 24 m range.
+This is a conservative reach bound, not a physics trajectory witness. `npm run level-check -- --place=place`
+passes all 11 reports. Existing report-only z-fight rows and planned-track warnings remain; no new allowances.
+
+**Rendered evidence:** solo `--to t1-done` passes; two-player `--to T2 --warp-speed 3` passes with 232
+matching same-step hashes (`.look/playthrough/ability-order-t1` and `.look/playthrough/ability-order-coop`).
+The co-op harness flags warp-clock drift; it is functional evidence, not timing/feel evidence. The first co-op
+attempt timed out after both pages returned to spawn during tooling edits (suspected module reload); its report
+is retained under `.look/playthrough/ffa19bc09`. The unchanged-source rerun completes. `world-inputs` passes.
+
+The Q2 take-and-flight probe passes: finder card, one flight, dry landing 4.1 m from the forge apron target,
+10 m/s full-stick speed and 3.2 m/s sink. The final gate probe passes with real input: one pull, dry jamb landing
+at y 38.44 m, accepted switch and removed gate collider. Stills and motion sheets were inspected; real-time motion,
+phone controls, the full fresh route through Q5 and live Q4 installation timing remain unverified.
+
+**Still paths (relative to this checkout):**
+
+- `.look/ability-glider-first-v2-still.png` — lit, unsealed first-climb prize at Q2.
+- `.look/ability-gate-empty-final-still.png` — permanent empty mount, no drum/ring at Q2.
+- `.look/ability-gate-final-still.png` — Q4 drum/ring on the connected far jamb, away from the machine.
+- `.look/ability-summit-gate-final-still.png` — **yes, the sea gate is visible from the summit's east edge**.
+- `.look/ability-first-flight-motion.png` and `.look/ability-first-flight-curves.png` — take and glide home.
+- `.look/ability-gate-pull-final-motion.png` — one hook pull, then the gate drops.
+
+Logs are retained in `.look/ability-order/checks/`. The initial incorrectly framed stills and the unenabled
+prefab captures are superseded by the final paths above. The ring and drum placement, landing height and reach
+anchor are shared with the level/authority checks; the masonry connector's top is below the headstock bound.
+
+**Files touched by the implementation (the plan cherry-pick is separate):**
+
+```text
+content/built/prefabs.json
+dev/economy/place-level.ts
+dev/look/bots/railway.ts
+dev/look/evals/jump-land-probe.ts
+dev/loop/graph.ts
+dev/loop/run.ts
+docs/agent-calls.md
+docs/decisions-archive.md
+docs/decisions-core-loop.md
+docs/decisions-process.md
+docs/game-design/place.md
+docs/plans/ability-order.md
+server/test/railway-line-host.test.ts
+src/adapters/railway-intents.ts
+src/content/prefabs/railway.ts
+src/entities/railway/glide-device-view.ts
+src/entities/railway/halts-view.ts
+src/entities/railway/hook-shot.ts
+src/entities/railway/hook-view.ts
+src/entities/railway/line2-view.ts
+src/entities/railway/sea-gate-view.ts
+src/place/tech-layout.ts
+src/sim/railway-check-line2.ts
+src/sim/railway-line2-layout.ts
+src/sim/railway-seeds.ts
+src/sim/railway-sys-line2.ts
+src/world/railway-jump.ts
+src/world/railway-server.ts
+test/fixtures/railway-bad-worlds.ts
+test/fixtures/railway-golden.json
+test/fixtures/railway-m12-trace.json
+test/railway-line2.test.ts
+test/railway-m10c-review.test.ts
+test/railway-m11-review.test.ts
+test/railway-m12.test.ts
+test/railway-replicate.test.ts
+```
+
+**Draft copy for the owner (not The Boogler):** removed “Sealed until the line reaches Far Head”, “The glider is
+awake”, and “Up on Needle Bell’s summit”. Jump-in line changed from “Q4 laid; the summit switch is next” to
+“Q4 laid; the sea gate switch is next”. Existing “Take it”, “The glider”, “Open it in the air.” and “Pull” stay.
 
 # The order of the hook, the summit, the glider and the sea gate
 

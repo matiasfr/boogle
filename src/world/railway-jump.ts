@@ -3,7 +3,14 @@
 // the arrival's landing) and the server (server/src/jump.ts) both import it. Only `type SeedStage` comes from the seed
 // builders, so none of their code reaches the client bundle. Adding a row: src/sim/railway-seeds.ts's header.
 import type { SeedStage } from '../sim/railway-seeds.ts';
-import { LINE2_BOILER, LINE2_HOOK, LINE2_LEVER, LINE2_SEA, LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
+import {
+  LINE2_BOILER,
+  LINE2_GLIDE,
+  LINE2_HOOK,
+  LINE2_LEVER,
+  LINE2_SEA,
+  LINE2_STATIONS,
+} from '../sim/railway-line2-layout.ts';
 import { RING_HALT, RING_HEAD, RING_JOINT_UP, RING_STEEL_WORKS, ringAt } from '../sim/railway-ring-layout.ts';
 import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN } from '../sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../sim/railway-lines.ts';
@@ -102,8 +109,8 @@ export const JUMPS: readonly Jump[] = [
   {
     stage: 'q4-done',
     label: 'Sea switch',
-    line: 'Q4 laid; the summit switch is next',
-    land: near(LINE2_HOOK, -3, 0.5, LINE2_HOOK.y / 100, LINE2_SEA), // on p2's pad, facing the rings up to the summit
+    line: 'Q4 laid; the sea gate switch is next',
+    land: near(LINE2_STATIONS[4]!, -3, 4, 24.3, LINE2_SEA), // beside Q5's frame, facing the gate's jamb
   },
   {
     stage: 'q5-done',
@@ -115,7 +122,7 @@ export const JUMPS: readonly Jump[] = [
     stage: 'glide-earned',
     label: 'Glide earned',
     line: "The glider is yours, up on Needle Bell's summit",
-    land: near(LINE2_SEA, 2.2, 1, 102.4, LINE2_STATIONS[0]!), // on the summit deck, facing the glide home
+    land: near(LINE2_GLIDE, -2, -0.5, LINE2_GLIDE.y / 100, LINE2_STATIONS[0]!), // on the summit deck, facing the glide home
   },
   { stage: 'trains-on', label: 'Trains running', line: 'The boiler is fitted and both lines run' },
   // Slice 5 (R1, R2). Its position was checked with a still on Windows/Edge, 12 November (on the platform, not

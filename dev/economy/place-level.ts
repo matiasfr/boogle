@@ -3,11 +3,20 @@
 // limits: from spawn, what can you reach on foot, in each state of the job? And it reports how long the walks really are.
 // It floods the 2 m grid of src/place/terrain.ts at the player's walkable slope, plus what's solid to walk on (footbridges
 // and laid track). It doesn't know about props in the way, which only the play-through (the railway bot, dev/look/bots/railway.ts) tests.
+import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
+import { act } from '../../src/sim/railway-seed-route.ts';
+import { account, qjob, rail, trees } from '../../src/sim/railway-rows.ts';
+import { line2Routes, LINE2_SEA } from '../../src/sim/railway-line2-layout.ts';
+import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { WALKABLE_NY } from '../../src/constants.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/place/terrain.ts';
 import {
   DEVICES,
   GATES,
+  GATE_SLAB,
+  SEA_LEDGE,
+  SEA_RING,
+  SEA_SWITCH,
   JUMP_COURSE,
   JUMP_RECOVERY,
   LEVER,
@@ -434,6 +443,67 @@ export function runPlaceLevelCheck() {
       must(got, id, 'a ring in range from where you can stand');
     mustNot(got, 'balcony', 'the balcony needs the glider');
     mustNot(got, 'stack', 'the sea stack needs the glider');
+
+    section('hook-glide-q2', '\nHook + glide, line at Q2: early reach does not open later jobs');
+    got = padsReachable(st3, { jump: true, hook: true, glide: true }, E2);
+    must(got, 'balcony', 'the optional first-flight secret');
+    mustNot(got, 'stack', 'the sea stack still needs the later line');
+    mustNot(got, 'glide-home', 'Far Head stays beyond the early flight');
+    const early = buildSeedWorld('glide-earned');
+    assertion(
+      rail(early.w).hook &&
+        rail(early.w).glide &&
+        qjob(early.w, 1).completion === 1 &&
+        qjob(early.w, 2).completion === 0,
+      'the accepted fixture has both moves at Q2, before Q3',
+    );
+    assertion(!line2Routes(2).sea, 'Q2 offers no sea drum, ring or prompt');
+    for (const op of ['rail.seaSwitch', 'rail.lever', 'rail.boilerTake', 'rail.kiln'])
+      assertion(act(early, 'a', op, { revision: 0 }) === 0, `${op} cannot open early`);
+    for (let strokes = 0; strokes < 100 && account(early.w, 'a')!.carry === 0; strokes++) {
+      const k = trees(early.w).findIndex((tree) => tree.left > 0);
+      act(early, 'a', 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false });
+    }
+    assertion(
+      account(early.w, 'a')!.carry > 0 && account(early.w, 'b')!.rails > 0,
+      'the early visitors carry logs and rails',
+    );
+    for (const station of ['Q4', 'Q5', 'Q6']) {
+      for (const kind of [0, 2])
+        assertion(
+          act(early, kind === 0 ? 'a' : 'b', 'rail.deposit', { station, n: 8, kind }) === 0,
+          `${station} refuses early ${kind === 0 ? 'logs' : 'rails'}`,
+        );
+    }
+    assertion(
+      [3, 4, 5].every((k) => qjob(early.w, k).start < 0),
+      'no later stretch funds or starts laying',
+    );
+
+    section('second-jump-no-hook-q4', '\nSecond jump, no hook, Q4 laid: the far jamb stays out of reach');
+    const gate = GATES.sea;
+    // Deliberately grant the player the entire headstock AND a 6 m-high machine gantry, regardless of whether
+    // they can get there. Both are below the landing. This upper bound includes jumping off the parked machine
+    // onto the slab/jamb/headstock, then another double jump and even the server's generous interaction reach.
+    let launch = Math.max(gate.y + GATE_SLAB.h + 0.8 + 0.7, railY(E, 286) + 6);
+    for (let x = SEA_LEDGE.x - 20; x <= SEA_LEDGE.x + 20; x++)
+      for (let z = SEA_LEDGE.z - 20; z <= SEA_LEDGE.z + 20; z++) launch = Math.max(launch, H(x + ORIGIN.x, z));
+    const highestHand = launch + TWO_JUMPS + 0.45 + 2.6;
+    assertion(
+      SEA_SWITCH.y > highestHand,
+      `even from machine/headstock/nearby terrain: switch ${SEA_SWITCH.y.toFixed(2)} m > double-jump interaction ceiling ${highestHand.toFixed(2)} m`,
+    );
+    assertion(SEA_LEDGE.top > launch + TWO_JUMPS, 'no second jump reaches the landing');
+    assertion(
+      SEA_SWITCH.y === SEA_LEDGE.top && Math.abs(LINE2_SEA.x / 100 - ORIGIN.x - SEA_SWITCH.x) < 0.01,
+      'the authority and visible mount use the same location',
+    );
+    const hookDistance = Math.hypot(SEA_RING.x - gate.x, SEA_RING.y - (gate.y + 1), SEA_RING.z - gate.z);
+    assertion(
+      hookDistance < MOVE.hookRange,
+      `one hook pull from the gate: ${hookDistance.toFixed(2)} m < ${MOVE.hookRange} m`,
+    );
+    assertion(line2Routes(4).sea && !line2Routes(3).sea, 'Q4 alone seats the drum and ring');
 
     const E3: [Line, number, number][] = [
       [N, 30, N.len],

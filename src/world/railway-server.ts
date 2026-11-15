@@ -269,7 +269,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.hook':
       return height(LINE2_HOOK.y) && near(LINE2_HOOK.x, LINE2_HOOK.z, 320);
     case 'rail.glide':
-      // Readiness (Q5 laid, not yet taken) is the rule's; here only the summit device's reach.
+      // Readiness (not yet taken) is the rule's; here only the summit device's reach.
       return height(LINE2_GLIDE.y) && near(LINE2_GLIDE.x, LINE2_GLIDE.z, 320);
     case 'rail.breaker':
       return at(WORKS_BREAKER);

@@ -307,10 +307,10 @@ export const hook = defineSystem('rail.hook', { reads: [QJob], writes: [Rail], p
   w.mut(Rail, railId(w))!.hook = true;
   return 1;
 });
-// The glider on Needle Bell's summit (glider piece B): sealed until Q5 is laid, then one shared take for the room.
+// The summit prize: available on the first climb, one shared take for the room.
 // Order 40: after the Works block (33-39).
-export const glide = defineSystem('rail.glide', { reads: [QJob], writes: [Rail], phase: 'act', order: 40 }, (w) => {
-  if (qCompleted(w) < 5 || w.get(Rail, railId(w))!.glide) return 0;
+export const glide = defineSystem('rail.glide', { writes: [Rail], phase: 'act', order: 40 }, (w) => {
+  if (w.get(Rail, railId(w))!.glide) return 0;
   w.mut(Rail, railId(w))!.glide = true;
   return 1;
 });
@@ -318,7 +318,7 @@ export const seaSwitch = defineSystem(
   'rail.seaSwitch',
   { writes: [Rail, QJob, QJobRun, Forge, Cart, Train], phase: 'act', order: 28 },
   (w, { tick, timing }: Act) => {
-    if (w.get(Rail, railId(w))!.sea) return 0;
+    if (qCompleted(w) < 4 || w.get(Rail, railId(w))!.sea) return 0;
     w.mut(Rail, railId(w))!.sea = true;
     fundQ(w, 4, tick, timing);
     return 1;

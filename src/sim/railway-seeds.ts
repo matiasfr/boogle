@@ -146,10 +146,10 @@ export function buildSeedWorld(stage: SeedStage): Seed {
     if (stage === 'q4-stocked') cartUnloads(s, stage, 3);
     return s;
   }
-  // Glider piece B: the room has taken the glider (the dev grant's replacement); and, look only, Q5's single 24-rail
+  // First-climb glider at Q2; and, look only, Q5's single 24-rail
   // shipment on its way and on the shelf.
   if (stage === 'glide-earned') {
-    const s = railwayAtQ5('q5-done');
+    const s = railwayAtHook();
     need(act(s, 'a', 'rail.glide') === 1, 'glide-earned: the take');
     return s;
   }

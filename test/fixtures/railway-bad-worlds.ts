@@ -251,7 +251,6 @@ export const BAD_WORLDS: readonly BadWorld[] = [
   { site: 'line2 cart', message: 'railway: cart', stage: A, break: (w) => set(w, Cart, { phase: 8 }) },
   { site: 'line2 lever', message: 'railway: lever before Q3', stage: Q, break: (w) => set(w, Rail, { lever: true }) },
   { site: 'line2 hook', message: 'railway: hook before Q2', stage: A, break: (w) => set(w, Rail, { hook: true }) },
-  { site: 'line2 glide', message: 'railway: glide before Q5', stage: Q, break: (w) => set(w, Rail, { glide: true }) },
   {
     site: 'line2 pack',
     message: 'railway: pack before the forge bill',

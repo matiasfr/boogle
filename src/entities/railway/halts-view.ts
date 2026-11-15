@@ -763,10 +763,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       // Lit, the same dashed square stands where the next footing is wanted: the stall, then the pier (A4).
       footingMark(w),
     );
-    // The glider waiting on Needle Bell's summit: woken (Q5 laid) and not yet taken by the room.
-    boards.glider(
-      line2Completed(w) >= 5 && !railRow(w).glide ? { x: LINE2_GLIDE.x / 100, z: LINE2_GLIDE.z / 100 } : null,
-    );
+    // The glider waiting on Needle Bell's summit: lit from the start and not yet taken by the room.
+    boards.glider(!railRow(w).glide ? { x: LINE2_GLIDE.x / 100, z: LINE2_GLIDE.z / 100 } : null);
     boards.update(dt);
   }
   const tick = (dt: number) => {

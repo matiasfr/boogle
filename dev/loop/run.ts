@@ -607,7 +607,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     Q3: (pl) => quarry(g, pl, 2, byHand.has('Q3')),
     lever: (pl) => device(g, pl, LINE2_LEVER, 'rail.lever', ready('lever')),
     Q4: (pl) => quarry(g, pl, 3, byHand.has('Q4')),
-    sea: (pl) => device(g, pl, LINE2_SEA, 'rail.seaSwitch', () => true),
+    sea: (pl) => device(g, pl, LINE2_SEA, 'rail.seaSwitch', ready('sea')),
     Q5: (pl) => quarry(g, pl, 4, byHand.has('Q5')),
     glider: (pl) => device(g, pl, LINE2_GLIDE, 'rail.glide', ready('glider')),
     boiler: (pl) => boiler(g, pl),

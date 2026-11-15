@@ -75,4 +75,29 @@ export const prefabs = [
     scope: 'owner',
     attach: { sign: { kind: 'label', at: [0, 2.4, 0], facing: [0, 0, 1], w: 1.8, h: 0.8, posts: 'none' } },
   }),
+  // One tall far jamb with a broad landing and a visibly vacant square socket. Top is placement y.
+  definePrefab({
+    key: 'railway.sea-jamb',
+    visual: {
+      builder: 'greybox.box',
+      params: { colour: '#917b5e' },
+      batch: 'railway:sea-jamb',
+      instances: [
+        { pos: [0, -7, 0], scale: [1.8, 14, 1.8] },
+        // Tie the taller jamb into the existing gate base; its top stays below the headstock reach bound.
+        { pos: [1.1, -10.95, 0.35], scale: [2.2, 6.1, 1.8] },
+        { pos: [0, -0.3, 0], scale: [4.4, 0.6, 4.4] },
+        { pos: [-0.83, 0.12, 0], scale: [0.14, 0.24, 1.8] },
+        { pos: [0.83, 0.12, 0], scale: [0.14, 0.24, 1.8] },
+        { pos: [0, 0.12, -0.83], scale: [1.5, 0.24, 0.14] },
+        { pos: [0, 0.12, 0.83], scale: [1.5, 0.24, 0.14] },
+      ],
+    },
+    colliders: [
+      { shape: 'box', at: [0, -7, 0], half: [0.9, 7, 0.9] },
+      { shape: 'box', at: [1.1, -10.95, 0.35], half: [1.1, 3.05, 0.9] },
+      { shape: 'box', at: [0, -0.3, 0], half: [2.2, 0.3, 2.2] },
+    ],
+    scope: 'owner',
+  }),
 ];
