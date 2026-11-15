@@ -30,7 +30,8 @@ export const TRACK_LOD_HYSTERESIS_M = 15;
 export const FAR_KINDS = new Set(['rail', 'sleeper', 'sleeper_steel']);
 
 /** Piece of `kind` at `u`: its chunk. Without a kind, the heavy span. */
-export const chunkOf = (u: number, kind = 'rail') => Math.floor(u / (HEAVY.has(kind) ? TRACK_CHUNK_M : TRACK_LIGHT_CHUNK_M));
+export const chunkOf = (u: number, kind = 'rail') =>
+  Math.floor(u / (HEAVY.has(kind) ? TRACK_CHUNK_M : TRACK_LIGHT_CHUNK_M));
 
 export type ChunkRun = {
   kind: string;

@@ -4,7 +4,14 @@ import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
-import { account as accountRow, beam as beamRow, job as jobRow, rail as railRow } from '../../sim/railway-rows.ts';
+import {
+  account as accountRow,
+  beam as beamRow,
+  boiler as boilerRow,
+  job as jobRow,
+  rail as railRow,
+  works as worksRow,
+} from '../../sim/railway-rows.ts';
 import { activeStation, railJobs, timingOf } from '../../sim/railway-queries.ts';
 import { railPanelCount, railPanelStock, railPhase } from '../../sim/railway-queries-line1.ts';
 import { railCounts } from '../../sim/railway-queries-line2.ts';
@@ -22,6 +29,7 @@ import { railwaySession, registerRailwayYouGot, type RailwayScene, type RailwayV
 import { createRailwayArrival } from './arrival.ts';
 import { createReturnHalts } from './return-halts.ts';
 import { createRailwayOpening } from './opening-view.ts';
+import { createPartHoist } from './part-hoist.ts';
 import { createRailwayPath } from './path.ts';
 import { createRailwayPanelView } from './panel-view.ts';
 import { createRailwayLine2 } from './line2-view.ts';
@@ -118,6 +126,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     rails: cart.flying().rails + trains.trainFlying().rails,
   });
   line2.holdDepot(flying);
+  line2.riderIs(seats.seated);
   shelf.holdRails(flying);
   const works = worksPreview()
     ? await import('./works-live.ts').then((m) =>
@@ -257,7 +266,21 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     },
     owner,
   );
+  // The crane's hold of what waits on the pedestal (docs/plans/forge-call-handoff.md, step 2).
+  // (No crane: the view was torn down while the opening loaded.)
+  const hoist = opening.crane
+    ? createPartHoist(owner, {
+        crane: opening.crane,
+        land,
+        waits: () => {
+          const w = world();
+          if (boilerRow(w).state === 'pedestal') return 'boiler';
+          return works && worksRow(w).breaker === 1 ? 'breaker' : null;
+        },
+      })
+    : null;
   function restoreMotion() {
+    hoist?.restore();
     works?.restore();
     const active = activeNow(),
       spec = LINE1_STATIONS[active]!;
@@ -448,6 +471,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       if (rebuild === 'soft') {
         trains.restore();
         halts.restore();
+        hoist?.restore();
         works?.restore();
       }
       rebuild = null;
@@ -535,6 +559,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       trains.update(dt);
       halts.update(dt);
       homeStation.update();
+      hoist?.update(dt); // before the views that draw the part it holds
       works?.update(dt);
       line2.update(dt);
       hook.update(dt, now);
@@ -651,6 +676,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       pathOpen: opened(),
       line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect(), ...trains.inspect(), ...halts.inspect() },
       // The Works and Roundhouse views' own inspection; `works` and `shed` are the adapter's accepted state (J3).
+      hoist: hoist?.inspect().hoist ?? null,
       worksView: works?.inspect() ?? null,
       crossingView: works?.crossingInspect() ?? null,
     } satisfies RailwayScene;

@@ -23,6 +23,7 @@ import { readableIntensity } from '../../render/readable-unlit.ts';
 import { PLAYER_R, reducedMotion } from '../../constants.ts';
 import { LINE2_BOILER, LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts';
 import { createForgeCall } from './forge-call.ts';
+import { pedestalHold } from './part-hoist.ts';
 import { createBeamDrag, restGrip, type DragShape } from './beam-drag.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
@@ -160,7 +161,7 @@ export function createRailwayBoiler(
   // The forge's call while the boiler waits; Split-rock's breaker uses the same one (forge-call.ts). Its plume rises
   // from the forge's chimney, not the boiler: a boiler steaming on its pedestal reads as an engine already running
   // (owner, 9 November). The boiler first steams once it's fitted to the old train. The call starts 2 m above `at`.
-  const call = createForgeCall({ x: chimney.x, y: chimney.y - 2, z: chimney.z }, owner);
+  const call = createForgeCall({ x: chimney.x, y: chimney.y - 2, z: chimney.z }, owner, { x: bx, z: bz });
   let body: Body | null = null;
   let mote = 0,
     side = 1,
@@ -345,7 +346,8 @@ export function createRailwayBoiler(
     posing.clear();
     const b = boilerRow(read.world());
     const isLoose = b.state === 'pedestal' || b.state === 'ground';
-    if (isLoose) lay.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift), b.z / 100);
+    if (isLoose)
+      lay.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal + pedestalHold.lift : lift), b.z / 100);
     // Your own Pick up takes the rope the frame you press it, before the server's answer (a refusal drops it again).
     const grabbed = isLoose && now - grabbing < 1500 && read.pending() > 0;
     const holder = b.state === 'held' ? b.holder : grabbed ? read.pid : '';
@@ -365,7 +367,7 @@ export function createRailwayBoiler(
       if (hauled.visible && b?.state === 'ground') {
         const dir = trail.set(0, 0, 1).applyQuaternion(hauled.quaternion);
         loose.rotation.set(0, Math.atan2(dir.x, dir.z) + hauledModel.rotation.y, 0);
-      } else if (b?.state === 'pedestal') loose.rotation.set(0, 0, 0);
+      } else if (b?.state === 'pedestal') loose.rotation.set(0, pedestalHold.yaw, 0);
       drag.hide();
       hauled.visible = false;
       dragHolder = '';
@@ -433,7 +435,10 @@ export function createRailwayBoiler(
       owner.removeBody(body);
       body = null;
     }
-    loose.position.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift), b.z / 100);
+    // On the pedestal the forge's crane holds it up, turning (part-hoist.ts); put down mid-haul it lies on the ground.
+    const hung = b.state === 'pedestal' ? pedestalHold.lift : 0;
+    loose.position.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift) + hung, b.z / 100);
+    if (b.state === 'pedestal') pedestalHold.top = loose.position.y + box.max.y;
     frames++;
     mine.helping();
     haul(frameDt, now);
@@ -572,7 +577,7 @@ export function createRailwayBoiler(
         bx = b.x / 100,
         bz = b.z / 100;
       if ((b.state === 'pedestal' || b.state === 'ground') && Math.hypot(p.x - b.x / 100, p.z - b.z / 100) <= 3.6) {
-        const at = new THREE.Vector3(bx, b.y / 100 + 2, bz);
+        const at = new THREE.Vector3(bx, b.y / 100 + 2 + (b.state === 'pedestal' ? pedestalHold.lift : 0), bz);
         // It takes rail.boilerTake's empty back (no load, footing or beam) and, like the beam, empty hands.
         // Say so rather than offer nothing: a back still loaded from station 5 is common here (the forge rack 4.5 m
         // off offers no rails before trains, but logs or rails carried from elsewhere still block the take).
@@ -643,6 +648,8 @@ export function createRailwayBoiler(
           z: b.z / 100,
           mine: b.state === 'held' && b.holder === pid,
           pedestal: pedestal.visible,
+          looseY: loose.position.y,
+          call: call.inspect(),
           saddle: { x: saddle.x, y: saddle.y, z: saddle.z },
           hauled: hauled.visible,
           helper: mine.helperOf(b.holder) ? (mine.helping() === b.holder ? pid : 'remote') : null,

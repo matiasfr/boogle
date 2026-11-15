@@ -181,6 +181,8 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   let population = -1;
   const people = () => townPopulation(townRead(env.progress.world()));
   return {
+    /** The forge's crane, for the hoist that holds what the forge casts (part-hoist.ts). */
+    crane,
     targets: greeter.targets,
     numbers(score: { money: number; logs: number; metres: number }, snapshot = false) {
       signs.setNumbers(score, people(), snapshot);

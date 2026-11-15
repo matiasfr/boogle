@@ -1,4 +1,5 @@
-> **Status: proposed (2026-11-15); design only, nothing built.** Queue item D1 of
+> **Status: built on a branch, not shipped (2026-11-15): steps 1, 3 and 5 whole, step 2 without the reach, step 4 found
+> already built; the reach and step 6 are sim work, listed under [As built](#as-built-15-november-2026).** Queue item D1 of
 > [grant-1114-queue](grant-1114-queue.md). Base: `bff2e6203`. Steps 1 to 5 are Local view work with no bump, except step 2's
 > reach, which the server also checks (see the design review). Step 6 is a room tunable. Nothing here changes a rule, a
 > bill or an order. Facts corrected in place by the design review of 15 November, each marked "(corrected)".
@@ -108,12 +109,12 @@ steps 1 and 2 have not been tried yet. If the next first-time player still walks
 
 Each is player-visible view work: implementer agent (fable, medium), then a visual review by a fresh subagent.
 
-- [ ] 1. The hand-off cut on Far Head's shot and the pier show; the whistle at the cut's start.
-- [ ] 2. The crane holding the part 1.6 m up; three waving little guys within 30 m; prompt reach 6 m.
-- [ ] 3. The rail rack's dashed mark (the blocked prompt's reason waits for the owner's wording).
-- [ ] 4. Q6's sign mark.
-- [ ] 5. The repeat call at 90 s.
-- [ ] 6. `railway.boilerSoloSpeed` 380.
+- [x] 1. The hand-off cut on Far Head's shot and the pier show; the whistle at the cut's start.
+- [ ] 2. The crane holding the part 1.6 m up; three waving little guys within 30 m (both built); prompt reach 6 m (not built: sim work).
+- [x] 3. The rail rack's dashed mark (the blocked prompt is built off; its reason waits for the owner's wording).
+- [x] 4. Q6's sign mark (already as built: no change).
+- [x] 5. The repeat call at 90 s (three at most, as the review changed it).
+- [ ] 6. `railway.boilerSoloSpeed` 380 (not built: sim work).
 
 ## Done means
 
@@ -224,3 +225,52 @@ The words for Sleeves and for the rack's reason are already queue question 4. No
 
 None changed. The rack's blocked reason has no draft in this plan yet; the plan says it is not shipped without the
 owner.
+
+## As built (15 November 2026)
+
+Owner, 15 November ([answer 4](../decisions-core-loop.md#d-2026-11-15-grant-queue-answered)): "the Far Head cutscene
+could be longer, that's fine". So Far Head's cut is built with the rest. View, camera, prompt and copy work only; no
+file under `src/sim`, `src/net`, `src/world` or `server/` changed.
+
+| Step | Built | Where |
+| --- | --- | --- |
+| 1, Far Head | The shot is 8.5 s: the Far Head leg 6 s (the Act 2 card up at 1.5 s and gone at 6.0 s, timed to the leg), then a 2.5 s cut to the pedestal, where the crane lifts the boiler, then a cut home. The forge's call sounds as the cut lands | `far-head-show.ts`, `far-head-view.ts`, `forge-cut.ts`, `camera-pull-out.ts` (`titleS`, `end.to`, `onCut`, `onHome`) |
+| 1, the pier | The show now waits behind a reward card, as Far Head's does. 3.5 s in (after the rockets and both whistles) a 2.5 s shared shot of the pedestal, the crane lifting the breaker; the call sounds as it lands. Only where the Works are mounted | `pier-view.ts` |
+| 1, the whistle | A show holds the forge's call from its edge and sounds it at the cut. A skip sounds it at the hand-back; with no shot (reduced motion, a vehicle's seat) it sounds 3 s into the show, after the show's own two whistles; an unclaimed call sounds 0.25 s after its edge. The plume starts as the call sounds | `forge-call.ts` |
+| 1, the hand-back | The camera comes home looking toward the forge, for a player on foot only (not seated, gliding, or hauling the boiler or the beam) | `line2-view.ts` `faceForge` |
+| 2 | The crane's jib swings over the pedestal on a live cast and lifts the part 1.6 m on the call (1.4 s), turning at 0.45 rad/s; a reload shows it held. Three little guys stand 3.1 m off on the forge's side and wave within 30 m; gone when the part is taken. The boiler stays cold; put down mid-haul it lies on the ground | `part-hoist.ts`, `boiler-view.ts`, `breaker-view.ts` |
+| 3 | A board on its own post off the forge rack's end nearer the pedestal shows the waiting part in gold dashes. The blocked "Take rails" is built off (`RACK_WAIT_REASON = null`) | `stock-sign.ts`, `line2-view.ts` |
+| 4 | Nothing: station 6's sign already draws the old train with its boiler dashed in gold (boiler-first-choice step 1) | `stock-sign.ts` |
+| 5 | The whistle again at 90, 180 and 270 s after a live call while the part waits; the first that sounds thickens the plume to 33 puffs; none while you are within 30 m of the pedestal; a reload replays none | `forge-call.ts` `FORGE_RECALL` |
+
+**The builder's own calls** (in [agent-calls](../agent-calls.md)): the breaker is drawn at twice its carried size while
+the crane holds it (at its own size it was a grey stick against the forge's wall from 7 m); the rack's board shows
+whenever a part waits, not only while the active station is train-fed; a banner queued behind the act card also waits
+for a playing shot (the glider's banner came up over the forge cut); the camera cuts home from the forge (a 0.55 s
+blend across 500 m was a smear); the cut's camera stands 9.5 m from the pedestal, west of the halt's post.
+
+**Measured.** The crane's mast stands 5.9 m from the pedestal and its jib reaches 17 m, so it reaches (review finding
+6). `dev/look/evals/forge-handoff.ts` holds both cuts: Far Head's call at 6.05 s and the pier's at 3.6 s after the
+edge, the part lifted 1.6 m, the camera home within 0.2 rad of the forge.
+
+### Sim work left (not built here)
+
+| What | Needs |
+| --- | --- |
+| Prompt reach 6 m (step 2) | `reach: 420` to `660` on `LINE2_BOILER` (`src/sim/railway-line2-layout.ts`) and `WORKS_BREAKER` (`src/sim/railway-works-layout.ts`), which `src/world/railway-server.ts` checks; then the views' `<= 3.6` to `<= 6` in `boiler-view.ts` and `breaker-view.ts` (keeping the 0.6 m margin). The review's checks go with it: it must not win over the halt's lever or the forge's deposit, nor be offered to a seated rider. The boiler's reach also applies where it lies after a drop: decide whether 6 m holds there or only on the pedestal. Room-safety and mixed-builds reading; no saved field |
+| Boiler solo speed 380 (step 6) | `railBoilerSoloSpeed` `def: 300` to `380` in `src/sim/tune.ts`; `test/tune.test.ts` holds 300 and a room's saved tune keeps its own value. Then place.md's haul paragraph |
+| The "taken within 20 s of first coming within 30 m" measure (finding 5) | A playtest mark on first entering 30 m while a part waits, and one on the take; `npm run loop -- trace` reads them. Not built |
+
+### Draft lines for the owner (none shipped)
+
+- The forge rack's blocked reason, while the boiler waits and station 6's kit goes by train: **"These go by train"**
+  (set `RACK_WAIT_REASON` in `line2-view.ts`). Second choice: "The train carries these".
+- Sleeves at the pedestal (G11; not built, no bubble): for the boiler, **"The forge made something enormous. I've been
+  told not to lift it. You look much more liftable-with."**; for the breaker, **"New hammer on the pedestal. Very
+  serious hammer. I waved at it and it didn't wave back."**
+
+### Not verified
+
+Sound was not listened to (the whistle's timing is from the eval's clock). The repeat call's 90 s was not waited out
+in a capture. Two players, a late joiner and a skip were not captured. The 2 min 30 s and 3 min targets need a person
+new to the beat. Not tested on a device.

@@ -1,13 +1,20 @@
 // Far Head's Local payoff: two instanced lamp rows and an ephemeral show on the live Q5 completion edge only. The rockets
 // and a camera pull-out over them wait behind any reward card, so the show is seen whole (owner, 9 November: "got no
-// cutscene I could see").
+// cutscene I could see"). The shot's last 2.5 s cut to the forge, where the boiler was just cast, and the forge's call
+// sounds as the cut lands (docs/plans/forge-call-handoff.md, step 1; owner, 15 November).
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Body } from '../../physics/engine.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity, readableUnlit } from '../../render/readable-unlit.ts';
 import { whistle } from '../../render/machine-sfx.ts';
+import type { ShotShape } from '../../render/camera-pull-out.ts';
 import { farHeadEnd, farHeadShot } from './far-head-show.ts';
+import { holdForgeCall, soundForgeCall } from './forge-call.ts';
+
+/** Seconds: the longest the show holds the forge's call (behind a reward card, then the shot), and when the call
+ * sounds with no cut to carry it (reduced motion, a vehicle's seat): after the show's own two whistles. */
+const CALL = { hold: 30, bare: 3 } as const;
 
 type Deps = {
   layout: typeof import('../../place/layout.ts');
@@ -17,10 +24,23 @@ type Deps = {
   sounds: typeof import('../../render/fanfare.ts');
   /** A reward card has the screen: the show waits for it. */
   busy: () => boolean;
-  /** The line's camera pull-out (createCameraPullOut): from, drifting to, looking at, seconds. */
-  shot: (from: THREE.Vector3, to: THREE.Vector3, at: THREE.Vector3, seconds: number) => void;
+  /** The line's camera pull-out (createCameraPullOut): from, drifting to, looking at, seconds, the travel's seconds
+   * and its shape; false when no shot was queued (reduced motion, a vehicle's seat). */
+  shot: (
+    from: THREE.Vector3,
+    to: THREE.Vector3,
+    at: THREE.Vector3,
+    seconds: number,
+    drift: number,
+    shape: ShotShape,
+  ) => boolean;
+  /** The camera is coming home from the forge cut: turn it toward the forge (line2-view.ts decides for whom). */
+  handBack: () => void;
 };
-export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, flat, sounds, busy, shot }: Deps) {
+export function createRailwayFarHead(
+  owner: OwnedView,
+  { layout, rail, land, flat, sounds, busy, shot, handBack }: Deps,
+) {
   const line = layout.LINKS[1]!.line;
   // The rail's end, in world metres (besideLine already includes ORIGIN, as it does for every production rail view).
   const farHead = farHeadEnd();
@@ -73,7 +93,14 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
   let completed = false,
     show = -1,
     secondWhistle = false,
-    waiting = false; // the edge came while a reward card had the screen
+    waiting = false, // the edge came while a reward card had the screen
+    // The forge's call for this show: held from the edge, sounded once (at the cut, the hand-back, or `CALL.bare`).
+    call: 'none' | 'held' | 'cut' = 'none';
+  const cue = () => {
+    if (call === 'none') return;
+    call = 'none';
+    soundForgeCall();
+  };
   const v = (p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z);
   function celebrate() {
     waiting = false;
@@ -83,8 +110,21 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
     whistle(farHead.x, farHead.z);
     barrage(farHead.x, farHead.y + 6, farHead.z, 10, 0.4, 36, 2.2);
     barrage(layout.VILLAGE.x + layout.ORIGIN.x, layout.VILLAGE.y, layout.VILLAGE.z, 5, 0.6, 26, 1.6);
-    const { from, to, at, seconds } = farHeadShot();
-    shot(v(from), v(to), v(at), seconds);
+    const { from, to, at, seconds, leg, title, back, end } = farHeadShot();
+    holdForgeCall(CALL.hold);
+    call = shot(v(from), v(to), v(at), seconds, leg, {
+      back,
+      titleS: title,
+      end: { pos: v(end.pos), to: v(end.to), at: v(end.at) },
+      onCut: cue,
+      // A skip before the cut, or the cut's end: the call has sounded by the time the camera is home.
+      onHome: () => {
+        cue();
+        handBack();
+      },
+    })
+      ? 'cut'
+      : 'held';
   }
   function barrage(x: number, y: number, z: number, count: number, gap: number, spread: number, size: number) {
     for (let k = 0; k < count; k++)
@@ -110,15 +150,22 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
       show = -1;
       secondWhistle = false;
       waiting = false;
+      cue();
       rockets.length = 0;
       lamps(done ? slots.length : 0);
     },
     update(dt: number, done: boolean) {
-      if (done && !completed) waiting = true;
+      if (done && !completed) {
+        waiting = true;
+        // The boiler is cast on this same frame: its call waits for the cut.
+        holdForgeCall(CALL.hold);
+        call = 'held';
+      }
       if (waiting && done && !busy()) celebrate();
       if (!done && completed) {
         show = -1;
         waiting = false;
+        cue();
         rockets.length = 0;
         lamps(0);
       }
@@ -130,6 +177,8 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
           secondWhistle = true;
           whistle(farHead.x, farHead.z);
         }
+        // No cut to carry it, or the shot was dropped (a seat taken mid-shot): the call sounds in the clear anyway.
+        if (call === 'held' ? show >= CALL.bare : show >= farHeadShot().seconds + 2) cue();
       }
       for (let k = rockets.length - 1; k >= 0; k--) {
         const r = rockets[k]!;
@@ -173,8 +222,14 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
             shrink: 0.5,
           });
       }
-      if (show > 6 && rockets.length === 0) show = -1;
+      if (show > 11 && rockets.length === 0) show = -1;
     },
-    inspect: () => ({ farHead, trestleLamps: posts.count, farHeadRockets: rockets.length, farHeadWaiting: waiting }),
+    inspect: () => ({
+      farHead,
+      trestleLamps: posts.count,
+      farHeadRockets: rockets.length,
+      farHeadWaiting: waiting,
+      farHeadCall: call,
+    }),
   };
 }

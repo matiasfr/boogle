@@ -9,7 +9,7 @@
 // act cards report their time there with the pull-outs and the reward card.
 // Local and cosmetic; inside .hud.
 import './moment-banner.css';
-import { holdCamera } from '../render/buddy-frame.ts';
+import { holdCamera, shotPlaying } from '../render/buddy-frame.ts';
 
 const FADE_S = 1; // the act card's fade in and out (moment-banner.css, .act)
 const bannerKey = {};
@@ -60,6 +60,12 @@ const actBusy = () => actWaiting || performance.now() < actUntil;
 export const actShowing = actBusy;
 function pump() {
   if (actBusy()) return;
+  // A shot still on screen (Far Head's ends on a cut to the forge): the banner comes up once the view is yours again.
+  if (queued.length && shotPlaying()) {
+    clearTimeout(pumpTimer);
+    pumpTimer = window.setTimeout(pump, 200);
+    return;
+  }
   const next = queued.shift();
   if (next) showMomentBanner(next.title, next.line, next.seconds);
 }

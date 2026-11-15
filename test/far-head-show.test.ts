@@ -12,6 +12,8 @@ import {
   farHeadEnd,
   farHeadShot,
 } from '../src/entities/railway/far-head-show.ts';
+import { FORGE_CUT, forgeCut, yawToForge } from '../src/entities/railway/forge-cut.ts';
+import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 
 type Point = { x: number; y: number; z: number };
 const mix = (a: Point, b: Point, u: number): Point => ({
@@ -23,9 +25,10 @@ const floor = (p: Point) => Math.max(H(p.x, p.z), SEA);
 const far = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 
 test('Far Head’s shot travels: a real move, for a few seconds, looking somewhere else than where it stands', () => {
-  const { from, to, at, seconds } = farHeadShot();
+  const { from, to, at, seconds, leg } = farHeadShot();
   for (const p of [from, to, at]) assert.ok([p.x, p.y, p.z].every(Number.isFinite), JSON.stringify(p));
-  assert.ok(seconds >= 4 && seconds <= 7, `${seconds} s`);
+  assert.ok(leg >= 4 && leg <= 7, `${leg} s`);
+  assert.ok(seconds > leg && seconds <= 9, `${seconds} s in all`);
   assert.ok(far(from, to) > 8, `the camera moves ${far(from, to).toFixed(1)} m`);
   assert.ok(far(from, at) > 40 && far(to, at) > 40, 'the aim is well ahead of the camera');
 });
@@ -54,4 +57,40 @@ test('the shot looks down the trestle to the rail’s end, with nothing but air 
       const p = mix(eye, { ...end, y: end.y + 2 }, k / 20);
       assert.ok(p.y > floor(p) + 0.5, `the land hides the rail's end ${k / 20} of the way`);
     }
+});
+
+// The hand-off cut (docs/plans/forge-call-handoff.md, step 1; owner, 15 November: Far Head's shot may run about 8.5 s).
+test('the shot ends on the forge: the Act 2 card is gone before the cut, which holds 2.5 s on the pedestal', () => {
+  const { leg, title, seconds, end, back } = farHeadShot();
+  // acts.ts: the card comes up when the titled leg has 3.5 s left and stays 4.5 s.
+  const cardUp = title - 3.5,
+    cardGone = cardUp + 4.5;
+  assert.ok(Math.abs(cardUp - 1.5) < 1e-9, `the card comes up at ${cardUp} s, as before`);
+  assert.ok(cardGone <= leg, `the card is gone at ${cardGone} s, the cut lands at ${leg} s`);
+  assert.equal(seconds - leg, FORGE_CUT.seconds);
+  assert.equal(seconds, 8.5);
+  assert.ok(back < 0.02, 'the camera cuts home: a blend across 500 m is a smear');
+  const foot = { x: LINE2_BOILER.x / 100, y: LINE2_BOILER.y / 100, z: LINE2_BOILER.z / 100 };
+  for (const eye of [end.pos, end.to]) {
+    const d = Math.hypot(eye.x - foot.x, eye.z - foot.z);
+    assert.ok(d > 6 && d < 12, `the camera stands ${d.toFixed(1)} m from the pedestal`);
+    assert.ok(eye.y > floor(eye) + 1.5, 'over the ground');
+    // It looks past the pedestal toward the forge behind it: the aim is beyond the pedestal, a little above its top.
+    assert.ok(Math.hypot(end.at.x - eye.x, end.at.z - eye.z) > d);
+  }
+  assert.ok(end.at.y > foot.y + 1.6 && end.at.y < foot.y + 4, 'the held part is in the middle of the frame');
+  assert.deepEqual(forgeCut(), end);
+});
+
+test('the hand-back yaw looks from the player toward the pedestal', () => {
+  const foot = { x: LINE2_BOILER.x / 100, z: LINE2_BOILER.z / 100 };
+  // The follow camera's yaw is behind a Buddy facing that way: the look direction is (-sin yaw, -cos yaw).
+  for (const [x, z] of [
+    [foot.x + 400, foot.z - 120],
+    [foot.x - 30, foot.z + 60],
+  ] as const) {
+    const yaw = yawToForge(x, z),
+      d = Math.hypot(foot.x - x, foot.z - z);
+    assert.ok(Math.abs(-Math.sin(yaw) - (foot.x - x) / d) < 1e-9 && Math.abs(-Math.cos(yaw) - (foot.z - z) / d) < 1e-9);
+  }
 });

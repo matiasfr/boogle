@@ -279,7 +279,11 @@ export async function createRailwayTools(
           r: 3.4,
           run: () => void adapter.openPack(),
         });
-      if (!rail(adapter.read.world()).jump && Math.hypot(p.x - deviceAt.x, p.z - deviceAt.z) <= 3 && Math.abs(p.y - deviceAt.y) <= 2.2)
+      if (
+        !rail(adapter.read.world()).jump &&
+        Math.hypot(p.x - deviceAt.x, p.z - deviceAt.z) <= 3 &&
+        Math.abs(p.y - deviceAt.y) <= 2.2
+      )
         targets.push({
           id: 'railway-jump-device',
           verb: 'Take it',
@@ -342,7 +346,15 @@ export async function createRailwayTools(
       if (unlocked && !knew && me.coyote <= 0) charge = false;
       knew = unlocked;
       // Not with a footing on your back (docs/plans/works-late-game.md, step 2b): the plain jump only.
-      if (!b || fallArrival.active || me.swimming || inputState.seated || inputState.held || me.down || account(adapter.read.world(), adapter.read.pid)?.foot) {
+      if (
+        !b ||
+        fallArrival.active ||
+        me.swimming ||
+        inputState.seated ||
+        inputState.held ||
+        me.down ||
+        account(adapter.read.world(), adapter.read.pid)?.foot
+      ) {
         second = false;
         return;
       }

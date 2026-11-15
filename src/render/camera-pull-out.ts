@@ -8,7 +8,7 @@ import { skipInput } from '../player/dismiss-pointer.ts';
 import { glyph } from '../player/glyphs.ts';
 import { reducedMotion } from '../constants.ts';
 import { clamp, smoothstep } from '../math-pure.ts';
-import { holdCamera } from './buddy-frame.ts';
+import { holdCamera, holdShot } from './buddy-frame.ts';
 import { craneAim } from './crane-aim.ts';
 import { camera } from './scene.ts';
 
@@ -39,14 +39,20 @@ function showSkip(owner: object, on: boolean) {
 
 /** Optional shaping of one shot: `lead` seconds held at `from` before the travel starts, `atFrom` where it looks until
  * then (it eases to `at` over the travel), `back` the hand-back blend (a tiny one is a deliberate cut), `end` a cut to a
- * held position and look the moment the travel ends, `cutIn` opens on `from` at once instead of blending in from the
- * follow camera (which can pass through geometry between the player and the shot). */
+ * held position and look the moment the travel ends (drifting on to `to` by the shot's end, when given), `cutIn` opens
+ * on `from` at once instead of blending in from the follow camera (which can pass through geometry between the player
+ * and the shot). `titleS`: the seconds of the shot a title may come up over (the act card times itself to the end of
+ * that leg, not of the whole shot). `onCut` runs once as the end cut lands; `onHome` once as the camera starts home,
+ * skipped or not (a shot that never played, reduced motion or a seat, calls neither: `play` returns false). */
 export type ShotShape = {
   lead?: number;
   atFrom?: THREE.Vector3;
   back?: number;
   cutIn?: boolean;
-  end?: { pos: THREE.Vector3; at: THREE.Vector3 };
+  end?: { pos: THREE.Vector3; at: THREE.Vector3; to?: THREE.Vector3 };
+  titleS?: number;
+  onCut?: () => void;
+  onHome?: () => void;
 };
 type Shot = {
   from: THREE.Vector3;
@@ -58,7 +64,10 @@ type Shot = {
   atFrom: THREE.Vector3 | null;
   back: number;
   cutIn: boolean;
-  end: { pos: THREE.Vector3; at: THREE.Vector3 } | null;
+  end: { pos: THREE.Vector3; at: THREE.Vector3; to: THREE.Vector3 | null } | null;
+  titleS: number;
+  onCut: (() => void) | null;
+  onHome: (() => void) | null;
   /** A crane (`crane()`): rises by `lift` over the live follow camera and back, easing in and out over `blend` seconds,
    * looking so that Buddy stays at CRANE_NDC_Y on screen. It starts and ends at the follow camera: no cut. */
   lift?: THREE.Vector3;
@@ -76,7 +85,14 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
     t = 0,
     weight = 0,
     cut = 1,
-    returned = false;
+    returned = false,
+    cutDone = false,
+    homeDone = false;
+  const goHome = () => {
+    if (!shot || homeDone) return;
+    homeDone = true;
+    shot.onHome?.();
+  };
   const forward = new THREE.Vector3(),
     aim = new THREE.Vector3(),
     position = new THREE.Vector3(),
@@ -96,6 +112,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
     // Behind Buddy at once, so the short blend home lands where the full shot would have.
     if (behindBuddy && !returned) cam.yaw = me.yaw;
     returned = true;
+    goHome();
     cancel();
   };
   const input = skipInput(skipping, skip, listeners.signal);
@@ -126,6 +143,10 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
       // The end cut sets the camera's position and its look together, on the one frame.
       if (shot.end && t >= shot.lead + shot.drift) {
         position.copy(shot.end.pos);
+        if (shot.end.to) {
+          const held = shot.seconds - shot.lead - shot.drift;
+          position.lerp(shot.end.to, held > 0 ? clamp((t - shot.lead - shot.drift) / held, 0, 1) : 0);
+        }
         target.copy(shot.end.at);
       }
       aim.copy(look).addScaledVector(forward, 8).lerp(target, weight);
@@ -139,12 +160,16 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
     t = weight = 0;
     cut = 1;
     returned = false;
+    cutDone = homeDone = false;
     input.release();
     showSkip(self, false);
   };
   // The camera's one list (buddy-frame.ts): a queued or playing shot holds it, but only a playing one has the screen: a queued
   // shot waits on a talk or a reward card, and the act card must not wait on it forever. The You page waits for every shot.
-  const report = () => holdCamera(self, !!shot || !!pending, shot ? shot.seconds - t : 0);
+  const report = () => {
+    holdCamera(self, !!shot || !!pending, shot ? Math.max(0, (shot.titleS || shot.seconds) - t) : 0);
+    holdShot(self, !!shot);
+  };
   const reset = () => {
     shot = pending = null;
     settle();
@@ -170,6 +195,11 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
       cam.yaw = me.yaw;
       returned = true;
     }
+    if (shot.end && !cutDone && cut === 1 && t >= shot.lead + shot.drift) {
+      cutDone = true;
+      shot.onCut?.();
+    }
+    if (cut === 1 && t >= shot.seconds - outS()) goHome();
     if (cut < 1) cut = Math.max(0, cut - dt / 0.14);
     const out = inS() > 0 ? Math.min(1, t / inS()) : 1,
       back = clamp((t - shot.seconds + outS()) / outS(), 0, 1);
@@ -187,7 +217,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
       drift = seconds,
       shape: ShotShape = {},
     ) {
-      if (reducedMotion || inSeat()) return;
+      if (reducedMotion || inSeat()) return false;
       pending = {
         from: from.clone(),
         to: to.clone(),
@@ -198,9 +228,15 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
         atFrom: shape.atFrom?.clone() ?? null,
         back: shape.back ?? BACK_S,
         cutIn: shape.cutIn ?? false,
-        end: shape.end ? { pos: shape.end.pos.clone(), at: shape.end.at.clone() } : null,
+        end: shape.end
+          ? { pos: shape.end.pos.clone(), at: shape.end.at.clone(), to: shape.end.to?.clone() ?? null }
+          : null,
+        titleS: shape.titleS ?? 0,
+        onCut: shape.onCut ?? null,
+        onHome: shape.onHome ?? null,
       };
       report();
+      return true;
     },
     /** A crane over the follow camera: up by `lift` (a world offset) and back down in `seconds`, easing in and out over
      * `blend` seconds each way, with Buddy held at CRANE_NDC_Y. */
@@ -217,6 +253,9 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
         back: BACK_S,
         cutIn: false,
         end: null,
+        titleS: 0,
+        onCut: null,
+        onHome: null,
         lift: lift.clone(),
         blend,
       };
@@ -233,6 +272,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
     dispose() {
       reset();
       holdCamera(self, false);
+      holdShot(self, false);
       listeners.abort();
       const index = camConstraints.indexOf(constraint);
       if (index >= 0) camConstraints.splice(index, 1);
