@@ -1,5 +1,5 @@
-// Independent a91bd8663 review. Accepted cargo ops; teleports isolate movement contracts, not route reachability.
-// npm run look -- --real --rail-seed glide-earned --eval dev/look/evals/review-heavy-load.ts --warm 0 --hud --name review-heavy-load
+// Heavy-load recovery regression. Accepted cargo ops; teleports isolate movement contracts, not route reachability.
+// npm run look -- --real --rail-seed glide-earned --eval dev/look/evals/review-heavy-load.ts --warm 2 --hud --name review-heavy-load
 const { me, cam } = await import('/src/player/player.ts' as string);
 const { teleport } = await import('/src/physics/engine.ts' as string);
 const { input } = await import('/src/player/input.ts' as string);
@@ -82,6 +82,10 @@ pressJump();
 await wait(350);
 releaseJump();
 check(localJumpCount() === jumps, 'heavy ground jump blocked');
+check(
+  document.querySelector('.notify-text')?.textContent === 'Too heavy to jump. Drop cargo to travel light.',
+  'jump explains recovery',
+);
 cam.yaw = 0;
 input.keys.add('KeyW');
 await wait(800);
@@ -89,6 +93,11 @@ console.log(`HEAVY REVIEW walk ${JSON.stringify({ count: count(), vx: me.body.ve
 input.keys.delete('KeyW');
 await at(home.x, H(home.x, home.z) + 10, home.z, 200);
 triggerAction('glide', 'down');
+await wait(50);
+check(
+  document.querySelector('.notify-text')?.textContent === 'Too heavy to glide. Drop cargo to travel light.',
+  'glide explains recovery',
+);
 pressJump();
 await wait(100);
 releaseJump();
@@ -98,6 +107,10 @@ const pulls = inspectRailway().hookShot.pulls;
 triggerAction('hook', 'down');
 await wait(100);
 check(inspectRailway().hookShot.pulls === pulls, 'heavy hook does not start');
+check(
+  document.querySelector('.notify-text')?.textContent === 'Too heavy to hook. Drop cargo to travel light.',
+  'hook explains recovery',
+);
 // A water pose with the bed below us, away from an edge; exercises the actual swimming controller.
 await at(850, -1.2, -350, 100);
 await until(() => me.swimming, 'water contact');
@@ -106,13 +119,25 @@ await wait(50);
 console.log(`HEAVY REVIEW swim ${JSON.stringify({ count: count(), vy: me.body.velocity.y, swimming: me.swimming })}`);
 check(me.body.velocity.y > 0, 'heavy swimming ascent available');
 releaseJump();
-await at(home.x, H(home.x, home.z) + 0.5, home.z, 1000);
+const { PADS } = await import('/src/place/tech-layout.ts' as string);
+const ledge = PADS.find((p: { id: string }) => p.id === 'p2');
+home.x = ledge.x + 1000;
+home.z = ledge.z;
+await at(home.x, ledge.top + 0.5, home.z, 1000);
 triggerAction('place-drop', 'down');
 await wait(700);
 triggerAction('place-drop', 'up');
 await until(() => count() === 0 && adapter.read.pending() === 0, 'whole-back drop');
 check(count() === 0, 'hold Drop sheds all 24');
 await until(() => me.coyote > 0, 'ground contact after drop');
+const { piles } = await import('/src/sim/railway-rows.ts' as string);
+check(
+  piles(world()).some(
+    (p: { y: number; x: number; z: number }) =>
+      Math.abs(p.y / 100 - ledge.top) < 1 && Math.hypot(p.x / 100 - home.x, p.z / 100 - home.z) < 4,
+  ),
+  'ledge drop stays at feet height',
+);
 pressJump();
 await wait(100);
 releaseJump();
@@ -124,4 +149,8 @@ check(inspectRailway().glider.open, 'drop restores glide');
 triggerAction('glide', 'down');
 await at(home.x, H(home.x, home.z) + 0.5, home.z, 1000);
 console.log(`HEAVY REVIEW COMPLETE ${JSON.stringify({ count: count(), comfort: carryComfort(world()) })}`);
+await fill();
+await at(home.x, ledge.top + 0.5, home.z, 1000);
+window.__debugCam?.set([home.x + 7, ledge.top + 4, home.z + 8], [home.x, ledge.top + 1.5, home.z], 55);
+triggerAction('hook', 'down');
 export {};

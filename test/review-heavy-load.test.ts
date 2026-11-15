@@ -69,7 +69,7 @@ for (const [op, stage] of [
     assert.equal(take(), 1);
     assert.equal(heavyLoad(w, 'a'), false);
     assert.equal(take(), carryMax(w) - carryComfort(w));
-    assert.equal(carrySpeed(w, 'a'), 0.6);
+    assert.equal(carrySpeed(w, 'a'), 0.45);
     assert.equal(take(), 0);
     assert.equal(invariant(w), null);
   });
@@ -86,7 +86,7 @@ test('review: two comfortable players race for an extra pile without duplication
   const b = command(w, 'b', 'rail.take', { id: pile.id });
   const shown = cloneWorld(w);
   assert.equal(railPredict(shown, 'b', b, 100000).n, 4);
-  assert.equal(carrySpeed(shown, 'b'), 0.6);
+  assert.equal(carrySpeed(shown, 'b'), 0.45);
   assert.equal(apply(w, 'a', a, 100000).accepted, 4);
   assert.equal(apply(w, 'b', b, 100000).accepted, 0);
   assert.equal(carried(account(w, 'a')!) + carried(account(w, 'b')!), 20);
@@ -108,7 +108,7 @@ test('review: every packed and unpacked load survives reload and epoch renewal w
     for (let n = maximum; n >= comfortable; n--) {
       assert.equal(carried(account(w, 'a')!), n);
       const speed = carrySpeed(w, 'a');
-      assert.ok(Math.abs(speed - (1 - (0.4 * (n - comfortable)) / (maximum - comfortable))) < 1e-15);
+      assert.ok(Math.abs(speed - (1 - (0.55 * (n - comfortable)) / (maximum - comfortable))) < 1e-15);
       assert.ok(speed > previous);
       previous = speed;
       w = restore(w);

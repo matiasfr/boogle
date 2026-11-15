@@ -53,9 +53,9 @@ test('comfort is free movement; each extra piece slows, maximum refuses without 
   chop(w);
   assert.equal(carried(account(w, 'a')!), 10);
   assert.equal(heavyLoad(w, 'a'), true);
-  assert.equal(carrySpeed(w, 'a'), 0.8);
+  assert.equal(carrySpeed(w, 'a'), 0.725);
   chop(w);
-  assert.equal(carrySpeed(w, 'a'), 0.6);
+  assert.equal(carrySpeed(w, 'a'), 0.45);
   const before = trees(w).map((t) => t.left);
   assert.equal(chop(w).accepted, 0);
   assert.deepEqual(
@@ -66,14 +66,14 @@ test('comfort is free movement; each extra piece slows, maximum refuses without 
   const saved = restore(w);
   assert.equal(saved.hash(), w.hash());
   assert.equal(heavyLoad(saved, 'a'), true);
-  assert.equal(carrySpeed(saved, 'a'), 0.6);
+  assert.equal(carrySpeed(saved, 'a'), 0.45);
   // Every cargo kind consumes the same space, never three separate allowances.
   const a = w.mut(Account, w.lookup(Account, 'a')!)!;
   a.carry = 4;
   a.stone = 3;
   a.rails = 5;
   assert.equal(free(w, a), 0);
-  assert.equal(carrySpeed(w, 'a'), 0.6);
+  assert.equal(carrySpeed(w, 'a'), 0.45);
 });
 
 test('dropping the extra restores mobility; two claimants cannot duplicate the pile; deposit lightens', () => {
@@ -94,6 +94,35 @@ test('dropping the extra restores mobility; two claimants cannot duplicate the p
   assert.equal(restore(w).hash(), w.hash());
 });
 
+test('a full old pile pool cannot trap a heavy carrier; all cargo remains recoverable after reload', () => {
+  const w = awake();
+  const send = (op: string, fields: Partial<RailAction>) => {
+    const a = account(w, 'a')!;
+    return apply(w, 'a', { op, epoch: a.epoch, request: a.request + 1, ...fields }, 100000).accepted;
+  };
+  const fill = () => {
+    while (carried(account(w, 'a')!) < carryMax(w)) {
+      const k = trees(w).findIndex((t) => t.left > 0);
+      assert.ok(send('rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }));
+    }
+  };
+  for (let i = 0; i < 128; i++) {
+    if (!account(w, 'a')!.carry) fill();
+    assert.equal(send('rail.drop', { x: i * 100, y: 0, z: 0, n: 1 }), 1);
+  }
+  fill();
+  assert.equal(heavyLoad(w, 'a'), true);
+  assert.equal(send('rail.drop', { x: -1000, y: 1800, z: 0, n: 4 }), 4);
+  assert.equal(heavyLoad(w, 'a'), false);
+  assert.equal(pilesWithIds(w).length, 129);
+  assert.equal(
+    pilesWithIds(w).reduce((sum, p) => sum + p.n, 0),
+    132,
+  );
+  assert.equal(invariant(w), null);
+  assert.equal(restore(w).hash(), w.hash());
+});
+
 test('the shared pack restores an existing heavy load and permits 24 with the same speed curve', () => {
   const { w } = buildSeedWorld('q1-done');
   assert.equal(act(w, 'a', 'rail.pack').accepted, 1);
@@ -104,7 +133,7 @@ test('the shared pack restores an existing heavy load and permits 24 with the sa
       act(w, 'a', 'rail.drop', { kind, n: 8, x: 0, y: 0, z: 0 });
   while (carried(account(w, 'a')!) < 24) chop(w);
   assert.equal(carryMax(w), 24);
-  assert.equal(carrySpeed(w, 'a'), 0.6);
+  assert.equal(carrySpeed(w, 'a'), 0.45);
   assert.equal(chop(w).accepted, 0);
   assert.equal(restore(w).hash(), w.hash());
   // Query boundary for a pack arriving while carrying 12; no cached heavy flag survives the upgrade.

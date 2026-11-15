@@ -18,7 +18,7 @@ import { LINE_TIMING } from '../sim/railway-line.ts';
 import {
   LINE2_FORGE,
   LINE2_STATIONS,
-  LINE2_DEPOT,
+  depotReach,
   LINE2_LEVER,
   LINE2_SEA,
   LINE2_GLIDE,
@@ -258,12 +258,12 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.depotTake': {
       const spec = LINE2_STATIONS[railLine2Active(w)];
       if (!spec) return legRackNear(w, at);
-      return spec.depot && near(spec.x, spec.z, LINE2_DEPOT.reach);
+      return spec.depot && near(spec.x, spec.z, depotReach(spec));
     }
     case 'rail.depotRailTake': {
       const spec = LINE2_STATIONS[railLine2Active(w)];
       if (!spec) return legRackNear(w, at);
-      return spec.shelf && near(spec.x, spec.z, LINE2_DEPOT.reach);
+      return spec.shelf && near(spec.x, spec.z, depotReach(spec));
     }
     case 'rail.pack':
       return near(LINE2_PACK.x, LINE2_PACK.z, 340);

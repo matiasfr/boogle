@@ -45,7 +45,7 @@ import { LINE_SLOTS, trainServes } from '../../src/sim/railway-trains.ts';
 import { TRAIN, TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
 import { railLinePoint } from '../../src/sim/railway-line-path.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, haltPlatform, trainPassesBy } from '../../src/sim/railway-lines.ts';
-import { ringHead, stopsOf } from '../../src/sim/railway-queries.ts';
+import { carried, carryComfort, ringHead, stopsOf } from '../../src/sim/railway-queries.ts';
 import { ringRivetSequence } from '../../test/helpers/railway-rivet-sequence.ts';
 import { setTune, type TuneKey } from '../../src/sim/tune.ts';
 import { TRADE_PCT } from '../../src/sim/railway-trade-layout.ts';
@@ -431,7 +431,7 @@ test('route host: a grant and a gate keep their id; judged at their spot, refuse
 let laid: Seed | undefined;
 const legLaid = () => (laid ??= legDone());
 function legDone(): Seed {
-  // Preserve the hold-cap workload's fleet phase, independent of the settled v46 jump-in.
+  // Preserve the hold-cap workload's comfortable feeding policy, independent of the settled v46 jump-in.
   const j = ringRivetSequence();
   const s = { w: restore(j.w), t: j.t };
   const n = RAIL_LEGS[STACK]!.sections.length;
@@ -444,6 +444,7 @@ function legDone(): Seed {
         ['rail.legStock', { leg: STACK }],
       ] as const) {
         const a = s.w.get(Account, s.w.lookup(Account, pid)!)!;
+        if (op !== 'rail.legStock' && carried(a) >= carryComfort(s.w)) continue;
         apply(s.w, pid, { op, epoch: a.epoch, request: a.request + 1, ...f }, s.t);
       }
     railTick(s.w, ++s.t);

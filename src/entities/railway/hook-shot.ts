@@ -1,6 +1,7 @@
 // The shared hook fact grants an Owner pull. Local targeting/presentation never changes the railway ledger.
 import * as THREE from 'three/webgpu';
 import { heavyLoad } from '../../sim/railway-queries.ts';
+import { notify } from '../../ui/notify.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { line2Routes } from '../../sim/railway-line2-layout.ts';
 import { line2Completed } from '../../sim/railway-queries-line2.ts';
@@ -174,6 +175,11 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     endPull();
   }
   function press(ring: HookRing | null = pick) {
+    if (owned && !inputState.seated && heavyLoad(adapter.read.world(), adapter.read.pid)) {
+      // Draft UI copy for the owner; not The Boogler's voice.
+      notify('Too heavy to hook. Drop cargo to travel light.', { kind: 'deny', key: 'heavy-load', ttl: 2500 });
+      return;
+    }
     if (!canPress()) return;
     if (pull) {
       cancel();

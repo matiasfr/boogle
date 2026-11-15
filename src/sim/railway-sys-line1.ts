@@ -6,7 +6,7 @@ import { LINE1_GREAT_TREE, LINE1_STATIONS, lineBeamGround } from './railway-line
 import { RAILS } from './railway-line2-layout.ts';
 import { layProgress, type LineTiming } from './railway-line-schedule.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
-import { railInt, RAILWAY_MAX_INT, RAILWAY_PILES } from './railway.ts';
+import { railInt, RAILWAY_MAX_INT } from './railway.ts';
 import { railPos } from './railway-route.ts';
 import {
   Account,
@@ -179,7 +179,8 @@ export const drop = defineSystem(
       if (at < 0 && p.kind === kind && p.x === e.x && p.z === e.z && p.y === e.y && p.n < cap) at = id;
     });
     if (at < 0) {
-      if (carry <= 0 || w.count(Pile) >= RAILWAY_PILES || w.nextId() >= 2147483647) return 0;
+      // Dropping is mobility recovery. Other players' piles must never consume that ability.
+      if (carry <= 0 || w.nextId() >= RAILWAY_MAX_INT) return 0;
       const n = Math.min(e.n!, carry, cap);
       w.spawn([Pile, { x: e.x!, y: e.y!, z: e.z!, n, kind, age: 0 }]);
       credit(a, kind, -n);

@@ -1565,7 +1565,7 @@ Both sealed gates have paired stone leaves, recessed courses, pale edge strips a
 **Heavy load (15 November, first decisions prototype).** In the main game, logs, stone and rails share a
 comfortable load of 8 (16 with the shared pack), with optional overfill to 12 (24). A pickup stops at comfort;
 a further press opts into the extra allowance. Above comfort, movement
-slows linearly from full speed to 60% at maximum; ground/air jump, hook and glide are unavailable. Jump-held
+slows linearly from full speed to 45% at maximum; ground/air jump, hook and glide are unavailable. Jump-held
 swimming ascent remains available. Drop (right click / R3 / touch; hold for all) puts cargo down as ordinary
 recoverable piles; dropping or depositing back to comfort restores mobility immediately. Pack acquisition
 re-evaluates the threshold for everyone. Big objects keep their existing exclusive carry rules. No sway or spill.
@@ -1573,7 +1573,7 @@ The steady bundle fills out; steel and stone render up to 24. Extra HUD cells ha
 comfort announces the cost, and a heavy-load reason with a Drop reminder remains visible while overloaded.
 This supersedes the older 8/16 hard cap and quiet-walking tag fade **only while heavy**. No special prototype
 room or new control. Server counts remain authoritative; movement is Owner and presentation Local.
-[Plan and limits](../plans/heavy-load.md). Whether early hauls offer a meaningful route trade-off is unproven.
+[Plan and measured geometry](../plans/heavy-load.md#review-follow-up-15-november). Q2 and Q5 log racks stand 10 m back along the approach; Q5’s rail shelf sits beside its log rack (10.11 m from the frame). A packed 24-unit haul can replace two comfortable trips there; full overloading loses on the longer early log bills. This is geometric walking arithmetic, not a human feel verdict. Pressing jump, hook or glide while heavy answers with a short draft refusal and a Drop instruction. Piles have no shared 128-row ceiling: another player’s drops cannot block your recovery; pile counts, positions and conservation are still validated.
 
 **Pack steel (8 November).** With the pack, carried rails stand in two banks on its shelf beside the log bundle,
 leaving both materials readable from behind and the side. Without it, the existing crosswise hold stays.

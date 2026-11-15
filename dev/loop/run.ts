@@ -23,9 +23,10 @@ import {
   LINE2_SEA,
   LINE2_GLIDE,
   LINE2_OLD_TRAIN,
+  depotOffset,
 } from '../../src/sim/railway-line2-layout.ts';
 import { line2Active } from '../../src/sim/railway-queries-line2.ts';
-import { railCarryMax } from '../../src/sim/railway-queries.ts';
+import { carryComfort, carrySpeed } from '../../src/sim/railway-queries.ts';
 import {
   account,
   aperture,
@@ -169,7 +170,7 @@ function* dropBig(g: Game, pl: Player): Policy {
 }
 const free = (g: Game, pid: string) => {
   const a = g.acct(pid);
-  return railCarryMax(g.w) - a.carry - (a.stone ?? 0) - (a.rails ?? 0);
+  return carryComfort(g.w) - a.carry - (a.stone ?? 0) - (a.rails ?? 0);
 };
 /** Chop the nearest standing tree (or hardwood, with the proper axe) until `want` logs are on the back. */
 function* chopTo(g: Game, pl: Player, want: number): Policy {
@@ -234,13 +235,13 @@ function* carry(
     for (let guard = 0; guard < 200; guard++) {
       const left = need.left() - g.others(need.key, pl.pid);
       if (left <= 0 && have() === 0) return;
-      if (have() < Math.min(left, railCarryMax(g.w))) {
+      if (have() < Math.min(left, carryComfort(g.w))) {
         if (left <= 0) return;
         // Anything else on the back goes down first, so the whole carry is this material.
         const a = g.acct(pl.pid),
           other = a.carry + (a.stone ?? 0) + (a.rails ?? 0) - have();
         if (other > 0) yield* clearBack(g, pl, need.kind);
-        const want = Math.min(left, railCarryMax(g.w));
+        const want = Math.min(left, carryComfort(g.w));
         g.bringing.set(mark, want);
         yield* fetch(want);
       }
@@ -338,6 +339,8 @@ function quarry(g: Game, pl: Player, k: number, byHand = false): Policy {
   const spec = L2(k);
   const depot = spec.depot && !byHand,
     shelf = spec.shelf && !byHand;
+  // A straight-line model of the rack's offset, not a terrain route or the server's pickup radius.
+  const rack = { x: spec.x + depotOffset(spec), z: spec.z };
   const j = () => qjob(g.w, k);
   return (function* () {
     yield* waitFor(g, () => line2Active(g.w) === k && g.h.tick() >= forgeOf(g.w).lit + LINE2_FORGE.turnTicks);
@@ -351,7 +354,7 @@ function quarry(g: Game, pl: Player, k: number, byHand = false): Policy {
       pl,
       logs,
       depot
-        ? (want) => fromRack(g, pl, spec, 'rail.depotTake', () => rail(g.w).depot, want, 'carry')
+        ? (want) => fromRack(g, pl, rack, 'rail.depotTake', () => rail(g.w).depot, want, 'carry')
         : (want) => chopTo(g, pl, want),
       () => g.acct(pl.pid).carry,
       spec,
@@ -362,7 +365,7 @@ function quarry(g: Game, pl: Player, k: number, byHand = false): Policy {
       pl,
       rails,
       shelf
-        ? (want) => fromRack(g, pl, spec, 'rail.depotRailTake', () => rail(g.w).depotRails, want, 'rails')
+        ? (want) => fromRack(g, pl, rack, 'rail.depotRailTake', () => rail(g.w).depotRails, want, 'rails')
         : (want) => forgeRails(g, pl, want),
       () => g.acct(pl.pid).rails ?? 0,
       spec,
@@ -712,7 +715,7 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
       pl.at = { ...cmd.walk };
       pl.walked += d / 100;
       t.walked += d / 100;
-      pl.busy = g.h.tick() + Math.ceil((d / (WALK_MPS * 100)) * 10);
+      pl.busy = g.h.tick() + Math.ceil((d / (WALK_MPS * carrySpeed(g.w, pl.pid) * 100)) * 10);
     } else if ('wait' in cmd) pl.busy = g.h.tick() + cmd.wait;
     else {
       const fields = { ...cmd.fields };

@@ -83,7 +83,8 @@ export const heavyLoad = (w: World, pid: string) => {
 export const carrySpeed = (w: World, pid: string) => {
   const a = w.get(Account, w.lookup(Account, pid) ?? -1);
   const extra = Math.max(0, (a ? carried(a) : 0) - carryComfort(w));
-  return 1 - Math.min(1, extra / (carryMax(w) - carryComfort(w))) * (1 - HEAVY_LOAD.minSpeed);
+  const fraction = Math.min(1, extra / (carryMax(w) - carryComfort(w)));
+  return 1 - fraction + fraction * HEAVY_LOAD.minSpeed;
 };
 /** One take stops at comfort first; another deliberate take opts into the heavy allowance. */
 export const free = (w: World, a: Readonly<AccountRow>) => {

@@ -17,7 +17,7 @@ import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import { RAIL_LEGS, RAIL_YARDS, railPos } from './railway-route.ts';
 import { RECOVERY_MINUTES } from './railway-supply.ts';
-import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES, RAILWAY_PILES } from './railway.ts';
+import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES } from './railway.ts';
 import {
   Account,
   Aperture,
@@ -146,8 +146,7 @@ export function railwayCheck(w: World) {
     [Route, 1],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
-  if (w.count(Account) > MAX_PLAYERS || w.count(Pile) > RAILWAY_PILES || w.count(Outcome) > RAILWAY_OUTCOMES)
-    throw new Error('railway: rows');
+  if (w.count(Account) > MAX_PLAYERS || w.count(Outcome) > RAILWAY_OUTCOMES) throw new Error('railway: rows');
   if (!railInt(w.nextId(), RAILWAY_MAX_INT, 1)) throw new Error('railway: next id');
   checkRailway(w);
 }

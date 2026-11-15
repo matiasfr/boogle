@@ -103,6 +103,7 @@
 // v48 (2026-11-15): authenticated room admission uses server-issued principals and device sessions.
 // Fresh identities at this development cutover; accounts.sqlite stays independent of room resets. No migration.
 // v48 (2026-11-15): heavy loads widen the accepted cargo domain from 8/16 to 12/24. Current builds only.
+// Before shipping that change: uncapped recovery piles, Q2/Q5 depot reach and stub-arrival continuation fixed.
 export const WORLD_NS = 'v48';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps

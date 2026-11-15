@@ -9,6 +9,7 @@ import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { account, rail } from '../../sim/railway-rows.ts';
 import { boilerHeld, held, heavyLoad } from '../../sim/railway-queries.ts';
+import { notify } from '../../ui/notify.ts';
 import { GRAVITY, PLAYER_MASS } from '../../constants.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { me } from '../../player/player.ts';
@@ -64,6 +65,11 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
     if (g.opened === 1) playMark('glide opened', { authority: 'local' });
   }
   function toggle() {
+    if (owned && !inputState.seated && heavyLoad(adapter.read.world(), adapter.read.pid)) {
+      // Draft UI copy for the owner; not The Boogler's voice.
+      notify('Too heavy to glide. Drop cargo to travel light.', { kind: 'deny', key: 'heavy-load', ttl: 2500 });
+      return;
+    }
     if (!canAct() || hookPulling()) return;
     toggles++;
     if (g.open) return closeGlide(g);

@@ -17,7 +17,8 @@ import {
   LINE2_STATIONS,
   LINE2_FORGE,
   LINE2_PACK,
-  LINE2_DEPOT,
+  depotOffset,
+  type Line2Station,
   LINE2_LEVER,
   LINE2_HOOK,
   LINE2_SEA,
@@ -234,10 +235,10 @@ const rocks = (list: readonly { x: number; z: number; initial: number }[], label
   label,
 });
 const one = (q: Point, label: string): HandSupply => ({ by: 'hand', from: [q], per: 1, label });
-const depotRack = (s: { x: number; z: number }, by: 'cart' | 'train', foot: HandSupply): Supply => ({
+const depotRack = (s: Line2Station, by: 'cart' | 'train', foot: HandSupply): Supply => ({
   by,
-  rack: { x: s.x + LINE2_DEPOT.reach, z: s.z },
-  label: `${by} to the rack (reach ${LINE2_DEPOT.reach / 100} m)`,
+  rack: { x: s.x + depotOffset(s), z: s.z },
+  label: `${by} to the rack (modeled offset ${depotOffset(s) / 100} m)`,
   foot,
 });
 const dec = (on: NodeId, by: EnforcedBy, source: string, scope?: 'finish'): Edge => ({
