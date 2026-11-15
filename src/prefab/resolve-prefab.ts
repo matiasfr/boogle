@@ -1,5 +1,5 @@
 // Authored seat headings stay in degrees in JSON; runtime attachments keep their existing radians contract.
-import type { Attach, JsonObject, PrefabDef } from './types.ts';
+import type { Attach, ColliderDef, JsonObject, PrefabDef } from './types.ts';
 function object(value: unknown): JsonObject {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('prefabs: expected authored seat attachment object');
@@ -8,6 +8,38 @@ function object(value: unknown): JsonObject {
 export function resolvePrefab(record: PrefabDef, records: Readonly<Record<string, PrefabDef>> = {}): PrefabDef {
   if (record.layout === undefined) return record;
   let layout = record.layout;
+  // A polygonal pit wall stores authored dimensions, not forty-eight derived trig transforms in JSON.
+  if (layout?.kind === 'pit-ring') {
+    const { inner, outer, bottom, top, segments } = layout;
+    if (
+      typeof inner !== 'number' ||
+      typeof outer !== 'number' ||
+      typeof bottom !== 'number' ||
+      typeof top !== 'number' ||
+      typeof segments !== 'number' ||
+      ![inner, outer, bottom, top, segments].every(Number.isFinite) ||
+      inner <= 0 ||
+      outer <= inner ||
+      top <= bottom ||
+      !Number.isInteger(segments) ||
+      segments < 8 ||
+      segments > 256
+    )
+      throw new Error('prefabs: invalid pit ring dimensions');
+    const radius = (inner + outer) / 2;
+    const ring = Array.from({ length: segments }, (_, k): ColliderDef => {
+      const yaw = (k * Math.PI * 2) / segments;
+      return {
+        shape: 'box',
+        at: [Math.sin(yaw) * radius, (bottom + top) / 2, Math.cos(yaw) * radius],
+        half: [outer * Math.tan(Math.PI / segments), (top - bottom) / 2, (outer - inner) / 2],
+        rot: [yaw, 0, 0],
+      };
+    });
+    const resolved = { ...record, colliders: [...record.colliders, ...ring] };
+    delete resolved.layout;
+    return resolved;
+  }
   if (layout?.source !== undefined) {
     const source =
       typeof layout.source === 'string' && Object.hasOwn(records, layout.source) ? records[layout.source] : undefined;

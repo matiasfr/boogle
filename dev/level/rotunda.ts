@@ -7,6 +7,11 @@ import { BUFFERS, PROPS, ROTUNDA_HOME, legPoints, roadAt, spurPoints, type XZ } 
 import { LINKS, ORIGIN } from '../../src/place/layout.ts';
 import { H } from '../../src/place/terrain.ts';
 import { TOWN_SLOTS, townBuilding, townLocal } from '../../src/place/town-plan.ts';
+import { GRAVITY, JUMP_SPEED, PLAYER_R } from '../../src/constants.ts';
+import { TUNABLES } from '../../src/sim/tune.ts';
+import { terrainCollisionTiles, surfaceHeight } from '../../src/place/terrain.ts';
+import { definitions } from '../../src/prefab/catalogue.ts';
+import { openScene, type Solid } from './scene.ts';
 
 /** Metres: a running rail's centre, a town footprint, a prop from any rail, and how level the blocks' ground must be. */
 const LIMITS = { rail: 3.5, town: 4, prop: 3.5, level: 0.1 };
@@ -140,4 +145,98 @@ export function printRotunda(r: ReturnType<typeof checkRotunda>) {
       `  painted bay ${w.bearing}° (not planned): ${w.rail.toFixed(2)} m from a running rail, ground within ${w.ground.toFixed(2)} m`,
     );
   for (const p of r.problems) console.log(`  ${p}`);
+}
+
+/** A bounded physical clearance proof, not a controller/timing simulation. Sweep the actual player spheres along
+ * a conservative plain held-jump arc over the actual terrain and record-authored rim. A footing occupies the
+ * back visually; it keeps the player's body and jump impulse, but slows walking to the solo carry tune. No air jump or sprint. */
+export async function checkPitEscape() {
+  const site = ROTUNDA_HOME,
+    cx = site.centre.x + ORIGIN.x,
+    cz = site.centre.z,
+    yaw = bayFrame(site, 0).yaw;
+  const solids: Solid[] = terrainCollisionTiles().map((tile, i) => ({
+    id: `pit-terrain-${i}`,
+    source: { file: 'src/place/terrain.ts', symbol: 'terrainCollisionTiles' },
+    shape: { kind: 'heightfield', heights: tile.heights, cell: tile.cell },
+    position: tile.position,
+    support: 'embedded',
+  }));
+  for (const [i, collider] of definitions['roundhouse.table']!.colliders.entries()) {
+    if (collider.shape !== 'box' && collider.shape !== 'trunk') throw new Error('Unexpected pit collider');
+    const a = (collider.rot?.[0] ?? 0) + yaw;
+    solids.push({
+      id: `pit-ring-${i}`,
+      source: { file: 'src/content/prefabs/roundhouse.ts', symbol: 'prefabs' },
+      shape:
+        collider.shape === 'box'
+          ? { kind: 'box', hx: collider.half[0], hy: collider.half[1], hz: collider.half[2] }
+          : { kind: 'cylinder', rTop: collider.r, rBottom: collider.r, h: collider.h, segments: 12 },
+      position: {
+        x: cx + Math.cos(yaw) * collider.at[0] + Math.sin(yaw) * collider.at[2],
+        y: site.y + collider.at[1],
+        z: cz - Math.sin(yaw) * collider.at[0] + Math.cos(yaw) * collider.at[2],
+      },
+      rotation: { x: 0, y: Math.sin(a / 2), z: 0, w: Math.cos(a / 2) },
+      support: 'embedded',
+    });
+  }
+  const scene = await openScene(solids),
+    problems: string[] = [];
+  let paths = 0;
+  try {
+    for (const load of ['empty', 'footing'])
+      for (let bearing = 0; bearing < 360; bearing += 15) {
+        const speed = load === 'footing' ? TUNABLES.find((t) => t.key === 'railFootSoloSpeed')!.def / 100 : 5.6;
+        const a = (bearing * Math.PI) / 180,
+          ux = Math.sin(a),
+          uz = Math.cos(a);
+        // Walk to the bank before jumping; the live input proof also exercises an earlier launch at r6.5.
+        const startR = 7.2;
+        const x = cx + ux * startR,
+          z = cz + uz * startR,
+          ground = surfaceHeight(x, z);
+        // Rest the actual spheres against the bank; the centre-height ray alone embeds a sphere on a slope.
+        const support = scene.sweep({ x, y: ground + 0.6, z }, { x, y: ground - 0.1, z });
+        if (!support) throw new Error('Pit jump has no starting support');
+        const y = ground + 0.6 - 0.7 * support.fraction + 0.002;
+        let previous = { x, y, z },
+          cleared = false;
+        // Conservative held-jump envelope: omit the apex float and use the controller's heavier fall.
+        for (let frame = 1; frame <= 48; frame++) {
+          const t = frame / 60,
+            r = startR + speed * t,
+            apex = JUMP_SPEED / GRAVITY,
+            rise =
+              t <= apex
+                ? JUMP_SPEED * t - (GRAVITY * t * t) / 2
+                : (JUMP_SPEED * JUMP_SPEED) / (2 * GRAVITY) - (GRAVITY * 1.7 * (t - apex) * (t - apex)) / 2;
+          const next = { x: cx + ux * r, z: cz + uz * r, y: y + rise };
+          const hit = scene.sweep(previous, next);
+          if (hit) {
+            problems.push(`${load} ${bearing}°: ${hit.blocker} blocks plain jump at frame ${frame} (${hit.fraction})`);
+            break;
+          }
+          // The whole body is beyond the kerb and above the apron; its subsequent ground contact is landing.
+          if (r > site.tableR + ROTUNDA_KIT.rim + PLAYER_R + 0.02 && next.y >= site.y) {
+            cleared = true;
+            break;
+          }
+          previous = next;
+        }
+        paths++;
+        if (!cleared && !problems.at(-1)?.startsWith(`${load} ${bearing}°:`))
+          problems.push(`${load} ${bearing}°: did not clear kerb`);
+      }
+  } finally {
+    scene.world.free();
+  }
+  return {
+    level: 'rotunda/pit-escape',
+    failures: problems.length,
+    paths,
+    problems,
+    coverage:
+      'Swept player spheres, terrain and pit record; plain held-jump envelope, empty and footing. Live input timing is separate.',
+  };
 }

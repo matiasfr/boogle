@@ -6,7 +6,7 @@ import { ROTUNDA_HOME, TABLE } from '../../place/home-station.ts';
 import { bayFrame } from '../../place/rotunda.ts';
 
 type XZ = { x: number; z: number };
-/** The deck: its width and its depth, from the pit's floor (the yard's level for now) up to the rails' feet (m). */
+/** The timber deck's width and thickness (m); the view adds 0.9 m girders below its edges. */
 export const BRIDGE = { w: 3.2, h: 0.4 } as const;
 /** The handle's place on the deck: this far short of the deck's end, and in from its edge (m). */
 const HANDLE = { fromEnd: 0.8, inset: 0.15 };
@@ -29,7 +29,7 @@ export function bridgeHandle(table: XZ, r: number, yaw: number): XZ {
 }
 /** Whether a player's body (its centre, `PLAYER_R` over its feet) is clear of the deck resting at `yaw`, whose top is
  * at `top`: off its footprint by the body's own radius, or standing at its top or higher. The deck's collider is put
- * back only then, so it never returns through someone who dropped onto the disc while it turned. No player is clear. */
+ * back only then, so it never returns through someone who dropped into the pit while it turned. No player is clear. */
 export function clearOfBridge(
   table: XZ,
   r: number,
@@ -43,7 +43,7 @@ export function clearOfBridge(
     dz = body.z - table.z;
   const along = dx * Math.sin(yaw) + dz * Math.cos(yaw),
     across = dx * Math.cos(yaw) - dz * Math.sin(yaw);
-  return Math.abs(across) >= BRIDGE.w / 2 + PLAYER_R || Math.abs(along) >= halfLength(r) + PLAYER_R;
+  return Math.abs(across) >= BRIDGE.w / 2 + PLAYER_R || Math.abs(along) >= r + PLAYER_R;
 }
 /** The deck's collider box on a table of radius `r`: half its width, depth and length. */
 export const bridgeHalf = (r: number) => ({ hx: BRIDGE.w / 2, hy: BRIDGE.h / 2, hz: halfLength(r) });

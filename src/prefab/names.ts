@@ -47,7 +47,7 @@ export const names: NameRegistry = {
     'railway.halt-lever',
     'railway.halt-attachment',
     'roundhouse.bay-block',
-    'roundhouse.table-block',
+    'roundhouse.table',
   ],
   interactions: ['railway.request-stop', 'seat.sit', 'town.shop-stock', 'town.shop-rail'],
   gates: ['open'],

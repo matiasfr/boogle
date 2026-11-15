@@ -52,7 +52,7 @@ test('Gorge collider, placement and count values match the old massing', async (
   builders.set('railway.halt-lever', () => new THREE.Group());
   builders.set('railway.halt-attachment', () => new THREE.Group());
   builders.set('roundhouse.bay-block', () => new THREE.Group());
-  builders.set('roundhouse.table-block', () => new THREE.Group());
+  builders.set('roundhouse.table', () => new THREE.Group());
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
     fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
     { THREE, artifact, compiled, definitions, workshop, gorge, names, ...validation, builders, staticBody: record },

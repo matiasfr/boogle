@@ -116,7 +116,7 @@ export function captureWorkshop() {
       ['railway.halt-lever', () => chair],
       ['railway.halt-attachment', () => chair],
       ['roundhouse.bay-block', () => chair],
-      ['roundhouse.table-block', () => chair],
+      ['roundhouse.table', () => chair],
       [
         'town.workshop-parts',
         (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
@@ -273,7 +273,7 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
         ['railway.halt-lever', () => new THREE.Group()],
         ['railway.halt-attachment', () => new THREE.Group()],
         ['roundhouse.bay-block', () => new THREE.Group()],
-        ['roundhouse.table-block', () => new THREE.Group()],
+        ['roundhouse.table', () => new THREE.Group()],
         [
           'seat.chair',
           () => {

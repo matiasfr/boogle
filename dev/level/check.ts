@@ -232,11 +232,19 @@ async function runChecks() {
     report.push(ring);
     if (!json) printRing(ring);
     // Home's rotunda: its keep-clear outline against the tracks, the town, the yard props and its own ground.
-    const { checkRotunda, printRotunda } = await import('./rotunda.ts');
+    const { checkRotunda, printRotunda, checkPitEscape } = await import('./rotunda.ts');
     const rotunda = checkRotunda();
     failed += rotunda.failures;
     report.push(rotunda);
     if (!json) printRotunda(rotunda);
+    const escape = await checkPitEscape();
+    failed += escape.failures;
+    report.push(escape);
+    if (!json) {
+      console.log(`pit escape: ${escape.paths} plain-jump paths (empty and footing), ${escape.failures} problems`);
+      for (const problem of escape.problems) console.log(`  ${problem}`);
+      console.log(`  ${escape.coverage}`);
+    }
     // Greybox leg 2 (planned boxes): Bell Rock's two levels and Home's West landing (docs/plans/greybox-leg2-massing.md).
     const { checkLeg2, printLeg2 } = await import('./route-leg2.ts');
     const leg2 = checkLeg2();

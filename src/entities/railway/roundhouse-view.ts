@@ -102,7 +102,7 @@ export async function createRailwayRoundhouse(
   await drawWorksBoxes(owner, boxes);
 
   // ---------------------------------------------------------------- the turntable: the pit and its kerb are the
-  // rotunda's table block (flush with the yard until the pit is dug); the bridge across it is drawn here, since it turns
+  // rotunda's fixed table record; the bridge across the shallow pit is drawn here, since it turns
   const rotunda = createRotundaBlocks(owner);
   const anchor = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
   const table = toWorld(home.TABLE);
@@ -176,7 +176,6 @@ export async function createRailwayRoundhouse(
   let slabBody: Body | null = null,
     wagonBody: Body | null = null,
     wagonBodyAt = NaN,
-    deckBody: Body | null = null,
     deckBodyYaw = NaN,
     deckDrawn = NaN;
   let slabOpen = false,
@@ -193,6 +192,7 @@ export async function createRailwayRoundhouse(
     shunterA = PARKED_A - PARK.gap;
   let lastCradle = 0,
     lastRails = 0;
+  const deckBodies: Body[] = [];
   const lowering: { site: 0 | 1; slot: number; from: THREE.Vector3; t: number }[] = [];
   const bolts: { k: number; t: number }[] = []; // cradle pieces dropping on: k < 2 seats, else rail arms
   const m = new THREE.Matrix4(),
@@ -413,29 +413,73 @@ export async function createRailwayRoundhouse(
         oz = -Math.sin(drawn) * side * SHUNT.gauge;
       batch.box(table.x + ox, tableY + RAIL_HEAD - 0.135 / 2, table.z + oz, 0.1, 0.135, R * 2 - 0.1, '#4c5058', drawn);
     }
-    // The deck, from the pit's floor (the yard's level for now) up to the rails' feet.
-    const deckY = tableY + 0.1 - DECK.h / 2;
-    batch.box(table.x, deckY, table.z, DECK.w, DECK.h, R * 2 - 0.3, '#5c5046', drawn);
+    const deckTop = tableY + 0.05,
+      deckY = deckTop - DECK.h / 2,
+      length = R * 2 - 0.3;
+    m.makeRotationY(drawn).setPosition(table.x, deckTop, table.z);
+    // Timber deck at 18.35, 16 m overall. Narrow end boards keep the corners inside the r8.15 pit wall.
+    batch.part(m, 0, -DECK.h / 2, 0, DECK.w, DECK.h, length, '#665746');
+    for (const end of [-1, 1]) batch.part(m, 0, -DECK.h / 2, end * (R - 0.075), 2.8, DECK.h, 0.15, '#665746');
+    for (let z = -7.4; z <= 7.4; z += 0.6) {
+      batch.part(m, 0, 0.008, z, DECK.w, 0.016, 0.025, '#423f38');
+      for (const x of [-SHUNT.gauge, SHUNT.gauge]) batch.part(m, x, 0.025, z, 0.24, 0.05, 0.16, '#697170');
+    }
+    for (const side of [-1, 1]) {
+      const x = side * (DECK.w / 2 - 0.12);
+      // A 0.9 m plate girder with cap flanges, stiffeners and visible fastenings.
+      batch.part(m, x, -0.45, 0, 0.18, 0.9, length, '#3e505b');
+      for (const y of [-0.045, -0.855]) batch.part(m, x, y, 0, 0.24, 0.09, length, '#68757b');
+      for (let z = -7.1; z <= 7.1; z += 1.4) {
+        batch.part(m, x + side * 0.11, -0.45, z, 0.07, 0.72, 0.11, '#647178');
+        for (const y of [-0.16, -0.74]) batch.part(m, x + side * 0.155, y, z, 0.04, 0.055, 0.055, '#a59470');
+      }
+      // Short handrails leave both bridge ends and the central viewing/crossing area open.
+      for (const end of [-1, 1]) {
+        for (const z of [end * 4.8, end * 6.6]) batch.part(m, x, 0.47, z, 0.09, 0.94, 0.09, '#3e505b');
+        batch.part(m, x, 0.94, end * 5.7, 0.1, 0.1, 1.9, '#a59470');
+      }
+    }
     // A handle on the bridge's end that travels with it: what you turn.
     const handle = handleAt(drawn);
     batch.box(handle.x, tableY + 0.6, handle.z, 0.16, 1, 0.16, BRASS, drawn);
     // The deck is solid where it rests, never while it turns (a turning deck would shove whoever stands by it): it
     // is taken away with the first step of a turn and put back at the yaw it stops at, once this tab's player is
-    // clear of its volume (someone who dropped onto the disc during the turn is never lifted through it).
+    // clear of its volume (someone who dropped into the pit during the turn is never lifted through it).
     const still = !tableTurning && drawn === deckDrawn;
     deckDrawn = drawn;
-    if (deckBody && (!still || drawn !== deckBodyYaw)) {
-      owner.removeBody(deckBody);
-      deckBody = null;
+    if (deckBodies.length && (!still || drawn !== deckBodyYaw)) {
+      for (const body of deckBodies) owner.removeBody(body);
+      deckBodies.length = 0;
     }
-    if (still && !deckBody && clearOfBridge(table, R, drawn, deckY + DECK.h / 2, me.body?.position)) {
-      deckBody = addStatic(
-        { kind: 'box', ...bridgeHalf(R) },
-        { x: table.x, y: deckY, z: table.z },
-        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), drawn),
-        undefined,
-        owner,
-      );
+    if (still && !deckBodies.length && clearOfBridge(table, R, drawn, deckTop, me.body?.position)) {
+      for (const part of [
+        { x: 0, z: 0, y: deckY, half: bridgeHalf(R) },
+        ...[-1, 1].map((end) => ({
+          x: 0,
+          z: end * (R - 0.075),
+          y: deckY,
+          half: { hx: 1.4, hy: DECK.h / 2, hz: 0.075 },
+        })),
+        ...[-1, 1].map((side) => ({
+          x: side * (DECK.w / 2 - 0.12),
+          z: 0,
+          y: deckTop - 0.45,
+          half: { hx: 0.12, hy: 0.45, hz: length / 2 },
+        })),
+      ])
+        deckBodies.push(
+          addStatic(
+            { kind: 'box', ...part.half },
+            {
+              x: table.x + Math.cos(drawn) * part.x + Math.sin(drawn) * part.z,
+              y: part.y,
+              z: table.z - Math.sin(drawn) * part.x + Math.cos(drawn) * part.z,
+            },
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), drawn),
+            undefined,
+            owner,
+          ),
+        );
       deckBodyYaw = drawn;
     }
   }
