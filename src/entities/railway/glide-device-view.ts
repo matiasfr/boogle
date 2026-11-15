@@ -1,10 +1,5 @@
-// The glider's device on Needle Bell's summit (docs/plans/glider-b-home-flow.md), Local over accepted state. Sealed
-// until Q5 is laid: a dark drum and a folded vane on a short mast, its long axis pointing at the forge, no ring, no
-// light and no prompt. Woken: the vane unfurls teal and cream, Place's rings and core turn, a teal locator rises
-// (flaring on the live edge, with the room's wake banner) and the halts' maps mark the spot (halts-view.ts).
-// Taken (the room's `glide`): the drum stays, the rest goes. The take is a shared moment (./shared-moment.ts): the
-// finder's card plays on their own accepted (predicted) take; everyone else's flourish is ability-arrival.ts. Nothing
-// here grants anything.
+// The first-climb summit prize: faint turning rings and a forge-facing vane, no seal or shaft.
+// Local over the room's existing shared glide flag; the finder gets the card, friends the flourish.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
@@ -14,13 +9,7 @@ import type { V3 } from '../../physics/engine.ts';
 import type { Got } from '../../render/reward-reveal.ts';
 import { LINE2_GLIDE } from '../../sim/railway-line2-layout.ts';
 import { rail } from '../../sim/railway-rows.ts';
-import { line2Completed } from '../../sim/railway-queries-line2.ts';
 import { placeSound } from '../../render/place-sfx.ts';
-import { readableUnlit } from '../../render/readable-unlit.ts';
-import { warmDraw } from '../../render/precompile.ts';
-import { playMark } from '../../proto/mark.ts';
-import { reducedMotion } from '../../constants.ts';
-import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { GLIDE_REWARD } from './reward-data.ts';
 import { playSharedMoment } from './shared-moment.ts';
 
@@ -33,23 +22,6 @@ type Deps = {
 };
 /** The drum's light sits this high over its base (Place's tech.ts devices). */
 const LIGHT_Y = 1.45;
-const UNFURL_S = 0.6;
-/** The locator, wider and brighter than the jump device's (call 12's 0.1): on 10 November the glider woke and nobody
- * in the room saw it, so it must read as a few pixels from the village and line 2 (about 110 m) and not be heavy up
- * close. `opacity` breathes between its two values; `flare` is the wake edge's brief bright column and its seconds. */
-const LOCATOR = { r: 0.45, h: 70, opacity: [0.2, 0.32], flare: 0.85, flareS: 4 } as const;
-/** The seal (level-pacing-1114, B1): three brass bands on the furled cloth, one falling as each of Q3, Q4 and Q5 is
- * laid (line 2's completed count 3, 4 and 5; the last is the wake). A band's fall flares the locator at about a third
- * of the wake's: `flare` opacity, `wide` times the shaft, over `flareS`. `fallS`: how long a loose band is drawn. */
-const SEAL = { bandX: [-0.72, -0.25, 0.22], first: 3, flare: 0.3, wide: 1.5, flareS: 2, fallS: 0.7 } as const;
-/** How many bands still hold with `completed` stretches of line 2 laid. */
-const sealBands = (completed: number) =>
-  Math.max(0, Math.min(SEAL.bandX.length, SEAL.first + SEAL.bandX.length - 1 - completed));
-/** Why "Take it" is greyed while sealed. Draft UI copy for the owner (not a Boogler line). */
-const SEALED = 'Sealed until the line reaches Far Head';
-/** The wake banner, a draft for the owner to reword (not a Boogler line). */
-const WAKE_BANNER = ['The glider is awake', "Up on Needle Bell's summit"] as const;
-
 export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedView, deps: Deps) {
   const { land, shapes, partMat, glow, youGot } = deps;
   const geometries: THREE.BufferGeometry[] = [];
@@ -84,27 +56,7 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   // A short dark mast at the drum's east edge, and the vane at its top pointing west (-x), at the forge.
   const MAST = { x: 0.48, top: 2.35 };
   const mast = mesh(shapes.merged([['b', MAST.x, (MAST.top + 0.93) / 2, 0, 0.08, MAST.top - 0.93, 0.08, '#3d3c38']]));
-  // Sealed (level-pacing-1114, B1): the furled cloth already shows the glider's cream and teal, so it reads as the
-  // glider rolled up, bound by three brass bands that fall as Q3, Q4 and Q5 are laid. The drum stays dark.
-  const furled = mesh(
-    shapes.merged([
-      ['b', -0.25, 0, 0, 1.3, 0.22, 0.28, '#efe4c8'],
-      ['b', -0.25, 0.115, 0, 1.3, 0.02, 0.12, '#39e6c6'],
-      ['b', -0.25, 0, 0.145, 1.3, 0.09, 0.02, '#39e6c6'],
-      ['b', -0.25, 0, -0.145, 1.3, 0.09, 0.02, '#39e6c6'],
-      ['b', 0.42, 0, 0, 0.12, 0.22, 0.24, '#33322e'],
-    ]),
-  );
-  furled.position.set(MAST.x, MAST.top - 0.1, 0);
-  const bandShape = shapes.merged([['b', 0, 0, 0, 0.09, 0.3, 0.36, '#c79a3e']]);
-  /** West to east along the roll; the westmost falls first. `fall` is seconds since it let go, -1 while it holds. */
-  const bands = SEAL.bandX.map((x) => {
-    const view = mesh(bandShape);
-    view.position.set(MAST.x + x, MAST.top - 0.1, 0);
-    device.add(view);
-    return { view, x: MAST.x + x, fall: -1 };
-  });
-  // Woken: the cloth opens to the worn roll's teal and cream, its leading edge west.
+  // Unfurled from the start, leading edge pointing west to the forge.
   const vane = mesh(
     shapes.merged([
       ['b', -0.3, 0, 0, 1.4, 0.05, 0.9, '#39e6c6', 0, 0.06],
@@ -112,8 +64,8 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
       ['b', 0.36, -0.03, 0, 0.12, 0.09, 0.3, '#c79a3e'],
     ]),
   );
-  vane.position.copy(furled.position);
-  device.add(mast, furled, vane);
+  vane.position.set(MAST.x, MAST.top - 0.1, 0);
+  device.add(mast, vane);
   const ring = mesh(new THREE.TorusGeometry(0.72, 0.05, 8, 26), glow);
   ring.position.y = LIGHT_Y;
   ring.rotation.x = Math.PI / 2;
@@ -121,67 +73,19 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   ring2.position.y = LIGHT_Y;
   const core = mesh(new THREE.OctahedronGeometry(0.26), glow);
   core.position.y = LIGHT_Y;
-  // The locator: additive and unlit, seen across Home once woken (LOCATOR).
-  const shaftMat = readableUnlit(
-    new THREE.MeshBasicNodeMaterial({
-      color: '#39e6c6',
-      transparent: true,
-      opacity: LOCATOR.opacity[0],
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    }),
-  );
-  const shaft = mesh(new THREE.CylinderGeometry(LOCATOR.r, LOCATOR.r, LOCATOR.h, 8, 1, true), shaftMat);
-  shaft.castShadow = shaft.receiveShadow = false;
-  shaft.position.y = LOCATOR.h / 2 + 1.4;
-  device.add(ring, ring2, core, shaft);
-  const woken = [vane, ring, ring2, core, shaft];
-  // The loading frame warms the woken look, so Q5's completion edge never hitches on its first draw.
-  warmDraw(() => {
-    const was = woken.map((o) => o.visible);
-    for (const o of woken) o.visible = true;
-    return () => woken.forEach((o, k) => (o.visible = was[k]!));
-  });
+  device.add(ring, ring2, core);
   const ringFrom = () => device.localToWorld(new THREE.Vector3(0, LIGHT_Y, 0));
   const target = at.clone().add(new THREE.Vector3(0, 2.2, 0));
   const prize = shapes.merged(GLIDE_REWARD.parts);
   geometries.push(prize);
   owner.cleanup(() => {
     for (const g of geometries) g.dispose();
-    shaftMat.dispose();
   });
 
-  /** -1: not yet seen this session (the first build snaps); otherwise the completed count last seen ready. */
-  let seenCompleted = -1;
-  let unfurlT = -1;
-  /** Seconds since the wake edge's flare began, -1 when none. */
-  let flareT = -1;
-  /** Seconds since a band's smaller flare began (still sealed), -1 when none. */
-  let bandFlareT = -1;
   let t = 0;
-  const isWoken = (completed: number) => completed >= 5;
   const taken = () => rail(adapter.read.world()).glide;
-  const available = (completed: number) => isWoken(completed) && !taken();
-  function draw(completed: number) {
-    const gone = taken();
-    const awake = isWoken(completed) && !gone;
-    for (const o of [ring, ring2, core]) o.visible = awake;
-    // The locator stands while woken, and for a band's brief flare while still sealed.
-    shaft.visible = awake || (!gone && bandFlareT >= 0);
-    mast.visible = !gone;
-    // The bands that still hold sit on the roll; a loose one tumbles off for a moment, then is not drawn.
-    const holding = gone ? 0 : sealBands(completed);
-    bands.forEach((band, k) => {
-      const held = k >= bands.length - holding;
-      band.view.visible = !gone && (held || band.fall >= 0);
-      const f = held ? 0 : Math.max(0, band.fall);
-      band.view.position.set(band.x, MAST.top - 0.1 - 4.9 * f * f, 0.5 * f);
-      band.view.rotation.x = 5 * f;
-    });
-    const u = unfurlT < 0 ? 1 : Math.min(1, unfurlT / UNFURL_S);
-    vane.visible = awake;
-    furled.visible = !gone && (!awake || u < 0.15);
-    vane.scale.set(0.3 + 0.7 * u, 1, 0.12 + 0.88 * u * u * (3 - 2 * u));
+  function draw() {
+    for (const o of [mast, vane, ring, ring2, core]) o.visible = !taken();
   }
   return {
     accepted(e: RailwayAccepted) {
@@ -201,79 +105,17 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
         return false;
       });
     },
-    /** A restore (load, rejoin, resync) snaps to state: no wake show. */
-    restore(completed: number) {
-      seenCompleted = completed;
-      unfurlT = flareT = bandFlareT = -1;
-      for (const band of bands) band.fall = -1;
-      draw(completed);
-    },
-    update(dt: number, completed: number) {
+    restore: draw,
+    update(dt: number) {
       t += dt;
-      // The live edge only: Q5's completion seen going from 4 to 5 in this session, while still sealed.
-      // Every client sees it from the same accepted edge, so the whole room gets the flare and the banner (shared
-      // moments, 10 November); a restore or a late join gets the steady locator only.
-      if (seenCompleted === 4 && completed >= 5 && !taken()) {
-        unfurlT = 0;
-        flareT = 0;
-        showMomentBanner(WAKE_BANNER[0], WAKE_BANNER[1], 4.5);
-        playMark('glider woken', { authority: 'local' });
-      }
-      // A band lets go on the live edge of Q3, Q4 or Q5 being laid (the last with the wake above); the two earlier
-      // ones flare the locator briefly so line 2 sees the summit answer. A restore or a late join snaps, no show.
-      if (seenCompleted >= 0 && completed > seenCompleted && !taken()) {
-        for (let done = seenCompleted + 1; done <= completed; done++) {
-          const band = bands[done - SEAL.first];
-          if (!band) continue;
-          band.fall = reducedMotion ? -1 : 0;
-          placeSound('hookLatch', at.x, at.z);
-          if (done < SEAL.first + bands.length - 1) {
-            bandFlareT = 0;
-            playMark('glider band fell', { authority: 'local' });
-          }
-        }
-      }
-      if (adapter.read.ready()) seenCompleted = completed;
-      for (const band of bands)
-        if (band.fall >= 0) {
-          band.fall += dt;
-          if (band.fall >= SEAL.fallS) band.fall = -1;
-        }
-      if (bandFlareT >= 0) {
-        bandFlareT += dt;
-        if (bandFlareT >= SEAL.flareS || isWoken(completed)) bandFlareT = -1;
-      }
-      if (unfurlT >= 0) {
-        unfurlT += dt;
-        if (unfurlT >= UNFURL_S) unfurlT = -1;
-      }
-      // The locator flares on the wake edge and eases down to a slow breath (held still under reduced motion).
-      const [lo, hi] = LOCATOR.opacity;
-      const breath = reducedMotion ? (lo + hi) / 2 : lo + (hi - lo) * (0.5 + 0.5 * Math.sin(t * 1.6));
-      if (flareT >= 0) {
-        flareT += dt;
-        if (flareT >= LOCATOR.flareS) flareT = -1;
-      }
-      const f = flareT < 0 ? 0 : 1 - flareT / LOCATOR.flareS;
-      shaftMat.opacity = breath + (LOCATOR.flare - breath) * f * f;
-      shaft.scale.set(1 + f * 1.5, 1, 1 + f * 1.5);
-      if (bandFlareT >= 0) {
-        // Sealed: only the band's flare shows the shaft, fading out from SEAL.flare.
-        const b = 1 - bandFlareT / SEAL.flareS;
-        shaftMat.opacity = SEAL.flare * b * b;
-        shaft.scale.set(SEAL.wide, 1, SEAL.wide);
-      }
-      const spin = unfurlT >= 0 ? 6 : 1;
-      ring.rotation.z += dt * 0.7 * spin;
-      ring2.rotation.y += dt * spin;
+      ring.rotation.z += dt * 0.7;
+      ring2.rotation.y += dt;
       core.rotation.y += dt * 1.2;
       core.position.y = LIGHT_Y + Math.sin(t * 2) * 0.06;
-      draw(completed);
+      draw();
     },
-    targets(p: V3, completed: number): Interactable[] {
+    targets(p: V3): Interactable[] {
       if (taken() || Math.hypot(p.x - at.x, p.z - at.z) > 3 || Math.abs(p.y - at.y) > 2.2) return [];
-      // Sealed, the prompt shows greyed with when it opens, never silence (level-pacing-1114, B1).
-      if (!available(completed)) return [{ id: 'railway-glide-device', verb: 'Take it', at: target, blocked: SEALED }];
       return [{ id: 'railway-glide-device', verb: 'Take it', at: target, run: () => void adapter.claimGlide() }];
     },
     inspect: () => {
@@ -283,14 +125,14 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
           x: at.x,
           y: at.y,
           z: at.z,
-          available: isWoken(line2Completed(w)) && !rail(w).glide,
-          woken: isWoken(line2Completed(w)) && !rail(w).glide,
+          available: !rail(w).glide,
+          woken: !rail(w).glide,
           taken: rail(w).glide,
-          locator: shaft.visible,
-          unfurling: unfurlT >= 0,
-          flaring: flareT >= 0,
-          bands: rail(w).glide ? 0 : sealBands(line2Completed(w)),
-          bandFlaring: bandFlareT >= 0,
+          locator: false,
+          unfurling: false,
+          flaring: false,
+          bands: 0,
+          bandFlaring: false,
         },
       };
     },

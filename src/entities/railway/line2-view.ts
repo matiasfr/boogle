@@ -722,7 +722,7 @@ export async function createRailwayLine2(
           : lineFeed(spec, job).filter((fl) => fl.launchMs <= (run.elapsed - depositTicks) * 100).length;
     }
     seaGate.restore(railRow(w).sea);
-    glideDevice.restore(line2Completed(w));
+    glideDevice.restore();
     farHead.restore(farHeadLaid(w));
     boiler.restore();
     pier.restore(jobs[5]!.job.completion === 1);
@@ -1200,7 +1200,7 @@ export async function createRailwayLine2(
       depotSign.update(dt);
       syncSolids(w, completed);
       seaGate.update(dt, stock.sea);
-      glideDevice.update(dt, completed);
+      glideDevice.update(dt);
       // The rack's board: the part that waits on the pedestal, while it waits.
       const partWaits =
         boilerRow(w).state === 'pedestal' ? 'boiler' : worksPreview() && worksRow(w).breaker === 1 ? 'breaker' : null;
@@ -1279,7 +1279,7 @@ export async function createRailwayLine2(
         stock = railRow(w),
         completed = line2Completed(w),
         quarryRoute = line2Routes(completed).quarry;
-      const out: Interactable[] = [...seaGate.targets(p, stock.sea), ...glideDevice.targets(p, completed)];
+      const out: Interactable[] = [...seaGate.targets(p, stock.sea), ...glideDevice.targets(p)];
       out.push(...boiler.targets());
       // Step 3's second half, built off: the rack answers a press with a reason while its rails go by train and the
       // boiler waits. The words are the owner's (RACK_WAIT_REASON).

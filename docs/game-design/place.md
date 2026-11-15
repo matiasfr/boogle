@@ -52,8 +52,8 @@ Serves DESIGN.md **7. Telegraph everything** and **11. Show, don't tell**.
 
 **Q5 rules and the sea switch (8 November; B4 job A).** Production line two now reaches Q5: 24 logs and 24 rails
 fund the 260 m trestle from the rim to Far Head (286 → 546 m, 96 rail pairs). Laying waits for the Server-kind
-`rail.seaSwitch`: the first reached summit pull opens it, and the server checks the actor's reach and height at Needle Bell's summit
-(world 1011.8, 102.4, −6 m). Your pull is predicted; a friend's earlier pull stands without a correction effect.
+`rail.seaSwitch`: Q4 seats its control on the sea gate's far jamb, and the server checks reach and height
+at world (1174.02, 38, −36.27 m). A new pull opens it only after Q4 (15 November, fly first). Your pull is predicted; a friend's earlier pull stands without a correction effect.
 The cart serves Q5 as soon as Q4 completes, even with the gate up; its 24 rails come in one shipment (the cart holds 24 since glider piece B), moved
 from the forge. Leftover shelf rails return to the forge when Q5 funds. The sea flag and fifth station persist
 through restart; `WORLD_NS` v20 resets development worlds. The gate/switch views and summit access are separate
@@ -647,7 +647,7 @@ on the pier deck stay. Local view; the shared drop box he also asked for is the 
 
 ### Production Needle Bell hook climb (8 November 2026)
 
-The production bot now marks `hook taken` after the demo lands on t0, requires the six remaining upward pulls and a dry `needle bell summit` landing, then returns through t5–t0 and p2. Each pull uses the registered action and requires a clear path and landing; climb and descent spend no air jump.
+The production bot now marks `hook taken` after the demo lands on t0, requires the six remaining upward pulls and a dry `needle bell summit` landing, then takes the glider and flies to the forge on that first climb (15 November, fly first). The descending rings remain available. Each pull uses the registered action and requires a clear path and landing; climb and descent spend no air jump.
 
 **Falling and returning:** the gorge has an existing exit. From its low floor, follow the low quarry footbridge and graded quarry path up the east bank. Round the north side of Q3's frame and the parked track layer, then use a normal jump over the raised timber track edge at s=112 and walk back to s=84. A summit fall can land on the upper bank and join this route directly. Both drop returns have passed without relocation recovery; no new stair, ramp, ladder or other exit geometry was added. Surface swimming is allowed in the bot's return mode, while the successful t3 route needed walking and a ground jump. The p2 ring is outside its 24 m range at the observed drop landings (about 62 m from t3's floor landing, 44 m from the summit's bank landing).
 
@@ -663,11 +663,11 @@ The room's existing hook fact grants everyone a zip-line pull to the ring neares
 
 The press immediately starts its sound, 70 ms reaching cable and arm pose; arrival/let-go sounds and winds the cable back over 110 ms. A denied press gives a quiet pop, 1.5 m cable flick and 200 ms blink on nearby rings without moving the body. The picked ring shows the F/RB glyph for the first three pulls, with touch using its Hook button. Targeting and cosmetics are Local; the pull is Owner physics carried by ordinary position presence, with an additive nullable `railwayHook` pad id. No new shared operation or state is added.
 
-The production railway shows eight rings from the start: p2, t0–t5 and the summit. Rings are brass before ownership, teal when owned or in range, and bright when picked or pulling. Six 0.9 m floating stone slabs have teal undersides; the 0.4 m wooden summit deck is at 102.4 m. Positions and ring placement read Place's `tech-layout.ts` directly. Thin 1.5 m collider tiles preserve the camera's view beneath the next slab. The existing p2 slab is reused. The t0 secret box, t3 side slab and all other Place rings stay out of production. The summit ring and its post retain Place's off-deck east-edge placement for the orchestrator's review.
+The production railway shows eight rings from the start: p2, t0–t5 and the summit. Rings are brass before ownership, teal when owned or in range, and bright when picked or pulling. Six 0.9 m floating stone slabs have teal undersides; the 0.4 m wooden summit deck is at 102.4 m. Positions and ring placement read Place's `tech-layout.ts` directly. Thin 1.5 m collider tiles preserve the camera's view beneath the next slab. The summit deck is the exception, one solid box: nothing stands above it, and with tiles a camera pitched up at the last ring came to rest under the deck, showing its underside behind the glider's prompt (15 November). The existing p2 slab is reused. The t0 secret box, t3 side slab and all other Place rings stay out of production. The summit ring and its post retain Place's off-deck east-edge placement for the orchestrator's review.
 
 ### Production Q5, the sea gate and Far Head (8 November 2026)
 
-Job A supplies Q5's Server state: the summit switch opens the sea gate whenever reached; Q5's
+The sea switch opens only after Q4, from the gate's far jamb (15 November, fly first); Q5's
 24-log/24-rail bill still waits for Q4 to complete and Q5 to become active. The active Q4/Q5 frame accepts logs and rails before its gate is down (owner playtest call, 8 November).
 Hand-carried and depot-cart materials stock the bill; a full gated frame keeps its physical stock and counters,
 with “Pull the lever / switch to start”. The cart's service board hides when the bill is full.
@@ -676,12 +676,11 @@ Automatic unloading retries in reach at the ordinary cadence, logs then rails, w
 The Server rule and client prediction share this acceptance rule; funding stays authoritative. Existing partly
 stocked gated saves remain valid with the same world namespace.
 The cart stocks the rack even before the switch is pulled; it carries 24 rails a trip since glider piece B (it was
-16, two trips), so Q5's rails come in one shipment. The bot now reuses the Needle Bell climb and descent after Q4, pulls `railway-sea-switch`, unloads logs
+16, two trips), so Q5's rails come in one shipment. The bot hooks once onto the gate jamb after Q4, pulls `railway-sea-switch`, drops back beside Q5 and unloads logs
 before taking shelf rails, funds Q5, waits for laying and walks the 260 m trestle with dry support checks every
 3 m. Checkpoints are `sea gate`, `Q5 funded`, `Q5 laid` and `Far Head`; a friend witnesses Q5 completion.
 
-The Local gate slab, switch drum and posts read accepted `sea`; the switch lights the posts
-down to the gate. Far Head's lamps follow Q5 completion; rockets play only on the live completion edge, never
+The Local slab reads accepted `sea`. A permanent far-jamb landing shows an empty mount from the start, built to read from the gate's foot 13 m below: a gold collar round the landing, a dark cradle frame 3.6 m tall behind the socket, the ring's post at the near corner, and dashed gold "a part goes here" outlines for the drum, its lever and the ring. On Q4's live edge a bell rings, the drum drops 9 m into the cradle over 1.3 s and lands with a clank, a pop, a white flash, a shock ring and dust; the ghosts go, the ring swings out on its post (drawn a third larger than the tower's), the cradle's beam and a strip down two faces of the jamb wipe from white to teal over about a second, and the two gate-foot caps (0.5 m) light. Q4's arrival has no camera move, so none was added for this. Before Q4 there is no drum, ring or prompt. The landing is at 38 m (14 m above the bed), above a second jump plus interaction reach even from the headstock; the hook is a single 17.57 m pull. Restores snap to the installed state, including old already-open gates. Far Head's lamps follow Q5 completion; rockets play only on the live completion edge, never
 on rebuild, reload or late join. C reads B's pinned `sea`, `seaGateSolid`, `farHead` and `trestleLamps` inspection
 fields. After B merged as `bfe5cf30`, both seeded halves passed without recovery: sea gate 38.8 s;
 Q5 funded 123.9 s, laid 153.9 s, Far Head 208.3 s. The bot follows the laid track across the gorge and rounds
@@ -697,36 +696,20 @@ campaign or real-time smoothness verdict. The long route and owner playtest rema
 
 ### Production glider (9 November 2026, piece B)
 
-[Plan](../plans/glider-b-home-flow.md); [placement brief](../brainstorms/glider-placement.md). The glider waits
-sealed on Needle Bell's summit at world (1016, 102.4, −4.5), 4.5 m from the sea switch: a dark drum with a brass cap
-and a short mast carrying a furled vane, pointing west at the forge. It has no ring, no light and no shaft.
+[Ability order](../plans/ability-order.md), candidate A, owner-approved 15 November. At world
+(1016, 102.4, −4.5), the summit's dark drum has a cream-and-teal vane facing west to the forge and faint turning
+rings and core from the start. No seal, bands, shaft, Q5 wake or banner. **Take it** is one shared `rail.glide`
+take on the first climb, usable at once. The server checks the same summit reach and height; the take remains
+predicted, the finder gets "The glider" / "Open it in the air.", partners get the existing flourish and late joiners
+inherit it. The drum stays after the prize is taken. Halt maps keep a canopy mark while it waits.
 
-**The seal (14 November, [level-pacing](../plans/level-pacing-1114.md) B1; reverses the 9 November default of a dark
-vane and no prompt).** The furled cloth is the glider's own cream with teal edging, bound by three brass bands; the
-drum stays dark. One band lets go as each of Q3, Q4 and Q5 is laid (the last is the wake): it tumbles off with a
-latch sound and, for the first two, the locator flares for 2 s at opacity 0.3 and 1.5 times its width, so line 2 sees
-the summit answer. Within reach, **Take it** shows greyed with "Sealed until the line reaches Far Head" (draft UI
-copy). Local over accepted completions: a join, a reload or reduced motion snaps to the band count with no fall.
-
-Q5's completion wakes it, on the same edge that casts the boiler (no summit cinematic). The vane takes the worn roll's
-teal and cream, Place's two rings and core light up and turn, and a teal locator shaft rises 70 m (radius 0.45,
-breathing between opacity 0.2 and 0.32, held at 0.26 under reduced motion), a few pixels wide from the village and
-line 2. It used to be as faint as the jump device's (0.1 m, 0.1), and in the owner's 10 November co-op playtest the
-glider woke about ten minutes in and nobody in the room noticed it. On the live edge only the vane unfurls once over
-0.6 s, the shaft flares (opacity 0.85, 2.5 times as wide, easing back over 4 s) and every client in the room shows
-the moment banner "The glider is awake" / "Up on Needle Bell's summit" (draft copy for the owner; not a Boogler
-line), each from its own accepted edge; a reload or a late join snaps it to woken with no flare or banner. While it
-waits, every halt's map display marks the summit with a small teal canopy in the device's teal and cream (displays
-stand once trains run, so a group that left it behind sees it there). The route up stays the hook rings and teal
-undersides of the first climb, which read from the foot without a sign.
-The hook brings you back up. **Take it** (Place's verb) is one shared take, `rail.glide`, a Server op on the railway
-world, heard within 3.2 m across and 2.6 m of the summit's height and only after Q5: whoever takes it takes it for
-the room. It is predicted, so the finder gets Place's card ("The glider" / "Open it in the air."), the
-`pickupGlider` sound and the folded roll on the press; partners get the ability-arrival flourish (teal puff, sound,
-the glider badge) and no card. Taken, the device keeps its drum and loses its lights.
+Nothing on Home requires the glider and Needle Bell is optional for now, as the owner accepted. The hook remains
+required at the sea gate's jamb. The first flight is the way down toward Q3's rails at the forge; subsequent
+climb-plus-flight trips are not faster hauling. The balcony is optional; Ring Island supplies its later crossing.
+The hook secrets `alcove` and `firstpull` move to the finders' bay after trains, not immediately after this early take.
 
 The first time you fall faster than 4 m/s with the glider shut, the Glide action's glyph (LB / Q; nothing on touch,
-like the jump teach) pulses at your back until you open it or land. It shows Glide, not Jump, because at Q5 Jump
+like the jump teach) pulses at your back until you open it or land. It shows Glide, not Jump, because Jump
 spends the double jump first. The flight is piece A's, now read from eight room tunables (`railGlideSpeed` 1000 cm/s,
 `railGlideSink` 320 cm/s, `railGlideAccel` 1800, `railGlideBrake` 1200, `railGlideOver` 800 cm/s², `railGlideTurnTau`
 120 ms, `railGlideTurnMax` 360°/s, `railGlideDeploy` 100 ms). While the canopy holds you, two threads of air trail
@@ -735,18 +718,19 @@ only, off under reduced motion), and the air going past is a low band of noise o
 speed to 10 m/s (Place's glide wind, restored the same day; silent once you land). Both stop while a shot, a reward card or the pause view has the screen
 and resume after it.
 
-Taking it faces you west over the device toward the forge, where the plume stands over the new boiler, so the natural
-step-off heads home. The first flight lands on the forge apron only if you let go of the stick over it: letting go
+Taking it faces you west over the device toward the forge, where Q3's rails wait, so the natural step-off faces the next job. Q5 still casts the boiler and plays Far Head's show; it no longer changes the summit. The first flight lands on the forge apron only if you let go of the stick over it: letting go
 brakes you in under a second and you sink onto broad, dry ground. Holding full stick carries you about 250 m, over the
 forge and the village and into the cove, which is a swim.
 
-The cart now carries 24 rails a trip (16 before), so Q5's whole rail bill comes in one shipment. The production bot
-plays in a player's order: it opens the pack at the forge before Q1, pulls the sea switch on the first climb, waits
-at the rim for Q5's single shipment, and after Far Head climbs back up, takes the glider and glides to the boiler;
-`&botOrder=legacy` keeps the old order. Seeds `glide-earned`, `q5-shelved` and `q5-arriving` replace the dev grant
-`&railGlide=1`. Code: `rail.glide` in `src/sim/railway-systems.ts`, `Rail.glide`, the view
-`src/entities/railway/glide-device-view.ts`, the flourish and teach in `ability-arrival.ts`. `WORLD_NS` v23. Not
-tested on a device.
+The cart carries 24 rails a trip, so Q5's whole rail bill comes in one shipment. The production bot takes the
+pack at the forge, climbs once after the hook, takes the glider and flies down, then pulls the gate-jamb switch
+after Q4 and walks home after Far Head. `hook-taken` keeps an untaken summit prize; `glide-earned` is now Q2 with
+both moves. The Q5 seeds also represent rooms that skipped the optional climb; the train seeds keep their owned
+glider. Existing hook, glider and sea flags remain valid; no namespace reset or save migration for this change.
+Tests cover new Q2 glider saves, old pre-Q4 sea flags, host restart, prediction races and late joins. Old tabs must
+reload to see the new placement and remove the seal; the updated server rejects their obsolete summit switch
+position. This is forward save preservation, not support for rolling a new early-glider save back to the old code.
+Not tested on a device.
 
 ### Production boiler, trains and the pier (8 November 2026)
 
@@ -1560,9 +1544,11 @@ The worn equipment uses the same pure builders and attachment transforms as [Bud
 
 **Two gates on the line, both slabs across the track bed.** You can walk round one; the machine can't. Its frame stocks logs and rails while the slab is up, and waits for the pull before laying. _The quarry:_ a chain runs from the slab up to a lever on a ledge 2.2 m high, banded in the devices' teal (**Pull**). _The rim, before the sea:_ dark posts lead from the slab back to the tower. A separate summit switch (**Pull**) sends light down them and drops the slab, without granting the glider. The same hook rings provide the return descent. Building the sea crossing then reaches the glider; its reward is dismissed before the immediate glide home, and the distant-island reveal remains later at the pier. The `solo-input-hud` branch owns reward/camera sequencing; this change removes the gate/pickup coupling without duplicating its queue. Optional balcony and sea-stack routes remain accessible after earning the glider, with their existing missed-prize rules. The owner's 21–24 minute range is diagnostic only; no bill, movement speed or delay was added to meet it.
 
-The first accepted summit Pull opens the sea gate immediately, even before Q4 (owner, 8 November; [puzzle order](../brainstorms/puzzle-order.md), suggestion 1). There is no jam or refusal line. The teal handle pivots at the drum's axle and pulls down toward the summit approach, holding that pose after reload. The server still checks the summit position; Q5 can take materials and fund only when it is the active stretch after Q4. This remains true with gated filling: a closed gate may hold an active frame's construction, but never permits deliveries to an inactive stretch. Existing saved sea flags remain valid; no saved shape or namespace changes.
+Since 15 November's [fly-first decision](../decisions-core-loop.md#d-2026-11-15-fly-first), the switch is on the
+sea gate's far jamb and new pulls require Q4. Old saved open gates stay open; Q5 still waits for its active stretch.
+The former summit-switch account above describes the retired prototype; the production sections own today's order.
 
-The summit switch and the quarry lever each queue a 3.2-second Local camera move toward their gate, using Place's shared celebration pull-out and the railway's reward-card queue. It is a shared moment (owner, 10 November, "shared moments play for everyone"; `src/entities/railway/shared-moment.ts`): the puller's page plays it from the predicted pull, every other page in the room, near or far, as the server confirms it, and a reload or late join never replays it. The move waits until all reward cards are dismissed and blends back to the ordinary camera behind Buddy. Nothing ends it by accident (owner, 9 November): keys, clicks, taps, the wheel, the mouse, pad buttons and sticks leave it playing, and Buddy still moves underneath. From 0.8 s until it starts back, Interact's glyph shows bottom centre in a sun-ringed chip with a blinking ▸▸ (on touch the Grab button lights instead), and that one press skips: the view turns behind Buddy and blends home in 0.14 s, and the press does nothing else. A reward card opening mid-move puts the move back in the queue to play whole after it. It is cancelled by a view reset or when the server refuses the pull; a railway chair or bench no longer cancels it (14 November, every pull-out: `createCameraPullOut`), only a vehicle's driving seat, whose chase camera owns the view. Reduced motion skips the camera move. Gate state, lights and handle motion never wait for a camera or reward card. The hook shot keeps aiming from the player's own follow camera while a move plays, so hooking back down the tower during or right after the summit move picks the ring Buddy faces (fixed 9 November: the pick had used the move's camera and found no ring).
+The gate-jamb switch and the quarry lever each queue a 3.2-second Local camera move toward their gate, using Place's shared celebration pull-out and the railway's reward-card queue. It is a shared moment (owner, 10 November, "shared moments play for everyone"; `src/entities/railway/shared-moment.ts`): the puller's page plays it from the predicted pull, every other page in the room, near or far, as the server confirms it, and a reload or late join never replays it. The move waits until all reward cards are dismissed and blends back to the ordinary camera behind Buddy. Nothing ends it by accident (owner, 9 November): keys, clicks, taps, the wheel, the mouse, pad buttons and sticks leave it playing, and Buddy still moves underneath. From 0.8 s until it starts back, Interact's glyph shows bottom centre in a sun-ringed chip with a blinking ▸▸ (on touch the Grab button lights instead), and that one press skips: the view turns behind Buddy and blends home in 0.14 s, and the press does nothing else. A reward card opening mid-move puts the move back in the queue to play whole after it. It is cancelled by a view reset or when the server refuses the pull; a railway chair or bench no longer cancels it (14 November, every pull-out: `createCameraPullOut`), only a vehicle's driving seat, whose chase camera owns the view. Reduced motion skips the camera move. Gate state, lights and handle motion never wait for a camera or reward card. The hook shot keeps aiming from the player's own follow camera while a move plays, so hooking back down the tower during or right after the summit move picks the ring Buddy faces (fixed 9 November: the pick had used the move's camera and found no ring).
 
 **Both gates hang their slab from a headstock (9 November playtest: riding through the open quarry gate, "the top here disappears which looks weird").** Two beams of the jambs' stone lie across their tops, 5.9 m over the rail, with a slot between them and a sheave over each end of the slab. A chain runs from an eye at each end of the slab's top up through the slot and over its sheave. At the quarry both chains then run over the winch-side sheave and down to the lever's winch; at the sea gate each runs in to its half of a drum on the headstock. The chains are drawn from the slab, so when the slab sinks its links ride down with it and pay out over the sheaves, the sheaves and the winch's crank wheel (or the drum) turning by the same length, and the chain's end stays on the slab, down in its slot once open. Nothing ends in the air, open or closed, and a rebuild or late join poses it from the slab. The headstock is solid; when each gate opens, and the slab's and jambs' colliders, are unchanged. Clearances measured on line two's train (9 November): the engine's chimney tops out 2.07 m over the rail and 0.99 m either side of the track's centre, the flatbeds 2.34 m (crates) and 1.7 m, a rider stands on a flatbed's deck at 0.70 m. Under the 5.9 m headstock that leaves about 3.2 m over a standing rider (allowing 2 m for Buddy and a hat) and 1.6 m over one jumping, and 1.1 m from the flatbeds to the hanging chains (2.77 m out). Sized for an engine up to 1.5 times today's height and width (owner, 9 November, undecided): its chimney would clear by 3.8 / 3.3 / 2.8 m at 1, 1.25 and 1.5 times, a rider standing on its boiler top by 2.2 / 1.7 / 1.3 m, and it would pass the chains by 1.8 / 1.5 / 1.3 m, so the jambs stay where they are. Only a rider jumping off a 1.5-times engine's boiler would bump the headstock. Local view over accepted `gateOpen`/`seaOpen` (`src/entities/railway/gate-rig.ts`); the frame is one draw with the jambs, the wheels one instanced draw, the links one. Not tested on a device.
 

@@ -284,7 +284,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     pullLever: () => submit({ op: 'rail.lever' }),
     pullSeaSwitch: () => submit({ op: 'rail.seaSwitch' }),
     claimHook: () => submit({ op: 'rail.hook' }),
-    /** Take the glider from its summit device (once Q5 is laid; the rule and the server judge it). */
+    /** Take the glider from its summit device (on the first climb; the rule and the server judge it). */
     claimGlide: () => submit({ op: 'rail.glide' }),
     deposit(n = 1, kind: RailMaterial = 0) {
       const station = LINE1_STATIONS[activeStation(view())]!.id;

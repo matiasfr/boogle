@@ -2,6 +2,7 @@
 // Node. Research: docs/research/movement-abilities.md, sections 5 and 6, with its coordinates moved to what the land really is.
 // All local metres, x z y like `Pt` in ./layout.ts; `top` is the surface you stand on. All of it hypotheses until played.
 import { LINES, OFFSET_LAT, lineAt, railY, type Line, type LinePoint } from './layout.ts';
+import { LINE2_SEA } from '../sim/railway-line2-layout.ts';
 import { TOWN_PROPS } from './town-plan.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
@@ -165,7 +166,18 @@ export const DEVICES: Record<TechId, { pad: string; x: number; z: number; y: num
   glide: { pad: 'glide-home', x: 369, z: -169, y: 32.3 },
 };
 export const GLIDE_RAMP = { x: 367, z: -154, hx: 3, hz: 10, low: 24.3, high: 32.3 };
-export const SEA_SWITCH = { x: 11.8, z: -6, y: 102.4 };
+export const SEA_SWITCH = { x: LINE2_SEA.x / 100 - 1000, z: LINE2_SEA.z / 100, y: LINE2_SEA.y / 100 };
+/** Permanent far-jamb landing and empty socket. The ring and drum arrive together with Q4. */
+export const SEA_LEDGE: Pad = {
+  id: 'sea-jamb',
+  x: SEA_SWITCH.x,
+  z: SEA_SWITCH.z,
+  top: SEA_SWITCH.y,
+  hx: 2.2,
+  hz: 2.2,
+  look: 'stone',
+};
+export const SEA_RING = { x: SEA_LEDGE.x - 1.8, z: SEA_LEDGE.z + 1.8, y: SEA_LEDGE.top + 2.4 };
 
 // ---------------------------------------------------------------- the two gates on the line
 // A slab across the track bed where the next stretch would go, so you can see why the machine stopped.
@@ -211,17 +223,12 @@ export const SERVICE_ROUTES = {
 export const SERVICE_WIDTH = 3;
 /** The hook walk's first points (alongside the deck, then the turn) sit flush with the track's walkable top, 0.1 m over rail height. */
 export const HOOK_FLUSH = { points: 3, top: 0.1 };
-/** Dark stone posts from the sea gate back towards the tower: light runs along them when its summit wakes. */
-export const POSTS: { x: number; z: number }[] = [];
-{
-  const g = GATES.sea,
-    to = { x: 26, z: -8 },
-    n = 14;
-  for (let k = 0; k < n; k++) {
-    const t = (k + 0.5) / n;
-    POSTS.push({ x: g.x + (to.x - g.x) * t + 3.4 * (k % 2 ? 1 : -1), z: g.z + (to.z - g.z) * t });
-  }
-}
+/** Two caps at the gate's feet light when Q4 seats its control, then flash on the pull. */
+export const POSTS = [-1, 1].map((side) => {
+  const g = GATES.sea;
+  const across = side * (GATE_SLAB.w / 2 + GATE_SLAB.pillar);
+  return { x: g.x + Math.cos(g.yaw) * across, z: g.z - Math.sin(g.yaw) * across };
+});
 
 // ---------------------------------------------------------------- secrets: optional, on paths you've walked
 export type SecretId =
@@ -301,7 +308,7 @@ export const SECRETS: Secret[] = [
     x: -40,
     z: -80.5,
     y: top('alcove'),
-    after: 'glide',
+    after: 'trains',
     from: { x: -41, z: -84 },
   },
   {
@@ -312,7 +319,7 @@ export const SECRETS: Secret[] = [
     x: 8,
     z: 9.5,
     y: top('t0') + 1,
-    after: 'glide',
+    after: 'trains',
     from: { x: P2.x, z: P2.z, y: P2.y + 2.2 },
   },
   {

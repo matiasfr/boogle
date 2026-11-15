@@ -7,6 +7,8 @@
 // pending, stalled, status), and every accepted, corrected, remap and reset event the adapter plays. Scripted runs at
 // every seed the M10 groups used, with two lagged players pressing every op the
 // adapter sends, a disconnect and refill, and a late joiner; a predicted press read before the server answers.
+// Re-recorded for the owner-approved fly-first rules, 15 November: early glider acceptance, Q4 sea pulls and the
+// glide-earned Q2 fixture deliberately change the trace (docs/plans/ability-order.md, save-preservation exception).
 // The value is the trace's FNV hash per client, with a checkpoint every 25 frames so a difference can be found.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -318,7 +320,7 @@ function settle(name: string) {
 }
 
 for (const stage of STAGES)
-  test(`M12 at ${stage}: two players, a disconnect and refill and a late joiner see what main showed`, () => {
+  test(`M12 at ${stage}: two players, a disconnect and refill and a late joiner match the approved rule trace`, () => {
     const r = room(stage === 'fresh' ? undefined : buildSeedWorld(stage));
     const a = r.join('a', 'a', 6, `${stage}/a`);
     const b = r.join('b', 'b', 2, `${stage}/b`);

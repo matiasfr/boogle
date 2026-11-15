@@ -11,10 +11,10 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_ROCKS, LINE1_GREAT_TREE } from '../../src/sim/railway-line-layout.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
-import { Pile } from '../../src/sim/railway-components.ts';
+import { Pile, Rail } from '../../src/sim/railway-components.ts';
 import { railMaxDuration } from '../../src/sim/railway-queries-line1.ts';
 import { line2Active, line2Rails, line2SeaOpen, railCounts } from '../../src/sim/railway-queries-line2.ts';
-import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS, LINE2_SEA } from '../../src/sim/railway-line2-layout.ts';
 import { CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import {
   buildSeedWorld,
@@ -37,7 +37,7 @@ import type { ServerPacket } from '../../src/world/replicate.ts';
 
 type Obj = Record<string, unknown>;
 for (const early of [true, false]) {
-  test(`line host: summit pull ${early ? 'before' : 'after'} Q4 survives a restart; Q5 respects the active stretch`, async () => {
+  test(`line host: gate pull ${early ? 'before' : 'after'} Q4 survives a restart; Q5 respects the active stretch`, async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-q5-'));
     const store = createStore({ dataDir: dir, maxRooms: 2 });
     await store.init();
@@ -90,7 +90,12 @@ for (const early of [true, false]) {
       };
       const q5 = LINE2_STATIONS[4]!;
       const frame: [number, number, number] = [q5.x, 2400, q5.z];
-      const summit: [number, number, number] = [101180, 10240, -600];
+      const jamb: [number, number, number] = [LINE2_SEA.x, LINE2_SEA.y, LINE2_SEA.z];
+      assert.equal(
+        (await edit({ op: 'rail.seaSwitch' }, [101180, 10240, -600])).status,
+        'rejected',
+        'an old client at the summit cannot open the gate',
+      );
       assert.equal((await edit({ op: 'rail.seaSwitch' }, [101180, 2400, -600])).status, 'rejected');
       assert.equal((await edit({ op: 'rail.seaSwitch' }, frame)).status, 'rejected');
       assert.equal(rail(world()).sea, false);
@@ -113,8 +118,15 @@ for (const early of [true, false]) {
         session = getSession();
         request = Number(session.next) - 1;
       }
-      assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'accepted');
-      assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'noop');
+      assert.equal((await edit({ op: 'rail.seaSwitch' }, jamb)).status, early ? 'noop' : 'accepted');
+      if (early) {
+        // An old room's already-pulled flag, loaded in the unchanged checkpoint shape.
+        const old = world().snapshot();
+        old.c[Rail.kind]![1 + Rail.names.indexOf('sea')]![0] = 1;
+        world().load(old, railwayCheck);
+        host.rules.railway.touchAll();
+      }
+      assert.equal((await edit({ op: 'rail.seaSwitch' }, jamb)).status, 'noop');
       assert.equal(line2SeaOpen(world()), true);
       assert.equal((await edit(deposit, frame)).status, early ? 'noop' : 'accepted');
       if (early) {
@@ -148,7 +160,7 @@ for (const early of [true, false]) {
     }
   });
 }
-test('line host: the glider judged on the summit device, only after Q5; one shared take survives a restart', async () => {
+test('line host: the glider judged on the summit device, on the first climb; one shared take survives a restart', async () => {
   const { LINE2_GLIDE, LINE2_HOOK, LINE2_SEA } = await import('../../src/sim/railway-line2-layout.ts');
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-glide-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
@@ -200,17 +212,9 @@ test('line host: the glider judged on the summit device, only after Q5; one shar
   const glide = { op: 'rail.glide' };
   try {
     await host.whenReady();
-    // Before Q5 is laid the device is sealed: refused by the rule even at the device.
-    await load(railwayAtQ5('q5-finishing'));
-    await open('a');
-    assert.equal((await edit('a', glide, device)).status, 'noop');
-    assert.equal(rail(world()).glide, false);
-    await host.close({ save: false });
-    host = create();
-    await host.whenReady();
-    await load(railwayAtQ5('q5-done'));
+    await load(buildSeedWorld('hook-taken'));
     for (const sid of ['a', 'b']) await open(sid);
-    // Heard only on the summit device: not below it at the foot (y 20 m), not at the sea switch 4.5 m off, not at the
+    // Heard only on the summit device: not below it at the foot (y 20 m), not at the sea switch at the gate, not at the
     // hook device.
     assert.equal((await edit('a', glide, [LINE2_GLIDE.x, 2000, LINE2_GLIDE.z])).status, 'rejected');
     assert.equal((await edit('a', glide, [LINE2_SEA.x, LINE2_SEA.y, LINE2_SEA.z])).status, 'rejected');

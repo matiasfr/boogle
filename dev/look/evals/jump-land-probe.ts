@@ -62,7 +62,7 @@ const anchors: [string, number, number, number][] = points.length
       ['hook', 999.54, 20.86, 23.5],
       ['lever', 1097.4, 42.2, 26.2],
       ['boiler', 919, 5.4, 18.15],
-      ['sea', 1011.8, -6, 102.4],
+      ['sea', tech.SEA_SWITCH.x + 1000, tech.SEA_SWITCH.z, tech.SEA_SWITCH.y],
       ['pierstop', 1402.59, -358.46, 24.3],
       ['kiln', 1128, 87, 24.2],
       ['pierframe', 1405.54, -371.07, 24.3],

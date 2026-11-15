@@ -161,13 +161,17 @@ export const LINE2_PACK = { x: 91400, z: -900, carry: 16 } as const;
  * 2350): a position only, no saved field holds it. */
 export const LINE2_LEVER = { x: 109740, z: 4220, y: 2620 } as const;
 export const LINE2_HOOK = { x: 99669, z: 1680, y: 2294 } as const;
-/** Place tech-layout.ts SEA_SWITCH, on Needle Bell's summit deck. */
-export const LINE2_SEA = { x: 101180, z: -600, y: 10240 } as const;
-/** The glider device on the same deck (glider piece B), 4.5 m from the switch handle and clear of the top rock drum: Q5
- * wakes it and `rail.glide` takes it (docs/plans/glider-b-home-flow.md). */
+/** Sea gate's far jamb, one hook pull above the bed. Rounded world centimetres; tech-layout uses these too.
+ * Height clears even a second jump and interaction reach from the gate's headstock, reached via the machine. */
+export const LINE2_SEA = { x: 117402, z: -3627, y: 3800 } as const;
+/** The glider on Needle Bell, lit from the start and clear of the top rock drum; one shared take. */
 export const LINE2_GLIDE = { x: 101600, z: -450, y: 10240 } as const;
 /** Readiness from accepted completions only: Q2 builds the hook walkway, Q3 the quarry ramp and winch drive. */
-export const line2Routes = (completed: number) => ({ hook: completed >= 2, quarry: completed >= 3 });
+export const line2Routes = (completed: number) => ({
+  hook: completed >= 2,
+  quarry: completed >= 3,
+  sea: completed >= 4,
+});
 /** Integer-centimetre rail-pair boundaries for a line-two stretch: each stock rail lays as its rail pairs. */
 export function line2Panels(station: Line2Station) {
   const span = station.toCm - station.fromCm;

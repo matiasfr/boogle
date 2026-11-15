@@ -31,12 +31,12 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-08 · the Sickle Isles map as a backdrop, built for phones ([entry](#d-2026-11-08-the-sickle-isles-map-as-a))
 - 2026-11-08 · Split-rock answers: The forge casts the breaker after Q6; the Roundhouse is a yard shunter at Home's junction turntable whose wagon joins line 2's train; one footing fills your back, and a friend can Help carry a… ([entry](#d-2026-11-08-split-rock-answers))
 - 2026-11-08 · start Split-rock Works and the Roundhouse now _(merging only after B5–B8 was played: replaced by "nothing waits for a playtest" (2026-11-09))_ ([entry](#d-2026-11-08-start-split-rock-works-and-the))
-- 2026-11-08 · the summit switch opens early; switch cinematics; try a springy beam ([entry](#d-2026-11-08-the-summit-switch-opens-early-switch))
+- 2026-11-08 · the summit switch opens early; switch cinematics; try a springy beam ([entry](#d-2026-11-08-the-summit-switch-opens-early-switch)) _Replaced in part by [fly first](decisions-core-loop.md#d-2026-11-15-fly-first), 15 November. The early summit pull is replaced: the switch is at the gate and opens after Q4; the cinematics and beam trial stand._
 - 2026-11-08 · the next playtest: today's fixes plus B5–B8 ([entry](#d-2026-11-08-the-next-playtest-today-s-fixes))
 - 2026-11-08 · fill a gated stretch before its switch ([entry](#d-2026-11-08-fill-a-gated-stretch-before-its))
 - 2026-11-08 · a world wipe is a new save; old saves go ([entry](#d-2026-11-08-a-world-wipe-is-a-new)) _13 November: see [Save resets never block development or architecture](agents/owner-calls.md#save-resets-never-block-development-or-architecture)._
 - 2026-11-08 · the cart may shove you; the train lines run low and bend ([entry](#d-2026-11-08-the-cart-may-shove-you-the))
-- 2026-11-08 · the hook shot comes into the game ([entry](#d-2026-11-08-the-hook-shot-comes-into-the))
+- 2026-11-08 · the hook shot comes into the game ([entry](#d-2026-11-08-the-hook-shot-comes-into-the)) _Replaced in part by [fly first](decisions-core-loop.md#d-2026-11-15-fly-first), 15 November. The summit location is replaced: the switch moves to the sea gate; the hook and Q2 walk stand._
 - 2026-11-07 · world scale settled: Keep the current scale: Buddy (1.59 m), the little guys (0.96 m), buildings and the Sickle Isles terrain stay as they are; the little guys needn't match their houses' proportions ("the shop that you… ([entry](#d-2026-11-07-world-scale-settled))
 - 2026-11-07 · E's core is accepted at its current size ([entry](#d-2026-11-07-e-s-core-is-accepted-at))
 - 2026-11-07 · keep going while the owner is away ([entry](#d-2026-11-07-keep-going-while-the-owner-is))

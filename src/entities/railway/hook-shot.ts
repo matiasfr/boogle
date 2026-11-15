@@ -1,6 +1,8 @@
 // The shared hook fact grants an Owner pull. Local targeting/presentation never changes the railway ledger.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import { line2Routes } from '../../sim/railway-line2-layout.ts';
+import { line2Completed } from '../../sim/railway-queries-line2.ts';
 import { account, rail } from '../../sim/railway-rows.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R } from '../../constants.ts';
@@ -54,6 +56,7 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     ended = 0;
   let demoLeft = -1;
   let summitReached = false;
+  let seenSea: boolean | null = null;
   const range = new Set<HookRing>();
   const fwd = new THREE.Vector3(),
     to = new THREE.Vector3(),
@@ -228,6 +231,9 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
       return true;
     },
     update(dt: number, now: number) {
+      const seaReady = line2Routes(line2Completed(adapter.read.world())).sea || rail(adapter.read.world()).sea;
+      view.setSeaRing(seaReady, seenSea === null);
+      if (adapter.read.ready()) seenSea = seaReady;
       owned = latch(adapter.read.ready(), rail(adapter.read.world()).hook, dt);
       const summit = view.ringById.get('summit');
       const p = me.body?.position;

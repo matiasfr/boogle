@@ -82,13 +82,22 @@ export async function createRailwayHookView(owner: OwnedView) {
           hz,
           offset: { x: p.x + ox - p.hx + hx * (i * 2 + 1), y: p.top - thick / 2, z: p.z - p.hz + hz * (j * 2 + 1) },
         });
-    land.addStatics(tiles, { x: 0, y: 0, z: 0 }, owner);
+    // The summit deck has no slab above it to look up at, so it is one solid box: the camera's arm skips thin tiles
+    // (camera-arm.ts), and a camera pitched up at the last ring came to rest under the deck, looking at its underside.
+    const solid: Shape = {
+      kind: 'box',
+      hx: p.hx,
+      hy: thick / 2,
+      hz: p.hz,
+      offset: { x: p.x + ox, y: p.top - thick / 2, z: p.z },
+    };
+    land.addStatics(p.id === 'summit' ? [solid] : tiles, { x: 0, y: 0, z: 0 }, owner);
     if (p.look === 'float') {
       const under = add(new THREE.Mesh(new THREE.BoxGeometry(p.hx * 0.7, 0.1, p.hz * 0.7), glow));
       under.position.set(p.x + ox, p.top - thick - 0.04, p.z);
     }
   }
-  const ringMesh = add(new THREE.InstancedMesh(new THREE.TorusGeometry(0.55, 0.09, 8, 22), ringMat, rings.length + 1));
+  const ringMesh = add(new THREE.InstancedMesh(new THREE.TorusGeometry(0.55, 0.09, 8, 22), ringMat, rings.length + 2));
   const climbRings = rings.length;
   const posts = add(
     new THREE.InstancedMesh(new THREE.BoxGeometry(0.22, 1, 0.22), flatMod.flat('#917b5e', 0.9), climbRings),
@@ -111,7 +120,7 @@ export async function createRailwayHookView(owner: OwnedView) {
     hot = new THREE.Color('#d6fff5'),
     color = new THREE.Color();
   // Allocate instanceColor before the first material compilation; later updates change its contents.
-  for (let k = 0; k <= climbRings; k++) ringMesh.setColorAt(k, dim);
+  for (let k = 0; k <= climbRings + 1; k++) ringMesh.setColorAt(k, dim);
   ringMesh.count = rings.length;
   /** Ring Island's ring (ring-island-build1, R4b): on a sea pile 276 m out, its pad the railhead platform's gold square. It
    * joins the rings once the gap is footed (set === 14), and leaves them if the room is rewound. */
@@ -132,17 +141,46 @@ export async function createRailwayHookView(owner: OwnedView) {
       land: { x: pad.x, y: pad.top + 0.45 + 0.2, z: pad.z },
     };
   })();
-  function setIslandRing(on: boolean) {
-    if (on === ringById.has('island')) return;
+  const jamb: HookRing = {
+    id: 'sea-jamb',
+    pad: tech.SEA_LEDGE,
+    at: { ...tech.SEA_RING, x: tech.SEA_RING.x + ox },
+    land: { x: tech.SEA_LEDGE.x + ox + 1.2, y: tech.SEA_LEDGE.top + 0.65, z: tech.SEA_LEDGE.z },
+  };
+  function setRing(ring: HookRing, on: boolean) {
+    if (on === ringById.has(ring.id)) return;
     if (on) {
-      rings.push(island);
-      ringById.set('island', island);
+      rings.push(ring);
+      ringById.set(ring.id, ring);
     } else {
-      rings.splice(rings.indexOf(island), 1);
-      ringById.delete('island');
+      rings.splice(rings.indexOf(ring), 1);
+      ringById.delete(ring.id);
     }
     ringMesh.count = rings.length;
   }
+  const setIslandRing = (on: boolean) => setRing(island, on);
+  // The jamb's post stands from the start, like the tower's, with a gold foot plate: the ring arrives on it with Q4.
+  // Its collider is the railway.sea-jamb prefab's.
+  {
+    const height = jamb.at.y - 0.55 - jamb.pad.top;
+    const post = add(
+      new THREE.Mesh(
+        shapes.merged([
+          ['b', 0, height / 2, 0, 0.26, height, 0.26, '#55524a'],
+          ['b', 0, 0.06, 0, 0.7, 0.12, 0.7, '#c79a3e'],
+          ['b', 0, height - 0.07, 0, 0.44, 0.14, 0.44, '#c79a3e'],
+        ]),
+        partMat,
+      ),
+    );
+    post.position.set(jamb.at.x, jamb.pad.top, jamb.at.z);
+    post.castShadow = true;
+  }
+  let seaSwing = 1;
+  const setSeaRing = (on: boolean, snap: boolean) => {
+    if (on && !ringById.has(jamb.id)) seaSwing = snap ? 1 : 0;
+    setRing(jamb, on);
+  };
   const camAt = new THREE.Vector3();
   // Where the island's ring faces while it sleeps: out over the gap, to the folk's brace platform it brings you home from.
   const islandFaces = new THREE.Vector3();
@@ -251,6 +289,7 @@ export async function createRailwayHookView(owner: OwnedView) {
      * before the hook, and turned to the far side it serves rather than to you. */
     asleep: HookRing | null = null,
   ) {
+    seaSwing = Math.min(1, seaSwing + dt / 0.8);
     camera.getWorldPosition(camAt);
     rings.forEach((r, k) => {
       const bright = r === pick || r === pull || (now < blinkUntil && range.has(r)),
@@ -258,7 +297,11 @@ export async function createRailwayHookView(owner: OwnedView) {
       pose.position.set(r.at.x, r.at.y, r.at.z);
       if (r === asleep) pose.lookAt(islandFaces);
       else pose.lookAt(camAt);
-      pose.scale.setScalar(bright ? 1.18 + Math.sin(now * 0.012) * 0.05 : inRange ? 1.05 : 0.92);
+      if (r === jamb) pose.rotateY(((1 - seaSwing) * Math.PI) / 2);
+      // The jamb's ring is first met from 13 m below, so it is drawn a third larger than the tower's.
+      pose.scale.setScalar(
+        (bright ? 1.18 + Math.sin(now * 0.012) * 0.05 : inRange ? 1.05 : 0.92) * (r === jamb ? 1.35 : 1),
+      );
       pose.updateMatrix();
       ringMesh.setMatrixAt(k, pose.matrix);
       ringMesh.setColorAt(
@@ -320,6 +363,7 @@ export async function createRailwayHookView(owner: OwnedView) {
     rings,
     ringById,
     setIslandRing,
+    setSeaRing,
     update,
     fire,
     end,

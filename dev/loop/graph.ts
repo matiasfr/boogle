@@ -495,7 +495,7 @@ export const NODES: readonly LoopNode[] = [
   ]),
   {
     id: 'sea',
-    label: 'Pull the sea switch (Needle Bell summit)',
+    label: 'Pull the sea switch (gate jamb)',
     area: 'line 2',
     at: p(LINE2_SEA),
     bill: {},
@@ -504,18 +504,13 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'sea switch pulled' },
     stops: [],
     requires: [
-      dec('hook', 'world', 'decisions.md 2026-11-08 the hook shot comes into the game (summit 102 m up)'),
-      {
-        on: 'Q4',
-        status: 'free',
-        by: 'none',
-        source: 'decisions.md 2026-11-08 the summit switch opens early',
-      },
+      dec('hook', 'world', 'docs/decisions-core-loop.md: fly first, the far jamb needs one hook pull'),
+      dec('Q4', 'rules', `${RULES_LINE2} seaSwitch: four stretches laid`),
     ],
     cue: [
       onMain(
         'world',
-        'the summit switch and the signal down Needle Bell',
+        'the empty mount at the gate, filled by Q4 with a drum and ring',
         'src/entities/railway/sea-gate-view.ts:1,39',
       ),
       onMain('world', 'Q5\'s sign: "Pull the switch to start" once full', 'src/entities/railway/line2-view.ts:957-960'),
@@ -535,11 +530,8 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.glide'],
     reached: { mark: 'glider gained' },
     stops: ['glider'],
-    requires: [
-      dec('Q5', 'rules', `${RULES_LINE2} glide: five stretches laid`),
-      dec('hook', 'world', 'docs/plans/glider-b-home-flow.md: on the summit deck'),
-    ],
-    cue: [onMain('world', 'the woken summit device and its locator', 'src/entities/railway/glide-device-view.ts:1-5')],
+    requires: [dec('hook', 'world', 'docs/plans/glider-b-home-flow.md: on the summit deck')],
+    cue: [onMain('world', 'the lit summit device facing the forge', 'src/entities/railway/glide-device-view.ts:1-5')],
     optional: true,
   },
   {
