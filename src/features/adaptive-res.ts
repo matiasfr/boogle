@@ -61,7 +61,6 @@ registerGraphics({
   cost: 'sea vertices, shadow pass, multisampling',
   skips:
     'Auto sheds sea detail, then sun shadows, then MSAA (next load) once resolution is at its floor; a rung fixes it.',
-  hitch: 'Shadows off or on builds material pipelines on first use.',
   read: () => graphicsInitial('detail', DETAIL_CHOICES, 'auto'),
   apply: () => {}, // graphics-settings applies the rung's values to their owners
 });

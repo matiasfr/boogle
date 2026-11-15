@@ -46,9 +46,11 @@
   (owner, 9 November; [the summer sky](water.md#the-summer-sky-6-november-2026)). Smooth edges in Pause can override MSAA on either device.
   The render resolution follows the frame rate: it starts where this
   device last settled (0.8x on a first touch visit), drops in 10 % steps to 0.6x after 2 s of slow frames and climbs back
-  after 5 s at the display's cadence. Slow is over 18.5 ms, or over 1.08x the cadence the browser delivers frames at, a
-  cadence that stops at 34 ms (Safari's 30 Hz in Low Power Mode is a cap, not a slow GPU; anything slower is the
-  device); a step up that turns slow again within 10 s doubles the wait before the next one (up to a minute).
+  after 5 s of calm frames. Slow is a moving average over max(18.5 ms, 1.08x the browser cadence), or more than 10%
+  of intervals over max(18.5 ms, 1.5x cadence). The 18.5 ms floor keeps high-refresh callback jitter from shedding
+  detail on a fast GPU. Calm allows a median within 18.5 ms or the cadence's jitter tolerance and at most 5% late
+  intervals. Cadence stops at 34 ms (Safari's 30 Hz in Low Power Mode is a cap, not a slow GPU; anything slower is
+  the device); a step up that turns slow again within 10 s doubles the wait before the next one (up to 40 s).
   While the game is open and visible, a Screen Wake Lock (taken on the first input) keeps the screen from dimming
   and locking where the browser offers one (Safari, Home Screen apps from iOS 18.4, Chrome); hiding the tab lets
   it go. In a Home Screen web app (standalone) the canvas, HUD and overlays are sized to the whole screen, since iOS
@@ -128,8 +130,11 @@
   (`boogle.detail.v1`); the MSAA flag is never lifted by the governor, only by a player Detail or preset choice.
   It is measured rather than detected: the M4 iPad Pro should never reach the floor, so it keeps full detail.
   Pause → Graphics → Detail (Auto / Full / Simpler sea / No shadows / Lowest) fixes a rung; `?dpr=fixed`
-  harness pages ignore the remembered rung. Shadows off or on compiles pipelines on first use: a hitch.
-  Not tested on a device.
+  harness pages ignore the remembered rung. Sun shadows switch through shadow intensity and map updates while
+  the light's shader key stays fixed: no receiver-pipeline rebuild or missing-model interval. Off retains receiver
+  sampling but skips the shadow pass; the frozen sky leaves these controls to the Graphics owner.
+  Chromium on Mac verification and limits: [Detail governor fix](../research/detail-governor-1115.md).
+  Not tested on Grant's device.
 - **Coarser far ground (on by default since 11 November).** `farGround`: the Place ground draws as 192 m tiles with
   bounds (out of view culled) and far tiles use 4 m cells from 180 m and 8 m from 420 m, full resolution on every
   tile border so there are no cracks ([far-ground.ts](../../src/place/far-ground.ts); the pattern is Chunked LOD, see

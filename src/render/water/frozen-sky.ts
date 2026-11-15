@@ -98,8 +98,6 @@ export function createFrozenWaterSky() {
     intensity: sun.intensity,
     direction: SUN_DIR.clone(),
     position: sun.position.clone(),
-    shadowIntensity: sun.shadow.intensity,
-    shadowUpdate: sun.shadow.autoUpdate,
     exposure: renderer.toneMappingExposure,
     hemi: { color: hemi.color.clone(), ground: hemi.groundColor.clone(), intensity: hemi.intensity },
   };
@@ -196,8 +194,7 @@ export function createFrozenWaterSky() {
     sun.color.multiply(lighting.keyTint);
     colourProfile(sun.color);
     sun.intensity *= lighting.keyGain;
-    sun.shadow.intensity = 1;
-    sun.shadow.autoUpdate = true;
+    // The scene's Graphics owner controls shadow strength and updates. Reapplying sky lighting must not undo Detail.
     const ug = atmosphere.underground;
     hemi.color.copy(upper);
     hemi.color.multiply(lighting.fillTint);
@@ -479,8 +476,6 @@ export function createFrozenWaterSky() {
     sun.color.copy(prior.sunColor);
     sun.intensity = prior.intensity;
     sun.position.copy(prior.position);
-    sun.shadow.intensity = prior.shadowIntensity;
-    sun.shadow.autoUpdate = prior.shadowUpdate;
     SUN_DIR.copy(prior.direction);
     renderer.toneMappingExposure = prior.exposure;
     hemi.color.copy(prior.hemi.color);
