@@ -9,6 +9,7 @@
 //   touch WebAudio (Safari can silence an element whose stream also feeds the context); only your own mic is metered
 //   on the game's context, and nothing of voice ever reaches its speakers.
 import './voice.css';
+import { playMark } from '../proto/mark.ts';
 import { net, remotes, addPresenceField, keepPresenceWhile, onRemotePresence, onPeerRemoved } from '../netplay/net.ts';
 import { onNetState, sendPresence } from '../netplay/net.ts';
 import { createVoiceMesh, type PeerLink, type VoiceMesh } from '../netplay/voice-mesh.ts';
@@ -304,6 +305,7 @@ const micSvg = (struck: boolean) =>
   '<path d="M6 11a6 6 0 0 0 12 0M12 17v4" fill="none"/>' +
   (struck ? '<path class="voice-strike" d="M4 3 20 21" fill="none"/>' : '') +
   '</svg>';
+let recordedVoice = '';
 let key = '';
 function refresh() {
   const links = mesh?.links();
@@ -326,6 +328,13 @@ function refresh() {
               ? 'talking'
               : 'on';
     list.push({ name: r?.name || 'Someone', state });
+  }
+  // Record only local transitions and aggregate failures, never peers or audio levels.
+  const failed = list.some((w) => w.state === 'failed');
+  const voiceState = JSON.stringify([joined, muted, problem, failed]);
+  if (voiceState !== recordedVoice) {
+    recordedVoice = voiceState;
+    playMark('voice', { on: joined, muted: joined && muted, problem, failed });
   }
   const kind = inputKind();
   const next = JSON.stringify([joined, joining, muted, problem, list, kind]);
