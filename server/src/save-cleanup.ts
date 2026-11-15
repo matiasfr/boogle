@@ -72,6 +72,7 @@ export async function cleanupSaves(
   const ns = { world: inv.ns, rail: inv.rail, currentRooms: inv.currentRooms };
   const trashRoot = path.join(dataDir, '.trash');
   const protectedFile = (name: string) => {
+    if (classify(name, ns) === 'application') return 'application';
     try {
       assertNotCurrent(name, ns);
     } catch {
