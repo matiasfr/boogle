@@ -353,13 +353,16 @@ registerGraphics({
   label: 'Sun shadows',
   choices: [true, false],
   default: true,
-  applyMode: 'rebuild',
+  applyMode: 'live',
   cost: 'shadow rendering',
-  skips: 'Removes sun shadow rendering and receiver shadow sampling; leaves sun light and day clock intact.',
-  hitch: 'Changing the light shadow key builds material pipelines on first use.',
-  read: () => sun.castShadow,
+  skips: 'Stops sun shadow-map updates; receivers keep their compiled sampling path with zero shadow strength.',
+  read: () => sun.shadow.intensity > 0,
   apply: (value) => {
-    sun.castShadow = value === true;
+    // castShadow changes the light key: every receiver rebuilds WGSL/pipelines and skips drawing while they build.
+    // Keep that key stable. Intensity is a uniform in three's ShadowNode; autoUpdate gates the costly shadow pass.
+    sun.shadow.intensity = value === true ? 1 : 0;
+    sun.shadow.autoUpdate = value === true;
+    sun.shadow.needsUpdate = value === true;
   },
 });
 

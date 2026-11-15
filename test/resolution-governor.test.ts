@@ -104,6 +104,39 @@ test('climbs back at 120 Hz when the frame stamps jitter', () => {
   assert.ok(full !== null && full <= 30, `full resolution after ${full?.toFixed(1) ?? 'more than 60'} s`);
 });
 
+// Grant's 14 November session: p50 6.2 ms, p95 8 ms, but repeated resolution/detail changes.
+// The log has no raw rAF stamps. This is a deterministic high-refresh jitter reproduction, not a replay.
+test('does not hunt or shed detail on fast high-refresh frames with interval jitter', () => {
+  const g = createGovernor(1);
+  const steps: GovernorStep[] = [];
+  let t = 0;
+  let i = 0;
+  let rung = 0;
+  while (t < 180) {
+    // Repeat a jittery fast stretch and a stable one so the old governor sheds and recovers repeatedly.
+    // Every interval is within 8.25 ms; a low 10th percentile must not call them GPU overload.
+    const ms = Math.floor(t / 30) % 2 ? 6.25 : 6.25 + ((i++ % 5) - 2);
+    t += ms / 1000;
+    const step = g.frame(ms, { canShed: rung < 2, rungShed: rung > 0 });
+    if (step) steps.push(step);
+    if (step === 'shed') rung++;
+    if (step === 'restore') rung--;
+  }
+  assert.deepEqual(steps, [], `fast frames caused ${steps.length} quality changes`);
+  assert.equal(g.ratio, 1);
+});
+
+test('still sheds when high-refresh intervals exceed the 60 Hz frame budget', () => {
+  const g = createGovernor(1);
+  const steps: GovernorStep[] = [];
+  for (let i = 0; i < 120 * 20; i++) {
+    const step = g.frame(i % 2 ? 25 : 6.25, { canShed: true, rungShed: false });
+    if (step) steps.push(step);
+  }
+  assert.equal(g.ratio, 0.6);
+  assert.ok(steps.includes('shed'));
+});
+
 test('a steady 30 Hz cap reads as the cap, not as slow', () => {
   const g = createGovernor(1);
   for (let i = 0; i < 30 * 60; i++) assert.equal(g.frame(33 + (i % 2), { canShed: false, rungShed: false }), null);

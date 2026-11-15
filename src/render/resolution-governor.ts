@@ -1,23 +1,25 @@
 // The frame-time governor behind adaptive resolution (src/features/adaptive-res.ts), as pure logic: frame intervals in,
 // one step out. No DOM, storage or renderer, so test/resolution-governor.test.ts can drive it with simulated frames.
 //
-// The cadence is the 10th percentile of the last 2 s of intervals: the rate the browser delivers frames at when nothing
+// The cadence is the 10th percentile of the last 120 intervals (2 s at 60 Hz): the rate the browser delivers when nothing
 // is late (Safari caps rAF at 60 Hz on a 120 Hz screen and at 30 Hz in Low Power Mode), stopping at 34 ms. A frame is
-// late when its interval is over 1.5 cadences: it missed a vsync.
+// late when its interval is over max(18.5 ms, 1.5 cadences). High-refresh jitter or a missed 160 Hz vsync must not
+// shed quality while frames still fit the 60 Hz budget. The cadence still recognizes Safari's 30 Hz cap.
 //
 // Down: slow for 2 s, slow being the frame-time moving average over max(18.5 ms, 1.08 x cadence) or more than 10 % of
-// the last 2 s of frames late.
+// the window's frames late.
 //
 // Up: under vsync a 16.7 ms frame says nothing about headroom, so the governor cannot wait for frames faster than the
-// cadence; it probes instead. It is calm while the median interval is on the cadence and at most 5 % of the last 2 s of
-// frames are late. A hitch does not reset the calm (it moves the average, not the share), a sustained slowdown does. After 5 s calm it steps up; a step that is slow again
+// cadence; it probes instead. It is calm while the median interval fits 18.5 ms or the cadence and at most 5 % of the
+// window's frames are late. A hitch does not reset the calm (it moves the average, not the share), a sustained slowdown
+// does. After 5 s calm it steps up; a step that is slow again
 // within 10 s doubles the wait (up to 40 s), and a step that holds for 10 s puts the wait back to 5 s. The 9 November
 // 2026 playtest had a Mac at a steady 17 ms sit at the floor for four minutes: the old rule needed every frame's
 // average under 1.06 x a 10th percentile that Safari's 1 ms timer resolution rounds down to 16 ms. "On the cadence"
 // allows 1.15 cadences or 2 ms over it, whichever is more: at 120 Hz Chromium's frame stamps jitter by about a
 // millisecond, which put the median 1.11–1.19 x the 10th percentile with every frame on time, so the calm kept
 // resetting (bench --scaler, 9 November: 37 s to climb one step after a load, never back to full in a minute). Two
-// frames a vsync apart are still 8 ms apart, so half rate still reads as not calm.
+// frames a vsync apart still exceed this tolerance at 60 Hz. At higher refresh rates, staying inside 18.5 ms is calm.
 //
 // Measured on the simulated series in the test: 3 s from heavy load to the first step down, the floor within 10 s;
 // back to full resolution within 25 s of the load ending (75 s after repeated failed probes); a device on the edge
@@ -87,7 +89,7 @@ export function createGovernor(start: number) {
     const s = sorted.subarray(0, filled).sort();
     cadence = Math.min(CADENCE_MAX, Math.max(4, s[Math.floor(filled * 0.1)]!));
     median = s[Math.floor(filled * 0.5)]!;
-    const late = cadence * LATE_K;
+    const late = Math.max(SLOW_MS, cadence * LATE_K);
     let n = 0;
     for (let i = 0; i < filled; i++) if (s[i]! > late) n++;
     lateShare = n / filled;
@@ -125,7 +127,10 @@ export function createGovernor(start: number) {
       if (head % 30 === 0) measure();
       const late = lateShare > LATE_SLOW;
       slow = late || ema > Math.max(SLOW_MS, cadence * SLOW_K) ? slow + dt : 0;
-      calm = lateShare <= LATE_CALM && median <= Math.max(cadence * MEDIAN_K, cadence + MEDIAN_SLACK) ? calm + dt : 0;
+      calm =
+        lateShare <= LATE_CALM && median <= Math.max(SLOW_MS, cadence * MEDIAN_K, cadence + MEDIAN_SLACK)
+          ? calm + dt
+          : 0;
       if (probing && sinceUp >= RETRY_WINDOW) {
         probing = false; // that step held: the load it was waiting out has gone
         upAfter = UP_AFTER;
