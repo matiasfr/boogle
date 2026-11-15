@@ -28,7 +28,7 @@
     {"id":"town.block.plot8.door","params":{"colour":"#e4e5e6"},"pos":[0,1,3.76],"prefab":"greybox.decoration","scale":[1.2,2,0.12]},
     {"id":"town.block.plot8.mat","params":{"colour":"#3b3d40"},"pos":[0,0.03,4.45],"prefab":"greybox.decoration","scale":[1.6,0.06,1.5]},
     {"id":"town.footing","pos":[0,0.15,0],"prefab":"greybox.box","scale":[5,0.3,5]},
-    {"id":"town.statue","pos":[0,0.3,0],"prefab":"town.statue"}
+    {"id":"town.statue","labels":{"notice":"statueWorks"},"pos":[0,0.3,0],"prefab":"town.statue-works"}
   ],
   "rotation": "yaw, pitch, roll in radians, order YXZ",
   "units": "metres",

@@ -23,6 +23,7 @@ import '../../src/prefab/builders/shop-parts.ts';
 import '../../src/prefab/builders/museum-parts.ts';
 import '../../src/prefab/builders/room-shell.ts';
 import '../../src/prefab/builders/boogler-statue.ts';
+import '../../src/prefab/builders/statue-scaffold.ts';
 import { haltFrame } from '../../src/prefab/halt-deck.ts';
 import { forgePlan, openingBuildings, openForgeMouth } from '../../src/place/opening-plans.ts';
 import { openingStops } from '../../src/place/opening-stops.ts';

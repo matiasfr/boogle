@@ -11,6 +11,7 @@ import { prefabs as curioRecords } from '../src/content/prefabs/curio.ts';
 import { curioParts } from '../src/prefab/builders/curio-parts.ts';
 import { prefabs as townRecords } from '../src/content/prefabs/town.ts';
 import { BOOGLER_SHAPE } from '../src/boogler/shape.ts';
+import { BOOGLER_STATUE_UNVEILED } from '../src/content/levels/town-blockout.ts';
 import { GRAVITY, JUMP_SPEED } from '../src/constants.ts';
 import {
   LINES,
@@ -23,6 +24,7 @@ import {
   TOWN_EAVE,
   TOWN_FOOTING,
   TOWN_STATUE,
+  TOWN_STATUE_WORKS,
   VILLAGE,
   lineAt,
 } from '../src/place/layout.ts';
@@ -458,7 +460,7 @@ test("a block's height is its kit's eave: a house's slab and wall, a cottage's w
 test('the built level is the plan: eight solid blocks at their rows, a door panel and a mat on each door side', () => {
   assert.equal(blockoutLevel.placements.length, 26);
   assert.equal(stood.filter((p) => p.prefab === 'greybox.box').length, 9, 'eight blocks and the footing are solid');
-  assert.equal(stood.filter((p) => p.prefab === 'town.statue').length, 1, 'and the statue on the footing');
+  assert.equal(stood.filter((p) => p.id === 'town.statue').length, 1, 'and the statue, or its works, on the footing');
   for (const b of TOWN_BLOCKS) {
     const plan = townBuilding(b.id),
       block = piece(`town.block.${b.id}`),
@@ -561,13 +563,21 @@ const headHigh = STATUE_SCALE * (BOOGLER_SHAPE.body.y + BOOGLER_SHAPE.body.halfH
 const statueHigh = headHigh + STATUE_SCALE * (BOOGLER_SHAPE.hat.high - BOOGLER_SHAPE.hat.sink);
 
 test("The Boogler's statue stands on the footing at G, facing the hall", () => {
+  // The unfinished statue stands there, at the statue's own place and facing, until he has been met (owner, 15
+  // November); the switch is the level's.
   const statue = piece('town.statue');
-  assert.equal(statue.prefab, 'town.statue');
+  assert.equal(statue.prefab, BOOGLER_STATUE_UNVEILED ? 'town.statue' : 'town.statue-works');
   assert.equal(statue.scale, undefined, 'the record holds its size');
   near(statue.pos[0]!, TOWN_CENTRE.x + ORIGIN.x, 0.001, 'statue x');
   near(statue.pos[2]!, TOWN_CENTRE.z, 0.001, 'statue z');
   near(statue.pos[1]!, VILLAGE.y - TOWN_GROUND.green.drop + TOWN_FOOTING.high, 0.001, "on the footing's top");
-  near(statue.rot[0]!, TOWN_STATUE.yaw, 1e-9, 'statue yaw');
+  near(statue.rot[0]!, (BOOGLER_STATUE_UNVEILED ? TOWN_STATUE : TOWN_STATUE_WORKS).yaw, 1e-9, 'statue yaw');
+  if (!BOOGLER_STATUE_UNVEILED) {
+    // The works' square frame lines up with the square footing, so its corner poles stand on the slab.
+    const quarter = Math.PI / 2,
+      off = (((statue.rot[0]! - TOWN_FOOTING.yaw) % quarter) + quarter) % quarter;
+    near(Math.min(off, quarter - off), 0, 1e-9, "the frame is square to the footing");
+  }
   // Its front (local +z) points along the hall's centreline, bearing 70 from G, toward where a player spawns.
   const front = townLocal({ ...TOWN_STATUE }, 0, 1);
   const bearing = (Math.atan2(front.x - TOWN_CENTRE.x, -(front.z - TOWN_CENTRE.z)) * 180) / Math.PI;
@@ -626,4 +636,20 @@ test('the statue is a perch and not a step: a second jump from its top lands on 
     for (let i = 0; i < 4; i++) nearest = Math.min(nearest, toSegment(TOWN_CENTRE, q[i]!, q[(i + 1) % 4]!));
   }
   assert.ok(nearest - reach > 2, `nearest wall ${nearest.toFixed(2)} m from G, longest flight ${reach.toFixed(2)} m`);
+  // The unfinished statue that stands there first is no better a perch: its plinth is the statue's, every solid tops
+  // out below the hat, and the widest (a scaffold pole at a corner of the footing) is still short of the walls.
+  const works = townRecords.find((r) => r.key === 'town.statue-works')!;
+  const worksParams = works.visual as unknown as { params: { plinth: [number, number][] } };
+  assert.deepEqual(worksParams.params.plinth, STATUE_PLINTH);
+  let out = 0;
+  for (const c of works.colliders as unknown as { at: number[]; r?: number; h?: number; half?: number[] }[]) {
+    const high = c.at[1]! + (c.half ? c.half[1]! : c.h! / 2);
+    assert.ok(high <= plinthHigh + statueHigh, `a solid tops out at ${high} m`);
+    out = Math.max(
+      out,
+      Math.hypot(Math.abs(c.at[0]!) + (c.half?.[0] ?? c.r!), Math.abs(c.at[2]!) + (c.half?.[2] ?? c.r!)),
+    );
+  }
+  assert.ok(out <= Math.hypot(TOWN_FOOTING.w, TOWN_FOOTING.d) / 2, 'the works stand on the footing');
+  assert.ok(nearest - reach - out > 2, `the works reach ${out.toFixed(2)} m out from G`);
 });

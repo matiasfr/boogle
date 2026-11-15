@@ -36,7 +36,7 @@ At most five. Each has a recommended answer first; none is recorded as his call.
    the footing on the green carries a scaffold and a sheeted shape that the builders say he commissioned and they
    ran out of materials for; the stone statue stands once he has been met. This keeps your 14 November statue and
    moves when it appears. Alternative: keep the statue as it is and accept that the ending is not a reveal of his
-   looks. The builders' words would be yours. Answer (owner, 15 November): Scaffold, yes. Keep the statue asset; no meeting logic now, document the swap for later.
+   looks. The builders' words would be yours. Answer (owner, 15 November): Scaffold, yes. Keep the statue asset; no meeting logic now, document the swap for later. Built on a branch, not shipped: the scaffold and sheet stand, the statue is kept behind `BOOGLER_STATUE_UNVEILED`, the swap is documented in [place](../game-design/place.md); the notice's two lines are drafts for the owner.
 2. **May a flagged prototype, in its own room, try the first-line decisions (G5, G6, G21, G8)?** Recommended: yes, in
    this order: the heavy load in three variants (the designer's strongest: the one choice remade every trip), then
    pick your edge (1 log a chop and 8 on the back, then a whetstone or a sling first). It reopens the 1 November

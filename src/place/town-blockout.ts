@@ -2,7 +2,7 @@
 // town-blockout.ts) are in each building's own frame: x across its front, z out of its door, y above its ground. This
 // stands each at its `TOWN_BLOCKS` or `TOWN_FOOTING` row, on the ground under that building's centre (the plots' level
 // pads; the green's floor under the footing). Pure: the view and the tests share it.
-import { TOWN_BLOCKS, TOWN_FOOTING, TOWN_STATUE, toWorld } from './layout.ts';
+import { TOWN_BLOCKS, TOWN_FOOTING, TOWN_STATUE, TOWN_STATUE_WORKS, toWorld } from './layout.ts';
 import { townLocal } from './town-plan.ts';
 
 type Frame = { x: number; z: number; yaw: number; w: number; d: number };
@@ -20,13 +20,13 @@ export function blockoutFrame(id: string): Frame {
   return frame;
 }
 
-/** The placements in world metres, yawed with their buildings. */
-export function standBlockout<P extends { id: string; pos: readonly number[] }>(
+/** The placements in world metres, yawed with their buildings. The unfinished statue takes its own, squared frame. */
+export function standBlockout<P extends { id: string; prefab?: string; pos: readonly number[] }>(
   placements: readonly P[],
   ground: (wx: number, wz: number) => number,
 ): (Omit<P, 'pos'> & { pos: Vec3; rot: Vec3 })[] {
   return placements.map((p) => {
-    const frame = blockoutFrame(p.id),
+    const frame = p.prefab === 'town.statue-works' ? TOWN_STATUE_WORKS : blockoutFrame(p.id),
       at = townLocal(frame, p.pos[0]!, p.pos[2]!);
     return {
       ...p,
