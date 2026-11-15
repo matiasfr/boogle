@@ -250,12 +250,25 @@ export async function signOutAccount(destination?: string): Promise<void> {
 
 // Another tab switched people or signed out. Do not let this tab write the former person's unkeyed visit memory.
 globalThis.addEventListener?.('storage', (event) => {
-  if (visitStorage || switching || event.key !== ACCOUNT_KEY) return;
+  if (switching || event.key !== ACCOUNT_KEY) return;
   let next: Credential | undefined;
   try {
     if (event.newValue) next = readCredential(event.newValue);
   } catch {
     /* Reload into the unreadable state. */
   }
-  if (next?.token !== credential?.token || next?.pid !== credential?.pid) reload();
+  if (next?.token === credential?.token && next?.pid === credential?.pid) return;
+  if (visitStorage) {
+    try {
+      // Device sign-out applies to tab-only credentials too. Reload must not restore the stale fallback.
+      sessionStorage.removeItem(ACCOUNT_KEY);
+    } catch {
+      // If the browser cannot forget it, stop this tab's room and visit writers without reloading that person.
+      switching = true;
+      beforeReload();
+      problem = 'Sign-in changed in another tab. Close this tab to finish signing out.';
+      return;
+    }
+  }
+  reload();
 });

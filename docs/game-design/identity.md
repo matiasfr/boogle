@@ -12,7 +12,9 @@
   this device's sign-in and reloads as a new guest. Name, colour, room visits, The Boogler's memory, mini-game and
   soapbox bests are cleared before the new game loads. Settings stay. Pid-keyed finds, wardrobe, reward claims and
   positions remain with their original person; they are never copied to the new guest. The server account and room
-  remain intact, even with no partner. Save the PIN first to return to an account. No shared reset is sent.
+  remain intact, even with no partner. The warning says this starts a new player on this device and the room keeps
+  its progress. Other tabs, including tab-only credential fallbacks, close the old room and forget the old sign-in.
+  No shared reset is sent.
   If both browser stores reject the new credential, the current visit is kept with an explanatory message.
 - **World wipes.** A world namespace bump resets local room visits and saved spots, ability flourishes and teach
   moments, cosmetics claimed in old worlds, and The Boogler's memory of you. Name, colour, account/session, last-visit info,

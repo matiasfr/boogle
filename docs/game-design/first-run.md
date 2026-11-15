@@ -29,7 +29,8 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
 
 - **Identity before arrival.** Boot resolves the device session before loading the game, with a five-second limit.
   An unavailable server or unreadable credential never prevents play: a previously verified pid can rejoin when
-  the room server answers; without one, this visit uses a local-only solo identity. Revoked sessions retain their
+  the room server answers; without one, this visit uses a local-only solo identity. If registration fails, the lobby
+  shows the account problem and says a reload retries. Revoked sessions retain their
   saved identity but cannot join a room. Reload retries resolution. Complete credentials survive room/namespace
   resets. Blocked local storage permits a tab-only session where available, otherwise memory-only play. Switching
   people closes the old room and reloads, clearing unkeyed visit memory before the new game loads; same-person
@@ -90,7 +91,7 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
 - **Leaving and starting fresh.** The pause view's Leave goes to a small menu page (`/menu/`) with the game stopped: nothing
   renders and you leave the room. Back to the island returns to the same address; a lobby picker can go here if there are
   ever more lobbies. Start fresh asks for confirmation, signs this device out and reloads as a new guest, forgetting
-  its local visit ([identity.md](identity.md)). The warning says to save the account PIN first. The server account
+  its local visit ([identity.md](identity.md)). The short warning says the room keeps its progress. The server account
   and room remain; the new guest does not inherit the former person's belongings. Leave does not sign out.
   If neither browser store can carry a new identity through reload, Start fresh keeps the current visit and says so.
 - **Welcome back.** A returning player gets a small paper card at the top centre (under the name tag on touch) for

@@ -194,8 +194,7 @@ export function leaveIsland() {
 let fresh = false;
 /** A place can clear its own saves and choose a fresh destination without resetting a partner's room. */
 export const freshStart = {
-  warning:
-    'Start as a new guest? This signs out this device and forgets its visit. Your account and the island stay. Save your PIN first to return to your account.',
+  warning: 'Start over as a new player on this device? The room keeps its progress.',
   prepare: (): string | undefined => undefined,
 };
 export function startFresh() {
