@@ -1189,6 +1189,93 @@
         "params": {}
       }
     },
+    "scenery.broadleaf": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "r": 0.3,
+          "shape": "sphere"
+        },
+        {
+          "at": [
+            0,
+            1.2,
+            0
+          ],
+          "r": 0.3,
+          "shape": "sphere"
+        }
+      ],
+      "footprint": 0.45,
+      "key": "scenery.broadleaf",
+      "scope": "place",
+      "visual": {
+        "builder": "scenery.prop",
+        "params": {
+          "kind": "broadleaf"
+        }
+      }
+    },
+    "scenery.palm": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "lift": 0.25,
+          "r": 0.32,
+          "segments": 7,
+          "shape": "trunk-chain"
+        }
+      ],
+      "footprint": 0.5,
+      "key": "scenery.palm",
+      "scope": "place",
+      "visual": {
+        "builder": "scenery.prop",
+        "params": {
+          "kind": "palm"
+        }
+      }
+    },
+    "scenery.rock": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.1,
+            0
+          ],
+          "r": 0.82,
+          "shape": "sphere"
+        }
+      ],
+      "footprint": 0.95,
+      "key": "scenery.rock",
+      "scope": "place",
+      "visual": {
+        "builder": "scenery.prop",
+        "params": {
+          "kind": "rock"
+        }
+      },
+      "wet": true
+    },
+    "scenery.tree": {
+      "colliders": [],
+      "key": "scenery.tree",
+      "scope": "place",
+      "visual": {
+        "builder": "scenery.tree",
+        "params": {}
+      }
+    },
     "town.curio-bay": {
       "colliders": [
         {

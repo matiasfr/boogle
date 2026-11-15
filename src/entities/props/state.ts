@@ -1,7 +1,7 @@
 // The island's scenery with no view: where each prop stands (src/blueprints/props.ts), the footprints things walk
 // around, and the collider bodies. src/render/props.ts draws from the same placements.
-import { collidersOf, footprintOf, type Sphere } from '../../blueprints/blueprint.ts';
-import { isHomePalm, PROP_BLUEPRINTS, scatterProps, tileKey, type PropPlacement } from '../../blueprints/props.ts';
+import { collidersOf, footprintOf, type Sphere } from '../../prefab/scenery.ts';
+import { isHomePalm, PROP_PREFABS, scatterProps, propSample, tileKey } from '../../blueprints/props.ts';
 import { groundHeight } from '../../island/heights.ts';
 import { island } from '../../island/index.ts';
 import { clearedAt } from '../../island/layout.ts';
@@ -11,14 +11,14 @@ import type { Body } from '../../physics/engine.ts';
 /** A footprint on the ground plane. */
 export type Obstacle = { x: number; z: number; r: number };
 
-export const placements: PropPlacement[] = scatterProps({ groundHeight, keptOut: island.keptOut });
+export const placements = scatterProps({ groundHeight, keptOut: island.keptOut }).map(propSample);
 
 // Footprints of trees, rocks and POIs ({ x, z, r } on the ground plane), for things that walk around them. POIs keep
 // their ground clear and are walked around. Push freely; blockedAt() re-indexes when the list grows.
 export const obstacles: Obstacle[] = island.keepOut.map((k) => ({ x: k.x, z: k.z, r: k.r }));
 for (const p of placements)
   if (isHomePalm(p) || !clearedAt(p.x, p.z))
-    obstacles.push({ x: p.x, z: p.z, r: footprintOf(PROP_BLUEPRINTS[p.blueprint], p) });
+    obstacles.push({ x: p.x, z: p.z, r: footprintOf(PROP_PREFABS[p.blueprint], p) });
 
 const BUCKET = 16; // metres, spatial index cell for obstacles
 let indexed = -1;
@@ -58,7 +58,7 @@ function buildBodies() {
   const bodies: Body[] = [];
   const shapes = new Map<number, Sphere[]>();
   for (const p of placements) {
-    const spheres = collidersOf(PROP_BLUEPRINTS[p.blueprint], p);
+    const spheres = collidersOf(PROP_PREFABS[p.blueprint], p);
     if (isHomePalm(p)) {
       bodies.push(staticSpheresBody(spheres));
       continue;

@@ -19,6 +19,8 @@ function inside(point: Vec3, c: ColliderDef) {
       return Math.abs(x) <= c.half[0] && Math.abs(y) <= c.half[1] && Math.abs(z) <= c.half[2];
     case 'sphere':
       return x * x + y * y + z * z <= c.r * c.r;
+    case 'trunk-chain':
+      throw new Error('Seat clearance on a leaning trunk needs a placed lean');
     case 'trunk':
       return x * x + z * z <= c.r * c.r && Math.abs(y) <= c.h / 2;
     case 'capsule':

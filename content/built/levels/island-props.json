@@ -1,0 +1,21 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "generator": {
+    "name": "island-props",
+    "prefabs": [
+      "scenery.palm",
+      "scenery.broadleaf",
+      "scenery.rock"
+    ],
+    "seeds": [
+      20261028,
+      20261029
+    ]
+  },
+  "place": "island-props",
+  "placements": [],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

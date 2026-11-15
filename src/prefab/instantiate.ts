@@ -9,6 +9,9 @@ import type { BuilderName } from './names.ts';
 import type { Attach, Placement, PrefabKey, Vec3 } from './types.ts';
 import { loadLevelArtifact, validatePlacement, validatePrefab, validateColliderWorldTransforms } from './validate.ts';
 import './builders/seat-chair.ts';
+import './builders/scenery-prop.ts';
+import './builders/scenery-tree.ts';
+import { collidersOf, type Lean } from './scenery.ts';
 import './builders/greybox-box.ts';
 import './builders/workshop-parts.ts';
 import './builders/shop-parts.ts';
@@ -197,6 +200,18 @@ export function instantiate(
       case 'trunk':
         add({ kind: 'cylinder', rTop: c.r * scale.x, rBottom: c.r * scale.x, h: c.h * scale.y, segments: 12 });
         break;
+      case 'trunk-chain': {
+        const lean = placement.params?.lean as Lean | undefined;
+        if (
+          !lean ||
+          ![lean.angle, lean.amount, lean.height].every((n) => typeof n === 'number' && Number.isFinite(n)) ||
+          lean.height <= 0
+        )
+          throw new Error('prefabs: trunk-chain needs finite lean and positive height');
+        const spheres = collidersOf({ ...def, colliders: [c] }, { x: 0, h: 0, z: 0, lean });
+        for (const s of spheres) add({ kind: 'sphere', r: s.r * scale.x }, [s.x, s.y, s.z]);
+        break;
+      }
       case 'trimesh':
         add({
           kind: 'trimesh',
@@ -224,6 +239,7 @@ export function instantiate(
       const visual = builders.get(def.visual.builder)!(
         { ...def.visual.params, ...placement.params },
         batch ? { mesh: batch.target.mesh, index: batch.index + i } : undefined,
+        placement,
       );
       if ('construction' in visual) {
         if (batch || parent || placement.rot || placement.scale || placement.pos.some((v) => v !== 0))

@@ -1,7 +1,7 @@
 // What breaks a level for a player, as a designer would catch it in an editor. Each issue says where and what to do about
 // it. This catches what's broken; what a good level aims for is docs/research/level-design.md.
-import { collidersOf, footprintOf } from '../../src/blueprints/blueprint.ts';
-import { isHomePalm, PROP_BLUEPRINTS, tileKey } from '../../src/blueprints/props.ts';
+import { collidersOf, footprintOf } from '../../src/prefab/scenery.ts';
+import { isHomePalm, PROP_PREFABS as PROP_BLUEPRINTS, tileKey } from '../../src/blueprints/props.ts';
 import { CELL, GRID_RES, PLAYER_R, SEA, SOFT_WALL } from '../../src/constants.ts';
 import { segDist, siteFrame } from '../../src/island/stamps.ts';
 import { WAGON_MAX_GRADE } from '../../src/sim/wagon.ts';

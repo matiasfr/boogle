@@ -1,7 +1,7 @@
 // Pure scenery geometry, shared by the world and isolated asset previews.
 import * as THREE from 'three';
-import { trunkPoints } from '../blueprints/blueprint.ts';
-import { TRUNK_SEGMENTS, type PropPlacement } from '../blueprints/props.ts';
+import { trunkPoints } from '../prefab/scenery.ts';
+import { TRUNK_SEGMENTS, type PropSample as PropPlacement } from '../blueprints/props.ts';
 import { addPart } from './geometry-parts.ts';
 
 // Non-indexed already, so addPart only clones them.

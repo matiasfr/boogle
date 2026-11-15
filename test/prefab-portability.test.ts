@@ -1,4 +1,6 @@
 import { prefabs as rooms } from '../src/content/prefabs/rooms.ts';
+import { prefabs as scenery } from '../src/content/prefabs/scenery.ts';
+import { levels as sceneryLevels } from '../src/content/levels/scenery.ts';
 import { levels as roomLevels } from '../src/content/levels/rooms.ts';
 import { prefabs as house } from '../src/content/prefabs/house.ts';
 import { levels as houseLevels } from '../src/content/levels/house.ts';
@@ -133,6 +135,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...rooms,
           ...house,
           ...roundhouse,
+          ...scenery,
           ...haltKitContent().prefabs,
         ],
         [
@@ -145,6 +148,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...roomLevels,
           ...houseLevels,
           ...blockoutLevels,
+          ...sceneryLevels,
           ...haltKitContent().levels,
           ...rotundaContent().levels,
         ],

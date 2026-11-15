@@ -1,4 +1,4 @@
-// The island's scattered scenery as data: palms, round trees and rocks (./blueprint.ts). No three.js: src/entities/props/
+// Seeded prefab placements for palms, round trees and rocks. No three.js: src/entities/props/
 // builds the colliders from this, src/render/props.ts draws it, and `npm run level-check` reads it.
 //
 // A placement is seeded, so scatterProps() gives every client the same list on the same ground. It draws everything a
@@ -7,39 +7,72 @@
 import { COURT, HALF, SPAWN } from '../constants.ts';
 import { MASSIF } from '../island/shape.ts';
 import { mulberry32 } from '../sim/rng.ts';
-import type { Blueprint, Lean, Placement } from './blueprint.ts';
+import type { Lean } from '../prefab/scenery.ts';
+import type { Placement, PrefabDef, SceneryGenerator } from '../prefab/types.ts';
+import level from '../../content/built/levels/island-props.json' with { type: 'json' };
+import { definitions } from '../prefab/catalogue.ts';
+import { loadLevelArtifact } from '../prefab/validate.ts';
 
-export const TRUNK_SEGMENTS = 7;
+const generator = loadLevelArtifact(level, definitions).generator!;
 
 // Props are split into TILE-metre tiles: the view's merged meshes, so the camera and the shadow pass skip the ones out
 // of view, and the colliders, merged into one body per tile (the physics step pays per body).
 const TILE = 64;
 export const tileKey = (x: number, z: number) => Math.floor((x + HALF) / TILE) * 4096 + Math.floor((z + HALF) / TILE);
 
-export const PROP_BLUEPRINTS: Record<PropPlacement['blueprint'], Blueprint> = {
-  palm: {
-    footprint: 0.5,
-    colliders: [{ shape: 'trunk', segments: TRUNK_SEGMENTS, r: 0.32, lift: 0.25 }],
-  },
-  broadleaf: {
-    footprint: 0.45,
-    colliders: [
-      { shape: 'sphere', y: 0.4, r: 0.3 },
-      { shape: 'sphere', y: 1.2, r: 0.3 },
-    ],
-  },
-  rock: { footprint: 0.95, wet: true, colliders: [{ shape: 'sphere', y: 0.1, r: 0.82 }] },
+export const PROP_PREFABS: Record<PropSample['blueprint'], PrefabDef> = {
+  palm: definitions['scenery.palm']!,
+  broadleaf: definitions['scenery.broadleaf']!,
+  rock: definitions['scenery.rock']!,
 };
+const trunk = PROP_PREFABS.palm.colliders[0]!;
+if (trunk.shape !== 'trunk-chain') throw new Error('prefabs: palm needs its trunk-chain recipe');
+export const TRUNK_SEGMENTS = trunk.segments;
 
 export type PalmLook = { fronds: { angle: number; droop: number }[] };
 export type BroadleafLook = { height: number; crown: number; blobs: { angle: number; spin: number[] }[] };
 export type RockLook = { spin: number[]; dark: boolean };
-export type PropPlacement =
-  | (Placement<PalmLook> & { blueprint: 'palm'; lean: Lean; look: PalmLook; home?: boolean })
-  | (Placement<BroadleafLook> & { blueprint: 'broadleaf'; look: BroadleafLook })
-  | (Placement<RockLook> & { blueprint: 'rock'; size: number; look: RockLook });
-/** Home palms are the wood age's log spots: a layout's `clear` leaves them standing, and each has a body of its own. */
-export const isHomePalm = (p: PropPlacement) => p.blueprint === 'palm' && !!p.home;
+// A generator sample / drawing input, not a second placement or collider schema.
+export type PropSample = { x: number; z: number; h: number; size?: number } & (
+  | { blueprint: 'palm'; lean: Lean; look: PalmLook; home?: boolean }
+  | { blueprint: 'broadleaf'; look: BroadleafLook }
+  | { blueprint: 'rock'; size: number; look: RockLook }
+);
+export type PropPlacement = Placement &
+  (
+    | { prefab: 'scenery.palm'; params: { lean: Lean; look: PalmLook; home?: boolean } }
+    | { prefab: 'scenery.broadleaf'; params: { look: BroadleafLook } }
+    | { prefab: 'scenery.rock'; params: { look: RockLook }; scale: readonly [number, number, number] }
+  );
+/** Read the original procedural visual's input from its one canonical placement. */
+export function propSample(p: PropPlacement): PropSample {
+  const [x, h, z] = p.pos;
+  if (p.prefab === 'scenery.palm')
+    return {
+      blueprint: 'palm',
+      x,
+      z,
+      h,
+      lean: p.params.lean,
+      look: p.params.look,
+      ...(p.params.home ? { home: true } : {}),
+    };
+  if (p.prefab === 'scenery.broadleaf') return { blueprint: 'broadleaf', x, z, h, look: p.params.look };
+  return { blueprint: 'rock', x, z, h, size: p.scale[0], look: p.params.look };
+}
+/** Home palms retain individual bodies; all other props retain tile batching. */
+export const isHomePalm = (p: PropSample) => p.blueprint === 'palm' && !!p.home;
+const placement = (p: PropSample, index: number): PropPlacement => {
+  const base = { id: `island-props.${index}`, pos: [p.x, p.h, p.z] as const };
+  if (p.blueprint === 'palm')
+    return {
+      ...base,
+      prefab: 'scenery.palm',
+      params: { lean: p.lean, look: p.look, ...(p.home ? { home: true } : {}) },
+    };
+  if (p.blueprint === 'broadleaf') return { ...base, prefab: 'scenery.broadleaf', params: { look: p.look } };
+  return { ...base, prefab: 'scenery.rock', scale: [p.size, p.size, p.size], params: { look: p.look } };
+};
 
 /** What the scatter asks of the island. */
 export type ScatterGround = {
@@ -48,7 +81,7 @@ export type ScatterGround = {
 };
 
 type Rng = () => number;
-const palm = (x: number, z: number, h: number, rng: Rng): PropPlacement & { blueprint: 'palm' } => {
+const palm = (x: number, z: number, h: number, rng: Rng): PropSample & { blueprint: 'palm' } => {
   const lean = { angle: rng() * Math.PI * 2, amount: 0.18 + rng() * 0.3, height: 4.4 + rng() * 2.2 };
   const count = 7 + Math.floor(rng() * 2);
   const fronds = [];
@@ -60,11 +93,11 @@ const palm = (x: number, z: number, h: number, rng: Rng): PropPlacement & { blue
   return { blueprint: 'palm', x, z, h, lean, look: { fronds } };
 };
 const spin = (rng: Rng) => [rng() * 3, rng() * 3, rng() * 3];
-const rock = (x: number, z: number, h: number, size: number, rng: Rng): PropPlacement => {
+const rock = (x: number, z: number, h: number, size: number, rng: Rng): PropSample => {
   const look = { spin: spin(rng), dark: rng() >= 0.5 };
   return { blueprint: 'rock', x, z, h, size, look };
 };
-const broadleaf = (x: number, z: number, h: number, rng: Rng): PropPlacement => {
+const broadleaf = (x: number, z: number, h: number, rng: Rng): PropSample => {
   const height = 2.2 + rng() * 1.6,
     crown = 1.6 + rng() * 1.1;
   const blobs = [];
@@ -76,13 +109,17 @@ const broadleaf = (x: number, z: number, h: number, rng: Rng): PropPlacement => 
 };
 
 /** Every prop, in a fixed order: home palms, home rocks, then the mainland's palms, round trees and rocks. */
-export function scatterProps({ groundHeight, keptOut }: ScatterGround): PropPlacement[] {
-  const out: PropPlacement[] = [];
+export function scatterProps(
+  { groundHeight, keptOut }: ScatterGround,
+  source: SceneryGenerator = generator,
+): PropPlacement[] {
+  if (source.name !== 'island-props') throw new Error('prefabs: expected island-props generator');
+  const out: PropSample[] = [];
   const flatEnough = (x: number, z: number, h: number, max: number) =>
     Math.abs(groundHeight(x + 1, z) - h) <= max && Math.abs(groundHeight(x, z + 1) - h) <= max;
 
   // Home: the original palms and rocks, from the same seed and in the same order as always.
-  const rng = mulberry32(20261028);
+  const rng = mulberry32(source.seeds[0]!);
   // The meadow stays open: this rectangle also keeps the seeded sequence, so every home palm and rock stays where it is.
   const clear = (x: number, z: number, r: number) =>
     Math.hypot(x - SPAWN.x, z - SPAWN.z) > r &&
@@ -113,7 +150,7 @@ export function scatterProps({ groundHeight, keptOut }: ScatterGround): PropPlac
   }
 
   // Mainland: palms along the coasts, round trees in the meadows, boulders (more of them up on the massif).
-  const wild = mulberry32(20261029);
+  const wild = mulberry32(source.seeds[1]!);
   // Beyond the home island's shore, clear of spawn, the court and home's own palms.
   const outsideHome = (x: number, z: number) =>
     x * x + z * z > 48 * 48 && clear(x, z, 9) && !spots.some((t) => (t.x - x) ** 2 + (t.z - z) ** 2 < 16);
@@ -125,7 +162,7 @@ export function scatterProps({ groundHeight, keptOut }: ScatterGround): PropPlac
     count: number,
     tries: number,
     test: (x: number, z: number, h: number) => boolean,
-    add: (x: number, z: number, h: number) => PropPlacement,
+    add: (x: number, z: number, h: number) => PropSample,
   ) => {
     for (let n = 0, k = 0; k < tries && n < count; k++) {
       const x = (wild() * 2 - 1) * 140,
@@ -155,5 +192,5 @@ export function scatterProps({ groundHeight, keptOut }: ScatterGround): PropPlac
     (x, z, h) => h > 0.4 && (onMassif(x, z) ? wild() < 0.9 : wild() < 0.3) && spaced(x, z, 3.5),
     (x, z, h) => rock(x, z, h, 0.6 + wild() * (onMassif(x, z) ? 2.2 : 1.3), wild),
   );
-  return out;
+  return out.map(placement);
 }

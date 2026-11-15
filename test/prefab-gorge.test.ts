@@ -36,6 +36,8 @@ test('Gorge collider, placement and count values match the old massing', async (
     },
   });
   builders.set('seat.chair', () => new THREE.Group());
+  builders.set('scenery.prop', () => new THREE.Group());
+  builders.set('scenery.tree', () => new THREE.Group());
   builders.set('town.workshop-parts', () => new THREE.Group());
   builders.set('town.shop-parts', () => new THREE.Group());
   builders.set('town.curio-parts', () => new THREE.Group());
