@@ -60,7 +60,7 @@ onNetState((state) => {
   shown = true;
   const el = document.createElement('div');
   el.className = 'elsewhere';
-  el.innerHTML = `<div class="elsewhere-card"><p>You're playing in another tab.</p><button type="button">Play here</button></div>`;
+  el.innerHTML = `<div class="elsewhere-card"><p>You're playing in another tab or on another device.</p><button type="button">Play here</button></div>`;
   el.querySelector('button')!.addEventListener('click', () => location.reload());
   document.body.append(el);
 });

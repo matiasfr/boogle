@@ -43,11 +43,12 @@ export function installObserver(ignore: string) {
     for (let n = walk.nextNode(); n; n = walk.nextNode()) {
       if (!n.nodeValue?.trim()) continue;
       const parent = n.parentElement;
-      if (!parent || parent.closest('script, style') || parent.closest(ignore)) continue;
+      if (!parent || parent.closest('script, style, [data-private]') || parent.closest(ignore)) continue;
       if (parent.closest('[style*="z-index:9999"], [style*="z-index: 9999"]')) continue; // an eval's own notes
       blocks.add(textBlock(parent));
     }
     for (const b of blocks) {
+      if (b.querySelector('[data-private]')) continue; // A short ancestor can contain a private sibling's text.
       if (!b.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
       const r = b.getBoundingClientRect();
       if (r.width < 1 || r.height < 1 || r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth)
