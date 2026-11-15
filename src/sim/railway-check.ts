@@ -9,14 +9,14 @@
 // checkRailway, and one entry per `throw` to test/fixtures/railway-bad-worlds.ts.
 import type { World } from '../ecs/index.ts';
 import { MAX_PLAYERS, okPid } from './roster.ts';
-import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-layout.ts';
+import { RAILWAY_SOURCES, RAILWAY_SUPPLY } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import { RAIL_LEGS, RAIL_YARDS, railPos } from './railway-route.ts';
-import { RECOVERY_MINUTES, LOOSE_PIECE_CAPACITY } from './railway-supply.ts';
+import { RECOVERY_MINUTES, LOOSE_PILE_MAX } from './railway-supply.ts';
 import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES } from './railway.ts';
 import {
   Account,
@@ -71,7 +71,7 @@ import {
   rocks,
   trees,
 } from './railway-rows.ts';
-import { carryMax } from './railway-queries.ts';
+import { carryMax, spareDropSlots } from './railway-queries.ts';
 import { railCounts as worldCounts } from './railway-queries-line2.ts';
 import { checkLine1 } from './railway-check-line1.ts';
 import { checkLine2 } from './railway-check-line2.ts';
@@ -180,14 +180,12 @@ function checkRailway(w: World) {
   )
     bad('accounts');
   const lastPile = w.nextId() - 1;
-  const loose = [0, 0, 0, 0];
   if (
     w.ids(Pile).some((id) => {
       const p = w.get(Pile, id)!;
-      if (railInt(p.kind, 3)) loose[p.kind]! += p.n;
       return (
         !railInt(id, lastPile, 1) ||
-        !railInt(p.n, T1.carry, 1) ||
+        !railInt(p.n, LOOSE_PILE_MAX, 1) ||
         !railInt(p.kind, 3) ||
         !railPos(p.x) ||
         !railPos(p.z) ||
@@ -195,7 +193,7 @@ function checkRailway(w: World) {
         !railInt(p.age, RECOVERY_MINUTES)
       );
     }) ||
-    loose.some((n) => n > LOOSE_PIECE_CAPACITY)
+    spareDropSlots(w) < 0
   )
     bad('piles');
   if (!railInt(r0.awake, RAILWAY_MAX_INT, -1)) bad('tick');

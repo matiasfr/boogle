@@ -154,7 +154,7 @@ for (let delay = 0; delay <= 64; delay++) {
   });
 }
 
-test('review: 2048 one-log drops conserve cargo through reload and chunked late join', (t) => {
+test('review: 2048 one-log drop attempts conserve cargo through reload and chunked late join', (t) => {
   const s = buildSeedWorld('awake');
   const send = (op: string, fields: Record<string, number | boolean> = {}) => {
     const a = account(s.w, 'a')!;
@@ -165,14 +165,16 @@ test('review: 2048 one-log drops conserve cargo through reload and chunked late 
       const k = trees(s.w).findIndex((r) => r.left > 0);
       assert.ok(send('rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }));
     }
-    assert.equal(send('rail.drop', { n: 1, kind: 0, x: 90000 + (i % 64), z: Math.floor(i / 64), y: 0 }), 1);
+    // Fill all 128 rows, top them up locally to eight, then try overflowing each full pile.
+    assert.equal(send('rail.drop', { n: 1, kind: 0, x: 90000 + (i % 128), z: 0, y: 0 }), i < 1024 ? 1 : 0);
   }
-  assert.equal(piles(s.w).length, 1024, 'loose rows stop at the measured render capacity');
-  assert.equal(rail(s.w).rack, 1024, 'overflow returns to the recovery rack');
+  assert.equal(piles(s.w).length, 128, 'loose rows stop at the validated pile capacity');
+  assert.equal(rail(s.w).rack, 0, 'Drop never recovers cargo remotely');
   assert.equal(
     piles(s.w).reduce((sum, p) => sum + p.n, rail(s.w).rack),
-    2048,
+    1024,
   );
+  assert.equal(account(s.w, 'a')!.carry, 2, 'refused drops leave the harvested cargo on the carrier');
   assert.equal(invariant(s.w), null);
   s.w = restore(s.w);
   const wire = lateJoin(s);

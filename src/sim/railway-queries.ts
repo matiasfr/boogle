@@ -24,6 +24,7 @@ import {
   Job,
   JobRun,
   Line,
+  Pile,
   QJob,
   QJobRun,
   Rail,
@@ -33,6 +34,7 @@ import {
   Works,
 } from './railway-components.ts';
 import { STEEL } from './railway-ring-layout.ts';
+import { LOOSE_PILE_CAPACITY } from './railway-supply.ts';
 
 export type Row<C> = C extends { defaults: infer R } ? { -readonly [K in keyof R]: R[K] } : never;
 const TIMING_KEYS = Object.keys(LINE_TIMING) as (keyof LineTiming)[];
@@ -86,11 +88,23 @@ export const carrySpeed = (w: World, pid: string) => {
   const fraction = Math.min(1, extra / (carryMax(w) - carryComfort(w)));
   return 1 - fraction + fraction * HEAVY_LOAD.minSpeed;
 };
-/** One take stops at comfort first; another deliberate take opts into the heavy allowance. */
+/** One slot per excess piece lets every heavy player drop in any kind/order/location, even after reload. */
+export function reservedDropSlots(w: World) {
+  const comfort = carryComfort(w);
+  let reserved = 0;
+  w.each([Account], (_id, a) => {
+    reserved += Math.max(0, carried(a) - comfort);
+  });
+  return reserved;
+}
+/** Ordinary drops and new heavy pickups cannot consume another carrier's escape space. */
+export const spareDropSlots = (w: World) => LOOSE_PILE_CAPACITY - w.ids(Pile).length - reservedDropSlots(w);
+/** One take stops at comfort first; another deliberate take opts into the reserved heavy allowance. */
 export const free = (w: World, a: Readonly<AccountRow>) => {
   const n = carried(a);
   const target = n < carryComfort(w) ? carryComfort(w) : carryMax(w);
-  return heldBig(w, a) ? 0 : Math.max(0, target - n);
+  const room = Math.max(0, target - n);
+  return heldBig(w, a) ? 0 : n < carryComfort(w) ? room : Math.max(0, Math.min(room, spareDropSlots(w)));
 };
 /** Pile kinds: 0 logs, 1 stone, 2 rails, 3 a footing (one to a pile, one to a back). */
 export const FOOT = 3;

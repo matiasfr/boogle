@@ -5,7 +5,8 @@ import { railValid } from '../src/world/railway-server.ts';
 import type { RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../src/sim/railway-layout.ts';
 import { Account, Rail, Forge, Pile } from '../src/sim/railway-components.ts';
-import { LOOSE_PIECE_CAPACITY } from '../src/sim/railway-supply.ts';
+import { LOOSE_PILE_CAPACITY, LOOSE_PIECE_CAPACITY } from '../src/sim/railway-supply.ts';
+import { reservedDropSlots, spareDropSlots } from '../src/sim/railway-queries.ts';
 import { railPredict } from '../src/world/railway-predict.ts';
 import {
   account,
@@ -96,7 +97,7 @@ test('dropping the extra restores mobility; two claimants cannot duplicate the p
   assert.equal(restore(w).hash(), w.hash());
 });
 
-test('a full old pile pool cannot trap a heavy carrier; all cargo remains recoverable after reload', () => {
+test('reserved slots cannot be stolen; heavy carriers can shed every excess piece after reload', () => {
   const w = awake();
   const send = (op: string, fields: Partial<RailAction>) => {
     const a = account(w, 'a')!;
@@ -108,19 +109,29 @@ test('a full old pile pool cannot trap a heavy carrier; all cargo remains recove
       assert.ok(send('rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }));
     }
   };
-  for (let i = 0; i < 128; i++) {
+  for (let i = 0; i < 124; i++) {
     if (!account(w, 'a')!.carry) fill();
     assert.equal(send('rail.drop', { x: i * 100, y: 0, z: 0, n: 1 }), 1);
   }
   fill();
   assert.equal(heavyLoad(w, 'a'), true);
-  assert.equal(send('rail.drop', { x: -1000, y: 1800, z: 0, n: 4 }), 4);
+  assert.equal(reservedDropSlots(w), 4);
+  assert.equal(spareDropSlots(w), 0);
+  railSession(w, 'b', 1);
+  chop(w, 'b');
+  assert.equal(act(w, 'b', 'rail.drop', { x: 50000, y: 0, z: 0, n: 1 }).accepted, 0);
+  const replay = restore(w);
+  for (let i = 0; i < 4; i++) {
+    const a = account(w, 'a')!;
+    const e = { op: 'rail.drop', epoch: a.epoch, request: a.request + 1, x: -1000 - i * 100, y: 1800, z: 0, n: 1 };
+    assert.equal(apply(w, 'a', e, 100000).accepted, 1);
+    assert.equal(apply(replay, 'a', e, 100000).accepted, 1);
+    assert.equal(w.hash(), replay.hash());
+    assert.equal(invariant(w), null);
+  }
   assert.equal(heavyLoad(w, 'a'), false);
-  assert.equal(pilesWithIds(w).length, 129);
-  assert.equal(
-    pilesWithIds(w).reduce((sum, p) => sum + p.n, 0),
-    132,
-  );
+  assert.equal(pilesWithIds(w).length, 128);
+  assert.equal(chop(w).accepted, 0, 'no new heavy load without space to put it down');
   assert.equal(invariant(w), null);
   assert.equal(restore(w).hash(), w.hash());
 });
@@ -149,7 +160,7 @@ test('the shared pack restores an existing heavy load and permits 24 with the sa
 
 for (const [kind, key] of ['carry', 'stone', 'rails'].entries()) {
   for (const topUp of [false, true]) {
-    test(`overflow kind ${kind}, top-up ${topUp}: recover oldest whole piles, predict and reload without loss`, () => {
+    test(`overflow kind ${kind}, top-up ${topUp}: only local top-ups, predict and reload without loss`, () => {
       const { w, t } = buildSeedWorld('q1-done');
       for (const [k, field] of ['carry', 'stone', 'rails'].entries())
         while (account(w, 'a')![field as 'carry' | 'stone' | 'rails'])
@@ -159,13 +170,13 @@ for (const [kind, key] of ['carry', 'stone', 'rails'].entries()) {
         .reduce((sum, p) => sum + p.n, 0);
       // Conserved fixture at the measured buffer boundary, including a partial oldest pile.
       const target = w.spawn([Pile, { kind, n: 1, x: 123, y: 0, z: 456, age: 0 }]);
-      let remaining = LOOSE_PIECE_CAPACITY - before - 1;
-      while (remaining > 0) {
-        const n = Math.min(8, remaining);
-        w.spawn([Pile, { kind, n, x: remaining, y: 0, z: 999, age: 0 }]);
-        remaining -= n;
+      let added = 1;
+      while (w.ids(Pile).length < LOOSE_PILE_CAPACITY) {
+        w.spawn([Pile, { kind, n: 8, x: w.ids(Pile).length, y: 0, z: 999, age: 0 }]);
+        added += 8;
       }
-      const added = LOOSE_PIECE_CAPACITY - before + 16;
+      const initialLoose = before + added;
+      added += 16;
       const r = w.mut(Rail, w.single(Rail))!;
       const f = w.mut(Forge, w.single(Forge))!;
       r.pack = true;
@@ -173,8 +184,11 @@ for (const [kind, key] of ['carry', 'stone', 'rails'].entries()) {
         const produced = Math.ceil(added / 5) * 5;
         r.produced += produced;
         r.rack += produced - added;
-      } else if (kind === 1) r.stoneProduced += added;
-      else f.poured += added;
+      } else if (kind === 1) {
+        const produced = Math.ceil(added / 8) * 8;
+        r.stoneProduced += produced;
+        r.stoneRack += produced - added;
+      } else f.poured += added;
       w.mut(Account, w.lookup(Account, 'a')!)![key as 'carry' | 'stone' | 'rails'] = 16;
       assert.equal(invariant(w), null);
       const oldIds = pilesWithIds(w)
@@ -195,7 +209,7 @@ for (const [kind, key] of ['carry', 'stone', 'rails'].entries()) {
         z: topUp ? 456 : 654,
       };
       const predicted = restore(w);
-      const n = topUp ? 7 : 8;
+      const n = topUp ? 7 : 0;
       assert.equal(railPredict(predicted, 'a', e, t).n, n);
       assert.equal(apply(w, 'a', e, t).accepted, n);
       const compare = () => {
@@ -216,23 +230,21 @@ for (const [kind, key] of ['carry', 'stone', 'rails'].entries()) {
       assert.ok(loose <= LOOSE_PIECE_CAPACITY);
       assert.equal(
         loose + stored() - oldStored + account(w, 'a')![key as 'carry' | 'stone' | 'rails'],
-        LOOSE_PIECE_CAPACITY + 16,
+        initialLoose + 16,
       );
-      assert.equal(
-        w.get(
-          Pile,
-          oldIds.find((id) => !topUp || id !== target)!,
-        ),
-        undefined,
+      assert.equal(stored(), oldStored, 'Drop never transfers cargo to any store');
+      assert.ok(
+        oldIds.every((id) => w.has(Pile, id)),
+        'all existing piles remain',
       );
       if (topUp) assert.equal(w.get(Pile, target)!.n, 8);
       assert.equal(invariant(w), null);
       assert.equal(restore(w).hash(), w.hash());
       const second = { ...e, request: e.request + 1, x: 888, z: 777 };
       const replay = restore(w);
-      assert.equal(railPredict(predicted, 'a', second, t).n, 8);
-      assert.equal(apply(w, 'a', second, t).accepted, 8);
-      assert.equal(apply(replay, 'a', second, t).accepted, 8);
+      assert.equal(railPredict(predicted, 'a', second, t).n, 0);
+      assert.equal(apply(w, 'a', second, t).accepted, 0);
+      assert.equal(apply(replay, 'a', second, t).accepted, 0);
       compare();
       assert.equal(invariant(w), null);
       assert.equal(replay.hash(), w.hash());

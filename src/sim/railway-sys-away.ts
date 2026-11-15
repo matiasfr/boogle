@@ -208,7 +208,12 @@ export const supply = defineSystem(
         if (pile.age === RECOVERY_MINUTES && e.recover.includes(id)) {
           if (pile.kind === 1) rail.stoneRack += pile.n;
           // Abandoned rails return to the forge's rack; logs to the recovery rack.
-          else if (pile.kind === RAILS) w.mut(Forge, forgeId(w))!.rack += pile.n;
+          else if (pile.kind === RAILS) {
+            const f = w.mut(Forge, forgeId(w))!;
+            // Keep the aged pile until the whole transfer fits the checkpoint's rack domain.
+            if (f.rack + pile.n > 4096) return;
+            f.rack += pile.n;
+          }
           // An abandoned footing goes back to the Works rack (past its cap if it must).
           else if (pile.kind === FOOT) w.mut(Works, worksId(w))!.rack += pile.n;
           else rail.rack += pile.n;

@@ -1,4 +1,4 @@
-// Independent f83e49fa8 review reproduction. Accepted loose pieces must all render; overflow is recovered.
+// Independent f83e49fa8 review reproduction. Accepted loose pieces must all render; overflow stays carried.
 // node --import ./test/helpers/rail-no-audit.ts dev/look/review-heavy-load-piles.ts
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -21,16 +21,20 @@ for (let i = 0; i < 129; i++) {
     const k = trees(seed.w).findIndex((t) => t.left > 0);
     assert.ok(send('rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }));
   }
-  assert.equal(send('rail.drop', { n: 8, kind: 0, x: 90000 + (i % 16) * 10, z: Math.floor(i / 16) * 10, y: 0 }), 8);
+  assert.equal(
+    send('rail.drop', { n: 8, kind: 0, x: 90000 + (i % 16) * 10, z: Math.floor(i / 16) * 10, y: 0 }),
+    i < 128 ? 8 : 0,
+  );
 }
 assert.equal(invariant(seed.w), null);
 assert.equal(restore(seed.w).hash(), seed.w.hash());
 assert.equal(
-  piles(seed.w).reduce((n, p) => n + p.n, rail(seed.w).rack),
+  piles(seed.w).reduce((n, p) => n + p.n, rail(seed.w).rack + account(seed.w, 'a')!.carry),
   1032,
   'all accepted logs remain stored',
 );
-assert.equal(rail(seed.w).rack, 8, 'the oldest eight logs returned to the recovery rack');
+assert.equal(rail(seed.w).rack, 0, 'no logs moved to the recovery rack');
+assert.equal(account(seed.w, 'a')!.carry, 8, 'refused cargo stays on its carrier');
 console.log(
   'REVIEW piles',
   piles(seed.w).length,
@@ -70,7 +74,8 @@ try {
   reportGfxErrors([g]);
   assert.equal(g.healthErrors().length, 0);
   const r = result as { logs: number; recovered: number; meshes: { name: string; drawn: number; visible: boolean }[] };
-  assert.equal(r.logs + r.recovered, 1032, 'reload retains both loose and recovered logs');
+  assert.equal(r.logs, 1024, 'reload retains every accepted loose log');
+  assert.equal(r.recovered, 0, 'no remote recovery');
   const logs = r.meshes.find((m) => m.visible && (m.name.includes('log') || m.name === 'haul pieces'))!;
   assert.ok(logs, 'live cargo mesh found');
   assert.equal(logs.drawn, r.logs, 'review: every accepted log remains visible after reload');
