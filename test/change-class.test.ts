@@ -154,6 +154,8 @@ test('server jobs follow the real tuning panel and recorder behind per-tab impor
 // Loads no walk can follow: a computed import or URL, a worker or child process started from a path that is not a
 // literal URL, a bundle built by entry name. Each one known is listed with what covers it; a new one fails here.
 const UNFOLLOWED: Record<string, string> = {
+  'server/test/credential-evidence.test.ts: import':
+    'imports the browser bootstrap bundle from the literal account.ts URL; that source and its imports are walked',
   'server/test/seat-recording.test.ts: registerHooks':
     'isolates the literal seat binder and mark URLs per tab; both targets and their imports remain in the server closure',
   'server/test/seat-recording.test.ts: import':
