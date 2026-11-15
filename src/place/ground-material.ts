@@ -46,6 +46,7 @@ export type LawnLayer = (lawn: N, p: N, mottle: N) => N;
 
 /** `lawnLayer` is an experiment's (land.ts passes `?meadow=tint`'s); without one the graph is exactly the lawn's own. */
 export function homeGroundMaterial(lawnLayer?: LawnLayer) {
+  const trial = new URLSearchParams(location.search).get('terrainEdges') === 'trial';
   const m = groundMaterial();
   const p = positionWorld.sub(vec3(ORIGIN.x, 0, ORIGIN.z));
   const wx: N = positionWorld.x;
@@ -105,14 +106,21 @@ export function homeGroundMaterial(lawnLayer?: LawnLayer) {
   const wander: N = sin(p.x.mul(0.37).add(p.z.mul(0.23)))
     .mul(0.5)
     .add(sin(p.x.mul(0.91).sub(p.z.mul(0.67))).mul(0.3));
-  // The broad 3 m slope too, so a few walkable cells inside a cliff face don't sprout grass blotches.
+  // Keep broad-slope rock connected to cliffs. Smooth geometry normals are shared by all LODs;
+  // unlike a flat rendered-face test they do not introduce distant coarse-triangle patches.
+  // The vertex steep field alone misses vertical strips beside a flat bench (flattest adjacent face).
+  const cliff: N = smoothstep(0.02, 0.05, steep).max(
+    smoothstep(0.15, 0.35, normalWorldGeometry.normalize().y).oneMinus(),
+  );
   // Both borders are narrow and broken by a finer wander: a soft blend over a 2 m cell reads as an airbrushed smear
   // from the path, a crisp ragged edge as rock coming through the turf.
   const ragged: N = sin(p.x.mul(1.9).add(p.z.mul(1.1)).add(p.y.mul(1.7)))
     .mul(0.06)
     .add(sin(p.z.mul(2.7).sub(p.x.mul(0.8))).mul(0.05))
     .add(wander.mul(0.07));
-  const broad: N = smoothstep(0.54, 0.6, soil.add(wander.mul(0.03))).oneMinus();
+  const broad: N = smoothstep(0.54, 0.6, soil.add(wander.mul(0.03)))
+    .oneMinus()
+    .mul(trial ? cliff : 1);
   const rock: N = smoothstep(0.3, 0.42, steep.add(ragged)).max(broad);
   const tiles = coveTextures();
   const n: N = normalWorldGeometry.normalize();

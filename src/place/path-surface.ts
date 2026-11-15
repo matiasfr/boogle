@@ -15,6 +15,7 @@ import {
   length,
   mix,
   normalFlat,
+  normalWorldGeometry,
   positionView,
   positionWorld,
   sin,
@@ -71,6 +72,7 @@ export function pathFieldTexture() {
 
 /** Draw the paths over `material`'s colour and normal. Call it after every other ground layer. */
 export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
+  const trial = new URLSearchParams(location.search).get('terrainEdges') === 'trial';
   const p: N = positionWorld;
   const uv: N = p.xz
     .sub(vec2(ORIGIN.x + GRID.x0, ORIGIN.z + GRID.z0))
@@ -97,12 +99,14 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
   const d: N = raw.add(wobble);
   // One pixel of feather, so the edge stays clean from across the sea as well as underfoot.
   const soft: N = fwidth(raw).max(0.05);
-  // Bound paint to the path's height and its ground-facing facets: height alone also admits the wall's lowest strip.
-  const facetUp: N = cameraViewMatrix.transpose().mul(vec4(normalFlat, 0)).y;
+  // Height owns the bench edge; smooth normals keep paint off walls without rejecting individual triangles.
+  const facing: N = trial
+    ? smoothstep(0.45, 0.65, normalWorldGeometry.normalize().y)
+    : smoothstep(0.5, 0.66, cameraViewMatrix.transpose().mul(vec4(normalFlat, 0)).y);
   const bench: N = smoothstep(0.6, 0.9, p.y.sub(along))
     .oneMinus()
     .mul(smoothstep(0.9, 1.2, along.sub(p.y)).oneMinus())
-    .mul(smoothstep(0.5, 0.66, facetUp));
+    .mul(facing);
   const coverage: N = smoothstep(soft.negate(), soft, d).oneMinus();
   const tread: N = coverage.mul(bench);
   const near: N = smoothstep(30, 70, positionView.z.negate()).oneMinus(); // detail too small to draw from afar
