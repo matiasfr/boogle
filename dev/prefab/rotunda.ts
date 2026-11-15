@@ -37,11 +37,17 @@ export function rotundaContent(): { levels: LevelDef[] } {
         if (piece.part === 'ruin') ruins++;
         return {
           id: `rotunda-${site.id}.${piece.id}`,
-          prefab: RECORD[piece.part],
+          prefab: piece.part === 'shell' && piece.turn === 0 ? 'roundhouse.bay' : RECORD[piece.part],
           pos: [0, 0, 0],
           ...(piece.part === 'table' && scale !== 1 ? { scale: [scale, 1, scale] as const } : {}),
           params: { turn: piece.turn, ...(piece.part === 'ruin' ? { left, right } : {}) },
         };
+      });
+      placements.push({
+        id: `rotunda-${site.id}.open-doors`,
+        prefab: 'roundhouse.bay-open-doors',
+        pos: [0, 0, 0],
+        params: { turn: 0 },
       });
       return { place: `rotunda-${site.id}`, placements };
     }),

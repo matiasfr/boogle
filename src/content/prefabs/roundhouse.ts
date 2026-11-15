@@ -24,8 +24,31 @@ const PIER_X = 2.12,
   PIER_Z = 14.2;
 /** The roof falls 1.4 m over the bay's depth (0.129 rad), in three lengths that widen with the wedge. */
 const ROOF_PITCH = 0.129;
+const BAY_SOLIDS = [
+  box(-PIER_X, 3.1, PIER_Z, 0.31, 3.1, 0.4),
+  box(PIER_X, 3.1, PIER_Z, 0.31, 3.1, 0.4),
+  box(0, 5.4, PIER_Z, 1.8, 0.8, 0.4),
+  box(0, 2.4, 24.47, 4.34, 2.4, 0.15),
+  box(0, 6.116, 15.6, 3.07, 0.15, 1.82, ROOF_PITCH),
+  box(0, 5.65, 19.2, 3.7, 0.15, 1.82, ROOF_PITCH),
+  box(0, 5.184, 22.81, 4.34, 0.15, 1.82, ROOF_PITCH),
+  // The raised monitor is solid; the approach eaves keep the blockout's reach.
+  box(0, 6.71, 17.72, 3.12, 0.6, 1.0, ROOF_PITCH),
+];
 
 export const prefabs = [
+  definePrefab({
+    key: 'roundhouse.bay',
+    visual: { builder: 'roundhouse.bay', params: { part: 'bay' }, batch: 'rotunda-bays' },
+    colliders: BAY_SOLIDS,
+    scope: 'owner',
+  }),
+  definePrefab({
+    key: 'roundhouse.bay-open-doors',
+    visual: { builder: 'roundhouse.bay', params: { part: 'open-doors' }, batch: 'rotunda-open-doors' },
+    colliders: [box(-2.03, 2.3, 15.08, 0.1, 2.3, 0.89), box(2.03, 2.3, 15.08, 0.1, 2.3, 0.89)],
+    scope: 'owner',
+  }),
   definePrefab(
     block('bay', [
       box(-PIER_X, 3.1, PIER_Z, 0.31, 3.1, 0.4),
