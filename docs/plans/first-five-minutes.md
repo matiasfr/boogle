@@ -1,6 +1,6 @@
 # First five minutes
 
-Status: implemented and checked, 15 November 2026; independent review pending. D4 / G10, G11, G16;
+Status: implemented and checked, 15 November 2026; visual-review repairs recorded below. D4 / G10, G11, G16;
 [owner answer 5](../decisions-core-loop.md#d-2026-11-15-grant-queue-answered). Commit only; independent review belongs to the parent.
 
 **Goal:** meet a helpful camp resident, receive the axe, fill Station 1, and start the engine as the payoff.
@@ -112,3 +112,58 @@ Checks and evidence:
 - Final instant-feedback harness edit: scoped lint and typecheck passed. `git diff --check` passed.
 
 No shipping or push. No fixture regeneration, namespace reset, save migration, carry-capacity or player-speed edit.
+
+## Visual-review follow-up, 15 November
+
+Implementation commit `00e0d5667`, on `fix/first-five-visual` from `8355f8e8a`; not pushed or shipped.
+The parent owns review of this follow-up. The original independent code review does not cover these repairs.
+All six named review captures were opened before editing.
+
+- The recipient's accepted receipt now starts the axe reveal immediately, during `waking`, instead of waiting
+  for the 31-tick rule window to end. The resident reaches out; the axe is visible at that hand during anticipation,
+  with gathering glints there, then rises to the player. The existing card, deliberate dismissal, conversation
+  camera and speech-bubble size remain. Friends retain their existing flourish. No sim, wire, saved-data or
+  authoritative timing change; no fixture regeneration.
+- The resident moves to `(993.05, -145.2)`, grounded by the existing terrain query. Sampling the actual track
+  centreline every centimetre puts them 3.92 m from it, versus about 1.75 m before; their position is 5.16 m from
+  the existing 6 m wake centre. Talk also checks that unchanged reach. The opening bot approaches closer so its
+  old two-metre stopping tolerance cannot leave it outside Talk.
+- Ignition has a larger, slower body rock and a 12 cm upward kick at full strength. The separate panel gantry/rack
+  follows the same cosmetic transform; the first recapture exposed that it had stayed still while the shell shook.
+  Reduced motion suppresses the added movement. Vehicle bodies, track heights and progression remain unchanged.
+- Crew facing eases into the chair heading during the final climb, removing the seated turn snap. Their existing
+  route through the log-volley corridor and straight diagonal climb remain; only the requested minimum facing fix
+  is included.
+
+Inspected evidence, relative to this checkout (ignored `.look/` artifacts):
+
+- `.look/first-five-visual/s2-handover-motion.png`, `s2-axe-close.png`, `s2-resident-hand.png`: axe at the resident
+  immediately after acceptance, then above the player; no delayed machine-origin show. The capture's log reports
+  the reveal already showing while phase is `waking`. Run passed under load; not timing or feel evidence.
+- `.look/first-five-visual/s3-ignition-follow-v2-motion.png` and `s3-ignition-follow-v2-dense.png`: gantry and rack
+  visibly lean and return during the catch from the ordinary follow view behind the first frame.
+- `.look/first-five-visual/s3-boarding-front-v2-motion.png`, `s3-boarding-turn-sheet.png` and `s3-resident-pass.png`:
+  crew turn during the climb; the resident stands clear as the step, handrail and running gear pass.
+- The matching `*-realtime.webm` recordings are retained. Motion was inspected through sheets and extracted video
+  frames; real-time smoothness, heard audio and device play remain unverified. All focused runs passed WebGPU,
+  advancing completed frames and no page/console/graphics errors.
+- `.look/playthrough/first-five-visual-v3/report.txt` and `end-still.png`: `--to t1-done` passed on the final source,
+  no missing expected beats, no bot/graphics errors; inspected the end still. Warped progression proof only.
+  The first run stopped outside Talk at the old approach. The second was interrupted by this worker's source edit
+  reloading Vite; neither is a pass. Both failed runs are retained beside v3.
+
+Checks, using Node 26.13.0:
+
+- `npm run check`: passed lint, typecheck, unit tests (including all nine railway golden shards), registry,
+  level, asset/prefab freshness and production build, before the final gantry-transform follow-up.
+- Final source: `node dev/ship-check.ts 8355f8e8a`: passed registry, eight scoped lint files, typecheck and
+  515 tests across 59 affected files. Log: `.look/first-five-visual/final-check.log`.
+- Final source: `node --import ./dev/sim/hooks.ts --test test/railway-first-five-review.test.ts
+  test/railway-opening.test.ts test/railway-golden-?.test.ts`: 113/113 passed, all nine unchanged golden shards.
+  Log: `.look/first-five-visual/final-railway-tests.log`.
+- `npm run level-check`: passed, 15 reports; zero machine-clearance and grounding problems. Moving NPCs are
+  excluded from this offline check; their clearance is established by the departure capture above.
+- `npm run loop -- run`: passed every built route order for 1–4 players and the enforced-order probes.
+- `node dev/look/playthrough.ts --to t1-done --name first-five-visual-v3`: passed. `git diff --check`: passed.
+
+No new dialogue or Boogler copy changes. No push or shipping action.
