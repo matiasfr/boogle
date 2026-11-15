@@ -1,5 +1,6 @@
 // Owner-requested regression: the offline census must not resurrect retired prototype geometry.
 import { test } from 'node:test';
+import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { collectTechGeometry } from '../dev/level/tech-geometry.ts';
 import { padById } from '../src/place/tech-layout.ts';
@@ -64,4 +65,20 @@ test('every surviving runtime pad and support reaches the census', async () => {
       assert.ok(Math.abs(center - value!) < 0.3, `${piece}: ${pad} axis ${axis}`);
     }
   }
+});
+
+// Pin every object's bounds and face count as well as its ID: replacing a missing piece with a duplicate must fail.
+test('runtime tech inventory matches the audited per-piece geometry snapshot', () => {
+  const faces = collectTechGeometry();
+  const inventory = [...new Set(faces.map((f) => f.piece))].sort().map((id) => {
+    const rows = faces.filter((f) => f.piece === id),
+      points = rows.flatMap((f) => f.points);
+    return {
+      id,
+      faces: rows.length,
+      min: [0, 1, 2].map((axis) => +Math.min(...points.map((p) => p[axis]!)).toFixed(4)),
+      max: [0, 1, 2].map((axis) => +Math.max(...points.map((p) => p[axis]!)).toFixed(4)),
+    };
+  });
+  assert.deepEqual(inventory, JSON.parse(fs.readFileSync('test/fixtures/zfight-tech-inventory.json', 'utf8')));
 });

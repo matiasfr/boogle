@@ -39,6 +39,8 @@ Names below are representative pieces; count includes all oriented/hidden member
 
 ## Fixed — zfight-top20 implementation (partial)
 
+The [per-piece runtime inventory audit](zfight-spot16-inventory.md) proves all 26 removed prototype objects, all 12 newly captured live objects and all 20 retained pad/support objects against current main; the exact 32-piece geometry inventory is pinned by the regression fixture.
+
 **Spot 16 independent-review repair:** the first adapter missed surviving geometry. It now also executes
 `line2-view.ts`'s pad/pillar section (apron, apron support, p2, p2 pillar) and `secrets-view.ts`'s pad/support section
 (lookout, stack, balcony, lookout support, loft support, balcony column, stack column), from the runtime source.
