@@ -14,6 +14,8 @@ Owner, 15 November: "treat it as a preliminary playtest. The biggest part is tha
 
 - [ ] **Stuck at the Works: finding the breaker ("the crusher") and striking the quarry seam.** From the data, session `mwh4pmui-mpbh7trk` (Jhombus, desktop Chrome on macOS, build `4174823c3`, 37 min solo; the owner says this is Grant): everything through Q6 went quickly. He reached Far Head at 23:31, fitted the boiler at 30:36 and reached the Pier at 32:33. He then never took the breaker, struck a seam or filled the kiln. He rode back west and passed within 8 m of the breaker (`WORKS_BREAKER`, `src/sim/railway-works-layout.ts:31`) at 34:26, but no "Take the breaker" prompt was ever shown (reach 4.2 m). Instead he spent his last 3 minutes in the village shop, museum and house, then the session ended with no goodbye. The beat's only cue is "the forge call's plume over the breaker" (`npm run loop -- node breaker`); nothing tells a player the Works is the next goal after the Pier. The earlier round's data timed the steps after the breaker (the stall seam 13 s after it); finding the breaker in the first place is the gap here.
 
+- Owner, 15 November, on fixing it: "I think we want to wait until we get Opus and fable functionality again to design this, it would be a bigger design than just a signaling problem to fix the game flow properly." So this is a game-flow design job for a Claude designer once that usage is back, not a signposting patch. Nothing is dispatched for it.
+
 ### Boogler reveal and world
 
 - [ ] The Boogler statue on the road to Bell Rock gives the reveal away too early. His suggestion: an unfinished scaffold, with builders saying the Boogler commissioned it and they ran out of resources. The finished statue appears once you have met the Boogler.
