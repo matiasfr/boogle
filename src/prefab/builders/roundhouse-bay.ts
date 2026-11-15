@@ -104,6 +104,7 @@ registerBuilder('roundhouse.bay', (params, batch) => {
       box(0.89, 2.3, 0, 1.78, 4.6, 0.16, WOOD);
       for (let i = 0; i < 6; i++) box(0.15 + i * 0.296, 1.22, -0.09, 0.018, 2.3, 0.02, '#713f2c');
       window(0.89, 3.38, -0.11, 1.42, 1.66);
+      window(0.89, 3.38, 0.11, 1.42, 1.66);
       for (const y of [0.6, 2.2]) box(0.45, y, -0.14, 0.82, 0.12, 0.08, STEEL);
       box(1.56, 2.15, -0.19, 0.09, 0.35, 0.12, STEEL);
       // Open leaves fold inward along the reveal; nothing intrudes into the clear 3.6 m opening.
@@ -218,6 +219,8 @@ registerBuilder('roundhouse.bay', (params, batch) => {
       g.computeVertexNormals();
       add(g, STONE[0]);
       for (let y = 0.5; y < 4.8; y += 0.5) box(0, y, 19.5, 0.32, 0.018, 11, '#a88d66');
+      // Close the exposed end of the monitor without dividing adjacent built bays.
+      box(0, 6.55, 18, 0.3, 1.05, 2, STONE[1]);
       break;
     }
     case 'outline': {

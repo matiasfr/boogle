@@ -38,6 +38,18 @@ const BAY_SOLIDS = [
 
 export const prefabs = [
   definePrefab({
+    key: 'roundhouse.bay-doors',
+    visual: { builder: 'roundhouse.bay', params: { part: 'doors' }, batch: 'rotunda-doors' },
+    colliders: [box(0, 2.3, PIER_Z, 1.8, 2.3, 0.1)],
+    scope: 'owner',
+  }),
+  definePrefab({
+    key: 'roundhouse.end-wall',
+    visual: { builder: 'roundhouse.bay', params: { part: 'wall' }, batch: 'rotunda-end-walls' },
+    colliders: [box(0, 2.4, 19.5, 0.15, 2.4, 5.5)],
+    scope: 'owner',
+  }),
+  definePrefab({
     key: 'roundhouse.bay',
     visual: { builder: 'roundhouse.bay', params: { part: 'bay' }, batch: 'rotunda-bays' },
     colliders: BAY_SOLIDS,

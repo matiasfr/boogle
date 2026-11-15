@@ -1232,6 +1232,32 @@
         }
       }
     },
+    "roundhouse.bay-doors": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            2.3,
+            14.2
+          ],
+          "half": [
+            1.8,
+            2.3,
+            0.1
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.bay-doors",
+      "scope": "owner",
+      "visual": {
+        "batch": "rotunda-doors",
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "doors"
+        }
+      }
+    },
     "roundhouse.bay-open-doors": {
       "colliders": [
         {
@@ -1317,6 +1343,32 @@
         "builder": "roundhouse.bay-block",
         "params": {
           "part": "bay-ruin"
+        }
+      }
+    },
+    "roundhouse.end-wall": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            2.4,
+            19.5
+          ],
+          "half": [
+            0.15,
+            2.4,
+            5.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.end-wall",
+      "scope": "owner",
+      "visual": {
+        "batch": "rotunda-end-walls",
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "wall"
         }
       }
     },
