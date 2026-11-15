@@ -48,6 +48,12 @@ test('review: overflow rail drop must leave the forge within the checkpoint doma
   assert.equal(restore(w).hash(), w.hash());
   const drop = { op: 'rail.drop', epoch: 1, request: 1, kind: 2, n: 1, x: 120000, y: 2500, z: 0 };
   assert.equal(railValid(w, drop, actorAt(drop.x, drop.z), 100000), true);
+  assert.equal(railValid(w, drop, actorAt(drop.x + 321, drop.z), 100000), false);
+  assert.equal(
+    railValid(w, drop, { ...actorAt(drop.x, drop.z), height: () => false }, 100000),
+    false,
+    'matching horizontal coordinates do not permit a drop onto another floor',
+  );
   const before = pilesWithIds(w);
   assert.equal(apply(w, 'review', drop, 100000).accepted, 0, 'full table refuses a new ordinary pile');
   assert.equal(w.get(Forge, w.single(Forge))!.rack, 4096);

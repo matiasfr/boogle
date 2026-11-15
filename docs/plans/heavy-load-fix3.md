@@ -31,6 +31,9 @@ Existing validated position, request cadence and entity-id exhaustion rules stil
 1. Share pile count/piece bounds; derive reservations in the existing queries; apply them in every
    pickup through `free`, and in Drop. Remove all overflow recovery writes. Validate the same invariant
    on checkpoint load. Update the existing unshipped v48 domain note, with no migration.
+   Apply the server's existing height reach as well as horizontal reach to the drop point, so a
+   pile on another floor is not a local target. At coincident partial piles, choose creation order,
+   including temporary negative prediction ids after confirmed ids.
 2. Keep aged recovery separate from Drop; do not recover rails into a forge that would exceed 4,096.
    Preserve the pile for a later pulse. Other recovery stores are already bounded by conservation.
 3. Rewrite old recycling assertions as locality/refusal/reservation assertions, preserving conservation,

@@ -197,6 +197,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
         railPos(e.x) &&
         railPos(e.z) &&
         railPos(e.y) &&
+        height(e.y!) &&
         near(e.x, e.z, 320)
       );
     case 'rail.take': {
