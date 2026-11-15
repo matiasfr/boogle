@@ -4,7 +4,7 @@
 
 Let a player keep one identity across browsers and devices by saving a short PIN, while continuing to let friends play without registering. Accounts identify people; each room keeps its own progress, wallet, upgrades and saves. Serves DESIGN.md **6. Communal world, personal things**, **8. Enjoyable alone and together**, **Clear authority** and **Small and readable**.
 
-**Status:** step 1 authorized by the owner's 15 November implementation brief, including revision to a short PIN. Stop after step 1; steps 2–5 remain unbuilt. The P1 [backlog row](../backlog.md) and [account commitment](../decisions-process.md#d-2026-11-14-accounts-committed) own the broader effort.
+**Status:** step 1 built; step 2 implemented under the owner's 15 November brief, with remaining Checkpoint A evidence recorded below. Steps 3–5 remain outside this implementation, apart from the minimum guest bootstrap needed for step 2 to connect. The P1 [backlog row](../backlog.md) and [account commitment](../decisions-process.md#d-2026-11-14-accounts-committed) own the broader effort.
 
 ## Owner answers (15 November 2026)
 
@@ -161,3 +161,45 @@ Built initially on the previous eight digit recommendation under the brief's exp
 ## Sign-in decision closed (15 November 2026)
 
 **Settled: five digits, generated and unique, with PIN-alone lookup**, displayed as five digits with leading zeroes kept. The other three owner answers above are also settled. Before assigning step 2, the orchestrator should recheck current branch ownership around room admission and identity startup.
+
+## Step 2 implementation and evidence (15 November 2026)
+
+Implemented first-frame socket authentication against the durable account service. The frame is limited to 1 KiB
+and five seconds; URL pid/key admission is removed. The server supplies the principal, preserves same-connection
+reconnect and newer-connection takeover, and retains `taken` for another principal reusing a connection ID.
+Timeouts/storage failures use retryable restart closes; revoked/expired credentials get an explicit authentication
+refusal. Rotation and sign-out detach matching live sockets after the account transaction commits, across rooms.
+The operator capability is checked independently; `dev/tune.ts --controller` supplies it from `TUNE_CONTROLLER_KEY`.
+PIN generation/parsing are untouched by this step; the owner's five-digit change arrived from the separate job on main.
+
+The single cutover is `WORLD_NS` **v47 -> v48**, dated 15 November, in its own commit. The host golden was compared
+field by field before replacement: all 8,596 ordered records keep the same inputs, simulation state, state hashes,
+messages and replica packets. Only 205 checkpoint namespace/checksum pairs and 2,518 serialized-byte counters differ.
+The account database remains outside room reset/cleanup.
+
+**Minimum client prerequisite:** `src/player/account.ts`, `identity.ts`, boot and the net caller now obtain a guest
+session before main initializes identity-keyed caches. A version-1 token is saved before registration, retained on
+failure, and verified on reload; inaccessible storage uses memory for this visit. No legacy pid is imported. The
+existing loading error/reload route handles unavailable authentication. This is not completion of step 3: account
+switching, explicit browser sign-out/Start fresh integration, identity-sensitive visit cleanup and richer account
+status/recovery remain there; optional Account UI remains step 4. The headless room caller and live smoke probe use
+the same admission boundary. Existing room tests seed named principals in their temporary account volumes; the new
+authentication proofs use actual HTTP guest/account operations, not those fixture identities.
+
+**Checkpoint A evidence:** `server/test/account-admission.test.ts` runs the shared cases in
+`dev/peer-test/ws-accounts.ts`: duplicate guest/promotion/sign-in requests, absent-owner forgery, early/malformed/
+oversized auth input, the timeout bound, two tokens for one pid, retirement, foreign connection-ID refusal, live
+and grace reconnect, cross-room rotation/sign-out closure, restart and durable revocation. Separate socket proofs
+check account versus operator authority and the real `createWsRoom` reconnect with voice presence, followed by
+fatal sign-out without a retry loop. Existing seat, receipt, voice, save and server tests are retained.
+
+The step gate, owning server suite and focused net/image tests run with Node 26 and bounded commands; local logs:
+`.look/step-gate.log`, `.look/server-tests.log`, `.look/account-admission.log`, `.look/net-image-tests.log`, and
+`.look/namespace-trace-diff.log`. The final handoff supplies the exact exit codes and commit IDs.
+
+**Still unverified:** the trusted browser `npm run test:net` run. `timeout 600 node .look/see-client.ts net` exits 1
+because this T3 worktree has no `.look/see-client.ts` or broker configuration. No browser was launched to bypass it.
+The harness has been extended, but its reviewed broker launch/restart must happen in the coordinating session.
+Fresh independent review is also outstanding; this implementation sub-agent did not delegate one. Accordingly step
+2's readiness checkbox and Checkpoint A remain open. Rendered smoke, before/after load, full browser identity and
+room-isolation flows are not claimed; not tested on a device. Nothing was pushed, shipped or submitted as a PR.

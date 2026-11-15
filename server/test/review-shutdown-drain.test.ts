@@ -1,14 +1,15 @@
 // Review of fix/shutdown-drain (11 November, review/shutdown-drain). Each test states a defect found in review and
 // fails while it stands.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import { createStore, type Store } from '../src/store.ts';
-import { createRoomHost } from '../src/host/rooms.ts';
-import { createService, loadConfig } from '../src/server.ts';
+import { createRoomHost } from './helpers/accounts.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 
 type Obj = Record<string, unknown>;
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));

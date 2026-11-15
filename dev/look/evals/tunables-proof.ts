@@ -1,9 +1,7 @@
 // TUNE_CONTROLLER_KEY=tunablesproofcontroller01 npm run look -- --players 2 --real --room proto-tuneproof --query 'dev=1&t.post.centre=0.24' --eval dev/look/evals/tunables-proof.ts --wall 240
 // Needs a proto- room (the tune rule only allows those), the controller key in the server's env (look passes TUNE_CONTROLLER_KEY on), and shared writes only for railway.regrowMinutes, railway.recoveryMinutes (src/debug/dev/tunables.ts validate).
 // Loaded through Vite by look's existing --eval. No new browser or harness.
-const { identity } = (await import(
-  '/src/player/identity.ts' as string
-)) as typeof import('../../../src/player/identity.ts');
+
 const { net, connectRoom } = (await import(
   '/src/netplay/net.ts' as string
 )) as typeof import('../../../src/netplay/net.ts');
@@ -56,10 +54,8 @@ async function run() {
     net.room?.close();
     detachWorld();
     net.room = null;
-    // Keep the adapter's player id; let the old socket's 1.5 s identity reservation expire before changing its key.
-    await wait(2000);
-    identity.key = 'tunablesproofcontroller01';
-    await connectRoom();
+    // Keep the authenticated principal; supply the independent operator capability on the new socket.
+    await connectRoom('tunablesproofcontroller01');
     // This eval replaces a live room object; request a full state after its listeners have attached.
     net.room!.send({ t: 'r:resync' });
     await until(() => !!railwayCommands()?.read.ready() && net.state === 'live', 'controller reconnect');

@@ -47,6 +47,7 @@ export async function joinRoom(room: string) {
     addEventListener: noop,
     removeEventListener: noop,
   });
+  await (await import('../../src/player/account.ts')).prepareAccount();
   await connectRoom();
 }
 

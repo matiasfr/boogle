@@ -1,13 +1,14 @@
 // Malformed messages over real sockets (server/src/host/hosted-room.ts): a wire value that throws when coerced never
 // reaches the process, which hosts every room. From the independent review of 12 November.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
 import crypto from 'node:crypto';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 

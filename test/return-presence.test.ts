@@ -180,7 +180,7 @@ test("the arrival's own record reader and writer run with storage blocked", () =
 });
 
 test('reload returns in place over two real sockets: the watcher is never sent a Home pose', async () => {
-  const { createService, loadConfig } = await import('../server/src/server.ts');
+  const { createService, loadConfig, WebSocket } = await import('../server/test/helpers/accounts.ts');
   const { railwayRoomId } = await import('../src/world/railway-namespace.ts');
   const { sourceFunction } = await import('../dev/level/source.ts');
   const { readReturnSpot, createReturnSearch, haltLandings } = await import('../src/place/return-spot.ts');
@@ -195,7 +195,7 @@ test('reload returns in place over two real sockets: the watcher is never sent a
   const connect = sourceFunction<(base: string, room: string, id: string, pid?: string) => Socket>(
     'server/test/host.test.ts',
     'connect',
-    {},
+    { WebSocket },
   );
   const dataDir = fs.mkdtempSync(`${os.tmpdir()}/boogle-return-`);
   const svc = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log() {} }));

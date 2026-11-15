@@ -24,4 +24,16 @@ const jump =
         return undefined;
       });
 if (jump && from !== null) await jump.jumpIn(from);
-if (jump !== undefined) void import('../main.ts').catch(bootFailed);
+if (jump !== undefined) {
+  try {
+    const account = await import('../player/account.ts');
+    await account.prepareAccount();
+    if (!account.accountIsPersistent()) {
+      const sub = document.getElementById('lobby-sub');
+      if (sub) sub.textContent = 'This identity is for this visit only; this browser could not save it.';
+    }
+    await import('../main.ts');
+  } catch (error) {
+    bootFailed(error);
+  }
+}

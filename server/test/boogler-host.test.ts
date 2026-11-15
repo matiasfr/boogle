@@ -1,4 +1,5 @@
 import test, { type TestContext } from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -11,7 +12,7 @@ import { createBooglerShadow, booglerPose } from '../../src/world/boogler-shadow
 import { loadBooglerLand } from '../src/host/land.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
 import { stepBooglerWalk } from '../../src/world/boogler-walk.ts';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import { fixture as commandFixture } from './helpers/rail-tune.ts';
 import { GIFTS, giftIndex } from '../../src/sim/gift-catalog.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';

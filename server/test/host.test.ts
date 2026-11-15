@@ -1,11 +1,12 @@
 // The server host over real sockets (docs/plans/server-host.md, step 7): joining, refusals, relay, the world, saving
 // and the PeerJS host-id guard. Clients are Node's global WebSocket, as a browser's would be.
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createService, loadConfig } from '../src/server.ts';
+import { createService, loadConfig } from './helpers/accounts.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { HALF } from '../../src/world/grid.ts';
@@ -220,7 +221,7 @@ test('v43 clients receive a clean refusal after the v44 wire removal', async () 
 
 for (const disconnected of [false, true]) {
   for (const changed of ['pid', 'key'] as const) {
-    test(`a ${disconnected ? 'grace' : 'live'} session id cannot replace its bound ${changed}`, async () => {
+    test(`a ${disconnected ? 'grace' : 'live'} connection checks its principal when changing ${changed}`, async () => {
       const { svc, base } = await start();
       const self = 'victimsession';
       const original = connect(base, 'beach', self, 'victimpid');
@@ -239,9 +240,15 @@ for (const disconnected of [false, true]) {
         );
         try {
           const reply = await intruder.next((m) => m.t === 'welcome' || m.t === 'taken');
-          assert.equal(reply.t, 'taken', 'reusing the public session id must preserve its bound player and secret');
-          assert.equal(await intruder.closed, 4011);
-          if (!disconnected) assert.equal(original.ws.readyState, WebSocket.OPEN);
+          assert.equal(
+            reply.t,
+            changed === 'pid' ? 'taken' : 'welcome',
+            'only the verified principal binds a connection',
+          );
+          if (changed === 'pid') {
+            assert.equal(await intruder.closed, 4011);
+            if (!disconnected) assert.equal(original.ws.readyState, WebSocket.OPEN);
+          }
           const rejoined = connect(base, 'beach', self, 'victimpid');
           try {
             await rejoined.next(is('welcome'));
@@ -449,8 +456,8 @@ test('one player, two tabs: the newer one wins and the older leaves at once', as
     const back = connect(base, 'beach', 'ccc', 'samepid');
     assert.deepEqual(await back.next(is('elsewhere')), { t: 'elsewhere' });
     assert.equal(await back.closed, 4010);
-    // Someone else with that pid (copied from presence) but not its key can't take the player over.
-    const thief = connect(base, 'beach', 'eee', 'samepid', 'notthekey000000000');
+    // A different verified person cannot steal the public connection id.
+    const thief = connect(base, 'beach', 'ddd', 'anotherpid', 'notthekey000000000');
     assert.deepEqual(await thief.next(is('taken')), { t: 'taken' });
     assert.equal(await thief.closed, 4011);
     await sleep(100);

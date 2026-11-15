@@ -2,13 +2,14 @@
 // `closing` once every write it queued has landed, so the next join loads the room again from its file instead of being
 // refused with `bye restart` until the process restarts (the live `smoke-node-2` lockout, 10 November).
 import test from 'node:test';
+import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import { createStore, type Store } from '../src/store.ts';
-import { createRoomHost } from '../src/host/rooms.ts';
+import { createRoomHost } from './helpers/accounts.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { CLOSE } from '../../src/net/ws-wire.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';

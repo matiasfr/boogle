@@ -11,12 +11,12 @@ test('decode accepts only JSON objects with a string t', () => {
 
 test('roomUrl maps http to ws and https to wss', () => {
   assert.equal(
-    roomUrl('http://localhost:9000', 'beach', { self: 'abc', pid: 'p1', key: 'k1', b: 'dev' }),
-    'ws://localhost:9000/room/beach?self=abc&pid=p1&key=k1&b=dev',
+    roomUrl('http://localhost:9000', 'beach', { self: 'abc', b: 'dev' }),
+    'ws://localhost:9000/room/beach?self=abc&b=dev',
   );
   assert.equal(
-    roomUrl('https://boogle.fly.dev/', 'a-b', { self: 'x1', pid: 'p2', key: 'k2', b: 'b7' }),
-    'wss://boogle.fly.dev/room/a-b?self=x1&pid=p2&key=k2&b=b7',
+    roomUrl('https://boogle.fly.dev/', 'a-b', { self: 'x1', b: 'b7' }),
+    'wss://boogle.fly.dev/room/a-b?self=x1&b=b7',
   );
 });
 

@@ -1,15 +1,15 @@
 // The wire between a browser and the server host (docs/plans/server-host.md, "Wire"): JSON text frames on a WebSocket
-// at /room/<roomId>?self=<selfId>&pid=<pid>&key=<key>&b=<build>, subprotocol WS_PROTOCOL. Message shapes follow the
+// at /room/<roomId>?self=<selfId>&b=<build>, subprotocol WS_PROTOCOL, then account-wire.ts's first auth frame. Shapes follow the
 // old peer room's. Pure; the server imports it too.
 export const WS_PROTOCOL = 'boogle.1';
-// ELSEWHERE: a newer tab of the same player joined (src/player/identity.ts), so this one stops for good. TAKEN: that
-// pid is in the room under another browser's key.
+// ELSEWHERE: a newer connection of this player joined, so this tab stops. TAKEN: a connection id belongs to another person.
 export const CLOSE = {
   NOT_HOSTED: 4000,
   FULL: 4008,
   REPLACED: 4009,
   ELSEWHERE: 4010,
   TAKEN: 4011,
+  AUTH: 4401,
   BAD: 4400,
   RESTART: 1012,
 } as const;
@@ -37,10 +37,11 @@ export function decode(data: unknown): WireMsg | null {
   return v as WireMsg;
 }
 /** The room's WebSocket URL on the server at `base` (http -> ws, https -> wss). */
-// who: self (this connection), pid (the player), key (the browser's secret behind the pid), b (the build).
-export function roomUrl(base: string, roomId: string, who: { self: string; pid: string; key: string; b: string }) {
+// Only public connection/build metadata belongs in a URL.
+export function roomUrl(base: string, roomId: string, who: { self: string; b: string }) {
   const u = new URL(`/room/${encodeURIComponent(roomId)}`, base);
   u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:';
-  for (const [k, v] of Object.entries(who)) u.searchParams.set(k, v);
+  u.searchParams.set('self', who.self);
+  u.searchParams.set('b', who.b);
   return u.href;
 }
