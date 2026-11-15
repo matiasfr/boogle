@@ -39,6 +39,37 @@ Names below are representative pieces; count includes all oriented/hidden member
 
 ## Fixed — zfight-top20 implementation (partial)
 
+The [per-piece runtime inventory audit](zfight-spot16-inventory.md) proves all 26 removed prototype objects, all 12 newly captured live objects and all 20 retained pad/support objects against current main; the exact 32-piece geometry inventory is pinned by the regression fixture.
+
+**Spot 16 independent-review repair:** the first adapter missed surviving geometry. It now also executes
+`line2-view.ts`'s pad/pillar section (apron, apron support, p2, p2 pillar) and `secrets-view.ts`'s pad/support section
+(lookout, stack, balcony, lookout support, loft support, balcony column, stack column), from the runtime source.
+The reviewed 21-piece tech capture becomes 32 pieces; no captured tech object is removed. The regression requires
+that exact inventory in both the direct capture and final census, and checks restored pads/supports at their authored
+locations. It fails on the reviewed adapter and passes on the repair. Census **166/61/548 → 166/61/548**, raw
+**360/172/2443 unchanged**, pieces/faces **6,259/543,691 → 6,270/544,464**. No group ids, classes or members change;
+two unrelated shop box groups differ only by floating-point clipping roundoff (below 1e-12 in areas/positions).
+The original pre-implementation census was **167/61/548**: only the retired catch-6 ↔ jump-return contact group goes.
+Object inventories, bounded regression logs and the full comparison are in `.look/zfight-spot16/review-*`.
+No game source changes; the earlier matched stills and six hashes remain applicable. Not tested on a device.
+
+**Spot 16 diagnosis corrected (14 November, `codex/zfight-spot16`):** not a live geometry defect. Commit
+`e6f2961e1633857c1598989af0adf56312e5d2a2` deleted `src/proto/place/tech.ts`, including the loop drawing
+`JUMP_RECOVERY.slabs` and its return ramp. Current `src/entities/railway/tools.ts:98–113` draws only the first
+pillar/platform; `hook-view.ts:54` draws the hook ring pads. `path-surface.ts` paints terrain and has no pad builder.
+The offline `timberDecks` pad catalogue had resurrected the retired prototype. `dev/level/tech-geometry.ts` now
+executes bounded sections of those current builders, and `drawn-geometry.ts` uses their actual mesh buffers instead
+of the legacy pad/column box recipes. Boundaries fail closed if the source moves; no recovery exclusion list.
+The owner-requested `test/zfight-tech-source.test.ts` fails against the old collector and passes with this capture.
+Census: **a/b/c 167/61/548 → 166/61/548**, raw **361/172/2444 → 360/172/2443**; only the catch-6 ↔ jump-return
+group retired, no added groups. Pieces/faces **6,284/544,613 → 6,259/543,691**. Baseline unchanged; 22 new flags remain.
+Opened matched `.look/zfight-spot16-before-still.png` and `-after-still.png`: starting pillar and canyon paths,
+no recovery ribbon/ramp at the reported contact, same visible scene. Both captures pass WebGPU/frame/error health.
+Six hashes from `node dev/ground/heights-hash.ts` are identical (retained in `.look/zfight-spot16/hashes-{before,after}.txt`).
+No game source, depth bias, heights, collision, WORLD_NS, copy or ROM-data changes. No timing claim.
+This corrects the earlier "rank 16 needs path-surface.ts" diagnosis below; it does not restore the retired course.
+Full-route play and temporal flicker unverified. **Not tested on a device.** Nothing pushed or shipped.
+
 Fresh starting census: **a 176 / b 61 / c 541**. After the geometry changes and rebase:
 **a 159 / b 60 / c 538**, raw **345 / 127 / 1055**, new since baseline **14**.
 The historical top-twenty ranks below identify the requested spots, rather than the new ranking.

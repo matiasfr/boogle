@@ -35,6 +35,7 @@ import type { Surface } from '../../src/geometry/zfight-surface.ts';
 import { sourceFunction } from './source.ts';
 import { collectTrackGeometry } from './track-geometry.ts';
 import { timberDecks } from './timber-track.ts';
+import { collectTechGeometry } from './tech-geometry.ts';
 
 const transform = (p: Transform) =>
   new THREE.Matrix4().compose(
@@ -54,7 +55,7 @@ export async function collectDrawnGeometry() {
     'Moving actors, vehicles, animated/reveal poses, non-track GLB internals, museum animated exhibits, text/sign textures, particles and transparent effects.',
     'Temporary scaffold poles, shadow-only proxies and alternative stage props are not exterior completed geometry.',
     'Distant islands/Works and unconverted legacy decoration are not yet in the offline adapter; use the live scan there.',
-    'Service walkways, footbridges and tech pads use level-check timberDecks oriented-box adapters, not their detailed decoration.',
+    'Service walkways, footbridges and pillar lips use level-check timberDecks oriented-box adapters, not their detailed decoration.',
   ];
   const addGeometry = (
     geometry: THREE.BufferGeometry,
@@ -241,8 +242,9 @@ export async function collectDrawnGeometry() {
       p.id.replace(/\/[^/]+$/, '/part'),
     );
   for (const face of await collectTrackGeometry()) faces.push(face);
+  faces.push(...collectTechGeometry());
   for (const d of timberDecks().filter((d) =>
-    /^(pad\/|pad-column\/|pillar-lip\/|service-|footbridge\/|approach\/|landing\/)/.test(d.id),
+    /^(pillar-lip\/|service-|footbridge\/|approach\/|landing\/)/.test(d.id),
   )) {
     const matrix = new THREE.Matrix4()
       .makeBasis(d.axes[0]!, d.axes[1]!, d.axes[2]!)
@@ -301,6 +303,6 @@ export async function collectDrawnGeometry() {
     faces,
     excluded,
     coverage:
-      'Completed opening, forge and house/shop/museum shells and furnishing records; actual workshop steps/guards; halt-kit builders in their owning frames; greybox and town placements; opening props; real baked track kit (main lines and Home yard), Home station boxes; level-check walkway/pad boxes; default Home terrain mesh near pieces.',
+      'Completed opening, forge and house/shop/museum shells and furnishing records; actual workshop steps/guards; halt-kit builders in their owning frames; greybox and town placements; opening props; real baked track kit (main lines and Home yard), Home station boxes; source-captured starting pillar/platform and hook slabs; level-check walkway/lip boxes; default Home terrain mesh near pieces.',
   };
 }
