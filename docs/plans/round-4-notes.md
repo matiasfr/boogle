@@ -4,6 +4,49 @@ Every note from Matias and Grant's call of 3 November ([log and evidence](../pla
 
 Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
+## Grant's playtest, 14 November (his Granola notes; untriaged, not to be acted on yet)
+
+Grant played Boogle on his own and recorded it in Granola. He sent Matias a shared link on 15 November. Only his AI-written summary is readable there. The transcript sits in Grant's account and neither Granola's MCP nor the shared page exposes it, so none of these rows quotes his speech. The one quoted line is game copy that he wants kept. No session IDs, build or device were given, apart from the Dia browser on macOS for the vanishing-models bug ([log](../playtests.md#2026-11-14-grant-solo-his-granola-notes)). Owner, 15 November: record these so other agents can read them, but **do not act on them yet**. No row has a job, and none is a call by the owner. Grant's suggestions are not owner decisions.
+
+### Boogler reveal and world
+
+- [ ] The Boogler statue on the road to Bell Rock gives the reveal away too early. His suggestion: an unfinished scaffold, with builders saying the Boogler commissioned it and they ran out of resources. The finished statue appears once you have met the Boogler.
+- [ ] Keep: the NPC dialogue, Sleeves above all. Keep "The log cart will bring the heavy conversation".
+
+### Onboarding and progression
+
+- [ ] Train intro: the "wake up" prompt should read "start engine" or similar.
+- [ ] The multiplier reward from starting the engine feels misplaced. It would suit an NPC near the station better.
+- [ ] The train should power on only once every log is in place.
+- [ ] NPC conversation bubbles to signal who to talk to next.
+- [ ] The Forge sign and the log deposit face away from the arriving train.
+- [ ] Later stations are still labelled "Station 1".
+- [ ] The sealed hookshot that needs a return trip frustrates. He wants to take it now and use it later.
+- [ ] The cosmetics (hard hat, overalls, diving helmet) have no clear purpose or motivation.
+- [ ] The diving helmet's spot is a trap: once you jump in, there is no ladder or other way back to land.
+- [ ] The inventory mixes counts and grid squares, and the grid makes counts hard to read. Pick one.
+- [ ] Log depositories appear with no reason in the world and no sense of having earned them.
+
+### Agency and decisions (his biggest issue)
+
+- [ ] The game reads as running errands. You are always told what to do next, with no trade-offs or obstacles. The only choices are which tree to chop, or whether to get rails first.
+- [ ] The 40-log station is the sharpest pain point.
+- [ ] Carrying capacity or logs per chop should rise before Station 3, not after. His suggestion: 1 log per chop at first, 2 per chop from about Station 3. Chopping speed could also start slower and unlock as a reward.
+- [ ] Floated: weight, with overloading slowing you instead of a hard cap; separate log and rail capacities, each with upgrades, for real trade-offs.
+- [ ] Chopping progress should show on the tree itself, with the trunk splitting or narrowing.
+- [ ] Low point: the rail depot across the bridge has no fast way back, so 24 rails meant running back twice.
+- [ ] Dragging the engine over to connect the trains is confusing and unpleasant, with no context.
+
+### Bugs
+
+- [ ] Every model vanishes briefly, then reappears. Reproducible on macOS in Dia; possibly networking.
+- [ ] First crate on the road: jump + E reaches the scarf without climbing onto the platform.
+- [ ] The bench on the cliff edge is far too big, and its purpose is unclear.
+- [ ] A crate with a bell floats by the water. He noted it as already queued; compare the owner's "bell floats on water" in the next section.
+- [ ] The Station 1 NPC vanishes on the final log delivery with no transition (probably boarded the train).
+- [ ] The track-layer animation for dual track runs too fast. He noted a patch as queued.
+- [ ] The hookshot is bound to F, not the usual interaction key.
+
 ## Owner session, 14 November evening (desktop Safari, live build, after v45; ranked)
 
 | P | Note (his words where quoted) | What it is | Status |
