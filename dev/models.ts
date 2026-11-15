@@ -13,7 +13,15 @@ export type Route = { work: string; withCodex: Pick; normal: Pick };
  */
 export const codexFrom: string | null = '2026-11-12';
 export const codexWhy =
-  'Codex allowance is back (owner, 12 November): Codex takes the work below Opus on Sol, and Astra the high-risk and review work';
+  'Codex allowance is back (owner, 12 November): Codex takes the work below Opus on Sol, and Astra the high-risk, review and player-visible work; Fable is spared (owner, 15 November)';
+
+/**
+ * When the owner says Codex is down to about 10% of its allowance (owner, 15 November), player-visible building moves
+ * to an Opus implementer (medium, high if it falls short) and its visual review to a fresh Opus subagent at medium.
+ * The agent cannot read the meter; it waits for the owner's word.
+ */
+export const codexLowSwitch =
+  'at about 10% Codex left (owner says so): player-visible building -> opus medium/high, visual review -> fresh opus medium';
 
 const codex = (model: string, effort: string): Pick => ({ who: 'Codex (T3 delegate_task)', model, effort });
 const claude = (who: string, model: string, effort: string): Pick => ({ who, model, effort });
@@ -21,18 +29,18 @@ const claude = (who: string, model: string, effort: string): Pick => ({ who, mod
 export const routes: Route[] = [
   {
     work: 'Orchestration, review of returned work, owner conversation',
-    withCodex: claude('main session', 'opus or fable', 'medium, or high for opus'),
-    normal: claude('main session', 'opus or fable', 'medium, or high for opus'),
+    withCodex: claude('main session', 'opus', 'medium or high'),
+    normal: claude('main session', 'opus', 'medium or high'),
   },
   {
     work: 'Design review of a plan or brief with gameplay calls, before it is built',
-    withCodex: claude('designer agent', 'fable', 'medium'),
-    normal: claude('designer agent', 'fable', 'medium'),
+    withCodex: claude('designer agent (fable medium only for extremely complex work)', 'opus', 'high'),
+    normal: claude('designer agent (fable medium only for extremely complex work)', 'opus', 'high'),
   },
   {
     work: 'Planning complex work (docs/plans/<topic>.md)',
-    withCodex: claude('planner agent', 'fable', 'medium'),
-    normal: claude('planner agent', 'fable', 'medium'),
+    withCodex: claude('planner agent (fable medium only for extremely complex work)', 'opus', 'high'),
+    normal: claude('planner agent (fable medium only for extremely complex work)', 'opus', 'high'),
   },
   {
     work: 'Implementation of an approved plan (docs/plans/ or a written brief)',
@@ -41,13 +49,13 @@ export const routes: Route[] = [
   },
   {
     work: 'Player-visible implementation: views, cameras, effects, characters, prompts, feel, assets and look work',
-    withCodex: claude('implementer agent, spawned with model fable', 'fable', 'medium'),
-    normal: claude('implementer agent, spawned with model fable', 'fable', 'medium'),
+    withCodex: codex('gpt-6-astra', 'high'),
+    normal: claude('implementer agent, spawned with model opus', 'opus', 'medium (high if medium falls short)'),
   },
   {
     work: 'Visual review of a player-visible change before it ships (opens the stills and motion sheets; names what looks wrong)',
-    withCodex: claude('a fresh general-purpose subagent that did not build it', 'fable', 'medium'),
-    normal: claude('a fresh general-purpose subagent that did not build it', 'fable', 'medium'),
+    withCodex: claude('main session (opens the stills itself)', 'opus', 'medium or high'),
+    normal: claude('a fresh general-purpose subagent that did not build it', 'opus', 'medium'),
   },
   {
     work: 'Fixes, tooling and captures-driven tasks with no plan to follow',
@@ -56,24 +64,25 @@ export const routes: Route[] = [
   },
   {
     work: 'High-risk implementation (server, sync, src/world, src/net)',
-    withCodex: codex('gpt-6-astra', 'high'),
+    withCodex: codex('gpt-6-astra', 'high (medium may be tried as a first pass; check the result)'),
     normal: claude('implementer agent, spawned with model opus', 'opus', 'medium'),
   },
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     withCodex: {
       who: "a fresh reviewer with none of the author's context: a fresh Codex review delegate or a Claude delegate (T3 delegate_task)",
-      model: 'gpt-6-astra first, or fable or opus',
-      effort: 'high for astra (xhigh for one unresolved question), medium for fable or opus',
+      model: 'gpt-6-astra first, or opus',
+      effort:
+        'high for astra (medium may be tried as a first pass; xhigh for one unresolved question), medium for opus',
     },
-    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable', 'medium'),
+    normal: claude('a fresh general-purpose subagent that did not write the code', 'opus', 'medium'),
   },
   {
     work: 'Code review before shipping (/code-review, e.g. on src/net*, src/world/ or server/)',
     withCodex: {
       who: 'a fresh Codex review delegate on the committed branch (T3 delegate_task), not the main session',
       model: 'gpt-6-astra',
-      effort: 'high',
+      effort: 'high (medium may be tried as a first pass; check the result)',
     },
     normal: claude('general-purpose subagent running /code-review medium, not the main session', 'opus', 'medium'),
   },
@@ -85,7 +94,7 @@ export const routes: Route[] = [
   {
     work: 'Hardest design, research or second-opinion review',
     withCodex: codex('gpt-6-astra', 'xhigh'),
-    normal: claude('general-purpose subagent', 'fable', 'medium'),
+    normal: claude('general-purpose subagent', 'opus', 'high'),
   },
   {
     work: 'Search, file finding, log reading and summaries (the Explore agent; mistakes are cheap to spot)',
@@ -100,7 +109,7 @@ export const routes: Route[] = [
   {
     work: 'Brainstorm (light: one agent, three lenses; --panel: three panelists)',
     withCodex: codex('gpt-6.1-sol', 'high'),
-    normal: claude('one general-purpose subagent (light), or three with the role files (--panel)', 'fable', 'medium'),
+    normal: claude('one general-purpose subagent (light), or three with the role files (--panel)', 'opus', 'medium'),
   },
   {
     work: 'Images and previz (only Codex paints)',
@@ -124,9 +133,9 @@ export const fableTopEffort = 'high';
 
 /** Frontmatter of .claude/agents/*.md must match these (test/models.test.ts). */
 export const agents: Record<string, { model: string; effort: string }> = {
-  planner: { model: 'fable', effort: 'medium' },
+  planner: { model: 'opus', effort: 'high' },
   implementer: { model: 'sonnet', effort: 'medium' },
-  designer: { model: 'fable', effort: 'medium' },
+  designer: { model: 'opus', effort: 'high' },
   Explore: { model: 'haiku', effort: 'medium' },
 };
 
