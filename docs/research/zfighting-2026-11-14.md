@@ -39,6 +39,23 @@ Names below are representative pieces; count includes all oriented/hidden member
 
 ## Fixed — zfight-top20 implementation (partial)
 
+**Spot 16 diagnosis corrected (14 November, `codex/zfight-spot16`):** not a live geometry defect. Commit
+`e6f2961e1633857c1598989af0adf56312e5d2a2` deleted `src/proto/place/tech.ts`, including the loop drawing
+`JUMP_RECOVERY.slabs` and its return ramp. Current `src/entities/railway/tools.ts:98–113` draws only the first
+pillar/platform; `hook-view.ts:54` draws the hook ring pads. `path-surface.ts` paints terrain and has no pad builder.
+The offline `timberDecks` pad catalogue had resurrected the retired prototype. `dev/level/tech-geometry.ts` now
+executes bounded sections of those current builders, and `drawn-geometry.ts` uses their actual mesh buffers instead
+of the legacy pad/column box recipes. Boundaries fail closed if the source moves; no recovery exclusion list.
+The owner-requested `test/zfight-tech-source.test.ts` fails against the old collector and passes with this capture.
+Census: **a/b/c 167/61/548 → 166/61/548**, raw **361/172/2444 → 360/172/2443**; only the catch-6 ↔ jump-return
+group retired, no added groups. Pieces/faces **6,284/544,613 → 6,259/543,691**. Baseline unchanged; 22 new flags remain.
+Opened matched `.look/zfight-spot16-before-still.png` and `-after-still.png`: starting pillar and canyon paths,
+no recovery ribbon/ramp at the reported contact, same visible scene. Both captures pass WebGPU/frame/error health.
+Six hashes from `node dev/ground/heights-hash.ts` are identical (retained in `.look/zfight-spot16/hashes-{before,after}.txt`).
+No game source, depth bias, heights, collision, WORLD_NS, copy or ROM-data changes. No timing claim.
+This corrects the earlier "rank 16 needs path-surface.ts" diagnosis below; it does not restore the retired course.
+Full-route play and temporal flicker unverified. **Not tested on a device.** Nothing pushed or shipped.
+
 Fresh starting census: **a 176 / b 61 / c 541**. After the geometry changes and rebase:
 **a 159 / b 60 / c 538**, raw **345 / 127 / 1055**, new since baseline **14**.
 The historical top-twenty ranks below identify the requested spots, rather than the new ranking.
