@@ -9,7 +9,7 @@
 > [first-town-lesson](first-town-lesson.md)'s step A from its build on. `npm run inflight`: nothing unmerged on
 > wip/, ship/ or claude/; the local V1 branch (`folk.ts`, `train-view.ts`, `garage-data.ts`) is the overlap.
 > **Revised 16 November (planner, on `0b9933ec2`), after R1's builder stopped at the geometry proof:** R1 is now R1a
-> (the boiler waits for the cart, S, bump), R1b (Home proven on today's track, S, no bump) and R1c (the relay, L, only
+> (the trains wait for the cart, S, bump; the designer moved the wait from the pedestal, see its ruling), R1b (Home proven on today's track, S, no bump) and R1c (the relay, L, only
 > on the owner's word); see [the revision note](#revision-16-november-r1-after-the-builders-stop). Nothing built.
 > **Re-evaluated on merit 16 November** under [right over less work](../agents/owner-calls.md#right-over-less-work):
 > today's track (A) still recommended, now for what it does at Home, not for its size; see
@@ -31,7 +31,7 @@ Level finding 2 (the fit check's "extend the straight" cannot keep today's s 84 
 
 | State | Sync kind | Authority and API |
 | --- | --- | --- |
-| When the boiler's pedestal appears: Q5 complete **and** the depot cart at rest (R1a) | Server (rule) | `src/sim/railway-sys-line2.ts` `pedestalDue`; invariant in `railway-check-line2.ts`; the host's rule tick owns it, no field |
+| When line 2's trains wake: the boiler fitted **and** the depot cart at rest (R1a, [designer ruling](#r1a-designer-ruling)) | Server (rule) | `src/sim/railway-sys-line2.ts` `line2Wake`; invariant in `railway-check-line2.ts`; the host's rule tick owns it, no field |
 | Only with R1c: Home's road 2 head, the cart's leg, Q2's frame and rack, line 2's path samples, `CART_ROAD.forgeCm` | data (catalog) | `src/place/home-station.ts` (drawn), pinned in `src/sim/railway-lines.ts`, `railway-cart.ts`, `railway-line2-layout.ts`; read by rules and views |
 | Line 2's Village and Ring Island stops, `TRAIN_EXTENT.behindCm` (R2b) | data (catalog) | `src/sim/railway-lines.ts`, `railway-ring-layout.ts`; the host's rule tick reads them; signals, end blocks, `trainPlaces`, `within`, `retainedEndBlock` follow |
 | The consist: which cars a train pulls, in which order, at which offsets | Local, derived | `src/entities/railway/cars.ts` `consistOf(...)`, from the train's row (`wagon`, `boiler`) and its line; no field |
@@ -72,25 +72,64 @@ garage's works copy builds `consistOf` with no rider.
 
 Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rule; builders from `npm run models`.
 
-- [ ] **R1a. The boiler waits for the cart (S).** Sync: Server (rules). Tier: **independent review**. Builds: Codex
-  gpt-6.1-sol medium; review a fresh gpt-6-astra (medium as a first pass). Bump: **yes**, the next free number: "the
-  boiler comes out once the depot cart is home; the cart never shares line 2 with a train". Needed under every option
-  (Level finding 9: on main the cart drives through the line 2 train that has just woken) and depends on nothing in
-  this plan: **it can start now**, ahead of the Home choice, L1 or the coach.
-  - `src/sim/railway-sys-line2.ts`: the pedestal (`boilerPedestal`) appears when Q5 is complete **and** the cart is at
-    `REST`, whichever comes second: `layLine2`'s Q5 completion and `cartStep`'s move to `REST` both call one
-    `pedestalDue(w)` (boiler `'none'`, Q5 complete, cart `REST`); the away credit's path reaches it through the same two.
-    No new field, op or refusal. Why it holds: after Q5 starts, `cartServing` is −1 for good (Q6 and Q7 are fed by
-    train), so the cart never leaves `REST` again; `boilerFit` needs the boiler, the boiler needs the pedestal.
-  - `src/sim/railway-check-line2.ts`: a new invariant: boiler not `'none'`, or `Rail.trains >= 0`, means the cart is at
-    `REST`, `cartAlong` 0 and empty. `src/sim/railway-seed-route.ts`: the `boiler` stage advances from `q5-done` until
-    the pedestal stands (277 ticks on the route's own timing); fixtures and the host trace re-pinned naming this rule.
-  - Tests (`test/railway-line2.test.ts`, `test/railway-cart.test.ts`): from `q5-finishing`, the pedestal is absent until
-    the cart rests and appears that tick; the worst gap when the cart brought Q5's kit is 277 ticks (27.7 s: drop 22 +
-    back 334 + home 260 − Q5's lay 339); the invariant holds every tick from `q5-finishing` through `trains-on`,
-    `wagon-on` and `deck-laid`; `test/railway-works.test.ts`'s cart-at-camp test stays and now follows from it.
-  - **Proof:** `npm run checkpoints -- q5-done boiler trains-on`; `npm run loop -- run` (the boiler beat up to 27.7 s
-    later, nothing else moved). **Done means** those, and the designer has seen the gap's number.
+- [ ] **R1a. The trains wait for the cart (S, top of S).** Sync: Server (rules). Tier: **independent review**. Builds:
+  Codex gpt-6.1-sol medium; review a fresh gpt-6-astra (medium as a first pass). Bump: **yes**, the next free number:
+  "line 2's trains wake once the depot cart is home; the cart never shares line 2 with a train". Needed under every
+  option (Level finding 9: on main the cart drives through the line 2 train that has just woken) and depends on
+  nothing in this plan: **it can start now**, ahead of the Home choice, L1 or the coach. Changed by the
+  [designer ruling](#r1a-designer-ruling) below: the wait moved from the pedestal to the trains' wake.
+  - `src/sim/railway-sys-line2.ts`: the boiler casts on Q5's completion as today. `boilerFit` keeps its checks and
+    fits the boiler; the rest of its body (the breaker cast, `Rail.trains = tick`, the trains placed and timed) moves
+    to one `line2Wake(w, tick)`, called by `boilerFit` when the cart is at `REST` and by `cartStep`'s move to `REST`
+    when the boiler is fitted and `Rail.trains < 0`. No new field, op or refusal. Why it holds: after Q5 starts,
+    `cartServing` is −1 for good (Q6 and Q7 are fed by train), so once the cart rests it never leaves again.
+  - `src/sim/railway-check-line2.ts`: new: `Rail.trains >= 0` means the cart is at `REST`, `cartAlong` 0 and empty;
+    `fitted ⇔ trains ≥ 0` becomes `trains ≥ 0 ⇒ fitted` and `fitted ∧ trains < 0 ⇒ cart not at REST` (nothing is left
+    waiting on a cart at home); `railway-check-works.ts`'s `breaker > 0 ⇔ fitted` keys on `trains ≥ 0`.
+    `src/sim/railway-seed-route.ts`: the `trains-on` stage advances from the fit until the trains wake (the seed fits
+    20 ticks after `q5-done`, so about 257 ticks); fixtures and the host trace re-pinned naming this rule.
+  - Views: the fit's wake beat (`boiler-view.ts` `accepted` for `rail.boilerFit`: `holdForgeCall(FIT.wake)`, the
+    breaker's call, the "You got" timer) and the train's waking key on the trains' wake edge (`Rail.trains` from −1),
+    not on the accepted fit; the fit's clank and the boiler landing stay on the fit. Far Head's show, its forge cut,
+    the call, the hoist and the rack's board are untouched.
+  - Tests (`test/railway-line2.test.ts`, `test/railway-cart.test.ts`): the pedestal stands the tick Q5 completes; a
+    fit accepted with the cart out leaves `Rail.trains` −1 and the breaker uncast until the cart's `REST` tick, and
+    wakes both that tick; a fit with the cart home wakes at once (today's beat); a save and restore during the wait
+    wakes on the cart's rest; the invariant holds every tick from `q5-finishing` through `trains-on`, `wagon-on` and
+    `deck-laid`; `test/railway-works.test.ts`'s cart-at-camp test stays and now follows from it.
+  - **Proof:** `npm run checkpoints -- q5-done boiler trains-on`; `npm run loop -- run` (boiler beat unchanged; trains
+    on at the same time on the route, since no real fit beats the cart: see the ruling); `dev/look/evals/forge-handoff.ts`
+    passing unchanged. **Done means** those, and the ruling's acceptance below.
+
+  <a id="r1a-designer-ruling"></a>**Designer ruling, 16 November: wait at the trains' wake, not at the pedestal.**
+  *What plays at Q5 today* (`far-head-view.ts`, `far-head-show.ts`, `forge-call.ts`, `part-hoist.ts`): from the
+  completion edge, behind any reward card, the fanfare, two whistles and rockets at Far Head and the Village, an 8.5 s
+  shared shot (Far Head leg 6 s with the Act 2 card at 1.5–6.0 s, then a 2.5 s cut to the pedestal where the crane
+  lifts the just-cast boiler as the forge's call sounds), and the camera home facing the forge's 62 m plume. That cut
+  is D1's as-built fix (owner, 15 November: the longer Far Head cutscene) for "after Far Head, nothing calls you back".
+  *R1a as planned* would leave the pedestal hidden (`boiler-view.ts` hides it while the boiler is `'none'`) for up to
+  27.7 s: the cut lands on an empty apron, the camera hands back to a forge with no plume, and the call sounds alone
+  up to ~19 s later with nothing tying it to the show. A teaching fault: the beat's one job is to point at the next
+  goal, and the player 600 m away at Far Head, with the glider's summit as the other pull, is choosing where to go.
+  *The options.* (a) Leave it: keeps the invariant, breaks D1's cut and plume. (b) Pedestal at once, take refused
+  until the cart is home: the invariant then rests on trains anyway, and a refused take needs a reason (new copy) for
+  a wait the player cannot see the cause of. (c) A marker or the forge call during the gap: nothing exists yet to
+  point at, and the marker is only for where nothing else works (10 November); the call already works. (d) Shorten
+  at source: the cart home ~2× faster on its last trip reads as a glitch, holding Q5's show delays the payoff up to
+  27.7 s (principle 7), and neither closes a hand-filled Q5 (gap up to ~93 s). (e) **Wait at the trains' wake:**
+  keeps the invariant in its "trains on ⇒ cart at rest" half, which is the half that matters (`boilerFit` was only
+  ever the route to a train); costs the wake split out of the op and two invariants restated.
+  *Ruling: (e).* The boiler casts and the show plays exactly as today. A player meets the wait only if the fit beats
+  the cart home, which the route's timing never allows: the haul is 157 m between the reaches (172 m less 6.6 and
+  8.0) at the helped 5.4 m/s, ≥ 29 s after Q5 completes, against the 27.7 s worst gap (estimated; the builder
+  measures it). In a hand-filled Q5 or a fast-tuned room, the boiler clanks onto the old train, which stays cold
+  while the cart rolls home, and wakes the tick the cart rests. No new string, no marker, no refusal.
+  **Acceptance (observable):** (1) `forge-handoff` passes unchanged: at `q5-finishing` → complete, the cut shows the
+  boiler lifted 1.6 m and the call at 6.05 s; (2) on the route, `loop -- run`'s Q5-complete-to-fit time ≥ 27.7 s and
+  trains-on not later than today; (3) a forced wait (room tune `railBoilerHelpSpeed` 2000, fit with the cart out):
+  stills of the fitted boiler on the cold train with the cart in frame, then the first frame of steam on the cart's
+  rest tick, and a real-time clip from the fit to the wake; if the cart is not in sight from the old train, the
+  builder says so and the designer re-rules. Logged in [agent-calls](../agent-calls.md).
 - [ ] **R1b. Home proven for the coach train, today's track (S).** Sync: none (tests and level rows only). Tier:
   normal. Builds: Codex gpt-6.1-sol medium. Bump: no (no production value moves). After R1a. **Option A, recommended
   on merit ([Home on merit](#home-on-merit-a-b-and-c-16-november)):** with R1a the cart's leg is dead track whenever a
@@ -290,9 +329,10 @@ committed read-only probe `dev/level/rider-coach-probe.ts`; finding 11 added on 
 - **Room safety:** no op, apply or receipt changes; the extent change moves signals and end blocks on a live host,
   so R2b is a fresh-world bump with replay and `trainPlaces` tests, not a hot change.
 - **Mixed builds:** dev phase; each bump has its dated history line, no compatibility code.
-- **R1a changes the boiler beat:** the pedestal can appear up to 27.7 s after Q5 completes (the route's timing; a
-  hand-filled Q5 could make it longer, bounded by one cart cycle, 127 s less Q5's lay). The goal marker keys on the
-  pedestal, so for that gap no next goal shows; the designer rules whether it needs a cue.
+- **R1a changes the wake, not the boiler beat** ([designer ruling](#r1a-designer-ruling), 16 November): waiting at
+  the pedestal would have hidden Far Head's forge cut and the plume for up to 27.7 s (longer for a hand-filled Q5,
+  bounded by one cart cycle, 127 s less Q5's lay). The trains instead wake when the fit and the cart's rest have both
+  happened; on the route the fit cannot come first. The fit's wake beat must follow the wake edge, not the fit.
 - **Option A rests on R1a's invariant.** The leg's points stand under the coach train's engine; that is safe only
   while nothing runs on the leg after the trains wake. A later plan that revives the cart, or puts any vehicle on the
   leg once trains run, must relay road 2 with the leg's points at least s 31.3 (the nose 28.35 + the cart's 2.7 m +
