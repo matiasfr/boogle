@@ -196,8 +196,9 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
   // The bell: a little bell under a bracket on the bank, under the trestle. You hear it as you cross the footbridge.
   // The post stands on the dry bank east of the crate, on its own ground height, with the bracket reaching back over the
   // crate; west of the crate the bank drops into the river.
-  const by = H(-36.4 + ox, -78);
-  const post = { x: -34.6, z: -79 };
+  const bell = tech.SECRETS.find((s) => s.id === 'bell')!;
+  const by = H(bell.x + ox, bell.z);
+  const post = { x: bell.x + 1.7, z: bell.z + 0.9 };
   prop(
     [
       ['b', 0, 1.2, 0, 0.14, 2.4, 0.14, '#6e4c2a'],
@@ -207,10 +208,10 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
     post.x,
     H(post.x + ox, post.z),
     post.z,
-    Math.atan2(post.z - -78, -36.4 - post.x),
+    Math.atan2(post.z - bell.z, bell.x - post.x),
     true,
   );
-  const bellAt = new THREE.Vector3(-36.4 + ox, by + 1, -78);
+  const bellAt = new THREE.Vector3(bell.x + ox, by + 1, bell.z);
   // The loft: a yellow hard hat's worth of colour up on the rock.
   prop([['b', 0, 0.3, 0, 0.6, 0.6, 0.6, '#f2c81a']], loft.x + 1.5, loft.top, loft.z + 1.8, 0.3);
   // The balcony: a canopy-shaped weather vane, seen from the first steps of the game.

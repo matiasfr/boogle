@@ -294,8 +294,8 @@ export const SECRETS: Secret[] = [
     gift: 'whistle',
     area: 'timber',
     how: 'walk',
-    x: -36.4,
-    z: -78,
+    x: -36, // on the flat bank (1.3 m), clear of the river's edge (the old (-36.4, -78) was at the waterline)
+    z: -80.6,
     y: null,
     after: 'hook',
     from: { x: -40.5, z: -86 },
