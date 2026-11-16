@@ -308,6 +308,63 @@ Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/pr
   Pure three-train mover fixtures explicitly retain their historical fleet and 20 m/s profile so the old spacing
   regressions remain covered independently of the production ramp. Raw measurements: `.look/train-progression/step2.json`.
 
+- **Step 3:** line 2 has its own rust uniform and wheel batch, wake schedule, shudder, steam and answering whistle.
+  The existing platform beat now plays on either faster fit, and a joining train whistles as it grows in.
+  Board markers wait for their line's service start and omit shed rows. Late joins/restores settle the appearance
+  without replaying historical wakes or upgrade beats. Reserved trains cannot be named as a boarded train at the
+  host's reach check. No new messages or persistent state; step 4's bay presentation is untouched.
+
+**Additional fixture repins (the same deliberate v52 break):**
+
+- `railway-ops-golden.json`: `GOLDEN=1 node --import ./test/helpers/rail-no-audit.ts --test test/railway-ops.test.ts`.
+  All 277 hashes change with initial shed rows. Four call results change: aboard slots 2/3 cannot ask from the shed,
+  and two repeated outbound calls remain pending under the slower single-train schedule. Other results and labels
+  are unchanged.
+- `railway-tick-order.json` and `railway-tick-order-heads.json`:
+  `TICK_ORDER=1 TICK_ORDER_HEADS=1 node --import ./test/helpers/rail-no-audit.ts --test test/railway-tick-order.test.ts`.
+  Only hashes and five/nine later seed start ticks change; system ordering is unchanged.
+- `railway-m12-trace.json`: `M12_RECORD=1 node --import ./test/helpers/rail-no-audit.ts --test test/railway-m12.test.ts`.
+  The existing two-player, refill, reconnect and late-join scripts now record the new fleet rows and slower schedules.
+- `prefab-halts.json`: `GOLDEN=1 node --import ./test/helpers/rail-no-audit.ts --test test/prefab-halts.test.ts`.
+  Twelve changed leaves concern calling/lever availability, direction and plaque/target entries at the sampled
+  earlier stages. Train positions now reach the former-end clearance at a different tick. No terrain, collider or
+  kit geometry repinned; the separate request-argument fixture is unchanged.
+- `server/test/fixtures/world-host-trace.jsonl.gz`:
+  `HOST_TRACE_RECORD=1 node --import ./test/helpers/rail-no-audit.ts --test server/test/world-host-trace.test.ts`.
+  The host's checkpoint/replication trace includes the new namespace and reserved rows. Its own recorder wrote it.
+
+**Economy consequence measured by the existing trade tests:** the one-train first route earns about 35 Boogles/min
+against 56/min demand; crowds can reach their bounded cap if this rung is left running for 30 minutes. The box
+still fills and accounts for overflow when run for 40 minutes. Fare, demand, seats and queue rules are unchanged;
+the regression now compares income with the single train's seat-capped cycle rate.
+
+**Checks:** `npm run loop -- run` passed; `npm run check` passed (2,230 unit passes, 65 existing mode skips and one
+existing todo, plus registry, level, assets, prefabs and build). `cd server && npm ci && npm test` passed 396 tests.
+`npm run test:net` passed 208/208 checks. The fixture regeneration run passed 62 additional checks and the serial
+railway goldens passed 103. No hooks bypassed and nothing shipped or pushed.
+
+**Proof:** `.look/train-progression/answer-motion.png` and `answer-still.png` were opened. The engine coughs at the
+Village, clears, then leaves; rule samples bracket its first movement at 33 seconds after fit. The WebGPU capture
+reported advancing frames and no graphics errors. Its manifest reports shared-machine load: the sheet and tick
+samples do not establish real-time smoothness. The recorded WebM has not been listened to, so whistle audibility
+is not claimed from these images.
+
+The matched `slow-motion.png` / `fast-motion.png` and both `*-still.png` files were also opened. At the 4–6 s
+sheet frames the upgraded engine is visibly farther around the bend. Both runs captured slot 1 at the same
+Village stand (arrival tick 5507, departure 5557): row 0 before the table, row 1 after an accepted `rail.turn`
+at tick 4647. The fast run read 20 m/s and 62.86 m traveled at six seconds after departure; the nearest slow
+sample was 14 m/s and 43.40 m at 5.9 s. These are captured rule samples, not a wall-time performance claim.
+The table's pre-existing rollout is visible in the background; no bay work was added. Both captures passed
+WebGPU health without graphics errors. The fast capture names committed source `9f45fc3dd`; the answer/slow
+manifests began on step 2 plus the uncommitted step-3 changes. Subsequent changes only corrected comments and
+recorded this evidence. All three WebMs and the shared setup `capture.ts` remain beside the PNGs in
+`.look/train-progression/`; `proof.html` plots their samples and displays the inspected sheets.
+
+Final rebase onto fetched `origin/main` **9e8f9be6c** applied cleanly; main remained v51. It brought in rotunda
+documentation and the separate path-riser cleanup. Train implementation and the inspected train evidence are
+unchanged by that rebase. The requested checks were rerun on the rebased tree. `npm run review-stamp -- .`
+returned **6a71f9d54274**, covering 40 files. This is a review fingerprint, not an independent review approval.
+
 ## Owner questions
 
 **Answered by the owner, 15 November 2026:**

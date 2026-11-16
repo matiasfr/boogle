@@ -12,7 +12,7 @@ import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
-import { trainAlong, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
+import { trainAlong, trainWakeAt, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { railCallReady, railPlatformEnd, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
@@ -736,7 +736,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     boards.trains(
       // A fleet row in the shed (the greybox route) is on no board until it joins.
       RAIL_TRAINS.map(({ line }, k) =>
-        shown && trainRow(w, k).phase !== TRAIN_PHASE.SHED ? trainAlong(trainRow(w, k), line, clock) / 100 : null,
+        shown && tick >= trainWakeAt(line, railRow(w).trains) && trainRow(w, k).phase !== TRAIN_PHASE.SHED
+          ? trainAlong(trainRow(w, k), line, clock) / 100
+          : null,
       ),
       RAIL_TRAINS.map((_t, k) => {
         const r = trainRow(w, k);

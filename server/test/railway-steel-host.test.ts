@@ -243,13 +243,13 @@ test('steel host: malformed kinds, lines, parts and revisions refused without a 
       assert.equal(await r.action(install(0, l as number), spot(SHED_TABLE)), 'rejected', `line ${l}`);
     for (const part of [0, 1, '1', null])
       assert.equal(await r.action(install(0, 1, part as number), spot(SHED_TABLE)), 'rejected', `part ${part}`);
-    for (const revision of [2, -1, 0.5, '0', null, undefined])
+    for (const revision of [3, -1, 0.5, '0', null, undefined])
       assert.equal(
         await r.action({ op: 'rail.install', line: 1, part: 2, revision }, spot(SHED_TABLE)),
         'rejected',
         `revision ${revision}`,
       );
-    assert.equal(line(r.w, 1).boiler, 2, 'only the table fit');
+    assert.equal(line(r.w, 1).boiler, 1, 'only the table fit');
     // The room still answers.
     assert.equal(await r.action({ op: 'rail.steelTake', kind: 0 }, spot(RING_STEEL_YARD)), 'noop', 'the yard empty');
   } finally {

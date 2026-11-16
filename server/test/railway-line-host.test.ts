@@ -759,14 +759,14 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
     const p = railLinePoint(1, trainAlong(host.rules.railway.train(1)!, 1, host.sync.world.tick));
     const on: [number, number, number] = [Math.round(p.x), 2200, Math.round(p.z)];
     const ride = (train: unknown) => action({ op: 'rail.call', id: 3, dir: 1, train }, on);
-    for (const bad of ['1', 1.5, -1, 3, null])
+    for (const bad of ['1', 1.5, -1, 7, null])
       assert.equal((await ride(bad)).status, 'rejected', `malformed train ${JSON.stringify(bad)}`);
-    assert.equal((await ride(2)).status, 'rejected', 'from the wrong train: aboard 1, naming 2 (at Far Head)');
+    assert.equal((await ride(2)).status, 'rejected', 'a reserved train in the shed cannot be boarded');
     assert.equal((await ride(0)).status, 'rejected', "line 1's train for a line 2 halt");
     assert.equal((await call(3, 1, on)).status, 'rejected', 'aboard without naming the train');
     assert.equal((await ride(1)).status, 'accepted', 'aboard');
     assert.equal(host.rules.railway.train(1)!.req > 0, true, "the rider's own train holds it");
-    for (let t = 0; host.rules.railway.train(1)!.phase !== 1 && t < 200; t++) await ticks(1);
+    for (let t = 0; host.rules.railway.train(1)!.phase !== 1 && t < 400; t++) await ticks(1);
     assert.equal(host.rules.railway.train(1)!.phase, 1);
     const tick = host.sync.world.tick,
       rows = [0, 1, 2].map((k) => host.rules.railway.train(k)!);

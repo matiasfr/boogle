@@ -52,8 +52,8 @@ const RUSTED = { color: '#ffffff', own: true, rough: 0.7, rust: 'train' } as con
 const NEW = { color: '#ffffff', own: true, rough: 0.6 } as const;
 
 /** One of the engine's parts, sharing the kit's cached geometry and paint (never dispose either). */
-export function enginePart(part: EnginePart, rust = true) {
-  const m = new THREE.Mesh(geometry(part), paint(rust ? RUSTED : NEW));
+export function enginePart(part: EnginePart, rust: boolean | 'answer' = true) {
+  const m = new THREE.Mesh(geometry(part), paint(rust ? { ...RUSTED, rust: rust === 'answer' ? rust : 'train' } : NEW));
   m.name = part;
   m.castShadow = m.receiveShadow = true;
   return m;
@@ -127,9 +127,9 @@ const shadowOnly = new THREE.MeshBasicNodeMaterial({ colorWrite: false, depthWri
 /** The body with its cab in parts the train view can move out of a rider's way (train-view.ts, the cutaway): the rest
  * of the body, each face of the cab, and a shadow-only copy of the whole shell, so the cab keeps its shade with a
  * face out of the way. The geometry and paint are the kit's (never dispose them). */
-export function engineBodyWithCab() {
+export function engineBodyWithCab(rust: 'train' | 'answer' = 'train') {
   const s = splitBody(),
-    mat = paint(RUSTED);
+    mat = paint({ ...RUSTED, rust });
   const mesh = (g: THREE.BufferGeometry, name: string): THREE.Mesh => {
     const m = new THREE.Mesh(g, mat);
     m.name = name;
@@ -177,7 +177,7 @@ export const DOOR_HINGE = { x: ENGINE_CAB.hx - 0.03, z: ENGINE_CAB.door.z[0] + 0
 const hingedDoor = new Map<number, THREE.BufferGeometry>();
 /** A cab door on side `side` (+1 or −1), its origin on its hinge: turn it about y to swing it open (outward is +angle on
  * +x and −angle on −x; ../../entities/railway/train-view.ts swings them). */
-export function engineDoor(side: 1 | -1) {
+export function engineDoor(side: 1 | -1, rust: 'train' | 'answer' = 'train') {
   let g = hingedDoor.get(side);
   if (!g) {
     g = geometry('engine_door').clone().translate(-DOOR_HINGE.x, 0, -DOOR_HINGE.z);
@@ -193,7 +193,7 @@ export function engineDoor(side: 1 | -1) {
     }
     hingedDoor.set(side, g);
   }
-  const m = new THREE.Mesh(g, paint(RUSTED));
+  const m = new THREE.Mesh(g, paint({ ...RUSTED, rust }));
   m.name = `engine_door_${side > 0 ? 'right' : 'left'}`;
   m.position.set(side * DOOR_HINGE.x, 0, DOOR_HINGE.z);
   m.castShadow = m.receiveShadow = true;

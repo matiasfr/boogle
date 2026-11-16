@@ -395,10 +395,10 @@ test('a lever ask goes to the next train that way that can brake; the one too cl
   until(w, () => TRAIN_STOPS[LINE2]![1]! - along(w, A) < BRAKE - 600);
   assert.equal(lever(w, QUARRY, 1), 1);
   const st = trainStops(w.w, LINE2);
-  // The next up train behind A (with three trains, whichever comes round first) is named, not A.
+  // The sole train cannot serve the current pass; the ask stays for its next lap.
   assert.equal(trainServes(rows(w), LINE2, st, 1, 1, w.t), -1, 'no train can brake for this pass');
   const next = A; // The sole train serves the retained ask on its next outward trip.
-  // The named train can reach the quarry before A reaches Far Head (C, just short of the village): watch both at once.
+  // Watch the first turnback and the eventual outward stop without issuing another ask.
   const a: [number, number][] = [];
   let served = false;
   for (let t = 0; t < 3000 && !(served && a.length); t++) {
@@ -501,7 +501,7 @@ for (const pct of [100, TRAIN_HEAD_PCT])
       { k: A, stop: 0, track: 0, depart: w.t - TRAIN.dwellTicks },
       { k: B, stop: -1, track: 1, depart: w.t, s: 6670 },
     ]);
-    // v27: three trains, so an even spacing is a third of the cycle; the balanced hold at the ends evens them too.
+    // Two trains at the Pier: even spacing is half the cycle; the end hold evens them too.
     const st = trainStops(w.w, LINE2),
       even = cycleTicks(LINE2, st) / 2,
       head = headTicks(LINE2, st, pct, 0, 2);

@@ -512,19 +512,19 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     site: 'boiler bounds',
     message: 'railway: boiler bounds',
     stage: J,
-    break: (w) => set(w, Line, { boiler: 2 }, LINE2),
+    break: (w) => set(w, Line, { boiler: 3 }, LINE2),
   },
   {
     site: 'boiler fit',
     message: 'railway: boiler fit',
     stage: J,
-    break: (w) => set(w, Line, { boiler: 1, fitted: 100 }, LINE2),
+    break: (w) => set(w, Line, { boiler: 2, fitted: 100 }, LINE2),
   },
   {
     site: 'boiler aboard',
     message: 'railway: boiler aboard',
     stage: J,
-    break: (w) => set(w, Train, { boiler: 1 }, LINE_SLOTS[LINE2]![0]),
+    break: (w) => set(w, Train, { boiler: 2 }, LINE_SLOTS[LINE2]![0]),
   },
 ];
 
