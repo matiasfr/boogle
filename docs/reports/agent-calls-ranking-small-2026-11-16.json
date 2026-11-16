@@ -1,0 +1,889 @@
+[
+ {
+  "id": "CH-001",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "Friends see The Boogler react to their talk, riding and fleeing up to about 300 ms later, now that the server runs him.",
+  "recommendation": "confirm",
+  "why": "The cost of taking him off the lead tab, which you agreed on 13 November; your own talk still stops him at once.",
+  "source": "docs/decisions-process.md#d-2026-11-13-server-owned-state-answered"
+ },
+ {
+  "id": "CH-002",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "Friends see The Boogler's hearts, grumpy face and puff one server round trip late; the giver and rider see theirs on the press.",
+  "recommendation": "confirm",
+  "why": "Same server move; the delay stays inside the stated budgets.",
+  "source": "docs/decisions-process.md#d-2026-11-13-server-owned-state-answered"
+ },
+ {
+  "id": "CH-003",
+  "topic": "CH",
+  "group": "flag",
+  "gist": "The Boogler's position and facing are saved, he returns to his start on a reset, and his wander is seeded per room.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "DESIGN.md's authority table, applied on your word on 16 November (\"Apply the draft.\"), says The Boogler's position and facing are saved; a room reset sending him home is your 9 November rule (\"The Boogler included\"). The seeded wander and idle look are as built.",
+  "source": "DESIGN.md, Clear authority · docs/decisions-process.md#d-2026-11-16-design-sync-model-applied · docs/decisions-controls.md#d-2026-11-09-a-room-reset-starts-the-game"
+ },
+ {
+  "id": "CH-004",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "Ranges and rates for presents (5.6 m, one per 1.5 s) and puffs (2.6 m, one per 2 s); the frisbee stays a valid present.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "CH-006",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "Two draft lines for a ticket-window teller and a rider, marked not for agents to ship.",
+  "recommendation": "confirm (kept as unshipped drafts; the words are owner's copy)",
+  "why": "A draft log, not shipped copy; whether either line is used is yours."
+ },
+ {
+  "id": "CH-007",
+  "topic": "CH",
+  "group": "flag",
+  "gist": "Dressing cycles each slot left and right, applied at once, with no confirm or revert; partners see every step.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "Your 10 November entry, written from your five answers to the pause-wardrobe review, states the rule: \"Left and right cycle each slot, applied at once; partners see each step through the usual presence.\" That entry's words are the orchestrator's summary; your own answer (4) on the pips was \"Nothing plus what you own\".",
+  "source": "docs/decisions-characters.md#d-2026-11-10-dress-buddy-from-pause-you-is"
+ },
+ {
+  "id": "CH-008",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "The roster and Live pill sit in the You page's header, not under Options.",
+  "recommendation": "confirm",
+  "why": "Keeps the 5 November call that put them on Pause's first page."
+ },
+ {
+  "id": "CH-009",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "Pause button map: RB and Esc open Options from You, B and Esc go back, B on You closes; where focus starts per device.",
+  "recommendation": "confirm",
+  "why": "Your 10 November answer (1) already set RB and Esc for Options; the rest are small control defaults.",
+  "source": "docs/decisions-characters.md#d-2026-11-10-dress-buddy-from-pause-you-is"
+ },
+ {
+  "id": "CH-010",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "Wardrobe cycle order: owned items in catalog order, Nothing at the left end, wrapping; cycling drops a shop try-on.",
+  "recommendation": "confirm",
+  "why": "Follows your answer (4): Nothing plus what you own."
+ },
+ {
+  "id": "CH-011",
+  "topic": "CH",
+  "group": "flag",
+  "gist": "Colour moves to the You page, the pet row reads the stowaway's name, mute on You, fullscreen under Options, and a lighter dim behind You.",
+  "recommendation": "change: confirm, minus the lighter dim",
+  "why": "You overruled the dim on 10 November (\"there is a dull filter which doesnt make sense on the customization screen\"): You has no dim at all. The rest is as built.",
+  "source": "docs/decisions-characters.md#d-2026-11-10-no-dim-behind-the-pause-view-s-you"
+ },
+ {
+  "id": "CH-012",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "Get unstuck stays one press deeper in More; Options keeps today's main list; only the production railway gets the You page.",
+  "recommendation": "confirm",
+  "why": "Its \"Place keeps its own pause\" clause is moot now that Place is retired."
+ },
+ {
+  "id": "CH-013",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "The wardrobe's \"new\" dot has its own seen key, cleared by the same resets as the wardrobe.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "CH-014",
+  "topic": "CH",
+  "group": "decide",
+  "rank": 1,
+  "gist": "Sleeves the greeter's 15 lines, written by the greeter job and live in the game.",
+  "recommendation": "confirm as placeholders; the words are owner's copy",
+  "why": "They are the first lines a new player hears and they ship today; names, characters and their words are yours (11 November), so only you can keep or rewrite them.",
+  "source": "docs/decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s · src/entities/railway/greeter.ts"
+ },
+ {
+  "id": "CH-015",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "A resident's line said straight to you (Button answering a take) plays over a reward card; ambient talk still hushes.",
+  "recommendation": "confirm",
+  "why": "Otherwise Button is silent on every take; the rule now lives in src/entities/town/residents.ts."
+ },
+ {
+  "id": "CH-016",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "Suspect town lines kept as written: Pip's depot notice about two folk pushing a cart, and lines that mention a bridge.",
+  "recommendation": "confirm (kept as written; whether to edit them is owner's copy)",
+  "why": "Listing suspect lines instead of editing them is the standing rule; the lines now live in src/entities/town/town-lines.ts.",
+  "source": "docs/agents/owner-calls.md#boogler-copy"
+ },
+ {
+  "id": "CH-017",
+  "topic": "CH",
+  "group": "bulk",
+  "gist": "Suspect town lines kept as written: Moss's \"very small box\" cart and the pier that \"goes off the edge of the table\".",
+  "recommendation": "confirm (kept as written; whether to edit them is owner's copy)",
+  "why": "Same rule; the lines now live in src/entities/town/town-lines.ts.",
+  "source": "docs/agents/owner-calls.md#boogler-copy"
+ },
+ {
+  "id": "GX-001",
+  "topic": "GX",
+  "group": "bulk",
+  "gist": "Keep the starting packed-earth path colours after the canyon comparison; no lighter middle needed.",
+  "recommendation": "confirm",
+  "why": "You chose packed earth on 14 November; this only confirms its first values passed the check.",
+  "source": "docs/decisions-look.md#d-2026-11-14-terrain-clean-three-recommendations-accepted"
+ },
+ {
+  "id": "GX-002",
+  "topic": "GX",
+  "group": "bulk",
+  "gist": "The packed-earth path colours and the two checks they must pass against the canyon wall and the lawn.",
+  "recommendation": "confirm",
+  "why": "Tunable colours inside your 14 November packed-earth choice.",
+  "source": "docs/decisions-look.md#d-2026-11-14-terrain-clean-three-recommendations-accepted"
+ },
+ {
+  "id": "GX-003",
+  "topic": "GX",
+  "group": "bulk",
+  "gist": "Path-edge view rules: the tread edge follows the path's height, a cut-earth band at wall feet, sand blends into the gorge bank, rock marks only unwalkable faces, tread widths kept.",
+  "recommendation": "confirm",
+  "why": "Delivers the \"more intentional\" path edge you asked for; all tunable."
+ },
+ {
+  "id": "GX-004",
+  "topic": "GX",
+  "group": "bulk",
+  "gist": "Terrain clean-up order: pigment, tread edge, shore and rock borders, then bench levelling; survey findings 9, 11, 13–15 stay P3.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "GX-005",
+  "topic": "GX",
+  "group": "flag",
+  "gist": "Dressing-kit small calls: painted risers stay, timber kerb only at edges, nothing on Ring Island yet, you pick the style from a two-style previz sheet.",
+  "recommendation": "change: confirm, minus \"painted risers stay\"",
+  "why": "On 15 November you had the painted timber risers and their highlights removed; climbs keep the plain packed-earth path. The other kit calls stand.",
+  "source": "docs/decisions-look.md#d-2026-11-15-plain-path-climbs"
+ },
+ {
+  "id": "GX-007",
+  "topic": "GX",
+  "group": "bulk",
+  "gist": "The Sunshine swell is four up-and-down waves with no sideways motion, fading over the first 6 m of depth.",
+  "recommendation": "confirm",
+  "why": "Sideways motion is invisible at 0.1 m and would make swimming and floating heights expensive; serves the cheap-on-a-phone water target.",
+  "source": "docs/decisions-look.md#d-2026-11-09-the-water-s-target-is-super"
+ },
+ {
+  "id": "HU-001",
+  "topic": "HU",
+  "group": "flag",
+  "gist": "Far Head's shared shot grows from 5 s to about 8.5 s with a cut to the forge casting the boiler.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "You answered on 15 November: \"the Far Head cutscene could be longer, that's fine\". It is built (#1870).",
+  "source": "docs/decisions-core-loop.md#d-2026-11-15-grant-queue-answered · docs/plans/forge-call-handoff.md#as-built-15-november-2026"
+ },
+ {
+  "id": "HU-002",
+  "topic": "HU",
+  "group": "flag",
+  "gist": "The pier gains a shared 2.5 s shot of the forge casting the breaker; after a show the camera turns toward the forge for a player on foot.",
+  "recommendation": "change: keep the turn toward the forge; the pier's cut shows the breaker waiting, not being cast",
+  "why": "On 15 November you moved the casting to the boiler fit, \"with no camera cut\"; the pier cut that is still in code (pier-view.ts) now only shows a breaker already cast, so the row's wording is out of date.",
+  "source": "docs/decisions-core-loop.md#d-2026-11-15-works-flow"
+ },
+ {
+  "id": "HU-003",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "Draft wording stays live until you edit it, with one combined list of new strings owed to you.",
+  "recommendation": "confirm",
+  "why": "Keeps your copy visible to you without blocking builds; The Boogler's copy stays yours."
+ },
+ {
+  "id": "HU-004",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "The return window is 30 minutes (`railway.returnMinutes`); 0 turns returns off.",
+  "recommendation": "confirm",
+  "why": "A tunable; you said \"recent enough\" without a number.",
+  "source": "docs/decisions-controls.md#d-2026-11-14-a-recent-reload-returns-you-where"
+ },
+ {
+  "id": "HU-005",
+  "topic": "HU",
+  "group": "decide",
+  "rank": 3,
+  "gist": "After the return window runs out, you start at Home, with the Welcome back card.",
+  "recommendation": "confirm",
+  "why": "Your 14 November entry decides recent returns but leaves Home after a long absence open with you; with the route now long, starting at Home rather than the nearest halt sets how far a returning player is from where they left off.",
+  "source": "docs/decisions-controls.md#d-2026-11-14-a-recent-reload-returns-you-where"
+ },
+ {
+  "id": "HU-006",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "A reload aboard a train puts you off at the halt it was running to; in deep water, the nearest standing halt; then Home.",
+  "recommendation": "confirm",
+  "why": "A moving deck or the sea is not a place to stand; your entry's rule already names the train-to-halt case.",
+  "source": "docs/decisions-controls.md#d-2026-11-14-a-recent-reload-returns-you-where"
+ },
+ {
+  "id": "HU-007",
+  "topic": "HU",
+  "group": "flag",
+  "gist": "A returning player gets the act as the first line of the Welcome back card; a first-visit late joiner sees the current act at landing.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "Your 11 November acts entry says it (\"a returning player gets the act as the first line of the Welcome back card instead; two full-screen moments never stack\"), and your later answer that day (\"keep it a bit mysterious\") already covers the Welcome back line.",
+  "source": "docs/decisions-controls.md#d-2026-11-11-the-game-has-acts"
+ },
+ {
+  "id": "HU-008",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "Act-card presentation: \"acts\" never \"chapters\", 0.6/2.8/0.6 s timing, timber-letter type, one sting, reduced motion fades only, seen act remembered per browser.",
+  "recommendation": "confirm",
+  "why": "Tunables and presentation; \"chapter\" is The Boogler's word, as your acts entry says.",
+  "source": "docs/decisions-controls.md#d-2026-11-11-the-game-has-acts"
+ },
+ {
+  "id": "HU-009",
+  "topic": "HU",
+  "group": "decide",
+  "rank": 1,
+  "gist": "Acts come from railway progress: Act 2 at Q5 (built), Act 3 at the twelfth pier footing, Act 4 at the Meet; each browser shows the current act once.",
+  "recommendation": "change: confirm the rule; place Acts 3 and 4 when their opening shows are built",
+  "why": "The rule and Act 2 are yours already; Acts 3 and 4 are story structure, which is yours (11 November), and as logged both fall in the Ring Island stretch, so they are better placed once you see those beats.",
+  "source": "docs/decisions-controls.md#d-2026-11-11-the-game-has-acts · docs/decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s · src/sim/railway-queries-story.ts"
+ },
+ {
+  "id": "HU-010",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "In a shared moment the puller's own screen plays the shot from its prediction; everyone else plays it on the server's answer.",
+  "recommendation": "confirm",
+  "why": "Avoids a round trip of lag on the press; inside your shared-moments rule.",
+  "source": "docs/decisions-controls.md#d-2026-11-10-shared-moments-play-for-everyone"
+ },
+ {
+  "id": "HU-011",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "The railway's first banner is its own copy of the old Place banner style.",
+  "recommendation": "confirm",
+  "why": "Internal; the banner exists (src/ui/moment-banner.ts) and the reason for copying no longer matters now Place is gone."
+ },
+ {
+  "id": "HU-012",
+  "topic": "HU",
+  "group": "decide",
+  "rank": 2,
+  "gist": "The one way to skip a cinematic is Interact, offered 0.8 s in, shown as Interact's own glyph in a highlighted chip; that press only skips.",
+  "recommendation": "confirm",
+  "why": "Your 9 November rule allowed \"maybe\" one highlighted button and left the pick logged; this is that pick, and it now applies to every shot, the Q4 and forge cuts included.",
+  "source": "docs/decisions-controls.md#d-2026-11-09-a-cinematic-can-t-be-interrupted"
+ },
+ {
+  "id": "HU-013",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "After a world reset the name card comes pre-filled, so a reset costs one Jump in.",
+  "recommendation": "confirm",
+  "why": "Your 9 November reset entry already says it.",
+  "source": "docs/decisions-controls.md#d-2026-11-09-a-world-reset-starts-the-game"
+ },
+ {
+  "id": "HU-014",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "A reset forgets no more than before; identity, settings and prototype saves stay.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "HU-015",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "Only the first load after a reset is a new game; reloading with the card still up counts as a return.",
+  "recommendation": "confirm",
+  "why": "An edge case; the builder asked to hear only if it matters to you."
+ },
+ {
+  "id": "HU-016",
+  "topic": "HU",
+  "group": "bulk",
+  "gist": "A browser that never stored a world marker but has a saved name counts as a return, not a reset.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "HU-018",
+  "topic": "HU",
+  "group": "flag",
+  "gist": "The switch cinematic's camera can be clipped by trees on the way in.",
+  "recommendation": "revert (retire: out of date)",
+  "why": "The summit switch it describes is gone: on 15 November the switch moved to the sea gate and Q4 got its own camera shot of the jamb. Any clipping in the new shot is a fresh bug, not this call.",
+  "source": "docs/decisions-core-loop.md#d-2026-11-15-fly-first · docs/decisions-controls.md#d-2026-11-15-q4-gets-a-camera-shot"
+ },
+ {
+  "id": "AT-001",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The Boogler's movement is sent as legs and drawn on every screen; presents and puffs are server commands; prototypes keep local seats.",
+  "recommendation": "confirm",
+  "why": "Architecture is the agents' call (11 November); matches DESIGN.md's authority table."
+ },
+ {
+  "id": "AT-002",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Server seat rules: one each, first request wins a chair, 400 ms between sits, seated through a reconnect, a chair frees 1.5 s after its player goes.",
+  "recommendation": "confirm",
+  "why": "Server seats as built; ties become \"pressed first\"."
+ },
+ {
+  "id": "AT-003",
+  "topic": "AT",
+  "group": "flag",
+  "gist": "A room fast-forward replaces the world with a stage's seed; everyone lands at the stage's spot once; wardrobe finds stay; the shared island refused until you answer question 1.",
+  "recommendation": "change: confirm, minus \"wardrobe finds stay\", with question 1 answered",
+  "why": "On 13 November you dropped the wardrobe rule (\"wardrobe fine stay doesn't need to be a rule\") and answered question 1: the dev key holder may replace any room, the shared island included, behind the typed name, countdown and backup.",
+  "source": "docs/agents/owner-calls.md#one-room · docs/plans/room-fast-forward.md#owner-questions"
+ },
+ {
+  "id": "AT-004",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Fast-forward's line, control wording and stage list (the curated JUMPS rows), forward-only.",
+  "recommendation": "confirm",
+  "why": "Dev-tool copy, none of it The Boogler's."
+ },
+ {
+  "id": "AT-005",
+  "topic": "AT",
+  "group": "decide",
+  "rank": 1,
+  "gist": "The Pause → More → Jump in list is deleted only after you have fast-forwarded a room yourself; `?from=` keeps working, unlisted.",
+  "recommendation": "confirm",
+  "why": "You said you are \"not a fan of the jump-in rooms as separate rooms\"; keeping the list until you have used fast-forward yourself is the agents' guess at when you are ready to lose it, and only you can say whether that is now.",
+  "source": "docs/agents/owner-calls.md#one-room · docs/plans/room-fast-forward.md"
+ },
+ {
+  "id": "AT-007",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The trade numbers have one home, src/sim/railway-trade-layout.ts, which the 2D model reads.",
+  "recommendation": "confirm",
+  "why": "Built: dev/economy/trade-data.ts reads TRADE from src/sim/railway-trade-layout.ts."
+ },
+ {
+  "id": "AT-008",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Server Dockerfile, dependencies and fly.toml no longer trigger an independent review; CI still boots the image.",
+  "recommendation": "confirm",
+  "why": "You asked whether the Dockerfile needs a review; the image boot is its check."
+ },
+ {
+  "id": "AT-009",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "How the railway read model's tests were converted: seven batches, each proved by a census and a mutation table.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-010",
+  "topic": "AT",
+  "group": "flag",
+  "gist": "Riders, the wallet, households and source steps are integers in the server sim; a `?proto=trade` prototype runs the same rules unsaved.",
+  "recommendation": "change: confirm the integer counts; drop the `?proto=trade` prototype",
+  "why": "The town economy shipped straight into the live game (#1927–#1935) and no trade prototype exists in src; your 15 November answer prefers testing in the main game.",
+  "source": "docs/direction.md#now-next-later · docs/decisions-core-loop.md#d-2026-11-15-grant-queue-answered"
+ },
+ {
+  "id": "AT-012",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "`loop -- trace` downloads missing sessions through the playtest fetch path and aggregates confusion and wayfinding.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-013",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "How the loop tool measures detour factors from walked versus predicted metres.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-014",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Loop fallback supply: vehicle materials fetched on foot; `--by-hand` and `--no-share` flags.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-015",
+  "topic": "AT",
+  "group": "flag",
+  "gist": "The loop graph records the kiln's cue as prompt-only and reports no cue, because the gold ghost was only proposed.",
+  "recommendation": "change: confirm reading cues from the code; the gold ghost is now decided",
+  "why": "On 16 November you made the dashed gold outline the game's sign for \"a part goes here\", so the reason is out of date; the tool still reports only what the code shows.",
+  "source": "docs/decisions-look.md#d-2026-11-16-gold-outline-not-physical"
+ },
+ {
+  "id": "AT-016",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Loop-graph grind headlines 1 to 3 players; 4 is printed but secondary.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-017",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The loop tool calls an undemanded order a defect only on an edge you decided; other orders print as neutral facts.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-018",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Retiring headless runs keeps `npm run sim` as an empty loader and leaves unused helpers in place.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-019",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "How `loop -- trace` scores confusion per node (weights only order the nodes).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-020",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "`loop -- run` drives the host's own install behind a stub room; its play policy and softlock rule.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-021",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Loop-graph cues are read from the code; anything not confirmed is \"unknown\".",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-022",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Loop-graph grind assumptions: 5.6 m/s walk, 8 and 16 a carry, straight-line distances.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-023",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The beat lists stay hand-kept with a test that fails when they and the graph disagree.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-027",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Retiring headless runs also removes `npm run sim -- replay`; the in-game recorder stays.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-028",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "First grind numbers are straight-line, the trace is a text table, and `loop -- run` reports without gating a ship.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-029",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "What P1, P2 and P3 mean, and the first ranking of the 9 November notes.",
+  "recommendation": "confirm",
+  "why": "owner-calls already records these meanings as the orchestrator's default that you re-rank freely."
+ },
+ {
+  "id": "AT-030",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Archive tags for old worktrees are `archive/worktree/<branch>`, kept local.",
+  "recommendation": "confirm",
+  "why": "Matches the 13 November worktrees reading (archive tags kept local)."
+ },
+ {
+  "id": "AT-031",
+  "topic": "AT",
+  "group": "flag",
+  "gist": "Worktree cleanup kept three with uncommitted changes and four under 48 hours old.",
+  "recommendation": "revert (retire: superseded)",
+  "why": "Your 13 November worktree rule removes unmerged worktrees \"without waiting 48 hours\", tagging uncommitted work first; this was a one-off from 9 November.",
+  "source": "docs/agents/owner-calls.md#worktrees"
+ },
+ {
+  "id": "AT-032",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Lockstep review findings 3, 4 and 5 left unfixed (slower but served; intended; refuted).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-033",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Jump-in rows in route order, with their labels.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-034",
+  "topic": "AT",
+  "group": "flag",
+  "gist": "No jump-in rows yet for the town, the curio shelf or the Q5 rim wait; add them when those jobs land.",
+  "recommendation": "revert (retire: done)",
+  "why": "The town rows exist (Timber home, Fares paid, Ready to build, House built in src/world/railway-jump.ts); under \"One live game\", later stages go in as fast-forward stages, not new jump-in rooms.",
+  "source": "src/world/railway-jump.ts · docs/agents/owner-calls.md#one-room"
+ },
+ {
+  "id": "AT-035",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Jump in sits at Pause → More, Dev-gated, and inside any jump room.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-036",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "A jump-in lands through the railway arrival's pose restore.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-037",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Everyone without a saved pose in a jump room lands at the segment.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-038",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "A jump room is marked by its name, the page header and one arrival line; no HUD badge.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-039",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Personal state starts empty in a jump room; late-join ability flourishes play.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-040",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "A seed's save is stamped now, so no away credit finishes a job on join.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-041",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "\"From the beginning\" is a fresh private room with your identity kept and no fall.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-042",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "`POST /jump` limits: 6 a minute per IP, 30 a day per address under 500 total, rooms idle three days deleted, at most 200.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-043",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "A jump room skips the first-visit fall; a crate opened there dresses you only in that room.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-044",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Jump-in UI copy and small scope calls; no confirmation on a jump.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-045",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Place's Far Head glide pad and ramp are not ported.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-046",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The jump course and its lamplighter's cap move to job E, where the double jump ends up.",
+  "recommendation": "confirm",
+  "why": "The double jump stays after Station 3 (16 November), so the course goes with it."
+ },
+ {
+  "id": "AT-047",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The telescope moves 15 m east onto the ridge top; its one view frames Ring Island and the buoys.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-048",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Seven buoys, not Place's twelve.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-050",
+  "topic": "AT",
+  "group": "flag",
+  "gist": "The town's wood and stone growth waits for cargo in slice 5, not railway milestones; T6 ships the workshop and camps waking.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "You answered on 12 November that \"deliveries stake the plots\", and the slice 5 freight is built.",
+  "source": "docs/decisions-rewards.md#d-2026-11-12-town-economy-answered"
+ },
+ {
+  "id": "AT-051",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Crystals are personal; they get a distinct name or look when pillar crystals come.",
+  "recommendation": "confirm",
+  "why": "DESIGN 6: personal finds stay yours."
+ },
+ {
+  "id": "AT-053",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The playtest flag (M or d-pad right) shows as \"Flag\" in everyone's controls guide.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-054",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Camps wake with their lines, with fireworks and chimney smoke.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-055",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "A growth show plays on first sight; it snaps into place on load.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-056",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Missed prizes wait at the finders' bay; open either box and the other goes.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-057",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Each secret grants a cosmetic only it gives.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-058",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Late joiners and reloads find an unopened station box for every completion already reached.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-059",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "A station box opens when you walk into it, is saved before the reveal, and joins the reward queue.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-060",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Box odds and pity come from Place's catalog (a Wonder by the third box).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-061",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The museum's table is 1:120 of the live railway.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-062",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Production keeps Sleeves at the shore instead of Place's shore worker.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-063",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Residents hold their tongue while a reward reveal or conversation is up.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-064",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Each resident notices the newest town fact once per player; memory is personal.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-065",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Town sign population: 12, then +8, +6, +6 at the path, Far Head and the pier.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-066",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Which railway milestones count as each town fact.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-067",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The house stands from the start; its furniture follows the town facts.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-068",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The shop and museum rise on the first-path fact; until then their boards show.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-069",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "T1 shipped at +18 draw calls (ceiling +10); T2 brings it back down.",
+  "recommendation": "confirm",
+  "why": "Measured, GPU p95 no worse; \"measure before limits\"."
+ },
+ {
+  "id": "AT-070",
+  "topic": "AT",
+  "group": "flag",
+  "gist": "The Roundhouse stall is 4 × 9 m, smaller than the plan's 7 × 14 m, with bent roads.",
+  "recommendation": "revert (superseded)",
+  "why": "On 14 November you said it \"feels a little cramped\" and \"the train barely fits\", and asked for a real rotunda, bigger, reusable across the hubs.",
+  "source": "docs/agents/owner-calls.md#the-roundhouse-is-a-real-rotunda"
+ },
+ {
+  "id": "AT-071",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "The forge rack draws up to the largest rail bill (32).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-072",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Q6's parked track layer stays at the line's end; players hop its low deck to reach the pier.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "AT-073",
+  "topic": "AT",
+  "group": "flag",
+  "gist": "The Sickle Isles backdrop is pale flat-shaded greybox, one draw call, not walkable.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "You decided it on 8 November: \"backdrop for now is fine\"; areas became walkable as they were built, as that entry says.",
+  "source": "docs/decisions-process.md#d-2026-11-08-the-sickle-isles-map-as-a"
+ },
+ {
+  "id": "AT-074",
+  "topic": "AT",
+  "group": "bulk",
+  "gist": "Once trains run, the depot cart retires.",
+  "recommendation": "confirm",
+  "why": ""
+ }
+]
