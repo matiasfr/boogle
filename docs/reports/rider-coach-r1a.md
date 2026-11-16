@@ -86,3 +86,23 @@ Failed visual attempts: default route mount timeout; source-edit reload during t
 Final v56 loop and all five required checkpoints passed. The rebased two-player T2 repeat passed: both peers finished and mirrored hashes agreed at 233 server steps. Its report is `.look/playthrough/8ff56a02c/report.txt`. The final world-inputs repeat passed (9.9 s, WebGPU, no errors). That repeat and the closing `node dev/ship-check.ts` results are retained in `.look/r1a/logs/r1a-inputs-complete.log` and `.look/r1a/logs/r1a-final-shipcheck.log`; the handback reports their verified outcome. The final gate is intentionally invoked after this report is committed.
 
 Unverified: continuous real-time playback smoothness, device testing and the independent review (the caller owns that review). The cart is visible only late in the forced wait; early visibility is not claimed. No ROM data, new player strings or suspect Boogler copy. No later step implemented. No push or ship. No ship or push. No later rider-coach step or first-town-lesson work.
+
+## Independent review P2 follow-up, 16 November
+
+Review `8f23fcbb90f6` applies to `6e2c4d1dd`. Its fitter-attribution finding is fixed here; this is not a new independent review stamp. Rebased on origin/main before the fix. v56 remains this branch's number; no namespace or fixture was changed by the follow-up.
+
+The arrival view now separates whether a flourish is available (`trains-on`) from whether its progress still exists (`boiler fitted`). The existing per-room/per-player browser record therefore retains the accepted fitter's attribution throughout the cold wait, including a reload in that browser. On reload they see the physical train wake when it happens, without replaying a peer badge or pickup sound. Peers still get their flourish once at wake. A genuine progress reset clears attribution after the existing three-second ready-world grace. This preserves accepted credit without adding a server owner field or a new local-storage format.
+
+Owner-requested tests execute the real `createAbilityArrival` and `createSeen`, with browser/audio boundaries mocked. Against the reviewed source the exact reproduction produces `keys: ['boiler'], sounds: 1` instead of empty keys and zero sounds; the reload and retention/reset regressions fail too. The peer control passes. After the fix all four pass. Logs: `.look/r1a-review/before-exact.log` and `ability-after.log`.
+
+The supplied late-join test now compares the full mirrored world while advancing through the wake. It disconnects and replaces the mirror during the cold wait, verifies the reconnect snapshot is still cold, follows every update to train wake and breaker cast, then reconnects again after wake and checks both its replacement snapshot and subsequent deltas.
+
+Validation before the closing gate:
+- Ability-arrival, boiler, cart (including cart-wake), works and replication: 62 tests passed (`.look/r1a-review/focused.log`); four ability tests repeated after the exact negative control, all passed.
+- Goldens: all 115 tests passed without regeneration; no stage, fixture or namespace differs from the reviewed commit (`goldens.log`).
+- Server: all 407 tests passed (`server.log`).
+- Scoped lint: zero problems (`lint.log`); typecheck passed (`types.log`).
+- Unchanged forge-handoff eval: passed, crane lift 1.6 m, call observed at 6049 ms, cut and return seen (`handoff.log`). Opened its still and motion sheet.
+- Forced-wait clip retaken **because the fitter's observed wake behaviour changed** (the erroneous peer badge is suppressed). Capture passed with no page/graphics errors. Opened its still, motion sheet and decoded frames from 23–27 s: the train wakes, the fitter remains beside it, and no peer boiler badge appears. Peer sound/flourish counts are established by the production-view tests. Real-time playback smoothness is not claimed.
+
+Retaken evidence: `.look/r1a-review-fitter-realtime.webm`, `.look/r1a-review-fitter-motion.png`, `.look/r1a-review-fitter-still.png`, and `.look/r1a-review/fitter-wake-frames.png`. Closing `node dev/ship-check.ts` is invoked after this report is committed; its full result is in `.look/r1a-review/ship-check.log` and the handback. No push or ship.
