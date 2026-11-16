@@ -202,8 +202,8 @@ export async function createRailwayCart(
     flyingRails = 0;
   // Keep the waiting pieces on the cart until their individual flights launch. Collider stock still follows
   // accepted state immediately: this is only the load's Local drawing, never a delayed transfer or platform.
-  let unloading: { elapsed: number; logs: number; rails: number } | null = null;
-  const STAGGER = 0.045;
+  let unloading: { elapsed: number; logs: number; rails: number; stagger: number } | null = null;
+  const FLIGHT = 0.55;
   owner.cleanup(() => {
     for (const g of geometries) g.dispose();
     for (const m of materials) m.dispose();
@@ -232,7 +232,13 @@ export async function createRailwayCart(
         const k = active;
         if (k >= 0) {
           depotPlace(k, rackAt);
-          unloading = { elapsed: 0, logs: last.logs, rails: last.rails };
+          // Even Q5's full 48-piece shipment must land before the server's 2.2 s stop ends. Keep the
+          // smaller loads' rhythm, with 0.15 s to settle before departure; this changes only the drawing.
+          const stagger = Math.min(
+            0.045,
+            (CART.dropTicks / TICKS_PER_S - FLIGHT - 0.15) / Math.max(1, last.logs + last.rails - 1),
+          );
+          unloading = { elapsed: 0, logs: last.logs, rails: last.rails, stagger };
           cartLook.updateWorldMatrix(true, false);
           const firstLog = Math.max(0, stock.depot - last.logs);
           const deliveredLogs = last.logs;
@@ -248,8 +254,8 @@ export async function createRailwayCart(
               from,
               to,
               {
-                dur: 0.55,
-                delay: (last.rails + i) * STAGGER,
+                dur: FLIGHT,
+                delay: (last.rails + i) * stagger,
                 apex: 1.6,
                 size: [2.2, 2.2],
                 land: () => {
@@ -276,8 +282,8 @@ export async function createRailwayCart(
               from,
               shelfSlot(k, Math.max(0, stock.depotRails - last.rails) + i, new THREE.Vector3()),
               {
-                dur: 0.55,
-                delay: i * STAGGER,
+                dur: FLIGHT,
+                delay: i * stagger,
                 apex: 1.4,
                 land: () => {
                   flyingRails = Math.max(0, flyingRails - 1);
@@ -290,7 +296,7 @@ export async function createRailwayCart(
       }
       drawLoad(c.logs, c.rails);
       if (unloading) {
-        const launched = Math.floor(unloading.elapsed / STAGGER) + 1;
+        const launched = Math.floor(unloading.elapsed / unloading.stagger) + 1;
         // Lift the upper steel layer first, then the timber underneath: waiting cargo remains supported.
         logs.count = Math.max(c.logs, unloading.logs - Math.max(0, launched - unloading.rails));
         railsMesh.count = Math.max(c.rails, unloading.rails - launched);
@@ -351,6 +357,10 @@ export async function createRailwayCart(
           phase: c.phase,
           logs: c.logs,
           rails: c.rails,
+          shownLogs: logs.count,
+          shownRails: railsMesh.count,
+          flyingLogs,
+          flyingRails,
           along: cartAlong(c, adapter.read.tickNow()),
           riding: carry.on === car.platform,
           status: line2CartStatus(w),

@@ -282,11 +282,13 @@ async function pageScript(g: Game, file: string) {
 try {
   if (opt.railSeed && opt.url) throw new Error('--rail-seed needs a local stack, not --url');
   stack = await startStack({ url: opt.url, root: opt.root, warp: opt.warp && opt.players === 2 });
+  // launch acquires the shared bot slot. Stamp the save afterwards: queue time must not become away
+  // credit that unloads an arriving cart (or finishes a build) before the page can observe it.
+  browser = await launch();
   if (opt.railSeed) {
     opt.room ??= 'look-rail';
     await writeRailSeed(stack.dataDir!, opt.room, opt.railSeed);
   }
-  browser = await launch();
   wallTimer = setTimeout(() => void wallFired(), wall * 1000);
   const g = await Game.open(browser, stack, {
     sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until || opt.island),
