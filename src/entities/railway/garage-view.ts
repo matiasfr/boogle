@@ -1106,6 +1106,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     post: geo.post,
     open: api.open,
     isOpen: api.isOpen,
+    momentPlaying: () => phase === 'moment',
     /** The works copy stands on the table (the garage can open). */
     standing: () => shown,
     /** The bridge's yaw while the garage has turned the deck off its rest (open, or on its way back), else null. */
