@@ -751,7 +751,9 @@ its first departure is at 33 s. Maps show only trains in service. Each live spee
 the platform steam, clank and toot; restoring a room settles the appearance without replaying that moment.
 Both home lines begin at 14 m/s, accelerating at 2.5 m/s² and braking
 at 3.5 m/s². Turning the Roundhouse table sets both lines' fit to 20 m/s with 3.5 m/s² acceleration; each engine
-takes it only while standing at the Village, so a leg in flight keeps its original profile. The later free longer
+takes it only while standing at the Village, so a leg in flight keeps its original profile. A line-2 train waiting
+there for the footing wagon keeps its old fit through rollout and takes the faster fit only after coupling.
+The later free longer
 boiler is part 2: 25 m/s and the fourth car on line 2 only. The garage's existing speed and throughput rows follow
 these fits. Once the garage-moment work is built, the automatic table fit becomes the agreed free first install.
 

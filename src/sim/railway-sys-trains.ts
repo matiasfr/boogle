@@ -210,22 +210,22 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold): Tra
       // R3: riders waiting here to ride its way board, whatever it stopped for.
       ridersBoard(w, slot);
       const r = row(slot);
-      // Each line takes its fit standing at the Village; a running leg retains its own boiler row.
-      if (r.at === 0) boilerAdopt(w, trainId(w, slot), RAIL_TRAINS[slot]!.line);
-      if (!line2(slot)) {
-        if (legKitLoad(w, slot, tick) === 'hold') return 'hold';
-        return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
-      }
-
       // The footing wagon couples to the first line 2 train standing at the village once it has rolled out; a train
       // standing there when it is due holds its departure for it (at most WORKS.rollTicks).
-      if (r.at === 0 && wagonSlot(w) < 0) {
+      if (line2(slot) && r.at === 0 && wagonSlot(w) < 0) {
         const due = w.get(Shed, shedId(w))!.ready;
         if (due >= 0 && tick >= due) {
           w.mut(Train, trainId(w, slot))!.wagon = true;
           return 'again';
         }
         if (due >= 0) return 'hold';
+      }
+      // Each line takes its fit standing at the Village, after any wagon rollout and coupling. A running leg
+      // retains its own boiler row; the platform beat must not overlap the wagon's rollout.
+      if (r.at === 0) boilerAdopt(w, trainId(w, slot), RAIL_TRAINS[slot]!.line);
+      if (!line2(slot)) {
+        if (legKitLoad(w, slot, tick) === 'hold') return 'hold';
+        return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
       }
       // The active train-fed job's kit (its bill, up to the kit car's LINE2_KIT) loads onto whichever line 2 train
       // stands at the village while it is owed.

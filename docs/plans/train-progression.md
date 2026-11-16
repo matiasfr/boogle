@@ -242,19 +242,20 @@ Each ships by itself unless noted. Sim steps get the independent review (`REVIEW
    nothing reads, row 1 gets one visible mark on the engine (a clean band, a lamp) in step 3; that is a detail and
    stays small ("Mechanisms, then systems, then the full greybox, then details").
 4. **Two things answer the same beat.** At the table beat the footing wagon rolls out and couples. Row 1's first
-   platform beat should not play over the roll-out: the wagon's train takes row 1 at its next Village stop after
-   coupling.
+   platform beat should not play over the roll-out: the wagon's train takes row 1 at a Village stand only after
+   rollout and coupling, including a stand held for the wagon.
 5. **Not seen.** No stills: steps 1 to 3 place nothing. The first look that matters is the Village platform 30 to
    40 s after the fit, with line 1's train standing and line 2's waking.
 
 **Suspect or placeholder lines** (none rewritten): the fitter's card "Steam" / "Trains run both lines." (built, off)
-would be untrue for 33 s; the Boiler tile's "The first install. It woke the trains." stands.
+shows before line 2 departs at 33 s (confirmed by the independent review; owner copy kept unchanged);
+the Boiler tile's "The first install. It woke the trains." stands.
 
 ## Results: step 0 (15 November 2026)
 
 Measured on main eadecf32b (v51), before production edits. Imported test/spacing/run.ts from origin/scratch/spacing-e0; test/spacing/progression.ts applies isolated catalog counterfactuals before building seeds. Four seeds (0x5140–0x5143), 20,000 ticks each, headway 100%, both ask rates as that harness defines them. Means and shares use served line-2 asks; worst also includes outstanding asks at the cutoff. This is finite seeded rule evidence, not a player wait guarantee.
 
-Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/progression.ts <count> <140|200> <stage> <light|heavy>`. Stages are Far Head (trains-on), Pier (q6-done), Railhead (crossing-done).
+Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/progression.ts <count> <140|200> <stage> <light|heavy>`. Stages measured here are Far Head (trains-on), Pier (q6-done), and Crossing complete (crossing-done, four stops). The last was incorrectly labelled Railhead in the original report. Railhead is deck-laid (five stops); its corrected built-rule measurements are below. These historical counterfactual numbers remain labelled with the stage actually run.
 
 | Stage | Trains | m/s | Light mean / >105 s / worst | Heavy mean / >105 s / worst |
 | --- | --- | --- | --- | --- |
@@ -279,7 +280,7 @@ Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/pr
 
 **Delivery:** the same real rule driver, accepted pack/take/deposit ops, instant hand feeding by the seed actors, then laying to completion. Baseline three trains at 20 m/s: kit at Far Head 42.1 s after fit, Q6 laid at 70.0 s. One train at 14 m/s, first departure 33 s after fit: kit at 74.0 s, Q6 laid at 101.9 s (**+31.9 s**). Commands use stage `delivery`. These are host-rule ticks, not a full walking playthrough or a WebSocket-host latency test.
 
-**Fallback not taken.** Far Head one/14 heavy worst 108.1 s <135 s; Q6 delay 31.9 s <90 s. Pier two/14 heavy worst 84.2 s; Railhead three/20 heavy worst 67.3 s. Keep one/two/three. The one/14 Far Head heavy mean 54.3 s and 1.74% over 105 s miss the stricter spacing target; this is the explicitly bounded early phase.
+**Fallback not taken.** Far Head one/14 heavy worst 108.1 s <135 s; Q6 delay 31.9 s <90 s. Pier two/14 heavy worst 84.2 s. The three/20 heavy worst of 67.3 s was at Crossing complete, not Railhead, so it did not validate the Railhead rung. The corrected built-rule Railhead run below does. Keep one/two/three. The one/14 Far Head heavy mean 54.3 s and 1.74% over 105 s miss the stricter spacing target; this is the explicitly bounded early phase.
 
 **Timing clarification for step 2:** the existing wake plus ordinary dwell departs at 11 s, not the proposal's 6 s. Keep line 1's wake intact; its row-0 first Village arrival is 29.6 s. Line 2 starts its own six-second wake at 27 s and departs at 33 s, giving the first arriving rider 3.4 s to transfer. This follows step 2's explicit departure time; the proposal's approximate “wake at 33, leave six seconds later” is superseded.
 
@@ -300,8 +301,15 @@ Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/pr
   Line 2's own wake begins at 27 s; its first departure is exactly 33 s after fit (regression checked).
   `npm run loop -- run` passed. Repeating the four-seed, 20,000-tick measurements against the built rules
   (`test/spacing/progression.ts --built`) gave the following heavy-ask mean / percent over 105 s / worst:
-  Far Head 59.8 s / 1.30% / 109.0 s; Pier 39.3 s / 0.27% / 109.3 s; Railhead 32.1 s / 0% / 69.2 s.
+  Far Head 59.8 s / 1.30% / 109.0 s; Pier 39.3 s / 0.27% / 109.3 s; Crossing complete 32.1 s / 0% / 69.2 s.
   Light asks: 47.8 / 0% / 85.6 s, 31.5 / 0% / 63.1 s, 24.2 / 0% / 61.9 s respectively.
+  Crossing complete has four stops and two line-2 trains; this run was previously mislabelled Railhead.
+  Corrected Railhead (`deck-laid`, five stops, three line-2 trains) run on 15 November after review fixes:
+  heavy **25.4 s / 0% / 78.3 s (783 ticks)** across 501 served asks; light **24.2 s / 0% / 54.9 s** across
+  51 served asks. Four seeds 0x5140–0x5143, 20,000 ticks each, headway 100%, with the built rules and no catalog
+  overrides. Commands: `node --import ./test/helpers/rail-no-audit.ts test/spacing/progression.ts 3 200 deck-laid <light|heavy> --built`.
+  Worst includes outstanding asks; heavy has four outstanding waits (356, 150, 132, 228 ticks), light none.
+  Raw corrected runs: `.look/train-progression/review-deck-heavy.json` and `review-deck-light.json`.
   Kit delivery remains 74.0 s and Q6 completion 101.9 s. The bounded early-phase fallback is still unnecessary.
   The same serial golden regeneration command passed 103 checks. Every seed changes because reserved train rows
   now start in the shed at the Village; later hashes additionally reflect joining and departure timing.
@@ -364,6 +372,44 @@ Final rebase onto fetched `origin/main` **9e8f9be6c** applied cleanly; main rema
 documentation and the separate path-riser cleanup. Train implementation and the inspected train evidence are
 unchanged by that rebase. The requested checks were rerun on the rebased tree. `npm run review-stamp -- .`
 returned **6a71f9d54274**, covering 40 files. This is a review fingerprint, not an independent review approval.
+
+### Independent review follow-up (15 November 2026)
+
+Astra's high-effort review of stamp **6a71f9d54274** said fix first. All three findings are addressed:
+
+- The adapter now recognizes accepted `rail.install` events with `part: 2`. A real server/replicator test with
+  differently delayed installer and peer checks the authoritative fit, exactly one accepted install effect on
+  each client, no refusal and no pending request. Before the fix it failed on the installer's `noop` refusal;
+  after the fix it passes.
+- A line-2 Village stand checks wagon readiness and couples before adopting the faster row. The exact repro
+  turns the table at tick 5507: row 0 lasts through tick 5646, then coupling and row 1 happen at 5647. The test
+  failed before the fix on premature adoption at 5508 and passes after it. Running-leg adoption is unchanged.
+- The `crossing-done` results above are correctly labelled as four stops and two trains in the built rules.
+  The actual Railhead run at `deck-laid` has five stops and three trains; its heavy worst is 783 ticks. The
+  fitter's "Trains run both lines." remains unchanged and is listed above for the owner.
+
+**New repin:** only `test/fixtures/railway-m12-trace.json`, using
+`M12_RECORD=1 node --import ./test/helpers/rail-no-audit.ts --test test/railway-m12.test.ts`.
+The random command scripts at `stall-done` and `cradle-fitted` turn the table while a train waits for the wagon,
+so their three clients now read row 0 during rollout instead of prematurely reading row 1. Exactly those six
+traces change: six whole-trace hashes and 75 cumulative marks. Keys, frame counts and every other trace are
+unchanged. The standard seed goldens, ops, tick-order, prefab-halt and server host-trace pins need no new repin.
+
+**Follow-up look:** opened `.look/train-progression/review-rollout-motion.png` and `review-rollout-still.png`.
+The line-2 engine stays at the platform through the table motion, puffs near the 14-second sheet frame and then
+departs with the footing wagon. The roof obscures the coupling point; the captured mirror samples establish
+row 0 / no wagon through tick 5652, then row 1 / wagon at 5653 after an accepted turn at 5513. The exact 5507
+repro is covered by the regression above. WebGPU, advancing completed frames and no graphics/page errors passed.
+The run was under shared-machine load, so the sheet and rule samples do not establish real-time smoothness;
+the WebM remains unlistened and whistle audibility is not claimed. The source was the reviewed HEAD plus these
+fixes; no render code changed in this follow-up. Video: `.look/train-progression/review-rollout-realtime.webm`.
+
+**Follow-up checks:** both new regressions fail before the fixes and pass after. The serial railway fixture run
+found only the two M12 stage mismatches above; the regenerated M12 passes all 32 checks without recording.
+`npm run check` then passes (2,232 unit passes, 65 existing skips, one existing todo, static/level/asset/prefab
+checks and build). `cd server && npm ci && npm test` passes 396 tests, including the unchanged host-trace pin.
+`npm run loop -- run` and scoped lint pass. Logs are `.look/train-progression/review-*.txt`; the final network
+result and new review stamp are reported with the committed HEAD in the handoff. No shipping or push.
 
 ## Owner questions
 

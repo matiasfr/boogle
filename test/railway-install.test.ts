@@ -49,6 +49,8 @@ import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { apply } from '../src/sim/railway-drive.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { fuzzTicks } from './helpers/fuzz.ts';
+import { railRoom } from './helpers/rail-room.ts';
+import type { RailwayAccepted, RailwayRefusal } from '../src/adapters/railway-effects.ts';
 import {
   account,
   act,
@@ -95,6 +97,50 @@ function steelHome(): Seed {
   return s;
 }
 const HOME = steelHome();
+
+test('the accepted longer-boiler install reaches the installer and peer through replication exactly once', () => {
+  const room = railRoom(copy(HOME));
+  const clients = [room.join('installer', 'a', 2), room.join('peer', 'b', 6)];
+  const effects: RailwayAccepted[][] = [[], []];
+  const refusals: RailwayRefusal[][] = [[], []];
+  clients.forEach((c, i) => {
+    c.adapter.onAccepted((e) => effects[i]!.push(e));
+    c.adapter.onRefused((e) => refusals[i]!.push(e));
+  });
+  room.ready();
+  assert.equal(clients[0]!.adapter.installBoiler(1), true);
+  room.run(120);
+  assert.equal(lineRow(room.serverWorld(), LINE2).boiler, 2, 'the server accepted the install');
+  clients.forEach((c, i) => {
+    assert.equal(lineRow(c.adapter.read.world(), LINE2).boiler, 2);
+    assert.equal(c.adapter.read.pending(), 0);
+    assert.deepEqual(refusals[i], [], 'an accepted install must not report noop');
+    const installs = effects[i]!.filter((e) => e.op === 'rail.install');
+    assert.equal(installs.length, 1, 'each client receives the shared install once');
+    assert.equal(installs[0]!.part, 2);
+  });
+});
+
+test('a table turn at the Village waits for wagon rollout and coupling before adopting row 1', () => {
+  const s = copy(railwayAtWorks('cradle-fitted'));
+  advance(s, 5507 - s.t);
+  assert.equal(train(s.w, A).phase, TRAIN_PHASE.STAND);
+  assert.equal(train(s.w, A).at, 0);
+  assert.equal(train(s.w, A).boiler, 0);
+  assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: shed(s.w).tableRev }), 1);
+  const ready = shed(s.w).ready;
+  assert.equal(ready, 5647);
+  while (s.t < ready - 1) {
+    advance(s, 1);
+    assert.equal(train(s.w, A).boiler, 0, `no platform beat during rollout at tick ${s.t}`);
+    assert.equal(train(s.w, A).wagon, false);
+    assert.equal(train(s.w, A).phase, TRAIN_PHASE.STAND);
+  }
+  advance(s, 1);
+  assert.equal(train(s.w, A).wagon, true, 'the wagon has coupled');
+  assert.equal(train(s.w, A).boiler, 1, 'the Village stand can now adopt the faster row');
+  assert.equal(invariant(s.w), null);
+});
 
 test('the table commissions both lines; running legs keep their speed until a Village stand', () => {
   const s = copy(railwayAtWorks('cradle-fitted'));
