@@ -273,6 +273,12 @@ Home's lawn is a meadow by default (owner, 14 November: "I love the meadow. It'd
 
 ## The run
 
+**Construction-frame numbers (15 November, Grant G13):** the first line's frames read Station 1–3;
+line two continues with Station 4–10 instead of restarting at 1. The pier keeps its name as
+“Station 9: The pier”. The number remains the board's heading while a gate or shipment waits;
+the existing status words share the lower line with the material bill. Simulation IDs stay T1–T3
+and Q1–Q7. These labels are draft combinations of the existing words and corrected numbers.
+
 **Owner decision, 8 November: great-beam visual inertia (option 1 of [the Godot comparison](../research/beam-carry-godot-comparison.md)).**
 The existing rope drag and Help carry now have a Local horizontal/turn spring, derived only from the existing smoothed
 Owner avatars and helper state. Terrain pitch, the 0.3 s helped lift, speeds, claim, collision and progression stay as built.

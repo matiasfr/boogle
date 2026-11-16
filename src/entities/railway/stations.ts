@@ -377,8 +377,8 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
       const parts = GOODS.filter((g) => run.need(g) > 0).map(
         (g) => `${g === 'beam' ? 'great beam' : g} ${run.have[g]}/${run.need(g)}`,
       );
-      const big = status ?? run.spec.label.replace('Line 2, s', 'S'),
-        small = parts.join('  ');
+      const big = run.spec.label,
+        small = [status, parts.join('  ')].filter(Boolean).join(' · ');
       if (big + '|' + small === painted) return;
       painted = big + '|' + small;
       paintTwoLines(bill, big, small, BILL_LOOK);

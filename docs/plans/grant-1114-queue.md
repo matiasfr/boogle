@@ -39,6 +39,14 @@ Ranks are the tracker's. Within a rank, items are in the order to pick them. "Wh
   passed; prefab-tree, halt-lever reach and railway-placement owning tests passed. Built on
   `t3/grant-world-fixes`, not shipped. Final combined checks are recorded below when complete.
 
+- [x] **C4 / G13:** construction signs now count 1–10 across both lines, and their number stays
+  above gate/shipment status. The pier keeps its name. Inspected approach stills:
+  [Station 1](../../.look/grant-c4-t1-still.png) and [Station 5](../../.look/grant-c4-q2-still.png).
+  Both headings and their material counts are readable, with the receivers and track layer in view.
+  Both WebGPU captures passed with no page/graphics errors. Draft label combinations for the owner:
+  “Station 4” through “Station 10”, including “Station 9: The pier”; no dialogue changed.
+  Built on `t3/grant-world-fixes`, not shipped.
+
 ## Owner questions
 
 At most five. Each has a recommended answer first; none is recorded as his call.

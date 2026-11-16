@@ -342,14 +342,14 @@ const STATION_LAND: Record<LineStationId | Line2StationId, { side: number; label
   T2: { side: 1, label: 'Station 2' },
   T3: { side: 1, label: 'Station 3' },
   // In B the island is on road 2's north side, so Q1's frame stands south of it.
-  Q1: { side: 1, label: 'Line 2, station 1' },
-  Q2: { side: -1, label: 'Line 2, station 2' },
-  Q3: { side: -1, label: 'Line 2, station 3' },
-  Q4: { side: -1, label: 'Line 2, station 4' },
-  Q5: { side: -1, label: 'Line 2, station 5' },
-  Q6: { side: -1, label: 'The pier' },
-  // "Line 2, station 7" follows the others' board ("Station 7"); the plan names no label for it.
-  Q7: { side: 1, label: 'Line 2, station 7', own: true },
+  Q1: { side: 1, label: 'Station 4' },
+  Q2: { side: -1, label: 'Station 5' },
+  Q3: { side: -1, label: 'Station 6' },
+  Q4: { side: -1, label: 'Station 7' },
+  Q5: { side: -1, label: 'Station 8' },
+  Q6: { side: -1, label: 'Station 9: The pier' },
+  // Continue the first line's numbering; the pier keeps its authored name alongside its number.
+  Q7: { side: 1, label: 'Station 10', own: true },
 };
 /** A sim station row as the land reads it: metres along its line, its bill by goods, line 2's laying speed in m/s
  * (the row's is per cent of TUNE.laySpeed) and its rack (a depot's cart, or a kit by train). Line 1's second good is
