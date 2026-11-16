@@ -4,6 +4,8 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-16 · Sleeves' 15 greeter lines stay placeholders; the words are the owner's copy ([entry](#d-2026-11-16-sleeves-lines-stay-placeholders))
+
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
 - 2026-11-15 · The draft lines from Grant's queue (the opening, the forge hand-off, heavy load's refusals, fly first, the statue notice) stand as written for now ([entry](#d-2026-11-15-grant-queue-copy-good-for-now)) Superseded for the statue notice on 15 November: it reads only "WORK IN PROGRESS".
@@ -26,6 +28,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Art: a painted concept per era, then a building kit and a vehicle kit per era. ([entry](#d-undated-art))
 
 ## Decided
+
+- <a id="d-2026-11-16-sleeves-lines-stay-placeholders"></a>**2026-11-16, Sleeves' lines stay placeholders** (owner, 16 November 2026, in chat: "If I didn't say something else, I took the recommendation"). Accepted recommendation for CH-014: **confirm as placeholders; the words are owner's copy**. Sleeves the greeter's 15 lines remain placeholders. This records their status and writes no character words. See the [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json) and original row in the [archive](decisions-archive.md#archive-characters-cosmetics-and-story).
 
 - <a id="d-2026-11-15-grant-queue-copy-good-for-now"></a>**2026-11-15, the draft lines from Grant's queue are good for now** (owner, 15 November, after the drafts were listed: "Yeah lines are good for now"; and on the statue: "Statue notice is fine"). Kept as written, open to a later pass: the opening's lines ("Follow the path up to the camp. Someone there has an axe for you.", "Fill the first frame with logs. That should get the track layer going.", "You have the axe. The first frame needs logs before the engine can start.", "Take this axe. Fill the first frame with logs and we can get the engine going.", "Take axe", "Camp resident", "Something to say"); the forge hand-off's ("These go by train" on the forge rack, now shown; Sleeves' boiler and breaker lines, kept for when Sleeves at the pedestal is built); heavy load's refusals ("Too heavy to jump/hook/glide. Drop cargo to travel light."); fly first's copy changes ("Q4 laid; the sea gate switch is next"; the sealed, glider-awake and summit lines removed); and the statue works' notice ("STATUE NOT FINISHED" / "Ordered by The Boogler. Out of stone."). The Boogler's own copy was not touched.
 - <a id="d-2026-11-11-the-story-and-characters-are-the-owner-s"></a>**2026-11-11, the story and characters are the owner's to choose** (owner, 11 November: "I want to exert more agency over the story and characters of the world, even if it's just a placeholder."). Orchestrator's reading: story, characters, names and their quirks are his to choose. Agents propose a few varied options and build placeholders marked as placeholders; they do not settle canon. A brief of locations with options was prepared for him on 11 November (artifact; the link is added later by the orchestrator).
