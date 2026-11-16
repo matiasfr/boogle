@@ -1,4 +1,13 @@
-> **Status: plan, not built (2026-11-11).** Production-core slice 5, "economy and town growth on the server", systems
+> **Status, 16 November 2026 (reconciled with main `3720b4c3b`, `WORLD_NS` v52): R1, R2, R2b and R3 are built and on
+> main; R4, R5 and V1 to V4 are not.** Landed: R1 and R2 in #1641 (v28), R2b in #1650 (v29), R3 in #1652 (v30); each
+> step below names its commits. Nothing on main draws the trade (no file under `src/entities`, `src/render`,
+> `src/features`, `src/place` or `src/ui` reads `Yard`, `Town`, `Till`, `Train.freight` or `Train.riders`). What is left
+> is replanned, against layout B (the only Home since v36, #1729) and the Round's blockout (B1 to B3, B3 in #1800), in
+> [town-economy-visible](town-economy-visible.md): it supersedes R4, R5, V1 to V4, checkpoints C2 and C3 and the
+> jump-in rows for those beats. This file stays as the record of R1 to R3 and their rulings; marks below say what
+> layout B and the Round superseded.
+>
+> _Was:_ **Status: plan, not built (2026-11-11).** Production-core slice 5, "economy and town growth on the server", systems
 > first. Rules and server steps R1 to R5, then greybox views V1 to V4. Two `WORLD_NS` bumps. Designer-reviewed 11
 > November: **build with changes**, already made in the steps ([review](#design-review-designer-2026-11-11)). Its two owner
 > questions were answered on 12 November (UTC); one design item is open ([below](#open-design-item-trains-stop-at-every-resource-source)).
@@ -72,6 +81,8 @@ price, so a room that ignores all of it still finishes.
   the sack is one Interact press. No pad slot, key or guide row is added.
 - **Where the window stands:** a greybox till at the north end of the Village's line 2 platform until Home's layout
   B is the default; then `home-station.ts` moves it to the hall's north end wall (decided 10 November). One constant.
+  _Superseded (16 November): layout B is the only Home (v36, #1729), so the till goes straight to the hall's north end
+  wall; [town-economy-visible](town-economy-visible.md), A3._
 
 **New (calls made here, for the orchestrator to log in `docs/agent-calls.md`).**
 
@@ -152,7 +163,8 @@ checkpoint runs for it.
 
 ### Rules and server
 
-- [ ] **R1. Yards and train freight (M). Independent review: yes (`src/sim`).**
+- [x] **R1. Yards and train freight (M). Independent review: yes (`src/sim`).** **Landed in #1641** (`0adf7f6c3` the
+  rows and check, `f5e818474` the rules; v28).
   - Files: `src/sim/railway-trade-layout.ts`, `railway-queries-trade.ts`, `railway-sys-trade.ts`,
     `railway-check-trade.ts`, `railway-seed-trade.ts` (all new); `railway-components.ts`, `railway-sys-trains.ts`,
     `railway-systems.ts`, `railway-check.ts`, `railway-seeds.ts`, `railway-rows.ts`; `test/railway-trade.test.ts`
@@ -173,7 +185,8 @@ checkpoint runs for it.
   - Proof: `npm run checkpoints -- freight-running`; `playthrough --from trains-on --to freight` (a new stop in
     `dev/look/segments.ts`: the bot waits at the Village until the mirror's `Town.wood ≥ 8`); one look at the Village
     platforms on `--rail-seed freight-running` (trains still call and stop as before).
-- [ ] **R2. Yards join the away credit; plots are staked (S). Independent review: yes.**
+- [x] **R2. Yards join the away credit; plots are staked (S). Independent review: yes.** **Landed in #1641**
+  (`fc4334c29`, review fix `4e3431467`; rides v28).
   - Files: `src/sim/railway-sys-away.ts`, `railway-queries-trade.ts`, `test/railway-trade.test.ts`,
     `src/world/namespace.ts`, `docs/game-design/place.md` (the paused-world paragraph gains the two yards).
   - Rules: `awayCredit` gives each yard `floor(ticks / everyTicks)` crates, never past its cap, when the trains are
@@ -187,7 +200,10 @@ checkpoint runs for it.
     a second resume at the same marker adds nothing; `plotsStaked` at 0, 8, 24 and 40 timber with and without stone.
   - Proof: the empty-room proof for this area, once: a hosted room on `freight-running`, emptied past the pause
     grace, rejoined after a faked 8 hours (the existing away host test's clock); one look at the Camp yard.
-- [ ] **R3. Riders, fares and the strongbox (L). Independent review: yes.**
+- [x] **R3. Riders, fares and the strongbox (L). Independent review: yes.** **Landed in #1652** (`ecbd5d6a3` the
+  per-town yard rows, `063125a9d` the rules, `9fc6cb301` v30, `977c7efef` the "Fares paid" jump-in). _Measured on main
+  16 November: from `trains-on` the box earns 34 a minute, not the 53.5 to 56 below (gate 6's 40 no longer holds there);
+  from `q6-done` 65, from `crossing-done` 77. [town-economy-visible](town-economy-visible.md), "What main has"._
   - Files: `railway-components.ts`, `railway-sys-trade.ts`, `railway-sys-trains.ts`, `railway-queries-trade.ts`,
     `railway-check-trade.ts`, `railway-systems.ts`, `railway-seed-trade.ts`, `src/sim/tune.ts`,
     `src/tunables/catalog.ts`, `src/world/railway-server.ts` (the three tunables into the tick),
@@ -255,7 +271,8 @@ checkpoint runs for it.
     where riders board, facing the Quarry (land stilled on Windows/Edge, 12 November, not on a device); the
     playthrough's `fare` stop is meant with `--from trains-on` (the trade seeds are jump-ins, not `--from` seeds, so
     not the `freight-running` this step's proof names) and waits for the mirror's `Till.landed > 0`; no hash moved.
-- [ ] **R4. Plots and the buy (M). Independent review: yes (`src/sim`, `src/world`, the op list).**
+- [ ] **R4. Plots and the buy (M). Independent review: yes (`src/sim`, `src/world`, the op list).** _Not built;
+  superseded by [town-economy-visible](town-economy-visible.md), B1 (`Plot` gains `paid`; the bump is v54 or later)._
   - Files: `railway-components.ts`, `railway-sys-trade.ts`, `railway-systems.ts` (`'rail.buy': [buy]`),
     `railway-queries-trade.ts`, `railway-check-trade.ts`, `src/sim/town-facts.ts`, `test/town-facts.test.ts`,
     `src/world/railway-server.ts`, `src/adapters/railway-intents.ts` (`buy(plot)`), `railway-seed-trade.ts`,
@@ -271,7 +288,8 @@ checkpoint runs for it.
   - Seeds: `house-ready` (`boogles ≥ 300`, plot 1 staked) and `house-built` (plot 1 bought and built).
   - Proof: `playthrough --from house-ready --to buy` (until V3 the bot sends the intent directly; from V3 it holds
     Interact at the board); one look at the plot on `--rail-seed house-built`.
-- [ ] **R5. The till joins the away credit; the sack (S). Independent review: yes.**
+- [ ] **R5. The till joins the away credit; the sack (S). Independent review: yes.** _Not built; superseded by
+  [town-economy-visible](town-economy-visible.md), C1 (its own bump: bump B was spent by R3 alone, v30)._
   - Files: `railway-sys-away.ts`, `railway-sys-trade.ts`, `railway-systems.ts` (`'rail.sack': [sack]`),
     `railway-check-trade.ts`, `src/world/railway-server.ts`, `src/adapters/railway-intents.ts` (`sack()`),
     `src/world/namespace.ts`, `test/railway-trade.test.ts`, `docs/game-design/place.md`.
@@ -286,6 +304,10 @@ checkpoint runs for it.
     `playthrough --from sack-waiting --to sack`; one look at the till.
 
 ### Greybox views
+
+_Not built; superseded (16 November) by [town-economy-visible](town-economy-visible.md): V1 becomes A1 (freight) and A2
+(stakes and piles on the Round's plots, with no delivered stack at the platforms: layout B has one island), V2 becomes
+A3, V3 becomes B2, V4 becomes C2._
 
 Views read the mirror's rows and the queries above; they hold no rule and no arithmetic of their own. Boxes,
 capsules and boards only, instanced; no motion beyond what exists (trains, the site show). No unit tests (test
@@ -321,6 +343,9 @@ diet). Independent review: no (`src/entities` only); the normal review and one l
 
 ### Checkpoints
 
+_C1 ran with R1, R2 and R2b (their as-built gate tables above); C2 and C3 are superseded by K1 to K3 of
+[town-economy-visible](town-economy-visible.md)._
+
 - **C1, at bump A (R1, R2):** `npm run check`; `npm run check:full` (server tests and `test:net`); the two-peer
   route through T2 and `world-inputs` (the `src/sim` rule in bot-segments); `npm run checkpoints` for the routed
   stages and `freight-running`; `npm run loop -- run` (the route's order and bills must not move); the worst wait at
@@ -332,6 +357,9 @@ diet). Independent review: no (`src/entities` only); the normal review and one l
   No atlas story (owner call "One nightly load": the atlas runs only when he asks).
 
 ## Jump-in stages, one per beat
+
+_On main: `freight-running` ("Timber home") and `fares-running` ("Fares paid"). The other three are planned in
+[town-economy-visible](town-economy-visible.md) (B1, C1)._
 
 Each is a `SEED_STAGES` id built from accepted ops and ticks only (`src/sim/railway-seed-trade.ts`) and a `JUMPS`
 row in `src/world/railway-jump.ts`; the labels go to the designer and each `land` is checked in a still.
@@ -373,6 +401,8 @@ Boogler's charging gag, real cosmetic spending.
   cannot be climbed with the second jump). Nothing here is a secret or an ability gate.
 - `npm run level-check -- --place=place` on this branch reports what main does (run 11 November); the check cannot
   see plots, stakes or the till (town-layout finding 2).
+- _Superseded (16 November): the Round's B1 removed three cottages and moved the gate cottage, and B3 stands the eight
+  plots as blocks; town-economy-visible's level findings were probed on those positions._
 - Not checked on real ground: today's Village still has its four cottages at the old spots. By my arithmetic plots 1
   to 3 stand 16 m or more from each of them and from the shop, but V1 looks from above before it ships, and V2 runs
   the level check with the till's box added.
@@ -393,6 +423,7 @@ Boogler's charging gag, real cosmetic spending.
 - **The room tune state** gains three keys, which changes its hash; it rides bump B.
 - **Town-layout.** V1 builds part of its step 5 and V3 its step 6; its steps 2 and 3 (moving what stands, the
   streets) are untouched, so the bought house stands beside today's four cottages until that plan moves them.
+  _Superseded: the Round's blockout (home-flip B1 to B3) moved what stands; the house goes up on a Round plot._
 
 ## Not in this plan
 
@@ -403,7 +434,8 @@ Boogler's charging gag, real cosmetic spending.
   than one destination (the row grows the brief's count-and-sum pairs then, on its own bump).
 - The coin tray and coins in the hand, the paper tape of purchases, The Boogler's coin, a HUD figure, sounds.
 - Who moves in: no resident, no lines, no furniture. Little-guy gangs, trunks, lamps and any animation of riders.
-- Moving the Village to the Round, the green, the streets, the clock (town-layout steps 2, 3 and 5's rest).
+- Moving the Village to the Round, the green, the streets, the clock (town-layout steps 2, 3 and 5's rest). _Since
+  done as the blockout (home-flip B1 to B3); the clock became The Boogler's statue (14 November)._
 - Production-core slices 6 and 7 (object lifetimes, Place's retirement): M13's work, not touched here.
 - Save migration. It is the campaign outline's decision 5, due at the start of the Alpha phase.
 
@@ -514,7 +546,8 @@ one stop, 10.8 s. Line 2's round trip with the Pier as its end is about 930 tick
 4. **The next plan** (growing the town by hand, his answer 2) must keep the hand work at the plot: crates the trains
    brought are raised there; nobody carries them from a source.
 
-**R2b. The stone stop (S). Independent review: yes (`src/sim`).** After R1 and R2; rides bump A if that has not
+**R2b. The stone stop (S). Independent review: yes (`src/sim`).** **Built: landed in #1650** (`d82a8969f` the stop,
+`1cbf946ea` the footings ruling; v29). After R1 and R2; rides bump A if that has not
 shipped, else bump B (a rule change, no shape change).
 
 - Files: `src/sim/railway-trade-layout.ts` (`loadStop: 8`; the Quarry yard gains `after: 'pier'`),
