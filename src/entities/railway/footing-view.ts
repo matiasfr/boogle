@@ -239,6 +239,7 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
             ? {
                 id: `railway-foot-pile${pile.id}`,
                 verb: 'Shoulder a footing',
+                note: '1 footing',
                 at,
                 run: () => void adapter.take(pile.id),
               }
@@ -246,11 +247,18 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
               ? {
                   id: `railway-foot-pile${pile.id}`,
                   verb: 'Shoulder a footing',
+                  note: '1 footing',
                   at,
                   run: () =>
                     void setDownThen(adapter, () => adapter.take(pile.id), { x: pile.x / 100, z: pile.z / 100 }),
                 }
-              : { id: `railway-foot-pile${pile.id}`, verb: 'Shoulder a footing', at, blocked: 'Empty your back first' },
+              : {
+                  id: `railway-foot-pile${pile.id}`,
+                  verb: 'Shoulder a footing',
+                  note: '1 footing',
+                  at,
+                  blocked: 'Empty your back first',
+                },
         );
       }
       if (mineHelp.helping())

@@ -640,6 +640,8 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 ## Controls, HUD and arrival
 
+C5 ruling, 15 November: **counts everywhere; squares gone** — an [owner call](agents/owner-calls.md#counts-everywhere), not an open agent decision.
+
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
 | 2026-11-15 | New (proposed, nothing built; waits for the owner): Far Head's shared shot grows from 5 s to about 8.5 s, the Act 2 card over the Far Head leg as now and a 2.5 s cut to the forge casting the boiler after it. Until he answers, no cut: the forge's whistle sounds at the hand-back | [forge-call-handoff](plans/forge-call-handoff.md#design-review-designer-2026-11-15), call 1, finding 1, owner question 1 | designer | Changes the 11 November acts reading ("trimmed to 5 s, never a second move after it"); as `acts.ts` stands the card would cover an appended cut | open |
