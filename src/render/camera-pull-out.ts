@@ -19,6 +19,17 @@ const SKIP_AFTER_S: number | null = 0.8;
 const CRANE_NDC_Y = -0.17;
 const BACK_S = 0.55; // the blend home at the end of a shot
 
+// Owner, 15 November ("Sounds good", to holding a shot for a player in the air rather than skipping it): a shot never
+// takes the camera from someone steering in the air. While any of these holds (the glider's canopy: glide.ts), a shot
+// waits, or goes back in the queue if it was playing, and plays whole once it lets go. A crane keeps Buddy on screen,
+// so it does not wait.
+const waiters = new Set<() => boolean>();
+export function waitShotsWhile(holds: () => boolean) {
+  waiters.add(holds);
+  return () => void waiters.delete(holds);
+}
+const aloft = () => [...waiters].some((holds) => holds());
+
 // One chip for every pull-out: Interact's glyph, ringed, with a skip mark. On touch the Grab button lights instead.
 let chip: HTMLElement | null = null;
 let chipOwner: object | null = null;
@@ -175,16 +186,18 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
     settle();
     report();
   };
+  const waits = (s: Shot) => busy() || inputState.held || (!s.lift && aloft());
   const step = (dt: number) => {
     if (inSeat() || reducedMotion) return reset();
-    if (pending && !busy() && !inputState.held) {
+    if (pending && !waits(pending)) {
       shot = pending;
       pending = null;
       settle();
     }
     if (!shot) return;
-    // A reward card over a shot the player was meant to see: it goes back in the queue and plays whole after the card.
-    if (busy() || inputState.held) {
+    // A reward card over a shot the player was meant to see, or a canopy opened under it: it goes back in the queue and
+    // plays whole after.
+    if (waits(shot)) {
       if (cut === 1) pending ??= shot;
       shot = null;
       return settle();
