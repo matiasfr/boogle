@@ -5,6 +5,7 @@ export const levels = [
     place: 'town-plot-stakes',
     placements: [
       { id: 'stakes', prefab: 'town.plot-stakes', pos: [0, 0, 0] },
+      { id: 'bands', prefab: 'town.plot-stake-bands', pos: [0, 0, 0] },
       { id: 'string', prefab: 'town.plot-string', pos: [0, 0, 0] },
       // z is relative to the front wall, resolved with the plot's d/2 by the view.
       { id: 'board', prefab: 'town.plot-board', pos: [2.2, 0, 1.2], labels: { label: 'plot' } },

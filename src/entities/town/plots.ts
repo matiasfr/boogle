@@ -7,7 +7,8 @@ import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
 import { definitions } from '../../prefab/catalogue.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
 import level from '../../../content/built/levels/town-plot-stakes.json' with { type: 'json' };
-import { TOWN_PLOTS, townBuilding, townLocal } from '../../place/town-plan.ts';
+import { TOWN_CENTRE, TOWN_PLOTS, TOWN_SLOTS, townBuilding, townLocal } from '../../place/town-plan.ts';
+import { HALL } from '../../place/home-station.ts';
 import { toWorld } from '../../place/layout.ts';
 import { H } from '../../place/terrain.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
@@ -18,6 +19,7 @@ const TIMBER = new Color('#ab6b34'),
 
 // Placeholder words for The Boogler; icons and counts follow the depot boards. Paint only: instantiate owns signs.
 function paintBoard({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: readonly string[]) {
+  const timberOnly = lines.length === 2;
   g.fillStyle = '#493522';
   g.fillRect(0, 0, cw, ch);
   g.strokeStyle = '#edcf8c';
@@ -26,10 +28,10 @@ function paintBoard({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: re
   g.fillStyle = '#fff5dc';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.font = `900 ${ch * 0.2}px Figtree, system-ui, sans-serif`;
-  g.fillText(lines[0]!, cw / 2, ch * 0.19);
+  g.font = `900 ${ch * (timberOnly ? 0.3 : 0.24)}px Figtree, system-ui, sans-serif`;
+  g.fillText(lines[0]!, cw / 2, ch * (timberOnly ? 0.28 : 0.2));
   lines.slice(1).forEach((line, i) => {
-    const y = ch * (i === 0 ? 0.51 : 0.8),
+    const y = ch * (timberOnly ? 0.7 : i === 0 ? 0.51 : 0.8),
       r = ch * 0.055;
     g.fillStyle = i === 0 ? '#eac28a' : '#a9b9c1';
     if (i === 0) {
@@ -53,7 +55,7 @@ function paintBoard({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: re
     }
     g.fillStyle = '#fff5dc';
     g.textAlign = 'left';
-    g.font = `900 ${ch * 0.18}px Figtree, system-ui, sans-serif`;
+    g.font = `900 ${ch * (timberOnly ? 0.26 : 0.22)}px Figtree, system-ui, sans-serif`;
     g.fillText(line, cw * 0.23, y, cw * 0.71);
   });
 }
@@ -61,17 +63,24 @@ function paintBoard({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: re
 export function createTownPlots(owner: OwnedView) {
   const kit = loadLevelArtifact(level, definitions).placements;
   const prices = TRADE.plots[0];
-  const batch = createPrefabBatch('town.plot-stakes', prices.length * 16, owner);
+  const slotsPerPlot = kit.reduce((n, p) => {
+    const visual = definitions[p.prefab]!.visual;
+    return n + ('builder' in visual ? (visual.instances?.length ?? 1) : 0);
+  }, 0);
+  const batch = createPrefabBatch('town.plot-stakes', prices.length * slotsPerPlot, owner);
   batch.mesh.name = 'town:plot-stakes-and-piles';
   batch.mesh.castShadow = true;
   let index = 0;
   const plots = prices.map((need, k) => {
     const building = townBuilding(TOWN_PLOTS.order[k]!);
+    // Ring plots are approached from the ring road; the road plot beside the hall faces arrivals from the
+    // hall/platform. Board centres stay at their authored townLocal offsets; only their facing changes.
+    const approach = TOWN_SLOTS.find((s) => s.id === TOWN_PLOTS.order[k])!.ring ? TOWN_CENTRE : HALL;
     const previous = prices[k - 1];
     const woodNeed = need.wood - (previous?.wood ?? 0),
       stoneNeed = need.stone - (previous?.stone ?? 0);
     const parts = kit.map((p) => {
-      const framePiece = p.id === 'stakes' || p.id === 'string';
+      const framePiece = p.id === 'stakes' || p.id === 'bands' || p.id === 'string';
       const at = townLocal(building, p.pos[0], p.pos[2] + (framePiece ? 0 : building.d / 2));
       const visual = definitions[p.prefab]!.visual;
       const batched = 'builder' in visual;
@@ -81,7 +90,7 @@ export function createTownPlots(owner: OwnedView) {
           ...p,
           id: `${TOWN_PLOTS.order[k]}.${p.id}`,
           pos: [toWorld(at.x), H(toWorld(building.x), building.z) + p.pos[1], at.z],
-          rot: [building.yaw, 0, 0],
+          rot: [p.id === 'board' ? Math.atan2(approach.x - at.x, approach.z - at.z) : building.yaw, 0, 0],
           ...(framePiece ? { scale: [(building.w + 0.6) / 8, 1, (building.d + 0.6) / 8] } : {}),
         },
         {

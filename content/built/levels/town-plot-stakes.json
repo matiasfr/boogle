@@ -4,6 +4,7 @@
   "place": "town-plot-stakes",
   "placements": [
     {"id":"stakes","pos":[0,0,0],"prefab":"town.plot-stakes"},
+    {"id":"bands","pos":[0,0,0],"prefab":"town.plot-stake-bands"},
     {"id":"string","pos":[0,0,0],"prefab":"town.plot-string"},
     {"id":"board","labels":{"label":"plot"},"pos":[2.2,0,1.2],"prefab":"town.plot-board"},
     {"id":"crate.0","pos":[-2.82,0.39,0.78],"prefab":"town.plot-crate","scale":[0.78,0.78,0.78]},
