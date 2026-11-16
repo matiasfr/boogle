@@ -1,8 +1,8 @@
-> **Status: plan, not built (16 November 2026).** Follow-up: [scarce town plots brainstorm](../brainstorms/town-plots-scarce.md) (proposed, not an owner decision). Planner, against origin/main `a71077c4b`, `WORLD_NS` v54. The one file
+> **Status: plan, not built; designer-reviewed 16 November under the first-island-teaches scope ([review](#designer-review-16-november-the-first-town-as-a-lesson)): plot 2 as the loader yard for its lesson, no choice asked; rider places 8 a train; plot 3's base 800; four owner questions.** Follow-up: [scarce town plots brainstorm](../brainstorms/town-plots-scarce.md) (proposed, not an owner decision). Planner, against origin/main `a71077c4b`, `WORLD_NS` v54. The one file
 > each build job reads. Follows [town-economy-visible](town-economy-visible.md) (its design review's ruling 1, "the next
 > plan"). **Finding first: the choice as ruled does not work** (section 2a, measured); section 2b changes it until it
-> does. "Plot 1, 2" are the first and second priced plots, slots `plot3` and `plot2` (that plan's N9). Not yet
-> designer-reviewed; nothing here is built.
+> does. "Plot 1, 2" are the first and second priced plots, slots `plot3` and `plot2` (that plan's N9). Nothing here
+> is built.
 
 # Town choice: the house now, or footings on every train
 
@@ -241,3 +241,123 @@ work and Q7 interleaved in one run (fares and footings were measured apart); a d
 **Research:** [upgrade-economy](../research/upgrade-economy.md) (an upgrade repays an inconvenience already felt: the
 wait at the jib) and [economy-principles-audit](../research/economy-principles-audit.md) (one box, no conversion); no
 departure.
+
+## Designer review, 16 November: the first town as a lesson
+
+**Scope.** The owner, 16 November ([first island teaches](../decisions-core-loop.md#d-2026-11-16-first-island-teaches)):
+a first-island purchase is judged by whether the player understands its mechanic and sees its payoff; choices come
+with the other hubs and towns. Second owner call the same day, being recorded as
+`d-2026-11-16-rider-seats-are-not-player-seats` in the rail log: "differentiate between 4 player seats and seats for
+npcs. They should get designed passenger cars and trains that are size appropriate." Read: this plan,
+[town-plots-scarce](../brainstorms/town-plots-scarce.md), [town-economy-visible](town-economy-visible.md) (status, owner
+questions, review), [garage-choices](garage-choices.md), [train-progression](train-progression.md)'s ladder, the
+as-built [town section](../game-design/place.md#town-economy-in-the-live-game-16-november-2026-v54), DESIGN core loop,
+6, 7, 11, the rewards Current rules (10 to 12 November). Numbers are the docs' unless marked **probe** (one new
+headless run on `8878cdcdf`, the brainstorm's script with `TRADE.seats` also varied, gross fares a minute, 10 minutes
+after 5 of warm-up) or **estimate**. Not looked at: any still (nothing new is placed); a device.
+
+**Probe, fares a minute by added houses H (0 to 3) and rider places a train:**
+
+| Stage | 4 places | 6 places | 8 places |
+| --- | --- | --- | --- |
+| `q6-done` | 36, 54, 72, **72** | 36, 54, 72, 90.9 | 36, 54, 72, 90.9 |
+| `ring-joined` | 54.6, 81.9, 106.6, 135.2 | 54.6, 81.9, 107.9, 136.5 | 54.6, 81.9, 107.9, (run cut off) |
+
+The cap swallows only a **third** house at the pier stage; at Ring Island 4 places carry three added houses.
+
+### 1. The lesson list (ruling)
+
+| # | Lesson, in the order met | Taught by | On main? |
+| --- | --- | --- | --- |
+| 1 | Trains bring goods home, and goods make room in the town (a pile, then stakes) | plot 1's pile and stakes, 8 timber | **Half.** Pile, stakes and board are built; freight on the cars and the yard stacks are not (A1 open), so the cause is not seen |
+| 2 | Little guys ride and pay fares into one shared box | riders on line 2, the till's column | Yes |
+| 3 | A staked plot plus the price in the box means you can build | the gold ghost, hold 1 s | Yes |
+| 4 | **A house brings riders and fares** | plot 1, 150: 36 → 54 a minute at `q6-done` | Yes |
+| 5 | **Each next building in a town costs more** | plot 2's board, 400 → 800, at that same buy | Yes |
+| 6 | **A works building helps the line and brings no riders** | plot 2 as the loader yard (point 2) | **Missing** |
+| 7 | The second cargo grows the town too: stone stakes the bigger plot | plot 3, 16 stone after the pier's footings | Board built; the payoff is about 75 minutes away (point 3) |
+| 8 | Away time leaves one capped sack | C1, C2 | Missing, planned |
+
+Lesson 6 is the back half of DESIGN's core loop ("grown towns give upgrades that extend your reach"); nothing on the
+first island teaches it today. The box's cap mark is shown, not a lesson to design. Teaching gaps to close, in order:
+A1 (lesson 1), plot 2 (6), plot 3's price (7), C1 and C2 (8).
+
+### 2. The second plot (ruling: the loader yard, choice framing dropped)
+
+- **If a house:** a second house by the quarry road, riders 54 → 72 at the pier stage (measured). The player learns
+  lesson 4 again; the decided Boogle source upgrade, the loader arm (10 November), has no home on the first island,
+  and the player reaches a later hub never having seen a town building do anything but bring riders.
+- **If the loader yard:** the board shows the footing icon and "Every train" where plot 1's shows the rider icon (two
+  icons are the lesson, no sentence); the grey folded arm stands at the Works from the start; once built, the riders do
+  not change, the arm swings footings onto every line 2 train at the quarry, and footings come in on more trains at
+  the Pier and the railhead. Solo, pier 182 → 155 s, ring 339 → 203 s (a71077c4b, historical, not rerun). Bought in
+  the usual order (house 150, then the yard at 800), it lands about 19 minutes after `q6-done`: before a first-timer's
+  pier loads and the ring (section 2b's solo row); for a fast trio, after the pier but before the ring (**estimate**).
+- **Keep:** 2b's rules (C1 no riders, C2 every line 2 train up to 6), the doubling counting the yard (call 7), C3's
+  board and arm. 2a's measurement still stands for C2: an arm-only loader saves nothing, so it would show no payoff.
+  **Drop:** the "neither dominates" requirement and section 2b's who-wins table as a design test; both plots stay
+  offered in either order, and no number is tuned to balance them. Garage G-c (the bigger cradle) still teaches a
+  different thing (a rail part paid in steel); its value check stays this plan's risk note.
+
+### 3. Rider places (ruling: 8 a train, coming with the train; plot 3's base 3,000 → 800)
+
+- **How many.** Rider places are their own number now, not the 4 player seats. **6 is the measured minimum** that lets
+  every first-island house pay at every measured stage (the third house: 72 → 90.9 at `q6-done`). **Recommend 8**
+  (stand-in, `TRADE.seats` renamed for riders): the same fares where measured, headroom past the third house (not
+  measured above H 3), and a count that reads as a car made for little guys. With plot 2 as the yard the first island
+  has only two added houses, and 4 places already carry them (72 = 72); the car matters for headroom and if plot 2 stays
+  a house.
+- **With the train or added.** **With the train**: the passenger car every line 2 train already pulls becomes the
+  rider car (the four player benches kept, the little guys' places beside them), so each train the ladder adds (at the
+  Pier, at Q7) brings its places and "a boiler sets top speed and how many cars" (10 November) is untouched. Not
+  bought on the first island: the garage's first-island picks are decided (G-a to G-c, 15 November) and none is a car;
+  "anything on rails costs materials, the passenger train and seats included" is a leaning (10 and 11 November), and a
+  bought rider car fits the later per-line trade, G-e's whole extra car and G-f's "people or goods per line". The
+  car's look is a separate art job (the existing car kit, `src/entities/railway/car-kit.ts`); not designed here.
+- **Plot 3's 6,000.** Places do not move the price. At 6,000 (3,000 × 50% × 4) and about 82 a minute at Ring Island
+  with one added house (probe), it is about 73 minutes of fares with nothing else to buy, against the confirmed stand-in
+  rule "a town's last household to about 20" minutes (10 November). Plot 3 is never on offer at the pier stage: its 16
+  stone moves only after the pier's twelfth footing, and only two plots stake at once. **Default: base 800** (room
+  1,600, about 20 minutes at 82 a minute; it adds about 26 a minute, 81.9 → 107.9). Prices are stand-ins (11 November);
+  the ×2 per building stays, so lesson 5 still shows.
+
+### 4. Where the choices go
+
+The first island should send the player to the next hub already knowing, from use: **two building kinds** (a house
+gives riders; a works building upgrades that town's source and gives none), each read from its board's icon; **that a
+town's prices climb** with each building; **two currencies that never convert** (Boogles from fares buy town
+buildings; steel buys rail parts at the Roundhouse); **two kinds of garage step** (a free install that comes with a
+beat, G-a and G-b, and one that spends steel, G-c); **that a train's cars have a size** (riders in the rider car,
+footings on the decks, the longer boiler's fourth car). With those, a hub town can ask "house or this hub's works
+building on scarce plots", and a line can ask Quick or Strong, people or goods, without a new rule being taught at
+the moment of choosing. The first island adds no third building kind, typed plots, rebuilds or a civic sink.
+
+### 5. What to drop
+
+| Open question | Under this scope |
+| --- | --- |
+| This plan's 1 (plot 2 the loader yard, loader on every train); town-economy-visible's 3, which it supersedes | **Still his**, reframed as a lesson (owner question 1) |
+| This plan's 2 (build it as the town's first choice; stakes small) | Drop: no choice is asked of the first town |
+| This plan's 3 (a second Boogle sink past the second buy) | Drop for the first island: plot 3 at 1,600 closes it; the late-game shortfall (11 November, open) is the hubs' |
+| This plan's 4 (jump row "Two plots") | Drop to a Default: a tool row; rename it "Loader yard" (placeholder) |
+| Brainstorm 1 (test 2H against H+L) | Drop: no choice experiment on the first island |
+| Brainstorm 2 (H or L on the hall's plot, 250 premium) | Drop: plot types are fixed; the first buy stays a house (11 November) |
+| Brainstorm 3 (rebuild fee) | Drop: no rebuilds on the first island |
+| Brainstorm 4 (park W and M; later source crews) | Drop as a question: parked; a later hub's brief takes it up |
+
+**Calls logged** in [agent-calls](../agent-calls.md) (rewards, open): plot 2 as the loader yard for lesson 6; rider
+places 8 with the train; plot 3's base 800; the lesson order. **Strings (placeholders, none of The Boogler's
+touched):** "Every train", "Loader yard"; a rider count on the car, if the art job wants one ("Riders <n> / 8").
+Suspect existing line: the "new neighbours" lines firing on the yard (call 9), which houses no one; his to rewrite.
+
+### Owner questions (each builds on the recommendation; nothing waits)
+
+1. **Plot 2 becomes the loader yard (no riders; its arm loads every line 2 train), as the first island's lesson that a
+   town building can help the line, with no choice asked?** Recommended: **yes.** Or a second house, and the loader
+   arm waits for a later hub.
+2. **Each passenger train's car carries 8 little guys (6 is the measured minimum) beside the four player seats, and
+   comes with the train; added rider cars are a later hub's garage pick?** Recommended: **yes.** Or 6.
+3. **Plot 3's base 3,000 → 800, so the third building costs 1,600 (about 20 minutes of fares at Ring Island, your 10
+   November "last household about 20") instead of 6,000 (about 73)?** Recommended: **yes.**
+4. **Drop this plan's questions 2 to 4 and the scarce-plots brainstorm's four, as section 5 lists?** Recommended:
+   **yes.**
