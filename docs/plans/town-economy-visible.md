@@ -130,6 +130,7 @@ models`'.
     23 m; phone red corners and pile distinguish the staked site at 40.0 m, string subtler and board words unreadable.
     Platform sightline remains unproved: curio structures obscure most of the site from the middle; hall posts
     obstruct the townward end. Ruling 3's platform visibility is still unresolved by this cosmetic revision.
+    From the platform the staked plot is hidden by the hall's wall and posts; still open for the designer.
     All four WebGPU captures pass with no graphics errors; shared-machine still evidence, no timing/feel claim,
     not tested on a device.
     Commands are in `dev/look/evals/town-a2.ts`. Placeholder strings: `Plot 1`, `Plot 2`, `Plot 3`,

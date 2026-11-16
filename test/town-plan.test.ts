@@ -542,7 +542,15 @@ test('the little guys avoid the footing and only avoid plot blocks when they sta
   const feet = blockoutFeet(stood);
   // The monument has one footprint, the footing's: it encloses the statue's plinth (town-statue-folk.test.ts).
   assert.equal(feet.length, 1);
-  assert.equal(blockoutFeet(standBlockout(blockoutLevel.placements, H, true)).length, 9);
+  const restored = blockoutFeet(standBlockout(blockoutLevel.placements, H, true));
+  assert.equal(restored.length, 9);
+  for (const b of [...TOWN_BLOCKS, TOWN_FOOTING]) {
+    const foot = restored.find((f) => Math.hypot(f.x - b.x - ORIGIN.x, f.z - b.z) < 0.001);
+    assert.ok(foot, `a restored footprint at (${b.x}, ${b.z})`);
+    assert.equal(foot.yaw, b.yaw);
+    assert.equal(foot.hw, b.w / 2);
+    assert.equal(foot.hd, b.d / 2);
+  }
   for (const b of [TOWN_FOOTING]) {
     const foot = feet.find(
       (f) => Math.hypot(f.x - b.x - ORIGIN.x, f.z - b.z) < 0.001 && f.hw === b.w / 2 && f.yaw === b.yaw,

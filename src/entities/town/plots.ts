@@ -105,20 +105,27 @@ export function createTownPlots(owner: OwnedView) {
       if (batched) index += visual.instances?.length ?? 1;
       return { id: p.id, instance, index: index - 1 };
     });
-    return { k, previous, woodNeed, stoneNeed, parts, last: '' };
+    return { k, previous, woodNeed, stoneNeed, parts, visible: false, offered: false, wood: -1, stone: -1 };
   });
   return {
     update(read: TownLook['plots'] | null) {
-      const staked = read?.staked ?? [];
-      const next = prices.findIndex((_, k) => !staked.includes(k));
+      const staked = read?.staked;
+      let next = -1;
+      for (let k = 0; k < prices.length; k++)
+        if (!staked?.includes(k)) {
+          next = k;
+          break;
+        }
       for (const p of plots) {
-        const offered = staked.includes(p.k),
+        const offered = staked?.includes(p.k) ?? false,
           visible = !!read && (offered || p.k === next);
         const wood = Math.max(0, Math.min(p.woodNeed, (read?.wood ?? 0) - (p.previous?.wood ?? 0)));
         const stone = Math.max(0, Math.min(p.stoneNeed, (read?.stone ?? 0) - (p.previous?.stone ?? 0)));
-        const key = `${visible}:${offered}:${wood}:${stone}`;
-        if (key === p.last) continue;
-        p.last = key;
+        if (visible === p.visible && offered === p.offered && wood === p.wood && stone === p.stone) continue;
+        p.visible = visible;
+        p.offered = offered;
+        p.wood = wood;
+        p.stone = stone;
         // Eight crates at most per pile; the board keeps the exact count beyond eight and the drawn mix
         // keeps stone visible from its first delivery.
         const count = Math.min(8, wood + stone);
