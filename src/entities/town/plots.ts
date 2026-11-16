@@ -131,9 +131,20 @@ export function createTownPlots(owner: OwnedView) {
     // The subscription follows session mount/replacement and is removed with this owner.
     return onRailwayCommands((session) => {
       unsubscribe?.();
-      unsubscribe = session?.onRefused((event) => {
-        if (event.intent.op === 'rail.buy') waiting = -1;
+      waiting = -1;
+      release();
+      const offRefused = session?.onRefused((event) => {
+        if (event.intent.op === 'rail.buy' && event.intent.id === waiting) waiting = -1;
       });
+      // A whole-state refill settles unknown outcomes through rows; a dropped queue has no refusal receipt.
+      const offReset = session?.onReset(() => {
+        waiting = -1;
+        release();
+      });
+      unsubscribe = () => {
+        offRefused?.();
+        offReset?.();
+      };
     });
   }
 
@@ -278,6 +289,10 @@ export function createTownPlots(owner: OwnedView) {
     update(read: TownLook['plots'] | null, dt = 0) {
       targets.length = 0;
       const facade = railwayWorldRead();
+      if (!facade || facade.status() === 'connecting' || facade.status() === 'starting') {
+        waiting = -1;
+        release();
+      }
       const w = facade?.world();
       const tillId = w?.ids(Till)[0];
       const till = tillId === undefined ? undefined : w?.get(Till, tillId);

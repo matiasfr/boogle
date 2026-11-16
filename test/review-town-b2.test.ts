@@ -17,6 +17,7 @@ import { HALL } from '../src/place/home-station.ts';
 import { advanceHold } from '../src/components/hold/view.ts';
 import { railRoom } from './helpers/rail-room.ts';
 import type { Interactable } from '../src/player/hands.ts';
+import type { RailwayRefusal } from '../src/adapters/railway-effects.ts';
 import type { RailwayAdapter } from '../src/adapters/railway-session.ts';
 
 type Plots = {
@@ -29,6 +30,7 @@ type Plots = {
 function plotsView(adapter: RailwayAdapter) {
   const board = plan.townPlotBoard(0);
   const me = { body: { position: { x: board.x + 1000, y: 18.5, z: board.z } } };
+  let refusal: ((event: RailwayRefusal) => void) | undefined;
   const listeners = new Set<(s: RailwayAdapter | null) => void>();
   const create = sourceFunction<(owner: unknown) => Plots>('src/entities/town/plots.ts', 'createTownPlots', {
     loadLevelArtifact,
@@ -69,7 +71,13 @@ function plotsView(adapter: RailwayAdapter) {
     railwayWorldRead: () => adapter.read,
     onRailwayCommands(fn: (s: RailwayAdapter | null) => void) {
       listeners.add(fn);
-      fn(adapter);
+      fn({
+        ...adapter,
+        onRefused: ((cb: (event: RailwayRefusal) => void) => {
+          refusal = cb;
+          return adapter.onRefused(cb);
+        }) as RailwayAdapter['onRefused'],
+      });
       return () => listeners.delete(fn);
     },
   });
@@ -78,7 +86,11 @@ function plotsView(adapter: RailwayAdapter) {
     const w = adapter.read.world();
     return { wood: 999, stone: 999, staked: plotsStaked(w, 0) };
   };
-  return { view, read };
+  return {
+    view,
+    read,
+    refuse: (id: number) => refusal?.({ intent: { op: 'rail.buy', id }, request: 99, reason: 'refused' }),
+  };
 }
 
 test('review B2: a buy lost with the socket leaves the board pressable again once the plot is still unbought', () => {
@@ -109,6 +121,12 @@ test('review B2: a buy lost with the socket leaves the board pressable again onc
     'ten seconds after the reconnect the unbought plot still says "Waiting for town" and cannot be pressed',
   );
   assert.ok(target()?.run);
+  target()!.run!();
+  for (let k = 0; k < 70; k++) view.update(read(), 1 / 60);
+  room.run(120);
+  view.update(read(), 0);
+  assert.ok(plot(room.serverWorld(), 0).at >= 0, 'a new hold buys after reconnect');
+  assert.equal(room.serverWorld().get(Till, room.serverWorld().ids(Till)[0]!)!.spent, 150);
 });
 
 test('review B2 (control): two boards held at once send two buys; one plot is bought once and both boards settle', () => {
@@ -117,7 +135,10 @@ test('review B2 (control): two boards held at once send two buys; one plot is bo
     b = room.join('bob', 'bob', 3);
   room.ready();
   const views = [plotsView(a.adapter), plotsView(b.adapter)];
-  for (const { view, read } of views) (view.update(read(), 0), view.update(read(), 0));
+  for (const { view, read } of views) {
+    view.update(read(), 0);
+    view.update(read(), 0);
+  }
   for (const { view } of views) view.targets()[0]!.run!();
   for (let k = 0; k < 70; k++) for (const { view, read } of views) view.update(read(), 1 / 60);
   for (const { view } of views) assert.equal(view.targets()[0]?.blocked, 'Waiting for town');
@@ -130,4 +151,23 @@ test('review B2 (control): two boards held at once send two buys; one plot is bo
   assert.ok(plot(room.serverWorld(), 0).at >= 0);
   assert.equal(spent(), 150, 'spent once');
   for (const { view } of views) assert.equal(view.targets().length, 0, 'a bought plot offers nothing');
+});
+
+test('review B2: another plot refusal leaves this plot waiting; its own refusal releases it', () => {
+  const room = railRoom(buildSeedWorld('house-ready'));
+  const c = room.join('alice', 'alice', 3);
+  room.ready();
+  const { view, read, refuse } = plotsView(c.adapter);
+  view.update(read(), 0);
+  view.update(read(), 0);
+  view.targets()[0]!.run!();
+  for (let k = 0; k < 70; k++) view.update(read(), 1 / 60);
+  refuse(1);
+  view.update(read(), 0);
+  assert.equal(view.targets()[0]?.blocked, 'Waiting for town');
+  assert.equal(view.targets()[0]?.run, undefined);
+  refuse(0);
+  view.update(read(), 0);
+  assert.equal(view.targets()[0]?.blocked, undefined);
+  assert.ok(view.targets()[0]?.run);
 });

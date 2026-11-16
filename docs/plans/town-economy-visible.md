@@ -257,6 +257,11 @@ models`'.
     roof support at 23.2 m). The bay/shelf/first-house/second-house/shop gaps are 0.30/1.02/9.94/2.89 m:
     the final shop-to-balcony gap is 0.15 m. All are horizontally within the plan's 12.6 m sprint double-jump envelope after two houses. This is geometric evidence,
     not an executed controller route to the balcony; jump timing and landing clearance remain unverified.
+    **Roof follow-up (review P3):** the shared flat hull tops out at +5.2 m versus the drawn ridge at about +6.6 m; K3 must measure the resulting up-to-1.4 m roof penetration on the rooftop run, including existing town buildings.
+    **Review fixes:** dropped-session/refill signals release a pending board without success; refusals match its plot. Late piece starts silently place past landings and retain future falling pieces/effects; room starts still use their 1.2/3 s delays.
+    Reload proof: `timeout 240 node dev/look/town-b2-reload.ts`; opened `.look/town-b2-reload-motion.png` and its still.
+    Reload starts at purchase +50 ticks; the new view starts at +73 ticks, silently places 79 pieces, emits zero thuds/dust rings in its first frame, then emits 3 thuds and 2 dust rings for remaining landings. The sheet shows the hold/build, reload, remaining roof pieces and finished house. The harness reapplies its splash mask after navigation to expose the renderer during graphics warm-up; the normal covered sheet is retained separately. Counters instrument served responses only; no rule, clock or shared-state edits. Actual sound listening and device behavior remain unverified.
+
     **Placeholder strings for the owner:** “+1 rider / minute”, “Price <n>”, “Box <n>”, “Hold to build”, “Hold <n>%”,
     “Need <n> more Boogles”, “Waiting for town”. Existing “Plot <n>”, “Timber” and “Stone” and The Boogler's copy stay.
 - [ ] **C1. The sack (S; R5).** After B1 (it shares B1's files). Sync: Server kind. Tier: **independent review**.
@@ -315,6 +320,7 @@ riders were probed separately (ground `H`, slope, clearance to the rails, the st
    plot 2's roof (10.17 m: over a walking second jump of 7.4 to 7.9 m, under a sprinting 12.6 m), Fine Prices' roof
    (3.00 m), the balcony. Plot 1 is 3.00 m from Fine Prices too, but nothing climbable stands within 12.6 m (the gate
    cottage is 16.47 m). Recommended: accept, as B4's question 1 did; K3 measures it.
+   **B2 review P3:** K3 must also measure the shared +5.2 m flat roof hull against the roughly +6.6 m drawn ridge (up to 1.4 m of avatar penetration); existing town buildings share this recipe, unchanged here.
 8. **Telegraph:** plot 1, staked first, is about 50 m from the hall (plot 2 37 m, plot 3 22 m), seen across the green.
    The buy order is town-layout's; flagged, not changed. **(review) Changed by N9:** slot `plot3` is staked first.
 

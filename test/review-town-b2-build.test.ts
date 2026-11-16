@@ -60,16 +60,34 @@ function harness() {
   return { sites, site, sounds };
 }
 
-test('review B2: a house first seen 6 s into its build lands no burst of thuds in its first frame', () => {
+test('review B2: a house first seen 6 s into its build lands no burst of thuds in its first frame', (t) => {
   const fresh = harness();
   fresh.sites.startSite(fresh.site, 0);
   fresh.sites.updateSites(1 / 60);
   const late = harness();
   late.sites.startSite(late.site, -6); // plots.ts: startSite(site, -(tick - bought) / 10)
   late.sites.updateSites(1 / 60);
+  t.diagnostic(`first frame: fresh ${JSON.stringify(fresh.sounds)}, late ${JSON.stringify(late.sounds)}`);
   assert.ok(fresh.sounds.thump <= 1, `a fresh build starts quietly (${fresh.sounds.thump})`);
   assert.ok(
     late.sounds.thump <= 1 && late.sounds.dust <= 1,
     `a late view replays ${late.sounds.thump} thuds and ${late.sounds.dust} dust rings in one frame`,
   );
+});
+
+test('review B2: delayed room builds stay quiet until due; late builds still play future landings', () => {
+  for (const delay of [1.2, 3]) {
+    const room = harness();
+    room.sites.startSite(room.site, delay);
+    for (let k = 0; k < delay * 60; k++) room.sites.updateSites(1 / 60);
+    assert.deepEqual(room.sounds, { thump: 0, dust: 0 });
+    for (let k = 0; k < 60; k++) room.sites.updateSites(1 / 60);
+    assert.ok(room.sounds.thump > 0);
+  }
+  const late = harness();
+  late.sites.startSite(late.site, -6);
+  late.sites.updateSites(1 / 60);
+  const initial = { ...late.sounds };
+  for (let k = 0; k < 180; k++) late.sites.updateSites(1 / 60);
+  assert.ok(late.sounds.thump > initial.thump && late.sounds.dust > initial.dust);
 });

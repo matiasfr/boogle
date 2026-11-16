@@ -93,7 +93,7 @@ kiln/cradle material. Its roof is visible from the island platform above the cur
 occluded there. A one-second Interact hold queues the buy; only an accepted Plot row clears the pile and starts
 construction. The existing site builder finishes at the purchase tick plus 100; a late arrival sees the completed
 closed shell with its door mark and three solid hulls. Missing plot/till rows hide the view and recover on refill.
-An unaffordable board shows its shortfall through the ordinary blocked prompt. Shared pure board anchors allow
+An unaffordable board shows its shortfall through the ordinary blocked prompt. Session loss/refill releases a pending hold without claiming success; only the matching plot refusal releases it otherwise. Mid-build returns place already-landed pieces silently, then play the remaining landings. Shared pure board anchors allow
 server validation within 3.2 m, with no new saved state or namespace bump. The two tooling landings now stand
 clear of the board post and statue. New words are placeholders for The Boogler (listed in the plan); existing copy
 is unchanged. Not tested on a device.
