@@ -65,7 +65,7 @@ const hardwoods = planted
 for (const { t } of hardwoods) t.hardwood = true;
 
 // Station ground and approved path benches may remove a planted tree; keep survivors' IDs and ordering.
-// Terrain-clean step 5 deliberately clears 12 of the 362 trees and pins the resulting v49 harvest catalog.
+// Terrain-clean step 5 deliberately clears 12 of the 362 trees and pins the resulting v50 harvest catalog.
 export const LAND_TREES = planted.filter((t) => {
   const i = Math.round((t.x - ORIGIN.x - GRID.x0) / CELL),
     j = Math.round((t.z - ORIGIN.z - GRID.z0) / CELL);

@@ -529,7 +529,7 @@ run, then reverted; the unit tests were not run on the trial):
   1.36 to 0.12 m. Quarry stays 2.87 m, shore stays 0.55 m: these are step 6, not claimed fixed here.
 - Intended pins: coast texture/sampling digests; prefab trees (cleared sources and terrain-following bodies);
   prefab halts (terrain-following ramp transforms only); sim harvest-source tuples and resource totals (120
-  fewer initial logs); railway seed/ops/M12/tick-order hash fixtures for that catalog change, with v49 namespace.
+  fewer initial logs); railway seed/ops/M12/tick-order hash fixtures for that catalog change, initially v49 (v50 after the heavy-load rebase below).
   Keyed fixture comparison confirms seed ticks, operation labels/results, M12 frame counts and tick-system
   sequences are unchanged; only state hashes change. Generated world blockout changes Line 1's bank classification at 112–116 m; rail geometry is unchanged.
 - Walker proof: `.look/shots/terrain-benches-before-retry/group-0/c0-v0.png` versus
@@ -596,6 +596,56 @@ run, then reverted; the unit tests were not run on the trial):
 second-jump flood; its measured findings above supersede that estimate. Step 7 remains untouched: its proposed
 cap would increase the ring report's abutment-cut figure beyond the existing 0.1 m expectation.
 
+### Heavy-load rebase (2026-11-15)
+
+Rebased the reviewed terrain branch onto `54b8b4f128be76cfcdc39dbd1a84ac14b003b00a` (#1876).
+Heavy-load's complete v49 history and rules remain; terrain has a separate dated **v50** entry. Main's line-2
+24-piece pack/late-join/deposit assertions remain verbatim, with only the terrain catalog's initial-log total
+reapplied (3,910 to 3,790 in six assertions). No new terrain shape or Step 7 change.
+
+Regenerated all five railway fixtures using their own writers, never merged JSON:
+
+```sh
+GOLDEN=1 M12_RECORD=1 TICK_ORDER=1 TICK_ORDER_HEADS=1 node --import ./test/helpers/rail-no-audit.ts \
+  --test --test-concurrency=1 test/railway-golden-*.test.ts test/railway-ops.test.ts \
+  test/railway-m12.test.ts test/railway-tick-order.test.ts
+```
+
+Comparison is against fetched main, not the pre-heavy-load terrain branch:
+
+| Fixture | Regenerated difference | Cause |
+| --- | --- | --- |
+| `railway-golden.json` | 47 stage hashes and 47 post-1,200-tick hashes; namespace v49 to v50. All seed ticks unchanged. | Catalog-only state change plus namespace metadata; no heavy-load interaction in these routes. |
+| `railway-ops-golden.json` | All 277 hashes; every operation label/result unchanged. | Catalog only. Main's heavy-load acceptance results are retained. |
+| `railway-tick-order.json` | 2,700 per-tick hashes. | Catalog only; tick counts, systems and their order unchanged. |
+| `railway-tick-order-heads.json` | 14,400 hashes. | Catalog only; headway cases, timing and system sequences unchanged. |
+| `railway-m12-trace.json` | All 82 final hashes and 1,244 checkpoint marks; entry order, frame counts and mark lengths unchanged. | Catalog state/IDs and randomized source selection; a real behavioral interaction with heavy-load in `q3-done`, detailed below. |
+| `server/test/fixtures/world-host-trace.jsonl.gz` | 205 checkpoints and 5,667 serialized-byte counters; all 8,596 record kinds/order, command inputs/results and replication packets unchanged. | Catalog rows/entity IDs and v50 checkpoint namespace/hash/checksum only; no heavy-load interaction in this trace. |
+
+The M12 import-hook audit changes no production file or committed assertion. Restoring only main's full catalog
+under the combined heavy-load/v50 code reproduces **every main M12 entry exactly**. Thus namespace alone has no
+M12 effect and the catalog explains the entire new trace. Event comparison after excluding world hashes, next-ID
+shifts, source/pile IDs and remap IDs finds nonidentity differences only in `q3-done/a,b,c`: a different random
+chop target changes pickup acceptance and carried amounts. Under heavy-load, player a gets an additional forge
+take of 2 (17 carried), leaving player c a later forge take of 2 instead of 4. This is not just rehashed IDs.
+Two comfort-only controls also reproduce the pre-heavy-load main and the old terrain fixture exactly, confirming
+that both independently approved changes, rather than a new rule edit, explain the combined behavior.
+
+The additional server suite exposed its old host-trace golden (395 passes, that one failure). Regenerated with
+`HOST_TRACE_RECORD=1 node --import ./test/helpers/rail-no-audit.ts --test server/test/world-host-trace.test.ts`,
+then reran without recording. A control restoring only main's catalog and v49 reproduces main's complete
+uncompressed host trace exactly. Across all 205 new checkpoints, surviving tree values and all non-tree component
+values are identical after removing entity-ID columns; the next entity ID is lower by exactly 12. The same twelve
+source IDs listed in step 5 are removed. This was a necessary stale fixture beyond the textual rebase conflicts.
+
+Evidence: `.look/terrain-rebase/` contains the original fixtures, full keyed diffs, all four diagnostic recordings,
+`m12-event-audit.json`, and check logs. Requested checks pass: 16 level reports (5,250 grounded placements and
+2,303 track pieces, zero problems); path-ground exits 0 with the same six unrelated flagged stretches; all 81
+named terrain tests plus six bench/path-field tests; 188 railway fixture/cart/line-2 tests; and `npm run check`
+(2,226 passes, 65 existing local-mode skips, one TODO, zero failures, plus the remaining check stages).
+After the host-trace regeneration, the complete server suite also passes **396/396**, with no skips or failures.
+Scoped lint reports zero problems.
+
 ## Risks
 
 - **Room safety:** nothing from "Don't" applies; no apply, effect, presence, transport or save path is touched.
@@ -610,7 +660,7 @@ cap would increase the ring report's abutment-cut figure beyond the existing 0.1
   graded after or beside paths and need rechecking on rebase.
 - **Mixed builds:** none; clients on an old build draw the same collider. Steps 5 to 7 change colliders: development
   phase, no compatibility code. Heights alone are not saved state, but step 5 also clears 12 harvest sources: its pinned sim catalog
-  changes, so `WORLD_NS` advances from v48 to v49. A saved pose on a regraded bench otherwise restores through
+  changes, so `WORLD_NS` advances from heavy-load v49 to terrain v50. A saved pose on a regraded bench otherwise restores through
   the existing ground snap. No compatibility adapter is added.
 - **Performance:** Part 1 removes triangles and load work; 2a adds a few ALU operations per ground pixel and no
   texture reads; Part 3's cost is in its section. Measured and reported at checkpoints, not gated
