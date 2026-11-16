@@ -116,7 +116,8 @@
 // v54 (2026-11-16): priced Plot rows and rail.buy; houses build in 100 ticks, riders 1/min/building, room prices 50%.
 // v55 (2026-11-16): plot 2 is the loader yard (no riders); with it built and the wagon coupled every line 2 train
 // loads footings at the quarry going out; rooms that bought plot 2 as a house start fresh. No shape change or migration.
-export const WORLD_NS = 'v55';
+// v56 (2026-11-16): line two and the breaker wake only after the fitted boiler and the cart at rest.
+export const WORLD_NS = 'v56';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

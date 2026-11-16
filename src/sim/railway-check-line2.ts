@@ -7,7 +7,7 @@ import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { railPos } from './railway-route.ts';
 import { LINE2_FORGE as FORGE, LINE2_STATIONS, Q6 } from './railway-line2-layout.ts';
-import { CART, CART_PHASE, CART_PHASES, CART_ROAD } from './railway-cart.ts';
+import { CART, CART_PHASE, CART_PHASES, CART_ROAD, cartAlong } from './railway-cart.ts';
 import { DEPOT_OUT, Leg } from './railway-components.ts';
 import { accounts, beam, boiler, cart, forge, forgeClock, rail, steel } from './railway-rows.ts';
 import { line2Jobs, scheduleOf } from './railway-queries.ts';
@@ -143,7 +143,8 @@ export function checkLine2(w: World) {
     !railPos(b.y) ||
     !railPos(b.z) ||
     (b.state === 'none') !== done < 5 ||
-    (b.state === 'fitted') !== r0.trains >= 0 ||
+    (r0.trains >= 0 && b.state !== 'fitted') ||
+    (b.state === 'fitted' && r0.trains < 0 && c.phase === CART_PHASE.REST) ||
     (b.holder !== '') !== (b.state === 'held') ||
     (b.state === 'held' &&
       !accounts(w).some((a) => a.pid === b.holder && a.epoch === b.epoch && !a.carry && !a.stone && !a.rails)) ||
@@ -151,5 +152,7 @@ export function checkLine2(w: World) {
     !railInt(r0.trains, RAILWAY_MAX_INT, -1)
   )
     bad('boiler');
+  if (r0.trains >= 0 && (c.phase !== CART_PHASE.REST || cartAlong(c, r0.trains) !== 0 || c.logs || c.rails))
+    bad('trains before cart rests');
   if (line2Rails(w) !== f.poured) bad('rail conservation');
 }

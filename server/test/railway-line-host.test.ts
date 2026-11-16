@@ -734,6 +734,7 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
     await open();
     assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, apron)).status, 'accepted');
     assert.equal((await action({ op: 'rail.boilerFit', revision: boiler().revision }, camp)).status, 'accepted');
+    await ticks(277); // The fit may precede the returning cart; calls open at the shared wake.
     // A stop request: from the halt's lever (on its platform) or aboard the line's train (works-late-game step 1).
     const h = LINE_HALTS[4];
     const call = (id: number, dir: number, at: [number, number, number]) => action({ op: 'rail.call', id, dir }, at);

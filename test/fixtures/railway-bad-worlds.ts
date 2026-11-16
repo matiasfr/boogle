@@ -280,6 +280,12 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     stage: X,
     break: (w) => set(w, Rail, { shelfOut: 21 }),
   },
+  {
+    site: 'line2 trains before cart rests',
+    message: 'railway: trains before cart rests',
+    stage: 'trains-on',
+    break: (w) => set(w, Cart, { logs: 1 }),
+  },
   { site: 'line2 boiler', message: 'railway: boiler', stage: A, break: (w) => set(w, Boiler, { age: 22 }) },
   {
     site: 'line2 rail conservation',
@@ -467,7 +473,8 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     stage: J,
     break: (w) => {
       set(w, Rail, { depot: 64 });
-      set(w, Cart, { logs: 6 });
+      const tid = w.lookup(Train, LINE_SLOTS[LINE2]![0]!)!;
+      w.mut(Train, tid)!.logs += 6;
       set(w, Steel, { yardLogs: 8 });
     },
   },

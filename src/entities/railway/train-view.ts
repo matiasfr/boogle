@@ -33,7 +33,13 @@ import { STEEL } from '../../sim/railway-ring-layout.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { WORKS } from '../../sim/railway-works-layout.ts';
 import { line2Active, line2Trains } from '../../sim/railway-queries-line2.ts';
-import { aperture, rail as railRow, train as trainRow, works as worksRow } from '../../sim/railway-rows.ts';
+import {
+  boiler as boilerRow,
+  aperture,
+  rail as railRow,
+  train as trainRow,
+  works as worksRow,
+} from '../../sim/railway-rows.ts';
 import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2At, line2Lat, line2Y, endMergeM, departureHalt } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
@@ -946,9 +952,7 @@ export async function createRailwayTrains(
         return;
       }
       if (e.op !== 'rail.boilerFit') return;
-      secondVisible = true;
-      answerPending = true;
-      wake.start();
+
       // Two of the camp's little guys run to the loco's side and bolt the boiler on (step 8).
       const loco = first.cars[0]!,
         out = wagon.TRAIN_CARS[0]!.hx + 0.5;
@@ -1028,6 +1032,12 @@ export async function createRailwayTrains(
       const w = adapter.read.world(),
         tick = adapter.read.tickNow(),
         on = line2Trains(w);
+      if (on && !secondVisible) {
+        secondVisible = true;
+        answerPending = true;
+        wake.start();
+        first.puffs = 1; // The first steam marks the shared wake tick; the existing wake sequence follows.
+      }
       if (answerPending && on && tick >= trainWakeAt(LINE2, railRow(w).trains)) {
         answerPending = false;
         answer.start();
@@ -1072,7 +1082,7 @@ export async function createRailwayTrains(
           tr.hold.on = held;
           tr.hold.material.color.set(held ? HOLD.on : HOLD.off);
         }
-        const worn = on && !(tr.slot === 0 && boilerFlying()),
+        const worn = (on || boilerRow(w).state === 'fitted') && !(tr.slot === 0 && boilerFlying()),
           fit = on ? (row.boiler ?? 0) : 0;
         // The platform beat: the train's own row took a faster fit on a live tick (it stands at the Village). A
         // puff of steam covers the swap, then a clank and a short squash, then a toot. Riders keep their seats: no
@@ -1220,9 +1230,9 @@ export async function createRailwayTrains(
               vy: 1.5 + Math.random() * 0.8,
               vz: (Math.random() - 0.5) * 0.6,
               life: 2.4,
-              size: 0.3,
+              size: tr === first && tick <= railRow(w).trains + 1 ? 0.75 : 0.3,
               color: smoke,
-              alpha: 0.35,
+              alpha: tr === first && tick <= railRow(w).trains + 1 ? 0.85 : 0.35,
               drag: 0.6,
               grow: [1, 3.2],
               fade: 0.6,

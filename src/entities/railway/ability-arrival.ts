@@ -36,7 +36,7 @@ import { readableUnlit } from '../../render/readable-unlit.ts';
 import { toScreen } from '../../render/scene.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { railwayGlideOpen } from './glide.ts';
-import { rail, type ReadWorld } from '../../sim/railway-rows.ts';
+import { boiler as boilerRow, rail, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { railPhase } from '../../sim/railway-queries-line1.ts';
 
@@ -48,6 +48,8 @@ const ABILITIES: {
   op: RailwayAccepted['op'];
   cue: PlaceCue;
   has: (l: Look) => boolean;
+  /** Progress that retains attribution while its presentation waits for a later state edge. */
+  present?: (l: Look) => boolean;
   /** An axe's flourish is a floating model of it rather than a charge mark; the model comes from the caller. */
   badge?: boolean;
   /** Shown when the state turns (the wake's end), not when the event arrives. */
@@ -59,7 +61,15 @@ const ABILITIES: {
   { key: 'multi-axe', op: 'rail.wake', cue: 'pickupHook', has: AWAKE, badge: true, atState: true },
   { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: ({ w }) => rail(w).axe, badge: true },
   { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: ({ w }) => rail(w).pack, badge: true },
-  { key: 'boiler', op: 'rail.boilerFit', cue: 'pickupHook', has: ({ w }) => line2Trains(w), badge: true },
+  {
+    key: 'boiler',
+    op: 'rail.boilerFit',
+    cue: 'pickupHook',
+    has: ({ w }) => line2Trains(w),
+    present: ({ w }) => boilerRow(w).state === 'fitted',
+    badge: true,
+    atState: true,
+  },
 ];
 const BADGE_S = 1.5;
 const TEAL = new THREE.Color('#39e6c6');
@@ -280,7 +290,7 @@ export function createAbilityArrival(
       const look: Look = { w, tick, phase: railPhase(w, tick, tick) };
       const row = rail(look.w);
       for (const a of ABILITIES) {
-        const gone = a.has(look) ? 0 : (missing.get(a.key) ?? 0) + dt;
+        const gone = (a.present ?? a.has)(look) ? 0 : (missing.get(a.key) ?? 0) + dt;
         // Seen going from missing to there in this session: its flourish is the live one, not a late one.
         if (!gone && (missing.get(a.key) ?? 0) > 0) watched.add(a.key);
         missing.set(a.key, gone);

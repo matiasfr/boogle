@@ -56,7 +56,7 @@ import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { railPanelCount, railPhase } from '../src/sim/railway-queries-line1.ts';
 import { line2SeaOpen, railCounts } from '../src/sim/railway-queries-line2.ts';
-import { cartCycleTicks } from '../src/sim/railway-cart.ts';
+import { CART_PHASE, cartCycleTicks } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
@@ -587,7 +587,7 @@ test('boiler and train packets patch the mirror; boiler blocks predicted materia
     ).status,
     'accepted',
   );
-  r.sync.stepWorld(12000);
+  for (let i = 0; i < 400; i++) r.sync.stepWorld(100);
   r.pump();
   agree(r, 'a');
   assert.equal(boiler(r.mirrors.get('a')!.confirmed()).state, 'fitted');
@@ -869,4 +869,49 @@ test('a steel kit take a friend beat you to comes back as onCorrected', () => {
   );
   adapter.dispose();
   agree(r, 'a');
+});
+
+test('a late joiner sees the fitted boiler cold while the cart returns', () => {
+  const seed = buildSeedWorld('boiler');
+  seedAct(seed, 'a', 'rail.boilerTake', { revision: boiler(seed.w).revision });
+  seedAct(seed, 'a', 'rail.boilerFit', { revision: boiler(seed.w).revision });
+  const r = room();
+  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
+  r.api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
+  r.api.touchAll();
+  r.join('late');
+  r.pump();
+  const w = r.mirrors.get('late')!.confirmed();
+  assert.equal(boiler(w).state, 'fitted');
+  assert.equal(rail(w).trains, -1);
+  assert.equal(works(w).breaker, 0);
+  assert.deepEqual(cart(w), cart(r.api.world()));
+  agree(r, 'late');
+  // Disconnect and replace the mirror during the cold wait, as a reconnect does.
+  r.replication.removeClient('late');
+  for (let i = 0; i < 10; i++) r.sync.stepWorld(100);
+  r.join('late');
+  r.pump();
+  agree(r, 'late');
+  assert.equal(rail(r.mirrors.get('late')!.confirmed()).trains, -1);
+  let waited = 0;
+  while (rail(r.api.world()).trains < 0) {
+    assert.ok(waited++ < 400, 'the cart returns and wakes the trains');
+    r.sync.stepWorld(100);
+    r.pump();
+    agree(r, 'late');
+  }
+  const awake = r.mirrors.get('late')!.confirmed();
+  assert.equal(cart(awake).phase, CART_PHASE.REST);
+  assert.equal(works(awake).breaker, 1);
+  assert.equal(rail(awake).trains, rail(r.api.world()).trains);
+  // Reconnect again after wake: the replacement snapshot and following deltas agree too.
+  r.replication.removeClient('late');
+  for (let i = 0; i < 20; i++) r.sync.stepWorld(100);
+  r.join('late');
+  r.pump();
+  agree(r, 'late');
+  r.sync.stepWorld(100);
+  r.pump();
+  agree(r, 'late');
 });

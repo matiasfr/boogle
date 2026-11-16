@@ -72,7 +72,7 @@ garage's works copy builds `consistOf` with no rider.
 
 Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rule; builders from `npm run models`.
 
-- [ ] **R1a. The trains wait for the cart (S, top of S).** Sync: Server (rules). Tier: **independent review**. Builds:
+- [x] **R1a. The trains wait for the cart (S, top of S).** Sync: Server (rules). Tier: **independent review**. Builds:
   Codex gpt-6.1-sol medium; review a fresh gpt-6-astra (medium as a first pass). Bump: **yes**, the next free number:
   "line 2's trains wake once the depot cart is home; the cart never shares line 2 with a train". Needed under every
   option (Level finding 9: on main the cart drives through the line 2 train that has just woken) and depends on
@@ -100,6 +100,15 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   - **Proof:** `npm run checkpoints -- q5-done boiler trains-on`; `npm run loop -- run` (boiler beat unchanged; trains
     on at the same time on the route, since no real fit beats the cart: see the ruling); `dev/look/evals/forge-handoff.ts`
     passing unchanged. **Done means** those, and the ruling's acceptance below.
+
+  **As built, 16 November:** shared `line2Wake` gates the trains and breaker on fit plus cart REST; the pedestal and
+  Far Head handoff are unchanged. v56 follows the loader yard's v55, in a separate bump commit. Fitted boilers remain
+  visible while cold; wake steam, the forge timer and peers' ability flourish follow trains-on. The seeded wake is
+  tick 3376 (+257); boiler remains 3099. The loop's Q5-to-fit is 77.9 s (75.4 s for the 3-player canonical order),
+  with a 31.0 s haul: no route wait and the old-rule control has identical wake times. Forced proof shows the cart
+  visible late in the wait from the framed old train, then REST and first steam at wake tick 3376; the early cart
+  is out of sight. See [implementation and evidence report](../reports/rider-coach-r1a.md) for checks, first-frame
+  inspection limits and all artifacts. Independent review remains the next owner's workflow; nothing shipped here.
 
   <a id="r1a-designer-ruling"></a>**Designer ruling, 16 November: wait at the trains' wake, not at the pedestal.**
   *What plays at Q5 today* (`far-head-view.ts`, `far-head-show.ts`, `forge-call.ts`, `part-hoist.ts`): from the

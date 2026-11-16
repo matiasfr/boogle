@@ -2,6 +2,7 @@
 // the tick, each transfer is one atomic step that conserves logs and rails, an empty forge keeps it waiting, a call
 // stands once, and the away credit counts its loads.
 import test from 'node:test';
+import { WORLD_NS } from '../src/world/namespace.ts';
 import assert from 'node:assert/strict';
 import { createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
@@ -176,7 +177,7 @@ test('a save still carrying the cart recall column is refused whole, and older s
   const snap = JSON.parse(JSON.stringify(atQ2().w.snapshot()));
   snap.c.cart.push(snap.c.cart[0].map(() => 0));
   assert.throws(() => createRailwayWorld().load(snap, railwayCheck), /load: cart columns/);
-  assert.match(railwayRoomId('boogle'), /^rail-v55-/);
+  assert.ok(railwayRoomId('boogle').startsWith(`rail-${WORLD_NS}-`));
 });
 
 test('the away credit counts the cart: the load under way lands, whole trips bring the rest, the cart is home', () => {

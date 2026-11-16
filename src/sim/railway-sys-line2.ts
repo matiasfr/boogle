@@ -128,40 +128,50 @@ export const boilerDrop = defineSystem(
 );
 export const boilerFit = defineSystem(
   'rail.boilerFit',
-  { reads: [Account, QJob, Aperture, Leg], writes: [Boiler, Rail, Train, Works], phase: 'act', order: 31 },
+  { reads: [Account, QJob, Aperture, Leg, Cart], writes: [Boiler, Rail, Train, Works], phase: 'act', order: 31 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
     if (w.get(Rail, railId(w))!.trains >= 0 || !boilerReleasable(w, a.pid, a.epoch, e.revision!)) return 0;
     const b = w.mut(Boiler, boilerId(w))!;
     Object.assign(b, { state: 'fitted', holder: '', epoch: 0, age: 0, revision: b.revision + 1 });
-    // The empty pedestal casts the breaker as trains wake: the Works and Q6 open together.
-    if (w.get(Works, worksId(w))!.breaker === 0) w.mut(Works, worksId(w))!.breaker = 1;
-    w.mut(Rail, railId(w))!.trains = tick;
-    // Each line's trains spread round its circuit (docs/plans/generic-lines.md, "Starting"): line 2's at the Village
-    // (up) and Far Head (down); they wake together.
-    // A line's fleet rows past its first stage stay in the shed (the greybox route): the first `trains` slots wake.
-    RAIL_LINES.forEach((_l, line) => {
-      const places = trainPlaces(line, stopsOf(w, line));
-      LINE_SLOTS[line]!.slice(0, places.length).forEach((slot, k) => {
-        const { stop, track } = places[k]!,
-          s = TRAIN_STOPS[line]![stop]!;
-        Object.assign(w.mut(Train, trainId(w, slot))!, {
-          phase: TRAIN_PHASE.STAND,
-          at: stop,
-          to: stop,
-          track,
-          origin: track === 1 && stop === stopsOf(w, line).length - 1 ? s : 0,
-          depart: trainWakeAt(line, tick) + TRAIN.wakeTicks - (line === LINE2 ? TRAIN.dwellTicks : 0),
-          req: 0,
-          from: s,
-          v0: 0,
-          dest: s,
-        });
-      });
-    });
+    line2Wake(w, tick);
     return 1;
   },
 );
+/** The fitted engine and the cart's return share one wake edge. */
+function line2Wake(w: World, tick: number) {
+  if (
+    w.get(Boiler, boilerId(w))!.state !== 'fitted' ||
+    w.get(Rail, railId(w))!.trains >= 0 ||
+    w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST
+  )
+    return;
+  // The empty pedestal casts the breaker as trains wake: the Works and Q6 open together.
+  if (w.get(Works, worksId(w))!.breaker === 0) w.mut(Works, worksId(w))!.breaker = 1;
+  w.mut(Rail, railId(w))!.trains = tick;
+  // Each line's trains spread round its circuit (docs/plans/generic-lines.md, "Starting"): line 2's at the Village
+  // (up) and Far Head (down); they wake together.
+  // A line's fleet rows past its first stage stay in the shed (the greybox route): the first `trains` slots wake.
+  RAIL_LINES.forEach((_l, line) => {
+    const places = trainPlaces(line, stopsOf(w, line));
+    LINE_SLOTS[line]!.slice(0, places.length).forEach((slot, k) => {
+      const { stop, track } = places[k]!,
+        s = TRAIN_STOPS[line]![stop]!;
+      Object.assign(w.mut(Train, trainId(w, slot))!, {
+        phase: TRAIN_PHASE.STAND,
+        at: stop,
+        to: stop,
+        track,
+        origin: track === 1 && stop === stopsOf(w, line).length - 1 ? s : 0,
+        depart: trainWakeAt(line, tick) + TRAIN.wakeTicks - (line === LINE2 ? TRAIN.dwellTicks : 0),
+        req: 0,
+        from: s,
+        v0: 0,
+        dest: s,
+      });
+    });
+  });
+}
 // ---------------------------------------------------------------- line two's ops
 function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
   const spec = LINE2_STATIONS[k]!;
@@ -399,7 +409,10 @@ function cartStep(w: World, tick: number) {
           }
         } else if (c.phase === P.DROP) next(P.BACK, end);
         else if (c.phase === P.BACK) next(P.HOME, end);
-        else next(P.REST, end);
+        else {
+          next(P.REST, end);
+          line2Wake(w, tick);
+        }
     }
   }
 }
@@ -451,7 +464,7 @@ export const line2Tick = defineSystem(
 /** The depot cart, after the forge has poured this tick (so a waiting cart takes a rail the tick it lands). */
 export const cartTick = defineSystem(
   'rail.cartTick',
-  { reads: [QJob, Train, Works], writes: [Cart, Rail, Forge], phase: 'tick', order: 2 },
+  { reads: [QJob, Boiler, Aperture, Leg], writes: [Cart, Rail, Forge, Train, Works], phase: 'tick', order: 2 },
   (w, { tick }: Tick) => cartStep(w, tick),
 );
 export const boilerStood = defineSystem(
