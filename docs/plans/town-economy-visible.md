@@ -381,6 +381,9 @@ builds on the recommendation.
 5. **Once two houses stand, a rooftop run may reach the balcony find without the glider. Accept, as for the blocks?**
    Recommended: **yes**.
 
+Answer (owner, 16 November): "I'll do the recs for town I think." 1, 2, 4 and 5 are yes; 3 was measured since and waits
+for the designer's review ([decision](../decisions-rewards.md#d-2026-11-16-town-questions-as-recommended)).
+
 ## Design review (designer, 2026-11-16)
 
 **Build with changes, now in the steps.** Read: DESIGN 6, 7, 11; owner-calls; rewards and rail Current rules (10 to 14
