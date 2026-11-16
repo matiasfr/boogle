@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 16 November 2026 about 09:00 UTC, by a fresh orchestrate session (Claude, in T3 Code). World **v52** is live; main `3720b4c3b` (#1905) is green. Models and effort: `npm run models`.
+**Updated:** 16 November 2026 about 10:30 UTC, by a fresh orchestrate session (Claude, in T3 Code). World **v52** is live; main `3720b4c3b` (#1905) is green. Models and effort: `npm run models`.
 
 ## 16 November: the focus, and what is running
 
@@ -16,50 +16,8 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 - **Next, in order:** designer review of the slice 5 re-plan, then dispatch its first view step (player-visible row) and the buy (high-risk row, after v53 lands, since both edit `namespace.ts` and `railway-components.ts`); an independent review of garage step 1, then ship; the designer rebalances Quick against Strong on the garage page; garage step 2 (view only) can start any time.
 - **Orchestrator's call, for the owner to undo:** garage step 1 was started although the garage moment's checkpoint (proofs only; G1 to G5 are on main) is unticked: "Nothing waits for a playtest" and the step brings its own garage proof. The checkpoint's proofs are still owed as a runner job.
 - **Machine:** load was 33 on 10 cores at 08:30 UTC with about 25 unmerged T3 worktrees from 14–15 November; timing and bot results under that load prove little. Not cleaned up in this session: check each against `git cherry origin/main` before archiving.
+- **Trimmed 16 November:** the 14–15 November hand-off and the 14 November morning snapshot were removed (git keeps them: `git log -p -- docs/agents/orchestrator-state.md`); their lessons joined Rules learned and their unanswered owner questions joined Open owner questions. Answered questions were dropped; they are in the decision log.
 - **Leftover moved here from the backlog:** P2, the rotunda's quiet-machine frame timing, smoothness and device performance are still unverified (its steps 1–5 shipped, #1880 and #1890).
-
-**Older status below** (kept for its detail; this section supersedes it where they differ).
-
-## Night of 14–15 November (Opus orchestrating in T3 Code)
-
-- **Routing until 5 am PST Sunday 15 November** (owner, 14 November evening: "let's use codex models until 5 am sunday and keep opus orchestrating here as our usage is dwindling"): every hands-on, planning, design-review and review job goes to Codex (Sol by the models table's rows, Astra for high-risk, planning and review); only orchestration runs on Claude (Opus, this session). After 5 am, back to `npm run models`.
-- **Hand-off items:** the main typecheck fix landed (#1833, main green). The z-fighting detector port was reviewed (Astra `review-zfight-port`: ship; census 176/61/541; `zfight --strict` stays report-only) and is in `ship-queue` from `codex/zfight-detector-3`. The backlog board is in review (Astra `review-backlog-board`).
-- **Dispatched (Codex):** `accounts-plan` (Astra high, writes `docs/plans/accounts.md`); `traveller-step2` (Astra high, railhead traveller step 2, the first v46 piece, bump in its own commit); `terrain-2a` (Sol medium, terrain Part 2a steps 1–3, view only); `rotunda-checkpoint-a` resumed (rebase, the works bot's missing Quarry-stop prompt, perf, frame timing).
-- **Dropped by the owner, 14 November evening: the local backlog board** (`npm run board`; plan `docs/plans/backlog-board.md`, never on main). He ran it and it failed to start ("Error: Command failed: .../node .../dev/board/cli.ts serve", under Node v24.11.1 against the pinned 26), then: "we can abandon and clean that up". Its review had found two P1s (a board commit could start Claude through `ci-autofix.yml`'s dispatch path; a refresh could destroy staged work) and three P2s. The fix job was cancelled and every board worktree and branch removed; the tips are kept as local tags `archive/worktree/codex/backlog-board` and `archive/worktree/plan/backlog-board`. The read-only boogle.club/development page (#1828) stays.
-- **Shipped tonight:** #1834 the z-fighting detector; #1835 `/orchestrate` renamed `/orchestrate-boogle`, and in T3 Code every job is a T3 delegate (owner call). Running as T3 delegates: `zfight-top20` (Sol, the top twenty visible spots).
-- **World v46 shipped** (#1841, railhead traveller step 2; Codex Astra review: ship, no findings; `test:net` 190/190 outside the sandbox). The owner was asked whether to hold it while he played or stack the great tree on it, and answered "Ship now". The great tree move is therefore **v47**, building as T3 delegate `great-tree-v47`; the "rack move" needs nothing (owner: "I think the rack may have already moved. That was the curio rack."; the curio shelf moved in #1771 and #1778). Also landed tonight: #1837 rail tops and trestle joints (z-fighting), #1838 the accounts plan (four owner questions open, proceeding on its recommendations), #1839 rotunda Checkpoint A notes (works bot passes; quiet frame timing still owed), #1840 terrain clean-up 2a (paths as packed earth, no wall-foot paint; heights unchanged).
-- **Clean-up:** nine stale daily-run worktrees (3–10 November) and the merged `meadow/everywhere` agent worktree were removed at the owner's request; their uncommitted files are in `~/.boogle/daily/salvage-2026-11-14/`.
-
-## Start here (hand-off, 14 November evening)
-
-**Pick-up in five steps.**
-
-1. Read [the backlog](../backlog.md): the ranked list of everything the owner has committed to, each row with its status and next step. "What's next" comes from there, by rank. It is also the public dashboard at https://boogle.club/development (built from the file on every deploy; Owner words never published).
-2. Run `npm run heartbeat` and `npm run inflight` from any current checkout. Check main CI first (a red main beats new work).
-3. Check the three branches below that were in flight at hand-off.
-4. Work from your own worktree off `origin/main`. The repo-root checkout at `~/Developer/boogle` is a detached launcher hundreds of commits behind: never read plans from it or edit it.
-5. Models and effort come from `npm run models`: one table since 15 November, no modes; the owner edits its rows when the mix should change.
-
-**In flight at hand-off** (check each; none was killed):
-
-- **Main typecheck fix**, branch `fix/meadow-offsetlat` (worktree `../boogle-codex/fix-meadow-offsetlat`): main went red at #1830 because the meadow imported `upLat`, which v45 had renamed `offsetLat` (d1601e31e). Five-line rename, reviewed (Codex Astra: ship), queued in `ship-queue` with `--main-known`. If main is still red, confirm it landed (`git cherry origin/main fix/meadow-offsetlat`) and re-run CI.
-- **Z-fighting detector**, Codex job `zfight-detector`, branch `codex/zfight-detector-2` (worktree `../boogle-codex/zfight-detector`): approved after two Astra rounds (205 likely-visible groups, 61 joints, 545 hidden; the owner's two Home spots found). Its first ship failed typecheck: `dev/level/drawn-geometry.ts` imported the removed `src/proto/terrain-pass/*`; Codex is porting it to `src/place/ground-layers.ts`, `ground-material.ts` and `dev/ground/drawn.ts`. Then: a short re-review of that port, ship. After it lands: a job to fix the top twenty visible spots in `docs/research/zfighting-2026-11-14.md`.
-- **Local backlog board**, Codex job `backlog-board` from branch `plan/backlog-board` (plan `docs/plans/backlog-board.md`, commit 0b0c9c0c5, not yet on main): steps 1 to 6 (P1–P5 ranks with a stable id column; a read-only kanban on boogle.club/development; `npm run board` on localhost for the owner's drags, ranks and notes; `npm run board -- ship` with no model in the loop). Proceeding on the plan's three recommendations (re-rank and four "blocked on owner" statuses; shipped rows kept seven days; his Notes are his words, never edited by agents). Owner words: "I just dont want tokens going to the development page." Needs an independent review, then ship it (plan + build together) at a pause, and have the owner try one note end to end.
-
-**Shipped 14 November afternoon and evening** (each code change after an independent Codex Astra review): #1821 terrain ledge removal; #1822 glider wisps and wind; #1823 The Boogler's statue on the green; #1824 meadow flags; #1825 Home station fixes; #1826 the backlog; #1827 **world v45** (rotunda steps 1a and 1b, right-hand running steps 3 to 6 with the Pier's west platform, destination plaques off their masts, edge stripes seated; network suite 190/190); #1828 the development page from the backlog; #1829 decisions (backlog dashboard, accounts committed, v45 "ship at will"); #1830 meadow everywhere, default on (`?meadow=0` off). v45 was confirmed live: server deploy and smoke passed, boogle.club loaded with no console errors.
-
-**Lessons from today** (add to the numbered rules below):
-
-- After a ship lands, the next queued branch was checked against the old main. When two branches touch neighbouring code (v45 renamed a helper the meadow used), re-run `node dev/ship-check.ts origin/main HEAD` on the second after the first lands, before shipping it.
-- `dev/codex/run.ts review` takes `--ref-branch` only; `--base-ref` is for tasks.
-- The heartbeat's STALLED mark on a Codex job is often false (low CPU while waiting on the model): check `.look/codex/<topic>/events.jsonl` mtime.
-- `npm run server -- reset <room>` resets a room (backup first); the owner asked how, for future playtests.
-
-**Owner questions still open** (each proceeds on its recommendation): the board plan's three (above); suspect strings owed to him in one list (footings board lines in `src/entities/railway/footing-cues.ts`, "Next load: on the wagon", kiln, cradle, seal, great tree, rack and wagon prompts); the statue's facing and size, the glider trail's brightness and the wind sound (his walk); the right-hand running plan's three questions; walk the Round blockout. Items the backlog agent could not tell were commitments (train ladder, short turn, co-op abilities E, great beam, 2D economy prototype, express and east bay, yards, production-core slices 6 and 7, the target-quality pass, the 12 November hold list, mini-golf, critters) were put to him on 14 November and are unanswered: ask once.
-
-**Next work by the backlog's ranks** after the three in-flight items: the v46 reset (traveller step 2 rows `moved` and `from`, great tree move, rack move; the train ladder if he confirms it), a planner for accounts (`docs/plans/accounts.md`), terrain clean-up Part 2 (2a view-only can start), rotunda Checkpoint A timing then steps 2 to 5, prefab steps 11 to 13. HOTBOX has been down since 12 November.
-
-**Older status below** (morning snapshot, kept for its detail; the hand-off above supersedes it where they differ).
 
 ## Links
 
@@ -73,62 +31,9 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
   - approved: [recovery rack](../brainstorms/recovery-rack.md), [signposts](../brainstorms/signposts.md);
   - building: [tunables](../brainstorms/tunables.md), [cart whistle](../brainstorms/cart-whistle.md).
 
-## Where the work stands
+## Rules learned
 
-**Status at 14 November about 17:30 UTC (morning snapshot; see Start here).** Main is `c6c64cfb6` (#1811), `WORLD_NS` **v44**. **v45 is one shared reset, not shipped.** The Round blockout is ready for the owner's walk. HOTBOX has been down since 12 November.
-
-*On main on 14 November after the playtest, newest last.* Each code change below had an independent Codex Astra review, two to five rounds (orchestrator's handoff). Numbers and titles below were checked against local `git log origin/main`; the descriptions say what each batch did, rather than treating its last fix's title as the whole batch.
-
-- **#1791 — Regenerate the rail map after the rebase onto #1789 (+5 more).** Forge fixes.
-- **#1792 — Terrain pass: keep catalogued placements, report both maxima, cap rock a body can touch (+5 more).** Terrain pass default on Home.
-- **#1793 — One source for the stall ramp, the shunt's path and the yard's rails (+10 more).** Roundhouse yard tidy.
-- **#1794 — Garage selection: dispose the ghost car with the view; a wagon under the cradle; Looks and Whistle hold still (+2 more).** Garage without try-on.
-- **#1795 — Return: keep the train's destination through landing dedupe; closed stack heads do not stand (+8 more).** Reload where you were.
-- **#1796 — Record the Round rebase resolution and fresh visual proof (+10 more).** The Round B1 and B2.
-- **#1797 — The take-off board, windsock and landing cloth; the empty railhead rack's tag; docs and loop cues (+3 more).** Gap cues without the traveller: hook ring, take-off board, windsock, landing cloth and rack tag.
-- **#1798 — Commuters wake beyond their draw radius, so nobody is seen to jump (+8 more).** Track layer retimed; commuters step off for trains.
-- **#1799 — A frame stood back up for a friend after a load is drawn only (+14 more).** Honest prompts; construction frames fold.
-- **#1800 — The Round B3: the little guys walk round the footing and the blocks (+1 more).** The Round B3: eight plot blocks and the clock footing.
-- **#1801 — Docs and loop graph: the footings boards and the map mark (+2 more).** Footings signalling steps 3 to 5: Works rack board, pier bill and map mark.
-- **#1802 — Turnouts plan: step 1 ticked with its departures and what the other junctions still need (+1 more).** Engine spur turnout J1, turnouts step 1.
-- **#1803 — Record B4 measurements and remaining proof gaps (+1 more).** B4 checkpoint report and town plan sheet (docs).
-- **#1804 — Round B4: the designer's ruling on the level findings.** Designer B4 ruling (docs).
-- **#1805 — Round blockout: the door mat stays 1.6 m wide (+1 more).** Block shadows and darker door mats.
-- **#1806 — Round B4: the network suite passes outside the runner sandbox (+1 more).** B4 owed runs, including the network suite 190/190 outside the Codex sandbox (docs).
-- **#1807 — Share town plan point formatting (+2 more).** Simplify pass 3; range reviewed through `12ba8f7ba`, the last pass end.
-- **#1808 — Plan: name the ring bot's seed for the bents proof (+1 more).** Railhead traveller plan (docs); also names the ring bot's seed for the bents proof.
-- **#1809 — Ring summit path: design review (+1 more).** Ring Island summit path plan and design review (docs).
-- **#1810 — Preserve exact railhead poses across integer replan stamps (+1 more).** Traveller step 1: pure haul helpers in `src/sim/railway-ring-haul.ts`, no live callers.
-- **#1811 — Extract the summit path and report its severed leg.** Summit path step 1: path as data, no visible change.
-
-*The playtest is done.* The owner played the whole built route alone, wake to High Gorge's barrier and the powered pick, 08:07 to 09:35 UTC on an iPad with a keyboard: about 63 minutes played across thirteen page loads. The 54 ranked notes and timeline remain in [the tracker](../plans/round-4-notes.md#owner-solo-session-14-november-ipad-with-a-keyboard-the-whole-built-route-ranked) and [playtests](../playtests.md#2026-11-14-owner-solo-the-whole-built-route-wake-to-high-gorge-and-the-powered-pick). That play predates these fixes; it is not their device proof. Owner stills are under `.look/owner/`: `terrain-pass-1114`, `round-b1b2`, `round-b3`, `round-b4`, `footings-cues`, `turnout-j1`.
-
-*In work at about 17:30 UTC (the handoff, not a live agent poll):*
-
-- **Rotunda step 1a:** local `codex/rotunda-1a-2`, tip `0e1a87f7f`; two reviews, ready to combine, network suite 190/190. Bumps `WORLD_NS` to v45; **not shipped**. A Claude implementer is building step 1b, the blockout, on top. [Plan](../plans/roundhouse-rotunda.md).
-- **Summit path step 2:** the 28 m footbridge landed later on 14 November (#1814, #1815). [Plan](../plans/ring-summit-path.md).
-
-*Parked:* the moving railhead traveller's view-side implementation, local `worktree-agent-af55e2f2172764ff8` and local tag `archive/worktree/railhead-traveller` (both `9b9845fbb`). Superseded by [railhead-traveller](../plans/railhead-traveller.md). Its step 1 helpers are on main without live callers; step 2 moves row fields `moved` and `from` and needs v45.
-
-**The shared v45 reset — one bump, owner's go-ahead, never mid-session.** Combine rotunda 1a and 1b and traveller step 2. Still to build for it: [running-side](../plans/running-side.md) steps 3 to 6; [the train ladder](../plans/train-progression.md); [the great tree move and kit loading from the leaf](../plans/level-pacing-1114.md); the railhead rack move. No part of that combined reset is shipped.
-
-*Ready for the owner:* walk the Round blockout; the three [home-flip](../plans/home-flip.md) questions are the rooftop run to the balcony gift until D4 (recommended yes), the south-east street (keep as built) and plot 8 (leave it). Other questions are below; each proceeds on its recommendation.
-
-*Earlier work still relevant:* server-owned players is complete through removal of the client lead (v44). Prefab data steps 1 to 10 are done; 11 to 13 remain. Becsy is parked by the owner. The earlier simplify candidates still need checking against current code before dispatch: duplicate operator room mutation, stale transport wording in tooling and binding instructions (owner's wording), and unexpanded built prefab artifacts. Two-device join, reconnect and restart proof is still owed. Earlier ranked leftovers remain below unless today's results supersede them.
-
-Prefab portability still matters: committed artifacts hold authored operands only; transcendental math runs at load, because macOS arm64 and Linux x64 differed in the last digit. Runtime goldens compare within a tolerance ([record](../plans/prefab-data-step-7-portability.md)). Room fast-forward remains off on production until `ADVANCE_KEY` is set there; its Dev dock control and countdown are on main.
-
-**Open owner questions** (each proceeding as stated): today's recommendations are under "Open owner questions" below. Earlier calls not settled by this handoff stay open:
-
-- Leg 1 shipped under the 1,600 cap (agent call 109): keep it, or revisit train spacing. The earlier 48-seed settled worst was 1,553 heavy and 1,535 light; the 1,400 gate held on four seeds only. Candidate A added waits on main's stages; candidate B helped light asks only. The short turn still needs its own plan; preserve the `scratch/spacing-*` sheets and record the results in the spacing plan.
-- After the rivet, should the footing wagon's train stop for stone (call 108)? The earlier measurement was 2,884 ticks between loads because its train never takes stone.
-- Does the shared pool replace halt yards for upgrades, or cover only goods carried to a hub ([entry](../decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool))?
-- Maps compress the leg to about 30% of its true length; Home shrinks after the rivet and names have leaders. His call on that trade.
-- Suspect copy still his: "It runs faster and pulls one more car", "Look at the engine", "Railhead" beside "Stack railhead", and the leg labels. The fourth car is now built; the old "no fourth car yet" note is superseded.
-
-
-
-**Rules learned** (the lessons; the orchestrator keeps them):
+The lessons; the orchestrator keeps them.
 
 1. Never run `ship-queue` through `| tail`: it hides the exit code. Log to a file, grep narrowly (`ship-check|error|rejected`).
 2. A test that spawns git under the pre-push hook inherits `GIT_DIR` (fixed in #1601: `test/helpers/scratch-git.ts`). If every worktree says "this operation must be run in a work tree", check `git config core.bare`.
@@ -159,12 +64,17 @@ Prefab portability still matters: committed artifacts hold authored operands onl
 26. A hidden browser pane has zero size and the game waits for a drawable size: give the pane a size (`resize_window`) before judging a boot slow.
 27. The smoke test gives up after five minutes and the server deploy often takes six: a smoke failure on "server deployed source commit" right after a server-path merge is the race; rerun it once the deploy is done.
 28. A change to label or layout costs must be diffed against main for the states most rooms are in (the pre-rivet maps), not only the new state.
+29. After a ship lands, the next queued branch was checked against the old main. When two branches touch neighbouring code (v45 renamed a helper the meadow used), re-run `node dev/ship-check.ts origin/main HEAD` on the second after the first lands, before shipping it.
+30. `dev/codex/run.ts review` takes `--ref-branch` only; `--base-ref` is for tasks.
+31. The heartbeat's STALLED mark on a Codex job is often false (low CPU while waiting on the model): check `.look/codex/<topic>/events.jsonl` mtime.
+32. `npm run server -- reset <room>` resets a room (backup first); the owner asked how, for future playtests.
 
 **Peers.** HOTBOX, the owner's Windows desktop, has been down since 12 November. Do not queue proofs there.
 
 **Housekeeping.** The 13 November cleanup archived removed tips under local `archive/worktree/*` tags, including `codex/hook-swing-prototype-wip`, `codex/two-player-track-wip` and `review/leaf-coop` (its test was not on main). Old worktree counts are superseded; inspect current worktrees before cleanup. Daily-job checkouts under `~/.boogle/daily` stay untouched. The parked traveller branch and tag above are kept.
 
-**Leftovers from 11–12 November, by rank:**
+## Leftovers from 11–12 November, by rank
+
 - P2 (12 November evening): the request guard test is blind to `kind` on every op and to `rail.wake`'s `tk` (`server/test/railway-steel-host.test.ts`, the baseline subtraction): subtract the baseline from `railValid`'s reads only.
 - P2: the garage on a phone: a real touch hold is untested; sound is unchecked on every capture; the race loser hears a deny and sees a second lift; a refusal's resync test was not run against the old code. Closed by F1/X1: the stand is radial at 85°, 6.5 m out, with its inner end outside the 4.8 m sweep; X1's garage view is still owed.
 - P2: leg 1 step 4: the barrier is a red fleck from the stair's top landing and its plate is unreadable from the concourse; the legs' deck batch is never frustum-culled; the old heads keep their platform one section longer than the review said (step 3's `closesAt`).
@@ -218,6 +128,10 @@ Prefab portability still matters: committed artifacts hold authored operands onl
 - Water: the owner's from-scratch rebuild request (no Ultra baggage, flat underwater tint, light shallows and foam kept, Mario Odyssey/Sunshine range, seabed following terrain; archive tag `archive/water-ultra-2026-11-09`) is unverified as complete; check against the water rebuild (#1354).
 - Parked (owner's build-order call): R4d's breaker carried at the rivet, the whistle bark and rivet toss, and a sim-side early-strike guard (needs a field and a bump).
 - Unverified on GitHub: the automerge `--touches` step, the bisect.
+
+## Notes kept from earlier snapshots
+
+Prefab portability still matters: committed artifacts hold authored operands only; transcendental math runs at load, because macOS arm64 and Linux x64 differed in the last digit. Runtime goldens compare within a tolerance ([record](../plans/prefab-data-step-7-portability.md)). Room fast-forward remains off on production until `ADVANCE_KEY` is set there; its Dev dock control and countdown are on main.
 
 ## How merging works
 
@@ -329,9 +243,7 @@ From 5–7 November and not on the roadmap anywhere else, so kept here; check ea
 
 ## Open owner questions
 
-- **Answered, 14 November, question 4 (Sit beside Request stop):** Sit wins near a chair; seated, Interact requests an offered stop and Jump stands you up. Confirms #1783 as a try; revisit after he plays ([decision](../decisions-controls.md#d-2026-11-14-sit-first-stop-when-seated)).
 
-Answered questions are in the decision log, not here.
 From 5–6 November; drop each when answered.
 
 1. **Look choices:** gain/key cell from the town wedge, then cloud brightness and warmth.
@@ -343,29 +255,28 @@ From 5–6 November; drop each when answered.
 7. **From 10 November** (one lever per platform side and the passenger car at four are answered; see the [decision log](../decisions-rail.md#current-rules)): end-game train direction ([mock-ups](../brainstorms/engine-endgame-mockups.md)): steam to modern (freight or high speed) or the dark plated sci-fi train, or that one as a rival; lengthen halts and gates past 6 m or articulate short cars; a tender on the largest current-era engine or not. The glider banner wording is still his to reword.
 
 8. **From 14 November, proceeding on the recommendations** (the gap's earlier three questions, the record ceiling and no try-on are answered; do not ask again):
-   1. **Answered, Round walk and home-flip:** rooftop run until D4, south-east street as built, plot 8 kept; all revisitable after his walk ([decision](../decisions-rail.md#d-2026-11-14-round-blockout-recommendations-accepted)).
-   2. **Answered, summit path:** footbridge, no rim fence for now, P2 ([decision](../decisions-rail.md#d-2026-11-14-summit-path-recommendations-accepted)).
-   3. **Answered, traveller:** shared v45 reset, deck in `line2-view`, haul timing kept ([decision](../decisions-rail.md#d-2026-11-14-traveller-recommendations-accepted)).
-   4. **Answered, terrain:** no complex unwalkable geometry; remove geometric ledges, material carries the look; geometry clean-up next, walkable ground first; consider custom meshes afterward ([decision](../decisions-look.md#d-2026-11-14-terrain-simple-geometry-cleanup-first)).
    5. **Open orchestrator default, track layer:** add a second hand so Q5/Q6 motion reads; keep laying speed. Newly stated after the owner answer; not owner-confirmed ([agent calls](../agent-calls.md#rail-construction-levels-and-travel)).
    6. **Footings:** the pier still accepts a hand-carried footing although the bill says by wagon (recommended: do not refuse it yet); "stall" versus "rotunda" on the footings board.
    7. **Turnouts:** J1 proof looks rough from above; the other junctions wait for his look.
    8. **Open orchestrator default, draft strings:** stay live until he edits them; keep one consolidated list of new strings owed to him ([agent calls](../agent-calls.md#controls-hud-and-arrival)): "Next load: on the wagon"; kiln, cradle, seal, great tree, rack and wagon prompts; footings board lines in `src/entities/railway/footing-cues.ts`.
-   9. **Answered, shared v45 reset:** go ahead once right-hand running is fixed, re-reviewed and its checkpoints pass; never mid-session; tell him before shipping ([decision](../decisions-process.md#d-2026-11-14-shared-v45-reset-go-ahead)).
-   10. **Earlier unresolved calls:** apply the DESIGN.md sync-table text and agent-instruction drafts ([step 8 report](../plans/server-owned-players-step8-report.md)); settle the earlier after-the-fact independent reviews; level-pacing's "should the cart ever be ridden" (no), "are the yards still the drop box you mean" (yes), the resident's wagon line (not now), and suspect copy "No line beyond yet", "Needs the powered pick", "Stop requested".
+   10. **Earlier unresolved calls:** apply the agent-instruction drafts (the DESIGN.md text was applied on 16 November) ([step 8 report](../plans/server-owned-players-step8-report.md)); settle the earlier after-the-fact independent reviews; level-pacing's "should the cart ever be ridden" (no), "are the yards still the drop box you mean" (yes), the resident's wagon line (not now), and suspect copy "No line beyond yet", "Needs the powered pick", "Stop requested".
 
-- **Answered, rotunda visibility:** no town sightline required; no sightline note in detail steps ([decision](../decisions-rail.md#d-2026-11-14-rotunda-needs-no-town-sightline)).
 
 - **Tidy:** simplify pass 3 is on main; **last pass end `12ba8f7ba`**. Start the next range after it, not from the old pass 1 or 2 endpoints.
 
+**Owner questions still open** (each proceeds on its recommendation): the board plan's three (above); suspect strings owed to him in one list (footings board lines in `src/entities/railway/footing-cues.ts`, "Next load: on the wagon", kiln, cradle, seal, great tree, rack and wagon prompts); the statue's facing and size, the glider trail's brightness and the wind sound (his walk); the right-hand running plan's three questions; walk the Round blockout. Items the backlog agent could not tell were commitments (train ladder, short turn, co-op abilities E, great beam, 2D economy prototype, express and east bay, yards, production-core slices 6 and 7, the target-quality pass, the 12 November hold list, mini-golf, critters) were put to him on 14 November and are unanswered: ask once.
+
+**Earlier calls, still open:**
+
+- Leg 1 shipped under the 1,600 cap (agent call 109): keep it, or revisit train spacing. The earlier 48-seed settled worst was 1,553 heavy and 1,535 light; the 1,400 gate held on four seeds only. Candidate A added waits on main's stages; candidate B helped light asks only. The short turn still needs its own plan; preserve the `scratch/spacing-*` sheets and record the results in the spacing plan.
+- After the rivet, should the footing wagon's train stop for stone (call 108)? The earlier measurement was 2,884 ticks between loads because its train never takes stone.
+- Does the shared pool replace halt yards for upgrades, or cover only goods carried to a hub ([entry](../decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool))?
+- Maps compress the leg to about 30% of its true length; Home shrinks after the rivet and names have leaders. His call on that trade.
+- Suspect copy still his: "It runs faster and pulls one more car", "Look at the engine", "Railhead" beside "Stack railhead", and the leg labels. The fourth car is now built; the old "no fourth car yet" note is superseded.
+
 ## Next moves
 
-- The order is in "Where the work stands": review and combine rotunda 1a/1b, finish the summit footbridge, build the remaining shared-reset pieces, and satisfy the recorded v45 conditions: right-hand running fixed, re-reviewed and checkpoints passing; tell the owner before shipping, never mid-session.
-- Give the owner the Round blockout walk; its three recommendations are accepted and may change after his walk. Retain the proof gaps under Leftovers.
-- Keep about three agents running; HOTBOX is down, so proofs stay local.
-- Report perf work in frame time as well as triangles ([owner call](owner-calls.md#frame-time-60)).
-- Keep the playtest guide current: https://claude.ai/artifact/Ud7yddruEMLszCgModu4WC
-- Next orchestrator: start from a current `origin/main` worktree, not the detached launcher; run the network suite in the job worktree and require independent review for code, `--orchestrator-read` for docs.
+The order is in the dated section at the top and in [the backlog](../backlog.md). Standing: about three browser-heavy jobs at once; HOTBOX is down, so proofs stay local; report perf work in frame time as well as triangles ([owner call](owner-calls.md#frame-time-60)); code ships only after an independent review, docs with `--orchestrator-read`; work from a current `origin/main` worktree, never the detached launcher at `~/Developer/boogle`.
 
 ## Peers
 
