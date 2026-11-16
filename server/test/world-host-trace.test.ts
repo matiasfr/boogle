@@ -19,6 +19,9 @@
 // v51 breaker fit: this trace never fits the boiler, so only 205 checkpoint namespaces/checksums and 1,842
 // snapBytes samples change. All state, hashes, inputs/results and packets stay exact. Audit and namespace-only
 // control: docs/plans/works-flow-step1.md#server-host-trace-follow-up--15-november-2026.
+// v53 garage upgrade: the trace never turns the table. A namespace-only v52 control still matches all 8,596 records.
+// Only 205 checkpoint namespaces/checksums and 2,313 snapBytes samples change; all state, hashes, inputs/results,
+// messages and replica packets stay exact. See docs/plans/garage-choices.md, step 1 as built.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
