@@ -51,6 +51,8 @@ for (let n = 0; n < 2600 && planted.length < 400; n++) {
   });
 }
 
+// Harvest identities and the old clearing stay pinned when the forge receiver moves.
+const FORGE_TREE_ANCHOR = { x: -88, z: -12 };
 // The two nearest existing trees north of the forge: visible on the later walk back along the village ridge.
 // Selection does not move a tree or consume RNG; IDs still follow the original scenery planting order.
 const hardwoods = planted
@@ -58,8 +60,8 @@ const hardwoods = planted
   .filter(({ t }) => t.x < ORIGIN.x - 55 && t.z < 0 && t.z > -80)
   .sort(
     (a, b) =>
-      Math.hypot(a.t.x - ORIGIN.x - FORGE_FRAME.x, a.t.z - FORGE_FRAME.z) -
-      Math.hypot(b.t.x - ORIGIN.x - FORGE_FRAME.x, b.t.z - FORGE_FRAME.z),
+      Math.hypot(a.t.x - ORIGIN.x - FORGE_TREE_ANCHOR.x, a.t.z - FORGE_TREE_ANCHOR.z) -
+      Math.hypot(b.t.x - ORIGIN.x - FORGE_TREE_ANCHOR.x, b.t.z - FORGE_TREE_ANCHOR.z),
   )
   .slice(0, 2);
 for (const { t } of hardwoods) t.hardwood = true;
@@ -128,6 +130,7 @@ for (const p of Object.values(ROOM_PLOTS))
 protectedPoints.push(
   { x: SPAWN.x + ORIGIN.x, z: SPAWN.z + ORIGIN.z, r: 6 },
   { x: FORGE.x + ORIGIN.x, z: FORGE.z + ORIGIN.z, r: 10 },
+  { x: FORGE_TREE_ANCHOR.x + ORIGIN.x, z: FORGE_TREE_ANCHOR.z + ORIGIN.z, r: 6 },
   { x: FORGE_FRAME.x + ORIGIN.x, z: FORGE_FRAME.z + ORIGIN.z, r: 6 },
 );
 

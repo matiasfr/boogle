@@ -10,7 +10,7 @@ export const RAILS = 2;
 export const LINE2_FORGE = {
   bills: [24, 32] as const,
   logs: 56,
-  x: 91200,
+  x: 92200,
   z: -1200,
   rackX: 91547,
   rackZ: 1005,
