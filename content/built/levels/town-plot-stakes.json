@@ -1,0 +1,21 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "town-plot-stakes",
+  "placements": [
+    {"id":"stakes","pos":[0,0,0],"prefab":"town.plot-stakes"},
+    {"id":"string","pos":[0,0,0],"prefab":"town.plot-string"},
+    {"id":"board","labels":{"label":"plot"},"pos":[2.2,0,1.2],"prefab":"town.plot-board"},
+    {"id":"crate.0","pos":[-2.82,0.39,0.78],"prefab":"town.plot-crate","scale":[0.78,0.78,0.78]},
+    {"id":"crate.1","pos":[-1.98,0.39,0.78],"prefab":"town.plot-crate","scale":[0.78,0.78,0.78]},
+    {"id":"crate.2","pos":[-2.82,0.39,1.62],"prefab":"town.plot-crate","scale":[0.78,0.78,0.78]},
+    {"id":"crate.3","pos":[-1.98,0.39,1.62],"prefab":"town.plot-crate","scale":[0.78,0.78,0.78]},
+    {"id":"crate.4","pos":[-2.82,1.17,0.78],"prefab":"town.plot-crate","scale":[0.78,0.78,0.78]},
+    {"id":"crate.5","pos":[-1.98,1.17,0.78],"prefab":"town.plot-crate","scale":[0.78,0.78,0.78]},
+    {"id":"crate.6","pos":[-2.82,1.17,1.62],"prefab":"town.plot-crate","scale":[0.78,0.78,0.78]},
+    {"id":"crate.7","pos":[-1.98,1.17,1.62],"prefab":"town.plot-crate","scale":[0.78,0.78,0.78]}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import blockoutLevel from '../content/built/levels/town-blockout.json' with { type: 'json' };
-import { blockoutFeet, standBlockout } from '../src/place/town-blockout.ts';
+import { blockoutFeet, standBlockout, PLOT_BLOCKS } from '../src/place/town-blockout.ts';
 import { AXIS, HALL, SHELF_SIZE, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
 import { prefabs as curioRecords } from '../src/content/prefabs/curio.ts';
 import { curioParts } from '../src/prefab/builders/curio-parts.ts';
@@ -143,10 +143,7 @@ test('there are twelve buildings, the eight plots in order, and two staked at on
     'plot7',
     'plot8',
   ]);
-  assert.deepEqual(
-    TOWN_PLOTS.order,
-    ids.filter((id) => id.startsWith('plot')),
-  );
+  assert.deepEqual(TOWN_PLOTS.order, ['plot3', 'plot2', 'plot1', 'plot4', 'plot5', 'plot6', 'plot7', 'plot8']);
   assert.equal(TOWN_PLOTS.stakedAtOnce, 2);
 });
 
@@ -431,12 +428,13 @@ type Stood = {
 const stood: Stood[] = standBlockout(blockoutLevel.placements, H);
 const piece = (id: string) => stood.find((p) => p.id === id)!;
 
-test('every slot is drawn once: a room, the gate cottage or a block', () => {
+test('every slot is drawn once: a room, the gate cottage or an empty outlined plot', () => {
+  assert.equal(PLOT_BLOCKS, false);
   for (const s of TOWN_SLOTS) {
     const drawn = [
       Object.hasOwn(ROOM_PLOTS, s.id),
       s.id === 'gate' && TOWN.start.length === 1,
-      TOWN_BLOCKS.some((b) => b.id === s.id),
+      stood.some((p) => p.id === `town.block.${s.id}.outline.0`),
     ].filter(Boolean).length;
     assert.equal(drawn, 1, `${s.id} is drawn ${drawn} times`);
   }
@@ -444,6 +442,18 @@ test('every slot is drawn once: a room, the gate cottage or a block', () => {
     TOWN_BLOCKS.map((b) => b.id),
     TOWN_PLOTS.order,
   );
+  assert.equal(stood.filter((p) => p.id.includes('.outline.')).length, 32);
+  assert.equal(stood.filter((p) => p.id.endsWith('.mat')).length, 8);
+  assert.equal(stood.filter((p) => p.id.endsWith('.door')).length, 0);
+  assert.equal(stood.filter((p) => p.prefab === 'greybox.box').length, 1, 'only the footing stays solid');
+  for (const b of TOWN_BLOCKS) {
+    assert.ok(!stood.some((p) => p.id === `town.block.${b.id}`), `${b.id} has no block`);
+    for (let i = 0; i < 4; i++) {
+      const outline = piece(`town.block.${b.id}.outline.${i}`);
+      assert.equal(outline.prefab, 'greybox.decoration');
+      near(outline.pos[1]! - outline.scale![1]! / 2, VILLAGE.y, 0.001, `${b.id} outline ground`);
+    }
+  }
 });
 
 test("a block's height is its kit's eave: a house's slab and wall, a cottage's wall", () => {
@@ -457,8 +467,10 @@ test("a block's height is its kit's eave: a house's slab and wall, a cottage's w
   assert.deepEqual(TOWN_FOOTING, { ...TOWN_CENTRE, yaw: 0, w: 5, d: 5, high: 0.3 });
 });
 
-test('the built level is the plan: eight solid blocks at their rows, a door panel and a mat on each door side', () => {
-  assert.equal(blockoutLevel.placements.length, 26);
+test('PLOT_BLOCKS restores eight solid blocks at their rows, with their door panels and mats', () => {
+  const stood = standBlockout(blockoutLevel.placements, H, true);
+  const piece = (id: string) => stood.find((p) => p.id === id)!;
+  assert.equal(stood.length, 26);
   assert.equal(stood.filter((p) => p.prefab === 'greybox.box').length, 9, 'eight blocks and the footing are solid');
   assert.equal(stood.filter((p) => p.id === 'town.statue').length, 1, 'and the statue, or its works, on the footing');
   for (const b of TOWN_BLOCKS) {
@@ -525,12 +537,13 @@ test("no block's mat lies on a road: each is off the ring and outside the quarry
   }
 });
 
-test('the little guys walk round the footing and the blocks: every solid has an avoidance footprint', () => {
+test('the little guys avoid the footing and only avoid plot blocks when they stand', () => {
   // folk.ts steers round `feet` (src/place/sites.ts), not colliders: each solid piece registers its footprint.
   const feet = blockoutFeet(stood);
   // The monument has one footprint, the footing's: it encloses the statue's plinth (town-statue-folk.test.ts).
-  assert.equal(feet.length, 9);
-  for (const b of [...TOWN_BLOCKS, TOWN_FOOTING]) {
+  assert.equal(feet.length, 1);
+  assert.equal(blockoutFeet(standBlockout(blockoutLevel.placements, H, true)).length, 9);
+  for (const b of [TOWN_FOOTING]) {
     const foot = feet.find(
       (f) => Math.hypot(f.x - b.x - ORIGIN.x, f.z - b.z) < 0.001 && f.hw === b.w / 2 && f.yaw === b.yaw,
     );

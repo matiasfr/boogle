@@ -102,7 +102,7 @@ models`'.
   - `src/entities/railway/train-view.ts`: the crate deck on `model.cars[2]` also shows `Train.freight` crates in its
     goods' tint (N6), through the same `solidTrainLoad`; on unload they go with the row change (N3).
   - Proof: `npm run look -- --rail-seed freight-running`: a still at the Camp stack and one of a line 1 train in.
-- [ ] **A2. Stakes and piles in the Round (M).** Sync: Cosmetic/Local over `Town.wood`, `Town.stone`, `plotsStaked`.
+- [x] **A2. Stakes and piles in the Round (M).** Sync: Cosmetic/Local over `Town.wood`, `Town.stone`, `plotsStaked`.
   Tier: normal + visual. Model: gpt-6-astra high. Parallel with A1, A3 and B1.
   - `src/entities/town/plots.ts` (new; town-layout step 5's file, D4 of [home-flip](home-flip.md)): per priced plot
     (`TOWN_PLOTS.order[k]`, `TRADE.plots[0][k]`): when staked, four stakes 0.3 m outside the footprint's corners, a
@@ -117,6 +117,18 @@ models`'.
     plan sheet (`dev/level/town-plan-sheet.ts`) follow. The first pile then grows 36 m from the island, in its view.
   - Proof: `npm run look -- --rail-seed freight-running`: from the hall's front toward plot 1's stakes, and at 375 × 812
     from the top of the dock street (the stakes must read at 40 m).
+  - **As built (16 November):** `plots.ts` reads the town facade; three prefab-backed boards/piles, one shared
+    stake/string/crate batch (48 slots), no bodies or interactions. Stakes are 1.4 m tall, 0.3 m outside each corner;
+    boards/piles keep the specified offsets. Piles show at most eight 0.78 m crates (1.56 m high when full), with
+    exact per-plot timber/stone counts and icons on the boards. All eight unbought slots have outlines/mats;
+    `PLOT_BLOCKS = true` restores blocks, door panels and folk footprints through the same level/view filter.
+    Order is `plot3, plot2, plot1, plot4…plot8`; no sim/save reader uses that layout order, no namespace change.
+    Opened `.look/town-a2-{hall,dock}-{still,motion}.png`: hall pile and stakes clear, board edge-on; phone pile and
+    enclosure visible at 40.0 m, individual crate counts and board words too small to rely on. Both WebGPU captures
+    pass with no graphics errors; shared-machine still evidence, no timing/feel claim, not tested on a device.
+    Commands are in `dev/look/evals/town-a2.ts`. Placeholder strings: `Plot 1`, `Plot 2`, `Plot 3`,
+    `Timber <have> / 8`, `Timber <have> / 16`, `Stone <have> / 16`. Existing copy untouched.
+    K1 retains ownership of the combined `game-design/place.md` economy-view update.
 - [ ] **A3. Riders and the till (M).** Sync: Cosmetic/Local over `Town.wait0`, `wait1`, `Train.riders`, `Till`. Tier:
   normal + visual. Model: gpt-6-astra high. Parallel with A1, A2 and B1.
   - `src/place/home-station.ts`: `TILL = { ...axisPoint(-11.4, ISLAND_C - 5.95), yaw: HALL.yaw }`: Place-local

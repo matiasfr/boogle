@@ -234,6 +234,7 @@ export async function collectDrawnGeometry() {
     }
   }
   for (const name of ['gorge', 'bell', 'west']) for (const p of readLevel(name)) prefab(p);
+  // N1: the runtime's PLOT_BLOCKS filter also chooses outlines versus blocks here.
   for (const p of standBlockout(readLevel('town-blockout'), terrain.H)) prefab(p);
   for (const p of openingStops())
     addGeometry(

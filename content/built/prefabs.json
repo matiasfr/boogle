@@ -3691,6 +3691,168 @@
         }
       }
     },
+    "town.plot-board": {
+      "attach": {
+        "label": {
+          "at": [
+            0,
+            1.05,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 1.1,
+          "kind": "label",
+          "posts": "one",
+          "w": 2.1
+        }
+      },
+      "colliders": [],
+      "key": "town.plot-board",
+      "scope": "place",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.plot-crate": {
+      "colliders": [],
+      "key": "town.plot-crate",
+      "scope": "place",
+      "visual": {
+        "batch": "route-greybox:massing",
+        "builder": "greybox.box",
+        "params": {
+          "colour": "#ab6b34"
+        }
+      }
+    },
+    "town.plot-stakes": {
+      "colliders": [],
+      "key": "town.plot-stakes",
+      "scope": "place",
+      "visual": {
+        "batch": "route-greybox:massing",
+        "builder": "greybox.box",
+        "instances": [
+          {
+            "pos": [
+              -4,
+              0.7,
+              -4
+            ],
+            "scale": [
+              0.18,
+              1.4,
+              0.18
+            ]
+          },
+          {
+            "pos": [
+              -4,
+              0.7,
+              4
+            ],
+            "scale": [
+              0.18,
+              1.4,
+              0.18
+            ]
+          },
+          {
+            "pos": [
+              4,
+              0.7,
+              -4
+            ],
+            "scale": [
+              0.18,
+              1.4,
+              0.18
+            ]
+          },
+          {
+            "pos": [
+              4,
+              0.7,
+              4
+            ],
+            "scale": [
+              0.18,
+              1.4,
+              0.18
+            ]
+          }
+        ],
+        "params": {
+          "colour": "#bd742d"
+        }
+      }
+    },
+    "town.plot-string": {
+      "colliders": [],
+      "key": "town.plot-string",
+      "scope": "place",
+      "visual": {
+        "batch": "route-greybox:massing",
+        "builder": "greybox.box",
+        "instances": [
+          {
+            "pos": [
+              0,
+              1.04,
+              -4
+            ],
+            "scale": [
+              7.82,
+              0.05,
+              0.05
+            ]
+          },
+          {
+            "pos": [
+              0,
+              1.04,
+              4
+            ],
+            "scale": [
+              7.82,
+              0.05,
+              0.05
+            ]
+          },
+          {
+            "pos": [
+              -4,
+              1.04,
+              0
+            ],
+            "scale": [
+              0.05,
+              0.05,
+              7.82
+            ]
+          },
+          {
+            "pos": [
+              4,
+              1.04,
+              0
+            ],
+            "scale": [
+              0.05,
+              0.05,
+              7.82
+            ]
+          }
+        ],
+        "params": {
+          "colour": "#f3daa0"
+        }
+      }
+    },
     "town.room-house-hulls-0": {
       "colliders": [],
       "key": "town.room-house-hulls-0",

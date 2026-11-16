@@ -1,5 +1,5 @@
-// The Round's blockout (docs/plans/home-flip.md, B3): plain grey blocks at the true size and place of the eight bought
-// plots, a pale door panel and a dark mat on each door side, and the footing at G with The Boogler's unfinished
+// The Round's blockout (town-economy-visible A2): empty outlined plots with their existing door mats. PLOT_BLOCKS
+// restores the solid spacing blocks and door panels. The footing at G carries The Boogler's unfinished
 // statue on it: a sheeted shape in a scaffold (owner, 15 November) until he has been met, then his stone statue
 // (owner, 14 November; the switch is `BOOGLER_STATUE_UNVEILED` in content/levels/town-blockout.ts). Local and static: the blocks read no fact. Where each stands is src/place/town-blockout.ts; a block leaves when its real building is mounted.
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -16,8 +16,7 @@ export const STATUE_WORKS_COPY = {
   statueWorks: ['WORK IN PROGRESS'],
 };
 
-/** Draw every block and mark in one batch and the statue; the blocks, the footing and the statue are solid and walked
- * round, the marks are not. */
+/** Draw the shared filtered placements in one batch and the statue. Only actual solids have avoidance footprints. */
 export function createTownBlockout(owner: OwnedView) {
   const placements = standBlockout(loadLevelArtifact(level, definitions).placements, H);
   // The boxes share one draw; the statue is its own mesh (it casts and receives through its builder).

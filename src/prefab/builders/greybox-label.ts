@@ -26,16 +26,20 @@ function paint(s: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: readonly string[]) 
   });
 }
 
-export function makeGreyboxLabel(a: Extract<Attach, { kind: 'label' }>, lines: readonly string[]) {
+export function makeGreyboxLabel(
+  a: Extract<Attach, { kind: 'label' }>,
+  lines: readonly string[],
+  painter: typeof paint = paint,
+) {
   const s = signBoard(undefined, { w: a.w, h: a.h, px: 1024, foot: a.at[1], posts: a.posts ?? 'two', wood: '#5d6063' });
-  paint(s, lines);
+  painter(s, lines);
   s.painted();
   s.mesh.name = 'route-greybox:sign';
   s.mesh.position.set(a.at[0], 0, a.at[2]);
   s.mesh.rotation.y = Math.atan2(a.facing[0], a.facing[2]);
   /** The same plate with new words (a count that moves): repainted in place, no new board. */
   const repaint = (next: readonly string[]) => {
-    paint(s, next);
+    painter(s, next);
     s.painted();
   };
   return { ...s, repaint };

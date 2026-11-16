@@ -5,6 +5,8 @@ import { levels as roomLevels } from '../src/content/levels/rooms.ts';
 import { prefabs as house } from '../src/content/prefabs/house.ts';
 import { levels as houseLevels } from '../src/content/levels/house.ts';
 import { levels as blockoutLevels } from '../src/content/levels/town-blockout.ts';
+import { prefabs as plotStakes } from '../src/content/prefabs/town-plot-stakes.ts';
+import { levels as plotStakeLevels } from '../src/content/levels/town-plot-stakes.ts';
 import { HALTS } from '../src/place/layout.ts';
 import { prefabs as museum } from '../src/content/prefabs/museum.ts';
 import { haltKitContent } from '../dev/prefab/halts.ts';
@@ -127,6 +129,7 @@ test('artifact serialization is independent of runtime native transcendental res
         [
           ...greybox,
           ...town,
+          ...plotStakes,
           ...rock,
           ...railway,
           ...seaLadder,
@@ -150,6 +153,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...roomLevels,
           ...houseLevels,
           ...blockoutLevels,
+          ...plotStakeLevels,
           ...sceneryLevels,
           ...haltKitContent().levels,
           ...rotundaContent().levels,

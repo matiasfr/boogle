@@ -35,6 +35,21 @@ const placements: Placement[] = PLOTS.flatMap(([plot, kit, short]): Placement[] 
     mat = short?.mat ?? k.mat;
   return [
     { id, prefab: 'greybox.box', pos: [0, k.mid, 0], scale: [k.w, k.high, k.d] },
+    // N1: the default drawn footprint is empty ground, with a low outline and the existing door mat.
+    ...(
+      [
+        [0, -k.d / 2, k.w, 0.12],
+        [0, k.d / 2, k.w, 0.12],
+        [-k.w / 2, 0, 0.12, k.d - 0.12],
+        [k.w / 2, 0, 0.12, k.d - 0.12],
+      ] as const
+    ).map(([x, z, w, d], edge): Placement => ({
+      id: `${id}.outline.${edge}`,
+      prefab: 'greybox.decoration',
+      pos: [x, 0.025, z],
+      scale: [w, 0.05, d],
+      params: { colour: '#e4cf9b' },
+    })),
     // The door side: a pale panel proud of the door face, and a dark mat wider than the door on the ground against
     // the wall, so the door side reads from above and on foot.
     { id: `${id}.door`, prefab: 'greybox.decoration', pos: [0, 1, k.face], scale: [DOOR_WIDE, 2, 0.12], params: pale },

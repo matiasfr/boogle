@@ -4,7 +4,8 @@
 // stretches are laid. Pure over a world and a tick. The look is worked out once per (world, tick): `railCounts` and
 // `railPhase` walk the rows, and the town asks every frame.
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
-import { jobs, qjobs, works, type ReadWorld } from '../../sim/railway-rows.ts';
+import { jobs, qjobs, works, town, type ReadWorld } from '../../sim/railway-rows.ts';
+import { plotsStaked } from '../../sim/railway-queries-trade.ts';
 import { railPhase } from '../../sim/railway-queries-line1.ts';
 import { railCounts } from '../../sim/railway-queries-line2.ts';
 import { townRead, type TownRead } from '../../sim/town-facts.ts';
@@ -12,6 +13,8 @@ import { townRead, type TownRead } from '../../sim/town-facts.ts';
 type Facade = RailwayAdapter['read'];
 
 export type TownLook = {
+  /** Home's delivered freight and numeric staking slots: cosmetic reads only. */
+  plots: { wood: number; stone: number; staked: readonly number[] };
   facts: TownRead;
   /** `railCounts(w, tick).score`: the shop's prices climb with it. */
   score: number;
@@ -30,6 +33,7 @@ const timed = (w: ReadWorld, tick: number) => ({
   phase: railPhase(w, tick, tick),
 });
 export const townLookOf = (w: ReadWorld, tick: number, held = timed(w, tick)): TownLook => ({
+  plots: { wood: town(w, 0).wood, stone: town(w, 0).stone, staked: plotsStaked(w, 0) },
   facts: townRead(w),
   ...held,
   breaker: works(w).breaker,
