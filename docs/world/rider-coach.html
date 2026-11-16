@@ -1,0 +1,502 @@
+<!doctype html> <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>
+  Rider coach · Boogle</title
+><style>
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: #f4f3ef;
+    color: #171917;
+    font:
+      16px/1.55 system-ui,
+      sans-serif;
+  }
+  main {
+    max-width: 1100px;
+    margin: auto;
+    padding: 30px 20px 70px;
+  }
+  section {
+    background: #fcfcfb;
+    border: 1px solid #dddcd6;
+    border-radius: 10px;
+    padding: 24px;
+    margin: 24px 0;
+  }
+  h1 {
+    font-size: 40px;
+    line-height: 1.1;
+  }
+  h2 {
+    font-size: 26px;
+  }
+  img {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+  small,
+  .note {
+    color: #52584f;
+  }
+  svg {
+    width: 100%;
+    min-width: 760px;
+    background: #eeeae0;
+    border-radius: 6px;
+  }
+  .drawing {
+    overflow: auto;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  td,
+  th {
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+    padding: 10px;
+  }
+  a {
+    color: #835329;
+  }
+  strong {
+    color: #653b24;
+  }
+</style>
+<main>
+  <small>BOOGLE / LOOK STUDY / 16 NOVEMBER 2026 / PREVIZ ONLY</small>
+  <h1>A proper little passenger coach</h1>
+  <p>
+    Eight riders, in a dedicated car included with every passenger train. The players’ knifeboard stays as it is. No
+    purchase, new strings or game changes. Proposal for a look decision; no candidate is owner-approved.
+  </p>
+  <section>
+    <h2>The period already in the game</h2>
+    <p>
+      <b>Reading: a late-Victorian British narrow-gauge industrial/light railway, roughly 1870–1900.</b> This is a
+      visual inference, not a canonical date or a proposal to reintroduce progression eras. The squat short-wheelbase
+      steam engine, separate cab, tall chimney, red boiler and brass bands suggest small industrial steam; timber
+      flatbeds, exposed iron rails and simple plank platforms reinforce that reading. The Roundhouse’s radial stalls and
+      turntable belong to the same steam workshop vocabulary, but do not date the game on their own. The
+      <a href="rider-coach/roundhouse.png">inspected running-game Roundhouse still</a> shows the radial stone stalls,
+      timber turntable and fan tracks.
+    </p>
+    <p>
+      Source inspection: <a href="../../src/entities/railway/engine.ts">engine geometry</a> and its
+      <a href="../../assets/src/engine.json">recipe</a>; <a href="../../src/entities/railway/cars.ts">existing cars</a>;
+      <a href="../../src/entities/railway/home-station-view.ts">station palette</a>;
+      <a href="../../src/entities/railway/roundhouse-view.ts">Roundhouse</a>. The
+      <a href="../research/roundhouse-trains.md">Roundhouse research</a> concerns workshop/progression, not an
+      authoritative historical date; <a href="../research/boiler-cart-art.md">boiler/cart art</a> supports broad bevels
+      and simple material blocks.
+    </p>
+    <p>
+      Use honey timber #b98a52, brown posts #5c4530, dark iron #2f3131, restrained red #a33a2c and small brass accents
+      #e6a33e. These are game colors, not a claim about a historical railway’s livery. Keep broad panels and readable
+      joints; omit lettering, fine lining, rivet fields and ornamental lamps.
+    </p>
+    <h3>Named references — descriptions, no copied photographs</h3>
+    <ul>
+      <li>
+        <a href="https://www.festipedia.org.uk/wiki/Carriage_4"
+          >Ffestiniog Brown, Marshalls “Small Birmingham” / bug box, 1864</a
+        >: low four-wheel enclosed body, panel divisions, short arc roof and side windows. A gives that compact enclosed
+        silhouette much larger droplight openings so hats remain visible.
+      </li>
+      <li>
+        <a href="https://bala-lake-railway.co.uk/about/">Dinorwic four-wheel open quarry coach, 1880</a>: compact
+        utilitarian passenger furniture with open sightlines. B combines that open passenger logic with the roofed
+        open-third vocabulary of the
+        <a href="https://www.festipedia.org.uk/wiki/FR_Carriages">Ffestiniog open bug boxes</a>; its canopy is our
+        adaptation, not an exact Dinorwic replica.
+      </li>
+      <li>
+        <a href="https://www.welshhighlandheritage.co.uk/wp-content/uploads/WHH-No-83.pdf"
+          >North Wales Narrow Gauge Railway saloon / Gladstone car</a
+        >: glazed central saloon and open end balcony vocabulary. C miniaturizes this saloon type on four wheels; it
+        does not copy the original chassis or claim a scale reproduction.
+      </li>
+    </ul>
+    <p>
+      Arc roofs keep the silhouettes low. A clerestory and lamp pots would add height and clutter without explaining
+      eight passengers; full-length running boards are replaced by one clear step at each entrance. Panelled timber
+      below, open air or large droplights above, and dark underframes carry the period.
+    </p>
+  </section>
+  <section>
+    <h2>Anchor — today’s train</h2>
+    <img src="rider-coach/anchor.png" alt="Current running Boogle train capture" />
+    <p class="note" id="capture-note">
+      Fresh running-game capture at fd9cd961, seeded trains-on, 16 November: red steam engine, existing empty
+      knifeboard, cargo car and timber station. WebGPU; no graphics errors. Look images below are generated proposals,
+      never running-game evidence.
+    </p>
+  </section>
+  <section>
+    <h2>Scale contract and honest lengths</h2>
+    <p>
+      Today’s player car: <b>2.20 m wide × 3.20 m long, deck 0.70 m</b>. Player: 1.70 m. Little guy: about 0.95 m
+      standing, hat 0.584 m across. The earlier
+      <a href="https://github.com/matiasfr/boogle/blob/0f5720adf/docs/world/rider-cars.html"
+        >rider-car layout studies</a
+      >
+      are superseded; their measured sizes still bind (source available at commit 0f5720adf).
+    </p>
+    <p>
+      All three seat <b>4 + 4 on facing longitudinal benches</b>, 0.60 m pitch. Four hats occupy 3 × 0.60 + 0.584 =
+      <b>2.384 m</b>. Proposed bench top is 0.22 m above deck, depth 0.35 m; the 1.80 m body leaves about 0.80 m between
+      benches after walls/posts. These are furniture assumptions needing a seated folk pose, not measurements of an
+      existing seated rig. A player’s furniture remains much taller.
+    </p>
+    <p>
+      <b>Platform gap to resolve:</b> the current platform edge is 1.65 m from track centre and 0.72 m high; a 1.80 m
+      coach body leaves a 0.75 m horizontal gap to its side at the 0.70 m deck. Each candidate therefore needs an
+      engineered boarding step/bridge or a wider underdeck ledge; the body width is not a proven boarding solution. Do
+      not shrink the platform or silently change its collider.
+    </p>
+    <p>
+      Lengths below are over body/deck, including balconies, excluding couplers. Reserve provisionally 0.25 m coupling
+      allowance at each end; the fit-check owner must measure actual train spacing, curves, frame and platforms. A 2.40
+      m body leaves only 0.016 m beyond the four hats: insufficient for end structure or motion. No candidate quietly
+      squeezes into it.
+    </p>
+    <table>
+      <tr>
+        <th>Candidate</th>
+        <th>L × W × H over rail</th>
+        <th>Minimum body length</th>
+        <th>At 2.4 / 3.2 m</th>
+      </tr>
+      <tr>
+        <td>A · Panelled bug box</td>
+        <td>2.80 × 1.80 × 2.05 m</td>
+        <td>2.60 m</td>
+        <td>No / yes geometrically</td>
+      </tr>
+      <tr>
+        <td>B · Summer coach</td>
+        <td>2.60 × 1.80 × 2.05 m</td>
+        <td>2.50 m</td>
+        <td>No / yes geometrically</td>
+      </tr>
+      <tr>
+        <td>C · Balcony saloon</td>
+        <td>3.20 × 1.80 × 2.10 m</td>
+        <td>3.20 m</td>
+        <td>No / exactly, before couplers</td>
+      </tr>
+    </table>
+    <p class="note">
+      Minimum A: 2.384 m hat run + 0.20 m ends ≈ 2.60 m. B: + 0.10 m thin open end frames ≈ 2.50 m. C: 2.40 m clear
+      saloon + two 0.40 m balconies = 3.20 m (end frames integrated into balcony zones). These are static packing
+      floors; animation may demand more.
+    </p>
+  </section>
+  <section>
+    <h2>A · Panelled bug box</h2>
+    <p>
+      <strong>Strongest enclosed period silhouette; weakest fare readability.</strong> Nominal 2.80 × 1.80 × 2.05 m.
+    </p>
+    <div class="drawing">
+      <svg
+        viewBox="0 0 1000 330"
+        role="img"
+        aria-label="Scaled side and end elevations with player and little guy; one hundred pixels per metre"
+      >
+        <g stroke="#393e38" stroke-width="2">
+          <rect x="35" y="201" width="280.0" height="9" fill="#b98a52" />
+          <rect x="35" y="211" width="280.0" height="14" fill="#303435" />
+          <circle cx="60" cy="251" r="29" fill="#303435" />
+          <circle cx="290.0" cy="251" r="29" fill="#303435" />
+          <rect x="35" y="182" width="280.0" height="19" fill="#b98a52" />
+          <rect x="35" y="85.00000000000003" width="7" height="115.99999999999997" fill="#60472f" />
+          <rect x="308.0" y="85.00000000000003" width="7" height="115.99999999999997" fill="#60472f" />
+          <rect x="35" y="155" width="280.0" height="27" fill="#b98a52" />
+          <path d="M35,87.00000000000003 Q175.0,63.00000000000003 315.0,87.00000000000003 Z" fill="#303435" />
+          <circle cx="70.0" cy="140" r="12" fill="#edb980" />
+          <rect x="40.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="60.0" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="140.0" cy="140" r="12" fill="#edb980" />
+          <rect x="110.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="130.0" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="210.0" cy="140" r="12" fill="#edb980" />
+          <rect x="180.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="200.0" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="280.0" cy="140" r="12" fill="#edb980" />
+          <rect x="250.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="270.0" y="154" width="20" height="22" fill="#718b63" />
+          <rect x="35" y="176" width="280.0" height="6" fill="#5c4530" />
+          <rect x="410" y="201" width="180" height="9" fill="#b98a52" />
+          <rect x="410" y="211" width="180" height="14" fill="#303435" />
+          <circle cx="435" cy="251" r="29" fill="#303435" />
+          <circle cx="565" cy="251" r="29" fill="#303435" />
+          <rect x="410" y="182" width="180" height="19" fill="#b98a52" />
+          <rect x="410" y="85.00000000000003" width="7" height="115.99999999999997" fill="#60472f" />
+          <rect x="583" y="85.00000000000003" width="7" height="115.99999999999997" fill="#60472f" />
+          <rect x="410" y="155" width="180" height="27" fill="#b98a52" />
+          <path d="M410,87.00000000000003 Q500.0,63.00000000000003 590,87.00000000000003 Z" fill="#303435" />
+          <circle cx="455.0" cy="140" r="12" fill="#edb980" />
+          <rect x="425.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="445.0" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="545.0" cy="140" r="12" fill="#edb980" />
+          <rect x="515.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="535.0" y="154" width="20" height="22" fill="#718b63" />
+          <rect x="410" y="176" width="180" height="6" fill="#5c4530" />
+          <rect x="716" y="145" width="28" height="135" fill="#36bbbf" />
+          <circle cx="730" cy="127" r="17" fill="#efbc83" />
+          <rect x="856" y="220" width="28" height="60" fill="#ce9560" />
+          <circle cx="870" cy="202" r="17" fill="#efbc83" />
+          <rect x="840.8" y="185" width="58.4" height="6" fill="#c2543c" />
+        </g>
+        <g fill="#292e29" font-family="system-ui" font-size="15">
+          <text x="35" y="305">SIDE · 2.80 m</text>
+          <text x="410" y="305">END · 1.80 m</text>
+          <text x="680" y="325">Player 1.70 m</text>
+          <text x="825" y="305">Folk ≈0.95 m</text>
+          <text x="35" y="22">Height 2.05 m · deck 0.70 m · same scale: 100 px = 1 m</text>
+        </g>
+      </svg>
+    </div>
+    <p class="note">
+      Orthographic design envelopes: four near-side riders; far four overlap in side elevation. End shows two rows. Hats
+      are 0.584 m wide; bodies/poses are schematic. Roof arcs and projections stay inside stated height. Drawing defines
+      dimensions; painted images do not.
+    </p>
+    <img
+      src="rider-coach/closed.png"
+      alt="Generated look proposal: Panelled bug box coupled to Boogle train at a platform"
+    />
+    <p>
+      <b>Visibility:</b> Four open droplights per side, low sills and no dark glass: hats and faces show broadside, but
+      the far bench still disappears behind the near row.
+    </p>
+    <p>
+      <b>Build:</b> Panelled lower shell, four-wheel iron chassis, arc roof, window posts, two benches, side doors and
+      short running steps. Shared needs: eight seated folk poses and anchors, boarding motion, coupler mesh and
+      train-placement integration.
+    </p>
+    <p>
+      <b>Boarding:</b> Two side doors at bench ends, opening toward the platform; split the access between both ends
+      rather than crossing seated knees. Door sweep and the last seat need a build check.
+    </p>
+    <p>
+      <b>Empty / full:</b> Empty: light through the windows and exposed bench slats. Full: four hats per side, with the
+      far four partially occluded; no counter may substitute for them.
+    </p>
+  </section>
+  <section>
+    <h2>B · Summer coach</h2>
+    <p><strong>Best balance of a real passenger coach and visible fares.</strong> Nominal 2.60 × 1.80 × 2.05 m.</p>
+    <div class="drawing">
+      <svg
+        viewBox="0 0 1000 330"
+        role="img"
+        aria-label="Scaled side and end elevations with player and little guy; one hundred pixels per metre"
+      >
+        <g stroke="#393e38" stroke-width="2">
+          <rect x="35" y="201" width="260.0" height="9" fill="#b98a52" />
+          <rect x="35" y="211" width="260.0" height="14" fill="#303435" />
+          <circle cx="60" cy="251" r="29" fill="#303435" />
+          <circle cx="270.0" cy="251" r="29" fill="#303435" />
+          <rect x="35" y="182" width="260.0" height="19" fill="#b98a52" />
+          <rect x="35" y="85.00000000000003" width="7" height="115.99999999999997" fill="#60472f" />
+          <rect x="288.0" y="85.00000000000003" width="7" height="115.99999999999997" fill="#60472f" />
+          <path d="M35,87.00000000000003 Q165.0,63.00000000000003 295.0,87.00000000000003 Z" fill="#303435" />
+          <circle cx="67.5" cy="140" r="12" fill="#edb980" />
+          <rect x="38.3" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="57.5" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="132.5" cy="140" r="12" fill="#edb980" />
+          <rect x="103.3" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="122.5" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="197.5" cy="140" r="12" fill="#edb980" />
+          <rect x="168.3" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="187.5" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="262.5" cy="140" r="12" fill="#edb980" />
+          <rect x="233.3" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="252.5" y="154" width="20" height="22" fill="#718b63" />
+          <rect x="35" y="176" width="260.0" height="6" fill="#5c4530" />
+          <rect x="410" y="201" width="180" height="9" fill="#b98a52" />
+          <rect x="410" y="211" width="180" height="14" fill="#303435" />
+          <circle cx="435" cy="251" r="29" fill="#303435" />
+          <circle cx="565" cy="251" r="29" fill="#303435" />
+          <rect x="410" y="182" width="180" height="19" fill="#b98a52" />
+          <rect x="410" y="85.00000000000003" width="7" height="115.99999999999997" fill="#60472f" />
+          <rect x="583" y="85.00000000000003" width="7" height="115.99999999999997" fill="#60472f" />
+          <path d="M410,87.00000000000003 Q500.0,63.00000000000003 590,87.00000000000003 Z" fill="#303435" />
+          <circle cx="455.0" cy="140" r="12" fill="#edb980" />
+          <rect x="425.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="445.0" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="545.0" cy="140" r="12" fill="#edb980" />
+          <rect x="515.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="535.0" y="154" width="20" height="22" fill="#718b63" />
+          <rect x="410" y="176" width="180" height="6" fill="#5c4530" />
+          <rect x="716" y="145" width="28" height="135" fill="#36bbbf" />
+          <circle cx="730" cy="127" r="17" fill="#efbc83" />
+          <rect x="856" y="220" width="28" height="60" fill="#ce9560" />
+          <circle cx="870" cy="202" r="17" fill="#efbc83" />
+          <rect x="840.8" y="185" width="58.4" height="6" fill="#c2543c" />
+        </g>
+        <g fill="#292e29" font-family="system-ui" font-size="15">
+          <text x="35" y="305">SIDE · 2.60 m</text>
+          <text x="410" y="305">END · 1.80 m</text>
+          <text x="680" y="325">Player 1.70 m</text>
+          <text x="825" y="305">Folk ≈0.95 m</text>
+          <text x="35" y="22">Height 2.05 m · deck 0.70 m · same scale: 100 px = 1 m</text>
+        </g>
+      </svg>
+    </div>
+    <p class="note">
+      Orthographic design envelopes: four near-side riders; far four overlap in side elevation. End shows two rows. Hats
+      are 0.584 m wide; bodies/poses are schematic. Roof arcs and projections stay inside stated height. Drawing defines
+      dimensions; painted images do not.
+    </p>
+    <img
+      src="rider-coach/summer.png"
+      alt="Generated look proposal: Summer coach coupled to Boogle train at a platform"
+    />
+    <p>
+      <b>Visibility:</b> Open sides and low waist rails expose hats, bodies and empty seats. A low camera can still
+      align the two rows; stagger the camera test, not the measured seating.
+    </p>
+    <p>
+      <b>Build:</b> Four-wheel underframe, panelled ends, eight canopy posts, one shallow arc canopy, two slatted
+      benches, low iron rails and side gates. Shared needs: eight seated folk poses and anchors, boarding motion,
+      coupler mesh and train-placement integration.
+    </p>
+    <p>
+      <b>Boarding:</b> A 0.60 m side gate at either end of each bench run; a short step at platform edge, no end-to-end
+      transfer from the player car. The roof is for folk, not player walk-through.
+    </p>
+    <p>
+      <b>Empty / full:</b> Empty: two visibly small benches beneath a real coach roof. Full: two orderly rows of four;
+      large openings make occupancy clearest, though the roof can hide hats from high cameras.
+    </p>
+  </section>
+  <section>
+    <h2>C · Balcony saloon</h2>
+    <p>
+      <strong>Most railway character, with the largest length and boarding cost.</strong> Nominal 3.20 × 1.80 × 2.10 m.
+    </p>
+    <div class="drawing">
+      <svg
+        viewBox="0 0 1000 330"
+        role="img"
+        aria-label="Scaled side and end elevations with player and little guy; one hundred pixels per metre"
+      >
+        <g stroke="#393e38" stroke-width="2">
+          <rect x="35" y="201" width="320.0" height="9" fill="#b98a52" />
+          <rect x="35" y="211" width="320.0" height="14" fill="#303435" />
+          <circle cx="60" cy="251" r="29" fill="#303435" />
+          <circle cx="330.0" cy="251" r="29" fill="#303435" />
+          <rect x="75" y="182" width="240.0" height="19" fill="#b98a52" />
+          <rect x="75" y="80.0" width="7" height="121.0" fill="#60472f" />
+          <rect x="308.0" y="80.0" width="7" height="121.0" fill="#60472f" />
+          <rect x="75" y="155" width="240.0" height="27" fill="#b98a52" />
+          <path d="M35,82.0 Q195.0,58.0 355.0,82.0 Z" fill="#303435" />
+          <circle cx="105.0" cy="140" r="12" fill="#edb980" />
+          <rect x="75.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="95.0" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="165.0" cy="140" r="12" fill="#edb980" />
+          <rect x="135.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="155.0" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="225.0" cy="140" r="12" fill="#edb980" />
+          <rect x="195.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="215.0" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="285.0" cy="140" r="12" fill="#edb980" />
+          <rect x="255.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="275.0" y="154" width="20" height="22" fill="#718b63" />
+          <rect x="75" y="176" width="240.0" height="6" fill="#5c4530" />
+          <rect x="410" y="201" width="180" height="9" fill="#b98a52" />
+          <rect x="410" y="211" width="180" height="14" fill="#303435" />
+          <circle cx="435" cy="251" r="29" fill="#303435" />
+          <circle cx="565" cy="251" r="29" fill="#303435" />
+          <rect x="410" y="182" width="180" height="19" fill="#b98a52" />
+          <rect x="410" y="80.0" width="7" height="121.0" fill="#60472f" />
+          <rect x="583" y="80.0" width="7" height="121.0" fill="#60472f" />
+          <rect x="410" y="155" width="180" height="27" fill="#b98a52" />
+          <path d="M410,82.0 Q500.0,58.0 590,82.0 Z" fill="#303435" />
+          <circle cx="455.0" cy="140" r="12" fill="#edb980" />
+          <rect x="425.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="445.0" y="154" width="20" height="22" fill="#718b63" />
+          <circle cx="545.0" cy="140" r="12" fill="#edb980" />
+          <rect x="515.8" y="123" width="58.4" height="6" fill="#b17a32" />
+          <rect x="535.0" y="154" width="20" height="22" fill="#718b63" />
+          <rect x="410" y="176" width="180" height="6" fill="#5c4530" />
+          <rect x="716" y="145" width="28" height="135" fill="#36bbbf" />
+          <circle cx="730" cy="127" r="17" fill="#efbc83" />
+          <rect x="856" y="220" width="28" height="60" fill="#ce9560" />
+          <circle cx="870" cy="202" r="17" fill="#efbc83" />
+          <rect x="840.8" y="185" width="58.4" height="6" fill="#c2543c" />
+        </g>
+        <g fill="#292e29" font-family="system-ui" font-size="15">
+          <text x="35" y="305">SIDE · 3.20 m</text>
+          <text x="410" y="305">END · 1.80 m</text>
+          <text x="680" y="325">Player 1.70 m</text>
+          <text x="825" y="305">Folk ≈0.95 m</text>
+          <text x="35" y="22">Height 2.10 m · deck 0.70 m · same scale: 100 px = 1 m</text>
+        </g>
+      </svg>
+    </div>
+    <p class="note">
+      Orthographic design envelopes: four near-side riders; far four overlap in side elevation. End shows two rows. Hats
+      are 0.584 m wide; bodies/poses are schematic. Roof arcs and projections stay inside stated height. Drawing defines
+      dimensions; painted images do not.
+    </p>
+    <img
+      src="rider-coach/saloon.png"
+      alt="Generated look proposal: Balcony saloon coupled to Boogle train at a platform"
+    />
+    <p>
+      <b>Visibility:</b> Large clear windows expose near-side faces; the end door offers an extra glimpse. The solid
+      body and roof hide more of the far row than B.
+    </p>
+    <p>
+      <b>Build:</b> Central panelled shell, low arc roof, four-wheel chassis, broad windows, two benches, two end doors,
+      balcony decks, iron guard rails, side steps and gates. Shared needs: eight seated folk poses and anchors, boarding
+      motion, coupler mesh and train-placement integration.
+    </p>
+    <p>
+      <b>Boarding:</b> Board from platform to balcony, then turn through an end door into a 0.80 m aisle. A 0.40 m
+      balcony is a minimum static landing for tiny folk, not a validated turning envelope.
+    </p>
+    <p>
+      <b>Empty / full:</b> Empty: a distinct central room with vacant benches and balconies. Full: a lively little
+      saloon, but only the near four read reliably through the side; end balcony occupants are not extra seats.
+    </p>
+  </section>
+  <section>
+    <h2>Image inspection — intent versus measurements</h2>
+    <p>
+      All three look images were made with the built-in OpenAI image_gen tool, using the earlier running-game anchor
+      from 0f5720adf as identity/style reference. A omits the cargo car, and its roof ribs and glazing are more
+      elaborate than needed. B best preserves the consist and exposes eight riders, but its gate/step is unresolved. C
+      incorrectly puts all eight riders along the visible side and exaggerates body length; use the 4 + 4 elevations and
+      dimensions, not that painted seating arrangement. In every image, hat sizes, body lengths and existing car
+      geometry are approximate: none is a scale or fit proof. Engine noses are cropped, but the cab, boiler and coupling
+      order remain legible.
+    </p>
+    <h2>Recommendation: B, the summer coach</h2>
+    <p>
+      Build the roofed open coach as the first look target: its arc canopy, panelled ends and four-wheel chassis say
+      “passenger railway,” while eight small seats and exposed riders explain fares without labels. Use the 2.60 m
+      nominal body, not its 2.50 m packing floor; retain the players’ car and engine sizes. A is the fallback if an
+      enclosed coach matters more than occupancy; C earns its extra length only if balcony boarding proves charming and
+      readable.
+    </p>
+    <h2>Not judged by this previz</h2>
+    <p>
+      Actual seated folk rig and hat collisions; view from both travel directions and game zoom; empty-versus-full
+      recognition in motion; canopy occlusion; platform gaps, door and gate clearance; complete train length, curves,
+      swept corners and the rock frame; coupling, rider boarding and disembarking; performance, multiplayer behavior and
+      fun. The separate fit check owns physical feasibility. No claim of an in-game build, approval, playable boarding
+      or motion proof.
+    </p>
+    <p class="note">
+      Tool receipts, image departures and capture identity: <a href="rider-coach/README.md">evidence notes</a>. No ROM
+      data, copied reference photographs or runtime art assets. The Boogler’s copy is unchanged.
+    </p>
+  </section>
+</main>

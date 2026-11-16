@@ -1,0 +1,20 @@
+{
+  "tool": "image_gen.imagegen",
+  "reference": "0f5720adf:docs/world/rider-cars/anchor.png",
+  "invariants": "Preserve Boogle chunky low-poly style, timber platform, bright grass, red boiler with brass bands, dark iron, existing knifeboard and Buddy. Add a dedicated coach behind train. Eight folk aboard, 0.95m standing, 0.584m hats; seats 0.22m above 0.70m deck. Elevated three-quarter platform view. No text, modern train or ornate detail.",
+  "variants": [
+    [
+      "closed",
+      "a closed four-wheel panelled timber coach, 2.8m long 1.8m wide 2.05m total height, low arc roof dark iron, honey wood lower panels and muted red waist, four large clear open droplight windows each side, two longitudinal benches facing inwards with four tiny riders per bench. Hats visible through windows."
+    ],
+    [
+      "summer",
+      "an open-sided four-wheel summer passenger coach, 2.6m long 1.8m wide 2.05m high, low dark iron arc canopy on slender chunky posts, honey timber waist panels only 0.28m above deck, two inward facing longitudinal benches four tiny riders per bench, generous open windowless sides. A proper Victorian coach with roof and panelled ends, not a flat wagon."
+    ],
+    [
+      "saloon",
+      "a four-wheel balcony-end saloon coach, 3.2m long 1.8m wide 2.1m high, two 0.4m deep end balconies with dark iron rails and end door, low arc roof, honey timber panelled body, very large windows, two longitudinal benches with four tiny riders per bench in central 2.4m saloon."
+    ]
+  ],
+  "receipt": "Actual model and cost not exposed; one attempt each; static images only."
+}
