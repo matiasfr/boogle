@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>
+    First-line decisions · Boogle
+  </title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f3ef;
+      --paper: #fcfcfb;
+      --ink: #0b0b0b;
+      --muted: #52514e;
+      --line: #dddcd6;
+      --accent: #a6441b;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font:
+        15px/1.5 system-ui,
+        sans-serif;
+    }
+    main {
+      max-width: 1200px;
+      margin: auto;
+      padding: 28px 18px 70px;
+    }
+    h1 {
+      font-size: 30px;
+      margin: 0;
+    }
+    h2 {
+      font-size: 20px;
+    }
+    p {
+      color: var(--muted);
+    }
+    a {
+      color: var(--accent);
+    }
+    button,
+    input {
+      font: inherit;
+    }
+    button {
+      padding: 10px 16px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button[aria-pressed='true'] {
+      background: var(--ink);
+      color: white;
+    }
+    input[type='number'] {
+      width: 90px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+    }
+    label {
+      display: inline-block;
+      margin: 5px 14px 5px 0;
+    }
+    #finding {
+      font-size: 20px;
+      color: var(--ink);
+      max-width: 1000px;
+    }
+    .controls,
+    article,
+    details {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      padding: 18px;
+      margin: 16px 0;
+      border-radius: 6px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .metric {
+      border-top: 3px solid var(--line);
+      padding: 9px;
+    }
+    .selected {
+      border-color: var(--accent);
+      background: #eb683410;
+    }
+    .seconds {
+      font-size: 26px;
+      font-weight: 650;
+    }
+    .small {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .bars {
+      display: flex;
+      gap: 3px;
+      height: 10px;
+      margin-top: 8px;
+    }
+    .bar {
+      background: #777;
+    }
+    .bar:nth-child(2) {
+      background: #d9591f;
+    }
+    .bar:nth-child(3) {
+      background: #1a9a6b;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    article h2 {
+      margin: 0;
+    }
+    .delta {
+      font-weight: 650;
+      color: var(--accent);
+    }
+    @media (max-width: 600px) {
+      main {
+        padding: 18px 12px;
+      }
+      .cards {
+        grid-template-columns: 1fr;
+      }
+      .metric {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .metric .small {
+        grid-column: 1/-1;
+      }
+      .seconds {
+        text-align: right;
+      }
+      h1 {
+        font-size: 26px;
+      }
+      #finding {
+        font-size: 18px;
+      }
+    }
+  </style>
+  <main>
+    <p class="small">BOOGLE / DESIGN MODEL / snapshot 3720b4c3b · 16 November 2026</p>
+    <h1>Pick your edge</h1>
+    <p id="finding" aria-live="polite"></p>
+    <p>
+      Draft names only: “whetstone” and “sling”; sling also names Canopy Town’s later carry grant. This is a planning
+      page, not player-facing copy. Both picks apply to the room. Pick after Station 1, receive the other after Station
+      2; pack and proper axe keep their existing arrival.
+    </p>
+    <div class="controls">
+      <div id="picks">
+        <button data-pick="0" aria-pressed="false">Today</button>
+        <button data-pick="1" aria-pressed="true">Whetstone first</button>
+        <button data-pick="2" aria-pressed="false">Sling first</button>
+      </div>
+      <label><input id="heavy" type="checkbox" /> Deliberately fill the heavy allowance</label>
+      <p class="small">
+        Shipped rule: +50% capacity (8→12, draft 12→18, pack 16→24), speed falls linearly to 45% at maximum; no jump,
+        hook or glide while over comfort. Logs, stone and rails share capacity. Partial final loads use their actual
+        slowdown. Big beam stays one per back. Normal pickup stops at comfort; another take opts in; spare drop slots
+        can restrict overfill. This model assumes enough slots.
+      </p>
+      <label><input id="fuel" type="checkbox" /> Parked model only: rails cost logs — NOT DECIDED</label
+      ><label>Logs per rail <input id="ratio" type="number" min="0" max="100" step="0.25" value="1" /></label>
+      <p class="small">
+        1 log/rail is an editable stand-in, not a proposed bill. Extra logs are chopped with the proper axe and hauled
+        to the forge with the pack before each Q bill; the added row shows the cost. No finite log budget is assumed, so
+        this quantifies work, not resource scarcity.
+      </p>
+      <label>Draft sling capacity <input id="sling" type="number" min="8" max="64" step="1" value="12" /></label
+      ><label>Chop cycle, seconds <input id="chop" type="number" min="0" max="10" step="0.01" value="0.24" /></label>
+      <p class="small">
+        240 ms is the axe’s swing animation, used as an editable cadence stand-in; it is not a measured input-to-log
+        interval.
+      </p>
+    </div>
+    <h2>Per haul · seconds = chopping + walking</h2>
+    <p>
+      All three variants remain visible; buttons highlight the pick. Positive delta means sling is faster. Bars compare
+      seconds within each haul (grey today, orange whetstone, green sling). Defaults are straight-line lower bounds, not
+      observed completion times.
+    </p>
+    <div id="rows"></div>
+    <details open>
+      <summary>Sources, method and limits</summary>
+      <p>
+        Bills and per-material distances were extracted from
+        <a href="../../dev/loop/graph.ts">dev/loop/graph.ts (NODES, grindOf, carryMetres)</a>. Source distances average
+        the nearest sources needed for the bill; depletion across stations is not simulated. Bill catalogs:
+        <a href="../../src/sim/railway-line-layout.ts">line 1</a> and
+        <a href="../../src/sim/railway-line2-layout.ts">line 2</a>. Depot positions use the graph’s modeled offset
+        (Q2/Q5 10 m; others 3.4 m), not a surveyed route.
+      </p>
+      <p>
+        <a href="../../src/sim/railway-layout.ts">RAILWAY_T1</a>: 2 logs/chop today, 8 carry, swingMs 240; HEAVY_LOAD
+        extra 0.5, minSpeed 0.45. <a href="../../src/sim/railway-queries.ts">carrySpeed / carryMax / free</a> give
+        actual partial-load speed and deliberate overfill. <a href="../../src/sim/railway-sys-line1.ts">chop()</a>:
+        proper axe yields 5; <a href="../../src/sim/railway-line2-layout.ts">LINE2_PACK.carry</a>: 16, forge bills 24 +
+        32. <a href="../../dev/loop/graph.ts">WALK_MPS</a>: 5.6 m/s (planning pace).
+      </p>
+      <p>
+        Movement restrictions and slowdown: <a href="../../src/entities/railway/view.ts">jump gate</a>,
+        <a href="../../src/entities/railway/hook-shot.ts">hook gate</a>,
+        <a href="../../src/entities/railway/glide.ts">glide gate</a>,
+        <a href="../../src/entities/railway/sources.ts">walking wish multiplier</a>.
+      </p>
+      <p>
+        Each material uses separate trips (no mixed-load packing optimization), starts and ends at its receiving frame:
+        empty outbound short route + loaded return, including a return to source on the first trip. Trips =
+        ceil(bill/capacity). Heavy speed = 1 − 0.55 × excess/floor(comfort/2). Only a heavy loaded leg uses the long
+        route. No measured jump shortcut is established here: each named source→frame direct route and ground
+        alternative initially share the graph estimate. Edit their one-way walk-seconds per haul; equality is a
+        stand-in, never evidence that grounded movement has no cost. Beam uses the great-tree→T3 route and stays outside
+        T3’s log row to avoid double counting.
+      </p>
+      <p>
+        Excludes mining time, pickup, unload, construction, ability detours, vehicle/rail production waits and
+        navigation errors. Cart-supplied logs require zero player chops. Proper axe is taken after forge completion.
+        Fuel assumes unlimited trees and no stock competition. The 85 s comparison is Grant’s Station 2 observation in
+        <a href="../brainstorms/first-line-decisions.md">the brief</a>; predictions are not calibrated to it. Feeling a
+        choice needs play evidence: the editable threshold below is only a discussion aid.
+      </p>
+      <label>Discussion threshold, seconds <input id="threshold" type="number" min="0" max="120" value="5" /></label>
+      <p>
+        Owner’s <a href="../plans/grant-1114-queue.md#owner-questions">15 November answers 2–3</a>: build into the main
+        game, heavy load first; glider usable when obtained. This page changes no game rule and models no sealed glider.
+      </p>
+    </details>
+  </main>
+  <script>
+    const DATA = [
+      {
+        id: 'T1',
+        bill: { logs: 24 },
+        legs: [{ material: 'logs', carries: 3, metres: 12.58957711037809, handMetres: 12.58957711037809, by: 'hand' }],
+      },
+      {
+        id: 'T2',
+        bill: { logs: 32, stone: 8 },
+        legs: [
+          { material: 'logs', carries: 4, metres: 20.371083091233018, handMetres: 20.371083091233018, by: 'hand' },
+          { material: 'stone', carries: 1, metres: 28.699857142501596, handMetres: 28.699857142501596, by: 'hand' },
+        ],
+      },
+      {
+        id: 'beam',
+        bill: { beam: 1 },
+        legs: [
+          { material: 'beam', carries: 1, metres: 34.977800102350635, handMetres: 34.977800102350635, by: 'hand' },
+        ],
+      },
+      {
+        id: 'T3',
+        bill: { logs: 40, beam: 1 },
+        legs: [{ material: 'logs', carries: 5, metres: 44.92112056670936, handMetres: 44.92112056670936, by: 'hand' }],
+      },
+      {
+        id: 'Forge \u00b7 first bill',
+        bill: { logs: 24 },
+        legs: [{ material: 'logs', metres: 34.951279755, by: 'hand' }],
+      },
+      {
+        id: 'Forge \u00b7 second bill',
+        bill: { logs: 32 },
+        legs: [{ material: 'logs', metres: 34.951279755, by: 'hand' }],
+      },
+      {
+        id: 'Q1',
+        bill: { logs: 16, rails: 6 },
+        legs: [
+          { material: 'logs', carries: 1, metres: 40.92553712650255, handMetres: 40.92553712650255, by: 'hand' },
+          { material: 'rails', carries: 1, metres: 12.157779402506035, handMetres: 12.157779402506035, by: 'hand' },
+        ],
+      },
+      {
+        id: 'Q2',
+        bill: { logs: 24, rails: 12 },
+        legs: [
+          {
+            material: 'logs',
+            carries: 2,
+            metres: 10,
+            handMetres: 25.6973164987197,
+            by: 'cart',
+            foot: 'standing trees',
+          },
+          { material: 'rails', carries: 1, metres: 45.50289770992612, handMetres: 45.50289770992612, by: 'hand' },
+        ],
+      },
+      {
+        id: 'Q3',
+        bill: { logs: 16, rails: 12 },
+        legs: [
+          {
+            material: 'logs',
+            carries: 1,
+            metres: 3.4,
+            handMetres: 14.874923459892644,
+            by: 'cart',
+            foot: 'standing trees',
+          },
+          { material: 'rails', carries: 1, metres: 113.79357495043384, handMetres: 113.79357495043384, by: 'hand' },
+        ],
+      },
+      {
+        id: 'Q4',
+        bill: { logs: 16, rails: 16 },
+        legs: [
+          {
+            material: 'logs',
+            carries: 1,
+            metres: 3.4,
+            handMetres: 48.066697137444464,
+            by: 'cart',
+            foot: 'standing trees',
+          },
+          { material: 'rails', carries: 1, metres: 3.4, handMetres: 167.2831802662778, by: 'cart', foot: 'forge rack' },
+        ],
+      },
+      {
+        id: 'Q5',
+        bill: { logs: 24, rails: 24 },
+        legs: [
+          {
+            material: 'logs',
+            carries: 2,
+            metres: 10,
+            handMetres: 20.53940904421313,
+            by: 'cart',
+            foot: 'standing trees',
+          },
+          { material: 'rails', carries: 2, metres: 10, handMetres: 254.12192683827973, by: 'cart', foot: 'forge rack' },
+        ],
+      },
+    ];
+    let pick = 1;
+    const names = ['Today', 'Whetstone first', 'Sling first'];
+    const val = (id) => Math.max(0, Number(document.getElementById(id).value) || 0);
+    const routeInputs = {};
+    function calculate(row, v) {
+      let chop = 0,
+        trips = 0,
+        time = 0;
+      const q = row.id.startsWith('Q'),
+        second = row.id.includes('second');
+      let comfort =
+        q || second
+          ? 16
+          : v && row.id !== 'T1' && (v === 2 || row.id !== 'T2')
+            ? Math.max(8, Math.floor(val('sling')))
+            : 8;
+      let yieldLog = q ? 5 : v && (row.id === 'T1' || (row.id === 'T2' && v === 2)) ? 1 : 2;
+      for (const leg of row.legs) {
+        const n = row.bill[leg.material] || 0;
+        const big = leg.material === 'beam';
+        const cap = big ? 1 : comfort + (document.getElementById('heavy').checked ? Math.floor(comfort / 2) : 0);
+        chop += leg.material === 'logs' && leg.by === 'hand' ? Math.ceil(n / yieldLog) : 0;
+        const route = routeInputs[row.id + '-' + leg.material];
+        const short = Number(route.short.value) || 0,
+          long = Number(route.long.value) || 0;
+        for (let left = n; left > 0; left -= cap) {
+          const load = Math.min(left, cap),
+            excess = big ? 0 : Math.max(0, load - comfort),
+            factor = excess ? 1 - (0.55 * excess) / Math.floor(comfort / 2) : 1;
+          time += short + (excess ? long : short) / factor;
+          trips++;
+        }
+      }
+      return { chop, trips, time: time + chop * val('chop') };
+    }
+    function render() {
+      const threshold = val('threshold');
+      let diffs = [];
+      for (const row of DATA) {
+        const values = [0, 1, 2].map((v) => calculate(row, v));
+        const delta = values[1].time - values[2].time;
+        diffs.push({ id: row.id, delta });
+        const max = Math.max(1, ...values.map((x) => x.time));
+        document.getElementById('metrics-' + row.id).innerHTML = values
+          .map(
+            (r, v) =>
+              `<div class="metric ${pick === v ? 'selected' : ''}"><strong>${names[v]}</strong><div class="seconds">${r.time.toFixed(1)} s</div><span class="small">${r.chop} chops · ${r.trips} trips</span></div>`,
+          )
+          .join('');
+        document.getElementById('delta-' + row.id).textContent =
+          `Whetstone − sling: ${delta.toFixed(1)} s · ${Math.abs(delta) >= threshold ? 'above' : 'below'} ${threshold} s discussion threshold`;
+        document.getElementById('bars-' + row.id).innerHTML = values
+          .map((r) => `<span class="bar" style="width:${(100 * r.time) / max / 3}%"></span>`)
+          .join('');
+      }
+      const t2 = diffs.find((x) => x.id === 'T2');
+      document.getElementById('finding').textContent =
+        `At Station 2, ${t2.delta >= 0 ? 'sling' : 'whetstone'} saves ${Math.abs(t2.delta).toFixed(1)} s (${((Math.abs(t2.delta) / 85) * 100).toFixed(1)}% of Grant’s 85 s beat); the order changes no later haul, so these estimates alone do not establish a choice a player can feel.`;
+      document.getElementById('fuel-row').hidden = !document.getElementById('fuel').checked;
+      let fuel = DATA.filter((r) => r.id.startsWith('Q')).map((r) => {
+        const n = Math.ceil(r.bill.rails * val('ratio'));
+        const fake = { id: 'Fuel', bill: { logs: n }, legs: [{ material: 'logs', by: 'hand' }] };
+        routeInputs['Fuel-logs'] = { short: { value: 34.951279755 / 5.6 }, long: { value: 34.951279755 / 5.6 } }; // fixed forge source estimate, all variants packed and proper axe
+        fake.id = 'Qfuel';
+        routeInputs['Qfuel-logs'] = routeInputs['Fuel-logs'];
+        const x = calculate(fake, 0);
+        return `${r.id}: ${n} extra logs · ${x.chop} chops · ${x.trips} trips · +${x.time.toFixed(1)} s (all variants)`;
+      });
+      document.getElementById('fuel-output').textContent = fuel.join(' / ');
+    }
+    for (const row of DATA) {
+      const article = document.createElement('article');
+      article.innerHTML = `<h2>${row.id}</h2><p>${Object.entries(row.bill)
+        .map(([k, v]) => `${v} ${k}`)
+        .join(
+          ' + ',
+        )}${row.id === 'T3' ? ' (beam carried in separate row)' : ''} · <a href="../../dev/loop/graph.ts">graph bill / distance</a></p><div class="cards" id="metrics-${row.id}"></div><p class="delta" id="delta-${row.id}"></p><div class="bars" id="bars-${row.id}"></div>`;
+      for (const leg of row.legs) {
+        const wrap = document.createElement('div');
+        const source =
+          leg.material === 'beam'
+            ? 'great tree'
+            : leg.by === 'hand'
+              ? leg.material === 'rails'
+                ? 'forge rail rack'
+                : leg.material === 'stone'
+                  ? 'line-one rocks'
+                  : 'nearest standing trees'
+              : 'cart rack';
+        wrap.innerHTML = `<p class="small">${leg.material}: ${source} → ${row.id}; ${leg.metres.toFixed(2)} m graph estimate. Short: direct source approach; long: grounded source approach, unmeasured.</p><label>Short walk-s <input type="number" min="0" step="0.1" value="${(leg.metres / 5.6).toFixed(3)}"></label><label>Long walk-s <input type="number" min="0" step="0.1" value="${(leg.metres / 5.6).toFixed(3)}"></label>`;
+        const inputs = wrap.querySelectorAll('input');
+        routeInputs[row.id + '-' + leg.material] = { short: inputs[0], long: inputs[1] };
+        article.append(wrap);
+      }
+      document.getElementById('rows').append(article);
+    }
+    const fuelArticle = document.createElement('article');
+    fuelArticle.id = 'fuel-row';
+    fuelArticle.innerHTML =
+      '<h2>Forge fuel · parked, not decided</h2><p id="fuel-output"></p><p class="small">Additional cost only; add to the corresponding Q row. Same forge direct/ground approach stand-in, 34.95 m each way. No alternative fuel or finite-stock trade-off is decided.</p>';
+    document.getElementById('rows').append(fuelArticle);
+    document.querySelectorAll('[data-pick]').forEach(
+      (b) =>
+        (b.onclick = () => {
+          pick = Number(b.dataset.pick);
+          document
+            .querySelectorAll('[data-pick]')
+            .forEach((x) => x.setAttribute('aria-pressed', String(Number(x.dataset.pick) === pick)));
+          render();
+        }),
+    );
+    document.addEventListener('input', render);
+    render();
+  </script>
+</html>

@@ -2,6 +2,7 @@
 > one agent through the three lenses (play designer, systems architect, creative director), not a panel. Nothing is
 > built. Every mechanic here changes a rule, so none is built on the live room without the owner (queue questions 2
 > and 3).
+> **2D model (16 November):** [Page](../world/first-line-decisions.html) exists: sling first saves about 3.4 s at Station 2 (7.1 s with deliberate shipped overfill), with no later order difference; route shortcuts remain unmeasured editable stand-ins.
 
 # Decisions on the first line
 
