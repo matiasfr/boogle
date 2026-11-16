@@ -194,17 +194,20 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
     0.6,
   );
   // The bell: a little bell under a bracket on the bank, under the trestle. You hear it as you cross the footbridge.
+  // The post stands on the dry bank east of the crate, on its own ground height, with the bracket reaching back over the
+  // crate; west of the crate the bank drops into the river.
   const by = H(-36.4 + ox, -78);
+  const post = { x: -34.6, z: -79 };
   prop(
     [
       ['b', 0, 1.2, 0, 0.14, 2.4, 0.14, '#6e4c2a'],
       ['b', 0.4, 2.3, 0, 0.9, 0.1, 0.1, '#6e4c2a'],
       ['k', 0.75, 2.02, 0, 0.17, 0.34, 0.17, BRASS],
     ],
-    -38.4,
-    by,
-    -76.5,
-    0.8,
+    post.x,
+    H(post.x + ox, post.z),
+    post.z,
+    Math.atan2(post.z - -78, -36.4 - post.x),
     true,
   );
   const bellAt = new THREE.Vector3(-36.4 + ox, by + 1, -78);
