@@ -5,6 +5,7 @@ import {
   BUFFERS,
   CROSSING,
   HEADS,
+  HALL,
   ISLAND,
   ISLAND_A,
   ISLAND_C,
@@ -17,7 +18,7 @@ import {
   march,
   roadAt,
 } from '../../src/place/home-station.ts';
-import { CART, FORMATION, LINES, LINKS, lineAt } from '../../src/place/layout.ts';
+import { CART, FORMATION, LINES, LINKS, ORIGIN, lineAt } from '../../src/place/layout.ts';
 import { frameBesideLine, stationColliders } from '../../src/place/spatial-station.ts';
 import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
 import { ENGINE, ENGINE_LONG_AHEAD } from '../../src/entities/railway/engine.ts';
@@ -25,6 +26,18 @@ import { STEEL_CAR, TRAILER, TRAIN_OFFSETS, WAGON_CAR, steelCarOffset } from '..
 import { deckAt, deckGap, type Deck } from '../../src/entities/railway/car-spacing.ts';
 import { CART_ROAD } from '../../src/sim/railway-cart.ts';
 import { TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
+
+import clearancePins from './home-cart-pins.json' with { type: 'json' };
+
+// Renderer-local dimensions have no headless exported records. test/home-cart.test.ts guards these
+// against their production construction sites; derive envelopes here rather than repeat derived sizes.
+export const HOME_STATIC = {
+  lever: { w: 0.5, d: 0.8, along: 1.5, lat: 2.4 },
+  forge: { postX: 1.25, postZ: 1.2, postW: 0.2, beamW: 2.7 },
+  depot: { postX: 1.1, postZ: 0.8, postW: 0.14, bearerW: 0.2, along: 6, out: 8 },
+  sign: { w: 1.3, border: 0.06, depth: 0.08, post: 0.12, x: -1.2, z: -1.55 },
+  tree: { pine: 0.46, hardwood: 0.95, barkRelief: 0.13 },
+};
 
 export const COACH_STOP = 21.65;
 const pitch = 3.4;
@@ -53,7 +66,9 @@ const box = (x: number, z: number, yaw: number, hx: number, hz: number): Deck =>
 const blank = () => box(0, 0, 0, 0, 0);
 const at = (s: number, out: { x: number; z: number }) =>
   Object.assign(out, lineAt(LINES.east, s, { x: 0, z: 0, ux: 0, uz: 0 }));
-export function checkHomeCart() {
+export function checkHomeCart(options: { stop?: number; obstacle?: (id: string, envelope: Deck) => Deck } = {}) {
+  const stop = options.stop ?? COACH_STOP;
+  const { lever, forge, depot, sign, tree } = HOME_STATIC;
   const problems: string[] = [];
   const metrics: { name: string; value: number; minimum: number; strict: boolean; margin: number; source: string }[] =
     [];
@@ -83,45 +98,65 @@ export function checkHomeCart() {
     return { x: p.x + Math.cos(b) * lat, z: p.z + Math.sin(b) * lat };
   }
   for (const [id, p] of [
-    ['leg line 1 lever', side(0, LEG.from + 1.5, -2.4)],
-    ['leg line 2 lever', side(1, LEG.to + 1.5, 2.4)],
-    ['spur lever', side(1, SPUR.s - 1.5, 2.4)],
+    ['leg line 1 lever', side(0, LEG.from + lever.along, -lever.lat)],
+    ['leg line 2 lever', side(1, LEG.to + lever.along, lever.lat)],
+    ['spur lever', side(1, SPUR.s - lever.along, lever.lat)],
   ] as const)
-    obstacles.push({ id, ...box(p.x, p.z, yaw, 0.25, 0.4) });
-  obstacles.push({ id: 'forge rack full', ...box(PROPS.rack.x, PROPS.rack.z, PROPS.rack.yaw, 1.35, 1.3) });
+    obstacles.push({ id, ...box(p.x, p.z, HALL.yaw, lever.w / 2, lever.d / 2) });
+  obstacles.push({
+    id: 'forge rack full',
+    ...box(
+      PROPS.rack.x,
+      PROPS.rack.z,
+      PROPS.rack.yaw,
+      Math.max(forge.postX + forge.postW / 2, forge.beamW / 2),
+      forge.postZ + forge.postW / 2,
+    ),
+  });
   for (const spec of LINKS[1]!.stations.slice(0, 2)) {
     const f = frameBesideLine(spec, LINES.east, 1),
       c = stationColliders(f, 0, true);
     for (const p of [...c.frame, c.feeder, ...(c.rails ? [c.rails] : [])])
       obstacles.push({
         id: `${spec.id}/${p.id}`,
-        ...box(p.position.x - 1000, p.position.z, p.yaw, p.shape.hx, p.shape.hz),
+        ...box(p.position.x - ORIGIN.x, p.position.z, p.yaw, p.shape.hx, p.shape.hz),
       });
     if (spec.id === 'Q2') {
-      const x = f.x - 1000 - Math.sin(f.yaw) * 6 - Math.cos(f.yaw) * spec.side * 8;
-      const z = f.z - Math.cos(f.yaw) * 6 + Math.sin(f.yaw) * spec.side * 8,
+      const x = f.x - ORIGIN.x - Math.sin(f.yaw) * depot.along - Math.cos(f.yaw) * spec.side * depot.out;
+      const z = f.z - Math.cos(f.yaw) * depot.along + Math.sin(f.yaw) * spec.side * depot.out,
         y = f.yaw - Math.PI / 2;
-      obstacles.push({ id: 'Q2 rack full', ...box(x, z, y, 1.2, 0.87) });
+      obstacles.push({
+        id: 'Q2 rack full',
+        ...box(x, z, y, depot.postX + depot.bearerW / 2, depot.postZ + depot.postW / 2),
+      });
       obstacles.push({
         id: 'Q2 sign',
         ...box(
-          x - 1.2 * Math.cos(y) - 1.55 * Math.sin(y),
-          z + 1.2 * Math.sin(y) - 1.55 * Math.cos(y),
+          x + sign.x * Math.cos(y) + sign.z * Math.sin(y),
+          z - sign.x * Math.sin(y) + sign.z * Math.cos(y),
           y + Math.PI / 2,
-          0.65,
-          0.06,
+          sign.w / 2 + sign.border,
+          Math.max(sign.depth / 2 + 0.004, sign.post / 2),
         ),
       });
     }
   }
   for (const t of TREE_SOURCES.filter((t) => !t.cleared))
-    obstacles.push({ id: `tree ${t.index} trunk`, ...box(t.x - 1000, t.z, 0, 0.46 * t.size, 0.46 * t.size) });
-  const decks = PLANNED_HOME_CONSIST.map((v) =>
-    deckAt(at, COACH_STOP + v.d, { ...v, back: v.hz, front: v.hz }, blank()),
-  );
+    obstacles.push({
+      id: `tree ${t.index} trunk`,
+      ...box(
+        t.x - ORIGIN.x,
+        t.z,
+        0,
+        (t.hardwood ? tree.hardwood * (1 + tree.barkRelief) : tree.pine) * t.size,
+        (t.hardwood ? tree.hardwood * (1 + tree.barkRelief) : tree.pine) * t.size,
+      ),
+    });
+  if (options.obstacle) for (const o of obstacles) Object.assign(o, options.obstacle(o.id, { ...o }));
+  const decks = PLANNED_HOME_CONSIST.map((v) => deckAt(at, stop + v.d, { ...v, back: v.hz, front: v.hz }, blank()));
   const engine = PLANNED_HOME_CONSIST[0]!,
-    nose = COACH_STOP + engine.d + engine.hz;
-  const tail = COACH_STOP + PLANNED_HOME_CONSIST.at(-1)!.d - STEEL_CAR.hz;
+    nose = stop + engine.d + engine.hz;
+  const tail = stop + PLANNED_HOME_CONSIST.at(-1)!.d - STEEL_CAR.hz;
   minimum('tail past spur points', tail - SPUR.s, 0, ruling, true);
   pin('tail past spur points', tail - SPUR.s, 0.05);
   minimum(
@@ -140,12 +175,12 @@ export function checkHomeCart() {
   );
   minimum(
     'merge block ahead of reach',
-    FORMATION.quarry.from - (COACH_STOP + TRAIN_EXTENT.aheadCm / 100),
+    FORMATION.quarry.from - (stop + TRAIN_EXTENT.aheadCm / 100),
     0,
     'src/sim/railway-lines.ts TRAIN_EXTENT.aheadCm: forward safety reach before merge block',
     true,
   );
-  pin('merge block ahead of reach', FORMATION.quarry.from - (COACH_STOP + TRAIN_EXTENT.aheadCm / 100), 4.15);
+  pin('merge block ahead of reach', FORMATION.quarry.from - (stop + TRAIN_EXTENT.aheadCm / 100), 4.15);
   const straight = march(HEADS[1].start, [{ len: 1000 }], nose),
     bent = roadAt(1, nose);
   const offLine = Math.hypot(straight.x - bent.x, straight.z - bent.z);
@@ -153,10 +188,10 @@ export function checkHomeCart() {
   pin('nose into arc', nose - HEADS[1].segs[0].len, 3.35);
   pin('nose off line', offLine, 0.3114362900980901);
   for (const v of PLANNED_HOME_CONSIST.slice(1))
-    minimum(`${v.role} short of arc`, HEADS[1].segs[0].len - (COACH_STOP + v.d + v.hz), 0);
+    minimum(`${v.role} short of arc`, HEADS[1].segs[0].len - (stop + v.d + v.hz), 0);
   for (const v of PLANNED_HOME_CONSIST.slice(1, 3)) {
-    minimum(`${v.role} deck start`, COACH_STOP + v.d - v.hz - (ISLAND_A.deck0 + ROAD2_S), 0, ruling, true);
-    minimum(`${v.role} deck end`, ISLAND_A.deck1 + ROAD2_S - (COACH_STOP + v.d + v.hz), 0, ruling, true);
+    minimum(`${v.role} deck start`, stop + v.d - v.hz - (ISLAND_A.deck0 + ROAD2_S), 0, ruling, true);
+    minimum(`${v.role} deck end`, ISLAND_A.deck1 + ROAD2_S - (stop + v.d + v.hz), 0, ruling, true);
   }
   for (const [name, recorded] of [
     ['players deck start', 14.34671419114904],
@@ -199,9 +234,17 @@ export function checkHomeCart() {
     'engine/leg lever',
     deckGap(decks[0]!, obstacles[2]!),
     1,
-    'docs/research/rider-car-fit.md: Parked layer at Pier, 1 m body/furniture rule; R1b orchestrator ruling',
+    'docs/research/rider-car-fit.md: Parked layer at Pier, R1b orchestrator 1 m lever ruling by analogy with Pier parked-layer rule (not an established trackside furniture rule)',
   );
   pin('engine/leg lever', deckGap(decks[0]!, obstacles[2]!), 1.1341593429538008);
+  // Fixed records, never recomputed from today's geometry: each minimum has an independent drift pin.
+  const recorded: Record<string, number> = clearancePins;
+  for (const m of metrics) {
+    if (!(m.name in recorded)) problems.push(`Missing clearance pin: ${m.name}`);
+    else if (!pins.some((p) => p.name === m.name)) pin(m.name, m.value, recorded[m.name]!);
+  }
+  for (const name of Object.keys(recorded))
+    if (!metrics.some((m) => m.name === name)) problems.push(`Stale clearance pin: ${name}`);
   return {
     level: 'home-cart',
     failures: problems.length,
@@ -219,6 +262,6 @@ export function checkHomeCart() {
     offLine,
     noseToMerge: FORMATION.quarry.from - nose,
     coverage:
-      'R1a exclusive operating cart and standing planned coach train; planar body envelopes. Excluded: no 3D undercarriage/wheel contact certificate for spur or idle leg turnout blades, wing/check/closure rails, frog, timbers or tie plates (planar bodies would overlap their running surfaces). Trees use trunk boxes only: crown, branch and foliage contact at engine/coach roof height, wind sway, hardwood-specific crown shapes and root seats are not certified. Dynamic players, dropped cargo, loading motion and future train movement are excluded.',
+      'R1a exclusive operating cart and standing planned coach train. Sampled planar-envelope check: 0.25 m cart samples plus joins and endpoints, no height discrimination and no continuous swept volume. Excluded: no 3D undercarriage/wheel contact certificate for spur or idle leg turnout blades, wing/check/closure rails, frog, timbers or tie plates (planar bodies would overlap their running surfaces). Trees use trunk boxes only: crown, branch and foliage contact at engine/coach roof height, wind sway, hardwood-specific crown shapes and root seats are not certified. Dynamic players, dropped cargo, loading motion and future train movement are excluded.',
   };
 }

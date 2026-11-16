@@ -164,7 +164,7 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   frame, tree or production value moved, world stays v56. The earlier stop on rounded measurements is
   resolved by the orchestrator's ruling: design minima are separate from pins (each ±0.01 m).
   Body/island ≥0.55 m (Home on merit's platform design gap), engine/leg lever ≥1.00 m
-  (rider-car-fit's Pier body/furniture rule), tail past spur >0, engine ≤3.5 m into arc,
+  (orchestrator ruling by analogy with rider-car-fit's Pier parked layer, not an established furniture rule), tail past spur >0, engine ≤3.5 m into arc,
   forward safety reach strictly before merge block, passenger deck margins >0. Static operating/standing
   set ≥0.25 m; the existing crossing's stricter ≥1 m boards/tail rule is retained.
   `home-cart` in CI's level-check passes. Exact engine/island gap **0.5794398184781144 m**,
@@ -180,6 +180,19 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   Coverage excludes 3D turnout running-parts/undercarriage contact and tree canopy/branches/roots;
   Validation: level-check passes (18 reports), Home tests 15/15, probe, lint, types and ship-check
   (180 tests across 20 files) pass. Exact limitations, thresholds, pins and test changes: [implementation report](../reports/rider-coach-r1b.md).
+
+  **Independent review fixes, 16 November:** all 751 minimum measurements now have fixed ±0.01 m
+  records (`home-cart-pins.json`), including 368 standing, 368 operating and all five non-engine
+  straight clearances; 755 pins in total. Collider +0.05 m and stop +0.05 m regressions fail pins.
+  Production layout/frame/tree records supply placements and available dimensions; renderer-local
+  dimensions/offsets have source guards in `test/home-cart.test.ts`. Corrected sign half-width 0.71
+  (border included), hardwood trunk radius 0.95 with maximum 1.13 bark relief. Thin margins unchanged.
+  This is a sampled planar-envelope check (0.25 m cart samples plus joins/endpoints), with no height
+  discrimination or continuous swept volume. No height band added; turnout running parts,
+  undercarriage contact and tree canopies remain excluded. The 1.00 m lever minimum is the
+  orchestrator's analogy with the Pier parked-layer rule, not an established trackside furniture rule.
+  Validation after review fixes: level-check passes (18 reports), Home and new tests 17/17,
+  probe, scoped lint, types and ship-check (182 tests across 21 files) pass.
 
 - [ ] **R1c. Option B, only if the owner picks it (question 2, b): the relay (L).** Sync: Server data (catalog). Tier:
   **independent review** + visual. Builds: Codex gpt-6-astra high; review fresh astra high. Bump: yes (rides R1a's if
