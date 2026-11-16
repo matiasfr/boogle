@@ -1,6 +1,6 @@
 ---
 name: codex
-description: Hand work to Codex CLI (GPT-6.1-Sol by default, GPT-6-Astra for the hardest calls, on the owner's ChatGPT subscription) and review what comes back. Previz of a prototype, game moment or effect at its idealized look; deep research docs; a second-opinion code review; or a self-contained task on its own branch. Use when the user says /codex, asks to use Codex or Astra, wants previz or a visual brainstorm of how something could look, or wants work spread across their Codex usage.
+description: Hand work to Codex CLI (models per `npm run models`, on the owner's ChatGPT subscription) and review what comes back. Previz of a prototype, game moment or effect at its idealized look; deep research docs; a second-opinion code review; or a self-contained task on its own branch. Use when the user says /codex, asks to use Codex or Astra, wants previz or a visual brainstorm of how something could look, or wants work spread across their Codex usage.
 ---
 
 # Codex jobs
@@ -23,9 +23,9 @@ The worker's `.look/see-client.ts` supports `playthrough`, `look` and named exis
 relevant bot, open the generated PNGs, explain what it saw, and report failures and unverified feel. `look --at` reads this
 job's own bot checkpoints. The broker is already running; the worker should not start another or run Chromium directly.
 
-From inside Codex this is how you start a worker on its own branch and worktree: run it in the background and carry on.
+In T3 Code, start Codex jobs with T3's `delegate_task`, not `run.ts` (owner call "In T3 Code, dispatch T3's way"; the orchestrate-boogle skill, "In T3 Code"). The rest of this section is for sessions without T3's tools.
 
-`node dev/codex/run.ts <mode> <topic> [--effort ...] [--ref a.png] "<brief>"` runs one Codex job and prints its final message. Always start it with Bash `run_in_background: true` (jobs take 5-40 minutes) and carry on; you're notified when it ends. Log, report and meta: `.look/codex/<topic>/`. `--dry` prints the prompt and command without running.
+`node dev/codex/run.ts <mode> <topic> [--effort ...] [--ref a.png] "<brief>"` runs one Codex job on its own branch and worktree and prints its final message. Start it with Bash `run_in_background: true` (jobs take 5-40 minutes) and carry on; you're notified when it ends. Log, report and meta: `.look/codex/<topic>/`. `--dry` prints the prompt and command without running.
 
 Codex reads AGENTS.md and the docs its table triggers like you do, and can't push. A `task` job can see the game through `node dev/codex/see.ts` (below): stills, motion sheets, video as extracted frames, curves, and scripted play through `--action`. You are the director: brief it, then review and ship what it made.
 
@@ -54,7 +54,7 @@ Previz is not concept art: it pictures *this* game at its best (DESIGN.md, the r
 Put what you already know in the brief (paths, errors, the snippet, the decision), so it doesn't explore the repo again; its report is all that comes back into your context, so ask for a short one.
 
 - Research: name the facet and the questions. Read the doc when it lands; it ships like any other change (from the worktree: `npm run ship`).
-- Task: lockstep logic with tests (`src/sim/`, rules), JS-to-TS conversion, tooling, docs, and visuals it can judge from stills and motion sheets. Not feel: it reads frames and numbers, and doesn't play or watch in real time. A task's sandbox can't start Chromium, so `dev/codex/see.ts` runs the job's server and Vite inside it, and `dev/codex/look-broker.ts`, started by `run.ts`, runs this checkout's harness and the browser outside it. That takes network access in the job's sandbox; the brief limits it to the local server, and `--eyes off` turns it all off. Before starting, `npm run inflight` so it doesn't collide with in-flight work. Read its diff (`git -C ../boogle-codex/<topic> log -p origin/main..`), run `/look` yourself if a player could see it, then ship from the worktree.
+- Task: shared-rule logic with tests (`src/sim/`, rules), JS-to-TS conversion, tooling, docs, and visuals it can judge from stills and motion sheets. Not feel: it reads frames and numbers, and doesn't play or watch in real time. A task's sandbox can't start Chromium, so `dev/codex/see.ts` runs the job's server and Vite inside it, and `dev/codex/look-broker.ts`, started by `run.ts`, runs this checkout's harness and the browser outside it. That takes network access in the job's sandbox; the brief limits it to the local server, and `--eyes off` turns it all off. Before starting, `npm run inflight` so it doesn't collide with in-flight work. Read its diff (`git -C ../boogle-codex/<topic> log -p origin/main..`), run `/look` yourself if a player could see it, then ship from the worktree.
 - Review: run it on branches touching `src/world/`, `src/net*`, `src/sim/` or `server/` before shipping. Verify each finding against the code before acting on it.
 
 Clean up a finished worktree with `git worktree remove ../boogle-codex/<topic>` (and `git branch -D codex/<topic>` once it's merged).

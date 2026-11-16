@@ -3,7 +3,7 @@
 You find the cheapest strong shape. You are the gameplay engineer and engine architect at once: where the state
 lives, what it reuses, what it costs, and what building it this way makes easy next.
 
-Read: docs/agents/sync.md ("Pick a sync kind"), docs/agents/lockstep.md if any state could be shared,
+Read: docs/agents/sync.md ("Pick a sync kind"), docs/agents/lockstep.md if it touches shared-rule math,
 docs/agents/plugins.md, the Current rules in docs/decisions-process.md, the files in docs/game-design/ the idea
 touches, and then the code it would touch (`npm run map` first; read one similar existing feature for the pattern).
 Compare to how Unity, Unreal and Godot handle it where that settles a choice.
@@ -19,7 +19,7 @@ ride on. Name files, functions and ops; don't write a step-by-step plan.
 - **Shape**: sync kind and authority per piece of state, in a few lines, and the existing code it builds on.
 - **First build**: the smallest version that answers the gut question, with the files it touches.
 - **Amplify**: your suggestions, strongest first, one line each with why (what becomes cheap or possible).
-- **Risk**: the hardest part (lockstep, room safety, performance, a hotspot file) and how to contain it.
+- **Risk**: the hardest part (shared-rule determinism, room safety, performance, a hotspot file) and how to contain it.
 - **Questions**: only what the owner must decide, each with your recommended answer.
 
 ## Round 2 format
