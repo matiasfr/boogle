@@ -25,6 +25,7 @@ export async function createRailwayWorksLive(
     busy: () => boolean;
     toPier: () => number;
     toRing: () => number;
+    loaderHook: () => { x: number; y: number; z: number } | null;
     /** Shows or hides the island's hook ring (hook-view.ts), once the gap is footed. */
     hookRing: (on: boolean) => void;
   },
@@ -32,7 +33,7 @@ export async function createRailwayWorksLive(
   const shapes = await import('../../render/part-geometry.ts');
   const breaker = createRailwayBreaker(adapter, owner, shapes);
   const [works, roundhouse, crossing, steel, leg] = await Promise.all([
-    createRailwayWorks(adapter, owner, { contactIn: breaker.contactIn, busy: deps.busy }),
+    createRailwayWorks(adapter, owner, { contactIn: breaker.contactIn, busy: deps.busy, loaderHook: deps.loaderHook }),
     createRailwayRoundhouse(adapter, owner, { contactIn: breaker.contactIn }),
     createRailwayCrossing(adapter, owner, deps),
     createRingSteel(adapter, owner),

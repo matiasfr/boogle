@@ -25,6 +25,8 @@
 // v54 town buy: checkpoints gain three unbought Plot rows, price percent 50 and v54 envelopes; hashes/bytes and
 // dynamic entity IDs follow. The action sweep adds four records for a refused buy (no id), shifting Bob's later
 // requests by one. Existing outcome payloads and all other simulation columns stay exact: 8,600 records.
+// v55 loader yard: this trace buys no yard. Only 205 namespace/checksum envelopes and 2,528 snapBytes samples
+// change; all 8,600 ordered records keep their state, hashes, inputs, results and replica packets.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

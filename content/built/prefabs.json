@@ -890,6 +890,17 @@
         "none": true
       }
     },
+    "railway.loader-arm": {
+      "colliders": [],
+      "key": "railway.loader-arm",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.loader-parts",
+        "params": {
+          "kind": "arm"
+        }
+      }
+    },
     "railway.machine-chair": {
       "colliders": [],
       "interactions": [
@@ -3246,6 +3257,17 @@
           "d": 7.4,
           "piece": "window-box",
           "w": 7.4
+        }
+      }
+    },
+    "town.loader-jib": {
+      "colliders": [],
+      "key": "town.loader-jib",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.loader-parts",
+        "params": {
+          "kind": "yard"
         }
       }
     },

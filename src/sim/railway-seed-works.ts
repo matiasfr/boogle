@@ -1,6 +1,6 @@
 // Seeds for Split-rock Works, on ./railway-seed-route.ts (./railway-seeds.ts is the catalog and how to add a stage). Accepted fixtures for Split-rock Works and the Roundhouse (docs/plans/split-rock-roundhouse.md, J3f), built on the
 // B5-B8 `q6-done` fixture through accepted sim ops only. No direct state writes.
-import { act, advance, railwayAtTrains, type Seed } from './railway-seed-route.ts';
+import { act, advance, finishQ6, railwayAtTrains, type Seed } from './railway-seed-route.ts';
 import { check, invariant, need, restore } from './railway-drive.ts';
 import { account, forge, hardwoods, rock, shed, trains, trees, works } from './railway-rows.ts';
 import { RAILWAY_SOURCES } from './railway-layout.ts';
@@ -55,9 +55,16 @@ function carryFooting(s: Seed, pid: string, rack: 0 | 1, site: 0 | 1 | 2) {
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<WorksStage, Seed>();
 /** The railway at a Works stage, each built on the one before it (the B5-B8 `q6-done` fixture first). */
-export function railwayAtWorks(stage: WorksStage): Seed {
+export function railwayAtWorks(stage: WorksStage, source?: Seed): Seed {
   const k = WORKS_STAGES.indexOf(stage);
   need(k >= 0, stage);
+  if (source) {
+    const s = { w: restore(source.w), t: source.t };
+    finishQ6(s);
+    for (const step of WORKS_STAGES.slice(0, k + 1)) build(s, step);
+    need(invariant(s.w) === null, stage);
+    return s;
+  }
   let base = cache.get(stage);
   if (!base) {
     const before = k ? railwayAtWorks(WORKS_STAGES[k - 1]!) : railwayAtTrains('q6-done');

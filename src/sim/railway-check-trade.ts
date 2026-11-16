@@ -8,15 +8,29 @@
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { RIDER_UNIT, TRADE } from './railway-trade-layout.ts';
-import { RAIL_TRAINS } from './railway-lines.ts';
+import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
+import { WORKS } from './railway-works-layout.ts';
 import { plot, till, townClock, towns, trains, yardClock, yards } from './railway-rows.ts';
-import { plotSlot, freightAboard, lineRoute, ridersAboard, riderPlaces } from './railway-queries-trade.ts';
+import { plotSlot, freightAboard, lineRoute, ridersAboard, riderPlaces, loaderOn } from './railway-queries-trade.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
 };
 /** The trade's whole-world invariants; throws on the first broken one. */
 export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
+  if (
+    trains(w).some(
+      (r, slot) =>
+        !r.wagon &&
+        r.foot > 0 &&
+        (RAIL_TRAINS[slot]!.line !== LINE2 ||
+          !loaderOn(w, tick) ||
+          r.foot > WORKS.loaderCap ||
+          r.logs + r.rails + r.steel + r.freight > 0 ||
+          r.legKit),
+    )
+  )
+    bad('loader cargo');
   const ys = yards(w),
     ts = towns(w);
   if (

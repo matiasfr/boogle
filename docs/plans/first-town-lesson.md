@@ -125,7 +125,7 @@ session's visual review of their stills.
     and one with a player sat on the bench beside them (no figure in a seat, none through the bench), plus one with a
     pet on the bench and one of a player walking the deck's length (report any figure walked through); the Cars tab
     still. A dressing-only fill up to 4 is fine for the still; say the count shown. **Done means** those stills opened, figures clear of seats, 1/2/4 counts read distinctly and all four places clear the car, seated players and pets.
-- [ ] **L1. The loader yard's rules (M).** After S1 (shares `railway-trade-layout.ts`, `railway-check-trade.ts`).
+- [x] **L1. The loader yard's rules (M).** After S1 (shares `railway-trade-layout.ts`, `railway-check-trade.ts`).
   Sync: Server. Tier: **independent review**. Builds: Codex gpt-6-astra high; review a fresh gpt-6-astra high (or opus
   high). Rules as in Design. Files: `src/sim/railway-trade-layout.ts`, `railway-works-layout.ts` (`loaderCap`),
   `railway-queries-trade.ts` (`loaderOn`, `footCarrier`, `footCap`, `deckHeld`, `townBuildings`),
@@ -154,7 +154,7 @@ session's visual review of their stills.
   train once the loader yard stands"; `dev/economy/trade-data.ts`: plot rows' `riders` and `gives`, `loader.works`
   becomes plot 2 (offered when staked, price from `TRADE`), plot 3's 800; `docs/world/trade-economy.html`
   regenerated. **Done means** `npm run loop -- run` unmoved and `npm run economy` shows plot 2 as the yard.
-- [ ] **V2. The yard, the arm, footings on decks (M).** After L1. Sync: Local. Tier: normal + visual. Builds:
+- [x] **V2. The yard, the arm, footings on decks (M).** After L1. Sync: Local. Tier: normal + visual. Builds:
   gpt-6-astra high. Parallel with L2.
   - `src/entities/town/plots.ts`: an offered plot with `gives: 'loader'` paints the **footing icon** (the Works rack
     board's) and **"Every train"** where plot 1 paints the rider and "+1 rider / minute"; price and box as now. Its gold
@@ -244,6 +244,29 @@ rescaled character. The garage reads its player-seat count from the car-bench pr
 
 Earlier eight-place reports and rejected-layout stills are historical, superseded by this rework. No L1, L2,
 V2, A or R implementation here. Real-time smoothness and device performance are not claimed.
+
+## L1 + V2 as built (16 November 2026)
+
+Implemented together on `t3/loader-yard`, based on `0b9933ec` (#1968 included), for independent review; no push or
+ship. Rider places remain four. The yard adds no rider demand or residents’ town fact but still doubles subsequent
+prices. Coupling gates the six-footing loader; outgoing empty line 2 decks help, all aboard counts reserve owed
+footings, and the wagon’s kit car stays available. Tests cover same-tick carriers, prediction acceptance/refusal,
+existing loads at buy, mid-load reload, late join/reconnect, and stone/kit progress after delivery.
+
+The board, ghost and built jib keep plot 2’s closed shell and hulls. The Works arm colours at build completion,
+folds until loading, and follows accepted row-edge flights to the role-named deck lookup. Two view-only prefab
+records add no solid. Owning town design is updated in `docs/game-design/place.md`.
+
+L1 takes **v55**. All 49 old golden stages keep their exact ticks and hashes; the four accepted-op yard stages are
+added. Schema changes only its namespace; host trace changes only namespace, envelope checksum and byte counts.
+The new `yard-deck` base path stops at accepted Q7 completion: with the yard, the old full-rack/wagon-at-Home
+alignment can never recur because other carriers already have the finite ring stock. No old seed alignment changes.
+
+[Implementation report](../reports/loader-yard-l1-v2.md): five review findings, fixture audit, opened stills and
+motion evidence, complete check results and retained failure logs. Instant-carry rule checks take 112.4 s for the
+Pier and 189 s for the ring; these do not claim R’s solo/trio pacing rerun. The exact `yard-built` seed precedes
+Works lighting, so the extra stall-bill still uses that seed advanced through accepted Works operations to
+`works-lit`. From the island only the ghost roof is visible. L2, A, R and K remain separate and unticked.
 
 ## Level findings
 

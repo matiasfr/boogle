@@ -114,7 +114,9 @@
 // v52 (2026-11-15): train progression adds 14/20/25 boiler rows and a train per early extension.
 // v53 (2026-11-16): the free 20 m/s garage install replaces the automatic table upgrade; the wagon waits for it.
 // v54 (2026-11-16): priced Plot rows and rail.buy; houses build in 100 ticks, riders 1/min/building, room prices 50%.
-export const WORLD_NS = 'v54';
+// v55 (2026-11-16): plot 2 is the loader yard (no riders); with it built and the wagon coupled every line 2 train
+// loads footings at the quarry going out; rooms that bought plot 2 as a house start fresh. No shape change or migration.
+export const WORLD_NS = 'v55';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

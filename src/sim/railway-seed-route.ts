@@ -206,26 +206,31 @@ export function railwayAtTrains(stage: TrainStage): Seed {
     }
   }
   if (stage === 'q6-stocked' || stage === 'q6-finishing' || stage === 'q6-done') {
-    let ticks = 0;
-    while (rail(w).depot !== 32 || rail(w).depotRails !== 32) {
-      need(ticks++ < 4000, 'kit unloaded at Far Head');
-      advance(s, 1);
-      // Rails conserved, among the rest of the load check.
-      const broken = check(w);
-      need(broken === null, `rails conserved: ${broken}`);
-    }
-    if (stage !== 'q6-stocked') {
-      need(act(s, 'a', 'rail.pack') === 1, 'the pack');
-      for (const kind of [0, 2])
-        for (const pid of ['a', 'b']) {
-          need(act(s, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake') === 16, 'Q6 depot taken');
-          need(act(s, pid, 'rail.deposit', { station: 'Q6', kind, n: 16 }) === 16, 'Q6 took materials');
-        }
-      const total = layTicks(w, 5);
-      advance(s, stage === 'q6-done' ? total : total - 450);
-    }
+    finishQ6(s, stage);
   }
   const broken = invariant(w);
   need(broken === null, `railwayAtTrains ${stage}: ${broken}`);
   return s;
+}
+/** The accepted Q6 kit sequence, also used by a town-first route before it enters the Works. */
+export function finishQ6(s: Seed, stage: 'q6-stocked' | 'q6-finishing' | 'q6-done' = 'q6-done') {
+  const w = s.w;
+  let ticks = 0;
+  while (rail(w).depot !== 32 || rail(w).depotRails !== 32) {
+    need(ticks++ < 4000, 'kit unloaded at Far Head');
+    advance(s, 1);
+    // Rails conserved, among the rest of the load check.
+    const broken = check(w);
+    need(broken === null, `rails conserved: ${broken}`);
+  }
+  if (stage !== 'q6-stocked') {
+    need(act(s, 'a', 'rail.pack') === 1, 'the pack');
+    for (const kind of [0, 2])
+      for (const pid of ['a', 'b']) {
+        need(act(s, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake') === 16, 'Q6 depot taken');
+        need(act(s, pid, 'rail.deposit', { station: 'Q6', kind, n: 16 }) === 16, 'Q6 took materials');
+      }
+    const total = layTicks(w, 5);
+    advance(s, stage === 'q6-done' ? total : total - 450);
+  }
 }

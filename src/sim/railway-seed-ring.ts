@@ -24,9 +24,15 @@ export const RING_STAGES: readonly RingStage[] = ['deck-laid', 'gap-footed', 'le
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<RingStage, Seed>();
 /** The railway at a Ring Island stage, each built on the one before it (`crossing-done` first). */
-export function railwayAtRing(stage: RingStage): Seed {
+export function railwayAtRing(stage: RingStage, source?: Seed): Seed {
   const k = RING_STAGES.indexOf(stage);
   need(k >= 0, stage);
+  if (source) {
+    const s = railwayAtWorks('crossing-done', source);
+    for (const step of RING_STAGES.slice(0, k + 1)) build(s, step, true);
+    need(invariant(s.w) === null, stage);
+    return s;
+  }
   let base = cache.get(stage);
   if (!base) {
     const before = k ? railwayAtRing(RING_STAGES[k - 1]!) : railwayAtWorks('crossing-done');
@@ -60,7 +66,7 @@ function settleHaul(s: Seed) {
   until(s, () => haulSettled(aperture(s.w), s.t), 1000, 'the railhead haul settled');
 }
 
-function build(s: Seed, stage: RingStage): Seed {
+function build(s: Seed, stage: RingStage, townFirst = false): Seed {
   const w = s.w;
   switch (stage) {
     case 'deck-laid': {
@@ -77,6 +83,9 @@ function build(s: Seed, stage: RingStage): Seed {
           need(act(s, pid, 'rail.deposit', { station: 'Q7', kind, n }) === n, 'Q7 took materials');
         }
       until(s, () => qjob(w, Q7).completion === 1, 6000, 'Q7 laid');
+      // On the yard route other trains immediately carry the ring's finite stock. A full Works rack and
+      // the wagon at Home need never coincide. Start at the accepted lay, without moving any old seed.
+      if (townFirst) break;
       // The wagon home at the Village, the Works rack full for its next load.
       until(
         s,

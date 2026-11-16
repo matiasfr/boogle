@@ -20,6 +20,7 @@ export const WORKS = {
   counterweight: 4,
   total: 32,
   wagonCap: 6,
+  loaderCap: 6,
   rollTicks: 140,
   // Let the accepted garage upgrade settle before the shunter takes the table (5 seconds).
   upgradeTicks: 50,

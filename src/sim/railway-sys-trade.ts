@@ -16,6 +16,7 @@ import { Plot, Rail, Till, Town, TownClock, Train, Yard, YardClock } from './rai
 import { railId, trainId } from './railway-queries.ts';
 import {
   boxCap,
+  deckHeld,
   plotBought,
   plotPrice,
   plotsStaked,
@@ -65,7 +66,7 @@ export function freightLoads(w: World, slot: number) {
   const y = lineYard(RAIL_TRAINS[slot]!.line);
   if (y < 0) return;
   const r = w.get(Train, trainId(w, slot))!;
-  if (r.phase !== TRAIN_PHASE.STAND || r.at !== TRADE.yards[y]!.stop || trainDir(r) >= 0) return;
+  if (deckHeld(r) || r.phase !== TRAIN_PHASE.STAND || r.at !== TRADE.yards[y]!.stop || trainDir(r) >= 0) return;
   const id = yardId(w, y),
     n = Math.min(TRADE.freightCap - r.freight, w.get(Yard, id)!.stock);
   if (n <= 0) return;

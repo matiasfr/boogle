@@ -78,10 +78,7 @@ export function checkWorks(w: World) {
   if (
     ts.some(
       (r, slot) =>
-        (r.wagon && RAIL_TRAINS[slot]!.line !== LINE2) ||
-        r.foot > WORKS.wagonCap ||
-        (r.foot > 0 && !r.wagon) ||
-        (r.wagon && h.fitted < 0),
+        (r.wagon && RAIL_TRAINS[slot]!.line !== LINE2) || r.foot > WORKS.wagonCap || (r.wagon && h.fitted < 0),
     )
   )
     bad('wagon');

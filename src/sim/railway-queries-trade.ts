@@ -22,11 +22,11 @@
 import type { World } from '../ecs/index.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { TRADE, TRADE_PCT, type TradePct, type TradeRoute, type TradeYard } from './railway-trade-layout.ts';
-import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
+import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { WORKS } from './railway-works-layout.ts';
 import type { RailTrain } from './railway-train.ts';
 import { Plot, Town, Train, Works, Yard } from './railway-components.ts';
-import { footingsOwed, kitOwed, stopsOf, worksId } from './railway-queries.ts';
+import { footingsOwed, kitOwed, stopsOf, wagonSlot, worksId, type Row } from './railway-queries.ts';
 import { legKitWaiting } from './railway-queries-route.ts';
 
 export const yardId = (w: World, slot: number) => w.lookup(Yard, slot)!;
@@ -121,8 +121,8 @@ export function plotBuilt(w: World, slot: number, tick: number): boolean {
   return !!p && p.at >= 0 && tick >= p.at + TRADE.buildTicks;
 }
 export const housesOf = (w: World, town: number, tick: number): number =>
-  (TRADE.plots[town] ?? []).filter((_p, k) => plotBuilt(w, plotSlot(town, k), tick)).length;
-/** Every bought house doubles the other prices immediately, including while it is building. */
+  (TRADE.plots[town] ?? []).reduce((n, p, k) => n + (plotBuilt(w, plotSlot(town, k), tick) ? p.riders : 0), 0);
+/** Every bought building doubles the other prices immediately, including the yard and unfinished builds. */
 export function plotPrice(w: World, town: number, k: number, pricePct: number): number {
   const p = TRADE.plots[town]?.[k];
   if (!p) return 0;
@@ -131,6 +131,20 @@ export function plotPrice(w: World, town: number, k: number, pricePct: number): 
   return Math.floor((price * pricePct) / 100);
 }
 export const townBuildings = (w: World, town: number, tick: number) => TRADE.startBuildings + housesOf(w, town, tick);
+/** The yard changes the Works' colour at completion; carrying still waits for the wagon's commissioning. */
+export const loaderOn = (w: World, tick: number): boolean =>
+  wagonSlot(w) >= 0 &&
+  TRADE.plots.some((ps, town) =>
+    ps.some((p, k) => 'gives' in p && p.gives === 'loader' && plotBuilt(w, plotSlot(town, k), tick)),
+  );
+/** One deck, one cargo. The coupled wagon has its own deck and leaves its train's kit car free. */
+export const deckHeld = (r: Readonly<RailTrain>): boolean => !r.wagon && r.foot > 0;
+export const footCap = (r: Readonly<RailTrain>): number => (r.wagon ? WORKS.wagonCap : WORKS.loaderCap);
+export const footCarrier = (w: World, r: Readonly<Row<typeof Train>>, tick: number): boolean =>
+  r.wagon ||
+  (RAIL_TRAINS[r.slot]!.line === LINE2 &&
+    loaderOn(w, tick) &&
+    (r.foot > 0 || (!r.legKit && r.logs + r.rails + r.steel + r.freight === 0)));
 /** Demand income, before the seat cap, in whole Boogles a minute. */
 export function tillRate(w: World, pct: TradePct, tick: number = 0) {
   let hundredths = 0;

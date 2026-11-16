@@ -53,6 +53,8 @@ import {
   wagonGhost,
 } from './cradle-cues.ts';
 import { LINE2_FORGE } from '../../sim/railway-line2-layout.ts';
+import { TRADE } from '../../sim/railway-trade-layout.ts';
+import { plotBuilt, plotSlot } from '../../sim/railway-queries-trade.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { FOOTING_COPY, footingBoardLine } from './footing-cues.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -74,6 +76,7 @@ export async function createRailwayWorks(
   deps: {
     contactIn: (id: number) => number;
     busy: () => boolean;
+    loaderHook: () => { x: number; y: number; z: number } | null;
   },
 ) {
   const { H, addStatic } = await import('../../place/land.ts');
@@ -141,6 +144,54 @@ export async function createRailwayWorks(
   }
   // The halt rack: a deck for six footings, three by two, and the broken sample beside it so the shape reads early.
   const rackY = H(rack.x, rack.z);
+  // Motion storyboard: folded beside the rack -> reach to the lifted footing -> slew/extend over the kit deck ->
+  // fold back. The mast is fixed; slew pivots at 3.2 m, boom pitches there and telescopes; hook hangs vertically.
+  // Only replicated loading edges (the train view's flights) drive it. Completion changes paint even before coupling.
+  const loader = instantiate(
+    'railway.loader-arm',
+    {
+      id: 'works-loader',
+      prefab: 'railway.loader-arm',
+      pos: [rack.x + 2.6, rackY, rack.z - 1.8],
+    },
+    { owner },
+  );
+  loader.setEnabled(true);
+  const slew = loader.root.getObjectByName('slew')!,
+    boom = loader.root.getObjectByName('boom')!,
+    inner = loader.root.getObjectByName('inner')!,
+    hook = loader.root.getObjectByName('hook')!;
+  const mast = loader.root.getObjectByName('mast') as THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial>;
+  let loaderColoured = false,
+    loaderMoving = false;
+  const folded = new THREE.Vector3(0, 1.6, 1.1),
+    hookLocal = folded.clone();
+  function drawLoader(dt: number, snap = false) {
+    loaderColoured = TRADE.plots.some((ps, town) =>
+      ps.some(
+        (p, k) =>
+          'gives' in p &&
+          p.gives === 'loader' &&
+          plotBuilt(adapter.read.world(), plotSlot(town, k), adapter.read.tick()),
+      ),
+    );
+    mast.material.color.set(loaderColoured ? '#d8a34a' : '#737878');
+    const target = !snap && loaderColoured ? deps.loaderHook() : null;
+    loaderMoving = !!target;
+    if (target) hookLocal.set(target.x, target.y, target.z).sub(loader.root.position);
+    else if (snap) hookLocal.copy(folded);
+    else hookLocal.lerp(folded, Math.min(1, dt * 5));
+    hook.position.copy(hookLocal);
+    const dx = hookLocal.x,
+      dz = hookLocal.z,
+      dy = hookLocal.y + 1.1 - 3.2;
+    const horizontal = Math.hypot(dx, dz),
+      length = Math.hypot(horizontal, dy);
+    slew.rotation.y = Math.atan2(dx, dz);
+    boom.rotation.x = -Math.atan2(dy, horizontal);
+    inner.position.z = (1.5 + length) / 2;
+    inner.scale.z = Math.max(0.1, length - 1.5);
+  }
   const rackYaw = Math.atan2(
     ROLLER_ROAD.at(-1)!.x - ROLLER_ROAD.at(-2)!.x,
     ROLLER_ROAD.at(-1)!.z - ROLLER_ROAD.at(-2)!.z,
@@ -828,6 +879,7 @@ export async function createRailwayWorks(
     boardPainted = null;
     stallUnbuilt = false;
     cueFrom = 0;
+    drawLoader(0, true);
   }
   snap();
   return {
@@ -878,6 +930,7 @@ export async function createRailwayWorks(
       drawKiln();
       drawKilnFlights(dt);
       drawRack(dt);
+      drawLoader(dt);
       batch.commit();
       drawGhosts();
       rockMotes(dt);
@@ -1040,6 +1093,13 @@ export async function createRailwayWorks(
         wagonWait: wagonWait[0],
       },
       rack: Math.max(0, worksRow(wd).rack - flights.length),
+      loader: {
+        coloured: loaderColoured,
+        loading: loaderMoving,
+        folded: hookLocal.distanceTo(folded) < 0.02,
+        at: loader.root.position.toArray(),
+        hook: hookLocal.toArray(),
+      },
       rollers: flights.length,
     }),
   };

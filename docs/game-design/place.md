@@ -80,9 +80,11 @@ The same finite ordinary trees, eight-log back, 24-log first frame, wake animati
 
 **House buy rules (16 November; town-economy-visible B1).** The server accepts `rail.buy { id }` for a staked,
 unbought priced plot when the shared strongbox can pay. It subtracts the price once, records the paid amount and
-purchase tick, and counts the house after 100 ticks (10 seconds). Base prices stay 300, 800 and 3,000; each bought
-house immediately doubles the other prices in that town, and the room defaults to `railPricePct = 50`. Each starting
-building or completed house sends one rider a minute each way. The strongbox holds the larger of twenty minutes'
+purchase tick, and counts the house after 100 ticks (10 seconds). Base prices are 300, 800 and 800; each bought
+building immediately doubles the other prices in that town, and the room defaults to `railPricePct = 50`. Each starting
+building or completed rider house sends one rider a minute each way. Plot 2 is the loader yard, with no riders;
+only plots 1 and 3 add the residents’ town fact. Today each train has four rider places, separate from four player
+seats. Plot 3 costs 1,600 after the first two purchases at the default room price. The strongbox holds the larger of twenty minutes'
 demand income or 1.5 times the dearest staked, unbought offer. The buy is not predicted. B1 supplies the server rule,
 adapter intent, town facts and `house-ready` / `house-built` tooling seeds. The town's fact reader uses the mirror tick and refreshes staked
 plots when a purchase changes, while reusing unchanged projections.
@@ -97,6 +99,18 @@ An unaffordable board shows its shortfall through the ordinary blocked prompt. S
 server validation within 3.2 m, with no new saved state or namespace bump. The two tooling landings now stand
 clear of the board post and statue. New words are placeholders for The Boogler (listed in the plan); existing copy
 is unchanged. Not tested on a device.
+
+**The loader yard (16 November; first-town-lesson L1 + V2, v55).** Plot 2 keeps its closed house shell and hulls,
+with a roadside jib and two grooved footings on its step. Its board shows a footing icon and the placeholder
+“Every train”; its affordable ghost includes the jib. The Works arm starts grey and folded, takes its colour when
+the yard finishes, and stays folded until a train loads. The coupled footing wagon still gates the work. While
+footings are owed, every empty outbound line 2 train can take up to six; the owed count includes every carrier.
+Non-wagon footing decks take no stone, kit, steel or leg kit, while the wagon’s separate deck keeps its train’s kit
+capacity. The arm and footing flights follow accepted row edges; footings ride the appropriate train deck and
+unload at the Pier or railhead. Saved and late-join state draws silently without replaying loads. No new solid,
+new bill, or order change. The yard counts for price doubling, not rider income or “new neighbours” dialogue.
+The two rider houses reach 72 landed fares/minute; the yard leaves that rate unchanged. See the
+[implementation evidence](../reports/loader-yard-l1-v2.md). Device performance and owner playtesting are unverified.
 
 **Line 2, part 2's first playable: the pack and Q4 (7 November; [plan](../plans/line2-part2-greybox.md), B1-B2).** The pack frame's chest stands beside the forge once its first bill (24 logs) is in; whoever opens it opens it for everyone, so every back carries 16 from then on (the card for the opener, a flourish for the rest, as with the axe). Q4 (16 logs, 16 rails, 178 → 286 m, to the rim) waits behind the quarry gate: its frame takes nothing until the lever has dropped the slab. Its depot cart runs as soon as Q3 is laid: eight logs a trip, as before, and from Q4 on it also takes up to 16 of the stretch's rails off the forge rack onto a low shelf beside the log rack ("Take rails"), so the forge rack drops by what the shelf gains: rails are moved, never made. Rails left on the shelf when the frame funds (someone brought rails by hand) go back to the forge rack. A survey stake with a teal flag marks the rim where Q4 ends. For now the cart has no body: its loads appear (B3 gives it its trip). The away credit runs the shelf too. Once it is open every Buddy wears the open timber carry frame on the back (the same frame as Place's, with its shelf under the logs; yours and every friend's, derived from the shared pack flag, no presence field), and the haul bundle sits on it. Code: `rail.pack`, `rail.depotRailTake` and the depot in `src/sim/railway-systems.ts`; views `tools.ts` (the chest and the worn frame) and `shelf-view.ts`. `WORLD_NS` v18. Not tested on a device.
 **Line 2, part 2's first playable: the pack and Q4 (7 November; [plan](../plans/line2-part2-greybox.md), B1-B2).** The pack frame's chest stands beside the forge once its first bill (24 logs) is in; whoever opens it opens it for everyone, so every back carries 16 from then on (the card for the opener, a flourish for the rest, as with the axe). Q4 (16 logs, 16 rails, 178 → 286 m, to the rim) waits behind the quarry gate: its frame takes nothing until the lever has dropped the slab. Its depot cart runs as soon as Q3 is laid: eight logs a trip, as before, and from Q4 on it also takes up to 16 of the stretch's rails off the forge rack onto a low shelf beside the log rack ("Take rails"), so the forge rack drops by what the shelf gains: rails are moved, never made. Rails left on the shelf when the frame funds (someone brought rails by hand) go back to the forge rack. A survey stake with a teal flag marks the rim where Q4 ends. The away credit runs the shelf too. Code: `rail.pack`, `rail.depotRailTake` and the depot in `src/sim/railway-systems.ts`; views `tools.ts` (the chest) and `shelf-view.ts`. `WORLD_NS` v18. Not tested on a device.
