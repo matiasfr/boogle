@@ -1,6 +1,8 @@
 > **Status: plan, not built (16 November 2026).** Replans what is left of [slice5-town-economy](slice5-town-economy.md)
-> (its R4, R5, V1 to V4) against main `3720b4c3b`, `WORLD_NS` v52. The one file each build job reads. Not yet
-> designer-reviewed. Owner, 16 November (relayed by the orchestrator, not yet in the backlog): the town economy goes to
+> (its R4, R5, V1 to V4) against main `3720b4c3b`, `WORLD_NS` v52. The one file each build job reads.
+> Designer-reviewed 16 November ([review](#design-review-designer-2026-11-16)); its changes are in the steps, marked
+> "(review)". "Plot 1, 2, 3" below mean the first, second and third priced plot: slots `plot3`, `plot2`, `plot1` (N9).
+> Owner, 16 November (relayed by the orchestrator, not yet in the backlog): the town economy goes to
 > the top of the backlog, because "towns grow from what arrives, and grown towns give upgrades" is not playable.
 
 ## Summary
@@ -27,7 +29,9 @@
 Boogles at +4.3 min, 300 at +9.6 min; after 20 minutes 686 Boogles (34 a minute; R3 measured 53.5 to 56 at v30), both
 crowds near the cap (24 and 22), nothing lost, no stone (the stop waits for the pier's footings, as ruled). From
 `q6-done` 65 a minute, from `crossing-done` 77 (fare 9). R3's gate 6, "at least 40 a minute at every stage", no longer
-holds at `trains-on`; not bisected (candidates: v34's train spacing, v52's train progression). See Q3.
+holds at `trains-on`; not bisected (candidates: v34's train spacing, v52's train progression). See Q2.
+**(review)** Fares are seat-bound: with the crowds at their cap before any house, a third building adds 1% at
+`trains-on` and nothing at `q6-done`. The review's numbers are in its finding 2.
 
 ## Goal
 
@@ -75,7 +79,10 @@ bay, clear of the goods door. N5 Boards stand 1.2 m out from the door line, 2.2 
 1). N6 Freight crates ride in the flat car's solid crate deck, as kit crates do. N7 `boxCap`'s "dearest thing on offer"
 is the dearest staked, unbought plot at its current price. N8 The hub-town rename of `Town.wood` and `Town.stone` to
 per-row goods counters waits for the plan that adds the second town (section 4 asked for it at this bump; that plan
-resets the world anyway).
+resets the world anyway). **(review)** N9 The buy order starts by the hall: `TOWN_PLOTS.order` begins `plot3`,
+`plot2`, `plot1` (level finding 8). N10 Riders 1 a minute a building (`ridersPerMin`), so a house pays. N11 The room's
+`railPricePct` is 50 from B1's ship: 150, 400, 1,500 (the data keeps D2's 300). N12 A staked plot whose price the box
+holds shows the house's gold ghost.
 
 ## Steps
 
@@ -106,6 +113,8 @@ models`'.
     outline and mat stay), `src/entities/town/blockout.ts`, `dev/level/drawn-geometry.ts` (so the level check and the
     view agree), `test/town-plan.test.ts` ("every slot is drawn once": an unbought plot is an outline). One constant,
     `PLOT_BLOCKS` in `src/place/town-blockout.ts`, restores the blocks if Q1 says so.
+  - N9 (review): `src/place/town-plan.ts` `TOWN_PLOTS.order` = `plot3`, `plot2`, `plot1`, then 4 to 8; tests and the
+    plan sheet (`dev/level/town-plan-sheet.ts`) follow. The first pile then grows 36 m from the island, in its view.
   - Proof: `npm run look -- --rail-seed freight-running`: from the hall's front toward plot 1's stakes, and at 375 × 812
     from the top of the dock street (the stakes must read at 40 m).
 - [ ] **A3. Riders and the till (M).** Sync: Cosmetic/Local over `Town.wait0`, `wait1`, `Train.riders`, `Till`. Tier:
@@ -121,11 +130,13 @@ models`'.
   - Proof: `npm run look -- --rail-seed fares-running`: a still at the till and one on the island as a train boards.
 - [ ] **K1. Checkpoint: the economy seen.** After A1 to A3. The main session opens the six stills; one real-time clip of
   a train unloading at the island; `docs/game-design/place.md` gains the town economy's views (one doc edit for all
-  three steps, so they share no file). Then the room is live for him to play (owner call "Development is live").
+  three steps, so they share no file). Live as every ship is; (review) the owner is pointed at the economy at B2, the
+  first moment with a choice, not here, where money builds with nothing to spend it on.
 - [ ] **B1. Plots and the buy (M; R4).** Sync: Server kind in the railway's replicated world; the server has
   authority. Tier: **independent review**. Model: Codex gpt-6-astra high; review a fresh gpt-6-astra high (or opus
   high). Parallel with A1 to A3 (no shared file).
-  - `src/sim/railway-trade-layout.ts`: plot rows gain `base` (300, 800, 3,000); `houseOrder: 2`, `buildTicks: 100`.
+  - `src/sim/railway-trade-layout.ts`: plot rows gain `base` (300, 800, 3,000); `houseOrder: 2`, `buildTicks: 100`;
+    `ridersPerMin` 2 to 1 (N10, review). The room's `railPricePct` is set to 50 when B1 ships (N11, review).
     `railway-components.ts`: `Plot` keyed `slot` (= town × 16 + k; D8), fields `at` (tick bought, −1) and `paid`,
     spawned per priced plot. `railway-rows.ts`: `plot`.
   - `railway-queries-trade.ts`: `plotSlot(town, k)`, `plotBought`, `plotBuilt(w, slot, tick)`, `housesOf(w, town,
@@ -147,12 +158,15 @@ models`'.
     rail-schema regenerated, fixtures re-recorded; rebase onto main right before the bump.
   - Tests (`test/railway-trade.test.ts`, `test/town-facts.test.ts`): refused unstaked, short or bought; a replayed
     request spends once; two buys in one tick spend once; `tillRate` rises at `at + buildTicks`, not before; `town`
-    flips then; buying plot 2 first prices plot 1 at 600; determinism; save round-trip.
+    flips then; buying plot 2 first prices plot 1 at 600; determinism; save round-trip; (review) the payoff guard: from
+    `q6-done`, three buildings land at least 1.3 times what two do in 20 minutes (measured 53.3 against 35.3).
   - Proof: `npm run checkpoints -- house-ready house-built` (both seeds from accepted ops through the host's save path).
 - [ ] **K2. Checkpoint at B1's bump.** `npm run check:full`; `npm run scenario` for two players pressing one plot (one
   plot bought, spent once: the one new sync contract); `npm run loop -- run` with order and bills unmoved.
 - [ ] **B2. The house goes up (M; V3).** After B1 and A2. Sync: Local view of `Plot`. Tier: normal + visual. Model:
   gpt-6-astra high. Parallel with C1.
+  - (review) What a plot gives is on its board as an icon and count (riders +1 a minute; D6). N12: while the box holds
+    a staked plot's price, the house's gold ghost (the kiln's and cradle's cue) stands on it, seen from the island.
   - `src/entities/town/plots.ts`: the board shows the price and the box's Boogles; Interact held 1 s (F2), `blocked`
     with the shortfall; calls `buy(slot)` and changes nothing until the `Plot` row does. The hold: reuse the garage
     install's hold if it is a helper by then, else write it here (owner call "Fold copies into one helper").
@@ -187,6 +201,10 @@ models`'.
 **Order and lanes.** Start A1, A2, A3 and B1 together (no file is shared; the docs edit is K1's); ship each as it
 passes. B2 waits for B1 and A2; C1 waits for B1; B2 and C1 run together; C2 waits for C1 and A3. Hotspots:
 `train-view.ts` (A1), `halts-view.ts` and `folk.ts` (A3), `railway-server.ts`, `namespace.ts` (B1, C1): rebase first.
+**(review) Priority when agents are short:** A2 and B1 (the buy's critical path), then A3 (the payoff's crowd and
+column), B2, then A1; C1 and C2 serve the return visit, not the choice, and take an agent only when the next plan's
+plot-2 upgrade cannot. **Next plan (review):** the second priced plot's house also brings the Works' faster footing
+loader (the model's `loader.works`), so the board offers fares now or the footing loader sooner; planned now, docs only.
 
 ## Level findings
 
@@ -214,7 +232,7 @@ riders were probed separately (ground `H`, slope, clearance to the rails, the st
    (3.00 m), the balcony. Plot 1 is 3.00 m from Fine Prices too, but nothing climbable stands within 12.6 m (the gate
    cottage is 16.47 m). Recommended: accept, as B4's question 1 did; K3 measures it.
 8. **Telegraph:** plot 1, staked first, is about 50 m from the hall (plot 2 37 m, plot 3 22 m), seen across the green.
-   The buy order is town-layout's; flagged, not changed.
+   The buy order is town-layout's; flagged, not changed. **(review) Changed by N9:** slot `plot3` is staked first.
 
 ## Risks
 
@@ -225,8 +243,8 @@ and a pile, 24 riders, one column, instanced; K3 reports it. N1: the level check
 
 ## Strings for the owner
 
-All new copy is a placeholder for The Boogler's voice: the board ("Plot 1", "300", "Timber 8 / 8", "Stone 0 / 16"), the
-hold prompt ("Build" or "Buy", and "Needs 120 more"), the till ("322 Boogles"), the sack prompt ("Empty"), and
+All new copy is a placeholder for The Boogler's voice: the board ("Plot 1", "300", "Timber 8 / 8", "Stone 0 / 16";
+(review) "Riders +1 a minute"), the hold prompt ("Build" or "Buy", and "Needs 120 more"), the till ("322 Boogles"), the sack prompt ("Empty"), and
 the jump-in rows ("Ready to build": "300 Boogles in the box; plot 1 is staked"; "House built": "Plot 1's house stands";
 "Sack waiting": "Back after a night: the coin sack is on the counter"). Existing lines reachable for the first time
 when `town` and `stone` turn true (`src/entities/town/town-lines.ts`, lines 54 to 55, 86 to 87, 136 to 137, 168 to
@@ -234,16 +252,68 @@ when `town` and `stone` turn true (`src/entities/town/town-lines.ts`, lines 54 t
 
 ## Owner questions
 
-Nothing waits on these; each step builds on the recommendation.
+The review's five replace the planner's four (its 4, the grey shell, is D7 and F6). Nothing waits on them; each step
+builds on the recommendation.
 
-1. **Should unbought plots go back to empty ground now, before you have walked the blocks?** Recommended: **yes (A2)**.
-   The town only reads as growing if it starts small; the spacing stays on the plan sheet and as outlines on the
-   ground. If you want to walk the blocks first, one constant brings them back.
-2. **Is choosing between two staked plots enough of a decision for now?** With plots 1 and 2 staked you can buy the
-   cheap one or save for the other (either way the second costs double). Recommended: **yes for this plan; the next
-   plan puts one source upgrade (decided as a Boogle buy) on the same board**, so money has two uses: Grant's "no real
-   decisions".
-3. **The first house comes about 10 minutes after the trains wake on today's main (fares 34 a minute, down from 56).
-   Keep 300?** Recommended: **keep 300** (prices are stand-ins); `railPricePct` changes it live, without a reset.
-4. **A bought house is a closed grey shell until the details pass: nobody moves in yet. OK?** Recommended: **yes**
-   (mechanisms, systems, greybox, then details); "every building can be walked into" stays decided for that pass.
+1. **Unbought plots go back to empty ground now, before your walk of the blocks?** Recommended: **yes** (A2, N1); one
+   constant brings the blocks back for the walk.
+2. **Riders 1 a minute a building and the room's prices halved, so a house lifts fares by about half and the first
+   (150) comes about 3 minutes after the pier, about 36 minutes in?** Recommended: **yes**. At 300: about 41 minutes.
+3. **Next plan: the second priced plot's house also brings the Works' faster footing loader, so the buy is fares now
+   or footings sooner?** Recommended: **yes**.
+4. **The first plot staked is the one by the hall (slot `plot3`), seen from the island; the dock street's is third?**
+   Recommended: **yes**.
+5. **Once two houses stand, a rooftop run may reach the balcony find without the glider. Accept, as for the blocks?**
+   Recommended: **yes**.
+
+## Design review (designer, 2026-11-16)
+
+**Build with changes, now in the steps.** Read: DESIGN 6, 7, 11; owner-calls; rewards and rail Current rules (10 to 14
+November entries opened); the 16 November focus entry; Grant's and the 9 and 10 November playtests; slice 5's reviews;
+town-layout's Round; home-flip's B4 ruling; `npm run loop`; the model's source rows (`dev/economy/trade-data.ts`).
+Measured: 20-minute headless runs from three seeds, building count and `ridersPerMin` varied (script not committed);
+two stills on `freight-running` (island toward the town; hall front toward slot `plot1`). Not seen: the views this plan
+adds (unbuilt); a device.
+
+| Calls | Kind | Ruling |
+| --- | --- | --- |
+| D1 to D8 | Decided | Consistent. D2's 300 stays the data's stand-in; N11 halves it in the room only |
+| F1 to F10 | Default | Keep. F6 answers the planner's question 4 (D7: no residents in this pass) |
+| N1 to N8 | New | Build as planned. N1: a staked plot reads as for sale only on open ground; `PLOT_BLOCKS` restores the blocks for his walk (Q1) |
+| N9 buy order from slot `plot3`; N12 gold ghost and the give line | New; Default | Finding 3 (Q4) |
+| N10 `ridersPerMin` 1; N11 `railPricePct` 50 | New | Finding 2 (Q2) |
+| Plot 2's house also brings the Works' footing loader, next plan | New | Finding 1 (Q3) |
+| A rooftop run to the balcony over bought houses | New | Accept; finding 4 (Q5) |
+
+1. **Q1: the buy was neither a payoff nor a choice.** Fares are seat-bound (crowds 24 and 22 at the cap before any
+   house): a third building lands 34.6 a minute against 34.3 at `trains-on`, 68.4 against 68.4 at `q6-done`. And two
+   plots giving the same thing are one right answer; the doubling even makes the dearer first cheaper in total (800 +
+   600 against 300 + 1,600): a sum, not a decision a player could explain (Grant's "no real decisions"). **Smallest
+   change:** the second priced plot's house also brings one source upgrade, the Works' faster footing loader (the
+   model's `loader.works`; Boogles upgrade sources, the loader arm named, 10 November; a grown town gives its sources'
+   upgrades, 12 November). Footings (stall 2, crossing 12, bents 14, weights 4) are the work right after the pier,
+   where both playtesters stopped, so the board asks "fares now, or the loader sooner?" and the doubling prices the
+   first pick. **Next plan, not B1:** it needs a rule, a number and a view at the Works, and B1 is already a reviewed
+   bump; `rail.buy { id }` stays generic so it adds an effect to a plot row. **Order:** the decision's critical path is
+   A2 and B1, then B2; A3 shows the payoff; A1 and the sack are off it (priority, in Order and lanes).
+2. **Q2: the first payoff.** `trains-on` is idle: the seed lays Q6 1.7 minutes later (Grant: trains 30:36, pier 32:33)
+   and from `q6-done` fares are 68.4 a minute, so today's 300 lands about 7 minutes after the trains (about 38 minutes
+   in) but buys nothing measurable. With N10, fares a minute for two, three, four buildings: `trains-on` 25.6, 33.6,
+   34.3; `q6-done` 35.3, 53.3, 68.4; `crossing-done` 23.1, 41.1, 59.1: a house lifts fares by a third to three
+   quarters and riders outgrow the seats after a house or two (slice 5's review, row 4). At 300 the first house then
+   comes about 9 minutes after the trains (41 minutes in); with N11 (150) 3.2 minutes after `q6-done`, about 36
+   minutes in, as a player comes back from the pier. The second (800 after doubling, at 53 a minute) about 15 later.
+3. **Q3: sightlines.** A1: the first timber shows on line 1's flat car at the island about 44 s after the wake, where
+   the player stands; the yard stacks only to riders. Missing: where it goes. N3 drops it unflown and the pile grows at
+   slot `plot1`, 71 m away past the hall's south end; the island still picks no plot out there. N9: slot `plot3` is
+   36 m from the island and 22 m from the hall, its block beside the open hall in that still. A2: stakes and string
+   are small shapes; the pile is the medium one, so the 40 m proof must show the pile. From the hall's front slot
+   `plot1` is small at about 40 m between Fine Prices and the statue. A3: the till is 24 m from the island and 17 m
+   from the breaker, the next beat. B2: nothing changed at a distance when the box reached a price (the board reads at
+   about 10 m); N12's gold ghost is the route's own "this can be done". C2: seen in the hall; not checked from spawn.
+4. **Q4: the rooftop run.** His 14 November acceptance covers the blocks only. Houses follow the trains and the glider
+   is on offer from Q5, before them, so "before the glider" needs an optional find left 20 minutes or more; the balcony
+   is a personal cosmetic, not a gate (DESIGN 2, 10). With N9 it can open at the second house. Accept; K3 measures.
+5. **Q5: what starts now.** A1, A2, A3 and B1 now; B2 after B1 and A2; C1 after B1; C2 after C1 and A3; the next
+   plan's planning now. Nothing waits for the owner: no step changes direction or scope past the 16 November focus,
+   N11 is a live tunable and N1 one constant.
