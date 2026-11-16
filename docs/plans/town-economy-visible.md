@@ -1,3 +1,4 @@
+> **Next plan: [town-choice](town-choice.md)** (16 November): ruling 1's choice measured; as ruled it does not work, and plot 2 becomes the loader yard.
 > **Status: plan, not built (16 November 2026).** Replans what is left of [slice5-town-economy](slice5-town-economy.md)
 > (its R4, R5, V1 to V4) against main `3720b4c3b`, `WORLD_NS` v52. The one file each build job reads.
 > Designer-reviewed 16 November ([review](#design-review-designer-2026-11-16)); its changes are in the steps, marked
