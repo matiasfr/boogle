@@ -1,5 +1,9 @@
 # Unit shard time, 13 November 2026
 
+> **Verdict:** balance selected unit files across eight CI shards while preserving full coverage and explicit selection.
+> **Top recommendations:** retain the shard-union coverage assertion; treat the timings below as loaded-Mac observations.
+> **Status:** adopted in #1723 and #1724; historical timing report, not current CI performance evidence.
+
 **Rebase follow-up:** `codex/ci-unit-shard-time-2` rebases the two original commits onto `origin/main` at
 `505f62f40` (world v35). The runner first honors explicit `UNIT_ONLY` in every mode, then consumes CI's shard flag
 and balances that selected set. Main's opt-in scoped flags in `dev/check.ts` and `dev/ship-check.ts` are preserved.

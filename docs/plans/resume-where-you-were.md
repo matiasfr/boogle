@@ -1,4 +1,4 @@
-> **Status: steps 1–6 built (2026-11-14); Checkpoint R's reload proofs run in a browser, the ship pending.** Original design base: `origin/main` at `4a5d2b9ff`. Every step is
+> **Status: steps 1–6 shipped in #1795 (14 November 2026), checked on main `aa7861150`.** Checkpoint R's historical reload evidence and limits remain below. Original design base: `origin/main` at `4a5d2b9ff`. Every step is
 > Local (this browser's body and its own localStorage): no server code, no wire field, no op, no saved state and no
 > `WORLD_NS` bump. Owner call: [A recent reload puts you back where you were](../agents/owner-calls.md#a-recent-reload-returns-you-where-you-were).
 
@@ -194,16 +194,16 @@ In `docs/decisions-controls.md`, top of "Decided", with its line in "Current rul
 >   (30 minutes, `railway.returnMinutes`) stands where they last stood in that room, on ground, a deck or a platform,
 >   or at the nearest safe spot: beside it, else the nearest standing halt (also where a reload aboard a train puts
 >   you), else Home. After the window, or with no remembered place, you arrive at Home. The memory is this browser's,
->   per room. Narrows [2 November](#d-2026-11-02-a-return-goes-straight-in-and), which had no time limit.
+>   per room. Narrows [2 November](../decisions-controls.md#d-2026-11-02-a-return-goes-straight-in-and), which had no time limit.
 
 The window and the long-absence rule in that entry are the recommendations of questions 1 and 2 until he answers.
 
 ## Steps
 
-Tiers from `npm run models` (withCodex). Nothing here is server, sync, `src/world`, `src/net` or `src/sim`, so no
-step is the high-risk Astra row and the independent wire review is not owed; steps 1 to 4 are "implementation of an
-approved plan" (Codex, gpt-6.1-sol medium), step 5 is player-visible (implementer on fable medium, then a fresh visual
-review on fable medium). Steps 2 and 3 edit `src/player/world-reset.ts`: read `.claude/rules/state-consumers.md`
+Tiers come from `npm run models` at dispatch; the assignments below are historical (14 November), not overrides of
+`dev/models.ts`. Nothing here changes server, sync, `src/world`, `src/net` or `src/sim` authority, so the independent
+wire review is not owed. Use the plan-following row for nonvisual work, the player-visible row for step 5, and the
+visual-review row for its evidence. Steps 2 and 3 edit `src/player/world-reset.ts`: read `.claude/rules/state-consumers.md`
 first. Each step leaves `node dev/ship-check.ts` green. Dispatch as two jobs: steps 1 to 3, then 4 to 6.
 
 - [x] **1. Reproduce and pin the gap** (sol medium). Eval written; baseline browser run unverified (see [batch report](../archive/plans/resume-return-steps-1-3-report.md)). Add `dev/look/evals/railway-return.ts` on the pattern of

@@ -1456,6 +1456,7 @@ concrete), New (this plan's).
 | 60 | Nothing is added to say "up trains don't stop here": the up track is the far one, across the down track, with no platform, lever, lamp or board beside it | Default | Signs in the world before words: the absence of a platform is the sign. A word goes on only if a session shows someone waiting there for a train out |
 | 61 | When Q7 completes, the old merge's turnout on Far Head (s 556–576) is relaid by the machine as plain double track | Default | "Track has no visible kinks"; a turnout that leads nowhere would read as a way to somewhere |
 
+<a id="copy-drafts-for-the-owner-none-of-the-boogler-s"></a>
 ### Copy (drafts for the owner; none of The Boogler's)
 
 | Where | Draft | Note |

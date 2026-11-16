@@ -1,4 +1,4 @@
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Round data and Home layout B are on main (#1729); door-distance interiors and Round B1–B4 landed (#1796, #1800, #1804, #1805, #1806). This implements the blockout portion of steps 2/3/5, not their finished dressing or a bought plot. Built, not shipped: none additional verified. Next: home-flip D1, open the gate cottage; full town steps 2–6 remain incomplete. The Round's data is built; moving the buildings and opening the gate cottage remain R2 of [home-flip](home-flip.md). The ECS migration is complete. The owner said on 12 November: "I think this stuff could be in conjunction with the first version of the updated town that we designed that we plan to implement. Make sure that we plan to implement that." The sealed buildings open together with the Round's first build ([owner calls](../agents/owner-calls.md)).
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Round data and Home layout B are on main (#1729); door-distance interiors and Round B1–B4 landed (#1796, #1800, #1804, #1805, #1806). This implements the blockout portion of steps 2/3/5, not their finished dressing. Bought plots and house construction subsequently shipped in #1929/#1930; freight stakes and piles in #1927. Built, not shipped: none additional verified. Next: home-flip D1, open the gate cottage; full town steps 2–6 remain incomplete. The Round's data is built; moving the buildings and opening the gate cottage remain R2 of [home-flip](home-flip.md). The ECS migration is complete. The owner said on 12 November: "I think this stuff could be in conjunction with the first version of the updated town that we designed that we plan to implement. Make sure that we plan to implement that." The sealed buildings open together with the Round's first build ([owner calls](../agents/owner-calls.md)).
 
 > **Status: layout chosen, reviewed (2026-11-10).** The owner picked **option 2, the Round**. The
 > [design review](#design-review-designer-2026-11-10) ruled every call and its rulings are applied to the body below.
@@ -560,12 +560,12 @@ of its section:
 - `docs/decisions-rail.md`, Decided and Current rules: "**2026-11-10, Home's town is laid out as the Round** (owner:
   'Ok sounds good, we can do the round, it's a lot more organic feeling than cross'). A green on the hall's
   centreline with a ring road; buildings stand on the ring about 30° apart facing the green; the hall, Pip's house and one cottage stand on arrival; Fine Prices and the museum rise
-  with the first path; eight plots are bought. Plan: [town-layout](plans/town-layout.md)."
+  with the first path; eight plots are bought. Plan: [town-layout](town-layout.md)."
 - If question 3 is yes, an italic note on the 10 November "the curio shelf and the finders' bay share one axis, for
   now" rules line: "_the bay's spot: beside the hall's south end, facing the square (town layout, 2026-11-NN)_".
 - `docs/agent-calls.md`, rail table, one row per New and Default call above, for example: "| 2026-11-10 | New: on
   arrival Home's town is the hall, Pip's house and one gate cottage; three cottages and five houses are bought plots,
-  two staked at a time, the first two from the start | [town-layout](plans/town-layout.md#calls) | planner (town
+  two staked at a time, the first two from the start | [town-layout](town-layout.md#calls) | planner (town
   layout) | Two households match the trade brief; DESIGN 7 | open |".
 
 ## What I could not confirm

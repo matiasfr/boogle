@@ -1,5 +1,9 @@
 # Classified z-fighting census, 14 November 2026
 
+> **Verdict:** the current-main port restores geometry collection; the historical top twenty is not the current ranking.
+> **Top recommendations:** run the current census for ranking and retain changed contacts for review rather than silently baselining them.
+> **Status:** reference; collector port shipped in #1834, inventory audit in #1843; later seam proof is in #1846.
+
 > Latest: after the current-main rebase port, the census is **a 176 / b 61 / c 541**, with 20 new findings and 162 stale baseline pair keys. See the rebase follow-up below for the main-side geometry changes and fresh evidence. The original tables/images below retain their historical provenance.
 
 The original census below used the launch origin/main snapshot `fceb07f6115d854628bd14e3bb677b46866075b4`; no geometry fixes are made here. Run commit `7ac7996515f5fc884346d7d63c84d17cda2d1838`, source hash `337d6af47d881708d08dedba69f07435d1ea55701e52b08cf4d53105f54f2add`.

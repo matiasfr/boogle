@@ -1,7 +1,8 @@
 > **Status, 16 November 2026 (reconciled with main `3720b4c3b`, `WORLD_NS` v52): R1, R2, R2b and R3 are built and on
-> main; R4, R5 and V1 to V4 are not.** Landed: R1 and R2 in #1641 (v28), R2b in #1650 (v29), R3 in #1652 (v30); each
-> step below names its commits. Nothing on main draws the trade (no file under `src/entities`, `src/render`,
-> `src/features`, `src/place` or `src/ui` reads `Yard`, `Town`, `Till`, `Train.freight` or `Train.riders`). What is left
+> main; the later re-plan's A1–A3, B1–B2 and K2 also shipped by `aa7861150` (#1927–#1930, #1932, #1935, v54).**
+> Freight, riders, the till, plot purchase and house construction now have views; the sack and remaining checkpoints
+> stay open in the re-plan. Landed: R1 and R2 in #1641 (v28), R2b in #1650 (v29), R3 in #1652 (v30); each
+> step below names its commits. The work after R3
 > is replanned, against layout B (the only Home since v36, #1729) and the Round's blockout (B1 to B3, B3 in #1800), in
 > [town-economy-visible](town-economy-visible.md): it supersedes R4, R5, V1 to V4, checkpoints C2 and C3 and the
 > jump-in rows for those beats. This file stays as the record of R1 to R3 and their rulings; marks below say what

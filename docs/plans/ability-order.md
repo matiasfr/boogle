@@ -1,4 +1,5 @@
-> **Status: candidate A approved and implemented on 15 November 2026; validated for independent review, not shipped.**
+> **Status: candidate A approved and shipped on 15 November 2026** (#1872, #1877, #1878; checked on main
+> `aa7861150`). Timing and fun remain playtest questions; the implementation evidence below is the historical handoff.
 > Owner picks: "fly first" and "Yes, for now". Recorded first in
 > [the dated decision](../decisions-core-loop.md#d-2026-11-15-fly-first); supersessions and Current rules updated;
 > `npm run decisions` passed. Independent review belongs to the parent.

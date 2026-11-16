@@ -1,5 +1,9 @@
 # First-line crossing probe
 
+> **Verdict:** no suitable crossing fits at either station on today's terrain.
+> **Top recommendations:** do not build stage 2; put any new crossing terrain to the owner as a scope choice.
+> **Status:** reference; stage 1 shipped in #1923 and its no-build result was recorded in #1925 (16 November 2026).
+
 16 November 2026. Stage 1 measurement only; no rule, terrain, bill, source, copy or runtime changes.
 Surveyed `origin/main` **68e2984efdbd58f0a923b2e614b06ac7659d221b**, world **v52**.
 The brief and its calculator were already on that main. The owner's two-stage approval is the task's scope;

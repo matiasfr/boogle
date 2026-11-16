@@ -20,7 +20,7 @@ different models at the same time"). The owner's words for each change are in
   (`fableTopEffort`, owner 10 November: "fable high should be the absolute top used") and not at low either (the
   Fable 5.2 system card: low saves about 15% of medium's cost for a clear drop in score).
 - **Codex is the workhorse.** Sol (`gpt-6.1-sol`) takes plan-following implementation, the runner, mechanical jobs,
-  brainstorms and previz at medium, and unplanned fixes at high. A job that falls short at medium is rerun at high with
+  and previz at medium, and brainstorms and unplanned fixes at high. A job that falls short at medium is rerun at high with
   its failed evidence, not started at high (OpenAI publishes no medium-against-high comparison). Astra
   (`gpt-6-astra`) takes the work where a wrong claim costs most: high-risk and player-visible implementation, the
   independent review and the code review at high, the hardest design and research at xhigh. A first pass at Astra

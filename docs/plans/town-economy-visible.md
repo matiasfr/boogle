@@ -1,9 +1,11 @@
-> **Next plan: [town-choice](town-choice.md)** (16 November): ruling 1's choice measured; as ruled it does not work, and plot 2 becomes the loader yard.
-> **Status: plan, not built (16 November 2026).** Replans what is left of [slice5-town-economy](slice5-town-economy.md)
+> **Next proposal: [town-choice](town-choice.md)** (16 November, nothing built; owner choice still open): ruling 1's choice measured; as ruled it does not work, so the proposal recommends a loader yard on plot 2.
+> **Status, reconciled 16 November against main `aa7861150` (v54):** A1–A3, B1–B2 and K2 are on main
+> (#1927–#1930, #1932, #1935). K1, C1–C2 and K3 remain open. The measurements and "What main has" table below are
+> the v52 planning baseline, not current status. Replans what is left of [slice5-town-economy](slice5-town-economy.md)
 > (its R4, R5, V1 to V4) against main `3720b4c3b`, `WORLD_NS` v52. The one file each build job reads.
 > Designer-reviewed 16 November ([review](#design-review-designer-2026-11-16)); its changes are in the steps, marked
 > "(review)". "Plot 1, 2, 3" below mean the first, second and third priced plot: slots `plot3`, `plot2`, `plot1` (N9).
-> Owner, 16 November (relayed by the orchestrator, not yet in the backlog): the town economy goes to
+> Owner, 16 November (relayed by the orchestrator, now the first P1 backlog row): the town economy goes to
 > the top of the backlog, because "towns grow from what arrives, and grown towns give upgrades" is not playable.
 
 ## Summary

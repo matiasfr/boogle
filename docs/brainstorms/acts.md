@@ -1,4 +1,4 @@
-> **Status: first build done (2026-11-11), on `feature/acts`; designer-reviewed and the owner has answered the review's five
+> **Status: first build shipped in #1607 (2026-11-11); designer-reviewed and the owner has answered the review's five
 > questions** ([decision](../decisions-controls.md#d-2026-11-11-the-game-has-acts)). Built: Acts 1 and 2 only, as the
 > review's rulings and the owner's answers set them (Act 1 an aerial move at the first landing, Act 2 over Far Head's
 > shared shot, no band, and no "Next stop" line: the owner overruled it); see [first-run](../game-design/first-run.md#acts). The sections below are the brief; where they

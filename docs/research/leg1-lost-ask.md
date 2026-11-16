@@ -1,5 +1,9 @@
 # Leg 1: the lay ask can expire before boarding
 
+> **Verdict:** the v34 lay ask could expire before boarding; the bounded v35 correction preserves the anti-spam rule.
+> **Top recommendations:** retain bounded dwell extension and the host regressions; historical browser proof gaps below stay explicit.
+> **Status:** adopted in #1723; this report preserves the original diagnosis and handoff, not a new browser verdict.
+
 13 November 2026, `codex/leg1-lost-ask-2`, rebased onto main `66d902242` (initial fetch `c3a816c72`). The original diagnosis below is the **v34 baseline**, committed at
 `7c28778a`. The [v35 bounded correction](#v35-bounded-correction) below supersedes the unrestricted-repeat
 candidate at `77bb44f3`. The owner ruled that the existing anti-spam assertions win unchanged.

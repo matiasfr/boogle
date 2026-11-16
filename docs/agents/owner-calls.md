@@ -24,6 +24,7 @@ Dates are the original call dates; undated calls stay undated.
 - [Try reversible work](#try-early) · 5 Nov 2026
 - [No old-build work](#no-old-builds) · 5 Nov 2026
 - [Latest versions](#latest-tools) · 3 Nov 2026
+- [Full clickable links](#full-links) · 3 Nov 2026
 - [Iteration over tests](#fast-coverage) · 1 Nov 2026
 - [Archive prototypes](#prototypes) · undated
 
@@ -168,6 +169,8 @@ Dates are the original call dates; undated calls stay undated.
 - <a id="no-old-builds"></a>**No old builds in development** (owner, 5 November). Until public playtests, assume every client is up to date when we play; an out-of-date client may hit bugs, and that is accepted. Don't spend work preserving old builds or old saves: no compatibility code, version fences, capability gates, save migrations or mixed-build tests and proofs. Where such code already exists, refactor, optimize or cut it. When a reshape would break the durable world, bump `WORLD_NS` (one line) instead of migrating. Reset the world whenever a change needs it, without asking, unless the owner has said they're in a playtest (owner, 6 November). The server still validates every message, which is room safety, not compatibility. Returning players redownloading unchanged lazy assets after a deploy is also acceptable in development; do not add cache promotion back ([loading contract](../plans/loading.md#a-service-worker-built)). _13 November: see [Save resets never block development or architecture](#save-resets-never-block-development-or-architecture)._
 
 - <a id="latest-tools"></a>**Stay on the latest versions.** Default to upgrading frameworks, tools and runtimes for their features and performance, as long as nothing breaks. A change in feel or download size is something to measure and report, not a reason to stay behind; hold back only for a real break, and say what would unblock it. Prefer a complete upgrade over keeping an old version alongside; a partial step is a stop on the way, with the rest of the path named (owner, 3 November).
+
+- <a id="full-links"></a>**Give full clickable links** (owner, 3 November 2026). When pointing the owner at a page or option, give the full clickable URL, never a bare flag such as `&q=mobile`: he clicks from a phone or iPad and will not type URLs. Link only what is deployed; if the change is not merged yet, say so.
 
 - <a id="fast-coverage"></a>**Fast iteration over test coverage** (1 November). Agents run many tasks in parallel, see their own results and ship by themselves; tests only where lockstep needs them.
 

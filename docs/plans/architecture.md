@@ -11,12 +11,13 @@
 
 The open questions in the two plans have working answers so work can start; change them here if they are wrong.
 
-- **Target device:** a 2021 iPad (A13/A14 class) and a mid-range Android phone. Frame budget: 4 ms main-thread CPU,
-  60 fps at the adaptive resolution floor.
+- **Target devices:** the Mac and mobile; judge on the agents' Mac (M1 Max baseline) and let mobile scale down while
+  remaining playable ([owner call](../agents/owner-calls.md#mac-mobile)). The old 4 ms CPU assumption has no current
+  owner; the current frame-time target and measurement rules are in [owner calls](../agents/owner-calls.md#frame-time-60).
 - **Hosting:** stay on GitHub Pages until shared memory (`SharedArrayBuffer`) is needed, then move the static site to
   Cloudflare Pages (COOP/COEP headers). Nothing before phase 4 needs it.
 - **ECS:** instance pools, no ECS library.
-- **Physics engine:** move from cannon-es to Rapier (decided 2026-10-31; [rapier.md](done/rapier.md)).
+- **Physics engine:** move from cannon-es to Rapier (decided 2026-10-31; [rapier.md](../archive/plans/done/rapier.md)).
 - **Server transport:** WebSocket first (as [server-host.md](server-host.md) chose); unreliable datagrams only on
   evidence.
 

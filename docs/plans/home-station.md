@@ -1,4 +1,4 @@
-> **Status: built to step 6 (2026-11-13), not shipped.** F1/F2 and X1/X2 of [home-flip](home-flip.md) implement the station, tools and the sole Home with v36. The owner approved the flip; save resets never hold development. The older implementation notes below are historical where the flip supersedes them. Browser proof and independent review are owed as listed in [X1 evidence](../reviews/home-flip-x1.md); later station dressing remains unbuilt.
+> **Status: station/sole-Home conversion shipped in #1729 (13 November 2026), checked on main `aa7861150`.** Later station dressing and the listed proof gaps remain open. F1/F2 and X1/X2 of [home-flip](home-flip.md) implement the station, tools and the sole Home with v36. The owner approved the flip; save resets never hold development. The older implementation notes below are historical where the flip supersedes them. Browser proof and independent review are owed as listed in [X1 evidence](../reviews/home-flip-x1.md); later station dressing remains unbuilt.
 
 # Home station: one terminus, layout B
 

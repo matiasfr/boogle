@@ -1,6 +1,7 @@
 # Curio shelf and finders' bay: placement in the Home town
 
-**Status:** building (10 November 2026): the Recommendation is approved and built on a branch, not yet shipped. Owner,
+**Status:** layout A shipped in #1372 (10 November 2026); the sole Home layout B subsequently shipped in #1729.
+The old A/B comparison below is historical, not another unshipped effort. Owner,
 after a plan-view comparison: "Ok let's commit to A for now. no need for in game stills"
 ([decision](../decisions.md#decided)). Findings 1 to 4 are fixed with it. Proposal by the designer, 10 November. Owner, playing the live build on 10 November: "the
 curio shelves could be positiioned much better in the town, they seem weirdly at angles and not spaced intentionally

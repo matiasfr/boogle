@@ -32,7 +32,7 @@ Commit bodies name the principle served. Names are listed here so a tuning fix, 
 - 11. Show, don't tell
 - Pick how each feature shares state
 - Determinism from day one
-- Sync edits, not state
+- Commands and replicas
 - Clear authority
 - Server hosts every room
 - Understandable at a glance

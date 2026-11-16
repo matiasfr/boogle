@@ -140,7 +140,7 @@ node .look/see-client.ts look --query 'proto=water&q=high&prof=1&timestampFix=1&
 
 Other one-at-a-time capture switches are `cost=resolution|detail|shadow|ocean|terrain|sky|caustics|adaptive`.
 Shadow, ocean, flat terrain, sky and caustic disabling are diagnostics, not shipped quality settings. The permanent diagnostic
-URL options are documented in [water-proto.md](../game-design/water.md#options).
+URL options are documented in the historical [water-proto.md](https://github.com/matiasfr/boogle/blob/980d90cd957fed78897f5473649db7efa9e2688e/docs/game-design/water-proto.md#options), before that prototype chapter was removed. They are not current deployed options.
 
 ### Kept changes and measured savings
 
