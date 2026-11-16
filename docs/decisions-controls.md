@@ -4,6 +4,9 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-16 · Keep the turn toward the forge; the pier's cut shows the breaker waiting, not being cast ([entry](#d-2026-11-16-batch2-pier-shot-shows-waiting-breaker))
+- 2026-11-16 · The 10 batch-2 bulk calls in this topic are confirmed as logged, subject to later explicit owner decisions ([entry](#d-2026-11-16-batch2-bulk-confirmed))
+
 - 2026-11-16 · An expired return starts at Home with Welcome back; cinematic skip is Interact, offered 0.8 s in, with its own highlighted glyph and the press swallowed ([entry](#d-2026-11-16-batch2-controls-confirmed))
 - 2026-11-16 · Acts follow railway progress and each browser shows the current act once; Act 2 stays at Q5, while Acts 3 and 4 are placed when their opening shows are built ([entry](#d-2026-11-16-later-acts-await-opening-shows))
 
@@ -35,6 +38,10 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · first visit and returning visit are different ([entry](#d-2026-11-01-first-visit-and-returning-visit-are))
 
 ## Decided
+
+- <a id="d-2026-11-16-batch2-pier-shot-shows-waiting-breaker"></a>**2026-11-16, the pier shot shows the breaker waiting** (owner, 16 November 2026, in chat: "Answered recs on the flags"). Accepted recommendations: **HU-002:** keep the turn toward the forge; the pier's cut shows the breaker waiting, not being cast. The rest of each original row stands except the named change or retirement; full rows are in the [archive](decisions-archive.md#b2-rest-controls). Basis: [docs/decisions-core-loop.md#d-2026-11-15-works-flow](decisions-core-loop.md#d-2026-11-15-works-flow). No player or character copy is authored by this entry.
+
+- <a id="d-2026-11-16-batch2-bulk-confirmed"></a>**2026-11-16, batch-2 bulk calls confirmed as logged** (owner, 16 November 2026, page: "Accept all remaining", none pulled out; in chat: "And accepted the safe ones"). All 10 bulk rows in this topic from the [RC ranking](reports/agent-calls-ranking-rc-2026-11-16.json) and [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json) are confirmed as logged. Their original Call, Where, By and Why this pick cells are preserved in the [archive](decisions-archive.md#b2-rest-controls). Later explicit owner decisions still govern where rules overlap; confirming a proposed or measured row does not claim it is built. Drafts and placeholders keep that status, and the owner keeps his character words. IDs: HU-003, HU-004, HU-006, HU-008, HU-010, HU-011, HU-013, HU-014, HU-015, HU-016.
 
 - <a id="d-2026-11-16-batch2-controls-confirmed"></a>**2026-11-16, batch-2 return and cinematic skip calls confirmed** (owner, 16 November 2026, in chat: "If I didn't say something else, I took the recommendation"). HU-005 and HU-012 are confirmed as logged: an expired return record starts at Home with the Welcome back card; the cinematic's one skip is Interact, offered 0.8 s into the shot until it starts back, with Interact's own glyph highlighted and that press used only to skip. The full original cells, including device controls and tunables, stand in the [archive](decisions-archive.md#archive-controls-hud-and-arrival). Source: [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json).
 
