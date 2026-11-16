@@ -2,7 +2,7 @@
 
 > **Verdict:** Mac measurements of graphics switch costs; MSAA and lab grass largest.
 > **Top recommendations:** none; measurements only, no proposals.
-> **Status:** reference. See [plan graphics-switches](../plans/graphics-switches.md).
+> **Status:** reference. See [plan graphics-switches](../archive/plans/graphics-switches.md).
 
 ## Mac verification — 4 November 2026
 
@@ -285,4 +285,4 @@ Additional opened diagnostic images: [initial panel](../../.look/evidence/179378
 - No mobile/Safari run, cold-cache guarantee, isolated device timing, multiplayer scenario, storage-denial browser test, exact baseline pixel diff or physical display/occlusion measurement. No geometry/wave/query experiments, player Pause page or presets were added. Some visual effects remain unverified as listed above.
 - **Departure:** early `npm run inflight` fetched GitHub despite the task's local-network-only instruction. This was disclosed during work and not repeated. All browser evidence thereafter used the existing local broker. No push, ship or screenshot upload occurred.
 
-Implementation and built behavior: [plan](../plans/graphics-switches.md), [game design](../game-design/graphics.md). Stop here for the owner's review/playtest; no look or preset is selected by these numbers.
+Implementation and built behavior: [plan](../archive/plans/graphics-switches.md), [game design](../game-design/graphics.md). Stop here for the owner's review/playtest; no look or preset is selected by these numbers.

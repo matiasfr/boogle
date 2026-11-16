@@ -166,7 +166,7 @@ Folders with current/live files or unexpected entries, non-stamped folders and s
 `GET /admin/saves` remains read-only and includes `lastCleanup`: the current process's latest boot result
 (`at`, `enabled`, `trash`, `moved`, `purged`, `skipped`, `unknown`, `errors`), or null if inventory failed.
 Per-file cleanup failures are recorded and do not stop boot. A second boot with no new eligible files moves nothing
-and creates no new trash folder. See [the plan](../docs/plans/world-version-and-save-reset.md).
+and creates no new trash folder. See [the plan](../docs/archive/plans/world-version-and-save-reset.md).
 
 ## Operator tools
 

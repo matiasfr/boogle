@@ -16,11 +16,11 @@ The binding principles are [DESIGN.md](../../DESIGN.md): **Toys before chores**,
 
 The inputs already contain unusually useful evidence:
 
-- [Finding the fun](finding-the-fun.md) and [the current prototype plan](../plans/find-the-fun.md) put the enjoyable verb before expansion. Place's recorded material-to-track verdict is a reason to polish that action; it is not evidence for hours of repeated hauling.
+- [Finding the fun](finding-the-fun.md) and [the current prototype plan](../archive/plans/find-the-fun.md) put the enjoyable verb before expansion. Place's recorded material-to-track verdict is a reason to polish that action; it is not evidence for hours of repeated hauling.
 - [Look pass](../plans/look-pass.md) records owner approval of the look experiment. Its light/kit/material/ground percentages are the builder's subjective attribution, not measured causal contributions. Its Mac figures are historical measurements of that experiment, not an iPad budget. Some comparison shots froze the machine and restored logs: useful art comparisons, insufficient play evidence.
 - [Place as built](../game-design/place.md) explicitly describes a **local** prototype. [`index.ts`](../../src/proto/place/index.ts) saves its progression locally. Two tabs seeing similar machinery would not prove shared contributions or persistence. The documented cradle collision exception also remains a concrete acceptance risk.
 - [Bang-for-buck aesthetics](bang-for-buck-aesthetics.md) supplies techniques, but its older direction proposals do not override the newer owner verdict. [Visual validation](visual-validation.md) demonstrates why a successful screenshot command or an independent rAF counter cannot establish a working, smooth game.
-- [Rail slice](../plans/rail-slice.md) is a draft awaiting approval. This report can inform its art and production gates; it does not approve or silently implement its shared-state work.
+- [Rail slice](../archive/plans/rail-slice.md) is a draft awaiting approval. This report can inform its art and production gates; it does not approve or silently implement its shared-state work.
 
 ## What the precedents actually establish
 
@@ -130,7 +130,7 @@ There are two honest milestones:
 1. **Quality target:** one real, freely playable corner reaches the desired look and feel inside the local prototype. It answers whether this craft direction is worth extending and exposes costs. It may be valuable on its own.
 2. **Production vertical slice:** the same action uses the approved production route for shared material, build progress, collision, join/return and asset delivery. It also passes the repeatability experiment below. This answers whether Boogle can produce and operate more of it.
 
-The first does not imply the second. Keep this boundary visible in the review card and completion report. Adding the required shared path is real work, subject to the approved scope of [rail slice](../plans/rail-slice.md), not a last-minute polish checkbox.
+The first does not imply the second. Keep this boundary visible in the review card and completion report. Adding the required shared path is real work, subject to the approved scope of [rail slice](../archive/plans/rail-slice.md), not a last-minute polish checkbox.
 
 Common traps and the countermeasure:
 
@@ -214,7 +214,7 @@ For planning, separate **one-time setup + repeated known work + new content fami
 
 ## Numbered recommendations for Boogle
 
-1. **Polish the accepted material-to-track job before expanding its content.** Use [find-the-fun](../plans/find-the-fun.md) and the recorded [place loop](../game-design/place.md); keep the approved Sunshine look and camera from [decisions](../decisions.md).
+1. **Polish the accepted material-to-track job before expanding its content.** Use [find-the-fun](../archive/plans/find-the-fun.md) and the recorded [place loop](../game-design/place.md); keep the approved Sunshine look and camera from [decisions](../decisions.md).
 2. **Choose Station 2 and include the whole playable crossing.** Use [`LINKS`, `GROVES` and `TUNE`](../../src/place/layout.ts); bound approach, source, frame, machine, gorge and exit by actual sightlines, with ordinary access and a return view.
 3. **Follow dependency order: action/contact, composition, light, kit, materials, final motion/sound, integrated validation.** Start rough feedback immediately; use [look-pass](../plans/look-pass.md) for the existing baseline and revise earlier passes when play exposes a fault.
 4. **Define polish as readable, responsive and consistent states.** Apply the checklist above to [`stations.ts`](../../src/entities/railway/stations.ts), [`rail.ts`](../../src/proto/place/rail.ts) and [`pieces.ts`](../../src/place/pieces.ts); solid-looking surfaces and accepted contributions are hard gates.
@@ -224,7 +224,7 @@ For planning, separate **one-time setup + repeated known work + new content fami
 8. **Spend owner attention on three short iPad decisions.** Review the place, the completed action and the final quality target with one question each; builders do the edge cases required by [AGENTS.md](../../AGENTS.md).
 9. **Inspect actual play, not only attractive captures.** Use the existing [look harness](../../dev/look/look.ts), real-time motion and normal controls; keep capture health separate from the answer to the visual question, following [visual-validation](visual-validation.md).
 10. **Measure full production cost and real device tails.** Record setup/reuse/rework/review, cold assets, action-state render cost and sustained iPad behavior through the existing [render tools](../../src/render/README.md); treat budgets and extrapolations as hypotheses.
-11. **Distinguish a local quality target from a co-op production slice.** The local save in [`place/index.ts`](../../src/proto/place/index.ts) cannot prove shared work; promotion needs approved [rail-slice](../plans/rail-slice.md) state, join/return and persistence behavior through existing [world rules](../../src/world/rules/README.md).
+11. **Distinguish a local quality target from a co-op production slice.** The local save in [`place/index.ts`](../../src/proto/place/index.ts) cannot prove shared work; promotion needs approved [rail-slice](../archive/plans/rail-slice.md) state, join/return and persistence behavior through existing [world rules](../../src/world/rules/README.md).
 12. **Stop when the gates pass and reuse survives a second placement.** Record the accepted target, evidence and measured cost; update [look-pass](../plans/look-pass.md) and the relevant [game-design record](../game-design/place.md) when implementing, rather than endlessly adding decorative layers.
 
 ## Concrete pass plan: one gorge station, one track-laying machine

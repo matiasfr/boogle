@@ -23,7 +23,7 @@ Evidence labels:
 - **[I]** Proposed design or calculated consequence. **H1–H5** name important untested hypotheses.
 - **[U]** Unverified behavior or measurement needed before implementation can be called successful.
 
-House-format precedents: [stylized-terrain](stylized-terrain.md) and [level-design](level-design.md), following [the research index](README.md). Also read [rail-slice](../plans/rail-slice.md), [vast-world-scale](vast-world-scale.md), [entity-architecture step 22](../plans/entity-architecture.md), [find-the-fun](../plans/find-the-fun.md), [src map](../../src/README.md) and [as-built game design](../game-design.md). The required in-flight audit found other research touching this index; this change adds its own entry and does not replace theirs. [L]
+House-format precedents: [stylized-terrain](stylized-terrain.md) and [level-design](level-design.md), following [the research index](README.md). Also read [rail-slice](../archive/plans/rail-slice.md), [vast-world-scale](vast-world-scale.md), [entity-architecture step 22](../plans/entity-architecture.md), [find-the-fun](../archive/plans/find-the-fun.md), [src map](../../src/README.md) and [as-built game design](../game-design.md). The required in-flight audit found other research touching this index; this change adds its own entry and does not replace theirs. [L]
 
 ### Reconcile the plans before building
 

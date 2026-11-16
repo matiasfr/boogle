@@ -2,7 +2,7 @@
 
 > **Verdict:** Author small parametric Blender recipes, inspect the exported asset; no new generator.
 > **Top recommendations:** 1. Keep editable recipes in assets/src. 2. Make inspection part of authoring. 3. Reuse the build, catalogue and material presets.
-> **Status:** partly adopted. See [asset-model-trial](asset-model-trial.md), [plan asset-stage](../plans/asset-stage.md).
+> **Status:** partly adopted. See [asset-model-trial](asset-model-trial.md), [plan asset-stage](../archive/plans/asset-stage.md).
 
 _2026-11-04. Research only: local source inspection and live primary-source reading; no generation, installations, paid tasks or benchmark reproduction. Links below were read on this date unless explicitly marked indexed-only. Vendor timings, prices and demonstrations are attributed, not independently measured. Proposed budgets and judgements are ours._
 
@@ -25,7 +25,7 @@ The [pipeline plan](../plans/asset-pipeline.md) is substantially real: top-level
 
 There is a local failure report too: the [November 2 character decision](../decisions.md#characters-and-story) says earlier code-built figures and agent-authored run cycles did not satisfy the owner. Editable code is a production advantage, not an aesthetic guarantee; preserve the accepted Buddy direction and existing clips.
 
-The [completed stage plan](../plans/asset-stage.md) provides `/character/` (`/assets/` alias), catalogue, metre grid, bounds, wireframe/bones/sockets, Raw versus As played, repeatable clip sampling and copyable camera/light/time URLs. Its shipped-light approximation excludes some world/post effects; still inspect the asset in context. Two-version comparison remains deferred. Contrary to the older [material report](material-pipeline.md), named presets now exist: timber, paintedToy, foliage, stone, steel and feedback. They are opt-in shared materials, not an automatic imported-glTF material translator; clone before per-instance mutation.
+The [completed stage plan](../archive/plans/asset-stage.md) provides `/character/` (`/assets/` alias), catalogue, metre grid, bounds, wireframe/bones/sockets, Raw versus As played, repeatable clip sampling and copyable camera/light/time URLs. Its shipped-light approximation excludes some world/post effects; still inspect the asset in context. Two-version comparison remains deferred. Contrary to the older [material report](material-pipeline.md), named presets now exist: timber, paintedToy, foliage, stone, steel and feedback. They are opt-in shared materials, not an automatic imported-glTF material translator; clone before per-instance mutation.
 
 ## Models, examples and actual evaluation
 

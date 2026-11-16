@@ -51,7 +51,7 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   Unknown consumers, opaque arguments, unresolved imports and value-analysis bounds fail closed: importing or
   module-carrying debt exports are counted as both capabilities. A source import of ignored or unanalysed project
   code fails closed too. Lint/registry print the affected files; the current list is `legacy` in
-  `dev/lint/prefab-debt.json`, and [the dynamic-import audit](../plans/prefab-data-step-5-dynamic-audit.md) records
+  `dev/lint/prefab-debt.json`, and [the dynamic-import audit](../archive/plans/prefab-data-step-5-dynamic-audit.md) records
   the value model (its counts are history).
   The bounded value domain allows eight aggregate levels and 24 fixed-point passes; exceeding either is not a waiver.
   `NOT_CONSTRUCTORS` and `NOT_CONSTRUCTION_EXPORTS` are exemption **candidates**, never unconditional stops.
@@ -71,7 +71,7 @@ Before changing module dependencies, services or lockstep boundaries, read this 
   feature fixture remains passing, as does a DOM-only HUD fixture importing lifecycle, entity and named player
   state APIs plus a truly erased physics type. Runtime raw physics/seat module imports remain forbidden;
   HUD state reads use named player exports or `src/player/state.ts`, not whole construction namespaces.
-  The [precise-guard audit](../plans/prefab-data-step-5-precise-audit.md) records current counts and the eight
+  The [precise-guard audit](../archive/plans/prefab-data-step-5-precise-audit.md) records current counts and the eight
   ordinary fixture groups; earlier importer totals are historical.
   `forwards["file#export"]` freezes construction re-export binding/provider
   identities, including nested namespaces; added surfaces fail even in already-importing barrels, and removals

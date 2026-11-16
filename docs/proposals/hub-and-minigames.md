@@ -8,7 +8,7 @@
 
 Friends have gravitated toward mini-games, with the island as the place they meet. The evidence agrees on the order. Club Penguin's precursor had four rooms and chat, and "strangers were showing up every day to hang out together"; mini-games and dressing up came on top (Priebe). So the island stays the place you hang out, and mini-games become what you go do there.
 
-This is a shift away from the [communal-restoration](../research/communal-progression.md) and [tech-tree](boogler-tech-tree.md) direction. That direction isn't thrown away: section 7 maps it onto the new shape.
+This is a shift away from the [communal-restoration](../research/communal-progression.md) and [tech-tree](../archive/proposals/boogler-tech-tree.md) direction. That direction isn't thrown away: section 7 maps it onto the new shape.
 
 ## 1. Feel first: the rule over everything below
 
@@ -18,7 +18,7 @@ The owner's priority is that game feel comes first. It means:
 - **Prototype with blocks, polish the feel, then add the look.** Splatoon's first prototype used plain blocks.
 - **One task at a time, with shared verbs.** Every mini-game reuses Boogle's verbs: move, jump, throw, dig, pile, push, ride. Learning one teaches the rest (Jackbox).
 - **Leave room for one-in-a-million moments** (Fall Guys) and slapstick (principle 10). Loose physics over precise inputs.
-- **A feel pass before progression.** For each mini-game, list its juice: sound, particles, squash, camera nudge, hit-stop. Check it with `/look` and a `dev/scenarios/` scenario. No coins until the toy passes. See [methodology.md](methodology.md) §4 and the [vehicle feel sheet](vehicles.md).
+- **A feel pass before progression.** For each mini-game, list its juice: sound, particles, squash, camera nudge, hit-stop. Check it with `/look` and a `dev/scenarios/` scenario. No coins until the toy passes. See [methodology.md](../archive/proposals/methodology.md) §4 and the [vehicle feel sheet](../archive/proposals/vehicles.md).
 
 ## 2. Elevators or in-island? A hybrid, joined by vehicles
 
@@ -114,17 +114,17 @@ Club Penguin held at least one party a month, and "everyone who attended a party
 
 | Existing idea | In the hub shape |
 | --- | --- |
-| [The Emporium](directions.md) (A) | Becomes **the shop**. The Boogler sells hats and hut furniture for som, with a rotating catalog. The Boat Fund jar is the optional communal thread. |
-| [Business for Beginners](boogler-tech-tree.md) | Shrinks to **The Boogler's story and a stamp book**: pages open as you play mini-games (Club Penguin stamps), and his lines react. No island-wide gates. |
+| [The Emporium](../archive/proposals/directions.md) (A) | Becomes **the shop**. The Boogler sells hats and hut furniture for som, with a rotating catalog. The Boat Fund jar is the optional communal thread. |
+| [Business for Beginners](../archive/proposals/boogler-tech-tree.md) | Shrinks to **The Boogler's story and a stamp book**: pages open as you play mini-games (Club Penguin stamps), and his lines react. No island-wide gates. |
 | [Restoration](../research/communal-progression.md) (H) | Landmarks become **venues**. Lighting the lighthouse could open the night regatta, and restarting the windmills could open the land yacht course. It's a light first-run arc, not the main loop. |
-| [Vehicles](vehicles.md) | **The travel between venues** and mini-games of their own (soapbox run, regatta, mine cart). |
+| [Vehicles](../archive/proposals/vehicles.md) | **The travel between venues** and mini-games of their own (soapbox run, regatta, mine cart). |
 | Exploration (B, C) | **Islets and caves hold venues and secrets.** Stamps for finding them (A Short Hike's landmarks, Club Penguin's secret rooms). |
 | [Storm tide](../research/ambitious-mechanics.md) (G) | **The sandcastle mini-game** and a party ("king tide night"). |
 | Coconut post (E) | Messages left at your hut for friends who were offline. |
 
 ## 8. First slice
 
-1. **Feel:** the soapbox buggy on the lighthouse path, using the [vehicle feel sheet](vehicles.md), behind `?proto=buggy`. Iterate with `/look` until it's fun with no timer.
+1. **Feel:** the soapbox buggy on the lighthouse path, using the [vehicle feel sheet](../archive/proposals/vehicles.md), behind `?proto=buggy`. Iterate with `/look` until it's fun with no timer.
 2. **Feel:** court ball as a game, with a score shown only as sand-coloured pips on each side.
 3. **Character:** one hat, earned by playing either game. Shown on the avatar through a presence field, and saved in localStorage.
 4. **Playtest questions:** do friends race down the hill again without being asked? Does anyone go to the court on their own? Does a hat on a friend make anyone ask "where did you get that"?

@@ -2,7 +2,7 @@
 
 *Retired 2 November: not on the `?play` island, the playlist or the prototype list's live cards. The code stays, and `?proto=soapbox` still loads it, in case it comes back somewhere else.*
 
-*A mechanics-only prototype for [find-the-fun](../plans/find-the-fun.md), step 5: "Is driving a vehicle fun?" Feel
+*A mechanics-only prototype for [find-the-fun](../archive/plans/find-the-fun.md), step 5: "Is driving a vehicle fun?" Feel
 first, no rewards. Serves DESIGN.md 1 (Toys before chores), with 2 (Physics toys first) and 10 (Slapstick over
 precision). Third try (2026-11-01): after two "no"s the cart drives as a suspensiony RC car with analog triggers
 ([decisions.md](../decisions.md); research: [vehicle-feel.md](../research/vehicle-feel.md), "RC cars"). The
@@ -152,5 +152,5 @@ and `--size 1180x820` for iPad size). The pilot,
 ## Not built
 
 The muddy shortcut, the plank tally, The Boogler's Puff Boost, pushing a cart with friends, carrying
-the ball, races, rewards and the era hat (proposals: [vertical-slice.md](../proposals/vertical-slice.md) S5 and S6,
-[vehicles.md](../proposals/vehicles.md)).
+the ball, races, rewards and the era hat (proposals: [vertical-slice.md](../archive/proposals/vertical-slice.md) S5 and S6,
+[vehicles.md](../archive/proposals/vehicles.md)).

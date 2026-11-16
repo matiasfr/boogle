@@ -280,7 +280,7 @@ decisions (G5, G6, G21; [first-line-decisions](../brainstorms/first-line-decisio
 
 ### C. Hook first, tower later: the hook keeps Q2 and gets the quarry; the tower opens at Q4
 
-The 4 November [ability-pacing](ability-pacing.md) proposal. The hook comes at Q2 and its first job is the quarry
+The 4 November [ability-pacing](../archive/plans/ability-pacing.md) proposal. The hook comes at Q2 and its first job is the quarry
 lever's ledge at Q3 (a ring replaces the two-jump approach); Needle Bell's rings stay dark until Q4, then the summit
 gives the switch and the glider as in B. It is the only candidate that keeps hook and glider five minutes apart.
 
@@ -377,7 +377,7 @@ here is an owner decision.
 
 Read against DESIGN.md (7, 8, 10, 11), [owner-calls](../agents/owner-calls.md), the Current rules and dated entries of
 core loop, process, rail and controls, [round-4-notes](round-4-notes.md) (G5, G9, G17, G18, G25, row 31, the
-3 November list), [level-pacing-1114](level-pacing-1114.md), [ability-pacing](ability-pacing.md),
+3 November list), [level-pacing-1114](level-pacing-1114.md), [ability-pacing](../archive/plans/ability-pacing.md),
 [glider-placement](../brainstorms/glider-placement.md), [puzzle-order](../brainstorms/puzzle-order.md), and the
 research index: [progression-flow-layout](../research/progression-flow-layout.md),
 [route-contract](../research/route-contract.md), [movement-abilities](../research/movement-abilities.md),
@@ -484,7 +484,7 @@ Nine decided, eleven default, six new (four recommended yes, two alternatives re
    and add a second level-check state beside the doc's `hook + glide, line at Q2`: second jump, no hook, Q4 laid,
    the machine standing at the slab, switch out of reach. Without it the reach claim is a finding.
 6. **C's stated reason is wrong; its rejection stands.** The tower can be kept shut without a refusing ring: take
-   the first slab away, or out of range, until Q4. That is what [ability-pacing](ability-pacing.md) proposed
+   the first slab away, or out of range, until Q4. That is what [ability-pacing](../archive/plans/ability-pacing.md) proposed
    ("physically separating the hook lesson from the tower entrance"), and "terrain may change" allows it. I could
    not confirm "about 3 m over ground": t0's top is 24.0 m and p2's 22.9 m, and the still shows t0 hanging beside the
    upper bank at about bank height. Level-check agrees it needs the hook. C still loses, because a missing step

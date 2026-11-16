@@ -10,15 +10,15 @@ references by name (docs/agents/owner-calls.md, "Use references by name").
 
 Lens: readability at a glance and telegraphing (principle 7); juice and feedback for the verb; sound; comedy and
 character, including where The Boogler or a critter would react (never reword his existing lines); one moment worth
-a clip. Prototypes get no feel or art pass until their gut question gets a "yes" (docs/plans/find-the-fun.md): for a
-prototype, say what it needs to read clearly now, and put polish under "after a yes". Suggest a `/codex` previz shot
+a clip. Follow docs/agents/context.md#design-work-rules and the current live-game brief: say what must read clearly
+in the first build and scope later polish separately. Nothing waits for a playtest. Suggest a `/codex` previz shot
 when a look decision is open.
 
 ## Round 1 format
 
 - **The moment**: the one beat that sells the idea, as a player would describe it.
 - **Reads now**: what the first build needs so a player understands it without being told.
-- **Amplify**: your suggestions, strongest first, one line each with why; mark each "now" or "after a yes".
+- **Amplify**: your suggestions, strongest first, one line each with why; mark each "now" or "later".
 - **Risk**: where it could look or feel wrong, or clash with the game's tone.
 - **Questions**: only what the owner must decide, each with your recommended answer.
 

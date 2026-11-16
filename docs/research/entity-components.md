@@ -2,9 +2,9 @@
 
 > **Verdict:** Document a composition convention, no component runtime; one name-label proof.
 > **Top recommendations:** 1. Approve a convention before a runtime. 2. Prove it with name labels in two real entities. 3. Keep ordering where agents can read it.
-> **Status:** adopted. See [plan entity-components](../plans/entity-components.md).
+> **Status:** adopted. See [plan entity-components](../archive/plans/entity-components.md).
 
-_3 November 2026. Source audit at `050d6e252f5d`, with live primary engine documentation and a shipped-game developer account. Research and an approval-ready [plan](../plans/entity-components.md), not implementation authority. Counts are `wc -l` physical lines, including comments and blanks; code ranges refer to that commit. No runtime experiment or device test._
+_3 November 2026. Source audit at `050d6e252f5d`, with live primary engine documentation and a shipped-game developer account. Research and an approval-ready [plan](../archive/plans/entity-components.md), not implementation authority. Counts are `wc -l` physical lines, including comments and blanks; code ranges refer to that commit. No runtime experiment or device test._
 
 ## Result: where the pain actually is
 
@@ -70,16 +70,16 @@ Boogle's constraints are substantive: browser allocation/GC and hidden tabs; age
 
 ## Numbered recommendations for Boogle
 
-1. **Approve a convention before a runtime.** Follow [the plan's Design](../plans/entity-components.md#design): plain typed owned objects and direct calls; leave `src/entity/walker.ts` and `entity.ts` unchanged.
-2. **Prove it with name labels in two real entities.** Replace the duplicate blocks in `src/entities/remote-player/index.ts` and `src/fall/index.ts`, preserving blank-name policy, call order and visuals; see [Proof](../plans/entity-components.md#proof-two-conversions-one-behaviour).
+1. **Approve a convention before a runtime.** Follow [the plan's Design](../archive/plans/entity-components.md#design): plain typed owned objects and direct calls; leave `src/entity/walker.ts` and `entity.ts` unchanged.
+2. **Prove it with name labels in two real entities.** Replace the duplicate blocks in `src/entities/remote-player/index.ts` and `src/fall/index.ts`, preserving blank-name policy, call order and visuals; see [Proof](../archive/plans/entity-components.md#proof-two-conversions-one-behaviour).
 3. **Keep ordering where agents can read it.** Retain literal `defineKind` and presence registrations; keep ball/ball-carry separate and preserve `dev/registry/scan.ts` output. No automatic component phase dispatch.
-4. **Keep authority and headless boundaries explicit.** Apply [the plan's state table](../plans/entity-components.md#state-headless-and-sync) and `src/world/README.md`; Lockstep rules never import, find or invoke components. Do not make permanent net subscriptions per transient component.
+4. **Keep authority and headless boundaries explicit.** Apply [the plan's state table](../archive/plans/entity-components.md#state-headless-and-sync) and `src/world/README.md`; Lockstep rules never import, find or invoke components. Do not make permanent net subscriptions per transient component.
 5. **Expose owned state without a new inspector/profiler.** Use the owner's existing `describe().components` and `<kind> <phase>` cost; disclose that there is no independent component CPU row. Extend lint for the shared folder, not suppression allowances.
 6. **Defer generic carry, buoyancy, seat and mesh/body components.** Revisit only with two genuinely matching callers or an approved large-entity split. Promote place objects within their own authority plan; retain current batching and existing helpers.
 7. **Judge the proof by deleted duplication and unchanged behaviour.** Require the focused label checks and place bot; use entity-core tests within the owner's exception and `npm run sim -- replay` whenever a subsequent component touches player/ball physics. Do not claim Unreal portability or measured performance improvement.
 
 ## Limits and disposition
 
-**Owner decision needed for implementation; research complete.** No engine was installed and no conversion was executed. Line counts and call paths were checked, not frame time, heap retention or subjective feel. The preview currently has no label disposal in its entity teardown; the proof would close that ownership gap, but this audit did not measure a leak. Full place promotion, UE6 migration guarantees and device performance remain unverified. The [plan](../plans/entity-components.md) names the bounded implementation steps and stop conditions.
+**Owner decision needed for implementation; research complete.** No engine was installed and no conversion was executed. Line counts and call paths were checked, not frame time, heap retention or subjective feel. The preview currently has no label disposal in its entity teardown; the proof would close that ownership gap, but this audit did not measure a leak. Full place promotion, UE6 migration guarantees and device performance remain unverified. The [plan](../archive/plans/entity-components.md) names the bounded implementation steps and stop conditions.
 
 Documentation validation: `npm run check` passed; local file links resolve. No browser/bot/replay run was required or performed for this docs-only change. Those are acceptance work for an approved implementation, not evidence claimed here.

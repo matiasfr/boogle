@@ -2,7 +2,7 @@
 
 > **Verdict:** One opt-in Dev page in the pause menu, water tuning first.
 > **Top recommendations:** 1. Mount Water as the first tool. 2. Make “Go to” a named, reversible test action. 3. Add a Local camera tool with one-click return.
-> **Status:** adopted. See [plan dev-menu](../plans/dev-menu.md).
+> **Status:** adopted. See [plan dev-menu](../archive/plans/dev-menu.md).
 
 _2026-11-03. Research and recommendation, not implementation approval. Code audited at `9b828d68`; live web sources below. **[V]** means source text/code read, **[S]** means secondary account or indexed abstract only, **[D]** means a Boogle recommendation. No game or device test performed._
 

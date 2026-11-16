@@ -2,7 +2,7 @@
 
 > **Verdict:** Name the build phases and tie each input to a physical answer.
 > **Top recommendations:** 1. The games that make building a pleasure tie every small input to an immediate, physical answer: a sound with weight. 2. Watching works when the build has phases you can name (ground, frame, walls, roof, topping out), not one continuous fill. 3. Show the finished thing first, as a ghost or hologram (Factorio, Fortnite, Timberborn, LEGO Fortnite).
-> **Status:** adopted. See [plan rail-slice](../plans/rail-slice.md).
+> **Status:** adopted. See [plan rail-slice](../archive/plans/rail-slice.md).
 
 *Research report, 1 November 2026. How shipped games stage construction that players watch and take part in (Tiny Glade, Townscaper, Dorfromantik, Islanders, Timberborn, Anno, Manor Lords, Cities: Skylines, Kingdom Two Crowns, Factorio, Satisfactory, Fortnite and LEGO Fortnite, Valheim, Minecraft, Animal Crossing: New Horizons, Death Stranding 1 and 2, The Sims 4), turned into recommendations for the `?proto=build` prototype ([haul.md](../game-design/haul.md), "Construction you can watch") and the machine's laying run. Builds on [level-design.md](level-design.md) (section 11: Townscaper, Tiny Glade, watching spots), [communal-progression.md](communal-progression.md) (the honk chord) and [rail-as-play.md](rail-as-play.md) without repeating them. Recommendations only; no design decisions.*
 

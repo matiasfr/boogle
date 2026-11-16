@@ -504,7 +504,7 @@ an implementation and controlled before/after evidence. No owner playtest or fur
 
 - Local contracts: [AGENTS.md](../../AGENTS.md), [DESIGN.md](../../DESIGN.md), [source map](../../src/README.md),
   [loop](../../src/loop.ts), [entity core](../../src/entity/entity.ts), [current direction](../decisions.md),
-  [prototype plan](../plans/find-the-fun.md), [ledger](../architecture-review/ledger.md).
+  [prototype plan](../archive/plans/find-the-fun.md), [ledger](../architecture-review/ledger.md).
 - Prior research: [engine architecture](engine-architecture.md), [entity architecture](entity-architecture.md),
   [primary-source provenance](notes/entity-architecture/sources.md), [engine source notes](notes/engine-architecture/sources.md).
   External official URLs appear alongside the comparisons above; their current contents were not fetched.

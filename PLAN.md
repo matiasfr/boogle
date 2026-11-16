@@ -126,7 +126,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## 0.1 groundwork: identity, haul stack, work sites
 
-[docs/plans/0.1-groundwork.md](docs/plans/0.1-groundwork.md), from [docs/research/0.1/](docs/research/0.1/10-groundwork.md).
+[docs/plans/0.1-groundwork.md](docs/archive/plans/0.1-groundwork.md), from [docs/research/0.1/](docs/research/0.1/10-groundwork.md).
 
 - [x] M1 Clean break: the `v01` world namespace; proto, terrain and water retired.
 - [x] M2 A stable player id (pid) and the roster. · [x] M3 Ground piles. · [x] M4 The haul stack.

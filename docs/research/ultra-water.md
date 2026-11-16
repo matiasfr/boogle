@@ -2,7 +2,7 @@
 
 > **Verdict:** Take filtering, shared fields and accounting; no whole-renderer port.
 > **Top recommendations:** 1. Build a selective TSL treatment inside the existing sea, with provenance from the start. 2. Measure completed work and the actual pixel/pass budget before adding a simulation. 3. Fix local bathymetry and contacts before adding wave complexity.
-> **Status:** partly adopted. See [plan water-graduation](../plans/water-graduation.md), [Look](../decisions.md#look).
+> **Status:** partly adopted. See [plan water-graduation](../archive/plans/water-graduation.md), [Look](../decisions.md#look).
 
 _Research report, 2 November 2026. Source audit of Ultra Water, selective WebGPU/TSL adaptations, scene-performance lessons, wave queries and attribution. Target: Super Mario Sunshine's warmth and toy-like readability, an M4 iPad Pro with a controller, and train views at 20–50 m/s. Recommendations only; no implementation or performance measurements._
 
@@ -22,7 +22,7 @@ Evidence labels:
 
 I read the reference README, LICENSE, THIRD_PARTY_NOTICES.md and **every file under `src/`** at commit `30ea65ecb0a66b137aa200d099965634bdd84d51`. The read-only checkout is `/Users/matiasfranco/Developer/boogle-codex/_refs/ultra-water`. **I read the source but ran nothing from it: no install, build, demo, simulation or benchmark. No reference files were copied into Boogle.** Source links below are pinned to that revision. Boogle was inspected at `a8578f5b2612be56497984aac6160d05c79c13cb`; its performance harness was read, not run. **[C]**
 
-Context read: [research index](README.md), [Sunshine look](sunshine-look.md) and [WebGPU on iPad](webgpu-on-ipad.md) for format and prior findings, plus [sea crossings](sea-crossings.md), [vast world scale](vast-world-scale.md), [look pass](../plans/look-pass.md), [find the fun](../plans/find-the-fun.md) and the crossing entries in [playtests](../playtests.md). `living-world-shaders.md` was absent from this checkout and fetched `origin/main`; `inflight` listed it in an unmerged research branch, so it is not treated as a main-branch source. Older reports' device claims and budgets are not new measurements.
+Context read: [research index](README.md), [Sunshine look](sunshine-look.md) and [WebGPU on iPad](webgpu-on-ipad.md) for format and prior findings, plus [sea crossings](sea-crossings.md), [vast world scale](vast-world-scale.md), [look pass](../plans/look-pass.md), [find the fun](../archive/plans/find-the-fun.md) and the crossing entries in [playtests](../playtests.md). `living-world-shaders.md` was absent from this checkout and fetched `origin/main`; `inflight` listed it in an unmerged research branch, so it is not treated as a main-branch source. Older reports' device claims and budgets are not new measurements.
 
 The complete reference-source inventory was `main.js`; `engine/{fullscreen,PlanarReflection,PostFX,gpuTimer}.js`; `scene/{noise,islandHeight,terrainGeometry,atmosphere,sky,terrain,floaters,floaterMeshes,floaterShadow}.js`; and `water/{OceanSim,OceanSurface,shoreMap,bakeTextures,WaterQuery,Caustics,Spray,MarineSnow,UnderwaterPass}.js`. The last group cannot be understood accurately by reading only `OceanSurface.js`.
 

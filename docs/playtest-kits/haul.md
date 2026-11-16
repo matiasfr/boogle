@@ -1,6 +1,6 @@
 # Playtest kit: the haul
 
-Step 1 of [find the fun](../plans/find-the-fun.md): is hauling fun as a toy, with no goal? Written for one experienced
+Step 1 of [find the fun](../archive/plans/find-the-fun.md): is hauling fun as a toy, with no goal? Written for one experienced
 player; it should take minutes. Its card is on [boogle.club/protos/](https://boogle.club/protos/).
 
 Open https://boogle.club/?proto=haul&room=proto-haul (any `proto-` room; a fresh name gives a clean save). The **Haul

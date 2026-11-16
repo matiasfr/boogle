@@ -2,7 +2,7 @@
 
 > **Verdict:** Abilities at connection milestones; hook and glide handling.
 > **Top recommendations:** 1. Award shared abilities at useful connection milestones: timber walkable shortcut → double jump, quarry connection → hook. 2. Replace the archive's additive kick with one bounded second launch at max(vy, 6.8): retain buffers. 3. Make hook a one-press 24 m fixed-target pull at up to 16 m/s: explicit arrival footprints, body sweeps.
-> **Status:** adopted. See [plan round-4](../plans/round-4.md), [plan ability-pacing](../plans/ability-pacing.md).
+> **Status:** adopted. See [plan round-4](../plans/round-4.md), [plan ability-pacing](../archive/plans/ability-pacing.md).
 
 *Research report, 2 November 2026. Round 4 of `?proto=place`: double jump, hook shot, a Breath of the Wild-leaning glide, and reasons to revisit familiar paths. Live web research, a controller/input/camera/collision audit at `e402350a`, and inspection of the moves prototype before archive commit `98027243`. No game was played, implementation changed, or proposed route collision-tested for this report. Every Boogle tuning value and new placement below is a hypothesis, not an approved design or a measurement of another game.*
 

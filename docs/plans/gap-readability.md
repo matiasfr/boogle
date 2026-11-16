@@ -9,7 +9,7 @@
 > step is view-only (local views, local colliders, local hook rules) and needs no `WORLD_NS` bump. Two things named here
 > but not recommended now would touch more: moving the hook pile (layout data read by level-check, the bot and a test;
 > no sim rule, no bump) and loading the island's first kit from the leaf going down (sim, the next free bump, v45,
-> shared with [footings-signalling](footings-signalling.md) option B and [level-pacing-1114](level-pacing-1114.md) A2).
+> shared with [footings-signalling](../archive/plans/footings-signalling.md) option B and [level-pacing-1114](level-pacing-1114.md) A2).
 
 # Gap readability: the railhead, the hook pile, the leaf and arriving on Ring Island
 

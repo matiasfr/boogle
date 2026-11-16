@@ -122,7 +122,7 @@ owner's fallback, classic migration stops here. Its packed height texture and si
 allocated only when classic creates its sea; production exposes no old material-patch API. This is a route
 choice, not an opt-in switch. Live tuning and Looks remain available on Place and crossing.
 
-The [removal handoff](../plans/water-graduation.md#step-78-removal-handoff-4-november-2026) records
+The [removal handoff](../archive/plans/water-graduation.md#step-78-removal-handoff-4-november-2026) records
 matched frame costs, opened views, final solo/co-op routes, retained failures and device limits.
 The real iPhone and the owner's replay remain untested; the code is committed for review, not shipped.
 
@@ -188,7 +188,7 @@ GOBI remains pending the actual pack and source-page licence verification.
 The owner's calls, verbatim:
 
 - 9 November, the target: Super Mario Sunshine's water and grading, "really efficient for mobile without issue"
-  ([plan](../plans/water-sunshine.md), [research](../research/water-sunshine.md)).
+  ([plan](../archive/plans/water-sunshine.md), [research](../research/water-sunshine.md)).
 - 9 November, the pick: "Let's go with water B and fully clean up. also fix the geometry of the shallow bed so it
   matches the terrain more realistically than the sharp edges/squares it has today".
 - 10 November: "since underwater doesn't matter, is that taken account for the water optimizations?"

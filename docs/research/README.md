@@ -9,9 +9,9 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [art-kit-pipeline.md](art-kit-pipeline.md) (2026-11-02): small versioned kit of parts with assembly recipes; formalize the station frame first. **Status:** open. No decision cites it yet.
 - [carrying-and-logistics-play.md](carrying-and-logistics-play.md) (2026-11-01): keep the bundle reliable, put slapstick in optional tools; building what ends hauling is the reward. **Status:** reference.
 - [compounding-infrastructure.md](compounding-infrastructure.md) (2026-11-01): connect, inherit a service, build something newly possible; towns repay the connection. **Status:** reference. See [The shape of the game](../decisions.md#the-shape-of-the-game).
-- [construction-you-can-watch.md](construction-you-can-watch.md) (2026-11-01): name the build phases and tie each input to a physical answer. **Status:** adopted. See [plan rail-slice](../plans/rail-slice.md).
+- [construction-you-can-watch.md](construction-you-can-watch.md) (2026-11-01): name the build phases and tie each input to a physical answer. **Status:** adopted. See [plan rail-slice](../archive/plans/rail-slice.md).
 - [crystals-and-wonder.md](crystals-and-wonder.md) (2026-11-02): one extraordinary crystal property inside familiar construction; lift first. **Status:** partly adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
-- [growing-towns.md](growing-towns.md) (2026-11-02): each cargo improves a named district; author the street skeleton. **Status:** partly adopted. See [plan rail-slice](../plans/rail-slice.md).
+- [growing-towns.md](growing-towns.md) (2026-11-02): each cargo improves a named district; author the street skeleton. **Status:** partly adopted. See [plan rail-slice](../archive/plans/rail-slice.md).
 - [home-station-layout.md](home-station-layout.md) · [home-layout.html](../world/home-layout.html) (2026-11-09): one terminus with an island for both lines, the forge as goods side, the turntable on its own spur; keep arc length so no `s` value moves. **Status:** open. See [Decided](../decisions.md#decided).
 - [rail-as-play.md](rail-as-play.md) (2026-10-30): track as a toy before a network; one verb, pre-made snapping pieces. **Status:** adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
 - [rail-network-depth.md](rail-network-depth.md) (2026-11-05): friends choose connections and bottlenecks; the railway runs itself; paper first. **Status:** open. No decision cites it yet.
@@ -69,13 +69,13 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [coop-puzzles.md](coop-puzzles.md) (2026-11-05): puzzles that permanently change the railway; prototype one linked-gate freight yard first. **Status:** open. No decision cites it yet.
 - [friction-without-failure.md](friction-without-failure.md) (2026-11-05): challenge as a burden to solve and retire, with loss-free recovery nearby. **Status:** open. No decision cites it yet.
 - [harvest-feel.md](harvest-feel.md) (2026-11-02): contact agrees across pose, tree and sound; short hold, small chips, no shake. **Status:** partly adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
-- [movement-abilities.md](movement-abilities.md) (2026-11-02): abilities at connection milestones; hook and glide handling. **Status:** adopted. See [plan round-4](../plans/round-4.md), [plan ability-pacing](../plans/ability-pacing.md).
+- [movement-abilities.md](movement-abilities.md) (2026-11-02): abilities at connection milestones; hook and glide handling. **Status:** adopted. See [plan round-4](../plans/round-4.md), [plan ability-pacing](../archive/plans/ability-pacing.md).
 - [procedural-animation.md](procedural-animation.md) (2026-11-01): code for gameplay-driven motion, clips for authored beats. **Status:** reference.
 - [ratchet-and-clank-feel.md](ratchet-and-clank-feel.md) (2026-11-01): bolts burst, notice you, land one sound each. **Status:** adopted. See [collect-sounds](collect-sounds.md).
 - [third-person-camera.md](third-person-camera.md) (2026-11-02): immediate horizontal follow, steadier view on jumps, manual look has priority. **Status:** adopted. See [Controls](../decisions.md#controls).
 - [third-person-platformer-movement.md](third-person-platformer-movement.md) (2026-11-01): controller already quicker than references; make input win by rule. **Status:** partly adopted. See [character-controller-feel](character-controller-feel.md).
 - [traversal-at-speed.md](traversal-at-speed.md) (2026-11-02): pleasant walking, expressive connected movement, chosen speed bursts. **Status:** partly adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
-- [tree-tiers.md](tree-tiers.md) (2026-11-03): every ordinary tree choppable with the first axe; finite trees. **Status:** adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game), [plan trees-any](../plans/trees-any.md).
+- [tree-tiers.md](tree-tiers.md) (2026-11-03): every ordinary tree choppable with the first axe; finite trees. **Status:** adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game), [plan trees-any](../archive/plans/trees-any.md).
 - [vehicle-feel.md](vehicle-feel.md) (2026-11-01): keep the soapbox sphere, add a sprung chassis and a short drift charge. **Status:** reference.
 
 ## World, places and level design
@@ -88,7 +88,7 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [next-destinations.md](next-destinations.md) (2026-11-05): chalk coast, steel harbour, suspended geology, high port, the finale. **Status:** partly adopted.
 - [places-as-modules.md](places-as-modules.md) (2026-11-02): a place is the unit of content, a chunk of residency, a room of simulation. **Status:** adopted. See [plan mainline-architecture](../plans/mainline-architecture.md).
 - [progression-flow-layout.md](progression-flow-layout.md) (2026-11-09): three near-universal flow rules (findable next goal, gates keep their meaning, nobody stranded) and five lenses good games break on purpose; Home's beats read through them. **Status:** reference.
-- [shore-arrival.md](shore-arrival.md) (2026-11-04): west-shore cove to village in 25 to 35 seconds. **Status:** partly adopted. See [plan terrain-pilot](../plans/terrain-pilot.md), [plan water-graduation](../plans/water-graduation.md).
+- [shore-arrival.md](shore-arrival.md) (2026-11-04): west-shore cove to village in 25 to 35 seconds. **Status:** partly adopted. See [plan terrain-pilot](../plans/terrain-pilot.md), [plan water-graduation](../archive/plans/water-graduation.md).
 - [town-interiors.md](town-interiors.md) (2026-11-02): each door gives private life, personal expression or shared spectacle. **Status:** open. See [plan round-4](../plans/round-4.md).
 - [vast-world-scale.md](vast-world-scale.md) (2026-11-01): rail decisively faster than feet; 1 to 3 km legs; crossing baseline set. **Status:** partly adopted. See [Trains and the world](../decisions.md#trains-and-the-world).
 - [world-detailing.md](world-detailing.md) (2026-11-05): one accountable integrator, independent review, a visible-combination budget. **Status:** open. No decision cites it yet.
@@ -113,13 +113,13 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [post-look-round2.md](post-look-round2.md) · [post-look-round2/](post-look-round2/) (2026-11-04): post-look boards; owner kept Current, layers archived on tag. **Status:** superseded by the owner calls in [Look](../decisions.md#look).
 - [procedural-sky.md](procedural-sky.md) (2026-11-03): small sunny procedural sky; replaced by the summer sky default. **Status:** superseded by [skybox](skybox.md); see [Look](../decisions.md#look).
 - [shore-slice-validation.md](shore-slice-validation.md) (2026-11-03): smooth shore kept opt-in; take rock forms first. **Status:** reference.
-- [shore-water-validation.md](shore-water-validation.md) (2026-11-03): home shore with graduated water validated locally. **Status:** reference. See [plan water-graduation](../plans/water-graduation.md).
+- [shore-water-validation.md](shore-water-validation.md) (2026-11-03): home shore with graduated water validated locally. **Status:** reference. See [plan water-graduation](../archive/plans/water-graduation.md).
 - [sky-comparison.md](sky-comparison.md) (2026-11-03): frozen demo sky comparison, a viewing experiment. **Status:** reference. See [skybox](skybox.md).
 - [skybox.md](skybox.md) (2026-11-03): summer cumulus became the default sky; windpaint and toy sky archived. **Status:** partly adopted. See [Look](../decisions.md#look).
 - [stylized-rendering-on-a-budget.md](stylized-rendering-on-a-budget.md) · [notes/stylized-rendering-on-a-budget/](notes/stylized-rendering-on-a-budget/) (2026-10-30): paint the island inside the materials; existing choices hold up. **Status:** reference.
 - [stylized-terrain.md](stylized-terrain.md) (2026-11-02): smooth-normal heightfield plus a small authored cliff kit. **Status:** partly adopted. See [plan terrain-pilot](../plans/terrain-pilot.md).
-- [sunshine-look.md](sunshine-look.md) (2026-11-01): cool water, warm stone, readable light; make the sea the hero. **Status:** partly adopted. See [plan look-pass](../plans/look-pass.md), [plan rail-slice](../plans/rail-slice.md).
-- [sunshine-rendering.md](sunshine-rendering.md) (2026-11-03): metered Neutral, authored toy sky, restrained water retuning. **Status:** partly adopted. See [plan look-compare](../plans/look-compare.md), [Look](../decisions.md#look).
+- [sunshine-look.md](sunshine-look.md) (2026-11-01): cool water, warm stone, readable light; make the sea the hero. **Status:** partly adopted. See [plan look-pass](../plans/look-pass.md), [plan rail-slice](../archive/plans/rail-slice.md).
+- [sunshine-rendering.md](sunshine-rendering.md) (2026-11-03): metered Neutral, authored toy sky, restrained water retuning. **Status:** partly adopted. See [plan look-compare](../archive/plans/look-compare.md), [Look](../decisions.md#look).
 - [sunshine-sky.md](sunshine-sky.md) · [sunshine-sky/](sunshine-sky/) (2026-11-03): keep the sea, author the sky; replaced by the summer sky default. **Status:** superseded by [skybox](skybox.md).
 - [toon-shading.md](toon-shading.md) · [toon-shading/](toon-shading/) (2026-11-10): three `?toon=` candidates (character ramp, world ramp with cool shade and rim, plus ink hull) against today. **Status:** superseded 10 November: B without the rim was the default for a day; the owner tried it live and chose the baseline lighting. See [Look](../decisions.md#look).
 - [terrain-art.md](terrain-art.md) (2026-11-05): author coastal structure before surface detail; two-direction previz. **Status:** partly adopted. See [plan terrain-pilot](../plans/terrain-pilot.md).
@@ -129,10 +129,10 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [terrain-texturing.md](terrain-texturing.md) (2026-11-05): continuous authored normals, banded strata, grass/rock/sand/path families. **Status:** adopted. See [plan terrain-pilot](../plans/terrain-pilot.md), [Look](../decisions.md#look).
 - [texturing.md](texturing.md) (2026-11-06): procedural tiles baked to small textures; Meshy only as a drafting source. **Status:** adopted. See [Look](../decisions.md#look).
 - [tone-comparison.md](tone-comparison.md) (2026-11-03): compare neutral, agx, agx-sat and aces tone maps per scene. **Status:** reference. See [Look](../decisions.md#look).
-- [ultra-water.md](ultra-water.md) (2026-11-02): take filtering, shared fields and accounting; no whole-renderer port. **Status:** partly adopted. See [plan water-graduation](../plans/water-graduation.md), [Look](../decisions.md#look).
-- [water-sunshine.md](water-sunshine.md) · [water-sunshine.html](water-sunshine.html) (2026-11-09): Sunshine's one-plane recipe with no screen copies, about a tenth of Ultra's cost; compare behind `?water=`. **Status:** open. See [plan water-sunshine](../plans/water-sunshine.md).
-- [water-demo-diagnosis.md](water-demo-diagnosis.md) (2026-11-02): numerical diagnosis of the water demo spectrum and shore. **Status:** reference. See [plan water-graduation](../plans/water-graduation.md).
-- [water-demo-validation.md](water-demo-validation.md) (2026-11-03): water demo scene visual validation, four rounds. **Status:** reference. See [plan water-graduation](../plans/water-graduation.md).
+- [ultra-water.md](ultra-water.md) (2026-11-02): take filtering, shared fields and accounting; no whole-renderer port. **Status:** partly adopted. See [plan water-graduation](../archive/plans/water-graduation.md), [Look](../decisions.md#look).
+- [water-sunshine.md](water-sunshine.md) · [water-sunshine.html](water-sunshine.html) (2026-11-09): Sunshine's one-plane recipe with no screen copies, about a tenth of Ultra's cost; compare behind `?water=`. **Status:** open. See [plan water-sunshine](../archive/plans/water-sunshine.md).
+- [water-demo-diagnosis.md](water-demo-diagnosis.md) (2026-11-02): numerical diagnosis of the water demo spectrum and shore. **Status:** reference. See [plan water-graduation](../archive/plans/water-graduation.md).
+- [water-demo-validation.md](water-demo-validation.md) (2026-11-03): water demo scene visual validation, four rounds. **Status:** reference. See [plan water-graduation](../archive/plans/water-graduation.md).
 - [water-shore-seams.md](water-shore-seams.md) (2026-11-03): shore seam diagnosis after the shore-water branch. **Status:** reference.
 - [water-sky-speed.md](water-sky-speed.md) (2026-11-05): sky-size comparison removed with the summer sky default. **Status:** superseded by [skybox](skybox.md).
 - [water-times-of-day.md](water-times-of-day.md) (2026-11-03): prove one prepared evening at a finished line with two authored lighting states. **Status:** open. See [Look](../decisions.md#look).
@@ -175,19 +175,19 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 
 - [cold-start.md](cold-start.md) (2026-11-10): the time to "Jump in", attributed; a chain of lazy-chunk round trips and a wait for Rapier fixed, pipelines for things off screen are next. **Status:** open.
 - [deterministic-sim-at-scale.md](deterministic-sim-at-scale.md) · [notes/deterministic-sim-at-scale/](notes/deterministic-sim-at-scale/) (2026-10-29): make desyncs diagnosable first: cheap per-tick check plus an expensive diagnostic. **Status:** reference.
-- [ecs-evaluation.md](ecs-evaluation.md) (2026-11-06): build E: in-house ECS-shaped tables with id-ordered systems on the fixed clock. **Status:** adopted. See [plan ecs-e](../plans/ecs-e.md), [Process](../decisions.md#process).
+- [ecs-evaluation.md](ecs-evaluation.md) (2026-11-06): build E: in-house ECS-shaped tables with id-ordered systems on the fixed clock. **Status:** adopted. See [plan ecs-e](../archive/plans/ecs-e.md), [Process](../decisions.md#process).
 - [ecs-alternatives-live.md](ecs-alternatives-live.md) (2026-11-13): live ECS health and enforcement comparison; Bevy core first under the stated criteria, checked Becsy first within TypeScript; engine ports preserve contracts, or the authoritative server. **Status:** open.
 - [engine-portability.md](engine-portability.md) (2026-11-12): the railway's data layer is engine-shaped and cheap to move; the rest is outside it and stays there until the playtest; two lint-sized jobs now. **Status:** open.
 - [engine-long-term.md](engine-long-term.md) (2026-11-13): independent year-ahead engine target: one gameplay component model, shared scheduling, typed commands/events and migration-backed saves; staged classic/player/seat conversion with replay proof. **Status:** open.
 - [engine-architecture.md](engine-architecture.md) · [notes/engine-architecture/](notes/engine-architecture/) (2026-11-01): review for drift, not missing engine parts; freeze three boundaries. **Status:** partly adopted. See [plan entity-architecture](../plans/entity-architecture.md).
 - [entity-architecture.md](entity-architecture.md) · [notes/entity-architecture/](notes/entity-architecture/) (2026-11-01): declare hooks as rows on the kind; pin step order before renaming. **Status:** adopted. See [plan entity-architecture](../plans/entity-architecture.md), [Process](../decisions.md#process).
-- [entity-components.md](entity-components.md) (2026-11-03): document a composition convention, no component runtime; one name-label proof. **Status:** adopted. See [plan entity-components](../plans/entity-components.md).
+- [entity-components.md](entity-components.md) (2026-11-03): document a composition convention, no component runtime; one name-label proof. **Status:** adopted. See [plan entity-components](../archive/plans/entity-components.md).
 - [freeze-draw-audit.md](freeze-draw-audit.md) (2026-11-04): default-game draw capacity audit after the forge and place bounds. **Status:** reference. See [freeze-instance-overflow](freeze-instance-overflow.md).
 - [freeze-instance-overflow.md](freeze-instance-overflow.md) (2026-11-03): forge rail rack drew 25 from 24 matrices; fixed with a regression test. **Status:** adopted.
 - [glb-delivery-audit.md](glb-delivery-audit.md) (2026-11-05): keep Meshopt and gzip; exclude HTML from the immutable asset cache. **Status:** adopted. See [plan loading](../plans/loading.md).
 - [gpu-recovery.md](gpu-recovery.md) (2026-11-05): GPU failure recovery that does not stop play on every uncaptured error. **Status:** adopted. See [plan round-4-notes](../plans/round-4-notes.md).
-- [graphics-settings.md](graphics-settings.md) (2026-11-03): three presets and six controls; registry and cost switches built, pages not. **Status:** partly adopted. See [plan graphics-switches](../plans/graphics-switches.md).
-- [graphics-switch-costs.md](graphics-switch-costs.md) (2026-11-04): Mac measurements of graphics switch costs; MSAA and lab grass largest. **Status:** reference. See [plan graphics-switches](../plans/graphics-switches.md).
+- [graphics-settings.md](graphics-settings.md) (2026-11-03): three presets and six controls; registry and cost switches built, pages not. **Status:** partly adopted. See [plan graphics-switches](../archive/plans/graphics-switches.md).
+- [graphics-switch-costs.md](graphics-switch-costs.md) (2026-11-04): Mac measurements of graphics switch costs; MSAA and lab grass largest. **Status:** reference. See [plan graphics-switches](../archive/plans/graphics-switches.md).
 - [godot-migration-scope.md](godot-migration-scope.md) (2026-11-06): conditional native-first Godot migration scope, responsive authoritative physics, empty-world suspension and an agent workflow shortlist. **Status:** open. See [Process](../decisions.md#process).
 - [netcode-browser-physics.md](netcode-browser-physics.md) (2026-10-29): host-authoritative physics with a lockstep sim; older than the server plan. **Status:** reference. See [shared-physics](shared-physics.md).
 - [perf-pass-2026-11-05.md](perf-pass-2026-11-05.md) (2026-11-05): redundant instance writes removed, no proven frame-time gain. **Status:** reference.
@@ -208,13 +208,13 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [water-cold-start.md](water-cold-start.md) (2026-11-03): true-cold reproduction was blocked; replaced by the cold-start fix. **Status:** superseded by [water-metal-cold](water-metal-cold.md).
 - [water-load-stall-appendix.md](water-load-stall-appendix.md) (2026-11-03): startup timing data behind the water load stall. **Status:** reference. See [water-load-stall](water-load-stall.md).
 - [water-load-stall.md](water-load-stall.md) (2026-11-03): reported freeze not reproduced; cause found in the cold-start work. **Status:** superseded by [water-metal-cold](water-metal-cold.md).
-- [water-metal-cold.md](water-metal-cold.md) (2026-11-03): cold Metal cache froze place for 4.5 s; first-frame pipelines built behind loading. **Status:** adopted. See [plan graphics-switches](../plans/graphics-switches.md).
+- [water-metal-cold.md](water-metal-cold.md) (2026-11-03): cold Metal cache froze place for 4.5 s; first-frame pipelines built behind loading. **Status:** adopted. See [plan graphics-switches](../archive/plans/graphics-switches.md).
 - [webgpu-on-ipad.md](webgpu-on-ipad.md) (2026-10-31): WebGPU on iPad Safari: shipped settings and the recommendations that were turned off. **Status:** adopted. See [plan loading](../plans/loading.md).
 
 ## Tools and process
 
 - [_primary-source-notes.md](_primary-source-notes.md) (2026-10-29): raw fetched facts behind the early reports, no proposals. **Status:** reference.
-- [agent-model-pipelines.md](agent-model-pipelines.md) (2026-11-04): author small parametric Blender recipes, inspect the exported asset; no new generator. **Status:** partly adopted. See [asset-model-trial](asset-model-trial.md), [plan asset-stage](../plans/asset-stage.md).
+- [agent-model-pipelines.md](agent-model-pipelines.md) (2026-11-04): author small parametric Blender recipes, inspect the exported asset; no new generator. **Status:** partly adopted. See [asset-model-trial](asset-model-trial.md), [plan asset-stage](../archive/plans/asset-stage.md).
 - [agent-navigation-audit.md](agent-navigation-audit.md) (2026-11-03): contradictory routing advice, not dead code, is the main agent-navigation cost. **Status:** reference.
 - [asset-model-trial.md](asset-model-trial.md) · [asset-model-trial/](asset-model-trial/) (2026-11-04): two-asset headless authoring trial; checks pass, art approval pending. **Status:** reference. See [agent-model-pipelines](agent-model-pipelines.md).
 - [asset-motion-review.md](asset-motion-review.md) · [asset-motion-review/](asset-motion-review/) (2026-11-04): the asset stage's own motion evidence; cap seating repaired. **Status:** reference. See [plan asset-motion-review](../plans/asset-motion-review.md).
@@ -227,19 +227,19 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [dev-compat-peers.md](dev-compat-peers.md) (2026-11-05): current-client Place compatibility removals. **Status:** adopted.
 - [dev-compat-reports.md](dev-compat-reports.md) (2026-11-05): report-endpoint compatibility inventory, nothing deleted. **Status:** adopted.
 - [dev-compat-state.md](dev-compat-state.md) (2026-11-05): state and recovery cleanup; load current state only. **Status:** adopted.
-- [dev-menu-plan.md](dev-menu-plan.md) (2026-11-03): one opt-in Dev page in the pause menu, water tuning first. **Status:** adopted. See [plan dev-menu](../plans/dev-menu.md).
+- [dev-menu-plan.md](dev-menu-plan.md) (2026-11-03): one opt-in Dev page in the pause menu, water tuning first. **Status:** adopted. See [plan dev-menu](../archive/plans/dev-menu.md).
 - [dev-saves-and-stage-jumps.md](dev-saves-and-stage-jumps.md) (2026-11-12): guarded live-room stage replacement, isolated agent seeds, verified recovery and explicit personal-state semantics. **Status:** open. See [plan room-fast-forward](../plans/room-fast-forward.md).
-- [dev-tools-agentic.md](dev-tools-agentic.md) (2026-11-03): review loop first: one link, before and after, a pinned note, the right agent. **Status:** partly adopted. See [plan review-inbox](../plans/review-inbox.md), [plan asset-stage](../plans/asset-stage.md), [plan look-compare](../plans/look-compare.md).
+- [dev-tools-agentic.md](dev-tools-agentic.md) (2026-11-03): review loop first: one link, before and after, a pinned note, the right agent. **Status:** partly adopted. See [plan review-inbox](../plans/review-inbox.md), [plan asset-stage](../archive/plans/asset-stage.md), [plan look-compare](../archive/plans/look-compare.md).
 - [direction-skill-test.md](direction-skill-test.md) (2026-11-03): game-direction skill passed four prompt tests. **Status:** reference. See [game-direction](game-direction.md).
 - [features-audit.md](features-audit.md) (2026-11-03): feature organization and performance audit; keep flat composition entries. **Status:** reference.
 - [final-tree-replay-verification.md](final-tree-replay-verification.md) (2026-11-05): final replay tree verification, one seated-ride failure then pass. **Status:** reference.
-- [finding-the-fun.md](finding-the-fun.md) (2026-11-01): verb before world; one feeling question per prototype. **Status:** adopted. See [plan find-the-fun](../plans/find-the-fun.md).
+- [finding-the-fun.md](finding-the-fun.md) (2026-11-01): verb before world; one feeling question per prototype. **Status:** adopted. See [plan find-the-fun](../archive/plans/find-the-fun.md).
 - [frozen-shot-lists.md](frozen-shot-lists.md) (2026-11-04): frozen shot queue for repeated look captures. **Status:** adopted.
 - [game-direction.md](game-direction.md) (2026-11-03): one game-direction skill, a derived direction doc, a narrow AGENTS.md trigger. **Status:** adopted. See [direction-skill-test](direction-skill-test.md).
 - [linter-replacement.md](linter-replacement.md) (2026-11-04): Oxlint with a small dev/lint runner replaces ESLint. **Status:** adopted.
 - [main-clean-dev-channel.md](main-clean-dev-channel.md) (2026-11-04): keep main on boogle.club, put a prototype on dev.boogle.club. **Status:** open. No decision cites it yet.
 - [motion-references.md](motion-references.md) · [motion-references/](motion-references/) (2026-11-05): image-first motion references; generation step blocked in this job. **Status:** partly adopted. See [rack-model-compare](rack-model-compare.md).
-- [playtest-telemetry.md](playtest-telemetry.md) (2026-11-01): a handful of signals tied to a question; heat maps for where. **Status:** open. See [plan find-the-fun](../plans/find-the-fun.md).
+- [playtest-telemetry.md](playtest-telemetry.md) (2026-11-01): a handful of signals tied to a question; heat maps for where. **Status:** open. See [plan find-the-fun](../archive/plans/find-the-fun.md).
 - [rack-model-compare.md](rack-model-compare.md) (2026-11-05): owner preferred the reference-guided rack build. **Status:** adopted.
 - [research-map.md](research-map.md) (2026-11-02): map of what research still serves Boogle; replaced by this index. **Status:** superseded by this index ([README](README.md)).
 - [round-4-replay-preparation.md](round-4-replay-preparation.md) (2026-11-05): round 4 replay preparation captures and fixes. **Status:** reference. See [Process](../decisions.md#process).

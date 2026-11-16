@@ -23,7 +23,7 @@ Read alongside, without replacing:
 | [Compounding infrastructure](compounding-infrastructure.md)                               | Apply its “upgrade removes work” test to tools. Keep the newer decision that track still needs hands-on hauling.                            |
 | [0.1 resource loop](0.1/7-resource-loop.md)                                               | Historical prototype reasoning, not authority for one material per age, ball income or the former wobbly stack.                             |
 | [Game-feel skill](../../.claude/skills/game-feel/SKILL.md)                                | Use a few coordinated feedback layers. Its generic global hit-stop examples are unsuitable for a live shared world.                         |
-| [Haul as built](../game-design/haul.md), [find the fun](../plans/find-the-fun.md)         | Ground the smallest experiment in existing palms, source charges, tuning and the haul magnet. No plan boxes are completed by this research. |
+| [Haul as built](../game-design/haul.md), [find the fun](../archive/plans/find-the-fun.md)         | Ground the smallest experiment in existing palms, source charges, tuning and the haul magnet. No plan boxes are completed by this research. |
 
 ## Summary
 

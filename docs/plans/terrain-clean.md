@@ -13,7 +13,7 @@ on a device._
 > of the valley wall, but it should be more clearly looking like a path."
 
 This supersedes, in part, his 10 November answer "denser triangles only on unwalkable cells"
-([terrain-pass](terrain-pass.md#owners-answers-10-november)). The rest of that entry stands: grass to the beach, rock
+([terrain-pass](../archive/plans/terrain-pass.md#owners-answers-10-november)). The rest of that entry stands: grass to the beach, rock
 only on real cliffs, subtle layers, a cliff kit next.
 
 ## Goal
@@ -409,7 +409,7 @@ which also edit `terrain.ts`.
 - [x] **6. The quarry path's benches (finding 3).** Step 5 does not fix it: at (-60, 148) the cross fall stays
   2.87 m (something later regrades or skips those cells; the implementer finds which before changing anything, most
   likely a `skip` or a later pad). Then cut a 4 m bench on both gorge descents, with a 6 m level landing at the turn
-  near (-10, 150), as [terrain-pass](terrain-pass.md#ground-that-needs-real-reshaping-proposals-for-a-later-ground-step-not-done-here)
+  near (-10, 150), as [terrain-pass](../archive/plans/terrain-pass.md#ground-that-needs-real-reshaping-proposals-for-a-later-ground-step-not-done-here)
   proposed. The shore path's ramp (-177, 27) to (-153, 33) is in the cove's fine patch and is unchanged by step 5: it
   goes with this step.
   **Cause confirmed before step 6:** `gradeSupport(BANK_CART...)` runs after the path strips. Its 3 m soft

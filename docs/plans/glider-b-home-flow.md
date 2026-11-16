@@ -639,7 +639,7 @@ and log; Input gets instant feedback; Anything playtests could tune is tunable; 
 matches Breath of the Wild"; 1 November, glide is an unlock; 5 November, "a construction job between hook and glider";
 6 November, all progression shared; 7 November, co-op abilities option E; 8 November, the glider deferred, not cut;
 9 November, pick and log), [direction](../direction.md), [playtests](../playtests.md) (8 November solo runs),
-[find-the-fun](find-the-fun.md) (rules for every prototype), [glider-placement](../brainstorms/glider-placement.md) and its
+[find-the-fun](../archive/plans/find-the-fun.md) (rules for every prototype), [glider-placement](../brainstorms/glider-placement.md) and its
 review, [home-flow](../reviews/home-flow.md), and the research index's _Puzzles, abilities and traversal_ and _World,
 places and level design_ sections: [progression-flow-layout](../research/progression-flow-layout.md),
 [route-contract](../research/route-contract.md), [level-design](../research/level-design.md),

@@ -148,7 +148,7 @@
   `?terrain=0` keeps the earlier ground material.
   The lower gorge wall has broader, more continuous green patches without the ledges; the orchestrator accepted that
   difference after opening matched camera-9 stills. The cliffs retain their warm banded-rock character. Not tested on
-  a device. [Plan and proofs](../plans/terrain-clean.md); earlier rounds are [history](../plans/terrain-pass.md).
+  a device. [Plan and proofs](../plans/terrain-clean.md); earlier rounds are [history](../archive/plans/terrain-pass.md).
   Sand meets the gorge's bank across a nominal 7 m distance blend with per-pixel wander. The same packed attribute
   carries unsaturated gorge distance; no extra texture or geometry is added. The broad-slope rock rule remains
   unchanged: its proposed gate failed visual review and is unfinished in Part 2a.

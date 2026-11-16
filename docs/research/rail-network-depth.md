@@ -255,7 +255,7 @@ All are **[P]**, ordered by what the later prototype must establish. They do not
 
 7. **Defer service profiles until an automatic default loses a meaningful comparison.** Touches [roundhouse's decision set](roundhouse-management.md#the-smallest-honest-decision-set). **Proof:** add Swift/Hauler to the otherwise identical paper fixture only after topology/fittings work. Cut the choice if a profile dominates, requires constant retuning, or makes a friend's ordinary ride worse than the protected baseline.
 
-8. **Prototype one paper junction first, then stop for the owner's verdict.** Touches [progression's simulation gate](../brainstorms/progression.md#shape), [find-the-fun rules](../plans/find-the-fun.md#rules-for-every-prototype) and [owner playtest calls](../agents/owner-calls.md#owners-standing-calls). **Proof:** the short exercise below; a later playable prototype requires the gameplay brainstorm and existing production/replay prerequisites, not just favorable numbers.
+8. **Prototype one paper junction first, then stop for the owner's verdict.** Touches [progression's simulation gate](../brainstorms/progression.md#shape), [find-the-fun rules](../archive/plans/find-the-fun.md#rules-for-every-prototype) and [owner playtest calls](../agents/owner-calls.md#owners-standing-calls). **Proof:** the short exercise below; a later playable prototype requires the gameplay brainstorm and existing production/replay prerequisites, not just favorable numbers.
 
 ## First prototype: a ten-minute paper railway
 

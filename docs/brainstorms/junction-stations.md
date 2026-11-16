@@ -270,7 +270,7 @@ table) and `?ring=greybox` can show it now with no sim. Home under layout B is a
 
 The greybox (`src/proto/greybox/ring.ts`, static colliders only) is built in three steps, because two answers are
 open: buffers or a loop at the island ([rail-map](../plans/rail-map.md#owner-questions), question 2) and the island's
-landform ([terrain-pass](../plans/terrain-pass.md)).
+landform ([terrain-pass](../archive/plans/terrain-pass.md)).
 
 - **Now** (depends on neither): the leaning station house at the north-west corner, inside the landform proposal's
   25 m keep band, walk-in, with the Lookers' waiting room, its bench and the tilted window framed on the shard; the
@@ -393,7 +393,7 @@ the world, a well-designed town); direction.md; playtests 10 November (co-op, v2
 [rail-map](../plans/rail-map.md) and its design review; [world-blockout](../plans/world-blockout.md) (areas, lines,
 telegraphing, the branch choice); [engine-garage](engine-garage.md) (where it lives, the scale audit, the keep-clear,
 the owner's answers and round-2 notes); [ring-island](ring-island.md) (greybox findings and rulings 1–6);
-[terrain-pass](../plans/terrain-pass.md) (Ring Island's landform proposal and its keep band);
+[terrain-pass](../archive/plans/terrain-pass.md) (Ring Island's landform proposal and its keep band);
 `src/proto/greybox/ring.ts`. **Research:** [level-design](../research/level-design.md) (recs 3 and 5: three sizes of
 shape, one weenie per area and a hub everyone returns to), [progression-flow-layout](../research/progression-flow-layout.md)
 (three firm rules, five lenses), [route-contract](../research/route-contract.md),
@@ -549,7 +549,7 @@ house is off it), fixed by finding 1.
      the Way, which platform trains stand at and the chained lever, the loader and the works' footprint on the east
      side (the loop's neck and deck stand there today), done-means still 2. If it helps him answer, draw the buffers
      end as a variant (`?ring=greybox&end=buffers`) beside today's loop; a proto variant is cheap and reversible.
-   - **After the landform** ([terrain-pass](../plans/terrain-pass.md)): the path from the station to the town and
+   - **After the landform** ([terrain-pass](../archive/plans/terrain-pass.md)): the path from the station to the town and
      the summit, anything more than 25 m from the track (the works' shelf, the dwellings), and the bay site's fill.
 3. **The case for Port Quay's Roundhouse rests on a wrong distance.** "Several minutes' ride from Home either way
    round the 8.7 km ring" ignores the cave line the place is reached by: West landing to Port Quay is under 1.7 km,

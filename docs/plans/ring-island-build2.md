@@ -535,7 +535,7 @@ true to the rules from then.
 | The install moment's polish beyond what the garage's first build already plays; a shared-moment card for players away; a late joiner's card | [engine-garage](../brainstorms/engine-garage.md), "The install moment" |
 | The bigger cradle, a fourth car, the consist strip, gantry loaders, source upgrades bought with Boogles | engine-garage section 6; [campaign-outline](campaign-outline.md) section 4 |
 | Counted steel prices, the wallet, town growth from cargo | Production-core slice 5; campaign-outline section 4 |
-| The station house's production build, the organic landform, the branch platforms | [terrain-pass](terrain-pass.md); junction-stations |
+| The station house's production build, the organic landform, the branch platforms | [terrain-pass](../archive/plans/terrain-pass.md); junction-stations |
 | Steel art: the works building, the furnace, the long boiler's dressing, sounds beyond the existing hammer and whistle | The detail pass after the full greybox |
 | The train through the ring as rules | Question 1; step T is a layout and a still only |
 | Build 1's leftovers (R5b, R6, the queued trains fix and two prompts) | [ring-island-build1](ring-island-build1.md); not re-planned here |

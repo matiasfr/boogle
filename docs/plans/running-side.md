@@ -172,7 +172,7 @@ Models are `npm run models` rows (withCodex).
 - [x] **3. The catalog and the server's check. Tier: sim and world, high risk; `WORLD_NS`.**
       _Built locally 14 November on the rotunda's shared v45; not shipped. Independent review found no in-scope
       defects. Step 4 is required before release; the old-way views and prompts are intentionally unfinished here.
-      [Step 3 report](running-side-step3-report.md) records fixtures, recommendations, checks and the stale broker
+      [Step 3 report](../archive/plans/running-side-step3-report.md) records fixtures, recommendations, checks and the stale broker
       scenario failure._
       `src/sim/railway-lines.ts`: swap the `platforms` tuples of Quarry, Far Head, Railhead and Ring Island, rewrite
       the field's comment, `haltPlatform(halt, way, head, end)`; `src/world/railway-server.ts` line 232 passes whether
@@ -216,7 +216,7 @@ Models are `npm run models` rows (withCodex).
       -6.95, on piles, a lever and a plank crossing), its `RailPlatform` in the catalog, `only: -1` kept. Run
       `npm run level-check` on it before review. Tier: sim catalog plus view; same bump. Row: gpt-6-astra high for the
       catalog, fable for the view.
-- [x] **6. Bots, tools and words.** Built locally 14 November; not shipped. [Step 6 report](running-side-step6-report.md)
+- [x] **6. Bots, tools and words.** Built locally 14 November; not shipped. [Step 6 report](../archive/plans/running-side-step6-report.md)
       records checks, browser evidence, remaining limits and departures: production-path sampling replaces the obsolete
       ring splice; the seeded Works eval dismisses station-box cards by normal E; a new ride eval proves the Q7 Pier
       return; the Home bay's future routing remains unresolved. The mechanical `offsetLat` / `OFFSET_LAT` /
@@ -242,7 +242,7 @@ Each step leaves `node dev/ship-check.ts` green.
 new and gate nothing: levers have no collider and stay on their platforms, inside the server's reach (platform half
 length at most 12 m against a reach of 11.6 to 13.6 m; step 1's test holds this). Step 5's west platform is now checked: Q7-gated deck/crossing, rail-height start ramp, no seabed wall or far ramp,
 0.8 m full-train crossing clearance, and a 65.4 m conservative roof glide against 278 m to the far deck. The
-[review-fix report](running-side-fix-report.md) records the source-linked checks and remaining evidence limits.
+[review-fix report](../archive/plans/running-side-fix-report.md) records the source-linked checks and remaining evidence limits.
 
 ## Risks
 

@@ -10,7 +10,7 @@ Current prototype policy (players step 8, v44): effective prototype pages use Lo
 There is no lead tab and no production server command session for those features. This does not restore the retired
 net/wagon gameplay described below.
 
-*A greybox prototype for [find-the-fun](../plans/find-the-fun.md), step 6, from the owner's rail-loop direction in
+*A greybox prototype for [find-the-fun](../archive/plans/find-the-fun.md), step 6, from the owner's rail-loop direction in
 [decisions.md](../decisions.md) ("Trains and the world", 2026-11-02), after Death Stranding's auto-pavers and
 monorails: building infrastructure makes it easier to build more. Gut question: "When the village steps up, do you want
 to go connect the next camp?" Serves DESIGN.md 1 (Toys before chores) and 9 (Leave something for the next visitor).
