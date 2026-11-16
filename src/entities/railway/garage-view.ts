@@ -118,7 +118,9 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     import('../../place/land.ts'),
   ]);
   const { ENGINE_WHEELS, ENGINE_BOILER, ENGINE, ENGINE_LONG_AHEAD } = spec;
-  const { TRAILER, TRAIN_OFFSETS, WAGON_CAR, STEEL_CAR, steelCarOffset } = cars;
+  const { TRAILER, WAGON_CAR, STEEL_CAR, consistOf, offsetOf } = cars;
+  const displayConsist = consistOf({ line: 1, wagon: true, steel: true });
+  const displayOffset = (role: Parameters<typeof offsetOf>[1]) => offsetOf(displayConsist, role);
   const tableTop = geo.y + 0.02;
   const centre = new THREE.Vector3(geo.table.x, tableTop, geo.table.z);
 
@@ -151,12 +153,12 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   const furniture = new THREE.Group();
   furniture.visible = false;
   root.add(furniture);
-  const shift = (TRAIN_OFFSETS[0]! + ENGINE.hz - TRAILER.hz) / 2; // centres engine and first car on the table
+  const shift = (displayOffset('engine') + ENGINE.hz - TRAILER.hz) / 2; // centres engine and first car on the table
   const train = new THREE.Group();
   train.position.z = -shift;
   rig.add(train);
   const engine = new THREE.Group();
-  engine.position.z = TRAIN_OFFSETS[0]!;
+  engine.position.z = displayOffset('engine');
   train.add(engine);
   const part = (name: Parameters<typeof kit.enginePart>[0], rust = true) => kit.enginePart(name, rust);
   const shortSet = [part('engine_body'), part('engine_boiler', false), part('engine_lashing', false)];
@@ -239,7 +241,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
    * copy does not carry, and the wagon under the cradle's place once the wagon has coupled. */
   function focusOf(p: PartId): Focus {
     const b = ENGINE_BOILER,
-      at = TRAIN_OFFSETS[0]!,
+      at = displayOffset('engine'),
       long = facts.longFitted ? ENGINE_LONG_AHEAD : 0;
     const barrel = (ahead: number): Focus => ({
       c: [0, b.y, at + (b.zBack + b.zFront + ahead) / 2],
@@ -264,16 +266,20 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       case 'roof':
         return { c: [0, (TRAILER.top + 2.8) / 2, 0], s: [2.6, 2.8 - TRAILER.top, 3.4] };
       case 'kitcar':
-        return car(TRAIN_OFFSETS[2]!, TRAILER.top, true);
+        return car(displayOffset('kit'), TRAILER.top, true);
       case 'wagon':
-        return car(TRAIN_OFFSETS[3]!, WAGON_CAR.top, facts.wagonCoupled);
+        return car(displayOffset('wagon'), WAGON_CAR.top, facts.wagonCoupled);
       case 'steelcar':
-        return car(steelCarOffset(facts.wagonCoupled), STEEL_CAR.top, facts.longFitted);
+        return car(
+          offsetOf(consistOf({ line: 1, wagon: facts.wagonCoupled, steel: true }), 'steel'),
+          STEEL_CAR.top,
+          facts.longFitted,
+        );
       case 'cradle':
         return {
-          c: [0, WAGON_CAR.top + 0.55, TRAIN_OFFSETS[3]!],
+          c: [0, WAGON_CAR.top + 0.55, displayOffset('wagon')],
           s: [2.0, 1.1, 2.9],
-          ...(facts.wagonCoupled ? { ghost: { z: TRAIN_OFFSETS[3]!, top: WAGON_CAR.top } } : {}),
+          ...(facts.wagonCoupled ? { ghost: { z: displayOffset('wagon'), top: WAGON_CAR.top } } : {}),
         };
       case 'toot':
       case 'two':
@@ -490,7 +496,12 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   function solid() {
     const long = shown && facts.longFitted ? ENGINE_LONG_AHEAD : 0;
     const want = [
-      { z: TRAIN_OFFSETS[0]! - shift + long / 2, hx: ENGINE.hx, hz: ENGINE.hz + long / 2, top: ENGINE_BOILER.top },
+      {
+        z: displayOffset('engine') - shift + long / 2,
+        hx: ENGINE.hx,
+        hz: ENGINE.hz + long / 2,
+        top: ENGINE_BOILER.top,
+      },
       { z: -shift, hx: TRAILER.hx, hz: TRAILER.hz, top: TRAILER.top + 0.1 },
     ];
     const sin = Math.sin(restPose),
@@ -663,7 +674,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     eyeA = new THREE.Vector3();
   /** How far the Cargo shot slides along the train to the chosen car: its row is framed on the kit car, the first
    * car behind the copy. The other categories' parts are all inside their own shot. */
-  const slideOf = () => (cat === 'cargo' ? focusOf(sel).c[2] - TRAIN_OFFSETS[2]! : 0);
+  const slideOf = () => (cat === 'cargo' ? focusOf(sel).c[2] - displayOffset('kit') : 0);
   const constraint: (typeof camConstraints)[number] = (look, pos) => {
     if (openT <= 0) {
       camSnap = true;

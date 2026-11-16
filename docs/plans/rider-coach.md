@@ -184,7 +184,7 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     turnout rails, the leg, the island's end ramp, the town plots, the rotunda and the machine sweep: tree 217's trunk
     and canopy against a train's swept body (no tree is removed; if it fouls, this option fails), the bot's route to
     Q1 and Q2, before/after stills at the five cameras of the stop report, a real-time clip of the cart through the leg.
-- [ ] **R2a. The consist by roles, no coach (S).** Sync: Local. Tier: normal. Builds: Codex gpt-6.1-sol medium.
+- [x] **R2a. The consist by roles, no coach (S).** Sync: Local. Tier: normal. Builds: Codex gpt-6.1-sol medium.
   Bump: no. After V1 ships (shares `train-view.ts`); before V2 starts, so V2 is written against roles.
   - `cars.ts` as in Design (`consistOf`, `roleIndex`, `offsetOf`; derived `TRAIN_OFFSETS`). Every row of the fit
     check's [index audit](../research/rider-car-fit.md#4-car-position-and-every-production-index-assumption-found):
@@ -195,6 +195,11 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   - Tests: a new `test/consist.test.ts`: `consistOf` reproduces today's offsets exactly for line 1, line 2, the wagon's
     train and the steel train; `rg -n 'cars\[[1-9]\]|TRAIN_OFFSETS\[' src/entities` finds nothing outside `cars.ts`.
   - **Proof:** one `look -- --rail-seed wagon-on` still at Home matching main's (nothing moved). **Done means** that.
+  - **As built, 16 November:** `consistOf` / `roleIndex` / `offsetOf` own the role layout; production readers use it,
+    including the loader's existing helpers, garage display roles and full-consist bounds. No coach, stop/rule/wire/save
+    change or world bump. Old offsets/tail are pinned exactly; goldens, host trace and schema unchanged. All nine
+    before/after view pairs opened and compared (ambient/capture-phase differences only). Checks and remaining-index
+    audit: [R2a report](../reports/rider-coach-r2a.md).
 - [ ] **R2b. The coach in the train, a grey blockout (M).** Sync: Server data + Local. Tier: **independent review** +
   visual. Builds: Codex gpt-6-astra high; review a fresh gpt-6-astra high (or opus high). Bump: **yes**, the next
   free number (likely v57): "every line 2 train pulls the riders' coach behind the players' car; eight rider places a

@@ -127,7 +127,7 @@ export async function createTownView(read: () => TownLook | null) {
     movers = [{ ...r.machine, kind: 'machine' }];
     if (facts.trains)
       for (const t of r.line2View.trains) {
-        const c = t.cars[0];
+        const c = t.cars.find((c) => c.role === 'engine');
         if (c) movers.push({ x: c.x, y: c.y, z: c.z, kind: 'train' });
       }
   };
