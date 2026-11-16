@@ -8,7 +8,7 @@ import { smoothstep } from '../math.ts';
 import { easeBend, easedAt, easedSmoothAt, type Eased } from './track-ease.ts';
 import { TURNOUT_CM } from '../sim/railway-lines.ts';
 import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/railway-line-layout.ts';
-import { LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
 import { TOWN_PLOTS, TOWN_PROPS, TOWN_SLOTS, TOWN_STREETS, townBuilding } from './town-plan.ts';
@@ -342,14 +342,14 @@ const STATION_LAND: Record<LineStationId | Line2StationId, { side: number; label
   T2: { side: 1, label: 'Station 2' },
   T3: { side: 1, label: 'Station 3' },
   // In B the island is on road 2's north side, so Q1's frame stands south of it.
-  Q1: { side: 1, label: 'Line 2, station 1' },
-  Q2: { side: -1, label: 'Line 2, station 2' },
-  Q3: { side: -1, label: 'Line 2, station 3' },
-  Q4: { side: -1, label: 'Line 2, station 4' },
-  Q5: { side: -1, label: 'Line 2, station 5' },
-  Q6: { side: -1, label: 'The pier' },
-  // "Line 2, station 7" follows the others' board ("Station 7"); the plan names no label for it.
-  Q7: { side: 1, label: 'Line 2, station 7', own: true },
+  Q1: { side: 1, label: 'Station 4' },
+  Q2: { side: -1, label: 'Station 5' },
+  Q3: { side: -1, label: 'Station 6' },
+  Q4: { side: -1, label: 'Station 7' },
+  Q5: { side: -1, label: 'Station 8' },
+  Q6: { side: -1, label: 'Station 9: The pier' },
+  // Continue the first line's numbering; the pier keeps its authored name alongside its number.
+  Q7: { side: 1, label: 'Station 10', own: true },
 };
 /** A sim station row as the land reads it: metres along its line, its bill by goods, line 2's laying speed in m/s
  * (the row's is per cent of TUNE.laySpeed) and its rack (a depot's cart, or a kit by train). Line 1's second good is
@@ -573,8 +573,8 @@ export const pathLamps = (up: (s: number) => number) => {
   return out;
 };
 
-/** The forge's own frame, by its north wall: logs land in it and its pieces drop. By hand first; trains finish the roof. */
-export const FORGE_FRAME = { x: -88, z: -12, yaw: 0 };
+/** The forge receiver on the east apron, facing the arriving train. Share its centre with deposit reach. */
+export const FORGE_FRAME = { x: LINE2_FORGE.x / 100 - ORIGIN.x, z: LINE2_FORGE.z / 100, yaw: 0 };
 /** The proper axe's stand, beside the forge frame on the hardwoods' side: the lit forge's first made thing (7 November). */
 export const AXE_STAND = { x: -92.5, z: -15 };
 export const FORGE_BILLS: Station[] = [

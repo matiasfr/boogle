@@ -223,7 +223,7 @@ export async function createRailwayLine2(
   mouth.visible = false;
   const forgeFrame = stations.buildStation(
     layout.FORGE_BILLS[0]!,
-    { x: layout.toWorld(layout.FORGE_FRAME.x), z: layout.FORGE_FRAME.z, yaw: Math.PI / 2, lx: 0, lz: -1 },
+    { x: layout.toWorld(layout.FORGE_FRAME.x), z: layout.FORGE_FRAME.z, yaw: layout.FORGE_FRAME.yaw, lx: 1, lz: 0 },
     owner,
   );
   // The rails rack the forge pours onto: posts come from the opening view; the steel is drawn here.

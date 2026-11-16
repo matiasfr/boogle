@@ -281,6 +281,12 @@ Home's lawn is a meadow by default (owner, 14 November: "I love the meadow. It'd
 
 ## The run
 
+**Construction-frame numbers (15 November, Grant G13):** the first line's frames read Station 1–3;
+line two continues with Station 4–10 instead of restarting at 1. The pier keeps its name as
+“Station 9: The pier”. The number remains the board's heading while a gate or shipment waits;
+the existing status words share the lower line with the material bill. Simulation IDs stay T1–T3
+and Q1–Q7. These labels are draft combinations of the existing words and corrected numbers.
+
 **Owner decision, 8 November: great-beam visual inertia (option 1 of [the Godot comparison](../research/beam-carry-godot-comparison.md)).**
 The existing rope drag and Help carry now have a Local horizontal/turn spring, derived only from the existing smoothed
 Owner avatars and helper state. Terrain pitch, the 0.3 s helped lift, speeds, claim, collision and progression stay as built.
@@ -348,7 +354,7 @@ All numbers are hypotheses until played, set with `node dev/economy/model.ts rou
 4. **The first path opens, with no train.** Station 3's stretch is the whole trestle and the run home, and when the machine gets there: whistles wherever you stand, the view shakes, a big "A way across!", rockets down the gorge and over the village, the pull-out (about 4 s; only Interact ends it, once its glyph shows at 0.8 s; nothing else does, 9 November), lamps coming on one by one along both edges of the deck from the near rim, the village pouring out, and five little guys running out across it (from then on they walk it, there and back, all day). The new way from the village to the machine is **191 m against 431**. The first end-to-end crossing records its time and plays the fanfare, without a comparison banner (owner, 5 November).
 5. **The ladder.** Each rung is earned, physical and arrives as you start wanting it:
    - **A proper axe:** the lit forge's first made thing (7 November): an iron-banded chest with a low blue glimmer on a solid pale stand beside the forge frame, on the side of the two hardwoods it opens. Station 3 and the path no longer grant it. Already-upgraded saves do not receive it again. Ordinary trees remain **3 strokes, 5 logs a stroke** (2.5x the logs a swing, half again the logs a tree), with more chips and a little kick. The axe remains a shared rung inherited by late joiners.
-   - **The forge, by hand:** its frame stands by its north wall. Logs roll in and its pieces drop, no scaling: 24 logs for the timber frame. The oak and former decorative trees on this side can supply it; which nearby trees remain changes the next carry.
+   - **The forge, by hand:** its frame stands on the east apron, at world (922, −12), facing the arriving train (Grant G12, 15 November). Its two-sided bill stands beside it, clear of the stock; the receiver, feeder, stock collision and authoritative deposit centre share the new placement. The deposit radius is unchanged. Logs roll in and its pieces drop, no scaling: 24 logs for the timber frame. The oak and former decorative trees on this side can supply it; which nearby trees remain changes the next carry.
    - **A pack frame:** a chest when the frame's up. An open timber frame with shoulder straps and a shallow canvas cradle, proportioned to Buddy and below the head so it stays clear of the follow view, **16 on your back**. Then 32 logs for walls and chimney, and the forge lights, roofless, and pours rails. The machine turns on the turntable for line 2.
    - **Line 2, station 1:** 16 logs and 6 rails: finite nearby trees for logs, the forge for rails. When it's laid, **the depot**: the camp builds its sawmill, and two little guys start shoving a cart of 24 logs down your track, over the turntable, to **a rack by the next frame**. You do the last carry. Rails stay yours to fetch from the forge through station 3, unless a partner loads the cart.
 6. **The long second route.** Four more frames, each bigger: 24 logs and 12 rails, over the stem of the gorge; 16 and 12, to the quarry; 16 and 16, across the table; 24 and 24, out over the sea, 260 m of trestle in one go, all the way to Far Head. **From station 4, the little guys bring rails too:** the same cart stops at the forge, loads real forge stock onto its logs, and heaves both onto the frontier rack. Rails land on their own low timber shelf beside the log cradle, visible even after the logs are taken. You still take the pieces and carry them into the frame. The cart holds 16 rails: station 4 fits one mixed shipment; station 5 gets a second rail shipment unless a partner brings the balance. An empty forge makes the cart wait for production. Bills, automatic-cart speed (9 m/s) and forge output are unchanged; a manually loaded cart with a rider now earns the co-op bonus below. Machine speeds rise, 5 m/s on line 1 to 9 m/s on the sea. Far Head gets rockets at both ends, a big "Far Head!" and lamps along the trestle.
@@ -1811,6 +1817,12 @@ the store; the cut gold finds' `finds` field is still parsed, unused), pruned by
 `WORLD_NS` change.
 
 ### Secrets in the live game (9 November 2026, place-retirement F2)
+
+**Helmet water escape (15 November, Grant G15):** a brass inclined ladder runs from below the sea
+to the south lip of the 15 m helmet stack. Walk forward from swimming onto its 1.8 m wide,
+45-degree surface; no jump, hook, glider or new button is required. Its two rails and 49 rungs
+use the existing prefab box component with one continuous walkable collider. The existing
+stack-return hook still leads from the dry stack back to the railway. No new words.
 
 As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
 

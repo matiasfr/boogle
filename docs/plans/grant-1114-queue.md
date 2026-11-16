@@ -25,8 +25,56 @@ Ranks are the tracker's. Within a rank, items are in the order to pick them. "Wh
 | 7 | **D5. Trains arrive all at once** | P2 | G19 (owner rows 11, 39) | 7 | Planned: [train-progression](train-progression.md), with three owner questions open there | Nothing new; Grant's row is added evidence | As that plan says |
 | 8 | **C5. One unit for what you carry** ✓ | P2 | G14 | 11 ("what's on screen is true") | Owner, 15 November: [counts everywhere](../agents/owner-calls.md#counts-everywhere); squares gone | Built and checked on `t3/grant-c5-counts`, not shipped: carry icons/counts, explicit heavy overflow, numbered singleton cargo and pile/recovery stock, numeric garage capacity. Desktop/phone before-after stills opened; owning tests, `check` and T1 pass. [Evidence](grant-c5-evidence.md); ruling linked in agent-calls | Implementation sub-agent |
 | 9 | **C7. Hook and glider controls** ✓ | P2 (G26 P3) | G17, G18, G26 | 11 | Owner approved 15 November; [Jump is the glider's button](../agents/owner-calls.md#jump-is-the-gliders-button) | Built and checked on `t3/grant-c7-controls`, not shipped: Interact hooks, F/RB prompt persists, Jump closes and teaches the glider, upward aiming stays above the platform. Keyboard/pad/touch handler checks, motion sheets, camera before/after, teach and touch stills, owning tests, `check` and T1 route: [evidence](grant-c7-evidence.md) | Implementation sub-agent |
-| 10 | **C3, C4, C6. Three small world fixes** | P2 | G12, G13, G15 | 11 | No decision needed | The forge's board and deposit face the arriving train; every station's sign carries its own number; a ladder out of the water at the diving helmet | Implementer agent, fable medium |
+| 10 | **C3, C4, C6. Three small world fixes** | P2 | G12, G13, G15 | 11 | No decision needed | Built on `t3/grant-world-fixes`, not shipped; [checks and inspected stills](#c3-c4-c6-implementation-evidence-15-november) | Implementer agent, fable medium |
 | 11 | **C8. The P3 batch** | P3 | G20, G22, G24, G25, G27 to G35 | 11, 10 | G22: Pause already opens on the wardrobe (10 November); he did not find it. G29 is in [terrain-clean](terrain-clean.md). G30, G31 and G34 are the owner's own rows | One batch after the items above; G24 keeps Sleeves' line | Codex, gpt-6.1-sol medium |
+
+## C3, C4, C6 implementation evidence (15 November)
+
+- [x] **C3 / G12:** forge receiver moved from world (912, -12) to (922, -12), with its feeder
+  rotated toward the forge and its existing bill facing the train approach. Local 3.6 m deposit reach and
+  server reach are unchanged; the authoritative centre moves with the physical receiver. Original harvest
+  trees and clearing remain pinned. No new words. Inspected [arrival still](../../.look/grant-c3-still.png):
+  the forge name and log bill are readable above the receiver on the right; a crane post occupies the
+  foreground but does not hide them. WebGPU capture passed with no graphics/page errors. `level-check`
+  passed; prefab-tree, halt-lever reach and railway-placement owning tests passed. Built on
+  `t3/grant-world-fixes`, not shipped. Combined checks are recorded below.
+
+- [x] **C4 / G13:** construction signs now count 1–10 across both lines, and their number stays
+  above gate/shipment status. The pier keeps its name. Inspected approach stills:
+  [Station 1](../../.look/grant-c4-t1-still.png) and [Station 5](../../.look/grant-c4-q2-still.png).
+  Both headings and their material counts are readable, with the receivers and track layer in view.
+  Both WebGPU captures passed with no page/graphics errors. Draft label combinations for the owner:
+  “Station 4” through “Station 10”, including “Station 9: The pier”; no dialogue changed.
+  Built on `t3/grant-world-fixes`, not shipped.
+
+- [x] **C6 / G15:** a 24 m inclined brass ladder reaches below the water and joins the helmet
+  stack's south lip. Existing box prefab rendering, 49 rungs, two side rails and one smooth
+  walkable collider; no new control or copy. Inspected [water-level still](../../.look/grant-c6-fixed-still.png):
+  the ladder is continuous from the water to the stack beside the trestle. The forward-only swimmer
+  reached (1326.80, 15.44, -120.82), from (1326.80, -0.36, -100), without jumping or using an ability.
+  The first attempt snagged under the lip; its [still](../../.look/grant-failed-ladder/grant-c6-still.png)
+  and [log](../../.look/grant-failed-ladder/run.log) are preserved. The corrected run passed WebGPU health.
+  Built on `t3/grant-world-fixes`, not shipped.
+
+**Combined checks:** `npm run check` passed (2,227 passed, 65 skipped, one existing TODO;
+level-check, registry, assets, prefab freshness and build included). After the final ladder join and
+forge tree-fall protection, `npm run check -- --unit-only` passed all 76 owning tests plus the same
+static/level/build gates. Logs: [full](../../.look/grant-check-full.log),
+[final scoped](../../.look/grant-check-final.log). The final level report found no reachability,
+grounding, machine/track clearance or service-walkway failures; its documented collision coverage
+limits still apply. The physical ladder traversal is the escape witness.
+
+The production bot passed through T3 ([report](../../.look/playthrough/grant-arrival/report.txt)),
+and two peers passed T2 with matching hashes at 232 sampled server steps
+([report](../../.look/playthrough/grant-two-peer/report.txt)). The latter reported transient client
+clock deficits of 4.755 and 8.657 game seconds during warp, then caught up; this is not timing/feel
+proof. `world-inputs` passed ([log](../../.look/grant-world-inputs.log)).
+Review stamp: `fab3fa93c974` (forge sim placement and the three prefab/census test or fixture
+changes); no independent review claimed.
+
+Stills were opened. Capture metadata names the launch baseline plus working edits, not a final-HEAD
+certification. The ladder warm-up was warped: no real-time smoothness or device-performance claim.
+Not tested on a device. No depot boards changed and nothing was shipped or pushed.
 
 ## Owner questions
 
@@ -98,7 +146,7 @@ At most five. Each has a recommended answer first; none is recorded as his call.
   allowance); the boiler's plume rises from the forge's chimney about 15 m from the pedestal, and only the
   breaker's rises from the pedestal; Far Head's shot and the pier show each sound two whistles of their own.
 
-## Not done here
+## Initial planning scope
 
 The initial planning pass changed no game code and dispatched nothing; implementation status is now in the queue above. The designer agent reviewed both design docs ("ready with
 changes"; its sections are in each doc) and logged seven proposed calls in [agent-calls](../agent-calls.md). The 2D

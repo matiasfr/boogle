@@ -10,6 +10,8 @@ import { hookRings } from '../../src/entities/railway/hook-path.ts';
 import { geometryFaces, materialSurface } from '../../src/geometry/drawn-faces.ts';
 import type { Face } from '../../src/geometry/zfight.ts';
 import { sourceModule } from './source.ts';
+import { compiled } from '../../src/prefab/catalogue.ts';
+import type { Placement, PrefabKey, Transform } from '../../src/prefab/types.ts';
 
 /** Fail closed if either source-owned geometry boundary moves. No copied dimensions or pad keep/exclude list. */
 function runSection(file: string, start: string, end: string, bindings: Record<string, unknown>) {
@@ -97,6 +99,27 @@ export function collectTechGeometry(): Face[] {
     parts,
     merged,
     padById: tech.padById,
+    createPrefabBatch() {},
+    instantiate(key: PrefabKey, placement: Placement) {
+      const def = compiled.prefabs[key]!;
+      if (!('builder' in def.visual) || def.visual.builder !== 'greybox.box')
+        throw new Error('Tech census: expected box prefab');
+      const transform = (p: Transform) =>
+        new THREE.Matrix4().compose(
+          new THREE.Vector3(...p.pos),
+          new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(p.rot?.[1] ?? 0, p.rot?.[0] ?? 0, p.rot?.[2] ?? 0, 'YXZ'),
+          ),
+          new THREE.Vector3(...(p.scale ?? [1, 1, 1])),
+        );
+      const frame = transform(placement);
+      for (const [i, part] of def.visual.instances!.entries()) {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), flat(String(def.visual.params.colour)));
+        mesh.applyMatrix4(frame.clone().multiply(transform(part)));
+        capture(mesh, `tech/${placement.id}/${i}`);
+      }
+      return { setEnabled() {} };
+    },
     H,
     ox: layout.ORIGIN.x,
     STONE: '#917b5e',

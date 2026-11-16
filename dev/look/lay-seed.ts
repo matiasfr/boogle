@@ -4,20 +4,50 @@
 import { act, advance, logs, rails, railwayAtQ4, railwayAtQ5 } from '../../src/sim/railway-seed-route.ts';
 import { railwayAtWorks, advanceWorks } from '../../src/sim/railway-seed-works.ts';
 import { need, restore } from '../../src/sim/railway-drive.ts';
-import { rail, qjob, trains } from '../../src/sim/railway-rows.ts';
+import { rail, qjob, trains, beam, rocks } from '../../src/sim/railway-rows.ts';
+import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
+import { railSession } from '../../src/sim/railway-sys-core.ts';
 import { Q7, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import { retainedEndBlock } from '../../src/sim/railway-trains.ts';
 import { seedDoc } from './ring-mid-seed.ts';
 
 export const layStage = (stage: string) =>
-  stage === 'q5-held' || stage === 'q4-held' || stage === 'q7-retained' || stage === 'q7-signal' ? stage : null;
+  stage === 'forge-open' ||
+  stage === 'q5-held' ||
+  stage === 'q4-held' ||
+  stage === 'q7-retained' ||
+  stage === 'q7-signal'
+    ? stage
+    : null;
 export function buildLayDoc(stage = 'q5-held') {
+  if (stage === 'forge-open') return buildForgeDoc();
   if (stage === 'q4-held') return buildQ4Doc();
   if (stage !== 'q5-held') return buildQ7Doc(stage === 'q7-signal');
   const seed = railwayAtQ5('q4-done');
   logs(seed, 'a', 'Q5', 24);
   rails(seed, 'b', 'Q5', 24);
   return seedDoc(seed);
+}
+
+/** Arrival at the unbuilt forge, through accepted ops; no presentation-only state mutation. */
+function buildForgeDoc() {
+  const s = buildSeedWorld('awake');
+  railSession(s.w, 'b', 1);
+  logs(s, 'a', 'T1', 24);
+  advance(s, 300);
+  for (let i = 0; i < 8;) {
+    const n = act(s, 'b', 'rail.mine', { id: rocks(s.w).findIndex((r) => r.left > 0) });
+    need(act(s, 'b', 'rail.deposit', { station: 'T2', kind: 1, n }) === n, 'forge look: T2 stone');
+    i += n;
+  }
+  logs(s, 'a', 'T2', 32);
+  advance(s, 300);
+  logs(s, 'a', 'T3', 40);
+  for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
+  act(s, 'a', 'rail.beamTake', { revision: beam(s.w).revision });
+  need(act(s, 'a', 'rail.beamDeposit', { revision: beam(s.w).revision, station: 'T3' }) === 1, 'forge look: beam');
+  advance(s, 600);
+  return seedDoc(s);
 }
 
 /** Look-only: Q4's bill paid in full with the quarry lever not yet pulled, so its 17 s of laying, and the live edge
