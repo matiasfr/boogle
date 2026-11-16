@@ -1,22 +1,53 @@
 // Local unread-conversation cue, owned by the railway greeters and the town residents.
-import { Vector3 } from 'three/webgpu';
+import type { Vector3 } from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { camera, toScreen } from '../../render/scene.ts';
+import { camera, toScreen, view } from '../../render/scene.ts';
 
-export function createSpeechCue(owner: OwnedView) {
+/** One bubble, two contents. Forward `show` from the Talk target, then `update` after prompts and the camera. */
+export function createSpeechCue(owner: OwnedView, at: Vector3) {
   const el = document.createElement('div');
-  el.className = 'place-bark';
-  el.textContent = '•••';
-  el.setAttribute('aria-label', 'Something to say');
+  el.className = 'speech-cue';
+  el.hidden = true;
+  const inner = document.createElement('div');
+  inner.className = 'prompt-in';
+  const chip = document.createElement('span');
+  chip.className = 'prompt-chip';
+  inner.append(chip);
+  el.append(inner);
   (document.querySelector('.hud') ?? document.body).append(el);
   owner.cleanup(() => el.remove());
-  const at = new Vector3();
   const screen = { x: 0, y: 0, behind: false };
-  return (x: number, y: number, z: number, unread: boolean) => {
-    at.set(x, y + 2.4, z);
-    toScreen(at, screen);
-    const on = unread && !screen.behind && camera.position.distanceToSquared(at) < 24 * 24;
-    el.classList.toggle('on', on);
-    if (on) el.style.transform = `translate(-50%, -100%) translate(${screen.x}px, ${screen.y}px)`;
+  let prompt = '';
+  let shown = '';
+  const markup = document.createElement('template');
+  return {
+    // The prompt feature supplies the actual keyboard/pad/touch markup, and clears it on losing the pick.
+    show(html: string) {
+      prompt = html;
+    },
+    update(unread: boolean) {
+      const html = prompt || (unread ? '…' : '');
+      if (html !== shown) {
+        shown = html;
+        if (prompt) {
+          markup.innerHTML = prompt;
+          // Keep the bubble itself: only its glyph and label children change.
+          chip.replaceChildren(...markup.content.firstElementChild!.childNodes);
+        } else chip.textContent = html;
+        el.classList.toggle('unread', !prompt);
+        el.setAttribute('aria-label', prompt ? 'Talk' : 'Something to say');
+      }
+      toScreen(at, screen);
+      el.hidden = !(
+        html &&
+        !screen.behind &&
+        screen.x > 0 &&
+        screen.x < view.w &&
+        screen.y > 0 &&
+        screen.y < view.h &&
+        (prompt || camera.position.distanceToSquared(at) < 24 * 24)
+      );
+      if (!el.hidden) el.style.transform = `translate(${screen.x.toFixed(1)}px, ${screen.y.toFixed(1)}px)`;
+    },
   };
 }

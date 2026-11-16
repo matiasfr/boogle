@@ -154,7 +154,13 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
       if (k >= 0) folk.guys.splice(k, 1);
     }
   });
-  const cues = IDS.map((id) => ({ id, show: createSpeechCue(owner) }));
+  const cues = new Map(
+    IDS.map((id) => {
+      const g = guys[id];
+      const at = new THREE.Vector3(g.x, (g.fy ?? g.y) + 1.5, g.z);
+      return [id, { at, ...createSpeechCue(owner, at) }] as const;
+    }),
+  );
   const inRoom = (r: Room) => IDS.filter((id) => CAST[id].room === r.id);
   const seen = seenFrom(memory.load());
   const remember = () => memory.save(seen);
@@ -229,7 +235,6 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
     if (!started) return void (g.chat = 0);
     playMark('talked to resident', { who: id });
   }
-  const prompts = new Map<ResidentId, THREE.Vector3>();
   function targets(): Interactable[] {
     const b = me.body;
     if (!b) return NO_TARGETS;
@@ -238,10 +243,9 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
     for (const id of IDS) {
       const g = guys[id];
       if (!g.on || Math.hypot(p.x - g.x, p.z - g.z) > 3.3 || Math.abs(p.y - (g.fy ?? g.y)) > 3) continue;
-      let at = prompts.get(id);
-      if (!at) prompts.set(id, (at = new THREE.Vector3()));
-      at.set(g.x, (g.fy ?? g.y) + 1.5, g.z);
-      (out ??= []).push({ id: `place-talk-${id}`, verb: 'Talk', at, run: () => open(id) });
+      const cue = cues.get(id)!;
+      cue.at.set(g.x, (g.fy ?? g.y) + 1.5, g.z);
+      (out ??= []).push({ id: `place-talk-${id}`, verb: 'Talk', at: cue.at, run: () => open(id), show: cue.show });
     }
     return out ?? NO_TARGETS;
   }
@@ -344,13 +348,11 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
     remember();
     bark(best, line);
   }
-  function update(dt: number) {
-    for (const { id, show } of cues) {
+  function lateUpdate() {
+    for (const [id, cue] of cues) {
       const g = guys[id];
-      show(
-        g.x,
-        g.fy ?? g.y,
-        g.z,
+      cue.at.set(g.x, (g.fy ?? g.y) + 1.5, g.z);
+      cue.update(
         g.on &&
           rooms.indoors.room?.id === CAST[id].room &&
           !env.hush() &&
@@ -358,6 +360,8 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
           (!seen.met[id] || noticeFor(id) !== null),
       );
     }
+  }
+  function update(dt: number) {
     for (const id of IDS) {
       const r = rooms.rooms[CAST[id].room];
       guys[id].on = r.near.visible && r.ready;
@@ -391,7 +395,7 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
     let y = onScreen ? ((1 - screen.y) / 2) * innerHeight : innerHeight * 0.3;
     const target = interactTarget();
     if (target?.verb === 'Talk' && Math.hypot(target.at.x - g.x, target.at.z - g.z) < 0.1) {
-      const prompt = document.querySelector<HTMLElement>('.prompt:not([hidden]) .prompt-in');
+      const prompt = document.querySelector<HTMLElement>('.speech-cue:not(.unread):not([hidden]) .prompt-in');
       if (prompt) y = Math.min(y, prompt.getBoundingClientRect().top - 8);
     }
     bubble.style.transform = `translate(-50%, -100%) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
@@ -399,6 +403,7 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
   return {
     guys,
     update,
+    lateUpdate,
     targets,
     /** Someone who lives here says this now. */
     say: (id: ResidentId, text: string) => bark(guys[id], text, true),
