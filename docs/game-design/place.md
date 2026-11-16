@@ -1288,9 +1288,9 @@ The delivered steel pallet follows the site's table radius and the kit's kerb: i
 with at least 1 m between the pallet and kerb. Its base spans the shallow ground slope; neither steel nor pallet
 stands on the disc. The placement clears the spur, all seven future stall roads, the garage furniture and camera.
 
-**Rotunda, through step 4 (15 November).** The Roundhouse is one curved masonry building at the kit's true sizes
+**Rotunda, through step 5 (15 November).** The Roundhouse is one curved masonry building at the kit's true sizes
 ([plan](../plans/roundhouse-rotunda.md)), following the owner's approved painted reference. The block records and
-builder are gone; stages still snap until step 5.
+builder are gone; earned stages rise in front of you.
 
 - **The table (step 3, 15 November)** is a shallow pit: ground at 17.1 m inside r6, banking up to the masonry
   wall at r8.15. A pale segmented kerb reaches r8.6 and stands 0.15 m above the yard; 48 box colliders close the
@@ -1311,8 +1311,11 @@ builder are gone; stages still snap until step 5.
   at all: two empty sockets where they go, the cracked slab just behind them, the tarped shunter and wagon behind
   that. The two footings set in the sockets raise bay 190°'s piers and lintel; when they stand, bays 170°, 190° and
   210° stand as the building, with 190° open and working. When the first steel lands at Home, bays 150° and 230°
-  join them and ruins appear at 130° and 250°. A change of stage snaps for now; the rise is a later step. Seven
-  bays is held: it needs its own brief.
+  join them and ruins appear at 130° and 250°. Each live stage edge raises only the new bays over the existing
+  three-second build timing, with dust and clanks at the start and finish; stage 1 waits for the working door frame.
+  Existing ruins stay solid until the new stage settles, then its record colliders switch on. Shared camera moments
+  pause the rise; opening the garage settles it before the install. Restores, late joins and reduced motion snap
+  without a rise. Seven bays is held: it needs its own brief.
 - **Rails** fan from the table to every one of the seven bays from arrival, built or not.
 - **Painted on the ground** past each end, bays 110° and 270° in amber outline: what nine bays would take. The
   270° one stands 3.2 m from road 2's buffer stub.
