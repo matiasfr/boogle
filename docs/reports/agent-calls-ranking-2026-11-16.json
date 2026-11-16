@@ -1,0 +1,1315 @@
+[
+  {
+    "id": "CL-001",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Line 2 gets a big boiler at High Gorge: 30 m/s, same cars, its own braking.",
+    "recommendation": "confirm",
+    "why": "You kept the big boiler at High Gorge on 15 November; only its numbers are open.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-15-garage-trade-answers"
+  },
+  {
+    "id": "CL-002",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Spare engines sit in the Roundhouse bays as scenery and leave in a fixed order as their lines open.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-003",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Timing targets to judge the next first-timer at the breaker, the throat and the pier.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-004",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Glider and sea-switch hint text reworded for fly first (draft UI, not The Boogler's).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-005",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Heavy loads keep room to drop at your feet, so overfilling can always be undone.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-008",
+    "topic": "CL",
+    "group": "decide",
+    "rank": 2,
+    "gist": "Drop the depot you place yourself (Grant's G8) from the first prototype; the forge crew hands the depot over instead.",
+    "recommendation": "confirm",
+    "why": "Measured: the cart's rack already stands 7 m from the open frame, so a placed depot can only tie or lose, and it leans toward the routing DESIGN rules out; it is Grant's idea, so the fork is yours.",
+    "source": "docs/brainstorms/first-line-decisions.md#design-review-designer-2026-11-15 (finding 4) · DESIGN.md, the core loop"
+  },
+  {
+    "id": "CL-009",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Settings for the whetstone-or-sling prototype: sling 12, overfill, 0.6 slowdown, depot stake within 12 m.",
+    "recommendation": "revert (retire as superseded)",
+    "why": "The whetstone-or-sling pick is not being built (16 November), heavy loads shipped with a 45% speed floor rather than 0.6, and CL-008 drops the stake.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-16-first-line-choice-two-stages · docs/game-design/place.md (heavy load: 45% at maximum)"
+  },
+  {
+    "id": "CL-010",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Couplings stretch on tight curves so cars stop clipping the engine.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-011",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The cab roof hides only when you are really inside the cab.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-012",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A train-fed station's board says \"On the rack\" or \"On the way\" while it waits; gold motes on what it needs.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-013",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The cradle stall gets a bill, rail ghosts and greyed hints, so you know to bring 8 rails.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-014",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The kiln prompt shows the exact logs and stone still needed (draft UI).",
+    "recommendation": "confirm",
+    "why": "Matches \"Counts everywhere\" (15 November)."
+  },
+  {
+    "id": "CL-015",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The cart's rack tag compares what is aboard with what the bill still needs.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-016",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The great tree's Chop is greyed with \"For Station 3's beam\" until then.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-017",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Finished station frames fold flat and vanish once nobody stands in them.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-018",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Roundhouse bays only appear with something to stand in them; they are never bought.",
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "Your 15 November garage answer (1) says this: a bay holds one thing the room owns and is not running, and is never bought.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-15-garage-choices"
+  },
+  {
+    "id": "CL-019",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The Roundhouse grows free with the story: a ruined arc, then three bays, then five at first steel.",
+    "recommendation": "confirm",
+    "why": "Agrees with \"never bought\" (15 November)."
+  },
+  {
+    "id": "CL-020",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Garage post, crane and camera positions, and a slower turntable spin.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-021",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "After the longer boiler each line 2 train gains the steel car, so the wagon's train is one car longer for now.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-022",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The steel car runs empty once steel is home, until a later steel job gives it cargo.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-023",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Friends see an install from the moment it is accepted, not during the hold.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-024",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The install's drop waits for the server; the part sways on the hook until then (2.5 s timeout).",
+    "recommendation": "confirm",
+    "why": "The hold starts on the press, so \"Input gets instant feedback\" holds."
+  },
+  {
+    "id": "CL-025",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Ship the garage moment before the fourth car.",
+    "recommendation": "revert (retire: done)",
+    "why": "Both have shipped; the steel car is on main since v33, so the ordering has nothing left to decide.",
+    "source": "docs/game-design/place.md (the steel car, 13 November, v33)"
+  },
+  {
+    "id": "CL-026",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "The garage moment's small calls: banners, platform puff, placeholder strings, Try it without whistle or turn.",
+    "recommendation": "change: confirm, minus the Try it clause",
+    "why": "Try it no longer exists: on 14 November you removed the try-on step.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-14-no-try-on-in-the-garage"
+  },
+  {
+    "id": "CL-028",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Greybox ability pickups stand off the platform, under a minute's walk, so areas don't all play the same.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-030",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Greybox bills are 20 logs and 20 rails a section by kit train; no hand-carried footings.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-031",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Greybox abilities and gates are plain posts and barriers with placeholder labels.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-032",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Greybox ending: a marker by the Original Island platform opens a shared card.",
+    "recommendation": "confirm",
+    "why": "A stand-in; your Alpha ending (12 November) replaces it."
+  },
+  {
+    "id": "CL-033",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The greybox time table splits hands-on work, watching, riding and waiting.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-034",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Ring Island build 2 should take 6 to 9 minutes solo, with no idle wait over 60 s.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-036",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Installs come in three sizes; a bigger part gets a bigger moment.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-038",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A small crane and two little guys do the lifting at the Roundhouse table.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-039",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A new car is coupled on the approach track with a jolt down the train.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-040",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Install animation timings and shake values.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-041",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Car count shown as pips; the idle table turns and steams; sound ducks around the hit.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-042",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Phone and reduced-motion versions of the install, and draft strings including \"Try it\".",
+    "recommendation": "change: confirm, drop \"Try it\" and \"Trying it on\"",
+    "why": "Try it no longer exists: on 14 November you removed the try-on step.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-14-no-try-on-in-the-garage"
+  },
+  {
+    "id": "CL-044",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "The garage opens only after the footing wagon has left.",
+    "recommendation": "revert",
+    "why": "Conflicts with your 15 November answer (3), built in #1926: the footing wagon waits for the 20 m/s install at the table, so the garage is open before the wagon leaves.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-15-garage-choices"
+  },
+  {
+    "id": "CL-045",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Players never reorder cars; a part you can't fit shows locked with its reason.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-046",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Line 2's second train gets a wagon only once footings have a job for it.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-047",
+    "topic": "CL",
+    "group": "decide",
+    "rank": 3,
+    "gist": "A speed upgrade is offered on a line only if it saves 10 s or more; new main lines are at least 1 km.",
+    "recommendation": "confirm",
+    "why": "This rule decides which garage upgrades exist on which lines and how long the route's lines must be; it already drives the big boiler and the Quick/Strong balance.",
+    "source": "docs/brainstorms/engine-garage.md#design-review-designer-2026-11-10 (call 25) · owner note, 10 November"
+  },
+  {
+    "id": "CL-048",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Keep ground clear at Home for the bigger Roundhouse.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-049",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The garage list splits Upgrades from Looks and sounds; looks never change numbers.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-050",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Upgrade previews: wheels at the new speed, plus a Now-and-After strip of two trains running the same trip.",
+    "recommendation": "change: keep the wheels-and-chuff preview and resources a minute; drop the Now/After strip",
+    "why": "On 10 November you said no comparison race visual and no trip-time metric; you compare by choosing the current part or the upgrade.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-10-the-train-upgrade-screen-install-plain"
+  },
+  {
+    "id": "CL-051",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Installing is a short hold (about 0.8 s), not a confirm dialog.",
+    "recommendation": "confirm",
+    "why": "Your 10 November answer: a hold of about a second."
+  },
+  {
+    "id": "CL-052",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The garage camera frames the engine and moves by category.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-053",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The longer boiler also lets the train pull one more car (3 to 4).",
+    "recommendation": "confirm",
+    "why": "Your 10 November words: a boiler sets speed and cars."
+  },
+  {
+    "id": "CL-054",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Island maps mark Works tasks with small gold symbols.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-055",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Those map marks stay still; no blinking.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-056",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The trodden path and the \"Kiln\" fingerpost appear when the breaker is taken.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-057",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Dashed gold ghosts sit in the stall's empty footing sockets.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-058",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A bill board for logs and stone stands by the kiln.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-060",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A resident remarks where the breaker's cracks are (draft, not The Boogler's).",
+    "recommendation": "confirm",
+    "why": "The line now lives in src/entities/town/town-lines.ts."
+  },
+  {
+    "id": "CL-061",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The kiln's logs come from the grove just outside; no trees added.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-062",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Retune the seam sparkle size only if it reads as specks from afar.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-063",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A boiler a leaver never carried goes back on its pedestal.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-064",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The lookout shelf sits at 20.0 m so two jumps reach it reliably.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-066",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Accept that the alcove can be reached early by dropping from the plateau.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-067",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Accept an early double-jump route to the sea-stack find.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-070",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Each halt's train board hangs above its signal arm.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-071",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "No gold ghost on the quarry rack unless players get stuck there.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-072",
+    "topic": "CL",
+    "group": "decide",
+    "rank": 5,
+    "gist": "A dashed gold outline means \"a part goes here\", and gold is used for nothing else.",
+    "recommendation": "confirm",
+    "why": "It is the game's one visual word for \"put something here\", now reused by the cradle and the house ghosts, so it binds every later sign.",
+    "source": "docs/brainstorms/works-signposting.md#open-questions (question 1) · DESIGN.md 11"
+  },
+  {
+    "id": "CL-073",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "No camera shot when the stall seam is struck.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-074",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Works effects read their layout from data (internal).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-075",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Station 6 refuses hand deliveries until trains run.",
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "Your 9 November decision (1) says this: Station 6 takes nothing by hand and the forge offers no rails for it until trains run.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-09-station-6-takes-nothing-by-hand"
+  },
+  {
+    "id": "CL-076",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "No separate breaker stand; the breaker sits on the pedestal.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-077",
+    "topic": "CL",
+    "group": "decide",
+    "rank": 4,
+    "gist": "Whoever fits the boiler gets a \"You got\" card once the trains wake.",
+    "recommendation": "confirm; the card's words are yours (draft \"Steam\" / \"Trains run both lines.\")",
+    "why": "Every other first find gets a card, and \"Rewards should be maximal\" (2 November); the moment the trains wake is the biggest one on Home.",
+    "source": "docs/plans/boiler-first-choice.md#design-review-designer-2026-11-09 (call 27) · docs/decisions-core-loop.md#d-2026-11-02-rewards-should-be-maximal"
+  },
+  {
+    "id": "CL-078",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Station 6 stays wordless: its sign shows the old train with a gold boiler outline.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-079",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Boiler haul numbers and prompts (pace, help range, drop rules).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-080",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The boiler fit animation and friends' flourish.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-082",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Upgrade forks are \"which first\" choices: taking one makes the other next.",
+    "recommendation": "change: make forks trades with lasting differences, like the Quick and Strong boilers",
+    "why": "You have set order-only choices aside: on 15 November the per-line trade replaced \"which line first\", and on 16 November a fork worth seconds was \"an order, not a decision\"; the focus is real choice.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-15-garage-trade-answers · docs/decisions-core-loop.md#d-2026-11-16-first-line-choice-two-stages · docs/decisions-process.md#d-2026-11-16-focus-choice-and-payoff"
+  },
+  {
+    "id": "CL-083",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The works board's spot waits for the Home station choice.",
+    "recommendation": "confirm",
+    "why": "Home B is chosen now; place the board when it is built."
+  },
+  {
+    "id": "CL-084",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Upgrade parts glow, the crew bolts them on, no undo, free until money exists, first press wins a fork.",
+    "recommendation": "change: confirm the look and no undo; drop \"free\" and \"first press wins a fork\"",
+    "why": "Installs now spend steel from the one pool (15 November, answer 2), and Quick/Strong are freely swappable trades, not a race to press (15 November trade answers).",
+    "source": "docs/decisions-core-loop.md#d-2026-11-15-garage-choices · docs/decisions-core-loop.md#d-2026-11-15-garage-trade-answers"
+  },
+  {
+    "id": "CL-085",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The tower's first secret box moved to the east edge so it doesn't block the way down.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-086",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Finders' bay crates open only with Open, not by walking into them.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-087",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The lookout's missed box reaches the finders' bay at the end of line 2.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-088",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Secret gift cards show only their names.",
+    "recommendation": "confirm",
+    "why": "Owner's copy: any line for them is yours."
+  },
+  {
+    "id": "CL-089",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Glide-only secrets appear once the room has the glider.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-090",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Forge smoke parts around your view, so the first glide isn't flown blind.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-091",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "The glider uses existing words; the first-fall hint is the Glide button icon.",
+    "recommendation": "change: confirm the card and prompt words; the hint shows Jump",
+    "why": "You ruled \"Jump is the glider's button\" on 15 November: the first-fall teach shows Jump, not Glide/Q/LB.",
+    "source": "docs/agents/owner-calls.md#jump-is-the-gliders-button"
+  },
+  {
+    "id": "CL-092",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Taking the glider responds at once; a rare refusal undoes it 2 s later.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-093",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A dev shortcut for the glider is replaced by a save seed (internal).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-094",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The glider device stands clear of the rocks on Needle Bell's summit.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-095",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Glider handling numbers aimed at Breath of the Wild's feel.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-096",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The bot checks the glider is absent through state (internal test).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-097",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Glider pickup range and double-take handling.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-099",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A full-stick first flight can overshoot into the sea (a swim).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-100",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "With 24-rail carts, away credit brings up to 24 rails; a cart waits 12 s for a raided rack.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-101",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Carts carry 24 rails, so one trip covers Q5.",
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "Your 9 November decision says the cart stays at 24 rails.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-09-the-boiler-fit-is-the-first"
+  },
+  {
+    "id": "CL-102",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Frame Split-rock's cleft as a side trip while you wait for the cart.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-103",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A steam plume and a whistle call you back to the waiting boiler.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-104",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The breaker uses the same forge plume and whistle.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-106",
+    "topic": "CL",
+    "group": "flag",
+    "gist": "Build the glider before retiring the Place prototype, without making the retirement wait.",
+    "recommendation": "revert (retire: done)",
+    "why": "Both have happened: the glider is in the live game and src/proto/place is gone.",
+    "source": "docs/direction.md#how-we-got-here"
+  },
+  {
+    "id": "CL-107",
+    "topic": "CL",
+    "group": "decide",
+    "rank": 1,
+    "gist": "Move the double jump later, to Split-rock's ankle rings after the glider.",
+    "recommendation": "revert: keep the double jump after Station 3",
+    "why": "Your 16 November first-line test tried to bring the jump earlier, not later; pushing it past the glider removes an early ability when the focus is an edge sooner. direction.md lists it as your call.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-09-loop-orders · docs/decisions-core-loop.md#d-2026-11-16-first-line-choice-two-stages · docs/direction.md#owner-decisions-that-change-the-next-work"
+  },
+  {
+    "id": "CL-108",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Rising air over machine plumes for the glider: deferred, first to cut.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-109",
+    "topic": "CL",
+    "group": "decide",
+    "rank": 6,
+    "gist": "The glider is never needed on Home's main line; its one required use is at Ring Island.",
+    "recommendation": "confirm",
+    "why": "The Home half is already yours (fly first, 15 November); the open half makes the glider a required gate at Ring Island, which sets what the ability is for.",
+    "source": "docs/decisions-core-loop.md#d-2026-11-15-fly-first"
+  },
+  {
+    "id": "CL-111",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Glider progress is stored as small flags (internal).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-112",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The first glider build leaves out upgrades and extras.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-113",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Friends see your folded glider and your open canopy.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-114",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Gliding has no stamina limit.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-115",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Faster glider cloth from Canopy: deferred.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-116",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The glider reopens two secrets and some optional ways down.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-117",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "You can't glide holding a beam or boiler; logs and rails are fine.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-118",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The summit device stands clear of the landing and the switch.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-119",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The first flight lasts about 20 to 25 s and ends on wide dry ground.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-120",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "The glider card reads \"The glider\" / \"Open it in the air.\"; the camera pulls out.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-122",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A glide press counts for 180 ms after you step off a ledge.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-123",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "A friend already in the air can glide the moment the glider is unlocked.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-124",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Input priority: hook, then glide, then jump.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "CL-125",
+    "topic": "CL",
+    "group": "bulk",
+    "gist": "Closing and reopening the glider never refills your air jump.",
+    "recommendation": "confirm",
+    "why": "Read with \"Jump closes the glider\" (15 November)."
+  },
+  {
+    "id": "RW-001",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "The Camp's timber pile stands behind its halt, off the walking line.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-002",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "The Quarry's stone pile stands behind its platform, where its board reads face-on.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-003",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 3,
+    "gist": "Each building sends 1 rider a minute instead of 2, so buying a house actually raises fares.",
+    "recommendation": "confirm",
+    "why": "At 2 the crowds were already at their cap and a house added 1% or nothing; the house has to pay off visibly for the town loop to work (built in B1).",
+    "source": "docs/plans/town-economy-visible.md#design-review-designer-2026-11-16 (finding 2, N10)"
+  },
+  {
+    "id": "RW-004",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 2,
+    "gist": "All prices run at 50%, so the first house (150) comes about 3 minutes after the pier, about 36 minutes in.",
+    "recommendation": "confirm",
+    "why": "Both playtesters stopped at the pier at 32 to 35 minutes; this puts the first real purchase where they quit.",
+    "source": "docs/plans/town-economy-visible.md#design-review-designer-2026-11-16 (finding 2, N11) · docs/decisions-process.md#d-2026-11-16-focus-choice-and-payoff"
+  },
+  {
+    "id": "RW-005",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 8,
+    "gist": "The first house you can buy stands by the town hall, near where freight unloads.",
+    "recommendation": "confirm",
+    "why": "The first freight lands at the island, so the town should grow where the player is standing.",
+    "source": "docs/plans/town-economy-visible.md#design-review-designer-2026-11-16 (finding 3, N9)"
+  },
+  {
+    "id": "RW-006",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "An affordable plot shows a gold ghost house; each board shows what the plot gives (placeholder text).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-007",
+    "topic": "RW",
+    "group": "flag",
+    "gist": "The second house also brings the Works' faster footing loader: fares now or footings sooner.",
+    "recommendation": "revert: hold for the scarce-plots brainstorm in town-choice",
+    "why": "town-choice measured it on 16 November: the loader house first always wins and both orders end in the same town, so it is one right answer, not a choice.",
+    "source": "docs/plans/town-choice.md (section 2a) · docs/backlog.md (P1, town economy)"
+  },
+  {
+    "id": "RW-008",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Accept that bought houses' rooftops can reach the balcony find without the glider.",
+    "recommendation": "confirm",
+    "why": "With fly first the glider comes long before any house, so this barely matters."
+  },
+  {
+    "id": "RW-009",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 7,
+    "gist": "Unbought plots show as outlines on the ground instead of grey blocks.",
+    "recommendation": "confirm",
+    "why": "A plot only reads as for sale on open ground; you asked to judge the Round by walking blocks, and one constant (PLOT_BLOCKS) brings them back for that walk.",
+    "source": "docs/agents/owner-calls.md#blockout-first · docs/plans/town-economy-visible.md#design-review-designer-2026-11-16"
+  },
+  {
+    "id": "RW-011",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "The gate cottage opens as an empty grey room with no resident yet.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-012",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Five placeholder market stalls on Bell Rock's decks.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-013",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 6,
+    "gist": "Riders ride to wherever line 2 currently ends, and fares grow with distance, so income jumps as the line grows.",
+    "recommendation": "confirm (its price default is now 50%, per RW-004)",
+    "why": "It sets the money curve: fares go from about 58 to 168 a minute when the Gorge opens, which is the biggest swing in the economy.",
+    "source": "docs/plans/slice5-town-economy.md#rules-and-server (R3)"
+  },
+  {
+    "id": "RW-014",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Dev jump-in point \"Fares paid\" (internal).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-015",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "The market keeps its own freight rows; no crate is split.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-016",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Stone may wait longer in the yard during a new leg's first lap.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-017",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "A limit on how long a full stone load may sit at the Quarry (measurement).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-018",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "A train carrying a kit it can unload skips stone stops.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-019",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Stone throughput target; the fare jump at the Gorge is reported, not limited.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-020",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Riders never add a stop; they board only where trains already stand.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-021",
+    "topic": "RW",
+    "group": "flag",
+    "gist": "The fare stays 7 as the line grows.",
+    "recommendation": "revert (superseded)",
+    "why": "RW-013, built the same day, prices fares by distance (7, 9, 10, 13) over this call, and RW-019 records the jump.",
+    "source": "RW-013 · docs/plans/slice5-town-economy.md#rules-and-server (R3)"
+  },
+  {
+    "id": "RW-022",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "A footing wagon with no footings owed is judged like any train.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-023",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Proof that the economy doesn't slow construction deliveries (test gate).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-024",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 1,
+    "gist": "Five places grow towns: Home, Ring Island, High Gorge, Canopy Town and Port Quay; everywhere else is a source or a station.",
+    "recommendation": "confirm",
+    "why": "You chose \"larger hubs only\" on 12 November but left which hubs as a proposal; this list sets where every later town, house and payoff stands.",
+    "source": "docs/decisions-rewards.md#d-2026-11-12-hub-towns-grow-and-receive-freight · docs/plans/campaign-outline.md#towns-at-the-hubs"
+  },
+  {
+    "id": "RW-025",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 5,
+    "gist": "Each source's freight goes to one fixed neighbouring town along its line; no player routing.",
+    "recommendation": "confirm",
+    "why": "It keeps \"no routing or quotas\" and makes every new connection change a town you already built; how freight picks its town was left to a proposal.",
+    "source": "docs/decisions-rewards.md#d-2026-11-12-hub-towns-grow-and-receive-freight · DESIGN.md, the core loop"
+  },
+  {
+    "id": "RW-026",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 4,
+    "gist": "What each town receives: the Village timber, stone and steel; Ring Island stone and copper; High Gorge steel and fibre; Canopy copper; Port Quay salt and fibre.",
+    "recommendation": "confirm",
+    "why": "It decides what each town grows from; the one weak spot is Canopy, which receives nothing until the Wall closes.",
+    "source": "docs/plans/campaign-outline.md#towns-at-the-hubs (section 2)"
+  },
+  {
+    "id": "RW-027",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "A hub town's first plot opens when its first train arrives, with no goods needed.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-028",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 10,
+    "gist": "Each hub town has three priced plots at Alpha, each next house double, bought from the one wallet.",
+    "recommendation": "confirm",
+    "why": "It sets how much there is to buy in each town; prices are stand-ins and the model needs re-running for a four-to-five-hour game.",
+    "source": "docs/plans/campaign-outline.md#towns-at-the-hubs · docs/decisions-rewards.md#d-2026-11-11-boogles-prices-are-stand-ins-to"
+  },
+  {
+    "id": "RW-029",
+    "topic": "RW",
+    "group": "flag",
+    "gist": "No stone stop on a line while its wagon still owes footings.",
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "Your 12 November cargo-trains answer (1), \"A now, C later\", confirms this pause.",
+    "source": "docs/decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered"
+  },
+  {
+    "id": "RW-030",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Proof limits on how much the stone stop may delay trains.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-031",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "The stone stop happens whoever is aboard.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-032",
+    "topic": "RW",
+    "group": "flag",
+    "gist": "The Quarry stone stop takes a whole trainload (8), heading home, once the pier's footings are set.",
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "You picked the stone stop once the pier's footings are done (12 November) and then defined it as the full-load stop; only the dwell and platform are left, and they are tunables.",
+    "source": "docs/decisions-rewards.md#d-2026-11-12-town-economy-answered · docs/decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered"
+  },
+  {
+    "id": "RW-034",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Dev jump-in point \"Timber home\" (internal).",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-035",
+    "topic": "RW",
+    "group": "flag",
+    "gist": "Rider numbers: 2 a minute per building, at most 24 waiting, 4 seats; a one-second hold to buy.",
+    "recommendation": "change: confirm with 1 rider a minute (as built), the rest as is",
+    "why": "RW-003 lowered the rate to 1 a minute and it is built (ridersPerMin 1).",
+    "source": "RW-003 · src/sim/railway-trade-layout.ts"
+  },
+  {
+    "id": "RW-036",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Freight yards start full so the first train home stakes plot 1; a house counts 10 s after it is bought.",
+    "recommendation": "confirm",
+    "why": "Its loadStop 4 half you changed on 12 November."
+  },
+  {
+    "id": "RW-037",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "The Camp and Quarry yards make a crate every 15 s and 30 s, up to 8; freight is never carried by hand.",
+    "recommendation": "confirm",
+    "why": "You confirmed the \"never carried\" half; only the rates are open."
+  },
+  {
+    "id": "RW-038",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Residents' existing \"town\" and \"stone\" lines start playing once houses stand.",
+    "recommendation": "confirm",
+    "why": "Owner's copy: the lines are unchanged and listed for you."
+  },
+  {
+    "id": "RW-039",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "The Village's first three plots cost 300, 1,600 and 12,000 (before the 50% setting).",
+    "recommendation": "confirm",
+    "why": "Your 11 November doubling rule; the third is a long-term goal."
+  },
+  {
+    "id": "RW-040",
+    "topic": "RW",
+    "group": "flag",
+    "gist": "Home has eight plots bought in a fixed order; plots 1 and 2 are staked from the first arrival with a blank price board.",
+    "recommendation": "change: keep eight plots in a fixed order; plots are staked by deliveries, not by arrival",
+    "why": "On 12 November you decided deliveries stake the Village's plots; RW-005 also changes which plot comes first.",
+    "source": "docs/decisions-rewards.md#d-2026-11-12-town-economy-answered"
+  },
+  {
+    "id": "RW-042",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Stand-in material costs for extra passenger seats and cars.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-043",
+    "topic": "RW",
+    "group": "flag",
+    "gist": "Price list against income: a room that hauls well can clear every Boogle price by waiting.",
+    "recommendation": "revert (retire; re-run the model)",
+    "why": "Hand arithmetic from 10 November, before your 11 November doubling curve; you left the late-game shortfall as an open content question.",
+    "source": "docs/decisions-rewards.md#d-2026-11-11-boogles-prices-are-stand-ins-to"
+  },
+  {
+    "id": "RW-044",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 9,
+    "gist": "Boogles buy source upgrades: faster regrowth, bigger racks and a faster loader jib, two steps a source.",
+    "recommendation": "confirm",
+    "why": "Besides houses these are the only things money buys, so they are most of the payoff menu; you confirmed the loader part, and the steps and numbers are open.",
+    "source": "docs/decisions-rewards.md#d-2026-11-10-boogles-build-houses-and-upgrade-sources"
+  },
+  {
+    "id": "RW-045",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 11,
+    "gist": "Each end-game goal costs one kind of thing: the Grand Station and the Ring lighthouse in Boogles, the rest in materials.",
+    "recommendation": "confirm, as model inputs only",
+    "why": "It shapes the late game, which you left open as a content question; nothing should be built on it before you pick the goals.",
+    "source": "docs/decisions-rewards.md#d-2026-11-11-boogles-prices-are-stand-ins-to"
+  },
+  {
+    "id": "RW-046",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Fares get a flat +5 at junction stations instead of doubling.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-047",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "A fare is 2 Boogles to board plus 1 for every 100 m.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-048",
+    "topic": "RW",
+    "group": "decide",
+    "rank": 12,
+    "gist": "No money counter on the HUD; the balance shows on price boards and fare boxes.",
+    "recommendation": "confirm",
+    "why": "Players will want to know what the room has while far from Home; putting it on signs in the world follows your signs-first call, and Pause may show it.",
+    "source": "docs/agents/owner-calls.md#world-signs"
+  },
+  {
+    "id": "RW-049",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Emptying the coin sack never takes anyone's camera.",
+    "recommendation": "confirm",
+    "why": ""
+  },
+  {
+    "id": "RW-050",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "The coin is fat brass with a hole and a little engine; no currency symbol.",
+    "recommendation": "confirm",
+    "why": "The Boogler's face on the front is yours."
+  },
+  {
+    "id": "RW-051",
+    "topic": "RW",
+    "group": "bulk",
+    "gist": "Riders drop coins in a fare box; a paper tape lists each purchase and who made it.",
+    "recommendation": "confirm",
+    "why": ""
+  }
+]
