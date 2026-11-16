@@ -26,10 +26,16 @@ export function readSection(root: string, reference: string): { text: string; st
     if (fence) return;
     const match = /^(#{1,6}) (.+?)(?: +#+)?$/.exec(line);
     if (match) headings.push({ line: i, depth: match[1]!.length, title: match[2]! });
+    // Explicit call anchors are individually readable, including the decision log's list entries.
+    const call = /^(?:- )?<a id="([^"]+)"><\/a>/.exec(line);
+    if (call) headings.push({ line: i, depth: 7, title: call[1]! });
   });
   const matches = headings.filter((h) => h.title === wanted || anchor(h.title) === wanted);
   if (matches.length !== 1) throw new Error(`${reference}: expected one heading, found ${matches.length}`);
   const heading = matches[0]!;
-  const end = headings.find((h) => h.line > heading.line && h.depth <= heading.depth)?.line ?? lines.length;
+  const end =
+    heading.depth === 7 && !lines[heading.line]!.includes('</a>**')
+      ? heading.line + 1 // An archive forwarding link in an index is only that line.
+      : (headings.find((h) => h.line > heading.line && h.depth <= heading.depth)?.line ?? lines.length);
   return { text: lines.slice(heading.line, end).join('\n'), start: heading.line + 1, end };
 }

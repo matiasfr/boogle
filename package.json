@@ -40,6 +40,7 @@
     "sheet": "node dev/look/sheet.ts",
     "registry": "node dev/registry/check.ts",
     "decisions": "node dev/decisions/check.ts",
+    "owner-calls": "node dev/owner-calls/check.ts",
     "decisions:split": "node dev/decisions/split.ts",
     "atlas": "node dev/atlas/cli.ts",
     "daily": "node dev/daily/run.ts",

@@ -8,4 +8,6 @@ Only making a design decision, adding a mechanic or prototype work requires DESI
 
 `npm run map -- --section <file> '<heading-or-anchor>'` prints a heading and its children, stopping at the next peer/ancestor. Missing or ambiguous headings fail. Use line ranges for individual facts inside a long section. The map validates section references and reports unique Unicode characters in its must-read sections, including AGENTS.md once; nested path rules and conditional reads are separately triggered, not hidden in the cost. Route budgets are in dev/scan/task-routes.ts and enforced by registry. They measure required guidance, not a cap on investigation.
 
+For owner preferences, read the [index](owner-calls.md#index), then only applicable full calls with `npm run map -- --section docs/agents/owner-calls.md <anchor-or-heading>`. Explicit call anchors read one call, stopping at the next call or heading; topic headings read the topic. An archived call's index pointer leads to its current rule. The index never weakens the full calls.
+
 A player-visible behavior change updates the owning docs/game-design section in the same commit; a new system adds a chapter and index line. Refactors and tooling do not. Reviews select the contract being reviewed and do not run implementation checks unless needed for evidence.
