@@ -17,6 +17,8 @@ import { prefabs as curio } from '../src/content/prefabs/curio.ts';
 import { prefabs as shop } from '../src/content/prefabs/shop.ts';
 import { levels as shopLevels } from '../src/content/levels/shop.ts';
 import { prefabs as railway } from '../src/content/prefabs/railway.ts';
+import { prefabs as till } from '../src/content/prefabs/railway-till.ts';
+import { levels as tillLevels } from '../src/content/levels/railway-till.ts';
 import { prefabs as seaLadder } from '../src/content/prefabs/sea-ladder.ts';
 import { prefabs as greybox } from '../src/content/prefabs/greybox.ts';
 import { prefabs as town } from '../src/content/prefabs/town.ts';
@@ -132,6 +134,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...plotStakes,
           ...rock,
           ...railway,
+          ...till,
           ...seaLadder,
           ...kit,
           ...shop,
@@ -145,6 +148,7 @@ test('artifact serialization is independent of runtime native transcendental res
         ],
         [
           ...leg2,
+          ...tillLevels,
           ...gorge,
           ...workshop,
           ...kitLevels,

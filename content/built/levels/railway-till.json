@@ -1,0 +1,14 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "railway-till",
+  "placements": [
+    {"id":"railway.till","labels":{"sign":"balance"},"pos":[0,0,0],"prefab":"railway.till"},
+    {"id":"railway.till-coins","pos":[-0.17,1.02,0],"prefab":"railway.till-coins"},
+    {"id":"railway.waiting-0","labels":{"sign":"waiting"},"pos":[0,0,0],"prefab":"railway.waiting-board"},
+    {"id":"railway.waiting-1","labels":{"sign":"waiting"},"pos":[0,0,0],"prefab":"railway.waiting-board"}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

@@ -49,6 +49,7 @@ import { createRingMapTable } from './ring-map-table.ts';
 import { footingMark } from './footing-cues.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 import { createHaltKit, createHaltAttachment } from './halt-kit.ts';
+import { createRiders } from './riders-view.ts';
 
 type Box = import('../../render/boxes.ts').Box;
 type Line = import('../../place/layout.ts').Line;
@@ -65,6 +66,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const { box, place } = boxModule,
     { dropSet, dustRing } = piecesModule;
   const { ORIGIN, lineAt, railY } = layout;
+  const riders = createRiders(adapter, owner);
   // The up track's platforms and plank crossings, standing with today's halt beside each (generic-lines step 2).
   const ups = createUpPlatforms(owner, { layout, boxes: boxModule, pieces: piecesModule });
   // The map's lines, replaced in place whenever line 2's stage changes (maps(), below).
@@ -777,6 +779,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   return {
     restore() {
       refreshStops();
+      riders.restore();
       shown = line2Trains(adapter.read.world());
       inShed.fill(null);
       joining.fill(-1);
@@ -796,6 +799,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     },
     update(dt: number) {
       refreshStops();
+      riders.update();
       const on = line2Trains(adapter.read.world());
       // Live edges only: trains coming drop every open halt in; Q6 completing drops the Pier halt in.
       const was = shown;

@@ -52,6 +52,7 @@ test('Gorge collider, placement and count values match the old massing', async (
   builders.set('railway.halt-ramp', () => new THREE.Group());
   builders.set('railway.halt-lever', () => new THREE.Group());
   builders.set('railway.halt-attachment', () => new THREE.Group());
+  builders.set('railway.till-parts', () => new THREE.Group());
   builders.set('roundhouse.bay', () => new THREE.Group());
   builders.set('roundhouse.table', () => new THREE.Group());
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(

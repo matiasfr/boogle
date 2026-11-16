@@ -161,7 +161,6 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     chairTaken: env.chairTaken,
     machine: env.machine,
     traffic: env.traffic,
-    trainCar: () => null,
     driver: env.driver,
     gather: { x: gather.x, z: gather.z, ux: p.ux, uz: p.uz, lx: p.uz, lz: -p.ux, len: 28 },
     platform: { x: platform.x, y: layout.railY(line, 19) + 0.72, z: platform.z, ux: p.ux, uz: p.uz, up: () => false },

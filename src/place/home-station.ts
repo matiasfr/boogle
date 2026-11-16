@@ -152,6 +152,9 @@ export const HALL = (() => {
 })();
 
 // ---------------------------------------------------------------- the engine spur, the table and the stalls
+/** The ticket till in the north end wall's back bay, clear of the goods door (town-economy-visible A3). */
+export const TILL = { ...axisPoint(-11.4, ISLAND_C - 5.95), yaw: HALL.yaw };
+
 /** Off road 2 at s 5.5 to the right on a 15 m curve through 60°, then 1.5 m to the table's rim. */
 export const SPUR = { road: 1 as const, s: 5.5, segs: [arc((15 * Math.PI) / 3, 15, 1), straight(1.5)] };
 const spurStart = roadAt(1, SPUR.s);

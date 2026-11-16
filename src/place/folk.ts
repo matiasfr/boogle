@@ -36,14 +36,25 @@ import { feet, outOf, underway, type Foot, type Site } from './sites.ts';
 const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   CAMP = 3,
   STATION = 2,
-  RIDERS = 2,
+  RIDERS = 4,
+  WAITING = 12,
   COMMUTERS = 5,
   PUSHERS = 2,
   RESIDENTS = 6,
   ISLAND_FOLK = 8; // Ring Island's square (src/entities/ring-folk): six crew and Hooter, one spare
 // A driver a train: the little guy at the engine's controls, on his tall stool (docs/plans/engine-previz.md).
 const DRIVERS = RAIL_TRAINS.length;
-const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + DRIVERS + COMMUTERS + PUSHERS + RESIDENTS + ISLAND_FOLK;
+const COUNT =
+  VILLAGE_MAX +
+  CAMP * 2 +
+  STATION +
+  RIDERS * RAIL_TRAINS.length +
+  WAITING * 2 +
+  DRIVERS +
+  COMMUTERS +
+  PUSHERS +
+  RESIDENTS +
+  ISLAND_FOLK;
 const SKIN = '#f4cfa4',
   EYE = '#1d1a20';
 // Facing +z, standing on y = 0, about 0.95 m tall. Two thirds of it head and hat.
@@ -83,6 +94,7 @@ type Job =
   | 'camp'
   | 'station'
   | 'rider'
+  | 'waiting'
   | 'driver'
   | 'commuter'
   | 'pusher'
@@ -241,9 +253,14 @@ TOWN.camps.forEach((c, n) => {
 // Local boarding legs: keep the crew visible between the frame and their chairs.
 const boarding = new Map<Guy, { x: number; y: number; z: number; t: number }>();
 const stationGuys = Array.from({ length: STATION }, (_, k) => make('station', X(-6 + k), -142, { seat: k }));
-const riders = Array.from({ length: RIDERS * 2 }, (_, k) =>
-  make('rider', 0, 0, { on: false, seat: k % RIDERS, camp: k < RIDERS ? 0 : 1 }),
+const riders = Array.from({ length: RIDERS * RAIL_TRAINS.length }, (_, k) =>
+  make('rider', 0, 0, { on: false, seat: k % RIDERS, camp: Math.floor(k / RIDERS) }),
 );
+const waiting = Array.from({ length: WAITING * 2 }, (_, k) =>
+  make('waiting', 0, 0, { on: false, seat: k % WAITING, camp: Math.floor(k / WAITING) }),
+);
+type RiderCar = { mesh: THREE.Object3D; top: number };
+const riderCars = new Map<number, RiderCar>();
 // One driver a train (`camp` its line, `seat` which of the line's trains), on whenever there's an engine's stool to sit
 // on (FolkEnv.driver).
 RAIL_LINES.forEach((l, line) => {
@@ -280,7 +297,6 @@ export type FolkEnv = {
   /** A player holds the machine chair this station hand rides in (0 left, 1 right): they wait at the station. */
   chairTaken?: (seat: number) => boolean;
   machine: () => { mesh: THREE.Object3D; top: number };
-  trainCar: (line: number) => { mesh: THREE.Object3D; top: number } | null;
   /** The engine's driving stool on a line's `k`th train, in its car's frame: `top` is his footrest (his feet rest on
    * it), `up` the seat over it, `x`, `z` and `yaw` where he sits and faces; null while that engine has no driver. */
   driver?: (
@@ -742,6 +758,9 @@ function brain(g: Guy, dt: number) {
     case 'driver':
       g.mood = 'ride';
       return;
+    case 'waiting':
+      g.mood = 'idle';
+      return;
     case 'commuter': {
       if (!e?.path) return;
       // There and back along it; `a.x` is where along, `a.z` which way, `b.x` how far to the side, and `home` the last
@@ -1145,8 +1164,24 @@ function crewBrain(g: Guy, dt: number) {
 /** Who is bolting now (for the evals). */
 export const bolting = () =>
   bolt ? { left: bolt.left, guys: bolt.guys.length, here: bolt.here.filter(Boolean).length } : null;
-function setRiders(line: number, on: boolean) {
-  for (const g of riders) if (g.camp === line) g.on = on;
+/** Each train's replicated count, on its passenger deck. This never boards or charges anyone. */
+function setRiders(slot: number, count: number, car: RiderCar | null) {
+  if (car) riderCars.set(slot, car);
+  else riderCars.delete(slot);
+  for (const g of riders) if (g.camp === slot) g.on = !!car && g.seat < count;
+}
+/** One bounded waiting crowd, posed by the halt view. No roaming or collision displacement off its platform. */
+function setWaiting(end: number, count: number, at: (k: number) => { x: number; y: number; z: number; yaw: number }) {
+  for (const g of waiting) {
+    if (g.camp !== end) continue;
+    g.on = g.seat < count;
+    if (!g.on) continue;
+    const p = at(g.seat);
+    g.x = p.x;
+    g.z = p.z;
+    g.y = g.fy = p.y;
+    g.yaw = p.yaw;
+  }
 }
 /** The path's open: they come out onto it. `run`: s they run for, the first time. */
 export function setCommuters(on: boolean, run = 0) {
@@ -1185,8 +1220,8 @@ function resetFolk() {
       g.yaw = Math.PI;
     }
   }
-  setRiders(0, false);
-  setRiders(1, false);
+  for (const g of [...riders, ...waiting]) g.on = false;
+  riderCars.clear();
   setCommuters(false);
   setPushers(false);
   boarding.clear();
@@ -1389,10 +1424,11 @@ export function updateFolk(dt: number) {
       const car = e_.machine();
       // On the track layer's chair, bottom on the seat top (a sitting guy's root is 3.5 cm under it, as in the sit pose).
       ride(g, car, g.seat ? 0.55 : -0.55, -1.15, g.seat ? -0.7 : 0.7, MACHINE_CHAIR_SEAT - 0.035);
-    } else if (e_ && g.job === 'rider') {
-      const car = e_.trainCar(g.camp);
+    } else if (g.job === 'rider') {
+      const car = riderCars.get(g.camp);
       if (!car) continue;
-      ride(g, car, g.seat ? 0.42 : -0.42, -1.1, g.seat ? 0.9 : -0.9);
+      const side = g.seat < 2 ? 1 : -1;
+      ride(g, car, side * 0.45, side * (g.seat % 2 ? 0.45 : -0.85), (side * Math.PI) / 2, 0.32);
     } else if (g.job === 'driver') {
       const seat = e_?.driver?.(g.camp, g.seat);
       if (!seat) continue;
@@ -1401,7 +1437,7 @@ export function updateFolk(dt: number) {
       const car = e_.cart();
       if (!car) continue;
       ride(g, car, g.seat ? 0.35 : -0.35, -car.hz - 0.5, 0);
-    } else if (!boarding.has(g)) clearTraffic(g);
+    } else if (g.job !== 'waiting' && !boarding.has(g)) clearTraffic(g);
     g.poseTime = g.poseMood === g.mood ? g.poseTime + dt : 0;
     g.poseMood = g.mood;
     let glance = 0;
@@ -1438,6 +1474,9 @@ export const folk = {
   stationGuys,
   campGuys,
   riders,
+  waiting,
+  setRiders,
+  setWaiting,
   bolting,
   chats: 0, // exchanges and lines so far, for the evals
   lines: 0,

@@ -6,6 +6,7 @@ import type { World } from '../ecs/index.ts';
 import type { ReadWorld } from '../sim/railway-rows.ts';
 import type { RailTuneApi } from '../world/rules/tune.ts';
 import type { RailwayIntent } from './railway-intents.ts';
+import { TRADE_PCT, type TradePct } from '../sim/railway-trade-layout.ts';
 
 /** Movement tunables the views read from the server mirror. */
 export const railMovement = (tune: Pick<RailTuneApi, 'get'>) => ({
@@ -48,6 +49,8 @@ export type RailwayReadHandle<D> = {
   stalled: (at: number) => readonly { action: { intent: RailwayIntent } }[];
   now: () => number;
   movement: () => RailwayMovement;
+  /** Replicated room percentages used by the cosmetic till's cap query. */
+  trade?: () => TradePct;
   movementRev?: () => number;
   /** The session scalars no view reads, built per call. */
   debug: () => D;
@@ -65,6 +68,7 @@ export function createRailwayRead<D>({
   now,
   movement,
   movementRev,
+  trade = () => TRADE_PCT,
   debug,
 }: RailwayReadHandle<D>) {
   // The frame memo. update() runs once a frame in the railway entity's update (order 10, after its prePhysics and fixed
@@ -150,6 +154,7 @@ export function createRailwayRead<D>({
     stalled: stalledNow,
     /** The movement tunables (railMovement), one frozen object while they are unchanged. */
     movement: moves,
+    trade,
     /** The session scalars no view reads (tools, witnesses and the view's inspection do), built per call: the
      * connection, the server step the confirmed mirror is current to and its hash (computed only when read; never the
      * prediction's), the account epoch, the next action id and the prediction's counters. */
