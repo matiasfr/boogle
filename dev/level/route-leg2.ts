@@ -351,8 +351,8 @@ function west(entries: Entry[]) {
     kind: 'fact',
     message: `  ground under the root ${f1(H(M.root.x, M.root.z))} m, under the stop ${f1(H(W.origin.x, W.origin.z))} m, under the platforms' sea end ${f1(H(M.seaEnd.x, M.seaEnd.z))} m; the commons mark stands at ${f1(y(M.commons))} m`,
   });
-  // Change 3. The flood passes the 56 degree cliff by a thin margin: step 5's walk, up and down, is the proof
-  // (change 1), and a plain grey stair the fix if the way up fails.
+  // Start-area S1: the shore path and end ramp are the way up. The real-body walk eval proves both directions;
+  // the grid alone can pass steep cliff cells and does not model the path's overhead clearance.
   for (const [name, from, to] of [
     ['from platform A to the commons', M.platformA, M.commons],
     ['from platform B to the commons', M.platformB, M.commons],

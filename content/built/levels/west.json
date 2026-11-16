@@ -91,18 +91,6 @@
             "operand": 0
           }
         },
-        "stairFoot": {
-          "x": 803.8,
-          "z": 15
-        },
-        "stairTop": {
-          "x": 833.5,
-          "z": 15
-        },
-        "stairTurn": {
-          "x": 803.8,
-          "z": 11
-        },
         "stop": {
           "at": [
             20,
@@ -213,70 +201,6 @@
           "id": "apron",
           "tone": "grey",
           "top": 4.9
-        },
-        {
-          "bounds": [
-            805,
-            831,
-            13.5,
-            16.5
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 1
-          },
-          "h": 0.4,
-          "id": "stair",
-          "posts": true,
-          "rise": {
-            "a": 17.2,
-            "b": 3,
-            "compute": "sub"
-          },
-          "tone": "light",
-          "top": 3
-        },
-        {
-          "bounds": [
-            805,
-            831,
-            13.3,
-            13.5
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 1
-          },
-          "h": 1,
-          "id": "stair-parapet-n",
-          "rise": {
-            "a": 18.2,
-            "b": 4,
-            "compute": "sub"
-          },
-          "tone": "pale",
-          "top": 4
-        },
-        {
-          "bounds": [
-            805,
-            831,
-            16.5,
-            16.7
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 1
-          },
-          "h": 1,
-          "id": "stair-parapet-s",
-          "rise": {
-            "a": 18.2,
-            "b": 4,
-            "compute": "sub"
-          },
-          "tone": "pale",
-          "top": 4
         }
       ],
       "posts": [
@@ -377,20 +301,6 @@
           },
           "compute": "perp",
           "sign": -1
-        }
-      },
-      {
-        "o": {
-          "x": 0,
-          "z": 0
-        },
-        "u": {
-          "x": 1,
-          "z": 0
-        },
-        "v": {
-          "x": 0,
-          "z": 1
         }
       }
     ]

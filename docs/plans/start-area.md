@@ -199,7 +199,7 @@ Models come from `npm run models` (15 November). "Player-visible implementation"
 "Implementation of an approved plan" is Codex `gpt-6.1-sol` medium; "Planning complex work" is the planner agent on
 opus high; "Visual review" is the main session.
 
-- [ ] **S1. Remove the grey stair and its posts (items 1, 2; G29's grey half). P1.** Tier: player-visible Local view
+- [x] **S1. Remove the grey stair and its posts (items 1, 2; G29's grey half). P1.** Tier: player-visible Local view
   and static colliders; no sim, no `WORLD_NS`, no heights. Model row: player-visible implementation, Codex
   `gpt-6-astra` high.
   - Files: `src/content/levels/leg2.ts` (drop `stair`, `stair-parapet-n`, `stair-parapet-s`; drop the `stairFoot`,
@@ -210,6 +210,14 @@ opus high; "Visual review" is the main session.
     `docs/plans/greybox-leg2-massing.md`; one row in `docs/agent-calls.md` (call 120 reversed, a small ruling).
   - Verify: `npm run level-check`; the walk eval reaches platform A from the commons and back; one proof still from
     02's camera, opened. Stop if the body can't reach the shelf by the shore path: report it, don't re-add a stair.
+  - **Implemented 15 November:** the three stair pieces and their marks are gone; platforms, bed, apron and end
+    ramp are unchanged in this step. `level-check`, the owning prefab tests and `node dev/ship-check.ts` pass.
+    The real-body eval reaches all eight waypoints down to platform A and all eight back, without jumping
+    (18.8 / 23.0 game seconds under warp; not a timing/feel claim). Its initial route cut through a town building;
+    corrected to follow the commons' west edge. The straight-at-cliff control still stops, as expected.
+    [Opened 02 after S1](/Users/matiasfranco/Developer/boogle/.look/start-area/s1-s4/s1/02-landing-settled.png):
+    the path is exposed; the retained end ramp still crosses the dock's left edge.
+    [Walk log](/Users/matiasfranco/Developer/boogle/.look/start-area/s1-s4/s1-walk-2.log).
 - [ ] **S2. Check the sea lure behind the landing (item 4). P2.** Tier: a capture, then at most a player-visible
   Local view change. Model row: player-visible implementation, Codex `gpt-6-astra` high (S1's job).
   - After S1, capture 04's camera (turned round at the landing) and 14's (above). Judge whether anything there is

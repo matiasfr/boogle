@@ -193,15 +193,8 @@ const WEST_ROOT = { x: 801, z: 10 },
   WEST_S = unit(-0.6155, -0.7881),
   WEST_LAT = perp(WEST_S, -1);
 const sl = frame(WEST_ROOT, WEST_S, WEST_LAT);
-// World axes, for what follows the cliff and not the row: `a` is x (east), `b` is z (south).
-const xz = frame({ x: 0, z: 0 }, { x: 1, z: 0 }, { x: 0, z: 1 });
 const WEST_RAIL = 4,
-  WEST_SHELF = 3,
-  // The stair's top on the commons' edge (the terrain there stands at 17 to 18 m).
-  WEST_TOP = 17.2,
-  // The stair runs due east from the shelf beside the end ramp, 26 m at the Ring ramps' 5.4 in 10, placed so the
-  // cliff's face stays under it and its top is flush with the commons' edge.
-  STAIR = { x0: 805, x1: 831, z0: 13.5, z1: 16.5 };
+  WEST_SHELF = 3;
 
 function west() {
   const top = WEST_RAIL + 0.9;
@@ -217,42 +210,11 @@ function west() {
       { ...sl.box('platform-b', 2, 40, -PLAT, -BED, top, 2, 'light'), posts: true },
       sl.ramp('end-ramp', 0, top, -4, WEST_SHELF, BED, PLAT, 'grey'),
       sl.box('apron', 4, 16, PLAT, 11.8, top, 2, 'grey'),
-      // Call 120: the cliff alone is not a way up (a straight walk at it stops at its foot), so a plain grey stair
-      // climbs it from the shelf to the commons, with a parapet each side.
-      {
-        ...xz.ramp('stair', STAIR.x0, WEST_SHELF, STAIR.x1, WEST_TOP, STAIR.z0, STAIR.z1, 'light'),
-        h: 0.4,
-        posts: true,
-      },
-      {
-        ...xz.ramp(
-          'stair-parapet-n',
-          STAIR.x0,
-          WEST_SHELF + 1,
-          STAIR.x1,
-          WEST_TOP + 1,
-          STAIR.z0 - 0.2,
-          STAIR.z0,
-          'pale',
-        ),
-        h: 1,
-      },
-      {
-        ...xz.ramp(
-          'stair-parapet-s',
-          STAIR.x0,
-          WEST_SHELF + 1,
-          STAIR.x1,
-          WEST_TOP + 1,
-          STAIR.z1,
-          STAIR.z1 + 0.2,
-          'pale',
-        ),
-        h: 1,
-      },
+      // Call 120 reversed (start-area S1): the shore path climbs to the commons and meets the end ramp's foot.
+      // A second climb here crossed that path and read as the newcomer's way up.
     ],
     pads: [],
-    // Change 4: beside the stair's foot, facing east, so the walk down from the commons reads it before the platform.
+    // Beside the shore path's foot, facing east, so the walk down reads it before the platform.
     posts: [
       {
         id: 'board',
@@ -279,11 +241,7 @@ function west() {
       platformB: sl.at(20, -5.8),
       rampFoot: sl.at(-5, 5.8),
       rampHead: sl.at(1, 5.8),
-      stairFoot: { x: STAIR.x0 - 1.2, z: (STAIR.z0 + STAIR.z1) / 2 },
-      /** Round the north parapet's end, between the stair's foot and the end ramp's. */
-      stairTurn: { x: STAIR.x0 - 1.2, z: STAIR.z0 - 2.5 },
-      stairTop: { x: STAIR.x1 + 2.5, z: (STAIR.z0 + STAIR.z1) / 2 },
-      // One straight line at the cliff, 15 m north of the stair (the walk's control).
+      // One straight line at the cliff, north of the shore path (the walk's control).
       cliffFoot: { x: 808, z: -3 },
       cliffTop: { x: 830, z: -3 },
       /** The commons, 60 m east of the stop, on the cliff's top. */

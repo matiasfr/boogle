@@ -1294,8 +1294,10 @@ Free cam, or by swimming: no line runs there yet.
 **Home's West landing** stands on the shelf under the commons' west cliff: the bay line's unlaid bed pointing out
 to sea at Bell Rock (its pinnacle shows on the horizon from the platform), a 40 m platform each side on posts past
 the shore, a ramp from the landward platform down to the shelf, an apron behind it, and a board beside the way
-down, facing the walker: "LINE TO BELL ROCK / UNDER CONSTRUCTION". A plain grey stair with parapets climbs the
-cliff from the shelf to the commons' edge; the bare cliff cannot be walked up.
+down, facing the walker: "LINE TO BELL ROCK / UNDER CONSTRUCTION". The shore path is the way between the shelf and
+the commons; the end ramp connects it to platform A. The duplicate grey stair, its posts and both parapets were
+removed in start-area S1 (15 November): they crossed the path and read as a competing way into town. The bare
+cliff cannot be walked up.
 
 **High Gorge** gains the incline's two 40 m platforms beside the north-south row, level with the stack line's
 south platform, and a dark mark on the south wall where the row will enter the rock (nothing is bored).
