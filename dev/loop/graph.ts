@@ -795,7 +795,7 @@ export const NODES: readonly LoopNode[] = [
       footings: {
         by: 'wagon',
         rack: p(PIER_RACK),
-        label: 'wagon to the pier rack',
+        label: 'wagon, or every outbound line 2 train once the loader yard stands and wagon couples, to the pier rack',
         foot: one(p(WORKS_RACK), 'the Works rack'),
       },
     },
@@ -804,7 +804,11 @@ export const NODES: readonly LoopNode[] = [
     stops: ['crossing'],
     requires: [
       dec('Q6', 'rules', `${RULES_WORKS} footSet site 2: all stretches laid; split-rock-roundhouse.md pier after Q6`),
-      dec('upgrade', 'rules', `${RULES_TRAINS} wagonArrives: footings ride the wagon`),
+      dec(
+        'upgrade',
+        'rules',
+        `${RULES_TRAINS} wagonArrives: footings ride the wagon, or every outbound line 2 train with the coupled wagon and built loader yard (up to six, only while owed)`,
+      ),
     ],
     cue: [
       onMain(
@@ -833,7 +837,8 @@ export const NODES: readonly LoopNode[] = [
       footings: {
         by: 'wagon',
         rack: p(RING_HEAD[0]!.rack),
-        label: 'wagon to the railhead rack',
+        label:
+          'wagon, or every outbound line 2 train once the loader yard stands and wagon couples, to the railhead rack',
         foot: one(p(WORKS_RACK), 'the Works rack'),
       },
     },
@@ -842,7 +847,11 @@ export const NODES: readonly LoopNode[] = [
     stops: ['railhead', 'gap-footed'],
     requires: [
       dec('Q7', 'rules', `${RULES_RING} ringFootSet: Q7 laid`),
-      dec('upgrade', 'rules', `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon to the Railhead`),
+      dec(
+        'upgrade',
+        'rules',
+        `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon, or every outbound line 2 train with the coupled wagon and built loader yard (up to six, only while owed) to the Railhead`,
+      ),
     ],
     cue: [
       onMain(
@@ -883,7 +892,8 @@ export const NODES: readonly LoopNode[] = [
       footings: {
         by: 'wagon',
         rack: p(RING_HEAD[RING_HEAD.length - 1]!.rack),
-        label: 'wagon to the railhead rack',
+        label:
+          'wagon, or every outbound line 2 train once the loader yard stands and wagon couples, to the railhead rack',
         foot: one(p(WORKS_RACK), 'the Works rack'),
       },
     },

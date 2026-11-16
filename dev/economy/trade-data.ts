@@ -3,7 +3,9 @@
 // tune them on the 2D model page" (10 November 2026). Nothing here is a game rule until the owner says so. The rows
 // the game uses come from src/sim/railway-trade-layout.ts's TRADE (call 5: one home for the numbers; dev may import
 // src/sim, never the reverse).
-import { TRADE } from '../../src/sim/railway-trade-layout.ts';
+import { TRADE, TRADE_PCT } from '../../src/sim/railway-trade-layout.ts';
+export const VILLAGE_PLOTS = TRADE.plots[0];
+export const VILLAGE_PRICE_FACTOR = TRADE_PCT.pricePct / 100;
 export const TOWNS = ['village', 'ring', 'canopy', 'port', 'gorge'] as const;
 export type Town = (typeof TOWNS)[number];
 export const MATS = ['W', 'St', 'Fi', 'Cu'] as const;
@@ -154,10 +156,12 @@ for (const t of TOWNS)
     add(
       'Town buys',
       `house.${t}.${i + 1}`,
-      `House ${i + 1}, ${TOWN_NAME[t]}`,
+      t === 'village' && i === 1 ? 'Loader yard, the Village (no riders)' : `House ${i + 1}, ${TOWN_NAME[t]}`,
       p,
       'Boogles',
-      i === 2 && t === 'village' ? 'Offered at the first branch' : 'Brief section 3',
+      t === 'village'
+        ? 'Shipped base; yard counts in doubling. Staking time is approximated by route stage'
+        : 'Brief section 3',
     ),
   );
 add(
@@ -209,7 +213,6 @@ const SOURCES: [string, string, string, number][] = [
   ['regrowth.camp', "Faster regrowth, the timber camp's grove", 'home.line2', 1100],
   ['regrowth.quarry', "Faster regrowth, the Quarry's rocks", 'home.line2', 1100],
   ['rack.forge', "Bigger rack, the forge's", 'home.line2', 900],
-  ['loader.works', "Faster loader arm, the Works' footing loader", 'home.line2', 1300],
   ['rack.steelworks', "Bigger rack, the steel works'", 'ring.connect', 1500],
   ['loader.steelworks', "Faster loader arm, the steel works'", 'ring.connect', 2200],
   ['regrowth.loft', "Faster regrowth, the cloth loft's crop", 'b1.reach', 2800],

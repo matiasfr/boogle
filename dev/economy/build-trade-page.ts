@@ -16,6 +16,7 @@ export const SOURCES = [
   'dev/economy/ring-sim.ts',
   'dev/economy/trade-data.ts',
   'src/sim/railway-trade-layout.ts',
+  'src/sim/railway-works-layout.ts',
   'dev/economy/trade-model.ts',
   'dev/economy/trade-route.ts',
   'dev/economy/trade-page.ts',
