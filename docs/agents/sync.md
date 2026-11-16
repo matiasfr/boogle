@@ -1,7 +1,7 @@
 Before choosing or changing any state or event delivery, read this sync contract.
 
 ## Pick a sync kind for each piece of state
-Choose the cheapest of three kinds: Local, Owner or Server. No lockstep state remains since v40; v44 removes the lead tab and Host fields. The owner-controlled DESIGN.md table has its replacement drafted in [players step 8](../plans/server-owned-players-step8-report.md).
+Choose the cheapest of three kinds: Local, Owner or Server. No lockstep state remains since v40; v44 removes the lead tab and Host fields. DESIGN.md's table says the same since 16 November ([decision](../decisions-process.md#d-2026-11-16-design-sync-model-applied)).
 - **Local** (only this tab sees it, or it decorates): no API. Floats, `Math.random()`, GPU, all fine.
 - **Owner** (one player drives it; physics): `addPresenceField(key, getter)` + `onRemotePresence((r, pr, time) => ...)` (`src/netplay/net.ts`), smoothed with `createSnaps()` (`src/netplay/snaps.ts`, sample at `now - INTERP_MS`). 20 Hz, latest wins: a few numbers under an untaken key that names the feature (`boogler`, not `b`; existing short keys stay as they are; taken keys: `npm run registry -- --json`). A peer that leaves just drops out of `remotes`: sweep your per-remote meshes.
 - **Owner that changes hands** (one shared physics object any tab may simulate): `createOwnerSync(state, object)` (`src/netplay/owner-sync.ts`) has the claim rule, the orphan pick, the mode flip and the sampling; the object keeps its presence key and wire shape, and what holding means. Example: the ball (`src/entities/ball/`).

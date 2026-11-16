@@ -1,6 +1,6 @@
 # Boogle
 
-Goofy co-op browser game: three.js WebGPU + TSL, Rapier and Vite; a WebSocket server hosts lockstep rooms. Main auto-deploys to boogle.club.
+Goofy co-op browser game: three.js WebGPU + TSL, Rapier and Vite; a WebSocket server owns shared rules, commands and replicas. Main auto-deploys to boogle.club.
 
 - Keep The Boogler's copy; list suspect lines for the owner.
 - No ROM data or anything cut from it, on any branch or in builds.
