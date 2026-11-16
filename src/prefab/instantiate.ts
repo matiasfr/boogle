@@ -74,6 +74,8 @@ export function instantiate(
     /** The existing moving platform owns physics; its drawn frame owns this record's root. */
     parent?: { platform: Platform; root: THREE.Object3D; frame?: THREE.Object3D };
     texts?: Readonly<Record<string, readonly string[]>>;
+    /** Custom icon/count paint on record-owned signs; construction and repaint lifetime stay here. */
+    paintLabel?: Parameters<typeof makeGreyboxLabel>[2];
     makeLabel?: (attachment: Extract<Attach, { kind: 'label' }>, key: string) => THREE.Object3D;
     handlers?: Readonly<Record<string, (placement: Placement) => Interactable[]>>;
   },
@@ -277,7 +279,7 @@ export function instantiate(
   for (const { a, lines, key, name } of labels) {
     if (options.makeLabel) root.add(options.makeLabel(a, key));
     else {
-      const label = makeGreyboxLabel(a, lines!);
+      const label = makeGreyboxLabel(a, lines!, options.paintLabel);
       root.add(label.mesh);
       owner.cleanup(label.dispose);
       repaints.set(name, label.repaint);

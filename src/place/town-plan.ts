@@ -78,10 +78,10 @@ export function townLocal(b: TownBuilding, x: number, z: number): XZ {
   return { x: b.x + x * c + z * s, z: b.z - x * s + z * c };
 }
 
-/** The eight bought plots, in the order they are bought. The two lowest-numbered unbought plots are staked; the
- * passenger trade sets how far up the list the route allows. */
+/** Presentation slots for the town's numeric trade plots, nearest the hall first (town-economy-visible, N9).
+ * No sim or save reads these ids; TRADE owns the delivered-goods thresholds and staking limit. */
 export const TOWN_PLOTS = {
-  order: ['plot1', 'plot2', 'plot3', 'plot4', 'plot5', 'plot6', 'plot7', 'plot8'] as const,
+  order: ['plot3', 'plot2', 'plot1', 'plot4', 'plot5', 'plot6', 'plot7', 'plot8'] as const,
   stakedAtOnce: 2,
 };
 

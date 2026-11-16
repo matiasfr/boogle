@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { sourceFunction } from './source.ts';
+import { PLOT_BLOCKS } from '../../src/place/town-blockout.ts';
 import {
   FORGE,
   LANDING,
@@ -93,9 +94,9 @@ const names: Record<TownId, string> = {
   gate: 'Gate cottage',
   museum: 'Museum',
   shop: 'Fine Prices',
-  plot1: 'Plot 1',
+  plot1: 'Plot 3 (slot 1)',
   plot2: 'Plot 2',
-  plot3: 'Plot 3',
+  plot3: 'Plot 1 (slot 3)',
   plot4: 'Plot 4',
   plot5: 'Plot 5',
   plot6: 'Plot 6',
@@ -144,10 +145,10 @@ const today: Building[] = [
     name: names[id as TownId],
     when: id === 'house' ? ('arrival' as const) : ('free' as const),
   })),
-  // B3: the bought plots stand as plain blocks until each is detailed.
+  // N1: outlines and mats by default, with the spacing blocks retained behind one switch.
   ...TOWN_BLOCKS.map((b) => ({
     ...b,
-    name: `${names[b.id]} · block`,
+    name: `${names[b.id]} · ${PLOT_BLOCKS ? 'block' : 'outline'}`,
     when: 'bought' as const,
   })),
   hall,
@@ -197,7 +198,7 @@ const notes = [
   'Unused TOWN.wood/stone growth rows and distant camps are excluded.',
   'Paint and height cells are baked data; dashed paths are authored centrelines.',
   'B1 streets/cottage/yard built; bay and shelf already moved on main (#1778).',
-  'B2 rooms and balcony built. B3: plots 1–8 and the footing stand as blocks.',
+  `A2: plot order ${TOWN_PLOTS.order.join(', ')}; ${PLOT_BLOCKS ? 'blocks restored' : 'empty outlines and mats'}.`,
   'Doors have slab-matching thresholds; yard dressing follows the gift anchor.',
   'Distances are straight, horizontal metres, not walked routes or terrain slopes.',
   'Forge frame stands on arrival; free finish at F2. Shop/museum boards: arrival.',
@@ -456,7 +457,14 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
   const draw = (b: Building, ghost = false) => {
     const c = mode === 'today' || ghost ? color.today : color[b.when];
     const dash = ghost || b.when === 'bought' ? 'stroke-dasharray="4 3"' : '';
-    out.push(shape(b, ghost ? 'none' : mode === 'today' ? '#e0e3e0' : '#fffef8', c, dash));
+    out.push(
+      shape(
+        b,
+        ghost || (b.when === 'bought' && !PLOT_BLOCKS) ? 'none' : mode === 'today' ? '#e0e3e0' : '#fffef8',
+        c,
+        dash,
+      ),
+    );
     const a = door(b),
       yaw = b.face ?? b.yaw;
     out.push(path([a, { x: a.x + Math.sin(yaw) * 2, z: a.z + Math.cos(yaw) * 2 }], c, 2));
@@ -593,7 +601,7 @@ for (const [key, label] of [
   parts.push(text(840, y, label, 15, color[key]));
   y += 27;
 }
-parts.push(text(840, y, 'Plots 1 & 2: staked on arrival; dashed footprints show future buildings.', 14));
+parts.push(text(840, y, 'Deliveries stake up to two plots; first by the hall (slot 3), then slots 2 and 1.', 14));
 y += 34;
 for (const [i, m] of measures.entries()) {
   parts.push(text(840, y, `${String.fromCharCode(65 + i)} · ${m.name}: ${distance(m.a, m.b).toFixed(1)} m`, 14));
