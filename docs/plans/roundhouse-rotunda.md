@@ -236,6 +236,7 @@ Tier is the review tier of `npm run review-stamp`. Model rows are from `npm run 
   - [ ] **Unverified:** quiet-machine frame timing, real-time smoothness and device performance. All three look runs passed WebGPU, advancing completed frames and no page/console errors. Sparse sheets show poses only; no real-time video watched. Perf is diagnostic, with no performance approval; zero client sim ticks do not measure server cost.
 
 - [ ] **6. Held: stage 3 bought, and the second hub.** A designer brief first (the price, the row on the garage screen, what bays hold); built after the owner has played and on the chosen engine foundation. Port Quay is one `RotundaSite` row in that station's plan.
+  - **Brief written 15 November: [garage-choices](garage-choices.md)** (with its design review; proposed, owner questions open). It answers open question 2 (a bay holds what the room owns and is not running; never bought), splits stage 3 into bay 130° with the cave line and bay 250° with the faster engine, gives Port Quay's row, and reads "the chosen engine foundation" as the in-house ECS facade (no library is chosen; the owner parked it). Its steps replace this one.
 
 ## Level findings
 
