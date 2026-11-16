@@ -18,7 +18,7 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { reducedMotion } from '../../constants.ts';
 import { packDrawn, packLoaded, packSolid, packStep, type PackState } from './frame-pack.ts';
 import { kitBatch, stationKit } from '../../place/look-kit.ts';
-import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
+import { GOODS, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from '../../place/pieces.ts';
 import { addFoot } from '../../place/sites.ts';
 import {
@@ -253,13 +253,11 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   let bx = x + Math.sin(yaw) * billEnd + lx * billOut,
     bz = z + Math.cos(yaw) * billEnd + lz * billOut,
     byaw = yaw;
-  // The pack is on the working apron: put this existing bill before the building frontage, not between the follow
-  // camera and the receiver as the player collects it. It stands out past the scaffold, facing out from the front.
+  // The forge's bill stands beside its train-facing receiver, clear of the stock and the east wall.
   if (spec0.id === 'F1') {
-    const fz = FORGE.z + ORIGIN.z;
-    bz = fz - FORGE.d / 2 - 1.3;
-    bx = x;
-    byaw = 0;
+    bx = x - 1.8;
+    bz = z - 2.4;
+    byaw = Math.PI / 2;
   }
   bill.mesh.position.set(bx, place.y ?? H(bx, bz), bz);
   bill.mesh.rotation.y = byaw;

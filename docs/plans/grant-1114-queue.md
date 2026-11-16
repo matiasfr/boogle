@@ -28,6 +28,17 @@ Ranks are the tracker's. Within a rank, items are in the order to pick them. "Wh
 | 10 | **C3, C4, C6. Three small world fixes** | P2 | G12, G13, G15 | 11 | No decision needed | The forge's board and deposit face the arriving train; every station's sign carries its own number; a ladder out of the water at the diving helmet | Implementer agent, fable medium |
 | 11 | **C8. The P3 batch** | P3 | G20, G22, G24, G25, G27 to G35 | 11, 10 | G22: Pause already opens on the wardrobe (10 November); he did not find it. G29 is in [terrain-clean](terrain-clean.md). G30, G31 and G34 are the owner's own rows | One batch after the items above; G24 keeps Sleeves' line | Codex, gpt-6.1-sol medium |
 
+## C3, C4, C6 implementation evidence (15 November)
+
+- [x] **C3 / G12:** forge receiver moved from world (912, -12) to (922, -12), with its feeder
+  rotated toward the forge and its existing bill facing the train approach. Local 3.6 m deposit reach and
+  server reach are unchanged; the authoritative centre moves with the physical receiver. Original harvest
+  trees and clearing remain pinned. No new words. Inspected [arrival still](../../.look/grant-c3-still.png):
+  the forge name and log bill are readable above the receiver on the right; a crane post occupies the
+  foreground but does not hide them. WebGPU capture passed with no graphics/page errors. `level-check`
+  passed; prefab-tree, halt-lever reach and railway-placement owning tests passed. Built on
+  `t3/grant-world-fixes`, not shipped. Final combined checks are recorded below when complete.
+
 ## Owner questions
 
 At most five. Each has a recommended answer first; none is recorded as his call.

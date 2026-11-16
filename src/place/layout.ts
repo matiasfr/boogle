@@ -8,7 +8,7 @@ import { smoothstep } from '../math.ts';
 import { easeBend, easedAt, easedSmoothAt, type Eased } from './track-ease.ts';
 import { TURNOUT_CM } from '../sim/railway-lines.ts';
 import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/railway-line-layout.ts';
-import { LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
 import { TOWN_PLOTS, TOWN_PROPS, TOWN_SLOTS, TOWN_STREETS, townBuilding } from './town-plan.ts';
@@ -573,8 +573,8 @@ export const pathLamps = (up: (s: number) => number) => {
   return out;
 };
 
-/** The forge's own frame, by its north wall: logs land in it and its pieces drop. By hand first; trains finish the roof. */
-export const FORGE_FRAME = { x: -88, z: -12, yaw: 0 };
+/** The forge receiver on the east apron, facing the arriving train. Share its centre with deposit reach. */
+export const FORGE_FRAME = { x: LINE2_FORGE.x / 100 - ORIGIN.x, z: LINE2_FORGE.z / 100, yaw: 0 };
 /** The proper axe's stand, beside the forge frame on the hardwoods' side: the lit forge's first made thing (7 November). */
 export const AXE_STAND = { x: -92.5, z: -15 };
 export const FORGE_BILLS: Station[] = [
