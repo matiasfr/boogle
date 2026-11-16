@@ -24,7 +24,6 @@ import {
   TRAIN_EXTENT,
   circuitAhead,
   circuitLen,
-  lineDef,
 } from '../src/sim/railway-lines.ts';
 import {
   BOILER_SPEED,
@@ -35,9 +34,7 @@ import {
   stopKin,
   trainAlong,
   trainDir,
-  trainLegAlong,
   trainLegTicks,
-  type RailTrain,
 } from '../src/sim/railway-train.ts';
 import {
   LINE_SLOTS,
@@ -60,6 +57,7 @@ import {
   line as lineRow,
   railTick,
   railwayAtRing,
+  railwayAtWorks,
   restore,
   shed,
   steel,
@@ -73,7 +71,7 @@ const [A, B, C] = LINE_SLOTS[LINE2] as [number, number, number];
 const ISLAND = 5;
 const copy = (s: Seed): Seed => unaudited({ w: restore(s.w), t: s.t });
 const install = (s: Seed, pid = 'a', fields: Record<string, unknown> = {}) =>
-  act(s, pid, 'rail.install', { line: LINE2, part: 1, revision: lineRow(s.w, LINE2).boiler, ...fields });
+  act(s, pid, 'rail.install', { line: LINE2, part: 2, revision: lineRow(s.w, LINE2).boiler, ...fields });
 
 /** Ring-joined played on until the first steel is in the bay, from accepted ops and ticks only: the kit train, the
  * bill fed by one player, the casts and the ride home. Built once, outside any one test's time. */
@@ -98,41 +96,43 @@ function steelHome(): Seed {
 }
 const HOME = steelHome();
 
-// ---------------------------------------------------------------- the standard boiler is v27's
-test("the standard boiler's legs are v27's bit for bit; the longer one cruises at 25 m/s", () => {
-  RAIL_LINES.forEach((l, line) => {
-    assert.equal(BOILER_SPEED[0], l.speed, `${l.name}: row 0 is the line's own cruise`);
-    assert.equal(boilerKin(line, 0), lineDef(line), 'the very same kin object');
-    l.halts.forEach((_h, to) => {
-      for (const track of [0, 1]) {
-        const v27 = stopKin(line, to, track),
-          now = stopKin(line, to, track, 0);
-        assert.deepEqual(now, v27);
-        for (const dist of [1, 999, 2500, 30000, 119000])
-          for (const v0 of [0, 37, 200]) {
-            assert.equal(trainLegTicks(dist, v0, now), trainLegTicks(dist, v0, v27));
-            for (const t of [1, 50, 333, 1000])
-              assert.equal(trainLegAlong(dist, t, v0, now), trainLegAlong(dist, t, v0, v27));
-          }
-        assert.equal(stopKin(line, to, track, 1).speed, 250);
-        assert.equal(stopKin(line, to, track, 1).brake, v27.brake, 'a halt brakes at its own rate on either boiler');
-      }
-    });
-  });
-  // A row with no boiler field (a fixture's) runs as boiler 0.
-  const row: RailTrain = {
-    ...train(HOME.w, A),
-    phase: TRAIN_PHASE.RUN,
-    depart: 0,
-    from: 1400,
-    dest: 60000,
-    to: -1,
-    v0: 0,
-  };
-  const bare: RailTrain = { ...row };
-  delete bare.boiler;
-  for (const t of [0, 10, 100, 1000])
-    assert.equal(trainAlong({ ...row, boiler: 0 }, LINE2, t), trainAlong(bare, LINE2, t));
+test('the table commissions both lines; running legs keep their speed until a Village stand', () => {
+  const s = copy(railwayAtWorks('cradle-fitted'));
+  while (train(s.w, 0).phase !== TRAIN_PHASE.RUN) advance(s, 1);
+  const before = trains(s.w).map((r) => ({ ...r }));
+  assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: shed(s.w).tableRev }), 1);
+  for (const l of [0, LINE2]) assert.equal(lineRow(s.w, l).boiler, 1);
+  assert.deepEqual(trains(s.w), before, 'the turn changes the fit, never a train in flight');
+  const pending = new Set(servingSlots((k) => train(s.w, k), 0).concat(servingSlots((k) => train(s.w, k), LINE2)));
+  for (let t = 0; pending.size; t++) {
+    assert.ok(t < 4000, 'every active train adopts within a round trip');
+    const was = trains(s.w).map((r) => ({ ...r }));
+    advance(s, 1);
+    for (const k of pending) {
+      const r = train(s.w, k);
+      if (r.boiler === 0) continue;
+      assert.equal(r.boiler, 1);
+      const home = trainStops(s.w, RAIL_TRAINS[k]!.line)[0];
+      assert.ok(r.from === home && r.v0 === 0 && (r.phase === TRAIN_PHASE.STAND || r.depart === s.t));
+      if (was[k]!.phase === TRAIN_PHASE.RUN) assert.equal(was[k]!.to, 0, 'an arriving leg finishes at the Village');
+      pending.delete(k);
+    }
+  }
+  assert.equal(invariant(s.w), null);
+});
+
+test('the speed rows keep braking and shorten the two opening rides', () => {
+  assert.deepEqual(BOILER_SPEED, [140, 200, 250]);
+  for (const [line, dist, slow, table] of [
+    [0, 19300, 186, 154],
+    [1, 50575, 410, 311],
+  ]) {
+    assert.equal(trainLegTicks(dist!, 0, boilerKin(line!, 0)), slow);
+    assert.equal(trainLegTicks(dist!, 0, boilerKin(line!, 1)), table);
+    assert.equal(boilerKin(line!, 0).accel, 2.5);
+    assert.equal(boilerKin(line!, 0).brake, 3.5);
+    assert.equal(boilerKin(line!, 2).speed, 250);
+  }
 });
 
 test('the ten-second rule on the real stops: Village to Ring Island saves at least 10 s at 25 m/s', (t) => {
@@ -140,16 +140,16 @@ test('the ten-second rule on the real stops: Village to Ring Island saves at lea
   assert.equal(stops.length, 6, 'the island is open');
   const leg = (from: number, to: number, boiler: number) =>
     trainLegTicks(Math.abs(stops[to]! - stops[from]!), 0, stopKin(LINE2, to, to > from ? 0 : 1, boiler));
-  const out = [leg(0, ISLAND, 0), leg(0, ISLAND, 1)],
+  const out = [leg(0, ISLAND, 1), leg(0, ISLAND, 2)],
     // Home with a stop at the homeward-only Pier.
-    pier = [leg(ISLAND, 3, 0) + leg(3, 0, 0), leg(ISLAND, 3, 1) + leg(3, 0, 1)];
+    pier = [leg(ISLAND, 3, 1) + leg(3, 0, 1), leg(ISLAND, 3, 2) + leg(3, 0, 2)];
   t.diagnostic(
     `Village to Ring Island ${out[0]! / 10} s at 20 m/s, ${out[1]! / 10} s at 25 (saves ${(out[0]! - out[1]!) / 10} s); ` +
       `home by the Pier ${pier[0]! / 10} s, ${pier[1]! / 10} s (saves ${(pier[0]! - pier[1]!) / 10} s); ` +
-      `round trip ${cycleTicks(LINE2, stops) / 10} s, ${cycleTicks(LINE2, stops, 1) / 10} s`,
+      `round trip ${cycleTicks(LINE2, stops, 1) / 10} s, ${cycleTicks(LINE2, stops, 2) / 10} s`,
   );
   assert.ok(out[0]! - out[1]! >= 100, 'about ten seconds a trip, non-stop');
-  assert.ok(cycleTicks(LINE2, stops, 1) < cycleTicks(LINE2, stops));
+  assert.ok(cycleTicks(LINE2, stops, 2) < cycleTicks(LINE2, stops, 1));
 });
 
 test('with the 8.2 m extent every middle halt stands clear of both end blocks, and every signal of its own', () => {
@@ -175,12 +175,12 @@ test('rail.install: refused with no steel home, for line 1, another part, a stal
   assert.equal(install(joined), 0, 'no steel in the bay');
   const s = copy(HOME);
   assert.equal(install(s, 'a', { line: 0 }), 0, 'line 1');
-  assert.equal(install(s, 'a', { part: 2 }), 0, 'another part');
-  assert.equal(install(s, 'a', { revision: 1 }), 0, 'a revision not yet seen');
+  assert.equal(install(s, 'a', { part: 3 }), 0, 'another part');
+  assert.equal(install(s, 'a', { revision: 2 }), 0, 'a revision not yet seen');
   for (const bad of [-1, 1.5, -0, Number.NaN, '0', null, undefined, 2 ** 60])
     assert.equal(install(s, 'a', { revision: bad }), 0, `revision ${String(bad)}`);
   for (const bad of ['1', 1.5, Number.NaN, null, undefined]) assert.equal(install(s, 'a', { line: bad }), 0);
-  assert.equal(lineRow(s.w, LINE2).boiler, 0);
+  assert.equal(lineRow(s.w, LINE2).boiler, 1);
   // The table mid roll-out (the wagon ready and rolling, not yet coupled): refused. A hand-made state, so applied
   // without the load check.
   const busy = restore(s.w);
@@ -191,7 +191,7 @@ test('rail.install: refused with no steel home, for line 1, another part, a stal
   const r = apply(
     busy,
     'a',
-    { op: 'rail.install', epoch: a.epoch, request: a.request + 1, line: 1, part: 1, revision: 0 },
+    { op: 'rail.install', epoch: a.epoch, request: a.request + 1, line: 1, part: 2, revision: 1 },
     s.t,
   );
   assert.equal(r.accepted, 0, 'the table is busy');
@@ -200,15 +200,15 @@ test('rail.install: refused with no steel home, for line 1, another part, a stal
 test('two presses on one tick install once; the fit spends nothing and records its tick', () => {
   const s = copy(HOME);
   const bay = shed(s.w).steel;
-  assert.equal(install(s, 'a', { revision: 0 }), 1);
-  assert.equal(install(s, 'b', { revision: 0 }), 0, 'the second press on the same tick carries a stale revision');
+  assert.equal(install(s, 'a', { revision: 1 }), 1);
+  assert.equal(install(s, 'b', { revision: 1 }), 0, 'the second press on the same tick carries a stale revision');
   assert.deepEqual(
     { boiler: lineRow(s.w, LINE2).boiler, fitted: lineRow(s.w, LINE2).fitted },
-    { boiler: 1, fitted: s.t },
+    { boiler: 2, fitted: s.t },
   );
   assert.equal(shed(s.w).steel, bay, 'the stack is shown, not spent');
   assert.equal(install(s, 'b'), 0, 'installed: nothing more to fit');
-  assert.equal(lineRow(s.w, 0).boiler, 0, "line 1's fit is untouched");
+  assert.equal(lineRow(s.w, 0).boiler, 1, 'line 1 keeps the table fit');
 });
 
 test('each line 2 train takes the boiler only standing at the Village, and its pose never jumps', (t) => {
@@ -243,8 +243,8 @@ test('each line 2 train takes the boiler only standing at the Village, and its p
       s.w,
       RAIL_TRAINS.findIndex((x) => x.line !== LINE2),
     ).boiler,
-    0,
-    'line 1 never',
+    1,
+    'line 1 keeps the table fit',
   );
   t.diagnostic(`fitted after install: ${[...took].map(([k, d]) => `train ${k} ${d / 10} s`).join(', ')}`);
 });
@@ -270,7 +270,7 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
   if (fleet !== 'standard') assert.equal(install(s), 1);
   if (fleet === 'longer')
     // The trains in service (servingSlots): the fleet's shed rows never stand at the Village to take the fit.
-    for (let k = 0; servingSlots((j) => train(s.w, j), LINE2).some((k2) => train(s.w, k2).boiler !== 1); k++) {
+    for (let k = 0; servingSlots((j) => train(s.w, j), LINE2).some((k2) => train(s.w, k2).boiler !== 2); k++) {
       assert.ok(k < 4000, `every train fitted in time (tick ${s.t})`);
       railTick(s.w, ++s.t, headPct);
     }
@@ -323,24 +323,24 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
     // its pose this tick is the same on either boiler (it only left on the faster train's slightly shorter headway).
     for (const k2 of slow) {
       const r = train(s.w, k2);
-      if (r.boiler === 0) continue;
+      if (r.boiler < 2) continue;
       const village = trainStops(s.w, LINE2)[0]!;
       assert.ok(
         r.from === village && r.v0 === 0 && (r.phase === TRAIN_PHASE.STAND ? r.at === 0 : r.depart === s.t),
         'took it standing at the Village this tick',
       );
-      s.w.mut(Train, s.w.lookup(Train, k2)!)!.boiler = 0;
+      s.w.mut(Train, s.w.lookup(Train, k2)!)!.boiler = 1;
       resets++;
     }
     const boilers = LINE_SLOTS[LINE2]!.map((k2) => train(s.w, k2).boiler);
-    if (boilers.includes(0) && boilers.includes(1)) mixedTicks++;
+    if (boilers.includes(1) && boilers.includes(2)) mixedTicks++;
     // How close a fast train came to the train ahead of it round the circuit (the block rule's floor is sepCm).
     {
       const st = trainStops(s.w, LINE2),
         c = circuitLen(st),
         at = LINE_SLOTS[LINE2]!.map((k2) => trainPose(train(s.w, k2), LINE2, st, s.t).c);
       LINE_SLOTS[LINE2]!.forEach((k2, i) => {
-        if (train(s.w, k2).boiler !== 1) return;
+        if (train(s.w, k2).boiler !== 2) return;
         const gap = Math.min(...at.filter((_p, j) => j !== i).map((p) => circuitAhead(at[i]!, p, c)));
         closest = Math.min(closest, gap);
       });

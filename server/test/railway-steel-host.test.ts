@@ -148,7 +148,7 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
 const spot = (p: { x: number; y: number; z: number }): At => [p.x, p.y, p.z];
 const away = (p: { x: number; y: number; z: number }): At => [p.x + 2000, p.y, p.z];
 const fixture = (stage: SteelStage) => railwayAtSteel(stage);
-const install = (revision: unknown = 0, line = 1, part = 1) => ({ op: 'rail.install', line, part, revision });
+const install = (revision: unknown = 1, line = 1, part = 2) => ({ op: 'rail.install', line, part, revision });
 
 test('steel host: the yard take at the yard, the feed at the works, each refused from elsewhere', async () => {
   const r = await host('reach', fixture('steel-kit'));
@@ -241,15 +241,15 @@ test('steel host: malformed kinds, lines, parts and revisions refused without a 
       assert.equal(await r.action({ op: 'rail.steelTake', kind }, spot(RING_STEEL_YARD)), 'rejected', `kind ${kind}`);
     for (const l of [0, 2, -1, '1', null])
       assert.equal(await r.action(install(0, l as number), spot(SHED_TABLE)), 'rejected', `line ${l}`);
-    for (const part of [0, 2, '1', null])
+    for (const part of [0, 1, '1', null])
       assert.equal(await r.action(install(0, 1, part as number), spot(SHED_TABLE)), 'rejected', `part ${part}`);
     for (const revision of [2, -1, 0.5, '0', null, undefined])
       assert.equal(
-        await r.action({ op: 'rail.install', line: 1, part: 1, revision }, spot(SHED_TABLE)),
+        await r.action({ op: 'rail.install', line: 1, part: 2, revision }, spot(SHED_TABLE)),
         'rejected',
         `revision ${revision}`,
       );
-    assert.equal(line(r.w, 1).boiler, 0, 'nothing installed');
+    assert.equal(line(r.w, 1).boiler, 2, 'only the table fit');
     // The room still answers.
     assert.equal(await r.action({ op: 'rail.steelTake', kind: 0 }, spot(RING_STEEL_YARD)), 'noop', 'the yard empty');
   } finally {
@@ -262,14 +262,14 @@ test('steel host: the install at the table, once, two players pressing on the sa
   try {
     assert.equal(await r.action(install(), away(SHED_TABLE)), 'rejected', 'not at the table');
     assert.equal(await r.action(install(), spot(SHED_TABLE), 's'), 'accepted');
-    assert.deepEqual([line(r.w, 1).boiler, line(r.w, 1).fitted >= 0], [1, true], 'line 2 fitted');
+    assert.deepEqual([line(r.w, 1).boiler, line(r.w, 1).fitted >= 0], [2, true], 'line 2 fitted');
     assert.equal(await r.action(install(), spot(SHED_TABLE), 't'), 'noop', 'the second press saw a stale fit');
-    assert.equal(await r.action(install(1), spot(SHED_TABLE), 't'), 'noop', 'already the longer boiler');
+    assert.equal(await r.action(install(2), spot(SHED_TABLE), 't'), 'noop', 'already the longer boiler');
     // The fourth car (R3a): the car is drawn from the replicated row's `boiler`, so the one fact to prove is that a
     // line 2 train takes the fit standing at the Village and that row reaches a client and a late joiner.
     const seen = r.connect('c');
     const village = (w: typeof r.w, k: number) =>
-      train(w, k).phase === TRAIN_PHASE.STAND && train(w, k).at === 0 && train(w, k).boiler === 1;
+      train(w, k).phase === TRAIN_PHASE.STAND && train(w, k).at === 0 && train(w, k).boiler === 2;
     let fitted = -1;
     for (let t = 0; fitted < 0; t++) {
       assert.ok(t < 3000, 'a line 2 train stands fitted at the Village');
@@ -277,11 +277,11 @@ test('steel host: the install at the table, once, two players pressing on the sa
       fitted = LINE_SLOTS[1]!.find((k) => village(r.w, k)) ?? -1;
     }
     await r.ticks(2);
-    assert.equal(train(seen()!, fitted).boiler, 1, 'the replicated row wears the longer boiler');
+    assert.equal(train(seen()!, fitted).boiler, 2, 'the replicated row wears the longer boiler');
     const joiner = r.connect('late');
     await r.ticks(3);
     assert.ok(joiner(), "the joiner's snapshot is whole");
-    assert.equal(train(joiner()!, fitted).boiler, 1, "and its row wears it: the joiner's train has the steel car");
+    assert.equal(train(joiner()!, fitted).boiler, 2, "and its row wears it: the joiner's train has the steel car");
     for (const k of LINE_SLOTS[1]!)
       assert.equal(train(joiner()!, k).boiler, train(r.w, k).boiler, `train ${k}: the joiner's row is the host's`);
   } finally {
@@ -299,7 +299,8 @@ test('steel host: a rider asks from the steel car of the wagon train, 11.1 m beh
     const k = LINE_SLOTS[1]!.find((s) => train(r.w, s).wagon);
     assert.ok(k !== undefined, 'the wagon is on a line 2 train');
     // It takes the fit at its next Village stand: fitted, it has the steel car.
-    const fitted = () => train(r.w, k).phase === TRAIN_PHASE.STAND && train(r.w, k).at === 0 && train(r.w, k).boiler;
+    const fitted = () =>
+      train(r.w, k).phase === TRAIN_PHASE.STAND && train(r.w, k).at === 0 && train(r.w, k).boiler === 2;
     for (let t = 0; !fitted(); t++) {
       assert.ok(t < 3000, 'the wagon train stands fitted at the Village');
       await r.ticks(1);
@@ -343,7 +344,8 @@ test('review (car4): the reach edge of a standing fitted train is 21.1 m, the st
   try {
     assert.equal(await r.action(install(), spot(SHED_TABLE)), 'accepted');
     const k = LINE_SLOTS[1]!.find((s) => train(r.w, s).wagon)!;
-    const fitted = () => train(r.w, k).phase === TRAIN_PHASE.STAND && train(r.w, k).at === 0 && train(r.w, k).boiler;
+    const fitted = () =>
+      train(r.w, k).phase === TRAIN_PHASE.STAND && train(r.w, k).at === 0 && train(r.w, k).boiler === 2;
     for (let t = 0; !fitted(); t++) {
       assert.ok(t < 3000, 'the wagon train stands fitted at the Village');
       await r.ticks(1);

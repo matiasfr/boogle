@@ -1,7 +1,7 @@
 // The train garage's catalogue and readout maths (docs/brainstorms/engine-garage.md), pure: no scene, DOM or clock.
 // Local view data only: nothing here is sent, saved or read by the simulation. Speeds and times come from the
 // railway's own leg maths (src/sim/railway-train.ts) so a number on the screen is the number the timetable gives.
-import { BOILER_SPEED, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
+import { BOILER, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
 import { WORKS } from '../../sim/railway-works-layout.ts';
 import { LINE2_KIT } from '../../sim/railway-line2-layout.ts';
@@ -214,8 +214,9 @@ export const speedMs = (cmPerTick: number) => cmPerTick / 10;
 /** What each boiler sets (owner, 10 November: "certain boilers are faster but also raise the cap of the amount of
  * cars"): its top speed and how many cars the engine pulls. */
 export const BOILERS = {
-  boiler: { speed: BOILER_SPEED[0], pulls: 3 },
-  long: { speed: BOILER_SPEED[1], pulls: 4 },
+  boiler: { ...BOILER[0], pulls: 3 },
+  table: { ...BOILER[1], pulls: 3 },
+  long: { ...BOILER[2], pulls: 4 },
 } as const;
 export type BoilerId = keyof typeof BOILERS;
 /** The line's run for the readouts: the Village stop to the line's last stop, in centimetres, or, until the island
@@ -231,8 +232,9 @@ export function lineRunCm(line = GARAGE_LINE): { cm: number; planned: boolean; e
     : { cm: PLANNED_RUN_CM, planned: true, end: 'the island' };
 }
 /** Seconds for one nonstop run of `cm` from a stand at top speed `speed` (cm a tick), with the line's acceleration. */
-export function runSeconds(cm: number, speed: number, accel: number = TRAIN.accel) {
-  return trainLegTicks(cm, 0, { speed, accel }) / 10;
+export function runSeconds(cm: number, speed: number, accel?: number) {
+  const row = BOILER.find((b) => b.speed === speed);
+  return trainLegTicks(cm, 0, { speed, accel: accel ?? row?.accel ?? TRAIN.accel, brake: row?.brake }) / 10;
 }
 /** A round trip: two runs and three stands (the brief's throughput note). */
 export const roundTripSeconds = (run: number) => 2 * run + (3 * TRAIN.dwellTicks) / 10;
@@ -261,11 +263,11 @@ export const rowChanged = (r: Row) => r.kind !== 'text' && r.now !== r.then;
 /** The rows a part shows, for the part chosen against what the category has now. Only rows the part changes carry a
  * preview (brief, call 37); a part that changes nothing shows what the category is today. `fitted`: the room wears
  * the longer boiler, so today's numbers are its and no row carries a preview. */
-export function rowsFor(cat: CatId, chosen: PartId, fitted = false): Row[] {
+export function rowsFor(cat: CatId, chosen: PartId, boiler = 0): Row[] {
   const { cm } = lineRunCm();
   const end = lineRunCm().end;
   if (cat === 'engine') {
-    const a = fitted ? BOILERS.long : BOILERS.boiler,
+    const a = boiler >= 2 ? BOILERS.long : boiler === 1 ? BOILERS.table : BOILERS.boiler,
       b = chosen === 'long' ? BOILERS.long : a;
     const runA = runSeconds(cm, a.speed),
       runB = runSeconds(cm, b.speed);

@@ -287,6 +287,18 @@ Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/pr
 
 ## Owner questions
 
+## Implementation record
+
+- **Step 1:** 14/20/25 profiles built; `Shed.table === 1` commissions row 1 for both lines in the accepted
+  `rail.turn` operation. Each train adopts at a Village stand. Longer boiler is part 2 throughout the rules,
+  host validation, adapter, garage, fourth-car presentation and bot. v52 was free after fetching main (v51).
+  Typecheck, scoped lint, four targeted profile/adoption tests and the install fleet tests passed (one pre-existing
+  todo). Golden regenerated with `GOLDEN=1 node --import ./test/helpers/rail-no-audit.ts --test --test-concurrency=1 'test/railway-golden-*.test.ts'`: 103 checks passed. All 26 stages from `trains-on` onward change because slower
+  legs change arrival/cargo ticks and the table now sets two fits; every earlier stage is unchanged. No pins edited
+  by hand. This is a deliberate v52 rule change, not a refactor repin.
+
+## Owner questions (answered)
+
 **Answered by the owner, 15 November 2026:**
 
 - **Q1:** Build the automatic 20 m/s step when the Roundhouse table turns now. Once the garage-moment steps

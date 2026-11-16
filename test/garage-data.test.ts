@@ -43,10 +43,10 @@ test('engine rows change for the longer boiler only', () => {
   assert.deepEqual(
     rows.map((r) => [r.id, r.now, r.then]),
     [
-      ['speed', 20, 25],
+      ['speed', 14, 25],
       ['cars', 3, 4],
-      ['foot', 2.5, 2.9],
-      ['kit', 13.1, 15.3],
+      ['foot', 1.8, 2.9],
+      ['kit', 9.8, 15.3],
     ],
   );
 });
@@ -122,7 +122,7 @@ test('a row has no state for a part tried on: it previews until the moment, then
 
 test('a fitted room’s rows are the longer boiler’s, with no arrow', () => {
   for (const chosen of ['boiler', 'long'] as const) {
-    const rows = rowsFor('engine', chosen, true);
+    const rows = rowsFor('engine', chosen, 2);
     assert.ok(rows.every((r) => !rowChanged(r) && !shownRow(r, 0, 'idle', 0).arrow));
     assert.deepEqual(
       rows.map((r) => r.then),

@@ -591,7 +591,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     },
     steelworks: () => steelOf(w()).lit >= 0,
     steelhome: () => shed(w()).steel >= 1,
-    install: () => lineOf(w(), LINE2).boiler >= 1,
+    install: () => lineOf(w(), LINE2).boiler >= 2,
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
   const policy: Record<NodeId, (pl: Player) => Policy> = {
@@ -731,7 +731,7 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
       // The table turn and fit name the revision the actor sees now.
       if (cmd.act === 'rail.turn') Object.assign(fields, { to: 1, revision: shed(g.w).tableRev });
       if (cmd.act === 'rail.install')
-        Object.assign(fields, { line: LINE2, part: 1, revision: lineOf(g.w, LINE2).boiler });
+        Object.assign(fields, { line: LINE2, part: 2, revision: lineOf(g.w, LINE2).boiler });
       const res = g.h.act(pl.pid, cmd.act, fields, pl.at);
       t.actions++;
       if (res.status === 'rejected') {

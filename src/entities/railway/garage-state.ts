@@ -19,7 +19,7 @@ export function roomFacts(w: ReadWorld): RoomFacts {
     tableBusy: shed(w).ready >= 0 && !wagonCoupled,
     steelHome: shed(w).steel >= 1,
     steel: shed(w).steel,
-    longFitted: boiler >= 1,
+    longFitted: boiler >= 2,
     boilerRev: boiler,
   };
 }
