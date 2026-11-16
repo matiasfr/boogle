@@ -8,7 +8,7 @@ Conservative rule: uncertainty stays live. Archiving a completed implementation 
 
 | Topic | live | superseded | owner-answered | obsolete | duplicate | Total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Core loop, pacing and progression | 108 | 16 | 1 | 0 | 0 | 125 |
+| Core loop, pacing and progression | 109 | 15 | 1 | 0 | 0 | 125 |
 | Rail, construction, levels and travel | 386 | 16 | 1 | 0 | 0 | 403 |
 | Rewards, co-op and town roles | 48 | 2 | 1 | 0 | 0 | 51 |
 | Characters, cosmetics and story | 16 | 0 | 1 | 0 | 0 | 17 |
@@ -16,11 +16,9 @@ Conservative rule: uncertainty stays live. Archiving a completed implementation 
 | Audio | 0 | 0 | 0 | 0 | 0 | 0 |
 | Controls, HUD and arrival | 17 | 0 | 1 | 0 | 0 | 18 |
 | Architecture, tools and prototype lifecycle | 67 | 4 | 0 | 0 | 3 | 74 |
-| **Total** | 647 | 39 | 5 | 1 | 3 | **695** |
+| **Total** | 648 | 38 | 5 | 1 | 3 | **695** |
 
 ## Core loop, pacing and progression
-
-- **CL-001 — Additional fast boiler proposed for High Gorge** · `superseded`. [docs/decisions-core-loop.md#d-2026-11-15-garage-trade-answers](../decisions-core-loop.md#d-2026-11-15-garage-trade-answers): The later garage trade answers explicitly rule out the proposed trade for line two at High Gorge.
 
 - **CL-006 — Slow overloaded travel and reposition early delivery racks** · `superseded`. CL-005, [docs/agent-calls.md:23](../agent-calls.md) (baseline line 23): The later Fix3 restores the bounded 128-pile table and explicitly replaces unbounded/recycling drop policies. The speed and rack choices remain; this row is classified for its contradicted drop policy.
 

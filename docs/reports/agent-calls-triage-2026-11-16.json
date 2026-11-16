@@ -4,8 +4,8 @@
     "topic": "Core loop, pacing and progression",
     "date": "2026-11-15",
     "gist": "Additional fast boiler proposed for High Gorge",
-    "class": "superseded",
-    "evidence": "docs/decisions-core-loop.md#d-2026-11-15-garage-trade-answers: The later garage trade answers explicitly rule out the proposed trade for line two at High Gorge.",
+    "class": "live",
+    "evidence": "",
     "plan": "garage-choices (docs/plans/garage-choices.md), G-d"
   },
   {
@@ -59,7 +59,7 @@
     "date": "2026-11-15",
     "gist": "Prototype harvesting and carrying choices before the boiler",
     "class": "superseded",
-    "evidence": "docs/decisions-core-loop.md#d-2026-11-16-first-line-choice-two-stages: The newer owner-approved staged experiment is an early double-jump versus carry-12 choice; the earlier whetstone-versus-sling prototype is replaced, with current progression retained until built.",
+    "evidence": "docs/decisions-core-loop.md#d-2026-11-16-first-line-choice-two-stages — The newer owner-approved staged experiment is an early double-jump versus carry-12 choice; the earlier whetstone-versus-sling prototype is replaced, with current progression retained until built.",
     "plan": "first-line-decisions (docs/brainstorms/first-line-decisions.md#design-review-designer-2026-11-15)"
   },
   {
@@ -725,7 +725,7 @@
     "date": "2026-11-09",
     "gist": "Choose upgrades beside the affected machine",
     "class": "superseded",
-    "evidence": "docs/decisions-core-loop.md#d-2026-11-10-open-calls-answered-the-train-upgrade: The later owner answer permits the garage upgrade screen. The absolute no-menu clause is replaced; choosing at the physical machine remains.",
+    "evidence": "docs/decisions-core-loop.md#d-2026-11-10-open-calls-answered-the-train-upgrade — The later owner answer permits the garage upgrade screen. The absolute no-menu clause is replaced; choosing at the physical machine remains.",
     "plan": "upgrade-choices (docs/brainstorms/upgrade-choices.md#design-review-designer-2026-11-09), question 1"
   },
   {
@@ -878,7 +878,7 @@
     "date": "2026-11-09",
     "gist": "Teach the dedicated glide control before the jump move",
     "class": "superseded",
-    "evidence": "docs/agents/owner-calls.md#jump-is-the-gliders-button: The owner explicitly replaces teaching Glide/Q/LB with the Jump glyph, while retaining Q and LB as alternates.",
+    "evidence": "docs/agents/owner-calls.md#jump-is-the-gliders-button — The owner explicitly replaces teaching Glide/Q/LB with the Jump glyph, while retaining Q and LB as alternates.",
     "plan": "glider-b plan (docs/plans/glider-b-home-flow.md#design-review-designer-2026-11-09)"
   },
   {
@@ -941,7 +941,7 @@
     "date": "2026-11-09",
     "gist": "Have the bot pull the summit switch on its first visit",
     "class": "superseded",
-    "evidence": "docs/decisions-core-loop.md#d-2026-11-15-fly-first: The switch moves off the summit to the sea gate and arrives with Q4, replacing the bot policy of pulling it on the first summit visit; the pack choice is not separately settled.",
+    "evidence": "docs/decisions-core-loop.md#d-2026-11-15-fly-first — The switch moves off the summit to the sea gate and arrives with Q4, replacing the bot policy of pulling it on the first summit visit; the pack choice is not separately settled.",
     "plan": "home-flow (docs/reviews/home-flow.md#4-the-bots-route-isnt-the-players), finding 4"
   },
   {
@@ -986,7 +986,7 @@
     "date": "2026-11-09",
     "gist": "Open gliding after available air jumps are spent",
     "class": "superseded",
-    "evidence": "docs/agents/owner-calls.md#jump-is-the-gliders-button: The owner explicitly replaces Jump doing nothing while the canopy is open: Jump now closes it. Opening after air jumps are spent remains.",
+    "evidence": "docs/agents/owner-calls.md#jump-is-the-gliders-button — The owner explicitly replaces Jump doing nothing while the canopy is open: Jump now closes it. Opening after air jumps are spent remains.",
     "plan": "glider-placement (docs/brainstorms/glider-placement.md#design-review-designer-2026-11-09), call 8"
   },
   {
@@ -1085,7 +1085,7 @@
     "date": "2026-11-09",
     "gist": "Teach gliding with a pulsing jump symbol",
     "class": "owner-answered",
-    "evidence": "docs/agents/owner-calls.md#jump-is-the-gliders-button: Owner: \"Jump is the glider’s button\". The entry explicitly states that the first-fall teaching displays Jump, confirming this original glyph choice after an intervening Glide-glyph default.",
+    "evidence": "docs/agents/owner-calls.md#jump-is-the-gliders-button — Owner: \"Jump is the glider’s button\". The entry explicitly states that the first-fall teaching displays Jump, confirming this original glyph choice after an intervening Glide-glyph default.",
     "plan": "glider-placement (docs/brainstorms/glider-placement.md#design-review-designer-2026-11-09), call 10"
   },
   {
@@ -3308,7 +3308,7 @@
     "date": "2026-11-10",
     "gist": "Build the bay route through Bell Rock to Canopy",
     "class": "superseded",
-    "evidence": "docs/decisions-core-loop.md#d-2026-11-12-campaign-outline-answered: The owner fixes High Gorge before the Canopy branch, replacing the Canopy-first order; the bay-line layout details are not separately ruled here.",
+    "evidence": "docs/decisions-core-loop.md#d-2026-11-12-campaign-outline-answered — The owner fixes High Gorge before the Canopy branch, replacing the Canopy-first order; the bay-line layout details are not separately ruled here.",
     "plan": "rail-map (docs/plans/rail-map.md#design-review-designer-2026-11-10), call 21, finding 6"
   },
   {
@@ -4190,7 +4190,7 @@
     "date": "2026-11-10",
     "gist": "Replace automatic platform calls with request levers",
     "class": "owner-answered",
-    "evidence": "docs/decisions-rail.md#d-2026-11-10-trains-stop-on-request-at-the: Owner: \"Stop on request\". The entry specifies request levers at halts and otherwise running through, confirming replacement of automatic walk-on calls.",
+    "evidence": "docs/decisions-rail.md#d-2026-11-10-trains-stop-on-request-at-the — Owner: \"Stop on request\". The entry specifies request levers at halts and otherwise running through, confirming replacement of automatic walk-on calls.",
     "plan": "works-late-game, step 1"
   },
   {
@@ -5117,7 +5117,7 @@
     "date": "2026-11-10",
     "gist": "Use shared money with physical coins as props",
     "class": "owner-answered",
-    "evidence": "docs/decisions-rewards.md#d-2026-11-11-boogles-the-five-open-questions-answered: Owner: \"I like your recommendations for 1-5\". Answer 1 explicitly confirms no personal balances, automatic shared fares and carried coins as props.",
+    "evidence": "docs/decisions-rewards.md#d-2026-11-11-boogles-the-five-open-questions-answered — Owner: \"I like your recommendations for 1-5\". Answer 1 explicitly confirms no personal balances, automatic shared fares and carried coins as props.",
     "plan": "passenger-trade (docs/brainstorms/passenger-trade.md#open-after-his-answers-of-10-november), question 1; section 5 (docs/brainstorms/passenger-trade.md#coins-in-the-hand-a-proposal-question-1)"
   },
   {
@@ -5252,7 +5252,7 @@
     "date": "2026-11-10",
     "gist": "Suggest resident occupations without authoring their identities",
     "class": "owner-answered",
-    "evidence": "docs/decisions-rewards.md#d-2026-11-11-boogles-the-five-open-questions-answered: Owner: \"I like your recommendations for 1-5\". Answer 5 accepts the brief's roles as a starting list, including the retired driver, baker and lost-property keeper; characters and lines remain the owner's.",
+    "evidence": "docs/decisions-rewards.md#d-2026-11-11-boogles-the-five-open-questions-answered — Owner: \"I like your recommendations for 1-5\". Answer 5 accepts the brief's roles as a starting list, including the retired driver, baker and lost-property keeper; characters and lines remain the owner's.",
     "plan": "passenger-trade (docs/brainstorms/passenger-trade.md#who-moves-in-roles-proposed-question-5); question 5"
   },
   {
@@ -5405,7 +5405,7 @@
     "date": "2026-11-14",
     "gist": "Limit the initial terrain kit and seek a style selection",
     "class": "superseded",
-    "evidence": "docs/decisions-look.md#d-2026-11-15-plain-path-climbs: The owner orders painted timber risers and their highlights removed, contradicting their retention in this mixed kit row. Other kit defaults still need review.",
+    "evidence": "docs/decisions-look.md#d-2026-11-15-plain-path-climbs — The owner orders painted timber risers and their highlights removed, contradicting their retention in this mixed kit row. Other kit defaults still need review.",
     "plan": "terrain-clean (docs/plans/terrain-clean.md#design-review-designer-2026-11-14), calls 19 to 22"
   },
   {
@@ -5576,7 +5576,7 @@
     "date": "2026-11-08",
     "gist": "Trial spring lag for the carried beam",
     "class": "owner-answered",
-    "evidence": "docs/decisions-process.md#d-2026-11-08-the-summit-switch-opens-early-switch: Owner: \"Try option 1 for log\". The entry identifies that option as local visual spring lag and a clearer grip for the great beam.",
+    "evidence": "docs/decisions-process.md#d-2026-11-08-the-summit-switch-opens-early-switch — Owner: \"Try option 1 for log\". The entry identifies that option as local visual spring lag and a clearer grip for the great beam.",
     "plan": "`src/player/beam-carry-tuning.ts`"
   },
   {
@@ -5639,7 +5639,7 @@
     "date": "2026-11-12",
     "gist": "Route work through the former two-mode model scheme",
     "class": "superseded",
-    "evidence": "docs/agents/models.md#models-and-effort: The current policy cites the owner, 15 November: \"just have one schema for model routing that I will update when we need to\". One table with no modes replaces withCodex-mode routing.",
+    "evidence": "docs/agents/models.md#models-and-effort — The current policy cites the owner, 15 November: \"just have one schema for model routing that I will update when we need to\". One table with no modes replaces withCodex-mode routing.",
     "plan": "`routes` in dev/models.ts (dev/models.ts); models (docs/agents/models.md)"
   },
   {
@@ -5684,7 +5684,7 @@
     "date": "2026-11-10",
     "gist": "Keep sensitive implementation on the former Opus route",
     "class": "superseded",
-    "evidence": "docs/agents/models.md#models-and-effort: Current routing puts high-risk implementation on Astra and ordinary implementation on Sol; the former Opus/Sonnet implementation split is replaced by the one-table policy.",
+    "evidence": "docs/agents/models.md#models-and-effort — Current routing puts high-risk implementation on Astra and ordinary implementation on Sol; the former Opus/Sonnet implementation split is replaced by the one-table policy.",
     "plan": "models (docs/agents/models.md), Implementer on Sonnet"
   },
   {
