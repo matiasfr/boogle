@@ -7,7 +7,11 @@ export async function accountBrowserChecks(options: {
   restart: () => Promise<void>;
   check: (name: string, ok: boolean) => void;
 }) {
-  const { check } = options;
+  let last = 'start';
+  const check = (name: string, ok: boolean) => {
+    last = name;
+    options.check(name, ok);
+  };
   const web = await startWeb('account-page.ts', options.root, options.base);
   const query = `server=${encodeURIComponent(options.base)}&room=${options.room}-browser`;
   try {
@@ -73,8 +77,9 @@ export async function accountBrowserChecks(options: {
         (await ev(b.page, () => window.T.status().pid)) === pid,
     );
   } catch {
-    // Browser exceptions may contain evaluated inputs. Keep credentials out of the runner's error log.
-    throw new Error('Account browser proof failed; no browser input values recorded.');
+    // Browser exceptions may contain evaluated inputs. Keep credentials out of the runner's error log: report only the
+    // last check reached, never the error.
+    throw new Error(`Account browser proof failed after "${last}"; no browser input values recorded.`);
   } finally {
     await web.close();
   }
