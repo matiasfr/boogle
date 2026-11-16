@@ -6,7 +6,7 @@
 > The implementations went in `32bd6a38a`; the eight haul tuning keys and the classic transport retired at v40 (`75852d2a9`), so links to deleted files below are dead on purpose. The Boogler's copy is preserved in
 > [gift-catalog.ts](../../src/sim/gift-catalog.ts); see [retired copy](retired-classic-copy.md).
 
-The 0.1 groundwork ([docs/plans/0.1-groundwork.md](../plans/0.1-groundwork.md), research in
+The 0.1 groundwork ([docs/plans/0.1-groundwork.md](../archive/plans/0.1-groundwork.md), research in
 [docs/research/0.1/](../research/0.1/10-groundwork.md)): one material per age (wood first: logs), carried on your back,
 poured into work sites that lay the railway. Placeholder visuals throughout. Every part is optional: nothing blocks a
 place or a toy, and credit only ever adds.

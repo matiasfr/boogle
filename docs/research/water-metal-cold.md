@@ -2,7 +2,7 @@
 
 > **Verdict:** Cold Metal cache froze place for 4.5 s; first-frame pipelines built behind loading.
 > **Top recommendations:** none; fix record for the cold-cache freeze.
-> **Status:** adopted. See [plan graphics-switches](../plans/graphics-switches.md).
+> **Status:** adopted. See [plan graphics-switches](../archive/plans/graphics-switches.md).
 
 2026-11-03. DESIGN.md: **Small and readable — measure before optimizing**.
 

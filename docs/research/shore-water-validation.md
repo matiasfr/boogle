@@ -2,7 +2,7 @@
 
 > **Verdict:** Home shore with graduated water validated locally.
 > **Top recommendations:** 1. Low along the shore. 2. High over the shallows. 3. Avatar at the wet edge.
-> **Status:** reference. See [plan water-graduation](../plans/water-graduation.md).
+> **Status:** reference. See [plan water-graduation](../archive/plans/water-graduation.md).
 
 3 November 2026. Local work on `codex/shore-water`; no push. DESIGN.md: **Show, don't tell**, **Small and readable**.
 This follows the existing shore-slice and Ultra Water research; no external network was used.

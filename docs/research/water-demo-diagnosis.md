@@ -2,7 +2,7 @@
 
 > **Verdict:** Numerical diagnosis of the water demo spectrum and shore.
 > **Top recommendations:** 1. Keep the source spectrum and make amplitude a visible, measured tuning choice. 2. Keep the exact source damping and bed clamp. 3. Keep phase coordinates local to the demo island and update the source before caustics/underwater/rendering with.
-> **Status:** reference. See [plan water-graduation](../plans/water-graduation.md).
+> **Status:** reference. See [plan water-graduation](../archive/plans/water-graduation.md).
 
 2026-11-02. Serves DESIGN.md **Toys before chores** and **Show, don't tell**. This is Local cosmetic water;
 the wave field is never lockstep state or read back into the simulation. Reference: Ultra Water commit

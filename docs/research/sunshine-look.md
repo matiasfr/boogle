@@ -2,7 +2,7 @@
 
 > **Verdict:** Cool water, warm stone, readable light; make the sea the hero.
 > **Top recommendations:** 1. Make the crossing's sea the hero. 2. Lock the daytime palette under Neutral. 3. Filter glitter before increasing it.
-> **Status:** partly adopted. See [plan look-pass](../plans/look-pass.md), [plan rail-slice](../plans/rail-slice.md).
+> **Status:** partly adopted. See [plan look-pass](../plans/look-pass.md), [plan rail-slice](../archive/plans/rail-slice.md).
 
 _Research report, 1 November 2026. Super Mario Sunshine's visual construction, the crossing beauty board's selected shots, and a practical translation to Boogle's WebGPU renderer on an M4 iPad Pro. Recommendations only; no renderer changes or new design decisions._
 

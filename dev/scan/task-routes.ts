@@ -36,7 +36,7 @@ const design = {
   refs: [
     'docs/agents/context.md',
     'DESIGN.md',
-    'docs/plans/find-the-fun.md#rules-for-every-prototype',
+    'docs/agents/context.md#design-work-rules',
     'docs/decisions.md#decided',
   ],
 };
@@ -407,7 +407,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
   ],
   prototype: [
     {
-      scope: 'Flagged experiment',
+      scope: 'Explicitly requested isolated experiment',
       owners: ['src/proto', 'src/features', 'protos/protos.ts'],
       example: 'src/features/proto-greybox.ts',
       copy: 'Small flag-gated dynamic loader; keep implementation under proto',
@@ -415,15 +415,15 @@ export const TASK_ROUTES: Record<string, Route[]> = {
         ...core,
         'docs/agents/context.md',
         'DESIGN.md',
-        'docs/plans/find-the-fun.md#rules-for-every-prototype',
+        'docs/agents/context.md#design-work-rules',
         'docs/decisions.md#decided',
       ],
       readIf: [decisionTopics, { when: 'Changing the place prototype', refs: ['docs/game-design/place.md#the-run'] }],
       sync: 'Choose per state; lockstep number changes need a separate proto room',
-      checks: `${look}; card question/one-line change and live status when shipped; owner playtest stops further work`,
+      checks: `${look}; one gut question and one line on the change; nothing waits for a playtest`,
       lookalikes: ['src/proto/flags.ts', 'src/entities'],
       warning:
-        'Place now also opens by default; do not copy that policy for a new experiment. Prototypes may use onFrame until promoted; keep core seams explicit and update the experiment chapter.',
+        'Normal development builds into the live game. Use this route only for an explicitly requested isolated experiment; keep core seams explicit and update its chapter.',
     },
   ],
 };

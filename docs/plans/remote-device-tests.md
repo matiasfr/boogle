@@ -74,7 +74,7 @@ All of it is one lazy chunk, `src/debug/device/`, loaded by `src/features/device
 added. There are no controls to register: the Run button is a DOM button in the panel, not a game action.
 
 **The room.** `?device=` rewrites the address before boot so the page enters a fresh private jump room
-(`?from=q6-done`, [playtest-jump-in](playtest-jump-in.md)) with `prof=1` (GPU timestamps where the browser has them).
+(`?from=q6-done`, [playtest-jump-in](../archive/plans/playtest-jump-in.md)) with `prof=1` (GPU timestamps where the browser has them).
 The shared `boogle` world is never entered. `q6-done` is the bench's own seed for its heaviest poses.
 
 **Suite `quick` (step 1), in order:**

@@ -27,11 +27,11 @@ Repo settings this relies on (owner only): Settings > Actions > General > "Allow
 
 - Every feature names the DESIGN.md principle it serves and flags any it bends (commit message body, or the PR).
 - If a change conflicts with a principle, change the idea, or change the principle in DESIGN.md with the reason, in its own commit.
-- Use [DESIGN.md](DESIGN.md) and [docs/decisions.md](docs/decisions.md) for current design; pick prototype work from [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) and tick its checkboxes in the same commit.
+- Use [DESIGN.md](DESIGN.md) and [docs/decisions.md](docs/decisions.md) for current design; pick prototype work from [docs/plans/find-the-fun.md](docs/archive/plans/find-the-fun.md) and tick its checkboxes in the same commit.
 
 ## Playtesting
 
-The playtest is the real test. Whenever something new lands, jump on https://boogle.club/?room=<name> with whoever is around. Each prototype in [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) has a question; jot the answer and anything fun or broken in [docs/playtests.md](docs/playtests.md) (or run `/playtest-notes` in Claude Code). File broken things with the bug report template and `?netdebug=1` logs.
+The playtest is the real test. Whenever something new lands, jump on https://boogle.club/?room=<name> with whoever is around. Each prototype in [docs/plans/find-the-fun.md](docs/archive/plans/find-the-fun.md) has a question; jot the answer and anything fun or broken in [docs/playtests.md](docs/playtests.md) (or run `/playtest-notes` in Claude Code). File broken things with the bug report template and `?netdebug=1` logs.
 
 ## Working with AI agents
 

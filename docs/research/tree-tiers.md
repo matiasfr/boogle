@@ -2,7 +2,7 @@
 
 > **Verdict:** Every ordinary tree choppable with the first axe; finite trees.
 > **Top recommendations:** 1. Make every ordinary tree choppable with the first axe. 2. Keep trees finite; let the proper axe improve familiar work.
-> **Status:** adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game), [plan trees-any](../plans/trees-any.md).
+> **Status:** adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game), [plan trees-any](../archive/plans/trees-any.md).
 
 _Research report, 3 November 2026. Evidence for the owner's after-round-4 tree decision: harvest eligibility, natural visual differences, contact feedback and Threefold Reach's efficiency ladder. Live web research, source inspection at `70b871cc`, an offline replay of tree placement and economy-model sensitivities. No game changes, reference-game play session or new Boogle playtest; not tested on a device._
 

@@ -2,7 +2,7 @@
 
 > **Verdict:** Build Super Mario Sunshine's recipe (one plane, two scrolling textures, a sparkle band chosen by texture footprint), with no screen copies, behind `?water=`; keep Ultra as the control until the owner picks.
 > **Top recommendations:** 1. Replace the ocean's look, not the water contract: keep `waterField`, plunges, underwater and ripples, swap the surface. 2. Drop both screen copies, the FFT and the caustics producer on the cheap candidates; depth only where foam needs it. 3. Fix the pier/Far Head per-pixel contact loop and the phone's pinned resolution in the measurement job's numbers before judging any candidate's cost.
-> **Status:** open. Plan: [water-sunshine](../plans/water-sunshine.md); board: [water-sunshine.html](water-sunshine.html).
+> **Status:** open. Plan: [water-sunshine](../archive/plans/water-sunshine.md); board: [water-sunshine.html](water-sunshine.html).
 
 _9 November 2026. Research on `worktree-agent-a94029c73fc37a991`, based on `d07206a9`, three.js r187. Live web research and a read of the current water code; no game code changed and nothing was run on a GPU, browser or bot (measuring is the parallel performance job's work). Not tested on a device._
 
@@ -129,7 +129,7 @@ From [`water-render.ts`](../../src/render/water-render.ts) and [`src/render/wate
 
 ## Numbered recommendations
 
-1. **Swap the surface, keep the contract.** Build the new waters as alternative `Ocean` implementations behind `?water=`, sharing `waterField`, underwater, ripples, receivers and spray seams. Ultra stays the default and the control until the owner picks ([plan](../plans/water-sunshine.md)).
+1. **Swap the surface, keep the contract.** Build the new waters as alternative `Ocean` implementations behind `?water=`, sharing `waterField`, underwater, ripples, receivers and spray seams. Ultra stays the default and the control until the owner picks ([plan](../archive/plans/water-sunshine.md)).
 2. **Use Sunshine's recipe on one plane with no screen read** for the first candidate: two scrolling samples of our own small wave texture, colour from the bed, blending for clear shallows, an analytic sky band for reflection, a sun lane, haze to the horizon. About 5 fetches a pixel, no pass split.
 3. **Make the mip trick resolution-proof.** Choose the band from the computed texture footprint (`log2` of world metres per pixel × texels per metre), the same value the GPU uses, rather than relying on authored mip levels alone: it then survives DPR, the 0.6 water ceiling, the telescope's zoom and the summit's height. Keep an authored mip chain (`DataTexture.mipmaps`, supported by r187's WebGPU texture upload) as an A/B variant.
 4. **Get depth only where foam needs it.** The second candidate adds one depth copy (one pass split, no colour copy) for intersection foam on legs, rocks, swimmers and buoys and a soft waterline. If refraction shimmer is wanted later, copy colour at half size, as Sunshine did.

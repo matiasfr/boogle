@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 Add an entry to `docs/playtests.md` from: $ARGUMENTS
 
-1. Read `docs/playtests.md` for the format, `docs/plans/find-the-fun.md` for the current playtest question,
+1. Read `docs/playtests.md` for the format, the active brief and `docs/direction.md` for the current playtest question,
    and the active notes tracker (currently `docs/plans/round-4-notes.md`). The preferred feedback is a
    Granola call while playing, not a long survey. For visual feedback, say where you are and share a
    screen when possible. During the place round, **M / D-pad right** flags the moment without typing;

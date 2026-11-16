@@ -18,7 +18,7 @@
 
 ## 1. What is binding, and what actually exists
 
-**[C]** [DESIGN.md](../../DESIGN.md) makes the relevant tests clear: **Toys before chores**, automatic cooperation, drop-in play, and leaving something for the next visitor. A musical reward cannot require a rhythm score, a party waiting together, or extra time on a train. [Find the fun, step 7](../plans/find-the-fun.md#7-does-a-long-crossing-feel-vast) is the existing crossing experiment, not a request to build a soundtrack system now.
+**[C]** [DESIGN.md](../../DESIGN.md) makes the relevant tests clear: **Toys before chores**, automatic cooperation, drop-in play, and leaving something for the next visitor. A musical reward cannot require a rhythm score, a party waiting together, or extra time on a train. [Find the fun, step 7](../archive/plans/find-the-fun.md#7-does-a-long-crossing-feel-vast) is the existing crossing experiment, not a request to build a soundtrack system now.
 
 **[C]** The newer [owner decisions](../decisions.md) supersede several ideas in the earlier reports:
 

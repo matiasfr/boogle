@@ -5,7 +5,7 @@ import path from 'node:path';
 
 type Authority = { status: 'current' | 'historical' | 'parked'; next: string; why: string };
 const decisions = 'docs/decisions.md';
-const work = 'docs/plans/find-the-fun.md';
+const work = 'docs/direction.md';
 const built = 'docs/game-design.md';
 
 function docAuthority(file: string, text: string): Authority {
@@ -18,7 +18,7 @@ function docAuthority(file: string, text: string): Authority {
       next: decisions,
       why: 'superseded entries and ruled calls; current rules are in the topic files',
     };
-  if (['PLAN.md', 'SETTLED.md'].includes(f) || f.startsWith('docs/plans/done/'))
+  if (['PLAN.md', 'SETTLED.md'].includes(f) || f.startsWith('docs/plans/done/') || f.startsWith('docs/archive/'))
     return { status: 'historical', next: work, why: 'superseded plan or record' };
   if (f.startsWith('docs/proposals/') && ![decisions, 'docs/proposals/README.md'].includes(f))
     return {
@@ -48,7 +48,7 @@ export function docLabel(file: string, text: string): string {
   return `[${a.status}] ${file} → ${a.next} (${a.why})`;
 }
 
-/** Literal, case-insensitive search of repository Markdown; no dependency or generated trees. */
+/** Literal, case-insensitive search of live repository Markdown; no archives, dependency or generated trees. */
 export function searchDocs(root: string, query: string): string[] {
   const out: string[] = [];
   const skip = new Set(['node_modules', '.git', '.look', 'dist', '.boogle-data']);
@@ -57,7 +57,7 @@ export function searchDocs(root: string, query: string): string[] {
       .readdirSync(path.join(root, dir), { withFileTypes: true })
       .sort((a, b) => a.name.localeCompare(b.name))) {
       const f = path.join(dir, e.name);
-      if (e.isDirectory() && !skip.has(e.name)) walk(f);
+      if (e.isDirectory() && !skip.has(e.name) && f !== 'docs/archive') walk(f);
       else if (e.isFile() && e.name.endsWith('.md')) {
         const text = fs.readFileSync(path.join(root, f), 'utf8');
         const hits = text

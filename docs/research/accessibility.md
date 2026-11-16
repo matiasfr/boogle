@@ -129,7 +129,7 @@ Priority orders likely exclusion first, then breadth and effort; it is not an im
 
 ## What to prototype first
 
-**Bounded experiment: reduced-motion jumps with height stabilization retained.** First compare the current reduced-motion camera with the same camera retaining its existing vertical filter, while sprint FOV and shake stay off. No new camera constants, route, art or gameplay rules. Own the experiment in [Buddy camera](../../src/player/buddy/camera.ts), with its flag/card following [prototype rules](../plans/find-the-fun.md#rules-for-every-prototype). This is proposed future work, not part of this research commit. **[D]**
+**Bounded experiment: reduced-motion jumps with height stabilization retained.** First compare the current reduced-motion camera with the same camera retaining its existing vertical filter, while sprint FOV and shake stay off. No new camera constants, route, art or gameplay rules. Own the experiment in [Buddy camera](../../src/player/buddy/camera.ts), with its flag/card following [prototype rules](../archive/plans/find-the-fun.md#rules-for-every-prototype). This is proposed future work, not part of this research commit. **[D]**
 
 **Gut question:** “Can you jump and ride while keeping the view comfortable?” **What's new:** “Reduced motion keeps the steady jump camera.”
 

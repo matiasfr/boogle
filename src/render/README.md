@@ -5,7 +5,7 @@ Boogle draws with three.js's `WebGPURenderer` (`three/webgpu`) and writes every 
 Silicon. There is no WebGL 2 fallback (`scene.ts` turns three's off), so a browser without WebGPU gets a note in the
 lobby instead of the island. In return any feature may use compute shaders, storage buffers, storage textures and
 indirect draws directly, with no second path and no `isWebGPUBackend` check. CI runs WebGPU too (SwiftShader over
-Vulkan). How the migration went: [docs/plans/done/webgpu-migration.md](../../docs/plans/done/webgpu-migration.md).
+Vulkan). How the migration went: [docs/plans/done/webgpu-migration.md](../../docs/archive/plans/done/webgpu-migration.md).
 
 ## The frame
 

@@ -1,6 +1,6 @@
 # Plan: every shared outcome decided on the server
 
-> **Status:** steps 1–5 and 9 built, 13 November 2026; steps 6–8 skipped by the owner's Retire choice. The classic transport and its final registrations are retired at v40; rail tuning and the live roster are Server kind. Checkpoints A and B remain incomplete, with browser-harness/device limitations below and in the [step 9 report](server-owned-state-step9-report.md). Original inventory read at `de19c85a3`. Owner calls behind it: [Engine foundations first](../agents/owner-calls.md) and [Save resets never block development or architecture](../agents/owner-calls.md#save-resets-never-block-development-or-architecture) (both 13 November). This is "option 1" (the server as the simulation, the client a thin view). Option 2 (prefab and content data) is another plan and is not covered. No ECS library is chosen; Becsy is a lean, not a decision.
+> **Status:** steps 1–5 and 9 built, 13 November 2026; steps 6–8 skipped by the owner's Retire choice. The classic transport and its final registrations are retired at v40; rail tuning and the live roster are Server kind. Checkpoints A and B remain incomplete, with browser-harness/device limitations below and in the [step 9 report](../archive/plans/server-owned-state-step9-report.md). Original inventory read at `de19c85a3`. Owner calls behind it: [Engine foundations first](../agents/owner-calls.md) and [Save resets never block development or architecture](../agents/owner-calls.md#save-resets-never-block-development-or-architecture) (both 13 November). This is "option 1" (the server as the simulation, the client a thin view). Option 2 (prefab and content data) is another plan and is not covered. No ECS library is chosen; Becsy is a lean, not a decision.
 
 ## Goal
 
@@ -162,7 +162,7 @@ Rebased on `9c9b4cd67` as `codex/server-state-step-3-2`, preserving Home's singl
 The seven classic gameplay states, their 13 operations, ticks, persisted/hash shapes and exclusively dependent
 views, prototypes and tests are retired at v39. The eight haul keys and classic roster registration remain for
 step 9; the live railway bundle/HUD, inventory and Boogler catalog remain. The catalog is byte-identical.
-The [retirement report](server-owned-state-step5-report.md) lists every state, readers, deleted files and line
+The [retirement report](../archive/plans/server-owned-state-step5-report.md) lists every state, readers, deleted files and line
 counts, preserved copy locations, trace projection proof, checks and browser limits. Full check, server tests,
 ship-check, registry and level checks pass; two peers complete T2. Net and world-inputs are unverified on the
 updated harness because the trusted broker still runs pre-retirement code. Checkpoint A remains incomplete.
@@ -173,7 +173,7 @@ The eight haul keys and final classic roster/tune registrations are removed firs
 the classic transport, recovery tail and trace oracle are then retired at v40. No
 lockstep state remains. The room clock, server registration/checkpoint and verified
 save/fatal-command guards remain. Seats and The Boogler still use the lead tab.
-The [step 9 report](server-owned-state-step9-report.md) records deleted files/lines,
+The [step 9 report](../archive/plans/server-owned-state-step9-report.md) records deleted files/lines,
 fixture changes, server replay/convergence proofs and proposed owner-only DESIGN
 text. DESIGN.md and prefab lint files are unchanged. The existing math ban stays:
 shared railway prediction and repeatable server replay still need consistent rules.

@@ -971,7 +971,7 @@ Today `npm run checks-for` routes every gameplay, render, terrain and audio chan
 - [ ] **D1c. Dev menu.** `src/debug/dev/place.ts` is rewritten as a production read-only adapter: destinations from
   `layout`; inspect from `inspectRailway()` and `inspectTown()`. Or delete it, and have `camera.ts`, `inspect.ts`,
   `room.ts`, `report.ts` and `scenarios.ts` use `productionRailway` branches only. Then, per
-  [playtest-jump-in](playtest-jump-in.md#ordering-and-d1):
+  [playtest-jump-in](../archive/plans/playtest-jump-in.md#ordering-and-d1):
   - **Delete:** `src/debug/dev/fixtures.ts`; `src/debug/dev/scenarios.ts` (the dock's Tests panel) and its
     `registerDockPanel` line; `src/debug/dev/destinations.ts`, whose Start test, Go and Return are Place-only; the TEST
     badge and `dev-launch` block in `src/debug/dev-menu.ts` (the `fixture()` and `VERSION` imports); `setup`, `fixture`,
@@ -1153,7 +1153,7 @@ The game, the railway bot and every routed check pass on boogle.club's entry.
 
 Read against DESIGN.md, [owner-calls](../agents/owner-calls.md), [decisions.md](../decisions.md) (index, then The shape
 of the game, Trains and the world, Progress and rewards, Characters and story), [direction.md](../direction.md), the
-newest [playtests](../playtests.md) (3, 4, 6, 7 and 8 November), [find-the-fun](find-the-fun.md) steps 6 and 10, and
+newest [playtests](../playtests.md) (3, 4, 6, 7 and 8 November), [find-the-fun](../archive/plans/find-the-fun.md) steps 6 and 10, and
 the research index's town, reward and movement entries. `node dev/playtest/cli.ts` doesn't run in this checkout (it
 can't find `playwright`), so playtest data comes from the written entries. Every Default and New call below is in
 [agent-calls](../agent-calls.md), status `open`.

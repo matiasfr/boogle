@@ -7,7 +7,7 @@
 _2026-11-12. Answers the owner's 12 November interest: "more work that we could do to make our engine more like a real
 game engine and make it easier if we ever need to migrate to another ECS engine". Code read at `add1b4264`. It builds on
 [engine-architecture](engine-architecture.md), [ecs-evaluation](ecs-evaluation.md), [entity-architecture](entity-architecture.md),
-[plan ecs-e](../plans/ecs-e.md) and [plan ecs-m12-m13](../plans/ecs-m12-m13.md) and doesn't repeat them. Every number is
+[plan ecs-e](../archive/plans/ecs-e.md) and [plan ecs-m12-m13](../archive/plans/ecs-m12-m13.md) and doesn't repeat them. Every number is
 from a command at that commit: line counts from `git ls-files … | xargs cat | wc -l`, call counts from regex over the
 files named (receivers typed `World`), imports from `git grep`/import-statement parsing, facts from `npm run atlas`. No
 code changed._

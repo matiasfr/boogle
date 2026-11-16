@@ -23,7 +23,7 @@ what the pier breaks. [route-contract](../research/route-contract.md): no travel
 two by hand) is kept.
 
 **Already built, not redone here.** Part 1 and part 2 of the Works signposting ([part 2](works-signposting-2.md)), the
-kiln's bill on its prompt (14 November), [footings-signalling](footings-signalling.md) A1 to A4 (the cradle's and the
+kiln's bill on its prompt (14 November), [footings-signalling](../archive/plans/footings-signalling.md) A1 to A4 (the cradle's and the
 footings' boards, 14 November) and D1, the forge's hand-off ([forge-call-handoff](forge-call-handoff.md), shipped in
 #1870 after Grant played): the pier's 2.5 s cut to the crane lifting the breaker, the little guys waving within 30 m,
 the 6 m prompt, three repeat calls, and the `breaker approached` / `breaker taken` marks. Grant played build

@@ -2,7 +2,7 @@
 
 > **Verdict:** Water demo scene visual validation, four rounds.
 > **Top recommendations:** none; validation record, four visual rounds.
-> **Status:** reference. See [plan water-graduation](../plans/water-graduation.md).
+> **Status:** reference. See [plan water-graduation](../archive/plans/water-graduation.md).
 
 2026-11-03. Local branch `codex/water-demo-scene`; no push or deployment. Serves DESIGN.md **Toys before chores**
 and **Show, don't tell**. The owner's supplied desktop screenshots are the target, ahead of source inference.

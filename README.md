@@ -4,7 +4,7 @@ One island, one beach ball, and everyone who has the page open.
 
 Boogle is a small multiplayer browser game built with [three.js](https://threejs.org) and [Rapier](https://rapier.rs) (physics, WASM). It is bundled with [Vite](https://vite.dev).
 
-**Contributing?** Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read [DESIGN.md](DESIGN.md) (the principles that decide design arguments), [docs/decisions.md](docs/decisions.md) (the owner's decisions) and [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) (what we're prototyping now).
+**Contributing?** Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read [DESIGN.md](DESIGN.md) (the principles that decide design arguments), [docs/decisions.md](docs/decisions.md) (the owner's decisions) and [docs/plans/find-the-fun.md](docs/archive/plans/find-the-fun.md) (what we're prototyping now).
 
 ## Run it locally
 

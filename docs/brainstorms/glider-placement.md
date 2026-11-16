@@ -108,9 +108,9 @@ Each capture uses `node dev/look/look.ts`:
 
 Read against DESIGN.md (7, 8, 3, 10, 11), [owner-calls](../agents/owner-calls.md), [decisions.md](../decisions.md)
 (index; The shape of the game; Process, 5–9 November), [direction.md](../direction.md), [playtests](../playtests.md)
-(3 November round 4, 8 November solo runs), [find-the-fun](../plans/find-the-fun.md) (rules for every prototype),
+(3 November round 4, 8 November solo runs), [find-the-fun](../archive/plans/find-the-fun.md) (rules for every prototype),
 [place-retirement](../plans/place-retirement.md) (D1, F2, its design review), [split-rock-roundhouse](../plans/split-rock-roundhouse.md)
-(balcony section, J3, question 4), [ability-pacing](../plans/ability-pacing.md), and the research index's _Puzzles,
+(balcony section, J3, question 4), [ability-pacing](../archive/plans/ability-pacing.md), and the research index's _Puzzles,
 abilities and traversal_ section: [ability-upgrades](../research/ability-upgrades.md),
 [botw-glide-target](../research/botw-glide-target.md), [movement-abilities](../research/movement-abilities.md),
 [route-contract](../research/route-contract.md), [round4-first-use](../research/round4-first-use.md). Code read:

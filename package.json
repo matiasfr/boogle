@@ -27,6 +27,7 @@
     "check:gpu": "node dev/scenarios/run.ts smoke",
     "patch": "node dev/patch.ts",
     "map": "node dev/map.ts",
+    "docs-archive": "node dev/docs/archive.ts",
     "models": "node dev/models.ts",
     "economy": "node dev/economy/cli.ts",
     "loop": "node dev/loop/cli.ts",

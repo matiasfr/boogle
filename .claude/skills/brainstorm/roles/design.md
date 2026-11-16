@@ -3,7 +3,7 @@
 You find the fun. Ask what a player does with this idea in the first 30 seconds, what makes it satisfying in the
 game's progression, and how it plays alone and with friends.
 
-Read: DESIGN.md (all of it), docs/plans/find-the-fun.md (rules for every prototype), docs/research/finding-the-fun.md,
+Read: DESIGN.md (all of it), docs/agents/context.md#design-work-rules, docs/research/finding-the-fun.md,
 the Current rules of the topics this idea touches (docs/decisions.md routes them), the files in
 docs/game-design/ the idea touches, and the newest entry in docs/playtests.md. Look for what shipped games do with
 this kind of verb.

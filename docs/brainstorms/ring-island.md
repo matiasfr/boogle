@@ -228,7 +228,7 @@ On the decisions page, in the form "question: answer":
 
 - Ring Island while it's the end of the line: "Buffers about 15 m past the halt, with a crossover before it" (as recommended; [rail-map](../plans/rail-map.md)).
 - **Changed from the recommendation:** the raised drawbridge seen from Home: "Leave it at true scale". The far leaf is not drawn larger than life; the telegraph above is corrected to say so.
-- Start the island's first landform step now?: "Yes, start it" ([terrain plan](../plans/terrain-pass.md#ring-island-a-landform-people-could-live-on)).
+- Start the island's first landform step now?: "Yes, start it" ([terrain plan](../archive/plans/terrain-pass.md#ring-island-a-landform-people-could-live-on)).
 - Get unstuck on the island before the Meet: "It returns you to your own side (the Pier halt)" (build 1's question 2).
 - The name "Rivet" for the island character: "Keep it". The works board reads "RINGWORKS": "Keep it for now".
 
@@ -386,7 +386,7 @@ from 10 November: Ring Island, trains stop on request, Turn the table only when 
 everyone. From 9 November: a cinematic can't be interrupted by accident, words and beacons sparingly, and station 6 by
 train. From 8 November, the Split-rock answers. From 6 November: ring-and-economy, roughly six hours, Split-rock then
 Ring Island, and the gate-puzzles answers. Also [direction](../direction.md), the [round 4 notes](../plans/round-4-notes.md)
-(the 9 and 10 November sessions), [find-the-fun](../plans/find-the-fun.md) 7–10, [glider placement](glider-placement.md)
+(the 9 and 10 November sessions), [find-the-fun](../archive/plans/find-the-fun.md) 7–10, [glider placement](glider-placement.md)
 and [gate puzzles](gate-puzzles.md). Research tops: [route-contract](../research/route-contract.md),
 [progression-flow-layout](../research/progression-flow-layout.md), [level-design](../research/level-design.md),
 [shared-moments-and-events](../research/shared-moments-and-events.md), [botw-glide-target](../research/botw-glide-target.md),

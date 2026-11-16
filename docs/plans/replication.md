@@ -549,7 +549,7 @@ easing back up.
 
 ### The railway on E (7 November)
 
-The railway's state moved into an E world ([ecs-e](ecs-e.md), section 4): the replicated components above are now
+The railway's state moved into an E world ([ecs-e](../archive/plans/ecs-e.md), section 4): the replicated components above are now
 E components (`src/sim/railway-world.ts`), each a replication schema as it stands, and the server's world is its own
 projection (`src/world/replicate-world.ts`): the systems mark what they change, so `railProjections` and the
 hand-written touch lists are gone. Catalog kinds and accounts are keyed by entity id and carry their `slot` or `pid`;

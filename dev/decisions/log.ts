@@ -29,7 +29,10 @@ const LEAD = /^(?: {2})?- (?:<a id="[^"]+"><\/a>)?\*\*(.+?)\*\*/;
 export const lead = (line: string): string | null => LEAD.exec(line)?.[1] ?? null;
 export const isEntry = (u: Unit) => /^- \*\*/.test(u.lines[0]!);
 /** A line as the old single file had it: the anchor the split adds before an entry's lead is not part of the record. */
-export const unanchored = (line: string) => line.replace(ANCHOR, '- ');
+// Archive relocation changes link destinations only. Hash the original destination so the immutable split
+// manifest still guards every word of the decision/call; do not rebaseline it after moving linked documents.
+export const unanchored = (line: string) =>
+  line.replace(ANCHOR, '- ').replace(/(\]\()archive\/(plans|proposals)\//g, '$1$2/');
 export const hash = (s: string) => crypto.createHash('sha256').update(s).digest('hex').slice(0, 16);
 export const chars = (s: string) => [...s].length;
 

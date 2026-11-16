@@ -1,6 +1,6 @@
 # 6.28 Prototype: a real place (`?proto=place`)
 
-**Deleted (11 November 2026, [ecs-m12-m13](../plans/ecs-m12-m13.md) M13e).** `src/proto/place/` and the
+**Deleted (11 November 2026, [ecs-m12-m13](../archive/plans/ecs-m12-m13.md) M13e).** `src/proto/place/` and the
 `?proto=place` entry are gone; `?proto=place` now opens the live game. The source is at the tag `archive/place`
 (`a6fc476fb`; local until the owner pushes it). What follows is the prototype's record: its files, flags, rooms,
 saves and evals are history, and the live game's parts are in `src/place/`, `src/entities/` and their own sections.
@@ -56,7 +56,7 @@ and the cart's existing numbered service tag. The full shipment unloads steel fi
 waiting piece on the cart and showing it on its receiving stack only after it lands. The visual stagger now fits
 all 48 pieces inside the cart's existing 2.2 s stop (last landing at 2.05 s); smaller loads retain their old rhythm.
 Only Local presentation changes: no delivery quantities, pickup rules, server timing or new words. DESIGN.md
-**11. Show, don't tell**. Proof and limits: [C2 evidence](../plans/grant-c2-depots.md).
+**11. Show, don't tell**. Proof and limits: [C2 evidence](../archive/plans/grant-c2-depots.md).
 
 **Q5 rules and the sea switch (8 November; B4 job A).** Production line two now reaches Q5: 24 logs and 24 rails
 fund the 260 m trestle from the rim to Far Head (286 → 546 m, 96 rail pairs). Laying waits for the Server-kind
@@ -132,7 +132,7 @@ Saved `Rail.awake` still grants the tool; Station 1's saved `Job.start` determin
 shape, namespace, bill or command changes, and no migration: old awake saves keep their axe and progress;
 funded saves restore the engine silently. The retained wire name `rail.wake` now comes from the camp interaction.
 All new opening copy and the removed “Wake it up” prompt are drafts for the owner, listed in
-[first-five-minutes](../plans/first-five-minutes.md). The Boogler's copy is untouched.
+[first-five-minutes](../archive/plans/first-five-minutes.md). The Boogler's copy is untouched.
 Serves DESIGN.md 7 (Telegraph everything) and 11 (Show, don't tell).
 
 **Current branch, unshipped:** the integrated slice-2 base is `f0be49a3`. The [slice-3 plan](../research/slice3-plan-2.md) now continues the same accepted material authority through T1's 24 logs, T2's 32 logs + 8 stone, and T3's 40 logs + one unique great beam. Stations accept only their own outstanding bill in order; a funded station pins its feed and departure/lay schedule. Local swings, flights, piles, stock displays and the one machine display accepted state. Rejoining reconstructs that state without replaying historical sounds or rewards. This entry supersedes the T1-only scope above for this branch; the earlier records remain historical evidence.
@@ -972,7 +972,7 @@ Island use original-side/outbound and offset-side/homeward platforms; at the ope
 side, moving with the Railhead. Track geometry and train rules are unchanged. Catalog and views share the rotunda's v45 reset and now agree on right-hand running. The Pier remains
 homeward-only; after Q7 its piled west platform and crossing serve the return train and its east lever chains.
 Retained terminal trains keep their original platform authority until the whole departure clears. See the
-[step 3 report](../plans/running-side-step3-report.md) for the contract and remaining work. Step 4 (the views) is
+[step 3 report](../archive/plans/running-side-step3-report.md) for the contract and remaining work. Step 4 (the views) is
 built on the same branch: "Trains keep to the right, and the lever you pull is on your train's platform" above. Tools and bots follow the same sides and retained authority (step 6).
 
 **A train's vehicles stand apart along the track they are drawn on** (owner, 14 November: "on certain stops,
@@ -1279,7 +1279,7 @@ old massing goldens byte for byte. The incline platforms derive from the leg-2 a
 This changes no route, interaction, sign copy or resident distance.
 
 **Greybox leg 2: Bell Rock, Home's West landing, the Gorge's incline platforms (13 November 2026;
-[greybox-leg2-massing](../plans/greybox-leg2-massing.md)).** Layout only, live for everyone: grey boxes, labelled
+[greybox-leg2-massing](../archive/plans/greybox-leg2-massing.md)).** Layout only, live for everyone: grey boxes, labelled
 pads and boards, no rails, no rules, nothing to press. Every label is a placeholder.
 
 Static Bell Rock and West landing geometry is authored in `src/content/levels/leg2.ts`, compiled to the Bell/West
@@ -1324,7 +1324,7 @@ garage's post, stand, jib and crew move out with it. The current 15° garage cam
 The jib arm is 12.2 m so the closed bystander's install hook and trolley remain supported with that camera pose.
 The show-off turn lasts 3 s within the locked install moment (rest at c+4800, skip still from c+800).
 The level pad under the bay arc is already graded to 18 m, because the relocated yard rails otherwise sank into
-the old slope. There is no pit or rotunda shell yet. [Step 1a report](../plans/roundhouse-rotunda-1a-report.md).
+the old slope. There is no pit or rotunda shell yet. [Step 1a report](../archive/plans/roundhouse-rotunda-1a-report.md).
 The delivered steel pallet follows the site's table radius and the kit's kerb: its centre is on bearing 30° at Home,
 with at least 1 m between the pallet and kerb. Its base spans the shallow ground slope; neither steel nor pallet
 stands on the disc. The placement clears the spur, all seven future stall roads, the garage furniture and camera.
@@ -1402,7 +1402,7 @@ cusp, then the shunter pushes the wagon out to line 2 at the unchanged coupling 
 and after line 2 couples it, a turn is refused
 and the prompt isn't offered (until 10 November a turn before the fit was accepted and did nothing, and after
 coupling the table was a toy). **The cradle asks in the open (14 November,
-[footings-signalling](../plans/footings-signalling.md) A1 and A2; owner: "There is never any prompt to bring 8 rails to
+[footings-signalling](../archive/plans/footings-signalling.md) A1 and A2; owner: "There is never any prompt to bring 8 rails to
 the cradle stall").** From the stall's second footing (after its build and tarp on a live edge) until the wagon rolls
 out: a station-style bill on the Roundhouse apron, **Footing wagon** / **rails 0/8**, its count rising, then
 **Turn the table** once fitted. It is the kiln's own board, idle since the kiln lit, moved 11.3 m from the table's
@@ -1546,7 +1546,7 @@ The decks/bases/piles, shelter, bench, island canopy/posts, signal mast and all 
 compiled halt-kit records. The compiler joins the unchanged halt catalog and platform layout; native geometry
 resolves at load. The existing platform frame, piece reveal order, merged draws, grass support and collider order
 remain. Request levers/plaques, signal attachments, plank crossings and board stands still use their existing
-builders ([prefab step 10 third pass](../plans/prefab-data-step-10-3-report.md)); no halt or interaction moves.
+builders ([prefab step 10 third pass](../archive/plans/prefab-data-step-10-3-report.md)); no halt or interaction moves.
 
 Home's two destination plaques hang 0.8 m inward beside their signal masts, clear of the pictograms; the masts stay
 in place. These are the kit's only road plaques (the Pier's second platform has no mast or road plaque). All kit
@@ -1625,9 +1625,9 @@ plus a total against comfort (8 or 16); an overloaded total is amber and may rea
 comfort announces the cost, and a heavy-load reason with a Drop reminder remains visible while overloaded.
 This supersedes the older 8/16 hard cap and quiet-walking tag fade **only while heavy**. No special prototype
 room or new control. Server counts remain authoritative; movement is Owner and presentation Local.
-[Plan and measured geometry](../plans/heavy-load.md#review-follow-up-15-november). Q2's log rack stands 6 m back and 8 m outward from its frame (a 10 m haul), clear of the cart's curved connecting track. Q5's log rack stays 10 m back; its rail shelf stands 4 m to the side (10.77 m from the frame), leaving 1.5 m between their footprints and separate pickup prompts. A packed 24-unit haul can replace two comfortable trips there; full overloading loses on the longer early log bills. This is geometric walking arithmetic, not a human feel verdict. Pressing jump, hook or glide while heavy answers with a short draft refusal and a Drop instruction.
+[Plan and measured geometry](../archive/plans/heavy-load.md#review-follow-up-15-november). Q2's log rack stands 6 m back and 8 m outward from its frame (a 10 m haul), clear of the cart's curved connecting track. Q5's log rack stays 10 m back; its rail shelf stands 4 m to the side (10.77 m from the frame), leaving 1.5 m between their footprints and separate pickup prompts. A packed 24-unit haul can replace two comfortable trips there; full overloading loses on the longer early log bills. This is geometric walking arithmetic, not a human feel verdict. Pressing jump, hook or glide while heavy answers with a short draft refusal and a Drop instruction.
 
-**Loose-cargo overflow (15 November, third review repair).** Drops only change the pile at their validated local point or create one there; they never recover distant stock or transfer anything to a rack. There are at most 128 piles, eight small pieces per pile (one per footing), and each small-piece draw batch is sized from that maximum: 128 × 8 = 1,024. The sim reserves one free pile slot per excess carried piece across all accounts, including absent players. A comfortable player can only take extra cargo if those slots exist, counting the one slot freed by taking an entire source pile; a partial take frees no slot. Another player's ordinary drops cannot consume the reservations. Every accepted heavy load can therefore drop to comfort at its feet, in any material order, without needing a reachable frame or rack. At saturation, ordinary new piles and unreserved overfill are refused without spending cargo; exact-position partial piles can still be topped up. Hold Drop may stop at comfort when ordinary space is exhausted, restoring jump, hook and glide. Pile counts, reservations, positions and conservation are checked on reload; reservations are derived, never separately saved. The review's 129 eight-log drop attempts leave 1,024 visible ground logs and the last eight still carried, with no remote recovery. Ordinary timed abandonment remains separate and leaves aged rails in place if the forge's validated 4,096 limit would be exceeded. This supersedes the earlier unbounded and overflow-recycling policies; [plan and call](../plans/heavy-load-fix3.md).
+**Loose-cargo overflow (15 November, third review repair).** Drops only change the pile at their validated local point or create one there; they never recover distant stock or transfer anything to a rack. There are at most 128 piles, eight small pieces per pile (one per footing), and each small-piece draw batch is sized from that maximum: 128 × 8 = 1,024. The sim reserves one free pile slot per excess carried piece across all accounts, including absent players. A comfortable player can only take extra cargo if those slots exist, counting the one slot freed by taking an entire source pile; a partial take frees no slot. Another player's ordinary drops cannot consume the reservations. Every accepted heavy load can therefore drop to comfort at its feet, in any material order, without needing a reachable frame or rack. At saturation, ordinary new piles and unreserved overfill are refused without spending cargo; exact-position partial piles can still be topped up. Hold Drop may stop at comfort when ordinary space is exhausted, restoring jump, hook and glide. Pile counts, reservations, positions and conservation are checked on reload; reservations are derived, never separately saved. The review's 129 eight-log drop attempts leave 1,024 visible ground logs and the last eight still carried, with no remote recovery. Ordinary timed abandonment remains separate and leaves aged rails in place if the forge's validated 4,096 limit would be exceeded. This supersedes the earlier unbounded and overflow-recycling policies; [plan and call](../archive/plans/heavy-load-fix3.md).
 
 **Pack steel (8 November).** With the pack, carried rails stand in two banks on its shelf beside the log bundle,
 leaving both materials readable from behind and the side. Without it, the existing crosswise hold stays.
@@ -2351,7 +2351,7 @@ off. Numbers: `TUNE`, the bills (`LINKS`, `FORGE_BILLS`) and the plots (`TOWN`) 
 
 The look (`src/place/look.ts`) is the default. It overrides `tod`. `&look=off` gives the old look; `&look=ground,light,contact,kit,mats,gtao` gives single layers (`all`, the default, leaves `gtao` out). To-dos: [look-pass.md](../plans/look-pass.md).
 
-The staged [water graduation](../plans/water-graduation.md) registers the finalized `terrain.ts` grid after
+The staged [water graduation](../archive/plans/water-graduation.md) registers the finalized `terrain.ts` grid after
 `buildLand()`, through `water.ts`. Its valid world bounds are x 740–1520, z −280–260; the last row and column are
 included explicitly rather than accepting `H`'s exterior −6 fallback as real ground. The Local shore atlas uses a
 1024 m / 512² core and an 80-texel halo (2 m/texel); all eight resident layers are bounded, and an overflow reports

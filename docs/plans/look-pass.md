@@ -36,7 +36,7 @@ With `all` (no `gtao`) on this Mac at 2x, GPU time went from 3.3 ms to 4.2 ms, a
 - [ ] Light and ground on the main island first; they're most of the gain for the least cost. **Needs an owner call first:** the look relies on a higher sun (`skyDebug.preview(0.2)` in the test), so decide how it works with the day-night cycle and per-era palettes.
 - [ ] Move the ground material to the island's terrain (`src/island/terrain.ts`). Keep cliffs faceted per pixel, which looked better than smoothing them.
 - [ ] Decide how materials (wood grain, the two-colour sky reflection on steel) become shared helpers, and add post effects as tiers in `src/render/` only if they earn it. Leave out GTAO.
-- [ ] Authored cliff planes or a remesh: the 2 m grid gives vertical stripes where the painting has big planes. This goes with the terrain redesign in [rail-slice.md](rail-slice.md), which also says heightfields can't do gorge faces or overhangs.
+- [ ] Authored cliff planes or a remesh: the 2 m grid gives vertical stripes where the painting has big planes. This goes with the terrain redesign in [rail-slice.md](../archive/plans/rail-slice.md), which also says heightfields can't do gorge faces or overhangs.
 - [ ] Baked contact shading in vertex colours as a kit standard. Blobs only where needed, since each needs placing.
 - [ ] A real art pipeline for pieces: a Python kit per era, batched. Blender worked headless for this one (`assets/src/place-kit.py`, [asset-pipeline.md](asset-pipeline.md)).
 

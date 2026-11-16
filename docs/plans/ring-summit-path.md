@@ -251,7 +251,7 @@ Run on the planned positions before review (`npm run level-check` on main, plus 
   reloads. Development phase, no compatibility code.
 - **Hotspot files:** `src/entities/ring-island/view.ts` (907 lines; the build-2 and greybox jobs edit it) and
   `dev/level/ring.ts`. Keep the hunks to the path block; no branch is on them today.
-- **Terrain pass.** [terrain-pass](terrain-pass.md) proposes shelves, gullies and a softened summit on this island and
+- **Terrain pass.** [terrain-pass](../archive/plans/terrain-pass.md) proposes shelves, gullies and a softened summit on this island and
   warns that "the path's fixed waypoints may then cross a gully or a terrace riser". After step 1 that is a failing
   check, not a playtest note; the bridge's ends are computed from the line and the ground, so they move with both.
 - **Lockstep:** not touched. `path.ts` imports `src/sim` data read-only, as `ground.ts` does.
