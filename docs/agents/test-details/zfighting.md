@@ -53,6 +53,10 @@ bounded source adapters; unsupported builder/import changes throw instead of sil
 Some legacy pads/walkways still use the existing `timberDecks` box adapter. The output names excluded content.
 All completed assemblies are sampled, rather than asserting which progression state a person is currently seeing.
 
+The Roundhouse bridge adapter executes its current draw section and box batch at the stall stop, preserving the
+Float32 instance transforms and material colours. It covers rails, timber, girders, fastenings and handrails;
+the handle and other turning poses are outside this snapshot. A changed source boundary fails explicitly.
+
 For a live spot, run the **Vite dev server**, open `?dev=1`, then **Dev → Z-fighting → Scan at crosshair**.
 It samples opaque CPU triangles within 5 m of the first opaque hit on a 40 m centre ray (camera if none),
 names scene meshes/instances and connected components, and tints the nearest three pairs. The screenshot banner
