@@ -36,6 +36,7 @@ import { createRailwayLine2 } from './line2-view.ts';
 import { createRailwayShelf } from './shelf-view.ts';
 import { createRailwayCart } from './cart-view.ts';
 import { createRailwayTrains } from './train-view.ts';
+import { createFreight } from './freight-view.ts';
 import { createRailwayHalts } from './halts-view.ts';
 import { createRailwayHook } from './hook-shot.ts';
 import { createRailwayGlide } from './glide.ts';
@@ -120,6 +121,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     shelf.railSlot,
   );
   const trains = await createRailwayTrains(adapter, owner, line2.depotPlace);
+  const freight = createFreight(adapter, owner);
   line2.boilerSeat(trains.boilerSeat);
   trains.holdBoiler(line2.boilerFlying);
   const halts = await createRailwayHalts(adapter, owner);
@@ -563,6 +565,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       // Reserve the accepted delivery before the receiving views draw it; pieces appear there on landing.
       cart.update(dt);
       trains.update(dt);
+      freight.update();
       halts.update(dt);
       homeStation.update();
       hoist?.update(dt); // before the views that draw the part it holds
