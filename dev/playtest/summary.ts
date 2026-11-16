@@ -403,7 +403,7 @@ export function summarize(s: Session, others: Session[], places: Place[]): strin
     out.push(`  ${clock(e.t).padStart(6)}  [${str(e.src)}] ${str(e.msg)}${str(e.at) ? `  ${str(e.at)}` : ''}`);
   const lost = num(of(s, 'dropped').reduce((a, e) => a + num(e.n), 0));
   if (lost) out.push(`Note: ${lost} events were dropped on the way (offline too long, or marked in a loop).`);
-  if (others.length) out.push('', ...together([s, ...others], places));
+  if (others.length) out.push('', ...together([s, ...others]));
   return out;
 }
 
@@ -415,7 +415,7 @@ function track(s: Session) {
 }
 
 /** What each player did and how much they overlapped. */
-export function together(list: Session[], places: Place[]): string[] {
+export function together(list: Session[]): string[] {
   const out = [`Together: ${list.map(playerName).join(' and ')}`];
   for (const s of list) {
     const marks = [...marksByName(s).entries()]
@@ -440,8 +440,6 @@ export function together(list: Session[], places: Place[]): string[] {
       let longestAt = 0;
       let firstTogether = -1;
       const start = Math.min(...ta.keys());
-      const placesA = new Map<string, number>();
-      const placesB = new Map<string, number>();
       for (const [sec, ea] of ta) {
         const eb = tb.get(sec);
         if (!eb) continue;
@@ -460,10 +458,6 @@ export function together(list: Session[], places: Place[]): string[] {
           }
           if (d > 50) far++;
         }
-        const pa = str(ea.w) || placeAt(places, num(ea.x), num(ea.z));
-        const pb = str(eb.w) || placeAt(places, num(eb.x), num(eb.z));
-        placesA.set(pa, (placesA.get(pa) ?? 0) + 1);
-        placesB.set(pb, (placesB.get(pb) ?? 0) + 1);
       }
       const pct = (n: number) => `${Math.round((n / Math.max(1, both)) * 100)}%`;
       out.push(
