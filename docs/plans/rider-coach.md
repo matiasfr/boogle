@@ -139,7 +139,7 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   stills of the fitted boiler on the cold train with the cart in frame, then the first frame of steam on the cart's
   rest tick, and a real-time clip from the fit to the wake; if the cart is not in sight from the old train, the
   builder says so and the designer re-rules. Logged in [agent-calls](../agent-calls.md).
-- [ ] **R1b. Home proven for the coach train, today's track (S).** Sync: none (tests and level rows only). Tier:
+- [x] **R1b. Home proven for the coach train, today's track (S).** Sync: none (tests and level rows only). Tier:
   normal. Builds: Codex gpt-6.1-sol medium. Bump: no (no production value moves). After R1a. **Option A, recommended
   on merit ([Home on merit](#home-on-merit-a-b-and-c-16-november)):** with R1a the cart's leg is dead track whenever a
   train can stand at the Village, so
@@ -154,21 +154,32 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     **Operating** (trains < 0): the cart's body swept every 0.25 m from line 1 s 54 through the leg, road 2 to s 0 and
     out along line 2 to s 120 against static geometry only (island and its ramps, both levers, the spur's turnout parts,
     Q1's and Q2's frames, Q2's rack and sign at full stock, the forge rack, trees), ≥ 0.25 m. **Standing** (cart at
-    rest, hidden): the planned train at 21.65 against the same static set, ≥ 0.25 m (measured: island 0.58, leg lever
-    1.13). The probe `dev/level/rider-coach-probe.ts` (read-only, committed) holds today's numbers.
+    rest, hidden): the planned train at 21.65 against the same static set, ≥ 0.25 m (measured: island 0.5794398184781144, leg lever
+    1.1341593429538008). The probe `dev/level/rider-coach-probe.ts` (read-only, committed) holds today's numbers.
   - **Proof:** level-check exit 0 with the new row; `look -- --rail-seed wagon-on` stills with the planned train's
     footprint drawn (debug overlay, as the fit check's), opened: from the island toward s 28, from the square through
     the hall's bays, from the table toward road 2. These are the evidence for owner question 2 (the engine standing on
     the curve over the idle leg). **Done means** that.
-  **R1b implementation stopped, 16 November:** the new diagnostic `home-cart` level row measures the
-  long engine/island gap as **0.5794398184781144 m**, below the task's explicit **0.58 m minimum**
-  by 0.0005601815218856 m. The committed read-only probe independently reproduces it. No threshold was
-  lowered, no production geometry changed, and no existing test assertion was relaxed. R1b remains incomplete.
-  The probe's leg-lever gap is 1.1293370765247293 m (below 1.13); the row uses the rendered lever's
-  station-axis heading from `home-station-view.ts`, giving 1.1341593429538008 m. Resolve this heading
-  discrepancy before certification. The row also exposes the rounded deck-start figures: 14.34671419114904
-  and 10.946714191149042 m versus 14.35 and 10.95. Its static audit is diagnostic, not a completed
-  turnout-part or canopy certificate. See [implementation report](../reports/rider-coach-r1b.md).
+  **As built, 16 November (R1b acceptance minima and pins):** Home keeps today's track; no stop,
+  frame, tree or production value moved, world stays v56. The earlier stop on rounded measurements is
+  resolved by the orchestrator's ruling: design minima are separate from pins (each ±0.01 m).
+  Body/island ≥0.55 m (Home on merit's platform design gap), engine/leg lever ≥1.00 m
+  (rider-car-fit's Pier body/furniture rule), tail past spur >0, engine ≤3.5 m into arc,
+  forward safety reach strictly before merge block, passenger deck margins >0. Static operating/standing
+  set ≥0.25 m; the existing crossing's stricter ≥1 m boards/tail rule is retained.
+  `home-cart` in CI's level-check passes. Exact engine/island gap **0.5794398184781144 m**,
+  leg lever **1.1341593429538008 m**, using the view's station-axis yaw. The probe is corrected to match;
+  its old tangent-yaw result was 1.1293370765247293 m. Earlier **0.58 / 1.13** figures in this plan
+  were rounded measurements, not minima (dated correction, 16 November 2026).
+  Nose s 28.35, arc intrusion 3.35, off-line 0.3114362900980901; tail s 5.55, 0.05 past spur,
+  boards 1.95 behind tail, forward reach 4.15 before merge (physical nose 5.65 before).
+  Players' deck margins 14.34671419114904 / 0.45328580885095704 m; coach margins
+  10.946714191149042 / 4.15328580885096 m. Thin margins: tail/spur 0.05, engine/island
+  0.029439818478114388 over its minimum, deck far end 0.45328580885095704.
+  Stills already accepted: [Home coach train](../world/home-coach-train.html); none retaken.
+  Coverage excludes 3D turnout running-parts/undercarriage contact and tree canopy/branches/roots;
+  Validation: level-check passes (18 reports), Home tests 15/15, probe, lint, types and ship-check
+  (180 tests across 20 files) pass. Exact limitations, thresholds, pins and test changes: [implementation report](../reports/rider-coach-r1b.md).
 
 - [ ] **R1c. Option B, only if the owner picks it (question 2, b): the relay (L).** Sync: Server data (catalog). Tier:
   **independent review** + visual. Builds: Codex gpt-6-astra high; review fresh astra high. Bump: yes (rides R1a's if
@@ -247,7 +258,7 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     the Quarry offset player car's existing −1.62 m (asserted no worse); **the staged queue**: two line 2 steel trains
     at `sepCm` on line 2's offset approach (worst s 85), body gap ≥ 0.5 m; the Home spans (tail 5.55 m past the spur's
     points at 5.5, boards 1.95 m behind, nose 28.35: with R1b 3.35 m onto today's arc and 2.35 m past the dead leg's
-    points, 0.58 m off the island and 1.13 m off the leg's lever; with R1c on the 28.4 straight, 1.05 m short of the leg).
+    points, 0.5794398184781144 m off the island and 1.1341593429538008 m off the leg's lever; with R1c on the 28.4 straight, 1.05 m short of the leg).
   - **Proof:** `npm run level-check` (Ring rows: Level finding 5); `look --rail-seed fares-running`: the coach at Home
     from the island and from both sides with eight seated (**count read**: at game zoom each side shows four
     distinct riders, one per opening, not fused with the far four into a band: the failure V1 hit), with three seated
@@ -322,8 +333,9 @@ committed read-only probe `dev/level/rider-coach-probe.ts`; finding 11 added on 
    4.6 m before the up track's merge at s 34 (8 m today). Q2's rack at its inherited 6 m / 8 m offset then stands
    across the cart's path (−1.52 m) on 0.48 m of uneven ground; +31° on its haul circle, logs facing the frame, clears
    everything (R1c).
-8. **Not measured, owed by the steps:** the cart's operating sweep against Home's static set (R1b's row; today's Q2
-   rack 3.21 m clear of it); a queued train's chord poses at the new Home signal (s 70.1) (R2b); seated knees, hats
+8. **Measured in R1b, 16 November:** the cart's operating body sweep against Home's static set passes ≥0.25 m
+   (nearest island/ramps 0.8539024798146642 m; turnout running parts and canopy excluded as detailed in its report).
+   **Still owed by later steps:** a queued train's chord poses at the new Home signal (s 70.1) (R2b); seated knees, hats
    and door access (R3); each player seat exit at the Quarry; boarding in motion, multiplayer, device cost (R4); future
    Strong consists and later lines' stops (not certified here); with R1c, its whole audit.
 9. **The cart and the trains coexist on main today** (planner's revision, 16 November, probe `cart`). Nothing keeps
@@ -334,7 +346,7 @@ committed read-only probe `dev/level/rider-coach-probe.ts`; finding 11 added on 
    The view draws the cart whenever it is not at rest. So the static sweep the first revision asked for was not only
    contradictory: the overlap is real for half a minute after every first wake. R1a closes it for every option.
 10. **R2b's train on today's track** (probe `noRelay`): nose s 28.35, 3.35 m into the R 18 arc, 0.31 m off the
-   straight's line; 2.35 m past the leg's points; 0.58 m off the island (today's train 0.65); 1.13 m off the leg's lever
+   straight's line; 2.35 m past the leg's points; 0.5794398184781144 m off the island (today's train 0.65); 1.1341593429538008 m off the leg's lever
    at s 27.5; 5.65 m short of the up track's merge (s 34). The leg's points stand under the engine, harmless once R1a
    holds: no train and cart share a tick.
 
@@ -538,7 +550,7 @@ a line-wide decision, not a Home one.
 | What a player sees at the platform | Every car anyone boards stands straight beside the deck; the engine's front 3.35 m stands onto the curve past the platform's end, 0.31 m off line, over the idle leg's points (measured) | The whole train straight, the nose 1.05 m short of the leg's points: the tidiest engine (measured) | Players' car partly beyond today's deck end; engine 7 m round the curve, 1.37 m off line (measured) |
 | Boarding both passenger cars | Players' car 20.05–23.25, coach 16.65–19.55 on the 5.70–23.70 deck (measured) | Identical | Needs the deck +3.25 m over the leg's line |
 | The read from the square and the hall | Unchanged | The s 28–90 curve 4.37 m north, 35–75 m away: about 4–6° of bearing (design review); **build** for stills | Island longer, leg gone at its far end; **build** |
-| Clearances | Engine to island 0.58 (today's engine 0.65; every car to a platform edge is 0.55 by design), lever 1.13, merge block 4.15 (measured) | Same platform margins; straight spare 0.05; the 1.05 m to the points is no clearance for the cart (its body overlaps the nose by 0.31) (measured) | Merge block 0.45; tail at the spur's points as today (measured) |
+| Clearances | Engine to island 0.5794398184781144 (today's engine 0.65; every car to a platform edge is 0.55 by design), lever 1.1341593429538008, merge block 4.15 (measured) | Same platform margins; straight spare 0.05; the 1.05 m to the points is no clearance for the cart (its body overlaps the nose by 0.31) (measured) | Merge block 0.45; tail at the spur's points as today (measured) |
 | What it rests on | R1a's invariant: no vehicle on the leg after trains wake | The same invariant (see Clearances) | The same, plus the leg lifted |
 | When trains grow again | Takes one more car with the island lengthened over the dead leg; two need a new head | Cannot take one more car without a second relay | Is that growth; two more need the turnout moved |
 | Q1 and Q2, the first two track quests | Untouched: frames, rack, trees, bot route, laying sweep as proven | Q2's frame 3.5 m and its rack +31°; track 3.64 m from tree 217's centre, trunk and canopy unproven (**build**); the laying sweep and bot route re-proven | Untouched by Home's change; the island's far end changes |

@@ -55,10 +55,21 @@ const at = (s: number, out: { x: number; z: number }) =>
   Object.assign(out, lineAt(LINES.east, s, { x: 0, z: 0, ux: 0, uz: 0 }));
 export function checkHomeCart() {
   const problems: string[] = [];
-  const metrics: { name: string; value: number; minimum: number; margin: number }[] = [];
-  function minimum(name: string, value: number, min: number) {
-    metrics.push({ name, value, minimum: min, margin: value - min });
-    if (value + 1e-9 < min) problems.push(`${name}: ${value} m < ${min} m (margin ${value - min} m)`);
+  const metrics: { name: string; value: number; minimum: number; strict: boolean; margin: number; source: string }[] =
+    [];
+  const pins: { name: string; value: number; recorded: number; tolerance: number; remaining: number }[] = [];
+  function pin(name: string, value: number, recorded: number) {
+    const tolerance = 0.01,
+      remaining = tolerance - Math.abs(value - recorded);
+    pins.push({ name, value, recorded, tolerance, remaining });
+    if (remaining < 0) problems.push(`${name}: pin ${recorded} ± ${tolerance} m, measured ${value} m`);
+  }
+  const ruling =
+    'R1b orchestrator ruling, 16 November 2026 (docs/plans/rider-coach.md, R1b acceptance minima and pins)';
+  function minimum(name: string, value: number, min: number, source = ruling, strict = false) {
+    metrics.push({ name, value, minimum: min, strict, margin: value - min, source });
+    if (strict ? value <= min : value + 1e-9 < min)
+      problems.push(`${name}: ${value} m < ${min} m (margin ${value - min} m)`);
   }
   const yaw = Math.atan2(AXIS.d.x, AXIS.d.z);
   const mid = axisPoint((BUFFERS[0] + ISLAND_A.foot) / 2, ISLAND_C);
@@ -111,55 +122,103 @@ export function checkHomeCart() {
   const engine = PLANNED_HOME_CONSIST[0]!,
     nose = COACH_STOP + engine.d + engine.hz;
   const tail = COACH_STOP + PLANNED_HOME_CONSIST.at(-1)!.d - STEEL_CAR.hz;
-  minimum('tail past spur points', tail - SPUR.s, 0.05);
-  minimum('boards behind tail', tail - (CROSSING.s + CROSSING.len / 2), 1.95);
-  minimum('nose past idle leg points', nose - LEG.to, 2.35);
-  minimum('arc allowance remaining (max 3.5)', 3.5 - (nose - HEADS[1].segs[0].len), 0.15);
-  minimum('merge block ahead of reach', FORMATION.quarry.from - (COACH_STOP + TRAIN_EXTENT.aheadCm / 100), 4.15);
+  minimum('tail past spur points', tail - SPUR.s, 0, ruling, true);
+  pin('tail past spur points', tail - SPUR.s, 0.05);
+  minimum(
+    'boards behind tail',
+    tail - (CROSSING.s + CROSSING.len / 2),
+    1,
+    'test/home-station.test.ts: board crossing, boards at least 1 m behind train',
+  );
+  pin('boards behind tail', tail - (CROSSING.s + CROSSING.len / 2), 1.95);
+  pin('nose past idle leg points', nose - LEG.to, 2.35);
+  minimum(
+    'arc allowance remaining (max 3.5)',
+    3.5 - (nose - HEADS[1].segs[0].len),
+    0,
+    'docs/plans/rider-coach.md R1b: engine at most 3.5 m into arc',
+  );
+  minimum(
+    'merge block ahead of reach',
+    FORMATION.quarry.from - (COACH_STOP + TRAIN_EXTENT.aheadCm / 100),
+    0,
+    'src/sim/railway-lines.ts TRAIN_EXTENT.aheadCm: forward safety reach before merge block',
+    true,
+  );
+  pin('merge block ahead of reach', FORMATION.quarry.from - (COACH_STOP + TRAIN_EXTENT.aheadCm / 100), 4.15);
   const straight = march(HEADS[1].start, [{ len: 1000 }], nose),
     bent = roadAt(1, nose);
   const offLine = Math.hypot(straight.x - bent.x, straight.z - bent.z);
+  pin('nose s', nose, 28.35);
+  pin('nose into arc', nose - HEADS[1].segs[0].len, 3.35);
+  pin('nose off line', offLine, 0.3114362900980901);
   for (const v of PLANNED_HOME_CONSIST.slice(1))
     minimum(`${v.role} short of arc`, HEADS[1].segs[0].len - (COACH_STOP + v.d + v.hz), 0);
   for (const v of PLANNED_HOME_CONSIST.slice(1, 3)) {
-    minimum(
-      `${v.role} deck start`,
-      COACH_STOP + v.d - v.hz - (ISLAND_A.deck0 + ROAD2_S),
-      v.role === 'players' ? 14.35 : 10.95,
-    );
-    minimum(
-      `${v.role} deck end`,
-      ISLAND_A.deck1 + ROAD2_S - (COACH_STOP + v.d + v.hz),
-      v.role === 'players' ? 0.45 : 4.15,
-    );
+    minimum(`${v.role} deck start`, COACH_STOP + v.d - v.hz - (ISLAND_A.deck0 + ROAD2_S), 0, ruling, true);
+    minimum(`${v.role} deck end`, ISLAND_A.deck1 + ROAD2_S - (COACH_STOP + v.d + v.hz), 0, ruling, true);
   }
+  for (const [name, recorded] of [
+    ['players deck start', 14.34671419114904],
+    ['players deck end', 0.45328580885095704],
+    ['coach deck start', 10.946714191149042],
+    ['coach deck end', 4.15328580885096],
+  ] as const)
+    pin(name, metrics.find((m) => m.name === name)!.value, recorded);
   for (const o of obstacles) {
-    minimum(`standing/${o.id}`, Math.min(...decks.map((d) => deckGap(d, o))), 0.25);
+    minimum(
+      `standing/${o.id}`,
+      Math.min(...decks.map((d) => deckGap(d, o))),
+      o.id === 'island and ramps' ? 0.55 : 0.25,
+      o.id === 'island and ramps'
+        ? 'docs/plans/rider-coach.md Home on merit: every car to platform edge 0.55 by design'
+        : 'docs/plans/rider-coach.md R1b: static set clearance 0.25 m',
+    );
     let gap = Infinity;
-    // Include both end points, the leg's joins, road 2 s 0, and the out-run to s 120.
+    // Sample at 0.25 m plus exact joins and end points.
     const end = CART_ROAD.forgeCm / 100 + 120;
-    for (let d = 142; d <= end + 0.25; d += 0.25) {
+    const samples = [142 + LEG.len, CART_ROAD.forgeCm / 100, end];
+    for (let d = 142; d < end; d += 0.25) samples.push(d);
+    for (const d of samples) {
       const s = Math.min(d, end),
         p = cartRoadAt(s, LINES),
         a = cartRoadAt(Math.max(0, s - 1.1), LINES),
         b = cartRoadAt(s + 1.1, LINES);
       gap = Math.min(gap, deckGap(box(p.x, p.z, Math.atan2(b.x - a.x, b.z - a.z), CART.hx, CART.hz), o));
     }
-    minimum(`operating/${o.id}`, gap, 0.25);
+    minimum(`operating/${o.id}`, gap, 0.25, 'docs/plans/rider-coach.md R1b: operating static set clearance 0.25 m');
   }
-  minimum('engine/island', deckGap(decks[0]!, obstacles[0]!), 0.58);
-  minimum('engine/leg lever', deckGap(decks[0]!, obstacles[2]!), 1.13);
+  minimum(
+    'engine/island',
+    deckGap(decks[0]!, obstacles[0]!),
+    0.55,
+    'docs/plans/rider-coach.md Home on merit: every car to platform edge 0.55 by design',
+  );
+  pin('engine/island', deckGap(decks[0]!, obstacles[0]!), 0.5794398184781144);
+  minimum(
+    'engine/leg lever',
+    deckGap(decks[0]!, obstacles[2]!),
+    1,
+    'docs/research/rider-car-fit.md: Parked layer at Pier, 1 m body/furniture rule; R1b orchestrator ruling',
+  );
+  pin('engine/leg lever', deckGap(decks[0]!, obstacles[2]!), 1.1341593429538008);
   return {
     level: 'home-cart',
     failures: problems.length,
     problems,
-    metrics,
+    designMinima: metrics,
+    pins,
+    thinMargins: {
+      tailPastSpur: tail - SPUR.s,
+      islandAboveMinimum: deckGap(decks[0]!, obstacles[0]!) - 0.55,
+      passengerDeckFarEnd: metrics.find((m) => m.name === 'players deck end')!.value,
+    },
     nose,
     tail,
     intoArc: nose - HEADS[1].segs[0].len,
     offLine,
     noseToMerge: FORMATION.quarry.from - nose,
     coverage:
-      'R1a exclusive operating cart and standing planned coach train; planar body envelopes. Running rails, sleepers and turnout rails lie below the bodies and are running surfaces, not lateral obstacles. Trees use standing trunk envelopes; canopy and dynamic cargo are not certified.',
+      'R1a exclusive operating cart and standing planned coach train; planar body envelopes. Excluded: no 3D undercarriage/wheel contact certificate for spur or idle leg turnout blades, wing/check/closure rails, frog, timbers or tie plates (planar bodies would overlap their running surfaces). Trees use trunk boxes only: crown, branch and foliage contact at engine/coach roof height, wind sway, hardwood-specific crown shapes and root seats are not certified. Dynamic players, dropped cargo, loading motion and future train movement are excluded.',
   };
 }

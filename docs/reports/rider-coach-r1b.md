@@ -1,68 +1,105 @@
-# R1b stopped at the stated minimum
+# R1b: Home proven on today's track
 
-Branch: `t3/rider-coach-home-proof`. Rebased onto origin/main `874c0b8c`; world remains v56.
-No production changes, no bump, no new stills, no subagents, no push or ship.
+Branch `t3/rider-coach-home-proof`, based on origin/main `874c0b8c`. World stays v56.
+No production values moved; no new stills, subagents, push or ship. R1b is ticked in the
+[plan](../plans/rider-coach.md). The initial numerical stop was resolved by the orchestrator's
+16 November ruling: design minima and pinned measurements are separate contracts.
 
-R1b is **incomplete**. The instruction says to stop if a measured clearance is worse than its stated
-minimum, without adjusting a threshold. The island clearance is 0.5794398184781144 m, below 0.58 m.
-This is consistent with rounding to the plan's two decimal places, but does not meet the task's explicit minimum.
-The owner/orchestrator must resolve that numerical requirement before implementation resumes.
+The CI-registered [home-cart acceptance row](../../dev/level/home-cart.ts), called by
+[level-check](../../dev/level/check.ts), defines planned stock locally: long engine, players' car,
+2.90 × 1.60 coach directly behind it, kit car, footing wagon, steel car. Players' stop is s 21.65;
+no production `consistOf` dependency. Every asserted minimum reports its source, value and margin;
+every pin reports recorded value, measured value, ±0.01 m tolerance and remaining tolerance.
+R1a's `railway-check-line2.ts` invariant makes the two phases exclusive: trains on implies cart at
+REST and hidden, with nothing running on the leg once trains wake.
 
-The diagnostic [home-cart row](../../dev/level/home-cart.ts) is registered in the default CI
-[level-check entry](../../dev/level/check.ts). It describes its own planned six-vehicle consist,
-with the 2.90 × 1.60 coach directly behind the players' car, at stop 21.65. It checks standing
-bodies and the operating cart sampled every 0.25 m from road 1 s 54 through the leg and Home,
-then out to line 2 s 120, against island/ramps, leg and spur levers, frame colliders, Q2 rack/sign,
-forge rack and standing tree trunks. It reports each metric's threshold and remaining margin.
-It is diagnostic: turnout parts and canopy are not fully certified. Do not treat it as acceptance.
+| Design condition | Threshold | Source | Measured / margin |
+| --- | --- | --- | --- |
+| Every planned body to island footprint including apron/ramps | ≥0.55 m | Plan, Home on merit: every car to platform edge 0.55 by design | engine 0.5794398184781144; +0.029439818478114388 |
+| Engine to leg lever | ≥1.00 m | Orchestrator ruling; rider-car-fit, Parked layer at Pier's 1 m rule | 1.1341593429538008; +0.13415934295380083 |
+| Tail past spur points | >0 m | Orchestrator ruling | 0.04999999999999716; a scrape |
+| Engine into arc | ≤3.5 m | Plan R1b | 3.35; 0.15 spare |
+| Merge block ahead of forward safety reach | >0 m | `TRAIN_EXTENT.aheadCm` in railway-lines.ts; plan R1b | 4.15 spare after 8.2 m forward reach |
+| Passenger deck start and far-end margins | >0 m | Orchestrator ruling, plan Home on merit | exact values pinned below |
+| Other cars short of arc | ≥0 m | Plan R1b, every car but engine straight | all pass |
+| Boards behind tail | ≥1 m | Existing Home crossing test | 1.95; 0.95 spare |
+| Operating cart/static set and standing train/other static set | ≥0.25 m | Plan R1b | operating nearest 0.8539024798146642, island; +0.6039024798146642 |
 
-| Measurement | Actual m | Plan m | Difference or remaining margin m |
-| --- | ---: | ---: | ---: |
-| Tail past spur points | 0.05 (tail s 5.55) | 0.05 | 0 |
-| Nose s | 28.35 | 28.35 | 0 |
-| Nose into arc | 3.35 | 3.35; max 3.5 | 0.15 to maximum |
-| Nose off straight extension | 0.3114362900980901 | about 0.31 | +0.0014362900980901 |
-| Nose past idle leg points | 2.35 | 2.35 | 0 |
-| Engine/island | 0.5794398184781144 | minimum 0.58 | **−0.0005601815218856** |
-| Engine/leg lever, committed probe | 1.1293370765247293 | minimum 1.13 | **−0.0006629234752707** |
-| Engine/leg lever, rendered axis heading | 1.1341593429538008 | minimum 1.13 | +0.0041593429538008 |
-| Nose to second-track merge | 5.65 | 5.65 in level finding 10 | 0 |
-| Forward reach to merge block | 4.15 | 4.15 in Home on merit | 0 |
-| Boards behind tail | 1.95 | 1.95 | 0 |
-| Players' car span | 20.05–23.25 | 20.05–23.25 | deck far-end margin 0.45328580885095704 |
-| Coach span | 16.65–19.55 | 16.65–19.55 | deck far-end margin 4.15328580885096 |
+The existing crossing's 1 m boards/tail rule is stricter than the general 0.25 m static-set
+rule and is retained. The audited level checks have no stricter applicable body/platform or
+engine/lever minimum. Rotunda's 3.5 m limits measure building/prop footprints to rail centrelines,
+not vehicle bodies to furniture, and do not apply to these comparisons.
+All bodies are checked against the island: the unchanged flatbeds have their nominal 0.55 m side
+gap (sampled 0.5500488410144548 m), so that designed baseline has almost zero surplus.
 
-The probe turns the lever with the local road tangent. The actual leg levers in
-`src/entities/railway/home-station-view.ts` use the station-axis yaw; the row follows that source.
-Both values are recorded rather than silently choosing the larger clearance.
-4.15 is the margin to the train's forward safety reach (8.2 m ahead of its stop), not its physical nose.
+The three requested thin margins are plainly: **tail/spur 0.05 m** (the thinnest spatial
+separation at Home), **engine/island 0.029439818478114388 m over its minimum**, and
+**players' deck far end 0.45328580885095704 m**. Arc allowance also has 0.15 m spare.
+These are different kinds of margin; a nominal platform side gap is not free room to consume.
 
-No existing assertion changed because implementation stopped first:
+Every pin below is asserted independently of the minima, within **±0.01 m**:
 
-- “both stops are on the straight…” before and after: today's two stops and both engine lengths must
-  keep their noses on the straight; marks remain 14 and 18.25, with the abeam check preserved.
-  The planned-coach exception (all other cars straight, engine at most 3.5 m into arc) has **not** been added.
-- “road 2: buffer, cart, points, waiting wagon, train and leg in order…” before and after: all original
-  ordering and buffer assertions still hold, including today's noses short of the leg points.
-  The R1a-based planned-row exception has **not** been added.
-- The crossing test is unchanged too: boards at least 1 m behind today's tail and its original
-  far-end assertion `LEG.to - head < 1.6`. Planned-row boards/tail clearance is in the diagnostic row only.
+| Pin | Recorded m |
+| --- | ---: |
+| Nose s | 28.35 |
+| Nose into arc | 3.35 |
+| Nose off straight extension | 0.3114362900980901 |
+| Nose past idle leg points | 2.35 |
+| Forward reach before merge | 4.15 |
+| Tail past spur points | 0.05 |
+| Boards behind tail | 1.95 |
+| Engine/island | 0.5794398184781144 |
+| Engine/leg lever | 1.1341593429538008 |
+| Players' deck start margin | 14.34671419114904 |
+| Players' deck far-end margin | 0.45328580885095704 |
+| Coach deck start margin | 10.946714191149042 |
+| Coach deck far-end margin | 4.15328580885096 |
 
-Checks on the diagnostic code:
+Measured values match the records above to floating-point precision. Tail is s 5.55;
+physical nose is 5.65 m short of the merge, whereas the safety reach is 4.15 m short.
+Both passenger cars are straight: players 20.05–23.25, coach 16.65–19.55.
+The [probe](../../dev/level/rider-coach-probe.ts) now uses the real lever pose: station-axis yaw from
+`home-station-view.ts`, giving 1.1341593429538008 m. Its former tangent-based 1.1293370765247293 m
+is recorded in the probe comment as superseded. Plan measurements 0.58 and 1.13 are corrected with
+a dated note; they were rounded measurements, never design minima under the revised ruling.
 
-- `npm run level-check`: **exit 1**, 18 reports. New row's failures quoted in full below; no allowances added.
-- `node --import ./dev/sim/hooks.ts --test test/home-station.test.ts`: **exit 0**, 15/15 passed.
-- `node --import ./dev/sim/hooks.ts dev/level/rider-coach-probe.ts`: **exit 0**; `noRelay` independently confirms island gap.
-- Scoped `npm run lint -- dev/level/home-cart.ts dev/level/check.ts`: **exit 0**, zero problems.
-- `npm run typecheck`: **exit 0**.
-- `node dev/ship-check.ts`: **exit 0**, registry, scoped lint, types, 19 affected test files / 165 passing tests.
+The two existing tests in [home-station.test.ts](../../test/home-station.test.ts) now admit only
+the planned-coach cases justified by R1a; all original assertions in these two tests remain:
 
-```text
-players deck start: 14.34671419114904 m < 14.35 m (margin -0.0032858088509595262 m)
-coach deck start: 10.946714191149042 m < 10.95 m (margin -0.00328580885095775 m)
-engine/island: 0.5794398184781144 m < 0.58 m (margin -0.0005601815218855277 m)
-```
+- **“both stops are on the straight…”** Before: today's marks 14/18.25, abeam relation, and both
+  engine lengths' noses must stay on the straights. After: all those checks remain, plus the planned
+  row requires each non-engine car's nose on the straight and allows only the engine up to 3.5 m
+  into the curve. Comment cites R1a: trains on implies cart at REST, leg unused.
+- **“road 2: buffer, cart, points, waiting wagon, train and leg in order…”** Before: today's three-car,
+  scaled wagon and fitted steel configurations must obey the original ordering, including noses
+  before the leg points, plus line 1's buffer and straight checks. After: all remain; the planned
+  row preserves buffer/cart/spur/tail ordering but omits the idle leg from that ordering and
+  explicitly places its nose beyond the leg points. Comment cites the same R1a invariant.
+- **Crossing test:** Before: boards ≥1 m behind today's tail, all spur/cart/ramp/walk checks, and
+  `LEG.to - head < 1.6` justified no crossing at the far end. After: retain all checks except that
+  obsolete far-end justification; replace it with the planned tail's 1.95 m boards clearance
+  within 0.01 m, citing R1a. Today's ≥1 m tail clearance still runs.
 
-The first two failures compare rounded deck-start margins introduced in the diagnostic row, rather than
-plan-stated minima; they also require resolution, not threshold changes made to get green. The physically
-binding stop is the explicit island minimum. R1b remains unticked in the plan.
+Coverage is a planar body-envelope acceptance, not a complete mesh/collision certificate.
+The operating cart is sampled every 0.25 m from line 1 s 54 through the leg, road 2 s 0 and
+out to line 2 s 120, plus exact joins and endpoints. Obstacles are island including apron/ramps,
+both leg levers and spur lever, Q1/Q2 frame/feeder/rail-bearer colliders, Q2 full rack/sign,
+forge rack and standing tree trunk boxes. The standing planned train uses the same set.
+
+Precisely excluded: 3D undercarriage/wheel contact with spur and idle-leg turnout blades,
+wing/check/closure rails, frog, timbers and tie plates; these running surfaces would overlap
+planar body projections. No certification of tree crowns, branches or foliage at engine/coach
+roof height, wind sway, hardwood-specific crown geometry or root seats. Dynamic players,
+dropped cargo, loading motion and future train movement are outside this row. No new visual
+claim: [the accepted stills](../world/home-coach-train.html) remain the visual evidence.
+
+Checks:
+
+- `npm run level-check`: exit 0, 18 reports; home-cart zero failures; existing planned-track findings remain reported.
+- `node --import ./dev/sim/hooks.ts --test test/home-station.test.ts`: exit 0, all 15 tests in the complete file pass.
+- `node --import ./dev/sim/hooks.ts dev/level/rider-coach-probe.ts`: exit 0; corrected `noRelay` agrees with row.
+- Scoped `npm run lint` on all four code files: exit 0, zero problems.
+- `npm run typecheck`: exit 0.
+- `node dev/ship-check.ts`: exit 0; registry, four scoped lint files, types and 180 passing tests across 20 affected test files.
+
+No check failed in this completion pass. Initial stopped-run failures are superseded by the explicit orchestrator ruling, not hidden threshold re-pins.
