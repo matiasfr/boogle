@@ -13,6 +13,7 @@ import { fallArrival } from '../../fall/arrival.ts';
 import { me, camForward, followEye } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';
 import { registerAction, wrapAction } from '../../player/controls.ts';
+import type { Interactable } from '../../player/hands.ts';
 import { getMask, raycastClosest, rayHit, sweepSphere } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { addPresenceField } from '../../netplay/net.ts';
@@ -197,6 +198,7 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     view.fire(ring);
   }
   const controls: Active = { press: () => press(), cancel, pulling: () => !!pull, ring: () => pull?.ring.id ?? null };
+  const targetAt = new THREE.Vector3();
   active = controls;
   const offProbe = registerHookProbe((id) => {
     const ring = view.ringById.get(id);
@@ -211,6 +213,11 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     offProbe();
   });
   return {
+    targets(): Interactable[] {
+      if (!canPress() || pull || !pick) return [];
+      targetAt.set(pick.at.x, pick.at.y, pick.at.z);
+      return [{ id: `rail-hook-${pick.id}`, verb: 'Hook', at: targetAt, run: () => press() }];
+    },
     /** The island's ring on its sea pile, once the gap is footed (hook-view.ts). */
     setIslandRing: view.setIslandRing,
     demo() {
@@ -297,7 +304,7 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
         }
       }
       pickRing(now);
-      view.update(dt, now, owned, pick, pull?.ring ?? null, range, pulls, asleep);
+      view.update(dt, now, owned, pick, pull?.ring ?? null, range, asleep);
     },
     inspect: () => ({
       owned,

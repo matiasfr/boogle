@@ -1,7 +1,7 @@
 // The glider on Needle Bell's summit (docs/brainstorms/glider-placement.md). Two rooms:
 // - `--rail-seed glide-earned`, where the room has taken the glider: the setup stands you on the summit (staging only)
 //   and the flight is piece A's, by real input: walk off, Jump spends the air jump, Jump again opens the canopy, Glide
-//   closes and reopens it, Jump while open does nothing.
+//   closes and reopens it, and Jump closes it too.
 // - `--rail-seed q5-done --query glideTake=1` (piece B's grant): the setup stands you 2.5 m east of the woken device,
 //   facing it (staging only); the flight presses Interact to take it, dismisses the card, steps off west and flies to
 //   the boiler's apron by the forge as the bot's glide home does, writing `__glideResult`.
@@ -182,11 +182,13 @@ export async function fly() {
     const back = glider();
     if (quiet.wisps !== quietFrom || quiet.wind.level !== 0 || back.wisps <= quiet.wisps || back.wind.level < 0.95)
       throw new Error(`GLIDE the air ignores a moment: ${JSON.stringify({ quietFrom, quiet, back })}`);
-    // Jump while it's open does nothing.
+    // Jump closes the open canopy.
     pressJump();
     await wait(120);
     releaseJump();
-    if (!glider().open) throw new Error('GLIDE Jump closed the open canopy');
+    if (glider().open) throw new Error('GLIDE Jump did not close the open canopy');
+    triggerAction('glide', 'down');
+    triggerAction('glide', 'up');
     // Glide closes it and reopens it (stop and reopen).
     triggerAction('glide', 'down');
     triggerAction('glide', 'up');

@@ -24,7 +24,7 @@ Ranks are the tracker's. Within a rank, items are in the order to pick them. "Wh
 | 6 | **C2. Depots say what they are** | P2 | G7, G8 (the sign) | 11 | Yes: signs in the world; the cart is one full shipment ([level-pacing-1114](level-pacing-1114.md), problem 3) | The rail depot gets the log depot's board; the cart is seen to unload | Implementer agent, fable medium |
 | 7 | **D5. Trains arrive all at once** | P2 | G19 (owner rows 11, 39) | 7 | Planned: [train-progression](train-progression.md), with three owner questions open there | Nothing new; Grant's row is added evidence | As that plan says |
 | 8 | **C5. One unit for what you carry** | P2 | G14 | 11 ("what's on screen is true") | [Carried-resource display](../game-design/place.md#carried-resource-display) is as built; no decision picks counts over squares | A short plan: counts everywhere, squares gone, or the reverse; a small ruling logged in agent-calls | Designer agent, then implementer agent |
-| 9 | **C7. Hook and glider controls** | P2 (G26 P3) | G17, G18, G26 | 11 | The hook is on F by the controls table; no decision says Interact may not fire it | Interact fires the hook at a ring in reach; the F prompt stays up; Jump closes the glider; the camera when aiming up from a platform | Implementer agent, fable medium |
+| 9 | **C7. Hook and glider controls** ✓ | P2 (G26 P3) | G17, G18, G26 | 11 | Owner approved 15 November; [Jump is the glider's button](../agents/owner-calls.md#jump-is-the-gliders-button) | Built and checked on `t3/grant-c7-controls`, not shipped: Interact hooks, F/RB prompt persists, Jump closes and teaches the glider, upward aiming stays above the platform. Keyboard/pad/touch handler checks, motion sheets, camera before/after, teach and touch stills, owning tests, `check` and T1 route: [evidence](grant-c7-evidence.md) | Implementation sub-agent |
 | 10 | **C3, C4, C6. Three small world fixes** | P2 | G12, G13, G15 | 11 | No decision needed | The forge's board and deposit face the arriving train; every station's sign carries its own number; a ladder out of the water at the diving helmet | Implementer agent, fable medium |
 | 11 | **C8. The P3 batch** | P3 | G20, G22, G24, G25, G27 to G35 | 11, 10 | G22: Pause already opens on the wardrobe (10 November); he did not find it. G29 is in [terrain-clean](terrain-clean.md). G30, G31 and G34 are the owner's own rows | One batch after the items above; G24 keeps Sleeves' line | Codex, gpt-6.1-sol medium |
 
@@ -100,6 +100,6 @@ At most five. Each has a recommended answer first; none is recorded as his call.
 
 ## Not done here
 
-No game code was changed and nothing is dispatched. The designer agent reviewed both design docs ("ready with
+The initial planning pass changed no game code and dispatched nothing; implementation status is now in the queue above. The designer agent reviewed both design docs ("ready with
 changes"; its sections are in each doc) and logged seven proposed calls in [agent-calls](../agent-calls.md). The 2D
 page for D2 is not made.

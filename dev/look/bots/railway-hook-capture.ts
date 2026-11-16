@@ -79,7 +79,9 @@ export function act() {
       await wait(400);
       console.log(`HOOK CAPTURE descent ${performance.now()}`);
       await returnFromTower(bot, ['t0']);
-      if (inspectRailway()!.hookShot.chip) throw new Error('Hook chip remained after three pulls');
+      aimHook('t1');
+      await wait(250);
+      if (!inspectRailway()!.hookShot.chip) throw new Error('Hook chip disappeared after three pulls');
       console.log(`HOOK CAPTURE complete ${performance.now()}`);
     })(),
     'record hook press denial and descent',

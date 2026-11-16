@@ -661,7 +661,7 @@ A friend's nullable `railwayHook` presence names a known ring, with every other 
 
 The room's existing hook fact grants everyone a zip-line pull to the ring nearest the middle of the view: 24 m range, 25° cone, 16 m/s cruise with 60 m/s² acceleration and 70 m/s² braking. Picking uses chest ray clearance, both body-sphere sweeps and 20%/150 ms hysteresis. Jump, Back or a second press lets go with horizontal speed capped at 9.5 m/s and upward speed at 3 m/s; cancelling never refills the air jump. A pull skips the second-jump step. Reveal input holding blocks new pulls but lets a current pull finish. Ownership survives disconnect/resync and clears only after two ready seconds without the shared fact.
 
-The press immediately starts its sound, 70 ms reaching cable and arm pose; arrival/let-go sounds and winds the cable back over 110 ms. A denied press gives a quiet pop, 1.5 m cable flick and 200 ms blink on nearby rings without moving the body. The picked ring shows the F/RB glyph for the first three pulls, with touch using its Hook button. Targeting and cosmetics are Local; the pull is Owner physics carried by ordinary position presence, with an additive nullable `railwayHook` pad id. No new shared operation or state is added.
+The press immediately starts its sound, 70 ms reaching cable and arm pose; arrival/let-go sounds and winds the cable back over 110 ms. A denied press gives a quiet pop, 1.5 m cable flick and 200 ms blink on nearby rings without moving the body. The picked ring keeps its F/RB glyph whenever available, including after three pulls. Interact (E/X/the main touch button, labelled Hook) also fires it through the ordinary target picker; the dedicated F/RB/touch Hook remains available. Targeting and cosmetics are Local; the pull is Owner physics carried by ordinary position presence, with an additive nullable `railwayHook` pad id. No new shared operation or state is added.
 
 The production railway shows eight rings from the start: p2, t0–t5 and the summit. Rings are brass before ownership, teal when owned or in range, and bright when picked or pulling. Six 0.9 m floating stone slabs have teal undersides; the 0.4 m wooden summit deck is at 102.4 m. Positions and ring placement read Place's `tech-layout.ts` directly. Thin 1.5 m collider tiles preserve the camera's view beneath the next slab. The summit deck is the exception, one solid box: nothing stands above it, and with tiles a camera pitched up at the last ring came to rest under the deck, showing its underside behind the glider's prompt (15 November). The existing p2 slab is reused. The t0 secret box, t3 side slab and all other Place rings stay out of production. The summit ring and its post retain Place's off-deck east-edge placement for the orchestrator's review.
 
@@ -708,9 +708,11 @@ required at the sea gate's jamb. The first flight is the way down toward Q3's ra
 climb-plus-flight trips are not faster hauling. The balcony is optional; Ring Island supplies its later crossing.
 The hook secrets `alcove` and `firstpull` move to the finders' bay after trains, not immediately after this early take.
 
-The first time you fall faster than 4 m/s with the glider shut, the Glide action's glyph (LB / Q; nothing on touch,
-like the jump teach) pulses at your back until you open it or land. It shows Glide, not Jump, because Jump
-spends the double jump first. The flight is piece A's, now read from eight room tunables (`railGlideSpeed` 1000 cm/s,
+The first time you fall faster than 4 m/s with the glider shut, Jump's glyph (Space / pad A; nothing on touch,
+like the jump teach) pulses at your back for up to 1.3 s, ending sooner if you open it or land. Jump is the glider's primary button: with it
+shut, Jump spends the air jump first and then opens it; with it open, Jump closes it without spending a remaining
+air jump. Q/LB and touch Glide remain alternate toggles ([owner, 15 November](../agents/owner-calls.md#jump-is-the-gliders-button)).
+The flight is piece A's, now read from eight room tunables (`railGlideSpeed` 1000 cm/s,
 `railGlideSink` 320 cm/s, `railGlideAccel` 1800, `railGlideBrake` 1200, `railGlideOver` 800 cm/s², `railGlideTurnTau`
 120 ms, `railGlideTurnMax` 360°/s, `railGlideDeploy` 100 ms). While the canopy holds you, two threads of air trail
 off its tips, thicker with speed up to 8 m/s (Place's wisps, restored 14 November after the port dropped them; yours

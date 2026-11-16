@@ -3,7 +3,8 @@
 // (docs/research/third-person-camera.md, rec 6). Any camera can have one, and nothing it should respect needs telling:
 // anything static in `mask` counts, so a new building or cliff blocks it on the day it's added. Thin things (a trunk, a
 // post: narrower than 1.6 m, see sweepSphere in src/physics/engine.ts) don't pull it in from
-// afar, as a camera that zoomed for every palm would pump all the way along a beach; only one right at the lens moves it.
+// afar, as a camera that zoomed for every palm would pump all the way along a beach; only one right at the lens moves it,
+// except on a downward arm, which also catches the small tiles of the platform underneath you.
 // What moves (players, the ball, a train) never blocks it. Local, render only.
 //
 // By default it pulls in at once and eases back out after a beat, and is exactly on the wanted spot when nothing's in the
@@ -62,7 +63,10 @@ export function makeCameraArm({ min = 0, glide }: { min?: number; glide?: Glide 
       SOLID.mask = THIN.mask = mask;
       const solid = sweepSphere(from, to, r, SOLID);
       if (solid >= 0) safe = solid;
-      const start = Math.max(0, safe - THIN_NEAR);
+      // Looking up puts the lens below its pivot. Sweep that whole downward arm against thin shapes too:
+      // the climb decks are tiled into small colliders, and a lens already below one would miss the slab.
+      // Above the pivot keep the near-lens rule, so the next deck and distant posts don't pull the view in.
+      const start = to.y < from.y ? 0 : Math.max(0, safe - THIN_NEAR);
       a.copy(from).addScaledVector(dir, start);
       b.copy(from).addScaledVector(dir, safe);
       const thin = sweepSphere(a, b, r, THIN);

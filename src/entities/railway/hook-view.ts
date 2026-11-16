@@ -284,7 +284,6 @@ export async function createRailwayHookView(owner: OwnedView) {
     pick: HookRing | null = null,
     pull: HookRing | null = null,
     range: Set<HookRing> = new Set(),
-    pulls = 0,
     /** A ring that cannot help from where you stand (the island's, from the deck it lands on): gold and small, as
      * before the hook, and turned to the far side it serves rather than to you. */
     asleep: HookRing | null = null,
@@ -342,10 +341,10 @@ export async function createRailwayHookView(owner: OwnedView) {
       handAt(root, theirHand);
       drawCable(other.cable, theirHand, to, dt);
     }
-    chipOn = !!pick && !pull && pulls < 3 && !document.body.classList.contains('touch');
+    const html = glyph('hook');
+    chipOn = !!pick && !pull && !!html;
     chip.classList.toggle('on', chipOn);
     if (chipOn && pick) {
-      const html = glyph('hook');
       if (chip.innerHTML !== html) chip.innerHTML = html;
       onScreen.set(pick.at.x, pick.at.y, pick.at.z).project(camera);
       chip.style.transform = `translate(calc(${((onScreen.x + 1) / 2) * innerWidth}px - 50%), calc(${((1 - onScreen.y) / 2) * innerHeight}px - 50%))`;
