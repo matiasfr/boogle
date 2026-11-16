@@ -9,10 +9,11 @@ import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { toWorld } from '../../place/layout.ts';
 import { H } from '../../place/terrain.ts';
 
-// Plan A1's Place-local centres; A2's 0.78 m crates and 0.84 m pitch, in two layers of four.
+// Designer ruling, 16 November: Place-local pile and board anchors, clear of the halt decks and rear ramps.
+// A2's 0.78 m crates and 0.84 m pitch, in two layers of four.
 const CENTRES = [
-  { x: 9.64, z: -143.1 },
-  { x: 66.59, z: 29.74 },
+  { x: 12.2, z: -143.64, board: { x: 13.8, z: -143.64, yaw: 0 } },
+  { x: 74.98, z: 28.57, board: { x: 76.58, z: 28.48, yaw: 0.054 } },
 ] as const;
 const TINT = { wood: '#a8703a', stone: '#8f959c' }; // the existing train crate goods palette
 
@@ -80,7 +81,8 @@ export function createFreight(adapter: RailwayAdapter, owner: OwnedView) {
       {
         id: `freight:yard${slot}:board`,
         prefab: 'railway.waiting-board',
-        pos: [x + 1.5, H(x + 1.5, z), z],
+        pos: [toWorld(centre.board.x), H(toWorld(centre.board.x), centre.board.z), centre.board.z],
+        rot: [centre.board.yaw, 0, 0],
         labels: { sign: 'count' },
       },
       { owner, texts: { count: ['0'] }, paintLabel: (sign, lines) => paintCount(sign, lines, yard.goods === 'stone') },

@@ -94,12 +94,13 @@ reads. **Tier** is `npm run review-stamp`'s rule: a file under `src/sim`, `src/n
 read. Player-visible steps also get the main session's visual review of their proof. **Model** rows are `npm run
 models`'.
 
-- [x] **A1. Freight you can see (S; placement correction still required).** Sync: Cosmetic/Local over `Yard`, `Train.freight`. Tier: normal + visual.
+- [x] **A1. Freight you can see (S).** Sync: Cosmetic/Local over `Yard`, `Train.freight`. Tier: normal + visual.
   Model: Codex gpt-6-astra high (player-visible). Parallel with A2, A3 and B1.
   - `src/entities/railway/freight-view.ts` (new): an instanced crate stack per `TRADE.yards` row, `Yard.stock` crates
     (2 × 2 × 2 at 8), timber brown, stone grey, and a count board (`src/render/sign-board.ts`, as `stock-sign.ts`).
-    Camp: Place-local (9.64, −143.10), 3 m beyond line 1's Camp stand from the track. Quarry: (66.59, 29.74), beside
-    line 2's homeward platform. Mounted in `src/entities/railway/view.ts`.
+    Camp: Place-local pile (12.20, −143.64), board (13.80, −143.64), yaw 0, on ground east of the rear ramp.
+    Quarry: pile (74.98, 28.57), board (76.58, 28.48), yaw 0.054, on ground behind the homeward platform's
+    open east half (designer, 16 November). Mounted in `src/entities/railway/view.ts`.
   - `src/entities/railway/train-view.ts`: the crate deck on `model.cars[2]` also shows `Train.freight` crates in its
     goods' tint (N6), through the same `solidTrainLoad`; on unload they go with the row change (N3).
   - Proof: `npm run look -- --rail-seed freight-running`: a still at the Camp stack and one of a line 1 train in.
@@ -114,15 +115,9 @@ models`'.
     (and Camp/train motion sheets): Camp board **4** matches `Yard.stock=4`; train slot 0 shows **4** brown crates
     for `Train.freight=4`, seated on its cargo deck; Quarry board **8** matches its stock. No visible train crate
     floating or z-fighting; real-time motion, unload edge and riding on freight remain unverified. Not tested on a device.
-  - **Placement conflict, not visual approval:** at the exact planned Camp centre the rear access ramp cuts
-    through the pile, hiding most of the bottom layer. Quarry's planned centre overlaps the homeward platform
-    edge, hiding its bottom layer; its board also stands in the rear ramp. No anchor was moved. From the actual
-    halt/ramp footprints and the pile's 0.81 m half-width, the nearest clear pile centres are approximately
-    Place-local **(11.70, -143.10)** at Camp (2.06 m east), and **(66.57, 29.38)** at Quarry (0.36 m outward).
-    These are footprint-clear candidates, not approved placements or inspected replacements; Quarry's board
-    also needs to be placed clear of the ramp. The first Camp trial (`town-a1-camp-first-still.png`) had an
-    underground camera and is not freight proof. Repro commands and row diagnostics are in `dev/look/evals/town-a1.ts`.
-    K1 retains the combined game-design update; resolve these placement conflicts before calling the visual step complete.
+  - **Placement as built (designer ruling, 16 November):** new Camp/Quarry stills from the platform side show
+    piles and boards clear of ramps, decks, shelter posts and benches, no visible floating or sinking crates,
+    and readable **4 / 8** counts matching the yard rows; exact per-yard board positions and yaws replace the fixed offset.
 - [x] **A2. Stakes and piles in the Round (M).** Sync: Cosmetic/Local over `Town.wood`, `Town.stone`, `plotsStaked`.
   Tier: normal + visual. Model: gpt-6-astra high. Parallel with A1, A3 and B1.
   - `src/entities/town/plots.ts` (new; town-layout step 5's file, D4 of [home-flip](home-flip.md)): per priced plot

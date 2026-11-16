@@ -1,7 +1,7 @@
 // Accepted server seed, camera and read-only diagnostics. No stock/train row edits.
 // timeout 360 npm run look -- --rail-seed freight-running --eval dev/look/evals/town-a1.ts --query a1=camp --until window.__freightReady --warm 180 --name town-a1-camp --wall 240 --question 'Does the Camp stack show its stock, with a readable board and seated crates?'
 // timeout 360 npm run look -- --rail-seed freight-running --eval dev/look/evals/town-a1.ts --query a1=train --until window.__freightReady --warm 180 --name town-a1-train --wall 240 --question 'Does a line 1 train carry its timber freight on the solid crate deck?'
-// a1=quarry frames the second planned stack for placement inspection.
+// timeout 360 npm run look -- --rail-seed freight-running --eval dev/look/evals/town-a1.ts --query a1=quarry --until window.__freightReady --warm 180 --name town-a1-quarry --wall 240 --question 'Are the Quarry pile and readable board clear of the platform, ramp, bench and shelter posts?'
 const { railReady, railRead, rw, inspectRailway } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
@@ -15,8 +15,8 @@ const { teleport } = (await import(
 )) as typeof import('../../../src/physics/engine.ts');
 if (!(await railReady())) throw new Error('A1 proof: railway mirror not ready');
 const mode = new URLSearchParams(location.search).get('a1') ?? 'camp';
-const x = mode === 'quarry' ? 1066.59 : 1009.64,
-  z = mode === 'quarry' ? 29.74 : -143.1;
+const x = mode === 'quarry' ? 1074.98 : 1012.2,
+  z = mode === 'quarry' ? 28.57 : -143.64;
 teleport(me.body!, x + 8, H(x + 8, z + 8) + 0.9, z + 8);
 let ready = false,
   key = '';
@@ -30,7 +30,8 @@ const poll = () => {
     window.__debugCam?.set([car.x + 7, car.y + 5, car.z + 8], [car.x, car.y + 0.7, car.z], 55);
   } else if (mode !== 'train') {
     const y = H(x, z);
-    window.__debugCam?.set([x + 4, y + 4, z + 7], [x + 0.5, y + 0.85, z], 55);
+    // Look from the platform side: Camp's platform is on the -z side, Quarry's homeward platform on +z.
+    window.__debugCam?.set([x + 3, y + 7.5, z + (mode === 'quarry' ? 2.5 : -2.5)], [x + 0.5, y + 0.65, z], 62);
   }
   const stock = yards.find((row) => row.slot === (mode === 'quarry' ? 1 : 0))?.stock;
   if (!ready && (mode === 'train' ? !!car : (stock ?? 0) >= 4)) {
