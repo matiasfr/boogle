@@ -4,6 +4,9 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-16 · Keep the wardrobe's setting placements and paper rows; remove the lighter dim behind You ([entry](#d-2026-11-16-batch2-wardrobe-small-calls-without-dim))
+- 2026-11-16 · The 12 batch-2 bulk calls in this topic are confirmed as logged, subject to later explicit owner decisions ([entry](#d-2026-11-16-batch2-bulk-confirmed))
+
 - 2026-11-16 · Sleeves' 15 greeter lines stay placeholders; the words are the owner's copy ([entry](#d-2026-11-16-sleeves-lines-stay-placeholders))
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
@@ -28,6 +31,10 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Art: a painted concept per era, then a building kit and a vehicle kit per era. ([entry](#d-undated-art))
 
 ## Decided
+
+- <a id="d-2026-11-16-batch2-wardrobe-small-calls-without-dim"></a>**2026-11-16, wardrobe small calls without a dim** (owner, 16 November 2026, in chat: "Answered recs on the flags"). Accepted recommendations: **CH-011:** confirm, minus the lighter dim. The rest of each original row stands except the named change or retirement; full rows are in the [archive](decisions-archive.md#b2-rest-characters). Basis: [docs/decisions-characters.md#d-2026-11-10-no-dim-behind-the-pause-view-s-you](decisions-characters.md#d-2026-11-10-no-dim-behind-the-pause-view-s-you).
+
+- <a id="d-2026-11-16-batch2-bulk-confirmed"></a>**2026-11-16, batch-2 bulk calls confirmed as logged** (owner, 16 November 2026, page: "Accept all remaining", none pulled out; in chat: "And accepted the safe ones"). All 12 bulk rows in this topic from the [RC ranking](reports/agent-calls-ranking-rc-2026-11-16.json) and [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json) are confirmed as logged. Their original Call, Where, By and Why this pick cells are preserved in the [archive](decisions-archive.md#b2-rest-characters). Later explicit owner decisions still govern where rules overlap; confirming a proposed or measured row does not claim it is built. Drafts and placeholders keep that status, and the owner keeps his character words. IDs: CH-001, CH-002, CH-004, CH-006, CH-008, CH-009, CH-010, CH-012, CH-013, CH-015, CH-016, CH-017.
 
 - <a id="d-2026-11-16-sleeves-lines-stay-placeholders"></a>**2026-11-16, Sleeves' lines stay placeholders** (owner, 16 November 2026, in chat: "If I didn't say something else, I took the recommendation"). Accepted recommendation for CH-014: **confirm as placeholders; the words are owner's copy**. Sleeves the greeter's 15 lines remain placeholders. This records their status and writes no character words. See the [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json) and original row in the [archive](decisions-archive.md#archive-characters-cosmetics-and-story).
 
