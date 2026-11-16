@@ -269,7 +269,7 @@ The cap swallows only a **third** house at the pier stage; at Ring Island 4 plac
 
 | # | Lesson, in the order met | Taught by | On main? |
 | --- | --- | --- | --- |
-| 1 | Trains bring goods home, and goods make room in the town (a pile, then stakes) | plot 1's pile and stakes, 8 timber | **Half.** Pile, stakes and board are built; freight on the cars and the yard stacks are not (A1 open), so the cause is not seen |
+| 1 | Trains bring goods home, and goods make room in the town (a pile, then stakes) | plot 1's pile and stakes, 8 timber | Yes. _Orchestrator's correction, 16 November: A1 (yard stacks and freight on the cars) is on main; the review read a stale line._ |
 | 2 | Little guys ride and pay fares into one shared box | riders on line 2, the till's column | Yes |
 | 3 | A staked plot plus the price in the box means you can build | the gold ghost, hold 1 s | Yes |
 | 4 | **A house brings riders and fares** | plot 1, 150: 36 → 54 a minute at `q6-done` | Yes |
@@ -280,7 +280,7 @@ The cap swallows only a **third** house at the pier stage; at Ring Island 4 plac
 
 Lesson 6 is the back half of DESIGN's core loop ("grown towns give upgrades that extend your reach"); nothing on the
 first island teaches it today. The box's cap mark is shown, not a lesson to design. Teaching gaps to close, in order:
-A1 (lesson 1), plot 2 (6), plot 3's price (7), C1 and C2 (8).
+plot 2 (6), plot 3's price (7), C1 and C2 (8).
 
 ### 2. The second plot (ruling: the loader yard, choice framing dropped)
 
