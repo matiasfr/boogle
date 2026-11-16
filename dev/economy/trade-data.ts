@@ -92,9 +92,9 @@ add(
   'Riders',
   'house.buildMin',
   'Minutes from the buy to the first riders',
-  1,
+  TRADE.buildTicks / 600,
   'minutes',
-  'The build is about 30 seconds',
+  'Rule build time at 600 ticks a minute',
 );
 
 // Trains and seats.
@@ -144,7 +144,7 @@ add('Box', 'away.hours', 'A night away', 22, 'hours', 'Used for the night-away f
 
 // Houses and town things (Boogles). Prices are the ones the owner saw.
 const HOUSE: Record<Town, number[]> = {
-  village: [300, 800, 3000],
+  village: TRADE.plots[0].map((p) => p.base),
   ring: [1300, 2100],
   canopy: [2500, 4000, 6400],
   port: [3500, 5600],
@@ -165,7 +165,7 @@ add(
   'Town buys',
   'house.order',
   "Each next house in a town costs this times the last, on the brief's base prices",
-  2,
+  TRADE.houseOrder,
   'times',
   "Owner, 11 November: later purchases can cost more; 1 gives the brief's prices as written",
 );

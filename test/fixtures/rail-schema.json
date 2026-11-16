@@ -1,5 +1,5 @@
 {
-  "worldNs": "v47",
+  "worldNs": "v54",
   "components": [
     {
       "kind": "rail",
@@ -509,6 +509,21 @@
       "requires": [],
       "defaults": {},
       "fields": [["acc", "int"]]
+    },
+    {
+      "kind": "plot",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "at": -1
+      },
+      "fields": [
+        ["slot", "int"],
+        ["at", "int"],
+        ["paid", "int"]
+      ]
     },
     {
       "kind": "till",

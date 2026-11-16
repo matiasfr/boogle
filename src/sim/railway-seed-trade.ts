@@ -7,12 +7,13 @@
 //   fares-running     R3: freight-running advanced until the strongbox holds 100 Boogles (riders' fares, Village to
 //                     Far Head)
 import { invariant, need } from './railway-drive.ts';
-import { advance, railwayAtTrains, type Seed } from './railway-seed-route.ts';
+import { act, advance, railwayAtTrains, type Seed } from './railway-seed-route.ts';
 import { till, town } from './railway-rows.ts';
-import { TRADE } from './railway-trade-layout.ts';
+import { plotPrice } from './railway-queries-trade.ts';
+import { TRADE, TRADE_PCT } from './railway-trade-layout.ts';
 
-export type TradeStage = 'freight-running' | 'fares-running';
-export const TRADE_STAGES: readonly TradeStage[] = ['freight-running', 'fares-running'];
+export type TradeStage = 'freight-running' | 'fares-running' | 'house-ready' | 'house-built';
+export const TRADE_STAGES: readonly TradeStage[] = ['freight-running', 'fares-running', 'house-ready', 'house-built'];
 
 /** The railway at a trade stage. */
 export function railwayAtTrade(stage: TradeStage): Seed {
@@ -24,11 +25,21 @@ export function railwayAtTrade(stage: TradeStage): Seed {
     need(waited++ <= 6000, `${stage}: no timber reached the Village`);
     advance(s, 1);
   }
-  if (stage === 'fares-running')
+  if (stage !== 'freight-running')
     while (till(s.w).boogles < 100) {
       need(waited++ <= 12000, `${stage}: no fares landed`);
       advance(s, 1);
     }
+  if (stage === 'house-ready' || stage === 'house-built') {
+    while (till(s.w).boogles < plotPrice(s.w, 0, 0, TRADE_PCT.pricePct)) {
+      need(waited++ <= 18000, `${stage}: first house never affordable`);
+      advance(s, 1);
+    }
+    if (stage === 'house-built') {
+      need(act(s, 'a', 'rail.buy', { id: 0 }) === 1, 'house-built: buy refused');
+      advance(s, TRADE.buildTicks);
+    }
+  }
   const broken = invariant(s.w);
   need(broken === null, `railwayAtTrade ${stage}: ${broken}`);
   return s;

@@ -446,6 +446,8 @@ function startWorld(room: Room) {
       });
     T.railIntent = (intent) => {
       switch (intent.op) {
+        case 'rail.buy':
+          return adapter.buy(intent.id);
         case 'rail.wake':
           return adapter.wake();
         case 'rail.chop':

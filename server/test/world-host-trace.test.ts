@@ -22,6 +22,9 @@
 // v53 garage upgrade: the trace never turns the table. A namespace-only v52 control still matches all 8,596 records.
 // Only 205 checkpoint namespaces/checksums and 2,313 snapBytes samples change; all state, hashes, inputs/results,
 // messages and replica packets stay exact. See docs/plans/garage-choices.md, step 1 as built.
+// v54 town buy: checkpoints gain three unbought Plot rows, price percent 50 and v54 envelopes; hashes/bytes and
+// dynamic entity IDs follow. The action sweep adds four records for a refused buy (no id), shifting Bob's later
+// requests by one. Existing outcome payloads and all other simulation columns stay exact: 8,600 records.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

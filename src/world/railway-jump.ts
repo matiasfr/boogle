@@ -83,6 +83,12 @@ const GORGE_HALT = RAIL_LINES[1]!.halts.find((h) => h.name === 'High Gorge')!.pl
   // lies 4 m to the north, along -C of the split's frame (-0.5162, 0.8565), and a train stands on the rails.
   GORGE_LAND = near(GORGE_HALT, 0.5162 * 4.05, -0.8565 * 4.05, GORGE_HALT.y / 100 + 0.9, RAIL_GRANTS[0]!.at);
 
+// B1: N9's first priced slot is plot3. Pinned from townBuilding('plot3') / townLocal(2.2, d/2 + 1.2),
+// world x = Place-local x + 1000; the built landing is TOWN_CENTRE facing that plot. As other rail layout anchors,
+// keep these headless (town-plan imports the view's layout). B2 checks both in stills after its view lands.
+const HOUSE_READY: JumpLand = { x: 904.6, y: 18, z: 35.2, yaw: 1.571 };
+const HOUSE_BUILT: JumpLand = { x: 884.993, y: 18, z: 20.076, yaw: -2.056 };
+
 /** In route order. Labels and lines are UI text (not The Boogler's), logged in docs/agent-calls.md. Each `land` was
  * checked with a still (docs/plans/playtest-jump-in.md, step 7); `y` is the surface measured there. */
 export const JUMPS: readonly Jump[] = [
@@ -142,6 +148,20 @@ export const JUMPS: readonly Jump[] = [
     label: 'Fares paid',
     line: "Riders board at the Village's line 2 platform; the strongbox holds 100 Boogles",
     land: near(VILLAGE_LINE2, 4.7, -1.71, VILLAGE_LINE2.y / 100, QUARRY_LINE2), // 5 m on along Home's 70° island axis, facing the Quarry
+  },
+  {
+    stage: 'house-ready',
+    menu: false,
+    label: 'Ready to build',
+    line: 'The first plot is staked and the strongbox can pay for its house',
+    land: HOUSE_READY,
+  },
+  {
+    stage: 'house-built',
+    menu: false,
+    label: 'House built',
+    line: 'The first house is built and sends riders to the trains',
+    land: HOUSE_BUILT,
   },
   {
     stage: 'q6-done',

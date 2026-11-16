@@ -64,7 +64,7 @@ import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, wo
 import { legKitRelease } from './railway-sys-route-kit.ts';
 import { resume, supply } from './railway-sys-away.ts';
 import { brace, ringFootSet, ringFootTake, ringStrike } from './railway-sys-ring.ts';
-import { tradeTick, yardTick } from './railway-sys-trade.ts';
+import { buy, tradeTick, yardTick } from './railway-sys-trade.ts';
 import { TRADE_PCT, type TradePct } from './railway-trade-layout.ts';
 import { install, steelFeed, steelTake, steelTick } from './railway-sys-steel.ts';
 import { arrive, gate, grant, legStock, legTick } from './railway-sys-route.ts';
@@ -73,6 +73,7 @@ import { arrive, gate, grant, legStock, legTick } from './railway-sys-route.ts';
 // An op system that reads no action (the axe, the jump, the lever, the hook, the glider) takes it all the same.
 const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.wake': [wake],
+  'rail.buy': [buy],
   'rail.chop': [chop],
   'rail.mine': [mine],
   'rail.deposit': [deposit, deposit2],
@@ -122,7 +123,14 @@ export function railOutcome(w: World, pid: string, epoch: number, request: numbe
   return w.run(receipt, { pid, epoch, request });
 }
 /** All transfers recheck capacity at application, after preceding actions. */
-export function railApply(w: World, pid: string, e: RailAction, tick: number, timing: LineTiming = LINE_TIMING) {
+export function railApply(
+  w: World,
+  pid: string,
+  e: RailAction,
+  tick: number,
+  timing: LineTiming = LINE_TIMING,
+  pricePct = TRADE_PCT.pricePct,
+) {
   const previous = railOutcome(w, pid, e.epoch, e.request);
   // A pid with no account never gets past here: the server refuses its action as 'session' before applying it, and
   // the receipt answers 'snapshot-required' to any other caller.
@@ -130,8 +138,8 @@ export function railApply(w: World, pid: string, e: RailAction, tick: number, ti
   const a = w.lookup(Account, pid)!;
   let n = 0;
   for (const sys of Object.hasOwn(OPS, e.op) ? OPS[e.op]! : [])
-    if ((n = w.run(sys as System<Act, number>, { a, e, tick, timing }))) break;
-  return w.run(remember, { a, e, n, rejected: e.op === 'rail.reject' });
+    if ((n = w.run(sys as System<Act, number>, { a, e, tick, timing, pricePct }))) break;
+  return w.run(remember, { a, e, n, rejected: e.op === 'rail.reject' || (e.op === 'rail.buy' && n === 0) });
 }
 
 /** The rule tick's systems, run by (order, name): the order `railTick` ran them in by hand before M3. */
@@ -165,6 +173,7 @@ export function railTick(
     headPct,
     farePct: trade.farePct,
     riderPct: trade.riderPct,
+    pricePct: trade.pricePct ?? TRADE_PCT.pricePct,
     holdCap: hold.cap,
     holdPct: hold.pct,
   });

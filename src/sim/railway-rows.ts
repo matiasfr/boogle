@@ -30,6 +30,7 @@ import {
   Line,
   Outcome,
   Pile,
+  Plot,
   QJob,
   QJobRun,
   Rail,
@@ -123,6 +124,7 @@ export const lines = listed(line, RAIL_LINES.length);
 export const yard = slotted(Yard);
 export const yardClock = slotted(YardClock, Yard);
 export const town = slotted(Town);
+export const plot = slotted(Plot);
 /** R3: a town's rider clock (not replicated). */
 export const townClock = slotted(TownClock, Town);
 export const yards = listed(yard, TRADE.yards.length);

@@ -16,6 +16,7 @@ import {
   Forge,
   ForgeClock,
   QJob,
+  Plot,
   Till,
   Town,
   Train,
@@ -27,10 +28,15 @@ import { railwayCheck } from '../src/sim/railway-check.ts';
 import { checkTrade } from '../src/sim/railway-check-trade.ts';
 import { buildSeedWorld, SEED_STAGES } from '../src/sim/railway-seeds.ts';
 import { TRADE_STAGES } from '../src/sim/railway-seed-trade.ts';
-import { railTick } from '../src/sim/railway-systems.ts';
-import { rail, town, townClock, train, trains, yard, yards } from '../src/sim/railway-rows.ts';
+import { railApply, railTick } from '../src/sim/railway-systems.ts';
+import { account, plot, rail, town, townClock, train, trains, yard, yards } from '../src/sim/railway-rows.ts';
 import {
   boxCap,
+  dearestOnOffer,
+  plotPrice,
+  plotBuilt,
+  plotSlot,
+  housesOf,
   fareOf,
   freightAboard,
   freightStop,
@@ -840,17 +846,17 @@ test('R3: riders conserve and every fare is charged once a rider a trip, for 30 
     paid = earned(w);
     if (t % 1800 === 0) railwayCheck(w);
   }
-  assert.ok(town(w, 0).alighted - town(FREIGHT.w, 0).alighted > 140, 'the one-train opening route carries riders');
+  assert.ok(town(w, 0).alighted - town(FREIGHT.w, 0).alighted > 100, 'the one-train opening route carries riders');
   assert.ok(town(w, 0).wait0 <= TRADE.crowdCap && town(w, 0).wait1 <= TRADE.crowdCap, 'queues remain bounded');
 });
 
 test("R3: the box's cap (20 minutes of the demand rate) lands no fare past it and counts the rest in lost", () => {
   const w = copy(FREIGHT.w);
-  assert.equal(tillRate(w, TRADE_PCT), 56, '2 buildings × 2 riders × 2 ways × 7');
-  assert.equal(boxCap(w, TRADE_PCT), 1120);
+  assert.equal(tillRate(w, TRADE_PCT), 28, '2 buildings × 1 rider × 2 ways × 7');
+  assert.equal(boxCap(w, TRADE_PCT), 560);
   for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 40 * 600; t++) railTick(w, t);
   const b = tillRow(w);
-  assert.equal(b.boogles, 1120, 'full');
+  assert.equal(b.boogles, 600, 'full: the second staked plot raises the cap to 1.5 × 400');
   assert.ok(b.lost > 0, 'fares past the cap are lost');
   assert.equal(b.boogles, b.landed + b.poured - b.spent);
 });
@@ -873,14 +879,14 @@ test('R3: railFarePct 200 doubles the fare and so what lands; railRiderPct 0 sen
   assert.ok(town(none, 0).boarded <= was.boarded + was.wait0 + was.wait1);
 });
 
-test('R3: the three trade tunables, appended, default 100, inside their bounds', () => {
+test('R3: trade tunables default to 100 for fares and riders, 50 for prices', () => {
   for (const [key, min, max] of [
     ['railFarePct', 0, 1000],
     ['railRiderPct', 0, 1000],
     ['railPricePct', 1, 1000],
   ] as const) {
     const t = TUNABLES.find((s) => s.key === key)!;
-    assert.deepEqual([t.def, t.min, t.max], [100, min, max], key);
+    assert.deepEqual([t.def, t.min, t.max], [key === 'railPricePct' ? 50 : 100, min, max], key);
     assert.ok(okTune(key, min) && okTune(key, max) && okTune(key, 100));
     assert.ok(!okTune(key, min - 1) && !okTune(key, max + 1) && !okTune(key, 50.5), key);
   }
@@ -1166,9 +1172,9 @@ test('R3: Q7 laid and the rivet move the far end on (hand-set rows): the Railhea
   const before = JSON.stringify([town(w, 0), tillRow(w), trains(w).map((r) => r.riders)]);
   assert.deepEqual([routeFar(w, 0), fareOf(w, 0)], [3, 9], 'the Pier');
   w.mut(QJob, w.lookup(QJob, Q7)!)!.completion = 1;
-  assert.deepEqual([routeFar(w, 0), fareOf(w, 0), boxCap(w, TRADE_PCT)], [4, 10, 1600], 'the Railhead');
+  assert.deepEqual([routeFar(w, 0), fareOf(w, 0), boxCap(w, TRADE_PCT)], [4, 10, 800], 'the Railhead');
   w.mut(Aperture, w.single(Aperture))!.joined = 0;
-  assert.deepEqual([routeFar(w, 0), fareOf(w, 0), boxCap(w, TRADE_PCT)], [5, 13, 2080], 'Ring Island');
+  assert.deepEqual([routeFar(w, 0), fareOf(w, 0), boxCap(w, TRADE_PCT)], [5, 13, 1040], 'Ring Island');
   assert.equal(JSON.stringify([town(w, 0), tillRow(w), trains(w).map((r) => r.riders)]), before);
   checkTrade(w);
 });
@@ -1247,12 +1253,129 @@ test('R3: played through pier, ring, counterweight and rivet, riders aboard when
   assert.ok(offAt[3]! > 0 && offAt[4]! > 0 && offAt[5]! > 0, 'riders rode to the Pier, the Railhead and Ring Island');
 });
 
-test('R3: income at the first route settles within one fare a minute of min(56, the seat-capped rate)', () => {
+test('R3: income at the first route settles within one fare a minute of min(28, the seat-capped rate)', () => {
   const w = copy(FREIGHT.w),
     e0 = earned(w);
   for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 6000; t++) railTick(w, t);
   const perMin = (earned(w) - e0) / 10;
   const seatsPerMinute = (2 * TRADE.seats * 600) / cycleTicks(LINE2, stopsOf(w, LINE2));
-  const expected = Math.min(56, seatsPerMinute * fareOf(w, 0));
+  const expected = Math.min(28, seatsPerMinute * fareOf(w, 0));
   assert.ok(Math.abs(perMin - expected) <= fareOf(w, 0), `${perMin} a minute, expected ${expected}`);
+});
+
+// B1: spending and building use the same authoritative rules as the host.
+const READY = buildSeedWorld('house-ready');
+const PIER = buildSeedWorld('q6-done');
+const sendBuy = (w: World, tick: number, id: number, pid = 'a', pct = 50) => {
+  const a = account(w, pid)!;
+  return railApply(w, pid, { op: 'rail.buy', id, epoch: a.epoch, request: a.request + 1 }, tick, undefined, pct);
+};
+/** Controlled money for rule isolation, with its conservation ledger intact. Seeds never do this. */
+function credit(w: World, n: number) {
+  const b = w.mut(Till, w.single(Till))!;
+  b.boogles += n;
+  b.landed += n;
+}
+
+test('B1: unstaked, short and bought plots reject; duplicates and two players in one tick spend once', () => {
+  assert.equal(sendBuy(copy(ASLEEP.w), ASLEEP.t, 0).status, 'rejected');
+  assert.equal(sendBuy(copy(FREIGHT.w), FREIGHT.t, 0).status, 'rejected');
+  const w = copy(READY.w),
+    before = { ...tillRow(w) };
+  const a = account(w, 'a')!;
+  const request = { op: 'rail.buy', id: 0, epoch: a.epoch, request: a.request + 1 };
+  const first = railApply(w, 'a', request, READY.t);
+  assert.equal(first.status, 'accepted');
+  assert.deepEqual(railApply(w, 'a', request, READY.t), first, 'replayed request');
+  assert.equal(sendBuy(w, READY.t, 0, 'b').status, 'rejected', 'same tick, other player');
+  assert.equal(sendBuy(w, READY.t + 1, 0).status, 'rejected', 'already bought');
+  assert.deepEqual(plot(w, 0), { slot: 0, at: READY.t, paid: 150 });
+  assert.equal(tillRow(w).boogles, before.boogles - 150);
+  assert.equal(tillRow(w).spent, 150);
+  checkTrade(w, READY.t);
+  assert.equal(plotSlot(3, 2), 50, 'keys are per town');
+});
+
+test('B1: buying the second plot first doubles the first immediately; only staked unbought offers set the cap', () => {
+  const w = copy(READY.w);
+  assert.deepEqual(plotsStaked(w, 0), [0, 1]);
+  assert.equal(dearestOnOffer(w, 100), 800, 'third is not staked');
+  credit(w, 800);
+  assert.equal(sendBuy(w, READY.t, 1, 'a', 100).status, 'accepted');
+  assert.equal(plotPrice(w, 0, 0, 100), 600);
+  assert.equal(plotPrice(w, 0, 0, 50), 300);
+  assert.equal(housesOf(w, 0, READY.t), 0, 'price doubles before completion');
+  assert.deepEqual(plotsStaked(w, 0), [0]);
+  assert.equal(dearestOnOffer(w, 100), 600);
+  assert.equal(boxCap(w, { ...TRADE_PCT, pricePct: 100 }, READY.t), 900);
+});
+
+test('B1: a house raises demand at exactly at + buildTicks; replay and a mid-build save stay deterministic', () => {
+  const a = copy(READY.w),
+    b = copy(READY.w);
+  for (const w of [a, b]) assert.equal(sendBuy(w, READY.t, 0).status, 'accepted');
+  const back = createRailwayWorld();
+  back.load(JSON.parse(JSON.stringify(b.snapshot())), (w) => railwayCheck(w, READY.t));
+  assert.equal(back.hash(), b.hash());
+  assert.equal(tillRate(a, TRADE_PCT, READY.t + 99), 28);
+  assert.equal(tillRate(a, TRADE_PCT, READY.t + 100), 42);
+  assert.equal(plotBuilt(a, 0, READY.t + 99), false);
+  for (let tick = READY.t + 1; tick <= READY.t + 600; tick++) {
+    railTick(a, tick);
+    railTick(back, tick);
+    assert.equal(a.hash(), back.hash());
+    checkTrade(a, tick);
+  }
+});
+
+test('B1: plot load checks reject future buys, missing thresholds, unbought payments and a wrong spent sum', () => {
+  const bought = copy(READY.w);
+  sendBuy(bought, READY.t, 0);
+  assert.throws(() => checkTrade(bought, READY.t - 1), /plot bounds/);
+  const unbought = copy(READY.w);
+  unbought.mut(Plot, unbought.lookup(Plot, 0)!)!.paid = 1;
+  assert.throws(() => checkTrade(unbought, READY.t), /plot bounds/);
+  const wrong = copy(bought);
+  wrong.mut(Plot, wrong.lookup(Plot, 0)!)!.paid++;
+  assert.throws(() => checkTrade(wrong, READY.t), /plot spending/);
+  const early = copy(ASLEEP.w);
+  Object.assign(early.mut(Plot, early.lookup(Plot, 0)!)!, { at: ASLEEP.t, paid: 150 });
+  assert.throws(() => checkTrade(early, ASLEEP.t), /plot thresholds/);
+});
+
+test('B1: q6-done payoff: three buildings land at least 1.3 times two in 20 minutes', (t) => {
+  const rates = [0, 1, 2].map((houses) => {
+    const w = copy(PIER.w);
+    // Isolate the building count on identical q6 train positions and queues. Supply only each tested plot's
+    // prerequisites; buying still goes through the rule and the freight/money ledgers remain conserved.
+    for (let k = 0; k < houses; k++) {
+      const timber = Math.max(0, TRADE.plots[0][k]!.wood - town(w, 0).wood);
+      w.mut(Town, w.lookup(Town, 0)!)!.wood += timber;
+      w.mut(Yard, w.lookup(Yard, 0)!)!.made += timber;
+      credit(w, plotPrice(w, 0, k, 50));
+      assert.equal(sendBuy(w, PIER.t - TRADE.buildTicks, k).status, 'accepted');
+    }
+    const start = tillRow(w).landed;
+    for (let tick = PIER.t + 1; tick <= PIER.t + MIN20; tick++) railTick(w, tick);
+    checkTrade(w, PIER.t + MIN20);
+    return (tillRow(w).landed - start) / 20;
+  });
+  t.diagnostic(`q6-done landed fares/min, 2/3/4 buildings: ${rates.join(', ')}`);
+  assert.ok(rates[1]! >= 1.3 * rates[0]!, `${rates[1]} vs ${rates[0]}`);
+  const s = { w: copy(PIER.w), t: PIER.t };
+  while (tillRow(s.w).boogles < plotPrice(s.w, 0, 0, 50)) {
+    assert.ok(s.t - PIER.t < 10 * 600);
+    advance(s, 1);
+  }
+  t.diagnostic(
+    `first house at 50%: ${(s.t - PIER.t) / 600} minutes after q6-done; ${s.t / 600} seed-clock minutes; house-ready ${(READY.t - rail(READY.w).trains) / 600} minutes after trains-on`,
+  );
+});
+
+test('B1: audited buy and completed-house ticks declare every accessed component', () => {
+  const w = createRailwayWorld({ audit: true });
+  w.load(JSON.parse(JSON.stringify(READY.w.snapshot())), railwayCheck);
+  assert.equal(sendBuy(w, READY.t, 0).status, 'accepted');
+  railTick(w, READY.t + TRADE.buildTicks);
+  checkTrade(w, READY.t + TRADE.buildTicks);
 });

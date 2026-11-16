@@ -169,7 +169,7 @@ models`'.
   a train unloading at the island; `docs/game-design/place.md` gains the town economy's views (one doc edit for all
   three steps, so they share no file). Live as every ship is; (review) the owner is pointed at the economy at B2, the
   first moment with a choice, not here, where money builds with nothing to spend it on.
-- [ ] **B1. Plots and the buy (M; R4).** Sync: Server kind in the railway's replicated world; the server has
+- [x] **B1. Plots and the buy (M; R4).** Sync: Server kind in the railway's replicated world; the server has
   authority. Tier: **independent review**. Model: Codex gpt-6-astra high; review a fresh gpt-6-astra high (or opus
   high). Parallel with A1 to A3 (no shared file).
   - `src/sim/railway-trade-layout.ts`: plot rows gain `base` (300, 800, 3,000); `houseOrder: 2`, `buildTicks: 100`;
@@ -198,6 +198,24 @@ models`'.
     flips then; buying plot 2 first prices plot 1 at 600; determinism; save round-trip; (review) the payoff guard: from
     `q6-done`, three buildings land at least 1.3 times what two do in 20 minutes (measured 53.3 against 35.3).
   - Proof: `npm run checkpoints -- house-ready house-built` (both seeds from accepted ops through the host's save path).
+  - **As built, 16 November 2026 (rules/server, v54):** priced `Plot` rows, authoritative `rail.buy`, the two seeds,
+    and 50% room prices are implemented. Riders accrue at one per minute per building. At `q6-done`, matched
+    20-minute runs land **35.55 / 51.75 / 67.05 Boogles per minute for 2 / 3 / 4 buildings**; three pays **1.456×**
+    two. This controlled payoff test supplies the extra houses' timber and purchase funds, preserving conservation;
+    it measures the completed houses with identical train phase/queues, not their acquisition timeline. With no
+    purchase, the first 150-Boogle house becomes affordable **4.245 simulated minutes after `q6-done`** (tick 6665,
+    seed-clock minute 11.108). The `house-ready` branch of `fares-running` reaches it 7.367 minutes after trains start.
+    These are deterministic seed times, not human playthrough timing. Real-host `r:edit` tests cover refusals,
+    competing buys, both replicas, room pricing, and save/reload before the exact 100-tick completion. Both seed
+    checkpoints and the route loop pass; route order and bills stay unchanged. Schema and replay fixtures were
+    regenerated after auditing changes (new rows/IDs, rider demand, price default and namespace; the host action
+    sweep adds one refused buy). **Review fixes, 16 November:** the town reader now invalidates staking on numeric
+    purchase ticks without reallocating unchanged projections, and passes the mirror tick into `townRead`.
+    Tunable descriptions and the model's build delay now match the rules. The independent review's two P2
+    regressions are covered alongside its conservation, restart and real-WebSocket tests.
+    A tampered client can buy from anywhere; the strongbox is shared so harm is low; B2 decides whether the board's reach is checked on the server.
+    **B2 handoff:** the tooling jump rows have no player-menu entry; their board/green landings still need B2 stills.
+    K2's dedicated browser scenario is not claimed by this implementation.
 - [ ] **K2. Checkpoint at B1's bump.** `npm run check:full`; `npm run scenario` for two players pressing one plot (one
   plot bought, spent once: the one new sync contract); `npm run loop -- run` with order and bills unmoved.
 - [ ] **B2. The house goes up (M; V3).** After B1 and A2. Sync: Local view of `Plot`. Tier: normal + visual. Model:

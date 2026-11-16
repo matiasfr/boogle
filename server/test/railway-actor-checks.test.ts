@@ -79,7 +79,7 @@ test('reach comes from the action position; cadence from the client action clock
     assert.equal(f.result(first), 'accepted');
     assert.equal(f.result(second), 'accepted');
     // The facts were judged, then left out of what is saved and replicated.
-    const saved = JSON.stringify(f.host.sync.snapshot().data.railway);
+    const saved = JSON.stringify(f.host.rules.railway.world().snapshot().c.outcome);
     assert.ok(!saved.includes('"at"') && !saved.includes('"ms"'));
     // A swing faster than the cadence on the client's own clock: refused.
     const fast = f.send({ ...chop, ms: 1000 + T1.swingMs + 60 });

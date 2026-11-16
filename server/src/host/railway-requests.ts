@@ -60,6 +60,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
     e.op === 'rail.mine' ||
     e.op === 'rail.call' ||
     e.op === 'rail.strike' ||
+    e.op === 'rail.buy' ||
     e.op === 'rail.grant' ||
     e.op === 'rail.gate'
   )

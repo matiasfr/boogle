@@ -308,6 +308,12 @@ export const Town = defineComponent(
   },
   { key: 'slot', requires: [TownClock] },
 );
+/** A priced plot, keyed by town * 16 + k. Completion is derived from at + TRADE.buildTicks. */
+export const Plot = defineComponent(
+  'plot',
+  { slot: 'int', at: 'int', paid: 'int' },
+  { key: 'slot', defaults: { at: -1 } },
+);
 /** R3, the one shared strongbox (decided: one wallet, no personal money): the Boogles in it, the fares that landed and
  * those lost to its cap, and (R4, R5) what was spent, the away sack and what was poured from it. */
 export const Till = defineComponent('till', {
@@ -382,6 +388,7 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   YardClock,
   Town,
   TownClock,
+  Plot,
   Till,
   Steel,
   SteelClock,
@@ -428,5 +435,6 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   RAIL_LEGS.forEach((_l, slot) => w.spawn([Leg, { slot }]));
   RAIL_YARDS.forEach((_y, slot) => w.spawn([LegYard, { slot }]));
   w.spawn([Route, {}]);
+  TRADE.plots.forEach((plots, town) => plots.forEach((_p, k) => w.spawn([Plot, { slot: town * 16 + k }])));
   return w;
 }

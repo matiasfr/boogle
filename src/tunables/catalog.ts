@@ -202,14 +202,14 @@ const supply = {
     units: 'percent of the stand-in rate',
     at: 'next rule tick',
     owner: 'src/sim/railway-sys-trade.ts',
-    meaning: 'Riders each town sends to its route halts, from 2 a minute a building each way.',
+    meaning: 'Riders each town sends to its route halts, from 1 a minute a building each way.',
   },
   railPricePct: {
     id: 'railway.pricePct',
     units: 'percent of the stand-in prices',
-    at: 'next buy (slice 5 R4; read by nothing yet)',
-    owner: 'src/sim/railway-trade-layout.ts',
-    meaning: "Every plot's price, from the stand-ins; R4's buy reads it.",
+    at: 'next buy or fare landing',
+    owner: 'src/sim/railway-queries-trade.ts',
+    meaning: "Every plot's price and the strongbox cap's price-based floor, from the stand-in prices.",
   },
   railTrainHoldCap: {
     id: 'railway.trainHoldCap',

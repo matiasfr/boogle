@@ -7,7 +7,7 @@
 //   lineYard(line)                 the yard slot a line loads at and delivers for (-1 none)
 //   freightAboard(w, yard)         a yard's crates aboard its line's trains
 //   plotsStakedOf(town, wood, stone, bought)   the plots staked for those deliveries (R2), lowest first
-//   plotsStaked(w, town)           the same on the world (no plot is bought before R4)
+//   plotsStaked(w, town)           the same on the world, excluding bought plots
 //   freightStop(w, slot, r, k, dir)  R2b's full-load stop: halt k going `dir` is a service stop for train `slot`
 //   R3, riders and fares (every town's, from TRADE.routes; the Till is one):
 //   lineRoute(line)                the route slot on a line (-1 none)
@@ -15,17 +15,17 @@
 //   routeAhead(w, route, dir)      the halt its riders ride to going `dir`
 //   fareOf(w, route, farePct)      2 to board and 1 a 100 m between its halts, times the room's fare percent
 //   (riders never add a stop: the ruling of 12 November; they board and step off only where a train already stands)
-//   townBuildings()         the town's buildings (its two starting ones until R4 builds plots)
+//   townBuildings(w, town, tick)   the starting buildings plus completed houses
 //   tillRate(w, pct)               every route's demand rate in Boogles a minute; boxCap(w, pct) the strongbox's cap
 //   trainSeats()            seats on a train (4; the garage's install changes it here)
 //   ridersAboard(w, route)         riders on the route's line's trains
 import type { World } from '../ecs/index.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
-import { TRADE, type TradePct, type TradeRoute, type TradeYard } from './railway-trade-layout.ts';
+import { TRADE, TRADE_PCT, type TradePct, type TradeRoute, type TradeYard } from './railway-trade-layout.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { WORKS } from './railway-works-layout.ts';
 import type { RailTrain } from './railway-train.ts';
-import { Town, Train, Works, Yard } from './railway-components.ts';
+import { Plot, Town, Train, Works, Yard } from './railway-components.ts';
 import { footingsOwed, kitOwed, stopsOf, worksId } from './railway-queries.ts';
 import { legKitWaiting } from './railway-queries-route.ts';
 
@@ -52,11 +52,11 @@ export function plotsStakedOf(
   return out;
 }
 /** plotsStakedOf on the world's Town row; a town with no row has nothing staked ([], as plotsStakedOf for a town
- * with no priced plots). No plot can be bought until R4 adds the Plot row and `rail.buy`. */
+ * with no priced plots). Bought plots free the next eligible offer. */
 export function plotsStaked(w: World, town: number): number[] {
   const id = w.lookup(Town, town),
     t = id === undefined ? undefined : w.get(Town, id);
-  return t ? plotsStakedOf(town, t.wood, t.stone) : [];
+  return t ? plotsStakedOf(town, t.wood, t.stone, (k) => plotBought(w, plotSlot(town, k))) : [];
 }
 /** R2b, the full-load stop (the freight-stops ruling, calls 3 to 5): halt `k` going `dir` is a service stop for train
  * `slot` (row `r`) when its line's yard stands at that middle halt, the train is heading home, the yard's `after` is
@@ -109,23 +109,51 @@ export function fareOf(w: World, route: number, farePct: number = 100) {
   const base = TRADE.fare.board + TRADE.fare.per100m * Math.floor(Math.abs(far - halts[r.a]!.s) / 10000);
   return Math.floor((base * farePct) / 100);
 }
-/** A town's buildings: the two it arrives with (R4 adds its built plots). */
-export const townBuildings = () => TRADE.startBuildings;
-/** The demand rate in Boogles a minute (the plan's Default: not the seat-capped rate), over every route: buildings ×
- * riders a minute × the rider percent, both ways, times the fare; rounded down once. 56 at the start. */
-export function tillRate(w: World, pct: TradePct) {
+/** Priced plot keys leave room for up to sixteen slots per town. */
+export const plotSlot = (town: number, k: number) => town * 16 + k;
+export function plotBought(w: World, slot: number): boolean {
+  const id = w.lookup(Plot, slot);
+  return id !== undefined && w.get(Plot, id)!.at >= 0;
+}
+export function plotBuilt(w: World, slot: number, tick: number): boolean {
+  const id = w.lookup(Plot, slot),
+    p = id === undefined ? undefined : w.get(Plot, id);
+  return !!p && p.at >= 0 && tick >= p.at + TRADE.buildTicks;
+}
+export const housesOf = (w: World, town: number, tick: number): number =>
+  (TRADE.plots[town] ?? []).filter((_p, k) => plotBuilt(w, plotSlot(town, k), tick)).length;
+/** Every bought house doubles the other prices immediately, including while it is building. */
+export function plotPrice(w: World, town: number, k: number, pricePct: number): number {
+  const p = TRADE.plots[town]?.[k];
+  if (!p) return 0;
+  let price = p.base;
+  for (let j = 0; j < TRADE.plots[town]!.length; j++) if (plotBought(w, plotSlot(town, j))) price *= TRADE.houseOrder;
+  return Math.floor((price * pricePct) / 100);
+}
+export const townBuildings = (w: World, town: number, tick: number) => TRADE.startBuildings + housesOf(w, town, tick);
+/** Demand income, before the seat cap, in whole Boogles a minute. */
+export function tillRate(w: World, pct: TradePct, tick: number = 0) {
   let hundredths = 0;
   TRADE.routes.forEach((r, k) => {
-    hundredths += townBuildings() * TRADE.ridersPerMin * pct.riderPct * 2 * fareOf(w, k, pct.farePct);
+    hundredths += townBuildings(w, r.town, tick) * TRADE.ridersPerMin * pct.riderPct * 2 * fareOf(w, k, pct.farePct);
   });
   return Math.floor(hundredths / 100);
 }
-/** The dearest thing on offer: nothing is bought before R4 (its plots' prices come in then). */
-export const dearestOnOffer = () => 0;
-/** The strongbox's cap (Decided): the larger of `incomeMin` minutes of income or 1.5 times the dearest thing on offer. */
-export function boxCap(w: World, pct: TradePct) {
+/** Only staked, unbought plots are on offer. */
+export function dearestOnOffer(w: World, pricePct: number) {
+  let dearest = 0;
+  TRADE.plots.forEach((_ps, town) => {
+    for (const k of plotsStaked(w, town)) dearest = Math.max(dearest, plotPrice(w, town, k, pricePct));
+  });
+  return dearest;
+}
+/** The larger of twenty minutes' demand income or 1.5 times the dearest current offer. */
+export function boxCap(w: World, pct: TradePct, tick: number = 0) {
   const b = TRADE.box;
-  return Math.max(b.incomeMin * tillRate(w, pct), Math.floor((dearestOnOffer() * b.dearestNum) / b.dearestDen));
+  return Math.max(
+    b.incomeMin * tillRate(w, pct, tick),
+    Math.floor((dearestOnOffer(w, pct.pricePct ?? TRADE_PCT.pricePct) * b.dearestNum) / b.dearestDen),
+  );
 }
 /** Seats on train `slot`: 4 (the garage's install changes it here, nowhere else). */
 export const trainSeats = () => TRADE.seats;

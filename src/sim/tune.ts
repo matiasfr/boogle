@@ -112,7 +112,7 @@ export const TUNABLES = [
   // the stand-ins in src/sim/railway-trade-layout.ts. Appended: hashed order.
   { key: 'railFarePct', def: 100, min: 0, max: 1000, label: 'Railway fares (percent of the stand-in fare)' },
   { key: 'railRiderPct', def: 100, min: 0, max: 1000, label: 'Railway riders (percent of the stand-in rate)' },
-  { key: 'railPricePct', def: 100, min: 1, max: 1000, label: 'Railway prices (percent of the stand-in prices)' },
+  { key: 'railPricePct', def: 50, min: 1, max: 1000, label: 'Railway prices (percent of the stand-in prices)' },
   // The Ring Island hold (docs/plans/short-turn.md, the ruling on step 1's sheet, call 7; railway-trains.ts
   // TRAIN_HOLD): how long past its arrival plus the dwell a train may stand at a control halt (a lever ask at its own
   // platform restarts the dwell, as at the end holds), and the gap difference that stops it, as a percent of an even
