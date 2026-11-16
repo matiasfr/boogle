@@ -1374,7 +1374,7 @@ line that says where the next ones go, how many are in and how they travel: **st
 by wagon** (from the stall standing, before there is a wagon: the apron bill answers "what wagon?"), then, with Q7
 laid, **railhead 0/14 by wagon** and **weights 0/4**; it comes down when the last weight hangs. On the pier head's
 pad, at its seaward far corner beside the jib and facing the walk from the platform, a bill reads **Pier** /
-**footings 0/12 by wagon** from the kiln's lighting (once Q6 has laid the pier) to the twelfth footing; the Railhead
+**footings 0/12 by wagon** from Q6 laid to the twelfth footing (owner, 15 November; works-flow step 2); the Railhead
 finger takes that corner after. On the halts' maps the kiln's dashed gold square, idle once the kiln is lit, moves to
 where the next footing is wanted: the stall until the wagon has rolled out, then the pier's jib, gone at the twelfth.
 Both boards are grey plates from the prefab record door (`railway.footings-bill`, the railhead rack tag's kind),
@@ -1386,8 +1386,10 @@ onto the pier rack. Line 2 stands there 3.5 m short of the halt's middle, so its
 track layer parked at the rails' end (engine A, 10 November: 1.0 m nearer than the old loco, and at least the 1 m wanted
 with the longer boiler; `test/railway-works-layout.test.ts`) and the wagon stands at the halt's
 landward end. The pier rack is a timber row of six (two high)
-along the halt deck's seaward edge, leaving the track side free to walk and board; it stands once the kiln has cast
-its first footing. At the pier head a jib swings each set footing out over the stakes and lowers it on a rope into
+along the halt deck's seaward edge, leaving the track side free to walk and board; it stands from Q6 laid, with six
+dashed gold ghost footings while none are on the pier rack, set in the sea or aboard the wagon. The ghosts use the
+stall sockets' shape and size; releasing a footing back to the Works may bring them back. At the pier head a jib
+swings each set footing out over the stakes and lowers it on a rope into
 its socket on the sea floor; each pair raises a trestle bent to its deck height, and the twelfth set
 gives the crossing's finale once the last bent stands. The bents are built for the double track ([generic-lines](../plans/generic-lines.md),
 step 3): each carries a 7.6 m deck whose middle is 2 m west of line 2's track, its two footings 3.3 m either side, and
