@@ -21,9 +21,14 @@ export async function accountBrowserChecks(options: {
     const guestB = await ev(b.page, () => window.T.status().pid);
     check('isolated browser stores register different verified guests', a.ctx !== b.ctx && pid !== guestB && !!pid);
     // Never print, assert-equal, persist in artifacts or put this value in a URL.
+    // signIn/signOut reload the page: start them without awaiting inside the page, or the evaluate can lose its
+    // context to the reload it caused (a CI race). A refusal then shows as the navigation wait timing out.
     const pin: string = await ev(a.page, () => window.T.savePin());
     await ev(b.page, () => localStorage.setItem('boogle.visit.account-proof', 'former guest'));
-    await Promise.all([b.page.waitForEvent('framenavigated'), ev(b.page, (pin: string) => window.T.signIn(pin), pin)]);
+    await Promise.all([
+      b.page.waitForEvent('framenavigated'),
+      ev(b.page, (pin: string) => void window.T.signIn(pin), pin),
+    ]);
     await b.page.waitForFunction(() => !!window.T?.start);
     const joined = await ev(b.page, () => window.T.start());
     check(
@@ -51,7 +56,7 @@ export async function accountBrowserChecks(options: {
       'restart preserves browser credential admission and principal',
       typeof afterRestart === 'string' && (await ev(b.page, () => window.T.status().pid)) === pid,
     );
-    await Promise.all([b.page.waitForEvent('framenavigated'), ev(b.page, () => window.T.signOut())]);
+    await Promise.all([b.page.waitForEvent('framenavigated'), ev(b.page, () => void window.T.signOut())]);
     await b.page.waitForFunction(() => !!window.T?.start);
     const asGuest = await ev(b.page, () => window.T.start());
     const guest = await ev(b.page, () => window.T.status());
@@ -59,7 +64,10 @@ export async function accountBrowserChecks(options: {
       'sign-out reloads into a distinct guest admitted to the room',
       typeof asGuest === 'string' && guest.state === 'ready' && !!guest.pid && guest.pid !== pid,
     );
-    await Promise.all([b.page.waitForEvent('framenavigated'), ev(b.page, (pin: string) => window.T.signIn(pin), pin)]);
+    await Promise.all([
+      b.page.waitForEvent('framenavigated'),
+      ev(b.page, (pin: string) => void window.T.signIn(pin), pin),
+    ]);
     await b.page.waitForFunction(() => !!window.T?.start);
     await ev(b.page, () => window.T.start());
     check('switch-back resolves the original account', (await ev(b.page, () => window.T.status().pid)) === pid);
