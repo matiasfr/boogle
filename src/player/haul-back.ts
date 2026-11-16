@@ -8,7 +8,7 @@ export type CarryReadout = {
   logs: number;
   rails: number;
   stone: number;
-  big: 'beam' | 'boiler' | null;
+  big: 'beam' | 'boiler' | 'footing' | null;
   capacity: number;
   /** Above this count movement is heavy; omitted for owners without overfill. */
   comfortable?: number;

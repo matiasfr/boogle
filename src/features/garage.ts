@@ -180,16 +180,7 @@ function rowHtml(row: Row, i: number, snap: ReturnType<NonNullable<typeof garage
   const live = reducedMotion ? 1e6 : snap.ms;
   const s = shownRow(row, i, snap.phase, snap.phase === 'moment' ? live : 0);
   const cls = s.preview ? ' preview' : '';
-  if (row.kind === 'pips') {
-    const had = Math.round(row.now),
-      total = Math.round(Math.max(row.now, row.then));
-    const filled = Math.round(s.value);
-    let pips = '';
-    for (let k = 0; k < Math.max(total, 4); k++)
-      pips += `<i class="${k < filled ? 'on' : ''}${k >= had && k < filled ? ' new' : ''}"></i>`;
-    const arrow = s.arrow ? `<s>${had}</s> → ` : '';
-    return `<div class="g-row"><span>${h(row.label)}</span><b class="${cls}">${arrow}<span class="pips">${pips}</span></b></div>`;
-  }
+
   const arrow = s.arrow ? `<s>${f(row.now, row.digits)}</s> → ` : '';
   return `<div class="g-row"><span>${h(row.label)}</span><b class="${cls}">${arrow}${f(s.value, row.digits)}${h(row.unit ?? '')}</b></div>`;
 }

@@ -229,33 +229,7 @@
 .g-row b.preview {
   color: var(--g-preview);
 }
-.pips {
-  display: inline-flex;
-  gap: 4px;
-  vertical-align: -2px;
-}
-.pips i {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  border: 2px solid var(--g-edge);
-}
-.pips i.on {
-  background: var(--g-ink);
-  border-color: var(--g-line);
-}
-.pips i.new {
-  background: var(--g-preview);
-}
-.pips i.new {
-  animation: g-drop 0.3s var(--ease-pop) both;
-}
-@keyframes g-drop {
-  from {
-    transform: translateY(-14px);
-    opacity: 0;
-  }
-}
+
 .g-note {
   margin: 0;
   color: var(--g-soft);
@@ -403,8 +377,5 @@ body.garage-open .hud > :not(.garage-ui):not(.shot-skip-chip):not(.notify) {
 @media (prefers-reduced-motion: reduce) {
   .g-row b {
     transition: none;
-  }
-  .pips i.new {
-    animation: none;
   }
 }

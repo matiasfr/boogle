@@ -244,11 +244,11 @@ export const speedSaved = (cm: number, from: number, to: number) => runSeconds(c
 export const speedOffered = (cm: number, from: number, to: number) => speedSaved(cm, from, to) >= SAVES_AT_LEAST_S;
 
 // ---------------------------------------------------------------- readouts
-/** One row. `now` and `then` are the same kind: a number (with `unit`), or car pips. */
+/** One row. `now` and `then` are numeric amounts, with an optional unit. */
 export type Row = {
   id: string;
   label: string;
-  kind: 'number' | 'pips' | 'text';
+  kind: 'number' | 'text';
   now: number;
   then: number;
   /** Decimal places the count shows. */
@@ -271,7 +271,7 @@ export function rowsFor(cat: CatId, chosen: PartId, fitted = false): Row[] {
       runB = runSeconds(cm, b.speed);
     const rows: Row[] = [
       { id: 'speed', label: 'Top speed', kind: 'number', now: speedMs(a.speed), then: speedMs(b.speed), unit: ' m/s' },
-      { id: 'cars', label: 'Cars it pulls', kind: 'pips', now: a.pulls, then: b.pulls },
+      { id: 'cars', label: 'Cars it pulls', kind: 'number', now: a.pulls, then: b.pulls },
       {
         id: 'foot',
         label: `Footings to ${end} a minute`,

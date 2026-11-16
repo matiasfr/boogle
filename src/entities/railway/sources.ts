@@ -649,7 +649,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       logs,
       rails: mine?.rails ?? 0,
       stone: mine?.stone ?? 0,
-      big: heldBeam() ? ('beam' as const) : null,
+      big: heldBeam() ? ('beam' as const) : mine?.foot ? ('footing' as const) : null,
       capacity: carryMax(world()),
       comfortable: carryComfort(world()),
       flyingLogs: Math.min(logs, harvestFlights.length),
@@ -860,10 +860,17 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       const point = new THREE.Vector3(pile.x / 100, pileHeight(pile) + 1.4, pile.z / 100);
       result.push(
         freeCarry() <= 0
-          ? { id: `place-pile${pile.id}`, verb: 'Pick up', at: point, blocked: 'Your back is full' }
+          ? {
+              id: `place-pile${pile.id}`,
+              verb: 'Pick up',
+              note: `${pile.n} ${pile.kind === 1 ? 'stone' : pile.kind === 2 ? 'rails' : 'logs'}`,
+              at: point,
+              blocked: 'Your back is full',
+            }
           : {
               id: `place-pile${pile.id}`,
               verb: 'Pick up',
+              note: `${pile.n} ${pile.kind === 1 ? 'stone' : pile.kind === 2 ? 'rails' : 'logs'}`,
               at: point,
               run: () => {
                 adapter.take(pile.id);
@@ -874,10 +881,17 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     if (railRow(world()).rack > 0 && Math.hypot(p.x - rackAt.x, p.z - rackAt.z) <= 2.8)
       result.push(
         freeCarry() <= 0
-          ? { id: 'railway-recovery-rack', verb: 'Pick up', at: rack.logBase, blocked: 'Your back is full' }
+          ? {
+              id: 'railway-recovery-rack',
+              verb: 'Pick up',
+              note: `${railRow(world()).rack} logs`,
+              at: rack.logBase,
+              blocked: 'Your back is full',
+            }
           : {
               id: 'railway-recovery-rack',
               verb: 'Pick up',
+              note: `${railRow(world()).rack} logs`,
               at: rack.logBase,
               run: () => {
                 adapter.rackTake();
@@ -888,6 +902,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       result.push({
         id: 'railway-recovery-stone',
         verb: 'Pick up',
+        note: `${railRow(world()).stoneRack} stone`,
         at: rack.stoneAt,
         run: () => void adapter.rackTake(1),
         ...(freeCarry() <= 0 ? { blocked: 'Your back is full' } : {}),
