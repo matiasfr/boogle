@@ -210,7 +210,7 @@ Each leaves `node dev/ship-check.ts` green. The checkpoint is one look per step'
     3.1 s), with no camera cut. `pier-view.ts`: D1's cut only while `breaker === 1`; otherwise none.
   - place.md (Split-rock paragraph, "After the pier the forge casts..."), the invariant line in
     [split-rock-roundhouse](split-rock-roundhouse.md), the decision entry once the owner answers.
-- [ ] **2. The pier asks first.** Tier: player-visible implementation, Codex (T3 delegate_task) **gpt-6-astra high**.
+- [x] **2. The pier asks first.** Tier: player-visible implementation, Codex (T3 delegate_task) **gpt-6-astra high**.
   - `src/entities/railway/footing-cues.ts`: `pierBillLine` returns its existing line from
     `pierLaid(line2Completed(w))` (today null while `k.lit < 0`), null at the twelfth. A `pierGhosts(w)`: the pier
     laid, and `pierRack + pierSet` zero with no footing aboard the wagon; read from accepted rows only.
@@ -221,6 +221,26 @@ Each leaves `node dev/ship-check.ts` green. The checkpoint is one look per step'
   - Look: `npm run look -- --rail-seed q6-done --cam 1405,26.6,-349 --look 1405,24,-366` (where players wait, facing
     south) and from the stop toward the jib; a reload shows the same.
   - place.md (the footings paragraph); supersede the 9 November rack call in agent-calls.
+  - **Implementation evidence (15 November 2026):** view only in `footing-cues.ts` and `crossing-view.ts`; no sim or
+    `WORLD_NS` edits. The rack and existing full bill stand from Q6 laid; six stall-sized gold outlines disappear
+    when accepted rows have footings aboard, on the pier rack or set. Map timing and all copy are unchanged. The
+    parallel step-1 job owns the owner-answer/decision record, including the superseded rack call.
+  - **Checks:** `npm run check` passed (2,223 passed, 65 skipped, one todo, no failures), including the owning
+    `railway-works`, `railway-works-layout` and `works-shape` tests; `npm run loop -- run` passed, as did the routed
+    `playthrough --to t1-done` (`.look/playthrough/pier-asks-t1/`). The proposed footing-cues test file does not exist:
+    no new view unit test was added under the test diet. Scratch accepted-seed assertions cover before Q6, Q6 done,
+    kiln lit, crossing done and the unchanged pre-kiln map (`.look/works-flow-pier/cue-checks.log`).
+  - **Opened stills:** `.look/works-flow-pier/{q6,arrival}-{desktop,phone}-still.png`, generated with the existing
+    look `Game` harness (`capture.ts`, `captures.json`, `verdict.json` alongside them). Desktop is 1280 × 800;
+    phone is 390 × 844 with touch/coarse-pointer enabled. At the plan's waiting pose, six gold ghost boxes stand
+    before the kiln lights. After the first live wagon unload, six solid footings stand instead, with no ghosts;
+    the bill correctly remains `footings 0/12 by wagon` because none are set yet. WebGPU, advancing completed frames,
+    no graphics/page/console errors on all four. The small bill line is tiny from this waiting pose, particularly
+    on the phone; these frames establish its presence, not comfortable reading at that distance. These are restored
+    Q6 and wagon-on starts, not the live Q6 completion show; no physical-device, motion or first-timer-read claim.
+  - **Nearer wording views:** `.look/works-flow-pier/detail-near/q6-{desktop,phone}-still.png`, opened, with the
+    camera about 4 m from the existing sign. `0/12 by wagon` reads on both; the existing **Sit** prompt overlaps part
+    of `footings`. No sign relocation, enlargement, prompt change or new words were added. Capture health passed.
 - [ ] **3. (Only if owner question 1 is no.) The maps mark the throat first.** Tier: player-visible implementation,
   Codex (T3 delegate_task) **gpt-6-astra high**.
   - `src/entities/railway/halts-view.ts` (the `boards.works` call, lines 755–765): the stall seam's zigzag needs

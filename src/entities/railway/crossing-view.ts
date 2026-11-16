@@ -20,6 +20,7 @@ import { dustRing } from '../../render/particle-effects.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { camera } from '../../render/scene.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
+import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { showMomentBanner, momentBanner } from '../../ui/moment-banner.ts';
 import { playMark } from '../../proto/mark.ts';
 import { SEA } from '../../constants.ts';
@@ -40,7 +41,7 @@ import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box
 import { signBoard } from '../../render/sign-board.ts';
 import { Q7 } from '../../sim/railway-line2-layout.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
-import { FOOTING_COPY, pierBillLine } from './footing-cues.ts';
+import { FOOTING_COPY, pierBillLine, pierGhosts } from './footing-cues.ts';
 
 /** The rockets' launch height over the sea, and the pieces' timings in seconds. */
 const LAUNCH = SEA + 4;
@@ -127,6 +128,23 @@ export async function createRailwayCrossing(
       rack.z + rackAxis.z * v * RACK_PITCH,
     );
   };
+  // The stall sockets' gold outline and dimensions, seated in the rack's six lower slots from Q6 laid.
+  const rackGhosts = createGhostOutlines(owner, 600, 0.2, 0.12, 0.03);
+  let ghostsShown = false;
+  function drawRackGhosts() {
+    const show = open() && pierGhosts(wd);
+    if (show === ghostsShown) return;
+    ghostsShown = show;
+    rackGhosts.begin();
+    if (show) {
+      const h = FOOTING.h - 0.08;
+      for (let k = 0; k < 6; k++) {
+        rackSlot(k, p);
+        rackGhosts.box(p.x, p.y + h / 2 + 0.02, p.z, FOOTING.w - 0.1, h, FOOTING.w - 0.1, rackYaw);
+      }
+    }
+    rackGhosts.commit();
+  }
   /** The rack, as Line 2's depot racks are built: two bearers, a chock between slots and a post at each corner. */
   const rackParts = (() => {
     const out: [number, number, number, number, number, number, string][] = [];
@@ -232,7 +250,7 @@ export async function createRailwayCrossing(
   const jibHead = new THREE.Vector3(frame.x + Math.sin(jibYaw) * 3.2, deckY + 4.6, frame.z + Math.cos(jibYaw) * 3.2);
   // The pier's bill (footings-signalling A4): how many footings the crossing has of its twelve and how they come, a
   // plaque hung on the jib's mast over head height, on the side away from the arm, facing the walk from the platform
-  // and the rack. From the kiln's lighting to the twelfth footing. A plate from the record door.
+  // and the rack. From Q6 laid to the twelfth footing. A plate from the record door.
   const pierBill = instantiate(
     'railway.footings-plaque',
     { id: 'pier-footings-bill', prefab: 'railway.footings-plaque', pos: [0, 0, 0], labels: { sign: 'pier' } },
@@ -391,12 +409,9 @@ export async function createRailwayCrossing(
         batch.box(b.x, SEA + 1.55, b.z, 0.3, 0.5, 0.3, STAKE);
       }
       bents.forEach((_, b) => drawBent(b));
-      // The pier rack stands once the kiln has cast its first footing (there is something to bring), then its stack
-      // (less what is still hopping off the wagon).
-      if (worksRow(wd).poured > 0) {
-        footingFrame(m, rack.x, rackY, rack.z, rackYaw);
-        for (const r of rackParts) batch.part(m, ...r);
-      }
+      // The rack asks from Q6 laid; its real stack excludes what is still hopping off the wagon.
+      footingFrame(m, rack.x, rackY, rack.z, rackYaw);
+      for (const r of rackParts) batch.part(m, ...r);
       const resting = Math.max(0, worksRow(wd).pierRack - deps.toPier());
       for (let k = 0; k < Math.min(resting, WORKS.pier); k++) {
         rackSlot(k, p);
@@ -605,6 +620,7 @@ export async function createRailwayCrossing(
       solidDecks(open());
       finger.mesh.visible = started;
       drawPierBill();
+      drawRackGhosts();
       stepLowering(dt);
       // A bent whose pair arrived without a lowering here (a correction, a late accept) still rises.
       const pairs = Math.floor(inSea() / 2);

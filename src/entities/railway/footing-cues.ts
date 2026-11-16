@@ -6,7 +6,9 @@
 // UI copy.
 import { PIER_FRAME, SHED_STALL, WORKS } from '../../sim/railway-works-layout.ts';
 import { q7Laid } from '../../sim/railway-queries.ts';
-import { aperture, shed, works, type ReadWorld } from '../../sim/railway-rows.ts';
+import { pierLaid } from '../../sim/railway-line2-layout.ts';
+import { line2Completed } from '../../sim/railway-queries-line2.ts';
+import { aperture, shed, trains, works, type ReadWorld } from '../../sim/railway-rows.ts';
 
 export const FOOTING_COPY = {
   board: 'Footings',
@@ -32,12 +34,17 @@ export function footingBoardLine(w: ReadWorld): string | null {
   return null;
 }
 
-/** The pier bill's small line, from the kiln's lighting to the twelfth footing; null outside it. The view shows it
- * only once the pier stands (Q6 laid). */
+/** The pier asks from Q6 laid, including how the footings travel, until the twelfth footing is set. */
 export function pierBillLine(w: ReadWorld): string | null {
   const k = works(w);
-  if (k.lit < 0 || k.pierSet >= WORKS.pier) return null;
+  if (!pierLaid(line2Completed(w)) || k.pierSet >= WORKS.pier) return null;
   return `footings ${count(k.pierSet, WORKS.pier)} ${FOOTING_COPY.byWagon}`;
+}
+
+/** Six empty rack slots ask for footings until some are at the pier or on their way aboard the wagon. */
+export function pierGhosts(w: ReadWorld): boolean {
+  const k = works(w);
+  return pierLaid(line2Completed(w)) && k.pierRack + k.pierSet === 0 && !trains(w).some((r) => r.foot > 0);
 }
 
 /** Where the next footing is wanted, for the halts' maps (world metres): the stall until the wagon has rolled out of
