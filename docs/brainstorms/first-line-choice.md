@@ -1,4 +1,5 @@
 > **Status: proposed (2026-11-16).** Light brainstorm: one agent, three lenses; no game changes or new binding calls.
+> Stage 1 [crossing probe](../research/first-line-crossing-probe.md) (2026-11-16): no useful crossing established on v52; measured ground itineraries favour early carry at both stations. Research only; fork not built.
 > Supersedes the recommendation, not the historical record, of [first-line-decisions](first-line-decisions.md).
 > Only one candidate survives the filters below. Draft names are design labels, not approved player copy.
 
