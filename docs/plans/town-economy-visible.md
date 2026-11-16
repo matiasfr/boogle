@@ -209,10 +209,13 @@ models`'.
     competing buys, both replicas, room pricing, and save/reload before the exact 100-tick completion. Both seed
     checkpoints and the route loop pass; route order and bills stay unchanged. Schema and replay fixtures were
     regenerated after auditing changes (new rows/IDs, rider demand, price default and namespace; the host action
-    sweep adds one refused buy). **B2 handoff:** the owner's no-edit boundary on `src/entities/town/` leaves its
-    `townRead` caller's mirror tick and explicit empty `houses` value for B2; timeless reads do not claim completion.
-    The tooling jump rows have no player-menu entry; their board/green landings still need B2 stills. Independent
-    review and K2's browser scenario are not claimed by this implementation.
+    sweep adds one refused buy). **Review fixes, 16 November:** the town reader now invalidates staking on numeric
+    purchase ticks without reallocating unchanged projections, and passes the mirror tick into `townRead`.
+    Tunable descriptions and the model's build delay now match the rules. The independent review's two P2
+    regressions are covered alongside its conservation, restart and real-WebSocket tests.
+    A tampered client can buy from anywhere; the strongbox is shared so harm is low; B2 decides whether the board's reach is checked on the server.
+    **B2 handoff:** the tooling jump rows have no player-menu entry; their board/green landings still need B2 stills.
+    K2's dedicated browser scenario is not claimed by this implementation.
 - [ ] **K2. Checkpoint at B1's bump.** `npm run check:full`; `npm run scenario` for two players pressing one plot (one
   plot bought, spent once: the one new sync contract); `npm run loop -- run` with order and bills unmoved.
 - [ ] **B2. The house goes up (M; V3).** After B1 and A2. Sync: Local view of `Plot`. Tier: normal + visual. Model:

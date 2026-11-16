@@ -92,9 +92,9 @@ add(
   'Riders',
   'house.buildMin',
   'Minutes from the buy to the first riders',
-  1,
+  TRADE.buildTicks / 600,
   'minutes',
-  'The build is about 30 seconds',
+  'Rule build time at 600 ticks a minute',
 );
 
 // Trains and seats.

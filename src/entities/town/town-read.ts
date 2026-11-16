@@ -4,8 +4,9 @@
 // stretches are laid. Pure over a world and a tick. The look is worked out once per (world, tick): `railCounts` and
 // `railPhase` walk the rows, and the town asks every frame.
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
-import { jobs, qjobs, works, town, type ReadWorld } from '../../sim/railway-rows.ts';
-import { plotsStaked } from '../../sim/railway-queries-trade.ts';
+import { jobs, qjobs, works, town, plot, type ReadWorld } from '../../sim/railway-rows.ts';
+import { plotsStaked, plotSlot } from '../../sim/railway-queries-trade.ts';
+import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { railPhase } from '../../sim/railway-queries-line1.ts';
 import { railCounts } from '../../sim/railway-queries-line2.ts';
 import { townRead, type TownRead } from '../../sim/town-facts.ts';
@@ -32,6 +33,8 @@ const timed = (w: ReadWorld, tick: number) => ({
   score: railCounts(w, tick).score,
   phase: railPhase(w, tick, tick),
 });
+// Private numeric snapshots keep the public projection unchanged and never retain mutable Plot rows.
+const purchaseTicks = new WeakMap<TownLook['plots'], readonly number[]>();
 export const townLookOf = (
   w: ReadWorld,
   tick: number,
@@ -39,15 +42,20 @@ export const townLookOf = (
   previousPlots?: TownLook['plots'],
 ): TownLook => {
   const { wood, stone } = town(w, 0);
-  // Staking currently depends only on these deliveries. Compare values, not row/world identity: rows can change
-  // in place, and a new mirror world need not change freight. Keep old projections intact for their readers.
-  const plots =
-    previousPlots?.wood === wood && previousPlots.stone === stone
-      ? previousPlots
-      : { wood, stone, staked: plotsStaked(w, 0) };
+  // Staking depends on deliveries and purchases. Compare numbers without allocating on unchanged frame reads:
+  // rows can change in place, and a new mirror world need not change either input. Preserve older projections.
+  const previousTicks = previousPlots && purchaseTicks.get(previousPlots);
+  let reuse = previousPlots?.wood === wood && previousPlots.stone === stone && previousTicks !== undefined;
+  for (let k = 0; reuse && k < TRADE.plots[0].length; k++) reuse = previousTicks![k] === plot(w, plotSlot(0, k)).at;
+  const plots = reuse ? previousPlots! : { wood, stone, staked: plotsStaked(w, 0) };
+  if (!reuse)
+    purchaseTicks.set(
+      plots,
+      TRADE.plots[0].map((_p, k) => plot(w, plotSlot(0, k)).at),
+    );
   return {
     plots,
-    facts: townRead(w),
+    facts: townRead(w, tick),
     ...held,
     breaker: works(w).breaker,
     line1: jobs(w).map((j) => j.completion),
