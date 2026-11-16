@@ -11,9 +11,9 @@ import { H } from '../../place/terrain.ts';
 import { addFoot } from '../../place/sites.ts';
 import { blockoutFeet, standBlockout } from '../../place/town-blockout.ts';
 
-/** The builders' notice on the scaffold. DRAFT for the owner: the builders' words, not The Boogler's. */
+/** The builders' notice on the scaffold (owner, 15 November: "should just say, work in progress, and that's it"). */
 export const STATUE_WORKS_COPY = {
-  statueWorks: ['STATUE NOT FINISHED', 'Ordered by The Boogler. Out of stone.'],
+  statueWorks: ['WORK IN PROGRESS'],
 };
 
 /** Draw every block and mark in one batch and the statue; the blocks, the footing and the statue are solid and walked
