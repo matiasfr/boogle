@@ -65,8 +65,7 @@ const LAMP = { on: '#ffa31a', off: '#4b3a22' } as const;
 /** The hold lamp (docs/plans/generic-lines.md, 4): red beside the stop lamp while the train stands held by the block
  * ahead or the headway at an end, doors open; out the moment it goes. */
 const HOLD = { on: '#ff3b2a', off: '#3e2420' } as const;
-/** Footings aboard stand in two stacks on the cradle's seats: slot k's centre in the wagon's rail frame. */
-const aboardAt = (k: number) => ({ y: 0.63 + Math.floor(k / 2) * (0.9 + 0.02), z: k % 2 ? 0.8 : -0.8 });
+/** Seconds for a footing to hop between a rack and its carrier. */
 const FOOT_HOP_S = 0.9;
 /** The cab doors' default (docs/agent-calls.md): each swings out about 100° on its back post in 0.25 s when any
  * player is within 1.2 m of its doorway, and shuts 0.6 s after the last one leaves. A local view of positions every
@@ -338,6 +337,18 @@ export async function createRailwayTrains(
   const kitCar = (tr: (typeof trains)[number]) => tr.cars[2]!;
   const footingCar = (tr: (typeof trains)[number]) =>
     trainRow(adapter.read.world(), tr.slot).wagon ? wagonCar : kitCar(tr);
+  const deckPoint = new THREE.Vector3();
+  /** Local base of a footing slot on its carrier. Consume the shared scratch vector immediately. */
+  function deckSlot(tr: (typeof trains)[number], k: number) {
+    const car = footingCar(tr);
+    return deckPoint.set(
+      0,
+      car === wagonCar
+        ? 0.63 + Math.floor(k / 2) * (0.9 + 0.02)
+        : car.spec.top - car.rock.position.y + Math.floor(k / 2) * 0.92,
+      k % 2 ? 0.8 : -0.8,
+    );
+  }
   /** The cars that grow in with a joining train: its own, and its steel car (a fleet row that joins after the install
    * takes the fit as it stands there, so the car comes on mid-growth and stays coupled). */
   const grown = (tr: (typeof trains)[number]) => (tr.steel ? [...tr.cars, tr.steel] : tr.cars);
@@ -579,16 +590,19 @@ export async function createRailwayTrains(
     fsc = new THREE.Vector3();
   /** World centre of the base of aboard slot `k`, and the wagon's yaw. */
   function aboardWorld(tr: (typeof trains)[number], k: number, out: THREE.Vector3) {
-    const a = aboardAt(k);
+    const a = deckSlot(tr, k);
     const car = footingCar(tr);
     car.mesh.updateMatrixWorld(true);
-    const y = car === wagonCar ? a.y : car.spec.top - car.rock.position.y + Math.floor(k / 2) * 0.92;
-    fm.multiplyMatrices(car.rock.matrixWorld, lm.makeTranslation(0, y, a.z));
+    fm.multiplyMatrices(car.rock.matrixWorld, lm.makeTranslation(0, a.y, a.z));
     fm.decompose(out, fq, fsc);
     return out;
   }
-  const inbound = (tr?: (typeof trains)[number]) =>
-    footFlights.filter((f) => (!tr || f.train === tr) && !f.toPier && !f.toRing).length;
+  const inboundByTrain = new Int32Array(RAIL_TRAINS.length);
+  const inbound = () => {
+    let n = 0;
+    for (const f of footFlights) if (!f.toPier && !f.toRing) n++;
+    return n;
+  };
   const toPier = () => footFlights.filter((f) => f.toPier).length;
   const toRing = () => footFlights.filter((f) => f.toRing).length;
   /** Where a flying footing lands: the wagon's slot, the pier rack's or the railhead rack's. */
@@ -601,13 +615,18 @@ export async function createRailwayTrains(
     out.y += Math.sin(u * Math.PI) * 1.6;
     return out;
   }
-  const loaderPoint = new THREE.Vector3();
+  const loaderPoint = new THREE.Vector3(),
+    loaderOffset = new THREE.Vector3(0, 1.04, 0);
   function loaderHook() {
-    const f = footFlights.find((f) => !f.toPier && !f.toRing && f.t >= 0 && footingCar(f.train) !== wagonCar);
-    return f ? flightPosition(f, loaderPoint).add(new THREE.Vector3(0, 1.04, 0)) : null;
+    for (const f of footFlights)
+      if (!f.toPier && !f.toRing && f.t >= 0 && footingCar(f.train) !== wagonCar)
+        return flightPosition(f, loaderPoint).add(loaderOffset);
+    return null;
   }
   function drawWagon() {
     batch.begin();
+    inboundByTrain.fill(0);
+    for (const f of footFlights) if (!f.toPier && !f.toRing) inboundByTrain[f.train.slot]!++;
     const coupled = wagonTrain();
     const foot = coupled ? trainRow(adapter.read.world(), coupled.slot).foot : 0;
     if (wagonCar.mesh.visible) {
@@ -620,26 +639,20 @@ export async function createRailwayTrains(
       for (let r = 0; r < 8; r++)
         batch.part(frame, r % 2 ? 0.95 : -0.95, 1.05, [-1.35, -0.25, 0.25, 1.35][r >> 1]!, 0.1, 1.1, 0.1, BRASS);
       for (const x of [-0.95, 0.95]) batch.part(frame, x, 1.62, 0, 0.12, 0.12, 2.9, BRASS);
-      const aboard = Math.max(0, foot - (coupled ? inbound(coupled) : 0));
+      const aboard = Math.max(0, foot - (coupled ? inboundByTrain[coupled.slot]! : 0));
       for (let k = 0; k < aboard; k++) {
-        const a = aboardAt(k);
+        const a = deckSlot(coupled!, k);
         footingParts(batch, fm.multiplyMatrices(frame, lm.makeTranslation(0, a.y, a.z)));
       }
     }
     for (const tr of cargo) {
       const car = footingCar(tr);
       if (car === wagonCar || !car.mesh.visible) continue;
-      const n = Math.max(0, trainRow(adapter.read.world(), tr.slot).foot - inbound(tr));
+      const n = Math.max(0, trainRow(adapter.read.world(), tr.slot).foot - inboundByTrain[tr.slot]!);
       car.mesh.updateMatrixWorld(true);
       for (let k = 0; k < n; k++) {
-        const a = aboardAt(k);
-        footingParts(
-          batch,
-          fm.multiplyMatrices(
-            car.rock.matrixWorld,
-            lm.makeTranslation(0, car.spec.top - car.rock.position.y + Math.floor(k / 2) * 0.92, a.z),
-          ),
-        );
+        const a = deckSlot(tr, k);
+        footingParts(batch, fm.multiplyMatrices(car.rock.matrixWorld, lm.makeTranslation(0, a.y, a.z)));
       }
     }
     for (const f of footFlights) {

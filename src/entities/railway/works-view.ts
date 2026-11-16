@@ -53,8 +53,7 @@ import {
   wagonGhost,
 } from './cradle-cues.ts';
 import { LINE2_FORGE } from '../../sim/railway-line2-layout.ts';
-import { TRADE } from '../../sim/railway-trade-layout.ts';
-import { plotBuilt, plotSlot } from '../../sim/railway-queries-trade.ts';
+import { loaderBuilt } from '../../sim/railway-queries-trade.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { FOOTING_COPY, footingBoardLine } from './footing-cues.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -164,18 +163,15 @@ export async function createRailwayWorks(
   const mast = loader.root.getObjectByName('mast') as THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial>;
   let loaderColoured = false,
     loaderMoving = false;
+  mast.material.color.set('#737878');
   const folded = new THREE.Vector3(0, 1.6, 1.1),
     hookLocal = folded.clone();
   function drawLoader(dt: number, snap = false) {
-    loaderColoured = TRADE.plots.some((ps, town) =>
-      ps.some(
-        (p, k) =>
-          'gives' in p &&
-          p.gives === 'loader' &&
-          plotBuilt(adapter.read.world(), plotSlot(town, k), adapter.read.tick()),
-      ),
-    );
-    mast.material.color.set(loaderColoured ? '#d8a34a' : '#737878');
+    const coloured = loaderBuilt(adapter.read.world(), adapter.read.tick());
+    if (coloured !== loaderColoured) {
+      loaderColoured = coloured;
+      mast.material.color.set(coloured ? '#d8a34a' : '#737878');
+    }
     const target = !snap && loaderColoured ? deps.loaderHook() : null;
     loaderMoving = !!target;
     if (target) hookLocal.set(target.x, target.y, target.z).sub(loader.root.position);

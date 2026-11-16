@@ -21,7 +21,14 @@ import { Forge, Plot, Till, Train, Works } from '../src/sim/railway-components.t
 import { TRADE } from '../src/sim/railway-trade-layout.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { LINE2_STATIONS, Q7 } from '../src/sim/railway-line2-layout.ts';
-import { loaderOn, plotPrice, townBuildings, footCarrier, deckHeld } from '../src/sim/railway-queries-trade.ts';
+import {
+  loaderBuilt,
+  loaderOn,
+  plotPrice,
+  townBuildings,
+  footCarrier,
+  deckHeld,
+} from '../src/sim/railway-queries-trade.ts';
 import { aboard, stopsOf } from '../src/sim/railway-queries.ts';
 import { footingTotal } from '../src/sim/railway-queries-works.ts';
 import { checkTrade } from '../src/sim/railway-check-trade.ts';
@@ -66,6 +73,8 @@ test('L1: yard completion needs the wagon; yard first adds no neighbours, demand
   until(s, () => town(s.w, 0).wood >= 24);
   buyYard(s);
   const at = s.t;
+  assert.equal(loaderBuilt(s.w, at + TRADE.buildTicks - 1), false);
+  assert.equal(loaderBuilt(s.w, at + TRADE.buildTicks), true, 'paint changes before coupling');
   assert.equal(loaderOn(s.w, at + TRADE.buildTicks - 1), false);
   assert.equal(loaderOn(s.w, at + TRADE.buildTicks), false, 'not coupled');
   assert.equal(townBuildings(s.w, 0, at + TRADE.buildTicks), 2);

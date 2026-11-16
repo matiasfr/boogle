@@ -44,6 +44,7 @@ import {
   plotsStakedOf,
   routeFar,
   tillRate,
+  townBuildings,
 } from '../src/sim/railway-queries-trade.ts';
 import { okTune, TUNABLES } from '../src/sim/tune.ts';
 import { footingsOwed, kitOwed, wagonSlot, worksId } from '../src/sim/railway-queries.ts';
@@ -1363,6 +1364,7 @@ test('S1/L1: q6-done payoff: plots 1 and 3 land 72 a minute at four places; yard
       credit(w, plotPrice(w, 0, k, 50));
       assert.equal(sendBuy(w, PIER.t - TRADE.buildTicks, k).status, 'accepted');
     }
+    if (plots.includes(1)) assert.equal(townBuildings(w, 0, PIER.t), 4, 'the yard adds no rider house');
     // The q6 seed has the old two-building queues. Let five minutes of the new demand reach the trains, then
     // measure ten minutes before the twenty-minute box fills (a full box deliberately stops fares).
     for (let tick = PIER.t + 1; tick <= PIER.t + 3000; tick++) railTick(w, tick);

@@ -132,11 +132,17 @@ export function plotPrice(w: World, town: number, k: number, pricePct: number): 
 }
 export const townBuildings = (w: World, town: number, tick: number) => TRADE.startBuildings + housesOf(w, town, tick);
 /** The yard changes the Works' colour at completion; carrying still waits for the wagon's commissioning. */
-export const loaderOn = (w: World, tick: number): boolean =>
-  wagonSlot(w) >= 0 &&
-  TRADE.plots.some((ps, town) =>
-    ps.some((p, k) => 'gives' in p && p.gives === 'loader' && plotBuilt(w, plotSlot(town, k), tick)),
-  );
+export function loaderBuilt(w: World, tick: number): boolean {
+  for (let town = 0; town < TRADE.plots.length; town++) {
+    const ps = TRADE.plots[town]!;
+    for (let k = 0; k < ps.length; k++) {
+      const p = ps[k]!;
+      if ('gives' in p && p.gives === 'loader' && plotBuilt(w, plotSlot(town, k), tick)) return true;
+    }
+  }
+  return false;
+}
+export const loaderOn = (w: World, tick: number): boolean => loaderBuilt(w, tick) && wagonSlot(w) >= 0;
 /** One deck, one cargo. The coupled wagon has its own deck and leaves its train's kit car free. */
 export const deckHeld = (r: Readonly<RailTrain>): boolean => !r.wagon && r.foot > 0;
 export const footCap = (r: Readonly<RailTrain>): number => (r.wagon ? WORKS.wagonCap : WORKS.loaderCap);
