@@ -3,6 +3,8 @@
 // Every number is a named tunable in trade-data.ts; the route's minutes come in as a spine (trade-route.ts).
 import {
   MATS,
+  VILLAGE_PLOTS,
+  VILLAGE_PRICE_FACTOR,
   SEAT_STEPS,
   SOURCE_DEFS,
   TOWNS,
@@ -14,6 +16,7 @@ import {
   type Town,
   type Tunables,
 } from './trade-data.ts';
+import { WORKS } from '../../src/sim/railway-works-layout.ts';
 import type { RouteSpine } from './trade-route.ts';
 
 export { defaultTunables, TUNABLES } from './trade-data.ts';
@@ -76,6 +79,8 @@ export type Item = {
   step?: SeatStep;
   /** Boogles; seats on materials are not items (they are hauled), so every item here costs Boogles and nothing else. */
   price: number;
+  riders?: number;
+  gives?: 'loader';
   offerAt: string;
   after?: string;
 };
@@ -97,16 +102,23 @@ export function catalog(t: Tunables, policy: Policy): Item[] {
   const mult = policy.seats === 'boogles' ? t['house.mult.boogleSeats']! : t['house.mult.materialSeats']!;
   for (const town of TOWNS) {
     const arrive = ARRIVES[town];
-    for (let n = 1; t[`house.${town}.${n}`] !== undefined; n++)
+    for (let n = 1; t[`house.${town}.${n}`] !== undefined; n++) {
+      const plot = town === 'village' ? VILLAGE_PLOTS[n - 1] : undefined;
+      const gives = plot && 'gives' in plot ? plot.gives : undefined;
       out.push({
         id: `house.${town}.${n}`,
-        kind: 'house',
-        label: `House ${n}, ${townName(town)}`,
+        kind: gives ? 'building' : 'house',
+        riders: plot?.riders ?? 1,
+        gives,
+        label: gives === 'loader' ? 'Loader yard, the Village' : `House ${n}, ${townName(town)}`,
         town,
-        price: Math.round(t[`house.${town}.${n}`]! * mult * t['house.order']! ** (n - 1)),
-        offerAt: town === 'village' && n === 3 ? ARRIVES.canopy : arrive,
+        price: Math.round(
+          t[`house.${town}.${n}`]! * (town === 'village' ? VILLAGE_PRICE_FACTOR : mult) * t['house.order']! ** (n - 1),
+        ),
+        offerAt: town === 'village' && n === 3 ? 'ring.connect' : arrive,
         after: n > 1 ? `house.${town}.${n - 1}` : undefined,
       });
+    }
     const f = t[`fitout.${town}`]!;
     out.push({
       id: `fitout.${town}.1`,
@@ -264,6 +276,7 @@ export type RoomRun = {
 // Shared with the playable prototype (play-trade.ts), which calls these same functions so the two cannot drift.
 export type TownRt = {
   open: boolean;
+  loader: boolean;
   houses: number;
   building: number;
   fit: number;
@@ -272,10 +285,11 @@ export type TownRt = {
   waiting: number;
   arr: number;
   cap: number;
-  due: { tick: number; kind: 'house' | 'building' }[];
+  due: { tick: number; kind: 'house' | 'building'; riders?: number; gives?: 'loader' }[];
 };
 export const newTownRt = (): TownRt => ({
   open: false,
+  loader: false,
   houses: 0,
   building: 0,
   fit: 0,
@@ -323,8 +337,9 @@ export function completeBuilds(rt: Record<Town, TownRt>, tick: number) {
     const r = rt[tw];
     r.due = r.due.filter((d) => {
       if (d.tick > tick) return true;
-      if (d.kind === 'house') r.houses++;
-      else r.building++;
+      if (d.gives === 'loader') r.loader = true;
+      if (d.kind === 'house') r.houses += d.riders ?? 1;
+      else if (d.gives !== 'loader') r.building++;
       return false;
     });
   }
@@ -342,10 +357,16 @@ export function installSeat(r: TownRt, step: SeatStep) {
 /** What a buy does to its town: houses and buildings take their build minutes; seats and fit-outs are at once. */
 export function applyTownItem(t: Tunables, rt: Record<Town, TownRt>, it: Item, tick: number) {
   const r = rt[it.town!];
-  if (it.kind === 'house' || it.kind === 'building') r.due.push({ tick: tick + t['house.buildMin']!, kind: it.kind });
+  if (it.kind === 'house' || it.kind === 'building')
+    r.due.push({ tick: tick + t['house.buildMin']!, kind: it.kind, riders: it.riders, gives: it.gives });
   else if (it.kind === 'fitout') r.fit++;
   else if (it.kind === 'seat') installSeat(r, it.step!);
 }
+// Shipped loader capacity contract. The minute campaign has no train rows; delivery times are
+// measured by dev/loader-times.ts instead of pretending a global labour cut is this machine.
+export const loaderCapacity = (yardBuilt: boolean, wagonCoupled: boolean, outbound: boolean, owed: number) =>
+  yardBuilt && wagonCoupled && outbound ? Math.min(WORKS.loaderCap, Math.max(0, owed)) : 0;
+
 export type MinuteTown = { served: number; lost: number; fare: number; landed: number };
 export type Minute = {
   landed: number;

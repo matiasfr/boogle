@@ -5,6 +5,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   awayCredit,
+  completeBuilds,
+  demandOf,
+  loaderCapacity,
   applyTownItem,
   billOf,
   capacityOf,
@@ -162,16 +165,33 @@ test('trade: deterministic for a seed, and the seed matters', () => {
 test("trade: the brief's buys and the first house are on offer as written", () => {
   const houses = catalog(T, room('houses'));
   const first = houses.find((i) => i.id === 'house.village.1')!;
-  assert.equal(first.price, 450); // 300 Boogles, half as much again, while seats cost materials
-  assert.equal(catalog(T, room('boogleSeats')).find((i) => i.id === 'house.village.1')!.price, 300);
+  assert.equal(first.price, 150); // Shipped Village price at 50%, independent of seat policy.
+  assert.equal(catalog(T, room('boogleSeats')).find((i) => i.id === 'house.village.1')!.price, 150);
   assert.ok(headline(run(spine, T, room('houses'))).houses > 0);
 });
 
 test('trade: each next house in a town costs the house order times the last', () => {
   const price = (id: string, t = T) => catalog(t, room('houses')).find((i) => i.id === id)!.price;
-  assert.equal(price('house.village.2'), 800 * 1.5 * 2);
-  assert.equal(price('house.village.3'), 800 * 1.5 * 4);
-  assert.equal(price('house.village.2', { ...T, 'house.order': 1 }), 800 * 1.5);
+  const yard = catalog(T, room('houses')).find((i) => i.id === 'house.village.2')!;
+  assert.equal(yard.riders, 0);
+  assert.equal(yard.kind, 'building');
+  assert.equal(yard.gives, 'loader');
+  const rt = newTowns();
+  const before = demandOf(T, rt.village);
+  applyTownItem(T, rt, yard, 0);
+  completeBuilds(rt, T['house.buildMin']!);
+  assert.equal(rt.village.loader, true);
+  assert.equal(demandOf(T, rt.village), before);
+  assert.equal(loaderCapacity(true, true, true, 20), 6);
+  assert.equal(loaderCapacity(true, true, true, 2), 2);
+  assert.equal(loaderCapacity(false, true, true, 20), 0);
+  assert.equal(loaderCapacity(true, false, true, 20), 0);
+  assert.equal(loaderCapacity(true, true, false, 20), 0);
+  assert.equal(loaderCapacity(true, true, true, 0), 0);
+  assert.ok(!catalog(T, room('houses')).some((i) => i.id.startsWith('loader.works')));
+  assert.equal(price('house.village.2'), 800 * 0.5 * 2);
+  assert.equal(price('house.village.3'), 800 * 0.5 * 4);
+  assert.equal(price('house.village.2', { ...T, 'house.order': 1 }), 800 * 0.5);
 });
 
 test('trade: the committed page is current', () => {

@@ -72,8 +72,8 @@ for (const [id, seats] of [
 test('playable trade: the first house is the Village third cottage plot, at the model price with the house order', () => {
   const haul = catalog(T, policyFor('haul')).find((i) => i.id === 'house.village.1')!;
   const boogles = catalog(T, policyFor('boogles')).find((i) => i.id === 'house.village.1')!;
-  assert.equal(haul.price, 300 * T['house.mult.materialSeats']! * T['house.order']! ** 0);
-  assert.equal(boogles.price, 300 * T['house.mult.boogleSeats']!);
+  assert.equal(haul.price, 300 * 0.5 * T['house.order']! ** 0);
+  assert.equal(boogles.price, 300 * 0.5);
   const tr = createTrade('haul');
   assert.equal(T['riders.startBuildings'], 2, 'two cottages stand on arrival; the first bought house is the third');
   const opened = (key: string) => key === 'home.line2';
@@ -181,10 +181,10 @@ test('playable trade: the Village opens with its line, a house is bought by hand
   assert.equal(buyItem(w, 'house.village.1'), 'Not on offer yet');
   for (let guard = 0; guard < 400_000 && !stepDone(w)('home.line2'); guard++) tick(w, 1);
   assert.ok(stepDone(w)('home.line2'));
-  for (let s = 0; s < 8 * 60 * 60 && w.trade!.wallet < 450; s++) tick(w, 1);
-  assert.ok(w.trade!.wallet >= 450, 'fares fill the box to the first house within hours');
+  for (let s = 0; s < 8 * 60 * 60 && w.trade!.wallet < 150; s++) tick(w, 1);
+  assert.ok(w.trade!.wallet >= 150, 'fares fill the box to the first house within hours');
   assert.equal(buyItem(w, 'house.village.1'), null);
-  assert.equal(w.trade!.spent, 450);
+  assert.equal(w.trade!.spent, 150);
   assert.equal(buyItem(w, 'house.village.1'), 'Not on offer yet', 'a house is bought once');
   assert.ok(w.events.some((e) => e.kind === 'trade' && /Bought House 1/.test(e.text)));
   leave(w, 22);

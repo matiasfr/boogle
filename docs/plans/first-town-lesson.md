@@ -1,3 +1,11 @@
+> **Timing correction revised after review, 16 November 2026:** historical figures below remain historical.
+> Accepted-ops v55 seeds: solo pier **177.3 → 134.5 s**, ring **334.3 → 197.6 s**;
+> assumed trio pier **162.8 → 120.0 s**, ring **313.9 → 191.9 s**.
+> Previous 57c2bbafe counterfactual: solo 182.3 → 134.5 / 418.6 → 197.6 s;
+> trio 167.8 → 120.0 / 398.3 → 191.9 s. Its yard-deletion baseline is superseded.
+> Seeds share lit/full racks, offsets and carry cadence; natural train phases differ.
+> These do not reproduce the historical figures. See [method, spreads and separate synthetic quarry-stop test](../reports/loader-times.md).
+
 > **Status: S1 + V1 reworked together on `t3/first-town-rider-places`: four countable rider places now;
 > eight await coach A. Pending independent review; remaining steps unbuilt here.
 > S1 keeps v54: four rider places now, eight with the dedicated coach. L1 takes the next free namespace after v54.
@@ -149,7 +157,7 @@ session's visual review of their stills.
     with only the yard built, true at the first house. S1's fares test moves to plots 1 and 3 (two added houses).
   - **Proof:** `npm run checkpoints -- yard-ready yard-built yard-wagon yard-deck`; `npm run loop -- run` with order
     and bills unmoved. **Done means** tests, checkpoints and loop pass, fixtures re-pinned with the named inputs.
-- [ ] **L2. The loop graph and the model (S).** After L1. Sync: none (tools). Tier: normal. Builds: gpt-6.1-sol
+- [x] **L2. The loop graph and the model (S).** After L1. Sync: none (tools). Tier: normal. Builds: gpt-6.1-sol
   medium. Parallel with V2. `dev/loop/graph.ts`: the crossing, bents and weights supplies read "wagon, or every line 2
   train once the loader yard stands"; `dev/economy/trade-data.ts`: plot rows' `riders` and `gives`, `loader.works`
   becomes plot 2 (offered when staked, price from `TRADE`), plot 3's 800; `docs/world/trade-economy.html`
@@ -195,7 +203,7 @@ session's visual review of their stills.
   - Look previz: [three period rider coaches](../world/rider-coach.html), with scaled elevations, minimum lengths and recommendation (16 November; dedicated car, earlier layout candidates superseded).
   - Fit gate: [rider-car fit research](../research/rider-car-fit.md) — 2.90 m coach after the player car; Home link rework and Ring stop shift required before art.
   - **Plan: [rider-coach](rider-coach.md)** (16 November, the owner's coach A, rework and allowance answers): this step is built there, R1 to R4; its order against L1 and V2 is in that plan.
-- [ ] **R. Runner: the loader's times on the built branch (S).** After L1 (and V2 if built). Builds: gpt-6.1-sol
+- [x] **R. Runner: the loader's times on the built branch (S).** After L1 (and V2 if built). Builds: gpt-6.1-sol
   medium; changes no game code. Rerun town-choice 2b's harness from `yard-wagon` and `yard-deck`, instant, solo (4.4 s
   a set) and trio (1.5 s): today's historical figures, pier 182 → 155 s and ring 339 → 203 s solo, were measured on
   `a71077c4b` and never rerun. **Done means** the three rows per site recorded under this step with the commit; a
@@ -413,3 +421,11 @@ The trial was rejected and reverted; no further layout iteration or rule change.
 done. See the [count-readability evidence and limits](../reports/first-town-rider-count-readability.md).
 The dedicated rider coach remains the proper eight-rider art solution. The subsequent four-place rework above
 supersedes this rejected trial.
+
+## L2 + R as built (16 November 2026)
+
+Tools and evidence only, against #1975 v55. Graph supplies include yard carriers;
+model has the no-rider works building, shipped Village prices and four rider places;
+both generated pages rebuilt. The committed dev/loader-times.ts reproduces the
+headless timings, three phase starts and empty-rack cycle/fare comparison.
+[Results and explicit model stand-ins](../reports/loader-times.md). No game rule or view changed.
