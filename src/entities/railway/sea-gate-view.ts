@@ -14,7 +14,9 @@ import { readableUnlit } from '../../render/readable-unlit.ts';
 import { playMark } from '../../proto/mark.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
+import { reducedMotion } from '../../constants.ts';
 import { createGateRig, gateEyes } from './gate-rig.ts';
+import { SEA_INSTALL_SHOT } from './sea-gate-shot.ts';
 
 type Deps = {
   layout: typeof import('../../place/layout.ts');
@@ -25,10 +27,14 @@ type Deps = {
   sounds: typeof import('../../render/fanfare.ts');
   partMat: THREE.Material;
   glow: THREE.Material;
+  /** Q4's shot (sea-gate-shot.ts), queued on the live edge: false when none was (reduced motion, a vehicle's seat). */
+  shot: () => boolean;
+  /** Seconds that shot has played; negative while it waits behind a reward card, Infinity once it is over or gone. */
+  shotClock: () => number;
 };
 
 export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, deps: Deps) {
-  const { layout, tech, land, shapes, flat, sounds, partMat, glow } = deps;
+  const { layout, tech, land, shapes, flat, sounds, partMat, glow, shot, shotClock } = deps;
   const ox = layout.ORIGIN.x;
   const G = tech.GATES.sea;
   const SLAB = tech.GATE_SLAB;
@@ -75,6 +81,11 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
   // The mount's hardware, there from the first minute and read from the gate's foot 13 m below: a gold collar round
   // the landing, an open cradle frame behind the socket, and dashed gold "a part goes here" for the drum and the ring.
   const CRADLE = { back: -0.83, half: 0.83, top: 3.6 };
+  // The pennant (owner, 15 November, on a sightline from the summit: "use your own judgement"): a mast on the landing's
+  // corner away from the hook ring and the gate, and a long pennant in the gate's gold streaming away from both, its
+  // broad side to Needle Bell's summit 160 m west, where the glider is taken. The mast is in the cradle's draw.
+  const MAST = { x: 1.7, z: -1.7, top: 15, w: 0.28 };
+  const PENNANT = { length: 11, hoist: 4.2, tip: 0.8, parts: 3, thick: 0.06 };
   const cradle = mesh(
     shapes.merged([
       ['b', -CRADLE.half, CRADLE.top / 2, CRADLE.back, 0.26, CRADLE.top, 0.26, '#55524a'],
@@ -84,10 +95,49 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
       ['b', 0, -0.3, -2.215, 4.46, 0.56, 0.05, '#c79a3e'],
       ['b', 2.215, -0.3, 0, 0.05, 0.56, 4.46, '#c79a3e'],
       ['b', -2.215, -0.3, 0, 0.05, 0.56, 4.46, '#c79a3e'],
+      ['b', MAST.x, MAST.top / 2, MAST.z, MAST.w, MAST.top, MAST.w, '#55524a'],
+      ['b', MAST.x, 0.25, MAST.z, 0.6, 0.5, 0.6, '#6d6a60'],
+      ['b', MAST.x, MAST.top + 0.25, MAST.z, 0.5, 0.5, 0.5, '#c79a3e'],
     ]),
   );
   cradle.position.copy(at);
   owner.add(cradle);
+  // Three hinged lengths, each swinging a little behind the one before: a wave down the cloth with no shader.
+  const gold = new THREE.Color('#c79a3e');
+  const cloth: THREE.Object3D[] = [];
+  const partLength = PENNANT.length / PENNANT.parts;
+  for (let k = 0; k < PENNANT.parts; k++) {
+    const g = new THREE.BoxGeometry(partLength, 1, PENNANT.thick).translate(partLength / 2, 0, 0);
+    const p = g.getAttribute('position');
+    const colour = new Float32Array(p.count * 3);
+    for (let n = 0; n < p.count; n++) {
+      const along = (k + p.getX(n) / partLength) / PENNANT.parts;
+      p.setY(n, p.getY(n) * (PENNANT.hoist + (PENNANT.tip - PENNANT.hoist) * along));
+      colour.set([gold.r, gold.g, gold.b], n * 3);
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(colour, 3));
+    g.computeVertexNormals();
+    const part = mesh(g);
+    part.castShadow = false;
+    if (k === 0) {
+      part.position.set(at.x + MAST.x, at.y + MAST.top - PENNANT.hoist / 2, at.z + MAST.z);
+      owner.add(part);
+    } else {
+      part.position.x = partLength;
+      cloth[k - 1]!.add(part);
+    }
+    cloth.push(part);
+  }
+  let wind = 0;
+  function fly(dt: number) {
+    if (!reducedMotion) wind += dt;
+    // +x turned to -z: away from the gate and the ring's corner.
+    cloth.forEach((part, k) => {
+      const sway = Math.sin(wind * 1.9 - k * 1.1) * (0.1 + k * 0.09) + Math.sin(wind * 0.7 + k) * 0.05;
+      part.rotation.y = (k === 0 ? Math.PI / 2 : 0) + sway;
+    });
+  }
+  fly(0);
   // Lights that say the control is live: the cradle's beam and a strip down each face of the jamb the approach sees.
   const lampMat = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: '#ffffff' }));
   const lampDark = new THREE.Color('#285650'),
@@ -136,17 +186,41 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
   let installed = false,
     ghosted = true,
     seating = 1,
-    litT = 1; // seconds since the seat landed, for the flash and the lights' wipe; large when settled
+    litT = 1, // seconds since the seat landed, for the flash and the lights' wipe; large when settled
+    // Seconds the drop has waited for Q4's shot to reach the jamb; negative when it is not waiting.
+    held = -1;
   const SETTLED = 10;
   const ready = () => line2Routes(line2Completed(adapter.read.world())).sea || rail(adapter.read.world()).sea;
+  function drop() {
+    seating = 0;
+    bell(at.x, at.z);
+  }
+  const live = () => installed && held < 0 && seating === 1;
   function install(snap: boolean, dt = 0) {
     const on = ready();
     if (snap) {
       seating = 1;
       litT = SETTLED;
+      held = -1;
     } else if (on && !installed) {
-      seating = 0;
-      bell(at.x, at.z);
+      // The live edge: with a shot queued, the drum waits above until the camera is on the jamb.
+      const queued = shot();
+      held = queued ? 0 : -1;
+      playMark('moment played', {
+        moment: 'sea control',
+        mine: false,
+        shot: queued,
+        authority: 'local',
+        edge: 'state',
+      });
+      if (!queued) drop();
+    }
+    if (held >= 0) {
+      held += dt;
+      if (!on || shotClock() >= SEA_INSTALL_SHOT.drop || held >= SEA_INSTALL_SHOT.hold) {
+        held = -1;
+        if (on) drop();
+      }
     }
     const was = seating;
     seating = Math.min(1, seating + dt / DROP.time);
@@ -158,10 +232,11 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     }
     litT = Math.min(SETTLED, litT + dt);
     installed = on;
-    drum.visible = on;
+    const shown = on && held < 0;
+    drum.visible = shown;
     drum.position.y = at.y + (1 - seating) * (1 - seating) * DROP.from;
-    if (ghosted !== !on) drawGhosts((ghosted = !on));
-    const seated = on && seating === 1;
+    if (ghosted !== !shown) drawGhosts((ghosted = !shown));
+    const seated = shown && seating === 1;
     const u = Math.min(1, litT / 0.5);
     flash.visible = shock.visible = seated && u < 1;
     flashMat.opacity = (1 - u) * 0.9;
@@ -274,6 +349,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     },
     update(dt: number, sea: boolean) {
       install(false, dt);
+      fly(dt);
       solid(sea);
       refusal = Math.min(1, refusal + dt / 0.55);
       drum.rotation.z = Math.sin(refusal * Math.PI * 6) * (1 - refusal) * 0.12;
@@ -289,10 +365,10 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
         lightT += dt;
         drawCaps(Math.min(tech.POSTS.length, 1 + Math.floor(lightT / (1.5 / tech.POSTS.length))));
         if (lightT >= 1.5) lightT = -1;
-      } else drawCaps(installed && seating === 1 ? tech.POSTS.length : 0);
+      } else drawCaps(live() ? tech.POSTS.length : 0);
     },
     targets(p: V3, sea: boolean): Interactable[] {
-      if (!ready() || seating < 1 || sea || Math.hypot(p.x - at.x, p.z - at.z) >= 3 || Math.abs(p.y - at.y) >= 2.2)
+      if (!ready() || !live() || sea || Math.hypot(p.x - at.x, p.z - at.z) >= 3 || Math.abs(p.y - at.y) >= 2.2)
         return [];
       return [
         {
@@ -316,6 +392,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
         pulled: rail(adapter.read.world()).sea,
         installed,
         seating,
+        held: held >= 0,
         handleAngle: handle.rotation.z,
         refusal,
       },
