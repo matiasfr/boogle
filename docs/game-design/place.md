@@ -1291,11 +1291,14 @@ and the bay line's two unlaid bed halves bridging the cut, a platform each side 
 to the rock. The east rock and the pinnacle's foot are reached by the bridge only. You get there by the DEV strip's
 Free cam, or by swimming: no line runs there yet.
 
-**Home's West landing** stands on the shelf under the commons' west cliff: the bay line's unlaid bed pointing out
-to sea at Bell Rock (its pinnacle shows on the horizon from the platform), a 40 m platform each side on posts past
-the shore, a ramp from the landward platform down to the shelf, an apron behind it, and a board beside the way
-down, facing the walker: "LINE TO BELL ROCK / UNDER CONSTRUCTION". A plain grey stair with parapets climbs the
-cliff from the shelf to the commons' edge; the bare cliff cannot be walked up.
+**Home's West landing** is a staked survey site on the shelf under the commons' west cliff. Until the build that
+starts the Bell Rock line, every room sees five timber stakes along the bed's first 20 m and the existing
+"LINE TO BELL ROCK / UNDER CONSTRUCTION" board beside the shore path's foot, facing the path. No grey platforms,
+bed, end ramp or apron stand over the arrival dock. The bay and cave catalog roots remain; their halts are shut
+and they have no trains. The shore path is the way between the landing and the commons. The duplicate grey stair,
+its posts and both parapets were removed in start-area S1 (15 November): they crossed the path and read as a
+competing way into town. The bare cliff cannot be walked up. The [owner's Q1/Q2 answers](../plans/start-area.md#owner-answers-15-november)
+set the future station's trigger and terrain rule; S5/S6 remain separate work.
 
 **High Gorge** gains the incline's two 40 m platforms beside the north-south row, level with the stack line's
 south platform, and a dark mark on the south wall where the row will enter the rock (nothing is bored).

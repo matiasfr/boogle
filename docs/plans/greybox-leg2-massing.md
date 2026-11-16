@@ -290,6 +290,9 @@ All six steps are built. Where the build left the plan's numbers, for the design
    stops at its foot, so the stair ships with step 5: 26 m at 5.4 in 10, due east from the shelf beside the end
    ramp (x 805 to 831, z 13.5 to 16.5) to the commons' edge, a parapet each side. Walked down and up by the body
    with forward held and no jump. Home's own dirt path also comes down to the shelf just south of it.
+   _15 November, start-area S1: call 120 reversed. The shore path already reaches the end ramp; the grey stair,
+   its support posts and parapets are removed because they compete with and cross the newcomer's path. The
+   replacement walk eval follows the shore path between the commons and platform A, both ways, without jumping._
 5. **The boards.** The West landing's stands beside the stair's foot at (805, 20.5), facing east (change 4). Bell
    Rock's market board is overhead on one post and turned south-east to the walker coming up the ramp: at the
    plan's spot a board on the ground stood across the ramp's head. Pad boards size their type to the board.

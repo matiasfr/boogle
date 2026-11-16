@@ -5,7 +5,8 @@ import type { Pt } from './layout.ts';
 import { TOWN_STREETS } from './town-plan.ts';
 
 export const SHORE_COAST = true;
-export const SHORE_LANDING = { x: -199, z: 10, yaw: -Math.PI / 2 - 0.2 };
+// Aim toward the first climbing leg, including in a portrait frame (start-area S3).
+export const SHORE_LANDING = { x: -199, z: 10, yaw: -Math.PI / 2 - 0.45 };
 // Broad climb to the dock street, ending at the ring road.
 export const SHORE_PATH: Pt[] = [
   [-199, 10, 3],

@@ -4,6 +4,8 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-15 · Rail owns its height; terrain conforms when the row's leg is next or built ([Rail decision](decisions-rail.md#d-2026-11-15-rail-owns-terrain-formation)).
+
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
 - 2026-11-15 · climbs keep the same plain packed-earth path as level ground; remove painted timber risers and their highlights, preserving the edge, verge, stones, bank, cut darkening and all heights/colliders ([entry](#d-2026-11-15-plain-path-climbs))

@@ -133,6 +133,12 @@ History for [decisions-rail.md](decisions-rail.md), verbatim.
 
 ### Agent calls the owner ruled on
 
+_Archived 15 November 2026; the owner answered both start-area questions yes: [Q1](decisions-rail.md#d-2026-11-15-west-landing-staked-until-bell-rock) and [Q2](decisions-rail.md#d-2026-11-15-rail-owns-terrain-formation). The proposal row is preserved verbatim, including its original status._
+
+| Date | Call | Where | By | Why this pick | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-15 | New (proposed; owner Q1 and Q2 in the plan): until the build that starts the Bell Rock leg, Home's West landing shows survey stakes and the board, no grey massing (a build switch, not room progress). Rails own their height and terrain conforms; a row on land is graded once its leg is next or built | [start-area](plans/start-area.md) S4, architecture | design sub-agent; designer review | The West landing's root is the first-visit landing; a room-progress gate would be the massing's first state read and miss rooms past leg 1 | open |
+
 _Archived 14 November 2026; overruled by [The Boogler's statue replaces the town clock](decisions-rail.md#d-2026-11-14-the-boogler-s-statue-replaces-the-clock) (owner: "Yeah, the statue should replace the clock."). The row is verbatim, including its original status; its footing stays, under the statue._
 
 | Date | Call | Where | By | Why this pick | Status |

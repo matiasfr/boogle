@@ -1,4 +1,5 @@
 // West's static massing and extras are compiled level placements (prefab-data step 7).
+// The authoring build switch selects survey stakes or platforms for every room; this view reads no progress.
 import level from '../../../content/built/levels/west.json' with { type: 'json' };
 import type { OwnedView } from '../../render/owned-view.ts';
 import { leg2Massing, leg2Extras } from './leg2-draw.ts';

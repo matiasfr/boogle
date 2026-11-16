@@ -56,7 +56,7 @@ function report(level: unknown, definitions: unknown = artifact) {
   return checker.checkLeg2();
 }
 
-test('compiled leg 2 still matches the old level report bytes', () => {
+test('compiled leg 2 matches the approved level report bytes', () => {
   assert.equal(
     JSON.stringify(report(bell), null, 2) + '\n',
     fs.readFileSync('test/fixtures/prefab-leg2-report.json', 'utf8'),
@@ -82,15 +82,12 @@ for (const mutation of ['remove', 'move', 'height', 'lower', 'rotate', 'scale'] 
     );
   });
 
-test('West and Gorge clearance use placed box dimensions, not assumed unit colliders', () => {
+test('Gorge clearance uses placed box dimensions; the staked West site has no platform bodies', () => {
   const definitions = structuredClone(artifact);
   definitions.prefabs['greybox.box'].colliders[0]!.half[0] = 5;
   const result = report(bell, definitions);
-  for (const name of ['platform-a', 'incline-n'])
-    assert.ok(
-      result.entries.some((e) => e.kind === 'assertion' && !e.passed && e.message.includes(name)),
-      name,
-    );
+  assert.ok(result.entries.some((e) => e.kind === 'assertion' && !e.passed && e.message.includes('incline-n')));
+  assert.ok(!west.placements.some((p) => p.prefab === 'greybox.box' || p.prefab === 'greybox.collider'));
 });
 
 test('pad clearance follows the placed scale', () => {
