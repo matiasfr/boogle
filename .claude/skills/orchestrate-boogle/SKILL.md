@@ -109,4 +109,22 @@ List peers with ListAgents, and message them with SendMessage: what you're doing
 - Rank every note and bug P1, P2 or P3 when you log it (owner call "Rank every note"), in the tracker, the board title and the state file; pick work by rank and never drop a note for ranking low.
 - Say "not tested on a device" where it applies. Report failures and your own mistakes plainly, and correct a wrong status as soon as you find it.
 
+## 9. The unattended tick
+
+A scheduled run every four hours keeps committed work moving while the owner is away (owner, 16 November, [decision](../../../docs/decisions-process.md#d-2026-11-16-unattended-tick)). It is a fresh session each time: it knows only the repo. The project root is a stale launcher, so first `git fetch origin` and work from a worktree at `origin/main` (`../boogle-heartbeat`: create it detached, or move it to `origin/main` if it exists; `npm ci` there when the lock changed). Use Node 26.
+
+Each tick, in order:
+
+1. Read [the backlog](../../../docs/backlog.md) and the top dated section of [the state file](../../../docs/agents/orchestrator-state.md); run `npm run heartbeat` and `npm run inflight`. A red main is fixed or reported before anything else.
+2. Review what finished since the last tick (sections 3 and 4). Ship docs and work `review-stamp` does not mark; anything it marks `review` gets its independent review first. Never ship on a report alone.
+3. If no job is running on a P1 row, start exactly one next step, as a T3 delegate (section 2). If every P1 row waits on the owner, take the first P2 row that does not, then P3.
+4. Put anything that needs the owner in the state file's "Open owner questions", each with a recommendation, and carry on with other rows.
+5. Update the backlog row and the state file's dated section, and ship them with the tick's docs.
+
+It may start: build steps of plans the owner approved; design work that ends in a proposal (a brainstorm, a 2D page, a designer review, a measuring job); owed proofs and plan upkeep.
+
+It must leave for the owner: anything that changes a recorded decision or adds scope; The Boogler's copy, story, characters and names; verdicts on feel or fun; cleanup of worktrees with unmerged work; resetting a room.
+
+Limits: at most two jobs in flight across all sessions (count running delegates and worktrees with commits in the last four hours). Stop the tick and write one line in the state file when main is red and not fixable in the tick, at a usage limit (never move Codex work to Claude), or when a live orchestrator session has updated the state file in the last hour (it owns the work; do not start a second job beside it). After two ticks in a row that could start nothing, say so at the top of the state file so the owner can pause the schedule. End every tick with three lines: shipped, started, waiting on the owner.
+
 To improve this skill, use the Anthropic skill-creator skill.
