@@ -285,8 +285,6 @@ Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/pr
 
 **Namespace:** v45 references above are historical proposal estimates. Use the next free namespace at the speed-row commit and share it with step 2; no shipping in this job.
 
-## Owner questions
-
 ## Implementation record
 
 - **Step 1:** 14/20/25 profiles built; `Shed.table === 1` commissions row 1 for both lines in the accepted
@@ -297,7 +295,20 @@ Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/pr
   legs change arrival/cargo ticks and the table now sets two fits; every earlier stage is unchanged. No pins edited
   by hand. This is a deliberate v52 rule change, not a refactor repin.
 
-## Owner questions (answered)
+- **Step 2:** one line-2 train at Far Head, two at the Pier, three at the Railhead, six on the greybox route;
+  line 1 keeps its one. Reserved rows start in the shed and join through the existing clear-Village rule.
+  Line 2's own wake begins at 27 s; its first departure is exactly 33 s after fit (regression checked).
+  `npm run loop -- run` passed. Repeating the four-seed, 20,000-tick measurements against the built rules
+  (`test/spacing/progression.ts --built`) gave the following heavy-ask mean / percent over 105 s / worst:
+  Far Head 59.8 s / 1.30% / 109.0 s; Pier 39.3 s / 0.27% / 109.3 s; Railhead 32.1 s / 0% / 69.2 s.
+  Light asks: 47.8 / 0% / 85.6 s, 31.5 / 0% / 63.1 s, 24.2 / 0% / 61.9 s respectively.
+  Kit delivery remains 74.0 s and Q6 completion 101.9 s. The bounded early-phase fallback is still unnecessary.
+  The same serial golden regeneration command passed 103 checks. Every seed changes because reserved train rows
+  now start in the shed at the Village; later hashes additionally reflect joining and departure timing.
+  Pure three-train mover fixtures explicitly retain their historical fleet and 20 m/s profile so the old spacing
+  regressions remain covered independently of the production ramp. Raw measurements: `.look/train-progression/step2.json`.
+
+## Owner questions
 
 **Answered by the owner, 15 November 2026:**
 

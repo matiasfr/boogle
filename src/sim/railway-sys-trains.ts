@@ -260,7 +260,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold): Tra
     // owes footings (design review, 9; ring-island-build1, R3).
     headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
     // The greybox route: the trains a line runs at its legs' stage (its fleet).
-    fleet: (line) => fleetOf(line, legsLaid(w)),
+    fleet: (line) => fleetOf(line, legsLaid(w), stopsOf(w, line)),
     // The Ring Island hold is off for a train on an errand (./railway-queries-trade.ts, holdOff).
     controlOff: (line, slot) => holdOff(w, line, row(slot)),
   };

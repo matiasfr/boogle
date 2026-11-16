@@ -93,7 +93,7 @@ export type RailLineDef = {
   /** The greybox route (step 3): how many trains run at each stage of RAIL_LEGS[`leg`], by its sections laid
    * (`trains[0]` is `trains`). A stage's extra trains wait in the shed (TRAIN_PHASE.SHED) until they join at the line's
    * first halt (./railway-trains.ts, fleetJoin). Absent: `trains` at every stage. */
-  fleet?: { leg: number; trains: readonly number[] };
+  fleet?: { leg: number; trains: readonly number[]; opens?: readonly { stop: number; trains: number }[] };
   /** Block signals (the greybox route, step 3): cm along the line where a train may hold short of its goal on either
    * track, with no halt, between halts too far apart for the block rule to let a follower start (it needs the whole leg
    * clear of the train ahead). Each stands between two halts of the line, never at one. */
@@ -463,7 +463,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
       ...STACK_HALTS,
     ],
     home: 0,
-    trains: 3,
+    trains: 1,
     speed: 140,
     accel: 2.5,
     brake: 3.5,
@@ -471,7 +471,14 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     balance: 600,
     // The greybox route: 3, then 6 from the first section laid (ruling A.4, call 63; six from short-turn's ruling on
     // step 1's sheet, call 5: the sixth waits in the shed and joins at the Village as the fourth and fifth do).
-    fleet: { leg: STACK_LEG, trains: [3, 6, 6, 6, 6] },
+    fleet: {
+      leg: STACK_LEG,
+      trains: [1, 6, 6, 6, 6],
+      opens: [
+        { stop: 3, trains: 2 },
+        { stop: 4, trains: 3 },
+      ],
+    },
     // Block signals at the stack line's section ends but the last (10 m past each railhead stop), so a train follows
     // another up the 1.5 km from Ring Island block by block (re-measure ruling 1).
     signals: STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toCm)),
@@ -588,6 +595,16 @@ RAIL_LINES.forEach((l) => {
     f.trains.length !== leg.sections.length + 1 ||
     f.trains[0] !== l.trains ||
     f.trains.some((n, k) => !Number.isSafeInteger(n) || n < (k ? f.trains[k - 1]! : 1)) ||
+    f.opens?.some(
+      (r, k) =>
+        !Number.isSafeInteger(r.stop) ||
+        r.stop < 0 ||
+        r.stop >= l.halts.length ||
+        !Number.isSafeInteger(r.trains) ||
+        r.trains < l.trains ||
+        r.trains > lineRows(l) ||
+        (k > 0 && (r.stop <= f.opens![k - 1]!.stop || r.trains < f.opens![k - 1]!.trains)),
+    ) ||
     l.home !== 0
   )
     throw new Error(`railway: line ${l.id} has a bad fleet`);

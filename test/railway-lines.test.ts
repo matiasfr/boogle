@@ -39,7 +39,7 @@ const V25_STOPS = [
 ];
 const V25_HOME = [1, 0];
 /** v27 (ring-island-build1, R3b): line 2 runs three trains, at the Village (up), Far Head (down) and Quarry (down). */
-const V27_HOME = [1, 0, 2, 1];
+const V27_HOME = [1, 0, 0, 0];
 /** v27's two halts after the Pier: the Railhead at its first head, Ring Island. */
 const V27_STOPS = [RING_HEAD[0]!.s, RING_END.s];
 const HALT_PINS = [
@@ -143,8 +143,8 @@ test("every halt's opening slot exists, and halts run in s order", () => {
       );
     for (let k = 1; k < l.halts.length; k++) assert.ok(l.halts[k]!.s > l.halts[k - 1]!.s, `${l.id} in s order`);
     assert.ok(l.home >= 0 && l.home < l.halts.length && l.halts[l.home]!.opens === -1, `${l.id}'s home is open`);
-    assert.equal(l.speed, TRAIN.speed);
-    assert.equal(l.accel, TRAIN.accel);
+    assert.equal(l.speed, l.id === 'line1' || l.id === 'line2' ? 140 : TRAIN.speed);
+    assert.equal(l.accel, l.id === 'line1' || l.id === 'line2' ? 2.5 : TRAIN.accel);
   }
   assert.deepEqual(
     RAIL_LINES.map((l) => l.id),
@@ -247,7 +247,7 @@ test("line 2 keeps its halt order and pinned platforms after Home's move", () =>
   // The path runs on: line 2's, then RING_PATH, then the greybox route's LINE2_ON, its index still s / 1000.
   assert.equal(line2.path.length, V25_PATHS[1]!.length + RING_PATH.length + LINE2_ON.length);
   assert.deepEqual(line2.path.slice(0, V25_PATHS[1]!.length), HOME_PATHS[1]);
-  assert.equal(line2.trains, 3);
+  assert.equal(line2.trains, 1);
   assert.equal(line2.balance, 600, 'the balanced hold, capped 60 s past the dwell (call 47)');
   for (const h of halts)
     assert.ok(h.opens === -1 || (Number.isInteger(h.opens) && h.opens >= 0 && h.opens <= 6), `${h.name} opens`);
@@ -327,7 +327,7 @@ test('three trains stand on three places: the Village (up), Far Head (down) and 
     assert.equal(new Set(places).size, 3, `${places.join(' ')}`);
   }
   // The catalog's line 2 is the same row.
-  assert.deepEqual(trainPlaces(1, TRAIN_STOPS[1]!.slice(0, 3)), trainPlaces(LINE2_ROWS, line2Stops(0)));
+  assert.deepEqual(trainPlaces(1, TRAIN_STOPS[1]!.slice(0, 3), 3), trainPlaces(LINE2_ROWS, line2Stops(0)));
 });
 
 test("a line's balanced hold is absent or 1 to BALANCE_MAX_TICKS whole ticks; trainPlaces refuses any other", () => {

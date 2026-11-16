@@ -60,7 +60,7 @@ import { footingTotal, pierNeed } from '../src/sim/railway-queries-works.ts';
 /** Halt ids (LINE_HALTS) on line 2. */
 const H = { village: 2, quarry: 3, farHead: 4, pier: 5 } as const;
 const STOPS = TRAIN_STOPS[1]!;
-const BRAKE = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
+const BRAKE = (140 * 140) / (2 * 3.5);
 /** Line 2's trains (L2, three since v27): A starts at the village (up), B at Far Head (down), the third at Quarry. */
 const L2 = LINE_SLOTS[1]!;
 const [A, B] = L2 as [number, number];
@@ -145,7 +145,7 @@ test('a leg keeps its destination in cm when a stop moves (Ring Island moves the
     stops[2] = was;
   }
   assert.equal(trainAlong({ ...row, to: 3 }, 1, 190), trainAlong(row, 1, 190));
-  assert.equal(trainAlong(row, 1, trainArrives(row)), row.dest);
+  assert.equal(trainAlong(row, 1, trainArrives(row, 1)), row.dest);
 });
 test('request sets: two digits a stop, safe integers with room for 26 stops', () => {
   assert.ok(REQ_MAX_STOPS >= 16);
@@ -288,14 +288,14 @@ test('the next train heading the asked way stops; one heading the other way runs
     if (served < 0) served = L2.find((k) => standing(v, 1, k)() && trainDir(train(v.w, k)) < 0) ?? -1;
     return !reqHas(lineRow(v.w, 1).req, 1, -1, 3);
   });
-  assert.ok(made.every(([at]) => at !== 1) && served !== A, 'the down train B took it, not A');
+  assert.equal(served, A, 'the sole train turns at Far Head and serves the homeward ask');
   assert.equal(invariant(v.w), null);
 });
 test('a request made mid-run shortens the trip if the train can still brake; inside braking reach it runs through', () => {
   // In reach: cruising out from the village, more than its braking distance short of the quarry.
   const w = railwayAtTrains('q6-stocked');
   until(w, standing(w, 0));
-  until(w, () => line2(w).phase === TRAIN_PHASE.RUN && trainSpeed(line2(w), 1, w.t) === TRAIN.speed);
+  until(w, () => line2(w).phase === TRAIN_PHASE.RUN && trainSpeed(line2(w), 1, w.t) === 140);
   // A leg to the end, or (v27's third train) to the end block's signal while a train stands at Far Head.
   assert.ok([2, -1].includes(line2(w).to), 'nothing asked: a leg to the end or its signal');
   assert.ok(STOPS[1]! - trainAlong(line2(w), 1, w.t) > BRAKE + 400);
@@ -367,6 +367,17 @@ test('line 1 waits for the cart to rest', () => {
   Object.assign(w.w.mut(Cart, w.w.single(Cart))!, { phase: CART_PHASE.REST });
   advance(w, 1);
   assert.equal(train(w.w, 0).phase, 1);
+});
+test('line 2 answers with a first departure exactly 33 seconds after the boiler fit', () => {
+  const w = railwayAtTrains('trains-on');
+  const fitted = rail(w.w).trains;
+  while (w.t < fitted + 329) advance(w, 1);
+  assert.equal(line2(w).phase, TRAIN_PHASE.STAND);
+  assert.equal(trains(w.w).filter((r) => r.phase !== TRAIN_PHASE.SHED).length, 2);
+  advance(w, 1);
+  assert.equal(line2(w).phase, TRAIN_PHASE.RUN);
+  assert.equal(line2(w).depart, fitted + 330);
+  assert.equal(invariant(w.w), null);
 });
 test('the kit needs no request: it loads on the line 2 train at the village; every unit has one home', () => {
   const w = railwayAtTrains('trains-on');
@@ -500,7 +511,15 @@ test('coupling needs no request: the first line 2 train at the village after the
   let first = -1;
   for (let t = 0; t < 3000 && !trains(w.w).some((x) => x.wagon); t++) {
     advanceWorks(w, 1);
-    if (first < 0) for (const k of L2) if (standing(w, 0, k)() && w.t >= shedRow(w.w).ready) first = k;
+    if (first < 0)
+      for (const k of L2) {
+        const tr = train(w.w, k);
+        if (
+          (standing(w, 0, k)() || (tr.depart === w.t && tr.from === STOPS[0] && tr.v0 === 0)) &&
+          w.t >= shedRow(w.w).ready
+        )
+          first = k;
+      }
   }
   const coupled = L2.filter((k) => train(w.w, k).wagon);
   assert.deepEqual(coupled, [first], 'coupled to the first train standing at the village once it was due');

@@ -29,7 +29,17 @@ import {
 import { trainPlaces } from '../../src/sim/railway-lines.ts';
 
 /** Line 2's catalog row, copied: the pure train code runs it with slots 0 to `trains - 1`. */
-export const LINE2_ROWS: RailLineDef = { ...RAIL_LINES[LINE2]!, id: 'line2-rows' };
+// These pure mover regressions deliberately retain the three-train, 20 m/s fixture. Production progression has
+// separate world tests; changing the opening fleet must not erase the three-train spacing cases.
+export const LINE2_ROWS: RailLineDef = {
+  ...RAIL_LINES[LINE2]!,
+  id: 'line2-rows',
+  trains: 3,
+  speed: 200,
+  accel: 3.5,
+  brake: undefined,
+  fleet: undefined,
+};
 /** Line 2's open stops: `laid` QJob slots complete (6: Q6, 7: Q7), the railhead at `head`, the rivet struck. */
 export const line2Stops = (laid: number, head = 0, joined = false) => trainStopsOf(LINE2, laid, { head, joined });
 
