@@ -18,6 +18,12 @@ import { installRailRules } from './helpers/rail-rules.ts';
 import { homeLand } from './helpers/land.ts';
 import { install as installRailway } from '../src/world/railway-server.ts';
 import { createRailwayMirror, RAIL_SCHEMAS } from '../src/world/railway-replicate.ts';
+import { LONG_REVIEWS } from './helpers/fuzz.ts';
+
+// Sized for the nightly long run: every offset, every funding delay. Elsewhere the offsets go by 16 and the delay
+// sweep (its 50 s ring-rivet prefix and about 12 s a delay) is left to the long run, which CI's 10-minute shards
+// cannot hold.
+const OFFSET_STEP = LONG_REVIEWS ? 1 : 16;
 
 for (const count of [1, 2]) {
   test(`review: ${count} trains, every stub-extension offset -80..80 preserves routing, spacing and JSON reload`, () => {
@@ -39,7 +45,7 @@ for (const count of [1, 2]) {
         rails: 20,
       };
       const arrival = trainArrives(initial.rows[0]!, line);
-      for (let offset = -80; offset <= 80; offset++) {
+      for (let offset = -80; offset <= 80; offset += OFFSET_STEP) {
         const f = new FixtureLine(before, 0, 0, line);
         f.rows = structuredClone(initial.rows);
         if (count === 2) {
@@ -94,10 +100,15 @@ function stock(s: Seed) {
       apply(s.w, pid, { op, epoch: a.epoch, request: a.request + 1, leg: 0 }, s.t);
     }
 }
-const prefix = ringRivetSequence();
-while (legRow(prefix.w, 0).laid < 1) {
-  if (legRow(prefix.w, 0).start < 0) stock(prefix);
-  advance(prefix, 1);
+let built: Seed | null = null;
+function prefixSeed() {
+  if (built) return built;
+  const prefix = ringRivetSequence();
+  while (legRow(prefix.w, 0).laid < 1) {
+    if (legRow(prefix.w, 0).start < 0) stock(prefix);
+    advance(prefix, 1);
+  }
+  return (built = prefix);
 }
 
 function lateJoin(s: Seed) {
@@ -125,33 +136,38 @@ function lateJoin(s: Seed) {
 }
 
 for (let delay = 0; delay <= 64; delay++) {
-  test(`review: real mixed-overfill funding delay ${delay}, reload and late join at second lay`, () => {
-    const s: Seed = { w: restore(prefix.w), t: prefix.t };
-    let due = -1,
-      checked = false;
-    const begin = s.t;
-    while (legRow(s.w, 0).laid < 4 && s.t - begin < 8000) {
-      const g = legRow(s.w, 0);
-      if (g.laid === 1 && due < 0) {
-        // Wait until both builders can fund, as the original regression, then shift the accepted commands.
-        if (s.t >= begin + 560) due = s.t + delay;
+  test(
+    `review: real mixed-overfill funding delay ${delay}, reload and late join at second lay`,
+    { skip: !LONG_REVIEWS },
+    () => {
+      const prefix = prefixSeed();
+      const s: Seed = { w: restore(prefix.w), t: prefix.t };
+      let due = -1,
+        checked = false;
+      const begin = s.t;
+      while (legRow(s.w, 0).laid < 4 && s.t - begin < 8000) {
+        const g = legRow(s.w, 0);
+        if (g.laid === 1 && due < 0) {
+          // Wait until both builders can fund, as the original regression, then shift the accepted commands.
+          if (s.t >= begin + 560) due = s.t + delay;
+        }
+        if (g.start < 0 && (g.laid !== 1 || (due >= 0 && s.t >= due))) stock(s);
+        if (g.laid === 1 && g.start >= 0 && s.t === g.start + TRAIN.dwellTicks) s.w = restore(s.w);
+        if (g.laid === 1 && g.start >= 0 && s.t === g.start + 299) {
+          s.w = restore(s.w);
+          lateJoin(s);
+          checked = true;
+        }
+        advance(s, 1);
+        if (checked && g.laid === 1 && legRow(s.w, 0).laid === 2) assert.equal(invariant(s.w), null);
       }
-      if (g.start < 0 && (g.laid !== 1 || (due >= 0 && s.t >= due))) stock(s);
-      if (g.laid === 1 && g.start >= 0 && s.t === g.start + TRAIN.dwellTicks) s.w = restore(s.w);
-      if (g.laid === 1 && g.start >= 0 && s.t === g.start + 299) {
-        s.w = restore(s.w);
-        lateJoin(s);
-        checked = true;
-      }
-      advance(s, 1);
-      if (checked && g.laid === 1 && legRow(s.w, 0).laid === 2) assert.equal(invariant(s.w), null);
-    }
-    assert.ok(checked, 'reload and late join actually exercised');
-    assert.equal(legRow(s.w, 0).laid, 4, 'Gorge opens');
-    assert.equal(invariant(s.w), null);
-    assert.equal(restore(s.w).hash(), s.w.hash());
-    assert.ok(trains(s.w).filter((r) => r.phase !== TRAIN_PHASE.SHED).length >= 3);
-  });
+      assert.ok(checked, 'reload and late join actually exercised');
+      assert.equal(legRow(s.w, 0).laid, 4, 'Gorge opens');
+      assert.equal(invariant(s.w), null);
+      assert.equal(restore(s.w).hash(), s.w.hash());
+      assert.ok(trains(s.w).filter((r) => r.phase !== TRAIN_PHASE.SHED).length >= 3);
+    },
+  );
 }
 
 test('review: 2048 one-log drop attempts conserve cargo through reload and chunked late join', (t) => {
