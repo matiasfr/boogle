@@ -1,4 +1,4 @@
-> **Status: plan, not built (16 November 2026).** Planner, against origin/main `a71077c4b`, `WORLD_NS` v54. The one file
+> **Status: plan, not built (16 November 2026).** Follow-up: [scarce town plots brainstorm](../brainstorms/town-plots-scarce.md) (proposed, not an owner decision). Planner, against origin/main `a71077c4b`, `WORLD_NS` v54. The one file
 > each build job reads. Follows [town-economy-visible](town-economy-visible.md) (its design review's ruling 1, "the next
 > plan"). **Finding first: the choice as ruled does not work** (section 2a, measured); section 2b changes it until it
 > does. "Plot 1, 2" are the first and second priced plots, slots `plot3` and `plot2` (that plan's N9). Not yet
