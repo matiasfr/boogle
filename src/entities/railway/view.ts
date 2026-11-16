@@ -623,6 +623,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       owner.update(ctx);
     },
     lateUpdate: () => {
+      opening.lateUpdate();
       sources.lateUpdate();
       line2.lateUpdate();
       works?.lateUpdate();

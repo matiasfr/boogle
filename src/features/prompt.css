@@ -1,6 +1,7 @@
 /* Interact prompt: a paper sticker with the button glyph and the verb, pointing down at the thing it acts on. Motion
    tokens from src/ui/ui-kit.css. */
-.prompt {
+.prompt,
+.speech-cue {
   position: absolute;
   left: 0;
   top: 0;
@@ -48,6 +49,20 @@
 }
 body.touch .prompt-chip {
   padding-left: 14px;
+}
+/* Unread NPC dots occupy the same world anchor, arrow and bounded CSS scale as Talk. */
+.speech-cue {
+  pointer-events: none;
+}
+.speech-cue.unread .prompt-chip {
+  padding-left: 14px;
+  min-height: 24px;
+}
+body.touch .speech-cue.unread .prompt-chip {
+  min-height: 20px;
+}
+body.gamepad .speech-cue.unread .prompt-chip {
+  min-height: 25px;
 }
 .prompt-chip.blocked {
   background: #e4e8ef;

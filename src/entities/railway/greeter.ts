@@ -59,7 +59,12 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
     import('../../place/land.ts'),
   ]);
   if (!owner.alive)
-    return { update: () => {}, targets: (): Interactable[] => [], handoff: (out: THREE.Vector3) => void out };
+    return {
+      update: () => {},
+      lateUpdate: () => {},
+      targets: (): Interactable[] => [],
+      handoff: (out: THREE.Vector3) => void out,
+    };
   const g = folk.addGreeter(layout.toWorld(layout.GREETER.x), layout.VILLAGE.y, layout.GREETER.z);
   // Ground the original shore worker beside the path, without adding a blocking body.
   g.fy = land.H(g.x, g.z);
@@ -82,12 +87,12 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
   let speaking = false;
   let lastStage = '';
   let cursor = 0;
-  const cue = createSpeechCue(owner);
+  const cue = createSpeechCue(owner, at);
   // Beside the existing wake reach, on the camp side of the parked machine; no collider or new shared state.
   const camp = folk.addGreeter(T1.wake.x / 100 - 3, 0, T1.wake.z / 100 + 4.2);
   camp.fy = land.H(camp.x, camp.z);
   const campAt = new THREE.Vector3(camp.x, camp.fy + 1.5, camp.z);
-  const campCue = createSpeechCue(owner);
+  const campCue = createSpeechCue(owner, campAt);
   let campSpeaking = false;
   let handing = 0;
   const openCamp = () => {
@@ -171,28 +176,27 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
         camp.yaw = angleLerp(camp.yaw, Math.atan2(p.x - camp.x, p.z - camp.z), Math.min(1, dt * 5));
         camp.mood = handing > 0 ? 'give' : campSpeaking ? 'chat' : needsAxe ? 'wave' : 'idle';
       } else camp.mood = 'idle';
-      cue(
-        g.x,
-        g.fy!,
-        g.z,
-        read.ready() && !conversation.open && (lastStage !== stage() || cursor < GREETER_LINES[stage()].length),
-      );
-      campCue(camp.x, camp.fy!, camp.z, needsAxe && !conversation.open);
       talk.updateTalkCard();
+    },
+    lateUpdate() {
+      cue.update(
+        g.on && read.ready() && !conversation.open && (lastStage !== stage() || cursor < GREETER_LINES[stage()].length),
+      );
+      campCue.update(camp.on && read.ready() && rail(read.world()).awake < 0 && !conversation.open);
     },
     targets(): Interactable[] {
       const p = me.body?.position;
       if (!p || !read.ready() || conversation.open) return [];
       const targets: Interactable[] = [];
       if (Math.hypot(p.x - g.x, p.z - g.z) < 3.3 && Math.abs(p.y - g.fy!) < 3)
-        targets.push({ id: 'railway-talk-greeter', verb: 'Talk', at, run: open });
+        targets.push({ id: 'railway-talk-greeter', verb: 'Talk', at, run: open, show: cue.show });
       if (
         rail(read.world()).awake < 0 &&
         Math.hypot(p.x - camp.x, p.z - camp.z) < 3.3 &&
         Math.abs(p.y - camp.fy!) < 3 &&
         Math.hypot(p.x - T1.wake.x / 100, p.z - T1.wake.z / 100) <= T1.wake.reach / 100
       )
-        targets.push({ id: 'railway-talk-camp', verb: 'Talk', at: campAt, run: openCamp });
+        targets.push({ id: 'railway-talk-camp', verb: 'Talk', at: campAt, run: openCamp, show: campCue.show });
       return targets;
     },
   };

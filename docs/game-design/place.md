@@ -119,6 +119,15 @@ residents get the same cue inside their room for a first meeting or a new town-p
 hidden during conversation; the camp cue remains available after declining or a refused handoff. Existing town
 conversation memory is reused. Sleeves also has an axe-owned/engine-cold stage pointing at the first frame.
 
+**Unread/Talk swap (owner, 15 November; clarified 16 November).** Each NPC has one bubble element at the
+existing Talk anchor (1.5 m above its feet). It shows `…` while unread and out of reach; when selected by
+Interact, that same element immediately switches to the actual keyboard, pad or touch Talk markup. Leaving
+reach restores the dots while unread. There is no separate high unread bubble. Both states share the paper
+chip, arrow and fixed CSS size scale, projected after the camera update; the Talk anchor itself is unchanged.
+The bubble hides behind the camera or outside the viewport, and unread dots keep their 24 m camera range.
+Sleeves, the camp resident and all five room residents share this rule. The Boogler's separate marker/nameplate
+and spoken barks keep their existing behavior.
+
 Saved `Rail.awake` still grants the tool; Station 1's saved `Job.start` determines engine ignition. No saved
 shape, namespace, bill or command changes, and no migration: old awake saves keep their axe and progress;
 funded saves restore the engine silently. The retained wire name `rail.wake` now comes from the camp interaction.

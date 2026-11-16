@@ -195,7 +195,10 @@ export async function createTownView(read: () => TownLook | null) {
       owner.update(ctx);
     },
     /** Just before render: what's drawn near the camera (rooms.ts `cull`). */
-    cull: () => rooms.cull(),
+    cull() {
+      rooms.cull();
+      residents.lateUpdate();
+    },
     inspect: (): TownInspection => ({
       facts: TOWN_FACTS.filter((f) => townHas(facts, f)),
       newest: newestTownFact(facts),

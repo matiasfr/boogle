@@ -12,7 +12,8 @@ import { delayedRoom } from '../../world/delayed-room.ts';
 import { createRailwayView, type RailwayView } from './view.ts';
 import { setRailwayView, setRailwayWorldRead, setRailwayCommands } from './state.ts';
 
-defineKind('railway', { prePhysics: -59, fixedPre: 43, update: 10, lateUpdate: 0 });
+// Project NPC cues after the final camera (including the debug camera at 1000).
+defineKind('railway', { prePhysics: -59, fixedPre: 43, update: 10, lateUpdate: 1002 });
 // The glide keeps the heading it had before the controller's air steering (Place's order-22 note, at 23 here): a second slot.
 defineKind('railway-glide', { fixedPre: 23 });
 let active: RailwayView | null = null;
