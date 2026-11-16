@@ -11,6 +11,16 @@ for (let i = 0; !R.railRead()?.ready() || !me.body; i++) {
   if (i > 600) throw new Error('CART WAKE railway did not mount');
   await wait(100);
 }
+// Evidence overlay: sampled from the published mirror, so video frames can be matched to the wake tick.
+const stamp = document.createElement('div');
+stamp.style.cssText =
+  'position:fixed;left:8px;top:8px;z-index:99999;background:#000;color:#fff;padding:6px;font:16px monospace';
+document.body.append(stamp);
+const annotate = () => {
+  stamp.textContent = `tick ${R.railAt()} cart ${R.cart(R.rw()).phase} trains ${R.rail(R.rw()).trains}`;
+  requestAnimationFrame(annotate);
+};
+annotate();
 const bot = makeBot({ doneFlag: '__cartWakeDone' });
 const b = R.boiler(R.rw());
 teleport(me.body!, b.x / 100 + 2, b.y / 100 + 1, b.z / 100);

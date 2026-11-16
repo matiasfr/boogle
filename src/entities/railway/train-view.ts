@@ -1036,6 +1036,7 @@ export async function createRailwayTrains(
         secondVisible = true;
         answerPending = true;
         wake.start();
+        first.puffs = 1; // The first steam marks the shared wake tick; the existing wake sequence follows.
       }
       if (answerPending && on && tick >= trainWakeAt(LINE2, railRow(w).trains)) {
         answerPending = false;
@@ -1229,9 +1230,9 @@ export async function createRailwayTrains(
               vy: 1.5 + Math.random() * 0.8,
               vz: (Math.random() - 0.5) * 0.6,
               life: 2.4,
-              size: 0.3,
+              size: tr === first && tick <= railRow(w).trains + 1 ? 0.75 : 0.3,
               color: smoke,
-              alpha: 0.35,
+              alpha: tr === first && tick <= railRow(w).trains + 1 ? 0.85 : 0.35,
               drag: 0.6,
               grow: [1, 3.2],
               fade: 0.6,

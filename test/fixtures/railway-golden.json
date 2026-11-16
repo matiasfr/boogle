@@ -1,5 +1,5 @@
 {
-  "worldNs": "v55",
+  "worldNs": "v56",
   "ticks": 1200,
   "stages": {
     "awake": {
@@ -133,14 +133,14 @@
       "after": 2834696800
     },
     "yard-ready": {
-      "tick": 20859,
-      "stage": 560161376,
-      "after": 298816224
+      "tick": 21136,
+      "stage": 1084583264,
+      "after": 2265539296
     },
     "yard-built": {
-      "tick": 20959,
-      "stage": 2897507685,
-      "after": 1947920485
+      "tick": 21236,
+      "stage": 101205029,
+      "after": 1142613797
     },
     "q6-stocked": {
       "tick": 4116,
@@ -193,9 +193,9 @@
       "after": 3727174095
     },
     "yard-wagon": {
-      "tick": 22166,
-      "stage": 1668486087,
-      "after": 3429225927
+      "tick": 22443,
+      "stage": 2627933255,
+      "after": 2865150791
     },
     "crossing-finishing": {
       "tick": 6617,
@@ -213,9 +213,9 @@
       "after": 3957049359
     },
     "yard-deck": {
-      "tick": 24391,
-      "stage": 3169888183,
-      "after": 1957548407
+      "tick": 24668,
+      "stage": 3477627319,
+      "after": 3662222967
     },
     "gap-footed": {
       "tick": 11351,
