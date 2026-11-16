@@ -109,7 +109,9 @@
 // carried piece. No drop-triggered recovery; at saturation pickups stop before unreserved overfill.
 // v50 (2026-11-15): terrain-clean benches clear twelve ordinary harvest sources, preserving all surviving IDs.
 // Follows heavy-load v49; the source catalog changes with the ground. No migration.
-export const WORLD_NS = 'v50';
+// v51 (2026-11-15): Works flow step 1 casts the breaker at the boiler fit, not Q6; the save invariant follows.
+// No shape change or migration.
+export const WORLD_NS = 'v51';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

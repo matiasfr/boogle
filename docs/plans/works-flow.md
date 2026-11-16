@@ -1,6 +1,6 @@
-> **Status: plan, designer-reviewed and the review folded in (2026-11-15); nothing built.** Base: `e3d64e3ea`.
-> Step 2 is Local view work with no bump and builds on its recommendation; step 1 waits for owner question 1, step 3
-> is built only if he says no. No game code was changed here.
+> **Status: owner-approved 2026-11-15; step 1 implemented, awaiting parent review (not shipped).**
+> Q1 yes (cast at the fit, no cut, call after the wake), Q2 yes, Q3 no (keep the crack glowing).
+> Step 2 is approved for a separate build. Step 3 is dropped. The design review below is the historical review.
 
 # The Works' flow: from the pier to the crossing, one thread
 
@@ -169,7 +169,7 @@ the review's `pier-handback` still), but from where players wait. Grant walked (
 three times before the kiln casts one: the pier's ghosts, the Quarry rack's broken sample (from the platform, 11 m),
 the stall's socket ghosts.
 
-### 3. The maps mark the throat first (signposting; view only; size S; only if fix 1 is not built)
+### 3. DROPPED: The maps mark the throat first (owner, 15 November: Q1 yes, Q3 no)
 
 Either seam may still be struck first (decided, 9 November), and the stall seam keeps its motes and its "Strike the
 seam" prompt: it is the breaker's harmless first strike in sight of where you take it. Only the halt maps wait: the
@@ -194,7 +194,7 @@ needed: the stall is 40 m from the platform the player boards line 2 from, on th
 Each leaves `node dev/ship-check.ts` green. The checkpoint is one look per step's seed and, for step 1,
 `npm run loop -- run`.
 
-- [ ] **1. (If owner question 1 is yes.) The breaker comes with trains.** Tier: high-risk implementation (`src/sim`
+- [x] **1. The breaker comes with trains.** [Implementation and evidence](works-flow-step1.md). Tier: high-risk implementation (`src/sim`
   and seeds), Codex (T3 delegate_task) **gpt-6-astra high**; independent review before merge by a fresh reviewer,
   **gpt-6-astra** first (the models table's review row). Read room-safety, mixed-builds and lockstep first.
   - `src/sim/railway-sys-line2.ts`: move `breaker = 1` from Q6's completion (line 434) to the boiler's fit (the
@@ -241,7 +241,7 @@ Each leaves `node dev/ship-check.ts` green. The checkpoint is one look per step'
   - **Nearer wording views:** `.look/works-flow-pier/detail-near/q6-{desktop,phone}-still.png`, opened, with the
     camera about 4 m from the existing sign. `0/12 by wagon` reads on both; the existing **Sit** prompt overlaps part
     of `footings`. No sign relocation, enlargement, prompt change or new words were added. Capture health passed.
-- [ ] **3. (Only if owner question 1 is no.) The maps mark the throat first.** Tier: player-visible implementation,
+- [x] **3. DROPPED (owner, 15 November: Q1 yes, Q3 no). The maps mark the throat first.** Tier: player-visible implementation,
   Codex (T3 delegate_task) **gpt-6-astra high**.
   - `src/entities/railway/halts-view.ts` (the `boards.works` call, lines 755–765): the stall seam's zigzag needs
     `wk.lit >= 0`. `breaker-view.ts` (motes and "Strike the seam") is not touched.
@@ -316,6 +316,8 @@ play at the fit, not after the pier, and its "One by the turntable" first still 
 go by train" for the forge rack; Sleeves' two pedestal lines) are unchanged.
 
 ## Owner questions
+
+**Owner answers, 15 November 2026:** Q1 **yes**: cast at the boiler fit, no camera cut, call after the train wakes. Q2 **yes**: pier rack, six ghost footings and the full "footings 0/12 by wagon" bill from Q6. Q3 **no**: the turntable crack keeps its glow. Q1 supersedes the 8 November "after Q6" call. **Step 3 is dropped**; the crack and its map cue stay as they are. Step 2 is approved for a separate build; this task builds step 1 only.
 
 1. **Should the forge cast the breaker when the boiler is fitted, instead of after the pier?** Recommended: **yes,
    with no camera cut at the fit**: the call sounds after the train wakes, and the crew and prompt meet you at the

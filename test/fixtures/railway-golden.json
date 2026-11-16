@@ -1,5 +1,5 @@
 {
-  "worldNs": "v50",
+  "worldNs": "v51",
   "ticks": 1200,
   "stages": {
     "awake": {
@@ -109,27 +109,27 @@
     },
     "trains-on": {
       "tick": 3119,
-      "stage": 111374516,
-      "after": 49204660
+      "stage": 1892905140,
+      "after": 2292108724
     },
     "freight-running": {
       "tick": 3530,
-      "stage": 2735691828,
-      "after": 3812180916
+      "stage": 1799313460,
+      "after": 4010361780
     },
     "fares-running": {
       "tick": 4678,
-      "stage": 956953332,
-      "after": 3054893396
+      "stage": 2260333300,
+      "after": 172357972
     },
     "q6-stocked": {
       "tick": 3520,
-      "stage": 3000941108,
-      "after": 2486107572
+      "stage": 2540616244,
+      "after": 3942579636
     },
     "q6-finishing": {
       "tick": 3520,
-      "stage": 1470873930,
+      "stage": 3801858378,
       "after": 3201993226
     },
     "q6-done": {

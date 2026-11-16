@@ -62,7 +62,7 @@ export const SEED_STAGES = [
   'glide-earned',
   'boiler',
   'boiler-camp',
-  'trains-on',
+  'trains-on', // The boiler is fitted and the breaker waits; Q6 and the Works are both open.
   // Slice 5 (./railway-seed-trade.ts): trains-on with the first timber home; then the first fares.
   'freight-running',
   'fares-running',

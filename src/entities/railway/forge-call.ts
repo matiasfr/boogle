@@ -2,7 +2,7 @@
 // whistle that carries across the island on the frame it appears (docs/reviews/home-flow.md findings 2 and 3).
 // The boiler and Split-rock's breaker share it. Local: it follows accepted state only, a live edge whistles and a
 // restore never does. The whistle is the hand-off's cue (docs/plans/forge-call-handoff.md): a completion show holds it
-// until its cut to the forge, and it repeats, at most three times, while the thing still waits.
+// until its cut to the forge (or the train's wake at the boiler fit), and it repeats, at most three times, while the thing still waits.
 //
 // The plume is its own instanced mesh of puffs, not the shared particle pool: at the pier the pool turns over about
 // 440 particles a second, so a 10 s puff from the forge is recycled within 2 s and the column never reached the sky
@@ -83,6 +83,7 @@ export function createForgeCall(
     line = new THREE.Line3(eye, you),
     closest = new THREE.Vector3();
   let waiting: boolean | null = null,
+    lastRelease = released,
     clock = 0,
     // Seconds the plume has been rising: a new call grows its column from the pedestal up, it doesn't appear whole.
     shown = 0,
@@ -164,6 +165,7 @@ export function createForgeCall(
   return {
     /** Snap to the state without a whistle (first frame, reload, late join, resync): a waiting call shows whole. */
     restore(now: boolean) {
+      lastRelease = released;
       waiting = now;
       shown = now ? PLUME.rise : 0;
       due = since = -1;
@@ -184,9 +186,13 @@ export function createForgeCall(
       if (!now) due = since = -1;
       waiting = now;
       // Sounds once no show holds it: at the show's cue, or CLAIM_S after the edge when nobody claimed it.
-      if (due >= 0 && !forgeCallHeld() && (released >= due || nowS() - due >= CLAIM_S)) {
+      // The pier may remind a player who skipped the already-cast breaker. Its cut cues the waiting part again,
+      // including after a reload, without replaying an old cue or restarting the three automatic repeats.
+      const cued = released > lastRelease;
+      lastRelease = released;
+      if (now && !forgeCallHeld() && (cued || (due >= 0 && nowS() - due >= CLAIM_S))) {
         due = -1;
-        since = 0;
+        if (since < 0) since = 0;
         sound();
       }
       if (since >= 0) {

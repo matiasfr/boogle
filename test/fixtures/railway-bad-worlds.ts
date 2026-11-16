@@ -42,6 +42,8 @@ import { stopsOf } from '../../src/sim/railway-queries.ts';
 /** The stages the entries are built on: line one only, a line-two stretch on its way, line two done, and the rivet
  * struck (the steel works'). */
 export const BAD_WORLD_STAGES = [
+  'boiler',
+  'trains-on',
   'awake',
   'q2-arriving',
   'crossing-done',
@@ -333,7 +335,18 @@ export const BAD_WORLDS: readonly BadWorld[] = [
   // ------------------------------------------------ the Works (src/sim/railway-check-works.ts)
   { site: 'works bounds', message: 'railway: works bounds', stage: X, break: (w) => set(w, Works, { seams: 4 }) },
   { site: 'works shed bounds', message: 'railway: shed bounds', stage: X, break: (w) => set(w, Shed, { table: 2 }) },
-  { site: 'works breaker', message: 'railway: breaker', stage: A, break: (w) => set(w, Works, { breaker: 1 }) },
+  {
+    site: 'works breaker before fit',
+    message: 'railway: breaker',
+    stage: 'boiler',
+    break: (w) => set(w, Works, { breaker: 1 }),
+  },
+  {
+    site: 'works breaker missing after fit',
+    message: 'railway: breaker',
+    stage: 'trains-on',
+    break: (w) => set(w, Works, { breaker: 0 }),
+  },
   {
     site: 'works seam before the breaker',
     message: 'railway: seam before the breaker',

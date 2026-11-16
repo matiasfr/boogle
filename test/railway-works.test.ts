@@ -46,12 +46,10 @@ import {
 import { footingTotal, pierNeed, worksStage } from '../src/sim/railway-queries-works.ts';
 import { forgeRailsOffered, trainOwed } from '../src/entities/railway/forge-offer.ts';
 import { CART_PHASE, cartAlong } from '../src/sim/railway-cart.ts';
-import { TRAIN_STOPS } from '../src/sim/railway-train.ts';
-import { RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { RAIL_ROCKS, RAIL_STONE, WORKS, WORKS_BREAKER, WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
-import { Account, Boiler, Line, Pile, Rail, Train, Works, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { Account, Pile, Train, Works, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import type { World } from '../src/ecs/index.ts';
 
@@ -104,7 +102,9 @@ test('a cast breaker means trains run: station 6 cannot be laid by hand before t
   for (const pid of ['a', 'b']) assert.equal(act(s, pid, 'rail.drop', { x: 91900, y: 1815, z: 560, n: 8, kind: 0 }), 8);
   assert.equal(act(s, 'a', 'rail.boilerTake', { revision: boiler(w).revision }), 1);
   assert.equal(act(s, 'a', 'rail.boilerFit', { revision: boiler(w).revision }), 1);
-  // The train brings the kit; two backs carry it rack to frame; the machine lays Q6 and the breaker is cast.
+  assert.equal(works(w).breaker, 1, 'the fit casts it before Q6');
+  assert.equal(invariant(w), null, 'the newly cast room saves and reloads before Q6');
+  // The train brings the kit; two backs carry it rack to frame; Q6 leaves the waiting breaker alone.
   for (let ticks = 0; rail(w).depot !== 32 || rail(w).depotRails !== 32; ticks++) {
     assert.ok(ticks < 4000, 'the kit unloads at Far Head');
     advance(s, 1);
@@ -123,26 +123,33 @@ test('a cast breaker means trains run: station 6 cannot be laid by hand before t
   assert.equal(works(w).breaker, 1);
   assert.ok(rail(w).trains >= 0);
 });
-test('breaker cast once when Q6 completes; one taker', () => {
-  const s = railwayAtTrains('q6-finishing'),
+test('breaker cast once at the boiler fit; one taker, no recast at Q6', () => {
+  const s = railwayAtTrains('boiler'),
     w = s.w;
   assert.equal(works(w).breaker, 0);
   assert.equal(worksStage(w), 'dormant');
-  while (line2Completed(w) < 6) {
-    assert.equal(works(w).breaker, 0);
-    advance(s, 1);
-  }
-  assert.equal(works(w).breaker, 1, 'cast the tick Q6 is laid');
+  assert.equal(act(s, 'a', 'rail.boilerTake', { revision: boiler(w).revision }), 1);
+  const revision = boiler(w).revision;
+  assert.equal(act(s, 'a', 'rail.boilerFit', { revision }), 1);
+  assert.equal(works(w).breaker, 1, 'cast in the accepted fit');
+  assert.equal(line2Completed(w), 5);
+  assert.equal(invariant(w), null);
   advance(s, 50);
   assert.equal(works(w).breaker, 1);
   assert.equal(act(s, 'a', 'rail.breaker'), 1);
   assert.equal(act(s, 'b', 'rail.breaker'), 0);
   assert.equal(works(w).breaker, 2);
-  // An away credit that finishes Q6 casts it too.
+  assert.equal(act(s, 'b', 'rail.boilerFit', { revision }), 0);
+  assert.equal(act(s, 'a', 'rail.strike', { id: 1 }), 1, 'the throat opens before Q6');
+  assert.equal(act(s, 'b', 'rail.strike', { id: 0 }), 1, 'either seam first');
+  assert.equal(invariant(w), null);
+  assert.equal(works(restore(w)).breaker, 2, 'the take survives a reload');
+  // Finishing Q6, including by away credit, must never put a taken breaker back on the pedestal.
   const away = railwayAtTrains('q6-finishing');
+  assert.equal(act(away, 'a', 'rail.breaker'), 1);
   railResume(away.w, scheduleOf(LINE2_STATIONS[5]!, qjob(away.w, 5)).totalTicks, 1, away.t);
   assert.equal(line2Completed(away.w), 6);
-  assert.equal(works(away.w).breaker, 1);
+  assert.equal(works(away.w).breaker, 2);
   assert.equal(invariant(away.w), null);
 });
 test('a strike needs the breaker and is idempotent', () => {
@@ -160,38 +167,17 @@ test('a strike needs the breaker and is idempotent', () => {
   assert.equal(worksStage(w), 'open');
 });
 test('no breaker and no strike while hauling the boiler', () => {
-  // A world from before step 3 (docs/plans/boiler-first-choice.md, Part 2): Q6 laid by hand, the breaker cast on the
-  // pedestal, and the boiler still waiting there, now on a's rope.
-  const s = railwayAtTrains('q6-done'),
+  const s = railwayAtTrains('boiler'),
     w = s.w;
-  for (const pid of ['a', 'b']) {
-    const back = account(w, pid)!;
-    for (const kind of [0, 2] as const) {
-      const n = kind ? back.rails : back.carry;
-      if (n) assert.equal(act(s, pid, 'rail.drop', { x: 91900, y: 1815, z: 560, n, kind }), n);
-    }
-  }
-  const epoch = account(w, 'a')!.epoch;
-  w.mut(Rail, w.single(Rail))!.trains = -1;
-  Object.assign(w.mut(Boiler, w.single(Boiler))!, { state: 'held', holder: 'a', epoch, age: 0 });
-  // Cold trains stand at home, empty (the kit was hand-carried in that world).
-  // A fleet row (the greybox route) stays in the shed (phase 2).
-  RAIL_TRAINS.forEach(({ line, home: at, track, shed }, slot) => {
-    const here = TRAIN_STOPS[line]![at]!;
-    Object.assign(w.mut(Train, w.lookup(Train, slot)!)!, {
-      ...{ phase: shed ? 2 : 0, at, to: at, track, depart: 0, arrived: 0, req: 0, from: here, v0: 0, dest: here },
-      origin: track === 1 && at === 2 ? here : 0,
-    });
-  });
-  for (const id of w.ids(Line)) Object.assign(w.mut(Line, id)!, { req: 0, left0: -1, left1: -1 });
+  assert.equal(act(s, 'a', 'rail.boilerTake', { revision: boiler(w).revision }), 1);
   assert.equal(boiler(w).state, 'held');
   assert.equal(invariant(w), null);
-  assert.equal(works(w).breaker, 1);
+  assert.equal(works(w).breaker, 0);
   assert.equal(act(s, 'a', 'rail.breaker'), 0, 'not for the hauler');
-  assert.equal(act(s, 'b', 'rail.breaker'), 1, 'another player takes it');
+  assert.equal(act(s, 'b', 'rail.breaker'), 0, 'nor another player before the fit');
   assert.equal(act(s, 'a', 'rail.strike', { id: 0 }), 0, 'the hauler strikes nothing');
   assert.equal(works(w).seams, 0);
-  assert.equal(act(s, 'b', 'rail.strike', { id: 0 }), 1);
+  assert.equal(act(s, 'b', 'rail.strike', { id: 0 }), 0);
   assert.equal(invariant(w), null);
 });
 test('the kiln waits for the throat; lights once when both bills are full', () => {
