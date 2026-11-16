@@ -358,6 +358,37 @@ _Archived 15 November 2026: the ability-order proposals below are accepted, and 
 
 ## Archive: Rail, construction, levels and travel
 
+### Batch-2 decide calls answered 16 November 2026
+
+Owner, in chat: "If I didn't say something else, I took the recommendation". RC-005 and RC-062 have separate page answers; RC-308 has a page answer and the later "4% is ok then" confirmation. Sources: [RC ranking](reports/agent-calls-ranking-rc-2026-11-16.json), [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json), [application report](reports/agent-call-batch2-decide-answers-applied-2026-11-16.md). Only the decide group is answered; flags and bulk remain open.
+
+Rows in baseline ID order: RC-001, RC-005, RC-022, RC-062, RC-067, RC-186, RC-221, RC-233, RC-308, RC-313, RC-314. Only the status cell changes, with decision links.
+
+| Date | Call | Where | By | Why this pick | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-15 | Default (built, start-area S1): remove the West landing's grey stair and parapets; the shore path and the end ramp are the way between the commons and the shelf. Reverses call 120. Grant's "should be real stairs" (G29) weighed and declined: a second way up 10 m from the path splits a newcomer's first choice | [start-area](plans/start-area.md) S1 | design sub-agent; designer review; implementation sub-agent | Two of three first-time landings took the stair as the way up; the end ramp's foot is on the shore path's first leg, so no reach is lost | confirmed ([decision](decisions-rail.md#d-2026-11-16-batch2-rail-calls-confirmed)) |
+| 2026-11-15 | Default (built on a branch, not shipped): the breaker is drawn at twice its carried size while the forge's crane holds it over the pedestal, and at its own size once taken | [forge-call-handoff](plans/forge-call-handoff.md#as-built-15-november-2026) | implementer | At its own size it was a grey stick against the forge's wall from Grant's 7 m and 10 m passes (review finding 6: "does not read"); the lift alone did not fix that. What the cut shows and what is found match; only the carried one is smaller | confirmed ([decision](decisions-rail.md#d-2026-11-16-carried-and-held-size)) |
+| 2026-11-14 | New: the glide across the gap gets its own cue: a take-off board off the platform's end with a windsock in the glider's cream and teal, and a square of the same cloth on the brace platform; cloth means glide, gold stays "this is for that". Draw-only, adds no reach. Proposed, not built | [gap-readability](plans/gap-readability.md#design-review-designer-2026-11-14), call 10, section 4 | designer (gap readability) | Nothing on the stretch names the glide; the deck's end is striped like a stop | confirmed ([decision](decisions-rail.md#d-2026-11-16-batch2-rail-calls-confirmed)) |
+| 2026-11-12 | New: a train pushes a player sideways out of its path (a local fender on the player's own body, a pop on entry) only in the Ring Island halt's bed, about u 423..468; everywhere else a train carries a player as today. The every-line version is held for the owner. Bar: a stopping train carries under 3 m; a passing one leaves the player in the six-foot or on the planks within the platforms' length, never past u 468 or below 8.0 m; `FEND` 0.6 m ahead, 4 m/s across, flip after 8 ticks, speed raised before reach | [ring-island-crossing](plans/ring-island-crossing.md#design-review-designer-2026-11-12), calls 5, 6 and 9, findings 1 to 3 | designer (ring crossing review) | Measured shoves of 33 m and 166 m into the sea from the only way across, where kerbs stop the push ending; elsewhere the carry is an existing toy (DESIGN 2's test) and generic-lines ruled a bump at a plank crossing slapstick | changed ([decision](decisions-rail.md#d-2026-11-16-push-aside-at-halts)) |
+| 2026-11-12 | New: six trains with a hold at Ring Island is built for the long line, ahead of the short turn: a train may stand there up to 20 s past its dwell (cap 200, on at 15% of an even gap) with riders aboard and no "go now". Builds the train-spacing review's call 23 (its 12 November row is further down this table, still open) on its recommendation | [short-turn](plans/short-turn.md#design-ruling-on-step-1s-sheet-designer-2026-11-12), ruling 2, call 11, question 1 | designer (spacing step 1 ruling) | On 48 seeds it meets the looser rate and halves the long waits at both ask rates (light settled 343 / 0.22% / 1,275; heavy 493 / 3.54% / 1,470), shortens the Gorge-bound journey, and puts nobody off a train | confirmed ([decision](decisions-rail.md#d-2026-11-16-batch2-rail-calls-confirmed)) |
+| 2026-11-10 | New: on arrival Home's town is the hall, Pip's house and one gate cottage, with the forge's frame and stake boards for Fine Prices and the museum. Takes the planner's row of the same day (question 2) as recommended, and replaces in part the row below, "the Village starts with two cottages": which buildings stand; its rider figures and prices are untouched | [town-layout](plans/town-layout.md#design-review-designer-2026-11-10), call 3 | designer (town layout review); first proposed by the planner | Owner's leaning: "maybe only a couple buildings exist"; a ring with five empty places is the stronger picture of building up. Plot 4, a cottage, can stand from the start by one field | confirmed ([decision](decisions-rail.md#d-2026-11-16-batch2-rail-calls-confirmed)) |
+| 2026-11-10 | New: a station fit-out (benches, a canopy, lamps, a clock) raises its town's riders by a quarter, two steps at most, only at a place with a station house; the frame stays hauled | [passenger-trade](brainstorms/passenger-trade.md#what-boogles-buy), town table; question 4 | designer (passenger-trade rework) | The decision's "a better station"; the tier is earned by what the place is (junction-stations) and no route step has a Boogle price. Answers the review's call 35 (say what each comfort does) | confirmed ([decision](decisions-rail.md#d-2026-11-16-batch2-rail-calls-confirmed)) |
+| 2026-11-10 | New: interchanges are bought per junction at the junction for steel and rails and laid by the track gang on a 1.2 s hold (bends 2 November's "you still haul each track segment"); the install takes nobody's camera, as engine-garage call I10 | [express-train](brainstorms/express-train.md#design-review-designer-2026-11-10), calls 25, 26 and 31, finding 7 | designer | The owner called it an upgrade; the brief should name wallet against material and say what it bends | changed ([decision](decisions-rail.md#d-2026-11-16-interchange-track-is-hauled)) |
+| 2026-11-10 | New: future rail corridors keep a 4% ruling grade, the bow included: trains run low at the islands' heights (a 4–15 m sea deck), decks meet an island at its height, and towns on high tops are reached by a lift from a low station; a line needing more height goes round or through, never steeper than 4%. Live lines 1 and 2's in-town climbs (about 26% and 22% at their steepest) stay as built | [world-blockout](plans/world-blockout.md#rulings-10-november), the ruling grade | orchestrator (design pass, #1396) | Every future line jumps onto its islands at 45–340%; 4% is the gentlest that fits the bow into the 440 m crossing, reads as a railway at 20–40 m/s, and is kind to standing riders (a P1 since 10 November) | confirmed ([decision](decisions-rail.md#d-2026-11-16-four-percent-ruling-grade)) |
+| 2026-11-10 | New: High Gorge has one station, low in the split at 3 m, for every line (the White Wall line comes down to the sea deck before the stacks); a switchback stair on the falls side (about 165 m, 30–40 s) always climbs to the bridge; a lift in the split, recommended as the copper's first job, then carries everyone and is a travel edge only | [world-blockout](plans/world-blockout.md#rulings-10-november), conflict 5 | orchestrator (design pass, #1396) | The split points at Ring Island, so arriving down it end-on is the area's picture; the stair keeps solo and group unstranded; a bridge-level station needs 2 km of climb | confirmed ([decision](decisions-rail.md#d-2026-11-16-batch2-rail-calls-confirmed)) |
+| 2026-11-10 | New: the bay and cave lines share one West landing station; lines 1 and 2 don't run on to it; the 100–130 m walk (about 20–25 s) from the Village halts through the village is the hub, shown by a trodden path and the halt boards' map | [world-blockout](plans/world-blockout.md#rulings-10-november), conflict 6 | orchestrator (design pass, #1396) | Home as the place every line meets on foot, through the town the trains grow; no line 1 rework or bump for it | confirmed ([decision](decisions-rail.md#d-2026-11-16-batch2-rail-calls-confirmed)) |
+
+#### Original status receipts, batch-2 decide, 16 November 2026: Rail, construction, levels and travel
+
+These original-status lines preserve the immutable split manifest's exact history; they are receipts, not additional moved calls.
+
+```text
+| 2026-11-10 | New: interchanges are bought per junction at the junction for steel and rails and laid by the track gang on a 1.2 s hold (bends 2 November's "you still haul each track segment"); the install takes nobody's camera, as engine-garage call I10 | [express-train](brainstorms/express-train.md#design-review-designer-2026-11-10), calls 25, 26 and 31, finding 7 | designer | The owner called it an upgrade; the brief should name wallet against material and say what it bends | open |
+| 2026-11-10 | New: future rail corridors keep a 4% ruling grade, the bow included: trains run low at the islands' heights (a 4–15 m sea deck), decks meet an island at its height, and towns on high tops are reached by a lift from a low station; a line needing more height goes round or through, never steeper than 4%. Live lines 1 and 2's in-town climbs (about 26% and 22% at their steepest) stay as built | [world-blockout](plans/world-blockout.md#rulings-10-november), the ruling grade | orchestrator (design pass, #1396) | Every future line jumps onto its islands at 45–340%; 4% is the gentlest that fits the bow into the 440 m crossing, reads as a railway at 20–40 m/s, and is kind to standing riders (a P1 since 10 November) | open |
+| 2026-11-10 | New: High Gorge has one station, low in the split at 3 m, for every line (the White Wall line comes down to the sea deck before the stacks); a switchback stair on the falls side (about 165 m, 30–40 s) always climbs to the bridge; a lift in the split, recommended as the copper's first job, then carries everyone and is a travel edge only | [world-blockout](plans/world-blockout.md#rulings-10-november), conflict 5 | orchestrator (design pass, #1396) | The split points at Ring Island, so arriving down it end-on is the area's picture; the stair keeps solo and group unstranded; a bridge-level station needs 2 km of climb | open |
+| 2026-11-10 | New: the bay and cave lines share one West landing station; lines 1 and 2 don't run on to it; the 100–130 m walk (about 20–25 s) from the Village halts through the village is the hub, shown by a trodden path and the halt boards' map | [world-blockout](plans/world-blockout.md#rulings-10-november), conflict 6 | orchestrator (design pass, #1396) | Home as the place every line meets on foot, through the town the trains grow; no line 1 rework or bump for it | open |
+```
+
 ### Agent calls answered 16 November 2026
 
 Owner: "Accept all remaining" on the bulk review page, none pulled out; "I take the recommendation for all the other 14 and 24 calls" in chat; CL-072 answered separately on the page. Stage 1's non-live archive was also approved, except rows whose evidence retains unresolved details. Sources: [ranking](reports/agent-calls-ranking-2026-11-16.json), [triage](reports/agent-calls-triage-2026-11-16.json), [application report](reports/agent-call-answers-applied-2026-11-16.md).
@@ -630,6 +661,24 @@ History for [decisions-rewards.md](decisions-rewards.md), verbatim.
 
 ## Archive: Characters, cosmetics and story
 
+### Batch-2 decide calls answered 16 November 2026
+
+Owner, in chat: "If I didn't say something else, I took the recommendation". RC-005 and RC-062 have separate page answers; RC-308 has a page answer and the later "4% is ok then" confirmation. Sources: [RC ranking](reports/agent-calls-ranking-rc-2026-11-16.json), [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json), [application report](reports/agent-call-batch2-decide-answers-applied-2026-11-16.md). Only the decide group is answered; flags and bulk remain open.
+
+Rows in baseline ID order: CH-014. Only the status cell changes, with decision links.
+
+| Date | Call | Where | By | Why this pick | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-08 | Sleeves the greeter's 15 lines | `src/entities/railway/greeter.ts` | greeter job | Goofy, points up the path, asks for help with the rail (owner's brief) | confirmed ([decision](decisions-characters.md#d-2026-11-16-sleeves-lines-stay-placeholders)) |
+
+#### Original status receipts, batch-2 decide, 16 November 2026: Characters, cosmetics and story
+
+These original-status lines preserve the immutable split manifest's exact history; they are receipts, not additional moved calls.
+
+```text
+| 2026-11-08 | Sleeves the greeter's 15 lines | `src/entities/railway/greeter.ts` | greeter job | Goofy, points up the path, asks for help with the rail (owner's brief) | open |
+```
+
 ### Agent calls answered 16 November 2026
 
 Owner: "Accept all remaining" on the bulk review page, none pulled out; "I take the recommendation for all the other 14 and 24 calls" in chat; CL-072 answered separately on the page. Stage 1's non-live archive was also approved, except rows whose evidence retains unresolved details. Sources: [ranking](reports/agent-calls-ranking-2026-11-16.json), [triage](reports/agent-calls-triage-2026-11-16.json), [application report](reports/agent-call-answers-applied-2026-11-16.md).
@@ -722,6 +771,26 @@ History for [decisions-look.md](decisions-look.md), verbatim.
 
 ## Archive: Controls, HUD and arrival
 
+### Batch-2 decide calls answered 16 November 2026
+
+Owner, in chat: "If I didn't say something else, I took the recommendation". RC-005 and RC-062 have separate page answers; RC-308 has a page answer and the later "4% is ok then" confirmation. Sources: [RC ranking](reports/agent-calls-ranking-rc-2026-11-16.json), [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json), [application report](reports/agent-call-batch2-decide-answers-applied-2026-11-16.md). Only the decide group is answered; flags and bulk remain open.
+
+Rows in baseline ID order: HU-005, HU-009, HU-012. Only the status cell changes, with decision links.
+
+| Date | Call | Where | By | Why this pick | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-14 | Default: an expired return record starts at Home, retaining the Welcome back card | [resume-where-you-were](plans/resume-where-you-were.md#open-questions), question 2 | implementer (approved return plan) | The hub gives a new sitting context; the owner has not chosen Home over the nearest halt after a long absence | confirmed ([decision](decisions-controls.md#d-2026-11-16-batch2-controls-confirmed)) |
+| 2026-11-11 | Acts are derived from railway progress (Act 2 when Q5 is laid, Far Head's show; Act 3 at the twelfth pier footing; Act 4 at the Meet); each browser remembers the highest act it has shown in the room's visit memory and shows the current act once when it is higher, live or on arrival, with no recap and no count or teaser on the card | [acts](brainstorms/acts.md) Q2-Q4 | brainstorm (acts) | No new saved state or `WORLD_NS` bump; one rule covers live, late, returning and offline players; resets already forget the visit memory; the story has nothing to tease yet | changed ([decision](decisions-controls.md#d-2026-11-16-later-acts-await-opening-shows)) |
+| 2026-11-09 | The one skip for a cinematic is Interact (E, pad X / □ / Y, the touch Grab button), offered 0.8 s into the shot until it starts back, drawn as Interact's own glyph in a sun-ringed chip with a ▸▸ mark (on touch, the Grab button lights); that press only skips. `SKIP_AFTER_S = null` in `camera-pull-out.ts` removes it | `src/render/camera-pull-out.ts`, `src/player/dismiss-pointer.ts` | implementer (lever-cutscene fix) | The reward card already goes away on Interact with the same glyph, so it reads as "this button puts the show away"; jump would also be wanted for moving, B has no key or touch button, and Esc opens the menu. The skip swallows its press, so it never also picks up or talks in the world. 0.8 s keeps the lever's own press from skipping its shot. Suggested label if the glyph doesn't read: "Skip" | confirmed ([decision](decisions-controls.md#d-2026-11-16-batch2-controls-confirmed)) |
+
+#### Original status receipts, batch-2 decide, 16 November 2026: Controls, HUD and arrival
+
+These original-status lines preserve the immutable split manifest's exact history; they are receipts, not additional moved calls.
+
+```text
+| 2026-11-09 | The one skip for a cinematic is Interact (E, pad X / □ / Y, the touch Grab button), offered 0.8 s into the shot until it starts back, drawn as Interact's own glyph in a sun-ringed chip with a ▸▸ mark (on touch, the Grab button lights); that press only skips. `SKIP_AFTER_S = null` in `camera-pull-out.ts` removes it | `src/render/camera-pull-out.ts`, `src/player/dismiss-pointer.ts` | implementer (lever-cutscene fix) | The reward card already goes away on Interact with the same glyph, so it reads as "this button puts the show away"; jump would also be wanted for moving, B has no key or touch button, and Esc opens the menu. The skip swallows its press, so it never also picks up or talks in the world. 0.8 s keeps the lever's own press from skipping its shot. Suggested label if the glyph doesn't read: "Skip" | open |
+```
+
 ### Agent calls answered 16 November 2026
 
 Owner: "Accept all remaining" on the bulk review page, none pulled out; "I take the recommendation for all the other 14 and 24 calls" in chat; CL-072 answered separately on the page. Stage 1's non-live archive was also approved, except rows whose evidence retains unresolved details. Sources: [ranking](reports/agent-calls-ranking-2026-11-16.json), [triage](reports/agent-calls-triage-2026-11-16.json), [application report](reports/agent-call-answers-applied-2026-11-16.md).
@@ -764,6 +833,16 @@ _Archived 14 November 2026; the owner confirms the Sit / Request stop priority a
 | 2026-11-11 | Acts 4 (the ring) and 5 (the Original Island and The Boogler) are placeholders after the economy model's route; titles other than "The beginning" are drafts for the owner | [acts](brainstorms/acts.md) Q5 | brainstorm (acts) | The roadmap stops at Ring Island; story copy is the owner's | confirmed ([decision](decisions-controls.md#d-2026-11-11-the-game-has-acts)) |
 
 ## Archive: Architecture, tools and prototype lifecycle
+
+### Batch-2 decide calls answered 16 November 2026
+
+Owner, in chat: "If I didn't say something else, I took the recommendation". RC-005 and RC-062 have separate page answers; RC-308 has a page answer and the later "4% is ok then" confirmation. Sources: [RC ranking](reports/agent-calls-ranking-rc-2026-11-16.json), [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json), [application report](reports/agent-call-batch2-decide-answers-applied-2026-11-16.md). Only the decide group is answered; flags and bulk remain open.
+
+Rows in baseline ID order: AT-005. Only the status cell changes, with decision links.
+
+| Date | Call | Where | By | Why this pick | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-12 | Default: `?from=` keeps working for anyone with the link, ungated, but is in no menu or player-facing doc and gets no new rows for people; the Pause → More → Jump in list is deleted only after the owner has fast-forwarded a room himself, and Dev → Room keeps one "New empty room" row so a fresh start stays one tap away (9 November) | [room-fast-forward](plans/room-fast-forward.md#design-review-designer-2026-11-12), calls 8 and 10, change 3 | designer (fast-forward review) | Bots and looks need isolated rooms; a gate is bespoke work for nothing; the list is today his one-tap way to the rivet, so it goes only once the new way works for him | confirmed ([decision](decisions-process.md#d-2026-11-16-jump-in-retirement-condition)) |
 
 ### Agent calls answered 16 November 2026
 

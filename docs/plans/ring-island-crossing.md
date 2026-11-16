@@ -13,6 +13,12 @@ to 61 ticks platform to platform); a train does not stop for a player in the bed
 touches `src/entities/ring-island/`, `src/entities/railway/car.ts` or `dev/level/ring.ts`; `car4/*` (world v33) changes
 `cars.ts` and `TRAIN_EXTENT` only, see finding 2.
 
+## Owner answer and next step, 16 November 2026
+
+Owner, on RC-062: "Not sure this needs to be special cased". **Orchestrator's reading:** the push-aside should not be a Ring Island special case; one rule should cover every halt where a train meets players ([decision](../decisions-rail.md#d-2026-11-16-push-aside-at-halts)). This replaces the designer review's Ring Island-only scope and answers its first owner question; the dated review below remains history.
+
+- [ ] **Next step, 16 November 2026:** generalise step 3's fender to every halt where a train meets players, rather than checking Ring Island's halt only. Reconcile the implementation scope and checkpoint coverage for those halts before building it. The owner's words are "Not sure this needs to be special cased"; this does not extend the reading to every piece of open track. No fender behavior is implemented by this docs update.
+
 ## Design
 
 ### 1. The crossing (view and local physics only; no sim state, no wire, no WORLD_NS bump)

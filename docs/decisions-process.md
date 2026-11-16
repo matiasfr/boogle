@@ -4,6 +4,8 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-16 · The Jump in menu list goes only after the owner has fast-forwarded a room himself; unlisted `?from=` and one New empty room row stay as logged ([entry](#d-2026-11-16-jump-in-retirement-condition))
+
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
 - 2026-11-16 · The heartbeat may have three jobs in flight across all sessions, not two ([entry](#d-2026-11-16-three-jobs-in-flight))
@@ -91,6 +93,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-16-jump-in-retirement-condition"></a>**2026-11-16, the Jump in list's retirement condition stands** (owner, 16 November 2026, in chat: "If I didn't say something else, I took the recommendation"). AT-005 is confirmed as logged: the Pause → More → Jump in list is deleted only after the owner has fast-forwarded a room himself; `?from=` keeps working ungated for anyone with the link, unlisted, with no new rows for people; Dev → Room keeps one "New empty room" row. This confirms the condition, not that the owner has met it. See the [small-topics ranking](reports/agent-calls-ranking-small-2026-11-16.json) and original row in the [archive](decisions-archive.md#archive-architecture-tools-and-prototype-lifecycle).
 
 - <a id="d-2026-11-16-three-jobs-in-flight"></a>**2026-11-16, three jobs in flight** (owner, told that the hourly heartbeat started nothing because two jobs were already in flight: "Expand to 3 job limit"). The heartbeat's limit is at most three jobs in flight across all sessions, counted as before (running delegates and worktrees with commits in the last four hours; the daily tidy's delegates count). Everything else in [one unattended orchestrator](#d-2026-11-16-one-heartbeat) stands. Orchestrator's note: the same message corrected a heartbeat that held work because it took the heartbeat's own thread for a live owner session; the owner said he was not in one.
 - <a id="d-2026-11-16-one-heartbeat"></a>**2026-11-16, one unattended orchestrator: the tick is folded into the hourly heartbeat** (owner, told that the hourly heartbeat and the four-hour tick each counted the other's jobs against the same limit: "Remove the unattended tick, or fold it into the existing other heartbeat"). The "Boogle unattended tick" schedule is deleted. The hourly "Boogle heartbeat" is the only unattended orchestrator and follows the [orchestrate skill](../.claude/skills/orchestrate-boogle/SKILL.md)'s section 9: what the tick did (review and ship what finished, start exactly one next step when no P1 row is moving, list what needs him), under the same limits and the same list of what stays his. Folding rather than only removing is the orchestrator's reading of his either-or; the heartbeat's cadence, thread and model are unchanged and his to change.
