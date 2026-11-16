@@ -14,16 +14,61 @@ export const WAGON_CAR: CarSpec = { hx: 1.1, hz: 1.6, top: 0.5 };
 /** A railway train's cars, engine first, and each car's centre from the train's along in metres: the engine (A with
  * its walk-in cab, ./engine.ts) 0.6 m ahead of the first flatbed's end (a longer engine reaches further forward), then
  * cars every 3.7 m. Line 1 runs the first three; line 2 adds the footing wagon, which couples at the village (WAGON_S). */
-export const TRAIN_CARS: readonly CarSpec[] = [ENGINE, TRAILER, TRAILER, WAGON_CAR];
-export const TRAIN_OFFSETS: readonly number[] = [TRAILER.hz + 0.6 + ENGINE.hz, 0, -3.7, -7.4];
-/** Steel's own car (docs/plans/fourth-car.md): a flatbed the trailers' size, last on a line 2 train that wears the
- * longer boiler. Not stored: a train has it exactly when its row's `boiler >= 1`. */
+export type CarRole = 'engine' | 'player' | 'rider' | 'kit' | 'wagon' | 'steel';
+export type Consist = readonly { role: CarRole; spec: CarSpec; offset: number }[];
 export const STEEL_CAR: CarSpec = { ...TRAILER };
-/** The steel car's centre from the train's along: one pitch behind the footing wagon on the wagon's train (-11.1 m),
- * else one behind the kit car (-7.4 m). The two tables above stay three cars and the wagon. */
-export const steelCarOffset = (wagon: boolean) => (wagon ? TRAIN_OFFSETS[3]! : TRAIN_OFFSETS[2]!) - 3.7;
-/** The farthest tail of any train, the steel car's on the wagon's train (12.7 m behind the pose): the rules' extent
- * behind (TRAIN_EXTENT.behindCm in src/sim/railway-lines.ts; test/railway-lines.test.ts keeps them in step). */
+/** Local layout only. R2a deliberately has no rider car on any line. */
+function makeConsist(wagon: boolean, steel: boolean): Consist {
+  const cars: { role: CarRole; spec: CarSpec; offset: number }[] = [
+    { role: 'engine', spec: ENGINE, offset: TRAILER.hz + 0.6 + ENGINE.hz },
+    { role: 'player', spec: TRAILER, offset: 0 },
+  ];
+  for (const [role, spec] of [
+    ['kit', TRAILER],
+    ...(wagon ? [['wagon', WAGON_CAR] as const] : []),
+    ...(steel ? [['steel', STEEL_CAR] as const] : []),
+  ] as const) {
+    // Group the pitch before subtracting: today's 3.7 m subtraction stays byte-exact.
+    const previous = cars.at(-1)!;
+    cars.push({ role, spec, offset: previous.offset - (previous.spec.hz + 0.5 + spec.hz) });
+  }
+  return Object.freeze(cars.map((car) => Object.freeze(car)));
+}
+// R2a's layouts are line-independent. Build the four possible consists once, never in a frame path.
+const layouts = [
+  [makeConsist(false, false), makeConsist(false, true)],
+  [makeConsist(true, false), makeConsist(true, true)],
+] as const;
+export const consistOf = ({ wagon, steel }: { line: number; wagon: boolean; steel: boolean }): Consist =>
+  layouts[Number(wagon)]![Number(steel)]!;
+const bounds = new Map(
+  layouts.flat().map(
+    (consist) =>
+      [
+        consist,
+        Object.freeze({
+          lo: Math.min(...consist.map((car) => car.offset - car.spec.hz)),
+          hi: Math.max(...consist.map((car) => car.offset + car.spec.hz)),
+        }),
+      ] as const,
+  ),
+);
+/** The complete consist's extents relative to the players' car, precomputed with its descriptors. */
+export function consistBounds(consist: Consist) {
+  const value = bounds.get(consist);
+  if (!value) throw new Error('Bounds require a cached consist');
+  return value;
+}
+export const roleIndex = (consist: Consist, role: CarRole) => {
+  const index = consist.findIndex((car) => car.role === role);
+  if (index < 0) throw new Error(`No ${role} in consist`);
+  return index;
+};
+export const offsetOf = (consist: Consist, role: CarRole) => consist[roleIndex(consist, role)]!.offset;
+const legacy = consistOf({ line: 1, wagon: true, steel: false });
+export const TRAIN_CARS: readonly CarSpec[] = legacy.map((car) => car.spec);
+export const TRAIN_OFFSETS: readonly number[] = legacy.map((car) => car.offset);
+export const steelCarOffset = (wagon: boolean) => offsetOf(consistOf({ line: 1, wagon, steel: true }), 'steel');
 export const TRAIN_TAIL_M = STEEL_CAR.hz - steelCarOffset(true);
 
 /** The name the place kit gives a flatbed's underframe and rail rack (src/place/look-kit.ts kitCars), so the passenger

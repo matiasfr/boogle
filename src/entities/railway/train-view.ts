@@ -43,7 +43,8 @@ import {
 import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2At, line2Lat, line2Y, endMergeM, departureHalt } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
-import { STEEL_CAR, ridesOn, steelCarOffset } from './cars.ts';
+import type { CarRole } from './cars.ts';
+import { STEEL_CAR, ridesOn, consistOf, consistBounds, roleIndex, offsetOf } from './cars.ts';
 import { CAR_BUFFERS, ENGINE_BUFFERS, couplingCapacity, trainPlaces, type Vehicle } from './car-spacing.ts';
 import { createCouplings } from './couplings.ts';
 import type { TrainAhead } from './path-refuge.ts';
@@ -124,22 +125,21 @@ export async function createRailwayTrains(
     secondVisible = false;
   // The footing wagon, a fourth car behind whichever of line 2's trains it couples to (the sim's `wagon`, per row);
   // it waits under the land until then.
-  const offsets = wagon.TRAIN_OFFSETS;
   owner.cleanup(() => RAIL_TRAINS.forEach((_, slot) => folk.folk.setRiders(slot, 0, null)));
-  const WAGON = 3;
   const wagonRock = new THREE.Group();
   // One train a RAIL_TRAINS slot (v26: line 1's, then line 2's two), each posed on its line from its own row.
   const trains = RAIL_TRAINS.map(({ line }, slot) => {
+    const consist = consistOf({ line, wagon: false, steel: false });
     const model = look.LOOK.kit
-      ? kit.trainLook(2, () => false, owner, engineKit, line === LINE2 ? 'answer' : 'train')
-      : wagon.wagonLook(2, false, owner);
+      ? kit.trainLook(consist, () => false, owner, engineKit, line === LINE2 ? 'answer' : 'train')
+      : wagon.wagonLook(consist, false, owner);
     if ('step' in model) owner.animate(model.step, 8);
-    const cars = offsets.slice(0, WAGON).map((_, n) => {
+    const cars = consist.map(({ spec, role }, n) => {
       const car = rail.makeCar(
-        wagon.TRAIN_CARS[n]!,
+        spec,
         model.cars[n]!,
         () => {
-          if (slot === 0 && n === 0) step();
+          if (slot === 0 && role === 'engine') step();
         },
         {},
         owner,
@@ -149,10 +149,12 @@ export async function createRailwayTrains(
       car.speedLimit = 30;
       return car;
     });
+    const carByRole = (role: Parameters<typeof roleIndex>[1]) => cars[roleIndex(consist, role)]!;
+    const meshByRole = (role: Parameters<typeof roleIndex>[1]) => model.cars[roleIndex(consist, role)]!;
     // The engine is a compound (docs/plans/engine-previz.md, "Collider"): its deck box is the frame and footplate up to
     // the cab floor, and the cab's walls either side of each doorway, its roof, steps and (once fitted) the boiler stand
     // on it. Its decks are stacked: you ride the floor, the boiler's top or the roof, whichever your feet are on.
-    const engine = cars[0]!,
+    const engine = carByRole('engine'),
       centre = -engine.rock.position.y; // the body's centre over the rail line
     const solid = (b: ReturnType<typeof shape.engineSolids>[number]): Shape => ({
       kind: 'box',
@@ -170,17 +172,16 @@ export async function createRailwayTrains(
     fit(false);
     engine.platform.topAt = (x, z, feet) =>
       shape.engineDeckAt(x, z, feet === undefined ? -Infinity : feet + centre, fitted) - centre;
-    const crateDeck = crates.deck(model.cars[2]!, () => {}, owner.root);
-    // Car 2 carries the cargo (the deck above): a freight car, loaded or empty, with stakes and boards and no seats
-    // (owner, 10 November: "if there's cargo then it shouldnt have seats"). Car 1 is the passenger car, a knifeboard of four seats.
+    const crateDeck = crates.deck(meshByRole('kit'), () => {}, owner.root);
+    // The kit car carries the cargo (the deck above): a freight car, loaded or empty, with stakes and boards and no seats
+    // (owner, 10 November: "if there's cargo then it shouldnt have seats"). The players' car is the passenger car, a knifeboard of four seats.
     const fittings = wagon.cargoFittings(owner);
     // On the rock with the deck, as the passenger car's bench is: level boards on a pitched deck cross its planks.
-    fittings.position.y = cars[2]!.hy - cars[2]!.rock.position.y;
+    fittings.position.y = carByRole('kit').hy - carByRole('kit').rock.position.y;
     owner.add(fittings);
-    cars[2]!.rock.add(fittings);
+    carByRole('kit').rock.add(fittings);
     {
-      const n = 1,
-        car = cars[n]!;
+      const car = carByRole('player');
       // The knifeboard (docs/plans/passenger-car-previz.md, Four): one back-to-back bench down the middle, two seats a
       // side, riders facing out over the halt decks. The fittings are the kit's (car-kit.ts); the bench has no solid,
       // so the aisle and a walk along the deck stay open, and Sit snaps you on, as the stools did.
@@ -195,7 +196,7 @@ export async function createRailwayTrains(
       instantiate(
         'railway.car-bench',
         {
-          id: `railway:train${slot}-${n}`,
+          id: `railway:train${slot}-${roleIndex(consist, 'player')}`,
           prefab: 'railway.car-bench',
           pos: [0, car.hy, 0],
           parent: car.platform.id,
@@ -220,7 +221,7 @@ export async function createRailwayTrains(
     });
     boiler.position.copy(engineKit.BOILER_CENTRE);
     owner.add(boiler);
-    model.cars[0]!.add(boiler);
+    meshByRole('engine').add(boiler);
     // The longer boiler (ring-island-build2, V2): its body and boiler stand in for the short ones while the train's row
     // wears boiler 1 (`rail.install`, taken up at the Village). The cab, doors, drivers and collider are the short
     // engine's; the frame's extra 0.5 m ahead is drawn only.
@@ -229,7 +230,7 @@ export async function createRailwayTrains(
     for (const part of longParts) {
       part.visible = false;
       owner.add(part);
-      model.cars[0]!.add(part);
+      meshByRole('engine').add(part);
     }
     owner.cleanup(() => longParts.forEach((part) => part.removeFromParent()));
     // The stop lamp (docs/plans/works-late-game.md, step 1): amber on the cab's roof at its front, lit while the train
@@ -238,12 +239,12 @@ export async function createRailwayTrains(
     const stopLamp = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.12), lampMaterial);
     stopLamp.position.set(0, shape.ENGINE_CAB.roofTop + 0.08, shape.ENGINE_CAB.zFront);
     owner.add(stopLamp);
-    model.cars[0]!.add(stopLamp);
+    meshByRole('engine').add(stopLamp);
     const holdMaterial = new THREE.MeshBasicNodeMaterial({ color: HOLD.off });
     const holdLamp = new THREE.Mesh(stopLamp.geometry, holdMaterial);
     holdLamp.position.set(0.32, shape.ENGINE_CAB.roofTop + 0.08, shape.ENGINE_CAB.zFront);
     owner.add(holdLamp);
-    model.cars[0]!.add(holdLamp);
+    meshByRole('engine').add(holdLamp);
     owner.cleanup(() => {
       stopLamp.removeFromParent();
       holdLamp.removeFromParent();
@@ -259,7 +260,7 @@ export async function createRailwayTrains(
       // A cached kit model must not retain the retired physics/seat graph. Its wheel callback sees no parent.
       for (const c of model.cars) c.removeFromParent();
     });
-    const solidLoad = load.solidTrainLoad(cars[2]!, crateDeck);
+    const solidLoad = load.solidTrainLoad(carByRole('kit'), crateDeck);
     // Steel's own car (docs/plans/fourth-car.md, V1), one a line 2 train, built as the wagon's car is: the last car
     // while the train's row wears the longer boiler, under the land otherwise. A flat deck you can stand on, no seats.
     const steelRock = new THREE.Group();
@@ -276,8 +277,11 @@ export async function createRailwayTrains(
     return {
       slot,
       line,
+      consist,
+      carByRole,
+      meshByRole,
       model,
-      riderCar: { mesh: cars[1]!.rock, top: cars[1]!.hy - cars[1]!.rock.position.y },
+      riderCar: { mesh: carByRole('player').rock, top: carByRole('player').hy - carByRole('player').rock.position.y },
       riderCount: -1,
       cars,
       steel,
@@ -289,7 +293,7 @@ export async function createRailwayTrains(
       // Line 2's kit car says whose kit it carries (./kit-board.ts; the greybox route's step 4 review, answer j).
       board:
         line === LINE2
-          ? createKitBoard(owner, model.cars[2]!, wagon.TRAIN_CARS[2]!.top, wagon.TRAIN_CARS[2]!.hz)
+          ? createKitBoard(owner, meshByRole('kit'), carByRole('kit').spec.top, carByRole('kit').spec.hz)
           : null,
       boiler,
       long,
@@ -329,7 +333,7 @@ export async function createRailwayTrains(
   const first = trains[0]!;
   /** Line 2's trains: the ones that carry the kit and the footing wagon. */
   const cargo = trains.filter((tr) => tr.line === LINE2);
-  const wagonCar = rail.makeCar(wagon.TRAIN_CARS[WAGON]!, wagonRock, () => {}, {}, owner);
+  const wagonCar = rail.makeCar(wagon.WAGON_CAR, wagonRock, () => {}, {}, owner);
   wagonCar.platform.id = 'railway:wagon';
   wagonCar.platform.shared = true;
   wagonCar.speedLimit = 30;
@@ -339,8 +343,8 @@ export async function createRailwayTrains(
   });
   /** The train the footing wagon is coupled to now, or null. */
   const wagonTrain = () => cargo.find((tr) => trainRow(adapter.read.world(), tr.slot).wagon) ?? null;
-  // Role lookups stay here for the later car-role migration; the loader never assumes an index elsewhere.
-  const kitCar = (tr: (typeof trains)[number]) => tr.cars[2]!;
+  // The loader follows the footing carrier role, falling back to the kit deck before coupling.
+  const kitCar = (tr: (typeof trains)[number]) => tr.carByRole('kit');
   const footingCar = (tr: (typeof trains)[number]) =>
     trainRow(adapter.read.world(), tr.slot).wagon ? wagonCar : kitCar(tr);
   const deckPoint = new THREE.Vector3();
@@ -357,13 +361,30 @@ export async function createRailwayTrains(
   }
   /** The cars that grow in with a joining train: its own, and its steel car (a fleet row that joins after the install
    * takes the fit as it stands there, so the car comes on mid-growth and stays coupled). */
-  const grown = (tr: (typeof trains)[number]) => (tr.steel ? [...tr.cars, tr.steel] : tr.cars);
-  /** Every car of `tr`, the wagon behind it while it's coupled and its steel car while it has one. */
-  const carsOf = (tr: (typeof trains)[number]) => [
-    ...tr.cars,
-    ...(wagonTrain() === tr ? [wagonCar] : []),
-    ...(tr.steel && tr.carOn ? [tr.steel] : []),
-  ];
+  const roleCar = (tr: (typeof trains)[number], role: CarRole): Car =>
+    role === 'wagon' ? wagonCar : role === 'steel' ? tr.steel! : tr.carByRole(role);
+  // Cache available role-to-car collections once. A line without a steel car never selects a steel layout.
+  const carLayouts = new Map(
+    trains.map((tr) => [
+      tr,
+      [false, true].map((wagon) =>
+        [false, true].map((steel) => {
+          if (steel && !tr.steel) return null;
+          const consist = consistOf({ line: tr.line, wagon, steel });
+          return {
+            consist,
+            bounds: consistBounds(consist),
+            cars: Object.freeze(consist.map(({ role }) => roleCar(tr, role))),
+          };
+        }),
+      ),
+    ]),
+  );
+  const layoutOf = (tr: (typeof trains)[number], wagon: boolean, steel: boolean) =>
+    carLayouts.get(tr)![Number(wagon)]![Number(steel)]!;
+  const grown = (tr: (typeof trains)[number]) => layoutOf(tr, false, !!tr.steel).cars;
+  /** Every car drawn as part of this train, in consist order. */
+  const carsOf = (tr: (typeof trains)[number]) => layoutOf(tr, wagonTrain() === tr, !!tr.steel && tr.carOn).cars;
   /** The lateral at s (m) of train `tr` on `row`'s track: right-hand running (docs/plans/running-side.md, v45). Going
    * out (track 0) it is on the original track, 0; going home (track 1) on the offset one, 4 m to the west between the
    * turnouts, easing over each 20 m turnout. Line 2 reads its open end from the room's rows (./line2-path.ts: Far
@@ -427,8 +448,8 @@ export async function createRailwayTrains(
   const makeWake = (tr: typeof first, rust: typeof look.rustTrainU) =>
     createWakePresentation(
       {
-        flatbed: tr.cars[1]!,
-        loco: tr.cars[0]!,
+        flatbed: tr.carByRole('player'),
+        loco: tr.carByRole('engine'),
         look: tr.model,
         shudder: (a) => {
           tr.shudder = a;
@@ -446,7 +467,7 @@ export async function createRailwayTrains(
           const m = tr.model as { slip?: { rate: number } };
           if (m.slip) m.slip.rate = rate;
         },
-        distance: (x, z) => Math.hypot(tr.cars[1]!.x - x, tr.cars[1]!.z - z),
+        distance: (x, z) => Math.hypot(tr.carByRole('player').x - x, tr.carByRole('player').z - z),
       },
       owner,
       { fanfare: sounds.fanfare, dustRing: pieces.dustRing },
@@ -504,9 +525,11 @@ export async function createRailwayTrains(
         made.push(v);
         stock.push(c);
       };
-      tr.cars.forEach((c, n) => put(c, offsets[n]! * c.mesh.scale.x, n === 0 ? ENGINE_BUFFERS : CAR_BUFFERS));
-      if (tr === coupled) put(wagonCar, offsets[WAGON]!);
-      if (tr.steel) put(tr.steel, steelCarOffset(row.wagon) * tr.steel.mesh.scale.x);
+      tr.cars.forEach((c, n) =>
+        put(c, tr.consist[n]!.offset * c.mesh.scale.x, tr.consist[n]!.role === 'engine' ? ENGINE_BUFFERS : CAR_BUFFERS),
+      );
+      if (tr === coupled) put(wagonCar, offsetOf(layoutOf(tr, true, false).consist, 'wagon'));
+      if (tr.steel) put(tr.steel, offsetOf(layoutOf(tr, row.wagon, true).consist, 'steel') * tr.steel.mesh.scale.x);
       // On today's track the line's metres are the track's.
       const spaced = lat(along + made[0]!.d) !== 0 || lat(along + made.at(-1)!.d) !== 0 || lat(along) !== 0;
       trainPlaces(trackAt, along, made, standAt, spaced);
@@ -697,10 +720,10 @@ export async function createRailwayTrains(
             steelBatch.part(f, x * 0.96, top + 0.15, z, 0.1, 0.3, 0.1, '#1e1e22');
         }
       }
-      const kitCar = tr.cars[2]!,
+      const kitCar = tr.carByRole('kit'),
         n = tr.line === LINE2 && line2Trains(w) ? Math.min(trainRow(w, tr.slot).steel ?? 0, STEEL.trip) : 0;
       if (!n || kitCar.y < -30) continue;
-      const frame = car ? car.rock : tr.model.cars[2]!;
+      const frame = car ? car.rock : tr.meshByRole('kit');
       frame.updateWorldMatrix(true, false);
       for (let i = 0; i < n; i++)
         steelBatch.part(
@@ -804,7 +827,7 @@ export async function createRailwayTrains(
         c.rock.position.y = -(BOTTOM + c.hy);
       }
       tr.carOn = on && (last.boiler ?? 0) >= 2;
-      tr.model.cars[0]!.scale.set(1, 1, 1);
+      tr.meshByRole('engine').scale.set(1, 1, 1);
       drawLoad(tr, Math.ceil((last.logs + last.rails) / 8), last.freight);
     });
     step();
@@ -824,8 +847,8 @@ export async function createRailwayTrains(
     if (me.body) people.push(near.set(me.body.position.x, me.body.position.y - PLAYER_R, me.body.position.z).clone());
     for (const r of remotes.values()) if (r.entered && r.avatar) people.push(r.avatar.position.clone());
     for (const tr of trains) {
-      const loco = tr.model.cars[0]!;
-      if (!tr.doors.length || !tr.cars[0]!.mesh.visible) continue;
+      const loco = tr.meshByRole('engine');
+      if (!tr.doors.length || !tr.carByRole('engine').mesh.visible) continue;
       toCar.copy(loco.matrixWorld).invert();
       const c = shape.ENGINE_CAB,
         mid = (c.door.z[0] + c.door.z[1]) / 2,
@@ -852,7 +875,7 @@ export async function createRailwayTrains(
   /** You (`cabLocal`: your middle and feet in the car's frame) inside `tr`'s cab (engine.ts, `inEngineCab`); `keep`
    * widens it, so a step back in the doorway doesn't flicker it. */
   function inCab(tr: (typeof trains)[number], keep: boolean) {
-    return tr.cars[0]!.mesh.visible && shape.inEngineCab(cabLocal.x, cabLocal.y, cabLocal.z, keep);
+    return tr.carByRole('engine').mesh.visible && shape.inEngineCab(cabLocal.x, cabLocal.y, cabLocal.z, keep);
   }
   function cutCab(dt: number) {
     const b = me.body;
@@ -863,7 +886,7 @@ export async function createRailwayTrains(
       const p = b.interpolatedPosition;
       for (const tr of trains) {
         if (!tr.cab) continue;
-        const loco = tr.model.cars[0]!;
+        const loco = tr.meshByRole('engine');
         // This frame's pose (drawCar just moved it), not the last render's: a moving train is a step further on.
         loco.updateWorldMatrix(true, false);
         toCar.copy(loco.matrixWorld).invert();
@@ -921,7 +944,8 @@ export async function createRailwayTrains(
     couplings.begin();
     for (const tr of trains) {
       const list = carsOf(tr);
-      for (let n = 1; n < list.length; n++) couplings.link(list[n - 1]!, list[n]!, n === 1);
+      for (let n = 1; n < list.length; n++)
+        couplings.link(list[n - 1]!, list[n]!, list[n - 1] === tr.carByRole('engine'));
     }
     couplings.end();
     swingDoors(dt);
@@ -946,7 +970,7 @@ export async function createRailwayTrains(
         // event names the train when it's yours; a friend's is found by who rides which.
         const line = LINE_HALTS[e.id]?.line;
         const tr = e.train !== undefined ? trains[e.train] : trains.find((t) => t.line === line && riderOf(t, e.pid));
-        const loco = tr?.cars[0];
+        const loco = tr?.carByRole('engine');
         if (!tr || tr.line !== line || !loco || !riderOf(tr, e.pid)) return;
         bell(loco.x, loco.z);
         return;
@@ -954,7 +978,7 @@ export async function createRailwayTrains(
       if (e.op !== 'rail.boilerFit') return;
 
       // Two of the camp's little guys run to the loco's side and bolt the boiler on (step 8).
-      const loco = first.cars[0]!,
+      const loco = first.carByRole('engine'),
         out = wagon.TRAIN_CARS[0]!.hx + 0.5;
       const x = loco.x + Math.cos(loco.yaw) * out,
         z = loco.z - Math.sin(loco.yaw) * out;
@@ -973,9 +997,16 @@ export async function createRailwayTrains(
      * footrest, facing forward. Folk has a driver a train. */
     driverSeat(k: number, n: number) {
       const tr = trains.filter((t) => t.line === k)[n];
-      if (!tr || !tr.boiler.visible || tr.cars[0]!.y < -30) return null;
+      if (!tr || !tr.boiler.visible || tr.carByRole('engine').y < -30) return null;
       const st = shape.ENGINE_STOOL;
-      return { mesh: tr.model.cars[0]!, top: st.footrest, up: st.seat - st.footrest - 0.035, x: st.x, z: st.z, yaw: 0 };
+      return {
+        mesh: tr.meshByRole('engine'),
+        top: st.footrest,
+        up: st.seat - st.footrest - 0.035,
+        x: st.x,
+        z: st.z,
+        yaw: 0,
+      };
     },
     /** Every car a train can have, for the little guys' give-way (folk.ts `traffic`): one out of use waits under the
      * land. */
@@ -987,7 +1018,12 @@ export async function createRailwayTrains(
         .filter((tr) => tr.line === k && tr.out)
         .map((tr) => (sec: number) => {
           const along = trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock + sec * 10) / 100;
-          return { lo: along + offsets[2]! - tr.cars[2]!.spec.hz, hi: along + offsets[0]! + tr.cars[0]!.spec.hz };
+          const row = trainRow(adapter.read.world(), tr.slot);
+          const { bounds } = layoutOf(tr, row.wagon, !!tr.steel && tr.carOn);
+          return {
+            lo: along + bounds.lo,
+            hi: along + bounds.hi,
+          };
         }),
     isTrain: (platform: Platform | null) =>
       platform === wagonCar.platform ||
@@ -1057,7 +1093,7 @@ export async function createRailwayTrains(
         // Joined from the shed on a live tick: its cars grow in over JOIN_S (their bodies are whole at once).
         if (tr.seen && tr.last?.phase === TRAIN_PHASE.SHED && row.phase !== TRAIN_PHASE.SHED) {
           tr.join = 0;
-          whistle(tr.cars[0]!.x, tr.cars[0]!.z);
+          whistle(tr.carByRole('engine').x, tr.carByRole('engine').z);
         }
         if (tr.join >= 0) {
           tr.join += dt;
@@ -1087,12 +1123,12 @@ export async function createRailwayTrains(
         // The platform beat: the train's own row took a faster fit on a live tick (it stands at the Village). A
         // puff of steam covers the swap, then a clank and a short squash, then a toot. Riders keep their seats: no
         // collider or seat changes.
-        const loco = tr.model.cars[0]!;
+        const loco = tr.meshByRole('engine');
         if (tr.seen && fit > tr.wears && tr.beat < 0 && !reducedMotion) {
           tr.beat = 0;
           tr.model.chimneyTop.getWorldPosition(beatAt);
           // The same steam at the tail, where the steel car comes on (posed there already, under the land).
-          const kitCar = tr.cars[2]!,
+          const kitCar = tr.carByRole('kit'),
             tail = fit >= 2 ? tr.steel : null;
           for (let i = 0; i < (tail ? 32 : 18); i++)
             emit({
@@ -1119,13 +1155,13 @@ export async function createRailwayTrains(
           tr.beat += dt;
           const at = (t: number) => before < t && tr.beat >= t;
           if (tr.beat < BEAT.swap) wears = tr.wears;
-          if (at(BEAT.swap)) clank(tr.cars[0]!.x, tr.cars[0]!.z);
+          if (at(BEAT.swap)) clank(tr.carByRole('engine').x, tr.carByRole('engine').z);
           // The coupling: the steel car is on the tail from the swap, and its own clank lands there after the engine's.
           if (at(BEAT.couple) && fit >= 2 && tr.steel) clank(tr.steel.x, tr.steel.z);
           const u = (tr.beat - BEAT.swap) / BEAT.squash;
           const k = u > 0 && u < 1 ? Math.sin(u * Math.PI) : 0;
           loco.scale.set(1 + 0.04 * k, 1 - 0.07 * k, 1 + 0.04 * k);
-          if (at(BEAT.toot)) whistle(tr.cars[0]!.x, tr.cars[0]!.z);
+          if (at(BEAT.toot)) whistle(tr.carByRole('engine').x, tr.carByRole('engine').z);
           if (tr.beat >= BEAT.toot || fit === 0) {
             tr.beat = -1;
             loco.scale.set(1, 1, 1);
@@ -1145,7 +1181,7 @@ export async function createRailwayTrains(
         tr.long.boiler.visible = tr.long.lashing.visible = worn && wears >= 2;
         if (worn !== tr.fitted()) tr.fit(worn);
         if (tr.last && on && row.phase === TRAIN_PHASE.RUN && tr.last.phase !== TRAIN_PHASE.RUN)
-          whistle(tr.cars[0]!.x, tr.cars[0]!.z);
+          whistle(tr.carByRole('engine').x, tr.carByRole('engine').z);
         // A train-fed job's kit unloads at its own halt: Q6's at Far Head, Q7's at the Pier, onto that job's rack.
         const kit = tr.line === LINE2 ? LINE2_STATIONS[line2Active(w)] : undefined;
         if (
@@ -1193,7 +1229,7 @@ export async function createRailwayTrains(
             legKitFlight.rails += rails;
             // A rack across a track (Ring Island's, 8.4 m over the up track): the arc tops out HOP_OVER above the
             // rails, so a tumbling crate (0.71 m to its far corner) clears a cab roof (3.3 m) standing under it.
-            const kitCar = tr.cars[2]!,
+            const kitCar = tr.carByRole('kit'),
               far = Math.hypot(rack.x / 100 - kitCar.x, rack.z / 100 - kitCar.z) > 6,
               over = far ? kitCar.y - (BOTTOM + kitCar.hy) + HOP_OVER : undefined;
             for (let i = 0; i < count; i++) {
@@ -1254,10 +1290,22 @@ export async function createRailwayTrains(
         line: tr.line,
         ...trainRow(adapter.read.world(), tr.slot),
         along: trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock),
-        cars: carsOf(tr).map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
+        cars: carsOf(tr).map((c) => ({
+          role:
+            c === wagonCar
+              ? 'wagon'
+              : c === tr.steel
+                ? 'steel'
+                : tr.consist.find((entry) => tr.carByRole(entry.role) === c)?.role,
+          id: c.platform.id,
+          x: c.x,
+          y: c.y,
+          z: c.z,
+          riding: carry.on === c.platform,
+        })),
         crates: crates.deckCount(tr.deck),
         kitBoard: tr.board?.mark() ?? '',
-        joinScale: +tr.cars[0]!.mesh.scale.x.toFixed(3),
+        joinScale: +tr.carByRole('engine').mesh.scale.x.toFixed(3),
         lashed: tr.boiler.visible || tr.long.boiler.visible,
         longBoiler: tr.long.body.visible,
         stopLamp: tr.lamp.on,

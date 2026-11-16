@@ -17,7 +17,7 @@ export const forgePoles = { down: 0 };
 
 const BEAMS = 8,
   LENGTH = 5,
-  /** The stack beside the village halt, where line 1's last car stands (TRAIN_OFFSETS[2]), as the beams used to ride. */
+  /** The stack beside the village halt, where line 1's kit car stands, as the beams used to ride. */
   CAR = -3.7 - 0.5,
   /** The beams drop in from this high. */
   DROP = 7,

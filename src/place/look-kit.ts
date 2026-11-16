@@ -1,3 +1,5 @@
+import type { Consist } from '../entities/railway/cars.ts';
+import { consistOf, roleIndex } from '../entities/railway/cars.ts';
 // The look's kit, from assets/src/place-kit.py (Blender, through `npm run assets`): real pieces in place of the greybox's
 // boxes, batched by part and material the way the board asks. The track keeps its run, timing and colliders: `lookTrack`
 // only reroutes where its matrices land. The file loads after the first frame, so each mesh starts on a speck of geometry
@@ -680,12 +682,12 @@ export const machineLook = (owner: OwnedView): MachineLook => kitCars(1, true, (
 /** A train's look: the same loco, the same livery, and plain flatbeds; the railway's trains lead with `engine` (A with
  * its walk-in cab, docs/plans/engine-previz.md) in place of Place's shell. */
 export const trainLook = (
-  trailers: number,
+  consist: Consist,
   boilerShown: () => boolean,
   owner: OwnedView,
   engine?: EngineKit,
   rust: 'train' | 'answer' = 'train',
-): MachineLook => kitCars(trailers, false, boilerShown, owner, engine, rust);
+): MachineLook => kitCars(consist.length - 1, false, boilerShown, owner, engine, rust, roleIndex(consist, 'player'));
 function kitCars(
   trailers: number,
   working: boolean,
@@ -693,6 +695,7 @@ function kitCars(
   owner: OwnedView,
   engine?: EngineKit,
   rust: 'train' | 'answer' = 'train',
+  playerIndex = roleIndex(consistOf({ line: 1, wagon: false, steel: false }), 'player'),
 ): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
     // The timber keeps its grain; only painted and bare metal age with the engine.
@@ -782,6 +785,7 @@ function kitCars(
     outer.add(inner);
     return outer;
   });
+  const engineIndex = roleIndex(consistOf({ line: 1, wagon: false, steel: false }), 'engine');
   const sets = [{ wheels: locoWheels, r: locoR }, ...beds.map((b) => ({ wheels: b.wheels, r: 0.22 }))];
   const last = cars.map(() => new THREE.Vector3(NaN, 0, 0));
   const angle = cars.map(() => 0);
@@ -814,12 +818,12 @@ function kitCars(
         wheelBatch.setMatrixAt(w.at, wheelM.compose(wheelP, wheelQ, wheelS).premultiply(inner.matrixWorld));
       }
       wheelBatch.instanceMatrix.needsUpdate = true;
-      if (n === 1) travel += Math.abs(ds);
+      if (n === playerIndex) travel += Math.abs(ds);
     });
     const crank = engine ? ENGINE_WHEELS.throw : 0.12;
     for (const { m } of rods) {
-      m.position.y = (engine ? 0 : 0.51) + crank * Math.cos(angle[0]!);
-      m.position.z = crank * Math.sin(angle[0]!);
+      m.position.y = (engine ? 0 : 0.51) + crank * Math.cos(angle[engineIndex]!);
+      m.position.z = crank * Math.sin(angle[engineIndex]!);
     }
     if (working) fork.position.y = 0.2 + 0.3 * Math.abs(Math.cos((travel / 1.2) * Math.PI));
   };

@@ -1,3 +1,4 @@
+import { consistOf, roleIndex } from '../src/entities/railway/cars.ts';
 import { compiled, definitions } from '../src/prefab/catalogue.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 // Owner-requested step-8 goldens: execute the old seat construction blocks with recording services.
@@ -97,15 +98,22 @@ function captureSeats() {
   );
   const cars = RAIL_TRAINS.map((_, slot) => {
     const passenger = car(`railway:train${slot}-1`);
-    block('src/entities/railway/train-view.ts', '    {\n      const n = 1,', '    // The fitted boiler:', {
-      owner,
-      slot,
-      cars: [null, passenger],
-      PLAYER_R,
-      PASSENGER_CAR_UPGRADED: false,
-      carKit: { CAR_DECK: 0.7, passengerCar: () => new THREE.Group() },
-      instantiate,
-    });
+    block(
+      'src/entities/railway/train-view.ts',
+      "    {\n      const car = carByRole('player');",
+      '    // The fitted boiler:',
+      {
+        owner,
+        slot,
+        consist: consistOf({ line: 1, wagon: false, steel: false }),
+        roleIndex,
+        carByRole: () => passenger,
+        PLAYER_R,
+        PASSENGER_CAR_UPGRADED: false,
+        carKit: { CAR_DECK: 0.7, passengerCar: () => new THREE.Group() },
+        instantiate,
+      },
+    );
     return passenger;
   });
   return { owner, registered, flatbed, cars, bodies };

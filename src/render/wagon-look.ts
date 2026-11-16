@@ -12,7 +12,8 @@ import { reducedMotion } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { damp, springStep, stiffnessOf, dampingOf, type Spring } from './motion.ts';
 
-import { LOCO, TRAILER } from '../entities/railway/cars.ts';
+import type { Consist } from '../entities/railway/cars.ts';
+import { LOCO, TRAILER, consistOf, roleIndex } from '../entities/railway/cars.ts';
 // The car sizes live in ./cars.ts (no three.js) so the layout tests read them too.
 export { LOCO, TRAILER, WAGON_CAR, TRAIN_CARS, TRAIN_OFFSETS, type CarSpec } from '../entities/railway/cars.ts';
 
@@ -56,7 +57,9 @@ export function cargoFittings(owner?: OwnedView) {
   return g;
 }
 
-export function wagonLook(trailers: number, crated = true, owner?: OwnedView): WagonLook {
+export function wagonLook(layout: number | Consist, crated = true, owner?: OwnedView): WagonLook {
+  const consist = typeof layout === 'number' ? consistOf({ line: 1, wagon: false, steel: false }) : layout;
+  const trailers = typeof layout === 'number' ? layout : layout.length - 1;
   const mat = (color: string, metal = 0) => {
     const material = new THREE.MeshStandardNodeMaterial({ color, roughness: metal ? 0.45 : 0.85, metalness: metal });
     owner?.cleanup(() => material.dispose());
@@ -154,7 +157,11 @@ export function wagonLook(trailers: number, crated = true, owner?: OwnedView): W
     outer.add(inner);
     return outer;
   });
-  return { cars, chimneyTop, step: animate(cars, bodies, [locoWheels, ...trailerWheels], gear) };
+  return {
+    cars,
+    chimneyTop,
+    step: animate(cars, bodies, [locoWheels, ...trailerWheels], gear, cars[roleIndex(consist, 'engine')]!),
+  };
 }
 
 // ---------------------------------------------------------------- motion
@@ -177,7 +184,9 @@ function animate(
   bodies: THREE.Object3D[],
   wheelSets: THREE.Mesh[][],
   gear: Gear[],
+  engineCar: THREE.Object3D,
 ) {
+  const engineIndex = cars.indexOf(engineCar);
   const radius = wheelSets.map((ws) => (ws[0]!.geometry as THREE.CylinderGeometry).parameters.radiusTop);
   const angle = cars.map(() => 0);
   const last = cars.map(() => new THREE.Vector3(NaN, 0, 0));
@@ -199,7 +208,7 @@ function animate(
       last[n]!.copy(at);
       angle[n]! += ds / radius[n]!;
       for (const w of wheelSets[n]!) w.rotation.x = angle[n]!;
-      if (n === 0) {
+      if (car === engineCar) {
         const v = damp(speed, ds / dt, 0.05, dt);
         accel = damp(accel, (v - speed) / dt, 0.08, dt);
         speed = v;
@@ -207,7 +216,7 @@ function animate(
     });
     // The loco's rods: crank pins on the right side lead the left by a quarter turn.
     for (const g of gear) {
-      const th = angle[0]! + (g.side > 0 ? Math.PI / 2 : 0);
+      const th = angle[engineIndex]! + (g.side > 0 ? Math.PI / 2 : 0);
       const py = AXLE + ROD.crank * Math.cos(th),
         pz = ROD.crank * Math.sin(th); // a pin's offset from its wheel's centre (rotation about +x)
       const front = ROD.wheelbase / 2;
