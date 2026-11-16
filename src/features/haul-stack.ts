@@ -106,7 +106,7 @@ const materials = ['logs', 'rails', 'stone'] as const;
 type CarryMaterial = (typeof materials)[number];
 type CarrySlot = { el: HTMLSpanElement; at: number; filled: boolean };
 const carrySlots: Record<CarryMaterial, CarrySlot[]> = { logs: [], rails: [], stone: [] };
-const emptySlots = Array.from({ length: 16 }, () => {
+const emptySlots = Array.from({ length: 24 }, () => {
   const el = document.createElement('span');
   el.className = 'carry-slot';
   return el;
@@ -151,12 +151,20 @@ function fillSlots(load: CarryReadout, now: number) {
   // No layout animation: fixed cells and a reserved Full line keep projection stable.
   if (!load.big) nodes.push(...emptySlots.slice(0, Math.max(0, load.capacity - nodes.length)));
   for (let i = 0; i < nodes.length; i++) {
+    nodes[i]!.dataset.extra = String(i >= (load.comfortable ?? load.capacity));
     if (slots.children[i] !== nodes[i]) slots.insertBefore(nodes[i]!, slots.children[i] ?? null);
   }
   while (slots.children.length > nodes.length) slots.lastElementChild!.remove();
   slots.hidden = !!load.big;
   capacity.hidden = !!load.big;
-  capacity.style.visibility = filled >= load.capacity ? 'visible' : 'hidden';
+  const comfort = load.comfortable ?? load.capacity;
+  const heavy = load.logs + load.rails + load.stone > comfort;
+  capacity.textContent = heavy
+    ? 'Heavy · no jump, hook or glide. Drop to lighten.'
+    : filled >= comfort && comfort < load.capacity
+      ? 'Comfortable limit · extra cargo is heavy'
+      : 'Full';
+  capacity.style.visibility = heavy || filled >= comfort ? 'visible' : 'hidden';
   if (reduced || filled === nodes.length) nextPop = now;
 }
 const overlaps = (x: number, y: number, w: number, h: number, r: DOMRect) =>
@@ -172,12 +180,12 @@ function tickCarry(load: CarryReadout, now: number) {
   const reserved = load.reserved ?? 0;
   const pending = incoming + reserved;
   const full = !load.big && held + pending >= load.capacity;
-  const key = `${load.logs}/${load.rails}/${load.stone}/${load.big}/${load.capacity}/${incoming}/${reserved}`;
+  const key = `${load.logs}/${load.rails}/${load.stone}/${load.big}/${load.capacity}/${load.comfortable}/${incoming}/${reserved}`;
   if (key !== carryKey) {
     if (carryKey || held || pending || load.big) carryUntil = now + 2000;
     carryKey = key;
     contents.innerHTML = load.big ? item(load.big, load.big === 'beam' ? 'Great beam' : 'Boiler') : '';
-    const fraction = `${held + pending}/${load.capacity}${full ? ' · Full' : ''}`;
+    const fraction = `${held + pending}/${load.capacity}${full ? ' · Full' : ''}${load.comfortable !== undefined ? ` · ${load.comfortable} comfortable` : ''}`;
     const exact = load.big
       ? load.big === 'beam'
         ? 'Great beam'
@@ -195,7 +203,7 @@ function tickCarry(load: CarryReadout, now: number) {
     tag.setAttribute('aria-label', exact);
   }
   fillSlots(load, now);
-  if (load.attention) carryUntil = now + 2000;
+  if (load.attention || (!load.big && held > (load.comfortable ?? load.capacity))) carryUntil = now + 2000;
   // The tag's original hold and fade do not depend on the slot animation.
   const opacity = me.entered && !padModal() ? Math.min(1, Math.max(0, (carryUntil + 200 - now) / 200)) : 0;
   tag.style.opacity = String(opacity);

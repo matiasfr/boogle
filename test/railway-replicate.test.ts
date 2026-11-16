@@ -372,17 +372,17 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   assert.equal(job(w(), 1).completion, 1);
   assert.equal(act('a', 'rail.pack'), 0, 'no pack chest before the forge bill');
   logs('a', 'F', 24);
-  // The pack, predicted on a's own copy of its mirror with the server's very system: one open, every back 16.
+  // The pack, predicted on a's own copy of its mirror with the server's very system: one open, every back comfortable at 16 and permitting 24.
   const mirror = r.mirrors.get('a')!;
   const predicted = shownOf(mirror.confirmed());
   const press = railPredict(predicted, 'a', { op: 'rail.pack', epoch: 1, request: (req.get('a') ?? 0) + 1 }, 0);
   assert.equal(press.n, 1, 'the press is shown at once');
   assert.equal(rail(predicted).pack, true);
-  assert.equal(carryMax(predicted), 16);
+  assert.equal(carryMax(predicted), 24);
   assert.equal(rail(mirror.confirmed()).pack, false, 'the confirmed mirror waits for the server');
   assert.equal(act('a', 'rail.pack'), 1);
   assert.equal(act('b', 'rail.pack'), 0, 'one pack for two openers');
-  assert.equal(carryMax(mirror.confirmed()), 16, 'the mirror carries 16 once confirmed');
+  assert.equal(carryMax(mirror.confirmed()), 24, 'the mirror permits 24 once confirmed');
   logs('b', 'F', 32);
   assert.ok(forge(w()).lit >= 0, 'the forge is lit');
   /** a's predicting adapter on its own mirror session `name`, standing at `pose`, for a one-flag take race. */
@@ -545,7 +545,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   assert.equal(rail(joined).sea, true, 'a late joiner gets the sea switch');
   assert.equal(rail(joined).pack, true, 'a late joiner gets the pack');
   assert.equal(rail(joined).glide, true, 'a late joiner sees the glider taken');
-  assert.equal(carryMax(joined), 16);
+  assert.equal(carryMax(joined), 24);
   const counts = railCounts(joined, r.sync.world.tick); // a client's world is read at the server's tick
   assert.equal(counts.rails.total, counts.rails.poured, 'no rail minted');
   assert.equal(counts.total, RAILWAY_SUPPLY + 30 + counts.produced);

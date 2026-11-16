@@ -43,7 +43,7 @@ import {
   railCounts,
 } from '../src/sim/railway-queries-line2.ts';
 import type { RailAction } from '../src/sim/railway.ts';
-import { LINE2_FORGE, LINE2_STATIONS, LINE2_PACK, line2Routes } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS, line2Routes } from '../src/sim/railway-line2-layout.ts';
 import { CART, CART_PHASE, cartCycleTicks } from '../src/sim/railway-cart.ts';
 import { RAILWAY_T1 } from '../src/sim/railway-layout.ts';
 import type { World as Rows } from '../src/ecs/index.ts';
@@ -426,7 +426,7 @@ const railsHeld = (w: World) => {
   return c;
 };
 
-test('the pack: no chest before the forge bill, one pack for two openers, every back 16 through load and late join', () => {
+test('the pack: no chest before the forge bill, one pack for two openers, every back 24 through load and late join', () => {
   const w = pathOpen();
   assert.equal(act(w, 'a', 'rail.pack'), 0, 'no chest before the forge has a log');
   logs(w, 'a', 'F', 16);
@@ -437,20 +437,20 @@ test('the pack: no chest before the forge bill, one pack for two openers, every 
   assert.throws(() => w.w.load(early, railwayCheck), /pack before the forge bill/);
   logs(w, 'a', 'F', 8);
   assert.equal(forge(w.w).used, LINE2_FORGE.bills[0]);
-  assert.equal(railCarryMax(w.w), RAILWAY_T1.carry);
-  assert.equal(chopTo(w, 'b', 99), RAILWAY_T1.carry, 'eight on a back before the pack');
+  assert.equal(railCarryMax(w.w), 12);
+  assert.equal(chopTo(w, 'b', 99), 12, 'twelve on a back before the pack');
   assert.equal(act(w, 'a', 'rail.pack'), 1);
   assert.equal(act(w, 'b', 'rail.pack'), 0, 'one pack for two openers');
-  assert.equal(railCarryMax(w.w), LINE2_PACK.carry);
-  assert.equal(chopTo(w, 'b', 99), LINE2_PACK.carry, 'and sixteen with it, for the one who did not open it');
-  assert.equal(chopTo(w, 'b', 99), LINE2_PACK.carry, 'never more');
-  // Sixteen on a back survives a save and load, and a player who joins later carries sixteen too.
+  assert.equal(railCarryMax(w.w), 24);
+  assert.equal(chopTo(w, 'b', 99), 24, 'and twenty-four with it, for the one who did not open it');
+  assert.equal(chopTo(w, 'b', 99), 24, 'never more');
+  // Twenty-four on a back survives a save and load, and a player who joins later carries twenty-four too.
   restoreIn(w);
   assert.equal(rail(w.w).pack, true);
-  assert.equal(account(w.w, 'b')!.carry, 16);
+  assert.equal(account(w.w, 'b')!.carry, 24);
   railSession(w.w, 'c', 1);
-  assert.equal(chopTo(w, 'c', 99), LINE2_PACK.carry, 'a late joiner carries sixteen');
-  assert.equal(act(w, 'b', 'rail.deposit', { station: 'F', n: 16 }), 16, 'a whole back unloads at once');
+  assert.equal(chopTo(w, 'c', 99), 24, 'a late joiner carries twenty-four');
+  assert.equal(act(w, 'b', 'rail.deposit', { station: 'F', n: 24 }), 24, 'a whole back unloads at once');
   assert.equal(railCounts(w.w).total, 3910 + railCounts(w.w).produced);
 });
 

@@ -95,7 +95,7 @@ test('a saved world loads all or nothing: archetypes, catalog, keys and every do
     return j.c[kind]![1 + c.names.indexOf(field)]!;
   };
   const cases: [string, (j: Snap) => void][] = [
-    ['an account over its carry', (j) => (col(j, 'account', 'carry')[0] = 9)],
+    ['an account over its carry', (j) => (col(j, 'account', 'carry')[0] = 13)],
     ['a log made from nothing', (j) => (col(j, 'tree', 'left')[0] = 10)],
     ['a tree missing', (j) => j.c.tree!.forEach((c) => c.pop())],
     ['a second account for one pid', (j) => (col(j, 'account', 'pid')[1] = col(j, 'account', 'pid')[0]!)],

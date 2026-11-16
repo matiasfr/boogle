@@ -294,6 +294,7 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
         receiveShadow: o.receiveShadow,
       });
   });
+  // v48 heavy-load seed timing changes only stack-3 Pier.calling; geometry and ordered prompts stay exact.
   const fixture = 'test/fixtures/prefab-halts.json';
   const actual = JSON.parse(JSON.stringify({ catalogs: catalog.RAIL_HALTS, boxValues, meshes, states }));
   if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual, null, 2) + '\n');

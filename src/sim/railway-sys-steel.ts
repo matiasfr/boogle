@@ -28,6 +28,7 @@ import {
   Forge,
   Leg,
   Line,
+  Pile,
   Rail,
   Shed,
   Steel,
@@ -52,7 +53,7 @@ import { legKitPut } from './railway-sys-route-kit.ts';
 /** Take logs (kind 0) or rails (kind 1) off the island yard, up to your back's room, once the rivet is struck. */
 export const steelTake = defineSystem(
   'rail.steelTake',
-  { reads: [Aperture, Beam, Boiler, Rail], writes: [Steel, Account], phase: 'act', order: 54 },
+  { reads: [Aperture, Beam, Boiler, Rail, Pile], writes: [Steel, Account], phase: 'act', order: 54 },
   (w, { a: aid, e }: Act) => {
     if (!railInt(e.kind, 1) || !ringJoined(w)) return 0;
     const id = steelId(w),

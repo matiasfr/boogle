@@ -550,7 +550,12 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
           replan(io, line, slot, tick);
           break;
         }
-        const turn = r.turn; // the row may be live: read it before the set clears it
+        // A stub that opened ahead while we were arriving is now a through stop. Its single track lets us
+        // run on, just as lay() redirects a train already standing there. Include this arrival tick too:
+        // otherwise funding one tick earlier can send a whole kit back home instead of to the new head.
+        const halt = r.to >= 0 ? lineDef(line).halts[r.to] : undefined;
+        const runsOn = r.to > 0 && r.to < n - 1 && !!halt?.leg && halt.end?.kind === 'stub';
+        const turn = r.turn && !runsOn; // the row may be live: read it before the set clears it
         // A leg it could not replan off a halt that refuses its way (the homeward-only Pier, held short of a busy
         // railhead) ends at a stand with no halt, as at a signal: no platform, no dwell, no arrival.
         const at = !turn && r.to >= 0 && trainPassesBy(line, r.to, r.track ? -1 : 1, n) ? -1 : r.to;

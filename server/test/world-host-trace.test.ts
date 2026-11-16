@@ -9,6 +9,10 @@
 // The record order, inputs and command results remain pinned.
 // v48 authentication cutover: only 205 checkpoint namespaces/checksums and 2,518 snapBytes samples change.
 // All 8,596 ordered records retain identical inputs, simulation state, hashes, messages and replica packets.
+// v48 heavy load: only 205 namespace/checksum envelopes and 2,518 snapBytes samples change.
+// All 8,596 ordered records, inputs, state hashes, command results and replication packets remain pinned.
+// v49 integration: main had already used v48 for authentication. Only namespace/checksum envelopes and
+// serialized byte counters change; the 380 boiler-speed trace from main is retained.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

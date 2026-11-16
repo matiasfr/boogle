@@ -2,6 +2,8 @@
 // No runtime prototype imports or native trig in lockstep. Coordinates are centimetres.
 // Original tree IDs survive: great tree 28 and hardwoods 209/232 are not T1 logs.
 export const RAILWAY_CATALOG = 1;
+/** Heavy-load prototype: extra fraction of comfortable cargo and speed at that maximum. */
+export const HEAVY_LOAD = { extra: 0.5, minSpeed: 0.45 } as const;
 export const RAILWAY_T1 = {
   id: 'T1',
   bill: 24,

@@ -10,6 +10,8 @@ export type CarryReadout = {
   stone: number;
   big: 'beam' | 'boiler' | null;
   capacity: number;
+  /** Above this count movement is heavy; omitted for owners without overfill. */
+  comfortable?: number;
   /** Pieces in the air on their way here, and slots held for unconfirmed actions. An owner that predicts its own
    * actions (the railway) already shows them in its counts and leaves these out. */
   incoming?: number;

@@ -6,8 +6,9 @@ import { LINE1_GREAT_TREE, LINE1_STATIONS, lineBeamGround } from './railway-line
 import { RAILS } from './railway-line2-layout.ts';
 import { layProgress, type LineTiming } from './railway-line-schedule.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
-import { railInt, RAILWAY_MAX_INT, RAILWAY_PILES } from './railway.ts';
+import { railInt, RAILWAY_MAX_INT } from './railway.ts';
 import { railPos } from './railway-route.ts';
+import { LOOSE_PILE_MAX } from './railway-supply.ts';
 import {
   Account,
   Aperture,
@@ -29,6 +30,7 @@ import {
   beamId,
   boilerHeld,
   carried,
+  carryComfort,
   FOOT,
   forgeId,
   free,
@@ -38,13 +40,16 @@ import {
   ready,
   roomFor,
   scheduleOf,
+  spareDropSlots,
   timingOf,
   type AccountRow,
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 const pileKind = (kind: unknown) => (kind === 1 || kind === RAILS || kind === FOOT ? kind : 0);
-const pileCap = (kind: number) => (kind === FOOT ? 1 : 8);
+const pileCap = (kind: number) => (kind === FOOT ? 1 : LOOSE_PILE_MAX);
+// Confirmed ids precede temporary -request ids; ties at the same point follow creation order on both peers.
+const pileOrder = (id: number) => (id < 0 ? RAILWAY_MAX_INT - id : id);
 const balanceOf = (a: Readonly<AccountRow>, kind: number) =>
   kind === 1 ? a.stone : kind === RAILS ? a.rails : kind === FOOT ? a.foot : a.carry;
 function credit(a: AccountRow, kind: number, n: number) {
@@ -55,7 +60,7 @@ function credit(a: AccountRow, kind: number, n: number) {
 }
 export const chop = defineSystem(
   'rail.chop',
-  { reads: [Boiler, Beam], writes: [Rail, Tree, Hardwood, Account], phase: 'act', order: 2 },
+  { reads: [Boiler, Beam, Pile], writes: [Rail, Tree, Hardwood, Account], phase: 'act', order: 2 },
   (w, { a: aid, e, tick }: Act) => {
     if (!ready(w, tick)) return 0;
     const a = w.mut(Account, aid)!;
@@ -96,7 +101,7 @@ export const chop = defineSystem(
 );
 export const mine = defineSystem(
   'rail.mine',
-  { reads: [Boiler, Rail, Beam], writes: [Rock, Account], phase: 'act', order: 3 },
+  { reads: [Boiler, Rail, Beam, Pile], writes: [Rock, Account], phase: 'act', order: 3 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
     if (!ready(w, tick) || free(w, a) <= 0 || !railInt(e.id, RAIL_ROCKS.length - 1)) return 0;
@@ -166,7 +171,7 @@ const putDown = (w: World, aid: number, kind: number, n: number) =>
   legKitPut(w, aid, kind ? 0 : n, kind === RAILS ? n : 0);
 export const drop = defineSystem(
   'rail.drop',
-  { reads: [Aperture], writes: [Pile, Account, Leg], phase: 'act', order: 5 },
+  { reads: [Aperture, Rail], writes: [Pile, Account, Leg], phase: 'act', order: 5 },
   (w, { a: aid, e }: Act) => {
     const kind = pileKind(e.kind),
       cap = pileCap(kind);
@@ -174,20 +179,29 @@ export const drop = defineSystem(
     if (kind === FOOT && e.n !== 1) return 0;
     const a = w.mut(Account, aid)!;
     const carry = balanceOf(a, kind);
-    let at = -1;
+    let at: number | undefined;
     w.each([Pile], (id, p) => {
-      if (at < 0 && p.kind === kind && p.x === e.x && p.z === e.z && p.y === e.y && p.n < cap) at = id;
+      if (
+        p.kind === kind &&
+        p.x === e.x &&
+        p.z === e.z &&
+        p.y === e.y &&
+        p.n < cap &&
+        (at === undefined || pileOrder(id) < pileOrder(at))
+      )
+        at = id;
     });
-    if (at < 0) {
-      if (carry <= 0 || w.count(Pile) >= RAILWAY_PILES || w.nextId() >= 2147483647) return 0;
-      const n = Math.min(e.n!, carry, cap);
+    const n = Math.min(e.n!, carry, at === undefined ? cap : cap - w.get(Pile, at)!.n);
+    if (n <= 0) return 0;
+    if (at === undefined) {
+      const released = kind === FOOT ? 0 : Math.min(n, Math.max(0, carried(a) - carryComfort(w)));
+      if (spareDropSlots(w) + released < 1 || w.nextId() >= RAILWAY_MAX_INT) return 0;
       w.spawn([Pile, { x: e.x!, y: e.y!, z: e.z!, n, kind, age: 0 }]);
       credit(a, kind, -n);
       putDown(w, aid, kind, n);
       return n;
     }
     const p = w.mut(Pile, at)!;
-    const n = Math.min(e.n!, carry, cap - p.n);
     p.n += n;
     if (n) p.age = 0;
     credit(a, kind, -n);
@@ -201,9 +215,9 @@ export const take = defineSystem(
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     const kind = pileKind(e.kind);
-    const room = roomFor(w, a, kind);
-    const p = room > 0 && railInt(e.id, RAILWAY_MAX_INT, -RAILWAY_MAX_INT) ? w.mut(Pile, e.id) : undefined;
+    const p = railInt(e.id, RAILWAY_MAX_INT, -RAILWAY_MAX_INT) ? w.mut(Pile, e.id) : undefined;
     if (!p || kind !== p.kind) return 0;
+    const room = roomFor(w, a, kind, p.n);
     const n = Math.min(p.n, room);
     p.n -= n;
     credit(a, kind, n);
@@ -213,7 +227,7 @@ export const take = defineSystem(
 );
 export const rackTake = defineSystem(
   'rail.rackTake',
-  { reads: [Boiler, Beam], writes: [Rail, Account], phase: 'act', order: 7 },
+  { reads: [Boiler, Beam, Pile], writes: [Rail, Account], phase: 'act', order: 7 },
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);

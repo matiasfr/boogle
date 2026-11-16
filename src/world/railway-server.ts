@@ -6,7 +6,7 @@
 // The rules stay pure (state, action, tick): railApply and railTick are the same functions R1b's prediction runs.
 // Validation reads the facts the action carried (the actor's own position and action clock) through `Actor`.
 import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type RailResult } from '../sim/railway.ts';
-import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
+import { HEAVY_LOAD, RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import {
   LINE1_STATIONS,
   LINE1_GREAT_TREE,
@@ -18,7 +18,7 @@ import { LINE_TIMING } from '../sim/railway-line.ts';
 import {
   LINE2_FORGE,
   LINE2_STATIONS,
-  LINE2_DEPOT,
+  depotReach,
   LINE2_LEVER,
   LINE2_SEA,
   LINE2_GLIDE,
@@ -183,15 +183,21 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
         LINE1_STATIONS.find((row) => row.id === e.station) ??
         LINE2_STATIONS.find((row) => row.id === e.station) ??
         (e.station === 'F' ? LINE2_FORGE : undefined);
-      return !!station && kind && railInt(e.n, LINE2_PACK.carry, 1) && near(station.x, station.z, T1.reach);
+      return (
+        !!station &&
+        kind &&
+        railInt(e.n, LINE2_PACK.carry * (1 + HEAVY_LOAD.extra), 1) &&
+        near(station.x, station.z, T1.reach)
+      );
     }
     case 'rail.drop':
       return (
-        railInt(e.n, LINE2_PACK.carry, 1) &&
+        railInt(e.n, LINE2_PACK.carry * (1 + HEAVY_LOAD.extra), 1) &&
         pileKind &&
         railPos(e.x) &&
         railPos(e.z) &&
         railPos(e.y) &&
+        height(e.y!) &&
         near(e.x, e.z, 320)
       );
     case 'rail.take': {
@@ -253,12 +259,12 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.depotTake': {
       const spec = LINE2_STATIONS[railLine2Active(w)];
       if (!spec) return legRackNear(w, at);
-      return spec.depot && near(spec.x, spec.z, LINE2_DEPOT.reach);
+      return spec.depot && near(spec.x, spec.z, depotReach(spec));
     }
     case 'rail.depotRailTake': {
       const spec = LINE2_STATIONS[railLine2Active(w)];
       if (!spec) return legRackNear(w, at);
-      return spec.shelf && near(spec.x, spec.z, LINE2_DEPOT.reach);
+      return spec.shelf && near(spec.x, spec.z, depotReach(spec));
     }
     case 'rail.pack':
       return near(LINE2_PACK.x, LINE2_PACK.z, 340);

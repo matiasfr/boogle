@@ -22,6 +22,7 @@ import {
   LINE2_FORGE,
   LINE2_STATIONS,
   Q7,
+  depotOffset,
   line2Panels,
   line2Routes,
   pierLaid,
@@ -331,8 +332,19 @@ export async function createRailwayLine2(
     const f = frames[k]!;
     // On the approach beside the frame: clear its posts, feeder, parked machine and Q5's gate jambs.
     // Use the frame's tangent; normalizing a vector toward the frame crowded the pile against it on bends.
-    // The full 3.2 m pickup zone stays inside the server's 7 m reach except Q6's dry approach rack below.
-    out.set(f.x - Math.sin(f.yaw) * 3.4, 0, f.z - Math.cos(f.yaw) * 3.4);
+    // Q2/Q5 leave a short walk outside auto-unload, so a deliberate extra pickup buys a trip.
+    const offset = depotOffset(LINE2_STATIONS[k]!) / 100;
+    out.set(f.x - Math.sin(f.yaw) * offset, 0, f.z - Math.cos(f.yaw) * offset);
+    if (LINE2_STATIONS[k]!.id === 'Q2') {
+      // The cart's curved Home leg crosses the old straight-back spot. A 6 m approach / 8 m outward
+      // offset keeps the 10 m haul, with the whole loaded rack outside that curve and both running roads.
+      const side = quarry.stations[k]!.side;
+      out.set(
+        f.x - Math.sin(f.yaw) * 6 - Math.cos(f.yaw) * side * 8,
+        0,
+        f.z - Math.cos(f.yaw) * 6 + Math.sin(f.yaw) * side * 8,
+      );
+    }
     if (k === Q7) {
       // On the pier's piled deck, south of the frame (q7-site.ts), and over the sea: the deck's height, not the ground's.
       const d = q7Spot('rack', deck7);

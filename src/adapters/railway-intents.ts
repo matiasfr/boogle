@@ -1,7 +1,7 @@
 // The railway's actions as a client asks for them (docs/plans/ecs-m12-m13.md, M12f): the intent shapes, an event's
 // intent read back off the wire, the sets the session's submit and settle judge by, and the adapter's action methods.
 // Nothing here sends, predicts or plays: that is railway-session.ts.
-import { RAILWAY_SOURCES } from '../sim/railway-layout.ts';
+import { HEAVY_LOAD, RAILWAY_SOURCES } from '../sim/railway-layout.ts';
 import { railInt, railYaw } from '../sim/railway.ts';
 import { railPos } from '../sim/railway-route.ts';
 import { LINE1_STATIONS, LINE1_HARDWOODS, type RailMaterial, type LineStationId } from '../sim/railway-line-layout.ts';
@@ -56,7 +56,7 @@ export type RailwayIntent =
   | { op: 'rail.drop'; x: number; y?: number; z: number; n: number; kind?: RailMaterial | 2 | 3 };
 
 /** The most a back ever carries (with the pack): the wire's bound on a moved count; the rule clips to today's back. */
-export const CARRY_MAX = LINE2_PACK.carry;
+export const CARRY_MAX = LINE2_PACK.carry * (1 + HEAVY_LOAD.extra);
 export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.wake') return { op: e.op };
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;

@@ -1,5 +1,5 @@
 {
-  "worldNs": "v47",
+  "worldNs": "v49",
   "ticks": 1200,
   "stages": {
     "awake": {
@@ -229,13 +229,13 @@
     },
     "gorge-mid": {
       "tick": 14096,
-      "stage": 2064539733,
-      "after": 1893122614
+      "stage": 1067617151,
+      "after": 1614511056
     },
     "gorge-reached": {
       "tick": 17227,
-      "stage": 4176653013,
-      "after": 3962343317
+      "stage": 2192202057,
+      "after": 1400721993
     }
   }
 }

@@ -5,7 +5,7 @@
 // Inspection observes; it never seeds a world or moves a player.
 import type { Bot } from '../bot.ts';
 import {
-  carryMax,
+  carryComfort,
   railBack,
   forge,
   inspectRailway,
@@ -127,7 +127,7 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     await until(() => works().seams & 1, 'stall slab struck', 30000);
     await checkpoint('stall open');
     // 3. Sixteen logs, then line 2 to the quarry and the throat.
-    await fillLogs(Math.min(carryMax(rw()), WORKS.kilnLogs));
+    await fillLogs(Math.min(carryComfort(rw()), WORKS.kilnLogs));
     check(carry() === WORKS.kilnLogs, 'a back of sixteen logs for the kiln');
     await ride(HALT.village2, 1);
     await use(seam(1), /^Strike the seam$/, 'strike the throat');

@@ -141,31 +141,31 @@ test('treeGrowth is the minutes a felled tree is past regrowth (31), 0 for a sta
   }
 });
 
-test('freeCarryIgnoringBig is the back less its load by count alone (8, 16 with the pack), whatever is held', () => {
+test('freeCarryIgnoringBig is the back less its load by count alone (12, 24 with the pack), whatever is held', () => {
   const [, w] = SEEDED[1]!;
   const pid = 'a';
   const row = () => railAccount(w, pid)!;
   const set = (load: Partial<{ carry: number; stone: number; rails: number; foot: number }>) =>
     Object.assign(w.mut(Account, w.lookup(Account, pid)!)!, { carry: 0, stone: 0, rails: 0, foot: 0 }, load);
   set({});
-  assert.equal(freeCarryIgnoringBig(w, pid), 8, 'an empty back');
-  assert.equal(freeCarryIgnoringBig(w, 'nobody'), 8, 'no account: the whole back');
+  assert.equal(freeCarryIgnoringBig(w, pid), 12, 'an empty back');
+  assert.equal(freeCarryIgnoringBig(w, 'nobody'), 12, 'no account: the whole back');
   set({ carry: 3, stone: 2, rails: 1 });
-  assert.equal(freeCarryIgnoringBig(w, pid), 2);
-  assert.equal(free(w, row()), 2, 'no big load: the same as free');
+  assert.equal(freeCarryIgnoringBig(w, pid), 6);
+  assert.equal(free(w, row()), 2, 'a take first stops at comfort');
   set({ carry: 8 });
-  assert.equal(freeCarryIgnoringBig(w, pid), 0, 'a full back');
+  assert.equal(freeCarryIgnoringBig(w, pid), 4, 'comfort leaves the heavy allowance');
   // A big load makes free 0 and leaves the count alone: the boiler held, then a footing worn.
   set({ carry: 3 });
   Object.assign(w.mut(Boiler, boilerId(w))!, { state: 'held', holder: pid });
   assert.equal(free(w, row()), 0, 'the boiler held: no room');
-  assert.equal(freeCarryIgnoringBig(w, pid), 5, 'by count, five');
+  assert.equal(freeCarryIgnoringBig(w, pid), 9, 'by count, nine');
   Object.assign(w.mut(Boiler, boilerId(w))!, { state: 'stood', holder: '' });
   set({ foot: 1 });
   assert.equal(free(w, row()), 0, 'a footing worn: no room');
-  assert.equal(freeCarryIgnoringBig(w, pid), 8, 'by count, the whole back');
+  assert.equal(freeCarryIgnoringBig(w, pid), 12, 'by count, the whole back');
   // The pack doubles the back.
   Object.assign(w.mut(Rail, railId(w))!, { pack: true });
   set({ carry: 3, stone: 2, rails: 1 });
-  assert.equal(freeCarryIgnoringBig(w, pid), 10);
+  assert.equal(freeCarryIgnoringBig(w, pid), 18);
 });

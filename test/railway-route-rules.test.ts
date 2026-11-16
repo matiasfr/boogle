@@ -54,7 +54,7 @@ import {
 import { LINE_SLOTS, cycleTicks, servingSlots, trainServes, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { line, rail, train, trains } from '../src/sim/railway-rows.ts';
-import { stopsOf } from '../src/sim/railway-queries.ts';
+import { carried, carryComfort, stopsOf } from '../src/sim/railway-queries.ts';
 import { legKitNeed, legKitWaiting, legOpen, legRow, legsLaid, routeRow } from '../src/sim/railway-queries-route.ts';
 import { freightStop } from '../src/sim/railway-queries-trade.ts';
 import { footingsOwed, kitOwed, steelNeed } from '../src/sim/railway-queries.ts';
@@ -78,7 +78,6 @@ import { checkRoute } from '../src/sim/railway-check-route.ts';
 import { railLegKitHolders, railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
 import { ROUTE_GATES, fuzzTicks, routeTicks } from './helpers/fuzz.ts';
 import { ringRivetSequence } from './helpers/railway-rivet-sequence.ts';
-import { laySection } from '../src/sim/railway-seed-legs.ts';
 
 const STACK = 0;
 const LEG = RAIL_LEGS[STACK]!;
@@ -117,6 +116,8 @@ function stock(s: Seed, k = STACK) {
       ['rail.legStock', { leg: k }],
     ] as const) {
       const a = s.w.get(Account, s.w.lookup(Account, pid)!)!;
+      // Transport pacing uses comfortable loads; deliberate overfill has its own sim tests.
+      if (o !== 'rail.legStock' && carried(a) >= carryComfort(s.w)) continue;
       const r = apply(s.w, pid, { op: o, epoch: a.epoch, request: a.request + 1, ...f } as never, s.t);
       if (o === 'rail.legStock' && r.accepted) stocked++;
     }
@@ -1429,7 +1430,7 @@ if (process.env.LEG_ASK_FUZZ === '1') {
 
 // Shared replay fixture, outside the timeout as LEAF/JOINED above.
 const HEAD2_LAY = unaudited(copy(JOINED));
-while (legRow(HEAD2_LAY.w, STACK).laid < 2) laySection(HEAD2_LAY);
+while (legRow(HEAD2_LAY.w, STACK).laid < 2) feedSection(HEAD2_LAY);
 for (let guard = 0; !trains(HEAD2_LAY.w).some((r) => r.legKit && r.logs + r.rails > 0); guard++) {
   assert.ok(guard < 3000, 'a kit aboard before the third section');
   advance(HEAD2_LAY, 1);

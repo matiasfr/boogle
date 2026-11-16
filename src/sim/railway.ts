@@ -5,7 +5,6 @@ import { RAILWAY_SOURCES } from './railway-layout.ts';
 
 export const RAILWAY_OUTCOMES = 64;
 export const RAILWAY_WINDOW = 8;
-export const RAILWAY_PILES = 128;
 export const RAILWAY_MAX_INT = 2147483647;
 export const RAILWAY_MAX_MARKER = Number.MAX_SAFE_INTEGER;
 export type RailAccount = {

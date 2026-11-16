@@ -31,6 +31,7 @@ import {
   Forge,
   ForgeClock,
   Job,
+  Pile,
   QJob,
   QJobRun,
   Rail,
@@ -235,7 +236,7 @@ export const deposit2 = defineSystem(
 );
 export const forgeTake = defineSystem(
   'rail.forgeTake',
-  { reads: [Boiler, Rail, Beam, QJob, Shed, Works], writes: [Forge, Account], phase: 'act', order: 21 },
+  { reads: [Boiler, Rail, Beam, QJob, Shed, Works, Pile], writes: [Forge, Account], phase: 'act', order: 21 },
   (w, { a: aid }: Act) => {
     if (trainOwed(w)) return 0;
     const a = w.mut(Account, aid)!;
@@ -255,7 +256,7 @@ export const forgeTake = defineSystem(
 );
 export const depotTake = defineSystem(
   'rail.depotTake',
-  { reads: [Boiler, Beam, Aperture], writes: [Rail, Account, Leg], phase: 'act', order: 22 },
+  { reads: [Boiler, Beam, Aperture, Pile], writes: [Rail, Account, Leg], phase: 'act', order: 22 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -272,7 +273,7 @@ export const depotTake = defineSystem(
 /** Rails from the shelf by a `shelf` stretch's rack (moved there from the forge; railValid checks the stretch). */
 export const depotRailTake = defineSystem(
   'rail.depotRailTake',
-  { reads: [Boiler, Beam, Aperture], writes: [Rail, Account, Leg], phase: 'act', order: 25 },
+  { reads: [Boiler, Beam, Aperture, Pile], writes: [Rail, Account, Leg], phase: 'act', order: 25 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);

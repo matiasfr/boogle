@@ -262,7 +262,7 @@ test('the last-piece race between two players in one step transfers one log; it 
     await f.deposit('a', 7);
     await f.harvest('a', 4);
     f.pose('a', T1.x, T1.z);
-    await f.edit('a', { op: 'rail.drop', x: T1.x, y: 3000, z: T1.z, n: 1 });
+    await f.edit('a', { op: 'rail.drop', x: T1.x, y: 0, z: T1.z, n: 1 });
     await f.harvest('b', 4);
     assert.equal(job(f.world(), 0).stock, 23);
     // Both arrive before the next step: they apply in arrival order, each rechecking the bill.

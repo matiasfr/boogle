@@ -9,15 +9,15 @@
 // checkRailway, and one entry per `throw` to test/fixtures/railway-bad-worlds.ts.
 import type { World } from '../ecs/index.ts';
 import { MAX_PLAYERS, okPid } from './roster.ts';
-import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-layout.ts';
+import { RAILWAY_SOURCES, RAILWAY_SUPPLY } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import { RAIL_LEGS, RAIL_YARDS, railPos } from './railway-route.ts';
-import { RECOVERY_MINUTES } from './railway-supply.ts';
-import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES, RAILWAY_PILES } from './railway.ts';
+import { RECOVERY_MINUTES, LOOSE_PILE_MAX } from './railway-supply.ts';
+import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES } from './railway.ts';
 import {
   Account,
   Aperture,
@@ -71,7 +71,7 @@ import {
   rocks,
   trees,
 } from './railway-rows.ts';
-import { carryMax } from './railway-queries.ts';
+import { carryMax, spareDropSlots } from './railway-queries.ts';
 import { railCounts as worldCounts } from './railway-queries-line2.ts';
 import { checkLine1 } from './railway-check-line1.ts';
 import { checkLine2 } from './railway-check-line2.ts';
@@ -146,8 +146,7 @@ export function railwayCheck(w: World) {
     [Route, 1],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
-  if (w.count(Account) > MAX_PLAYERS || w.count(Pile) > RAILWAY_PILES || w.count(Outcome) > RAILWAY_OUTCOMES)
-    throw new Error('railway: rows');
+  if (w.count(Account) > MAX_PLAYERS || w.count(Outcome) > RAILWAY_OUTCOMES) throw new Error('railway: rows');
   if (!railInt(w.nextId(), RAILWAY_MAX_INT, 1)) throw new Error('railway: next id');
   checkRailway(w);
 }
@@ -186,14 +185,15 @@ function checkRailway(w: World) {
       const p = w.get(Pile, id)!;
       return (
         !railInt(id, lastPile, 1) ||
-        !railInt(p.n, T1.carry, 1) ||
+        !railInt(p.n, LOOSE_PILE_MAX, 1) ||
         !railInt(p.kind, 3) ||
         !railPos(p.x) ||
         !railPos(p.z) ||
         !railPos(p.y) ||
         !railInt(p.age, RECOVERY_MINUTES)
       );
-    })
+    }) ||
+    spareDropSlots(w) < 0
   )
     bad('piles');
   if (!railInt(r0.awake, RAILWAY_MAX_INT, -1)) bad('tick');

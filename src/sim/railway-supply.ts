@@ -6,6 +6,10 @@ import { RAILWAY_SOURCES } from './railway-layout.ts';
 export const REGROW_MINUTES = 31;
 export const RECOVERY_MINUTES = 21; // minute quantization still leaves at least twenty minutes
 export const RECOVERY_RACK = { x: 90500, z: 100 };
+/** Bounded local storage. Each batch can draw the whole table filled with its kind. */
+export const LOOSE_PILE_CAPACITY = 128;
+export const LOOSE_PILE_MAX = 8;
+export const LOOSE_PIECE_CAPACITY = LOOSE_PILE_CAPACITY * LOOSE_PILE_MAX;
 // Pinned centimetre bounds of the two initially laid stubs and T1's whole corridor, plus 8 m clearance.
 // Clear the eventual corridor throughout construction too; never recreate an obstruction around finished track.
 export const RAILWAY_TRACK_CLEARINGS = [
