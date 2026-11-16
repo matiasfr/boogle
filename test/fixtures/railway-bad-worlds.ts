@@ -417,7 +417,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     site: 'works wagon (line, cap, cargo)',
     message: 'railway: wagon',
     stage: X,
-    break: (w) => set(w, Train, { foot: 1 }, 0),
+    break: (w) => set(w, Train, { foot: 999 }, 0),
   },
   { site: 'works foot', message: 'railway: foot', stage: X, break: (w) => set(w, Account, { foot: 2 }, 'a') },
   {

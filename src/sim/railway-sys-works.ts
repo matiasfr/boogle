@@ -106,7 +106,7 @@ export const footTake = defineSystem(
   },
 );
 /** Set the footing on your back: 0 the stall (after the slab), 1 the cradle (after the stall), 2 the pier (after
- * Q6, while the pier still needs one that is not already racked there or aboard the wagon). */
+ * Q6, while the pier still needs one that is not already racked there or aboard a train). */
 export const footSet = defineSystem(
   'rail.footSet',
   { reads: [QJob, Line], writes: [Works, Shed, Account, Train], phase: 'act', order: 37 },

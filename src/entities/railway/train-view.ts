@@ -31,6 +31,7 @@ import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { STEEL } from '../../sim/railway-ring-layout.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
+import { WORKS } from '../../sim/railway-works-layout.ts';
 import { line2Active, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { aperture, rail as railRow, train as trainRow, works as worksRow } from '../../sim/railway-rows.ts';
 import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
@@ -64,8 +65,7 @@ const LAMP = { on: '#ffa31a', off: '#4b3a22' } as const;
 /** The hold lamp (docs/plans/generic-lines.md, 4): red beside the stop lamp while the train stands held by the block
  * ahead or the headway at an end, doors open; out the moment it goes. */
 const HOLD = { on: '#ff3b2a', off: '#3e2420' } as const;
-/** Footings aboard stand in two stacks on the cradle's seats: slot k's centre in the wagon's rail frame. */
-const aboardAt = (k: number) => ({ y: 0.63 + Math.floor(k / 2) * (0.9 + 0.02), z: k % 2 ? 0.8 : -0.8 });
+/** Seconds for a footing to hop between a rack and its carrier. */
 const FOOT_HOP_S = 0.9;
 /** The cab doors' default (docs/agent-calls.md): each swings out about 100° on its back post in 0.25 s when any
  * player is within 1.2 m of its doorway, and shuts 0.6 s after the last one leaves. A local view of positions every
@@ -333,6 +333,22 @@ export async function createRailwayTrains(
   });
   /** The train the footing wagon is coupled to now, or null. */
   const wagonTrain = () => cargo.find((tr) => trainRow(adapter.read.world(), tr.slot).wagon) ?? null;
+  // Role lookups stay here for the later car-role migration; the loader never assumes an index elsewhere.
+  const kitCar = (tr: (typeof trains)[number]) => tr.cars[2]!;
+  const footingCar = (tr: (typeof trains)[number]) =>
+    trainRow(adapter.read.world(), tr.slot).wagon ? wagonCar : kitCar(tr);
+  const deckPoint = new THREE.Vector3();
+  /** Local base of a footing slot on its carrier. Consume the shared scratch vector immediately. */
+  function deckSlot(tr: (typeof trains)[number], k: number) {
+    const car = footingCar(tr);
+    return deckPoint.set(
+      0,
+      car === wagonCar
+        ? 0.63 + Math.floor(k / 2) * (0.9 + 0.02)
+        : car.spec.top - car.rock.position.y + Math.floor(k / 2) * 0.92,
+      k % 2 ? 0.8 : -0.8,
+    );
+  }
   /** The cars that grow in with a joining train: its own, and its steel car (a fleet row that joins after the install
    * takes the fit as it stands there, so the car comes on mid-growth and stays coupled). */
   const grown = (tr: (typeof trains)[number]) => (tr.steel ? [...tr.cars, tr.steel] : tr.cars);
@@ -554,8 +570,15 @@ export async function createRailwayTrains(
     if (changed) tr.solid();
   }
   // ---------------------------------------------------------------- the footing wagon and its footings
-  const batch = createBoxBatch(owner, 96);
-  const footFlights: { from: THREE.Vector3; slot: number; toPier: boolean; toRing?: boolean; t: number }[] = [];
+  const batch = createBoxBatch(owner, 96 + cargo.length * WORKS.loaderCap * 14);
+  const footFlights: {
+    train: (typeof trains)[number];
+    from: THREE.Vector3;
+    slot: number;
+    toPier: boolean;
+    toRing?: boolean;
+    t: number;
+  }[] = [];
   let places: { works: FootPlace | null; pier: FootPlace | null; ring?: FootPlace | null } = {
     works: null,
     pier: null,
@@ -566,20 +589,44 @@ export async function createRailwayTrains(
     fq = new THREE.Quaternion(),
     fsc = new THREE.Vector3();
   /** World centre of the base of aboard slot `k`, and the wagon's yaw. */
-  function aboardWorld(k: number, out: THREE.Vector3) {
-    const a = aboardAt(k);
-    fm.multiplyMatrices(wagonRock.matrixWorld, lm.makeTranslation(0, a.y, a.z));
+  function aboardWorld(tr: (typeof trains)[number], k: number, out: THREE.Vector3) {
+    const a = deckSlot(tr, k);
+    const car = footingCar(tr);
+    car.mesh.updateMatrixWorld(true);
+    fm.multiplyMatrices(car.rock.matrixWorld, lm.makeTranslation(0, a.y, a.z));
     fm.decompose(out, fq, fsc);
     return out;
   }
-  const inbound = () => footFlights.filter((f) => !f.toPier && !f.toRing).length;
+  const inboundByTrain = new Int32Array(RAIL_TRAINS.length);
+  const inbound = () => {
+    let n = 0;
+    for (const f of footFlights) if (!f.toPier && !f.toRing) n++;
+    return n;
+  };
   const toPier = () => footFlights.filter((f) => f.toPier).length;
   const toRing = () => footFlights.filter((f) => f.toRing).length;
   /** Where a flying footing lands: the wagon's slot, the pier rack's or the railhead rack's. */
   const landing = (f: (typeof footFlights)[number], out: THREE.Vector3) =>
-    f.toRing ? places.ring!(f.slot, out) : f.toPier ? places.pier!(f.slot, out) : aboardWorld(f.slot, out);
+    f.toRing ? places.ring!(f.slot, out) : f.toPier ? places.pier!(f.slot, out) : aboardWorld(f.train, f.slot, out);
+  function flightPosition(f: (typeof footFlights)[number], out: THREE.Vector3) {
+    if (f.t < 0) return out.copy(f.from);
+    const u = Math.min(1, f.t / FOOT_HOP_S);
+    landing(f, out).lerpVectors(f.from, out, u);
+    out.y += Math.sin(u * Math.PI) * 1.6;
+    return out;
+  }
+  const loaderPoint = new THREE.Vector3(),
+    loaderOffset = new THREE.Vector3(0, 1.04, 0);
+  function loaderHook() {
+    for (const f of footFlights)
+      if (!f.toPier && !f.toRing && f.t >= 0 && footingCar(f.train) !== wagonCar)
+        return flightPosition(f, loaderPoint).add(loaderOffset);
+    return null;
+  }
   function drawWagon() {
     batch.begin();
+    inboundByTrain.fill(0);
+    for (const f of footFlights) if (!f.toPier && !f.toRing) inboundByTrain[f.train.slot]!++;
     const coupled = wagonTrain();
     const foot = coupled ? trainRow(adapter.read.world(), coupled.slot).foot : 0;
     if (wagonCar.mesh.visible) {
@@ -592,10 +639,20 @@ export async function createRailwayTrains(
       for (let r = 0; r < 8; r++)
         batch.part(frame, r % 2 ? 0.95 : -0.95, 1.05, [-1.35, -0.25, 0.25, 1.35][r >> 1]!, 0.1, 1.1, 0.1, BRASS);
       for (const x of [-0.95, 0.95]) batch.part(frame, x, 1.62, 0, 0.12, 0.12, 2.9, BRASS);
-      const aboard = Math.max(0, foot - inbound());
+      const aboard = Math.max(0, foot - (coupled ? inboundByTrain[coupled.slot]! : 0));
       for (let k = 0; k < aboard; k++) {
-        const a = aboardAt(k);
+        const a = deckSlot(coupled!, k);
         footingParts(batch, fm.multiplyMatrices(frame, lm.makeTranslation(0, a.y, a.z)));
+      }
+    }
+    for (const tr of cargo) {
+      const car = footingCar(tr);
+      if (car === wagonCar || !car.mesh.visible) continue;
+      const n = Math.max(0, trainRow(adapter.read.world(), tr.slot).foot - inboundByTrain[tr.slot]!);
+      car.mesh.updateMatrixWorld(true);
+      for (let k = 0; k < n; k++) {
+        const a = deckSlot(tr, k);
+        footingParts(batch, fm.multiplyMatrices(car.rock.matrixWorld, lm.makeTranslation(0, a.y, a.z)));
       }
     }
     for (const f of footFlights) {
@@ -605,11 +662,8 @@ export async function createRailwayTrains(
         continue;
       }
       const u = Math.min(1, f.t / FOOT_HOP_S);
-      const to = landing(f, fv);
-      const x = f.from.x + (to.x - f.from.x) * u,
-        y = f.from.y + (to.y - f.from.y) * u + Math.sin(u * Math.PI) * 1.6,
-        z = f.from.z + (to.z - f.from.z) * u;
-      footingParts(batch, footingFrame(fm, x, y, z, wagonCar.yaw, Math.sin(u * Math.PI) * 0.3));
+      const p = flightPosition(f, fv);
+      footingParts(batch, footingFrame(fm, p.x, p.y, p.z, footingCar(f.train).yaw, Math.sin(u * Math.PI) * 0.3));
     }
     batch.commit();
   }
@@ -669,14 +723,15 @@ export async function createRailwayTrains(
   }
   /** The wagon's live arrival edges: at the quarry the footings the row took hop from the Works rack onto the cradle,
    * at the pier they hop off onto the pier rack. Racks and the wagon hold their shown count until each one lands. */
-  function footArrivals(row: RailTrain, last: RailTrain) {
-    if (!row.wagon || row.phase !== TRAIN_PHASE.STAND) return;
+  function footArrivals(tr: (typeof trains)[number], row: RailTrain, last: RailTrain) {
+    if (row.phase !== TRAIN_PHASE.STAND) return;
     const arrived = last.phase !== TRAIN_PHASE.STAND || last.at !== row.at;
     const works = worksRow(adapter.read.world());
     if (arrived && row.at === 1 && row.foot > last.foot && places.works) {
       wagonCar.mesh.updateMatrixWorld(true);
       for (let i = 0; i < row.foot - last.foot; i++)
         footFlights.push({
+          train: tr,
           // The rack has already given them: they were its top footings, above what it keeps.
           from: places.works(works.rack + i, new THREE.Vector3()),
           slot: last.foot + i,
@@ -689,7 +744,8 @@ export async function createRailwayTrains(
       const n = last.foot - row.foot;
       for (let i = 0; i < n; i++)
         footFlights.push({
-          from: aboardWorld(last.foot - 1 - i, new THREE.Vector3()),
+          train: tr,
+          from: aboardWorld(tr, last.foot - 1 - i, new THREE.Vector3()),
           slot: works.pierRack - 1 - i,
           toPier: true,
           t: -0.3 * i,
@@ -703,7 +759,8 @@ export async function createRailwayTrains(
         rack = aperture(adapter.read.world()).rack;
       for (let i = 0; i < n; i++)
         footFlights.push({
-          from: aboardWorld(last.foot - 1 - i, new THREE.Vector3()),
+          train: tr,
+          from: aboardWorld(tr, last.foot - 1 - i, new THREE.Vector3()),
           slot: rack - 1 - i,
           toPier: false,
           toRing: true,
@@ -1148,7 +1205,7 @@ export async function createRailwayTrains(
           }
         }
         drawLoad(tr, unloading && tr.line === LINE2 ? tr.count : Math.ceil((row.logs + row.rails) / 8), row.freight);
-        if (tr.line === LINE2 && tr.last) footArrivals(row, tr.last);
+        if (tr.line === LINE2 && tr.last) footArrivals(tr, row, tr.last);
         tr.last = { ...row };
         if (!on) return;
         tr.puffs += tr.speed * dt * 0.25 + (tr.speed < 0.1 ? dt / 2 : 0);
@@ -1181,6 +1238,7 @@ export async function createRailwayTrains(
     },
     /** Footings in the air: onto the wagon from the Works rack, and off it to the pier rack. */
     footFlying: () => ({ toWagon: inbound(), toPier: toPier(), toRing: toRing() }),
+    loaderHook,
     inspect: () => ({
       trains: trains.map((tr) => ({
         line: tr.line,

@@ -139,6 +139,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
           busy: () => reward.inspect().busy,
           toPier: () => trains.footFlying().toPier,
           toRing: () => trains.footFlying().toRing,
+          loaderHook: trains.loaderHook,
           hookRing: hook.setIslandRing,
         }),
       )

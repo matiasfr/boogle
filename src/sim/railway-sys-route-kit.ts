@@ -15,6 +15,7 @@
 //   legKitLifted, legKitPut      the rack's units on backs: lifted off the rack (counted held), off a back (not)
 //   legKitRelease                a leaver's units no longer counted held (the host's leaver check)
 import { defineSystem, type World } from '../ecs/index.ts';
+import { deckHeld } from './railway-queries-trade.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_LEGS } from './railway-route.ts';
 import { steelNeed } from './railway-queries.ts';
@@ -106,7 +107,7 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
     k = openLeg(w, line);
   if (k < 0) return 'on';
   const r = w.get(Train, trainOf(w, slot))!;
-  if (r.at !== legKitHalt(line)) return 'on';
+  if (deckHeld(r) || r.at !== legKitHalt(line)) return 'on';
   // Steel first (call 64; owner, 12 November): the steel works' kit has the kit car and the forge's rails first. A leg's
   // kit loads only when the works wants none brought (steelNeed: its kit is fed, in the yard or aboard), and never onto
   // a train carrying the works' kit, so a train never carries both.

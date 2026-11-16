@@ -31,6 +31,7 @@ import {
 } from './railway-components.ts';
 import {
   apertureId,
+  aboard,
   cartId,
   depotNeed,
   footingsOwed,
@@ -53,7 +54,7 @@ import {
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
-import { freightStop, holdOff } from './railway-queries-trade.ts';
+import { deckHeld, footCap, footCarrier, freightStop, holdOff } from './railway-queries-trade.ts';
 import type { TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
 import { legKitArrive, legKitLoad, legKitService } from './railway-sys-route-kit.ts';
@@ -115,16 +116,17 @@ export const call = defineSystem(
     return 1;
   },
 );
-/** Line 2's wagon train arriving: at the quarry it loads what the Works rack has and the pier (then, once Q7 is laid,
+/** Line 2's footing carrier arriving: at the quarry it loads what the Works rack has and the pier (then, once Q7 is laid,
  * the ring) still needs; at the Pier, until Q7 is laid, it unloads everything onto the pier rack; at the Railhead it
  * unloads onto the railhead rack, up to the rack's room (the rest rides on). One apply each. No ring footing ever
- * reaches the pier rack (call 65): the wagon loads none before Q7 is laid, and unloads none at the Pier after. */
-function wagonArrives(w: World, row: Row<typeof Train>) {
-  if (!row.wagon) return;
-  if (row.at === 1) {
+ * reaches the pier rack (call 65): carriers load none before Q7 is laid, and unload none at the Pier after.
+ * Loader decks load going out only; every carrier's aboard count reserves the shared owed quantity. */
+function footingsArrive(w: World, row: Row<typeof Train>, tick: number) {
+  if (!footCarrier(w, row, tick)) return;
+  if (row.at === 1 && (row.wagon || trainDir(row) > 0)) {
     const works = w.get(Works, worksId(w))!;
-    const need = footOwed(w, row.foot);
-    const n = Math.min(WORKS.wagonCap - row.foot, works.rack, need);
+    const need = footOwed(w, aboard(w, 'foot'));
+    const n = Math.min(footCap(row) - row.foot, works.rack, need);
     if (n <= 0) return;
     w.mut(Works, worksId(w))!.rack -= n;
     row.foot += n;
@@ -147,7 +149,7 @@ function wagonArrives(w: World, row: Row<typeof Train>) {
  * homeward train that is empty and on no build errand when a whole trainload waits (never while the wagon is owed
  * footings). Riders add no stop (the ruling of 12 November): they board and step off where a train already stands.
  * Trains run end to end on their track since v26, so no ask can turn one back short of an errand. */
-function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>): ServiceStop {
+function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>, tick: number): ServiceStop {
   // Slice 5 R2b: a yard's full-load stop, on any line from its TRADE.yards row (freightStop); the greybox route's kit
   // at its rack, on any line with an open leg (legKitService).
   const route = legKitService(w, slot, r);
@@ -157,9 +159,9 @@ function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>): Serv
     freight(k, dir) ||
     (k === 0 && dir < 0 && kitOwed(w, r)) ||
     (k === kitStop(w) && r.logs + r.rails > 0) ||
-    (k === 1 && dir > 0 && r.wagon && r.foot < WORKS.wagonCap && footOwed(w, r.foot) > 0) ||
-    (k === 3 && r.wagon && r.foot > 0 && !q7Laid(w)) ||
-    (k === 4 && dir > 0 && r.wagon && r.foot > 0) ||
+    (k === 1 && dir > 0 && footCarrier(w, r, tick) && r.foot < footCap(r) && footOwed(w, aboard(w, 'foot')) > 0) ||
+    (k === 3 && footCarrier(w, r, tick) && r.foot > 0 && !q7Laid(w)) ||
+    (k === 4 && dir > 0 && footCarrier(w, r, tick) && r.foot > 0) ||
     steelService(w, r, k, dir);
 }
 /** The rows a moved end or stop rewrites (endMoved, stopMoved in ./railway-trains.ts), over the world's Train rows and
@@ -186,7 +188,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
     awake: w.get(Rail, railId(w))!.trains,
     headPct,
     hold,
-    service: (slot) => serviceOf(w, slot, row(slot)),
+    service: (slot) => serviceOf(w, slot, row(slot), tick),
     arrive(slot) {
       freightArrives(w, slot);
       ridersArrive(w, slot, pct, tick);
@@ -201,7 +203,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
         rail.depotRails += r.rails;
         r.logs = r.rails = 0;
       }
-      wagonArrives(w, r);
+      footingsArrive(w, r, tick);
       steelArrives(w, r);
     },
     standing(slot, tick) {
@@ -232,7 +234,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
       // The active train-fed job's kit (its bill, up to the kit car's LINE2_KIT) loads onto whichever line 2 train
       // stands at the village while it is owed.
       const kit = kitJob(w);
-      if (r.at === 0 && kit >= 0 && w.get(QJob, qjobId(w, kit))!.start < 0) {
+      if (!deckHeld(r) && r.at === 0 && kit >= 0 && w.get(QJob, qjobId(w, kit))!.start < 0) {
         const need = depotNeed(w, kit, w.get(QJob, qjobId(w, kit))!);
         const n = Math.min(LINE2_KIT.logs - r.logs, need.logs);
         const rails = Math.min(LINE2_KIT.rails - r.rails, need.rails, w.get(Forge, forgeId(w))!.rack);

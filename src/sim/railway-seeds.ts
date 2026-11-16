@@ -68,6 +68,8 @@ export const SEED_STAGES = [
   'fares-running',
   'house-ready',
   'house-built',
+  'yard-ready',
+  'yard-built',
   'q6-stocked',
   'q6-finishing',
   'q6-done',
@@ -78,9 +80,11 @@ export const SEED_STAGES = [
   'stall-done',
   'cradle-fitted',
   'wagon-on',
+  'yard-wagon',
   'crossing-finishing',
   'crossing-done',
   'deck-laid',
+  'yard-deck',
   'gap-footed',
   'leaf-raised',
   'ring-joined',
@@ -100,6 +104,8 @@ export const isSeedStage = (stage: string): stage is SeedStage => (SEED_STAGES a
 
 /** The world at a seed stage: what the host saves for a jump-in or a look's --rail-seed. */
 export function buildSeedWorld(stage: SeedStage): Seed {
+  if (stage === 'yard-wagon') return railwayAtWorks('wagon-on', railwayAtTrade('yard-built'));
+  if (stage === 'yard-deck') return railwayAtRing('deck-laid', railwayAtTrade('yard-built'));
   if (stage === 'awake') {
     const s = { w: createRailway(), t: 40 };
     railSession(s.w, 'a', 1);

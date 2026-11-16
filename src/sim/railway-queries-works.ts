@@ -1,8 +1,8 @@
 // The Works' and the Roundhouse's derived facts on the world (docs/plans/ecs-migration-railway.md, M8). Pure reads.
 //
-//   footingTotal(w)    every footing's home: Works rack, backs, ground piles, the wagon, pier rack, stall, cradle, sea,
+//   footingTotal(w)    every footing's home: Works rack, backs, ground piles, train decks, pier rack, stall, cradle, sea,
 //                      and Ring Island's railhead rack, bents and counterweight (v27)
-//   pierNeed(w)        footings the pier still wants that are not already set, racked there or aboard the wagon
+//   pierNeed(w)        footings the pier still wants that are not already set, racked there or aboard trains
 //   worksStage(w)      a label for views and the bot
 import type { World } from '../ecs/index.ts';
 import { WORKS } from './railway-works-layout.ts';
@@ -10,8 +10,8 @@ import { SEAM_THROAT, type WorksStage } from './railway-works.ts';
 import { Account, Aperture, Pile, Shed, Train, Works } from './railway-components.ts';
 import { apertureId, FOOT, pierOwed, shedId, worksId } from './railway-queries.ts';
 
-/** Footings aboard any train (the wagon). */
-const wagonFoot = (w: World) => {
+/** Footings aboard every carrier, including loader decks; the conserved total is independent of carrier role. */
+const carrierFoot = (w: World) => {
   let n = 0;
   w.each([Train], (_id, r) => (n += r.foot));
   return n;
@@ -32,13 +32,13 @@ export function footingTotal(w: World) {
     shed.cradle +
     backs +
     piles +
-    wagonFoot(w) +
+    carrierFoot(w) +
     ring.rack +
     ring.set +
     ring.cw
   );
 }
-export const pierNeed = (w: World) => Math.max(0, pierOwed(w, wagonFoot(w))); // after Q7 the wagon carries the ring's
+export const pierNeed = (w: World) => Math.max(0, pierOwed(w, carrierFoot(w))); // after Q7 carriers bring the ring's
 export function worksStage(w: World): WorksStage {
   const works = w.get(Works, worksId(w))!,
     shed = w.get(Shed, shedId(w))!;

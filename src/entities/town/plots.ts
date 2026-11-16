@@ -42,7 +42,12 @@ function paintBoard({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: re
       const y = ch * (0.15 + i * 0.235);
       g.fillStyle = i === 1 ? '#edcf8c' : '#fff5dc';
       g.fillText(lines[i]!, cw * 0.18, y, cw * 0.77);
-      if (i === 1) {
+      if (i === 1 && lines[1] === 'Every train') {
+        // The rack's grooved footing silhouette, in the same place as the house's rider.
+        g.fillRect(cw * 0.065, y - ch * 0.025, cw * 0.07, ch * 0.075);
+        g.fillRect(cw * 0.065, y - ch * 0.055, cw * 0.025, ch * 0.04);
+        g.fillRect(cw * 0.11, y - ch * 0.055, cw * 0.025, ch * 0.04);
+      } else if (i === 1) {
         // one rider silhouette, no font-dependent icon
         g.beginPath();
         g.arc(cw * 0.1, y - ch * 0.04, ch * 0.035, 0, Math.PI * 2);
@@ -159,6 +164,20 @@ export function createTownPlots(owner: OwnedView) {
     const target: Interactable = { id: `town.plot.${k}`, verb: 'Hold to build', at, run };
     const one = [target];
     const params = { x: toWorld(building.x), y: H(toWorld(building.x), building.z), z: building.z, yaw: building.yaw };
+    const loader = 'gives' in need && need.gives === 'loader';
+    const jib = loader
+      ? instantiate(
+          'town.loader-jib',
+          {
+            id: `plot.${k}.jib`,
+            prefab: 'town.loader-jib',
+            pos: [params.x, params.y, params.z],
+            rot: [building.yaw, 0, 0],
+          },
+          { owner },
+        )
+      : null;
+    jib?.setEnabled(false);
     const shell = ['scaffold', 'pieces'].map((phase) =>
       instantiate(
         'town.plot-house',
@@ -207,6 +226,19 @@ export function createTownPlots(owner: OwnedView) {
         1,
       );
     }
+    if (loader) {
+      const frame = new Matrix4()
+        .makeTranslation(params.x, params.y, params.z)
+        .multiply(new Matrix4().makeRotationY(building.yaw));
+      for (const [x, y, z, w, h, d] of [
+        [-2.85, 2.2, 4.03, 0.22, 3.4, 0.22],
+        [-1.9, 3.85, 4.03, 2.1, 0.22, 0.22],
+        [-0.95, 2.85, 4.03, 0.06, 1.8, 0.06],
+        [-0.95, 1.96, 4.03, 0.28, 0.12, 0.12],
+        [-0.95, 0.9, 4.03, 0.8, 0.8, 0.8],
+      ])
+        ghost.outline(frame.clone().multiply(new Matrix4().makeTranslation(x!, y!, z!)), w!, h!, d!);
+    }
     ghost.commit();
     ghost.mesh.visible = false;
     const previous = prices[k - 1];
@@ -241,6 +273,8 @@ export function createTownPlots(owner: OwnedView) {
     });
     return {
       k,
+      loader,
+      jib,
       previous,
       woodNeed,
       stoneNeed,
@@ -320,6 +354,7 @@ export function createTownPlots(owner: OwnedView) {
         } else if (p.site.state === 'none') startSite(p.site, -(tick - bought) / 10);
         if (waiting === p.k && bought >= 0) waiting = -1;
         p.ghost.mesh.visible = offered && money >= price;
+        p.jib?.setEnabled(bought >= 0 && tick >= bought + TRADE.buildTicks);
         if (holding === p.k) {
           if (!offered || money < price || !near(p.at)) release();
           else {
@@ -374,7 +409,7 @@ export function createTownPlots(owner: OwnedView) {
             part.instance.relabel(
               'label',
               offered
-                ? [`Plot ${p.k + 1}`, '+1 rider / minute', `Price ${price}`, `Box ${money}`]
+                ? [`Plot ${p.k + 1}`, p.loader ? 'Every train' : '+1 rider / minute', `Price ${price}`, `Box ${money}`]
                 : [
                     `Plot ${p.k + 1}`,
                     `Timber ${wood} / ${p.woodNeed}`,

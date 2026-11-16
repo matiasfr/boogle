@@ -15,6 +15,7 @@
 //   install        rail.install { line, part, revision }   line 2's longer boiler, once steel is in the bay (R3)
 //   boilerAdopt    standing at the Village   a line 2 train takes its line's boiler fit
 import { defineSystem, type World } from '../ecs/index.ts';
+import { deckHeld } from './railway-queries-trade.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { LINE2_KIT } from './railway-line2-layout.ts';
 import { railInt } from './railway.ts';
@@ -108,7 +109,7 @@ export function steelLoads(w: World, id: number) {
   const need = steelNeed(w),
     r = w.get(Train, id)!;
   // A train carrying a greybox leg's kit takes none of the works' (greybox-route, call 64: never both).
-  if (r.legKit) return;
+  if (deckHeld(r) || r.legKit) return;
   const logs = Math.min(LINE2_KIT.logs - r.logs, need.logs),
     rails = Math.min(LINE2_KIT.rails - r.rails, need.rails, w.get(Forge, forgeId(w))!.rack);
   if (logs <= 0 && rails <= 0) return;
@@ -153,7 +154,7 @@ export function steelArrives(w: World, r: Row<typeof Train>) {
       w.mut(Forge, forgeId(w))!.rack += rails;
       r.rails -= rails;
     }
-  } else if (r.at === RING_ISLAND) {
+  } else if (r.at === RING_ISLAND && !deckHeld(r)) {
     const id = steelId(w),
       s = w.get(Steel, id)!,
       lack = lacks(w);

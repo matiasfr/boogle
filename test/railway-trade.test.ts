@@ -44,6 +44,7 @@ import {
   plotsStakedOf,
   routeFar,
   tillRate,
+  townBuildings,
 } from '../src/sim/railway-queries-trade.ts';
 import { okTune, TUNABLES } from '../src/sim/tune.ts';
 import { footingsOwed, kitOwed, wagonSlot, worksId } from '../src/sim/railway-queries.ts';
@@ -1347,22 +1348,23 @@ test('B1: plot load checks reject future buys, missing thresholds, unbought paym
   assert.throws(() => checkTrade(early, ASLEEP.t), /plot thresholds/);
 });
 
-test('S1: q6-done payoff: three added houses land 72 a minute at four places; plot 3 costs 1600', (t) => {
-  const rates = [0, 1, 2, 3].map((houses) => {
+test('S1/L1: q6-done payoff: plots 1 and 3 land 72 a minute at four places; yard adds no riders', (t) => {
+  const rates = [[], [0], [0, 2], [0, 1, 2]].map((plots) => {
     const w = copy(PIER.w);
     // Isolate the building count on identical q6 train positions and queues. Supply only each tested plot's
     // prerequisites; buying still goes through the rule and the freight/money ledgers remain conserved.
-    for (let k = 0; k < houses; k++) {
+    for (const k of plots) {
       const timber = Math.max(0, TRADE.plots[0][k]!.wood - town(w, 0).wood);
       w.mut(Town, w.lookup(Town, 0)!)!.wood += timber;
       w.mut(Yard, w.lookup(Yard, 0)!)!.made += timber;
       const stone = Math.max(0, TRADE.plots[0][k]!.stone - town(w, 0).stone);
       w.mut(Town, w.lookup(Town, 0)!)!.stone += stone;
       w.mut(Yard, w.lookup(Yard, 1)!)!.made += stone;
-      if (k === 2) assert.equal(plotPrice(w, 0, k, 50), 1600);
+      if (k === 2 && plots.includes(1)) assert.equal(plotPrice(w, 0, k, 50), 1600);
       credit(w, plotPrice(w, 0, k, 50));
       assert.equal(sendBuy(w, PIER.t - TRADE.buildTicks, k).status, 'accepted');
     }
+    if (plots.includes(1)) assert.equal(townBuildings(w, 0, PIER.t), 4, 'the yard adds no rider house');
     // The q6 seed has the old two-building queues. Let five minutes of the new demand reach the trains, then
     // measure ten minutes before the twenty-minute box fills (a full box deliberately stops fares).
     for (let tick = PIER.t + 1; tick <= PIER.t + 3000; tick++) railTick(w, tick);
@@ -1371,7 +1373,7 @@ test('S1: q6-done payoff: three added houses land 72 a minute at four places; pl
     checkTrade(w, PIER.t + 9000);
     return (tillRow(w).landed - start) / 10;
   });
-  t.diagnostic(`q6-done landed fares/min, 2/3/4/5 buildings: ${rates.join(', ')}`);
+  t.diagnostic(`q6-done landed fares/min, 2/3/4 houses then 4 houses + yard: ${rates.join(', ')}`);
   assert.ok(rates[1]! >= 1.3 * rates[0]!, `${rates[1]} vs ${rates[0]}`);
   assert.deepEqual(rates, [36, 54, 72, 72], 'four places saturate after the second added house');
   const s = { w: copy(PIER.w), t: PIER.t };

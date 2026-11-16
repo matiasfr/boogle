@@ -12,7 +12,7 @@ import {
   LINE2_STATIONS,
 } from '../sim/railway-line2-layout.ts';
 import { RING_HALT, RING_HEAD, RING_JOINT_UP, RING_STEEL_WORKS, ringAt } from '../sim/railway-ring-layout.ts';
-import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN } from '../sim/railway-works-layout.ts';
+import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN, WORKS_RACK } from '../sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../sim/railway-lines.ts';
 import { RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
 
@@ -64,6 +64,7 @@ const VILLAGE_LINE1 = RAIL_LINES[0]!.halts[0]!.platforms[0],
  * second: along the line; boiler-long lands there too, to ride out at 25 m/s). */
 const VILLAGE_LINE2 = RAIL_LINES[1]!.halts[0]!.platforms[0],
   QUARRY_LINE2 = RAIL_LINES[1]!.halts[1]!.platforms[0];
+const LOADER_LAND = near(QUARRY_LINE2, 0, 0, QUARRY_LINE2.y / 100, WORKS_RACK);
 
 /** The greybox route's leg 1 (step 5). Ring Island's first frame and rack stand on the island's west platform, 7 m
  * apart (deck 8.9 m): land between them, in the 4 m reach of both, facing the frame. The Gorge: the north platform at
@@ -174,6 +175,13 @@ export const JUMPS: readonly Jump[] = [
     label: 'Works open',
     line: 'Split-rock Works is open; the kiln is cold',
     land: near(WORKS_KILN, -6, 0, 24, WORKS_KILN), // in front of the kiln, clear of its walls
+  },
+  {
+    stage: 'yard-wagon',
+    menu: false,
+    label: 'Loader yard',
+    line: 'The loader yard stands; footings ride every line 2 train',
+    land: LOADER_LAND,
   },
   {
     stage: 'crossing-finishing',

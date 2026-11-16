@@ -31,7 +31,7 @@ export type TradeYard = {
  * one integer). */
 export type TradeRoute = { town: number; line: number; a: number; b: number | 'end' };
 /** A plot's staking thresholds: the town's delivered timber and stone. */
-export type TradePlot = { wood: number; stone: number; base: number };
+export type TradePlot = { wood: number; stone: number; base: number; riders: number; gives?: 'loader' };
 export const TRADE = {
   yards: [
     { line: 0, stop: 1, everyTicks: 150, cap: 8, town: 0, home: 0, goods: 'wood' },
@@ -43,9 +43,9 @@ export const TRADE = {
   // R2: cargo stakes plots (call 1). The Village's first three; plots 4 to 8 stay unstaked until priced.
   plots: [
     [
-      { wood: 8, stone: 0, base: 300 },
-      { wood: 24, stone: 0, base: 800 },
-      { wood: 40, stone: 16, base: 800 },
+      { wood: 8, stone: 0, base: 300, riders: 1 },
+      { wood: 24, stone: 0, base: 800, riders: 0, gives: 'loader' },
+      { wood: 40, stone: 16, base: 800, riders: 1 },
     ],
   ] as const satisfies readonly (readonly TradePlot[])[],
   stakedAtOnce: 2,

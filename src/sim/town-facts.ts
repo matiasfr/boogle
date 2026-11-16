@@ -47,7 +47,7 @@ export function townHas(r: TownRead, f: TownFact): boolean {
     case 'pier':
       return r.completed >= 6;
     case 'town':
-      return !!r.houses?.length;
+      return r.houses?.some((k) => (TRADE.plots[0][k]?.riders ?? 0) > 0) ?? false;
     case 'stone':
       return r.houses?.includes(2) ?? false;
   }

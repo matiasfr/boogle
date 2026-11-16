@@ -9,11 +9,19 @@
 import { invariant, need } from './railway-drive.ts';
 import { act, advance, railwayAtTrains, type Seed } from './railway-seed-route.ts';
 import { till, town } from './railway-rows.ts';
-import { plotPrice } from './railway-queries-trade.ts';
+import { plotPrice, plotsStaked } from './railway-queries-trade.ts';
 import { TRADE, TRADE_PCT } from './railway-trade-layout.ts';
 
-export type TradeStage = 'freight-running' | 'fares-running' | 'house-ready' | 'house-built';
-export const TRADE_STAGES: readonly TradeStage[] = ['freight-running', 'fares-running', 'house-ready', 'house-built'];
+export type TradeStage =
+  'freight-running' | 'fares-running' | 'house-ready' | 'house-built' | 'yard-ready' | 'yard-built';
+export const TRADE_STAGES: readonly TradeStage[] = [
+  'freight-running',
+  'fares-running',
+  'house-ready',
+  'house-built',
+  'yard-ready',
+  'yard-built',
+];
 
 /** The railway at a trade stage. */
 export function railwayAtTrade(stage: TradeStage): Seed {
@@ -30,13 +38,23 @@ export function railwayAtTrade(stage: TradeStage): Seed {
       need(waited++ <= 12000, `${stage}: no fares landed`);
       advance(s, 1);
     }
-  if (stage === 'house-ready' || stage === 'house-built') {
+  if (stage === 'house-ready' || stage === 'house-built' || stage === 'yard-ready' || stage === 'yard-built') {
     while (till(s.w).boogles < plotPrice(s.w, 0, 0, TRADE_PCT.pricePct)) {
       need(waited++ <= 18000, `${stage}: first house never affordable`);
       advance(s, 1);
     }
-    if (stage === 'house-built') {
+    if (stage !== 'house-ready') {
       need(act(s, 'a', 'rail.buy', { id: 0 }) === 1, 'house-built: buy refused');
+      advance(s, TRADE.buildTicks);
+    }
+  }
+  if (stage === 'yard-ready' || stage === 'yard-built') {
+    while (!plotsStaked(s.w, 0).includes(1) || till(s.w).boogles < plotPrice(s.w, 0, 1, TRADE_PCT.pricePct)) {
+      need(waited++ <= 36000, `${stage}: loader yard never affordable`);
+      advance(s, 1);
+    }
+    if (stage === 'yard-built') {
+      need(act(s, 'a', 'rail.buy', { id: 1 }) === 1, 'yard-built: buy refused');
       advance(s, TRADE.buildTicks);
     }
   }
