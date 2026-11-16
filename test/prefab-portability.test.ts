@@ -15,6 +15,7 @@ import { prefabs as curio } from '../src/content/prefabs/curio.ts';
 import { prefabs as shop } from '../src/content/prefabs/shop.ts';
 import { levels as shopLevels } from '../src/content/levels/shop.ts';
 import { prefabs as railway } from '../src/content/prefabs/railway.ts';
+import { prefabs as seaLadder } from '../src/content/prefabs/sea-ladder.ts';
 import { prefabs as greybox } from '../src/content/prefabs/greybox.ts';
 import { prefabs as town } from '../src/content/prefabs/town.ts';
 import { prefabs as rock } from '../src/content/prefabs/bell-rock.ts';
@@ -128,6 +129,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...town,
           ...rock,
           ...railway,
+          ...seaLadder,
           ...kit,
           ...shop,
           ...curio,
