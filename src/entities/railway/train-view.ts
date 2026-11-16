@@ -270,6 +270,8 @@ export async function createRailwayTrains(
       slot,
       line,
       model,
+      riderCar: { mesh: model.cars[1]!, top: wagon.TRAIN_CARS[1]!.top },
+      riderCount: -1,
       cars,
       steel,
       /** The steel car is coupled as drawn: the row wears the longer boiler and a live fit's puff has covered it. */
@@ -710,6 +712,7 @@ export async function createRailwayTrains(
       const last = { ...trainRow(w, tr.slot) };
       tr.last = last;
       tr.count = -1;
+      tr.riderCount = -1;
       // A restore or a late join shows the rows only: no beat, and the next frame's fit is not an edge.
       tr.seen = false;
       tr.beat = -1;
@@ -958,7 +961,11 @@ export async function createRailwayTrains(
       const marks = kitMarks(w, tick);
       trains.forEach((tr) => {
         const row = trainRow(w, tr.slot);
-        folk.folk.setRiders(tr.slot, on ? row.riders : 0, { mesh: tr.model.cars[1]!, top: wagon.TRAIN_CARS[1]!.top });
+        const riders = on && Number.isFinite(row.riders) ? Math.max(0, Math.min(4, Math.floor(row.riders))) : 0;
+        if (riders !== tr.riderCount) {
+          tr.riderCount = riders;
+          folk.folk.setRiders(tr.slot, riders, tr.riderCar);
+        }
         tr.board?.set(marks.get(tr.slot) ?? '');
         // Joined from the shed on a live tick: its cars grow in over JOIN_S (their bodies are whole at once).
         if (tr.seen && tr.last?.phase === TRAIN_PHASE.SHED && row.phase !== TRAIN_PHASE.SHED) {

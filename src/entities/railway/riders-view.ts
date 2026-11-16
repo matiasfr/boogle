@@ -6,7 +6,7 @@ import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { compiled } from '../../prefab/catalogue.ts';
 import kit from '../../../content/built/levels/railway-till.json' with { type: 'json' };
 import { TRADE } from '../../sim/railway-trade-layout.ts';
-import { town } from '../../sim/railway-rows.ts';
+import { Town } from '../../sim/railway-components.ts';
 import { routeFar } from '../../sim/railway-queries-trade.ts';
 import { railCallPlatform, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
@@ -18,52 +18,95 @@ export function createRiders(adapter: RailwayAdapter, owner: OwnedView) {
   const boards = loadLevelArtifact(kit, compiled.prefabs)
     .placements.slice(2)
     .map((p) => instantiate('railway.waiting-board', p, { owner, texts: { waiting: ['0', 'Waiting'] } }));
-  const drawn = [-1, -1];
   const route = TRADE.routes[0];
-  const tangent = { x: 0, z: 0, ux: 0, uz: 1 };
+  const halts = new Map<number, number>();
+  LINE_HALTS.forEach((h, i) => {
+    if (h.line === route.line) halts.set(h.stop, i);
+  });
+  const crowds = boards.map((board, end) => {
+    const point = { x: 0, y: 0, z: 0, yaw: 0 };
+    const crowd = {
+      count: -1,
+      stop: -1,
+      platform: null as ReturnType<typeof railCallPlatform> | null,
+      tangent: { x: 0, z: 0, ux: 0, uz: 1 },
+      at(k: number) {
+        const { ux, uz } = crowd.tangent,
+          p = crowd.platform!,
+          along = -1.9 + (k % 6) * 0.85 + Math.floor(k / 6) * 0.12,
+          across = (end ? -0.3 : 1.25) + Math.floor(k / 6) * (end ? 0.7 : -0.7);
+        point.x = p.x / 100 + ux * along - uz * across;
+        point.y = p.y / 100;
+        point.z = p.z / 100 + uz * along + ux * across;
+        point.yaw = Math.atan2(-uz * (end ? -1 : 1), ux * (end ? -1 : 1));
+        return point;
+      },
+    };
+    board.setEnabled(false);
+    return crowd;
+  });
   const hide = () => {
-    for (let end = 0; end < 2; end++) folk.setWaiting(end, 0, () => ({ x: 0, y: 0, z: 0, yaw: 0 }));
+    for (let end = 0; end < crowds.length; end++) {
+      const crowd = crowds[end]!;
+      if (crowd.count === 0) continue;
+      crowd.count = 0;
+      folk.setWaiting(end, 0, crowd.at);
+      boards[end]!.setEnabled(false);
+    }
   };
   owner.cleanup(hide);
-  return {
-    update() {
-      const w = adapter.read.world(),
-        on = line2Trains(w),
-        row = town(w, route.town);
-      const stops = trainStops(w, route.line);
-      for (let end = 0; end < 2; end++) {
-        const stop = end ? routeFar(w, 0) : route.a;
-        const halt = LINE_HALTS.findIndex((h) => h.line === route.line && h.stop === stop);
-        const platform = railCallPlatform(w, halt, end ? -1 : 1, adapter.read.tickNow());
-        line2At(stops[stop]! / 100, tangent);
-        const { ux, uz } = tangent;
-        const facing = end ? -1 : 1;
-        const yaw = Math.atan2(-uz * facing, ux * facing);
-        const at = (along: number, across: number) => ({
-          x: platform.x / 100 + ux * along - uz * across,
-          y: platform.y / 100,
-          z: platform.z / 100 + uz * along + ux * across,
-          yaw,
-        });
-        const n = on ? (end ? row.wait1 : row.wait0) : 0;
-        // Two rows of six face their track, with a small stagger. Leave the island's central lane and the
-        // far platform's bench (5 m behind its centre), signal and lever clear.
-        folk.setWaiting(end, Math.min(12, n), (k) =>
-          at(
-            -1.9 + (k % 6) * 0.85 + Math.floor(k / 6) * 0.12,
-            (end ? -0.3 : 1.25) + Math.floor(k / 6) * (end ? 0.7 : -0.7),
-          ),
-        );
-        const board = boards[end]!;
-        board.setEnabled(n > 12);
-        const p = at(3.4, end ? 0 : 0.8);
-        board.root.position.set(p.x, p.y, p.z);
-        board.root.rotation.y = yaw;
-        if (n !== drawn[end]) {
-          drawn[end] = n;
-          board.relabel('sign', [String(n), 'Waiting']);
-        }
+  function update() {
+    const w = adapter.read.world(),
+      id = w.lookup(Town, route.town),
+      row = id === undefined ? undefined : w.get(Town, id);
+    if (!row || !line2Trains(w)) {
+      hide();
+      return;
+    }
+    const stops = trainStops(w, route.line);
+    for (let end = 0; end < crowds.length; end++) {
+      const crowd = crowds[end]!;
+      const stop = end ? routeFar(w, 0) : route.a;
+      const halt = halts.get(stop)!;
+      const platform = railCallPlatform(w, halt, end ? -1 : 1, adapter.read.tickNow());
+      const raw = end ? row.wait1 : row.wait0;
+      const n = Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+      // Counts can stay fixed while the route grows or its boarding side changes. Repose on either edge.
+      const moved = stop !== crowd.stop || platform !== crowd.platform;
+      if (n === crowd.count && !moved) continue;
+      if (moved) {
+        crowd.stop = stop;
+        crowd.platform = platform;
+        line2At(stops[stop]! / 100, crowd.tangent);
       }
+      const { ux, uz } = crowd.tangent;
+      const facing = end ? -1 : 1;
+      const yaw = Math.atan2(-uz * facing, ux * facing);
+      // Two rows of six face their track, with a small stagger. Leave the island's central lane and the
+      // far platform's bench (5 m behind its centre), signal and lever clear.
+      folk.setWaiting(end, Math.min(12, n), crowd.at);
+      const board = boards[end]!;
+      board.setEnabled(n > 12);
+      if (moved) {
+        const across = end ? 0 : 0.8;
+        board.root.position.set(
+          platform.x / 100 + ux * 3.4 - uz * across,
+          platform.y / 100,
+          platform.z / 100 + uz * 3.4 + ux * across,
+        );
+        board.root.rotation.y = yaw;
+      }
+      if (n !== crowd.count) {
+        crowd.count = n;
+        board.relabel('sign', [String(n), 'Waiting']);
+      }
+    }
+  }
+  return {
+    update,
+    restore() {
+      for (const crowd of crowds) crowd.count = -1;
+      update();
     },
   };
 }

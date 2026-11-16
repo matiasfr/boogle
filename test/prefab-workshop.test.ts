@@ -116,7 +116,7 @@ export function captureWorkshop() {
       ['railway.halt-ramp', () => chair],
       ['railway.halt-lever', () => chair],
       ['railway.halt-attachment', () => chair],
-      ['railway.till-parts', () => chair],
+      ['railway.till-parts', () => chair], // Registry completeness only, like the other unused builders; this captures workshop geometry.
       ['roundhouse.bay', () => chair],
       ['roundhouse.table', () => chair],
       [

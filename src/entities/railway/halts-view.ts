@@ -779,7 +779,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   return {
     restore() {
       refreshStops();
-      riders.update();
+      riders.restore();
       shown = line2Trains(adapter.read.world());
       inShed.fill(null);
       joining.fill(-1);

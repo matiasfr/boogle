@@ -156,6 +156,15 @@ models`'.
     at about 17 m, its digits small there; island waiting falls 10 to 6 as four board; far crowd is 12 with "13 Waiting".
     `node dev/ship-check.ts` and the Place level checks pass (the latter excludes station props). Placeholder strings:
     "Boogles", "Waiting". Real-time feel and later far-halt layouts unverified; not tested on a device.
+  - Review fixes (16 November): missing Till/Town rows hide their views and recover; non-finite counts become zero,
+    coins/balance clamp to the cap, riders clamp to their drawn maxima. Crowd poses reuse scratch points and update
+    on count/platform changes; train car descriptors are retained. Review regressions fail before and pass after.
+    Till movement checked without moving its anchor: its counter ends 2 m before the goods-door opening; all explicit
+    jump-in landings clear it (nearest, `q5-done`, 12.21 m including player radius). The production breaker routes in
+    `dev/look/bots/railway.ts` and `railway-works.ts` use the collider-aware bot. `town-a3-hall.ts` walked from the
+    `fares-running` landing through the hall, past the till and out the goods door to that breaker without recovery;
+    minimum sampled capsule clearance 0.144 m. Opened `.look/a3-hall-still.png` and its motion sheet; hall and doorway
+    remain open. Full `npm run level-check` passed; this short bot witness covers the station prop it excludes.
 - [ ] **K1. Checkpoint: the economy seen.** After A1 to A3. The main session opens the six stills; one real-time clip of
   a train unloading at the island; `docs/game-design/place.md` gains the town economy's views (one doc edit for all
   three steps, so they share no file). Live as every ship is; (review) the owner is pointed at the economy at B2, the
