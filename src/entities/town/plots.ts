@@ -29,12 +29,12 @@ const TIMBER = new Color('#ab6b34'),
 
 // Placeholder words for The Boogler; icons and counts follow the depot boards. Paint only: instantiate owns signs.
 function paintBoard({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: readonly string[]) {
+  g.fillStyle = '#493522';
+  g.fillRect(0, 0, cw, ch);
+  g.strokeStyle = '#edcf8c';
+  g.lineWidth = ch * 0.025;
+  g.strokeRect(ch * 0.04, ch * 0.04, cw - ch * 0.08, ch - ch * 0.08);
   if (lines.length === 4) {
-    g.fillStyle = '#493522';
-    g.fillRect(0, 0, cw, ch);
-    g.strokeStyle = '#edcf8c';
-    g.lineWidth = ch * 0.025;
-    g.strokeRect(ch * 0.04, ch * 0.04, cw - ch * 0.08, ch - ch * 0.08);
     g.textBaseline = 'middle';
     g.textAlign = 'left';
     g.font = `900 ${ch * 0.19}px Figtree, system-ui, sans-serif`;
@@ -57,11 +57,6 @@ function paintBoard({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: re
     return;
   }
   const timberOnly = lines.length === 2;
-  g.fillStyle = '#493522';
-  g.fillRect(0, 0, cw, ch);
-  g.strokeStyle = '#edcf8c';
-  g.lineWidth = ch * 0.025;
-  g.strokeRect(ch * 0.04, ch * 0.04, cw - ch * 0.08, ch - ch * 0.08);
   g.fillStyle = '#fff5dc';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
