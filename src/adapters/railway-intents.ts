@@ -44,7 +44,7 @@ export type RailwayIntent =
   | { op: 'rail.steelTake'; kind: 0 | 1 }
   | { op: 'rail.legStock'; leg: number }
   | { op: 'rail.grant' | 'rail.gate'; id: number }
-  | { op: 'rail.install'; line: number; part: 1; revision: number }
+  | { op: 'rail.install'; line: number; part: 2; revision: number }
   | { op: 'rail.boilerTake' | 'rail.boilerFit'; revision: number }
   | { op: 'rail.boilerDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamTake'; revision: number }
@@ -66,7 +66,7 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.steelTake' && (e.kind === undefined || railInt(e.kind, 1)))
     return { op: e.op, kind: e.kind === 1 ? 1 : 0 };
   if (e.op === 'rail.install' && e.line === LINE2 && e.part === 1 && railInt(e.revision, BOILER_MAX))
-    return { op: e.op, line: LINE2, part: 1, revision: e.revision };
+    return { op: e.op, line: LINE2, part: 2, revision: e.revision };
   // The greybox route (docs/plans/greybox-route.md, leg 1 step 4): catalog indexes.
   if (e.op === 'rail.legStock' && railInt(e.leg, RAIL_LEGS.length - 1)) return { op: e.op, leg: e.leg };
   if (e.op === 'rail.grant' && railInt(e.id, RAIL_GRANTS.length - 1)) return { op: e.op, id: e.id };
@@ -275,7 +275,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     feedSteel: () => submit({ op: 'rail.steel' }),
     /** Install line 2's longer boiler at the table, on the line's fit you saw (`Line.boiler`). */
     installBoiler: (revision: number) =>
-      railInt(revision, BOILER_MAX) && submit({ op: 'rail.install', line: LINE2, part: 1, revision }),
+      railInt(revision, BOILER_MAX) && submit({ op: 'rail.install', line: LINE2, part: 2, revision }),
     /** The greybox route: feed your back's logs and rails into leg `leg`'s current frame (a RAIL_LEGS index); take a
      * pickup for the room (a RAIL_GRANTS index); open a barrier (a RAIL_GATES index). */
     feedLeg: (leg: number) => railInt(leg, RAIL_LEGS.length - 1) && submit({ op: 'rail.legStock', leg }),

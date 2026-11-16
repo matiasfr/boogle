@@ -540,7 +540,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     }
   }
   /** The engine's cruise in the garage, by the room's fit. */
-  const today = () => speedMs(BOILERS[facts.longFitted ? 'long' : 'boiler'].speed);
+  const today = () => speedMs(BOILERS[facts.longFitted ? 'long' : facts.boilerRev === 1 ? 'table' : 'boiler'].speed);
   /** The copy's first appearance on a live tick (design review, call 22): behind one steam puff, with a toot. */
   function arrive() {
     for (let i = 0; i < 26; i++) {

@@ -27,10 +27,14 @@ export const TRAIN = {
    * the nose-to-tail clearance at this floor is 6.5 m. */
   sepCm: 2740,
 } as const;
-/** A train's cruise (cm a tick) by the boiler it wears (`Train.boiler`; ring-island-build2, R3): the standard boiler
- * (its line's own speed, 20 m/s) and the longer one (25 m/s, line 2's install). Row 0 is never read for a speed: a
- * train on the standard boiler runs at its line's, so every v27 leg is bit for bit (test/railway-install.test.ts). */
-export const BOILER_SPEED = [200, 250] as const;
+/** Boiler profiles in cm/tick and cm/tick²: initial fit, table upgrade, longer boiler. A running train keeps its
+ * row until its next Village stand. Row 0's catalog profile also supports isolated fixture lines. */
+export const BOILER = [
+  { speed: 140, accel: 2.5, brake: 3.5 },
+  { speed: 200, accel: 3.5, brake: 3.5 },
+  { speed: 250, accel: 3.5, brake: 3.5 },
+] as const;
+export const BOILER_SPEED = BOILER.map((row) => row.speed);
 /** The last boiler row. */
 export const BOILER_MAX = BOILER_SPEED.length - 1;
 /** A line's cruise (cm a tick) and acceleration (cm a tick²); TRAIN's by default. `brake` (cm a tick²), when set, is
@@ -287,10 +291,10 @@ export const boilerSpeed = (line: LineRef, boiler = 0) => (boiler > 0 ? BOILER_S
 /** The kin a train wearing `boiler` runs at on `line` (its line's own object on the standard boiler). */
 export function boilerKin(line: LineRef, boiler = 0): TrainKin {
   const l = lineDef(line);
-  return boiler > 0 ? { speed: boilerSpeed(line, boiler), accel: l.accel } : l;
+  return boiler > 0 ? BOILER[boiler]! : l;
 }
 /** The kin a leg to halt `to` (-1 a signal) on `track` runs at, wearing `boiler`: its line's (the boiler's cruise),
- * braking at the halt's `brake` when it ends there going up (track 0). With `boiler` 0 it is v27's, unchanged. */
+ * braking at the halt's `brake` when it ends there going up (track 0). */
 export function stopKin(line: LineRef, to: number, track: number, boiler = 0): TrainKin {
   const l = boilerKin(line, boiler),
     brake = track === 0 && to >= 0 ? lineDef(line).halts[to]?.brake : undefined;

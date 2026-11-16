@@ -1643,7 +1643,7 @@ function gate15(fed: boolean) {
     if (yard < 0 && st.yardLogs + st.yardRails === STEEL.logs + STEEL.rails) yard = s.t - t0;
     if (yard >= 0 && st.lit < 0) feedSteel(s);
     if (home < 0 && bay(s.w) >= 1) home = s.t - t0;
-    if (home >= 0 && act(s, 'a', 'rail.install', { line: LINE2, part: 1, revision: 0 })) installed = s.t - t0;
+    if (home >= 0 && act(s, 'a', 'rail.install', { line: LINE2, part: 2, revision: 1 })) installed = s.t - t0;
   }
   assert.equal(invariant(s.w), null);
   return { yard, home, installed };

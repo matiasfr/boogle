@@ -707,7 +707,7 @@ export async function createRailwayTrains(
         c.mesh.scale.setScalar(1);
         c.rock.position.y = -(BOTTOM + c.hy);
       }
-      tr.carOn = on && (last.boiler ?? 0) >= 1;
+      tr.carOn = on && (last.boiler ?? 0) >= 2;
       tr.model.cars[0]!.scale.set(1, 1, 1);
       drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
     });
@@ -973,7 +973,7 @@ export async function createRailwayTrains(
         // puff of steam covers the swap, then a clank and a short squash, then a toot. Riders keep their seats: no
         // collider or seat changes.
         const loco = tr.model.cars[0]!;
-        if (tr.seen && fit === 1 && tr.wears === 0 && tr.beat < 0 && !reducedMotion) {
+        if (tr.seen && fit === 2 && tr.wears < 2 && tr.beat < 0 && !reducedMotion) {
           tr.beat = 0;
           tr.model.chimneyTop.getWorldPosition(beatAt);
           // The same steam at the tail, where the steel car comes on (posed there already, under the land).
@@ -1011,23 +1011,23 @@ export async function createRailwayTrains(
           const k = u > 0 && u < 1 ? Math.sin(u * Math.PI) : 0;
           loco.scale.set(1 + 0.04 * k, 1 - 0.07 * k, 1 + 0.04 * k);
           if (at(BEAT.toot)) whistle(tr.cars[0]!.x, tr.cars[0]!.z);
-          if (tr.beat >= BEAT.toot || fit !== 1) {
+          if (tr.beat >= BEAT.toot || fit !== 2) {
             tr.beat = -1;
             loco.scale.set(1, 1, 1);
           }
         }
         tr.seen = true;
         // A restore, a late join and reduced motion have no beat: the car is there with the row.
-        tr.carOn = !!wears;
+        tr.carOn = wears >= 2;
         if (wears !== tr.wears) {
           tr.wears = wears;
-          if (tr.cab) tr.cab.body.visible = !wears;
-          tr.long.body.visible = !!wears;
-          const c = wears ? tr.long.chimney : shape.ENGINE_BOILER.chimney;
+          if (tr.cab) tr.cab.body.visible = wears < 2;
+          tr.long.body.visible = wears >= 2;
+          const c = wears >= 2 ? tr.long.chimney : shape.ENGINE_BOILER.chimney;
           tr.model.chimneyTop.position.set(0, c.y, c.z);
         }
-        tr.boiler.visible = worn && !wears;
-        tr.long.boiler.visible = tr.long.lashing.visible = worn && !!wears;
+        tr.boiler.visible = worn && wears < 2;
+        tr.long.boiler.visible = tr.long.lashing.visible = worn && wears >= 2;
         if (worn !== tr.fitted()) tr.fit(worn);
         if (tr.last && on && row.phase === TRAIN_PHASE.RUN && tr.last.phase !== TRAIN_PHASE.RUN)
           whistle(tr.cars[0]!.x, tr.cars[0]!.z);

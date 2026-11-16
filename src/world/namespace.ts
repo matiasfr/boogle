@@ -111,7 +111,8 @@
 // Follows heavy-load v49; the source catalog changes with the ground. No migration.
 // v51 (2026-11-15): Works flow step 1 casts the breaker at the boiler fit, not Q6; the save invariant follows.
 // No shape change or migration.
-export const WORLD_NS = 'v51';
+// v52 (2026-11-15): train progression adds 14/20/25 boiler rows and a train per early extension.
+export const WORLD_NS = 'v52';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

@@ -6,9 +6,31 @@ import { pierLaid } from './railway-line2-layout.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from './railway-works.ts';
 import { railInt, RAILWAY_MAX_INT } from './railway.ts';
-import { Account, Aperture, Beam, Boiler, Leg, QJob, Shed, Train, Works, WorksClock } from './railway-components.ts';
+import {
+  Account,
+  Aperture,
+  Beam,
+  Boiler,
+  Leg,
+  Line,
+  QJob,
+  Shed,
+  Train,
+  Works,
+  WorksClock,
+} from './railway-components.ts';
 import { legKitPut } from './railway-sys-route-kit.ts';
-import { aboard, boilerHeld, FOOT, qCompleted, roomFor, shedId, wagonSlot, worksId } from './railway-queries.ts';
+import {
+  aboard,
+  boilerHeld,
+  FOOT,
+  lineId,
+  qCompleted,
+  roomFor,
+  shedId,
+  wagonSlot,
+  worksId,
+} from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 // ---------------------------------------------------------------- the Works and the Roundhouse (./railway-works.ts)
@@ -139,7 +161,7 @@ export const cradle = defineSystem(
  * waits for its train, and after it couples, a turn is refused: no press is accepted and silent. */
 export const turn = defineSystem(
   'rail.turn',
-  { reads: [QJob], writes: [Shed, Train], phase: 'act', order: 39 },
+  { reads: [QJob], writes: [Shed, Train, Line], phase: 'act', order: 39 },
   (w, { e, tick }: Act) => {
     const h = w.get(Shed, shedId(w))!;
     if (h.stall !== WORKS.stall || !railInt(e.to, 1) || e.revision !== h.tableRev || e.to === h.table) return 0;
@@ -148,6 +170,9 @@ export const turn = defineSystem(
     const hm = w.mut(Shed, shedId(w))!;
     hm.table = e.to;
     hm.tableRev++;
+    // The table's first turn commissions the 20 m/s fit for both home lines.
+    // Trains adopt it at their next Village stand, so no running leg changes.
+    for (const line of [0, 1]) Object.assign(w.mut(Line, lineId(w, line))!, { boiler: 1, fitted: tick });
     commission(w, tick);
     return 1;
   },

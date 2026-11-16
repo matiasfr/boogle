@@ -66,7 +66,14 @@ export function checkSteel(w: World) {
   // must relax `bay < 1` here, or a fitted room with an empty bay fails its load.
   const ls = lines(w);
   if (ls.some((l) => !railInt(l.boiler, BOILER_MAX) || !railInt(l.fitted, RAILWAY_MAX_INT, -1))) bad('boiler bounds');
-  if (ls.some((l, line) => l.boiler > 0 !== l.fitted >= 0 || (l.boiler > 0 && (line !== LINE2 || bay < 1))))
+  if (
+    ls.some(
+      (l, line) =>
+        l.boiler > 0 !== l.fitted >= 0 ||
+        (line <= LINE2 ? l.boiler >= 1 !== (shed(w).table === 1) : l.boiler !== 0) ||
+        (l.boiler === 2 && (line !== LINE2 || bay < 1)),
+    )
+  )
     bad('boiler fit');
   if (ts.some((r, slot) => !railInt(r.boiler, ls[RAIL_TRAINS[slot]!.line]!.boiler))) bad('boiler aboard');
 }

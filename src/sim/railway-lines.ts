@@ -84,6 +84,8 @@ export type RailLineDef = {
   speed: number;
   /** Cm a tick². */
   accel: number;
+  /** Braking may be stronger than the initial boiler's pull-away. */
+  brake?: number;
   /** Set on a line with the balanced hold at its ends (railway-trains.ts, balancedHold): the most ticks past its dwell
    * a train ready to leave an end waits for the gap ahead to grow to the gap behind. A safe integer from 1 to
    * BALANCE_MAX_TICKS (balanceOk; trainPlaces refuses any other). */
@@ -238,8 +240,9 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     ],
     home: 1,
     trains: 1,
-    speed: 200,
-    accel: 3.5,
+    speed: 140,
+    accel: 2.5,
+    brake: 3.5,
   },
   {
     id: 'line2',
@@ -461,8 +464,9 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     ],
     home: 0,
     trains: 3,
-    speed: 200,
-    accel: 3.5,
+    speed: 140,
+    accel: 2.5,
+    brake: 3.5,
     // The balanced hold, capped 60 s past the dwell (R3b, call 47).
     balance: 600,
     // The greybox route: 3, then 6 from the first section laid (ruling A.4, call 63; six from short-turn's ruling on

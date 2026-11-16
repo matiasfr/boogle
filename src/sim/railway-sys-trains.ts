@@ -209,14 +209,14 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold): Tra
       freightLoads(w, slot);
       // R3: riders waiting here to ride its way board, whatever it stopped for.
       ridersBoard(w, slot);
+      const r = row(slot);
+      // Each line takes its fit standing at the Village; a running leg retains its own boiler row.
+      if (r.at === 0) boilerAdopt(w, trainId(w, slot), RAIL_TRAINS[slot]!.line);
       if (!line2(slot)) {
         if (legKitLoad(w, slot, tick) === 'hold') return 'hold';
         return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
       }
-      const r = row(slot);
-      // A train standing at the Village takes line 2's boiler fit (ring-island-build2, R3): standing, so no leg in
-      // flight changes speed.
-      if (r.at === 0) boilerAdopt(w, trainId(w, slot));
+
       // The footing wagon couples to the first line 2 train standing at the village once it has rolled out; a train
       // standing there when it is due holds its departure for it (at most WORKS.rollTicks).
       if (r.at === 0 && wagonSlot(w) < 0) {

@@ -244,7 +244,7 @@ function refresh() {
   }
   // Through a real install the rows count from the old numbers to the new, though the room's rows already say fitted.
   const landing = snap.real && snap.phase === 'moment';
-  const rows = rowsFor(snap.cat, snap.sel, snap.facts.longFitted && !landing);
+  const rows = rowsFor(snap.cat, snap.sel, landing ? 1 : snap.facts.boilerRev);
   const html = rows.map((r, i) => rowHtml(r, i, snap)).join('');
   if (html !== shownKey) {
     shownKey = html;
