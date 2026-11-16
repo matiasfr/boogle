@@ -99,7 +99,6 @@ add(
 
 // Trains and seats.
 add('Seats', 'riders.perCar', 'Rider places a train', TRADE.riderPlaces, 'riders', 'Separate from four player seats');
-add('Seats', 'seats.six', 'Seats in a car after the Six fit-out', 6, 'seats', '');
 add('Seats', 'trains.perLine', 'Trains on a line', 2, 'trains', 'Line 2 has two');
 add('Seats', 'cars.base', 'Passenger cars a train starts with', 1, 'cars', 'The free first car');
 add('Seats', 'cars.second', 'Passenger cars after the second-car buy', 2, 'cars', 'The cap is four cars');
@@ -240,20 +239,14 @@ add('Source upgrades', 'cut.rack', 'Labour and waiting one rack step removes', 0
 add('Source upgrades', 'cut.loader', 'Labour and waiting one loader step removes', 0.03, 'of the rest', 'Stand-in');
 
 // Seats: the material bills (hauled) and the old Boogle prices (for the seats-in-Boogles room).
-export type SeatStep = 'six' | 'car' | 'express';
+// The Six fit-out is retired until the dedicated rider-car design gives it a meaning (owner, 16 November).
+export type SeatStep = 'car' | 'express';
 export const SEAT_STEPS: Record<Town, SeatStep[]> = {
-  village: ['six', 'car'],
-  ring: ['six', 'car'],
-  canopy: ['six', 'car'],
-  port: ['six', 'car', 'express'],
-  gorge: ['six', 'car'],
-};
-const SIX: Record<Town, Bill> = {
-  village: { W: 24 },
-  ring: { W: 16 },
-  canopy: { W: 24, Fi: 6 },
-  port: { W: 24, Fi: 6 },
-  gorge: { W: 24, Fi: 6 },
+  village: ['car'],
+  ring: ['car'],
+  canopy: ['car'],
+  port: ['car', 'express'],
+  gorge: ['car'],
 };
 const CAR: Record<Town, Bill> = {
   village: { St: 6, W: 24 },
@@ -262,12 +255,11 @@ const CAR: Record<Town, Bill> = {
   port: { St: 10, Fi: 8 },
   gorge: { St: 10, Fi: 8 },
 };
-const SIX_B: Record<Town, number> = { village: 600, ring: 500, canopy: 3000, port: 3000, gorge: 3000 };
 const CAR_B: Record<Town, number> = { village: 2000, ring: 6000, canopy: 6000, port: 6000, gorge: 6000 };
 for (const t of TOWNS) {
   for (const step of SEAT_STEPS[t]) {
-    const bill: Bill = step === 'six' ? SIX[t] : step === 'car' ? CAR[t] : { St: 12, Fi: 8, Cu: 4 };
-    const nm = step === 'six' ? 'Six fit-out' : step === 'car' ? 'Second car' : "Express's passenger set";
+    const bill: Bill = step === 'car' ? CAR[t] : { St: 12, Fi: 8, Cu: 4 };
+    const nm = step === 'car' ? 'Second car' : "Express's passenger set";
     for (const m of MATS)
       if (bill[m])
         add(
@@ -278,7 +270,7 @@ for (const t of TOWNS) {
           'units',
           'Stand-in sized beside engine-garage',
         );
-    const b = step === 'six' ? SIX_B[t] : step === 'car' ? CAR_B[t] : 6000;
+    const b = step === 'car' ? CAR_B[t] : 6000;
     add(
       'Seats in Boogles',
       `seatB.${t}.${step}`,

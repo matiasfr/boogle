@@ -130,7 +130,7 @@ export function catalog(t: Tunables, policy: Policy): Item[] {
         out.push({
           id: `seat.${town}.${step}`,
           kind: 'seat',
-          label: `${step === 'six' ? 'Six fit-out' : step === 'car' ? 'Second car' : 'Express set'}, ${townName(town)}`,
+          label: `${step === 'car' ? 'Second car' : 'Express set'}, ${townName(town)}`,
           town,
           step,
           price: t[`seatB.${town}.${step}`]!,
@@ -267,7 +267,6 @@ export type TownRt = {
   houses: number;
   building: number;
   fit: number;
-  six: boolean;
   car: boolean;
   express: boolean;
   waiting: number;
@@ -280,7 +279,6 @@ export const newTownRt = (): TownRt => ({
   houses: 0,
   building: 0,
   fit: 0,
-  six: false,
   car: false,
   express: false,
   waiting: 0,
@@ -298,9 +296,7 @@ export const newTowns = (): Record<Town, TownRt> => ({
 /** Whether a route step (by key) is finished; 'end' is the whole route. */
 export type StepDone = (key: string) => boolean;
 export const seatsOf = (t: Tunables, r: TownRt) =>
-  t['trains.perLine']! *
-    (r.car ? t['cars.second']! : t['cars.base']!) *
-    (r.six ? t['seats.six']! : t['riders.perCar']!) +
+  t['trains.perLine']! * (r.car ? t['cars.second']! : t['cars.base']!) * t['riders.perCar']! +
   (r.express ? t['express.seats']! : 0);
 export const capacityOf = (t: Tunables, town: Town, r: TownRt) =>
   seatsOf(t, r) / (t['cycle.base']! + t['cycle.perKm']! * t[`km.${town}`]!);
@@ -338,10 +334,9 @@ export function openTowns(rt: Record<Town, TownRt>, done: StepDone) {
   for (const tw of TOWNS) if (!rt[tw].open && done(ARRIVES[tw])) rt[tw].open = true;
 }
 export const nextSeatStep = (town: Town, r: TownRt): SeatStep | undefined =>
-  SEAT_STEPS[town].find((s) => !(s === 'six' ? r.six : s === 'car' ? r.car : r.express));
+  SEAT_STEPS[town].find((s) => !(s === 'car' ? r.car : r.express));
 export function installSeat(r: TownRt, step: SeatStep) {
-  if (step === 'six') r.six = true;
-  else if (step === 'car') r.car = true;
+  if (step === 'car') r.car = true;
   else r.express = true;
 }
 /** What a buy does to its town: houses and buildings take their build minutes; seats and fit-outs are at once. */
@@ -609,9 +604,7 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
     if (policy.seats === 'haul' && !job && !routeDone)
       for (const tw of TOWNS) {
         if (crowdOf(rt, tw) < t['crowd.stop']!) continue;
-        const next = SEAT_STEPS[tw].find(
-          (s) => !(s === 'six' ? rt[tw].six : s === 'car' ? rt[tw].car : rt[tw].express),
-        );
+        const next = nextSeatStep(tw, rt[tw]);
         if (!next) continue;
         const bill = billOf(t, tw, next);
         job = { town: tw, step: next, left: billMinutes(t, bill) / hands, bill };

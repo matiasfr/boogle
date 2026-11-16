@@ -2566,10 +2566,12 @@ then `plot2`, then `plot1`. Sources: [plots](../../src/entities/town/plots.ts),
 Little guys wait beside the island and far platforms, board the trains and ride on them. At most twelve waiting
 figures are drawn per end; larger crowds get a true-count board. Each passenger car carries and draws up to eight
 riders (`TRADE.riderPlaces`), separate from the four player seats. For the first-town-lesson S1/V1 stand-in they
-stand facing out at the two ends and outer corners, taking the car's pitch and shudder, with the seats, seated
-players' legs and pets left clear. They crowd each other on this small deck; the passenger-car art job remains
-open. There is no rider counter on the car. The garage's Cars tile says "Four seats, eight riders" and shows
-Seats 4 and Riders 8 (new copy is placeholder). Fares fill the
+stand facing out along two diagonally opposite end corners (x ±0.77, matching-sign z 0.98–1.145), taking the car's
+pitch and shudder, with the seats, seated players' legs and pets left clear. They overlap along the deck inside
+its panels, rails and posts; the passenger-car art job remains open. The crowded figures stand upright without
+the ground folk's idle lean; their poses run after the train's
+current rendered transform so they stay inside the moving car. There is no rider counter on the car. The garage's
+Cars tile says "Four seats, eight riders" and shows Seats 4 and Riders 8 (new copy is placeholder). Fares fill the
 shared strongbox: inside the hall, against its north end wall, the ticket counter shows its balance and a coin
 column proportional to its cap, with a fixed cap mark. Sources:
 [riders](../../src/entities/railway/riders-view.ts), [till](../../src/entities/railway/till-view.ts),

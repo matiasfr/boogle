@@ -5,10 +5,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   awayCredit,
+  applyTownItem,
   billOf,
+  capacityOf,
   catalog,
   defaultTunables,
   headline,
+  installSeat,
+  newTowns,
   playRooms,
   POLICIES,
   run,
@@ -21,6 +25,24 @@ const spine = routeSpine();
 const T = defaultTunables();
 const room = (id: string) => POLICIES.find((p) => p.id === id)!;
 const sum = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0);
+
+test('trade: every offered rider-capacity purchase and hauled install preserves or increases capacity', () => {
+  const bought = newTowns();
+  for (const item of catalog(T, room('boogleSeats'))) {
+    if (!item.town) continue;
+    const before = capacityOf(T, item.town, bought[item.town]);
+    applyTownItem(T, bought, item, 0);
+    assert.ok(capacityOf(T, item.town, bought[item.town]) >= before, `${item.id} lowers rider capacity`);
+  }
+  const hauled = newTowns();
+  for (const town of TOWNS)
+    for (const step of SEAT_STEPS[town]) {
+      const before = capacityOf(T, town, hauled[town]);
+      installSeat(hauled[town], step);
+      assert.ok(capacityOf(T, town, hauled[town]) >= before, `${town}.${step} lowers hauled rider capacity`);
+    }
+  assert.ok(!catalog(T, room('boogleSeats')).some((item) => item.id.endsWith('.six')));
+});
 
 test("trade: every number is one named tunable, and the fares are the brief's", () => {
   assert.equal(new Set(TUNABLES.map((r) => r.key)).size, TUNABLES.length);

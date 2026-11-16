@@ -80,8 +80,8 @@ clone agrees with the server once non-wagon trains carry them; no other predicte
 - **The suspect line's fix (no copy).** `townHas(r, 'town')` is true only when a built plot has `riders > 0`, so
   Pip's "New neighbours. All employed. I checked." and the three others (`town-lines.ts` 54, 86, 136, 168) never fire
   for the yard; a room that buys the yard first hears them at its first house. `stone` is unchanged (plot 3 built).
-- **Save, replay, mixed builds.** No shape change; rail-schema should not move (verify). `WORLD_NS` **v55** (or the
-  next free), dated: "plot 2 is the loader yard (no riders); with it built and the wagon coupled every line 2 train
+- **Save, replay, mixed builds.** No shape change; rail-schema should not move (verify). `WORLD_NS` **the next free
+  number after v55** (taken by S1), dated: "plot 2 is the loader yard (no riders); with it built and the wagon coupled every line 2 train
   loads footings at the quarry going out; rooms that bought plot 2 as a house start fresh". The bump is for the saved
   meaning of a bought plot 2; no compatibility code. Replay fixtures re-pinned naming those two inputs.
 
@@ -100,11 +100,12 @@ session's visual review of their stills.
     `riders.perCar`, "Rider places a train", 8. `test/railway-trade.test.ts`: the `TRADE.seats` uses.
   - Tests: a train boards 8 and not a 9th; `checkTrade` refuses 9; after plots 1 and 2 are bought plot 3 is priced
     1,600 at 50%; from `q6-done` three added houses land at least 88 a minute (probe 90.9; 72 at 4 places).
-  - No `WORLD_NS` bump: no op, state shape or catalog entry changes and every saved row stays valid under the new
-    numbers (a live room's bought plot 3 keeps its `paid`). Replay fixtures re-pinned only if they move, naming the
-    rider cap. _Designer: if `test/fixtures/railway-golden.json` moves (a stage with riders running past 4 aboard),
-    that is a rule change, which the [seed-goldens](../agents/owner-calls.md#seed-goldens) call says needs a bump: S1
-    then takes the next free number, without waiting for L1 ([no bump waits](../agents/owner-calls.md#no-bump-hold))._ **Done means** the tests pass and `npm run loop -- run` shows order and bills unmoved.
+  - **As built: S1 takes `WORLD_NS` v55.** No op, state shape or catalog entry changes, and historical `paid` stays
+    valid, but the fifth rider changes `house-built` in `test/fixtures/railway-golden.json`. Under
+    [seed-goldens](../agents/owner-calls.md#seed-goldens), that rule change requires the bump and a deliberate
+    re-pin naming the rider cap, without waiting for L1 ([no bump waits](../agents/owner-calls.md#no-bump-hold)).
+    L1 needs the next free number after v55. **Done means** the tests pass and `npm run loop -- run` shows order
+    and bills unmoved.
 - [x] **V1. Riders in their own places (S).** Sync: Local. Tier: normal + visual. Builds: gpt-6-astra high. Parallel
   with S1, no shared file, but it reads S1's `TRADE.riderPlaces`: build on S1's branch; ship with it.
   - `src/place/folk.ts`: `RIDERS` = `TRADE.riderPlaces`; rider `k` stands (not sits) at one of eight places on car 1's
@@ -200,13 +201,15 @@ session's visual review of their stills.
   is unchanged, so no new scenario); `docs/game-design/place.md`'s town section gains rider places, plot 3's price and
   the yard (one edit, after V2); the backlog row updated.
 
-**Order and bumps.** S1 and V1 first, in parallel, shipped as a pair (or S1 alone first): no bump, and the third
-house pays as soon as plot 3 is affordable. Then L1, the **one** bump (v55). Then V2 and L2 in parallel, then R and K.
+**Order and bumps.** S1 and V1 first, built and shipped as a pair: S1 takes v55 because the rider golden moves,
+and the third house pays as soon as plot 3 is affordable. L1 needs the next free number after v55.
+Then V2 and L2 in parallel, then R and K.
 _Designer: V2 is built on L1's branch and the two ship together (each reviewed at its own tier): L1 alone puts
 footings on trains with no deck footings, flights or arm drawn, so the pier rack fills from nothing on the live game.
 S1 and V1 ship as one pair, not S1 alone. S1 bumps only if the goldens move (S1's note)._
 A runs whenever an agent is free, after V1. If town-economy-visible's C1 (the sack, a new op) is built on the same
-branch as L1, they share v55; otherwise each takes the next free number. S1, V1, L2, V2, A, R and K never bump.
+branch as L1, they share L1's next free namespace; otherwise each takes the next free number.
+V1, L2, V2, A, R and K never bump on their own.
 Hotspots: `railway-sys-trains.ts`, `train-view.ts`, `namespace.ts`: rebase first.
 
 ## S1 + V1 as built (16 November 2026)
@@ -215,6 +218,7 @@ Hotspots: `railway-sys-trains.ts`, `train-view.ts`, `namespace.ts`: rebase first
 Plot 3's base is 800, priced at 1,600 after the first two purchases at 50%. From `q6-done`, three added houses
 land 90.9 a minute over ten minutes after a five-minute demand warm-up. The initial queues still reflect the
 seed's two buildings. The loop's order, bills and results are unchanged (only measured runner wall time differs).
+Review fix: the offline model drops the Six fit-out until the dedicated rider-car design gives it meaning; added rider cars remain a later hub's garage pick (owner, 16 November).
 
 The `house-built` golden first diverges at tick 8439 when train 1 boards its fifth rider; only that stage's
 after-1,200 hash changes. **S1 bumps v54 to v55** under seed-goldens; the schema fixture is unchanged. L1's planned
@@ -222,7 +226,11 @@ v55 is therefore occupied. The server host trace was re-pinned after a v54-only 
 records; only namespace/checksum envelopes and their byte counts change. Above-cap Boogles and historical plot payments remain valid; clients publish mirrors
 and predict on clones without `checkTrade`.
 
-The standing figures use eight local end/corner places and the car's full rock quaternion, including their boots.
+The standing figures use eight local places along two diagonally opposite end corners and the car's full rock
+quaternion, including their boots. Review fix: local x is ±0.77; z is ±0.98, ±1.035, ±1.09 or ±1.145, with matching
+x/z signs. Crowds overlap along the deck at the ends where the player seats stop at |z|=0.45. The standing pose
+stays upright and runs after the train's rendered transform, keeping hats/hands and the moving figures inside
+the panels, rails and posts.
 All five requested views were opened: the car with eight figures, a seated player, a pet beside the seat, the
 deck-length walk and the Cars tab. The car shots dress eight figures over the seed's three authoritative riders;
 actual eight-rider boarding and ninth-rider refusal are proved by the rule test. Rider pairs visibly overlap, as
@@ -232,6 +240,7 @@ unverified. Four extra drawn figures add 5,104 submitted main-pass triangles and
 draw calls. No counter or new collider. The garage's three new strings remain placeholders.
 
 Full commands, failures, final results and inspected still paths: [S1/V1 implementation report](../reports/first-town-lesson-s1-v1.md).
+The independent review's four corrections, current positions and replacement stills: [review-fix report](../reports/first-town-lesson-s1-v1-review-fixes.md).
 No L1, L2, V2, A or R implementation here. The generated economy pages and their existing price assertions were
 refreshed because S1 changes their shared inputs; no loader rules or model were added.
 

@@ -268,17 +268,18 @@ const waiting = Array.from({ length: WAITING * 2 }, (_, k) =>
 );
 type RiderCar = { mesh: THREE.Object3D; top: number };
 const riderCars = new Map<number, RiderCar>();
-// Stand-in places at both deck ends, in pairs at the outer corners. The middle stays walkable; the seated players'
-// outward legs (to ±0.8 m) and their pets stay clear. Riders may crowd each other, never a seat. Local, no colliders.
+// Stand-in crowds along the two diagonally opposite, roomy end corners: on these sides seats end at |z|=0.45.
+// Keep hats/hands inside the end rails, coats inside the sides, and clear the seats, outward legs and pets.
+// Pairs overlap along the deck, never across its side panel. Local places, no colliders.
 const RIDER_PLACES = [
-  [-0.8, -1.36, -Math.PI / 2],
-  [-0.98, -1.36, -Math.PI / 2],
-  [0.8, -1.36, Math.PI / 2],
-  [0.98, -1.36, Math.PI / 2],
-  [-0.8, 1.36, -Math.PI / 2],
-  [-0.98, 1.36, -Math.PI / 2],
-  [0.8, 1.36, Math.PI / 2],
-  [0.98, 1.36, Math.PI / 2],
+  [-0.77, -1.145, -Math.PI / 2],
+  [-0.77, -1.09, -Math.PI / 2],
+  [0.77, 1.145, Math.PI / 2],
+  [0.77, 1.09, Math.PI / 2],
+  [-0.77, -1.035, -Math.PI / 2],
+  [-0.77, -0.98, -Math.PI / 2],
+  [0.77, 1.035, Math.PI / 2],
+  [0.77, 0.98, Math.PI / 2],
 ] as const;
 // One driver a train (`camp` its line, `seat` which of the line's trains), on whenever there's an engine's stool to sit
 // on (FolkEnv.driver).
@@ -988,12 +989,15 @@ function pose(g: Guy) {
       hr = [0.3, 0.74 + Math.sin(t * 1.4) * 0.05, 0.04];
       break;
     default:
-      sq = 1 + Math.sin(t * 0.8) * 0.02;
-      tilt = Math.sin(t * 0.35 + g.k) * 0.035;
-      pitch = Math.sin(t * 0.5 + g.k) * 0.025;
+      // In the crowded car, keep the standing footprint fixed; its rock supplies the motion.
+      if (!g.rideRotation) {
+        sq = 1 + Math.sin(t * 0.8) * 0.02;
+        tilt = Math.sin(t * 0.35 + g.k) * 0.035;
+        pitch = Math.sin(t * 0.5 + g.k) * 0.025;
+      }
   }
   // Saying something: a quick bob and a nod, so you can see who it is, whatever else they're doing.
-  if (g.chat === 1) {
+  if (g.chat === 1 && !g.rideRotation) {
     const talk = Math.abs(Math.sin(t * 4.2));
     hop += talk * 0.05;
     pitch += talk * 0.1;

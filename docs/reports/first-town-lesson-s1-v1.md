@@ -1,5 +1,10 @@
 # First-town lesson: S1 + V1 implementation
 
+> Historical first handoff for `00a52d8f2`. The independent review found the offline Six fit-out reduced capacity,
+> rider/car intersections, broken anchors and contradictory bump prose. Those findings and replacement stills are
+> addressed in [the review-fix report](first-town-lesson-s1-v1-review-fixes.md); the visual claims below describe the
+> initial inspection and do not override the review's geometry findings.
+
 16 November 2026. Branch `t3/first-town-rider-places`, based on `cb4b902b6` after the requested fetch/rebase.
 Built as one pair; no push or ship. Independent review remains the orchestrator's next step. The final handoff
 names the committed tip (this report is in that commit).

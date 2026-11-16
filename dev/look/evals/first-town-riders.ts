@@ -2,6 +2,7 @@
 // S1/V1 visual proof.
 // riderShot=boarding|seated|pet|walk. Eight cosmetic passengers are dressed on a real line-2 car; no mirror writes.
 // The logged authoritative count distinguishes this fit proof from the rule tests' real eight-rider boarding.
+// For walk, add --action dev/look/evals/first-town-walk.ts --video --seconds 4 so walking starts after warm-up.
 const { inspectRailway, rw, train } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
@@ -26,8 +27,9 @@ const { input } = (await import('/src/player/input.ts' as string)) as typeof imp
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const mode = new URLSearchParams(location.search).get('riderShot') ?? 'boarding';
 const reverse = new URLSearchParams(location.search).has('riderReverse');
+const overhead = new URLSearchParams(location.search).has('riderOverhead');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const shot = window as Window & { __placeDone?: boolean };
+const shot = window as Window & { __placeDone?: boolean; __startDeckWalk?: boolean };
 background(
   (async () => {
     const limit = performance.now() + 600000;
@@ -56,7 +58,11 @@ background(
     const dress = () => folk.setRiders(slot, 8, { mesh: rock, top: 0.7 });
     const aim = () => {
       dress();
-      const eye = at(reverse ? -5.4 : 5.4, reverse ? 6.5 : 5.1, -6.2),
+      const eye = at(
+          overhead ? -3.6 : reverse ? -5.4 : 5.4,
+          overhead ? 8.5 : reverse ? 6.5 : 5.1,
+          overhead ? 3.8 : -6.2,
+        ),
         target = at(0, 1.1, 0);
       window.__debugCam?.set([eye.x, eye.y, eye.z], [target.x, target.y, target.z], 42);
     };
@@ -86,7 +92,10 @@ background(
     shot.__placeDone = true;
     if (mode === 'walk') {
       // Real walking input, relative to the moving deck. The bench has always been non-solid; report crossings.
-      await wait(250);
+      while (!shot.__startDeckWalk) {
+        if (performance.now() > limit) throw new Error('rider proof: walk action never started');
+        await wait(16);
+      }
       const touched = new Set<number>();
       let finish = -1.5;
       const until = performance.now() + 5000;

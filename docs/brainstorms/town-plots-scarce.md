@@ -149,7 +149,7 @@ Shared choices, bills and benefits are **Server**; signs, silhouettes and arm mo
 | In-place rebuild | **M** | Draft command with expected kind/revision; atomic Till debit, safe stock/cargo handling, `at` construction tick. Accumulate plot `paid` on rebuilds; preserve `Till.spent = sum(Plot.paid)`. M's spending would need its own ledger and revised invariant. **Bump** for new op/state meaning; no migration |
 | Readable selection, construction and source payoff | **M** | `src/entities/town/plots.ts`, `town-read.ts`, existing site show, train/Works views, prefab records + compiled JSON. Keep `TOWN_PLOTS` order and freight staking; preserve shell hull/roof routes. **No extra bump** for Local views |
 | Eight-slot catalog and W/M if justified | **L** | Author five missing bills/delivery gates, price-cap offers and service definitions; M needs saved active-time/expiry and spend. **Bump** for catalog/ops/state. No need to implement these to compare the first two slots |
-| Evidence and owning docs | **S–M** | Extend headless economy/loop data, pure rule conservation/replay/race/save checks, two-client buy/rebuild contract, [as-built town section](../game-design/place.md#town-economy-in-the-live-game-16-november-2026-v54). **No bump** for tools/prose |
+| Evidence and owning docs | **S–M** | Extend headless economy/loop data, pure rule conservation/replay/race/save checks, two-client buy/rebuild contract, [as-built town section](../game-design/place.md#town-economy-in-the-live-game-16-november-2026-v55). **No bump** for tools/prose |
 
 No `npm run inflight` job touches these docs. The orchestrator reviews; a planner writes a plan if the owner says yes.
 
