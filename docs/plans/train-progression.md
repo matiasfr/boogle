@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-14).** Plan and design review only; nothing built. Numbers are from `src/sim` on
+> **Status: approved for steps 0–3 (2026-11-15), implementation in progress; no ship.** Historical proposal numbers are from `src/sim` on
 > `7e2fa099b`, computed with the sim's own `trainLegTicks` in a scratch script; laps and waits are *arithmetic* from
 > those ride times (nonstop, 5 s dwell at each end), not a measured run. Step 0 measures them.
 
@@ -10,8 +10,8 @@ Designer, 14 November 2026.
 beginning we get a lot of trains all at once, and maybe it's a little too much. And also the trains move really fast
 from the beginning. Maybe they should start off slower to give a more satisfying sense of progression later."
 
-It is feedback with two "maybe"s, not a ruling, so nothing here is recorded in the decision log; the calls are in
-[agent-calls](../agent-calls.md) for him to revisit.
+The owner approved steps 0–3 on 15 November and answered the three questions below. The
+[decision](../decisions-rail.md#d-2026-11-15-train-progression) records the accepted ladder. Step 4 remains with the rotunda.
 
 ## Goal
 
@@ -250,7 +250,52 @@ Each ships by itself unless noted. Sim steps get the independent review (`REVIEW
 **Suspect or placeholder lines** (none rewritten): the fitter's card "Steam" / "Trains run both lines." (built, off)
 would be untrue for 33 s; the Boiler tile's "The first install. It woke the trains." stands.
 
+## Results: step 0 (15 November 2026)
+
+Measured on main eadecf32b (v51), before production edits. Imported test/spacing/run.ts from origin/scratch/spacing-e0; test/spacing/progression.ts applies isolated catalog counterfactuals before building seeds. Four seeds (0x5140–0x5143), 20,000 ticks each, headway 100%, both ask rates as that harness defines them. Means and shares use served line-2 asks; worst also includes outstanding asks at the cutoff. This is finite seeded rule evidence, not a player wait guarantee.
+
+Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/progression.ts <count> <140|200> <stage> <light|heavy>`. Stages are Far Head (trains-on), Pier (q6-done), Railhead (crossing-done).
+
+| Stage | Trains | m/s | Light mean / >105 s / worst | Heavy mean / >105 s / worst |
+| --- | --- | --- | --- | --- |
+| trains-on | 1 | 14 | 36.5 s / 0.00% / 80.2 s | 54.3 s / 1.74% / 108.1 s |
+| trains-on | 1 | 20 | 29.1 s / 0.00% / 69.3 s | 47.9 s / 0.00% / 95.4 s |
+| trains-on | 2 | 14 | 17.5 s / 0.00% / 35.6 s | 23.2 s / 0.00% / 56.0 s |
+| trains-on | 2 | 20 | 14.3 s / 0.00% / 33.3 s | 20.6 s / 0.00% / 53.5 s |
+| trains-on | 3 | 14 | 13.7 s / 0.00% / 32.4 s | 16.0 s / 0.00% / 42.1 s |
+| trains-on | 3 | 20 | 9.8 s / 0.00% / 27.2 s | 12.6 s / 0.00% / 39.9 s |
+| q6-done | 1 | 14 | 67.2 s / 26.32% / 125.2 s | 92.0 s / 46.51% / 162.3 s |
+| q6-done | 1 | 20 | 44.4 s / 0.00% / 87.8 s | 76.9 s / 28.57% / 134.6 s |
+| q6-done | 2 | 14 | 26.6 s / 0.00% / 58.2 s | 38.1 s / 0.00% / 84.2 s |
+| q6-done | 2 | 20 | 28.1 s / 0.00% / 51.9 s | 30.9 s / 0.00% / 76.2 s |
+| q6-done | 3 | 14 | 20.7 s / 0.00% / 42.7 s | 24.9 s / 0.00% / 70.7 s |
+| q6-done | 3 | 20 | 19.1 s / 0.00% / 43.2 s | 19.1 s / 0.00% / 56.9 s |
+| crossing-done | 1 | 14 | 58.6 s / 21.05% / 124.8 s | 90.4 s / 47.62% / 156.8 s |
+| crossing-done | 1 | 20 | 45.0 s / 0.00% / 98.3 s | 76.1 s / 29.07% / 131.4 s |
+| crossing-done | 2 | 14 | 29.4 s / 0.00% / 60.9 s | 40.1 s / 0.00% / 83.4 s |
+| crossing-done | 2 | 20 | 19.8 s / 0.00% / 48.0 s | 32.9 s / 0.00% / 78.7 s |
+| crossing-done | 3 | 14 | 19.5 s / 0.00% / 53.5 s | 24.6 s / 0.00% / 70.7 s |
+| crossing-done | 3 | 20 | 17.9 s / 0.00% / 38.7 s | 19.0 s / 0.00% / 67.3 s |
+
+**Delivery:** the same real rule driver, accepted pack/take/deposit ops, instant hand feeding by the seed actors, then laying to completion. Baseline three trains at 20 m/s: kit at Far Head 42.1 s after fit, Q6 laid at 70.0 s. One train at 14 m/s, first departure 33 s after fit: kit at 74.0 s, Q6 laid at 101.9 s (**+31.9 s**). Commands use stage `delivery`. These are host-rule ticks, not a full walking playthrough or a WebSocket-host latency test.
+
+**Fallback not taken.** Far Head one/14 heavy worst 108.1 s <135 s; Q6 delay 31.9 s <90 s. Pier two/14 heavy worst 84.2 s; Railhead three/20 heavy worst 67.3 s. Keep one/two/three. The one/14 Far Head heavy mean 54.3 s and 1.74% over 105 s miss the stricter spacing target; this is the explicitly bounded early phase.
+
+**Timing clarification for step 2:** the existing wake plus ordinary dwell departs at 11 s, not the proposal's 6 s. Keep line 1's wake intact; its row-0 first Village arrival is 29.6 s. Line 2 starts its own six-second wake at 27 s and departs at 33 s, giving the first arriving rider 3.4 s to transfer. This follows step 2's explicit departure time; the proposal's approximate “wake at 33, leave six seconds later” is superseded.
+
+**Namespace:** v45 references above are historical proposal estimates. Use the next free namespace at the speed-row commit and share it with step 2; no shipping in this job.
+
 ## Owner questions
+
+**Answered by the owner, 15 November 2026:**
+
+- **Q1:** Build the automatic 20 m/s step when the Roundhouse table turns now. Once the garage-moment steps
+  are built, replace it with a free first install at the garage; the owner likes this as "the first upgrade".
+  That install is the agreed next form, not part of steps 0–3.
+- **Q2:** Yes: seven trains stays the busy end; only the ramp changes.
+- **Q3:** Yes: "choose what to add at the garage" is the next design brief after the owner has ridden this ladder.
+
+The original questions and recommendations follow for context.
 
 1. **Should the step to 20 m/s happen by itself when the table turns, or be the first thing you install at the
    garage?** Recommended: by itself now. It ships without waiting for the garage moment's remaining steps; once

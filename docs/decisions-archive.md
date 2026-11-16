@@ -108,6 +108,18 @@ _Archived 15 November 2026: the ability-order proposals below are accepted, and 
 
 ## Archive: Rail, construction, levels and travel
 
+### Train progression calls ruled on 15 November 2026
+
+_Approved for steps 0–3; [owner answers](decisions-rail.md#d-2026-11-15-train-progression). Historical version number below is superseded by the next free namespace at commit time. The bays remain outside this build._
+
+| Date | Call | Source | Who | Why | State when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-14 | New: trains start at 14 m/s (pull-away 2.5 m/s², braking 3.5) on both lines, not 20: 2.5 times walking, 1.5 times a sprint, 1.6 times the cart. Rides: line 1 18.6 s (15.4 today), Village to Far Head 41.0 s (31.1). 12 loses to a sprint on line 1; 16 leaves too small a step | [train-progression](plans/train-progression.md#design-review-designer-2026-11-14), call 12, 19, section 2 | designer (train progression) | Owner, 14 November: "the trains move really fast from the beginning. Maybe they should start off slower"; one table row, tunable | open |
+| 2026-11-14 | New: trains wake one at a time: line 1's engine alone at the boiler fit; line 2's first engine 33 s later, as line 1's first train reaches the Village (4 woke together before) | [train-progression](plans/train-progression.md#design-review-designer-2026-11-14), call 13 | designer (train progression) | Owner, 14 November: "a lot of trains all at once"; the fit is one act on one engine; the player stepping off line 1 boards line 2 with no wait | open |
+| 2026-11-14 | New: line 2 gets a train per extension: 1 at Far Head, 2 when the Pier opens, 3 when the Railhead opens (3 from the fit before); line 1 stays at 1; six on the greybox as built. The lone train's worst wait is 92 to 112 s for about three minutes (arithmetic); if step 0 measures over 135 s, or station 6 finishes more than 90 s slower, line 2 wakes with two | [train-progression](plans/train-progression.md#design-review-designer-2026-11-14), calls 14 and 16, section 4 | designer (train progression) | The greybox's own rule moved earlier; an engine always answers something built; inside the 12 November looser rate, over table C's worst only if both Quarry platforms ask | open |
+| 2026-11-14 | New: the Roundhouse `table` beat raises both lines to 20 m/s (pull-away 3.5), by itself, each train taking it at its next Village stop with the platform beat built for the longer boiler; line 1 too, though it saves only 3 s there (a story step, not an offered speed part). Ladder: 14, 20, 25 | [train-progression](plans/train-progression.md#design-review-designer-2026-11-14), calls 15 and 17, question 1 | designer (train progression) | The first thing the Roundhouse does; lands before any sea track, so the decided one-minute crossing is never ridden at 14; gives the uncued `table` beat a payoff | open |
+| 2026-11-14 | Default: train progression's small calls: no new garage tile (the Boiler tile's speed row reads 14 then 20; any word for the middle row is a placeholder); a joining engine whistles and scales in until the bays exist; a late joiner sees rows only; one bump (v45) for both sim steps; "the player chooses what to add at the garage" is held as the rotunda stage 3 brief | [train-progression](plans/train-progression.md#design-review-designer-2026-11-14), calls 20 to 24 | designer (train progression) | Small, cheap to change; option (c) is new gameplay and waits for a brainstorm | open |
+
 History for [decisions-rail.md](decisions-rail.md), verbatim.
 
 ### Superseded entries
