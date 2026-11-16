@@ -188,6 +188,7 @@ session's visual review of their stills.
   ([machines show their work](../agents/owner-calls.md#physical-work)). Start the previz now, beside S1.
   - Previz decision page: [Rider cars](../world/rider-cars.html) — two candidates and recommended bay; no build or approval claimed.
   - Look previz: [three period rider coaches](../world/rider-coach.html), with scaled elevations, minimum lengths and recommendation (16 November; dedicated car, earlier layout candidates superseded).
+  - Fit gate: [rider-car fit research](../research/rider-car-fit.md) — 2.90 m coach after the player car; Home link rework and Ring stop shift required before art.
 - [ ] **R. Runner: the loader's times on the built branch (S).** After L1 (and V2 if built). Builds: gpt-6.1-sol
   medium; changes no game code. Rerun town-choice 2b's harness from `yard-wagon` and `yard-deck`, instant, solo (4.4 s
   a set) and trio (1.5 s): today's historical figures, pier 182 → 155 s and ring 339 → 203 s solo, were measured on
