@@ -2,10 +2,11 @@
 // node --import ./dev/sim/hooks.ts dev/level/rider-coach-probe.ts
 // Sections: `candidate` (the R1 builder's pinned relay candidate, unchanged), `noRelay` (R2b's coach train at s 21.65
 // on today's track, planner's revision), `solves` (other exact-closing relays), `rack` (Q2's depot rack placements on
-// its 10 m haul circle against the full criteria) and `cart` (when the depot cart and line 2's trains coexist).
+// its 10 m haul circle against the full criteria), `growth` (Home for one or two cars more than the coach train) and
+// `cart` (when the depot cart and line 2's trains coexist).
 // Candidate closes the four constraints (x, z, heading, length) at the original line's s 89;
 // right radius is free, left radius 18 m. LEG closes x, z and heading with both radii 15 m.
-import { AXIS, BUFFERS, HEADS, ISLAND, ISLAND_A, ISLAND_C, LEG, axisPoint, march, roadAt, type Seg, type XZ } from '../../src/place/home-station.ts';
+import { AXIS, BUFFERS, HEADS, ISLAND, ISLAND_A, ISLAND_C, LEG, ROAD2_S, axisPoint, march, roadAt, type Seg, type XZ } from '../../src/place/home-station.ts';
 import { LINES, LINKS, CART, FORMATION, lineAt, offsetLat, railY, type Line } from '../../src/place/layout.ts';
 import { frameBesideLine, stationColliders, type FrameAt } from '../../src/place/spatial-station.ts';
 import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
@@ -540,11 +541,71 @@ const cartRows = (['q5-finishing', 'q5-done', 'boiler', 'trains-on'] as const).m
   };
 });
 
+// ---------------------------------------------------------------- Home for a longer train than the coach train (option C)
+// Each extra car behind the coach train: the tail may not pass the spur's points (s 5.5, as today's 5.55), so the
+// stop moves on by the car's pitch and the player car must still stand beside the island's deck.
+const legPts = Array.from({ length: Math.ceil(LEG.len) * 4 + 1 }, (_, k) =>
+  march(LEG.start, LEG.segs as unknown as Seg[], Math.min(LEG.len, k / 4)),
+);
+const roadGap = (s: number) => {
+  const p = roadAt(1, s);
+  let best = Infinity;
+  for (let t = 0; t <= 80; t += 0.05) best = Math.min(best, distance(p, roadAt(0, t)));
+  return best;
+};
+const legNear = (s0: number, s1: number) => {
+  let best = { d: Infinity, s: 0 };
+  for (let s = s0; s <= s1; s += 0.25) {
+    const p = roadAt(1, s);
+    for (const q of legPts) if (distance(p, q) < best.d) best = { d: distance(p, q), s };
+  }
+  return best;
+};
+const deckEnd = ISLAND_A.deck1 + ROAD2_S; // road 2's s at the island deck's far end (23.70)
+const growth = [0, 3.4, 3.7, 7.4].map((extra) => {
+  const stop = 5.5 + 0.05 + 16.1 + extra,
+    deck = stop + 1.6,
+    nose = stop + TRAIN_OFFSETS[0]! + ENGINE.hz + ENGINE_LONG_AHEAD;
+  let relay: { join: number; r2: number; maxMove: number; tree217: number; upRadius: number } | null = null;
+  for (const J of [90, 92, 94, 96, 98, 100])
+    for (const r2 of [18, 20, 22, 25, 30])
+      try {
+        const h = solveHead(Math.ceil((nose + 0.05) * 10) / 10, J, r2);
+        if (Math.min(h[1]!.r!, h[3]!.r!) < 18) continue;
+        const f = relayFacts(h, J, Math.ceil((nose + 1.05) * 10) / 10);
+        if (f.upRadius < 14) continue;
+        if (!relay || f.maxMove.d < relay.maxMove)
+          relay = {
+            join: J,
+            r2,
+            maxMove: f.maxMove.d,
+            tree217: f.trees.find((t) => t.id === 217)?.d ?? Infinity,
+            upRadius: f.upRadius,
+          };
+      } catch {
+        // No closure.
+      }
+  return {
+    extra,
+    stop,
+    deckEndNeeded: deck,
+    deckExtension: deck - deckEnd,
+    nose,
+    noseIntoTodaysArc: nose - HEADS[1].segs[0].len,
+    noseOffLine: distance(march(HEADS[1].start, [{ len: 1000 }], nose), roadAt(1, nose)),
+    reachAheadToUpMerge: FORMATION.quarry.from - (stop + 8.2),
+    legNearDeckExtension: legNear(deckEnd, deck + ISLAND.endRamp),
+    roadGapAtDeckEnd: roadGap(deck),
+    relayForNoseOnStraight: relay,
+  };
+});
+
 console.log(
   JSON.stringify(
     {
       candidate,
       noRelay,
+      growth,
       solves: solves.map((r) => ({ ...r, line: undefined, leg: undefined })),
       rack: {
         today: rackSearch(old, LEG.segs as unknown as Seg[], LEG.to),
