@@ -232,7 +232,7 @@ used local refs only. Scenario splitting and the two-player look are the other s
 
 ## Draft DESIGN.md sync and authority wording — not applied
 
-The owner sets these words. `DESIGN.md` is untouched. This replaces the four-kind draft in
+**Applied to `DESIGN.md` on 16 November 2026 on the owner's word ("Apply the draft."); the heading keeps its name so links resolve.** As drafted: the owner sets these words. `DESIGN.md` is untouched. This replaces the four-kind draft in
 [server-owned-state step 9](server-owned-state-step9-report.md#proposed-design-sync-table-owner-commits).
 
 ### Pick how each feature shares state

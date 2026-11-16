@@ -259,7 +259,7 @@ From 5–6 November; drop each when answered.
    6. **Footings:** the pier still accepts a hand-carried footing although the bill says by wagon (recommended: do not refuse it yet); "stall" versus "rotunda" on the footings board.
    7. **Turnouts:** J1 proof looks rough from above; the other junctions wait for his look.
    8. **Open orchestrator default, draft strings:** stay live until he edits them; keep one consolidated list of new strings owed to him ([agent calls](../agent-calls.md#controls-hud-and-arrival)): "Next load: on the wagon"; kiln, cradle, seal, great tree, rack and wagon prompts; footings board lines in `src/entities/railway/footing-cues.ts`.
-   10. **Earlier unresolved calls:** apply the DESIGN.md sync-table text and agent-instruction drafts ([step 8 report](../plans/server-owned-players-step8-report.md)); settle the earlier after-the-fact independent reviews; level-pacing's "should the cart ever be ridden" (no), "are the yards still the drop box you mean" (yes), the resident's wagon line (not now), and suspect copy "No line beyond yet", "Needs the powered pick", "Stop requested".
+   10. **Earlier unresolved calls:** apply the agent-instruction drafts (the DESIGN.md text was applied on 16 November) ([step 8 report](../plans/server-owned-players-step8-report.md)); settle the earlier after-the-fact independent reviews; level-pacing's "should the cart ever be ridden" (no), "are the yards still the drop box you mean" (yes), the resident's wagon line (not now), and suspect copy "No line beyond yet", "Needs the powered pick", "Stop requested".
 
 
 - **Tidy:** simplify pass 3 is on main; **last pass end `12ba8f7ba`**. Start the next range after it, not from the old pass 1 or 2 endpoints.

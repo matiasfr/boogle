@@ -43,46 +43,51 @@ The world and how its things relate should explain what's happening. The train m
 ## Technical principles
 
 ### Pick how each feature shares state
-Every feature, including ones we haven't thought of yet, puts each piece of its state in one of four kinds. Use the cheapest kind that works:
+
+Every feature puts each piece of its state in one of three kinds. Use the cheapest kind that works:
 
 | Kind | Use when | Who computes it | Math | Today |
-|---|---|---|---|---|
-| **Local** | Nobody else needs to see it, or it only decorates | Each tab | Anything, including `Math.random()` and the GPU | Particles, ripples, sounds, camera shake |
-| **Owner** | One player drives it, or physics moves it | The owner's tab; others smooth its broadcast pose. Ownership changes hands by epoch | Anything (Rapier physics, three.js math) | Your avatar, the beach ball |
-| **Host** | Shared, small (a few dozen numbers), changes over time | The lead tab (the server picks it); it broadcasts the values (presence or messages) and clients interpolate | Anything | The Boogler |
-| **Lockstep** | Shared and big (a grid or many cells), changes in many places at once, often persists | Every tab, from server-stamped edits | Deterministic (below) | Mushrooms, gifts |
+| --- | --- | --- | --- | --- |
+| **Local** | Nobody else needs the result, or it only decorates | Each tab | Anything, including `Math.random()` and the GPU | Particles, ripples, sounds, camera shake, personal conversation memory |
+| **Owner** | One player drives it, or local physics moves it | The owner's tab; others smooth its broadcast pose. Shared physical ownership changes hands by epoch | Anything, including Rapier and three.js math | Player movement, seat pose, the beach ball |
+| **Server** | A shared outcome needs one authority, whether transient or saved | The room server accepts authenticated commands, applies rules and publishes replicas. Clients render replicas and may predict declared actions | Deterministic rules for replay and shared prediction; presentation stays separate | Railway, roster, rail tuning, seats, The Boogler's legs and accepted reactions |
 
-In code: Local needs nothing; Owner is `addPresenceField` + `onRemotePresence` (plus [`createOwnerSync`](src/netplay/owner-sync.ts) for one object that changes hands) and Host is `addHostField` (both in [`src/netplay/net.ts`](src/netplay/net.ts)); Lockstep is `submitEdit` + `onApplied`/`onSnapshot` for features, with the rules registered through `registerOp`, `registerState` and `onTick` ([`src/world/sync.ts`](src/world/sync.ts)). One-off events (a honk, a ping) are not state: send them as messages with `net.room.send` and receive them through `onRoomReady(room => room.onMessage(...))`, reliable and ordered, reaching every other peer (see [`src/net/README.md`](src/net/README.md)); presence fields are for state that has a current value. Owner and Host values ride one presence packet per player at 20 Hz (`SEND_MS`), latest value wins, so keep each field to a few numbers; smooth them with [`createSnaps`](src/netplay/snaps.ts). Lockstep ticks at 10 Hz, compares hashes every 2 s, and the server saves it.
+In code: Local needs no shared API. Owner uses `addPresenceField` and `onRemotePresence` in `src/netplay/net.ts`, plus `createOwnerSync` for a physical object that changes hands. Presence goes out at 20 Hz, latest value wins; keep fields small and smooth poses with `createSnaps`. Server commands use `ops.define` on the server and the command adapter on the client. Complete replicated mirrors drive views. Saved Server state uses `registerState(..., { server: true })`; transient seats are not saved. No tab leads the room, and clients never execute authoritative shared ticks or save room state.
 
-- **Physics is never lockstep.** Our physics (and three.js math) isn't kept bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (a player bounces on a mushroom) and change it only by submitting edits (stocking a work site).
-- **Crossing kinds goes through edits.** A thrown thing landing (each tab replays the flight as Local, the thrower submits where it landed): the actor submits an edit and the lockstep sim applies it.
-- **Shared state that should survive everyone leaving** is Lockstep: snapshots save it through `registerState`, which also hashes it, so it must match on every tab. Host values restart with whoever leads next. Your own things (The Boogler's memory of your conversations) are yours, kept in localStorage; what you hold is yours too, for the visit.
-- **Shared schedules are Lockstep without state:** a pure function of tick + seed that every tab computes, so they cost no bandwidth and need no snapshot. Their visuals read the same function. The [wagon prototype's timetable](src/sim/wagon.ts) needs no seed: it derives its pose from tick, laid sections and timetable settings, without storing a pose.
-- **The scene graph is a view.** three.js objects are updated from state (lockstep ticks run at 10/s and rendering interpolates between them); never read game state back out of a mesh.
+One-off cosmetic events such as honks and pings use `room.send` and `room.onMessage`, reliable and ordered to every other peer, with validation and rate limits. An accepted shared outcome such as a Boogler present or puff uses a server command and replicated event; declared local prediction plays on the press and never repeats on confirmation. Queuing a command is not acceptance.
+
+- **Physics stays Owner.** A physical thing can read Server state and request a shared change through a command. The server owns the accepted result; the client owns its immediate declared prediction.
+- **Shared persistent state is Server.** Verified checkpoints preserve it across departures and restarts. Roster and tune commits acknowledge only after storage; ordinary checkpoints normally run every two seconds and on close, so non-durable actions may roll back within that window. A failed-load fallback never overwrites the last good checkpoint. Personal conversation memory stays localStorage.
+- **Shared schedules derive from replicated facts and the room clock.** Clients compute continuous poses from accepted start ticks and legs; they do not elect a tab to advance them.
+- **The scene graph is a view.** Render from state and never read shared authority back out of a mesh.
+- **Prototype pages are temporary.** Effective prototypes keep Local unarbitrated seats and a per-tab Boogler. The retired `?proto=place` alias remains the production game.
 
 ### Determinism from day one
-Lockstep state must produce bit-identical results on every machine:
+Server replay and declared shared prediction use deterministic rules and fixed ordering. Conserved quantities remain integers. The current conservative math guard remains on pure rules and prediction dependencies; local cosmetics and the server-only Boogler brain do not feed client authority. The rules:
 - conserved quantities are integers (item counts and ids), so totals stay exact and snapshots stay small;
 - other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow` (or `**`), `exp`, `log`, `atan2` or `hypot` (browsers round them differently): use a lookup table or our own polynomial. three.js math (`Vector3`, `Quaternion`, `Euler`, `Matrix4`, `MathUtils`) and the physics engine call those internally, so lockstep logic lives in three.js-free modules (`src/sim/`) and the rendering side adapts it. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
 - fixed update order and a fixed tick rate;
 - seeded randomness ([`mulberry32`](src/sim/rng.ts)), never `Math.random()` in shared logic;
 - events (shared schedules) are a pure function of tick + seed.
 
-### Sync edits, not state
-For lockstep systems, clients send small **edit events** (plant or water a mushroom, toss or take a gift, stock a work site) over the reliable channel. The server stamps them with a tick and broadcasts them; everyone applies them to the same deterministic sim. Bulk state only travels as server snapshots (with a hash) for late joiners and desync recovery. Owner and Host state send the values themselves.
+### Commands and replicas
+Clients request shared changes through small authenticated commands. The server validates and applies them in arrival order, then publishes changed components, receipts and accepted events. Clients read complete mirrors; optional declared prediction reconciles with the server. They do not replay a classic edit stream or compare shared-state hashes. Owner presence publishes current values.
 
 ### Clear authority
+
 | Thing | Authority |
-|---|---|
-| Your player's movement | You (client) |
-| The beach ball | Its current owner (epoch rule in [`src/netplay/owner-sync.ts`](src/netplay/owner-sync.ts)) |
-| Mushrooms, gifts, work sites | The server |
-| The Boogler (wandering NPC) | The lead tab (the server picks it), published in its presence ([`src/boogler/boogler.ts`](src/boogler/boogler.ts)) |
-| The Boogler's memory of you; what you hold | You (client): conversations and comic grudges kept in localStorage ([`src/boogler/play.ts`](src/boogler/play.ts)); what you hold for the visit ([`src/player/inventory.ts`](src/player/inventory.ts)) |
-| Persistence (snapshots) | The server writes each room to its disk (every 2 s when it changed, every 30 s and on shutdown regardless) and starts a room from that save; tabs keep no copy |
+| --- | --- |
+| Your player's movement and seat pose | Your client, published as Owner presence |
+| The beach ball | Its current owner, with the epoch rule in `src/netplay/owner-sync.ts` |
+| Railway outcomes, roster and rail tuning | The server, through authenticated commands and complete replicas |
+| Seat occupancy | The server; one transient seat per player, predicted locally on the press and reconciled with receipts/rows |
+| The Boogler's movement, mode and accepted present/puff reactions | The server; clients draw continuous legs and predict their own reaction effects |
+| The Boogler's conversation memory, talk UI, ride timer/launch and personal held items | Your client; no dialogue text is sent by the server |
+| Room persistence | The server, through verified checkpoints; seats and reaction events remain transient, while The Boogler's position/facing are saved |
+| Prototype seats and Boogler | Each tab independently; no shared arbitration or server command session for these features |
 
 ### Server hosts every room
-Every room is hosted by our server over WebSocket: it runs the lockstep world headless, relays presence and messages, and saves to its own disk, so the island never waits for a host; an empty room pauses until the next join. There is no peer-hosted fallback: when the server is unreachable, tabs reconnect and play alone meanwhile. Local dev runs the same server. The game talks only to the room interface in [`src/net/README.md`](src/net/README.md), never to the WebSocket directly. Plan: [docs/plans/server-host.md](docs/plans/server-host.md). (Changed 2026-10-31 from "PeerJS only" and 2026-11-06 to pause empty rooms: [why](docs/research/shared-state-at-scale.md), [next](docs/plans/net-roadmap.md).)
+Every room is hosted by our server over WebSocket: it runs shared rules and the room clock headless, accepts authenticated commands and publishes replicas, relays presence and messages, and saves to its own disk, so the island never waits for a host; an empty room pauses until the next join. There is no peer-hosted fallback: when the server is unreachable, tabs reconnect and play alone meanwhile. Local dev runs the same server. The game talks only to the room interface in [`src/net/README.md`](src/net/README.md), never to the WebSocket directly. Plan: [docs/plans/server-host.md](docs/plans/server-host.md). (Changed 2026-10-31 from "PeerJS only" and 2026-11-06 to pause empty rooms: [why](docs/research/shared-state-at-scale.md), [next](docs/plans/net-roadmap.md).)
 
 ### Understandable at a glance
 Boogle is built by a handful of friends and their agents shipping at once, so how it fits together has to be something you can see, not only read. The atlas ([boogle.club/atlas](https://boogle.club/atlas)) is our internal map: one picture of the pieces, stories that follow a single action through them, and code views underneath. It's a tool for the people and agents building Boogle, never part of the game. Facts in it come from the code on every build; the explanations live in `docs/atlas/` and a daily agent keeps them current, so a stale explanation is that agent's chore, never a red build. A new way of sharing state, or a big feature, comes with a story. Internal tools like this may use a library the game doesn't (the atlas draws with d3), as long as it never reaches the game bundle.
