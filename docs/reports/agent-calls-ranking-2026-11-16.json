@@ -916,32 +916,29 @@
   {
     "id": "RW-003",
     "topic": "RW",
-    "group": "decide",
-    "rank": 4,
+    "group": "flag",
     "gist": "Each building sends 1 rider a minute instead of 2, so buying a house actually raises fares.",
-    "recommendation": "confirm",
-    "why": "At 2 the crowds were already at their cap and a house added 1% or nothing; the house has to pay off visibly for the town loop to work (built in B1).",
-    "source": "docs/plans/town-economy-visible.md#design-review-designer-2026-11-16 (finding 2, N10)"
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "You answered the town plan's question 2 as recommended on 16 November (after stage 1's baseline).",
+    "source": "docs/decisions-rewards.md#d-2026-11-16-town-questions-as-recommended"
   },
   {
     "id": "RW-004",
     "topic": "RW",
-    "group": "decide",
-    "rank": 2,
+    "group": "flag",
     "gist": "All prices run at 50%, so the first house (150) comes about 3 minutes after the pier, about 36 minutes in.",
-    "recommendation": "confirm",
-    "why": "Both playtesters stopped at the pier at 32 to 35 minutes; this puts the first real purchase where they quit.",
-    "source": "docs/plans/town-economy-visible.md#design-review-designer-2026-11-16 (finding 2, N11) · docs/decisions-process.md#d-2026-11-16-focus-choice-and-payoff"
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "You answered the town plan's question 2 as recommended on 16 November (after stage 1's baseline).",
+    "source": "docs/decisions-rewards.md#d-2026-11-16-town-questions-as-recommended"
   },
   {
     "id": "RW-005",
     "topic": "RW",
-    "group": "decide",
-    "rank": 9,
+    "group": "flag",
     "gist": "The first house you can buy stands by the town hall, near where freight unloads.",
-    "recommendation": "confirm",
-    "why": "The first freight lands at the island, so the town should grow where the player is standing.",
-    "source": "docs/plans/town-economy-visible.md#design-review-designer-2026-11-16 (finding 3, N9)"
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "You answered the town plan's question 4 as recommended on 16 November (after stage 1's baseline).",
+    "source": "docs/decisions-rewards.md#d-2026-11-16-town-questions-as-recommended"
   },
   {
     "id": "RW-006",
@@ -955,7 +952,7 @@
     "id": "RW-007",
     "topic": "RW",
     "group": "decide",
-    "rank": 3,
+    "rank": 2,
     "gist": "The second house also brings the Works' faster footing loader: fares now or footings sooner.",
     "recommendation": "confirm, as a teaching beat",
     "why": "town-choice measured that the loader house first always wins, but your 16 November call says the first island teaches and its buys are judged on showing a mechanic and its payoff; this one teaches the loader, and the real trade between them belongs in later hubs.",
@@ -964,20 +961,20 @@
   {
     "id": "RW-008",
     "topic": "RW",
-    "group": "bulk",
+    "group": "flag",
     "gist": "Accept that bought houses' rooftops can reach the balcony find without the glider.",
-    "recommendation": "confirm",
-    "why": "With fly first the glider comes long before any house, so this barely matters."
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "You answered the town plan's question 5 as recommended on 16 November (after stage 1's baseline).",
+    "source": "docs/decisions-rewards.md#d-2026-11-16-town-questions-as-recommended"
   },
   {
     "id": "RW-009",
     "topic": "RW",
-    "group": "decide",
-    "rank": 8,
+    "group": "flag",
     "gist": "Unbought plots show as outlines on the ground instead of grey blocks.",
-    "recommendation": "confirm",
-    "why": "A plot only reads as for sale on open ground; you asked to judge the Round by walking blocks, and one constant (PLOT_BLOCKS) brings them back for that walk.",
-    "source": "docs/agents/owner-calls.md#blockout-first · docs/plans/town-economy-visible.md#design-review-designer-2026-11-16"
+    "recommendation": "confirm and move to the archive (already answered)",
+    "why": "You answered the town plan's question 1 as recommended on 16 November (after stage 1's baseline).",
+    "source": "docs/decisions-rewards.md#d-2026-11-16-town-questions-as-recommended"
   },
   {
     "id": "RW-011",
@@ -999,9 +996,9 @@
     "id": "RW-013",
     "topic": "RW",
     "group": "decide",
-    "rank": 7,
+    "rank": 5,
     "gist": "Riders ride to wherever line 2 currently ends, and fares grow with distance, so income jumps as the line grows.",
-    "recommendation": "confirm (its price default is now 50%, per RW-004)",
+    "recommendation": "confirm (its price default is now 50%, which you confirmed on 16 November)",
     "why": "It sets the money curve: fares go from about 58 to 168 a minute when the Gorge opens, which is the biggest swing in the economy.",
     "source": "docs/plans/slice5-town-economy.md#rules-and-server (R3)"
   },
@@ -1100,7 +1097,7 @@
     "id": "RW-025",
     "topic": "RW",
     "group": "decide",
-    "rank": 6,
+    "rank": 4,
     "gist": "Each source's freight goes to one fixed neighbouring town along its line; no player routing.",
     "recommendation": "confirm",
     "why": "It keeps \"no routing or quotas\" and makes every new connection change a town you already built; how freight picks its town was left to a proposal.",
@@ -1110,7 +1107,7 @@
     "id": "RW-026",
     "topic": "RW",
     "group": "decide",
-    "rank": 5,
+    "rank": 3,
     "gist": "What each town receives: the Village timber, stone and steel; Ring Island stone and copper; High Gorge steel and fibre; Canopy copper; Port Quay salt and fibre.",
     "recommendation": "confirm",
     "why": "It decides what each town grows from; the one weak spot is Canopy, which receives nothing until the Wall closes.",
@@ -1128,7 +1125,7 @@
     "id": "RW-028",
     "topic": "RW",
     "group": "decide",
-    "rank": 11,
+    "rank": 7,
     "gist": "Each hub town has three priced plots at Alpha, each next house double, bought from the one wallet.",
     "recommendation": "confirm",
     "why": "It sets how much there is to buy in each town; prices are stand-ins and the model needs re-running for a four-to-five-hour game.",
@@ -1182,8 +1179,8 @@
     "group": "flag",
     "gist": "Rider numbers: 2 a minute per building, at most 24 waiting, 4 seats; a one-second hold to buy.",
     "recommendation": "change: confirm with 1 rider a minute (as built), the rest as is",
-    "why": "RW-003 lowered the rate to 1 a minute and it is built (ridersPerMin 1).",
-    "source": "RW-003 · src/sim/railway-trade-layout.ts"
+    "why": "RW-003 lowered the rate to 1 a minute, it is built (ridersPerMin 1), and you confirmed it on 16 November.",
+    "source": "RW-003 · src/sim/railway-trade-layout.ts · docs/decisions-rewards.md#d-2026-11-16-town-questions-as-recommended"
   },
   {
     "id": "RW-036",
@@ -1247,7 +1244,7 @@
     "id": "RW-044",
     "topic": "RW",
     "group": "decide",
-    "rank": 10,
+    "rank": 6,
     "gist": "Boogles buy source upgrades: faster regrowth, bigger racks and a faster loader jib, two steps a source.",
     "recommendation": "confirm",
     "why": "Besides houses these are the only things money buys, so they are most of the payoff menu; you confirmed the loader part, and the steps and numbers are open.",
@@ -1257,7 +1254,7 @@
     "id": "RW-045",
     "topic": "RW",
     "group": "decide",
-    "rank": 12,
+    "rank": 8,
     "gist": "Each end-game goal costs one kind of thing: the Grand Station and the Ring lighthouse in Boogles, the rest in materials.",
     "recommendation": "confirm, as model inputs only",
     "why": "It shapes the late game, which you left open as a content question; nothing should be built on it before you pick the goals.",
@@ -1283,7 +1280,7 @@
     "id": "RW-048",
     "topic": "RW",
     "group": "decide",
-    "rank": 13,
+    "rank": 9,
     "gist": "No money counter on the HUD; the balance shows on price boards and fare boxes.",
     "recommendation": "confirm",
     "why": "Players will want to know what the room has while far from Home; putting it on signs in the world follows your signs-first call, and Pause may show it.",
