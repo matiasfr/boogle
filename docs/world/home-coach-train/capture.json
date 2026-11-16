@@ -1,0 +1,86 @@
+[
+  {
+    "mode": "before",
+    "camera": "square",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/before-square-still.png",
+    "fps": 60.045280045134966,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "before",
+    "camera": "island",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/before-island-still.png",
+    "fps": 59.37654626422563,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "before",
+    "camera": "table",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/before-table-still.png",
+    "fps": 60.012002399764555,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "before",
+    "camera": "top",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/before-top-still.png",
+    "fps": 60.03001500750375,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "before",
+    "camera": "player",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/before-player-still.png",
+    "fps": 60.76564715560944,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "before",
+    "camera": "coach",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/before-coach-still.png",
+    "fps": 59.154096420481935,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "after",
+    "camera": "square",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/after-square-still.png",
+    "fps": 59.956752507793865,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "after",
+    "camera": "island",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/after-island-still.png",
+    "fps": 59.898173106433106,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "after",
+    "camera": "table",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/after-table-still.png",
+    "fps": 60.039370078740156,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "after",
+    "camera": "top",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/after-top-still.png",
+    "fps": 59.982005401239796,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "after",
+    "camera": "player",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/after-player-still.png",
+    "fps": 60.477774416448035,
+    "backend": "webgpu"
+  },
+  {
+    "mode": "after",
+    "camera": "coach",
+    "path": "/Users/matiasfranco/.t3/worktrees/boogle/t3-ee32a509-1a2d24efd2dca549/docs/world/home-coach-train/after-coach-still.png",
+    "fps": 59.36479667277062,
+    "backend": "webgpu"
+  }
+]

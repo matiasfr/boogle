@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>
+    Home · coach train on today’s track</title
+  ><style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f2e9;
+      --ink: #233d3c;
+      --panel: #fffdf5;
+      --line: #c4cdc3;
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.5 system-ui;
+      margin: 32px auto;
+      max-width: 1440px;
+      padding: 0 24px;
+    }
+    h1 {
+      font-size: 32px;
+    }
+    h2 {
+      font-size: 21px;
+      margin-top: 32px;
+    }
+    .pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    figure {
+      margin: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 10px;
+    }
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    figcaption {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    table {
+      border-collapse: collapse;
+    }
+    td,
+    th {
+      padding: 6px 16px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+    a {
+      color: inherit;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #132322;
+        --ink: #eef2e2;
+        --panel: #1b2e2c;
+        --line: #3f5951;
+      }
+    }
+    @media (max-width: 700px) {
+      body {
+        padding: 0 12px;
+      }
+      .pair {
+        gap: 6px;
+      }
+      figure {
+        padding: 4px;
+      }
+      figcaption {
+        font-size: 12px;
+      }
+    }
+  </style>
+  <h1>Home · coach train on today’s track</h1>
+  <p>
+    Owner question 2, <a href="../plans/rider-coach.md#home-on-merit-a-b-and-c-16-november">Home on merit</a>: how does
+    the longer train’s engine look parked beyond the platform and over the idle cart junction? Left: today’s longest
+    train. Right: option A’s coach train. Same fixed camera in each pair. No recommendation.
+  </p>
+  <table>
+    <tr>
+      <th>Plan / fit-check measurement (m)</th>
+      <th>Today</th>
+      <th>With coach</th>
+    </tr>
+    <tr>
+      <td>Players’ car stop s</td>
+      <td>18.25</td>
+      <td>21.65</td>
+    </tr>
+    <tr>
+      <td>Long engine nose s</td>
+      <td>24.95</td>
+      <td>28.35</td>
+    </tr>
+    <tr>
+      <td>Beyond level deck end s 23.70</td>
+      <td>1.25</td>
+      <td>4.65</td>
+    </tr>
+    <tr>
+      <td>Beyond end-ramp foot s 27.70</td>
+      <td>−2.75</td>
+      <td>0.65</td>
+    </tr>
+    <tr>
+      <td>Into R 18 curve from s 25</td>
+      <td>−0.05</td>
+      <td>3.35</td>
+    </tr>
+    <tr>
+      <td>Off straight line at nose</td>
+      <td>0</td>
+      <td>0.31</td>
+    </tr>
+    <tr>
+      <td>Beyond cart leg points s 26</td>
+      <td>−1.05</td>
+      <td>2.35</td>
+    </tr>
+  </table>
+  <p>
+    Plan’s standing-body clearance: island 0.58 m; leg lever 1.13 m. These are measured envelopes from the committed
+    probe, not pixel measurements. Passenger car ends 0.45 m inside the level deck. The cart’s retirement is R1a’s
+    separate rule; these stills do not prove it.
+  </p>
+  <p>
+    Seed: <code>boiler-long</code>, wagon-bearing line 2 slot 2. Real production engine, players’ car, kit car, footing
+    wagon and steel-car meshes posed in memory with <code>trainPlaces</code> and <code>deckAt</code> on today’s line.
+    Future offsets: engine +4.20, player 0, coach −3.55, kit −7.10, wagon −10.80, steel −14.50 m. Coach: plain 2.90 ×
+    1.60 × 2.05 m box, timber body and dark underframe. All eye cameras are 1.60 m above their standing surface.
+  </p>
+  <h2>1 · Square, through the hall</h2>
+  <div class="pair">
+    <figure>
+      <a href="home-coach-train/before-square-still.png"
+        ><img src="home-coach-train/before-square-still.png" alt="before: 1 · Square, through the hall" loading="eager"
+      /></a>
+      <figcaption>
+        <strong>Today.</strong> The hall frames the platform; the engine is distant and the posts mask its relation to
+        the deck end. It reads as parked; no hall contact is visible. Nose beyond level deck: 1.25 m.
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="home-coach-train/after-square-still.png"
+        ><img src="home-coach-train/after-square-still.png" alt="after: 1 · Square, through the hall" loading="eager"
+      /></a>
+      <figcaption>
+        <strong>With coach.</strong> The coach adds a dark timber rectangle; the engine is farther forward, but its bend
+        is hard to judge through the hall. No hall contact is visible. Nose beyond level deck: 4.65 m.
+      </figcaption>
+    </figure>
+  </div>
+  <h2>2 · Island, looking toward the engine</h2>
+  <div class="pair">
+    <figure>
+      <a href="home-coach-train/before-island-still.png"
+        ><img
+          src="home-coach-train/before-island-still.png"
+          alt="before: 2 · Island, looking toward the engine"
+          loading="eager"
+      /></a>
+      <figcaption>
+        <strong>Today.</strong> The engine stands aligned with the passenger car; the deck and its lever remain visible
+        alongside. It reads as parked. Nose beyond level deck: 1.25 m.
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="home-coach-train/after-island-still.png"
+        ><img
+          src="home-coach-train/after-island-still.png"
+          alt="after: 2 · Island, looking toward the engine"
+          loading="eager"
+      /></a>
+      <figcaption>
+        <strong>With coach.</strong> The engine is farther beyond the deck and turns away slightly; it reads as parked
+        on the bend from here. The post and lever interrupt the sightline; no contact is visible. Nose beyond level
+        deck: 4.65 m.
+      </figcaption>
+    </figure>
+  </div>
+  <h2>3 · Turntable side and cart junction</h2>
+  <div class="pair">
+    <figure>
+      <a href="home-coach-train/before-table-still.png"
+        ><img
+          src="home-coach-train/before-table-still.png"
+          alt="before: 3 · Turntable side and cart junction"
+          loading="eager"
+      /></a>
+      <figcaption>
+        <strong>Today.</strong> The nose is near the platform ramp, before the leg points. It reads as parked straight;
+        the small brown junction control stands separately in front. Nose beyond level deck: 1.25 m.
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="home-coach-train/after-table-still.png"
+        ><img
+          src="home-coach-train/after-table-still.png"
+          alt="after: 3 · Turntable side and cart junction"
+          loading="eager"
+      /></a>
+      <figcaption>
+        <strong>With coach.</strong> The engine visibly projects over the junction beside the end ramp; its slight turn
+        is visible. It reads as an engine standing over points. The brown control and ramp look close but separate. Nose
+        beyond level deck: 4.65 m.
+      </figcaption>
+    </figure>
+  </div>
+  <h2>4 · Overhead, s 0–45</h2>
+  <div class="pair">
+    <figure>
+      <a href="home-coach-train/before-top-still.png"
+        ><img src="home-coach-train/before-top-still.png" alt="before: 4 · Overhead, s 0–45" loading="eager"
+      /></a>
+      <figcaption>
+        <strong>Today.</strong> The engine is aligned with the straight, before the leg merge. The canopy masks part of
+        the train; the platform end, curve and leg rails remain visible. Nose beyond level deck: 1.25 m.
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="home-coach-train/after-top-still.png"
+        ><img src="home-coach-train/after-top-still.png" alt="after: 4 · Overhead, s 0–45" loading="eager"
+      /></a>
+      <figcaption>
+        <strong>With coach.</strong> The engine angles onto the curve and covers the leg merge; the passenger cars
+        remain aligned with the straight. The canopy masks the inner platform and some freight; no visible island
+        overlap. Nose beyond level deck: 4.65 m.
+      </figcaption>
+    </figure>
+  </div>
+  <h2>5a · Players’ boarding position</h2>
+  <div class="pair">
+    <figure>
+      <a href="home-coach-train/before-player-still.png"
+        ><img
+          src="home-coach-train/before-player-still.png"
+          alt="before: 5a · Players’ boarding position"
+          loading="eager"
+      /></a>
+      <figcaption>
+        <strong>Today.</strong> This fixed eye is ahead of today’s passenger-car centre, so the engine and forward end
+        of the car share the view. Both follow the straight; the platform lever is foreground. Nose beyond level deck:
+        1.25 m.
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="home-coach-train/after-player-still.png"
+        ><img
+          src="home-coach-train/after-player-still.png"
+          alt="after: 5a · Players’ boarding position"
+          loading="eager"
+      /></a>
+      <figcaption>
+        <strong>With coach.</strong> The players’ car is straight beside the yellow deck edge, between engine and coach.
+        It reads as a boarding position; the nearby lever is separate from the car. Nose beyond level deck: 4.65 m.
+      </figcaption>
+    </figure>
+  </div>
+  <h2>5b · Riders’ future boarding position</h2>
+  <div class="pair">
+    <figure>
+      <a href="home-coach-train/before-coach-still.png"
+        ><img
+          src="home-coach-train/before-coach-still.png"
+          alt="before: 5b · Riders’ future boarding position"
+          loading="eager"
+      /></a>
+      <figcaption>
+        <strong>Today.</strong> Today’s players’ car occupies this location; it stands straight beside the deck. No
+        coach exists in this view. Nose beyond level deck: 1.25 m.
+      </figcaption>
+    </figure>
+    <figure>
+      <a href="home-coach-train/after-coach-still.png"
+        ><img
+          src="home-coach-train/after-coach-still.png"
+          alt="after: 5b · Riders’ future boarding position"
+          loading="eager"
+      /></a>
+      <figcaption>
+        <strong>With coach.</strong> The plain timber-and-dark box stands straight beside the deck; the side is blank
+        because this is an envelope placeholder. No doors, steps, wheels or boarding animation are represented. Nose
+        beyond level deck: 4.65 m.
+      </figcaption>
+    </figure>
+  </div>
+  <p>
+    Limits: static presentation evidence, not a boarding, collider, motion or device proof. Coach art and its couplings
+    cannot be posed truthfully because they do not exist; only the requested envelope is shown. Existing batch fittings
+    are copied with their car; no new coach fittings are invented. Background trains and steam can move between views.
+    The overhead is the intact scene, so its canopy occlusion is retained and disclosed. No broken track or visible
+    train contact with the hall, posts, island or lever was observed in these stills; hidden surfaces remain unverified.
+    Full-resolution images open from each panel. <a href="home-coach-train/capture.json">Capture health results</a>.
+    Staging and capture code: <code>dev/look/evals/home-coach-train.ts</code>,
+    <code>dev/look/home-coach-capture.ts</code>.
+  </p>
+</html>
