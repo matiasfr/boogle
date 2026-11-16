@@ -50,6 +50,14 @@ for every mirrored player account, independently of the log bundle, so unloading
 visible. These are Local views over existing accepted stock; supply, bills, capacity and copy are unchanged.
 Serves DESIGN.md **7. Telegraph everything** and **11. Show, don't tell**.
 
+**Depots say what they are (15 November; Grant C2).** The rail shelf already uses the log rack's physical
+`stockSign` board: a steel or timber icon and the visible stock count, facing the arrival path. Keep those boards
+and the cart's existing numbered service tag. The full shipment unloads steel first and then timber, retaining each
+waiting piece on the cart and showing it on its receiving stack only after it lands. The visual stagger now fits
+all 48 pieces inside the cart's existing 2.2 s stop (last landing at 2.05 s); smaller loads retain their old rhythm.
+Only Local presentation changes: no delivery quantities, pickup rules, server timing or new words. DESIGN.md
+**11. Show, don't tell**. Proof and limits: [C2 evidence](../plans/grant-c2-depots.md).
+
 **Q5 rules and the sea switch (8 November; B4 job A).** Production line two now reaches Q5: 24 logs and 24 rails
 fund the 260 m trestle from the rim to Far Head (286 → 546 m, 96 rail pairs). Laying waits for the Server-kind
 `rail.seaSwitch`: Q4 seats its control on the sea gate's far jamb, and the server checks reach and height
