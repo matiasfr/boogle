@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>
+    Rider cars · Boogle</title
+  ><style>
+    :root {
+      color-scheme: light;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #f4f3ef;
+      color: #0b0b0b;
+      font:
+        15px/1.5 system-ui,
+        sans-serif;
+    }
+    main {
+      max-width: 1100px;
+      margin: auto;
+      padding: 28px 20px 60px;
+    }
+    h1 {
+      font-size: 38px;
+      line-height: 1.1;
+    }
+    h2 {
+      font-size: 24px;
+    }
+    section {
+      background: #fcfcfb;
+      border: 1px solid #dddcd6;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 18px 0;
+    }
+    p {
+      max-width: 95ch;
+    }
+    a {
+      color: #215c9e;
+    }
+    small {
+      color: #52514e;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+    }
+    svg text {
+      font: 14px system-ui;
+      fill: #393732;
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .pick {
+      border-left: 5px solid #167752;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    td,
+    th {
+      text-align: left;
+      border-bottom: 1px solid #dddcd6;
+      padding: 8px;
+    }
+    code {
+      font-size: 12px;
+    }
+  </style>
+  <main>
+    <small>BOOGLE / STEP A / 16 NOVEMBER 2026 / DESIGN INTENT ONLY</small>
+    <h1>A car for the little guys</h1>
+    <p>
+      Four player seats stay on the knifeboard. Eight little guys get their own places, included with each passenger
+      train. No purchase and no counter: the passengers themselves show the load.
+    </p>
+    <section>
+      <h2>Anchor — today’s car</h2>
+      <img
+        src="rider-cars/anchor.png"
+        alt="Running game: current knifeboard passenger car, seated player and pet at a line 2 halt"
+      />
+      <p id="anchor-note">
+        Captured from cb4b902b at Village, line 2 (WebGPU, no graphics errors), before V1: this is today’s car, not the
+        proposed eight standing riders. The anchor preserves the chunky wood, dark iron and real character proportions;
+        drawings below are flat design studies, not in-game renders.
+      </p>
+    </section>
+    <section>
+      <h2>The sizes that bind</h2>
+      <table>
+        <tr>
+          <th>Measured from source</th>
+          <th>Metres</th>
+        </tr>
+        <tr>
+          <td>Flatbed / deck over rail</td>
+          <td>2.20 wide × 3.20 long / 0.70 high</td>
+        </tr>
+        <tr>
+          <td>Knifeboard / seat top</td>
+          <td>1.10 wide × 2.74 long / 0.32 above deck (1.02 over rail)</td>
+        </tr>
+        <tr>
+          <td>Player / little guy</td>
+          <td>1.70 collider height × 0.90 diameter; Buddy arms ≈0.91 / ≈0.95 tall, hat 0.584 wide</td>
+        </tr>
+        <tr>
+          <td>Player spacing / pet</td>
+          <td>1.30 along bench / 0.62 to owner’s right on bench</td>
+        </tr>
+        <tr>
+          <td>Halt / fit envelope</td>
+          <td>0.72 high; edge 1.65 from track / roof envelope 2.55 wide, 2.77 high</td>
+        </tr>
+      </table>
+      <small
+        >Sources: <a href="../../src/entities/railway/car-kit.ts">car-kit</a>,
+        <a href="../../src/entities/railway/cars.ts">cars</a>,
+        <a href="../../assets/src/passenger-car.json">bench recipe</a>,
+        <a href="../../src/place/folk.ts">folk geometry</a>,
+        <a href="../../src/constants.ts">player capsule: 2 × 0.45 + 0.8</a>,
+        <a href="../plans/passenger-car-previz.md">10 November study (Buddy arms / seats / pet)</a>. Folk hat: 2 ×
+        0.292; crown reaches 0.99, hence “about 0.95”.</small
+      >
+    </section>
+    <section>
+      <h2>1 · End perches on today’s car</h2>
+      <p>
+        Two low transverse perches, four riders at each end, keep the 3.2 m deck and the knifeboard. The measured plan
+        exposes the compromise: hats overlap at 0.54 m pitch, and the end passengers overlap the player and pet zones.
+      </p>
+      <svg viewBox="0 0 860 340" role="img" xmlns="http://www.w3.org/2000/svg">
+        <rect x="50" y="55" width="224" height="154" fill="#ba9062" stroke="#4e4941" stroke-width="1" />
+        <rect x="66" y="93.5" width="191.8" height="77" fill="#976b43" stroke="#4e4941" stroke-width="1" />
+        <rect x="66" y="129" width="191.8" height="6" fill="#4b3930" stroke="#4e4941" stroke-width="1" />
+        <circle cx="116.5" cy="109" r="22" fill="#db7965" stroke="#4e4941" />
+        <circle cx="159.9" cy="109" r="10" fill="#6b7485" />
+        <circle cx="116.5" cy="155" r="22" fill="#db7965" stroke="#4e4941" />
+        <circle cx="159.9" cy="155" r="10" fill="#6b7485" />
+        <circle cx="207.5" cy="109" r="22" fill="#db7965" stroke="#4e4941" />
+        <circle cx="250.9" cy="109" r="10" fill="#6b7485" />
+        <circle cx="207.5" cy="155" r="22" fill="#db7965" stroke="#4e4941" />
+        <circle cx="250.9" cy="155" r="10" fill="#6b7485" />
+        <circle cx="68" cy="75" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="68" cy="113" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="68" cy="151" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="68" cy="189" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="256" cy="75" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="256" cy="113" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="256" cy="151" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="256" cy="189" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <rect x="50" y="247" width="224" height="28" fill="#dddcd6" stroke="#4e4941" stroke-width="1" />
+        <text x="50" y="293">Halt edge: 1.65 m from track • 0.55 m from deck</text>
+        <text x="50" y="37">3.20 × 2.20 m • unchanged</text>
+        <g transform="translate(570 210)">
+          <path
+            d="M-20 0v-48l-12 -30 13 -13 7 22h24l7 -22 13 13 -12 30v48h-13v-43h-14v43z"
+            fill="#db7965"
+            stroke="#4e4941"
+          />
+          <circle cy="-103" r="16" fill="#e6c4a6" />
+        </g>
+        <g transform="translate(650 210) scale(1)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <text x="530" y="240">Buddy 1.70 m</text>
+        <text x="625" y="264">Little guy ≈0.95 m</text>
+        <rect x="740" y="195" width="70" height="6" fill="#4e4941" stroke="#4e4941" stroke-width="1" />
+        <text x="742" y="185">1 m</text>
+      </svg>
+      <p>
+        <b>Build:</b> new wood perch and iron grip meshes in <code>car_fit</code>, eight rider poses on the existing
+        rock frame; keep all four player anchors, Sit and colliders. No train growth or platform relocation; Cars tab
+        preview would show eight riders beside four player seats, with no new purchase.
+        <b>Do not build this packing as drawn:</b> it needs clearance it does not have.
+      </p>
+      <small
+        >Plan: coral = player envelope; slate = pet; green = little-guy hat footprint. Circles are measured occupancy
+        guides, not new character designs.</small
+      >
+    </section>
+    <section class="pick">
+      <h2>2 · A dedicated rider bay — recommended</h2>
+      <p>
+        Extend the car by 2.4 m with a low, open rider bay: four little guys along each side of a miniature central
+        bench, facing the halts at 0.60 m pitch. The original 3.2 m player section keeps its knifeboard, pets and
+        access; the longer silhouette makes the two scales legible.
+      </p>
+      <svg viewBox="0 0 860 340" role="img" xmlns="http://www.w3.org/2000/svg">
+        <rect x="50" y="55" width="392" height="154" fill="#ba9062" stroke="#4e4941" stroke-width="1" />
+        <rect x="66" y="93.5" width="191.8" height="77" fill="#976b43" stroke="#4e4941" stroke-width="1" />
+        <rect x="66" y="129" width="191.8" height="6" fill="#4b3930" stroke="#4e4941" stroke-width="1" />
+        <circle cx="116.5" cy="109" r="22" fill="#db7965" stroke="#4e4941" />
+        <circle cx="159.9" cy="109" r="10" fill="#6b7485" />
+        <circle cx="116.5" cy="155" r="22" fill="#db7965" stroke="#4e4941" />
+        <circle cx="159.9" cy="155" r="10" fill="#6b7485" />
+        <circle cx="207.5" cy="109" r="22" fill="#db7965" stroke="#4e4941" />
+        <circle cx="250.9" cy="109" r="10" fill="#6b7485" />
+        <circle cx="207.5" cy="155" r="22" fill="#db7965" stroke="#4e4941" />
+        <circle cx="250.9" cy="155" r="10" fill="#6b7485" />
+        <rect x="274" y="55" width="168" height="154" fill="#d1ae76" stroke="#4e4941" stroke-width="1" />
+        <rect x="279" y="118" width="158" height="28" fill="#8e6742" stroke="#4e4941" stroke-width="1" />
+        <circle cx="295" cy="100" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="295" cy="164" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="337" cy="100" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="337" cy="164" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="379" cy="100" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="379" cy="164" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="421" cy="100" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <circle cx="421" cy="164" r="20.44" fill="#42b887" stroke="#4e4941" />
+        <rect x="50" y="247" width="392" height="28" fill="#dddcd6" stroke="#4e4941" stroke-width="1" />
+        <text x="50" y="293">Halt edge: 1.65 m from track • 0.55 m from deck</text>
+        <text x="50" y="37">5.60 × 2.20 m • +2.40 m</text>
+        <g transform="translate(570 210)">
+          <path
+            d="M-20 0v-48l-12 -30 13 -13 7 22h24l7 -22 13 13 -12 30v48h-13v-43h-14v43z"
+            fill="#db7965"
+            stroke="#4e4941"
+          />
+          <circle cy="-103" r="16" fill="#e6c4a6" />
+        </g>
+        <g transform="translate(650 210) scale(1)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <text x="530" y="240">Buddy 1.70 m</text>
+        <text x="625" y="264">Little guy ≈0.95 m</text>
+        <rect x="740" y="195" width="70" height="6" fill="#4e4941" stroke="#4e4941" stroke-width="1" />
+        <text x="742" y="185">1 m</text>
+      </svg>
+      <p>
+        <b>Build:</b> a longer deck, underframe and side boards, a small wood bench (proposed seat top 0.20 m above
+        deck), low iron end grips and eight seated rider poses; retain the original player bench mesh and anchors at
+        their present positions. Extend the car’s rock group, revise car bounds, wheels, couplings and downstream
+        offsets: train length grows <b>2.40 m</b>; keep the cargo deck free for its own loads. Cars tab gets a longer
+        preview, no added price or capacity upgrade.
+      </p>
+      <p>
+        <b>Platform cost:</b> this is not a drop-in fitting. The 10 November study found +0.10 m forward already failed
+        Home with the big boiler, and +0.20 m backward failed the wagon/points layout. This +2.40 m needs revised
+        stop/layout clearance at Home and a line 2 halt review, including Quarry’s parked layer, curves, garage stalls
+        and tables; platforms may need extension or stop relocation. Quarry decks are 20 / 20.5 m long, Far Head and
+        Pier 22 m; platform length alone does not prove the complete train fits at its stop.
+      </p>
+    </section>
+    <section>
+      <h2>Recommended bay · front, side, back</h2>
+      <svg viewBox="0 0 860 275" role="img" xmlns="http://www.w3.org/2000/svg">
+        <text x="30" y="24">FRONT / REAR: open end rails</text>
+        <rect x="80" y="180" width="154" height="14" fill="#8e6742" stroke="#4e4941" stroke-width="1" />
+        <rect x="98" y="194" width="118" height="20" fill="#4e4941" stroke="#4e4941" stroke-width="1" />
+        <rect x="80" y="115" width="8" height="65" fill="#6b7072" stroke="#4e4941" stroke-width="1" />
+        <rect x="226" y="115" width="8" height="65" fill="#6b7072" stroke="#4e4941" stroke-width="1" />
+        <rect x="80" y="115" width="154" height="8" fill="#8e6742" stroke="#4e4941" stroke-width="1" />
+        <g transform="translate(130 180) scale(1)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <g transform="translate(185 180) scale(1)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <rect x="310" y="180" width="154" height="14" fill="#8e6742" stroke="#4e4941" stroke-width="1" />
+        <rect x="328" y="194" width="118" height="20" fill="#4e4941" stroke="#4e4941" stroke-width="1" />
+        <rect x="310" y="115" width="8" height="65" fill="#6b7072" stroke="#4e4941" stroke-width="1" />
+        <rect x="456" y="115" width="8" height="65" fill="#6b7072" stroke="#4e4941" stroke-width="1" />
+        <rect x="310" y="115" width="154" height="8" fill="#8e6742" stroke="#4e4941" stroke-width="1" />
+        <g transform="translate(360 180) scale(1)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <g transform="translate(415 180) scale(1)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <text x="520" y="24">SIDE: original bench + rider bay</text>
+        <rect x="490" y="180" width="336" height="14" fill="#8e6742" stroke="#4e4941" stroke-width="1" />
+        <rect x="500" y="132" width="172" height="10" fill="#976b43" stroke="#4e4941" stroke-width="1" />
+        <rect x="500" y="101" width="172" height="12" fill="#4b3930" stroke="#4e4941" stroke-width="1" />
+        <g transform="translate(690 180) scale(0.857142857)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <g transform="translate(726 180) scale(0.857142857)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <g transform="translate(762 180) scale(0.857142857)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <g transform="translate(798 180) scale(0.857142857)">
+          <path d="M-12 -5v-27h24v27M-9 -28v-18h18v18" fill="#42b887" stroke="#4e4941" />
+          <ellipse cy="-52" rx="19" ry="17" fill="#f4cfa4" />
+          <ellipse cy="-60" rx="20.44" ry="9" fill="#dfaa41" />
+          <circle cx="-6" cy="-51" r="2" />
+          <circle cx="6" cy="-51" r="2" />
+        </g>
+        <circle cx="530" cy="205" r="16" fill="#4e4941" />
+        <circle cx="790" cy="205" r="16" fill="#4e4941" />
+        <text x="490" y="246">Side at 60 px/m; ends at 70 px/m</text>
+        <text x="30" y="246">2.20 m wide; deck 0.70 m above rail</text>
+      </svg>
+      <p>
+        Natural wood and dark iron, matching today’s car; no canopy added. The end views share the same symmetric open
+        rail; the side shows the unchanged adult bench and the smaller passenger furniture. Figures in elevations mark
+        standing size envelopes; the build needs a real seated little-guy pose, not a shrunken Buddy.
+      </p>
+      <svg viewBox="0 0 860 160" role="img" aria-label="Detail of small bench and end grip">
+        <rect x="70" y="70" width="180" height="18" fill="#ba9062" />
+        <path d="M90 88v45m140-45v45M80 70V40h160v30" fill="none" stroke="#4e4941" stroke-width="9" />
+        <text x="290" y="60">Detail intent: thick wood seat; blunt ends; dark iron legs.</text>
+        <text x="290" y="88">Small bench 0.20 m over deck; adult bench stays 0.32 m.</text>
+        <text x="290" y="116">End grips stay low; leave side boarding gaps open.</text>
+      </svg>
+    </section>
+    <section class="pick">
+      <h2>Choose space over squeezing</h2>
+      <p>
+        <b>I recommend 2</b>: it gives the little guys recognisably their own furniture without spending the players’
+        legroom or pet places. Its cost is real layout work; if this step must retain the current train envelope,
+        neither of these drawings is ready to build.
+      </p>
+      <p>
+        <b>Not judged:</b> real seated rider silhouette, eight riders with four players and four pets, boarding and
+        walking clearances, rocking and curve sweep, platform and garage fit, camera occlusion, performance or device
+        readability. Those need a build; these drawings establish intent and expose footprint costs, not clearance
+        approval.
+      </p>
+      <small
+        >Principle: 11. Show, don’t tell. Recommendation only; no owner approval claimed.
+        <a href="../plans/first-town-lesson.md">Step A brief</a> ·
+        <a href="../plans/passenger-car-previz.md">Keep Four, picked 10 November</a>. No generated bitmap art or
+        external assets; inline SVG studies are original measured diagrams. No game code changed.</small
+      >
+    </section>
+  </main>
+</html>
