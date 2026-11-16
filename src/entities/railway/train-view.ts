@@ -30,6 +30,7 @@ import {
 import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { STEEL } from '../../sim/railway-ring-layout.ts';
+import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { line2Active, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { aperture, rail as railRow, train as trainRow, works as worksRow } from '../../sim/railway-rows.ts';
 import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
@@ -277,6 +278,7 @@ export async function createRailwayTrains(
       /** The steel car is coupled as drawn: the row wears the longer boiler and a live fit's puff has covered it. */
       carOn: false,
       deck: crateDeck,
+      goods: TRADE.yards.find((yard) => yard.line === line)?.goods,
       solid: solidLoad,
       // Line 2's kit car says whose kit it carries (./kit-board.ts; the greybox route's step 4 review, answer j).
       board:
@@ -526,13 +528,30 @@ export async function createRailwayTrains(
     teleport(b, b.position.x, top + PLAYER_R + 0.02, b.position.z);
     b.velocity.set(b.velocity.x, Math.max(0, b.velocity.y), b.velocity.z);
   }
-  function drawLoad(tr: typeof first, count: number) {
-    if (tr.count === count) return;
-    for (const c of tr.deck.held) c?.mesh.removeFromParent();
-    tr.deck.held.fill(null);
-    for (let i = 0; i < count; i++) crates.putCrate(tr.deck, i, 'fill');
-    tr.count = count;
-    tr.solid();
+  function drawLoad(tr: typeof first, kit: number, freight: number) {
+    const capacity = tr.deck.held.length;
+    const count = Number.isFinite(kit) ? Math.max(0, Math.min(capacity, Math.floor(kit))) : 0;
+    const goods = tr.goods;
+    const loaded = goods && Number.isFinite(freight) ? Math.max(0, Math.min(capacity - count, Math.floor(freight))) : 0;
+    let changed = tr.count !== count;
+    if (changed) {
+      for (const c of tr.deck.held) c?.mesh.removeFromParent();
+      tr.deck.held.fill(null);
+      for (let i = 0; i < count; i++) crates.putCrate(tr.deck, i, 'fill');
+      tr.count = count; // kit count only: its existing unload flights must never include freight
+    }
+    for (let i = count; i < capacity; i++) {
+      const held = tr.deck.held[i];
+      // A departing kit keeps its slot until its existing hop releases it. Freight itself never flies (A1, N3).
+      if (held?.kind === 'fill') continue;
+      const kind = i < count + loaded ? goods : undefined;
+      if (held?.kind === kind) continue;
+      held?.mesh.removeFromParent();
+      tr.deck.held[i] = null;
+      if (kind) crates.putCrate(tr.deck, i, kind);
+      changed = true;
+    }
+    if (changed) tr.solid();
   }
   // ---------------------------------------------------------------- the footing wagon and its footings
   const batch = createBoxBatch(owner, 96);
@@ -723,7 +742,7 @@ export async function createRailwayTrains(
       }
       tr.carOn = on && (last.boiler ?? 0) >= 2;
       tr.model.cars[0]!.scale.set(1, 1, 1);
-      drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
+      drawLoad(tr, Math.ceil((last.logs + last.rails) / 8), last.freight);
     });
     step();
     trains.forEach((tr) => {
@@ -1072,7 +1091,7 @@ export async function createRailwayTrains(
           unloading = true;
           flyingLogs = tr.last.logs;
           flyingRails = tr.last.rails;
-          const count = crates.deckCount(tr.deck),
+          const count = crates.deckCount(tr.deck, 'fill'),
             logs = flyingLogs,
             rails = flyingRails;
           for (let i = 0; i < count; i++) {
@@ -1127,7 +1146,7 @@ export async function createRailwayTrains(
             tr.count = keep;
           }
         }
-        if (!unloading || tr.line !== LINE2) drawLoad(tr, Math.ceil((row.logs + row.rails) / 8));
+        drawLoad(tr, unloading && tr.line === LINE2 ? tr.count : Math.ceil((row.logs + row.rails) / 8), row.freight);
         if (tr.line === LINE2 && tr.last) footArrivals(row, tr.last);
         tr.last = { ...row };
         if (!on) return;
