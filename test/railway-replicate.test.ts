@@ -784,7 +784,7 @@ test('the steel works: its yard take and feed are predicted, its lighting and th
   );
   assert.ok(seedAct(w, 'a', 'rail.steel') > 0);
   assert.equal(steel(w.w).lit, w.t, 'lit on the server');
-  const install = { op: 'rail.install', line: 1, part: 1, revision: 0, epoch: a().epoch, request: a().request + 1 };
+  const install = { op: 'rail.install', line: 1, part: 2, revision: 1, epoch: a().epoch, request: a().request + 1 };
   assert.equal(RAIL_PREDICTED.has('rail.install'), false);
   assert.equal(railPredict(shownOf(w.w), 'a', install, w.t).n, 0);
 });

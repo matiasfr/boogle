@@ -32,7 +32,7 @@ export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
     return {
       steel: sh.steel,
       boiler: l.boiler,
-      shown: aperture(wd).joined >= 0 || sh.steel > 0 || l.boiler >= 1,
+      shown: aperture(wd).joined >= 0 || sh.steel > 0 || l.boiler >= 2,
     };
   }
   function draw() {

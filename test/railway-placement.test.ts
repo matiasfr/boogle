@@ -154,7 +154,7 @@ test("a stop request is judged from the halt's lever or aboard its line's train"
   assert.equal(railValid(w, ride, at(train.x + reach - 100, train.z), 50), true, 'aboard');
   assert.equal(railValid(w, ride, at(train.x + reach + 300, train.z), 50), false, 'beside neither');
   assert.equal(railValid(w, { ...ride, train: 0 }, at(train.x, train.z), 50), false, "line 1's train");
-  assert.equal(railValid(w, { ...ride, train: 3 }, at(train.x, train.z), 50), false, 'no such train');
+  assert.equal(railValid(w, { ...ride, train: 7 }, at(train.x, train.z), 50), false, 'no such train');
   assert.equal(railValid(w, { ...ride, train: 0.5 }, at(train.x, train.z), 50), false, 'malformed train');
   assert.equal(railValid(w, { ...e, dir: 1 }, at(train.x, train.z), 50), false, 'aboard, no train named');
   assert.equal(railValid(w, { ...e, id: 0 }, at(train.x, train.z + 2000), 50), false, "line 1's halt, far from it");

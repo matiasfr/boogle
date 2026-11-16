@@ -29,7 +29,7 @@ import {
 } from '../sim/railway-line2-layout.ts';
 import { railCounts, line2Active, line2GateOpen, line2Completed } from '../sim/railway-queries-line2.ts';
 import { railMaxDuration, railPanelCount, railPanelStock, railPhase } from '../sim/railway-queries-line1.ts';
-import { trainAlong, trainSpeed } from '../sim/railway-train.ts';
+import { trainAlong, trainSpeed, TRAIN_PHASE } from '../sim/railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { BOILER_MAX } from '../sim/railway-train.ts';
 import { RING_BRACE, RING_HEAD, RING_RIVET, RING_STEEL_WORKS, RING_STEEL_YARD } from '../sim/railway-ring-layout.ts';
@@ -152,6 +152,7 @@ function nearTrain(w: World, slot: number, tick: number, actor: Actor) {
   if (id === undefined) return false;
   const row = w.get(Train, id)!,
     line = RAIL_TRAINS[slot]!.line;
+  if (row.phase === TRAIN_PHASE.SHED) return false;
   const p = railLinePoint(line, trainAlong(row, line, tick));
   const travel = Math.ceil(trainSpeed(row, line, tick)) * RIDER_LAG_TICKS;
   return actor.reach(p.x, p.z, RIDER_REACH + travel + RIDER_SPAN);
@@ -306,7 +307,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       return at(RING_STEEL_WORKS);
     case 'rail.install':
       // At the table: line 2 (1), the longer boiler (1), on the fit the actor saw; a stale one is the rule's noop.
-      return e.line === LINE2 && e.part === 1 && railInt(e.revision, BOILER_MAX) && at(SHED_TABLE);
+      return e.line === LINE2 && e.part === 2 && railInt(e.revision, BOILER_MAX) && at(SHED_TABLE);
     // The greybox route (step 3): ids are catalog indexes; whether the leg is open, the pickup's leg laid or the grant
     // held is the rule's (./railway-sys-route.ts), never this.
     case 'rail.legStock': {

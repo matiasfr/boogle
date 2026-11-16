@@ -1,7 +1,7 @@
 // Ring Island build 2's part of the route through ordinary inputs (docs/plans/ring-island-build2.md, R5), from the ring
 // joined to the longer boiler: ride out to the island (the kit train has put the logs and rails in the yard), take the
 // logs and feed the works, take the rails and feed them, ride home when steel is on the rack (or wait for it at the
-// Village), then open the garage at the Roundhouse table's lever post and hold its Install until Line.boiler is 1
+// Village), then open the garage at the Roundhouse table's lever post and hold its Install until Line.boiler is 2
 // (docs/plans/garage-install-moment.md, G3). Prompts are pressed by their
 // ids (`railway-steel-take-logs`, `railway-steel-take-rails`, `railway-steel-feed`, `railway-garage`). Each phase
 // reads the rows first, so the bot also resumes from `steel-kit`, `steel-lit` and `steel-home` seeds. Inspection
@@ -131,7 +131,7 @@ export async function steelRoute({ bot, checkpoint }: SteelRoute) {
   const post = polarAt(table, geo.post);
   // Beside the lever and inside the server's reach, with room for the walk's stopping tolerance.
   const stood = polarAt(table, { bearing: geo.post.bearing + 6, r: geo.post.r - 0.6 });
-  if (boiler() < 1) {
+  if (boiler() < 2) {
     check(await bot.walk(stood.x, stood.z, 0.3), 'walked to the garage post');
     face(post.x, post.z);
     await until(() => interactTarget()?.id === 'railway-garage', 'the garage is offered at the post', 20000);
@@ -145,7 +145,7 @@ export async function steelRoute({ bot, checkpoint }: SteelRoute) {
     // Held through the interact action itself: down now, up once the server has fitted it.
     triggerAction('interact', 'down');
     try {
-      await untilTicks(() => boiler() >= 1, 'Line.boiler is 1 after the hold', 600);
+      await untilTicks(() => boiler() >= 2, 'Line.boiler is 2 after the hold', 600);
     } finally {
       triggerAction('interact', 'up');
     }

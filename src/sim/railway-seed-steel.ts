@@ -68,15 +68,15 @@ function build(s: Seed, stage: SteelStage): Seed {
       break;
     case 'steel-home':
       until(s, () => shed(w).steel >= 1, 6000, 'the first steel in the bay');
-      need(line(w, LINE2).boiler === 0, 'not yet installed');
+      need(line(w, LINE2).boiler === 1, 'table upgrade, longer boiler not yet installed');
       break;
     case 'boiler-long':
-      need(act(s, 'a', 'rail.install', { line: LINE2, part: 1, revision: line(w, LINE2).boiler }) === 1, 'installed');
+      need(act(s, 'a', 'rail.install', { line: LINE2, part: 2, revision: line(w, LINE2).boiler }) === 1, 'installed');
       until(
         s,
         // The trains in service: a fleet row still in the shed (the greybox route) takes the fit when it joins and
         // stands at the Village.
-        () => servingSlots((k) => train(w, k), LINE2).every((k) => train(w, k).boiler === 1),
+        () => servingSlots((k) => train(w, k), LINE2).every((k) => train(w, k).boiler === 2),
         3000,
         'every line 2 train wearing the longer boiler',
       );

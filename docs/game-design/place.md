@@ -750,6 +750,19 @@ Not tested on a device.
 
 ### Production boiler, trains and the pier (8 November 2026)
 
+**Train speed ladder (15 November 2026).** Line 2 begins with one train, adds one at the Pier and another at the
+Railhead, then reaches six on the greybox route (seven including line 1). Reserved trains join at a clear Village,
+growing in with a whistle. The first line-2 engine stays rusty until its own answering wake at 27 s after the fit;
+its first departure is at 33 s. Maps show only trains in service. Each live speed adoption at the Village gets
+the platform steam, clank and toot; restoring a room settles the appearance without replaying that moment.
+Both home lines begin at 14 m/s, accelerating at 2.5 m/s² and braking
+at 3.5 m/s². Turning the Roundhouse table sets both lines' fit to 20 m/s with 3.5 m/s² acceleration; each engine
+takes it only while standing at the Village, so a leg in flight keeps its original profile. A line-2 train waiting
+there for the footing wagon keeps its old fit through rollout and takes the faster fit only after coupling.
+The later free longer
+boiler is part 2: 25 m/s and the fourth car on line 2 only. The garage's existing speed and throughput rows follow
+these fits. Once the garage-moment work is built, the automatic table fit becomes the agreed free first install.
+
 Q5 completion casts one communal boiler on the forge apron. An empty-backed player shoulders it and walks
 line one's finished track to fit it at the old camp locomotive. Accepted fitting starts the wake (rust clearing,
 steam and whistle) and drops five Local halts into place. These effects do not replay on restore. While the boiler is

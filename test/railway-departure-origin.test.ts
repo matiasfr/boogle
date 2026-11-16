@@ -6,7 +6,7 @@ import { TRAIN_PHASE, trainArrives } from '../src/sim/railway-train.ts';
 import { endMoved, stopMoved, trainStepLine, trainRowBroken } from '../src/sim/railway-trains.ts';
 import { line2Lat } from '../src/entities/railway/line2-path.ts';
 import { FixtureLine, line2Stops, standingAt } from './helpers/rail-rows.ts';
-import { buildSeedWorld, train, restore } from './helpers/rail.ts';
+import { buildSeedWorld, train, restore, advance } from './helpers/rail.ts';
 import { railRoom } from './helpers/rail-room.ts';
 
 // Reviewer case: the resident remembered Far Head; a fresh view given the same row drew it 4 m away.
@@ -50,20 +50,24 @@ test('a moved Railhead keeps its old departure coordinate at a signal', () => {
 
 test('departure origins survive server save, replication, late join and reconnect', () => {
   const seed = buildSeedWorld('trains-on');
-  const original = train(seed.w, 2);
+  while (train(seed.w, 1).origin !== 52400) {
+    assert.ok(seed.t < 100000, 'the first train reaches Far Head');
+    advance(seed, 1);
+  }
+  const original = train(seed.w, 1);
   assert.equal(original.origin, 52400);
   const saved = restore(seed.w);
-  assert.equal(train(saved, 2).origin, original.origin);
+  assert.equal(train(saved, 1).origin, original.origin);
   const room = railRoom({ ...seed, w: saved });
   const resident = room.join('a', 'a');
   room.ready();
   const late = room.join('b', 'b');
   room.ready();
-  for (const c of [resident, late]) assert.equal(train(c.adapter.read.world(), 2).origin, original.origin);
+  for (const c of [resident, late]) assert.equal(train(c.adapter.read.world(), 1).origin, original.origin);
   resident.disconnect();
   resident.reconnect();
   room.run(4);
-  assert.equal(train(resident.adapter.read.world(), 2).origin, original.origin);
+  assert.equal(train(resident.adapter.read.world(), 1).origin, original.origin);
 });
 
 test('the save check refuses malformed or wrong-way departure origins', () => {

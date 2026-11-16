@@ -44,6 +44,7 @@ import {
   TRAIN,
   TRAIN_PHASE,
   fleetOf,
+  lineStagesOf,
   trainAlong,
   trainDir,
   trainPassesBy,
@@ -211,15 +212,15 @@ test('the ring row counts 100 cm ahead of line 2: the shift is the catalog row a
 test('the fleet: 3, then 6 from the first section laid (ruling A.4; six from short-turn call 5); the fourth to sixth rows start in the shed', () => {
   assert.deepEqual(
     Array.from({ length: N + 1 }, (_v, n) => fleetOf(LINE2, [n])),
-    [3, 6, 6, 6, 6],
+    [1, 6, 6, 6, 6],
   );
   assert.deepEqual(
     RAIL_TRAINS.map((t) => [t.line, !!t.shed]),
     [
       [0, false],
       [1, false],
-      [1, false],
-      [1, false],
+      [1, true],
+      [1, true],
       [1, true],
       [1, true],
       [1, true],
@@ -228,7 +229,7 @@ test('the fleet: 3, then 6 from the first section laid (ruling A.4; six from sho
   const w = createRailwayWorld();
   assert.deepEqual(
     trains(w).map((r) => r.phase),
-    [0, 0, 0, 0, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED],
+    [0, 0, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED],
   );
   // Spawned last, in catalog order, nothing laid.
   assert.equal(w.count(Leg), RAIL_LEGS.length);
@@ -236,6 +237,13 @@ test('the fleet: 3, then 6 from the first section laid (ruling A.4; six from sho
   assert.deepEqual(w.get(Route, w.single(Route)), { grants: 0, gates: 0, arrived: -1 });
   assert.ok(w.ids(Leg).every((id) => w.ids(Train).every((t) => t < id)));
   railwayCheck(w);
+});
+
+test('each reachable early stage runs one train per extension, then six on the greybox', () => {
+  for (const { stops, trains } of lineStagesOf(LINE2)) {
+    if (stops.length < 2) continue;
+    assert.equal(trains, stops.length <= 3 ? 1 : stops.length === 4 ? 2 : stops.length <= 6 ? 3 : 6);
+  }
 });
 
 test('the stops: the railhead opens with the first section and moves on; the Gorge opens on the fourth', () => {
@@ -1643,7 +1651,7 @@ function gate15(fed: boolean) {
     if (yard < 0 && st.yardLogs + st.yardRails === STEEL.logs + STEEL.rails) yard = s.t - t0;
     if (yard >= 0 && st.lit < 0) feedSteel(s);
     if (home < 0 && bay(s.w) >= 1) home = s.t - t0;
-    if (home >= 0 && act(s, 'a', 'rail.install', { line: LINE2, part: 1, revision: 0 })) installed = s.t - t0;
+    if (home >= 0 && act(s, 'a', 'rail.install', { line: LINE2, part: 2, revision: 1 })) installed = s.t - t0;
   }
   assert.equal(invariant(s.w), null);
   return { yard, home, installed };

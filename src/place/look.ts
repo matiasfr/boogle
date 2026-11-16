@@ -134,6 +134,7 @@ export const spireRock = (color: string) => (LOOK.ground ? (color === '#8c8478' 
 export const DAY = { seconds: 1680, u: 0.23, hold: true, low: 0.14, high: 0.42 };
 
 // ---------------------------------------------------------------- materials
+export type TrainRust = 'train' | 'answer';
 export type Paint = {
   color: string;
   /** With `mats`: the wood is honey, with its grain running along this axis. Its value: metres per unit of the geometry. */
@@ -144,11 +145,13 @@ export type Paint = {
   /** The geometry brings colours of its own (the log's bark, band and cut ends). */
   own?: boolean;
   /** Goes to rust and dust with `rustU` (the machine, stranded) or `rustTrainU` (the old train, stranded longer). */
-  rust?: boolean | 'train';
+  rust?: boolean | TrainRust;
 };
 /** 1 asleep, rusty and dusty; 0 awake. */
 export const rustU = uniform(0);
 export const rustTrainU = uniform(0);
+/** The answering line wakes independently, 27 seconds after the first engine's fit. */
+export const rustAnswerU = uniform(0);
 /** Where a chunk of a longer batch starts in it (`userData.grainBase`; 0 for any other mesh), so its pieces keep the grain
  * their place in the whole batch gave them. One shared node, so no material gains a variant by it. */
 const GRAIN_BASE: N = uniform(0).onObjectUpdate(function (this: N, { object }: { object: THREE.Object3D | null }) {
@@ -181,7 +184,7 @@ export function paint(p: Paint) {
   if (steel) m.emissiveNode = skyOnSteel();
   if (p.rust) {
     // Broad material changes fit the painted kit; world-space mottling made moving metal look camouflaged.
-    const wear = p.rust === 'train' ? rustTrainU : rustU;
+    const wear = p.rust === 'answer' ? rustAnswerU : p.rust === 'train' ? rustTrainU : rustU;
     const base: N = m.colorNode ?? materialColor;
     const aged = steel ? vec3(0.24, 0.12, 0.055) : base.mul(vec3(0.58, 0.5, 0.42)).add(vec3(0.055, 0.035, 0.015));
     m.colorNode = mix(base, aged, wear);
@@ -345,7 +348,16 @@ export function addBlob(x: number, y: number, z: number, w: number, d: number, y
   setBlob(k, x, y, z, w, d, yaw, owner);
   return k;
 }
-export function setBlob(k: number, x: number, y: number, z: number, w: number, d: number, yaw: number, owner: OwnedView) {
+export function setBlob(
+  k: number,
+  x: number,
+  y: number,
+  z: number,
+  w: number,
+  d: number,
+  yaw: number,
+  owner: OwnedView,
+) {
   const mesh = ownedBlobs.get(owner);
   if (!mesh || k < 0) return;
   bm.compose(bp.set(x, y + 0.03, z), bq.setFromAxisAngle(UP, yaw), bs.set(w, 1, d));

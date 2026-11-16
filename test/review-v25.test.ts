@@ -4,7 +4,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  TRAIN,
   TRAIN_PHASE,
   TRAIN_STOPS,
   trainAlong,
@@ -19,7 +18,7 @@ import { act, advance, forge, rail, railwayAtTrains, train, type Seed } from './
 
 const H = { quarry: 3, farHead: 4 } as const;
 const STOPS = TRAIN_STOPS[1]!;
-const BRAKE = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
+const BRAKE = (140 * 140) / (2 * 3.5);
 const line2 = (w: Seed) => train(w.w, 1);
 const ask = (w: Seed, id: number, dir: -1 | 1) => act(w, 'a', 'rail.call', { id, dir });
 const kitAboard = (w: Seed) => line2(w).logs + line2(w).rails > 0;
@@ -60,7 +59,7 @@ test("review: a rider on the train's rear car keeps reach for the lag window aft
   for (let t = 0; ; t++) {
     assert.ok(t < 3000);
     const r = line2(w);
-    if (r.phase === TRAIN_PHASE.RUN && trainDir(r) > 0 && trainSpeed(r, 1, w.t) === TRAIN.speed) break;
+    if (r.phase === TRAIN_PHASE.RUN && trainDir(r) > 0 && trainSpeed(r, 1, w.t) === 140) break;
     advance(w, 1);
   }
   assert.ok(STOPS[1]! - trainAlong(line2(w), 1, w.t) > BRAKE + 1000, 'the quarry is still in braking reach');

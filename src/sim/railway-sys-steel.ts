@@ -195,7 +195,7 @@ export const install = defineSystem(
   'rail.install',
   { reads: [Shed, Train], writes: [Line], phase: 'act', order: 56 },
   (w, { e, tick }: Act) => {
-    if (e.line !== LINE2 || e.part !== 1 || !railInt(e.revision, BOILER_MAX)) return 0;
+    if (e.line !== LINE2 || e.part !== 2 || !railInt(e.revision, BOILER_MAX)) return 0;
     const id = lineId(w, LINE2),
       l = w.get(Line, id)!,
       h = w.get(Shed, shedId(w))!;
@@ -210,8 +210,8 @@ export const install = defineSystem(
   },
 );
 /** A line 2 train standing at the Village takes its line's boiler fit (never in flight, so no leg changes speed). */
-export function boilerAdopt(w: World, id: number) {
-  const fit = w.get(Line, lineId(w, LINE2))!.boiler;
+export function boilerAdopt(w: World, id: number, line: number) {
+  const fit = w.get(Line, lineId(w, line))!.boiler;
   if (w.get(Train, id)!.boiler < fit) w.mut(Train, id)!.boiler = fit;
 }
 /** The works' cast: once lit, one steel to the rack every castTicks while the rack has room, STEEL.total in all. A full

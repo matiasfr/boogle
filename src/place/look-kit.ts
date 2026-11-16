@@ -674,8 +674,8 @@ const wheelSet = (p: Paint, n: number, owner: OwnedView) => {
     return b;
   };
 };
-// The four trains of a view (v27: three cars each, four wheels each) share one batch of its own.
-const trainWheels = new WeakMap<OwnedView, () => THREE.InstancedMesh>();
+// Each line shares a wheel batch, so the answering line can keep its rust until its own wake.
+const trainWheels = new WeakMap<OwnedView, Map<'train' | 'answer', () => THREE.InstancedMesh>>();
 export const machineLook = (owner: OwnedView): MachineLook => kitCars(1, true, () => false, owner);
 /** A train's look: the same loco, the same livery, and plain flatbeds; the railway's trains lead with `engine` (A with
  * its walk-in cab, docs/plans/engine-previz.md) in place of Place's shell. */
@@ -684,24 +684,28 @@ export const trainLook = (
   boilerShown: () => boolean,
   owner: OwnedView,
   engine?: EngineKit,
-): MachineLook => kitCars(trailers, false, boilerShown, owner, engine);
+  rust: 'train' | 'answer' = 'train',
+): MachineLook => kitCars(trailers, false, boilerShown, owner, engine, rust);
 function kitCars(
   trailers: number,
   working: boolean,
   boilerShown: () => boolean,
   owner: OwnedView,
   engine?: EngineKit,
+  rust: 'train' | 'answer' = 'train',
 ): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
     // The timber keeps its grain; only painted and bare metal age with the engine.
-    const m = piece(name, { ...p, rust: p.grain ? false : working ? true : 'train' }, owner);
+    const m = piece(name, { ...p, rust: p.grain ? false : working ? true : rust }, owner);
     m.position.set(x, y, z);
     parent.add(m);
     return m;
   };
   // The wheels of all the cars are one batch, posed each frame, and cast no shadow: they're under the deck.
-  let shared = trainWheels.get(owner);
-  if (!shared) trainWheels.set(owner, (shared = wheelSet({ ...IRON, rust: 'train' }, 48, owner)));
+  let batches = trainWheels.get(owner);
+  if (!batches) trainWheels.set(owner, (batches = new Map()));
+  let shared = batches.get(rust);
+  if (!shared) batches.set(rust, (shared = wheelSet({ ...IRON, rust }, 72, owner)));
   const wheelBatch = working ? wheelSet({ ...IRON, rust: true }, 8, owner)() : shared();
   const wheels = (hz: number, r: number) => {
     const list: Wheel[] = [];
@@ -717,8 +721,8 @@ function kitCars(
   let cab: MachineLook['cab'];
   if (engine) {
     // The body, stool and doors; the fitted boiler and its lashing are the train view's (they come with the fit).
-    doors = [engine.engineDoor(1), engine.engineDoor(-1)];
-    cab = engine.engineBodyWithCab();
+    doors = [engine.engineDoor(1, rust), engine.engineDoor(-1, rust)];
+    cab = engine.engineBodyWithCab(rust);
     loco.add(cab.body, ...Object.values(cab.faces), cab.shadow, engine.enginePart('engine_stool'), ...doors);
   } else if (working) {
     add(loco, 'loco_body', RED);
@@ -741,7 +745,7 @@ function kitCars(
   // The side rods, so the drive reads: they ride the front and back wheels' crank pins. The engine's are one mesh,
   // both sides, drawn at rest round the axles' line.
   const rods = engine
-    ? [{ m: loco.add(engine.enginePart('engine_rods')).children.at(-1)!, side: 0 }]
+    ? [{ m: loco.add(engine.enginePart('engine_rods', rust === 'answer' ? rust : true)).children.at(-1)!, side: 0 }]
     : [-1, 1].map((side) => {
         const m = add(loco, 'beam_long', ARM, side * 0.62, 0, 0);
         m.scale.set(0.3, 0.2, 0.85);

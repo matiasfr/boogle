@@ -23,6 +23,7 @@ import {
   TRAIN_PHASE,
   TRAIN_HOME,
   trainAlong,
+  trainWakeAt,
   trainRequestable,
   type RailTrain,
 } from '../../sim/railway-train.ts';
@@ -112,7 +113,7 @@ export async function createRailwayTrains(
   // two rings and a knot in the rope's own material (shared with the rope; never disposed here).
   const lashMaterial = flat(GOLD_ROPE, 0.7);
   let clock = -1,
-    shudder = 0,
+    answerPending = false,
     secondVisible = false;
   // The footing wagon, a fourth car behind whichever of line 2's trains it couples to (the sim's `wagon`, per row);
   // it waits under the land until then.
@@ -121,7 +122,9 @@ export async function createRailwayTrains(
   const wagonRock = new THREE.Group();
   // One train a RAIL_TRAINS slot (v26: line 1's, then line 2's two), each posed on its line from its own row.
   const trains = RAIL_TRAINS.map(({ line }, slot) => {
-    const model = look.LOOK.kit ? kit.trainLook(2, () => false, owner, engineKit) : wagon.wagonLook(2, false, owner);
+    const model = look.LOOK.kit
+      ? kit.trainLook(2, () => false, owner, engineKit, line === LINE2 ? 'answer' : 'train')
+      : wagon.wagonLook(2, false, owner);
     if ('step' in model) owner.animate(model.step, 8);
     const cars = offsets.slice(0, WAGON).map((_, n) => {
       const car = rail.makeCar(
@@ -280,6 +283,7 @@ export async function createRailwayTrains(
       boiler,
       long,
       wears: 0,
+      shudder: 0,
       /** The platform beat (docs/plans/garage-install-moment.md, G5): this view has drawn the train since the last
        * restore, and the seconds into its longer boiler going on, or -1. */
       seen: false,
@@ -393,32 +397,35 @@ export async function createRailwayTrains(
     return carsOf(tr).some((c) => Math.hypot(c.x - riderAt.x, c.z - riderAt.z) < 6);
   }
   let boilerFlying = () => false;
-  const wake = createWakePresentation(
-    {
-      flatbed: first.cars[1]!,
-      loco: first.cars[0]!,
-      look: first.model,
-      shudder: (a) => {
-        shudder = a;
-        if (!a)
-          first.cars.forEach((c) => {
-            c.rock.rotation.z = c.rock.position.x = 0;
-          });
+  const makeWake = (tr: typeof first, rust: typeof look.rustTrainU) =>
+    createWakePresentation(
+      {
+        flatbed: tr.cars[1]!,
+        loco: tr.cars[0]!,
+        look: tr.model,
+        shudder: (a) => {
+          tr.shudder = a;
+          if (!a)
+            tr.cars.forEach((c) => {
+              c.rock.rotation.z = c.rock.position.x = 0;
+            });
+        },
+        setRust: (v) => {
+          rust.value = v;
+        },
+        setFire: () => {},
+        setLamps: () => {},
+        setSlip: (rate) => {
+          const m = tr.model as { slip?: { rate: number } };
+          if (m.slip) m.slip.rate = rate;
+        },
+        distance: (x, z) => Math.hypot(tr.cars[1]!.x - x, tr.cars[1]!.z - z),
       },
-      setRust: (v) => {
-        look.rustTrainU.value = v;
-      },
-      setFire: () => {},
-      setLamps: () => {},
-      setSlip: (rate) => {
-        const m = first.model as { slip?: { rate: number } };
-        if (m.slip) m.slip.rate = rate;
-      },
-      distance: (x, z) => Math.hypot(first.cars[1]!.x - x, first.cars[1]!.z - z),
-    },
-    owner,
-    { fanfare: sounds.fanfare, dustRing: pieces.dustRing },
-  );
+      owner,
+      { fanfare: sounds.fanfare, dustRing: pieces.dustRing },
+    );
+  const wake = makeWake(first, look.rustTrainU);
+  const answer = makeWake(cargo[0]!, look.rustAnswerU);
   let flyingLogs = 0,
     flyingRails = 0,
     unloading = false;
@@ -695,6 +702,9 @@ export async function createRailwayTrains(
     footFlights.length = 0;
     for (const tr of cargo) crates.clearCrates(tr.deck);
     wake.reset(on ? (clock - railRow(w).trains) / 10 : -1);
+    const answerAt = trainWakeAt(LINE2, railRow(w).trains);
+    answer.reset(on ? (clock - answerAt) / 10 : -1);
+    answerPending = on && clock < answerAt;
     trains.forEach((tr) => {
       const last = { ...trainRow(w, tr.slot) };
       tr.last = last;
@@ -707,7 +717,7 @@ export async function createRailwayTrains(
         c.mesh.scale.setScalar(1);
         c.rock.position.y = -(BOTTOM + c.hy);
       }
-      tr.carOn = on && (last.boiler ?? 0) >= 1;
+      tr.carOn = on && (last.boiler ?? 0) >= 2;
       tr.model.cars[0]!.scale.set(1, 1, 1);
       drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
     });
@@ -832,11 +842,12 @@ export async function createRailwayTrains(
     cutCab(dt);
     drawWagon();
     drawSteel();
-    if (shudder)
-      first.cars.forEach((c, n) => {
-        c.rock.rotation.z = Math.sin(now * 0.073 + n * 1.3) * 0.018 * shudder;
-        c.rock.position.x = Math.sin(now * 0.097 + n * 1.3) * 0.035 * shudder;
-      });
+    for (const tr of trains)
+      if (tr.shudder)
+        tr.cars.forEach((c, n) => {
+          c.rock.rotation.z = Math.sin(now * 0.073 + n * 1.3) * 0.018 * tr.shudder;
+          c.rock.position.x = Math.sin(now * 0.097 + n * 1.3) * 0.035 * tr.shudder;
+        });
   }, 7);
   owner.cleanup(() => {
     for (const tr of cargo) crates.clearCrates(tr.deck);
@@ -855,9 +866,9 @@ export async function createRailwayTrains(
         return;
       }
       if (e.op !== 'rail.boilerFit') return;
-      wake.start(() => {
-        secondVisible = true;
-      });
+      secondVisible = true;
+      answerPending = true;
+      wake.start();
       // Two of the camp's little guys run to the loco's side and bolt the boiler on (step 8).
       const loco = first.cars[0]!,
         out = wagon.TRAIN_CARS[0]!.hx + 0.5;
@@ -933,9 +944,14 @@ export async function createRailwayTrains(
     trainFlying: () => ({ logs: flyingLogs, rails: flyingRails }),
     update(dt: number) {
       wake.update(dt);
+      answer.update(dt);
       const w = adapter.read.world(),
         tick = adapter.read.tickNow(),
         on = line2Trains(w);
+      if (answerPending && on && tick >= trainWakeAt(LINE2, railRow(w).trains)) {
+        answerPending = false;
+        answer.start();
+      }
       // Each line's open stops, worked out once for the frame and shared by the lamps.
       const stops = [trainStops(w, 0), trainStops(w, LINE2)];
       const marks = kitMarks(w, tick);
@@ -943,7 +959,10 @@ export async function createRailwayTrains(
         const row = trainRow(w, tr.slot);
         tr.board?.set(marks.get(tr.slot) ?? '');
         // Joined from the shed on a live tick: its cars grow in over JOIN_S (their bodies are whole at once).
-        if (tr.seen && tr.last?.phase === TRAIN_PHASE.SHED && row.phase !== TRAIN_PHASE.SHED) tr.join = 0;
+        if (tr.seen && tr.last?.phase === TRAIN_PHASE.SHED && row.phase !== TRAIN_PHASE.SHED) {
+          tr.join = 0;
+          whistle(tr.cars[0]!.x, tr.cars[0]!.z);
+        }
         if (tr.join >= 0) {
           tr.join += dt;
           const u = reducedMotion ? 1 : Math.min(1, tr.join / JOIN_S),
@@ -969,16 +988,16 @@ export async function createRailwayTrains(
         }
         const worn = on && !(tr.slot === 0 && boilerFlying()),
           fit = on ? (row.boiler ?? 0) : 0;
-        // The platform beat: the train's own row took the longer boiler on a live tick (it stands at the Village). A
+        // The platform beat: the train's own row took a faster fit on a live tick (it stands at the Village). A
         // puff of steam covers the swap, then a clank and a short squash, then a toot. Riders keep their seats: no
         // collider or seat changes.
         const loco = tr.model.cars[0]!;
-        if (tr.seen && fit === 1 && tr.wears === 0 && tr.beat < 0 && !reducedMotion) {
+        if (tr.seen && fit > tr.wears && tr.beat < 0 && !reducedMotion) {
           tr.beat = 0;
           tr.model.chimneyTop.getWorldPosition(beatAt);
           // The same steam at the tail, where the steel car comes on (posed there already, under the land).
           const kitCar = tr.cars[2]!,
-            tail = tr.steel;
+            tail = fit >= 2 ? tr.steel : null;
           for (let i = 0; i < (tail ? 32 : 18); i++)
             emit({
               x: (i < 18 ? beatAt.x : tail!.x) + (Math.random() - 0.5) * (i < 18 ? 1.6 : 3),
@@ -1003,31 +1022,31 @@ export async function createRailwayTrains(
           const before = tr.beat;
           tr.beat += dt;
           const at = (t: number) => before < t && tr.beat >= t;
-          if (tr.beat < BEAT.swap) wears = 0;
+          if (tr.beat < BEAT.swap) wears = tr.wears;
           if (at(BEAT.swap)) clank(tr.cars[0]!.x, tr.cars[0]!.z);
           // The coupling: the steel car is on the tail from the swap, and its own clank lands there after the engine's.
-          if (at(BEAT.couple) && tr.steel) clank(tr.steel.x, tr.steel.z);
+          if (at(BEAT.couple) && fit >= 2 && tr.steel) clank(tr.steel.x, tr.steel.z);
           const u = (tr.beat - BEAT.swap) / BEAT.squash;
           const k = u > 0 && u < 1 ? Math.sin(u * Math.PI) : 0;
           loco.scale.set(1 + 0.04 * k, 1 - 0.07 * k, 1 + 0.04 * k);
           if (at(BEAT.toot)) whistle(tr.cars[0]!.x, tr.cars[0]!.z);
-          if (tr.beat >= BEAT.toot || fit !== 1) {
+          if (tr.beat >= BEAT.toot || fit === 0) {
             tr.beat = -1;
             loco.scale.set(1, 1, 1);
           }
         }
         tr.seen = true;
         // A restore, a late join and reduced motion have no beat: the car is there with the row.
-        tr.carOn = !!wears;
+        tr.carOn = wears >= 2;
         if (wears !== tr.wears) {
           tr.wears = wears;
-          if (tr.cab) tr.cab.body.visible = !wears;
-          tr.long.body.visible = !!wears;
-          const c = wears ? tr.long.chimney : shape.ENGINE_BOILER.chimney;
+          if (tr.cab) tr.cab.body.visible = wears < 2;
+          tr.long.body.visible = wears >= 2;
+          const c = wears >= 2 ? tr.long.chimney : shape.ENGINE_BOILER.chimney;
           tr.model.chimneyTop.position.set(0, c.y, c.z);
         }
-        tr.boiler.visible = worn && !wears;
-        tr.long.boiler.visible = tr.long.lashing.visible = worn && !!wears;
+        tr.boiler.visible = worn && wears < 2;
+        tr.long.boiler.visible = tr.long.lashing.visible = worn && wears >= 2;
         if (worn !== tr.fitted()) tr.fit(worn);
         if (tr.last && on && row.phase === TRAIN_PHASE.RUN && tr.last.phase !== TRAIN_PHASE.RUN)
           whistle(tr.cars[0]!.x, tr.cars[0]!.z);

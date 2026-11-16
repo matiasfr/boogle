@@ -54,6 +54,7 @@ import {
   trainNextStop,
   trainPassesBy,
   trainSpeed,
+  trainWakeAt,
   type RailTrain,
   type ServiceStop,
 } from './railway-train.ts';
@@ -506,7 +507,7 @@ export function balancedHold<L extends LineRef>(
  * for that end's block and every one is at least `TRAIN.sepCm` from it round the circuit either way. One a tick; the
  * dwell, the headway and the balanced hold then judge its leaving as any train's. */
 export function fleetJoin<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
-  if (!io.fleet || tick < io.awake + TRAIN.wakeTicks) return;
+  if (!io.fleet || tick < trainWakeAt(line, io.awake) + TRAIN.wakeTicks) return;
   const serving = servingSlots(io.row, line);
   if (serving.length >= io.fleet(line)) return;
   const slot = lineSlots(line).find((k) => io.row(k).phase === TRAIN_PHASE.SHED);
@@ -583,7 +584,8 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
       if (hold === 'again') continue;
       if (hold === 'hold') break;
       // A halt's dwell (a signal has none: the train goes the tick its block clears), and the wake.
-      if ((r.at >= 0 && tick < r.depart + TRAIN.dwellTicks) || tick < io.awake + TRAIN.wakeTicks) break;
+      if ((r.at >= 0 && tick < r.depart + TRAIN.dwellTicks) || tick < trainWakeAt(line, io.awake) + TRAIN.wakeTicks)
+        break;
       // The halt it leaves: its own, or the end whose block it stands in on the way out (a train the railhead's stop
       // moved on from: stopMoved), which it leaves as from that end.
       const from = r.at >= 0 ? r.at : endStanding(line, stops, r),

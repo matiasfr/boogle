@@ -52,7 +52,7 @@ export function checkTrains(w: World) {
     const serving = servingSlots((k) => rows[k]!, line),
       all = railTrainsOf(w, line);
     if (
-      serving.length > Math.max(l.trains, fleetOf(line, legs)) ||
+      serving.length > Math.max(l.trains, fleetOf(line, legs, stops(line))) ||
       serving.length < l.trains ||
       all.slice(serving.length).some((r) => r.phase !== TRAIN_PHASE.SHED)
     )

@@ -50,6 +50,7 @@ import { TOWN_PLOTS } from '../src/place/town-plan.ts';
 import { TRADE, TRADE_PCT } from '../src/sim/railway-trade-layout.ts';
 import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { TRAIN_PHASE, trainAlong } from '../src/sim/railway-train.ts';
+import { cycleTicks } from '../src/sim/railway-trains.ts';
 import { act, advance } from '../src/sim/railway-seed-route.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
 import { worldVerdict } from './helpers/railway-check.ts';
@@ -128,16 +129,11 @@ test('two worlds driven alike stay equal row for row; the yard invariant holds e
     if (t % 600 === 0) railwayCheck(a);
   }
   assert.deepEqual(a.snapshot(), b.snapshot());
-  // The Camp kept making crates and its timber kept coming home (line 1 stands at the Camp every trip). Stone comes
-  // only with a train that stands at the Quarry homeward for another reason; with nothing asked, only the one parked
-  // there as the trains woke: 8 once, and the refilled yard then waits full.
+  // Camp timber keeps coming home. No train starts at the Quarry now, so its stone waits for an asked stop.
   assert.ok(yard(a, CAMP).made > TRADE.yards[CAMP]!.cap + 4, 'the Camp made');
   assert.ok(town(a, 0).wood > TRADE.freightCap);
-  assert.equal(town(a, 0).stone, TRADE.freightCap);
-  assert.deepEqual(
-    [yard(a, QUARRY).stock, yard(a, QUARRY).made],
-    [TRADE.yards[QUARRY]!.cap, 2 * TRADE.yards[QUARRY]!.cap],
-  );
+  assert.equal(town(a, 0).stone, 0, 'the opening train starts at the Village, not the Quarry');
+  assert.deepEqual([yard(a, QUARRY).stock, yard(a, QUARRY).made], [TRADE.yards[QUARRY]!.cap, TRADE.yards[QUARRY]!.cap]);
 });
 
 test('the first line 1 arrival home delivers a full load of 8', () => {
@@ -200,10 +196,8 @@ test('a train standing at the Quarry for another reason (a lever ask homeward) l
 });
 
 test('a train standing at a yard heading home loads whatever it stopped for, up to its room', () => {
-  // The line 2 train that stands at the Quarry as the trains wake loaded there with no freight stop.
-  const at = LINE2_SLOTS.find((k) => RAIL_TRAINS[k]!.home === TRADE.yards[QUARRY]!.stop);
-  assert.ok(at !== undefined, 'a line 2 train is parked at the Quarry');
-  assert.equal(train(ON.w, at).freight, TRADE.freightCap);
+  // Line 1 starts at its yard, so loading while standing does not need a freight service stop.
+  assert.equal(train(ON.w, LINE1_SLOT).freight, TRADE.freightCap);
   // A crate made while it stands is taken the tick it is made.
   const w = copy(ON.w),
     id = yardId(w, CAMP);
@@ -470,7 +464,7 @@ test('stakedAtOnce has one value: the trade table and the town plan agree', () =
 test("R2b's stop: only heading home at the Quarry, after the pier's footings, with 8 crates there and an empty train", () => {
   const w = copy(CROSSED.w),
     q = TRADE.yards[QUARRY]!,
-    slot = LINE2_SLOTS.find((k) => !train(w, k).wagon)!;
+    slot = LINE2_SLOTS.find((k) => !train(w, k).wagon && train(w, k).phase !== TRAIN_PHASE.SHED)!;
   assert.equal(w.get(Works, worksId(w))!.pierSet, WORKS.pier);
   // Q7's kit is owed at crossing-done (no train stops for stone then); on until it is aboard and no longer owed.
   for (let t = CROSSED.t + 1; kitOwed(w, { ...train(w, slot), logs: 0, rails: 0 }); t++) {
@@ -480,7 +474,7 @@ test("R2b's stop: only heading home at the Quarry, after the pier's footings, wi
   const set = (stock: number, freight: number, pierSet: number = WORKS.pier) => {
     const y = w.mut(Yard, yardId(w, QUARRY))!;
     y.stock = stock;
-    w.mut(Train, w.lookup(Train, slot)!)!.freight = freight;
+    Object.assign(w.mut(Train, w.lookup(Train, slot)!)!, { freight, logs: 0, rails: 0 });
     w.mut(Works, worksId(w))!.pierSet = pierSet;
   };
   const stop = (k: number = q.stop, dir = -1, r = train(w, slot)) => freightStop(w, slot, r, k, dir);
@@ -846,15 +840,15 @@ test('R3: riders conserve and every fare is charged once a rider a trip, for 30 
     paid = earned(w);
     if (t % 1800 === 0) railwayCheck(w);
   }
-  assert.ok(town(w, 0).alighted - town(FREIGHT.w, 0).alighted > 200, 'riders rode');
-  assert.ok(town(w, 0).wait0 < TRADE.crowdCap && town(w, 0).wait1 < TRADE.crowdCap, 'nobody strands');
+  assert.ok(town(w, 0).alighted - town(FREIGHT.w, 0).alighted > 140, 'the one-train opening route carries riders');
+  assert.ok(town(w, 0).wait0 <= TRADE.crowdCap && town(w, 0).wait1 <= TRADE.crowdCap, 'queues remain bounded');
 });
 
 test("R3: the box's cap (20 minutes of the demand rate) lands no fare past it and counts the rest in lost", () => {
   const w = copy(FREIGHT.w);
   assert.equal(tillRate(w, TRADE_PCT), 56, '2 buildings × 2 riders × 2 ways × 7');
   assert.equal(boxCap(w, TRADE_PCT), 1120);
-  for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 30 * 600; t++) railTick(w, t);
+  for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 40 * 600; t++) railTick(w, t);
   const b = tillRow(w);
   assert.equal(b.boogles, 1120, 'full');
   assert.ok(b.lost > 0, 'fares past the cap are lost');
@@ -1258,5 +1252,7 @@ test('R3: income at the first route settles within one fare a minute of min(56, 
     e0 = earned(w);
   for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 6000; t++) railTick(w, t);
   const perMin = (earned(w) - e0) / 10;
-  assert.ok(Math.abs(perMin - 56) <= fareOf(w, 0), `${perMin} a minute`);
+  const seatsPerMinute = (2 * TRADE.seats * 600) / cycleTicks(LINE2, stopsOf(w, LINE2));
+  const expected = Math.min(56, seatsPerMinute * fareOf(w, 0));
+  assert.ok(Math.abs(perMin - expected) <= fareOf(w, 0), `${perMin} a minute, expected ${expected}`);
 });
