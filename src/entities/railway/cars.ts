@@ -18,7 +18,7 @@ export type CarRole = 'engine' | 'player' | 'rider' | 'kit' | 'wagon' | 'steel';
 export type Consist = readonly { role: CarRole; spec: CarSpec; offset: number }[];
 export const STEEL_CAR: CarSpec = { ...TRAILER };
 /** Local layout only. R2a deliberately has no rider car on any line. */
-export function consistOf({ wagon, steel }: { line: number; wagon: boolean; steel: boolean }): Consist {
+function makeConsist(wagon: boolean, steel: boolean): Consist {
   const cars: { role: CarRole; spec: CarSpec; offset: number }[] = [
     { role: 'engine', spec: ENGINE, offset: TRAILER.hz + 0.6 + ENGINE.hz },
     { role: 'player', spec: TRAILER, offset: 0 },
@@ -32,7 +32,32 @@ export function consistOf({ wagon, steel }: { line: number; wagon: boolean; stee
     const previous = cars.at(-1)!;
     cars.push({ role, spec, offset: previous.offset - (previous.spec.hz + 0.5 + spec.hz) });
   }
-  return cars;
+  return Object.freeze(cars.map((car) => Object.freeze(car)));
+}
+// R2a's layouts are line-independent. Build the four possible consists once, never in a frame path.
+const layouts = [
+  [makeConsist(false, false), makeConsist(false, true)],
+  [makeConsist(true, false), makeConsist(true, true)],
+] as const;
+export const consistOf = ({ wagon, steel }: { line: number; wagon: boolean; steel: boolean }): Consist =>
+  layouts[Number(wagon)]![Number(steel)]!;
+const bounds = new Map(
+  layouts.flat().map(
+    (consist) =>
+      [
+        consist,
+        Object.freeze({
+          lo: Math.min(...consist.map((car) => car.offset - car.spec.hz)),
+          hi: Math.max(...consist.map((car) => car.offset + car.spec.hz)),
+        }),
+      ] as const,
+  ),
+);
+/** The complete consist's extents relative to the players' car, precomputed with its descriptors. */
+export function consistBounds(consist: Consist) {
+  const value = bounds.get(consist);
+  if (!value) throw new Error('Bounds require a cached consist');
+  return value;
 }
 export const roleIndex = (consist: Consist, role: CarRole) => {
   const index = consist.findIndex((car) => car.role === role);

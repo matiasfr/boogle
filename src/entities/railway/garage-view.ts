@@ -121,6 +121,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   const { TRAILER, WAGON_CAR, STEEL_CAR, consistOf, offsetOf } = cars;
   const displayConsist = consistOf({ line: 1, wagon: true, steel: true });
   const displayOffset = (role: Parameters<typeof offsetOf>[1]) => offsetOf(displayConsist, role);
+  const steelOffsets = [false, true].map((wagon) => offsetOf(consistOf({ line: 1, wagon, steel: true }), 'steel'));
   const tableTop = geo.y + 0.02;
   const centre = new THREE.Vector3(geo.table.x, tableTop, geo.table.z);
 
@@ -270,11 +271,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       case 'wagon':
         return car(displayOffset('wagon'), WAGON_CAR.top, facts.wagonCoupled);
       case 'steelcar':
-        return car(
-          offsetOf(consistOf({ line: 1, wagon: facts.wagonCoupled, steel: true }), 'steel'),
-          STEEL_CAR.top,
-          facts.longFitted,
-        );
+        return car(steelOffsets[Number(facts.wagonCoupled)]!, STEEL_CAR.top, facts.longFitted);
       case 'cradle':
         return {
           c: [0, WAGON_CAR.top + 0.55, displayOffset('wagon')],

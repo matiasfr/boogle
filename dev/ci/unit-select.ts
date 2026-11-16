@@ -75,6 +75,10 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     reaches: ['src/entities/finds/secrets-view.ts'],
     why: 'executes the actual yard dressing block selected from this source-owned boundary',
   },
+  'test/consist-cache.test.ts: sourceModule': {
+    reaches: ['src/entities/railway/train-view.ts'],
+    why: 'Executes the local role/car-collection closure with stub cars to count steady-frame descriptor requests.',
+  },
   'test/prefab-seats.test.ts: sourceModule': {
     reaches: ['src/entities/railway/track-machine.ts', 'src/entities/railway/train-view.ts'],
     why: 'executes the seat construction blocks selected from these source-owned boundaries',

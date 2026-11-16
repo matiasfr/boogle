@@ -44,7 +44,7 @@ import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-que
 import { line2At, line2Lat, line2Y, endMergeM, departureHalt } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import type { CarRole } from './cars.ts';
-import { STEEL_CAR, ridesOn, consistOf, roleIndex, offsetOf } from './cars.ts';
+import { STEEL_CAR, ridesOn, consistOf, consistBounds, roleIndex, offsetOf } from './cars.ts';
 import { CAR_BUFFERS, ENGINE_BUFFERS, couplingCapacity, trainPlaces, type Vehicle } from './car-spacing.ts';
 import { createCouplings } from './couplings.ts';
 import type { TrainAhead } from './path-refuge.ts';
@@ -363,13 +363,28 @@ export async function createRailwayTrains(
    * takes the fit as it stands there, so the car comes on mid-growth and stays coupled). */
   const roleCar = (tr: (typeof trains)[number], role: CarRole): Car =>
     role === 'wagon' ? wagonCar : role === 'steel' ? tr.steel! : tr.carByRole(role);
-  const grown = (tr: (typeof trains)[number]) =>
-    consistOf({ line: tr.line, wagon: false, steel: !!tr.steel }).map(({ role }) => roleCar(tr, role));
+  // Cache available role-to-car collections once. A line without a steel car never selects a steel layout.
+  const carLayouts = new Map(
+    trains.map((tr) => [
+      tr,
+      [false, true].map((wagon) =>
+        [false, true].map((steel) => {
+          if (steel && !tr.steel) return null;
+          const consist = consistOf({ line: tr.line, wagon, steel });
+          return {
+            consist,
+            bounds: consistBounds(consist),
+            cars: Object.freeze(consist.map(({ role }) => roleCar(tr, role))),
+          };
+        }),
+      ),
+    ]),
+  );
+  const layoutOf = (tr: (typeof trains)[number], wagon: boolean, steel: boolean) =>
+    carLayouts.get(tr)![Number(wagon)]![Number(steel)]!;
+  const grown = (tr: (typeof trains)[number]) => layoutOf(tr, false, !!tr.steel).cars;
   /** Every car drawn as part of this train, in consist order. */
-  const carsOf = (tr: (typeof trains)[number]) =>
-    consistOf({ line: tr.line, wagon: wagonTrain() === tr, steel: !!tr.steel && tr.carOn }).map(({ role }) =>
-      roleCar(tr, role),
-    );
+  const carsOf = (tr: (typeof trains)[number]) => layoutOf(tr, wagonTrain() === tr, !!tr.steel && tr.carOn).cars;
   /** The lateral at s (m) of train `tr` on `row`'s track: right-hand running (docs/plans/running-side.md, v45). Going
    * out (track 0) it is on the original track, 0; going home (track 1) on the offset one, 4 m to the west between the
    * turnouts, easing over each 20 m turnout. Line 2 reads its open end from the room's rows (./line2-path.ts: Far
@@ -513,12 +528,8 @@ export async function createRailwayTrains(
       tr.cars.forEach((c, n) =>
         put(c, tr.consist[n]!.offset * c.mesh.scale.x, tr.consist[n]!.role === 'engine' ? ENGINE_BUFFERS : CAR_BUFFERS),
       );
-      if (tr === coupled) put(wagonCar, offsetOf(consistOf({ line: tr.line, wagon: true, steel: false }), 'wagon'));
-      if (tr.steel)
-        put(
-          tr.steel,
-          offsetOf(consistOf({ line: tr.line, wagon: row.wagon, steel: true }), 'steel') * tr.steel.mesh.scale.x,
-        );
+      if (tr === coupled) put(wagonCar, offsetOf(layoutOf(tr, true, false).consist, 'wagon'));
+      if (tr.steel) put(tr.steel, offsetOf(layoutOf(tr, row.wagon, true).consist, 'steel') * tr.steel.mesh.scale.x);
       // On today's track the line's metres are the track's.
       const spaced = lat(along + made[0]!.d) !== 0 || lat(along + made.at(-1)!.d) !== 0 || lat(along) !== 0;
       trainPlaces(trackAt, along, made, standAt, spaced);
@@ -1008,10 +1019,10 @@ export async function createRailwayTrains(
         .map((tr) => (sec: number) => {
           const along = trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock + sec * 10) / 100;
           const row = trainRow(adapter.read.world(), tr.slot);
-          const consist = consistOf({ line: tr.line, wagon: row.wagon, steel: !!tr.steel && tr.carOn });
+          const { bounds } = layoutOf(tr, row.wagon, !!tr.steel && tr.carOn);
           return {
-            lo: along + Math.min(...consist.map((c) => c.offset - c.spec.hz)),
-            hi: along + Math.max(...consist.map((c) => c.offset + c.spec.hz)),
+            lo: along + bounds.lo,
+            hi: along + bounds.hi,
           };
         }),
     isTrain: (platform: Platform | null) =>

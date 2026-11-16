@@ -2,7 +2,7 @@
 
 Implementation: `t3/role-based-train-consist`, based on origin/main `f0c3ce77` (includes loader yard #1975).
 
-`consistOf({line, wagon, steel})` returns ordered `{role, spec, offset}` descriptors. Roles are engine, player, kit,
+`consistOf({line, wagon, steel})` returns cached, ordered `{role, spec, offset}` descriptors. Roles are engine, player, kit,
 optional wagon, optional steel. The rider name is reserved in the type but no rider is built. Base offsets are
 4.2, 0, -3.7 m; wagon -7.4 m; steel -7.4 m without wagon, -11.100000000000001 m with it. Maximum tail is
 12.700000000000001 m. Grouping each half-length + 0.5 m gap + next half-length before subtraction preserves existing floating point arithmetic exactly.
@@ -94,3 +94,34 @@ src/entities/railway/train-view.ts:134:        model.cars[n]!,
 src/entities/railway/train-view.ts:146:    const carByRole = (role: Parameters<typeof roleIndex>[1]) => cars[roleIndex(consist, role)]!;
 src/entities/railway/train-view.ts:147:    const meshByRole = (role: Parameters<typeof roleIndex>[1]) => model.cars[roleIndex(consist, role)]!;
 ```
+
+## Review follow-up: steady-frame allocations
+
+Addressed the P2 from the independent review of `275787618` (stamp `50ea146b3224`). Rebased onto
+`61abe4ca5`, including the landed cart-wait step. This fix adds no namespace, simulation, server, wire, save,
+fixture or posing change; the v56 change is inherited from main.
+
+- Build the four wagon/steel descriptor layouts and their bounds once at module initialization.
+- Bind each train's available role-to-car collections once, freeze the collection arrays, and select them by flags
+  during coupling, growth, posing and bounds queries. No descriptor requests or new car arrays on these steady paths.
+- Precompute the garage's two steel-car offsets during view construction.
+- Pin literal old `hx`, `hz`, and `top` for every role/configuration, alongside the old offsets, tails and cached bounds.
+- Register the source-extraction test's precise train-view dependency in the unit selector.
+
+The real `carsOf` closure is executed with stub cars: **60 unchanged frames requested 60 descriptor rebuilds before
+and zero after**, with the same cached car-array identity returned after the fix. A second test selects all four
+cached collections as the wagon couples/uncouples and the steel car appears/disappears, then revisits prior arrays.
+The regression was run failing before the fix and passing after it.
+
+Validation:
+
+- Requested scoped suite (consist, prefab-seats, train, garage, nine golden shards, M12 host trace and schema): 301/301 pass.
+- Post-rebase `npm run check`: exit 0; 2302 pass, 65 skipped, one existing todo; level/assets/registry and build pass.
+- Full lint: exit 0, zero problems. Typecheck: exit 0.
+- Unit-selector/source-cache checks: 22/22 pass (the initial missing source dependency was corrected).
+- Final `node dev/ship-check.ts`: exit 0; registry, 11 lint files, typecheck, 75 affected test files (610 tests pass).
+- Fixture paths and sim/world/server files have no branch diff from origin/main. No goldens or trace re-pinned.
+- Posing arithmetic is unchanged; no new stills, as requested. Earlier visual evidence above is retained.
+
+Logs: [before regression](../../.look/r2a/cache-before.log), [scoped tests](../../.look/r2a/cache-tests.log),
+[post-rebase full check](../../.look/r2a/cache-final-check.log), [final gate](../../.look/r2a/cache-ship-check.log).
