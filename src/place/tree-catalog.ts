@@ -64,8 +64,8 @@ const hardwoods = planted
   .slice(0, 2);
 for (const { t } of hardwoods) t.hardwood = true;
 
-// Only the new station ground may remove an already planted tree. Keep every survivor's id and ordering.
-// X1 covers no existing trunks: all 362 survive (the v35 comparison is in home-flip's proof report).
+// Station ground and approved path benches may remove a planted tree; keep survivors' IDs and ordering.
+// Terrain-clean step 5 deliberately clears 12 of the 362 trees and pins the resulting v49 harvest catalog.
 export const LAND_TREES = planted.filter((t) => {
   const i = Math.round((t.x - ORIGIN.x - GRID.x0) / CELL),
     j = Math.round((t.z - ORIGIN.z - GRID.z0) / CELL);

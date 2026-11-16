@@ -144,7 +144,8 @@
   seams and the cove's rock tile, appears where the collider is unwalkable or the broad slope is steep. The material
   inputs are packed on the land's own vertices; geometric cliff ledges and the wedge variants are removed. The land
   draws the collider's own grid, including the unchanged fine cove patch, with the far-ground tiles described above.
-  Every height, collider, ground query and placed object is unchanged. `?terrain=0` keeps the earlier ground material.
+  The ledge removal preserved heights and colliders; the later bench grading below deliberately reshapes them.
+  `?terrain=0` keeps the earlier ground material.
   The lower gorge wall has broader, more continuous green patches without the ledges; the orchestrator accepted that
   difference after opening matched camera-9 stills. The cliffs retain their warm banded-rock character. Not tested on
   a device. [Plan and proofs](../plans/terrain-clean.md); earlier rounds are [history](../plans/terrain-pass.md).
@@ -157,7 +158,9 @@
   width: cool grey-brown packed earth (Fresh edge `#6e5f50`, middle `#93836f`), lighter where feet go and distinct
   from the warm sandstone; a dark cut edge with a painted bank, a darker verge, small
   stones, and timber risers square across the tread on climbs steeper than 1 in 8. Bold paths are 6 m wide, the others
-  3.8 m. No vertex moves; where a tread needs real reshaping the plan lists it for a ground step.
+  3.8 m. The graded shoulders extend one 2 m cell diagonal beyond those widths (5.9/8.8 m bold inner/outer,
+  4.8/7.7 m plain). Paint widths remain independent. The Round's lowered green and ability-pad approaches retain
+  their previous grading. Twelve ordinary trees are cleared, with surviving harvest IDs unchanged.
   The path field's own height bounds the painted bench, with the original ground-facing facet cutoff retained so
   tread colour, stones and painted normals do not climb the wall. The verge darkens only the bench outside the
   horizontal tread footprint; a wall rejected by the bench never becomes a dark verge. Exterior cut-bank paint is

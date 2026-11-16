@@ -211,7 +211,7 @@ test('line-one bills, unique beam and funded completion survive every stage rest
   assert.equal(railCounts(s).stone!.used, 8);
   assert.equal(beam(s).state, 'used');
   assert.equal(railCounts(s).completion, 3);
-  assert.equal(railCounts(s).total, 3910);
+  assert.equal(railCounts(s).total, 3790);
   assert.equal(railCounts(s).stone!.total, 40, 'line one 24 and the bowl 16');
 });
 

@@ -49,9 +49,9 @@ test('line 1 preserves source identity, exact bills and the one twelve-panel all
     LINE1_STATIONS.reduce((n, s) => n + s.beam, 0),
     1,
   );
-  assert.deepEqual(LINE1_INITIAL, [3910, 24]);
+  assert.deepEqual(LINE1_INITIAL, [3790, 24]);
   const ordinary = new Set(LINE1_ORDINARY_SOURCES.map(([id]) => id));
-  assert.equal(ordinary.size, 388);
+  assert.equal(ordinary.size, 376);
   for (const id of [LINE1_GREAT_TREE.id, ...LINE1_HARDWOOD_IDS]) assert.equal(ordinary.has(id), false);
   assert.equal(
     LINE1_ROCKS.reduce((n, rock) => n + rock.initial, 0),

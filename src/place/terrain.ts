@@ -8,6 +8,7 @@ import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layou
 import { TOWN_CENTRE, TOWN_GROUND, TOWN_RING, TOWN_SLOTS, TOWN_STREETS, townBuilding } from './town-plan.ts';
 import { ROTUNDA_HOME } from './home-station.ts';
 import { ROTUNDA_KIT } from './rotunda.ts';
+import { JUMP_COURSE, padById } from './tech-layout.ts';
 import {
   ARMS,
   BANK_CART,
@@ -152,7 +153,8 @@ function strip(
   samples: [number, number, number][],
   inner: number,
   outer: number,
-  painted: boolean,
+  /** Painted half width is independent of the graded shoulder. */
+  paintInner: number | false,
   /** Leave this cell as it is; `y` is the strip's height there and `k` the cell. */
   skip?: (x: number, z: number, y: number, k: number) => boolean,
   /** false: leave `clearMask` as it was. The tree catalog reads it, and `heights` too (its h < 4 filter), so a strip
@@ -180,7 +182,7 @@ function strip(
     const t = smoothstep(outer, inner, d);
     heights[k] = heights[k]! + (y - heights[k]!) * t;
     if (clears) clearMask[k] = Math.max(clearMask[k]!, t);
-    if (painted) pathMask[k] = Math.max(pathMask[k]!, smoothstep(inner + 1, inner - 0.5, d));
+    if (paintInner !== false) pathMask[k] = Math.max(pathMask[k]!, smoothstep(paintInner + 1, paintInner - 0.5, d));
   }
   return best;
 }
@@ -318,9 +320,17 @@ function bake() {
         railBedCeilings.set(k, Math.min(railBedCeilings.get(k) ?? Infinity, heights[k]!, height));
   }
   // Paths last: they cut their ramps into the walls and fill across whatever they meet.
+  // Preserve ability-pad approaches and the Round's lowered green, including their interpolation cells.
+  const protectedPads = [padById('alcove'), ...JUMP_COURSE];
+  const keepExisting = (x: number, z: number) =>
+    protectedPads.some((p) => Math.abs(x - p.x) <= p.hx + 2 + CELL && Math.abs(z - p.z) <= p.hz + 2 + CELL) ||
+    Math.hypot(x - TOWN_CENTRE.x, z - TOWN_CENTRE.z) <= TOWN_RING.inner + CELL;
   PATHS.forEach((p) => {
     const samples = [...samplePath(p.pts.slice(0, p.bridgeAt + 1)), ...samplePath(p.pts.slice(p.bridgeAt + 1))];
-    strip(samples, p.bold ? 3.6 : 2.4, p.bold ? 6.5 : 4.8, true);
+    const paint = p.bold ? 3.6 : 2.4;
+    strip(samples, paint, p.bold ? 6.5 : 4.8, paint, (x, z) => !keepExisting(x, z));
+    // One cell diagonal beyond the tread keeps the cut wall's triangles outside the walking surface.
+    strip(samples, p.bold ? 5.9 : 4.8, p.bold ? 8.8 : 7.7, paint, keepExisting);
   });
   // Paint only: the ring follows the existing terrain, including the hall's gentle apron.
   for (let j = 0; j < NZ; j++)
@@ -331,7 +341,7 @@ function bake() {
       pathMask[at(i, j)] = Math.max(pathMask[at(i, j)]!, paint);
     }
   const dock = TOWN_STREETS.dock.line.map((p): Pt => [p.x, p.z, VILLAGE.y]);
-  strip(samplePath(dock), 4, 6, true, undefined, false);
+  strip(samplePath(dock), 4, 6, 4, undefined, false);
 }
 bake();
 
@@ -410,7 +420,7 @@ if (SHORE_COAST) {
     false,
     inTown,
   );
-  strip(SHORE_SAMPLES, 3.6, 6.5, true, inTown);
+  strip(SHORE_SAMPLES, 5.9, 8.8, 3.6, inTown);
   pad(SHORE_HOP.x, SHORE_HOP.z, SHORE_HOP.y, 2.5, 3);
   // Last: an 18 m disc (16 m clear after grid interpolation), including the steering funnel.
   pad(SHORE_LANDING.x, SHORE_LANDING.z, 3, 9, 5);

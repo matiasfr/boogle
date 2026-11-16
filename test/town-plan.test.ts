@@ -319,7 +319,7 @@ test('the curio frames’ footprints are the drawn crowns’: SHELF_SIZE agrees 
 
 test('the tree catalog retains its stable planting order (length, first and last rows)', () => {
   const at = (i: number) => [Math.round(LAND_TREES[i]!.x * 100) / 100, Math.round(LAND_TREES[i]!.z * 100) / 100];
-  assert.equal(LAND_TREES.length, 362);
+  assert.equal(LAND_TREES.length, 350);
   assert.deepEqual(at(0), [1081.13, -89.07]);
   assert.deepEqual(at(LAND_TREES.length - 1), [1426.55, -214.11]);
 });
@@ -361,8 +361,8 @@ test('the green has one 0.8 m drop tunable and a shallow bank to the level ring'
   }
 });
 
-test('the tree table keeps all 362 trunks outside the Round pad and edge', () => {
-  assert.equal(LAND_TREES.length, 362);
+test('the tree table keeps the 350 surviving trunks outside the Round pad and edge', () => {
+  assert.equal(LAND_TREES.length, 350);
   for (const t of LAND_TREES)
     assert.ok(Math.hypot(t.x - ORIGIN.x - TOWN_CENTRE.x, t.z - TOWN_CENTRE.z) > TOWN_GROUND.r + TOWN_GROUND.soft);
 });
@@ -576,7 +576,7 @@ test("The Boogler's statue stands on the footing at G, facing the hall", () => {
     // The works' square frame lines up with the square footing, so its corner poles stand on the slab.
     const quarter = Math.PI / 2,
       off = (((statue.rot[0]! - TOWN_FOOTING.yaw) % quarter) + quarter) % quarter;
-    near(Math.min(off, quarter - off), 0, 1e-9, "the frame is square to the footing");
+    near(Math.min(off, quarter - off), 0, 1e-9, 'the frame is square to the footing');
   }
   // Its front (local +z) points along the hall's centreline, bearing 70 from G, toward where a player spawns.
   const front = townLocal({ ...TOWN_STATUE }, 0, 1);

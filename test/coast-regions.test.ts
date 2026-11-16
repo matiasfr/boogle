@@ -85,15 +85,15 @@ function digest(coast: Coast) {
   return { width: tex.image.width, height: tex.image.height, texture, sampled, n };
 }
 
-// Rotunda step 3: the shallow pit changes terrain inputs after the harvest snapshot; coast/shader code is unchanged.
+// Terrain-clean step 5: wider benches change terrain inputs; coast/shader code is unchanged.
 // Print replacement texture/sample digests after an intentional terrain change (then review and update only those pins):
 // PRINT_COAST_BASELINE=1 node --test --test-name-pattern='two shores' test/coast-regions.test.ts
 // Size, transform, lattice bounds and region assertions remain independent of regeneration.
 const COAST_BASELINE = {
   width: 2015,
   height: 780,
-  texture: 'c30fdd583ee06d3785e43b231b599378dcd9642b51b1f2a3aa80bd892d287db7',
-  sampled: '96f2d1a18cfcabe56ade161eaf1cb78138505a33a0f91aeb155c171fa4020bdb',
+  texture: '27d658bb67a6284207f4817d5c5935233b5c845f9930ad728952bfa422720a51',
+  sampled: '7db7e1f6e6b5d93720875f71eed40ffdc85a52f0abd40dc472d98b726395a177',
   transform: [-375, -400, 0.0004962779156327543, 0.001282051282051282],
 };
 

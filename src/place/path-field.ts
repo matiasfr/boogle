@@ -5,7 +5,7 @@ import { GRID, PATHS, VILLAGE, type Pt } from './layout.ts';
 import { SHORE_COAST, SHORE_PATH } from './shore-layout.ts';
 import { TOWN_RING, TOWN_STREETS, slotPoint } from './town-plan.ts';
 
-/** Half the drawn tread's width, metres: inside the level strip the terrain grades (3.6 m and 2.4 m), so the tread
+/** Half the drawn tread's width, metres: inside the level strip the terrain grades (5.9 m and 4.8 m), so the tread
  * ends before a cut wall starts. */
 export const TREAD_HALF = { bold: 3, plain: 1.9 };
 /** The field's range either side of a tread's edge, metres. */

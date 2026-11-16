@@ -1,4 +1,5 @@
 // Owner-requested old-code golden: execute the halt view with recording render/physics boundaries.
+// Terrain-clean step 5 repins terrain-following ramp transforms; catalogs, boxes and request arguments stay fixed.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';

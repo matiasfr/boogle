@@ -1,4 +1,5 @@
 // Step 11: captured on the unconverted code. Exact bytes, including native-math results; no tolerance.
+// Terrain-clean step 5 repins Home's cleared trees and grounded bodies; classic scatter remains byte-identical.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
