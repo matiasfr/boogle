@@ -59,7 +59,14 @@ const ABILITIES: {
   { key: 'multi-axe', op: 'rail.wake', cue: 'pickupHook', has: AWAKE, badge: true, atState: true },
   { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: ({ w }) => rail(w).axe, badge: true },
   { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: ({ w }) => rail(w).pack, badge: true },
-  { key: 'boiler', op: 'rail.boilerFit', cue: 'pickupHook', has: ({ w }) => line2Trains(w), badge: true },
+  {
+    key: 'boiler',
+    op: 'rail.boilerFit',
+    cue: 'pickupHook',
+    has: ({ w }) => line2Trains(w),
+    badge: true,
+    atState: true,
+  },
 ];
 const BADGE_S = 1.5;
 const TEAL = new THREE.Color('#39e6c6');

@@ -127,7 +127,7 @@ for (const part of [1, 2] as const)
 
 test('an upgrade at the Village waits for wagon rollout and coupling before adopting row 1', () => {
   const s = copy(railwayAtWorks('cradle-fitted'));
-  advance(s, 5507 - s.t);
+  while (train(s.w, A).phase !== TRAIN_PHASE.STAND || train(s.w, A).at !== 0) advance(s, 1);
   assert.equal(train(s.w, A).phase, TRAIN_PHASE.STAND);
   assert.equal(train(s.w, A).at, 0);
   assert.equal(train(s.w, A).boiler, 0);

@@ -162,6 +162,7 @@ test('fit once, at the old train', () => {
   const w = railwayAtTrains('boiler');
   act(w, 'a', 'rail.boilerTake', { revision: boiler(w.w).revision });
   assert.equal(act(w, 'a', 'rail.boilerFit', { revision: boiler(w.w).revision }), 1);
+  while (rail(w.w).trains < 0) advance(w, 1);
   assert.equal(rail(w.w).trains, w.t);
   assert.equal(boiler(w.w).state, 'fitted');
   assert.deepEqual(
@@ -172,7 +173,7 @@ test('fit once, at the old train', () => {
 });
 test('malformed boiler documents fail atomically', () => {
   const w = railwayAtTrains('boiler');
-  for (const state of ['fitted', 'held', 'pedestal']) {
+  for (const state of ['held', 'pedestal']) {
     const bad = restore(w.w);
     bad.mut(Boiler, bad.single(Boiler))!.state = state;
     if (state === 'pedestal') bad.mut(Rail, bad.single(Rail))!.trains = 1;
@@ -234,8 +235,10 @@ test('station 6 takes nothing by hand and the forge gives no rails until trains 
   assert.deepEqual([account(w.w, 'a')!.carry, account(w.w, 'a')!.rails], [4, 4], 'the back keeps its load');
   // The fit opens both: the frame takes a back's load and the rack gives rails again.
   fit(w);
+  while (rail(w.w).trains < 0) advance(w, 1);
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q6', kind: 0, n: 4 }), 4);
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q6', kind: 2, n: 4 }), 4);
+  while (!forge(w.w).rack) advance(w, 1);
   assert.ok(act(w, 'a', 'rail.forgeTake') > 0, 'the rack gives rails after the fit');
   assert.equal(line2Rails(w.w), forge(w.w).poured);
 });

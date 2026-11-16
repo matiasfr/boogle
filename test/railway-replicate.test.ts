@@ -587,7 +587,7 @@ test('boiler and train packets patch the mirror; boiler blocks predicted materia
     ).status,
     'accepted',
   );
-  r.sync.stepWorld(12000);
+  for (let i = 0; i < 400; i++) r.sync.stepWorld(100);
   r.pump();
   agree(r, 'a');
   assert.equal(boiler(r.mirrors.get('a')!.confirmed()).state, 'fitted');
@@ -869,4 +869,21 @@ test('a steel kit take a friend beat you to comes back as onCorrected', () => {
   );
   adapter.dispose();
   agree(r, 'a');
+});
+
+test('a late joiner sees the fitted boiler cold while the cart returns', () => {
+  const seed = buildSeedWorld('boiler');
+  seedAct(seed, 'a', 'rail.boilerTake', { revision: boiler(seed.w).revision });
+  seedAct(seed, 'a', 'rail.boilerFit', { revision: boiler(seed.w).revision });
+  const r = room();
+  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
+  r.api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
+  r.api.touchAll();
+  r.join('late');
+  r.pump();
+  const w = r.mirrors.get('late')!.confirmed();
+  assert.equal(boiler(w).state, 'fitted');
+  assert.equal(rail(w).trains, -1);
+  assert.equal(works(w).breaker, 0);
+  assert.deepEqual(cart(w), cart(r.api.world()));
 });

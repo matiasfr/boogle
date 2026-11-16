@@ -636,7 +636,13 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.breaker'],
     reached: { mark: 'breaker taken' },
     stops: [],
-    requires: [dec('trains', 'rules', `${RULES_LINE2} boilerFit: casts the breaker; docs/plans/works-flow.md`)],
+    requires: [
+      dec(
+        'trains',
+        'rules',
+        `${RULES_LINE2} line2Wake: casts the breaker after fit and cart rest; docs/plans/rider-coach.md`,
+      ),
+    ],
     cue: [onMain('world', "the forge call's plume over the breaker", 'src/entities/railway/breaker-view.ts:49')],
   },
   {

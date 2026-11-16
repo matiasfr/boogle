@@ -131,7 +131,9 @@ test('breaker cast once at the boiler fit; one taker, no recast at Q6', () => {
   assert.equal(act(s, 'a', 'rail.boilerTake', { revision: boiler(w).revision }), 1);
   const revision = boiler(w).revision;
   assert.equal(act(s, 'a', 'rail.boilerFit', { revision }), 1);
-  assert.equal(works(w).breaker, 1, 'cast in the accepted fit');
+  assert.equal(works(w).breaker, 0, 'the cart is still out');
+  advance(s, 277);
+  assert.equal(works(w).breaker, 1, 'cast at the cart rest');
   assert.equal(line2Completed(w), 5);
   assert.equal(invariant(w), null);
   advance(s, 50);

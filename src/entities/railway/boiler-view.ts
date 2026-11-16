@@ -420,6 +420,7 @@ export function createRailwayBoiler(
     trail.set(back.x * 0.82 + Math.cos(yaw) * side0 * 0.57, 0, back.z * 0.82 - Math.sin(yaw) * side0 * 0.57);
     drag.update(dt, hip, from, trail, helped);
   }
+  let fittedByMe = false;
   let wasAwake = line2Trains(read.world());
   function update(dt: number) {
     const w = read.world(),
@@ -472,7 +473,7 @@ export function createRailwayBoiler(
     const awake = line2Trains(w);
     if (awake && !wasAwake) {
       holdForgeCall(FIT.wake);
-      if (BOILER_CARD && youGot) cardDue = performance.now() + FIT.wake * 1000;
+      if (BOILER_CARD && youGot && fittedByMe) cardDue = performance.now() + FIT.wake * 1000;
     }
     wasAwake = awake;
     call.update(dt, b.state === 'pedestal');
@@ -564,6 +565,7 @@ export function createRailwayBoiler(
         pieces.dustRing(bx, by + 0.6, bz, 8, 1.5, 0.25);
       }
       if (e.op === 'rail.boilerFit') {
+        fittedByMe = e.pid === read.pid;
         // The landing clank stays on the fit; the wake and breaker call follow the trains.
 
         // The fitter heard the clank as it landed; everyone else hears it now.
