@@ -160,6 +160,16 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     footprint drawn (debug overlay, as the fit check's), opened: from the island toward s 28, from the square through
     the hall's bays, from the table toward road 2. These are the evidence for owner question 2 (the engine standing on
     the curve over the idle leg). **Done means** that.
+  **R1b implementation stopped, 16 November:** the new diagnostic `home-cart` level row measures the
+  long engine/island gap as **0.5794398184781144 m**, below the task's explicit **0.58 m minimum**
+  by 0.0005601815218856 m. The committed read-only probe independently reproduces it. No threshold was
+  lowered, no production geometry changed, and no existing test assertion was relaxed. R1b remains incomplete.
+  The probe's leg-lever gap is 1.1293370765247293 m (below 1.13); the row uses the rendered lever's
+  station-axis heading from `home-station-view.ts`, giving 1.1341593429538008 m. Resolve this heading
+  discrepancy before certification. The row also exposes the rounded deck-start figures: 14.34671419114904
+  and 10.946714191149042 m versus 14.35 and 10.95. Its static audit is diagnostic, not a completed
+  turnout-part or canopy certificate. See [implementation report](../reports/rider-coach-r1b.md).
+
 - [ ] **R1c. Option B, only if the owner picks it (question 2, b): the relay (L).** Sync: Server data (catalog). Tier:
   **independent review** + visual. Builds: Codex gpt-6-astra high; review fresh astra high. Bump: yes (rides R1a's if
   built together). The builder's stop report (`git show aba7158b2:docs/reports/rider-coach-r1.md`, branch
