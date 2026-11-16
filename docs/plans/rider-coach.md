@@ -136,6 +136,7 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   train can stand at the Village, so
   R2b's train stands at 21.65 with its long engine's nose at s 28.35, 3.35 m onto today's R 18 arc (0.31 m off the
   straight's line) and 2.35 m past the leg's points (s 26). Nothing at Home moves: no relay, no Q2 change, no tree.
+  - **Posed-train stills:** [Home coach train comparison](../world/home-coach-train.html) — today and option A, six fixed camera pairs; visual evidence only.
   - `test/home-station.test.ts`: "both stops on the straight" gains R2b's planned row (the steel train at 21.65 with a
     3.40 m coach pitch: every car but the engine on the straight, the engine at most 3.5 m into the arc); "road 2 in
     order" lets the planned row's nose pass the leg's points, citing R1a's invariant; the crossing's "far end has no
