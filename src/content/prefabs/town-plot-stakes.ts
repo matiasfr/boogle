@@ -59,6 +59,7 @@ export const prefabs = [
     visual: { none: true },
     colliders: [],
     attach: { label: { kind: 'label', at: [0, 1.05, 0], facing: [0, 0, 1], w: 2.8, h: 1.4, posts: 'one' } },
+    interactions: [{ action: 'town.plot-buy' }],
     scope: 'place',
   }),
 ];

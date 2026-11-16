@@ -7,6 +7,7 @@ type SaidFact = TownFact | 'breaker';
 
 export type TownRoomInspection = { up: boolean; ready: boolean };
 export type TownInspection = {
+  plots: ReturnType<ReturnType<typeof import('./plots.ts').createTownPlots>['inspect']>;
   facts: TownFact[];
   newest: TownFact | null;
   level: number;

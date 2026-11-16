@@ -27,23 +27,25 @@ export function roomShell(p: JsonObject): ConstructionBuild {
       z: p.z,
       yaw: p.yaw,
       door: { w: 2.6, rows: 3 },
-      closed: false,
+      closed: spec.closed === true,
       windows: '#3f4a57',
-      floor: 0.14,
+      floor: spec.closed === true ? 0.5 : 0.14,
       ...(spec.smoke ? { chimney: { dx: w * 0.38, dz: d * 0.2, n: 5, a: '#9a4a3a', b: '#8a4032' } } : {}),
     };
     cached = housePlan(s as unknown as HouseSpec, p.y as number);
-    cached.keepOut = {
-      dx: 0,
-      dy: (spec.high as number) / 2,
-      dz: 0,
-      hx: w / 2 + 0.1,
-      hy: (spec.high as number) / 2,
-      hz: d / 2 + 0.1,
-    };
+    if (spec.closed !== true)
+      cached.keepOut = {
+        dx: 0,
+        dy: (spec.high as number) / 2,
+        dz: 0,
+        hx: w / 2 + 0.1,
+        hy: (spec.high as number) / 2,
+        hz: d / 2 + 0.1,
+      };
     previous = signature;
   }
   if (p.phase !== 'scaffold' && p.phase !== 'pieces') throw new Error('rooms: unknown construction phase');
+  if (p.all === true) return { construction: { plan: cached, phase: p.phase, parts: cached[p.phase] } };
   const index = p.index;
   if (typeof index !== 'number' || !Number.isInteger(index) || index < 0 || !cached[p.phase][index])
     throw new Error('rooms: unknown shell part');

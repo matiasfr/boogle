@@ -48,6 +48,8 @@ export function dropSet(boxes: Box[], onLand: (k: number) => void, owner: OwnedV
       set.mesh.visible = true;
     },
     snap(k, on) {
+      // A row disappearing or a completed load cancels this piece's pending drop as well as its drawn pose.
+      for (let n = air.length - 1; n >= 0; n--) if (air[n]!.k === k) air.splice(n, 1);
       if (on) write(k, 0, 0);
       else set.mesh.setMatrixAt(k, ZERO);
       if (on) set.mesh.visible = true;

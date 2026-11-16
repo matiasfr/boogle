@@ -529,7 +529,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/place/sites.ts": {
-      "count": 8,
+      "count": 7,
       "exports": [
         "addFoot",
         "addSite",
@@ -878,15 +878,11 @@
     "src/entities/ring-steel/view.ts#createRingSteel": 1,
     "src/entities/route-greybox/leg-view.ts#createLegView": 1,
     "src/entities/town/curio-shelf.ts#createCurioShelf": 1,
-    "src/entities/town/rooms.ts#createRooms": 1,
     "src/entities/town/view.ts#createTownView": 1,
     "src/entities/town/workshop.ts#makeWorkshop": 1,
     "src/fall/letters.ts#blastLetters": 1,
     "src/place/cove-view.ts#buildCove": 1,
     "src/place/sites.ts#hullBodies": 1,
-    "src/place/sites.ts#buildSites": 2,
-    "src/place/sites.ts#snapSite": 2,
-    "src/place/sites.ts#updateSites": 2,
     "src/pois/caves/decor.ts#buildDecor": 1,
     "src/proto/crossing/world.ts#buildWorld": 1,
     "src/proto/greybox/build.ts#buildGreybox": 2,

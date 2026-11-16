@@ -1049,7 +1049,7 @@ test('house furnishing retains old parts, solids, copy and every fact stage', ()
 });
 
 test('site body records retain the old construction, ejection, snap and teardown lifecycle', () => {
-  function run(useRecords: boolean) {
+  function run() {
     const events: unknown[] = [],
       states: unknown[] = [],
       active = new Set<import('../src/physics/engine.ts').Body>(),
@@ -1162,12 +1162,10 @@ test('site body records retain the old construction, ejection, snap and teardown
         },
       };
     };
-    const site = sites.addSite(
-      'room-lifecycle',
-      plan,
-      1.5,
-      useRecords ? { hulls: plan.hulls.map(record), poles: plan.poles.map(record) } : undefined,
-    );
+    const site = sites.addSite('room-lifecycle', plan, 1.5, {
+      hulls: plan.hulls.map(record),
+      poles: plan.poles.map(record),
+    });
     const dispose = sites.buildSites(owner as unknown as import('../src/render/owned-view.ts').OwnedView);
     const state = () =>
       states.push({
@@ -1209,11 +1207,9 @@ test('site body records retain the old construction, ejection, snap and teardown
     assert.equal(sites.feet.length, 0);
     return JSON.parse(JSON.stringify({ events, states }));
   }
-  const legacy = run(false),
-    recorded = run(true);
+  const recorded = run();
   const siteFixture = 'test/fixtures/prefab-site-lifecycle.json';
-  if (process.env.GOLDEN === '1') fs.writeFileSync(siteFixture, JSON.stringify(legacy) + '\n');
+  if (process.env.GOLDEN === '1') fs.writeFileSync(siteFixture, JSON.stringify(recorded) + '\n');
   const old = JSON.parse(fs.readFileSync(siteFixture, 'utf8'));
-  prefabGolden(legacy, old, 'legacy site lifecycle');
   prefabGolden(recorded, old, 'record site lifecycle');
 });

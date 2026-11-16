@@ -83,11 +83,11 @@ const GORGE_HALT = RAIL_LINES[1]!.halts.find((h) => h.name === 'High Gorge')!.pl
   // lies 4 m to the north, along -C of the split's frame (-0.5162, 0.8565), and a train stands on the rails.
   GORGE_LAND = near(GORGE_HALT, 0.5162 * 4.05, -0.8565 * 4.05, GORGE_HALT.y / 100 + 0.9, RAIL_GRANTS[0]!.at);
 
-// B1: N9's first priced slot is plot3. Pinned from townBuilding('plot3') / townLocal(2.2, d/2 + 1.2),
-// world x = Place-local x + 1000; the built landing is TOWN_CENTRE facing that plot. As other rail layout anchors,
-// keep these headless (town-plan imports the view's layout). B2 checks both in stills after its view lands.
-const HOUSE_READY: JumpLand = { x: 904.6, y: 18, z: 35.2, yaw: 1.571 };
-const HOUSE_BUILT: JumpLand = { x: 884.993, y: 18, z: 20.076, yaw: -2.056 };
+// B2: clear of the first board's post, 1.8 m toward the hall; the built landing is on the green,
+// east of the statue, facing the house. Surface/clearance checked in the live collision probe and both stills.
+// World x = Place-local x + 1000. These are landing coordinates only, not simulation/save state.
+const HOUSE_READY: JumpLand = { x: 904.6, y: 18, z: 33.4, yaw: 3.142 };
+const HOUSE_BUILT: JumpLand = { x: 890, y: 17.2, z: 22, yaw: -2.076 };
 
 /** In route order. Labels and lines are UI text (not The Boogler's), logged in docs/agent-calls.md. Each `land` was
  * checked with a still (docs/plans/playtest-jump-in.md, step 7); `y` is the surface measured there. */

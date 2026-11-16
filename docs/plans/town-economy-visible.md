@@ -218,7 +218,7 @@ models`'.
     K2's dedicated browser scenario is not claimed by this implementation.
 - [ ] **K2. Checkpoint at B1's bump.** `npm run check:full`; `npm run scenario` for two players pressing one plot (one
   plot bought, spent once: the one new sync contract); `npm run loop -- run` with order and bills unmoved.
-- [ ] **B2. The house goes up (M; V3).** After B1 and A2. Sync: Local view of `Plot`. Tier: normal + visual. Model:
+- [x] **B2. The house goes up (M; V3).** After B1 and A2. Sync: Local view of `Plot`. Tier: normal + visual. Model:
   gpt-6-astra high. Parallel with C1.
   - (review) What a plot gives is on its board as an icon and count (riders +1 a minute; D6). N12: while the box holds
     a staked plot's price, the house's gold ghost (the kiln's and cradle's cue) stands on it, seen from the island.
@@ -230,6 +230,35 @@ models`'.
     `src/entities/town/view.ts` mounts it.
   - Proof: `npm run look -- --rail-seed house-ready`: hold at plot 1's board and record the house going up, once, in
     real time.
+  - **As built, 16 November 2026:** the board paints the rider icon/rate, current tuned price and box balance;
+    the shared kiln/cradle gold outline shows the affordable house. A shared clamped hold helper also serves the
+    garage. The one-second hold queues `buy`; only the accepted Plot tick clears freight and starts the existing
+    house/site recipe. Its 100-tick deadline forces completion, and late loads snap built. Three record-owned hulls
+    make each closed shell solid; the existing house recipe supplies its door mark. Missing Town/Plot/Till rows hide
+    plot views, counts are clamped, targets are cached after enabling, and owner teardown retires bodies/meshes/listeners.
+    The unused legacy site-constructor fallback was folded into its existing record path, reducing prefab debt.
+    The railway view's trade facade now includes the existing `railPricePct` so its quote matches the server.
+    **Reach decision:** pure `townPlotBoard` needs no view import, so the server checks 3.2 m from the board in
+    world centimetres. Boundary unit checks cover all three anchors; the real WebSocket `r:edit` host test rejects a
+    far buyer without spending, then accepts/replays the nearby buy once. No saved shape or WORLD_NS change.
+    This reach change requires the owner's independent review before shipping.
+    **Landings (owner-authorized correction):** `house-ready` is `(904.6,18,33.4)`, 1.8 m before the post;
+    `house-built` is `(890,17.2,22)`, clear of the statue. The live surface probe rejected the old built point and
+    accepted both replacements. Both final landings are checked in stills.
+    **Visual proof:** `.look/town-b2-build-final-r2` is the real-time 14-second recording and 15-frame sheet of one hold
+    and build. The first offer is 150, the box goes 168 → 18, and the next board becomes 800; completion is 100 ticks
+    after acceptance. `.look/town-b2-ghost-hall` and `town-b2-ghost-island`: the gold pitched roof is visible from
+    both, including the platform, though the curio shelf occludes its lower outline there. `town-b2-refused-r3` shows
+    the ordinary grey blocked prompt and red “Need 782 more Boogles”. Final landing stills are
+    `town-b2-ready-final` and `town-b2-built-final`; `town-b2-built-landing` also frames the next board clearly.
+    Stills and sheets were opened; the recorded video cannot be watched in this agent, so real-time smoothness is
+    unverified. Not tested on a device. No long playthrough or new two-client browser scenario was run.
+    **Solids/route:** level-check includes the compiled house hulls (nine boxes, all three closed interiors blocked,
+    roof support at 23.2 m). The bay/shelf/first-house/second-house/shop gaps are 0.30/1.02/9.94/2.89 m:
+    the final shop-to-balcony gap is 0.15 m. All are horizontally within the plan's 12.6 m sprint double-jump envelope after two houses. This is geometric evidence,
+    not an executed controller route to the balcony; jump timing and landing clearance remain unverified.
+    **Placeholder strings for the owner:** “+1 rider / minute”, “Price <n>”, “Box <n>”, “Hold to build”, “Hold <n>%”,
+    “Need <n> more Boogles”, “Waiting for town”. Existing “Plot <n>”, “Timber” and “Stone” and The Boogler's copy stay.
 - [ ] **C1. The sack (S; R5).** After B1 (it shares B1's files). Sync: Server kind. Tier: **independent review**.
   Model: gpt-6-astra high; review as B1. Parallel with B2.
   - `src/sim/railway-sys-away.ts` (`tillAway(w, ticks)` beside `yardsAway`: `sack += floor(tillRate × ticks / 600)`, at

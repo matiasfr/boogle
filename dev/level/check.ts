@@ -212,6 +212,11 @@ async function runChecks() {
           `  ${l.route} deck ${l.deck}: deck ${l.over} stands ${l.above.toFixed(2)} m above it near (${l.x.toFixed(1)}, ${l.z.toFixed(1)})`,
         );
     }
+    const { checkTownHouses } = await import('./town-houses.ts');
+    const houses = await checkTownHouses();
+    failed += houses.failures;
+    report.push(houses);
+    if (!json) console.log('Town houses:', JSON.stringify(houses));
     const start = performance.now();
     const { runPlaceLevelCheck, printPlaceLevelCheck } = await import('../economy/place-level.ts');
     const result = runPlaceLevelCheck();

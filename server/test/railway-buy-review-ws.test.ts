@@ -52,7 +52,7 @@ test('review ws: a real server refuses bad buys, spends once for racing and repl
       let request = Number(session.next) - 1;
       const epoch = Number(session.epoch);
       const edit = (fields: Msg) => {
-        const e = { op: 'rail.buy', ...fields, epoch, request: ++request, at: [0, 0, 0], ms: 100 * request };
+        const e = { op: 'rail.buy', at: [90460, 1800, 3520], ...fields, epoch, request: ++request, ms: 100 * request };
         ws.send(JSON.stringify({ t: 'm', d: { t: 'r:edit', e } }));
         return e;
       };
@@ -80,6 +80,11 @@ test('review ws: a real server refuses bad buys, spends once for racing and repl
     await sleep(300);
     for (const e of bad) assert.equal(status(a.pid, e.epoch, e.request), 'rejected', JSON.stringify(e));
     assert.deepEqual({ ...till(w()) }, before);
+    const far = a.edit({ id: 0, at: [0, 1800, 0] });
+    await sleep(150);
+    assert.equal(status(a.pid, far.epoch, far.request), 'rejected', 'real r:edit outside the board reach');
+    assert.deepEqual({ ...till(w()) }, before, 'far buy spends nothing');
+    assert.equal(plot(w(), 0).at, -1);
     // Alice and Bob press plot 1 back to back; Alice's buy is re-sent.
     const first = a.edit({ id: 0 });
     const rival = b.edit({ id: 0 });
