@@ -8,6 +8,7 @@ import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layou
 import { TOWN_CENTRE, TOWN_GROUND, TOWN_RING, TOWN_SLOTS, TOWN_STREETS, townBuilding } from './town-plan.ts';
 import { ROTUNDA_HOME } from './home-station.ts';
 import { ROTUNDA_KIT } from './rotunda.ts';
+import { QUARRY_WEST_BENCH, QUARRY_EAST_BENCH, SHORE_BENCH } from './path-benches.ts';
 import { JUMP_COURSE, padById } from './tech-layout.ts';
 import {
   ARMS,
@@ -134,15 +135,19 @@ function pad(x0: number, z0: number, y: number, r: number, soft: number) {
     }
 }
 
-/** One-metre ground-strip samples, including each segment's endpoints. */
-function samplePath(pts: Pt[]): Pt[] {
+/** Ground-strip samples, including endpoints; new benches ease their slopes into level landings. */
+function samplePath(pts: Pt[], step = 1, eased = false): Pt[] {
   const samples: Pt[] = [];
   pts.slice(0, -1).forEach((a, k) => {
     const b = pts[k + 1]!,
-      n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
+      n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step);
     for (let m = 0; m <= n; m++) {
       const t = m / n;
-      samples.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+      samples.push([
+        a[0] + (b[0] - a[0]) * t,
+        a[1] + (b[1] - a[1]) * t,
+        a[2] + (b[2] - a[2]) * (eased ? smoothstep(0, 1, t) : t),
+      ]);
     }
   });
   return samples;
@@ -427,7 +432,7 @@ if (SHORE_COAST) {
 }
 
 // Grade the bearing areas, with one cell of margin so drawn triangles are flat through the footprint.
-function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, yaw = 0) {
+function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, yaw = 0, soft = 3) {
   const x = wx - ORIGIN.x,
     z = wz - ORIGIN.z,
     c = Math.cos(yaw),
@@ -446,7 +451,7 @@ function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, y
       const dx = cellX(i) - x,
         dz = cellZ(j) - z;
       const outside = Math.max(Math.abs(dx * c - dz * s) - w / 2, Math.abs(dx * s + dz * c) - d / 2);
-      const weight = smoothstep(CELL + 3, CELL, outside),
+      const weight = smoothstep(CELL + soft, CELL, outside),
         k = at(i, j);
       const ceiling = railBedCeilings.get(k);
       // At a skipped cliff edge, the adjacent terrain triangle can enter the deck just beyond the pad blend.
@@ -456,14 +461,32 @@ function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, y
       if (weight > 0) heights[k] = Math.min(heights[k]! + (y - heights[k]!) * weight, ceiling ?? Infinity);
     }
 }
-gradeSupport(BANK_CART.x + ORIGIN.x, BANK_CART.z, BANK_CART.y, 3, 4, BANK_CART.yaw);
+// The cart's soft support skirt used to overwrite the west tread (2.87 m cross fall at -60,148).
+// Cut the benches before restoring narrowly feathered bearings; the old 3 m support skirt is unnecessary here.
+// Two metres of tread plus a cell diagonal, then a 2.9 m shoulder; paint keeps its existing width.
+strip(samplePath(QUARRY_WEST_BENCH, 0.1, true), 4.9, 7.8, false);
+strip(samplePath(QUARRY_EAST_BENCH, 0.1, true), 4.9, 7.8, false);
+// Six clear metres at the turn, including the corner triangles; run-ins hold the same 8 m datum.
+strip([[-10, 150, 8]], 5.9, 8.8, false);
+if (SHORE_COAST)
+  strip(
+    samplePath(SHORE_BENCH, 0.1, true),
+    5.9,
+    8.8,
+    false,
+    (x, z) => Math.hypot(x - TOWN_CENTRE.x, z - TOWN_CENTRE.z) <= TOWN_GROUND.r,
+  );
+// Keep a cell of flat bearing around each prop, but only half a metre of fade into the adjacent tread.
+gradeSupport(BANK_CART.x + ORIGIN.x, BANK_CART.z, BANK_CART.y, 3, 4, BANK_CART.yaw, 0.5);
 if (SHORE_COAST)
   gradeSupport(
     SHORE_HOP.x + ORIGIN.x,
     SHORE_HOP.z + 7,
-    coarseHeight(SHORE_HOP.x + ORIGIN.x, SHORE_HOP.z + 7),
+    SHORE_HOP.y,
     SHORE_HOP.bottom * 2,
     SHORE_HOP.bottom * 2,
+    0,
+    0.5,
   );
 const stationPads = LINKS.flatMap((link) =>
   link.stations.map((spec) => {

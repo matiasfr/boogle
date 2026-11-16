@@ -405,7 +405,7 @@ which also edit `terrain.ts`.
   1.9 m), so a triangle with one corner on the bench and one 2 m further up the wall folds into the tread. Fix, in
   `terrain.ts` where `PATHS` and `SHORE_SAMPLES` are graded: `inner` = tread half width plus one cell diagonal
   (5.9 m bold, 4.8 m plain), `outer` = `inner` + 2.9 (8.8 m, 7.7 m). Trialled for this plan: see Level findings.
-- [ ] **6. The quarry path's benches (finding 3).** Step 5 does not fix it: at (-60, 148) the cross fall stays
+- [x] **6. The quarry path's benches (finding 3).** Step 5 does not fix it: at (-60, 148) the cross fall stays
   2.87 m (something later regrades or skips those cells; the implementer finds which before changing anything, most
   likely a `skip` or a later pad). Then cut a 4 m bench on both gorge descents, with a 6 m level landing at the turn
   near (-10, 150), as [terrain-pass](terrain-pass.md#ground-that-needs-real-reshaping-proposals-for-a-later-ground-step-not-done-here)
@@ -414,7 +414,7 @@ which also edit `terrain.ts`.
   **Cause confirmed before step 6:** `gradeSupport(BANK_CART...)` runs after the path strips. Its 3 m soft
   skirt raises the downhill vertex at (-60, 150) from 9.905 m to 13.770 m, towards the cart's 18.6 m pad.
   That vertex lies in the tread triangle sampled at (-60, 148). This is the later cart pad, not a path skip or
-  the cove fine patch. The repair must retain the cart's wheel bearings while restoring the descent afterwards.
+  the cove fine patch. The repair retains the cart's wheel bearings with a narrower support fade after restoring the descent.
 - [ ] **7. Ring Island footbridge, abutment a (finding 7).** `src/entities/ring-island/ground.ts`: cap the ground
   under the deck's footprint plus 0.5 m, for the first 4 m from abutment a, at the deck's underside less 0.1 m (the
   same kind of cap the loop deck already has), so nothing stands through the deck; the abutment beam then reads as a
@@ -540,15 +540,61 @@ run, then reverted; the unit tests were not run on the trial):
   These are frozen desktop stills, not motion, owner playtest or device evidence.
 - Required checks: level-check passes (16 current reports, zero grounding/timber problems), path survey exits 0,
   all 81 tests in the nine named files pass. `npm run check` passes (2,189 unit passes, zero failures, one
-  existing skip, plus lint/typecheck/registry/level/assets/prefabs/build). T1 passes; the `world-inputs` scenario passes. The extra two-peer
+  existing TODO, plus lint/typecheck/registry/level/assets/prefabs/build). T1 passes; the `world-inputs` scenario passes. The extra two-peer
   T2 route times out after waking (300 s wall limit, both pages around 250 s game time, clock drift; no graphics
   errors). Its final still and report are in `.look/playthrough/terrain-benches-step5-t2/`; this is not a multiplayer
   route pass. The one-player T1 proof is `.look/playthrough/terrain-benches-step5-t1/`.
 
-**Step 6 (quarry benches) and step 7 (Ring footbridge cap)** were not trialled: their positions are named above and
-each must bring its own level-check diff to the designer before it is built. Expected for step 6: more trees cleared
-on the gorge walls and a wider second-jump flood in the gorge; for step 7: the ring report's abutment cut rises above
-its 0.1 m expectation.
+**Step 6 implementation (2026-11-15, on step 5 `b6d5e8950`):**
+
+- `path-benches.ts` derives local height profiles from the existing centre lines. Both descents have 4 m clear
+  benches (4.9/7.8 m grading), eased slopes and flat turn/bridge run-ins. The (-10, 150) turn has a verified
+  6 × 6 m landing at y=8; the bridge's endpoints and span stay fixed. Terrain and paint use the same profiles.
+  The original catalog capture remains before these local cuts: all 350 land-tree records and 379 harvest slots
+  remain identical to step 5, with no further namespace change.
+- The cart's former 3 m fade caused the 2.87 m cross fall; restoring only the bench initially left one wheel
+  floating. The finished repair keeps a full cell of bearing around its original footprint and narrows the fade
+  to 0.5 m. All wheels remain at 18.6 m. The shore marker's bearing gets the same narrow fade at the hop's 14 m
+  datum (its terrain-following foot was 14.544 m). Both pass the actual footprint grounding audit.
+- The shore ramp's sharp height-profile corners and support skirt were retained by the protected fine-grid
+  corridor. Its new level bends/eased slopes are baked into the coarse grid and inherited by the fine grid.
+  The survey now queries `surfaceHeight`, including that fine patch, instead of only the coarse triangles.
+- Level-check: 16 reports, zero failures; production grounding 5,250 placements, zero problems; 405 timber decks
+  and 2,303 track pieces, zero problems. The one fewer placement is ordinary tree 79 at local (6.19, 165.56),
+  hidden by the new turn shoulder; its harvest slot remains. Visible trees are 319 to 318. All nine recorded
+  samples around each of the alcove, apron and lookout are identical to step 5.
+- Second-jump flood: 443 to 438 incremental cells, 16 newly classified and 21 no longer classified; all named
+  progression assertions pass. Exact coordinates: `.look/terrain-benches/step6-flood-delta.json`.
+- Path survey: 9 to 6 flagged stretches, with no quarry or shore stretch remaining. Cross fall at (-60, 148)
+  is 0.006 m instead of 2.87 m; the shore bend at (-177, 28) is exactly level. A quarter-metre surface sweep
+  holds both quarry descents within 0.12 m of their centres across 4 m, and the shore within 0.15 m across 6 m;
+  the maximum measured shore deviation is 0.135 m. These are tolerance-level benches, not exact planes everywhere.
+- All 81 required terrain tests plus six path-field/bench tests pass. The three new surface tests fail against
+  the committed step-5 terrain and pass against step 6 (ignored counterfactual evidence in
+  `.look/terrain-benches/step6-regression-before.txt`). The landing test checks the whole square every 0.25 m.
+- Intended repins in this step: coast texture `791e0c8d3fc35d1c3a31e170abff17163a57eae1f0bb5ff365643da185e49af9`
+  and sample `5cbfd247698940588870c4e88f7bb821e058b58cde62829aa7beffe61d6cf454`; prefab-tree terrain-following
+  source/root poses, the local cleared flag for tree 79, and 1,740 to 1,735 body records. Classic scatter and
+  planted tree records are exact; no sim hash, halt fixture or generated railway data is repinned in step 6.
+
+- Final stills: `.look/shots/terrain-benches-step6-final/group-0/c0-v0.png` through `c6-v0.png`, all opened.
+  Matched step-6 before views are `terrain-benches-step5-final/group-0/c2-v0.png` (west descent), `c3-v0.png`
+  (east descent/turn) and `c4-v0.png` (shore). The after views use the same indices and cameras. West now has a
+  broad continuous tread instead of a cart-skirt intrusion; the east turn and descent read continuously to the
+  bridge; the shore is more even, although some painted risers still look slightly wavy. The top-down `c6` shows
+  the clear landing. Rim trees still frame the walker view and `c5`; no replacement trees were needed. `c5`
+  alone is partly obstructed and is not landing proof. Final capture health and exact-repeat probes pass, with
+  no source changes during capture. The earlier `terrain-benches-step6/` set was invalidated by a documentation
+  edit during capture and is not the final evidence. No motion, owner-playtest or device claim.
+- `npm run check` passes: 2,192 unit passes, zero failures, one existing TODO, plus lint/typecheck/registry/
+  level/assets/prefabs/build. `node dev/ground/path-ground.ts` exits 0.
+- Final T1 route passes at `.look/playthrough/terrain-benches-step6-t1/` (end still opened). It ran under load,
+  so it proves route completion, not timing or feel. The earlier two-player T2 timeout remains an explicit
+  unverified checkpoint; no additional multiplayer pass is claimed.
+
+**Historical pre-implementation expectation:** step 6 was expected to clear more trees and expand the gorge's
+second-jump flood; its measured findings above supersede that estimate. Step 7 remains untouched: its proposed
+cap would increase the ring report's abutment-cut figure beyond the existing 0.1 m expectation.
 
 ## Risks
 

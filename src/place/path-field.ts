@@ -1,8 +1,10 @@
 // Where Home's footpaths run, as a distance field over the land's grid: the pure half of path-surface.ts, so a test can
 // check it without a renderer. Built from PATHS and the shore path, with each footbridge's span left out, plus the
 // Round's painted streets. It reads the layout only: nothing here moves a height (docs/plans/terrain-pass.md).
+import { smoothstep } from '../math.ts';
+import { QUARRY_WEST_BENCH, QUARRY_EAST_BENCH, SHORE_BENCH } from './path-benches.ts';
 import { GRID, PATHS, VILLAGE, type Pt } from './layout.ts';
-import { SHORE_COAST, SHORE_PATH } from './shore-layout.ts';
+import { SHORE_COAST } from './shore-layout.ts';
 import { TOWN_RING, TOWN_STREETS, slotPoint } from './town-plan.ts';
 
 /** Half the drawn tread's width, metres: inside the level strip the terrain grades (5.9 m and 4.8 m), so the tread
@@ -16,15 +18,22 @@ export const FIELD_W = Math.round((GRID.x1 - GRID.x0) / FIELD_CELL) + 1,
   FIELD_H = Math.round((GRID.z1 - GRID.z0) / FIELD_CELL) + 1;
 
 /** Each run of path on the ground (Place-local), with its tread's half width. */
-export const PATH_RUNS: { pts: Pt[]; half: number }[] = [
-  ...PATHS.flatMap((p) => {
+export const PATH_RUNS: { pts: Pt[]; half: number; eased?: boolean }[] = [
+  ...PATHS.flatMap((p, i) => {
     const half = p.bold ? TREAD_HALF.bold : TREAD_HALF.plain;
+    if (i === 1)
+      return [
+        { pts: p.pts.slice(0, 5), half },
+        { pts: QUARRY_WEST_BENCH, half, eased: true },
+        { pts: QUARRY_EAST_BENCH, half, eased: true },
+        { pts: p.pts.slice(12), half },
+      ];
     return [
       { pts: p.pts.slice(0, p.bridgeAt + 1), half },
       { pts: p.pts.slice(p.bridgeAt + 1), half },
     ];
   }),
-  ...(SHORE_COAST ? [{ pts: SHORE_PATH, half: TREAD_HALF.bold }] : []),
+  ...(SHORE_COAST ? [{ pts: SHORE_BENCH, half: TREAD_HALF.bold, eased: true }] : []),
   // The Round's paint also needs a tread in the terrain pass: it replaces the old pathMask colour layer.
   // A closed 64-segment ring differs from the authored circle by at most 2.1 cm, below the field's 1 m texels.
   {
@@ -61,8 +70,8 @@ export function pathAt(x: number, z: number) {
       edge = d - run.half;
       dx = d > 1e-6 ? ox / d : 0;
       dz = d > 1e-6 ? oz / d : 0;
-      grade = Math.abs(b[2] - a[2]) / Math.sqrt(len2);
-      height = a[2] + (b[2] - a[2]) * t;
+      grade = (Math.abs(b[2] - a[2]) / Math.sqrt(len2)) * (run.eased ? 6 * t * (1 - t) : 1);
+      height = a[2] + (b[2] - a[2]) * (run.eased ? smoothstep(0, 1, t) : t);
     }
   return { edge, dx, dz, grade, height };
 }

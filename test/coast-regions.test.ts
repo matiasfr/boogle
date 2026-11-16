@@ -85,15 +85,15 @@ function digest(coast: Coast) {
   return { width: tex.image.width, height: tex.image.height, texture, sampled, n };
 }
 
-// Terrain-clean step 5: wider benches change terrain inputs; coast/shader code is unchanged.
+// Terrain-clean steps 5–6: wider benches change terrain inputs; coast/shader code is unchanged.
 // Print replacement texture/sample digests after an intentional terrain change (then review and update only those pins):
 // PRINT_COAST_BASELINE=1 node --test --test-name-pattern='two shores' test/coast-regions.test.ts
 // Size, transform, lattice bounds and region assertions remain independent of regeneration.
 const COAST_BASELINE = {
   width: 2015,
   height: 780,
-  texture: '27d658bb67a6284207f4817d5c5935233b5c845f9930ad728952bfa422720a51',
-  sampled: '7db7e1f6e6b5d93720875f71eed40ffdc85a52f0abd40dc472d98b726395a177',
+  texture: '791e0c8d3fc35d1c3a31e170abff17163a57eae1f0bb5ff365643da185e49af9',
+  sampled: '5cbfd247698940588870c4e88f7bb821e058b58cde62829aa7beffe61d6cf454',
   transform: [-375, -400, 0.0004962779156327543, 0.001282051282051282],
 };
 

@@ -161,11 +161,15 @@
   3.8 m. The graded shoulders extend one 2 m cell diagonal beyond those widths (5.9/8.8 m bold inner/outer,
   4.8/7.7 m plain). Paint widths remain independent. The Round's lowered green and ability-pad approaches retain
   their previous grading. Twelve ordinary trees are cleared, with surviving harvest IDs unchanged.
+  Both quarry descents have a 4 m bench, eased into flat bends and bridge run-ins, with a 6 m square level landing
+  at local (-10, 150). The shore ramp uses the same eased profile for terrain and paint, with level turns at
+  (-177, 28) and the hop's (-165, 32). Narrow prop-support blends keep the cart wheels and shore footing grounded
+  without raising the tread. One more tree beside the quarry turn is hidden locally; its harvest slot is retained.
   The path field's own height bounds the painted bench, with the original ground-facing facet cutoff retained so
   tread colour, stones and painted normals do not climb the wall. The verge darkens only the bench outside the
   horizontal tread footprint; a wall rejected by the bench never becomes a dark verge. Exterior cut-bank paint is
-  removed: the sandstone keeps its own colour right down to its foot. Existing folded treads, narrow green slivers
-  and a dotted crease remain height-work findings in Part 2b.
+  removed: the sandstone keeps its own colour right down to its foot. The canyon, quarry and shore treads are regraded; short path-end/bend irregularities elsewhere and the
+  dotted crease remain recorded findings in Part 2b.
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon
   style B live as the default). No stepped light, cool shade side or rim on characters or the world. The comparison
   is kept as research: [toon-shading](../research/toon-shading.md).
