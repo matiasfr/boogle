@@ -1,5 +1,6 @@
 # Start area: the landing, the grey West landing and the walk up
 
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** S1–S4 are on main (#1904): stair removed, landing re-aimed and West landing staked by a build switch. Built, not shipped: none verified. Next: S5 when the formation-rule trigger is met; S6 real station remains deferred and no new browser proof was run here.
 _Plan, 15 November 2026 (design sub-agent); the designer's review (below) is folded in. Checked on main `230347ec5`. Original survey below; implementation evidence is recorded per step. Survey stills are frozen
 1280 × 800 frames on a shared Mac under load (1-minute load 4 to 29): evidence of layout and composition only, not
 of timing or motion. Not tested on a device._

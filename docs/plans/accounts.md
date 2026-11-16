@@ -4,7 +4,7 @@
 
 Let a player keep one identity across browsers and devices by saving a short PIN, while continuing to let friends play without registering. Accounts identify people; each room keeps its own progress, wallet, upgrades and saves. Serves DESIGN.md **6. Communal world, personal things**, **8. Enjoyable alone and together**, **Clear authority** and **Small and readable**.
 
-**Status:** steps 1–4 are live on main (#1868, #1871, #1873, #1875). Step 5 adds checkpoint coverage; broader browser and visual proofs remain open as listed below.
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1–4 are on main (#1868, #1871, #1873, #1875), with browser-proof/startup fixes (#1879, #1884, #1887). Built, not shipped: none verified. Next: step 5, close the account checkpoint and completion marks; full browser/visual proof closure remains unverified.
 
 ## Owner answers (15 November 2026)
 

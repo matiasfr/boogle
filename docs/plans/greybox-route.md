@@ -1,4 +1,4 @@
-> **Status: plan for the owner's and the designer's review (11 November 2026).** Nothing here is built. Phase B of
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Leg 1 steps 1–5 and 4b are on main (#1642, #1647, #1675, #1678, #1688, #1719); leg 2 massing is on main (#1720), not its complete playable route. Built, not shipped: no additional implementation verified (local greybox/leg1-step5 is historical). Next: implement leg 2 rules, grants/gates and bot parity; full-route proofs remain unverified. Phase B of
 > [campaign-outline](campaign-outline.md): the whole route, rough. Its owner questions were answered on 12 November
 > (UTC) ([below](#owner-questions)); the open questions below are the planner's own.
 
@@ -309,7 +309,7 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       kits. Nothing here is read by the sim yet. The catalog file moved with `git mv` to `src/sim/railway-world-lines.ts`; its generator's `--check` (and any rerun) needs
       `node --import ./dev/sim/hooks.ts dev/level/world-blockout.ts`. A `RouteLeg` carries `railheadHalt` (a sim-line halt
       index) and `destRowHalt` (a catalog-row halt index), kept apart on purpose.
-- [ ] **3. The rules (HOTBOX, L).** `railway-components.ts`: `Leg`, `LegYard` (kind `'legYard'`: `Yard` is the town economy's crate yard on main), `Route`, spawned in catalog order in
+- [x] **3. The rules (HOTBOX, L).** `railway-components.ts`: `Leg`, `LegYard` (kind `'legYard'`: `Yard` is the town economy's crate yard on main), `Route`, spawned in catalog order in (On main, #1675.)
       `createRailwayWorld`. New `railway-sys-route.ts`: `rail.legStock`, the lay tick (a section lays over
       `layTicks`, as a QJob does), `rail.grant`, `rail.gate`, `rail.arrive`. `railway-lines.ts`: line 2 gains a
       `Stack railhead` halt (`heads`, a stub end) and `High Gorge` (buffers, a crossover before it), `fleet` of 3, 4, 5
@@ -504,7 +504,7 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       the fourth sheet's run: 8 fixed stages worst 1,166; 9 settled 1,261, 1,340, 1,397, 1,367 and stage 0 766 to 820;
       11 whole-leg 1,210 to 1,421; 5 the opening load at +2,252; 14 rivet to Gorge 3,575; 15 +651 and +1,824 / +2,157.
       Fixtures regenerated for the two Leg fields.
-- [ ] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
+- [x] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in (On main, #1678.)
       lifecycle), `massing.ts` (the Gorge's stacks and split from `src/proto/greybox/blockout.ts`, one merged mesh per
       material, resident by P1's rule), `leg-view.ts` (deck and trestle bents from `laid`, the frame, rack, bill sign
       reading "0 of 20", the barrier, the pickup post). `src/adapters/railway-read.ts` and `railway-intents.ts`: the
@@ -684,7 +684,7 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       a train passing during the stage 0 hop were not staged; no dust or sound at a join; the table shows no train
       markers; the steel kit's own unload to the yard still has no hop (build 2's greybox). None of the five has a
       prompt. Not tested on a device.
-- [ ] **5. Seeds, jump rows, the loop and the bot (HOTBOX, M).** New `src/sim/railway-seed-legs.ts` from
+- [x] **5. Seeds, jump rows, the loop and the bot (HOTBOX, M).** New `src/sim/railway-seed-legs.ts` from (On main, #1719.)
       `ring-joined`, accepted ops only: `gorge-open` (the leg open, nothing fed), `gorge-mid` (two sections laid, kit
       aboard a train), `gorge-reached` (four laid, `pick` not taken). `SEED_STAGES`; two `JUMPS` rows ("Stack line
       open", "High Gorge reached"; placeholder UI text, logged in agent-calls by the orchestrator).

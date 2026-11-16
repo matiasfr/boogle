@@ -1,5 +1,6 @@
 # Prefab data: every thing in the world as one record
 
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1–11 are on main (#1726, #1727, #1741, #1750, #1753, #1756, #1757, #1760, #1761, #1765, #1772, #1781, #1784, #1855). Built, not shipped: no additional implementation verified; local codex/prefab-data-step-* branches contain earlier work, not proof of missing shipments. Next: step 12, GLB records; Checkpoints A/B and portability proof remain unverified.
 _Plan, 13 November 2026. Not approved, not started. Counts are from commands at `f464b11d2` (`grep -rcE` over `src/**/*.ts`, `find`, and Node imports of the data modules); "Not read" is at the end. Option 2 of the owner's 13 November question ([owner-calls, "Engine foundations first"](../agents/owner-calls.md)); option 1 (all state server-owned) is `plan/server-owned-state` and is not covered here._
 
 ## Goal

@@ -1,5 +1,6 @@
 > **Status: building (reconciled 2026-11-15).** Steps 1a and 1b shipped together in v45, #1827 (`f1005f2ab`), and are present on main. Step 0 is superseded by the owner call below. Checkpoint A has historical proofs and outstanding quiet-machine timing; step 2 (previz) is dispatched separately by the orchestrator. Original planning measurements used `7c9d2fea5`.
 
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1a/1b and Checkpoint A (#1827, #1851), previz 2 (#1853, #1856), pit/bridge 3 (#1858), bays 4 (#1860), growth 5 (#1880) and Checkpoint B record (#1889) are on main. Built, not shipped: none additional verified (codex/rotunda-1a is historical). Next: step 6 designer brief for stage 3/second hub; quiet-machine timing, real-time smoothness and device performance remain unverified.
 # The Roundhouse as a rotunda: bigger, growing, a kit for the hubs
 
 Planner, 14 November 2026.

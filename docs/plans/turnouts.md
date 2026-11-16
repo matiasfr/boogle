@@ -1,6 +1,6 @@
 # Turnouts: real points wherever tracks merge or cross
 
-> **Status: step 1 built (14 November 2026): J1, the spur's turnout, static.** Checkpoint A is next; nothing else is
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Step 1 (J1 static spur turnout) is on main (#1802); junctions() still returns only J1. Built, not shipped: none verified. Next: step 2, J2–J9 inventory and level checks; Checkpoint A owner/designer viewing is not verified here. Checkpoint A is next; nothing else is
 > built. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
 > overlaps, one track kit, the stall road seated: PR 1793, `yard-track.ts` and `home-yard.ts`) and does not redo it;
 > step 1 extends that pass's shared timbers rather than drawing through `track.ts` (see step 1's departures).
