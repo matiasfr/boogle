@@ -109,3 +109,5 @@ tick of 100 ms (10 per second).
 ## 11. [Glossary](game-design/glossary.md)
 
 ## 12. [Doc and code mismatches found while writing this](game-design/mismatches.md)
+
+- [Town economy: freight, plots, riders, till and buying a house (v54)](game-design/place.md#town-economy-in-the-live-game-16-november-2026-v54)

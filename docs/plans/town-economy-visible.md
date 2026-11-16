@@ -216,8 +216,15 @@ models`'.
     A tampered client can buy from anywhere; the strongbox is shared so harm is low; B2 decides whether the board's reach is checked on the server.
     **B2 handoff:** the tooling jump rows have no player-menu entry; their board/green landings still need B2 stills.
     K2's dedicated browser scenario is not claimed by this implementation.
-- [ ] **K2. Checkpoint at B1's bump.** `npm run check:full`; `npm run scenario` for two players pressing one plot (one
+- [x] **K2. Checkpoint at B1's bump.** `npm run check:full`; `npm run scenario` for two players pressing one plot (one
   plot bought, spent once: the one new sync contract); `npm run loop -- run` with order and bills unmoved.
+  - Runner proof (16 November): `town-buy` passes with two WebGPU tabs: one bought Plot, spent 150 once,
+    both see the same construction tick, mid-build reload retains it, occupied footprint ejects and walks away.
+    `check:full` final rerun passes (2264 unit passes, 66 skipped; 406 server passes; 208/208 network checks).
+    Loop and level checks pass. The first full run's report endpoint returned 404 rather than 204; not reproduced.
+    This tick covers K2's listed gates, not real-time smoothness or a complete no-landing-burst observation.
+    K1 remains open: A1 is absent; six-still review and freight unloading are not proved.
+    Evidence, limits and commands: [runner report](../reports/town-checkpoints-k1-k2.md).
 - [x] **B2. The house goes up (M; V3).** After B1 and A2. Sync: Local view of `Plot`. Tier: normal + visual. Model:
   gpt-6-astra high. Parallel with C1.
   - (review) What a plot gives is on its board as an icon and count (riders +1 a minute; D6). N12: while the box holds

@@ -2547,3 +2547,43 @@ wagon is commissioned (owner, 10 November: only when ready, and not a toy after 
 roof pitches up to its ridge from eaves on the ruin's posts, its walls closed to the eaves. The bowl's trees are
 cleared locally, and its two limestone rocks
 are chopped like line 1's. Serves DESIGN.md **7. Telegraph everything** and **8. Enjoyable alone and together**. Not tested on a device.
+
+
+## Town economy in the live game (16 November 2026, v54)
+
+Freight delivered by the running trains supplies the Village's plots. Its rules already accumulate timber and
+stone, but this head has no yard-stack view or replicated freight load drawn on trains (A1 remains open).
+The freight car still has its existing cargo fittings; this is not visible proof of the trade cargo.
+Sources: [trade rules](../../src/sim/railway-sys-trade.ts),
+[train view](../../src/entities/railway/train-view.ts).
+
+The unbought plots are empty outlined ground with door mats. Delivered materials grow a pile beside the next plot;
+a complete delivery stakes its corners with red tops and string. Up to eight crates represent each pile, while its
+board gives exact timber and stone have/need counts. The first priced plot is the one beside the hall (`plot3`),
+then `plot2`, then `plot1`. Sources: [plots](../../src/entities/town/plots.ts),
+[town layout](../../src/place/town-plan.ts), [blockout](../../src/place/town-blockout.ts).
+
+Little guys wait beside the island and far platforms, board the trains and ride on them. At most twelve waiting
+figures are drawn per end; larger crowds get a true-count board. Each train draws up to four riders. Fares fill the
+shared strongbox: inside the hall, against its north end wall, the ticket counter shows its balance and a coin
+column proportional to its cap, with a fixed cap mark. Sources:
+[riders](../../src/entities/railway/riders-view.ts), [till](../../src/entities/railway/till-view.ts),
+[folk](../../src/place/folk.ts), [trade queries](../../src/sim/railway-queries-trade.ts).
+
+When the box can afford a staked plot, a gold outline shows its house. Approach the board and hold Interact for one
+second. Its board shows the added rider rate, price and box balance; an unaffordable offer gives the shortfall.
+Only an accepted server purchase spends the shared box and starts construction. At the current 50 percent room
+price, the first offer is 150 Boogles; after buying it the second rises from 400 to 800. The pile and board clear,
+the house's floor, frame, walls and roof fall into place, and its closed shell stands after 100 ticks (10 seconds).
+Little guys gather and use their existing town lines. A player inside the footprint is moved to its edge as the
+hulls arrive. Reloads use the accepted purchase tick to resume or snap completed construction. Each completed house
+adds one rider per minute; subsequent prices in that town double per house bought. Sources:
+[plot interaction and view](../../src/entities/town/plots.ts), [construction](../../src/place/sites.ts),
+[buy rules](../../src/sim/railway-sys-trade.ts), [trade layout](../../src/sim/railway-trade-layout.ts),
+[town facts](../../src/sim/town-facts.ts). Nothing on the main route requires this purchase.
+
+Placeholder copy, pending The Boogler: `Plot 1`, `Plot 2`, `Plot 3`, `Timber <have> / <need>`,
+`Stone <have> / <need>`, `+1 rider / minute`, `Price <n>`, `Box <n>`, `Boogles`, `Waiting`,
+`Hold to build`, `Hold <percent>%`, `Need <n> more Boogles`, `Waiting for town`.
+The existing residents' words are preserved. Proof limits and commands:
+[town checkpoint report](../reports/town-checkpoints-k1-k2.md).
