@@ -361,3 +361,6 @@ Suspect existing line: the "new neighbours" lines firing on the yard (call 9), w
    November "last household about 20") instead of 6,000 (about 73)?** Recommended: **yes.**
 4. **Drop this plan's questions 2 to 4 and the scarce-plots brainstorm's four, as section 5 lists?** Recommended:
    **yes.**
+
+Answer (owner, 16 November): "I take your recs on the four questions": all four yes
+([decision](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers)).
