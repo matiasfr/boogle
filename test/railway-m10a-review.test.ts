@@ -12,7 +12,7 @@ import { apertureId, railId, trainId } from '../src/sim/railway-queries.ts';
 import { line2Trains } from '../src/sim/railway-queries-line2.ts';
 import { railOpenEnd, railTrainAsked, railTrainHeld, trainStops } from '../src/sim/railway-queries-trains.ts';
 import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
-import { LINE_HALTS, TRAIN, TRAIN_PHASE } from '../src/sim/railway-train.ts';
+import { LINE_HALTS, TRAIN, TRAIN_PHASE, trainWakeAt } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { RAILWAY_WINDOW } from '../src/sim/railway.ts';
 import { Aperture, Rail, Train } from '../src/sim/railway-components.ts';
@@ -23,7 +23,7 @@ const mutTrain = (w: World, slot: number) => w.mut(Train, trainId(w, slot))!;
 for (const stage of ['trains-on', 'q6-done', 'crossing-done', 'deck-laid', 'ring-joined'] as const)
   test(`${stage}: a train is held from its dwell's end (+10 ticks) at a halt, at once at a signal, and never asked while it stands at a halt`, () => {
     const w = buildSeedWorld(stage).w as World;
-    const t0 = rail(w as unknown as ReadWorld).trains + TRAIN.wakeTicks + 200;
+    const t0 = trainWakeAt(LINE2, rail(w as unknown as ReadWorld).trains) + TRAIN.wakeTicks + 200;
     for (const slot of RAIL_TRAINS.keys()) {
       const n = trainStops(w, RAIL_TRAINS[slot]!.line).length;
       for (let at = -1; at < n; at++)
@@ -61,6 +61,14 @@ test("the wake: no lamp before the trains' wake ends, exactly at its end and hal
   );
   assert.deepEqual(
     held(at + TRAIN.wakeTicks),
+    RAIL_TRAINS.map((r) => r.line === 0),
+  );
+  assert.deepEqual(
+    held(trainWakeAt(LINE2, at) + TRAIN.wakeTicks - 0.5),
+    RAIL_TRAINS.map((r) => r.line === 0),
+  );
+  assert.deepEqual(
+    held(trainWakeAt(LINE2, at) + TRAIN.wakeTicks),
     RAIL_TRAINS.map(() => true),
   );
   // Asleep (Rail.trains -1): nothing held, nothing asked.

@@ -130,7 +130,7 @@ test('review: the amber lamp is dark for a rider ask too late to stop for, lit f
   // The world twin the views call (train-view's amber lamp); the adapter's own copy went in M12.
   const { railTrainAsked } = await import('../src/sim/railway-queries-trains.ts');
   const { trainAlong, trainSpeed } = await import('../src/sim/railway-train.ts');
-  const brake = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
+  const brake = (140 * 140) / (2 * 3.5);
   const quarry = TRAIN_STOPS[LINE2]![1]!;
   const run = (late: boolean) => {
     const w = unaudited(railwayAtTrains('trains-on'));
@@ -139,7 +139,7 @@ test('review: the amber lamp is dark for a rider ask too late to stop for, lit f
     for (let k = 0; k < 3000; k++) {
       const r = train(w.w, A);
       const left = quarry - trainAlong(r, LINE2, w.t);
-      if (r.phase === TRAIN_PHASE.RUN && r.track === 0 && trainSpeed(r, LINE2, w.t) >= TRAIN.speed - 1)
+      if (r.phase === TRAIN_PHASE.RUN && r.track === 0 && trainSpeed(r, LINE2, w.t) >= 139)
         if (late ? left < brake - 300 && left > 0 : left > brake + 600) break;
       railTick(w.w, ++w.t);
     }
@@ -159,7 +159,7 @@ test('review: no two drawn trains overlap (a train held at a stub signal stands 
   const { FORMATION, LINKS, offsetLat, crossLat } = await import('../src/place/layout.ts');
   const { TRAIN_CARS, TRAIN_OFFSETS } = await import('../src/entities/railway/cars.ts');
   const { trainAlong } = await import('../src/sim/railway-train.ts');
-  const w = unaudited(railwayAtTrains('q6-stocked'));
+  const w = unaudited(railwayAtTrains('q6-done'));
   const rand = mulberry32(0x5a);
   const boxes = (slot: number) => {
     const r = train(w.w, slot),
@@ -206,7 +206,6 @@ test('review: no two drawn trains overlap (a train held at a stub signal stands 
   let first: string | null = null,
     held = false;
   for (let k = 0; k < 4000 && !first; k++) {
-    if (k === 1500) fundQ6(w);
     if (train(w.w, B).phase === TRAIN_PHASE.STAND && train(w.w, B).at === -1) held = true;
     if (rand() < 0.05)
       act(w, 'a', 'rail.call', { id: Math.floor(rand() * RAIL_HALTS.length), dir: rand() < 0.5 ? -1 : 1 });

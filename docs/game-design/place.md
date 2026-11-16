@@ -744,7 +744,12 @@ Not tested on a device.
 
 ### Production boiler, trains and the pier (8 November 2026)
 
-**Train speed ladder (15 November 2026).** Both home lines begin at 14 m/s, accelerating at 2.5 m/s² and braking
+**Train speed ladder (15 November 2026).** Line 2 begins with one train, adds one at the Pier and another at the
+Railhead, then reaches six on the greybox route (seven including line 1). Reserved trains join at a clear Village,
+growing in with a whistle. The first line-2 engine stays rusty until its own answering wake at 27 s after the fit;
+its first departure is at 33 s. Maps show only trains in service. Each live speed adoption at the Village gets
+the platform steam, clank and toot; restoring a room settles the appearance without replaying that moment.
+Both home lines begin at 14 m/s, accelerating at 2.5 m/s² and braking
 at 3.5 m/s². Turning the Roundhouse table sets both lines' fit to 20 m/s with 3.5 m/s² acceleration; each engine
 takes it only while standing at the Village, so a leg in flight keeps its original profile. The later free longer
 boiler is part 2: 25 m/s and the fourth car on line 2 only. The garage's existing speed and throughput rows follow
