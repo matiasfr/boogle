@@ -4,6 +4,8 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-16 · Dashed gold outlines mean "a part goes here", with gold used for nothing else; try the owner's maybe of half opacity and very slow opacity oscillation, with no fixed numbers ([entry](#d-2026-11-16-gold-outline-not-physical))
+
 - 2026-11-15 · Rail owns its height; terrain conforms when the row's leg is next or built ([Rail decision](decisions-rail.md#d-2026-11-15-rail-owns-terrain-formation)).
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
@@ -55,6 +57,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · night stays light, moonlit ([entry](#d-2026-11-01-night-stays-light-moonlit))
 
 ## Decided
+
+- <a id="d-2026-11-16-gold-outline-not-physical"></a>**2026-11-16, gold outlines mean a part goes here** (owner, 16 November 2026, on CL-072, the dashed gold outline meaning "a part goes here", with gold used for nothing else: "Confirmed, and maybe they should be half opaque and very slowly oscillate in opacity to signify they are not a physical object."). Thin dashed gold outlines, only once the site is open, remain the visual word for a part waiting to go there. His "maybe" makes half opacity and a very slow oscillation in opacity a direction to try, replacing the old no-pulse default as a trial; it sets no fixed opacity, range or period. The original call is in the [archive](decisions-archive.md); the building follow-up is in the [backlog](backlog.md).
 
 - <a id="d-2026-11-15-plain-path-climbs"></a>**2026-11-15, plain packed-earth paths on climbs** (owner: "The tread texture I don't like as much as a plain path like the other cases."). The canyon climb, quarry descents and shore ramp use the same plain packed-earth finish as level paths, such as the Village junction by the museum. Remove the painted timber risers and their lit highlights; keep the tread edge, verge, stones, painted bank and cut darkening. This is view-only: no height or collider changes.
 
