@@ -254,9 +254,11 @@ would be untrue for 33 s; the Boiler tile's "The first install. It woke the trai
 
 1. **Should the step to 20 m/s happen by itself when the table turns, or be the first thing you install at the
    garage?** Recommended: by itself now. It ships without waiting for the garage moment's remaining steps; once
-   those are built it can become a free first install (a hold at the post), which would teach the garage an hour
+   those are built it becomes the free "upgrade" (a hold at the post; owner, 15 November), which would teach the garage an hour
    before steel. That is a change of one rule.
 2. **Is 7 trains still the right busy end, with only the ramp changed?** Recommended: yes. You liked "life
    happening" on 2 November; the ladder reaches today's count at the Railhead and today's six on the greybox.
 3. **If the ladder feels right, is "choose what to add at the garage" the next design to brief?** Recommended: yes,
    as what a Roundhouse bay is for (the rotunda's open question 2), after you have ridden this one.
+
+Naming (owner, 15 November): the 20 m/s table step is "upgrade". The boiler fit stays "the first install" and keeps "The first install. It woke the trains.".

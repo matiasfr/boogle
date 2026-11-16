@@ -1,7 +1,4 @@
-> **Status: proposed (2026-11-15).** A light `/brainstorm`: one agent, three lenses (play designer, systems architect,
-> creative director). Nothing is built. Steps 1 to 3 of [garage-choices](../plans/garage-choices.md) build on "which
-> line first"; the owner picks between that and this before step 4 is built
-> ([decision](../decisions-core-loop.md#d-2026-11-15-garage-choices)).
+> **Status: approved (2026-11-15).** All five owner recommendations accepted; step 4 builds this trade instead of "which line first". Nothing built. [Decision](../decisions-core-loop.md#d-2026-11-15-garage-trade-answers).
 
 # A per-line garage trade: a quicker trip or a bigger load
 
@@ -123,19 +120,22 @@ bug, but it slows a source's first delivery. (c) Free swaps invite an optimiser 
 
 1. **Does step 4 build the per-line trade instead of "which line first"?** Recommended: yes. Each new line from stage 4
    gets one step with two rows, quick or strong, and order stops being the choice. Or keep "which line first" as
-   approved, and park the trade until cargo trains run. Answer: ___
+   approved, and park the trade until cargo trains run. **Answer: yes.** Step 4 builds the per-line trade.
 2. **Is a swap free and unlimited, at the Roundhouse with the line's copy on the table, taking effect at the line's next
    departure from its depot end?** Recommended: yes; if play shows rooms flipping per bill, limit it to one swap per
-   line per stage. Or a swap costs steel, or the pick is final. Answer: ___
+   line per stage. Or a swap costs steel, or the pick is final. **Answer: yes.** Swaps are free and unlimited at the
+   Roundhouse, with the line's copy on the table; they take effect at its next depot departure. Limit a line to one
+   swap per stage only if rooms flip it for every bill.
 3. **Is the strong row one whole car (the line's load again), with both rows balanced on the 2D page so neither wins on
    every line?** Recommended: yes; a part-car is invisible on the bills. Or a fixed +50% load on every line.
-   Answer: ___
+   **Answer: yes.** Strong adds one whole car, balanced on the 2D page.
 4. **Does line 2 get the trade too, at High Gorge (the big boiler or a second footing wagon)?** Recommended: no, not
    yet. With the bigger cradle fitted, and if High Gorge's 32 footings ride line 2's whole 3.21 km,
    they take 4 trips of 286 s (1,144 s); 30 m/s makes that 984 s and a second wagon 572 s, so strong wins by far
-   and the choice is false there. Keep G-d an upgrade, and start the trade at stage 4. Or make G-d the first trade and tune it. Answer: ___
+   and the choice is false there. Keep G-d an upgrade, and start the trade at stage 4. Or make G-d the first trade and tune it.
+   **Answer: no.** Line 2 does not get the trade at High Gorge; it keeps the big boiler as an upgrade.
 5. **Names for the two rows?** Drafts: "Quick boiler" and "Strong boiler" (the research's "Swift" and "Hauler" are its
-   own). The words are yours. Answer: ___
+   own). The words are yours. **Answer: yes.** The names are "Quick boiler" and "Strong boiler".
 
 ## Parked
 

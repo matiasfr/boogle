@@ -4,6 +4,12 @@
 
 ## Archive: Core loop, pacing and progression
 
+_Archived 15 November 2026: owner confirmed all five trade recommendations ([decision](decisions-core-loop.md#d-2026-11-15-garage-trade-answers)); row preserved verbatim._
+
+| Date | Call | Source | Who | Why | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-15 | New (proposed, nothing built; the owner picks before garage-choices step 4): from stage 4 each new line's boiler step is two rows of one price, quick (25 m/s, cars unchanged) or strong (20 m/s, one whole car more), swapped back free and without limit at the Roundhouse with the line's copy on the table, taking effect at the line's next depot departure; it replaces "which line first" as step 4's choice; line 2 keeps the big boiler as an upgrade at High Gorge; readouts stay speed, cars and resources a minute | [garage-line-trade](brainstorms/garage-line-trade.md#open-questions) | brainstorm (light, one agent) | Measured with `npm run loop -- run`: footings are trip-bound (crossing 3:15 played, 195 s predicted) and 78 of the stand-ins' 122 haul minutes; strong cuts the stand-ins' footing trips 40 to 21, quick cuts every round trip 12 to 19% and about 8 of 38 riding minutes; at High Gorge strong wins by far (572 against 984 s), so no trade there | open |
+
 History for [decisions-core-loop.md](decisions-core-loop.md), verbatim.
 
 ### Garage choices calls ruled on 15 November 2026
