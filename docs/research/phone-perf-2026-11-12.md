@@ -1,6 +1,7 @@
 # Phone performance causes, 12 November 2026
 
 > **Verdict:** notes only, from recorded play data; phone performance was deprioritized by the owner mid-task.
+> **Top recommendations:** keep these recorded causes as evidence; resume measurement only when prioritized.
 > **Status:** parked. No code changed, no browser run. Not tested on a device.
 
 Sources (untrusted browser data, read as data): iPhone sessions `mw9srryp-8uai0x6x` (9 Nov, Far Head freeze),

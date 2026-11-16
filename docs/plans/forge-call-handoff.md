@@ -1,5 +1,6 @@
-> **Status: built on a branch, not shipped (2026-11-15): steps 1, 3 and 5 whole, step 2 without the reach, step 4 found
-> already built; the reach and step 6 are sim work, listed under [As built](#as-built-15-november-2026).** Queue item D1 of
+> **Status, reconciled 16 November at main `aa7861150`:** the D1 handoff shipped in #1870, including the later
+> pickup-reach and seated-exclusion follow-up. Its original partial implementation and proof notes remain below;
+> subsequent breaker timing is [Works flow](works-flow.md) (#1888). Queue item D1 of
 > [grant-1114-queue](grant-1114-queue.md). Base: `bff2e6203`. Steps 1 to 5 are Local view work with no bump, except step 2's
 > reach, which the server also checks (see the design review). Step 6 is a room tunable. Nothing here changes a rule, a
 > bill or an order. Facts corrected in place by the design review of 15 November, each marked "(corrected)".
@@ -107,14 +108,15 @@ steps 1 and 2 have not been tried yet. If the next first-time player still walks
 
 ## Steps
 
-Each is player-visible view work: implementer agent (fable, medium), then a visual review by a fresh subagent.
+The original assignments below are historical; resolve player-visible work, high-risk follow-ups and visual review
+through `npm run models` at dispatch.
 
 - [x] 1. The hand-off cut on Far Head's shot and the pier show; the whistle at the cut's start.
-- [ ] 2. The crane holding the part 1.6 m up; three waving little guys within 30 m (both built); prompt reach 6 m (not built: sim work).
+- [x] 2. The crane holding the part 1.6 m up; three waving little guys within 30 m; pedestal-only prompt reach 6 m (shipped #1870).
 - [x] 3. The rail rack's dashed mark (the blocked prompt is built off; its reason waits for the owner's wording).
 - [x] 4. Q6's sign mark (already as built: no change).
 - [x] 5. The repeat call at 90 s (three at most, as the review changed it).
-- [ ] 6. `railway.boilerSoloSpeed` 380 (not built: sim work).
+- [x] 6. `railway.boilerSoloSpeed` 380 (shipped #1870; current `railBoilerSoloSpeed` default verified as 380).
 
 ## Done means
 
@@ -263,7 +265,7 @@ Captures: `fx-pier-*` and `fx-far-head-*` in `.look/`.
 
 ### Sim work left (not built here)
 
-**D1 sim follow-up (15 November, `d1-sim`, not shipped):** the three rows below are now implemented on the follow-up
+**D1 sim follow-up (15 November, `d1-sim`, shipped #1870):** the three rows below were implemented on the follow-up
 branch. The waiting boiler and breaker have a 6 m prompt and 6.6 m server reach; the dropped boiler retains 3.6 m
 and 4.2 m (logged in agent-calls). The solo default is 380 cm/s; a room's saved tune remains its own. The recorder's
 `boiler approached` / `breaker approached` marks fire once per part per page, on the first frame within 30 m while

@@ -410,6 +410,7 @@ everyone?" · "Yes, fit it" · "Not yet" · "Before" · "After" · "Hear it" · 
 · "Passenger cars stop here" · "Too long for the line's end" · "Nothing can load this". The fit card reuses the boiler's
 pattern; its words for the longer boiler are not drafted (the owner's, as "Steam" was).
 
+<a id="open-questions"></a>
 ## Owner questions answered (10 November)
 
 The owner's message, verbatim:

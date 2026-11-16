@@ -4,6 +4,13 @@
 > **Top recommendations:** 1. Turn everything it can into mechanical rules. 2. Read only what rules can't see: the adapter contract, the choice of sync kind, time handling, hook order. 3. Say little, remember what was rejected, and be willing to report nothing.
 > **Status:** partly adopted. See [plan entity-architecture](../plans/entity-architecture.md).
 
+**Current review pointers (16 November 2026):** lint policy is [dev/lint/policy.ts](../../dev/lint/policy.ts), not the
+retired `eslint.config.js`; [lint boundaries](../agents/lint-boundaries.md) names the enforced rules. The measurements,
+"Today" examples and enforcement table below describe the dated 1 November tree, not current runtime contracts.
+Use [sync](../agents/sync.md), [mixed builds](../agents/mixed-builds.md) and [owner calls](../agents/owner-calls.md)
+for current authority, reset, device and performance rules. In particular, check 12's exclusions include owner-approved
+ECS/prefab work, and check 13's specific phased-state test applies despite the generic boolean-flags exclusion below.
+
 _2026-11-01. What engine programmers look for in a game's runtime architecture, what changes on the web, how small games
 fail as they grow, and how to run a recurring architecture review without noise. Written as the source a scheduled,
 read-only review agent cites. Code read at `39392fac`: every path cited as current exists there, and every number comes

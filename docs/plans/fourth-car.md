@@ -1,5 +1,5 @@
-> **Status (12 November 2026): R1 to R3 built on `car4/rules` (the rules, the Village stop mark, the host tests;
-> reviewed, ship); V1 and V2 built on `car4/ship` (rules and views rebased onto main, 13 November); C1 to come.** The plan as written for review follows. The planner ran one
+> **Status, reconciled 16 November at main `aa7861150`:** R1–R3 and V1–V2 shipped in #1711. C1's checkpoint
+> remains open; shipped implementation does not establish every requested proof. The plan as written for review follows. The planner ran one
 > trial in this worktree (the planned extent and stop mark applied, uncommitted, then reverted): its figures are marked
 > *trial*; everything else is read from main at `e9a7e752` or is *arithmetic*. The next Ring Island step after the
 > garage's install moment. One rules change with its own bump (v33); no new op, no new field.

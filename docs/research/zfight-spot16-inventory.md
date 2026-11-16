@@ -1,5 +1,9 @@
 # Spot 16 per-piece runtime inventory audit
 
+> **Verdict:** the census inventory matches current runtime selectors; the recovery contact group alone disappears.
+> **Top recommendations:** retain per-piece removal/addition evidence rather than attributing all inventory drift to recovery objects.
+> **Status:** reference; audit shipped in #1843 (14 November 2026), with no game-source change.
+
 Audited against `origin/main` **2d86cf80b3ca9fe1274e05158a61959fbf8d86b8** (14 November 2026).
 The runtime source files cited below are identical between that main and this branch. No adapter or game source
 change was needed for this audit: every removal/addition matches runtime. This corrects the earlier implication

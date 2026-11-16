@@ -1,4 +1,6 @@
-> **Status: partly built (2026-11-14). A1 is on main; A2 is implemented on `codex/great-tree-v47`, unshipped.** Four notes from the owner's 14 November play session,
+> **Status, reconciled 16 November at main `aa7861150`:** A1 and A2 shipped (#1845 for the prow move);
+> B1's seal was rejected and replaced by [fly first](ability-order.md), shipped #1872/#1877/#1878. The remaining
+> C/D items below need reconciliation against Grant's queue; they are not certified complete here. Four notes from the owner's 14 November play session,
 > each with a diagnosis from the code and his session data, three options and one recommendation. Base: `origin/main`
 > at `643548676`. Steps A1, B1, C1, C2 and D1 are view-only and need no bump; step A2 moves a sim constant and takes the
 > next free `WORLD_NS` (originally v45; A2 now uses v47 after v45 and v46 shipped).
@@ -251,7 +253,7 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. Run `npm run infl
 ([home-flip](home-flip.md)) is in flight in the town; none of these steps touches the town's ground or
 `src/place/home-station.ts`.
 
-- [ ] **A1. The great tree's honest refusal. View tier, no bump.** `src/entities/railway/sources.ts`: while
+- [x] **A1. The great tree's honest refusal. View tier, no bump.** `src/entities/railway/sources.ts`: while
   `railBeamChoppable` is false and the tree stands, register its `Chop` prompt as blocked with the reason "For
   Station 3's beam" within the existing 4.6 m; the rebound is unchanged. Test: the prompt's state for T1 active, T3
   active and the tree felled. Proof look: `--rail-seed awake`, Buddy 3 m from the tree, the blocked prompt in frame.

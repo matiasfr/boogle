@@ -1,4 +1,4 @@
-> **Status: building (approved, owner, 2026-11-09: "let's do all 3"; designer-reviewed). Open questions build on their recommended answers.**
+> **Status: first build shipped in #1324/#1330; graph, headless run and trace are available through `npm run loop`** (checked on main `aa7861150`, 16 November). Approved, owner, 2026-11-09: "let's do all 3"; designer-reviewed. The implementation and calibrated human-detour follow-ups remain separate from whether the loop is fun.
 > **Status: approved (owner, 2026-11-09: "let's do all 3"). Open questions build on their recommended answers.**
 
 # Loop graph

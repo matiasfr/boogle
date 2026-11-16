@@ -62,6 +62,7 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 
 ## Puzzles, abilities and traversal
 
+- [first-line-crossing-probe.md](first-line-crossing-probe.md) (2026-11-16): no readable, forgiving crossing fits at both early stations on current terrain; stage 2 is not built. **Status:** reference (#1923, #1925).
 - [ability-upgrades.md](ability-upgrades.md) (2026-11-05): three short ability ladders (jump, glide, hook), five upgrades after the base finds. **Status:** open. See [The shape of the game](../decisions.md#the-shape-of-the-game).
 - [ambitious-mechanics.md](ambitious-mechanics.md) · [notes/ambitious-mechanics/](notes/ambitious-mechanics/) (2026-10-29): a telegraphed storm-tide cycle; written before the railway direction, never built. **Status:** reference.
 - [botw-glide-target.md](botw-glide-target.md) (2026-11-02): 10 m/s forward and 3.2 m/s sink as a labelled comparison target for the glide. **Status:** partly adopted. See [plan round-4](../plans/round-4.md).
@@ -173,6 +174,12 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 
 ## Tech: engine, ECS, sync, physics, performance, delivery
 
+- [ci-unit-shard-time.md](ci-unit-shard-time.md) (2026-11-13): balance eight shards without losing selected files or coverage; loaded-Mac timing evidence. **Status:** adopted (#1723, #1724).
+- [detail-governor-1115.md](detail-governor-1115.md) (2026-11-15): distinguish fast jitter from overload and preserve shadow pipelines when toggling detail. **Status:** adopted (#1864).
+- [leg1-lost-ask.md](leg1-lost-ask.md) (2026-11-13): preserve boarding and outbound asks with bounded dwell extensions; historical browser gaps remain stated. **Status:** adopted (#1723).
+- [phone-perf-2026-11-12.md](phone-perf-2026-11-12.md) (2026-11-12): recorded phone stall causes, parked when the owner deprioritized phone work. **Status:** reference.
+- [zfighting-2026-11-14.md](zfighting-2026-11-14.md) (2026-11-14): classified geometry census and current-main collector port; use a fresh census for current ranking. **Status:** reference (#1834).
+- [zfight-spot16-inventory.md](zfight-spot16-inventory.md) (2026-11-14): per-piece runtime inventory reconciles removed prototype geometry and added live meshes. **Status:** reference (#1843).
 - [cold-start.md](cold-start.md) (2026-11-10): the time to "Jump in", attributed; a chain of lazy-chunk round trips and a wait for Rapier fixed, pipelines for things off screen are next. **Status:** open.
 - [deterministic-sim-at-scale.md](deterministic-sim-at-scale.md) · [notes/deterministic-sim-at-scale/](notes/deterministic-sim-at-scale/) (2026-10-29): make desyncs diagnosable first: cheap per-tick check plus an expensive diagnostic. **Status:** reference.
 - [ecs-evaluation.md](ecs-evaluation.md) (2026-11-06): build E: in-house ECS-shaped tables with id-ordered systems on the fixed clock. **Status:** adopted. See [plan ecs-e](../archive/plans/ecs-e.md), [Process](../decisions.md#process).

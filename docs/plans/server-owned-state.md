@@ -187,6 +187,7 @@ readiness; updated harness execution remains unverified. No bot beat failure,
 real-time smoothness claim, push or ship. Not tested on a device. Checkpoints A/B
 remain open; this implementation does not claim their completion.
 
+<a id="open-questions"></a>
 ## Original questions (owner answers recorded above)
 
 **Owner (three, recommendation first). Answered 13 November UTC: "Yes, I agree on retiring the 7 classic states. 2, I agree on move authority. 3, I agree" ([decision](../decisions-process.md#d-2026-11-13-server-owned-state-answered)).**

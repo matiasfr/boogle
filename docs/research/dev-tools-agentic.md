@@ -68,7 +68,7 @@ Default view: asset search/thumbnails, turntable/orbit, ground grid in metres, b
 
 ## Persistent Dev and an unobstructed camera
 
-**[V]** The readable sibling [Dev-menu plan](../../../../boogle-codex/dev-menu/docs/plans/dev-menu.md) puts Water **inside the pause dialog** so the top layer cannot hide it, and camera lifetime ends on menu close. Its gate is exactly `?dev=1`. That solves mounting but the pause screen blocks the scene the owner wants to inspect. These recommendations intentionally revise that shell/lifetime; retain its disposable-fixture restrictions.
+**[V]** The readable sibling [Dev-menu plan](../archive/plans/dev-menu.md) puts Water **inside the pause dialog** so the top layer cannot hide it, and camera lifetime ends on menu close. Its gate is exactly `?dev=1`. That solves mounting but the pause screen blocks the scene the owner wants to inspect. These recommendations intentionally revise that shell/lifetime; retain its disposable-fixture restrictions.
 
 **[D]** Opening `?dev=1` should remember an origin-local preference independent of room/build ID. Explicit `dev=0` and a visible **Turn Dev off** win over storage, clear only Dev preferences, release camera/input and dispose tools (reload when a legacy instrument cannot detach). A tiny bootstrap reads the preference before lazy imports. On deploy, keep enablement but invalidate unsupported settings; show build ID and missing presets. This survives reloads, deploys and rooms on the **same browser/origin**, not another device, private storage or a new subdomain. Enable once per device. Persist dock/bookmarks, not a live free-camera/input grab or a disposable-run authority marker.
 

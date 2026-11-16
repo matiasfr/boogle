@@ -1,6 +1,8 @@
-> **Status: owner-approved 2026-11-15; step 1 implemented, awaiting parent review (not shipped).**
+> **Status: owner-approved 2026-11-15; steps 1 and 2 shipped** (#1888 and #1883, respectively; checked on main
+> `aa7861150`). Step 3 was dropped by the owner; no build remains in this plan. The checkpoint below is still open;
+> its full proof list and playtest outcomes are not certified by this docs review.
 > Q1 yes (cast at the fit, no cut, call after the wake), Q2 yes, Q3 no (keep the crack glowing).
-> Step 2 is approved for a separate build. Step 3 is dropped. The design review below is the historical review.
+> The design review and implementation handoffs below are historical.
 
 # The Works' flow: from the pier to the crossing, one thread
 

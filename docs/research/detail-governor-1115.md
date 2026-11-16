@@ -1,6 +1,10 @@
 # Grant C1: Detail hunting and disappearing models
 
-Implemented on `codex/grant-c1-detail-stability`, based on `303e30a8a`. Not shipped.
+> **Verdict:** fast-frame jitter made Detail hunt; changing the shadow light key rebuilt pipelines and hid receivers.
+> **Top recommendations:** keep the 18.5 ms late-detection floor and switch shadow intensity without changing the light key.
+> **Status:** adopted in #1864 (15 November 2026); the measurements below are historical, with contention limits stated.
+
+Implemented on `codex/grant-c1-detail-stability`, based on `303e30a8a`; shipped in #1864.
 Serves **Small and readable** and **Slapstick over precision**: stable drawing before extra detail.
 
 Grant's session `mwh4pmui-mpbh7trk` reported p50 6.2 ms, p95 8 ms, 65 Detail marks and 67 resolution-change marks.

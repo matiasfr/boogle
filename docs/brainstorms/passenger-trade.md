@@ -102,7 +102,7 @@ gives it its first source and its first sinks. It orders nothing ahead of Ring I
 
 Build it, but not as a v26 feature with saves and a wallet yet. **First a model and 2D step** (fares, seats, towns
 with plots and the two kinds of Boogle buy in the economy model and in the playable
-[economy prototype](../economy/economy-prototype.html) the owner asked for on 6 November), **then a flagged
+[economy prototype](../world/economy-prototype.html) the owner asked for on 6 November), **then a flagged
 `?proto=trade` on today's game**: little guys riding Village to Far Head, a till at Home that fills, a house to build
 and a car to haul for. The reasons: the wallet doesn't exist in `src/` or `server/`, so a real build is a new piece of
 saved shared state plus the first spend op. Today's lines are short (line 2 is about 0.75 km), so fares are pocket
@@ -954,7 +954,7 @@ Passenger capacity is hauled for now, not bought with Boogles; the heading is ke
   in section 3), at least two moments where two things are on offer that the room cannot both afford, Boogle buys an
   hour, what a night with the tab open earns (one box), the end-game goals still taking a few hours, solo and three
   players within the existing 15%, and what steel, fibre and copper the seats take. The playable
-  [economy prototype](../economy/economy-prototype.html) (`play-sim.ts`) gets riders, towns with plots, a till with
+  [economy prototype](../world/economy-prototype.html) (`play-sim.ts`) gets riders, towns with plots, a till with
   its mark, a house to build, a source upgrade and seats to haul for, so the owner can feel the wheel in 2D first.
 
 - **Review:** an independent pre-merge review of the sim and op change (owner-calls' review route).

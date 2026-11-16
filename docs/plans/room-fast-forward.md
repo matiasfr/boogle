@@ -36,6 +36,7 @@ shared save is protected by `ADVANCE_SHARED` being off until he answers owner qu
 **Research.** [dev-saves-and-stage-jumps](../research/dev-saves-and-stage-jumps.md), adopted except as listed under
 "Not adopted"; [dev-menu-plan](../research/dev-menu-plan.md) (the executing authority enforces the gate; exact ids).
 
+<a id="options"></a>
 ## What exists, and the options
 
 - **Options.** (a) **Replace** (recommended): the server writes the stage's seed doc over the room's save; no op, no
@@ -183,6 +184,7 @@ sitting and leaves `node dev/ship-check.ts` green. 1 to 3 are high-risk server w
   saves is a second endpoint to guard for a development tool. Revisit with public playtests.
 - **"Agree once" for a session** (3): a habit, not a mechanism. **Snapshot identity in reports** (5): the record only.
 
+<a id="design-review-designer-2026-11-12"></a>
 ## Design review (designer, 2026-11-12), as amended
 
 Cleared to build in the order above. The designer's three changes are in: a first-time visitor gets the normal
