@@ -462,9 +462,11 @@ export async function createRailwayRoundhouse(
     }
     for (const side of [-1, 1]) {
       const x = side * (DECK.w / 2 - 0.12);
-      // A 0.9 m plate girder with cap flanges, stiffeners and visible fastenings.
-      batch.part(m, x, -0.45, 0, 0.18, 0.9, length, '#3e505b');
-      for (const y of [-0.045, -0.855]) batch.part(m, x, y, 0, 0.24, 0.09, length, '#68757b');
+      // Keep steel 2 cm inside the timber's top, outer sides and ends; flush faces fought from above and beside it.
+      // The web stops at the flanges' inner faces, so it cannot fight their exposed tops/bottoms either.
+      batch.part(m, x, -0.46, 0, 0.18, 0.7, length - 0.04, '#3e505b');
+      batch.part(m, x, -0.065, 0, 0.2, 0.09, length - 0.04, '#68757b');
+      batch.part(m, x, -0.855, 0, 0.24, 0.09, length - 0.04, '#68757b');
       for (let z = -7.1; z <= 7.1; z += 1.4) {
         batch.part(m, x + side * 0.11, -0.45, z, 0.07, 0.72, 0.11, '#647178');
         for (const y of [-0.16, -0.74]) batch.part(m, x + side * 0.155, y, z, 0.04, 0.055, 0.055, '#a59470');

@@ -1297,6 +1297,9 @@ builder are gone; earned stages rise in front of you.
   wall and kerb. The dark floor follows the terrain triangles, with a ring rail at r7.4 and a central pivot.
   The comparison disc and amber 14 m ring are gone. The moving bridge is a 16 × 3.2 m timber deck at 18.35 m,
   with narrow end boards to clear the wall, 0.9 m steel girders, rails, stiffeners, fastenings and short handrails.
+  The upper girder flanges sit 2 cm below the timber top and inside its sides; girder ends stop 2 cm short of the
+  timber ends. Webs stop at the flanges' inner faces. This avoids competing steel/timber faces without moving
+  the walkable deck or its colliders (15 November edge repair).
   Its brass handle still rides the end. Deck and girders are solid at rest, removed during either turn, and
   restored only once the local player clears their volume. The pit is escapable with the plain held jump,
   including carrying a footing; the level check sweeps the player's real spheres over the terrain and kerb.
