@@ -9,6 +9,7 @@ import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { drawWorksBoxes } from './works-box-view.ts';
 import { box, type WorksBox, type WorksPoint } from './works-shape.ts';
+import { createTill } from './till-view.ts';
 
 const STONE = '#c8c0b0',
   KERB = '#ddd6c6',
@@ -33,6 +34,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   const ground = (p: WorksPoint) => H(p.x, p.z);
   const at = (a: number, c: number) => world(home.axisPoint(a, c));
   const yaw = home.HALL.yaw;
+  const till = createTill(adapter, owner);
   /** Local x of a box turned `yaw`, in world: across the station axis (toward road 1). */
   const across = { x: Math.cos(yaw), z: -Math.sin(yaw) };
   const boxes: WorksBox[] = [];
@@ -221,6 +223,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   // same footprint, the island's full width, so the kerb's faces shared the deck base's planes and fought along the
   // foot of the platform wall, and its end stood up through the ramps' feet. Its boxes are the batch's last.
   const update = () => {
+    till.update();
     showLeg();
     statics.count = line2Trains(adapter.read.world()) ? boxes.length : boxes.length + kerb.length;
   };

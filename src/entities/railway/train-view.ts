@@ -118,6 +118,7 @@ export async function createRailwayTrains(
   // The footing wagon, a fourth car behind whichever of line 2's trains it couples to (the sim's `wagon`, per row);
   // it waits under the land until then.
   const offsets = wagon.TRAIN_OFFSETS;
+  owner.cleanup(() => RAIL_TRAINS.forEach((_, slot) => folk.folk.setRiders(slot, 0, null)));
   const WAGON = 3;
   const wagonRock = new THREE.Group();
   // One train a RAIL_TRAINS slot (v26: line 1's, then line 2's two), each posed on its line from its own row.
@@ -957,6 +958,7 @@ export async function createRailwayTrains(
       const marks = kitMarks(w, tick);
       trains.forEach((tr) => {
         const row = trainRow(w, tr.slot);
+        folk.folk.setRiders(tr.slot, on ? row.riders : 0, { mesh: tr.model.cars[1]!, top: wagon.TRAIN_CARS[1]!.top });
         tr.board?.set(marks.get(tr.slot) ?? '');
         // Joined from the shed on a live tick: its cars grow in over JOIN_S (their bodies are whole at once).
         if (tr.seen && tr.last?.phase === TRAIN_PHASE.SHED && row.phase !== TRAIN_PHASE.SHED) {

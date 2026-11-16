@@ -87,12 +87,14 @@ export function createRailwayAdapter({
   mirror: rail,
   movement,
   movementRev,
+  trade,
   pid,
   pose = () => null,
   now = () => performance.now(),
 }: {
   mirror: RailwayMirror;
   movement: () => RailwayMovement;
+  trade?: () => import('../sim/railway-trade-layout.ts').TradePct;
   /** A number that changes whenever `movement()`'s values may have (the tune state's `rev`, bumped by every edit and
    * load), so a read checks it instead of reading the 18 tunables. Absent (tests, tools), they are read and compared. */
   movementRev?: () => number;
@@ -611,6 +613,7 @@ export function createRailwayAdapter({
     now,
     movement,
     movementRev,
+    trade,
     debug: () => ({
       connected,
       synced,

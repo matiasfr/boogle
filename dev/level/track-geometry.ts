@@ -156,6 +156,7 @@ export async function collectTrackGeometry() {
       ...shape,
       line2Completed: () => 1,
       line2Trains: () => true,
+      createTill: () => ({ update() {} }), // Prefab-owned till is outside this legacy station-box capture.
       drawWorksBoxes(_owner: unknown, boxes: shape.WorksBox[]) {
         for (const [i, b] of boxes.entries()) {
           const matrix = new THREE.Matrix4().compose(

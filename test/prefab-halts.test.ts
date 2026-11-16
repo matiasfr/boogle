@@ -185,6 +185,7 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
     {
       THREE,
       dependencies,
+      createRiders: () => ({ update() {} }), // Cosmetic crowd does not alter the captured halt kit.
       ...catalog,
       ...train,
       ...queries,

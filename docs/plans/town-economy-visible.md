@@ -137,6 +137,7 @@ models`'.
     `Timber <have> / 8`, `Timber <have> / 16`, `Stone <have> / 16`. Existing copy untouched.
     K1 retains ownership of the combined `game-design/place.md` economy-view update.
 - [ ] **A3. Riders and the till (M).** Sync: Cosmetic/Local over `Town.wait0`, `wait1`, `Train.riders`, `Till`. Tier:
+- [x] **A3. Riders and the till (M).** Sync: Cosmetic/Local over `Town.wait0`, `wait1`, `Train.riders`, `Till`. Tier:
   normal + visual. Model: gpt-6-astra high. Parallel with A1, A2 and B1.
   - `src/place/home-station.ts`: `TILL = { ...axisPoint(-11.4, ISLAND_C - 5.95), yaw: HALL.yaw }`: Place-local
     (−93.95, 6.08), against the inside of the north end wall in the back bay (N4).
@@ -147,6 +148,14 @@ models`'.
     `src/place/folk.ts`: a `waiting` role, and `setRiders(line, on)` becomes a count per train from `Train.riders`
     (seats 4).
   - Proof: `npm run look -- --rail-seed fares-running`: a still at the till and one on the island as a train boards.
+  - As built (16 November): the planned north-wall anchor holds the prefab counter, 0.9 m proportional coin
+    column, fixed cap mark and balance board; adapter reads only, no shared state or namespace change. Both crowds
+    follow the replicated rows (12 figures maximum, true-count board above 12); each train draws up to four riders.
+    Opened `.look/a3-till-final-still.png`, `a3-till-approach-still.png`, `a3-island-final-still.png` and
+    `a3-far-player-still.png`, plus their motion sheets: 126/1120 Boogles; the till is visible from the breaker path
+    at about 17 m, its digits small there; island waiting falls 10 to 6 as four board; far crowd is 12 with "13 Waiting".
+    `node dev/ship-check.ts` and the Place level checks pass (the latter excludes station props). Placeholder strings:
+    "Boogles", "Waiting". Real-time feel and later far-halt layouts unverified; not tested on a device.
 - [ ] **K1. Checkpoint: the economy seen.** After A1 to A3. The main session opens the six stills; one real-time clip of
   a train unloading at the island; `docs/game-design/place.md` gains the town economy's views (one doc edit for all
   three steps, so they share no file). Live as every ship is; (review) the owner is pointed at the economy at B2, the

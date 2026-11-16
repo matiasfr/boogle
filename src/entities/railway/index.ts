@@ -25,6 +25,7 @@ if (productionRailway && railwayMirror) {
   const adapter = createRailwayAdapter({
     mirror: railwayMirror,
     movement: () => railMovement(tune),
+    trade: () => ({ farePct: tune.get('railFarePct'), riderPct: tune.get('railRiderPct') }),
     movementRev: () => tune.tune.rev,
     pid: identity.pid,
     pose: () => {

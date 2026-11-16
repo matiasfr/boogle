@@ -47,6 +47,7 @@ export const names: NameRegistry = {
     'railway.halt-ramp',
     'railway.halt-lever',
     'railway.halt-attachment',
+    'railway.till-parts',
     'roundhouse.bay',
     'roundhouse.table',
   ],

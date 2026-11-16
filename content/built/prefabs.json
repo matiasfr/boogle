@@ -1743,6 +1743,86 @@
         }
       }
     },
+    "railway.till": {
+      "attach": {
+        "sign": {
+          "at": [
+            0.18,
+            1.95,
+            0
+          ],
+          "facing": [
+            -1,
+            0,
+            0
+          ],
+          "h": 0.65,
+          "kind": "label",
+          "posts": "none",
+          "w": 1.8
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            -0.17,
+            0.5,
+            0
+          ],
+          "half": [
+            0.4,
+            0.5,
+            0.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "railway.till",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.till-parts",
+        "params": {
+          "kind": "counter"
+        }
+      }
+    },
+    "railway.till-coins": {
+      "colliders": [],
+      "key": "railway.till-coins",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.till-parts",
+        "params": {
+          "kind": "coins"
+        }
+      }
+    },
+    "railway.waiting-board": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            1.45,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 0.65,
+          "kind": "label",
+          "posts": "one",
+          "w": 1.2
+        }
+      },
+      "colliders": [],
+      "key": "railway.waiting-board",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
     "roundhouse.bay": {
       "colliders": [
         {
