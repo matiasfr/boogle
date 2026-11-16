@@ -1,5 +1,5 @@
 {
-  "worldNs": "v55",
+  "worldNs": "v54",
   "ticks": 1200,
   "stages": {
     "awake": {
@@ -130,7 +130,7 @@
     "house-built": {
       "tick": 7619,
       "stage": 3599873888,
-      "after": 332299744
+      "after": 1683160544
     },
     "q6-stocked": {
       "tick": 3839,

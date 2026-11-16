@@ -1,3 +1,6 @@
+> Historical evidence: superseded by the [four-place rework](first-town-four-place-rework.md).
+> Current S1 keeps four rider places and v54; eight await the dedicated coach.
+
 # First-town S1/V1: independent-review fixes
 
 16 November 2026. Follow-up to the independent review of `00a52d8f2`, on the same branch,

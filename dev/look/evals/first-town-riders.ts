@@ -1,7 +1,7 @@
 // npm run look -- --rail-seed fares-running --eval dev/look/evals/first-town-riders.ts --until window.__placeDone --query riderShot=pet
 // S1/V1 visual proof.
-// riderShot=boarding|seated|pet|walk. Eight cosmetic passengers are dressed on a real line-2 car; no mirror writes.
-// The logged authoritative count distinguishes this fit proof from the rule tests' real eight-rider boarding.
+// riderShot=boarding|seated|pet|walk; riderCount defaults to TRADE.riderPlaces, or selects 1..places. No mirror writes.
+// The logged authoritative count distinguishes this fit proof from the rule tests' real boarding.
 // For walk, add --action dev/look/evals/first-town-walk.ts --video --seconds 4 so walking starts after warm-up.
 const { inspectRailway, rw, train } = (await import(
   '/dev/look/rail-read.ts' as string
@@ -25,6 +25,11 @@ const { scene, renderer } = (await import(
 )) as typeof import('../../../src/render/scene.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
+const { TRADE } = (await import(
+  '/src/sim/railway-trade-layout.ts' as string
+)) as typeof import('../../../src/sim/railway-trade-layout.ts');
+const count = Number(new URLSearchParams(location.search).get('riderCount') ?? TRADE.riderPlaces);
+if (!Number.isInteger(count) || count < 1 || count > TRADE.riderPlaces) throw new Error('rider proof: invalid count');
 const mode = new URLSearchParams(location.search).get('riderShot') ?? 'boarding';
 const reverse = new URLSearchParams(location.search).has('riderReverse');
 const overhead = new URLSearchParams(location.search).has('riderOverhead');
@@ -55,7 +60,7 @@ background(
       rock.updateWorldMatrix(true, false);
       return v.clone().set(x, y, z).applyMatrix4(rock.matrixWorld);
     };
-    const dress = () => folk.setRiders(slot, 8, { mesh: rock, top: 0.7 });
+    const dress = () => folk.setRiders(slot, count, { mesh: rock, top: 0.7 });
     const aim = () => {
       dress();
       const eye = at(
@@ -87,7 +92,7 @@ background(
     await wait(400);
     aim();
     console.log(
-      `PLAY RIDERS ${JSON.stringify({ mode, slot, authoritative: train(rw(), slot).riders, dressed: 8, seat: seatState(), pet: wardrobe()?.pet(), renderer: renderer.info.render })}`,
+      `PLAY RIDERS ${JSON.stringify({ mode, slot, authoritative: train(rw(), slot).riders, dressed: count, seat: seatState(), pet: wardrobe()?.pet(), renderer: renderer.info.render })}`,
     );
     shot.__placeDone = true;
     if (mode === 'walk') {

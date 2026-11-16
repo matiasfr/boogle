@@ -1103,8 +1103,9 @@ test('R3: every replicated component changes only where it does with riders off,
   assert.ok(ticks(on) <= ticks(off) + on.events.size);
 });
 
-test('S1: eight riders board, a ninth waits; even flooded crowds never exceed the separate rider places', () => {
-  // A real standing train, with nine waiting. Keep the ledger while emptying its prior riders for this rule probe.
+test('S1: rider places fill, one waits; even flooded crowds never exceed the separate rider places', () => {
+  // A real standing train, with one more waiting than its rider places. Keep the ledger while emptying
+  // its prior riders for this rule probe.
   const s = { w: copy(FARES.w), t: FARES.t };
   let slot = -1;
   for (let i = 0; i < 3000 && slot < 0; i++) {
@@ -1120,13 +1121,14 @@ test('S1: eight riders board, a ninth waits; even flooded crowds never exceed th
     tw = s.w.mut(Town, s.w.lookup(Town, 0)!)!;
   tw.alighted += r.riders;
   r.riders = 0;
-  tw.wait0 = 9;
+  tw.wait0 = TRADE.riderPlaces + 1;
   checkTrade(s.w);
   advance(s, 1);
-  assert.equal(train(s.w, slot).riders, 8, 'eight boarded');
-  assert.equal(town(s.w, 0).wait0, 1, 'the ninth waits');
+  assert.equal(train(s.w, slot).riders, TRADE.riderPlaces, 'exactly the available places board');
+  assert.equal(town(s.w, 0).wait0, 1, 'one rider waits');
   advance(s, 1);
-  assert.equal(train(s.w, slot).riders, 8, 'the ninth still cannot board');
+  assert.equal(train(s.w, slot).riders, TRADE.riderPlaces, 'a full train boards nobody');
+  assert.equal(town(s.w, 0).wait0, 1, 'the waiting rider remains');
   checkTrade(s.w);
   // A flood of riders: the crowds stop at their cap and the rider places hold.
   const w = copy(FARES.w);
@@ -1345,7 +1347,7 @@ test('B1: plot load checks reject future buys, missing thresholds, unbought paym
   assert.throws(() => checkTrade(early, ASLEEP.t), /plot thresholds/);
 });
 
-test('S1: q6-done payoff: three added houses land at least 88 a minute; plot 3 costs 1600', (t) => {
+test('S1: q6-done payoff: three added houses land 72 a minute at four places; plot 3 costs 1600', (t) => {
   const rates = [0, 1, 2, 3].map((houses) => {
     const w = copy(PIER.w);
     // Isolate the building count on identical q6 train positions and queues. Supply only each tested plot's
@@ -1371,7 +1373,7 @@ test('S1: q6-done payoff: three added houses land at least 88 a minute; plot 3 c
   });
   t.diagnostic(`q6-done landed fares/min, 2/3/4/5 buildings: ${rates.join(', ')}`);
   assert.ok(rates[1]! >= 1.3 * rates[0]!, `${rates[1]} vs ${rates[0]}`);
-  assert.ok(rates[3]! >= 88, `${rates[3]} fares/min with three added houses`);
+  assert.deepEqual(rates, [36, 54, 72, 72], 'four places saturate after the second added house');
   const s = { w: copy(PIER.w), t: PIER.t };
   while (tillRow(s.w).boogles < plotPrice(s.w, 0, 0, 50)) {
     assert.ok(s.t - PIER.t < 10 * 600);

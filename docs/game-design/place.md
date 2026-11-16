@@ -2549,7 +2549,7 @@ cleared locally, and its two limestone rocks
 are chopped like line 1's. Serves DESIGN.md **7. Telegraph everything** and **8. Enjoyable alone and together**. Not tested on a device.
 
 
-## Town economy in the live game (16 November 2026, v55)
+## Town economy in the live game (16 November 2026, v54)
 
 Freight delivered by the running trains supplies the Village's plots. Its rules already accumulate timber and
 stone, but this head has no yard-stack view or replicated freight load drawn on trains (A1 remains open).
@@ -2564,17 +2564,17 @@ then `plot2`, then `plot1`. Sources: [plots](../../src/entities/town/plots.ts),
 [town layout](../../src/place/town-plan.ts), [blockout](../../src/place/town-blockout.ts).
 
 Little guys wait beside the island and far platforms, board the trains and ride on them. At most twelve waiting
-figures are drawn per end; larger crowds get a true-count board. Each passenger car carries and draws up to eight
-riders (`TRADE.riderPlaces`), separate from the four player seats. For the first-town-lesson S1/V1 stand-in they
-stand facing out along two diagonally opposite end corners (x ±0.77, matching-sign z 0.98–1.145), taking the car's
-pitch and shudder, with the seats, seated players' legs and pets left clear. They overlap along the deck inside
-its panels, rails and posts; the passenger-car art job remains open. The orchestrator rejected this crowd
-as a count cue: eight figures read as two. A wider strip trial was rejected for entry-post/knob contact;
-[the count-readability acceptance remains open](../reports/first-town-rider-count-readability.md).
-The crowded figures stand upright without
-the ground folk's idle lean; their poses run after the train's
-current rendered transform so they stay inside the moving car. There is no rider counter on the car. The garage's
-Cars tile says "Four seats, eight riders" and shows Seats 4 and Riders 8 (new copy is placeholder). Fares fill the
+figures are drawn per end; larger crowds get a true-count board. Each passenger car carries and draws up to **four**
+riders (`TRADE.riderPlaces`), separate from the four player seats. Eight arrive with the
+[dedicated coach A](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework), after its halt rework; today's car
+must show everyone it carries (orchestrator, 16 November). The first-town S1/V1 stand-in has two overlapping
+riders per diagonally opposite roomy end: outer (x ±0.78, z ±1.20), inner (x ±0.77, z ±1.02), matching signs.
+They face outward at slightly different angles, with the outer places filled first, alternating ends.
+The upright poses run after the car's rendered transform, taking its pitch and shudder. The four heads remain
+countable, clear of fittings, seats, seated players and pets in the
+[inspected stills and sampled geometry](../reports/first-town-four-place-rework.md). No counter or new collider.
+The Cars tile reads both numbers from data: "4 seats, 4 riders", with Seats 4 and Riders 4 (placeholder copy).
+Fares fill the
 shared strongbox: inside the hall, against its north end wall, the ticket counter shows its balance and a coin
 column proportional to its cap, with a fixed cap mark. Sources:
 [riders](../../src/entities/railway/riders-view.ts), [till](../../src/entities/railway/till-view.ts),

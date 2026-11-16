@@ -84,7 +84,7 @@ sounds (Looks, Whistle), and eleven tiles:
 | Engine | Boiler | Installed; Replaced after the longer boiler | none |
 | Engine | Longer boiler | Needs steel → Ready → Installed | bill "STEEL 0/1"; note "Free: the reward for reaching steel" |
 | Engine | Plough and headlamp | Later | none ("Not built yet.") |
-| Cars | Four seats, eight riders | Installed | none |
+| Cars | 4 seats, 4 riders (both from data; placeholder) | Installed | none |
 | Cargo | Rail and kit car | Installed | none |
 | Cargo | Footing wagon | Waits in the stall → Free with the kiln | none |
 | Cargo | Steel car | Later → Owned (with the longer boiler) | none |

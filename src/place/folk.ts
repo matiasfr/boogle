@@ -268,18 +268,14 @@ const waiting = Array.from({ length: WAITING * 2 }, (_, k) =>
 );
 type RiderCar = { mesh: THREE.Object3D; top: number };
 const riderCars = new Map<number, RiderCar>();
-// Stand-in crowds along the two diagonally opposite, roomy end corners: on these sides seats end at |z|=0.45.
+// Two stand-in riders per diagonally opposite roomy end: on these sides player seats end at |z|=0.45.
 // Keep hats/hands inside the end rails, coats inside the sides, and clear the seats, outward legs and pets.
-// Pairs overlap along the deck, never across its side panel. Local places, no colliders.
+// Alternate ends on boarding, outer places first. Slightly splayed outward faces clear the hands. No colliders.
 const RIDER_PLACES = [
-  [-0.77, -1.145, -Math.PI / 2],
-  [-0.77, -1.09, -Math.PI / 2],
-  [0.77, 1.145, Math.PI / 2],
-  [0.77, 1.09, Math.PI / 2],
-  [-0.77, -1.035, -Math.PI / 2],
-  [-0.77, -0.98, -Math.PI / 2],
-  [0.77, 1.035, Math.PI / 2],
-  [0.77, 0.98, Math.PI / 2],
+  [-0.78, -1.2, -Math.PI / 3],
+  [0.78, 1.2, (2 * Math.PI) / 3],
+  [-0.77, -1.02, (-2 * Math.PI) / 3],
+  [0.77, 1.02, Math.PI / 3],
 ] as const;
 // One driver a train (`camp` its line, `seat` which of the line's trains), on whenever there's an engine's stool to sit
 // on (FolkEnv.driver).

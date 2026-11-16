@@ -63,8 +63,8 @@ export const TRADE = {
   crowdStop: 4,
   /** Riders who wait at one end at most; the rest give up. */
   crowdCap: 24,
-  /** Riders' places on the passenger car, separate from its four player seats (owner, 16 November). Stand-in. */
-  riderPlaces: 8,
+  /** Riders' places, separate from player seats. Four on today's car; eight arrive with the dedicated coach. */
+  riderPlaces: 4,
   fare: { board: 2, per100m: 1 },
   /** The box holds the larger of `incomeMin` minutes of income or `dearestNum / dearestDen` of the dearest thing on
    * offer; fares past it do not land. */

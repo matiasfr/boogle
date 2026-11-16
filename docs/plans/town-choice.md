@@ -251,7 +251,7 @@ with the other hubs and towns. Second owner call the same day, being recorded as
 npcs. They should get designed passenger cars and trains that are size appropriate." Read: this plan,
 [town-plots-scarce](../brainstorms/town-plots-scarce.md), [town-economy-visible](town-economy-visible.md) (status, owner
 questions, review), [garage-choices](garage-choices.md), [train-progression](train-progression.md)'s ladder, the
-as-built [town section](../game-design/place.md#town-economy-in-the-live-game-16-november-2026-v55), DESIGN core loop,
+as-built [town section](../game-design/place.md#town-economy-in-the-live-game-16-november-2026-v54), DESIGN core loop,
 6, 7, 11, the rewards Current rules (10 to 12 November). Numbers are the docs' unless marked **probe** (one new
 headless run on `8878cdcdf`, the brainstorm's script with `TRADE.seats` also varied, gross fares a minute, 10 minutes
 after 5 of warm-up) or **estimate**. Not looked at: any still (nothing new is placed); a device.

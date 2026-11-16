@@ -1,3 +1,6 @@
+> Historical evidence: superseded by the [four-place rework](first-town-four-place-rework.md).
+> Current S1 keeps four rider places and v54; eight await the dedicated coach.
+
 # First-town lesson: S1 + V1 implementation
 
 > Historical first handoff for `00a52d8f2`. The independent review found the offline Six fit-out reduced capacity,

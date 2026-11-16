@@ -1,3 +1,6 @@
+> Historical evidence: superseded by the [four-place rework](first-town-four-place-rework.md).
+> Current S1 keeps four rider places and v54; eight await the dedicated coach.
+
 # Rider count-readability: stopped layout trial
 
 16 November 2026, on `t3/first-town-rider-places`, starting at `dd61f3a71`.
