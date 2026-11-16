@@ -1,4 +1,4 @@
-> **Status: 2026-11-14, steps 1 and 2 implemented; Checkpoint A and the view work remain.** Design base:
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1–2 shipped in #1841 as v46; Aperture.moved/from and the pure haul functions are on main. Built, not shipped: none verified. Next: step 3, the deck as a shared car; Checkpoint A proof completeness and steps 3–5 are not established by the shipped state schema. Design base:
 > `origin/main` at `35e1c3431`. Replaces
 > steps 2 and 4 of [gap-readability](gap-readability.md) (the railhead's move), which were built on branch
 > `worktree-agent-af55e2f2172764ff8` (tag `archive/worktree/railhead-traveller`, tip `9b9845fbb`) and failed three

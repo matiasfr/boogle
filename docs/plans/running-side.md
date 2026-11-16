@@ -1,8 +1,6 @@
 # Running side and request levers
 
-Planned 14 November 2026 from the owner's play session that day. Steps 1–5 are built locally; the follow-up fix
-brief explicitly approves step 5 recommendation (a). The historical diagnosis and original departures below are
-retained; the [review-fix report](running-side-fix-report.md) records their resolution. Not shipped.
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1–2 (#1790) and 3–6 with right-hand running and v45 (#1827) are on main. Built, not shipped: none verified. Next: reconcile the combined checkpoint proof list against the v45 reports; this audit does not certify all its browser proofs.
 
 **His words (verbatim; "query" is the Quarry halt, "peer" is the Pier halt):**
 

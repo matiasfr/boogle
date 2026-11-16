@@ -1,4 +1,4 @@
-> **Status: approved for steps 0–3 (2026-11-15), implementation in progress; no ship.** Historical proposal numbers are from `src/sim` on
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 0–3 and ladder/install/rollout sequencing are on main (#1903); BOILER has 14/20/25 m/s rows and line 2 wakes separately. Built, not shipped: none verified. Next: step 4, engines waiting in bays and rolling out; step 5 checkpoint closure is unverified. Historical proposal numbers are from `src/sim` on
 > `7e2fa099b`, computed with the sim's own `trainLegTicks` in a scratch script; laps and waits are *arithmetic* from
 > those ride times (nonstop, 5 s dwell at each end), not a measured run. Step 0 measures them.
 

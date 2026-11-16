@@ -1,4 +1,4 @@
-> **Status: server implementation, 2026-11-13; client work pending.** The original plan below was based on
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 0–6 are on main: server replacement/recovery in #1734 and client countdown, landing and Dev Room control in #1754. Built, not shipped: none additional verified (codex/room-fast-forward-server is historical). Next: close replacement/restore checkpoint; step 7 removal still requires the recorded owner-use condition, not verified here. The original plan below was based on
 > `origin/main` at `5b42057ad` (`WORLD_NS` v32). The [server implementation](#server-implementation-13-november)
 > adapts it to v40. No `WORLD_NS` bump; one server-to-client wire message (`replacing`). Original design claims
 > below are historical; the implementation section distinguishes the current scope and outstanding client work.

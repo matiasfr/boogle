@@ -1,5 +1,6 @@
 # Ring Island: the summit path over the stack line's cutting
 
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1–2 are on main (#1811, #1814), including the bridge and shared path; the walk witness was pointed at that path in #1814 (step 3 partly built). Built, not shipped: none verified. Next: finish step 3 witness/stills and step 4 proof closure; a complete checkpoint is unverified.
 **Goal.** The drawn path from Ring Island's west platform to the summit lookout walks straight off the rim of the
 stack line's cutting; put a footbridge there so the path the world draws can be walked again. Serves DESIGN 7
 (Telegraph everything: a drawn path is a promise) and 11 (Show, don't tell: the way up is seen, not explained). No

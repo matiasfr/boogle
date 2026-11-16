@@ -1,4 +1,4 @@
-> **Status: plan for the owner's and the designer's review (11 November 2026).** Nothing here is built. Ring Island
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** R1–R5 and V1–V3 are on main (#1672), with later garage/fourth-car follow-ups (#1681, #1711). Built, not shipped: none verified. Next: reconcile Checkpoints A/B against retained proofs, then T (ring-threading layout); complete checkpoint coverage is not established here. Ring Island
 > build 2 as a systems-first greybox, `WORLD_NS` v31 (main took v28 for slice 5; v29 is the Quarry stone stop's and v30 is the riders step's). Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
 > R1 to R5 do not wait for them. **Designer's review, 11 November: cleared to build;
 > [its rulings](#design-review-designer-2026-11-11) A to F are what gets built where a step below differs** (no footings

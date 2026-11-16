@@ -1,8 +1,7 @@
 > **14 November 2026: there is no try-on.** The owner's call replaces every "Try it" below (call 3, the tables and
 > the as-built notes, which are kept as the record): [no try-on](#no-try-on-14-november-2026).
 >
-> **Status: cleared to build by the design review below (12 November 2026); G1 and G2 are built, G3 to G5 and the
-> checkpoint are not.** G2's stand does not fit as the review placed it: [G2 as built](#g2-as-built-12-november-2026). The next Ring
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** G1–G2 (#1679) and G3–G5 (#1681) are on main; direct install/selection follow-ups shipped in #1794. Built, not shipped: none verified. Next: reconcile the garage checkpoint. Proof files exist in /Users/matiasfranco/Developer/boogle/.look/codex/v45-rebase/evidence/ (final-garage-open real-time capture and final-garage-two verdict), with later install/bystander/perf records in roundhouse-rotunda Checkpoint B (#1889); full original bot/check/before-after perf coverage and device proof are not verified here. G2's stand does not fit as the review placed it: [G2 as built](#g2-as-built-12-november-2026). The next Ring
 > Island item after greybox leg 1 step 3 (owner, 12 November: "yes, plain for now", "but prioritize the garage
 > moment"). View only: no sim, wire or save change, no `WORLD_NS` bump.
 
