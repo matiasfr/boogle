@@ -1,7 +1,10 @@
-> **Timing correction, 16 November 2026:** historical loader figures below remain historical.
-> Rerun on v55 (#1975): solo pier **182.3 → 134.5 s**, ring **418.6 → 197.6 s**;
-> assumed trio pier **167.8 → 120.0 s**, ring **398.3 → 191.9 s**.
-> These do not reproduce the old figures. See [method, phase spreads and quarry-stop cost](../reports/loader-times.md).
+> **Timing correction revised after review, 16 November 2026:** historical figures below remain historical.
+> Accepted-ops v55 seeds: solo pier **177.3 → 134.5 s**, ring **334.3 → 197.6 s**;
+> assumed trio pier **162.8 → 120.0 s**, ring **313.9 → 191.9 s**.
+> Previous 57c2bbafe counterfactual: solo 182.3 → 134.5 / 418.6 → 197.6 s;
+> trio 167.8 → 120.0 / 398.3 → 191.9 s. Its yard-deletion baseline is superseded.
+> Seeds share lit/full racks, offsets and carry cadence; natural train phases differ.
+> These do not reproduce the historical figures. See [method, spreads and separate synthetic quarry-stop test](../reports/loader-times.md).
 
 > **Status: S1 + V1 reworked together on `t3/first-town-rider-places`: four countable rider places now;
 > eight await coach A. Pending independent review; remaining steps unbuilt here.

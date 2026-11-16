@@ -3,8 +3,8 @@
 // tune them on the 2D model page" (10 November 2026). Nothing here is a game rule until the owner says so. The rows
 // the game uses come from src/sim/railway-trade-layout.ts's TRADE (call 5: one home for the numbers; dev may import
 // src/sim, never the reverse).
-import { TRADE, TRADE_PCT } from '../../src/sim/railway-trade-layout.ts';
-export const VILLAGE_PLOTS = TRADE.plots[0];
+import { TRADE, TRADE_PCT, type TradePlot } from '../../src/sim/railway-trade-layout.ts';
+export const VILLAGE_PLOTS: readonly TradePlot[] = TRADE.plots[0];
 export const VILLAGE_PRICE_FACTOR = TRADE_PCT.pricePct / 100;
 export const TOWNS = ['village', 'ring', 'canopy', 'port', 'gorge'] as const;
 export type Town = (typeof TOWNS)[number];
@@ -156,7 +156,9 @@ for (const t of TOWNS)
     add(
       'Town buys',
       `house.${t}.${i + 1}`,
-      t === 'village' && i === 1 ? 'Loader yard, the Village (no riders)' : `House ${i + 1}, ${TOWN_NAME[t]}`,
+      t === 'village' && 'gives' in VILLAGE_PLOTS[i]! && VILLAGE_PLOTS[i]!.gives === 'loader'
+        ? 'Loader yard, the Village (no riders)'
+        : `House ${i + 1}, ${TOWN_NAME[t]}`,
       p,
       'Boogles',
       t === 'village'

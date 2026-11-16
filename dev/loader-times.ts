@@ -5,7 +5,7 @@ import { createRailwayWorld } from '../src/sim/railway-components.ts';
 import assert from 'node:assert/strict';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { act, advance } from '../src/sim/railway-seed-route.ts';
-import { Aperture, Plot, Till, Works } from '../src/sim/railway-components.ts';
+import { Aperture, Works } from '../src/sim/railway-components.ts';
 import { plot, trains, till } from '../src/sim/railway-rows.ts';
 import { worksId } from '../src/sim/railway-queries.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
@@ -17,7 +17,7 @@ for (const stage of ['yard-ready', 'yard-built'] as const) {
   console.log(stage, 'tick', s.t, 'yard', plot(s.w, 1).at);
 }
 const bases = new Map<string, ReturnType<typeof buildSeedWorld>>();
-function seed(stage: 'yard-wagon' | 'yard-deck') {
+function seed(stage: 'yard-wagon' | 'yard-deck' | 'wagon-on' | 'deck-laid') {
   let base = bases.get(stage);
   if (!base) {
     base = buildSeedWorld(stage);
@@ -32,14 +32,30 @@ for (const stage of ['yard-wagon', 'yard-deck'] as const)
     for (const every of [0, 44, 15]) {
       const results: number[] = [];
       for (const offset of [0, 100, 200]) {
-        const s = seed(stage);
-        if (!yard) {
-          const p = s.w.mut(Plot, s.w.lookup(Plot, 1)!)!;
-          const b = s.w.mut(Till, s.w.single(Till))!;
-          b.spent -= p.paid;
-          b.boogles += p.paid;
-          p.at = -1;
-          p.paid = 0;
+        const source = yard ? stage : stage === 'yard-wagon' ? 'wagon-on' : 'deck-laid';
+        const s = seed(source);
+        if (offset === 0 && every === 0) {
+          const wk = s.w.get(Works, worksId(s.w))!;
+          assert.equal(wk.rack, WORKS.rackCap, 'naturally full Works rack');
+          assert.ok(wk.lit >= 0, 'kiln lit through accepted ops');
+          assert.equal(wk.pierRack, 0, 'empty pier rack');
+          assert.equal(s.w.get(Aperture, s.w.single(Aperture))!.rack, 0, 'empty railhead rack');
+          console.log(
+            JSON.stringify({
+              kind: 'accepted-ops-start',
+              source,
+              tick: s.t,
+              rack: wk.rack,
+              lit: wk.lit,
+              pierRack: wk.pierRack,
+              pierSet: wk.pierSet,
+              aperture: s.w.get(Aperture, s.w.single(Aperture)),
+              trains: trains(s.w)
+                .filter((r, k) => LINE2_SLOTS.includes(k) && r.phase !== TRAIN_PHASE.SHED)
+                .map(({ slot, phase, at, to, wagon, foot }) => ({ slot, phase, at, to, wagon, foot })),
+            }),
+          );
+          assert.equal(plot(s.w, 1).at >= 0, yard, 'seed yard purchase');
         }
         advance(s, offset); // phase sweep, cargo may move during the wait; clock starts afterwards
         const start = s.t;
@@ -62,8 +78,12 @@ for (const stage of ['yard-wagon', 'yard-deck'] as const)
         }
         results.push((s.t - start) / 10);
       }
-      console.log(JSON.stringify({ stage, yard, carrySeconds: every / 10, seconds: results }));
+      console.log(
+        JSON.stringify({ kind: 'accepted-ops-time', stage, yard, carrySeconds: every / 10, seconds: results }),
+      );
     }
+// SYNTHETIC ONLY: direct writes below deliberately bypass progression and conservation.
+// Kept apart from accepted-ops-time rows; this isolates persistent empty-rack scheduling.
 // Controlled empty-rack comparison. Disable casting by leaving rack empty and kiln off.
 // No carrying: owed persists. Same seed and train phase in each paired run.
 for (const owed of [true, false]) {
@@ -99,6 +119,7 @@ for (const owed of [true, false]) {
   }
   console.log(
     JSON.stringify({
+      kind: 'synthetic-empty-rack',
       owed,
       faresPerMin: (till(s.w).landed - money) / 20,
       grossFaresPerMin: (till(s.w).landed + till(s.w).lost - gross) / 20,

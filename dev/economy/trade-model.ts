@@ -102,13 +102,15 @@ export function catalog(t: Tunables, policy: Policy): Item[] {
   const mult = policy.seats === 'boogles' ? t['house.mult.boogleSeats']! : t['house.mult.materialSeats']!;
   for (const town of TOWNS) {
     const arrive = ARRIVES[town];
-    for (let n = 1; t[`house.${town}.${n}`] !== undefined; n++)
+    for (let n = 1; t[`house.${town}.${n}`] !== undefined; n++) {
+      const plot = town === 'village' ? VILLAGE_PLOTS[n - 1] : undefined;
+      const gives = plot && 'gives' in plot ? plot.gives : undefined;
       out.push({
         id: `house.${town}.${n}`,
-        kind: town === 'village' && n === 2 ? 'building' : 'house',
-        riders: town === 'village' ? VILLAGE_PLOTS[n - 1]!.riders : 1,
-        gives: town === 'village' && n === 2 ? 'loader' : undefined,
-        label: town === 'village' && n === 2 ? 'Loader yard, the Village' : `House ${n}, ${townName(town)}`,
+        kind: gives ? 'building' : 'house',
+        riders: plot?.riders ?? 1,
+        gives,
+        label: gives === 'loader' ? 'Loader yard, the Village' : `House ${n}, ${townName(town)}`,
         town,
         price: Math.round(
           t[`house.${town}.${n}`]! * (town === 'village' ? VILLAGE_PRICE_FACTOR : mult) * t['house.order']! ** (n - 1),
@@ -116,6 +118,7 @@ export function catalog(t: Tunables, policy: Policy): Item[] {
         offerAt: town === 'village' && n === 3 ? 'ring.connect' : arrive,
         after: n > 1 ? `house.${town}.${n - 1}` : undefined,
       });
+    }
     const f = t[`fitout.${town}`]!;
     out.push({
       id: `fitout.${town}.1`,

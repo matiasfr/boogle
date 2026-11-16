@@ -1,7 +1,10 @@
-> **Timing correction, 16 November 2026:** historical loader figures below remain historical.
-> Rerun on v55 (#1975): solo pier **182.3 → 134.5 s**, ring **418.6 → 197.6 s**;
-> assumed trio pier **167.8 → 120.0 s**, ring **398.3 → 191.9 s**.
-> These do not reproduce the old figures. See [method, phase spreads and quarry-stop cost](../reports/loader-times.md).
+> **Timing correction revised after review, 16 November 2026:** historical figures below remain historical.
+> Accepted-ops v55 seeds: solo pier **177.3 → 134.5 s**, ring **334.3 → 197.6 s**;
+> assumed trio pier **162.8 → 120.0 s**, ring **313.9 → 191.9 s**.
+> Previous 57c2bbafe counterfactual: solo 182.3 → 134.5 / 418.6 → 197.6 s;
+> trio 167.8 → 120.0 / 398.3 → 191.9 s. Its yard-deletion baseline is superseded.
+> Seeds share lit/full racks, offsets and carry cadence; natural train phases differ.
+> These do not reproduce the historical figures. See [method, spreads and separate synthetic quarry-stop test](../reports/loader-times.md).
 
 > **Status: plan, not built; designer-reviewed 16 November under the first-island-teaches scope ([review](#designer-review-16-november-the-first-town-as-a-lesson)): plot 2 as the loader yard for its lesson, no choice asked; rider places 8 a train; plot 3's base 800; four owner questions.** Owner answered all four yes; build steps: [first-town-lesson](first-town-lesson.md). Follow-up: [scarce town plots brainstorm](../brainstorms/town-plots-scarce.md) (proposed, not an owner decision). Planner, against origin/main `a71077c4b`, `WORLD_NS` v54. The one file
 > each build job reads. Follows [town-economy-visible](town-economy-visible.md) (its design review's ruling 1, "the next

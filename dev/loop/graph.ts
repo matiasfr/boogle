@@ -807,7 +807,7 @@ export const NODES: readonly LoopNode[] = [
       dec(
         'upgrade',
         'rules',
-        `${RULES_TRAINS} wagonArrives: footings ride the wagon, or every outbound line 2 train with the coupled wagon and built loader yard (up to six, only while owed)`,
+        `${RULES_TRAINS} wagonArrives: footings ride the wagon, or every outbound line 2 train with the coupled wagon and built loader yard (up to ${WORKS.loaderCap}, only while owed)`,
       ),
     ],
     cue: [
@@ -850,7 +850,7 @@ export const NODES: readonly LoopNode[] = [
       dec(
         'upgrade',
         'rules',
-        `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon, or every outbound line 2 train with the coupled wagon and built loader yard (up to six, only while owed) to the Railhead`,
+        `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon, or every outbound line 2 train with the coupled wagon and built loader yard (up to ${WORKS.loaderCap}, only while owed) to the Railhead`,
       ),
     ],
     cue: [
