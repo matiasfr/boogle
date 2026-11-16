@@ -1,0 +1,3202 @@
+[
+ {
+  "id": "RC-001",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 9,
+  "gist": "The West landing's grey stair and parapets are gone; the shore path and end ramp are the way up. Grant's \"should be real stairs\" (G29) is declined.",
+  "recommendation": "confirm",
+  "why": "Two of three first landings took the stair as the way up, and a second way 10 m from the path splits a newcomer's first choice; it declines Grant's idea, so the fork is yours.",
+  "source": "docs/plans/start-area.md · docs/decisions-rail.md#d-2026-11-15-west-landing-staked-until-bell-rock"
+ },
+ {
+  "id": "RC-002",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ship start-area S1 to S3 together, ahead of the rest of Grant's P3 batch (queue C8).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-003",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Behind the landing, check the sea lure from the turned-round camera after S1.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-004",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The 6 m pickup prompt and 6.6 m server allowance apply only to the waiting pedestal part.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-005",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 5,
+  "gist": "The breaker is drawn at twice its carried size while the forge's crane holds it, and at its own size once taken.",
+  "recommendation": "change: one size everywhere; if it must read bigger, it is bigger in your hands too",
+  "why": "A part that shrinks when you pick it up breaks DESIGN 11's \"what's on screen is true, including what you're holding\"; RC-006's upright hang, steam and framing already do the reading.",
+  "source": "DESIGN.md 11 · docs/plans/forge-call-handoff.md#as-built-15-november-2026"
+ },
+ {
+  "id": "RC-006",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "While the forge's crane holds the breaker it hangs upright by its head, head 3.9 m over the pedestal's foot, and the pier's cut frames it from 5 m …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-007",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The forge rack's board shows the waiting part whenever one waits on the pedestal, not only while the active station is train-fed (the plan's …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-008",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A banner queued behind the act card also waits for a camera shot that is still playing.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-009",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The forge's second call is capped: a whistle at 90, 180 and 270 s after the show while the part still waits, the plume thickening once to 33 puffs …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-010",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "While a part waits on the forge's pedestal the crane holds it 1.6 m up, turning, and three little guys stand on the forge side, off the rails, and …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-011",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Bench levelling (step 5) may remove the trees its wider strips clear: about 12 from the starter catalog (estimated ids 44, 59, 69, 75, 97, 205, 227 …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-012",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The second jump reaching 23 more cells of wall and shore after bench levelling is accepted, on three checks from the implementer's run: the cells' …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-013",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The quarry path gets a 4 m bench on both gorge descents and a 6 m level landing at the turn near (-10, 150) (step 6).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-014",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The terrain dressing kit is solid scenery with no mechanic and never a route: level-check runs on its placements.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-015",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ring Island footbridge cap (step 7): the ground under the deck's footprint plus 0.5 m is capped 0.1 m under the deck for the first 4 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-016",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The track layer gets a second hand so its motion reads at Q5 and Q6 speed.",
+  "recommendation": "confirm",
+  "why": "Linked to the wing model you approved on 11 November; laying speed is unchanged."
+ },
+ {
+  "id": "RC-017",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The path gets one more waypoint 8 m behind the bridge's halt-side abutment on the deck's axis (about (1374.5, -872.3)), so the turn onto the bridge …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-018",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The footbridge's blockout: timber deck 3.0 m wide, solid parapets 1.05 m in the folk's orange (low enough to jump), concrete abutments 3 m behind the …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-019",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The rest of the summit path keeps its waypoints (about 330 m, a minute's walk, steepest 21 %) with nothing added between the bridge and the lookout.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-020",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Round's roofs are perches: the hall's roof from the bay stands with one proven way down (the \"way down on each side\" requirement is withdrawn) …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-021",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The blockout's blocks cast and receive shadows, and the door mat grows to the door's width by 1.5 m deep in a dark tone.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-022",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 10,
+  "gist": "The glide across Ring Island's gap gets its own cue: a take-off board with a windsock in the glider's cream and teal; cloth means glide, gold stays \"this is for that\".",
+  "recommendation": "confirm",
+  "why": "Like the gold outline, it adds a lasting visual word that later glide spots will reuse; nothing on the stretch names the glide today.",
+  "source": "docs/plans/gap-readability.md#design-review-designer-2026-11-14 · docs/decisions-look.md#d-2026-11-16-gold-outline-not-physical"
+ },
+ {
+  "id": "RC-023",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The railhead's slide waits 1.0 s after the span lands (a two-stroke bell, the buffers' stripe lamps blinking gold, chocks kicked out), moves eased …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-024",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Lowering the leaf is a strike beat: a mallet on the gold strut swung like the breaker (70 ms hit-stop), the pawl flying into the sea, a part-drop and …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-025",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ring Island's arrival says kits come by train: the steel works' sign leads with \"KIT: ON A TRAIN\" (then \"KIT: ON THE PALLETS\"), dashed gold ghosts …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-026",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Engines not yet in service stand in the Roundhouse bays and roll out over the table when their line grows.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "Your 15 November garage answer (1): \"a Roundhouse bay holds one thing the room owns and is not running and is never bought; each fitted line keeps its own bay\".",
+  "source": "docs/decisions-core-loop.md#d-2026-11-15-garage-choices"
+ },
+ {
+  "id": "RC-027",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The cradle and table beats each get a cue of their own.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-028",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "When the stall's second footing is set a station-style bill stands at the stall door, \"Footing wagon / rails 0/8\" (then \"Turn the table\" once fitted …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-029",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A board at the Works rack, \"Footings\" over \"stall 0/2 by hand\", then \"pier 0/12 by wagon\", \"railhead 0/14 by wagon\", \"weights 0/4\".",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-030",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The footings order is kept (the stall's two by hand, then the wagon.",
+  "recommendation": "confirm",
+  "why": "Keeps your 10 November footings order; the stricter pier rule stays held on evidence."
+ },
+ {
+  "id": "RC-031",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Home's Roundhouse stops at seven bays; the half ring of nine or more is Port Quay's.",
+  "recommendation": "change: Home's seven bays stand; Port Quay has five bays",
+  "why": "Your 15 November answer (4): \"Port Quay stands complete at arrival, five bays on the decided order\".",
+  "source": "docs/decisions-core-loop.md#d-2026-11-15-garage-choices"
+ },
+ {
+  "id": "RC-032",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Roundhouse table is 16 m, not 14 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-033",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Port Quay's rotunda shares the kit and differs in its arc (a half ring), state at arrival, way in, bays and stone.",
+  "recommendation": "change: its arc is five bays, standing and complete at arrival; the other differences stand",
+  "why": "Your 15 November answer (4) fixes five bays at Port Quay, not a half ring.",
+  "source": "docs/decisions-core-loop.md#d-2026-11-15-garage-choices"
+ },
+ {
+  "id": "RC-034",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The rotunda kit's numbers: a 0.9 m open pit with a kerb and no rail, 20° bays, doors 14 m out and 3.6 × 4.6 m, bays 11 m deep, door wall 6.2 m and …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-035",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The 95° to 125° side of the Roundhouse stays clear of props; the ruin arc cues the stall beat only, and cradle and table stay NO CUE.",
+  "recommendation": "change: keep the clear lane; drop \"cradle and table stay NO CUE\"",
+  "why": "RC-027, logged later the same day after your \"There is never any prompt to bring 8 rails to the cradle stall\", gives both beats a cue.",
+  "source": "RC-027 · docs/archive/plans/footings-signalling.md#design-review-designer-2026-11-14"
+ },
+ {
+  "id": "RC-037",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The great tree moves from (−4, −138), 3.9 m from Station 1's frame, to the prow beyond Station 3 at local (0, −62), with WORLD_NS v45.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-038",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "With the tree on the prow the great beam's haul is 35 m, not 53 m (24 s to 16 s solo).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-039",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Before Station 3 opens the great tree's Chop is shown blocked with \"For Station 3's beam\" (draft UI copy, not The Boogler's).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-041",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The depot cart previews freight only (visible loads that grow with the bills, a crew, the last lift by hand).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-042",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "No stand-in for the museum's street tell; With the owner's one 48 m radius (decision) the real crystal shows through the door out to 48 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-043",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Accepted as built: in every room the furniture and the resident appear together at the draw radius (48 m since the owner's 14 November call.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-044",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Round's green is blocked out as a shallow bowl: 0.8 m down at the middle (level inside about r 10, a bank of about 1 in 4 to r 14), the ring road …",
+  "recommendation": "confirm",
+  "why": "Asked as the home-flip plan's question 2; one tunable with 0 as level, cheap to change after your walk."
+ },
+ {
+  "id": "RC-045",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The quarry road runs at x −97.85 between plot 2's corner and the fronts of plots 3 and 6 (3.65 m each side).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-046",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The bold camp path starts at the ring's 40° mouth, 9.9 m from spawn, joined by the ring road's paint.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-047",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "House blocks on plots 1 and 2 stand from arrival; a second-jump hop to the balcony is accepted until D4.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "Your 14 November Round blockout answer (\"I'll take your recommendations on the other decisions\") accepted the rooftop run to the balcony gift until D4.",
+  "source": "docs/decisions-rail.md#d-2026-11-14-round-blockout-recommendations-accepted"
+ },
+ {
+  "id": "RC-048",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The gate cottage stays sealed through B1 to B3 and opens in D1, which follows B3 and runs beside B4 instead of waiting for the owner's walk.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-049",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The blockout's small calls as planned: block height is the kit's eave with a pale door panel and a mat.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-050",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "B4 also takes two stills with the eight blocks hidden by the look's eval (spawn's camera and the top of the dock street, phone size too).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-051",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Layout B as built under ?home=b (F1, F2), amending the two home-flip rows below: the board crossing is on road 2's buffer stub at s 2.0 to 3.6 …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-052",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "On Home's island a lever ask calls the lever's own line: the train on the rail beside it, going where the plaque above it says.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-053",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Line 1's stub turnout at s 36 tightens from an 18.0 m to a 9.5 m radius and is accepted.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-054",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The longer walks in the one station are accepted: footings 19 m with a hop or 36 m by the ramp (11 m today), the pedestal to the stall seam 32 m (14 …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-055",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The flip's tree planting must be stable without replanting the island: plant with today's draws and order against a frozen mask, then drop only the …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-056",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Layout B's fixes and the flip's housekeeping: the rack at (−84.53, 10.05) with a 2.2 m lane on road 1's side.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-057",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Bell Rock is cut through for the lower (ns) line: the skerry becomes two lands in the map data (bell-w, bell-e) with sea in the cut, the decks on …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-058",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The incline keeps its row and is bored through the south stack, 165 m (s 67 to s 232).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-059",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Gorge's ns stop moves from t 20 to about t 36, its crossover with it, so a train stands at its own platforms and not 9 m back inside leg 1's …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-060",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Leg 2's massing: Bell Rock's cut widens west into a 52 × 16 m lower deck, so stalls keep the level of their line.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-061",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Leg 2's level calls: the commons-to-West-landing walk, with a grey stair if the cliff fails; rim, kink and board rules.",
+  "recommendation": "change: confirm the rest; drop the grey stair",
+  "why": "RC-001 (built, 15 November) removed the stair, and your 15 November call keeps the West landing to stakes and the board until the Bell Rock build.",
+  "source": "RC-001 · docs/decisions-rail.md#d-2026-11-15-west-landing-staked-until-bell-rock"
+ },
+ {
+  "id": "RC-062",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 7,
+  "gist": "A train pushes a player sideways out of its path only in the Ring Island halt's bed; everywhere else a train carries you as today. The every-line version is held for you.",
+  "recommendation": "confirm (Ring Island only)",
+  "why": "Measured shoves of 33 and 166 m into the sea from the only way across; elsewhere being carried is a toy worth keeping (DESIGN 2 and 10), so the fork is whether to spread it.",
+  "source": "docs/plans/ring-island-crossing.md#design-review-designer-2026-11-12 · DESIGN.md 2, 10"
+ },
+ {
+  "id": "RC-063",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ring Island's foot crossing is a timber plank band at the platforms' south end, u 428.1..430.5, with full-width 9.6 degree ramps cut into the …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-064",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "While a train stands at a platform and a seat is free, Interact offers Sit ahead of \"Request stop\".",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-065",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The rider's-trip gate for six trains with the Ring Island hold is 5% over today's on the finished line only.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-066",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The fourth car's checkpoint bar, replacing the row below of the same day: on 48 seeds each row's mean, p95 and share over 1,050 no worse than the …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-067",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 4,
+  "gist": "Six trains with a Ring Island hold: a train with riders aboard may stand up to 20 s past its dwell to even the gaps, with no \"go now\".",
+  "recommendation": "confirm",
+  "why": "Players sit through it on every long ride; it borrows your 20 s express wait without the express's \"anyone aboard can go now\", and it is what replaced the short turn.",
+  "source": "docs/plans/short-turn.md#design-ruling-on-step-1s-sheet-designer-2026-11-12 · docs/decisions-rail.md#d-2026-11-10-open-calls-answered-the-express-and"
+ },
+ {
+  "id": "RC-068",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The short turn is parked: not built for the greybox, its scratch rule not written, the owner's question on it withdrawn.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-069",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Line 2 runs six trains from the first section of leg 1 laid (fleet.trains 3, 6, 6, 6, 6).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-070",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Ring Island hold is built as measured and shown without text: never on a train a lever ask is assigned to, off for errand trains as the sheet ran …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-071",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The long line's wait gates once six trains and the hold land, restating call 109: the committed four-seed route gates are unchanged and none loosened …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-072",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Railhead's outward worst rising on the growing leg (1,286 to 1,338 heavy, 1,143 to 1,311 light) is read as noise, not a kill: a second seed block …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-073",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Spacing lands after the fourth car on its own bump (the fourth car keeps v33) and is measured again on the fourth car's extent as its first build step.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-076",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "On a short turn both trains wait for the walk between them; a cord ask beyond Ring Island prevents the turn.",
+  "recommendation": "revert (retire: the short turn is parked)",
+  "why": "RC-068 parked the short turn after the cheaper Ring Island hold cleared the bar; it returns only if a later leg misses.",
+  "source": "RC-068 · docs/plans/short-turn.md#design-ruling-on-step-1s-sheet-designer-2026-11-12"
+ },
+ {
+  "id": "RC-077",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The short turn's build bar, and that a cheaper candidate that clears it is built instead.",
+  "recommendation": "revert (retire: used and done)",
+  "why": "The bar was applied: the Ring Island hold cleared it, so it was built (RC-067) and the short turn parked (RC-068).",
+  "source": "RC-067 · RC-068"
+ },
+ {
+  "id": "RC-078",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The short turn's measurement plan and kill rules.",
+  "recommendation": "revert (retire: the short turn is parked)",
+  "why": "RC-068 parked the short turn; the measurement it plans will not run unless a later leg misses.",
+  "source": "RC-068"
+ },
+ {
+  "id": "RC-079",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The short turn's meet time: the measured seat-to-seat walk plus 50 ticks, at most 200.",
+  "recommendation": "revert (retire: the short turn is parked)",
+  "why": "RC-068 parked the short turn.",
+  "source": "RC-068"
+ },
+ {
+  "id": "RC-080",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "How a short turn is told: plates inside the car, two bell strokes, a turn-back badge; draft strings.",
+  "recommendation": "revert (retire: the short turn is parked)",
+  "why": "RC-068 parked the short turn.",
+  "source": "RC-068"
+ },
+ {
+  "id": "RC-081",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "KitTrains stays \"the running trains less one\" although steel no longer needs an empty kit car.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-082",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The fourth car's placement: derived from Train.boiler >= 1 (no op or field).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-083",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The fourth car's small calls: steel rides the steel car on a fitted train and the kit car otherwise, 6 a trip.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-085",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The garage at today's table as built and ruled, amending the placement row below (its \"stand at about 120°, 5.6 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-086",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The jib's arm parks off the table: it points at the table only while a part waits (steel home, not fitted) and through the install, swinging in over …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-087",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "G2's own calls: the garage opens only once the works copy stands (it used to open from the boiler's fit, on an empty table).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-088",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The garage and its install moment mount at today's Home table before the Home flip, on their own placement row (GARAGE_GEO.a).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-089",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The works copy stands on the Home table always, from the footing wagon's coupling once the shunt is finished, wearing the room's fit, solid (one …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-091",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Greybox leg 1 ships with the finished-line wait gate proven on the test's four seeds only (worst 1,397 against 1,400).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-092",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Until train spacing lands, leg 1's settled worst lever wait is at most 1,400 ticks (2 min 20), read from the owner's \"about 2 minutes 15\".",
+  "recommendation": "confirm",
+  "why": "A 50-tick reading of your \"about 2 minutes 15\" for leg 1's settled worst; gate 8 stays at 1,350."
+ },
+ {
+  "id": "RC-093",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The footing wagon's train is exempt from the opening stone stop; whether that ends once no footings are owed is put to you.",
+  "recommendation": "change: confirm, and end the exemption once no footings are owed",
+  "why": "Your 12 November cargo answer (1) pauses economy stops only \"while its wagon is owed footings\", which answers the question.",
+  "source": "docs/decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered"
+ },
+ {
+  "id": "RC-094",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "At a leg's opening a full load of stone may wait until the last opening kit has loaded and one quiet round trip more (2,805 ticks from the rivet).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-095",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A train owed a kit still makes no stone stop.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-096",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "A late train passes a lever ask to the train close behind it and runs through.",
+  "recommendation": "revert",
+  "why": "It bends your 10 November \"a request lever at each halt calls the next train to stop\", where only the express may run past; it was never built, and the Ring Island hold met the bar instead (RC-067, RC-068).",
+  "source": "docs/decisions-rail.md#d-2026-11-10-trains-stop-on-request-at-the · docs/decisions-rail.md#d-2026-11-10-open-calls-answered-the-express-and"
+ },
+ {
+  "id": "RC-097",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A rider's stop is always honoured: a cord ask is never passed back, and a train whose stop lamp shows a halt stops there (a latch on the line row is …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-098",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "If passing is not enough, a train may stand at Ring Island up to 20 s to even gaps, off while any train is on an errand.",
+  "recommendation": "change: confirm the hold as built (RC-067, RC-070): off only for errand, lever-assigned and joining trains themselves",
+  "why": "RC-070 relaxed this row's \"off while any train of the line is on an errand\", and the hold was built ahead of passing, not after it.",
+  "source": "RC-067 · RC-070"
+ },
+ {
+  "id": "RC-099",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "A spacing mechanism is built only if leg 1 misses the light-asks row; short-turning is planned only if passing with the hold misses.",
+  "recommendation": "revert (retire: done)",
+  "why": "The sheets ran: the hold was built (RC-067) and the short turn parked (RC-068), so the conditions have been settled.",
+  "source": "RC-067 · RC-068"
+ },
+ {
+  "id": "RC-100",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "When a train runs past a pulled lever, the lever holds and the train that will stop is lit.",
+  "recommendation": "revert (with RC-096)",
+  "why": "It only applies if passing is built; RC-096 recommends against it.",
+  "source": "RC-096"
+ },
+ {
+  "id": "RC-101",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "A pass costs the asker at most 250 ticks and at most one ask in ten is passed.",
+  "recommendation": "revert (with RC-096)",
+  "why": "It only applies if passing is built; RC-096 recommends against it.",
+  "source": "RC-096"
+ },
+ {
+  "id": "RC-102",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The pass distance, its band and the Ring Island hold's cap are room tunables, off at zero.",
+  "recommendation": "change: keep the hold's cap and share as tunables; drop the pass settings",
+  "why": "The hold is built with them as tunables (RC-070); passing is not (RC-096).",
+  "source": "RC-070 · RC-096"
+ },
+ {
+  "id": "RC-103",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The spacing experiments add the player's columns (trains run past a lever, passed asks, lamp changes, the rider's trip under asks, the longest …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-104",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "On the stack line a head's halt stays where it is until the first train after the lay has stood there and left.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-105",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The stack line's first frame (u 453, lat -8.3) and its rack (u 446, lat -8.4) stand on Ring Island's west platform.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-106",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Frames 1 to 3 stand 8 m short of the railhead at lat +4.8, racks abreast of the kit wagon, reach 4 m (catalog positions for step 3).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-107",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Placeholder sign text at Ring Island: steel works east, the line to High Gorge west, and the rack plates.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-108",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Pick stands on the north stack's rim, 82 m up and 8 m back from the edge (world cm -7435, -203262, y 8500).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-109",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Gorge's greybox stair is four long flights on the north wall, about 215 m and 40 s from the platform.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-110",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "At the Gorge a concourse behind the buffers joins both platforms, a gangway runs to the stair, one slipway climbs from the split's water, and the …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-111",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A block signal at a section end is a grey post with the halts' arm and a plate, SIGNAL / TRAIN AHEAD.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-112",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "No shed for the stack line's two extra trains; a joining train comes in over one second at the Village.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-113",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A live stack-line head has one 25 m platform on the right going out, one homeward lever, a board, a buffer and a sea ramp.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-114",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ring Island's buffers and end board are hidden from the first section laid.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-115",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The garage view's run follows the line's open stops.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-116",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Each kit car carries its section's number (S for steel) and each frame's sign and rack plate the same number.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-117",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The halt map and the Home hall's line map mark the stack line's head and its frame, fitted once for the whole leg.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-118",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The objective line's four placeholder texts for leg 1, and no new HUD element for it in step 4.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-119",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Step 4 owes three stills (Ring Island across the tracks, the split from a train, the rim looking down) and step 3 three proofs (the ride on from an …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-120",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Measured safe: the parked track layer on line 1 meets no train before the forge is lit.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-121",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Measured safe: line 2's building frontiers keep the track layer clear of trains.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-122",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Once Q7 is laid the parked track layer leaves the scene (under the land, undrawn, like a train not yet needed) instead of standing at the pier head …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-123",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Line 2's wait gates are owed at the shipped headway hold (railTrainHeadPct 75) on four seeds.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-124",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Step 3's gates after the re-measure: the round-trip gate (1.2 times non-stop) applies at every stage, so three stack sections laid (1.38, worst wait …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-125",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "While a line is growing (a leg opening until 3,000 ticks after its far end last moved) the worst wait may reach 1,600 ticks, and never over 1,158 for …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-127",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A leg's kit is all owed at once, one kit a train, on at most the running trains minus one (kitTrains).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-128",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Step 3's proof gate is sixteen items: slice 5's seven, fixed-stage and settled waits, the ride, the whole-leg fuzz, the join window (both trains …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-129",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Rail.legStock is predicted on the client before G1 ships.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-130",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A train's logs and rails are marked as a leg's kit (Train.legKit, v32) when a leg loads them and cleared when the last unit is off.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-131",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Steel first is judged at the load: on line 2 a leg's kit loads only when the works wants none brought (steelNeed zero) and never onto a train …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-132",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Two assertions of build 2's test/railway-steel-review.test.ts are edited for the open leg, in their own commit: the sent-rails bound gains the legs' …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-133",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Railway-predict.ts holds back both thresholds, the steel works' lighting (build 2) and a leg's lay start (step 3), each as its side wrote it.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-134",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The steel check's 'steel sent rails' bound counts the legs' loaded rails, as line 2's shelf bound does (the orchestrator's ruling D).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-135",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "LineStages lists no stage for a line with every halt shut (ns, bay, cave).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-136",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Build 2's boiler-long seed waits for the trains in service to wear the longer boiler.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-137",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "LegKitNeed counts every log and rail on a player's back as leg kit, the steel yard's units included, so a leg load can be put off while someone …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-138",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The greybox route's wait gates are measured main's way (the WAIT_BOUND method): on 5% of ticks a lever ask at a halt picked uniformly among those a …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-139",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Heads 1 and 2 close two lays on, counted in open stops, as built.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-140",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The stack line's heads 1 and 2 close behind: once the section after next lays, a passed head takes no lever ask and no rider stop, no train stops …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-141",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Step 3 fixes its two red tool files itself: the loop graph lists the four route ops as pending (PENDING_OPS) until step 5 builds their nodes, and the …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-142",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The route gates' long version (ROUTE_GATES=1 in the long mode: 20,000 ticks on the four ruled seeds) is run and its output pasted before step 3 ships …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-143",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The leg's frame, rack, pickup and barrier positions the step 4 review fixes go into step 3 before its bump.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-144",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Step 4 (the views) starts after step 3 is rebased onto Ring Island build 2, and proves from ring-joined with an eval.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-145",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Rail.grant and rail.gate stay unpredicted in the greybox (a press shows after the server's reply).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-146",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Line 2's grown stretch has block signals (holds with no platform) at the stack line's section ends but the last, on both tracks.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-147",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Until you answer question 1, step 3's wait gates 8 and 9 are printed, not asserted.",
+  "recommendation": "revert (retire: answered)",
+  "why": "Your 12 November wait answer settled question 1, and RC-071 restates gates 8 and 9 as committed.",
+  "source": "docs/decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered · RC-071"
+ },
+ {
+  "id": "RC-148",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The greybox stack line opens the moment Ring Island's rivet is struck, so ring-joined moves at its own stage tick (its first kit loads).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-149",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Leg 2's train rows (the ns, bay and cave fleets) come later, with their own bump.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-150",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The stack railhead opens with section 1 and stays a stop at its last head once the Gorge opens (as the Railhead stays at bent 13).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-151",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "KitLead (all remaining) and a section's 30 s lay are constants in the route catalog for now, not room tunables.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-152",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Step 3 ships with two checks stated rather than built: the rail.legStock \"gate shut\" refusal (no built leg has a barrier yet) and kit conservation …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-153",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The ring row's centimetres are shifted by 100 to line 2's s in the rules, not regenerated (a test ties the shift to the catalog).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-154",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The four route ops are not predicted for the greybox; the views step decides.",
+  "recommendation": "change: confirm, except `rail.legStock`, which is predicted",
+  "why": "RC-129 predicts `rail.legStock` before G1 ships; the other three stay server-confirmed.",
+  "source": "RC-129"
+ },
+ {
+  "id": "RC-155",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Greybox sections stay as built, 22 (the Wall 850, 437, 822, 818, 540, 593 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-156",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "R3's fleet test asserts line 2's wait bound (worst 1,050, mean 525) on the fleets a room can have: all standard and the real handover (install …",
+  "recommendation": "confirm",
+  "why": "Marked as your open question; a measurement bound for one seed of the all-longer fleet, no bound raised."
+ },
+ {
+  "id": "RC-157",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Prompt wording from the final review: blocked lines name what the bill lacks, \"Hands full\", and the install prompt says it is a hold.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-159",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The steel works' greybox (V1); Placeholder strings, none The Boogler's: the bill sign's \"logs 0/8  rails 0/12\" (big line) over \"Steel works\", and …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-160",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The White Wall is built from Port Quay as the cave row growing on, meeting line 2 at the Gorge as two platforms.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-161",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Greybox sections end at a place, 300 to 650 m, and lay at Q7's speed.",
+  "recommendation": "change: sections end at a place; up to about 900 m, about 30 s to lay",
+  "why": "RC-155 replaced the length and the speed the next day.",
+  "source": "RC-155"
+ },
+ {
+  "id": "RC-163",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The objective line and the halt maps point at the open leg's frame.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-164",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The greybox is built as a ride pass, then a proof pass; the High Gorge panel waits for your ride of leg 1.",
+  "recommendation": "change: confirm; drop the wait for your ride",
+  "why": "Nothing waits for a playtest (owner, 9 November); the panel runs when High Gorge's depth is next.",
+  "source": "docs/agents/owner-calls.md#no-playtest-hold"
+ },
+ {
+  "id": "RC-165",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The steel kit lies in a yard at the island halt and is carried once, about 12 m, into the works.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-166",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Steel rides home on the kit car's empty deck on any line 2 train, 6 a trip (the plan proposed the footing wagon's cradle).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-167",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The steel works casts 12 steel, one every 80 ticks, rack cap 6; the first one home unlocks the install, which spends none.",
+  "recommendation": "change: confirm the casting numbers; the install spends steel from the one pool",
+  "why": "Your 15 November answer (2) has installs spend the one steel pool, and on 16 November CL-084 dropped free installs.",
+  "source": "docs/decisions-core-loop.md#d-2026-11-15-garage-choices · docs/decisions-core-loop.md#d-2026-11-16-upgrade-look-without-free-or-race"
+ },
+ {
+  "id": "RC-168",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The works is an open shed over the drop hammer with one empty room.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-169",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "\"Feed the works\" shows blocked with \"Bring logs or rails\"; the bill sign and labels are placeholders.",
+  "recommendation": "change: confirm, with the blocked line by what the bill lacks",
+  "why": "RC-157 replaced the single line with \"Bring logs\", \"Bring rails\" or \"Bring logs or rails\".",
+  "source": "RC-157"
+ },
+ {
+  "id": "RC-170",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Railhead has no dot or name on the map before Q7 is laid.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-171",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The map's solid track ends at the Pier until Q7 completes, then at the railhead's stop.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-172",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Q7's kit unloads at the Pier (stop 3, the line's end while Q7 is laid) onto the rack and shelf on Q7's deck (s 703–713), into the depot.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-173",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Q7's kit is its bill, 20 logs and 20 rails, one trip.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-174",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Rail.out6 counts the logs issued to Q7 (capped at its bill), as out5 does for Q6.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-175",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The footing wagon loads no ring footings until Q7 is laid (ringOwed is 0 before then), so only the pier's twelve ever reach the Pier's rack.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-176",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Both hands pick, sweep and seat in the same beat; both pairs seat at contact with one heavier landing sound.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-177",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The wing serves whichever side the up track is on: the machine's right on line 1 (laid toward Home), its left on line 2.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-178",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "After a yes the wing is solid: the truck and the up stack's platform can be stood on, the arm runs above head height, and the truck pushes a player …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-180",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The magazine splits into a down stack on the gantry and an up stack on the wing, deliveries landing alternately.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-181",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Far Head's crossover rails (s 490–512) drop under the wing's arm in the greybox, as sleepers drop under the jaws.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-182",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The greybox sits behind ?layer=wing with PANEL_BEAM_LENGTH left at 7.0 and its own 5.8 m length and reach assertions.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-183",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The wing model is its own GLB (track-wing.glb, loaded only under ?layer=wing), not nodes in track-layer.glb.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-184",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The arm is a three-stage telescope hinged on the flatbed header's end at 3.55 m (above head height), turning in plan to the post.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-185",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The folded wing is NOT parked no longer or wider than today: the up stack's platform reaches x 2.85 against 1.57 and 4.3 m ahead against about 2.8 …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-186",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 8,
+  "gist": "On arrival Home's town is the hall, Pip's house and one gate cottage, with the forge's frame and stake boards for Fine Prices and the museum.",
+  "recommendation": "confirm",
+  "why": "It is the first picture of a town you build up, taken from your 10 November leaning (\"maybe only a couple buildings exist\"); the plots around it are now staked by deliveries.",
+  "source": "docs/plans/town-layout.md#design-review-designer-2026-11-10 · docs/decisions-rewards.md#d-2026-11-16-eight-plots-staked-by-deliveries"
+ },
+ {
+  "id": "RC-187",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The finders' bay stands beside the hall's south end, on the hall's front line, facing the green, at (−89.19, 21.80).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-188",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The forge's door is on its west wall, on the camp road.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-189",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The balcony stays a glider find: no cottage roof within 11 m of Fine Prices' roof or the balcony pad.",
+  "recommendation": "change: drop the 11 m rule; bought rooftops may reach the balcony; probe the hops as planned",
+  "why": "You accepted bought houses' rooftops reaching the balcony without the glider on 16 November (RW-008).",
+  "source": "docs/decisions-rewards.md#d-2026-11-16-town-questions-as-recommended"
+ },
+ {
+  "id": "RC-190",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The gate cottage is the one sealed cottage left and opens first.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-191",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Fine Prices and the museum still rise free when T3 is laid.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-192",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Place's cargo-built town rows are cut; only the clock is kept.",
+  "recommendation": "change: cut the rows; no clock either",
+  "why": "On 14 November The Boogler's statue replaced the clock (\"no clock is built there or elsewhere\"), with a scaffold for now (15 November).",
+  "source": "docs/decisions-rail.md#d-2026-11-14-the-boogler-s-statue-replaces-the-clock"
+ },
+ {
+  "id": "RC-193",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Cottage roofs may be climbed with the second jump (the gate cottage, plots 4, 5 and 7).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-194",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The yard find moves behind the gate cottage, on its seaward side.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-195",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Pip's house stands beside the camp road's mouth; the gate cottage and plot 1's stakes stand either side of the dock street.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-196",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Riders cross the green on the worn path and go in by the hall's north bay.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-197",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The little guys wander the ring road and the green.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-198",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A green of about 14 m radius, a ring road of about 6 m, a dock street 8 m wide and 18 m long.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-199",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Pier's one platform stands east of the down track from Q6 (s 719–741, lat +1.65 to +4.15), not swapped at Q7.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-200",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The pier rack stands on that platform (3.5 m east at s 733).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-201",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Q7's frame at s 710, lat +4.5 on its own deck; kit carries about 12 m, not 7.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-202",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The pier head's apron shrinks to the jib's pad (s 741–746), 0.68 m below the platform's end.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-203",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Pier's jump-in landings and Get unstuck's target are the platform's south end (s 720.5, lat +2.9).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-204",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A 1.5 m footway on Q7's deck from the pad to u 95 and a finger board lettered Railhead (placeholder).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-205",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Nothing is added to say up trains pass the Pier; the missing platform is the sign.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-206",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The old merge's turnout (s 556–576) is relaid plain when Q7 completes.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-207",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The island's run-off is in a cutting up to 1.5 m deep.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-208",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ring Island build 1's calls 41, 44 to 46, 51, 52 and call 43's timing are accepted as written.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-209",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The Village starts with two cottages; the other two are plots at 300 and 800; every building sends 2 riders a minute.",
+  "recommendation": "revert (superseded)",
+  "why": "RC-186 changed what stands on arrival, and on 16 November you set 1 rider a minute (RW-003) and 50% prices (RW-004).",
+  "source": "RC-186 · docs/decisions-rewards.md#d-2026-11-16-town-questions-as-recommended"
+ },
+ {
+  "id": "RC-210",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "With Home's east bay, the cart's link (line 1 s 54 to road 2 s 26) is lifted once the cart has retired, and Q2's old delivery frame is cleared or …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-211",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The longest set Home's bay must hold is 12.7 m (the longer-boiler engine and two coaches, eight seats).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-212",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Home is the named exception to \"each designed station keeps a 40 m bay road with a 65 m parallel throat\": its bay is 26 m with no parallel throat.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-213",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "In Home's bay the coach stands at the buffer end beside the platform and the engine faces out.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-214",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Coming home, the passenger set arrives at platform 2 like any train, lets riders off on the island, then backs into the bay from the outbound track …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-215",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Walks to Home's bay are measured from the hall's back doorway on the island's axis and from the Roundhouse's open stall door, at 5.6 m/s (40 m, 7 s …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-216",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "What a town has on arrival against what is bought: the starting buildings rise from hauling, every later one is a bought plot staked by the route.",
+  "recommendation": "change: keep \"starting few rise from hauling, every later building is a bought plot\"; plots are staked by deliveries, at 1 rider a minute; drop the four cottages",
+  "why": "Deliveries stake the plots (12 November, and RW-040 on 16 November), RW-003 set 1 rider a minute, and RC-186 changed what stands.",
+  "source": "docs/decisions-rewards.md#d-2026-11-12-town-economy-answered · docs/decisions-rewards.md#d-2026-11-16-eight-plots-staked-by-deliveries"
+ },
+ {
+  "id": "RC-217",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Buying a house: a plot is empty ground with four stakes, a string and a sign carrying the price card.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-218",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A town building (a workplace or a sight) is built on a plot like a house and gives riders a place to go.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-219",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The `?proto=trade` prototype's first buy is a house, then the car, then a second house.",
+  "recommendation": "revert (retire)",
+  "why": "There is no `?proto=trade`: the town economy was built in the main game (slice 5, #1927 to #1935).",
+  "source": "docs/direction.md#now-next-later"
+ },
+ {
+  "id": "RC-220",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "A household sends 2 riders a minute each way; only a lived-in house sends riders.",
+  "recommendation": "change: confirm at 1 rider a minute",
+  "why": "You set 1 rider a minute on 16 November (RW-003).",
+  "source": "docs/decisions-rewards.md#d-2026-11-16-town-questions-as-recommended"
+ },
+ {
+  "id": "RC-221",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 11,
+  "gist": "A station fit-out (benches, a canopy, lamps, a clock) raises its town's riders by a quarter, two steps at most, only where a station house stands.",
+  "recommendation": "confirm, as a later-hub buy and model input",
+  "why": "It is one of the few payoffs a town offers besides houses, the current focus; it belongs at the later hubs under your first-island call, and needs rider cars to carry the extra riders.",
+  "source": "docs/brainstorms/passenger-trade.md#what-boogles-buy · docs/decisions-core-loop.md#d-2026-11-16-first-island-teaches · docs/decisions-rail.md#d-2026-11-16-rider-seats-are-not-player-seats"
+ },
+ {
+  "id": "RC-222",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The `?proto=trade` prototype adds two households to buy beside the car.",
+  "recommendation": "revert (retire)",
+  "why": "There is no `?proto=trade`: the town economy was built in the main game.",
+  "source": "docs/direction.md#now-next-later"
+ },
+ {
+  "id": "RC-223",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Seats or cargo for the engine's limited places: a passenger car (Boogles) or a cargo car (materials).",
+  "recommendation": "revert (superseded)",
+  "why": "On 16 November riders get passenger cars of their own size, apart from the 4 player seats, and on 15 November the per-line trade became the Quick or Strong boiler.",
+  "source": "docs/decisions-rail.md#d-2026-11-16-rider-seats-are-not-player-seats · docs/decisions-core-loop.md#d-2026-11-15-garage-trade-answers"
+ },
+ {
+  "id": "RC-224",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Up to 12 little guys drawn a platform; the crowd left behind is the prompt to buy seats, and an empty platform under a train with empty benches is …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-225",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "A player is never refused a seat: the rider in it stands on the car's step.",
+  "recommendation": "revert (superseded)",
+  "why": "On 16 November you separated the 4 player seats from riders' seats, so a rider never holds a player's seat.",
+  "source": "docs/decisions-rail.md#d-2026-11-16-rider-seats-are-not-player-seats"
+ },
+ {
+  "id": "RC-226",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Riders walk out of doors to the platform as well as into them, and a door that takes riders shows up to four of them inside.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-227",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The express's passenger set carries riders between junction stations when no player has called it.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-228",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A seats buy is offered at a line only once a train has left riders behind there.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-229",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "At most about 24 more little guys drawn (one platform's 12, two cars' 8, 4 walking off), in folk's existing four draws, asleep past 150 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-230",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Riders go from homes to jobs and sights, split by fixed weights.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-231",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The express's rules as the brief has them: one a line at a time.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-232",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The hall's live line map gains a pick on the map itself (no list), replacing 9 November's \"No fast travel or picker\".",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-233",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 2,
+  "gist": "Interchanges are bought per junction for steel and rails and laid by the track gang on a 1.2 s hold.",
+  "recommendation": "change: the interchange's track is a bill hauled at the junction like any segment, not a hold",
+  "why": "A hold for track bends DESIGN's \"you still haul for each track segment\" (2 November); the materials price already follows your \"anything on rails costs materials\".",
+  "source": "DESIGN.md, the core loop · docs/decisions-rail.md#d-2026-11-02-junctions-unlock-the-network-and-you · docs/brainstorms/express-train.md#design-review-designer-2026-11-10"
+ },
+ {
+  "id": "RC-234",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The express's dressing and numbers: the 20 s wait with the dwell inside it, three bell rings, the headboard, the last 5 s ticking, whistles, the gold …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-235",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Each designed junction station's plan keeps a 40 m bay road with a 65 m parallel throat and 65 m parallel approaches, whether or not a dedicated …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-236",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Stations come in three tiers and a halt never gets a station building.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-237",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A designed station is built with its area, never ahead of it.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-238",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The other stations' concepts, provisional until their areas: High Gorge's winding house, copper lift (runs for one player.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-239",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Junction platform edges wear their line's colour and the way between platforms ends at a fingerpost in the other line's colour, each colour paired …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-240",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The station kit is extracted only as far as Ring Island uses it (one house shell, buffers and end board, fingerpost, edge colour), the rest when a …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-241",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A house shell has a doorway with no leaf (at least 1.6 m wide, 2.6 m clear), a lit room of about 5 × 5 m with 3.5 m clear or a roof that cuts away, a …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-242",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Home adds end boards, line colours on the island's edges and a towel on each ruin outline with a little guy beside it.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-243",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Canopy first: the bay trestle runs through Bell Rock to Canopy Town as one line at stage 3.",
+  "recommendation": "change: keep it as one line through Bell Rock; drop \"Canopy first\"",
+  "why": "Your 12 November campaign answer puts High Gorge first, in a fixed order.",
+  "source": "docs/decisions-core-loop.md#d-2026-11-12-campaign-outline-answered"
+ },
+ {
+  "id": "RC-244",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Cargo stands on the −s (Home) side of the passenger mark at every halt, in both directions, and a source's loader stands there on the side the goods …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-245",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "One shared stop mark per halt, no per-platform stop field.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-246",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "V26's stub-end signals stand 20 m outside each merge (not 10), so turnouts can later be eased over 30 m as a view change.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-247",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Home's ends, stop marks and the grown Roundhouse's keep-clear are planned on layout B (the table at (942, 17), a sector south of it), not today's …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-248",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "No curve speed limit in v26 and no change to the live curves.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-249",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "On a line whose two ends are both at Home a platform's plaque names the next big place that way.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-250",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Hold Drop puts the whole back down, and shouldering a big load sets your back down beside you.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "You answered on 10 November: \"Drop one thing off your back (hold: all of it)\"; the big-load swap is read as taken with it.",
+  "source": "docs/decisions-rail.md#d-2026-11-10-open-calls-answered-yards-at-halts"
+ },
+ {
+  "id": "RC-251",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A yard stands on the ground at the foot of the original platform's back ramp, never on the deck, and is not anchored to a \"cargo end\".",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-252",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A yard takes logs, stone and rails only; \"Leave it here\" puts all of them off your back in one press.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-253",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A set-down pile lands beside you away from the big thing, outside its prompt radius and off the rails.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-254",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Recovered logs and stone go to the nearest yard (the Village when none is nearer).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-255",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The yard's loader position waits for engine-garage's consist order, and the yard keeper (a little guy) waits for a yes.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-256",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A train eases into Ring Island's open railhead end stop at no more than 2 m/s² (RING_END_BRAKE_CMS2 200, approach cap RING_END_APPROACH 20 m/s, so …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-257",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "V26's worst-wait test is a flat regression bound, 1,050 ticks (105 s) on line 2, from the review's long fuzz, printing the per-halt table.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-258",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A train already bound for Far Head as its end when Q6 opens the pier still makes that stop once (as if a rider had asked), then runs on to the pier.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-259",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The hold lamp is red, beside the amber stop lamp on the cab roof.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-260",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A stub end's block reaches past its 20 m turnout and its signal stands outside that by an inbound train's reach (Village 63 m, pier 529.8 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-261",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Each up platform's lever stands at the end nearer its plank crossing, with no signal mast or board of its own.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-262",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ring Island's brace platform is at 8.0 m from u 284 to 294 (7.6 m under the take-off, about 6 m under the hinge deck.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-263",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Train waits use v26's one-minute bound for riders; the wagon's train is never held by the headway rule while the ring owes footings.",
+  "recommendation": "change: waits use your limits (about 105 s on line 2; 1,350 and 1,600 ticks on the greybox); the wagon clause stands",
+  "why": "On 10 November you accepted about 105 s with three trains, and on 12 November a looser greybox limit; the minute is no longer the bound.",
+  "source": "docs/decisions-rail.md#d-2026-11-10-line-2-runs-three-trains-for-now · docs/decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered"
+ },
+ {
+  "id": "RC-264",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The railhead stays a halt after the Meet, with a west up platform on the last bent (drawn with bent 13, its lever chained until joined) and a plank …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-265",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "At the island halt a train on the up track always stands at the west platform (the end).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-266",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "One footing site at the railhead jib sets the bents until the gap is footed, then hangs the counterweights.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-267",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ring Island's sequence is Q7 over bents 1–6 first, then the 14 bent footings with the railhead moving out, then gap, brace and counterweight, then …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-268",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "WORKS.total is 32 (pier 12 + stall 2 + 14 bents + 4 counterweights), not the 34 logged on 10 November (that row counted the cradle's two footings …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-269",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The ring's footings come by the wagon to the railhead rack (cap 6, three loads), rack to jib 15 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-270",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The island's loop runs at 10 m/s (railLoopSpeed), for camera spin (14°/s against 29°/s at 20 m/s) and the view, not because riders are thrown (carry …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-271",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Ring Island's buoys, the looker rota with a nod, no hook from the water, a walkable part-lowered leaf.",
+  "recommendation": "change: confirm minus the nod",
+  "why": "On 11 November the folk stand facing the shard and the nod was dropped.",
+  "source": "docs/decisions-rail.md#d-2026-11-11-ring-island-folk-stand-facing-the-shard"
+ },
+ {
+  "id": "RC-272",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The railhead platform stays behind as a side walkway (RING_WALK) while the rack, jib and lever slide on over about 3 s.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-273",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The island halt's levers and the joint's west-platform lever are chained with no prompt until joined.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-274",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The folk waving on the brace platform is a looker, never Rivet; the folk's lines are tied to facts (owner's copy).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-275",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "At railhead head 6 a sprint jump, air jump and glide can reach the brace platform early (45 m raw against 44 m).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-276",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ring Island's hook ring stands on its own pile 10 m into the gap, east of the glide lane (u 270, lat +12, 17.5 m up), its land pad on the railhead …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-277",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Out of the sea at the hinge pier and the last bent by a ramp drawn as stairs: a slipway foot from 1.2 m under water at ≤ 15°, then switchback flights …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-278",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The summit lookout stays under the shard as the shard's place.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-279",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The branch choice reads at the island halt, on its map display and a two-armed fingerpost.",
+  "recommendation": "change: keep the display and fingerpost as wayfinding to the open branch; there is no choice to read",
+  "why": "Your 12 November campaign answer fixes the order for Alpha, High Gorge first; the choice may return for Beta.",
+  "source": "docs/decisions-core-loop.md#d-2026-11-12-campaign-outline-answered"
+ },
+ {
+  "id": "RC-280",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The bow's heights from the pier head: bent 6 20.3 m, railhead 14.7 m, brace platform 10.0 m, halt 8.0 m.",
+  "recommendation": "change: confirm, with the brace platform at 8.0 m",
+  "why": "RC-262, logged after it, moved the brace platform to 8.0 m (from 10.0 m) so a late double jump falls short.",
+  "source": "RC-262"
+ },
+ {
+  "id": "RC-281",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The glide lane beside the raised leaf on the hinge pier's east side is confirmed: a rail along the railhead platform's last 5 m on its track side …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-282",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The hook pillar p2 moves to 11 m left of line 2 at s 89.5 (was 7 m at s 92), with its walk and the hook device (LINE2_HOOK 99954, 2086, 2350 → 99669 …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-283",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The quarry and sea gates widen to span both tracks, centred 2 m left, with a wider slab.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-284",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Quarry's up platform moves along the line clear of the Q4 frame (or past it).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-285",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Line 1's p1 lip ends at the widened ridge trestle's edge, 5.8 m left (was 1.8 m).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-286",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The track layer's gantry beam lengthens (asset and code) so the trolley reaches the up track's seat with margin.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-287",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The second-track survey in dev/level/world-blockout.ts also checks the pillars, the gates and the station frames' footprints.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-288",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Line 1 keeps one train; line 2 runs two, both waking at the boiler fit.",
+  "recommendation": "revert (superseded)",
+  "why": "Your 15 November train progression starts with one slow train and adds one per extension (three at the Railhead, six on the greybox, RC-069).",
+  "source": "docs/decisions-rail.md#d-2026-11-15-train-progression"
+ },
+ {
+  "id": "RC-289",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "V25's early turn-back (LOOK) is dropped; a train always runs end to end on its own track.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-290",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Terminal stubs with one platform at the Village (both lines), Camp and the pier.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-291",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "No turning loop on lines 1 and 2; the first loop is Ring Island's halt in v27, replacing the brief's reverse pull-out.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-292",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Generic lines and double track ship alone as WORLD_NS v26.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-293",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Each future line's catalog row arrives with its area's bump, not installed parked now.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-294",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Each line's train count is sized so no wait for a train your way is over about a minute.",
+  "recommendation": "change: size by your limits (about 105 s on line 2; 1,350 and 1,600 ticks on the greybox)",
+  "why": "Same as RC-263: you replaced the minute on 10 and 12 November.",
+  "source": "docs/decisions-rail.md#d-2026-11-10-line-2-runs-three-trains-for-now · docs/decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered"
+ },
+ {
+  "id": "RC-295",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Block rule sepCm 2740 (train length plus 20 m), checked at planning.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-296",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "One train per end block; a follower waits at a signal 10 m outside the merge with its doors open (line 2 s 44 and 480, then 546 after Q6).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-297",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Headway hold at the ends, headPct 75 of an even split (line 2 35 s, 27 s before the pier), none with one train.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-298",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A held train stands doors open with its hold lamp lit, and the halt's departure board shows the held departure.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-299",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A lever ask is served by the nearest train that way that can still brake, and that train lights its amber stop lamp as soon as it is assigned.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-300",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A rider's cord ask belongs to their own train only.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-301",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Far Head's crossover at s 490–512 while it is the end.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-302",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Q6's kit loads onto whichever line-2 train stands at the Village first.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-303",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Frames too close to the up track step out 1 m at step 2's look.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-304",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Far Head's up-platform lever is chained, plaqued \"Pier\", and refused by the server until Q6 opens the pier.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-305",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A plank crossing at the halt end of the Quarry and Far Head platforms, used by the bot.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-306",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The laying machine visibly lays both rails of each panel and its magazine empties by two.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-307",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Shared moments add no banner to the gate and throat shots, only the shot itself.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-308",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 1,
+  "gist": "Every future rail corridor keeps a 4% ruling grade; trains run low, and towns on high tops are reached by a lift from a low station.",
+  "recommendation": "confirm",
+  "why": "It binds the shape of every line and area still to build (the bow, Bell Rock, High Gorge, Canopy), so a lift or a long way round becomes the normal answer to height.",
+  "source": "docs/plans/world-blockout.md#rulings-10-november · docs/research/route-contract.md"
+ },
+ {
+  "id": "RC-309",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Ring Island keeps the live cones' position (751 m from the pier head) and size (about 640–680 m across).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-310",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The bow runs at 4% from the first bent: 24.3 m at the pier head, about 19.6 m at bent 6, about 7.5 m at the halt.",
+  "recommendation": "change: confirm the 4% bow at RC-280's heights",
+  "why": "RC-280 supersedes \"19.6 m at bent 6\" and \"7.5 m at the halt\" (now 20.3 m and 8.0 m).",
+  "source": "RC-280"
+ },
+ {
+  "id": "RC-311",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "No Ring top halt; the junction is the shore halt; the summit is a walked-up lookout; build 2's threading saddle is lowered.",
+  "recommendation": "change: confirm; drop build 2's threading saddle",
+  "why": "Your 12 November answer moved the train through the ring to the White Wall lap, out of build 2.",
+  "source": "docs/decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered"
+ },
+ {
+  "id": "RC-312",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "\"Ring Island halt\" becomes a map place at the shore, about (1414, −820).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-313",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 3,
+  "gist": "High Gorge has one station low in the split for every line; a switchback stair always climbs to the bridge, and a lift (the copper's first job) carries everyone as a travel edge only.",
+  "recommendation": "confirm, as the frame the High Gorge panel starts from",
+  "why": "It sets the next big area's shape and what the copper first pays for; the always-there stair keeps solo play unstranded and the lift skips distance, never work.",
+  "source": "docs/plans/world-blockout.md#rulings-10-november (conflict 5) · docs/research/route-contract.md"
+ },
+ {
+  "id": "RC-314",
+  "topic": "RC",
+  "group": "decide",
+  "rank": 6,
+  "gist": "The bay and cave lines share one West landing station; the 20–25 s walk from the Village halts through town is Home's hub.",
+  "recommendation": "confirm",
+  "why": "It makes Home the place every line meets on foot, through the town the trains grow, and fixes where every later line starts.",
+  "source": "docs/plans/world-blockout.md#rulings-10-november (conflict 6) · docs/decisions-rail.md#d-2026-11-15-west-landing-staked-until-bell-rock"
+ },
+ {
+  "id": "RC-315",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The area order is Sickle's, High Port after both branches.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-316",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Bell Terraces and Bell Rock are one place, named Bell Rock.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-317",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Every island a player lands on keeps the foam lip and cyan shallows.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-318",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The bay trestle has no hump: it leaves the Ring Island halt at about 8 m, runs at the sea deck, and rises at 4% to Bell Rock's 15 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-319",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The crossing's six bents are widened in v26 with the bow redraw: the bents, the seven new ones, the folk's stub and the leaf at the 7.6 m double …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-320",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Crossing finale banner \"Next stop: Ring Island\" over \"The crossing has begun\", 4.5 s (draft UI copy).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-321",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Crossing finale shot: 7 s from over the pier head to short of the last bent, ten rockets, no glint on the shard.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-322",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Jump-in row \"Crossing almost finished\" lands by the pier rack.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-323",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Train.req is a safe integer with two arithmetic digits per stop (room for 26 stops), and the leg row stores its destination in cm (from, v0, dest) …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-324",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The server accepts a halt's request from its platform (the halt's own reach, about 12 m, not the plan's 3 m) or aboard: within 10 m of the train's …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-325",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The engine's stop lamp sits on the front of the cab roof (the plan said the cab front), lit while the train runs to a middle halt requested its way.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-326",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A footing's pace is 3 m/s alone and 5.4 m/s helped (railway.footSoloSpeed, footHelpSpeed), and a solo sprint goes 1.3 times that.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-327",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Inside the engine's cab the camera is unchanged and the cab cuts away instead (roof lifts 3 m and goes, walls on the camera's side sink to a 10% kerb …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-328",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Ring Island's gap is 16–18 m; you glide down onto a brace platform about 4 m below the deck.",
+  "recommendation": "change: confirm the gap and glide; the brace platform is at 8.0 m on RC-280's bow",
+  "why": "RC-262 amends \"about 4 m below the deck\", and RC-310 and RC-280 replace the 6 m bow it was measured on.",
+  "source": "RC-262 · RC-280"
+ },
+ {
+  "id": "RC-329",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The brace (knock out the pawl, drive the brace under the heel, accepted once the gap is footed) and the counterweight go in either order.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-330",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The Meet's shared shot (about 6 s) ends on the island halt and the RINGWORKS sign without waiting on a train.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-331",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Build 1 shows steel stacked under a tarp at the island halt, with the drop hammer going and the prophecy mural on the works wall.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-332",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Four counterweight footings, the kiln's single fill (total 34), the looker rota, buoys and folk lines tied to facts.",
+  "recommendation": "change: confirm, with `WORKS.total` 32",
+  "why": "RC-268 corrects the total to 32 after your late-game answer removed the cradle's two footings.",
+  "source": "RC-268"
+ },
+ {
+  "id": "RC-333",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The Ring Island arrival is the Meet: the folk's half-crossing, 14 more footings, a glide, the brace, counterweights and the rivet.",
+  "recommendation": "confirm and move to the archive (already decided)",
+  "why": "The 10 November entry records the Meet, made under your \"The orchestrator makes design calls too\" after your \"Yes, brainstorm it\".",
+  "source": "docs/decisions-rail.md#d-2026-11-10-ring-island-the-meet-the-shard"
+ },
+ {
+  "id": "RC-334",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The six built bents are redrawn so line 2 bows from 24 m to about 6 m.",
+  "recommendation": "revert (superseded)",
+  "why": "RC-310 and then RC-280 set the bow to a 4% grade ending at 8.0 m.",
+  "source": "RC-310 · RC-280"
+ },
+ {
+  "id": "RC-335",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The shard is a perfect floating octahedron, never explained; the folk's religion is that someone must always look up at it.",
+  "recommendation": "confirm and move to the archive (already decided); the names stay the owner's copy",
+  "why": "The same 10 November entry records it, from your \"weird religion\", \"perfect and floatin\" and \"It should be funny and goofy though\".",
+  "source": "docs/decisions-rail.md#d-2026-11-10-ring-island-the-meet-the-shard"
+ },
+ {
+  "id": "RC-336",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Steel comes home as the longer boiler first; the bigger orange cradle is the second steel.",
+  "recommendation": "confirm and move to the archive (already decided)",
+  "why": "The 10 November entry's title rule, \"steel as the longer boiler\", covers it.",
+  "source": "docs/decisions-rail.md#d-2026-11-10-ring-island-the-meet-the-shard"
+ },
+ {
+  "id": "RC-337",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Build 1 is v26 with no steel; build 2 (v27) adds the steel works, the boiler fit and threading the ring.",
+  "recommendation": "revert (superseded)",
+  "why": "Threading moved to the White Wall lap (12 November), and RC-292 renumbered the builds v27 and v28.",
+  "source": "docs/decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered · RC-292"
+ },
+ {
+  "id": "RC-338",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The engine's cab roof is a deck you ride, like the boiler top (the plan proposed a roof with no standing top).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-339",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The boiler on the pedestal and on the rope is the engine's own, 1.25× (2.7 m long, was 1.5 m), so the fit lands the same part.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-340",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "One little guy drives each line's engine once its boiler is fitted, on his tall stool in the riding pose (a hand up at the regulator), feet on its …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-342",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A running train replans its leg to stop at a newly requested halt still beyond braking distance (about 57 m at 20 m/s).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-344",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Service stops need no request: the Q6 kit at the village and Far Head.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-345",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Dwell 5 s at every stop; the 1.5 s call dwell goes.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-346",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The request lever is a cast-frame lever at the signal mast's foot with a lamp.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-347",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The passenger request is \"Request stop: <next halt>\" as a bell cord pull, with an amber lamp on the cab front.",
+  "recommendation": "change: confirm, with the lamp on the cab roof's front",
+  "why": "RC-325 as built puts the stop lamp on the front of the cab roof.",
+  "source": "RC-325"
+ },
+ {
+  "id": "RC-348",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The sim owns requests; the server checks reach to the lever (3 m) or to the train (about 6 m).",
+  "recommendation": "change: confirm, with RC-324's reach",
+  "why": "RC-324 as built accepts a halt's own reach (about 12 m) and a rider by the train's pose, length and lag.",
+  "source": "RC-324"
+ },
+ {
+  "id": "RC-349",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Each engine has a destination plate on its front showing the end it is running to (Local over sweep).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-350",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A dashed gold wagon ghost at its line-2 wait from the slab strike.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-351",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The turntable carries the wagon and shunter round in one Local choreography (align, push on, 2 s turn, push off).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-352",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The stall roof's slope rolls swap sign (it is built as a V), the new side walls close up to the eaves, the socket rims take STALL_YAW.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-353",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Help carry is measured from the helper to the load's grip, 5 m to start and 8 m to keep, 3 m of height.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-354",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Port verdicts for Place's forge roof: keep the roof, chimney and walk-in workshop.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-355",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Check the shore east of the quarry halt for a climb-out only if train dismounts still happen after step 1.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-356",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The fitter's \"You got\" card after the wake is built off behind `BOILER_CARD = false`.",
+  "recommendation": "change: the card is confirmed; it stays off only until you give its words",
+  "why": "You confirmed the boiler card on 16 November (CL-077) and kept its words as your own; the drafts are not to ship.",
+  "source": "docs/decisions-core-loop.md#d-2026-11-16-boiler-card-owner-copy"
+ },
+ {
+  "id": "RC-357",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A fit accepted while the boiler is still in the air (a near server answers inside a frame) lets the flight finish.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-358",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The fit lands at the loco boiler's own world pose (train-view.ts hands it over), not the plan's fixed saddle point.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-359",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The lashing's two rings sit at 8% behind and 30% ahead of the boiler's middle, 3 cm clear of its bands, the knot on the front ring's shoulder.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-360",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The bolting guys stand 0.9 m either side of the loco's side point along x (the camp track runs east).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-361",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Drop puts the hauled boiler down where it is drawn (its centre, at the hauler's support height), not at the tail end on the terrain the plan named.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-362",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The hauled boiler's nose is never lower than its own radius above the hauler's feet.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-363",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "CreateHelpCarry takes no field name; the view registers railwayBoilerHelp itself and feeds the helper its presence and hear.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-364",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Keep Place's \"bay across the path from the wardrobe\" in Home.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-365",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Missed boxes 3 × 3 in the bay's own frame (across −1.1 / 0 / +1.1 m, out 1.5 / 2.6 / 3.7 m, middle first, nearest the bay first), the trophy plinth …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-366",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The trophy plinth's NEAR stays 4.5 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-367",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Layout A's curio shelf stands at (−91.6, 8.5) until v24.",
+  "recommendation": "revert (retire)",
+  "why": "Layout A is gone: no `?home=` value is left and the old Home is tagged `archive/home-a` (RC-056).",
+  "source": "RC-056"
+ },
+ {
+  "id": "RC-368",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "SHELF_B's 1.4 m gap to the south wall stays, as the side way into the works board's bay.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-369",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The folk wander point (−104, 16) moves to (−103, 24).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-370",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "While station 6 waits for the train its rails shelf offers no \"Take rails\" and hides its own count sign (the plan named only the rack).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-371",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The station 6 sign's dashed gold boiler is drawn on the sign's canvas (setLineDash, GOLD_ROPE), not with the Works signposting branch's …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-372",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The station 6 arrival nudge (one sign bob of 0.16 m over 0.5 s, one two-round steam puff over 0.9 s, uiSound('tick')) fires on entering the frame's …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-374",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The forge call's plume over the waiting boiler rises from the forge's chimney top, not the boiler.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-375",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Within 3.6 m the boiler always shows \"Shoulder the boiler\", greyed \"Empty your back first\" when a load is in the way.",
+  "recommendation": "change: keep the prompt and its reach to the pedestal's edge; a back load is set down beside you instead",
+  "why": "You confirmed on 10 November that shouldering a big load sets your back down beside you, \"never 'Empty your back first'\" (RC-250).",
+  "source": "RC-250 · docs/decisions-rail.md#d-2026-11-10-open-calls-answered-yards-at-halts"
+ },
+ {
+  "id": "RC-376",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Far Head (line 2 reaching its end) gets a camera pull-out over its rockets, the same uninterruptible pull-out with the Interact skip.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-377",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Far Head shot numbers: 6 s; from 64 m back along the trestle (s 482), 22 m beside it, 24 m up, drifting to s 474, 27 m, 31 m.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-378",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Far Head's rockets stay on the shared particle pool: during the shot 263 of 2,810 particles were recycled before their life ended (9%.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-379",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Every player in the room gets the Far Head shot, not just whoever laid the last pair.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-380",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Far Head's rockets, fanfare and shot wait behind a reward card on that screen (the lamps and whistle don't).",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-381",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Both line-two gates get a stone headstock across the jambs' tops (underside 5.9 m over the rail, the jambs' existing height) with a sheave over each …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-382",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "At Home B, the hall, buffers, apron and an island kerb stand from the start.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-383",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The track layer drives road 1 → the leg → road 2 at the forge's lighting (about 93 m), with LINE2_FORGE.turnTicks set to the drive in v24.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-384",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The works board goes on the inside face of the hall's south end wall (it first mirrored the curio shelf on the north wall.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-385",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "Stalls at 160°, 190° and 220°, and the engine at least 1.25×.",
+  "recommendation": "confirm and move to the archive (already answered)",
+  "why": "Your 9 November answer (3) moved the stalls to 160°, 190° and 220°, and on 10 November engine size follows \"the cab fits Buddy\".",
+  "source": "docs/decisions-core-loop.md#d-2026-11-09-station-6-takes-nothing-by-hand · docs/decisions-rail.md#d-2026-11-10-the-train-engine-s-cab-fits"
+ },
+ {
+  "id": "RC-386",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Join line 2 at s 84 on R 18; the cart stops at platform 2's buffers.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-387",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Spawn facing kept or turned to about 40° from the step-3 still, end walls low enough to show the forge.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-388",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The quarry gate gets a fixed headstock with a sheave and its chain follows the slab down.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-389",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The first load after a reset also skips the Home Screen app's jump back to its last room (it offers \"Continue in ...\" on the card instead), and the …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-390",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The curio shelf's gifts each stand on their board (lifted by how far their shape reaches below it) and the top board goes up 16 cm.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-391",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "J3 (the Works and Roundhouse rules, WORLD_NS v22) ships ahead of J4.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-392",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Leave the pine growing inside the Split-rock Works bowl for J4, rather than moving world trees now.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-393",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "B5–B8: a running train answers a call at its next stop; no express with a rider; the boiler returns when its holder leaves; no away credit for trains.",
+  "recommendation": "change: retire the call rules; the boiler's return and no away credit stand",
+  "why": "Your 10 November \"stop on request\" replaced call legs.",
+  "source": "docs/decisions-rail.md#d-2026-11-10-trains-stop-on-request-at-the"
+ },
+ {
+  "id": "RC-394",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Steel on the pack shows as two upright bars.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-395",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Known polish bug: Q6's station label overlaps the rack's stock sign at Far Head.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-396",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The museum table draws each stretch when its station completes, not at the live laying head.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-397",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Station boxes at Q2–Q6 (five), following Place's crate flags, not \"T3, Q1–Q6\" as owner question 3's call worded it.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-398",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "Line-2 boxes stand across the track from their frame.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-399",
+  "topic": "RC",
+  "group": "flag",
+  "gist": "The curio shelf stands at Place's `SHELF` spot near the forge.",
+  "recommendation": "revert (superseded)",
+  "why": "The shelf's place is set by the 9 and 10 November entries, and layout A is gone.",
+  "source": "docs/decisions-rail.md#d-2026-11-10-the-curio-shelf-both-layouts-stand"
+ },
+ {
+  "id": "RC-400",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A suspect line on the curio shelf's pet choice is kept as owner's copy.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-401",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A device run is a playdata session with card device and bot: true on every session event.",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-402",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "The device page sets notrack=1&profui=0 with prof=1: no second, unmarked play session from the ordinary recorder (it would look like someone playing …",
+  "recommendation": "confirm",
+  "why": ""
+ },
+ {
+  "id": "RC-403",
+  "topic": "RC",
+  "group": "bulk",
+  "gist": "A scene is two playdata events (dev.scene, dev.scene.cost): the endpoint keeps 24 fields an event and drops the rest silently.",
+  "recommendation": "confirm",
+  "why": ""
+ }
+]
