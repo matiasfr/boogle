@@ -7,6 +7,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 - 2026-11-14 · The Boogler's stone statue stands on the footing in the middle of the Round's green and replaces the town clock; no clock is built there or elsewhere ([entry](#d-2026-11-14-the-boogler-s-statue-replaces-the-clock)). _(amended 2026-11-15: a scaffold and sheeted shape stand there until meeting The Boogler is built; [entry](decisions-core-loop.md#d-2026-11-15-grant-queue-answered))_
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
+- 2026-11-15 · Roundhouse bays hold what the room owns and is not running, never bought; Home's stage 3 in two halves; Port Quay's rotunda complete at arrival with five bays; both Roundhouses fit every line ([entry](decisions-core-loop.md#d-2026-11-15-garage-choices))
 - 2026-11-14 · no town-to-rotunda sightline required; no such note in the rotunda detail steps ([entry](#d-2026-11-14-rotunda-needs-no-town-sightline))
 - 2026-11-14 · railhead traveller: shared v45 reset, deck built in line2-view, haul timing kept ([entry](#d-2026-11-14-traveller-recommendations-accepted))
 - 2026-11-14 · Ring Island summit path: footbridge rather than east path, no rim fence for now, P2 ([entry](#d-2026-11-14-summit-path-recommendations-accepted))
