@@ -65,7 +65,7 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   // Ring Island's steel works and the install (v31): a kind of 0 is left out of the event.
   if (e.op === 'rail.steelTake' && (e.kind === undefined || railInt(e.kind, 1)))
     return { op: e.op, kind: e.kind === 1 ? 1 : 0 };
-  if (e.op === 'rail.install' && e.line === LINE2 && e.part === 1 && railInt(e.revision, BOILER_MAX))
+  if (e.op === 'rail.install' && e.line === LINE2 && e.part === 2 && railInt(e.revision, BOILER_MAX))
     return { op: e.op, line: LINE2, part: 2, revision: e.revision };
   // The greybox route (docs/plans/greybox-route.md, leg 1 step 4): catalog indexes.
   if (e.op === 'rail.legStock' && railInt(e.leg, RAIL_LEGS.length - 1)) return { op: e.op, leg: e.leg };
