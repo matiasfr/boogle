@@ -549,6 +549,6 @@ with the points at s 31.3 or more, which B as drawn does not meet); (3) the owne
    must stand straight and short of the points: build the relay (R1c).
 
 Answer (owner, 16 November): "I'm ok with your recs for 1-3": question 1 not decided now; question 2 yes (option A; the
-stills are owed to him and he may reverse it on seeing them); and the designer's question, four riders a side, yes
+confirmed on seeing the stills: "Keep today's"); and the designer's question, four riders a side, yes
 ([decision](../decisions-rail.md#d-2026-11-16-home-keeps-its-track)).
 
