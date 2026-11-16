@@ -1,4 +1,6 @@
-> **Status: proposed (2026-11-15), design review folded in.** A design brief; nothing is built. Measured on main
+> **Status: approved (2026-11-15), owner answers [below](#owner-questions); steps 1 to 3 build on them. Step 4 waits
+> for the owner's pick between "which line first" and the per-line trade in
+> [garage-line-trade](../brainstorms/garage-line-trade.md).** A design brief; nothing is built. Measured on main
 > `eadecf32b` (v51). The train ladder (14, 20 and 25 m/s; one train, then a train per extension) is being built on
 > `t3/train-ladder` and is not on main; "the ladder" below means that branch.
 
@@ -20,6 +22,13 @@ now and, once the garage-moment steps are built, becomes the free first garage i
 trains stays the busy end. The ladder's step 4 (engines waiting in the bays, rolling out over the table) is the bays'
 first occupant.
 
+**Owner answers to this brief** (15 November, [decision](../decisions-core-loop.md#d-2026-11-15-garage-choices)):
+questions 1 to 4 as recommended; question 5 for now, with the per-line trade brainstormed now and picked before step
+4. **Copy:** the boiler fit stays the first install (9 November) and its tile keeps "The first install. It woke the
+trains."; the 20 m/s step at the table is not called "the first upgrade". It is worded as something like "the
+Roundhouse's first gift", which this brief carries as a draft (the final words are the owner's). Where the brief and
+its review below say "the first upgrade" for G-a, read that draft.
+
 **Binding.** "Shared progression and one shared wallet"; "anything on rails costs materials" and "no upgrade has two
 prices" ([rewards, 10 November](../decisions-rewards.md#d-2026-11-10-boogles-build-houses-and-upgrade-sources)); "where
 steel for upgrades waits: as a visible stack in the Roundhouse bay, spent by an install" ([yards, 10
@@ -35,14 +44,15 @@ at a Roundhouse" ([10 November](../decisions-rail.md#d-2026-11-10-big-junctions-
 crossing starts at about a minute: 1.2 km at 20 m/s" (2 November); High Gorge first, fixed order (12 November);
 "the roundhouse is where you unlock, upgrade, customize and send out trains, with a light management feel" (5
 November); "Wary of material grinds"; "Visualize in 2D HTML first"; "Brainstorm new gameplay first" (this brief and
-its review are that pass for steps 1 to 3; step 4's choice gets a light `/brainstorm`).
+its review are that pass for steps 1 to 3; step 4's choice has its light `/brainstorm`,
+[garage-line-trade](../brainstorms/garage-line-trade.md)).
 
 **Serves** DESIGN.md **6. Communal world** (one pool, anyone installs for the room), **7. Telegraph everything** (the
 store shows what the room can spend; the next engine waits behind a door), **11. Show, don't tell** (the building fills
 as the network does). It bends **11** only as the garage screen already does.
 
 **Research.** [roundhouse-management](../research/roundhouse-management.md) ("one small configuration choice per
-line": used for step 4's brainstorm, not yet met by this brief); [roundhouse-trains](../research/roundhouse-trains.md)
+line": used by step 4's brainstorm, not yet met by this brief); [roundhouse-trains](../research/roundhouse-trains.md)
 ("not an intended wait-to-afford-upgrades loop": used, so no scarcity is forced); [upgrade-economy](../research/upgrade-economy.md)
 rec 2 (an upgrade repays an inconvenience already felt). Not a port from Place.
 
@@ -51,9 +61,9 @@ rec 2 (an upgrade repays an inconvenience already felt). Not a port from Place.
 - **What a bay is for:** a bay holds something the room owns and is not running: an engine waiting for its line, the
   steel not yet spent, each fitted line's works engine (the copy the garage fits), and later the faster engine's works
   copy. A bay is never bought; it rises when the Roundhouse has something to keep and nowhere to keep it.
-- **What you choose, and when:** the first upgrade at the table turn and the longer boiler at steel are free and
-  choiceless; they teach the garage. The bigger cradle (decided, the second steel pick) is the first install that spends
-  steel. The big boiler is offered when line 2 reaches High Gorge. From stage 4, when two new lines open together, the
+- **What you choose, and when:** the Roundhouse's first gift (draft) at the table turn and the longer boiler at steel
+  are free and choiceless; they teach the garage. The bigger cradle (decided, the second steel pick) is the first
+  install that spends steel. The big boiler is offered when line 2 reaches High Gorge. From stage 4, when two new lines open together, the
   room picks **which line gets its next boiler first**: an honest choice of order, never a lock-out.
 - **What you pay with:** steel, spent from the one pool the route's own bills draw on. Never Boogles. Looks and
   whistles keep no price until the owner gives one.
@@ -135,7 +145,7 @@ on main. This brief reads step 6's words that way; it does not wait on the libra
 
 | # | When (a beat that exists) | What the garage offers | Choice | Price |
 | --- | --- | --- | --- | --- |
-| G-a | The table turn (`table`) | **The first upgrade**: every Home engine from row 0 (14 m/s) to row 1 (20). It waits on the stand by the jib, knob orange. **The footing wagon rolls out after it is installed** | none: one hold, for every engine at Home | free |
+| G-a | The table turn (`table`) | **The Roundhouse's first gift** (draft): every Home engine from row 0 (14 m/s) to row 1 (20). It waits on the stand by the jib, knob orange. **The footing wagon rolls out after it is installed** | none: one hold, for every engine at Home | free |
 | G-b | Steel home (`steelhome`) | The longer boiler and its steel car (built) | none | free: needs 1 steel, spends none (decided) |
 | G-c | Steel home, beside the longer boiler | **The bigger cradle** (line 2's footing wagon, 6 → 10 footings a trip, stand-in): the second steel pick, the first install that spends | none | 4 steel, spent (stand-in) |
 | G-d | Line 2 reaches High Gorge | **The big boiler** for line 2: 30 m/s, cars unchanged | none | 6 steel (stand-in) |
@@ -144,7 +154,7 @@ on main. This brief reads step 6's words that way; it does not wait on the libra
 
 **G-a, a gate with meaning.** The ladder put 20 m/s at the table beat so the decided one-minute crossing is never
 ridden at 14 m/s (it would be 88.6 s), and every footing trip of the crossing, the bents and the weights runs behind
-it. So the wagon's roll-out waits for the room's first install: turn the table, install the blast pipe (draft name: a
+it. So the wagon's roll-out waits for the gift's install: turn the table, install the blast pipe (draft name: a
 short pipe lowered through the chimney into the smokebox; the chuff sharpens and quickens, the audible payoff the
 ladder's review asked row 1 for), and the wagon rolls. The post is 9.4 m from the handle the player has just used, the
 part is on the stand and the knob is orange. Size Medium. Owner question 3.
@@ -153,7 +163,8 @@ part is on the stand and the knob is orange. Size Medium. Owner question 3.
 steel the route's bills need flows through the same pool, so a boiler step delays a little building and is never a wait
 of its own. What makes it worth a moment is that the lines differ: the one you are about to ride, or the long one
 behind you. The richer choice the research names (per line, a quicker trip or a bigger load, reversible at the table)
-waits for cargo trains to give a bigger load a use; it is step 4's brainstorm. Owner question 5.
+is brainstormed now in [garage-line-trade](../brainstorms/garage-line-trade.md); the owner picks between it and this
+order before step 4 is built (owner question 5, answered).
 
 **Readouts.** Top speed, cars it pulls, and the line's resources a minute (footings, rails and logs, later steel), as
 today. No trip times on the screen.
@@ -167,7 +178,7 @@ accepted hold wins, as `rail.install`'s revision rule already does.
 | --- | --- | --- | --- | --- |
 | Top of the screen | **Line chips**, one per fitted line, the line on the table lit | New, step 4 | appear at stage 4; until then the screen is line 2's | none |
 | Engine | Boiler | built | Installed / Replaced | as today |
-| Engine | **Blast pipe** (draft) | New, step 1 | Later → Ready at the table turn → Installed; "Free: the first upgrade" (draft) | top speed 14 → 20 m/s; footings and kit a minute |
+| Engine | **Blast pipe** (draft) | New, step 1 | Later → Ready at the table turn → Installed; "Free: the Roundhouse's first gift" (draft; the owner words it) | top speed 14 → 20 m/s; footings and kit a minute |
 | Engine | Longer boiler | built | unchanged | 20 → 25 m/s; cars 3 → 4 |
 | Engine | **Big boiler** (draft) | New, step 3 | Later; bill "STEEL n/6" with no button; Ready; Installed. Only on a line the rule passes | 25 → 30 m/s; resources a minute; cars unchanged |
 | Engine | Plough and headlamp | built | Later, unchanged (no rule; a look until it has one) | |
@@ -250,7 +261,7 @@ rotunda.ts` lists `SITES = [ROTUNDA_HOME]`. The server's install reach is one po
 | Steel landed (`Shed.steel`) and **spent** (`Shed.spent`, new); the pool is their difference, shared world-wide | Server | `railway-components.ts`, `railway-sys-steel.ts`; route bills draw on the same pool (owner question 2) |
 | Each line's boiler row (`Line.boiler`), a fourth row (300, with its own braking) | Server | `railway-train.ts` `BOILER` rows |
 | The cradle's size on the footing wagon | Server | `WORKS.wagonCap` becomes the line's fit |
-| The wagon's roll-out waits for the first install | Server | `commission` in `railway-sys-works.ts` |
+| The wagon's roll-out waits for the gift's install | Server | `commission` in `railway-sys-works.ts` |
 | Which line's copy is on the table (`Shed.tableLine`) and `rail.bring { line, revision }` | Server | step 4; judged at the post; refused while the table turns, a moment plays or a roll-out is due |
 | `rail.install { line, part, revision }` for any fitted line, price from one table | Server | generalised from line 2, part 1 |
 | Selection, line chips, the camera to a bay | Local | `garage-view.ts`, `src/features/garage.ts` |
@@ -267,10 +278,10 @@ for a playtest.
 | # | Step | Files | Tier | Model row | Proof |
 | --- | --- | --- | --- | --- | --- |
 | 0 | **The 2D page.** The route as a timeline: the pool against the stand-in bills, each part's Ready time and price, the boiler ladder with a row left for the faster engine (35 to 40 m/s), the bays by stage at Home and Port Quay. Prices set small against the route's bills | `docs/world/garage-choices.html` (artifact) | none | Implementation of an approved plan: Codex gpt-6.1-sol medium | the page, for the owner |
-| 1 | **The first upgrade (G-a).** `rail.install { part: 1 }` for every Home line at the table post, replacing the ladder's automatic rise; `commission` waits for it; the blast pipe tile, stand and seat; a loop node between `table` and `crossing`; the bot's hold | `src/sim/railway-sys-steel.ts`, `railway-sys-works.ts` (`commission`), `src/world/railway-server.ts`, `garage-data.ts`, `garage-state.ts`, `garage-view.ts`, `dev/loop/graph.ts`, `dev/look/bots/`, `test/railway-install.test.ts`, `src/world/namespace.ts` | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | `garage-open`; `npm run loop -- run` |
+| 1 | **The Roundhouse's first gift (G-a).** `rail.install { part: 1 }` for every Home line at the table post, replacing the ladder's automatic rise; `commission` waits for it; the blast pipe tile, stand and seat; a loop node between `table` and `crossing`; the bot's hold | `src/sim/railway-sys-steel.ts`, `railway-sys-works.ts` (`commission`), `src/world/railway-server.ts`, `garage-data.ts`, `garage-state.ts`, `garage-view.ts`, `dev/loop/graph.ts`, `dev/look/bots/`, `test/railway-install.test.ts`, `src/world/namespace.ts` | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | `garage-open`; `npm run loop -- run` |
 | 2 | **Engines wait in the bays** (the ladder's step 4), view only: tarped engines in the ruins and bays in the departure order above; on the line's serving count rising, the tarp falls and the doors shut; the joining train keeps the ladder's whistle and scale-in. A roll-out in motion, if wanted later, copies the footing wagon's due tick | `src/place/rotunda.ts`, `rotunda-view.ts`, `test/rotunda-occupants.test.ts` | none | Player-visible implementation: Codex gpt-6-astra high; visual review by the main session | stills of arrival and stage 1 |
 | 3 | **Steel is spent: the bigger cradle and the big boiler (G-c, G-d).** `Shed.spent`; the price table; the cradle as line 2's fit; the fourth boiler row; bills and Ready; the store in bay 150° | `railway-components.ts`, `railway-sys-steel.ts`, `railway-train.ts`, `railway-works-layout.ts`, `garage-data.ts`, `boiler-install-view.ts`, `rotunda-view.ts`, `namespace.ts`, tests | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | the cradle install at `steel-home`; stills of bay 150° from the post at player height and from the garage camera |
-| 4 | **Lines in the bays; the choice (G-e).** First a light `/brainstorm` on the per-line choice and `rail.bring`; then works copies per fitted line, `rail.bring`, line chips, `boilerAdopt` at each line's depot end, stages 3a and 3b. Starts when stage 4's lines are playable | `railway-components.ts`, `railway-sys-steel.ts`, `railway-server.ts`, `rotunda-stage.ts`, `home-station.ts`, `garage-*.ts`, `src/features/garage.ts`, `roundhouse-view.ts`, tests | review | Brainstorm: Codex gpt-6.1-sol high; then high-risk implementation: Codex gpt-6-astra high, and the independent review row | two players at the post, one brings a line out, both see it; stage 3a rising |
+| 4 | **Lines in the bays; the choice (G-e).** First the owner picks "which line first" or the per-line trade ([garage-line-trade](../brainstorms/garage-line-trade.md)); then works copies per fitted line, `rail.bring`, line chips, `boilerAdopt` at each line's depot end, stages 3a and 3b. Starts when stage 4's lines are playable | `railway-components.ts`, `railway-sys-steel.ts`, `railway-server.ts`, `rotunda-stage.ts`, `home-station.ts`, `garage-*.ts`, `src/features/garage.ts`, `roundhouse-view.ts`, tests | review | High-risk implementation: Codex gpt-6-astra high, and the independent review row | two players at the post, one brings a line out, both see it; stage 3a rising |
 | 5 | **Port Quay's row**, inside its station plan: the row above, the per-site stage and ruin rule, `SITES`, a second reach point | the station plan's files; `src/place/rotunda.ts`; `dev/prefab/rotunda.ts`; `src/sim/railway-works-layout.ts` | review (the reach point) | Planning complex work: planner agent, opus high | that plan's |
 
 Order: step 1 after the ladder and the garage moment's checkpoint ship; 2 any time after the ladder; 3 after 1; 4
@@ -282,7 +293,7 @@ when stage 4 is playable; 5 with Port Quay's station.
 reads bays. One still was taken by the review (from beside the post at `steel-home`).
 
 1. **Nothing is gated by an ability or hidden.** Every free install comes from a beat the route already has.
-2. **The first upgrade is a gate on the wagon,** placed where the player stands: the post is 9.4 m from the table's
+2. **The first gift (draft) is a gate on the wagon,** placed where the player stands: the post is 9.4 m from the table's
    handle, the part on its stand, the knob orange. The loop graph gains a node between `table` and `crossing`; `npm
    run loop -- run` must pass with it. Rule 3 holds: one player can do it and the part cannot be lost.
 3. **The store bay is partly hidden from the post.** From beside the post the stand, with the longer boiler on it,
@@ -314,34 +325,49 @@ reads bays. One still was taken by the review (from beside the post at `steel-ho
 
 ## 10. Suspect or placeholder lines (none rewritten; none The Boogler's)
 
-"Free: the first upgrade" (draft) sits against the 9 November entry "the boiler fit is the first upgrade a player
-chooses" and the built Boiler tile's "The first install. It woke the trains."; one of the three should give, and the
-wording is the owner's. Also built: "Free: the reward for reaching steel"; "Not built yet." on the plough and the
-cradle; the fitter's card "Steam" / "Trains run both lines." (the ladder's review). New drafts: "Blast pipe", "Big
-boiler" (it invites a "bigger" for the faster engine), "STEEL n/4", "STEEL n/6", the line chips' names (the
-catalogue's until the owner names them).
+Resolved by the owner, 15 November: the 9 November entry and the built Boiler tile's "The first install. It woke the
+trains." stand, and the draft "Free: the first upgrade" gives way to a draft like "Free: the Roundhouse's first gift",
+the final words his. **"Gift" is a suspect word:** gifts are already a system (lockstep gifts in DESIGN.md; "gifts
+hint at themselves, and start as cosmetics", [2
+November](../decisions-rail.md#d-2026-11-02-gifts-hint-at-themselves-and-start)), and this one is a speed part. "The
+Roundhouse's first gift" itself is the owner's suggestion; flagged, not changed. Also built: "Free: the reward for
+reaching steel"; "Not built yet." on the plough and the cradle; the fitter's card "Steam" / "Trains run both lines."
+(the ladder's review). New drafts: "Blast pipe", "Big boiler" (it invites a "bigger" for the faster engine), "STEEL
+n/4", "STEEL n/6", the line chips' names (the catalogue's until the owner names them).
 
 ## Owner questions
+
+Answered by the owner, 15 November ([decision](../decisions-core-loop.md#d-2026-11-15-garage-choices)). His one doubt
+was question 5 ("Only doubt is for question 5"): "which line first" is a thin choice when every line ends up the same.
 
 1. **A bay is where the room keeps what it owns and is not running, and is never bought; each fitted line keeps its own
    bay; stage 3 rises in two halves, bay 130° with the cave line and bay 250° when High Port's faster engine comes
    home. Yes?** Recommended: yes; Home then holds seven things in seven bays. Or keep "stage 3 bought as a row on the
    garage screen", which gives Home two shut doors to pay for.
+   **Answer: yes, as recommended.**
 2. **Is the steel an install spends the same steel the route's later bills spend?** Recommended: one pool (your 12
    November "shared pool"), shown as the stack in bay 150°, with boiler steps and the cradle priced small against the
    route's 334 steel, so an install delays a little building and is never a wait of its own. Or the Roundhouse's stack
    is a separate share the works sets aside.
+   **Answer: one pool, as recommended.**
 3. **Does the footing wagon wait for the first upgrade?** Recommended: yes: turn the table, install the blast pipe,
    the wagon rolls, so the one-minute crossing and every footing trip run at 20 m/s. Or keep the install optional, and
    it installs itself when the wagon first couples.
+   **Answer: yes, as recommended.** Copy: the 20 m/s part is not "the first upgrade"; the boiler fit stays the first
+   install and keeps "The first install. It woke the trains."; draft "the Roundhouse's first gift", final words the
+   owner's.
 4. **Do both Roundhouses fit every line, with Port Quay standing complete at arrival, sized by what it holds (five bays
    on the decided order)?** Recommended: yes; it follows "you still buy at a Roundhouse" and gives the faster engine
    its first stall without repeating Home's ruin story. Or Port Quay fits only the lines that never reach Home, as a
    nine-bay half ring with empty bays shut.
+   **Answer: yes, as recommended.**
 5. **Is "which line gets its next boiler first" enough of a choice for now?** Recommended: yes, shown as an honest
    order with no forced scarcity; the per-line trade (a quicker trip or a bigger load, reversible at the table) goes to
    a light `/brainstorm` at step 4, once cargo trains give a bigger load a use. Or brainstorm it now and hold step 4's
    build for it.
+   **Answer: accepted for now.** Steps 1 to 3 build on "which line first". The per-line trade brainstorm runs now, not
+   before step 4 ([garage-line-trade](../brainstorms/garage-line-trade.md)), and the owner picks between the two
+   before step 4 is built.
 
 ## How the review was folded in
 
