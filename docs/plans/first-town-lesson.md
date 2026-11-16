@@ -1,4 +1,7 @@
-> **Status: plan, nothing built; designer-reviewed 16 November: build with changes (folded into S1, V1, L1, V2, A and
+> **Status: S1 + V1 reworked together on `t3/first-town-rider-places`: four countable rider places now;
+> eight await coach A. Pending independent review; remaining steps unbuilt here.
+> S1 keeps v54: four rider places now, eight with the dedicated coach. L1 takes the next free namespace after v54.
+> Designer-reviewed 16 November: build with changes (folded into S1, V1, L1, V2, A and
 > the order; the three owner questions are agent defaults, none asked).** Planner, 16 November, against origin/main `73ee4ecdd`, `WORLD_NS` v54. Builds the
 > owner's [answers](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers) to the designer's
 > [review](town-choice.md#designer-review-16-november-the-first-town-as-a-lesson) of [town-choice](town-choice.md).
@@ -20,8 +23,10 @@ felt: the jib), [economy-principles-audit](../research/economy-principles-audit.
 
 1. **Plot 2 is the loader yard:** no riders; once built, with the footing wagon coupled, an arm at the Works loads
    footings onto every line 2 train going out, up to 6 a train. Both plots stay offered in the usual order.
-2. **Rider places are their own number:** `TRADE.seats` 4 becomes `TRADE.riderPlaces` 8, on the passenger car that
+2. **Rider places are their own number:** `TRADE.seats` 4 becomes `TRADE.riderPlaces` 4, on the passenger car that
    every line 2 train already pulls; the four player seats (the knifeboard, transient seat rows) are untouched.
+   Eight rider places arrive with the [dedicated coach](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework),
+   not this stand-in (orchestrator, 16 November: what is on screen must be true).
 3. **Plot 3's base 3,000 → 800:** after two buys it costs 800 × 2 × 2 × 50% = **1,600** at the room's prices.
 
 ## Design
@@ -78,8 +83,8 @@ clone agrees with the server once non-wagon trains carry them; no other predicte
 - **The suspect line's fix (no copy).** `townHas(r, 'town')` is true only when a built plot has `riders > 0`, so
   Pip's "New neighbours. All employed. I checked." and the three others (`town-lines.ts` 54, 86, 136, 168) never fire
   for the yard; a room that buys the yard first hears them at its first house. `stone` is unchanged (plot 3 built).
-- **Save, replay, mixed builds.** No shape change; rail-schema should not move (verify). `WORLD_NS` **v55** (or the
-  next free), dated: "plot 2 is the loader yard (no riders); with it built and the wagon coupled every line 2 train
+- **Save, replay, mixed builds.** No shape change; rail-schema should not move (verify). `WORLD_NS` **the next free
+  number after v54**, dated: "plot 2 is the loader yard (no riders); with it built and the wagon coupled every line 2 train
   loads footings at the quarry going out; rooms that bought plot 2 as a house start fresh". The bump is for the saved
   meaning of a bought plot 2; no compatibility code. Replay fixtures re-pinned naming those two inputs.
 
@@ -89,37 +94,37 @@ Each leaves `node dev/ship-check.ts` green. **Tier** is `npm run review-stamp`'s
 tests asserting them: independent review). Who builds, from `npm run models`. Player-visible steps also get the main
 session's visual review of their stills.
 
-- [ ] **S1. Rider places and plot 3's price (S).** Sync: Server (rules and data). Tier: **independent review**.
+- [x] **S1. Rider places and plot 3's price (S).** Sync: Server (rules and data). Tier: **independent review**.
   Builds: Codex gpt-6.1-sol medium; review a fresh gpt-6-astra (medium as a first pass). Parallel with V1.
-  - `src/sim/railway-trade-layout.ts`: `seats: 4` → `riderPlaces: 8` with a comment (riders' places on the
+  - `src/sim/railway-trade-layout.ts`: `seats: 4` → `riderPlaces: 4` with a comment (riders' places on the
     passenger car, not the player seats; decision 16 November); plot 3 `base: 800`.
     `railway-queries-trade.ts`: `trainSeats()` → `riderPlaces()` (header comment too); `railway-sys-trade.ts`
     `ridersBoard`; `railway-check-trade.ts`. `dev/economy/trade-data.ts`: the `seats.perCar` row becomes
-    `riders.perCar`, "Rider places a train", 8. `test/railway-trade.test.ts`: the `TRADE.seats` uses.
-  - Tests: a train boards 8 and not a 9th; `checkTrade` refuses 9; after plots 1 and 2 are bought plot 3 is priced
-    1,600 at 50%; from `q6-done` three added houses land at least 88 a minute (probe 90.9; 72 at 4 places).
-  - No `WORLD_NS` bump: no op, state shape or catalog entry changes and every saved row stays valid under the new
-    numbers (a live room's bought plot 3 keeps its `paid`). Replay fixtures re-pinned only if they move, naming the
-    rider cap. _Designer: if `test/fixtures/railway-golden.json` moves (a stage with riders running past 4 aboard),
-    that is a rule change, which the [seed-goldens](../agents/owner-calls.md#seed-goldens) call says needs a bump: S1
-    then takes the next free number, without waiting for L1 ([no bump waits](../agents/owner-calls.md#no-bump-hold))._ **Done means** the tests pass and `npm run loop -- run` shows order and bills unmoved.
-- [ ] **V1. Riders in their own places (S).** Sync: Local. Tier: normal + visual. Builds: gpt-6-astra high. Parallel
+    `riders.perCar`, "Rider places a train", 4. `test/railway-trade.test.ts`: the `TRADE.seats` uses.
+  - Tests: `places + 1` wait, exactly `TRADE.riderPlaces` board, one waits, and a full train boards nobody;
+    `checkTrade` refuses `places + 1`; after plots 1 and 2 are bought plot 3 is priced
+    1,600 at 50%; from `q6-done` two through five buildings land exactly 36, 54, 72 and 72 a minute at four places.
+  - **As built: no world bump.** S1 keeps v54 and the four-place cap. Main's golden fixture, namespace,
+    cart namespace assertion and host trace are restored unchanged; all golden stages and the host trace pass.
+    Historical payments and above-cap balances remain valid. L1 needs the next free number after v54.
+    **Done means** the tests pass and `npm run loop -- run` shows order and bills unmoved.
+- [x] **V1. Riders in their own places (S).** Sync: Local. Tier: normal + visual. Builds: gpt-6-astra high. Parallel
   with S1, no shared file, but it reads S1's `TRADE.riderPlaces`: build on S1's branch; ship with it.
-  - `src/place/folk.ts`: `RIDERS` = `TRADE.riderPlaces`; rider `k` stands (not sits) at one of eight places on car 1's
+  - `src/place/folk.ts`: `RIDERS` = `TRADE.riderPlaces`; rider `k` stands (not sits) at one of four places on car 1's
     deck **clear of the bench's four seats and the walk-on aisle** (today riders sit at the bench's seat offsets, on
     the players' seats). `src/entities/railway/train-view.ts`: the clamp `Math.min(4, …)` → `TRADE.riderPlaces`.
     _Designer: "clear" also means clear of a seated player's legs (they face out to about ±0.8 m) and of each seat's
     stowaway perch. Stand them at the deck's two ends and outer corners, facing out over the side as the seated ones
     do, on the car's rock (they take its pitch and shudder); riders may crowd one another (a full car reads as full and
     is the stand-in the art job fixes), never a player, a seat or a pet. Places are a local table, no collider._
-  - Garage Cars tile (`src/entities/railway/garage-data.ts`): "Four seats" becomes **"Four seats, eight riders"**
-    (placeholder), desc "The knifeboard passenger car: four seats for players, places for eight riders." (placeholder;
-    today "four riders and four pets"), the stats row Seats 4 plus a **Riders 8** row. `docs/plans/garage-choices.md`'s
+  - Garage Cars tile (`src/entities/railway/garage-data.ts`): "Four seats" becomes **"4 seats, 4 riders"**
+    (placeholder, both numbers read from data), desc "The knifeboard passenger car: 4 seats for players, places for 4 riders." (placeholder;
+    today "four riders and four pets"), the stats row Seats 4 plus a **Riders 4** row. `docs/plans/garage-choices.md`'s
     tile table follows.
-  - **Proof:** `npm run look -- --rail-seed fares-running`: a still of a line 2 train boarding with 8 riders aboard
+  - **Proof:** `npm run look -- --rail-seed fares-running`: a still of a line 2 train boarding with 4 riders aboard
     and one with a player sat on the bench beside them (no figure in a seat, none through the bench), plus one with a
     pet on the bench and one of a player walking the deck's length (report any figure walked through); the Cars tab
-    still. A dressing-only fill of 8 waiting is fine for the still; say the count shown. **Done means** those stills opened, figures clear of seats, cost of 4 more figures a train reported.
+    still. A dressing-only fill up to 4 is fine for the still; say the count shown. **Done means** those stills opened, figures clear of seats, 1/2/4 counts read distinctly and all four places clear the car, seated players and pets.
 - [ ] **L1. The loader yard's rules (M).** After S1 (shares `railway-trade-layout.ts`, `railway-check-trade.ts`).
   Sync: Server. Tier: **independent review**. Builds: Codex gpt-6-astra high; review a fresh gpt-6-astra high (or opus
   high). Rules as in Design. Files: `src/sim/railway-trade-layout.ts`, `railway-works-layout.ts` (`loaderCap`),
@@ -173,8 +178,8 @@ session's visual review of their stills.
   places it replaces. Sync: Local. Tier: normal + visual. Previz: Codex gpt-6.1-sol medium (only Codex paints); build:
   gpt-6-astra high with the asset-author skill on `src/entities/railway/car-kit.ts`. **Brief:** the owner's words,
   "designed passenger cars and trains that are size appropriate". Design line 2's passenger car at the little guys'
-  scale so eight riders read as passengers of this car (their own places, not the player bench), beside the four
-  player seats, which keep their bench, Sit and colliders. The car comes with every passenger train; nothing is bought
+  scale in a dedicated coach: [coach A and the rework decision](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework)
+  supersedes fitting eight on this car. Today's four player seats keep their bench, Sit and colliders. The car comes with every passenger train; nothing is bought
   on the first island. Fit the existing car kit, the rock frame and the train's length; consider whether the train
   around it needs resizing. The owner sees the previz before the build. Not designed in this plan. _Designer, added
   to the brief:_ anchor on a real still of a line 2 train at a halt with V1's standing riders, a seated Buddy and a pet
@@ -198,14 +203,46 @@ session's visual review of their stills.
   is unchanged, so no new scenario); `docs/game-design/place.md`'s town section gains rider places, plot 3's price and
   the yard (one edit, after V2); the backlog row updated.
 
-**Order and bumps.** S1 and V1 first, in parallel, shipped as a pair (or S1 alone first): no bump, and the third
-house pays as soon as plot 3 is affordable. Then L1, the **one** bump (v55). Then V2 and L2 in parallel, then R and K.
+**Order and bumps.** S1 and V1 first, built and shipped as a pair, retaining v54 and four rider places.
+Plot 3 costs 1,600; its extra demand is capacity-limited until the coach. L1 takes the next free number after v54.
+Then V2 and L2 in parallel, then R and K.
 _Designer: V2 is built on L1's branch and the two ship together (each reviewed at its own tier): L1 alone puts
 footings on trains with no deck footings, flights or arm drawn, so the pier rack fills from nothing on the live game.
-S1 and V1 ship as one pair, not S1 alone. S1 bumps only if the goldens move (S1's note)._
+S1 and V1 ship as one pair. The four-place rework leaves main's goldens unchanged; do not re-pin them._
 A runs whenever an agent is free, after V1. If town-economy-visible's C1 (the sack, a new op) is built on the same
-branch as L1, they share v55; otherwise each takes the next free number. S1, V1, L2, V2, A, R and K never bump.
+branch as L1, they share L1's next free namespace; otherwise each takes the next free number.
+V1, L2, V2, R and K never bump on their own. The dedicated coach owns its later eight-place rule change
+and any resulting bump; the original local-only A brief does not waive that requirement.
 Hotspots: `railway-sys-trains.ts`, `train-view.ts`, `namespace.ts`: rebase first.
+
+## S1 + V1 as built (16 November 2026, four-place rework)
+
+`TRADE.riderPlaces` is **4** throughout boarding, validation, the view and the offline economy model, separate
+from the unchanged four player seats. Eight arrive with the
+[dedicated rider coach A](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework), after its halt rework.
+Today's car must show everyone it carries. Plot 3's base is 800, priced at 1,600 after two purchases at 50%.
+From `q6-done`, two/three/four/five buildings land exactly **36/54/72/72 fares per minute** after a five-minute
+warm-up and over a ten-minute measurement. The third house does not lift landed fares past the four-place cap.
+The full three-plot purchase bill is 2,550. Above-cap Boogles and historical paid prices remain valid; clients
+publish mirrors and predict on clones without `checkTrade`.
+
+S1 keeps **v54**. Main's golden fixture, namespace, cart assertion and host trace are restored byte-for-byte;
+all 49 golden stages (including the 29 later stages) and the complete host trace pass unchanged. L1 must take
+the next free number after v54. No golden or trace re-pin in this rework.
+The offline model still drops Six until the dedicated rider-car design gives a fit-out meaning; added rider
+cars remain a later hub's garage pick (owner, 16 November). Both economy pages are regenerated from the model.
+
+V1's four-place geometry and count-readability evidence is recorded in the
+[four-place rework report](../reports/first-town-four-place-rework.md). Places in fill order are
+(−0.78, −1.20, −60°), (+0.78, +1.20, +120°),
+(−0.77, −1.02, −120°), (+0.77, +1.02, +60°), in local x/z/yaw. The first two alternate ends; the next two add
+a second distinct round hat at each end. The standing pose stays upright on the
+car's full rock quaternion and runs after its rendered transform. No counter, collider, rule workaround or
+rescaled character. The garage reads its player-seat count from the car-bench prefab and its rider count from
+`TRADE.riderPlaces`: "4 seats, 4 riders", the corresponding numeric description and "Riders" are placeholders.
+
+Earlier eight-place reports and rejected-layout stills are historical, superseded by this rework. No L1, L2,
+V2, A or R implementation here. Real-time smoothness and device performance are not claimed.
 
 ## Level findings
 
@@ -222,25 +259,25 @@ in the car have no collider. V2 reruns the check.
 - **Order.** The loader moves no beat (owner question 1); `npm run loop -- run` proves order and bills each rule step.
 - **One deck, one cargo** may delay a leg or steel kit while every non-wagon train rides on with footings; the wagon's
   train always takes it, so nothing strands (an L1 test).
-- **Mixed builds.** One bump, no compatibility code; an old tab may draw 4 riders or misprice plot 3 until it reloads
+- **Mixed builds.** S1 keeps v54; L1 takes the next free number. No compatibility code; an old tab may misprice plot 3 until it reloads
   (accepted in development).
 - **G-c, the bigger cradle,** is worth less once every train carries footings: garage-choices re-checks its value
   when it is built (town-choice's note, kept).
-- **Performance.** Four more rider figures a train (V1), one arm, at most 6 footings on two more decks; reported in
+- **Performance.** V1 keeps four figures a train; later one arm and at most 6 footings on two more decks; reported in
   K3's `npm run perf`, not a gate.
 
 ## Strings for the owner (placeholders; none of The Boogler's copy touched)
 
 New: "Every train" (plot 2's board, with the footing icon); the jump row "Loader yard" and its line "The loader yard
-stands; footings ride every line 2 train"; the Cars tile "Four seats, eight riders", its desc "The knifeboard
-passenger car: four seats for players, places for eight riders." and its stats row "Riders". (The art job's
+stands; footings ride every line 2 train"; the Cars tile "4 seats, 4 riders", its desc "The knifeboard
+passenger car: 4 seats for players, places for 4 riders." and its stats row "Riders". (The art job's
 optional "Riders <n> / 8" is dropped by the design review.) **Suspect existing lines:** the residents' "new neighbours" lines (`town-lines.ts` 54, 86, 136,
 168) firing on the yard, which houses no one: L1's non-copy fix keeps them for houses only; the words are his.
 
-## Owner questions (each step builds on the recommendation; nothing waits)
+## Original owner questions (superseded where noted)
 
 _Designer, 16 November: none of the three is the owner's; each is logged as an agent default (see the review). They
-stay below as the planner wrote them._
+stay below as historical context. Question 2 is superseded: four places now; eight with coach A._
 
 1. **The loader runs only once the footing wagon is coupled, so a yard bought early never carries the pier's
    footings before the stall, cradle and wagon?** Recommended: **yes**. Or from the yard's completion, which can move
@@ -277,7 +314,7 @@ prefab); [upgrade-economy](../research/upgrade-economy.md). No still taken: noth
 | 11 | The arm takes its colour when the yard is built, folded until a train loads (designer) | Default | Finding 1 |
 | 12 | L1 ships with V2; S1 with V1 (designer) | Default | Machines show their work: no invisible loader on the live game |
 | 13 | Start the passenger-car previz now (planner's question 3) | Default | [Try things early](../agents/owner-calls.md#try-early); it changes no rule |
-| 14 | Jump row "Loader yard", its line, menu off; the Cars tile "Four seats, eight riders", desc and Riders row | Default | Placeholder strings for the owner |
+| 14 | Jump row "Loader yard", its line, menu off; the Cars tile "4 seats, 4 riders", desc and Riders row | Default | Placeholder strings for the owner |
 | 15 | No rider counter on the car (drops the optional "Riders <n> / 8") | Default | The figures are the count |
 | 16 | Seeds `yard-ready`, `yard-built`, `yard-wagon`, `yard-deck` | Default | Tools, from accepted ops |
 
@@ -300,6 +337,9 @@ are in, none are aboard (the owed count includes what is aboard). Kits: Q7's ope
 loads at the Village on a train that has unloaded its footings at the Pier; leg kits during the ring wait at most for
 the wagon's train, which always takes them (L1's test). Steel opens after the rivet, after every footing.
 
+> **Later orchestrator ruling (16 November):** the eight-place assumptions in findings 2–5 and the old
+> placeholder copy below are superseded. Four are carried and drawn now, with no bump; eight await coach A.
+
 **Finding 2, S1's "no bump" (for the code reviewer).** As a designer I find no player-facing reason to bump: a box
 above the new cap keeps its Boogles (`ridersArrive` lands `min(fares, max(0, cap − boogles))`: it stops filling,
 never takes away), `checkTrade` has no `boogles ≤ cap` and no `paid` against price, so a bought plot 3 keeps its 6,000;
@@ -308,7 +348,7 @@ old builds). **Confirm:** (i) no other code clamps `Till.boogles` to `boxCap` (t
 it must not either); (ii) `test/fixtures/railway-golden.json` (pinned to v54, 1,200 ticks after each stage) does not
 move; if any stage boards a fifth rider it is a rule change and needs a bump by the seed-goldens call (folded into S1);
 (iii) nothing on the client runs `checkTrade` against a mirror whose cap differs; (iv) the predicted `rail.footSet`
-clone agrees once non-wagon trains carry footings (L1, as the plan claims); (v) whether L1's v55 is needed at all is
+clone agrees once non-wagon trains carry footings (L1, as the plan claims); (v) whether L1's next namespace after v54 is needed at all is
 the code reviewer's per mixed-builds; from the player's side a room whose plot 2 was a house could keep its shell as
 the yard, but a reset is cheap ([resets never block](../agents/owner-calls.md#save-resets-never-block-development-or-architecture)).
 
@@ -318,7 +358,7 @@ the seats and the aisle" missed two things on the deck today: a seated player's 
 each seat's stowaway perch. Folded into V1: the ends and outer corners, facing out, on the car's rock, crowding each
 other but never a player, seat or pet, plus stills with a pet aboard and a player walking the deck. Eight will look
 packed on a 2.2 × 3.2 m deck; that is honest (the car is not yet their size) and the art job's reason. The tile
-"Four seats, eight riders" is plain and right; placeholder. V1 reads S1's rename, so it builds on S1's branch.
+"4 seats, 4 riders" is plain and right; placeholder. V1 reads S1's rename, so it builds on S1's branch.
 
 **Finding 4, the art brief.** The owner's words are there; it lacked the previz rule's anchors. Added to A: a real
 still with V1's riders, a seated Buddy and a pet; the binding sizes; the knifeboard he picked on 10 November kept;
@@ -328,15 +368,24 @@ appropriate" may mean length; sheets for the pick; no counter; the look rules' m
 **Finding 5, order.** S1 + V1, then L1 + V2 (one ship, finding 1's reason applies to L1 alone too: footings would
 arrive at the Pier on trains that show none), then L2, R and K; A beside them. This is the order in which each lesson
 pays where the player can see it: the third house first (fares, standing riders), then the yard (the arm, decks).
-C1 should **not** be held to share v55: it is a different lesson (8, the sack) and nothing waits on a bump; share only
+C1 should **not** be held to share L1's namespace: it is a different lesson (8, the sack) and nothing waits on a bump; share only
 if it is already on L1's branch. Lesson order is the logged 16 November one; no change.
 
 **Suspect lines (his, unchanged):** the residents' "new neighbours" lines (`town-lines.ts` 54, 86, 136, 168) on the
 yard: L1's trigger fix keeps them for houses. **New strings, placeholders:** "Every train"; "Loader yard" and "The
-loader yard stands; footings ride every line 2 train"; "Four seats, eight riders", "The knifeboard passenger car:
+loader yard stands; footings ride every line 2 train"; "4 seats, 4 riders", "The knifeboard passenger car:
 four seats for players, places for eight riders.", "Riders".
 
 **Owner questions: none.** The planner's three are agents' calls: 1 is required by the route contract (call 6), 2 is
 the stand-in the owner's own complaint implies (call 10), 3 is try-early (call 13). He sees the art previz when it
 exists, as with the 10 November car; nothing waits for it. **Logged** in [agent-calls](../agent-calls.md) (rewards
 and rail, open): calls 6, 7, 10, 11, 12, 13 and 15.
+
+### Rider count-readability pass (16 November)
+
+The orchestrator rejected the crowded V1 view: eight riders read as two. A wider `RIDER_PLACES` trial improved
+the hat separation but touched the entry posts/knobs and did not establish four distinct people per group.
+The trial was rejected and reverted; no further layout iteration or rule change. V1 is reopened, not claimed
+done. See the [count-readability evidence and limits](../reports/first-town-rider-count-readability.md).
+The dedicated rider coach remains the proper eight-rider art solution. The subsequent four-place rework above
+supersedes this rejected trial.

@@ -504,7 +504,6 @@ function panels() {
   modal();
 }
 const STEP_NAME = {
-  six: 'Six fit-out (more seats a car)',
   car: 'Second passenger car',
   express: "The express's passenger set",
 };

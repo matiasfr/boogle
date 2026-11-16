@@ -36,7 +36,7 @@ function supply(w: World, wood: number, stone: number, boogles: number) {
   b.landed += boogles;
 }
 
-test('review: all three plots, bought one by one, cost 150, 800 and 6,000; spent is their sum through a reload', () => {
+test('review: all three plots, bought one by one, cost 150, 800 and 1,600; spent is their sum through a reload', () => {
   const w = copy(READY.w);
   supply(w, Math.max(0, 40 - town(w, 0).wood), Math.max(0, 16 - town(w, 0).stone), 10000);
   const start = till(w).boogles;
@@ -48,16 +48,16 @@ test('review: all three plots, bought one by one, cost 150, 800 and 6,000; spent
     paid.push(plot(w, k).paid);
     assert.equal(plot(w, k).paid, price);
   }
-  assert.deepEqual(paid, [150, 800, 6000]);
+  assert.deepEqual(paid, [150, 800, 1600]);
   assert.deepEqual(plotsStaked(w, 0), [], 'nothing left on offer');
-  assert.equal(till(w).spent, 6950);
-  assert.equal(till(w).boogles, start - 6950);
+  assert.equal(till(w).spent, 2550);
+  assert.equal(till(w).boogles, start - 2550);
   for (const p of paid) assert.ok(Number.isInteger(p));
   const back = createRailwayWorld();
   back.load(JSON.parse(JSON.stringify(w.snapshot())), (x) => railwayCheck(x, READY.t));
   for (let t = READY.t + 1; t <= READY.t + TRADE.buildTicks + 600; t++) railTick(back, t);
   railwayCheck(back, READY.t + TRADE.buildTicks + 600);
-  assert.equal(till(back).spent, 6950);
+  assert.equal(till(back).spent, 2550);
 });
 
 test('review: two players buying different plots in one tick with money for one spend once', () => {

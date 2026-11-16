@@ -9,6 +9,7 @@ import * as THREE from 'three/webgpu';
 import { angleLerp } from '../math.ts';
 import { mulberry32 } from '../sim/rng.ts';
 import { RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { TRADE } from '../sim/railway-trade-layout.ts';
 import { emit } from '../render/particles.ts';
 import { camera } from '../render/scene.ts';
 import { getAudio } from '../render/audio.ts';
@@ -36,7 +37,7 @@ import { feet, outOf, underway, type Foot, type Site } from './sites.ts';
 const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   CAMP = 3,
   STATION = 2,
-  RIDERS = 4,
+  RIDERS = TRADE.riderPlaces,
   WAITING = 12,
   COMMUTERS = 5,
   PUSHERS = 2,
@@ -126,6 +127,7 @@ type Guy = {
   hasTarget: boolean;
   fy: number | null; // stands at this height, not on the ground (a scaffold, a platform)
   rideUp: number; // m a rider's root sits above the deck it rides on: a chair's seat, feet still on the deck
+  rideRotation?: THREE.Quaternion; // standing passengers take the car's full pitch and shudder, boots included
   cheer: number;
   gather: boolean;
   follow: number;
@@ -254,13 +256,27 @@ TOWN.camps.forEach((c, n) => {
 const boarding = new Map<Guy, { x: number; y: number; z: number; t: number }>();
 const stationGuys = Array.from({ length: STATION }, (_, k) => make('station', X(-6 + k), -142, { seat: k }));
 const riders = Array.from({ length: RIDERS * RAIL_TRAINS.length }, (_, k) =>
-  make('rider', 0, 0, { on: false, seat: k % RIDERS, camp: Math.floor(k / RIDERS) }),
+  make('rider', 0, 0, {
+    on: false,
+    seat: k % RIDERS,
+    camp: Math.floor(k / RIDERS),
+    rideRotation: new THREE.Quaternion(),
+  }),
 );
 const waiting = Array.from({ length: WAITING * 2 }, (_, k) =>
   make('waiting', 0, 0, { on: false, seat: k % WAITING, camp: Math.floor(k / WAITING) }),
 );
 type RiderCar = { mesh: THREE.Object3D; top: number };
 const riderCars = new Map<number, RiderCar>();
+// Two stand-in riders per diagonally opposite roomy end: on these sides player seats end at |z|=0.45.
+// Keep hats/hands inside the end rails, coats inside the sides, and clear the seats, outward legs and pets.
+// Alternate ends on boarding, outer places first. Slightly splayed outward faces clear the hands. No colliders.
+const RIDER_PLACES = [
+  [-0.78, -1.2, -Math.PI / 3],
+  [0.78, 1.2, (2 * Math.PI) / 3],
+  [-0.77, -1.02, (-2 * Math.PI) / 3],
+  [0.77, 1.02, Math.PI / 3],
+] as const;
 // One driver a train (`camp` its line, `seat` which of the line's trains), on whenever there's an engine's stool to sit
 // on (FolkEnv.driver).
 RAIL_LINES.forEach((l, line) => {
@@ -755,6 +771,8 @@ function brain(g: Guy, dt: number) {
       return;
     }
     case 'rider':
+      g.mood = 'idle';
+      return;
     case 'driver':
       g.mood = 'ride';
       return;
@@ -967,19 +985,23 @@ function pose(g: Guy) {
       hr = [0.3, 0.74 + Math.sin(t * 1.4) * 0.05, 0.04];
       break;
     default:
-      sq = 1 + Math.sin(t * 0.8) * 0.02;
-      tilt = Math.sin(t * 0.35 + g.k) * 0.035;
-      pitch = Math.sin(t * 0.5 + g.k) * 0.025;
+      // In the crowded car, keep the standing footprint fixed; its rock supplies the motion.
+      if (!g.rideRotation) {
+        sq = 1 + Math.sin(t * 0.8) * 0.02;
+        tilt = Math.sin(t * 0.35 + g.k) * 0.035;
+        pitch = Math.sin(t * 0.5 + g.k) * 0.025;
+      }
   }
   // Saying something: a quick bob and a nod, so you can see who it is, whatever else they're doing.
-  if (g.chat === 1) {
+  if (g.chat === 1 && !g.rideRotation) {
     const talk = Math.abs(Math.sin(t * 4.2));
     hop += talk * 0.05;
     pitch += talk * 0.1;
     sq *= 1 + talk * 0.05;
   }
   const gy = g.fy ?? H(g.x, g.z);
-  q.setFromEuler(e.set(pitch, g.yaw, tilt, 'YXZ'));
+  q.setFromEuler(e.set(pitch, g.rideRotation ? 0 : g.yaw, tilt, 'YXZ'));
+  if (g.rideRotation) q.premultiply(g.rideRotation);
   base.compose(p.set(g.x, gy + hop, g.z), q, s.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq)));
   coats.setMatrixAt(k, base);
   heads.setMatrixAt(k, m.copy(base).multiply(tr.makeRotationY(g.gaze)));
@@ -1020,6 +1042,7 @@ function pose(g: Guy) {
   const airborne = g.mood === 'cheer' ? hop : 0;
   const seatDrop = g.mood === 'ride' ? -0.14 - g.rideUp : 0; // ride() raises the seated root above its deck
   q.setFromEuler(e.set(0, g.yaw, 0));
+  if (g.rideRotation) q.copy(g.rideRotation);
   base.compose(p.set(g.x, gy + airborne, g.z), q, s.set(1, 1, 1));
   for (let foot = 0; foot < 2; foot++) {
     const x = foot === 0 ? -0.13 : 0.13,
@@ -1427,8 +1450,16 @@ export function updateFolk(dt: number) {
     } else if (g.job === 'rider') {
       const car = riderCars.get(g.camp);
       if (!car) continue;
-      const side = g.seat < 2 ? 1 : -1;
-      ride(g, car, side * 0.45, side * (g.seat % 2 ? 0.45 : -0.85), (side * Math.PI) / 2, 0.32);
+      const [x, z, yaw] = RIDER_PLACES[g.seat]!;
+      car.mesh.updateWorldMatrix(true, false);
+      wp.set(x, car.top, z).applyMatrix4(car.mesh.matrixWorld);
+      g.x = wp.x;
+      g.z = wp.z;
+      g.fy = wp.y;
+      car.mesh.getWorldQuaternion(g.rideRotation!);
+      g.rideRotation!.multiply(q.setFromEuler(e.set(0, yaw, 0)));
+      e.setFromQuaternion(g.rideRotation!, 'YXZ');
+      g.yaw = e.y;
     } else if (g.job === 'driver') {
       const seat = e_?.driver?.(g.camp, g.seat);
       if (!seat) continue;

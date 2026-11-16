@@ -979,7 +979,7 @@ test('R3: the check refuses bad riders and a bad strongbox, each with its messag
   const line2 = RAIL_TRAINS.findIndex((t) => t.line === LINE2),
     line1 = RAIL_TRAINS.findIndex((t) => t.line === 0);
   assert.equal(
-    verdict((w) => (w.mut(Train, w.lookup(Train, line2)!)!.riders = TRADE.seats + 1)),
+    verdict((w) => (w.mut(Train, w.lookup(Train, line2)!)!.riders = 9)),
     'railway: riders bounds',
   );
   assert.equal(
@@ -1103,9 +1103,9 @@ test('R3: every replicated component changes only where it does with riders off,
   assert.ok(ticks(on) <= ticks(off) + on.events.size);
 });
 
-test('R3: a full train boards nobody; at railRiderPct 1000 the crowds stay at their cap and no train holds more than its seats', () => {
-  // A line 2 train standing at the Village to leave up: fill its seats by hand (boarded raised with it) and crowd the
-  // platform; on the next tick nobody boards it.
+test('S1: rider places fill, one waits; even flooded crowds never exceed the separate rider places', () => {
+  // A real standing train, with one more waiting than its rider places. Keep the ledger while emptying
+  // its prior riders for this rule probe.
   const s = { w: copy(FARES.w), t: FARES.t };
   let slot = -1;
   for (let i = 0; i < 3000 && slot < 0; i++) {
@@ -1119,14 +1119,18 @@ test('R3: a full train boards nobody; at railRiderPct 1000 the crowds stay at th
   assert.ok(slot >= 0, 'a train stands at the Village');
   const r = s.w.mut(Train, s.w.lookup(Train, slot)!)!,
     tw = s.w.mut(Town, s.w.lookup(Town, 0)!)!;
-  tw.boarded += TRADE.seats - r.riders;
-  r.riders = TRADE.seats;
-  tw.wait0 = 5;
+  tw.alighted += r.riders;
+  r.riders = 0;
+  tw.wait0 = TRADE.riderPlaces + 1;
   checkTrade(s.w);
   advance(s, 1);
-  assert.equal(train(s.w, slot).riders, TRADE.seats, 'still full');
-  assert.ok(town(s.w, 0).wait0 >= 5, 'nobody boarded it');
-  // A flood of riders: the crowds stop at their cap and the seats hold.
+  assert.equal(train(s.w, slot).riders, TRADE.riderPlaces, 'exactly the available places board');
+  assert.equal(town(s.w, 0).wait0, 1, 'one rider waits');
+  advance(s, 1);
+  assert.equal(train(s.w, slot).riders, TRADE.riderPlaces, 'a full train boards nobody');
+  assert.equal(town(s.w, 0).wait0, 1, 'the waiting rider remains');
+  checkTrade(s.w);
+  // A flood of riders: the crowds stop at their cap and the rider places hold.
   const w = copy(FARES.w);
   for (let t = FARES.t + 1; t <= FARES.t + 3000; t++) {
     railTick(w, t, undefined, { farePct: 100, riderPct: 1000 });
@@ -1135,8 +1139,8 @@ test('R3: a full train boards nobody; at railRiderPct 1000 the crowds stay at th
       `tick ${t}: a crowd past its cap`,
     );
     assert.ok(
-      trains(w).every((x) => x.riders <= TRADE.seats),
-      `tick ${t}: a train past its seats`,
+      trains(w).every((x) => x.riders <= TRADE.riderPlaces),
+      `tick ${t}: a train past its rider places`,
     );
   }
   assert.equal(Math.max(town(w, 0).wait0, town(w, 0).wait1), TRADE.crowdCap, 'the flood reached the cap');
@@ -1253,13 +1257,13 @@ test('R3: played through pier, ring, counterweight and rivet, riders aboard when
   assert.ok(offAt[3]! > 0 && offAt[4]! > 0 && offAt[5]! > 0, 'riders rode to the Pier, the Railhead and Ring Island');
 });
 
-test('R3: income at the first route settles within one fare a minute of min(28, the seat-capped rate)', () => {
+test('R3: income at the first route settles within one fare a minute of min(28, the rider-place-capped rate)', () => {
   const w = copy(FREIGHT.w),
     e0 = earned(w);
   for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 6000; t++) railTick(w, t);
   const perMin = (earned(w) - e0) / 10;
-  const seatsPerMinute = (2 * TRADE.seats * 600) / cycleTicks(LINE2, stopsOf(w, LINE2));
-  const expected = Math.min(28, seatsPerMinute * fareOf(w, 0));
+  const ridersPerMinute = (2 * TRADE.riderPlaces * 600) / cycleTicks(LINE2, stopsOf(w, LINE2));
+  const expected = Math.min(28, ridersPerMinute * fareOf(w, 0));
   assert.ok(Math.abs(perMin - expected) <= fareOf(w, 0), `${perMin} a minute, expected ${expected}`);
 });
 
@@ -1343,8 +1347,8 @@ test('B1: plot load checks reject future buys, missing thresholds, unbought paym
   assert.throws(() => checkTrade(early, ASLEEP.t), /plot thresholds/);
 });
 
-test('B1: q6-done payoff: three buildings land at least 1.3 times two in 20 minutes', (t) => {
-  const rates = [0, 1, 2].map((houses) => {
+test('S1: q6-done payoff: three added houses land 72 a minute at four places; plot 3 costs 1600', (t) => {
+  const rates = [0, 1, 2, 3].map((houses) => {
     const w = copy(PIER.w);
     // Isolate the building count on identical q6 train positions and queues. Supply only each tested plot's
     // prerequisites; buying still goes through the rule and the freight/money ledgers remain conserved.
@@ -1352,16 +1356,24 @@ test('B1: q6-done payoff: three buildings land at least 1.3 times two in 20 minu
       const timber = Math.max(0, TRADE.plots[0][k]!.wood - town(w, 0).wood);
       w.mut(Town, w.lookup(Town, 0)!)!.wood += timber;
       w.mut(Yard, w.lookup(Yard, 0)!)!.made += timber;
+      const stone = Math.max(0, TRADE.plots[0][k]!.stone - town(w, 0).stone);
+      w.mut(Town, w.lookup(Town, 0)!)!.stone += stone;
+      w.mut(Yard, w.lookup(Yard, 1)!)!.made += stone;
+      if (k === 2) assert.equal(plotPrice(w, 0, k, 50), 1600);
       credit(w, plotPrice(w, 0, k, 50));
       assert.equal(sendBuy(w, PIER.t - TRADE.buildTicks, k).status, 'accepted');
     }
+    // The q6 seed has the old two-building queues. Let five minutes of the new demand reach the trains, then
+    // measure ten minutes before the twenty-minute box fills (a full box deliberately stops fares).
+    for (let tick = PIER.t + 1; tick <= PIER.t + 3000; tick++) railTick(w, tick);
     const start = tillRow(w).landed;
-    for (let tick = PIER.t + 1; tick <= PIER.t + MIN20; tick++) railTick(w, tick);
-    checkTrade(w, PIER.t + MIN20);
-    return (tillRow(w).landed - start) / 20;
+    for (let tick = PIER.t + 3001; tick <= PIER.t + 9000; tick++) railTick(w, tick);
+    checkTrade(w, PIER.t + 9000);
+    return (tillRow(w).landed - start) / 10;
   });
-  t.diagnostic(`q6-done landed fares/min, 2/3/4 buildings: ${rates.join(', ')}`);
+  t.diagnostic(`q6-done landed fares/min, 2/3/4/5 buildings: ${rates.join(', ')}`);
   assert.ok(rates[1]! >= 1.3 * rates[0]!, `${rates[1]} vs ${rates[0]}`);
+  assert.deepEqual(rates, [36, 54, 72, 72], 'four places saturate after the second added house');
   const s = { w: copy(PIER.w), t: PIER.t };
   while (tillRow(s.w).boogles < plotPrice(s.w, 0, 0, 50)) {
     assert.ok(s.t - PIER.t < 10 * 600);
@@ -1370,6 +1382,39 @@ test('B1: q6-done payoff: three buildings land at least 1.3 times two in 20 minu
   t.diagnostic(
     `first house at 50%: ${(s.t - PIER.t) / 600} minutes after q6-done; ${s.t / 600} seed-clock minutes; house-ready ${(READY.t - rail(READY.w).trains) / 600} minutes after trains-on`,
   );
+});
+
+test('S1: an above-cap saved box and a plot bought at its old price keep their balances', () => {
+  const w = copy(PIER.w);
+  // A progressed save from before the price cut: three bought plots, the last paid at 6000.
+  for (const [k, paid] of [150, 800, 6000].entries()) {
+    const threshold = TRADE.plots[0][k]!;
+    for (const [goods, slot] of [
+      ['wood', 0],
+      ['stone', 1],
+    ] as const) {
+      const n = Math.max(0, threshold[goods] - town(w, 0)[goods]);
+      w.mut(Town, w.lookup(Town, 0)!)![goods] += n;
+      w.mut(Yard, w.lookup(Yard, slot)!)!.made += n;
+    }
+    Object.assign(w.mut(Plot, w.lookup(Plot, k)!)!, { at: PIER.t - TRADE.buildTicks, paid });
+    const b = w.mut(Till, w.single(Till))!;
+    b.spent += paid;
+    b.landed += paid;
+  }
+  credit(w, 10000);
+  const before = { ...tillRow(w) };
+  assert.ok(before.boogles > boxCap(w, TRADE_PCT, PIER.t));
+  const back = createRailwayWorld();
+  back.load(JSON.parse(JSON.stringify(w.snapshot())), (v) => railwayCheck(v, PIER.t));
+  const alighted = town(back, 0).alighted;
+  for (let tick = PIER.t + 1; tick <= PIER.t + 1200; tick++) railTick(back, tick);
+  checkTrade(back, PIER.t + 1200);
+  assert.ok(town(back, 0).alighted > alighted, 'fares arrived while above cap');
+  assert.equal(tillRow(back).boogles, before.boogles, 'no clamp');
+  assert.equal(tillRow(back).landed, before.landed, 'no new fares land');
+  assert.ok(tillRow(back).lost > before.lost);
+  assert.equal(plot(back, 2).paid, 6000, 'historical payment unchanged');
 });
 
 test('B1: audited buy and completed-house ticks declare every accessed component', () => {

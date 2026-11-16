@@ -25,7 +25,7 @@ import {
   routeAhead,
   townBuildings,
   townId,
-  trainSeats,
+  riderPlaces,
   waitingFor,
   yardId,
 } from './railway-queries-trade.ts';
@@ -156,7 +156,7 @@ export function ridersArrive(w: World, slot: number, pct: TradePct, tick: number
   m.lost += fares - land;
 }
 /** Train `slot` standing at a route halt, leaving toward the other (an end's train has already turned): the riders
- * waiting there to ride its way board, up to its seats; `boarded` grows by them. Called every tick it stands. */
+ * waiting there to ride its way board, up to its rider places; `boarded` grows by them. Called every tick it stands. */
 export function ridersBoard(w: World, slot: number) {
   const route = lineRoute(RAIL_TRAINS[slot]!.line);
   if (route < 0) return;
@@ -164,7 +164,7 @@ export function ridersBoard(w: World, slot: number) {
   if (r.phase !== TRAIN_PHASE.STAND || r.at < 0) return;
   const dir = trainDir(r),
     waiting = waitingFor(w, route, r.at, dir),
-    n = Math.min(trainSeats() - r.riders, waiting);
+    n = Math.min(riderPlaces() - r.riders, waiting);
   if (n <= 0) return;
   const rt = TRADE.routes[route]!,
     t = w.mut(Town, townId(w, rt.town))!;

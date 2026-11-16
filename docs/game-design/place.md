@@ -2564,7 +2564,17 @@ then `plot2`, then `plot1`. Sources: [plots](../../src/entities/town/plots.ts),
 [town layout](../../src/place/town-plan.ts), [blockout](../../src/place/town-blockout.ts).
 
 Little guys wait beside the island and far platforms, board the trains and ride on them. At most twelve waiting
-figures are drawn per end; larger crowds get a true-count board. Each train draws up to four riders. Fares fill the
+figures are drawn per end; larger crowds get a true-count board. Each passenger car carries and draws up to **four**
+riders (`TRADE.riderPlaces`), separate from the four player seats. Eight arrive with the
+[dedicated coach A](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework), after its halt rework; today's car
+must show everyone it carries (orchestrator, 16 November). The first-town S1/V1 stand-in has two overlapping
+riders per diagonally opposite roomy end: outer (x ±0.78, z ±1.20), inner (x ±0.77, z ±1.02), matching signs.
+They face outward at slightly different angles, with the outer places filled first, alternating ends.
+The upright poses run after the car's rendered transform, taking its pitch and shudder. The four heads remain
+countable, clear of fittings, seats, seated players and pets in the
+[inspected stills and sampled geometry](../reports/first-town-four-place-rework.md). No counter or new collider.
+The Cars tile reads both numbers from data: "4 seats, 4 riders", with Seats 4 and Riders 4 (placeholder copy).
+Fares fill the
 shared strongbox: inside the hall, against its north end wall, the ticket counter shows its balance and a coin
 column proportional to its cap, with a fixed cap mark. Sources:
 [riders](../../src/entities/railway/riders-view.ts), [till](../../src/entities/railway/till-view.ts),
@@ -2573,7 +2583,9 @@ column proportional to its cap, with a fixed cap mark. Sources:
 When the box can afford a staked plot, a gold outline shows its house. Approach the board and hold Interact for one
 second. Its board shows the added rider rate, price and box balance; an unaffordable offer gives the shortfall.
 Only an accepted server purchase spends the shared box and starts construction. At the current 50 percent room
-price, the first offer is 150 Boogles; after buying it the second rises from 400 to 800. The pile and board clear,
+price, the first offer is 150 Boogles; after buying it the second rises from 400 to 800. Plot 3's base is now 800,
+so after both earlier buys its price is 1,600. A box above a reduced cap retains its Boogles; further fares stop
+landing until it has room. Historical `Plot.paid` values are preserved. The pile and board clear,
 the house's floor, frame, walls and roof fall into place, and its closed shell stands after 100 ticks (10 seconds).
 Little guys gather and use their existing town lines. A player inside the footprint is moved to its edge as the
 hulls arrive. Reloads use the accepted purchase tick to resume or snap completed construction. Each completed house

@@ -186,6 +186,9 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   let pathOpen = false;
   let population = -1;
   const people = () => townPopulation(townRead(env.progress.world()));
+  // Train frames draw at order 7 and their kit at 8. Pose the cast after those transforms: standing riders must not
+  // trail the rendered deck by one frame and cross its end panel as it accelerates.
+  owner.animate(({ dt }) => folk.updateFolk(dt), 9);
   return {
     /** The forge's crane, for the hoist that holds what the forge casts (part-hoist.ts). */
     crane,
@@ -204,7 +207,6 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
       }
       folk.setCamp(0, env.awake());
       greeter.update(dt);
-      folk.updateFolk(dt);
     },
   };
 }
