@@ -157,7 +157,8 @@
   one 781 × 541 RGBA16F texture, 3.4 MB), over whatever ground is underneath and winning over slope rock within its
   width: cool grey-brown packed earth (Fresh edge `#6e5f50`, middle `#93836f`), lighter where feet go and distinct
   from the warm sandstone; a dark cut edge with a painted bank, a darker verge, small
-  stones, and timber risers square across the tread on climbs steeper than 1 in 8. Bold paths are 6 m wide, the others
+  stones. Climbs use the same plain packed earth as level paths, with no painted timber risers or their highlights
+  ([owner, 15 November](../decisions-look.md#d-2026-11-15-plain-path-climbs)). Bold paths are 6 m wide, the others
   3.8 m. The graded shoulders extend one 2 m cell diagonal beyond those widths (5.9/8.8 m bold inner/outer,
   4.8/7.7 m plain). Paint widths remain independent. The Round's lowered green and ability-pad approaches retain
   their previous grading. Twelve ordinary trees are cleared, with surviving harvest IDs unchanged.

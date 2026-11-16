@@ -2,7 +2,7 @@
 // should be more clearly looking like a path"). A per-pixel layer over whatever ground material is underneath, from a
 // distance field of the paths (path-field.ts), so the tread's edge is finer than the land's 2 m cells and the tread
 // wins over slope rock within its width. Brown compacted earth, lighter where feet go, a dark cut edge with a small
-// painted bank (shading only: no vertex moves), a darker verge, small stones and timber risers on the climbs. Local.
+// painted bank (shading only: no vertex moves), a darker verge and small stones. Climbs keep the same plain earth. Local.
 import * as THREE from 'three/webgpu';
 import {
   cameraViewMatrix,
@@ -39,7 +39,6 @@ export const PATH_PIGMENT = {
   edge: '#6e5f50',
   middle: '#93836f',
   cut: '#4b3c30',
-  timber: '#5f4630',
   stone: '#b3a892',
 } as const;
 
@@ -79,7 +78,6 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
     .div(vec2(FIELD_W, FIELD_H));
   const sample: N = texture(pathFieldTexture(), uv);
   const raw: N = sample.r;
-  const grade: N = sample.g;
   const along: N = sample.b; // the path's own height here: level across the tread
   // Which way is off the path, in world xz: the field's slope, from its change across the pixel.
   const ax: N = dFdx(p.xz),
@@ -116,16 +114,6 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
     .mul(0.05)
     .mul(smoothstep(8, 22, positionView.z.negate()).oneMinus());
   const earth: N = mix(sand(PATH_PIGMENT.edge), sand(PATH_PIGMENT.middle), middle).mul(mottle.add(grit).add(1));
-  // Timber risers across the tread on the climbs: one every 0.6 m of the path's own height, so each lies square across it.
-  const climb: N = smoothstep(0.1, 0.16, grade);
-  const rise: N = fract(along.div(0.6));
-  const riserWidth: N = fwidth(along.div(0.6)).max(0.01);
-  const riser: N = smoothstep(0, riserWidth, rise)
-    .mul(smoothstep(0.13, riserWidth.add(0.13), rise).oneMinus())
-    .mul(climb)
-    .mul(smoothstep(0.25, 0.5, d.negate()));
-  const lit: N = smoothstep(0.13, riserWidth.add(0.13), rise).mul(smoothstep(0.2, 0.34, rise).oneMinus());
-  const timber: N = sand(PATH_PIGMENT.timber);
   // The cut edge: dark earth just inside the line.
   const cut: N = smoothstep(0.06, 0.34, d.negate()).oneMinus().mul(tread);
   const soil: N = sand(PATH_PIGMENT.cut);
@@ -160,9 +148,7 @@ export function applyPathSurface(material: THREE.MeshStandardNodeMaterial) {
     .mul(bench);
   patchNode(material, 'colorNode', (previous: N) => {
     let c: N = mix(previous, previous.mul(vec3(0.7, 0.78, 0.64)), verge.mul(0.75));
-    let path: N = mix(earth, timber, riser.mul(0.85));
-    path = mix(path, path.mul(1.12), lit.mul(climb).mul(0.5));
-    path = mix(path, soil, cut.mul(0.8));
+    const path: N = mix(earth, soil, cut.mul(0.8));
     c = mix(c, path, tread);
     return mix(c, pebble, stone);
   });

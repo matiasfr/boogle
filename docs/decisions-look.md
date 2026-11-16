@@ -6,6 +6,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
+- 2026-11-15 · climbs keep the same plain packed-earth path as level ground; remove painted timber risers and their highlights, preserving the edge, verge, stones, bank, cut darkening and all heights/colliders ([entry](#d-2026-11-15-plain-path-climbs))
 - 2026-11-14 · the meadow (lawn tint, flowers and tufts) is the default ground dressing across the map, including the green round The Boogler's statue ([entry](#d-2026-11-14-the-meadow-is-the-default-ground))
 - 2026-11-14 · terrain clean-up, three answers: level the path benches by widening each path's graded strip; the path is a cooler, darker packed earth, not pale gravel; the custom mesh kit starts on the canyon wedge once the path and shore fixes ship, previz first ([entry](#d-2026-11-14-terrain-clean-three-recommendations-accepted))
 - 2026-11-14 · unwalkable terrain needs no complex geometry: remove geometric cliff ledges, use the material; geometry clean-up next, walkable ground first; consider custom dressing meshes afterward, not yet committed ([entry](#d-2026-11-14-terrain-simple-geometry-cleanup-first))
@@ -52,6 +53,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · night stays light, moonlit ([entry](#d-2026-11-01-night-stays-light-moonlit))
 
 ## Decided
+
+- <a id="d-2026-11-15-plain-path-climbs"></a>**2026-11-15, plain packed-earth paths on climbs** (owner: "The tread texture I don't like as much as a plain path like the other cases."). The canyon climb, quarry descents and shore ramp use the same plain packed-earth finish as level paths, such as the Village junction by the museum. Remove the painted timber risers and their lit highlights; keep the tread edge, verge, stones, painted bank and cut darkening. This is view-only: no height or collider changes.
 
 - <a id="d-2026-11-14-the-meadow-is-the-default-ground"></a>**2026-11-14, the meadow is the default ground dressing, everywhere** (owner, 14 November 2026, on the still of the meadow experiments on Home's south slope ([research note](research/small-magic-look.md#what-was-built-14-november)): "I love the meadow. It'd be really nice if there was that kind of texture around the bugler statue and just widespread in the map in general."). Relayed by the orchestrator. "Bugler" is The Boogler: his statue stands on the footing at the centre of the Round's green (`TOWN_STATUE`). The meadow (the lawn tint, the flowers and the grass tufts) stops being a flagged experiment on one slope and becomes the game's default ground dressing across the map, including the green round the statue. Still view only: no sim, world, net or saved state, no colliders, nothing a player uses. It keeps clear of streets, treads, footprints and the places players work, and it must be cheap enough for an iPad and a phone.
 
