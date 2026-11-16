@@ -44,6 +44,7 @@ export function createRailwayFarHead(
   const line = layout.LINKS[1]!.line;
   // The rail's end, in world metres (besideLine already includes ORIGIN, as it does for every production rail view).
   const farHead = farHeadEnd();
+  const shotSeconds = farHeadShot().seconds;
   const slots: THREE.Vector3[] = [];
   // Rim outward, preserving Place's 27 stations (490, 483, ... 308), two lamps each, 1.72 m in from each edge of the
   // deck: on the left that is the up track's edge since the second track (generic-lines step 2).
@@ -178,7 +179,7 @@ export function createRailwayFarHead(
           whistle(farHead.x, farHead.z);
         }
         // No cut to carry it, or the shot was dropped (a seat taken mid-shot): the call sounds in the clear anyway.
-        if (call === 'held' ? show >= CALL.bare : show >= farHeadShot().seconds + 2) cue();
+        if (call === 'held' ? show >= CALL.bare : show >= shotSeconds + 2) cue();
       }
       for (let k = rockets.length - 1; k >= 0; k--) {
         const r = rockets[k]!;
