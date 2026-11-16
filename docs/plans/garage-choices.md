@@ -176,7 +176,7 @@ accepted hold wins, as `rail.install`'s revision rule already does.
 | --- | --- | --- | --- | --- |
 | Top of the screen | **Line chips**, one per fitted line, the line on the table lit | New, step 4 | appear at stage 4; until then the screen is line 2's | none |
 | Engine | Boiler | built | Installed / Replaced | as today |
-| Engine | **Blast pipe** (draft) | New, step 1 | Later → Ready at the table turn → Installed; "Free: the 20 m/s upgrade" | top speed 14 → 20 m/s; footings and kit a minute |
+| Engine | **Blast pipe** (owner's pick, 16 November) | New, step 1 | Later → Ready at the table turn → Installed; "Free: the 20 m/s upgrade" | top speed 14 → 20 m/s; footings and kit a minute |
 | Engine | Longer boiler | built | unchanged | 20 → 25 m/s; cars 3 → 4 |
 | Engine | **Big boiler** (owner's pick, 16 November) | New, step 3 | Later; bill "STEEL n/6" with no button; Ready; Installed. Only on a line the rule passes | 25 → 30 m/s; resources a minute; cars unchanged |
 | Engine | Plough and headlamp | built | Later, unchanged (no rule; a look until it has one) | |
