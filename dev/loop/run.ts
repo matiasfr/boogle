@@ -578,7 +578,8 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     kiln: () => works(w()).lit >= 0,
     stall: () => shed(w()).stall >= WORKS.stall,
     cradle: () => shed(w()).fitted >= 0,
-    table: () => trainsOf(w()).some((r) => r.wagon) && (q(5) || flags.wagonReturned),
+    table: () => shed(w()).table === 1,
+    upgrade: () => trainsOf(w()).some((r) => r.wagon) && (q(5) || flags.wagonReturned),
     crossing: () => works(w()).pierSet >= WORKS.pier,
     Q7: () => q(6),
     bents: () => aperture(w()).set >= WORKS.ring,
@@ -631,8 +632,13 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
         () => works(w()).rack,
       ),
     cradle: (pl) => cradle(g, pl),
-    table: function* (pl) {
-      yield* device(g, pl, SHED_TABLE, 'rail.turn', () => shed(w()).fitted >= 0);
+    table: (pl) => device(g, pl, SHED_TABLE, 'rail.turn', () => shed(w()).fitted >= 0),
+    upgrade: function* (pl) {
+      if (pl.i !== 0) return;
+      yield* waitFor(g, done.table);
+      yield* walk(node('upgrade').at);
+      yield { wait: 9 }; // the Medium hold, 900 ms
+      yield* press('rail.install', { part: 1 });
       if (pl.i !== 0 || q(5)) return;
       // Works first: prove the loaded wagon visits Far Head and returns without a pier to unload at.
       const loadedAt = (at: number) => trainsOf(w()).some((r) => r.wagon && r.foot > 0 && r.phase === 0 && r.at === at);
@@ -731,7 +737,7 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
       // The table turn and fit name the revision the actor sees now.
       if (cmd.act === 'rail.turn') Object.assign(fields, { to: 1, revision: shed(g.w).tableRev });
       if (cmd.act === 'rail.install')
-        Object.assign(fields, { line: LINE2, part: 2, revision: lineOf(g.w, LINE2).boiler });
+        Object.assign(fields, { line: LINE2, part: fields.part ?? 2, revision: lineOf(g.w, LINE2).boiler });
       const res = g.h.act(pl.pid, cmd.act, fields, pl.at);
       t.actions++;
       if (res.status === 'rejected') {

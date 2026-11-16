@@ -1,7 +1,7 @@
 > **Status: approved (2026-11-15), owner answers [below](#owner-questions); steps 1 to 3 build on them. Step 4 builds
-> the per-line trade in [garage-line-trade](../brainstorms/garage-line-trade.md).** Step 0's 2D page is built; game steps remain unbuilt. Measured on main
-> `eadecf32b` (v51). The train ladder (14, 20 and 25 m/s; one train, then a train per extension) is being built on
-> `t3/train-ladder` and is not on main; "the ladder" below means that branch.
+> the per-line trade in [garage-line-trade](../brainstorms/garage-line-trade.md).** Steps 0 and 1 are built; steps 2–5 remain unbuilt. Original measurements below are from
+> `eadecf32b` (v51). The train ladder (14, 20 and 25 m/s; one train, then a train per extension) is on main (#1903);
+> step 1 replaces its automatic table upgrade (as-built note in section 7).
 
 # Garage choices: what the room adds at the Roundhouse, and what its bays hold
 
@@ -276,11 +276,43 @@ for a playtest.
 | # | Step | Files | Tier | Model row | Proof |
 | --- | --- | --- | --- | --- | --- |
 | 0 | **The 2D page — built (2026-11-16).** Finding: Strong leads all three line totals under the editable stand-in assignments; Quick wins the small ending bills and rider legs, so balance remains unresolved. The route as a timeline: the pool against the stand-in bills, each part's Ready time and price, the boiler ladder with a row left for the faster engine (35 to 40 m/s), the bays by stage at Home and Port Quay; compare both trade rows per line against stand-in bills at 1p and 3p so neither wins everywhere. Prices set small against the route's bills | `docs/world/garage-choices.html` (artifact) | none | Implementation of an approved plan: Codex gpt-6.1-sol medium | the page, for the owner |
-| 1 | **The 20 m/s upgrade (G-a).** `rail.install { part: 1 }` for every Home line at the table post, replacing the ladder's automatic rise; `commission` waits for it; the blast pipe tile, stand and seat; a loop node between `table` and `crossing`; the bot's hold | `src/sim/railway-sys-steel.ts`, `railway-sys-works.ts` (`commission`), `src/world/railway-server.ts`, `garage-data.ts`, `garage-state.ts`, `garage-view.ts`, `dev/loop/graph.ts`, `dev/look/bots/`, `test/railway-install.test.ts`, `src/world/namespace.ts` | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | `garage-open`; `npm run loop -- run` |
+| 1 | **The 20 m/s upgrade (G-a) — built (2026-11-16, v53).** `rail.install { part: 1 }` for every Home line at the table post, replacing the ladder's automatic rise; `commission` waits for it; the blast pipe tile, stand and seat; a loop node between `table` and `crossing`; the bot's hold | `src/sim/railway-sys-steel.ts`, `railway-sys-works.ts` (`commission`), `src/world/railway-server.ts`, `garage-data.ts`, `garage-state.ts`, `garage-view.ts`, `dev/loop/graph.ts`, `dev/look/bots/`, `test/railway-install.test.ts`, `src/world/namespace.ts` | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | `garage-open`; `npm run loop -- run` |
 | 2 | **Engines wait in the bays** (the ladder's step 4), view only: tarped engines in the ruins and bays in the departure order above; on the line's serving count rising, the tarp falls and the doors shut; the joining train keeps the ladder's whistle and scale-in. A roll-out in motion, if wanted later, copies the footing wagon's due tick | `src/place/rotunda.ts`, `rotunda-view.ts`, `test/rotunda-occupants.test.ts` | none | Player-visible implementation: Codex gpt-6-astra high; visual review by the main session | stills of arrival and stage 1 |
 | 3 | **Steel is spent: the bigger cradle and the big boiler (G-c, G-d).** `Shed.spent`; the price table; the cradle as line 2's fit; the fourth boiler row; bills and Ready; the store in bay 150° | `railway-components.ts`, `railway-sys-steel.ts`, `railway-train.ts`, `railway-works-layout.ts`, `garage-data.ts`, `boiler-install-view.ts`, `rotunda-view.ts`, `namespace.ts`, tests | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | the cradle install at `steel-home`; stills of bay 150° from the post at player height and from the garage camera |
 | 4 | **Lines in the bays; the per-line trade (G-e).** Build the two named boiler rows, free swaps at the Roundhouse, and `boilerAdopt` at each line's next depot departure; then works copies per fitted line, `rail.bring`, line chips, stages 3a and 3b. Starts when stage 4's lines are playable | `railway-components.ts`, `railway-sys-steel.ts`, `railway-server.ts`, `rotunda-stage.ts`, `home-station.ts`, `garage-*.ts`, `src/features/garage.ts`, `roundhouse-view.ts`, tests | review | High-risk implementation: Codex gpt-6-astra high, and the independent review row | two players at the post, one brings a line out, both see it; stage 3a rising |
 | 5 | **Port Quay's row**, inside its station plan: the row above, the per-site stage and ruin rule, `SITES`, a second reach point | the station plan's files; `src/place/rotunda.ts`; `dev/prefab/rotunda.ts`; `src/sim/railway-works-layout.ts` | review (the reach point) | Planning complex work: planner agent, opus high | that plan's |
+
+**Step 1 as built (16 November).** One 900 ms Medium hold sends `rail.install { line: 1, part: 1, revision: 0 }`
+at the existing Home table reach. It fits both Home lines (0 and 1), spends nothing, and commissions the wagon;
+trains adopt 20 m/s at their next Village stand. The table turn alone no longer fits or commissions anything.
+The accepted moment gets 50 server ticks before the existing 140-tick roll-out; stale/raced/repeated, early,
+malformed and busy installs refuse. The old turn cue ends after the turn. Blast pipe tile, stand, seat, accepted
+shared moment, loop `table → upgrade → crossing` and the production bot's Interact hold are built. Steps 2–5
+remain separate work.
+
+Evidence: `test/railway-install.test.ts` covers rules, refusals, adoption and replicated accepted effects; the
+real-host `r:edit` case is in `server/test/railway-steel-host.test.ts`. `npm run loop -- run` passes for 1–4 players
+and its order probes. Opened `.look/garage-upgrade-offered-still.png` and `.look/garage-upgrade-installed-still.png`:
+Ready previews 14 → 20 m/s with three cars; accepted seats the brass pipe and reads Installed/20 m/s.
+Initial `node dev/ship-check.ts`: 1,788 passed, zero failed, 65 skipped, one todo. Real-time smoothness/audio and
+device behavior are unverified; segment evidence does not claim the long route. Rebased segment checks: two peers through T2 (230 shared samples agree; passed under load), `world-inputs`, and
+`test:net` (208/208) pass. Opened `garage-upgrade-installed-final` still/sheet from a real Interact hold and
+`garage-upgrade-stand-final`: the offered pipe rests on its trestle under the jib, beside the orange post.
+The implementation handoff records the final server/ship-check totals.
+
+Fixture audit against `3720b4c3b`: all 47 old seed hashes matched their golden; 33 stages through cradle-fitted stay
+exact. The 14 later stages change from the accepted install/request and reserved 50 ticks (wagon-on +50 ticks,
+crossing +41; later seed ticks unchanged). Factory/vehicle clocks, one extra early casting and later one fewer
+landed Boogles follow those schedules; no upgrade spends anything. Tick-order system sequences remain identical.
+The golden, tick-order/headway and M12 hashes were regenerated only after that comparison; 158 fixture checks pass.
+The frozen server host trace also needed v53: current code with only the namespace held at v52 reproduces all
+8,596 old records byte-for-byte. On v53, exactly 205 checkpoint namespaces/checksums and 2,313 `snapBytes` samples
+change; all state, hashes, inputs/results, messages and replica packets stay exact. The changed byte counts match
+the serialized envelope widths; three pending-writer byte counters remain unchanged.
+
+Owner copy review: new draft name **Blast pipe**; approved **Free: the 20 m/s upgrade** reused unchanged. The
+existing footing-wagon descriptions still say it rolled out when the kiln lit / waits until the cradle is fitted
+and the table turns; they omit this gate and are left for The Boogler. No other copy was polished.
 
 Order: step 1 after the ladder and the garage moment's checkpoint ship; 2 any time after the ladder; 3 after 1; 4
 when stage 4 is playable; 5 with Port Quay's station.

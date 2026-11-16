@@ -9,7 +9,7 @@ import { WORKS } from './railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from './railway-works.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { Pile } from './railway-components.ts';
-import { accounts, beam, boiler, shed, trains, works, worksClock } from './railway-rows.ts';
+import { accounts, beam, boiler, line, shed, trains, works, worksClock } from './railway-rows.ts';
 import { line2Completed } from './railway-queries-line2.ts';
 import { pierLaid } from './railway-line2-layout.ts';
 import { footingTotal } from './railway-queries-works.ts';
@@ -71,9 +71,10 @@ export function checkWorks(w: World) {
   const coupled = ts.filter((r) => r.wagon);
   if (coupled.length > 1) bad('two wagons');
   if (h.ready >= 0 && h.fitted < 0) bad('ready before fitted');
-  // Before it couples the wagon is on its way out exactly while the cradle is fitted and the table points at line 2;
-  // once coupled it stays, and the table is a toy.
-  if (coupled.length ? h.ready < 0 : h.ready >= 0 !== (h.fitted >= 0 && h.table === 1)) bad('wagon rollout');
+  // Before it couples the wagon is commissioned exactly when the cradle, table turn and upgrade are complete;
+  // once coupled it stays.
+  if (coupled.length ? h.ready < 0 : h.ready >= 0 !== (h.fitted >= 0 && h.table === 1 && line(w, LINE2).boiler >= 1))
+    bad('wagon rollout');
   if (
     ts.some(
       (r, slot) =>

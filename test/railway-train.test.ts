@@ -489,8 +489,9 @@ test('the wagon couples at the village, only when ready', () => {
   while (!(r().phase === TRAIN_PHASE.STAND && r().at === 0)) advanceWorks(w, 1);
   const arrived = r().depart;
   assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: shedRow(w.w).tableRev }), 1);
+  assert.equal(act(w, 'a', 'rail.install', { line: 1, part: 1, revision: 0 }), 1);
   const due = shedRow(w.w).ready;
-  assert.equal(due, w.t + WORKS.rollTicks);
+  assert.equal(due, w.t + WORKS.upgradeTicks + WORKS.rollTicks);
   while (r().phase === TRAIN_PHASE.STAND) {
     advanceWorks(w, 1);
     if (w.t < due) assert.equal(r().wagon, false);
@@ -508,6 +509,7 @@ test('coupling needs no request: the first line 2 train at the village after the
   const out = () => r().phase === TRAIN_PHASE.RUN && r().track === 0;
   until(w, () => out() && along() > STOPS[1]! + 2000 && along() < STOPS[2]! - BRAKE - 1000, 6000, true);
   assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: shedRow(w.w).tableRev }), 1);
+  assert.equal(act(w, 'a', 'rail.install', { line: 1, part: 1, revision: 0 }), 1);
   let first = -1;
   for (let t = 0; t < 3000 && !trains(w.w).some((x) => x.wagon); t++) {
     advanceWorks(w, 1);

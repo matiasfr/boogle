@@ -142,7 +142,7 @@ export async function createRailwayRoundhouse(
         (deckK === null || deckK <= 0) && !tableTurning && Math.abs(shunterA - (PARKED_A - PARK.gap)) < 0.05
           ? tableYaw
           : null,
-      install: (rev) => adapter.installBoiler(rev),
+      install: (rev, part) => adapter.installBoiler(rev, part),
       installHere: true,
       online: () => adapter.read.ready(),
     },
@@ -544,6 +544,7 @@ export async function createRailwayRoundhouse(
     // The shunter turns back where it sat on the deck on the way out.
     const deckStop = TABLE_A - PARK.gap / 2;
     const u = (tick - (sh.ready - WORKS.rollTicks)) / WORKS.rollTicks;
+    if (u < 0) return { wagon: PARKED_A, shunter: home, k: null, hidden };
     if (u < 1) {
       const a =
         u < ROLL.turn[0]
@@ -825,11 +826,11 @@ export async function createRailwayRoundhouse(
       if (e.op === 'rail.install')
         // The room's moment, on every page from the accepted install (never a restore or a late join): at the table
         // or in the garage it is the part going on; a page away from both gets the banner as its note.
-        playSharedMoment('longer boiler', e, adapter.read.pid, (mine) => {
+        playSharedMoment(e.part === 1 ? 'upgrade' : 'longer boiler', e, adapter.read.pid, (mine) => {
           const pos = me.body?.position;
           const away = !pos || Math.hypot(pos.x - table.x, pos.z - table.z) > BANNER_BEYOND;
-          if (away && !garageView.isOpen()) showMomentBanner(BANNER[0], BANNER[1], 4.5);
-          garageView.accepted(mine);
+          if (e.part === 2 && away && !garageView.isOpen()) showMomentBanner(BANNER[0], BANNER[1], 4.5);
+          garageView.accepted(mine, e.part === 1 ? 1 : 2);
           return false;
         });
     },
@@ -904,6 +905,7 @@ export async function createRailwayRoundhouse(
         sh.stall >= WORKS.stall &&
         sh.fitted >= 0 &&
         sh.ready < 0 &&
+        sh.table === 0 &&
         !tableTurning &&
         !asked &&
         Math.hypot(pos.x - anchor.x, pos.z - anchor.z) <= SHED_TABLE.reach / 100 - 0.6 &&

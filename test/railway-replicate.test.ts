@@ -752,7 +752,18 @@ test('the kiln lit, the cradle fitted and the wagon rolling out are never predic
   assert.equal(shed(s.w).fitted, s.t);
   assert.equal(shed(s.w).ready, -1, 'fitted, the table still facing the stall');
   assert.equal(seedAct(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
-  assert.equal(shed(s.w).ready, s.t + WORKS.rollTicks);
+  assert.equal(shed(s.w).ready, -1, 'the turn waits for the upgrade');
+  const upgrade = {
+    op: 'rail.install',
+    line: 1,
+    part: 1,
+    revision: 0,
+    epoch: account(s.w, 'a')!.epoch,
+    request: account(s.w, 'a')!.request + 1,
+  };
+  assert.equal(railPredict(shownOf(s.w), 'a', upgrade, s.t).n, 0, 'the upgrade is not predicted');
+  assert.equal(seedAct(s, 'a', 'rail.install', { line: 1, part: 1, revision: 0 }), 1);
+  assert.equal(shed(s.w).ready, s.t + WORKS.upgradeTicks + WORKS.rollTicks);
 });
 
 // Ring Island's steel works (ring-island-build2, R4): the yard take and the feed are predicted like the kiln's; the

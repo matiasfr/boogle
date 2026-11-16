@@ -210,7 +210,7 @@ function refresh() {
   const part = list.find((p) => p.id === snap.sel) ?? list[0];
   if (!part) return;
 
-  const rk = `${snap.cat}|${snap.sel}|${snap.facts.wagonCoupled}|${snap.facts.steelHome}|${snap.facts.longFitted}|${snap.phase === 'idle' || snap.phase === 'holding'}`;
+  const rk = `${snap.cat}|${snap.sel}|${snap.facts.wagonCoupled}|${snap.facts.steelHome}|${snap.facts.longFitted}|${snap.facts.boilerRev}|${snap.facts.upgradeReady}|${snap.phase === 'idle' || snap.phase === 'holding'}`;
   if (rk !== railKey) {
     railKey = rk;
     const groupOf = (g: Group) =>
@@ -244,7 +244,7 @@ function refresh() {
   }
   // Through a real install the rows count from the old numbers to the new, though the room's rows already say fitted.
   const landing = snap.real && snap.phase === 'moment';
-  const rows = rowsFor(snap.cat, snap.sel, landing ? 1 : snap.facts.boilerRev);
+  const rows = rowsFor(snap.cat, snap.sel, landing ? (snap.sel === 'blast' ? 0 : 1) : snap.facts.boilerRev);
   const html = rows.map((r, i) => rowHtml(r, i, snap)).join('');
   if (html !== shownKey) {
     shownKey = html;
@@ -254,7 +254,12 @@ function refresh() {
   const label = els.btn.querySelector('.g-label')!;
   // No try-on (owner, 14 November 2026): the button is there only when the part can go on now, or is going on. A
   // part the room cannot install yet shows its bill instead, and no button.
-  const act = snap.cat === 'whistle' ? 'hear' : landing || (snap.canInstall && part.id === 'long') ? 'install' : 'none';
+  const act =
+    snap.cat === 'whistle'
+      ? 'hear'
+      : landing || (snap.canInstall && (part.id === 'long' || part.id === 'blast'))
+        ? 'install'
+        : 'none';
   els.btn.dataset.act = act;
   els.btn.hidden = act === 'none';
   // "Installed" lands with the hit, as the tile's pill turns.

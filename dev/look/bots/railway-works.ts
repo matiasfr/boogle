@@ -3,6 +3,9 @@
 // request, at a lever and aboard), fit the cradle with rails, turn the table, then ride the footing wagon's train to
 // the pier and set twelve footings in the sea.
 // Inspection observes; it never seeds a world or moves a player.
+import { triggerAction } from '../../../src/player/controls.ts';
+import { garage } from '../../../src/entities/railway/garage-state.ts';
+import { garageRow, polarAt } from '../../../src/entities/railway/garage-geo.ts';
 import type { Bot } from '../bot.ts';
 import {
   carryComfort,
@@ -201,8 +204,27 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     await checkpoint('cradle fitted');
     // 7. Turn the table; the shunter pushes the wagon out and line 2 couples it at the village.
     await use(table, /^Turn the table$/, 'turn the table');
-    await until(() => shed().table === 1 && shed().ready >= 0, 'table turned for line 2', 30000);
+    await until(() => shed().table === 1, 'table turned for line 2', 30000);
     await checkpoint('table turned');
+    const { geo, table: centre } = garageRow();
+    const post = polarAt(centre, geo.post);
+    const stood = polarAt(centre, { bearing: geo.post.bearing + 6, r: geo.post.r - 0.6 });
+    check(await bot.walk(stood.x, stood.z, 0.3), 'walked to the upgrade post');
+    face(post.x, post.z);
+    await until(() => interactTarget()?.id === 'railway-garage', 'the garage is offered', 20000);
+    bot.press();
+    await until(() => garage.api?.isOpen(), 'the garage opened', 8000);
+    check(garage.api!.snap().sel === 'blast' && garage.api!.snap().canInstall, 'the free upgrade is ready');
+    await bot.wait(700);
+    triggerAction('interact', 'down');
+    try {
+      await until(() => garage.api!.snap().facts.boilerRev >= 1, 'the upgrade accepted', 30000);
+    } finally {
+      triggerAction('interact', 'up');
+    }
+    await until(() => garage.api!.snap().phase === 'idle', 'the upgrade settled', 15000);
+    garage.api!.close();
+    await checkpoint('upgrade installed');
     await until(() => trains().some((r) => r.wagon), 'line 2 couples the footing wagon');
     await checkpoint('wagon coupled');
   }

@@ -17,6 +17,7 @@ import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-
 import { SHED_TABLE } from '../../src/sim/railway-works-layout.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
 import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
+import { shed } from '../../src/sim/railway-rows.ts';
 import { rail } from '../../src/sim/railway-rows.ts';
 import {
   RAIL_GATES,
@@ -150,6 +151,37 @@ const away = (p: { x: number; y: number; z: number }): At => [p.x + 2000, p.y, p
 const fixture = (stage: SteelStage) => railwayAtSteel(stage);
 const install = (revision: unknown = 1, line = 1, part = 2) => ({ op: 'rail.install', line, part, revision });
 
+test('upgrade host: part 1 crosses r:edit, checks reach, replicates both lines and saves the gate', async () => {
+  const r = await host('upgrade', buildSeedWorld('cradle-fitted'), { s: 'a', peer: 'b' });
+  try {
+    const mirror = r.connect('viewer');
+    assert.equal(await r.action(install(0, 1, 1), spot(SHED_TABLE)), 'noop', 'turn first');
+    assert.equal(await r.action({ op: 'rail.turn', to: 1, revision: 0 }, spot(SHED_TABLE)), 'accepted');
+    assert.equal(shed(r.w).ready, -1);
+    assert.equal(await r.action(install(0, 1, 1), away(SHED_TABLE)), 'rejected');
+    for (const e of [install(0, 0, 1), install(0, 1, 3), install('0', 1, 1), { ...install(0, 1, 1), part: '1' }])
+      assert.equal(await r.action(e, spot(SHED_TABLE)), 'rejected');
+    assert.equal(await r.action(install(1, 1, 1), spot(SHED_TABLE)), 'noop', 'stale revision');
+    assert.equal(await r.action(install(0, 1, 1), spot(SHED_TABLE)), 'accepted');
+    const ready = shed(r.w).ready;
+    assert.ok(ready > r.tick);
+    assert.equal(await r.action(install(0, 1, 1), spot(SHED_TABLE), 'peer'), 'noop', 'second hold loses');
+    await r.ticks(3);
+    for (const w of [r.w, mirror()!]) {
+      assert.equal(line(w, 0).boiler, 1);
+      assert.equal(line(w, 1).boiler, 1);
+      assert.equal(shed(w).steel, 0);
+      assert.equal(shed(w).ready, ready);
+    }
+    await r.restart();
+    assert.equal(line(r.w, 0).boiler, 1);
+    assert.equal(line(r.w, 1).boiler, 1);
+    assert.equal(shed(r.w).ready, ready);
+  } finally {
+    await r.done();
+  }
+});
+
 test('steel host: the yard take at the yard, the feed at the works, each refused from elsewhere', async () => {
   const r = await host('reach', fixture('steel-kit'));
   try {
@@ -241,7 +273,7 @@ test('steel host: malformed kinds, lines, parts and revisions refused without a 
       assert.equal(await r.action({ op: 'rail.steelTake', kind }, spot(RING_STEEL_YARD)), 'rejected', `kind ${kind}`);
     for (const l of [0, 2, -1, '1', null])
       assert.equal(await r.action(install(0, l as number), spot(SHED_TABLE)), 'rejected', `line ${l}`);
-    for (const part of [0, 1, '1', null])
+    for (const part of [0, 3, '1', null])
       assert.equal(await r.action(install(0, 1, part as number), spot(SHED_TABLE)), 'rejected', `part ${part}`);
     for (const revision of [3, -1, 0.5, '0', null, undefined])
       assert.equal(

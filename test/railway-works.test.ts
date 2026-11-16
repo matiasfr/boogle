@@ -290,11 +290,7 @@ test('fitted once; the table turns only when ready; a stale revision is 0', () =
   assert.equal(act(s, 'a', 'rail.turn', { to: 2, revision: 0 }), 0);
   assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
   assert.equal(act(s, 'b', 'rail.turn', { to: 1, revision: 0 }), 0, 'a second turn on the same revision');
-  assert.deepEqual(
-    [shed(w).table, shed(w).tableRev, shed(w).ready],
-    [1, 1, s.t + WORKS.rollTicks],
-    'the one turn rolls it out',
-  );
+  assert.deepEqual([shed(w).table, shed(w).tableRev, shed(w).ready], [1, 1, -1], 'the turn waits for the upgrade');
   assert.equal(invariant(w), null);
   const fitted = railwayAtWorks('cradle-fitted');
   const at = shed(fitted.w).fitted;
@@ -391,7 +387,9 @@ test('ready only after fitted and turned; the table holds while the wagon rolls 
   assert.deepEqual([shed(w).fitted, shed(w).ready], [s.t, -1], 'fitted; the table still faces the stall');
   // The one turn rolls the wagon out; every line 2 train comes back to its village end anyway (v26: end to end).
   assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
-  assert.equal(shed(w).ready, s.t + WORKS.rollTicks);
+  assert.equal(shed(w).ready, -1);
+  assert.equal(act(s, 'a', 'rail.install', { line: 1, part: 1, revision: 0 }), 1);
+  assert.equal(shed(w).ready, s.t + WORKS.upgradeTicks + WORKS.rollTicks);
   const due = shed(w).ready;
   assert.equal(act(s, 'b', 'rail.turn', { to: 0, revision: 1 }), 0, 'no turning back while it rolls out');
   assert.deepEqual([shed(w).table, shed(w).tableRev, shed(w).ready], [1, 1, due]);
@@ -424,6 +422,7 @@ test('the cart rests at the camp, serving nothing, from the cradle fitted until 
   };
   atCamp();
   assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: shed(w).tableRev }), 1);
+  assert.equal(act(s, 'a', 'rail.install', { line: 1, part: 1, revision: 0 }), 1);
   for (let guard = 0; !trains(w).some((r) => r.wagon); guard++) {
     assert.ok(guard < 4000, 'the wagon couples');
     atCamp();

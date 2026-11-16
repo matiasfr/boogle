@@ -81,6 +81,7 @@ const RAILWAY_BEATS: [string, RegExp][] = [
   ['saw a shared moment', /^moment played$/],
   ['fitted the cradle', /^cradle rails$/],
   ['turned the table', /^table turned$/],
+  ['installed the upgrade', /^upgrade installed$/],
   ['tried something on', /^shop tried on$/],
   ['took something from the shop', /^shop kept$/],
   ['swapped on the rail', /^shop swapped$/],

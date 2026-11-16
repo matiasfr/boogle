@@ -49,6 +49,7 @@ import {
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { legKitPut } from './railway-sys-route-kit.ts';
+import { commission } from './railway-sys-works.ts';
 
 /** Take logs (kind 0) or rails (kind 1) off the island yard, up to your back's room, once the rivet is struck. */
 export const steelTake = defineSystem(
@@ -187,25 +188,27 @@ export function steelService(w: World, r: Readonly<Row<typeof Train>>, k: number
   return usable > 0 || (w.get(Steel, steelId(w))!.rack > 0 && r.steel < STEEL.trip);
 }
 // ---------------------------------------------------------------- the install (R3)
-/** Install the longer boiler for line 2 (decided: a hold at the table, no dialog, free): the first steel is in the
- * Roundhouse bay, the fit is the revision the actor saw (`Line.boiler`, so two presses at once install once, as
- * rail.turn), and the table is not mid roll-out (the wagon rolling to the Village: `Shed.ready` set, not yet coupled).
- * It spends nothing; line 2's trains each take the fit standing at the Village (boilerAdopt). */
+/** One free hold at Home: part 1 upgrades both Home lines after the table turn and commissions the wagon.
+ * Part 2 is line 2's longer boiler, gated by landed steel. The line's boiler is the revision: a race installs once.
+ * Neither spends material or changes a train in flight; trains adopt at their next Village stand. */
 export const install = defineSystem(
   'rail.install',
-  { reads: [Shed, Train], writes: [Line], phase: 'act', order: 56 },
+  { reads: [Train], writes: [Line, Shed], phase: 'act', order: 56 },
   (w, { e, tick }: Act) => {
-    if (e.line !== LINE2 || e.part !== 2 || !railInt(e.revision, BOILER_MAX)) return 0;
+    if (e.line !== LINE2 || (e.part !== 1 && e.part !== 2) || !railInt(e.revision, BOILER_MAX)) return 0;
     const id = lineId(w, LINE2),
       l = w.get(Line, id)!,
       h = w.get(Shed, shedId(w))!;
-    if (e.revision !== l.boiler || l.boiler >= e.part || h.steel < 1) return 0;
-    // Unreachable in play today (nothing uncouples the wagon once it is on); kept so the table is never fitted mid
-    // roll-out if that changes.
+    if (e.revision !== l.boiler || l.boiler !== e.part - 1) return 0;
     if (h.ready >= 0 && wagonSlot(w) < 0) return 0;
-    const m = w.mut(Line, id)!;
-    m.boiler = e.part;
-    m.fitted = tick;
+    if (e.part === 1) {
+      if (h.fitted < 0 || h.table !== 1) return 0;
+      for (const home of [0, LINE2]) Object.assign(w.mut(Line, lineId(w, home))!, { boiler: 1, fitted: tick });
+      commission(w, tick);
+    } else {
+      if (h.steel < 1) return 0;
+      Object.assign(w.mut(Line, id)!, { boiler: 2, fitted: tick });
+    }
     return 1;
   },
 );

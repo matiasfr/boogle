@@ -21,6 +21,8 @@ export const WORKS = {
   total: 32,
   wagonCap: 6,
   rollTicks: 140,
+  // Let the accepted garage upgrade settle before the shunter takes the table (5 seconds).
+  upgradeTicks: 50,
 } as const;
 export const WORKS_SEAMS = [
   { id: 0, name: 'stall', x: 94212, z: 3297, y: 1830, reach: 400 },

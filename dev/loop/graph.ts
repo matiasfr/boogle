@@ -50,6 +50,10 @@ import {
   STEEL,
 } from '../../src/sim/railway-ring-layout.ts';
 
+import { garageRow, polarAt } from '../../src/entities/railway/garage-geo.ts';
+const garageSite = garageRow();
+const garagePost = polarAt(garageSite.table, garageSite.geo.post);
+
 export type NodeId =
   | 'wake'
   | 'T1'
@@ -80,6 +84,7 @@ export type NodeId =
   | 'stall'
   | 'cradle'
   | 'table'
+  | 'upgrade'
   | 'crossing'
   | 'Q7'
   | 'bents'
@@ -735,7 +740,7 @@ export const NODES: readonly LoopNode[] = [
   },
   {
     id: 'table',
-    label: 'Turn the table: the wagon joins line 2',
+    label: 'Turn the table for the upgrade',
     area: 'works',
     at: p(SHED_TABLE),
     bill: {},
@@ -747,8 +752,6 @@ export const NODES: readonly LoopNode[] = [
       dec('stall', 'rules', `${RULES_WORKS} turn: the stall stands`),
       // Owner, 10 November ("Only when ready"): the turn is refused until the cradle is fitted, and after the wagon goes.
       dec('cradle', 'rules', `${RULES_WORKS} turn: only once the cradle is fitted, before the wagon rolls out`),
-      dec('cradle', 'rules', `${RULES_WORKS} commission(): fitted and table at line 2`, 'finish'),
-      dec('trains', 'rules', `${RULES_TRAINS} wagonArrives: the wagon couples at line 2's train`, 'finish'),
       { on: 'Q6', status: 'free', by: 'none', source: 'Owner, 15 November: the Works or Q6 first; works-flow step 1' },
     ],
     cue: [
@@ -756,6 +759,28 @@ export const NODES: readonly LoopNode[] = [
         'world',
         'the apron bill turns to "Turn the table", the handle wears a gold outline and motes, a ghost wagon waits on line 2',
         'src/entities/railway/cradle-cues.ts; src/entities/railway/works-view.ts',
+      ),
+    ],
+  },
+  {
+    id: 'upgrade',
+    label: 'Install the 20 m/s upgrade: the wagon joins line 2',
+    area: 'works',
+    at: { x: Math.round(garagePost.x * 100), z: Math.round(garagePost.z * 100), y: SHED_TABLE.y },
+    bill: {},
+    supply: {},
+    ops: ['rail.install'],
+    reached: { mark: 'upgrade installed' },
+    stops: [],
+    requires: [
+      dec('table', 'rules', `${RULES_STEEL} install part 1: fitted cradle, table at line 2`),
+      dec('trains', 'rules', `${RULES_TRAINS} wagonArrives: the wagon couples to line 2's train`, 'finish'),
+    ],
+    cue: [
+      onMain(
+        'world',
+        'the blast pipe on its stand, the garage post orange; hold Install for the free upgrade',
+        'src/entities/railway/garage-view.ts',
       ),
     ],
   },
@@ -778,7 +803,7 @@ export const NODES: readonly LoopNode[] = [
     stops: ['crossing'],
     requires: [
       dec('Q6', 'rules', `${RULES_WORKS} footSet site 2: all stretches laid; split-rock-roundhouse.md pier after Q6`),
-      dec('table', 'rules', `${RULES_TRAINS} wagonArrives: footings ride the wagon`),
+      dec('upgrade', 'rules', `${RULES_TRAINS} wagonArrives: footings ride the wagon`),
     ],
     cue: [
       onMain(
@@ -816,7 +841,7 @@ export const NODES: readonly LoopNode[] = [
     stops: ['railhead', 'gap-footed'],
     requires: [
       dec('Q7', 'rules', `${RULES_RING} ringFootSet: Q7 laid`),
-      dec('table', 'rules', `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon to the Railhead`),
+      dec('upgrade', 'rules', `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon to the Railhead`),
     ],
     cue: [
       onMain(
