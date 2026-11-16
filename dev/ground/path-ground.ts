@@ -3,7 +3,11 @@
 // tread: the level width around the centre line, the cross fall, and the wall or drop beside it.
 // `node dev/ground/path-ground.ts` (add `--all` for every station).
 import { PATH_RUNS } from '../../src/place/path-field.ts';
-import { colliderHeight } from '../../src/place/ground-layers.ts';
+import { ORIGIN } from '../../src/place/layout.ts';
+import { surfaceHeight } from '../../src/place/terrain.ts';
+
+// Query the finished collision surface, including the shore's 1 m fine patch.
+const colliderHeight = (x: number, z: number) => surfaceHeight(x + ORIGIN.x, z + ORIGIN.z);
 
 const all = process.argv.includes('--all');
 type Station = { x: number; z: number; y: number; level: number; fall: number; left: number; right: number };

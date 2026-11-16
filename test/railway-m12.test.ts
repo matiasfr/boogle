@@ -12,6 +12,7 @@
 // adapter sends, a disconnect and refill, and a late joiner; a predicted press read before the server answers.
 // Re-recorded for the owner-approved fly-first rules, 15 November: early glider acceptance, Q4 sea pulls and the
 // glide-earned Q2 fixture deliberately change the trace (docs/plans/ability-order.md, save-preservation exception).
+// Re-recorded for terrain-clean step 5: twelve cleared harvest sources are removed from the v50 catalog (after heavy-load v49).
 // The value is the trace's FNV hash per client, with a checkpoint every 25 frames so a difference can be found.
 import test from 'node:test';
 import assert from 'node:assert/strict';

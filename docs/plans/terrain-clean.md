@@ -400,17 +400,21 @@ change". Each runs `npm run level-check`, `node dev/ground/path-ground.ts` and t
 `railway-works-layout`, `far-head-show`) before it is called done, and rebases on the Round and rotunda branches,
 which also edit `terrain.ts`.
 
-- [ ] **5. Benches level across the whole tread (finding 4; closes 5).** Cause, measured: `strip()` levels vertices
+- [x] **5. Benches level across the whole tread (finding 4; closes 5).** Cause, measured: `strip()` levels vertices
   within `inner` of the centre line, but `inner` (3.6 m bold, 2.4 m plain) is barely wider than the tread (3 m,
   1.9 m), so a triangle with one corner on the bench and one 2 m further up the wall folds into the tread. Fix, in
   `terrain.ts` where `PATHS` and `SHORE_SAMPLES` are graded: `inner` = tread half width plus one cell diagonal
   (5.9 m bold, 4.8 m plain), `outer` = `inner` + 2.9 (8.8 m, 7.7 m). Trialled for this plan: see Level findings.
-- [ ] **6. The quarry path's benches (finding 3).** Step 5 does not fix it: at (-60, 148) the cross fall stays
+- [x] **6. The quarry path's benches (finding 3).** Step 5 does not fix it: at (-60, 148) the cross fall stays
   2.87 m (something later regrades or skips those cells; the implementer finds which before changing anything, most
   likely a `skip` or a later pad). Then cut a 4 m bench on both gorge descents, with a 6 m level landing at the turn
   near (-10, 150), as [terrain-pass](terrain-pass.md#ground-that-needs-real-reshaping-proposals-for-a-later-ground-step-not-done-here)
   proposed. The shore path's ramp (-177, 27) to (-153, 33) is in the cove's fine patch and is unchanged by step 5: it
   goes with this step.
+  **Cause confirmed before step 6:** `gradeSupport(BANK_CART...)` runs after the path strips. Its 3 m soft
+  skirt raises the downhill vertex at (-60, 150) from 9.905 m to 13.770 m, towards the cart's 18.6 m pad.
+  That vertex lies in the tread triangle sampled at (-60, 148). This is the later cart pad, not a path skip or
+  the cove fine patch. The repair retains the cart's wheel bearings with a narrower support fade after restoring the descent.
 - [ ] **7. Ring Island footbridge, abutment a (finding 7).** `src/entities/ring-island/ground.ts`: cap the ground
   under the deck's footprint plus 0.5 m, for the first 4 m from abutment a, at the deck's underside less 0.1 m (the
   same kind of cap the loop deck already has), so nothing stands through the deck; the abutment beam then reads as a
@@ -503,10 +507,144 @@ run, then reverted; the unit tests were not run on the trial):
    (-56, -112) goes from 1.25 m to 0.14 m, the foot at (-61, -80) from 1.36 m to 0.12 m. Left: the quarry path
    (2.87 m at (-60, 148)), the shore ramp, the bend at (-80, -166) (0.66 m), and short stretches at path ends.
 
-**Step 6 (quarry benches) and step 7 (Ring footbridge cap)** were not trialled: their positions are named above and
-each must bring its own level-check diff to the designer before it is built. Expected for step 6: more trees cleared
-on the gorge walls and a wider second-jump flood in the gorge; for step 7: the ring report's abutment cut rises above
-its 0.1 m expectation.
+**Step 5 implementation (2026-11-15, based on `e3d64e3ea`):**
+
+- The specified shoulders are graded separately from paint: bold 5.9/8.8 m, plain 4.8/7.7 m. Every paint-mask
+  cell remains identical. The village green and the alcove/jump-course footprints plus a cell of margin retain
+  their old grading, preserving the reviewed gate heights. Alcove's nine under/beside samples are identical;
+  apron/lookout approach changes only lower ground, never shorten the climb.
+- Production grounding: 5,251 placements, zero problems. Twelve ordinary trees are cleared, IDs
+  `44,59,69,75,97,205,227,241,313,317,319,323` (362 to 350 land trees; 391 to 379 harvest sources).
+  Visible trees are 331 to 319: the shore already hid its nearby trees on the starting build, so there are no
+  additional shore-only removals in this step. The other three placements are the net change in terrain-following track support: panel mode has five fewer
+  sleepers and three more planks; continuous mode has three fewer sleepers and two more planks. Rail counts
+  and quarry track counts are unchanged. Around local (-30, -90), lowering the bank switches the standard
+  track builder from bed sleepers to a deck; its different spacing also moves later supports along the same line.
+  The timber audit uses continuous mode: 405 decks, 2,303 track pieces, zero problems; its one-piece reduction
+  is that same net sleeper/plank change, not a missing rail.
+- Second-jump flood: 422 to 443 incremental cells (149 newly classified, 128 no longer classified; the net is 21,
+  not a list of 21 new cells). Named progression assertions are unchanged and pass; Far Head remains gated.
+  Diagnostics and exact cell coordinates: `.look/terrain-benches/step5-flood-delta.json`.
+- Path survey: 20 to 9 narrow stretches; canyon (-56, -112) 1.25 to 0.14 m cross fall and foot (-61, -80)
+  1.36 to 0.12 m. Quarry stays 2.87 m, shore stays 0.55 m: these are step 6, not claimed fixed here.
+- Intended pins: coast texture/sampling digests; prefab trees (cleared sources and terrain-following bodies);
+  prefab halts (terrain-following ramp transforms only); sim harvest-source tuples and resource totals (120
+  fewer initial logs); railway seed/ops/M12/tick-order hash fixtures for that catalog change, initially v49 (v50 after the heavy-load rebase below).
+  Keyed fixture comparison confirms seed ticks, operation labels/results, M12 frame counts and tick-system
+  sequences are unchanged; only state hashes change. Generated world blockout changes Line 1's bank classification at 112–116 m; rail geometry is unchanged.
+- Walker proof: `.look/shots/terrain-benches-before-retry/group-0/c0-v0.png` versus
+  `.look/shots/terrain-benches-step5-final/group-0/c0-v0.png`, both opened. The canyon tread is now continuous,
+  with the rock wall set back behind a grass shoulder; the old right-edge folded slivers are gone. Quarry `c2`
+  and `c3` show a wider descent but the cart bulge/turn remain. Shore `c4` retains its kinks. The extra overhead
+  `c5` is partly obscured by trees and does not prove the landing. Capture health/repeat probes pass.
+  These are frozen desktop stills, not motion, owner playtest or device evidence.
+- Required checks: level-check passes (16 current reports, zero grounding/timber problems), path survey exits 0,
+  all 81 tests in the nine named files pass. `npm run check` passes (2,189 unit passes, zero failures, one
+  existing TODO, plus lint/typecheck/registry/level/assets/prefabs/build). T1 passes; the `world-inputs` scenario passes. The extra two-peer
+  T2 route times out after waking (300 s wall limit, both pages around 250 s game time, clock drift; no graphics
+  errors). Its final still and report are in `.look/playthrough/terrain-benches-step5-t2/`; this is not a multiplayer
+  route pass. The one-player T1 proof is `.look/playthrough/terrain-benches-step5-t1/`.
+
+**Step 6 implementation (2026-11-15, on step 5 `b6d5e8950`):**
+
+- `path-benches.ts` derives local height profiles from the existing centre lines. Both descents have 4 m clear
+  benches (4.9/7.8 m grading), eased slopes and flat turn/bridge run-ins. The (-10, 150) turn has a verified
+  6 × 6 m landing at y=8; the bridge's endpoints and span stay fixed. Terrain and paint use the same profiles.
+  The original catalog capture remains before these local cuts: all 350 land-tree records and 379 harvest slots
+  remain identical to step 5, with no further namespace change.
+- The cart's former 3 m fade caused the 2.87 m cross fall; restoring only the bench initially left one wheel
+  floating. The finished repair keeps a full cell of bearing around its original footprint and narrows the fade
+  to 0.5 m. All wheels remain at 18.6 m. The shore marker's bearing gets the same narrow fade at the hop's 14 m
+  datum (its terrain-following foot was 14.544 m). Both pass the actual footprint grounding audit.
+- The shore ramp's sharp height-profile corners and support skirt were retained by the protected fine-grid
+  corridor. Its new level bends/eased slopes are baked into the coarse grid and inherited by the fine grid.
+  The survey now queries `surfaceHeight`, including that fine patch, instead of only the coarse triangles.
+- Level-check: 16 reports, zero failures; production grounding 5,250 placements, zero problems; 405 timber decks
+  and 2,303 track pieces, zero problems. The one fewer placement is ordinary tree 79 at local (6.19, 165.56),
+  hidden by the new turn shoulder; its harvest slot remains. Visible trees are 319 to 318. All nine recorded
+  samples around each of the alcove, apron and lookout are identical to step 5.
+- Second-jump flood: 443 to 438 incremental cells, 16 newly classified and 21 no longer classified; all named
+  progression assertions pass. Exact coordinates: `.look/terrain-benches/step6-flood-delta.json`.
+- Path survey: 9 to 6 flagged stretches, with no quarry or shore stretch remaining. Cross fall at (-60, 148)
+  is 0.006 m instead of 2.87 m; the shore bend at (-177, 28) is exactly level. A quarter-metre surface sweep
+  holds both quarry descents within 0.12 m of their centres across 4 m, and the shore within 0.15 m across 6 m;
+  the maximum measured shore deviation is 0.135 m. These are tolerance-level benches, not exact planes everywhere.
+- All 81 required terrain tests plus six path-field/bench tests pass. The three new surface tests fail against
+  the committed step-5 terrain and pass against step 6 (ignored counterfactual evidence in
+  `.look/terrain-benches/step6-regression-before.txt`). The landing test checks the whole square every 0.25 m.
+- Intended repins in this step: coast texture `791e0c8d3fc35d1c3a31e170abff17163a57eae1f0bb5ff365643da185e49af9`
+  and sample `5cbfd247698940588870c4e88f7bb821e058b58cde62829aa7beffe61d6cf454`; prefab-tree terrain-following
+  source/root poses, the local cleared flag for tree 79, and 1,740 to 1,735 body records. Classic scatter and
+  planted tree records are exact; no sim hash, halt fixture or generated railway data is repinned in step 6.
+
+- Final stills: `.look/shots/terrain-benches-step6-final/group-0/c0-v0.png` through `c6-v0.png`, all opened.
+  Matched step-6 before views are `terrain-benches-step5-final/group-0/c2-v0.png` (west descent), `c3-v0.png`
+  (east descent/turn) and `c4-v0.png` (shore). The after views use the same indices and cameras. West now has a
+  broad continuous tread instead of a cart-skirt intrusion; the east turn and descent read continuously to the
+  bridge; the shore is more even, although some painted risers still look slightly wavy. The top-down `c6` shows
+  the clear landing. Rim trees still frame the walker view and `c5`; no replacement trees were needed. `c5`
+  alone is partly obstructed and is not landing proof. Final capture health and exact-repeat probes pass, with
+  no source changes during capture. The earlier `terrain-benches-step6/` set was invalidated by a documentation
+  edit during capture and is not the final evidence. No motion, owner-playtest or device claim.
+- `npm run check` passes: 2,192 unit passes, zero failures, one existing TODO, plus lint/typecheck/registry/
+  level/assets/prefabs/build. `node dev/ground/path-ground.ts` exits 0.
+- Final T1 route passes at `.look/playthrough/terrain-benches-step6-t1/` (end still opened). It ran under load,
+  so it proves route completion, not timing or feel. The earlier two-player T2 timeout remains an explicit
+  unverified checkpoint; no additional multiplayer pass is claimed.
+
+**Historical pre-implementation expectation:** step 6 was expected to clear more trees and expand the gorge's
+second-jump flood; its measured findings above supersede that estimate. Step 7 remains untouched: its proposed
+cap would increase the ring report's abutment-cut figure beyond the existing 0.1 m expectation.
+
+### Heavy-load rebase (2026-11-15)
+
+Rebased the reviewed terrain branch onto `54b8b4f128be76cfcdc39dbd1a84ac14b003b00a` (#1876).
+Heavy-load's complete v49 history and rules remain; terrain has a separate dated **v50** entry. Main's line-2
+24-piece pack/late-join/deposit assertions remain verbatim, with only the terrain catalog's initial-log total
+reapplied (3,910 to 3,790 in six assertions). No new terrain shape or Step 7 change.
+
+Regenerated all five railway fixtures using their own writers, never merged JSON:
+
+```sh
+GOLDEN=1 M12_RECORD=1 TICK_ORDER=1 TICK_ORDER_HEADS=1 node --import ./test/helpers/rail-no-audit.ts \
+  --test --test-concurrency=1 test/railway-golden-*.test.ts test/railway-ops.test.ts \
+  test/railway-m12.test.ts test/railway-tick-order.test.ts
+```
+
+Comparison is against fetched main, not the pre-heavy-load terrain branch:
+
+| Fixture | Regenerated difference | Cause |
+| --- | --- | --- |
+| `railway-golden.json` | 47 stage hashes and 47 post-1,200-tick hashes; namespace v49 to v50. All seed ticks unchanged. | Catalog-only state change plus namespace metadata; no heavy-load interaction in these routes. |
+| `railway-ops-golden.json` | All 277 hashes; every operation label/result unchanged. | Catalog only. Main's heavy-load acceptance results are retained. |
+| `railway-tick-order.json` | 2,700 per-tick hashes. | Catalog only; tick counts, systems and their order unchanged. |
+| `railway-tick-order-heads.json` | 14,400 hashes. | Catalog only; headway cases, timing and system sequences unchanged. |
+| `railway-m12-trace.json` | All 82 final hashes and 1,244 checkpoint marks; entry order, frame counts and mark lengths unchanged. | Catalog state/IDs and randomized source selection; a real behavioral interaction with heavy-load in `q3-done`, detailed below. |
+| `server/test/fixtures/world-host-trace.jsonl.gz` | 205 checkpoints and 5,667 serialized-byte counters; all 8,596 record kinds/order, command inputs/results and replication packets unchanged. | Catalog rows/entity IDs and v50 checkpoint namespace/hash/checksum only; no heavy-load interaction in this trace. |
+
+The M12 import-hook audit changes no production file or committed assertion. Restoring only main's full catalog
+under the combined heavy-load/v50 code reproduces **every main M12 entry exactly**. Thus namespace alone has no
+M12 effect and the catalog explains the entire new trace. Event comparison after excluding world hashes, next-ID
+shifts, source/pile IDs and remap IDs finds nonidentity differences only in `q3-done/a,b,c`: a different random
+chop target changes pickup acceptance and carried amounts. Under heavy-load, player a gets an additional forge
+take of 2 (17 carried), leaving player c a later forge take of 2 instead of 4. This is not just rehashed IDs.
+Two comfort-only controls also reproduce the pre-heavy-load main and the old terrain fixture exactly, confirming
+that both independently approved changes, rather than a new rule edit, explain the combined behavior.
+
+The additional server suite exposed its old host-trace golden (395 passes, that one failure). Regenerated with
+`HOST_TRACE_RECORD=1 node --import ./test/helpers/rail-no-audit.ts --test server/test/world-host-trace.test.ts`,
+then reran without recording. A control restoring only main's catalog and v49 reproduces main's complete
+uncompressed host trace exactly. Across all 205 new checkpoints, surviving tree values and all non-tree component
+values are identical after removing entity-ID columns; the next entity ID is lower by exactly 12. The same twelve
+source IDs listed in step 5 are removed. This was a necessary stale fixture beyond the textual rebase conflicts.
+
+Evidence: `.look/terrain-rebase/` contains the original fixtures, full keyed diffs, all four diagnostic recordings,
+`m12-event-audit.json`, and check logs. Requested checks pass: 16 level reports (5,250 grounded placements and
+2,303 track pieces, zero problems); path-ground exits 0 with the same six unrelated flagged stretches; all 81
+named terrain tests plus six bench/path-field tests; 188 railway fixture/cart/line-2 tests; and `npm run check`
+(2,226 passes, 65 existing local-mode skips, one TODO, zero failures, plus the remaining check stages).
+After the host-trace regeneration, the complete server suite also passes **396/396**, with no skips or failures.
+Scoped lint reports zero problems.
 
 ## Risks
 
@@ -521,8 +659,9 @@ its 0.1 m expectation.
   sits on re-graded ground. The grounding audit found 0 problems on the trial; the Round's and the rotunda's pads are
   graded after or beside paths and need rechecking on rebase.
 - **Mixed builds:** none; clients on an old build draw the same collider. Steps 5 to 7 change colliders: development
-  phase, no compatibility code. No `WORLD_NS` bump: heights are not saved state. A saved pose on a regraded bench
-  restores through the existing ground snap.
+  phase, no compatibility code. Heights alone are not saved state, but step 5 also clears 12 harvest sources: its pinned sim catalog
+  changes, so `WORLD_NS` advances from heavy-load v49 to terrain v50. A saved pose on a regraded bench otherwise restores through
+  the existing ground snap. No compatibility adapter is added.
 - **Performance:** Part 1 removes triangles and load work; 2a adds a few ALU operations per ground pixel and no
   texture reads; Part 3's cost is in its section. Measured and reported at checkpoints, not gated
   ([owner call](../../docs/agents/owner-calls.md#performance-guides-not-gates)).

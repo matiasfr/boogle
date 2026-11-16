@@ -13,6 +13,9 @@
 // All 8,596 ordered records, inputs, state hashes, command results and replication packets remain pinned.
 // v49 integration: main had already used v48 for authentication. Only namespace/checksum envelopes and
 // serialized byte counters change; the 380 boiler-speed trace from main is retained.
+// v50 terrain catalog: remove twelve ordinary sources; retained tree values and other state stay exact after
+// entity-ID remapping. 205 namespace/hash/checksum envelopes and 5,667 snapBytes samples follow; inputs/results
+// and replica packets stay exact. Audit and own-writer regeneration: docs/plans/terrain-clean.md#heavy-load-rebase-2026-11-15.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

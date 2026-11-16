@@ -1,4 +1,5 @@
 // Step 11: captured on the unconverted code. Exact bytes, including native-math results; no tolerance.
+// Terrain-clean steps 5–6 repin cleared trees and terrain-following source/body poses; classic scatter stays exact.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

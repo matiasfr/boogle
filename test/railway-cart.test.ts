@@ -56,7 +56,7 @@ const forgeRack = (w: Seed) => forgeRow(w.w).rack;
 function conserved(w: Seed) {
   assert.equal(invariant(w.w), null);
   const c = railCounts(w.w);
-  assert.equal(c.total, 3910 + c.produced, 'logs conserved');
+  assert.equal(c.total, 3790 + c.produced, 'logs conserved');
   assert.equal(c.rails.total, c.rails.poured, 'rails conserved');
 }
 const tick = (w: Seed, n = 1) => {
@@ -176,7 +176,7 @@ test('a save still carrying the cart recall column is refused whole, and older s
   const snap = JSON.parse(JSON.stringify(atQ2().w.snapshot()));
   snap.c.cart.push(snap.c.cart[0].map(() => 0));
   assert.throws(() => createRailwayWorld().load(snap, railwayCheck), /load: cart columns/);
-  assert.match(railwayRoomId('boogle'), /^rail-v49-/);
+  assert.match(railwayRoomId('boogle'), /^rail-v50-/);
 });
 
 test('the away credit counts the cart: the load under way lands, whole trips bring the rest, the cart is home', () => {

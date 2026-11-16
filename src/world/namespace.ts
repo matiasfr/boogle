@@ -107,7 +107,9 @@
 // Before shipping that change: uncapped recovery piles, Q2/Q5 depot reach and stub-arrival continuation fixed.
 // Still before shipping v49 (2026-11-15): 128 local piles of <=8 pieces, with one reserved slot per excess
 // carried piece. No drop-triggered recovery; at saturation pickups stop before unreserved overfill.
-export const WORLD_NS = 'v49';
+// v50 (2026-11-15): terrain-clean benches clear twelve ordinary harvest sources, preserving all surviving IDs.
+// Follows heavy-load v49; the source catalog changes with the ground. No migration.
+export const WORLD_NS = 'v50';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

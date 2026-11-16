@@ -161,7 +161,7 @@ test('forge refuses logs before the path, lights at exactly 56 and pours conserv
   assert.equal(forge(w.w).rack, LINE2_FORGE.rackMax, 'pours only to the rack');
   restoreIn(w);
   assert.equal(railCounts(w.w).rails.total, railCounts(w.w).rails.poured);
-  assert.equal(railCounts(w.w).total, 3910 + railCounts(w.w).produced);
+  assert.equal(railCounts(w.w).total, 3790 + railCounts(w.w).produced);
 });
 
 test('Q1-Q3 fund atomically from logs and rails; depot, hook and lever follow accepted completions only', () => {
@@ -214,7 +214,7 @@ test('Q1-Q3 fund atomically from logs and rails; depot, hook and lever follow ac
   assert.equal(line2Active(w.w), 3, 'Q4 behind the gate is next');
   const c = railCounts(w.w);
   assert.equal(c.rails.stations, 30);
-  assert.equal(c.total, 3910 + c.produced);
+  assert.equal(c.total, 3790 + c.produced);
   restoreIn(w);
 });
 
@@ -330,7 +330,7 @@ test('taking depot logs and dropping them elsewhere never makes the depot exceed
   assert.equal(railCounts(w.w).produced - before, 24);
   assert.equal(rail(w.w).depot, 0);
   restoreIn(w);
-  assert.equal(railCounts(w.w).total, 3910 + railCounts(w.w).produced);
+  assert.equal(railCounts(w.w).total, 3790 + railCounts(w.w).produced);
 });
 
 test('a peer resuming mid-Q2 after a restart matches one that never went offline', () => {
@@ -451,7 +451,7 @@ test('the pack: no chest before the forge bill, one pack for two openers, every 
   railSession(w.w, 'c', 1);
   assert.equal(chopTo(w, 'c', 99), 24, 'a late joiner carries twenty-four');
   assert.equal(act(w, 'b', 'rail.deposit', { station: 'F', n: 24 }), 24, 'a whole back unloads at once');
-  assert.equal(railCounts(w.w).total, 3910 + railCounts(w.w).produced);
+  assert.equal(railCounts(w.w).total, 3790 + railCounts(w.w).produced);
 });
 
 test('Q4: behind the quarry gate; its cart brings logs and moves rails off the forge rack, never minting one', () => {
@@ -507,7 +507,7 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   assert.equal(act(w, 'a', 'rail.depotRailTake'), 0, 'an empty shelf gives nothing');
   const c = railsHeld(w);
   assert.equal(c.stations, 6 + 12 + 12 + 16);
-  assert.equal(railCounts(w.w).total, 3910 + railCounts(w.w).produced);
+  assert.equal(railCounts(w.w).total, 3790 + railCounts(w.w).produced);
   restoreIn(w);
 });
 
@@ -628,7 +628,7 @@ for (const k of [3, 4]) {
     restoreIn(w);
     finishQ(w, k);
     railsHeld(w);
-    assert.equal(railCounts(w.w).total, 3910 + railCounts(w.w).produced);
+    assert.equal(railCounts(w.w).total, 3790 + railCounts(w.w).produced);
   });
 }
 

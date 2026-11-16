@@ -499,8 +499,7 @@ export const LIVE_SECOND_TRACK: readonly SecondTrack[] = [
     clashes: [
       { fromCm: 0, toCm: 200, reason: 'the forge', otherFree: false },
       { fromCm: 400, toCm: 800, reason: 'the Boiler', otherFree: false },
-      { fromCm: 11200, toCm: 11200, reason: 'a drop over 6 m', otherFree: true },
-      { fromCm: 11400, toCm: 11400, reason: 'a bank', otherFree: true },
+      { fromCm: 11200, toCm: 11600, reason: 'a drop over 6 m', otherFree: true },
     ],
   },
   {

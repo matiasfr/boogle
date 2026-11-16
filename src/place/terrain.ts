@@ -8,6 +8,8 @@ import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layou
 import { TOWN_CENTRE, TOWN_GROUND, TOWN_RING, TOWN_SLOTS, TOWN_STREETS, townBuilding } from './town-plan.ts';
 import { ROTUNDA_HOME } from './home-station.ts';
 import { ROTUNDA_KIT } from './rotunda.ts';
+import { QUARRY_WEST_BENCH, QUARRY_EAST_BENCH, SHORE_BENCH } from './path-benches.ts';
+import { JUMP_COURSE, padById } from './tech-layout.ts';
 import {
   ARMS,
   BANK_CART,
@@ -133,15 +135,19 @@ function pad(x0: number, z0: number, y: number, r: number, soft: number) {
     }
 }
 
-/** One-metre ground-strip samples, including each segment's endpoints. */
-function samplePath(pts: Pt[]): Pt[] {
+/** Ground-strip samples, including endpoints; new benches ease their slopes into level landings. */
+function samplePath(pts: Pt[], step = 1, eased = false): Pt[] {
   const samples: Pt[] = [];
   pts.slice(0, -1).forEach((a, k) => {
     const b = pts[k + 1]!,
-      n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
+      n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step);
     for (let m = 0; m <= n; m++) {
       const t = m / n;
-      samples.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+      samples.push([
+        a[0] + (b[0] - a[0]) * t,
+        a[1] + (b[1] - a[1]) * t,
+        a[2] + (b[2] - a[2]) * (eased ? smoothstep(0, 1, t) : t),
+      ]);
     }
   });
   return samples;
@@ -152,7 +158,8 @@ function strip(
   samples: [number, number, number][],
   inner: number,
   outer: number,
-  painted: boolean,
+  /** Painted half width is independent of the graded shoulder. */
+  paintInner: number | false,
   /** Leave this cell as it is; `y` is the strip's height there and `k` the cell. */
   skip?: (x: number, z: number, y: number, k: number) => boolean,
   /** false: leave `clearMask` as it was. The tree catalog reads it, and `heights` too (its h < 4 filter), so a strip
@@ -180,7 +187,7 @@ function strip(
     const t = smoothstep(outer, inner, d);
     heights[k] = heights[k]! + (y - heights[k]!) * t;
     if (clears) clearMask[k] = Math.max(clearMask[k]!, t);
-    if (painted) pathMask[k] = Math.max(pathMask[k]!, smoothstep(inner + 1, inner - 0.5, d));
+    if (paintInner !== false) pathMask[k] = Math.max(pathMask[k]!, smoothstep(paintInner + 1, paintInner - 0.5, d));
   }
   return best;
 }
@@ -318,9 +325,17 @@ function bake() {
         railBedCeilings.set(k, Math.min(railBedCeilings.get(k) ?? Infinity, heights[k]!, height));
   }
   // Paths last: they cut their ramps into the walls and fill across whatever they meet.
+  // Preserve ability-pad approaches and the Round's lowered green, including their interpolation cells.
+  const protectedPads = [padById('alcove'), ...JUMP_COURSE];
+  const keepExisting = (x: number, z: number) =>
+    protectedPads.some((p) => Math.abs(x - p.x) <= p.hx + 2 + CELL && Math.abs(z - p.z) <= p.hz + 2 + CELL) ||
+    Math.hypot(x - TOWN_CENTRE.x, z - TOWN_CENTRE.z) <= TOWN_RING.inner + CELL;
   PATHS.forEach((p) => {
     const samples = [...samplePath(p.pts.slice(0, p.bridgeAt + 1)), ...samplePath(p.pts.slice(p.bridgeAt + 1))];
-    strip(samples, p.bold ? 3.6 : 2.4, p.bold ? 6.5 : 4.8, true);
+    const paint = p.bold ? 3.6 : 2.4;
+    strip(samples, paint, p.bold ? 6.5 : 4.8, paint, (x, z) => !keepExisting(x, z));
+    // One cell diagonal beyond the tread keeps the cut wall's triangles outside the walking surface.
+    strip(samples, p.bold ? 5.9 : 4.8, p.bold ? 8.8 : 7.7, paint, keepExisting);
   });
   // Paint only: the ring follows the existing terrain, including the hall's gentle apron.
   for (let j = 0; j < NZ; j++)
@@ -331,7 +346,7 @@ function bake() {
       pathMask[at(i, j)] = Math.max(pathMask[at(i, j)]!, paint);
     }
   const dock = TOWN_STREETS.dock.line.map((p): Pt => [p.x, p.z, VILLAGE.y]);
-  strip(samplePath(dock), 4, 6, true, undefined, false);
+  strip(samplePath(dock), 4, 6, 4, undefined, false);
 }
 bake();
 
@@ -410,14 +425,14 @@ if (SHORE_COAST) {
     false,
     inTown,
   );
-  strip(SHORE_SAMPLES, 3.6, 6.5, true, inTown);
+  strip(SHORE_SAMPLES, 5.9, 8.8, 3.6, inTown);
   pad(SHORE_HOP.x, SHORE_HOP.z, SHORE_HOP.y, 2.5, 3);
   // Last: an 18 m disc (16 m clear after grid interpolation), including the steering funnel.
   pad(SHORE_LANDING.x, SHORE_LANDING.z, 3, 9, 5);
 }
 
 // Grade the bearing areas, with one cell of margin so drawn triangles are flat through the footprint.
-function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, yaw = 0) {
+function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, yaw = 0, soft = 3) {
   const x = wx - ORIGIN.x,
     z = wz - ORIGIN.z,
     c = Math.cos(yaw),
@@ -436,7 +451,7 @@ function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, y
       const dx = cellX(i) - x,
         dz = cellZ(j) - z;
       const outside = Math.max(Math.abs(dx * c - dz * s) - w / 2, Math.abs(dx * s + dz * c) - d / 2);
-      const weight = smoothstep(CELL + 3, CELL, outside),
+      const weight = smoothstep(CELL + soft, CELL, outside),
         k = at(i, j);
       const ceiling = railBedCeilings.get(k);
       // At a skipped cliff edge, the adjacent terrain triangle can enter the deck just beyond the pad blend.
@@ -446,14 +461,32 @@ function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, y
       if (weight > 0) heights[k] = Math.min(heights[k]! + (y - heights[k]!) * weight, ceiling ?? Infinity);
     }
 }
-gradeSupport(BANK_CART.x + ORIGIN.x, BANK_CART.z, BANK_CART.y, 3, 4, BANK_CART.yaw);
+// The cart's soft support skirt used to overwrite the west tread (2.87 m cross fall at -60,148).
+// Cut the benches before restoring narrowly feathered bearings; the old 3 m support skirt is unnecessary here.
+// Two metres of tread plus a cell diagonal, then a 2.9 m shoulder; paint keeps its existing width.
+strip(samplePath(QUARRY_WEST_BENCH, 0.1, true), 4.9, 7.8, false);
+strip(samplePath(QUARRY_EAST_BENCH, 0.1, true), 4.9, 7.8, false);
+// Six clear metres at the turn, including the corner triangles; run-ins hold the same 8 m datum.
+strip([[-10, 150, 8]], 5.9, 8.8, false);
+if (SHORE_COAST)
+  strip(
+    samplePath(SHORE_BENCH, 0.1, true),
+    5.9,
+    8.8,
+    false,
+    (x, z) => Math.hypot(x - TOWN_CENTRE.x, z - TOWN_CENTRE.z) <= TOWN_GROUND.r,
+  );
+// Keep a cell of flat bearing around each prop, but only half a metre of fade into the adjacent tread.
+gradeSupport(BANK_CART.x + ORIGIN.x, BANK_CART.z, BANK_CART.y, 3, 4, BANK_CART.yaw, 0.5);
 if (SHORE_COAST)
   gradeSupport(
     SHORE_HOP.x + ORIGIN.x,
     SHORE_HOP.z + 7,
-    coarseHeight(SHORE_HOP.x + ORIGIN.x, SHORE_HOP.z + 7),
+    SHORE_HOP.y,
     SHORE_HOP.bottom * 2,
     SHORE_HOP.bottom * 2,
+    0,
+    0.5,
   );
 const stationPads = LINKS.flatMap((link) =>
   link.stations.map((spec) => {
