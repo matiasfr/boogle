@@ -11,6 +11,9 @@
 > **Revised 16 November (planner, on `0b9933ec2`), after R1's builder stopped at the geometry proof:** R1 is now R1a
 > (the boiler waits for the cart, S, bump), R1b (Home proven on today's track, S, no bump) and R1c (the relay, L, only
 > on the owner's word); see [the revision note](#revision-16-november-r1-after-the-builders-stop). Nothing built.
+> **Re-evaluated on merit 16 November** under [right over less work](../agents/owner-calls.md#right-over-less-work):
+> today's track (A) still recommended, now for what it does at Home, not for its size; see
+> [Home on merit](#home-on-merit-a-b-and-c-16-november).
 
 # The riders' coach: Home and Ring reworked, then the coach
 
@@ -71,8 +74,9 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
 
 - [ ] **R1a. The boiler waits for the cart (S).** Sync: Server (rules). Tier: **independent review**. Builds: Codex
   gpt-6.1-sol medium; review a fresh gpt-6-astra (medium as a first pass). Bump: **yes**, the next free number: "the
-  boiler comes out once the depot cart is home; the cart never shares line 2 with a train". Needed whichever way Home
-  is fitted (Level finding 9: on main the cart is still out when trains wake).
+  boiler comes out once the depot cart is home; the cart never shares line 2 with a train". Needed under every option
+  (Level finding 9: on main the cart drives through the line 2 train that has just woken) and depends on nothing in
+  this plan: **it can start now**, ahead of the Home choice, L1 or the coach.
   - `src/sim/railway-sys-line2.ts`: the pedestal (`boilerPedestal`) appears when Q5 is complete **and** the cart is at
     `REST`, whichever comes second: `layLine2`'s Q5 completion and `cartStep`'s move to `REST` both call one
     `pedestalDue(w)` (boiler `'none'`, Q5 complete, cart `REST`); the away credit's path reaches it through the same two.
@@ -88,8 +92,9 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   - **Proof:** `npm run checkpoints -- q5-done boiler trains-on`; `npm run loop -- run` (the boiler beat up to 27.7 s
     later, nothing else moved). **Done means** those, and the designer has seen the gap's number.
 - [ ] **R1b. Home proven for the coach train, today's track (S).** Sync: none (tests and level rows only). Tier:
-  normal. Builds: Codex gpt-6.1-sol medium. Bump: no (no production value moves). After R1a. **The recommended Home
-  rework (owner question 1):** with R1a the cart's leg is dead track whenever a train can stand at the Village, so
+  normal. Builds: Codex gpt-6.1-sol medium. Bump: no (no production value moves). After R1a. **Option A, recommended
+  on merit ([Home on merit](#home-on-merit-a-b-and-c-16-november)):** with R1a the cart's leg is dead track whenever a
+  train can stand at the Village, so
   R2b's train stands at 21.65 with its long engine's nose at s 28.35, 3.35 m onto today's R 18 arc (0.31 m off the
   straight's line) and 2.35 m past the leg's points (s 26). Nothing at Home moves: no relay, no Q2 change, no tree.
   - `test/home-station.test.ts`: "both stops on the straight" gains R2b's planned row (the steel train at 21.65 with a
@@ -102,9 +107,11 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     Q1's and Q2's frames, Q2's rack and sign at full stock, the forge rack, trees), ≥ 0.25 m. **Standing** (cart at
     rest, hidden): the planned train at 21.65 against the same static set, ≥ 0.25 m (measured: island 0.58, leg lever
     1.13). The probe `dev/level/rider-coach-probe.ts` (read-only, committed) holds today's numbers.
-  - **Proof:** level-check exit 0 with the new row; one `look -- --rail-seed wagon-on` still from the island toward
-    s 28 with the planned engine's footprint drawn (debug overlay, as the fit check's), opened. **Done means** that.
-- [ ] **R1c. Only if the owner picks the relay (question 1, b): the relay (L).** Sync: Server data (catalog). Tier:
+  - **Proof:** level-check exit 0 with the new row; `look -- --rail-seed wagon-on` stills with the planned train's
+    footprint drawn (debug overlay, as the fit check's), opened: from the island toward s 28, from the square through
+    the hall's bays, from the table toward road 2. These are the evidence for owner question 2 (the engine standing on
+    the curve over the idle leg). **Done means** that.
+- [ ] **R1c. Option B, only if the owner picks it (question 2, b): the relay (L).** Sync: Server data (catalog). Tier:
   **independent review** + visual. Builds: Codex gpt-6-astra high; review fresh astra high. Bump: yes (rides R1a's if
   built together). The builder's stop report (`git show aba7158b2:docs/reports/rider-coach-r1.md`, branch
   `t3/home-road2-rework`) and the probe give the numbers; the size grew from M because of findings 2–3 and the
@@ -214,8 +221,8 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   **real-time clip** of riders boarding and alighting at Home and at the Pier (`npm run video`); `docs/game-design/
   place.md`'s train section gains the coach; the backlog row updated. Stays unmeasured: Level finding 8's list.
 
-**Order against L1.** S1 + V1 ship first with **no bump** (v54; four rider places, plot 3 at 1,600). **R1a runs in
-parallel with L1** (no shared file except `namespace.ts`, the goldens and the host trace: the second to ship rebases,
+**Order against L1.** S1 + V1 ship first with **no bump** (v54; four rider places, plot 3 at 1,600). **R1a can start
+now** (it fixes main's cart-through-train overlap and waits on no choice) **and runs in parallel with L1** (no shared file except `namespace.ts`, the goldens and the host trace: the second to ship rebases,
 re-pins and takes the next number; if both are ready together they share one); R1b follows R1a (no bump; R1c, if
 chosen, replaces R1b and rides R1a's bump when built with it). **R2a lands after
 V1 and before V2 is built**, so V2 targets the kit role and its arm stands beside the kit role's pose at the Quarry
@@ -230,7 +237,7 @@ its own if built with R1a). They cannot share one: R1 must ship and be proven al
 
 Measured at `916f570fb` with production `march`/`roadAt`/`lineAt` (scratch scripts, not committed) and
 `npm run level-check` (exit 0, 17 reports, 15 known planned-track failures, none new). Findings 2–4 and 7–10 revised on `0b9933ec2` with the
-committed read-only probe `dev/level/rider-coach-probe.ts`.
+committed read-only probe `dev/level/rider-coach-probe.ts`; finding 11 added on merit re-evaluation.
 1. **The stops move in R2b, not R1.** Moving both marks +3.4 m with today's trains moves the kit, wagon and steel
    3.4 m forward: the waiting wagon (`WAGON_S`) and the shunt misalign at Home, and at Ring the steel car's centre
    (S 444.0) falls 3.4 m off the jib's arm (u 440.4–440.8). With the coach, the same move keeps every freight car
@@ -272,6 +279,11 @@ committed read-only probe `dev/level/rider-coach-probe.ts`.
    at s 27.5; 5.65 m short of the up track's merge (s 34). The leg's points stand under the engine, harmless once R1a
    holds: no train and cart share a tick.
 
+11. **One more car at Home** (probe `growth`, 16 November): stop s 25.35, deck to s 26.95 (+3.25 m), end ramp to
+   30.95 over the leg's line (the leg 1.05–1.8 m north of road 2 at s 30–31; the island starts 1.65 m north), nose
+   7.05 m into the arc and 1.37 m off line, reach ahead 0.45 m short of the up track's merge; two more cars −3.25 m
+   into it. No relay with both arcs ≥ 18 m puts that nose on a straight (joins s 90–100).
+
 ## Risks
 
 - **Hotspots:** `train-view.ts` (V1, V2, R2a, R2b), `railway-lines.ts`, `namespace.ts`, the goldens: rebase first.
@@ -281,6 +293,10 @@ committed read-only probe `dev/level/rider-coach-probe.ts`.
 - **R1a changes the boiler beat:** the pedestal can appear up to 27.7 s after Q5 completes (the route's timing; a
   hand-filled Q5 could make it longer, bounded by one cart cycle, 127 s less Q5's lay). The goal marker keys on the
   pedestal, so for that gap no next goal shows; the designer rules whether it needs a cue.
+- **Option A rests on R1a's invariant.** The leg's points stand under the coach train's engine; that is safe only
+  while nothing runs on the leg after the trains wake. A later plan that revives the cart, or puts any vehicle on the
+  leg once trains run, must relay road 2 with the leg's points at least s 31.3 (the nose 28.35 + the cart's 2.7 m +
+  0.25), which B's 29.4 does not meet either (the cart's body at B's leg end overlaps B's nose by 0.31 m).
 - **With R1c only:** the 4.37 m move between s 28 and 90 is new geometry the fit check never saw, beside tree 217
   and through Q1 and Q2, the first two stretches every player lays; its audit and stills are the gate.
 - **Performance:** seven coach meshes and colliders, eight seated figures a train (V1 draws four standing);
@@ -417,9 +433,77 @@ unfinished audit). The owner approved the fit check's relay as the means; the go
 fitting and proven before the coach is built, is unchanged, so the means is his to confirm. Kept: no stop moves in
 R1, no tree is removed, Ring Island's +3.4 m stays in R2b.
 
-**Owner question** (R1a and R1b proceed on the recommendation; R1c is built only on (b)):
+**Owner question** (superseded the same day: the owner answered "If it's the right solution, let's not shy away from
+the work", and the choice was re-made on merit in [Home on merit](#home-on-merit-a-b-and-c-16-november)):
 1. **Fit the coach train at Home by keeping today's track (the engine stands 3.35 m onto the curve, over the depot
    cart's leg, which no longer runs once the trains do), or by relaying road 2 as the fit check proposed?** (a)
    **Recommended:** keep the track: nothing at Home moves, two small steps, the boiler may appear up to 27.7 s after Q5
    completes while the cart gets home; (b) relay: road 2's curve moves up to 4.4 m north between s 28 and 90, past a
    tree 3.6 m from the track, Q2's frame and log rack move, one large step.
+
+## Home on merit: A, B and C (16 November)
+
+The owner, offered A as "a fraction of the work": "If it's the right solution, let's not shy away from the work"
+([right over less work](../agents/owner-calls.md#right-over-less-work)). Re-judged with effort set aside; sizes are
+stated as facts on their own lines. Numbers from `dev/level/rider-coach-probe.ts` (read-only; sections `noRelay`,
+`solves`, `rack`, `growth`, `cart`) are **measured**; line-wide numbers for a longer train are the fit check's or
+**estimated**; anything marked **build** needs one to know.
+
+**The longest train the plans call for at Home's road 2 is the coach train**, 22.80 m over bodies (23.20 with the
+terminal buffers): the longer or big boiler's engine, the players' car, the coach, the kit car, the footing wagon and
+the steel car; tail 16.10 m behind the players' car, nose 6.70 m ahead. Sources: the steel car on the long boiler and
+the wagon ([fourth-car](fourth-car.md), [train-progression](train-progression.md) rung 6); the big boiler on line 2 at
+High Gorge, "cars unchanged" ([garage-choices](garage-choices.md) G-d and its review call 12); the coach outside the
+allowance ([coach A](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework) (3)). Strong's extra car is offered
+only on lines opened from stage 4 ([garage trade answers](../decisions-core-loop.md#d-2026-11-15-garage-trade-answers):
+"Line 2 keeps the big boiler upgrade at High Gorge; no trade there"), and those lines leave from the West landing (bay, cave) and High Gorge (ns), not road 2
+(`src/sim/railway-world-lines.ts`). Not decided, and the only things that could lengthen a road 2 train: cargo trains
+of their own ("a later plan, after the greybox route", [12 November](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered)),
+rider places beyond eight a train ([dedicated car](../decisions-rail.md#d-2026-11-16-riders-get-a-dedicated-car):
+"how many riders it holds beyond the 8" not decided), or Strong on line 2.
+
+**So C, as asked, is A or B:** both already fit the longest planned train. What C would mean for **one more car**
+(3.70 m, measured on today's track): the stop moves to s 25.35 (tail held at the spur's points); the island's deck
+must reach s 26.95 (+3.25 m) and its end ramp s 30.95, where the cart's leg runs 1.05–1.8 m north of road 2, inside
+the island's footprint from 1.65 m: the leg must be lifted when the trains come (dead by R1a) or rerouted; the
+engine's nose 7.05 m into the curve, 1.37 m off line; the reach ahead 0.45 m short of the up track's merge (s 34).
+Two more cars reach 3.25 m into the turnout's block: the up track's turnout must move, a new Home head. B cannot take
+one more car at all: no exact closure with both arcs ≥ 18 m puts that nose on a straight (joins s 90–100 tried), so B
+would be relaid a second time. Off Home, one more car also fails line 2's queue spacing by about 2.1 m at today's
+`TRAIN.sepCm` (fit check), moves Ring Island's stop again and needs every halt re-swept (estimated). A longer train is
+a line-wide decision, not a Home one.
+
+| Criterion | A: today's track (R1a + R1b) | B: the relay (R1a + R1c) | C: Home for one more car |
+| --- | --- | --- | --- |
+| What a player sees at the platform | Every car anyone boards stands straight beside the deck; the engine's front 3.35 m stands onto the curve past the platform's end, 0.31 m off line, over the idle leg's points (measured) | The whole train straight, the nose 1.05 m short of the leg's points: the tidiest engine (measured) | Players' car partly beyond today's deck end; engine 7 m round the curve, 1.37 m off line (measured) |
+| Boarding both passenger cars | Players' car 20.05–23.25, coach 16.65–19.55 on the 5.70–23.70 deck (measured) | Identical | Needs the deck +3.25 m over the leg's line |
+| The read from the square and the hall | Unchanged | The s 28–90 curve 4.37 m north, 35–75 m away: about 4–6° of bearing (design review); **build** for stills | Island longer, leg gone at its far end; **build** |
+| Clearances | Engine to island 0.58 (today's engine 0.65; every car to a platform edge is 0.55 by design), lever 1.13, merge block 4.15 (measured) | Same platform margins; straight spare 0.05; the 1.05 m to the points is no clearance for the cart (its body overlaps the nose by 0.31) (measured) | Merge block 0.45; tail at the spur's points as today (measured) |
+| What it rests on | R1a's invariant: no vehicle on the leg after trains wake | The same invariant (see Clearances) | The same, plus the leg lifted |
+| When trains grow again | Takes one more car with the island lengthened over the dead leg; two need a new head | Cannot take one more car without a second relay | Is that growth; two more need the turnout moved |
+| Q1 and Q2, the first two track quests | Untouched: frames, rack, trees, bot route, laying sweep as proven | Q2's frame 3.5 m and its rack +31°; track 3.64 m from tree 217's centre, trunk and canopy unproven (**build**); the laying sweep and bot route re-proven | Untouched by Home's change; the island's far end changes |
+| Risk to what is built and proven | Two tests relaxed with the invariant cited; nothing re-pinned | Line 2's path samples, `forgeCm`, Q2's catalog row, seeds and goldens re-pinned | Island, leg and halts reworked with a line-wide spacing change |
+
+**Sizes, as facts.** A: R1a (S, one bump) + R1b (S, no bump). B: R1a (S) + R1c (L, a bump shared with R1a if built
+together, full audit). C: R1a + an island extension, a lifted or rerouted leg, a moved stop and line-wide spacing, Ring
+and halt re-sweeps: L or more (estimated), plus the decision that creates the longer train.
+
+**Recommendation: A.** On merit: it puts every car a player boards straight beside the platform exactly as B does;
+B's one real gain is the engine's last 3.35 m, which stands past the platform's end where nobody boards, and B's own
+margins (0.05 m of straight, a points gap the cart's body does not clear) are no more robust than A's; B moves Q1 and
+Q2, the first stretches every new player lays, beside a tree whose canopy is not proven clear, to buy that; and A is
+the only option that can take one more car later without being relaid again. Both rest on R1a's invariant.
+**What would change it:** (1) the owner, shown R1b's stills, finds the engine standing on the curve over the idle
+junction wrong at Home (question 2: then B); (2) a plan puts a vehicle back on the leg after trains run (then a relay
+with the points at s 31.3 or more, which B as drawn does not meet); (3) the owner decides line 2's trains grow
+(question 1: then C on A's track, designed with that decision and its line-wide spacing).
+
+**Owner questions** (the build proceeds on the recommended answers; R1a starts now regardless):
+1. **Will line 2's trains ever grow past the coach train: more rider coaches as towns grow, cargo cars, or Strong on
+   line 2?** (a) **Recommended:** not decided now; Home is sized for the coach train, and the plan that lengthens line
+   2's trains brings Home's one-more-car change (the island lengthened over the retired leg) and the line-wide spacing
+   with it; (b) yes, plan one more car now: Home's change joins R1, the spacing joins R2b.
+2. **At Home, may the coach train's engine stand just past the platform's end, 3.35 m round the curve (0.31 m off
+   line), over the depot cart's idle junction?** (a) **Recommended:** yes, judged on R1b's stills; (b) no, the engine
+   must stand straight and short of the points: build the relay (R1c).
+
