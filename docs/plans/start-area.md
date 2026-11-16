@@ -218,7 +218,7 @@ opus high; "Visual review" is the main session.
     [Opened 02 after S1](/Users/matiasfranco/Developer/boogle/.look/start-area/s1-s4/s1/02-landing-settled.png):
     the path is exposed; the retained end ramp still crosses the dock's left edge.
     [Walk log](/Users/matiasfranco/Developer/boogle/.look/start-area/s1-s4/s1-walk-2.log).
-- [ ] **S2. Check the sea lure behind the landing (item 4). P2.** Tier: a capture, then at most a player-visible
+- [x] **S2. Check the sea lure behind the landing (item 4). P2.** Tier: a capture, then at most a player-visible
   Local view change. Model row: player-visible implementation, Codex `gpt-6-astra` high (S1's job).
   - After S1, capture 04's camera (turned round at the landing) and 14's (above). Judge whether anything there is
     brighter or more inviting than the path up: the open dock end, the grey bed, the far island's talk bubble.
@@ -228,6 +228,14 @@ opus high; "Visual review" is the main session.
     if S1 and S3 are not enough (shore-arrival research: no beacon arrows). If the far island's bubble is the lure,
     report it to the route-greybox owner rather than changing it here. Update `docs/game-design/first-run.md` if
     anything changes.
+  - **Checked 15 November, after S1:** opened matched
+    [04](/Users/matiasfranco/Developer/boogle/.look/start-area/s1-s4/s1/04-landing-behind-to-sea.png) and
+    [14](/Users/matiasfranco/Developer/boogle/.look/start-area/s1-s4/s1/14-top-down-landing.png).
+    The pale platforms and dark bed remain the large seaward cue; the far island's white speech bubble is a small,
+    distinct point on the horizon. **No end rail or fingerpost added.** A dock-end rail does not address the beach
+    departure or the far bubble; S4's newly approved removal of the massing addresses the large cue. No side rails,
+    new copy or fall changes. Route-greybox owner follow-up: assess that far island/bubble from camera 04 if sea-bound
+    first visits continue; no evidence here establishes that it caused Marias's choice. Final S4 captures recheck it.
 - [ ] **S3. Re-aim the landing (item 6). P2.** Tier: Local presentation. Model row: player-visible implementation,
   Codex `gpt-6-astra` high (S1's job).
   - Files: `src/place/shore-layout.ts` (`SHORE_LANDING.yaw`), only if needed.
