@@ -1,3 +1,4 @@
+import { advanceHold } from '../../components/hold/view.ts';
 // The train garage's world half (docs/brainstorms/engine-garage.md, first build; docs/plans/garage-install-moment.md,
 // G2; view only): the works copy of the engine standing on the Roundhouse table for the upgrade or after wagon coupling, when
 // the deck is at rest, wearing the room's fit; the blast pipe or longer boiler waiting on its stand when its install is ready, and as a
@@ -916,7 +917,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
           ghost.visible = true;
           uiSound('thunk');
         }
-        ring = Math.min(1, ring + dt / need);
+        ring = advanceHold(ring, dt, true, need);
         clickAt -= dt;
         if (clickAt <= 0) {
           clickAt = 1 / (6 + 8 * ring);
@@ -924,7 +925,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
         }
         if (ring >= 1) commit();
       } else {
-        ring = Math.max(0, ring - dt / (MOMENT.drain / 1000));
+        ring = advanceHold(ring, dt, false, need, MOMENT.drain / 1000);
         if (ring <= 0) {
           phase = 'idle';
           // Back on its stand if it waits there (no frame without it), else gone.

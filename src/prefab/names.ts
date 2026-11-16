@@ -5,6 +5,7 @@ export interface InteractionNames {
   'seat.sit': true;
   'railway.request-stop': true;
   'town.shop-stock': true;
+  'town.plot-buy': true;
   'town.shop-rail': true;
 }
 export interface GateNames {
@@ -51,7 +52,7 @@ export const names: NameRegistry = {
     'roundhouse.bay',
     'roundhouse.table',
   ],
-  interactions: ['railway.request-stop', 'seat.sit', 'town.shop-stock', 'town.shop-rail'],
+  interactions: ['railway.request-stop', 'seat.sit', 'town.shop-stock', 'town.plot-buy', 'town.shop-rail'],
   gates: ['open'],
   materials: [],
   assets: {},

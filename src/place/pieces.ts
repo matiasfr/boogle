@@ -44,10 +44,18 @@ export function dropSet(boxes: Box[], onLand: (k: number) => void, owner: OwnedV
   return {
     ...set,
     drop(k, h, delay = 0) {
-      air.push({ k, t: -delay, fall: Math.sqrt((2 * h) / GRAVITY), h, landed: false });
+      const fall = Math.sqrt((2 * h) / GRAVITY);
+      // A site first seen part-built passes a negative delay. Its past landings are state, not new effects.
+      // Keep the fall-time decision here so all callers share the same gravity and landing boundary.
+      if (-delay >= fall) {
+        write(k, 0, 0);
+        set.mesh.instanceMatrix.needsUpdate = true;
+      } else air.push({ k, t: -delay, fall, h, landed: false });
       set.mesh.visible = true;
     },
     snap(k, on) {
+      // A row disappearing or a completed load cancels this piece's pending drop as well as its drawn pose.
+      for (let n = air.length - 1; n >= 0; n--) if (air[n]!.k === k) air.splice(n, 1);
       if (on) write(k, 0, 0);
       else set.mesh.setMatrixAt(k, ZERO);
       if (on) set.mesh.visible = true;

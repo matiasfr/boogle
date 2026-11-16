@@ -5,7 +5,7 @@
 // Local (./memory.ts). The museum's 1:120 table shows the shared railway as it stands (place-retirement T3).
 import type { FrameCtx } from '../../loop.ts';
 import { conversation } from '../../player/conversation.ts';
-import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
+import { type Interactable } from '../../player/hands.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import {
   TOWN_FACTS,
@@ -66,8 +66,8 @@ export async function createTownView(read: () => TownLook | null) {
   let railway: TownLook | null = null;
   const refresh = () => {
     const r = read();
-    if (!r) return;
     railway = r;
+    if (!r) return;
     facts = r.facts;
     score = r.score;
   };
@@ -164,23 +164,31 @@ export async function createTownView(read: () => TownLook | null) {
   // Empty plot outlines and mats, the monument, and the delivered freight at the priced plots.
   createTownBlockout(owner);
   const plots = createTownPlots(owner);
-  plots.update(read()?.plots ?? null);
   sites.buildSites(owner);
+  plots.update(read()?.plots ?? null);
   rooms.snap();
   rooms.warm();
+  const targets: Interactable[] = [];
+  const appendTargets = (some: Interactable[]) => {
+    for (const target of some) targets.push(target);
+  };
   const room = (id: 'house' | 'shop' | 'museum') => ({ up: rooms.rooms[id].up, ready: rooms.rooms[id].ready });
   return {
     root: owner.root,
+    release: plots.release,
     /** The residents' Talk and the shop's stands and rail. Joined only when more than one has something in reach. */
     targets(): Interactable[] {
-      const parts = [residents.targets(), shop?.targets() ?? NO_TARGETS].filter((t) => t.length);
-      return parts.length === 0 ? NO_TARGETS : parts.length === 1 ? parts[0]! : parts.flat();
+      targets.length = 0;
+      appendTargets(residents.targets());
+      if (shop) appendTargets(shop.targets());
+      appendTargets(plots.targets());
+      return targets;
     },
     /** The curio shelf, for K1's crystals (`shelfGroup`, `crystalPeg`). */
     shelf,
     update(ctx: FrameCtx) {
       refresh();
-      plots.update(railway?.plots ?? null);
+      plots.update(railway?.plots ?? null, ctx.dt);
       if ((hushIn -= ctx.dt) <= 0) {
         hushIn = HUSH_EVERY;
         const reward = inspectRailway()?.reward;
@@ -204,6 +212,7 @@ export async function createTownView(read: () => TownLook | null) {
       residents.lateUpdate();
     },
     inspect: (): TownInspection => ({
+      plots: plots.inspect(),
       facts: TOWN_FACTS.filter((f) => townHas(facts, f)),
       newest: newestTownFact(facts),
       level: townLevel(facts),

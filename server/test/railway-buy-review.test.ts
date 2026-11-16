@@ -1,3 +1,4 @@
+import { townPlotBoard } from '../../src/place/town-plan.ts';
 // Independent review of B1 through the real r:edit path: different plots raced in one tick, a buy re-sent after a
 // restart under a new session epoch, and the old epoch's edit replayed.
 import test from 'node:test';
@@ -83,7 +84,15 @@ async function fixture(stage: SeedStage) {
     mirrors,
     send(fields: Obj, sid = 'alice') {
       const s = sessions.get(sid) ?? { epoch: 1, request: 0 };
-      const e = { op: 'rail.buy', ...fields, epoch: s.epoch, request: ++s.request, at: [90460, 1800, 3520], ms: 100 };
+      const board = townPlotBoard(typeof fields.id === 'number' && fields.id >= 0 && fields.id < 3 ? fields.id : 0);
+      const e = {
+        op: 'rail.buy',
+        ...fields,
+        epoch: s.epoch,
+        request: ++s.request,
+        at: [Math.round((board.x + 1000) * 100), 1800, Math.round(board.z * 100)],
+        ms: 100,
+      };
       h.deliver({ t: 'r:edit', e }, sid);
       return { e, result: h.rules.railway.outcome(sid, s.epoch, s.request) };
     },

@@ -5,6 +5,7 @@
 //
 // The rules stay pure (state, action, tick): railApply and railTick are the same functions R1b's prediction runs.
 // Validation reads the facts the action carried (the actor's own position and action clock) through `Actor`.
+import { townPlotBoard, TOWN_BOARD } from '../place/town-plan.ts';
 import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type RailResult } from '../sim/railway.ts';
 import { HEAVY_LOAD, RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import {
@@ -281,8 +282,12 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.glide':
       // Readiness (not yet taken) is the rule's; here only the summit device's reach.
       return height(LINE2_GLIDE.y) && near(LINE2_GLIDE.x, LINE2_GLIDE.z, 320);
-    case 'rail.buy':
-      return railInt(e.id) && !!TRADE.plots[Math.floor(e.id / 16)]?.[e.id % 16];
+    case 'rail.buy': {
+      if (!railInt(e.id) || !TRADE.plots[Math.floor(e.id / 16)]?.[e.id % 16]) return false;
+      const board = townPlotBoard(e.id % 16);
+      // Place-local x + 1000 is the world's Home origin, as in the other railway anchors.
+      return actor.reach(Math.round((board.x + 1000) * 100), Math.round(board.z * 100), TOWN_BOARD.reach * 100);
+    }
     case 'rail.breaker':
       return at(WORKS_BREAKER);
     case 'rail.strike':

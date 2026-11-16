@@ -3791,6 +3791,11 @@
         }
       },
       "colliders": [],
+      "interactions": [
+        {
+          "action": "town.plot-buy"
+        }
+      ],
       "key": "town.plot-board",
       "scope": "place",
       "visual": {
@@ -3807,6 +3812,77 @@
         "params": {
           "colour": "#ab6b34"
         }
+      }
+    },
+    "town.plot-house": {
+      "colliders": [],
+      "key": "town.plot-house",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-shell",
+        "params": {
+          "all": true,
+          "spec": {
+            "closed": true,
+            "d": 7.4,
+            "high": 3.7,
+            "post": "#7f5630",
+            "postPalette": "timber",
+            "rise": 2.5,
+            "roof": "#c9a86a",
+            "w": 7.4,
+            "wall": "#e8dcc0",
+            "wallPalette": "walls"
+          }
+        }
+      }
+    },
+    "town.plot-house-hull": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            1.85,
+            0
+          ],
+          "half": [
+            3.8,
+            1.85,
+            3.8
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            4.45,
+            0
+          ],
+          "half": [
+            3.7,
+            0.75,
+            2.59
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            0.25,
+            0
+          ],
+          "half": [
+            4.5,
+            0.25,
+            4.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.plot-house-hull",
+      "scope": "owner",
+      "visual": {
+        "none": true
       }
     },
     "town.plot-stake-bands": {

@@ -123,3 +123,10 @@ export const TOWN_PROPS = {
   yard: GATE_BACK,
   forgeDoor: { x: -92, z: -3, w: 2.8 },
 } as const;
+
+/** Board anchor in Place-local metres, shared with the server's reach validation (no view dependencies). */
+export const TOWN_BOARD = { side: 2.2, front: 1.2, reach: 3.2 } as const;
+export function townPlotBoard(k: number): XZ {
+  const b = townBuilding(TOWN_PLOTS.order[k]!);
+  return townLocal(b, TOWN_BOARD.side, b.d / 2 + TOWN_BOARD.front);
+}

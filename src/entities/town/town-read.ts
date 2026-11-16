@@ -3,6 +3,7 @@
 // what the town view draws: the score the shop's prices climb with, the Works' breaker, line one's phase and which
 // stretches are laid. Pure over a world and a tick. The look is worked out once per (world, tick): `railCounts` and
 // `railPhase` walk the rows, and the town asks every frame.
+import { Plot, Town } from '../../sim/railway-components.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { jobs, qjobs, works, town, plot, type ReadWorld } from '../../sim/railway-rows.ts';
 import { plotsStaked, plotSlot } from '../../sim/railway-queries-trade.ts';
@@ -77,6 +78,12 @@ export function createTownReader(facade: () => Facade | null) {
       if (!f) return null;
       const tick = f.tick(),
         w = f.world();
+      const townId = w.lookup(Town, 0);
+      if (townId === undefined || !w.get(Town, townId)) return null;
+      for (let k = 0; k < TRADE.plots[0].length; k++) {
+        const id = w.lookup(Plot, k);
+        if (id === undefined || !w.get(Plot, id)) return null;
+      }
       if (!held || held.w !== w || held.tick !== tick) {
         stats.builds++;
         held = { w, tick, timed: timed(w, tick) };
