@@ -33,6 +33,7 @@ test('every surviving runtime pad and support reaches the census', async () => {
     ...Array.from({ length: 19 }, (_, i) => `tech/hook/${i}`),
     ...Array.from({ length: 4 }, (_, i) => `tech/line2/${i}`),
     ...Array.from({ length: 7 }, (_, i) => `tech/secrets/${i}`),
+    ...Array.from({ length: 51 }, (_, i) => `tech/helmet-escape/${i}`),
   ].sort();
   const direct = collectTechGeometry();
   const { faces } = await collectDrawnGeometry();

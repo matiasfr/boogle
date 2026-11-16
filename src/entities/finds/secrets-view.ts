@@ -31,6 +31,7 @@ import { pierLaid } from '../../sim/railway-line2-layout.ts';
 import { townShelf } from '../town/state.ts';
 import { wardrobe } from '../wardrobe/state.ts';
 import type { FindsApi, FindsViewInspection } from './state.ts';
+import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
 
 const STONE = '#917b5e',
   STONE2 = '#b6a080',
@@ -89,6 +90,16 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
   const lookout = padById('lookout'),
     balcony = padById('balcony'),
     stack = padById('stack');
+  instantiate(
+    'railway.sea-ladder',
+    {
+      id: 'helmet-escape',
+      prefab: 'railway.sea-ladder',
+      pos: [stack.x + ox, stack.top + 0.1, stack.z + stack.hz],
+      rot: [0, Math.PI / 4, 0],
+    },
+    { owner, batch: { target: createPrefabBatch('railway.sea-ladder', 51, owner), index: 0 } },
+  ).setEnabled(true);
   for (const b of [lookout, stack]) {
     put(stonePad(b.hx, b.hz, THICK), v.set(b.x + ox, b.top - THICK / 2, b.z));
     addStatic({ kind: 'box', hx: b.hx, hy: THICK / 2, hz: b.hz }, v, undefined, undefined, owner);

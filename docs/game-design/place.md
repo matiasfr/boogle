@@ -1800,6 +1800,12 @@ the store; the cut gold finds' `finds` field is still parsed, unused), pruned by
 
 ### Secrets in the live game (9 November 2026, place-retirement F2)
 
+**Helmet water escape (15 November, Grant G15):** a brass inclined ladder runs from below the sea
+to the south lip of the 15 m helmet stack. Walk forward from swimming onto its 1.8 m wide,
+45-degree surface; no jump, hook, glider or new button is required. Its two rails and 49 rungs
+use the existing prefab box component with one continuous walkable collider. The existing
+stack-return hook still leads from the dry stack back to the railway. No new words.
+
 As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
 
 - **Nine of Place's ten secrets** stand where Place had them (`tech-layout.ts`'s `SECRETS`), each a crate with a
