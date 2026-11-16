@@ -531,7 +531,7 @@ type Run = {
   done: Record<NodeId, () => boolean>;
   policy: Record<NodeId, (pl: Player) => Policy>;
   /** World facts the sim doesn't hold (the pier is reached by walking there). */
-  flags: { atPier: boolean };
+  flags: { atPier: boolean; wagonReturned: boolean };
   /** The node being played, and how much farther than straight-line its walks are (1 unless calibrated). */
   current: NodeId | null;
   detour: (id: NodeId) => number;
@@ -546,7 +546,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     gen: null,
   }));
   const g = new Game(h, players);
-  const flags = { atPier: false };
+  const flags = { atPier: false, wagonReturned: false };
   const w = () => g.w;
   const q = (k: number) => !!qjob(w(), k).completion;
   const done: Record<NodeId, () => boolean> = {
@@ -578,7 +578,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     kiln: () => works(w()).lit >= 0,
     stall: () => shed(w()).stall >= WORKS.stall,
     cradle: () => shed(w()).fitted >= 0,
-    table: () => trainsOf(w()).some((r) => r.wagon), // any of line 2's trains (v26)
+    table: () => trainsOf(w()).some((r) => r.wagon) && (q(5) || flags.wagonReturned),
     crossing: () => works(w()).pierSet >= WORKS.pier,
     Q7: () => q(6),
     bents: () => aperture(w()).set >= WORKS.ring,
@@ -631,7 +631,16 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
         () => works(w()).rack,
       ),
     cradle: (pl) => cradle(g, pl),
-    table: (pl) => device(g, pl, SHED_TABLE, 'rail.turn', () => shed(w()).stall >= WORKS.stall) as Policy,
+    table: function* (pl) {
+      yield* device(g, pl, SHED_TABLE, 'rail.turn', () => shed(w()).fitted >= 0);
+      if (pl.i !== 0 || q(5)) return;
+      // Works first: prove the loaded wagon visits Far Head and returns without a pier to unload at.
+      const loadedAt = (at: number) => trainsOf(w()).some((r) => r.wagon && r.foot > 0 && r.phase === 0 && r.at === at);
+      yield* waitFor(g, () => loadedAt(2));
+      yield* waitFor(g, () => loadedAt(0));
+      if (works(w()).pierRack || works(w()).pierSet) throw new Error('wagon unloaded before Q6');
+      flags.wagonReturned = true;
+    },
     // By hand, the pier's footings come off the Works rack the kiln casts to, not off the wagon at the pier rack.
     crossing: (pl) =>
       byHand.has('crossing')

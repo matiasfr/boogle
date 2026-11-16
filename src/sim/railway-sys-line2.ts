@@ -128,12 +128,14 @@ export const boilerDrop = defineSystem(
 );
 export const boilerFit = defineSystem(
   'rail.boilerFit',
-  { reads: [Account, QJob, Works, Aperture, Leg], writes: [Boiler, Rail, Train], phase: 'act', order: 31 },
+  { reads: [Account, QJob, Aperture, Leg], writes: [Boiler, Rail, Train, Works], phase: 'act', order: 31 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
     if (w.get(Rail, railId(w))!.trains >= 0 || !boilerReleasable(w, a.pid, a.epoch, e.revision!)) return 0;
     const b = w.mut(Boiler, boilerId(w))!;
     Object.assign(b, { state: 'fitted', holder: '', epoch: 0, age: 0, revision: b.revision + 1 });
+    // The empty pedestal casts the breaker as trains wake: the Works and Q6 open together.
+    if (w.get(Works, worksId(w))!.breaker === 0) w.mut(Works, worksId(w))!.breaker = 1;
     w.mut(Rail, railId(w))!.trains = tick;
     // Each line's trains spread round its circuit (docs/plans/generic-lines.md, "Starting"): line 2's at the Village
     // (up) and Far Head (down); they wake together.
@@ -431,8 +433,6 @@ export function layLine2(w: World, tick: number) {
   if (run.elapsed === schedule.totalTicks) {
     w.mut(QJob, id)!.completion = 1;
     if (k === 4 && w.get(Boiler, boilerId(w))!.state === 'none') boilerPedestal(w);
-    // The forge's third made thing: Q6 laid casts the breaker on the boiler's old pedestal.
-    if (k === Q6 && w.get(Works, worksId(w))!.breaker === 0) w.mut(Works, worksId(w))!.breaker = 1;
     // The pier opens: a train already bound for Far Head (halt 2) as its end still makes that stop. One whose nose is
     // on the crossover has crossed: it turns back there as at an end (`turn`; review of v26, P2-2). One short of it
     // stops there once, as if a rider had asked, then runs on to the pier (review of 4a, P3a). endMoved
@@ -445,7 +445,7 @@ export function layLine2(w: World, tick: number) {
 }
 export const line2Tick = defineSystem(
   'rail.line2Tick',
-  { reads: [Aperture, Leg], writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works, Train], phase: 'tick', order: 1 },
+  { reads: [Aperture, Leg, Works], writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Train], phase: 'tick', order: 1 },
   (w, { tick }: Tick) => layLine2(w, tick),
 );
 /** The depot cart, after the forge has poured this tick (so a waiting cart takes a rail the tick it lands). */

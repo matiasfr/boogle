@@ -13,7 +13,7 @@ import type { Act, Tick } from './railway-sys-core.ts';
 
 // ---------------------------------------------------------------- the Works and the Roundhouse (./railway-works.ts)
 // Server kind: every op is judged from the actor's own position by railValid; each transfer is one apply.
-/** The breaker on the boiler's old pedestal: the forge's third made thing, cast when Q6 is laid. A room-wide rung.
+/** The breaker on the boiler's old pedestal: the forge's third made thing, cast when the boiler is fitted. A room-wide rung.
  * Not while you haul the boiler (docs/plans/boiler-first-choice.md, Part 2): a guard for worlds where the two met. */
 export const breaker = defineSystem(
   'rail.breaker',

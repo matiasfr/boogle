@@ -23,7 +23,7 @@ Sources: [next-destination](../research/next-destination.md) (A, Split-rock Work
 
 ## Goal
 
-After the pier, the forge casts a **breaker**. You take it and strike a cracked slab at Home, which opens an old
+At the boiler fit, the forge casts a **breaker** (owner, 15 November; [works-flow](works-flow.md#owner-questions), superseding the original after-Q6 timing). You take it and strike a cracked slab at Home, which opens an old
 Roundhouse stall beside the junction turntable. Inside are two empty footing sockets and a shunter and wagon under a
 tarp. You ride line 2 to the quarry halt and strike the big seam in the **split rock** you have passed since Q3. The
 haul cut opens and you light the Works' kiln with logs and stone. **Precast footings** come down a roller road to a
@@ -150,8 +150,8 @@ the test moves a candidate to clear something, J1 says so; the cm above are the 
 - `validateRailWorks(view)`, the invariants below.
 
 **Systems** (`src/sim/railway-systems.ts`; the Works block after B5–B8's train block):
-- **Cast the breaker.** Where B5–B8 casts the boiler (`layLine2`, `line2Tick` and `resume`'s writes): when slot 5 (Q6)
-  completes and `breaker === 0`, set `breaker = 1`. An away credit that finishes Q6 casts it too.
+- **Cast the breaker (owner, 15 November; works-flow step 1).** The accepted boiler fit sets `breaker = 1` if it is
+  zero. Q6 completion and away credit never recast it. This supersedes the original after-Q6 trigger.
 - `rail.breaker` (op order 33): needs `breaker === 1`, then sets 2. It is a room-wide rung like `rail.axe` and
   `rail.hook`.
 - `rail.strike {id}` (34): needs `breaker === 2` and the seam bit unset. It sets the bit; a repeat strike returns 0. It
@@ -233,7 +233,7 @@ each):
 - **Footings**: `footingTotal === poured ≤ total`, `rack ≤ total` (recovery may push it past `rackCap`) and
   `pierRack + pierSet ≤ pier`. `stall ≤ 2`; `cradle > 0 ⇒ stall === 2`; `cradleRails ≤ 8`. `fitted ≥ 0 ⇔ (cradle === 2
   && cradleRails === 8)`. `table === 1 ⇒ stall === 2`, and `ready ≥ 0 ⇒ fitted ≥ 0`.
-- **Works**: `breaker > 0 ⇔ line2Completed ≥ 6`; `seams ⊆ {1, 2}`; `seams > 0 ⇒ breaker === 2`. `lit ≥ 0 ⇔ (logs ===
+- **Works** (owner, 15 November): `breaker > 0 ⇔ boiler.state === 'fitted'`; `seams ⊆ {1, 2}`; `seams > 0 ⇒ breaker === 2`. `lit ≥ 0 ⇔ (logs ===
   16 && stone === 16)`; `lit ≥ 0 ⇒ seams & 2`; `poured > 0 ⇒ lit ≥ 0`. `pierRack + pierSet > 0 ⇒ line2Completed ≥ 6`;
   `crossing ≥ 0 ⇔ pierSet === 12`.
 - **Trains and accounts**: `train[0].foot === 0` and `!train[0].wagon`; `train[1].foot ≤ wagonCap`;

@@ -1,6 +1,6 @@
 // The pier's Local payoff: pooled rockets only on the mounted Q6 completion edge. From v27 it also holds the pier's
 // second track and Q7's deck (./ring-deck.ts), laid from the room's rows once Q7 starts. The show ends on a 2.5 s
-// shared shot of the forge's pedestal, where the breaker was just cast, and the forge's call sounds as it lands
+// shared shot of the forge's pedestal only if the breaker still waits there, and the forge's call sounds as it lands
 // (docs/plans/forge-call-handoff.md, step 1): a shared moment's rules, so every page that sees the edge live, the one
 // highlighted skip, behind a reward card, none under reduced motion or on a reload.
 import * as THREE from 'three/webgpu';
@@ -68,6 +68,11 @@ export function createRailwayPier(
     soundForgeCall();
   };
   function cutToForge() {
+    // A friend may have taken it while the reward card or rockets held the show.
+    if (!cast()) {
+      cue();
+      return;
+    }
     const { pos, to, at } = forgeCut('breaker');
     holdForgeCall(PIER_CUT.hold);
     // The whole shot is the held end: it cuts in, drifts and cuts home; `onCut` is its first frame on screen.
@@ -125,7 +130,7 @@ export function createRailwayPier(
       deck.update(dt);
       if (done && !completed) {
         waiting = true;
-        // The breaker is cast on this same frame: its call waits for the cut.
+        // The breaker was cast at the boiler fit. Remind only a room that left it on the pedestal.
         if (cast()) {
           holdForgeCall(PIER_CUT.hold);
           call = 'held';

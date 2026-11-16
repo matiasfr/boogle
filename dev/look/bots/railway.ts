@@ -23,7 +23,7 @@ import { CART_PHASE } from '../../../src/sim/railway-cart.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
 import { net, onRemotePresence, remotes } from '../../../src/netplay/net.ts';
 import { RAIL_STOPS } from '../segments.ts';
-import { RAIL_STONE } from '../../../src/sim/railway-works-layout.ts';
+import { RAIL_STONE, WORKS_BREAKER } from '../../../src/sim/railway-works-layout.ts';
 import { splitRockToCrossing } from './railway-works.ts';
 export { splitRockToCrossing };
 import { LINE2_BOILER } from '../../../src/sim/railway-line2-layout.ts';
@@ -667,6 +667,15 @@ export async function boilerToPier(
     await until(() => !aboard() && me.coyote > 0, 'stepped off the train onto the halt', 10000);
   };
   if (from !== 'q6') await ride(0, 1, 0, true);
+  // The breaker is already cast: take it on the first pass through Village, before riding out to Q6.
+  if (R.works(R.rw()).breaker === 1) {
+    check(
+      await bot.use(WORKS_BREAKER.x / 100, WORKS_BREAKER.z / 100, 'take the breaker', /^Take the breaker$/),
+      'breaker offered',
+    );
+    await until(() => R.works(R.rw()).breaker === 2, 'breaker taken before Q6', 30000);
+    await checkpoint('breaker');
+  }
   await ride(1, 2, 2, from === 'q6');
   await until(
     () => R.rail(R.rw()).depot === 32 && R.rail(R.rw()).depotRails === 32,

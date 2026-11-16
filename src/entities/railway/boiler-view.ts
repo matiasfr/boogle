@@ -22,7 +22,7 @@ import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { PLAYER_R, reducedMotion } from '../../constants.ts';
 import { LINE2_BOILER, LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts';
-import { createForgeCall } from './forge-call.ts';
+import { createForgeCall, holdForgeCall } from './forge-call.ts';
 import { pedestalHold } from './part-hoist.ts';
 import { createBeamDrag, restGrip, type DragShape } from './beam-drag.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
@@ -556,6 +556,8 @@ export function createRailwayBoiler(
         pieces.dustRing(bx, by + 0.6, bz, 8, 1.5, 0.25);
       }
       if (e.op === 'rail.boilerFit') {
+        // The breaker is cast on this accepted edge. Let the train finish waking before the forge calls; no cut.
+        holdForgeCall(FIT.wake);
         // The fitter heard the clank as it landed; everyone else hears it now.
         if (!(fit && e.pid === fit.holder)) clank(saddle.x, saddle.z);
         if (BOILER_CARD && youGot && e.pid === read.pid) cardDue = performance.now() + FIT.wake * 1000;
