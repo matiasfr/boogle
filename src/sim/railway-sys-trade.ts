@@ -177,7 +177,7 @@ export function ridersBoard(w: World, slot: number) {
 /** Buy is authoritative and atomic; the shared request history handles retransmits. */
 export const buy = defineSystem(
   'rail.buy',
-  { reads: [Town], writes: [Plot, Till], phase: 'act', order: 1 },
+  { reads: [Town], writes: [Plot, Till], phase: 'act', order: 70 },
   (w, { e, tick, pricePct }: Act) => {
     if (typeof e.id !== 'number' || !Number.isInteger(e.id) || e.id < 0) return 0;
     const town = Math.floor(e.id / 16),

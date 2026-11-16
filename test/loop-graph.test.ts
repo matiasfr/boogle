@@ -1,5 +1,5 @@
 // The loop graph (dev/loop/graph.ts) can't drift silently: every rail action and every railway mark has a node (or is
-// a named generic carrying op / activity mark), and the hand-kept beat lists agree with the graph's nodes.
+// a named generic route-independent op / activity mark), and the hand-kept beat lists agree with the graph's nodes.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITY_MARKS, GENERIC_OPS, NODES, PENDING_OPS, proposeOrders } from '../dev/loop/graph.ts';
@@ -23,7 +23,7 @@ const generic = new Set<string>(GENERIC_OPS);
 const pending = new Set<string>(PENDING_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
 
-test('every rail action has a node or is a generic carrying op', () => {
+test('every rail action has a node or is a generic route-independent op', () => {
   for (const op of RAIL_ACTIONS) assert.ok(owned.has(op) || generic.has(op) || pending.has(op), `${op} has no node`);
   for (const op of [...owned, ...generic, ...pending]) assert.ok(RAIL_ACTIONS.has(op), `${op} is not a rail action`);
   for (const op of pending) assert.ok(!owned.has(op), `${op} has a node: take it out of PENDING_OPS`);

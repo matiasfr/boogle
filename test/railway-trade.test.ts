@@ -1371,3 +1371,11 @@ test('B1: q6-done payoff: three buildings land at least 1.3 times two in 20 minu
     `first house at 50%: ${(s.t - PIER.t) / 600} minutes after q6-done; ${s.t / 600} seed-clock minutes; house-ready ${(READY.t - rail(READY.w).trains) / 600} minutes after trains-on`,
   );
 });
+
+test('B1: audited buy and completed-house ticks declare every accessed component', () => {
+  const w = createRailwayWorld({ audit: true });
+  w.load(JSON.parse(JSON.stringify(READY.w.snapshot())), railwayCheck);
+  assert.equal(sendBuy(w, READY.t, 0).status, 'accepted');
+  railTick(w, READY.t + TRADE.buildTicks);
+  checkTrade(w, READY.t + TRADE.buildTicks);
+});

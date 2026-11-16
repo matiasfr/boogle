@@ -153,8 +153,9 @@ export type LoopNode = {
   standIn?: never;
 };
 
-/** Rail actions that carry or move material for whichever node is current. */
+/** General actions for any current node, and optional town buys that never gate the route. */
 export const GENERIC_OPS = [
+  'rail.buy', // B1: outside route order and bills.
   'rail.chop',
   'rail.take',
   'rail.rackTake',

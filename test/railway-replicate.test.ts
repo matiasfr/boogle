@@ -289,9 +289,9 @@ test('the railway state is checkpointed by the host and restores its session acc
   again.sync.loadSnapshot(saved);
   assert.equal(again.api.account('alice')?.epoch, 1);
   // the depot cart, boiler and trains; the Works and the shed; the lines; the aperture (v27); the yards, the town and
-  // the till (slice 5); the steel works (ring-island-build2); the legs, the junction yard and the route (the greybox
+  // the till and plots (slice 5); the steel works (ring-island-build2); the legs, the junction yard and the route (the greybox
   // route)
-  assert.equal(RAIL_SCHEMAS.length, 24);
+  assert.equal(RAIL_SCHEMAS.length, 25);
 });
 
 test('a scripted run through line one, the pack and line two to Q6 replicates exactly, live and to a late joiner', () => {
