@@ -49,8 +49,12 @@ export async function accountBrowserChecks(options: {
     );
     await Promise.all([b.page.waitForEvent('framenavigated'), ev(b.page, () => window.T.signOut())]);
     await b.page.waitForFunction(() => !!window.T?.start);
-    await ev(b.page, () => window.T.start());
-    check('sign-out reloads into a distinct guest', (await ev(b.page, () => window.T.status().pid)) !== pid);
+    const asGuest = await ev(b.page, () => window.T.start());
+    const guest = await ev(b.page, () => window.T.status());
+    check(
+      'sign-out reloads into a distinct guest admitted to the room',
+      typeof asGuest === 'string' && guest.state === 'ready' && !!guest.pid && guest.pid !== pid,
+    );
     await Promise.all([b.page.waitForEvent('framenavigated'), ev(b.page, (pin: string) => window.T.signIn(pin), pin)]);
     await b.page.waitForFunction(() => !!window.T?.start);
     await ev(b.page, () => window.T.start());
