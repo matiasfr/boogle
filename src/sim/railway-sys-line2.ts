@@ -13,7 +13,7 @@ import {
 } from './railway-line2-layout.ts';
 import { layProgress, type LineTiming } from './railway-line-schedule.ts';
 import { CART, CART_PHASE, CART_ROAD, cartEnd } from './railway-cart.ts';
-import { TRAIN, TRAIN_PHASE, TRAIN_STOPS } from './railway-train.ts';
+import { TRAIN, TRAIN_PHASE, TRAIN_STOPS, trainWakeAt } from './railway-train.ts';
 import { LINE2, RAIL_LINES, trainPlaces } from './railway-lines.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
@@ -151,7 +151,7 @@ export const boilerFit = defineSystem(
           to: stop,
           track,
           origin: track === 1 && stop === stopsOf(w, line).length - 1 ? s : 0,
-          depart: tick + TRAIN.wakeTicks,
+          depart: trainWakeAt(line, tick) + TRAIN.wakeTicks - (line === LINE2 ? TRAIN.dwellTicks : 0),
           req: 0,
           from: s,
           v0: 0,

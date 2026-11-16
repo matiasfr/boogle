@@ -9,7 +9,7 @@
 import type { World } from '../ecs/index.ts';
 import { Line, Rail, Train } from './railway-components.ts';
 import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, haltPlatform } from './railway-lines.ts';
-import { TRAIN, TRAIN_PHASE, reqHas, trainCanBrake } from './railway-train.ts';
+import { TRAIN, TRAIN_PHASE, reqHas, trainCanBrake, trainWakeAt } from './railway-train.ts';
 import { LINE_SLOTS, atEnd, retainedEndBlock, trainPose, trainServes } from './railway-trains.ts';
 import { railId, ringHead, stopsOf, trainId } from './railway-queries.ts';
 import { haltHead } from './railway-queries-route.ts';
@@ -62,7 +62,8 @@ export function railTrainAsked(
 export function railTrainHeld(w: World, slot: number, tick: number) {
   const r = trainRow(w, slot),
     at = trainsOn(w);
-  if (at < 0 || r.phase !== TRAIN_PHASE.STAND || tick < at + TRAIN.wakeTicks) return false;
+  if (at < 0 || r.phase !== TRAIN_PHASE.STAND || tick < trainWakeAt(RAIL_TRAINS[slot]!.line, at) + TRAIN.wakeTicks)
+    return false;
   return r.at < 0 || tick >= r.depart + TRAIN.dwellTicks + 10;
 }
 /** Whether halt `stop` of `line` is one of its open ends now (the adapter's railOpenEnd). */

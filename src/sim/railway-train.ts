@@ -8,6 +8,7 @@
 // `track` and turns back only at an end; spacing, holds and who serves a lever ask are ./railway-trains.ts.
 import {
   RAIL_HALTS,
+  LINE2,
   RAIL_LINES,
   RAIL_TRAINS,
   lineDef,
@@ -21,12 +22,15 @@ export const TRAIN = {
   accel: 3.5,
   dwellTicks: 50,
   wakeTicks: 60,
+  answerTicks: 270,
   kitWaitTicks: 60,
   /** The block rule's gap round the circuit (27.4 m, set as the footing wagon's 7.4 m, v32's RIDER_SPAN, plus 20 m; kept at v33). Since
    * v31's 8.2 m extent ahead of the pose (TRAIN_EXTENT), and v33's 12.7 m behind it (the steel car, fourth-car R1),
    * the nose-to-tail clearance at this floor is 6.5 m. */
   sepCm: 2740,
 } as const;
+/** Line 2 answers at 27 s and leaves six seconds later; line 1 keeps its existing wake and dwell. */
+export const trainWakeAt = (line: LineRef, fitted: number) => fitted + (line === LINE2 ? TRAIN.answerTicks : 0);
 /** Boiler profiles in cm/tick and cm/tick²: initial fit, table upgrade, longer boiler. A running train keeps its
  * row until its next Village stand. Row 0's catalog profile also supports isolated fixture lines. */
 export const BOILER = [
@@ -80,13 +84,18 @@ export const trainStopsOf = (
   return out;
 };
 /** The trains line `line` runs with `legs` laid: its fleet's at its leg's sections laid, else `trains`. */
-export function fleetOf(line: LineRef, legs: LegsLaid = NO_LEGS) {
+export function fleetOf(line: LineRef, legs: LegsLaid = NO_LEGS, stops: readonly number[] = trainStopsOf(line, 0)) {
   const l = lineDef(line);
-  return l.fleet ? l.fleet.trains[Math.min(l.fleet.trains.length - 1, legs[l.fleet.leg] ?? 0)]! : l.trains;
+  const f = l.fleet;
+  if (!f) return l.trains;
+  return Math.max(
+    f.trains[Math.min(f.trains.length - 1, legs[f.leg] ?? 0)]!,
+    ...(f.opens ?? []).filter((r) => r.stop < stops.length).map((r) => r.trains),
+  );
 }
 /** Every stage a line's stops can reach, with the trains it runs there: each `opens` slot laid in turn, each head, the
  * rivet, and each section of the legs its halts open. */
-function lineStagesOf(line: LineRef): { stops: readonly number[]; trains: number }[] {
+export function lineStagesOf(line: LineRef): { stops: readonly number[]; trains: number }[] {
   const halts = lineDef(line).halts,
     top = Math.max(0, ...halts.map((h) => h.opens + 1)),
     heads = Math.max(1, ...halts.map((h) => (h.leg ? 1 : (h.heads?.length ?? 1))));
@@ -114,8 +123,10 @@ function lineStagesOf(line: LineRef): { stops: readonly number[]; trains: number
       for (const joined of [false, true]) {
         const base = trainStopsOf(line, laid, { head, joined }).length;
         for (const l of legs)
-          if (l.every((n, slot) => !n || base === first(slot)))
-            out.push({ stops: trainStopsOf(line, laid, { head, joined }, l), trains: fleetOf(line, l) });
+          if (l.every((n, slot) => !n || base === first(slot))) {
+            const stops = trainStopsOf(line, laid, { head, joined }, l);
+            out.push({ stops, trains: fleetOf(line, l, stops) });
+          }
       }
   return out;
 }

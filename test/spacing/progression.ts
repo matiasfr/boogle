@@ -5,14 +5,17 @@ const [countArg, speedArg, stage = 'trains-on', rate = 'light'] = process.argv.s
 const count = Number(countArg),
   speed = Number(speedArg);
 if (![1, 2, 3].includes(count) || ![140, 200].includes(speed)) throw new Error('count 1..3, speed 140|200');
-const l = RAIL_LINES[1]!;
-Object.assign(l, { trains: count, speed, accel: speed === 140 ? 2.5 : 3.5, brake: 3.5 });
-Object.assign(l.fleet!, { trains: [count, 6, 6, 6, 6] });
-let n = 0;
-for (const r of RAIL_TRAINS)
-  if (r.line === 1) {
-    if (n++ >= count) Object.assign(r, { home: 0, track: 0, shed: true });
-  }
+const built = process.argv.includes('--built');
+if (!built) {
+  const l = RAIL_LINES[1]!;
+  Object.assign(l, { trains: count, speed, accel: speed === 140 ? 2.5 : 3.5, brake: 3.5 });
+  Object.assign(l.fleet!, { trains: [count, 6, 6, 6, 6] });
+  let n = 0;
+  for (const r of RAIL_TRAINS)
+    if (r.line === 1) {
+      if (n++ >= count) Object.assign(r, { home: 0, track: 0, shed: true });
+    }
+}
 // Imports happen after the catalog override, so seed placement and its load checks see the same counterfactual.
 if (stage === 'delivery') {
   const { railwayAtTrains, rail, trainId, act, railTick, qjob, layTicks, unaudited } =
@@ -20,7 +23,7 @@ if (stage === 'delivery') {
   const { Train } = await import('../../src/sim/railway-components.ts');
   const s = unaudited(railwayAtTrains('trains-on'));
   const fit = rail(s.w).trains;
-  if (count === 1) s.w.mut(Train, trainId(s.w, 1))!.depart = fit + 280;
+  if (!built && count === 1) s.w.mut(Train, trainId(s.w, 1))!.depart = fit + 280;
   while (rail(s.w).depot !== 32 || rail(s.w).depotRails !== 32) {
     if (s.t - fit > 6000) throw new Error('delivery timeout');
     railTick(s.w, ++s.t);
