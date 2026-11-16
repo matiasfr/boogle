@@ -66,6 +66,8 @@ export const SEED_STAGES = [
   // Slice 5 (./railway-seed-trade.ts): trains-on with the first timber home; then the first fares.
   'freight-running',
   'fares-running',
+  'house-ready',
+  'house-built',
   'q6-stocked',
   'q6-finishing',
   'q6-done',

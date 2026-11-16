@@ -81,6 +81,8 @@ import type { Replicator } from './replicate-server.ts';
 import type { SyncView } from './rules/types.ts';
 import type { RailTuneApi } from './rules/tune.ts';
 
+import { TRADE } from '../sim/railway-trade-layout.ts';
+
 export const name = 'railway';
 export type RailwayApi = ReturnType<typeof install>;
 /** What the host knows about an action's actor: judged from the facts the action carried. */
@@ -95,6 +97,7 @@ export type Actor = {
 /** The material actions a client may send. */
 export const RAIL_ACTIONS = new Set([
   'rail.wake',
+  'rail.buy',
   'rail.chop',
   'rail.take',
   'rail.rackTake',
@@ -278,6 +281,8 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.glide':
       // Readiness (not yet taken) is the rule's; here only the summit device's reach.
       return height(LINE2_GLIDE.y) && near(LINE2_GLIDE.x, LINE2_GLIDE.z, 320);
+    case 'rail.buy':
+      return railInt(e.id) && !!TRADE.plots[Math.floor(e.id / 16)]?.[e.id % 16];
     case 'rail.breaker':
       return at(WORKS_BREAKER);
     case 'rail.strike':
@@ -366,7 +371,7 @@ export function install(
       serialize: () => world.snapshot(),
       load: (json) => {
         const next = createRailwayWorld();
-        next.load(json, railwayCheck);
+        next.load(json, (w) => railwayCheck(w, sync.world.tick));
         world = next;
       },
       hash: () => world.hash(),
@@ -378,7 +383,11 @@ export function install(
       world,
       tick,
       rules.railTune.get('railTrainHeadPct'),
-      { farePct: rules.railTune.get('railFarePct'), riderPct: rules.railTune.get('railRiderPct') },
+      {
+        farePct: rules.railTune.get('railFarePct'),
+        riderPct: rules.railTune.get('railRiderPct'),
+        pricePct: rules.railTune.get('railPricePct'),
+      },
       { cap: rules.railTune.get('railTrainHoldCap'), pct: rules.railTune.get('railTrainHoldPct') },
     );
     commit();
@@ -402,6 +411,7 @@ export function install(
         valid ? e : { op: 'rail.reject', epoch: e.epoch, request: e.request },
         valid && e.op === 'rail.wake' ? railWakeTick(tick, e.tk) : tick,
         timing(),
+        rules.railTune.get('railPricePct'),
       );
       railSettle(world);
       commit();

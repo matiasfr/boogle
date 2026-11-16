@@ -9,14 +9,14 @@ import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { RIDER_UNIT, TRADE } from './railway-trade-layout.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
-import { till, townClock, towns, trains, yardClock, yards } from './railway-rows.ts';
-import { freightAboard, lineRoute, ridersAboard, trainSeats } from './railway-queries-trade.ts';
+import { plot, till, townClock, towns, trains, yardClock, yards } from './railway-rows.ts';
+import { plotSlot, freightAboard, lineRoute, ridersAboard, trainSeats } from './railway-queries-trade.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
 };
 /** The trade's whole-world invariants; throws on the first broken one. */
-export function checkTrade(w: World) {
+export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
   const ys = yards(w),
     ts = towns(w);
   if (
@@ -62,4 +62,19 @@ export function checkTrade(w: World) {
   const b = till(w);
   if (![b.boogles, b.landed, b.lost, b.spent, b.sack, b.poured].every((v) => railInt(v))) bad('till bounds');
   if (b.boogles !== b.landed + b.poured - b.spent) bad('till conservation');
+  let paid = 0;
+  TRADE.plots.forEach((ps, town) =>
+    ps.forEach((threshold, k) => {
+      const p = plot(w, plotSlot(town, k));
+      if (
+        !railInt(p.at, tick, -1) ||
+        !railInt(p.paid, RAILWAY_MAX_INT, p.at >= 0 ? 1 : 0) ||
+        (p.at === -1 && p.paid !== 0)
+      )
+        bad('plot bounds');
+      if (p.at >= 0 && (ts[town]!.wood < threshold.wood || ts[town]!.stone < threshold.stone)) bad('plot thresholds');
+      paid += p.paid;
+    }),
+  );
+  if (b.spent !== paid) bad('plot spending');
 }

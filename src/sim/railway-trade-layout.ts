@@ -8,7 +8,7 @@
 //   TRADE.loadStop    R2b: the crates a middle-halt yard must hold (and an empty train have room for) before a train
 //                     heading home makes a service stop for them: a whole trainload (the full-load stop)
 //   TRADE.plots       by town, its priced plots in order: the timber and stone the town must have received before
-//                     each is staked (R2; the prices come with the buy, R4); at most `stakedAtOnce` staked unbought
+//                     each is staked, and its base price; at most `stakedAtOnce` staked unbought
 //   TRADE.routes      R3: each town's passenger route (town, line, halts a and b) and the riders', fares' and box's
 //                     numbers; TRADE_PCT the tunables' defaults
 export type TradeYard = {
@@ -31,7 +31,7 @@ export type TradeYard = {
  * one integer). */
 export type TradeRoute = { town: number; line: number; a: number; b: number | 'end' };
 /** A plot's staking thresholds: the town's delivered timber and stone. */
-export type TradePlot = { wood: number; stone: number };
+export type TradePlot = { wood: number; stone: number; base: number };
 export const TRADE = {
   yards: [
     { line: 0, stop: 1, everyTicks: 150, cap: 8, town: 0, home: 0, goods: 'wood' },
@@ -43,18 +43,20 @@ export const TRADE = {
   // R2: cargo stakes plots (call 1). The Village's first three; plots 4 to 8 stay unstaked until priced.
   plots: [
     [
-      { wood: 8, stone: 0 },
-      { wood: 24, stone: 0 },
-      { wood: 40, stone: 16 },
+      { wood: 8, stone: 0, base: 300 },
+      { wood: 24, stone: 0, base: 800 },
+      { wood: 40, stone: 16, base: 3000 },
     ],
   ] as const satisfies readonly (readonly TradePlot[])[],
   stakedAtOnce: 2,
+  houseOrder: 2,
+  buildTicks: 100,
   // R3: riders, fares and the strongbox (the plan's "Numbers"; Decided: the fare formula, the box's cap rule, two
-  // starting buildings, 2 riders a minute a building each way).
+  // starting buildings, 1 rider a minute a building each way).
   // The Village and line 2's current far end (the ruling of 12 November): Far Head, then the Pier, the Railhead, Ring
   // Island as the line grows.
   routes: [{ town: 0, line: 1, a: 0, b: 'end' }] as const satisfies readonly TradeRoute[],
-  ridersPerMin: 2,
+  ridersPerMin: 1,
   startBuildings: 2,
   /** Waiting riders that would stop a train at a middle route halt (decided: four or more). Unused in this slice:
    * riders never add a stop (the ruling of 12 November, call 4); kept for the plan that builds the stop. */
@@ -68,9 +70,9 @@ export const TRADE = {
   box: { incomeMin: 20, dearestNum: 3, dearestDen: 2 },
   sackMin: 15,
 } as const;
-/** The room's trade tunables (src/sim/tune.ts railFarePct, railRiderPct; railPricePct is R4's), in percent. */
-export type TradePct = { farePct: number; riderPct: number };
-export const TRADE_PCT: TradePct = { farePct: 100, riderPct: 100 };
+/** The room's trade tunables (src/sim/tune.ts railFarePct, railRiderPct, railPricePct), in percent. */
+export type TradePct = { farePct: number; riderPct: number; pricePct?: number };
+export const TRADE_PCT = { farePct: 100, riderPct: 100, pricePct: 50 } satisfies TradePct;
 /** A town's rider accrual unit: `acc` gains buildings × ridersPerMin × riderPct a tick, so a whole rider a minute per
  * unit of rate is 600 ticks × 100 percent. */
 export const RIDER_UNIT = 600 * 100;

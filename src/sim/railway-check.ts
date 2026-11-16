@@ -41,6 +41,7 @@ import {
   Rock,
   Shed,
   Till,
+  Plot,
   Town,
   TownClock,
   Steel,
@@ -104,6 +105,7 @@ const ARCHETYPES = [
   [Yard, YardClock],
   [Town, TownClock],
   [Till],
+  [Plot],
   [Steel, SteelClock],
   // The greybox route.
   [Leg],
@@ -111,7 +113,7 @@ const ARCHETYPES = [
   [Route],
 ].map((set) => set.map((c) => c.kind).join());
 /** Every entity has a known shape, the catalog is whole, and every domain invariant holds on the world. */
-export function railwayCheck(w: World) {
+export function railwayCheck(w: World, tick = RAILWAY_MAX_INT) {
   const shapes = new Map<number, string[]>();
   for (const c of RAIL_COMPONENTS)
     for (const id of w.ids(c)) {
@@ -140,6 +142,7 @@ export function railwayCheck(w: World) {
     [Yard, TRADE.yards.length],
     [Town, TRADE_TOWNS],
     [Till, 1],
+    [Plot, TRADE.plots.reduce((n, ps) => n + ps.length, 0)],
     [Steel, 1],
     [Leg, RAIL_LEGS.length],
     [LegYard, RAIL_YARDS.length],
@@ -148,7 +151,7 @@ export function railwayCheck(w: World) {
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
   if (w.count(Account) > MAX_PLAYERS || w.count(Outcome) > RAILWAY_OUTCOMES) throw new Error('railway: rows');
   if (!railInt(w.nextId(), RAILWAY_MAX_INT, 1)) throw new Error('railway: next id');
-  checkRailway(w);
+  checkRailway(w, tick);
 }
 
 const bad = (what: string): never => {
@@ -157,7 +160,7 @@ const bad = (what: string): never => {
 /** The domain's invariants on the world (M8b): the accounts, piles, outcomes and catalog here, then line one, line
  * two, the trains, the Works, the ring, the trade and the steel works (./railway-check-*.ts), then the conserved logs. Every row and slot is
  * there: railwayCheck counted them first. */
-function checkRailway(w: World) {
+function checkRailway(w: World, tick: number) {
   const ts = trees(w),
     r0 = rail(w),
     clock = railClock(w);
@@ -262,7 +265,7 @@ function checkRailway(w: World) {
   checkTrains(w);
   checkWorks(w);
   checkRing(w);
-  checkTrade(w);
+  checkTrade(w, tick);
   checkSteel(w);
   checkRoute(w);
   const counts = worldCounts(w);

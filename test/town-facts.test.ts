@@ -11,6 +11,9 @@ import {
   townRead,
   type TownFact,
 } from '../src/sim/town-facts.ts';
+import { TRADE } from '../src/sim/railway-trade-layout.ts';
+import { plotPrice } from '../src/sim/railway-queries-trade.ts';
+import { till } from '../src/sim/railway-rows.ts';
 import type { World } from '../src/ecs/index.ts';
 import {
   act,
@@ -92,10 +95,27 @@ test('q6-done: every milestone fact, 32 people', () => {
   assert.equal(townPopulation(townRead(s)), 32);
 });
 
-test('town and stone stay false (until slice 5 brings train cargo)', () => {
-  const r = townRead(atPier());
-  assert.equal(townHas(r, 'town'), false);
-  assert.equal(townHas(r, 'stone'), false);
+test('town flips only at the first house completion; stone needs the third priced plot built', () => {
+  const s = buildSeedWorld('house-ready');
+  assert.equal(townHas(townRead(s.w, s.t), 'town'), false);
+  assert.equal(act(s, 'a', 'rail.buy', { id: 0 }), 1);
+  advance(s, TRADE.buildTicks - 1);
+  assert.equal(townHas(townRead(s.w, s.t), 'town'), false);
+  advance(s, 1);
+  assert.equal(townHas(townRead(s.w, s.t), 'town'), true);
+  assert.equal(townHas(townRead(s.w, s.t), 'stone'), false);
+  const stone = buildSeedWorld('crossing-done');
+  // Free an offer, then earn the third plot through freight and fares, not hand-set state.
+  while (till(stone.w).boogles < plotPrice(stone.w, 0, 0, 50)) advance(stone, 1);
+  assert.equal(act(stone, 'a', 'rail.buy', { id: 0 }), 1);
+  let waited = 0;
+  while (till(stone.w).boogles < plotPrice(stone.w, 0, 2, 50)) {
+    assert.ok(waited++ < 100000, 'third plot becomes affordable');
+    advance(stone, 1);
+  }
+  assert.equal(act(stone, 'a', 'rail.buy', { id: 2 }), 1);
+  assert.equal(townHas(townRead(stone.w, stone.t + 99), 'stone'), false);
+  assert.equal(townHas(townRead(stone.w, stone.t + 100), 'stone'), true);
 });
 
 test('newest is the last true fact in TOWN_FACTS order', () => {

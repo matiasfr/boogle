@@ -15,6 +15,10 @@ import { activeStation } from '../sim/railway-queries.ts';
 import { railBeamChoppable } from '../sim/railway-queries-line1.ts';
 import type { World } from '../ecs/index.ts';
 
+import { TRADE } from '../sim/railway-trade-layout.ts';
+
+const pricedPlot = (id: unknown): id is number => railInt(id) && !!TRADE.plots[Math.floor(id / 16)]?.[id % 16];
+
 export type RailwayIntent =
   | { op: 'rail.wake'; tk?: number }
   | { op: 'rail.chop'; id: number; yaw?: number; collapsed?: boolean }
@@ -36,7 +40,7 @@ export type RailwayIntent =
         | 'rail.steel';
     }
   | { op: 'rail.call'; id: number; dir: -1 | 1; train?: number }
-  | { op: 'rail.strike'; id: number }
+  | { op: 'rail.strike' | 'rail.buy'; id: number }
   | { op: 'rail.footTake'; rack: 0 | 1 | 2 }
   | { op: 'rail.footSet'; site: 0 | 1 | 2 | 3 }
   | { op: 'rail.brace'; revision: 1 }
@@ -58,6 +62,7 @@ export type RailwayIntent =
 /** The most a back ever carries (with the pack): the wire's bound on a moved count; the rule clips to today's back. */
 export const CARRY_MAX = LINE2_PACK.carry * (1 + HEAVY_LOAD.extra);
 export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
+  if (e.op === 'rail.buy' && pricedPlot(e.id)) return { op: e.op, id: e.id };
   if (e.op === 'rail.wake') return { op: e.op };
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
   if (e.op === 'rail.breaker' || e.op === 'rail.kiln' || e.op === 'rail.cradle' || e.op === 'rail.steel')
@@ -167,6 +172,7 @@ export const TAKES: ReadonlySet<string> = new Set([
 /** The ops that never move material, so a held beam does not block them. */
 export const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.wake',
+  'rail.buy',
   'rail.axe',
   'rail.jump',
   'rail.lever',
@@ -199,6 +205,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
   const pileIn = (id: number) => view().get(Pile, id);
   return {
     wake: () => submit({ op: 'rail.wake' }),
+    buy: (slot: number) => pricedPlot(slot) && submit({ op: 'rail.buy', id: slot }),
     openAxe: () => submit({ op: 'rail.axe' }),
     claimJump: () => submit({ op: 'rail.jump' }),
     /** False (rebound now) when the rule would refuse the stroke: before Station 3 opens or once the tree is down. */

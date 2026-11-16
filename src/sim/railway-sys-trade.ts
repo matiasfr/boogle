@@ -12,10 +12,13 @@ import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE, trainDir } from './railway-train.ts';
 import { RIDER_UNIT, TRADE, type TradePct } from './railway-trade-layout.ts';
-import { Rail, Till, Town, TownClock, Train, Yard, YardClock } from './railway-components.ts';
+import { Plot, Rail, Till, Town, TownClock, Train, Yard, YardClock } from './railway-components.ts';
 import { railId, trainId } from './railway-queries.ts';
 import {
   boxCap,
+  plotBought,
+  plotPrice,
+  plotsStaked,
   fareOf,
   lineRoute,
   lineYard,
@@ -26,7 +29,7 @@ import {
   waitingFor,
   yardId,
 } from './railway-queries-trade.ts';
-import type { Tick } from './railway-sys-core.ts';
+import type { Act, Tick } from './railway-sys-core.ts';
 
 /** The yards' production (as the forge pours: ./railway-sys-line2.ts, layLine2): while the trains are awake, a crate
  * for every whole `everyTicks` since the last, up to the cap; a full yard's clock stays at the tick, so its next crate
@@ -106,13 +109,13 @@ export function yardsAway(w: World, ticks: number, tick: number) {
  * Works (order 4). */
 export const tradeTick = defineSystem(
   'rail.tradeTick',
-  { reads: [Rail], writes: [Town, TownClock], phase: 'tick', order: 3.5 },
-  (w, { riderPct }: Tick) => {
+  { reads: [Rail, Plot], writes: [Town, TownClock], phase: 'tick', order: 3.5 },
+  (w, { riderPct, tick }: Tick) => {
     if (w.get(Rail, railId(w))!.trains < 0) return;
     TRADE.routes.forEach((r) => {
       const id = townId(w, r.town),
         c = w.mut(TownClock, id)!;
-      c.acc += townBuildings() * TRADE.ridersPerMin * riderPct;
+      c.acc += townBuildings(w, r.town, tick) * TRADE.ridersPerMin * riderPct;
       let n = 0;
       while (c.acc >= RIDER_UNIT) {
         c.acc -= RIDER_UNIT;
@@ -134,7 +137,7 @@ export const tradeTick = defineSystem(
  * ride to (the one ahead the way it came), they step off: `alighted` grows by them, and their fares (each
  * `fareOf(route, farePct)`, charged once a rider a trip, here) land in the one strongbox up to its cap (`landed`), the
  * rest counted in `lost`. */
-export function ridersArrive(w: World, slot: number, pct: TradePct) {
+export function ridersArrive(w: World, slot: number, pct: TradePct, tick: number) {
   const route = lineRoute(RAIL_TRAINS[slot]!.line);
   if (route < 0) return;
   const r = w.get(Train, trainId(w, slot))!;
@@ -146,7 +149,7 @@ export function ridersArrive(w: World, slot: number, pct: TradePct) {
   const tid = w.single(Till),
     till = w.get(Till, tid)!;
   const fares = n * fareOf(w, route, pct.farePct),
-    land = Math.min(fares, Math.max(0, boxCap(w, pct) - till.boogles));
+    land = Math.min(fares, Math.max(0, boxCap(w, pct, tick) - till.boogles));
   const m = w.mut(Till, tid)!;
   m.boogles += land;
   m.landed += land;
@@ -170,3 +173,23 @@ export function ridersBoard(w: World, slot: number) {
   t.boarded += n;
   w.mut(Train, trainId(w, slot))!.riders += n;
 }
+
+/** Buy is authoritative and atomic; the shared request history handles retransmits. */
+export const buy = defineSystem(
+  'rail.buy',
+  { reads: [Town], writes: [Plot, Till], phase: 'act', order: 1 },
+  (w, { e, tick, pricePct }: Act) => {
+    if (typeof e.id !== 'number' || !Number.isInteger(e.id) || e.id < 0) return 0;
+    const town = Math.floor(e.id / 16),
+      k = e.id % 16;
+    if (!TRADE.plots[town]?.[k] || plotBought(w, e.id) || !plotsStaked(w, town).includes(k)) return 0;
+    const price = plotPrice(w, town, k, pricePct),
+      tid = w.single(Till);
+    if (w.get(Till, tid)!.boogles < price) return 0;
+    const till = w.mut(Till, tid)!;
+    till.boogles -= price;
+    till.spent += price;
+    Object.assign(w.mut(Plot, w.lookup(Plot, e.id)!)!, { at: tick, paid: price });
+    return 1;
+  },
+);

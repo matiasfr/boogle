@@ -1,10 +1,11 @@
 // What anyone can see has happened to the town (docs/plans/place-retirement.md, "The town facts"), read from the shared
 // railway's completions and thresholds only, never from predicted counts. Every client computes the same facts from its
 // mirror; nothing here is kept, sent or saved. Pure. The town entity (src/entities/town/) and the opening village's
-// population read these; the residents notice them in T2. `town` and `stone` (cargo-built rows) stay false until
-// production-core slice 5 brings train cargo (design review, 9 November, finding 1).
+// population read these; the residents notice them in T2. Bought plots count only after the build completes.
 import type { World } from '../ecs/index.ts';
 import { forge, jobs, type ReadWorld } from './railway-rows.ts';
+import { plotBuilt, plotSlot } from './railway-queries-trade.ts';
+import { TRADE } from './railway-trade-layout.ts';
 import { line2Completed, line2Trains } from './railway-queries-line2.ts';
 
 /** Oldest first, in ../entities/town/town-lines.ts's `Fact` order. */
@@ -13,15 +14,22 @@ export type TownFact = (typeof TOWN_FACTS)[number];
 /** The village sign's people: Place's TUNE.people, then +8 when the path opens, +6 at Far Head, +6 at the pier. */
 export const TOWN_PEOPLE = { start: 12, path: 8, head: 6, pier: 6 } as const;
 
-/** The few shared thresholds the facts come from, so the rules below are written once. */
-export type TownRead = { path: boolean; forge: boolean; completed: number; trains: boolean };
+/** The shared thresholds. houses lists built priced indexes; absent only in the view's empty/loading state. */
+export type TownRead = {
+  path: boolean;
+  forge: boolean;
+  completed: number;
+  trains: boolean;
+  houses?: readonly number[];
+};
 
-/** The thresholds behind the town facts, from the rows. Station 2 is T3 (the root job is T1). */
-export const townRead = (w: ReadWorld | World): TownRead => ({
+/** The thresholds from rows. B2 passes the mirror tick; a timeless read never claims a house completed. */
+export const townRead = (w: ReadWorld | World, tick = 0): TownRead => ({
   path: !!jobs(w)[2]?.completion,
   forge: forge(w).lit >= 0,
   completed: line2Completed(w),
   trains: line2Trains(w),
+  houses: TRADE.plots[0].flatMap((_p, k) => (plotBuilt(w, plotSlot(0, k), tick) ? [k] : [])),
 });
 
 export function townHas(r: TownRead, f: TownFact): boolean {
@@ -39,8 +47,9 @@ export function townHas(r: TownRead, f: TownFact): boolean {
     case 'pier':
       return r.completed >= 6;
     case 'town':
+      return !!r.houses?.length;
     case 'stone':
-      return false; // until slice 5's train cargo
+      return r.houses?.includes(2) ?? false;
   }
 }
 /** The last true fact in TOWN_FACTS order, or null. */

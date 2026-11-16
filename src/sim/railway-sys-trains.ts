@@ -21,6 +21,7 @@ import {
   Rail,
   Shed,
   Town,
+  Plot,
   Steel,
   Train,
   Works,
@@ -173,7 +174,7 @@ export function trainMoveIO(w: World): TrainMoveIO {
 /** The world's side of the trains' step (./railway-trains.ts): rows, stops, every line's yard freight (slice 5,
  * ./railway-sys-trade.ts), and line 2's cargo, wagon and the cart's hold on line 1. Transfers and phase changes are
  * atomic inside this tick apply. */
-function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold): TrainIO {
+function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick: number): TrainIO {
   const row = (slot: number) => w.get(Train, trainId(w, slot))!;
   const line2 = (slot: number) => RAIL_TRAINS[slot]!.line === LINE2;
   return {
@@ -188,7 +189,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold): Tra
     service: (slot) => serviceOf(w, slot, row(slot)),
     arrive(slot) {
       freightArrives(w, slot);
-      ridersArrive(w, slot, pct);
+      ridersArrive(w, slot, pct, tick);
       // The greybox route: a leg's kit off at its rack (none while a Q job's kit is owed: one open leg comes after Q7).
       legKitArrive(w, slot);
       if (!line2(slot)) return;
@@ -268,17 +269,17 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold): Tra
 }
 function trainStep(w: World, tick: number, headPct: number, pct: TradePct, hold: TrainHold) {
   if (w.get(Rail, railId(w))!.trains < 0) return;
-  const io = trainIO(w, headPct, pct, hold);
+  const io = trainIO(w, headPct, pct, hold, tick);
   for (let line = 0; line < RAIL_LINES.length; line++) trainStepLine(io, line, tick);
 }
 export const trainTick = defineSystem(
   'rail.trainTick',
   {
-    reads: [QJob, Cart, Account],
+    reads: [QJob, Cart, Account, Plot],
     writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed, Leg],
     phase: 'tick',
     order: 3,
   },
-  (w, { tick, headPct, farePct, riderPct, holdCap, holdPct }: Tick) =>
-    trainStep(w, tick, headPct, { farePct, riderPct }, { cap: holdCap, pct: holdPct }),
+  (w, { tick, headPct, farePct, riderPct, pricePct, holdCap, holdPct }: Tick) =>
+    trainStep(w, tick, headPct, { farePct, riderPct, pricePct }, { cap: holdCap, pct: holdPct }),
 );

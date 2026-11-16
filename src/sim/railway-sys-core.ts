@@ -16,11 +16,12 @@ export type Tick = {
   headPct: number;
   farePct: number;
   riderPct: number;
+  pricePct: number;
   holdCap: number;
   holdPct: number;
 };
 /** What an op system is given: the actor's account id, the action, the tick and the room's timing. */
-export type Act = { a: number; e: RailAction; tick: number; timing: LineTiming };
+export type Act = { a: number; e: RailAction; tick: number; timing: LineTiming; pricePct: number };
 // ---------------------------------------------------------------- the request history
 export const receipt = defineSystem(
   'rail.receipt',
