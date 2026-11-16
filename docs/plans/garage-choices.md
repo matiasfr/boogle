@@ -178,7 +178,7 @@ accepted hold wins, as `rail.install`'s revision rule already does.
 | Engine | Boiler | built | Installed / Replaced | as today |
 | Engine | **Blast pipe** (draft) | New, step 1 | Later → Ready at the table turn → Installed; "Free: the 20 m/s upgrade" | top speed 14 → 20 m/s; footings and kit a minute |
 | Engine | Longer boiler | built | unchanged | 20 → 25 m/s; cars 3 → 4 |
-| Engine | **Big boiler** (draft) | New, step 3 | Later; bill "STEEL n/6" with no button; Ready; Installed. Only on a line the rule passes | 25 → 30 m/s; resources a minute; cars unchanged |
+| Engine | **Big boiler** (owner's pick, 16 November) | New, step 3 | Later; bill "STEEL n/6" with no button; Ready; Installed. Only on a line the rule passes | 25 → 30 m/s; resources a minute; cars unchanged |
 | Engine | Plough and headlamp | built | Later, unchanged (no rule; a look until it has one) | |
 | Cargo | **Bigger cradle** | built as Later; real in step 3 | bill "STEEL n/4"; Ready; Installed | footings a trip 6 → 10; footings a minute |
 | Cars, the other Cargo tiles, Looks, Whistle | as today | built | unchanged | |
