@@ -1,4 +1,6 @@
-> **Status: plan, nothing built; designer-reviewed 16 November: build with changes (folded into S1, V1, L1, V2, A and
+> **Status: S1 + V1 built together on `t3/first-town-rider-places`, pending independent review; remaining steps unbuilt here.
+> S1 takes v55 because the fifth rider changes the `house-built` replay golden; L1 must take the next free namespace.
+> Designer-reviewed 16 November: build with changes (folded into S1, V1, L1, V2, A and
 > the order; the three owner questions are agent defaults, none asked).** Planner, 16 November, against origin/main `73ee4ecdd`, `WORLD_NS` v54. Builds the
 > owner's [answers](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers) to the designer's
 > [review](town-choice.md#designer-review-16-november-the-first-town-as-a-lesson) of [town-choice](town-choice.md).
@@ -89,7 +91,7 @@ Each leaves `node dev/ship-check.ts` green. **Tier** is `npm run review-stamp`'s
 tests asserting them: independent review). Who builds, from `npm run models`. Player-visible steps also get the main
 session's visual review of their stills.
 
-- [ ] **S1. Rider places and plot 3's price (S).** Sync: Server (rules and data). Tier: **independent review**.
+- [x] **S1. Rider places and plot 3's price (S).** Sync: Server (rules and data). Tier: **independent review**.
   Builds: Codex gpt-6.1-sol medium; review a fresh gpt-6-astra (medium as a first pass). Parallel with V1.
   - `src/sim/railway-trade-layout.ts`: `seats: 4` → `riderPlaces: 8` with a comment (riders' places on the
     passenger car, not the player seats; decision 16 November); plot 3 `base: 800`.
@@ -103,7 +105,7 @@ session's visual review of their stills.
     rider cap. _Designer: if `test/fixtures/railway-golden.json` moves (a stage with riders running past 4 aboard),
     that is a rule change, which the [seed-goldens](../agents/owner-calls.md#seed-goldens) call says needs a bump: S1
     then takes the next free number, without waiting for L1 ([no bump waits](../agents/owner-calls.md#no-bump-hold))._ **Done means** the tests pass and `npm run loop -- run` shows order and bills unmoved.
-- [ ] **V1. Riders in their own places (S).** Sync: Local. Tier: normal + visual. Builds: gpt-6-astra high. Parallel
+- [x] **V1. Riders in their own places (S).** Sync: Local. Tier: normal + visual. Builds: gpt-6-astra high. Parallel
   with S1, no shared file, but it reads S1's `TRADE.riderPlaces`: build on S1's branch; ship with it.
   - `src/place/folk.ts`: `RIDERS` = `TRADE.riderPlaces`; rider `k` stands (not sits) at one of eight places on car 1's
     deck **clear of the bench's four seats and the walk-on aisle** (today riders sit at the bench's seat offsets, on
@@ -206,6 +208,32 @@ S1 and V1 ship as one pair, not S1 alone. S1 bumps only if the goldens move (S1'
 A runs whenever an agent is free, after V1. If town-economy-visible's C1 (the sack, a new op) is built on the same
 branch as L1, they share v55; otherwise each takes the next free number. S1, V1, L2, V2, A, R and K never bump.
 Hotspots: `railway-sys-trains.ts`, `train-view.ts`, `namespace.ts`: rebase first.
+
+## S1 + V1 as built (16 November 2026)
+
+`TRADE.riderPlaces` is 8 throughout boarding, validation and the view; the four player seats are unchanged.
+Plot 3's base is 800, priced at 1,600 after the first two purchases at 50%. From `q6-done`, three added houses
+land 90.9 a minute over ten minutes after a five-minute demand warm-up. The initial queues still reflect the
+seed's two buildings. The loop's order, bills and results are unchanged (only measured runner wall time differs).
+
+The `house-built` golden first diverges at tick 8439 when train 1 boards its fifth rider; only that stage's
+after-1,200 hash changes. **S1 bumps v54 to v55** under seed-goldens; the schema fixture is unchanged. L1's planned
+v55 is therefore occupied. The server host trace was re-pinned after a v54-only control matched all 8,600
+records; only namespace/checksum envelopes and their byte counts change. Above-cap Boogles and historical plot payments remain valid; clients publish mirrors
+and predict on clones without `checkTrade`.
+
+The standing figures use eight local end/corner places and the car's full rock quaternion, including their boots.
+All five requested views were opened: the car with eight figures, a seated player, a pet beside the seat, the
+deck-length walk and the Cars tab. The car shots dress eight figures over the seed's three authoritative riders;
+actual eight-rider boarding and ninth-rider refusal are proved by the rule test. Rider pairs visibly overlap, as
+allowed for this stand-in. The deck walk crosses no rider; it uses the existing non-solid bench's middle, so this
+does not establish a new clear physical aisle through the bench. Real-time smoothness and device cost remain
+unverified. Four extra drawn figures add 5,104 submitted main-pass triangles and 1,312 shadow triangles, no new
+draw calls. No counter or new collider. The garage's three new strings remain placeholders.
+
+Full commands, failures, final results and inspected still paths: [S1/V1 implementation report](../reports/first-town-lesson-s1-v1.md).
+No L1, L2, V2, A or R implementation here. The generated economy pages and their existing price assertions were
+refreshed because S1 changes their shared inputs; no loader rules or model were added.
 
 ## Level findings
 

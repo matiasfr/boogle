@@ -4,6 +4,7 @@
 import { BOILER, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
 import { WORKS } from '../../sim/railway-works-layout.ts';
+import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { LINE2_KIT } from '../../sim/railway-line2-layout.ts';
 
 // ---------------------------------------------------------------- categories
@@ -135,8 +136,8 @@ export function partsOf(room: RoomFacts): Part[] {
     {
       id: 'four',
       cat: 'cars',
-      name: 'Four seats',
-      desc: 'The knifeboard passenger car: four riders and four pets.',
+      name: 'Four seats, eight riders',
+      desc: 'The knifeboard passenger car: four seats for players, places for eight riders.',
       standing: 'installed',
       pill: 'Installed',
       size: 'medium',
@@ -316,7 +317,11 @@ export function rowsFor(cat: CatId, chosen: PartId, boiler = 0): Row[] {
     ];
     return rows;
   }
-  if (cat === 'cars') return [{ id: 'seats', label: 'Seats', kind: 'number', now: 4, then: 4 }];
+  if (cat === 'cars')
+    return [
+      { id: 'seats', label: 'Seats', kind: 'number', now: 4, then: 4 },
+      { id: 'riders', label: 'Riders', kind: 'number', now: TRADE.riderPlaces, then: TRADE.riderPlaces },
+    ];
   if (cat === 'cargo')
     return [
       { id: 'footTrip', label: 'Footings a trip', kind: 'number', now: WORKS.wagonCap, then: WORKS.wagonCap },

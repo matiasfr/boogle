@@ -10,7 +10,7 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { RIDER_UNIT, TRADE } from './railway-trade-layout.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { plot, till, townClock, towns, trains, yardClock, yards } from './railway-rows.ts';
-import { plotSlot, freightAboard, lineRoute, ridersAboard, trainSeats } from './railway-queries-trade.ts';
+import { plotSlot, freightAboard, lineRoute, ridersAboard, riderPlaces } from './railway-queries-trade.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
@@ -39,11 +39,11 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
     })
   )
     bad('freight conservation');
-  // R3: riders. A train's riders fit its seats, and only a line with a route carries any; each town's waiting crowds
+  // R3: riders. A train's riders fit its own places, and only a line with a route carries any; each town's waiting crowds
   // stay under the cap and its accrual under a whole rider.
   if (
     trains(w).some(
-      (r, slot) => !railInt(r.riders, trainSeats()) || (lineRoute(RAIL_TRAINS[slot]!.line) < 0 && r.riders !== 0),
+      (r, slot) => !railInt(r.riders, riderPlaces()) || (lineRoute(RAIL_TRAINS[slot]!.line) < 0 && r.riders !== 0),
     ) ||
     ts.some(
       (t) =>

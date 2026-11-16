@@ -17,7 +17,7 @@
 //   (riders never add a stop: the ruling of 12 November; they board and step off only where a train already stands)
 //   townBuildings(w, town, tick)   the starting buildings plus completed houses
 //   tillRate(w, pct)               every route's demand rate in Boogles a minute; boxCap(w, pct) the strongbox's cap
-//   trainSeats()            seats on a train (4; the garage's install changes it here)
+//   riderPlaces()           riders' places on a train, separate from the four player seats
 //   ridersAboard(w, route)         riders on the route's line's trains
 import type { World } from '../ecs/index.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
@@ -155,8 +155,8 @@ export function boxCap(w: World, pct: TradePct, tick: number = 0) {
     Math.floor((dearestOnOffer(w, pct.pricePct ?? TRADE_PCT.pricePct) * b.dearestNum) / b.dearestDen),
   );
 }
-/** Seats on train `slot`: 4 (the garage's install changes it here, nowhere else). */
-export const trainSeats = () => TRADE.seats;
+/** Riders' places on each passenger car; player seats never set the fare-paying capacity. */
+export const riderPlaces = () => TRADE.riderPlaces;
 /** Riders aboard the route's line's trains. */
 export const ridersAboard = (w: World, route: number) =>
   LINE_SLOTS[TRADE.routes[route]!.line]!.reduce((n, k) => n + w.get(Train, w.lookup(Train, k)!)!.riders, 0);

@@ -300,7 +300,7 @@ export type StepDone = (key: string) => boolean;
 export const seatsOf = (t: Tunables, r: TownRt) =>
   t['trains.perLine']! *
     (r.car ? t['cars.second']! : t['cars.base']!) *
-    (r.six ? t['seats.six']! : t['seats.perCar']!) +
+    (r.six ? t['seats.six']! : t['riders.perCar']!) +
   (r.express ? t['express.seats']! : 0);
 export const capacityOf = (t: Tunables, town: Town, r: TownRt) =>
   seatsOf(t, r) / (t['cycle.base']! + t['cycle.perKm']! * t[`km.${town}`]!);

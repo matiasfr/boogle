@@ -45,7 +45,7 @@ export const TRADE = {
     [
       { wood: 8, stone: 0, base: 300 },
       { wood: 24, stone: 0, base: 800 },
-      { wood: 40, stone: 16, base: 3000 },
+      { wood: 40, stone: 16, base: 800 },
     ],
   ] as const satisfies readonly (readonly TradePlot[])[],
   stakedAtOnce: 2,
@@ -63,7 +63,8 @@ export const TRADE = {
   crowdStop: 4,
   /** Riders who wait at one end at most; the rest give up. */
   crowdCap: 24,
-  seats: 4,
+  /** Riders' places on the passenger car, separate from its four player seats (owner, 16 November). Stand-in. */
+  riderPlaces: 8,
   fare: { board: 2, per100m: 1 },
   /** The box holds the larger of `incomeMin` minutes of income or `dearestNum / dearestDen` of the dearest thing on
    * offer; fares past it do not land. */

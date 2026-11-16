@@ -98,7 +98,7 @@ add(
 );
 
 // Trains and seats.
-add('Seats', 'seats.perCar', 'Seats in a passenger car', TRADE.seats, 'seats', 'A Four car');
+add('Seats', 'riders.perCar', 'Rider places a train', TRADE.riderPlaces, 'riders', 'Separate from four player seats');
 add('Seats', 'seats.six', 'Seats in a car after the Six fit-out', 6, 'seats', '');
 add('Seats', 'trains.perLine', 'Trains on a line', 2, 'trains', 'Line 2 has two');
 add('Seats', 'cars.base', 'Passenger cars a train starts with', 1, 'cars', 'The free first car');

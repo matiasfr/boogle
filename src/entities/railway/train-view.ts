@@ -271,7 +271,7 @@ export async function createRailwayTrains(
       slot,
       line,
       model,
-      riderCar: { mesh: model.cars[1]!, top: wagon.TRAIN_CARS[1]!.top },
+      riderCar: { mesh: cars[1]!.rock, top: cars[1]!.hy - cars[1]!.rock.position.y },
       riderCount: -1,
       cars,
       steel,
@@ -980,7 +980,8 @@ export async function createRailwayTrains(
       const marks = kitMarks(w, tick);
       trains.forEach((tr) => {
         const row = trainRow(w, tr.slot);
-        const riders = on && Number.isFinite(row.riders) ? Math.max(0, Math.min(4, Math.floor(row.riders))) : 0;
+        const riders =
+          on && Number.isFinite(row.riders) ? Math.max(0, Math.min(TRADE.riderPlaces, Math.floor(row.riders))) : 0;
         if (riders !== tr.riderCount) {
           tr.riderCount = riders;
           folk.folk.setRiders(tr.slot, riders, tr.riderCar);

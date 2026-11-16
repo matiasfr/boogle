@@ -25,6 +25,9 @@
 // v54 town buy: checkpoints gain three unbought Plot rows, price percent 50 and v54 envelopes; hashes/bytes and
 // dynamic entity IDs follow. The action sweep adds four records for a refused buy (no id), shifting Bob's later
 // requests by one. Existing outcome payloads and all other simulation columns stay exact: 8,600 records.
+// v55 first-town riders: a namespace-only v54 control matches all 8,600 records. Only 205 checkpoint
+// namespaces/checksums and 2,528 snapBytes samples change; simulation, hashes, inputs/results and packets stay exact.
+// Audit: docs/reports/first-town-lesson-s1-v1.md; regenerated with this test's HOST_TRACE_RECORD=1 writer.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
