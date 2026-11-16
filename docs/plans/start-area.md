@@ -236,13 +236,24 @@ opus high; "Visual review" is the main session.
     departure or the far bubble; S4's newly approved removal of the massing addresses the large cue. No side rails,
     new copy or fall changes. Route-greybox owner follow-up: assess that far island/bubble from camera 04 if sea-bound
     first visits continue; no evidence here establishes that it caused Marias's choice. Final S4 captures recheck it.
-- [ ] **S3. Re-aim the landing (item 6). P2.** Tier: Local presentation. Model row: player-visible implementation,
+- [x] **S3. Re-aim the landing (item 6). P2.** Tier: Local presentation. Model row: player-visible implementation,
   Codex `gpt-6-astra` high (S1's job).
   - Files: `src/place/shore-layout.ts` (`SHORE_LANDING.yaw`), only if needed.
   - After S1, capture the landing's first frame (`intro=1`). Change the yaw only if the shore path's first
     leg, (813, 10) to (823, 28), is not in the middle third of the frame. The yaw also turns the fall
     (`src/features/fall.ts` feeds `LANDING.yaw` to the sky rail, the title's reading order, the letter scatter and
     the crane), so a change is verified with an `intro=1` look of the whole fall, and `scenario arrival` re-runs.
+  - **Implemented 15 November:** yaw is `-π/2 - 0.45` (14.3° farther toward the climb). At 390 × 844 the old yaw
+    puts the first climbing leg's midpoint `(818, 19)` at 93.2% of frame width and its upper end off-screen.
+    With the new yaw that midpoint is at 51.4%, inside the middle third; the upper end is visible at 89.1%.
+    Opened [phone before](/Users/matiasfranco/Developer/boogle/.look/start-area/s1-s4/s3-phone-before-still.png) and
+    [phone after](/Users/matiasfranco/Developer/boogle/.look/start-area/s1-s4/s3-phone-after-still.png).
+    Opened all nine `intro=1` desktop fall frames (0–16 s in 2 s steps) and the 30 s landing in
+    [s3-fall](/Users/matiasfranco/Developer/boogle/.look/start-area/s1-s4/s3-fall): sky trolley, readable BOOGLE title,
+    letter scatter, dock impact, stand-up and crane complete. The grey platform still masks part of the impact
+    until S4; letters still temporarily cover the path as intended. Frozen stepped frames do not prove real-time
+    smoothness, and phone width is not a device test. `scenario arrival` passes all five assertions with no graphics
+    errors; `ship-check` passes (946 assertions in 120 affected test files).
 - [ ] **S4. What Home shows of the West landing until its leg is being built (items 3, 5). P1; waits on Q1.**
   Tier: player-visible Local static view and colliders; no state read, no new op, no saved shape. Model row:
   player-visible implementation, Codex `gpt-6-astra` high.
