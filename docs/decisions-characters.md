@@ -6,7 +6,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
-- 2026-11-15 · The draft lines from Grant's queue (the opening, the forge hand-off, heavy load's refusals, fly first, the statue notice) stand as written for now ([entry](#d-2026-11-15-grant-queue-copy-good-for-now))
+- 2026-11-15 · The draft lines from Grant's queue (the opening, the forge hand-off, heavy load's refusals, fly first, the statue notice) stand as written for now ([entry](#d-2026-11-15-grant-queue-copy-good-for-now)) Superseded for the statue notice on 15 November: it reads only "WORK IN PROGRESS".
 - 2026-11-11 · story, characters, names and their quirks are the owner's to choose; agents propose a few varied options and build marked placeholders ([entry](#d-2026-11-11-the-story-and-characters-are-the-owner-s)).
 - 2026-11-10 · no dim behind the pause view's You page ([entry](#d-2026-11-10-no-dim-behind-the-pause-view-s-you))
 - 2026-11-10 · The Boogler is an entrepreneur; the mayor entry is archived ([entry](#d-2026-11-10-the-boogler-is-an-entrepreneur))
