@@ -432,6 +432,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       line2.prePhysics();
       works?.prePhysics();
       hook.prePhysics();
+      glide.prePhysics();
     },
     fixedPre: () => {
       stepMoves(hook, reward, glide);
@@ -637,6 +638,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         ...(works?.targets() ?? []),
         ...halts.targets(),
         ...trains.targets(),
+        ...hook.targets(),
       ];
       // The track layer's two chairs: Sit aboard with nothing else to press for; seated, Interact stands you up.
       return seats.withSeatTargets(targets);

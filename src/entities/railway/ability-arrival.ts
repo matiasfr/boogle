@@ -16,8 +16,8 @@
 //   update(dt)                  late flourishes, the charge mark, the first-jump teach and the first-fall glide teach
 //
 // The glider's teach is everyone's, the finder's too (its device teaches nothing): the first time you fall fast with the
-// glider and the canopy shut, the Glide action's glyph pulses at Buddy's back. Glide, not Jump, while the double jump is
-// still yours: Jump spends the air jump first and opens the canopy only on a second press (glider-b plan, finding 2).
+// glider and the canopy shut, Jump's glyph pulses at Buddy's back. Jump spends the air jump first, then opens or closes
+// the canopy (owner, 15 November); Q/LB remain alternates.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
@@ -335,7 +335,7 @@ export function createAbilityArrival(
       lastVy = vy;
       if (pulse > 0 && (second || grounded)) pulse = Math.min(pulse, 0.15);
       pulse = Math.max(0, pulse - dt);
-      // The first fast fall with the glider and the canopy shut: the Glide glyph at Buddy's back, once.
+      // The first fast fall with the glider and the canopy shut: the Jump glyph at Buddy's back, once.
       const canopy = railwayGlideOpen();
       if (
         row.glide &&
@@ -388,7 +388,7 @@ export function createAbilityArrival(
         ripple.scale.setScalar(0.35 + 1.6 * (1 - (1 - u) ** 2));
         rippleMaterial.opacity = 1 - u;
       }
-      const label = pulse > 0 ? glyph('jump') : glidePulse > 0 ? glyph('glide') : '';
+      const label = pulse > 0 || glidePulse > 0 ? glyph('jump') : '';
       chip.classList.toggle('on', !!label);
       if (label) {
         if (chip.innerHTML !== label) chip.innerHTML = label;

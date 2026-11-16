@@ -98,7 +98,7 @@ export function initInput() {
     if (!me.entered || isTyping(e) || devInputBlocked()) return;
     input.keys.add(e.code);
     if (e.code === 'Space') {
-      pressJump();
+      if (!e.repeat) pressJump();
       e.preventDefault();
     }
     if (e.code.startsWith('Arrow')) e.preventDefault();

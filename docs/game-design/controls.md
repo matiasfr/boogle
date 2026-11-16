@@ -14,8 +14,8 @@ and [updates.ts](../../src/features/updates.ts).
 | -------------------------------------------- | -------------- | ------------------------------------------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------------- | -------------- | ------------ |
 | Move (`move`)                                | described      | WASD, ↑ ↓ (← → too while the mouse is locked)          | Left stick                                                               | Drag on the left                                           | Getting around |              |
 | Jump, or swim up (`jump`)                    | action         | Space                                                  | A                                                                        | Jump                                                       | Getting around |              |
-| Hook shot, at a ring (`hook`) | action, after finding hook | F | RB | Hook | Getting around | |
-| Open or close the glider, in the air (`glide`) | action, after the room has the glider | Q; Jump in the air once no air jump is left | LB | Glide | Getting around | |
+| Hook shot, at a ring (`hook`) | action, after finding hook | E (Interact) or F | X (Interact) or RB | Main button reads Hook; dedicated Hook also works | Getting around | aimed, reachable ring |
+| Open or close the glider, in the air (`glide`) | action, after the room has the glider | Jump (Space); Q alternate | Jump (A); LB alternate | Jump; Glide alternate | Getting around | opening spends the air jump first |
 | Sprint (`sprint`)                            | action         | Left Shift                                             | L3 (latches)                                                             | Push the stick far                                         | Getting around |              |
 | Look around (`look`)                         | described      | Mouse; unlocked: drag, two-finger scroll, ← →          | Right stick                                                              | Drag on the right                                          | Camera         |              |
 | Bring the ball back (`respawn`)              | action         | R                                                      | View                                                                     | none                                                       | The ball       |              |
@@ -32,6 +32,8 @@ and [updates.ts](../../src/features/updates.ts).
 | Reload for the new version (`update-reload`) | action, hidden | (notice button)                                        | first free slot, only while the update notice shows                      | notice button                                              | none           |              |
 
 Notes:
+
+- **Hook and glider (owner, 15 November, C7):** Interact offers the aimed ring through the ordinary target picker; nearer interactions retain their normal priority. F/RB and the dedicated touch Hook remain available. The F/RB prompt stays visible whenever a ring is picked, including after three pulls. Jump closes an open glider before either the ground or air jump can consume that press; with it shut, Jump spends the air jump first and then opens the glider when sufficiently clear of the ground. The first-fall teach shows Jump. Q/LB and touch Glide remain toggles. [Owner call](../agents/owner-calls.md#jump-is-the-gliders-button).
 
 - **Great trunk availability (owner update, 5 November):** both Chop and shoulder prompts appear only while the active frame needs its beam at Station 3. Earlier strokes are refused. Already-felled old saves stay valid, and Drop still frees an early-held trunk. Ground cargo that later becomes unreachable returns to its pickup spot.
 - Conversations capture all four D-pad directions (and arrow keys); left/right move across answers without firing Ping or Flag. All four grabbed directions repeat while held.
@@ -66,7 +68,7 @@ Notes:
   pad's brand (`body[data-pad]`, set from `Gamepad.id` in [src/features/gamepad.ts](../../src/features/gamepad.ts)):
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
-- **Free pad slots** (`npm run registry -- --json`): D-pad ↑ and D-pad ↓. Production Hook owns RB after acquisition, Glide owns LB once the room has the glider (Jump while it's open does nothing); Drop owns R3; Flag owns D-pad →.
+- **Free pad slots** (`npm run registry -- --json`): D-pad ↑ and D-pad ↓. Production Hook owns RB after acquisition, Glide owns LB as an alternate once the room has the glider (Jump opens and closes it); Drop owns R3; Flag owns D-pad →.
   Place uses LB, RB and R3 for its moves, and D-pad → for its own Flag. Claims in `src/proto/` don't count as taken
   and can't clash with the game's in the registry. The update notice borrows D-pad ↑ while it is up (or the first free
   slot if that is ever taken), so AGENTS.md requires at least one to stay unclaimed.

@@ -3,7 +3,7 @@
 // body each step (hook, then glide, then the jump) is decided in move-order.ts, not here.
 //
 // Opening: Jump in the air once no air jump is left, or the Glide action (LB / Q / touch) as a toggle. Jump while it's
-// open does nothing. A shouldered great beam or boiler keeps it shut (docs/brainstorms/glider-placement.md, call 16).
+// open closes it, before either jump can consume the press. A shouldered great beam or boiler keeps it shut.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -101,6 +101,12 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
     }
   });
   return {
+    /** Consume closing Jump before the controller or the remaining air jump can turn it into a launch. */
+    prePhysics() {
+      if (!g.open || me.jumpQueued <= 0 || !canAct()) return;
+      closeGlide(g);
+      me.jumpQueued = 0;
+    },
     /** Entity fixedPre order 23, before the controller (40): the velocity whose steering the glide keeps. */
     noteVelocity() {
       const b = me.body;
@@ -122,7 +128,7 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
       if (g.armUntil && performance.now() < g.armUntil) open();
       if (airJumped) rearmGlide(g);
       else if (me.jumpQueued > 0 && airUnder()) {
-        // No air jump left (or none found): Jump opens it; while it's open, Jump does nothing.
+        // No air jump left (or none found): Jump opens it. Closing is consumed in prePhysics.
         if (!g.open) {
           open();
           jumpOpens++;
@@ -150,6 +156,11 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
           pad: 'lb',
           key: 'KeyQ',
           label: 'Open or close the glider, in the air',
+          detail: {
+            kbm: 'Jump (Space) opens or closes it; Q also toggles it',
+            pad: 'Jump opens or closes it; LB also toggles it',
+            touch: 'Jump opens or closes it; Glide also toggles it',
+          },
           touch: { label: 'Glide', className: 'place-glide-btn' },
           group: 'move',
           order: 3,

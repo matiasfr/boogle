@@ -116,6 +116,11 @@ has a scaled radial dead zone of 12% of its travel (50 px on phones, 60 px on ta
 unless you swim). Features can take it over through `camConstraints` (the caves keep it inside the tunnels). Before
 you enter, it slowly circles the island.
 
+When aiming up, the camera's whole downward arm also checks thin colliders. This keeps it above the Needle Bell
+platform under you: those slabs use 1.5 m tiles, which otherwise count as thin posts and let the lens rest below
+the deck. The upward arm still ignores distant thin tiles, preserving the view toward the next slab. Platform
+heights, colliders and hook clearance are unchanged (Grant G26, 15 November).
+
 ## Avatar, colours and names
 
 - Avatar: the Buddy (below). Its model and clips preload from the HTML, alongside the game modules. Local players,

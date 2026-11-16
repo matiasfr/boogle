@@ -334,7 +334,7 @@ export async function createRailwayTools(
       core.rotation.y = now * 0.0012;
     },
     /** Entity fixedPre order 42: the same post-controller second-jump seam as the approved prototype. True when the air
-     * jump fired this step (move-order.ts re-arms an open canopy on it). */
+     * jump fired this step; a press closing the canopy was already consumed by glide.prePhysics. */
     fixedPre() {
       const before = jumps;
       api.airJump();
