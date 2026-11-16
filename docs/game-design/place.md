@@ -1179,10 +1179,15 @@ stands on the table, the post is orange, and the **Blast pipe** tile is Ready wi
 One Medium hold (900 ms) sends `rail.install { line: 1, part: 1, revision: 0 }` for both Home lines. It spends no
 steel. The server refuses an unfitted cradle, an unturned or busy table, an unsupported line or part, and a stale or
 repeated fit; its actor reach remains the Home table post's. Turning alone leaves both lines at 14 m/s and the wagon
-in its stall. Acceptance sets both line fits to 20 m/s; each active train adopts at its next Village stand. The
+in its stall. The armed deck stays on road 0 through the wait and install; the orange post and offered part show
+what comes next. The garage copy stays aligned with those rails, including while browsing. The deck makes its
+one outbound turn with the wagon aboard, then follows the existing shunter return. Acceptance sets both line fits
+to 20 m/s; each active train adopts at its next Village stand. The
 blast pipe lowers through the copy's chimney and its chuff quickens. The wagon's roll-out starts five seconds after
 acceptance, allowing the install to settle before the shunter takes the table. The garage closes for the roll-out
-and returns when the wagon has coupled and the shunter is home. The longer boiler remains part 2, needs landed
+and returns when the wagon has coupled and the shunter is home. A Village train can wait at most its dwell plus
+the install hold and roll-out: `TRAIN.dwellTicks + WORKS.upgradeTicks + WORKS.rollTicks` (240 ticks; 24 seconds).
+The longer boiler remains part 2, needs landed
 steel, and stays free. The boiler-fit copy remains “The first install. It woke the trains.”
 
 **The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With

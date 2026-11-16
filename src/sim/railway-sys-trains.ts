@@ -211,7 +211,8 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold): Tra
       ridersBoard(w, slot);
       const r = row(slot);
       // The footing wagon couples to the first line 2 train standing at the village once it has rolled out; a train
-      // standing there when it is due holds its departure for it (at most WORKS.rollTicks).
+      // still standing when the install lands holds for WORKS.upgradeTicks + WORKS.rollTicks. Including its
+      // prior dwell, the Village wait is bounded by TRAIN.dwellTicks + WORKS.upgradeTicks + WORKS.rollTicks.
       if (line2(slot) && r.at === 0 && wagonSlot(w) < 0) {
         const due = w.get(Shed, shedId(w))!.ready;
         if (due >= 0 && tick >= due) {

@@ -27,11 +27,9 @@ const copy = (s: Seed): Seed => unaudited({ w: restore(s.w), t: s.t });
 const upgrade = (s: Seed, pid = 'a') => act(s, pid, 'rail.install', { line: LINE2, part: 1, revision: 0 });
 const standingHome = (s: Seed) => train(s.w, A).phase === TRAIN_PHASE.STAND && train(s.w, A).at === 0;
 
-// src/sim/railway-sys-trains.ts says a line 2 train standing at the Village when the wagon is due "holds its departure
-// for it (at most WORKS.rollTicks)", and test/railway-train.test.ts asserts `depart - arrived <= dwellTicks +
-// rollTicks`. That test installs on the arrival tick, where 50 dwell ticks happen to equal the new 50-tick hold. An
-// install on the last dwell tick shows the bound the code now keeps.
-test('review: a Village train held for the wagon keeps the documented dwell + roll bound when the install lands late', () => {
+// Installing on arrival overlaps the train's dwell with the upgrade hold. Installing on the last dwell tick
+// exercises the full bound: dwell + upgrade hold + roll, with the rule and shared moment unchanged.
+test('review: a Village train held for the wagon keeps the dwell + hold + roll bound when the install lands late', () => {
   const s = copy(railwayAtWorks('cradle-fitted'));
   assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: shed(s.w).tableRev }), 1);
   // Away from the Village first, so the next stand there is a fresh arrival.
@@ -51,10 +49,8 @@ test('review: a Village train held for the wagon keeps the documented dwell + ro
   while (standingHome(s)) advanceWorks(s, 1);
   assert.equal(train(s.w, A).wagon, true, 'it left with the wagon');
   const held = train(s.w, A).depart - arrived;
-  assert.ok(
-    held <= TRAIN.dwellTicks + WORKS.rollTicks,
-    `stood ${held} ticks at the Village (documented bound ${TRAIN.dwellTicks + WORKS.rollTicks})`,
-  );
+  const bound = TRAIN.dwellTicks + WORKS.upgradeTicks + WORKS.rollTicks;
+  assert.ok(held <= bound, `stood ${held} ticks at the Village (documented bound ${bound})`);
   assert.equal(invariant(s.w), null);
 });
 

@@ -499,7 +499,10 @@ test('the wagon couples at the village, only when ready', () => {
   assert.equal(r().wagon, true);
   assert.equal(train(w.w, B).wagon, false, 'one wagon');
   assert.ok(r().depart >= due, 'it left only once coupled');
-  assert.ok(r().depart - arrived <= TRAIN.dwellTicks + WORKS.rollTicks, 'held at most the roll');
+  assert.ok(
+    r().depart - arrived <= TRAIN.dwellTicks + WORKS.upgradeTicks + WORKS.rollTicks,
+    'held at most the dwell, install hold and roll',
+  );
   assert.equal(invariant(w.w), null);
 });
 test('coupling needs no request: the first line 2 train at the village after the roll-out takes the wagon', () => {

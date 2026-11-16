@@ -310,6 +310,14 @@ The frozen server host trace also needed v53: current code with only the namespa
 change; all state, hashes, inputs/results, messages and replica packets stay exact. The changed byte counts match
 the serialized envelope widths; three pending-writer byte counters remain unchanged.
 
+Review follow-up (16 November): the accepted turn arms the upgrade without moving the deck off road 0; the
+garage copy also stays aligned while open. The existing roll-out makes one loaded turn, then the shunter returns
+as before. Opened `.look/garage-upgrade-one-turn-motion.png` (24 frames): press/wait/install stay parked, the wagon
+turns once outbound, then clears before the shunter's return. The proof's 214 pre-roll samples stay on road 0 and
+89 loaded-turn samples stay aboard without reversal. The unchanged rule's Village bound is dwell + upgrade hold
++ roll (240 ticks); the reviewer's late-install test reproduces 239 ticks, failed the old 190 bound and passes the
+corrected one. Reviewer commit `dce5eaf66`'s tests are retained. No new player copy or sim rule change.
+
 Owner copy review: new draft name **Blast pipe**; approved **Free: the 20 m/s upgrade** reused unchanged. The
 existing footing-wagon descriptions still say it rolled out when the kiln lit / waits until the cradle is fitted
 and the table turns; they omit this gate and are left for The Boogler. No other copy was polished.

@@ -60,7 +60,7 @@ const FLOOR = 18.05,
   RAIL = STALL_RAIL;
 /** Rule ticks per second (the railway sim runs at 10 Hz, as cart-view.ts says). */
 const TICKS_PER_S = 10;
-/** The roll-out's turn, as fractions of its `rollTicks` (11 s): push on, turn, back down the spur and push off. */
+/** The roll-out's turn, as fractions of `WORKS.rollTicks`: push on, turn, back down the spur and push off. */
 const ROLL = { turn: [0.34, 0.7] } as const;
 /** The shunter's way home after the wagon waits on line 2 (ticks), and its turn back as fractions of it. */
 const BACK_TICKS = 130;
@@ -159,7 +159,7 @@ export async function createRailwayRoundhouse(
   // Pure geometry (./shunt-path.ts): the stall road at the heights it is drawn at, the deck's turn, the spur, road 2.
   const { PARKED_A, TABLE_A, OUT_A, cuspA: CUSP_A, turnBy, ...shuntPath } = createShuntPath();
   // The deck carries what stands on it (works-late-game step 5). `deckK` is the turn done (0..1) while the
-  // choreography runs, null while the deck simply follows the accepted table.
+  // choreography runs, null while the deck waits on road 0 for the upgrade and its hold.
   const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
   let deckK: number | null = null;
   /** A vehicle's centre at its own distance: the wagon's, or the shunter's (`PARK.gap` behind the wagon's). */
@@ -421,12 +421,12 @@ export async function createRailwayRoundhouse(
       batch.box(pt.x, y - slump, pt.z, w, h * (1 - tarp * 0.6), d, '#87968b', STALL_YAW, 0, tarp * 0.6);
     }
   }
-  /** The deck's yaw: the shunt's choreography while it runs (the deck carrying the wagon round), else the accepted
-   * table's stop, eased at a quarter turn per TURN_S. */
+  /** The deck waits on the stall road through the armed upgrade and its hold. Only the shunt's choreography
+   * carries it to road 1, with the wagon aboard, then brings the shunter home. */
   function drawTable(dt: number) {
-    const target = deckK === null ? yaws[shed(wd).table]! : yaws[0]! + turnBy * deckK;
+    const target = yaws[0]! + turnBy * (deckK ?? 0);
     const d = wrap(target - tableYaw);
-    // Following the choreography it lands exactly; off it (a deck left turned before the cradle was fitted), it catches up.
+    // Following the choreography it lands exactly; before it, it rests on road 0.
     const step = (deckK === null ? Math.PI / 2 / TURN_S : Math.PI) * dt;
     const was = tableTurning;
     // Within the choreography the turn is its own phase, so the clank and the landing thump play once each.
@@ -526,7 +526,7 @@ export async function createRailwayRoundhouse(
    * reload or a late joiner lands in the same pose). The roll-out, `rollTicks` up to `ready`: the shunter pushes the
    * wagon onto the deck, the deck turns with both on it, and it pushes the wagon off to its wait on line 2. Then, over
    * BACK_TICKS, the shunter backs onto the deck alone, the deck turns back to the stall road and it reverses home.
-   * k is null before the roll-out, when the deck follows the accepted table.
+   * k is null before the roll-out: an accepted table turn arms the upgrade, while the deck stays on road 0.
    */
   function shuntTargets(tick: number): { wagon: number; shunter: number; k: number | null; hidden: boolean } {
     const sh = shed(wd),
@@ -567,9 +567,9 @@ export async function createRailwayRoundhouse(
     shownReady = -1;
   /** The room clock as the shunt shows it. It runs at real time, leaning at most half a step toward the room clock
    * (`tickNow`), so a correction (an RTT probe settling) slows or hurries the wagon instead of sending it back and
-   * forth; it never runs backwards. A `ready` that changes live starts it at the turn's own tick (`ready − rollTicks`),
-   * so the roll-out starts from the parked pose whatever the clock says. More than 10 s adrift, or on a restore, it
-   * snaps to the room clock. */
+   * forth; it never runs backwards. A `ready` that changes live starts it no later than the roll-out's first tick
+   * (`ready − rollTicks`), preserving the upgrade hold and starting from the parked pose even if the receipt is
+   * late. More than 10 s adrift, or on a restore, it snaps to the room clock. */
   function shuntClock(dt: number, snapTo: boolean) {
     const now = adapter.read.tickNow(),
       step = dt * TICKS_PER_S,
@@ -705,7 +705,7 @@ export async function createRailwayRoundhouse(
     wagonA = t.wagon;
     shunterA = t.shunter;
     deckK = t.k;
-    tableYaw = deckK === null ? yaws[shed(wd).table]! : yaws[0]! + turnBy * deckK;
+    tableYaw = yaws[0]! + turnBy * (deckK ?? 0);
     garageView.restore();
   }
   snap();
@@ -899,7 +899,8 @@ export async function createRailwayRoundhouse(
       // The table: offered once the stall stands and the cradle is fitted (the sim refuses a turn before; owner,
       // 10 November: only when ready), while it is still, and never once the wagon is commissioned: the shunter's
       // choreography owns the deck from then on (not a toy after the wagon leaves).
-      // A press waits for the server's answer (`asked`); the deck turns only with the accepted roll-out.
+      // A press waits for the server's answer (`asked`), then offers the upgrade at the orange garage post.
+      // The deck stays on road 0 until the installed upgrade's roll-out carries the wagon round.
       if (asked && (sh.table === asked.to || performance.now() >= asked.until)) asked = null;
       if (
         sh.stall >= WORKS.stall &&

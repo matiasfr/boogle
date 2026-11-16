@@ -941,7 +941,17 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     // With the Longer boiler chosen and ready to install the engine stays at the opening pose, where the install is
     // in clear view left of the panel: no idle turn, and a table already turned comes home (through the hold too).
     const poised = real || canInstall();
-    const turns = open && CAMS[cat].turns && phase !== 'holding' && phase !== 'moment' && !reducedMotion && !poised;
+    // Before the wagon couples, its stall road owns the deck: even opening or browsing the upgrade must not
+    // turn it away and force a swing back when the shunter arrives. The copy stays aligned with those rails.
+    const parkedForWagon = !facts.wagonCoupled;
+    const turns =
+      !parkedForWagon &&
+      open &&
+      CAMS[cat].turns &&
+      phase !== 'holding' &&
+      phase !== 'moment' &&
+      !reducedMotion &&
+      !poised;
     if (showTurn >= 0) {
       showTurn += (dt * 1000) / (MOMENT.rest - MOMENT.whistle);
       turnYaw = smooth(clamp01(showTurn)) * TAU;
@@ -954,10 +964,10 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       const home = wrap(turnYaw);
       turnYaw = Math.abs(home) <= DECK_RATE * dt || reducedMotion ? 0 : home - Math.sign(home) * DECK_RATE * dt;
     } else if (!CAMS[cat].turns && phase === 'idle') turnYaw -= turnYaw * Math.min(1, dt * 3);
-    if (!open && showTurn < 0) turnYaw = 0;
+    if (parkedForWagon || (!open && showTurn < 0)) turnYaw = 0;
     // The deck carries the copy to the garage's pose and back at the table's own rate; once there it follows exactly.
     // With the garage shut the show-off turn of someone's install still turns it, about its rest.
-    const target = (open ? baseYaw() : restPose) + turnYaw;
+    const target = (open && !parkedForWagon ? baseYaw() : restPose) + turnYaw;
     const d = wrap(target - yaw),
       step = DECK_RATE * dt;
     if ((open && settled) || (!open && showTurn >= 0) || reducedMotion || Math.abs(d) <= step) {
