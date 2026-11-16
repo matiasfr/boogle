@@ -54,7 +54,7 @@ Owner, 15 November: "treat it as a preliminary playtest. The biggest part is tha
 | P3 | G27. The first crate on the road: jump + E reaches the scarf without climbing the platform (Matias tried a fix; "not enough") | Opened at 2:09 | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
 | P3 | G28. The bench on the cliff edge is too big and has no clear purpose | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
 | P3 | G29. The ramp and stairs up the first hill and down to the river are grey box; the road clips into the hill. Should be real stairs | With the owner's row 3 (terrain pass) | Canyon half shipped 15 November (benches levelled, risers removed, shore ramp levelled); the grey half (the West landing's stair over the shore path) is [start-area](start-area.md) S1, not dispatched |
-| P3 | G30. The crate with a bell floats by the water | Same as the owner's evening row (bell floats on water) | Queued: [queue](grant-1114-queue.md) C8, with the owner's evening row; not dispatched |
+| P3 | G30. The crate with a bell floats by the water | Same as the owner's evening row (bell floats on water) | Fixed 16 November with the owner's evening row: the bell's post now stands on the bank. The crate is unchanged at the water's edge (ground 0.87 m, water at 0) |
 | P3 | G31. The track layer for the dual track runs too fast | Same as the owner's row 32 | Queued: [queue](grant-1114-queue.md) C8, with the owner's row 32; not dispatched |
 | P3 | G32. Couldn't catch the track-laying train to ride it; the bridge is narrow and falling would be bad | Queued: [queue](grant-1114-queue.md) C8; not dispatched |
 | P3 | G33. Running and jumping uphill is faster; he doesn't mind, it's fun to play with the movement | 486 jumps, 107 bonks | Queued: [queue](grant-1114-queue.md) C8 (nothing to do; kept); not dispatched |
@@ -75,7 +75,7 @@ The NPC dialogue, Sleeves above all ("I wouldn't change the damn thing"); keep "
 
 | P | Note (his words where quoted) | What it is | Status |
 | --- | --- | --- | --- |
-| P3 | "bell floats on water" (with a screenshot: the canyon river, the bell's bent post standing in the water beside a crate) | The hanging bell of the "look under the bridge" secret (`src/entities/finds/secrets-view.ts`, `bellAt` at about (-36.4, by + 1, -78)): its post stands in the river with nothing under it. Not yet checked whether the water, the bridge or the post moved | Logged; not dispatched |
+| P3 | "bell floats on water" (with a screenshot: the canyon river, the bell's bent post standing in the water beside a crate) | The hanging bell of the "look under the bridge" secret (`src/entities/finds/secrets-view.ts`, `bellAt` at about (-36.4, by + 1, -78)): its post stands in the river with nothing under it. Not yet checked whether the water, the bridge or the post moved | Fixed 16 November: nothing had moved. The post was placed 2.5 m west of the crate, over the river bed (ground -1.79 m), using the crate's ground height. It now stands on the dry bank east of the crate at its own ground height, with the bracket reaching back over the crate |
 
 ## Fixed and shipped (still to be played)
 
