@@ -2,7 +2,24 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 14 November 2026 about 23:00 UTC (15:00 PST), at the end of the 12–14 November orchestrate session. The owner is moving orchestration to a new harness; this section is the hand-off. Mode: withCodex. World **v45** is live (#1827).
+**Updated:** 16 November 2026 about 09:00 UTC, by a fresh orchestrate session (Claude, in T3 Code). World **v52** is live; main `3720b4c3b` (#1905) is green. Models and effort: `npm run models`.
+
+## 16 November: the focus, and what is running
+
+- **Owner call** ([decision](../decisions-process.md#d-2026-11-16-focus-choice-and-payoff)): the next work is the choice-and-payoff loop. [The backlog](../backlog.md) was reconciled: four P1 rows (the town economy, garage choices, the first-line decisions, the Round); P1 is the focus, at most five rows. [direction.md](../direction.md) was rewritten to match.
+- **Found while reconciling:** slice 5's rules are on main through R3 (yards and freight v28, the stone stop v29, riders, fares and the till v30) and nothing draws them; the buy (R4), the sack (R5) and V1 to V4 are not built. The plan's status line said "not built".
+- **Running, all T3 delegates from `3720b4c3b`, none shipped:**
+  - `garage-step1-upgrade` (Codex Astra high, branch `codex/garage-step1-upgrade`): garage-choices step 1, `rail.install { part: 1 }` at the table post, `commission` waits for it; takes **v53**. Needs the independent review row before it ships.
+  - `garage-2d-page` (Codex Sol medium, `codex/garage-2d-page`): garage-choices step 0, `docs/world/garage-choices.html`.
+  - `edge-2d-page` (Codex Sol medium, `codex/edge-2d-page`): `docs/world/first-line-decisions.html`, pick your edge with the heavy load as built.
+  - `slice5-replan` (Claude Opus high, `claude/slice5-replan`): ticks slice 5's plan against main and writes `docs/plans/town-economy-visible.md` (views first, then the buy on v54 or later, then the sack). Its gameplay calls need the designer before any build.
+  - `plan-status-reconcile` (Codex Sol medium, `codex/plan-status-reconcile`): corrects the status lines of the other backlog plans against main; its report updates the backlog's next steps.
+- **Next, in order:** review and ship the two pages (docs, `--orchestrator-read`) and show them to the owner; designer review of the slice 5 re-plan, then dispatch its first view step (player-visible row) and the buy (high-risk row, after v53 lands, since both edit `namespace.ts` and `railway-components.ts`); an independent review of garage step 1, then ship; a plan for pick your edge from the page's numbers; garage step 2 (view only) can start any time.
+- **Orchestrator's call, for the owner to undo:** garage step 1 was started although the garage moment's checkpoint (proofs only; G1 to G5 are on main) is unticked: "Nothing waits for a playtest" and the step brings its own garage proof. The checkpoint's proofs are still owed as a runner job.
+- **Machine:** load was 33 on 10 cores at 08:30 UTC with about 25 unmerged T3 worktrees from 14–15 November; timing and bot results under that load prove little. Not cleaned up in this session: check each against `git cherry origin/main` before archiving.
+- **Leftover moved here from the backlog:** P2, the rotunda's quiet-machine frame timing, smoothness and device performance are still unverified (its steps 1–5 shipped, #1880 and #1890).
+
+**Older status below** (kept for its detail; this section supersedes it where they differ).
 
 ## Night of 14–15 November (Opus orchestrating in T3 Code)
 
