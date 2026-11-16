@@ -351,13 +351,19 @@ function west(entries: Entry[]) {
     kind: 'fact',
     message: `  ground under the root ${f1(H(M.root.x, M.root.z))} m, under the stop ${f1(H(W.origin.x, W.origin.z))} m, under the platforms' sea end ${f1(H(M.seaEnd.x, M.seaEnd.z))} m; the commons mark stands at ${f1(y(M.commons))} m`,
   });
-  // Start-area S1: the shore path and end ramp are the way up. The real-body walk eval proves both directions;
-  // the grid alone can pass steep cliff cells and does not model the path's overhead clearance.
-  for (const [name, from, to] of [
-    ['from platform A to the commons', M.platformA, M.commons],
-    ['from platform B to the commons', M.platformB, M.commons],
-    ['from the commons down to platform A', M.commons, M.platformA],
-  ] as const) {
+  // Start-area: the shore path is the way up; the end ramp joins it only in the platform build.
+  // The real-body eval proves both directions; the grid can pass steep cliff cells and omits overhead clearance.
+  const routes: [string, XZ, XZ][] = [
+    ['from the landing to the commons', M.root, M.commons],
+    ['from the commons down to the landing', M.commons, M.root],
+  ];
+  if (!W.staked)
+    routes.push(
+      ['from platform A to the commons', M.platformA, M.commons],
+      ['from platform B to the commons', M.platformB, M.commons],
+      ['from the commons down to platform A', M.commons, M.platformA],
+    );
+  for (const [name, from, to] of routes) {
     const seen = flood(grid, MOVER, [g.node(from)]);
     entries.push({
       kind: 'assertion',
@@ -365,6 +371,12 @@ function west(entries: Entry[]) {
       message: `on foot ${name}${seen[g.node(to)] ? '' : ': NOT reached'} (the flood only; step 5 walks it)`,
     });
   }
+  entries.push({
+    kind: 'fact',
+    message: W.staked
+      ? '  build: survey stakes and board only; no platform reach targets until the build that starts bay-cut'
+      : '  build: West landing platforms stand',
+  });
   // The `cave` row leaves the same root: its first 80 m, as wide as a bed.
   const cave = WORLD_LINES.find((l) => l.id === 'cave')!.pts.map(([x, z, yy]) => ({
     x: x / 100,

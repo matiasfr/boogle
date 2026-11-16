@@ -1,8 +1,8 @@
 // npm run look -- --eval dev/look/evals/leg2-west-walk.ts --warm 180 --until 'window.__westWalk' \
 //   --cam 800,40,52 --look 820,8,10 --name west-walk
-// The West landing's way between the commons and the platform, walked by the body (docs/plans/greybox-leg2-massing.md,
-// step 5 and its design review's change 1): by real input, at walk speed, with no jump. Three walks: the cliff alone
-// in one straight line (east from the shelf), then down the shore path from the commons to platform A, then back up.
+// The West landing's way between the commons and the dock (or future platform), walked by the body
+// (docs/plans/greybox-leg2-massing.md, step 5 and its design review's change 1): by real input, at walk speed, with no jump. Three walks: the cliff alone
+// in one straight line (east from the shelf), then down the shore path to the landing, then back up.
 // Staging teleports only. Prints `WESTWALK ...` lines and sets `window.__westWalk`; a failed route throws.
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
@@ -26,10 +26,9 @@ const { default: prefabs } = (await import('/content/built/prefabs.json' as stri
 };
 const records: unknown = prefabs;
 validation.validateArtifact(records);
-const M = (
-  validation.loadLevelArtifact(west, records.prefabs)
-    .analysis as unknown as import('../../../src/content/levels/leg2.ts').Leg2Analysis['west']
-).marks;
+const area = validation.loadLevelArtifact(west, records.prefabs)
+  .analysis as unknown as import('../../../src/content/levels/leg2.ts').Leg2Analysis['west'];
+const M = area.marks;
 type XZ = { x: number; z: number };
 
 async function stage(p: XZ, y: number) {
@@ -89,10 +88,12 @@ async function run() {
     { x: 838, z: 0 },
   ];
   await stage(M.commons, 19.5);
-  results.push(
-    await walk('down: the commons to platform A', [...path.toReversed(), M.rampFoot, M.rampHead, M.platformA], 60000),
-  );
-  results.push(await walk('up: platform A to the commons', [M.rampHead, M.rampFoot, ...path, M.commons], 60000));
+  // Walk to the arrival dock while the build switch removes the platforms. When platforms return, this same
+  // eval must again reach platform A and its end ramp; never stage a walker on a platform that is absent.
+  const landing = area.staked ? [M.root] : [M.rampFoot, M.rampHead, M.platformA];
+  const end = area.staked ? 'the landing' : 'platform A';
+  results.push(await walk(`down: the commons to ${end}`, [...path.toReversed(), ...landing], 60000));
+  results.push(await walk(`up: ${end} to the commons`, [...landing.toReversed().slice(1), ...path, M.commons], 60000));
   if (results.slice(1).some((r) => !r.ok))
     throw new Error('WESTWALK: shore path route failed; do not restore the stair');
   (window as unknown as { __westWalk?: unknown }).__westWalk = results;

@@ -193,6 +193,9 @@ const WEST_ROOT = { x: 801, z: 10 },
   WEST_S = unit(-0.6155, -0.7881),
   WEST_LAT = perp(WEST_S, -1);
 const sl = frame(WEST_ROOT, WEST_S, WEST_LAT);
+// Owner Q1, 15 November: every room sees the staked site until the build that starts bay-cut.
+// Flip this with that build's station/formation work, never from room progression.
+const WEST_STAKED = true;
 const WEST_RAIL = 4,
   WEST_SHELF = 3;
 
@@ -202,27 +205,42 @@ function west() {
     /** The stop, s 20. */
     origin: sl.at(20, 0),
     basis: sl.basis,
-    pieces: [
-      { ...sl.box('bed', 0, 60, -BED, BED, WEST_RAIL - 0.1, 1, 'dark'), posts: true },
-      // Platform A is the landward one; past s 20 the ground falls under the sea and both stand on posts.
-      { ...sl.box('platform-a', 0, 40, BED, PLAT, top, 2, 'light'), posts: true },
-      // B starts at s 2: from s 0 its root corner stood 1 m inside the `cave` row's corridor, which leaves this root.
-      { ...sl.box('platform-b', 2, 40, -PLAT, -BED, top, 2, 'light'), posts: true },
-      sl.ramp('end-ramp', 0, top, -4, WEST_SHELF, BED, PLAT, 'grey'),
-      sl.box('apron', 4, 16, PLAT, 11.8, top, 2, 'grey'),
-      // Call 120 reversed (start-area S1): the shore path climbs to the commons and meets the end ramp's foot.
-      // A second climb here crossed that path and read as the newcomer's way up.
-    ],
+    staked: WEST_STAKED,
+    pieces: WEST_STAKED
+      ? []
+      : [
+          { ...sl.box('bed', 0, 60, -BED, BED, WEST_RAIL - 0.1, 1, 'dark'), posts: true },
+          // Platform A is the landward one; past s 20 the ground falls under the sea and both stand on posts.
+          { ...sl.box('platform-a', 0, 40, BED, PLAT, top, 2, 'light'), posts: true },
+          // B starts at s 2: from s 0 its root corner stood 1 m inside the `cave` row's corridor, which leaves this root.
+          { ...sl.box('platform-b', 2, 40, -PLAT, -BED, top, 2, 'light'), posts: true },
+          sl.ramp('end-ramp', 0, top, -4, WEST_SHELF, BED, PLAT, 'grey'),
+          sl.box('apron', 4, 16, PLAT, 11.8, top, 2, 'grey'),
+          // Call 120 reversed (start-area S1): the shore path climbs to the commons and meets the end ramp's foot.
+          // A second climb here crossed that path and read as the newcomer's way up.
+        ],
     pads: [],
-    // Beside the shore path's foot, facing east, so the walk down reads it before the platform.
+    // A single row of short timber survey stakes on the level shelf, beside the first 20 m of the bed.
+    // Decorative only: no platforms or hidden platform collision, and the shore path stays clear.
+    extras: WEST_STAKED
+      ? [0, 1, 2, 3, 4].map((k) => ({
+          id: `survey-${k}`,
+          prefab: 'greybox.decoration',
+          // Authored 5 m steps (-3, -4), along the shelf beside the bed rather than out over the water.
+          pos: [805.5 - 3 * k, 3.5, 6.5 - 4 * k],
+          scale: [0.14, 1.2, 0.14],
+          params: { colour: '#8a6238' },
+        }))
+      : [],
+    // On the shelf beside the shore path's foot, facing the path; keep the existing placeholder copy.
     posts: [
       {
         id: 'board',
-        x: 805,
-        z: 20.5,
+        x: WEST_STAKED ? 810 : 805,
+        z: WEST_STAKED ? 5.5 : 20.5,
         y: WEST_SHELF,
-        nx: 1,
-        nz: 0,
+        nx: WEST_STAKED ? 0 : 1,
+        nz: WEST_STAKED ? 1 : 0,
         label: 'west.board',
       },
     ],

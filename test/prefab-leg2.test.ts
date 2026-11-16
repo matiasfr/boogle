@@ -35,7 +35,7 @@ const expected = {
 };
 
 for (const area of ['bell', 'west'] as const)
-  test(`${area} collider and placement values match the old leg 2`, async () => {
+  test(`${area} collider and placement values match the approved leg 2 fixture`, async () => {
     const matrices = recordMatrices();
     const colliders: unknown[] = [],
       signs: { mesh: THREE.Group; options: unknown; lines: string[] }[] = [];
