@@ -159,8 +159,8 @@
     <p id="finding" aria-live="polite"></p>
     <p>
       Draft names only: “whetstone” and “sling”; sling also names Canopy Town’s later carry grant. This is a planning
-      page, not player-facing copy. Both picks apply to the room. Pick after Station 1, receive the other after Station
-      2; pack and proper axe keep their existing arrival.
+      page, not player-facing copy. Original comparison: both picks apply to the room. Pick after Station 1, receive the
+      other after Station 2; pack and proper axe keep their existing arrival.
     </p>
     <div class="controls">
       <div id="picks">
@@ -169,6 +169,17 @@
         <button data-pick="2" aria-pressed="false">Sling first</button>
       </div>
       <label><input id="heavy" type="checkbox" /> Deliberately fill the heavy allowance</label>
+      <label><input id="movement" type="checkbox" /> New proposal: early double jump or carry allowance</label>
+      <p class="small">
+        Proposal only, from <a href="../brainstorms/first-line-choice.md">first-line-choice</a>: keep today's 2 logs per
+        chop and 8 comfort. After T1 choose double jump with 8 comfort, or the draft sling allowance (12 by default). No
+        second grant at T2. Existing later grants resume after T3. Only T1–T3 are modeled under this proposal; later
+        rows retain the original comparison. Whetstone/sling labels become movement/carry below. Movement-only T2/T3 log
+        approaches below are editable design targets, NOT surveyed routes. A heavy return still uses the grounded long
+        approach. Stone and the beam retain their existing estimates.
+      </p>
+      <label>Movement T2 logs, one-way walk-s <input id="moveT2" type="number" min="0" step="0.1" value="2" /></label>
+      <label>Movement T3 logs, one-way walk-s <input id="moveT3" type="number" min="0" step="0.1" value="7" /></label>
       <p class="small">
         Shipped rule: +50% capacity (8→12, draft 12→18, pack 16→24), speed falls linearly to 45% at maximum; no jump,
         hook or glide while over comfort. Logs, stone and rails share capacity. Partial final loads use their actual
@@ -191,9 +202,9 @@
     </div>
     <h2>Per haul · seconds = chopping + walking</h2>
     <p>
-      All three variants remain visible; buttons highlight the pick. Positive delta means sling is faster. Bars compare
-      seconds within each haul (grey today, orange whetstone, green sling). Defaults are straight-line lower bounds, not
-      observed completion times.
+      All three variants remain visible; buttons highlight the pick. Positive delta means the third column is faster.
+      Bars follow column order: grey today, orange first option, green second option. Original defaults are
+      straight-line lower bounds; movement targets are assumptions. Neither is an observed completion time.
     </p>
     <div id="rows"></div>
     <details open>
@@ -365,13 +376,21 @@
             ? Math.max(8, Math.floor(val('sling')))
             : 8;
       let yieldLog = q ? 5 : v && (row.id === 'T1' || (row.id === 'T2' && v === 2)) ? 1 : 2;
+      const movement = document.getElementById('movement').checked && ['T1', 'T2', 'T3', 'beam'].includes(row.id);
+      if (movement) {
+        yieldLog = 2;
+        comfort = v === 2 && row.id !== 'T1' ? Math.max(8, Math.floor(val('sling'))) : 8;
+      }
       for (const leg of row.legs) {
         const n = row.bill[leg.material] || 0;
         const big = leg.material === 'beam';
         const cap = big ? 1 : comfort + (document.getElementById('heavy').checked ? Math.floor(comfort / 2) : 0);
         chop += leg.material === 'logs' && leg.by === 'hand' ? Math.ceil(n / yieldLog) : 0;
         const route = routeInputs[row.id + '-' + leg.material];
-        const short = Number(route.short.value) || 0,
+        const short =
+            movement && v === 1 && leg.material === 'logs' && ['T2', 'T3'].includes(row.id)
+              ? val('move' + row.id)
+              : Number(route.short.value) || 0,
           long = Number(route.long.value) || 0;
         for (let left = n; left > 0; left -= cap) {
           const load = Math.min(left, cap),
@@ -385,6 +404,7 @@
     }
     function render() {
       const threshold = val('threshold');
+      const movement = document.getElementById('movement').checked;
       let diffs = [];
       for (const row of DATA) {
         const values = [0, 1, 2].map((v) => calculate(row, v));
@@ -394,18 +414,19 @@
         document.getElementById('metrics-' + row.id).innerHTML = values
           .map(
             (r, v) =>
-              `<div class="metric ${pick === v ? 'selected' : ''}"><strong>${names[v]}</strong><div class="seconds">${r.time.toFixed(1)} s</div><span class="small">${r.chop} chops · ${r.trips} trips</span></div>`,
+              `<div class="metric ${pick === v ? 'selected' : ''}"><strong>${movement && ['T1', 'T2', 'T3', 'beam'].includes(row.id) ? ['Today', 'Early double jump', 'Early carry'][v] : names[v]}</strong><div class="seconds">${r.time.toFixed(1)} s</div><span class="small">${r.chop} chops · ${r.trips} trips</span></div>`,
           )
           .join('');
         document.getElementById('delta-' + row.id).textContent =
-          `Whetstone − sling: ${delta.toFixed(1)} s · ${Math.abs(delta) >= threshold ? 'above' : 'below'} ${threshold} s discussion threshold`;
+          `${movement && ['T1', 'T2', 'T3', 'beam'].includes(row.id) ? 'Movement − carry' : 'Whetstone − sling'}: ${delta.toFixed(1)} s · ${Math.abs(delta) >= threshold ? 'above' : 'below'} ${threshold} s discussion threshold`;
         document.getElementById('bars-' + row.id).innerHTML = values
           .map((r) => `<span class="bar" style="width:${(100 * r.time) / max / 3}%"></span>`)
           .join('');
       }
       const t2 = diffs.find((x) => x.id === 'T2');
-      document.getElementById('finding').textContent =
-        `At Station 2, ${t2.delta >= 0 ? 'sling' : 'whetstone'} saves ${Math.abs(t2.delta).toFixed(1)} s (${((Math.abs(t2.delta) / 85) * 100).toFixed(1)}% of Grant’s 85 s beat); the order changes no later haul, so these estimates alone do not establish a choice a player can feel.`;
+      document.getElementById('finding').textContent = movement
+        ? `Proposed route targets: T2 movement − carry ${t2.delta.toFixed(1)} s; T3 ${diffs.find((x) => x.id === 'T3').delta.toFixed(1)} s. These are assumptions, not measured shortcuts. The decision must read as a new way across versus fewer loads, not a small time saving.`
+        : `At Station 2, ${t2.delta >= 0 ? 'sling' : 'whetstone'} saves ${Math.abs(t2.delta).toFixed(1)} s (${((Math.abs(t2.delta) / 85) * 100).toFixed(1)}% of Grant’s 85 s beat); the order changes no later haul, so these estimates alone do not establish a choice a player can feel.`;
       document.getElementById('fuel-row').hidden = !document.getElementById('fuel').checked;
       let fuel = DATA.filter((r) => r.id.startsWith('Q')).map((r) => {
         const n = Math.ceil(r.bill.rails * val('ratio'));
