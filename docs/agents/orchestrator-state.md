@@ -2,14 +2,15 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 16 November 2026 about 12:15 UTC, by the orchestrate session that started that morning (Claude, in T3 Code). World **v54** is live (smoke passed on #1929); main is `a71077c4b` (#1930). Models and effort: `npm run models`.
+**Updated:** 16 November 2026 about 13:15 UTC, by the unattended tick (skill section 9; the morning's orchestrate session ended at 12:38 UTC). World **v54** is live; main is `296ad9698` (#1933), CI, deploy and smoke green. Models and effort: `npm run models`.
 
 ## 16 November: the focus, what shipped, what is open
 
 - **Owner call** ([decision](../decisions-process.md#d-2026-11-16-focus-choice-and-payoff)): the next work is the choice-and-payoff loop. [The backlog](../backlog.md) has four P1 rows; P1 is the focus, at most five rows.
 - **Shipped today, game:** #1926 garage step 1 (the 20 m/s upgrade as an install, v53); #1927 stakes and piles on the Round; #1928 riders and the till; #1929 `rail.buy` and houses that raise fares (v54); #1930 the gold ghost, the hold and the house going up. Every one had an independent review and its fixes before shipping.
 - **Shipped today, docs:** #1907 backlog and direction; #1910 plan status lines; #1912 DESIGN.md's server model; #1913 agent instructions to match; #1916 the owner-calls index (`npm run owner-calls`); #1924 the archive pass (`docs/archive/`, `npm run docs-archive`); #1920 the unattended tick (skill section 9); the 2D pages for garage choices (#1909) and the first line (#1908); the first-line brief (#1914) and its crossing probe (#1923).
-- **Nothing is running** as of this update. Next by rank: town economy A1 (view only), the next town plan (the loader choice; planner, then designer), checkpoints K1 and K2 as a runner job, garage step 2 (view only), garage step 3 (high-risk).
+- **Tick, 13:15 UTC:** shipped since the last update: #1932 (the two-tab buy scenario `dev/scenarios/town-buy.ts`, the town economy's game-design chapter, [the checkpoint report](../reports/town-checkpoints-k1-k2.md); K2 ticked, K1 still open) and #1933 ([town-choice](../plans/town-choice.md), a plan shipped as a proposal: not designer-reviewed, nothing built from it). Nothing was waiting for review or merge.
+- **Running: one job.** Town economy A1 (crate stacks at the Camp and Quarry, freight crates on the train; view only), T3 delegate `town-a1-freight`, Codex gpt-6-astra high, branch `codex/town-a1-freight`, started by the tick at 13:10 UTC. When it reports: read the diff, open its two stills, `npm run review-stamp`, then ship. After A1: K1 (a runner job), garage step 2 (view only), garage step 3 (high-risk). The town-choice plan waits on the owner (Open owner questions).
 - **Two unattended orchestrators exist** and the owner has not chosen between them: the hourly heartbeat in the "Orchestrate Boogle with T3" thread, and the four-hour "Boogle unattended tick" (scheduled task, section 9 of the skill). On 16 November the hourly one killed the browser MCP of two running jobs and removed five merged worktrees. Until he chooses, section 9's rule stands: a tick does not start work beside a live orchestrator session.
 - **Open owner questions from today** (each proceeds on its recommended yes unless marked): the town plan's five (unbought plots as outlines, live; riders 1 a minute and prices halved, live; the loader on the second plot's house, next plan; the plot by the hall first, live; the rooftop run accepted); the first line: no fork, or build a crossing (blocked on him: three ideas measured, none a decision on today's terrain); "Blast pipe" and the board and till placeholder strings; whether the buy's reach check (3.2 m from the board, live) is wanted.
 - **Proof debts from today, none tested on a device:** the two-player browser scenario for the buy (K2); real-time motion and sound for the garage install and the house build; the rooftop run with a controller; a second real player inside a plot when a house completes; the full Works bot route after v53.
@@ -239,6 +240,12 @@ From 5–7 November and not on the roadmap anywhere else, so kept here; check ea
 - **Framework and tool upgrades:** last.
 
 ## Open owner questions
+
+**From 16 November, waiting on him** (the tick starts nothing on these):
+
+- **The town's first choice** ([town-choice](../plans/town-choice.md), measured): the ruled version fails (the second plot's house with the loader always wins, and the loader as named saves nothing). The planner's replacement, a loader yard at 400 that lets every line 2 train carry footings, saves real time (Ring Island 339 s to 203 s) but both orders end in the same town, so it is an order, not a decision. Recommended: keep the loader yard as an upgrade, do not call it the choice, and run one light brainstorm on scarce plots (eight plots, more things worth building than plots), then the designer, before any build. The alternative: ship the loader yard now for its two minutes at the ring. Either changes the 16 November ruling ("the loader on the second plot's house"), so it is his.
+- **Which unattended orchestrator stays:** the hourly heartbeat in the "Orchestrate Boogle with T3" thread or the four-hour tick. Recommended: the four-hour tick only (the hourly one killed two jobs' browser MCP on 16 November).
+- **The first line:** no fork, or build a crossing (the backlog's blocked P1 row). Recommended: no fork.
 
 
 From 5–6 November; drop each when answered.
