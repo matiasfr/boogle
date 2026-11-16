@@ -74,7 +74,7 @@ export async function seesAll(group: { page: Page; selfId: SelfId }[]): Promise<
 
 // page.js-style bundle `entry` served on a free port, plus headless Chromium. open(name, query) loads a page and runs
 // its T.start(); selfId is the page's id, or { error } when the room turned it away.
-export async function startWeb(entry: string, root?: string) {
+export async function startWeb(entry: string, root?: string, accountServer?: string) {
   const webPort = await freePort();
   const built = await esbuild.build({
     entryPoints: [path.join(here, entry)],
@@ -83,6 +83,7 @@ export async function startWeb(entry: string, root?: string) {
     write: false,
     platform: 'browser',
     logLevel: 'warning',
+    define: accountServer ? { 'import.meta.env.VITE_BOOGLE_SERVER': JSON.stringify(accountServer) } : {},
     // Test instructions stay trusted; only the application under test comes from the worker tree.
     plugins: root
       ? [
@@ -99,7 +100,7 @@ export async function startWeb(entry: string, root?: string) {
         ]
       : [],
   });
-  const js = built.outputFiles[0]!.text;
+  const js = built.outputFiles![0]!.text;
   const web = http
     .createServer((req, res) => {
       if (req.url!.startsWith('/bundle.js')) {

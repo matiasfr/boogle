@@ -4,7 +4,7 @@
 
 Let a player keep one identity across browsers and devices by saving a short PIN, while continuing to let friends play without registering. Accounts identify people; each room keeps its own progress, wallet, upgrades and saves. Serves DESIGN.md **6. Communal world, personal things**, **8. Enjoyable alone and together**, **Clear authority** and **Small and readable**.
 
-**Status:** step 1 built; step 2 implemented under the owner's 15 November brief, with remaining Checkpoint A evidence recorded below. Steps 3–5 remain outside this implementation, apart from the minimum guest bootstrap needed for step 2 to connect. The P1 [backlog row](../backlog.md) and [account commitment](../decisions-process.md#d-2026-11-14-accounts-committed) own the broader effort.
+**Status:** steps 1–4 are live on main (#1868, #1871, #1873, #1875). Step 5 adds checkpoint coverage; broader browser and visual proofs remain open as listed below.
 
 ## Owner answers (15 November 2026)
 
@@ -102,9 +102,9 @@ Each numbered implementation step is a reviewable commit and leaves `node dev/sh
 
 - [x] **0. Trace the current identity and write this plan.** Tier: documentation. Files: `docs/plans/accounts.md` only. Models row: **Planning complex work**, executed by this requested Codex planner. Verify the cited seams and links; format and run the task's required `npm run check`. Validation results are recorded below.
 - [x] **1. Build durable principals and account operations.** Tier: high risk, server/persistence. Files: new `server/src/account-store.ts`, `server/src/accounts.ts`, `server/test/accounts.test.ts`; edit `server/src/server.ts`, `server/README.md`, and image manifests only as their import closure requires (`server/Dockerfile`, `dev/server-build.ts`, `.github/workflows/deploy-server.yml`). Implement `createAccountStore`, `registerGuest`, `createAccount`, `signIn`, `resolveSession`, `rotatePin`, `revokeSession` and the HTTP routes with the transactions and failure behavior above, using the confirmed five-digit PIN-alone decision. Models row: **High-risk implementation** (currently Astra high). Checks: step gate plus focused server tests explicitly requested in the 15 November brief: persistence/restart, duplicate requests, promotion, PIN uniqueness/rotation, expiry/revocation, token rebinding rejection, rollback/storage failure, bounded input/origins and simple sign-in limiting. Checkpoint A later exercises socket integration. No UI unit suite or new generic auth framework.
-- [ ] **2. Bind room admission to verified principals.** Tier: high risk, transport/server. Files: `src/net/ws-room.ts`, `src/net/ws-wire.ts`, `server/src/host/rooms.ts`, `server/src/host/hosted-room.ts`, new `src/net/account-wire.ts` for shared shapes; `src/world/namespace.ts` dated bump; `src/net/README.md`; explicit shared-file image entries above. Replace URL secrets and live-key comparisons with the auth frame and resolved pid. Preserve newer-connection takeover and operator tuning capability, updating `dev/tune.ts` and its transport caller if needed. Models row: **High-risk implementation**. Checks: step gate; **checkpoint A** below, before this boundary is considered ready.
-- [ ] **3. Resolve browser identity before room startup.** Tier: high risk, identity/transport integration. Files: new `src/player/account.ts`; `src/player/identity.ts`, `src/netplay/net.ts`, `src/features/identity.ts`, `src/player/arrival.ts`, `src/player/world-reset.ts`; `src/boot/index.ts` before its dynamic `main.ts` import. Store a complete credential record, preserve accounts through room resets, await resolution, handle revoked/offline/memory-only states and switch via close/reload. Keep local visit data from following a different person; do not change same-person spawn policy. Models row: **High-risk implementation**. Checks: step gate; checkpoint B verifies two separate browser stores, storage denial, account switch and namespace reset.
-- [ ] **4. Add the optional Account page and truthful copy.** Tier: player-visible Local UI. Files: new `src/player/account-page.ts` and `account-page.css`, `src/player/pause-pages.ts`; extend the existing takeover message in `src/features/identity.ts` to mention another device. Update `docs/game-design/social.md`, `docs/game-design/first-run.md` and `docs/atlas/stories/join.json` (the existing join story). Models row: **Player-visible implementation** (currently Fable medium); **Visual review** by a fresh Fable reviewer at checkpoint B. Checks: step gate, then B. No DOM unit tests; no game-design claim until behavior exists. Keep The Boogler's copy unchanged.
+- [x] **2. Bind room admission to verified principals.** Tier: high risk, transport/server. Files: `src/net/ws-room.ts`, `src/net/ws-wire.ts`, `server/src/host/rooms.ts`, `server/src/host/hosted-room.ts`, new `src/net/account-wire.ts` for shared shapes; `src/world/namespace.ts` dated bump; `src/net/README.md`; explicit shared-file image entries above. Replace URL secrets and live-key comparisons with the auth frame and resolved pid. Preserve newer-connection takeover and operator tuning capability, updating `dev/tune.ts` and its transport caller if needed. Models row: **High-risk implementation**. Checks: step gate; **checkpoint A** below, before this boundary is considered ready. Shipped in #1871.
+- [x] **3. Resolve browser identity before room startup.** Tier: high risk, identity/transport integration. Files: new `src/player/account.ts`; `src/player/identity.ts`, `src/netplay/net.ts`, `src/features/identity.ts`, `src/player/arrival.ts`, `src/player/world-reset.ts`; `src/boot/index.ts` before its dynamic `main.ts` import. Store a complete credential record, preserve accounts through room resets, await resolution, handle revoked/offline/memory-only states and switch via close/reload. Keep local visit data from following a different person; do not change same-person spawn policy. Models row: **High-risk implementation**. Checks: step gate; checkpoint B verifies two separate browser stores, storage denial, account switch and namespace reset. Shipped in #1873.
+- [x] **4. Add the optional Account page and truthful copy.** Tier: player-visible Local UI. Files: new `src/player/account-page.ts` and `account-page.css`, `src/player/pause-pages.ts`; extend the existing takeover message in `src/features/identity.ts` to mention another device. Update `docs/game-design/social.md`, `docs/game-design/first-run.md` and `docs/atlas/stories/join.json` (the existing join story). Models row: **Player-visible implementation** (currently Fable medium); **Visual review** by a fresh Fable reviewer at checkpoint B. Checks: step gate, then B. No DOM unit tests; no game-design claim until behavior exists. Keep The Boogler's copy unchanged. Shipped in #1875.
 - [ ] **5. Close the account checkpoint and update completion marks.** Tier: networking proof and documentation. Files: extend existing `dev/peer-test/ws-run.ts` and its helpers for the new room admission contract; update `docs/plans/accounts.md` with evidence, `docs/plans/net-roadmap.md` section 1 with as-built behavior and `docs/backlog.md` status only when actually complete. Models row: **Runner** (currently Sol medium); boundary changes require **Independent review before merge** / **Code review before shipping** (currently Astra high, fresh context). Checks: B below, review resulting manifests and final diff. This planning task commits only on its branch: no push or ship; later implementation follows its own authorization.
 
 ### Checkpoint A: authenticated room boundary
@@ -203,3 +203,40 @@ The harness has been extended, but its reviewed broker launch/restart must happe
 Fresh independent review is also outstanding; this implementation sub-agent did not delegate one. Accordingly step
 2's readiness checkbox and Checkpoint A remain open. Rendered smoke, before/after load, full browser identity and
 room-isolation flows are not claimed; not tested on a device. Nothing was pushed, shipped or submitted as a PR.
+
+## Step 5 checkpoint evidence (15 November 2026)
+
+Steps 1–4 are live in #1868, #1871, #1873 and #1875. Their implementation checkboxes above are complete;
+Checkpoint A, Checkpoint B and step 5 remain open until the proofs below are finished.
+
+**A — verified in this worktree:** Node 26.13.0 ran `node --test server/test/account-admission.test.ts`:
+3 passed, zero failures/skips. Its shared `ws-accounts.ts` cases cover first-frame admission, unknown/revoked
+credentials, absent-owner forgery, malformed/early/oversized input, timeout, two tokens for one pid,
+newer-connection takeover/retirement, same-connection reconnect, cross-room revocation, promotion retries
+and restart durability. The other two tests verify independent operator authority and real-client voice-presence
+reconnect followed by fatal sign-out. `node --test server/test/accounts.test.ts server/test/server.test.ts
+test/server-image.test.ts`: 24 passed, zero failures/skips. No production authentication behavior changed here.
+
+**B — coverage added, browser execution unverified:** `ws-run.ts` now runs `ws-account-browser.ts` before
+opening the ordinary room pages, so its browser queue lease is released before the next suite acquires one.
+The probe bundles the production `src/player/account.ts` and `createWsRoom` in `account-page.ts` against the
+fixture server. Two independent browser contexts register separate guests; A promotes, B signs in, A is retired,
+B reloads and survives server restart, signs out and switches back, then A rotates the PIN and B's stored
+revoked credential is refused without silently becoming a guest. A visit-memory sentinel checks person cleanup.
+The probe bundles successfully. These are account/sync checks, not Account-menu or whole-game visual evidence.
+PIN handoff exists only in runner memory; no secret is put in URLs, assertions, evidence, telemetry or screenshots.
+Browser exceptions are replaced with a fixed message before the runner logs them.
+
+**Local gates:** `npm run checks-for` selects `npm run check`. Scoped lint and typecheck pass.
+`npm run atlas -- --check` exits 0, with existing unrelated stale citations/text warnings; the join story is unchanged.
+`npm run check` passed (exit 0): 2,189 unit tests passed, zero failures, one existing TODO; registry,
+level, asset, prefab and production-build checks passed. The final-tree rerun is also reported at handoff.
+
+**Parent follow-up:** `node .look/see-client.ts net` exits 1 (`MODULE_NOT_FOUND`: this worktree has no
+`.look/see-client.ts`). Accordingly `npm run test:net` has **not passed** here; do not launch Chromium directly
+to bypass the broker. Review the new harness and restart the trusted broker/launcher before running net locally.
+The parent must also complete/record the existing rendered smoke, quiet-machine before/after eight-player load,
+Account menu desktop/narrow-touch/controller review with secret-free captures, room-progress isolation and
+room-reset account survival, storage denial, expired-session and lost-create-response browser cases.
+No device was tested. No new screenshots or browser manifests were fabricated; no independent review is claimed.
+The backlog remains building because these checkpoint proofs are outstanding. Nothing was pushed or shipped.

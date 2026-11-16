@@ -6,8 +6,17 @@
   "steps": [
     {
       "go": [["you.netplay", "server"]],
-      "text": "Your tab opens one WebSocket to the server. The server checks the room, your player id and the player cap.",
-      "code": "createWsRoom({ roomId, server, pid, key })",
+      "text": "Boot resolves your device session without blocking guest play on account problems. Pause → Options → Account can save a five-digit PIN or sign in on another device. Accounts keep identity; progress stays with each room.",
+      "code": "prepareAccount() · Save PIN · Sign in",
+      "cite": [
+        { "file": "src/player/account.ts", "symbol": "prepareAccount" },
+        { "file": "src/player/account-page.ts", "symbol": "mountAccount" }
+      ]
+    },
+    {
+      "go": [["you.netplay", "server"]],
+      "text": "Your tab opens a WebSocket and authenticates with its device session in the first frame. The server resolves your player id, then checks the room and player cap. A newer connection for the same identity in this room takes over.",
+      "code": "createWsRoom({ roomId, server, authenticate })",
       "cite": [
         {
           "file": "src/net/ws-room.ts",
@@ -31,17 +40,18 @@
     },
     {
       "go": [["server", "you.world"]],
-      "text": "The server runs the shared world itself and sends you a snapshot of it. You apply edits from that tick on.",
-      "code": "{ t: 'w:snap' } chunks",
+      "text": "The server runs the shared world and sends a complete replicated view, then accepted changes. Your client displays that room's state.",
+      "code": "createReplicator() · { t: 's', tk: step }",
       "cite": [
         {
-          "message": "w:snap"
+          "file": "src/world/replicate-server.ts",
+          "symbol": "createReplicator"
         }
       ]
     },
     {
       "hl": ["server"],
-      "text": "The server saves the world to its own disk every 2 s when it changed, so the island survives, and keeps ticking, when everyone leaves.",
+      "text": "The server saves this room to disk when it changes. It pauses while empty and credits bounded production when someone returns. Signing in elsewhere does not copy this room's progress.",
       "code": "createWorldHost({ roomId, store, saveMs })",
       "cite": [
         {

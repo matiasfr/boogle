@@ -47,6 +47,10 @@ import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
 import { createRotundaView } from './rotunda-view.ts';
 import { BRIDGE, bridgeHalf, bridgeHandle, clearOfBridge } from './table-bridge.ts';
 import { rotundaStage } from './rotunda-stage.ts';
+import { bayFrame, rotundaBays } from '../../place/rotunda.ts';
+import { cameraHeld } from '../../render/buddy-frame.ts';
+import { inputState } from '../../player/input-state.ts';
+import { reducedMotion } from '../../constants.ts';
 
 /** Seconds: the door piers' build, the tarp's slide, the table's quarter turn. */
 const BUILD_S = 3,
@@ -192,6 +196,8 @@ export async function createRailwayRoundhouse(
     shunterA = PARKED_A - PARK.gap;
   let lastCradle = 0,
     lastRails = 0;
+  let stageShown = 0;
+  let stageRise: { from: number; to: number; seconds: number } | null = null;
   const deckBodies: Body[] = [];
   const lowering: { site: 0 | 1; slot: number; from: THREE.Vector3; t: number }[] = [];
   const bolts: { k: number; t: number }[] = []; // cradle pieces dropping on: k < 2 seats, else rail arms
@@ -213,19 +219,49 @@ export async function createRailwayRoundhouse(
     [PIER.x, 18 + ROTUNDA_BLOCK.wall / 2, PIER.z, pierW, ROTUNDA_BLOCK.wall, ROTUNDA_BLOCK.reveal, 0],
     [0, 18 + ROTUNDA_KIT.door.high + over / 2, PIER.z, ROTUNDA_KIT.door.clear, over, ROTUNDA_BLOCK.reveal, 0],
   ];
-  /** The stage shown: the rotunda's own, but its first stage waits for the door piers to finish rising. */
-  const shownStage = () => {
-    const stage = rotundaStage(wd);
-    return stage >= 1 && build < 1 ? 0 : stage;
-  };
+  function snapStage(stage: number) {
+    stageRise = null;
+    stageShown = stage;
+    rotunda.show(stage);
+  }
+  function stageDust(from: number, to: number) {
+    const before = rotundaBays(home.ROTUNDA_HOME, from);
+    for (const bay of rotundaBays(home.ROTUNDA_HOME, to)) {
+      if (before.includes(bay)) continue;
+      const at = toWorld(bayFrame(home.ROTUNDA_HOME, bay).door);
+      clank(at.x, at.z);
+      dustRing(at.x, FLOOR + 0.1, at.z, 18, 3, 0.5);
+    }
+  }
+  function drawStage(dt: number) {
+    const target = rotundaStage(wd);
+    // A restore goes through snap(); a rollback cancels the local rise. Opening the garage settles it before
+    // the install's first frame. Steel arrives from a server tick, so its live row edge has no action receipt.
+    if (target < (stageRise?.to ?? stageShown) || garageView.isOpen() || reducedMotion) {
+      snapStage(target);
+      return;
+    }
+    if (cameraHeld() || inputState.held || garageView.momentPlaying() || build < 1) return;
+    if (!stageRise && target > stageShown) {
+      stageRise = { from: stageShown, to: stageShown + 1, seconds: 0 };
+      stageDust(stageRise.from, stageRise.to);
+    }
+    if (!stageRise) return;
+    stageRise.seconds = Math.min(BUILD_S, stageRise.seconds + dt);
+    const u = stageRise.seconds / BUILD_S;
+    rotunda.rise(stageRise.to, smooth(u));
+    if (u >= 1) {
+      stageDust(stageRise.from, stageRise.to);
+      snapStage(stageRise.to);
+    }
+  }
   const frameFrom = (k: number) => k / FRAME.length;
   function drawFrame(dt: number) {
     const prior = build;
     const target = shed(wd).stall >= WORKS.stall ? 1 : 0;
-    if (build < target) build = Math.min(target, build + dt / BUILD_S);
+    if (build < target && !cameraHeld() && !inputState.held) build = Math.min(target, build + dt / BUILD_S);
     else if (build > target) build = Math.max(target, build - dt / 0.6);
-    rotunda.show(shownStage());
-    if (build >= 1 && prior >= 1) return;
+    if (stageShown >= 1) return;
     FRAME.forEach(([x, y, z, w, h, d, roll], k) => {
       const start = frameFrom(k),
         span = 1 / FRAME.length;
@@ -653,7 +689,7 @@ export async function createRailwayRoundhouse(
     build = shed(wd).stall >= WORKS.stall ? 1 : 0;
     tarp = build;
     builtShown = build >= 1;
-    rotunda.show(shownStage());
+    snapStage(rotundaStage(wd));
     fittedShown = shed(wd).fitted >= 0;
     tableTurning = false;
     lowering.length = 0;
@@ -750,6 +786,7 @@ export async function createRailwayRoundhouse(
       drawSockets();
       drawLowering(dt);
       drawFrame(dt);
+      drawStage(dt);
       drawTarp();
       drawShunt(dt, false); // first: it sets the deck's turn
       drawTable(dt);
@@ -891,7 +928,7 @@ export async function createRailwayRoundhouse(
       centreAt(wagonA, false, w);
       return {
         garageView: { ...garageView.inspect(), here: true, post: garagePost, deckYaw: garageView.deckYaw() },
-        rotunda: rotunda.inspect(),
+        rotunda: { ...rotunda.inspect(), rise: stageRise ? { ...stageRise } : null },
         slab: !slabOpen,
         slabSolid: !!slabBody,
         socketGhosts: socketGhosts.count,

@@ -22,6 +22,30 @@
 - **Related ideas.** [research/communal-progression.md](../research/communal-progression.md) uses the honk chord as the
   template for together moments.
 
+## Optional accounts
+
+Pause → Options → Account uses the existing menu, controller focus and touch buttons. Guests can **Save PIN**
+to keep their current identity, or **Sign in** with a five-digit PIN (a text field with numeric input mode;
+spaces/hyphens are accepted and leading zeroes are preserved). No account is required to start playing.
+An account keeps identity only: progress stays with each room; name, colour, wardrobe, settings and visit
+memory remain on the device. Signing into another identity reloads and does not merge the guest's belongings.
+
+The server generates the PIN. Save PIN and **Replace PIN** show it once, with the warning: “If you lose your
+PIN and every device is signed out, you’ll need a new account.” Dismissal clears the reveal. It is never
+auto-copied or stored locally. Replace PIN first warns that the old PIN stops working and other devices sign out.
+**Sign out** confirms that the player needs the PIN to return, then reloads as a new guest without resetting
+the room. An unavailable or revoked session shows the account problem with reload, sign-in and sign-out routes;
+blocked persistent storage is labelled “this visit only”. Lost create/replace replies recover account status
+when possible and offer replacement, never pretend the PIN was saved.
+
+The same account in the same room uses the newer connection. The older one says “You're playing in another tab
+or on another device.” **Play here** reloads to take over. Different rooms keep separate progress.
+
+Account credentials stay in `boogle.account` (excluded from look storage evidence). Form/reveal text is private
+to the page and excluded from the look text observer; account actions emit no playdata marks. Capture proofs
+mask the PIN before taking screenshots. Files: [account-page.ts](../../src/player/account-page.ts),
+[account.ts](../../src/player/account.ts), [pause-pages.ts](../../src/player/pause-pages.ts).
+
 ## Voice chat
 
 Added for the 9 November playtest. Voice is room-wide, not by distance, and off until you press **Join voice** in the

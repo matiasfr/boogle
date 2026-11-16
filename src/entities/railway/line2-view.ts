@@ -68,6 +68,7 @@ import { createForgeFinish } from './forge-finish.ts';
 import { stockSign } from './stock-sign.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { playSharedMoment } from './shared-moment.ts';
+import { seaInstallShot } from './sea-gate-shot.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 
 /** Rail pairs each stretch lays, one per commit. */
@@ -122,7 +123,7 @@ export async function createRailwayLine2(
   // The same pull-out as Place's glider reveal, now owned by this view and queued behind its reward cards.
   const switchCamera = createCameraPullOut(rewardBusy, true);
   owner.cleanup(() => switchCamera.dispose());
-  let switchKind: 'sea' | 'quarry' | 'farHead' | 'pier' | null = null;
+  let switchKind: 'sea' | 'quarry' | 'seaInstall' | 'farHead' | 'pier' | null = null;
   // The hand-back from a forge cut (far-head-view.ts, pier-view.ts): a player on foot whose camera the shot took comes
   // home looking toward the forge (design review call 5). Not a rider, a glider in the air or someone hauling: their
   // camera has a job already. Reduced motion plays no shot, so it never gets here.
@@ -558,7 +559,32 @@ export async function createRailwayLine2(
   slab.position.set(G.x + ox, slabUp, G.z);
   let slabBody: Body | null = null;
   let slabT = -1;
-  const seaGate = createRailwaySeaGate(adapter, owner, { layout, tech, land, shapes, flat, sounds, partMat, glow });
+  const point = (p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z);
+  const seaGate = createRailwaySeaGate(adapter, owner, {
+    layout,
+    tech,
+    land,
+    shapes,
+    flat,
+    sounds,
+    partMat,
+    glow,
+    // Q4's shot of the jamb (sea-gate-shot.ts): a shared moment from the live completion edge, like Far Head's.
+    shot: () => {
+      const { from, to, at, atFrom, lead, travel, seconds } = seaInstallShot();
+      const queued = switchCamera.play(point(from), point(to), point(at), seconds, travel, {
+        lead,
+        atFrom: point(atFrom),
+      });
+      if (queued) switchKind = 'seaInstall';
+      return queued;
+    },
+    shotClock: () => {
+      const camera = switchCamera.inspect();
+      if (switchKind !== 'seaInstall') return Infinity;
+      return camera.active ? camera.seconds : camera.pending ? -1 : Infinity;
+    },
+  });
   const glideDevice = createRailwayGlideDevice(adapter, owner, { land, shapes, partMat, glow, youGot });
   const farHead = createRailwayFarHead(owner, {
     layout,

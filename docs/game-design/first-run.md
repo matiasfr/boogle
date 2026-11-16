@@ -34,8 +34,10 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   saved identity but cannot join a room. Reload retries resolution. Complete credentials survive room/namespace
   resets. Blocked local storage permits a tab-only session where available, otherwise memory-only play. Switching
   people closes the old room and reloads, clearing unkeyed visit memory before the new game loads; same-person
-  reloads keep the existing return policy. The optional Account page remains [accounts-plan](../plans/accounts.md)
-  step 4; no sign-in form gates a first guest visit.
+  reloads keep the existing return policy. Pause → Options → Account offers optional Save PIN and Sign in;
+  no sign-in form gates a first guest visit. Accounts carry identity only: each room keeps its progress, and
+  name, colour, wardrobe, settings and visit memory stay on the device. A five-digit server-generated PIN keeps
+  leading zeroes. Its one-time reveal warns that losing it with every device signed out means a new account.
 - **First visit.** With no name saved on this device (`boogle.name`), you fall into the world (below). The card asks for
   nothing but a name box already filled with a friendly random name ("Sunny Otter", "Jolly Puffin", ...), the eight colour
   swatches (one picked at random) and one big Jump in. Pressing Jump in straight away is fine. The loading screen covers it

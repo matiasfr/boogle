@@ -7,6 +7,7 @@
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { waitShotsWhile } from '../../render/camera-pull-out.ts';
 import { account, rail } from '../../sim/railway-rows.ts';
 import { boilerHeld, held, heavyLoad } from '../../sim/railway-queries.ts';
 import { notify } from '../../ui/notify.ts';
@@ -88,6 +89,10 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
   }
   const controls: Active = { toggle, open: () => g.open };
   active = controls;
+  // A camera shot waits from the canopy opening until you are down again (camera-pull-out.ts), so shutting it for the
+  // last drop does not start the shot in the air.
+  let flying = false;
+  owner.cleanup(waitShotsWhile(() => (flying = g.open || (flying && !grounded() && !me.swimming))));
   owner.cleanup(() => {
     closeGlide(g);
     if (active === controls) {
