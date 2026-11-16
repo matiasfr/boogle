@@ -28,7 +28,7 @@ docs/agents/plugins.md has the rules; this is the order to apply them in.
 4. Wire it through the registries, not new listeners: `registerAction` for any key/pad/touch control (on a slot from
    `npm run registry -- --json`; one must stay unclaimed for `src/features/updates.ts`, so if that's the only one free,
    stop and report that there's no slot: no key-only controls), `registerInteractable` for things the interact button acts on, `emit` for particles,
-   `addPresenceField`/`addHostField` for shared values (getter returns `null` when off).
+   `addPresenceField` for Owner values (getter returns `null` when off).
 5. Pure logic worth a test goes in `src/sim/$0.ts` with `test/$0.test.ts`. Don't import another feature; move shared
    code into `src/`. Hotspot files (`src/main.ts`, `src/style.css`, `index.html`): a line or two at most. Tick or add
    a box in docs/plans/find-the-fun.md if it's listed there, and update or add its file in `docs/game-design/` (AGENTS.md).

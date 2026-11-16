@@ -79,23 +79,15 @@ replay an obsolete avatar offset. Later attachment changes ease from the last di
 Local presentation only: collision proxies retain their prior distance guard, and wire fields, authority,
 server authority and Place train reconciliation are unchanged. Serves DESIGN.md 4, Cooperation is automatic, not negotiated.
 
-## 8.4 Lockstep world, snapshots and saves
+## 8.4 Server commands, replicas and checkpoints
 
-[src/world/sync.ts](../../src/world/sync.ts), [src/world/README.md](../../src/world/README.md),
-[src/world/rules/README.md](../../src/world/rules/README.md).
+[src/world/README.md](../../src/world/README.md), [src/world/rules/README.md](../../src/world/rules/README.md).
 
-- 10 ticks per second. Tabs send `w:edit`; the server (the host) validates, stamps each edit 3 ticks ahead and
-  broadcasts `w:edits`. Everyone applies edits in tick and sequence order, then runs ticks in `RULES` order:
-  gifts, roster, stacks, piles, sites, sources, bank (append only: it is the wire order; the list restarted with the
-  0.1 namespace, when the terrain, water and proto stubs were retired). Tabs run about 2 to 3 ticks behind the server.
-- Every 20 ticks (2 s) the server sends per-state hashes; a tab that disagrees (or gets an edit for a past tick) asks
-  for a snapshot (`w:need`) and replaces its state. Snapshots travel in 7,000-character chunks.
-- States have versions and migrations (`registerState(key, { version, migrate })`); all are at version 0 today. A
-  state that fails to load starts fresh; a state from a newer build is skipped and that tab stops persisting.
-- The world seed is the constant 20261028 for every room.
-- Budget: a world with every state at its caps (256 players, 128 piles, full plaques) saves within `MAX_RECOVERY_BYTES`, 128 KB
-  since 6 November (about 27 KB today, `test/world-size.test.ts`; the railway's worst case is about 60 KB). `worldStatus().snapBytes` reports the
-  last size; telemetry doesn't send it yet.
+The server advances the room clock at 60 steps per second and registered rules at 10 ticks per second. Clients send authenticated `r:*` commands. The server validates and applies them in order, then publishes complete component packets, receipts and accepted events. Clients estimate time from server-only `w:c`, render complete mirrors and may predict declared actions; no classic edit replay or cross-client hash consensus remains. A queued command is not acceptance, and a client predicting nothing remains conformant.
+
+Saved Server states register JSON serialization, strict load and deterministic hash handlers. Recovery verifies the envelope checksum, exact registered state keys, every load and the loaded state hash before readiness. A failed-load fallback or fatal rule/command result must never replace the last good checkpoint. Clients never persist room state. Checkpoints normally run every two seconds and on close; durable roster and tune commits wait for storage, while non-durable actions may roll back within that checkpoint window.
+
+The checkpoint envelope is capped at 128,000 UTF-8 bytes. Shape/catalog/wire breaks reset WORLD_NS with a dated history entry, without migrations. Seats and reaction events are transient; The Boogler saves only his position/facing. Effective prototypes retain Local seats and a per-tab Boogler. The room and rules READMEs own the exact current registration, clock and persistence contracts.
 
 ## 8.5 What persists and where
 

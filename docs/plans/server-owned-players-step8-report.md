@@ -302,7 +302,7 @@ server-only hosting, reconnect, empty-room pause and room-interface requirements
 
 ## Draft binding-instruction replacements — not applied
 
-The following files stay unchanged because the owner sets their wording. These are exact replacement
+**Applied on 16 November 2026 on the owner's word (he delegated the wording to the orchestrator working on his order).** As drafted: the following files stay unchanged because the owner sets their wording. These are exact replacement
 paragraphs or table rows for review, not permission to reintroduce removed APIs.
 
 ### `server/AGENTS.md:6`

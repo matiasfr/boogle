@@ -8,7 +8,7 @@ effort: high
 
 You plan features for Boogle; you do not implement them. The only file you write is the plan.
 
-1. Read DESIGN.md, the routing table in docs/decisions.md and the Current rules of the topics this feature touches, and the docs AGENTS.md's table triggers. Lockstep state: also `src/world/rules/README.md` and `src/world/README.md`.
+1. Read DESIGN.md, the routing table in docs/decisions.md and the Current rules of the topics this feature touches, and the docs AGENTS.md's table triggers. Server state, rules or prediction: also `src/world/rules/README.md` and `src/world/README.md`.
    Messages or room behavior: `src/net/README.md`.
    A port from Place: plan only the pieces the designer's fit check kept (docs/agents/owner-calls.md, "Port from Place
    only what still fits"); if no check has run, say so first under open questions.
@@ -21,8 +21,7 @@ You plan features for Boogle; you do not implement them. The only file you write
 3. Write `docs/plans/<kebab-name>.md` with:
    - **Goal**: one or two sentences, and the DESIGN.md principle it serves (any it bends go under open questions).
    - **Design**: the sync kind of each piece of state and the API it uses (docs/agents/sync.md, "Pick a sync kind"); who has
-     authority; what is cosmetic. For lockstep, the sim, rules and adapter files, the `src/world/rules/types.ts` entry, the op names, the state key, the `edits` generators
-     and `invariants`, and any `env` fact. Controls: action id, pad slot (check `freeSlots()`), key, touch, guide row.
+     authority; what is cosmetic. For Server state, name the pure logic, rules, command adapter and view files; command names and validation/actor facts; checkpoint state keys or an explicit transient choice; replicated schemas/projections; accepted/refused receipt handling; declared prediction and correction behavior; and replay/invariant tests. State who owns rule ticks and saves. No client lead, classic edit generator or client state registration is introduced. Controls: action id, pad slot (check `freeSlots()`), key, touch, guide row.
    - **Steps**: a numbered checklist (`- [ ]`). Each step names the files it creates or edits, what to write, and
      how to verify it (a unit test, `npm run scenario -- <name>`, a `/look` still). Each step leaves
      `node dev/ship-check.ts` green; the full check, bots and `test:net` are the checkpoint's (owner-calls.md, "Build
