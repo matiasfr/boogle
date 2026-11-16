@@ -48,8 +48,8 @@ export function checkWorks(w: World) {
     !railInt(h.ready, RAILWAY_MAX_INT, -1)
   )
     bad('shed bounds');
-  // Works: the breaker comes with Q6; every seam and the kiln after it.
-  if (k.breaker > 0 !== done) bad('breaker');
+  // Works: the breaker comes with the boiler fit; every seam and the kiln after it. The pier still needs Q6.
+  if (k.breaker > 0 !== (boiler(w).state === 'fitted')) bad('breaker');
   if (k.seams > 0 && k.breaker !== 2) bad('seam before the breaker');
   if (k.lit >= 0 !== (k.logs === WORKS.kilnLogs && k.stone === WORKS.kilnStone)) bad('kiln lit');
   if ((k.logs || k.stone) && !(k.seams & SEAM_THROAT)) bad('kiln before the throat');

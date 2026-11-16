@@ -72,7 +72,7 @@ function build(s: Seed, stage: WorksStage): Seed {
   const w = s.w;
   switch (stage) {
     case 'works-arrive':
-      // Q6 laid: the forge has cast the breaker on the boiler's old pedestal.
+      // This seed keeps the Q6-first route; the breaker has waited since the boiler fit.
       need(works(w).breaker === 1, 'the breaker cast');
       break;
     case 'works-open':

@@ -482,7 +482,7 @@ The 5 November prop art pass gives that shared boiler broad end bevels, two matc
 **The forge's hand-off (15 November, [forge-call-handoff](../plans/forge-call-handoff.md#as-built-15-november-2026)).**
 Far Head's shot and the pier's show end on the thing to touch next. Far Head's shot runs 8.5 s: 6 s over the trestle
 (the Act 2 card is up from 1.5 s to 6.0 s), then a 2.5 s cut to the forge's pedestal, then a cut home. The pier's show
-gets the same 2.5 s shot 3.5 s in, after its rockets; it is a shared moment (every page that sees the edge live, the
+gets the same 2.5 s shot 3.5 s in, after its rockets, only if the breaker still waits on the pedestal; it is a shared moment (every page that sees the edge live, the
 one highlighted skip, behind a reward card, none under reduced motion or on a reload). The forge's call sounds as the
 cut lands, not under the show's own whistles (at the hand-back after a skip; 3 s into the show where no shot plays),
 and the plume starts with it. A player on foot comes home looking toward the forge; a rider, a glider in the air and
@@ -1335,8 +1335,10 @@ no rule, wire, save or namespace change beyond step 1a's. Serves DESIGN.md 11 (S
 everything). Not walked by a player: the roof is out of reach of one or two jumps from the ground (1.6 m and about
 2.9 m against a 5.1 m eave), and whether the glider reaches it is not measured. Not tested on a device.
 
-After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's
-plume and whistle. **Take the breaker** is once for the room; like the boiler before it, its prompt measures to the
+At the boiler fit the forge casts its third thing, the **breaker**, onto the now-empty pedestal. The plume, whistle
+and crane hoist wait until the train's 3.1 s wake finishes; the fit takes no camera. Q6 and the Works are open in
+either order. A wagon commissioned before Q6 carries its footings to Far Head and back until the Pier stop opens.
+The pier still needs Q6; its forge cut plays only while the breaker waits, including a take during the show's delay. **Take the breaker** is once for the room; like the boiler before it, its prompt measures to the
 pedestal's edge, so logs set down against the pedestal don't take the prompt from it (12 November). **Strike the seam** at the cracked slab by Home's
 turntable opens the old Roundhouse stall (two empty sockets, a tarped shunter and wagon); at the quarry halt the same
 strike topples the split rock's throat and opens the haul cut. **Fill the kiln** at the cut takes 16 logs and 16
@@ -1454,7 +1456,7 @@ really it needs a specific amount of stone and wood"; `kiln-prompt.ts`): with so
 "logs 3/16  stone 0/16 · adds 8 logs"; otherwise greyed with a plain reason: "Bring logs and stone" (or the one it
 still lacks), "Logs are full: bring stone", "Takes logs and stone, not rails", "The kiln is full". All draft UI copy. A resident in the
 street says once, after the breaker is taken: "That big hammer's for cracks. One by the turntable, and a jealous one
-past the quarry." (a town-side fact, `breaker`, newest after the pier, so the residents' own pier notices are then
+past the quarry." (a town-side fact, `breaker`, now available before the pier; if taken after the pier, the residents' own pier notices are then
 quiet). The kiln's logs come from the grove 30–46 m outside the throat; `npm run loop` no longer counts the trees the
 Works clears inside the rock. All Local over accepted state.
 

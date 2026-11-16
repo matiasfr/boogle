@@ -1,5 +1,5 @@
 // Split-rock Works and the Roundhouse through ordinary inputs (docs/plans/split-rock-roundhouse.md, J5d): after the
-// pier, take the breaker, open the stall and the throat, light the kiln, carry two footings home by hand (trains on
+// pier, take the breaker if it was skipped on the way out, open the stall and the throat, light the kiln, carry two footings home by hand (trains on
 // request, at a lever and aboard), fit the cradle with rails, turn the table, then ride the footing wagon's train to
 // the pier and set twelve footings in the sea.
 // Inspection observes; it never seeds a world or moves a player.
@@ -119,9 +119,11 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
   if (from === 'pier') await ride(HALT.pier, 0);
   if (from !== 'wagon') {
     // 1. The breaker on the boiler's old pedestal.
-    await use(cm(WORKS_BREAKER), /^Take the breaker$/, 'take the breaker');
-    await until(() => works().breaker === 2, 'breaker taken', 30000);
-    await checkpoint('breaker');
+    if (works().breaker === 1) {
+      await use(cm(WORKS_BREAKER), /^Take the breaker$/, 'take the breaker');
+      await until(() => works().breaker === 2, 'breaker taken', 30000);
+      await checkpoint('breaker');
+    }
     // 2. The stall slab, 15 m from the pedestal: the harmless first strike.
     await use(seam(0), /^Strike the seam$/, 'strike the stall slab');
     await until(() => works().seams & 1, 'stall slab struck', 30000);

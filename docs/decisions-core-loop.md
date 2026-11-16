@@ -4,6 +4,8 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-15 · The breaker comes with trains: cast at the boiler fit, no camera cut, call after the wake; Q6 and the Works in either order. The pier rack, ghosts and full by-wagon bill are approved from Q6; the turntable crack keeps its glow and step 3 is dropped ([entry](#d-2026-11-15-works-flow)).
+
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
 - 2026-11-15 · Signposting the sea gate from the summit: a tall gold pennant on the gate's jamb, no change to the summit deck; Q4's install gets a shared camera shot ([entry](decisions-controls.md#d-2026-11-15-q4-gets-a-camera-shot))
@@ -93,6 +95,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · The ending: back on the original island with The Boogler (the Design Table call, top of this section). ([entry](#d-undated-the-ending)) _At Alpha: the ride, the meeting, one shared moment, a thanks card (undecided) ("Campaign outline answered")._
 
 ## Decided
+
+- <a id="d-2026-11-15-works-flow"></a>**2026-11-15, the breaker comes with trains** (owner answers to [works-flow](plans/works-flow.md#owner-questions): Q1 yes, Q2 yes, Q3 no). The forge casts the breaker when the boiler is fitted, with no camera cut; the call sounds after the train wakes. Q6 and the Works can be done in either order, while the pier still needs Q6. This supersedes only "after Q6" in [8 November Split-rock answers](decisions-process.md#d-2026-11-08-split-rock-answers). The pier rack, six gold ghost footings and existing full "footings 0/12 by wagon" bill are approved from Q6 laid (step 2, separate build). The turntable crack keeps its glow; step 3 is dropped and its map cue stays.
 
 - <a id="d-2026-11-15-fly-first"></a>**2026-11-15, fly first** (owner, answering [ability-order](plans/ability-order.md)'s two questions in a question dialog). (1) Take candidate A, **"fly first"**. (2) With A nothing on Home needs the glider and the Needle Bell climb becomes optional: **"Yes, for now"**; the sea switch sits one hook pull up the gate's jamb. The glider is lit from the start, taken and usable on the first climb. The sea switch leaves the summit; an empty mount stands on the jamb away from the parked machine from the start, and Q4's arrival seats the drum and ring. No ring or prompt before Q4; the gate opens only after Q4. This replaces 5 November's **"a construction job between hook and glider"**, 8 November's **"the summit switch opens early"** and **"the sea switch stays on the summit"**; the other parts of those entries stand. The shared gate shot, first-fall Glide glyph, shared take and inherited abilities stay. Apply the designer's ready-with-changes items: faint device with no shaft, no seal or wake banner, forge-facing vane, Q5 keeps Far Head and the boiler, and alcove/firstpull move to the bay after trains. Owner's implementation instruction: "rooms already past the hook, past the summit, holding the glider, or with the sea switch already pulled must keep working." This task preserves existing saved flags and the namespace, an explicit exception to the plan's proposed reset; old clients still need updating, with no general compatibility framework.
 

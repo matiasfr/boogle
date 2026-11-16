@@ -630,7 +630,7 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.breaker'],
     reached: { mark: 'breaker taken' },
     stops: [],
-    requires: [dec('Q6', 'rules', `${RULES_WORKS} breaker: cast when Q6 is laid; docs/plans/split-rock-roundhouse.md`)],
+    requires: [dec('trains', 'rules', `${RULES_LINE2} boilerFit: casts the breaker; docs/plans/works-flow.md`)],
     cue: [onMain('world', "the forge call's plume over the breaker", 'src/entities/railway/breaker-view.ts:49')],
   },
   {
@@ -749,6 +749,7 @@ export const NODES: readonly LoopNode[] = [
       dec('cradle', 'rules', `${RULES_WORKS} turn: only once the cradle is fitted, before the wagon rolls out`),
       dec('cradle', 'rules', `${RULES_WORKS} commission(): fitted and table at line 2`, 'finish'),
       dec('trains', 'rules', `${RULES_TRAINS} wagonArrives: the wagon couples at line 2's train`, 'finish'),
+      { on: 'Q6', status: 'free', by: 'none', source: 'Owner, 15 November: the Works or Q6 first; works-flow step 1' },
     ],
     cue: [
       onMain(
