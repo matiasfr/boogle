@@ -420,6 +420,7 @@ export function createRailwayBoiler(
     trail.set(back.x * 0.82 + Math.cos(yaw) * side0 * 0.57, 0, back.z * 0.82 - Math.sin(yaw) * side0 * 0.57);
     drag.update(dt, hip, from, trail, helped);
   }
+  let wasAwake = line2Trains(read.world());
   function update(dt: number) {
     const w = read.world(),
       pid = read.pid;
@@ -468,6 +469,12 @@ export function createRailwayBoiler(
         (beam.state === 'held' && beam.holder === pid) ||
         (mineAcc ? mineAcc.carry + mineAcc.rails + mineAcc.stone : 0) > 0,
     );
+    const awake = line2Trains(w);
+    if (awake && !wasAwake) {
+      holdForgeCall(FIT.wake);
+      if (BOILER_CARD && youGot) cardDue = performance.now() + FIT.wake * 1000;
+    }
+    wasAwake = awake;
     call.update(dt, b.state === 'pedestal');
     mote -= dt;
     echoMote -= dt;
@@ -517,6 +524,7 @@ export function createRailwayBoiler(
     update,
     restore() {
       // Rebuild silently; the continuous pedestal invitation resumes on a later frame.
+      wasAwake = line2Trains(read.world());
       mote = 0.8;
       call.restore(boilerRow(read.world()).state === 'pedestal');
       update(0);
@@ -556,11 +564,10 @@ export function createRailwayBoiler(
         pieces.dustRing(bx, by + 0.6, bz, 8, 1.5, 0.25);
       }
       if (e.op === 'rail.boilerFit') {
-        // The breaker is cast on this accepted edge. Let the train finish waking before the forge calls; no cut.
-        holdForgeCall(FIT.wake);
+        // The landing clank stays on the fit; the wake and breaker call follow the trains.
+
         // The fitter heard the clank as it landed; everyone else hears it now.
         if (!(fit && e.pid === fit.holder)) clank(saddle.x, saddle.z);
-        if (BOILER_CARD && youGot && e.pid === read.pid) cardDue = performance.now() + FIT.wake * 1000;
       }
     },
     /** A refused or lost request: a refused fit hops back onto the rope (a refused take ends `grabbing` once nothing

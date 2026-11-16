@@ -9,7 +9,7 @@ import { WORKS } from './railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from './railway-works.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { Pile } from './railway-components.ts';
-import { accounts, beam, boiler, line, shed, trains, works, worksClock } from './railway-rows.ts';
+import { accounts, beam, boiler, rail, line, shed, trains, works, worksClock } from './railway-rows.ts';
 import { line2Completed } from './railway-queries-line2.ts';
 import { pierLaid } from './railway-line2-layout.ts';
 import { footingTotal } from './railway-queries-works.ts';
@@ -48,8 +48,8 @@ export function checkWorks(w: World) {
     !railInt(h.ready, RAILWAY_MAX_INT, -1)
   )
     bad('shed bounds');
-  // Works: the breaker comes with the boiler fit; every seam and the kiln after it. The pier still needs Q6.
-  if (k.breaker > 0 !== (boiler(w).state === 'fitted')) bad('breaker');
+  // Works: the breaker comes with the trains waking; every seam and the kiln after it. The pier still needs Q6.
+  if (k.breaker > 0 !== rail(w).trains >= 0) bad('breaker');
   if (k.seams > 0 && k.breaker !== 2) bad('seam before the breaker');
   if (k.lit >= 0 !== (k.logs === WORKS.kilnLogs && k.stone === WORKS.kilnStone)) bad('kiln lit');
   if ((k.logs || k.stone) && !(k.seams & SEAM_THROAT)) bad('kiln before the throat');
