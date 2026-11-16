@@ -19,7 +19,9 @@ const { garage } = (await import(
 const { garageRow, polarAt } = (await import(
   '/src/entities/railway/garage-geo.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-geo.ts');
-const { railReady, rw, train } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
+const { railReady, rw, train, shed, inspectRailway } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { LINE2 } = (await import(
   '/src/sim/railway-lines.ts' as string
 )) as typeof import('../../../src/sim/railway-lines.ts');
@@ -44,6 +46,20 @@ const post = polarAt(centre, row.post);
 const stood = polarAt(centre, { bearing: row.post.bearing + 6, r: row.post.r - 0.2 });
 teleport(me.body!, stood.x, 19.2, stood.z);
 await wait(1500);
+// Step 1 proof starts at cradle-fitted, with a real accepted table turn before opening the garage.
+if (new URLSearchParams(location.search).get('upgrade') === '1') {
+  const { railwayCommands } = (await import(
+    '/src/entities/railway/state.ts' as string
+  )) as typeof import('../../../src/entities/railway/state.ts');
+  if (!(await railReady(30000))) throw new Error('upgrade look: railway not ready');
+  if (!railwayCommands()!.turnTable(1, shed(rw()).tableRev)) throw new Error('upgrade look: turn not sent');
+  const end = performance.now() + 15000;
+  while (!inspectRailway()?.worksView?.garageView?.copy.shown) {
+    if (performance.now() > end) throw new Error('upgrade look: copy did not stand after the turn');
+    await wait(100);
+  }
+}
+
 if (new URLSearchParams(location.search).get('train')) {
   if (!(await railReady(30_000))) throw new Error('garage look: the railway never became ready');
   const standing = () =>

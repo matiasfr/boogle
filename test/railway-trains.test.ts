@@ -365,6 +365,7 @@ test("the wagon's twelve footings reach the pier under random asks and restores"
   let w = unaudited(railwayAtWorks('cradle-fitted'));
   const rand = mulberry32(0xfee7);
   assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: shedRow(w.w).tableRev }), 1);
+  assert.equal(act(w, 'a', 'rail.install', { line: 1, part: 1, revision: 0 }), 1);
   const start = w.t;
   const wagons = new Set<number>();
   for (let guard = 0; worksRow(w.w).pierSet < WORKS.pier; guard++) {

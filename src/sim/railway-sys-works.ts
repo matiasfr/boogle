@@ -83,13 +83,12 @@ export const kiln = defineSystem(
     return logs + stone;
   },
 );
-/** The wagon rolls out to wait on line 2 once the cradle is fitted and the table points at line 2 (any op that makes
- * that true calls this); it couples to the first line 2 train that stands at the village after it is ready. Every
+/** The wagon rolls out after the cradle, table turn and free upgrade (the completing op calls this); it couples to the first line 2 train that stands at the village after it is ready. Every
  * train runs end to end since v26, so none needs calling back for it. */
-function commission(w: World, tick: number) {
+export function commission(w: World, tick: number) {
   const h = w.get(Shed, shedId(w))!;
-  if (h.fitted >= 0 && h.table === 1 && h.ready < 0 && wagonSlot(w) < 0)
-    w.mut(Shed, shedId(w))!.ready = tick + WORKS.rollTicks;
+  if (h.fitted >= 0 && h.table === 1 && h.ready < 0 && wagonSlot(w) < 0 && w.get(Line, lineId(w, 1))!.boiler >= 1)
+    w.mut(Shed, shedId(w))!.ready = tick + WORKS.upgradeTicks + WORKS.rollTicks;
 }
 /** Shoulder a footing (rack 0 the Works rack, 1 the pier rack): it fills an empty back. */
 export const footTake = defineSystem(
@@ -110,7 +109,7 @@ export const footTake = defineSystem(
  * Q6, while the pier still needs one that is not already racked there or aboard the wagon). */
 export const footSet = defineSystem(
   'rail.footSet',
-  { reads: [QJob], writes: [Works, Shed, Account, Train], phase: 'act', order: 37 },
+  { reads: [QJob, Line], writes: [Works, Shed, Account, Train], phase: 'act', order: 37 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
     if (a.foot !== 1 || !railInt(e.site, 2)) return 0;
@@ -143,7 +142,7 @@ function fit(w: World, tick: number) {
 /** Rails off your back onto the cradle, up to its eight, once the stall stands. */
 export const cradle = defineSystem(
   'rail.cradle',
-  { writes: [Shed, Account, Train, Leg], reads: [QJob, Aperture], phase: 'act', order: 38 },
+  { writes: [Shed, Account, Train, Leg], reads: [QJob, Aperture, Line], phase: 'act', order: 38 },
   (w, { a: aid, tick }: Act) => {
     const h = w.get(Shed, shedId(w))!;
     if (h.stall !== WORKS.stall) return 0;
@@ -157,22 +156,19 @@ export const cradle = defineSystem(
   },
 );
 /** Turn the table to a road, on the revision the actor saw. Only when ready (owner, 10 November): once the cradle is
- * fitted and before the wagon rolls out, so the one turn there is sends the wagon out. Earlier, while it rolls out or
+ * fitted and before the wagon rolls out, so the one turn offers the garage upgrade before the wagon goes. Earlier, while it rolls out or
  * waits for its train, and after it couples, a turn is refused: no press is accepted and silent. */
 export const turn = defineSystem(
   'rail.turn',
-  { reads: [QJob], writes: [Shed, Train, Line], phase: 'act', order: 39 },
+  { reads: [QJob, Line], writes: [Shed, Train], phase: 'act', order: 39 },
   (w, { e, tick }: Act) => {
     const h = w.get(Shed, shedId(w))!;
     if (h.stall !== WORKS.stall || !railInt(e.to, 1) || e.revision !== h.tableRev || e.to === h.table) return 0;
     if (h.tableRev >= RAILWAY_MAX_INT) return 0;
-    if (h.fitted < 0 || h.ready >= 0 || wagonSlot(w) >= 0) return 0;
+    if (h.fitted < 0 || h.table === 1 || h.ready >= 0 || wagonSlot(w) >= 0) return 0;
     const hm = w.mut(Shed, shedId(w))!;
     hm.table = e.to;
     hm.tableRev++;
-    // The table's first turn commissions the 20 m/s fit for both home lines.
-    // Trains adopt it at their next Village stand, so no running leg changes.
-    for (const line of [0, 1]) Object.assign(w.mut(Line, lineId(w, line))!, { boiler: 1, fitted: tick });
     commission(w, tick);
     return 1;
   },

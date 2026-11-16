@@ -765,7 +765,7 @@ growing in with a whistle. The first line-2 engine stays rusty until its own ans
 its first departure is at 33 s. Maps show only trains in service. Each live speed adoption at the Village gets
 the platform steam, clank and toot; restoring a room settles the appearance without replaying that moment.
 Both home lines begin at 14 m/s, accelerating at 2.5 m/s² and braking
-at 3.5 m/s². Turning the Roundhouse table sets both lines' fit to 20 m/s with 3.5 m/s² acceleration; each engine
+at 3.5 m/s². Installing the free blast pipe after turning the Roundhouse table sets both lines' fit to 20 m/s with 3.5 m/s² acceleration; each engine
 takes it only while standing at the Village, so a leg in flight keeps its original profile. A line-2 train waiting
 there for the footing wagon keeps its old fit through rollout and takes the faster fit only after coupling.
 The later free longer
@@ -1174,6 +1174,22 @@ place over the first car (dashed); Whistle frames the chimney's cap, where the w
 cradle's dashed box stands over a ghost of the footing wagon once the wagon has coupled. On Looks and Whistle the
 table holds still (it used to turn idly there, carrying the frame behind the engine), and the Whistle shot is its own
 camera row on the chimney (it was close on the cab).
+**The 20 m/s upgrade (G-a, 16 November, v53):** after the cradle is fitted and the table turned, the works copy
+stands on the table, the post is orange, and the **Blast pipe** tile is Ready with **Free: the 20 m/s upgrade**.
+One Medium hold (900 ms) sends `rail.install { line: 1, part: 1, revision: 0 }` for both Home lines. It spends no
+steel. The server refuses an unfitted cradle, an unturned or busy table, an unsupported line or part, and a stale or
+repeated fit; its actor reach remains the Home table post's. Turning alone leaves both lines at 14 m/s and the wagon
+in its stall. The armed deck stays on road 0 through the wait and install; the orange post and offered part show
+what comes next. The garage copy stays aligned with those rails, including while browsing. The deck makes its
+one outbound turn with the wagon aboard, then follows the existing shunter return. Acceptance sets both line fits
+to 20 m/s; each active train adopts at its next Village stand. The
+blast pipe lowers through the copy's chimney and its chuff quickens. The wagon's roll-out starts five seconds after
+acceptance, allowing the install to settle before the shunter takes the table. The garage closes for the roll-out
+and returns when the wagon has coupled and the shunter is home. A Village train can wait at most its dwell plus
+the install hold and roll-out: `TRAIN.dwellTicks + WORKS.upgradeTicks + WORKS.rollTicks` (240 ticks; 24 seconds).
+The longer boiler remains part 2, needs landed
+steel, and stays free. The boiler-fit copy remains “The first install. It woke the trains.”
+
 **The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
 steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
 for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go
@@ -1368,7 +1384,7 @@ builder are gone; earned stages rise in front of you.
 
 The garage keeps **camBearing 15°**, the angle in the approved garage previz. Step 4's proposed 30° camera comes
 within 0.44 m of the steel pallet (the owning test requires 2 m); 45° comes within 0.27 m, 85° within 1.67 m.
-15° keeps 2.26 m. The garage opens after the wagon couples, not at `stall-done`, when the shunter is still in its bay.
+15° keeps 2.26 m. The garage first opens after the fitted cradle's table turn for the 20 m/s upgrade, then returns after the wagon couples and the shunter is home. It is unavailable at `stall-done`.
 
 Local scenery and Owner collision from eight prefab records (table, bay, steel bay, ruin, end wall, shut doors,
 open doors and the retained nine-bay outline; `content/built/levels/rotunda-home.json`). Repeated shells, doors,

@@ -14,6 +14,7 @@ export function roomFacts(w: ReadWorld): RoomFacts {
   const boiler = line(w, LINE2).boiler;
   return {
     boilerFitted: line2Trains(w),
+    upgradeReady: shed(w).fitted >= 0 && shed(w).table === 1,
     wagonCoupled,
     // The roll-out owns the table from the commission until the wagon has coupled.
     tableBusy: shed(w).ready >= 0 && !wagonCoupled,

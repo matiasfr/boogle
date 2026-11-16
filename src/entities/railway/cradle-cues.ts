@@ -20,8 +20,14 @@ export const CRADLE_COPY = {
 
 export type CradleStage = 'none' | 'rails' | 'turn';
 /** `rails`: the stall stands and the cradle wants rails; `turn`: fitted, the table not yet turned; else none. */
-export function cradleStage(shed: { stall: number; cradleRails: number; fitted: number; ready: number }): CradleStage {
-  if (shed.stall < WORKS.stall || shed.ready >= 0) return 'none';
+export function cradleStage(shed: {
+  stall: number;
+  cradleRails: number;
+  fitted: number;
+  table: number;
+  ready: number;
+}): CradleStage {
+  if (shed.stall < WORKS.stall || shed.table === 1 || shed.ready >= 0) return 'none';
   return shed.fitted >= 0 || shed.cradleRails >= WORKS.cradleRails ? 'turn' : 'rails';
 }
 /** The bill's small line, in the stations' own form. */

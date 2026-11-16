@@ -29,6 +29,8 @@ export type RoomFacts = {
   wagonCoupled: boolean;
   /** The shunter or the footing wagon is using the table (the roll-out): the garage waits ("The table's busy"). */
   tableBusy: boolean;
+  /** The cradle is fitted and the table has turned to line 2. */
+  upgradeReady: boolean;
   /** Steel has come home (`Shed.steel` of 1 or more): the longer boiler can be installed. */
   steelHome: boolean;
   /** How much steel is home (`Shed.steel`): the count a part's bill shows as in. */
@@ -40,7 +42,18 @@ export type RoomFacts = {
 };
 
 export type PartId =
-  'boiler' | 'long' | 'plough' | 'four' | 'kitcar' | 'wagon' | 'steelcar' | 'cradle' | 'roof' | 'toot' | 'two';
+  | 'boiler'
+  | 'blast'
+  | 'long'
+  | 'plough'
+  | 'four'
+  | 'kitcar'
+  | 'wagon'
+  | 'steelcar'
+  | 'cradle'
+  | 'roof'
+  | 'toot'
+  | 'two';
 /** How big an install of this part is (brief, "Three sizes of install"): a tunable table, not three code paths. */
 export type Size = 'small' | 'medium' | 'large';
 export type Standing =
@@ -86,6 +99,16 @@ export function partsOf(room: RoomFacts): Part[] {
       standing: room.longFitted ? 'replaced' : 'installed',
       pill: room.longFitted ? 'Replaced' : 'Installed',
       size: 'large',
+    },
+    {
+      id: 'blast',
+      cat: 'engine',
+      name: 'Blast pipe',
+      desc: 'Free: the 20 m/s upgrade',
+      standing: room.boilerRev >= 1 ? 'installed' : room.upgradeReady ? 'ready' : 'later',
+      pill: room.boilerRev >= 1 ? 'Installed' : room.upgradeReady ? 'Ready' : 'Later',
+      size: 'medium',
+      price: 'Free: the 20 m/s upgrade',
     },
     {
       id: 'long',
@@ -268,7 +291,7 @@ export function rowsFor(cat: CatId, chosen: PartId, boiler = 0): Row[] {
   const end = lineRunCm().end;
   if (cat === 'engine') {
     const a = boiler >= 2 ? BOILERS.long : boiler === 1 ? BOILERS.table : BOILERS.boiler,
-      b = chosen === 'long' ? BOILERS.long : a;
+      b = chosen === 'long' ? BOILERS.long : chosen === 'blast' && boiler === 0 ? BOILERS.table : a;
     const runA = runSeconds(cm, a.speed),
       runB = runSeconds(cm, b.speed);
     const rows: Row[] = [

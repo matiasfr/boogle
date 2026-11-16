@@ -70,7 +70,9 @@ export function checkSteel(w: World) {
     ls.some(
       (l, line) =>
         l.boiler > 0 !== l.fitted >= 0 ||
-        (line <= LINE2 ? l.boiler >= 1 !== (shed(w).table === 1) : l.boiler !== 0) ||
+        (line <= LINE2
+          ? l.boiler >= 1 !== shed(w).ready >= 0 || (l.boiler >= 1 && shed(w).table !== 1)
+          : l.boiler !== 0) ||
         (l.boiler === 2 && (line !== LINE2 || bay < 1)),
     )
   )

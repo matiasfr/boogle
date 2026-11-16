@@ -46,7 +46,7 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
     'rail.deposit': 'deposit',
     'rail.beamDeposit': 'deposit',
   };
-  const name = names[intent.op];
+  const name = intent.op === 'rail.install' && intent.part === 1 ? 'upgrade installed' : names[intent.op];
   if (!name) return [];
   if ('station' in intent) data.station = intent.station;
   if ('kind' in intent) data.material = intent.kind === 2 ? 'rails' : intent.kind === 1 ? 'stone' : 'logs';

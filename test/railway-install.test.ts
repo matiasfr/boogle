@@ -47,6 +47,7 @@ import {
 } from '../src/sim/railway-trains.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { apply } from '../src/sim/railway-drive.ts';
+import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { fuzzTicks } from './helpers/fuzz.ts';
 import { railRoom } from './helpers/rail-room.ts';
@@ -98,38 +99,43 @@ function steelHome(): Seed {
 }
 const HOME = steelHome();
 
-test('the accepted longer-boiler install reaches the installer and peer through replication exactly once', () => {
-  const room = railRoom(copy(HOME));
-  const clients = [room.join('installer', 'a', 2), room.join('peer', 'b', 6)];
-  const effects: RailwayAccepted[][] = [[], []];
-  const refusals: RailwayRefusal[][] = [[], []];
-  clients.forEach((c, i) => {
-    c.adapter.onAccepted((e) => effects[i]!.push(e));
-    c.adapter.onRefused((e) => refusals[i]!.push(e));
+for (const part of [1, 2] as const)
+  test(`accepted part ${part} reaches installer and peer through replication exactly once`, () => {
+    const seed = part === 1 ? copy(railwayAtWorks('cradle-fitted')) : copy(HOME);
+    if (part === 1) act(seed, 'a', 'rail.turn', { to: 1, revision: 0 });
+    const room = railRoom(seed);
+    const clients = [room.join('installer', 'a', 2), room.join('peer', 'b', 6)];
+    const effects: RailwayAccepted[][] = [[], []];
+    const refusals: RailwayRefusal[][] = [[], []];
+    clients.forEach((c, i) => {
+      c.adapter.onAccepted((e) => effects[i]!.push(e));
+      c.adapter.onRefused((e) => refusals[i]!.push(e));
+    });
+    room.ready();
+    assert.equal(clients[0]!.adapter.installBoiler(part - 1, part), true);
+    room.run(120);
+    assert.equal(lineRow(room.serverWorld(), LINE2).boiler, part, 'the server accepted the install');
+    clients.forEach((c, i) => {
+      assert.equal(lineRow(c.adapter.read.world(), LINE2).boiler, part);
+      assert.equal(c.adapter.read.pending(), 0);
+      assert.deepEqual(refusals[i], [], 'an accepted install must not report noop');
+      const installs = effects[i]!.filter((e) => e.op === 'rail.install');
+      assert.equal(installs.length, 1, 'each client receives the shared install once');
+      assert.equal(installs[0]!.part, part);
+    });
   });
-  room.ready();
-  assert.equal(clients[0]!.adapter.installBoiler(1), true);
-  room.run(120);
-  assert.equal(lineRow(room.serverWorld(), LINE2).boiler, 2, 'the server accepted the install');
-  clients.forEach((c, i) => {
-    assert.equal(lineRow(c.adapter.read.world(), LINE2).boiler, 2);
-    assert.equal(c.adapter.read.pending(), 0);
-    assert.deepEqual(refusals[i], [], 'an accepted install must not report noop');
-    const installs = effects[i]!.filter((e) => e.op === 'rail.install');
-    assert.equal(installs.length, 1, 'each client receives the shared install once');
-    assert.equal(installs[0]!.part, 2);
-  });
-});
 
-test('a table turn at the Village waits for wagon rollout and coupling before adopting row 1', () => {
+test('an upgrade at the Village waits for wagon rollout and coupling before adopting row 1', () => {
   const s = copy(railwayAtWorks('cradle-fitted'));
   advance(s, 5507 - s.t);
   assert.equal(train(s.w, A).phase, TRAIN_PHASE.STAND);
   assert.equal(train(s.w, A).at, 0);
   assert.equal(train(s.w, A).boiler, 0);
   assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: shed(s.w).tableRev }), 1);
+  assert.equal(shed(s.w).ready, -1, 'the table turn alone cannot send the wagon');
+  assert.equal(install(s, 'a', { part: 1 }), 1);
   const ready = shed(s.w).ready;
-  assert.equal(ready, 5647);
+  assert.equal(ready, s.t + WORKS.upgradeTicks + WORKS.rollTicks);
   while (s.t < ready - 1) {
     advance(s, 1);
     assert.equal(train(s.w, A).boiler, 0, `no platform beat during rollout at tick ${s.t}`);
@@ -142,13 +148,15 @@ test('a table turn at the Village waits for wagon rollout and coupling before ad
   assert.equal(invariant(s.w), null);
 });
 
-test('the table commissions both lines; running legs keep their speed until a Village stand', () => {
+test('the upgrade commissions both lines; running legs keep their speed until a Village stand', () => {
   const s = copy(railwayAtWorks('cradle-fitted'));
   while (train(s.w, 0).phase !== TRAIN_PHASE.RUN) advance(s, 1);
   const before = trains(s.w).map((r) => ({ ...r }));
   assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: shed(s.w).tableRev }), 1);
+  assert.equal(shed(s.w).ready, -1, 'the table turn alone cannot send the wagon');
+  assert.equal(install(s, 'a', { part: 1 }), 1);
   for (const l of [0, LINE2]) assert.equal(lineRow(s.w, l).boiler, 1);
-  assert.deepEqual(trains(s.w), before, 'the turn changes the fit, never a train in flight');
+  assert.deepEqual(trains(s.w), before, 'the install changes the fit, never a train in flight');
   const pending = new Set(servingSlots((k) => train(s.w, k), 0).concat(servingSlots((k) => train(s.w, k), LINE2)));
   for (let t = 0; pending.size; t++) {
     assert.ok(t < 4000, 'every active train adopts within a round trip');
@@ -165,6 +173,57 @@ test('the table commissions both lines; running legs keep their speed until a Vi
     }
   }
   assert.equal(invariant(s.w), null);
+});
+
+test('the free upgrade refuses early, malformed, raced and repeated holds, and survives restore', () => {
+  const early = copy(railwayAtWorks('stall-done'));
+  assert.equal(install(early, 'a', { part: 1 }), 0, 'no fitted cradle');
+  const s = copy(railwayAtWorks('cradle-fitted'));
+  assert.equal(install(s, 'a', { part: 1 }), 0, 'table still faces the stall');
+  assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
+  advance(s, WORKS.rollTicks * 2);
+  assert.equal(shed(s.w).ready, -1, 'waiting never installs the upgrade');
+  for (const home of [0, LINE2]) assert.equal(lineRow(s.w, home).boiler, 0);
+  for (const bad of [
+    { line: 0 },
+    { line: 2 },
+    { line: '1' },
+    { part: 0 },
+    { part: 3 },
+    { part: '1' },
+    { revision: -1 },
+    { revision: 0.5 },
+    { revision: '0' },
+    { revision: 1 },
+    { revision: NaN },
+  ])
+    assert.equal(install(s, 'a', { part: 1, ...bad }), 0, JSON.stringify(bad));
+  assert.equal(install(s, 'a', { part: 2 }), 0, 'cannot skip row 1');
+  const steel = shed(s.w).steel;
+  assert.equal(install(s, 'a', { part: 1, revision: 0 }), 1);
+  const ready = shed(s.w).ready;
+  assert.equal(install(s, 'b', { part: 1, revision: 0 }), 0, 'same-tick race loses');
+  assert.equal(install(s, 'a', { part: 1, revision: 1 }), 0, 'already installed');
+  assert.equal(shed(s.w).steel, steel, 'free, even with no steel');
+  assert.equal(shed(s.w).ready, ready, 'a repeat cannot restart the roll-out');
+  const loaded = restore(s.w);
+  for (const home of [0, LINE2]) assert.equal(lineRow(loaded, home).boiler, 1);
+  assert.equal(shed(loaded).ready, ready);
+  assert.equal(invariant(loaded), null);
+  const busy = copy(railwayAtWorks('cradle-fitted'));
+  act(busy, 'a', 'rail.turn', { to: 1, revision: 0 });
+  busy.w.mut(Shed, busy.w.single(Shed))!.ready = busy.t + WORKS.rollTicks;
+  const a = account(busy.w, 'a')!;
+  assert.equal(
+    apply(
+      busy.w,
+      'a',
+      { op: 'rail.install', line: 1, part: 1, revision: 0, epoch: a.epoch, request: a.request + 1 },
+      busy.t,
+    ).accepted,
+    0,
+    'table reserved by a roll-out',
+  );
 });
 
 test('the speed rows keep braking and shorten the two opening rides', () => {
