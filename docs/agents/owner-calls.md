@@ -127,6 +127,7 @@ Dates are the original call dates; undated calls stay undated.
 
 **How the owner works**
 
+- [Right solution over less work](#right-over-less-work) · 16 Nov 2026
 - [Tune for 1–3](#player-count) · 6 Nov 2026
 - [Feel first](#feel-first) · 1–2 Nov 2026
 - [Think ambitiously](#ambition) · 1–2 Nov 2026
@@ -327,6 +328,8 @@ Dates are the original call dates; undated calls stay undated.
 ## How the owner works
 
 Standing preferences from the Boogle 2.0 design thread (1–2 November), moved here from the decision log on 8 November. Where a dated standing call above differs, the later call wins; those are marked.
+
+- <a id="right-over-less-work"></a>**The right solution over less work** (owner, 16 November 2026, offered two ways to fit the riders' coach at Home with the smaller one recommended partly for being "a fraction of the work"): "If it's the right solution, let's not shy away from the work". Orchestrator's reading: when options are put to him, judge and recommend them on which is right for the game; give the size of each as a fact, never as the reason to prefer one. It does not say the larger option is the right one.
 
 - <a id="player-count"></a>**Tune for 1–3 players** (owner, 6 November: "really tuned to 1 to 2 to 3, maybe 4 people, unlikely more than that"). Design and tune for one to three; four must still work; don't design for more.
 
