@@ -1,4 +1,5 @@
-> **Status: S1 + V1 built together on `t3/first-town-rider-places`, pending independent review; remaining steps unbuilt here.
+> **Status: S1 built on `t3/first-town-rider-places`; V1 implemented but its count-readability acceptance
+> remains open after orchestrator review; remaining steps unbuilt here.
 > S1 takes v55 because the fifth rider changes the `house-built` replay golden; L1 must take the next free namespace.
 > Designer-reviewed 16 November: build with changes (folded into S1, V1, L1, V2, A and
 > the order; the three owner questions are agent defaults, none asked).** Planner, 16 November, against origin/main `73ee4ecdd`, `WORLD_NS` v54. Builds the
@@ -106,7 +107,7 @@ session's visual review of their stills.
     re-pin naming the rider cap, without waiting for L1 ([no bump waits](../agents/owner-calls.md#no-bump-hold)).
     L1 needs the next free number after v55. **Done means** the tests pass and `npm run loop -- run` shows order
     and bills unmoved.
-- [x] **V1. Riders in their own places (S).** Sync: Local. Tier: normal + visual. Builds: gpt-6-astra high. Parallel
+- [ ] **V1. Riders in their own places (S).** Sync: Local. Tier: normal + visual. Builds: gpt-6-astra high. Parallel
   with S1, no shared file, but it reads S1's `TRADE.riderPlaces`: build on S1's branch; ship with it.
   - `src/place/folk.ts`: `RIDERS` = `TRADE.riderPlaces`; rider `k` stands (not sits) at one of eight places on car 1's
     deck **clear of the bench's four seats and the walk-on aisle** (today riders sit at the bench's seat offsets, on
@@ -377,3 +378,11 @@ four seats for players, places for eight riders.", "Riders".
 the stand-in the owner's own complaint implies (call 10), 3 is try-early (call 13). He sees the art previz when it
 exists, as with the 10 November car; nothing waits for it. **Logged** in [agent-calls](../agent-calls.md) (rewards
 and rail, open): calls 6, 7, 10, 11, 12, 13 and 15.
+
+### Rider count-readability pass (16 November)
+
+The orchestrator rejected the crowded V1 view: eight riders read as two. A wider `RIDER_PLACES` trial improved
+the hat separation but touched the entry posts/knobs and did not establish four distinct people per group.
+The trial was rejected and reverted; no further layout iteration or rule change. V1 is reopened, not claimed
+done. See the [count-readability evidence and limits](../reports/first-town-rider-count-readability.md).
+The dedicated rider coach remains the proper art solution.

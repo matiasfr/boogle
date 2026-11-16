@@ -2568,7 +2568,10 @@ figures are drawn per end; larger crowds get a true-count board. Each passenger 
 riders (`TRADE.riderPlaces`), separate from the four player seats. For the first-town-lesson S1/V1 stand-in they
 stand facing out along two diagonally opposite end corners (x ±0.77, matching-sign z 0.98–1.145), taking the car's
 pitch and shudder, with the seats, seated players' legs and pets left clear. They overlap along the deck inside
-its panels, rails and posts; the passenger-car art job remains open. The crowded figures stand upright without
+its panels, rails and posts; the passenger-car art job remains open. The orchestrator rejected this crowd
+as a count cue: eight figures read as two. A wider strip trial was rejected for entry-post/knob contact;
+[the count-readability acceptance remains open](../reports/first-town-rider-count-readability.md).
+The crowded figures stand upright without
 the ground folk's idle lean; their poses run after the train's
 current rendered transform so they stay inside the moving car. There is no rider counter on the car. The garage's
 Cars tile says "Four seats, eight riders" and shows Seats 4 and Riders 8 (new copy is placeholder). Fares fill the
