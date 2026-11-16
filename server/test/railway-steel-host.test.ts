@@ -14,7 +14,7 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-ring-layout.ts';
-import { SHED_TABLE } from '../../src/sim/railway-works-layout.ts';
+import { SHED_TABLE, WORKS } from '../../src/sim/railway-works-layout.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
 import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
 import { shed } from '../../src/sim/railway-rows.ts';
@@ -94,6 +94,7 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
   h.rules.railway.touchAll();
   const sessions: Record<string, { epoch: number; request: number }> = {};
   for (const sid of Object.keys(players)) {
+    if (sid.startsWith('unopened')) continue;
     h.deliver({ t: 'r:open' }, sid);
     await ticks(3);
     const session = sent.findLast((m) => m.t === 'r:session' && m.to === sid)!;
@@ -132,6 +133,25 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
     },
     depart: (sid: string) => h.depart(sid),
     grace: () => h.rules.railTune.get('railBeamGraceS') * 1000,
+    /** Several r:edits delivered back to back on one rule tick (no step between), each with its own session. */
+    async race(edits: [Obj, At, string][]) {
+      now += 1000;
+      const keys = edits.map(([e, at, sid]) => {
+        const x = sessions[sid]!;
+        h.deliver({ t: 'r:edit', e: { ...e, epoch: x.epoch, request: ++x.request, at, ms: now - 1800000000000 } }, sid);
+        return [sid, x.epoch, x.request] as const;
+      });
+      await h.sync.whenDurable();
+      assert.equal(invariant(h.rules.railway.world()), null);
+      return keys.map(([sid, epoch, request]) => h.rules.railway.outcome(players[sid]!, epoch, request)?.status);
+    },
+    /** An r:edit from a socket whose player never opened a railway session (r:open). */
+    async stranger(e: Obj, at: At, sid: string) {
+      now += 1000;
+      h.deliver({ t: 'r:edit', e: { ...e, epoch: 1, request: 1, at, ms: now - 1800000000000 } }, sid);
+      await h.sync.whenDurable();
+      return h.rules.railway.outcome(players[sid] ?? sid, 1, 1)?.status;
+    },
     async action(e: Obj, at: At, sid = 's') {
       const x = sessions[sid]!;
       now += 1000;
@@ -177,6 +197,47 @@ test('upgrade host: part 1 crosses r:edit, checks reach, replicates both lines a
     assert.equal(line(r.w, 0).boiler, 1);
     assert.equal(line(r.w, 1).boiler, 1);
     assert.equal(shed(r.w).ready, ready);
+  } finally {
+    await r.done();
+  }
+});
+
+test('review: upgrade host races on one tick, a stranger, the hold refusing, and a restart mid-hold that still couples', async () => {
+  const r = await host('upgrade-review', buildSeedWorld('cradle-fitted'), { s: 'a', peer: 'b', unopened: 'c' });
+  try {
+    assert.equal(await r.action({ op: 'rail.turn', to: 1, revision: 0 }, spot(SHED_TABLE)), 'accepted');
+    // A player in the room who never opened a railway session cannot install.
+    assert.notEqual(await r.stranger(install(0, 1, 1), spot(SHED_TABLE), 'unopened'), 'accepted');
+    assert.equal(line(r.w, 1).boiler, 0);
+    assert.equal(shed(r.w).ready, -1);
+    // Two players' holds land on one rule tick: exactly one installs.
+    const tick = r.tick;
+    const got = await r.race([
+      [install(0, 1, 1), spot(SHED_TABLE), 's'],
+      [install(0, 1, 1), spot(SHED_TABLE), 'peer'],
+    ]);
+    assert.equal(r.tick, tick, 'both on one tick');
+    assert.deepEqual([...got].sort(), ['accepted', 'noop']);
+    const ready = shed(r.w).ready;
+    assert.equal(ready, tick + WORKS.upgradeTicks + WORKS.rollTicks);
+    // During the moment: the table cannot turn back, a part 2 install is refused, a repeat cannot move the roll-out.
+    await r.ticks(10);
+    assert.equal(await r.action({ op: 'rail.turn', to: 0, revision: shed(r.w).tableRev }, spot(SHED_TABLE)), 'noop');
+    assert.equal(await r.action(install(1, 1, 2), spot(SHED_TABLE), 'peer'), 'noop');
+    assert.equal(await r.action(install(0, 1, 1), spot(SHED_TABLE)), 'noop');
+    assert.equal(shed(r.w).ready, ready);
+    // The player who started it leaves; the server restarts inside the 50-tick hold.
+    r.depart('s');
+    await r.ticks(10);
+    await r.restart();
+    assert.equal(shed(r.w).ready, ready);
+    for (const l of [0, 1]) assert.equal(line(r.w, l).boiler, 1);
+    for (let t = 0; !LINE_SLOTS[LINE2]!.some((k) => train(r.w, k).wagon); t++) {
+      assert.ok(t < 6000, 'the wagon couples after the restart');
+      await r.ticks(1);
+    }
+    assert.ok(r.tick >= ready);
+    assert.equal(invariant(r.w), null);
   } finally {
     await r.done();
   }
