@@ -114,3 +114,36 @@ passed again for 1–4 players (24 runs plus canonical calibration), including t
 assets and build. The check's existing geometry diagnostics are report-only; this is not a new visual clearance claim.
 Audit script, keyed results and command logs are saved under `.look/works-flow-rebase/`. Browser and network proof
 above is from the pre-rebase tree; neither was rerun for this rebase follow-up. Nothing was pushed or shipped.
+
+## Server host-trace follow-up — 15 November 2026
+
+CI run `43800101384` on ship PR #1886 exposed the missing server check: the rebase had retained the v50
+host-trace fixture byte-for-byte, while the accepted checkpoint namespace is v51. The earlier railway tests and
+root `check` did not run the server suite. This follow-up starts from `52d32cea0` on `t3/forge-breaker-trains`;
+it changes the fixture and its documentation, with no production-code or test-assertion logic changes.
+
+Regenerated `server/test/fixtures/world-host-trace.jsonl.gz` using its own writer only:
+
+```sh
+HOST_TRACE_RECORD=1 node --import ./test/helpers/rail-no-audit.ts --test server/test/world-host-trace.test.ts
+```
+
+The decompressed, ordered JSONL comparison checks every key, array length and leaf across **8,596 records**:
+
+- All **205** checkpoint namespaces change from `rail-v50` to `rail-v51`, with **205** changed checksums.
+- **1,842** of the 5,667 `snapBytes` samples change with the checksum's decimal width. Every old and new envelope
+  checksum was independently recomputed; every byte count matches its serialized envelope, including three
+  samples that report a queued checkpoint before its write is recorded.
+- Every other value is identical: checkpoint simulation state and hashes, command inputs/results, messages,
+  replication packets, record order and trace lengths. This trace never fits the boiler, so there is **no breaker
+  state change** in it. No extra gameplay change or terrain repin is hidden in this fixture update.
+
+As a control, an import hook changes only the runtime namespace back to v50 and points the unchanged trace
+assertion at a saved copy of the old fixture. The complete decompressed byte stream matches exactly. Production
+files and the regenerated v51 fixture are untouched by this control. Evidence, both audit scripts and logs are
+under `.look/works-flow-host-trace/` (`audit.json`, `v50-control.log`, `regen.log`).
+
+The requested `cd server && npm ci && npm test` passed **396/396**, with no skips or failures; this includes the
+host trace without the recording flag. The install and full suite logs are saved alongside the audit.
+`npm run check` also passed: lint, types, registry, 2,227 passing units (65 skips, one todo, zero failures), level,
+assets and build. The fresh review stamp is reported with the committed HEAD in the handoff. No push or ship.

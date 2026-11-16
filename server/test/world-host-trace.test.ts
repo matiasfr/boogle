@@ -16,6 +16,9 @@
 // v50 terrain catalog: remove twelve ordinary sources; retained tree values and other state stay exact after
 // entity-ID remapping. 205 namespace/hash/checksum envelopes and 5,667 snapBytes samples follow; inputs/results
 // and replica packets stay exact. Audit and own-writer regeneration: docs/plans/terrain-clean.md#heavy-load-rebase-2026-11-15.
+// v51 breaker fit: this trace never fits the boiler, so only 205 checkpoint namespaces/checksums and 1,842
+// snapBytes samples change. All state, hashes, inputs/results and packets stay exact. Audit and namespace-only
+// control: docs/plans/works-flow-step1.md#server-host-trace-follow-up--15-november-2026.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
