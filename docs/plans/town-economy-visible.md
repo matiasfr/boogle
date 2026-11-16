@@ -21,7 +21,7 @@
 | Seeds and jump-ins | `freight-running` ("Timber home"), `fares-running` ("Fares paid") | `railway-seed-trade.ts`, `src/world/railway-jump.ts` |
 | R4 `Plot`, `rail.buy`; R5 the pour, `rail.sack` | No | `dearestOnOffer()` is 0; `townHas` keeps `town` and `stone` false |
 | Any view of the trade | No | no file in `src/entities`, `src/render`, `src/features`, `src/place`, `src/ui` reads `Yard`, `Town`, `Till`, `Train.freight` or `Train.riders` |
-| Home | Layout B only (v36, #1729); the Round's blockout B1 to B3 (B3 in #1800) | eight solid plot blocks with door marks; B4 is not signed off |
+| Home | Layout B only (v36, #1729); the Round's blockout B1 to B3 (B3 in #1800) | eight solid plot blocks with door marks; B4's evidence and ruling are on main (#1804 to #1806), his walk is owed |
 
 **Measured on main (headless, from `trains-on`, nothing asked).** Plot 1 staked at +44 s, plot 2 at +4.7 min, 100
 Boogles at +4.3 min, 300 at +9.6 min; after 20 minutes 686 Boogles (34 a minute; R3 measured 53.5 to 56 at v30), both
