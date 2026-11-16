@@ -70,21 +70,7 @@ async function serve(env: Record<string, string> = {}) {
   return svc;
 }
 let svc = await serve();
-const web = await startWeb('ws-page.ts', root);
-const openFixture = web.open;
-web.open = (name, query) => {
-  const params = new URLSearchParams(query);
-  const pid = params.get('pid');
-  if (!pid) throw new Error('room fixture requires a named principal');
-  seedPrincipal(dataDir, pid, fixtureToken(pid));
-  return openFixture(name, query + '&fixture=1');
-};
-// Each page is its own player (pid from its name) unless `pid` says otherwise.
-const open = (name: string, pid = 'pl' + name.toLowerCase()): Promise<Page> =>
-  web.open(name, `room=${room}&server=http://127.0.0.1:${port}&pid=${pid}`);
-const world = (p: Page) => ev(p.page, () => window.T.world());
-const clocksReady = async (group: Page[]) =>
-  (await Promise.all(group.map(world))).every((w) => w.status.ready && w.status.mode === 'client');
+let closeWeb = async () => {};
 
 let exitCode = 1;
 try {
@@ -97,6 +83,33 @@ try {
     },
     check,
   });
+  const { accountBrowserChecks } = await import('./ws-account-browser.ts');
+  await accountBrowserChecks({
+    base: `http://127.0.0.1:${port}`,
+    room,
+    root,
+    check,
+    async restart() {
+      await svc.close({ save: true });
+      svc = await serve();
+    },
+  });
+  const web = await startWeb('ws-page.ts', root);
+  const openFixture = web.open;
+  web.open = (name, query) => {
+    const params = new URLSearchParams(query);
+    const pid = params.get('pid');
+    if (!pid) throw new Error('room fixture requires a named principal');
+    seedPrincipal(dataDir, pid, fixtureToken(pid));
+    return openFixture(name, query + '&fixture=1');
+  };
+  // Each page is its own player (pid from its name) unless `pid` says otherwise.
+  const open = (name: string, pid = 'pl' + name.toLowerCase()): Promise<Page> =>
+    web.open(name, `room=${room}&server=http://127.0.0.1:${port}&pid=${pid}`);
+  const world = (p: Page) => ev(p.page, () => window.T.world());
+  const clocksReady = async (group: Page[]) =>
+    (await Promise.all(group.map(world))).every((w) => w.status.ready && w.status.mode === 'client');
+  closeWeb = web.close;
   // 1. join: every tab follows the server; no tab is special.
   const A = await open('A'),
     B = await open('B'),
@@ -297,7 +310,7 @@ try {
 } catch (e) {
   console.error(e);
 } finally {
-  await web.close();
+  await closeWeb();
   await svc.close({ save: false });
   if (!controlUrl) await fs.rm(dataDir, { recursive: true, force: true });
 }
