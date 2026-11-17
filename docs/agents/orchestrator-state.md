@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, and keep it short. It holds only what cannot be looked up: who is running what, what waits on the owner, and the lessons. Main, CI, pull requests and worktrees come from `npm run heartbeat`; committed work and its next steps from [the backlog](../backlog.md); what merged from git. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 17 November 2026 about 17:10 UTC by the daily tidy; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
+**Updated:** 17 November 2026 about 17:50 UTC by the daily tidy; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
 
 ## Jobs in flight
 
@@ -11,8 +11,6 @@ The one record of who is running what, and what the three-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Garage choices step 3: steel is spent (the bigger cradle, the big boiler, the store in bay 150°) | Garage choices (P1) | `codex/garage-steel-spent` | the heartbeat (HOTBOX, a T3 delegate, Codex gpt-6-astra high) | 17 November 16:40 | building; owes an independent review before it ships (sim and server, a `WORLD_NS` bump) |
-| Tidy part 1: simplify what merged since `72b79c3f3` (entities, features, prefabs, render, dev; not sim, world, net or server) | none (daily tidy) | `tidy/simplify-1117` | the daily tidy (HOTBOX, a T3 delegate, Codex gpt-6.1-sol high) | 17 November 17:05 | building; ships each area itself |
-| Tidy parts 2 and 3: architecture review, docs audit, weekly agent-calls ranking | none (daily tidy) | `tidy/docs-arch-1117` | the daily tidy (HOTBOX, a T3 delegate, Codex gpt-6.1-sol high) | 17 November 17:05 | reviewing |
 
 ## Where the work stands
 
@@ -69,7 +67,7 @@ Earlier calls, still open:
 
 ## Tidy
 
-- **Tidy:** last full pass 16 November 2026. Code: simplify pass 4 covered `12ba8f7ba..72b79c3f3` ([#1937](https://github.com/matiasfr/boogle/pull/1937), [#1938](https://github.com/matiasfr/boogle/pull/1938), [#1940](https://github.com/matiasfr/boogle/pull/1940)); **last code pass end `72b79c3f3`**, start the next range after it. Architecture and docs: reviewed through `aa7861150` ([#1939](https://github.com/matiasfr/boogle/pull/1939), [report](../reports/tidy-2026-11-16.md)). Memory: consolidated 16 November (full-links rule moved to owner-calls). Debris: 16 November (25 merged or closed `ship/*` branches, 15 merged worktrees, 141 week-old `.look/` captures).
+- **Tidy:** last full pass 17 November 2026 (HOTBOX). Code: simplify covered `72b79c3f3..5fa88131` outside `src/sim`, `src/world`, `src/net`, `src/ecs` and `server/` (#2022, #2023, #2024); **last code pass end `5fa88131`**; those high-risk areas were not simplified for this range and want a pass with an independent review. Architecture and docs: reviewed through `5fa88131`, no new findings, AR-2 still open (#2025, [report](../reports/tidy-2026-11-17.md)); the tidy restored the gold-outline P2 row that left with the town row. Weekly agent-calls review: 17 November, 1 open call (flags 1, [ranking](../reports/agent-calls-review-2026-11-17.md)); the review page was not republished. Memory: 17 November (the "a good model" rule moved to models.md, #2021). Debris: 17 November (2 merged `ship/*` branches; `ship/matias-franco-97aed0d`, two weeks old with one unmerged research commit and no PR, left for the owner).
 
 ## Rules learned
 
