@@ -7,7 +7,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 - **P3, from K3 (17 November, [report](../reports/town-k3-checkpoint.md)):** drawn roof ridges stand above their flat colliders, so a player on a roof sinks into it: up to 1.56 m on the new plot houses, 1.16 m on the hall and house, 1.20 m on the shop, 1.28 m on the museum (figures from geometry, no avatar seen). The level check also listed 15 new likely-visible z-fighting pairs against its baseline, not looked at. The Round’s frame timings were taken with other apps running.
 - **Proof debts from today, none tested on a device:** K2's two-player buy scenario shipped in #1932; remaining gaps include real-time motion and sound for the garage install and the house build; the rooftop run with a controller; a second real player inside a plot when a house completes; the full Works bot route after v53.
 - **Leftover moved here from the backlog:** P2, the rotunda's quiet-machine frame timing, smoothness and device performance are still unverified (its steps 1–5 shipped, #1880 and #1890).
-- **Docs clean-up left:** 66 plans kept as "unsure" in `docs/archive/README.md`; 707 links that were broken before the archive pass (evidence files never committed); `docs/game-design/place.md` still wants splitting; P3 `.claude/skills/look/references/performance.md` still says "lockstep tick".
+- **Docs clean-up left:** 66 plans kept as "unsure" in `docs/archive/README.md`; 707 links that were broken before the archive pass (evidence files never committed); `docs/game-design/place.md` still wants splitting.
 
 ## Leftovers
 
