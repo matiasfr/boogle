@@ -1,0 +1,52 @@
+{
+  "source": {
+    "shelf": "src/entities/railway/shelf-view.ts:50",
+    "position": "src/entities/railway/q7-site.ts:12"
+  },
+  "shelfDimensions": [2.6, 0.12, 3.4],
+  "shelfCornersInCrossingFrame": [
+    {
+      "s": 707.4942321247472,
+      "lat": 4.6001946091263015
+    },
+    {
+      "s": 707.4984910268383,
+      "lat": 1.2001972765165543
+    },
+    {
+      "s": 704.8942341645162,
+      "lat": 4.596937801644862
+    },
+    {
+      "s": 704.8984930666073,
+      "lat": 1.1969404690351153
+    }
+  ],
+  "proposedCrossing": {
+    "s0": 707.2,
+    "s1": 709.6,
+    "eastLat": 1.5
+  },
+  "sharedFootprintPoint": {
+    "s": 707.35,
+    "lat": 1.4,
+    "world": {
+      "x": 1404.9295477665894,
+      "z": -335.8805875116304
+    },
+    "insideShelf": true,
+    "insideDrawnPlank": true
+  },
+  "shelfUnderside": 24.84,
+  "crossingTop": 24.52,
+  "proposedRamp": {
+    "run": 9.36922181033233,
+    "rise": 0.6699999999999982,
+    "slopeDegrees": 4.090300858919113
+  },
+  "tailClearance": {
+    "today": 4.199999999999932,
+    "plannedCoach": 0.7999999999999545
+  },
+  "result": "FAIL: Q7 shelf/plank footprints overlap; 0 m separation, required >= 0.60 m."
+}
