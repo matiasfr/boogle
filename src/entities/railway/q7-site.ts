@@ -2,13 +2,17 @@
 // not on the ground, which is the sea floor there. Its frame is the sim's (RING_Q7_FRAME, s 710, lat +4.5); the depot
 // rack stands south of it, the rails' shelf between the rack and the platform's ramp. Pure numbers over ./line2-path.ts.
 import { line2At, line2World, line2Y } from './line2-path.ts';
+import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+
+/** Both kit views use the active accepted job, never retained construction state. No kit piece has a collider. */
+export const depotPieceVisible = (active: number, piece: 'depot' | 'shelf') => !!LINE2_STATIONS[active]?.[piece];
 
 /** The deck's top over the rail line (planks 0.04 m proud, as the trestle's). */
 export const Q7_DECK_UP = 0.04;
 const SPOTS = {
   /** The log rack: 2.4 m along the line, its stack 4 wide. */
   rack: { s: 705.2, lat: 5.0 },
-  /** The rails' shelf, 2.3 m along the line. */
+  /** The rails' shelf, 2.6 m along the line (shelf-view.ts's turned 2.6 by 3.4 m plank). */
   shelf: { s: 706.2, lat: 2.9 },
   /** Q7's personal box, at the deck's south end by the shelf (crates-view.ts). */
   crate: { s: 704, lat: 3.4 },

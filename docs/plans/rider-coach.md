@@ -66,7 +66,7 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   engine (island 0.607466, lever 1.160978; no minimum changed). **R1c, the relay (L): not built** ("Keep today's").
 - [x] **R2a. The consist by roles, no coach (S).** Built, no bump: `consistOf` / `roleIndex` / `offsetOf` own the
   layout; old offsets pinned exactly. [Report](../reports/rider-coach-r2a.md).
-- [ ] **R2b.1. The Pier's west foot crossing, clear of the longest train (S).** Sync: Local (Place, prefab).
+- [x] **R2b.1. The Pier's west foot crossing, clear of the longest train (S).** Sync: Local (Place, prefab).
   Tier: normal + visual. Builds: Codex gpt-6.1-sol medium. **Bump: no**; ships alone on main now, with today's trains,
   ahead of the coach (today's 12.70 m tail then clears it by 4.20 m). [Options](#r2b-options).
   - `src/place/layout.ts` `OFFSET_HALTS` Pier: `crossS` 711.8 → **708.4** (planks s 707.2–709.6) and a new optional
@@ -92,6 +92,14 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     toward its tail, so the 4.20 m gap is seen, not only measured. The designer reads them. The production bot's walk (halts-view path) from the west platform's lever down the
     ramp and across to the east end, and back, in the running game at `deck-laid` (`look`, a stated route, both ways).
     **Done means** level-check exit 0 with the new rows, the stills and the walk.
+  - **As built, 16 November:** `t3/pier-west-crossing`; crossing centre 708.4, edges 707.2–709.6; west head ramp
+    9.4 m in s, 0.67 m rise, 4.090301°. Platform, lever, stop, trains, Q7 site and server catalogs unchanged: no bump.
+    Orchestrator's phase ruling: the 0.6 m site minimum applies to pieces that coexist with walkable planks; rack/shelf
+    instead have a shared-state exclusion check (512 combinations). Q7's standing frame/feeder clears by 1.310301 m,
+    every personal box by at least 1.476609 m. Today's tail gap is 4.20 ±0.01 m; planned coach row 0.80 ±0.01 m,
+    both ≥0.60 m. Fixed before/after stills opened; production Q7 work/homeward ride and both-way walking pass.
+    [As-built report, phase table, evidence and checks](../reports/rider-coach-r2b1.md). Prefab golden expectations changed:
+    independent review before ship; designer/orchestrator reviews the stills and real-time clip. No push or ship.
 - [ ] **R2b.2. High Gorge's crossover 3.40 m toward Home (S).** Sync: Server data (generated catalog). Tier:
   **independent review** (it moves an end block and signal). Builds: Codex gpt-6.1-sol medium. **Bump: rides R2b.3's
   v57** (its own commit on `t3/rider-coach-blockout`, before the coach). [Options](#r2b-options).

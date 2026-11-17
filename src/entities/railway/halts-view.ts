@@ -322,7 +322,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const toward = u.crossS > mid ? 1 : -1,
       endS = toward > 0 ? u.s1 : u.s0;
     const at = (s: number, l: number) => (lineAt(line, s, P), lateral(l, { x: 0, z: 0 }));
-    const via = Math.abs(u.crossS - endS) <= 6 ? at(u.crossS, u.lat) : at(endS + toward * 6, u.lat);
+    const ramp = toward < 0 ? (u.headRamp ?? 6) : 6;
+    const via = Math.abs(u.crossS - endS) <= ramp ? at(u.crossS, u.lat) : at(endS + toward * ramp, u.lat);
     const path = [at(endS, u.lat), via, at(u.crossS, u.crossTo ?? layout.CROSSING_SPAN[1]), at(u.crossS, 1.5)];
     return { pair: u.pair, lever, centre: { x: c.x, y: low, z: c.z }, path };
   });
@@ -611,9 +612,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     return h.leg && h.end?.kind === 'stub' ? 'Stack railhead' : haltName(x.line, to);
   }
   /** Whether a lever stands: its halt is up and its frame shown (an up lever with today's halt's). */
-  const upWanted = (pair: number) =>
-    halts[pair]!.up &&
-    line2Completed(adapter.read.world()) >= (layout.OFFSET_HALTS.find((h) => h.pair === pair)?.laid ?? 0);
+  const upWanted = (pair: number) => halts[pair]!.up && layout.upHaltReady(pair, line2Completed(adapter.read.world()));
   const standing = (x: Spot) =>
     x.ring
       ? x.stop < stopsNow[x.line]!.length && x.ring.need()

@@ -496,6 +496,8 @@ export type UpHalt = {
   pair: number;
   crossS: number;
   crossTo?: number;
+  /** Start ramp's interval along the line; ordinary halts use 6 m. */
+  headRamp?: number;
   endRamp: boolean;
   /** A deck on piles, with only a start ramp to rail height; never a ramp to the seabed. */
   piles?: true;
@@ -531,13 +533,17 @@ export const OFFSET_HALTS: UpHalt[] = [
     s1: 741,
     lat: -6.95,
     pair: 5,
-    crossS: 711.8,
+    crossS: 708.4,
+    headRamp: 9.4,
     crossTo: -8.2,
     endRamp: false,
     piles: true,
     laid: 7,
   },
 ];
+/** The same completion gate for an up platform's drawing and all its local colliders (halts-view.ts). */
+export const upHaltReady = (pair: number, completed: number) =>
+  completed >= (OFFSET_HALTS.find((h) => h.pair === pair)?.laid ?? 0);
 /** A plank crossing's span across the formation, lateral metres (today's side, up side), and its width along the line.
  * Its planks lie on the sleepers, flush with the rail tops, with a flangeway beside each rail. */
 export const CROSSING_SPAN = [1.5, -5.5] as const;
