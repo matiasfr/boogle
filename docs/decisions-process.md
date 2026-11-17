@@ -4,6 +4,8 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-17 · review agent calls weekly ([entry](#d-2026-11-17-weekly-agent-calls-review))
+
 - 2026-11-16 · Fast-forward need not preserve wardrobe finds; the dev key holder may replace the shared room behind the typed name, countdown and backup ([entry](#d-2026-11-16-batch2-fast-forward-can-reset-wardrobe))
 - 2026-11-16 · Keep integer counts for riders, wallet, households and source steps; drop the separate trade prototype ([entry](#d-2026-11-16-batch2-trade-counts-without-prototype))
 - 2026-11-16 · The loop reports cues from the code; the gold ghost is decided rather than merely proposed ([entry](#d-2026-11-16-batch2-loop-cues-from-code-gold-decided))
@@ -98,6 +100,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-17-weekly-agent-calls-review"></a>**2026-11-17, review agent calls weekly** (owner, 17 November 2026, review page: "the others I accept all"). Owner’s words on the card: "Confirm". Once a week the designer ranks open `docs/agent-calls.md` rows into decide / flags / bulk, each with a recommendation; the orchestrator republishes the owner’s review page for him. Add this short step to the tidy skill’s docs pass.
 
 - <a id="d-2026-11-16-batch2-fast-forward-can-reset-wardrobe"></a>**2026-11-16, fast-forward can reset wardrobe finds and the shared room** (owner, 16 November 2026, in chat: "Answered recs on the flags"). Accepted recommendations: **AT-003:** confirm, minus "wardrobe finds stay", with question 1 answered. The rest of each original row stands except the named change or retirement; full rows are in the [archive](decisions-archive.md#b2-rest-process). Basis: [docs/agents/owner-calls.md#one-room](agents/owner-calls.md#one-room), [docs/plans/room-fast-forward.md#owner-questions](plans/room-fast-forward.md#owner-questions). Earlier owner words, 13 November: "Yeah, wardrobe fine stay doesn't need to be a rule Especially if it's in the way of a good system"; on the dev-key-only recommendation for any room: "Okay, that all sounds good."
 

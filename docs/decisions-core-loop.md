@@ -4,6 +4,16 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-17 · the first line has no fork ([entry](#d-2026-11-17-first-line-no-fork))
+
+- 2026-11-17 · retire the production-bot route call ([entry](#d-2026-11-17-retire-5))
+
+- 2026-11-17 · retire the Glide-glyph first-fall teach ([entry](#d-2026-11-17-retire-4))
+
+- 2026-11-17 · heavy-load tuning with bounded local drop recovery ([entry](#d-2026-11-17-heavy-load-pile-rule-as-shipped))
+
+- 2026-11-17 · batch-3 calls confirmed as logged ([entry](#d-2026-11-17-batch3-confirmed))
+
 - 2026-11-16 · CL-072's gold outline grammar and opacity direction live in [Look](decisions-look.md#d-2026-11-16-gold-outline-not-physical)
 - 2026-11-16 · The ranked bulk calls and the listed confirm recommendations are confirmed as logged; their full words are in the archive ([entry](#d-2026-11-16-ranked-calls-confirmed))
 - 2026-11-16 · The boiler card is confirmed; its words remain the owner's, with the suggested words still drafts ([entry](#d-2026-11-16-boiler-card-owner-copy))
@@ -111,6 +121,16 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · The ending: back on the original island with The Boogler (the Design Table call, top of this section). ([entry](#d-undated-the-ending)) _At Alpha: the ride, the meeting, one shared moment, a thanks card (undecided) ("Campaign outline answered")._
 
 ## Decided
+
+- <a id="d-2026-11-17-first-line-no-fork"></a>**2026-11-17, the first line has no fork** (owner, 17 November 2026, review page: "the others I accept all"). Take the recommendation: no first-line fork and no new crossing terrain. Heavy load is the per-trip choice; the first real choices are the first house after the pier and the garage’s steel installs. Stage 1 found no crossing that makes double jump versus carry a real choice, so stage 2 is not built. This closes the owner scope question in [D2](brainstorms/first-line-decisions.md) and the [crossing probe](research/first-line-crossing-probe.md); do not start the rejected prototype.
+
+- <a id="d-2026-11-17-retire-5"></a>**2026-11-17, retire the production-bot route call** (owner, 17 November 2026, review page: "the others I accept all"). A test-bot route, not a game rule.
+
+- <a id="d-2026-11-17-retire-4"></a>**2026-11-17, retire the Glide-glyph first-fall teach** (owner, 17 November 2026, review page: "the others I accept all"). Conflicts with the confirmed Jump-in-air canopy control.
+
+- <a id="d-2026-11-17-heavy-load-pile-rule-as-shipped"></a>**2026-11-17, heavy-load tuning with bounded local drop recovery** (owner, 17 November 2026, review page: "the others I accept all"). Confirm comfort 8/16, maximum 12/24, the 45% linear speed floor and the rack moves as logged. Replace only "Remove the 128-pile ceiling" with the shipped rule: `LOOSE_PILE_CAPACITY = 128`, eight pieces per pile; heavy excess reserves drop slots, pickups are bounded by spare slots, and a whole-pile take may reclaim its source slot. Drops top up same-position piles and use unreserved slots or release their own excess. See [final integration](archive/plans/heavy-load-final.md), `src/sim/railway-supply.ts`, `railway-queries.ts` and `railway-sys-line1.ts`. The ceiling was not removed; no code change is authorized here.
+
+- <a id="d-2026-11-17-batch3-confirmed"></a>**2026-11-17, batch-3 calls confirmed as logged** (owner, 17 November 2026, review page: "the others I accept all"). The confirmed rows in this topic in the [batch-3 archive](decisions-archive.md#batch3-core-loop) are confirmed word for word, subject to later explicit owner decisions. Proposed work is not claimed built. The "Kiln" fingerpost remains a stand-in until the owner words it; his character copy is unchanged.
 
 - <a id="d-2026-11-16-ranked-calls-confirmed"></a>**2026-11-16, ranked calls confirmed as logged** (owner, 16 November 2026, review page: "Accept all remaining", none pulled out; in chat: "I take the recommendation for all the other 14 and 24 calls"). The bulk rows and the confirm recommendations below are confirmed exactly as logged in the [archive](decisions-archive.md). The original Call, Where, By and Why this pick cells remain the rule; this confirmation does not turn proposed or measured work into an as-built claim. IDs from the [ranking](reports/agent-calls-ranking-2026-11-16.json) and [baseline triage](reports/agent-calls-triage-2026-11-16.md): CL-001, CL-002, CL-003, CL-004, CL-005, CL-008, CL-010, CL-011, CL-012, CL-013, CL-014, CL-015, CL-016, CL-017, CL-019, CL-020, CL-021, CL-022, CL-023, CL-024, CL-028, CL-030, CL-031, CL-032, CL-033, CL-034, CL-036, CL-038, CL-039, CL-040, CL-041, CL-045, CL-046, CL-047, CL-048, CL-049, CL-051, CL-052, CL-053, CL-054, CL-055, CL-056, CL-057, CL-058, CL-060, CL-061, CL-062, CL-063, CL-064, CL-066, CL-067, CL-070, CL-071, CL-073, CL-074, CL-076, CL-078, CL-079, CL-080, CL-083, CL-085, CL-086, CL-087, CL-088, CL-089, CL-090, CL-092, CL-093, CL-094, CL-095, CL-096, CL-097, CL-099, CL-100, CL-102, CL-103, CL-104, CL-108, CL-109, CL-111, CL-112, CL-113, CL-114, CL-115, CL-116, CL-117, CL-118, CL-119, CL-120, CL-122, CL-123, CL-124, CL-125.
 
