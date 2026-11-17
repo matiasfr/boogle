@@ -21,6 +21,7 @@ export function tileIndex(
   [i0, j0, i1, j1]: TileCells,
   s: number,
   skip: (i: number, j: number) => boolean,
+  fine?: TileCells,
 ): number[] {
   const at = (i: number, j: number) => i + j * nx;
   const out: number[] = [];
@@ -37,6 +38,9 @@ export function tileIndex(
   // A block is coarse when it lies whole inside the tile and none of its cells is skipped.
   const block = (a: number, b: number) => {
     if (s === 1 || a < 0 || b < 0 || a >= ba || b >= bb) return false;
+    const column = i0 + a * s,
+      row = j0 + b * s;
+    if (fine && column < fine[2] && column + s > fine[0] && row < fine[3] && row + s > fine[1]) return false;
     for (let j = j0 + b * s; j < j0 + (b + 1) * s; j++)
       for (let i = i0 + a * s; i < i0 + (a + 1) * s; i++) if (skip(i, j)) return false;
     return true;

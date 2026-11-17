@@ -23,6 +23,7 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-17 | Default: the Round's kerb is 0.30 m wide and 0.08 m high on the green's side only, with no collider; the green is the terrain's own `#618f41` and the kerb the statue's stone `#a3a29c` | [home-flip D2](plans/home-flip.md); `src/prefab/builders/town-green-kerb.ts` | D2 builder; the heartbeat | Low enough to walk over without a collider, and no new colours | open |
 
 
 

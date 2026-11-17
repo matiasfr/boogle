@@ -26,6 +26,7 @@ import type { TownInspection } from './state.ts';
 type Fact = import('./town-lines.ts').Fact;
 import { createCurioShelf } from './curio-shelf.ts';
 import { createTownBlockout } from './blockout.ts';
+import { createTownStreets } from './streets.ts';
 import { createTownPlots } from './plots.ts';
 
 /** What every town piece reads of the world. All of it comes from the shared railway or is this tab's own moment. */
@@ -166,6 +167,7 @@ export async function createTownView(read: () => TownLook | null) {
   const shelf = clothes ? await createCurioShelf(owner, clothes) : null;
   // Empty plot outlines and mats, the monument, and the delivered freight at the priced plots.
   createTownBlockout(owner);
+  createTownStreets(owner);
   const plots = createTownPlots(owner);
   sites.buildSites(owner);
   plots.update(read()?.plots ?? null);
