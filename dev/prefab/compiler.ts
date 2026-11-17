@@ -118,7 +118,10 @@ export function compile(prefabs: readonly PrefabDef[], levels: readonly LevelDef
   return outputs;
 }
 export function writeArtifacts(outputs: ReadonlyMap<string, string>, directory: string, check: boolean) {
-  const existing = fs.existsSync(directory) ? fs.globSync('**/*.json', { cwd: directory }) : [];
+  // globSync joins with path.sep (backslashes on Windows); output keys use forward slashes.
+  const existing = fs.existsSync(directory)
+    ? fs.globSync('**/*.json', { cwd: directory }).map((f) => f.split(path.sep).join('/'))
+    : [];
   for (const file of existing) {
     if (outputs.has(file)) continue;
     if (check) throw new Error(`stale prefab artifact ${file}`);

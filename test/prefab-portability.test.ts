@@ -49,7 +49,7 @@ test('page startup has exactly one catalogue validation owner shared by every co
   const loads: string[] = [],
     imports: string[] = [];
   for (const relative of fs.globSync('**/*.ts', { cwd: sourceRoot })) {
-    const sourcePath = `src/${relative}`;
+    const sourcePath = `src/${relative.replaceAll('\\', '/')}`; // globSync uses backslashes on Windows
     if (sourcePath === 'src/prefab/validate.ts') continue;
     const source = fs.readFileSync(new URL(relative, sourceRoot), 'utf8');
     const calls = source.match(/\b(?:loadPrefabArtifact|validateArtifact)\s*\(/g)?.length ?? 0;
@@ -182,7 +182,7 @@ test('moving a catalog platform makes the committed halt artifact stale', () => 
   };
   const committed = new Map(
     [...fs.globSync('**/*.json', { cwd: 'content/built' })].map((file) => [
-      file,
+      file.replaceAll('\\', '/'), // the artifact keys writeArtifacts compares, on Windows too
       fs.readFileSync(`content/built/${file}`, 'utf8'),
     ]),
   );
