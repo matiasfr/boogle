@@ -1,0 +1,168 @@
+
+> boogle@0.1.0 test:unit
+> node dev/test-unit.ts --ci
+
+unit file start test/home-signals.test.ts
+::warning file=test/home-signals.test.ts::Unmeasured unit file test/home-signals.test.ts was assigned 1s; refresh unit weights.
+unit file start test/home-station.test.ts
+unit file start test/railway-end-path.test.ts
+unit file test/railway-end-path.test.ts: 0.225s
+unit timing {"file":"test/railway-end-path.test.ts","seconds":0.22493337500000002,"weight":1,"passed":true}
+unit file start test/railway-trains.test.ts
+✔ held Home signals preserve whole-train clearance and measured pins (11.229333ms)
+✔ Home signal rows reject moving a held tail back into the turnout (7.080041ms)
+unit file test/home-signals.test.ts: 0.566s
+unit timing {"file":"test/home-signals.test.ts","seconds":0.565593625,"weight":null,"passed":true}
+unit file start test/train-car-clearance.test.ts
+✔ each head is 1 m samples from s 0 to its join, meeting today line at the join on the same heading (0.77175ms)
+✔ R2b passenger cars stay on the straight; Home mark is 4.65 m ahead of abeam and long nose uses the idle arc (0.159875ms)
+✔ road 2: buffer, cart, points, waiting wagon, train and leg in order and apart; no stop overlaps a buffer (0.193542ms)
+✔ every stop stands beside the island, 1.65 m in from its edge and within its halt reach (0.3165ms)
+✔ the table and stalls are radial: the spur and each stall road point at its centre, stalls 20 degrees apart (0.37825ms)
+✔ no track centre comes within 2.8 m of a building (3.670667ms)
+✔ the cart's road is continuous: line 1, the leg, road 2 to the buffers (the forge stop), then out along line 2 (0.951583ms)
+✔ the shunt fits the stub, over the cart forge stop (0.191167ms)
+✔ the hall: 1 m behind the buffers, centred on the island, five posts in four even bays; the curio pair beside it (0.319292ms)
+✔ the rack stands on the apron and leaves a lane along road 1; its posts clear the cart on road 2 (0.263375ms)
+✔ the greeter stands in front of the hall, before a post and not in a bay, well off the curio pair (0.098333ms)
+✔ the goods door: 1.5 m in the north wall’s back half, behind road 1’s buffer, clear of the posts (0.074042ms)
+✔ the rules’ cart distance lands on Home’s road: the forge stop on road 2’s s 0, the rail height unbroken (0.554792ms)
+✔ the board crossing over road 2: behind a standing train’s tail, off the spur’s points, beside the head ramp (1.181167ms)
+✔ the island’s two levers stand more than twice the prompt’s reach apart, each on its own edge of the deck (0.150375ms)
+unit file test/home-station.test.ts: 0.591s
+unit timing {"file":"test/home-station.test.ts","seconds":0.590889625,"weight":2,"passed":true}
+✔ Q7 preserves all six car poses while standing and throughout departure (26.138958ms)
+✔ every old end keeps its full-car path when Q6, the Railhead or the rivet opens (15.692791ms)
+unit file start test/train-wheel-capacity.test.ts
+::warning file=test/train-wheel-capacity.test.ts::Unmeasured unit file test/train-wheel-capacity.test.ts was assigned 1s; refresh unit weights.
+unit file test/train-wheel-capacity.test.ts: 0.153s
+unit timing {"file":"test/train-wheel-capacity.test.ts","seconds":0.153339625,"weight":null,"passed":true}
+unit file test/train-car-clearance.test.ts: 1.587s
+unit timing {"file":"test/train-car-clearance.test.ts","seconds":1.587084625,"weight":2,"passed":true}
+✔ R2b: Home's shorter trips change Pier/pre-Pier/Railhead cycle and headway pins (1.014833ms)
+✔ fuzz c0ffee at 75%: lever and rider asks, the pier at a random tick, restores; the worst wait (373.275625ms)
+ℹ 3000 ticks; pier opened at 4483; restores 4
+ℹ worst lever waits: Village up 41.9 s; Camp down 36.7 s; Village, line 2 up 15.4 s; Quarry down 56.7 s; Quarry up 58.5 s; Far Head down 60.8 s; Far Head up 14.1 s; Pier down 48.9 s
+ℹ line 2 lever waits: 14 served, mean 32.1 s
+ℹ worst rider waits (slot/stop):
+ℹ longest line-2 stand: {"slot":1,"ticks":513,"at":0,"tick":5182}
+✔ fuzz 777 at 0%: lever and rider asks, the pier at a random tick, restores; the worst wait (366.145834ms)
+ℹ 3000 ticks; pier opened at 5391; restores 4
+ℹ worst lever waits: Village up 38.7 s; Camp down 21.2 s; Village, line 2 up 55.0 s; Quarry down 44.7 s; Quarry up 15.7 s; Far Head down 113.5 s; Far Head up 7.2 s; Pier down 75.4 s
+ℹ line 2 lever waits: 11 served, mean 39.4 s
+ℹ worst rider waits (slot/stop): 2/2 23.2 s
+ℹ longest line-2 stand: {"slot":1,"ticks":410,"at":0,"tick":6188}
+✔ fuzz c0ffee at 75% from crossing-done: lever and rider asks, the pier at a random tick, restores; the worst wait (355.027333ms)
+ℹ 3000 ticks; pier opened at 6668; restores 4
+ℹ worst lever waits: Village up 2.8 s; Camp down 28.8 s; Village, line 2 up 65.2 s; Quarry down 8.2 s; Quarry up 27.5 s; Far Head down 46.6 s; Far Head up 42.0 s; Pier down 26.2 s
+ℹ line 2 lever waits: 16 served, mean 19.8 s
+ℹ worst rider waits (slot/stop): 2/2 19.1 s
+ℹ longest line-2 stand: {"slot":1,"ticks":94,"at":3,"tick":7464}
+✔ fuzz 777 at 0% from crossing-done: lever and rider asks, the pier at a random tick, restores; the worst wait (361.497709ms)
+ℹ 3000 ticks; pier opened at 6668; restores 4
+ℹ worst lever waits: Village up 27.6 s; Camp down 24.6 s; Village, line 2 up 14.9 s; Quarry down 54.6 s; Quarry up 29.8 s; Far Head down 66.5 s; Far Head up 66.5 s; Pier down 51.4 s
+ℹ line 2 lever waits: 14 served, mean 30.4 s
+ℹ worst rider waits (slot/stop): 2/1 13.6 s
+ℹ longest line-2 stand: {"slot":1,"ticks":108,"at":3,"tick":8686}
+✔ fuzz c0ffee at 75% from deck-laid: lever and rider asks, the pier at a random tick, restores; the worst wait (363.732167ms)
+ℹ 3000 ticks; pier opened at 8231; restores 4
+ℹ worst lever waits: Village up 9.7 s; Camp down 35.7 s; Village, line 2 up 15.4 s; Quarry down 56.0 s; Quarry up 51.0 s; Far Head down 49.3 s; Far Head up 27.9 s; Pier down 50.9 s; Railhead down 0.1 s
+ℹ line 2 lever waits: 18 served, mean 19.8 s
+ℹ worst rider waits (slot/stop): 2/3 0.1 s; 1/1 38 s; 1/2 28.2 s
+ℹ longest line-2 stand: {"slot":3,"ticks":293,"at":4,"tick":9449}
+✔ fuzz 777 at 0% from deck-laid: lever and rider asks, the pier at a random tick, restores; the worst wait (366.769333ms)
+ℹ 3000 ticks; pier opened at 8231; restores 4
+ℹ worst lever waits: Village up 34.5 s; Camp down 31.5 s; Village, line 2 up 31.0 s; Quarry down 30.4 s; Quarry up 58.0 s; Far Head down 38.9 s; Far Head up 24.5 s; Pier down 45.6 s; Railhead down 13.6 s
+ℹ line 2 lever waits: 17 served, mean 25.2 s
+ℹ worst rider waits (slot/stop): 1/2 8 s; 1/1 36.4 s; 2/1 24.3 s
+ℹ longest line-2 stand: {"slot":3,"ticks":283,"at":4,"tick":11018}
+✔ fuzz c0ffee at 75% from gap-footed: lever and rider asks, the pier at a random tick, restores; the worst wait (360.193625ms)
+ℹ 3000 ticks; pier opened at 11382; restores 4
+ℹ worst lever waits: Village up 21.0 s; Camp down 33.8 s; Village, line 2 up 15.4 s; Quarry down 23.5 s; Quarry up 50.5 s; Far Head down 32.9 s; Far Head up 54.4 s; Pier down 32.1 s; Railhead down 21.6 s
+ℹ line 2 lever waits: 17 served, mean 22.2 s
+ℹ worst rider waits (slot/stop): 2/2 15.8 s; 2/1 47.8 s
+ℹ longest line-2 stand: {"slot":3,"ticks":326,"at":0,"tick":12387}
+✔ fuzz 777 at 0% from gap-footed: lever and rider asks, the pier at a random tick, restores; the worst wait (368.136666ms)
+ℹ 3000 ticks; pier opened at 11382; restores 4
+ℹ worst lever waits: Village up 34.0 s; Camp down 35.2 s; Village, line 2 up 33.7 s; Quarry down 40.4 s; Quarry up 46.6 s; Far Head down 48.9 s; Far Head up 23.6 s; Pier down 40.2 s; Railhead down 2.7 s
+ℹ line 2 lever waits: 14 served, mean 23.8 s
+ℹ worst rider waits (slot/stop): 2/2 19.3 s; 2/1 35.5 s
+ℹ longest line-2 stand: {"slot":3,"ticks":206,"at":0,"tick":12267}
+✔ fuzz c0ffee at 75% from ring-joined: lever and rider asks, the pier at a random tick, restores; the worst wait (418.676917ms)
+ℹ 3000 ticks; pier opened at 11482; restores 4
+ℹ worst lever waits: Village up 14.5 s; Camp down 23.8 s; Village, line 2 up 44.3 s; Quarry down 54.8 s; Quarry up 67.9 s; Far Head down 44.5 s; Far Head up 68.1 s; Pier down 56.9 s; Railhead down 52.9 s; Railhead up 87.1 s; Ring Island down 38.7 s
+ℹ line 2 lever waits: 22 served, mean 41.7 s
+ℹ worst rider waits (slot/stop): 2/2 35.6 s; 1/2 42.2 s; 1/1 17.2 s; 2/3 13.9 s
+ℹ longest line-2 stand: {"slot":3,"ticks":383,"at":5,"tick":13677}
+✔ fuzz 777 at 0% from ring-joined: lever and rider asks, the pier at a random tick, restores; the worst wait (408.275584ms)
+ℹ 3000 ticks; pier opened at 11482; restores 4
+ℹ worst lever waits: Village up 35.8 s; Camp down 32.8 s; Village, line 2 up 21.9 s; Quarry down 58.5 s; Quarry up 53.5 s; Far Head down 67.0 s; Far Head up 37.8 s; Pier down 36.4 s; Railhead down 24.0 s; Railhead up 84.2 s
+ℹ line 2 lever waits: 13 served, mean 38.1 s
+ℹ worst rider waits (slot/stop): 2/2 8.9 s; 2/4 64.2 s; 2/3 0.1 s
+ℹ longest line-2 stand: {"slot":3,"ticks":336,"at":0,"tick":14455}
+✔ a held Far Head signal leg lengthens when the pier opens, on a three-train mover fixture (14.447791ms)
+✔ R2b: a v32 Village standing pose is refused by the load check (593.788416ms)
+✔ R2b: a v56 Village standing pose is refused by the load check (5.023959ms)
+✔ the wagon's twelve footings reach the pier under random asks and restores (144.757625ms)
+ℹ crossing after 203.3 s
+✔ a lever ask goes to the next train that way that can brake; the one too close runs through (3103.031166ms)
+✔ a lever ask in time stops the first train; the one behind is not named (1049.635333ms)
+✔ a rider's ask is never served by the train ahead (2121.782958ms)
+✔ a train held at a signal leaves the tick the block clears; the end block holds one train (874.969458ms)
+✔ a held leg lengthens without a jump once the train ahead moves on (477.456584ms)
+✔ the headway hold spaces two trains that started together (100%) (99.5145ms)
+✔ the headway hold spaces two trains that started together (75%) (96.694667ms)
+✔ the wagon train is never held for headway while the pier owes footings (3905.079541ms)
+✔ opening the pier mid-run moves no train (2255.531917ms)
+✔ a train bound for Far Head as its end when the pier opens still stops there once, then runs to the pier (30.648166ms)
+✔ Far Head's up lever is refused while Far Head is the end; the pier's the way in, always (269.283083ms)
+✔ the fixture line: three trains, a 1173 m line, 138.8 s round, 462 ticks apart evenly (0.176917ms)
+✔ an up train into the open island stands at 119340 on its row alone, turns onto the down track and leaves (4.088542ms)
+✔ a second up train holds at the island's signal (112880) until the first is out of its block (5.155625ms)
+✔ the balanced hold: an end waits while the gap ahead is the shorter, never past its cap or a waiter at its signal (0.198625ms)
+✔ endMoved at Far Head is v26's Q6 hunk, row for row, on the world (5349.131208ms)
+✔ at Q7 a train past the Pier stub's turnout (s 536 m) turns back there; one short runs on with no Pier stop (7.595208ms)
+✔ on the rivet a train past the railhead stub's turnout turns back; one short stops there once and runs on (6.686209ms)
+✔ stopMoved over the railhead's seven advances moves no pose; a standing train is at a signal, a running one bound on (1.734791ms)
+✔ fixture fuzz c0ffee at 75%: 3 trains to the open island, the worst wait each way (34.504333ms)
+ℹ 3000 ticks; restores 10
+ℹ worst lever waits: Village, line 2 up 71.2 s; Quarry down 67.5 s; Quarry up 71.5 s; Far Head down 68.0 s; Far Head up 50.4 s; Pier down 61.3 s; Railhead down 45.2 s; Railhead up 69.9 s; Ring Island down 61.5 s
+ℹ worst rider waits (slot/stop): 2/1 16.6 s; 0/4 41.2 s; 1/2 44.3 s; 1/1 9.6 s; 0/3 9.5 s; 2/4 13.9 s; 2/3 0 s; 1/4 53.3 s; 0/2 6.8 s; 1/3 22.1 s
+✔ fixture fuzz 777 at 0%: 3 trains to the open island, the worst wait each way (30.446042ms)
+ℹ 3000 ticks; restores 5
+ℹ worst lever waits: Village, line 2 up 59.6 s; Quarry down 85.3 s; Quarry up 79.1 s; Far Head down 74.5 s; Far Head up 79.4 s; Pier down 73.9 s; Railhead down 74.1 s; Railhead up 60.5 s; Ring Island down 73.7 s
+ℹ worst rider waits (slot/stop): 0/2 47.6 s; 2/1 9.4 s; 1/3 20.9 s; 0/4 5.1 s; 1/1 35.1 s; 2/2 28.2 s; 0/3 3.9 s; 1/2 25.7 s; 2/4 0 s; 0/1 31 s
+✔ fixture fuzz 5eed: Q7, the railhead's seven bents and the rivet under random asks; no up train stands at the Pier after Q7 (46.642833ms)
+ℹ Q7 at 401, bents at 681, 976, 1188, 1479, 1690, 1920, 2220, rivet at 2620
+✔ fixture fuzz bee: Q7, the railhead's seven bents and the rivet under random asks; no up train stands at the Pier after Q7 (48.283416ms)
+ℹ Q7 at 454, bents at 791, 997, 1225, 1524, 1799, 2001, 2227, rivet at 2627
+✔ the load check refuses an up train standing at the homeward-only Pier; a leg held onto it ends at no halt (0.26075ms)
+✔ review (six-hold): the island's lever ask, which the train running into the island serves, does not release the train held at the control halt behind it (2.993208ms)
+✔ review (six-hold): the island's lever ask does not flip the leg of a train bound for the control halt tick by tick (5.352166ms)
+✔ six-hold: the hold stands a train at the control halt and releases it on its cap (arrived + dwell + cap) (2.038959ms)
+✔ six-hold: no train is held while one of its line waits in the shed to join (1.72725ms)
+✔ six-hold: the headway-exempt train is never held (1.148166ms)
+✔ six-hold: a train the IO puts off (an errand) is never held (1.904084ms)
+✔ six-hold: the ask at the held train's own platform its way does not release it (1.9825ms)
+✔ six-hold: the errand list (holdOff): footings owed, a kit aboard that can unload, a kit owed; a waiting kit is none (5966.995875ms)
+unit file test/railway-trains.test.ts: 65.773s
+unit timing {"file":"test/railway-trains.test.ts","seconds":65.773299,"weight":77,"passed":true}
+✔ spacedAlong: metres along the drawn track, not the line (0.647209ms)
+✔ on straight track nothing moves: every vehicle at its offset (0.920375ms)
+✔ at every stop, on either track, with and without the longer boiler, no deck stands in the next (6.322209ms)
+✔ under way: decks stay clear round every bend of both lines, on both tracks (121.365125ms)
+✔ the Quarry's bend: the up track is eased to 10 m and the up train stands there close coupled (246.066125ms)
+✔ a train on either up track never steps back along it, at 0.05 m (7.499417ms)
+✔ buffers never stand in each other or in a deck: every 0.1 m of both lines, on both tracks (1035.441625ms)
+✔ the couplings batch holds every train of the fleet, and the seated rider and the rack are found (0.875875ms)
+✔ each shared wheel batch fits every line and every consist in the full fleet (0.559667ms)
+✔ wheel allocation cannot silently drop a vehicle at the capacity boundary (0.329541ms)
+ℹ tests 76
+ℹ suites 0
+ℹ pass 76
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 66033.37575
+unit shard 1/1: 66.1s

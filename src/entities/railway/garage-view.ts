@@ -119,9 +119,9 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   ]);
   const { ENGINE_WHEELS, ENGINE_BOILER, ENGINE, ENGINE_LONG_AHEAD } = spec;
   const { TRAILER, WAGON_CAR, STEEL_CAR, consistOf, offsetOf } = cars;
-  const displayConsist = consistOf({ line: 1, wagon: true, steel: true });
+  const displayConsist = consistOf({ line: -1, wagon: true, steel: true });
   const displayOffset = (role: Parameters<typeof offsetOf>[1]) => offsetOf(displayConsist, role);
-  const steelOffsets = [false, true].map((wagon) => offsetOf(consistOf({ line: 1, wagon, steel: true }), 'steel'));
+  const steelOffsets = [false, true].map((wagon) => offsetOf(consistOf({ line: -1, wagon, steel: true }), 'steel'));
   const tableTop = geo.y + 0.02;
   const centre = new THREE.Vector3(geo.table.x, tableTop, geo.table.z);
 

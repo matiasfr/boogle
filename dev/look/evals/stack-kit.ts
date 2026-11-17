@@ -43,7 +43,7 @@ const mode = query.get('kit') ?? 'car',
   side = Number(query.get('side') ?? 1);
 const LINE2 = 1,
   LEG = 0;
-type Car = { x: number; y: number; z: number };
+type Car = { role: string; x: number; y: number; z: number };
 type TrainView = { line: number; kitBoard: string; joinScale: number; crates: number; cars: Car[] };
 type View = { trains?: TrainView[]; legKitFlying?: { logs: number; rails: number }; markerGrow?: number[] };
 const view = () => inspectRailway()?.line2View as unknown as View | undefined;
@@ -97,8 +97,8 @@ if (mode === 'car') {
     if (pick < 0 || !view()!.trains![pick]?.kitBoard || !standing(pick)) pick = now.find(standing) ?? now[0] ?? -1;
     if (pick < 0) return;
     const cars = view()!.trains![pick]!.cars,
-      kit = cars[2]!,
-      ahead = cars[1]!;
+      kit = cars.find((c) => c.role === 'kit')!,
+      ahead = cars.find((c) => c.role === 'player')!;
     const dx = ahead.x - kit.x,
       dz = ahead.z - kit.z,
       n = Math.hypot(dx, dz) || 1;

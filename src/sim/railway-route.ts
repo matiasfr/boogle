@@ -6,7 +6,7 @@
 // Lockstep math: integers and `+ - * /`, `Math.floor`, `Math.round` and `Math.sqrt` only (docs/agents/lockstep.md).
 import type { RailPlatform } from './railway-lines.ts';
 import { railInt } from './railway.ts';
-import { RING_S_HEAD, ringAt } from './railway-ring-layout.ts';
+import { RING_END, RING_S_HEAD, ringAt } from './railway-ring-layout.ts';
 import { WORLD_LINES, type WorldLine } from './railway-world-lines.ts';
 
 /** One section of a leg: it lays when `logs` + `rails` are fed to its frame; `gate` (a RAIL_GATES index) shuts the frame. */
@@ -368,8 +368,9 @@ export const ROUTE = { branchFirst: 'gorge', branches: 'both', ending: 'card', u
 
 // ---------------------------------------------------------------- step 3: what the rules read (greybox-route.md)
 /** A row's centimetres against its sim line's `s`: the `ring` row counts on from the pier head at its `fromCm` (74300),
- * line 2 from RING_S_HEAD (74200), so the same place is 100 cm further along the row (the Ring Island halt: row 119100,
- * line 2's 119000). The generator measured the pier head along Place's sampled path, which ends 3.55 m short of it;
+ * line 2 from RING_S_HEAD (74200), so the same place is 100 cm further along the row. Ring Island's physical
+ * construction origin (`legStartS`) is row 119100 / line 2 s 119000 cm; its service mark is separate. The generator
+ * measured the pier head along Place's sampled path, which ends 3.55 m short of it;
  * line 2's s is the ring layout's (s = RING_S_HEAD + u). The rules shift the row instead of regenerating the catalog
  * (step 2's, tested against the map) or moving line 2's built halts; test/railway-route-rules.test.ts ties the shift to
  * both. The other rows are their own lines and count from 0. */
@@ -381,6 +382,9 @@ export const ROW_SHIFT: Readonly<Record<RowId, number>> = {
 };
 /** Cm along a leg's sim line of `cm` along its row. */
 export const legS = (leg: Pick<RouteLeg, 'row'>, cm: number) => cm - ROW_SHIFT[leg.row];
+/** The departure halt's stop mark, distinct from the physical start of track construction.
+ * Ring's coach advances the mark while the laid sections, frame and rack keep their coordinates. */
+export const legStartS = (leg: RouteLeg) => (leg.row === 'ring' ? RING_END.s : legS(leg, leg.fromCm));
 /** A catalog row's point `cm` along it (row cm) and a catalog halt's platform point: the sim catalog's sources. */
 export const rowPoint = pointAt;
 export const rowHalt = haltAt;

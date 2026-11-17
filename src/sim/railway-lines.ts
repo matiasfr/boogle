@@ -12,7 +12,7 @@ import {
   RING_JOINT_UP,
   RING_PATH,
 } from './railway-ring-layout.ts';
-import { RAIL_LEGS, ROW_LINE, ROW_SHIFT, legS, pathOf, rowHalt, rowPoint } from './railway-route.ts';
+import { RAIL_LEGS, ROW_LINE, ROW_SHIFT, legS, legStartS, pathOf, rowHalt, rowPoint } from './railway-route.ts';
 import { WORLD_LINES } from './railway-world-lines.ts';
 
 export type RailEndKind = 'stub' | 'crossover' | 'loop';
@@ -113,10 +113,10 @@ export const TURNOUT_CM = 2000;
  * the wagon's train (below). The cars are src/entities/railway/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
  * in step), so a longer train moves every signal with it. From v28 (ring-island-build2, R3, call 15) the reach ahead
  * is the longer boiler's, rail-map's long train (8.2 m), whichever boiler a train wears: one extent, one block rule.
- * The drawn longer engine reaches less (test/railway-lines.test.ts holds this at least the drawn one). From v33
- * (docs/plans/fourth-car.md, R1) the reach behind is the steel car's tail on the wagon's train (12.7 m, cars.ts's
+ * The drawn longer engine reaches less (test/railway-lines.test.ts holds this at least the drawn one). From v57
+ * (docs/plans/rider-coach.md, R2b) the reach behind is the steel car's tail on the wagon's coach train (16.1 m, cars.ts's
  * TRAIN_TAIL_M), whichever cars a train pulls: one extent for every train, as ahead. */
-export const TRAIN_EXTENT = { aheadCm: 820, behindCm: 1270 } as const;
+export const TRAIN_EXTENT = { aheadCm: 820, behindCm: 1610 } as const;
 /** A line end at `mergeCm`, at its line's low end (`side` -1, the first halt) or high end (+1). Its block reaches the
  * merge plus a stub's turnout (`edgeCm`: past it the tracks are apart; a crossover's block starts at the crossover);
  * its signal stands outside that by the reach of an inbound train's leading end, so a train held there is clear of the
@@ -406,8 +406,8 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     halts: [
       {
         name: 'Village, line 2',
-        // 18.25 m from v33 (docs/plans/fourth-car.md, R2): the wagon train's steel car stands off the table's deck.
-        s: 1825,
+        // Coach adds 3.4 m behind the players: advance the mark equally so every freight car stays put.
+        s: 2165,
         opens: -1,
         platforms: both({ x: 92985, z: 375, y: 1902, reach: 1260 }),
         end: railEnd('stub', 3400, -1),
@@ -634,7 +634,7 @@ RAIL_LEGS.forEach((leg, k) => {
   }
   void head;
   if (
-    !halts.some((h) => h.s === legS(leg, leg.fromCm)) ||
+    !halts.some((h) => h.s === legStartS(leg)) ||
     !halts.some(
       (h) => h.leg?.slot === k && h.leg.section === last && !h.heads && h.s === legS(leg, leg.sections[last]!.toCm),
     )

@@ -64,8 +64,8 @@ export const ENGINE_BUFFERS = { hx: 0.85, back: 0.34, front: 0 } as const;
 /** A car's buffers as couplings.ts draws them at each end: 0.2 m out, 0.55 m off the middle, 0.11 m in radius. */
 export const CAR_BUFFER = { out: 0.2, x: 0.55, r: 0.11 } as const;
 export const CAR_BUFFERS = { hx: CAR_BUFFER.x + CAR_BUFFER.r, back: CAR_BUFFER.out, front: CAR_BUFFER.out } as const;
-/** The most vehicles a train has (engine, two cars, the footing wagon, the steel car), so its couplings. */
-export const TRAIN_VEHICLES_MAX = 5;
+/** The most vehicles a train has (engine, player, rider, kit, footing wagon, steel), so its couplings. */
+export const TRAIN_VEHICLES_MAX = 6;
 /** How many couplings a fleet of `trains` can show at once (couplings.ts sizes its batches from it). */
 export const couplingCapacity = (trains: number) => trains * (TRAIN_VEHICLES_MAX - 1);
 /** The most a coupling stretches, m (0.27 m is the most any bend asks, now the Quarry's up track is eased). */

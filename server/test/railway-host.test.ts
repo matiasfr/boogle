@@ -19,6 +19,13 @@ import { ROSTER_CHANGE_MS } from '../../src/world/rules/roster.ts';
 import { MAX_PLAYERS } from '../../src/sim/roster.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 
+import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
+import { Train, Town } from '../../src/sim/railway-components.ts';
+import { railTick } from '../../src/sim/railway-systems.ts';
+import { trains, town } from '../../src/sim/railway-rows.ts';
+import { TRADE } from '../../src/sim/railway-trade-layout.ts';
+import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
+
 type Obj = Record<string, unknown>;
 const START = 1800000000000;
 
@@ -595,6 +602,56 @@ test('a tuning edit whose key is an object with a non-callable toString never th
       false,
       'no edit reached the sync',
     );
+  } finally {
+    await f.close();
+  }
+});
+
+test('R2b: a full coach survives durable save, restart and a late-join replica', async () => {
+  const seed = buildSeedWorld('q6-done');
+  let slot = -1;
+  for (let n = 0; n < 3000 && slot < 0; n++) {
+    railTick(seed.w, ++seed.t);
+    slot = trains(seed.w).findIndex((r) => r.slot > 0 && r.phase === 0 && r.at === 0 && r.track === 0);
+  }
+  assert.ok(slot >= 0);
+  const r = seed.w.mut(Train, seed.w.lookup(Train, slot)!)!;
+  const crowd = seed.w.mut(Town, seed.w.lookup(Town, 0)!)!;
+  crowd.alighted += r.riders;
+  r.riders = 0;
+  crowd.wait0 = TRADE.riderPlaces + 1;
+  railTick(seed.w, ++seed.t);
+  railwayCheck(seed.w, seed.t);
+  assert.equal(trains(seed.w)[slot]!.riders, TRADE.riderPlaces);
+  assert.equal(town(seed.w, 0).wait0, 1);
+  const f = await fixture(railwayRoomId('coach-restart'));
+  try {
+    while (f.host.sync.world.tick <= seed.t) f.host.step(0.1);
+    await f.host.sync.whenDurable();
+    f.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
+    f.host.rules.railway.touchAll();
+    const riders = () => ({ trains: trains(f.world()).map((r) => ({ ...r })), town: { ...town(f.world(), 0) } });
+    const before = riders();
+    await f.restart();
+    assert.deepEqual(riders(), before, 'train rows and the rider ledger survive the real host restart');
+    assert.equal(trains(f.world())[slot]!.riders, TRADE.riderPlaces);
+    const mirror = createRailwayMirror();
+    f.host.replication.addClient('late');
+    f.host.replication.commit(f.host.sync.roomStep());
+    f.host.replication.flush(f.host.sync.roomStep(), (sid, packet) => {
+      if (sid === 'late') assert.ok(mirror.mirror.apply(packet, 0));
+    });
+    const replicated = mirror.confirmed();
+    assert.equal(trains(replicated)[slot]!.riders, TRADE.riderPlaces, 'late join retains every occupied place');
+    assert.deepEqual(
+      trains(replicated).map((r) => r.riders),
+      trains(f.world()).map((r) => r.riders),
+    );
+    assert.deepEqual(town(replicated, 0), town(f.world(), 0), 'waiting, boarded and alighted ledger is conserved');
+    railwayCheck(f.world(), f.host.sync.world.tick);
+    await f.step(20);
+    await f.restart();
+    railwayCheck(f.world(), f.host.sync.world.tick);
   } finally {
     await f.close();
   }

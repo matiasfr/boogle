@@ -1,4 +1,4 @@
-// R1b: planned stock, never a production consist. R1a (railway-check-line2.ts) proves these phases exclusive:
+// R2b: production stock and stop. R1a (railway-check-line2.ts) proves these phases exclusive:
 // trains on implies cart at rest (hidden); nothing uses the leg after the trains wake.
 import {
   AXIS,
@@ -18,14 +18,22 @@ import {
   march,
   roadAt,
 } from '../../src/place/home-station.ts';
-import { CART, FORMATION, LINES, LINKS, ORIGIN, lineAt } from '../../src/place/layout.ts';
+import { CART, FORMATION, LINES, LINKS, ORIGIN } from '../../src/place/layout.ts';
 import { frameBesideLine, stationColliders } from '../../src/place/spatial-station.ts';
 import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
-import { ENGINE, ENGINE_LONG_AHEAD } from '../../src/entities/railway/engine.ts';
-import { STEEL_CAR, TRAILER, TRAIN_OFFSETS, WAGON_CAR, steelCarOffset } from '../../src/entities/railway/cars.ts';
-import { deckAt, deckGap, type Deck } from '../../src/entities/railway/car-spacing.ts';
+import { ENGINE_LONG_AHEAD } from '../../src/entities/railway/engine.ts';
+import { STEEL_CAR, consistOf } from '../../src/entities/railway/cars.ts';
+import {
+  CAR_BUFFERS,
+  ENGINE_BUFFERS,
+  trainPlaces,
+  deckAt,
+  deckGap,
+  type Deck,
+} from '../../src/entities/railway/car-spacing.ts';
+import { line2At } from '../../src/entities/railway/line2-path.ts';
 import { CART_ROAD } from '../../src/sim/railway-cart.ts';
-import { TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
+import { LINE2, RAIL_LINES, TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
 
 import clearancePins from './home-cart-pins.json' with { type: 'json' };
 
@@ -39,22 +47,22 @@ export const HOME_STATIC = {
   tree: { pine: 0.46, hardwood: 0.95, barkRelief: 0.13 },
 };
 
-export const COACH_STOP = 21.65;
-const pitch = 3.4;
-// Long engine, players, 2.90 x 1.60 coach, kit, footing wagon, steel. Freight stays at today's places.
-export const PLANNED_HOME_CONSIST = [
-  {
-    role: 'engine',
-    d: TRAIN_OFFSETS[0]! + ENGINE_LONG_AHEAD / 2,
-    hx: ENGINE.hx,
-    hz: ENGINE.hz + ENGINE_LONG_AHEAD / 2,
-  },
-  { role: 'players', d: 0, ...TRAILER },
-  { role: 'coach', d: -(TRAILER.hz + 0.5 + 1.45), hx: 0.8, hz: 1.45 },
-  { role: 'kit', d: TRAIN_OFFSETS[2]! - pitch, ...TRAILER },
-  { role: 'wagon', d: TRAIN_OFFSETS[3]! - pitch, ...WAGON_CAR },
-  { role: 'steel', d: steelCarOffset(true) - pitch, ...STEEL_CAR },
-];
+export const COACH_STOP = RAIL_LINES[LINE2]!.halts[0]!.s / 100;
+const consist = consistOf({ line: LINE2, wagon: true, steel: true });
+// Symmetric envelopes for the along-track scalar checks. Keep R1b's measurement names and pins.
+export const HOME_CONSIST = consist.map(({ role, spec, offset }) => ({
+  ...spec,
+  role: role === 'player' ? 'players' : role === 'rider' ? 'coach' : role,
+  d: offset + (role === 'engine' ? ENGINE_LONG_AHEAD / 2 : 0),
+  hz: spec.hz + (role === 'engine' ? ENGINE_LONG_AHEAD / 2 : 0),
+}));
+const vehicles = consist.map(({ role, spec, offset }) => ({
+  d: offset,
+  hx: spec.hx,
+  back: spec.hz,
+  front: spec.hz + (role === 'engine' ? ENGINE_LONG_AHEAD : 0),
+  buffers: role === 'engine' ? ENGINE_BUFFERS : CAR_BUFFERS,
+}));
 const box = (x: number, z: number, yaw: number, hx: number, hz: number): Deck => ({
   x,
   z,
@@ -65,7 +73,7 @@ const box = (x: number, z: number, yaw: number, hx: number, hz: number): Deck =>
 });
 const blank = () => box(0, 0, 0, 0, 0);
 const at = (s: number, out: { x: number; z: number }) =>
-  Object.assign(out, lineAt(LINES.east, s, { x: 0, z: 0, ux: 0, uz: 0 }));
+  Object.assign(out, line2At(s, { x: 0, z: 0, ux: 0, uz: 0 }, true));
 export function checkHomeCart(options: { stop?: number; obstacle?: (id: string, envelope: Deck) => Deck } = {}) {
   const stop = options.stop ?? COACH_STOP;
   const { lever, forge, depot, sign, tree } = HOME_STATIC;
@@ -153,10 +161,11 @@ export function checkHomeCart(options: { stop?: number; obstacle?: (id: string, 
       ),
     });
   if (options.obstacle) for (const o of obstacles) Object.assign(o, options.obstacle(o.id, { ...o }));
-  const decks = PLANNED_HOME_CONSIST.map((v) => deckAt(at, stop + v.d, { ...v, back: v.hz, front: v.hz }, blank()));
-  const engine = PLANNED_HOME_CONSIST[0]!,
+  const places = trainPlaces(at, stop, vehicles, [], false);
+  const decks = vehicles.map((v, i) => deckAt(at, places[i]!, v, blank()));
+  const engine = HOME_CONSIST[0]!,
     nose = stop + engine.d + engine.hz;
-  const tail = stop + PLANNED_HOME_CONSIST.at(-1)!.d - STEEL_CAR.hz;
+  const tail = stop + HOME_CONSIST.at(-1)!.d - STEEL_CAR.hz;
   minimum('tail past spur points', tail - SPUR.s, 0, ruling, true);
   pin('tail past spur points', tail - SPUR.s, 0.05);
   minimum(
@@ -187,9 +196,9 @@ export function checkHomeCart(options: { stop?: number; obstacle?: (id: string, 
   pin('nose s', nose, 28.35);
   pin('nose into arc', nose - HEADS[1].segs[0].len, 3.35);
   pin('nose off line', offLine, 0.3114362900980901);
-  for (const v of PLANNED_HOME_CONSIST.slice(1))
+  for (const v of HOME_CONSIST.slice(1))
     minimum(`${v.role} short of arc`, HEADS[1].segs[0].len - (stop + v.d + v.hz), 0);
-  for (const v of PLANNED_HOME_CONSIST.slice(1, 3)) {
+  for (const v of HOME_CONSIST.slice(1, 3)) {
     minimum(`${v.role} deck start`, stop + v.d - v.hz - (ISLAND_A.deck0 + ROAD2_S), 0, ruling, true);
     minimum(`${v.role} deck end`, ISLAND_A.deck1 + ROAD2_S - (stop + v.d + v.hz), 0, ruling, true);
   }
@@ -229,14 +238,16 @@ export function checkHomeCart(options: { stop?: number; obstacle?: (id: string, 
     0.55,
     'docs/plans/rider-coach.md Home on merit: every car to platform edge 0.55 by design',
   );
-  pin('engine/island', deckGap(decks[0]!, obstacles[0]!), 0.5794398184781144);
+  pin('engine/island', deckGap(decks[0]!, obstacles[0]!), clearancePins['engine/island']);
   minimum(
     'engine/leg lever',
     deckGap(decks[0]!, obstacles[2]!),
     1,
     'docs/research/rider-car-fit.md: Parked layer at Pier, R1b orchestrator 1 m lever ruling by analogy with Pier parked-layer rule (not an established trackside furniture rule)',
   );
-  pin('engine/leg lever', deckGap(decks[0]!, obstacles[2]!), 1.1341593429538008);
+  pin('engine/leg lever', deckGap(decks[0]!, obstacles[2]!), clearancePins['engine/leg lever']);
+  // R2b re-pin, orchestrator 16 November: real asymmetric long engine and production axle pose replace R1b's
+  // symmetric planned envelope. No minimum changed; tail/spur and player far-end margins stay pinned.
   // Fixed records, never recomputed from today's geometry: each minimum has an independent drift pin.
   const recorded: Record<string, number> = clearancePins;
   for (const m of metrics) {
@@ -262,6 +273,6 @@ export function checkHomeCart(options: { stop?: number; obstacle?: (id: string, 
     offLine,
     noseToMerge: FORMATION.quarry.from - nose,
     coverage:
-      'R1a exclusive operating cart and standing planned coach train. Sampled planar-envelope check: 0.25 m cart samples plus joins and endpoints, no height discrimination and no continuous swept volume. Excluded: no 3D undercarriage/wheel contact certificate for spur or idle leg turnout blades, wing/check/closure rails, frog, timbers or tie plates (planar bodies would overlap their running surfaces). Trees use trunk boxes only: crown, branch and foliage contact at engine/coach roof height, wind sway, hardwood-specific crown shapes and root seats are not certified. Dynamic players, dropped cargo, loading motion and future train movement are excluded.',
+      'R1a exclusive operating cart and standing production coach train. Sampled planar-envelope check: 0.25 m cart samples plus joins and endpoints, no height discrimination and no continuous swept volume. Excluded: no 3D undercarriage/wheel contact certificate for spur or idle leg turnout blades, wing/check/closure rails, frog, timbers or tie plates (planar bodies would overlap their running surfaces). Trees use trunk boxes only: crown, branch and foliage contact at engine/coach roof height, wind sway, hardwood-specific crown shapes and root seats are not certified. Dynamic players, dropped cargo, loading motion and future train movement are excluded.',
   };
 }

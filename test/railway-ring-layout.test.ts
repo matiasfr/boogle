@@ -151,11 +151,11 @@ test('the island ends in buffers 15 m past the platforms, a crossover before the
   const E = RING_END;
   // Rail-map's long train (the longer boiler ahead, three cargo cars behind; docs/plans/rail-map.md, the station plan)
   // is the extent from v33 (fourth-car, R1: the steel car behind the wagon).
-  assert.deepEqual(TRAIN_EXTENT, { aheadCm: 820, behindCm: 1270 });
+  assert.deepEqual(TRAIN_EXTENT, { aheadCm: 820, behindCm: 1610 });
   assert.equal(E.bufferU, RING_HALT.u1 + 1500);
   assert.deepEqual(E.buffers[0], { ...ringAt(E.bufferU, 0), y: 940 });
   assert.deepEqual(E.buffers[1], { ...ringAt(E.bufferU, -400), y: 940 });
-  assert.equal(E.u, (RING_HALT.u0 + RING_HALT.u1) / 2);
+  assert.equal(E.u, (RING_HALT.u0 + RING_HALT.u1) / 2 + 340); // R2b keeps freight centres fixed
   assert.equal(E.s, RING_S_HEAD + E.u);
   assert.equal(E.mergeCm, RING_S_HEAD + E.cross.u0);
   // As long as Far Head's crossover, at least a turnout, and clear of the platforms.

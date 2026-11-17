@@ -980,7 +980,7 @@ test('R3: the check refuses bad riders and a bad strongbox, each with its messag
   const line2 = RAIL_TRAINS.findIndex((t) => t.line === LINE2),
     line1 = RAIL_TRAINS.findIndex((t) => t.line === 0);
   assert.equal(
-    verdict((w) => (w.mut(Train, w.lookup(Train, line2)!)!.riders = 9)),
+    verdict((w) => (w.mut(Train, w.lookup(Train, line2)!)!.riders = TRADE.riderPlaces + 1)),
     'railway: riders bounds',
   );
   assert.equal(
@@ -1348,7 +1348,47 @@ test('B1: plot load checks reject future buys, missing thresholds, unbought paym
   assert.throws(() => checkTrade(early, ASLEEP.t), /plot thresholds/);
 });
 
-test('S1/L1: q6-done payoff: plots 1 and 3 land 72 a minute at four places; yard adds no riders', (t) => {
+test('R2b: a crowded coach lands a full fare load, conserved through save and reload', () => {
+  const s = { w: copy(PIER.w), t: PIER.t };
+  let slot = -1;
+  for (let n = 0; n < 3000 && slot < 0; n++) {
+    advance(s, 1);
+    slot =
+      LINE2_SLOTS.find((k) => {
+        const r = train(s.w, k);
+        return r.phase === TRAIN_PHASE.STAND && r.at === 0 && r.track === 0;
+      }) ?? -1;
+  }
+  assert.ok(slot >= 0);
+  const r = s.w.mut(Train, s.w.lookup(Train, slot)!)!,
+    tw = s.w.mut(Town, s.w.lookup(Town, 0)!)!;
+  tw.alighted += r.riders;
+  r.riders = 0;
+  tw.wait0 = TRADE.riderPlaces + 1;
+  advance(s, 1);
+  assert.equal(train(s.w, slot).riders, TRADE.riderPlaces);
+  assert.equal(town(s.w, 0).wait0, 1);
+  assert.equal(fareOf(s.w, 0), 9, 'Home move leaves the whole-hundred-metres fare unchanged');
+  const loaded = createRailwayWorld();
+  loaded.load(JSON.parse(JSON.stringify(s.w.snapshot())), (w) => railwayCheck(w, s.t));
+  for (let n = 0; n < 3000; n++) {
+    const before = train(s.w, slot).at,
+      money = tillRow(s.w).landed,
+      alighted = town(s.w, 0).alighted;
+    advance(s, 1);
+    railTick(loaded, s.t);
+    assert.equal(loaded.hash(), s.w.hash(), 'loaded riders and fares stay identical each tick');
+    if (before !== routeFar(s.w, 0) && train(s.w, slot).at === routeFar(s.w, 0)) {
+      assert.equal(town(s.w, 0).alighted - alighted, TRADE.riderPlaces);
+      assert.equal(tillRow(s.w).landed - money, 72, 'the old rider cap lands only 36 from this crowded trip');
+      checkTrade(s.w, s.t);
+      return;
+    }
+  }
+  assert.fail('Crowded coach did not complete its first trip');
+});
+
+test('R2b: q6-done fare window with two added rider houses; the yard adds no riders', (t) => {
   const rates = [[], [0], [0, 2], [0, 1, 2]].map((plots) => {
     const w = copy(PIER.w);
     // Isolate the building count on identical q6 train positions and queues. Supply only each tested plot's
@@ -1375,7 +1415,12 @@ test('S1/L1: q6-done payoff: plots 1 and 3 land 72 a minute at four places; yard
   });
   t.diagnostic(`q6-done landed fares/min, 2/3/4 houses then 4 houses + yard: ${rates.join(', ')}`);
   assert.ok(rates[1]! >= 1.3 * rates[0]!, `${rates[1]} vs ${rates[0]}`);
-  assert.deepEqual(rates, [36, 54, 72, 72], 'four places saturate after the second added house');
+  // Causal controls: fare stays 9 (711.75 -> 708.35 m, both floor to seven hundreds). Home's +3.4 m
+  // shortens the round trip by four ticks and shifts this finite window: 40 -> 41 riders with two houses.
+  // With four houses a six-rider burst now fits; together cap + timing put 81 rather than 80 arrivals here.
+  // Plot 2 is the yard, so the fourth entry still has four rider houses, not five. No steady fare-rate increase
+  // is inferred from a single extra 9-Boogle fare in ten minutes. See rider-coach-r2b causal controls.
+  assert.deepEqual(rates, [36.9, 54, 72.9, 72.9]);
   const s = { w: copy(PIER.w), t: PIER.t };
   while (tillRow(s.w).boogles < plotPrice(s.w, 0, 0, 50)) {
     assert.ok(s.t - PIER.t < 10 * 600);

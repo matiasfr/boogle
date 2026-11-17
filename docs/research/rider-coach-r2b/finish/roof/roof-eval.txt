@@ -1,0 +1,55 @@
+const {raycastClosest,teleport} = await import('/src/physics/engine.ts');
+const {me} = await import('/src/player/player.ts');
+const {RAIL_LINES} = await import('/src/sim/railway-lines.ts');
+const {RING_HEAD} = await import('/src/sim/railway-ring-layout.ts');
+const {line2World,line2Y,line2Lat} = await import('/src/entities/railway/line2-path.ts');
+const {ENGINE_CAB,ENGINE_BOILER} = await import('/src/entities/railway/engine.ts');
+const {RIDER_CAR,consistOf} = await import('/src/entities/railway/cars.ts');
+const {GRAVITY,JUMP_SPEED,WALKABLE_NY} = await import('/src/constants.ts');
+const {JUMP} = await import('/src/entities/player/state.ts');
+const {APEX_GRAVITY} = await import('/src/entities/player/apex-float.ts');
+const {TUNABLES} = await import('/src/sim/tune.ts');
+const air=TUNABLES.find(t=>t.key==='railJumpImpulse').def/100, apex=TUNABLES.find(t=>t.key==='railJumpApexSpeed').def/100;
+const dt=1/240;
+function flight(rise,press){let y=0,v=JUMP_SPEED,pressed=false,peak=0;for(let t=0;t<5;t+=dt){if(!pressed&&t>=press){v=Math.max(v,air);pressed=true;}const g=v<0?JUMP.fallGravity:v<(pressed?apex:JUMP.apexSpeed)?APEX_GRAVITY:1;v-=GRAVITY*g*dt;y+=v*dt;peak=Math.max(peak,y);if(pressed&&v<0&&y<rise)return peak>=rise?t:0;}return 0;}
+// Sample the air-jump press every 1/60 s, integrating the production gravity/apex rules at 240 Hz.
+const cache=new Map();
+function reach(rise){const key=Math.round(rise*20);if(cache.has(key))return cache.get(key);let t=0;for(let p=0;p<1.5;p+=1/60)t=Math.max(t,flight(key/20,p));const d=t*9.5;cache.set(key,d);return d;}
+let h=0,v=JUMP_SPEED;for(let k=0;k<2;k++){if(k)v=air;while(v>0){v-=GRAVITY*(v<(k?apex:JUMP.apexSpeed)?APEX_GRAVITY:1)*dt;h+=v*dt;}}
+const rows=[];
+const halts=[...RAIL_LINES[1].halts.map((h,i)=>({name:h.name,s:h.s/100,index:i})),...RING_HEAD.slice(1).map((h,i)=>({name:`Railhead ${i+2}`,s:h.s/100,index:4}))];
+const poses=halts.flatMap(h=>[false,true].map(up=>({...h,up,terminal:false})));
+poses.push(...halts.filter(h=>h.index>=2&&h.index<9).map(h=>({...h,up:true,terminal:true})));
+for(const halt of poses){
+ const s=halt.s,c=line2World(s,0,{x:0,z:0}),rail=line2Y(s);
+ teleport(me.body,c.x+6,rail+3,c.z);
+ await new Promise(r=>setTimeout(r,500));
+ const points=[],map=new Map();
+ const hit={hasHit:false,distance:0,hitPointWorld:{x:0,y:0,z:0},hitNormalWorld:{x:0,y:0,z:0}};
+ for(let iz=-24;iz<=24;iz++)for(let ix=-24;ix<=24;ix++){
+  const x=c.x+ix,z=c.z+iz;
+  if(raycastClosest({x,y:rail+15,z},{x,y:Math.max(-.3,rail-8),z},{},hit)&&hit.hitNormalWorld.y>=WALKABLE_NY&&hit.hitPointWorld.y>-.3){
+   const p={x,y:hit.hitPointWorld.y,z,ix,iz,component:-1};map.set(`${ix},${iz}`,points.length);points.push(p);
+  }
+ }
+ const groups=[];
+ for(let i=0;i<points.length;i++)if(points[i].component<0){const id=groups.length,group=[],todo=[i];points[i].component=id;while(todo.length){const n=todo.pop(),p=points[n];group.push(p);for(const [dx,dz]of [[1,0],[-1,0],[0,1],[0,-1]]){const j=map.get(`${p.ix+dx},${p.iz+dz}`);if(j===undefined)continue;const q=points[j];if(q.component<0&&Math.abs(q.y-p.y)<=.6){q.component=id;todo.push(j);}}}groups.push(group);}
+ const baseStop=s-([0,5].includes(halt.index)?3.4:0);
+ const marks=RAIL_LINES[1].halts.map(h=>h.s);if(halt.index===4)marks[4]=halt.s*100;
+ const trackStops=halt.terminal?marks.slice(0,halt.index+1):marks;
+ const point=(along,lat,top)=>{const p=line2World(along,lat+line2Lat({track:Number(halt.up),origin:0},along,trackStops,undefined,true),{x:0,z:0});return {...p,y:line2Y(along)+top};};
+ const origins=[point(baseStop+4.2,0,ENGINE_BOILER.top),point(baseStop+4.2+ENGINE_CAB.roofZ[0],0,ENGINE_CAB.roofTop)];
+ for(const car of consistOf({line:1,wagon:true,steel:true}))if(car.role!=='rider'&&car.role!=='engine')for(const end of [-1,1])origins.push(point(baseStop+car.offset+(car.offset<0?3.4:0)+end*car.spec.hz,0,car.spec.top));
+ const coach=[-1,1].flatMap(a=>[-1,1].map(b=>point(s-3.55+a*RIDER_CAR.hz,b*RIDER_CAR.hx,RIDER_CAR.top)));
+ const can=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z)<=reach(b.y-a.y);
+ const accessible=new Set();
+ for(let k=0;k<groups.length;k++)if(groups[k].some(p=>origins.some(o=>can(o,p))))accessible.add(k);
+ // A reached walkable patch remains available as a takeoff: compare routes, not individual landing points.
+ for(let changed=true;changed;){changed=false;for(let k=0;k<groups.length;k++)if(!accessible.has(k)){
+  let ok=false;for(const j of accessible){if(groups[k].some(b=>groups[j].some(a=>can(a,b)))){ok=true;break;}}
+  if(ok){accessible.add(k);changed=true;}
+ }}
+ const added=groups.flatMap((g,k)=>!accessible.has(k)&&g.some(p=>coach.some(o=>can(o,p)))?[{component:k,cells:g.length,example:g[0]}]:[]);
+ rows.push({halt:halt.name,way:halt.up?(halt.terminal?'terminal homeward':'homeward'):'outward',s,rail,roof:rail+RIDER_CAR.top,boiler:origins[0].y,cab:origins[1].y,playersCarToRoofRise:RIDER_CAR.top-.7,doubleJumpRise:h,walkableCells:points.length,components:groups.length,baselineReachable:accessible.size,newCoachComponents:added});
+}
+return {rows,scope:'Measured live collision tops on a 1 m grid, 48 × 48 m per halt, surface components joined at <=0.6 m neighbour rise; held sprint/air-jump flight envelope. Geometry reach model, no swept-body/occlusion or controller witness, and no sub-metre landing guarantee.',singleRoof:RIDER_CAR.top,baseline:{boiler:ENGINE_BOILER.top,cab:ENGINE_CAB.roofTop}};

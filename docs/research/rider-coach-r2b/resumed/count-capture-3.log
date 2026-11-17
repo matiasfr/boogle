@@ -1,0 +1,10 @@
+bot queue: acquired t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/.look/rider-coach-r2b/resume/count-capture.ts; waited 0.50s
+[player] entry: clicked Jump in
+[player] renderer backend: webgpu
+(node:45121) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[player] entry: clicked Jump in
+[player] renderer backend: webgpu
+[player] entry: clicked Jump in
+[player] renderer backend: webgpu
+bot queue: released t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/.look/rider-coach-r2b/resume/count-capture.ts

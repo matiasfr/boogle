@@ -5,6 +5,20 @@ import { definePrefab } from '../../prefab/types.ts';
 import { PLAYER_R } from '../../constants.ts';
 
 export const prefabs = [
+  // R2b blockout: rail-local coordinates, four window openings per side; door gaps at both ends.
+  // The train's existing makeCar owns its one moving envelope collider.
+  definePrefab({
+    key: 'railway.coach-body',
+    scope: 'owner',
+    colliders: [],
+    visual: { builder: 'railway.coach-parts', params: { kind: 'body' } },
+  }),
+  definePrefab({
+    key: 'railway.coach-underframe',
+    scope: 'owner',
+    colliders: [],
+    visual: { builder: 'railway.coach-parts', params: { kind: 'underframe' } },
+  }),
   definePrefab({
     key: 'railway.machine-chair',
     visual: { none: true },

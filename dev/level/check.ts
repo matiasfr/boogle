@@ -241,6 +241,21 @@ async function runChecks() {
     failed += homeCart.failures;
     report.push(homeCart);
     if (!json) console.log('Home cart:', JSON.stringify(homeCart));
+    const { checkHomeSignals } = await import('./home-signals.ts');
+    const homeSignals = checkHomeSignals();
+    failed += homeSignals.failures;
+    report.push(homeSignals);
+    if (!json) console.log('Home held signals:', JSON.stringify(homeSignals));
+    const { checkRiderCoach } = await import('./rider-coach.ts');
+    const riderCoach = checkRiderCoach();
+    failed += riderCoach.failures;
+    report.push(riderCoach);
+    if (!json) console.log('Rider coach:', JSON.stringify(riderCoach));
+    const { checkCoachAudit } = await import('./rider-coach-audit.ts');
+    const coachAudit = checkCoachAudit();
+    failed += coachAudit.failures;
+    report.push(coachAudit);
+    if (!json) console.log('Rider coach tail/nose:', JSON.stringify(coachAudit));
     // Home's rotunda: its keep-clear outline against the tracks, the town, the yard props and its own ground.
     const { checkRotunda, printRotunda, checkPitEscape } = await import('./rotunda.ts');
     const rotunda = checkRotunda();

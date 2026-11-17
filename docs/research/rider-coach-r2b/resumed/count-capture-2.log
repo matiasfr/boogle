@@ -1,0 +1,21 @@
+bot queue: acquired t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/.look/rider-coach-r2b/resume/count-capture.ts; waited 0.51s
+[player] entry: clicked Jump in
+[player] renderer backend: webgpu
+(node:42559) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+bot queue: released t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/.look/rider-coach-r2b/resume/count-capture.ts
+node:internal/modules/run_main:111
+    triggerUncaughtException(
+    ^
+
+page.evaluate: TypeError: folk.updateFolk is not a function
+    at setCamera (eval at evaluate (:370:30), <anonymous>:137:57)
+    at captureShots (eval at evaluate (:370:30), <anonymous>:220:7)
+    at async eval (eval at evaluate (:370:30), <anonymous>:1:16)
+    at async <anonymous>:396:30
+    at Game.eval (/Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/lib.ts:394:22)
+    at /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/.look/rider-coach-r2b/resume/count-capture.ts:42:10 {
+  log: []
+}
+
+Node.js v26.13.0

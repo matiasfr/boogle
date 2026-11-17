@@ -150,6 +150,8 @@ export type Option = {
   terrain?: Terrain[];
   places: Place[];
   lines: Line[];
+  /** Authored service-end coordinates in catalog cm; omitted ends use the generator's standard setback. */
+  turnbacks?: Record<string, { start?: number; end?: number }>;
   gates?: Gate[];
   secrets?: Secret[];
   sights?: Sight[];

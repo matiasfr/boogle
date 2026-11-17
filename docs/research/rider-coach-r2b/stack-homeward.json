@@ -1,0 +1,42 @@
+{
+  "seed": "gorge-reached",
+  "tick": 18311,
+  "slot": 4,
+  "request": {
+    "pid": "a",
+    "epoch": 1,
+    "request": 12847,
+    "status": "accepted",
+    "accepted": 1
+  },
+  "train": {
+    "slot": 4,
+    "phase": 0,
+    "at": 8,
+    "to": 8,
+    "track": 1,
+    "depart": 18311,
+    "req": 0,
+    "from": 271030,
+    "v0": 0,
+    "dest": 271030,
+    "turn": false,
+    "origin": 0,
+    "logs": 0,
+    "rails": 0,
+    "wagon": false,
+    "foot": 0,
+    "arrived": 18311,
+    "freight": 0,
+    "riders": 2,
+    "steel": 0,
+    "boiler": 1,
+    "legKit": false
+  },
+  "stop": 2710.3,
+  "trackLateral": -4,
+  "platformInnerLateral": 1.7999999999999998,
+  "coachHalfWidth": 0.8,
+  "lateralGap": 5,
+  "finding": "Homeward service accepted at Stack halt, but the only deck is across the outward track."
+}

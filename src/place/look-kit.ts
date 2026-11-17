@@ -30,6 +30,7 @@ import { makeBoiler } from '../render/carry-models.ts';
 import { makeProp } from '../render/prop-kit.ts';
 import { ENGINE_BOILER, ENGINE_WHEELS } from '../entities/railway/engine.ts';
 import { FLAT_RACK } from '../entities/railway/cars.ts';
+import { TRAIN_WHEEL_CAPACITY, WHEELS_PER_CAR, assertWheelCapacity } from '../entities/railway/train-capacity.ts';
 
 // ---------------------------------------------------------------- the file
 const SPECK = new THREE.BufferGeometry();
@@ -687,7 +688,17 @@ export const trainLook = (
   owner: OwnedView,
   engine?: EngineKit,
   rust: 'train' | 'answer' = 'train',
-): MachineLook => kitCars(consist.length - 1, false, boilerShown, owner, engine, rust, roleIndex(consist, 'player'));
+): MachineLook =>
+  kitCars(
+    consist.length - 1,
+    false,
+    boilerShown,
+    owner,
+    engine,
+    rust,
+    roleIndex(consist, 'player'),
+    consist.findIndex((c) => c.role === 'rider'),
+  );
 function kitCars(
   trailers: number,
   working: boolean,
@@ -696,6 +707,7 @@ function kitCars(
   engine?: EngineKit,
   rust: 'train' | 'answer' = 'train',
   playerIndex = roleIndex(consistOf({ line: 1, wagon: false, steel: false }), 'player'),
+  riderIndex = -1,
 ): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
     // The timber keeps its grain; only painted and bare metal age with the engine.
@@ -708,14 +720,13 @@ function kitCars(
   let batches = trainWheels.get(owner);
   if (!batches) trainWheels.set(owner, (batches = new Map()));
   let shared = batches.get(rust);
-  if (!shared) batches.set(rust, (shared = wheelSet({ ...IRON, rust }, 72, owner)));
+  if (!shared) batches.set(rust, (shared = wheelSet({ ...IRON, rust }, TRAIN_WHEEL_CAPACITY[rust], owner)));
   const wheelBatch = working ? wheelSet({ ...IRON, rust: true }, 8, owner)() : shared();
   const wheels = (hz: number, r: number) => {
+    assertWheelCapacity(wheelBatch.count + WHEELS_PER_CAR, wheelBatch.instanceMatrix.count);
     const list: Wheel[] = [];
     for (const sx of [-0.5, 0.5])
-      for (const sz of [-1, 1])
-        if (wheelBatch.count < wheelBatch.instanceMatrix.count)
-          list.push({ x: sx, y: r + 0.15, z: sz * (hz - 0.5), at: wheelBatch.count++ });
+      for (const sz of [-1, 1]) list.push({ x: sx, y: r + 0.15, z: sz * (hz - 0.5), at: wheelBatch.count++ });
     return list;
   };
   const loco = new THREE.Group();
@@ -755,11 +766,13 @@ function kitCars(
         return { m, side };
       });
 
-  const beds = Array.from({ length: trailers }, () => {
+  const beds = Array.from({ length: trailers }, (_, k) => {
     const flatbed = new THREE.Group();
-    add(flatbed, 'flat_deck', DECK);
-    // Named, so the passenger car's body can leave it undrawn (train-view.ts; cars.ts FLAT_RACK).
-    add(flatbed, 'flat_black', BLACK).name = FLAT_RACK;
+    if (k + 1 !== riderIndex) {
+      add(flatbed, 'flat_deck', DECK);
+      // Named, so the passenger car's body can leave it undrawn (train-view.ts; cars.ts FLAT_RACK).
+      add(flatbed, 'flat_black', BLACK).name = FLAT_RACK;
+    }
     return { flatbed, wheels: wheels(TRAILER.hz, 0.22) };
   });
   // The machine's flatbed works for a living.

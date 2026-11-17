@@ -44,7 +44,7 @@ test('engine rows change for the longer boiler only', () => {
     rows.map((r) => [r.id, r.now, r.then]),
     [
       ['speed', 14, 25],
-      ['cars', 3, 4],
+      ['cars', 4, 5],
       ['foot', 1.8, 2.9],
       ['kit', 9.8, 15.3],
     ],
@@ -127,7 +127,7 @@ test('a fitted room’s rows are the longer boiler’s, with no arrow', () => {
     assert.ok(rows.every((r) => !rowChanged(r) && !shownRow(r, 0, 'idle', 0).arrow));
     assert.deepEqual(
       rows.map((r) => r.then),
-      [25, 4, 2.9, 15.3],
+      [25, 5, 2.9, 15.3],
     );
   }
 });

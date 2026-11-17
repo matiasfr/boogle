@@ -1,0 +1,15 @@
+Production co-op: PASS; end=T2; room rail-coop-mwk2d5yk
+Wall 84 s; warp 3x
+COOP both peers finished (end=T2); mirrored hashes agree at 235 server steps
+
+Player 1's last lines:
+  PLAY 204.2 (+11.1) T2 laid
+  RAILWAY CHECKPOINT {"beat":"T2 laid","player":"1","pid":"baa572d4fe","tick":2144,"hash":21258258,"phase":"idle","ready":true,"activeStation":2,"stations":[{"slo
+  RAILWAY TICKHASH {"player":"1","hashes":[[600,902099596],[720,902099596],[786,1503894475],[840,1503894475],[960,1503894475],[1050,1254652754],[1080,1254652754],
+  PLAY 207.3 (+3.0) THE END at 207.3: segment complete: botTo T2 (T2 laid)
+Player 2's last lines:
+  PLAY 204.4 (+11.1) T2 laid
+  RAILWAY CHECKPOINT {"beat":"T2 laid","player":"2","pid":"c2477ff767","tick":2144,"hash":21258258,"phase":"idle","ready":true,"activeStation":2,"stations":[{"slo
+  RAILWAY TICKHASH {"player":"2","hashes":[[600,902099596],[720,902099596],[786,1503894475],[840,1503894475],[960,1503894475],[1050,1254652754],[1080,1254652754],
+  PLAY 207.4 (+3.0) THE END at 207.4: segment complete: botTo T2 (T2 laid)
+verdict: pass on 72354f8d + 26 uncommitted, load 28.99 → 36.03 (UNDER LOAD), queued 60 s, 2026-11-17T02:19:01.866Z to 2026-11-17T02:21:27.171Z; passed under load: not evidence of timing or feel

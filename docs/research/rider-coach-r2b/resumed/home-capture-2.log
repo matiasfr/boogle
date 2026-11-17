@@ -1,0 +1,14 @@
+bot queue: acquired t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/.look/rider-coach-r2b/resume/home-capture.ts; waited 0.51s
+[player] entry: clicked Jump in
+[player] renderer backend: webgpu
+(node:30238) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+bot queue: released t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/.look/rider-coach-r2b/resume/home-capture.ts
+file:///Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/.look/rider-coach-r2b/resume/home-capture.ts:27
+ if(actual.row.phase!==0||actual.row.at!==0)throw Error('Train left Home before capture '+JSON.stringify(actual.row));
+                                                  ^
+
+Error: Train left Home before capture {"slot":2,"phase":1,"at":0,"to":4,"track":0,"depart":15831,"req":0,"from":2165,"v0":0,"dest":99200,"turn":false,"origin":0,"logs":20,"rails":20,"wagon":true,"foot":0,"arrived":15781,"freight":0,"riders":1,"steel":0,"boiler":2,"legKit":true}
+    at file:///Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/.look/rider-coach-r2b/resume/home-capture.ts:27:51
+
+Node.js v26.13.0

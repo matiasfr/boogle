@@ -20,7 +20,7 @@
 //   haltHead(w, halt)            the head a `heads` halt stands at now (the Railhead's ring head, a leg's sections)
 import type { World } from '../ecs/index.ts';
 import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, legBuilt } from './railway-lines.ts';
-import { LEG_TUNE, RAIL_LEGS, legS } from './railway-route.ts';
+import { LEG_TUNE, RAIL_LEGS, legStartS } from './railway-route.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { TRAIN_PHASE, type RailTrain } from './railway-train.ts';
 import { Account, Aperture, Leg, Rail, Route, Train } from './railway-components.ts';
@@ -58,7 +58,7 @@ export function legKitStop(w: World, k: number) {
   if (laid >= leg.sections.length) return -1;
   // One halt a head (call 88): the head of the last section laid.
   if (laid > 0) return leg.railheadHalt + laid - 1;
-  const from = legS(leg, leg.fromCm);
+  const from = legStartS(leg);
   return RAIL_LINES[leg.line]!.halts.findIndex((h) => h.s === from);
 }
 const billOf = (k: number, from: number, to: number) => {

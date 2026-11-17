@@ -268,15 +268,11 @@ const waiting = Array.from({ length: WAITING * 2 }, (_, k) =>
 );
 type RiderCar = { mesh: THREE.Object3D; top: number };
 const riderCars = new Map<number, RiderCar>();
-// Two stand-in riders per diagonally opposite roomy end: on these sides player seats end at |z|=0.45.
-// Keep hats/hands inside the end rails, coats inside the sides, and clear the seats, outward legs and pets.
-// Alternate ends on boarding, outer places first. Slightly splayed outward faces clear the hands. No colliders.
-const RIDER_PLACES = [
-  [-0.78, -1.2, -Math.PI / 3],
-  [0.78, 1.2, (2 * Math.PI) / 3],
-  [-0.77, -1.02, (-2 * Math.PI) / 3],
-  [0.77, 1.02, Math.PI / 3],
-] as const;
+// One seated figure per window, alternating sides so both show the load. Face inward across the aisle.
+const COACH_SEATS = Array.from({ length: TRADE.riderPlaces }, (_, k) => {
+  const side = k % 2 ? 1 : -1;
+  return [side * 0.535, (Math.floor(k / 2) - (TRADE.riderPlaces / 2 - 1) / 2) * 0.6, (-side * Math.PI) / 2] as const;
+});
 // One driver a train (`camp` its line, `seat` which of the line's trains), on whenever there's an engine's stool to sit
 // on (FolkEnv.driver).
 RAIL_LINES.forEach((l, line) => {
@@ -771,7 +767,7 @@ function brain(g: Guy, dt: number) {
       return;
     }
     case 'rider':
-      g.mood = 'idle';
+      g.mood = 'ride';
       return;
     case 'driver':
       g.mood = 'ride';
@@ -1450,9 +1446,10 @@ export function updateFolk(dt: number) {
     } else if (g.job === 'rider') {
       const car = riderCars.get(g.camp);
       if (!car) continue;
-      const [x, z, yaw] = RIDER_PLACES[g.seat]!;
+      const [x, z, yaw] = COACH_SEATS[g.seat]!;
+      g.rideUp = 0.22 - 0.035;
       car.mesh.updateWorldMatrix(true, false);
-      wp.set(x, car.top, z).applyMatrix4(car.mesh.matrixWorld);
+      wp.set(x, car.top + 0.14 + g.rideUp, z).applyMatrix4(car.mesh.matrixWorld);
       g.x = wp.x;
       g.z = wp.z;
       g.fy = wp.y;

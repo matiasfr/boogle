@@ -1,3 +1,4 @@
+import { RAIL_LINES, LINE2 } from '../../sim/railway-lines.ts';
 // ?greybox=<option> (dev server only; default sickle): a map prototype from docs/world/map-prototypes.html blocked out
 // at the real scale beside today's world, to walk, look and ride round before anything is dressed. It adds to the
 // world and changes nothing in it: no ops, no state, no saves, no sim. How to use it: ./README.md.
@@ -204,7 +205,7 @@ const NAMED_ROUTES: { id: string; name: string; legs: string[] }[] = [
 const WORK_RIDES = workRides(map.ride);
 const legId = (leg: string) => leg.replace(/^[~=]/, '');
 /** Line 2 from the Village halt to the rails' end, on Place's real track (the pier's end is where `ringx` starts). */
-const L2_VILLAGE = 18.25; // line 2's Village stop from v33 (docs/plans/fourth-car.md, R2), as ./rides.ts
+const L2_VILLAGE = RAIL_LINES[LINE2]!.halts[0]!.s / 100;
 const LINE2_RIDE: WorkRide = {
   id: 'l2',
   name: 'Line 2',

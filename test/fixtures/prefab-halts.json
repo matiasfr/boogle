@@ -22,7 +22,7 @@
         "kind": "stub",
         "mergeCm": 3600,
         "edgeCm": 5600,
-        "signalCm": 6870
+        "signalCm": 7210
       },
       "line": 0,
       "stop": 0
@@ -56,7 +56,7 @@
     },
     {
       "name": "Village, line 2",
-      "s": 1825,
+      "s": 2165,
       "opens": -1,
       "platforms": [
         {
@@ -76,7 +76,7 @@
         "kind": "stub",
         "mergeCm": 3400,
         "edgeCm": 5400,
-        "signalCm": 6670
+        "signalCm": 7010
       },
       "line": 1,
       "stop": 0
@@ -188,7 +188,7 @@
     },
     {
       "name": "Ring Island",
-      "s": 119000,
+      "s": 119340,
       "opens": 6,
       "platforms": [
         {
@@ -338,9 +338,9 @@
       ],
       "end": {
         "kind": "crossover",
-        "mergeCm": 319540,
-        "edgeCm": 319540,
-        "signalCm": 318720
+        "mergeCm": 319200,
+        "edgeCm": 319200,
+        "signalCm": 318380
       },
       "line": 1,
       "stop": 9

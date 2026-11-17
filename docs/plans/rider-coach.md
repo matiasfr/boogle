@@ -1,6 +1,7 @@
-> **Status: R1a, R1b and R2a built and on main (v56). R2b re-planned 16 November after its builder's second stop:**
-> two level steps join it (R2b.1 the Pier's foot crossing, ships alone with no bump; R2b.2 High Gorge's crossover,
-> inside the coach's v57), then R2b.3 the coach resumes `t3/rider-coach-blockout` at `15737dec1` (v57, not shipped).
+> **Status: R1a, R1b, R2a and R2b.1 on main (v56). R2b.2 and R2b.3 built locally (v57), ready for independent review; not shipped.**
+> Builder, 16 November: R2b.1 is on main (#1986). Rebased on `2c29e37a3`; R2b.2 is built locally in its own
+> commit `c3ebcef7c` and R2b.3 is built on `t3/rider-coach-blockout`, v57, not shipped. The production Pier
+> tail clears by 0.80 m (minimum 0.60); full level acceptance passes. Independent review is next.
 > Designer, 16 November: R2b revision reviewed, **build with changes** (folded into R2b.1 and R2b.2);
 > [review](#design-review-of-the-r2b-revision-designer-16-november).
 > Planner, 16 November 2026, against origin/main `945c69554`. Builds the owner's
@@ -100,7 +101,7 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     both ≥0.60 m. Fixed before/after stills opened; production Q7 work/homeward ride and both-way walking pass.
     [As-built report, phase table, evidence and checks](../reports/rider-coach-r2b1.md). Prefab golden expectations changed:
     independent review before ship; designer/orchestrator reviews the stills and real-time clip. No push or ship.
-- [ ] **R2b.2. High Gorge's crossover 3.40 m toward Home (S).** Sync: Server data (generated catalog). Tier:
+- [x] **R2b.2. High Gorge's crossover 3.40 m toward Home (S).** Sync: Server data (generated catalog). Tier:
   **independent review** (it moves an end block and signal). Builds: Codex gpt-6.1-sol medium. **Bump: rides R2b.3's
   v57** (its own commit on `t3/rider-coach-blockout`, before the coach). [Options](#r2b-options).
   - The `ring` row's end in `docs/world/map-prototypes.html`: `sCm` 319640 → **319300** (line 2 s 3192.0–3214.0);
@@ -111,9 +112,17 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     outward and homeward poses at the Gorge stop are the same (the turn moves no car; with the coach and today's
     crossover the steel car swings 0.08 m and 3.9°). The leg view draws no crossover: no scenery moves (the flag-only
     `?blockout=world` draws the row's X and follows the regenerated row).
+  - **As built, 16 November (own commit `c3ebcef7c`, v57):** generated crossover now s 3192.00–3214.00; reserved tail
+    clearance 0.30 m, last-car standing-turn shift **0 m / 0 radians**. Corrected Gorge platform span is
+    3210.40–3250.40. The map had no authored end coordinate: it now owns one `turnbacks.ring.end` override
+    (319300 catalog cm), consumed by the generator; all other ends retain their 35 m setback. The flag-only
+    world blockout's X follows this regenerated coordinate; production leg scenery is unchanged. Shares v57.
+    The fixed north-platform pair and actual long-train turn clips are inspected in the
+    [R2b report](../research/rider-coach-r2b.md); the loop reaches Gorge, turn displacement is zero and every
+    Gorge row passes. After rebasing on R2b.1, the combined level gate passes with zero failures.
   - **Proof and done means:** level-check; a fixed-camera pair from the north platform toward Home at `gorge-reached`,
     a train arriving and leaving (where it swings across is the only visible change); `npm run loop -- run` to the Gorge.
-- [ ] **R2b.3. The coach in the train, a grey blockout (M).** Sync: Server data + Local. Tier: **independent review**
+- [x] **R2b.3. The coach in the train, a grey blockout (M).** Sync: Server data + Local. Tier: **independent review**
   + visual. Builds: Codex gpt-6-astra high; review a fresh gpt-6-astra high (or opus high). **Bump: v57** (taken on the
   branch): "every line 2 train pulls the riders' coach behind the players' car; eight rider places a train (was four);
   the tail reaches 16.1 m; line 2's Village stop 21.65 m, Ring Island's 3.4 m on; High Gorge's crossover 3.4 m toward
@@ -124,7 +133,36 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     1610, six-vehicle buffers, `legStartS` separating Ring's service mark from the leg's origin, Home re-pinned for
     the real engine, the fare vector explained (`[36.9, 54, 72.9, 72.9]`: Home's phase shift and the cap), 53 golden
     stages explained by isolated controls, 12 count stills opened (eight countable across the two sides). Keep it.
-  - **Fix on resume:** the Gorge row measures against platforms s 3210.4–3250.4 (`gorge.ts`: the line's end less
+  - **As built after the revision, 16 November (v57, local branch, not shipped):** production acceptance now
+    contains 61 tail/nose audit rows with unchanged design minima and ±0.01 m pins, plus 35 longitudinal/lateral
+    passenger-platform poses and the three named retained Stack gaps. Every Gorge row passes; full-line queue
+    minimum is 0.940971 m homeward at s 84.90 (need 0.50). Home’s three thin margins still hold. The R4b tail,
+    server request span (1450 cm), greybox marks, role-based previews/loaders and stale fixtures are repaired.
+    Causal controls reproduce all 53 v56 stage/continuation goldens; Gorge changes only `gorge-reached`.
+    408 server tests, 53 host checkpoints, the loop, two-player T2, world-inputs and town-buy pass. Count stills
+    show four distinct riders per side; Home/Ring comparisons, the complete staged queue, real-time boarding/turn recordings and garage proof
+    are in the [report](../research/rider-coach-r2b.md). Roof scan: 48 operating poses, no new sampled reachable
+    surface against the 2.50 m boiler/3.295 m cab baseline (measurement limits stated).
+  - **Final integration, 16 November:** rebased on main `2c29e37a3` with R2b.1. The Pier row uses the real
+    production consist: 16.10 m tail, 0.80 ±0.01 m clear, minimum 0.60 unchanged. Its shared-reservation pin
+    moves 4.20→0.80 because the reservation now includes the coach; all other Pier pins unchanged. Full
+    level-check passes. No simulation golden changes from the reviewed coach pins; prefab changes are only
+    the merged Pier crossing/ramp. The report's images/sheets/logs are in the repo; raw clips are local-only.
+    Controller inputs at Home reach the roof from platform, players’ deck (bench/rail decorative) and kit
+    load, ending grounded on the roof. Coach-roof and existing-cab attempts toward the canopy both return
+    to the platform: no new route found. Every-halt coverage remains the stated 48-pose geometry scan.
+    R2b.2 and R2b.3 are built for independent review, not shipped; final checks and evidence are in the report.
+  - **Independent-review fixes, 16 November:** shared wheel capacity now derives from every fleet slot's
+    largest production consist (20 timber / 144 answering; 12 / 96 used), with explicit overflow failure.
+    The full Home station sweep and headway evenness property are restored. The 51-tick deviation is the
+    moved Home stop's integer endpoint/arrival boundary, not a new tail effect; scheduling and goldens stay
+    unchanged. Held Home signals have passing whole-train level rows and ±0.01 m pins. Controller jumps
+    reach the Quarry canopy from both coach and existing cab, reach Ring's coach roof and return to its
+    existing platform, and land on the moving coach during Home departure. No new route found in these
+    trials. All pool counts, measurements, portable evidence and final checks are in the
+    [review-fix report](../research/rider-coach-r2b-review-fixes.md). Owner accepted the blockout as v1;
+    this branch remains unshipped.
+  - **Fix on resume (now addressed):** the Gorge row measures against platforms s 3210.4–3250.4 (`gorge.ts`: the line's end less
     40 m), not 3200.4–3240.4 (it still passes); `test/railway-r4b-views.test.ts` :136 reads `TRAIN_EXTENT.behindCm`,
     not the legacy `TRAIN_TAIL_M`; `test/world-lines.test.ts` :119 compares the ring row's Ring stop with the moved
     service mark: restate it against `legStartS`; the queue row sweeps all of line 2 on both tracks, as the audit does
@@ -132,7 +170,7 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     (each "Need" below a minimum, each "Coach" a ±0.01 pin). The other failures at the stop are pinned values and
     stale fixtures (stops, signals, cycle, headway, `119000`, a fixture train placed at the old Village signal 66.7,
     the census and rail-map freshness, a prefab seat fixture): re-pin each naming its cause.
-  - **Still owed from the stop:** terminal and timber-only rows; T2 and world-inputs; full server suite; restart and
+  - **Earlier stop checklist (now addressed; evidence and measurement limits in the report):** terminal and timber-only rows; T2 and world-inputs; full server suite; restart and
     late join at eight; the queued-train live staging; perf; the real-time clips (Home and Pier boarding, Home curve
     departure); a live garage proof; the owning game-design sections. **Roof reach:** the baseline is today's tallest
     standable tops (boiler top 2.50 m, cab roof 3.295 m, per the builder), not 1.75; state at every served halt that

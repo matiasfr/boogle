@@ -1,3 +1,4 @@
+import { RAIL_LINES, LINE2 } from '../../sim/railway-lines.ts';
 // The panel's line-2 rides, with the timings the 2D economy model uses: the depot cart's trip, the line 2 train and the
 // boiler walk. Pure (no three.js): legs follow Place's real rails, cart road or the apron between buffer ends;
 // the greybox uses their real rail heights and a test checks the lengths.
@@ -58,7 +59,7 @@ export function workRides(ride: MapData['ride']): WorkRide[] {
       mps: ride.speed,
       startS: ride.boardS,
       legs: [
-        train(18.25, EAST.quarry - 4, 'Quarry stop'), // line 2's Village stop (v33, fourth-car R2)
+        train(RAIL_LINES[LINE2]!.halts[0]!.s / 100, EAST.quarry - 4, 'Quarry stop'),
         train(EAST.quarry - 4, EAST.headStop, 'Far Head stop'),
         train(EAST.headStop, E, 'Pier'),
       ],

@@ -30,9 +30,10 @@ import {
 import { layout, parseMapPage } from '../../src/sickle/map-data.ts';
 import { RING_CONES, ringHeight } from '../../src/proto/greybox/ground.ts';
 import { WORLD_LINES, FORMATION } from '../../src/sim/railway-world-lines.ts';
+import { consistOf } from '../../src/entities/railway/cars.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import { HALT_PIER } from '../../src/prefab/halt-deck.ts';
-import { RING_HALT, RING_HEAD, RING_LOOP, RING_S_HEAD, ringAt } from '../../src/sim/railway-ring-layout.ts';
+import { RING_END, RING_HALT, RING_HEAD, RING_LOOP, RING_S_HEAD, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
 import {
   BUFFERS,
@@ -85,8 +86,8 @@ const MARKS: Record<string, { s: number; why: string }> = {
     why: `kept (home-station call 10): ${r1(14 - BUF1)} m from the buffers at s ${BUF1}; the ${TERMINAL_GAP} m rule allows down to s ${r1(BUF1 + TERMINAL_GAP)}`,
   },
   'Village, line 2': {
-    s: 18.25,
-    why: `kept (v33, fourth-car R2: the wagon train's steel car off the table's deck, 1.25 m ahead of abeam): ${r1(18.25 - BUF2)} m from the buffers at s ${BUF2}; the rule allows down to s ${r1(BUF2 + TERMINAL_GAP)}`,
+    s: RAIL_LINES[1]!.halts[0]!.s / 100,
+    why: `v57 rider coach: the stop moves 3.40 m with the coach, freight stays in place: ${r1(RAIL_LINES[1]!.halts[0]!.s / 100 - BUF2)} m from the buffers at s ${BUF2}; the rule allows down to s ${r1(BUF2 + TERMINAL_GAP)}`,
   },
   Camp: { s: r1(220 - TERMINAL_GAP), why: `${TERMINAL_GAP} m from the proposed buffers at s 220 (call 12)` },
   Quarry: {
@@ -836,7 +837,10 @@ function loaders() {
     const near = halts.reduce((b, h) => (Math.abs(h.stop - a.s) < Math.abs(b.stop - a.s) ? h : b));
     const off = a.s - near.stop;
     const where = `s ${r1(a.s)}, ${r1(Math.abs(a.lat))} m ${a.lat > 0 ? 'right' : 'left'} of ${s.line === 'line1' ? 'line 1' : 'line 2'}'s track, ${r1(Math.abs(off))} m ${off < 0 ? 'Home-side' : 'pier-side'} of ${near.name}'s mark (s ${near.stop}).`;
-    const loader = ` A loader serving a standing train sits at the cargo cars: s ${r1(near.stop - 3.7)} to ${r1(near.stop - 11.1)} (cars 2-4, Home-side of the passenger car in both directions: push-pull, never turned), on the ${a.lat > 0 ? 'down (right)' : 'up (left)'} side.`;
+    const cargo = consistOf({ line: s.line === 'line1' ? 0 : 1, wagon: true, steel: true }).filter((c) =>
+      ['kit', 'wagon', 'steel'].includes(c.role),
+    );
+    const loader = ` A loader serving a standing train sits at the cargo cars: s ${r1(near.stop + cargo[0]!.offset)} to ${r1(near.stop + cargo.at(-1)!.offset)} (kit, wagon and steel, Home-side of the passenger car in both directions: push-pull, never turned), on the ${a.lat > 0 ? 'down (right)' : 'up (left)'} side.`;
     const text =
       s.id === 'stall'
         ? `${where} Not a loader: the shunter brings stock from the stall over the table and up the spur, which leaves road 2 at s ${SPUR.s}.`
@@ -846,12 +850,13 @@ function loaders() {
     rows.push({ name: s.name, x: r1(s.x), z: r1(s.z), text });
   }
   const ringMid = (RING_HALT.u0 + RING_HALT.u1) / 2;
+  const ringCargo = consistOf({ line: 1, wagon: true, steel: true });
   const sw = ringAt(ringMid - 700, 900);
   rows.push({
     name: "Ring Island's steel works (build 2)",
     x: r1(sw.x / 100),
     z: r1(sw.z / 100),
-    text: `On the original (east, terminal before extension) side of the island halt, where trains stand while it is the end. With buffers the train is never turned, so the cargo cars are Home-side of the mark as everywhere else: the loader at u ${r1((ringMid - 1110) / 100)} to ${r1((ringMid - 370) / 100)} m, east of the platform's south half.`,
+    text: `On the original (east, terminal before extension) side of the island halt, where trains stand while it is the end. With buffers the train is never turned, so the cargo cars are Home-side of the mark as everywhere else: the loader at u ${r1(RING_END.u / 100 + ringCargo.find((c) => c.role === 'steel')!.offset)} to ${r1(RING_END.u / 100 + ringCargo.find((c) => c.role === 'kit')!.offset)} m, east of the platform's south half.`,
   });
   const g = WORLD_LINES.find((l) => l.id === 'ring')!.halts.find((h) => h.name === 'High Gorge')!;
   rows.push({

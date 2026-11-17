@@ -1,0 +1,1742 @@
+{
+  "mode": "fleet",
+  "results": [
+    {
+      "slot": 6,
+      "fleet": [
+        {
+          "line": 0,
+          "phase": 1
+        },
+        {
+          "line": 1,
+          "phase": 1
+        },
+        {
+          "line": 1,
+          "phase": 1
+        },
+        {
+          "line": 1,
+          "phase": 1
+        },
+        {
+          "line": 1,
+          "phase": 1
+        },
+        {
+          "line": 1,
+          "phase": 1
+        },
+        {
+          "line": 1,
+          "phase": 1
+        }
+      ],
+      "train": {
+        "line": 1,
+        "slot": 6,
+        "phase": 1,
+        "at": 8,
+        "to": 4,
+        "track": 1,
+        "depart": 17802,
+        "req": 0,
+        "from": 171209,
+        "v0": 250,
+        "dest": 99200,
+        "turn": false,
+        "origin": 271030,
+        "logs": 0,
+        "rails": 0,
+        "wagon": false,
+        "foot": 0,
+        "arrived": 17255,
+        "freight": 0,
+        "riders": 1,
+        "steel": 0,
+        "boiler": 2,
+        "legKit": false,
+        "along": 156216,
+        "cars": [
+          {
+            "role": "engine",
+            "id": "railway:train6-0",
+            "x": 1105.0008876705053,
+            "y": 4.8475,
+            "z": -900.805080891528,
+            "riding": false
+          },
+          {
+            "role": "player",
+            "id": "railway:train6-1",
+            "x": 1109.1966982443023,
+            "y": 4.550000000000001,
+            "z": -900.6267538144028,
+            "riding": false
+          },
+          {
+            "role": "rider",
+            "id": "railway:train6-2",
+            "x": 1112.7449960091922,
+            "y": 5.2250000000000005,
+            "z": -900.5082071417236,
+            "riding": false
+          },
+          {
+            "role": "kit",
+            "id": "railway:train6-3",
+            "x": 1116.2939421553267,
+            "y": 4.550000000000001,
+            "z": -900.4238320392889,
+            "riding": false
+          },
+          {
+            "role": "steel",
+            "id": "railway:train6-steel",
+            "x": 1119.9933934921887,
+            "y": 4.550000000000001,
+            "z": -900.3730379963723,
+            "riding": false
+          }
+        ],
+        "crates": 0,
+        "kitBoard": "",
+        "joinScale": 1,
+        "lashed": true,
+        "longBoiler": true,
+        "stopLamp": false,
+        "holdLamp": false,
+        "crossing": true,
+        "doors": [
+          0,
+          0
+        ],
+        "cut": {
+          "roof": 0,
+          "back": 0,
+          "front": 0,
+          "left": 0,
+          "right": 0
+        }
+      }
+    }
+  ],
+  "health": {
+    "errors": [],
+    "fps": 59.92210126763774,
+    "gfx": "webgpu"
+  },
+  "pools": [
+    {
+      "name": "instance pool",
+      "used": 0,
+      "capacity": 16,
+      "geometry": "CircleGeometry",
+      "parent": ""
+    },
+    {
+      "name": "haul pieces",
+      "used": 0,
+      "capacity": 246,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 18,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 7,
+      "geometry": "ConeGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 7,
+      "geometry": "SphereGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 8,
+      "capacity": 8,
+      "geometry": "BufferGeometry",
+      "parent": "secrets"
+    },
+    {
+      "name": "",
+      "used": 8,
+      "capacity": 8,
+      "geometry": "BufferGeometry",
+      "parent": "secrets"
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "BufferGeometry",
+      "parent": "secrets"
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 14,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "railway:sea-ladder",
+      "used": 51,
+      "capacity": 51,
+      "geometry": "BoxGeometry",
+      "parent": "finds"
+    },
+    {
+      "name": "",
+      "used": 7,
+      "capacity": 7,
+      "geometry": "OctahedronGeometry",
+      "parent": "finds"
+    },
+    {
+      "name": "",
+      "used": 573,
+      "capacity": 720,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 7,
+      "capacity": 7,
+      "geometry": "OctahedronGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 7,
+      "geometry": "OctahedronGeometry",
+      "parent": ""
+    },
+    {
+      "name": "route-greybox:massing",
+      "used": 41,
+      "capacity": 41,
+      "geometry": "BoxGeometry",
+      "parent": "town"
+    },
+    {
+      "name": "town:plot-stakes-and-piles",
+      "used": 60,
+      "capacity": 60,
+      "geometry": "BoxGeometry",
+      "parent": "town"
+    },
+    {
+      "name": "",
+      "used": 424,
+      "capacity": 1024,
+      "geometry": "BoxGeometry",
+      "parent": "town"
+    },
+    {
+      "name": "",
+      "used": 552,
+      "capacity": 1024,
+      "geometry": "BoxGeometry",
+      "parent": "town"
+    },
+    {
+      "name": "",
+      "used": 424,
+      "capacity": 1024,
+      "geometry": "BoxGeometry",
+      "parent": "town"
+    },
+    {
+      "name": "box plan",
+      "used": 646,
+      "capacity": 646,
+      "geometry": "BoxGeometry",
+      "parent": "town"
+    },
+    {
+      "name": "",
+      "used": 12,
+      "capacity": 12,
+      "geometry": "BoxGeometry",
+      "parent": "box plan"
+    },
+    {
+      "name": "",
+      "used": 12,
+      "capacity": 12,
+      "geometry": "BoxGeometry",
+      "parent": "box plan"
+    },
+    {
+      "name": "",
+      "used": 12,
+      "capacity": 12,
+      "geometry": "ConeGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 12,
+      "capacity": 12,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 95,
+      "capacity": 95,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "BoxGeometry",
+      "parent": "box plan"
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "BoxGeometry",
+      "parent": "box plan"
+    },
+    {
+      "name": "place kit fork",
+      "used": 1,
+      "capacity": 1,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 1,
+      "capacity": 1,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 1,
+      "capacity": 1,
+      "geometry": "BufferGeometry",
+      "parent": "track-layer-deck"
+    },
+    {
+      "name": "place kit log",
+      "used": 0,
+      "capacity": 40,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "rail-stack",
+      "used": 4,
+      "capacity": 76,
+      "geometry": "BufferGeometry",
+      "parent": "panel-mechanism"
+    },
+    {
+      "name": "lay_cream_upper-instances",
+      "used": 3,
+      "capacity": 3,
+      "geometry": "BufferGeometry",
+      "parent": "panel-mechanism"
+    },
+    {
+      "name": "lay_cream_jaw_left-instances",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "BufferGeometry",
+      "parent": "panel-mechanism"
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 154,
+      "capacity": 154,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 154,
+      "capacity": 154,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit post",
+      "used": 162,
+      "capacity": 162,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit plank",
+      "used": 47,
+      "capacity": 47,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 17,
+      "capacity": 17,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 17,
+      "capacity": 17,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 138,
+      "capacity": 138,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 14,
+      "capacity": 14,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 78,
+      "capacity": 78,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 78,
+      "capacity": 78,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 102,
+      "capacity": 102,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit cap",
+      "used": 6,
+      "capacity": 6,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit stringer",
+      "used": 20,
+      "capacity": 20,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit brace",
+      "used": 10,
+      "capacity": 10,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 1721,
+      "capacity": 4096,
+      "geometry": "PlaneGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 11,
+      "capacity": 16,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit frame_post",
+      "used": 44,
+      "capacity": 64,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit frame_tip",
+      "used": 44,
+      "capacity": 64,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit beam_long",
+      "used": 22,
+      "capacity": 64,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit beam_short",
+      "used": 22,
+      "capacity": 64,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit frame_floor",
+      "used": 11,
+      "capacity": 64,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit frame_board",
+      "used": 11,
+      "capacity": 64,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit feeder_steel:0.7000000000000002",
+      "used": 11,
+      "capacity": 64,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit feeder_leg",
+      "used": 22,
+      "capacity": 64,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station T1 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station T1 rails",
+      "used": 0,
+      "capacity": 1,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station T2 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station T2 rails",
+      "used": 0,
+      "capacity": 1,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station T2 stone",
+      "used": 0,
+      "capacity": 8,
+      "geometry": "DodecahedronGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 6,
+      "capacity": 6,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 6,
+      "capacity": 6,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 6,
+      "capacity": 6,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 6,
+      "capacity": 6,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station T3 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station T3 rails",
+      "used": 0,
+      "capacity": 1,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 379,
+      "capacity": 379,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 379,
+      "capacity": 379,
+      "geometry": "ConeGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 379,
+      "capacity": 379,
+      "geometry": "ConeGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 379,
+      "capacity": 379,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 379,
+      "capacity": 379,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 4,
+      "capacity": 4,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 6,
+      "capacity": 6,
+      "geometry": "SphereGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "CircleGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 6,
+      "capacity": 6,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "wear_carried_rails",
+      "used": 0,
+      "capacity": 24,
+      "geometry": "BufferGeometry",
+      "parent": "wear_place_cargo"
+    },
+    {
+      "name": "wear_carried_stone",
+      "used": 0,
+      "capacity": 24,
+      "geometry": "DodecahedronGeometry",
+      "parent": "wear_place_cargo"
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 1024,
+      "geometry": "DodecahedronGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 7,
+      "capacity": 1024,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit log",
+      "used": 24,
+      "capacity": 1024,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 14,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 14,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 14,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 95,
+      "capacity": 95,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "BoxGeometry",
+      "parent": "box plan"
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "BoxGeometry",
+      "parent": "box plan"
+    },
+    {
+      "name": "station F1 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station F1 rails",
+      "used": 0,
+      "capacity": 1,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 24,
+      "capacity": 48,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 151,
+      "capacity": 151,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 151,
+      "capacity": 151,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit post",
+      "used": 7,
+      "capacity": 7,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit plank",
+      "used": 143,
+      "capacity": 143,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 101,
+      "capacity": 101,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 101,
+      "capacity": 101,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit plank",
+      "used": 270,
+      "capacity": 270,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 122,
+      "capacity": 122,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 122,
+      "capacity": 122,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit post",
+      "used": 1,
+      "capacity": 1,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 7,
+      "capacity": 7,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 7,
+      "capacity": 7,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 140,
+      "capacity": 140,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 134,
+      "capacity": 134,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 144,
+      "capacity": 144,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 94,
+      "capacity": 94,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 106,
+      "capacity": 106,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 106,
+      "capacity": 106,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit post",
+      "used": 155,
+      "capacity": 155,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 91,
+      "capacity": 91,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 91,
+      "capacity": 91,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 61,
+      "capacity": 61,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 61,
+      "capacity": 61,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 116,
+      "capacity": 116,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 134,
+      "capacity": 134,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 132,
+      "capacity": 132,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit cap",
+      "used": 20,
+      "capacity": 20,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit stringer",
+      "used": 72,
+      "capacity": 72,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit brace",
+      "used": 38,
+      "capacity": 38,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit stringer",
+      "used": 86,
+      "capacity": 86,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit cap",
+      "used": 32,
+      "capacity": 32,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit post",
+      "used": 164,
+      "capacity": 164,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit brace",
+      "used": 64,
+      "capacity": 64,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q1 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q1 rails",
+      "used": 0,
+      "capacity": 6,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q2 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q2 rails",
+      "used": 0,
+      "capacity": 12,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q3 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q3 rails",
+      "used": 0,
+      "capacity": 12,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q4 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q4 rails",
+      "used": 0,
+      "capacity": 16,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q5 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q5 rails",
+      "used": 0,
+      "capacity": 24,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q6 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q6 rails",
+      "used": 0,
+      "capacity": 32,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit log",
+      "used": 0,
+      "capacity": 32,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 217,
+      "capacity": 219,
+      "geometry": "TorusGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 3,
+      "capacity": 3,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 128,
+      "capacity": 130,
+      "geometry": "TorusGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 4,
+      "capacity": 4,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "railway:sea-jamb",
+      "used": 7,
+      "capacity": 7,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 160,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "OctahedronGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 54,
+      "capacity": 54,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 54,
+      "capacity": 54,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 64,
+      "capacity": 64,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 8,
+      "capacity": 8,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 33,
+      "geometry": "IcosahedronGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 937,
+      "capacity": 945,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 8,
+      "capacity": 8,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q7 logs",
+      "used": 0,
+      "capacity": 56,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "station Q7 rails",
+      "used": 0,
+      "capacity": 20,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 14,
+      "capacity": 14,
+      "geometry": "TorusGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 12,
+      "capacity": 12,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 0,
+      "capacity": 32,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit log",
+      "used": 0,
+      "capacity": 24,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 0,
+      "capacity": 24,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit wheel",
+      "used": 12,
+      "capacity": 20,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit wheel",
+      "used": 96,
+      "capacity": 144,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "train couplings",
+      "used": 27,
+      "capacity": 35,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "train buffers",
+      "used": 94,
+      "capacity": 140,
+      "geometry": "CylinderGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 17,
+      "capacity": 600,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 66,
+      "capacity": 147,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "freight:yard0",
+      "used": 8,
+      "capacity": 8,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "freight:yard1",
+      "used": 8,
+      "capacity": 8,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 73,
+      "capacity": 73,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 63,
+      "capacity": 63,
+      "geometry": "PlaneGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 63,
+      "capacity": 63,
+      "geometry": "PlaneGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 18,
+      "capacity": 18,
+      "geometry": "RingGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 18,
+      "capacity": 18,
+      "geometry": "PlaneGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 9,
+      "capacity": 9,
+      "geometry": "PlaneGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 9,
+      "capacity": 9,
+      "geometry": "PlaneGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 19,
+      "capacity": 19,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 22,
+      "capacity": 22,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 1,
+      "capacity": 1,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 22,
+      "capacity": 22,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 22,
+      "capacity": 22,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 29,
+      "capacity": 29,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "railway:stack-boards",
+      "used": 8,
+      "capacity": 16,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 47,
+      "capacity": 62,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper",
+      "used": 147,
+      "capacity": 147,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit sleeper_steel",
+      "used": 129,
+      "capacity": 129,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 125,
+      "capacity": 125,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit post",
+      "used": 102,
+      "capacity": 102,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 4,
+      "capacity": 4,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 33,
+      "geometry": "IcosahedronGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 198,
+      "capacity": 360,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 600,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 16,
+      "capacity": 16,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 26,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "route-greybox:deck",
+      "used": 1680,
+      "capacity": 2400,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "route-greybox:things",
+      "used": 17,
+      "capacity": 420,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 10,
+      "capacity": 10,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "rotunda-bays",
+      "used": 5,
+      "capacity": 5,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "rotunda-doors",
+      "used": 6,
+      "capacity": 6,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "rotunda-steel-bays",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "rotunda-end-walls",
+      "used": 8,
+      "capacity": 8,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "rotunda-outlines",
+      "used": 2,
+      "capacity": 2,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "rotunda-open-doors",
+      "used": 1,
+      "capacity": 1,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 67,
+      "capacity": 67,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 83,
+      "capacity": 320,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 12,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 320,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 194,
+      "capacity": 320,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 200,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 1200,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 168,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 452,
+      "capacity": 468,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 253,
+      "capacity": 2600,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 13,
+      "capacity": 13,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 18,
+      "capacity": 18,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 18,
+      "capacity": 18,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 191,
+      "capacity": 191,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 4,
+      "capacity": 4,
+      "geometry": "BoxGeometry",
+      "parent": "box plan"
+    },
+    {
+      "name": "",
+      "used": 4,
+      "capacity": 4,
+      "geometry": "BoxGeometry",
+      "parent": "box plan"
+    },
+    {
+      "name": "box plan",
+      "used": 18,
+      "capacity": 18,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "box plan",
+      "used": 14,
+      "capacity": 14,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 1,
+      "capacity": 144,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 1,
+      "capacity": 144,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 4,
+      "capacity": 576,
+      "geometry": "SphereGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 2,
+      "capacity": 288,
+      "geometry": "BoxGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit log",
+      "used": 0,
+      "capacity": 96,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "place kit rail",
+      "used": 0,
+      "capacity": 96,
+      "geometry": "BufferGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 0,
+      "capacity": 32,
+      "geometry": "DodecahedronGeometry",
+      "parent": ""
+    },
+    {
+      "name": "",
+      "used": 4,
+      "capacity": 4,
+      "geometry": "BoxGeometry",
+      "parent": "ring-island-leaf"
+    }
+  ]
+}

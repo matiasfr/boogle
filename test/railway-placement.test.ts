@@ -145,7 +145,7 @@ test("a stop request is judged from the halt's lever or aboard its line's train"
   assert.equal(railValid(w, e, at(quarry.x + 200, quarry.z), 50), true, 'at the lever, on the platform');
   assert.equal(railValid(w, { ...e, dir: -1 }, at(quarry.x + 200, quarry.z), 50), false, 'the other way: across');
   assert.equal(railValid(w, { ...e, dir: -1 }, at(home.x + 200, home.z), 50), true, 'the north platform asks home');
-  // Line 2's first train (slot 1) stands at its village stop (18.25 m along): a passenger on its rear car (11.1 m
+  // Line 2's first train (slot 1) stands at its village stop (21.65 m along): a passenger on its rear car (14.5 m
   // behind on the wagon's train, RIDER_SPAN) asks for the quarry, naming the train. Standing, the reach is the rider's
   // own plus the train's length (no travel in the lag window).
   const ride = { ...e, dir: 1, train: 1 };

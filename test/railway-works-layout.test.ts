@@ -26,7 +26,7 @@ import { distToLine, parseMapPage, type XZ } from '../src/proto/greybox/map-data
 import { LINE2_BOILER, LINE2_LEVER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { LINE1_ROCKS } from '../src/sim/railway-line-layout.ts';
 import { TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
-import { LOCO, TRAILER, TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
+import { LOCO, TRAILER, TRAIN_CARS, TRAIN_OFFSETS, consistOf } from '../src/entities/railway/cars.ts';
 import { ENGINE, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 /** src/entities/railway/machine-model.ts MACHINE_GAP (that module loads three.js, so it is pinned here). */
 const MACHINE_GAP = 3.7;
@@ -208,9 +208,13 @@ test('no train stands inside the track layer, even with the longer boiler', () =
         assert.ok(g >= 1, `line 2 at ${stop / 100} m, engine ×${engine}, pier ${pier}: ${g.toFixed(2)} m clear`);
       }
     }
-  // At the Pier halt (s 719-741 m) the engine stands at the deck and the wagon at least half on it.
-  const [rear, front] = trainSpan(PIER_STOP_CM / 100);
-  assert.ok(rear + TRAIN_CARS.at(-1)!.hz >= 719 && front <= 741, `${rear}..${front}`);
+  // R2b: freight may overhang; both passenger cars must remain beside the Pier deck.
+  for (const car of consistOf({ line: 1, wagon: true, steel: true }).filter(
+    (c) => c.role === 'player' || c.role === 'rider',
+  )) {
+    const centre = PIER_STOP_CM / 100 + car.offset;
+    assert.ok(centre - car.spec.hz >= 719 && centre + car.spec.hz <= 741, car.role);
+  }
   // Its consist is the one the wagon couples to at the village.
   assert.equal(WAGON_S, TRAIN_STOPS[1]![0]! + TRAIN_OFFSETS.at(-1)! * 100);
 });
