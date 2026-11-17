@@ -24,6 +24,8 @@ import '../../src/prefab/builders/museum-parts.ts';
 import '../../src/prefab/builders/room-shell.ts';
 import '../../src/prefab/builders/boogler-statue.ts';
 import '../../src/prefab/builders/statue-scaffold.ts';
+import '../../src/prefab/builders/town-green-kerb.ts';
+import { TOWN_CENTRE } from '../../src/place/town-plan.ts';
 import { haltFrame } from '../../src/prefab/halt-deck.ts';
 import { forgePlan, openingBuildings, openForgeMouth } from '../../src/place/opening-plans.ts';
 import { openingStops } from '../../src/place/opening-stops.ts';
@@ -236,6 +238,12 @@ export async function collectDrawnGeometry() {
   for (const name of ['gorge', 'bell', 'west']) for (const p of readLevel(name)) prefab(p);
   // N1: the runtime's PLOT_BLOCKS filter also chooses outlines versus blocks here.
   for (const p of standBlockout(readLevel('town-blockout'), terrain.H)) prefab(p);
+  const greenFrame = new THREE.Matrix4().makeTranslation(
+    layout.ORIGIN.x + TOWN_CENTRE.x,
+    0,
+    layout.ORIGIN.z + TOWN_CENTRE.z,
+  );
+  for (const p of readLevel('town-green-kerb')) prefab(p, greenFrame);
   for (const p of openingStops())
     addGeometry(
       new THREE.BoxGeometry(p.w, p.h, p.d),

@@ -37,6 +37,8 @@ import { coveJoinCoverage, coveJoinNormal, coveWeight } from './cove.ts';
 import { buildCove } from './cove-view.ts';
 import { dressCoveGround } from './cove-ground.ts';
 import { addFarGround } from './far-ground.ts';
+import type { TileCells } from './far-ground-index.ts';
+import { TOWN_CENTRE, TOWN_GREEN } from './town-plan.ts';
 import { setFarHills } from './far-hills.ts';
 import { applyPathSurface } from './path-surface.ts';
 import { describeGround } from './ground-layers.ts';
@@ -45,6 +47,13 @@ import { MEADOW, meadowLawnLayer } from './meadow-flags.ts';
 import { background } from '../async.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
+
+const greenCells: TileCells = [
+  Math.floor((TOWN_CENTRE.x - TOWN_GREEN.radius - GRID.x0) / CELL),
+  Math.floor((TOWN_CENTRE.z - TOWN_GREEN.radius - GRID.z0) / CELL),
+  Math.ceil((TOWN_CENTRE.x + TOWN_GREEN.radius - GRID.x0) / CELL),
+  Math.ceil((TOWN_CENTRE.z + TOWN_GREEN.radius - GRID.z0) / CELL),
+];
 
 // ---------------------------------------------------------------- the mesh and the heightfield
 const FLAT = (color: string) => flat(color);
@@ -284,7 +293,7 @@ function buildMesh(owner: OwnedView) {
   owner.cleanup(() => mesh.material.dispose());
   mesh.frustumCulled = false;
   owner.add(mesh);
-  addFarGround(mesh, NX, NZ, mainEnd, inCove, owner);
+  addFarGround(mesh, NX, NZ, mainEnd, inCove, owner, greenCells);
   // The meadow's flowers and tufts (meadow-flowers.ts): loaded and baked after the land is up, so no frame waits.
   if (MEADOW.flowers && layered)
     background(

@@ -99,9 +99,10 @@ export function addFarGround(
   mainEnd: number,
   skip: (i: number, j: number) => boolean,
   owner?: OwnedView,
+  fine?: TileCells,
 ) {
   const made: THREE.BufferGeometry[] = [];
-  const view: View = { full, build: () => build(full, nx, nz, mainEnd, skip, made, owner), built: null };
+  const view: View = { full, build: () => build(full, nx, nz, mainEnd, skip, made, owner, fine), built: null };
   const dispose = () => {
     views.delete(view);
     for (const geo of made) geo.dispose();
@@ -120,6 +121,7 @@ function build(
   skip: (i: number, j: number) => boolean,
   made: THREE.BufferGeometry[],
   owner?: OwnedView,
+  fine?: TileCells,
 ): Built {
   const source = full.geometry;
   const index = source.getIndex()!.array;
@@ -156,7 +158,7 @@ function build(
       const i1 = Math.min(i0 + TILE, nx - 1),
         j1 = Math.min(j0 + TILE, nz - 1);
       const cells: TileCells = [i0, j0, i1, j1];
-      const levels = LEVELS.map(([s]) => compact(tileIndex(nx, cells, s, skip)));
+      const levels = LEVELS.map(([s]) => compact(tileIndex(nx, cells, s, skip, fine)));
       const mesh = new THREE.Mesh(levels[0]!, full.material);
       mesh.receiveShadow = full.receiveShadow;
       mesh.castShadow = full.castShadow;
