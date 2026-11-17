@@ -122,7 +122,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 
 ## Decided
 
-- <a id="d-2026-11-17-first-line-no-fork"></a>**2026-11-17, the first line has no fork** (owner, 17 November 2026, review page: "the others I accept all"). Take the recommendation: no first-line fork and no new crossing terrain. Heavy load is the per-trip choice; the first real choices are the first house after the pier and the garage’s steel installs. Stage 1 found no crossing that makes double jump versus carry a real choice, so stage 2 is not built. This closes the owner scope question in [D2](brainstorms/first-line-decisions.md) and the [crossing probe](research/first-line-crossing-probe.md); do not start the rejected prototype.
+- <a id="d-2026-11-17-first-line-no-fork"></a>**2026-11-17, the first line has no fork** (owner, 17 November 2026, review page: "the others I accept all"). Take the recommendation: no first-line fork and no new crossing terrain. Heavy load is the per-trip choice; the first real choice is the garage’s steel installs (the first town asks no choice between its plots, [16 November](decisions-rewards.md#d-2026-11-16-first-town-lesson-answers)). Stage 1 found no crossing that makes double jump versus carry a real choice, so stage 2 is not built. This closes the owner scope question in [D2](brainstorms/first-line-decisions.md) and the [crossing probe](research/first-line-crossing-probe.md); do not start the rejected prototype.
 
 - <a id="d-2026-11-17-retire-5"></a>**2026-11-17, retire the production-bot route call** (owner, 17 November 2026, review page: "the others I accept all"). A test-bot route, not a game rule.
 
