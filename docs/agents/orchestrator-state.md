@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, and keep it short. It holds only what cannot be looked up: who is running what, what waits on the owner, and the lessons. Main, CI, pull requests and worktrees come from `npm run heartbeat`; committed work and its next steps from [the backlog](../backlog.md); what merged from git. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 17 November 2026 about 11:50 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
+**Updated:** 17 November 2026 about 13:00 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
 
 ## Jobs in flight
 
@@ -10,13 +10,12 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Garage choices step 2, engines wait in the bays, view only ([plan](../plans/garage-choices.md#7-steps)) | P1, garage choices | `codex/garage-bays-step2` | Heartbeat thread; Codex gpt-6-astra high | 17 November 11:50 | Building. It reports to the heartbeat thread; the next heartbeat reviews the stills and ships it |
 
 ## Where the work stands
 
 - **Machine:** HOTBOX (Windows, clone `C:\Users\matia\Claude work\boogle`) has orchestrated since 17 November; the MacBook's schedules are paused ([automations](automations.md)). The hourly heartbeat runs in its own thread with a fresh session each run (#2006); the owner's live orchestrator thread ran beside it until 09:36 UTC on 17 November, when it settled; no live session was running at 11:35 UTC. Sessions cannot message each other, so they split work through the table above and the Line Map board.
 - **Focus:** the choice-and-payoff loop ([decision](../decisions-process.md#d-2026-11-16-focus-choice-and-payoff)); the backlog's P1 rows, at most five. World v58 is on main (C1, #2005).
-- **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2, unclaimed: the next free job) and its K1 and K3; garage choices step 2 (view only, running) and step 3 (steel spent, high risk), with the designer's Quick or Strong rebalance first, now that an extra car can mean rider capacity; riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
+- **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2, unclaimed: the next free job) and its K1 and K3; garage choices step 3 (steel spent, high risk), with the designer's Quick or Strong rebalance first, now that an extra car can mean rider capacity; riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
 - **Proof debts and leftovers:** [orchestrator-leftovers](orchestrator-leftovers.md). Nothing from 16 or 17 November was tested on a device.
 
 ## Open owner questions
@@ -77,7 +76,7 @@ The lessons; the orchestrator keeps them.
 4. About three full-suite agents is the Mac's limit; briefs ask for typecheck, lint and touched tests only. HOTBOX: two looks at once at most.
 5. Default shell is Node 24: export Node 26 (`$HOME/.nvm/versions/node/v26.13.0/bin` on the Mac, `$HOME/AppData/Local/nvm/v26.13.0` on HOTBOX). Run tests with `node dev/test-unit.ts <files>`, not `npx vitest`.
 6. Keep independent reviewers: they found real defects in batch C, the CI diet and ring2 R1–R2.
-7. New test files need review and must fit the [test diet](tests.md#tests); briefs say "no new unit test files" unless the code is lockstep.
+7. New test files need review and must fit the [test diet](tests.md#tests); briefs say "no new unit test files" unless the code is lockstep, even when the plan's step names one (garage step 2, 17 November: a review round to delete it).
 8. The registry's 14,000-character must-read budget per route is nearly full: an edit to `tests.md` or `sync.md` must not grow them.
 9. A solo look warps page time about 12x while the server runs at real speed: evals wait on server ticks (`railAt()`). Two-player warp looks need `--warp-speed 2`.
 10. `refs/stash` is shared across worktrees: no `git stash` in any brief. Two ships fetching at once fail with "cannot lock ref"; rerun.

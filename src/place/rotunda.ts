@@ -62,6 +62,15 @@ export function rotundaBays(site: RotundaSite, stage: number): number[] {
   return site.order.slice(0, site.stages[stage] ?? 0);
 }
 
+/** Waiting engines only, in departure order (signed bay offsets): 250°, 150°, then 170°, 210°, 230°.
+ * The first engine already belongs to the line. Building a bay never adds or removes an engine: these stand
+ * in the ruins too. Use the actual serving count, not the route's target fleet, so a delayed join still waits.
+ * The working bay and later works copies/store are owned separately; Port Quay has no waiting fleet yet. */
+export function bayOccupants(site: RotundaSite, facts: { serving: number }): number[] {
+  if (site.id !== 'home') return [];
+  return [3, -2, -1, 1, 2].slice(Math.max(0, facts.serving - 1)).filter((bay) => site.order.includes(bay));
+}
+
 /** Steel waits on the open apron, 80° off the approach road, between the camera and garage post at Home.
  * A metre of walking space outside the kerb,
  * measured to the pallet's bounding circle, follows the site's table size rather than the old disc offsets. */

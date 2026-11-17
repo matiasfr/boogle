@@ -3,7 +3,7 @@
 // stands, in bays from the site's `mid` (`turn`); the owning view stands it from the same site row
 // (src/place/rotunda.ts `rotundaPose`) and shows it by stage (`rotundaShows`), so no derived number is stored.
 import { ROTUNDA_HOME } from '../../src/place/home-station.ts';
-import { rotundaPieces, type RotundaPart, type RotundaSite } from '../../src/place/rotunda.ts';
+import { bayOccupants, rotundaPieces, type RotundaPart, type RotundaSite } from '../../src/place/rotunda.ts';
 import type { LevelDef, Placement, PrefabKey } from '../../src/prefab/types.ts';
 
 const SITES: readonly RotundaSite[] = [ROTUNDA_HOME];
@@ -49,6 +49,18 @@ export function rotundaContent(): { levels: LevelDef[] } {
         pos: [0, 0, 0],
         params: { turn: 0 },
       });
+      for (const bay of bayOccupants(site, { serving: 1 })) {
+        for (const [part, prefab] of [
+          ['waiting', 'roundhouse.waiting-engine'],
+          ['open', 'roundhouse.bay-open-doors'],
+        ] as const)
+          placements.push({
+            id: `rotunda-${site.id}.${part}-${bay}`,
+            prefab,
+            pos: [0, 0, 0],
+            params: { turn: bay },
+          });
+      }
       return { place: `rotunda-${site.id}`, placements };
     }),
   };

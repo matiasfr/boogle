@@ -2300,6 +2300,32 @@
         "params": {}
       }
     },
+    "roundhouse.waiting-engine": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            1.85,
+            18.5
+          ],
+          "half": [
+            1.2,
+            1.45,
+            2.2
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.waiting-engine",
+      "scope": "owner",
+      "visual": {
+        "batch": "rotunda-waiting-engines",
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "waiting-engine"
+        }
+      }
+    },
     "scenery.broadleaf": {
       "colliders": [
         {
