@@ -8,7 +8,7 @@ import { definitions } from '../../prefab/catalogue.ts';
 import level from '../../../content/built/levels/rotunda-home.json' with { type: 'json' };
 import { ROTUNDA_HOME } from '../../place/home-station.ts';
 import { ORIGIN } from '../../place/layout.ts';
-import { rotundaPieces, rotundaPose, rotundaShows } from '../../place/rotunda.ts';
+import { bayOccupants, rotundaBays, rotundaPieces, rotundaPose, rotundaShows } from '../../place/rotunda.ts';
 
 export function createRotundaView(owner: OwnedView) {
   const site = ROTUNDA_HOME;
@@ -20,7 +20,14 @@ export function createRotundaView(owner: OwnedView) {
     const count = [...placements.values()].filter((p) => p.prefab === placement.prefab).length;
     batches.set(placement.prefab, { target: createPrefabBatch(placement.prefab, count, owner), next: 0 });
   }
-  const pieces = [...rotundaPieces(site), { id: 'open-doors', part: 'door' as const, turn: 0 }].map((piece) => {
+  const pieces = [
+    ...rotundaPieces(site),
+    { id: 'open-doors', part: 'door' as const, turn: 0 },
+    ...bayOccupants(site, { serving: 1 }).flatMap((turn) => [
+      { id: `waiting-${turn}`, part: 'waiting' as const, turn },
+      { id: `open-${turn}`, part: 'open' as const, turn },
+    ]),
+  ].map((piece) => {
     const placement = placements.get(`rotunda-${site.id}.${piece.id}`);
     if (!placement) throw new Error(`rotunda: the level has no ${piece.id}; run npm run prefabs`);
     const pose = rotundaPose(site, piece.turn);
@@ -40,18 +47,28 @@ export function createRotundaView(owner: OwnedView) {
     };
   });
   let shown = -1;
+  let serving = -1;
+  let occupied = new Set<number>();
   let rising = false;
   const matrix = pieces[0]!.rest.clone();
-  return {
+  const shows = (stage: number, piece: (typeof pieces)[number]['piece']) => {
+    if (piece.part === 'waiting') return occupied.has(piece.turn);
+    if (piece.part === 'open') return occupied.has(piece.turn) && rotundaBays(site, stage).includes(piece.turn);
+    if (piece.part === 'door' && occupied.has(piece.turn)) return false;
+    return rotundaShows(site, stage, piece);
+  };
+  const view = {
     /** Stand the pieces of `stage` (solid with them) and clear the rest; a change snaps. */
-    show(stage: number) {
-      if (stage === shown && !rising) return;
+    show(stage: number, count: number) {
+      if (stage === shown && count === serving && !rising) return;
       rising = false;
       shown = stage;
+      serving = count;
+      occupied = new Set(bayOccupants(site, { serving }));
       for (const { piece, instance, rest, batch, index } of pieces) {
         // Reset even an unfinished rise; unchanged pieces keep their record colliders.
         instance.root.position.y = rest.elements[13]!;
-        const on = rotundaShows(site, stage, piece);
+        const on = shows(stage, piece);
         instance.setEnabled(on);
         instance.root.visible = on;
         if (batch) {
@@ -64,13 +81,17 @@ export function createRotundaView(owner: OwnedView) {
         target.mesh.computeBoundingSphere();
       }
     },
+    /** A join removes its covered engine and closes its built bay immediately; no roll-out or phantom train. */
+    occupy(count: number) {
+      if (count !== serving) view.show(shown, count);
+    },
     /** Only newly built shells, doors and end walls move. Existing ruins/solids stay until the new stage settles.
      * Prefab batch matrices are visual only: no moving collider lifts a player through the roof. */
     rise(stage: number, progress: number) {
       rising = true;
       const changed = new Set<ReturnType<typeof createPrefabBatch>>();
       for (const { piece, instance, batch, index, rest } of pieces) {
-        if (piece.part === 'ruin' || !rotundaShows(site, stage, piece) || rotundaShows(site, shown, piece)) continue;
+        if (piece.part === 'ruin' || piece.part === 'waiting' || !shows(stage, piece) || shows(shown, piece)) continue;
         const offset = -8 * (1 - progress);
         instance.root.position.y = rest.elements[13]! + offset;
         instance.root.visible = true;
@@ -87,6 +108,12 @@ export function createRotundaView(owner: OwnedView) {
         batch.mesh.computeBoundingSphere();
       }
     },
-    inspect: () => ({ stage: shown, standing: pieces.filter((p) => p.instance.root.visible).map((p) => p.piece.id) }),
+    inspect: () => ({
+      stage: shown,
+      serving,
+      waiting: [...occupied],
+      standing: pieces.filter((p) => p.instance.root.visible).map((p) => p.piece.id),
+    }),
   };
+  return view;
 }

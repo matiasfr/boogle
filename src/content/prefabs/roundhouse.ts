@@ -29,6 +29,13 @@ const BAY_SOLIDS = [
 
 export const prefabs = [
   definePrefab({
+    key: 'roundhouse.waiting-engine',
+    visual: { builder: 'roundhouse.bay', params: { part: 'waiting-engine' }, batch: 'rotunda-waiting-engines' },
+    // A covered, parked engine is solid, without a cab/seat or a train in the simulation.
+    colliders: [box(0, 1.85, 18.5, 1.2, 1.45, 2.2)],
+    scope: 'owner',
+  }),
+  definePrefab({
     key: 'roundhouse.bay-ruin',
     visual: { builder: 'roundhouse.bay', params: { part: 'ruin' } },
     // Placement-authored broken tops are all >=3.2 m; keep the 1b solid at 3.1 m.

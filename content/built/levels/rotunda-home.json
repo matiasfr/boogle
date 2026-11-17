@@ -33,7 +33,17 @@
     {"id":"rotunda-home.wall-260","params":{"turn":3.5},"pos":[0,0,0],"prefab":"roundhouse.end-wall"},
     {"id":"rotunda-home.outline-110","params":{"turn":-4},"pos":[0,0,0],"prefab":"roundhouse.bay-outline"},
     {"id":"rotunda-home.outline-270","params":{"turn":4},"pos":[0,0,0],"prefab":"roundhouse.bay-outline"},
-    {"id":"rotunda-home.open-doors","params":{"turn":0},"pos":[0,0,0],"prefab":"roundhouse.bay-open-doors"}
+    {"id":"rotunda-home.open-doors","params":{"turn":0},"pos":[0,0,0],"prefab":"roundhouse.bay-open-doors"},
+    {"id":"rotunda-home.waiting-3","params":{"turn":3},"pos":[0,0,0],"prefab":"roundhouse.waiting-engine"},
+    {"id":"rotunda-home.open-3","params":{"turn":3},"pos":[0,0,0],"prefab":"roundhouse.bay-open-doors"},
+    {"id":"rotunda-home.waiting--2","params":{"turn":-2},"pos":[0,0,0],"prefab":"roundhouse.waiting-engine"},
+    {"id":"rotunda-home.open--2","params":{"turn":-2},"pos":[0,0,0],"prefab":"roundhouse.bay-open-doors"},
+    {"id":"rotunda-home.waiting--1","params":{"turn":-1},"pos":[0,0,0],"prefab":"roundhouse.waiting-engine"},
+    {"id":"rotunda-home.open--1","params":{"turn":-1},"pos":[0,0,0],"prefab":"roundhouse.bay-open-doors"},
+    {"id":"rotunda-home.waiting-1","params":{"turn":1},"pos":[0,0,0],"prefab":"roundhouse.waiting-engine"},
+    {"id":"rotunda-home.open-1","params":{"turn":1},"pos":[0,0,0],"prefab":"roundhouse.bay-open-doors"},
+    {"id":"rotunda-home.waiting-2","params":{"turn":2},"pos":[0,0,0],"prefab":"roundhouse.waiting-engine"},
+    {"id":"rotunda-home.open-2","params":{"turn":2},"pos":[0,0,0],"prefab":"roundhouse.bay-open-doors"}
   ],
   "rotation": "yaw, pitch, roll in radians, order YXZ",
   "units": "metres",

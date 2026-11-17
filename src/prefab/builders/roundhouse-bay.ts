@@ -4,6 +4,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { material } from '../../render/materials.ts';
 import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
+import { ENGINE, ENGINE_CAB, ENGINE_BOILER, ENGINE_WHEELS } from '../../entities/railway/engine.ts';
 import { registerBuilder } from '../builders.ts';
 declare module '../names.ts' {
   interface BuilderNames {
@@ -120,6 +121,72 @@ registerBuilder('roundhouse.bay', (params, batch) => {
   };
 
   switch (params.part) {
+    case 'waiting-engine': {
+      // The existing engine's silhouette under canvas, facing the table. Only the underframe, drivers and buffers
+      // are exposed: no hidden detailed locomotive is rendered beneath the opaque cloth.
+      const centre = 18.5,
+        rail = 0.24,
+        hem = 1.05;
+      box(0, rail + 0.93, centre, ENGINE.hx * 2, 0.3, ENGINE.hz * 2, '#3d4946');
+      for (const side of [-1, 1]) {
+        for (const z of [-ENGINE_WHEELS.z, ENGINE_WHEELS.z])
+          add(
+            new THREE.CylinderGeometry(ENGINE_WHEELS.r, ENGINE_WHEELS.r, 0.18, 12)
+              .rotateZ(Math.PI / 2)
+              .translate(side * 0.55, rail + ENGINE_WHEELS.r, centre + z),
+            '#343b39',
+          );
+        box(side * 0.66, rail + 0.55, centre, 0.08, 0.12, ENGINE_WHEELS.z * 2, '#77827c');
+        for (const z of [-1, 1]) box(side * 0.62, rail + 0.88, centre + z * 2.18, 0.36, 0.3, 0.22, '#414b47');
+      }
+      // Five vertices across each draped section: loose hems, shoulders, ridge. Height changes follow the chimney,
+      // boiler and cab of the actual engine; slightly alternating hems make it read as cloth rather than a box.
+      const sections = [
+        [-2.22, ENGINE_BOILER.top - 0.28, 0.65],
+        [-ENGINE_BOILER.chimney.z, ENGINE_BOILER.chimney.y + 0.14, 0.45],
+        [-0.8, ENGINE_BOILER.top + 0.1, 0.78],
+        [0.25, ENGINE_BOILER.top + 0.12, 0.8],
+        [0.55, ENGINE_CAB.roofTop + 0.12, ENGINE_CAB.roofHx],
+        [1.9, ENGINE_CAB.roofTop + 0.12, ENGINE_CAB.roofHx],
+        [2.22, ENGINE_CAB.roofTop - 0.12, 0.94],
+      ];
+      const vertices: number[] = [],
+        indices: number[] = [];
+      for (const [i, [z, top, shoulder]] of sections.entries()) {
+        for (const [x, y] of [
+          [-1.22, hem + (i % 2) * 0.08],
+          [-shoulder!, top! - 0.17],
+          [0, top!],
+          [shoulder!, top! - 0.17],
+          [1.22, hem + ((i + 1) % 2) * 0.08],
+        ])
+          vertices.push(x!, rail + y!, centre + z!);
+        if (i === 0) continue;
+        for (let j = 0; j < 4; j++) {
+          const a = (i - 1) * 5 + j,
+            b = i * 5 + j;
+          indices.push(a, b, a + 1, a + 1, b, b + 1);
+        }
+      }
+      // Close both hanging ends down to the hem, keeping the wheels visible below it.
+      for (const row of [0, sections.length - 1]) {
+        const bottom = vertices.length / 3;
+        vertices.push(0, rail + hem, centre + sections[row]![0]!);
+        for (let j = 0; j < 4; j++) {
+          const a = row * 5 + j;
+          if (row === 0) indices.push(bottom, a, a + 1);
+          else indices.push(bottom, a + 1, a);
+        }
+      }
+      const cloth = new THREE.BufferGeometry();
+      cloth.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      cloth.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array((vertices.length / 3) * 2), 2));
+      cloth.setIndex(indices);
+      cloth.computeVertexNormals();
+      // Match the working bay's existing sage canvas.
+      add(cloth, '#87968b');
+      break;
+    }
     case 'bay': {
       piers(6.2, 6.2);
       stoneWall(-1.8, 1.8, front + 0.4, 0.8, 4.6, 6.2);

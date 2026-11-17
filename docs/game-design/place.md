@@ -1426,6 +1426,12 @@ builder are gone; earned stages rise in front of you.
   pause the rise; opening the garage settles it before the install. Restores, late joins and reduced motion snap
   without a rise. Seven bays is held: it needs its own brief.
 - **Rails** fan from the table to every one of the seven bays from arrival, built or not.
+- **Waiting engines (17 November, garage choices step 2)** stand under sage canvas in the ruins and in open bays.
+  Five wait at most: 250°'s open road leaves first at the Pier, then 150° at the Railhead (empty before steel lands),
+  then 170°, 210° and 230° as the greybox fleet joins. Canonical arrival after the Pier shows four tarps. The existing
+  line-2 serving count owns the visible departure: the covered engine disappears and a built bay shuts its doors,
+  with no rolling engine on the table or a false train at the Village. The joining train's whistle and scale-in
+  remain unchanged. The working bay's shunter and footing wagon keep their existing presentation.
 - **Painted on the ground** past each end, bays 110° and 270° in amber outline: what nine bays would take. The
   270° one stands 3.2 m from road 2's buffer stub.
 - **The stone yard's spot** moves north of the table, between the kerb and road 2 (nothing is drawn there today):
@@ -1435,9 +1441,9 @@ The garage keeps **camBearing 15°**, the angle in the approved garage previz. S
 within 0.44 m of the steel pallet (the owning test requires 2 m); 45° comes within 0.27 m, 85° within 1.67 m.
 15° keeps 2.26 m. The garage first opens after the fitted cradle's table turn for the 20 m/s upgrade, then returns after the wagon couples and the shunter is home. It is unavailable at `stall-done`.
 
-Local scenery and Owner collision from eight prefab records (table, bay, steel bay, ruin, end wall, shut doors,
-open doors and the retained nine-bay outline; `content/built/levels/rotunda-home.json`). Repeated shells, doors,
-end walls and outlines use owner-local batches; ruins retain individually authored broken heights. The piers,
+Local scenery and Owner collision from nine prefab records (table, bay, steel bay, ruin, end wall, shut doors,
+open doors, waiting engine and the retained nine-bay outline; `content/built/levels/rotunda-home.json`). Repeated shells, doors,
+end walls, covered engines and outlines use owner-local batches; ruins retain individually authored broken heights. The piers,
 lintel, back wall, end-wall collision and approach eaves retain the blockout's sizes; the raised monitor is solid.
 Ruin piers are at least 3.2 m above 3.1 m solids. The working footings, `BUILD_S` and tarp timing are unchanged;
 no rule, wire, save or namespace change beyond step 1a's. Serves DESIGN.md 11 (Show, don't tell) and 7 (Telegraph

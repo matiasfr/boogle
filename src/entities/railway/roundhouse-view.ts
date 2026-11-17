@@ -46,7 +46,7 @@ import { account, shed, trains, works as worksRow, type ReadWorld } from '../../
 import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
 import { createRotundaView } from './rotunda-view.ts';
 import { BRIDGE, bridgeHalf, bridgeHandle, clearOfBridge } from './table-bridge.ts';
-import { rotundaStage } from './rotunda-stage.ts';
+import { rotundaServing, rotundaStage } from './rotunda-stage.ts';
 import { bayFrame, rotundaBays } from '../../place/rotunda.ts';
 import { cameraHeld } from '../../render/buddy-frame.ts';
 import { inputState } from '../../player/input-state.ts';
@@ -222,7 +222,7 @@ export async function createRailwayRoundhouse(
   function snapStage(stage: number) {
     stageRise = null;
     stageShown = stage;
-    rotunda.show(stage);
+    rotunda.show(stage, rotundaServing(wd));
   }
   function stageDust(from: number, to: number) {
     const before = rotundaBays(home.ROTUNDA_HOME, from);
@@ -234,6 +234,7 @@ export async function createRailwayRoundhouse(
     }
   }
   function drawStage(dt: number) {
+    rotunda.occupy(rotundaServing(wd));
     const target = rotundaStage(wd);
     // A restore goes through snap(); a rollback cancels the local rise. Opening the garage settles it before
     // the install's first frame. Steel arrives from a server tick, so its live row edge has no action receipt.
