@@ -1,5 +1,8 @@
 # Rider-car fit, 16 November 2026
 
+> **Status:** superseded (reconciled 17 November 2026). **Verdict:** Historical fit measurements, not current Home rework instructions.
+> **Recommendation:** Use the [rider-coach plan](../plans/rider-coach.md), which records the later Home-keeps-track scope and shipped clearance work.
+
 **Verdict: does not fit without level rework.** Scope: the [dedicated-car decision](../decisions-rail.md#d-2026-11-16-riders-get-a-dedicated-car). A dedicated coach can board beside the player car, but the longest existing consist plus any candidate fouls Home's spur/exit arrangement at its present mark. Recommend **2.90 × 1.60 m, immediately behind the player car** (new index 2); keep the four player seats. Before building art, redesign Home's road 2/link and move the Ring Island stop as below. This is a fit recommendation, not approval of boiler limits or Strong's consist.
 
 Measured at `fd9cd961` after `git fetch origin && git rebase origin/main`, Node 26.13.0, local `npm ci`. No shipping game code changed. The [10 November study](../plans/passenger-car-previz.md#against-the-halts-and-the-layout-tests) is the source of the +0.10 m forward / +0.20 m backward failures: it grew the *existing* player car, on older geometry. [Fourth-car R2](../plans/fourth-car.md#7-level-findings) subsequently moved Home line 2 to s 18.25. Today's 16 m table supersedes that study's 9.6 m table.

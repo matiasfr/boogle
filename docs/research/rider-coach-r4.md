@@ -1,5 +1,8 @@
 # R4: modelled riders' coach evidence and checkpoint
 
+> **Status:** reference (reconciled 17 November 2026). **Verdict:** Checkpoint/evidence subsequently shipped in #1999; capture success is not device or smoothness proof.
+> **Recommendation:** Retain the stated boarding, device and contended-performance limitations; use the [plan](../plans/rider-coach.md) for current status.
+
 16 November 2026 (captures continued past midnight UTC). Runner on `t3/rider-coach-evidence-r4`, based on main `4c1423f995ffe31392b29715d5ab01dcdaa1d779`, #1995, world v57. Node 26.13.0; own npm installation. No game, design, test assertion, golden or asset edits. No push or ship.
 
 [Evidence index](rider-coach-r4/index.html). Sixteen JPEGs, each at most 1200 px wide, total below 3 MB. The occupancy views use the existing R3 cosmetic visibility harness with frozen server rules; the movement captures observe actual server boarding and departures. Capture success is separate from the observations below.

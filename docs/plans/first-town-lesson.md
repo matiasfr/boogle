@@ -6,16 +6,14 @@
 > Seeds share lit/full racks, offsets and carry cadence; natural train phases differ.
 > These do not reproduce the historical figures. See [method, spreads and separate synthetic quarry-stop test](../reports/loader-times.md).
 
-> **Status: S1 + V1 reworked together on `t3/first-town-rider-places`: four countable rider places now;
-> eight await coach A. Pending independent review; remaining steps unbuilt here.
-> S1 keeps v54: four rider places now, eight with the dedicated coach. L1 takes the next free namespace after v54.
-> Designer-reviewed 16 November: build with changes (folded into S1, V1, L1, V2, A and
-> the order; the three owner questions are agent defaults, none asked).** Planner, 16 November, against origin/main `73ee4ecdd`, `WORLD_NS` v54. Builds the
-> owner's [answers](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers) to the designer's
-> [review](town-choice.md#designer-review-16-november-the-first-town-as-a-lesson) of [town-choice](town-choice.md).
-> Follows [town-economy-visible](town-economy-visible.md) (its K1, C1, C2 and K3 stay open there and are not changed
-> here). "Plot 1, 2, 3" are the first, second and third priced plots: `TRADE.plots[0][0..2]`, slots `plot3`, `plot2`,
-> `plot1` (that plan's N9). `npm run inflight`: nothing in flight touches these files.
+> **Status, reconciled 17 November against main `5fa88131`: all implementation and checkpoint steps shipped.**
+> Rider places/plot price: #1968; loader rules/view and accepted-op timing/model follow-up: #1975/#1977;
+> dedicated coach: #1992, art: #1995, coach checkpoint: #1999. K is reconciled from R4's recorded
+> checks and the game-design update, not freshly rerun here; no playtest/session is a ship gate.
+> Builds the owner's [answers](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers) to
+> [town-choice](town-choice.md): first island teaches, no plot choice asked.
+> [Town-economy-visible](town-economy-visible.md)'s sack/checkpoints also shipped (#2005, #2012, #2014, #2018).
+> Original design review and planning details below remain historical.
 
 # The first town as a lesson: the loader yard, rider places, plot 3's price
 
@@ -182,7 +180,7 @@ session's visual review of their stills.
     folded arm); `--rail-seed yard-wagon`: the arm loading a second train, once in real time, and a non-wagon train
     arriving at the Pier with footings; the jump row's landing. **Done means** those stills and the clip opened by
     the main session, and `npm run level-check` unchanged (no solid added).
-- [ ] **A. Passenger cars sized for riders: the art job (M; previz S).** Independent of the rules; after V1, whose
+- [x] **A. Passenger cars sized for riders: the art job (M; previz S).** Shipped via [rider-coach](rider-coach.md), #1992/#1995/#1999. Independent of the rules; after V1, whose
   places it replaces. Sync: Local. Tier: normal + visual. Previz: Codex gpt-6.1-sol medium (only Codex paints); build:
   gpt-6-astra high with the asset-author skill on `src/entities/railway/car-kit.ts`. **Brief:** the owner's words,
   "designed passenger cars and trains that are size appropriate". Design line 2's passenger car at the little guys'
@@ -208,7 +206,7 @@ session's visual review of their stills.
   a set) and trio (1.5 s): today's historical figures, pier 182 → 155 s and ring 339 → 203 s solo, were measured on
   `a71077c4b` and never rerun. **Done means** the three rows per site recorded under this step with the commit; a
   solo saving under 10 s at the pier or 60 s at the ring goes to the designer, untuned.
-- [ ] **K. Checkpoint.** `npm run check:full`; `npm run loop -- run`; `npm run scenario -- town-buy` (the buy contract
+- [x] **K. Checkpoint.** Reconciled 17 November: [R4](../research/rider-coach-r4.md) (#1999) records all three checks passing; `game-design/place.md` has the rider/price/loader details and #2016 added the [Trade chapter](../game-design/trade.md); the completed backlog row is removed by this audit. `npm run check:full`; `npm run loop -- run`; `npm run scenario -- town-buy` (the buy contract
   is unchanged, so no new scenario); `docs/game-design/place.md`'s town section gains rider places, plot 3's price and
   the yard (one edit, after V2); the backlog row updated.
 

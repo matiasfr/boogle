@@ -1,5 +1,8 @@
 # R2b: second stop — Gorge crossover and Pier foot crossing
 
+> **Status:** superseded (reconciled 17 November 2026). **Verdict:** This was an incomplete, blocked intermediate build.
+> **Recommendation:** Use [R2b](rider-coach-r2b.md) and its [review fixes](rider-coach-r2b-review-fixes.md), subsequently shipped in #1992; do not revive this stopped build.
+
 16 November 2026. Branch `t3/rider-coach-blockout`, resumed from `e875dee20`; fetch/rebase onto
 `origin/main` (`945c69554`, including #1981–#1983) succeeded. **Incomplete; do not merge.**
 No push, ship, subagents, R1c, R3 or R4. World **v57** remains its own commit `c9781e298`.

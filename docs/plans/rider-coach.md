@@ -1,17 +1,12 @@
-> **Status: R1a, R1b, R2a and R2b.1 on main (v56). R2b.2 and R2b.3 built locally (v57), ready for independent review; not shipped.**
-> Builder, 16 November: R2b.1 is on main (#1986). Rebased on `2c29e37a3`; R2b.2 is built locally in its own
-> commit `c3ebcef7c` and R2b.3 is built on `t3/rider-coach-blockout`, v57, not shipped. The production Pier
-> tail clears by 0.80 m (minimum 0.60); full level acceptance passes. Independent review is next.
-> Designer, 16 November: R2b revision reviewed, **build with changes** (folded into R2b.1 and R2b.2);
-> [review](#design-review-of-the-r2b-revision-designer-16-november).
-> Planner, 16 November 2026, against origin/main `945c69554`. Builds the owner's
-> [coach A, the rework and the allowance](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework),
-> [riders get a dedicated car](../decisions-rail.md#d-2026-11-16-riders-get-a-dedicated-car) and
-> [Home keeps its track](../decisions-rail.md#d-2026-11-16-home-keeps-its-track) on the
-> [fit check](../research/rider-car-fit.md) and the [coach previz](../world/rider-coach.html). Replaces
-> [first-town-lesson](first-town-lesson.md)'s step A from its build on. Judged under
-> [right over less work](../agents/owner-calls.md#right-over-less-work): sizes are facts, never the reason.
-> The full text of earlier revisions: `git show 945c69554:docs/plans/rider-coach.md` (603 lines).
+> **Status, reconciled 17 November against main `5fa88131`: R1/R2, R3 and R4 shipped.**
+> Cold waiting engines, Home clearance and the Pier crossing landed in #1981/#1983/#1986; production
+> coach/review fixes in #1992 (v57), candidate A model in #1995, checkpoint/evidence in #1999.
+> R1c's extra relay remains deliberately unbuilt under the owner's recorded scope. R4 is a checkpoint receipt,
+> not proof of target-device frame time, smoothness or every boarding presentation; its limits remain below.
+> [R2b review](#design-review-of-the-r2b-revision-designer-16-november) and original planning details follow.
+> Authority: [dedicated car](../decisions-rail.md#d-2026-11-16-riders-get-a-dedicated-car),
+> [Home keeps its track](../decisions-rail.md#d-2026-11-16-home-keeps-its-track), and
+> [right over less work](../agents/owner-calls.md#right-over-less-work). Earlier revision: `git show 945c69554:docs/plans/rider-coach.md`.
 
 # The riders' coach: Home and Ring reworked, then the coach
 
