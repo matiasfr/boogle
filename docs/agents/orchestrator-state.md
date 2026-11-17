@@ -10,7 +10,6 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| The green and the kerb (home-flip D2, view only) | Home's town as the Round | `codex/town-green-kerb-d2` | the heartbeat (Codex gpt-6-astra high delegate) | 17 November 21:50 | building; when it reports, the heartbeat reads the diff, opens its stills and sends anything `review-stamp` marks to an independent review |
 
 ## Where the work stands
 
