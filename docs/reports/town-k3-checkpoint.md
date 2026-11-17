@@ -15,7 +15,7 @@ The designer retains the rooftop ruling; neither performance nor a playtest is a
 3. Compare the two accepted seeds at the same Round camera with bounded hardware perf runs.
 4. Inspect and run the existing away server tests once; stop short of adding the missing sack integration test.
 5. Move and extend K2's economy section into Trade, retain its old anchor, update the index and record this checkpoint.
-6. Format the scoped docs, review the diff, run ship-check, commit and rebase onto fetched main; no push or ship.
+6. Review the scoped docs and formatting policy, commit, rebase onto fetched main and run ship-check; no push or ship.
 
 Revisions from the brief's assumptions: the drawn ridge is +6.76 m, not about +6.6 m; existing town rooms use a
 different compiled roof-hull variant from the new plot houses. Current main also already gives the second offer
@@ -160,8 +160,19 @@ with the same pinned Node PATH, `npm.cmd` (PowerShell blocks npm.ps1) and Git's 
 `npm run map -- --kind build` was attempted, but build is not a map kind; `--kind docs` was then read successfully.
 `npm run inflight` reported only the separate orchestrator backlog/state lane; those files were not touched.
 
-Final scoped formatting, diff review, rebase and `node dev/ship-check.ts origin/main HEAD` results are recorded below
-after they run. No `npm run check`, push, ship or PR. Unverified: actual rooftop controller traversal/clearance,
+Scoped Prettier was invoked on the five documentation files; the repository's `.prettierignore` excludes
+`*.md`, so it intentionally made no formatting changes. `git diff --check` passes. A read-only link-path
+check found 102 local targets in the index, Trade, report and plan, with zero missing files (anchors were not
+validated). The full diff was reviewed, including the moved K2 section and copy retained for owner review.
+
+Committed on `codex/town-k3-checkpoint` and rebased successfully onto fetched `origin/main`
+`75a4cd5dbb36ccf3b23f80983425ca0679eb98c1`. The only main changes since the measured commit were the
+orchestrator's backlog/state documents; measured game sources are unchanged. The required
+`timeout 180 node dev/ship-check.ts origin/main HEAD` passes: docs-only, five files, registry OK,
+46 checks passed and zero failed (the first post-rebase run took 22.38 s). The gate is repeated after this
+report-only follow-up commit before handoff. No `npm run check`, push, ship or PR.
+
+Unverified: actual rooftop controller traversal/clearance,
 avatar poses on the ridge, quiet-machine performance, real display presentation, the exact away-host sack path,
 and real-time visual smoothness. **not tested on a device**.
 
