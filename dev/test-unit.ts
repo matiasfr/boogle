@@ -11,7 +11,7 @@ import './node-version.ts'; // first: re-runs under the pinned Node
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { testEnv } from './test-env.ts';
-import { unitShards } from './ci/unit-shards.ts';
+import { CI_UNIT_CONCURRENCY, unitShards } from './ci/unit-shards.ts';
 
 const given = process.argv.slice(2);
 const ship = given.includes('--ship');
@@ -26,6 +26,8 @@ if (!files.length) {
   process.exit(1);
 }
 const args = given.filter((a) => !['--ci', '--long', '--ship'].includes(a));
+if (given.includes('--ci') && !given.includes('--long') && !args.some((a) => a.startsWith('--test-concurrency')))
+  args.push(`--test-concurrency=${CI_UNIT_CONCURRENCY}`);
 const shardAt = args.findIndex((a) => a === '--test-shard' || a.startsWith('--test-shard='));
 const shard = shardAt < 0 ? '1/1' : (args[shardAt]!.split('=')[1] ?? args[shardAt + 1] ?? '');
 if (given.includes('--ci') && !given.includes('--long') && shardAt >= 0) {
@@ -50,6 +52,7 @@ if (given.includes('--ci') && !given.includes('--long') && shardAt >= 0) {
 const { env, flags } = testEnv(
   given.includes('--long') ? 'long' : given.includes('--ci') ? 'ci' : ship ? 'ship' : 'local',
 );
+if (!given.includes('--long') && (given.includes('--ci') || ship)) flags.push('--import', './dev/ci/unit-budget.ts');
 // Keep Node's normal output and expose the file summaries it hides, for shard balancing.
 const reporters = args.some((a) => a.startsWith('--test-reporter'))
   ? []

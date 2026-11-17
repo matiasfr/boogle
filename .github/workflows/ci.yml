@@ -145,9 +145,9 @@ jobs:
       fail-fast: false
       matrix:
         shard: ${{ fromJSON(needs.changes.outputs.unit_shards) }}
-    # On 13 November shard 1/4 passed its tests in 589s but hit this job limit. Eight duration-balanced shards target
-    # ~6 min including setup; the runner warns after 7 min. Re-measure/rebalance before raising this. See
-    # docs/research/ci-unit-shard-time.md. Coverage, audit and sweep settings stay full.
+    # Re-measured/rebalanced 16 November: golden and route-rule partitions, three file workers per shard,
+    # an 8 min process-group deadline, and visible weight drift. The runner warns after 7 min per shard.
+    # Re-measure/rebalance before raising this; see docs/research/ci-unit-shard-time.md. Audit/sweeps stay full.
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
