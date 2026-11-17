@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, and keep it short. It holds only what cannot be looked up: who is running what, what waits on the owner, and the lessons. Main, CI, pull requests and worktrees come from `npm run heartbeat`; committed work and its next steps from [the backlog](../backlog.md); what merged from git. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 17 November 2026 about 13:00 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
+**Updated:** 17 November 2026 about 13:40 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
 
 ## Jobs in flight
 
@@ -10,6 +10,7 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
+| Town economy K1: the six stills, one real-time clip of freight unloading at the island, the place.md A1 gap closed | The town economy, visible and playable | `codex/town-k1-economy-seen` | the heartbeat (T3 delegate, gpt-6.1-sol high) | 17 November 13:40 | running |
 
 ## Where the work stands
 
@@ -24,6 +25,7 @@ One list, newest first. Each proceeds on its recommendation unless it says it wa
 
 **From 16 and 17 November:**
 
+- The heartbeat starts one job an hour while three may run (17 November, the 13:35 UTC run's workflow review): after C2 merged at 12:58 UTC nothing ran for 40 minutes, with two free job slots and the machine at 3% CPU, because section 9 lets a run start exactly one next step and only when no P1 row has a job. Recommended: a run may fill the free slots, one job per P1 row, when the jobs share no file and at most two are browser-heavy on HOTBOX (rule 4). Nothing waits; the heartbeat keeps to one until he says.
 - A server merge takes 19 minutes to go live (17 November, twice: 05:23 and 10:35 UTC): `deploy-server.yml`'s test job reruns the server tests (5.5 minutes) and builds and boots the image (5.7 minutes) that CI's server job passed on the same commit minutes earlier, then Fly builds it a third time (7 minutes). Smoke waited 12 minutes and failed after C1 with nothing wrong; the heartbeat raised its wait to 24. Recommended: the deploy's test job is skipped when CI was green on that commit, which brings a server merge live in about 8 minutes. Nothing waits.
 - The footing wagon: does it stay on its train after the ring's last footing (the designer and orchestrator recommend it stays; nothing waits)? With it, call 108: after the rivet, should the footing wagon's train stop for stone? The earlier measurement was 2,884 ticks between loads because its train never takes stone.
 - More red on the coach, or not.
