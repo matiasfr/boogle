@@ -145,10 +145,15 @@ export async function startStack({
 // no adapter at all). Linux and the Mac keep exactly the flag they had.
 export const gpuAngle = () => (process.platform === 'win32' ? '--use-angle=d3d11' : '--use-angle=metal');
 
-// LOOK_CHANNEL=msedge runs the installed Microsoft Edge instead of Playwright's own Chromium. Off by default. For a
-// Windows machine whose Smart App Control blocks Playwright's unsigned chrome.exe (headed launches fail with "spawn
-// UNKNOWN"); Edge is signed. Any Playwright channel name works (chrome, msedge, ...).
-export const browserChannel = () => (process.env.LOOK_CHANNEL ? { channel: process.env.LOOK_CHANNEL } : {});
+// LOOK_CHANNEL=msedge runs the installed Microsoft Edge instead of Playwright's own Chromium. For a Windows machine
+// whose Smart App Control blocks Playwright's unsigned chrome.exe (headed launches fail with "spawn UNKNOWN"); Edge is
+// signed. Any Playwright channel name works (chrome, msedge, ...). On Windows the default is `chromium`, the full
+// build run headless: Playwright's headless shell ships no dxcompiler.dll, so requestDevice fails ("DynamicLib.Open:
+// dxcompiler.dll Windows Error: 87") and the game never reaches the lobby (HOTBOX, 17 November 2026).
+export const browserChannel = () => {
+  const channel = process.env.LOOK_CHANNEL ?? (process.platform === 'win32' ? 'chromium' : undefined);
+  return channel ? { channel } : {};
+};
 
 // The game is WebGPU only. On Linux (CI) WebGPU runs on SwiftShader over Vulkan, so runners without a GPU still get it;
 // on a Mac it runs on the real GPU (Metal), about 60 fps.
@@ -303,9 +308,9 @@ export class Game {
       ...(opts.scale ? { deviceScaleFactor: opts.scale } : {}),
     });
     if (opts.clock) await g.ctx.clock.install();
-    // Edge (LOOK_CHANNEL=msedge) asks for /favicon.ico, which the game does not serve; Playwright's own Chromium never
-    // does. Answer it empty so that 404 is not a console error. Only with a channel: the default path is unchanged.
-    if (process.env.LOOK_CHANNEL) await g.ctx.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
+    // A full browser (any channel: Edge, or Windows' default `chromium`) asks for /favicon.ico, which the game does not
+    // serve; the headless shell never does. Answer it empty so that 404 is not a console error.
+    if ('channel' in browserChannel()) await g.ctx.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
     g.tracing = !!opts.trace;
     if (g.tracing) await g.ctx.tracing.start({ title: g.name });
     // src/constants.ts reads isTouch once at load, so this must run before the page's code.
