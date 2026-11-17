@@ -11,7 +11,9 @@ for arg in "$@"; do
   case "$arg" in --all) all=1 ;; *) echo "Unknown argument: $arg"; exit 1 ;; esac
 done
 cd "$(git rev-parse --show-toplevel)" || exit 1
-for d in "$HOME"/.nvm/versions/node/v26*/bin; do [ -d "$d" ] && PATH="$d:$PATH"; done
+for d in "$HOME"/.nvm/versions/node/v26*/bin "$HOME"/AppData/Local/nvm/v26*; do [ -d "$d" ] && PATH="$d:$PATH"; done
+windows=0
+case "${OSTYPE:-}" in msys* | cygwin*) windows=1 ;; esac
 main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
 say() { printf '\n## %s\n' "$1"; }
 git fetch -q origin
@@ -48,7 +50,7 @@ say "Play sessions (newest first; shown for information: ships hold only on the 
 (cd "$main" && [ -f dev/device/cli.ts ] && node dev/device/cli.ts waiting 2>&1 | head -2 | cut -c1-160)
 say "Bot queue"
 node -e '
-const fs = require("fs"), dir = process.env.BOOGLE_BOT_QUEUE_DIR ?? `/tmp/boogle-bots-${process.getuid()}`;
+const fs = require("fs"), dir = process.env.BOOGLE_BOT_QUEUE_DIR ?? `/tmp/boogle-bots-${process.getuid?.() ?? "user"}`; // as dev/look/bot-queue.ts
 const rows = (fs.existsSync(dir) ? fs.readdirSync(dir) : []).filter((n) => n.endsWith(".json")).flatMap((n) => {
   try { const t = JSON.parse(fs.readFileSync(`${dir}/${n}`, "utf8")); process.kill(t.pid, 0); return [t]; } catch { return []; }
 }).sort((a, b) => b.held - a.held || a.number - b.number);
@@ -79,12 +81,14 @@ done
 say "Ship lock and load"
 lock=${BOOGLE_SHIP_LOCK:-/tmp/boogle-ship-$(id -u).lock}
 [ -d "$lock" ] && echo "a ship holds the lock (pid $(cat "$lock/pid" 2>/dev/null))" || echo "no ship running"
-uptime | sed 's/.*load averages*: */load: /'
+if [ "$windows" = 1 ]; then node dev/heartbeat-processes.ts load; else uptime | sed 's/.*load averages*: */load: /'; fi
 # Owner, 11 November: check for the bottleneck each round. Two full server-suite runs sat at 0% CPU for 62 and 83
 # minutes inside one test file while their agents "waited", and that held a review and the views behind it.
 say "Bottleneck: long test and check processes (STALLED = over 15 minutes and under 1% CPU now)"
 found=0
-while read -r pid etime cpu cmd; do
+# Git Bash has no ps -A, pgrep or lsof; the Windows helper samples the same process trees through PowerShell.
+[ "$windows" = 1 ] && found=1 && node dev/heartbeat-processes.ts
+[ "$windows" = 1 ] || while read -r pid etime cpu cmd; do
   secs=$(echo "$etime" | awk -F'[-:]' '{ n = NF; s = $n + $(n-1) * 60; if (n > 2) s += $(n-2) * 3600; if (n > 3) s += $(n-3) * 86400; print s }')
   [ "$secs" -lt "${HEARTBEAT_STALL_SECS:-900}" ] && continue
   found=1
@@ -115,7 +119,7 @@ while read -r w; do
     # Active: the last commit, or any uncommitted file's modification time, within 48 hours.
     latest=$(git -C "$w" log -1 --format=%ct 2>/dev/null || echo 0)
     if [ "$latest" -lt "$since" ] && [ -n "$status" ]; then
-      m=$(printf '%s\n' "$status" | cut -c4- | sed 's/.* -> //; s/^"//; s/"$//' | (cd "$w" && tr '\n' '\0' | xargs -0 stat -f %m 2>/dev/null) | sort -n | tail -1)
+      m=$(printf '%s\n' "$status" | cut -c4- | sed 's/.* -> //; s/^"//; s/"$//' | (cd "$w" && tr '\n' '\0' | xargs -0 sh -c 'stat -f %m "$@" 2>/dev/null || stat -c %Y "$@"' _ 2>/dev/null) | sort -n | tail -1)
       [ -n "$m" ] && [ "$m" -gt "$latest" ] && latest=$m
     fi
     [ "$latest" -lt "$since" ] && { older=$((older + 1)); continue; }
