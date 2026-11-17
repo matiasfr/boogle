@@ -291,9 +291,9 @@ models`'.
     “Need <n> more Boogles”, “Waiting for town”. Existing “Plot <n>”, “Timber” and “Stone” and The Boogler's copy stay.
 - [x] **C1. The sack (S; R5).** After B1 (it shares B1's files). Sync: Server kind. Tier: **independent review**.
   Model: gpt-6-astra high; review as B1. Parallel with B2.
-  - **Built 2026-11-17, v58; not shipped.** C1's 7 tests and the `sack-waiting` host checkpoint pass. Bounded
+  - **Built and shipped 2026-11-17, v58 (#2005; independent review of `f90a1f61` found no defect).** C1's 7 tests and the `sack-waiting` host checkpoint pass. Bounded
     ship-check: registry/lint/typecheck pass; 1,609 tests pass, 4 unchanged Windows-path failures
-    (`prefab-portability` ×2, `unit-budget` ×2), 65 skipped, 1 todo. Independent review and C2's view remain;
+    (`prefab-portability` ×2, `unit-budget` ×2), 65 skipped, 1 todo. C2's view remains;
     not tested on a device.
   - `src/sim/railway-sys-away.ts` (`tillAway` beside the yard credit:
     `sack = max(sack, min(sackCap, sack + floor(tillRate × ticks / 600)))`; the box earns nothing away),

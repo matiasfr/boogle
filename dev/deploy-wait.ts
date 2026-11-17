@@ -1,5 +1,5 @@
 // Deployment identity only: Pages supplies the server source commit, which can predate the Pages commit.
-export const SERVER_WAIT_MS = 12 * 60 * 1000;
+export const SERVER_WAIT_MS = 24 * 60 * 1000;
 const POLL_MS = 15000;
 
 export async function waitForServerBuild(

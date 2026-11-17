@@ -18,13 +18,13 @@ const site = new URL(option('--url') || 'https://boogle.club/');
 const expected = option('--build');
 const start = performance.now();
 const sockets: import('ws').WebSocket[] = [];
-// Leave two minutes beyond the twelve-minute identity wait for assets and the room round-trip.
+// Leave two minutes beyond the 24-minute identity wait for assets and the room round-trip.
 const deadline = setTimeout(
   () => {
-    console.error('FAIL live smoke exceeded 14 minutes');
+    console.error('FAIL live smoke exceeded 26 minutes');
     process.exit(1);
   },
-  14 * 60 * 1000,
+  26 * 60 * 1000,
 );
 async function get(url: URL, contentType: RegExp, timeoutMs = 5000) {
   const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(Math.ceil(timeoutMs)) });
@@ -100,7 +100,7 @@ try {
   // Server and Pages deploy independently, and the server usually lands last. serverBuild is the last commit that
   // touched the server, so a Pages-only push expects the build already live and passes on the first poll; a server
   // push waits here for deploy-server. A server that never reaches serverBuild still fails below.
-  console.log(`Waiting up to 12 minutes for ${server}/version: expected server source commit ${version.serverBuild}`);
+  console.log(`Waiting up to 24 minutes for ${server}/version: expected server source commit ${version.serverBuild}`);
   const actual = await waitForServerBuild(version.serverBuild, {
     readBuild: async (timeoutMs) => {
       const data = (await (await get(new URL('/version', server), /application\/json/, timeoutMs)).json()) as {

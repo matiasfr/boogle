@@ -4,7 +4,7 @@ Before substantial work, committing or shipping, read this shipping procedure.
 
 For CI/ship changes, read [pipeline ordering, optional hardening and live smoke](ship-pipeline.md).
 
-Smoke starts after Pages and waits up to 12 minutes, polling `/version` every 15 seconds, for the exact
+Smoke starts after Pages and waits up to 24 minutes, polling `/version` every 15 seconds, for the exact
 `version.json.serverBuild` source commit (which can predate HEAD on a Pages-only change). A timeout fails with
 the expected commit, last reported commit and last probe result. Before rerunning Smoke, inspect `deploy-server.yml`:
 repair a failed deploy or confirm the expected source commit is live; rerunning is not the normal deploy ordering.
