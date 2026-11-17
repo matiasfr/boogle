@@ -4,6 +4,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## From 16 November
 
+- **P3, tooling (17 November):** a refused pre-push check leaves only a Node crash stub in the `ship-queue` log (`stdout: null`), so the failing test is not named and the check has to be rerun by hand (about 4 minutes each time, twice for garage step 3). Have `scripts/ship.sh` or `dev/ship-check.ts` keep the failing step's output.
 - **P3, from K3 (17 November, [report](../reports/town-k3-checkpoint.md)):** drawn roof ridges stand above their flat colliders, so a player on a roof sinks into it: up to 1.56 m on the new plot houses, 1.16 m on the hall and house, 1.20 m on the shop, 1.28 m on the museum (figures from geometry, no avatar seen). The level check also listed 15 new likely-visible z-fighting pairs against its baseline, not looked at. The Round’s frame timings were taken with other apps running.
 - **Proof debts from today, none tested on a device:** K2's two-player buy scenario shipped in #1932; remaining gaps include real-time motion and sound for the garage install and the house build; the rooftop run with a controller; a second real player inside a plot when a house completes; the full Works bot route after v53.
 - **Leftover moved here from the backlog:** P2, the rotunda's quiet-machine frame timing, smoothness and device performance are still unverified (its steps 1–5 shipped, #1880 and #1890).
