@@ -116,10 +116,9 @@ export async function createRailwayShelf(
     const key = `${k}:${n}:${owed}`;
     if (key === drawn) return;
     drawn = key;
-    const spec = LINE2_STATIONS[k];
     shelf.visible = depotPieceVisible(k, 'shelf');
     sign.board.visible = shelf.visible && !owed;
-    if (!spec?.shelf) return;
+    if (!shelf.visible) return;
     place(k);
     // On its own post beside the shelf's end, facing along the line toward the approach.
     sign.board.position.set(1.45, 0, 2.05).applyAxisAngle(THREE.Object3D.DEFAULT_UP, shelf.rotation.y).add(at);
