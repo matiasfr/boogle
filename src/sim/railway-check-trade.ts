@@ -7,11 +7,11 @@
 //                   strongbox's (boogles = landed + poured − spent) (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
-import { RIDER_UNIT, TRADE } from './railway-trade-layout.ts';
+import { RIDER_UNIT, TRADE, lineRoute } from './railway-trade-layout.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { plot, till, townClock, towns, trains, yardClock, yards } from './railway-rows.ts';
-import { plotSlot, freightAboard, lineRoute, ridersAboard, riderPlaces, loaderOn } from './railway-queries-trade.ts';
+import { plotSlot, freightAboard, ridersAboard, riderPlaces, loaderOn } from './railway-queries-trade.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);

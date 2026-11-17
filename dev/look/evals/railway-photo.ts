@@ -52,7 +52,7 @@ background(
     // The train leaves as the wagon couples, so this frame rides with it: from beside and behind the wagon,
     // along the train (the static frame above is only where it starts).
     if (beat === 'wagon coupled') {
-      type Pose = { x: number; y: number; z: number };
+      type Pose = { role: string; x: number; y: number; z: number };
       const { inspectRailway } = (await import(
         '/src/entities/railway/state.ts' as string
       )) as typeof import('../../../src/entities/railway/state.ts');
@@ -60,7 +60,7 @@ background(
         const train = (inspectRailway() as unknown as { line2View?: { trains: { wagon?: Pose; cars: Pose[] }[] } })
           .line2View?.trains[1];
         const w = train?.wagon,
-          head = train?.cars[2];
+          head = train?.cars.find((c) => c.role === 'kit');
         if (!w || !head) return;
         const d = Math.hypot(head.x - w.x, head.z - w.z) || 1,
           fx = (head.x - w.x) / d,

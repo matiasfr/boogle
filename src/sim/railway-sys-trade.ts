@@ -11,7 +11,7 @@
 import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE, trainDir } from './railway-train.ts';
-import { RIDER_UNIT, TRADE, type TradePct } from './railway-trade-layout.ts';
+import { RIDER_UNIT, TRADE, lineRoute, type TradePct } from './railway-trade-layout.ts';
 import { Plot, Rail, Till, Town, TownClock, Train, Yard, YardClock } from './railway-components.ts';
 import { railId, trainId } from './railway-queries.ts';
 import {
@@ -21,7 +21,6 @@ import {
   plotPrice,
   plotsStaked,
   fareOf,
-  lineRoute,
   lineYard,
   routeAhead,
   townBuildings,

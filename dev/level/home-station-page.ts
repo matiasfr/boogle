@@ -31,7 +31,7 @@ const bx = (b: Box): Box => ({ x: r2(b.x), z: r2(b.z), w: r2(b.w), d: r2(b.d), y
 async function part() {
   const layout = await import('../../src/place/layout.ts');
   const home = await import('../../src/place/home-station.ts');
-  const { LOCO, TRAILER, WAGON_CAR, TRAIN_OFFSETS } = await import('../../src/entities/railway/cars.ts');
+  const { consistOf } = await import('../../src/entities/railway/cars.ts');
   const { TRAIN_STOPS } = await import('../../src/sim/railway-train.ts');
   const { LINE2_FORGE, LINE2_BOILER, LINE2_PACK, LINE2_STATIONS } =
     await import('../../src/sim/railway-line2-layout.ts');
@@ -63,17 +63,18 @@ async function part() {
     const out: Record<string, (Box & { kind: string })[]> = {};
     for (const road of [0, 1] as const) {
       const s = TRAIN_STOPS[road]![0]! / 100;
-      const cars = road ? 4 : 3;
-      out[road ? 'l2' : 'l1'] = TRAIN_OFFSETS.slice(0, cars).map((o, k) => {
-        const spec = k === 0 ? LOCO : k === 3 ? WAGON_CAR : TRAILER;
-        const scale = k === 0 ? f : 1;
-        const off = k === 0 ? o - spec.hz + spec.hz * f : o;
-        const p = along(road, s + off);
-        return {
-          ...bx({ x: p.x, z: p.z, w: spec.hx * 2 * scale, d: spec.hz * 2 * scale, yaw: p.yaw }),
-          kind: k ? 'car' : 'loco',
-        };
-      });
+      out[road ? 'l2' : 'l1'] = consistOf({ line: road, wagon: road === 1, steel: false }).map(
+        ({ offset: o, spec, role }) => {
+          const k = role === 'engine' ? 0 : 1;
+          const scale = k === 0 ? f : 1;
+          const off = k === 0 ? o - spec.hz + spec.hz * f : o;
+          const p = along(road, s + off);
+          return {
+            ...bx({ x: p.x, z: p.z, w: spec.hx * 2 * scale, d: spec.hz * 2 * scale, yaw: p.yaw }),
+            kind: k ? 'car' : 'loco',
+          };
+        },
+      );
     }
     return out;
   };

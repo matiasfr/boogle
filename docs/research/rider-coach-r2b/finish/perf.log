@@ -1,0 +1,200 @@
+
+> boogle@0.1.0 perf
+> node dev/look/perf.ts
+
+bot queue: queued behind t3-b6310eac-63a166c3506c3ec2: /Users/matiasfranco/.t3/worktrees/boogle/t3-b6310eac-63a166c3506c3ec2/dev/look/look.ts --root /Users/matiasfranco/.t3/worktrees/boogle/t3-b6310eac-63a166c3506c3ec2/.look/rider-coach-r2b1/baseline --rail-seed boiler-long --query debugcam=1&pierShot=long --eval .look/rider-coach-r2b1/views.ts --until window.__pierShotReady --warm 2400 --seconds 1 --frames 2 --size 1280x900 --out .look/rider-coach-r2b1/before --name long --question Longest current train standing homeward and the old crossing (pid 13686), t3-b6310eac-63a166c3506c3ec2: /Users/matiasfranco/.t3/worktrees/boogle/t3-b6310eac-63a166c3506c3ec2/dev/look/look.ts --rail-seed deck-laid --query debugcam=1&pierShot=lever --eval .look/rider-coach-r2b1/views.ts --until window.__pierShotReady --warm 2400 --seconds 1 --frames 2 --size 1280x900 --out .look/rider-coach-r2b1/after --name lever --question Fixed Pier lever after R2b.1 (pid 13823), t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/look.ts --rail-seed boiler-long --hud --eval dev/look/evals/garage-open.ts --action .look/rider-coach-r2b/finish/garage-proof.ts --name rider-coach-garage --out .look/rider-coach-r2b/finish/garage --seconds 1 --frames 2 --question Does the live Cars tile show eight riders while the works copy has no coach? (pid 14440)
+bot queue: queued behind t3-b6310eac-63a166c3506c3ec2: /Users/matiasfranco/.t3/worktrees/boogle/t3-b6310eac-63a166c3506c3ec2/dev/look/look.ts --root /Users/matiasfranco/.t3/worktrees/boogle/t3-b6310eac-63a166c3506c3ec2/.look/rider-coach-r2b1/baseline --rail-seed boiler-long --query debugcam=1&pierShot=long --eval .look/rider-coach-r2b1/views.ts --until window.__pierShotReady --warm 2400 --seconds 1 --frames 2 --size 1280x900 --out .look/rider-coach-r2b1/before --name long --question Longest current train standing homeward and the old crossing (pid 13686), t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/look.ts --rail-seed boiler-long --hud --eval dev/look/evals/garage-open.ts --action .look/rider-coach-r2b/finish/garage-proof.ts --name rider-coach-garage --out .look/rider-coach-r2b/finish/garage --seconds 1 --frames 2 --question Does the live Cars tile show eight riders while the works copy has no coach? (pid 14440)
+bot queue: queued behind t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/look.ts --rail-seed boiler-long --hud --eval dev/look/evals/garage-open.ts --action .look/rider-coach-r2b/finish/garage-proof.ts --name rider-coach-garage --out .look/rider-coach-r2b/finish/garage --seconds 1 --frames 2 --question Does the live Cars tile show eight riders while the works copy has no coach? (pid 14440)
+bot queue: acquired t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/perf.ts; waited 81.22s
+[perf] entry: clicked Jump in
+[perf] renderer backend: webgpu
+render
+┌─────────┬──────────┬───────┬─────────────┬────────┬────────────┬──────────┐
+│ (index) │ backend  │ calls │ shadowCalls │ tris   │ geometries │ programs │
+├─────────┼──────────┼───────┼─────────────┼────────┼────────────┼──────────┤
+│ island  │ 'webgpu' │ 398   │ 184         │ 649812 │ 823        │ 207      │
+└─────────┴──────────┴───────┴─────────────┴────────┴────────────┴──────────┘
+{
+  "backend": "webgpu",
+  "calls": 398,
+  "shadowCalls": 184,
+  "tris": 649812,
+  "geometries": 823,
+  "programs": 207,
+  "frame": 221,
+  "renderPasses": 3,
+  "computeDispatches": 1,
+  "computePasses": 1,
+  "internalPixels": {
+    "width": 960,
+    "height": 600
+  },
+  "devicePixelRatio": 1,
+  "rendererPixelRatio": 1,
+  "msaaSamples": 4,
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "device": "",
+    "description": "",
+    "isFallbackAdapter": false
+  },
+  "workCountScope": "backend beginRender contexts and compute dispatches; excludes internal copy/clear/mipmap passes and XR layer splits",
+  "renderTargets": [
+    {
+      "id": "db4d2df2-e8ef-4e81-a800-8d9dca780fe8",
+      "name": "output",
+      "width": 960,
+      "height": 600,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 960,
+            "height": 600,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 960,
+              "height": 600,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 960,
+          "height": 600,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    },
+    {
+      "id": "da465012-b113-497d-ac92-1b0803a749a1",
+      "name": "ShadowMap",
+      "width": 2048,
+      "height": 2048,
+      "depth": 1,
+      "samples": 1,
+      "colors": [
+        {
+          "name": "ShadowMap",
+          "format": 1023,
+          "type": 1009,
+          "gpu": {
+            "width": 2048,
+            "height": 2048,
+            "layers": 1,
+            "format": "rgba8unorm",
+            "samples": 1
+          },
+          "multisampled": []
+        }
+      ],
+      "depthStencil": {
+        "name": "ShadowDepthTexture",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 2048,
+          "height": 2048,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 1
+        },
+        "multisampled": []
+      }
+    }
+  ],
+  "targetInventoryScope": "offscreen targets observed since collection began; not total residency; GPU descriptors are actual allocations, null means unavailable",
+  "route": {
+    "pathname": "/",
+    "query": {
+      "dpr": "fixed",
+      "debugcam": "1",
+      "room": "lookfbw1t",
+      "coi": "1"
+    },
+    "hash": ""
+  },
+  "view": {
+    "position": [
+      900.4548960101254,
+      20.73563838008075,
+      18.512570445951884
+    ],
+    "quaternion": [
+      -0.06660892149292418,
+      -0.3043115479200576,
+      -0.021336669637759646,
+      0.9500013052142704
+    ],
+    "fov": 62,
+    "near": 0.25,
+    "far": 4680
+  },
+  "flags": {
+    "prototypes": [
+      {
+        "id": "place",
+        "variant": "default"
+      }
+    ],
+    "look": null,
+    "fx": null,
+    "activeLook": {
+      "ground": true,
+      "light": true,
+      "contact": true,
+      "kit": true,
+      "mats": true,
+      "gtao": false
+    },
+    "dpr": "fixed"
+  },
+  "shadowCountScope": "draw-call difference between separate animation frames; moving objects can affect it",
+  "measuredView": "player camera"
+}
+
+main-thread CPU per frame section (ms over the last 240 frames; compare on the same device)
+┌─────────┬───────────────────────┬───────┬───────┬─────────┐
+│ (index) │ name                  │ avg   │ p95   │ max     │
+├─────────┼───────────────────────┼───────┼───────┼─────────┤
+│ 0       │ 'frame'               │ 6.357 │ 13.18 │ 608.185 │
+│ 1       │ 'splash update'       │ 2.354 │ 0.01  │ 564.595 │
+│ 2       │ 'main: render (CPU)'  │ 2.274 │ 4.43  │ 258.6   │
+│ 3       │ 'railway update'      │ 0.828 │ 6.43  │ 21.7    │
+│ 4       │ 'main: physics'       │ 0.516 │ 1.705 │ 34.47   │
+│ 5       │ 'town update'         │ 0.052 │ 0.105 │ 4.53    │
+│ 6       │ 'ambience update'     │ 0.046 │ 0.01  │ 10.575  │
+│ 7       │ 'player-view update'  │ 0.03  │ 0.09  │ 2.59    │
+│ 8       │ 'prompt lateUpdate'   │ 0.028 │ 0.095 │ 1.67    │
+│ 9       │ 'place-cove fixedPre' │ 0.022 │ 0.1   │ 0.965   │
+│ 10      │ 'camera update'       │ 0.021 │ 0.07  │ 1.355   │
+└─────────┴───────────────────────┴───────┴───────┴─────────┘
+
+sim, idle island: 0 ticks (client) in 0.4 s
+┌─────────────────────┬────────┬────────┬────────┐
+│ (index)             │ avg ms │ p95 ms │ max ms │
+├─────────────────────┼────────┼────────┼────────┤
+│ whole tick (sum)    │ 0      │ 0      │ 0      │
+│ sim: onTick, hashes │ 0      │ 0      │ 0      │
+└─────────────────────┴────────┴────────┴────────┘
+gfx errors: none
+bot queue: released t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/perf.ts

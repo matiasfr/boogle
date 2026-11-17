@@ -35,6 +35,7 @@ import {
   legRack,
   LEG_SITE_REACH,
   legS,
+  legStartS,
   ROW_SHIFT,
   rowPoint,
 } from '../../src/sim/railway-route.ts';
@@ -176,7 +177,7 @@ export function routeRulesShard(shard: number) {
     // R2b.2 moves the crossover 3.4 m toward Home: 3.70 m with v56's extent, 0.30 m with the coach.
     // The exact production drift pin lives in level-check; this remains the design minimum.
     assert.ok(gorge.s - TRAIN_EXTENT.behindCm - crossEnd >= 30, 'the tail at least 0.3 m clear of the crossover');
-    assert.equal(line2.halts[RING]!.s, legS(LEG, LEG.fromCm), 'the leg starts at Ring Island (row cm less 100)');
+    assert.equal(line2.halts[RING]!.s, legStartS(LEG), 'R2b service mark; physical construction origin stays fixed');
     for (let k = 1; k < line2.halts.length; k++) assert.ok(line2.halts[k]!.s > line2.halts[k - 1]!.s);
     assert.equal(line2.path.length / 2 - 1, Math.floor(legS(LEG, 325140) / 1000), 'the path runs past the buffers');
     for (const id of ['ns', 'bay', 'cave'] as const) {
@@ -202,8 +203,9 @@ export function routeRulesShard(shard: number) {
     );
     assert.deepEqual([ROW_SHIFT.ns, ROW_SHIFT.bay, ROW_SHIFT.cave], [0, 0, 0]);
     // The Ring Island halt: the row's stop less the shift is line 2's, and both are the ring layout's u 448 m.
-    assert.equal(legS(LEG, ring.stops[0]!), RING_END.s);
-    const at = ringAt(RING_END.u),
+    assert.equal(legStartS(LEG), RING_END.s);
+    assert.equal(legS(LEG, ring.stops[0]!) + 340, RING_END.s); // R2b service mark is 3.4 m beyond physical origin
+    const at = ringAt(RING_END.u - 340),
       row = rowPoint('ring', ring.stops[0]!);
     assert.ok(Math.hypot(row.x - at.x, row.z - at.z) <= 100, 'the same place within 1 m');
     // Line 2's path past s 1220 m is the row read at s + shift (its first sample, and the Gorge's halt).
@@ -1660,7 +1662,7 @@ export function routeRulesShard(shard: number) {
 
   // Build 2 alone (origin/main 4e769acd, v31), the same script from `ring-joined`: the kit in the yard, the works fed
   // the tick it lands, the install pressed the tick the first steel is home. Measured with the leg's rules absent.
-  const BUILD2 = { yard: 651, home: 1824 } as const;
+  const BUILD2 = { yard: 650, home: 1824 } as const;
   function gate15(fed: boolean) {
     const s = unaudited(copy(JOINED)),
       t0 = s.t;

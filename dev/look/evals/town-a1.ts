@@ -25,7 +25,7 @@ const poll = () => {
   const yards = w.ids(Yard).map((id) => ({ ...w.get(Yard, id)! }));
   const trains = inspectRailway()?.line2View.trains ?? [];
   const train = trains.find((tr) => tr.line === 0 && tr.freight > 0);
-  const car = train?.cars[2];
+  const car = train?.cars.find((c) => c.role === 'kit');
   if (mode === 'train' && car) {
     window.__debugCam?.set([car.x + 7, car.y + 5, car.z + 8], [car.x, car.y + 0.7, car.z], 55);
   } else if (mode !== 'train') {

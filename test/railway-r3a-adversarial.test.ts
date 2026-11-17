@@ -276,7 +276,7 @@ test("trainRequestable's v26 count form (train-view.ts until R4a) offers what th
     track: 0,
     from: 90000,
     v0: 0,
-    dest: 119000,
+    dest: stops[5]!,
     depart: 0,
   };
   assert.deepEqual(trainRequestable(r, V, stops.length, 1), trainRequestable(r, V, stops, 1));

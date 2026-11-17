@@ -25,8 +25,8 @@ export const TRAIN = {
   answerTicks: 270,
   kitWaitTicks: 60,
   /** The block rule's gap round the circuit (27.4 m, set as the footing wagon's 7.4 m, v32's RIDER_SPAN, plus 20 m; kept at v33). Since
-   * v31's 8.2 m extent ahead of the pose (TRAIN_EXTENT), and v33's 12.7 m behind it (the steel car, fourth-car R1),
-   * the nose-to-tail clearance at this floor is 6.5 m. */
+   * v31's 8.2 m extent ahead of the pose (TRAIN_EXTENT), and v57's 16.1 m behind it (the steel car on the coach train),
+   * the nose-to-tail clearance at this floor is 3.1 m. */
   sepCm: 2740,
 } as const;
 /** Line 2 answers at 27 s and leaves six seconds later; line 1 keeps its existing wake and dwell. */

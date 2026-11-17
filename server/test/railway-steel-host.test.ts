@@ -382,10 +382,10 @@ test('steel host: the install at the table, once, two players pressing on the sa
   }
 });
 
-// The fourth car (R3b): a rider on the steel car of the wagon's train (11.1 m behind the pose, RIDER_SPAN) asks for
-// the quarry as a real r:edit, standing at the Village: accepted. From 22 m behind (past the rider's 10 m of reach
-// and the train's 11.1 m): refused. No new op; this is the reach the steel car's deck leans on.
-test('steel host: a rider asks from the steel car of the wagon train, 11.1 m behind its pose; 22 m is out of reach', async () => {
+// The fourth car (R3b): a rider on the steel car of the wagon's train (14.5 m behind the pose, RIDER_SPAN) asks for
+// the quarry as a real r:edit, standing at the Village: accepted. From 25 m behind (past the rider's 10 m of reach
+// and the train's 14.5 m): refused. No new op; this is the reach the steel car's deck leans on.
+test('steel host: a rider asks from the steel car of the wagon train, 14.5 m behind its pose; 25 m is out of reach', async () => {
   const r = await host('steel-car-call', fixture('steel-home'));
   try {
     assert.equal(await r.action(install(), spot(SHED_TABLE)), 'accepted');
@@ -400,14 +400,14 @@ test('steel host: a rider asks from the steel car of the wagon train, 11.1 m beh
     }
     const along = trainAlong(train(r.w, k), 1, r.tick),
       y = RAIL_HALTS[2]!.platforms[0].y;
-    // Straight back from the pose along the steel car's line (line 2 itself ends 18.25 m behind, at the table), in
+    // Straight back from the pose along the steel car's line (line 2 itself ends 21.65 m behind, at the table), in
     // whole centimetres as a client sends its position.
     const pose = railLinePoint(1, along),
-      deck = railLinePoint(1, along - 1110);
+      deck = railLinePoint(1, along - 1450);
     const behind = (cm: number): At => [
-      Math.round(pose.x + ((deck.x - pose.x) * cm) / 1110),
+      Math.round(pose.x + ((deck.x - pose.x) * cm) / 1450),
       y,
-      Math.round(pose.z + ((deck.z - pose.z) * cm) / 1110),
+      Math.round(pose.z + ((deck.z - pose.z) * cm) / 1450),
     ];
     // A halt up the line this train stops at on request (not an end, not one it passes by now the Pier is open).
     const stops = stopsOf(r.w, 1),
@@ -416,20 +416,20 @@ test('steel host: a rider asks from the steel car of the wagon train, 11.1 m beh
       );
     assert.ok(id >= 0, 'a request halt up line 2');
     const ask = { op: 'rail.call', id, dir: 1, train: k };
-    assert.equal(await r.action(ask, behind(2200)), 'rejected', '22 m behind the pose: beside no car');
-    assert.equal(await r.action(ask, behind(1110)), 'accepted', "on the steel car's deck");
+    assert.equal(await r.action(ask, behind(2500)), 'rejected', '25 m behind the pose: beside no car');
+    assert.equal(await r.action(ask, behind(1450)), 'accepted', "on the steel car's deck");
   } finally {
     await r.done();
   }
 });
 
-// Review of car4/rules (R3b's gap): 11.1 m and 22 m read the same on v32's span (17.4 m of reach), so the case above
-// passes with RIDER_SPAN left at 740. This one pins v33's own edge on a standing train, as real r:edit: 21.0 m behind
-// the pose is in reach (refused on v32), 21.25 m is not, and the span is the steel car's place on the wagon's train.
-// It also shows what the reach is not: 21.0 m straight back is 8.3 m past the train's tail (12.7 m), on no car.
-test('review (car4): the reach edge of a standing fitted train is 21.1 m, the steel car plus the rider 10 m', async () => {
+// R2b updates the car4 reach proof for the coach train (v57): 14.5 m and 25 m read the same on v32's span (17.4 m of reach), so the case above
+// passes with RIDER_SPAN left at 740. This one pins v33's own edge on a standing train, as real r:edit: 24.4 m behind
+// the pose is in reach (refused on v32), 24.65 m is not, and the span is the steel car's place on the wagon's train.
+// It also shows what the reach is not: 24.4 m straight back is 8.3 m past the train's tail (16.1 m), on no car.
+test('review (car4): the reach edge of a standing fitted train is 24.5 m, the steel car plus the rider 10 m', async () => {
   assert.equal(RIDER_SPAN, Math.round(-steelCarOffset(true) * 100), "the span is the steel car's centre");
-  assert.equal(RIDER_REACH + RIDER_SPAN, 2110);
+  assert.equal(RIDER_REACH + RIDER_SPAN, 2450);
   // A v32 room id is not this server's railway: no host is made for it (the deploy gap).
   assert.equal(isRailwayRoom('rail-v32-somewhere'), false);
   assert.equal(currentRoomId('rail-v32-somewhere', roomNamespaces(['*'])), false);
@@ -446,11 +446,11 @@ test('review (car4): the reach edge of a standing fitted train is 21.1 m, the st
     const along = trainAlong(train(r.w, k), 1, r.tick),
       y = RAIL_HALTS[2]!.platforms[0].y;
     const pose = railLinePoint(1, along),
-      deck = railLinePoint(1, along - 1110);
+      deck = railLinePoint(1, along - 1450);
     const behind = (cm: number): At => [
-      Math.round(pose.x + ((deck.x - pose.x) * cm) / 1110),
+      Math.round(pose.x + ((deck.x - pose.x) * cm) / 1450),
       y,
-      Math.round(pose.z + ((deck.z - pose.z) * cm) / 1110),
+      Math.round(pose.z + ((deck.z - pose.z) * cm) / 1450),
     ];
     const stops = stopsOf(r.w, 1),
       id = RAIL_HALTS.findIndex(
@@ -458,8 +458,8 @@ test('review (car4): the reach edge of a standing fitted train is 21.1 m, the st
       );
     const ask = { op: 'rail.call', id, dir: 1, train: k };
     assert.equal(train(r.w, k).phase, TRAIN_PHASE.STAND, 'still standing: no travel in the lag window');
-    assert.equal(await r.action(ask, behind(2125)), 'rejected', '21.25 m: past the reach');
-    assert.equal(await r.action(ask, behind(2100)), 'accepted', '21.0 m: inside it (17.4 m on v32)');
+    assert.equal(await r.action(ask, behind(2465)), 'rejected', '24.65 m: past the reach');
+    assert.equal(await r.action(ask, behind(2440)), 'accepted', '24.4 m: inside it (17.4 m on v32)');
   } finally {
     await r.done();
   }

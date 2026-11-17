@@ -306,7 +306,7 @@ test('null layouts reject without recursive revalidation', () => {
 });
 
 test('seat degree recipes resolve before attachment validation and preserve authored data', () => {
-  const source = structuredClone(railway[0]!);
+  const source = structuredClone(railway.find((p) => p.key === 'railway.machine-chair')!);
   const bytes = JSON.stringify(source);
   const compiled = validation.loadPrefabArtifact({
     ...metadata,

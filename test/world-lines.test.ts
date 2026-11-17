@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { FORMATION, LIVE_SECOND_TRACK, WORLD_LINES } from '../src/sim/railway-world-lines.ts';
+import { RAIL_LEGS, legStartS, legS } from '../src/sim/railway-route.ts';
 import { TRAIN, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { LINES, ORIGIN } from '../src/place/layout.ts';
 import { layout, parseMapPage } from '../src/sickle/map-data.ts';
@@ -116,7 +117,9 @@ test("line 2's extension starts at line 2's rail end and counts on from it", () 
   assert.ok(Math.hypot(ring.pts[0]![0] - end[0]!, ring.pts[0]![1] - end[1]!) < 150, 'first point at the rails end');
   assert.ok(Math.abs(ring.fromCm - Math.round(E.len * 100)) <= 1);
   // Ring Island's stop (halt 5): the line's last before the greybox route's own halts, which the ring row's stops make.
-  assert.ok(ring.stops[0]! > TRAIN_STOPS[1]![5]!, 'its stops come after the pier stop');
+  const leg = RAIL_LEGS.find((l) => l.row === 'ring')!;
+  assert.equal(legStartS(leg), TRAIN_STOPS[1]![5]!, 'R2b moved service mark');
+  assert.equal(legS(leg, ring.stops[0]!) + 340, legStartS(leg), 'physical row origin stays fixed');
 });
 
 test('no future span is steeper than the 4% ruling grade, and the Gorge halts stand low in the split', () => {

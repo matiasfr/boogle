@@ -154,6 +154,24 @@ export function checkRiderCoach() {
       (k) => sideAt(s + consist[k]!.offset, 4.05, 2.25, 0),
     );
   }
+  for (const [i, h] of RING_HEAD.entries()) {
+    const terminalStops = [...stops.slice(0, 4), h.s];
+    row(
+      `Railhead ${i + 1} terminal homeward`,
+      coachTrain(h.s / 100, true, terminalStops),
+      (d) => curvedMargin(d, h.s / 100 - 15, h.s / 100 + 10, 4.05, 5),
+      (k) => sideAt(h.s / 100 + consist[k]!.offset, 4.05, 2.25, 0),
+    );
+  }
+  for (let i = 6; i < stops.length - 1; i++) {
+    const s = stops[i]! / 100;
+    row(
+      `${RAIL_LINES[LINE2]!.halts[i]!.name} terminal homeward`,
+      coachTrain(s, true, stops.slice(0, i + 1)),
+      (d) => curvedMargin(d, s - 15, s + 10, 4.05, 5),
+      (k) => sideAt(s + consist[k]!.offset, 4.05, 2.25, 0),
+    );
+  }
   row(
     'Joint homeward',
     coachTrain(RING_HEAD.at(-1)!.s / 100, true),
@@ -176,6 +194,13 @@ export function checkRiderCoach() {
       (d) => margin(d, f),
       () => ({ frame: f, halfWidth: 1.75, expectedDistance: Math.abs(lat - (up ? -4 : 0)) }),
     );
+    if (!up)
+      row(
+        'Ring Island terminal homeward',
+        coachTrain(stops[5]! / 100, true, stops.slice(0, 6)),
+        (d) => margin(d, f),
+        () => ({ frame: f, halfWidth: 1.75, expectedDistance: Math.abs(lat) }),
+      );
     for (let i = 6; i < stops.length; i++) {
       const s = stops[i]! / 100,
         gorge = i === stops.length - 1;
@@ -190,7 +215,7 @@ export function checkRiderCoach() {
   }
   let gap = Infinity,
     leadingS = 0;
-  // Includes the tight approach and the new Home signal (70.1 m), sampled every 25 cm.
+  // Additional fine approach samples; checkCoachAudit also sweeps every 0.5 m of BOTH tracks over the WHOLE line.
   for (let s = 50; s <= 120; s += 0.25) {
     const front = coachTrain(s, true),
       rear = coachTrain(s - TRAIN.sepCm / 100, true);

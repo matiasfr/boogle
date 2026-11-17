@@ -980,7 +980,7 @@ test('R3: the check refuses bad riders and a bad strongbox, each with its messag
   const line2 = RAIL_TRAINS.findIndex((t) => t.line === LINE2),
     line1 = RAIL_TRAINS.findIndex((t) => t.line === 0);
   assert.equal(
-    verdict((w) => (w.mut(Train, w.lookup(Train, line2)!)!.riders = 9)),
+    verdict((w) => (w.mut(Train, w.lookup(Train, line2)!)!.riders = TRADE.riderPlaces + 1)),
     'railway: riders bounds',
   );
   assert.equal(

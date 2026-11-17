@@ -83,8 +83,8 @@ unbought priced plot when the shared strongbox can pay. It subtracts the price o
 purchase tick, and counts the house after 100 ticks (10 seconds). Base prices are 300, 800 and 800; each bought
 building immediately doubles the other prices in that town, and the room defaults to `railPricePct = 50`. Each starting
 building or completed rider house sends one rider a minute each way. Plot 2 is the loader yard, with no riders;
-only plots 1 and 3 add the residents’ town fact. Today each train has four rider places, separate from four player
-seats. Plot 3 costs 1,600 after the first two purchases at the default room price. The strongbox holds the larger of twenty minutes'
+only plots 1 and 3 add the residents’ town fact. Each passenger-route train has eight rider places in its dedicated coach, separate from four player
+seats (rider-coach R2b, v57). Plot 3 costs 1,600 after the first two purchases at the default room price. The strongbox holds the larger of twenty minutes'
 demand income or 1.5 times the dearest staked, unbought offer. The buy is not predicted. B1 supplies the server rule,
 adapter intent, town facts and `house-ready` / `house-built` tooling seeds. The town's fact reader uses the mirror tick and refreshes staked
 plots when a purchase changes, while reusing unchanged projections.
@@ -933,6 +933,16 @@ else the lever competes as it always did (a loose pile beside it does not beat i
 at hand wins. Local view; no op, state, catalog or server change. Not tested on a device.
 _Known, not fixed here:_ a loose pile's pickup is offered as runnable while a footing fills your back, though the
 server refuses it (`sources.ts`); it should be greyed.
+
+**Riders' coach and Home's stop (16 November, R2b, v57).** Every line with a rider route has the dedicated
+coach directly behind the players' car. Home keeps its track: line 2's stop moves from s 18.25 to **21.65 m**,
+and Ring Island's mark moves 3.40 m on. Their freight cars keep their old world positions. The longest train's
+rear reservation is **16.10 m**; signals, end blocks and the Works' role-based kit, footing and steel decks follow.
+Home's actual coach train retains 0.05 m past the spur points and 0.4533 m before the players' deck end.
+High Gorge's crossover moves 3.40 m toward Home to s **3192.00–3214.00**, leaving the full train straight at its
+unchanged stop (0.30 m tail clearance); its platform and concourse stay put. The one-sided Stack heads remain a
+separate pre-existing level gap: retained homeward stops at heads 1 and 2 and Stack halt have only an east deck,
+across the outward track. Riders do not board or alight there. Proposed west platforms are not part of this build.
 
 **Trains keep to the right, and the lever you pull is on your train's platform (14 November 2026, view; [running-side](../plans/running-side.md), step 4, with step 3's catalog; local branch, ships with the v45 reset).**
 _Why (owner, 14 November: "the train then goes left-hand side instead of right-hand side towards the pier... the
@@ -2583,16 +2593,16 @@ then `plot2`, then `plot1`. Sources: [plots](../../src/entities/town/plots.ts),
 [town layout](../../src/place/town-plan.ts), [blockout](../../src/place/town-blockout.ts).
 
 Little guys wait beside the island and far platforms, board the trains and ride on them. At most twelve waiting
-figures are drawn per end; larger crowds get a true-count board. Each passenger car carries and draws up to **four**
-riders (`TRADE.riderPlaces`), separate from the four player seats. Eight arrive with the
-[dedicated coach A](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework), after its halt rework; today's car
-must show everyone it carries (orchestrator, 16 November). The first-town S1/V1 stand-in has two overlapping
-riders per diagonally opposite roomy end: outer (x ±0.78, z ±1.20), inner (x ±0.77, z ±1.02), matching signs.
-They face outward at slightly different angles, with the outer places filled first, alternating ends.
-The upright poses run after the car's rendered transform, taking its pitch and shudder. The four heads remain
-countable, clear of fittings, seats, seated players and pets in the
-[inspected stills and sampled geometry](../reports/first-town-four-place-rework.md). No counter or new collider.
-The Cars tile reads both numbers from data: "4 seats, 4 riders", with Seats 4 and Riders 4 (placeholder copy).
+figures are drawn per end; larger crowds get a true-count board. Each passenger-route train carries up to **eight**
+riders (`TRADE.riderPlaces`) in its dedicated coach immediately behind the four-seat players' car. Four riders sit
+at distinct window openings on each side; places fill alternating sides. Riders no longer stand in the players' car.
+The blockout is 2.90 × 1.60 × 2.05 m: timber body, iron underframe, five posts and four openings per side. Players
+can stand on its solid roof but cannot enter. Seating follows the coach's rendered pose; count changes happen while
+the train stands at the route's Home or current far-end platform. This is count-driven visibility, with no door walk
+or step yet (R3). The timber train has no rider route and no coach; the garage's works copy also excludes it.
+The Cars tile reads both numbers from data: "4 seats, 8 riders", with Seats 4 and Riders 8. Its description is the
+placeholder "The knifeboard car seats 4 players; the riders' coach behind it seats 8." The coach does not consume a
+boiler allowance; the existing boiler readouts now count 4 / 4 / 5 cars. [R2b measurements and evidence](../research/rider-coach-r2b.md).
 Fares fill the
 shared strongbox: inside the hall, against its north end wall, the ticket counter shows its balance and a coin
 column proportional to its cap, with a fixed cap mark. Sources:

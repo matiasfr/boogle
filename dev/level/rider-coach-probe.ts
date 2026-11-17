@@ -6,7 +6,21 @@
 // `cart` (when the depot cart and line 2's trains coexist).
 // Candidate closes the four constraints (x, z, heading, length) at the original line's s 89;
 // right radius is free, left radius 18 m. LEG closes x, z and heading with both radii 15 m.
-import { AXIS, BUFFERS, HEADS, ISLAND, ISLAND_A, ISLAND_C, LEG, ROAD2_S, axisPoint, march, roadAt, type Seg, type XZ } from '../../src/place/home-station.ts';
+import {
+  AXIS,
+  BUFFERS,
+  HEADS,
+  ISLAND,
+  ISLAND_A,
+  ISLAND_C,
+  LEG,
+  ROAD2_S,
+  axisPoint,
+  march,
+  roadAt,
+  type Seg,
+  type XZ,
+} from '../../src/place/home-station.ts';
 import { LINES, LINKS, CART, FORMATION, lineAt, offsetLat, railY, type Line } from '../../src/place/layout.ts';
 import { frameBesideLine, stationColliders, type FrameAt } from '../../src/place/spatial-station.ts';
 import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
@@ -158,47 +172,45 @@ for (let s = 28; s <= 89; s += 0.25) {
   moved.push({ x: b.x + 1000, z: b.z, s });
   if (s >= 34) moved.push(beside(line, s));
 }
-const candidate =
-    {
-      candidateOnly: true,
-      head,
-      leg,
-      join,
-      legLength: legLen,
-      oldLegLength: LEG.len,
-      forge,
-      pinnedForgeCm: Math.round(forge * 100),
-      legToTurnout: FORMATION.quarry.from - to,
-      baselineUpRadius: measure(baseline).row.minRadius,
-      proposedUpRadius: measure(proposed).row.minRadius,
-      proposedUpRadiusAt: measure(proposed).row.minRadiusAt,
-      maxMove,
-      trainRows,
-      frame: {
-        old: oldFrame,
-        proposed: frame,
-        move: distance(frame, oldFrame),
-        oldUpDistance: nearest(oldFrame, dense(old)),
-        proposedUpDistance: nearest(frame, dense(line)),
-        sameStationUpDistance: distance(frame, beside(line, 40.5)),
-        fullOffsetDistance: 7.5 - 4,
-      },
-      rack: {
-        ...rack,
-        haul: distance({ x: frame.x - 1000, z: frame.z }, rack),
-        body: sweep(rack),
-        posts: posts.map(sweep),
-        ground: H(rack.x + 1000, rack.z),
-        railAtLegStart: railY(LINES.north, 54),
-        railAtLegEnd: railY(line, to),
-      },
-      rackAlternative,
-      nearestTrees: TREE_SOURCES.filter((t) => !t.cleared)
-        .map((t) => ({ id: t.index, ...nearest(t, moved) }))
-        .sort((a, b) => a.d - b.d)
-        .slice(0, 3),
-    };
-
+const candidate = {
+  candidateOnly: true,
+  head,
+  leg,
+  join,
+  legLength: legLen,
+  oldLegLength: LEG.len,
+  forge,
+  pinnedForgeCm: Math.round(forge * 100),
+  legToTurnout: FORMATION.quarry.from - to,
+  baselineUpRadius: measure(baseline).row.minRadius,
+  proposedUpRadius: measure(proposed).row.minRadius,
+  proposedUpRadiusAt: measure(proposed).row.minRadiusAt,
+  maxMove,
+  trainRows,
+  frame: {
+    old: oldFrame,
+    proposed: frame,
+    move: distance(frame, oldFrame),
+    oldUpDistance: nearest(oldFrame, dense(old)),
+    proposedUpDistance: nearest(frame, dense(line)),
+    sameStationUpDistance: distance(frame, beside(line, 40.5)),
+    fullOffsetDistance: 7.5 - 4,
+  },
+  rack: {
+    ...rack,
+    haul: distance({ x: frame.x - 1000, z: frame.z }, rack),
+    body: sweep(rack),
+    posts: posts.map(sweep),
+    ground: H(rack.x + 1000, rack.z),
+    railAtLegStart: railY(LINES.north, 54),
+    railAtLegEnd: railY(line, to),
+  },
+  rackAlternative,
+  nearestTrees: TREE_SOURCES.filter((t) => !t.cleared)
+    .map((t) => ({ id: t.index, ...nearest(t, moved) }))
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 3),
+};
 
 // ---------------------------------------------------------------- the planner's revision (16 November), read-only
 const deg = (r: number) => (r * 180) / Math.PI;
@@ -394,7 +406,14 @@ function rackSearch(l: Line, lg: Seg[], landing: number) {
     const a = roadPt(Math.max(0, d - 1.1)),
       b = roadPt(d + 1.1),
       c = roadPt(d);
-    cartDecks.push({ x: c.x, z: c.z, yaw: Math.atan2(b.x - a.x, b.z - a.z), hx: CART.hx, back: CART.hz, front: CART.hz });
+    cartDecks.push({
+      x: c.x,
+      z: c.z,
+      yaw: Math.atan2(b.x - a.x, b.z - a.z),
+      hx: CART.hx,
+      back: CART.hz,
+      front: CART.hz,
+    });
   }
   const upAt = (s: number, out: XZ) => {
     const p = lineAt(l, s, blank()),
@@ -436,7 +455,10 @@ function rackSearch(l: Line, lg: Seg[], landing: number) {
     }
     return n;
   };
-  const base = { x: -Math.sin(f.yaw) * 6 - Math.cos(f.yaw) * spec.side * 8, z: -Math.cos(f.yaw) * 6 + Math.sin(f.yaw) * spec.side * 8 };
+  const base = {
+    x: -Math.sin(f.yaw) * 6 - Math.cos(f.yaw) * spec.side * 8,
+    z: -Math.cos(f.yaw) * 6 + Math.sin(f.yaw) * spec.side * 8,
+  };
   const evaluate = (degrees: number, facing: boolean) => {
     const th = (degrees * Math.PI) / 180;
     const at = {
@@ -449,7 +471,15 @@ function rackSearch(l: Line, lg: Seg[], landing: number) {
     // stock-sign: its post at (-1.2, -1.55) in the rack's frame (three.js Y rotation), a 1.3 m board across it.
     const sx = -1.2 * Math.cos(yaw) + -1.55 * Math.sin(yaw),
       sz = 1.2 * Math.sin(yaw) + -1.55 * Math.cos(yaw);
-    const sign: Box = { id: 'sign', x: at.x + sx, z: at.z + sz, yaw: yaw + Math.PI / 2, hx: 0.65, back: 0.06, front: 0.06 };
+    const sign: Box = {
+      id: 'sign',
+      x: at.x + sx,
+      z: at.z + sz,
+      yaw: yaw + Math.PI / 2,
+      hx: 0.65,
+      back: 0.06,
+      front: 0.06,
+    };
     const gap = (env: Box[], others: Deck[]) => Math.min(...env.flatMap((e) => others.map((o) => deckGap(e, o))));
     const env = [rk, sign];
     const corners = [-1, 1].flatMap((a) => [-1, 1].map((b) => ({ a, b })));
@@ -457,7 +487,10 @@ function rackSearch(l: Line, lg: Seg[], landing: number) {
     const ground = Math.max(
       ...corners.map(({ a, b }) =>
         Math.abs(
-          H(at.x + 1000 + Math.cos(yaw) * a * 1.2 + Math.sin(yaw) * b * 0.87, at.z - Math.sin(yaw) * a * 1.2 + Math.cos(yaw) * b * 0.87) - hc,
+          H(
+            at.x + 1000 + Math.cos(yaw) * a * 1.2 + Math.sin(yaw) * b * 0.87,
+            at.z - Math.sin(yaw) * a * 1.2 + Math.cos(yaw) * b * 0.87,
+          ) - hc,
         ),
       ),
     );
@@ -503,7 +536,10 @@ function rackSearch(l: Line, lg: Seg[], landing: number) {
     best: pass.sort((a, b) => score(b) - score(a)).slice(0, 3),
     nearestToInherited: pass.sort((a, b) => Math.abs(a.degrees) - Math.abs(b.degrees)).slice(0, 2),
     // The best placement still on the approach (behind the frame, toward Home): the inherited design's side.
-    bestOnApproach: pass.filter((r) => r.along <= -1).sort((a, b) => score(b) - score(a)).slice(0, 2),
+    bestOnApproach: pass
+      .filter((r) => r.along <= -1)
+      .sort((a, b) => score(b) - score(a))
+      .slice(0, 2),
     every10: rows.filter((r) => !r.facing && Number.isInteger(r.degrees / 10)),
   };
 }
@@ -612,7 +648,12 @@ console.log(
       rack: {
         today: rackSearch(old, LEG.segs as unknown as Seg[], LEG.to),
         candidate: rackSearch(line, leg, to),
-        recommendedSolve: { join: best.join, rightRadius: best.rightRadius, leftRadius: best.leftRadius, ...rackSearch(best.line, best.leg, to) },
+        recommendedSolve: {
+          join: best.join,
+          rightRadius: best.rightRadius,
+          leftRadius: best.leftRadius,
+          ...rackSearch(best.line, best.leg, to),
+        },
       },
       cart: cartRows,
     },

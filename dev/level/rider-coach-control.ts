@@ -2,10 +2,23 @@
 // R2B_CONTROL=baseline|cap|geometry|home|ring|tail|current node --import ./dev/level/rider-coach-control.ts ...
 import { registerHooks } from 'node:module';
 const mode = process.env.R2B_CONTROL ?? 'current';
-if (!['baseline', 'cap', 'geometry', 'home', 'ring', 'tail', 'current', 'namespace'].includes(mode))
+if (
+  !['baseline', 'cap', 'geometry', 'home', 'ring', 'tail', 'current', 'namespace', 'gorge', 'pre-gorge'].includes(mode)
+)
   throw new Error(`Bad control: ${mode}`);
-const enabled = (key: string) => mode === 'current' || mode === key || (mode === 'geometry' && key !== 'cap');
+const enabled = (key: string) =>
+  mode === 'current' ||
+  (mode === 'pre-gorge' && key !== 'gorge') ||
+  mode === key ||
+  (mode === 'geometry' && key !== 'cap');
 const changes = [
+  ['/src/world/railway-server.ts', 'RIDER_SPAN = 1450', 'RIDER_SPAN = 1110', 'tail'],
+  [
+    '/src/sim/railway-world-lines.ts',
+    'sCm: 319300, x: -5698, z: -195221, y: 370',
+    'sCm: 319640, x: -5946, z: -195454, y: 358',
+    'gorge',
+  ],
   ['/src/sim/railway-trade-layout.ts', 'riderPlaces: 8,', 'riderPlaces: 4,', 'cap'],
   ['/src/sim/railway-lines.ts', 'behindCm: 1610', 'behindCm: 1270', 'tail'],
   ['/src/sim/railway-lines.ts', 's: 2165,', 's: 1825,', 'home'],

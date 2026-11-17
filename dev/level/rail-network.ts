@@ -47,7 +47,7 @@ import {
 } from '../../src/sim/railway-ring-layout.ts';
 import { ENGINE } from '../../src/entities/railway/engine.ts';
 import { BUFFERS, LEG, SPUR } from '../../src/place/home-station.ts';
-import { TRAILER, TRAIN_OFFSETS } from '../../src/entities/railway/cars.ts';
+import { TRAILER, TRAIN_OFFSETS, consistOf, consistBounds } from '../../src/entities/railway/cars.ts';
 import { line2World, line2Y } from '../../src/entities/railway/line2-path.ts';
 
 export type Pt = { x: number; z: number; y: number; s: number };
@@ -430,13 +430,13 @@ export const CONSIST = (() => {
   const engineNose = TRAIN_OFFSETS[0]! + ENGINE.hz;
   const big = { hz: ENGINE.hz * 1.5 };
   const bigNose = TRAILER.hz + 0.6 + 2 * big.hz;
-  const tail = -3 * 3.7 - TRAILER.hz;
+  const tail = consistBounds(consistOf({ line: 1, wagon: true, steel: true })).lo;
   return {
     pass,
     engineNose,
     bigNose,
     tail,
-    todayTail: TRAIN_OFFSETS.at(-1)! - TRAILER.hz,
+    todayTail: tail,
     engineLength: 2 * ENGINE.hz,
     bigLength: 2 * big.hz,
   };

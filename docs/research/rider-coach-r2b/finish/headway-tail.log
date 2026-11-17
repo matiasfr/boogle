@@ -1,0 +1,10 @@
+✔ the headway hold spaces two trains that started together (100%) (184.544834ms)
+✔ the headway hold spaces two trains that started together (75%) (114.278542ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5315.210166

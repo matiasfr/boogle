@@ -10,7 +10,7 @@ import { JUMP } from '../../src/entities/player/state.ts';
 import { APEX_GRAVITY } from '../../src/entities/player/apex-float.ts';
 import { MOVE } from '../../src/place/tech-layout.ts';
 import { ENGINE, ENGINE_BOILER, ENGINE_CAB } from '../../src/entities/railway/engine.ts';
-import { STEEL_CAR, TRAIN_CARS, TRAIN_OFFSETS, steelCarOffset } from '../../src/entities/railway/cars.ts';
+import { STEEL_CAR, TRAIN_OFFSETS, steelCarOffset, consistOf } from '../../src/entities/railway/cars.ts';
 import { CARRY } from '../../src/physics/platforms.ts';
 import { TUNABLES } from '../../src/sim/tune.ts';
 import { RAIL_LINES, TRAIN_EXTENT, TURNOUT_CM } from '../../src/sim/railway-lines.ts';
@@ -150,13 +150,15 @@ const STANDABLE = [
   { name: 'chimney', off: TRAIN_OFFSETS[0]!, z: ENGINE_BOILER.chimney.z, y: ENGINE_BOILER.chimney.y, hx: 0 },
   { name: 'boiler top to its front', off: TRAIN_OFFSETS[0]!, z: ENGINE_BOILER.zFront, y: ENGINE_BOILER.top, hx: 0 },
   { name: 'running board', off: TRAIN_OFFSETS[0]!, z: ENGINE.hz, y: ENGINE.top, hx: ENGINE.hx },
-  ...TRAIN_CARS.slice(1).map((c, n) => ({
-    name: n === TRAIN_CARS.length - 2 ? "wagon's deck" : `flatbed ${n + 1}`,
-    off: TRAIN_OFFSETS[n + 1]!,
-    z: c.hz,
-    y: c.top,
-    hx: c.hx,
-  })),
+  ...consistOf({ line: 1, wagon: true, steel: false })
+    .slice(1)
+    .map((c) => ({
+      name: c.role === 'rider' ? 'coach roof' : `${c.role} deck`,
+      off: c.offset,
+      z: c.spec.hz,
+      y: c.spec.top,
+      hx: c.spec.hx,
+    })),
   // Steel's car (docs/plans/fourth-car.md, V2): the last deck of a fitted train, behind the wagon or the kit car.
   ...[true, false].map((wagon) => ({
     name: wagon ? "steel car's deck (the wagon's train)" : "steel car's deck (a plain train)",
@@ -513,8 +515,8 @@ function footCrossing(section: (message: string) => void, assertion: (passed: bo
     `the fingerpost (u ${f1(post)}) is ${f1(post - C.rampTop)} m past the west ramp's top (at least 1)`,
   );
 }
-/** The fourth car's train (world v33, car4/rules): the tail grows to 12.7 m. */
-const LONG = { aheadCm: 820, behindCm: 1270 };
+/** The longest production coach train (world v57): one reserved extent for all trains. */
+const LONG = TRAIN_EXTENT;
 const m = (cm: number) => cm / 100;
 const f1 = (x: number) => x.toFixed(1);
 /** Gap between two intervals, 0 if they overlap. */
