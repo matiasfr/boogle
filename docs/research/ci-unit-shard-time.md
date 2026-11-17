@@ -1,5 +1,8 @@
 # Unit shard time, 13 and 16 November 2026
 
+> **Status:** adopted (reconciled 17 November 2026). **Verdict:** Process-tree supervisor and shard-drift follow-up shipped in #1984 after the original #1723/#1724 work.
+> **Recommendation:** Use the follow-up rather than the superseded thread-only watchdog or original timing estimates.
+
 ## Review follow-up: process trees, route partitions and drift
 
 Rebased the implementation onto `origin/main` at `945c695546c626db2b6e926cefc788eb963e5afe` before applying the

@@ -1,5 +1,8 @@
 # Riders' coach A — R3, polished and curated
 
+> **Status:** reference (reconciled 17 November 2026). **Verdict:** Candidate A model subsequently shipped in #1995.
+> **Recommendation:** Use the curated model evidence; it does not certify target-device performance or real-time smoothness.
+
 16 November 2026. Local branch `t3/rider-coach-art`, rebased on main `943c29e9b`; no push or ship.
 The [brief](../world/rider-coach-a/brief.md) and [layout](../world/rider-coach-a/measured-layout.svg) govern
 dimensions; [look.png](../world/rider-coach-a/look.png) and [closed.png](../world/rider-coach/closed.png) supply

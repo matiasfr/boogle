@@ -1,12 +1,11 @@
-> **Next proposal: [town-choice](town-choice.md)** (16 November, nothing built; owner choice still open): ruling 1's choice measured; as ruled it does not work, so the proposal recommends a loader yard on plot 2.
-> **Status, reconciled 16 November against main `aa7861150` (v54):** A1–A3, B1–B2 and K2 are on main
-> (#1927–#1930, #1932, #1935). K1, C1–C2 and K3 remain open. The measurements and "What main has" table below are
-> the v52 planning baseline, not current status. Replans what is left of [slice5-town-economy](slice5-town-economy.md)
-> (its R4, R5, V1 to V4) against main `3720b4c3b`, `WORLD_NS` v52. The one file each build job reads.
-> Designer-reviewed 16 November ([review](#design-review-designer-2026-11-16)); its changes are in the steps, marked
-> "(review)". "Plot 1, 2, 3" below mean the first, second and third priced plot: slots `plot3`, `plot2`, `plot1` (N9).
-> Owner, 16 November (relayed by the orchestrator, now the first P1 backlog row): the town economy goes to
-> the top of the backlog, because "towns grow from what arrives, and grown towns give upgrades" is not playable.
+> **Status, reconciled 17 November against main `5fa88131` (v58): complete.** A1–A3, B1–B2 and K2 shipped
+> in #1927–#1930, #1932 and #1935; C1 in #2005, C2 in #2012, K1 in #2014 and K3's real away-host proof in #2018
+> (following #2016). [First-town-lesson](first-town-lesson.md) records the owner's replacement for the town-choice
+> proposal. The summary and "What main has" table below retain the v52 planning baseline, not current status.
+> This re-plan replaced R4, R5 and V1–V4 of [slice5-town-economy](slice5-town-economy.md).
+> Designer-reviewed 16 November ([review](#design-review-designer-2026-11-16)); "Plot 1, 2, 3" mean the
+> first, second and third priced plots: slots `plot3`, `plot2`, `plot1` (N9). Checkpoint receipts retain their
+> device/performance limits; remaining roof/platform observations are not new build gates.
 
 ## Summary
 
@@ -154,7 +153,6 @@ models`'.
     Commands are in `dev/look/evals/town-a2.ts`. Placeholder strings: `Plot 1`, `Plot 2`, `Plot 3`,
     `Timber <have> / 8`, `Timber <have> / 16`, `Stone <have> / 16`. Existing copy untouched.
     K1 retains ownership of the combined `game-design/place.md` economy-view update.
-- [ ] **A3. Riders and the till (M).** Sync: Cosmetic/Local over `Town.wait0`, `wait1`, `Train.riders`, `Till`. Tier:
 - [x] **A3. Riders and the till (M).** Sync: Cosmetic/Local over `Town.wait0`, `wait1`, `Train.riders`, `Till`. Tier:
   normal + visual. Model: gpt-6-astra high. Parallel with A1, A2 and B1.
   - `src/place/home-station.ts`: `TILL = { ...axisPoint(-11.4, ISLAND_C - 5.95), yaw: HALL.yaw }`: Place-local

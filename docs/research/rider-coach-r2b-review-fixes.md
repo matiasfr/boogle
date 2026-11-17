@@ -1,5 +1,8 @@
 # R2b independent-review fixes
 
+> **Status:** reference (reconciled 17 November 2026). **Verdict:** The review fixes subsequently shipped in #1992.
+> **Recommendation:** Use the [coach plan](../plans/rider-coach.md) for current status; keep this dated review receipt.
+
 16 November 2026. Branch `t3/rider-coach-blockout`, rebased from reviewed `2565b85c9` onto
 `origin/main` **d0ca285b1** (#1990, the owner's acceptance of the blockout). Rebase was clean.
 The previous implementation tip rebased to `554794ccb`. World remains **v57**; no new world bump,

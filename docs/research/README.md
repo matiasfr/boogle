@@ -6,6 +6,14 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 
 ## Railway, trains and construction
 
+- [rider-car-fit.md](rider-car-fit.md) (2026-11-16): Historical fit measurements, not current Home rework instructions. **Status:** superseded.
+- [rider-coach-evidence-trim.md](rider-coach-evidence-trim.md) (2026-11-16): Curated evidence cleanup shipped with #1999; no history rewritten. **Status:** reference.
+- [rider-coach-r2b-review-fixes.md](rider-coach-r2b-review-fixes.md) (2026-11-16): The review fixes subsequently shipped in #1992. **Status:** reference.
+- [rider-coach-r2b-second-stop.md](rider-coach-r2b-second-stop.md) (2026-11-16): This was an incomplete, blocked intermediate build. **Status:** superseded.
+- [rider-coach-r2b.md](rider-coach-r2b.md) (2026-11-16): The production coach and review follow-up subsequently shipped in #1992. **Status:** reference.
+- [rider-coach-r3.md](rider-coach-r3.md) (2026-11-16): Candidate A model subsequently shipped in #1995. **Status:** reference.
+- [rider-coach-r4.md](rider-coach-r4.md) (2026-11-16): Checkpoint/evidence subsequently shipped in #1999; capture success is not device or smoothness proof. **Status:** reference.
+
 - [art-kit-pipeline.md](art-kit-pipeline.md) (2026-11-02): small versioned kit of parts with assembly recipes; formalize the station frame first. **Status:** open. No decision cites it yet.
 - [carrying-and-logistics-play.md](carrying-and-logistics-play.md) (2026-11-01): keep the bundle reliable, put slapstick in optional tools; building what ends hauling is the reward. **Status:** reference.
 - [compounding-infrastructure.md](compounding-infrastructure.md) (2026-11-01): connect, inherit a service, build something newly possible; towns repay the connection. **Status:** reference. See [The shape of the game](../decisions.md#the-shape-of-the-game).
@@ -174,7 +182,7 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 
 ## Tech: engine, ECS, sync, physics, performance, delivery
 
-- [ci-unit-shard-time.md](ci-unit-shard-time.md) (2026-11-13): balance eight shards without losing selected files or coverage; loaded-Mac timing evidence. **Status:** adopted (#1723, #1724).
+- [ci-unit-shard-time.md](ci-unit-shard-time.md) (2026-11-13): balance eight shards without losing selected files or coverage; loaded-Mac timing evidence. **Status:** adopted (#1723, #1724). Process-tree cleanup and drift follow-up: #1984.
 - [detail-governor-1115.md](detail-governor-1115.md) (2026-11-15): distinguish fast jitter from overload and preserve shadow pipelines when toggling detail. **Status:** adopted (#1864).
 - [leg1-lost-ask.md](leg1-lost-ask.md) (2026-11-13): preserve boarding and outbound asks with bounded dwell extensions; historical browser gaps remain stated. **Status:** adopted (#1723).
 - [phone-perf-2026-11-12.md](phone-perf-2026-11-12.md) (2026-11-12): recorded phone stall causes, parked when the owner deprioritized phone work. **Status:** reference.

@@ -17,7 +17,7 @@ The open questions in the two plans have working answers so work can start; chan
 - **Hosting:** stay on GitHub Pages until shared memory (`SharedArrayBuffer`) is needed, then move the static site to
   Cloudflare Pages (COOP/COEP headers). Nothing before phase 4 needs it.
 - **ECS:** instance pools, no ECS library.
-- **Physics engine:** move from cannon-es to Rapier (decided 2026-10-31; [rapier.md](../archive/plans/done/rapier.md)).
+- **Physics engine:** move from cannon-es to Rapier (decided 2026-10-31; [rapier.md](done/rapier.md)).
 - **Server transport:** WebSocket first (as [server-host.md](server-host.md) chose); unreliable datagrams only on
   evidence.
 

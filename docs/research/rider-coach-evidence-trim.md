@@ -1,5 +1,8 @@
 # Rider coach evidence trim — 16 November 2026
 
+> **Status:** reference (reconciled 17 November 2026). **Verdict:** Curated evidence cleanup shipped with #1999; no history rewritten.
+> **Recommendation:** Use the retained JPEG/HTML evidence; local originals are not durable proof.
+
 Source: main `4c1423f995ffe31392b29715d5ab01dcdaa1d779` (#1995). Working-tree cleanup only; no history rewritten.
 
 | Folder | Before bytes | After bytes | Images |

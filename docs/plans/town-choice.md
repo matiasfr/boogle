@@ -6,11 +6,11 @@
 > Seeds share lit/full racks, offsets and carry cadence; natural train phases differ.
 > These do not reproduce the historical figures. See [method, spreads and separate synthetic quarry-stop test](../reports/loader-times.md).
 
-> **Status: plan, not built; designer-reviewed 16 November under the first-island-teaches scope ([review](#designer-review-16-november-the-first-town-as-a-lesson)): plot 2 as the loader yard for its lesson, no choice asked; rider places 8 a train; plot 3's base 800; four owner questions.** Owner answered all four yes; build steps: [first-town-lesson](first-town-lesson.md). Follow-up: [scarce town plots brainstorm](../brainstorms/town-plots-scarce.md) (proposed, not an owner decision). Planner, against origin/main `a71077c4b`, `WORLD_NS` v54. The one file
-> each build job reads. Follows [town-economy-visible](town-economy-visible.md) (its design review's ruling 1, "the next
-> plan"). **Finding first: the choice as ruled does not work** (section 2a, measured); section 2b changes it until it
-> does. "Plot 1, 2" are the first and second priced plots, slots `plot3` and `plot2` (that plan's N9). Nothing here
-> is built.
+> **Status: superseded proposal, not an open owner choice.** The owner answered the first-island-teaches
+> scope on 16 November; [first-town-lesson](first-town-lesson.md) is the build plan. Rider places, cheaper
+> third plot, loader yard and dedicated coach shipped through #1968, #1975/#1977 and #1992/#1995/#1999.
+> The competing plot-choice proposal and measurements below are historical, not a claim that choice was built.
+> [Scarce town plots](../brainstorms/town-plots-scarce.md) remains a brainstorm, not owner-approved scope.
 
 # Town choice: the house now, or footings on every train
 

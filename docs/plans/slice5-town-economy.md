@@ -1,17 +1,10 @@
-> **Status, 16 November 2026 (reconciled with main `3720b4c3b`, `WORLD_NS` v52): R1, R2, R2b and R3 are built and on
-> main; the later re-plan's A1–A3, B1–B2 and K2 also shipped by `aa7861150` (#1927–#1930, #1932, #1935, v54).**
-> Freight, riders, the till, plot purchase and house construction now have views; the sack and remaining checkpoints
-> stay open in the re-plan. Landed: R1 and R2 in #1641 (v28), R2b in #1650 (v29), R3 in #1652 (v30); each
-> step below names its commits. The work after R3
-> is replanned, against layout B (the only Home since v36, #1729) and the Round's blockout (B1 to B3, B3 in #1800), in
-> [town-economy-visible](town-economy-visible.md): it supersedes R4, R5, V1 to V4, checkpoints C2 and C3 and the
-> jump-in rows for those beats. This file stays as the record of R1 to R3 and their rulings; marks below say what
-> layout B and the Round superseded.
->
-> _Was:_ **Status: plan, not built (2026-11-11).** Production-core slice 5, "economy and town growth on the server", systems
-> first. Rules and server steps R1 to R5, then greybox views V1 to V4. Two `WORLD_NS` bumps. Designer-reviewed 11
-> November: **build with changes**, already made in the steps ([review](#design-review-designer-2026-11-11)). Its two owner
-> questions were answered on 12 November (UTC); one design item is open ([below](#open-design-item-trains-stop-at-every-resource-source)).
+> **Status, reconciled 17 November against main `5fa88131` (v58): replacement work shipped.**
+> R1–R3 retain the original server receipts (#1641, #1650, #1652). R4, R5, V1–V4 and later checkpoints
+> were superseded by [town-economy-visible](town-economy-visible.md): views/buy/house in #1927–#1935,
+> sack rules/view in #2005/#2012, K1 in #2014, K3's real away-host proof in #2018 after #2016.
+> Checked replacement steps below retain their original proposed details as history, not as-built contracts.
+> Layout B and the Round superseded the original layout and jump-in rows. Completion does not establish
+> target-device performance. Original [design review](#design-review-designer-2026-11-11) and rulings remain below.
 
 # Slice 5: train cargo grows the Village, then Boogles and one plot buy
 
@@ -272,8 +265,7 @@ checkpoint runs for it.
     where riders board, facing the Quarry (land stilled on Windows/Edge, 12 November, not on a device); the
     playthrough's `fare` stop is meant with `--from trains-on` (the trade seeds are jump-ins, not `--from` seeds, so
     not the `freight-running` this step's proof names) and waits for the mirror's `Till.landed > 0`; no hash moved.
-- [ ] **R4. Plots and the buy (M). Independent review: yes (`src/sim`, `src/world`, the op list).** _Not built;
-  superseded by [town-economy-visible](town-economy-visible.md), B1 (`Plot` gains `paid`; the bump is v54 or later)._
+- [x] **R4. Plots and the buy (M). Independent review: yes (`src/sim`, `src/world`, the op list).** _Original specification superseded by [town-economy-visible](town-economy-visible.md), B1 (`Plot` gains `paid`; the bump is v54 or later)._ Replacement shipped: B1, #1929.
   - Files: `railway-components.ts`, `railway-sys-trade.ts`, `railway-systems.ts` (`'rail.buy': [buy]`),
     `railway-queries-trade.ts`, `railway-check-trade.ts`, `src/sim/town-facts.ts`, `test/town-facts.test.ts`,
     `src/world/railway-server.ts`, `src/adapters/railway-intents.ts` (`buy(plot)`), `railway-seed-trade.ts`,
@@ -289,7 +281,7 @@ checkpoint runs for it.
   - Seeds: `house-ready` (`boogles ≥ 300`, plot 1 staked) and `house-built` (plot 1 bought and built).
   - Proof: `playthrough --from house-ready --to buy` (until V3 the bot sends the intent directly; from V3 it holds
     Interact at the board); one look at the plot on `--rail-seed house-built`.
-- [ ] **R5. The till joins the away credit; the sack (S). Independent review: yes.** _Not built; superseded by
+- [x] **R5. The till joins the away credit; the sack (S). Independent review: yes.** Replacement shipped: C1, #2005. _Original specification superseded by
   [town-economy-visible](town-economy-visible.md), C1 (its own bump: bump B was spent by R3 alone, v30)._
   - Files: `railway-sys-away.ts`, `railway-sys-trade.ts`, `railway-systems.ts` (`'rail.sack': [sack]`),
     `railway-check-trade.ts`, `src/world/railway-server.ts`, `src/adapters/railway-intents.ts` (`sack()`),
@@ -314,7 +306,7 @@ Views read the mirror's rows and the queries above; they hold no rule and no ari
 capsules and boards only, instanced; no motion beyond what exists (trains, the site show). No unit tests (test
 diet). Independent review: no (`src/entities` only); the normal review and one look each.
 
-- [ ] **V1. Freight and stakes (M).** After R1 and R2 are on main.
+- [x] **V1. Freight and stakes (M).** After R1 and R2 are on main. Replacement shipped: A1/A2, #1935/#1927.
   - Files: `src/entities/railway/freight-view.ts` (new: a crate stack at each yard sized by `Yard.stock`, crates on
     the train from `Train.freight` through `train-load.ts`, a delivered stack at each Village platform),
     `src/entities/town/plots.ts` (new; town-layout step 5's file, its stakes part only: four stakes, a string and a
@@ -322,13 +314,13 @@ diet). Independent review: no (`src/entities` only); the normal review and one l
     `docs/game-design/place.md`.
   - Proof: the R1 bot segment again, now watched; one look from the top of the dock path on
     `--rail-seed freight-running`, and the same at phone size (the stakes must read at 40 m).
-- [ ] **V2. Riders and the till (M).** After R3.
+- [x] **V2. Riders and the till (M).** After R3. Replacement shipped: A3, #1928.
   - Files: `src/entities/railway/riders-view.ts` (new: one instanced capsule per waiting rider on the platform, up
     to 12 drawn; the halt's board shows the count), `src/entities/railway/till-view.ts` (new: a box, a coin column
     whose height is `boogles / boxCap`, a mark at the cap, a board with the figure), `src/place/home-station.ts`
     (the `TILL` position), `src/entities/railway/view.ts`.
   - Proof: the R3 bot segment; one look at the till with riders waiting on `--rail-seed fares-running`.
-- [ ] **V3. The buy and the house (M).** After R4 and V1.
+- [x] **V3. The buy and the house (M).** After R4 and V1. Replacement shipped: B2, #1930.
   - Files: `src/entities/town/plots.ts` (the board shows the price and have/need; a `registerInteractable` target
     "Buy", held one second, `blocked` with the shortfall when short; calls `buy(plot)`; nothing is spent or shown
     until the `Plot` row changes), `src/entities/town/view.ts` (a bought plot builds with the existing
@@ -337,7 +329,7 @@ diet). Independent review: no (`src/entities` only); the normal review and one l
   - The hold: if the Mac's install op is on main first, use its hold helper; if not, the hold lives in `plots.ts`
     and the second to land folds the two ("Fold copies into one helper").
   - Proof: the R4 bot segment with the real hold; one look at the built house on `--rail-seed house-built`.
-- [ ] **V4. The sack (S).** After R5 and V2.
+- [x] **V4. The sack (S).** After R5 and V2. Replacement shipped: C2, #2012.
   - Files: `src/entities/railway/till-view.ts` (a sack on the counter while `Till.sack > 0`; Interact "Empty" calls
     `sack()`).
   - Proof: the R5 bot segment; one look on `--rail-seed sack-waiting`.

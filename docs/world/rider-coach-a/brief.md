@@ -1,6 +1,6 @@
 # Candidate A — R3 modelling brief
 
-Design reference only, 16 November 2026. No runtime asset, game code or owner art approval. Principles: Show, don't tell; Understandable at a glance.
+**Status, reconciled 17 November:** candidate A shipped in #1995; checkpoint/evidence in #1999 ([plan](../../plans/rider-coach.md)). This is the 16 November modelling reference, not a separate final-art approval. Principles: Show, don't tell; Understandable at a glance.
 
 ## Authority and axes
 

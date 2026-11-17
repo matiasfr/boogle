@@ -1,5 +1,8 @@
 # R2b: production coach, eight riders, and the Gorge crossover
 
+> **Status:** reference (reconciled 17 November 2026). **Verdict:** The production coach and review follow-up subsequently shipped in #1992.
+> **Recommendation:** Read the linked follow-up with this historical acceptance record; current status is in the [plan](../plans/rider-coach.md).
+
 **Review follow-up:** [wheel capacity, restored tests, held Home signals and controller proofs](rider-coach-r2b-review-fixes.md)
 records the subsequent rebase onto `d0ca285b1`. The acceptance history below records the earlier reviewed build.
 
