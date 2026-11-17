@@ -50,6 +50,7 @@ if (given.includes('--ci') && !given.includes('--long') && shardAt >= 0) {
 const { env, flags } = testEnv(
   given.includes('--long') ? 'long' : given.includes('--ci') ? 'ci' : ship ? 'ship' : 'local',
 );
+if (!given.includes('--long') && (given.includes('--ci') || ship)) flags.push('--import', './dev/ci/unit-budget.ts');
 // Keep Node's normal output and expose the file summaries it hides, for shard balancing.
 const reporters = args.some((a) => a.startsWith('--test-reporter'))
   ? []
