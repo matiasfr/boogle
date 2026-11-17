@@ -699,6 +699,7 @@ export function loadLegacyGraph(root: string, debt: PrefabDebt): LegacyGraph {
       cwd: root,
       exclude: ['**/node_modules/**', '.git/**', '.look/**', 'dist/**', '.claude/**', '.codex/**', '.agents/**'],
     })
+    .map((file) => file.split(path.sep).join('/')) // globSync gives \ on Windows; records and resolved imports use /
     .filter(isAnalysedCode)
     .sort())
     sources[file] = fs.readFileSync(path.join(root, file), 'utf8');
