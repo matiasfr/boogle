@@ -20,11 +20,13 @@ different models at the same time"). The owner's words for each change are in
   (`fableTopEffort`, owner 10 November: "fable high should be the absolute top used") and not at low either (the
   Fable 5.2 system card: low saves about 15% of medium's cost for a clear drop in score).
 - **Codex is the workhorse.** Sol (`gpt-6.2-sol`) takes plan-following implementation, the runner, mechanical jobs,
-  and previz at medium, and brainstorms and unplanned fixes at high. A job that falls short at medium is rerun at high with
-  its failed evidence, not started at high (OpenAI publishes no medium-against-high comparison). Astra
-  (`gpt-6.2-astra`) takes the work where a wrong claim costs most: high-risk and player-visible implementation, the
-  independent review and the code review at high, the hardest design and research at xhigh. A first pass at Astra
-  medium may be tried where the row says so, and its result checked. Both moved to the 6.2 models on 17 November
+  previz, brainstorms and unplanned fixes. Astra (`gpt-6.2-astra`) takes the work where a wrong claim costs most:
+  high-risk and player-visible implementation, the reviews, the hardest design and research.
+  **Medium is the default effort on the 6.2 models** (owner, 17 November: "with the new models we shouldn't have to
+  use high as much, we can use medium in most cases"). Every Codex row runs at medium except two: the independent
+  review of lockstep, net, world or server work stays at high, and the hardest design or research runs at high
+  (it was xhigh). Which rows keep high is the orchestrator's reading of "most cases", not the owner's word. A job
+  that falls short at medium is rerun at high with its failed evidence, not started at high. Both moved to the 6.2 models on 17 November
   (owner: "We should not be using Astra or sol 6.1 use SOL 6.2 and Astra 6.2 instead"); no route names
   `gpt-6.1-sol` or `gpt-6-astra` any more. T3's default effort for the 6.2 models is low, so every delegate passes
   the row's effort. Basis for the split, measured on the earlier models and not rechecked for 6.2: the
@@ -42,7 +44,7 @@ different models at the same time"). The owner's words for each change are in
   reading logs, where a wrong answer is cheap to spot and a Codex job would take minutes. Code edits and judgment
   calls stay off it.
 - **Code review** never runs in the main session: an Astra review delegate on the committed branch (T3
-  `delegate_task`; with no T3 tools, `node dev/codex/run.ts review <topic> --model gpt-6.2-astra --effort high`).
+  `delegate_task`; with no T3 tools, `node dev/codex/run.ts review <topic> --model gpt-6.2-astra --effort medium`).
   Verify each finding against the code before acting on it.
 - **Independent review** (owner, 9 November): the reviewer of a lockstep, net, world or server change is a fresh
   agent with none of the author's context, on any model the row names ("the context matters more"). Where a
