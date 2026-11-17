@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, and keep it short. It holds only what cannot be looked up: who is running what, what waits on the owner, and the lessons. Main, CI, pull requests and worktrees come from `npm run heartbeat`; committed work and its next steps from [the backlog](../backlog.md); what merged from git. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 17 November 2026 about 19:25 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
+**Updated:** 17 November 2026 about 19:40 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
 
 ## Jobs in flight
 
@@ -10,12 +10,13 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
+| Gate cottage opens (home-flip D1, view only) | Home's town as the Round | `codex/gate-cottage-d1` | the heartbeat (Codex gpt-6-astra high delegate) | 17 November 19:40 | building; the next heartbeat reviews it, opens its stills and sends anything `review-stamp` marks to an independent review |
 
 ## Where the work stands
 
 - **Machine:** HOTBOX (Windows, clone `C:\Users\matia\Claude work\boogle`) has orchestrated since 17 November; the MacBook's schedules are paused ([automations](automations.md)). The hourly heartbeat runs in its own thread with a fresh session each run (#2006); the owner's live orchestrator thread ran beside it until 09:36 UTC on 17 November, when it settled; no live session was running at 11:35 UTC. Sessions cannot message each other, so they split work through the table above and the Line Map board.
 - **Focus:** the choice-and-payoff loop ([decision](../decisions-process.md#d-2026-11-16-focus-choice-and-payoff)); the backlog's P1 rows, at most five. World v59 is on main (garage step 3, #2029).
-- **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2 and K1 shipped 17 November; K3 closed 17 November with the away host test, independently reviewed; left on the row are the designer’s items and the P2 gold-outline follow-up); garage choices: step 3 (steel spent) is on main (#2029, v59, independently reviewed); the designer's Quick or Strong rebalance, owed before step 4 is briefed now that an extra car can mean rider capacity, is running (see the table); then open the gate cottage (home-flip D1); riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
+- **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2 and K1 shipped 17 November; K3 closed 17 November with the away host test, independently reviewed; left on the row are the designer’s items and the P2 gold-outline follow-up); garage choices: step 3 (steel spent) is on main (#2029, v59, independently reviewed); the designer's Quick or Strong rebalance, owed before step 4 is briefed now that an extra car can mean rider capacity, is on main as a proposal (see Open owner questions; step 4 waits for playable stage-4 lines); the gate cottage opening (home-flip D1) is running (see the table); then riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
 - **Proof debts and leftovers:** [orchestrator-leftovers](orchestrator-leftovers.md). Nothing from 16 or 17 November was tested on a device.
 
 ## Open owner questions
