@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-17 · The state file stays short (jobs in flight, open owner questions, lessons); a job is claimed with a row in its Jobs in flight table and the three-job limit is counted from it; the daily tidy runs from its own origin/main worktree; the heartbeat may set a one-off follow-up check ([entry](#d-2026-11-17-short-state-claimed-jobs))
 - 2026-11-17 · review agent calls weekly ([entry](#d-2026-11-17-weekly-agent-calls-review))
 - 2026-11-16 · Work is split by context, not role: the builder plans, design-reviews and proves its own work; no designer or implementer agent; small fixes stay with the session that found them; route changes are compared on the process eval ([entry](#d-2026-11-16-fold-roles-into-the-builder))
 - 2026-11-16 · Fast-forward need not preserve wardrobe finds; the dev key holder may replace the shared room behind the typed name, countdown and backup ([entry](#d-2026-11-16-batch2-fast-forward-can-reset-wardrobe))
@@ -15,7 +16,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
-- 2026-11-16 · The heartbeat may have three jobs in flight across all sessions, not two ([entry](#d-2026-11-16-three-jobs-in-flight))
+- 2026-11-16 · The heartbeat may have three jobs in flight across all sessions, not two ([entry](#d-2026-11-16-three-jobs-in-flight)) _Counted from the state file's Jobs in flight table since 17 November._
 - 2026-11-16 · One unattended orchestrator: the hourly heartbeat. The four-hour tick is removed and its rules (review and ship, keep one backlog step moving, two jobs in flight, what stays with the owner) are the heartbeat's ([entry](#d-2026-11-16-one-heartbeat)) _The limit became three jobs the same day ([entry](#d-2026-11-16-three-jobs-in-flight))._
 - 2026-11-16 · An unattended orchestrator tick runs every four hours: it reviews and ships finished work and keeps one backlog step moving; decisions, scope, his copy and feel verdicts stay with the owner; two jobs in flight at most ([entry](#d-2026-11-16-unattended-tick)) _The separate four-hour schedule was removed the same day; its rules continue in the hourly heartbeat ([entry](#d-2026-11-16-one-heartbeat))._
 - 2026-11-16 · Working on the owner's direct order, the orchestrator sets the wording of agent-drafted instruction text marked "the owner sets these words"; The Boogler's copy, story, characters and names stay his ([entry](#d-2026-11-16-instruction-drafts-applied))
@@ -100,6 +101,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-17-short-state-claimed-jobs"></a>**2026-11-17, a short state file, and jobs claimed in it** (owner, after the orchestrator listed what the article [Building always-on agents](https://claude.com/resources/articles/building-always-on-agents) showed about this workflow: "Fix all the problems you highlighted"). Orchestrator's reading of what that covers, each as it was listed to him. [The state file](agents/orchestrator-state.md) is read at the start of every run, so it holds only what cannot be looked up: jobs in flight, open owner questions in one list, and lessons; dated history moved to [the log](agents/orchestrator-log.md) and unfixed findings to [the leftovers](agents/orchestrator-leftovers.md), word for word. A job is claimed with a row in the state file's "Jobs in flight" table, shipped in the turn that starts it, and the [three-job limit](#d-2026-11-16-three-jobs-in-flight) is counted from that table (`npm run heartbeat` prints it); an unclaimed running delegate still counts and gets its row. The daily tidy works from its own `origin/main` worktree, not the stale project root, and keeps the state file short. The heartbeat may set a one-off follow-up run for a check that should not wait an hour; a follow-up starts no job, so the [one-heartbeat rule](#d-2026-11-16-one-heartbeat) stands. The heartbeat's fresh session per run, the article's other lesson, was already his own change the same day (#2006).
 
 - <a id="d-2026-11-17-weekly-agent-calls-review"></a>**2026-11-17, review agent calls weekly** (owner, 17 November 2026, review page: "the others I accept all"). Owner’s words on the card: "Confirm". Once a week the designer ranks open `docs/agent-calls.md` rows into decide / flags / bulk, each with a recommendation; the orchestrator republishes the owner’s review page for him. Add this short step to the tidy skill’s docs pass.
 
