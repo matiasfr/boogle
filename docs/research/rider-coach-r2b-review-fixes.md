@@ -13,7 +13,7 @@ rule change, stop move, or golden re-pin. No ship, push, or subagents.
    shed slots. Allocation checks capacity before adding a car and throws `Train wheel batch overflow: need
    …, capacity …`; there is no silent skip. The regression enumerates every line and all wagon/steel
    combinations. It failed against 72 with `answer: wagon=false, steel=false, need 96, capacity 72`, then
-   passed. [Full before-fix failure](rider-coach-r2b/review/wheels-before.log).
+   passed. Full before-fix failure (local-only: `rider-coach-r2b/review/wheels-before.log`).
 2. **Station sweep restored.** `home-station.test.ts` covers the whole timber train, and the entire span
    from the coach's rear to the players' car's front on road 2. Both pass.
 3. **Evenness restored alongside the pin.** The 75% gaps remain **551 / 653 ticks**, averaging **602**;
@@ -32,8 +32,8 @@ rule change, stop move, or golden re-pin. No ship, push, or subagents.
 
 Counts include dormant fleet slots where their views are allocated. “Bound” deliberately permits combinations
 larger than the currently reachable fleet where that makes the capacity proof simpler. Live counts are in
-[fleet results](rider-coach-r2b/review/fleet/results.json); geometry inventory is in
-[pools.json](rider-coach-r2b/review/pools.json), reproducible with
+fleet results (local-only: `rider-coach-r2b/review/fleet/results.json`); geometry inventory is in
+pools.json (local-only: `rider-coach-r2b/review/pools.json`), reproducible with
 `node --import ./dev/sim/hooks.ts dev/level/rider-coach-pools.ts`.
 
 | Pool | Capacity | Worst need / bound | Finding |
@@ -73,9 +73,9 @@ and placement as the test (`dev/level/rider-coach-headway.ts current|home|tail`)
 | Only Home restored to 18.25 m | 1208 | 453 | 554, 654 | 50 |
 | Tail restored to 12.70 m, derived Home signals −3.40 m | 1204 | 451 | 551, 653 | 51 |
 
-[Production trace](rider-coach-r2b/review/headway-current-detail.json),
-[Home control](rider-coach-r2b/review/headway-home-detail.json),
-[tail control](rider-coach-r2b/review/headway-tail.json).
+Production trace (local-only: `rider-coach-r2b/review/headway-current-detail.json`),
+Home control (local-only: `rider-coach-r2b/review/headway-home-detail.json`),
+tail control (local-only: `rider-coach-r2b/review/headway-tail.json`).
 
 `balancedHold` compares **spatial** circuit gaps once per tick. In production, at tick **7412**, the leading
 train's `trainAlong` has rounded/clamped to the Pier endpoint **72650 cm**, while `trainArrives` is **7413**.
@@ -100,7 +100,7 @@ crossing. The Q2 frame is still present after completion and is included with it
 is also phase-exclusive with running trains, but the stronger geometric separation passes independently.
 
 Every value below is metres, with a **±0.01 m pin**. Sources/minima are recorded per row in
-[home-signals.json](rider-coach-r2b/review/home-signals.json): `rail-network.ts`/`railway-install.test.ts`
+home-signals.json (local-only: `rider-coach-r2b/review/home-signals.json`): `rail-network.ts`/`railway-install.test.ts`
 no-overlap, the Home crossing's 1 m tail clearance, R1b's 0.25 m static-furniture clearance, and the production
 3.6 m widened trestle's containment rule. Existing Home thin margins are unchanged.
 
@@ -139,32 +139,32 @@ and around 60 completed frames/s in the final health sample. I opened every list
 - **Quarry:** closest meaningful raised object is the platform canopy beside the coach. The controller lands
   on the coach at feet **26.3495 m** (roof 26.35), then on the canopy at **28.2198 m**. The existing cab-roof
   control lands on that same canopy at **28.2199 m**. Reachable, but **not a new route**.
-  [Platform→roof](rider-coach-r2b/review/quarry/platform-to-roof-filmstrip.png),
-  [roof→canopy](rider-coach-r2b/review/quarry/roof-exit-filmstrip.png),
-  [cab control](rider-coach-r2b/review/quarry/cab-control-filmstrip.png),
-  [contacts and inputs](rider-coach-r2b/review/quarry/results.json).
+  Platform→roof (local-only: `rider-coach-r2b/review/quarry/platform-to-roof-filmstrip.png`),
+  [roof→canopy](rider-coach-r2b/review/quarry/roof-exit-filmstrip.jpg),
+  cab control (local-only: `rider-coach-r2b/review/quarry/cab-control-filmstrip.png`),
+  contacts and inputs (local-only: `rider-coach-r2b/review/quarry/results.json`).
   The canopy obscures much of the coach roof in the first sheet; the grounded coach-platform ID confirms the landing.
 - **Ring Island:** the bank/loader-side platform is the other sensitive adjoining geometry. The controller
   lands on the roof at **10.0491 m** (roof 10.05), then returns to the existing **8.8999 m** platform; the cab
   control reaches the same platform. No raised walkable target was found within the nearby scan (±8 m along,
   ±10 m across, between rail+3.5 and rail+8 m). No new route found in these controller trials.
-  [On roof](rider-coach-r2b/review/ring/on-roof-still.png),
-  [platform→roof](rider-coach-r2b/review/ring/platform-to-roof-filmstrip.png),
-  [roof exit](rider-coach-r2b/review/ring/roof-exit-filmstrip.png),
-  [cab control](rider-coach-r2b/review/ring/cab-control-filmstrip.png),
-  [contacts and inputs](rider-coach-r2b/review/ring/results.json).
+  On roof (local-only: `rider-coach-r2b/review/ring/on-roof-still.png`),
+  platform→roof (local-only: `rider-coach-r2b/review/ring/platform-to-roof-filmstrip.png`),
+  [roof exit](rider-coach-r2b/review/ring/roof-exit-filmstrip.jpg),
+  cab control (local-only: `rider-coach-r2b/review/ring/cab-control-filmstrip.png`),
+  contacts and inputs (local-only: `rider-coach-r2b/review/ring/results.json`).
 - **Moving case:** after the server resumes at normal speed, the player jumps from the players' deck onto
   the departing coach and stays grounded on `railway:train5-2` around Home's curve, feet **20.3495 m**.
-  [Real-time motion sheet](rider-coach-r2b/review/moving/moving-coach-motion.png),
-  [contact trace](rider-coach-r2b/review/moving/results.json). The generic point-target `reached` flag is false:
+  Real-time motion sheet (local-only: `rider-coach-r2b/review/moving/moving-coach-motion.png`),
+  contact trace (local-only: `rider-coach-r2b/review/moving/results.json`). The generic point-target `reached` flag is false:
   its stale moving centre is 0.686 m away, outside the 0.6 m static target test; the grounded platform ID and
   roof height establish the actual roof landing. The fixed camera loses the train after 2.6 s; contacts continue
   through 4 s. This tests boarding/riding the moving roof, not every possible moving exit.
-- **Sixth train:** [new still](rider-coach-r2b/review/fleet/sixth-train-wheels-still.png) shows slot 6 running on
+- **Sixth train:** [new still](rider-coach-r2b/review/fleet/sixth-train-wheels-still.jpg) shows slot 6 running on
   the stack line, with its engine wheels and wheels beneath the passenger/kit underframes. Those smaller wheels
   are partly obscured by the deck and rails; this view is not a count of every far-side wheel. The complete
   fleet is active, and the live shared batch has **96 used / 144 capacity**.
-  [Seed/fleet/pool readback](rider-coach-r2b/review/fleet/results.json).
+  Seed/fleet/pool readback (local-only: `rider-coach-r2b/review/fleet/results.json`).
 
 The first fleet still missed a moving train after warm-up; the second was blocked by a Home canopy post. Neither
 is used as evidence. The final capture re-reads the live pose after warm-up and frames the sixth train on open
@@ -176,27 +176,27 @@ and all accepted count-read/Home evidence remain linked in the [original report]
 | Check | Result |
 | --- | --- |
 | Old-capacity regression | Expected failure: 96 needed, 72 available; full output linked above |
-| Affected tests, final | **76/76 pass** ([log](rider-coach-r2b/review/affected-final.log)); includes wheel/coupling capacity, station sweep, signal perturbation, headway and end poses |
-| Affected tests with CI audit and per-file deadline | **76/76 pass** ([log](rider-coach-r2b/review/affected-ci.log)); longest file `railway-trains` 65.77 s vs 77 s weight, no drift warning |
-| All 53 stage/continuation goldens | **118/118 pass**, no fixture changed ([log](rider-coach-r2b/review/goldens.log)) |
+| Affected tests, final | **76/76 pass** (log (local-only: `rider-coach-r2b/review/affected-final.log`)); includes wheel/coupling capacity, station sweep, signal perturbation, headway and end poses |
+| Affected tests with CI audit and per-file deadline | **76/76 pass** (log (local-only: `rider-coach-r2b/review/affected-ci.log`)); longest file `railway-trains` 65.77 s vs 77 s weight, no drift warning |
+| All 53 stage/continuation goldens | **118/118 pass**, no fixture changed (log (local-only: `rider-coach-r2b/review/goldens.log`)) |
 | Server, first run | 407 pass, one client-address failure, quoted below |
-| Client-address rerun | **48/48 pass** ([log](rider-coach-r2b/review/server-address-rerun.log)) |
-| Full server rerun | **408/408 pass**, including the 8,600-record host trace ([log](rider-coach-r2b/review/server-rerun.log)) |
-| `npm run level-check` | **21 reports, zero failures** ([log](rider-coach-r2b/review/level-check.log)); includes Home held-signal rows and all previous coach/Pier/Gorge rows |
-| `npm run lint` | **0 problems** ([log](rider-coach-r2b/review/lint.log)); existing conservative dynamic-import analysis notice |
-| `npm run typecheck` | **Pass** ([log](rider-coach-r2b/review/types-final.log)) |
+| Client-address rerun | **48/48 pass** (log (local-only: `rider-coach-r2b/review/server-address-rerun.log`)) |
+| Full server rerun | **408/408 pass**, including the 8,600-record host trace (log (local-only: `rider-coach-r2b/review/server-rerun.log`)) |
+| `npm run level-check` | **21 reports, zero failures** (log (local-only: `rider-coach-r2b/review/level-check.log`)); includes Home held-signal rows and all previous coach/Pier/Gorge rows |
+| `npm run lint` | **0 problems** (log (local-only: `rider-coach-r2b/review/lint.log`)); existing conservative dynamic-import analysis notice |
+| `npm run typecheck` | **Pass** (log (local-only: `rider-coach-r2b/review/types-final.log`)) |
 | Four capture modes | **Pass health**, observations/limits above; static target flag caveat explicitly recorded |
 | `git diff --check` | **Pass** after normalizing trailing whitespace in imported evidence logs |
-| `node dev/ship-check.ts` | **Pass**, registry, 83 lint files, types, 214 affected files: 1,876 passed, zero failures, 65 expected skips and one todo; 97.36 s ([log](rider-coach-r2b/review/ship-check.log)) |
+| `node dev/ship-check.ts` | **Pass**, registry, 83 lint files, types, 214 affected files: 1,876 passed, zero failures, 65 expected skips and one todo; 97.36 s (log (local-only: `rider-coach-r2b/review/ship-check.log`)) |
 
 The CI-mode timing reporter initially warned that the two new test files were unmeasured (0.566 s and
 0.153 s). Both now have a measured, rounded 1 s entry in `unit-weights.json`. No affected file drew a drift
-warning or approached the 480 s deadline. [Rerun after weights](rider-coach-r2b/review/new-test-weights.log):
+warning or approached the 480 s deadline. Rerun after weights (local-only: `rider-coach-r2b/review/new-test-weights.log`):
 four tests pass, no warnings.
 
 No application/server change was made for the transient HTTP failure; its focused and full reruns pass.
-The original failure text (trailing whitespace normalized) is preserved in [server-failure.txt](rider-coach-r2b/review/server-failure.txt),
-and the complete initial run in [server.log](rider-coach-r2b/review/server.log):
+The original failure text (trailing whitespace normalized) is preserved in server-failure.txt (local-only: `rider-coach-r2b/review/server-failure.txt`),
+and the complete initial run in server.log (local-only: `rider-coach-r2b/review/server.log`):
 
 ```
 ✖ failing tests:

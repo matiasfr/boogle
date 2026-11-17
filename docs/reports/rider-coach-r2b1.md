@@ -76,7 +76,7 @@ including unreachable combinations, using those actual view predicates. Main-hal
 from the proof deliberately, making the possible-crossing set larger. No combination allows Q7 kit and planks.
 A process-only negative control changes the crossing's `laid` from 7 to 6: it fails for both rack and shelf at
 completion bits 63, forge 0, crossing 0. The operand is restored; no test snapshot or seed supplies the exclusion.
-[Negative control transcript](../../.look/rider-coach-r2b1/phase-negative-control.log).
+Negative control transcript (local-only: `../../.look/rider-coach-r2b1/phase-negative-control.log`).
 
 ## Level row: minima separate from pins
 
@@ -104,36 +104,36 @@ lat +2.9 to the east ramp foot. Existing rows retain rail flangeways, no seabed/
 Before source is archived **origin/main a32bc4362**, with separately installed dependencies. After source is this
 implementation. The harness verdicts stamp the launching checkout's HEAD/dirty count even with `--root`;
 for before captures the command's absolute `--root` points to the archived main tree. This distinction is intentional.
-Cameras, FOV and viewport 1280×900 match; the final [camera/staging script](rider-coach-r2b1/views.ts.txt) is archived with the evidence. No screenshot is a measurement substitute. The final players' car pair uses its observed deck centre
+Cameras, FOV and viewport 1280×900 match; the final camera/staging script (local-only: `rider-coach-r2b1/views.ts.txt`) is archived with the evidence. No screenshot is a measurement substitute. The final players' car pair uses its observed deck centre
 `[1398.7506398967087,24.85,-354.7871484643708]` with the lens at y 26.55, replacing an earlier eye at the engine stop.
-[Capture verdicts](rider-coach-r2b1/verdicts.json) retain commands and load flags. Both long-train stills and the T1
+Capture verdicts (local-only: `rider-coach-r2b1/verdicts.json`) retain commands and load flags. Both long-train stills and the T1
 route passed under load; they make no performance claim. Both walking recordings passed without that flag.
 
 | View | Before / after | Opened observation |
 | --- | --- | --- |
-| West lever toward Home | [before](rider-coach-r2b1/before-lever.png) / [after](rider-coach-r2b1/after-lever.png) | The ramp descends continuously toward the moved planks; after, the crossing lines up with Q7's deck, further toward Home. The ramp still reads as an incline. |
-| Trestle at east end | [before](rider-coach-r2b1/before-east.png) / [after](rider-coach-r2b1/after-east.png) | The extended white ramp and plank junction are legible at eye height. Flangeways remain beside exposed rails. |
-| Top-down, s about 700–745 | [before](rider-coach-r2b1/before-top.png) / [after](rider-coach-r2b1/after-top.png) | The west ramp extends south; the east ramp and both shelters stay fixed. Planks meet the side of the work deck between frame and box. |
-| First sight from south, s 690 | [before](rider-coach-r2b1/before-south.png) / [after](rider-coach-r2b1/after-south.png) | Crossing and longer ramp enter the approach view sooner; the box and frame remain to the right on their deck, leaving the trestle route visible. |
-| Standing homeward players' car, fixed virtual eye camera | [before](rider-coach-r2b1/before-car.png) / [after](rider-coach-r2b1/after-car.png) | Standing players’ car and platform roof frame the old/new ramp toward Home. The crossing is visibly further away after. The virtual camera occupies the car view; the player is staged beside the lever, not aboard. |
-| `boiler-long`, Q7 deck toward wagon train tail | [before](rider-coach-r2b1/before-long.png) / [after](rider-coach-r2b1/after-long.png) | Both show the wagon and long boiler standing homeward. Before, the tail is close to the planks (0.80 m); after, open track clearly separates the steel tail from the planks (4.20 m). The Q7 frame remains at right. |
+| West lever toward Home | [before](rider-coach-r2b1/before-lever.jpg) / [after](rider-coach-r2b1/after-lever.jpg) | The ramp descends continuously toward the moved planks; after, the crossing lines up with Q7's deck, further toward Home. The ramp still reads as an incline. |
+| Trestle at east end | [before](rider-coach-r2b1/before-east.jpg) / [after](rider-coach-r2b1/after-east.jpg) | The extended white ramp and plank junction are legible at eye height. Flangeways remain beside exposed rails. |
+| Top-down, s about 700–745 | [before](rider-coach-r2b1/before-top.jpg) / [after](rider-coach-r2b1/after-top.jpg) | The west ramp extends south; the east ramp and both shelters stay fixed. Planks meet the side of the work deck between frame and box. |
+| First sight from south, s 690 | [before](rider-coach-r2b1/before-south.jpg) / [after](rider-coach-r2b1/after-south.jpg) | Crossing and longer ramp enter the approach view sooner; the box and frame remain to the right on their deck, leaving the trestle route visible. |
+| Standing homeward players' car, fixed virtual eye camera | [before](rider-coach-r2b1/before-car.jpg) / [after](rider-coach-r2b1/after-car.jpg) | Standing players’ car and platform roof frame the old/new ramp toward Home. The crossing is visibly further away after. The virtual camera occupies the car view; the player is staged beside the lever, not aboard. |
+| `boiler-long`, Q7 deck toward wagon train tail | [before](rider-coach-r2b1/before-long.jpg) / [after](rider-coach-r2b1/after-long.jpg) | Both show the wagon and long boiler standing homeward. Before, the tail is close to the planks (0.80 m); after, open track clearly separates the steel tail from the planks (4.20 m). The Q7 frame remains at right. |
 
 ## Walking and production route
 
-[35-second real-time clip](../../.look/rider-coach-r2b1/walk/crossing-realtime.webm),
-[motion sheet](../../.look/rider-coach-r2b1/walk/crossing-motion.png),
-[opened review-sized sheet](../../.look/rider-coach-r2b1/walk/crossing-motion-review.png),
-[curves](../../.look/rider-coach-r2b1/walk/crossing-curves.png),
-[log](../../.look/rider-coach-r2b1/walk.log). **Pass:** initial setup on the west platform, then ordinary production
+35-second real-time clip (local-only: `../../.look/rider-coach-r2b1/walk/crossing-realtime.webm`),
+motion sheet (local-only: `../../.look/rider-coach-r2b1/walk/crossing-motion.png`),
+opened review-sized sheet (local-only: `../../.look/rider-coach-r2b1/walk/crossing-motion-review.png`),
+curves (local-only: `../../.look/rider-coach-r2b1/walk/crossing-curves.png`),
+log (local-only: `../../.look/rider-coach-r2b1/walk.log`). **Pass:** initial setup on the west platform, then ordinary production
 `bot.walk` through `up.path`, along the east trestle margin to s 713/lat +2.9, up the east ramp to s 719, and back
 to the west lever. No recovery or swimming. The recording starts before the action; it is not virtual-time video.
 All 16 sheet frames (0–35 s) and the curves were opened. The incline and route read clearly; the motion follows
 the changing height, not a jump. The bot pauses at both plank ends to plan, so this pass's pacing is **not natural
 continuous walking**, although it completes. Height is 24.8–25.5 m and the curve records grounded throughout.
-[Second real-time clip, 24 seconds](../../.look/rider-coach-r2b1/walk-direct/crossing-realtime.webm),
-[opened 12-frame sheet](../../.look/rider-coach-r2b1/walk-direct/crossing-motion-review.png),
-[curves](../../.look/rider-coach-r2b1/walk-direct/crossing-curves.png),
-[log](../../.look/rider-coach-r2b1/walk-direct.log): **pass**. This uses production `bot.straight` (forward key/steering)
+Second real-time clip, 24 seconds (local-only: `../../.look/rider-coach-r2b1/walk-direct/crossing-realtime.webm`),
+opened 12-frame sheet (local-only: `../../.look/rider-coach-r2b1/walk-direct/crossing-motion-review.png`),
+curves (local-only: `../../.look/rider-coach-r2b1/walk-direct/crossing-curves.png`),
+log (local-only: `../../.look/rider-coach-r2b1/walk-direct.log`): **pass**. This uses production `bot.straight` (forward key/steering)
 along exactly the same waypoints, with no navigation-planner waits and no jump presses. The route completes out
 and back in about 12.5 seconds, pausing 0.7 seconds at the east platform by design. The ramp height changes smoothly;
 the plank/trestle transitions have small step-height changes (grounded 99% of sampled frames). From all 12 sheet
@@ -146,10 +146,10 @@ quality remains unverified**; the clip is supplied for the orchestrator's playba
 The production Q7 evidence starts at `crossing-done`, stages the player beside the depot once, then uses
 `railway-q7-crate.ts`'s real pickup/carry/deposit actions and `line2Rides(bot).ride(HALT.pier,0)` for the approach,
 lever, real-jump boarding and ride home. No recovery teleport or world mutation. It passed and ended at Village,
-verified by opening [its final still](../../.look/rider-coach-r2b1/route/q7-home-still.png).
+verified by opening its final still (local-only: `../../.look/rider-coach-r2b1/route/q7-home-still.png`).
 The temporary `no way yet` message caused a replan, not a failure; no `NEVER`, water/recovery or Q7 FAIL followed.
-[Script](../../.look/rider-coach-r2b1/q7-route.ts), [log](../../.look/rider-coach-r2b1/q7-route.log),
-[verdict](../../.look/rider-coach-r2b1/route/q7-home-verdict.json). The successful run used the same script before
+Script (local-only: `../../.look/rider-coach-r2b1/q7-route.ts`), log (local-only: `../../.look/rider-coach-r2b1/q7-route.log`),
+verdict (local-only: `../../.look/rider-coach-r2b1/route/q7-home-verdict.json`). The successful run used the same script before
 its final success log was prefixed `PLAY` so the harness would print it; its done flag is reached after Village arrival.
 
 ## Validation and review boundary
@@ -172,7 +172,7 @@ all in the Pier start-ramp/crossing boxes, their local bodies, or the correspond
 assertion code was weakened. `prefab-halt-requests.json` regenerates identically and is unchanged. The old fixture
 correctly failed on the first moved ramp x value. The regenerated fixture passes. Independent review of the fixture
 change is still required before shipping; no subagent was started, per the brief.
-[Exact fixture delta](../../.look/rider-coach-r2b1/prefab-halts-delta.json).
+Exact fixture delta (local-only: `../../.look/rider-coach-r2b1/prefab-halts-delta.json`).
 
 No R2b.2/R2b.3, push or ship. No separate steel-car step-off playtest; the owning prose distinguishes geometry
 from tested landings. Real-time playback/feel and the designer's visual approval remain with the orchestrator.
@@ -183,6 +183,6 @@ root resolution, early long-train staging, and the superseded/interrupted stagin
 fix waits for any homeward arrival, lets an unwanted train depart, and requests again; the original script waited
 for the desired wagon train even when another train had already served the request. No game train rule changed.
 The generated rail map changed only the Pier crossing's x/z/label. Capture source hashes are in the
-[source manifest](rider-coach-r2b1/source-manifest.json).
+source manifest (local-only: `rider-coach-r2b1/source-manifest.json`).
 
-Full command logs are retained under [.look/rider-coach-r2b1](../../.look/rider-coach-r2b1/).
+Full command logs are retained under .look/rider-coach-r2b1 (local-only: `../../.look/rider-coach-r2b1/`).

@@ -1,3 +1,0 @@
-export {};
-const w=window as any;
-void w.__pierWalk().catch((error:unknown)=>{console.error('PIER_WALK_FAIL '+String(error));throw error;});
