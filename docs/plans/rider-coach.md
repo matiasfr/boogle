@@ -142,6 +142,8 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     the count, Pier and Ring stills, `npm run perf`, `npm run loop -- run` with order and bills unmoved.
 - [ ] **R3. The coach's art (M; sheets S).** Sync: Local. Tier: normal + visual. Sheets: Codex gpt-6.1-sol medium;
   build: Codex gpt-6-astra high with the asset-author skill. Bump: no. After R2b.3.
+  **Sheets and build brief (16 November):** [measured candidate A references](../world/rider-coach-a.html),
+  [recipe brief](../world/rider-coach-a/brief.md). Art intent only; R3 build and runtime inspection remain unchecked.
   Candidate A of the [previz](../world/rider-coach.html) in the envelope (**2.90 × 1.60 m, roof ≤ 2.05 m**, deck
   0.70, 2.20 m axles): panelled shell, low arc roof, four unglazed droplights a side, benches 4 + 4 facing in, a door
   at each bench end, iron four-wheel underframe; honey timber #b98a52, brown #5c4530, iron #2f3131, red #a33a2c, small
