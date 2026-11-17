@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, and keep it short. It holds only what cannot be looked up: who is running what, what waits on the owner, and the lessons. Main, CI, pull requests and worktrees come from `npm run heartbeat`; committed work and its next steps from [the backlog](../backlog.md); what merged from git. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 17 November 2026 about 19:10 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
+**Updated:** 17 November 2026 about 19:25 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
 
 ## Jobs in flight
 
@@ -10,7 +10,6 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Garage choices: the designer's Quick or Strong rebalance on the 2D page (a proposal; no game code) | Garage choices (P1) | `codex/garage-trade-rebalance` | the heartbeat (HOTBOX, a T3 delegate, Codex gpt-6.1-sol high) | 17 November 19:10 | running; ends in a proposal the heartbeat reads and ships as docs |
 
 ## Where the work stands
 
@@ -25,6 +24,7 @@ One list, newest first. Each proceeds on its recommendation unless it says it wa
 
 **From 16 and 17 November:**
 
+- The Quick or Strong rebalance (17 November, [proposal](../brainstorms/garage-trade-rebalance.md), [page](../world/garage-choices.html)): Quick 25 m/s with one 10-footing cargo car, Strong 20 m/s with two, same 6 steel; on the page's model Quick leads North–south by 14.8 s and Bay by 33.4 s and Strong leads Cave by 12.1 minutes, at one and three players. The split is fragile (bills at three quarters, or half the travel legs, and Strong leads everywhere), and the page's layout was not seen (the browser gave no screenshot). Its scope question: should step 4 also own the future lines' sources assembling and delivering a full 20-footing load? Recommended: no, that stays in the future-line freight brief, which owes a loaded-departure proof before the 10/20 figures are called real. Nothing waits; step 4 starts when stage-4 lines are playable.
 - Suspect string from garage step 3 (17 November): the Footing wagon tile still says "6 footings a trip, Quarry to Pier" after the bigger cradle makes it 10 (`src/entities/railway/garage-data.ts:189`). His to reword; left as it is.
 - The reviewer's two passing host tests for garage step 3 (install orders and arriving steel) sit unmerged on `codex/review-garage-steel-spent` (`cf9f4235`); only the reviewed commit shipped. Recommended: leave them off main (the [test diet](tests.md#tests)) and let the 48-hour archive take the branch. Nothing waits.
 - The rooftop route to the balcony, with plots 3 and 2 built (K3, 17 November, [report](../reports/town-k3-checkpoint.md)): the chain is closed to a walking second jump (plot 3’s roof to plot 2’s is 9.94 m against 7.4 to 7.9 m) and open by the figures to a sprinting one (12.6 m); nobody has jumped it. Recommended: accept, as the plan’s finding 7 and B4’s question 1 did. Nothing waits.
