@@ -68,7 +68,7 @@ export const WORLD_LINES: readonly WorldLine[] = [
       { name: 'Ring Island halt', stop: 0, x: 141418, z: -81983, y: 800, reach: 1260 },
       { name: 'High Gorge', stop: 1, x: -8641, z: -197684, y: 300, reach: 1260 },
     ],
-    ends: [{ at: 'end', kind: 'crossover', sCm: 319640, x: -5946, z: -195454, y: 358 }],
+    ends: [{ at: 'end', kind: 'crossover', sCm: 319300, x: -5698, z: -195221, y: 370 }],
     legs: [
       { id: 'ringx', reverse: false, fromCm: 74300, toCm: 120126, stage: [2, 2] },
       { id: 'ledge', reverse: false, fromCm: 120126, toCm: 325140, stage: [3, 5] },

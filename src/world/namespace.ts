@@ -118,7 +118,8 @@
 // loads footings at the quarry going out; rooms that bought plot 2 as a house start fresh. No shape change or migration.
 // v56 (2026-11-16): line two and the breaker wake only after the fitted boiler and the cart at rest.
 // v57 — 2026-11-16: riders' coach, eight rider places (was four), 16.1 m rear reach;
-// Home line 2 stop 21.65 m and Ring Island stop +3.4 m, keeping freight positions fixed.
+// Home line 2 stop 21.65 m and Ring Island stop +3.4 m, keeping freight positions fixed;
+// High Gorge's crossover 3.4 m toward Home keeps the full coach train straight at the terminal turn.
 export const WORLD_NS = 'v57';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps

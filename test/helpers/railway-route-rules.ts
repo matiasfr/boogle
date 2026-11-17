@@ -173,7 +173,9 @@ export function routeRulesShard(shard: number) {
     const gorge = line2.halts[GORGE]!,
       crossEnd = gorge.end!.mergeCm + (RING_END.cross.u1 - RING_END.cross.u0);
     assert.equal(gorge.end!.kind, 'crossover');
-    assert.equal(gorge.s - TRAIN_EXTENT.behindCm - crossEnd, 30, 'the tail 0.3 m clear of the crossover');
+    // R2b.2 moves the crossover 3.4 m toward Home: 3.70 m with v56's extent, 0.30 m with the coach.
+    // The exact production drift pin lives in level-check; this remains the design minimum.
+    assert.ok(gorge.s - TRAIN_EXTENT.behindCm - crossEnd >= 30, 'the tail at least 0.3 m clear of the crossover');
     assert.equal(line2.halts[RING]!.s, legS(LEG, LEG.fromCm), 'the leg starts at Ring Island (row cm less 100)');
     for (let k = 1; k < line2.halts.length; k++) assert.ok(line2.halts[k]!.s > line2.halts[k - 1]!.s);
     assert.equal(line2.path.length / 2 - 1, Math.floor(legS(LEG, 325140) / 1000), 'the path runs past the buffers');

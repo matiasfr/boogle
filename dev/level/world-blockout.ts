@@ -488,7 +488,11 @@ function build(svc: Service): Built {
     const tip = side === 'start' ? fromCm : s;
     const stop = stops[side === 'start' ? 0 : stops.length - 1]!;
     if (kind === 'crossover') {
-      const sCm = side === 'start' ? stop + 3500 : stop - 3500;
+      // R2b.2: Gorge's authored end keeps the coach train wholly beyond its 22 m crossover.
+      // The catalog and flag-only world blockout's X share it; other termini keep their standard setback.
+      const sCm =
+        MAP.options.find((o) => o.id === 'sickle')!.turnbacks?.[svc.id]?.[side] ??
+        (side === 'start' ? stop + 3500 : stop - 3500);
       const [x, z, y] = at(sCm);
       ends.push({ at: side, kind, sCm, x, z, y });
     } else {

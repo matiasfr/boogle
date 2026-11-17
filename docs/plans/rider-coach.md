@@ -111,6 +111,12 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     outward and homeward poses at the Gorge stop are the same (the turn moves no car; with the coach and today's
     crossover the steel car swings 0.08 m and 3.9°). The leg view draws no crossover: no scenery moves (the flag-only
     `?blockout=world` draws the row's X and follows the regenerated row).
+  - **Implementation progress, 16 November:** generated crossover now s 3192.00–3214.00; reserved tail
+    clearance 0.30 m, last-car standing-turn shift **0 m / 0 radians**. Corrected Gorge platform span is
+    3210.40–3250.40. The map had no authored end coordinate: it now owns one `turnbacks.ring.end` override
+    (319300 catalog cm), consumed by the generator; all other ends retain their 35 m setback. The flag-only
+    world blockout's X follows this regenerated coordinate; production leg scenery is unchanged. Shares v57.
+    Motion and full acceptance are completed with R2b.3, not claimed by this data commit.
   - **Proof and done means:** level-check; a fixed-camera pair from the north platform toward Home at `gorge-reached`,
     a train arriving and leaving (where it swings across is the only visible change); `npm run loop -- run` to the Gorge.
 - [ ] **R2b.3. The coach in the train, a grey blockout (M).** Sync: Server data + Local. Tier: **independent review**

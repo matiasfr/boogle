@@ -12,7 +12,7 @@ import {
 } from '../../src/entities/railway/car-spacing.ts';
 import { HALTS, OFFSET_HALTS, ORIGIN } from '../../src/place/layout.ts';
 import { haltFrame } from '../../src/prefab/halt-deck.ts';
-import { line2At, line2Lat } from '../../src/entities/railway/line2-path.ts';
+import { line2At, line2Lat, LINE2_END_S } from '../../src/entities/railway/line2-path.ts';
 import { LINE2, RAIL_LINES, TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
 import { RING_END, RING_HALT, RING_HEAD, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { TRAIN } from '../../src/sim/railway-train.ts';
@@ -34,7 +34,10 @@ export function coachTrain(s: number, up: boolean, endStops: readonly number[] =
     o.x = p.x - p.uz * lat;
     o.z = p.z + p.ux * lat;
   };
-  const places = trainPlaces(at, s, vehicles, [], up);
+  // Match train-view: a terminal row may say track 1 while every car is still on the original straight.
+  const lat = (at: number) => line2Lat({ track: Number(up), origin: 0 }, at, endStops, undefined, true);
+  const spaced = lat(s + vehicles[0]!.d) !== 0 || lat(s + vehicles.at(-1)!.d) !== 0 || lat(s) !== 0;
+  const places = trainPlaces(at, s, vehicles, [], spaced);
   return vehicles.map((v, i) => deckAt(at, places[i]!, v, {} as Deck));
 }
 const corners = (d: Deck) =>
@@ -180,7 +183,7 @@ export function checkRiderCoach() {
       row(
         `${RAIL_LINES[LINE2]!.halts[i]!.name} ${up ? 'homeward' : 'outward'}`,
         coachTrain(s, up),
-        (d) => curvedMargin(d, s + 10 - (gorge ? 40 : 25), s + 10, 4.05, gorge ? 8 : 5),
+        (d) => curvedMargin(d, gorge ? LINE2_END_S - 40 : s - 15, gorge ? LINE2_END_S : s + 10, 4.05, gorge ? 8 : 5),
         (k) => sideAt(s + consist[k]!.offset, 4.05, 2.25, 0),
       );
     }
@@ -204,6 +207,16 @@ export function checkRiderCoach() {
   const gorgeCrossover = { tailPastEnd: (gorge.s - TRAIN_EXTENT.behindCm - crossEnd) / 100, minimum: 0.3 };
   if (gorgeCrossover.tailPastEnd < gorgeCrossover.minimum)
     problems.push(`High Gorge: tail/crossover ${gorgeCrossover.tailPastEnd} m, minimum ${gorgeCrossover.minimum} m`);
+  const outward = coachTrain(gorge.s / 100, false).at(-1)!,
+    homeward = coachTrain(gorge.s / 100, true).at(-1)!;
+  const gorgeTurn = {
+    shift: Math.hypot(outward.x - homeward.x, outward.z - homeward.z),
+    yaw: homeward.yaw - outward.yaw,
+  };
+  if (gorgeTurn.shift > 1e-9 || Math.abs(gorgeTurn.yaw) > 1e-9)
+    problems.push(
+      `High Gorge: standing turn moves last car ${gorgeTurn.shift} m / ${gorgeTurn.yaw} radians; must be zero`,
+    );
   return {
     level: 'rider-coach',
     failures: problems.length,
@@ -212,6 +225,7 @@ export function checkRiderCoach() {
     rows,
     queue: { gap, leadingS, minimum: 0.5 },
     gorgeCrossover,
+    gorgeTurn,
     coverage:
       'Production longest consist and chord/buffer placement. Whole-body longitudinal and lateral margins at actual platform end faces and stopping tracks. The 2 m lateral track corridor is half the 4 m track spacing, not a boarding-jump claim. Retained Stack homeward gaps are named separately by orchestrator ruling. Quarry player overhang allowed only to its existing 1.62 m. Sampled queue, not continuous collision or roof/door proof.',
   };
