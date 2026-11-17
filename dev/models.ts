@@ -15,7 +15,12 @@ const codex = (work: string, model: string, effort: string): Route => ({
 const claude = (work: string, who: string, model: string, effort: string): Route => ({ work, who, model, effort });
 
 export const routes: Route[] = [
-  claude('Orchestration, review of returned work, owner conversation', 'main session', 'opus', 'medium or high'),
+  claude(
+    'Orchestration, review of returned work, owner conversation',
+    'main session',
+    'opus',
+    'medium; high for tricky work',
+  ),
   claude(
     "The hourly heartbeat, the unattended orchestrator run with its workflow review (the orchestrate skill's section 9)",
     'the heartbeat thread (a T3 scheduled task; its model is set in that thread)',
@@ -42,31 +47,27 @@ export const routes: Route[] = [
   codex(
     'Player-visible implementation: views, cameras, effects, characters, prompts, feel, assets and look work',
     'gpt-6.2-astra',
-    'medium',
+    'medium; high for tricky work',
   ),
   claude(
     'Visual review of a player-visible change before it ships (opens the stills and motion sheets; names what looks wrong)',
     'main session (opens the stills itself)',
     'opus',
-    'medium or high',
+    'medium; high for tricky work',
   ),
   codex('Fixes, tooling and captures-driven tasks with no plan to follow', 'gpt-6.2-sol', 'medium'),
-  codex(
-    'High-risk implementation (server, sync, src/world, src/net)',
-    'gpt-6.2-astra',
-    'medium (rerun at high with the failed evidence if it falls short)',
-  ),
+  codex('High-risk implementation (server, sync, src/world, src/net)', 'gpt-6.2-astra', 'medium; high for tricky work'),
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     who: "a fresh reviewer with none of the author's context: a fresh Codex review delegate or a Claude delegate (T3 delegate_task)",
     model: 'gpt-6.2-astra first, or opus',
-    effort: 'high for astra (xhigh for one unresolved question), medium for opus',
+    effort: 'medium; high for tricky work',
   },
   {
     work: 'Code review before shipping (e.g. on src/net*, src/world/ or server/)',
     who: 'a fresh Codex review delegate on the committed branch (T3 delegate_task), not the main session',
     model: 'gpt-6.2-astra',
-    effort: 'medium (rerun at high with the failed evidence if it falls short)',
+    effort: 'medium; high for tricky work',
   },
   {
     work: 'Owed proofs on a built branch (rebase, bot runs, stills, tick marks)',
