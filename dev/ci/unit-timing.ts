@@ -6,7 +6,8 @@ import type { TestEvent } from 'node:test/reporters';
 export default async function* unitTiming(source: AsyncIterable<TestEvent>) {
   for await (const { type, data } of source) {
     if ((type === 'test:dequeue' || type === 'test:complete') && data.file && path.resolve(data.name) === data.file) {
-      const file = path.relative(process.cwd(), data.file);
+      // Forward slashes on every platform: unit weights, annotations and tests key files that way.
+      const file = path.relative(process.cwd(), data.file).split(path.sep).join("/");
       const weight = unitWeight(file);
       if (type === 'test:dequeue') {
         yield `unit file start ${file}\n`;
