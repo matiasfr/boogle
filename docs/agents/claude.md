@@ -12,7 +12,8 @@ For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relev
 - `/ship`: commit and ship with `npm run ship`.
 - `/simplify` is the cleanup pass and `/code-review` the code review required by docs/agents/shipping.md, "Shipping" (procedure: docs/agents/shipping.md).
 - `/new-feature <name>`: one self-contained plug-in in `src/features/`.
-- `/brainstorm <name> <idea>`: flesh out a seeded idea before it's built. Light by default (one agent, three lenses: play designer, systems architect, creative director); `--panel` runs three panelists for a big new area. Models per `npm run models`. It writes `docs/brainstorms/<name>.md` with suggestions and at most five open questions, and the brief goes straight to building. `/idea` still parks a line without any of that. The `planner` and `implementer` agents remain for when the owner asks for a written plan.
+- `/brainstorm <name> <idea>`: flesh out a seeded idea before it's built. Light by default (one agent, three lenses: play designer, systems architect, creative director); `--panel` runs three panelists for a big new area. Models per `npm run models`. It writes `docs/brainstorms/<name>.md` with suggestions and at most five open questions, and the brief goes straight to building. `/idea` still parks a line without any of that. The `planner` agent remains for high-risk work and for when the owner asks for a written plan.
+- `/build`: build from a brief or plan; the builder writes its own short plan first. `/design-review`: the design check on a plan or brief's gameplay calls, run by its author before building.
 - `/look`: see the running game (stills, motion, scenarios). Use it for any visual, feel, physics or multiplayer change.
 - `/asset-author`: measured small props and rigid attachments, canonical Blender recipes, built-GLB inspection and Buddy stage review.
 - `/concept-art`: painted concept images from prompts (`npm run concepts`, OpenAI key or Codex CLI) for design exploration.
@@ -23,6 +24,10 @@ For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relev
 - Reference skills load on their own when relevant: `threejs-*`, `game-feel`, `camera-systems`, `audio-design`. The `threejs-*` skills cover WebGL and WebGPU; Boogle is WebGPU + TSL only, so use their WebGPU/TSL parts and [src/render/README.md](../../src/render/README.md). Codex sees these skills through the `.agents/skills` symlink, so keep them in `.claude/skills`.
 
 ### Codex: bot runs, visual checks and follow-ups
+
+In T3 Code every Codex job is a T3 `delegate_task` and feedback goes to its child thread (the orchestrate-boogle
+skill, "In T3 Code"); the `run.ts` launcher and `resume` commands below are for a session with no T3 tools. The
+evidence contract and the broker commands apply either way.
 
 Which model does which work is in `npm run models` ([models](models.md)). The complete command and evidence
 contract is [dev/codex/README.md](../../dev/codex/README.md); visual framing and motion guidance is in
@@ -66,10 +71,11 @@ resuming a Codex **conversation**. Sandboxed task workers use the broker command
 
 ### Working in parallel
 
-- One session directs; implementation runs in parallel. A **subagent** (Agent tool, `isolation: "worktree"`, model and effort per `npm run models`) suits one piece whose result the director reviews in the same sitting; subagents can't start their own. A **session** of its own (one per track, in its own worktree) can run its own subagents and lasts across days; use it for a track like a prototype.
-- Give each agent a concrete stage and include the files, errors and decisions in its brief. Resume the same Codex job for feedback, fixes and repeated checks; use a new job for independent work or a new starting snapshot.
+- One session directs; implementation runs in parallel. In T3 Code every job that commits is a T3 `delegate_task` in its own worktree, with the model and effort from `npm run models` (owner call "In T3 Code, dispatch T3's way"); with no T3 tools, an Agent-tool subagent with `isolation: "worktree"` or a `dev/codex/run.ts` job. A **session** of its own (one per track, in its own worktree) lasts across days; use it for a track like a prototype.
+- Split work by context, not by role (owner call "Fold roles into the builder"): a delegate gets a piece that needs little from the rest and hands back a compact result. The builder plans its own work, reviews its own gameplay calls and finishes its own proofs (the build and design-review skills); a separate agent is for parallel work, a fresh-context review, or the high-risk plan. A small fix (about 3 files or 150 lines, off the review paths) is made by the session that found it.
+- Give each delegate a concrete stage and include the files, errors and decisions in its brief. Feedback, fixes and repeated checks go to the same delegate's thread; use a new one for independent work, and for every review.
 - Each worker sees its own result (docs/agents/verification.md, "See it before you ship", required by AGENTS.md). The director reviews Codex task reports, diffs and stills before shipping their commits; other workers follow their assigned shipping workflow.
-- Research before deep facets (docs/agents/owner-calls.md, "Owner's standing calls") runs as a deep-research subagent.
+- Research before deep facets (docs/agents/owner-calls.md, "Owner's standing calls") runs on the research row of `npm run models`, as a delegate, since its sources are read once and only the doc is kept.
 
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
 

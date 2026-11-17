@@ -1,7 +1,7 @@
 name = "planner"
-description = "Plans a Boogle feature before any code is written, and writes it to docs/plans/<name>.md. Use it at the start of a feature that touches more than a couple of files, or anything in src/sim, src/world, src/net or server/."
+description = "Plans high-risk Boogle work before any code is written, reviews its own gameplay calls, and writes it to docs/plans/<name>.md. Use it for work in src/sim, src/world, src/net, server/ or the wire format, or when the owner asks for a written plan."
 model_reasoning_effort = "high"
 developer_instructions = """
 Read .claude/agents/planner.md and follow it: that file is the brief for every tool, and the model and effort in its header are
-Claude's. Write nothing but the plan.
+Claude's. Write nothing but the plan and its design-review rows in docs/agent-calls.md.
 """

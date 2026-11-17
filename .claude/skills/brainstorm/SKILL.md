@@ -35,8 +35,8 @@ You are the director: you write the brief and make no design decisions the owner
    - **Parked**: good ideas for later, one line each.
 4. **Show the owner, then build.** Give the pitch, the top three suggestions and the open questions in chat, with the
    file path. Don't wait: the brief builds on its recommended answers, each logged in its topic's table in `docs/agent-calls.md` (owner,
-   9 November); only direction, unapproved scope or something irreversible waits for the owner. Commit the brief ("Brainstorm: <name>"), have the designer agent review it, and hand it to the implementation row of
-   `npm run models` citing `docs/brainstorms/$0.md` (in T3, both as `delegate_task` jobs). Record the owner's answers in the brief
+   9 November); only direction, unapproved scope or something irreversible waits for the owner. Commit the brief ("Brainstorm: <name>"), run the [design-review skill](../design-review/SKILL.md) on it yourself, and hand it to the implementation row of
+   `npm run models` citing `docs/brainstorms/$0.md` (in T3, a `delegate_task` job). Record the owner's answers in the brief
    whenever they come, and adjust what was built. Parked items the owner wants kept go to `docs/ideas.md`. When the owner commits to the brief's feature, or to work an answer creates, it becomes a row in `docs/backlog.md` that turn, with his words; a brief building on its recommended answers is not yet one. Remove any
    `.look/codex/$0-*` folders once the brief is committed.
 5. **Track it.** Status `building` when the build starts, `live` when it ships, `answered` with the owner's verdict

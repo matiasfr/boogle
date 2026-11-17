@@ -250,7 +250,7 @@ Read from `common` in the map data, [place.md](../game-design/place.md) and the 
   - Nothing checks line of sight from a beat end to the next goal.
   - Nothing checks that every place and gate in the map data is `seen` before it is reached (`reach`, or `open` for gates), though the fields exist.
   - level-check doesn't cover the Sickle greybox islands.
-- **The designer agent's checklist.** Its "Flow first" checks ([designer.md](../../.claude/agents/designer.md)) are worded as musts. This report suggests holding only lenses 1–3 that way. Rewording it is a separate call.
+- **The designer agent's checklist.** Its "Flow first" checks ([designer.md](../../.claude/skills/design-review/SKILL.md)) are worded as musts. This report suggests holding only lenses 1–3 that way. Rewording it is a separate call.
 
 ## Sources
 

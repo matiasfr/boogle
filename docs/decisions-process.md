@@ -5,7 +5,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 ## Current rules
 
 - 2026-11-17 · review agent calls weekly ([entry](#d-2026-11-17-weekly-agent-calls-review))
-
+- 2026-11-16 · Work is split by context, not role: the builder plans, design-reviews and proves its own work; no designer or implementer agent; small fixes stay with the session that found them; route changes are compared on the process eval ([entry](#d-2026-11-16-fold-roles-into-the-builder))
 - 2026-11-16 · Fast-forward need not preserve wardrobe finds; the dev key holder may replace the shared room behind the typed name, countdown and backup ([entry](#d-2026-11-16-batch2-fast-forward-can-reset-wardrobe))
 - 2026-11-16 · Keep integer counts for riders, wallet, households and source steps; drop the separate trade prototype ([entry](#d-2026-11-16-batch2-trade-counts-without-prototype))
 - 2026-11-16 · The loop reports cues from the code; the gold ghost is decided rather than merely proposed ([entry](#d-2026-11-16-batch2-loop-cues-from-code-gold-decided))
@@ -39,7 +39,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-07 · next proof: work, machinery, exploration; co-op priority revised ([entry](#d-2026-11-07-next-proof-work-machinery-exploration-co))
 - 2026-11-08 · the glider is deferred, not cut ([entry](#d-2026-11-08-the-glider-is-deferred-not-cut))
 - 2026-11-09 · a daily tidy pass ([entry](#d-2026-11-09-a-daily-tidy-pass))
-- 2026-11-09 · pick and log; a designer review; a lighter brainstorm; research by topic ([entry](#d-2026-11-09-pick-and-log-a-designer-review))
+- 2026-11-09 · pick and log; a designer review; a lighter brainstorm; research by topic ([entry](#d-2026-11-09-pick-and-log-a-designer-review)) _(the designer review is run by the plan's author since [16 November](#d-2026-11-16-fold-roles-into-the-builder))_
 - 2026-11-09 · nothing waits for a playtest ([entry](#d-2026-11-09-nothing-waits-for-a-playtest))
 - 2026-11-09 · playtest jump-ins (a requirement) ([entry](#d-2026-11-09-playtest-jump-ins-a-requirement)) _13 November: the owner is "not a fan of the jump-in rooms as separate rooms"; see [One live game](agents/owner-calls.md)._
 - 2026-11-08 · split the design record: decisions, roadmap and owner calls ([entry](#d-2026-11-08-split-the-design-record-decisions-roadmap))
@@ -102,6 +102,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 ## Decided
 
 - <a id="d-2026-11-17-weekly-agent-calls-review"></a>**2026-11-17, review agent calls weekly** (owner, 17 November 2026, review page: "the others I accept all"). Owner’s words on the card: "Confirm". Once a week the designer ranks open `docs/agent-calls.md` rows into decide / flags / bulk, each with a recommendation; the orchestrator republishes the owner’s review page for him. Add this short step to the tidy skill’s docs pass.
+
+- <a id="d-2026-11-16-fold-roles-into-the-builder"></a>**2026-11-16, fold roles into the builder; a process eval for route changes** (owner, 16 November 2026, shown seven findings from Anthropic's article on folding subagents into the main agent loop: "Implement all of these 1-7"). Work is split by context, not by role. The builder writes its own short plan, reviews its own gameplay calls with the [design-review skill](../.claude/skills/design-review/SKILL.md) and finishes its own proofs ([build skill](../.claude/skills/build/SKILL.md)); the `designer` and `implementer` agents are gone and the `planner` writes plans only for `src/sim`, `src/net`, `src/world`, `server/` and the wire format, or when the owner asks. A small fix is made by the session that found it. A route change is compared on `npm run process-eval`, one change at a time. Every plan or brief with gameplay calls still gets its design review before it is built. Full call: [owner-calls](agents/owner-calls.md#fold-roles).
 
 - <a id="d-2026-11-16-batch2-fast-forward-can-reset-wardrobe"></a>**2026-11-16, fast-forward can reset wardrobe finds and the shared room** (owner, 16 November 2026, in chat: "Answered recs on the flags"). Accepted recommendations: **AT-003:** confirm, minus "wardrobe finds stay", with question 1 answered. The rest of each original row stands except the named change or retirement; full rows are in the [archive](decisions-archive.md#b2-rest-process). Basis: [docs/agents/owner-calls.md#one-room](agents/owner-calls.md#one-room), [docs/plans/room-fast-forward.md#owner-questions](plans/room-fast-forward.md#owner-questions). Earlier owner words, 13 November: "Yeah, wardrobe fine stay doesn't need to be a rule Especially if it's in the way of a good system"; on the dev-key-only recommendation for any room: "Okay, that all sounds good."
 

@@ -17,18 +17,22 @@ const claude = (work: string, who: string, model: string, effort: string): Route
 export const routes: Route[] = [
   claude('Orchestration, review of returned work, owner conversation', 'main session', 'opus', 'medium or high'),
   claude(
-    'Design review of a plan or brief with gameplay calls, before it is built',
-    'designer agent (fable medium only for extremely complex work)',
-    'opus',
-    'high',
+    'Design review of a plan or brief with gameplay calls, before it is built (the design-review skill)',
+    "the plan's or brief's author, in the same context; no separate agent",
+    "the author's model",
+    "at the author's effort",
   ),
   claude(
-    'Planning complex work (docs/plans/<topic>.md)',
+    'Planning high-risk work (src/sim, src/net, src/world, server/, the wire format) or a plan the owner asks for (docs/plans/<topic>.md), with its design review',
     'planner agent (fable medium only for extremely complex work)',
     'opus',
     'high',
   ),
-  codex('Implementation of an approved plan (docs/plans/ or a written brief)', 'gpt-6.1-sol', 'medium'),
+  codex(
+    'Implementation from a brief or an approved plan; the builder writes its own short plan first and revises it as it builds (the build skill)',
+    'gpt-6.1-sol',
+    'medium',
+  ),
   codex(
     'Player-visible implementation: views, cameras, effects, characters, prompts, feel, assets and look work',
     'gpt-6-astra',
@@ -58,11 +62,12 @@ export const routes: Route[] = [
     model: 'gpt-6-astra',
     effort: 'high (medium may be tried as a first pass; check the result)',
   },
-  codex(
-    'Runner: owed proofs on a built branch (rebase, bot runs, stills, tick marks); reports failures, changes no design or game code',
-    'gpt-6.1-sol',
-    'medium',
-  ),
+  {
+    work: 'Owed proofs on a built branch (rebase, bot runs, stills, tick marks)',
+    who: "the builder's own thread (T3 t3_thread_send); a fresh runner delegate only when that thread is gone, and it reports failures and changes no design or game code",
+    model: "the builder's model, or gpt-6.1-sol for a fresh runner",
+    effort: "at the builder's effort, or medium",
+  },
   codex('Hardest design, research or second-opinion review', 'gpt-6-astra', 'xhigh'),
   claude(
     'Search, file finding, log reading and summaries (the Explore agent; mistakes are cheap to spot)',
@@ -70,7 +75,13 @@ export const routes: Route[] = [
     'haiku',
     'medium',
   ),
-  codex('Quick, easy, mechanical jobs', 'gpt-6.1-sol', 'medium'),
+  claude(
+    'Small fixes and mechanical edits: about 3 files or 150 lines at most, nothing `npm run review-stamp` marks `review`',
+    'the session that found it; no delegate',
+    'its own model',
+    'at its own effort',
+  ),
+  codex('Mechanical jobs above that size', 'gpt-6.1-sol', 'medium'),
   codex('Brainstorm (light: one agent, three lenses; --panel: three panelists)', 'gpt-6.1-sol', 'high'),
   codex('Images and previz (only Codex paints)', 'gpt-6.1-sol', 'medium'),
 ];
@@ -87,8 +98,6 @@ export const fableTopEffort = 'high';
 /** Frontmatter of .claude/agents/*.md must match these (test/models.test.ts). */
 export const agents: Record<string, { model: string; effort: string }> = {
   planner: { model: 'opus', effort: 'high' },
-  implementer: { model: 'sonnet', effort: 'medium' },
-  designer: { model: 'opus', effort: 'high' },
   Explore: { model: 'haiku', effort: 'medium' },
 };
 

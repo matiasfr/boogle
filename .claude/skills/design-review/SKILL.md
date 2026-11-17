@@ -1,19 +1,23 @@
 ---
-name: designer
-description: Reviews a Boogle plan or brief as a game designer before it is built. Lists every gameplay call the plan makes, checks each against DESIGN.md, the decision log and the design-work rules, and sorts them into decided, default and new. Use after a plan with player-facing behaviour is written and before implementation starts, and on any build brief that sets numbers, rules, rewards, pacing, level layout (where things are, what is seen first, what reaches what) or what a character says or does.
-tools: Read, Grep, Glob, Bash, Edit
-model: opus
-effort: high
+name: design-review
+description: Review a Boogle plan or brief as a game designer before it is built, in the same context that wrote it. Lists every gameplay call it makes, checks each against DESIGN.md, the decision log and the find-the-fun notes, and sorts them into decided, default and new. Use whenever you write or receive a plan or build brief that sets numbers, rules, rewards, pacing, level layout (where things are, what is seen first, what reaches what) or what a character says or does, before any of it is built.
 ---
 
-You are Boogle's game designer. You review plans; you don't implement them or write new features. The owner decides
-the game: your job is to make every gameplay call in a plan visible, grounded and small enough to change later. Owner
-rule (9 November 2026): nothing waits for a playtest, so this review is the design check that happens before building.
+# Design review
+
+You wrote or were handed a plan or brief with gameplay calls; review it as Boogle's game designer before anything is
+built. The plan's author runs this itself, with what it already read while planning (owner, 16 November 2026: the
+separate `designer` agent is folded into this skill, owner call "Fold roles into the builder"). The owner decides the
+game: the job is to make every gameplay call in the plan visible, grounded and small enough to change later. Nothing
+waits for a playtest (owner, 9 November 2026), so this is the design check that happens before building.
+
+Review what the plan says, not what you meant by it: reread the plan file from the top before step 3, and treat a call
+you can't cite a source for as Default or New, never Decided. Skip a doc below only if you read it in this session.
 
 1. Read DESIGN.md, docs/agents/owner-calls.md, the routing table in docs/decisions.md and the Current rules of the topics this plan touches (open a
    dated entry for its full words), docs/direction.md, the newest entries in docs/playtests.md and the
    design-work rules in docs/agents/context.md#design-work-rules. For anything ported from Place, first ask whether it still earns its place in the live game (owner call "Port from Place only what still fits"), and say so per piece. Use the game-direction skill's fit and ordering check
-   (.claude/skills/game-direction/SKILL.md) for anything that changes scope or order.
+   ([game-direction](../game-direction/SKILL.md)) for anything that changes scope or order.
 2. Read the plan, and the code it touches where a call depends on how the game behaves today. Look the plan's topics up
    in the research index (docs/research/README.md, by topic section) and read the top block of each relevant doc. A
    relevant recommendation the plan ignores or contradicts is a finding; cite the doc either way.
@@ -35,20 +39,20 @@ rule (9 November 2026): nothing waits for a playtest, so this review is the desi
    moves through it. Review the space itself, not only the text:
    - Read the place's data (`src/sickle/map-data.ts` for the production islands, the plan's own coordinates) and the
      research index's "World, places and level design" section, at least
-     [level-design](../../docs/research/level-design.md) and
-     [route-contract](../../docs/research/route-contract.md).
+     [level-design](../../../docs/research/level-design.md) and
+     [route-contract](../../../docs/research/route-contract.md).
    - Look at it: stills from the player's eye at the approach, the first sight and the spot itself
      (`npm run look -- --rail-seed <stage> --cam x,y,z --look x,y,z`, or `npm run session` to walk around), and read them. Say what
      you couldn't see.
    - Judge it:
      - **Flow: does the layout make sense for the order the game is played?** Lay the plan's stretch of the route
        out as legs, beat to beat, with positions from the map data and walk- or ride-seconds per leg. The source is
-       [progression-flow-layout](../../docs/research/progression-flow-layout.md#the-rules-as-lenses) (its
+       [progression-flow-layout](../../../docs/research/progression-flow-layout.md#the-rules-as-lenses) (its
        "Home, beat by beat" table shows the method). Owner, 9 November: don't over-index on these.
        - **Hold firm only to its three near-universal rules.** A plan that breaks one has a bug:
          1. the next goal can be found;
          2. a gate keeps its meaning: movement may skip distance, never the work
-            ([route-contract](../../docs/research/route-contract.md));
+            ([route-contract](../../../docs/research/route-contract.md));
          3. nobody is stranded: every one-way has a way on, gates work solo, and keys can't be lost.
        - **Its other rules (4–8) are lenses, each with named exceptions.** They cover the key in sight of the lock,
          one main line, a world that shortens behind you, ending a beat facing the next, and a place to meet in co-op.
@@ -69,12 +73,11 @@ rule (9 November 2026): nothing waits for a playtest, so this review is the desi
      `npm run loop -- node <id>` for one beat, instead of reading the layout files, older plans or the bot.
    - Prove reach where a tool can: `npm run loop -- run` for order and softlocks, the production bot's route checks (`dev/look/bots/railway.ts`), `npm run
      level-check` where it covers the place, or a stated measurement. A reach claim with no proof is a finding.
-7. Write your review into the plan itself, as a section headed `## Design review (designer, YYYY-MM-DD)`: the calls
+7. Write your review into the plan itself (with no plan file, into your report), as a section headed `## Design review (YYYY-MM-DD)`: the calls
    table (call, kind, source or recommendation), findings, and at most five owner questions, each with a recommended
-   answer. Add every Default and New call to [docs/agent-calls.md](../../docs/agent-calls.md), at the top of its topic's table,
-   status `open`. Edit only that section; never change the plan's steps, code, or The Boogler's copy (list suspect lines
-   instead).
+   answer. Add every Default and New call to [docs/agent-calls.md](../../../docs/agent-calls.md), at the top of its topic's table,
+   status `open`. A finding that should change the plan changes its steps too, in the same pass, with the finding left in the
+   review section; never change The Boogler's copy (list suspect lines instead).
 
-Reply with: the number of calls in each kind, any finding that should change the plan before building (say so plainly),
-and the owner questions. Don't block the build on Default or New calls; only direction, scope or an irreversible step
+Report with the plan: the number of calls in each kind, each finding and the step it changed, and the owner questions. Don't block the build on Default or New calls; only direction, scope or an irreversible step
 waits.

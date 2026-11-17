@@ -47,7 +47,7 @@ Open this repository in Codex and trust it. `AGENTS.md` is the shared entry poin
 - `config.toml`: workspace-write with network, live web search, and room for all of `AGENTS.md` (the default cuts it off at 32 KB).
 - `rules/boogle.rules`: the project's commands, Git and `gh` run outside the sandbox with no prompt; force-pushing and skipping hooks are refused. macOS's sandbox won't let Chromium start and a worktree's Git data is outside it, so these can't work from inside. Restart Codex after changing rules.
 - `hooks.json`: Prettier and the full lint runner on each edit, the same `.claude/hooks/format-lint.ts` Claude Code runs. Codex skips a project hook until you trust it: run `/hooks` once in a session. In our tests the project's copy didn't fire under `codex exec`; `dev/codex/run.ts` jobs pass the hook themselves.
-- `agents/`: `planner` and `implementer`, which read the same briefs as Claude's.
+- `agents/`: `planner`, which reads the same brief as Claude's. Building and design review are skills (`build`, `design-review`).
 - `environments/environment.toml`: the desktop app's setup script for a new worktree (Node 26, `npm ci`, Chromium) and its top-bar buttons.
 
 The look harness starts and stops its own local stack on free ports and writes to `.look/`, so it needs no running dev server. Name the question with `--question`, frame the feature, use `--action` after warm-up and open the still and sheet with `view_image`. A successful capture still needs a visual judgment (the shared `look` skill).
