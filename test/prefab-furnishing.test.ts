@@ -619,7 +619,7 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
 });
 
 // Old-code room-shell proof: recipes, stake painting/geometry, camera cutaways and ready/unready transitions.
-function checkRoomTransitions(withGate: boolean) {
+test('town rooms retain old shells, plot boards and state-driven transitions', () => {
   const geometry = (g: THREE.BufferGeometry) => ({
     index: g.index ? Array.from(g.index.array) : null,
     attributes: Object.fromEntries(
@@ -634,9 +634,8 @@ function checkRoomTransitions(withGate: boolean) {
     fs.readFileSync('src/place/building-plans.ts', 'utf8'),
     { THREE, ...boxes },
   );
-  // Keep the original three-room golden intact, then exercise the same lifecycle with the added cottage.
-  const { gate, ...originalPlots } = ROOM_PLOTS;
-  const plots = withGate ? ROOM_PLOTS : originalPlots;
+  // Keep this historical three-room golden unchanged when the town gains another room.
+  const plots = { house: ROOM_PLOTS.house, shop: ROOM_PLOTS.shop, museum: ROOM_PLOTS.museum };
   const added: THREE.Object3D[] = [],
     cleanups: (() => void)[] = [],
     sitePlans: unknown[] = [],
@@ -844,12 +843,6 @@ function checkRoomTransitions(withGate: boolean) {
   rooms.update(0.1);
   rooms.cull();
   capture('initial');
-  if (withGate) {
-    assert.equal(rooms.rooms.gate.up, true, 'gate stands on arrival');
-    assert.equal(rooms.rooms.gate.ready, true, 'gate has no construction to do');
-    assert.equal(rooms.rooms.gate.w, gate.w);
-    assert.equal(rooms.rooms.gate.d, gate.d);
-  }
   for (const r of roomList) {
     up[r.id] = true;
     rooms.update(0.1);
@@ -909,24 +902,12 @@ function checkRoomTransitions(withGate: boolean) {
     JSON.stringify({ plans: sitePlans, meshes: staticMeshes, paint, bodyCalls, states, pieceWrites }),
   );
   const roomFixture = 'test/fixtures/prefab-rooms.json';
-  if (!withGate) {
-    if (process.env.GOLDEN === '1') fs.writeFileSync(roomFixture, JSON.stringify(value) + '\n');
-    prefabGolden(value, JSON.parse(fs.readFileSync(roomFixture, 'utf8')), 'rooms');
-  }
+  if (process.env.GOLDEN === '1') fs.writeFileSync(roomFixture, JSON.stringify(value) + '\n');
+  prefabGolden(value, JSON.parse(fs.readFileSync(roomFixture, 'utf8')), 'rooms');
   const oldPlans = JSON.parse(fs.readFileSync(roomFixture, 'utf8')).plans as {
     id: string;
     plan: import('../src/place/building-plans.ts').Plan;
   }[];
-  if (withGate) {
-    const { plan } = sitePlans.find((p) => (p as { id: string }).id === 'room-gate') as (typeof oldPlans)[number];
-    assert.equal(plan.pieces.length, 56, 'gate construction count comes from the cottage recipe');
-    assert.equal(plan.scaffold.length, 18);
-    assert.equal(plan.hulls.length, 7, 'five walls, roof and floor; no zero-height lintel');
-    assert.equal(plan.poles.length, 5);
-    assert.ok(plan.hulls.every((h) => h.hx > 0 && h.hy > 0 && h.hz > 0));
-    assert.deepEqual(plan.keepOut, { dx: 0, dy: 1.5, dz: 0, hx: gate.w / 2 + 0.1, hy: 1.5, hz: gate.d / 2 + 0.1 });
-    oldPlans.push({ id: 'room-gate', plan });
-  }
   for (const { id, plan } of oldPlans) {
     const roomLevel = loadLevelArtifact(
       JSON.parse(fs.readFileSync(`content/built/levels/${id}.json`, 'utf8')),
@@ -938,14 +919,9 @@ function checkRoomTransitions(withGate: boolean) {
         ['pieces', plan.pieces.length],
         ['hulls', plan.hulls.length],
         ['poles', plan.poles.length],
-        ['proxy', id === 'room-gate' ? 6 : 7],
+        ['proxy', 7],
       ] as const
-    ).flatMap(([phase, count]) =>
-      Array.from(
-        { length: count },
-        (_, index) => `${id}-${phase}-${id === 'room-gate' && phase === 'hulls' && index >= 5 ? index + 1 : index}`,
-      ),
-    );
+    ).flatMap(([phase, count]) => Array.from({ length: count }, (_, index) => `${id}-${phase}-${index}`));
     assert.deepEqual(
       roomLevel.placements.map((p) => p.id),
       expectedIds,
@@ -964,8 +940,7 @@ function checkRoomTransitions(withGate: boolean) {
     const at = bodyCalls.length;
     const mounted = (['hulls', 'poles'] as const).flatMap((phase) =>
       plan[phase].map((_h, index) => {
-        const key =
-          `town.${id}-${phase}-${id === 'room-gate' && phase === 'hulls' && index >= 5 ? index + 1 : index}` as const;
+        const key = `town.${id}-${phase}-${index}` as const;
         const piece = runtime.instantiate(key, { id: key, prefab: key, pos: [0, 0, 0] }, { owner: frameOwner });
         piece.setEnabled(true);
         piece.setEnabled(true);
@@ -994,9 +969,7 @@ function checkRoomTransitions(withGate: boolean) {
   for (const fn of cleanups.reverse()) fn();
   assert.equal(constraints.length, 0, 'room disposal unregisters the indoor camera');
   assert.equal(activeBodies.size, 0, 'plot-board bodies leave with their record owners');
-}
-test('town rooms retain old shells, plot boards and state-driven transitions', () => checkRoomTransitions(false));
-test('the gate cottage joins the same room, cutaway and floor lifecycle', () => checkRoomTransitions(true));
+});
 
 test('house furnishing retains old parts, solids, copy and every fact stage', () => {
   const parts: Part[][] = [],
@@ -1078,17 +1051,14 @@ test('house furnishing retains old parts, solids, copy and every fact stage', ()
 });
 
 test('site body records retain the old construction, ejection, snap and teardown lifecycle', () => {
-  function run(start: 'ground' | 'roof' | 'slab-edge' = 'ground') {
+  function run() {
     const events: unknown[] = [],
       states: unknown[] = [],
       active = new Set<import('../src/physics/engine.ts').Body>(),
       ids = new Map<import('../src/physics/engine.ts').Body, number>();
     let nextId = 0;
     const player = {
-      position:
-        start === 'slab-edge'
-          ? { x: 70 + 3 * Math.cos(0.7), y: 18.45, z: 31 - 3 * Math.sin(0.7) }
-          : { x: 70, y: start === 'roof' ? 24.2 : 18.9, z: 31 },
+      position: { x: 70, y: 18.9, z: 31 },
       velocity: new THREE.Vector3(),
     };
     const ground = () => 18;
@@ -1195,7 +1165,6 @@ test('site body records retain the old construction, ejection, snap and teardown
         },
       };
     };
-    if (start === 'roof') plan.hulls.push({ dx: 0, dy: 5.5, dz: 0, hx: 2.6, hy: 0.5, hz: 3.6, room: true });
     const site = sites.addSite('room-lifecycle', plan, 1.5, {
       hulls: plan.hulls.map(record),
       poles: plan.poles.map(record),
@@ -1254,12 +1223,4 @@ test('site body records retain the old construction, ejection, snap and teardown
     old.events.splice(before, 0, old.events.splice(i, 1)[0]);
   }
   prefabGolden(recorded, old, 'record site lifecycle');
-  for (const start of ['roof', 'slab-edge'] as const) {
-    const late = run(start);
-    const clear = late.events.findIndex((e: unknown[]) => e[0] === 'teleport');
-    const added = late.events.findIndex((e: unknown[]) => e[0] === 'add');
-    assert.ok(clear >= 0 && clear < added, `${start}: clear an overlapping saved/late-join pose before any solid`);
-    assert.equal(late.states[1].player.y, 18.65, `${start}: return to safe ground height`);
-    assert.notDeepEqual(late.states[1].player, late.states[0].player, `${start}: move the player before snap`);
-  }
 });

@@ -184,17 +184,18 @@ function pushOut(site: Site) {
   const f: Foot = { x, z, c: cos, s: sin, hw: out.hx, hd: out.hz };
   let moved = me_.position.y < y + out.hy * 2 && outOf(f, pos, PLAYER_R + 0.2);
   if (!moved) {
-    // A saved position can overlap a roof or the slab beyond keepOut. Check both of Buddy's spheres' span,
+    // A saved position can overlap a roof or the slab beyond keepOut. Check each of Buddy's spheres against the boxes,
     // including scaffold solids on a build, then clear the whole footprint before enabling any of them.
     const solids = site.state === 'building' ? [...hulls, ...site.plan.poles] : hulls;
+    const lx = (pos.x - x) * cos - (pos.z - z) * sin,
+      lz = (pos.x - x) * sin + (pos.z - z) * cos;
     const overlaps = solids.some((h) => {
-      if (me_.position.y - PLAYER_R >= y + h.dy + h.hy || me_.position.y + HEAD_OFFSET + PLAYER_R <= y + h.dy - h.hy)
-        return false;
-      return outOf(
-        { x: x + h.dx * cos + h.dz * sin, z: z - h.dx * sin + h.dz * cos, c: cos, s: sin, hw: h.hx, hd: h.hz },
-        { ...pos },
-        PLAYER_R,
-      );
+      const dx = Math.max(0, Math.abs(lx - h.dx) - h.hx),
+        dz = Math.max(0, Math.abs(lz - h.dz) - h.hz);
+      return [0, HEAD_OFFSET].some((up) => {
+        const dy = Math.max(0, Math.abs(me_.position.y + up - y - h.dy) - h.hy);
+        return dx * dx + dy * dy + dz * dz < PLAYER_R * PLAYER_R;
+      });
     });
     if (overlaps)
       moved = outOf(
