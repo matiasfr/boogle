@@ -8,6 +8,9 @@ export const BALL_R = 0.45;
 export const BALL_MASS = 0.6;
 export const BALL_DAMPING = 0.12; // the beach ball's linear damping (its flight preview uses it too)
 export const PLAYER_R = 0.45;
+/** Walls and roofs of buildings you can walk into: solid to you (your mask has every bit), and the indoor camera leaves this
+ * bit out of its arm, so the wall it's cut away doesn't push the lens into your back (docs/research/town-interiors.md). */
+export const ROOM_GROUP = 8;
 export const PLAYER_MASS = 70;
 export const WALKABLE_NY = 0.55; // a contact's normal counts as ground above this: the steepest slope the player climbs
 export const JUMP_SPEED = 7.6; // m/s up at a jump's start

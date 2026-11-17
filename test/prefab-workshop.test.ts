@@ -45,6 +45,7 @@ import workshop from '../content/built/levels/workshop.json' with { type: 'json'
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
 
 const opening = sourceModule<{ forgePlan(): Plan }>(fs.readFileSync('src/place/opening-plans.ts', 'utf8'), {
+  TOWN_PROPS: { forgeDoor: { x: -92, z: -3, w: 2.8 } },
   FORGE: layout.FORGE,
   ORIGIN: layout.ORIGIN,
   TOWN: layout.TOWN,
@@ -135,6 +136,7 @@ export function captureWorkshop() {
     'src/entities/town/workshop-kit.ts',
     'workshopKit',
     {
+      workshopChair: runtime.workshopChair,
       merged,
       instantiate: runtime.instantiate,
       artifact,
@@ -175,7 +177,7 @@ export function captureWorkshop() {
       ROOM_GROUP: 8,
       staticBody,
       ROOM_CAM: { enter: 1 },
-      WORKSHOP_DOOR: { x: -2.9, w: 2.8, rows: 3 },
+      WORKSHOP_DOOR: { z: 0, w: 2.8, rows: 3 },
       kitMaterial: material,
       registerSeat,
       seatHeight: 0.55 + PLAYER_R,

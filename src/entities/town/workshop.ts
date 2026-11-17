@@ -1,14 +1,19 @@
 // The finished forge's walk-in reward. Local geometry/cutaway; no production, payment or freight state.
 import * as THREE from 'three/webgpu';
-import { reducedMotion } from '../../constants.ts';
-import { getMask, type Body } from '../../physics/engine.ts';
+import { PLAYER_R, ROOM_GROUP, reducedMotion } from '../../constants.ts';
+import { teleport, getMask, type Body } from '../../physics/engine.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
 import { camConstraints, me } from '../../player/player.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { readableGlow } from '../../render/readable-unlit.ts';
 import { flat } from '../../render/flat.ts';
 import { draw, makeSet } from '../../render/boxes.ts';
-import { ROOM_GROUP, staticBody } from '../../place/land.ts';
+import { staticBody } from '../../place/land.ts';
+import { outOf } from '../../place/sites.ts';
+import { H } from '../../place/terrain.ts';
+import { siteExit } from '../../place/site-clearance.ts';
+import { TOWN_PROPS } from '../../place/town-plan.ts';
+import { FORGE } from '../../place/layout.ts';
 import { ROOM_CAM } from './rooms.ts';
 import { kitMaterial } from '../railway/seat.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
@@ -20,7 +25,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Plan } from '../../place/building-plans.ts';
 import type { DropSet } from '../../place/pieces.ts';
 
-export const WORKSHOP_DOOR = { x: -2.9, w: 2.8, rows: 3 };
+export const WORKSHOP_DOOR = { z: TOWN_PROPS.forgeDoor.z - FORGE.z, w: TOWN_PROPS.forgeDoor.w, rows: 3 };
 export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   const { x, y, z } = plan;
   // Plan footprints include 0.8 m of foundation apron; walls sit on the authored building dimensions.
@@ -42,12 +47,12 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
     if (solid) solidSpecs.push({ x: xx, y: yy, z: zz, w, h, d, room: false });
     return m;
   };
-  // Two shallow steps over the existing foundation. They end to the left of the rack/output lane.
-  box(door.x, -0.375, hd + 1.25, door.w, 0.25, 0.9, '#9e9686');
-  // The upper one is level with the foundation, whose apron reaches hd + 0.8: only its nosing past that edge is drawn,
+  // Two shallow steps over the existing foundation. They meet the verge on the camp road.
+  box(-hw - 1.25, -0.375, door.z, 0.9, 0.25, door.w, '#9e9686');
+  // The upper one is level with the foundation, whose apron extends 0.8 m past the wall: only its nosing past that edge is drawn,
   // so its top never shares a plane with the foundation's (they fought). Its solid is the whole tread, as it was.
-  box(door.x, -0.125, hd + 0.85, door.w, 0.25, 0.1, '#b6aa92', false);
-  solidSpecs.push({ x: door.x, y: -0.125, z: hd + 0.7, w: door.w, h: 0.25, d: 0.4, room: false });
+  box(-hw - 0.85, -0.125, door.z, 0.1, 0.25, door.w, '#b6aa92', false);
+  solidSpecs.push({ x: -hw - 0.7, y: -0.125, z: door.z, w: 0.4, h: 0.25, d: door.w, room: false });
   // Furnace remains on its existing output axis. A solid guard keeps visitors out of the rail flight.
   box(0, 0.6, hd - 1.65, 3.3, 1.2, 0.16, '#536567');
   box(-1.65, 0.6, hd - 0.85, 0.16, 1.2, 1.6, '#536567');
@@ -81,15 +86,15 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   const wall = (xx: number, yy: number, zz: number, w: number, h: number, d: number) =>
     solidSpecs.push({ x: xx, y: yy, z: zz, w, h, d, room: true });
   wall(0, high / 2 - 0.5, -hd, hw * 2 + 0.4, high, 0.4);
-  wall(-hw, high / 2 - 0.5, 0, 0.4, high, hd * 2);
+  wall(0, high / 2 - 0.5, hd, hw * 2 + 0.4, high, 0.4);
   wall(hw, high / 2 - 0.5, 0, 0.4, high, hd * 2);
   for (const side of [-1, 1]) {
-    const edge = door.x + (side * door.w) / 2,
-      width = hw - side * edge;
-    wall(edge + (side * width) / 2, high / 2 - 0.5, hd, width, high, 0.4);
+    const edge = door.z + (side * door.w) / 2,
+      width = hd - side * edge;
+    wall(-hw, high / 2 - 0.5, edge + (side * width) / 2, 0.4, high, width);
   }
   const doorTop = 0.5 + (door.rows * (high - 0.5)) / Math.round((high - 0.5) / 0.82);
-  wall(door.x, (doorTop + high) / 2 - 0.5, hd, door.w, high - doorTop, 0.4);
+  wall(-hw, (doorTop + high) / 2 - 0.5, door.z, 0.4, high - doorTop, door.w);
   wall(0, high + 0.6, 0, hw * 2 + 0.4, 1.2, hd * 2 + 0.4);
   const proxy = makeSet(plan.pieces);
   proxy.mesh.material = new THREE.MeshBasicNodeMaterial({ colorWrite: false, depthWrite: false });
@@ -139,7 +144,23 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
       if (open !== wasReady) {
         wasReady = open;
         g.visible = open;
-        if (open)
+        if (open) {
+          const exit =
+            me.body &&
+            siteExit(
+              me.body.position,
+              { x, z, c: 1, s: 0, hw: plan.hw, hd: plan.hd },
+              floor,
+              [
+                ...kit.hulls,
+                ...solidSpecs.map((s) => ({ dx: s.x, dy: s.y, dz: s.z, hx: s.w / 2, hy: s.h / 2, hz: s.d / 2 })),
+              ],
+              outOf,
+            );
+          if (exit && me.body) {
+            teleport(me.body, exit.x, H(exit.x, exit.z) + PLAYER_R + 0.2, exit.z);
+            me.body.velocity.set(0, 0, 0);
+          }
           for (const [index, s] of solidSpecs.entries()) {
             // Keep today's body insertion order: furnishing, chair, then room walls.
             if (index === chairIndex) {
@@ -155,7 +176,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
             bodyOwner.addBody(body);
             bodies.push(body);
           }
-        else {
+        } else {
           kit.setEnabled(false);
           chair.setEnabled(false);
           for (const b of bodies) bodyOwner.removeBody(b);
@@ -163,9 +184,9 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
         }
       }
       const p = me.body?.interpolatedPosition;
-      const inBounds = !!p && p.y < y + high && Math.abs(p.x - x) < hw && Math.abs(p.z - z) < hd + ROOM_CAM.enter;
-      const atDoor = !!p && Math.abs(p.x - x - door.x) < door.w / 2 + 0.5 && p.z < z + hd + ROOM_CAM.enter;
-      inside = open && inBounds && (inside || atDoor || p!.z < z + hd);
+      const inBounds = !!p && p.y < y + high && p.x > x - hw - ROOM_CAM.enter && p.x < x + hw && Math.abs(p.z - z) < hd;
+      const atDoor = !!p && Math.abs(p.z - z - door.z) < door.w / 2 + 0.5;
+      inside = open && inBounds && (inside || atDoor || p!.x > x - hw);
       flames.update(dt, open, inside);
       if (!open) {
         hidden.fill(0);

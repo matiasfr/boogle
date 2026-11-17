@@ -1,4 +1,5 @@
 // Existing authored opening plans, shared by the legacy run and the owned T1 view. No progression or save owner.
+import { TOWN_PROPS } from './town-plan.ts';
 import { H } from './terrain.ts';
 import { FORGE, ORIGIN, TOWN, toWorld, type Plot } from './layout.ts';
 import {
@@ -192,7 +193,7 @@ export const W = FORGE.w,
   D = FORGE.d,
   HIGH = 4.6; // to the wall tops
 
-export function forgePlan(door = { x: -2.9, w: 2.8, rows: 3 }) {
+export function forgePlan() {
   return housePlan({
     x: X,
     z: Z,
@@ -204,26 +205,11 @@ export function forgePlan(door = { x: -2.9, w: 2.8, rows: 3 }) {
     wallPalette: 'timber',
     post: WOOD2,
     roof: ROOF,
-    door,
+    westDoor: { z: TOWN_PROPS.forgeDoor.z - FORGE.z, w: TOWN_PROPS.forgeDoor.w, rows: 3 },
+    door: { x: 0, w: 3, rows: 3 },
     closed: false,
     chimney: { dx: -W / 2 + 1.4, dz: -D / 2 + 1.2, n: 8, a: BRICK, b: '#8a4032' },
     poleTop: HIGH + 3,
   });
 }
-/** Keep the original furnace/output opening beside the walk-in door, so the lit mouth shows and rails pour out through
- * it. Trims only the low front boards; piece counts and construction bills stay identical. Edits `plan` in place. */
-export function openForgeMouth<P extends ReturnType<typeof forgePlan>>(plan: P): P {
-  for (let k = 0; k < plan.WALLS; k++) {
-    const b = plan.pieces[k]!;
-    if (Math.abs(b.z - (Z + D / 2)) > 0.01) continue;
-    if (k < plan.FRAME && Math.abs(b.x - X) < 0.01) b.x = X + 1.65;
-    else if (k >= plan.FRAME && b.x > X && b.local.elements[13]! < 2.9) {
-      const right = b.x + b.local.elements[0]! / 2;
-      b.local.elements[0] = right - (X + 1.5);
-      b.x = (right + X + 1.5) / 2;
-    }
-  }
-  return plan;
-}
-
 export { openingStops } from './opening-stops.ts';

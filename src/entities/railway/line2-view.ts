@@ -185,7 +185,7 @@ export async function createRailwayLine2(
 
   // ---------------------------------------------------------------- the forge
   // The furnace/output opening stays clear in the front wall, as in the prototype: the lit mouth shows through it.
-  const plan = plans.openForgeMouth(plans.forgePlan());
+  const plan = plans.forgePlan();
   const { pieces: forgePieces, FRAME, WALLS, ROOFED } = plan;
   const TOTAL = forgePieces.length;
   const HAND = FRAME + (WALLS - FRAME) + (TOTAL - ROOFED);

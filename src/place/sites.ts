@@ -6,7 +6,8 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../render/owned-view.ts';
 import { thump } from '../render/machine-sfx.ts';
-import { HEAD_OFFSET, PLAYER_R } from '../constants.ts';
+import { siteExit } from './site-clearance.ts';
+import { PLAYER_R } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { teleport, type Body } from '../physics/engine.ts';
 import type { Box } from '../render/boxes.ts';
@@ -173,46 +174,22 @@ function solid(site: Site, on: boolean) {
     }
 }
 function pushOut(site: Site) {
-  const { x, y, z, yaw, hulls } = site.plan;
-  const cos = Math.cos(yaw),
-    sin = Math.sin(yaw);
-  // Standing in the plot when the walls go up: you're moved to the nearest edge.
-  const me_ = me.body;
-  if (!me_) return;
-  const pos = { x: me_.position.x, z: me_.position.z };
-  const out = site.plan.keepOut ?? hulls[0]!;
-  const f: Foot = { x, z, c: cos, s: sin, hw: out.hx, hd: out.hz };
-  let moved = me_.position.y < y + out.hy * 2 && outOf(f, pos, PLAYER_R + 0.2);
-  if (!moved) {
-    // A saved position can overlap a roof or the slab beyond keepOut. Check each of Buddy's spheres against the boxes,
-    // including scaffold solids on a build, then clear the whole footprint before enabling any of them.
-    const solids = site.state === 'building' ? [...hulls, ...site.plan.poles] : hulls;
-    const lx = (pos.x - x) * cos - (pos.z - z) * sin,
-      lz = (pos.x - x) * sin + (pos.z - z) * cos;
-    const overlaps = solids.some((h) => {
-      const dx = Math.max(0, Math.abs(lx - h.dx) - h.hx),
-        dz = Math.max(0, Math.abs(lz - h.dz) - h.hz);
-      return [0, HEAD_OFFSET].some((up) => {
-        const dy = Math.max(0, Math.abs(me_.position.y + up - y - h.dy) - h.hy);
-        return dx * dx + dy * dy + dz * dz < PLAYER_R * PLAYER_R;
-      });
-    });
-    if (overlaps)
-      moved = outOf(
-        {
-          ...site.foot,
-          hw: Math.max(site.foot.hw, ...solids.map((h) => Math.abs(h.dx) + h.hx)),
-          hd: Math.max(site.foot.hd, ...solids.map((h) => Math.abs(h.dz) + h.hz)),
-        },
-        pos,
-        PLAYER_R + 0.2,
-      );
-  }
-  if (moved) {
-    teleport(me_, pos.x, H(pos.x, pos.z) + PLAYER_R + 0.2, pos.z);
-    me_.velocity.set(0, 0, 0);
+  const { y, hulls, poles, keepOut } = site.plan;
+  if (!me.body) return;
+  const exit = siteExit(
+    me.body.position,
+    site.foot,
+    y,
+    site.state === 'building' ? [...hulls, ...poles] : hulls,
+    outOf,
+    keepOut ?? hulls[0],
+  );
+  if (exit) {
+    teleport(me.body, exit.x, H(exit.x, exit.z) + PLAYER_R + 0.2, exit.z);
+    me.body.velocity.set(0, 0, 0);
   }
 }
+
 /** Call once, after every addSite. With an owner, its mesh and bodies are the owner's, and disposing it (or calling the
  * returned disposer) forgets every site added since the last call. */
 export function buildSites(owner: OwnedView) {

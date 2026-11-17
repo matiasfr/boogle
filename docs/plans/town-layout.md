@@ -386,9 +386,10 @@ also split step 4 and ordered step 7; its build-order ruling is in
   of 10 November; nothing in it depends on the layout); `works-late-game.md` step 6 and `place.md` updated. Verify: a
   look at `--rail-seed q1-done` (roof on) and at `awake` (frame only); the Works bot from `works-arrive` no longer
   waits for a roof.
-- [ ] **4b. The forge's west door. After the flip and M8.** Normal review. `src/entities/town/workshop.ts`:
+- [x] **4b. The forge's west door. After the flip and M8.** Normal review. `src/entities/town/workshop.ts`:
   `WORKSHOP_DOOR` on the west wall, from `TOWN_PROPS`. Verify: a look at `--rail-seed q1-done` from the camp road
   (door open, steps on the verge); walk in.
+  **17 November 2026:** built at Place-local (-92, -3). [Walk and stills](home-flip.md#steps): the old pedestrian gap is boarded, and the separate south furnace outlet still faces the rack.
 - [ ] **5. Stakes, boards, the footing and the clock.** Normal review. `src/entities/town/plots.ts` (new): four
   stakes with a pennant each, a string and a board per staked plot from `TOWN_PLOTS`, one instanced mesh; the board
   is blank until the passenger trade gives it a price (review, call 6). The clock's footing at G from the first
