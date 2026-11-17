@@ -642,16 +642,6 @@ export type Plot = {
   color?: string;
   top?: string;
 };
-const cottage = (x: number, z: number, yaw: number, smoke = false): Plot => ({
-  type: 'cottage',
-  x,
-  z,
-  yaw,
-  w: 5.4,
-  d: 4.4,
-  smoke,
-});
-const g = townBuilding('gate');
 /** Fewer buildings than the last round, placed for the views: the arriving train looks down the line at the great hall and
  * the clock behind it; the stone street lines the way in from the quarry. */
 export const TOWN: {
@@ -660,7 +650,7 @@ export const TOWN: {
   stone: Plot[][];
   camps: { asleep: Plot[]; awake: Plot[] }[];
 } = {
-  start: [cottage(g.x, g.z, g.yaw, true)],
+  start: [], // The gate cottage now stands through ROOM_PLOTS, once, with an open doorway.
   wood: [
     [
       { type: 'hall', x: -88, z: 31, w: 11, d: 8, yaw: 2.73, smoke: true },
@@ -715,13 +705,14 @@ export const TOWN: {
 };
 /** The buildings you can walk into (./rooms.ts). Their doors are local +z, so `yaw` turns each door to face the street. Sizes
  * are the outside; docs/research/town-interiors.md, "How little room is enough?". */
-export type RoomId = 'house' | 'shop' | 'museum';
+export type RoomId = 'house' | 'shop' | 'museum' | 'gate';
 /** The shells' slab top above their ground datum; door grading and the room view share it. */
 export const ROOM_FLOOR = 0.14;
 export const ROOM_PLOTS: Record<RoomId, { x: number; z: number; yaw: number; w: number; d: number; high: number }> = {
   house: { ...townBuilding('house'), high: 3.7 },
   shop: { ...townBuilding('shop'), high: 3.9 },
   museum: { ...townBuilding('museum'), high: 5 },
+  gate: { ...townBuilding('gate'), high: 3 },
 };
 /** The blockout's eaves above the ground, read from the kits so what can be climbed is what the real building will
  * allow: a house's slab and wall (`ROOM_FLOOR` + `ROOM_PLOTS.house.high`), a cottage's wall (`planOf`'s `high`).

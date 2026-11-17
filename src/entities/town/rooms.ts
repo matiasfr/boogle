@@ -1,4 +1,4 @@
-// Buildings you can walk into in the town: the house, the shop and the museum (docs/plans/round-4.md, step 6;
+// Buildings you can walk into in the town: the house, shop, museum and gate cottage (docs/plans/round-4.md, step 6;
 // docs/research/town-interiors.md). Each stands in the same world as everything else, with an open door and no loading: a site
 // like any other (./sites.ts, its pieces in the town's one instanced mesh), but hollow, with its walls and roof in `ROOM_GROUP`.
 //
@@ -29,6 +29,7 @@ import { definitions } from '../../prefab/catalogue.ts';
 import houseShell from '../../../content/built/levels/room-house.json' with { type: 'json' };
 import shopShell from '../../../content/built/levels/room-shop.json' with { type: 'json' };
 import museumShell from '../../../content/built/levels/room-museum.json' with { type: 'json' };
+import gateShell from '../../../content/built/levels/room-gate.json' with { type: 'json' };
 import { merged } from '../../render/part-geometry.ts';
 import { ROOM_GROUP } from '../../place/land.ts';
 import { H } from '../../place/terrain.ts';
@@ -46,7 +47,7 @@ import {
   type Site,
 } from '../../place/sites.ts';
 
-const shellLevels = { house: houseShell, shop: shopShell, museum: museumShell };
+const shellLevels = { house: houseShell, shop: shopShell, museum: museumShell, gate: gateShell };
 
 export const ROOM_CAM = {
   enter: 0.75, // m outside the door where the show starts, and past which it can end
@@ -66,7 +67,7 @@ export const DOOR = { w: 2.6, rows: 3 };
 const FLOOR = ROOM_FLOOR;
 
 /** What rooms are made of: their own colours, a little warm light of their own so a shaded room still reads, one material for
- * all three. */
+ * every room. */
 export const roomMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.9 });
 // A little bounce in the shadow proxy, without washing out the furniture's sunlit edges.
 roomMat.emissiveNode = vertexColor().mul(0.12);
@@ -176,8 +177,8 @@ function write(r: Room, g: Face) {
   const travel = g === 'roof' ? 7 : -(r.high + 0.4);
   for (const k of r.pieces[g]) writePiece(k, t, travel);
 }
-/** The three buildings, their stake boards, the cutaway and the indoor camera, owned by `owner`. Which rooms stand comes
- * from `env.up`, read from what's shared; the house is there from the start. Call `snap()` once the drop set is built
+/** The buildings, their stake boards, the cutaway and the indoor camera, owned by `owner`. Which rooms stand comes
+ * from `env.up`; the house and gate cottage are there from the start. Call `snap()` once the drop set is built
  * (./sites.ts `buildSites`), and `update(dt)` every frame. */
 export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) {
   function makeRoom(id: RoomId): Room {
@@ -293,11 +294,10 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       ready: false,
     };
   }
-  const rooms: Record<RoomId, Room> = {
-    house: makeRoom('house'),
-    shop: makeRoom('shop'),
-    museum: makeRoom('museum'),
-  };
+  const rooms = Object.fromEntries((Object.keys(ROOM_PLOTS) as RoomId[]).map((id) => [id, makeRoom(id)])) as Record<
+    RoomId,
+    Room
+  >;
   const LIST = Object.values(rooms);
   /** Each door's threshold in the world: where `drawWithin` is measured from. */
   const doors = new Map(LIST.map((r) => [r, roomToWorld(r, 0, 0, r.d / 2, new THREE.Vector3())]));

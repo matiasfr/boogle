@@ -5,6 +5,7 @@ const looks = {
   house: { wall: '#e8dcc0', post: '#7f5630', roof: '#c9a86a', rise: 2.5, smoke: true },
   shop: { wall: '#f0c98a', post: '#8a4a2c', roof: '#c4453a', rise: 2.6, smoke: false },
   museum: { wall: '#c8c3b4', post: '#b2ad9f', roof: '#4d5560', rise: 2.8, smoke: false },
+  gate: { wall: '#e8dcc0', post: '#7f5630', roof: '#b99a60', rise: 2.5, smoke: true },
 };
 export const prefabs: PrefabDef[] = Object.entries(looks).flatMap(([id, look]) => {
   const p = ROOM_PLOTS[id as keyof typeof ROOM_PLOTS];
@@ -17,7 +18,7 @@ export const prefabs: PrefabDef[] = Object.entries(looks).flatMap(([id, look]) =
     roof: look.roof,
     rise: look.rise,
     smoke: look.smoke,
-    ...(id === 'house' ? { wallPalette: 'walls' } : id === 'museum' ? { wallPalette: 'stone' } : {}),
+    ...(id === 'house' || id === 'gate' ? { wallPalette: 'walls' } : id === 'museum' ? { wallPalette: 'stone' } : {}),
     postPalette: id === 'museum' ? 'stone' : 'timber',
   };
   const records: PrefabDef[] = [];
@@ -30,7 +31,9 @@ export const prefabs: PrefabDef[] = Object.entries(looks).flatMap(([id, look]) =
     }),
   );
   for (const phase of ['hulls', 'poles'] as const)
-    for (let index = 0; index < (phase === 'hulls' ? 8 : 5); index++)
+    for (let index = 0; index < (phase === 'hulls' ? 8 : 5); index++) {
+      // The cottage's three door rows reach its eaves: there is no lintel wall to make solid.
+      if (id === 'gate' && phase === 'hulls' && index === 5) continue;
       records.push(
         definePrefab({
           key: `town.room-${id}-${phase}-${index}`,
@@ -40,7 +43,9 @@ export const prefabs: PrefabDef[] = Object.entries(looks).flatMap(([id, look]) =
           layout: { kind: 'room-hull', phase, index, w: p.w, d: p.d, high: p.high, rise: look.rise },
         }),
       );
-  for (let index = 0; index < 7; index++)
+    }
+  for (let index = 0; index < 7; index++) {
+    if (id === 'gate' && index === 6) continue; // No lintel shadow either.
     records.push(
       definePrefab({
         key: `town.room-${id}-proxy-${index}`,
@@ -49,6 +54,7 @@ export const prefabs: PrefabDef[] = Object.entries(looks).flatMap(([id, look]) =
         scope: 'owner',
       }),
     );
+  }
   return records;
 });
 prefabs.push(

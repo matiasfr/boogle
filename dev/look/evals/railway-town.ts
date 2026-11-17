@@ -64,7 +64,7 @@ for (const id of (reloaded ? '' : (query.get('townown') ?? '')).split(',').filte
 type V = { x: number; y: number; z: number };
 const ground = (x: number, z: number): V => ({ x, y: land.H(x, z), z });
 /** A room's door in world space, and the way in. */
-function door(id: 'house' | 'shop' | 'museum') {
+function door(id: 'house' | 'shop' | 'museum' | 'gate') {
   const p = layout.ROOM_PLOTS[id];
   const x = layout.toWorld(p.x),
     s = Math.sin(p.yaw),
@@ -73,7 +73,7 @@ function door(id: 'house' | 'shop' | 'museum') {
 }
 let stand: V, look: V, eye: V;
 let crate: { station: string; x: number; y: number; z: number } | null = null;
-if (at === 'house' || at === 'shop' || at === 'museum') {
+if (at === 'house' || at === 'shop' || at === 'museum' || at === 'gate') {
   const d = door(at);
   const up = inspectTown()!.rooms[at].up;
   // Built: 1 m inside. A plot: 3.5 m in front of its board (the board stands 2 m out from the door line).
@@ -126,7 +126,7 @@ if (at === 'house' || at === 'shop' || at === 'museum') {
   look = { x: box.x, y: box.y + 0.8, z: box.z };
   eye = { x: box.x + ux * 9 - uz * 3, y: box.y + 5, z: box.z + uz * 9 + ux * 3 };
   crate = box;
-} else throw new Error('Choose townat=house|shop|museum|street|sleeves|shelf|crates');
+} else throw new Error('Choose townat=house|shop|museum|gate|street|sleeves|shelf|crates');
 /** A point in the shop's room space (rooms.ts: floor at y = 0, door on +z), in the world. */
 function shopLocal(lx: number, ly: number, lz: number): V {
   const p = layout.ROOM_PLOTS.shop,
@@ -172,7 +172,8 @@ async function runAct() {
 }
 async function actOnce(act: string) {
   if (act === 'walkout') {
-    if (at !== 'house' && at !== 'shop' && at !== 'museum') throw new Error('townact=walkout needs a room');
+    if (at !== 'house' && at !== 'shop' && at !== 'museum' && at !== 'gate')
+      throw new Error('townact=walkout needs a room');
     const d = door(at);
     // After shopping at a stand, from 1 m inside the door, so the way out is clear.
     if (shopping) teleport(body, d.x + d.inX, land.H(d.x, d.z) + 0.9, d.z + d.inZ);
@@ -191,7 +192,8 @@ async function actOnce(act: string) {
     }
     await wait(800);
   } else if (act === 'enter') {
-    if (at !== 'house' && at !== 'shop' && at !== 'museum') throw new Error('townact=enter needs a room');
+    if (at !== 'house' && at !== 'shop' && at !== 'museum' && at !== 'gate')
+      throw new Error('townact=enter needs a room');
     const d = door(at);
     // Walk in until over the threshold, then give whoever's inside a moment to look up (their hello or notice bark).
     cam.yaw = me.yaw = Math.atan2(-d.inX, -d.inZ);

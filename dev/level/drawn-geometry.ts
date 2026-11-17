@@ -218,7 +218,7 @@ export async function collectDrawnGeometry() {
     } else prefab(p, frame);
   }
   for (const p of readLevel('workshop-kit')) prefab(p, workshopFrame);
-  for (const id of ['house', 'shop', 'museum'] as const) {
+  for (const id of ['house', 'shop', 'museum', 'gate'] as const) {
     const plot = layout.ROOM_PLOTS[id];
     const x = layout.toWorld(plot.x),
       y = terrain.H(x, plot.z);
@@ -227,7 +227,7 @@ export async function collectDrawnGeometry() {
       prefab({ ...p, params: { ...p.params, x, y, z: plot.z, yaw: plot.yaw } });
     }
     const frame = transform({ pos: [x, y + layout.ROOM_FLOOR, plot.z], rot: [plot.yaw, 0, 0] });
-    for (const p of readLevel(id)) {
+    for (const p of id === 'gate' ? [] : readLevel(id)) {
       const visual = compiled.prefabs[p.prefab]!.visual;
       if (!('builder' in visual) || visual.builder === 'town.museum-exhibit' || p.id.includes('-later-')) continue;
       prefab(p, frame);

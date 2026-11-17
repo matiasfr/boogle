@@ -112,6 +112,7 @@ test('the occupied rooms and the balcony use their Round poses', () => {
     ['house', 3.7],
     ['shop', 3.9],
     ['museum', 5],
+    ['gate', 3],
   ] as const)
     assert.deepEqual(ROOM_PLOTS[id], { ...B(id), high });
   const balcony = padById('balcony'),
@@ -395,18 +396,10 @@ test("the quarry path's bridge still spans the river after adding two head point
   assert.deepEqual(quarry.pts[quarry.bridgeAt + 1], [-19.2, 117.4, 1.7]);
 });
 
-test('the gate is the one cottage, the yard is behind it and the shore ends at the dock street', () => {
+test('the gate is one open cottage room, the yard is behind it and the shore ends at the dock street', () => {
   const gate = B('gate');
-  assert.equal(TOWN.start.length, 1);
-  assert.deepEqual(TOWN.start[0], {
-    type: 'cottage',
-    x: gate.x,
-    z: gate.z,
-    yaw: gate.yaw,
-    w: gate.w,
-    d: gate.d,
-    smoke: true,
-  });
+  assert.equal(TOWN.start.length, 0, 'the sealed shell must not overlap the open room');
+  assert.deepEqual(ROOM_PLOTS.gate, { ...gate, high: 3 });
   const yard = SECRETS.find((s) => s.id === 'yard')!;
   assert.deepEqual({ x: yard.x, z: yard.z }, TOWN_PROPS.yard);
   assert.deepEqual(yard.from, { x: -136, z: 22 });
@@ -428,7 +421,7 @@ type Stood = {
 const stood: Stood[] = standBlockout(blockoutLevel.placements, H);
 const piece = (id: string) => stood.find((p) => p.id === id)!;
 
-test('every slot is drawn once: a room, the gate cottage or an empty outlined plot', () => {
+test('every slot is drawn once: a room or an empty outlined plot', () => {
   assert.equal(PLOT_BLOCKS, false);
   for (const s of TOWN_SLOTS) {
     const drawn = [

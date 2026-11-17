@@ -619,7 +619,7 @@ test('museum furnishing and live displays retain the old geometry, copy, order a
 });
 
 // Old-code room-shell proof: recipes, stake painting/geometry, camera cutaways and ready/unready transitions.
-test('town rooms retain old shells, plot boards and state-driven transitions', () => {
+function checkRoomTransitions(withGate: boolean) {
   const geometry = (g: THREE.BufferGeometry) => ({
     index: g.index ? Array.from(g.index.array) : null,
     attributes: Object.fromEntries(
@@ -634,7 +634,9 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     fs.readFileSync('src/place/building-plans.ts', 'utf8'),
     { THREE, ...boxes },
   );
-  const plots = ROOM_PLOTS;
+  // Keep the original three-room golden intact, then exercise the same lifecycle with the added cottage.
+  const { gate, ...originalPlots } = ROOM_PLOTS;
+  const plots = withGate ? ROOM_PLOTS : originalPlots;
   const added: THREE.Object3D[] = [],
     cleanups: (() => void)[] = [],
     sitePlans: unknown[] = [],
@@ -655,7 +657,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       assert.ok(activeBodies.delete(b));
     },
   };
-  const up = { house: true, shop: false, museum: false };
+  const up = { house: true, shop: false, museum: false, gate: true };
   const player = { body: null as { interpolatedPosition: { x: number; y: number; z: number } } | null };
   const camera = new THREE.PerspectiveCamera();
   const cam = { pitch: 0, yaw: 0 };
@@ -744,6 +746,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       houseShell: JSON.parse(fs.readFileSync('content/built/levels/room-house.json', 'utf8')),
       shopShell: JSON.parse(fs.readFileSync('content/built/levels/room-shop.json', 'utf8')),
       museumShell: JSON.parse(fs.readFileSync('content/built/levels/room-museum.json', 'utf8')),
+      gateShell: JSON.parse(fs.readFileSync('content/built/levels/room-gate.json', 'utf8')),
       instantiate: (...args: Parameters<typeof runtime.instantiate>) => {
         const instance = runtime.instantiate(...args);
         instances.push(instance);
@@ -841,6 +844,12 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
   rooms.update(0.1);
   rooms.cull();
   capture('initial');
+  if (withGate) {
+    assert.equal(rooms.rooms.gate.up, true, 'gate stands on arrival');
+    assert.equal(rooms.rooms.gate.ready, true, 'gate has no construction to do');
+    assert.equal(rooms.rooms.gate.w, gate.w);
+    assert.equal(rooms.rooms.gate.d, gate.d);
+  }
   for (const r of roomList) {
     up[r.id] = true;
     rooms.update(0.1);
@@ -900,12 +909,24 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     JSON.stringify({ plans: sitePlans, meshes: staticMeshes, paint, bodyCalls, states, pieceWrites }),
   );
   const roomFixture = 'test/fixtures/prefab-rooms.json';
-  if (process.env.GOLDEN === '1') fs.writeFileSync(roomFixture, JSON.stringify(value) + '\n');
-  prefabGolden(value, JSON.parse(fs.readFileSync(roomFixture, 'utf8')), 'rooms');
+  if (!withGate) {
+    if (process.env.GOLDEN === '1') fs.writeFileSync(roomFixture, JSON.stringify(value) + '\n');
+    prefabGolden(value, JSON.parse(fs.readFileSync(roomFixture, 'utf8')), 'rooms');
+  }
   const oldPlans = JSON.parse(fs.readFileSync(roomFixture, 'utf8')).plans as {
     id: string;
     plan: import('../src/place/building-plans.ts').Plan;
   }[];
+  if (withGate) {
+    const { plan } = sitePlans.find((p) => (p as { id: string }).id === 'room-gate') as (typeof oldPlans)[number];
+    assert.equal(plan.pieces.length, 56, 'gate construction count comes from the cottage recipe');
+    assert.equal(plan.scaffold.length, 18);
+    assert.equal(plan.hulls.length, 7, 'five walls, roof and floor; no zero-height lintel');
+    assert.equal(plan.poles.length, 5);
+    assert.ok(plan.hulls.every((h) => h.hx > 0 && h.hy > 0 && h.hz > 0));
+    assert.deepEqual(plan.keepOut, { dx: 0, dy: 1.5, dz: 0, hx: gate.w / 2 + 0.1, hy: 1.5, hz: gate.d / 2 + 0.1 });
+    oldPlans.push({ id: 'room-gate', plan });
+  }
   for (const { id, plan } of oldPlans) {
     const roomLevel = loadLevelArtifact(
       JSON.parse(fs.readFileSync(`content/built/levels/${id}.json`, 'utf8')),
@@ -917,9 +938,14 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
         ['pieces', plan.pieces.length],
         ['hulls', plan.hulls.length],
         ['poles', plan.poles.length],
-        ['proxy', 7],
+        ['proxy', id === 'room-gate' ? 6 : 7],
       ] as const
-    ).flatMap(([phase, count]) => Array.from({ length: count }, (_, index) => `${id}-${phase}-${index}`));
+    ).flatMap(([phase, count]) =>
+      Array.from(
+        { length: count },
+        (_, index) => `${id}-${phase}-${id === 'room-gate' && phase === 'hulls' && index >= 5 ? index + 1 : index}`,
+      ),
+    );
     assert.deepEqual(
       roomLevel.placements.map((p) => p.id),
       expectedIds,
@@ -938,7 +964,8 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     const at = bodyCalls.length;
     const mounted = (['hulls', 'poles'] as const).flatMap((phase) =>
       plan[phase].map((_h, index) => {
-        const key = `town.${id}-${phase}-${index}` as const;
+        const key =
+          `town.${id}-${phase}-${id === 'room-gate' && phase === 'hulls' && index >= 5 ? index + 1 : index}` as const;
         const piece = runtime.instantiate(key, { id: key, prefab: key, pos: [0, 0, 0] }, { owner: frameOwner });
         piece.setEnabled(true);
         piece.setEnabled(true);
@@ -967,7 +994,9 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
   for (const fn of cleanups.reverse()) fn();
   assert.equal(constraints.length, 0, 'room disposal unregisters the indoor camera');
   assert.equal(activeBodies.size, 0, 'plot-board bodies leave with their record owners');
-});
+}
+test('town rooms retain old shells, plot boards and state-driven transitions', () => checkRoomTransitions(false));
+test('the gate cottage joins the same room, cutaway and floor lifecycle', () => checkRoomTransitions(true));
 
 test('house furnishing retains old parts, solids, copy and every fact stage', () => {
   const parts: Part[][] = [],
@@ -1049,14 +1078,17 @@ test('house furnishing retains old parts, solids, copy and every fact stage', ()
 });
 
 test('site body records retain the old construction, ejection, snap and teardown lifecycle', () => {
-  function run() {
+  function run(start: 'ground' | 'roof' | 'slab-edge' = 'ground') {
     const events: unknown[] = [],
       states: unknown[] = [],
       active = new Set<import('../src/physics/engine.ts').Body>(),
       ids = new Map<import('../src/physics/engine.ts').Body, number>();
     let nextId = 0;
     const player = {
-      position: { x: 70, y: 18.9, z: 31 },
+      position:
+        start === 'slab-edge'
+          ? { x: 70 + 3 * Math.cos(0.7), y: 18.45, z: 31 - 3 * Math.sin(0.7) }
+          : { x: 70, y: start === 'roof' ? 24.2 : 18.9, z: 31 },
       velocity: new THREE.Vector3(),
     };
     const ground = () => 18;
@@ -1083,6 +1115,7 @@ test('site body records retain the old construction, ejection, snap and teardown
     const sites = sourceModule<typeof import('../src/place/sites.ts')>(fs.readFileSync('src/place/sites.ts', 'utf8'), {
       THREE,
       PLAYER_R: 0.45,
+      HEAD_OFFSET: 0.8,
       ROOM_GROUP: 8,
       me: { body: player },
       H: ground,
@@ -1162,6 +1195,7 @@ test('site body records retain the old construction, ejection, snap and teardown
         },
       };
     };
+    if (start === 'roof') plan.hulls.push({ dx: 0, dy: 5.5, dz: 0, hx: 2.6, hy: 0.5, hz: 3.6, room: true });
     const site = sites.addSite('room-lifecycle', plan, 1.5, {
       hulls: plan.hulls.map(record),
       poles: plan.poles.map(record),
@@ -1209,7 +1243,23 @@ test('site body records retain the old construction, ejection, snap and teardown
   }
   const recorded = run();
   const siteFixture = 'test/fixtures/prefab-site-lifecycle.json';
-  if (process.env.GOLDEN === '1') fs.writeFileSync(siteFixture, JSON.stringify(recorded) + '\n');
+  // This is the historical lifecycle fixture; the intentional ordering change is specified below.
   const old = JSON.parse(fs.readFileSync(siteFixture, 'utf8'));
+  // D1: retain every old lifecycle event and state, but clearance now precedes collider activation.
+  for (let i = 0; i < old.events.length; i++) {
+    if (old.events[i][0] !== 'teleport') continue;
+    let before = i;
+    while (before > 0 && old.events[before - 1][0] === 'add') before--;
+    assert.ok(before < i, 'the fixture pins the former add-before-clear order');
+    old.events.splice(before, 0, old.events.splice(i, 1)[0]);
+  }
   prefabGolden(recorded, old, 'record site lifecycle');
+  for (const start of ['roof', 'slab-edge'] as const) {
+    const late = run(start);
+    const clear = late.events.findIndex((e: unknown[]) => e[0] === 'teleport');
+    const added = late.events.findIndex((e: unknown[]) => e[0] === 'add');
+    assert.ok(clear >= 0 && clear < added, `${start}: clear an overlapping saved/late-join pose before any solid`);
+    assert.equal(late.states[1].player.y, 18.65, `${start}: return to safe ground height`);
+    assert.notDeepEqual(late.states[1].player, late.states[0].player, `${start}: move the player before snap`);
+  }
 });

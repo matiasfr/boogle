@@ -12,7 +12,7 @@ export type TownInspection = {
   newest: TownFact | null;
   level: number;
   population: number;
-  rooms: { house: TownRoomInspection; shop: TownRoomInspection; museum: TownRoomInspection };
+  rooms: { house: TownRoomInspection; shop: TownRoomInspection; museum: TownRoomInspection; gate: TownRoomInspection };
   /** The room whose cutaway is on for this tab, and the one you're over the threshold of. */
   indoors: { room: string | null; inside: string | null };
   /** The house desk's stage: how many of its facts are true. */

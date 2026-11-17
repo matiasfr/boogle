@@ -6,7 +6,7 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../render/owned-view.ts';
 import { thump } from '../render/machine-sfx.ts';
-import { PLAYER_R } from '../constants.ts';
+import { HEAD_OFFSET, PLAYER_R } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { teleport, type Body } from '../physics/engine.ts';
 import type { Box } from '../render/boxes.ts';
@@ -160,6 +160,8 @@ function solid(site: Site, on: boolean) {
     return;
   }
   if (site.bodies.length || !owned) return;
+  // Clear an overlapping local player before any record enables its solids (including a join/reload snap).
+  pushOut(site);
   for (const part of parts.hulls) {
     part.setEnabled(true);
     site.bodies.push(...part.bodies);
@@ -169,7 +171,6 @@ function solid(site: Site, on: boolean) {
       part.setEnabled(true);
       site.poleBodies.push(...part.bodies);
     }
-  pushOut(site);
 }
 function pushOut(site: Site) {
   const { x, y, z, yaw, hulls } = site.plan;
@@ -181,7 +182,32 @@ function pushOut(site: Site) {
   const pos = { x: me_.position.x, z: me_.position.z };
   const out = site.plan.keepOut ?? hulls[0]!;
   const f: Foot = { x, z, c: cos, s: sin, hw: out.hx, hd: out.hz };
-  if (me_.position.y < y + out.hy * 2 && outOf(f, pos, PLAYER_R + 0.2)) {
+  let moved = me_.position.y < y + out.hy * 2 && outOf(f, pos, PLAYER_R + 0.2);
+  if (!moved) {
+    // A saved position can overlap a roof or the slab beyond keepOut. Check both of Buddy's spheres' span,
+    // including scaffold solids on a build, then clear the whole footprint before enabling any of them.
+    const solids = site.state === 'building' ? [...hulls, ...site.plan.poles] : hulls;
+    const overlaps = solids.some((h) => {
+      if (me_.position.y - PLAYER_R >= y + h.dy + h.hy || me_.position.y + HEAD_OFFSET + PLAYER_R <= y + h.dy - h.hy)
+        return false;
+      return outOf(
+        { x: x + h.dx * cos + h.dz * sin, z: z - h.dx * sin + h.dz * cos, c: cos, s: sin, hw: h.hx, hd: h.hz },
+        { ...pos },
+        PLAYER_R,
+      );
+    });
+    if (overlaps)
+      moved = outOf(
+        {
+          ...site.foot,
+          hw: Math.max(site.foot.hw, ...solids.map((h) => Math.abs(h.dx) + h.hx)),
+          hd: Math.max(site.foot.hd, ...solids.map((h) => Math.abs(h.dz) + h.hz)),
+        },
+        pos,
+        PLAYER_R + 0.2,
+      );
+  }
+  if (moved) {
     teleport(me_, pos.x, H(pos.x, pos.z) + PLAYER_R + 0.2, pos.z);
     me_.velocity.set(0, 0, 0);
   }
