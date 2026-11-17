@@ -228,5 +228,5 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     statics.count = line2Trains(adapter.read.world()) ? boxes.length : boxes.length + kerb.length;
   };
   update();
-  return { update };
+  return { update, targets: till.targets };
 }

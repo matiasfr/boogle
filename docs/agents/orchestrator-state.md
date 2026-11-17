@@ -10,13 +10,12 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Town economy C2, the sack on the counter, view only ([plan](../plans/town-economy-visible.md)) | P1, town economy | `codex/town-sack-c2` | Heartbeat thread; Codex gpt-6-astra high | 17 November 12:35 | Building. It reports to the heartbeat thread, which reads the diff and the look and ships it (an independent review first if `review-stamp` marks it) |
 
 ## Where the work stands
 
 - **Machine:** HOTBOX (Windows, clone `C:\Users\matia\Claude work\boogle`) has orchestrated since 17 November; the MacBook's schedules are paused ([automations](automations.md)). The hourly heartbeat runs in its own thread with a fresh session each run (#2006); the owner's live orchestrator thread ran beside it until 09:36 UTC on 17 November, when it settled; no live session was running at 11:35 UTC. Sessions cannot message each other, so they split work through the table above and the Line Map board.
 - **Focus:** the choice-and-payoff loop ([decision](../decisions-process.md#d-2026-11-16-focus-choice-and-payoff)); the backlog's P1 rows, at most five. World v58 is on main (C1, #2005).
-- **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2, running) and its K1 and K3; garage choices step 3 (steel spent, high risk), with the designer's Quick or Strong rebalance first, now that an extra car can mean rider capacity; riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
+- **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2 shipped 17 November; K1 and K3 are the next free jobs); garage choices step 3 (steel spent, high risk), with the designer's Quick or Strong rebalance first, now that an extra car can mean rider capacity; riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
 - **Proof debts and leftovers:** [orchestrator-leftovers](orchestrator-leftovers.md). Nothing from 16 or 17 November was tested on a device.
 
 ## Open owner questions
@@ -31,7 +30,7 @@ One list, newest first. Each proceeds on its recommendation unless it says it wa
 - The town plan's second plot: waits for the designer's review of the first town as a lesson.
 - How many riders a passenger car holds and how cars are added (from his seats call; asked before the riders' coach shipped with eight places, so check [his answers](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework) before asking again).
 - Whether the buy's reach check (3.2 m from the board, live) is wanted.
-- Placeholder strings: "Every train", "Loader yard", the Cars tile's counts line, the board and till strings, and C1's "Sack waiting" and "Back after a night: the coin sack is on the counter".
+- Placeholder strings: "Every train", "Loader yard", the Cars tile's counts line, the board and till strings, and C1's "Sack waiting" and "Back after a night: the coin sack is on the counter", and C2's "Empty" (the prompt), "Sack <n>" and "<n> Boogles" on the till board.
 - Device tests run remotely: both plans assume the Mac orchestrates and HOTBOX is an ssh runner; with HOTBOX orchestrating they need re-planning before any step (the orchestrator's reading, not yet his word).
 
 **From 14 November:**
