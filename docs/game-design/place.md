@@ -1431,7 +1431,9 @@ builder are gone; earned stages rise in front of you.
   then 170°, 210° and 230° as the greybox fleet joins. Canonical arrival after the Pier shows four tarps. The existing
   line-2 serving count owns the visible departure: the covered engine disappears and a built bay shuts its doors,
   with no rolling engine on the table or a false train at the Village. The joining train's whistle and scale-in
-  remain unchanged. The working bay's shunter and footing wagon keep their existing presentation.
+  remain unchanged. Before a restored engine or a newly enabled door becomes solid, an overlapping local player
+  is moved along that bay's road onto the clear apron toward the table. The working bay's shunter and footing
+  wagon keep their existing presentation.
 - **Painted on the ground** past each end, bays 110° and 270° in amber outline: what nine bays would take. The
   270° one stands 3.2 m from road 2's buffer stub.
 - **The stone yard's spot** moves north of the table, between the kerb and road 2 (nothing is drawn there today):

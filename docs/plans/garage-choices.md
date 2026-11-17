@@ -277,7 +277,7 @@ for a playtest.
 | --- | --- | --- | --- | --- | --- |
 | 0 | **The 2D page — built (2026-11-16).** Finding: Strong leads all three line totals under the editable stand-in assignments; Quick wins the small ending bills and rider legs, so balance remains unresolved. The route as a timeline: the pool against the stand-in bills, each part's Ready time and price, the boiler ladder with a row left for the faster engine (35 to 40 m/s), the bays by stage at Home and Port Quay; compare both trade rows per line against stand-in bills at 1p and 3p so neither wins everywhere. Prices set small against the route's bills | `docs/world/garage-choices.html` (artifact) | none | Implementation of an approved plan: Codex gpt-6.1-sol medium | the page, for the owner |
 | 1 | **The 20 m/s upgrade (G-a) — built (2026-11-16, v53).** `rail.install { part: 1 }` for every Home line at the table post, replacing the ladder's automatic rise; `commission` waits for it; the blast pipe tile, stand and seat; a loop node between `table` and `crossing`; the bot's hold | `src/sim/railway-sys-steel.ts`, `railway-sys-works.ts` (`commission`), `src/world/railway-server.ts`, `garage-data.ts`, `garage-state.ts`, `garage-view.ts`, `dev/loop/graph.ts`, `dev/look/bots/`, `test/railway-install.test.ts`, `src/world/namespace.ts` | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | `garage-open`; `npm run loop -- run` |
-| 2 | **Engines wait in the bays — built (2026-11-17)** (the ladder's step 4), view only: tarped engines in the ruins and bays in the departure order above; on the line's serving count rising, the covered engine disappears and the doors shut; the joining train keeps the ladder's whistle and scale-in. No animated roll-out | `src/place/rotunda.ts`, `rotunda-stage.ts`, `rotunda-view.ts`, `roundhouse-view.ts`, the existing roundhouse prefab kit and generated records, `test/rotunda-occupants.test.ts` | none | Player-visible implementation: Codex gpt-6-astra high; visual review by the main session | opened arrival, stage 1 and steel-home stills; evidence below |
+| 2 | **Engines wait in the bays — built (2026-11-17)** (the ladder's step 4), view only: tarped engines in the ruins and bays in the departure order above; on the line's serving count rising, the covered engine disappears and the doors shut; the joining train keeps the ladder's whistle and scale-in. No animated roll-out | `src/place/rotunda.ts`, `rotunda-stage.ts`, `rotunda-view.ts`, `roundhouse-view.ts`, the existing roundhouse prefab kit and generated records | none | Player-visible implementation: Codex gpt-6-astra high; visual review by the main session | opened arrival, stage 1 and steel-home stills; seed replay and collision probes below |
 | 3 | **Steel is spent: the bigger cradle and the big boiler (G-c, G-d).** `Shed.spent`; the price table; the cradle as line 2's fit; the fourth boiler row; bills and Ready; the store in bay 150° | `railway-components.ts`, `railway-sys-steel.ts`, `railway-train.ts`, `railway-works-layout.ts`, `garage-data.ts`, `boiler-install-view.ts`, `rotunda-view.ts`, `namespace.ts`, tests | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | the cradle install at `steel-home`; stills of bay 150° from the post at player height and from the garage camera |
 | 4 | **Lines in the bays; the per-line trade (G-e).** Build the two named boiler rows, free swaps at the Roundhouse, and `boilerAdopt` at each line's next depot departure; then works copies per fitted line, `rail.bring`, line chips, stages 3a and 3b. Starts when stage 4's lines are playable | `railway-components.ts`, `railway-sys-steel.ts`, `railway-server.ts`, `rotunda-stage.ts`, `home-station.ts`, `garage-*.ts`, `src/features/garage.ts`, `roundhouse-view.ts`, tests | review | High-risk implementation: Codex gpt-6-astra high, and the independent review row | two players at the post, one brings a line out, both see it; stage 3a rising |
 | 5 | **Port Quay's row**, inside its station plan: the row above, the per-site stage and ruin rule, `SITES`, a second reach point | the station plan's files; `src/place/rotunda.ts`; `dev/prefab/rotunda.ts`; `src/sim/railway-works-layout.ts` | review (the reach point) | Planning complex work: planner agent, opus high | that plan's |
@@ -289,7 +289,7 @@ The covered engine and its solid disappear together, and a built empty bay switc
 Restores derive the same state; the working bay, server-facing rotunda helpers, train join, whistle and scale-in
 are unchanged. No sim, server, wire or namespace edits, and no new player copy.
 
-Build plan completed: (1) pure mapping and its small test; (2) view wiring and the existing prefab batch kit;
+Build plan completed: (1) pure mapping, checked against accepted seeds; (2) view wiring and the existing prefab batch kit;
 (3) proof look, design notes and scoped checks. The additional wiring files were necessary: `roundhouse-view.ts`
 passes the fleet facts, the prefab record/builder owns the solid and merged visual, and `dev/prefab/rotunda.ts`
 generates the engine/open-door placements and compiled JSON. No gameplay rule beyond the approved plan was added.
@@ -310,11 +310,49 @@ Cost from scene geometry inspection: one added instanced engine/tarp mesh, 332 t
 plus five extra open-door instances at 576 each = 2,880 in the existing door draw. Added submission capacity:
 one scene draw (also one shadow draw when submitted), 4,540 triangles per pass including zero-scaled hidden slots.
 No timing or device performance claim. `node dev/ship-check.ts origin/main HEAD` passed: 1,385 passed, no failures,
-65 skipped, one todo; registry, changed lint, typecheck and prefab freshness passed. Focused rotunda tests: 7/7.
+65 skipped, one todo; registry, changed lint, typecheck and prefab freshness passed (initial build).
 `level-check --place=place` passed its 16 reports; its offline coverage excludes render-created solids, so it does
 not establish walking collision against these engines. First five-engine arrival and all-greybox departures are
-covered by the pure test, not a played route. Live disappearance timing, a long playthrough, audio and device feel
+checked by the seed replay below, not a played route. Live disappearance timing, a long playthrough, audio and device feel
 remain unverified; not tested on a device. Raw captures and setup scripts stay under `.look/`.
+
+**Step 2 review follow-up (17 November).** Before enabling a waiting engine or a non-working bay's door, the
+view checks both spheres of the local player's production body against the prefab's authored boxes, following
+the halt reveal's overlap pattern and the bridge's before-enable guard. Only an overlap moves the player: along
+that bay's road toward the table, onto the flat apron at radius 12.65 m. The world transform includes the owner's
+height; position/interpolation and velocity are corrected before collision is enabled. Separate enabled state
+keeps a visually rising door from skipping this check. The working bay, meshes, draw cost and shared state are
+unchanged. The presentation-only unit test was removed: the original brief's exception was wrong under the test diet.
+
+The requested probes ran through `timeout 60 node dev/look/session.ts eval` on full Chromium/WebGPU. Each used
+an owner at y100, bay 170°, a static floor with top y118, `makePlayerBody(false)`, 60 settling steps, the occupancy
+change, then 180 fixed steps. Both failed before the fix and passed after it:
+
+| Probe | Before the occupancy change (x, y, z) | Unfixed after 180 steps | Fixed after 180 steps |
+| --- | --- | --- | --- |
+| Restore serving 6 → 3 over the engine road | 947.7673, 118.4498, 37.3970 | 947.7673, 117.9483, 37.3970 (fell 0.5016 m) | 946.7515, 118.4498, 31.6359 |
+| Serving 3 → 4 with the player in the closing doorway | 947.0206, 118.4498, 33.1624 | 947.1167, 118.4498, 33.7039 (pushed into the bay) | 946.7515, 118.4498, 31.6359 |
+
+Both fixes place the body at y118.475 before the new solid is enabled; it settles to y118.4498 with zero net height
+loss, outside the solid on the apron. Raw probe script/results: `.look/garage-bays-overlap.ts` and
+`.look/garage-bays-overlap-{before,after}.log`. No new stills: the visual kit is unchanged. These are isolated
+production-physics probes, not a full live co-op collision/playthrough witness; not tested on a device.
+
+Review checks: `node dev/ship-check.ts origin/main HEAD` passed with 1,384 passed, zero failed, 65 skipped and one
+todo; registry, changed lint, typecheck and prefab freshness passed. Earlier runs had intermittent prefab dynamic
+fixture failures, also reproduced in an untouched archive of `4eec4dd8`; the final gate passed without tooling edits.
+
+The unchanged `buildSeedWorld` fixtures were replayed through `rotundaServing` and `bayOccupants` (raw output
+in `.look/garage-bays-seed-replay.log`); no test file or new scenario was added:
+
+| Accepted seed | Serving | Waiting bays, in departure order |
+| --- | --- | --- |
+| `trains-on` | 1 | 250°, 150°, 170°, 210°, 230° |
+| `q6-done` (the second train has not yet been admitted) | 1 | 250°, 150°, 170°, 210°, 230° |
+| `stall-done` | 2 | 150°, 170°, 210°, 230° |
+| `deck-laid` | 3 | 170°, 210°, 230° |
+| `steel-home` | 3 | 170°, 210°, 230° |
+| `gorge-mid` | 6 | none |
 
 **Step 1 as built (16 November).** One 900 ms Medium hold sends `rail.install { line: 1, part: 1, revision: 0 }`
 at the existing Home table reach. It fits both Home lines (0 and 1), spends nothing, and commissions the wagon;

@@ -8,7 +8,17 @@ import { definitions } from '../../prefab/catalogue.ts';
 import level from '../../../content/built/levels/rotunda-home.json' with { type: 'json' };
 import { ROTUNDA_HOME } from '../../place/home-station.ts';
 import { ORIGIN } from '../../place/layout.ts';
-import { bayOccupants, rotundaBays, rotundaPieces, rotundaPose, rotundaShows } from '../../place/rotunda.ts';
+import {
+  bayOccupants,
+  ROTUNDA_BLOCK,
+  ROTUNDA_KIT,
+  rotundaBays,
+  rotundaPieces,
+  rotundaPose,
+  rotundaShows,
+} from '../../place/rotunda.ts';
+import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
+import { me } from '../../player/state.ts';
 
 export function createRotundaView(owner: OwnedView) {
   const site = ROTUNDA_HOME;
@@ -44,6 +54,8 @@ export function createRotundaView(owner: OwnedView) {
       batch: batch?.target,
       index: batch ? batch.next - 1 : 0,
       rest: instance.root.matrix.clone(),
+      enabled: false,
+      colliders: definitions[placement.prefab]!.colliders,
     };
   });
   let shown = -1;
@@ -51,6 +63,32 @@ export function createRotundaView(owner: OwnedView) {
   let occupied = new Set<number>();
   let rising = false;
   const matrix = pieces[0]!.rest.clone();
+  const point = owner.root.position.clone();
+  function clearPlayer({ instance, colliders }: (typeof pieces)[number]) {
+    const body = me.body;
+    if (!body) return;
+    // As at the halt reveal, test BOTH body spheres against the authored boxes in their own frame. Like the
+    // bridge's clearance guard, do this before enabling collision, never let Rapier resolve a new solid through us.
+    const root = instance.root;
+    root.updateWorldMatrix(true, false);
+    const overlaps = colliders.some((box) => {
+      if (box.shape !== 'box') return false;
+      return [0, HEAD_OFFSET].some((up) => {
+        root.worldToLocal(point.set(body.position.x, body.position.y + up, body.position.z));
+        const dx = Math.max(0, Math.abs(point.x - box.at[0]) - box.half[0]);
+        const dy = Math.max(0, Math.abs(point.y - box.at[1]) - box.half[1]);
+        const dz = Math.max(0, Math.abs(point.z - box.at[2]) - box.half[2]);
+        return dx * dx + dy * dy + dz * dz < (PLAYER_R - 0.01) ** 2;
+      });
+    });
+    if (!overlaps) return;
+    // The flat apron on this road, in front of the door reveal and outside the pit/kerb. Transform its ground too:
+    // an elevated owner must not put the player down on the untransformed site's floor.
+    root.localToWorld(point.set(0, PLAYER_R + 0.025, ROTUNDA_KIT.doorR - ROTUNDA_BLOCK.reveal - PLAYER_R - 0.1));
+    body.position.set(point.x, point.y, point.z);
+    body.interpolatedPosition.set(point.x, point.y, point.z);
+    body.velocity.set(0, 0, 0);
+  }
   const shows = (stage: number, piece: (typeof pieces)[number]['piece']) => {
     if (piece.part === 'waiting') return occupied.has(piece.turn);
     if (piece.part === 'open') return occupied.has(piece.turn) && rotundaBays(site, stage).includes(piece.turn);
@@ -65,11 +103,19 @@ export function createRotundaView(owner: OwnedView) {
       shown = stage;
       serving = count;
       occupied = new Set(bayOccupants(site, { serving }));
-      for (const { piece, instance, rest, batch, index } of pieces) {
+      for (const entry of pieces) {
+        const { piece, instance, rest, batch, index } = entry;
         // Reset even an unfinished rise; unchanged pieces keep their record colliders.
         instance.root.position.y = rest.elements[13]!;
         const on = shows(stage, piece);
+        if (
+          on &&
+          !entry.enabled &&
+          (piece.part === 'waiting' || piece.part === 'open' || (piece.part === 'door' && piece.turn !== 0))
+        )
+          clearPlayer(entry);
         instance.setEnabled(on);
+        entry.enabled = on;
         instance.root.visible = on;
         if (batch) {
           batch.mesh.setMatrixAt(index, instance.root.visible ? rest : matrix.makeScale(0, 0, 0));
