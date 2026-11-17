@@ -58,7 +58,11 @@ const second = snapshot();
 const wall = (performance.now() - start) / 1000;
 
 const children = new Map<number, number[]>();
-for (const p of second) children.set(p.ParentProcessId, [...(children.get(p.ParentProcessId) ?? []), p.ProcessId]);
+for (const proc of second) {
+  const siblings = children.get(proc.ParentProcessId);
+  if (siblings) siblings.push(proc.ProcessId);
+  else children.set(proc.ParentProcessId, [proc.ProcessId]);
+}
 const cpuTime = (list: Proc[]) => new Map(list.map((p) => [p.ProcessId, (p.KernelModeTime + p.UserModeTime) / 1e7]));
 const before = cpuTime(first);
 const after = cpuTime(second);
