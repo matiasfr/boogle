@@ -32,6 +32,9 @@ different models at the same time"). The owner's words for each change are in
   give the task a way to verify its own work (a failing test, a build, a look, a bot segment); it is often cheaper
   than more effort. A task that Opus high can't solve goes back to the orchestrator, not to xhigh (about 2.5x the
   cost of high for about 1.4 points on SWE-bench Pro). Opus `max` only when the owner asks.
+- **"A good model" picks the row, not more effort** (owner, 10 November, after a planner asked for "a good model"
+  ran at high: "Fable at medium effort should be sufficient for the future FYI"). Take the model and effort from the
+  table as written; raise effort only when the owner names one.
 - **Explore on Haiku.** `.claude/agents/Explore.md` pins the Explore agent to Haiku for searching, finding files and
   reading logs, where a wrong answer is cheap to spot and a Codex job would take minutes. Code edits and judgment
   calls stay off it.
