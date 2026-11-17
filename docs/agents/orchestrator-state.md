@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, and keep it short. It holds only what cannot be looked up: who is running what, what waits on the owner, and the lessons. Main, CI, pull requests and worktrees come from `npm run heartbeat`; committed work and its next steps from [the backlog](../backlog.md); what merged from git. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 17 November 2026 about 15:30 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
+**Updated:** 17 November 2026 about 15:40 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
 
 ## Jobs in flight
 
@@ -10,6 +10,7 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
+| Town K3: the away host test (the sack through an emptied real room, rejoined after a faked 8 hours), added to `server/test/railway-away.test.ts` | The town economy (P1) | `codex/town-k3-away-host` | the heartbeat thread (HOTBOX), Codex gpt-6-astra high | 17 November 15:40 | building; an independent review before it ships |
 
 ## Where the work stands
 
@@ -111,6 +112,7 @@ The lessons; the orchestrator keeps them.
 33. Tell builders to commit at most about 16 curated stills, 1200 px wide, a few MB, and keep raw dumps and clips local under `.look/`; one brief that said "keep evidence in the repo" produced 119 MB (16 November).
 34. A branch that changes test assertions or fixtures is refused by `ship-queue` without `--reviewed`: send it to review before queuing.
 35. Asset work on HOTBOX needs `BLENDER="/c/Program Files/Blender Foundation/Blender 5.3/blender"`: Blender is not on PATH and `dev/assets/build.ts` and `inspect.ts` default to the Mac path.
+38. A brief's "no new unit test files" (rule 7) must name the exception when the plan step is a host test: say which existing server test file takes it (K3, 17 November: the builder stopped "rather than add the forbidden host test", and the step needed a second job an hour later).
 
 ## How merging works
 
