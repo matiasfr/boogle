@@ -1,6 +1,8 @@
 > **Status: R1a, R1b and R2a built and on main (v56). R2b re-planned 16 November after its builder's second stop:**
 > two level steps join it (R2b.1 the Pier's foot crossing, ships alone with no bump; R2b.2 High Gorge's crossover,
 > inside the coach's v57), then R2b.3 the coach resumes `t3/rider-coach-blockout` at `15737dec1` (v57, not shipped).
+> Designer, 16 November: R2b revision reviewed, **build with changes** (folded into R2b.1 and R2b.2);
+> [review](#design-review-of-the-r2b-revision-designer-16-november).
 > Planner, 16 November 2026, against origin/main `945c69554`. Builds the owner's
 > [coach A, the rework and the allowance](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework),
 > [riders get a dedicated car](../decisions-rail.md#d-2026-11-16-riders-get-a-dedicated-car) and
@@ -76,10 +78,18 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     (`crossS + CROSSING_WIDTH / 2 === s0 − headRamp`); the ramp walkable (≤ 15°, `WALKABLE_NY`); planks over no rail;
     no seabed or far-end ramp; "clears the full stopped train" reads the stop less `TRAIN_EXTENT.behindCm` (minimum
     **0.60**, pin 4.20 now; 0.80 at R2b.3); the roof-bypass row unchanged. `test/train-wheel-rail.test.ts`'s crossing
-    curve check runs at the new s. `docs/game-design/place.md`'s Pier paragraph: s 708.4, a 9.4 m ramp.
+    curve check runs at the new s. **Q7's site deck** (designer): the planks' east end (lat +1.5) now lands beside
+    Q7's piled deck (s 703–713, lat +1.8 to +6.0: log rack 705.2, rails' shelf 706.2, Q7's personal box 704, frame
+    710; `q7-site.ts`), between the shelf and the frame, where it met the east ramp's foot (s 713) before. Rows: no Q7
+    site piece within 0.6 m of the planks' width at their east end; the walk from there to the east ramp's foot stays
+    open between the frame and the down track; the personal box stays off the planks. Nothing of the site moves.
+    `docs/game-design/place.md`'s Pier paragraph: s 708.4, a 9.4 m ramp, the planks beside Q7's deck; its steel-car
+    stepping-off lines restated where the ramp now lies beside that car.
   - **Proof:** before/after stills, fixed cameras, opened: from the west platform toward Home down the ramp; from the
     trestle beside the down track at the crossing's east end; from a homeward train's players' car standing at the
-    Pier; top-down over s 700–745. The production bot's walk (halts-view path) from the west platform's lever down the
+    Pier; top-down over s 700–745; (designer) the first sight on foot, walking north on the trestle's east side at s
+    ≈ 690, eye height; and at `boiler-long` the wagon's long train standing homeward, from Q7's deck beside the planks
+    toward its tail, so the 4.20 m gap is seen, not only measured. The designer reads them. The production bot's walk (halts-view path) from the west platform's lever down the
     ramp and across to the east end, and back, in the running game at `deck-laid` (`look`, a stated route, both ways).
     **Done means** level-check exit 0 with the new rows, the stills and the walk.
 - [ ] **R2b.2. High Gorge's crossover 3.40 m toward Home (S).** Sync: Server data (generated catalog). Tier:
@@ -91,7 +101,8 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   - Tests and rows: `test/railway-route-rules.test.ts` :175 becomes a minimum (≥ 30 cm; 370 with today's extent, 30 at
     R2b.3), its comment giving the reason (below); the R2b level row's Gorge measurement; a new row: the last car's
     outward and homeward poses at the Gorge stop are the same (the turn moves no car; with the coach and today's
-    crossover the steel car swings 0.08 m and 3.9°). The leg view draws no crossover: no scenery moves.
+    crossover the steel car swings 0.08 m and 3.9°). The leg view draws no crossover: no scenery moves (the flag-only
+    `?blockout=world` draws the row's X and follows the regenerated row).
   - **Proof and done means:** level-check; a fixed-camera pair from the north platform toward Home at `gorge-reached`,
     a train arriving and leaving (where it swings across is the only visible change); `npm run loop -- run` to the Gorge.
 - [ ] **R2b.3. The coach in the train, a grey blockout (M).** Sync: Server data + Local. Tier: **independent review**
@@ -193,7 +204,8 @@ applies in full.
 - **Move the crossing 3.40 m toward Home (recommended).** Planks s 707.2–709.6; the start ramp 9.4 m (foot s 709.6,
   4.1°). Clearance 0.80 m for the coach train (as today), 4.20 for today's trains. The player sees the planks 3.4 m
   further from the deck and a longer, gentler ramp; the order (cross, ramp, platform, lever) is unchanged; the walk is
-  3.4 m longer. Reconnect: the ramp, the bots' walk path, the level rows; nothing else stands at s 700–713.
+  3.4 m longer. Reconnect: the ramp, the bots' walk path, the level rows. Not "nothing else": Q7's site deck (s
+  703–713, east of the down track) now meets the planks' east end; none of it moves (designer review).
   Size: S, Place and prefab only, no bump, ships alone.
 - **Move the stop toward the end.** One mark serves the terminal (before Q7) and the homeward stop (after): +3.4 m puts
   the drawn nose 2.20 m into the parked layer before Q7. Only a stop that moves at Q7 would work (`stopMoved`, as the
@@ -311,9 +323,71 @@ defaults (logged): the Pier's crossing and the Gorge's crossover move 3.4 m; the
 
 ## Owner question (the build proceeds on the recommended answer)
 
-1. **The wagon's long train (longer boiler, steel car and the coach: 16.1 m behind the players' car) no longer clears
-   two places. Fix the places, or shorten that train?** (a) **Recommended:** fix the places: the Pier's foot crossing
-   moves 3.4 m toward Home with a longer ramp (no stopped train stands on it), and High Gorge's crossover moves 3.4 m
-   (unseen; no car twitches at the turn); (b) the footing wagon goes home to its stall once the ring's footings are
-   in, so the longest train is 12.4 m and neither place changes (a new beat; the yard's loader and the wagon's
-   stone-stop rule change with it).
+Sharpened by the designer's [R2b review](#design-review-of-the-r2b-revision-designer-16-november); R2b.1 and R2b.2
+do not wait on it, and stand whichever way it is answered.
+
+1. **Once the ring's last footing is set, the footing wagon has nothing left to carry. Does it stay on its train for
+   the rest of the game, or roll home to its stall?** (a) **Recommended: it stays** (today's game): your train keeps
+   what it earned, the way the steel car rides empty between loads; the coach train is then the longest train and the
+   Pier's crossing and the Gorge's crossover move 3.4 m for it. (b) It rolls home: once the ring is footed, the next
+   time its train stands at the Village the wagon uncouples and runs back over the table into its stall, so after
+   the rivet every line 2 train is engine, players' car, coach, kit car and (with the longer boiler) steel car. You
+   would see it only if you were at Home then; anywhere else, one train is simply a car shorter when you next see it.
+
+## Design review of the R2b revision (designer, 16 November)
+
+**Verdict: build with changes** (folded into R2b.1 and R2b.2). Read: the as-built Pier (`place.md`, `layout.ts`
+`OFFSET_HALTS`, `halt-ramps.ts`, `halt-crossing.ts`, `halts-view.ts` :310–326, `q7-site.ts`), the riders' route
+(`railway-sys-trade.ts`: Home ↔ the open end only), the Gorge's consumers (`railway-lines.ts` :179–187, `train-view.ts`
+:64–67 and :402–408, `proto/greybox/build.ts` :485–504), the wagon's rules (`railway-queries.ts` :308–331,
+`railway-queries-trade.ts` :145), [first-town-lesson](first-town-lesson.md) L1, the 16 November rail and rewards
+entries. The audit reproduces (`rider-coach-audit.ts`: Pier 0.8 / −2.6, Gorge 0.3 / −3.1). Stills at `deck-laid` of
+today's Pier, opened: from the west lever toward Home, and top-down over s 700–745. Not seen: the moved layout (not
+built), a standing homeward train, colliders round the planks, the Gorge in motion.
+
+1. **The Pier's crossing (default, agree).** Who walks it after Q7: a player going home from the Pier (cross, ramp,
+   lever at the ramp's top, board), one stepping off a homeward train, one coming back down the trestle from the
+   Railhead. Riders never stop there after Q7 (confirmed); no works errand crosses it. The planner is right that the
+   planks are the one way onto the ramp's foot: the west ramp's foot hangs past the trestle deck (deck to lat −5.8,
+   ramp −5.7 to −8.2), and only the planks (to −8.2) carry you onto it. **Missed:** "nothing else stands at s
+   700–713" is wrong: Q7's site deck (rack, shelf, Q7's personal box, frame) is just east of the planks' new east end.
+   That is a better landing than the 1 m strip under the east ramp, so nothing moves, but it needs rows and a still
+   (folded). The lesson still reads: lever, platform and ramp top are unchanged; the walk is 3.4 m (0.6 s) longer,
+   1.2 s for someone walking back from the Railhead. **9.4 m ramp, on merit:** right. A 6 m ramp plus a 3.4 m flat
+   landing on piles reads as a step in the wrong place; a longer deck (s0 715.6) moves the lever 3.4 m off the
+   players' car, unpairs the two decks and moves the server's platform point. At 4.1° the ramp still reads as a ramp
+   (a raised slab with a clear end), and the planks then lead only to the live platform's foot, not the chained east
+   one's: the difference points the right way. **Alone, no bump, before the coach:** fine from the player's side. A
+   ramp needs no visible reason; only someone who knew the old Pier could notice, and nothing about it reads as wrong.
+2. **High Gorge's crossover (default, agree).** Confirmed: `gorge.ts` places platforms, concourse, buffers and stair
+   from the line's end; the leg view draws no crossover; the only things that read it are the end block, the signal
+   and the homeward path (data), the view's turn, and the flag-only world blockout's X (follows the row). The Gorge's
+   platform signals are drawn at the platforms and do not move. The rule is the right reason: a 3.9° snap of the last
+   car the moment a standing train turns is a visible fault at the showpiece terminus; moving the stop instead takes
+   the players' car off the platforms' middle to fix a track-plan problem.
+3. **The alternatives.** (b) judged as a beat: **not right now; I agree with the conclusion, not all the reasons.**
+   The plan says (b) "undoes standing rules": not so. By `ring-joined`, before `boiler-long`, no footing is owed
+   anywhere: `loaderOn` and the stone-stop exemption ([RC-093](../decisions-rail.md#d-2026-11-16-batch2-wagon-stone-exemption-ends))
+   have nothing left to govern. The real case against it: the beat lands where nobody is (at Home, while the players
+   are at the ring), so most players meet only its result, a train one car shorter for no reason they saw. That is
+   the same "change with no visible reason" this review clears R2b.1 of, only worse because it subtracts. It also
+   runs the table backwards against [only when ready](../decisions-rail.md#d-2026-11-10-turn-the-table-only-when-ready),
+   needing a storyboard of its own ([physical work](../agents/owner-calls.md#physical-work)), and it is a story beat
+   before the greybox is whole ([details later](../agents/owner-calls.md#mechanisms-systems-greybox-details)). Trains
+   are also meant to grow (added rider cars at a later hub's garage,
+   [rider seats](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers)), so a shorter train only puts off
+   the same headroom. Its upside is real: a works story that ends visibly. Hence the owner question. Size, as fact:
+   (b) is M (a new rule event, the table's motion, a bump); the two place moves are S and S. **No coach on the
+   wagon's train** and **the coach elsewhere**: rejected on merit, agreed (riders left at Home; a deck overhang or the
+   parked layer).
+4. **The owner question.** "Fix the places, or shorten that train?" is not his as posed: the place moves are
+   level defaults that follow from decided calls (coach A behind the players' car; Ring's stop moves with it) and
+   stand either way. What is his is whether the wagon retires: a new beat in the train's story. Sharpened above.
+5. **Order and bumps: agree.** R2b.1 alone on main makes sense to a player on its own; R2b.2 is invisible without
+   the coach train, so it belongs in v57 with the train that needs it, and one fresh-world reset beats two.
+
+**Calls** (logged in [agent-calls](../agent-calls.md), rail): default, the 9.4 m ramp, not a landing or a longer
+deck; default, the planks' east end beside Q7's deck, nothing of it moving; new, the wagon stays coupled after
+its last footing (status quo; the owner question). The planner's two defaults stand. **Changes folded:** R2b.1's
+Q7-deck rows and `place.md` lines; two more stills (first sight on foot from the south; `boiler-long` with the long
+train standing); R2b.2's blockout note; the options' "nothing else stands" corrected. No copy; no suspect line.
