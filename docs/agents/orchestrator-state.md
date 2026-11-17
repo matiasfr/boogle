@@ -10,12 +10,13 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
+| Town economy C2, the sack on the counter, view only ([plan](../plans/town-economy-visible.md)) | P1, town economy | `codex/town-sack-c2` | Heartbeat thread; Codex gpt-6-astra high | 17 November 12:35 | Building. It reports to the heartbeat thread, which reads the diff and the look and ships it (an independent review first if `review-stamp` marks it) |
 
 ## Where the work stands
 
 - **Machine:** HOTBOX (Windows, clone `C:\Users\matia\Claude work\boogle`) has orchestrated since 17 November; the MacBook's schedules are paused ([automations](automations.md)). The hourly heartbeat runs in its own thread with a fresh session each run (#2006); the owner's live orchestrator thread ran beside it until 09:36 UTC on 17 November, when it settled; no live session was running at 11:35 UTC. Sessions cannot message each other, so they split work through the table above and the Line Map board.
 - **Focus:** the choice-and-payoff loop ([decision](../decisions-process.md#d-2026-11-16-focus-choice-and-payoff)); the backlog's P1 rows, at most five. World v58 is on main (C1, #2005).
-- **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2, unclaimed: the next free job) and its K1 and K3; garage choices step 3 (steel spent, high risk), with the designer's Quick or Strong rebalance first, now that an extra car can mean rider capacity; riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
+- **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2, running) and its K1 and K3; garage choices step 3 (steel spent, high risk), with the designer's Quick or Strong rebalance first, now that an extra car can mean rider capacity; riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
 - **Proof debts and leftovers:** [orchestrator-leftovers](orchestrator-leftovers.md). Nothing from 16 or 17 November was tested on a device.
 
 ## Open owner questions
@@ -100,6 +101,7 @@ The lessons; the orchestrator keeps them.
 26. A hidden browser pane has zero size and the game waits for a drawable size: give the pane a size (`resize_window`) before judging a boot slow.
 27. A smoke failure on the server's source commit right after a server-path merge is usually the race with `deploy-server.yml` (19 minutes on 17 November; smoke waits 24 since then): check that the deploy finished and `/version` shows the commit, then rerun the smoke.
 36. A thread that ships a job and ends leaves its "Jobs in flight" row, backlog row and plan line stale, and the stale row blocks that backlog row for every other session (C1, 17 November: merged 10:35 UTC, still claimed an hour later). The session that sees the merge deletes the row.
+37. A view brief says two things or the review finds them: no new unit test files (rule 7), and a solid that switches on must first move a player standing in it (garage step 2, 17 November: both came back from review and cost a 16-minute fix round).
 28. A change to label or layout costs must be diffed against main for the states most rooms are in (the pre-rivet maps), not only the new state.
 29. After a ship lands, the next queued branch was checked against the old main. When two branches touch neighbouring code (v45 renamed a helper the meadow used), re-run `node dev/ship-check.ts origin/main HEAD` on the second after the first lands, before shipping it.
 30. `dev/codex/run.ts review` takes `--ref-branch` only; `--base-ref` is for tasks.
