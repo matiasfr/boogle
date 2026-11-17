@@ -69,8 +69,8 @@ balance. [Cap and rate queries](../../src/sim/railway-queries-trade.ts).
 An empty hosted room pauses after its grace period. Its next wake applies the existing diminishing away-production
 credit once. With trains running, away fares fill a separate sack, not the strongbox. New earnings stop at fifteen
 minutes of calculated fare income; lowering the rate never cuts down an earned sack. The current default
-house-built seed has a 42-Boogle/minute rate and an eight-hour absence fills its 630-Boogle sack. This is the
-rule/seed result, not a completed empty-room/rejoin integration proof: see [K3](../reports/town-k3-checkpoint.md#away-host-proof).
+house-built seed has a 42-Boogle/minute rate and an eight-hour absence fills its 630-Boogle sack. A host test proves it through a real room that empties, pauses and is rejoined after eight faked hours, with the
+sack collected by a real `rail.sack` edit (`server/test/railway-away.test.ts`, 17 November 2026).
 Sources: [away system](../../src/sim/railway-sys-away.ts), [curve](../../src/sim/railway-away.ts),
 [cap](../../src/sim/railway-queries-trade.ts), [seed](../../src/sim/railway-seed-trade.ts).
 

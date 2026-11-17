@@ -333,7 +333,7 @@ models`'.
   its index line; the away host test once (a hosted room emptied, rejoined after a faked 8 hours); "not tested on a
   device" or a device run.
 
-  - [x] **17 November 2026, away host test:** `server/test/railway-away.test.ts` passes: an emptied real WebSocket host pauses, rejoins after eight fake hours with exactly `sackCap` and no box earnings, accepts `rail.sack` via `r:edit`, and neither rejoin nor restart credits again; not tested on a device.
+  - [x] **17 November 2026, away host test:** `server/test/railway-away.test.ts` passes: an emptied real WebSocket host pauses, rejoins after eight fake hours with exactly `sackCap` and no box earnings, accepts `rail.sack` via `r:edit`, and a rejoin and a restart with no further time away leave the till unchanged; not tested on a device. Independent review (17 November): ship as is; the test catches a credit to the box, a doubled sack and a missing cap, while exactly-once crediting rests on the C1 rule tests and the reload-grace test beside it, not on this test alone.
 
   - **2026-11-17, K3 measurements recorded, closure unproven:** [checkpoint report](../reports/town-k3-checkpoint.md).
     Level-check passes with nine house hulls; route gaps are 0.30/1.02/9.94/2.89/0.15 m (sprint envelope only,
@@ -341,7 +341,7 @@ models`'.
     existing house/shop/museum. Round perf compares both seeds with ms, draws and triangles; timing is provisional
     under other running apps, reported only. K2's section is extended as [Trade](../game-design/trade.md), with its
     index line. Existing away server tests pass 8/8 and C1 rules 7/7, but neither proves the till sack through an
-    emptied real host and a fake eight-hour rejoin. Stopped rather than add the forbidden host test; K3 stays open
+    emptied real host and a fake eight-hour rejoin. Stopped rather than add the forbidden host test (superseded the same day by the away host test above); K3 stayed open
     for that exact proof, not a playtest or designer hold. not tested on a device.
 
 **Order and lanes.** Start A1, A2, A3 and B1 together (no file is shared; the docs edit is K1's); ship each as it
