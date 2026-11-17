@@ -1,7 +1,0 @@
-import fs from 'node:fs';
-import {stripTypeScriptTypes} from 'node:module';
-import {startStack,launch,Game} from '../../../dev/look/lib.ts';
-import {writeRailSeed} from '../../../dev/look/rail-seed.ts';
-const out='.look/rider-coach-r2b/finish/roof';fs.mkdirSync(out,{recursive:true});
-const stack=await startStack();await writeRailSeed(stack.dataDir,'roof','gorge-reached');const browser=await launch();
-try{const g=await Game.open(browser,stack,{room:'roof',out,sourceImports:true,query:'debugcam=1'});const result=await g.eval(stripTypeScriptTypes('async function probe(){'+fs.readFileSync('.look/rider-coach-r2b/finish/roof-eval.ts','utf8')+'}')+'return await probe();');fs.writeFileSync(out+'/reach.json',JSON.stringify({...result,errors:g.healthErrors(),fps:await g.fps(1000)},null,2));await g.close();}finally{await browser.close();await stack.close();}

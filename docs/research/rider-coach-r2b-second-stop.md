@@ -25,8 +25,8 @@ new tail stands across the crossover; this is independent of the positive passen
 The diagnostic observes an actual accepted terminal arrival (slot 4, tick 17943; v56 tick 17979), then
 **independently poses the longest allowed production consist** at that stop using the view's axle/chord and
 buffer-spacing functions. The arriving slot itself is a shorter train; this is not a live WS-train screenshot.
-[Production measurements](rider-coach-r2b/resumed/gorge-production.json),
-[v56 measurements](rider-coach-r2b/resumed/gorge-v56.json),
+Production measurements (local-only: `rider-coach-r2b/resumed/gorge-production.json`),
+v56 measurements (local-only: `rider-coach-r2b/resumed/gorge-v56.json`),
 [reproduction](../../dev/level/rider-coach-gorge.ts),
 [v56 source-loader control](../../dev/level/rider-coach-v56.ts).
 
@@ -44,7 +44,7 @@ extent puts the tail at **713.80**, clearance **+0.80 m**; R2b's 16.10 m puts it
 This is the existing level row's along-track measurement, not a new live collision witness.
 
 Full failure: **`FAIL  crossing clears the full stopped train by -2.6 m`**.
-[Unabridged level-check](rider-coach-r2b/resumed/level-check.log),
+Unabridged level-check (local-only: `rider-coach-r2b/resumed/level-check.log`),
 [existing test](../../dev/level/ring.ts), [crossing geometry](../../src/place/layout.ts).
 Permitting cargo-car overhang beyond the passenger deck does not waive this foot-crossing minimum.
 Smallest geometric alternative: move the crossing **at least 3.20 m toward Home**, reconnecting the ramp
@@ -55,7 +55,7 @@ This alternative needs ground, ramp, furniture and real-body checks. **Proposed 
 
 The same accepted `rail.call`, halt **8**, direction **−1**, on v56 stops slot 4 at tick **18347** on lateral
 **−4 m**, origin 0. Players' car nearest edge **−2.90 m**, only deck inner edge **+1.80 m**: **4.70 m** across
-the outward track. [v56 control](rider-coach-r2b/resumed/v56-control.json). The coach inherits a **5.00 m** gap.
+the outward track. v56 control (local-only: `rider-coach-r2b/resumed/v56-control.json`). The coach inherits a **5.00 m** gap.
 Named known gaps: **Stack head 1 homeward (retained), Stack head 2 homeward (retained), Stack head 3 / Stack
 halt homeward (retained)**. Heads 1/2 apply only while still served. Outward and current terminal service
 use the original/east track. This pre-existing omission is non-failing under the orchestrator's ruling.
@@ -84,7 +84,7 @@ There is no direct platform alongside the homeward car. Proposed west decks: cen
   symmetric envelope. Engine/island **0.579440 → 0.607466 m**; engine/lever **1.134159 → 1.160978 m**.
   No minima changed. Tail/spur **0.050000**, players' far deck end **0.453286**; the standing set's minimum
   island clearance **0.550049** also holds. All changed pins and their reason are in
-  [home-pin-deltas.json](rider-coach-r2b/resumed/home-pin-deltas.json). The Home level row passes.
+  home-pin-deltas.json (local-only: `rider-coach-r2b/resumed/home-pin-deltas.json`). The Home level row passes.
 - The integrated coach row now tests lateral track adjacency and longitudinal containment, naming the three
   known platform gaps. It fails High Gorge's tail/crossover minimum. Terminal variants and timber-only halt
   coverage were not finished before this second stop.
@@ -116,18 +116,18 @@ contain only two rider houses. Eight places have no additional riders to carry t
 The new cap-sensitive test puts **nine waiting**, boards **eight**, leaves **one**, then lands **72 Boogles**
 on that trip. It saves/reloads a copy and compares hashes every tick through arrival, also checking the
 rider ledger. It passes at cap eight and fails at cap four with **`36 !== 72`**.
-[Fare/test pass](rider-coach-r2b/resumed/trade-current.log),
-[old-cap expected failure in full](rider-coach-r2b/resumed/crowded-v56.log),
-[arrival/boarding trace](rider-coach-r2b/resumed/fare-events.log).
+Fare/test pass (local-only: `rider-coach-r2b/resumed/trade-current.log`),
+old-cap expected failure in full (local-only: `rider-coach-r2b/resumed/crowded-v56.log`),
+arrival/boarding trace (local-only: `rider-coach-r2b/resumed/fare-events.log`).
 Economy prototype and trade pages were regenerated from data.
 
 ### Golden causes
 
 All **53** stage hashes and their 1,200-tick continuations match the old v56 fixture exactly when cap,
 Home/Ring marks and extent are restored in memory. No stage differs for another rule change.
-[Controls, exact changed-stage lists](rider-coach-r2b/causal-stages.json),
-[old-value result](rider-coach-r2b/resumed/golden-baseline.json),
-[production result](rider-coach-r2b/resumed/golden-current.json),
+Controls, exact changed-stage lists (local-only: `rider-coach-r2b/causal-stages.json`),
+old-value result (local-only: `rider-coach-r2b/resumed/golden-baseline.json`),
+production result (local-only: `rider-coach-r2b/resumed/golden-current.json`),
 [control loader](../../dev/level/rider-coach-control.ts).
 
 - **Cap alone:** `yard-ready`, `yard-built`, `yard-wagon`, `yard-deck`; `house-built` changes only its continuation.
@@ -142,7 +142,7 @@ Re-pinned `railway-golden`, operations, M12, tick-order and tick-order-heads fix
 fixtures. Restored-v56 operations/tick-order/M12/host tests: **62 pass**. Current recording run: **63 pass**.
 The host trace still has **8,600 rows**. Its only changes are v57 namespace, dormant train `from`/`dest`
 1825→2165, derived hashes/checksums and encoded snapshot byte counts; **zero other fields changed**.
-[Host trace delta classification](rider-coach-r2b/resumed/host-trace-deltas.json).
+Host trace delta classification (local-only: `rider-coach-r2b/resumed/host-trace-deltas.json`).
 The final selected unit run verifies the re-pinned rule goldens; the full gate and remaining source-reader repairs stay red.
 
 ## Re-measured halt margins
@@ -151,7 +151,7 @@ Metres, rear/front whole-body margins; lateral column is nearest body-to-platfor
 The lateral check also verifies that the car is on the platform's stopping side. These are the completed
 rows, not a claim of complete terminal-state coverage. Quarry homeward retains its explicitly allowed
 old **−1.62 m** player overhang. Missing west stops are named above, not falsely marked beside the east deck.
-[Full numeric output](rider-coach-r2b/resumed/fit.json).
+Full numeric output (local-only: `rider-coach-r2b/resumed/fit.json`).
 
 | Halt | Players R/F | Coach R/F | Lateral P/R |
 | --- | ---: | ---: | ---: |
@@ -181,11 +181,11 @@ old **−1.62 m** player overhang. Missing west stops are named above, not false
 
 Home's dedicated row supplies its margins above. Queue calculation: two longest consists, spacing **27.40 m**,
 minimum body gap **0.929561 m** at leading s **85.00**, sampled every **0.25 m**, minimum **0.50 m**.
-A staged running-game queue is **not done**. [Home measurements](rider-coach-r2b/resumed/home.json).
+A staged running-game queue is **not done**. Home measurements (local-only: `rider-coach-r2b/resumed/home.json`).
 
 ## Inspected stills; clips and roof unfinished
 
-[Image gallery](rider-coach-r2b/resumed/gallery.html). All **18 delivered PNGs** were opened personally.
+Image gallery (local-only: `rider-coach-r2b/resumed/gallery.html`). All **18 delivered PNGs** were opened personally.
 The six original approved Home stills were also opened for comparison. Home geometry/framing matches that
 approved footprint; the actual coach has windows in place of the staged solid box. The square and coach
 cameras retain the approved pillar occlusion; they are comparison views, not counting views.
@@ -199,11 +199,11 @@ view. Empty is visibly empty from both sides. The close views expose the intende
 
 | Count | Outer game | Outer close | Island game | Island close |
 | --- | --- | --- | --- | --- |
-| 8 | [PNG](rider-coach-r2b/resumed/counts/8/c0-v0.png) | [PNG](rider-coach-r2b/resumed/counts/8/c1-v0.png) | [PNG](rider-coach-r2b/resumed/counts/8/c2-v0.png) | [PNG](rider-coach-r2b/resumed/counts/8/c3-v0.png) |
-| 3 | [PNG](rider-coach-r2b/resumed/counts/3/c0-v0.png) | [PNG](rider-coach-r2b/resumed/counts/3/c1-v0.png) | [PNG](rider-coach-r2b/resumed/counts/3/c2-v0.png) | [PNG](rider-coach-r2b/resumed/counts/3/c3-v0.png) |
-| 0 | [PNG](rider-coach-r2b/resumed/counts/0/c0-v0.png) | [PNG](rider-coach-r2b/resumed/counts/0/c1-v0.png) | [PNG](rider-coach-r2b/resumed/counts/0/c2-v0.png) | [PNG](rider-coach-r2b/resumed/counts/0/c3-v0.png) |
+| 8 | PNG (local-only: `rider-coach-r2b/resumed/counts/8/c0-v0.png`) | [PNG](rider-coach-r2b/resumed/counts/8/c1-v0.jpg) | PNG (local-only: `rider-coach-r2b/resumed/counts/8/c2-v0.png`) | [PNG](rider-coach-r2b/resumed/counts/8/c3-v0.jpg) |
+| 3 | PNG (local-only: `rider-coach-r2b/resumed/counts/3/c0-v0.png`) | [PNG](rider-coach-r2b/resumed/counts/3/c1-v0.jpg) | PNG (local-only: `rider-coach-r2b/resumed/counts/3/c2-v0.png`) | [PNG](rider-coach-r2b/resumed/counts/3/c3-v0.jpg) |
+| 0 | PNG (local-only: `rider-coach-r2b/resumed/counts/0/c0-v0.png`) | [PNG](rider-coach-r2b/resumed/counts/0/c1-v0.jpg) | PNG (local-only: `rider-coach-r2b/resumed/counts/0/c2-v0.png`) | [PNG](rider-coach-r2b/resumed/counts/0/c3-v0.jpg) |
 
-Home approved cameras: [square](rider-coach-r2b/resumed/home/c0-v0.png), [island](rider-coach-r2b/resumed/home/c1-v0.png), [table](rider-coach-r2b/resumed/home/c2-v0.png), [top](rider-coach-r2b/resumed/home/c3-v0.png), [players](rider-coach-r2b/resumed/home/c4-v0.png), [coach](rider-coach-r2b/resumed/home/c5-v0.png).
+Home approved cameras: [square](rider-coach-r2b/resumed/home/c0-v0.jpg), [island](rider-coach-r2b/resumed/home/c1-v0.jpg), [table](rider-coach-r2b/resumed/home/c2-v0.jpg), [top](rider-coach-r2b/resumed/home/c3-v0.jpg), players (local-only: `rider-coach-r2b/resumed/home/c4-v0.png`), coach (local-only: `rider-coach-r2b/resumed/home/c5-v0.png`).
 
 Capture health: WebGPU, positive completed-frame counts, no page/console/graphics errors in final captures.
 Initial count attempts rendered empty because frozen-camera captures had not recullled folk; those were
@@ -238,35 +238,35 @@ the actual standable surfaces must be checked before claiming whether the coach 
 - v56 accepted Stack-call control: pass; existing player-side gap confirmed, `railwayCheck` passes.
 - Causal seed controls: **53/53 exact baseline matches**; per-knob files retained.
 - Baseline operations/tick-order/M12/host trace: **62 pass, 0 fail**;
-  [full output](rider-coach-r2b/resumed/trace-baseline.log).
+  full output (local-only: `rider-coach-r2b/resumed/trace-baseline.log`).
 - Current trace/prefab recording: **63 pass, 0 fail**;
-  [full output](rider-coach-r2b/resumed/record-traces.log).
+  full output (local-only: `rider-coach-r2b/resumed/record-traces.log`).
 - Focused boarding/crowded-fare/payoff tests: **3 pass, 0 fail**.
 - Old-cap crowded-fare negative control: **expected fail `36 !== 72`**, full failure linked above.
 - Focused layout/cache/garage/Home tests: **22 pass, 1 fail** (old fitted Cars count); expectation corrected
-  afterwards, final gate below is authoritative. [Unabridged output](rider-coach-r2b/resumed/layout-unit.log).
+  afterwards, final gate below is authoritative. Unabridged output (local-only: `rider-coach-r2b/resumed/layout-unit.log`).
 - Focused geometry/route/trains tests: **133 pass, 13 fail**. One is the real Gorge minimum; others are old
   stop, signal, cycle and physical-origin/service-mark expectations. None suppressed.
-  [Every failure in full](rider-coach-r2b/resumed/geometry-tests.log).
+  Every failure in full (local-only: `rider-coach-r2b/resumed/geometry-tests.log`).
 - `npm run level-check`: **exit 1**, 19 reports; Home row passes, coach row fails:
   **`High Gorge: tail/crossover -3.1 m, minimum 0.3 m`**. The Ring/Pier report also fails
   **`FAIL  crossing clears the full stopped train by -2.6 m`** (minimum 0.60 m).
-  [Full output](rider-coach-r2b/resumed/level-check.log).
+  Full output (local-only: `rider-coach-r2b/resumed/level-check.log`).
 - An exploratory Gorge probe requiring an arriving wagon/long-boiler slot timed out after 5,000 ticks in
-  both worlds. [Both failures in full](rider-coach-r2b/resumed/gorge-longest-slot-attempt.txt).
+  both worlds. Both failures in full (local-only: `rider-coach-r2b/resumed/gorge-longest-slot-attempt.txt`).
   The delivered probe therefore explicitly separates the accepted shorter train's terminal coordinate
   from the longest-consist geometric measurement; it does not claim that live WS arrival was observed.
 - Final count captures and Home approved-camera captures: pass as stills, all opened, limits above.
 - Formatting/lint initial run: five unused imports after fixture changes; removed. Full initial diagnostic
-  retained in [format-lint.log](rider-coach-r2b/resumed/format-lint.log).
-- Earlier stop's full failing ship-check outputs remain [early](rider-coach-r2b/early-ship-check.txt) and
-  [first-stop final](rider-coach-r2b/final-ship-check.txt). They are historical, not this head's result.
+  retained in format-lint.log (local-only: `rider-coach-r2b/resumed/format-lint.log`).
+- Earlier stop's full failing ship-check outputs remain early (local-only: `rider-coach-r2b/early-ship-check.txt`) and
+  first-stop final (local-only: `rider-coach-r2b/final-ship-check.txt`). They are historical, not this head's result.
 
 Final validation command: **`node dev/ship-check.ts` — exit 1**. Registry, changed-file lint (zero problems),
 TypeScript and prefab freshness pass. **1,931 tests: 1,843 pass, 22 fail, 65 skipped, one todo**; test runtime
 80.29 seconds. Re-pinned rule-golden tests pass; outstanding failures include the real Gorge minimum,
 old stop/cycle/headway fixtures, rail-map freshness, sim re-export census and a prefab seat fixture.
-[Complete output, all 22 failures quoted unabridged](rider-coach-r2b/resumed/final-ship-check.log).
+Complete output, all 22 failures quoted unabridged (local-only: `rider-coach-r2b/resumed/final-ship-check.log`).
 No failures were suppressed. Report/evidence bookkeeping and the requested local commit follow this last
 validation command; no further implementation changes follow it.
 

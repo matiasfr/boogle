@@ -1,4 +1,0 @@
-const {line2World,line2Y}=await import('/src/entities/railway/line2-path.ts');
-const middle=line2World(66,-4,{x:0,z:0}),c=line2World(66,28,{x:0,z:0});
-window.__debugCam.set([c.x,line2Y(66)+35,c.z],[middle.x,line2Y(66),middle.z],65);
-window.__warp.pause();await window.__warp.step(2);window.__warp.go(1);

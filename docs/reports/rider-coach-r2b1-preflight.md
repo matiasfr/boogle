@@ -46,8 +46,8 @@ clearance and walking review, and is **not validated or applied**.
 
 The process-only probe used the production `q7Spot`, `lineAt`, `haltCrossing`, `RAIL_LINES` and `TRAIN_EXTENT`,
 and the shelf dimensions read from its renderer. It temporarily set the in-memory crossing operand to 708.4,
-then restored it; no source geometry was edited. [Raw measurements](rider-coach-r2b1/preflight.json).
-The local probe is retained at [preflight.ts](../../.look/rider-coach-r2b1/preflight.ts); reproduce with
+then restored it; no source geometry was edited. Raw measurements (local-only: `rider-coach-r2b1/preflight.json`).
+The local probe is retained at preflight.ts (local-only: `../../.look/rider-coach-r2b1/preflight.ts`); reproduce with
 `node --import ./dev/sim/hooks.ts .look/rider-coach-r2b1/preflight.ts` under Node 26.
 
 | Quantity | Proposed measurement | Required minimum / intended pin |
@@ -78,13 +78,13 @@ a server-owned catalog.
 
 ## Evidence opened
 
-- [Main, overhead over Q7 and the crossing](rider-coach-r2b1/main-q7-deck.png): unmodified `a32bc4362`,
+- [Main, overhead over Q7 and the crossing](rider-coach-r2b1/main-q7-deck.jpg): unmodified `a32bc4362`,
   `deck-laid`, camera `[1404,45,-334]`, target `[1404,24.3,-337]`, 1280×900. Opened: the old crossing meets
   the equal-length ramps; Q7's frame and personal box stand on the east deck; the shelf and rack are absent.
   This is a diagnostic before still, not the requested full s 700–745 before/after pair.
-- [Motion sheet](../../.look/rider-coach-r2b1/main-q7-deck-motion.png): opened; same static framing with the
+- Motion sheet (local-only: `../../.look/rider-coach-r2b1/main-q7-deck-motion.png`): opened; same static framing with the
   player standing beside the frame. It proves no walking route or motion quality.
-- [Capture verdict](rider-coach-r2b1/capture-verdict.json): pass, WebGPU, advancing completed frames,
+- Capture verdict (local-only: `rider-coach-r2b1/capture-verdict.json`): pass, WebGPU, advancing completed frames,
   no page/console/graphics errors. The exact capture command is in the verdict.
 
 No after stills, lever-to-Home view, east-end eye view, standing players' car view, south approach view,
@@ -101,7 +101,7 @@ the return route and homeward boarding remain unverified.
 - Targeted `npm run look`: passed capture-health checks; inspection qualification above.
 - `node dev/ship-check.ts` on the report/evidence diff: passed (exit 0): registry, 0 lint files,
   typecheck, 19 affected test files / 165 tests passed, 0 failures; 27.20 s.
-  [Full log](../../.look/rider-coach-r2b1/report-ship-check.log).
+  Full log (local-only: `../../.look/rider-coach-r2b1/report-ship-check.log`).
 - `git diff --check`: passed.
 - **Not run after stopping:** implementation `npm run level-check`; Pier tests and their complete files;
   `npm run loop -- run`; Pier-stage checkpoints; production bot's Q7 work, lever and homeward boarding;
