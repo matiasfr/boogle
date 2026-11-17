@@ -83,11 +83,12 @@ export function createModuleResolver(root: string) {
   });
   const cache = new Map<string, string | null>();
   // A pathname is not file identity on macOS (or through a hard link). Canonicalize protected files by inode.
+  // Stat as bigint: an NTFS file id is above 2^53, and as a number two files can round to the same id.
   const identities = new Map<string, string>();
   for (const file of [...new Set([...Object.values(CAPABILITIES).flat(), ...Object.values(PREFAB_DOORS).flat()])]) {
     const absolute = path.join(root, file);
     if (fs.existsSync(absolute)) {
-      const st = fs.statSync(absolute);
+      const st = fs.statSync(absolute, { bigint: true });
       identities.set(`${st.dev}:${st.ino}`, file);
     }
   }
@@ -99,7 +100,7 @@ export function createModuleResolver(root: string) {
     const result = resolver.sync(path.dirname(path.join(root, file)), request);
     let target: string | null = null;
     if (result.path) {
-      const st = fs.statSync(result.path);
+      const st = fs.statSync(result.path, { bigint: true });
       target =
         identities.get(`${st.dev}:${st.ino}`) ??
         path.relative(root, fs.realpathSync(result.path)).split(path.sep).join('/');
