@@ -103,7 +103,9 @@ fi
 if [ "$dry" = 1 ]; then echo "ship-queue: dry run, checks passed; nothing locked or shipped."; exit 0; fi
 # The trusted checkout must be a checkout of its own with the ship script, or nothing could ship: never report success.
 if ! [ -f "$trusted/dev/codex/ship-branch.sh" ] ||
-  [ "$(git -C "$trusted" rev-parse --show-toplevel 2>/dev/null)" != "$(cd "$trusted" && pwd -P)" ]; then
+  # Both sides go through cd and pwd -P: on Windows git prints C:/... where Git Bash's pwd prints /c/....
+  [ "$(cd "$(git -C "$trusted" rev-parse --show-toplevel 2>/dev/null || echo /nonexistent)" 2>/dev/null && pwd -P)" != \
+    "$(cd "$trusted" && pwd -P)" ]; then
   echo "ship-queue: no trusted checkout at $trusted: git -C $main worktree add --detach $trusted origin/main"
   exit 1
 fi
