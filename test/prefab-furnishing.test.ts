@@ -634,7 +634,8 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     fs.readFileSync('src/place/building-plans.ts', 'utf8'),
     { THREE, ...boxes },
   );
-  const plots = ROOM_PLOTS;
+  // Keep this historical three-room golden unchanged when the town gains another room.
+  const plots = { house: ROOM_PLOTS.house, shop: ROOM_PLOTS.shop, museum: ROOM_PLOTS.museum };
   const added: THREE.Object3D[] = [],
     cleanups: (() => void)[] = [],
     sitePlans: unknown[] = [],
@@ -655,7 +656,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       assert.ok(activeBodies.delete(b));
     },
   };
-  const up = { house: true, shop: false, museum: false };
+  const up = { house: true, shop: false, museum: false, gate: true };
   const player = { body: null as { interpolatedPosition: { x: number; y: number; z: number } } | null };
   const camera = new THREE.PerspectiveCamera();
   const cam = { pitch: 0, yaw: 0 };
@@ -744,6 +745,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       houseShell: JSON.parse(fs.readFileSync('content/built/levels/room-house.json', 'utf8')),
       shopShell: JSON.parse(fs.readFileSync('content/built/levels/room-shop.json', 'utf8')),
       museumShell: JSON.parse(fs.readFileSync('content/built/levels/room-museum.json', 'utf8')),
+      gateShell: JSON.parse(fs.readFileSync('content/built/levels/room-gate.json', 'utf8')),
       instantiate: (...args: Parameters<typeof runtime.instantiate>) => {
         const instance = runtime.instantiate(...args);
         instances.push(instance);
@@ -1083,6 +1085,7 @@ test('site body records retain the old construction, ejection, snap and teardown
     const sites = sourceModule<typeof import('../src/place/sites.ts')>(fs.readFileSync('src/place/sites.ts', 'utf8'), {
       THREE,
       PLAYER_R: 0.45,
+      HEAD_OFFSET: 0.8,
       ROOM_GROUP: 8,
       me: { body: player },
       H: ground,
@@ -1209,7 +1212,15 @@ test('site body records retain the old construction, ejection, snap and teardown
   }
   const recorded = run();
   const siteFixture = 'test/fixtures/prefab-site-lifecycle.json';
-  if (process.env.GOLDEN === '1') fs.writeFileSync(siteFixture, JSON.stringify(recorded) + '\n');
+  // This is the historical lifecycle fixture; the intentional ordering change is specified below.
   const old = JSON.parse(fs.readFileSync(siteFixture, 'utf8'));
+  // D1: retain every old lifecycle event and state, but clearance now precedes collider activation.
+  for (let i = 0; i < old.events.length; i++) {
+    if (old.events[i][0] !== 'teleport') continue;
+    let before = i;
+    while (before > 0 && old.events[before - 1][0] === 'add') before--;
+    assert.ok(before < i, 'the fixture pins the former add-before-clear order');
+    old.events.splice(before, 0, old.events.splice(i, 1)[0]);
+  }
   prefabGolden(recorded, old, 'record site lifecycle');
 });

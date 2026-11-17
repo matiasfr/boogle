@@ -235,7 +235,7 @@ function bake() {
   );
   // Meet each 14 cm slab at its door without lifting the room's centre datum or the ring road.
   // The shallow threshold stays below the interior floor and fades to level within the 2 m setback.
-  for (const p of Object.values(ROOM_PLOTS)) {
+  for (const [id, p] of Object.entries(ROOM_PLOTS)) {
     const r = Math.max(p.w, p.d) / 2 + 4,
       c = Math.cos(p.yaw),
       s = Math.sin(p.yaw);
@@ -253,7 +253,11 @@ function bake() {
           dz = cellZ(j) - p.z;
         const across = dx * c - dz * s,
           out = dx * s + dz * c - p.d / 2;
-        const weight = smoothstep(2.4, 1.6, Math.abs(across)) * smoothstep(-2.8, -1.6, out) * smoothstep(2, 0, out);
+        // A shallow cottage must not grade its own centre up: the shell takes its floor datum there.
+        const weight =
+          smoothstep(id === 'gate' ? 2.3 : 2.4, 1.6, Math.abs(across)) *
+          smoothstep(id === 'gate' ? -1.2 : -2.8, id === 'gate' ? -1 : -1.6, out) *
+          smoothstep(2, id === 'gate' ? 1 : 0, out);
         if (!weight) continue;
         const k = at(i, j);
         heights[k] = heights[k]! + (VILLAGE.y + ROOM_FLOOR - 0.015 - heights[k]!) * weight;

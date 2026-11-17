@@ -86,12 +86,15 @@ export async function createTownView(read: () => TownLook | null) {
     money: () => score,
     hush: () => conversation.open || rewardUp,
   };
-  // The house stands from the start; Fine Prices and the museum open on the first path (T5, T3). The shop needs this
+  // The house and gate cottage stand from the start; Fine Prices and the museum open on the first path (T5, T3). The shop needs this
   // player's wardrobe, which the wardrobe entity starts on the production railway.
   const clothes = wardrobe();
   const rooms = roomKit.createRooms(owner, {
     up: (id) =>
-      id === 'house' || (id === 'museum' && env.has('path')) || (id === 'shop' && !!clothes && env.has('path')),
+      id === 'house' ||
+      id === 'gate' ||
+      (id === 'museum' && env.has('path')) ||
+      (id === 'shop' && !!clothes && env.has('path')),
   });
   rooms.stakeBoard(rooms.rooms.shop, lines.BOARDS.shopPlot);
   rooms.stakeBoard(rooms.rooms.museum, lines.BOARDS.museumPlot);
@@ -172,7 +175,7 @@ export async function createTownView(read: () => TownLook | null) {
   const appendTargets = (some: Interactable[]) => {
     for (const target of some) targets.push(target);
   };
-  const room = (id: 'house' | 'shop' | 'museum') => ({ up: rooms.rooms[id].up, ready: rooms.rooms[id].ready });
+  const room = (id: keyof typeof rooms.rooms) => ({ up: rooms.rooms[id].up, ready: rooms.rooms[id].ready });
   return {
     root: owner.root,
     release: plots.release,
@@ -217,7 +220,7 @@ export async function createTownView(read: () => TownLook | null) {
       newest: newestTownFact(facts),
       level: townLevel(facts),
       population: townPopulation(facts),
-      rooms: { house: room('house'), shop: room('shop'), museum: room('museum') },
+      rooms: { house: room('house'), shop: room('shop'), museum: room('museum'), gate: room('gate') },
       indoors: { room: rooms.indoors.room?.id ?? null, inside: rooms.indoors.inside?.id ?? null },
       houseStage: house.stage(),
       museumBits: museum.shown(),

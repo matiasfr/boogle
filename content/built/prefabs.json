@@ -4219,6 +4219,280 @@
         }
       }
     },
+    "town.room-gate-hulls-0": {
+      "colliders": [],
+      "key": "town.room-gate-hulls-0",
+      "layout": {
+        "index": 0,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-hulls-1": {
+      "colliders": [],
+      "key": "town.room-gate-hulls-1",
+      "layout": {
+        "index": 1,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-hulls-2": {
+      "colliders": [],
+      "key": "town.room-gate-hulls-2",
+      "layout": {
+        "index": 2,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-hulls-3": {
+      "colliders": [],
+      "key": "town.room-gate-hulls-3",
+      "layout": {
+        "index": 3,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-hulls-4": {
+      "colliders": [],
+      "key": "town.room-gate-hulls-4",
+      "layout": {
+        "index": 4,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-hulls-6": {
+      "colliders": [],
+      "key": "town.room-gate-hulls-6",
+      "layout": {
+        "index": 6,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-hulls-7": {
+      "colliders": [],
+      "key": "town.room-gate-hulls-7",
+      "layout": {
+        "index": 7,
+        "kind": "room-hull",
+        "phase": "hulls",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-poles-0": {
+      "colliders": [],
+      "key": "town.room-gate-poles-0",
+      "layout": {
+        "index": 0,
+        "kind": "room-hull",
+        "phase": "poles",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-poles-1": {
+      "colliders": [],
+      "key": "town.room-gate-poles-1",
+      "layout": {
+        "index": 1,
+        "kind": "room-hull",
+        "phase": "poles",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-poles-2": {
+      "colliders": [],
+      "key": "town.room-gate-poles-2",
+      "layout": {
+        "index": 2,
+        "kind": "room-hull",
+        "phase": "poles",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-poles-3": {
+      "colliders": [],
+      "key": "town.room-gate-poles-3",
+      "layout": {
+        "index": 3,
+        "kind": "room-hull",
+        "phase": "poles",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-poles-4": {
+      "colliders": [],
+      "key": "town.room-gate-poles-4",
+      "layout": {
+        "index": 4,
+        "kind": "room-hull",
+        "phase": "poles",
+        "source": "town.room-gate-shell"
+      },
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "town.room-gate-proxy-0": {
+      "colliders": [],
+      "key": "town.room-gate-proxy-0",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 4.4,
+          "high": 3,
+          "index": 0,
+          "w": 5.4
+        }
+      }
+    },
+    "town.room-gate-proxy-1": {
+      "colliders": [],
+      "key": "town.room-gate-proxy-1",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 4.4,
+          "high": 3,
+          "index": 1,
+          "w": 5.4
+        }
+      }
+    },
+    "town.room-gate-proxy-2": {
+      "colliders": [],
+      "key": "town.room-gate-proxy-2",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 4.4,
+          "high": 3,
+          "index": 2,
+          "w": 5.4
+        }
+      }
+    },
+    "town.room-gate-proxy-3": {
+      "colliders": [],
+      "key": "town.room-gate-proxy-3",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 4.4,
+          "high": 3,
+          "index": 3,
+          "w": 5.4
+        }
+      }
+    },
+    "town.room-gate-proxy-4": {
+      "colliders": [],
+      "key": "town.room-gate-proxy-4",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 4.4,
+          "high": 3,
+          "index": 4,
+          "w": 5.4
+        }
+      }
+    },
+    "town.room-gate-proxy-5": {
+      "colliders": [],
+      "key": "town.room-gate-proxy-5",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-proxy",
+        "params": {
+          "d": 4.4,
+          "high": 3,
+          "index": 5,
+          "w": 5.4
+        }
+      }
+    },
+    "town.room-gate-shell": {
+      "colliders": [],
+      "key": "town.room-gate-shell",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.room-shell",
+        "params": {
+          "spec": {
+            "d": 4.4,
+            "high": 3,
+            "post": "#7f5630",
+            "postPalette": "timber",
+            "rise": 2.5,
+            "roof": "#b99a60",
+            "smoke": true,
+            "w": 5.4,
+            "wall": "#e8dcc0",
+            "wallPalette": "walls"
+          }
+        }
+      }
+    },
     "town.room-house-hulls-0": {
       "colliders": [],
       "key": "town.room-house-hulls-0",

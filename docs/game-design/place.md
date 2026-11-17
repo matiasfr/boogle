@@ -1805,6 +1805,8 @@ signs stay retired. No copy, gameplay, shared state, save, water or sky paramete
 
 ## The town you can go into
 
+**The gate cottage opens (17 November 2026, home-flip D1).** The Round's gate cottage now stands once at its existing row and facing, open from arrival: a bare 5.4 × 4.4 m room with the same permanently open doorway, local cutaway and indoor camera as the other rooms, with no furniture, resident, prompt or new copy. Its shallow threshold meets the floor, each local player is cleared before its solids switch on, and the yard find behind it stays put; view only, with no shared rule or save change.
+
 Nell stands clear of the station-whistle stand's approach. Previously her closer Talk target won over Try on from the aisle; the whistle's equip/keep/remove state worked when approached from the side. Its train unlock remains unchanged, and this fix does not change wearable geometry.
 
 Corner posts sink with whichever adjacent wall is cut away, using the same reveal timing and easing. Roof lift, the retained bottom course, wall collisions and shadow proxies are unchanged.

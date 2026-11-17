@@ -29,7 +29,7 @@ import {
 } from '../entities/railway/path-refuge.ts';
 import { merged } from '../render/part-geometry.ts';
 import type { OwnedView } from '../render/owned-view.ts';
-import { TOWN, toWorld, FORGE } from './layout.ts';
+import { TOWN, ROOM_PLOTS, toWorld, FORGE } from './layout.ts';
 import { TOWN_CENTRE, slotPoint } from './town-plan.ts';
 import { feet, outOf, underway, type Foot, type Site } from './sites.ts';
 
@@ -209,8 +209,8 @@ function make(job: Job, x: number, z: number, extra?: Partial<Guy>): Guy {
   coats.setColorAt(g.k, COLORS[g.k % COLORS.length]!);
   return g;
 }
-// Doors: the cottages'.
-const DOORS = TOWN.start.map((p) => {
+// The cottage's doorway stays the villagers' arrival point after its sealed shell becomes a room.
+const DOORS = [ROOM_PLOTS.gate, ...TOWN.start].map((p) => {
   const yaw = p.yaw ?? 0,
     d = (p.d ?? 4) / 2 + 1.2;
   return { x: X(p.x) + Math.sin(yaw) * d, z: p.z + Math.cos(yaw) * d };
