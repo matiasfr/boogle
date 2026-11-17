@@ -4,6 +4,10 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-17 · confirm the build-errand freight-stop rule ([entry](#d-2026-11-17-build-errand-freight-stop))
+
+- 2026-11-17 · batch-3 calls confirmed as logged ([entry](#d-2026-11-17-batch3-confirmed))
+
 - 2026-11-16 · The ranked bulk calls and the listed confirm recommendations are confirmed as logged; their full words are in the archive ([entry](#d-2026-11-16-ranked-calls-confirmed))
 - 2026-11-16 · RW-007 is confirmed as a teaching beat ([entry](#d-2026-11-16-loader-house-teaching-beat)) _The [first-town lesson answer](#d-2026-11-16-first-town-lesson-answers) specifies plot 2 as a loader yard with no riders._
 - 2026-11-16 · RW-013 is confirmed; its price default is now 50%, as confirmed on 16 November ([entry](#d-2026-11-16-distance-fares-price-default))
@@ -44,6 +48,10 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Kept from SETTLED:  _("every system is ignorable": replaced for the rail loop by the audit picks ("Skipping the rail"))_ ([entry](#d-undated-kept-from-settled))
 
 ## Decided
+
+- <a id="d-2026-11-17-build-errand-freight-stop"></a>**2026-11-17, confirm the build-errand freight-stop rule** (owner, 17 November 2026, review page: "the others I accept all"). Confirmed with the owner’s exact note: "This is fine, but unsure if we need that rule". The later 12 November amendment still governs: a leg kit waiting for its unopened railhead is no errand. The [batch-3 report](reports/agent-call-batch3-answers-applied-2026-11-17.md#build-errand-rule-finding) answers the doubt read-only and recommends keeping the rule.
+
+- <a id="d-2026-11-17-batch3-confirmed"></a>**2026-11-17, batch-3 calls confirmed as logged** (owner, 17 November 2026, review page: "the others I accept all"). The confirmed rows in this topic in the [batch-3 archive](decisions-archive.md#batch3-rewards) are confirmed word for word, subject to later explicit owner decisions. Proposed work is not claimed built.
 
 - <a id="d-2026-11-16-first-town-lesson-answers"></a>**2026-11-16, the first town as a lesson: the designer's four questions answered** (owner, shown the [designer's review](plans/town-choice.md#designer-review-16-november-the-first-town-as-a-lesson) and its four questions, each recommended yes): "I take your recs on the four questions". So: (1) plot 2 becomes the loader yard, which brings no riders and whose arm loads footings onto every line 2 train, as the first island's lesson that a town building can help the line, with no choice asked; this answers [town-economy-visible](plans/town-economy-visible.md#owner-questions)'s question 3. (2) Each passenger train's car carries 8 riders beside the four player seats and comes with the train; added rider cars are a later hub's garage pick ([rider seats](decisions-rail.md#d-2026-11-16-rider-seats-are-not-player-seats)). (3) Plot 3's base goes from 3,000 to 800, so the third building costs 1,600 at the room's prices. (4) The choice plan's questions 2 to 4 and the [scarce-plots brief](brainstorms/town-plots-scarce.md)'s four are dropped. Numbers are stand-ins, as all Boogle prices are. Not answered here: the placeholder strings "Every train" and "Loader yard", and the residents' "new neighbours" lines firing on the yard.
 - <a id="d-2026-11-16-ranked-calls-confirmed"></a>**2026-11-16, ranked calls confirmed as logged** (owner, 16 November 2026, review page: "Accept all remaining", none pulled out; in chat: "I take the recommendation for all the other 14 and 24 calls"). The bulk rows and the confirm recommendations below are confirmed exactly as logged in the [archive](decisions-archive.md). The original Call, Where, By and Why this pick cells remain the rule; this confirmation does not turn proposed or measured work into an as-built claim. IDs from the [ranking](reports/agent-calls-ranking-2026-11-16.json) and [baseline triage](reports/agent-calls-triage-2026-11-16.md): RW-001, RW-002, RW-006, RW-011, RW-012, RW-014, RW-015, RW-016, RW-017, RW-018, RW-019, RW-020, RW-022, RW-023, RW-024, RW-025, RW-026, RW-027, RW-028, RW-030, RW-031, RW-034, RW-036, RW-037, RW-038, RW-039, RW-042, RW-044, RW-046, RW-047, RW-048, RW-049, RW-050, RW-051.

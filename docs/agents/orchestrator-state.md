@@ -243,10 +243,10 @@ From 5–7 November and not on the roadmap anywhere else, so kept here; check ea
 
 ## Open owner questions
 
+Answered: [the town’s first choice, 16 November](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers); [the first line, 17 November](../decisions-core-loop.md#d-2026-11-17-first-line-no-fork).
+
 **From 16 November, waiting on him** (the heartbeat starts nothing on these):
 
-- **The town's first choice** ([town-choice](../plans/town-choice.md), measured): the ruled version fails (the second plot's house with the loader always wins, and the loader as named saves nothing). The planner's replacement, a loader yard at 400 that lets every line 2 train carry footings, saves real time (Ring Island 339 s to 203 s) but both orders end in the same town, so it is an order, not a decision. Recommended: keep the loader yard as an upgrade, do not call it the choice, and run one light brainstorm on scarce plots (eight plots, more things worth building than plots), then the designer, before any build. The alternative: ship the loader yard now for its two minutes at the ring. Either changes the 16 November ruling ("the loader on the second plot's house"), so it is his.
-- **The first line:** no fork, or build a crossing (the backlog's blocked P1 row). Recommended: no fork.
 
 
 From 5–6 November; drop each when answered.

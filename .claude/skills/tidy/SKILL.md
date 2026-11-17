@@ -42,6 +42,8 @@ Report and fix:
 - research docs missing from `docs/research/README.md` or without a top block;
 - `docs/agent-calls.md`: count the open calls (one table per topic) and list any older than a week for the owner; `npm run decisions` must pass (no ruled row left in the live tables, every entry with its Current rules line).
 
+Once a week, the designer ranks open `docs/agent-calls.md` calls into decide / flags / bulk, with a recommendation each; the orchestrator republishes the owner’s review page. Record the last review on the state file’s Tidy line ([owner decision](../../../docs/decisions-process.md#d-2026-11-17-weekly-agent-calls-review)).
+
 Keep each fix small and factual; don't rewrite decisions or The Boogler's copy.
 
 ## 4. Memory

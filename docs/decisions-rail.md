@@ -4,6 +4,14 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-17 · retire the completed passenger-car previz call ([entry](#d-2026-11-17-retire-14))
+
+- 2026-11-17 · retire the interim deck-standing riders ([entry](#d-2026-11-17-retire-13))
+
+- 2026-11-17 · retire the 28.4 m Home track extension ([entry](#d-2026-11-17-retire-6))
+
+- 2026-11-17 · batch-3 calls confirmed as logged ([entry](#d-2026-11-17-batch3-confirmed))
+
 - 2026-11-16 · Home keeps today's track for the coach train: the engine may stand past the platform end on the curve, over the cart's idle junction; whether line 2's trains grow further is not decided now; the coach shows four riders a side ([entry](#d-2026-11-16-home-keeps-its-track))
 - 2026-11-16 · The riders' car is the panelled coach (candidate A), 2.9 by 1.6 m directly behind the players' car; Home and Ring Island are reworked so the longer train fits, before the coach is built; for now the rider car does not count toward a boiler's car allowance ([entry](#d-2026-11-16-rider-coach-a-and-rework))
 - 2026-11-16 · Home's seven bays stand; Port Quay's five-bay rotunda stands complete at arrival, with the other logged differences retained ([entry](#d-2026-11-16-batch2-port-quay-five-bays))
@@ -150,6 +158,14 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · The rail spike comes first, and its job is to prove that riding feels good. ([entry](#d-undated-the-rail-spike-comes-first))
 
 ## Decided
+
+- <a id="d-2026-11-17-retire-14"></a>**2026-11-17, retire the completed passenger-car previz call** (owner, 17 November 2026, review page: "the others I accept all"). Completed: the owner picked [coach A](decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework).
+
+- <a id="d-2026-11-17-retire-13"></a>**2026-11-17, retire the interim deck-standing riders** (owner, 17 November 2026, review page: "the others I accept all"). Superseded by the [dedicated coach](decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework): four countable places now, eight in the coach.
+
+- <a id="d-2026-11-17-retire-6"></a>**2026-11-17, retire the 28.4 m Home track extension** (owner, 17 November 2026, review page: "the others I accept all"). Superseded by [Home keeps today’s track](decisions-rail.md#d-2026-11-16-home-keeps-its-track).
+
+- <a id="d-2026-11-17-batch3-confirmed"></a>**2026-11-17, batch-3 calls confirmed as logged** (owner, 17 November 2026, review page: "the others I accept all"). The confirmed rows in this topic in the [batch-3 archive](decisions-archive.md#batch3-rail) are confirmed word for word, subject to later explicit owner decisions. Proposed work is not claimed built.
 
 - <a id="d-2026-11-16-home-keeps-its-track"></a>**2026-11-16, Home keeps today's track; trains' further growth undecided; four riders a side** (owner, asked three questions with a recommendation each, after the planner re-judged Home on merit in [rider-coach](plans/rider-coach.md#home-on-merit-a-b-and-c-16-november): "I'm ok with your recs for 1-3"). So: (1) whether line 2's trains ever grow past the coach train is not decided now; Home stays sized for the coach train, and whichever plan lengthens trains brings Home's change and the line-wide spacing with it. (2) At Home the coach train's engine may stand just past the platform end, 3.35 m round the curve and 0.31 m off line, over the cart's idle junction (the plan's option A); the relay (R1c) is not built. The recommendation he accepted was "yes, but judge it on stills": the stills are owed to him and he may reverse this on seeing them. _Confirmed the same day: shown the [stills](world/home-coach-train.html) and the relay explained, he said "Keep today's"._ This changes [the same day's](#d-2026-11-16-rider-coach-a-and-rework) point 2, where Home was to be reworked: Ring Island's stop still moves with the coach, Home's track does not. (3) From one side the coach shows four riders; the other four sit across the aisle and show from the other side, filling alternate sides.
 - <a id="d-2026-11-16-rider-coach-a-and-rework"></a>**2026-11-16, the rider coach: the panelled coach, the Home and Ring rework, and the car allowance** (owner, shown the [coach previz](world/rider-coach.html) and the [fit check](research/rider-car-fit.md), and asked three questions: which coach, A, B or C, with A suggested; go ahead with the Home and Ring rework, recommended yes as its own measured step before any coach art; does the rider car count toward a boiler's car allowance, recommended that it does not): "1. A 2. Yes. 3. Yes for now". Asked which way 3 went, he chose "Does not count (Recommended)". So: (1) the riders' car is candidate A, the panelled four-wheel coach; the orchestrator's suggestions that came with it, not his words: windows built unglazed so the riders show, and the fit check's 2.9 by 1.6 m directly behind the players' car. (2) Home's line 2 halt and Ring Island are reworked so the longest train with the coach fits (the fit check's fixes: both stop marks about 3.4 m forward, Home's straight extended and its cart-link points relaid), planned and proven before the coach is built. (3) For now the rider car does not count toward a boiler's car allowance: it comes with every passenger train, so the allowances read one higher and Strong's extra car stays a cargo benefit; this adjusts "a boiler sets top speed and how many cars" (10 November) and is his to revisit.
