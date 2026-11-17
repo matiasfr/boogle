@@ -161,7 +161,7 @@ export function wagonLook(layout: number | Consist, crated = true, owner?: Owned
   return {
     cars,
     chimneyTop,
-    step: animate(cars, bodies, [locoWheels, ...trailerWheels], gear, cars[roleIndex(consist, 'engine')]!),
+    step: animate(cars, bodies, [locoWheels, ...trailerWheels], gear, roleIndex(consist, 'engine')),
   };
 }
 
@@ -185,9 +185,8 @@ function animate(
   bodies: THREE.Object3D[],
   wheelSets: THREE.Mesh[][],
   gear: Gear[],
-  engineCar: THREE.Object3D,
+  engineIndex: number,
 ) {
-  const engineIndex = cars.indexOf(engineCar);
   const radius = wheelSets.map((ws) => (ws[0]!.geometry as THREE.CylinderGeometry).parameters.radiusTop);
   const angle = cars.map(() => 0);
   const last = cars.map(() => new THREE.Vector3(NaN, 0, 0));
@@ -209,7 +208,7 @@ function animate(
       last[n]!.copy(at);
       angle[n]! += ds / radius[n]!;
       for (const w of wheelSets[n]!) w.rotation.x = angle[n]!;
-      if (car === engineCar) {
+      if (n === engineIndex) {
         const v = damp(speed, ds / dt, 0.05, dt);
         accel = damp(accel, (v - speed) / dt, 0.08, dt);
         speed = v;
