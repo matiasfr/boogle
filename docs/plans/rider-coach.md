@@ -197,11 +197,18 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   receipts are linked in the report; level-check, loop and ship-check pass, goldens unchanged. Steps lower and fold
   up in .25s; 481 stage frames, zero outliers. **Riders still appear by count, not a door-walk animation**. This is the requested R3 art scope;
   the earlier “riders through the doors” wording is not claimed complete. R4 and owner art acceptance remain open.
-- [ ] **R4. Evidence and checkpoint (S).** Runner: Codex gpt-6.1-sol medium; the main session opens the media.
+- [x] **R4. Evidence and checkpoint (S).** Runner: Codex gpt-6.1-sol medium; the main session opens the media.
   `npm run check:full`; `npm run loop -- run`; `npm run test:net`; stills of each halt with the art; **real-time
   clips**: riders boarding and alighting at Home and at the Pier; a player walking the moved Pier crossing and ramp
   onto the west platform and boarding a homeward coach train; the wagon's long train arriving at High Gorge and
   turning with no car twitching. `place.md`'s train section gains the coach; the backlog row updated.
+  **R4 runner as built, 16 November:** #1995 modelled coach, v57; 53 host checkpoints, loop,
+  two-player T2, world-inputs, town-buy, check:full, 408 server and 208 network checks, and level-check pass.
+  Fixed occupancy/standing views and real-time recordings are in the [R4 report](../research/rider-coach-r4.md).
+  Riders still pop into seats. No device tested; display smoothness, shimmer, brief turn twitch and player-input
+  boarding after the Pier walk remain unverified. The checkbox records the runner checkpoint, not owner art acceptance.
+  Fleet timing acceptance failed (two console 404s on both builds; CPU timings invalid); provisional GPU numbers
+  and local raw paths are reported without game fixes.
 
 <a id="r2b-audit"></a>
 ## The tail and nose audit (16 November)
