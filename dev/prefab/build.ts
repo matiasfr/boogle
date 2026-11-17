@@ -13,7 +13,9 @@ import { rotundaContent } from './rotunda.ts';
 const root = path.resolve(import.meta.dirname, '../..');
 const prefabs: PrefabDef[] = [],
   levels: LevelDef[] = [];
-for (const file of fs.globSync('src/content/{prefabs,levels}/*.ts', { cwd: root }).sort()) {
+// Forward slashes on Windows too (globSync joins with path.sep), so the prefabs/levels split below matches.
+const sources = fs.globSync('src/content/{prefabs,levels}/*.ts', { cwd: root }).map((f) => f.split(path.sep).join('/'));
+for (const file of sources.sort()) {
   const source = (await import(pathToFileURL(path.join(root, file)).href)) as {
     prefabs?: PrefabDef[];
     levels?: LevelDef[];

@@ -2,6 +2,7 @@
 // node dev/ci/unit-weights.ts --scale=1.5 .look/evidence/my-run/shard*.log
 import '../node-version.ts';
 import fs from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const args = process.argv.slice(2);
@@ -12,7 +13,8 @@ if (!logs.length || !Number.isFinite(scale) || scale <= 0)
   throw new Error('usage: node dev/ci/unit-weights.ts [--scale=1.5] <shard.log>...');
 const target = new URL('./unit-weights.json', import.meta.url);
 const weights = JSON.parse(fs.readFileSync(target, 'utf8')) as Record<string, number>;
-const discovered = new Set(fs.globSync('test/**/*.test.ts'));
+// Forward slashes on Windows too, as the unit reporter prints them.
+const discovered = new Set(fs.globSync('test/**/*.test.ts').map((f) => f.split(path.sep).join('/')));
 const measured = new Map<string, number>();
 for (const log of logs) {
   const text = fs.readFileSync(log, 'utf8');
