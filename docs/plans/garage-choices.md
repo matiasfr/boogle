@@ -5,6 +5,8 @@
 
 # Garage choices: what the room adds at the Roundhouse, and what its bays hold
 
+> **Step 4 tuning proposal (2026-11-17):** [garage-trade-rebalance](../brainstorms/garage-trade-rebalance.md) recommends a 10/20-footing future-line payload at the approved 25/20 m/s; the page carries it, with narrow Quick leads on North–south/Bay and Strong on Cave. Proposal only; source/loading feasibility remains unmeasured.
+
 Designer, 15 November 2026. Step 6 of [roundhouse-rotunda](roundhouse-rotunda.md) ("stage 3 bought, and the second
 hub") written together with "choose what to add at the garage", approved by the owner as the next design brief on 15
 November ([train-progression](train-progression.md) on `t3/train-ladder`, owner question 3). That answer puts the

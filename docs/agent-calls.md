@@ -16,6 +16,8 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-17 | Default: propose 10 footings per future-line cargo car; Quick 25 m/s / 10, Strong 20 m/s / 20 with one whole extra identical cargo car | [Garage trade rebalance](brainstorms/garage-trade-rebalance.md#b-10--20-footings--recommended) | Designer (Codex) | Retains approved speeds and coach exemption; splits current model's line totals Quick/Quick/Strong at 1p and 3p. Quick leads are only 14.8/33.4 s; no claim of robust or live balance. Does not inherit line 2's cradle or approve source/rack work. | open |
+| 2026-11-17 | Default: retain the 6-steel trade-price stand-in and page bill/length/travel allocations; model the 1p/3p party riding together, with only off-train handling divided by players and neutral handling 0 | [Garage trade rebalance](brainstorms/garage-trade-rebalance.md#what-was-refreshed) | Designer (Codex) | Keeps tuning comparisons on one explicit baseline; shows freight and travel separately. Future freight routes, demand and parallel travel remain unmeasured; halved travel or bills ×0.75 restore Strong's lead everywhere. | open |
 
 ## Rail, construction, levels and travel
 

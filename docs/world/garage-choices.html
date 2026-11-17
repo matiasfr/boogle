@@ -96,7 +96,16 @@
     }
     .verdict {
       border-left: 6px solid var(--blue);
-      font-size: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th,
+    td {
+      text-align: left;
+      padding: 8px 4px;
+      border-bottom: 1px solid var(--line);
     }
     .timeline {
       border-left: 3px solid #c3c2b7;
@@ -161,11 +170,16 @@
     }
   </style>
   <main>
-    <small>BOOGLE / DESIGN WORKBENCH / STEP 0 · source snapshot 3720b4c3b</small>
+    <small>BOOGLE / DESIGN WORKBENCH / STEP 0 · re-measured 48e0f68f2 · world v59</small>
     <h1>Quick or Strong?</h1>
     <p>
       One shared steel pool. A faster ride or a whole extra car. This is an editable design model, not the garage UI or
       a played route.
+    </p>
+    <p>
+      <a href="../brainstorms/garage-trade-rebalance.md">Rebalance proposal, 17 November</a>: retain 25 / 20 m/s; model
+      future-line cargo cars at 10 footings each (Quick 10, Strong 20). This is a proposed payload, not an inherited
+      cradle fit. Both rows keep 4 player seats and the separate 8-place riders' coach. Strong adds cargo.
     </p>
     <section class="verdict" aria-live="polite" id="verdict"></section>
     <div id="trades" class="grid"></div>
@@ -173,22 +187,24 @@
       <h2>How to read the comparison</h2>
       <p>
         Blue is Quick boiler (25 m/s, current cars); green is Strong boiler (20 m/s, one extra car). Minutes include
-        footing haul cycles plus rider legs. Savings are against 20 m/s with the current load. Shorter bars win. Both
-        rows pay the same steel once; swaps are free.
+        footing haul cycles plus sequential player travel legs. Savings are against 20 m/s with the current load.
+        Shorter bars win. Both rows pay the same steel once; swaps are free.
       </p>
       <p>
         Stand-in assignment: each area's footings are split equally across the lines it extends (rounded up); the full
         built line length at that stage is used. This is an editable scenario, not a designed freight itinerary. Other
-        materials, source production, intermediate stops, walking, fares, contention and parallel riders are excluded.
-        One train serves a line: three players do not triple train capacity. An editable handling allowance divided by
-        player count exposes that uncertainty.
+        materials, source production, intermediate stops, walking, fares, contention and parallel travel are excluded.
+        One effective service is modelled per line; actual fleet scheduling is unmeasured. Three players riding together
+        fit in the same 4-seat car, so the default elapsed travel is the same at 1p and 3p, not divided by three. An
+        editable handling allowance divided by player count exposes only off-train labour uncertainty.
       </p>
       <small
         >Sources:
         <a href="../brainstorms/garage-line-trade.md">garage-line-trade.md — approved rows and whole-car rule</a>;
         <a href="../../src/sim/railway-train.ts">railway-train.ts — BOILER, TRAIN.dwellTicks and trainLegTicks</a>;
-        <a href="../../src/sim/railway-works-layout.ts">railway-works-layout.ts — WORKS.wagonCap=6, rackCap=6</a>. The
-        generic six-unit car below is a footing-wagon proxy, not an implemented consist for future lines.</small
+        <a href="../../src/sim/railway-works-layout.ts">railway-works-layout.ts — CRADLE_CAP=[6,10], rackCap=6</a>;
+        <a href="../../src/sim/railway-trade-layout.ts">TRADE.riderPlaces=8</a>. The ten-unit future-line car is a
+        proxy; today's six-place rack does not demonstrate a 20-unit full load.</small
       ><label
         >Handling seconds per footing (unmeasured; neutral default 0)
         <input id="handling" type="number" min="0" value="0" /></label
@@ -207,8 +223,8 @@
         ><a href="../plans/garage-choices.md">garage-choices.md review calls 13–15</a>;
         <a href="../../src/sim/railway-ring-layout.ts">railway-ring-layout.ts STEEL.total=12, trip=6</a>. Set rate to 0
         to see built supply only.</small
-      ><label>Bigger cradle price · stand-in <input id="cradle" type="number" min="0" value="4" /></label
-      ><label>Big boiler price · stand-in <input id="bigPrice" type="number" min="0" value="6" /></label
+      ><label>Bigger cradle price · built default <input id="cradle" type="number" min="0" value="4" /></label
+      ><label>Big boiler price · built default <input id="bigPrice" type="number" min="0" value="6" /></label
       ><label
         >Price per line's Quick / Strong step · stand-in <input id="price" type="number" min="0" value="6" /></label
       ><small>Prices: garage-choices.md §2 G-c through G-f. Charged once per new line in this scenario.</small>
@@ -219,7 +235,7 @@
       <section>
         <h3>20 m/s upgrade</h3>
         Ready: table turn. Free. Every Home engine; wagon rollout follows.<small
-          >Plan §2 G-a. “Blast pipe” remains the plan's draft name.</small
+          >Built. “Blast pipe” is the owner's name (16 November).</small
         >
       </section>
       <section>
@@ -230,16 +246,16 @@
       </section>
       <section>
         <h3>Bigger cradle</h3>
-        Ready: steel home + its price in the shared pool. Proposed 6 →
+        Ready: steel home + its price in the shared pool. Built 6 →
         <input aria-label="Bigger cradle capacity" id="cradleCap" type="number" min="1" value="10" /> footings.<small
-          >Plan §2 G-c: 10 and price 4 are stand-ins. WORKS.wagonCap is 6 today.</small
+          >Built v59: line 2 only, 10 at the next load; price 4, spent from the pool. Rack remains 6.</small
         >
       </section>
       <section>
-        <h3>Big boiler (plan draft)</h3>
-        Ready: High Gorge + its price. Line 2 only.
+        <h3>Big boiler</h3>
+        Ready: all four High Gorge sections laid, longer boiler installed + its price. Line 2 only.
         <input aria-label="Big boiler speed" id="bigSpeed" type="number" min="25" value="30" /> m/s.<small
-          >Plan §2 G-d: proposed 30; no BOILER row yet. No trade on line 2.</small
+          >Built v59: 30 m/s, price 6; cars unchanged. No trade on line 2.</small
         >
       </section>
       <section>
@@ -292,9 +308,11 @@
       <a href="../../src/sim/railway-world-lines.ts">railway-world-lines.ts</a>. Built route beats come from
       <a href="../../dev/loop/graph.ts">dev/loop/graph.ts</a>. Later route bills and durations are all stand-ins. Rider
       legs default to two per model step (ROUTE.rides=1); allocations across lines are assumptions, editable below.
+      Route bills and comparison lengths still match main. The unused line-2 crossover coordinates were refreshed; no
+      measured live freight itinerary underlies these later bills.
     </p>
     <p>
-      No new part names. Existing plan drafts: Blast pipe, Big boiler. No player copy authored. This page cannot
+      No new part names or character copy. Blast pipe and Big boiler are now owner-approved names. This page cannot
       establish fun, supply balance, rack behavior or the final freight route.
     </p>
   </main>
@@ -427,7 +445,7 @@
             { name: 'Ring Island halt', stop: 0, x: 141418, z: -81983, y: 800, reach: 1260 },
             { name: 'High Gorge', stop: 1, x: -8641, z: -197684, y: 300, reach: 1260 },
           ],
-          ends: [{ at: 'end', kind: 'crossover', sCm: 319640, x: -5946, z: -195454, y: 358 }],
+          ends: [{ at: 'end', kind: 'crossover', sCm: 319300, x: -5698, z: -195221, y: 370 }],
           legs: [
             { id: 'ringx', reverse: false, fromCm: 74300, toCm: 120126, stage: [2, 2] },
             { id: 'ledge', reverse: false, fromCm: 120126, toCm: 325140, stage: [3, 5] },
@@ -865,7 +883,7 @@
     $('trades').innerHTML = scenarios
       .map(
         (s, i) =>
-          `<section><small>STAND-IN BILL / ${s.area}</small><h3>${s.name}</h3><div id="result${i}"></div><details><summary>Scenario inputs & sources</summary><label>Line length (m) <input id="len${i}" type="number" min="1" value="${s.cm / 100}"></label><small>railway-world-lines.ts cumulative toCm, High Gorge first</small><label>Footings assigned <input id="bill${i}" type="number" min="0" value="${s.foot}"></label><label>Rider one-way legs <input id="rides${i}" type="number" min="0" value="${s.rides}"></label><small>standins.ts bill split equally / ROUTE.rides × 2 per step, scenario assumptions</small><label>Current load per car <input id="cap${i}" type="number" min="1" value="6"></label><small>WORKS.wagonCap=6 proxy; Strong doubles this load with one extra car. Rack=6 cannot fill 12 today.</small></details></section>`,
+          `<section><small>STAND-IN BILL / ${s.area}</small><h3>${s.name}</h3><div id="result${i}"></div><details><summary>Scenario inputs & sources</summary><label>Line length (m) <input id="len${i}" type="number" min="1" value="${s.cm / 100}"></label><small>railway-world-lines.ts cumulative toCm, High Gorge first</small><label>Footings assigned <input id="bill${i}" type="number" min="0" value="${s.foot}"></label><label>Sequential player one-way legs (one player or a group riding together) <input id="rides${i}" type="number" min="0" value="${s.rides}"></label><small>standins.ts bill split equally / ROUTE.rides × 2 per step, scenario assumptions</small><label>Footings per future-line cargo car · proposed <input id="cap${i}" type="number" min="1" value="10"></label><small>Quick: one cargo car. Strong: two identical cargo cars, twice this load. Built line 2's 6/10 cradle is a numerical reference, not a fit for these lines. Both keep 4 player seats + 8 NPC rider places.</small></details></section>`,
       )
       .join('');
     // trainLegTicks profile, from rest, converted from centimetres/tick to SI; whole 100 ms ticks.
@@ -895,9 +913,10 @@
         const q = trips * quick + r * leg(m, 25),
           st = strongTrips * base + r * leg(m, 20);
         wins.push(q < st ? 'Quick' : q > st ? 'Strong' : 'Tie');
-        const total = totals.get(s.name) || [0, 0];
+        const total = totals.get(s.name) || [0, 0, 0];
         total[0] += q;
         total[1] += st;
+        total[2] += f * n('handling');
         totals.set(s.name, total);
         const max = Math.max(q, st, 1);
         $('result' + i).innerHTML =
@@ -908,7 +927,7 @@
           ]
             .map(
               ([name, t, tr, v]) =>
-                `<div class="row"><strong class="${name.toLowerCase()}">${name} boiler</strong><br>${v} m/s · ${name === 'Quick' ? 'current cars' : '+1 whole car'}<div class="bar ${name.toLowerCase()}"><i style="width:${(t / max) * 100}%"></i></div>${tr} footing trips<br>` +
+                `<div class="row"><strong class="${name.toLowerCase()}">${name} boiler</strong><br>${v} m/s · ${name === 'Quick' ? 'current cars' : '+1 whole cargo car'}<div class="bar ${name.toLowerCase()}"><i style="width:${(t / max) * 100}%"></i></div>${tr} footing trips · ${((tr * (name === 'Quick' ? quick : base)) / 60).toFixed(1)} min freight<br>${r} player legs · ${((r * leg(m, v)) / 60).toFixed(1)} min travel<br>` +
                 [1, 3]
                   .map(
                     (p) =>
@@ -920,8 +939,15 @@
             .join('') +
           '</div>';
       });
-      $('verdict').textContent =
-        `Across each line's assigned route bills: ${[...totals].map(([name, [q, st]]) => `${name}: ${q < st ? 'Quick' : 'Strong'} saves ${(Math.abs(q - st) / 60).toFixed(1)} min over the other row`).join('; ')}. Strong leads on all three line totals under the defaults. Quick wins the two small ending bills and every rider leg. Balance remains unresolved; no inputs were tuned to manufacture a split.`;
+      $('verdict').innerHTML =
+        '<h2>Line totals · freight + player travel</h2><table><thead><tr><th>Line</th><th>1p Quick / Strong min</th><th>3p Quick / Strong min</th><th>Lead</th></tr></thead><tbody>' +
+        [...totals]
+          .map(
+            ([name, [q, st, h]]) =>
+              `<tr><th>${name}</th>${[1, 3].map((p) => `<td>${((q + h / p) / 60).toFixed(2)} / ${((st + h / p) / 60).toFixed(2)}</td>`).join('')}<td><strong class="${q <= st ? 'quick' : 'strong'}">${q < st ? 'Quick' : q > st ? 'Strong' : 'Tie'}</strong> ${Math.abs(q - st).toFixed(1)} s</td></tr>`,
+          )
+          .join('') +
+        '</tbody></table><p>Default 10/20 load: Quick leads North-south and Bay by only 14.8 s / 33.4 s; Strong leads Cave by 12.1 min. Strong wins the large building bills; Quick wins the small ending bills and every player travel leg. This split is sensitive to bill thresholds and assumed travel: it is a proposal, not a proven live choice.</p><small>1p and 3p share the same train service and group travel legs; only the editable off-train handling term scales with players. Coach capacity stays 8 in both rows. With bills ×0.75 (round up), Strong leads all line totals again.</small>';
       let pool = 12 - n('cradle'),
         elapsed = 0;
       const charged = new Set();
@@ -950,7 +976,7 @@
           })
           .join('');
       $('ladder').innerHTML =
-        `14 → 20 → 25 → ${n('bigSpeed')} → ${n('fast')} m/s<p>Built BOILER rows: 14 (accel 2.5, brake 3.5), 20 and 25 (both 3.5 / 3.5 m/s²). Big boiler and faster engine are proposed inputs, not sim rows. Quick / Strong use built 25 / 20 profiles.</p>`;
+        `14 → 20 → 25 → ${n('bigSpeed')} → ${n('fast')} m/s<p>Built BOILER rows: 14 (accel 2.5, brake 3.5), 20, 25 and 30 (all 3.5 / 3.5 m/s²). Big boiler's built default is 30; faster engine remains proposed. Quick / Strong use built 25 / 20 profiles.</p>`;
     }
     document.addEventListener('input', update);
     $('reset').onclick = () => {
