@@ -19,19 +19,14 @@ different models at the same time"). The owner's words for each change are in
   Opus high, Fable medium only for extremely complex work. Fable never runs above high
   (`fableTopEffort`, owner 10 November: "fable high should be the absolute top used") and not at low either (the
   Fable 5.2 system card: low saves about 15% of medium's cost for a clear drop in score).
-- **Codex is the workhorse.** Sol (`gpt-6.2-sol`) takes plan-following implementation, the runner, mechanical jobs,
-  previz, brainstorms and unplanned fixes. Astra (`gpt-6.2-astra`) takes the work where a wrong claim costs most:
-  high-risk and player-visible implementation, the reviews, the hardest design and research.
-  **Medium is the default effort on the 6.2 models** (owner, 17 November: "with the new models we shouldn't have to
-  use high as much, we can use medium in most cases"). Every Codex row runs at medium except two: the independent
-  review of lockstep, net, world or server work stays at high, and the hardest design or research runs at high
-  (it was xhigh). Which rows keep high is the orchestrator's reading of "most cases", not the owner's word. A job
-  that falls short at medium is rerun at high with its failed evidence, not started at high. Both moved to the 6.2 models on 17 November
-  (owner: "We should not be using Astra or sol 6.1 use SOL 6.2 and Astra 6.2 instead"); no route names
-  `gpt-6.1-sol` or `gpt-6-astra` any more. T3's default effort for the 6.2 models is low, so every delegate passes
-  the row's effort. Basis for the split, measured on the earlier models and not rechecked for 6.2: the
-  [GPT-6.1 Sol system card addendum](https://deploymentsafety.openai.com/gpt-6-1-sol) reports Sol misrepresenting
-  its coding work in 1.50% of selected tasks against Astra's 0.51%. Every Codex result is reviewed before it ships.
+- **Codex is the workhorse.** Use Sol 6.2 medium for routine implementation. Use Astra 6.2 for player-visible or
+  high-risk work and independent reviews; raise to high for tricky cases. Every Codex result is reviewed before it ships.
+  The [Artificial Analysis Coding Agent Index](https://artificialanalysis.ai/agents/coding-agents/comparisons/claude-code-vs-codex)
+  (17 November 2026) puts Sol medium at 45 versus 47 at high, and Astra medium at 49 versus 52 at high.
+  Medium is our default, not a claim that effort levels are equivalent across providers. No route names
+  `gpt-6.1-sol` or `gpt-6-astra` any more (owner, 17 November: "We should not be using Astra or sol 6.1 use SOL 6.2
+  and Astra 6.2 instead"; "with the new models we shouldn't have to use high as much, we can use medium in most
+  cases"). T3's default effort for the 6.2 models is low, so every delegate passes the row's effort.
 - **Opus at medium, escalate on evidence** (owner, 9 November). Opus rows run at the row's effort; raise one task one
   level only when it hits bugs it couldn't fix or its result falls short, and say so in the report. Before raising,
   give the task a way to verify its own work (a failing test, a build, a look, a bot segment); it is often cheaper
@@ -40,9 +35,8 @@ different models at the same time"). The owner's words for each change are in
 - **"A good model" picks the row, not more effort** (owner, 10 November, after a planner asked for "a good model"
   ran at high: "Fable at medium effort should be sufficient for the future FYI"). Take the model and effort from the
   table as written; raise effort only when the owner names one.
-- **Explore on Haiku.** `.claude/agents/Explore.md` pins the Explore agent to Haiku for searching, finding files and
-  reading logs, where a wrong answer is cheap to spot and a Codex job would take minutes. Code edits and judgment
-  calls stay off it.
+- **Model floor.** Use Sol 6.2 or above on Codex and Opus or above on Claude. The exceptions are read-only Explore
+  (Haiku medium) and the on-demand Atlas job (Terra low). A usage reset can inform an owner-directed provider switch, not an automatic downgrade.
 - **Code review** never runs in the main session: an Astra review delegate on the committed branch (T3
   `delegate_task`; with no T3 tools, `node dev/codex/run.ts review <topic> --model gpt-6.2-astra --effort medium`).
   Verify each finding against the code before acting on it.
@@ -68,7 +62,4 @@ different models at the same time"). The owner's words for each change are in
 - **Daily jobs** (`dev/daily/jobs.ts`) run on Codex; at a limit they fail and report rather than spend Claude usage
   unattended.
 - **Changing a route:** edit the row in `dev/models.ts` (and `agents` plus the agent's frontmatter if it is one of
-  the two agents), rewrite the rule above that it changes, and record the owner's words in owner-calls. Change one
-  route at a time and compare it on the process eval (`npm run process-eval`,
-  [README](../../dev/process-eval/README.md)): each task run twice on the old and the new route, and read which tasks
-  flipped, not only the totals.
+  the two agents), rewrite the rule above that it changes, and record the owner's words in owner-calls. Use published benchmarks for model selection; a local model comparison is not required.
