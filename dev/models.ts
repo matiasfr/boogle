@@ -17,6 +17,12 @@ const claude = (work: string, who: string, model: string, effort: string): Route
 export const routes: Route[] = [
   claude('Orchestration, review of returned work, owner conversation', 'main session', 'opus', 'medium or high'),
   claude(
+    "The hourly heartbeat, the unattended orchestrator run with its workflow review (the orchestrate skill's section 9)",
+    'the heartbeat thread (a T3 scheduled task; its model is set in that thread)',
+    'fable',
+    'medium',
+  ),
+  claude(
     'Design review of a plan or brief with gameplay calls, before it is built (the design-review skill)',
     "the plan's or brief's author, in the same context; no separate agent",
     "the author's model",
