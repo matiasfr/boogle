@@ -1238,6 +1238,20 @@ the install hold and roll-out: `TRAIN.dwellTicks + WORKS.upgradeTicks + WORKS.ro
 The longer boiler remains part 2, needs landed
 steel, and stays free. The boiler-fit copy remains “The first install. It woke the trains.”
 
+**Steel is spent (17 November, garage choices step 3).** Line 2's Bigger cradle is offered beside the free longer
+boiler once steel lands. It costs 4 steel and raises the footing wagon's capacity from 6 to 10 on its next load;
+it does not change cargo already aboard or the loader deck. The Big boiler follows the longer boiler once all four
+sections to High Gorge are laid: 6 steel, 30 m/s, the same cars, adoption at the next Home stand. Its own braking
+row is 3.5 m/s²; at cruise a request 128.57 m away is too late and one 128.58 m away can be served.
+The paid tiles show Later before their gate, a STEEL have/need bill without a button while short, Ready with the
+bill and Install when funded, and Installed after acceptance. Prices and capacities remain the plan's stand-ins.
+Every paid install debits the one landed-minus-spent pool. Landed steel still opens stage 2 and the longer boiler,
+so spending cannot undo either. Bay 150° is open from stage 2 and holds the pool's stack. The boiler stand hides
+most of it from the post, so a low token pallet at the old apron position shows up to six blocks from that same
+pool. Both lose blocks when steel is spent; neither is a second stock. New solids clear an overlapping player first.
+Later route steel bills and footing demand are still offline stand-ins; this step adds no route or per-line trade.
+Proof and remaining limits: [Garage choices, step 3 as built](../plans/garage-choices.md#7-steps).
+
 **The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
 steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
 for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go

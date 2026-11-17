@@ -4,9 +4,11 @@
 //     Local view of accepted state.
 //  2. `garage`: the handle the world half (garage-view.ts) registers and the screen half (src/features/garage.ts) drives.
 // Nothing here is sent or saved, and the simulation reads none of it.
-import { line, shed, trains, type ReadWorld } from '../../sim/railway-rows.ts';
+import { leg, line, shed, trains, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE2 } from '../../sim/railway-lines.ts';
+import { installRevision, steelPool } from '../../sim/railway-works-layout.ts';
+import { RAIL_LEGS } from '../../sim/railway-route.ts';
 import type { CatId, Phase, PartId, RoomFacts } from './garage-data.ts';
 
 export function roomFacts(w: ReadWorld): RoomFacts {
@@ -19,9 +21,12 @@ export function roomFacts(w: ReadWorld): RoomFacts {
     // The roll-out owns the table from the commission until the wagon has coupled.
     tableBusy: shed(w).ready >= 0 && !wagonCoupled,
     steelHome: shed(w).steel >= 1,
-    steel: shed(w).steel,
+    steel: steelPool(shed(w)),
     longFitted: boiler >= 2,
     boilerRev: boiler,
+    installRev: installRevision(line(w, LINE2)),
+    cradleFitted: line(w, LINE2).cradle > 0,
+    gorgeReached: leg(w, 0).laid >= RAIL_LEGS[0]!.sections.length,
   };
 }
 
@@ -44,7 +49,7 @@ export type GarageSnap = {
   real: boolean;
   /** The part hangs over its seat waiting for the server's answer. */
   waiting: boolean;
-  /** The Longer boiler can be installed from here now (steel home, not fitted, the post inside the server's reach). */
+  /** The selected install is ready here: its gate, shared pool and table are available. */
   canInstall: boolean;
   /** Interact now skips (from c+800 until rest). */
   canSkip: boolean;

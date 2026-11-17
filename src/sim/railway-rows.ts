@@ -28,6 +28,7 @@ import {
   Job,
   JobRun,
   Line,
+  Leg,
   Outcome,
   Pile,
   Plot,
@@ -112,6 +113,7 @@ export const hardwood = slotted(Hardwood);
 export const rock = slotted(Rock);
 export const train = slotted(Train);
 export const line = slotted(Line);
+export const leg = slotted(Leg);
 
 export const jobs = listed(job, LINE1_STATIONS.length);
 export const qjobs = listed(qjob, LINE2_STATIONS.length);

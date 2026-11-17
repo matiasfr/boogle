@@ -37,6 +37,7 @@ export const BOILER = [
   { speed: 140, accel: 2.5, brake: 3.5 },
   { speed: 200, accel: 3.5, brake: 3.5 },
   { speed: 250, accel: 3.5, brake: 3.5 },
+  { speed: 300, accel: 3.5, brake: 3.5 },
 ] as const;
 export const BOILER_SPEED = BOILER.map((row) => row.speed);
 /** The last boiler row. */
@@ -432,7 +433,7 @@ export function trainRequestable(
     n = stops.length;
   const dir = trainDir(row);
   const next = reachable(stops, trainAlong(row, line, tick), trainSpeed(row, line, tick), dir, (k) =>
-    stopKin(line, k, row.track),
+    stopKin(line, k, row.track, row.boiler),
   ).find((k) => !trainPassesBy(line, k, dir, n));
   if (next === undefined || next === 0 || next === n - 1) return null;
   const requested = reqHas(row.req, next, dir, n) || (row.phase === TRAIN_PHASE.RUN && row.to === next);

@@ -2262,6 +2262,17 @@
         }
       }
     },
+    "roundhouse.bigger-cradle": {
+      "colliders": [],
+      "key": "roundhouse.bigger-cradle",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "cradle"
+        }
+      }
+    },
     "roundhouse.end-wall": {
       "colliders": [
         {
@@ -2285,6 +2296,57 @@
         "builder": "roundhouse.bay",
         "params": {
           "part": "wall"
+        }
+      }
+    },
+    "roundhouse.steel-block": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "half": [
+            0.28,
+            0.2,
+            0.28
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.steel-block",
+      "scope": "owner",
+      "visual": {
+        "batch": "steel-store",
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "steel-block"
+        }
+      }
+    },
+    "roundhouse.steel-pallet": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.09,
+            0
+          ],
+          "half": [
+            0.75,
+            0.09,
+            1.05
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.steel-pallet",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "pallet"
         }
       }
     },

@@ -278,9 +278,106 @@ for a playtest.
 | 0 | **The 2D page — built (2026-11-16).** Finding: Strong leads all three line totals under the editable stand-in assignments; Quick wins the small ending bills and rider legs, so balance remains unresolved. The route as a timeline: the pool against the stand-in bills, each part's Ready time and price, the boiler ladder with a row left for the faster engine (35 to 40 m/s), the bays by stage at Home and Port Quay; compare both trade rows per line against stand-in bills at 1p and 3p so neither wins everywhere. Prices set small against the route's bills | `docs/world/garage-choices.html` (artifact) | none | Implementation of an approved plan: Codex gpt-6.1-sol medium | the page, for the owner |
 | 1 | **The 20 m/s upgrade (G-a) — built (2026-11-16, v53).** `rail.install { part: 1 }` for every Home line at the table post, replacing the ladder's automatic rise; `commission` waits for it; the blast pipe tile, stand and seat; a loop node between `table` and `crossing`; the bot's hold | `src/sim/railway-sys-steel.ts`, `railway-sys-works.ts` (`commission`), `src/world/railway-server.ts`, `garage-data.ts`, `garage-state.ts`, `garage-view.ts`, `dev/loop/graph.ts`, `dev/look/bots/`, `test/railway-install.test.ts`, `src/world/namespace.ts` | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | `garage-open`; `npm run loop -- run` |
 | 2 | **Engines wait in the bays — built (2026-11-17)** (the ladder's step 4), view only: tarped engines in the ruins and bays in the departure order above; on the line's serving count rising, the covered engine disappears and the doors shut; the joining train keeps the ladder's whistle and scale-in. No animated roll-out | `src/place/rotunda.ts`, `rotunda-stage.ts`, `rotunda-view.ts`, `roundhouse-view.ts`, the existing roundhouse prefab kit and generated records | none | Player-visible implementation: Codex gpt-6-astra high; visual review by the main session | opened arrival, stage 1 and steel-home stills; seed replay and collision probes below |
-| 3 | **Steel is spent: the bigger cradle and the big boiler (G-c, G-d).** `Shed.spent`; the price table; the cradle as line 2's fit; the fourth boiler row; bills and Ready; the store in bay 150° | `railway-components.ts`, `railway-sys-steel.ts`, `railway-train.ts`, `railway-works-layout.ts`, `garage-data.ts`, `boiler-install-view.ts`, `rotunda-view.ts`, `namespace.ts`, tests | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | the cradle install at `steel-home`; stills of bay 150° from the post at player height and from the garage camera |
+| 3 | **Steel is spent: the bigger cradle and the big boiler (G-c, G-d) — built for review (2026-11-17, v59).** `Shed.spent`; the price table; the cradle as line 2's fit; the fourth boiler row; bills and Ready; the store in bay 150° | `railway-components.ts`, `railway-sys-steel.ts`, `railway-train.ts`, `railway-works-layout.ts`, `garage-data.ts`, `boiler-install-view.ts`, `rotunda-view.ts`, `namespace.ts`, tests | review | High-risk implementation: Codex gpt-6-astra high; then the independent review row | the cradle install at `steel-home`; stills of bay 150° from the post at player height and from the garage camera |
 | 4 | **Lines in the bays; the per-line trade (G-e).** Build the two named boiler rows, free swaps at the Roundhouse, and `boilerAdopt` at each line's next depot departure; then works copies per fitted line, `rail.bring`, line chips, stages 3a and 3b. Starts when stage 4's lines are playable | `railway-components.ts`, `railway-sys-steel.ts`, `railway-server.ts`, `rotunda-stage.ts`, `home-station.ts`, `garage-*.ts`, `src/features/garage.ts`, `roundhouse-view.ts`, tests | review | High-risk implementation: Codex gpt-6-astra high, and the independent review row | two players at the post, one brings a line out, both see it; stage 3a rising |
 | 5 | **Port Quay's row**, inside its station plan: the row above, the per-site stage and ruin rule, `SITES`, a second reach point | the station plan's files; `src/place/rotunda.ts`; `dev/prefab/rotunda.ts`; `src/sim/railway-works-layout.ts` | review (the reach point) | Planning complex work: planner agent, opus high | that plan's |
+
+**Step 3 as built (17 November, v59; implementation for independent review).** The builder's plan was (1) rules,
+schema and real-host acceptance, checked in the two existing install/steel-host files; (2) garage and store,
+checked with full Chromium WebGPU looks and overlap probes; (3) compare old fixtures before regenerating, then
+run the gate/loop/browser checks, document, commit and rebase. The store proof required the plan's token-pallet
+fallback. Steps 4 and 5 are not built; no line chips, `rail.bring` or Quick/Strong trade were added.
+
+`Shed.spent: int = 0` and `Line.cradle: u8 = 0` are new server-owned fields. `steelPool` is landed minus spent.
+The single `INSTALL_STEEL` table prices parts 1/2 at zero, 3 at six and 4 at four. The existing wire shape remains
+`rail.install { line, part, revision }`: line 1 is line 2's zero-based slot; parts 1/2 retain their meanings, 3 is
+Big boiler and 4 is Bigger cradle. Revision is `Line.boiler + Line.cradle`, a strictly rising shared fit revision
+that also fences cross-part races. No separate counter or compatibility path was added. Both paid parts check
+the pool before spending; rejected, stale, repeated or malformed installs spend nothing. The longer boiler and
+`rotundaStage` still read landed steel. `WORLD_NS` is v59.
+
+The cradle changes the wagon's next load cap through `footCap` (6/10 from `CRADLE_CAP`); it never changes cargo
+aboard, the loader deck or a running train leg. The fourth explicit `BOILER` row is 300 cm/tick, acceleration and
+braking 3.5; cars stay as for the longer boiler, and trains adopt at their next Home stand. The big boiler gate is
+completion of the four High Gorge sections, with the longer boiler installed first. Pure tests pin the cruise
+and late-request boundary: 12,857 cm refuses, 12,858 cm accepts.
+
+The main stack moved from the apron to bay 150°, 2.5 m inside its door. The door stays open from stage 2 even
+when the pool empties. Post-height evidence showed the stand hiding most of the stack, so the approved fallback
+keeps one low layer (up to six blocks) at the old apron pallet location. Both draw `steelPool`, not independent
+stock. Pallet and block prefabs move overlapping feet/head spheres clear before enabling their solids. Four
+browser probes passed for bay/token and feet/head, including a translated and rotated owner root. The cradle
+has an orange frame in the garage and on the running wagon; the big boiler currently reuses the longer model.
+
+Opened evidence lives in `docs/reviews/garage-steel-spent/` (1200 px stills; raw captures and sheets in `.look/`).
+The Ready panel shows the 4/4 bill and 6 → 10 preview; Installed shows the seated orange frame and cap 10.
+The matched token views show six blocks before the real hold and two afterward: landed 6, spent 4. Bay 150° is
+visible from the garage camera, but most of its low stack is hidden by the stand from the post. These are visual
+observations, not timing evidence. Captures passed WebGPU health with no graphics errors. The pause overlay in
+the first attempts was dismissed using the dev cursor seam for the final evidence; those attempts stay local.
+
+Fixture audit against `5fa88131`, before regeneration: all 54 old seeds matched the old golden. At every seed
+and after 1,200 ticks, the new world has the identical tick and every old column, plus zero cradle/spent columns;
+all 108 hashes change. No seed input, entity placement or old clock moves. The schema fixture adds only those
+two fields and its namespace. Five op streams keep all 277 labels/results and change their hashes. The nine
+300-tick and twelve 1,200-tick schedule traces keep all sequences/ticks and change 17,100 hashes. The 82 M12
+traces keep their frame lengths; 82 final hashes and 1,244 marks change. Each fixture used its existing writer.
+
+The frozen host trace still has 8,604 ordered records. A control holding only the namespace at v58 **does not**
+reproduce the old bytes: the new serialized columns necessarily change 205 checkpoint hashes/checksums and
+5,671 `snapBytes` samples. With v59, the same 205 namespaces also change. Every old checkpoint column was
+compared after removing only the two zero columns; all old state and all input/result/message/replica records
+remain exact. No compatibility code was retained. This is the precise exception to the requested namespace-only
+byte proof, not a claim that it passed. The v59 fixture was then regenerated by `HOST_TRACE_RECORD=1`.
+
+Checks: install plus steel-host tests 48 passed, zero failed, one existing fleet TODO; tick-order 23/23,
+M12 32/32 and frozen host trace 1/1. `npm run loop -- run` passes for 1–4 players and order probes. The exact
+`node dev/ship-check.ts origin/main HEAD` gate passed: registry, 28 lint files, typecheck, prefab validation and
+212 affected test files, totaling 1,940 cases (1,874 passed, zero failed, 65 skipped, one existing TODO).
+All changed TypeScript passes Prettier. The final commit/rebase state belongs to the implementation handoff.
+
+The first full gate found six maintenance failures: two generated economy pages had stale source fingerprints,
+the bad-world corpus used the now-valid boiler row 3 as out of bounds and lacked the new spent-check entry,
+and the apron spatial test still extracted `PALLET` instead of `TOKEN`. Existing fixtures/tests were updated;
+both pages were rebuilt with their own writers (no economy design change). The four affected test files then
+passed 125/125. Network checks pass 208/208; `world-inputs` passes; the level check passes (21 reports).
+The 3× and 2× two-peer runs reached T2 on both players with matching final state but failed the harness's clock
+capacity check; neither is a pass. The supported `--real` (1×) rerun passed through T2, with mirrored hashes equal
+at 241 sampled server steps. Both end stills were opened: the two players stand beside the completed T2 track
+and its bill frame. No timing or performance claim follows these runs.
+
+Additional files beyond the plan's named list: trade queries, train loading and load-check modules carry the
+cradle cap and spent invariant; `railway-rows.ts` exposes the existing Leg row for the garage gate; adapter
+intents and server admission accept the new part ids/revision; the garage feature updates bills and readouts;
+the live train view draws the fitted cradle. The roundhouse prefab source/builder/generated catalogue own the
+new solids and frame; the old pallet collider-debt entry was removed. Existing garage facts, spatial-test and
+bad-save fixtures follow those changes. Generated economy pages refresh their dependency fingerprint.
+
+Curated stills (seven, 2,910,768 bytes): [Ready](../reviews/garage-steel-spent/cradle-ready.png),
+[Installed](../reviews/garage-steel-spent/cradle-installed.png),
+[bay from the post](../reviews/garage-steel-spent/bay-from-post.png),
+[bay before](../reviews/garage-steel-spent/bay-from-garage-before.png),
+[bay after](../reviews/garage-steel-spent/bay-from-garage-after.png),
+[token before](../reviews/garage-steel-spent/token-before.png),
+[token after](../reviews/garage-steel-spent/token-after.png). All were opened; the matched pairs show the same
+landed six with the pool falling from six to two. The bay is legible from the garage eye, while the post view
+explains the fallback; the token pair makes the four-block withdrawal clear.
+
+Calls for the designer: the plan's 3.5 braking is also the new row's acceleration; High Gorge means all four
+sections laid, not a first train arrival. Capacity applies on the next load, without inventing an adoption wait.
+The token is a maximum six-block low layer at the existing apron position. Big boiler shares the longer boiler
+model pending art direction. Current playable bills consume logs/rails and all current footing demand precedes
+steel; later route steel bills and the 224-footing economy are offline stand-ins. Thus the cap and pool are built
+and rule-tested, but no current accepted journey demonstrates a ten-footing load or route-steel competition.
+The kiln's six-place rack and Ring rack are unchanged; `WORKS.wagonCap` remains only the legacy Ring-rack bound.
+
+New placeholder strings for owner review: “Big boiler”, “Bigger cradle”, “30 m/s. The same cars.”,
+“6 → 10 footings a trip.”, “STEEL n/4”, “STEEL n/6”, and “Footings to High Gorge a minute”. Existing Ready,
+Later, Installed and Install are reused. Suspect existing wagon copy still says “when the kiln lit”,
+“6 footings a trip, Quarry to Pier”, “Free with the kiln”, and “until the cradle is fitted and the table turns”;
+the old longer-boiler descriptions/car counts in historical prose also predate the coach. The Boogler's copy is
+untouched. Real-time smoothness/audio, the big-boiler browser moment, device behavior, the later bills and a
+ten-footing live trip remain unverified. **Not tested on a device.** No push or ship is authorized.
 
 **Step 2 as built (17 November).** The pure `bayOccupants(site, { serving })` returns Home's waiting bays in
 departure order: 250°, 150°, 170°, 210°, 230°. `rotunda-stage.ts` reads the existing line-2 serving slots; a delayed

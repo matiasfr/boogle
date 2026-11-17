@@ -35,6 +35,11 @@ import {
   trainAlong,
   trainDir,
   trainLegTicks,
+  trainLegSpeed,
+  trainCanBrake,
+  trainNextStop,
+  trainRequestable,
+  BOILER,
 } from '../src/sim/railway-train.ts';
 import {
   LINE_SLOTS,
@@ -47,7 +52,8 @@ import {
 } from '../src/sim/railway-trains.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { apply } from '../src/sim/railway-drive.ts';
-import { WORKS } from '../src/sim/railway-works-layout.ts';
+import { CRADLE_CAP, INSTALL_STEEL, WORKS, installRevision, steelPool } from '../src/sim/railway-works-layout.ts';
+import { footCap } from '../src/sim/railway-queries-trade.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { fuzzTicks } from './helpers/fuzz.ts';
 import { railRoom } from './helpers/rail-room.ts';
@@ -68,18 +74,19 @@ import {
   trains,
   unaudited,
   type Seed,
+  buildSeedWorld,
 } from './helpers/rail.ts';
 
 const [A, B, C] = LINE_SLOTS[LINE2] as [number, number, number];
 const ISLAND = 5;
 const copy = (s: Seed): Seed => unaudited({ w: restore(s.w), t: s.t });
 const install = (s: Seed, pid = 'a', fields: Record<string, unknown> = {}) =>
-  act(s, pid, 'rail.install', { line: LINE2, part: 2, revision: lineRow(s.w, LINE2).boiler, ...fields });
+  act(s, pid, 'rail.install', { line: LINE2, part: 2, revision: installRevision(lineRow(s.w, LINE2)), ...fields });
 
 /** Ring-joined played on until the first steel is in the bay, from accepted ops and ticks only: the kit train, the
  * bill fed by one player, the casts and the ride home. Built once, outside any one test's time. */
-function steelHome(): Seed {
-  const s = copy(railwayAtRing('ring-joined'));
+function steelHome(source = railwayAtRing('ring-joined')): Seed {
+  const s = copy(source);
   const run = (ok: () => boolean, max: number, what: string) => {
     for (let t = 0; !ok(); t++) {
       assert.ok(t < max, `${what} in time (tick ${s.t})`);
@@ -98,6 +105,126 @@ function steelHome(): Seed {
   return s;
 }
 const HOME = steelHome();
+const GORGE = steelHome(buildSeedWorld('gorge-reached'));
+
+function landed(source: Seed, count: number) {
+  const s = copy(source);
+  for (let t = 0; shed(s.w).steel < count; t++) {
+    assert.ok(t < 12000, 'steel lands by train');
+    advance(s, 1);
+  }
+  return s;
+}
+const FULL_HOME = landed(HOME, STEEL.total);
+const FULL_GORGE = landed(GORGE, STEEL.total);
+
+test('paid installs spend only the shared pool, refuse short/stale/repeated/malformed holds and restore', () => {
+  const s = landed(GORGE, INSTALL_STEEL[3]);
+  assert.equal(install(s), 1);
+  assert.equal(install(s, 'a', { part: 3 }), 1);
+  assert.ok(steelPool(shed(s.w)) < INSTALL_STEEL[4]);
+  assert.equal(install(s, 'a', { part: 4 }), 0, 'short pool');
+  const shortBig = landed(GORGE, INSTALL_STEEL[3]);
+  assert.equal(install(shortBig), 1);
+  assert.equal(install(shortBig, 'a', { part: 4 }), 1);
+  assert.ok(steelPool(shed(shortBig.w)) < INSTALL_STEEL[3]);
+  assert.equal(install(shortBig, 'a', { part: 3 }), 0, 'short pool at High Gorge');
+  const full = copy(FULL_HOME);
+  const rev = installRevision(lineRow(full.w, LINE2));
+  const original = trains(full.w).map((r) => ({ ...r }));
+  for (const fields of [{ part: 5 }, { part: '4' }, { part: 4.5 }, { line: 0 }, { revision: -1 }, { revision: NaN }])
+    assert.equal(install(full, 'a', { part: 4, ...fields }), 0);
+  assert.equal(install(full, 'a', { part: 4, revision: rev }), 1);
+  assert.deepEqual(trains(full.w), original, 'capacity changes no cargo or running leg');
+  assert.equal(shed(full.w).steel, STEEL.total, 'landed does not go backwards');
+  assert.equal(shed(full.w).spent, INSTALL_STEEL[4]);
+  assert.equal(steelPool(shed(full.w)), STEEL.total - INSTALL_STEEL[4]);
+  assert.equal(install(full, 'b', { part: 2, revision: rev }), 0, 'cross-part race is stale');
+  assert.equal(install(full, 'b', { part: 4 }), 0, 'new request cannot buy it twice');
+  assert.equal(install(full), 1, 'free longer boiler still reads landed steel');
+  assert.equal(shed(full.w).spent, INSTALL_STEEL[4]);
+  const wagon = trains(full.w).find((r) => r.wagon)!;
+  assert.equal(footCap(full.w, wagon), CRADLE_CAP[1]);
+  assert.equal(
+    footCap(
+      FULL_HOME.w,
+      trains(FULL_HOME.w).find((r) => r.wagon)!,
+    ),
+    CRADLE_CAP[0],
+  );
+  assert.equal(
+    footCap(
+      full.w,
+      trains(full.w).find((r) => !r.wagon)!,
+    ),
+    WORKS.loaderCap,
+  );
+  assert.equal(lineRow(restore(full.w), LINE2).cradle, 1);
+  assert.equal(invariant(full.w), null);
+});
+
+test('big boiler needs High Gorge and row 2; fits once, spends six, then adopts only at Home', () => {
+  const early = copy(FULL_HOME);
+  assert.equal(install(early), 1);
+  assert.equal(install(early, 'a', { part: 3 }), 0, 'not High Gorge');
+  const s = copy(FULL_GORGE);
+  assert.equal(install(s, 'a', { part: 3 }), 0, 'cannot skip longer boiler');
+  assert.equal(install(s), 1);
+  assert.equal(install(s, 'a', { part: 4 }), 1);
+  const rev = installRevision(lineRow(s.w, LINE2));
+  const before = trains(s.w).map((r) => ({ ...r }));
+  assert.equal(install(s, 'a', { part: 3, revision: rev }), 1);
+  assert.equal(install(s, 'b', { part: 3, revision: rev }), 0);
+  assert.equal(install(s, 'a', { part: 3 }), 0);
+  assert.deepEqual(trains(s.w), before);
+  assert.equal(shed(s.w).spent, INSTALL_STEEL[3] + INSTALL_STEEL[4]);
+  const pending = new Set(servingSlots((k) => train(s.w, k), LINE2));
+  for (let t = 0; pending.size; t++) {
+    assert.ok(t < 10000, 'all serving trains adopt');
+    advance(s, 1);
+    for (const k of pending) {
+      const r = train(s.w, k);
+      if (r.boiler !== 3) continue;
+      assert.equal(r.from, trainStops(s.w, LINE2)[0]);
+      assert.equal(r.v0, 0);
+      assert.ok(r.phase === TRAIN_PHASE.STAND || r.depart === s.t);
+      pending.delete(k);
+    }
+  }
+  assert.equal(lineRow(restore(s.w), LINE2).boiler, 3);
+  assert.equal(invariant(s.w), null);
+});
+
+test('30 m/s row cruises at 300 cm/tick and brakes at its own 3.5: the late request boundary is 128.58 m', () => {
+  const kin = BOILER[3];
+  assert.deepEqual(kin, { speed: 300, accel: 3.5, brake: 3.5 });
+  assert.equal(trainLegSpeed(100000, 200, 0, kin), kin.speed);
+  assert.equal(trainCanBrake(0, kin.speed, 1, 12857, kin), false);
+  assert.equal(trainCanBrake(0, kin.speed, 1, 12858, kin), true);
+  assert.equal(
+    trainNextStop([0, 12857, 50000], 0, kin.speed, 1, () => true, kin),
+    2,
+  );
+  assert.equal(
+    trainNextStop([0, 12858, 50000], 0, kin.speed, 1, () => true, kin),
+    1,
+  );
+  const row = {
+    ...train(FULL_GORGE.w, A),
+    boiler: 3,
+    phase: TRAIN_PHASE.RUN,
+    from: 0,
+    dest: 100000,
+    depart: 0,
+    to: 2,
+    track: 0,
+    v0: 300,
+    req: 0,
+  };
+  const stops = [0, 12858, 100000];
+  assert.equal(trainRequestable(row, LINE2, stops, 0)?.stop, 1);
+  assert.equal(trainRequestable(row, LINE2, [0, 12857, 100000], 0), null);
+});
 
 for (const part of [1, 2] as const)
   test(`accepted part ${part} reaches installer and peer through replication exactly once`, () => {
@@ -227,7 +354,7 @@ test('the free upgrade refuses early, malformed, raced and repeated holds, and s
 });
 
 test('the speed rows keep braking and shorten the two opening rides', () => {
-  assert.deepEqual(BOILER_SPEED, [140, 200, 250]);
+  assert.deepEqual(BOILER_SPEED, [140, 200, 250, 300]);
   for (const [line, dist, slow, table] of [
     [0, 19300, 186, 154],
     [1, 50575, 410, 311],

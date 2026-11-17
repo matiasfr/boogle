@@ -13,6 +13,7 @@ import { accounts, beam, boiler, rail, line, shed, trains, works, worksClock } f
 import { line2Completed } from './railway-queries-line2.ts';
 import { pierLaid } from './railway-line2-layout.ts';
 import { footingTotal } from './railway-queries-works.ts';
+import { footCap } from './railway-queries-trade.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
@@ -78,7 +79,7 @@ export function checkWorks(w: World) {
   if (
     ts.some(
       (r, slot) =>
-        (r.wagon && RAIL_TRAINS[slot]!.line !== LINE2) || r.foot > WORKS.wagonCap || (r.wagon && h.fitted < 0),
+        (r.wagon && RAIL_TRAINS[slot]!.line !== LINE2) || r.foot > footCap(w, r) || (r.wagon && h.fitted < 0),
     )
   )
     bad('wagon');

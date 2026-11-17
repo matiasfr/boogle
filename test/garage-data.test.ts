@@ -67,6 +67,9 @@ test('the lift follows the ring and pushes back in the last third', () => {
 
 test('the wagon is free only once it has coupled; the longer boiler waits on steel', () => {
   const room = {
+    installRev: 0,
+    cradleFitted: false,
+    gorgeReached: false,
     boilerFitted: true,
     upgradeReady: true,
     wagonCoupled: true,
@@ -82,7 +85,15 @@ test('the wagon is free only once it has coupled; the longer boiler waits on ste
 });
 
 test('the longer boiler reads Needs steel, then Ready, then Installed, and the old boiler Replaced', () => {
-  const base = { boilerFitted: true, upgradeReady: true, wagonCoupled: true, tableBusy: false };
+  const base = {
+    boilerFitted: true,
+    upgradeReady: true,
+    wagonCoupled: true,
+    tableBusy: false,
+    installRev: 0,
+    cradleFitted: false,
+    gorgeReached: false,
+  };
   const of = (steelHome: boolean, longFitted: boolean) => {
     const parts = partsOf({ ...base, steelHome, steel: steelHome ? 1 : 0, longFitted, boilerRev: longFitted ? 1 : 0 });
     const pick = (id: string) => parts.find((p) => p.id === id)!;
@@ -99,7 +110,16 @@ test('the longer boiler reads Needs steel, then Ready, then Installed, and the o
 });
 
 test('no try-on: a part short of its bill says what it needs and what is in; nothing else carries a bill', () => {
-  const room = { boilerFitted: true, upgradeReady: true, wagonCoupled: true, tableBusy: false, boilerRev: 0 };
+  const room = {
+    boilerFitted: true,
+    upgradeReady: true,
+    wagonCoupled: true,
+    tableBusy: false,
+    boilerRev: 0,
+    installRev: 0,
+    cradleFitted: false,
+    gorgeReached: false,
+  };
   const long = (steel: number, longFitted = false) =>
     partsOf({ ...room, steelHome: steel >= 1, steel, longFitted }).find((p) => p.id === 'long')!;
   assert.deepEqual(long(0).needs, { what: 'Steel', need: 1, have: 0 });

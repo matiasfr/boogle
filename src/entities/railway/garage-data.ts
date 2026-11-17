@@ -3,7 +3,7 @@
 // railway's own leg maths (src/sim/railway-train.ts) so a number on the screen is the number the timetable gives.
 import { BOILER, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
-import { WORKS } from '../../sim/railway-works-layout.ts';
+import { CRADLE_CAP, INSTALL_STEEL } from '../../sim/railway-works-layout.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { LINE2_KIT } from '../../sim/railway-line2-layout.ts';
 import { prefabs as railwayPrefabs } from '../../content/prefabs/railway.ts';
@@ -38,18 +38,23 @@ export type RoomFacts = {
   upgradeReady: boolean;
   /** Steel has come home (`Shed.steel` of 1 or more): the longer boiler can be installed. */
   steelHome: boolean;
-  /** How much steel is home (`Shed.steel`): the count a part's bill shows as in. */
+  /** Unspent steel (`Shed.steel - Shed.spent`): the count a part's bill shows as in. */
   steel: number;
-  /** The room's line 2 wears the longer boiler (`Line.boiler` of 1 or more). */
+  /** The room's line 2 wears the longer boiler (`Line.boiler` of 2 or more). */
   longFitted: boolean;
-  /** The boiler fit this tab last saw (`Line.boiler`): the revision an install is sent on. */
+  /** The boiler row this tab last saw (`Line.boiler`). */
   boilerRev: number;
+  /** Shared revision of the line's monotone boiler and cradle fits. */
+  installRev: number;
+  cradleFitted: boolean;
+  gorgeReached: boolean;
 };
 
 export type PartId =
   | 'boiler'
   | 'blast'
   | 'long'
+  | 'big'
   | 'plough'
   | 'four'
   | 'kitcar'
@@ -78,6 +83,9 @@ export type Standing =
 export type Bill = { what: string; need: number; have: number };
 /** The longer boiler needs steel home (`Shed.steel` of 1 or more: the server's rule for `rail.install`). */
 export const LONG_NEEDS_STEEL = 1;
+export const INSTALL_PART = { blast: 1, long: 2, big: 3, cradle: 4 } as const;
+export type InstallId = keyof typeof INSTALL_PART;
+export const isInstall = (id: PartId): id is InstallId => Object.hasOwn(INSTALL_PART, id);
 export type Part = {
   id: PartId;
   cat: CatId;
@@ -95,6 +103,16 @@ export type Part = {
 };
 
 export function partsOf(room: RoomFacts): Part[] {
+  const paid = (id: 'big' | 'cradle', available: boolean, installed: boolean) => {
+    const need = INSTALL_STEEL[INSTALL_PART[id]],
+      have = Math.min(room.steel, need);
+    const standing: Standing = installed ? 'installed' : !available ? 'later' : have >= need ? 'ready' : 'steel';
+    return {
+      standing,
+      pill: installed ? 'Installed' : !available ? 'Later' : have >= need ? 'Ready' : `STEEL ${have}/${need}`,
+      ...(available && !installed ? { needs: { what: 'STEEL', need, have } } : {}),
+    };
+  };
   return [
     {
       id: 'boiler',
@@ -127,6 +145,14 @@ export function partsOf(room: RoomFacts): Part[] {
         ? {}
         : { needs: { what: 'Steel', need: LONG_NEEDS_STEEL, have: Math.min(room.steel, LONG_NEEDS_STEEL) } }),
       price: 'Free: the reward for reaching steel',
+    },
+    {
+      id: 'big',
+      cat: 'engine',
+      name: 'Big boiler',
+      desc: `${BOILER[3].speed / 10} m/s. The same cars.`,
+      size: 'large',
+      ...paid('big', room.gorgeReached && room.longFitted, room.boilerRev >= 3),
     },
     {
       id: 'plough',
@@ -199,9 +225,8 @@ export function partsOf(room: RoomFacts): Part[] {
       id: 'cradle',
       cat: 'cargo',
       name: 'Bigger cradle',
-      desc: 'Not built yet.',
-      standing: 'later',
-      pill: 'Later',
+      desc: `${CRADLE_CAP[0]} → ${CRADLE_CAP[1]} footings a trip.`,
+      ...paid('cradle', room.steelHome, room.cradleFitted),
       size: 'medium',
     },
     {
@@ -246,6 +271,7 @@ export const BOILERS = {
   boiler: { ...BOILER[0], pulls: 4 },
   table: { ...BOILER[1], pulls: 4 },
   long: { ...BOILER[2], pulls: 5 },
+  big: { ...BOILER[3], pulls: 5 },
 } as const;
 export type BoilerId = keyof typeof BOILERS;
 /** The line's run for the readouts: the Village stop to the line's last stop, in centimetres, or, until the island
@@ -292,12 +318,21 @@ export const rowChanged = (r: Row) => r.kind !== 'text' && r.now !== r.then;
 /** The rows a part shows, for the part chosen against what the category has now. Only rows the part changes carry a
  * preview (brief, call 37); a part that changes nothing shows what the category is today. `fitted`: the room wears
  * the longer boiler, so today's numbers are its and no row carries a preview. */
-export function rowsFor(cat: CatId, chosen: PartId, boiler = 0): Row[] {
-  const { cm } = lineRunCm();
-  const end = lineRunCm().end;
+export function rowsFor(cat: CatId, chosen: PartId, boiler = 0, cradle = false): Row[] {
+  const gorge = RAIL_LINES[LINE2]!.halts.find((h) => h.name === 'High Gorge')!;
+  const { cm, end } =
+    chosen === 'big' ? { cm: gorge.s - RAIL_LINES[LINE2]!.halts[0]!.s, end: gorge.name } : lineRunCm();
+  const cap = CRADLE_CAP[Number(cradle)]!;
   if (cat === 'engine') {
-    const a = boiler >= 2 ? BOILERS.long : boiler === 1 ? BOILERS.table : BOILERS.boiler,
-      b = chosen === 'long' ? BOILERS.long : chosen === 'blast' && boiler === 0 ? BOILERS.table : a;
+    const a = boiler >= 3 ? BOILERS.big : boiler === 2 ? BOILERS.long : boiler === 1 ? BOILERS.table : BOILERS.boiler,
+      b =
+        chosen === 'big'
+          ? BOILERS.big
+          : chosen === 'long' && boiler < 2
+            ? BOILERS.long
+            : chosen === 'blast' && boiler === 0
+              ? BOILERS.table
+              : a;
     const runA = runSeconds(cm, a.speed),
       runB = runSeconds(cm, b.speed);
     const rows: Row[] = [
@@ -308,8 +343,8 @@ export function rowsFor(cat: CatId, chosen: PartId, boiler = 0): Row[] {
         label: `Footings to ${end} a minute`,
         kind: 'number',
         digits: 1,
-        now: perMinute(WORKS.wagonCap, runA),
-        then: perMinute(WORKS.wagonCap, runB),
+        now: perMinute(cap, runA),
+        then: perMinute(cap, runB),
       },
       {
         id: 'kit',
@@ -329,7 +364,21 @@ export function rowsFor(cat: CatId, chosen: PartId, boiler = 0): Row[] {
     ];
   if (cat === 'cargo')
     return [
-      { id: 'footTrip', label: 'Footings a trip', kind: 'number', now: WORKS.wagonCap, then: WORKS.wagonCap },
+      {
+        id: 'footTrip',
+        label: 'Footings a trip',
+        kind: 'number',
+        now: cap,
+        then: chosen === 'cradle' ? CRADLE_CAP[1] : cap,
+      },
+      {
+        id: 'footRate',
+        label: 'Footings a minute',
+        kind: 'number',
+        digits: 1,
+        now: perMinute(cap, runSeconds(cm, BOILER[boiler]!.speed)),
+        then: perMinute(chosen === 'cradle' ? CRADLE_CAP[1] : cap, runSeconds(cm, BOILER[boiler]!.speed)),
+      },
       { id: 'kitTrip', label: 'Rails a trip', kind: 'number', now: LINE2_KIT.rails, then: LINE2_KIT.rails },
     ];
   if (cat === 'looks')

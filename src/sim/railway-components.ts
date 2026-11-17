@@ -184,7 +184,7 @@ export const Steel = defineComponent(
  * tick it was installed (`fitted`, -1 never). */
 export const Line = defineComponent(
   'line',
-  { slot: 'int', req: 'int', left0: 'int', left1: 'int', boiler: 'u8', fitted: 'int' },
+  { slot: 'int', req: 'int', left0: 'int', left1: 'int', boiler: 'u8', fitted: 'int', cradle: 'u8' },
   { key: 'slot', defaults: { left0: -1, left1: -1, fitted: -1 } },
 );
 /** Split-rock Works (./railway-works.ts): the breaker, the seams, the kiln, its rack and the pier's footings. */
@@ -216,8 +216,9 @@ export const Shed = defineComponent(
     table: 'u8',
     tableRev: 'int',
     ready: 'int',
-    // Steel landed in the Roundhouse bay off line 2's trains (ring-island-build2, R2): shown, never spent in build 2.
+    // Landed steel never falls: stage/gate facts read it; stock and bills read steel - spent.
     steel: 'int',
+    spent: 'int',
   },
   { defaults: { fitted: -1, ready: -1 } },
 );
