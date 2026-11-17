@@ -183,10 +183,15 @@ models`'.
     `fares-running` landing through the hall, past the till and out the goods door to that breaker without recovery;
     minimum sampled capsule clearance 0.144 m. Opened `.look/a3-hall-still.png` and its motion sheet; hall and doorway
     remain open. Full `npm run level-check` passed; this short bot witness covers the station prop it excludes.
-- [ ] **K1. Checkpoint: the economy seen.** After A1 to A3. The main session opens the six stills; one real-time clip of
+- [x] **K1. Checkpoint: the economy seen.** After A1 to A3. The main session opens the six stills; one real-time clip of
   a train unloading at the island; `docs/game-design/place.md` gains the town economy's views (one doc edit for all
   three steps, so they share no file). Live as every ship is; (review) the owner is pointed at the economy at B2, the
   first moment with a choice, not here, where money builds with nothing to spend it on.
+  - **Proved 17 November, main `2f8e8ce1`, v58:** opened seven standing-height stills (riders and till separately),
+    the 50-second real-speed Home island arrival sheet and extracted video frames. Freight clears the deck and
+    the next plot gains two crates; no freight flight is drawn (N3). Reconciled the owning game-design chapter,
+    including A1 and C2. [Evidence, commands and limits](../reports/town-k1-economy-seen.md). Smoothness and feel
+    unverified; not tested on a device.
 - [x] **B1. Plots and the buy (M; R4).** Sync: Server kind in the railway's replicated world; the server has
   authority. Tier: **independent review**. Model: Codex gpt-6-astra high; review a fresh gpt-6-astra high (or opus
   high). Parallel with A1 to A3 (no shared file).

@@ -76,7 +76,7 @@ The same finite ordinary trees, eight-log back, 24-log first frame, wake animati
 
 **The paused world (owner, 6 November, "economy principles amended"; built 7 November).** A room simulates only while someone is in it: 30 s after the last player leaves (a reload or a hidden tab doesn't count as leaving) it stops ticking and saves. The next join applies one away credit before anyone sees the world: the forge's rack and the depot cart fill H × (1 − e^(−away/H)) of production time (H = 2 h: 10 min away credits 9.6 min, 1 h credits 47 min, 8 h credits 1 h 58 min, a weekend just under 2 h), never past the rack's 24 rails or the stretch's log bill, and (slice 5, once the trains run) the Camp's timber yard and the Quarry's stone yard a crate per 15 s and 30 s of that time, never past their 8; a funded stretch that was mid-laying finishes (an absence shorter than the 30 s grace, such as a quick deploy, only advances it); nothing new starts. Tree regrowth and drop recovery catch up on the same join, up to 24 hours. Both rates are so quick that any real absence comes back to a full rack and a loaded cart. Code: `src/sim/railway-away.ts`, `server/src/host/world-host.ts`. Serves DESIGN.md 9 (Leave something for the next visitor).
 
-**Freight (slice 5, 11-12 November; [plan](../plans/slice5-town-economy.md)).** Once the trains run, the Camp's timber yard makes a crate every 15 s and the Quarry's stone yard one every 30 s, each up to 8; both start full. Line 1's train stands at the Camp every trip and loads what it has room for; a train standing at a yard heading home always loads, whatever it stopped for, and its crates land in the Village's count at its line's Village platform. Line 2 makes one stop for freight: from the moment the pier's twelfth footing is set, a homeward train that is empty and on no build errand (not the footing wagon's, no kit aboard, no kit owed) stops at the Quarry's down platform when a whole trainload of 8 waits, dwells as usual and takes all 8; never while the footing wagon is still owed footings (from Q7 laid to the ring's last). Before the footings, while a kit is owed or while the wagon is owed footings, stone moves only when a lever or rider ask stands a train there. The deliveries stake the Village's plots (8, 24, then 40 timber with 16 stone, two staked at once). Freight is its own count: it never becomes logs, stone or rails anyone carries. No view yet (V1 draws the crates and stakes). Code: `src/sim/railway-sys-trade.ts`, `railway-queries-trade.ts`, `railway-trade-layout.ts`.
+**Freight (slice 5, 11-12 November; [plan](../plans/slice5-town-economy.md)).** Once the trains run, the Camp's timber yard makes a crate every 15 s and the Quarry's stone yard one every 30 s, each up to 8; both start full. Line 1's train stands at the Camp every trip and loads what it has room for; a train standing at a yard heading home always loads, whatever it stopped for, and its crates land in the Village's count at its line's Village platform. Line 2 makes one stop for freight: from the moment the pier's twelfth footing is set, a homeward train that is empty and on no build errand (not the footing wagon's, no kit aboard, no kit owed) stops at the Quarry's down platform when a whole trainload of 8 waits, dwells as usual and takes all 8; never while the footing wagon is still owed footings (from Q7 laid to the ring's last). Before the footings, while a kit is owed or while the wagon is owed footings, stone moves only when a lever or rider ask stands a train there. The deliveries stake the Village's plots (8, 24, then 40 timber with 16 stone, two staked at once). Freight is its own count: it never becomes logs, stone or rails anyone carries. A1 now draws yard stacks, count boards and freight on the train; A2 draws the stakes and plot piles ([current views](#town-economy-in-the-live-game-17-november-2026-v58)). Code: `src/sim/railway-sys-trade.ts`, `railway-queries-trade.ts`, `railway-trade-layout.ts`.
 
 **House buy rules (16 November; town-economy-visible B1).** The server accepts `rail.buy { id }` for a staked,
 unbought priced plot when the shared strongbox can pay. It subtracts the price once, records the paid amount and
@@ -2586,13 +2586,18 @@ cleared locally, and its two limestone rocks
 are chopped like line 1's. Serves DESIGN.md **7. Telegraph everything** and **8. Enjoyable alone and together**. Not tested on a device.
 
 
-## Town economy in the live game (16 November 2026, v54)
+<a id="town-economy-in-the-live-game-16-november-2026-v54"></a>
 
-Freight delivered by the running trains supplies the Village's plots. Its rules already accumulate timber and
-stone, but this head has no yard-stack view or replicated freight load drawn on trains (A1 remains open).
-The freight car still has its existing cargo fittings; this is not visible proof of the trade cargo.
-Sources: [trade rules](../../src/sim/railway-sys-trade.ts),
-[train view](../../src/entities/railway/train-view.ts).
+## Town economy in the live game (17 November 2026, v58)
+
+Freight delivered by the running trains supplies the Village's plots. The Camp draws a brown timber stack and
+the Quarry a grey stone stack, each with a goods-icon count board. Each pile draws at most eight crates in a
+two-by-two-by-two layout; its board retains the exact stock count. The train's solid cargo deck draws replicated
+freight in the slots left by kit cargo. At Home, freight disappears from the deck on the row change and the
+delivered count supplies the plot piles below. There is no freight flight or carried journey from car to plot;
+kit cargo keeps its separate unloading flights. These views add no shared state.
+Sources: [yard stacks and boards](../../src/entities/railway/freight-view.ts),
+[train view](../../src/entities/railway/train-view.ts), [trade rules](../../src/sim/railway-sys-trade.ts).
 
 The unbought plots are empty outlined ground with door mats. Delivered materials grow a pile beside the next plot;
 a complete delivery stakes its corners with red tops and string. Up to eight crates represent each pile, while its
@@ -2635,6 +2640,9 @@ offers nothing; a joining player draws the waiting sack from the same row. The s
 existing balance display and column remain capped at its mark, even if a pour takes the actual balance above it.
 The waiting sack's count is not clamped to the box cap.
 `Empty` and `Sack <count>` are placeholders for the owner. No Boogler copy changed.
+Sources: [till view and interaction](../../src/entities/railway/till-view.ts),
+[sack prefab](../../src/prefab/builders/till-parts.ts),
+[accepted sack-waiting seed](../../src/sim/railway-seed-trade.ts).
 
 When the box can afford a staked plot, a gold outline shows its house. Approach the board and hold Interact for one
 second. Its board shows the added rider rate, price and box balance; an unaffordable offer gives the shortfall.
@@ -2655,3 +2663,6 @@ Placeholder copy, pending The Boogler: `Plot 1`, `Plot 2`, `Plot 3`, `Timber <ha
 `Hold to build`, `Hold <percent>%`, `Need <n> more Boogles`, `Waiting for town`.
 The existing residents' words are preserved. Proof limits and commands:
 [town checkpoint report](../reports/town-checkpoints-k1-k2.md).
+The [17 November K1 evidence](../reports/town-k1-economy-seen.md) replaces that report's A1/still/unload gaps:
+seven opened standing-height stills and a real-speed Home island arrival recording show the deck clearing and
+the next plot's pile appearing. The motion sheet establishes the visible state change, not smoothness or feel.
