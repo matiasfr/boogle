@@ -51,17 +51,17 @@ test('a restart, missing build and transient endpoint error can recover', async 
   assert.equal(endpoint.now(), 30000);
 });
 
-test('failed or superseded deploy remaining on the wrong commit fails after twelve minutes', async () => {
+test('failed or superseded deploy remaining on the wrong commit fails after 24 minutes', async () => {
   for (const wrong of ['previous', 'newer', '']) {
     const endpoint = fakeEndpoint(() => wrong);
     await assert.rejects(waitForServerBuild('expected', endpoint), (error: Error) => {
-      assert.match(error.message, /did not converge within 720s.*expected source commit expected/);
+      assert.match(error.message, /did not converge within 1440s.*expected source commit expected/);
       assert.ok(error.message.includes(`wrong commit ${wrong || '<empty>'}`));
       assert.match(error.message, /deploy-server.yml.*failed, cancelled or superseded/);
       return true;
     });
     assert.equal(endpoint.now(), SERVER_WAIT_MS);
-    assert.equal(endpoint.polls.length, 48);
+    assert.equal(endpoint.polls.length, 96);
   }
 });
 

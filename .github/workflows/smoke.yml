@@ -32,9 +32,9 @@ jobs:
     # Forks have no live site of their own here.
     if: github.repository == 'matiasfr/boogle'
     runs-on: ubuntu-latest
-    # live-smoke.ts waits up to 12 minutes for deploy-server (14-minute hard deadline); the boot check adds an install
+    # live-smoke.ts waits up to 24 minutes for deploy-server (26-minute hard deadline; a server deploy took 19 minutes on 17 November); the boot check adds an install
     # and up to 2.5 minutes of page load.
-    timeout-minutes: 20
+    timeout-minutes: 32
     env:
       URL: ${{ inputs.url || 'https://boogle.club/' }}
     steps:
