@@ -3,6 +3,7 @@
 // the arrival's landing) and the server (server/src/jump.ts) both import it. Only `type SeedStage` comes from the seed
 // builders, so none of their code reaches the client bundle. Adding a row: src/sim/railway-seeds.ts's header.
 import type { SeedStage } from '../sim/railway-seeds.ts';
+import { AXIS, HALL, TILL } from '../place/home-station.ts';
 import {
   LINE2_BOILER,
   LINE2_GLIDE,
@@ -163,6 +164,19 @@ export const JUMPS: readonly Jump[] = [
     label: 'House built',
     line: 'The first house is built and sends riders to the trains',
     land: HOUSE_BUILT,
+  },
+  {
+    stage: 'sack-waiting',
+    menu: false,
+    label: 'Sack waiting',
+    line: 'Back after a night: the coin sack is on the counter',
+    // Tooling-only C1 landing, inside the hall facing the till; visual proof belongs to C2.
+    land: {
+      x: 1000 + TILL.x + AXIS.n.x * 2,
+      y: HALL.floor,
+      z: TILL.z + AXIS.n.z * 2,
+      yaw: TILL.yaw - Math.PI / 2,
+    },
   },
   {
     stage: 'q6-done',

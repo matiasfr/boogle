@@ -6,6 +6,7 @@
 // The rules stay pure (state, action, tick): railApply and railTick are the same functions R1b's prediction runs.
 // Validation reads the facts the action carried (the actor's own position and action clock) through `Actor`.
 import { townPlotBoard, TOWN_BOARD } from '../place/town-plan.ts';
+import { HALL, TILL } from '../place/home-station.ts';
 import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type RailResult } from '../sim/railway.ts';
 import { HEAVY_LOAD, RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import {
@@ -99,6 +100,7 @@ export type Actor = {
 export const RAIL_ACTIONS = new Set([
   'rail.wake',
   'rail.buy',
+  'rail.sack',
   'rail.chop',
   'rail.take',
   'rail.rackTake',
@@ -288,6 +290,10 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       // Place-local x + 1000 is the world's Home origin, as in the other railway anchors.
       return actor.reach(Math.round((board.x + 1000) * 100), Math.round(board.z * 100), TOWN_BOARD.reach * 100);
     }
+    case 'rail.sack':
+      return (
+        height(Math.round(HALL.floor * 100)) && near(Math.round((TILL.x + 1000) * 100), Math.round(TILL.z * 100), 320)
+      );
     case 'rail.breaker':
       return at(WORKS_BREAKER);
     case 'rail.strike':
@@ -451,9 +457,12 @@ export function install(
       commit();
       return n;
     },
-    /** The away credit: `yard` production ticks for the yards, then up to `ticks` for the funded job, once per marker. */
+    /** The away credit: `yard` production ticks for the yards and sack, then up to `ticks` for the job, once per marker. */
     resume(ticks: number, marker: number, yard = 0) {
-      const n = railResume(world, Math.min(ticks, railMaxDuration(world)), marker, sync.world.tick, yard);
+      const n = railResume(world, Math.min(ticks, railMaxDuration(world)), marker, sync.world.tick, yard, {
+        farePct: rules.railTune.get('railFarePct'),
+        riderPct: rules.railTune.get('railRiderPct'),
+      });
       commit();
       return n;
     },

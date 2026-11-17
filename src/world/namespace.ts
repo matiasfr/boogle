@@ -120,7 +120,8 @@
 // v57 — 2026-11-16: riders' coach, eight rider places (was four), 16.1 m rear reach;
 // Home line 2 stop 21.65 m and Ring Island stop +3.4 m, keeping freight positions fixed;
 // High Gorge's crossover 3.4 m toward Home keeps the full coach train straight at the terminal turn.
-export const WORLD_NS = 'v57';
+// v58 (2026-11-17): capped away-fare sack and rail.sack pour into the shared strongbox; no migration.
+export const WORLD_NS = 'v58';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

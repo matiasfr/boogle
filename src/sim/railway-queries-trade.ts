@@ -158,6 +158,8 @@ export function tillRate(w: World, pct: TradePct, tick: number = 0) {
   });
   return Math.floor(hundredths / 100);
 }
+/** The sack's fill limit at today's rate; an earned balance is never clamped to a lower rate. */
+export const sackCap = (w: World, pct: TradePct, tick: number = 0) => TRADE.sackMin * tillRate(w, pct, tick);
 /** Only staked, unbought plots are on offer. */
 export function dearestOnOffer(w: World, pricePct: number) {
   let dearest = 0;

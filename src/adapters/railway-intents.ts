@@ -23,7 +23,7 @@ export type RailwayIntent =
   | { op: 'rail.wake'; tk?: number }
   | { op: 'rail.chop'; id: number; yaw?: number; collapsed?: boolean }
   | { op: 'rail.mine'; id: number }
-  | { op: 'rail.axe' | 'rail.beamChop' | 'rail.jump' }
+  | { op: 'rail.axe' | 'rail.beamChop' | 'rail.jump' | 'rail.sack' }
   | {
       op:
         | 'rail.forgeTake'
@@ -64,6 +64,7 @@ export const CARRY_MAX = LINE2_PACK.carry * (1 + HEAVY_LOAD.extra);
 export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.buy' && pricedPlot(e.id)) return { op: e.op, id: e.id };
   if (e.op === 'rail.wake') return { op: e.op };
+  if (e.op === 'rail.sack') return { op: e.op };
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
   if (e.op === 'rail.breaker' || e.op === 'rail.kiln' || e.op === 'rail.cradle' || e.op === 'rail.steel')
     return { op: e.op };
@@ -173,6 +174,7 @@ export const TAKES: ReadonlySet<string> = new Set([
 export const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.wake',
   'rail.buy',
+  'rail.sack',
   'rail.axe',
   'rail.jump',
   'rail.lever',
@@ -206,6 +208,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
   return {
     wake: () => submit({ op: 'rail.wake' }),
     buy: (slot: number) => pricedPlot(slot) && submit({ op: 'rail.buy', id: slot }),
+    sack: () => submit({ op: 'rail.sack' }),
     openAxe: () => submit({ op: 'rail.axe' }),
     claimJump: () => submit({ op: 'rail.jump' }),
     /** False (rebound now) when the rule would refuse the stroke: before Station 3 opens or once the tree is down. */

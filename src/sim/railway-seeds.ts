@@ -68,6 +68,7 @@ export const SEED_STAGES = [
   'fares-running',
   'house-ready',
   'house-built',
+  'sack-waiting',
   'yard-ready',
   'yard-built',
   'q6-stocked',
