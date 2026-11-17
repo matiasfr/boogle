@@ -236,6 +236,11 @@ async function runChecks() {
     failed += ring.failures;
     report.push(ring);
     if (!json) printRing(ring);
+    const { checkHomeCart } = await import('./home-cart.ts');
+    const homeCart = checkHomeCart();
+    failed += homeCart.failures;
+    report.push(homeCart);
+    if (!json) console.log('Home cart:', JSON.stringify(homeCart));
     // Home's rotunda: its keep-clear outline against the tracks, the town, the yard props and its own ground.
     const { checkRotunda, printRotunda, checkPitEscape } = await import('./rotunda.ts');
     const rotunda = checkRotunda();

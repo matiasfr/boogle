@@ -2,6 +2,7 @@
 // in order along road 2, every stop sits beside the island, the stalls are radial, the tracks clear the buildings, and
 // the cart's road is continuous. Pure numbers: nothing here is drawn or reaches the rules.
 import test from 'node:test';
+import { COACH_STOP, PLANNED_HOME_CONSIST } from '../dev/level/home-cart.ts';
 import assert from 'node:assert/strict';
 import {
   AXIS,
@@ -105,6 +106,12 @@ test("both stops are on the straight, line 2's 1.25 m ahead of abeam (v33), with
       `line 2's front on the straight at ${engine}x`,
     );
   }
+  // R1a invariant (railway-check-line2.ts): trains on implies cart at REST, so no vehicle runs on the leg.
+  // Only the planned engine may leave the straight; all boardable and freight cars stay on it.
+  for (const v of PLANNED_HOME_CONSIST) {
+    const nose = COACH_STOP + v.d + v.hz;
+    assert.ok(nose <= HEADS[1].segs[0].len + (v.role === 'engine' ? 3.5 : 0), `${v.role} straight/arc allowance`);
+  }
 });
 
 /** In order along the road and not touching. */
@@ -153,6 +160,16 @@ test('road 2: buffer, cart, points, waiting wagon, train and leg in order and ap
       ["the leg's points", LEG.to, LEG.to],
     ]);
   }
+  // R1a: trains on implies cart at REST; the leg is idle. Only this planned row may pass its points.
+  const plannedTail = COACH_STOP + PLANNED_HOME_CONSIST.at(-1)!.d - STEEL_CAR.hz;
+  const plannedEngine = PLANNED_HOME_CONSIST[0]!;
+  inOrder([
+    ['buffer', BUFFERS[1], BUFFERS[1]],
+    ['the cart', -CART.hz, CART.hz],
+    ["the spur's points", SPUR.s, SPUR.s],
+    ['planned coach train', plannedTail, COACH_STOP + plannedEngine.d + plannedEngine.hz],
+  ]);
+  assert.ok(COACH_STOP + plannedEngine.d + plannedEngine.hz > LEG.to, 'nose past idle leg points');
   const one = trainSpan(STOP[0]!, 1.25, 'three');
   assert.ok(BUFFERS[0] < one[0], "line 1's whole train at 1.25x clears road 1's buffer");
   assert.ok(one[1] <= HEADS[0].segs[0].len, "and stays on road 1's straight");
@@ -470,12 +487,14 @@ test('the board crossing over road 2: behind a standing train’s tail, off the 
   const from = s - len / 2,
     to = s + len / 2;
   // The longest train line 2 stands at its stop: the longer boiler ahead, the steel car last.
-  const [tail, head] = trainSpan(STOP[1]!, 1, 'steel', ENGINES[1]);
+  const [tail] = trainSpan(STOP[1]!, 1, 'steel', ENGINES[1]);
   assert.ok(to <= tail - 1, `the boards end ${(tail - to).toFixed(2)} m behind the steel car`);
   assert.ok(to <= SPUR.s - 1.5, `and ${(SPUR.s - to).toFixed(2)} m short of the spur's points`);
   assert.ok(from >= CART.hz + 0.5, `the cart at its forge stop is ${(from - CART.hz).toFixed(2)} m clear`);
-  // The island's far end has no room for it: the nose stands within 1.6 m of the leg's points.
-  assert.ok(LEG.to - head < 1.6, `the far end leaves ${(LEG.to - head).toFixed(2)} m`);
+  // R1a: trains on implies cart at REST; the planned nose may pass the idle leg's points.
+  // The crossing still belongs behind the tail: exact planned margin 1.95 m, independent of that nose.
+  const plannedTail = COACH_STOP + PLANNED_HOME_CONSIST.at(-1)!.d - STEEL_CAR.hz;
+  assert.ok(Math.abs(plannedTail - to - 1.95) < 0.01, 'boards end 1.95 m behind planned steel tail');
   // Beside the head ramp's lower half: a short step down from it, never from the full deck.
   const a = s - ROAD2_S,
     up = (v: number) => (ISLAND.lift * (v - ISLAND_A.apron)) / ISLAND.headRamp;

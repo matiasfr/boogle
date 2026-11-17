@@ -341,7 +341,9 @@ const sideOf = (s: number, lat: number) => {
     b = (p.bearing * Math.PI) / 180;
   return { x: p.x + Math.cos(b) * lat, z: p.z + Math.sin(b) * lat, yaw: Math.atan2(Math.sin(b), -Math.cos(b)) };
 };
-const lever = sideOf(LEG.to + 1.5, 2.4);
+// 16 Nov R1b: home-station-view.ts uses station-axis yaw, not the curved road tangent.
+// Tangent pose previously measured 1.1293370765247293 m; real view pose is 1.1341593429538008 m.
+const lever = { ...sideOf(LEG.to + 1.5, 2.4), yaw: Math.atan2(AXIS.d.x, AXIS.d.z) };
 const yawAxis = Math.atan2(AXIS.d.x, AXIS.d.z);
 const islandMid = axisPoint((BUFFERS[0] + ISLAND_A.foot) / 2, ISLAND_C);
 const island: Deck = {
