@@ -129,7 +129,11 @@ test('a trailing line comment is not read as an import', () => {
 // redeployed the server. It now asks dev/server-build.ts; no second list.
 test('automerge decides a server deploy from SERVER_IMAGE_PATHS, not a copy', () => {
   const step = read('.github/workflows/automerge.yml');
-  assert.match(step, /\| node dev\/server-build\.ts --touches; then\n\s+gh workflow run deploy-server\.yml/);
+  assert.match(step, /node dev\/server-build\.ts --touches <<<"\$files"; then\n\s+gh workflow run deploy-server\.yml/);
+  // gh pr diff refuses PRs over 300 files (HTTP 406): #1992 merged without a server deploy that way.
+  assert.doesNotMatch(step, /gh pr diff[^\n]*server-build/, 'the deploy check is back on gh pr diff');
+  assert.match(step, /pulls\/\$PR\/files[\s\S]{0,200}deploying the server to be safe[\s\S]{0,80}gh workflow run deploy-server\.yml/,
+    'a failed file listing must still deploy the server');
   assert.doesNotMatch(step, /src\/net\/ws-wire\\\.ts/, 'an inline copy of the image paths is back');
   const touches = (input: string) => {
     try {
