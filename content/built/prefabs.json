@@ -2892,6 +2892,15 @@
         }
       }
     },
+    "town.green-kerb": {
+      "colliders": [],
+      "key": "town.green-kerb",
+      "scope": "place",
+      "visual": {
+        "builder": "town.green-kerb",
+        "params": {}
+      }
+    },
     "town.house-bed": {
       "colliders": [
         {

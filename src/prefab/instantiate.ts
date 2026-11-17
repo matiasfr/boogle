@@ -23,6 +23,7 @@ import './builders/room-shell.ts';
 import './builders/room-proxy.ts';
 import './builders/boogler-statue.ts';
 import './builders/statue-scaffold.ts';
+import './builders/town-green-kerb.ts';
 import './builders/halt-parts.ts';
 import './builders/halt-ramp.ts';
 import './builders/halt-lever.ts';
