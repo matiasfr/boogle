@@ -32,6 +32,7 @@ import { railApply, railTick } from '../src/sim/railway-systems.ts';
 import { account, plot, rail, town, townClock, train, trains, yard, yards } from '../src/sim/railway-rows.ts';
 import {
   boxCap,
+  sackCap,
   dearestOnOffer,
   plotPrice,
   plotBuilt,
@@ -61,6 +62,10 @@ import { cycleTicks } from '../src/sim/railway-trains.ts';
 import { act, advance } from '../src/sim/railway-seed-route.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
 import { worldVerdict } from './helpers/railway-check.ts';
+import { serverWorld } from './helpers/server-world.ts';
+import { HALL, TILL } from '../src/place/home-station.ts';
+import { railValid, type Actor } from '../src/world/railway-server.ts';
+import { intentOf, railwayActs } from '../src/adapters/railway-intents.ts';
 
 /** A plain (unaudited) copy of a world through JSON, as the server holds a save. */
 const copy = (w: World) => {
@@ -893,7 +898,7 @@ test('R3: trade tunables default to 100 for fares and riders, 50 for prices', ()
   }
 });
 
-test('R3: no replay: a save and load, a resume and a second resume change no rider or Boogle', () => {
+test('R3: no replay: a save and load, a resume and a second resume change no rider or strongbox balance', () => {
   const w = copy(FARES.w);
   const before = JSON.stringify([tillRow(w), town(w, 0), trains(w).map((r) => r.riders)]);
   const back = createRailwayWorld();
@@ -902,9 +907,13 @@ test('R3: no replay: a save and load, a resume and a second resume change no rid
   railResume(back, 8 * 36000, 5, FARES.t + 1, railAwayCredit(8 * 36000));
   railResume(back, 8 * 36000, 5, FARES.t + 1, railAwayCredit(8 * 36000));
   const after = JSON.stringify([tillRow(back), town(back, 0), trains(back).map((r) => r.riders)]);
-  // The yards' credit moves crates (Town.wood and stone are untouched by it); nothing about riders or Boogles moves.
+  // Away fares fill only the sack; riders and the strongbox stay unchanged.
   const strip = (j: string) => JSON.parse(j).map((x: unknown) => x);
-  assert.deepEqual(strip(after)[0], strip(before)[0], 'the strongbox');
+  assert.deepEqual(
+    strip(after)[0],
+    { ...strip(before)[0], sack: sackCap(back, TRADE_PCT, FARES.t + 1) },
+    'only the sack fills',
+  );
   const tw = (j: string) => {
     const t = strip(j)[1];
     return [t.wait0, t.wait1, t.boarded, t.alighted];
@@ -1470,4 +1479,168 @@ test('B1: audited buy and completed-house ticks declare every accessed component
   assert.equal(sendBuy(w, READY.t, 0).status, 'accepted');
   railTick(w, READY.t + TRADE.buildTicks);
   checkTrade(w, READY.t + TRADE.buildTicks);
+});
+
+// C1: resume reuses deterministic production ticks; a pour transfers the entire earned sack once.
+const HOUSE = buildSeedWorld('house-built');
+const NIGHT = 8 * 36000;
+const sendSack = (w: World, tick: number, pid = 'a') => {
+  const a = account(w, pid)!;
+  return railApply(w, pid, { op: 'rail.sack', epoch: a.epoch, request: a.request + 1 }, tick);
+};
+
+test('C1: eight hours fills one capped sack, leaves the box untouched, and resumes never duplicate it', () => {
+  const w = createRailwayWorld({ audit: true });
+  w.load(HOUSE.w.snapshot(), (v) => railwayCheck(v, HOUSE.t));
+  const before = { ...tillRow(w) };
+  resumeAway(w, NIGHT, NIGHT, HOUSE.t);
+  const cap = sackCap(w, TRADE_PCT, HOUSE.t);
+  assert.equal(cap, 15 * tillRate(w, TRADE_PCT, HOUSE.t));
+  assert.equal(cap, 630, 'three buildings at the current fixed default fare and rider rate');
+  assert.deepEqual({ ...tillRow(w) }, { ...before, sack: cap });
+  const after = w.snapshot();
+  resumeAway(w, NIGHT, NIGHT, HOUSE.t);
+  resumeAway(w, NIGHT, NIGHT - 1, HOUSE.t);
+  assert.deepEqual(w.snapshot(), after, 'same and older markers do nothing');
+  const back = createRailwayWorld();
+  back.load(JSON.parse(JSON.stringify(after)), (v) => railwayCheck(v, HOUSE.t));
+  for (const v of [w, back]) resumeAway(v, NIGHT, NIGHT + 1, HOUSE.t);
+  assert.deepEqual({ ...tillRow(w) }, { ...before, sack: cap }, 'another absence cannot add past the cap');
+  assert.equal(w.hash(), back.hash(), 'loaded and audited worlds replay identically');
+  const seed = buildSeedWorld('sack-waiting');
+  assert.deepEqual({ ...tillRow(seed.w) }, { ...before, sack: cap });
+  assert.equal(plotBuilt(seed.w, 0, seed.t), true);
+});
+
+test('C1: a short absence floors the credited fares; asleep trains and zero ticks earn nothing', () => {
+  const w = copy(HOUSE.w),
+    ticks = railAwayCredit(13);
+  resumeAway(w, 13, 1, HOUSE.t);
+  assert.equal(tillRow(w).sack, Math.floor((tillRate(w, TRADE_PCT, HOUSE.t) * ticks) / 600));
+  assert.ok(tillRow(w).sack < sackCap(w, TRADE_PCT, HOUSE.t));
+  const before = { ...tillRow(w) };
+  railResume(w, 0, 2, HOUSE.t);
+  assert.deepEqual({ ...tillRow(w) }, before);
+  const asleep = copy(ASLEEP.w);
+  resumeAway(asleep, NIGHT, 1, ASLEEP.t);
+  assert.equal(tillRow(asleep).sack, 0);
+});
+
+test('C1: an empty sack is rejected, including after another player pours it', () => {
+  const w = copy(HOUSE.w),
+    before = { ...tillRow(w) };
+  assert.equal(sendSack(w, HOUSE.t).status, 'rejected');
+  assert.deepEqual({ ...tillRow(w) }, before);
+  resumeAway(w, NIGHT, 1, HOUSE.t);
+  assert.equal(sendSack(w, HOUSE.t).status, 'accepted');
+  assert.equal(sendSack(w, HOUSE.t, 'b').status, 'rejected');
+  checkTrade(w, HOUSE.t);
+});
+
+test('C1: pouring past the box mark conserves every coin and replay cannot pour twice', () => {
+  const w = createRailwayWorld({ audit: true });
+  w.load(HOUSE.w.snapshot(), (v) => railwayCheck(v, HOUSE.t));
+  credit(w, boxCap(w, TRADE_PCT, HOUSE.t) - tillRow(w).boogles);
+  resumeAway(w, NIGHT, 1, HOUSE.t);
+  const before = { ...tillRow(w) },
+    a = account(w, 'a')!,
+    request = { op: 'rail.sack', epoch: a.epoch, request: a.request + 1 };
+  const result = railApply(w, 'a', request, HOUSE.t);
+  assert.equal(result.status, 'accepted');
+  assert.equal(result.accepted, 1, 'one pour, as for one buy; receipts do not carry coin counts');
+  assert.deepEqual(railApply(w, 'a', request, HOUSE.t), result);
+  assert.deepEqual(
+    { ...tillRow(w) },
+    {
+      ...before,
+      boogles: before.boogles + before.sack,
+      poured: before.poured + before.sack,
+      sack: 0,
+    },
+  );
+  assert.ok(tillRow(w).boogles > boxCap(w, TRADE_PCT, HOUSE.t));
+  checkTrade(w, HOUSE.t);
+  const back = createRailwayWorld();
+  back.load(JSON.parse(JSON.stringify(w.snapshot())), (v) => railwayCheck(v, HOUSE.t));
+  assert.equal(back.hash(), w.hash());
+  assert.equal(sendSack(back, HOUSE.t).status, 'rejected');
+  for (const key of ['boogles', 'poured'] as const) {
+    const corrupt = copy(w);
+    corrupt.mut(Till, corrupt.single(Till))![key]++;
+    assert.throws(() => checkTrade(corrupt, HOUSE.t), /till conservation/);
+  }
+});
+
+test('C1: lowering either live rate preserves a full sack; later resumes add nothing at the lower cap', () => {
+  for (const key of ['railFarePct', 'railRiderPct'] as const) {
+    const host = serverWorld(),
+      saved = host.sync.snapshot();
+    assert.ok(
+      host.sync.loadSnapshot({ ...saved, tick: HOUSE.t, data: { ...saved.data, railway: HOUSE.w.snapshot() } }),
+    );
+    host.railway.resume(NIGHT, 1, railAwayCredit(NIGHT));
+    const before = { ...tillRow(host.railway.world()) };
+    assert.equal(before.sack, sackCap(host.railway.world(), TRADE_PCT, HOUSE.t));
+    for (const v of [50, 0]) {
+      assert.equal(host.run('a', { op: 'tune.set', key, v }).status, 'accepted');
+      const pct = { farePct: host.railTune.get('railFarePct'), riderPct: host.railTune.get('railRiderPct') };
+      assert.ok(sackCap(host.railway.world(), pct, HOUSE.t) < before.sack);
+      assert.deepEqual({ ...tillRow(host.railway.world()) }, before, 'tuning does not clamp money');
+      host.railway.resume(NIGHT, v === 50 ? 2 : 3, railAwayCredit(NIGHT));
+      assert.deepEqual({ ...tillRow(host.railway.world()) }, before, 'lower-cap resume neither adds nor removes');
+      assert.ok(
+        host.sync.loadSnapshot(JSON.parse(JSON.stringify(host.sync.snapshot()))),
+        'save validates without a cap',
+      );
+    }
+  }
+});
+
+test('C1: the server fills at live rates and accepts the adapter pour only at the till', () => {
+  const host = serverWorld(),
+    saved = host.sync.snapshot();
+  assert.ok(host.sync.loadSnapshot({ ...saved, tick: HOUSE.t, data: { ...saved.data, railway: HOUSE.w.snapshot() } }));
+  assert.equal(host.run('a', { op: 'tune.set', key: 'railFarePct', v: 200 }).status, 'accepted');
+  assert.equal(host.run('a', { op: 'tune.set', key: 'railRiderPct', v: 25 }).status, 'accepted');
+  const ticks = railAwayCredit(100);
+  host.railway.resume(100, 1, ticks);
+  const w = host.railway.world(),
+    n = Math.floor((tillRate(w, { farePct: 200, riderPct: 25 }, HOUSE.t) * ticks) / 600);
+  assert.equal(tillRow(w).sack, n);
+  const actor: Actor = {
+    reach: (x, z, radius) =>
+      Math.abs(x - (1000 + TILL.x) * 100) < 1 && Math.abs(z - TILL.z * 100) < 1 && radius === 320,
+    height: (y) => Math.abs(y - (HALL.floor * 100 + 40)) < 1,
+    cadence: () => true,
+  };
+  const a = account(w, 'a')!,
+    request = { op: 'rail.sack', epoch: a.epoch, request: a.request + 1 };
+  assert.equal(railValid(w, request, { ...actor, height: () => false }), false);
+  assert.equal(railValid(w, request, { ...actor, cadence: () => false }), false);
+  assert.equal(host.railway.act('a', request, { ...actor, reach: () => false }).status, 'rejected');
+  assert.equal(tillRow(w).sack, n);
+  const intents = railwayActs(
+    (intent) => {
+      assert.deepEqual(intentOf(intent), { op: 'rail.sack' });
+      const next = account(w, 'a')!;
+      return (
+        host.railway.act('a', { ...intent, epoch: next.epoch, request: next.request + 1 }, actor).status === 'accepted'
+      );
+    },
+    () => w,
+  );
+  const before = { ...tillRow(w) };
+  assert.equal(intents.sack(), true);
+  assert.equal(tillRow(w).boogles, before.boogles + n);
+  assert.equal(tillRow(w).poured, before.poured + n);
+  assert.equal(tillRow(w).sack, 0);
+  checkTrade(w, HOUSE.t);
+});
+
+test('C1: save checks reject negative and fractional sacks, without consulting a live cap', () => {
+  for (const sack of [-1, 0.5, NaN, Infinity]) {
+    const w = copy(HOUSE.w);
+    w.mut(Till, w.single(Till))!.sack = sack;
+    assert.throws(() => checkTrade(w, HOUSE.t), /till bounds/);
+  }
 });

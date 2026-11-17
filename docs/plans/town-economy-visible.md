@@ -289,19 +289,26 @@ models`'.
 
     **Placeholder strings for the owner:** “+1 rider / minute”, “Price <n>”, “Box <n>”, “Hold to build”, “Hold <n>%”,
     “Need <n> more Boogles”, “Waiting for town”. Existing “Plot <n>”, “Timber” and “Stone” and The Boogler's copy stay.
-- [ ] **C1. The sack (S; R5).** After B1 (it shares B1's files). Sync: Server kind. Tier: **independent review**.
+- [x] **C1. The sack (S; R5).** After B1 (it shares B1's files). Sync: Server kind. Tier: **independent review**.
   Model: gpt-6-astra high; review as B1. Parallel with B2.
-  - `src/sim/railway-sys-away.ts` (`tillAway(w, ticks)` beside `yardsAway`: `sack += floor(tillRate × ticks / 600)`, at
-    most `sackCap`; the box earns nothing away), `railway-queries-trade.ts` (`sackCap(w, tick, pct)` = 15 × `tillRate`),
+  - **Built 2026-11-17, v58; not shipped.** C1's 7 tests and the `sack-waiting` host checkpoint pass. Bounded
+    ship-check: registry/lint/typecheck pass; 1,609 tests pass, 4 unchanged Windows-path failures
+    (`prefab-portability` ×2, `unit-budget` ×2), 65 skipped, 1 todo. Independent review and C2's view remain;
+    not tested on a device.
+  - `src/sim/railway-sys-away.ts` (`tillAway` beside the yard credit:
+    `sack = max(sack, min(sackCap, sack + floor(tillRate × ticks / 600)))`; the box earns nothing away),
+    `railway-queries-trade.ts` (`sackCap(w, pct, tick)` = 15 × `tillRate`),
     `railway-sys-trade.ts` (`sack`), `railway-systems.ts` (`'rail.sack': [sack]`), `railway-check-trade.ts`
-    (`sack ≤ sackCap`), `src/world/railway-server.ts`, `src/adapters/railway-intents.ts` (`sack()`),
+    (non-negative integer sack and the pour ledger; no tunable-dependent saved cap), `src/world/railway-server.ts`,
+    `src/adapters/railway-intents.ts` (`sack()`),
     `railway-seed-trade.ts` (`sack-waiting`: `house-built` resumed after 8 hours), `src/world/railway-jump.ts` ("Sack
     waiting", at the till), `test/railway-trade.test.ts`.
   - Op `rail.sack`: accepted when `sack > 0`; `boogles += sack`, `poured += sack`, `sack = 0` (it may pass the box's
     mark once). No new field: `Till.sack` and `poured` exist.
   - `WORLD_NS`: the next free number after B1's (a new op), unless C1 ships with B1 under one bump.
   - Tests: 8 hours away fills the sack to `sackCap` and the box not at all; a second resume adds nothing; an empty
-    sack's op is refused; the money check after a pour past the mark.
+    sack's op is refused; the money check after a pour past the mark; lowering either live rate preserves the earned
+    sack and a later resume adds nothing. The cap applies only when filling ([Default ruling](../agent-calls.md#rewards-co-op-and-town-roles)).
   - Proof: `npm run checkpoints -- sack-waiting`.
 - [ ] **C2. The sack on the counter (S; V4).** After C1 and A3. Sync: Local. Tier: normal + visual. Model:
   gpt-6-astra high. `src/entities/railway/till-view.ts`: a sack on the counter while `Till.sack > 0`, its count on the

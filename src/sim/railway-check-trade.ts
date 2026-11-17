@@ -74,6 +74,7 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
     bad('riders conservation');
   // R3: the one strongbox. Every field a whole number; what is in it is what landed and was poured, less what was spent.
   const b = till(w);
+  // The sack's cap applies when it fills, never when a save loads: live rates may have fallen since it was earned.
   if (![b.boogles, b.landed, b.lost, b.spent, b.sack, b.poured].every((v) => railInt(v))) bad('till bounds');
   if (b.boogles !== b.landed + b.poured - b.spent) bad('till conservation');
   let paid = 0;

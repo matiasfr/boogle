@@ -24,6 +24,7 @@ import {
   Job,
   JobRun,
   Pile,
+  Plot,
   QJob,
   QJobRun,
   Rail,
@@ -31,6 +32,7 @@ import {
   Rock,
   Steel,
   SteelClock,
+  Till,
   Train,
   Tree,
   Works,
@@ -60,6 +62,20 @@ import { jobClock } from './railway-sys-core.ts';
 import { layLine1 } from './railway-sys-line1.ts';
 import { boilerPedestal, cartMint, cartTakeRails, cartUnload, layLine2 } from './railway-sys-line2.ts';
 import { yardsAway } from './railway-sys-trade.ts';
+import { sackCap, tillRate } from './railway-queries-trade.ts';
+import { TRADE_PCT, type TradePct } from './railway-trade-layout.ts';
+
+/** One capped sack of away fares; the strongbox earns nothing until somebody pours it. */
+function tillAway(w: World, ticks: number, tick: number, pct: TradePct) {
+  if (ticks <= 0 || w.get(Rail, railId(w))!.trains < 0) return;
+  const id = w.single(Till),
+    sack = w.get(Till, id)!.sack;
+  const next = Math.max(
+    sack,
+    Math.min(sackCap(w, pct, tick), sack + Math.floor((tillRate(w, pct, tick) * ticks) / 600)),
+  );
+  if (next > sack) w.mut(Till, id)!.sack = next;
+}
 
 // ---------------------------------------------------------------- offline catch-up, sessions, supply, the beam
 /** The away credit's producers (./railway-away.ts): `ticks` of production for the forge's rack, the depot cart and the steel works' rack, as
@@ -121,7 +137,7 @@ function awayCredit(w: World, ticks: number, tick: number) {
 export const resume = defineSystem(
   'rail.resume',
   {
-    reads: [Aperture, Leg],
+    reads: [Aperture, Leg, Plot],
     writes: [
       Rail,
       RailClock,
@@ -140,14 +156,19 @@ export const resume = defineSystem(
       YardClock,
       Steel,
       SteelClock,
+      Till,
     ],
     phase: 'resume',
     order: 0,
   },
-  (w, { ticks, marker, tick, yard }: { ticks: number; marker: number; tick: number; yard: number }) => {
+  (
+    w,
+    { ticks, marker, tick, yard, pct }: { ticks: number; marker: number; tick: number; yard: number; pct: TradePct },
+  ) => {
     const clock = w.mut(RailClock, railId(w))!;
     if (marker <= clock.resumeMarker) return 0;
     clock.resumeMarker = marker;
+    tillAway(w, yard, tick, pct);
     awayCredit(w, yard, tick);
     const slot = activeStation(w),
       id = jobId(w, slot);
@@ -171,9 +192,16 @@ export const resume = defineSystem(
   },
 );
 /** One away credit, consumed once per absolute marker: `yard` production ticks for the producers first (the forge, the
- * depot and slice 5's crate yards), then up to `ticks` for the funded job. Returns the job ticks advanced. */
-export function railResume(w: World, ticks: number, marker: number, tick: number, yard = 0): number {
-  const n = w.run(resume, { ticks, marker, tick, yard });
+ * depot and slice 5's crate yards) and the fare sack, then up to `ticks` for the funded job. Returns the job ticks advanced. */
+export function railResume(
+  w: World,
+  ticks: number,
+  marker: number,
+  tick: number,
+  yard = 0,
+  pct: TradePct = TRADE_PCT,
+): number {
+  const n = w.run(resume, { ticks, marker, tick, yard, pct });
   w.run(jobClock, undefined);
   return n;
 }

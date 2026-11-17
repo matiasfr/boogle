@@ -448,6 +448,8 @@ function startWorld(room: Room) {
       switch (intent.op) {
         case 'rail.buy':
           return adapter.buy(intent.id);
+        case 'rail.sack':
+          return adapter.sack();
         case 'rail.wake':
           return adapter.wake();
         case 'rail.chop':

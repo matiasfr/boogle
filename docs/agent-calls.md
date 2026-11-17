@@ -31,6 +31,7 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-17 | Default: the sack keeps its coins when a rate is lowered | [Town economy C1](plans/town-economy-visible.md); `railway-sys-away.ts`, `railway-check-trade.ts` | Orchestrator; C1 builder | Apply the 15-minute cap only to new away accrual; never clamp earned coins. Save checks have no tunable context, so validate integer balances and the pour ledger. Fixed-rate tests assert the cap. C1 tooling copy remains owner placeholders: “Sack waiting”; “Back after a night: the coin sack is on the counter”. | open |
 
 ## Characters, cosmetics and story
 

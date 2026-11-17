@@ -11,14 +11,17 @@ import { act, advance, railwayAtTrains, type Seed } from './railway-seed-route.t
 import { till, town } from './railway-rows.ts';
 import { plotPrice, plotsStaked } from './railway-queries-trade.ts';
 import { TRADE, TRADE_PCT } from './railway-trade-layout.ts';
+import { railAwayCredit } from './railway-away.ts';
+import { railResume } from './railway-sys-away.ts';
 
 export type TradeStage =
-  'freight-running' | 'fares-running' | 'house-ready' | 'house-built' | 'yard-ready' | 'yard-built';
+  'freight-running' | 'fares-running' | 'house-ready' | 'house-built' | 'sack-waiting' | 'yard-ready' | 'yard-built';
 export const TRADE_STAGES: readonly TradeStage[] = [
   'freight-running',
   'fares-running',
   'house-ready',
   'house-built',
+  'sack-waiting',
   'yard-ready',
   'yard-built',
 ];
@@ -38,7 +41,13 @@ export function railwayAtTrade(stage: TradeStage): Seed {
       need(waited++ <= 12000, `${stage}: no fares landed`);
       advance(s, 1);
     }
-  if (stage === 'house-ready' || stage === 'house-built' || stage === 'yard-ready' || stage === 'yard-built') {
+  if (
+    stage === 'house-ready' ||
+    stage === 'house-built' ||
+    stage === 'sack-waiting' ||
+    stage === 'yard-ready' ||
+    stage === 'yard-built'
+  ) {
     while (till(s.w).boogles < plotPrice(s.w, 0, 0, TRADE_PCT.pricePct)) {
       need(waited++ <= 18000, `${stage}: first house never affordable`);
       advance(s, 1);
@@ -57,6 +66,10 @@ export function railwayAtTrade(stage: TradeStage): Seed {
       need(act(s, 'a', 'rail.buy', { id: 1 }) === 1, 'yard-built: buy refused');
       advance(s, TRADE.buildTicks);
     }
+  }
+  if (stage === 'sack-waiting') {
+    const away = 8 * 36000;
+    railResume(s.w, Number.MAX_SAFE_INTEGER, away, s.t, railAwayCredit(away));
   }
   const broken = invariant(s.w);
   need(broken === null, `railwayAtTrade ${stage}: ${broken}`);

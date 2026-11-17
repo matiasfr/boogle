@@ -1,5 +1,5 @@
 {
- "worldNs": "v57",
+ "worldNs": "v58",
  "ticks": 1200,
  "stages": {
   "awake": {
@@ -131,6 +131,11 @@
    "tick": 7869,
    "stage": 3482006752,
    "after": 2782016096
+  },
+  "sack-waiting": {
+   "tick": 7869,
+   "stage": 1103152096,
+   "after": 3043659616
   },
   "yard-ready": {
    "tick": 19194,

@@ -64,7 +64,7 @@ import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, wo
 import { legKitRelease } from './railway-sys-route-kit.ts';
 import { resume, supply } from './railway-sys-away.ts';
 import { brace, ringFootSet, ringFootTake, ringStrike } from './railway-sys-ring.ts';
-import { buy, tradeTick, yardTick } from './railway-sys-trade.ts';
+import { buy, sack, tradeTick, yardTick } from './railway-sys-trade.ts';
 import { TRADE_PCT, type TradePct } from './railway-trade-layout.ts';
 import { install, steelFeed, steelTake, steelTick } from './railway-sys-steel.ts';
 import { arrive, gate, grant, legStock, legTick } from './railway-sys-route.ts';
@@ -74,6 +74,7 @@ import { arrive, gate, grant, legStock, legTick } from './railway-sys-route.ts';
 const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.wake': [wake],
   'rail.buy': [buy],
+  'rail.sack': [sack],
   'rail.chop': [chop],
   'rail.mine': [mine],
   'rail.deposit': [deposit, deposit2],
@@ -139,7 +140,12 @@ export function railApply(
   let n = 0;
   for (const sys of Object.hasOwn(OPS, e.op) ? OPS[e.op]! : [])
     if ((n = w.run(sys as System<Act, number>, { a, e, tick, timing, pricePct }))) break;
-  return w.run(remember, { a, e, n, rejected: e.op === 'rail.reject' || (e.op === 'rail.buy' && n === 0) });
+  return w.run(remember, {
+    a,
+    e,
+    n,
+    rejected: e.op === 'rail.reject' || ((e.op === 'rail.buy' || e.op === 'rail.sack') && n === 0),
+  });
 }
 
 /** The rule tick's systems, run by (order, name): the order `railTick` ran them in by hand before M3. */

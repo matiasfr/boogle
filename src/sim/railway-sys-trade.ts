@@ -174,6 +174,18 @@ export function ridersBoard(w: World, slot: number) {
   w.mut(Train, trainId(w, slot))!.riders += n;
 }
 
+/** Pour every earned coin, even past the strongbox's mark; the ledger counts only what was poured. */
+export const sack = defineSystem('rail.sack', { writes: [Till], phase: 'act', order: 71 }, (w) => {
+  const id = w.single(Till),
+    n = w.get(Till, id)!.sack;
+  if (n <= 0) return 0;
+  const till = w.mut(Till, id)!;
+  till.boogles += n;
+  till.poured += n;
+  till.sack = 0;
+  return 1;
+});
+
 /** Buy is authoritative and atomic; the shared request history handles retransmits. */
 export const buy = defineSystem(
   'rail.buy',
