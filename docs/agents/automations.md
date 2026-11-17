@@ -90,9 +90,21 @@ If nothing needed action, reply with one line: "heartbeat: all clear", the bottl
 - Prompt (verbatim):
 
 ```text
-Daily tidy pass. In C:\Users\matia\Claude work\boogle, run the `tidy` skill: simplify code merged since the last pass, run the architecture review, audit docs and agent instructions for drift, and clear merged worktrees and branches. Ship any changes through the usual review and ship-queue rules, then report what was done in a few lines.
+Daily tidy pass. Everything you need is in the repo, not in this thread's history.
+
+The project root checkout (C:\Users\matia\Claude work\boogle) is a stale launcher: do not read skills or instructions from it, and do not edit it. First run `git fetch origin`. Then work from a worktree at origin/main, `../boogle-tidy` (the tidy's own, not the heartbeat's):
+- If it doesn't exist, create it with `git worktree add --detach ../boogle-tidy origin/main`.
+- If it exists and is clean, run `git -C ../boogle-tidy checkout --detach origin/main`.
+- Run `npm ci` there if node_modules is missing or the lock changed.
+Use Node 26: `export PATH="$HOME/AppData/Local/nvm/v26.13.0:/c/Program Files/GitHub CLI:$PATH"` (this also puts gh on PATH). Run every command from that worktree.
+
+Read `AGENTS.md` and `.claude/skills/tidy/SKILL.md` from that worktree with the Read tool, and follow the tidy skill. Don't load a repo skill (tidy, architecture-review) through the Skill tool, which would load the stale copy: read its SKILL.md from the worktree instead. Built-in skills the tidy names (simplify, consolidate-memory) run through the Skill tool as usual.
+
+Run every part that is due: simplify code merged since the last pass, run the architecture review, audit docs and agent instructions for drift (the orchestrator state file included), consolidate memory, and clear merged worktrees and branches. The tidy's delegates count toward the three jobs in flight: read the "Jobs in flight" table in `docs/agents/orchestrator-state.md` first, start none past three, and give each delegate a row there. Ship any changes through the usual review and ship-queue rules, then report what was done in a few lines.
 ```
 
-Unlike the heartbeat, this prompt runs the skill through the Skill tool from the project root, which the heartbeat
-treats as a stale launcher. It is recorded as it ran. The orchestrator's suggestion, not adopted: give it the
-heartbeat's worktree preamble.
+Since 17 November (owner: "Fix all the problems you highlighted") it has the heartbeat's preamble: it works from its
+own worktree at `origin/main`, `../boogle-tidy`, and reads the tidy skill from there, not from the stale project
+root. Its first run on this prompt is the 17 November one, so the prompt is unproven until that run reports. It
+still keeps its thread's context (`freshSession: false`); the skill reads each part's last run from the state file,
+so a fresh session would lose nothing (the orchestrator's reading; not changed).

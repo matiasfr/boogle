@@ -9,6 +9,10 @@ running well. One pass a day; each part is small. Models come from `npm run mode
 rule: small fixes ship, judgment calls go in `docs/agent-calls.md`, and only direction, scope or something irreversible
 waits for the owner.
 
+A scheduled run works from its own worktree at `origin/main` (`../boogle-tidy`), never the project root, which is a
+stale launcher ([automations](../../../docs/agents/automations.md)). Its delegates count toward the three jobs in
+flight: read the state file's "Jobs in flight" table first, start none past three, and give each delegate a row.
+
 With an argument, run only that part. Without one, run all five in order, skipping a part that ran within the last day
 (the state file's "Tidy" line records each part's last run and end commit).
 
@@ -39,6 +43,7 @@ Report and fix:
 - plans whose jobs have all merged but still read as open (mark them done with the PRs), and briefs whose status lags;
 - `docs/backlog.md` against the plans: each row's status and next step agree with its plan's status line and tick marks; a row whose effort has shipped is deleted; a plan that says the owner approved it has a row; list any row with no owner words for the owner instead of deleting it;
 - `docs/direction.md`'s Now/Next older than the newest merges;
+- the [orchestrator state file](../../../docs/agents/orchestrator-state.md), which every orchestrator run reads first, so it stays short (about 150 lines): delete "Jobs in flight" rows whose branch has merged or gone; delete owner questions the decision log answers; move dated history to [the log](../../../docs/agents/orchestrator-log.md) and unfixed findings to [the leftovers](../../../docs/agents/orchestrator-leftovers.md); in "Rules learned", fix or delete a rule that names a machine, path or tool that no longer applies and merge rules that say the same thing; set its "Updated" line. In the leftovers file, delete what has landed (check the code or the PR, not the wording);
 - research docs missing from `docs/research/README.md` or without a top block;
 - `docs/agent-calls.md`: count the open calls (one table per topic) and list any older than a week for the owner; `npm run decisions` must pass (no ruled row left in the live tables, every entry with its Current rules line).
 
