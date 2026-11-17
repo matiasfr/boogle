@@ -10,7 +10,7 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Garage choices step 3: steel is spent (the bigger cradle, the big boiler, the store in bay 150°) | Garage choices (P1) | `codex/garage-steel-spent` | the heartbeat (HOTBOX, a T3 delegate, Codex gpt-6-astra high) | 17 November 16:40 | building; owes an independent review before it ships (sim and server, a `WORLD_NS` bump) |
+| Garage choices step 3: steel is spent (the bigger cradle, the big boiler, the store in bay 150°) | Garage choices (P1) | `codex/garage-steel-spent` | the heartbeat (HOTBOX, a T3 delegate, Codex gpt-6-astra high) | 17 November 16:40 | built 17:45 UTC (`850aa42f`, world v59, stamp `306d9fd89b3c`; the heartbeat read the diff and two stills); in independent review since 17:55 UTC (a fresh Codex gpt-6-astra high delegate, branch `codex/review-garage-steel-spent`, reporting to the heartbeat thread); ships only after it |
 
 ## Where the work stands
 
