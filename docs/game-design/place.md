@@ -961,11 +961,15 @@ of the middle, and those platforms are 25 and 40 m long (Ring Island's home leve
 Camp's, the Pier's and the Home island's levers are where they were, and the stack heads keep one platform with a
 lever each way. The signal on a first platform drops for its lever's way. The plaque's arrow and the prompt follow
 the way the lever calls now. **The Pier after Q7 (14 November, step 5):** its homeward-only service boards a new west
-platform, s 719–741 at lateral -6.95, on piles. The platform and its plank crossing appear with Q7; before then the
+platform, s 719–741 at lateral -6.95, on piles. The platform and its plank crossing appear when Q7 completes; before then the
 east terminal platform still serves the train home. After Q7 and any retained departure clears, the east lever
-chains and its signal stays up; the west lever offers the existing **Request stop: to Village**. Its start ramp meets a plank crossing at s 711.8, 0.8 m clear
-of the full stopped train, with no ramp to the seabed or off the far end. Level-check checks this geometry, its Q7
-gate and the maximum jump/glide from its roof against the railhead gap.
+chains and its signal stays up; the west lever offers the existing **Request stop: to Village**. Its 9.4 m start ramp
+meets a plank crossing centred at s 708.4 (s 707.2–709.6), beside Q7's work deck. The planks clear today's longest
+stopped train by 4.20 m and the planned coach train by 0.80 m; the ramp rises 0.67 m at about 4.1°, with no ramp to
+the seabed or off the far end. Q7's rack and shelf are absent whenever the crossing is walkable; the frame
+stays on its piled deck after completion, and each player's unopened personal box stays there too, clear of the
+planks. Level-check checks the shared completion gate, simultaneous-piece clearances, the clear walk to the east
+ramp and the maximum jump/glide from the west roof against the railhead gap.
 **Departure origin (14 November, review fix):** the Server train row now keeps the far-end departure
 coordinate in `origin`, replicated and saved. It survives a growing line, a moving stop and replans until the next
 halt. Train decks and shared rideable bodies read it directly; no tab remembers a different departure side, and
@@ -1257,11 +1261,12 @@ launched). **Steel** rides on the steel car of a fitted train, two abreast, up t
 not yet fitted. In today's game that is one trip at most: the works casts twelve steel in all at six a trip and the
 install needs one home, so after an install the car carries the second trip or none, and then runs empty until a
 later steel part gives it a load. **At the Pier** only homeward trains stop, on request. A plain train's steel car
-stands beside the halt deck's landward end: stepping off its platform side lands you on the halt deck, the other
-side on the trestle's planks at rail height; keep walking 7 m either way and you go off the trestle's open edge
-into the sea, 26 m down, and swim (the same edge as beside any car there). The wagon train's steel car stands 3.7 m
-further landward, wholly off the halt deck: stepping off its track side lands you on the planks at rail height; its
-other side has not been walked. **In the garage** Cargo has a fourth tile, "Steel car":
+stands beside the halt deck's landward end and the top of its west ramp. Its platform side leads onto that deck
+or ramp; the opposite side leads onto the trestle at rail height. The wagon train's steel car stands 3.7 m further
+landward, wholly before the halt deck and now beside the longer west ramp. Its west side faces the ramp; its east
+side faces the trestle. Walk south down the ramp to the crossing and then east to Q7's work deck; walking past the
+outer edges still leads into the sea. These are the standing geometry's landing surfaces; stepping off each steel
+car has not been separately playtested in R2b.1. **In the garage** Cargo has a fourth tile, "Steel car":
 "Later" with "Comes with the longer boiler. 6 steel a trip." before the install, "Owned" with "Came with the longer
 boiler. 6 steel a trip." after (placeholder strings). The parts strip scrolls the chosen tile into view. At phone
 width the garage hides every part's description line, this one's too. "Cars it pulls 3 to 4" on the Engine tab is

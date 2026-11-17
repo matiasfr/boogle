@@ -10,7 +10,7 @@ import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { LINE2_STATIONS, Q7, depotOffset, depotShelfSide } from '../../sim/railway-line2-layout.ts';
-import { q7Spot } from './q7-site.ts';
+import { depotPieceVisible, q7Spot } from './q7-site.ts';
 import { stockSign } from './stock-sign.ts';
 import { waitsForTrain } from './forge-offer.ts';
 import { line2Active } from '../../sim/railway-queries-line2.ts';
@@ -117,7 +117,7 @@ export async function createRailwayShelf(
     if (key === drawn) return;
     drawn = key;
     const spec = LINE2_STATIONS[k];
-    shelf.visible = !!spec?.shelf;
+    shelf.visible = depotPieceVisible(k, 'shelf');
     sign.board.visible = shelf.visible && !owed;
     if (!spec?.shelf) return;
     place(k);

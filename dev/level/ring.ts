@@ -24,6 +24,7 @@ import { MOVER } from './mover.ts';
 import { haltDeck, haltFrame } from '../../src/prefab/halt-deck.ts';
 import { haltRamps } from '../../src/prefab/halt-ramps.ts';
 import { haltCrossing } from '../../src/prefab/halt-crossing.ts';
+import { pierCrossingReport } from './pier-crossing.ts';
 import { LIVE, beside, type Track } from './rail-network.ts';
 import { LIMITS, measure } from './track-continuity.ts';
 import {
@@ -548,7 +549,7 @@ export function checkRing() {
   const ramp = pierRamps[0]!.params!.support as number[];
   assertion(ramp[4]! >= frame.low - 1, `ramp foot stays at rail height (${f1(ramp[4]!)} m), not the seabed`);
   assertion(
-    Math.abs(pier.crossS + CROSSING_WIDTH / 2 - (pier.s0 - 6)) < 1e-6 &&
+    Math.abs(pier.crossS + CROSSING_WIDTH / 2 - (pier.s0 - (pier.headRamp ?? 6))) < 1e-6 &&
       (pier.crossTo ?? 0) <= pier.lat - frame.hw &&
       crossing.length === 2,
     'plank crossing meets the start ramp foot across both tracks, clear of the stopped train',
@@ -559,6 +560,7 @@ export function checkRing() {
     trainTail - crossingEnd >= 0.6,
     `crossing clears the full stopped train by ${f1(trainTail - crossingEnd)} m`,
   );
+  pierCrossingReport(assertion);
   // Conservatively launch from the new shelter roof as well as the deck, including both jumps and the raw glide.
   // The platform and all its ramps/crossing are landward of its s1: none advances the existing railhead's lip.
   const pierTop = frame.low + 3.5,

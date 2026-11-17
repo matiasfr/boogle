@@ -53,7 +53,7 @@ import { worksPreview } from './works-flag.ts';
 import { railwayGlideOpen } from './glide.ts';
 import { yawToForge } from './forge-cut.ts';
 import { RING_Q7_FRAME } from '../../sim/railway-ring-layout.ts';
-import { Q7_DECK_UP, q7Spot } from './q7-site.ts';
+import { Q7_DECK_UP, depotPieceVisible, q7Spot } from './q7-site.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
@@ -366,7 +366,7 @@ export async function createRailwayLine2(
     const key = `${k}:${n}:${train}`;
     if (key === drawnDepot) return;
     drawnDepot = key;
-    depotRack.visible = framed(k) && LINE2_STATIONS[k]!.depot;
+    depotRack.visible = framed(k) && depotPieceVisible(k, 'depot');
     depotSign.board.visible = depotRack.visible;
     if (!depotRack.visible) {
       commitPieces(depotLogs, 0);

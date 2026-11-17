@@ -48,7 +48,7 @@ export function haltRamps(id: string, params: JsonObject): Placement[] {
     );
     index++;
   };
-  const head = island ? ISLAND.headRamp : 6,
+  const head = island ? ISLAND.headRamp : (('headRamp' in h ? h.headRamp : undefined) ?? 6),
     end = island ? ISLAND.endRamp : 6;
   ramp(at(h.s0, h.lat), at(h.s0 - head, h.lat), water ? railY(line, h.s0 - head) + 0.05 : undefined);
   if (!water && (!up || ('endRamp' in h && h.endRamp))) ramp(at(h.s1, h.lat), at(h.s1 + end, h.lat));

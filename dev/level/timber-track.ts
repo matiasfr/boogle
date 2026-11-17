@@ -331,13 +331,13 @@ export function timberDecks(): Deck[] {
           from.z,
           to.x,
           to.z,
-          piles ? railY(line, s0 - 6) + 0.05 : H(from.x, from.z) + 0.05,
+          piles ? railY(line, s0 - head) + 0.05 : H(from.x, from.z) + 0.05,
           low,
           width,
           0.4,
         ),
       );
-    const head = island ? ISLAND.headRamp : 6,
+    const head = island ? ISLAND.headRamp : (('headRamp' in rest ? rest.headRamp : undefined) ?? 6),
       end = island ? ISLAND.endRamp : 6;
     ramp('ramp-start', lateral(line, s0 - head, lat), lateral(line, s0, lat));
     if (endRamp && !piles) ramp('ramp-end', lateral(line, s1 + end, lat), lateral(line, s1, lat));
