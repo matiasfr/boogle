@@ -29,6 +29,7 @@ import './builders/halt-lever.ts';
 import './builders/halt-attachment.ts';
 import './builders/till-parts.ts';
 import './builders/loader-parts.ts';
+import './builders/coach-parts.ts';
 import './builders/roundhouse-bay.ts';
 import './builders/roundhouse-table.ts';
 import type { Interactable } from '../player/hands.ts';

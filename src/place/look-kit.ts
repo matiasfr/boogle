@@ -687,7 +687,17 @@ export const trainLook = (
   owner: OwnedView,
   engine?: EngineKit,
   rust: 'train' | 'answer' = 'train',
-): MachineLook => kitCars(consist.length - 1, false, boilerShown, owner, engine, rust, roleIndex(consist, 'player'));
+): MachineLook =>
+  kitCars(
+    consist.length - 1,
+    false,
+    boilerShown,
+    owner,
+    engine,
+    rust,
+    roleIndex(consist, 'player'),
+    consist.findIndex((c) => c.role === 'rider'),
+  );
 function kitCars(
   trailers: number,
   working: boolean,
@@ -696,6 +706,7 @@ function kitCars(
   engine?: EngineKit,
   rust: 'train' | 'answer' = 'train',
   playerIndex = roleIndex(consistOf({ line: 1, wagon: false, steel: false }), 'player'),
+  riderIndex = -1,
 ): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
     // The timber keeps its grain; only painted and bare metal age with the engine.
@@ -755,11 +766,13 @@ function kitCars(
         return { m, side };
       });
 
-  const beds = Array.from({ length: trailers }, () => {
+  const beds = Array.from({ length: trailers }, (_, k) => {
     const flatbed = new THREE.Group();
-    add(flatbed, 'flat_deck', DECK);
-    // Named, so the passenger car's body can leave it undrawn (train-view.ts; cars.ts FLAT_RACK).
-    add(flatbed, 'flat_black', BLACK).name = FLAT_RACK;
+    if (k + 1 !== riderIndex) {
+      add(flatbed, 'flat_deck', DECK);
+      // Named, so the passenger car's body can leave it undrawn (train-view.ts; cars.ts FLAT_RACK).
+      add(flatbed, 'flat_black', BLACK).name = FLAT_RACK;
+    }
     return { flatbed, wheels: wheels(TRAILER.hz, 0.22) };
   });
   // The machine's flatbed works for a living.

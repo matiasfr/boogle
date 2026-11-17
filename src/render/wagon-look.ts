@@ -138,6 +138,7 @@ export function wagonLook(layout: number | Consist, crated = true, owner?: Owned
   const flatbed = (_: unknown, k: number) => {
     const g = new THREE.Group();
     trailerWheels.push(wheels(g, TRAILER.hz, 0.22));
+    if (typeof layout !== 'number' && consist[k + 1]?.role === 'rider') return g;
     box(g, TRAILER.hx * 2, 0.18, TRAILER.hz * 2, wood, 0, TRAILER.top - 0.09, 0);
     box(g, TRAILER.hx * 1.6, 0.3, TRAILER.hz * 1.9, black, 0, TRAILER.top - 0.33, 0);
     for (const sz of [-1, 1]) box(g, TRAILER.hx * 2, 0.25, 0.08, wood, 0, TRAILER.top + 0.12, sz * (TRAILER.hz - 0.04));

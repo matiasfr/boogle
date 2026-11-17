@@ -679,6 +679,28 @@
         "none": true
       }
     },
+    "railway.coach-body": {
+      "colliders": [],
+      "key": "railway.coach-body",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.coach-parts",
+        "params": {
+          "kind": "body"
+        }
+      }
+    },
+    "railway.coach-underframe": {
+      "colliders": [],
+      "key": "railway.coach-underframe",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.coach-parts",
+        "params": {
+          "kind": "underframe"
+        }
+      }
+    },
     "railway.footings-bill": {
       "attach": {
         "sign": {

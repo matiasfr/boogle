@@ -6,7 +6,7 @@
 // Lockstep math: integers and `+ - * /`, `Math.floor`, `Math.round` and `Math.sqrt` only (docs/agents/lockstep.md).
 import type { RailPlatform } from './railway-lines.ts';
 import { railInt } from './railway.ts';
-import { RING_S_HEAD, ringAt } from './railway-ring-layout.ts';
+import { RING_END, RING_S_HEAD, ringAt } from './railway-ring-layout.ts';
 import { WORLD_LINES, type WorldLine } from './railway-world-lines.ts';
 
 /** One section of a leg: it lays when `logs` + `rails` are fed to its frame; `gate` (a RAIL_GATES index) shuts the frame. */
@@ -381,6 +381,9 @@ export const ROW_SHIFT: Readonly<Record<RowId, number>> = {
 };
 /** Cm along a leg's sim line of `cm` along its row. */
 export const legS = (leg: Pick<RouteLeg, 'row'>, cm: number) => cm - ROW_SHIFT[leg.row];
+/** The departure halt's stop mark, distinct from the physical start of track construction.
+ * Ring's coach advances the mark while the laid sections, frame and rack keep their coordinates. */
+export const legStartS = (leg: RouteLeg) => (leg.row === 'ring' ? RING_END.s : legS(leg, leg.fromCm));
 /** A catalog row's point `cm` along it (row cm) and a catalog halt's platform point: the sim catalog's sources. */
 export const rowPoint = pointAt;
 export const rowHalt = haltAt;

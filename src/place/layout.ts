@@ -406,7 +406,7 @@ export const LINKS: LineSpec[] = [
     dir: 1,
     camp: { x: 98, z: 52, y: 24 },
     stations: onLine(LINE2_STATIONS, LINES.east),
-    stops: [18.25, EAST.quarry - 4, EAST.headStop], // line 2's Village stop: 18.25 from v33 (fourth-car R2)
+    stops: [21.65, EAST.quarry - 4, EAST.headStop], // advance with the coach; freight stays at its old world positions
     freeUpTo: 4,
   },
 ];

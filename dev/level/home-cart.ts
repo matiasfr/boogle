@@ -1,4 +1,4 @@
-// R1b: planned stock, never a production consist. R1a (railway-check-line2.ts) proves these phases exclusive:
+// R2b: production stock and stop. R1a (railway-check-line2.ts) proves these phases exclusive:
 // trains on implies cart at rest (hidden); nothing uses the leg after the trains wake.
 import {
   AXIS,
@@ -18,14 +18,22 @@ import {
   march,
   roadAt,
 } from '../../src/place/home-station.ts';
-import { CART, FORMATION, LINES, LINKS, ORIGIN, lineAt } from '../../src/place/layout.ts';
+import { CART, FORMATION, LINES, LINKS, ORIGIN } from '../../src/place/layout.ts';
 import { frameBesideLine, stationColliders } from '../../src/place/spatial-station.ts';
 import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
-import { ENGINE, ENGINE_LONG_AHEAD } from '../../src/entities/railway/engine.ts';
-import { STEEL_CAR, TRAILER, TRAIN_OFFSETS, WAGON_CAR, steelCarOffset } from '../../src/entities/railway/cars.ts';
-import { deckAt, deckGap, type Deck } from '../../src/entities/railway/car-spacing.ts';
+import { ENGINE_LONG_AHEAD } from '../../src/entities/railway/engine.ts';
+import { STEEL_CAR, consistOf } from '../../src/entities/railway/cars.ts';
+import {
+  CAR_BUFFERS,
+  ENGINE_BUFFERS,
+  trainPlaces,
+  deckAt,
+  deckGap,
+  type Deck,
+} from '../../src/entities/railway/car-spacing.ts';
+import { line2At } from '../../src/entities/railway/line2-path.ts';
 import { CART_ROAD } from '../../src/sim/railway-cart.ts';
-import { TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
+import { LINE2, RAIL_LINES, TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
 
 import clearancePins from './home-cart-pins.json' with { type: 'json' };
 
@@ -39,22 +47,22 @@ export const HOME_STATIC = {
   tree: { pine: 0.46, hardwood: 0.95, barkRelief: 0.13 },
 };
 
-export const COACH_STOP = 21.65;
-const pitch = 3.4;
-// Long engine, players, 2.90 x 1.60 coach, kit, footing wagon, steel. Freight stays at today's places.
-export const PLANNED_HOME_CONSIST = [
-  {
-    role: 'engine',
-    d: TRAIN_OFFSETS[0]! + ENGINE_LONG_AHEAD / 2,
-    hx: ENGINE.hx,
-    hz: ENGINE.hz + ENGINE_LONG_AHEAD / 2,
-  },
-  { role: 'players', d: 0, ...TRAILER },
-  { role: 'coach', d: -(TRAILER.hz + 0.5 + 1.45), hx: 0.8, hz: 1.45 },
-  { role: 'kit', d: TRAIN_OFFSETS[2]! - pitch, ...TRAILER },
-  { role: 'wagon', d: TRAIN_OFFSETS[3]! - pitch, ...WAGON_CAR },
-  { role: 'steel', d: steelCarOffset(true) - pitch, ...STEEL_CAR },
-];
+export const COACH_STOP = RAIL_LINES[LINE2]!.halts[0]!.s / 100;
+const consist = consistOf({ line: LINE2, wagon: true, steel: true });
+// Symmetric envelopes for the along-track scalar checks. Keep R1b's measurement names and pins.
+export const PLANNED_HOME_CONSIST = consist.map(({ role, spec, offset }) => ({
+  ...spec,
+  role: role === 'player' ? 'players' : role === 'rider' ? 'coach' : role,
+  d: offset + (role === 'engine' ? ENGINE_LONG_AHEAD / 2 : 0),
+  hz: spec.hz + (role === 'engine' ? ENGINE_LONG_AHEAD / 2 : 0),
+}));
+const vehicles = consist.map(({ role, spec, offset }) => ({
+  d: offset,
+  hx: spec.hx,
+  back: spec.hz,
+  front: spec.hz + (role === 'engine' ? ENGINE_LONG_AHEAD : 0),
+  buffers: role === 'engine' ? ENGINE_BUFFERS : CAR_BUFFERS,
+}));
 const box = (x: number, z: number, yaw: number, hx: number, hz: number): Deck => ({
   x,
   z,
@@ -65,7 +73,7 @@ const box = (x: number, z: number, yaw: number, hx: number, hz: number): Deck =>
 });
 const blank = () => box(0, 0, 0, 0, 0);
 const at = (s: number, out: { x: number; z: number }) =>
-  Object.assign(out, lineAt(LINES.east, s, { x: 0, z: 0, ux: 0, uz: 0 }));
+  Object.assign(out, line2At(s, { x: 0, z: 0, ux: 0, uz: 0 }, true));
 export function checkHomeCart(options: { stop?: number; obstacle?: (id: string, envelope: Deck) => Deck } = {}) {
   const stop = options.stop ?? COACH_STOP;
   const { lever, forge, depot, sign, tree } = HOME_STATIC;
@@ -153,7 +161,8 @@ export function checkHomeCart(options: { stop?: number; obstacle?: (id: string, 
       ),
     });
   if (options.obstacle) for (const o of obstacles) Object.assign(o, options.obstacle(o.id, { ...o }));
-  const decks = PLANNED_HOME_CONSIST.map((v) => deckAt(at, stop + v.d, { ...v, back: v.hz, front: v.hz }, blank()));
+  const places = trainPlaces(at, stop, vehicles, [], false);
+  const decks = vehicles.map((v, i) => deckAt(at, places[i]!, v, blank()));
   const engine = PLANNED_HOME_CONSIST[0]!,
     nose = stop + engine.d + engine.hz;
   const tail = stop + PLANNED_HOME_CONSIST.at(-1)!.d - STEEL_CAR.hz;

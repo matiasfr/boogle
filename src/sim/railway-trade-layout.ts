@@ -63,14 +63,16 @@ export const TRADE = {
   crowdStop: 4,
   /** Riders who wait at one end at most; the rest give up. */
   crowdCap: 24,
-  /** Riders' places, separate from player seats. Four on today's car; eight arrive with the dedicated coach. */
-  riderPlaces: 4,
+  /** Eight in the riders' coach, separate from player seats. */
+  riderPlaces: 8,
   fare: { board: 2, per100m: 1 },
   /** The box holds the larger of `incomeMin` minutes of income or `dearestNum / dearestDen` of the dearest thing on
    * offer; fares past it do not land. */
   box: { incomeMin: 20, dearestNum: 3, dearestDen: 2 },
   sackMin: 15,
 } as const;
+/** Passenger route on a line, or -1. Shared by the rules and the local consist without loading world queries. */
+export const lineRoute = (line: number): number => TRADE.routes.findIndex((r) => r.line === line);
 /** The room's trade tunables (src/sim/tune.ts railFarePct, railRiderPct, railPricePct), in percent. */
 export type TradePct = { farePct: number; riderPct: number; pricePct?: number };
 export const TRADE_PCT = { farePct: 100, riderPct: 100, pricePct: 50 } satisfies TradePct;

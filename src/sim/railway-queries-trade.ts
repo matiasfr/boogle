@@ -90,7 +90,7 @@ export function freightStop(w: World, slot: number, r: Readonly<RailTrain>, k: n
 
 // ---------------------------------------------------------------- R3: riders, fares and the strongbox
 /** The route slot on `line` (one at most a line today), or -1. */
-export const lineRoute = (line: number): number => TRADE.routes.findIndex((r) => r.line === line);
+export { lineRoute } from './railway-trade-layout.ts';
 /** A route's far halt: its `b`, or for `b: 'end'` its line's current open end (the ruling of 12 November: the
  * riders' far end follows line 2's end as Q6, Q7 and the rivet move it on; a query, no state). */
 export function routeFar(w: World, route: number) {

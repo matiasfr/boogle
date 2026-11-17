@@ -141,7 +141,7 @@ export function partsOf(room: RoomFacts): Part[] {
       id: 'four',
       cat: 'cars',
       name: `${playerSeats} seats, ${TRADE.riderPlaces} riders`,
-      desc: `The knifeboard passenger car: ${playerSeats} seats for players, places for ${TRADE.riderPlaces} riders.`,
+      desc: `The knifeboard car seats ${playerSeats} players; the riders' coach behind it seats ${TRADE.riderPlaces}.`,
       standing: 'installed',
       pill: 'Installed',
       size: 'medium',
@@ -242,9 +242,10 @@ export const speedMs = (cmPerTick: number) => cmPerTick / 10;
 /** What each boiler sets (owner, 10 November: "certain boilers are faster but also raise the cap of the amount of
  * cars"): its top speed and how many cars the engine pulls. */
 export const BOILERS = {
-  boiler: { ...BOILER[0], pulls: 3 },
-  table: { ...BOILER[1], pulls: 3 },
-  long: { ...BOILER[2], pulls: 4 },
+  // Owner, 16 November: the coach comes with passenger trains outside the allowance; Strong adds cargo.
+  boiler: { ...BOILER[0], pulls: 4 },
+  table: { ...BOILER[1], pulls: 4 },
+  long: { ...BOILER[2], pulls: 5 },
 } as const;
 export type BoilerId = keyof typeof BOILERS;
 /** The line's run for the readouts: the Village stop to the line's last stop, in centimetres, or, until the island

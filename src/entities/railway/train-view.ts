@@ -151,6 +151,15 @@ export async function createRailwayTrains(
     });
     const carByRole = (role: Parameters<typeof roleIndex>[1]) => cars[roleIndex(consist, role)]!;
     const meshByRole = (role: Parameters<typeof roleIndex>[1]) => model.cars[roleIndex(consist, role)]!;
+    const rider = consist.some((c) => c.role === 'rider') ? carByRole('rider') : null;
+    if (rider) {
+      for (const prefab of ['railway.coach-body', 'railway.coach-underframe'] as const)
+        instantiate(
+          prefab,
+          { id: `train${slot}:${prefab}`, prefab, pos: [0, 0, 0], parent: rider.platform.id },
+          { owner, parent: { platform: rider.platform, root: rider.rock, frame: rider.rock } },
+        ).setEnabled(true);
+    }
     // The engine is a compound (docs/plans/engine-previz.md, "Collider"): its deck box is the frame and footplate up to
     // the cab floor, and the cab's walls either side of each doorway, its roof, steps and (once fitted) the boiler stand
     // on it. Its decks are stacked: you ride the floor, the boiler's top or the roof, whichever your feet are on.
@@ -281,7 +290,7 @@ export async function createRailwayTrains(
       carByRole,
       meshByRole,
       model,
-      riderCar: { mesh: carByRole('player').rock, top: carByRole('player').hy - carByRole('player').rock.position.y },
+      riderCar: rider ? { mesh: rider.rock, top: 0.7 } : null,
       riderCount: -1,
       cars,
       steel,
@@ -729,7 +738,7 @@ export async function createRailwayTrains(
         steelBatch.part(
           frame.matrixWorld,
           i % 2 ? 0.45 : -0.45,
-          (car ? car.spec : wagon.TRAIN_CARS[2]!).top + 0.2,
+          (car ? car.spec.top : 0.7) + 0.2,
           -0.9 + (i >> 1) * 0.9,
           0.8,
           0.4,

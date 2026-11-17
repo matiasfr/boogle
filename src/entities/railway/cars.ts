@@ -1,6 +1,7 @@
 // Car sizes and how trains are made up from them, with no three.js, so the layout tests read the same numbers the views
 // pose (test/railway-works-layout.test.ts keeps line 2's stops clear of the parked track layer with them).
 import { ENGINE } from './engine.ts';
+import { lineRoute } from '../../sim/railway-trade-layout.ts';
 
 /** A car's physical size, shared with the platforms: deck half sizes and the deck top's height over the ground. */
 export type CarSpec = { hx: number; hz: number; top: number };
@@ -10,6 +11,7 @@ export const TRAILER: CarSpec = { hx: 1.1, hz: 1.6, top: 0.7 }; // a flatbed: a 
 /** The footing wagon, line 2's fourth car once the shed's wagon couples (docs/plans/split-rock-roundhouse.md, J5a): a
  * low deck the size of the shunt's wagon, so the one in the stall and the one on the train read as the same thing. */
 export const WAGON_CAR: CarSpec = { hx: 1.1, hz: 1.6, top: 0.5 };
+export const RIDER_CAR: CarSpec = { hx: 0.8, hz: 1.45, top: 2.05 };
 
 /** A railway train's cars, engine first, and each car's centre from the train's along in metres: the engine (A with
  * its walk-in cab, ./engine.ts) 0.6 m ahead of the first flatbed's end (a longer engine reaches further forward), then
@@ -17,13 +19,14 @@ export const WAGON_CAR: CarSpec = { hx: 1.1, hz: 1.6, top: 0.5 };
 export type CarRole = 'engine' | 'player' | 'rider' | 'kit' | 'wagon' | 'steel';
 export type Consist = readonly { role: CarRole; spec: CarSpec; offset: number }[];
 export const STEEL_CAR: CarSpec = { ...TRAILER };
-/** Local layout only. R2a deliberately has no rider car on any line. */
-function makeConsist(wagon: boolean, steel: boolean): Consist {
+/** Local layout only; passenger routes include the coach outside the boiler's cargo allowance. */
+function makeConsist(rider: boolean, wagon: boolean, steel: boolean): Consist {
   const cars: { role: CarRole; spec: CarSpec; offset: number }[] = [
     { role: 'engine', spec: ENGINE, offset: TRAILER.hz + 0.6 + ENGINE.hz },
     { role: 'player', spec: TRAILER, offset: 0 },
   ];
   for (const [role, spec] of [
+    ...(rider ? [['rider', RIDER_CAR] as const] : []),
     ['kit', TRAILER],
     ...(wagon ? [['wagon', WAGON_CAR] as const] : []),
     ...(steel ? [['steel', STEEL_CAR] as const] : []),
@@ -34,15 +37,14 @@ function makeConsist(wagon: boolean, steel: boolean): Consist {
   }
   return Object.freeze(cars.map((car) => Object.freeze(car)));
 }
-// R2a's layouts are line-independent. Build the four possible consists once, never in a frame path.
-const layouts = [
-  [makeConsist(false, false), makeConsist(false, true)],
-  [makeConsist(true, false), makeConsist(true, true)],
-] as const;
-export const consistOf = ({ wagon, steel }: { line: number; wagon: boolean; steel: boolean }): Consist =>
-  layouts[Number(wagon)]![Number(steel)]!;
+// Build all layouts once, never in a frame path. A works copy explicitly requests no passenger route.
+const layouts = [false, true].map((rider) =>
+  [false, true].map((wagon) => [false, true].map((steel) => makeConsist(rider, wagon, steel))),
+);
+export const consistOf = ({ line, wagon, steel }: { line: number; wagon: boolean; steel: boolean }): Consist =>
+  layouts[Number(lineRoute(line) >= 0)]![Number(wagon)]![Number(steel)]!;
 const bounds = new Map(
-  layouts.flat().map(
+  layouts.flat(2).map(
     (consist) =>
       [
         consist,

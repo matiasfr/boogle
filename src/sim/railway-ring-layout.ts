@@ -199,8 +199,9 @@ const RING_END_U = (RING_HALT.u0 + RING_HALT.u1) / 2,
   RING_END_CROSS = { u0: 39500, u1: 41700 } as const,
   RING_BUFFER_U = RING_HALT.u1 + 1500;
 export const RING_END = {
-  u: RING_END_U,
-  s: RING_S_HEAD + RING_END_U,
+  // Advance with the coach: freight keeps its loader alignment and the tail clears the crossing and ramp.
+  u: RING_END_U + 340,
+  s: RING_S_HEAD + RING_END_U + 340,
   cross: RING_END_CROSS,
   mergeCm: RING_S_HEAD + RING_END_CROSS.u0,
   bufferU: RING_BUFFER_U,

@@ -30,6 +30,7 @@ export type NameRegistry = {
 };
 export const names: NameRegistry = {
   builders: [
+    'railway.coach-parts',
     'railway.loader-parts',
     'seat.chair',
     'scenery.prop',
