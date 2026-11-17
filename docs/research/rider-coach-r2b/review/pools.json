@@ -1,0 +1,19 @@
+{
+  "sleepers": [
+    {
+      "line": "timber",
+      "count": 249
+    },
+    {
+      "line": "quarry",
+      "count": 639
+    }
+  ],
+  "yard": 121,
+  "trees": 758,
+  "stations": 18,
+  "machines": 2,
+  "blobUpperBound": 1787,
+  "capacity": 4096,
+  "coachIncrement": 0
+}

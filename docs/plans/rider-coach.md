@@ -152,6 +152,16 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
     load, ending grounded on the roof. Coach-roof and existing-cab attempts toward the canopy both return
     to the platform: no new route found. Every-halt coverage remains the stated 48-pose geometry scan.
     R2b.2 and R2b.3 are built for independent review, not shipped; final checks and evidence are in the report.
+  - **Independent-review fixes, 16 November:** shared wheel capacity now derives from every fleet slot's
+    largest production consist (20 timber / 144 answering; 12 / 96 used), with explicit overflow failure.
+    The full Home station sweep and headway evenness property are restored. The 51-tick deviation is the
+    moved Home stop's integer endpoint/arrival boundary, not a new tail effect; scheduling and goldens stay
+    unchanged. Held Home signals have passing whole-train level rows and ±0.01 m pins. Controller jumps
+    reach the Quarry canopy from both coach and existing cab, reach Ring's coach roof and return to its
+    existing platform, and land on the moving coach during Home departure. No new route found in these
+    trials. All pool counts, measurements, portable evidence and final checks are in the
+    [review-fix report](../research/rider-coach-r2b-review-fixes.md). Owner accepted the blockout as v1;
+    this branch remains unshipped.
   - **Fix on resume (now addressed):** the Gorge row measures against platforms s 3210.4–3250.4 (`gorge.ts`: the line's end less
     40 m), not 3200.4–3240.4 (it still passes); `test/railway-r4b-views.test.ts` :136 reads `TRAIN_EXTENT.behindCm`,
     not the legacy `TRAIN_TAIL_M`; `test/world-lines.test.ts` :119 compares the ring row's Ring stop with the moved

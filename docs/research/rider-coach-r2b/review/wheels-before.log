@@ -1,0 +1,28 @@
+✖ each shared wheel batch fits every line and every consist in the full fleet (0.65925ms)
+✔ wheel allocation cannot silently drop a vehicle at the capacity boundary (0.245459ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 88.518791
+
+✖ failing tests:
+
+test at test/train-wheel-capacity.test.ts:8:1
+✖ each shared wheel batch fits every line and every consist in the full fleet (0.65925ms)
+  AssertionError [ERR_ASSERTION]: answer: wagon=false, steel=false, need 96, capacity 72
+      at TestContext.<anonymous> (file:///Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/test/train-wheel-capacity.test.ts:17:16)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

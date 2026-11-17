@@ -2603,6 +2603,10 @@ or step yet (R3). The timber train has no rider route and no coach; the garage's
 The Cars tile reads both numbers from data: "4 seats, 8 riders", with Seats 4 and Riders 8. Its description is the
 placeholder "The knifeboard car seats 4 players; the riders' coach behind it seats 8." The coach does not consume a
 boiler allowance; the existing boiler readouts now count 4 / 4 / 5 cars. [R2b measurements and evidence](../research/rider-coach-r2b.md).
+The full six-train fleet keeps every car's wheels. Controller checks reach the coach roof at Home, Quarry and
+Ring Island and while leaving Home. Quarry's canopy is also reachable from the existing cab; the tested exits
+add no route. Held Home trains clear the turnouts, cart leg, quest frames and ridge trestle edges
+([review measurements and proofs](../research/rider-coach-r2b-review-fixes.md)).
 Fares fill the
 shared strongbox: inside the hall, against its north end wall, the ticket counter shows its balance and a coin
 column proportional to its cap, with a fixed cap mark. Sources:

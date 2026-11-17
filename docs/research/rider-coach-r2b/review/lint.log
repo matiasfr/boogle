@@ -1,0 +1,6 @@
+
+> boogle@0.1.0 lint
+> node dev/lint/run.ts
+
+prefab conservative dynamic-import analysis (use simpler module bindings to remove): src/boogler/play.ts, src/debug/perf-poses.ts, src/entities/finds/secrets-view.ts, src/entities/lookout/view.ts, src/entities/railway/arrival.ts, src/entities/railway/cart-view.ts, src/entities/railway/crates-view.ts, src/entities/railway/crossing-view.ts, src/entities/railway/forge-finish.ts, src/entities/railway/garage-view.ts, src/entities/railway/greeter.ts, src/entities/railway/halts-view.ts, src/entities/railway/home-station-view.ts, src/entities/railway/hook-shot.ts, src/entities/railway/hook-view.ts, src/entities/railway/line-cargo.ts, src/entities/railway/line2-view.ts, src/entities/railway/opening-view.ts, src/entities/railway/path.ts, src/entities/railway/reward.ts, src/entities/railway/roundhouse-view.ts, src/entities/railway/shelf-view.ts, src/entities/railway/sources.ts, src/entities/railway/tools.ts, src/entities/railway/train-view.ts, src/entities/railway/trophy-plinth.ts, src/entities/railway/view.ts, src/entities/railway/works-view.ts, src/entities/town/curio-shelf.ts, src/entities/town/view.ts, src/features/dino.ts, src/features/pois.ts
+lint: 0 problems (18.382s)

@@ -30,6 +30,7 @@ import { makeBoiler } from '../render/carry-models.ts';
 import { makeProp } from '../render/prop-kit.ts';
 import { ENGINE_BOILER, ENGINE_WHEELS } from '../entities/railway/engine.ts';
 import { FLAT_RACK } from '../entities/railway/cars.ts';
+import { TRAIN_WHEEL_CAPACITY, WHEELS_PER_CAR, assertWheelCapacity } from '../entities/railway/train-capacity.ts';
 
 // ---------------------------------------------------------------- the file
 const SPECK = new THREE.BufferGeometry();
@@ -719,14 +720,13 @@ function kitCars(
   let batches = trainWheels.get(owner);
   if (!batches) trainWheels.set(owner, (batches = new Map()));
   let shared = batches.get(rust);
-  if (!shared) batches.set(rust, (shared = wheelSet({ ...IRON, rust }, 72, owner)));
+  if (!shared) batches.set(rust, (shared = wheelSet({ ...IRON, rust }, TRAIN_WHEEL_CAPACITY[rust], owner)));
   const wheelBatch = working ? wheelSet({ ...IRON, rust: true }, 8, owner)() : shared();
   const wheels = (hz: number, r: number) => {
+    assertWheelCapacity(wheelBatch.count + WHEELS_PER_CAR, wheelBatch.instanceMatrix.count);
     const list: Wheel[] = [];
     for (const sx of [-0.5, 0.5])
-      for (const sz of [-1, 1])
-        if (wheelBatch.count < wheelBatch.instanceMatrix.count)
-          list.push({ x: sx, y: r + 0.15, z: sz * (hz - 0.5), at: wheelBatch.count++ });
+      for (const sz of [-1, 1]) list.push({ x: sx, y: r + 0.15, z: sz * (hz - 0.5), at: wheelBatch.count++ });
     return list;
   };
   const loco = new THREE.Group();

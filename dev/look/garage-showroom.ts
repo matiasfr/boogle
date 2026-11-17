@@ -16,11 +16,13 @@ import * as carKit from '../../src/entities/railway/car-kit.ts';
 import * as look from '../../src/place/look.ts';
 import * as wagonLook from '../../src/render/wagon-look.ts';
 import * as engineSpec from '../../src/entities/railway/engine.ts';
+import { consistOf, offsetOf } from '../../src/entities/railway/cars.ts';
 
 export async function showroom() {
   const done = window as Window & { __garageDone?: boolean; __garageInfo?: unknown };
   const { ENGINE, ENGINE_WHEELS, ENGINE_BOILER } = engineSpec;
-  const { TRAILER, TRAIN_OFFSETS, WAGON_CAR } = wagonLook;
+  const { TRAILER, WAGON_CAR } = wagonLook;
+  const consist = consistOf({ line: -1, wagon: true, steel: false });
   // Trains run once the boiler is in: the old train's rust is gone (cargo.ts sets this with job.rung.trains).
   look.rustTrainU.value = 0;
 
@@ -115,7 +117,7 @@ export async function showroom() {
     (groups[name] ??= []).push(...objects);
     return objects;
   };
-  const E = TRAIN_OFFSETS[0]!;
+  const E = offsetOf(consist, 'engine');
   const engine = new THREE.Group();
   engine.position.z = E;
   scene.add(engine);
@@ -157,7 +159,7 @@ export async function showroom() {
     return g;
   };
   // Car 1: the passenger car (knifeboard, Four), its upgrade built and off.
-  const passenger = flatbed(TRAIN_OFFSETS[1]!);
+  const passenger = flatbed(offsetOf(consist, 'player'));
   const fit = carKit.passengerCar(false);
   passenger.add(fit);
   const roof = carKit.passengerCar(true).children.find((c) => c.name === 'car_upgrade') as THREE.Mesh;
@@ -167,7 +169,7 @@ export async function showroom() {
   passenger.add(roofGhost);
   tag('roofGhost', roofGhost);
   // Car 2: the cargo car, stakes and boards, with logs and rails from the kit on it.
-  const cargo = flatbed(TRAIN_OFFSETS[2]!);
+  const cargo = flatbed(offsetOf(consist, 'kit'));
   const fittings = wagonLook.cargoFittings();
   fittings.position.y = TRAILER.top;
   cargo.add(fittings);
@@ -232,8 +234,8 @@ export async function showroom() {
     scene.add(g);
     return g;
   };
-  const wagon = footingWagon(TRAIN_OFFSETS[3]!);
-  const wagon2 = footingWagon(TRAIN_OFFSETS[3]! - 3.7);
+  const wagon = footingWagon(offsetOf(consist, 'wagon'));
+  const wagon2 = footingWagon(offsetOf(consist, 'wagon') - (2 * WAGON_CAR.hz + 0.5));
   tag('wagon2', wagon2);
   const wagon2Ghost = wagon2.clone();
   wagon2Ghost.traverse((o) => {

@@ -521,7 +521,14 @@ for (const pct of [100, TRAIN_HEAD_PCT])
     assert.ok(Math.min(...gaps) >= head - TRAIN.dwellTicks, `${gaps} at least ${head}`);
     // Home-only control: v56 [604,604] / [554,654] becomes [602,602] / [551,653].
     // The 3.40 m shorter trip shifts the integer balancing phase; tail-only is unchanged.
-    // Keep the safety/headway assertion above and pin timing rather than widening its old ±dwell heuristic.
+    // Balancing compares spatial gaps once per tick, not equal departure times. At 75% the
+    // end dwell splits the gaps by ±50 ticks. With the shorter Home trip, trainAlong rounds
+    // to the opposite endpoint one tick before trainArrives (7412 vs 7413 in the control),
+    // so spatial equality releases the other train one tick early. The old stop ties at 7426.
+    // Bound that quantisation explicitly; do not drop evenness.
+    const tolerance = TRAIN.dwellTicks + 1;
+    for (const gap of gaps)
+      assert.ok(Math.abs(gap - even) <= tolerance, `${gaps}: within ${tolerance} ticks of ${even}`);
     assert.deepEqual(gaps, pct === 100 ? [602, 602] : [551, 653]);
     assert.equal((gaps[0]! + gaps[1]!) / 2, even);
   });

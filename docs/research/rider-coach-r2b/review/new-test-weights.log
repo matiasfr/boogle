@@ -1,0 +1,23 @@
+
+> boogle@0.1.0 test:unit
+> node dev/test-unit.ts --ci
+
+unit file start test/home-signals.test.ts
+unit file start test/train-wheel-capacity.test.ts
+unit file test/train-wheel-capacity.test.ts: 0.157s
+unit timing {"file":"test/train-wheel-capacity.test.ts","seconds":0.157427875,"weight":1,"passed":true}
+✔ held Home signals preserve whole-train clearance and measured pins (10.670292ms)
+✔ Home signal rows reject moving a held tail back into the turnout (6.792375ms)
+unit file test/home-signals.test.ts: 0.537s
+unit timing {"file":"test/home-signals.test.ts","seconds":0.5366006670000001,"weight":1,"passed":true}
+✔ each shared wheel batch fits every line and every consist in the full fleet (0.572833ms)
+✔ wheel allocation cannot silently drop a vehicle at the capacity boundary (0.346042ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 567.671667
+unit shard 1/1: 0.6s

@@ -1,5 +1,8 @@
 # R2b: production coach, eight riders, and the Gorge crossover
 
+**Review follow-up:** [wheel capacity, restored tests, held Home signals and controller proofs](rider-coach-r2b-review-fixes.md)
+records the subsequent rebase onto `d0ca285b1`. The acceptance history below records the earlier reviewed build.
+
 16 November 2026. Branch **t3/rider-coach-blockout**. World **v57** (own small bump commit
 `be3935d49`); Gorge crossover data is its own commit **c3ebcef7c**, sharing v57.
 Rebased on main **2c29e37a3** (#1981–#1986, including R2b.1). No push or ship. No subagents. No R1c, R3 or R4.

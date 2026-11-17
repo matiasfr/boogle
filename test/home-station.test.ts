@@ -51,6 +51,8 @@ import {
   WAGON_CAR,
   consistOf,
   consistBounds,
+  offsetOf,
+  RIDER_CAR,
 } from '../src/entities/railway/cars.ts';
 import { ENGINE, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
@@ -206,7 +208,13 @@ test('every stop stands beside the island, 1.65 m in from its edge and within it
         assert.ok(behind <= 0.2, `road 2 at ${engine}x overhangs the deck ${behind.toFixed(2)} m behind`);
         assert.ok(ahead <= (engine === 1 ? 4.2 : 4.7), `road 2 at ${engine}x overhangs it ${ahead.toFixed(2)} m ahead`);
       }
-      for (let s = passenger[0]!; s <= passenger[1]!; s += 0.5) {
+      // Line 1's whole train; line 2's complete passenger area, from coach rear to players' front.
+      const near =
+        road === 0
+          ? rear
+          : STOP[road]! + offsetOf(consistOf({ line: road, wagon: false, steel: false }), 'rider') - RIDER_CAR.hz;
+      const far = road === 0 ? front : passenger[1]!;
+      for (let s = near; s <= far; s += 0.5) {
         const at = toAxis(roadAt(road, s));
         assert.ok(Math.abs(Math.abs(at.c - ISLAND_C) - (ISLAND.width / 2 + ISLAND.edge)) < 0.01, `road ${road} s ${s}`);
         assert.ok(dist(roadAt(road, s), centre) <= halt.reach / 100, `road ${road} s ${s} within ${halt.name}'s reach`);

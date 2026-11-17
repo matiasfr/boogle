@@ -46,7 +46,7 @@ if (at === 'platform') {
   const hall = local(home.HALL, 1.6);
   look = { x: (hall.x + local(layout.GREETER).x) / 2, y: eye.y, z: (hall.z + local(layout.GREETER).z) / 2 };
 } else if (at === 'crossing') {
-  // Line 2's train stops with its engine at s 18.25: a rider steps onto the deck's road 2 edge there.
+  // Line 2's players' car stops at the catalog Home mark (21.65 m with the coach); its engine is ahead of it.
   // The eye is a rider's on the deck beside the standing train's last car (the steel car, s 5.55 to 8.75), back at
   // the deck's road 1 edge so the boards (toward the buffers) and the stall (across road 2) are under 60° apart;
   // Buddy stands on the boards' far side. `homeeye=stop` stands at the engine's stop mark instead, 80° between them.

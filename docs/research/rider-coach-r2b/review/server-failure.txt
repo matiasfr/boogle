@@ -1,0 +1,19 @@
+✖ failing tests:
+
+test at test/client-address.test.ts:68:5
+✖ new sessions: Fly IPv6, independent clients and untrusted XFF (13.85625ms)
+  AssertionError [ERR_ASSERTION]: request 0
+
+  404 !== 204
+
+      at TestContext.<anonymous> (file:///Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/server/test/client-address.test.ts:112:49)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 204,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

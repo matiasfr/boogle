@@ -241,6 +241,11 @@ async function runChecks() {
     failed += homeCart.failures;
     report.push(homeCart);
     if (!json) console.log('Home cart:', JSON.stringify(homeCart));
+    const { checkHomeSignals } = await import('./home-signals.ts');
+    const homeSignals = checkHomeSignals();
+    failed += homeSignals.failures;
+    report.push(homeSignals);
+    if (!json) console.log('Home held signals:', JSON.stringify(homeSignals));
     const { checkRiderCoach } = await import('./rider-coach.ts');
     const riderCoach = checkRiderCoach();
     failed += riderCoach.failures;

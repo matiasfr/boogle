@@ -28,7 +28,7 @@ function poses(stops: readonly number[], origin: number, along: number) {
   );
 }
 
-test('Q7 preserves all five car poses while standing and throughout departure', () => {
+test('Q7 preserves all six car poses while standing and throughout departure', () => {
   const before = line2Stops(6),
     after = line2Stops(7),
     origin = before[3]!;

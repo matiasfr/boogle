@@ -254,11 +254,15 @@ test('buffers never stand in each other or in a deck: every 0.1 m of both lines,
 });
 
 test('the couplings batch holds every train of the fleet, and the seated rider and the rack are found', () => {
-  // Review, 14 November: a capacity of 12 dropped later trains' couplings; the fleet's seven trains can show 21 and
-  // more (four a train with the footing wagon and the steel car).
+  // Review: guard the fleet against every consist, including coach, wagon and steel car.
+  // Each slot is bounded independently even though only one wagon is fitted at a time.
   assert.equal(RAIL_TRAINS.length, 7);
   assert.equal(couplingCapacity(RAIL_TRAINS.length), 35);
-  assert.ok(couplingCapacity(RAIL_TRAINS.length) >= 21);
+  for (const wagon of [false, true])
+    for (const steel of [false, true]) {
+      const need = RAIL_TRAINS.reduce((n, { line }) => n + consistOf({ line, wagon, steel }).length - 1, 0);
+      assert.ok(couplingCapacity(RAIL_TRAINS.length) >= need, `need ${need} coupling links`);
+    }
   const view = fs.readFileSync('src/entities/railway/train-view.ts', 'utf8');
   assert.match(view, /createCouplings\(owner, couplingCapacity\(RAIL_TRAINS\.length\)\)/);
   // A seated rider is aboard by their chair's platform, not by the deck under their feet (#1783 let a sitter ask

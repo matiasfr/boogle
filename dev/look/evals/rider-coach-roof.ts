@@ -27,7 +27,12 @@ const sample = () => ({
   platform: carry.on?.id ?? null,
   jumps: localJumpCount(),
 });
+let selectedSlot: number | undefined;
+export function select(slot: number) {
+  selectedSlot = slot;
+}
 function train() {
+  if (selectedSlot !== undefined) return inspectRailway()!.line2View.trains[selectedSlot]!;
   const row = inspectRailway()!.line2View.trains.find(
     (r) => r.longBoiler && r.cars.length === 6 && r.at === 0 && r.phase === 0,
   );
@@ -123,7 +128,7 @@ export async function stage(kind: 'platform' | 'bench' | 'load' | 'cab') {
   await warp.step(2);
   return { kind, staged: start, settled: sample(), target, train: f.row };
 }
-export function begin(next?: Point) {
+export function begin(next?: Point, follow = false) {
   if (next) target = next;
   trace = [];
   clearInput();
@@ -137,6 +142,10 @@ export function begin(next?: Point) {
     if (!air && t >= 300) {
       pressJump();
       air = true;
+    }
+    if (follow) {
+      const f = frame();
+      target = { x: f.coach.x, y: f.railY + 2.05, z: f.coach.z };
     }
     const dx = target.x - b.position.x - b.velocity.x * 0.12,
       dz = target.z - b.position.z - b.velocity.z * 0.12;
@@ -174,6 +183,7 @@ export function canopyTarget() {
     }
   points.sort((a, b) => Math.hypot(a.x - f.coach.x, a.z - f.coach.z) - Math.hypot(b.x - f.coach.x, b.z - f.coach.z));
   if (points[0]) return { ...points[0], source: 'nearest raised walkable collider' };
+  if (selectedSlot !== undefined) return null;
   // Home's visible canopy has no roof collider. Still aim at its visual top to demonstrate the exit attempt.
   const a = toAxis({ x: f.coach.x - ORIGIN.x, z: f.coach.z }).a;
   const p = axisPoint(a, ISLAND_C);
