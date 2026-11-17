@@ -16,7 +16,7 @@ const CASES: [string, string[], 'docs' | 'code'][] = [
   ['root and nested prose', ['AGENTS.md', 'DESIGN.md', 'src/world/AGENTS.md', 'server/README.md'], 'docs'],
   [
     'skills, agents and rules',
-    ['.claude/skills/look/SKILL.md', '.claude/agents/implementer.md', '.claude/rules/net.md'],
+    ['.claude/skills/look/SKILL.md', '.claude/agents/planner.md', '.claude/rules/net.md'],
     'docs',
   ],
   ['an image in docs', ['docs/reviews/shot.png', 'docs/research/a.svg'], 'docs'],
