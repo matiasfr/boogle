@@ -201,7 +201,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true' && (needs.changes.outputs.server == 'true' || needs.changes.outputs.image == 'true')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # As deploy-server.yml: on main the audited tests (5.5 min) plus the image build's rail-save seeding (4+ min) pass
+    # 10, and a timed-out job is "cancelled", which red-main and the heartbeat read as superseded (17 November, twice).
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: server

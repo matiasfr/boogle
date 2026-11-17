@@ -33,6 +33,10 @@ case "$ci" in
     gh issue list --label red-main --state open --json number,url -q '.[] | "issue #\(.number) \(.url)"' 2>/dev/null
     ;;
 esac
+# A cancelled run with nothing newer is not superseded: a job hit its time limit, and main's tip has no verdict.
+tip=$(gh run list --workflow ci.yml --branch main -L 1 --json status,conclusion,headSha,url \
+  -q '.[0] | select(.conclusion == "cancelled") | "\(.headSha[0:8]) \(.url)"' 2>/dev/null)
+[ -n "$tip" ] && echo "NO VERDICT at main's tip: CI cancelled at ${tip} (a job timed out?); rerun it or fix the limit."
 say "Main"
 git log origin/main -3 --format='%h %s (%cr)'
 echo "main checkout: $(git -C "$main" rev-parse --abbrev-ref HEAD), $(git -C "$main" rev-list --count HEAD..origin/main) behind, $(git -C "$main" status --short | wc -l | tr -d ' ') uncommitted"
