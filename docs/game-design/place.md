@@ -2627,6 +2627,15 @@ column proportional to its cap, with a fixed cap mark. Sources:
 [riders](../../src/entities/railway/riders-view.ts), [till](../../src/entities/railway/till-view.ts),
 [folk](../../src/place/folk.ts), [trade queries](../../src/sim/railway-queries-trade.ts).
 
+**The waiting sack (17 November 2026, town-economy-visible C2).** When the replicated till has away fares,
+a tied coin sack stands beside the column on the counter. The board shows the box balance and `Sack <count>`;
+within 3 m, one Interact press on `Empty` sends the existing sack intent. The sack, its count and the prompt
+disappear only when the row reports the pour, and the column rises with the accepted balance. An empty sack
+offers nothing; a joining player draws the waiting sack from the same row. The sack has no collider. The box's
+existing balance display and column remain capped at its mark, even if a pour takes the actual balance above it.
+The waiting sack's count is not clamped to the box cap.
+`Empty` and `Sack <count>` are placeholders for the owner. No Boogler copy changed.
+
 When the box can afford a staked plot, a gold outline shows its house. Approach the board and hold Interact for one
 second. Its board shows the added rider rate, price and box balance; an unaffordable offer gives the shortfall.
 Only an accepted server purchase spends the shared box and starts construction. At the current 50 percent room

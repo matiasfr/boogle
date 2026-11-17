@@ -635,6 +635,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     targets(): Interactable[] {
       beginFrame();
       const targets = [
+        ...homeStation.targets(),
         ...opening.targets(),
         ...sources.targets(),
         ...reward.targets(),

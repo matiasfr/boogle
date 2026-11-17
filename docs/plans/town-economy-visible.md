@@ -310,10 +310,19 @@ models`'.
     sack's op is refused; the money check after a pour past the mark; lowering either live rate preserves the earned
     sack and a later resume adds nothing. The cap applies only when filling ([Default ruling](../agent-calls.md#rewards-co-op-and-town-roles)).
   - Proof: `npm run checkpoints -- sack-waiting`.
-- [ ] **C2. The sack on the counter (S; V4).** After C1 and A3. Sync: Local. Tier: normal + visual. Model:
+- [x] **C2. The sack on the counter (S; V4).** After C1 and A3. Sync: Local. Tier: normal + visual. Model:
   gpt-6-astra high. `src/entities/railway/till-view.ts`: a sack on the counter while `Till.sack > 0`, its count on the
   board; one Interact press calls `sack()`; the column rises on the row change. Proof: `npm run look -- --rail-seed
   sack-waiting`: press, the column rises.
+  - **Built locally, 17 November; not shipped.** Non-solid prefab sack, board count and record-owned `Empty`
+    target through the existing railway provider. Only replicated rows change the view. Opened the proof's
+    motion sheet and two 1200 px stills in `docs/reviews/town-sack-c2/`: sack 630 / box 18 before the press,
+    no sack / box 648 afterwards; column 1.5% to 54% of its 1,200 cap. One added mesh, 376 triangles,
+    one colour draw plus at most one shadow draw while present. WebGPU capture health and level-check pass.
+    The existing box balance label remains cap-clamped, as `test/review-town-a3.test.ts:78` requires; displaying
+    C1's over-cap balance exactly needs a separately reviewed assertion change. Sack counts stay exact.
+    No test assertions or fixtures edited. Simultaneous two-player press and a later joining peer were not
+    browser-tested; not tested on a device.
 - [ ] **K3. Checkpoint: the slice closed.** `npm run level-check` with B2's houses solid (finding 7); `npm run perf` at
   the Round on `house-built` against `trains-on`, reported, not a gate; a "Trade" chapter in `docs/game-design/` with
   its index line; the away host test once (a hosted room emptied, rejoined after a faked 8 hours); "not tested on a
