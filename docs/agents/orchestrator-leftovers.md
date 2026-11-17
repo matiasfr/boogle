@@ -12,6 +12,8 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## Leftovers
 
+- **17 November (P3, tooling):** four prefab tests keep their own list of every builder or record (`test/prefab-workshop.test.ts` twice, `test/prefab-gorge.test.ts`, `test/prefab-leg2.test.ts`, `test/prefab-portability.test.ts`), so each new builder fails the full ship check until all five are edited by hand (D2: 143 failures, then one more). One shared helper in `test/helpers` that stubs every name in `src/prefab/names.ts` would end it; it changes test fixtures, so it needs a review.
+
 
 - **14 November, after the fixes (ranked, in this order; nothing in this list was tested on a device):**
   - **P2, the Round's shadows:** from above only half the Round has shadows; the shadow map covers the area near the player.

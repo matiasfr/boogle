@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, and keep it short. It holds only what cannot be looked up: who is running what, what waits on the owner, and the lessons. Main, CI, pull requests and worktrees come from `npm run heartbeat`; committed work and its next steps from [the backlog](../backlog.md); what merged from git. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 17 November 2026 about 21:50 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
+**Updated:** 17 November 2026 about 22:40 UTC by the heartbeat; the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
 
 ## Jobs in flight
 
@@ -117,6 +117,7 @@ The lessons; the orchestrator keeps them.
 37. A cancelled CI run on main with no newer run is a timeout, not a superseded run: read its job times. `npm run heartbeat` now says NO VERDICT for it (17 November: two server-job timeouts went unseen).
 38. A pre-push refusal whose log names no test: rerun `node dev/ship-check.ts origin/main HEAD` in that worktree with its output in a file, and run no other suite on the machine while a ship's check runs (garage step 3, 17 November: two refusals and 45 minutes from the reviewer's verdict to main; the first was `test/prefab-dynamic.test.ts`, whose likely cause, NTFS file ids rounding as numbers, is fixed in #2028; the second ran beside the heartbeat's own unit run and left no error).
 39. A brief's "no catalog entry" must say wire or persistence catalog, and a view brief's file list must include the records the plug-in contract requires: `src/content/prefabs`, `src/content/levels` and the compiled JSON from `npm run prefabs` (gate cottage D1, 17 November: the builder stopped before any edit and the job lost an hour). Tell a builder to list every scope wall in one report rather than stop at the first.
+40. A brief that adds a prefab builder or level names the hand-kept lists it must join and asks for the full `node dev/ship-check.ts origin/main HEAD`, not `--unit-only`: the stub builder maps in `test/prefab-workshop.test.ts` (two), `test/prefab-gorge.test.ts` and `test/prefab-leg2.test.ts`, and the record lists in `test/prefab-portability.test.ts` (D2, 17 November: the builder’s `--unit-only` check passed 50 of 50, the ship was refused with 143 failures of `missing builder town.green-kerb`, and the review found the fifth list; a refused ship and a fix round). A mesh laid on the terrain is checked against every far-ground level (`LEVELS` in `src/place/far-ground.ts`): the coarse ground stood 0.29 m above the green.
 
 ## How merging works
 
