@@ -1,0 +1,33 @@
+
+> boogle@0.1.0 checkpoints
+> node dev/look/checkpoints.ts
+
+ok   awake          0.1 s
+ok   q5-done        7.2 s
+ok   trains-on      7.7 s
+ok   deck-laid      12.8 s
+ok   gap-footed     8.1 s
+ok   leaf-raised    0.1 s
+ok   ring-joined    0.3 s
+ok   steel-kit      2.8 s
+ok   steel-lit      0.3 s
+ok   steel-home     3.7 s
+ok   gorge-open     3.7 s
+ok   gorge-mid      37.6 s
+ok   q1-done        3.1 s
+ok   hook-taken     3.6 s
+ok   hook-earned    3.9 s
+ok   q4-done        4.3 s
+ok   glide-earned   3.6 s
+ok   freight-running 1.2 s
+ok   fares-running  7.1 s
+ok   house-ready    10.0 s
+ok   house-built    10.2 s
+ok   q6-done        3.0 s
+ok   works-open     0.0 s
+ok   yard-wagon     37.6 s
+ok   crossing-finishing 0.0 s
+ok   crossing-done  0.0 s
+ok   boiler-long    1.9 s
+ok   gorge-reached  68.3 s
+28 seeds build through the host save path

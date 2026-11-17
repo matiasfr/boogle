@@ -1,0 +1,11 @@
+
+> boogle@0.1.0 prefabs
+> node dev/prefab/build.ts --check
+
+prefabs: 226 records, 18 levels, 296618 bytes, fresh
+area greybox: 7 records, 7200 definition bytes (standalone canonical records)
+area halts: 12 records, 2414 definition bytes (standalone canonical records)
+area railway: 13 records, 15812 definition bytes (standalone canonical records)
+area roundhouse: 8 records, 5849 definition bytes (standalone canonical records)
+area scenery: 4 records, 1193 definition bytes (standalone canonical records)
+area town: 182 records, 54274 definition bytes (standalone canonical records)

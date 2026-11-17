@@ -1,14 +1,31 @@
 # R2b: production coach, eight riders, and the Gorge crossover
 
 16 November 2026. Branch **t3/rider-coach-blockout**. World **v57** (own small bump commit
-`8c5fc856e`); Gorge crossover data is its own commit **72354f8d9**, sharing v57.
-Rebased on main **a32bc4362** (#1981–#1985). No push or ship. No subagents. No R1c, R3 or R4.
+`be3935d49`); Gorge crossover data is its own commit **c3ebcef7c**, sharing v57.
+Rebased on main **2c29e37a3** (#1981–#1986, including R2b.1). No push or ship. No subagents. No R1c, R3 or R4.
 
-**Implementation and verification complete apart from the separately owned Pier R2b.1 dependency and the explicit evidence limits below.**
-R2b.1's existing −2.60 m full-tail/crossing clearance remains a named failing row against its unchanged
-0.60 m minimum and future 0.80 m pin. The builder did not edit the Pier crossing or ramp. Rebase and rerun
-level-check when R2b.1 lands. Do not merge this branch while that row fails.
+**R2b.2 and R2b.3 are built locally for independent review.** The separately owned Pier crossing is now on
+main and integrated: the production six-car tail clears the planks by **0.80 m**, against **0.60 m** minimum
+and **0.80 ±0.01 m** pin. The full level check passes with zero failures. No pending Pier failure remains.
 The [second-stop report](rider-coach-r2b-second-stop.md) preserves the original failures and controls.
+
+## Final rebase and Pier acceptance
+
+R2b.1's planned coach row now measures `consistBounds(consistOf({line: 1, wagon: true, steel: true}))`.
+The real tail is **16.10 m**, so its **0.80 m** pin is unchanged. The shared-reservation row changes its pin
+**4.20 → 0.80 m** because the reservation now includes the coach. Every other R2b.1 minimum and pin is kept:
+planks **707.2–709.6 m**, ramp **9.4 m** station interval, **9.369222 m** horizontal run, **0.67 m** rise,
+**9.393147 m** slope length, **4.090301°** (maximum **15°**); Q7 frame/feeder **1.310301 m** and every personal
+box at least **1.476609 m**, minimum **0.60 m**. The 512-state rack/shelf exclusion still passes.
+[All Pier rows, sources and pins](rider-coach-r2b/finish/margins.md#pier-r2b1-rows-with-the-production-consist).
+
+Rebase conflicts were in generated halt/rail-map data and the plan's as-built notes. Regeneration combines
+main's crossing/ramp with the reviewed coach Home/Ring/end-block values. Against reviewed `54a995c7a`, the
+prefab golden has **79 numeric leaf changes**, all Pier ramp/plank transforms or walking-path coordinates;
+[exact changed paths](rider-coach-r2b/final/prefab-deltas.json). **No simulation stage golden changed in this
+resume.** All 53 seeds and 1,200-tick continuations pass their reviewed pins. The initial dormant Home position
+remains the previously explained cause, not a new rebase delta. #1984's split runner, 480 s per-file deadline
+and drift reporting are retained unchanged; none of this branch's tested files draws a drift warning.
 
 ## What changed
 
@@ -180,23 +197,29 @@ retained alongside the successful capture logs.
 ## Real-time recordings and visual findings
 
 All clips use accepted server seed/state, then normal 1× server and client clocks for the recording.
-`dev/look/rider-coach-proof.ts` is the reproducible harness. MP4 copies preserve the original recording's
-frame timing and dimensions (1200×800, no speed-up); originals remain under `.look/rider-coach-r2b/finish`.
-The count matrix above stages cosmetic visibility; these recordings do not.
+`dev/look/rider-coach-proof.ts` is the reproducible harness. Clips are **local-only**; committed evidence is the inspected stills and motion sheets. Originals remain
+under `.look/rider-coach-r2b/finish/{home,pier,curve,gorge,gorge-first}/*-realtime.webm`. Compressed copies
+are retained under `.look/rider-coach-r2b/local-clips/` (1200×800, original frame timing, no speed-up).
+Exact local paths: `finish/home/home-realtime.webm`, `finish/pier/pier-realtime.webm` (refreshed after rebase),
+`finish/curve/curve-realtime.webm`, `finish/gorge/gorge-realtime.webm`, and
+`finish/gorge-first/gorge-realtime.webm` (wide); all prefixed `.look/rider-coach-r2b/`.
+The count matrix above stages cosmetic visibility; these recordings do not. The Pier capture is refreshed
+after R2b.1; the other recordings and count/Home stills retain their reviewed `54a995c7a` capture provenance.
+The rebase changes no train geometry, rider seating, Home camera or Gorge crossover pose.
 
 | Clip / stills | What it shows |
 | --- | --- |
-| [Home boarding](rider-coach-r2b/finish/home/home-realtime.mp4), [sheet](rider-coach-r2b/finish/home/home-motion.png) | Two aboard on arrival; three while standing, then three depart. The new near-side rider appears in a separate opening; no walk across open ground. |
-| [Pier boarding](rider-coach-r2b/finish/pier/pier-realtime.mp4), [standing](rider-coach-r2b/finish/pier/pier-standing-still.png), [departing](rider-coach-r2b/finish/pier/pier-departing-still.png) | Three arrive, four while standing; the purple near-side rider fills the second opening. The clearer opposite-side camera avoids the first attempt's canopy post. |
-| [Home curve departure](rider-coach-r2b/finish/curve/curve-realtime.mp4), [sheet](rider-coach-r2b/finish/curve/curve-motion.png) | Actual long boiler, players, coach, kit, wagon and steel car arrive, stand and leave around Home's curve. Wide composition; not a rider-count view. |
-| [Gorge north platform](rider-coach-r2b/finish/gorge/gorge-realtime.mp4), [standing](rider-coach-r2b/finish/gorge/gorge-standing-still.png), [departing](rider-coach-r2b/finish/gorge/gorge-departing-still.png) | Fixed camera toward Home; actual long wagon train arrives and backs out. The engine partly occludes the rear cars, so the wide clip complements this requested view. |
-| [Gorge wide turn](rider-coach-r2b/finish/gorge-wide/gorge-realtime.mp4), [sheet](rider-coach-r2b/finish/gorge-wide/gorge-motion.png) | All six car bodies remain straight while standing and turning; they cross to the homeward track only after departing. |
+| Home boarding (clip local-only), [sheet](rider-coach-r2b/finish/home/home-motion.png) | Two aboard on arrival; three while standing, then three depart. The new near-side rider appears in a separate opening; no walk across open ground. |
+| Pier boarding (clip local-only), [sheet](rider-coach-r2b/finish/pier/pier-motion.png), [standing](rider-coach-r2b/finish/pier/pier-standing-still.png), [departing](rider-coach-r2b/finish/pier/pier-departing-still.png) | Three arrive, four while standing; the purple near-side rider fills the second opening. The clearer opposite-side camera avoids the first attempt's canopy post. |
+| Home curve departure (clip local-only), [sheet](rider-coach-r2b/finish/curve/curve-motion.png) | Actual long boiler, players, coach, kit, wagon and steel car arrive, stand and leave around Home's curve. Wide composition; not a rider-count view. |
+| Gorge north platform (clip local-only), [sheet](rider-coach-r2b/finish/gorge/gorge-motion.png), [standing](rider-coach-r2b/finish/gorge/gorge-standing-still.png), [departing](rider-coach-r2b/finish/gorge/gorge-departing-still.png) | Fixed camera toward Home; actual long wagon train arrives and backs out. The engine partly occludes the rear cars, so the wide clip complements this requested view. |
+| Gorge wide turn (clip local-only), [sheet](rider-coach-r2b/finish/gorge-wide/gorge-motion.png) | All six car bodies remain straight while standing and turning; they cross to the homeward track only after departing. |
 | [Ring Island standing](rider-coach-r2b/finish/ring/ring-standing-still.png), [departing](rider-coach-r2b/finish/ring/ring-departing-still.png) | Opposite the loader canopy: the full six-car train, with both passenger cars alongside the platform and freight in its retained loading positions. |
 | [Two-train queue](rider-coach-r2b/finish/queue/queue-still.png), [two-frame sheet](rider-coach-r2b/finish/queue/queue-motion.png), [staging data](rider-coach-r2b/finish/queue/staging.json) | Two complete six-car production body sets at s 84.90 / 57.50 on the homeward track, visibly separate at the tight bend. The foreground pair is staged; other live trains are background. |
 | [Garage Cars tile](rider-coach-r2b/finish/garage/rider-coach-garage-still.png) | Real garage interaction, “4 seats, 8 riders”; engine and players' car in the works copy, no coach. |
 
-Home proof: arrival tick 4570, count 2→3 at 4577, departure 4620. Pier: arrival 5173,
-count 3→4 at 5178, departure 5222. The count does not change during the recorded RUN phases. These are
+Home proof: first observed arrival tick 4570, count 2→3 at 4577, departure 4620. Refreshed Pier proof:
+first observed standing tick 5172, count 3→4 at 5177, departure 5222. These are polling observations, not new simulation pins. The count does not change during the recorded RUN phases. These are
 aggregate riders, not identity-preserving NPC journeys; the existing count-driven draw remains unchanged.
 Gorge uses `boiler-long` followed by accepted leg construction to the Gorge, since the canonical
 `gorge-reached` checkpoint does not itself have the longest boiler/wagon combination. Proof JSON records
@@ -233,6 +256,28 @@ sprint/double-jump envelope. This is a sampled geometric reach check, not a swep
 not proof about sub-metre landing spots, and not a new route playtest. No new route was found; no roof
 height or level threshold was altered to obtain that result.
 
+### Controller witness after the Pier rebase
+
+Reproducer: `node --import ./dev/sim/hooks.ts dev/look/rider-coach-roof.ts`. Accepted `boiler-long` save plus
+accepted `rail.jump`, actual six-car train observed standing at Home; only the disposable server child is
+paused. The client runs the production player controller and Rapier at fixed 60 Hz. Initial takeoff positions
+are staged; every climb/exit uses held movement and jump inputs, with no mid-jump teleport, velocity patch or
+contact grant. These are **stepped controller sheets**, not additional real-time clips.
+
+| Start / action | Controller result | Evidence |
+| --- | --- | --- |
+| Platform edge, feet 19.0199 m | Lands and remains on `railway:train2-2`, feet **20.3495 m**, target roof 20.3500 | [Start](rider-coach-r2b/final/roof-controller/platform-start-still.png), [sheet](rider-coach-r2b/final/roof-controller/platform-climb-filmstrip.png), [landing](rider-coach-r2b/final/roof-controller/platform-roof-still.png) |
+| Players' bench/rail location | Decorative bench/rail has no collider; settles to real deck at **18.9992 m**, then lands on roof at **20.3495 m** | [Start](rider-coach-r2b/final/roof-controller/bench-start-still.png), [sheet](rider-coach-r2b/final/roof-controller/bench-climb-filmstrip.png), [landing](rider-coach-r2b/final/roof-controller/bench-roof-still.png) |
+| Kit load, feet **19.8191 m** | Lands and remains on roof at **20.3495 m** | [Start](rider-coach-r2b/final/roof-controller/load-start-still.png), [sheet](rider-coach-r2b/final/roof-controller/load-climb-filmstrip.png), [landing](rider-coach-r2b/final/roof-controller/load-roof-still.png) |
+| Coach roof → visible Home canopy (top **23.9200 m**) | Returns to the ordinary platform, feet **19.0199 m**; no new landing/route | [Sheet](rider-coach-r2b/final/roof-controller/roof-to-canopy-filmstrip.png) |
+| Existing cab roof (**21.5945 m**, 3.295 above rail) → same canopy | Also returns to the platform; the visible canopy has no walkable roof collider | [Start](rider-coach-r2b/final/roof-controller/cab-control-start-still.png), [sheet](rider-coach-r2b/final/roof-controller/cab-to-canopy-filmstrip.png) |
+
+All twelve new PNGs opened; actual roof contacts agree with the pictures. [Full controller trace and health](rider-coach-r2b/final/roof-controller/results.json): WebGPU, advancing frames, no errors.
+The platform approach's second press occurs after contact with the roof and can relaunch the player; its high
+peak is **not** a single free-flight jump-height measurement. No newly reachable route was found. The three
+controller starts and canopy comparison are at Home; the every-halt result above remains the explicitly
+limited 48-pose geometry scan, not an unperformed controller run at every halt.
+
 ## Review findings
 
 | Review point | Finding |
@@ -245,46 +290,48 @@ height or level threshold was altered to obtain that result.
 | Goldens | Every changed stage/continuation classified by cap, Home, Ring, tail or Gorge control. Zero unexplained stages; host trace has no unrelated field changes. |
 | New car view allocation/lifecycle | Layouts/bounds/seat offsets cached once. Coach meshes/materials constructed at view creation, disposed through the prefab owner; teardown clears rider bindings. Per-frame posing reuses vectors/quaternions, has no new `map`, `filter`, array/object construction or geometry/material allocation. Existing unrelated train-view allocations remain. |
 
-## Checks and remaining dependency
+## Checks on the rebased tree
+
+Unless labeled earlier evidence, these results are refreshed after main's Pier integration. T2, world-inputs,
+town-buy and the earlier visual/performance proofs retain their reviewed pre-rebase provenance; the rebase
+changes no shared rule, train pose, rider view, or player controller. The Pier boarding capture and controller
+roof evidence are refreshed on the rebased tree.
 
 | Check | Result |
 | --- | --- |
-| `npm run loop -- run` | PASS through Gorge. Order and bills unchanged; route totals 3:15 / 2:58 / 2:54 / 2:57 for 1–4 players. [Log](rider-coach-r2b/finish/loop.log). |
-| `npm run checkpoints` (all 53 named stages) | PASS, every seed builds through host save path. [Log](rider-coach-r2b/finish/checkpoints.log). |
-| Two-player T2, warp 3 | PASS: both end T2 at tick 2183; hashes agree at 235 server steps. Under load, max clock deficits 5.185/4.516 s; not timing/feel evidence. [Report](rider-coach-r2b/finish/t2/report.txt), [both-player verdict](rider-coach-r2b/finish/t2/verdict.json). |
-| `world-inputs`, `town-buy` | PASS both scenarios; no graphics errors. [Log](rider-coach-r2b/finish/scenarios.log). Buyer/partner stills and reload sheet opened. |
-| `npm --prefix server test` | PASS **408/408**. [Log](rider-coach-r2b/finish/server-final.log). |
-| Full unit portion of `npm run check` | PASS **2311**, skipped 65, todo 1, failed 0 (2377 tests). [Log](rider-coach-r2b/finish/check-final.log). |
+| `npm run loop -- run` | PASS through Gorge. Order and bills unchanged; route totals 3:15 / 2:58 / 2:54 / 2:57 for 1–4 players. [Log](rider-coach-r2b/final/loop.log). |
+| `npm run checkpoints` (all 53 named stages) | PASS: 28 defaults plus 25 additional stages, all **53 canonical stages** through the host save path. [Default log](rider-coach-r2b/final/checkpoints.log), [additional log](rider-coach-r2b/final/checkpoints-additional.log), [coverage](rider-coach-r2b/final/checkpoint-coverage.json). |
+| Two-player T2, warp 3 (earlier reviewed evidence) | PASS: both end T2 at tick 2183; hashes agree at 235 server steps. Under load, max clock deficits 5.185/4.516 s; not timing/feel evidence. [Report](rider-coach-r2b/finish/t2/report.txt), [both-player verdict](rider-coach-r2b/finish/t2/verdict.json). |
+| `world-inputs`, `town-buy` (earlier reviewed evidence) | PASS both scenarios; no graphics errors. [Log](rider-coach-r2b/finish/scenarios.log). Buyer/partner stills and reload sheet opened. |
+| `npm run test:net` | PASS **208/208**, including reload/restart and stop-request mirrors. [Log](rider-coach-r2b/final/net.log). |
+| Golden shards | PASS **118/118**; all 53 stages and 1,200-tick continuations keep reviewed pins. [Log](rider-coach-r2b/final/goldens.log). |
+| Controller roof probe | PASS three roof landings, two canopy exit comparisons, no new route found; stepped evidence and scope above. |
+| `npm --prefix server test` | PASS **408/408**. [Log](rider-coach-r2b/final/server.log). |
+| Full unit portion of `npm run check` | PASS **2312**, skipped 65, todo 1, failed 0 (2378 tests). No drift warnings. The combined command then failed registry on the missing eval header; registry passes after repair. [Full command log](rider-coach-r2b/final/check.log), [fixed registry](rider-coach-r2b/final/registry.log). |
 | Explicit old-save shape/cap bounds | PASS 3/3 after adding the immediate v56 standing-shape regression. [Log](rider-coach-r2b/finish/load-shape-fixed.log). |
-| `npm run level-check` | Only the named pending Pier failures below; no stale generated page, no other minimum failure. |
-| Typecheck / lint / prefab build | PASS; lint zero problems. |
+| `npm run level-check` | PASS in full: zero failures, zero stale generated pages; 61 audit rows, 35 platform poses, production Pier and Home rows. [Numeric report](rider-coach-r2b/finish/level-check.json). |
+| Typecheck / lint / prefab build / assets | PASS; lint zero problems. [Types](rider-coach-r2b/final/types.log), [lint](rider-coach-r2b/final/lint.log), [prefabs](rider-coach-r2b/final/prefabs.log), [assets](rider-coach-r2b/final/assets.log). |
 | `git diff --check` | Source/doc edits clean; raw test transcripts retain their original trailing spaces and final blank lines. [Full whitespace diagnostics](rider-coach-r2b/finish/raw-log-whitespace.log). |
-| `node dev/ship-check.ts` | PASS: registry, 70 lint files, typecheck, prefab check, 212 affected test files; 1872 tests passed, 65 skipped, one todo, zero failed. [Log](rider-coach-r2b/finish/ship-check-fixed.log). |
-| `npm run build` | PASS. [Log](rider-coach-r2b/finish/build.log). |
-| `npm run perf` and v56 control | PASS WebGPU/no errors. Entry counts 398 draws and 649812 triangles both; geometry 830→823, programs 201→207, shadow-call sample 86→184. Separate moving startup frames and shared-machine load make shadow/timing differences non-comparable; this is not a coach-visible cost or performance-regression claim. [Current](rider-coach-r2b/finish/perf.log), [v56](rider-coach-r2b/finish/perf-baseline.log). |
+| `node dev/ship-check.ts` | PASS: registry, 73 lint files, typecheck, prefab check, 212 affected test files; **1872** tests passed, 65 skipped, one todo, **zero failed**. [Log](rider-coach-r2b/final/ship-check.log). |
+| `npm run build` | PASS. [Log](rider-coach-r2b/final/build.log). |
+| `npm run perf` and v56 control (earlier reviewed evidence) | PASS WebGPU/no errors. Entry counts 398 draws and 649812 triangles both; geometry 830→823, programs 201→207, shadow-call sample 86→184. Separate moving startup frames and shared-machine load make shadow/timing differences non-comparable; this is not a coach-visible cost or performance-regression claim. [Current](rider-coach-r2b/finish/perf.log), [v56](rider-coach-r2b/finish/perf-baseline.log). |
 
-Full pending failures (not waived):
+There are **no pending R2b.1 failures**. Earlier product/assertion failures and their full expected/actual
+output remain in [earlier-failures.log](rider-coach-r2b/finish/earlier-failures.log) and the second-stop report;
+those are historical, not current failures. This resume's initial probe failures are preserved in full in
+[harness-failures.log](rider-coach-r2b/final/harness-failures.log): missing accepted air-jump unlock,
+querying before nearby collisions mounted, and attempting clock speed zero (unsupported, so the train
+had left Home). The final harness accepts the unlock and waits for a real Home arrival, then pauses only
+its disposable server child while stepping the client's controller/physics. Four initial probe TypeScript
+errors were repaired by using the harness's `WarpHandle` type. No gameplay rule or threshold changed. The full unit run passed before registry rejected the new eval's
+missing command header; the header was added and registry rerun. A checkpoint-list extraction mistakenly
+passed three comment fragments as stage names; those three unknown-name failures and the corrected clean
+run are retained, rather than being treated as game failures.
 
-```text
-FAIL  crossing clears the full stopped train by -2.6 m
-Pier full tail/west crossing: -2.6000000000000227 m < 0.6 m (R2b.1 pending: Pier west foot crossing must move 3.40 m toward Home)
-Pier full tail/west crossing: -2.6000000000000227 m, pin 0.8 ± 0.01 m (R2b.1 pending: Pier west foot crossing must move 3.40 m toward Home)
-Pier 12.40 m tail/west crossing: 1.1000000000000227 m, pin 4.5 ± 0.01 m (R2b.1 pending: Pier west foot crossing must move 3.40 m toward Home)
-```
-
-`npm run check` therefore stops at level-check; its build was run separately. Earlier assertion failures,
-full expected/actual output and stack traces are preserved **unabridged** in
-[earlier-failures.log](rider-coach-r2b/finish/earlier-failures.log): stale stop/cycle/headway/catalog/geometry
-pins, economy page signatures, old server reach, an overly broad restart assertion including intentionally
-reset ephemeral account/outcome rows, the first roof harness parse error, and queue capture harness errors. Each was corrected with the
-cause recorded above; no failing threshold was loosened. The initial ship-check's two failures were:
-`stale: run node dev/economy/build-prototype.ts` and `run node dev/economy/build-trade-page.ts`; the pages
-were regenerated after the final source-comment edits.
-
-R2b.1 remains separately owned and unmerged at the recorded base: move the Pier crossing 3.40 m toward
-Home, preserving the 0.60 m minimum and yielding **0.80 m** clearance, then rebase this branch and rerun
-level-check and the final gate. R2b.3's acceptance checkbox remains open for that dependency. Independent
-review is not claimed. No R1c, R3, R4, west Stack platforms, boarding walk or final art was built.
+Independent review is not claimed. No R1c, R3, R4, west Stack platforms, boarding walk or final art was built.
+Raw videos are local-only; the portable evidence is about **50 MiB**, including 50 inspected PNGs. All report-linked stills, sheets and small logs are tracked under
+`docs/research/rider-coach-r2b/`. The count and approved-camera tables above list every requested still;
+the real-time evidence table lists every requested motion sheet and its visibility limits.
 
 Placeholder string: **“The knifeboard car seats ${playerSeats} players; the riders' coach behind it seats
 ${TRADE.riderPlaces}.”** Existing Cars title/labels still interpolate data; boiler readouts change numbers

@@ -1,0 +1,8 @@
+
+> boogle@0.1.0 assets
+> node dev/assets/build.ts --check
+
+assets: 12 fresh, first load 0.51 MB / 25.00 MB, total 0.83 MB / 100.00 MB
+assets: not registered (total only, no priority): boiler-cart, conductor-cap, engine, feeder-roller, passenger-car, place-kit, recovery-rack, scaffold-kit, track-layer, track-wing
+assets: 0 of 12 assets over a size target (0 over size, 0 oversized textures, 0 of first-load and total over)
+catalogue: 12 built roots + generated kit parts, 18 code previews; coverage registry OK

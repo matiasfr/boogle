@@ -1,0 +1,224 @@
+
+> boogle@0.1.0 test:net
+> node dev/peer-test/ws-run.ts
+
+PASS  guest registration/promotion retries preserve one principal and account
+PASS  absent owner cannot be impersonated; malformed/early frames never enter or load a room
+PASS  first auth frame has a five-second bound; a delayed handshake stays retryable
+PASS  two device tokens share one pid; newer connection wins; retired and foreign connections cannot take it back
+PASS  healthy same-connection reconnect succeeds both live and during grace without fatal refusal
+PASS  PIN rotation closes other devices and rejects revoked tokens without rebinding
+PASS  server restart preserves principal/session and durable revocation
+PASS  sign-out closes its socket and remains idempotent; signed-out token cannot reconnect
+bot queue: queued behind t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts (pid 78945)
+bot queue: acquired t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/peer-test/ws-run.ts; waited 41.78s
+PASS  isolated browser stores register different verified guests
+PASS  account switch admits the verified account in the second store
+PASS  switch clears former-person visit memory
+PASS  newer authenticated browser retires the first connection
+PASS  reload resolves the same account from the second browser store
+PASS  restart preserves browser credential admission and principal
+PASS  sign-out reloads into a distinct guest admitted to the room
+PASS  switch-back resolves the original account
+PASS  revoked browser session stops with authentication refusal
+PASS  revoked stored credential cannot enter a room or silently become a guest
+bot queue: released t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/peer-test/ws-run.ts
+bot queue: acquired t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/peer-test/ws-run.ts; waited 0.51s
+PASS  every page is on the server transport
+PASS  every page follows the server
+PASS  each page sees the other two
+PASS  default room does not install the railway registry
+PASS  presence values propagate  (68 ms)
+PASS  presence null deletes key
+PASS  presence latency < 500 ms  (n=240 p50=11ms max=20ms)
+PASS  send(): 3 x 100 messages, in order, once each, not echoed  (16 ms)
+PASS  from matches every sender
+PASS  every page follows the server clock
+PASS  the server clock advances
+PASS  late joiner D follows the clock
+PASS  E is turned away with room_full and max 4  ({"error":"room_full","max":4})
+PASS  an older tab of the same player is told elsewhere  (1 ms)
+PASS  the older tab is left on the others within 1 s  (58 ms)
+PASS  the newer tab is in the room
+PASS  A is left on the others within 3 s  (1559 ms)
+PASS  the remaining tabs still follow the server
+PASS  pages reconnect within 5 s of a restart  (1477 ms)
+PASS  all clocks reconnect after the restart
+PASS  the world went back at most 5 ticks  (before 50, after 60)
+PASS  the restarted clock advances
+PASS  after a crash every page reconnects to the clock within 5 s  (1355 ms)
+
+Railway room: rail-v57-v57-wsm237j2
+PASS  RA mirrors the whole railway
+PASS  RA receives a server-issued session
+PASS  RB mirrors the whole railway
+PASS  RB receives a server-issued session
+PASS  rail.wake is acknowledged or refused
+PASS  wake is acknowledged
+PASS  both mirrors show the wake finish on its schedule
+PASS  rail.chop is acknowledged or refused
+PASS  rail.chop is acknowledged or refused
+PASS  each harvest shows in both mirrors
+PASS  rail.chop is acknowledged or refused
+PASS  a duplicate request does not harvest twice
+PASS  rail.deposit is acknowledged or refused
+PASS  two mirrors agree on conserved balances
+PASS  mirrors hash the same
+PASS  RC mirrors the whole railway
+PASS  RC receives a server-issued session
+PASS  a late joiner mirrors exact stock and carry
+PASS  RA2 mirrors the whole railway
+PASS  RA2 receives a server-issued session
+PASS  same-pid takeover advances the session epoch
+PASS  same-pid takeover retires the old socket
+PASS  rail.chop is acknowledged or refused
+PASS  an old epoch cannot spend through the new session
+PASS  takeover peers still mirror identically
+PASS  reconnected mirrors agree after an orderly restart
+PASS  restored progress and carry are exact
+PASS  RA2 mirrors the whole railway
+PASS  RA2 receives a server-issued session
+PASS  a restart issues a new epoch
+PASS  the client registers no shared state; railway, tuning and roster are mirrored
+PASS  identity is accepted in the server roster
+PASS  the legacy edit channel is refused
+PASS  RB mirrors the whole railway
+PASS  RB receives a server-issued session
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  rail.deposit is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  rail.deposit is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  rail.deposit is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  rail.drop is acknowledged or refused
+PASS  the catalog has an unspent source
+PASS  rail.chop is acknowledged or refused
+PASS  the final-piece race moves one log: seven carried, one bill funded
+PASS  every mirror lays T1 from its start tick and opens T2
+PASS  mirrors agree after completion
+PASS  RC mirrors the whole railway
+PASS  RC receives a server-issued session
+PASS  reloading restores exact material and completion
+PASS  the reloaded mirror matches the active players
+PASS  browser adapters become ready on the mirror and a session
+PASS  adapter sends a wake
+PASS  adapter wake retires and both show idle
+PASS  adapter sends an out-of-reach stroke
+PASS  a refused stroke is shown at once, then retires and gives its logs back
+PASS  a stroke sooner than the swing cadence is not sent
+PASS  predicted strokes cannot offer more than twelve carry slots  ({"queued":[true,true,true,true,true,false,false],"carry":12,"free":0})
+PASS  every burst stroke retires; what was shown minus what was given back is what is carried
+PASS  twelve predicted deposits show at once and prevent a thirteenth spend
+PASS  every deposit retires and only accepted logs leave carry, in both mirrors
+PASS  a reload rebuilds balances without replaying effects
+PASS  adapters reconnect after a restart with a new epoch, exact balances and no replayed effects
+PASS  reconnected adapter mirrors agree
+PASS  SeatA receives a whole seat mirror
+PASS  SeatA receives a seat command session
+PASS  SeatB receives a whole seat mirror
+PASS  SeatB receives a seat command session
+PASS  SeatA seat.sit gets a receipt
+PASS  a seat command without its actor pose is refused  ({"t":"rej","epoch":1,"request":1,"reason":"refused"})
+PASS  an actorless seat command leaves both mirrors empty
+PASS  SeatA seat.sit gets a receipt
+PASS  first seat request wins  ({"t":"ok","epoch":1,"request":2,"accepted":1})
+PASS  SeatB seat.sit gets a receipt
+PASS  the losing seat request takes the alternate  ({"t":"ok","epoch":1,"request":1,"accepted":1})
+PASS  both seat mirrors agree without displacement
+PASS  SeatC receives a whole seat mirror
+PASS  SeatC receives a seat command session
+PASS  a late join sees both occupied chairs
+PASS  SeatC seat.sit gets a receipt
+PASS  a third player at two stools is refused taken
+PASS  the other tabs receive the first tab hiding
+PASS  a hidden tab does not free seats
+PASS  a sitter keeps its chair inside the reconnect grace
+PASS  the sitter reconnects with its seat row intact
+PASS  closing the first page frees only its chair after grace
+PASS  server restart clears transient seat rows on both clients
+PASS  SeatB receives a whole seat mirror
+PASS  SeatB receives a seat command session
+PASS  SeatC receives a whole seat mirror
+PASS  SeatC receives a seat command session
+PASS  SeatC seat.sit gets a receipt
+PASS  a friend takes the old chair during the restart gap  ({"t":"ok","epoch":2,"request":1,"accepted":1})
+PASS  SeatB seat.sit gets a receipt
+PASS  re-claim includes alternatives and is accepted  ({"t":"ok","epoch":2,"request":1,"accepted":1})
+PASS  re-claim slides to the alternate without displacing the friend
+PASS  SeatB seat.stand gets a receipt
+PASS  standing is accepted  ({"t":"ok","epoch":2,"request":2,"accepted":1})
+PASS  standing releases only the caller
+PASS  POST /jump seeds a room at q3-done  (200)
+
+Jump-in room: rail-v57-q3-done-c7odjr
+PASS  both players mirror the seed: Q3 laid, Q4 not
+PASS  the first player gets a session in the seeded room
+PASS  one player's chop shows in the other's mirror  (source 20: 2 -> 0 / 0; {"t":"ack","epoch":1,"request":1})
+PASS  the two mirrors agree
+PASS  after a restart both rejoin with the seed and the chop kept
+PASS  and agree
+PASS  the room still says it started at q3-done  ({"stage":"q3-done","at":"2026-11-17T03:41:53.429Z"})
+PASS  the shared room was not created or changed
+PASS  replace: a fresh command session opens before occupying a seat
+PASS  replace: both peers mirror the occupied seat before replacement
+PASS  replace: both peers observe the played clock before replacement
+PASS  replace: authenticated request succeeds  ({"ok":true,"room":"rail-v57-q3-done-c7odjr","stage":"q3-done","players":2,"docHash":"2144029724","at":"2026-11-17T03:42:03.772Z","build":"dev","ns":"v57","bornBefore":"4714a1733feb","backup":"rail-v57-q3-done-c7odjr@20261117T034203772Z.json","restore":"npm run server -- restore q3-done-c7odjr rail-v57-q3-done-c7odjr@20261117T034203772Z.json --force","born":"33f74abb729b"})
+PASS  replace: both peers reconnect with a new birth
+PASS  replace: both peers receive countdown before disconnect  ([["notice:q3-done:10","disconnected"],["notice:q3-done:10","disconnected"]])
+PASS  replace: both peers receive the same new birth
+PASS  replace: both peers reload into the unplayed Q3 seed
+PASS  replace: both mirrors agree in the replaced world
+PASS  replace: v41 host and both peers have no seat rows
+PASS  replace: the played world returns to a lower seed tick  (2316 -> 1716)
+PASS  replace: pinned backup restores successfully  ({"ok":true,"room":"rail-v57-q3-done-c7odjr","kicked":2,"restored":"rail-v57-q3-done-c7odjr@20261117T034203772Z.json","backup":"rail-v57-q3-done-c7odjr@20261117T034205209Z.json"})
+PASS  replace: original birth returns on both peers
+PASS  replace: both peers recover the old Q3 world and chop
+PASS  replace: restored mirrors agree
+PASS  replace: restoring the save also leaves transient seats empty
+Replacement checkpoint {"before":{"tick":2316,"hash":2916968413},"seed":{"tick":1716,"hash":1478968392},"restored":{"tick":2364,"hash":2318123637},"backup":"rail-v57-q3-done-c7odjr@20261117T034203772Z.json"}
+PASS  request stop: every tab mirrors line 2's 6 trains
+PASS  request stop: the seed starts with nothing asked at the quarry
+PASS  request stop: a press from off the platform sets nothing
+PASS  request stop: the lever request is accepted by the server
+PASS  request stop: every tab mirrors the request
+PASS  request stop: the asker hears it accepted
+PASS  request stop: a friend's same request moves nothing  (req 4 -> 4)
+PASS  request stop: every tab names the same serving train as the server  (server 1, tabs 1,1,1)
+PASS  request stop: a train stands at the quarry, leaving toward the village  ({"slot":1,"phase":0,"at":1,"to":1,"track":1,"depart":4461,"req":0,"from":17400,"v0":0,"dest":17400,"turn":false,"origin":0,"logs":0,"rails":0,"wagon":false,"foot":0,"arrived":4461,"freight":8,"riders":2,"steel":0,"boiler":0,"legKit":false})
+PASS  request stop: the serving train is the one that stops  (stood 1, serving 1, named first 1)
+PASS  request stop: every tab agrees on the standing train
+PASS  leaf: both tabs mirror the raised leaf (14 set, 4 racked, none hung, on its pawl)  (server 14,4,0,1,-1 (pose 78), tabs 14,4,0,1,-1 / 14,4,0,1,-1, want 14,4,0,1,-1)
+PASS  leaf: one player's brace and the other's two weights: braced and dipped on both tabs  (server 14,2,2,2,-1 (pose 39), tabs 14,2,2,2,-1 / 14,2,2,2,-1, want 14,2,2,2,-1)
+PASS  leaf: a late joiner at 200 ms gets the braced, half-hung leaf from the server  (server 14,2,2,2,-1 (pose 39), tabs 14,2,2,2,-1 / 14,2,2,2,-1 / 14,2,2,2,-1, want 14,2,2,2,-1)
+PASS  leaf: the fourth weight brings it down on all three tabs  (server 14,0,4,0,-1 (pose 0), tabs 14,0,4,0,-1 / 14,0,4,0,-1 / 14,0,4,0,-1, want 14,0,4,0,-1)
+PASS  leaf: the server took the brace from one player and the weights from the other  (brace tab heard rail.footSet:leaf1,rail.footSet:leaf1,rail.brace:leaf0,rail.footSet:leaf1,rail.footSet:leaf1; late tab heard rail.footSet:leaf1,rail.footSet:leaf1)
+PASS  leaf: a reloading tab gets the leaf down from the server  (server 14,0,4,0,-1 (pose 0), tabs 14,0,4,0,-1 / 14,0,4,0,-1 / 14,0,4,0,-1, want 14,0,4,0,-1)
+PASS  leaf: the reload replays nothing
+PASS  leaf: the rivet: joined on all three tabs  (server 14,0,4,0,1 (pose 0), tabs 14,0,4,0,1 / 14,0,4,0,1 / 14,0,4,0,1, want 14,0,4,0,1)
+PASS  leaf: after a restart every tab reconnects to the joined leaf  (server 14,0,4,0,1 (pose 0), tabs 14,0,4,0,1 / 14,0,4,0,1 / 14,0,4,0,1, want 14,0,4,0,1)
+
+PASS: 208/208 checks passed
+bot queue: released t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/peer-test/ws-run.ts

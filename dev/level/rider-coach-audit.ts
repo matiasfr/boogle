@@ -24,10 +24,9 @@ export function checkCoachAudit() {
     pin: number;
     tolerance: number;
     source: string;
-    pending?: string;
   }[] = [];
   const source = 'docs/plans/rider-coach.md#r2b-audit';
-  function row(name: string, value: number, minimum: number | null, pin: number, rule: string, pending?: string) {
+  function row(name: string, value: number, minimum: number | null, pin: number, rule: string) {
     rows.push({
       name,
       value,
@@ -35,12 +34,9 @@ export function checkCoachAudit() {
       pin,
       tolerance: 0.01,
       source: `${source}; ${rule}`,
-      ...(pending ? { pending } : {}),
     });
-    if (minimum !== null && value + 1e-9 < minimum)
-      problems.push(`${name}: ${value} m < ${minimum} m${pending ? ` (${pending})` : ''}`);
-    if (Math.abs(value - pin) > 0.01 + 1e-9)
-      problems.push(`${name}: ${value} m, pin ${pin} ± 0.01 m${pending ? ` (${pending})` : ''}`);
+    if (minimum !== null && value + 1e-9 < minimum) problems.push(`${name}: ${value} m < ${minimum} m`);
+    if (Math.abs(value - pin) > 0.01 + 1e-9) problems.push(`${name}: ${value} m, pin ${pin} ± 0.01 m`);
   }
   for (const [line, data] of RAIL_LINES.slice(0, 2).entries()) {
     const h = data.halts[0]!,
@@ -104,15 +100,12 @@ export function checkCoachAudit() {
   );
   const pier = at('Pier').s / 100,
     plankEnd = OFFSET_HALTS[2]!.crossS + CROSSING_WIDTH / 2;
-  const pending =
-    plankEnd > 709.6 + 1e-9 ? 'R2b.1 pending: Pier west foot crossing must move 3.40 m toward Home' : undefined;
   row(
     'Pier full tail/west crossing',
     pier - tail - plankEnd,
     0.6,
     0.8,
     'ring.ts: stopped train clear of sole foot crossing; R2b.1 pin',
-    pending,
   );
   const shortTail = -consistBounds(consistOf({ line: LINE2, wagon: false, steel: true })).lo;
   row(
@@ -121,7 +114,6 @@ export function checkCoachAudit() {
     0.6,
     4.5,
     'ring.ts; R2b.1 crossing move raises pin 1.1 → 4.5',
-    pending,
   );
   row(
     'Pier drawn nose/parked layer',

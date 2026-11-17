@@ -13,6 +13,7 @@ import { qjobId } from '../../src/sim/railway-queries.ts';
 import { line2Active, line2Completed } from '../../src/sim/railway-queries-line2.ts';
 import { depotPieceVisible, q7Spot } from '../../src/entities/railway/q7-site.ts';
 import { deckGap, type Deck } from '../../src/entities/railway/car-spacing.ts';
+import { consistOf, consistBounds } from '../../src/entities/railway/cars.ts';
 import { crateParts } from '../../src/render/cosmetic-parts.ts';
 import { merged } from '../../src/render/part-geometry.ts';
 
@@ -53,9 +54,12 @@ export function pierCrossingReport(assertion: (pass: boolean, text: string) => v
     assertion(value >= min, `${name}: ${value.toFixed(6)} m; minimum ${min} m (${source})`);
   const stop = RAIL_LINES[1]!.halts[3]!.s / 100;
   const end = h.crossS + CROSSING_WIDTH / 2;
+  const coach = consistOf({ line: 1, wagon: true, steel: true });
+  // R2b.3: the real six-car train replaces R2b.1's planned 16.10 m envelope. Its pin stays 0.80;
+  // the shared reservation now includes the coach too (the pre-coach reservation's pin was 4.20).
   for (const [name, tail, recorded] of [
-    ['today, longest train', TRAIN_EXTENT.behindCm / 100, 4.2],
-    ['planned R2b.3 coach train', 16.1, 0.8],
+    ['production reservation, longest train', TRAIN_EXTENT.behindCm / 100, 0.8],
+    ['production coach consist', -consistBounds(coach).lo, 0.8],
   ] as const) {
     minimum(
       `${name}: tail to planks`,

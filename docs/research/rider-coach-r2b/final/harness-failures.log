@@ -1,0 +1,135 @@
+
+roof-no-unlock.log
+bot queue: acquired t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts; waited 0.51s
+[player] entry: clicked Jump in
+[player] renderer backend: webgpu
+bot queue: released t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts
+node:internal/modules/run_main:111
+    triggerUncaughtException(
+    ^
+
+page.evaluate: Error: Controller proof requires the accepted air-jump unlock
+    at Module.stage (http://127.0.0.1:57102/dev/look/evals/rider-coach-roof.ts:59:30)
+    at eval (eval at evaluate (:370:30), <anonymous>:1:43)
+    at eval (eval at evaluate (:370:30), <anonymous>:2:3)
+    at eval (<anonymous>)
+    at UtilityScript.evaluate (<anonymous>:370:30)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at Game.eval (/Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/lib.ts:394:22)
+    at /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts:39:27 {
+  log: []
+}
+
+Node.js v26.13.0
+
+roof-before-mount.log
+bot queue: acquired t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts; waited 0.51s
+[player] entry: clicked Jump in
+[player] renderer backend: webgpu
+bot queue: released t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts
+node:internal/modules/run_main:111
+    triggerUncaughtException(
+    ^
+
+page.evaluate: Error: No adjacent platform edge
+    at Module.stage (http://127.0.0.1:57135/dev/look/evals/rider-coach-roof.ts:76:33)
+    at eval (eval at evaluate (:370:30), <anonymous>:1:43)
+    at eval (eval at evaluate (:370:30), <anonymous>:2:3)
+    at eval (<anonymous>)
+    at UtilityScript.evaluate (<anonymous>:370:30)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at Game.eval (/Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/lib.ts:394:22)
+    at /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts:42:27 {
+  log: []
+}
+
+Node.js v26.13.0
+
+roof-clock-not-paused.log
+bot queue: acquired t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts; waited 0.51s
+[player] entry: clicked Jump in
+[player] renderer backend: webgpu
+bot queue: released t3-6a1cc403-f0af1001cb859586: /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts
+node:internal/modules/run_main:111
+    triggerUncaughtException(
+    ^
+
+page.evaluate: Error: No adjacent platform edge: {"f":{"row":{"line":1,"slot":2,"phase":1,"at":0,"to":4,"track":0,"depart":14649,"req":0,"from":2165,"v0":0,"dest":99200,"turn":false,"origin":0,"logs":20,"rails":20,"wagon":{"shown":true,"x":936.0285881783068,"y":18.75,"z":5.544818607121707,"flying":0},"foot":0,"arrived":14599,"freight":0,"riders":1,"steel":0,"boiler":2,"legKit":true,"along":3074,"cars":[{"role":"engine","id":"railway:train2-0","x":950.7245075178146,"y":19.1475,"z":3.141353212557733,"riding":false},{"role":"player","id":"railway:train2-1","x":946.4438634490966,"y":18.849999999999998,"z":2.758795328140259,"riding":false},{"role":"rider","id":"railway:train2-2","x":942.8883384601772,"y":19.525,"z":3.222179751545191,"riding":false},{"role":"kit","id":"railway:train2-3","x":939.5054505303502,"y":18.849999999999998,"z":4.2793440015614035,"riding":false},{"role":"wagon","id":"railway:wagon","x":936.0285881783068,"y":18.75,"z":5.544818607121707,"riding":false},{"role":"steel","id":"railway:train2-steel","x":932.5517243340612,"y":18.849999999999998,"z":6.8102929742634295,"riding":false}],"crates":5,"kitBoard":"3","joinScale":1,"lashed":true,"longBoiler":true,"stopLamp":false,"holdLamp":false,"crossing":false,"doors":[0,0],"cut":{"roof":0,"back":0,"front":0,"left":0,"right":0}},"coach":{"role":"rider","id":"railway:train2-2","x":942.8883384601772,"y":19.525,"z":3.222179751545191,"riding":false},"player":{"role":"player","id":"railway:train2-1","x":946.4438634490966,"y":18.849999999999998,"z":2.758795328140259,"riding":false},"ux":0.9916139873746297,"uz":-0.1292350573296101,"railY":18.3},"samples":[{"a":-4,"y":18.209293174743653},{"a":-3,"y":18.219498205184937},{"a":-2,"y":18.220000076293946},{"a":2,"y":18.220000076293946},{"a":3,"y":18.333397912979127},{"a":4,"y":18.28666262626648}]}
+    at Module.stage (http://127.0.0.1:57174/dev/look/evals/rider-coach-roof.ts:82:33)
+    at async eval (eval at evaluate (:370:30), <anonymous>:1:23)
+    at async <anonymous>:396:30
+    at Game.eval (/Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/lib.ts:394:22)
+    at /Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/dev/look/rider-coach-roof.ts:42:27 {
+  log: []
+}
+
+Node.js v26.13.0
+
+types-initial.log
+
+> boogle@0.1.0 typecheck
+> tsc -p .
+
+dev/look/evals/rider-coach-roof.ts(92,9): error TS18048: 'window.__warp' is possibly 'undefined'.
+dev/look/evals/rider-coach-roof.ts(92,23): error TS2339: Property 'step' does not exist on type '{ go(speed: number): void; }'.
+dev/look/evals/rider-coach-roof.ts(99,9): error TS18048: 'window.__warp' is possibly 'undefined'.
+dev/look/evals/rider-coach-roof.ts(99,23): error TS2339: Property 'step' does not exist on type '{ go(speed: number): void; }'.
+
+Checkpoint-list parser: included three comment fragments as stage names. Full failed invocation:
+
+> boogle@0.1.0 checkpoints
+> node dev/look/checkpoints.ts q2-stocked q2-arriving q3-stocked q3-done q4-stocked q4-arriving q5-arriving q5-shelved sea-open q5-stocked q5-carry q5-finishing boiler boiler-camp yard-ready yard-built q6-stocked q6-finishing works-arrive works-stocked works-lit stall-done cradle-fitted wagon-on yard-deck s leg 1 (./railway-seed-legs.ts): the stack line to High Gorge.
+   ,
+   ,
+  
+
+ok   q2-stocked     4.1 s
+ok   q2-arriving    3.9 s
+ok   q3-stocked     4.3 s
+ok   q3-done        4.1 s
+ok   q4-stocked     6.7 s
+ok   q4-arriving    6.1 s
+ok   q5-arriving    5.5 s
+ok   q5-shelved     6.2 s
+ok   sea-open       4.4 s
+ok   q5-stocked     6.2 s
+ok   q5-carry       6.2 s
+ok   q5-finishing   6.3 s
+ok   boiler         7.2 s
+ok   boiler-camp    0.0 s
+ok   yard-ready     35.5 s
+ok   yard-built     56.2 s
+ok   q6-stocked     3.4 s
+ok   q6-finishing   3.6 s
+ok   works-arrive   4.4 s
+ok   works-stocked  0.1 s
+ok   works-lit      1.8 s
+ok   stall-done     0.1 s
+ok   cradle-fitted  0.1 s
+ok   wagon-on       0.7 s
+ok   yard-deck      55.3 s
+FAIL s leg 1 (./railway-seed-legs.ts): the stack line to High Gorge.
+   Unknown railway seed: s leg 1 (./railway-seed-legs.ts): the stack line to High Gorge.
+  
+FAIL ,
+             Unknown railway seed: ,
+  
+FAIL ,
+             Unknown railway seed: ,
+  
+3 of 28 seeds failed
+
+Initial check registry failure, repaired by adding driven-by header:
+
+> node dev/registry/check.ts
+
+prefab conservative dynamic-import analysis: src/boogler/play.ts, src/debug/perf-poses.ts, src/entities/finds/secrets-view.ts, src/entities/lookout/view.ts, src/entities/railway/arrival.ts, src/entities/railway/cart-view.ts, src/entities/railway/crates-view.ts, src/entities/railway/crossing-view.ts, src/entities/railway/forge-finish.ts, src/entities/railway/garage-view.ts, src/entities/railway/greeter.ts, src/entities/railway/halts-view.ts, src/entities/railway/home-station-view.ts, src/entities/railway/hook-shot.ts, src/entities/railway/hook-view.ts, src/entities/railway/line-cargo.ts, src/entities/railway/line2-view.ts, src/entities/railway/opening-view.ts, src/entities/railway/path.ts, src/entities/railway/reward.ts, src/entities/railway/roundhouse-view.ts, src/entities/railway/shelf-view.ts, src/entities/railway/sources.ts, src/entities/railway/tools.ts, src/entities/railway/train-view.ts, src/entities/railway/trophy-plinth.ts, src/entities/railway/view.ts, src/entities/railway/works-view.ts, src/entities/town/curio-shelf.ts, src/entities/town/view.ts, src/features/dino.ts, src/features/pois.ts
+registry: decision log: no loss: 892/892 lines and 679/679 quotations of the old files found; entries 323 before, 618 now; call rows 421 before, 1222 now (source origin/main (874c0b8c))
+registry: owner calls: 101 indexed calls: 95 live, 6 archived; index 5845/6000 characters
+registry: agent launch docs: 3.75 ms (3,000/1,000-byte budgets and launch imports)
+registry: prototype dependencies: 6 cards, 114.19 ms (JSON has owner-review notes)
+registry: debt now: suppressions 20; knots 0 groups/0 members; allowances 15 entries/24 max
+registry: debt base origin/main: suppressions 20; knots 0 groups/0 members; allowances 15 entries/24 max
+
+registry: 1 problem(s) (docs/agents/registries.md):
+  - dev/look/evals/rider-coach-roof.ts has no command header: open it with "// npm run look -- ..." (its exact command), "// command: unknown, needs <what>" or "// driven by: <tool>"

@@ -1,7 +1,7 @@
 {
   "build": {
-    "commit": "72354f8d928ef0df3895ae5355e4335c0cb42618",
-    "sourceHash": "520b927df11a1822ec62e756fccc9d7da0086b5a5efd7feca297a388c8da1eb7",
+    "commit": "9d0064ac88fd8ec6a8311e439f4a54afe12a0527",
+    "sourceHash": "2f6806bf0a2b9d9a76ed1f7caaaf8dc949c987176e4ae5696058a2800a0d472a",
     "physics": "0.21.0",
     "dependencies": [
       {
@@ -669,12 +669,16 @@
         "sha256": "7e88dd3ea5c33b4cb11981ab6c56f94dfa4099345004151d49ab2fe07812819d"
       },
       {
+        "file": "dev/level/pier-crossing.ts",
+        "sha256": "38fd752ace9e80834384f5a0f5ab263ff0ffc6ef824c2a7631957d70a778b39e"
+      },
+      {
         "file": "dev/level/prefab-colliders.ts",
         "sha256": "f0f96f560ec388741e53616b5ea0ba5df64a258f56f2bfe563e7fd14823a69b0"
       },
       {
         "file": "dev/level/rail-map.ts",
-        "sha256": "cfcb8952a538de23056586925674c20165e68e4b7fe472fd9db81343116dd2fb"
+        "sha256": "9fa23bfc1fe454c13951d60419759791378e1654faf67d33bc39a4059de12360"
       },
       {
         "file": "dev/level/rail-network.ts",
@@ -682,7 +686,7 @@
       },
       {
         "file": "dev/level/rider-coach-audit.ts",
-        "sha256": "d01f2296132f106c65b7605e33393f4ffcdb5c135483617e1894b4c18040bc6d"
+        "sha256": "43e631a8cd6d68edece14d68d069986af63d24d0df226a5e842d5e8aa4dd3494"
       },
       {
         "file": "dev/level/rider-coach-control.ts",
@@ -706,11 +710,11 @@
       },
       {
         "file": "dev/level/rider-coach.ts",
-        "sha256": "d74f6853525ee4ae0d0d4a4d9a733919c4267639e526544d3bc27faba561110d"
+        "sha256": "02836d946ca9f0ba6b3111a485e5e6ad6e521090894bc1e95a81891aca7ddae7"
       },
       {
         "file": "dev/level/ring.ts",
-        "sha256": "3099a83b99f75f5e5a9264adc39ea332bcadd0c1eddfcf2393c8cfa116a172b5"
+        "sha256": "b2229f14d7a87378c956b349b9e2f04752622a0a99cddd369fd699f776d19035"
       },
       {
         "file": "dev/level/rotunda.ts",
@@ -742,7 +746,7 @@
       },
       {
         "file": "dev/level/timber-track.ts",
-        "sha256": "8d83ca108dac122213743bd6277a93761b507df591dd1a2c421991fb0c07c7f2"
+        "sha256": "5f374ab2508c63d08f650a4565fc105dcc8c3021fa99525aea91a7b152628f96"
       },
       {
         "file": "dev/level/town-houses.ts",
@@ -1746,7 +1750,7 @@
       },
       {
         "file": "dev/look/rider-coach-proof.ts",
-        "sha256": "8826748938a4a0ff79ab09977c054e90992f7baa1ddb1230ff03c910bce65f39"
+        "sha256": "face2def2d83b19b97c3a9bc20ce186ceaf105b460fa68acb38d009708ed3cc1"
       },
       {
         "file": "dev/look/ring-mid-seed.ts",
@@ -3190,7 +3194,7 @@
       },
       {
         "file": "src/entities/railway/halts-view.ts",
-        "sha256": "29f6c7e4238e518d268efb6ed157f472eac434991d821976636c653f15a25e2f"
+        "sha256": "5c31ad8aa0d4aba406afbfc4a55f1f728539c03a674b386a54621fe87e62706e"
       },
       {
         "file": "src/entities/railway/help-carry.ts",
@@ -3262,7 +3266,7 @@
       },
       {
         "file": "src/entities/railway/line2-view.ts",
-        "sha256": "d688e7d8d0851f46bc05d4bd93316879f65e99ade085713038d344bbcdbe689c"
+        "sha256": "109b21ef5bbaa7f8e029af20a2142f3cfdd1861cde612ea7e0ff7ba58f9040b3"
       },
       {
         "file": "src/entities/railway/machine-model.ts",
@@ -3310,7 +3314,7 @@
       },
       {
         "file": "src/entities/railway/q7-site.ts",
-        "sha256": "99a2ee20eaed4238eff1a72f0b3245357d2b45bc9f75db51e285b3e834ff951e"
+        "sha256": "ffd8c3de304bec47b2b6afc4eb689022d64c76dac20362da2d3526ce63e495c6"
       },
       {
         "file": "src/entities/railway/rail-kit.ts",
@@ -3394,7 +3398,7 @@
       },
       {
         "file": "src/entities/railway/shelf-view.ts",
-        "sha256": "8628a38cc48bec392d6a6ee74db692d46c45db14e9a595ab182f73731edfb079"
+        "sha256": "a74c9bdc58a51012e8d365f3c51914e8ba8d4246d2cea43304af014af931f550"
       },
       {
         "file": "src/entities/railway/shunt-path.ts",
@@ -4326,7 +4330,7 @@
       },
       {
         "file": "src/place/layout.ts",
-        "sha256": "e43ec6ac7351207c9025cc2f54486734e3606ee43d56429f0d091e3128212c9f"
+        "sha256": "5ca685abb67c1cc3a3c62dac0cb332bb1677260e94ea4918de5242df1375308c"
       },
       {
         "file": "src/place/look-kit.ts",
@@ -4858,7 +4862,7 @@
       },
       {
         "file": "src/prefab/halt-ramps.ts",
-        "sha256": "cdb1be8437d12053da18095f38a0decd51b1e212fa658bb5e69dfdf9ac18c413"
+        "sha256": "b04c8f485f3d44bd05c683f211cb7be0a1a29f9dcbf70d8ff0bea899a0459e93"
       },
       {
         "file": "src/prefab/instantiate.ts",
@@ -6016,6 +6020,662 @@
     ]
   },
   "reports": [
+    {
+      "level": "ring (planned)",
+      "entries": [
+        {
+          "kind": "section",
+          "message": "The Pier west platform after Q7 (running-side step 5)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "west deck and crossing appear only once Q7 is laid; no early piled-deck landing"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "west deck stands on visual piles, with no solid seabed wall to climb"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "only the landward ramp connects the piled platform; no far or seabed ramp"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "ramp foot stays at rail height (24.4 m), not the seabed"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "plank crossing meets the start ramp foot across both tracks, clear of the stopped train"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "crossing clears the full stopped train by 0.8 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "production reservation, longest train: tail to planks: 0.800000 m; minimum 0.6 m (dev/level/ring.ts original Pier rule; docs/plans/rider-coach.md Pier audit)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "production reservation, longest train: tail to planks: 0.800000 m; pin 0.8 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "production coach consist: tail to planks: 0.800000 m; minimum 0.6 m (dev/level/ring.ts original Pier rule; docs/plans/rider-coach.md Pier audit)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "production coach consist: tail to planks: 0.800000 m; pin 0.8 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "planks south edge s: 707.200000 m; pin 707.2 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "planks north edge s: 709.600000 m; pin 709.6 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "head ramp station interval: 9.400000 m; pin 9.4 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "ramp physical horizontal run: 9.369222 m; pin 9.369222 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "ramp rise: 0.670000 m; pin 0.67 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "ramp slope surface length: 9.393147 m; pin 9.393147 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "Pier ramp 4.090301\u00b0 \u226415\u00b0 and walkable (ring.ts ramp rule; WALKABLE_NY 0.55)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "ramp slope: 4.090301\u00b0; pin 4.090301 \u00b10.01\u00b0"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "crossing meets the ramp foot exactly in s"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "Q7 rack/shelf exclude walkable planks in all 512 completion/forge/crossing states: exclusive (orchestrator R2b.1 phase ruling)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "Q7 frame including feeder to east planks: 1.310301 m; minimum 0.6 m (designer/orchestrator R2b.1 simultaneous-piece rule)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "Q7 frame including feeder to east planks: 1.310301 m; pin 1.310301 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "Q7 personal box (all tiers and shake) to east planks: 1.476609 m; minimum 0.6 m (designer/orchestrator R2b.1 simultaneous-piece rule)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "Q7 personal box (all tiers and shake) to east planks: 1.476609 m; pin 1.476609 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "every player\u2019s Q7 personal box stays off the planks"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "east-end to east-ramp walking corridor: 0.853422 m; minimum 0 m (R2b.1 clear walk, swept PLAYER_R)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "east-end to east-ramp walking corridor: 0.853422 m; pin 0.853422 \u00b10.01 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "west platform's roof cannot bypass the gap: 65.4 m raw double-jump glide against 278.0 m"
+        },
+        {
+          "kind": "section",
+          "message": "The gap (bent 13 railhead, u 260 m, to the brace platform at u 284 m)"
+        },
+        {
+          "kind": "fact",
+          "message": "  take-off 15.6 m, platform 8.0 m: drop 7.6 m, near edge 24.0 m out. Double jump at the apex 17.4 m, pressed late (1.10 s) 20.4 m, + grace 1.0 + body 0.5 = 21.8 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "late double jump off the platform's end falls short: 21.8 m against 24.0 m (2.2 m short, needs 1.5)"
+        },
+        {
+          "kind": "fact",
+          "message": "  a train eases into the end stop at 2.0 m/s\u00b2 from at most 20.0 m/s; from each standable top:"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "chimney: worst at 5.1 m/s, 6.5 m before the stop (u 249.3, 18.4 m): own reach 23.2 m against 24.8 m after the carry, 1.6 m short"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "boiler top to its front: worst at 4.9 m/s, 6.0 m before the stop (u 250.1, 17.8 m): own reach 22.9 m against 24.7 m after the carry, 1.7 m short"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "running board: worst at 4.7 m/s, 5.6 m before the stop (u 250.6, 16.6 m): own reach 22.3 m against 24.6 m after the carry, 2.3 m short"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "cab roof: worst at 5.0 m/s, 6.2 m before the stop (u 247.6, 18.7 m): own reach 23.4 m against 26.6 m after the carry, 3.2 m short"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "player deck: worst at 4.8 m/s, 5.8 m before the stop (u 245.8, 16.2 m): own reach 22.1 m against 29.3 m after the carry, 7.2 m short"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "coach roof: worst at 4.8 m/s, 5.8 m before the stop (u 242.1, 17.7 m): own reach 22.9 m against 32.7 m after the carry, 9.8 m short"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "kit deck: worst at 4.8 m/s, 5.7 m before the stop (u 238.8, 16.5 m): own reach 22.3 m against 36.3 m after the carry, 14.0 m short"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "steel car's deck (a plain train): worst at 4.8 m/s, 5.7 m before the stop (u 235.1, 16.6 m): own reach 22.4 m against 40.0 m after the carry, 17.6 m short"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "wagon deck: worst at 4.8 m/s, 5.7 m before the stop (u 235.1, 16.4 m): own reach 22.3 m against 40.0 m after the carry, 17.8 m short"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "steel car's deck (the wagon's train): worst at 4.8 m/s, 5.8 m before the stop (u 231.3, 16.8 m): own reach 22.4 m against 43.7 m after the carry, 21.2 m short"
+        },
+        {
+          "kind": "fact",
+          "message": "  at the line's own 2.5 m/s\u00b2 and 20 m/s the chimney would land with -0.1 m to spare; the largest braking that keeps 1.5 m from a 20.0 m/s approach is 2.00 m/s\u00b2"
+        },
+        {
+          "kind": "fact",
+          "message": "  jumps: one 1.7 m up in 0.512 s, with the air jump at its top 3.0 m in 0.979 s. Glides: after both 42.4 m raw, 28.0 m conservative; after one 33.8 m raw; straight off the edge 23.8 m raw (a splash)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "a glide after a sprint jump and air jump reaches the near edge on the conservative budget: 28.0 m against 24.0 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "a glide after one sprint jump reaches it raw: 33.8 m against 24.0 m"
+        },
+        {
+          "kind": "section",
+          "message": "Early glides: from each railhead, the farthest glide (sprint jump, air jump, raw, + grace + body)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "head 0 (u 120 m): no glide reaches the folk's side; nearest cab roof to the brace platform: 70.3 m against 170.2 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "head 1 (u 140 m): no glide reaches the folk's side; nearest cab roof to the brace platform: 67.8 m against 150.2 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "head 2 (u 160 m): no glide reaches the folk's side; nearest cab roof to the brace platform: 65.3 m against 130.2 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "head 3 (u 180 m): no glide reaches the folk's side; nearest cab roof to the brace platform: 62.8 m against 110.2 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "head 4 (u 200 m): no glide reaches the folk's side; nearest cab roof to the brace platform: 60.3 m against 90.2 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "head 5 (u 220 m): no glide reaches the folk's side; nearest cab roof to the brace platform: 57.8 m against 70.2 m"
+        },
+        {
+          "kind": "fact",
+          "message": "  head 6 (u 240 m): reaches, cab roof to the brace platform: 55.3 m against 50.2 m (reported: nothing there works before the gap is footed)"
+        },
+        {
+          "kind": "fact",
+          "message": "  head 7 (u 260 m): reaches, cab roof to the brace platform: 52.8 m against 30.3 m (reported: nothing there works before the gap is footed)"
+        },
+        {
+          "kind": "fact",
+          "message": "  not counted: the hinge pier's ramp (its foot is in the sea: what reaches it, a swimmer reaches, Level finding 7) and the hook pile (it stands only from bent 13)"
+        },
+        {
+          "kind": "section",
+          "message": "The hook ring (u 276 m, lat 12 m, 17.5 m) from the brace platform, at eye height"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "corner u 284, lat 2.2: 14.9 m (hook 24 m)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "corner u 284, lat 10.2: 11.3 m (hook 24 m)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "corner u 294, lat 2.2: 21.9 m (hook 24 m)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "corner u 294, lat 10.2: 19.7 m (hook 24 m)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "no hook target on the folk's side: the one ring pulls onto our pad at u 258.2 m (no ring past the hinge)"
+        },
+        {
+          "kind": "section",
+          "message": "Ramps (flights at most 30 degrees, slipways 15, walkable at WALKABLE_NY)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "railhead 0: 4 flights 28.5, 28.5, 28.5, 28.5 degrees, slipway 14.9"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "railhead 1: 4 flights 27.7, 27.6, 27.7, 27.6 degrees, slipway 14.9"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "railhead 2: 4 flights 26.7, 26.7, 26.7, 26.7 degrees, slipway 14.9"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "railhead 3: 4 flights 25.8, 25.8, 25.8, 25.8 degrees, slipway 14.9"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "railhead 4: 4 flights 24.9, 24.8, 24.9, 24.8 degrees, slipway 14.9"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "railhead 5: 4 flights 23.9, 23.9, 23.9, 23.9 degrees, slipway 14.9"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "railhead 6: 4 flights 23.0, 22.9, 23.0, 22.9 degrees, slipway 14.9"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "railhead 7: 3 flights 27.5, 27.5, 27.5 degrees, slipway 14.9"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "hinge pier: 2 flights 26.6, 16.1 degrees, slipway 14.9"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "brace platform's steps: 1 flights 26.3 degrees"
+        },
+        {
+          "kind": "section",
+          "message": "The railhead's kit, over the platform's last 30 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "rack 1.6, lever 1.3, buffer 0.5 m over it (at most 1.6); the jib's mast 9.0 and arm 8.5-7.5 m, out of a double jump from the rack's top (4.6 m)"
+        },
+        {
+          "kind": "section",
+          "message": "The steel works' points (ring-island-build2, R1; level flags 1 and 2), on the works yard's deck"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "yard (rail.steelTake) at u 445.5, lat 8.0, 8.9 m: on the deck, 2.1 m clear of the tarp stack"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "works (rail.steel) at u 452.0, lat 6.5, 8.9 m: on the deck, 2.3 m clear of the hammer's west post"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "yard to works 6.7 m, level, no track crossed (the plan's budget: under 15 m); the yard west of the shed (u 448)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the works point is at the shed's doorway (lat 6.5, u 448..455), 1.2 m from the platform's edge"
+        },
+        {
+          "kind": "section",
+          "message": "Recovery points"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "(1415.9, 8.0, -660.7): 8.0 m, ground sea: dry"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "(1406.6, 8.9, -820.0): 8.9 m, ground 2.3: dry"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "(1417.7, 8.9, -819.7): 8.9 m, ground 1.6: dry"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "(1395.8, 6.1, -836.3): 6.1 m, ground 6.0: dry"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "(1330.0, 66.3, -1120.0): 66.3 m, ground 66.0: dry"
+        },
+        {
+          "kind": "section",
+          "message": "The island terminus (buffers and a crossover)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "up track's buffer face at u 483 m, 15.0 m past the platforms: world (1415.1, 9.4, -854.8)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "down track's buffer face at u 483 m, 15.0 m past the platforms: world (1411.1, 9.4, -854.9)"
+        },
+        {
+          "kind": "fact",
+          "message": "  the end board (blank) 1.5 m behind them at (1413.2, 8.9, -856.4)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the crossover u 395-417 m: 22.0 m (a turnout is 20.0), ending 11.0 m short of the platforms"
+        },
+        {
+          "kind": "fact",
+          "message": "  deck 9.3 m to 8.4 m on the 4% grade (level from u 427.5); the eased shift's steepest angle 15.3 degrees, tightest radius 24.5 m at u 396.5 (Far Head's live crossover: 15.3 degrees, 24.3 m)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "island down track: 98.0 m, worst kink 0.00 degrees (at most 2), tightest radius straight on the 5 m resample, steepest grade 4.00%"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "island up track: 98.0 m, worst kink 0.00 degrees (at most 2), tightest radius straight on the 5 m resample, steepest grade 4.00%"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "island crossover: 42.4 m, worst kink 0.07 degrees (at most 2), tightest radius 32.4 m on the 5 m resample, steepest grade 4.00%"
+        },
+        {
+          "kind": "fact",
+          "message": "  the crossover is tighter than the continuity report's 40 m, as every turnout on lines 1 and 2 is (reported there, not failed); it is Far Head's shape on a straight"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the longest train (8.2 m ahead, 16.1 m behind) standing at u 451.4: u 435.3-459.6, 18.3 m clear of the crossover, 23.4 m short of the buffers, beside the platforms (u 428-468)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the longest train held at the signal (u 386.8): tail at u 370.7, 93.7 m past the hinge, 120.7 m past the Railhead's stop (sepCm 27.4)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the catalog's signal (s 1128.8 m) is at least sepCm short of the stop (s 1193.4 m): endBlocks keeps it"
+        },
+        {
+          "kind": "fact",
+          "message": "  ground under the run-off (lat -5.8, 0, -4, 1.8 m), cut to 7.5 m:"
+        },
+        {
+          "kind": "fact",
+          "message": "    u 468.0: 6.1, 5.7, 6.0, 5.6 m"
+        },
+        {
+          "kind": "fact",
+          "message": "    u 470.0: 6.5, 6.1, 6.4, 6.0 m"
+        },
+        {
+          "kind": "fact",
+          "message": "    u 472.0: 6.9, 6.5, 6.8, 6.4 m"
+        },
+        {
+          "kind": "fact",
+          "message": "    u 474.0: 7.3, 6.9, 7.2, 6.8 m"
+        },
+        {
+          "kind": "fact",
+          "message": "    u 476.0: 7.7, 7.3, 7.6, 7.2 m"
+        },
+        {
+          "kind": "fact",
+          "message": "    u 478.0: 8.1, 7.7, 8.0, 7.6 m"
+        },
+        {
+          "kind": "fact",
+          "message": "    u 480.0: 8.5, 8.1, 8.3, 8.0 m"
+        },
+        {
+          "kind": "fact",
+          "message": "    u 482.0: 8.8, 8.5, 8.7, 8.3 m"
+        },
+        {
+          "kind": "fact",
+          "message": "    u 483.5: 9.1, 8.8, 9.0, 8.6 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the cutting is nowhere over 2.0 m: it starts at about u 476.0, deepest 1.6 m at u 483.5, lat -5.8"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "nothing of the end inside the station house's terrace grown by 1 m (u 467-478.5, lat -21 to -8.3): nearest 2.5 m outside it, westmost lat -5.8"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the buffer faces 11.5 m past the plank crossing's north edge (u 471.5; at least 10)"
+        },
+        {
+          "kind": "fact",
+          "message": "  the railhead's end stops are unchanged (RING_HEAD, RING_END_BRAKE_CMS2 2.0 m/s\u00b2): its braking rows are asserted above"
+        },
+        {
+          "kind": "fact",
+          "message": "    cab roof: lands at most at u 476.9 (4.8 m/s, 4.7 m before the stop)"
+        },
+        {
+          "kind": "fact",
+          "message": "    chimney: lands at most at u 478.7 (4.8 m/s, 4.6 m before the stop)"
+        },
+        {
+          "kind": "fact",
+          "message": "    boiler top to its front: lands at most at u 478.4 (4.7 m/s, 4.4 m before the stop)"
+        },
+        {
+          "kind": "fact",
+          "message": "    running board: lands at most at u 477.1 (4.4 m/s, 3.9 m before the stop)"
+        },
+        {
+          "kind": "fact",
+          "message": "    player deck: lands at most at u 471.7 (4.2 m/s, 3.6 m before the stop)"
+        },
+        {
+          "kind": "fact",
+          "message": "    coach roof: lands at most at u 469.7 (4.6 m/s, 4.2 m before the stop)"
+        },
+        {
+          "kind": "fact",
+          "message": "    kit deck: lands at most at u 464.6 (4.2 m/s, 3.6 m before the stop)"
+        },
+        {
+          "kind": "fact",
+          "message": "    wagon deck: lands at most at u 460.6 (4.2 m/s, 3.5 m before the stop)"
+        },
+        {
+          "kind": "fact",
+          "message": "    steel car's deck (the wagon's train): lands at most at u 457.2 (4.2 m/s, 3.6 m before the stop)"
+        },
+        {
+          "kind": "fact",
+          "message": "    steel car's deck (a plain train): lands at most at u 460.9 (4.2 m/s, 3.6 m before the stop)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "a late double jump off a train braking at the line's 2.5 m/s\u00b2 into u 451.4, aimed along the track at the platforms' height, lands short of the buffer faces: worst the chimney, u 478.7, 4.3 m short"
+        },
+        {
+          "kind": "fact",
+          "message": "  from the platforms' north end a late double jump on the level reaches 16.6 m, to u 484.6: over the buffers onto the open ground behind them (nothing there is gated)"
+        },
+        {
+          "kind": "section",
+          "message": "The island halt's foot crossing"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "ramps u 430.6-434.6: 0.68 m over 4.0 m, 9.6 degrees (at most 15; walkable at WALKABLE_NY 0.55)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "landings and planks at 8.22 m, the rail tops (deck 8.0 + 0.22)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "planks u 428.1-430.5, lat 0.58..1.80, -0.42..0.42, -3.42..-0.58, -4.42..-3.58, -5.80..-4.58: none over a rail (lat -0.5, 0.5, -4.5, -3.5; 0.08 m clear each side)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "today's train standing at u 451.4: tail at u 435.3, 4.8 m north of the planks (at least 3), 0.7 m north of the ramp top (u 434.6)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the long train standing at u 451.4: tail at u 435.3, 4.8 m north of the planks (at least 3), 0.7 m north of the ramp top (u 434.6)"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the crossover ends at u 417, 11.1 m south of the planks (at least 5): both tracks straight under them"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "the fingerpost (u 436.0) is 1.4 m past the west ramp's top (at least 1)"
+        },
+        {
+          "kind": "section",
+          "message": "The summit path"
+        },
+        {
+          "kind": "fact",
+          "message": "  path: 330.1 m; bridge span 28.0 m, grade 6.4 %, clearance 9.5 m, abutment cut 0.045 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "off the bridge, cut within 1.3 m of the path under 0.2 m: 0.02 m at 329.6 m"
+        },
+        {
+          "kind": "assertion",
+          "passed": true,
+          "message": "off the bridge, grade at most 151.8 %: 21.0 % at 327.6 m"
+        },
+        {
+          "kind": "fact",
+          "message": "  (stepped at 1/240 s; the controller steps at 1/60 s)"
+        }
+      ],
+      "failures": 0
+    },
     {
       "level": "home-cart",
       "failures": 0,
@@ -18241,12 +18901,8 @@
     },
     {
       "level": "rider-coach-tail-nose",
-      "failures": 3,
-      "problems": [
-        "Pier full tail/west crossing: -2.6000000000000227 m < 0.6 m (R2b.1 pending: Pier west foot crossing must move 3.40 m toward Home)",
-        "Pier full tail/west crossing: -2.6000000000000227 m, pin 0.8 \u00b1 0.01 m (R2b.1 pending: Pier west foot crossing must move 3.40 m toward Home)",
-        "Pier 12.40 m tail/west crossing: 1.1000000000000227 m, pin 4.5 \u00b1 0.01 m (R2b.1 pending: Pier west foot crossing must move 3.40 m toward Home)"
-      ],
+      "failures": 0,
+      "problems": [],
       "rows": [
         {
           "name": "Line 1 Home held tail/block edge",
@@ -18338,21 +18994,19 @@
         },
         {
           "name": "Pier full tail/west crossing",
-          "value": -2.6000000000000227,
+          "value": 0.7999999999999545,
           "minimum": 0.6,
           "pin": 0.8,
           "tolerance": 0.01,
-          "source": "docs/plans/rider-coach.md#r2b-audit; ring.ts: stopped train clear of sole foot crossing; R2b.1 pin",
-          "pending": "R2b.1 pending: Pier west foot crossing must move 3.40 m toward Home"
+          "source": "docs/plans/rider-coach.md#r2b-audit; ring.ts: stopped train clear of sole foot crossing; R2b.1 pin"
         },
         {
           "name": "Pier 12.40 m tail/west crossing",
-          "value": 1.1000000000000227,
+          "value": 4.5,
           "minimum": 0.6,
           "pin": 4.5,
           "tolerance": 0.01,
-          "source": "docs/plans/rider-coach.md#r2b-audit; ring.ts; R2b.1 crossing move raises pin 1.1 \u2192 4.5",
-          "pending": "R2b.1 pending: Pier west foot crossing must move 3.40 m toward Home"
+          "source": "docs/plans/rider-coach.md#r2b-audit; ring.ts; R2b.1 crossing move raises pin 1.1 \u2192 4.5"
         },
         {
           "name": "Pier drawn nose/parked layer",
@@ -18777,5 +19431,5 @@
     }
   ],
   "stale": [],
-  "timingMs": 48244
+  "timingMs": 20955
 }
