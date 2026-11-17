@@ -6,7 +6,7 @@ test files changed. Not tested on a device.
 
 **K1 is ticked.** Its three parts are now present: the economy stills were opened, a real-speed Home island
 arrival/unload was recorded and inspected through sheets/frames, and `game-design/place.md` now describes A1 and
-C2 on main. The owner clarified that the clip means the **Village/Home island platform**, not the separate far
+C2 on main. The orchestrator's heartbeat, not the owner, answered that the clip means the **Village/Home island platform**, not the separate far
 halt named Ring Island. This closes the three evidence gaps in the [16 November report](town-checkpoints-k1-k2.md),
 without upgrading that report's other unverified behavior.
 
