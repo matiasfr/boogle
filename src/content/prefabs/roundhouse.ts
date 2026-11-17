@@ -29,6 +29,24 @@ const BAY_SOLIDS = [
 
 export const prefabs = [
   definePrefab({
+    key: 'roundhouse.bigger-cradle',
+    visual: { builder: 'roundhouse.bay', params: { part: 'cradle' } },
+    colliders: [],
+    scope: 'owner',
+  }),
+  definePrefab({
+    key: 'roundhouse.steel-pallet',
+    visual: { builder: 'roundhouse.bay', params: { part: 'pallet' } },
+    colliders: [box(0, 0.09, 0, 0.75, 0.09, 1.05)],
+    scope: 'owner',
+  }),
+  definePrefab({
+    key: 'roundhouse.steel-block',
+    visual: { builder: 'roundhouse.bay', params: { part: 'steel-block' }, batch: 'steel-store' },
+    colliders: [box(0, 0, 0, 0.28, 0.2, 0.28)],
+    scope: 'owner',
+  }),
+  definePrefab({
     key: 'roundhouse.waiting-engine',
     visual: { builder: 'roundhouse.bay', params: { part: 'waiting-engine' }, batch: 'rotunda-waiting-engines' },
     // A covered, parked engine is solid, without a cab/seat or a train in the simulation.

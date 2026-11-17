@@ -38,6 +38,7 @@ import {
   aperture,
   rail as railRow,
   train as trainRow,
+  line as lineRow,
   works as worksRow,
 } from '../../sim/railway-rows.ts';
 import { railTrainAsked, railTrainHeld, trainStops, railCallPlatform } from '../../sim/railway-queries-trains.ts';
@@ -682,10 +683,22 @@ export async function createRailwayTrains(
       batch.part(frame, 0, 0.3, 0, 2.2, 0.35, 3.2, '#77766b');
       for (const x of [-0.85, 0.85]) for (const z of [-1, 1]) batch.part(frame, x, 0.05, z, 0.25, 0.5, 0.5, '#3a3c3c');
       // The fitted brass cradle: two seats, eight arms and the top rails that hold the stacks upright.
-      for (const z of [-0.8, 0.8]) batch.part(frame, 0, 0.55, z, 1.5, 0.16, 1.3, BRASS);
+      const big = lineRow(adapter.read.world(), LINE2).cradle > 0,
+        height = big ? 1.8 : 1.1,
+        colour = big ? '#e8742c' : BRASS;
+      for (const z of [-0.8, 0.8]) batch.part(frame, 0, 0.55, z, 1.5, 0.16, 1.3, colour);
       for (let r = 0; r < 8; r++)
-        batch.part(frame, r % 2 ? 0.95 : -0.95, 1.05, [-1.35, -0.25, 0.25, 1.35][r >> 1]!, 0.1, 1.1, 0.1, BRASS);
-      for (const x of [-0.95, 0.95]) batch.part(frame, x, 1.62, 0, 0.12, 0.12, 2.9, BRASS);
+        batch.part(
+          frame,
+          r % 2 ? 0.95 : -0.95,
+          0.5 + height / 2,
+          [-1.35, -0.25, 0.25, 1.35][r >> 1]!,
+          0.1,
+          height,
+          0.1,
+          colour,
+        );
+      for (const x of [-0.95, 0.95]) batch.part(frame, x, 0.52 + height, 0, 0.12, 0.12, 2.9, colour);
       const aboard = Math.max(0, foot - (coupled ? inboundByTrain[coupled.slot]! : 0));
       for (let k = 0; k < aboard; k++) {
         const a = deckSlot(coupled!, k);

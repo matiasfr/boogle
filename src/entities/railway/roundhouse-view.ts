@@ -831,7 +831,7 @@ export async function createRailwayRoundhouse(
           const pos = me.body?.position;
           const away = !pos || Math.hypot(pos.x - table.x, pos.z - table.z) > BANNER_BEYOND;
           if (e.part === 2 && away && !garageView.isOpen()) showMomentBanner(BANNER[0], BANNER[1], 4.5);
-          garageView.accepted(mine, e.part === 1 ? 1 : 2);
+          garageView.accepted(mine, e.part);
           return false;
         });
     },

@@ -34,6 +34,7 @@ import { railMaxDuration, railPanelCount, railPanelStock, railPhase } from '../s
 import { trainAlong, trainSpeed, TRAIN_PHASE } from '../sim/railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { BOILER_MAX } from '../sim/railway-train.ts';
+import { installPart } from '../sim/railway-works-layout.ts';
 import { RING_BRACE, RING_HEAD, RING_RIVET, RING_STEEL_WORKS, RING_STEEL_YARD } from '../sim/railway-ring-layout.ts';
 import { railLinePoint } from '../sim/railway-line-path.ts';
 import {
@@ -322,8 +323,8 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.steel':
       return at(RING_STEEL_WORKS);
     case 'rail.install':
-      // At Home's table post: the room-wide upgrade (1) or line 2's longer boiler (2).
-      return e.line === LINE2 && (e.part === 1 || e.part === 2) && railInt(e.revision, BOILER_MAX) && at(SHED_TABLE);
+      // At Home's table post: upgrade (1), longer boiler (2), big boiler (3), bigger cradle (4).
+      return e.line === LINE2 && installPart(e.part) && railInt(e.revision, BOILER_MAX + 1) && at(SHED_TABLE);
     // The greybox route (step 3): ids are catalog indexes; whether the leg is open, the pickup's leg laid or the grant
     // held is the rule's (./railway-sys-route.ts), never this.
     case 'rail.legStock': {

@@ -8,7 +8,7 @@ import { LINE1_STATIONS, LINE1_HARDWOODS, type RailMaterial, type LineStationId 
 import { LINE2_PACK, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import { BOILER_MAX, LINE_HALTS } from '../sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../sim/railway-lines.ts';
-import { RAIL_ROCKS } from '../sim/railway-works-layout.ts';
+import { RAIL_ROCKS, installPart, type InstallPart } from '../sim/railway-works-layout.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from '../sim/railway-route.ts';
 import { Pile } from '../sim/railway-components.ts';
 import { activeStation } from '../sim/railway-queries.ts';
@@ -48,7 +48,7 @@ export type RailwayIntent =
   | { op: 'rail.steelTake'; kind: 0 | 1 }
   | { op: 'rail.legStock'; leg: number }
   | { op: 'rail.grant' | 'rail.gate'; id: number }
-  | { op: 'rail.install'; line: number; part: 1 | 2; revision: number }
+  | { op: 'rail.install'; line: number; part: InstallPart; revision: number }
   | { op: 'rail.boilerTake' | 'rail.boilerFit'; revision: number }
   | { op: 'rail.boilerDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamTake'; revision: number }
@@ -71,7 +71,7 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   // Ring Island's steel works and the install (v31): a kind of 0 is left out of the event.
   if (e.op === 'rail.steelTake' && (e.kind === undefined || railInt(e.kind, 1)))
     return { op: e.op, kind: e.kind === 1 ? 1 : 0 };
-  if (e.op === 'rail.install' && e.line === LINE2 && (e.part === 1 || e.part === 2) && railInt(e.revision, BOILER_MAX))
+  if (e.op === 'rail.install' && e.line === LINE2 && installPart(e.part) && railInt(e.revision, BOILER_MAX + 1))
     return { op: e.op, line: LINE2, part: e.part, revision: e.revision };
   // The greybox route (docs/plans/greybox-route.md, leg 1 step 4): catalog indexes.
   if (e.op === 'rail.legStock' && railInt(e.leg, RAIL_LEGS.length - 1)) return { op: e.op, leg: e.leg };
@@ -283,9 +283,9 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
      * and rails into its bill. */
     steelTake: (kind: 0 | 1) => railInt(kind, 1) && submit({ op: 'rail.steelTake', kind }),
     feedSteel: () => submit({ op: 'rail.steel' }),
-    /** Install line 2's longer boiler at the table, on the line's fit you saw (`Line.boiler`). */
-    installBoiler: (revision: number, part: 1 | 2 = 2) =>
-      railInt(revision, BOILER_MAX) && submit({ op: 'rail.install', line: LINE2, part, revision }),
+    /** Install at Home on the shared revision of line 2's boiler and cradle fits. */
+    installBoiler: (revision: number, part: InstallPart = 2) =>
+      railInt(revision, BOILER_MAX + 1) && submit({ op: 'rail.install', line: LINE2, part, revision }),
     /** The greybox route: feed your back's logs and rails into leg `leg`'s current frame (a RAIL_LEGS index); take a
      * pickup for the room (a RAIL_GRANTS index); open a barrier (a RAIL_GATES index). */
     feedLeg: (leg: number) => railInt(leg, RAIL_LEGS.length - 1) && submit({ op: 'rail.legStock', leg }),

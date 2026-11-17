@@ -21,6 +21,8 @@ import { LINE2_KIT } from './railway-line2-layout.ts';
 import { railInt } from './railway.ts';
 import { LINE2 } from './railway-lines.ts';
 import { BOILER_MAX } from './railway-train.ts';
+import { INSTALL_STEEL, installPart, installRevision, steelPool } from './railway-works-layout.ts';
+import { legDone } from './railway-queries-route.ts';
 import {
   Account,
   Aperture,
@@ -189,26 +191,31 @@ export function steelService(w: World, r: Readonly<Row<typeof Train>>, k: number
   return usable > 0 || (w.get(Steel, steelId(w))!.rack > 0 && r.steel < STEEL.trip);
 }
 // ---------------------------------------------------------------- the install (R3)
-/** One free hold at Home: part 1 upgrades both Home lines after the table turn and commissions the wagon.
- * Part 2 is line 2's longer boiler, gated by landed steel. The line's boiler is the revision: a race installs once.
- * Neither spends material or changes a train in flight; trains adopt at their next Village stand. */
+/** One hold at Home, from the line's shared fit revision. Parts 1/2 are free; 3/4 spend the one steel pool.
+ * Boiler fits adopt at the next Village stand; the cradle changes the wagon's next load, never cargo aboard. */
 export const install = defineSystem(
   'rail.install',
-  { reads: [Train], writes: [Line, Shed], phase: 'act', order: 56 },
+  { reads: [Train, Leg], writes: [Line, Shed], phase: 'act', order: 56 },
   (w, { e, tick }: Act) => {
-    if (e.line !== LINE2 || (e.part !== 1 && e.part !== 2) || !railInt(e.revision, BOILER_MAX)) return 0;
+    if (e.line !== LINE2 || !installPart(e.part) || !railInt(e.revision, BOILER_MAX + 1)) return 0;
     const id = lineId(w, LINE2),
       l = w.get(Line, id)!,
       h = w.get(Shed, shedId(w))!;
-    if (e.revision !== l.boiler || l.boiler !== e.part - 1) return 0;
+    if (e.revision !== installRevision(l)) return 0;
+    if (e.part === 4 ? l.cradle !== 0 || l.boiler < 1 : l.boiler !== e.part - 1) return 0;
     if (h.ready >= 0 && wagonSlot(w) < 0) return 0;
+    if (steelPool(h) < INSTALL_STEEL[e.part]) return 0;
     if (e.part === 1) {
       if (h.fitted < 0 || h.table !== 1) return 0;
       for (const home of [0, LINE2]) Object.assign(w.mut(Line, lineId(w, home))!, { boiler: 1, fitted: tick });
       commission(w, tick);
     } else {
       if (h.steel < 1) return 0;
-      Object.assign(w.mut(Line, id)!, { boiler: 2, fitted: tick });
+      // High Gorge is reached when the stack leg is complete, not when a later pickup is taken.
+      if (e.part === 3 && !legDone(w, 0)) return 0;
+      if (e.part === 4) w.mut(Line, id)!.cradle = 1;
+      else Object.assign(w.mut(Line, id)!, { boiler: e.part, fitted: tick });
+      w.mut(Shed, shedId(w))!.spent += INSTALL_STEEL[e.part];
     }
     return 1;
   },

@@ -14,7 +14,8 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-ring-layout.ts';
-import { SHED_TABLE, WORKS } from '../../src/sim/railway-works-layout.ts';
+import { SHED_TABLE, WORKS, INSTALL_STEEL, installRevision, steelPool } from '../../src/sim/railway-works-layout.ts';
+import { laySection } from '../../src/sim/railway-seed-legs.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
 import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
 import { shed } from '../../src/sim/railway-rows.ts';
@@ -171,6 +172,66 @@ const away = (p: { x: number; y: number; z: number }): At => [p.x + 2000, p.y, p
 const fixture = (stage: SteelStage) => railwayAtSteel(stage);
 const install = (revision: unknown = 1, line = 1, part = 2) => ({ op: 'rail.install', line, part, revision });
 
+// Accepted route only: stock arrives on trains and the existing four sections open High Gorge.
+const PAID = fixture('boiler-long');
+for (let t = 0; shed(PAID.w).steel < STEEL.total; t++) {
+  assert.ok(t < 12000);
+  railTick(PAID.w, ++PAID.t);
+}
+const PAID_GORGE = { w: restore(PAID.w), t: PAID.t };
+while (legRow(PAID_GORGE.w, 0).laid < RAIL_LEGS[0]!.sections.length) laySection(PAID_GORGE);
+
+test('paid host: cradle and big boiler cross r:edit, share the pool, replicate and survive restart', async () => {
+  const r = await host('paid', PAID_GORGE, { s: 'a', peer: 'b' });
+  try {
+    const mirror = r.connect('viewer');
+    const rev = installRevision(line(r.w, LINE2));
+    for (const part of [3, 4]) assert.equal(await r.action(install(rev, LINE2, part), away(SHED_TABLE)), 'rejected');
+    assert.deepEqual(
+      await r.race([
+        [install(rev, LINE2, 4), spot(SHED_TABLE), 's'],
+        [install(rev, LINE2, 3), spot(SHED_TABLE), 'peer'],
+      ]),
+      ['accepted', 'noop'],
+      'the cradle wins the cross-part race',
+    );
+    assert.equal(shed(r.w).spent, INSTALL_STEEL[4]);
+    assert.equal(await r.action(install(rev + 1, LINE2, 4), spot(SHED_TABLE)), 'noop');
+    assert.equal(await r.action(install(rev + 1, LINE2, 3), spot(SHED_TABLE)), 'accepted');
+    assert.equal(await r.action(install(rev + 2, LINE2, 3), spot(SHED_TABLE)), 'noop');
+    await r.ticks(3);
+    for (const w of [r.w, mirror()!]) {
+      assert.equal(line(w, LINE2).boiler, 3);
+      assert.equal(line(w, LINE2).cradle, 1);
+      assert.equal(shed(w).spent, INSTALL_STEEL[3] + INSTALL_STEEL[4]);
+      assert.equal(steelPool(shed(w)), STEEL.total - INSTALL_STEEL[3] - INSTALL_STEEL[4]);
+    }
+    await r.restart();
+    assert.equal(line(r.w, LINE2).cradle, 1);
+    assert.equal(line(r.w, LINE2).boiler, 3);
+    assert.equal(shed(r.w).spent, INSTALL_STEEL[3] + INSTALL_STEEL[4]);
+    const late = r.connect('late');
+    await r.ticks(3);
+    assert.equal(shed(late()!).spent, shed(r.w).spent);
+  } finally {
+    await r.done();
+  }
+});
+
+test('paid host: short pool and early big boiler refuse through r:edit without spending', async () => {
+  const r = await host('paid-short', fixture('steel-home'));
+  try {
+    assert.equal(await r.action(install(1, LINE2, 2), spot(SHED_TABLE)), 'accepted');
+    assert.equal(await r.action(install(2, LINE2, 3), spot(SHED_TABLE)), 'noop');
+    assert.equal(await r.action(install(2, LINE2, 4), spot(SHED_TABLE)), 'accepted');
+    assert.ok(steelPool(shed(r.w)) < INSTALL_STEEL[3]);
+    assert.equal(await r.action(install(3, LINE2, 3), spot(SHED_TABLE)), 'noop');
+    assert.equal(shed(r.w).spent, INSTALL_STEEL[4]);
+  } finally {
+    await r.done();
+  }
+});
+
 test('upgrade host: part 1 crosses r:edit, checks reach, replicates both lines and saves the gate', async () => {
   const r = await host('upgrade', buildSeedWorld('cradle-fitted'), { s: 'a', peer: 'b' });
   try {
@@ -179,7 +240,7 @@ test('upgrade host: part 1 crosses r:edit, checks reach, replicates both lines a
     assert.equal(await r.action({ op: 'rail.turn', to: 1, revision: 0 }, spot(SHED_TABLE)), 'accepted');
     assert.equal(shed(r.w).ready, -1);
     assert.equal(await r.action(install(0, 1, 1), away(SHED_TABLE)), 'rejected');
-    for (const e of [install(0, 0, 1), install(0, 1, 3), install('0', 1, 1), { ...install(0, 1, 1), part: '1' }])
+    for (const e of [install(0, 0, 1), install(0, 1, 5), install('0', 1, 1), { ...install(0, 1, 1), part: '1' }])
       assert.equal(await r.action(e, spot(SHED_TABLE)), 'rejected');
     assert.equal(await r.action(install(1, 1, 1), spot(SHED_TABLE)), 'noop', 'stale revision');
     assert.equal(await r.action(install(0, 1, 1), spot(SHED_TABLE)), 'accepted');
@@ -334,9 +395,9 @@ test('steel host: malformed kinds, lines, parts and revisions refused without a 
       assert.equal(await r.action({ op: 'rail.steelTake', kind }, spot(RING_STEEL_YARD)), 'rejected', `kind ${kind}`);
     for (const l of [0, 2, -1, '1', null])
       assert.equal(await r.action(install(0, l as number), spot(SHED_TABLE)), 'rejected', `line ${l}`);
-    for (const part of [0, 3, '1', null])
+    for (const part of [0, 5, '1', null])
       assert.equal(await r.action(install(0, 1, part as number), spot(SHED_TABLE)), 'rejected', `part ${part}`);
-    for (const revision of [3, -1, 0.5, '0', null, undefined])
+    for (const revision of [5, -1, 0.5, '0', null, undefined])
       assert.equal(
         await r.action({ op: 'rail.install', line: 1, part: 2, revision }, spot(SHED_TABLE)),
         'rejected',

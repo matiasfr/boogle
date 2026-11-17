@@ -90,6 +90,8 @@ export function createRotundaView(owner: OwnedView) {
     body.velocity.set(0, 0, 0);
   }
   const shows = (stage: number, piece: (typeof pieces)[number]['piece']) => {
+    if (stage >= 2 && piece.turn === -2 && piece.part === 'open') return true;
+    if (stage >= 2 && piece.turn === -2 && piece.part === 'door') return false;
     if (piece.part === 'waiting') return occupied.has(piece.turn);
     if (piece.part === 'open') return occupied.has(piece.turn) && rotundaBays(site, stage).includes(piece.turn);
     if (piece.part === 'door' && occupied.has(piece.turn)) return false;

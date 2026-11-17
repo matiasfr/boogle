@@ -34,7 +34,7 @@ import {
   Works,
   WorksClock,
 } from '../../src/sim/railway-components.ts';
-import { reqAdd } from '../../src/sim/railway-train.ts';
+import { BOILER_MAX, reqAdd } from '../../src/sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../src/sim/railway-trains.ts';
 import { stopsOf } from '../../src/sim/railway-queries.ts';
@@ -519,7 +519,13 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     site: 'boiler bounds',
     message: 'railway: boiler bounds',
     stage: J,
-    break: (w) => set(w, Line, { boiler: 3 }, LINE2),
+    break: (w) => set(w, Line, { boiler: BOILER_MAX + 1 }, LINE2),
+  },
+  {
+    site: 'steel spent',
+    message: 'railway: steel spent',
+    stage: J,
+    break: (w) => set(w, Line, { cradle: 1 }, LINE2),
   },
   {
     site: 'boiler fit',

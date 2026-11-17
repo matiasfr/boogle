@@ -3,6 +3,17 @@
 import { LINE1_ROCKS } from './railway-line-layout.ts';
 import { RING_RIVET } from './railway-ring-layout.ts';
 
+/** Garage choices G-c: line 2's footing wagon fits, in footings per trip. */
+export const CRADLE_CAP = [6, 10] as const;
+/** One steel price per install. Part ids 1/2 keep the free upgrade/longer boiler; 3/4 add big boiler/cradle. */
+export const INSTALL_STEEL = { 1: 0, 2: 0, 3: 6, 4: 4 } as const;
+export type InstallPart = keyof typeof INSTALL_STEEL;
+export const installPart = (part: unknown): part is InstallPart => part === 1 || part === 2 || part === 3 || part === 4;
+/** Both fits only rise, so their sum is the line's shared install revision, including cross-part races. */
+export const installRevision = (line: { boiler: number; cradle: number }) => line.boiler + line.cradle;
+/** Landed is monotone progression; stock and every steel bill use this one pool. */
+export const steelPool = (shed: { steel: number; spent: number }) => shed.steel - shed.spent;
+
 export const WORKS = {
   kilnLogs: 16,
   kilnStone: 16,
@@ -19,7 +30,8 @@ export const WORKS = {
   ring: 14,
   counterweight: 4,
   total: 32,
-  wagonCap: 6,
+  // Legacy name retained for the six-place Ring rack. Wagon loading reads its line's CRADLE_CAP fit via footCap.
+  wagonCap: CRADLE_CAP[0],
   loaderCap: 6,
   rollTicks: 140,
   // Let the accepted garage upgrade settle before the shunter takes the table (5 seconds).

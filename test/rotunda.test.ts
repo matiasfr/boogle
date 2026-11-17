@@ -14,11 +14,11 @@ import { TOWN_SLOTS, townBuilding, townLocal } from '../src/place/town-plan.ts';
 const dist = (a: XZ, b: XZ) => Math.hypot(a.x - b.x, a.z - b.z);
 const near = (a: number, b: number, epsilon = 1e-9) => assert.ok(Math.abs(a - b) < epsilon, `${a} ≈ ${b}`);
 
-test('the delivered steel pallet clears the full table and kerb', () => {
+test('the apron steel token pallet clears the full table and kerb', () => {
   const centre = { x: ROTUNDA_HOME.centre.x + ORIGIN.x, z: ROTUNDA_HOME.centre.z };
-  const p = sourceFunction<{ x: number; y: number; bottom: number; z: number; w: number; d: number }>(
+  const p = sourceFunction<{ x: number; y: number; z: number; w: number; d: number }>(
     'src/entities/railway/boiler-install-view.ts',
-    'PALLET',
+    'TOKEN',
     { ROTUNDA_HOME, rotundaSteelPallet, ORIGIN, H },
   );
   const edge = Math.hypot(
@@ -29,9 +29,8 @@ test('the delivered steel pallet clears the full table and kerb', () => {
   for (const x of [-p.w / 2, 0, p.w / 2])
     for (const z of [-p.d / 2, 0, p.d / 2]) {
       const ground = H(p.x + x, p.z + z);
-      assert.ok(ground >= p.bottom && ground <= p.y, 'the base spans the supporting ground, below the pallet top');
+      assert.ok(ground <= p.y && p.y - ground < 0.15, 'the pallet sits at the high edge of shallow supporting ground');
     }
-  assert.ok(p.y - p.bottom < 0.15, 'only a shallow foundation is needed');
   const larger = rotundaSteelPallet({ ...ROTUNDA_HOME, tableR: ROTUNDA_HOME.tableR + 2 });
   near(dist(larger, rotundaSteelPallet(ROTUNDA_HOME)), 2);
   console.log(

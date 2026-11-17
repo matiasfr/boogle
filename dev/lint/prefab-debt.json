@@ -130,11 +130,6 @@
       "exports": ["createRailwayArrival"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/entities/railway/boiler-install-view.ts": {
-      "count": 2,
-      "exports": ["PALLET", "createBoilerInstall"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/entities/railway/boiler-view.ts": {
       "count": 1,
       "exports": ["createRailwayBoiler"],

@@ -1,5 +1,5 @@
 {
-  "worldNs": "v55",
+  "worldNs": "v59",
   "components": [
     {
       "kind": "rail",
@@ -418,7 +418,8 @@
         ["table", "u8"],
         ["tableRev", "int"],
         ["ready", "int"],
-        ["steel", "int"]
+        ["steel", "int"],
+        ["spent", "int"]
       ]
     },
     {
@@ -438,7 +439,8 @@
         ["left0", "int"],
         ["left1", "int"],
         ["boiler", "u8"],
-        ["fitted", "int"]
+        ["fitted", "int"],
+        ["cradle", "u8"]
       ]
     },
     {

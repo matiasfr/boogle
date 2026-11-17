@@ -15,6 +15,8 @@ import { BOILER_MAX } from './railway-train.ts';
 import { Leg } from './railway-components.ts';
 import { cart, lines, rail, shed, steel, steelClock, trains } from './railway-rows.ts';
 import { aboard, ringJoined } from './railway-queries.ts';
+import { INSTALL_STEEL } from './railway-works-layout.ts';
+import { legDone } from './railway-queries-route.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
@@ -24,7 +26,8 @@ export function checkSteel(w: World) {
   const s = steel(w),
     lastCast = steelClock(w).lastCast,
     ts = trains(w),
-    bay = shed(w).steel;
+    bay = shed(w).steel,
+    spent = shed(w).spent;
   if (
     !railInt(s.yardLogs, STEEL.logs) ||
     !railInt(s.yardRails, STEEL.rails) ||
@@ -36,7 +39,8 @@ export function checkSteel(w: World) {
     !railInt(s.outLogs) ||
     !railInt(s.outRails) ||
     !railInt(lastCast) ||
-    !railInt(bay, STEEL.total)
+    !railInt(bay, STEEL.total) ||
+    !railInt(spent, bay)
   )
     bad('steel bounds');
   // Steel rides only on line 2's trains, at most a trip's worth on each kit car (ruling C).
@@ -61,11 +65,14 @@ export function checkSteel(w: World) {
   if (s.lit < 0 && (s.poured || lastCast)) bad('steel unlit cast');
   // Every steel cast is on the rack, aboard a train or in the bay.
   if (s.poured !== s.rack + ts.reduce((n, r) => n + r.steel, 0) + bay) bad('steel conservation');
-  // The boiler fit (R3): line 2's alone, installed (with its tick) only once steel is in the bay; a train wears at most
-  // its line's fit. Nothing spends Shed.steel in build 2 (the install is free): the first feature that spends bay steel
-  // must relax `bay < 1` here, or a fitted room with an empty bay fails its load.
+  // Landed steel remains the gate even after the pool empties. Every bought fit accounts for its steel once.
   const ls = lines(w);
-  if (ls.some((l) => !railInt(l.boiler, BOILER_MAX) || !railInt(l.fitted, RAILWAY_MAX_INT, -1))) bad('boiler bounds');
+  if (
+    ls.some((l) => !railInt(l.boiler, BOILER_MAX) || !railInt(l.fitted, RAILWAY_MAX_INT, -1) || !railInt(l.cradle, 1))
+  )
+    bad('boiler bounds');
+  const fittedSteel = ls[LINE2]!.cradle * INSTALL_STEEL[4] + (ls[LINE2]!.boiler === 3 ? INSTALL_STEEL[3] : 0);
+  if (spent !== fittedSteel) bad('steel spent');
   if (
     ls.some(
       (l, line) =>
@@ -73,7 +80,9 @@ export function checkSteel(w: World) {
         (line <= LINE2
           ? l.boiler >= 1 !== shed(w).ready >= 0 || (l.boiler >= 1 && shed(w).table !== 1)
           : l.boiler !== 0) ||
-        (l.boiler === 2 && (line !== LINE2 || bay < 1)),
+        (l.boiler >= 2 && (line !== LINE2 || bay < 1)) ||
+        (l.boiler === 3 && !legDone(w, 0)) ||
+        (l.cradle > 0 && (line !== LINE2 || l.boiler < 1 || bay < 1)),
     )
   )
     bad('boiler fit');

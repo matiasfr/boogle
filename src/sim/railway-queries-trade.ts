@@ -22,9 +22,9 @@ import type { World } from '../ecs/index.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { TRADE, TRADE_PCT, type TradePct, type TradeRoute, type TradeYard } from './railway-trade-layout.ts';
 import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
-import { WORKS } from './railway-works-layout.ts';
+import { CRADLE_CAP, WORKS } from './railway-works-layout.ts';
 import type { RailTrain } from './railway-train.ts';
-import { Plot, Town, Train, Works, Yard } from './railway-components.ts';
+import { Line, Plot, Town, Train, Works, Yard } from './railway-components.ts';
 import { footingsOwed, kitOwed, stopsOf, wagonSlot, worksId, type Row } from './railway-queries.ts';
 import { legKitWaiting } from './railway-queries-route.ts';
 
@@ -144,7 +144,8 @@ export function loaderBuilt(w: World, tick: number): boolean {
 export const loaderOn = (w: World, tick: number): boolean => loaderBuilt(w, tick) && wagonSlot(w) >= 0;
 /** One deck, one cargo. The coupled wagon has its own deck and leaves its train's kit car free. */
 export const deckHeld = (r: Readonly<RailTrain>): boolean => !r.wagon && r.foot > 0;
-export const footCap = (r: Readonly<RailTrain>): number => (r.wagon ? WORKS.wagonCap : WORKS.loaderCap);
+export const footCap = (w: World, r: Readonly<Row<typeof Train>>): number =>
+  r.wagon ? CRADLE_CAP[w.get(Line, w.lookup(Line, LINE2)!)!.cradle]! : WORKS.loaderCap;
 export const footCarrier = (w: World, r: Readonly<Row<typeof Train>>, tick: number): boolean =>
   r.wagon ||
   (RAIL_TRAINS[r.slot]!.line === LINE2 &&

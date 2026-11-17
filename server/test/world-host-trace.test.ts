@@ -30,6 +30,10 @@
 // v58 town sack: the action sweep adds four records for a refused rail.sack, so Bob's later request ids,
 // acks and his account sequence move by one, each checkpoint holds one more outcome row and stats.actions is 18.
 // Otherwise only 205 namespace/hash/checksum envelopes and 5,657 snapBytes samples change: 8,604 records.
+// v59 garage steel: 205 checkpoints append zero Line.cradle/Shed.spent columns and change namespace/hash/checksum;
+// 5,671 snapBytes samples follow. All old columns, inputs, messages and replica packets stay exact. The v58-only
+// namespace control still differs by the new columns/hashes/bytes (not a byte-identical control). See garage-choices
+// step 3 as built for the 54-seed and 8,604-record audit, performed before the fixture's own writer regenerated it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

@@ -121,7 +121,9 @@
 // Home line 2 stop 21.65 m and Ring Island stop +3.4 m, keeping freight positions fixed;
 // High Gorge's crossover 3.4 m toward Home keeps the full coach train straight at the terminal turn.
 // v58 (2026-11-17): capped away-fare sack and rail.sack pour into the shared strongbox; no migration.
-export const WORLD_NS = 'v58';
+// v59 (2026-11-17): garage steel spending, Shed.spent and Line.cradle; priced installs share a fit revision,
+// the bigger footing cradle and 30 m/s boiler. No save migration.
+export const WORLD_NS = 'v59';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
