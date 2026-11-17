@@ -60,7 +60,8 @@ background(
       rock.updateWorldMatrix(true, false);
       return v.clone().set(x, y, z).applyMatrix4(rock.matrixWorld);
     };
-    const dress = () => folk.setRiders(slot, count, { mesh: rock, top: 0.7 });
+    const { COACH_SEATS } = await import('/src/entities/railway/coach-kit.ts' as string);
+    const dress = () => folk.setRiders(slot, count, { mesh: rock, top: 0.7, seats: COACH_SEATS });
     const aim = () => {
       dress();
       const eye = at(

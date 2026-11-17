@@ -178,16 +178,25 @@ Each leaves `node dev/ship-check.ts` green. Tier is `npm run review-stamp`'s rul
   - Riders appear seated while the train stands (orchestrator, 16 November; walk and step are R3); the Stack heads'
     homeward stops are named known gaps (finding 12). **Done means** tests, level-check exit 0 with the audit rows,
     the count, Pier and Ring stills, `npm run perf`, `npm run loop -- run` with order and bills unmoved.
-- [ ] **R3. The coach's art (M; sheets S).** Sync: Local. Tier: normal + visual. Sheets: Codex gpt-6.1-sol medium;
+- [x] **R3. The coach's art (M; sheets S).** Sync: Local. Tier: normal + visual. Sheets: Codex gpt-6.1-sol medium;
   build: Codex gpt-6-astra high with the asset-author skill. Bump: no. After R2b.3.
   **Sheets and build brief (16 November):** [measured candidate A references](../world/rider-coach-a.html),
-  [recipe brief](../world/rider-coach-a/brief.md). Art intent only; R3 build and runtime inspection remain unchecked.
+  [recipe brief](../world/rider-coach-a/brief.md). Built and inspected locally; [as-built report and evidence](../research/rider-coach-r3.md).
   Candidate A of the [previz](../world/rider-coach.html) in the envelope (**2.90 × 1.60 m, roof ≤ 2.05 m**, deck
   0.70, 2.20 m axles): panelled shell, low arc roof, four unglazed droplights a side, benches 4 + 4 facing in, a door
   at each bench end, iron four-wheel underframe; honey timber #b98a52, brown #5c4530, iron #2f3131, red #a33a2c, small
   brass; no lettering, lamps or glass; a fold-down step drawn only while standing, no collider. Asset-author steps to
   `assets/src/rider-coach.py` with eight seat sockets, `coach-kit.ts`, `COACH_SEATS` from the sockets; riders through
   the doors. **Done means** stage stills, in-game stills empty and full from both sides, the skill's owner question.
+  **R3 as built (16 November, local branch):** parametric Blender GLB, panelled shell, twelve-segment arc roof,
+  eight unchanged exported seat landmarks, four separate platform-facing steps. Polished honey window surrounds,
+  contrasting bevelled panels/red door outlines, cream waist lining, dark bench backs and solid inspection-window ends.
+  3,196 evaluated triangles, 25,012 bytes, one shared paint; +4 draws/+2,968 triangles per train against blockout. Seat nudge0; collider unchanged
+  (flat2.05m top leaves up to.12m visual gap at the eaves). World v57, rules/levels/goldens/assertions unchanged.
+  Sixteen curated stills (1.7MB), both-side counts, approved Home camera, Pier, Buddy stage and local-only motion/roof
+  receipts are linked in the report; level-check, loop and ship-check pass, goldens unchanged. Steps lower and fold
+  up in .25s; 481 stage frames, zero outliers. **Riders still appear by count, not a door-walk animation**. This is the requested R3 art scope;
+  the earlier “riders through the doors” wording is not claimed complete. R4 and owner art acceptance remain open.
 - [ ] **R4. Evidence and checkpoint (S).** Runner: Codex gpt-6.1-sol medium; the main session opens the media.
   `npm run check:full`; `npm run loop -- run`; `npm run test:net`; stills of each halt with the art; **real-time
   clips**: riders boarding and alighting at Home and at the Pier; a player walking the moved Pier crossing and ramp

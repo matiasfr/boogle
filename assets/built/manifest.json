@@ -304,6 +304,24 @@
       "side_rail_1_1"
     ]
   },
+  "rider-coach": {
+    "source": "rider-coach.py",
+    "sourceHash": "927b1bdc5748483c",
+    "outHash": "7b3af43b0a34aabd",
+    "rawBytes": 103668,
+    "bytes": 25012,
+    "triangles": 3064,
+    "nodes": [
+      "coach_shell",
+      "coach_step_LF",
+      "coach_step_LR",
+      "coach_step_RF",
+      "coach_step_RR",
+      "coach_underframe"
+    ],
+    "animations": [],
+    "textures": []
+  },
   "scaffold-kit": {
     "source": "scaffold-kit.py",
     "sourceHash": "4a239fc3e45106f9",

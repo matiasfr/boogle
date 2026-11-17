@@ -1,5 +1,6 @@
 // Human context only. Catalogue membership and build facts come from the generated build manifest.
 export type Motion =
+  | { kind: 'coach-steps'; source: string }
   | { kind: 'none'; source: string }
   | { kind: 'clips'; source: string }
   | { kind: 'chop'; source: string }
@@ -61,6 +62,16 @@ export const gearAttachments: Record<string, Extract<Motion, { kind: 'attachment
   },
 };
 export const descriptors: Record<string, AssetDescriptor> = {
+  'rider-coach': {
+    label: 'Riders coach A',
+    category: 'kit',
+    rootNote: 'Rail-local metres; eight seat landmarks on coach_shell. Wheels and couplings remain in the train kit.',
+    motion: {
+      kind: 'coach-steps',
+      source:
+        'coach-motion.ts: .25 s lowering, stowed when moving; stage alternates platform sides over a synthetic 4 s cycle',
+    },
+  },
   'boiler-cart': {
     label: 'Boiler, saddle and cart',
     category: 'kit',

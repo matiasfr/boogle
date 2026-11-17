@@ -2596,10 +2596,16 @@ Little guys wait beside the island and far platforms, board the trains and ride 
 figures are drawn per end; larger crowds get a true-count board. Each passenger-route train carries up to **eight**
 riders (`TRADE.riderPlaces`) in its dedicated coach immediately behind the four-seat players' car. Four riders sit
 at distinct window openings on each side; places fill alternating sides. Riders no longer stand in the players' car.
-The blockout is 2.90 × 1.60 × 2.05 m: timber body, iron underframe, five posts and four openings per side. Players
-can stand on its solid roof but cannot enter. Seating follows the coach's rendered pose; count changes happen while
-the train stands at the route's Home or current far-end platform. This is count-driven visibility, with no door walk
-or step yet (R3). The timber train has no rider route and no coach; the garage's works copy also excludes it.
+Candidate A's Blender-built art keeps the blockout's 2.90 × 1.60 × 2.05 m envelope: a shallow dark arc roof,
+red upper framing, four honey panels with contrasting bevelled frames and four honey-surrounded unglazed windows
+per side, cream waist lining and solid ends with small inspection windows. Red lower outlines and brass handles
+mark the outer door bays, with four separate folding steps. Only the actual platform-facing pair lowers while
+standing (.25 s); it folds up over the same .25 s as movement starts. Steps have no collider. Players can stand on the unchanged flat roof collider but cannot enter; the
+visual roof falls .12 m below that plane at its eaves. Eight exported seat landmarks preserve the blockout's
+seating positions and alternating-side count order. Seating follows the coach's rendered pose; count changes happen
+while the train stands at the route's Home or current far-end platform. This remains count-driven visibility,
+without a door-walking animation. [R3 model and evidence](../research/rider-coach-r3.md).
+The timber train has no rider route and no coach; the garage's works copy also excludes it.
 The Cars tile reads both numbers from data: "4 seats, 8 riders", with Seats 4 and Riders 8. Its description is the
 placeholder "The knifeboard car seats 4 players; the riders' coach behind it seats 8." The coach does not consume a
 boiler allowance; the existing boiler readouts now count 4 / 4 / 5 cars. [R2b measurements and evidence](../research/rider-coach-r2b.md).

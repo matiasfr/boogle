@@ -27,7 +27,7 @@ import {
   trainRequestable,
   type RailTrain,
 } from '../../sim/railway-train.ts';
-import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
+import { LINE2, RAIL_LINES, RAIL_TRAINS, RAIL_HALTS } from '../../sim/railway-lines.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { STEEL } from '../../sim/railway-ring-layout.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
@@ -40,7 +40,9 @@ import {
   train as trainRow,
   works as worksRow,
 } from '../../sim/railway-rows.ts';
-import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
+import { railTrainAsked, railTrainHeld, trainStops, railCallPlatform } from '../../sim/railway-queries-trains.ts';
+import { COACH_SEATS } from './coach-kit.ts';
+import { coachStepAmount, poseCoachSteps } from './coach-motion.ts';
 import { line2At, line2Lat, line2Y, endMergeM, departureHalt } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import type { CarRole } from './cars.ts';
@@ -160,6 +162,10 @@ export async function createRailwayTrains(
           { owner, parent: { platform: rider.platform, root: rider.rock, frame: rider.rock } },
         ).setEnabled(true);
     }
+    const coachSteps: THREE.Object3D[] = [];
+    rider?.rock.traverse((part) => {
+      if (part.name.startsWith('coach_step_')) coachSteps.push(part);
+    });
     // The engine is a compound (docs/plans/engine-previz.md, "Collider"): its deck box is the frame and footplate up to
     // the cab floor, and the cab's walls either side of each doorway, its roof, steps and (once fitted) the boiler stand
     // on it. Its decks are stacked: you ride the floor, the boiler's top or the roof, whichever your feet are on.
@@ -290,7 +296,10 @@ export async function createRailwayTrains(
       carByRole,
       meshByRole,
       model,
-      riderCar: rider ? { mesh: rider.rock, top: 0.7 } : null,
+      riderCar: rider ? { mesh: rider.rock, top: 0.7, seats: COACH_SEATS } : null,
+      coachSteps,
+      coachStepDown: 0,
+      coachStepSide: 0,
       riderCount: -1,
       cars,
       steel,
@@ -1092,6 +1101,19 @@ export async function createRailwayTrains(
       const marks = kitMarks(w, tick);
       trains.forEach((tr) => {
         const row = trainRow(w, tr.slot);
+        if (tr.riderCar) {
+          const standing = on && row.phase === TRAIN_PHASE.STAND && row.at >= 0;
+          tr.coachStepDown = Math.max(0, Math.min(0.25, tr.coachStepDown + (standing ? dt : -dt)));
+          if (standing) {
+            const halt = RAIL_HALTS.findIndex((h) => h.line === tr.line && h.stop === row.at);
+            const platform = railCallPlatform(w, halt, row.track ? -1 : 1, tick);
+            const coach = tr.carByRole('rider');
+            tr.coachStepSide = Math.sign(
+              (platform.x / 100 - coach.x) * Math.cos(coach.yaw) - (platform.z / 100 - coach.z) * Math.sin(coach.yaw),
+            );
+          }
+          poseCoachSteps(tr.coachSteps, tr.coachStepSide, coachStepAmount(tr.coachStepDown));
+        }
         const riders =
           on && Number.isFinite(row.riders) ? Math.max(0, Math.min(TRADE.riderPlaces, Math.floor(row.riders))) : 0;
         if (riders !== tr.riderCount) {
