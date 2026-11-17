@@ -18,7 +18,7 @@ For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relev
 - `/look`: see the running game (stills, motion, scenarios). Use it for any visual, feel, physics or multiplayer change.
 - `/asset-author`: measured small props and rigid attachments, canonical Blender recipes, built-GLB inspection and Buddy stage review.
 - `/concept-art`: painted concept images from prompts (`npm run concepts`, OpenAI key or Codex CLI) for design exploration.
-- `/codex`: hand a job to Codex (GPT-6.1-Sol by default, Astra for the hardest calls, on the owner's subscription): previz of a prototype or effect at its idealized look, a research doc, a second-opinion review, or a self-contained task on its own branch.
+- `/codex`: hand a job to Codex (GPT-6.2-Sol by default, Astra for the hardest calls, on the owner's subscription): previz of a prototype or effect at its idealized look, a research doc, a second-opinion review, or a self-contained task on its own branch.
 - `/architecture-review`: read-only check for architecture drift, at most three findings; decisions go in `docs/architecture-review/ledger.md`.
 - `/idea <text>`: park an idea for later in `docs/ideas.md`.
 - `/video`: clips, GIFs, trailers and patch-notes videos. `/playtest-notes`: log a play session to `docs/playtests.md`.
@@ -37,7 +37,7 @@ contract is [dev/codex/README.md](../../dev/codex/README.md); visual framing and
 From the checkout containing the work, start a job with a unique topic:
 
 ```sh
-node dev/codex/run.ts task inspect-forge --base-ref HEAD --model gpt-6.1-sol --effort medium "Run the place bot, inspect the forge reveal from its checkpoint, open the images, and report failures and visual findings. Do not change source."
+node dev/codex/run.ts task inspect-forge --base-ref HEAD --model gpt-6.2-sol --effort medium "Run the place bot, inspect the forge reveal from its checkpoint, open the images, and report failures and visual findings. Do not change source."
 ```
 
 Use `--snapshot` instead of `--base-ref HEAD` only when the job should include uncommitted work; it includes all

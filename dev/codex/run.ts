@@ -1,7 +1,7 @@
-// Hand a job to Codex CLI (GPT-6-Astra on the ChatGPT subscription) and collect its report. See
+// Hand a job to Codex CLI (GPT-6.2-Astra on the ChatGPT subscription) and collect its report. See
 // .claude/skills/codex/SKILL.md.
 //
-//   node dev/codex/run.ts <mode> <topic> [--effort low|medium|high|xhigh|max] [--model gpt-6.1-sol]
+//   node dev/codex/run.ts <mode> <topic> [--effort low|medium|high|xhigh|max] [--model gpt-6.2-sol]
 //                         [--base-ref <ref> | --snapshot] [--ref a.png,b.png] [--shots 4] [--ref-branch <branch>]
 //                         [--eyes off] [--role design|systems|creative] [--dry] [--detach] "<brief>"
 //
@@ -119,7 +119,7 @@ const metaFile = path.join(logs, 'meta.json');
 const previous: Job | undefined = command === 'resume' ? JSON.parse(fs.readFileSync(metaFile, 'utf8')) : undefined;
 const mode = previous?.mode ?? (command as Mode);
 const effort = opts.effort || previous?.effort || DEFAULT_EFFORT[mode];
-const model = opts.model || previous?.model || codexDefault; // dev/models.ts; --model gpt-6-astra for the hardest calls
+const model = opts.model || previous?.model || codexDefault; // dev/models.ts; --model gpt-6.2-astra for the hardest calls
 const eyes =
   mode === 'task' &&
   (previous ? previous.argv.includes('sandbox_workspace_write.network_access=true') : opts.eyes !== 'off');

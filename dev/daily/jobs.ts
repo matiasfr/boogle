@@ -19,7 +19,7 @@ export const scenarios = [
 export const liveScenarios: Record<string, string> = { smoke: 'https://boogle.club/' };
 export const jobs = {
   atlas: { utcHour: 13, minute: 7, scope: 'docs/atlas/', model: 'gpt-6.1-terra', effort: 'low' },
-  'patch-video': { utcHour: 14, minute: 23, scope: 'dev/video/shots/', model: 'gpt-6-astra', effort: 'high' },
+  'patch-video': { utcHour: 14, minute: 23, scope: 'dev/video/shots/', model: 'gpt-6.2-astra', effort: 'high' },
   scenarios: { utcHour: 11, minute: 30, scope: '', model: '', effort: '' },
   // Before the scenarios (03:30) so both get a quiet GPU; about five minutes including npm ci.
   perf: { utcHour: 11, minute: 0, scope: '', model: '', effort: '' },

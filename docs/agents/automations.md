@@ -17,7 +17,7 @@ they can be turned back on there with `enabled: true` (and the Windows ones paus
    and gh on the heartbeat's `PATH` line. On Windows, nvm-windows (`winget install CoreyButler.NVMforWindows`) puts
    it in `$HOME/AppData/Local/nvm/v26.13.0`, and gh's MSI installs to `/c/Program Files/GitHub CLI`, which T3 does
    not see until it restarts. On macOS, nvm uses `$HOME/.nvm/versions/node/v26.13.0/bin`. Add the Codex provider to
-   T3, since delegates run as `gpt-6.1-sol` and `gpt-6-astra`. Run `npm ci` in the clone root as well as in the
+   T3, since delegates run as `gpt-6.2-sol` and `gpt-6.2-astra`. Run `npm ci` in the clone root as well as in the
    heartbeat's worktree (`npm run heartbeat` reads play sessions and device runs from the root), copy the old clone's
    `.env.local` (`REPORT_TOKEN` and the other keys), and run `npx playwright install chromium` for bots and looks.
 2. **Paths:** the prompts name the clone's path (`C:\Users\matia\Claude work\boogle` now); change it to the new
