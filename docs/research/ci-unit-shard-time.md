@@ -1,5 +1,136 @@
 # Unit shard time, 13 and 16 November 2026
 
+## Review follow-up: process trees, route partitions and drift
+
+Rebased the implementation onto `origin/main` at `945c695546c626db2b6e926cefc788eb963e5afe` before applying the
+independent review. This section supersedes the first implementation's thread-only watchdog and timing estimates
+below. No source-game, server, golden fixture, dev/ship entry point or merge-policy change is included.
+
+### Finding 1: terminate the process tree
+
+The original descendant regression failed in both CI and ship modes: a file spawned an interval-running Node
+child, wrote its PID, then blocked synchronously; the deadline failed the file but the child remained alive.
+The regression's finally block cleaned up those probe processes.
+
+The preload now keeps a supervising process outside the test's blocked event loop. It re-executes the selected
+Node test file with the same arguments and test IPC in a new POSIX process group (`detached: true`). The
+supervisor's 480s deadline kills the **group**, including ordinary spawned descendants; exit and signal paths
+also clean up the owned group. Other files retain independent supervisors and keep running. The Windows branch
+uses taskkill /T /F; it is not exercised on this Mac. Linux and macOS use the same POSIX group/signalling path;
+the live descendant regression was run on macOS, not a Linux runner.
+
+The committed [budget regression](../../test/unit-budget.test.ts) verifies descendant disappearance with
+`kill(pid, 0)` returning ESRCH, a healthy file's successful completion **after** the killed file with concurrency
+one, and synchronous-loop/open-interval deadlines. Both CI and ship modes are covered. Before/after logs:
+[before](../../.look/evidence/ci-unit-review-fixes/budget-before.log),
+[after](../../.look/evidence/ci-unit-review-fixes/budget-after.log).
+
+### Finding 2a: split route rules without losing cases
+
+Moved the original route body into [the shared registration factory](../../test/helpers/railway-route-rules.ts).
+Four entry files invoke partitions 0 to 3. The normal cases retain registration order within each partition;
+index modulo four selects **12 / 12 / 11 / 11** cases, **46 total**, exactly once. Entire original-body ASTs match,
+including fixture setup, helpers, conditions, seeds, offsets and loop bounds; each case's callback AST and options
+also match. No assertion body changes. The opt-in LEG_ASK_FUZZ producers and their distribution check share mutable
+accumulated results, so all 33 stay together in partition 0. With that flag the case lists are **45 / 12 / 11 / 11**,
+**79 total**, again with identical callbacks/options and no missing or duplicate case.
+
+Proof: [normal case lists](../../.look/evidence/ci-unit-review-fixes/route-case-lists.json),
+[optional case lists](../../.look/evidence/ci-unit-review-fixes/route-optional-case-lists.json),
+[whole-body AST proof](../../.look/evidence/ci-unit-review-fixes/route-body-proof.json).
+These are registration/body comparisons; the optional long fuzz bodies were not rerun for this tooling change.
+All normal route cases execute in the eight CI-mode shards below.
+
+An isolated audited split run passed all 46 cases in 100.6s. Files 0/1/2/3 took **99.244 / 66.775 / 100.524 /
+92.944s**, versus the original file's 410.338s CI observation. Initial replacement weights are those local
+observations times 1.5, conservatively rounded up. The twelve golden entry files and their 53 stages retain the
+reviewed partitions and assertions and are included in the full rerun below.
+
+The only remaining **observed CI files over 240s** in the 16 November source measurements are:
+
+| Unchanged file | Observed CI seconds | Margin to 480s file budget |
+| --- | ---: | ---: |
+| railway-loader | 241.986 | 238.014 |
+| prefab-halts | 240.927 | 239.073 |
+
+For completeness, the same local planning factor puts **railway-loader at 284.380s** (195.620s file-budget
+margin) and **railway-r3b2-review at 246.132s** (233.868s margin), so the latter is also flagged as a projected
+>240s file despite its 229.142s historical CI observation. Prefab-halts projects 175.896s; its historical CI
+240.927s observation is the conservative value above. No new route or golden partition projects above 240s
+(the largest is golden 11 at 238.813s, leaving 241.187s to the file budget).
+
+New partition durations are local observations and calibrated estimates, not post-change CI observations.
+
+### Finding 2b: make stale weights visible and refreshable
+
+Weights now live in [unit-weights.json](../../dev/ci/unit-weights.json), including measured cheap files rather than
+omitting every small observation. A truly new/renamed file still gets assigned once with a 1s fallback, and now
+emits an Actions **warning at file start** when no weight exists. Completion emits a machine-readable
+`unit timing {file,seconds,weight,passed}` record in addition to the existing human-readable duration.
+A measured time greater than both **2x its weight and 10s** emits a drift **warning** naming both values.
+Warnings tolerate scheduler/load variation and do not discard coverage or turn a new test into a flaky gate.
+The **480s whole-file deadline remains a failure**, because it must stop a blocked process tree before job cancellation.
+
+One command to refresh from all eight downloaded CI logs (default scale 1):
+
+```sh
+node dev/ci/unit-weights.ts .look/evidence/my-ci-run/shard*.log
+```
+
+For the loaded-Mac planning factor used here, add `--scale=1.5`. The tool takes the maximum completed observation
+per file across its inputs, drops deleted files, preserves untouched weights, and refuses failed-file timings
+without editing the table. Refreshing weights can change every shard's membership: rerun the shards afterwards.
+[Drift probes](../../.look/evidence/ci-unit-review-fixes/drift-probes.log) verify unknown/overweight warnings,
+short-duration tolerance, start-before-import warning order and JSON records;
+[refresh probes](../../.look/evidence/ci-unit-review-fixes/refresh-probes.log) verify rejection of failed timings.
+
+### Finding 3: projected CI wall time and the final rerun
+
+Full CI mode now explicitly defaults to **three file workers per shard**, matching the observed GitHub jobs and
+making local measurements independent of the Mac's automatic nine-worker default. An explicit concurrency flag
+still wins (the process-tree regression uses one). Local, selected-ship and nightly defaults retain their settings.
+The eight-job count and ten-minute job ceiling remain unchanged. No coverage moves to nightly.
+
+Planning estimate per shard: **1.5 x measured loaded-Mac runner wall time + 30s setup**. This is a wall-time
+projection, not the sum of file weights and not a successful GitHub run. Two shard commands run concurrently on
+this Mac, each with the same three-worker CI mode. The 120s safety requirement means every projection must remain
+below **480s**, leaving at least two minutes of the 600s job ceiling.
+
+| Shard | Files | Local runner seconds | Projected CI job seconds | Margin to 600s |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 36 | 199.7 | 329.55 | 270.45 |
+| 2 | 36 | 159.5 | 269.25 | 330.75 |
+| 3 | 35 | 190.8 | 316.20 | 283.80 |
+| 4 | 35 | 150.5 | 255.75 | 344.25 |
+| 5 | 35 | 161.2 | 271.80 | 328.20 |
+| 6 | 36 | 164.7 | 277.05 | 322.95 |
+| 7 | 36 | 148.6 | 252.90 | 347.10 |
+| 8 | 37 | 130.6 | 225.90 | 374.10 |
+
+**Eight shards suffice under this planning model.** Worst projected job: **329.55s**,
+leaving **270.45s** to the ten-minute ceiling and **150.45s** below the
+480s planning threshold. No ninth shard or longer timeout is needed by these measurements. Actual GitHub
+post-change wall time remains unverified.
+
+### Final verification
+
+- All eight CI-mode shards passed: **286 files exactly once, 2,310 passes, zero failures/cancellations**, 65 existing skips and one existing TODO. This includes the new home-cart file from the rebase, three route entry files and the explicit budget regression. Start/completion sets match each saved assignment; the weights hash stayed unchanged throughout the final run. No drift warnings occurred.
+- All **12 golden files / 53 stages** passed. Reviewed golden partitions and the pinned fixture are unchanged. Golden wall seconds, numerically by file suffix 0 to 11: **11.635 / 12.641 / 15.343 / 14.615 / 19.718 / 14.890 / 11.379 / 7.621 / 40.686 / 89.346 / 115.782 / 159.209**.
+- Final route partitions 0/1/2/3 passed in **99.946 / 69.092 / 100.612 / 92.717s**. Normal and optional registration comparisons, complete-body AST equality and resolved-import equality passed. Optional long fuzz bodies were not executed.
+- Committed watchdog regression: **3/3 passed**; descendant disappearance and healthy-after-killed completion in CI and ship modes, plus synchronous loop and open interval. The original watchdog failed both descendant checks before the fix. These process probes ran on macOS; Linux runtime execution remains unverified locally.
+- Missing-weight-at-start, >2x/>10s drift warning, low-duration tolerance, machine-readable timing, failed-timing rejection and successful refresh probes passed. Every discovered file and a future unweighted file are assigned exactly once; reversing discovery order produces the same assignment.
+- `npm run lint`: zero problems. `npm run typecheck`: passed.
+- `npm run check -- --unit-only` with the budget/select/mode tests: passed lint, types, selected audited units, registry, level, assets, prefab and production build gates. The full CI-mode suite is separately reported above.
+- `node dev/ship-check.ts`: passed registry, 20 lint files, project types and **36 affected files / 332 tests**, 75.96s.
+- Prettier and `git diff --check`: passed.
+
+
+Final [assignments](../../.look/evidence/ci-unit-review-fixes/final-assignment.json),
+[shard wall times](../../.look/evidence/ci-unit-review-fixes/final-shards.json),
+[per-file timings](../../.look/evidence/ci-unit-review-fixes/final-file-timings.json) and
+[validation summary](../../.look/evidence/ci-unit-review-fixes/final-summary.json) are local ignored artifacts.
+No push, ship, automatic retry or merge-policy change was performed. Post-change CI remains unverified.
+
 ## 16 November investigation
 
 **Finding:** the two reported full-suite timeouts are slow audited seed construction in

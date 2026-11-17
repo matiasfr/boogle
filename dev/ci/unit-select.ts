@@ -55,6 +55,10 @@ export const CORE_TESTS = [
  * The guard also counts an fs read whose path is built into src/, dev/, server/, protos/ or test/fixtures and that the
  * walk does not follow, in a file a non-core test reaches (its call name: `readFileSync`, `readdir`, ...). */
 export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: string; count?: number }> = {
+  'dev/ci/unit-budget.ts: spawn': {
+    reaches: [],
+    why: 're-executes the current isolated test already selected by test-unit.ts; dev/ci/ is in FULL_ON',
+  },
   'dev/level/sites.ts: existsSync': {
     reaches: ['src/pois/'],
     why: 'the level loader discovers site files in every POI folder',

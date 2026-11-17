@@ -2,125 +2,22 @@
 // Whole-file seconds, rounded, 16 November CI; new golden splits scaled from local runs (see research report).
 // Missing/new files cost 1s until measured. Every discovered file is assigned, regardless of this table.
 export const CI_UNIT_SHARDS = 8;
-const SECONDS: Readonly<Record<string, number>> = {
-  'bot-queue': 2,
-  'change-class': 8,
-  'coast-regions': 5,
-  'ecs-budget': 2,
-  'entity-state-node': 2,
-  'far-ground-index': 2,
-  'garage-upgrade-review': 30,
-  'halt-lever-place': 68,
-  'home-station': 2,
-  'lint-determinism': 21,
-  'meadow-off': 2,
-  'meadow-on': 3,
-  'path-refuge': 18,
-  'prefab-dynamic': 21,
-  'prefab-edges': 16,
-  'prefab-furnishing': 2,
-  'prefab-halts': 241,
-  'prefab-leg2-level': 10,
-  'prefab-leg2': 2,
-  'prefab-lint': 16,
-  'prefab-ordinary': 39,
-  'prefab-portability': 3,
-  'prefab-review-4': 18,
-  'prefab-scenery-review': 2,
-  'prefab-seats': 2,
-  'prefab-specifiers': 20,
-  'prefab-trees': 3,
-  'prefab-workshop': 3,
-  'rail-map': 2,
-  'railway-adapter': 22,
-  'railway-arrival': 2,
-  'railway-boiler': 60,
-  'railway-cart-wake': 19,
-  'railway-cart': 27,
-  'railway-check-ring': 64,
-  'railway-check': 51,
-  'railway-departure-origin': 18,
-  'railway-first-five-review': 3,
-  'railway-golden-0': 24,
-  'railway-golden-1': 34,
-  'railway-golden-10': 121,
-  'railway-golden-11': 181,
-  'railway-golden-2': 34,
-  'railway-golden-3': 34,
-  'railway-golden-4': 31,
-  'railway-golden-5': 27,
-  'railway-golden-6': 15,
-  'railway-golden-7': 15,
-  'railway-golden-8': 47,
-  'railway-golden-9': 106,
-  'railway-heavy-load': 5,
-  'railway-install': 192,
-  'railway-line-authority': 6,
-  'railway-line2': 112,
-  'railway-loader': 242,
-  'railway-m10a-review': 72,
-  'railway-m10a-views': 20,
-  'railway-m10c-review': 54,
-  'railway-m10d-review': 14,
-  'railway-m10e-review': 7,
-  'railway-m10f-review': 29,
-  'railway-m11-review': 88,
-  'railway-m12-review': 59,
-  'railway-m12': 122,
-  'railway-ops': 37,
-  'railway-platform-transition': 29,
-  'railway-r3a-adversarial': 136,
-  'railway-r3b2-review': 229,
-  'railway-r4a-views': 44,
-  'railway-r4b-views': 44,
-  'railway-r4c-leaf': 56,
-  'railway-read-session': 7,
-  'railway-replicate': 92,
-  'railway-ring': 136,
-  'railway-route-review': 53,
-  'railway-route-rules': 410,
-  'railway-running-side': 143,
-  'railway-set-down': 20,
-  'railway-steel-review': 136,
-  'railway-steel': 104,
-  'railway-supply': 5,
-  'railway-tick-order': 71,
-  'railway-trade': 106,
-  'railway-train': 135,
-  'railway-trains': 77,
-  'railway-works': 75,
-  railway: 2,
-  'review-heavy-load-arrival': 6,
-  'review-heavy-load-fix2': 10,
-  'review-heavy-load-route': 107,
-  'review-heavy-load': 13,
-  'review-m12e': 16,
-  'review-town-b2': 98,
-  'review-v25': 23,
-  'review-v26': 41,
-  'roundhouse-yard': 2,
-  'town-buy-review': 31,
-  'town-facts': 104,
-  'town-statue-folk': 2,
-  'train-car-clearance': 2,
-  'train-wheel-rail': 3,
-  'unit-modes': 3,
-  'unit-select': 4,
-  'welcome-railway': 25,
-  'world-lines': 3,
-  'zfight-tech-source': 9,
-};
+export const CI_UNIT_CONCURRENCY = 3;
+import SECONDS from './unit-weights.json' with { type: 'json' };
+
+/** Undefined means unmeasured: still assigned, but the timing reporter warns. */
+export function unitWeight(file: string): number | undefined {
+  const key = file
+    .replaceAll('\\', '/')
+    .replace(/^test\//, '')
+    .replace(/\.test\.ts$/, '');
+  return (SECONDS as Readonly<Record<string, number>>)[key];
+}
 
 /** Longest first, onto the lightest shard; ties use the path and then the shard index. No files are dropped. */
 export function unitShards(files: readonly string[], total: number): string[][] {
   if (!Number.isInteger(total) || total < 1) throw new Error('unit shard total must be a positive integer');
-  const weight = (file: string) =>
-    SECONDS[
-      file
-        .replaceAll('\\', '/')
-        .replace(/^test\//, '')
-        .replace(/\.test\.ts$/, '')
-    ] ?? 1;
+  const weight = (file: string) => unitWeight(file) ?? 1;
   const bins = Array.from({ length: total }, () => ({ seconds: 0, files: [] as string[] }));
   for (const file of [...files].sort((a, b) => weight(b) - weight(a) || a.localeCompare(b))) {
     const bin = bins.reduce((a, b) => (a.seconds <= b.seconds ? a : b));
