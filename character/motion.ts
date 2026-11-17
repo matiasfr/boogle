@@ -90,6 +90,8 @@ export function bonePoses(figure: THREE.Object3D) {
   const bones: Record<string, Pose> = {};
   let root = figure;
   figure.traverse((o) => {
+    // Coach step hinges are real rigid joints, sampled alongside bones so their lowering/stow jumps are visible.
+    if (o.name.startsWith('coach_step_') && o.name.endsWith('_hinge')) bones[o.name] = pose(o);
     if (o instanceof THREE.Bone) {
       bones[o.name] = pose(o);
       if (!(o.parent instanceof THREE.Bone)) root = o;

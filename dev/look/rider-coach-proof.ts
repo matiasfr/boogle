@@ -13,9 +13,11 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAIL_LINES, LINE2 } from '../../src/sim/railway-lines.ts';
 import { line2World, line2Y } from '../../src/entities/railway/line2-path.ts';
+import { coachCameras } from './rider-coach-cameras.ts';
 const mode = process.argv[2];
 if (!['home', 'pier', 'curve', 'gorge', 'ring'].includes(mode!)) throw new Error('Expected home|pier|curve|gorge|ring');
-const out = `.look/rider-coach-r2b/finish/${mode}`;
+const art = process.argv.includes('--coach-art');
+const out = art ? `.look/rider-coach-r3-polish/motion/${mode}` : `.look/rider-coach-r2b/finish/${mode}`;
 fs.mkdirSync(out, { recursive: true });
 const seed = buildSeedWorld(mode === 'home' || mode === 'pier' ? 'q6-done' : 'boiler-long');
 if (mode === 'gorge') while (legRow(seed.w, 0).laid < 4) laySection(seed);
@@ -45,9 +47,21 @@ if (mode === 'ring') {
 if (mode === 'gorge') {
   // Fixed north platform, looking toward Home: both passenger cars and the last car at the turn.
   const c = line2World(stop + 16, 4.05, { x: 0, z: 0 });
-  const t = line2World(stop - 8, 0, { x: 0, z: 0 });
+  const t = line2World(stop - 3.55, 0, { x: 0, z: 0 });
   camera = [c.x, y + 5, c.z];
   target = [t.x, y + 0.7, t.z];
+}
+if (art && (mode === 'home' || mode === 'pier')) {
+  // Platform-facing low view: inspect the lowering pair, beneath the canopy.
+  const c = line2World(stop - 3.55, mode === 'home' ? 8 : 10, { x: 0, z: 0 });
+  const t = line2World(stop - 3.55, 0, { x: 0, z: 0 });
+  camera = [c.x, y + 2.7, c.z];
+  target = [t.x, y + 1.0, t.z];
+}
+if (art && mode === 'home') {
+  const fixed = coachCameras.counts[2]!;
+  camera = fixed.cam;
+  target = fixed.look;
 }
 const doc = await seedDoc(seed);
 const stack = await startStack({ warp: true });
@@ -78,9 +92,10 @@ try {
     teleport(me.body, ${camera[0]}, ${camera[1]}, ${camera[2]});
     window.__debugCam.set(${JSON.stringify(camera)}, ${JSON.stringify(target)}, 50);
     window.__coachProof = { R, T, slot: ${slot}, halt: ${halt}, samples: [] };
+    const S = await import('/src/render/scene.ts');
     setInterval(() => {
       const x = window.__coachProof, r = R.train(R.rw(), x.slot);
-      const sample = {wall: performance.now(), tick: R.railAt(), phase:r.phase, at:r.at, to:r.to, riders:r.riders, wagon:r.wagon, boiler:r.boiler, along:T.trainAlong(r,1,R.railAt())};
+      const sample = {wall: performance.now(), tick: R.railAt(), phase:r.phase, at:r.at, to:r.to, riders:r.riders, wagon:r.wagon, boiler:r.boiler, along:T.trainAlong(r,1,R.railAt()),steps:S.scene.getObjectsByProperty('name','rider-coach-body').map(o=>o.children.filter(c=>c.name.startsWith('coach_step_')).map(c=>({name:c.name,angle:c.rotation.z})))};
       const last = x.samples.at(-1);
       if (!last || last.tick !== sample.tick) x.samples.push(sample);
     }, 50);
@@ -113,7 +128,7 @@ try {
           { timeout: 12000, step: 50 },
         );
         if (left < 0) throw new Error(`${mode}: departure missed`);
-        await g.wait(0.2);
+        await g.wait(0.4);
         await g.still(`${mode}-departing`);
       })(),
     ]);

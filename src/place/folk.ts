@@ -266,13 +266,12 @@ const riders = Array.from({ length: RIDERS * RAIL_TRAINS.length }, (_, k) =>
 const waiting = Array.from({ length: WAITING * 2 }, (_, k) =>
   make('waiting', 0, 0, { on: false, seat: k % WAITING, camp: Math.floor(k / WAITING) }),
 );
-type RiderCar = { mesh: THREE.Object3D; top: number };
+type RiderCar = {
+  mesh: THREE.Object3D;
+  top: number;
+  seats: readonly import('../entities/railway/coach-kit.ts').CoachSeat[];
+};
 const riderCars = new Map<number, RiderCar>();
-// One seated figure per window, alternating sides so both show the load. Face inward across the aisle.
-const COACH_SEATS = Array.from({ length: TRADE.riderPlaces }, (_, k) => {
-  const side = k % 2 ? 1 : -1;
-  return [side * 0.535, (Math.floor(k / 2) - (TRADE.riderPlaces / 2 - 1) / 2) * 0.6, (-side * Math.PI) / 2] as const;
-});
 // One driver a train (`camp` its line, `seat` which of the line's trains), on whenever there's an engine's stool to sit
 // on (FolkEnv.driver).
 RAIL_LINES.forEach((l, line) => {
@@ -1446,10 +1445,14 @@ export function updateFolk(dt: number) {
     } else if (g.job === 'rider') {
       const car = riderCars.get(g.camp);
       if (!car) continue;
-      const [x, z, yaw] = COACH_SEATS[g.seat]!;
-      g.rideUp = 0.22 - 0.035;
+      const {
+        position: [x, y, z],
+        yaw,
+      } = car.seats[g.seat]!;
+      g.rideUp = y - car.top;
       car.mesh.updateWorldMatrix(true, false);
-      wp.set(x, car.top + 0.14 + g.rideUp, z).applyMatrix4(car.mesh.matrixWorld);
+      // The ride pose subtracts .14 in draw(); the visible seated root stays at the exported .885 m landmark.
+      wp.set(x, y + 0.14, z).applyMatrix4(car.mesh.matrixWorld);
       g.x = wp.x;
       g.z = wp.z;
       g.fy = wp.y;

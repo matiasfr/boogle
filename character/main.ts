@@ -26,6 +26,7 @@ import {
   wheelAngle,
 } from '../src/entities/railway/machine-model.ts';
 import { wingStage, WING_REVIEW_SECONDS } from './wing-stage.ts';
+import { coachStage, COACH_REVIEW_SECONDS } from './coach-stage.ts';
 import { MACHINE_REVIEW_SECONDS, machineReviewDistance } from './machine-motion.ts';
 import { panelMechanism } from '../src/entities/railway/machine-panels.ts';
 import { carriedPiece, MAX_PANEL_LENGTH } from '../src/entities/railway/track-panels.ts';
@@ -230,6 +231,7 @@ function generic(asset: Asset, shell?: Asset): Preview {
   }
   const group = asset.instance(state.node || undefined),
     own = cloneMaterials(group);
+  const coachPose = state.asset === 'rider-coach' && !state.node ? coachStage(group) : undefined;
   const machineFinish = state.asset === 'track-layer' ? dressMachine(group) : undefined;
   const machineWheels = state.asset === 'track-layer' ? machineWheelPivots(group).flat() : [];
   const machineRods = state.asset === 'track-layer' ? machineRodPivots(group) : [];
@@ -261,6 +263,7 @@ function generic(asset: Asset, shell?: Asset): Preview {
   let time = 0;
   const seek = (t: number) => {
     time = t;
+    coachPose?.(t);
     if (diagnosticRate !== null) group.rotation.z = t * diagnosticRate;
     for (const wheel of machineWheels) wheel.rotation.x = wheelAngle(machineReviewDistance(t));
     poseMachineRods(machineRods, wheelAngle(machineReviewDistance(t)));
@@ -530,6 +533,7 @@ async function choose(reframe = true) {
     if (state.asset === 'buddy' && state.chop !== 'off') duration = CHOP_PREVIEW_DURATION;
     if (diagnosticRate !== null) duration = (Math.PI * 2) / Math.abs(diagnosticRate);
     else if (entry.motion.kind === 'spin') duration = sailCycleSeconds();
+    else if (entry.motion.kind === 'coach-steps') duration = COACH_REVIEW_SECONDS;
     else if (entry.motion.kind === 'rail-wheels')
       duration = state.asset === 'track-wing' ? WING_REVIEW_SECONDS : MACHINE_REVIEW_SECONDS;
     preview =
