@@ -5,6 +5,7 @@ For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relev
 ### Setup
 
 - `.claude/settings.json` (shared): allowlist for routine npm/git commands, denies force-push and `--no-verify`, and a hook (`.claude/hooks/format-lint.ts`) that runs Prettier on each file you edit (plus the full lint runner for JS and TS: Oxlint, type-aware rules and Boogle's parser protections). Lint errors come back to you; fix them. Personal tweaks go in `.claude/settings.local.json` or `CLAUDE.local.md` (both gitignored).
+- Scheduled orchestrator runs (the hourly heartbeat and the daily tidy) are T3 scheduled tasks; their exact prompts, schedules and how to move them to another machine are in [automations](automations.md).
 
 ### Project skills
 
