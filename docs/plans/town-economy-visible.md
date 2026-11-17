@@ -333,6 +333,15 @@ models`'.
   its index line; the away host test once (a hosted room emptied, rejoined after a faked 8 hours); "not tested on a
   device" or a device run.
 
+  - **2026-11-17, K3 measurements recorded, closure unproven:** [checkpoint report](../reports/town-k3-checkpoint.md).
+    Level-check passes with nine house hulls; route gaps are 0.30/1.02/9.94/2.89/0.15 m (sprint envelope only,
+    designer ruling unchanged). Actual ridge/support offsets are 1.56 m for new houses and 1.16/1.20/1.28 m for
+    existing house/shop/museum. Round perf compares both seeds with ms, draws and triangles; timing is provisional
+    under other running apps, reported only. K2's section is extended as [Trade](../game-design/trade.md), with its
+    index line. Existing away server tests pass 8/8 and C1 rules 7/7, but neither proves the till sack through an
+    emptied real host and a fake eight-hour rejoin. Stopped rather than add the forbidden host test; K3 stays open
+    for that exact proof, not a playtest or designer hold. not tested on a device.
+
 **Order and lanes.** Start A1, A2, A3 and B1 together (no file is shared; the docs edit is K1's); ship each as it
 passes. B2 waits for B1 and A2; C1 waits for B1; B2 and C1 run together; C2 waits for C1 and A3. Hotspots:
 `train-view.ts` (A1), `halts-view.ts` and `folk.ts` (A3), `railway-server.ts`, `namespace.ts` (B1, C1): rebase first.
