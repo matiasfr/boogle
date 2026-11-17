@@ -46,6 +46,14 @@ they can be turned back on there with `enabled: true` (and the Windows ones paus
 
 - Schedule: `{type: "interval", everyMs: 3600000}` (hourly). Enabled. Bound to the orchestrator thread,
   `freshSession: false`.
+- Model: **Fable medium** (`claude-fable-5-2`, effort medium), set in the bound thread's model picker; the
+  scheduled task has no model of its own ([owner call](owner-calls.md#heartbeat-workflow), 17 November).
+- **Pending, 17 November:** the owner's Fable and workflow-review change is in the skill (section 9, step 2) but not yet
+  in the live task: the HOTBOX orchestrator thread reached this machine through a link without full access, so T3
+  refused both the thread's model change and the task's prompt update. To apply: in the heartbeat's thread pick
+  Fable 5.2, effort medium; and in the prompt below, after the "Name the bottleneck" list, add this line, then
+  update the verbatim copy here:
+  `- **Workflow review** (owner, 17 November): look at all the work since the previous run for throughput, friction, rework, waste and waits on the owner; name the biggest loss and act on it within section 9's limits, and send any change to how work is run to "Open owner questions" with a recommendation (skill section 9, step 2).`
 - Prompt (verbatim):
 
 ```text

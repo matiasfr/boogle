@@ -113,15 +113,21 @@ List peers with ListAgents, and message them with SendMessage: what you're doing
 
 ## 9. The heartbeat keeps work moving
 
-One scheduled run, the hourly "Boogle heartbeat", is the only unattended orchestrator (owner, 16 November, [decision](../../../docs/decisions-process.md#d-2026-11-16-one-heartbeat); the separate four-hour tick was removed and its rules folded in here). It knows only the repo. The project root is a stale launcher, so first `git fetch origin` and work from a worktree at `origin/main` (`../boogle-heartbeat`: create it detached, or move it to `origin/main` if it exists; `npm ci` there when the lock changed), and read this skill from that worktree. Use Node 26.
+One scheduled run, the hourly "Boogle heartbeat", on Fable medium and reviewing the workflow (owner, 17 November, [owner call](../../../docs/agents/owner-calls.md#heartbeat-workflow)), is the only unattended orchestrator (owner, 16 November, [decision](../../../docs/decisions-process.md#d-2026-11-16-one-heartbeat); the separate four-hour tick was removed and its rules folded in here). It knows only the repo. The project root is a stale launcher, so first `git fetch origin` and work from a worktree at `origin/main` (`../boogle-heartbeat`: create it detached, or move it to `origin/main` if it exists; `npm ci` there when the lock changed), and read this skill from that worktree. Use Node 26.
 
 Each run, in order:
 
 1. Run `npm run heartbeat` and `npm run inflight`. A red main, a failed deploy or smoke, or a stuck ship is fixed or reported before anything else; name the bottleneck and act on it (section 3).
-2. Review what finished since the last run (sections 3 and 4). Ship docs and work `review-stamp` does not mark; anything it marks `review` gets its independent review first. Never ship on a report alone.
-3. If no job is running on a P1 row of [the backlog](../../../docs/backlog.md), start exactly one next step, as a T3 delegate (section 2). If every P1 row waits on the owner, take the first P2 row that does not, then P3.
-4. Put anything that needs the owner in the state file's "Open owner questions", each with a recommendation, and carry on with other rows.
-5. When a job started, merged or blocked, update the backlog row and [the state file](../../../docs/agents/orchestrator-state.md)'s dated section and ship them with the run's docs. A run that changed nothing ships nothing.
+2. **Workflow review** (owner, 17 November: optimize throughput, and the workflow overall). Look at all the work since the previous run, in the threads, PRs, CI and the repo:
+   - Throughput: ship PRs and merges (how long each branch waited between its last commit and main), delegates started, finished or sitting idle, reviews waiting, bot-queue waits, idle machines.
+   - Friction and rework: refused pushes, CI reruns, fixes sent back to a builder, a review that found what the brief should have said, a job restarted, approvals or questions that stalled a delegate, a tool that failed on this machine.
+   - Waste: work started twice, proofs nobody needed, long runs where a segment would do, evidence too big to read, tokens spent rereading.
+   - Waits on the owner, and decisions that could have been recorded earlier.
+   Name the biggest loss and act on it within this section's limits: unblock it, reorder work, fix a small tooling fault as a small fix, tighten a brief template, start the next step. A change to how work is run (this skill, briefs' standing text, owner calls, the models table, the limits) goes to "Open owner questions" with a recommendation; record a lesson in the state file's "Rules learned" when it would have saved the hour. Report it in one line: the hour's merges and finished jobs, the biggest loss, and what changed.
+3. Review what finished since the last run (sections 3 and 4). Ship docs and work `review-stamp` does not mark; anything it marks `review` gets its independent review first. Never ship on a report alone.
+4. If no job is running on a P1 row of [the backlog](../../../docs/backlog.md), start exactly one next step, as a T3 delegate (section 2). If every P1 row waits on the owner, take the first P2 row that does not, then P3.
+5. Put anything that needs the owner in the state file's "Open owner questions", each with a recommendation, and carry on with other rows.
+6. When a job started, merged or blocked, update the backlog row and [the state file](../../../docs/agents/orchestrator-state.md)'s dated section and ship them with the run's docs. A run that changed nothing ships nothing.
 
 It may start: build steps of plans the owner approved; design work that ends in a proposal (a brainstorm, a 2D page, a design review, a measuring job); owed proofs and plan upkeep.
 
