@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # npm run heartbeat [-- --all]: everything an orchestrator checks each round, in one read-only report: main's CI
 # verdict first (RED MAIN with its fix PR and issue), model mode, main,
-# open pull requests, the last CI, deploy and smoke runs, recent play sessions, device runs not yet pulled, the bot
+# open pull requests, the jobs claimed in the state file, the last CI, deploy and smoke runs, recent play sessions,
+# device runs not yet pulled, the bot
 # queue, the nightly jobs and their open issues, the ship lock, machine load, test and check processes that have run
 # long or stalled, and the worktrees holding unmerged or
 # uncommitted work (those active in the last 48 hours and a count of the rest; --all lists every one).
@@ -43,6 +44,18 @@ echo "main checkout: $(git -C "$main" rev-parse --abbrev-ref HEAD), $(git -C "$m
 say "Open pull requests"
 gh pr list --json number,title,headRefName,mergeStateStatus,isDraft \
   -q '.[] | "#\(.number) \(.mergeStateStatus)\(if .isDraft then " draft" else "" end) \(.headRefName): \(.title)"' 2>/dev/null | cut -c1-150
+# The claims every session counts the three-job limit from; read from origin/main so a stale checkout still sees them.
+say "Jobs in flight (claimed in docs/agents/orchestrator-state.md on origin/main; limit three across all sessions)"
+claims=$(git show origin/main:docs/agents/orchestrator-state.md 2>/dev/null | awk '
+  /^## Jobs in flight/ { on = 1; next }
+  /^## / { on = 0 }
+  on && /^\| / && !/^\| (Job|---) / { print }' | cut -c1-240)
+if [ -n "$claims" ]; then
+  printf '%s\n' "$claims"
+  echo "$(printf '%s\n' "$claims" | wc -l | tr -d ' ') claimed"
+else
+  echo "none claimed"
+fi
 say "Last runs on main"
 for w in ci.yml deploy.yml deploy-server.yml smoke.yml unit-long.yml; do
   gh run list --workflow "$w" --branch main -L 1 --json conclusion,status,createdAt,headSha \
