@@ -1,0 +1,13 @@
+✔ S1: rider places fill, one waits; even flooded crowds never exceed the separate rider places (44.989333ms)
+✔ R2b: a crowded coach lands a full fare load, conserved through save and reload (99.735583ms)
+✔ R2b: q6-done fare window with two added rider houses; the yard adds no riders (687.604125ms)
+ℹ q6-done landed fares/min, 2/3/4 houses then 4 houses + yard: 36.9, 54, 72.9, 72.9
+ℹ first house at 50%: 4.31 minutes after q6-done; 11.63 seed-clock minutes; house-ready 7.321666666666666 minutes after trains-on
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4607.513792

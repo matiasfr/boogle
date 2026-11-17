@@ -1,0 +1,40 @@
+✖ S1/L1: q6-done payoff: plots 1 and 3 land 72 a minute at four places; yard adds no riders (702.798125ms)
+ℹ q6-done landed fares/min, 2/3/4 houses then 4 houses + yard: 36.9, 54, 72.9, 72.9
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5188.670666
+
+✖ failing tests:
+
+test at test/railway-trade.test.ts:1351:1
+✖ S1/L1: q6-done payoff: plots 1 and 3 land 72 a minute at four places; yard adds no riders (702.798125ms)
+  AssertionError [ERR_ASSERTION]: four places saturate after the second added house
+  + actual - expected
+  
+    [
+  +   36.9,
+  -   36,
+      54,
+  +   72.9,
+  +   72.9
+  -   72,
+  -   72
+    ]
+  
+      at TestContext.<anonymous> (file:///Users/matiasfranco/.t3/worktrees/boogle/t3-6a1cc403-f0af1001cb859586/test/railway-trade.test.ts:1378:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ 36.9, 54, 72.9, 72.9 ],
+    expected: [ 36, 54, 72, 72 ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

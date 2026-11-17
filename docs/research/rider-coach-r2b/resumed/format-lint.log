@@ -1,0 +1,53 @@
+dev/level/check.ts 57ms (unchanged)
+dev/level/home-cart.ts 29ms (unchanged)
+dev/level/rider-coach.ts 18ms (unchanged)
+test/consist-cache.test.ts 5ms (unchanged)
+test/consist.test.ts 4ms
+test/garage-data.test.ts 10ms (unchanged)
+test/home-station.test.ts 36ms
+test/path-refuge.test.ts 19ms
+test/prefab-gorge.test.ts 6ms (unchanged)
+test/prefab-leg2.test.ts 11ms
+test/prefab-workshop.test.ts 36ms (unchanged)
+test/railway-ring-layout.test.ts 11ms (unchanged)
+test/railway-trade.test.ts 71ms (unchanged)
+test/railway-works-layout.test.ts 12ms
+test/train-car-clearance.test.ts 14ms
+dev/level/rider-coach-control.ts 2ms
+dev/level/rider-coach-v56.ts 1ms (unchanged)
+dev/level/rider-coach-gorge.ts 3ms
+
+> boogle@0.1.0 lint
+> node dev/lint/run.ts dev/level/check.ts dev/level/home-cart.ts dev/level/rider-coach.ts test/consist-cache.test.ts test/consist.test.ts test/garage-data.test.ts test/home-station.test.ts test/path-refuge.test.ts test/prefab-gorge.test.ts test/prefab-leg2.test.ts test/prefab-workshop.test.ts test/railway-ring-layout.test.ts test/railway-trade.test.ts test/railway-works-layout.test.ts test/train-car-clearance.test.ts dev/level/rider-coach-control.ts dev/level/rider-coach-v56.ts dev/level/rider-coach-gorge.ts
+
+prefab conservative dynamic-import analysis (use simpler module bindings to remove): src/boogler/play.ts, src/debug/perf-poses.ts, src/entities/finds/secrets-view.ts, src/entities/lookout/view.ts, src/entities/railway/arrival.ts, src/entities/railway/cart-view.ts, src/entities/railway/crates-view.ts, src/entities/railway/crossing-view.ts, src/entities/railway/forge-finish.ts, src/entities/railway/garage-view.ts, src/entities/railway/greeter.ts, src/entities/railway/halts-view.ts, src/entities/railway/home-station-view.ts, src/entities/railway/hook-shot.ts, src/entities/railway/hook-view.ts, src/entities/railway/line-cargo.ts, src/entities/railway/line2-view.ts, src/entities/railway/opening-view.ts, src/entities/railway/path.ts, src/entities/railway/reward.ts, src/entities/railway/roundhouse-view.ts, src/entities/railway/shelf-view.ts, src/entities/railway/sources.ts, src/entities/railway/tools.ts, src/entities/railway/train-view.ts, src/entities/railway/trophy-plinth.ts, src/entities/railway/view.ts, src/entities/railway/works-view.ts, src/entities/town/curio-shelf.ts, src/entities/town/view.ts, src/features/dino.ts, src/features/pois.ts
+test/home-station.test.ts:52: no-unused-vars: Identifier 'steelCarOffset' is imported but never used.
+test/train-car-clearance.test.ts:38: no-unused-vars: Identifier 'STEEL_CAR' is imported but never used.
+test/train-car-clearance.test.ts:39: no-unused-vars: Identifier 'TRAIN_CARS' is imported but never used.
+test/train-car-clearance.test.ts:40: no-unused-vars: Identifier 'TRAIN_OFFSETS' is imported but never used.
+test/train-car-clearance.test.ts:42: no-unused-vars: Identifier 'steelCarOffset' is imported but never used.
+lint: 5 problems (7.306s)
+node:child_process:1029
+    throw err;
+    ^
+
+Error: Command failed: npm run lint -- dev/level/check.ts dev/level/home-cart.ts dev/level/rider-coach.ts test/consist-cache.test.ts test/consist.test.ts test/garage-data.test.ts test/home-station.test.ts test/path-refuge.test.ts test/prefab-gorge.test.ts test/prefab-leg2.test.ts test/prefab-workshop.test.ts test/railway-ring-layout.test.ts test/railway-trade.test.ts test/railway-works-layout.test.ts test/train-car-clearance.test.ts dev/level/rider-coach-control.ts dev/level/rider-coach-v56.ts dev/level/rider-coach-gorge.ts
+    at genericNodeError (node:internal/errors:999:15)
+    at wrappedFn (node:internal/errors:544:14)
+    at checkExecSyncError (node:child_process:990:11)
+    at Object.execFileSync (node:child_process:1026:15)
+    at [eval]:1:351
+    at runScriptInThisContext (node:internal/vm:219:10)
+    at node:internal/process/execution:485:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:483:60)
+    at evalFunction (node:internal/process/execution:317:30) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 55576,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v26.13.0

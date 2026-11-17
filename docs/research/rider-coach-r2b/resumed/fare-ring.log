@@ -1,0 +1,11 @@
+✔ S1/L1: q6-done payoff: plots 1 and 3 land 72 a minute at four places; yard adds no riders (876.293333ms)
+ℹ q6-done landed fares/min, 2/3/4 houses then 4 houses + yard: 36, 54, 72, 72
+ℹ first house at 50%: 4.245 minutes after q6-done; 11.57 seed-clock minutes; house-ready 7.366666666666666 minutes after trains-on
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5333.431708

@@ -1,0 +1,69 @@
+{
+  "tick": 17943,
+  "slot": 4,
+  "train": {
+    "slot": 4,
+    "phase": 0,
+    "at": 9,
+    "to": 9,
+    "track": 1,
+    "depart": 17943,
+    "req": 0,
+    "from": 323040,
+    "v0": 0,
+    "dest": 323040,
+    "turn": false,
+    "origin": 323040,
+    "logs": 0,
+    "rails": 0,
+    "wagon": false,
+    "foot": 0,
+    "arrived": 17943,
+    "freight": 0,
+    "riders": 2,
+    "steel": 0,
+    "boiler": 1,
+    "legKit": false
+  },
+  "stop": 3230.4,
+  "crossStart": 3195.4,
+  "crossEnd": 3217.4,
+  "extentBehind": 16.1,
+  "reservedTail": 3214.3,
+  "reservedTailPastCrossover": -3.099999999999909,
+  "requiredMargin": 0.3,
+  "poses": [
+    {
+      "direction": "outward arrival",
+      "tailRole": "steel",
+      "nominalTailCentre": 3215.9,
+      "tailBodyPastCrossoverEndPlane": -3.1009874364116237,
+      "tailWithBufferPastCrossoverEndPlane": -3.3009873009571526,
+      "nominalTailTrackLateral": 0,
+      "tailPose": {
+        "x": -1075.0176734969923,
+        "z": -1967.8971022214726,
+        "yaw": -2.249930117041874,
+        "hx": 1.1,
+        "back": 1.6,
+        "front": 1.6
+      }
+    },
+    {
+      "direction": "homeward terminal",
+      "tailRole": "steel",
+      "nominalTailCentre": 3215.9,
+      "tailBodyPastCrossoverEndPlane": -3.1748770587774113,
+      "tailWithBufferPastCrossoverEndPlane": -3.374391975230467,
+      "nominalTailTrackLateral": -0.05324943651389935,
+      "tailPose": {
+        "x": -1075.0655341368856,
+        "z": -1967.8337117835135,
+        "yaw": -2.3184282926066397,
+        "hx": 1.1,
+        "back": 1.6,
+        "front": 1.6
+      }
+    }
+  ]
+}

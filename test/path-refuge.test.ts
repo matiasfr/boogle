@@ -10,7 +10,7 @@ import { trackBoxes } from '../dev/level/grounding-track.ts';
 import { FORMATION, LINKS, STUB, lineAt, railY, offsetLat } from '../src/place/layout.ts';
 import { surfaceHeight } from '../src/place/terrain.ts';
 import { besideLine } from '../src/entities/railway/line-geometry.ts';
-import { STEEL_CAR, TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
+import { STEEL_CAR, TRAIN_CARS, consistOf, consistBounds } from '../src/entities/railway/cars.ts';
 import {
   CAR_BUFFERS,
   ENGINE_BUFFERS,
@@ -167,15 +167,16 @@ const train = (dir: 1 | -1, depart: number) => {
     along: (tick: number) => (tick < depart ? run.from : tick >= arrives ? run.dest : trainAlong(run, 0, tick)) / 100,
   };
 };
-const made: Vehicle[] = TRAIN_CARS.slice(0, 3).map((spec, n) => ({
-  d: TRAIN_OFFSETS[n]!,
+// R2b: this is the timber train, not the first three cars of the passenger consist.
+const timber = consistOf({ line: 0, wagon: false, steel: false });
+const made: Vehicle[] = timber.map(({ spec, offset }, n) => ({
+  d: offset,
   hx: spec.hx,
   back: spec.hz,
   front: spec.hz,
   buffers: n === 0 ? ENGINE_BUFFERS : CAR_BUFFERS,
 }));
-const LO = TRAIN_OFFSETS[2]! - TRAIN_CARS[2]!.hz,
-  HI = TRAIN_OFFSETS[0]! + TRAIN_CARS[0]!.hz;
+const { lo: LO, hi: HI } = consistBounds(timber);
 
 /** A commuter starting every 0.1 m of the path (the lanes and both ways by turns) through one timetable: returns how
  * many were ever inside a car's give-way box, and how many stood in a refuge. With `wakeAt` (seconds) they are asleep

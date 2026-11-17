@@ -13,8 +13,8 @@ import {
 import { HALTS, OFFSET_HALTS, ORIGIN } from '../../src/place/layout.ts';
 import { haltFrame } from '../../src/prefab/halt-deck.ts';
 import { line2At, line2Lat } from '../../src/entities/railway/line2-path.ts';
-import { LINE2, RAIL_LINES } from '../../src/sim/railway-lines.ts';
-import { RING_HALT, RING_HEAD, RING_S_HEAD } from '../../src/sim/railway-ring-layout.ts';
+import { LINE2, RAIL_LINES, TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
+import { RING_END, RING_HALT, RING_HEAD, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { TRAIN } from '../../src/sim/railway-train.ts';
 
 const consist = consistOf({ line: LINE2, wagon: true, steel: true });
@@ -45,6 +45,22 @@ const corners = (d: Deck) =>
     })),
   );
 type Frame = { x: number; z: number; yaw: number; half: number };
+type Side = { frame: Frame; halfWidth: number; expectedDistance: number };
+function lateral(d: Deck, { frame: f, halfWidth, expectedDistance }: Side) {
+  const project = (x: number, z: number) => (x - f.x) * Math.cos(f.yaw) - (z - f.z) * Math.sin(f.yaw);
+  const centre = project(d.x, d.z),
+    sign = Math.sign(centre);
+  const edge = corners(d).map((p) => sign * project(p.x, p.z));
+  return { gap: Math.min(...edge) - halfWidth, trackError: Math.abs(Math.abs(centre) - expectedDistance) };
+}
+function sideAt(s: number, lat: number, hw: number, track: number): Side {
+  const p = line2At(s, { x: 0, z: 0, ux: 0, uz: 1 });
+  return {
+    frame: { x: p.x - p.uz * lat, z: p.z + p.ux * lat, yaw: Math.atan2(p.ux, p.uz), half: 0 },
+    halfWidth: hw,
+    expectedDistance: Math.abs(lat - track),
+  };
+}
 function margin(d: Deck, f: Frame) {
   const a = corners(d).map((p) => (p.x - f.x) * Math.sin(f.yaw) + (p.z - f.z) * Math.cos(f.yaw));
   return { rear: Math.min(...a) + f.half, front: f.half - Math.max(...a) };
@@ -71,9 +87,20 @@ export function checkRiderCoach() {
     player: { rear: number; front: number };
     rider: { rear: number; front: number };
     whole: { rear: number; front: number };
+    lateral: { player: ReturnType<typeof lateral>; rider: ReturnType<typeof lateral> };
   }[] = [];
   const problems: string[] = [];
-  function row(halt: string, decks: Deck[], measure: (d: Deck) => { rear: number; front: number }) {
+  const knownGaps = [1, 2, 3].map((n) => ({
+    halt: `Stack head ${n} homeward (retained)`,
+    reason:
+      'Only east platform; stopping track -4 m, player/deck gap 4.7 m, coach/deck gap 5 m. No rider service here once retained. Orchestrator ruling, 16 November: reported separately, not built in R2b.',
+  }));
+  function row(
+    halt: string,
+    decks: Deck[],
+    measure: (d: Deck) => { rear: number; front: number },
+    side: (index: number) => Side,
+  ) {
     const all = decks.map(measure);
     const player = all[consist.findIndex((c) => c.role === 'player')]!,
       rider = all[consist.findIndex((c) => c.role === 'rider')]!;
@@ -82,7 +109,14 @@ export function checkRiderCoach() {
       player,
       rider,
       whole: { rear: Math.min(...all.map((a) => a.rear)), front: Math.min(...all.map((a) => a.front)) },
+      lateral: { player: lateral(decks[1]!, side(1)), rider: lateral(decks[2]!, side(2)) },
     });
+    for (const [role, m] of Object.entries(rows.at(-1)!.lateral)) {
+      if (m.gap < 0) problems.push(`${halt}: ${role} intersects platform laterally by ${-m.gap} m`);
+      // Half the 4 m track spacing: a car on the other track must never pass an along-track-only fit.
+      if (m.trackError >= 2)
+        problems.push(`${halt}: ${role} is not on the platform's stopping side (${m.trackError} m from its track)`);
+    }
     const floor = halt === 'Quarry, up' ? -1.62 : 0;
     if (Math.min(player.rear, player.front) < floor)
       problems.push(`${halt}: player ${JSON.stringify(player)} below ${floor} m`);
@@ -97,28 +131,57 @@ export function checkRiderCoach() {
         : i === HALTS.length
           ? stops[3]! / 100
           : stops[HALTS[i]!.stop]! / 100;
-      row(halt, coachTrain(s, up), (d) =>
-        margin(d, { x: f.c.x - ORIGIN.x, z: f.c.z - ORIGIN.z, yaw: f.yaw, half: f.half }),
+      row(
+        halt,
+        coachTrain(s, up),
+        (d) => margin(d, { x: f.c.x - ORIGIN.x, z: f.c.z - ORIGIN.z, yaw: f.yaw, half: f.half }),
+        () => ({
+          frame: { x: f.c.x - ORIGIN.x, z: f.c.z - ORIGIN.z, yaw: f.yaw, half: f.half },
+          halfWidth: f.hw,
+          expectedDistance: Math.abs(f.h.lat - (up ? -4 : 0)),
+        }),
       );
     }
   for (const [i, h] of RING_HEAD.entries()) {
     const s = h.s / 100;
-    row(`Railhead ${i + 1}`, coachTrain(s, false), (d) => curvedMargin(d, s - 15, s + 10, 4.05, 5));
+    row(
+      `Railhead ${i + 1} terminal`,
+      coachTrain(s, false),
+      (d) => curvedMargin(d, s - 15, s + 10, 4.05, 5),
+      (k) => sideAt(s + consist[k]!.offset, 4.05, 2.25, 0),
+    );
   }
-  row('Joint homeward', coachTrain(RING_HEAD.at(-1)!.s / 100, true), (d) => curvedMargin(d, 977, 1002, -8.05, 5));
+  row(
+    'Joint homeward',
+    coachTrain(RING_HEAD.at(-1)!.s / 100, true),
+    (d) => curvedMargin(d, 977, 1002, -8.05, 5),
+    (k) => sideAt(992 + consist[k]!.offset, -8.05, 2.25, -4),
+  );
   for (const up of [false, true]) {
-    row(`Ring Island ${up ? 'homeward' : 'outward'}`, coachTrain(stops[5]! / 100, up), (d) =>
-      curvedMargin(d, (RING_S_HEAD + RING_HALT.u0) / 100, (RING_S_HEAD + RING_HALT.u1) / 100, up ? -8.05 : 4.05, 5),
+    const lat = up ? -7.55 : 3.55,
+      a = ringAt(RING_HALT.u0, lat * 100),
+      b = ringAt(RING_HALT.u1, lat * 100);
+    const f = {
+      x: (a.x + b.x) / 200 - ORIGIN.x,
+      z: (a.z + b.z) / 200 - ORIGIN.z,
+      yaw: Math.atan2(b.x - a.x, b.z - a.z),
+      half: (RING_HALT.u1 - RING_HALT.u0) / 200,
+    };
+    row(
+      `Ring Island ${up ? 'homeward' : 'outward'}`,
+      coachTrain(stops[5]! / 100, up),
+      (d) => margin(d, f),
+      () => ({ frame: f, halfWidth: 1.75, expectedDistance: Math.abs(lat - (up ? -4 : 0)) }),
     );
     for (let i = 6; i < stops.length; i++) {
       const s = stops[i]! / 100,
         gorge = i === stops.length - 1;
-      if (up && !gorge)
-        problems.push(
-          `${RAIL_LINES[LINE2]!.halts[i]!.name} homeward: no west platform; coach side at lat -3.2, only deck starts at +1.8 (5 m across the outward track)`,
-        );
-      row(`${RAIL_LINES[LINE2]!.halts[i]!.name} ${up ? 'homeward' : 'outward'}`, coachTrain(s, up), (d) =>
-        curvedMargin(d, s + 10 - (gorge ? 40 : 25), s + 10, up && gorge ? -8.05 : 4.05, gorge ? 8 : 5),
+      if (up && !gorge) continue; // named known gaps above; terminal service is on the original track.
+      row(
+        `${RAIL_LINES[LINE2]!.halts[i]!.name} ${up ? 'homeward' : 'outward'}`,
+        coachTrain(s, up),
+        (d) => curvedMargin(d, s + 10 - (gorge ? 40 : 25), s + 10, 4.05, gorge ? 8 : 5),
+        (k) => sideAt(s + consist[k]!.offset, 4.05, 2.25, 0),
       );
     }
   }
@@ -135,13 +198,21 @@ export function checkRiderCoach() {
     }
   }
   if (gap < 0.5) problems.push(`Queue: ${gap} m at leading s ${leadingS}, minimum 0.5 m`);
+  // This pre-existing 0.30 m minimum was pinned by fourth-car's Gorge review. Do not re-pin to a negative gap.
+  const gorge = RAIL_LINES[LINE2]!.halts.at(-1)!;
+  const crossEnd = gorge.end!.mergeCm + RING_END.cross.u1 - RING_END.cross.u0;
+  const gorgeCrossover = { tailPastEnd: (gorge.s - TRAIN_EXTENT.behindCm - crossEnd) / 100, minimum: 0.3 };
+  if (gorgeCrossover.tailPastEnd < gorgeCrossover.minimum)
+    problems.push(`High Gorge: tail/crossover ${gorgeCrossover.tailPastEnd} m, minimum ${gorgeCrossover.minimum} m`);
   return {
     level: 'rider-coach',
     failures: problems.length,
     problems,
+    knownGaps,
     rows,
     queue: { gap, leadingS, minimum: 0.5 },
+    gorgeCrossover,
     coverage:
-      'DRAFT, not integrated with level-check: production longest consist and chord/buffer placement. Longitudinal end-face margins do not prove boarding adjacency. Stack homeward has no adjacent platform. Intermediate Stack rows apply only while served. Quarry player overhang allowed only to its existing 1.62 m. Sampled queue, not continuous collision or roof/door proof. Ring curved end projections still need validation against the authored segments.',
+      'Production longest consist and chord/buffer placement. Whole-body longitudinal and lateral margins at actual platform end faces and stopping tracks. The 2 m lateral track corridor is half the 4 m track spacing, not a boarding-jump claim. Retained Stack homeward gaps are named separately by orchestrator ruling. Quarry player overhang allowed only to its existing 1.62 m. Sampled queue, not continuous collision or roof/door proof.',
   };
 }

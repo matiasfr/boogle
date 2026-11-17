@@ -7,7 +7,7 @@ import { consistOf, consistBounds } from '../src/entities/railway/cars.ts';
 type Car = { role: string };
 type Train = { line: number; carOn: boolean; steel: Car; carByRole(role: string): Car };
 function fixture() {
-  const base = Object.fromEntries(['engine', 'player', 'kit'].map((role) => [role, { role }]));
+  const base = Object.fromEntries(['engine', 'player', 'rider', 'kit'].map((role) => [role, { role }]));
   const wagonCar = { role: 'wagon' },
     steelCar = { role: 'steel' };
   const tr: Train = { line: 1, carOn: false, steel: steelCar, carByRole: (role) => base[role]! };
@@ -51,7 +51,7 @@ test('real carsOf: 60 unchanged frames rebuild no descriptors and reuse the car 
   for (let frame = 0; frame < 60; frame++) {
     assert.deepEqual(
       f.api.carsOf(f.tr).map((car) => car.role),
-      ['engine', 'player', 'kit'],
+      ['engine', 'player', 'rider', 'kit'],
     );
   }
   assert.equal(f.builds(), 0);
@@ -64,7 +64,7 @@ test('real carsOf selects cached collections when the wagon couples and steel ar
   const wagon = f.api.carsOf(f.tr);
   assert.deepEqual(
     wagon.map((car) => car.role),
-    ['engine', 'player', 'kit', 'wagon'],
+    ['engine', 'player', 'rider', 'kit', 'wagon'],
   );
   assert.notEqual(wagon, base);
   assert.equal(f.api.carsOf(f.tr), wagon);
@@ -72,14 +72,14 @@ test('real carsOf selects cached collections when the wagon couples and steel ar
   const both = f.api.carsOf(f.tr);
   assert.deepEqual(
     both.map((car) => car.role),
-    ['engine', 'player', 'kit', 'wagon', 'steel'],
+    ['engine', 'player', 'rider', 'kit', 'wagon', 'steel'],
   );
   assert.equal(f.api.carsOf(f.tr), both);
   f.couple(false);
   const steel = f.api.carsOf(f.tr);
   assert.deepEqual(
     steel.map((car) => car.role),
-    ['engine', 'player', 'kit', 'steel'],
+    ['engine', 'player', 'rider', 'kit', 'steel'],
   );
   assert.equal(f.api.carsOf(f.tr), steel);
   assert.equal(f.api.grown(f.tr), steel);

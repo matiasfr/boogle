@@ -1,0 +1,608 @@
+{
+  "level": "rider-coach",
+  "failures": 1,
+  "problems": [
+    "High Gorge: tail/crossover -3.1 m, minimum 0.3 m"
+  ],
+  "knownGaps": [
+    {
+      "halt": "Stack head 1 homeward (retained)",
+      "reason": "Only east platform; stopping track -4 m, player/deck gap 4.7 m, coach/deck gap 5 m. No rider service here once retained. Orchestrator ruling, 16 November: reported separately, not built in R2b."
+    },
+    {
+      "halt": "Stack head 2 homeward (retained)",
+      "reason": "Only east platform; stopping track -4 m, player/deck gap 4.7 m, coach/deck gap 5 m. No rider service here once retained. Orchestrator ruling, 16 November: reported separately, not built in R2b."
+    },
+    {
+      "halt": "Stack head 3 homeward (retained)",
+      "reason": "Only east platform; stopping track -4 m, player/deck gap 4.7 m, coach/deck gap 5 m. No rider service here once retained. Orchestrator ruling, 16 November: reported separately, not built in R2b."
+    }
+  ],
+  "rows": [
+    {
+      "halt": "Village, line 2",
+      "player": {
+        "rear": 14.346712987408218,
+        "front": 0.453283156465206
+      },
+      "rider": {
+        "rear": 10.946714082624682,
+        "front": 4.153283367869806
+      },
+      "whole": {
+        "rear": -0.15328606362140107,
+        "front": -4.69038606556318
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.5500567156961051,
+          "trackError": 9.903254127419103e-06
+        },
+        "rider": {
+          "gap": 0.8500525647728594,
+          "trackError": 5.258365021632017e-06
+        }
+      }
+    },
+    {
+      "halt": "Quarry",
+      "player": {
+        "rear": 6.297510737292952,
+        "front": 10.272836580519803
+      },
+      "rider": {
+        "rear": 3.016537241874043,
+        "front": 14.071453676290346
+      },
+      "whole": {
+        "rear": -8.082792465198562,
+        "front": 4.967703189151647
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.5937302098374513,
+          "trackError": 0.2187293050977317
+        },
+        "rider": {
+          "gap": 1.2713299664534192,
+          "trackError": 0.4322654041617535
+        }
+      }
+    },
+    {
+      "halt": "Far Head",
+      "player": {
+        "rear": 9.398392182854067,
+        "front": 9.39836598527768
+      },
+      "rider": {
+        "rear": 5.994226498365743,
+        "front": 13.094091722823242
+      },
+      "whole": {
+        "rear": -5.127585822998402,
+        "front": 4.280381198747847
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.5496624533236405,
+          "trackError": 0.0020214845291528505
+        },
+        "rider": {
+          "gap": 0.8590089127848488,
+          "trackError": 0.019644906398194273
+        }
+      }
+    },
+    {
+      "halt": "Pier terminal",
+      "player": {
+        "rear": 5.899341329424742,
+        "front": 12.899331759962324
+      },
+      "rider": {
+        "rear": 2.4988727668841104,
+        "front": 16.59886527071715
+      },
+      "whole": {
+        "rear": -8.605957740372428,
+        "front": 7.733470042434956
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.5502064935806066,
+          "trackError": 0.0011717429052473527
+        },
+        "rider": {
+          "gap": 0.8526625602831737,
+          "trackError": 0.004714295270149549
+        }
+      }
+    },
+    {
+      "halt": "Quarry, up",
+      "player": {
+        "rear": 18.809671386049494,
+        "front": -1.619392369614209
+      },
+      "rider": {
+        "rear": 15.506738599281531,
+        "front": 2.0203557440030675
+      },
+      "whole": {
+        "rear": 4.412645454978968,
+        "front": -6.9729955641019785
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.8126897680677083,
+          "trackError": 0.2941362727035308
+        },
+        "rider": {
+          "gap": 0.9258492310389288,
+          "trackError": 0.09399416267295235
+        }
+      }
+    },
+    {
+      "halt": "Far Head, up",
+      "player": {
+        "rear": 9.402368138966823,
+        "front": 9.394376719912865
+      },
+      "rider": {
+        "rear": 5.998626007662983,
+        "front": 13.089679973747272
+      },
+      "whole": {
+        "rear": -5.121735580956074,
+        "front": 4.275888444604359
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.5956353574580309,
+          "trackError": 0.001995920881943558
+        },
+        "rider": {
+          "gap": 0.8696369220991547,
+          "trackError": 0.019715887751663885
+        }
+      }
+    },
+    {
+      "halt": "Pier, up",
+      "player": {
+        "rear": 5.901811245199263,
+        "front": 12.896861867566123
+      },
+      "rider": {
+        "rear": 2.50137864237748,
+        "front": 16.596357554875038
+      },
+      "whole": {
+        "rear": -8.60362675990239,
+        "front": 7.746227230844122
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.5978638736317683,
+          "trackError": 0.0011708940539678636
+        },
+        "rider": {
+          "gap": 0.8932318337119503,
+          "trackError": 0.004714760499653803
+        }
+      }
+    },
+    {
+      "halt": "Railhead 1 terminal",
+      "player": {
+        "rear": 13.400753052323228,
+        "front": 8.398085091863638
+      },
+      "rider": {
+        "rear": 9.999562907219003,
+        "front": 12.099866347521617
+      },
+      "whole": {
+        "rear": -1.0993472167234903,
+        "front": 3.2965129368896937
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6995639983146495,
+          "trackError": 8.881784197001252e-16
+        },
+        "rider": {
+          "gap": 0.998946470746136,
+          "trackError": 1.021405182655144e-13
+        }
+      }
+    },
+    {
+      "halt": "Railhead 2 terminal",
+      "player": {
+        "rear": 13.398091257556652,
+        "front": 8.407057887648822
+      },
+      "rider": {
+        "rear": 9.997332766074889,
+        "front": 12.108404100045146
+      },
+      "whole": {
+        "rear": -1.0971501785555045,
+        "front": 3.3054175480739407
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6988375423254971,
+          "trackError": 7.993605777301127e-15
+        },
+        "rider": {
+          "gap": 0.9996048661616275,
+          "trackError": 8.881784197001252e-16
+        }
+      }
+    },
+    {
+      "halt": "Railhead 3 terminal",
+      "player": {
+        "rear": 13.390756858822291,
+        "front": 8.406886125372356
+      },
+      "rider": {
+        "rear": 9.999562802466878,
+        "front": 12.098516018025387
+      },
+      "whole": {
+        "rear": -1.1047620109408638,
+        "front": 3.305525630261335
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6995639983146478,
+          "trackError": 8.881784197001252e-16
+        },
+        "rider": {
+          "gap": 0.9996440211764157,
+          "trackError": 1.7763568394002505e-15
+        }
+      }
+    },
+    {
+      "halt": "Railhead 4 terminal",
+      "player": {
+        "rear": 13.404802074482268,
+        "front": 8.38441354033045
+      },
+      "rider": {
+        "rear": 10.003891694760602,
+        "front": 12.085919496863802
+      },
+      "whole": {
+        "rear": -1.1004329938618733,
+        "front": 3.2828356923782924
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6996072023282034,
+          "trackError": 1.1546319456101628e-13
+        },
+        "rider": {
+          "gap": 0.9996440211764157,
+          "trackError": 1.7763568394002505e-15
+        }
+      }
+    },
+    {
+      "halt": "Railhead 5 terminal",
+      "player": {
+        "rear": 13.398201877613142,
+        "front": 8.406777933729147
+      },
+      "rider": {
+        "rear": 9.99716782135915,
+        "front": 12.108404030168026
+      },
+      "whole": {
+        "rear": -1.1024355684471878,
+        "front": 3.3054174823406215
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6995639983146509,
+          "trackError": 4.440892098500626e-15
+        },
+        "rider": {
+          "gap": 0.9996048661616288,
+          "trackError": 8.881784197001252e-16
+        }
+      }
+    },
+    {
+      "halt": "Railhead 6 terminal",
+      "player": {
+        "rear": 13.390866349608666,
+        "front": 8.398084977620195
+      },
+      "rider": {
+        "rear": 9.989676204504441,
+        "front": 12.099866239748245
+      },
+      "whole": {
+        "rear": -1.104372629973192,
+        "front": 3.296772737068919
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6995639983146509,
+          "trackError": 4.440892098500626e-15
+        },
+        "rider": {
+          "gap": 0.9989464707459117,
+          "trackError": 1.234568003383174e-13
+        }
+      }
+    },
+    {
+      "halt": "Railhead 7 terminal",
+      "player": {
+        "rear": 13.402843635706056,
+        "front": 8.402305914157255
+      },
+      "rider": {
+        "rear": 10.00722007995455,
+        "front": 12.098517327453143
+      },
+      "whole": {
+        "rear": -1.097259492690381,
+        "front": 3.3055268619293003
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6991765005054411,
+          "trackError": 0.0001399451522381412
+        },
+        "rider": {
+          "gap": 0.9996440211764157,
+          "trackError": 1.7763568394002505e-15
+        }
+      }
+    },
+    {
+      "halt": "Railhead 8 terminal",
+      "player": {
+        "rear": 13.400753052323518,
+        "front": 8.397054812676018
+      },
+      "rider": {
+        "rear": 9.999562907219284,
+        "front": 12.0986976158116
+      },
+      "whole": {
+        "rear": -1.1047618998661768,
+        "front": 3.2957003897869637
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6996072023284907,
+          "trackError": 1.7763568394002505e-15
+        },
+        "rider": {
+          "gap": 0.9996048661616288,
+          "trackError": 8.881784197001252e-16
+        }
+      }
+    },
+    {
+      "halt": "Joint homeward",
+      "player": {
+        "rear": 13.40895495853178,
+        "front": 8.388395444060324
+      },
+      "rider": {
+        "rear": 10.007656784204125,
+        "front": 12.090146681759931
+      },
+      "whole": {
+        "rear": -1.0826189107623019,
+        "front": 3.297145263245363
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6996072023284907,
+          "trackError": 2.6645352591003757e-15
+        },
+        "rider": {
+          "gap": 0.9996048661616288,
+          "trackError": 0
+        }
+      }
+    },
+    {
+      "halt": "Ring Island outward",
+      "player": {
+        "rear": 21.79500979016618,
+        "front": 15.004420451902579
+      },
+      "rider": {
+        "rear": 18.393951726487977,
+        "front": 18.705633923321656
+      },
+      "whole": {
+        "rear": 7.299762363204863,
+        "front": 9.902737540222136
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.7025666067890448,
+          "trackError": 0.002981017366330274
+        },
+        "rider": {
+          "gap": 0.9967096529780775,
+          "trackError": 0.0029147808314635704
+        }
+      }
+    },
+    {
+      "halt": "Stack head 1 outward",
+      "player": {
+        "rear": 13.372110163553367,
+        "front": 8.375584865580581
+      },
+      "rider": {
+        "rear": 9.979706922980057,
+        "front": 12.077056263451595
+      },
+      "whole": {
+        "rear": -1.1089763665653487,
+        "front": 3.281439823277675
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6975692215015474,
+          "trackError": 0.002247691000850871
+        },
+        "rider": {
+          "gap": 0.9988717846914357,
+          "trackError": 1.0658141036401503e-14
+        }
+      }
+    },
+    {
+      "halt": "Stack head 2 outward",
+      "player": {
+        "rear": 13.396745139521325,
+        "front": 8.3997646636561
+      },
+      "rider": {
+        "rear": 10.001206367110974,
+        "front": 12.098499926562635
+      },
+      "whole": {
+        "rear": -1.0960766638084134,
+        "front": 3.302631475869301
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.7018312739221813,
+          "trackError": 0.002235978404575789
+        },
+        "rider": {
+          "gap": 0.999639957363958,
+          "trackError": 1.1102230246251565e-13
+        }
+      }
+    },
+    {
+      "halt": "Stack head 3 outward",
+      "player": {
+        "rear": 13.396228515451073,
+        "front": 8.397444887235205
+      },
+      "rider": {
+        "rear": 9.997270944995565,
+        "front": 12.097291931990645
+      },
+      "whole": {
+        "rear": -1.10149405319436,
+        "front": 3.2979103015816364
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6996156290208746,
+          "trackError": 0.0002944358665368796
+        },
+        "rider": {
+          "gap": 0.9998470035190494,
+          "trackError": 6.927791673660977e-14
+        }
+      }
+    },
+    {
+      "halt": "High Gorge outward",
+      "player": {
+        "rear": 28.32004151113546,
+        "front": 8.43978937471948
+      },
+      "rider": {
+        "rear": 24.96743340949321,
+        "front": 12.131262944563444
+      },
+      "whole": {
+        "rear": 13.900084043028379,
+        "front": 3.3557737367348532
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.7041266532863992,
+          "trackError": 0.0077175822978672315
+        },
+        "rider": {
+          "gap": 0.9968673400494241,
+          "trackError": 1.509903313490213e-13
+        }
+      }
+    },
+    {
+      "halt": "Ring Island homeward",
+      "player": {
+        "rear": 21.799828825265205,
+        "front": 15.000151179729425
+      },
+      "rider": {
+        "rear": 18.404804706980872,
+        "front": 18.695180751220907
+      },
+      "whole": {
+        "rear": 7.300693259876816,
+        "front": 9.902438716877706
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.6952118721623615,
+          "trackError": 0.004773585964889193
+        },
+        "rider": {
+          "gap": 1.001723101738616,
+          "trackError": 0.0017362803189211462
+        }
+      }
+    },
+    {
+      "halt": "High Gorge homeward",
+      "player": {
+        "rear": 28.32004151113546,
+        "front": 8.43978937471948
+      },
+      "rider": {
+        "rear": 24.966358366473024,
+        "front": 12.132340154118877
+      },
+      "whole": {
+        "rear": 13.900538811216068,
+        "front": 3.354030088414065
+      },
+      "lateral": {
+        "player": {
+          "gap": 0.7041266532863992,
+          "trackError": 0.0077175822978672315
+        },
+        "rider": {
+          "gap": 0.9968650100499308,
+          "trackError": 2.3299996447789795e-06
+        }
+      }
+    }
+  ],
+  "queue": {
+    "gap": 0.9295610880093843,
+    "leadingS": 85,
+    "minimum": 0.5
+  },
+  "gorgeCrossover": {
+    "tailPastEnd": -3.1,
+    "minimum": 0.3
+  },
+  "coverage": "Production longest consist and chord/buffer placement. Whole-body longitudinal and lateral margins at actual platform end faces and stopping tracks. The 2 m lateral track corridor is half the 4 m track spacing, not a boarding-jump claim. Retained Stack homeward gaps are named separately by orchestrator ruling. Quarry player overhang allowed only to its existing 1.62 m. Sampled queue, not continuous collision or roof/door proof."
+}

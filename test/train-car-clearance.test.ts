@@ -33,14 +33,7 @@ import {
   type TrackPoint,
   type Vehicle,
 } from '../src/entities/railway/car-spacing.ts';
-import {
-  FLAT_RACK,
-  STEEL_CAR,
-  TRAIN_CARS,
-  TRAIN_OFFSETS,
-  ridesOn,
-  steelCarOffset,
-} from '../src/entities/railway/cars.ts';
+import { FLAT_RACK, ridesOn, consistOf } from '../src/entities/railway/cars.ts';
 import { RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import fs from 'node:fs';
 import { ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
@@ -63,30 +56,23 @@ function trackOf(k: number, up: boolean, plain = false) {
 }
 /** A train's vehicles, engine first, as train-view.ts makes them; `steel` is the longer boiler's train: a longer nose
  * and the steel car. `buffers` false: bare decks, as the cars were before any were drawn. */
-function vehiclesOf(steel: boolean, buffers = true): Vehicle[] {
-  const list: Vehicle[] = TRAIN_CARS.slice(0, 3).map((c, n) => ({
-    d: TRAIN_OFFSETS[n]!,
-    hx: c.hx,
-    back: c.hz,
-    front: c.hz + (n === 0 && steel ? ENGINE_LONG_AHEAD : 0),
-    ...(buffers ? { buffers: n === 0 ? ENGINE_BUFFERS : CAR_BUFFERS } : {}),
-  }));
-  if (steel)
-    list.push({
-      d: steelCarOffset(false),
-      hx: STEEL_CAR.hx,
-      back: STEEL_CAR.hz,
-      front: STEEL_CAR.hz,
-      ...(buffers ? { buffers: CAR_BUFFERS } : {}),
-    });
-  return list;
+function vehiclesOf(steel: boolean, buffers = true, line = 1): Vehicle[] {
+  return consistOf({ line, wagon: line === 1 && steel, steel: line === 1 && steel }).map(
+    ({ spec: c, offset: d }, n) => ({
+      d,
+      hx: c.hx,
+      back: c.hz,
+      front: c.hz + (n === 0 && steel ? ENGINE_LONG_AHEAD : 0),
+      ...(buffers ? { buffers: n === 0 ? ENGINE_BUFFERS : CAR_BUFFERS } : {}),
+    }),
+  );
 }
 const blank = (): Deck => ({ x: 0, z: 0, yaw: 0, hx: 0, back: 0, front: 0 });
 /** The train at `along` as it stands: each vehicle and its deck. `old` is as it was: the line's metres, bare decks
  * and the plain up track on the stepped heading. */
 function train(k: number, up: boolean, along: number, steel: boolean, old = false) {
   const at = trackOf(k, up, old),
-    vehicles = vehiclesOf(steel, !old);
+    vehicles = vehiclesOf(steel, !old, k);
   const places = old ? vehicles.map((v) => along + v.d) : trainPlaces(at, along, vehicles, [], up);
   return vehicles.map((v, n) => ({ v, deck: deckAt(at, places[n]!, v, blank()) }));
 }
@@ -135,9 +121,7 @@ test('on straight track nothing moves: every vehicle at its offset', () => {
   };
   for (const spaced of [false, true]) {
     const places = trainPlaces(at, 100, vehiclesOf(true), [], spaced);
-    [...TRAIN_OFFSETS.slice(0, 3), steelCarOffset(false)].forEach((d, n) =>
-      assert.ok(Math.abs(places[n]! - (100 + d)) < 1e-6, `vehicle ${n}`),
-    );
+    vehiclesOf(true).forEach(({ d }, n) => assert.ok(Math.abs(places[n]! - (100 + d)) < 1e-6, `vehicle ${n}`));
   }
 });
 
@@ -273,7 +257,7 @@ test('the couplings batch holds every train of the fleet, and the seated rider a
   // Review, 14 November: a capacity of 12 dropped later trains' couplings; the fleet's seven trains can show 21 and
   // more (four a train with the footing wagon and the steel car).
   assert.equal(RAIL_TRAINS.length, 7);
-  assert.equal(couplingCapacity(RAIL_TRAINS.length), 28);
+  assert.equal(couplingCapacity(RAIL_TRAINS.length), 35);
   assert.ok(couplingCapacity(RAIL_TRAINS.length) >= 21);
   const view = fs.readFileSync('src/entities/railway/train-view.ts', 'utf8');
   assert.match(view, /createCouplings\(owner, couplingCapacity\(RAIL_TRAINS\.length\)\)/);
