@@ -328,10 +328,12 @@ models`'.
     C1's over-cap balance exactly needs a separately reviewed assertion change. Sack counts stay exact.
     No test assertions or fixtures edited. Simultaneous two-player press and a later joining peer were not
     browser-tested; not tested on a device.
-- [ ] **K3. Checkpoint: the slice closed.** `npm run level-check` with B2's houses solid (finding 7); `npm run perf` at
+- [x] **K3. Checkpoint: the slice closed.** `npm run level-check` with B2's houses solid (finding 7); `npm run perf` at
   the Round on `house-built` against `trains-on`, reported, not a gate; a "Trade" chapter in `docs/game-design/` with
   its index line; the away host test once (a hosted room emptied, rejoined after a faked 8 hours); "not tested on a
   device" or a device run.
+
+  - [x] **17 November 2026, away host test:** `server/test/railway-away.test.ts` passes: an emptied real WebSocket host pauses, rejoins after eight fake hours with exactly `sackCap` and no box earnings, accepts `rail.sack` via `r:edit`, and neither rejoin nor restart credits again; not tested on a device.
 
   - **2026-11-17, K3 measurements recorded, closure unproven:** [checkpoint report](../reports/town-k3-checkpoint.md).
     Level-check passes with nine house hulls; route gaps are 0.30/1.02/9.94/2.89/0.15 m (sprint envelope only,
