@@ -1,10 +1,10 @@
 // The railway's system census (docs/plans/ecs-migration-railway.md, section 2, M3, M3b): every system a
 // railway-sys-*.ts file exports is dispatched by exactly one of the op table, the tick schedule or the named entry
 // points; every component is written by some system; no two systems share a phase and order (createSchedule refuses
-// that).
+// that); and no railway sim file re-exports another's names but the two blocks recorded here.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { createSchedule, type System } from '../src/ecs/index.ts';
 import { RAIL_COMPONENTS } from '../src/sim/railway-components.ts';
 import { RAIL_ENTRIES, RAIL_OPS, RAIL_SYSTEMS, RAIL_TICK } from '../src/sim/railway-systems.ts';
@@ -23,6 +23,10 @@ const isSystem = (v: unknown): v is System<never, unknown> =>
   typeof (v as { fn?: unknown }).fn === 'function' &&
   typeof (v as { phase?: unknown }).phase === 'string' &&
   typeof (v as { order?: unknown }).order === 'number';
+const REEXPORT = /export\s+(?:type\s+)?(?:\*|\{[^}]*\})\s*(?:as\s+\w+\s*)?from\s*'([^']+)'/g;
+/** The one re-export left: the seed route behind railway-seeds.ts (not on M3b's list; line one's read helpers on
+ * `Railway` went in M12b-2). */
+const RE_EXPORTS = ['railway-seeds.ts <- ./railway-seed-route.ts'];
 
 test('every railway system is in exactly one of the op table, the tick and the entry points', () => {
   const ops = Object.values(RAIL_OPS).flat();
@@ -52,6 +56,13 @@ test('every system a railway-sys-*.ts file exports is in RAIL_SYSTEMS, and RAIL_
         assert.ok(listed.has(value), `${file} exports ${key} (${value.name}), which no list dispatches`);
       }
   assert.deepEqual([...exported].sort(), RAIL_SYSTEMS.map((s) => s.name).sort());
+});
+
+test('no src/sim/railway-*.ts file re-exports, but the two recorded blocks', () => {
+  const found: string[] = [];
+  for (const f of readdirSync(SIM).filter((f) => /^railway.*\.ts$/.test(f)))
+    for (const m of readFileSync(new URL(f, SIM), 'utf8').matchAll(REEXPORT)) found.push(`${f} <- ${m[1]}`);
+  assert.deepEqual(found.sort(), RE_EXPORTS);
 });
 
 test('the op table names each system after its op, the deposit falling through to line two', () => {
