@@ -13,7 +13,7 @@ import { FORGE_FRAME, HALTS, OFFSET_HALTS, TUNE, toWorld } from '../src/place/la
 import { LINE_HALTS } from '../src/sim/railway-train.ts';
 import { LINE2, RAIL_HALTS, haltPlatform } from '../src/sim/railway-lines.ts';
 import * as works from '../src/sim/railway-works-layout.ts';
-import { LINE2_BOILER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_AXE, LINE2_BOILER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { RAILWAY_T1 } from '../src/sim/railway-layout.ts';
 import {
   RING_BRACE,
@@ -71,13 +71,15 @@ const site = (name: string, s: { x: number; z: number; reach: number }): Site =>
 const placements = loadLevelArtifact(kitLevel, loadPrefabArtifact(artifact).prefabs).placements;
 const levers = placements.filter((p) => p.prefab === 'railway.halt-lever' && !p.params?.ring);
 
-test('the waiting boiler and breaker cannot steal a halt lever or forge deposit: their prompt reaches are disjoint', () => {
+test('the waiting boiler, breaker and proper axe cannot steal a halt lever or forge deposit: their prompt reaches are disjoint', () => {
   for (const [name, part] of [
     ['boiler', LINE2_BOILER],
     ['breaker', works.WORKS_BREAKER],
+    ['axe', LINE2_AXE],
   ] as const) {
-    const reach = part.reach / 100 - 0.6;
-    assert.equal(reach, 6);
+    // The parts' prompts are 0.6 m inside the server's allowance; the axe's prompt is the server's 3.4 m (tools.ts).
+    const reach = name === 'axe' ? part.reach / 100 : part.reach / 100 - 0.6;
+    assert.equal(reach, name === 'axe' ? 3.4 : 6);
     const p = { x: part.x / 100, z: part.z / 100 };
     // Forge deposits are automatic inside reachStation; no competing take is offered anywhere in that circle.
     assert.ok(Math.hypot(p.x - toWorld(FORGE_FRAME.x), p.z - FORGE_FRAME.z) > reach + TUNE.reachStation, name);

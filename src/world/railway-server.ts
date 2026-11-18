@@ -9,13 +9,7 @@ import { townPlotBoard, TOWN_BOARD } from '../place/town-plan.ts';
 import { HALL, TILL } from '../place/home-station.ts';
 import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type RailResult } from '../sim/railway.ts';
 import { HEAVY_LOAD, RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
-import {
-  LINE1_STATIONS,
-  LINE1_GREAT_TREE,
-  LINE1_HARDWOODS,
-  LINE1_AXE_STAND,
-  LINE1_JUMP_DEVICE,
-} from '../sim/railway-line-layout.ts';
+import { LINE1_STATIONS, LINE1_GREAT_TREE, LINE1_HARDWOODS, LINE1_JUMP_DEVICE } from '../sim/railway-line-layout.ts';
 import { LINE_TIMING } from '../sim/railway-line.ts';
 import {
   LINE2_FORGE,
@@ -26,6 +20,7 @@ import {
   LINE2_GLIDE,
   LINE2_HOOK,
   LINE2_PACK,
+  LINE2_AXE,
   LINE2_BOILER,
   LINE2_OLD_TRAIN,
 } from '../sim/railway-line2-layout.ts';
@@ -220,7 +215,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       return !!rock && near(rock.x, rock.z, 320);
     }
     case 'rail.axe':
-      return near(LINE1_AXE_STAND.x, LINE1_AXE_STAND.z, 340);
+      return near(LINE2_AXE.x, LINE2_AXE.z, LINE2_AXE.reach);
     case 'rail.beamChop':
       return near(LINE1_GREAT_TREE.x, LINE1_GREAT_TREE.z, 420);
     case 'rail.boilerTake': {

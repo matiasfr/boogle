@@ -198,6 +198,10 @@ export function line2Panels(station: Line2Station) {
 
 /** Boiler pickup and camp fit anchors, world cm, pinned from Place. */
 export const LINE2_BOILER = { x: 92200, z: -117, y: 1800, reach: 660 } as const;
+/** The proper axe waits on the forge's pedestal once the forge is lit (forge-made rewards, 17 November): the server
+ * judges `rail.axe` from the pedestal's centre, as the client's prompt does, whichever way the model stands (upright on
+ * the plinth, or leaning on it while a cast part waits). A position only, no saved field holds it. */
+export const LINE2_AXE = { x: LINE2_BOILER.x, z: LINE2_BOILER.z, reach: 340 } as const;
 export const LINE2_OLD_TRAIN = { x: 100964, z: -14900, reach: 800 } as const;
 
 export const LINE2_BOILER_AREA = { x0: 88000, x1: 104000, z0: -17200, z1: 3500, y0: 1000, y1: 4500 } as const;

@@ -41,9 +41,23 @@ const x = Number(q.get('standX') ?? 912.2),
   yaw = Number(q.get('standYaw') ?? -Math.PI / 2);
 teleport(me.body, x, H(x, z) + 0.9, z);
 me.body.velocity.set(0, 0, 0);
-cam.yaw = yaw;
+cam.yaw = me.yaw = yaw;
 cam.pitch = Number(q.get('standPitch') ?? -0.08);
 await wait(1500);
+// What the interact button would do from here (the prompt's id and verb), and the reward's reach facts.
+{
+  const { interactTarget } = (await import(
+    '/src/player/hands.ts' as string
+  )) as typeof import('../../../src/player/hands.ts');
+  const { inspectRailway } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
+  const t = interactTarget(),
+    r = inspectRailway()!.reward,
+    p = me.body.position;
+  const d = Math.hypot(p.x - r.axeChest.x, p.z - r.axeChest.z);
+  console.log(
+    `FORGE LOOK target ${t?.id ?? 'none'} ${t?.verb ?? ''}; axe ${r.axeChest.available ? 'offered' : 'not offered'} at ${d.toFixed(2)} m from the pedestal's centre`,
+  );
+}
 // A lost pointer lock opens the pause menu over the shot: close it, and keep it out of the picture.
 ((await import('/src/features/pause.ts' as string)) as { closePause(): void }).closePause();
 const style = document.createElement('style');

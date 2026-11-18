@@ -581,8 +581,6 @@ export const pathLamps = (up: (s: number) => number) => {
 
 /** The forge receiver on the east apron, facing the arriving train. Share its centre with deposit reach. */
 export const FORGE_FRAME = { x: LINE2_FORGE.x / 100 - ORIGIN.x, z: LINE2_FORGE.z / 100, yaw: 0 };
-/** The proper axe's stand, beside the forge frame on the hardwoods' side: the lit forge's first made thing (7 November). */
-export const AXE_STAND = { x: -92.5, z: -15 };
 export const FORGE_BILLS: Station[] = [
   { id: 'F1', s: 0, to: 0, side: 1, logs: 24, rails: 0, label: 'The forge' },
   { id: 'F2', s: 0, to: 0, side: 1, logs: 32, rails: 0, label: 'The forge' },

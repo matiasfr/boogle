@@ -24,7 +24,6 @@ import {
   TOWN,
   ROOM_PLOTS,
   FORGE_FRAME,
-  AXE_STAND,
   FAR,
 } from '../../src/place/layout.ts';
 import { layout, parseMapPage } from '../../src/sickle/map-data.ts';
@@ -35,6 +34,7 @@ import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import { HALT_PIER } from '../../src/prefab/halt-deck.ts';
 import { RING_END, RING_HALT, RING_HEAD, RING_LOOP, RING_S_HEAD, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
+import { LINE2_AXE } from '../../src/sim/railway-line2-layout.ts';
 import {
   BUFFERS,
   HALL,
@@ -897,7 +897,7 @@ function keepClear() {
     near(`the ${id} room`, b.x + ORIGIN.x, b.z + ORIGIN.z, Math.max(b.w, b.d) / 2);
   near('the forge', FORGE.x + ORIGIN.x, FORGE.z + ORIGIN.z, Math.max(FORGE.w, FORGE.d) / 2);
   near("the forge's frame", FORGE_FRAME.x + ORIGIN.x, FORGE_FRAME.z + ORIGIN.z);
-  near('the axe stand', AXE_STAND.x + ORIGIN.x, AXE_STAND.z + ORIGIN.z);
+  near('the axe on the pedestal', LINE2_AXE.x / 100, LINE2_AXE.z / 100);
   near('the forge crane (Home)', W(PROPS.crane).x, W(PROPS.crane).z);
   near('the forge rack (Home)', W(PROPS.rack).x, W(PROPS.rack).z);
   near(

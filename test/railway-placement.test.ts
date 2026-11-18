@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { RailAction } from '../src/sim/railway.ts';
 import { Boiler, Pile, Rail } from '../src/sim/railway-components.ts';
-import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_AXE, LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { WORKS_BREAKER } from '../src/sim/railway-works-layout.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { RIDER_REACH, RIDER_SPAN, railValid } from '../src/world/railway-server.ts';
@@ -50,6 +50,39 @@ test('waiting forge parts accept the 6 m prompt plus 0.6 m margin; a dropped boi
     };
     assert.equal(railValid(w, { ...token, op: 'rail.breaker' }, actor), cm <= 660, `breaker at ${cm} cm`);
   }
+});
+
+test("the proper axe is judged from the forge pedestal's centre, 3.4 m every way, never from the old stand", () => {
+  // Forge-made rewards, step 4: the client's prompt measures from the same point (forge-rewards.ts AXE_AT), whether the
+  // model stands upright on the plinth or leans on it while a cast part waits.
+  const w = createRailway();
+  const e = { op: 'rail.axe', epoch: 1, request: 1 };
+  const from = (x: number, z: number) => ({
+    reach: (ax: number, az: number, r: number) => Math.hypot(x - ax, z - az) <= r,
+    height: () => true,
+    cadence: () => true,
+  });
+  assert.deepEqual(LINE2_AXE, { x: LINE2_BOILER.x, z: LINE2_BOILER.z, reach: 340 });
+  for (const [dx, dz] of [
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+    [0, -1],
+    [0.6, -0.8],
+  ] as const) {
+    for (const [cm, expected] of [
+      [330, true],
+      [340, true],
+      [350, false],
+    ] as const)
+      assert.equal(
+        railValid(w, e, from(LINE2_AXE.x + dx * cm, LINE2_AXE.z + dz * cm)),
+        expected,
+        `${cm} cm along ${dx}, ${dz}`,
+      );
+  }
+  // The retired stand by the forge frame (Place's AXE_STAND, 907.5, -15 m) is 19 m away now.
+  assert.equal(railValid(w, e, from(90750, -1500)), false);
 });
 
 test('wake accepts the whole machine prompt circle, including the side away from the receiving frame', () => {

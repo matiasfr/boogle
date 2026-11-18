@@ -6,15 +6,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
 import { insideSplitRock } from '../../src/entities/railway/works-shape.ts';
-import {
-  LINE1_STATIONS,
-  LINE1_ROCKS,
-  LINE1_GREAT_TREE,
-  LINE1_AXE_STAND,
-  LINE1_JUMP_DEVICE,
-} from '../../src/sim/railway-line-layout.ts';
+import { LINE1_STATIONS, LINE1_ROCKS, LINE1_GREAT_TREE, LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
 import {
   LINE2_STATIONS,
+  LINE2_AXE,
   LINE2_FORGE,
   LINE2_PACK,
   depotOffset,
@@ -429,14 +424,14 @@ export const NODES: readonly LoopNode[] = [
     id: 'axe',
     label: 'Take the proper axe',
     area: 'line 2',
-    at: p(LINE1_AXE_STAND),
+    at: p(LINE2_AXE),
     bill: {},
     supply: {},
     ops: ['rail.axe'],
     reached: { mark: 'proper axe gained' },
     stops: [],
     requires: [dec('forge', 'rules', `${RULES_LINE1} axe: forge lit; decisions.md 2026-11-07`)],
-    cue: [onMain('world', 'the axe chest by the forge', 'src/entities/railway/tools.ts:71,251-258')],
+    cue: [onMain('world', "the axe on the forge's pedestal", 'src/entities/railway/forge-rewards.ts')],
     optional: true,
   },
   {
