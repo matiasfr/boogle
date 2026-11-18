@@ -160,15 +160,34 @@ v60's re-route at the pair) separates the column from the rule.
   at `stack-3`, the trains' phase at those seeds' ticks); the writer also records the `gap-footed` Railhead lever's `u`
   as 235.60000000000002 for 235.6, which the column-only control reproduces (inside `prefabGolden`'s numeric tolerance).
 
-**Not passing: the greybox route's pacing gates (a wall for the owner).** `test/helpers/railway-route-rules.ts` runs
+**The greybox route's pacing gates, re-pinned at v61 (owner, 18 November: option (a), "re-measure and re-pin";
+the slower route is the accepted cost of trains waiting for the deck).** `test/helpers/railway-route-rules.ts` runs
 gates 12, 14 and 15 and "a redirected train gets 50 dwell ticks" on `ringRivetSequence`, which strikes the rivet
-mid-haul on purpose and is pinned so "those measured bounds are not silently loosened". Under v61 the rivet comes 147
-ticks later in that sequence (the wagon's dwells) and the stop settles 77 ticks after it: gate 14's rivet to the Gorge
-is 3,919 ticks (bound 3,700, v60 3,623) and one later frame idles 712 (bound 600); gate 15's steel kit reaches the
-yard at +588 against its pinned build-2 +650; gate 12's third join misses 1,050 ticks; the dwell test's slot changes.
-The same gates fail on v60's rules when only the rivet moves: 50 ticks later fails gate 15, 127 later fails gates 14
-and 15 and four more (the Gorge at 5,372). So they measure the fleet's phase at this one workload's rivet; whether to
-re-measure them at v61's phase, loosen them, or change the workload is the owner's call, not this build's.
+mid-haul on purpose. Under v61 the rivet comes 147 ticks later in that sequence (the wagon's dwells at the old head)
+and the stop settles 77 ticks after it. **v60's rules started from v61's rivet world give every v61 figure below
+exactly**, so none is a re-route defect: they are the fleet's phase at this workload's rivet (on v60's rules alone a
+rivet 50 ticks later fails gate 15, 127 later gates 14 and 15 and four more, the Gorge at 5,372). Each failing bound
+keeps v60's margin over the measured figure; a bound v61 still meets is kept.
+
+| Gate | v60 figure | v61 figure | Bound v60 → v61 (margin) |
+| --- | --- | --- | --- |
+| 12: the last extra train joins, ticks after the first section lays | +653 (+18, +371) | +1,403 (+733, +1,121) | 1,050 → 1,800 (397) |
+| 14: rivet to the Gorge, fed every tick | 3,623 | 3,919 | 3,700 → 3,996 (77) |
+| 14: later frames idle, the most | 565 | 712 | 600 → 747 (35) |
+| 14: first frame idle | 1,128 | 1,127 | 1,200 kept |
+| 15: steel kit in the yard, leg idle and fed (an equality) | +650, +650 | +588, +588 | `BUILD2.yard` 650 → 588 (0) |
+| 15: first steel home and the install, leg fed | +2,392 | +1,820 | `BUILD2.home` + 1,050 = 2,874 kept |
+
+`BUILD2.yard` was build 2 alone's tick with the leg's rules absent (v31), which cannot be re-run; at v60 the idle-leg
+figure equalled it exactly, so v61's idle-leg figure stands for it. Gate 12's third join at +1,403 is `fleetJoin`'s
+existing behaviour from this phase (v60's rules give it too), worth a look if the extra trains' join ever matters.
+
+"A redirected train gets 50 dwell ticks": the premise holds under the new rule (the lay's redirect is the leg's, not
+the ring's), but its fixture lost its case: at v60 slot 4 stood at the old head's end when section 3 laid; at v61 nobody
+does (slot 2, serving the ask, was running from the Village). The test now builds its premise: `REDIRECT` fills the
+frame `LEG_TUNE.layTicks` before the fifth tick of a train's end stand there (found by running the fleet unfed) and
+checks the redirect on the lay; it found slot 2, the frame filled 718 ticks after the kit was aboard. Every assertion
+is v60's, on that slot.
 
 ## Level findings and risks
 
