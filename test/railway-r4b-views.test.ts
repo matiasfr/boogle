@@ -42,7 +42,16 @@ import {
   haulU,
   type RailheadHaul,
 } from "../src/sim/railway-ring-haul.ts";
-import { railheadLever, railheadLeverOn } from "../src/entities/railway/lever-place.ts";
+import { leverAskTaken, railheadLever, railheadLeverUp } from "../src/entities/railway/lever-place.ts";
+import { deckPlatform } from "../src/entities/railway/railhead-shape.ts";
+import { mapStageOf } from "../src/entities/railway/halt-map.ts";
+import { railwayAtRing } from "../src/sim/railway-seed-ring.ts";
+import { act } from "../src/sim/railway-seed-route.ts";
+import { advanceWorks } from "../src/sim/railway-seed-works.ts";
+import { aperture } from "../src/sim/railway-rows.ts";
+import { ringHead } from "../src/sim/railway-queries.ts";
+import { railCallPlatform } from "../src/sim/railway-queries-trains.ts";
+import { RAIL_HALTS } from "../src/sim/railway-lines.ts";
 
 /** The haul to railhead k (its pair accepted at tick 1000, from where railhead k - 1 stood), and its ticks in quarters
  * from the accept to a second past the end: railhead-view.ts's `ruleClock` between fixed steps. */
@@ -157,7 +166,8 @@ test("the walkway behind a moving railhead holds the old platform's whole place,
   }
 });
 test("prompts wait until the haul has settled", () => {
-  // railhead-view.ts `settled` (its rack and jib prompts) and the Railhead lever (`railheadDrawn.settled`).
+  // railhead-view.ts `settled`: its rack and jib prompts. The Railhead lever no longer waits: it stands at the trains'
+  // stop, which holds still through the haul (below).
   for (const a of hauls) {
     let lastMove = -1;
     for (const t of ticks(a)) {
@@ -175,34 +185,111 @@ test("prompts wait until the haul has settled", () => {
     "before any pair the railhead is at rest",
   );
 });
-test("the lever stands on the drawn deck", () => {
-  // halts-view.ts's Railhead lever: `railheadLeverOn(railheadEnd())`, the deck's end as drawn.
-  for (let k = 0; k <= BENTS; k++)
-    for (const way of [-1, 1] as const)
-      assert.ok(
-        Math.abs(railheadLeverOn(headU(k), way) - railheadLever(k, way).u) < 1e-9,
-        `head ${k} way ${way}`,
-      );
+// ---------------------------------------------------------------- the railhead re-route (docs/plans/railhead-reroute.md,
+// step 3): the trains' Railhead (`Aperture.stop`) holds at the old head until the haul settles, and the views follow it.
+/** The stop the trains serve at tick t of haul a, as rail.ringStop moves it (once, at haulEnd). */
+const stopAt = (a: RailheadHaul, t: number) => (t >= haulEnd(a) ? a.set >> 1 : (a.set >> 1) - 1);
+
+test("the lever stands at the trains' stop through a haul, where the server takes its ask, and on what is drawn", () => {
+  // halts-view.ts's Railhead lever: `railheadLever(ringOpen(w).head)`, lifted by `railheadLeverUp(u, railheadEnd())`.
   for (const a of hauls) {
-    const offset = headU(0) - railheadLever(0).u;
-    let was = railheadLeverOn(haulU(a, a.moved) / 100);
     for (const t of ticks(a)) {
-      const end = haulU(a, t) / 100,
-        u = railheadLeverOn(end);
-      const [p0, p1] = platformSpan(end);
+      const stop = stopAt(a, t),
+        end = haulU(a, t) / 100,
+        { u, lat } = railheadLever(stop),
+        up = railheadLeverUp(u, end);
+      const [p0, p1] = platformSpan(end),
+        [w0] = walkwaySpan(end);
+      if (up) assert.ok(u > p0 && u <= p1, `haul to ${a.set >> 1} at tick ${t}: lifted, but off the deck`);
+      else assert.ok(u >= w0 && u <= p0, `haul to ${a.set >> 1} at tick ${t}: down, but not on the walkway`);
+      // A player standing at the lever, on the dais or the walkway under it: the server takes the ask there.
+      const at = ringAt(Math.round(u * 100), Math.round(lat * 100)),
+        y = (ringDeckY(Math.round(u * 100)) + up * 100) / 100;
       assert.ok(
-        u > p0 && u < p1,
-        `haul to ${a.set >> 1} at tick ${t}: the lever at u ${u} is off the deck`,
+        leverAskTaken(RING_HEAD[stop]!.platform, at.x / 100, y, at.z / 100),
+        `haul to ${a.set >> 1} at tick ${t}: the ask is refused at the lever`,
       );
-      assert.ok(Math.abs(end - u - offset) < 1e-9, "it keeps its place on the platform");
-      assert.ok(
-        Math.abs(u - was) <= (HAUL.speed / 100) * 0.25 + 1e-9,
-        `no jump at tick ${t}: ${was} to ${u}`,
-      );
-      was = u;
     }
+    // On the deck until it leaves, on the walkway through the travel, on the new deck at the settle.
+    const k = a.set >> 1;
+    assert.equal(railheadLeverUp(railheadLever(k - 1).u, haulU(a, a.moved) / 100), 0.9, "on the deck at the pair");
+    assert.equal(railheadLeverUp(railheadLever(k - 1).u, haulU(a, haulEnd(a) - 1) / 100), 0, "the walkway, settling");
+    assert.equal(railheadLeverUp(railheadLever(k).u, haulU(a, haulEnd(a)) / 100), 0.9, "on the new deck");
   }
 });
+
+test("the old platform's place is walkway at every tick of a haul", () => {
+  // Where the trains stand and riders step off until the settle: the old platform's 25 m, all walkway or deck.
+  for (const a of hauls)
+    for (const t of ticks(a)) {
+      const end = haulU(a, t) / 100,
+        [o0, o1] = platformSpan(headU(stopAt(a, t))),
+        [w0, w1] = walkwaySpan(end);
+      assert.ok(o0 >= w0 && o1 <= w1, `haul to ${a.set >> 1} at tick ${t}: the stop's platform over the sea`);
+    }
+});
+
+test("the far crowd rides the drawn deck and stands on the new platform at the settle", () => {
+  // riders-view.ts: `deckPlatform(railheadEnd())` while the build head is ahead of the stop.
+  for (let k = 0; k <= BENTS; k++)
+    assert.deepEqual(deckPlatform(headU(k)), RING_HEAD[k]!.platform, `head ${k}: the deck's platform at rest`);
+  for (const a of hauls) {
+    let was = deckPlatform(haulU(a, a.moved) / 100);
+    for (const t of ticks(a)) {
+      const p = deckPlatform(haulU(a, t) / 100),
+        step = Math.hypot(p.x - was.x, p.z - was.z);
+      assert.ok(step <= HAUL.speed * 0.25 + 2, `haul to ${a.set >> 1} at tick ${t}: the crowd jumps ${step} cm`);
+      was = p;
+    }
+    assert.deepEqual(was, RING_HEAD[a.set >> 1]!.platform, "settled on the new platform");
+  }
+});
+
+// A real room's row through one haul (deck-laid, a pair set): the stop, the build head and the map, rule tick by tick.
+const RAILHEAD_HALT = RAIL_HALTS.findIndex((h) => h.name === "Railhead");
+const REROUTE = (() => {
+  const s = railwayAtRing("deck-laid");
+  for (let g = 0; aperture(s.w).rack < 2; g++) {
+    assert.ok(g < 6000, "two footings on the railhead rack");
+    advanceWorks(s, 1);
+  }
+  for (let k = 0; k < 2; k++) {
+    assert.equal(act(s, "a", "rail.footTake", { rack: 2 }), 1);
+    assert.equal(act(s, "a", "rail.footSet", { site: 3 }), 1);
+  }
+  const at = s.t,
+    end = haulEnd(aperture(s.w)),
+    frames: { t: number; stop: number; build: number; map: number; platform: object }[] = [];
+  for (;;) {
+    frames.push({
+      t: s.t,
+      stop: aperture(s.w).stop,
+      build: ringHead(s.w),
+      map: mapStageOf(s.w).head,
+      platform: railCallPlatform(s.w, RAILHEAD_HALT, -1, s.t),
+    });
+    if (s.t > end + 10) break;
+    advanceWorks(s, 1);
+  }
+  return { at, end, frames };
+})();
+
+test("the map redraws at the settle, not at the pair", () => {
+  const { end, frames } = REROUTE;
+  for (const f of frames) {
+    assert.equal(f.map, f.t >= end ? 1 : 0, `tick ${f.t}: the map's railhead`);
+    assert.equal(f.map, f.stop, "the map follows the trains' stop");
+    // The far crowd rides the deck exactly while the build head is ahead of the stop; the lever's platform is the stop's.
+    assert.equal(f.build !== f.stop, f.t < end, `tick ${f.t}: riding the deck`);
+    assert.deepEqual(f.platform, RING_HEAD[f.stop]!.platform, `tick ${f.t}: the lever's platform`);
+  }
+  assert.deepEqual(
+    frames.filter((f, i) => i > 0 && f.map !== frames[i - 1]!.map).map((f) => f.t),
+    [end],
+    "one redraw, at the settle",
+  );
+});
+
 test("the railhead clock advances in rule ticks and snaps to a restored clock", () => {
   assert.equal(leanClock(-1, 100, 1 / 60), 100);
   assert.equal(leanClock(100, 100, 1 / 60), 100 + 1 / 6);

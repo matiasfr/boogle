@@ -6,7 +6,11 @@
 //   npm run look -- --real --rail-seed ring-set-3 --query debugcam=1 --eval dev/look/evals/railhead-move.ts
 //     --until window.__railheadMove --warm 120 --frames 10 --seconds 9 --name railhead-move
 // `&still=mid` instead flags mid-travel and `&still=rest` the settled deck, for single stills (--frames 2), and
-// `&cam=lever` frames the Railhead lever riding the deck, `&cam=kit` the platform's front (winch and bell) close up. Prints `RAILHEAD MOVE ...` lines with the haul's phase.
+// `&cam=lever` frames the Railhead lever (at the trains' stop through the haul, v61), `&cam=kit` the platform's front
+// (winch and bell) close up. `&train=1` (docs/plans/railhead-reroute.md, step 3) holds the footing until a line 2 train
+// is 30 to 150 m short of the Railhead, sets it, and frames the old head from the sea side, still: the train stands its
+// dwell at the old head while the deck hauls off, the lever stays and the far crowd rides the deck; at the settle the
+// stop, the map and the lever move out. Prints `RAILHEAD MOVE ...` lines with the haul's phase.
 const R = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
@@ -26,7 +30,23 @@ const page = window as unknown as Window & { __railheadMove?: boolean };
 const query = new URLSearchParams(location.search);
 const still = query.get('still'),
   lever = query.get('cam') === 'lever',
-  kit = query.get('cam') === 'kit';
+  kit = query.get('cam') === 'kit',
+  arriving = query.get('train') === '1';
+const { trainAlong, TRAIN_PHASE } = (await import(
+  '/src/sim/railway-train.ts' as string
+)) as typeof import('../../../src/sim/railway-train.ts');
+const LINE2 = 1,
+  RAILHEAD = 4;
+/** A line 2 train running to the Railhead, and how far it has to go (cm). */
+const coming = () => {
+  const stops = R.stopsOf(R.rw(), LINE2);
+  for (const r of R.trains(R.rw()))
+    if (r.phase === TRAIN_PHASE.RUN && r.to === RAILHEAD && r.track === 0) {
+      const left = stops[RAILHEAD]! - trainAlong(r, LINE2, R.railAt());
+      if (left >= 0) return { slot: r.slot, left };
+    }
+  return null;
+};
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const say = (text: string) => console.log(`RAILHEAD MOVE ${text}`);
 type Railhead = { opened: boolean; settled: boolean; shownU: number; traveller: Record<string, unknown> };
@@ -54,6 +74,16 @@ for (let i = 0; !R.railBack().foot; i++) {
   if (i > 100) throw new Error('RAILHEAD MOVE no footing on the back');
   await wait(100);
 }
+if (arriving)
+  for (let i = 0; ; i++) {
+    if (i > 3000) throw new Error('RAILHEAD MOVE no train came to the Railhead');
+    const c = coming();
+    if (c && c.left >= 3000 && c.left <= 15000) {
+      say(`train ${c.slot} ${(c.left / 100).toFixed(1)} m short of the Railhead`);
+      break;
+    }
+    await wait(100);
+  }
 if (!(await bot.use(head.jib.x / 100, head.jib.z / 100, 'set the footing', /Set the footing/)))
   throw new Error('RAILHEAD MOVE no set');
 for (let i = 0; ap().set === set0; i++) {
@@ -67,12 +97,20 @@ for (const d of document.querySelectorAll<HTMLDivElement>('div'))
   if (d.style.top === '90px' && d.style.zIndex === '9999') d.remove();
 const ends = { at: 0 };
 const p = { x: 0, z: 0 };
+const oldS = RING_S + head.u / 100;
 setInterval(() => {
   const resume = document.querySelector<HTMLButtonElement>('.you-resume');
   if (resume?.getClientRects().length) resume.click();
   const u = view()!.shownU;
   const s = RING_S + u;
-  if (kit) {
+  if (arriving) {
+    // Still, from the sea side: the old platform's place (lever, walkway, the train's stand) and the deck ahead of it.
+    line2World(oldS - 8, 21, p);
+    const cx = p.x,
+      cz = p.z;
+    line2World(oldS - 14, 1, p);
+    window.__debugCam?.set([cx, line2Y(oldS) + 7, cz], [p.x, line2Y(oldS - 14) + 1, p.z], 64);
+  } else if (kit) {
     line2World(s + 4.5, 7.5, p);
     const cx = p.x,
       cz = p.z;
@@ -107,6 +145,18 @@ const log = setInterval(() => {
   say(
     `t ${((performance.now() - ends.at) / 1000).toFixed(1)} s phase ${phase().toFixed(1)} u ${v.shownU.toFixed(2)} settled ${v.settled} rig ${JSON.stringify(v.traveller)}`,
   );
-  if (performance.now() - ends.at > 12000) clearInterval(log);
+  if (arriving) {
+    const r = R.trains(R.rw()).find((x) => x.phase === TRAIN_PHASE.STAND && x.at === RAILHEAD);
+    const levers = (
+      R.inspectRailway() as unknown as {
+        line2View?: { ringLevers?: { halt: number; platform: string; u: number; y: number }[] };
+      } | null
+    )?.line2View?.ringLevers;
+    const lever = levers?.find((l) => l.halt === RAILHEAD && l.platform === 'down');
+    say(
+      `stop ${ap().stop} build ${R.ringHead(R.rw())} standing ${r ? `${r.slot} at ${r.from}` : 'none'} lever u ${lever?.u.toFixed(2)} y ${lever?.y.toFixed(2)} waiting ${R.towns(R.rw())[0]?.wait1}`,
+    );
+  }
+  if (performance.now() - ends.at > 16000) clearInterval(log);
 }, 500);
 export {};

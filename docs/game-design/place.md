@@ -1181,6 +1181,22 @@ the wagon"** (draft copy), gone when a footing lands. The railhead itself still 
 move as a construction traveller that carries its riders (the owner's 14 November answer) is built on a separate
 branch and not shipped. Not tested on a device.
 
+**The trains wait for the deck (18 November 2026, `WORLD_NS` v61; [railhead re-route](../plans/railhead-reroute.md);
+[decision](../decisions-rail.md#d-2026-11-18-railhead-reroute-reset)).**
+A bent's second footing hauls the deck on at once, but the trains' Railhead stop moves only when the haul has settled
+(the chocks down and the settle bell, about 12.7 s after the pair): the platform goes first and the trains follow.
+Until then a train bound for the Railhead runs to the old head and stands its dwell there, beside the walkway the
+platform left (riders off, footings onto the rack's count, asks served); no train waits for the haul. At the settle one
+still standing at the old head leaves homeward, and one running there is replanned to the new head from where it is,
+with no jump. The map's railhead, the buoys' lifting and the end of the line follow the trains' stop, so they change
+at the settle too. The Railhead's request lever stays where the trains stop: once the deck slides off it, it stands on
+the walkway at its foot, its prompt still offered (the server takes the ask there), and at the settle it slides out
+to the new head and steps back up onto the platform; the rack and the jib still move with the deck at the pair. The
+little guys waiting there ride the deck out and stand on the new platform when it settles (they still board a train at
+the old head meanwhile). Proof: `npm run look -- --real --rail-seed ring-set-3 --query "debugcam=1&train=1" --eval
+dev/look/evals/railhead-move.ts --until window.__railheadMove --warm 400 --frames 10 --seconds 15`. Not tested on a
+device.
+
 **The bridge leaf (11 November 2026, R4c, first part; calls 8, 9, 35).** The leaf rests raised (78 degrees) on its pawl.
 Braced, each counterweight footing hung dips it a quarter (0.7 s); the last one, or the pawl knocked out with all four
 hung, swings it down onto the bents in 2.5 s, ease-in, with a thump at the toe. A page that loads after the leaf is down,

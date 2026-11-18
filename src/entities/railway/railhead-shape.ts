@@ -1,7 +1,8 @@
 // The railhead's numbers (ring-island-build1, R4b), pure: what stands where as the gap is footed, in metres out from the
 // pier head (`u`, src/sim/railway-ring-layout.ts) and metres east of the down track (`lat`). No three.js, no rows: the
 // view (./railhead-view.ts), the lookout's buoys and the tests read the same functions.
-import { RING_BUOYS, RING_HEAD, RING_WALK } from '../../sim/railway-ring-layout.ts';
+import { RING_BUOYS, RING_HEAD, RING_WALK, ringAt, ringDeckY } from '../../sim/railway-ring-layout.ts';
+import type { RailPlatform } from '../../sim/railway-lines.ts';
 import { HAUL, type RailheadHaul } from '../../sim/railway-ring-haul.ts';
 
 /** Bents 7..13 (index 0..6) stand at u 140, 160 ... 260; bent index j carries the deck from u 120 + 20 j to 140 + 20 j. */
@@ -47,6 +48,13 @@ export const spansDue = (a: RailheadHaul, clock: number) =>
 /** Where the platform stands with the railhead at `u`, and what is walkway behind it. */
 export const platformSpan = (u: number) => [u - PLATFORM.len, u] as const;
 export const walkwaySpan = (u: number) => [RING_WALK(0).u0 / 100, u] as const;
+/** The platform's middle as the deck carries it, its end at `end` m: RING_HEAD[k].platform's place (12.5 m back, lat
+ * +4.05, deck + 90 cm) at any u, so at a head it is RING_HEAD[k].platform exactly. Where the far crowd stands while the
+ * trains' stop waits for the haul to settle (riders-view.ts; docs/plans/railhead-reroute.md, step 3). */
+export function deckPlatform(end: number): RailPlatform {
+  const u = Math.round(end * 100) - 1250;
+  return { ...ringAt(u, 405), y: ringDeckY(u) + 90, reach: 1260 };
+}
 /** Fixtures along the railhead (metres out from the end, lat): the rack (RING_HEAD.rack), the jib's foot, the buffer's
  * face, and the stub's crossover (the up track eases onto the down track between merge - 20 and merge). */
 export const RACK_BACK = 18,
