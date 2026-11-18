@@ -775,11 +775,12 @@ campaign or real-time smoothness verdict. The long route and owner playtest rema
 ### Production glider (9 November 2026, piece B)
 
 [Ability order](../plans/ability-order.md), candidate A, owner-approved 15 November. At world
-(1016, 102.4, −4.5), the summit's dark drum has a cream-and-teal vane facing west to the forge and faint turning
-rings and core from the start. No seal, bands, shaft, Q5 wake or banner. **Take it** is one shared `rail.glide`
+(1016, 102.4, −4.5), the summit's dark drum holds the folded glider itself, the cream roll in teal bands you will
+wear on your back, turning slowly inside faint turning rings from the start (Grant's G25, 18 November: the card shows the
+same roll, so what you take is what you wear). No seal, bands, shaft, Q5 wake or banner. **Take it** is one shared `rail.glide`
 take on the first climb, usable at once. The server checks the same summit reach and height; the take remains
 predicted, the finder gets "The glider" / "Open it in the air.", partners online get the same card once they are free (never
-mid-glide), and partners who were away get the existing flourish. The drum stays after the prize is taken. Halt maps keep a canopy mark while it waits.
+mid-glide), and partners who were away get the existing flourish. The drum stays, empty, after the prize is taken. Halt maps keep a canopy mark while it waits.
 
 Nothing on Home requires the glider and Needle Bell is optional for now, as the owner accepted. The hook remains
 required at the sea gate's jamb. The first flight is the way down toward Q3's rails at the forge; subsequent

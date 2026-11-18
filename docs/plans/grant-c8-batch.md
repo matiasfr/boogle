@@ -1,4 +1,4 @@
-> **Status: planned 18 November 2026 (design sub-agent); sitting 1 (G27) built 18 November.** Four items are ready in three sittings (G27,
+> **Status: planned 18 November 2026 (design sub-agent); sitting 1 (G27) and sitting 2 (G25's look) built 18 November.** Four items are ready in three sittings (G27,
 > G25's look, G20, G22's hint); G24 and G30 are already answered on main; G28, G31, G32 and G34 wait on the owner or
 > are his own rows. Checked against `origin/main` at `df94d5816` (world v60). Source: [queue](grant-1114-queue.md)
 > C8, rows G20 to G34 in [round-4-notes](round-4-notes.md#grants-playtest-14-november-his-granola-call-ranked-queued-15-november).
@@ -183,6 +183,15 @@ Each is view only, under an hour, three to five files, with no world bump. Check
    `hook-taken`, `glide-earned` (`src/sim/railway-seeds.ts`); bots `dev/look/bots/railway-glide.ts` and
    `takeGlider()` in `dev/look/bots/railway.ts`. Shares `reward-data.ts` with friends' cards
    (`ability-arrival.ts`, the cutscenes-for-everyone row).
+   *As built, 18 November 2026:* the roll's parts moved out of `makeGear()` into `GLIDER_ROLL` in
+   `src/render/gear-models.ts` (the roll's builder lives there, not in `glide-view.ts`), and `GLIDE_REWARD.parts` is
+   that list, so the finder's card, a friend's card (`reward.ts` builds both from it) and the away friend's flourish
+   badge are the roll. On the summit the mast, the vane and the core are gone; the roll, at its worn size, turns at
+   the rings' height where the core was, on the drum's existing part material, and hides with the rings on the take.
+   Summit draws 6 to 4 (drum, two rings, roll; was drum, mast, vane, two rings, core). Seen: the roll in the rings at
+   `hook-taken`, the card, the roll on the back after landing, the empty drum at `glide-earned`
+   (`docs/world/grant-c8/g25-one-glider.png`); the take-and-glide bot passed (card, 28.1 s home, dry, 4.9 m from the
+   pedestal). Not seen: a friend's card (same parts, `reward.ts`'s flat-shaded material), reduced motion, phone width.
 3. **G20 and G22's hint, two small view changes.** `src/render/place-tree-view.ts`,
    `src/entities/railway/sources.ts`, `src/render/reward-reveal.ts`, `src/entities/railway/reward.ts`,
    `src/entities/railway/crates-view.ts` (and `secrets-view.ts`, after sitting 1). Seeds `awake`; bot
