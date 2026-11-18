@@ -146,6 +146,22 @@ test('a peer still gets the boiler flourish once, at the wake', () => {
   v.dispose();
 });
 
+test("a peer whose page played the boiler's show gets no boiler flourish", () => {
+  const h = harness();
+  const { v, fit } = h.mount('b');
+  v.update(4);
+  fit('a');
+  v.update(30);
+  // boiler-view.ts queues the show on the trains edge, before this file's update in the same frame (view.ts's order).
+  h.w.trains = 3376;
+  v.markShown('boiler');
+  v.update(0.1);
+  v.update(4);
+  assert.deepEqual({ keys: v.inspect().keys, sounds: h.sounds.length }, { keys: [], sounds: 0 });
+  assert.equal(v.seen.has('boiler'), true);
+  v.dispose();
+});
+
 test('a fitter reloading during the wait retains attribution in local storage', () => {
   const h = harness();
   const first = h.mount('a');

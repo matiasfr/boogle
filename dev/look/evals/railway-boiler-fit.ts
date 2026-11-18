@@ -6,8 +6,10 @@
 // presses "Fit the boiler" once the friend has moved, so the press falls inside the capture.
 // npm run look -- --rail-seed boiler-camp --players 2 --eval dev/look/evals/railway-boiler-fit.ts
 //   --until window.__boilerShot --seconds 10 --video
-//   --question "Does the friend get one boiler flourish where they stand, and keep walking through it?"
-// BOILER lines: the friend's `reward.arrival` before the fit, after it and as a trace every 100 ms; PASS/FAIL checks.
+//   --warp-speed 2
+//   --question "Does the friend's page cut to the old train waking, then to the breaker at the forge, and come home facing it?"
+// BOILER lines: the friend's `reward.arrival` and line 2's switch camera before the fit, after it and as a trace every
+// 100 ms; PASS/FAIL checks. The boiler's show (cutscenes-for-everyone plan, step 2) replaces the friend's flourish.
 // Solo (no `--players`, step 8's press as an `--action`): take it, walk to the saddle and fit it, watched side-on;
 // BOILER PRESS logs the view frame of the press, the frame the boiler first moved and the frame trains were accepted.
 // npm run look -- --rail-seed boiler-camp --action dev/look/evals/railway-boiler-fit.ts --video --seconds 14
@@ -48,6 +50,8 @@ const read = () => inspectRailway()!;
 const trainsOn = () => line2Trains(rw());
 const boiler = () => (read().line2View as unknown as { boiler: BoilerView }).boiler;
 const arrival = () => read().reward.arrival;
+type SwitchCamera = { active: boolean; pending: boolean; seconds: number; kind: string | null; forgeTurns: number };
+const camera = () => (read().line2View as unknown as { switchCamera: SwitchCamera }).switchCamera;
 function check(ok: unknown, label: string) {
   console.log(`BOILER ${ok ? 'PASS' : 'FAIL'} ${label}`);
   if (!ok) throw new Error(`BOILER FAIL ${label}`);
@@ -162,18 +166,29 @@ async function friend() {
       card: read().reward.showing,
       badge: a.badge?.map((n) => +n.toFixed(2)),
       keys: a.keys.join(),
+      shot: camera().kind === 'boiler' && camera().active ? +camera().seconds.toFixed(2) : null,
+      turns: camera().forgeTurns,
     });
   }, 100);
   // Walk to and fro by the village while it happens: a held input would stop Buddy.
   const p = me.body!.position;
   const home = { x: p.x, z: p.z };
   const walking = (async () => {
-    for (let k = 0; k < 4 && !(trainsOn() && arrival().keys.includes('boiler')); k++)
+    for (let k = 0; k < 4 && !(trainsOn() && camera().kind === 'boiler' && !camera().active); k++)
       await bot.walk(home.x + (k % 2 ? 0 : 6), home.z + 3, 1, { limit: 6000 });
   })();
   await until(() => trainsOn(), 'friend sees trains on', 120000);
-  await until(() => arrival().keys.includes('boiler'), 'friend boiler flourish played', 10000);
-  check(!read().reward.showing && !inputState.held, 'no card and no hold at the boiler flourish');
+  const turns = camera().forgeTurns;
+  await until(() => camera().kind === 'boiler' && camera().active, 'the boiler show is queued on the trains edge', 1000);
+  let longest = 0;
+  while (camera().kind === 'boiler' && camera().active) {
+    longest = Math.max(longest, camera().seconds);
+    await wait(50);
+  }
+  console.log(`BOILER SHOW ${JSON.stringify({ longest: +longest.toFixed(2), turns: camera().forgeTurns - turns })}`);
+  check(longest > 4.6, 'the show played on past the train into the forge cut');
+  check(camera().forgeTurns === turns + 1, 'the camera came home facing the forge');
+  check(!read().reward.showing && !inputState.held, 'no card and no hold after the show');
   const moving = { x: me.body!.position.x, z: me.body!.position.z };
   await walking;
   await bot.walk(home.x - 4, home.z - 3, 1, { limit: 6000 });
@@ -183,7 +198,7 @@ async function friend() {
   console.log(`BOILER TRACE ${JSON.stringify(rows)}`);
   const a = arrival();
   console.log(`BOILER AFTER ${JSON.stringify({ flourishes: a.flourishes, late: a.late, keys: a.keys, seen: a.seen })}`);
-  check(a.keys.filter((k) => k === 'boiler').length === 1 && a.late === before.late, 'one live boiler flourish');
+  check(!a.keys.includes('boiler') && a.seen.includes('boiler') && a.late === before.late, 'no flourish, the show played');
 }
 
 background(fitter ? fit() : friend(), `boiler fit ${fitter ? 'fitter' : 'friend'}`);

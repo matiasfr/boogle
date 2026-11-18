@@ -22,7 +22,9 @@ import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { PLAYER_R, reducedMotion } from '../../constants.ts';
 import { LINE2_BOILER, LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts';
-import { createForgeCall, holdForgeCall } from './forge-call.ts';
+import { createForgeCall, holdForgeCall, soundForgeCall } from './forge-call.ts';
+import { BOILER_SHOW } from './boiler-shot.ts';
+import { playMark } from '../../proto/mark.ts';
 import { pedestalHold } from './part-hoist.ts';
 import { createBeamDrag, restGrip, type DragShape } from './beam-drag.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
@@ -54,6 +56,11 @@ type Deps = {
   flat: typeof import('../../render/flat.ts').flat;
   /** The railway's reveal queue (reward.ts), for the fitter's card when BOILER_CARD is on. */
   youGot?: (got: Got) => boolean;
+  /** The boiler's show (boiler-shot.ts) on the line's camera pull-out, from the live trains edge: false when no shot
+   * was queued (reduced motion, a vehicle's seat). It calls `cue` as its forge cut lands, or as it comes home. */
+  shot?: (cue: () => void) => boolean;
+  /** The show is still queued or playing (a seat taken, a fresh start or a resync drops it). */
+  shotLive?: () => boolean;
 };
 type Avatar = NonNullable<typeof me.avatar>;
 const frameOf = (avatar: THREE.Object3D | null) => {
@@ -99,7 +106,7 @@ function dashedOutline(length: number, radius: number, material: THREE.Material)
 export function createRailwayBoiler(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  { land, props, carry, engine, pieces, flat, youGot }: Deps,
+  { land, props, carry, engine, pieces, flat, youGot, shot, shotLive }: Deps,
   chimney: { x: number; y: number; z: number },
 ) {
   const pedestal = props.makeProp('pedestal');
@@ -422,6 +429,13 @@ export function createRailwayBoiler(
   }
   let fittedByMe = false;
   let wasAwake = line2Trains(read.world());
+  // The forge's call while the boiler's show holds it: sounded once, on the cut, the hand-back or a dropped shot.
+  let called = false;
+  const cue = () => {
+    if (!called) return;
+    called = false;
+    soundForgeCall();
+  };
   function update(dt: number) {
     const w = read.world(),
       pid = read.pid;
@@ -474,10 +488,17 @@ export function createRailwayBoiler(
     );
     const awake = line2Trains(w);
     if (awake && !wasAwake) {
-      holdForgeCall(FIT.wake);
+      // The live edge only: a rebuild or a resync sets wasAwake first (restore, resync). Every page gets the show.
+      const queued = shot?.(cue) ?? false;
+      playMark('moment played', { moment: 'boiler trains', mine: false, shot: queued, authority: 'local', edge: 'state' });
+      // The breaker is cast on this tick: its call waits for the show, or for the wake when no shot was queued.
+      holdForgeCall(queued ? BOILER_SHOW.hold : FIT.wake);
+      called = queued;
       if (BOILER_CARD && youGot && fittedByMe) cardDue = performance.now() + FIT.wake * 1000;
     }
     wasAwake = awake;
+    // The shot was dropped before it called: the call sounds anyway.
+    if (called && !(shotLive?.() ?? false)) cue();
     call.update(dt, b.state === 'pedestal');
     mote -= dt;
     echoMote -= dt;
@@ -528,9 +549,14 @@ export function createRailwayBoiler(
     restore() {
       // Rebuild silently; the continuous pedestal invitation resumes on a later frame.
       wasAwake = line2Trains(read.world());
+      cue();
       mote = 0.8;
       call.restore(boilerRow(read.world()).state === 'pedestal');
       update(0);
+    },
+    /** A resync (a soft rebuild): trains already running play no show. */
+    resync() {
+      wasAwake = line2Trains(read.world());
     },
     drop,
     /** Sample after feel.ts's squash/landing pose, so the pulling end stays in the animated mitt. */

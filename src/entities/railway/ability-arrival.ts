@@ -14,8 +14,9 @@
 // the server has accepted it, reward.ts); a friend who heard the wake accepted gets theirs as the wake finishes. The
 // proper axe is the chest's, and the pack frame (the forge's chest, a back of 16 for everyone) works the same. A late
 // flourish for an axe has no charge ring: a small model of it pops up over Buddy and settles away. The boiler has no
-// card (boiler-view.ts's BOILER_CARD): the fitter has the wake, everyone else the flourish with a small boiler over
-// Buddy (boiler-first-choice plan, step 9). The keener edge (separate capacities, step 4: a hit gives 2 once Station 3 is
+// card (boiler-view.ts's BOILER_CARD): every page whose camera played the boiler's show (boiler-shot.ts) has had its
+// moment (markShown); a page with no shot (reduced motion, a vehicle's seat) gets the flourish with a small boiler over
+// Buddy (boiler-first-choice plan, step 9), as does one that wasn't there. The keener edge (separate capacities, step 4: a hit gives 2 once Station 3 is
 // funded) has no card, no words and no finder: everyone, the funder included, gets the multi-axe's flourish when they
 // are next free, as the machine starts the trestle (or on a later first landing).
 //   update(dt)                  owed cards, late flourishes, the charge mark, the first-jump teach and the first-fall
@@ -311,6 +312,8 @@ export function createAbilityArrival(
 
   const api = {
     seen,
+    /** This player has had the moment some other way (the boiler's show played on this page): no flourish for it. */
+    markShown: (key: string) => seen.add(key),
     inspect: () => ({
       ...stats,
       keys: [...stats.keys],

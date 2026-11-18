@@ -106,6 +106,8 @@ export async function createRailwayReward(
     targets: () => [...first.targets(), ...second.targets(), ...boxes.targets(), ...tools.targets()],
     youGot: reveal.youGot,
     gettingItem: reveal.gettingItem,
+    /** A moment this player has had some other way (the boiler's show): no flourish for it. */
+    markShown: arrival.markShown,
     /** Whether this player sits in a railway chair or bench: a friend's card waits until they stand. */
     riderIs(fn: () => boolean) {
       riderSeated = fn;
