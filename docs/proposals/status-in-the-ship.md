@@ -1,9 +1,13 @@
 # Status rides the ship (proposal, 18 November 2026)
 
-**Status: proposal, waiting on the owner. Binds no one until he accepts it.** If he does, it becomes a dated entry in
-[decisions-process](../decisions-process.md) that supersedes part of
-[d-2026-11-17-short-state-claimed-jobs](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs). After that the
-skill, the scripts and the state file change in one build.
+**Status: superseded, binds no one** (18 November 2026). The decision
+[five jobs and fewer bookkeeping ships](../decisions-process.md#d-2026-11-18-five-jobs-fewer-bookkeeping-ships), made
+the same day, already batches bookkeeping into one ship per turn and stops shipping a job's in-between states. It also
+rules out part 2: a work branch never edits the state file or the backlog, after #2051, a work branch that carried its
+own state and backlog edits, conflicted and had to be reshipped. The owner dropped part 1 (claim refs): with batching in
+place it would save about one ship per job, which isn't worth a new tool. Only part 4 was applied: the state file has no
+"Updated" line, and the orchestrate skill says not to add one back. The rest of this file is the proposal as it was
+written.
 
 Principle: iterate fast. Every merge to main costs one CI run, one Pages deploy and one smoke. Bookkeeping merges also
 take orchestrator turns and cause rebase conflicts.

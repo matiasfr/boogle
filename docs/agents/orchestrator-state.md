@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, and keep it short. It holds only what cannot be looked up: who is running what, what waits on the owner, and the lessons. Main, CI, pull requests and worktrees come from `npm run heartbeat`; committed work and its next steps from [the backlog](../backlog.md); what merged from git. How to work is in the [orchestrate-boogle skill](../../.claude/skills/orchestrate-boogle/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 18 November 2026 about 06:45 UTC by the heartbeat (a fourth running job found unclaimed got its row; the bookkeeping of #2098, stuck on a conflict for an hour, reshipped; rule 46); the file was split at 09:50 UTC ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)). Dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word.
+The file was split on 17 November ([owner decision](../decisions-process.md#d-2026-11-17-short-state-claimed-jobs)): dated history went to [the log](orchestrator-log.md) and leftovers to [their own file](orchestrator-leftovers.md), both moved word for word. Who changed it and when is in `git log`. It has no "Updated" line: one rewritten on every edit made parallel bookkeeping ships conflict.
 
 ## Jobs in flight
 
