@@ -4,7 +4,7 @@
 
 Let a player keep one identity across browsers and devices by saving a short PIN, while continuing to let friends play without registering. Accounts identify people; each room keeps its own progress, wallet, upgrades and saves. Serves DESIGN.md **6. Communal world, personal things**, **8. Enjoyable alone and together**, **Clear authority** and **Small and readable**.
 
-> **Status, 17 November 2026 against main 6ddfe5d2:** Steps 1–4 are on main (#1868, #1871, #1873, #1875), with browser-proof/startup fixes (#1879, #1884, #1887). Checkpoint A's room-admission cases and the two-store browser flow **pass through the trusted broker** ([step 5 run](#step-5-runner-evidence-17-november-2026)). Step 5 stays open: the eight-player load, the Account-menu visual review, room-progress isolation in the browser and a fresh independent review are unverified.
+> **Status, 17 November 2026 against main 6ddfe5d2:** Steps 1–4 are on main (#1868, #1871, #1873, #1875), with browser-proof/startup fixes (#1879, #1884, #1887). Checkpoint A's room-admission cases and the two-store browser flow **pass through the trusted broker** ([step 5 run](#step-5-runner-evidence-17-november-2026)). Step 5 stays open: broker `net` on the final harness, the eight-player load, the Account-menu visual review, room-progress isolation in the browser and a fresh review of identity binding, transactions and fail-closed errors are unverified.
 
 ## Owner answers (15 November 2026)
 
@@ -258,7 +258,9 @@ aborted at the railway jump-in "replace" section (see the harness gap below). Th
 
 - [x] Guest-registration and promotion retries keep one principal and one account (`409 already_account` on repeat).
 - [x] Unauthenticated or forged pid while the real owner is absent: a pid in the URL or the frame, an unknown token
-      and a presence frame before auth are all refused, with no welcome/list/message and no room created.
+      and a presence frame before auth are all refused, with no welcome/list/message. "No room created" is
+      asserted only by the server suite (`server/test/account-admission.test.ts` passes `rooms`); `ws-run.ts` does
+      not pass it, so the broker run does not prove it.
 - [x] Malformed and oversized auth frames are refused (`CLOSE.BAD`).
 - [x] Auth timeout: a silent socket closes retryably (`CLOSE.RESTART`) between 5.0 and 7.0 s, never admitted.
 - [x] Two device tokens resolve to one pid; the newer connection wins (`ELSEWHERE`), the retired connection cannot
@@ -290,11 +292,17 @@ checkpoint requires before it counts as ready. This runner did not perform or cl
 
 Under the broker the game server runs out of process, so `serve()` returns `roomHost: () => undefined`. The jump-in
 "replace" section, `railwayRequestStop` and `railwayLeaf` step or read the in-process room host, so broker `net`
-always aborted with "the server never hosted room ... within 15 s". `Ctx.inProcess` now says which mode is running;
-broker runs print explicit `SKIP` lines for those three sections instead of aborting, and standalone `npm run
-test:net` (CI's `net`) still runs them. The broker runs the **trusted** checkout's harness, so this fix is not
-exercised through the broker until it is reviewed, merged and the trusted checkout updated; the evidence above is from
-the unmodified main harness. Lint and typecheck pass with the change.
+always aborted with "the server never hosted room ... within 15 s". `Ctx.hostOnly(section)` now marks each of those
+sections. Under the broker (only with `--url`) it prints a `SKIP` line and the section is not run; the replace skip
+starts at the first room-host call, so its two session/seat checks still run. Skipped checks never enter the results,
+and the summary says so: `PASS: n/n checks passed; 34 skipped (broker: no in-process room host: jump-in replace,
+request stop, leaf)`. The broker keeps that line in its `output.txt`. `HOST_ONLY` in `ws-run.ts` lists each section's
+check count (14, 11 and 9); every standalone run recounts them and adds a failing check if a count goes stale.
+
+Standalone `npm run test:net` with the change: **208/208, exit 0, no `SKIP` lines** (`.look/net-standalone-2.log`);
+the run before the counts were filled in also passed all 208 checks and reported exactly 14, 11 and 9. The broker
+runs the **trusted** checkout's harness, so a broker run showing the skipped count is unverified until this is
+reviewed, merged and the trusted checkout updated. A fresh review confirmed CI coverage is intact.
 
 ### Checkpoint B: complete player flow and room isolation
 
@@ -304,13 +312,15 @@ the unmodified main harness. Lint and typecheck pass with the change.
       slot first", a timing flake against its 5 s limit (5.05–5.6 s; 2 of 3 isolated reruns passed; it uses its own
       temp queue directory). Because `check` stops at the first failing step, the rest ran directly: `registry`,
       `level-check`, `assets -- --check`, `prefabs -- --check` and `build` all exit 0. Not a clean `check` exit.
-- [x] Broker `net`: every account and existing room check that ran passed (above); the run did not reach its final
-      summary because of the harness gap.
+- [ ] Broker `net` on the final tree: **not proved**. The broker run above used main's old harness, exited 1 and never
+      reached its summary. The trusted broker runs the trusted checkout's harness, so the updated harness cannot run
+      through it until merged and the trusted checkout updated.
 - [x] Rendered `smoke` through the broker: 7/7 pass, WebGPU, no gfx errors, 27.9 s, load 6.88 → 9.54 (evidence
       `.look/evidence/1794978165398-29712`). Both stills opened: two avatars at the station, HUD showing "shared state:
       server replication" and "room server rtt 1 ms".
 - [ ] Before/after eight-player `npm run load`: **unverified**. It needs `WS_LOAD=1`, which broker `net` refuses, and
-      running it directly would launch Chromium outside the broker. No figures were taken.
+      running it directly would launch Chromium outside the broker. No figures were taken; the orchestrator runs it on
+      a quiet machine.
 - [ ] Browser room-progress isolation (rejoin keeps progress; another room imports no wallet, rails, upgrades, cargo
       or save): **unverified in the browser**; no reviewed harness case exists. Room reset preserving account and
       session records is covered by the server suite above.
