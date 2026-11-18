@@ -25,6 +25,7 @@ import {
   YardClock,
 } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
+import { okTune, TUNABLES } from '../src/sim/tune.ts';
 import { checkTrade } from '../src/sim/railway-check-trade.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { railApply, railTick } from '../src/sim/railway-systems.ts';
@@ -615,6 +616,8 @@ function wagonArrivals(w: World, t0: number, ticks: number) {
   let prev = trains(w).map((r) => r.phase);
   for (let t = t0 + 1; t <= t0 + ticks; t++) {
     railTick(w, t);
+    // Nothing asked: these states differ from every played run's, so they are checked here (each tick, then sampled).
+    if (t - t0 <= 1200 || t % 600 === 0) railwayCheck(w);
     const n = stopsOf(w, LINE2).length;
     trains(w).forEach((r, k) => {
       if (r.wagon && prev[k] === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND && (r.at === n - 1 || r.at === 0))
@@ -652,6 +655,19 @@ test("R2b: while footings are owed the wagon's train arrives on the no-stone-sto
     assert.deepEqual(a, b, name);
     assert.equal(town(w, 0).stone, stone0, `${name}: no stone while footings are owed`);
   }
+});
+
+// A golden compares one world with a recording; only two worlds ticked in one process see state kept outside the world.
+test('R2b: two worlds driven alike after the footings stay equal row for row', () => {
+  const a = copy(CROSSED.w),
+    b = copy(CROSSED.w);
+  for (let t = CROSSED.t + 1; t <= CROSSED.t + 6000; t++) {
+    railTick(a, t);
+    railTick(b, t);
+    if (t % 100 === 0) assert.equal(a.hash(), b.hash(), `tick ${t}`);
+  }
+  assert.deepEqual(a.snapshot(), b.snapshot());
+  assert.ok(town(a, 0).stone > town(CROSSED.w, 0).stone, 'a stone stop was made');
 });
 
 test('R2b: footings owed with no wagon coupled (a hand-made state): still no stone stop', () => {
@@ -740,9 +756,15 @@ test('R3: riders conserve and every fare is charged once a rider a trip, for 30 
 
 test("R3: the box's cap (20 minutes of the demand rate) lands no fare past it and counts the rest in lost", () => {
   const w = copy(FREIGHT.w);
+  // Worked out here, not with boxCap: twenty minutes of the demand rate, or 1.5 times the dearest plot on offer.
+  const floor = (x: World) => TRADE.box.incomeMin * tillRate(x, TRADE_PCT);
+  const offer = (x: World) =>
+    Math.floor((dearestOnOffer(x, TRADE_PCT.pricePct) * TRADE.box.dearestNum) / TRADE.box.dearestDen);
+  assert.ok(floor(w) > offer(w), 'at freight-running the demand floor is the larger term');
+  assert.equal(boxCap(w, TRADE_PCT), floor(w), 'so the cap is twenty minutes of demand');
   for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 40 * 600; t++) railTick(w, t);
   const b = tillRow(w);
-  assert.equal(b.boogles, boxCap(w, TRADE_PCT), 'full to the cap (raised by the second staked plot on the way)');
+  assert.equal(b.boogles, Math.max(floor(w), offer(w)), 'full to the cap (raised by the second staked plot)');
   assert.ok(b.lost > 0, 'fares past the cap are lost');
   assert.equal(b.boogles, b.landed + b.poured - b.spent);
 });
@@ -763,6 +785,19 @@ test('R3: railFarePct 200 doubles the fare and so what lands; railRiderPct 0 sen
   // Only the riders already waiting can board: none more arrive.
   const was = town(FREIGHT.w, 0);
   assert.ok(town(none, 0).boarded <= was.boarded + was.wait0 + was.wait1);
+});
+
+test('R3: trade tunables keep their bounds: fares and riders from 0, prices never below 1', () => {
+  for (const [key, min, max] of [
+    ['railFarePct', 0, 1000],
+    ['railRiderPct', 0, 1000],
+    ['railPricePct', 1, 1000],
+  ] as const) {
+    const t = TUNABLES.find((s) => s.key === key)!;
+    assert.deepEqual([t.min, t.max], [min, max], key);
+    assert.ok(okTune(key, min) && okTune(key, max) && okTune(key, t.def), key);
+    assert.ok(!okTune(key, min - 1) && !okTune(key, max + 1) && !okTune(key, 50.5), key);
+  }
 });
 
 test('R3: no replay: a save and load, a resume and a second resume change no rider or strongbox balance', () => {
