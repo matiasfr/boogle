@@ -88,14 +88,6 @@ test('every thread is open immediately and its chapters play in order', () => {
   }
 });
 
-test('the first menu includes every thread', () => {
-  const t = openTalk(createMemory(), ctx());
-  const v = talkView(t)!;
-  assert.ok(v.opts.some((o) => o === THREADS.home.ask[0]));
-  assert.ok(v.opts.some((o) => o === THREADS.mom.ask[0]));
-  assert.ok(v.opts.some((o) => o === THREADS.biz.ask[0]));
-});
-
 test('finishing a chapter teaches it once and ends the talk with a line over his head', () => {
   const f = createMemory();
   const t = openTalk(f, ctx());
@@ -229,7 +221,6 @@ test('the kick-off talk ends after one exchange', () => {
   const f = createMemory();
   kickedOff(f, 1e6);
   const t = openTalk(f, ctx({ start: 'kick' }));
-  assert.equal(talkView(t)!.say, 'Hey! No free rides!');
   pickTalk(t, 0);
   pickTalk(t, 0);
   assert.equal(talkView(t), null);

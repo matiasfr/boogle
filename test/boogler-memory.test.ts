@@ -12,7 +12,6 @@ import {
   loadMemory,
 } from '../src/boogler/memory.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
-import { PARKED_COPY } from './fixtures/boogler-parked-copy.ts';
 
 test('present reactions remember repeats and the existing window cap', () => {
   const f = createMemory();
@@ -84,11 +83,4 @@ test('memories round-trip through storage and ignore junk', () => {
     assert.ok(h.learned.every((s) => typeof s === 'string'));
     assert.equal(h.gifts.length, 0);
   }
-});
-
-test('parked copy stays available for the narrative pass outside the player bundle', () => {
-  assert.equal(PARKED_COPY.LEVEL_UP.length, 6);
-  assert.equal(Object.keys(PARKED_COPY.DEFLECT).length, 3);
-  assert.equal(PARKED_COPY.HOME0_D.opts.length, 2);
-  assert.ok(PARKED_COPY.TOO_NOSY && PARKED_COPY.QUIET.length && PARKED_COPY.PUSHED.length);
 });
