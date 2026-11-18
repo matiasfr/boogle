@@ -216,7 +216,7 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   cards on a friend's page (same code path, unit test covers the glider); the jump card after the multi-axe card in
   the seated run (the capture ended with the first card up); anything on a device.
 
-- [ ] **2. The boiler's show, for everyone.** Files: `boiler-shot.ts` (new), `boiler-view.ts`, `line2-view.ts`,
+- [x] **2. The boiler's show, for everyone.** Files: `boiler-shot.ts` (new), `boiler-view.ts`, `line2-view.ts`,
   `view.ts`, `ability-arrival.ts` (`markShown`), `place.md:408`, `:857`. As in "The boiler's show" above. The pull-out
   brings the existing rules (card queue, glide wait, vehicle seat, reduced motion, the 0.8 s Interact skip). Never on
   restore: `boiler-view.ts`'s `restore()` already sets `wasAwake`.
@@ -229,6 +229,33 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   Also a still of the first frame of the cut, and one solo run under `?reducedMotion` (no shot; the forge call at its
   old time). The eval's existing PASS line for "one boiler flourish" changes to "no flourish, the show played".
   *Risk: medium (line2-view.ts hotspot, forge-call timing). Independent review: yes.*
+  **Built (2026-11-18):** as written, with four changes. (a) The shot cuts in and cuts home (`back` 0.001 s), also when
+  no breaker waits: a friend may be a kilometre off and a blend that far is a smear. (b) The numbers moved off the plan's
+  first guess. The camera stands on the track's north (hill) side, not the south: from the south it stood on the halt's
+  platform, and the halt dropping in on the same edge put its roof slab, sign and signal post across the foreground
+  (looked at). Settled, in metres from the loco's middle (3.7 m east of `LINE2_OLD_TRAIN`; x along the track, z beside
+  it, y over the ground under the loco): from (6, 2.6, -8), drifting to (9, 4.2, -11) over the 4.5 s leg, looking at
+  (1.5, 2.6, 0), and never less than 1.6 m over the ground under the camera. The breaker's cut is `forgeCut('breaker')`
+  unchanged; 7 s in all with it, 4.5 s without. (c) A resync (view.ts's soft rebuild) did not reach `boiler.restore()`,
+  so a reconnect after the edge would have played the show: `line2.resynced()` now sets `wasAwake` there. (d)
+  `reward.ts` forwards `arrival.markShown` (one line; it was in the Files table but not in this step's brief). If the
+  queued shot is later dropped (a vehicle's seat taken while it waits or plays), the forge's call sounds at once and
+  the page stays marked shown: no flourish stands in. The pull-out already waits while `inputState.held` is set and
+  never writes it, so the show neither comes up over a talk box, the garage panel or the fall nor frees input under them.
+  The eval's friend now checks the show (queued on the edge, past 4.6 s, home facing the forge, no card or hold, no
+  flourish) and both pages log `BOILER SHOW HERE` (shot, when the call sounded). One new test in
+  `test/ability-arrival.test.ts`.
+  **Seen** (two players, `--warp-speed 2`): the friend's page cuts from the village to the loco (first frame:
+  [train](cutscenes-for-everyone/boiler-show-train.png), the red loco three-quarters front, the first wisp over the
+  chimney), the wake's dark coughs rise in a column, the halt's roof drops in behind the train and the little guys run
+  in; 4.47 s later it cuts to the breaker lying on the pedestal under the crane's hook
+  ([forge](cutscenes-for-everyone/boiler-show-forge.png)), and 2.5 s later home behind Buddy. The eval: longest 6.98 s,
+  one forge turn, no flourish, `boiler` marked seen. Solo under `--reduced-motion`: no shot, the call 3.0 s after the
+  trains edge, no camera cut in the clip. The fitter's "two little guys at the saddle before the wake ends" check fails
+  on this branch and on `origin/main` alike (same command, 20 s capture), so it is not this step's.
+  **Not seen:** the show on a page with a card up or gliding at the edge (the pull-out's existing waits); a seat taken
+  mid-show; the hand-back's turn toward the forge as a picture (the eval counts it); sound from the shot's camera (the
+  clip is silent); a reload after the edge (restore sets `wasAwake`, read in code only); anything on a device.
 
 - [ ] **3. (Only if the owner says yes to open question 2.) The "Steam" card after the show, for every page.** File:
   `boiler-view.ts`: `BOILER_CARD = true`. The card is owed from the trains edge to every page (not only `fittedByMe`)
