@@ -182,7 +182,31 @@ test('the walk from the trail over the landing onto the deck steps at most 10 cm
   }
 });
 
-test('off the bridge the path is never steeper than MOVER.walkSlope', () => {
+test('a mount correction clears the lower sphere against the sloping ground beside the landing', () => {
+  const resolve = sourceFunction<
+    (position: THREE.Vector3Like, solids: never[], height: typeof g.islandH) => THREE.Vector3Like | null
+  >('src/entities/ring-island/view.ts', 'ringSceneryExit', { THREE, PLAYER_R });
+  const x = 1379.69,
+    z = -878.461;
+  const exit = resolve({ x, y: g.islandH(x, z), z }, [], g.islandH);
+  assert.ok(exit);
+  const uphill = new THREE.Vector3(exit.x - 0.14, g.islandH(exit.x - 0.14, exit.z), exit.z);
+  const distance = uphill.distanceTo(exit);
+  assert.ok(distance >= PLAYER_R - 0.02, `ground is ${(PLAYER_R - distance).toFixed(3)} m inside the sphere`);
+});
+
+test('taper clearance includes the wider upper rim when the top radius exceeds the base', () => {
+  const outOf = sourceFunction('src/place/sites.ts', 'outOf', {});
+  const make = sourceFunction<(shape: object) => { exit(position: THREE.Vector3Like): unknown }>(
+    'src/entities/ring-island/view.ts',
+    'clearanceShape',
+    { THREE, PLAYER_R, siteExit, outOf },
+  );
+  const taper = make({ kind: 'cylinder', rTop: 2, rBottom: 1, h: 2, segments: 7 });
+  assert.ok(taper.exit({ x: 2.1, y: 1, z: 0 }), 'body sphere overlaps the top vertex at (2, 1, 0)');
+});
+
+test('off the bridge the path, the landing included at every offset, is never steeper than MOVER.walkSlope', () => {
   assert.ok(facts.steepest.grade <= MOVER.walkSlope, `${facts.steepest.grade} at ${facts.steepest.at} m`);
   assert.ok(facts.steepest.grade < 0.25, `${facts.steepest.grade} at ${facts.steepest.at} m`);
 });

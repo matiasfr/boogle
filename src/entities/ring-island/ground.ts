@@ -287,9 +287,18 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
         const p = polygon[k]!,
           q = polygon[(k + 1) % polygon.length]!;
         if (Math.abs(side.inside(p)) > 1e-8 || Math.abs(side.inside(q)) > 1e-8) continue;
-        const out = (v: Vertex) => ({ x: v.x + side.ox * 1e-6, z: v.z + side.oz * 1e-6 });
-        const op = out(p),
-          oq = out(q),
+        const length = Math.hypot(q.x - p.x, q.z - p.z);
+        if (length < 1e-5) continue;
+        // Just outside, and a hair along the edge from each end: an end on a corner of the footprint would otherwise be
+        // read on the next footprint's line (the deck's, at a), not on the ground beside this edge.
+        const tx = ((q.x - p.x) / length) * 1e-6,
+          tz = ((q.z - p.z) / length) * 1e-6;
+        const out = (v: Vertex, along = 0) => ({
+          x: v.x + side.ox * 1e-6 + tx * along,
+          z: v.z + side.oz * 1e-6 + tz * along,
+        });
+        const op = out(p, 1),
+          oq = out(q, -1),
           hp = islandH(op.x, op.z),
           hq = islandH(oq.x, oq.z);
         if (Math.abs(hp - p.y) < 1e-6 && Math.abs(hq - q.y) < 1e-6) continue;

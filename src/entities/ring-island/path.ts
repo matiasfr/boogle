@@ -136,25 +136,28 @@ export function summitPathFacts(g: IslandGround, centre: { x: number; z: number 
       dz = bz - az,
       span = Math.hypot(dx, dz);
     if (i !== bridgeLeg && span > 0) {
-      let previous = g.islandH(ax, az),
+      const offsets = [-1.3, -1, -0.5, 0, 0.5, 1, 1.3];
+      let previous = offsets.map(() => NaN),
         previousD = 0;
+      // The approach leg ends on the landing (ground.ts LANDING): its ground is cut on purpose under the path, so it
+      // counts for grade (at every offset, as it twists) and not for cut. It stops a hair short of a, where the deck's
+      // capped footprint begins.
+      const toA = i === bridgeLeg - 1;
       for (let k = 0; k <= Math.ceil(span / 0.5); k++) {
-        const d = Math.min(k * 0.5, span);
-        if (i === bridgeLeg - 1 && d >= span - SUMMIT_BRIDGE.approach / 2 - 1e-8) break;
+        const d = Math.min(k * 0.5, toA ? span - 1e-6 : span),
+          onLanding = toA && d >= span - SUMMIT_BRIDGE.approach / 2 - 1e-8;
         const x = ax + (dx * d) / span,
-          z = az + (dz * d) / span,
-          h = g.islandH(x, z);
-        if (d > previousD) {
-          const grade = Math.abs(h - previous) / (d - previousD);
-          if (grade > steepest.grade) steepest = { grade, at: length + d };
-        }
-        for (const off of [-1.3, -1, -0.5, 0, 0.5, 1, 1.3]) {
-          const xx = x + (dz * off) / span,
-            zz = z - (dx * off) / span,
-            depth = g.cone(xx, zz) - g.islandH(xx, zz);
-          if (depth > cut.depth) cut = { depth, at: length + d };
-        }
-        previous = h;
+          z = az + (dz * d) / span;
+        const heights = offsets.map((off) => g.islandH(x + (dz * off) / span, z - (dx * off) / span));
+        offsets.forEach((off, n) => {
+          if (d > previousD && (onLanding || off === 0)) {
+            const grade = Math.abs(heights[n]! - previous[n]!) / (d - previousD);
+            if (grade > steepest.grade) steepest = { grade, at: length + d };
+          }
+          const depth = g.cone(x + (dz * off) / span, z - (dx * off) / span) - heights[n]!;
+          if (!onLanding && depth > cut.depth) cut = { depth, at: length + d };
+        });
+        previous = heights;
         previousD = d;
       }
     }

@@ -763,8 +763,9 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     function trail(d: number, side: number) {
       const p = on(d, side),
         c = on(d, 0);
-      const follow = g.islandH(p.x, p.z) + 0.04,
-        level = g.islandH(c.x, c.z) + 0.12;
+      // The uncut hillside: on the last row the finished ground is already the landing, 1 cm up.
+      const follow = g.uncappedH(p.x, p.z) + 0.04,
+        level = g.uncappedH(c.x, c.z) + 0.12;
       const y = Math.max(follow, level + (follow - level) * THREE.MathUtils.smoothstep(d, from, from + 3));
       return new THREE.Vector3(p.x, y, p.z);
     }

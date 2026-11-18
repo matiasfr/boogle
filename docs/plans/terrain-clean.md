@@ -426,12 +426,16 @@ which also edit `terrain.ts`.
   the grid's triangles (`ground.ts`, a trimesh in place of those cells; heightfield tiles round it). The cap stays in
   the deck's footprint plus 0.5 m for its first 4 m. The landing (17 November call) is the ground itself over the path's
   last 4 m and 2.6 m: it starts 1 cm over the trail across its width and twists to the deck's level top at a (14.932
-  m), cut into the uphill side by up to 0.21 m under it and drawn as path. Worst step underfoot from 7 m before a to
-  1 m past it, at 0 and ±1.2/±1.3 m: 0.014 m. Mount clearance lifts a player clear of the slope as well as the solids.
-  The tapered cylinder bound uses the larger radius. Level-check: path 330.1 m, span 28.0 m, grade 6.4 %, clearance 9.5
-  m, abutment cut 0.692 m (the cap and the landing's cut), off-bridge cut 0.02 m, `ring (planned): ok`. Walk look by
-  real input, lanes 0 and ±1.2 m: all three reach 1 m past b with no stall; the parapets hold the outer lanes at ±0.93 m
-  on the deck. Stills: `docs/world/ring-footbridge-cap/walk-*.png`. Not tested on a device.
+  m), cut into the uphill side by up to 0.128 m under it and drawn as path. Worst step underfoot from 7 m before a to
+  1 m past it, at 0 and ±1.2/±1.3 m: 0.014 m. The landing's grade along the path, at every offset: at most 0.165 (in
+  any direction 0.253 at its downhill start corner, the trail's own cross-fall included). Mount clearance lifts a player
+  clear of the slope as well as the solids. The tapered cylinder bound uses the larger radius. Level-check: path 330.1 m,
+  span 28.0 m, grade 6.4 %, clearance 9.5 m, abutment cut 0.692 m (the cap and the landing's cut), off-bridge cut 0.02 m,
+  `ring (planned): ok`. Walk look by real input, lanes 0 and ±1.2 m: all three reach 1 m past b with no stall; the
+  parapets hold the outer lanes at ±0.93 m on the deck. Re-review fixes: the uphill lip wall runs whole to the deck's
+  end, and the drawn trail meets the landing with no crack. Downhill near a the landing stands up to 0.36 m over the
+  hillside (logged for the owner by the re-review). Stills: `docs/world/ring-footbridge-cap/walk-*.png`. Not tested on a
+  device.
 
 **Checkpoint C (end of 2b):** level-check, the census, `ring-island-walk` once, one proof look per step, one ship per
 step or one for all three if they are ready together.
