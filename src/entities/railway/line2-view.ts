@@ -643,6 +643,8 @@ export async function createRailwayLine2(
     sinceTick = 0,
     shownTick = -1;
   const feedLaunched = [0, 0, 0];
+  /** Per frame: its full bill behind a gate has been seen in the confirmed world (no action of yours pending). */
+  const gateFull: boolean[] = [];
   let deposits: { active: () => boolean; station: number; kind: number }[] = [];
   const from = new THREE.Vector3();
   /** The machine has crossed to line two: the forge is lit and the turn has played. */
@@ -1191,6 +1193,12 @@ export async function createRailwayLine2(
         });
         const gated = spec.gate === 'quarry' ? !gateOpen : spec.gate === 'sea' ? !stock.sea : false;
         const waiting = gated && job.stock === spec.bill[0] && job.railStock === spec.bill[1];
+        // The intake shuts on accepted state only (decisions-rail 2026-11-17, finished-deposits-read): a funded or
+        // laid bill (the server alone starts one), or a full one behind its gate once the world the views see is the
+        // confirmed one, so a predicted last piece never shuts it. Q7's frame stays shut on the pier once laid (stowed).
+        const full = waiting && (gateFull[k] === true || rd.pending() === 0);
+        gateFull[k] = full;
+        frame.shut(job.start >= 0 || !!job.completion || full);
         // A train-fed frame's bill says where its kit is while it is short (owner, 14 November, lost after the
         // crossing's finale: "I missed those resources"): on the rack and shelf beside it, or still on the way.
         const kit =
