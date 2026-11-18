@@ -1,6 +1,8 @@
-> **Status:** planned 18 November 2026 (planner), not built. Base `origin/main` at `b0f4bb58`. Answers the open owner
-> question "The railhead re-routes trains before the deck moves" on its recommendation: hold the re-route until the
-> haul settles. Needs **`WORLD_NS` v60**. Not a port from Place.
+> **Status:** planned 18 November 2026 (planner); steps 1 and 2 built 18 November on branch
+> `claude/railhead-reroute` (not shipped; [as built](#steps-1-and-2-as-built-18-november-2026)), step 3 not started.
+> Answers the open owner question "The railhead re-routes trains before the deck moves" on its recommendation: hold the
+> re-route until the haul settles. The reset is **`WORLD_NS` v61** (separate capacities took v60, #2152;
+> [decision](../decisions-rail.md#d-2026-11-18-railhead-reroute-reset)). Not a port from Place.
 
 # The railhead re-route waits for the deck
 
@@ -77,7 +79,7 @@ train rows.
 
 Rows from `npm run models` (18 November). No new test files (state rule 8).
 
-- [ ] **1. The field, its tick, the re-route. Sim, high risk; Codex gpt-6.2-astra high.** Edit
+- [x] **1. The field, its tick, the re-route. Sim, high risk; Codex gpt-6.2-astra high.** Edit
       `railway-components.ts`, `railway-sys-ring.ts` (system, `ringFootSet`, comments), `railway-systems.ts`
       (`RAIL_TICK`), `railway-queries.ts`, `railway-queries-trains.ts`, `railway-check-ring.ts`, `railway-seed-ring.ts`.
       `test/railway-ring.test.ts`: `a pair leaves the trains' Railhead at the old head until the haul settles`; `at
@@ -86,7 +88,7 @@ Rows from `npm run models` (18 November). No new test files (state rule 8).
       settle`; `a rivet struck before the last haul settles`; the 5,000-op fuzz checks the invariants.
       `test/railway-check-ring.test.ts`: each invariant refused. Verify: those, the re-pins, `node dev/ship-check.ts`.
       Review: a fresh Codex review delegate, gpt-6.2-astra high, a failing test per suspected defect.
-- [ ] **2. Through a real server. Same row.** `server/test/railway-ring-host.test.ts`, real host, two sessions and
+- [x] **2. Through a real server. Same row.** `server/test/railway-ring-host.test.ts`, real host, two sessions and
       mirrors, `rail.footSet` as a real `r:edit` (state rule 23): `mirrors hold the old stop through the haul, then the
       new stop and re-routed trains in one packet set`; `a checkpoint mid-haul round-trips stop and re-routes once after
       reload`; `a mirror joining mid-haul sees the old head`. Verify: that file; `npm run loop -- run` (`bents` beat
@@ -100,6 +102,73 @@ Rows from `npm run models` (18 November). No new test files (state rule 8).
       (`railway-ring-bot.ts --rail-seed deck-laid`, all fourteen footings); the footing wagon trip by trip with every
       delivery tick (state rule 14); a two-tab look with a mid-haul arrival. Code review: fresh Codex delegate on the
       committed branch, gpt-6.2-astra medium. Visual review: main session.
+
+## Steps 1 and 2 as built (18 November 2026)
+
+Branch `claude/railhead-reroute`, not shipped. Built as written, with three refinements:
+
+- **`checkRingStop` runs before the trains' check**, not inside `checkRing`: `checkTrains` reads the stop through
+  `stopsOf`, so a bad `stop` is refused by name (`ring bounds`, `ring stop past the head`, `ring stop ahead of the
+  deck`, `ring stop behind a settled haul`) instead of as a train fault or an out-of-range `RING_HEAD` index. The two
+  tick invariants need the rule tick the world stands at (`railwayCheck(w, tick)`, as the server's load passes); with
+  no tick (`RAILWAY_MAX_INT`, the seed and test drivers' `invariant`) only the bound and "not past the head" run.
+- `haulHead(a)` (`railway-ring-haul.ts`) is the build head the plan calls `headOf(a)`; `ringHead` and `haulTarget` use it.
+- `railCallPlatform` follows `ringOpen(w).head`, so the client's lever reach (`leverPlatform`) and the server's agree.
+
+**Tests.** `test/railway-ring.test.ts`: the five named cases and the fuzz checking `railwayCheck(w, tick)` after every
+op; `test/railway-check-ring.test.ts`: each of the three invariants refused (and the bound). Updated to the new rule:
+`test/railway-r3b2-review.test.ts` (the burst and the balanced hold re-route at `haulEnd`; the rack and jib judged at
+the build head, the lever at `stop`), the tick census (`rail.ringStop`, 2.75). Step 2:
+`server/test/railway-ring-host.test.ts`, real host, two sessions, `rail.footSet` as `r:edit`: mirrors hold the old
+stop through the haul and get the new stop with the re-routed train in the settle's packet set; a checkpoint
+mid-haul round-trips `stop` and the stop moves and the train is re-routed once, at the settle, after the reload; a
+mirror joining mid-haul sees the old head, then the new one.
+
+**The footing wagon, trip by trip (state rule 14).** Driven from `deck-laid` with the seeds' policy (a footing set the
+tick one is on the railhead rack, so each load's pairs land on its arrival tick), to the rivet and 3,000 ticks on;
+rule ticks, v60 then v61:
+
+| Trip | Railhead arrival and delivery (6 footings) | Leaves the Railhead | Village | Works load | Stop moves |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 8823 / 8823 | 8824 / 8873 | 9297 / 9346 | 9481 / 9530 | at the pairs 8823 / 9030 (0 to 3) |
+| 2 | 9979 / 10028 | 9980 / 10078 | 10483 / 10581 | 10667 / 10765 | 9979 / 10235 (3 to 6) |
+| 3 | 11195 / 11293 (the fourteenth and the four weights, the rivet) | 11196 / 11343 | 11729 / 11876 | | 11195 / 11420 (6 to 7) |
+| after | Ring Island 12423 / 12570, Village 13117 / 13263 | | | | |
+
+The first delivery is unchanged; **every later delivery moved, 49 ticks per earlier trip** (+4.9 s, +9.8 s, then
++14.7 s after the rivet). Why: under v60 the pair on the wagon's arrival tick re-routed it at once (a signal stand
+with no dwell left), so it left the next tick; now the stop holds through the haul and the wagon stands its own
+50-tick dwell at the old head, as the plan's design says ("No train waits for the haul" holds: it never waits past
+its dwell). It is the seed policy's instant pair that made v60's release happen every trip; a player carrying a
+footing 15 m from rack to jib rarely completes a pair inside the 5 s dwell. No wagon trip waited for a haul, and the
+haul distances matched trip for trip (the stop had settled before each next arrival).
+
+**Pinned fixtures, re-pinned under v61 by their own writers, each keyed against v60.** A control tree (v61's column,
+v60's re-route at the pair) separates the column from the rule.
+
+- Schema (`rail-schema.json`): only `Aperture.stop` (`u8`) and `worldNs`.
+- Seed golden: 46 of 56 stages are v60's state with a zero `stop` column (`deck-laid` included: its seed sets no pair);
+  the 10 built on the ring's footings move by the rule: `gap-footed` and `leaf-raised` (+98 ticks), `ring-joined`
+  (+98), `steel-kit` and `steel-lit` (+147), `steel-home`, `boiler-long`, `gorge-open`, `gorge-mid` and
+  `gorge-reached` (+80 or +81), their trains, line, town, yard and clocks rows following.
+- Op-stream golden: 279 records, every name and result exact; every hash moves (the column).
+- Tick-order heads: re-recorded (`rail.ringStop` in the sequence, the hashes).
+- M12 trace: 82 traces, no frame count changes; the column moves every hash, the rule only `ring-joined` a, b and c.
+- Host trace: 8,604 records; only 205 checkpoint namespaces, hashes and checksums with the zero column and 5,671
+  `snapBytes` samples; the control is byte-identical to v61 (the rule changes nothing in it).
+- `prefab-halts.json`: the rule moves three lever lamps (`calling`: Camp at `gap-footed` and `ring-joined`, the Village
+  at `stack-3`, the trains' phase at those seeds' ticks); the writer also records the `gap-footed` Railhead lever's `u`
+  as 235.60000000000002 for 235.6, which the column-only control reproduces (inside `prefabGolden`'s numeric tolerance).
+
+**Not passing: the greybox route's pacing gates (a wall for the owner).** `test/helpers/railway-route-rules.ts` runs
+gates 12, 14 and 15 and "a redirected train gets 50 dwell ticks" on `ringRivetSequence`, which strikes the rivet
+mid-haul on purpose and is pinned so "those measured bounds are not silently loosened". Under v61 the rivet comes 147
+ticks later in that sequence (the wagon's dwells) and the stop settles 77 ticks after it: gate 14's rivet to the Gorge
+is 3,919 ticks (bound 3,700, v60 3,623) and one later frame idles 712 (bound 600); gate 15's steel kit reaches the
+yard at +588 against its pinned build-2 +650; gate 12's third join misses 1,050 ticks; the dwell test's slot changes.
+The same gates fail on v60's rules when only the rivet moves: 50 ticks later fails gate 15, 127 later fails gates 14
+and 15 and four more (the Gorge at 5,372). So they measure the fleet's phase at this one workload's rivet; whether to
+re-measure them at v61's phase, loosen them, or change the workload is the owner's call, not this build's.
 
 ## Level findings and risks
 
