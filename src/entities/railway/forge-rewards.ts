@@ -1,7 +1,8 @@
 // The forge's rewards are its own products (docs/plans/forge-made-rewards.md; owner, 17 November). When the 24th log
-// goes in, the pack frame stands bare on a timber block at its spot and one of the frame's log haulers fetches an offcut from
-// the forge frame's foot, carries it over and hammers the pack together; the straps go on with a knock. The scaffold
-// pair keep hammering the walls the 32 logs pay for.
+// goes in, the pack frame stands bare on a timber stand at its spot (chest height, in the station frames' timber with
+// their amber caps, a coral glimmer while it waits) and one of the frame's log haulers fetches an offcut from the forge
+// frame's foot, carries it over and hammers the pack together; the straps go on with a knock. The scaffold pair keep
+// hammering the walls the 32 logs pay for.
 // Local presentation over accepted state: the pack is drawn, and offered, from the accepted edge; the errand plays once,
 // on a live crossing seen with no prediction pending, never on a reload, a late join or a resync (restore() snaps it
 // done), and nothing plays under reduced motion. Created by line2-view.ts beside the forge's finish.
@@ -14,6 +15,7 @@ import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { merged } from '../../render/part-geometry.ts';
 import { flat } from '../../render/flat.ts';
+import { softGlow } from '../../place/look.ts';
 import { H } from '../../place/terrain.ts';
 import { packParts } from '../../render/gear-models.ts';
 import { makeAxeModel } from '../../render/axe-models.ts';
@@ -24,7 +26,8 @@ import { line2PackReady } from '../../sim/railway-queries-line2.ts';
 
 /** The errand's timings, in seconds: the hammering at the pack, a leg that counts as arrived (the walk to the offcut
  * gets longer, as the nearest stroller can start across the yard), the whole errand's cap, and how long the pack takes
- * to finish itself with no little guy within `near` m of the offcut. `packShow`: the pack's scale on its block. */
+ * to finish itself with no little guy within `near` m of the offcut. `packShow`: the pack's scale on its stand, a
+ * back-sized frame that reads from the unload point at follow distance (owner's review, 18 November). */
 export const FORGE_REWARDS = {
   hammer: 1.4,
   leg: 6,
@@ -32,20 +35,26 @@ export const FORGE_REWARDS = {
   packCap: 16,
   packSelf: 1.5,
   near: 30,
-  packShow: 1.5,
-  axeShow: 1.4,
+  packShow: 2.4,
+  axeShow: 2.2,
   roofHoldMax: 5,
   cool: 3,
 } as const;
-const HOT = new THREE.Color('#ff7a2a'),
-  /** The steel's own colour while hot: near-white steel in daylight swallows an emissive glow on its own. */
-  HOT_STEEL = new THREE.Color('#9a3a12'),
+/** Steel out of the fire, hottest first: yellow, orange, red, then dark before it greys back to steel (heat 1 to 0).
+ * The steel's own colour follows it, as near-white steel in daylight swallows an emissive glow on its own; going through
+ * dark rather than straight from red to the near-white steel keeps it from passing through pink. */
+const HEAT_RAMP: readonly [number, THREE.Color][] = [
+    [1, new THREE.Color('#ffd04a')],
+    [0.7, new THREE.Color('#ff8a1c')],
+    [0.4, new THREE.Color('#d8461a')],
+    [0.18, new THREE.Color('#5a4640')],
+  ],
   SPARK = new THREE.Color('#ffb347'),
   SPARK_WHITE = new THREE.Color('#fff1c2');
 /** The plinth's top above the pedestal's foot (boiler-view.ts), and the lean: how far out from the pedestal's centre
  * the axe's foot stands and how far it tips toward the plinth, its head clear over the plinth's edge. */
 const PLINTH = 0.6,
-  LEAN = { out: 1.55, tilt: 0.38, toward: 0.5 };
+  LEAN = { out: 1.4, tilt: 0.38, toward: 0.5 };
 /** A cast part (the boiler, then the breaker) waits on the pedestal: the axe leans against the plinth instead, so a
  * cast never waits for the optional axe (owner, 17 November, as recommended). Accepted state, read every frame. */
 export const axeLeans = (w: ReadWorld) => boiler(w).state === 'pedestal' || works(w).breaker === 1;
@@ -76,8 +85,12 @@ export function axeHeadAt(lean: boolean, out: THREE.Vector3) {
   poseAxe(scratch, lean);
   return out.set(0, HEAD_Y * FORGE_REWARDS.axeShow, 0).applyMatrix4(scratch.matrixWorld);
 }
-const BLOCK = { w: 1.05, h: 0.22, d: 0.85 },
+/** The pack's stand: a shelf at about a Buddy's chest, `w` wide and `d` deep (the pack's cradle runs back into it), two
+ * back posts `post` high with a rail across and the station frames' amber caps. */
+const STAND = { shelf: 0.7, w: 1.9, d: 2.05, post: 2.35 },
   OFFCUT = 1.2;
+/** The pack's head above its spot: where its prompt points and its card starts (tools.ts). */
+export const PACK_HEAD_Y = STAND.shelf + 1.25;
 type Errand = 'done' | 'fetch' | 'carry' | 'hammer' | 'self';
 
 export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedView) {
@@ -88,7 +101,7 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
   const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92 });
 
   // The pack: the worn frame's own parts, standing as on a back, its straps toward the unload point where the bill is
-  // paid, on a timber block. Bare (no straps or buckles) until the little guy is done.
+  // paid, on its stand. Bare (no straps or buckles) until the little guy is done.
   const isStrap = (kind: string) => kind === 'packstrap' || kind === 's';
   const bare = keep(merged(packParts().filter((p) => !isStrap(p[0]))));
   const straps = keep(merged(packParts().filter((p) => isStrap(p[0]))));
@@ -104,22 +117,49 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
   const ux = LINE2_FORGE.x / 100 - at.x,
     uz = LINE2_FORGE.z / 100 - at.z;
   pack.rotation.y = Math.atan2(-ux, -uz);
-  const block = new THREE.Mesh(keep(new THREE.BoxGeometry(BLOCK.w, BLOCK.h, BLOCK.d)), flat('#8a6236', 0.9));
-  block.position.y = BLOCK.h / 2;
+  // The stand, in the pack's own space (+z runs back from the straps into the stand): a plank shelf on four legs, two
+  // back posts rising past the pack with a rail across, capped amber like every station frame's posts.
+  const wood = flat('#8a6236', 0.9),
+    post = flat('#7f5630', 0.9),
+    amber = flat('#f2a51a', 0.8);
+  const back = STAND.d - 0.12,
+    front = -0.12,
+    mid = (back + front) / 2;
+  const part = (w: number, h: number, d: number, x: number, y: number, z: number, m: THREE.Material) => {
+    const mesh = new THREE.Mesh(keep(new THREE.BoxGeometry(w, h, d)), m);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = mesh.receiveShadow = true;
+    pack.add(mesh);
+  };
+  part(STAND.w, 0.1, STAND.d, 0, STAND.shelf - 0.05, mid, wood);
+  for (const sx of [-1, 1]) {
+    const x = (sx * (STAND.w - 0.12)) / 2;
+    part(0.12, STAND.shelf - 0.1, 0.12, x, (STAND.shelf - 0.1) / 2, front + 0.06, post);
+    part(0.14, STAND.post, 0.14, x, STAND.post / 2, back, post);
+    part(0.22, 0.18, 0.22, x, STAND.post + 0.09, back, amber);
+  }
+  part(STAND.w, 0.12, 0.12, 0, STAND.post - 0.25, back, wood);
+  part(STAND.w, 0.1, 0.1, 0, 0.25, back, wood);
   const frame = new THREE.Mesh(bare, material),
     strapped = new THREE.Mesh(straps, material);
   for (const m of [frame, strapped]) {
-    m.position.y = BLOCK.h;
+    m.position.y = STAND.shelf;
     m.scale.setScalar(FORGE_REWARDS.packShow);
-  }
-  for (const m of [block, frame, strapped]) {
     m.castShadow = m.receiveShadow = true;
     pack.add(m);
   }
+  // The chests' low glimmer (crates-view.ts), in the pack's coral: a waiting reward still signals from across the yard.
+  const glimmer = softGlow('#ffc79e', 0.4, 'up');
+  glimmer.mat.blending = THREE.NormalBlending;
+  const glimmerMesh = new THREE.Mesh(
+    keep(new THREE.CylinderGeometry(1.15, 1.35, 1.9, 14, 1, true).translate(0, STAND.shelf + 0.95, mid)),
+    glimmer.mat,
+  );
+  pack.add(glimmerMesh);
   pack.visible = false;
   owner.add(pack);
   /** Where the card flies from and the prompt points: the pack's head. */
-  const head = at.clone().add(new THREE.Vector3(0, BLOCK.h + 0.7 * FORGE_REWARDS.packShow, 0));
+  const head = at.clone().add(new THREE.Vector3(0, PACK_HEAD_Y, 0));
 
   // The proper axe on the forge's pedestal, offered once the forge is lit: upright in a small timber block on the
   // plinth, its edge turned toward hardwood 232 (in sight 44 m north), or leaning on the plinth's north side while a
@@ -129,9 +169,9 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
     axeModel = makeAxeModel('proper');
   axeModel.scale.setScalar(FORGE_REWARDS.axeShow);
   axe.add(axeModel);
-  const socket = new THREE.Mesh(keep(new THREE.BoxGeometry(0.34, 0.16, 0.34)), flat('#8a6236', 0.9));
+  const socket = new THREE.Mesh(keep(new THREE.BoxGeometry(0.5, 0.2, 0.5)), flat('#8a6236', 0.9));
   socket.castShadow = socket.receiveShadow = true;
-  socket.position.copy(AXE_AT).y += 0.08;
+  socket.position.copy(AXE_AT).y += 0.1;
   axe.visible = socket.visible = false;
   owner.add(axe, socket);
   let leaning: boolean | null = null;
@@ -145,11 +185,20 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
   let heat: 'cool' | 'waiting' | 'cooling' = 'cool',
     heatT = 0,
     arrivals = 0;
+  const tint = new THREE.Color();
   const glow = (k: number) => {
+    // Where `k` falls on the ramp; below its last stop the dark fades back into the steel.
+    let i = 0;
+    while (i < HEAT_RAMP.length - 1 && k < HEAT_RAMP[i + 1]![0]) i++;
+    const [k0, c0] = HEAT_RAMP[i]!,
+      [k1, c1] = HEAT_RAMP[i + 1] ?? [0, null];
+    if (c1) tint.copy(c1).lerp(c0, (k - k1) / (k0 - k1));
+    else tint.copy(c0);
     for (const { m, steel } of hot) {
-      m.color.copy(steel).lerp(HOT_STEEL, k);
-      // Above 1: the glow reads against the daylight's exposure (HDR, as the forge's mouth does).
-      m.emissive.copy(HOT).multiplyScalar(3 * k);
+      if (c1) m.color.copy(tint);
+      else m.color.copy(steel).lerp(tint, k / k0);
+      // Above 1: the glow reads against the daylight's exposure (HDR, as the forge's mouth does); none once it's dark.
+      m.emissive.copy(tint).multiplyScalar(k > HEAT_RAMP.at(-1)![0] ? 2.5 * k : 0);
     }
   };
   /** The axe arrives: one hammer ring at the pedestal and a burst of sparks off the head; it cools from here. At most
@@ -184,8 +233,9 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
 
   // The offcut: one timber left over from the frame, lying at the frame's foot on the pack's side.
   const toPack = new THREE.Vector2(at.x - LINE2_FORGE.x / 100, at.z - LINE2_FORGE.z / 100).normalize();
-  const fetchAt = { x: LINE2_FORGE.x / 100 + toPack.x * 2.6, z: LINE2_FORGE.z / 100 + toPack.y * 2.6 };
-  const workAt = { x: at.x - toPack.x * 0.95, z: at.z - toPack.y * 0.95 };
+  // At the frame's foot on the pack's side, kept east of the bill board (1.8 m west, 2.4 m south of the frame).
+  const fetchAt = { x: LINE2_FORGE.x / 100 + 0.8, z: LINE2_FORGE.z / 100 - 2.8 };
+  const workAt = { x: at.x - toPack.x * 1.2, z: at.z - toPack.y * 1.2 };
   const offcut = new THREE.Mesh(keep(new THREE.BoxGeometry(0.16, 0.16, OFFCUT)), flat('#a07444', 0.9));
   offcut.castShadow = true;
   offcut.visible = false;
@@ -243,8 +293,9 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
       wait = FORGE_REWARDS.packSelf;
     }
   }
-  /** `crossing`: line two's restore as the machine crosses, a few seconds after the lighting: an arrival in flight
-   * keeps its heat. Any other restore (a reload, a late join, a resync) finds the axe cool. */
+  /** `crossing`: line two's restore as the machine crosses, a few seconds after the lighting: an arrival under way
+   * (waiting for its cut or its fallback, or cooling) keeps going, clank and sparks included. Any other restore (a
+   * reload, a late join, a resync) finds the axe cool. */
   function restore(crossing = false) {
     readyShown = line2PackReady(rd.world());
     finish(false);
@@ -257,6 +308,7 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
     endCrew();
     for (const g of geometries) g.dispose();
     material.dispose();
+    glimmer.mat.dispose();
   });
 
   return {
@@ -290,6 +342,7 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
       const ready = line2PackReady(w),
         claimed = rail(w).pack;
       pack.visible = ready && !claimed;
+      if (pack.visible) glimmer.strength.value = 0.4 + 0.06 * Math.sin(performance.now() * 0.0025);
       // A crossing counts once the view is the confirmed world (nothing of yours pending): never on prediction.
       if (rd.pending() === 0) {
         if (ready && !readyShown && !claimed) start();

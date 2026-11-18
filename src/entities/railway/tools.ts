@@ -17,7 +17,7 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { readableUnlit, readableIntensity } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { AXE_REWARD, JUMP_REWARD, PACK_REWARD } from './reward-data.ts';
-import { AXE_AT, axeHeadAt, axeLeans } from './forge-rewards.ts';
+import { AXE_AT, PACK_HEAD_Y, axeHeadAt, axeLeans } from './forge-rewards.ts';
 import { airJumpApexForce } from '../player/apex-float.ts';
 import { heavyLoad } from '../../sim/railway-queries.ts';
 import { linePanels } from '../../sim/railway-line-layout.ts';
@@ -83,7 +83,7 @@ export async function createRailwayTools(
   // draws it): whoever opens it opens it for everyone. Its prompt and card start at the frame's head.
   const packAt = new THREE.Vector3(LINE2_PACK.x / 100, 0, LINE2_PACK.z / 100);
   packAt.y = land.H(packAt.x, packAt.z);
-  const packTarget = packAt.clone().add(new THREE.Vector3(0, 1.3, 0));
+  const packTarget = packAt.clone().add(new THREE.Vector3(0, PACK_HEAD_Y, 0));
   const packPrize = shapes.merged(gear.packParts());
   geometries.push(packPrize);
 
