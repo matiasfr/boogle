@@ -308,7 +308,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       checks: `${look}; npm run level-check; npm run island-map; perf for many meshes/lights`,
       lookalikes: ['src/pois/lighthouse/site.ts', 'src/pois/lighthouse/index.ts'],
       warning:
-        'The lighthouse onFrame lifecycle is suppressed debt until the home redesign. New POIs use entities, site reach targets and existing loader globs.',
+        'POI things are prefab records (src/content/prefabs/pois.ts) under one entity owner per POI; new POIs use records, site reach targets and existing loader globs.',
     },
   ],
   control: [

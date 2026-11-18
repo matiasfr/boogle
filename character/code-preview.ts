@@ -6,6 +6,7 @@ import { itemModel } from '../src/player/item-models.ts';
 import { millBody, rotorParts, HUB_UP } from '../src/pois/windmills/model.ts';
 import { sailAngle } from '../src/pois/windmills/motion.ts';
 import type { CodeId } from './code-descriptors.ts';
+import type { Piece } from '../src/prefab/builders.ts';
 import type { KitPart } from './engine-previz.ts';
 import type { Figure } from './car-previz.ts';
 import { partGeometry } from '../src/render/box-plan.ts';
@@ -62,7 +63,11 @@ export async function codePreview(id: CodeId, kit?: KitPart, figure?: Figure): P
     });
     group.add(model);
   } else if (id.startsWith('windmill')) {
-    if (id !== 'windmill-rotor') millBody(parts);
+    if (id !== 'windmill-rotor') {
+      const pieces: Piece[] = [];
+      millBody(pieces);
+      for (const p of pieces) addPart(parts, p.geometry, p.matrix, p.color);
+    }
     if (id !== 'windmill-body') {
       rotor = new THREE.Mesh(rotorParts(), material);
       rotor.name = 'stage-rotor';

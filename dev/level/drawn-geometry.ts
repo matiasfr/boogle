@@ -184,6 +184,7 @@ export async function collectDrawnGeometry() {
     const build = builders.get(visual.builder);
     if (!build) throw new Error(`z-fight adapter missing builder ${visual.builder} (${p.id})`);
     const result = build({ ...visual.params, ...p.params });
+    if ('pieces' in result) throw new Error(`z-fight adapter: ${p.id}'s pieces are merged by their POI`);
     if ('parts' in result) addParts(result.parts, matrix, p.id);
     else if ('construction' in result) result.construction.parts.forEach((b, i) => addBox(b, `${p.id}/box-${i}`));
     else if ('object' in result) {

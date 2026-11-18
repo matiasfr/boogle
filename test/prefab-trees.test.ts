@@ -22,6 +22,8 @@ import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import type { TreePose } from '../src/render/place-tree-view.ts';
 import type { Body } from '../src/physics/engine.ts';
 import { treeColliderCase } from './helpers/tree-collider-case.ts';
+import { capturePoisAfter, sameTurns } from './helpers/poi-golden.ts';
+import { prefabGolden } from './helpers/prefab-golden.ts';
 const { loadLevel } = await import('../dev/level/level.ts');
 
 test('tree identities, poses, scatter sequence and colliders are byte-identical to pre-prefab code', () => {
@@ -164,4 +166,31 @@ test('runtime scatter body grouping retains the golden home bodies and tile orde
   });
   buildBodies();
   assert.deepEqual(actual, expected);
+});
+
+// Step 13 (src/pois/): the fixture was captured on the pre-record code (capturePoisBefore at 093f8029) and is never
+// rewritten. Runtime values use the shared tolerance; part matrices are full precision, before Float32 quantization.
+test('POI parts, poses, colliders and lights match the pre-record code', async () => {
+  const actual = sameTurns(JSON.parse(JSON.stringify(await capturePoisAfter(loadLevel(null).groundAt))));
+  prefabGolden(actual, sameTurns(JSON.parse(fs.readFileSync('test/fixtures/prefab-pois.json', 'utf8'))), 'pois');
+  // The records' authored numbers that repeat a POI's own (content may not import src/pois/).
+  const { MILLS } = await import('../src/pois/windmills/site.ts');
+  const { TOWER_H, PLINTH_H, R_TOP, R_BOTTOM } = await import('../src/pois/windmills/model.ts');
+  const { NODES } = await import('../src/pois/caves/network.ts');
+  const { definitions } = await import('../src/prefab/catalogue.ts');
+  const mills = JSON.parse(fs.readFileSync('content/built/levels/windmills.json', 'utf8')).placements;
+  assert.deepEqual(
+    mills.map((p: { pos: number[] }) => [p.pos[0], p.pos[2]]),
+    MILLS.map((m) => [m.x, m.z]),
+  );
+  assert.deepEqual(definitions['poi.windmill']!.colliders, [
+    { shape: 'cylinder', at: [0, 4.05, 0], rTop: R_TOP, rBottom: R_BOTTOM + 0.4, h: TOWER_H + PLINTH_H, segments: 8 },
+    { shape: 'sphere', at: [0, TOWER_H + PLINTH_H, 0], r: R_TOP + 0.5 },
+  ]);
+  const rack = definitions['cave.rack-bay']!.visual,
+    tower = definitions['poi.lighthouse']!.visual;
+  assert.equal('builder' in rack && rack.params.length, NODES.cellar.half[0] * 2);
+  const lantern = JSON.parse(fs.readFileSync('content/built/levels/lighthouse.json', 'utf8')).placements[1];
+  assert.ok('builder' in tower);
+  assert.equal(lantern.pos[1], (tower.params.plinthH as number) + (tower.params.towerH as number));
 });

@@ -1,4 +1,4 @@
-import { HALF, CELL, FIXED, HEAD_OFFSET, PLAYER_MASS, PLAYER_R } from '../constants.ts';
+import { HALF, CELL, FIXED, HEAD_OFFSET, PLAYER_MASS, PLAYER_R, CAVE_GROUP } from '../constants.ts';
 import { BODY, material, createBody, addBody, teleport } from './engine.ts';
 import { groundHeight, heights } from '../island/heights.ts';
 import type { Body } from './engine.ts';
@@ -26,7 +26,7 @@ export const ballMat = material('ball', { friction: 0.6, restitution: 0.55 });
 // Collision groups. Static scenery (the ground, trees, rocks, POI structures) is its own group so bodies that never
 // need it can skip it: kinematic bodies (they are moved by code, so contacts with static things are wasted work) and
 // anyone underground (the caves switch players and the ball to the CAVE group's colliders instead of the ground).
-export const GROUP = { DEFAULT: 1, SCENERY: 2, CAVE: 4 };
+export const GROUP = { DEFAULT: 1, SCENERY: 2, CAVE: CAVE_GROUP };
 export const NOT_SCENERY = ~(GROUP.SCENERY | GROUP.CAVE); // mask for bodies moved by code
 
 // Height of the ground below a point. The terrain, unless a feature with ground under the terrain (the caves) says

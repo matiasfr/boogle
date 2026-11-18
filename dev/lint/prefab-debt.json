@@ -550,23 +550,13 @@
       "exports": ["makeCameraArm"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/pois/caves/decor.ts": {
-      "count": 7,
-      "exports": ["buildDecor", "mouthFrame"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/pois/caves/index.ts": {
-      "count": 13,
+      "count": 12,
       "exports": ["cavesReady", "inCave"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/pois/lighthouse/index.ts": {
-      "count": 8,
-      "exports": ["DECK_Y"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/pois/windmills/index.ts": {
-      "count": 12,
+      "count": 7,
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
@@ -878,7 +868,6 @@
     "src/fall/letters.ts#blastLetters": 1,
     "src/place/cove-view.ts#buildCove": 1,
     "src/place/sites.ts#hullBodies": 1,
-    "src/pois/caves/decor.ts#buildDecor": 1,
     "src/proto/crossing/world.ts#buildWorld": 1,
     "src/proto/greybox/build.ts#buildGreybox": 2,
     "src/render/place-tree-view.ts#createTreeSolids": 1

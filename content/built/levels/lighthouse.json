@@ -1,0 +1,12 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "lighthouse",
+  "placements": [
+    {"id":"lighthouse","pos":[0,0,0],"prefab":"poi.lighthouse"},
+    {"id":"lighthouse/lantern","pos":[0,18.3,0],"prefab":"poi.lighthouse-lantern"}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}
