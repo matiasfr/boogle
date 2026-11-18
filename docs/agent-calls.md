@@ -117,7 +117,7 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 ## Controls, HUD and arrival
 
-C5 ruling, 15 November: **counts everywhere; squares gone** — an [owner call](agents/owner-calls.md#counts-everywhere), not an open agent decision.
+C5 ruling, 15 November: **counts everywhere; squares gone** — an [owner call](agents/owner-calls.md#counts-everywhere), not an open agent decision. Partly superseded 17 November: the carried display is squares again, while piles, bills, racks and boards keep their counts ([separate capacities](decisions-core-loop.md#d-2026-11-17-separate-capacities)).
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
