@@ -211,9 +211,9 @@ function rejectsUnavailable(store: ReturnType<typeof createAccountStore>) {
   assert.throws(() => createAccounts(store).registerGuest(token()), /unavailable/);
 }
 
-test('HTTP accounts: concurrent retries, restart, rotation and sign-out use durable operations', async (t) => {
+test('HTTP accounts: clean startup inventory, concurrent retries, restart, rotation and sign-out use durable operations', async (t) => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-account-http-'));
-  const cfg = loadConfig({}, { dataDir, allowedOrigins: ['https://boogle.club'], log: () => {} });
+  const cfg = loadConfig({}, { dataDir, reportToken: token(), allowedOrigins: ['https://boogle.club'], log: () => {} });
   let svc = createService(cfg);
   let port = await svc.listen(0);
   t.after(async () => {
@@ -226,6 +226,16 @@ test('HTTP accounts: concurrent retries, restart, rotation and sign-out use dura
       headers: { authorization: `Bearer ${bearer}`, 'content-type': 'application/json', origin: 'https://boogle.club' },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
+  const response = await fetch(`http://127.0.0.1:${port}/admin/saves`, {
+    headers: { authorization: `Bearer ${cfg.reportToken}` },
+  });
+  assert.equal(response.status, 200);
+  const inventory = await response.json();
+  assert.deepEqual(
+    { unknown: inventory.unknown, cleanupUnknown: inventory.lastCleanup.unknown },
+    { unknown: [], cleanupUnknown: [] },
+    'accounts.sqlite is server-owned data, not an unrecognized file needing operator investigation',
+  );
   const a = token();
   const guests = await Promise.all([request('guest', a, {}), request('guest', a, {})]);
   assert.deepEqual(
@@ -258,6 +268,47 @@ test('HTTP accounts: concurrent retries, restart, rotation and sign-out use dura
   assert.equal((await request('sign-out', a, {})).status, 204);
   assert.equal((await request('guest', a, {})).status, 401);
   assert.equal((await request('sign-in', token(), { pin: rotated.pin })).status, 200);
+});
+
+test('room reset, obsolete-save cleanup and restart preserve accounts without granting admin rights', async (t) => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-account-reset-review-'));
+  const room = 'account-review-room';
+  const cfg = loadConfig({}, { dataDir, serverRooms: [room], reportToken: token(), log: () => {} });
+  // A configured room is current, and reset only needs its checkpoint file, not a loaded simulation.
+  await fs.writeFile(path.join(dataDir, `${room}.json`), JSON.stringify({ tick: 0, writerId: 'server', data: {} }));
+  await fs.writeFile(path.join(dataDir, 'v01-obsolete.json'), '{}');
+  let svc = createService(cfg);
+  let port = await svc.listen(0);
+  t.after(async () => {
+    await svc.close({ save: false });
+    await fs.rm(dataDir, { recursive: true, force: true });
+  });
+  const request = (route: string, bearer: string, body?: object) =>
+    fetch(`http://127.0.0.1:${port}${route}`, {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: { authorization: `Bearer ${bearer}`, 'content-type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  const owner = token();
+  assert.equal((await request('/account/guest', owner, {})).status, 200);
+  const created = await request('/account/create', owner, {});
+  assert.equal(created.status, 200);
+  const saved = await created.json();
+  assert.equal((await request(`/admin/rooms/${room}/reset`, owner, {})).status, 401);
+  assert.equal((await request(`/admin/rooms/${room}/reset`, cfg.reportToken, {})).status, 200);
+  const files = await fs.readdir(dataDir);
+  assert.ok(!files.includes(`${room}.json`));
+  assert.ok(!files.includes('v01-obsolete.json'));
+  assert.ok(files.includes('accounts.sqlite'));
+  assert.equal((await (await request('/account/session', owner)).json()).accountId, saved.accountId);
+  assert.equal(await (await request('/healthz', '')).text(), 'ok');
+  await svc.close({ save: false });
+  svc = createService(cfg);
+  port = await svc.listen(0);
+  const signedIn = await request('/account/sign-in', token(), { pin: saved.pin });
+  assert.equal(signedIn.status, 200);
+  assert.equal((await signedIn.json()).pid, saved.pid);
+  assert.equal((await (await request('/account/session', owner)).json()).accountId, saved.accountId);
 });
 
 test('HTTP accounts enforce origins, bounded JSON, generic errors and a simple sign-in limit', async (t) => {
