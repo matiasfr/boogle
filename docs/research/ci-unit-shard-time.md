@@ -317,7 +317,7 @@ files in that second run follow; every one was in native shard 1/4. Paths are `t
 | railway-boiler | 24.013 | 3 |
 | railway-golden-5 | 16.759 | 4 |
 | railway-golden-1 | 15.563 | 7 |
-| railway-m10d-review | 14.412 | 8 |
+| railway-m10d-review (now split across footing replication, late join and adapter guards) | 14.412 | 8 |
 
 A full `timeout 1200 npm run test:unit -- --ci` measured all 199 files in one comparable run: 405.830s elapsed,
 2,698.691s summed file time, 1,692 passes, zero failures/cancellations/skips, one existing TODO (the documented

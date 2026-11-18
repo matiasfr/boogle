@@ -3,7 +3,7 @@
 // head (src/entities/railway/line2-path.ts) join the layout's, follow the ring's rows, and never jump a train sideways.
 // The views need three.js and a DOM, so their reads are reproduced here as written (train-view's stops and halts-view's stops and head; ring-deck's relay); a change
 // to a view's read is a change to the function below. The differential proof against `inspect()` went with it (X2 of
-// docs/plans/ecs-m12-m13.md). Modelled on test/railway-m10d-review.test.ts.
+// docs/plans/ecs-m12-m13.md).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSeedWorld, type SeedStage } from './helpers/rail.ts';
