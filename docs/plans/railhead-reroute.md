@@ -1,5 +1,6 @@
-> **Status:** planned 18 November 2026 (planner); steps 1 and 2 built 18 November on branch
-> `claude/railhead-reroute` (not shipped; [as built](#steps-1-and-2-as-built-18-november-2026)), step 3 not started.
+> **Status:** planned 18 November 2026 (planner); steps 1 to 3 built 18 November on branch `claude/railhead-reroute`
+> (not shipped; as built: [steps 1 and 2](#steps-1-and-2-as-built-18-november-2026),
+> [step 3](#step-3-as-built-18-november-2026)); they ship together (the independent review's condition).
 > Answers the open owner question "The railhead re-routes trains before the deck moves" on its recommendation: hold the
 > re-route until the haul settles. The reset is **`WORLD_NS` v61** (separate capacities took v60, #2152;
 > [decision](../decisions-rail.md#d-2026-11-18-railhead-reroute-reset)). Not a port from Place.
@@ -67,10 +68,11 @@ train rows.
   `settleHaul` (`railway-seed-ring.ts:65`) must end with `stop === headOf(a)`; assert it.
 - **Prediction:** `rail.footSet` predicts `ringFootSet`, which no longer writes trains; only the server re-routes.
 - **Server:** its tick applies it. No op, message, presence field or server-image file.
-- **Wire, save and `WORLD_NS`: yes, a bump, v59 → v60**, its own commit: "the Aperture row carries the trains' Railhead
-  bent, which moves when the haul settles; no migration". The column changes the replicated and saved shape, and a
-  rule that moves pinned fixtures needs a bump anyway (state rule 15, owner call "Seed-only goldens"). Under "No old
-  builds" it proceeds unless the owner is in a playtest; never mid-session. The server lands ~20 min after the client
+- **Wire, save and `WORLD_NS`: yes, a bump, v60 → v61** (separate capacities took v60), its own commit: "the
+  Aperture row carries the trains' Railhead bent, which moves when the haul settles; no migration". The column
+  changes the replicated and saved shape, and a rule that moves pinned fixtures needs a bump anyway (state rule 15,
+  owner call "Seed-only goldens"). Under "No old builds" it proceeds unless the owner is in a playtest; never
+  mid-session. The server lands ~20 min after the client
   (state rule 1): an old tab misdraws the stop meanwhile, accepted. No compatibility code.
 - **Invariants** (`railway-check-ring.ts`): `stop <= headOf(a)`; settled implies `stop === headOf(a)`;
   `RING_HEAD[stop].u <= haulU(a, tick)` (the stop never ahead of the deck).
@@ -93,12 +95,12 @@ Rows from `npm run models` (18 November). No new test files (state rule 8).
       new stop and re-routed trains in one packet set`; `a checkpoint mid-haul round-trips stop and re-routes once after
       reload`; `a mirror joining mid-haul sees the old head`. Verify: that file; `npm run loop -- run` (`bents` beat
       unchanged). Review: step 1's reviewer, driving a real server once.
-- [ ] **3. The views. Codex gpt-6.2-astra medium.** `halts-view.ts:728`, `riders-view.ts`.
+- [x] **3. The views. Codex gpt-6.2-astra medium.** `halts-view.ts:728`, `riders-view.ts`.
       `test/railway-r4b-views.test.ts`: `the far crowd rides the drawn deck and stands on the new platform at settle`;
       `the map redraws at settle`; `the old platform's place is walkway at every tick of a haul`. Verify: a motion
       sheet from `dev/look/evals/railhead-move.ts` at `ring-set-3` with a train arriving mid-haul. Update
       `docs/game-design/place.md`, "The railhead and the gap".
-- [ ] **Checkpoint (1 to 3, one ship, v60 its own commit).** Once: `npm run test:net`; the ring bot
+- [ ] **Checkpoint (1 to 3, one ship, v61 its own commit).** Once: `npm run test:net`; the ring bot
       (`railway-ring-bot.ts --rail-seed deck-laid`, all fourteen footings); the footing wagon trip by trip with every
       delivery tick (state rule 14); a two-tab look with a mid-haul arrival. Code review: fresh Codex delegate on the
       committed branch, gpt-6.2-astra medium. Visual review: main session.
@@ -189,6 +191,42 @@ frame `LEG_TUNE.layTicks` before the fifth tick of a train's end stand there (fo
 checks the redirect on the lay; it found slot 2, the frame filled 718 ticks after the kit was aboard. Every assertion
 is v60's, on that slot.
 
+## Step 3 as built (18 November 2026)
+
+The independent review of steps 1 and 2 (clean) made step 3 a condition of shipping them, and asked for the lever and
+its reach to agree.
+
+- **The map** reads the trains' stop: `mapStageOf(w)` (`halt-map.ts`, `ringOpen(w).head`), so the boards and the
+  island's table redraw at the settle, not about 12.7 s early at the pair.
+- **The Railhead lever: the lever moves, not the reach.** Through a haul the trains still stop at the old head, and
+  the server takes a lever ask at the stop's platform (`railCallPlatform`, unchanged since step 1). So the lever stands
+  at `railheadLever(ringOpen(w).head)` instead of riding the drawn deck: once the deck slides off it, it steps down
+  0.9 m onto the walkway at its foot (`railheadLeverUp`, eased at 3 m/s) and keeps offering its prompt, which the
+  traveller's settle gate no longer hides; at the settle it slides out to the new head at 7 m/s (no prompt while it
+  moves) and steps back up onto the platform. A player standing at the drawn lever can press it at every tick of a haul
+  (tested: the server's position test at the lever, on the dais or the walkway). Moving the reach onto the deck was
+  rejected: it would change `railCallPlatform` (shared by the server, the far crowd and the riders' stepping off), ask a
+  train to a stop 20 m behind the asker, and race the moving deck with the press's latency. `railheadLeverOn` is gone.
+- **The waiting little guys ride the deck:** while the build head is ahead of the stop, `riders-view.ts` stands the
+  far crowd on `deckPlatform(railheadEnd())` (`railhead-shape.ts`: `RING_HEAD[k].platform`'s place at any deck end),
+  which is the new head's platform exactly at the settle.
+- **Tests** (`test/railway-r4b-views.test.ts`): the lever at the trains' stop, on what is drawn, its ask taken at every
+  quarter tick of every haul; the old platform's place walkway at every tick; the far crowd's platform moving with no
+  jump and settling on the new platform; the map, the riding test and the lever's platform tick by tick through a real
+  room's haul (one redraw, at the settle). `prefab-halts.json`'s `gap-footed` Railhead lever is back to 235.6 (the
+  lever now comes from `railheadLever`, as v60's fixture had it).
+- **The host tests** no longer move a train's `depart` by hand: a train standing at the Railhead through a whole haul
+  is not a state ordinary ops reach (its 50-tick dwell, even restarted once by a lever ask, ends before a haul that
+  settles at least 127 ticks after the pair, which comes no earlier than the wagon's arrival; only the balanced hold
+  keeps one there, by the fleet's phase). They now run the real fixture on until a line 2 train is 400 m or more short
+  of the Railhead, still running at the settle, and assert its replan; the standing case stays the rule tests'.
+- **Proof look:** `dev/look/evals/railhead-move.ts` gained `&train=1`: it holds the footing until a line 2 train is 30
+  to 150 m short, sets it and frames the old head still. At `ring-set-3` train 3 arrived 3.5 s into the haul and stood
+  its dwell at the old head (s 872 m) beside the walkway while the deck travelled from u 140 to 160, then left home;
+  the one waiting little guy rode the deck out and boarded it; the lever held u 115.6, stepped down 0.9 m as the deck
+  left it, and at the settle slid to u 135.6 and back up. The map's redraw was not in frame (the tests hold it). Not
+  tested on a device.
+
 ## Level findings and risks
 
 - Nothing is placed or gated. A rider who steps off mid-haul lands on the old platform's walkway (step 3 asserts it).
@@ -201,6 +239,7 @@ is v60's, on that slot.
 
 1. **A train bound for the Railhead mid-haul: stand at the old head, or wait at the signal?** Recommended: the old head.
 2. **Reset to v60 for this alone?** Recommended: yes, own commit, unless a playtest is on; nothing in flight bumps.
+   (Answered 18 November: yes; the number is v61, since separate capacities took v60.)
 3. **Little guys waiting there: ride the deck out, or wait on the walkway and appear at settle?** Recommended: ride.
 
 ## Design review (2026-11-18)
