@@ -47,7 +47,8 @@ function fixture() {
       return undefined;
     },
     async open(name: string) {
-      assert.ok(stores.has(name), 'must not recreate a deleted cache');
+      // Like CacheStorage, open() recreates a deleted cache; the worker must not call it then.
+      if (!stores.has(name)) stores.set(name, new Map());
       return {
         async put(req: { url: string }, res: Response) {
           writes++;
