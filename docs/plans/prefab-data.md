@@ -820,3 +820,49 @@ path's beams, the footbridge (deck, trail and landing surface, parapets, abutmen
 placements would be generated from the sim catalogs (RING_*), path.ts or the ground, as the halts' are. The leaf and its
 footings (kinematic), the pennant, the ground and its heightfield, and the hammer's lift and thump stay as they are.
 Left in step 13: the rest of Ring Island (the generated massing). Not tested on a device.
+
+### Step 13, seventh area as built: Ring Island's sea ramps and the Pilgrims' Way
+
+The next part of the island's generated massing is placements of `ring.box` and `ring.box-drawn`, generated on the sim
+catalog's rows: `src/content/levels/ring-island.ts` places 192 more things (55 → 247), in the old draw order. The sea
+ramp (RING_RAMPS' one row) has 86 pieces: per flight its ramp (solid; the slipway plain sand, alone), its treads, then
+per side a kerb and a handrail (rail and posts), then its pile; per landing its deck (solid), its pile and its seaward
+handrail. The Pilgrims' Way has 106: its 20 deck spans (solid), 25 pairs of truss posts, 15 top rails a side and 6
+piers. The view resolves them where its loops stood. The track stays view code and is still drawn between the deck and
+the posts, so the merged draw keeps its order. Content may not import `src/sim` (`boogle/records-are-data`), so the level holds the
+rows' structure and counts (which flight is the slipway, 25 and 22 treads, the handrails' spans, 20 spans, 25 post
+pairs, 15 rails, 6 piers) and operands in new frames, `flight` and `landing` (row `flight` or `landing` of
+RING_RAMPS[`ramp`]: their ends, lat, heights, run and middle, read from the catalog on load). It also uses more `line` anchors
+(`mid`, `width`, `halt`, `end`), a `tread` form (tread k of a flight, the greybox's own arithmetic) and widths given as values. The
+view's `generatedCounts` runs the greybox's loops on RING_RAMPS, RING_GAP and RING_HALT and refuses to load a level
+whose counts no longer match (tried: 19 spans or 24 treads throw). A landing longer than one 50 m span also refuses to load. A
+generator beside `dev/prefab/halts.ts`, as the halts' placements are made, would take the counts from the catalog
+itself; it needs `dev/prefab/build.ts`, which this sitting did not touch. 25 solids moved from the island's one body into
+record bodies (the 3 flights' ramps, the 2 landings' decks, the 20 deck spans). Every one was already its own collider
+in the compound body, so the colliders a player stands on across a seam (span to span, flight to landing) are the same
+boxes as before, now in separate fixed bodies. A train's rider stands on the train, not on the deck. They switch with the near view
+(`setMounted`) and join the mount clearance in the old order, through the same `clearanceShape` and `siteExit`. No new
+record or builder: records 316 → 316, levels 26 → 26. The test lists' stub builders, the portability record lists and
+`dev/ci/unit-select.ts` need no entry. `dev/lint/prefab-debt.json` is unchanged: the view still calls `createBody` for
+the island's own body, the ground and the leaf.
+
+Proof: the massing golden (`test/fixtures/prefab-ring-massing.json`) already holds every piece this cut moves. It was
+captured from the view before the sixth area (commit "Capture the Ring Island massing golden before the record
+conversion"), and it passes on main, where the ramps and the Way were still view code. It was reused unchanged; no new
+fixture or test. Against the converted view it passes: 12,107 values, 53 not bit-identical, max deviation 1.8e-15
+against the 1e-9 tolerance. The furnishing's golden (`prefab-ring-island.json`) passes too (80 not bit-identical, max
+1.1e-13). A tread lifted 0.1 mm in the level fails both goldens. `npm run level-check` gives the same 21 reports as main,
+byte for byte apart from the source hash and timings. I opened before/after stills of the sea ramp and the Way (main's three
+files and this branch's, `--rail-seed ring-joined`, the same fixed camera from the sea east of the ramp, the player
+on the first landing; the staging was a raw eval under `.look/`, not committed)
+([stills and their difference](../world/prefab-ring-island/), `ramps-*.png`): the flights, treads, handrails, landings,
+piles, the Way's deck, truss and piers are unchanged; what differs is the animated sea showing between them, the
+player's colour, the train on the Way and specks in the sky. The second ramp flight's far side and the Way's north end
+past the halt were not photographed apart; the golden holds them.
+
+Left in this area: the Pilgrims' Way's track (beds and rails), the halt's platforms, landings and ramps, the foot
+crossing's planks, bed and slab, the west platform's ramp to the path, the crossover's rails, the summit path's beams,
+the footbridge (deck, trail and landing surface, parapets, abutments, bents) and the rim rocks stay view code over the
+island's own body. The leaf and its footings (kinematic), the pennant, the ground and its heightfield, and the hammer's
+lift and thump stay as they are. Left in step 13: the rest of Ring Island (that generated massing). Not tested on a
+device.

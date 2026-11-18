@@ -14,7 +14,9 @@
 // fingerpost, the map table and the summit lookout) and the hand-authored massing (the hinge pier, the pennant pole's
 // footing, the brace platform with its pier, handrail and gold strut, and the steps) are records
 // (content/prefabs/ring-island.ts), standing where content/levels/ring-island.ts puts them in the island's frames; their
-// solids come on and off with the near view.
+// solids come on and off with the near view. So are the sea ramps' flights and landings and the Pilgrims' Way's deck,
+// truss posts and rails and piers, placed on the catalog's rows (RING_RAMPS, RING_GAP, RING_HALT; generatedCounts
+// holds the level's counts to them).
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BODY, createBody, type Body, type Shape } from '../../physics/engine.ts';
@@ -44,8 +46,6 @@ import {
   RING_STEPS,
   ringAt,
   ringDeckY,
-  type RingFlight,
-  type RingLanding,
 } from '../../sim/railway-ring-layout.ts';
 import { LANDING, type Cone, type IslandGround } from './ground.ts';
 import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot, summitRimRockShape, summitRimRocks } from './path.ts';
@@ -97,7 +97,6 @@ const HAMMER = { cycle: 2.4, lift: 0.6, hold: 0.25, drop: 0.18, rise: 2.6, hear:
 // ---------------------------------------------------------------- colours (the greybox's; the furnishing's records
 // carry their own, the same palette)
 const TIMBER = '#8a6a48',
-  TIMBER_DARK = '#6a5038',
   STEEL = '#e8742c', // the folk's orange steel
   STEEL_DARK = '#b8551e',
   GOLD = '#ffc83a',
@@ -281,23 +280,6 @@ function builders({ add, solid }: Parts) {
     const c = at((u0 + u1) / 2, (l0 + l1) / 2);
     post(color, c.x, c.z, bottom, top, l1 - l0, u1 - u0, isSolid);
   }
-  /** A deck between u0 and u1 across [left, right], following `y(u)`, in `step` metre spans. */
-  function deck(
-    color: string,
-    u0: number,
-    u1: number,
-    left: number,
-    right: number,
-    y: (u: number) => number,
-    step = 10,
-  ) {
-    const mid = (left + right) / 2,
-      w = right - left;
-    for (let u = u0; u < u1 - 1e-6; u += step) {
-      const v = Math.min(u1, u + step);
-      beam(color, p3(u, mid, y(u)), p3(v, mid, y(v)), w, 0.5);
-    }
-  }
   /** Rails and a bed on each track, visual only. */
   function track(u0: number, u1: number, y: (u: number) => number, step = 10) {
     for (const t of TRACKS)
@@ -308,61 +290,7 @@ function builders({ add, solid }: Parts) {
           beam(RAIL, p3(u, t + r, y(u) + 0.22), p3(v, t + r, y(v) + 0.22), 0.12, 0.14, false);
       }
   }
-  /** A waist-high handrail with posts, from (u0, lat0) to (u1, lat1) with its foot at y0..y1. Visual only. */
-  function handrail(u0: number, lat0: number, u1: number, lat1: number, y0: number, y1: number) {
-    beam(STEEL, p3(u0, lat0, y0 + 1.05), p3(u1, lat1, y1 + 1.05), 0.07, 0.07, false);
-    const n = Math.max(1, Math.round(Math.hypot(u1 - u0, lat1 - lat0) / 3));
-    for (let k = 0; k <= n; k++) {
-      const t = k / n,
-        c = at(u0 + (u1 - u0) * t, lat0 + (lat1 - lat0) * t),
-        y = y0 + (y1 - y0) * t;
-      post(STEEL, c.x, c.z, y, y + 1.05, 0.08, 0.08, false);
-    }
-  }
-  /** One ramp flight (RingFlight, cm): a smooth solid ramp, treads, kerbs and rails; a slipway is plain sand. */
-  function flight(f: RingFlight) {
-    const u0 = f.u0 / 100,
-      u1 = f.u1 / 100,
-      lat = f.lat / 100,
-      y0 = f.y0 / 100,
-      y1 = f.y1 / 100,
-      W = 1.6;
-    beam(f.slip ? SAND : CONCRETE, p3(u0, lat, y0), p3(u1, lat, y1), W, 0.4);
-    if (f.slip) return;
-    const len = Math.abs(u1 - u0),
-      y = (t: number) => y0 + (y1 - y0) * t;
-    for (let k = 0; k * 0.4 < len - 0.2; k++) {
-      const t0 = (k * 0.4) / len,
-        t1 = (k * 0.4 + 0.22) / len;
-      beam(
-        TIMBER,
-        p3(u0 + (u1 - u0) * t0, lat, y(t0) + 0.05),
-        p3(u0 + (u1 - u0) * t1, lat, y(t1) + 0.05),
-        W - 0.3,
-        0.05,
-        false,
-      );
-    }
-    for (const s of [-1, 1]) {
-      beam(CONCRETE, p3(u0, lat + s * 0.74, y0 + 0.25), p3(u1, lat + s * 0.74, y1 + 0.25), 0.12, 0.25, false);
-      handrail(u0, lat + s * 0.85, u1, lat + s * 0.85, y0, y1);
-    }
-    const c = at((u0 + u1) / 2, lat);
-    post(TIMBER_DARK, c.x, c.z, -6, y(0.5) - 0.45, 0.4, 0.4, false);
-  }
-  /** A flat landing (RingLanding, cm), solid, with a pile under its middle and a rail along its seaward (high-lat) edge. */
-  function landing(l: RingLanding) {
-    const u0 = Math.min(l.u0, l.u1) / 100,
-      u1 = Math.max(l.u0, l.u1) / 100,
-      l0 = l.lat0 / 100,
-      l1 = l.lat1 / 100,
-      y = l.y / 100;
-    deck(CONCRETE, u0, u1, l0, l1, () => y, 50);
-    const c = at((u0 + u1) / 2, (l0 + l1) / 2);
-    post(TIMBER_DARK, c.x, c.z, -6, y - 0.5, 0.6, 0.6, false);
-    handrail(u0, l1 - 0.05, u1, l1 - 0.05, y, y);
-  }
-  return { tmp, beam, post, block, deck, track, handrail, flight, landing };
+  return { tmp, beam, post, block, track };
 }
 
 /** The leaf's local frame: +z along it from the heel toward the toe (toward Home when down), its top face at y 0. */
@@ -417,6 +345,9 @@ function boardTexture() {
 
 /** The furnishing's placements (content/levels/ring-island.ts), authored in the island's frames. */
 const furnishing = loadLevelArtifact(level, definitions).placements;
+for (const [prefix, n] of generatedCounts())
+  if (furnishing.filter((p) => p.id.startsWith(prefix)).length !== n)
+    throw new Error(`ring island: ${prefix} is not placed as RING_* lays it out (${n})`);
 /** The pennant pole's footing blocks (the far view's one definition), at the deck top where the pole stands. */
 const PENNANT_FOOTING = pennantFooting(deckY(PENNANT_POLE.u));
 type Anchors = Readonly<Record<string, number>>;
@@ -447,6 +378,71 @@ function value(v: Json | undefined, anchors: Anchors): number {
   } else n = value(from, anchors);
   for (const a of add) n = n + value(a, anchors);
   return n;
+}
+/** A sea ramp's row (RING_RAMPS[ramp]'s flight or landing, cm) as the frame its pieces stand in, metres. A flight:
+ * `u0`, `u1` (its foot and top, either way along u), `lat`, `y0`, `y1`, `len` (its run), `mid` (u of its middle) and
+ * `mid-y` (its top there). A landing: `u0` < `u1`, `l0`, `l1`, `y`, `mid` and `lat-mid` (its middle). */
+function rampFrame(place: JsonObject): Anchors {
+  const ramp = RING_RAMPS[finite(place.ramp, 'ramp')];
+  if (place.frame === 'flight') {
+    const f = ramp?.flights[finite(place.flight, 'flight')];
+    if (!f) throw new Error('ring island: no such flight');
+    const u0 = f.u0 / 100,
+      u1 = f.u1 / 100,
+      y0 = f.y0 / 100,
+      y1 = f.y1 / 100;
+    return {
+      u0,
+      u1,
+      lat: f.lat / 100,
+      y0,
+      y1,
+      len: Math.abs(u1 - u0),
+      mid: (u0 + u1) / 2,
+      'mid-y': y0 + (y1 - y0) * 0.5,
+    };
+  }
+  const l = ramp?.landings[finite(place.landing, 'landing')];
+  if (!l) throw new Error('ring island: no such landing');
+  const u0 = Math.min(l.u0, l.u1) / 100,
+    u1 = Math.max(l.u0, l.u1) / 100,
+    l0 = l.lat0 / 100,
+    l1 = l.lat1 / 100;
+  // Its deck is one slab: the greybox laid a landing in 50 m spans.
+  if (u1 - u0 > 50) throw new Error('ring island: a landing longer than one span');
+  return { u0, u1, l0, l1, y: l.y / 100, mid: (u0 + u1) / 2, 'lat-mid': (l0 + l1) / 2 };
+}
+/** How many of each generated piece the catalog asks for, by placement id prefix: the greybox's loops on RING_RAMPS,
+ * RING_GAP and RING_HALT. The level authors its counts; one that no longer matches the catalog refuses to load. */
+function generatedCounts(): [string, number][] {
+  const count = (from: number, to: number, step: number, upTo = false) => {
+    let n = 0;
+    for (let u = from; upTo ? u <= to : u < to - 1e-6; u += step) n++;
+    return n;
+  };
+  const rows: [string, number][] = [];
+  RING_RAMPS.forEach((ramp, r) => {
+    ramp.flights.forEach((f, k) => {
+      const at = `ramp${r + 1}/flight${k + 1}/`,
+        len = Math.abs(f.u1 - f.u0) / 100;
+      rows.push([at + 'ramp', 1]);
+      // A slipway is its sand ramp alone; a flight has a tread every 0.4 m to half a tread short of its top.
+      let treads = 0;
+      while (treads * 0.4 < len - 0.2) treads++;
+      rows.push(f.slip ? [at, 1] : [at + 'tread', treads]);
+    });
+    rows.push([`ramp${r + 1}/flight${ramp.flights.length + 1}/`, 0]);
+    ramp.landings.forEach((_, k) => rows.push([`ramp${r + 1}/landing${k + 1}/deck`, 1]));
+    rows.push([`ramp${r + 1}/landing${ramp.landings.length + 1}/`, 0]);
+  });
+  rows.push([`ramp${RING_RAMPS.length + 1}/`, 0]);
+  // The Way: 10 m deck spans from the hinge to WAY_END, truss posts every 6 m from 3 m out to the halt's south end (a
+  // pair), the top rails in 10 m lengths over the same (one a side), a pier every 20 m from 40 m out.
+  rows.push(['way/deck/', count(HINGE, WAY_END, 10)]);
+  rows.push(['way/post/', 2 * count(HINGE + 3, HALT[0], 6, true)]);
+  rows.push(['way/rail/', 2 * count(HINGE + 3, HALT[0], 10)]);
+  rows.push(['way/pier/', count(HINGE + 40, HALT[0], 20)]);
+  return rows;
 }
 /** World poses for a furnishing placement: its frame's operands resolved on the island as it stands. */
 function resolvePlacement(
@@ -503,9 +499,11 @@ function resolvePlacement(
     if (!f) throw new Error(`ring island: ${p.id} footing`);
     return block(f.u0, f.u1, f.lat0, f.lat1, f.y0, f.y1);
   }
-  if (frame !== 'halt' && frame !== 'brace' && frame !== 'line' && frame !== 'steps' && frame !== 'summit')
-    throw new Error(`ring island: ${p.id} frame`);
-  let anchors: Anchors = frames[frame];
+  let anchors: Anchors;
+  if (frame === 'flight' || frame === 'landing') anchors = rampFrame(place);
+  else if (frame === 'halt' || frame === 'brace' || frame === 'line' || frame === 'steps' || frame === 'summit')
+    anchors = frames[frame];
+  else throw new Error(`ring island: ${p.id} frame`);
   if (place.arch !== undefined) {
     // A tile of the mural's arch: its middle, at angle PI * (from + span * k / steps).
     const arch = object(place.arch, 'arch');
@@ -579,11 +577,32 @@ function resolvePlacement(
         z = anchors.cz! + (oz / n) * d;
       return { x, y: value(e.y, { ...anchors, ground: ground(x, z) }), z };
     };
+    return beam(end(object(q.a, 'beam a')), end(object(q.b, 'beam b')), value(q.w, anchors), finite(q.h, 'beam depth'));
+  }
+  if (place.tread !== undefined) {
+    // Tread k of a flight: from k pitches up it, `run` long, `lift` over the ramp's top, w wide and h deep. The last
+    // tread starts more than half a pitch short of the flight's top (rampCounts holds the count to the catalog).
+    const q = object(place.tread, 'tread'),
+      k = finite(q.k, 'tread k'),
+      pitch = finite(q.pitch, 'tread pitch'),
+      run = finite(q.run, 'tread run'),
+      lift = finite(q.lift, 'tread lift');
+    const u0 = anchors.u0!,
+      u1 = anchors.u1!,
+      lat = anchors.lat!,
+      y0 = anchors.y0!,
+      y1 = anchors.y1!,
+      len = anchors.len!;
+    if (frame !== 'flight' || !Number.isInteger(k) || k < 0 || !(k * pitch < len - pitch / 2))
+      throw new Error(`ring island: ${p.id} tread`);
+    const y = (t: number) => y0 + (y1 - y0) * t,
+      t0 = (k * pitch) / len,
+      t1 = (k * pitch + run) / len;
     return beam(
-      end(object(q.a, 'beam a')),
-      end(object(q.b, 'beam b')),
-      finite(q.w, 'beam width'),
-      finite(q.h, 'beam depth'),
+      p3(u0 + (u1 - u0) * t0, lat, y(t0) + lift),
+      p3(u0 + (u1 - u0) * t1, lat, y(t1) + lift),
+      value(q.w, anchors),
+      finite(q.h, 'tread depth'),
     );
   }
   if (place.slab !== undefined) {
@@ -633,7 +652,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.9, flatShading: true });
   const parts = createParts();
   const b = builders(parts);
-  const { beam, post, block, deck, track, flight, landing } = b;
+  const { beam, block, track } = b;
 
   // ---------------------------------------------------------------- the furnishing's records
   // Instantiated off (no bodies) until the near view mounts: setMounted turns their solids on with the island's own.
@@ -667,7 +686,15 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       'strut-x': RING_BRACE.x / 100,
       'strut-z': RING_BRACE.z / 100,
     },
-    line: { hinge: HINGE, left: FORM.left, right: FORM.right },
+    line: {
+      hinge: HINGE,
+      left: FORM.left,
+      right: FORM.right,
+      mid: FORM.mid,
+      width: FORM.right - FORM.left,
+      halt: HALT[0],
+      end: WAY_END,
+    },
     steps: {
       u0: RING_STEPS.u0 / 100,
       u1: RING_STEPS.u1 / 100,
@@ -715,28 +742,16 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     throw new Error('ring island: the pennant footing is not all placed');
   furnish((p) => p.id.startsWith('brace/'));
   furnish((p) => p.id.startsWith('steps/'));
-  for (const ramp of RING_RAMPS) {
-    for (const f of ramp.flights) flight(f);
-    for (const l of ramp.landings) landing(l);
-  }
+  // The sea ramps (RING_RAMPS): each one's flights (the slipway, then switchback flights with treads, kerbs, handrails
+  // and a pile), then its landings (a deck, a pile and a seaward handrail). Records too, generated on the catalog.
+  furnish((p) => p.id.startsWith('ramp'));
 
   // ---------------------------------------------------------------- the Pilgrims' Way: their stub, laid double track
-  deck(STEEL, HINGE, WAY_END, FORM.left, FORM.right, deckY);
+  // The deck, the truss posts and top rails and the piers are records (content/levels/ring-island.ts, `way/`); the
+  // track between them is still drawn here.
+  furnish((p) => p.id.startsWith('way/deck/'));
   track(HINGE, WAY_END, deckY);
-  for (let u = HINGE + 3; u <= HALT[0]; u += 6)
-    for (const lat of [FORM.left + 0.15, FORM.right - 0.15]) {
-      const c = at(u, lat);
-      post(STEEL_DARK, c.x, c.z, deckY(u), deckY(u) + 1.4, 0.25, 0.25, false);
-    }
-  for (const lat of [FORM.left + 0.15, FORM.right - 0.15])
-    for (let u = HINGE + 3; u < HALT[0]; u += 10) {
-      const v = Math.min(HALT[0], u + 10);
-      beam(STEEL_DARK, p3(u, lat, deckY(u) + 1.4), p3(v, lat, deckY(v) + 1.4), 0.25, 0.3, false);
-    }
-  for (let u = HINGE + 40; u < HALT[0]; u += 20) {
-    const c = at(u, FORM.mid);
-    post(STEEL_DARK, c.x, c.z, -6, deckY(u) - 0.5, 6, 1.2, false);
-  }
+  furnish((p) => p.id.startsWith('way/') && !p.id.startsWith('way/deck/'));
 
   // ---------------------------------------------------------------- the island halt
   const [upL0, upL1] = RING_HALT.offsetLat.map((l) => l / 100) as [number, number];
