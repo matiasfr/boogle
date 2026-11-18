@@ -1,11 +1,15 @@
-// Co-op abilities, option E captures (docs/brainstorms/coop-abilities.md, "Done means"), on the production railway.
-// Two pages: player 2 is the finder, playing the ordinary solo route with real inputs up to the double jump; player 1
-// is a friend this file drives. &coopShot= picks the moment the capture stops warping at (window.__coopShot):
-//   multi     the friend is walking about as the finder wakes the track layer: the multi-axe flourish, no card
+// Co-op abilities captures (docs/brainstorms/coop-abilities.md, "Done means"; docs/plans/cutscenes-for-everyone.md,
+// step 1), on the production railway. Two pages: player 2 is the finder, playing the ordinary solo route with real
+// inputs up to the double jump; player 1 is a friend this file drives. A friend online gets their own card for each
+// find once free (on the ground, not seated or gliding); this file puts away each one after &cardMs= (1.6 s by
+// default), except the one a capture is about. &coopShot= picks the moment the capture stops warping at
+// (window.__coopShot):
+//   multi     the friend is walking about as the finder wakes the track layer: the multi-axe card at the wake's end
 //   axe       the same at the forge as the finder opens the proper axe chest (the whole route to there first)
-//   unlock    the friend walks towards the device as the finder takes it: flourish, no card, shaft flare
-//   late      the friend is offline for the find and reconnects in the capture: their own flourish on landing
-//   alone     the friend gets the live flourish, drops and rejoins (none plays again), then passes the Home plinth
+//   unlock    the friend walks towards the device, hopping, as the finder takes it: the jump card once on the ground
+//   seated    the friend sits on the track layer's chair for the find: no card until they stand, then the jump card
+//   late      the friend is offline for the find and reconnects in the capture: their own flourish on landing, no card
+//   alone     the friend gets the live card, drops and rejoins (none plays again), then passes the Home plinth
 //             alone: the small show
 //   together  both walk up to the plinth side by side: the bigger show, from both tabs
 // The finder is placed beside the village for `together` (a harness pose, as look --at does); nothing seeds the world.
@@ -25,6 +29,10 @@ import { INTERP_MS, PLAYER_R } from '../../../src/constants.ts';
 import { LINE1_JUMP_DEVICE } from '../../../src/sim/railway-line-layout.ts';
 import { makeBot } from '../bot.ts';
 import { play } from './railway.ts';
+// The seat module, as far-head-seated.ts loads it: one shared copy of the page's own chairs.
+const { seated, sitDown } = (await import(
+  '/src/entities/railway/seat.ts' as string
+)) as typeof import('../../../src/entities/railway/seat.ts');
 
 const query = new URLSearchParams(location.search);
 const shot = query.get('coopShot') ?? 'unlock';
@@ -105,11 +113,25 @@ function trace(label: string, ms: number) {
   tick();
 }
 
-/** The finder's earlier tool unlocks (the multi-axe at the wake, the proper axe) are the finder's card alone: a friend
- * is never shown one, nor held, so this fails the run if a card ever comes up for them. */
-async function noCards(until: () => unknown) {
-  while (!until()) {
-    if (read().reward.showing) throw new Error('COOP FAIL a card stopped the friend for someone else’s find');
+/** A friend's cards come up only when they are free: this fails the run if one ever comes up in the air or seated.
+ * Until `capture()`, each card is put away with Interact after &cardMs= (the cards a run passes on its way). */
+async function cardsWhenFree(capture: () => unknown) {
+  const hold = Number(query.get('cardMs')) || 1600;
+  let up = false,
+    since = 0;
+  for (;;) {
+    const showing = read().reward.showing;
+    if (showing && !up) {
+      if (me.coyote <= 0 || seated() || inputState.seated) throw new Error('COOP FAIL a card came up while busy');
+      console.log(`COOP NOTE card up (${read().reward.arrival.cards.join()})`);
+      since = performance.now();
+    }
+    up = showing;
+    if (up && !capture() && performance.now() - since > hold) {
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+      since = performance.now();
+    }
     await wait(50);
   }
 }
@@ -118,8 +140,8 @@ async function friend() {
   const bot = makeBot({ doneFlag: '__coopFriendDone' });
   await until(landed, 'friend arrived and landed');
   background(
-    noCards(() => (shot === 'axe' ? axeFound() : found())),
-    'friend is never shown a card',
+    cardsWhenFree(() => w.__coopShot),
+    'friend cards only when free',
   );
   // Out of the finder's way: both arrive at the same spot, and the route starts from it.
   const p = me.body!.position;
@@ -161,11 +183,10 @@ async function friend() {
       }
     })();
     await until(has, `friend sees the ${key} unlock`);
-    check(!read().reward.showing && !inputState.held, `no card and no hold at the ${key} unlock`);
-    await until(() => read().reward.arrival.keys.includes(key), `friend ${key} flourish played`);
-    check(!read().reward.showing && !inputState.held, `no card and no hold after the ${key} flourish`);
+    await until(() => read().reward.arrival.cards.includes(key), `friend ${key} card owed and shown`);
     await hops;
-    check(read().reward.arrival.keys.filter((k) => k === key).length === 1, `one ${key} flourish`);
+    check(read().reward.arrival.cards.filter((k) => k === key).length === 1, `one ${key} card`);
+    check(!read().reward.arrival.keys.includes(key), `no ${key} flourish beside the card`);
     return;
   }
   if (shot === 'unlock') {
@@ -190,10 +211,37 @@ async function friend() {
     await until(() => found(), 'friend sees the unlock');
     const airborne = me.coyote <= 0;
     const jumps = read().reward.tools.jumps;
-    await until(() => read().reward.arrival.flourishes === 1, 'friend flourish played');
-    check(!read().reward.showing && !inputState.held, 'no card and no hold for a friend');
+    await until(() => read().reward.showing && read().reward.arrival.cards.includes('jump'), 'friend jump card up');
+    check(read().reward.arrival.flourishes === 0, 'no flourish beside the card');
     console.log(`COOP NOTE unlock arrived ${airborne ? 'mid-air' : 'on the ground'}; air jumps before ${jumps}`);
     await hops;
+    return;
+  }
+  if (shot === 'seated') {
+    // On the track layer's chair for the find, as a player's Interact would sit them.
+    for (let tries = 0; !seated() && tries < 40; tries++) {
+      const m = read().machine;
+      teleport(me.body!, m.x, m.y + 1.6, m.z);
+      me.body!.velocity.set(0, 0, 0);
+      await wait(400);
+      sitDown();
+      await wait(100);
+    }
+    check(seated(), 'friend sat on the track layer');
+    await until(() => found(), 'friend sees the unlock, seated', 3000000);
+    await wait(3000);
+    check(seated() && !read().reward.showing && !read().reward.arrival.cards.includes('jump'), 'no card while seated');
+    check(read().reward.arrival.flourishes === 0, 'no flourish while seated');
+    trace('seated', 5500);
+    w.__coopShot = true;
+    await wait(1200);
+    // Jump stands a seated player up (seat.ts).
+    pressJump();
+    await wait(140);
+    releaseJump();
+    await until(() => !seated(), 'friend stood up', 5000);
+    await until(() => read().reward.showing && read().reward.arrival.cards.includes('jump'), 'jump card once free');
+    check(read().reward.arrival.flourishes === 0, 'the card, not a flourish');
     return;
   }
   if (shot === 'late') {
@@ -219,6 +267,7 @@ async function friend() {
     check(read().reward.arrival.late === 0 || me.coyote > 0, 'nothing plays in the air');
     await until(() => read().reward.arrival.late === 1, 'late flourish on landing');
     check(!read().reward.showing && !inputState.held, 'no card and no hold for a late friend');
+    check(!read().reward.arrival.cards.includes('jump'), 'no jump card for a late friend');
     // The first jump since: the mark pulses at its top with the Jump glyph; a second press spends the air jump.
     await wait(900);
     const hop = async () => {
@@ -243,7 +292,8 @@ async function friend() {
     return;
   }
   // alone / together: the find happens while the friend is idle; then the plinth.
-  await until(() => found() && read().reward.arrival.flourishes === 1, 'friend got the flourish');
+  await until(() => found() && read().reward.arrival.cards.includes('jump'), 'friend got the card');
+  await until(() => !read().reward.showing, 'friend put the card away');
   if (shot === 'alone') {
     // What this player has been shown is this browser's: a rejoin rebuilds the world with no event, and the record a
     // reload would read already holds the jump, so nothing plays again. (A real reload would stop the two-player warp.)
@@ -254,7 +304,10 @@ async function friend() {
     await until(() => ready() && found(), 'friend rejoined');
     await until(landed, 'landed after the rejoin');
     await wait(4000);
-    check(read().reward.arrival.flourishes === 1, 'no second flourish after a rejoin');
+    check(
+      read().reward.arrival.flourishes === 0 && read().reward.arrival.cards.filter((k) => k === 'jump').length === 1,
+      'nothing plays again after a rejoin',
+    );
   }
   const plinth = read().reward.plinth;
   if (shot === 'alone') {

@@ -162,7 +162,7 @@ open question 2.
 Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, and attaches its inspected still or clip
 (`scripts/pr-shot.sh`). Looks use a disposable production room.
 
-- [ ] **1. A friend's own card for every shared item.** Files: `ability-arrival.ts`, `reward.ts`, `tools.ts`, the
+- [x] **1. A friend's own card for every shared item.** Files: `ability-arrival.ts`, `reward.ts`, `tools.ts`, the
   comment edits above, `place.md:421`, `:736`, `:781`. For a live accepted `rail.jump`, `rail.hook`, `rail.glide`,
   `rail.axe` or `rail.pack` from another pid: if `!seen.has(key)`, push `key` to `owed`; no flourish. For
   `multi-axe` (`atState`): when `watched.has(key)` and the state turns, push it to `owed`; the late path keeps its
@@ -183,6 +183,25 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   (the bot header's full command): the friend's page shows the jump card over their own Buddy after the finder takes
   the device. Then `coopShot=late`: the flourish on landing, no card.
   *Risk: medium (shared reward queue, two pages). Independent review: yes.*
+  **Built (2026-11-18):** as written, with three changes. (a) `seat.ts` may not be imported here (lint
+  `boogle/seats-from-records`), so the chair/bench check comes in as `env.seated`, through `reward.riderIs`, which
+  `view.ts` feeds with `seats.seated` as it does `line2.riderIs` (one line in `view.ts`). (b) The wake's card is owed
+  only on a page that heard the peer's `rail.wake` accepted live (`heard`), not merely watched the state turn, so a
+  reload mid-wake gets the flourish and no card; that mark is kept until the state turns (the three-second fresh-start
+  forgetting would otherwise drop it during the wait before the wake). (c) The first-jump teach also waits while a
+  jump card is owed. The boiler keeps its flourish (no card). The look bot `dev/look/bots/coop-unlock.ts` now expects
+  cards: it fails if a card comes up in the air or seated, puts away passing cards after `&cardMs=`, and has a new
+  `coopShot=seated`. Tests: six new cases in `test/ability-arrival.test.ts`; the boiler cases unchanged.
+  **Seen** (two players, `--warp-speed 2`, disposable look server):
+  [seated](cutscenes-for-everyone/friend-card-seated.png): the friend sits on the track layer's chair through the
+  wake and the jump find with no card; standing up, "You got the multi-axe!" / "Chops trees, breaks rocks, and more."
+  comes up within about 0.1 s, Buddy turned to the camera. [unlock](cutscenes-for-everyone/friend-card-unlock.png):
+  the find lands mid-hop; the jump card comes on landing, no flourish (Buddy faces away there because the bot's
+  `straight()` walk rewrites the yaw every 40 ms, a harness artifact). [late](cutscenes-for-everyone/friend-card-late.png):
+  offline for the find, the friend gets the teal flourish on landing, no card, and the first-jump pulse once.
+  **Not seen:** a friend gliding when the card falls due (unit test only); the hook, glider, proper axe and pack
+  cards on a friend's page (same code path, unit test covers the glider); the jump card after the multi-axe card in
+  the seated run (the capture ended with the first card up); anything on a device.
 
 - [ ] **2. The boiler's show, for everyone.** Files: `boiler-shot.ts` (new), `boiler-view.ts`, `line2-view.ts`,
   `view.ts`, `ability-arrival.ts` (`markShown`), `place.md:408`, `:857`. As in "The boiler's show" above. The pull-out
