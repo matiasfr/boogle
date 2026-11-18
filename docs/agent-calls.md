@@ -45,6 +45,10 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-17 | Default: culling and LOD changes in the world-streaming steps ship only with matched stills at the green, Far Head and the Ring Island halt showing no difference | [world-streaming](plans/world-streaming.md#design-review-2026-11-17), call 1 | Planner | Same method as the far ground's 11 November switch (research section 10); keeps the look unchanged while frames get cheaper | open |
+| 2026-11-17 | Default: the townsfolk stop updating past 300 m from the village and wake at 250 m; their meshes hide only when out of view or under a pixel | [world-streaming](plans/world-streaming.md#design-review-2026-11-17), call 2 | Planner | A tunable; nothing a player can see freezes or vanishes | open |
+| 2026-11-17 | Default: a far view put to sleep resumes from the current shared state and never replays an effect it missed | [world-streaming](plans/world-streaming.md#design-review-2026-11-17), call 3 | Planner | Effects follow receipts; a stale replay on approach would read as a bug | open |
+| 2026-11-17 | Default: residency and LOD distances scale with the camera's field of view, so the lookout telescope at 2x sees far places at full detail | [world-streaming](plans/world-streaming.md#design-review-2026-11-17), call 4 | Planner | The telescope was a best moment of the 3 November playtest; zooming must not show coarse or frozen places | open |
 
 ## Audio
 

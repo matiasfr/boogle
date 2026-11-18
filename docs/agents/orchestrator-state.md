@@ -12,7 +12,7 @@ The one record of who is running what, and what the three-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | The forge's west door (home-flip D3), view only | Home's town as the Round (P1) | `codex/forge-west-door-d3` | the heartbeat (HOTBOX), Codex gpt-6.2-astra medium delegate | 17 November 23:45 | built as `dabe248a` (ship check green; the `forge-lit` bot segment unverified); in independent review since 18 November 00:10 UTC (a fresh gpt-6.2-astra medium delegate, asked whether the forge plan's piece counts moved and what the south wall draws). Its report wakes the heartbeat thread: verify findings, send fixes to the builder's thread or ship with the review stamp |
 | Three small fixes: The Boogler's speech bubble from any distance, the cosmetics fitting pass, the "Connecting to the railway..." toast clear of Jump at phone width | Three small fixes (P3) | `codex/three-small-fixes` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium delegate | 18 November 01:10 | building |
-| The plan for chunking, culling and streaming the world (`docs/plans/world-streaming.md`), plan only | Chunk, cull and stream the world (P2) | `claude/plan-world-streaming` | the owner's live orchestrator session (HOTBOX), Claude Opus high planner delegate | 18 November 00:30 | planning (no browser) |
+| World streaming step 0: the census eval (`dev/look/evals/world-census.ts`) and the baseline counts at the green, Far Head and Ring Island | Chunk, cull and stream the world (P2) | `codex/world-census` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-sol medium delegate | 18 November 01:30 | building |
 
 ## Where the work stands
 
@@ -24,6 +24,10 @@ The one record of who is running what, and what the three-job limit is counted f
 ## Open owner questions
 
 One list, newest first. Each proceeds on its recommendation unless it says it waits; the heartbeat starts nothing on a question that waits. When he answers, record the answer in the decision log and delete the item here. Answered lately: [fill the free job slots, 18 November](../decisions-process.md#d-2026-11-18-fill-free-slots); [the town’s first choice, 16 November](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers); [the first line, 17 November: no fork](../decisions-core-loop.md#d-2026-11-17-first-line-no-fork); the names "Blast pipe" and "Big boiler" (16 November).
+
+**From 18 November:**
+
+- The world-streaming plan's five questions ([plan](../plans/world-streaming.md#6-open-questions-for-the-owner)), each proceeding on its recommendation: (1) the server sends each client only nearby state: not now; (2) the sea's grid is in this row, geometry only: yes; (3) far-away things (the townsfolk past 300 m, a place's machinery) may stop moving while nobody is near and resume as they were, the telescope counting as near: yes; (4) load areas on demand: defer until a device run shows memory or load trouble; (5) the row is done when steps 0 to 7 ship and checkpoint B's frame-time reading is reported on the Mac, Windows and one device run, with no number gating it. Nothing waits.
 
 **From 16 and 17 November:**
 
