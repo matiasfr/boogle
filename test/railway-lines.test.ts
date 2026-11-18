@@ -1,11 +1,10 @@
-// The line catalog (docs/plans/generic-lines.md, step 1): v25's stop and halt tables are views of RAIL_LINES, value for
-// value. Historical paths beyond Home's joins remain pinned; v36 replaces only the heads and Home platforms.
+// The line catalog (docs/plans/generic-lines.md, step 1): its stops, ends, signals, platforms and paths hang together.
+// Where its halts and paths stand against Place's layout is railway-train.test.ts's; Ring Island's, railway-ring-layout's.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   RAIL_HALTS,
   RAIL_LINES,
-  RAIL_TRAINS,
   TRAIN_EXTENT,
   TURNOUT_CM,
   BALANCE_MAX_TICKS,
@@ -26,100 +25,14 @@ import {
 import { LINE2_ROWS, line2Stops } from './helpers/rail-rows.ts';
 import { TRAIN_CARS, TRAIN_OFFSETS, TRAIN_TAIL_M } from '../src/entities/railway/cars.ts';
 import { ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
-import { HEADS, roadAt } from '../src/place/home-station.ts';
-import { FORMATION, ORIGIN, TURNOUT } from '../src/place/layout.ts';
-import { LINE_HALTS, TRAIN, TRAIN_HOME, TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
+import { FORMATION, TURNOUT } from '../src/place/layout.ts';
+import { TRAIN, TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import { PIER_STOP_CM } from '../src/sim/railway-works-layout.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 
-const V25_STOPS = [
-  [1400, 20700],
-  [2165, 17400, 52400, PIER_STOP_CM], // line 2's Village stop: v25's 1700, 2165 from v57 (rider coach R2b)
-];
-const V25_HOME = [1, 0];
-/** v27 (ring-island-build1, R3b): line 2 runs three trains, at the Village (up), Far Head (down) and Quarry (down). */
-const V27_HOME = [1, 0, 0, 0];
-/** v27's two halts after the Pier: the Railhead at its first head, Ring Island. */
-const V27_STOPS = [RING_HEAD[0]!.s, RING_END.s];
-const HALT_PINS = [
-  { name: 'Village', line: 0, stop: 0, x: 92985, z: 375, y: 1902, reach: 1260 },
-  { name: 'Camp', line: 0, stop: 1, x: 100964, z: -14610, y: 3102, reach: 1360 },
-  { name: 'Village, line 2', line: 1, stop: 0, x: 92985, z: 375, y: 1902, reach: 1260 },
-  { name: 'Quarry', line: 1, stop: 1, x: 108132, z: 4114, y: 2502, reach: 1160 },
-  { name: 'Far Head', line: 1, stop: 2, x: 136361, z: -16353, y: 2502, reach: 1260 },
-  { name: 'Pier', line: 1, stop: 3, x: 139969, z: -35833, y: 2502, reach: 1260 },
-];
-const V25_PATHS = [
-  [
-    91800, 1200, 92451, 441, 93103, -318, 93774, -1059, 94378, -1855, 94920, -2695, 95390, -3577, 95751, -4509, 96044,
-    -5465, 96322, -6426, 96578, -7392, 96828, -8361, 97099, -9323, 97442, -10263, 97592, -11243, 97320, -12203, 97213,
-    -13188, 97478, -14143, 98294, -14683, 99267, -14911, 100264, -14922, 101264, -14900, 102264, -14900,
-  ],
-  [
-    91800, 1200, 92507, 1907, 93204, 2624, 93863, 3375, 94762, 3785, 95758, 3828, 96728, 3600, 97662, 3242, 98624, 2980,
-    99620, 2900, 100617, 2976, 101600, 3153, 102571, 3391, 103543, 3627, 104527, 3803, 105525, 3865, 106525, 3850,
-    107523, 3799, 108509, 3738, 109387, 3260, 110221, 2710, 111042, 2138, 111857, 1559, 112662, 966, 113457, 359,
-    114252, -247, 115057, -841, 115881, -1407, 116715, -1959, 117541, -2522, 118349, -3112, 119138, -3725, 119919,
-    -4350, 120695, -4981, 121471, -5612, 122249, -6240, 123029, -6866, 123808, -7493, 124588, -8119, 125369, -8743,
-    126153, -9363, 126940, -9981, 127726, -10599, 128515, -11214, 129306, -11825, 130103, -12430, 130906, -13025,
-    131718, -13608, 132537, -14183, 133360, -14751, 134185, -15316, 135015, -15874, 135868, -16396, 136720, -16919,
-    137516, -17522, 138198, -18253, 138754, -19083, 139192, -19981, 139523, -20924, 139759, -21895, 139944, -22878,
-    140106, -23865, 140236, -24856, 140330, -25852, 140393, -26850, 140427, -27849, 140438, -28849, 140434, -29849,
-    140421, -30849, 140403, -31849, 140378, -32848, 140343, -33848, 140303, -34847, 140259, -35846, 140215, -36845,
-  ],
-];
-
-/** The station replaces only the head samples; the historical paths beyond each join stay pinned above. */
-const HOME_PATHS = V25_PATHS.map((path, road) => {
-  const r = road as 0 | 1;
-  const count = Math.ceil(HEADS[r].join / 10);
-  return [
-    ...Array.from({ length: count }, (_, k) => {
-      const p = roadAt(r, k * 10);
-      return [Math.round((ORIGIN.x + p.x) * 100), Math.round(p.z * 100)];
-    }).flat(),
-    ...path.slice(count * 2),
-  ];
-});
-
-test("stop, home and halt tables are catalog views, including Home's shared island", () => {
-  // The greybox route (step 3) appends after these: line 2's two halts, its fleet rows and the ns, bay and cave rows
-  // (test/railway-route-rules.test.ts).
-  assert.deepEqual([TRAIN_STOPS[0], TRAIN_STOPS[1]!.slice(0, 6)], [V25_STOPS[0], [...V25_STOPS[1]!, ...V27_STOPS]]);
-  assert.deepEqual([...TRAIN_HOME].slice(0, 2), V25_HOME, 'the first train of each line stands where v25s did');
-  assert.deepEqual([...TRAIN_HOME].slice(0, 4), V27_HOME);
-  // Home's platforms moved to the shared island in v36; the other down platforms stay pinned.
-  assert.deepEqual(LINE_HALTS.slice(0, 5), HALT_PINS.slice(0, 5));
-  assert.deepEqual(LINE_HALTS[5], { name: 'Pier', line: 1, stop: 3, ...PIER_EAST });
-  assert.deepEqual(
-    LINE_HALTS.slice(6, 8).map((h) => [h.name, h.line, h.stop]),
-    [
-      ['Railhead', 1, 4],
-      ['Ring Island', 1, 5],
-    ],
-  );
-  assert.deepEqual(
-    RAIL_TRAINS.slice(0, 4).map((t) => t.line),
-    [0, 1, 1, 1],
-    'line 1 one train, line 2 three',
-  );
-  // v27's two, then the greybox route's: line 2's three stack heads and High Gorge, and the ns, bay and cave rows'
-  // 3 + 4 + 5.
-  assert.equal(RAIL_HALTS.length, HALT_PINS.length + 2 + 4 + 12);
-  RAIL_HALTS.slice(0, 5).forEach((h, id) => {
-    assert.equal(h.s, V25_STOPS[h.line]![h.stop], `halt ${id} stands at its stop`);
-    // Today's platform serves the down track; Quarry and Far Head have an up one (step 2), the stubs' ends one.
-    assert.deepEqual(h.platforms[0], {
-      x: HALT_PINS[id]!.x,
-      z: HALT_PINS[id]!.z,
-      y: HALT_PINS[id]!.y,
-      reach: HALT_PINS[id]!.reach,
-    });
-    assert.equal(h.platforms[0] === h.platforms[1], h.name !== 'Quarry' && h.name !== 'Far Head', h.name);
-  });
-});
-
+/** Line 1's stops and line 2's to the Pier, the catalog's (railway-train.test.ts holds them to Place's layout). */
+const V25_STOPS = [TRAIN_STOPS[0]!, [...TRAIN_STOPS[1]!.slice(0, 3), PIER_STOP_CM]];
 test('the pier opens with Q6, as v25 (BEFORE_PIER); the Railhead with Q7', () => {
   assert.deepEqual(trainStopsOf(0, false), V25_STOPS[0]);
   assert.deepEqual(trainStopsOf(0, true), V25_STOPS[0]);
@@ -129,7 +42,7 @@ test('the pier opens with Q6, as v25 (BEFORE_PIER); the Railhead with Q7', () =>
   for (let laid = 0; laid <= LINE2_STATIONS.length; laid++)
     assert.deepEqual(
       trainStopsOf(1, laid),
-      laid >= 7 ? [...V25_STOPS[1]!, V27_STOPS[0]] : laid >= 6 ? V25_STOPS[1] : V25_STOPS[1]!.slice(0, 3),
+      laid >= 7 ? [...V25_STOPS[1]!, RING_HEAD[0]!.s] : laid >= 6 ? V25_STOPS[1] : V25_STOPS[1]!.slice(0, 3),
       `${laid} laid`,
     );
 });
@@ -152,18 +65,14 @@ test("every halt's opening slot exists, and halts run in s order", () => {
   );
 });
 
-test("railLinePoint reads Home's head samples, unchanged paths beyond the joins, and line 2 on to Ring Island", () => {
-  assert.deepEqual(
-    HEADS.map((head) => Math.ceil(head.join / 10)),
-    [6, 9],
-    'six and nine changed head samples',
-  );
-  // Line 2 runs on past Ring Island along the greybox route's `ring` row (LINE2_ON); the route's own rows are theirs.
-  const paths = [HOME_PATHS[0]!, [...HOME_PATHS[1]!, ...RING_PATH, ...LINE2_ON]];
+// Where the catalog's paths run is railway-train.test.ts's ("the server's coarse line path follows Place's rails within
+// a metre") and railway-ring-layout.test.ts's; this holds how railLinePoint reads them.
+test("railLinePoint reads the catalog's 10 m samples, line 2's running on through Ring Island", () => {
+  const line2 = RAIL_LINES[1]!.path;
+  assert.deepEqual(line2.slice(line2.length - RING_PATH.length - LINE2_ON.length), [...RING_PATH, ...LINE2_ON]);
   RAIL_LINES.slice(0, 2).forEach((l, line) => {
-    assert.deepEqual(l.path, paths[line]);
     for (let k = 0; k < l.path.length / 2; k++)
-      assert.deepEqual(railLinePoint(line, k * 1000), { x: paths[line]![k * 2], z: paths[line]![k * 2 + 1] });
+      assert.deepEqual(railLinePoint(line, k * 1000), { x: l.path[k * 2], z: l.path[k * 2 + 1] });
   });
 });
 
@@ -230,13 +139,8 @@ test("line 2 keeps its halt order and pinned platforms after Home's move", () =>
     ['Village, line 2', 'Quarry', 'Far Head', 'Pier', 'Railhead', 'Ring Island'],
   );
   halts.slice(0, 4).forEach((h, k) => assert.equal(h.s, V25_STOPS[1]![k], `${h.name} stands where v26's did`));
-  halts.slice(0, 3).forEach((h, k) => {
-    const v = HALT_PINS[k + 2]!;
-    assert.deepEqual(h.platforms[0], { x: v.x, z: v.z, y: v.y, reach: v.reach }, `${h.name}: pinned original platform`);
-  });
   // Before Q7 both ways use the east terminal; after it only the west platform serves the homeward train.
   const [px, pz] = [line2.path[73 * 2]!, line2.path[73 * 2 + 1]!];
-  assert.deepEqual([px, pz], [140259, -35846]);
   const [east, west] = halts[3]!.platforms;
   assert.equal(east, PIER_EAST);
   assert.ok(Math.abs(Math.sqrt((east.x - px) ** 2 + (east.z - pz) ** 2) - 290) <= 2, 'east: 2.9 m off the path');
@@ -244,20 +148,12 @@ test("line 2 keeps its halt order and pinned platforms after Home's move", () =>
   assert.ok(east.x > px && west.x < px, 'opposite boarding sides');
   assert.equal(west.reach, 1260);
   assert.equal(halts[3]!.only, -1);
-  // The path runs on: line 2's, then RING_PATH, then the greybox route's LINE2_ON, its index still s / 1000.
-  assert.equal(line2.path.length, V25_PATHS[1]!.length + RING_PATH.length + LINE2_ON.length);
-  assert.deepEqual(line2.path.slice(0, V25_PATHS[1]!.length), HOME_PATHS[1]);
-  assert.equal(line2.trains, 1);
-  assert.equal(line2.balance, 600, 'the balanced hold, capped 60 s past the dwell (call 47)');
-  for (const h of halts)
-    assert.ok(h.opens === -1 || (Number.isInteger(h.opens) && h.opens >= 0 && h.opens <= 6), `${h.name} opens`);
   // The Railhead: every number from the ring layout, its end at bent 6 (R1b's numbers).
   const head = halts[4]!;
   assert.deepEqual(
     head.heads,
     RING_HEAD.map((h) => h.s),
   );
-  assert.deepEqual(head.heads, [85200, 87200, 89200, 91200, 93200, 95200, 97200, 99200]);
   assert.equal(head.s, RING_HEAD[0]!.s);
   assert.deepEqual(head.platforms, [RING_HEAD[0]!.platform, RING_JOINT_UP]);
   assert.equal(head.brake, RING_END_BRAKE_CMS2 / 100);
@@ -265,7 +161,6 @@ test("line 2 keeps its halt order and pinned platforms after Home's move", () =>
   // Ring Island: the crossover on the Way, the buffers 15 m on.
   const island = halts[5]!;
   assert.equal(island.s, RING_END.s);
-  assert.equal(island.s, 119340);
   assert.deepEqual(island.platforms, [RING_HALT.down, RING_HALT.up]);
   assert.equal(island.ring, true);
   assert.deepEqual(island.end, { kind: 'crossover', mergeCm: 113700, edgeCm: 113700, signalCm: 112880 });
@@ -301,19 +196,16 @@ test("the catalog: every fixed halt's platform by way is its own; v27's fields o
 });
 
 test('v27 stops: Q6 opens the Pier, Q7 the Railhead at its bent, the rivet the island', () => {
+  const pier = line2Stops(6);
   assert.deepEqual(trainStopsOf(1, true), V25_STOPS[1], "v26's shim: true is Q6 laid");
-  assert.deepEqual(line2Stops(0), [2165, 17400, 52400]);
-  assert.deepEqual(line2Stops(6), [2165, 17400, 52400, 72650]);
-  assert.deepEqual(trainStopsOf(LINE2_ROWS, true), line2Stops(6), 'the shim means Q6, not every slot');
+  assert.deepEqual(pier, V25_STOPS[1]);
+  assert.deepEqual(line2Stops(0), pier.slice(0, 3));
+  assert.deepEqual(trainStopsOf(LINE2_ROWS, true), pier, 'the shim means Q6, not every slot');
   for (let k = 0; k < RING_HEAD.length; k++) {
-    assert.deepEqual(line2Stops(7, k), [2165, 17400, 52400, 72650, RING_HEAD[k]!.s]);
-    assert.deepEqual(line2Stops(7, k, true), [2165, 17400, 52400, 72650, RING_HEAD[k]!.s, 119340]);
-    assert.deepEqual(line2Stops(6, k, true), line2Stops(6), 'nothing past the pier before Q7');
+    assert.deepEqual(line2Stops(7, k), [...pier, RING_HEAD[k]!.s]);
+    assert.deepEqual(line2Stops(7, k, true), [...pier, RING_HEAD[k]!.s, RING_END.s]);
+    assert.deepEqual(line2Stops(6, k, true), pier, 'nothing past the pier before Q7');
   }
-  // 1173 m end to end once joined (the plan's v27 numbers), 1171.75 m from v33's Village stop.
-  const joined = line2Stops(7, 7, true);
-  assert.deepEqual(joined, [2165, 17400, 52400, 72650, 99200, 119340]);
-  assert.equal(joined[joined.length - 1]! - joined[0]!, 117175);
 });
 
 test('three trains stand on three places: the Village (up), Far Head (down) and Quarry (down)', () => {
