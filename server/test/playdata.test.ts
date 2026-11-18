@@ -40,7 +40,6 @@ const batch = (s: string, n = 0, ev: unknown[] = [{ t: 1, k: 'p', x: 3, z: -4 }]
   now: 2,
   ev,
 });
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 test('playdata: a batch appends a line per session, cleaned, and reads back with the token', async () => {
   const s = await start();
@@ -98,7 +97,8 @@ test('playdata: junk is refused without harm', async () => {
   }
 });
 
-test('playdata: a session stops at its cap, and the oldest sessions go past the total cap', async () => {
+test('playdata: a session stops at its cap, and the oldest sessions go past the total cap', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 0, 1) });
   const s = await start({}, { playMaxSessionBytes: 400, playMaxTotalBytes: 1000 });
   try {
     assert.equal((await s.post(batch('session-0001'))).status, 204);
@@ -106,7 +106,7 @@ test('playdata: a session stops at its cap, and the oldest sessions go past the 
     assert.equal((await s.post(big)).status, 507);
     for (let i = 2; i <= 16; i++) {
       assert.equal((await s.post(batch(`session-${String(i).padStart(4, '0')}`))).status, 204);
-      await sleep(2); // distinct write times
+      t.mock.timers.tick(1);
     }
     const list: { id: string }[] = await (await s.get('/playdata')).json();
     const files = await fs.readdir(path.join(s.dataDir, 'playdata'));
@@ -119,12 +119,13 @@ test('playdata: a session stops at its cap, and the oldest sessions go past the 
   }
 });
 
-test('playdata: past the session count the oldest goes', async () => {
+test('playdata: past the session count the oldest goes', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 0, 1) });
   const s = await start({}, { playMaxSessions: 2 });
   try {
     for (const id of ['session-0001', 'session-0002', 'session-0003']) {
       assert.equal((await s.post(batch(id))).status, 204);
-      await sleep(5);
+      t.mock.timers.tick(1);
     }
     const files = (await fs.readdir(path.join(s.dataDir, 'playdata'))).sort();
     assert.deepEqual(files, ['session-0002.jsonl', 'session-0003.jsonl']);
@@ -182,7 +183,8 @@ test('playdata: an IP may start only so many sessions an hour, and its running o
   }
 });
 
-test('playdata: sessions that look played are deleted only after all the others', async () => {
+test('playdata: sessions that look played are deleted only after all the others', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 0, 1) });
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-play-'));
   const dir = path.join(dataDir, 'playdata');
   await fs.mkdir(dir);
@@ -209,7 +211,7 @@ test('playdata: sessions that look played are deleted only after all the others'
   try {
     for (let i = 1; i <= 3; i++) {
       assert.equal((await s.post(batch(`session-000${i}`))).status, 204);
-      await sleep(5);
+      t.mock.timers.tick(1);
     }
     const files = (await fs.readdir(dir)).sort();
     assert.ok(files.includes('played-ana.jsonl'), 'the played session stays');

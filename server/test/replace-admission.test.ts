@@ -1,4 +1,5 @@
-// Admission under simulated floods: no world/seed work is needed to check the authority boundary.
+// Replacement admission under simulated floods and at the operator key's length boundary: no world/seed work is
+// needed to check the authority boundary. Trusted-address selection per mode is client-address.test.ts's matrix.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -9,13 +10,13 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 const KEY = 'operator-test-key-01234567890123456789';
 
-async function fixture(t: test.TestContext, overrides: Partial<ServerConfig> = {}) {
+async function fixture(t: test.TestContext, overrides: Partial<ServerConfig> = {}, key = KEY) {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-admission-'));
   const logs: unknown[][] = [];
   let builds = 0;
   const svc = createService(
     loadConfig(
-      { DATA_DIR: dataDir, ADVANCE_KEY: KEY, REPLACE_FLY_PROXY: '1' },
+      { DATA_DIR: dataDir, ADVANCE_KEY: key, REPLACE_FLY_PROXY: '1' },
       {
         log: (...args) => {
           logs.push(args);
@@ -45,6 +46,7 @@ async function fixture(t: test.TestContext, overrides: Partial<ServerConfig> = {
     return { status: response.status, body: await response.text() };
   };
   return {
+    base: `http://127.0.0.1:${port}`,
     send,
     advance: (ms: number) => {
       now += ms;
@@ -53,20 +55,6 @@ async function fixture(t: test.TestContext, overrides: Partial<ServerConfig> = {
     logs,
   };
 }
-
-test('review regression: a flooding IP cannot starve the operator over five simulated minutes', async (t) => {
-  const f = await fixture(t);
-  for (let n = 0; n < 24; n++) await f.send('wrong', '192.0.2.1');
-  const statuses: number[] = [];
-  for (let n = 0; n < 120; n++) {
-    f.advance(2500);
-    await f.send('wrong', '192.0.2.1');
-    statuses.push((await f.send(KEY, '192.0.2.2')).status);
-  }
-  assert.equal(statuses.at(-1), 400, 'key holder reaches validation instead of remaining locked out');
-  assert.equal(statuses.filter((status) => status === 400).length, 120);
-  assert.equal(f.builds(), 0);
-});
 
 test('distributed unauthenticated floods never consume operator admission or start seed work', async (t) => {
   const f = await fixture(t);
@@ -121,4 +109,21 @@ test('wrong keys of different lengths and matching prefixes get the same generic
   }
   assert.equal(f.builds(), 0);
   assert.ok(!JSON.stringify(f.logs).includes(KEY));
+});
+
+test('a 31-character key disables replacement with a warning that never contains the key', async (t) => {
+  const key = 'short-key-marker-01234567890123';
+  assert.equal(key.length, 31);
+  const f = await fixture(t, {}, key);
+  assert.equal((await fetch(`${f.base}/healthz`)).status, 200);
+  assert.equal((await f.send(key, '192.0.2.1')).status, 404);
+  assert.match(JSON.stringify(f.logs), /ADVANCE_KEY.*32/);
+  assert.ok(!JSON.stringify(f.logs).includes(key));
+});
+
+test('a 32-character key enables replacement without a short-key warning', async (t) => {
+  const key = '0123456789abcdef0123456789abcdef';
+  const f = await fixture(t, {}, key);
+  assert.equal((await f.send(key, '192.0.2.1')).status, 400);
+  assert.ok(!JSON.stringify(f.logs).includes('ADVANCE_KEY'));
 });

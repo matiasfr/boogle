@@ -39,7 +39,7 @@ test('roster keeps ordinals across pending reconnect, departure, late join and s
   a.mirror.roster.onChange((e) => changes[0]!.push(e));
   b.mirror.roster.onChange((e) => changes[1]!.push(e));
   const hold = f.holdNextWrite();
-  a.adapter.act('who.set', { n: 'Ana', c: 2 });
+  a.adapter.act('who.set', { n: 'abcdefghijklmno p', c: 2 });
   f.run();
   await hold.entered.promise;
   assert.equal(a.accepted.length, 0);
@@ -83,28 +83,6 @@ test('roster keeps ordinals across pending reconnect, departure, late join and s
   await restarted.whenReady();
   assert.deepEqual(serializeRoster(restarted.rules.roster.roster), expected);
   assert.equal(restarted.rules.roster.indexOf('alice'), 0);
-});
-
-test('accepted durable roster name stays identical across restart', async (t) => {
-  const f = await fixture(t),
-    a = f.join('alice');
-  f.run(3);
-  a.adapter.act('who.set', { n: 'abcdefghijklmno p', c: 2 });
-  f.run();
-  await f.settled();
-  assert.equal(a.accepted.length, 1);
-  const expected = f.host.rules.roster.nameOf(0);
-  await f.host.close({ save: false });
-  const restarted = createRailwayWorldHost({
-    roomId: f.roomId,
-    store: f.store,
-    tick: false,
-    now: f.now,
-    pidOf: (s) => s,
-  });
-  t.after(() => restarted.close({ save: false }).catch(() => {}));
-  await restarted.whenReady();
-  assert.equal(restarted.rules.roster.nameOf(0), expected);
 });
 
 test('roster cadence uses host time, rejects without a save, and survives a replacement session', async (t) => {

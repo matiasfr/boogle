@@ -47,13 +47,12 @@ test('a hosted room sends replicated changes at the end of a step, whole to a la
       project: (id) => (lamps.has(id as number) ? { ...lamps.get(id as number)! } : null),
       cell: () => GLOBAL_CELL,
     });
-    const sentAt = Date.now();
+    const touchedAt = room.world.sync.roomStep();
     room.replication.touch('lamp', 1);
     // A joiner's first send is its (here empty) whole state, marked w; the lamp follows on its own.
     const first = await a.next((m) => isS(m) && !!(m.d as { c?: unknown }).c);
     assert.deepEqual(first.d.c, [['lamp', 1, { on: false, hue: 3 }]]);
-    assert.ok(Number.isSafeInteger(first.d.tk) && first.d.tk > 0, 'stamped with the room step');
-    assert.ok(Date.now() - sentAt < 200, 'out within a few steps, not a 20 Hz tick later');
+    assert.equal(first.d.tk, touchedAt + 1, 'stamped with and sent at the end of the very next room step');
 
     const b = connect(base, 'beach', 'bravo');
     try {

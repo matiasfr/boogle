@@ -26,16 +26,23 @@ function connect(base: string, room: string, self: string) {
     'boogle.1',
   ]);
   const msgs: Msg[] = [];
-  ws.onmessage = (e) => msgs.push(JSON.parse(String(e.data)));
+  const echoes = new Map<number, () => void>();
+  ws.onmessage = (e) => {
+    const m = JSON.parse(String(e.data)) as Msg;
+    msgs.push(m);
+    if (m.t === 'hb') echoes.get(m.at)?.();
+  };
   const opened = new Promise<void>((r) => (ws.onopen = () => r()));
-  return { ws, msgs, opened, send: (m: string) => ws.send(m) };
+  return { ws, msgs, opened, echoes, send: (m: string) => ws.send(m) };
 }
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-/** The room still answers this socket: a heartbeat comes back. */
-async function alive(s: ReturnType<typeof connect>, at: number) {
+/** Resolves with the event, or false after a bound long enough for a loaded runner (never a guessed delay). */
+const within = <T>(event: Promise<T>, ms = 5000) =>
+  Promise.race([event, new Promise<false>((r) => setTimeout(() => r(false), ms).unref())]);
+/** The room still answers this socket: a heartbeat comes back, after every frame sent before it. */
+function alive(s: ReturnType<typeof connect>, at: number) {
+  const echoed = new Promise<true>((r) => s.echoes.set(at, () => r(true)));
   s.send(JSON.stringify({ t: 'hb', at }));
-  for (let k = 0; k < 40 && !s.msgs.some((m) => m.t === 'hb' && m.at === at); k++) await sleep(25);
-  return s.msgs.some((m) => m.t === 'hb' && m.at === at);
+  return within(echoed);
 }
 const threw = (logs: string[]) => logs.filter((l) => l.includes('dropped a message that threw'));
 
@@ -105,12 +112,13 @@ async function raw(port: number, target: string) {
   const s = net.connect(port, '127.0.0.1');
   s.on('error', () => {});
   await new Promise((r) => s.on('connect', r));
+  const answered = new Promise<true>((r) => s.once('data', () => r(true)));
   s.write(
     `GET ${target} HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n` +
       `Sec-WebSocket-Key: ${crypto.randomBytes(16).toString('base64')}\r\nSec-WebSocket-Version: 13\r\n` +
       `Sec-WebSocket-Protocol: boogle.1\r\n\r\n`,
   );
-  await sleep(100);
+  assert.ok(await within(answered), `no upgrade answer for ${target}`);
   return s;
 }
 const BAD_FRAMES = {
@@ -135,8 +143,9 @@ test('a refused socket that sends a bad frame never reaches the process; another
     for (const [why, target] of Object.entries(refusals))
       for (const [kind, frame] of Object.entries(BAD_FRAMES)) {
         const s = await raw(port, target);
+        const closed = new Promise<true>((r) => s.once('close', () => r(true)));
         s.write(frame);
-        await sleep(100);
+        assert.ok(await within(closed), `the server closes the refused socket: ${why}, ${kind}`);
         s.destroy();
         assert.equal(await alive(other, at++), true, `${why}, ${kind}`);
       }

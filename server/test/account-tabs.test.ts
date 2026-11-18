@@ -71,26 +71,25 @@ test('same-person renewal keeps a tab-only session and room running', async () =
   assert.ok(session.getItem(key));
 });
 
-for (const denied of [false, true]) {
-  test(`removing the durable sign-in stops fallback visit writers (fallback removal denied: ${denied})`, async () => {
-    const local = new Store(),
-      session = new Store();
-    local.setItem(key, JSON.stringify(credentialA));
-    session.setItem(key, JSON.stringify(credentialA));
-    const current = tab(local, session);
-    await current.api.prepareAccount();
-    const arrival = await current.api.arrival();
-    session.denyRemoval = denied;
-    local.removeItem(key);
-    current.changed();
-    arrival.rememberVisit('room', 12345);
-    assert.equal(local.getItem('boogle.visit.room'), null);
-    assert.equal(current.api.accountSwitching(), true);
-    assert.equal(current.closes(), 1);
-    assert.equal(current.reloads(), denied ? 0 : 1, 'never reload a fallback that could not be forgotten');
-    assert.equal(session.getItem(key) === null, !denied);
-  });
-}
+// The removable-fallback case is device sign-out's tab-only variant below; this is the fallback that cannot be removed.
+test('removing the durable sign-in stops fallback visit writers even when the fallback cannot be removed', async () => {
+  const local = new Store(),
+    session = new Store();
+  local.setItem(key, JSON.stringify(credentialA));
+  session.setItem(key, JSON.stringify(credentialA));
+  const current = tab(local, session);
+  await current.api.prepareAccount();
+  const arrival = await current.api.arrival();
+  session.denyRemoval = true;
+  local.removeItem(key);
+  current.changed();
+  arrival.rememberVisit('room', 12345);
+  assert.equal(local.getItem('boogle.visit.room'), null);
+  assert.equal(current.api.accountSwitching(), true);
+  assert.equal(current.closes(), 1);
+  assert.equal(current.reloads(), 0, 'never reload a fallback that could not be forgotten');
+  assert.ok(session.getItem(key));
+});
 type CredentialChange = { key: string; newValue: string | null; storageArea: Store };
 function tab(local: Store, session = new Store(), fetcher: typeof fetch = async () => reply(credentialA.pid)) {
   let changed = (_event: CredentialChange) => {};

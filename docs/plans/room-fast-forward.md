@@ -232,7 +232,7 @@ The endpoint contract, exact recovery command and local curl invocation are in
 [server/README.md](../../server/README.md#operator-tools). Replaced jump rooms are removed from jump expiry,
 including after journal recovery. Fresh rooms get an initial verified checkpoint to pin. Fatal/failed closes
 refuse replacement and restore; shutdown checkpoints other rooms without waiting for seed preparation.
-Hostile-message coverage lives in `server/test/replace-wire.test.ts` rather than `malformed-messages.test.ts`.
+Hostile-message coverage lives in `server/test/replace.test.ts` (the occupied replace scenario) rather than `malformed-messages.test.ts`.
 
 Checks on implementation tip `d89b4107` (rebased on already-fetched `859abbe7`, no authored prefab changes):
 

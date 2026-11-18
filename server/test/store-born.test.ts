@@ -59,16 +59,8 @@ test('a first save takes its own id (a backup put back), unless it is malformed'
   assert.match(b.store.born(room)!, /^[a-f0-9]{12}$/);
 });
 
-test('an unreadable save has no id and is left alone', async () => {
-  const { store, file } = await open();
-  await fs.writeFile(file, '{"tick": 12, "data": {');
-  assert.equal(store.born(room), null);
-  assert.equal(await fs.readFile(file, 'utf8'), '{"tick": 12, "data": {');
-});
-
 test('a join to a room whose save is unreadable is welcomed without an id, and the file stays', async () => {
-  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-born-'));
-  const file = path.join(dataDir, `${room}.json`);
+  const { dataDir, file, store } = await open();
   await fs.writeFile(file, '{"tick": 12, "data": {');
   const svc = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log: () => {} }));
   const port = await svc.listen(0);
@@ -82,9 +74,11 @@ test('a join to a room whose save is unreadable is welcomed without an id, and t
     });
     assert.equal(first.t, 'welcome');
     assert.ok(!('born' in first));
+    assert.equal(store.born(room), null);
     assert.equal(await fs.readFile(file, 'utf8'), '{"tick": 12, "data": {');
     ws.close();
   } finally {
     await svc.close({ save: false });
+    await fs.rm(dataDir, { recursive: true, force: true });
   }
 });
