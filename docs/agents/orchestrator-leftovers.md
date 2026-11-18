@@ -12,6 +12,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## Leftovers
 
+- **18 November (P2, Ring Island):** Ring Island's near view spawns its solid scenery (the footbridge deck, the abutments and the rest in `src/entities/ring-island/view.ts`) with no pre-mount player clearance (`src/entities/ring-island/index.ts:75`; the callback only delays saved-pose queries, `src/entities/railway/pose-readiness.ts:3`), so a player standing where a solid appears is not moved out first (state rule 35). Found by the terrain-clean step 7 builder; the fix belongs with step 7's resume, using the shared clearance once D3 lands.
 - **17 November (P3, tooling):** four prefab tests keep their own list of every builder or record (`test/prefab-workshop.test.ts` twice, `test/prefab-gorge.test.ts`, `test/prefab-leg2.test.ts`, `test/prefab-portability.test.ts`), so each new builder fails the full ship check until all five are edited by hand (D2: 143 failures, then one more). One shared helper in `test/helpers` that stubs every name in `src/prefab/names.ts` would end it; it changes test fixtures, so it needs a review.
 
 
