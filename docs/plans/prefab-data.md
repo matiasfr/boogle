@@ -1,6 +1,6 @@
 # Prefab data: every thing in the world as one record
 
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1–11 are on main (#1726, #1727, #1741, #1750, #1753, #1756, #1757, #1760, #1761, #1765, #1772, #1781, #1784, #1855). Built, not shipped: no additional implementation verified; local codex/prefab-data-step-* branches contain earlier work, not proof of missing shipments. Next: step 12, GLB records; Checkpoints A/B and portability proof remain unverified.
+> **Status, 18 November 2026 against main 83e398bfb:** Steps 1–13 are on main (steps 1–11: #1726, #1727, #1741, #1750, #1753, #1756, #1757, #1760, #1761, #1765, #1772, #1781, #1784, #1855; step 12 and the nine sittings of step 13 below). Checkpoint B passed on 18 November ([checkpoint run](#checkpoint-run-18-november-2026)). Checkpoint A ran but stays open: its proofs ran (one chair still pair retaken on main only, the level check's 12 reports now 21 by added sections), and the owner's rulings on the three open questions are owed. Step 14, the portability proof, waits on his answer to open question 3.
 _Plan, 13 November 2026. Not approved, not started. Counts are from commands at `f464b11d2` (`grep -rcE` over `src/**/*.ts`, `find`, and Node imports of the data modules); "Not read" is at the end. Option 2 of the owner's 13 November question ([owner-calls, "Engine foundations first"](../agents/owner-calls.md)); option 1 (all state server-owned) is `plan/server-owned-state` and is not covered here._
 
 ## Goal
@@ -141,11 +141,11 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 - [x] **2. Compiler and artifact.** Create `dev/prefab/build.ts`, scripts `prefabs` and `prefab:new` (`dev/prefab/new.ts`), empty `content/built/prefabs.json`; add `--check` to `dev/check.ts` and `dev/ship-check.ts`; add `nodes` to `assets/built/manifest.json` in `dev/assets/build.ts`. As built: canonical sorted keys and 1e-4 numbers, validation before and after rounding, duplicate/stale artifact rejection, scaffolded data and placement, node lists checked against committed GLB bytes. The check-mode test rejects a hand edit without rewriting it.
 - [x] **3. `instantiate` and the workshop chair.** First capture the golden from today's code: a test that builds `solidSpecs` and the seat from `makeWorkshop` and writes their world values. Then create `src/prefab/instantiate.ts`, `src/prefab/builders/seat-chair.ts` (wrapping `seatMesh()`), the record in `src/content/prefabs/town.ts`; replace `workshop.ts:65-76` with one `instantiate` call. Proof: the golden is byte-equal after; the orchestrator reports three chair before/after stills with zero differing pixels and identical sit/stand on main and this branch using the chair-focused eval committed as `865e03502`. Deletes the chair's two hand-typed boxes and its `registerSeat` call. Review corrections below supersede the initial visual hold.
 - [x] **4. One greybox platform.** Record `greybox.box` (`src/content/prefabs/greybox.ts`), builder `src/prefab/builders/greybox-box.ts` (the instanced mesh from `boxes.ts:64-75`), level `src/content/levels/gorge.ts` holding the north platform's five spans with ids; `drawGreyBoxes` takes placements for those and `GreyBox` for the rest. Proof: collider golden of all 53 solids equal before and after; `stack-at` still; `describe()` still reports 73 boxes and 53 solids. As built below corrects these pre-leg-2 counts.
-- [ ] **Checkpoint A** (the proving slice): `npm run check`, the two stills side by side, `npm run level-check` still 12 reports, `npm run perf` at the Gorge (draw calls and bodies unchanged). The designer and owner rule on the open questions here.
+- [ ] **Checkpoint A** (the proving slice): `npm run check`, the two stills side by side, `npm run level-check` still 12 reports, `npm run perf` at the Gorge (draw calls and bodies unchanged). The designer and owner rule on the open questions here. Run 18 November on main `83e398bfb` ([checkpoint run](#checkpoint-run-18-november-2026)): check, level check (21 sections, all passing) and the Gorge's bodies passed; still owed are the owner's rulings on open questions 1–3 and an old-code chair still (the pre-conversion build would not connect under today's harness).
 - [x] **5. Enforcement on.** The three lint rules with their seeded lists, the generated `test/prefab-records.test.ts`, the registry ratchet for the lists, `docs/agents/plugins.md` ("New things in the world are prefab records") and the new-feature skill. Proof: a fixture file with a stray `addStatic` fails lint; `npm run registry` fails when a list grows. As built: generated record coverage already landed in step 3; this step adds passing/failing lint fixtures and the file-identity ratchet (below).
 - [x] **6. High Gorge massing.** All 73 boxes become placements in `src/content/levels/gorge.ts` (the frame helpers move there from `massing.ts`); `massing.ts` keeps only exported constants others import. Proof: goldens equal, `stack-at` and `stack-draws` stills. Deletes `GreyBox`'s collider loop (`boxes.ts:76-82`) and `gorgeMassing()`; removes `route-greybox/boxes.ts` from the collider list. As built below corrects the count to 86.
 - [x] **7. Leg 2 and later legs** (after `greybox/leg2-massing` merges): `Piece`, `Pad` and `Post` become placements of `greybox.box`, `greybox.pad`, `greybox.sign-post` (a `label` attachment; placeholder text stays where it is authored); `dev/level/route-leg2.ts` reads `content/built/levels/*.json`. Proof: goldens, that branch's level report unchanged, one still per area. Deletes the three record types and `leg2-draw.ts`'s collider code. New legs are authored as level files from here.
-- [ ] **Checkpoint B:** `npm run check`, perf at Bell Rock, a bot walk of leg 1.
+- [x] **Checkpoint B:** `npm run check`, perf at Bell Rock, a bot walk of leg 1. As run 18 November on main `83e398bfb`: all three passed ([checkpoint run](#checkpoint-run-18-november-2026)); Bell Rock's cost was read with the plan's `stack-at` + `stack-draws` method, since `npm run perf` measures only the spawn.
 - [x] **8. The other seats (medium risk).** `railway.machine-chair` (`track-machine.ts:119`) and `railway.car-bench` (`train-view.ts:184-201`, `car-kit.ts:19`) with `parent` set to the moving platform. Seat ids are on the wire through presence: a golden asserts every id string is byte-identical, so no bump. Coordinate with `plan/server-owned-state`, which moves seat authority: whichever lands second rebases. Deletes the last `registerSeat` outside the runtime. As built: ids now key Server-kind rows at v41; all 31 ids and moving-seat pose goldens remain byte-identical. Seat debt shrank 13 files/20 units to 11/15. [Report, checks and inspected images](../archive/plans/prefab-data-step-8-report.md); local main lacked step 7, and stale broker smoke required the current worktree npm scenario fallback. Not pushed or shipped; not tested on a device.
 - [x] **9. Town rooms and furnishing.** `workshop-kit.ts` solids, `rooms.ts`, `curio-shelf.ts`, `shop.ts`, `museum.ts`: each furnishing piece a record whose builder returns its parts, so parts and solids stop being parallel lists. Signs and interactions join the lint rule. Proof: goldens, one still per room. Removes `workshop.ts` from `ENTITY_SERVICES` if nothing else holds it there.
 - [x] **10. Halts and stations (high-risk: reads sim catalogs).** Records for the platform kit (deck, shelter, bench, canopy post, mast, ramp, lever); placements generated by the compiler from `RAIL_HALTS` and `place/layout.ts`, which do not change. No bump. A bump is needed only if a catalog's values or order change, which this step forbids; `test/railway-golden-*.test.ts` unchanged is the proof, plus collider goldens and `npm run loop -- run`.
@@ -1008,3 +1008,109 @@ questions); **Checkpoint B** (`npm run check`, perf at Bell Rock, a bot walk of 
 `dev/prefab/export-godot.ts` writing the chair and the Gorge level as `.glb` and `.tscn`, and Godot's headless import
 listing matching nodes and collision shapes). Step 12's four unregistered models stay with step 12. Not tested on a
 device.
+
+## Checkpoint run, 18 November 2026
+
+Run on main `83e398bfb` (`git log origin/main..HEAD` empty before the runs) on HOTBOX (Windows 11, 20 logical CPUs, one
+GPU shared with other builders' look jobs). Load is busy logical CPUs out of 20 (Windows has no load average; the bot
+gate holds above 18 and a bench counts as quiet at 12 or under). Every browser run went through the machine bot queue
+with Playwright's full Chromium on WebGPU, reported no graphics errors, and its still was opened. Raw logs, verdicts and
+motion sheets are local under `.look/prefab-checkpoints/`; curated stills are in
+[docs/reports/prefab-checkpoints/](../reports/prefab-checkpoints/). Not tested on a device.
+
+### Checkpoint A
+
+- **`npm run check`: pass.** Lint 0 problems, typecheck, 2,170 unit tests (2,169 pass, 0 fail, 0 skipped, 1 existing
+  todo), registry ok, level check 21 reports, assets 13 fresh, `prefabs --check` fresh (318 records, 26 levels,
+  488,761 bytes), build. Started at load 1.2/20; 4 min 49 s. The tree did not change between Checkpoint A and
+  Checkpoint B, so this one run serves both.
+- **The step 3 chair's two stills: retaken on main only; the old-code half is still owed.** The step 3 originals
+  (`.look/evidence/1794562229858-61733/…` and `1794562620463-72059/…`) were taken on the Mac and are not kept on
+  this machine. `npm run before-after -- 10bb857ea` (the commit before `fcb905168`, which put the chair into prefab
+  data) with `--real --rail-seed q1-done --eval dev/look/evals/workshop-chair.ts --query chair=front` failed on the
+  old build. Its page stayed on "Connecting to the railway…" and logged a 404. Today's seed and harness against a
+  13 November server is a launch incompatibility, not a game regression
+  ([still](../reports/prefab-checkpoints/chair-before-10bb857ea-not-connected.png)). The same eval on main, `chair=front`
+  and `chair=side`, passed at load 7.8 and 3.3: [front](../reports/prefab-checkpoints/chair-front.png),
+  [side](../reports/prefab-checkpoints/chair-side.png). In both, the seat (a backless stool since `4fcca0b0c`,
+  14 November) stands square on the forge's floorboards between the water barrel and the log pile. It has no gap
+  under its legs and nothing passes through it. Sit/stand was not exercised.
+- **`npm run level-check`: pass, 21 reports** (exit 0, 36.9 s standalone, 36.4 s inside check). The checkpoint's "12"
+  counts report **sections**, not findings. At `f464b11d2` the check had five classic level rows plus clearance,
+  grounding, timber, walkways, place, Ring Island and track continuity: 12. Since then nine sections were added, none
+  of them by this plan's steps: leg 2 (`2399b1904`, the 13 that steps 4–7 recorded), rotunda (`1485fdf3e`), drawn
+  z-fighting (`46849763d`), pit escape (`47dfdc883`), town houses (`041d1401a`), Home cart, Home held signals, rider
+  coach and coach tail/nose (the R1b/R2b work, 16 November). Every section passes. Step 3's note that the 12 were
+  "all planned or never-drawn track continuity" describes the continuity section's findings, not the count. The
+  count was not changed.
+- **Perf at the Gorge: bodies unchanged; earlier draw totals not comparable.** `npm run perf` stands the player at the
+  spawn and has no seed or position option (`dev/look/perf.ts`). So, as in steps 6 and 7, the reading used
+  `npm run look -- --real --rail-seed gorge-reached --eval dev/look/evals/stack-at.ts
+  --query stackat=-105.7,5,-1987.3 --action dev/look/evals/stack-draws.ts --cam -103,130,-1925 --look -103,5,-1990`.
+  Results: High Gorge resident, **84 visible boxes / 55 bodies** (step 6's golden: 84/55), 25 named route meshes,
+  **168 draw calls / 165 without route meshes / +3 route**, 301,096 triangles (+20,456 from route meshes). The
+  game's frame cost was avg 8.44 ms, p95 9.9, max 11.3, and the page completed 55.9 frames/s. Load was 3.5 at start
+  and 1.0 at end, after 509 s in the queue
+  ([still](../reports/prefab-checkpoints/gorge-overhead.png): the stair zigzag, platforms and halt deck read whole).
+  Step 6 recorded 1,036 / 1,028 / +8 and +21,560 triangles on the Mac at a camera it did not record, so the draw
+  totals cannot be compared. Only the box and body counts can. A first camera (`-213,75,-1898`) sat behind the
+  gorge wall: 171 / 166 / +5, frame avg 10.3 ms at load 5.3 → 3.7. It is not used. Frame times are one reading on a
+  GPU other jobs share. The CPU load was quiet by the bench's rule, but sole GPU use cannot be shown.
+- **The open questions are not ruled** (the owner's, below); Checkpoint A stays unticked.
+
+### Checkpoint B
+
+- **`npm run check`: pass**, the same run as above.
+- **Perf at Bell Rock: pass on the route meshes; the rest of the world draws fewer calls than on 13 November.** The
+  same method with `--query stackat=-50,16,-850 --cam -160,75,-760 --look -50,10,-850`, step 7's camera. Bell
+  resident, **75 visible boxes / 21 box bodies**, 31 named route meshes, **285 draws / 273 without route meshes /
+  +12 route**, 357,990 triangles (**+21,576 from route meshes**). Frame cost avg 9.83 ms, p95 11.3, max 12.2, and
+  56.3 frames/s. Load 3.2 at start and 0.9 at end; 3.9 just before queueing
+  ([still](../reports/prefab-checkpoints/bell-rock.png): the split rock, the crossing decks, the ramp and the
+  outlined pads with their boards in place). Against step 7 at the same camera, the route's +12 draws and
+  +21,576 triangles are identical. The 75 boxes match. The bodies match too, though they are counted in two places:
+  step 7's 23 included the two rim trimeshes of `greybox.bell-rock`. The rock is a non-batched placement that
+  `leg2Extras` builds, and `describe()` counts only the batched boxes' bodies
+  (`src/entities/route-greybox/index.ts:59-71`), so it reports 21. Its two trimesh colliders are in the compiled
+  record, and the leg 2 collider golden in `npm run check` holds them. Outside the route meshes the frame now
+  draws 273 calls against 292, with 26,029 more triangles. That difference lies in the rest of the world, five days
+  and a different machine and GPU later, not in this plan's records. No draw budget applies.
+- **Bot walk of leg 1: pass.** `npm run playthrough -- --from ring-joined --to gorge --wall 2700 --stall 1200`:
+  four sections fed and laid, rides to each head and a step-off onto the Gorge platform. It finished with
+  "Leg 1 seeded: gorge reached; no recovery": 1,892 s of game in 607 s, load 2.35 → 7.44 (0.3 before queueing),
+  `underLoad: false`, verdict `pass` (local `.look/prefab-checkpoints/leg1-run2-pass/verdict.json`). The checkpoint
+  sat at (-86.2, 4.15, -1977.3), grounded and not swimming
+  ([end still](../reports/prefab-checkpoints/leg1-gorge-reached.png)). The first try, with the default `--wall 300`,
+  timed out at 978 s of game, with two sections laid and still progressing. The segment needs about 30 minutes of
+  game and 10 of wall clock; it is a timeout, not a failure. In the end still the player stands in an open wagon of
+  the train stopped at the Gorge halt, with "Sit" offered; the bot's own grounded check passed there. Whether the
+  step-off reached the platform deck itself was not confirmed from the still.
+
+Checkpoint B is ticked: its three proofs passed and none of them waits on the owner. Perf is "cost reported, not a
+gate" (Risks, Performance).
+
+### Owed to the owner (Checkpoint A, unruled)
+
+On 13 November the owner approved steps 1–3 to go ahead on the three recommendations. Questions 1 and 2 have since
+been built on, but no ruling at a checkpoint is recorded for any of the three.
+
+1. **Record today's call sites as approved debt?** Recommended: yes. Built that way at step 5: the collider and seat
+   lists only shrink (`dev/lint/prefab-debt.json`, ratcheted by `npm run registry`, which passed in this run).
+2. **The game loads compiled JSON, committed to the repo?** Recommended: yes (bends "Small and readable" the way
+   `npm run assets` does). Built that way: `content/built/` holds 318 records and 26 levels, 488,761 bytes, checked
+   fresh by `npm run prefabs -- --check`.
+3. **Prove portability with one real export now?** Recommended: yes, Godot, once, after Checkpoint B (step 14), not
+   kept in CI. Checkpoint B has now passed, so step 14 waits only on this answer. It was not started here.
+
+### Defects and limits found
+
+- P3: `npm run perf` cannot measure at a place or seed (`dev/look/perf.ts` has no `--rail-seed` or position option), so
+  both checkpoints' "perf at" lines can only be run through the `stack-at`/`stack-draws` look. Not changed here.
+- P3: `describe()`'s `solids` for a route area leaves out non-batched extras (`src/entities/route-greybox/index.ts:59-71`),
+  so Bell reports 21 where the plan's body count is 23. A diagnostic count, not a game defect.
+- P3: the leg 1 segment does not fit `playthrough`'s default 300 s wall. `docs/agents/test-details/bot-segments.md`
+  does not say to pass `--wall` for `--from ring-joined --to gorge`, as it does for `deck-laid`.
+- P3: `before-after` against `10bb857ea` (13 November, the only old commit tried) does not reach its railway on this
+  harness, so an old-code still of the chair could not be retaken.
+- Unverified: sit/stand on the chair, real-time feel, quiet-GPU frame times (the GPU was shared), the West landing
+  (not named by either checkpoint), and any device. Not tested on a device.
