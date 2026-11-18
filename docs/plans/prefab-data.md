@@ -639,7 +639,7 @@ New in the prefab core: a tapered `cylinder` collider (Rapier's hull, as the tow
 All 20 `use-an-entity` suppressions are gone (`lint-suppressions.json` is empty); collider debt drops (decor and
 lighthouse leave, windmills 12 → 7, caves 13 → 12). Records 256 → 291, levels 20 → 22.
 
-Proof: `test/fixtures/prefab-pois.json` was captured from the unconverted code (093f8029) and passes unchanged:
+Proof: `test/fixtures/prefab-pois.json` was captured from the unconverted code (ab4d29ea) and passes unchanged:
 ~27,300 values (every merged part's full-precision world matrix and colour, other meshes' poses and materials, 276
 world colliders, 17 lights), max deviation 1.4e-14 m against the 1e-9 tolerance. Opened before/after stills of each
 area match ([after stills](../world/prefab-pois/)); the lighthouse climb and caves scenarios pass.
