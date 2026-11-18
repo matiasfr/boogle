@@ -2,9 +2,9 @@ import { Matrix4, Sphere, type InstancedMesh } from 'three/webgpu';
 
 const transform = new Matrix4();
 const instance = new Sphere();
-const DEFAULT_PAD = 0.5;
+const PAD = 0.5;
 
-function computeFittedSphere(this: InstancedMesh, pad = DEFAULT_PAD) {
+function computeFittedSphere(this: InstancedMesh) {
   const bounds = (this.boundingSphere ??= new Sphere()).makeEmpty();
   if (!this.geometry.boundingSphere) this.geometry.computeBoundingSphere();
   const local = this.geometry.boundingSphere!;
@@ -13,11 +13,11 @@ function computeFittedSphere(this: InstancedMesh, pad = DEFAULT_PAD) {
     instance.copy(local).applyMatrix4(transform);
     if (instance.radius > 0) bounds.union(instance);
   }
-  if (!bounds.isEmpty()) bounds.radius += pad;
+  if (!bounds.isEmpty()) bounds.radius += PAD;
 }
 
-export function fitInstanceBounds(mesh: InstancedMesh, pad = DEFAULT_PAD) {
-  mesh.computeBoundingSphere = pad === DEFAULT_PAD ? computeFittedSphere : computeFittedSphere.bind(mesh, pad);
+export function fitInstanceBounds(mesh: InstancedMesh) {
+  mesh.computeBoundingSphere = computeFittedSphere;
   mesh.computeBoundingSphere();
   mesh.frustumCulled = true;
 }
