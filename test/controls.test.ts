@@ -297,14 +297,12 @@ test('controls: a wrapped action in src/ binds its guide keys through the action
   assert.ok(wrapped.has('interact'), 'the garage wraps interact; did the pattern stop matching?');
   const missing: string[] = [];
   for (const [f, text] of texts)
-    for (const [body, id] of text.matchAll(/registerAction\(\s*'([\w-]+)',\s*\{((?:[^{}]|\{[^{}]*\})*?)\}\s*\)/g).map(
-      (m) => [m[2]!, m[1]!] as const,
-    )) {
-      if (!wrapped.has(id)) continue;
-      const guide = body.match(/\bkeys:\s*(\[[^\]]*\])/)?.[1] ?? '';
-      const bound = body.match(/\bkey:\s*('\w+'|\[[^\]]*\])/)?.[1] ?? '';
+    for (const [, id, body] of text.matchAll(/registerAction\(\s*'([\w-]+)',\s*\{((?:[^{}]|\{[^{}]*\})*?)\}\s*\)/g)) {
+      if (!wrapped.has(id!)) continue;
+      const guide = body!.match(/\bkeys:\s*(\[[^\]]*\])/)?.[1] ?? '';
+      const bound = body!.match(/\bkey:\s*('\w+'|\[[^\]]*\])/)?.[1] ?? '';
       for (const [, code] of guide.matchAll(/'(Key\w+|Digit\w+|Space|Escape|Enter|Tab)'/g))
-        if (!bound.includes(`'${code}'`)) missing.push(`${f}:${id} lists ${code} in keys but does not bind it (key:)`);
+        if (!bound.includes(`'${code}'`)) missing.push(`${f}:${id!} lists ${code} in keys but does not bind it (key:)`);
     }
   assert.deepEqual(missing, []);
 });
