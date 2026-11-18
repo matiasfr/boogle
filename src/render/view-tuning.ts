@@ -3,8 +3,8 @@ export const VIEW_SPECS = [
   {
     id: 'view.mode',
     default: 0,
-    max: 2,
-    meaning: '0 lit, 1 unlit with current output, 2 raw base colour (sRGB only).',
+    max: 3,
+    meaning: '0 lit, 1 unlit with current output, 2 raw base colour (sRGB only), 3 overlap (z-fighting) view.',
   },
   { id: 'view.sky', default: 1, max: 1, meaning: 'Keep the current sky (1) or hide it (0).' },
   { id: 'view.water', default: 1, max: 1, meaning: 'Keep the current water surface (1) or hide it (0).' },

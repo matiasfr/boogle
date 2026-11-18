@@ -99,6 +99,14 @@
   Returning all three to defaults removes the render/draw hooks. Ordinary visits load no diagnostic chunk and
   add no frame work. No assets, palettes or shipped defaults change. Frozen comparisons do not establish feel
   or device performance; not tested on a device.
+- **Overlap view (z-fighting).** `?view=overlap`, Local Tunables `view.mode` 3, or Dev → Z-fighting → Overlap
+  view on/off. Pass 1 stores each opaque pixel's draw id, instance and view depth; pass 2 redraws without a depth
+  test and keeps fragments of a *different* draw or instance within 2 mm + 0.05 % of depth of that surface. The
+  screen shows grey shaded by facing, solid magenta where such fragments cover an area, faint pink on edge-on seams
+  where meshes only meet. Hovering (or the screen centre under pointer lock) names the pair within 12 px. Contacts
+  inside one merged draw share an id and do not show: use the Dev scan or `npm run zfight`. Code loads only when the
+  mode is chosen; off, it adds nothing to any frame. Proof: [yard sleepers](../reviews/overlap-view/yard-sleepers-overlap.png)
+  beside the [normal view](../reviews/overlap-view/yard-sleepers-normal.png) (`--rail-seed house-built`).
 - **Player Graphics.** Pause → Graphics lazily loads a small page using the existing modal's keyboard,
   gamepad and touch navigation. Desktop puts it beside the scene; phone uses a scrollable card with the
   scene visible above. No new bindings. Choices are Local, bounded, and stored in `boogle.graphics.v1`;

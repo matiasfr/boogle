@@ -15,6 +15,7 @@ import { defineKind, spawn, despawn, type GameEntity } from '../../entity/entity
 import { sceneFaces, isOpaqueMaterial } from '../../geometry/drawn-faces.ts';
 import { findZfights, ZFIGHT, type Point } from '../../geometry/zfight.ts';
 import { classifyZfights, className, type Finding } from '../../geometry/zfight-classify.ts';
+import { bindings } from '../../render/water/live.ts';
 import { el, note, command } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
 
@@ -142,13 +143,25 @@ function scan(args: Record<string, unknown>) {
   if (output) output.textContent = JSON.stringify(latest, null, 2);
   return ok(`a ${counts.a}, b ${counts.b}, c ${counts.c}; nearest three selected findings tinted.`, latest);
 }
+function overlapView(on: boolean) {
+  const mode = bindings.get('view.mode');
+  if (!mode) return no('The view diagnostic is not loaded on this visit.');
+  mode.set(on ? 3 : 0);
+  return ok(on ? 'Overlap view on.' : 'Overlap view off.');
+}
 export const tool: Tool = {
   id: 'zfight',
   label: 'Z-fighting',
   scope: 'Local read-only drawn-geometry snapshot. No network, physics, material edits or continuous scan.',
-  commands: ['scan', 'clear'],
+  commands: ['scan', 'clear', 'overlap', 'pair'],
   available: () => (import.meta.env.DEV ? null : 'Dev server only.'),
-  run(name, args) {
+  async run(name, args) {
+    if (name === 'overlap') return overlapView(args.on !== false);
+    if (name === 'pair') {
+      const { overlapPair } = await import('../overlap-view.ts');
+      const pair = overlapPair();
+      return pair ? ok(`${pair.a} ↔ ${pair.b}`, pair) : no('No overlap named at the cursor or crosshair.');
+    }
     if (name === 'clear') {
       clear();
       return ok('Tints cleared.');
@@ -168,6 +181,12 @@ export const tool: Tool = {
     command(parent, context, 'zfight', 'Scan at crosshair', 'scan');
     command(parent, context, 'zfight', 'Scan including joints / hidden', 'scan', { all: true });
     command(parent, context, 'zfight', 'Clear tints', 'clear');
+    note(
+      parent,
+      'Overlap view: grey scene, magenta where two different draws or instances share a depth on screen (faint pink: edge-on seams). Hover or aim to name the pair. Contacts inside one merged draw are not shown; use Scan or npm run zfight for those. Same as ?view=overlap or Local Tunables view.mode 3.',
+    );
+    command(parent, context, 'zfight', 'Overlap view on', 'overlap', { on: true });
+    command(parent, context, 'zfight', 'Overlap view off', 'overlap', { on: false });
     output = el('pre', '', 'dev-output');
     parent.append(output);
     return () => {
