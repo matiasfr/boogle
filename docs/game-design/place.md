@@ -706,6 +706,23 @@ collider and no footprint, so nothing closes round a player restored there. The 
 on the pier deck stay. Local view; the shared drop box he also asked for is the decided yard at each halt
 (station-deposit build 1), not this.
 
+**A frame shows when it stops taking (17 November 2026, [finished-deposits](../brainstorms/finished-deposits.md), first
+build; [decision](../decisions-rail.md#d-2026-11-17-finished-deposits-read)).** Owner: "it's not really clear sometimes
+if they accept resources or not because they stay the same." A station frame (T1 to T3, Q1 to Q7) that has stopped
+taking closes a plank gate across its walk-up face: two leaves, each a board frame with an X brace, hinged at the
+posts, standing over the board and its log so the open "logs go here" face is covered. It closes on accepted state
+only: the moment the bill is funded (the server alone starts a bill; your own predicted last piece shows the stock
+full but leaves the gate open until the server answers), and on Q4 and Q5 when the full bill waits behind the quarry
+gate or the sea switch and no action of yours is still unanswered; their bill keeps saying "Pull the lever to
+start" or "Pull the switch to start". While it feeds, the logs still roll out over the feeder into the machine behind the shut gate, and line
+1's bill stays up with its full count (logs 24/24). The shut pose reads with no colour, motion or sound: the X across
+the opening is the cue. It swings shut from folded back along the frame's flanks in under half a second, settling
+past closed by a touch; a reload, a late joiner or reduced motion sees it already shut. The gate is part of the
+frame: it folds away with it on the laid stretch (above), has no collider and adds no prompt. Q7's frame on the pier
+keeps its gate shut once laid, stowed in place, with no flag or yard there. The forge's frame never shows the gate,
+so between its two bills (24, then 32 logs) it does not read shut. Local view (`stations.ts` `shut`, called from
+`view.ts` and `line2-view.ts`); look: `dev/look/evals/railway-frame-shut.ts`. Not tested on a device.
+
 ### Production Needle Bell hook climb (8 November 2026)
 
 The production bot now marks `hook taken` after the demo lands on t0, requires the six remaining upward pulls and a dry `needle bell summit` landing, then takes the glider and flies to the forge on that first climb (15 November, fly first). The descending rings remain available. Each pull uses the registered action and requires a clear path and landing; climb and descent spend no air jump.
