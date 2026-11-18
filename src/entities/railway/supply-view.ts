@@ -4,6 +4,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { loadAsset } from '../../render/assets.ts';
 import rackUrl from '../../../assets/built/recovery-rack.glb?url';
+import { registerAsset } from '../../render/asset-manifest.ts';
+
+registerAsset({ id: 'recovery-rack', url: rackUrl, kind: 'model', priority: 'first' });
 
 export async function createRecoveryRack(
   owner: OwnedView,

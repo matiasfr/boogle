@@ -95,7 +95,9 @@ function assetStages(srcDir = path.join(ROOT, 'src')): Record<string, AssetStage
       files.set(m[1]!, m[2]!);
     for (const m of text.matchAll(/registerAsset\(\{([\s\S]*?)\}\s*\)/g)) {
       const body = m[1]!;
-      const url = /\burl:\s*(\w+)/.exec(body)?.[1];
+      // `url: someUrl`, or the shorthand `url` when the import itself is named url.
+      const named = /\burl\b(?:\s*:\s*(\w+))?/.exec(body);
+      const url = named && (named[1] ?? 'url');
       const priority = /\bpriority:\s*'(first|soon|later)'/.exec(body)?.[1] as AssetStage['priority'] | undefined;
       const id = url && files.get(url);
       if (id && priority) stages[id] = { priority, conditional: /\bwhen:/.test(body) };

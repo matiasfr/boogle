@@ -1,4 +1,6 @@
 // Names are portable data; implementations live behind the runtime door.
+// Asset ids and their node lists come from the built manifest (`npm run assets`), the one list of GLBs.
+import manifest from '../../assets/built/manifest.json' with { type: 'json' };
 /* oxlint-disable typescript/no-empty-object-type -- declaration-merging registries intentionally start empty */
 export interface BuilderNames {}
 export interface InteractionNames {
@@ -13,9 +15,16 @@ export interface GateNames {
   open: true;
 }
 export interface MaterialNames {}
-export interface AssetNames {}
 export interface ComponentInits {}
 /* oxlint-enable typescript/no-empty-object-type */
+/** The built models a record may name in `visual.asset`; each is registered (`registerAsset`) by the view that loads it. */
+export interface AssetNames {
+  'boiler-cart': true;
+  engine: true;
+  'passenger-car': true;
+  'track-layer': true;
+  'track-wing': true;
+}
 export type BuilderName = keyof BuilderNames;
 export type InteractionName = keyof InteractionNames;
 export type GateName = keyof GateNames;
@@ -66,6 +75,6 @@ export const names: NameRegistry = {
   ],
   gates: ['open'],
   materials: [],
-  assets: {},
+  assets: Object.fromEntries(Object.entries(manifest).map(([id, entry]) => [id, { nodes: entry.nodes }])),
   retired: [],
 };

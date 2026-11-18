@@ -26,6 +26,8 @@ import {
   line2Trains,
 } from '../../sim/railway-queries-line2.ts';
 import { cart as cartRow, rail as railRow, type ReadWorld } from '../../sim/railway-rows.ts';
+import { prefabAsset } from '../../prefab/catalogue.ts';
+import type { PropPart } from '../../render/prop-kit.ts';
 
 /** The cart is out on its road: line 2's first stretch is laid, and it is not parked while trains run. */
 const cartOn = (w: ReadWorld, ready: boolean) =>
@@ -91,7 +93,8 @@ export async function createRailwayCart(
 
   // ---------------------------------------------------------------- the cart and its load
   const cartLook = new THREE.Group();
-  cartLook.add(props.makeProp('cart'));
+  // The record names the kit node; makeProp throws if the kit lacks it.
+  cartLook.add(props.makeProp(prefabAsset('railway.depot-cart').node as PropPart));
   const logs = pieces.logStackMesh(CART.load, owner);
   logs.removeFromParent();
   cartLook.add(logs);
