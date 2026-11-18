@@ -1,7 +1,7 @@
 // The railhead and the gap (docs/plans/ring-island-build1.md, R4b), live from accepted state: once Q7 is laid, line 2
 // runs on from the pier head over bents 7-13. Each footing the jib sets drops into one of the next bent's two sockets;
 // the second stands the bent up, the prefabricated span (planks, stringers, both tracks' rails, the side walkway) comes
-// down on its caps, and the railhead platform, rack, jib and buffers slide out along it in about 3 s. The platform's 25 m
+// down on its caps, and the railhead car carries its riders, rack, jib and buffers along it. The platform's 25 m
 // stay behind as the side walkway (RING_WALK), so a player on it is never left over the sea; the rack's and the jib's
 // prompts wait for the slide. Beyond the railhead the gap reads as unbuilt: the deck ends on a striped beam, stakes
 // mark the bents to come and the next bent's two sockets glow. With bent 13 come the hook pile and its gold pad, the
@@ -21,7 +21,10 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { splash } from '../../render/splash.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { dustRing } from '../../render/particle-effects.ts';
-import { SEA, reducedMotion } from '../../constants.ts';
+import { FIXED, SEA, reducedMotion } from '../../constants.ts';
+import { haulU } from '../../sim/railway-ring-haul.ts';
+import { deckU, placeDeck, railheadDrawn, type RailheadDeck } from './railhead-state.ts';
+import { outOf } from '../../place/sites.ts';
 import { H, slab } from '../../place/land.ts';
 import { OFFSET_LAT } from '../../place/layout.ts';
 import { CROSSING_FOOT_OFF, WORKS } from '../../sim/railway-works-layout.ts';
@@ -46,7 +49,7 @@ import {
   crossoverSpan,
   headOf,
   headU,
-  slide,
+  leanClock,
   spanFrom,
   spanTo,
   walkwaySpan,
@@ -108,7 +111,7 @@ type Lowering = { slot: number; from: THREE.Vector3; t: number };
 export function createRailwayRailhead(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  deps: { toRing: () => number; hookRing: (on: boolean) => void },
+  deps: { deck: RailheadDeck; toRing: () => number; hookRing: (on: boolean) => void },
 ) {
   const P = { x: 0, z: 0, ux: 0, uz: 1 },
     q = { x: 0, z: 0 },
@@ -171,6 +174,20 @@ export function createRailwayRailhead(
   }
   const sideMid = (SIDE.lat0 + SIDE.lat1) / 2,
     sideW = SIDE.lat1 - SIDE.lat0;
+  const car = deps.deck.car;
+  let ruleClock = -1;
+  deps.deck.drive(() => {
+    const state = adapter.read.world();
+    if (!adapter.read.whole() || !line2Trains(state) || !q7Laid(state)) {
+      ruleClock = -1;
+      car.y = -60;
+      return;
+    }
+    const opening = ruleClock < 0;
+    ruleClock = leanClock(ruleClock, adapter.read.tickNow(), FIXED);
+    const u = haulU(aperture(state), ruleClock) / 100;
+    placeDeck(deps.deck, u, opening, me.body, me.coyote, outOf);
+  });
   /** The side walkway from `u0` to `u1`: planks, bearers out from the deck's edge, piles at its outer edge. */
   function walkway(group: number, u0: number, u1: number) {
     for (let u = u0; u < u1 - 1e-6; u++) put(group, u + 0.5, sideMid, -0.02, sideW, 0.12, 0.84, COLOURS.walk);
@@ -381,13 +398,6 @@ export function createRailwayRailhead(
       const body = slab(pile.x, pile.z - 0.01, pile.x, pile.z + 0.01, pileTop + 0.3, pileTop + 0.3, 1.8, owner, 0.8);
       return body;
     });
-    // The platform stands as a solid only while it is where the sim has it; moving, it is a picture, and whoever is on
-    // it drops to the walkway under it (its 25 m are inside the walkway: platformSpan <= walkwaySpan).
-    const k = stood();
-    const key = `plat${k}`;
-    for (const have of [...bodies.keys()])
-      if (have.startsWith('plat') && have !== key) wantSolid(have, false, () => null as never);
-    wantSolid(key, baseOn && settled(), () => strip(shownU - PLATFORM.len, shownU, sideMid, sideW, PLATFORM.up + 0.08));
   }
 
   // ---------------------------------------------------------------- drawing
@@ -848,7 +858,7 @@ export function createRailwayRailhead(
       decked[j] = j < pairs;
     }
     baseOn = opened;
-    shownU = headU(pairs);
+    shownU = railheadDrawn.u = ruleClock < 0 ? headU(0) : deckU(car.body.interpolatedPosition);
     for (const pc of pieces) pc.born = -Infinity;
     for (const key of [...bodies.keys()]) wantSolid(key, false, () => null as never);
     placeJib();
@@ -904,8 +914,7 @@ export function createRailwayRailhead(
         animating = DROP_S + 1.2;
         solids();
       }
-      const goal = headU(stood());
-      shownU = slide(shownU, goal, dt);
+      shownU = railheadDrawn.u = ruleClock < 0 ? headU(0) : deckU(car.body.interpolatedPosition);
       placeJib();
       if (animating > 0) {
         animating -= dt;

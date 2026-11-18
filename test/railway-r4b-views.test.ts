@@ -19,7 +19,6 @@ import {
   PLATFORM,
   RACK_BACK,
   SIDE,
-  SLIDE,
   bentU,
   buoyLifted,
   crossoverSpan,
@@ -29,7 +28,7 @@ import {
   headU,
   noseU,
   platformSpan,
-  slide,
+  leanClock,
   spanFrom,
   spanTo,
   walkwaySpan,
@@ -98,18 +97,10 @@ test("the walkway behind a moving railhead holds the old platform's whole place,
     assert.ok(n0 >= w0 && n0 < p1, 'the new platform starts over the old one');
   }
 });
-test('the kit slides a bent in about 3 s, never faster than SLIDE, and a restore snaps', () => {
-  let shown = headU(2);
-  const goal = headU(3);
-  let t = 0;
-  for (; shown < goal; t += 1 / 60) {
-    const next = slide(shown, goal, 1 / 60);
-    assert.ok(next - shown <= SLIDE / 60 + 1e-9, 'a frame never moves more than SLIDE');
-    shown = next;
-  }
-  assert.ok(t > 2.7 && t < 3.1, `a bent takes about 3 s: ${t.toFixed(2)}`);
-  assert.equal(slide(headU(0), headU(7), 1 / 60), headU(7), 'a long way (a restore) snaps');
-  assert.equal(slide(headU(3), headU(3), 1 / 60), headU(3));
+test('the railhead clock advances in rule ticks and snaps to a restored clock', () => {
+  assert.equal(leanClock(-1, 100, 1 / 60), 100);
+  assert.equal(leanClock(100, 100, 1 / 60), 100 + 1 / 6);
+  assert.equal(leanClock(100, 210, 1 / 60), 210);
 });
 
 // ---------------------------------------------------------------- the lookout's buoys

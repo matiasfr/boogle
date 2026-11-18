@@ -1,4 +1,4 @@
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1–2 shipped in #1841 as v46; Aperture.moved/from and the pure haul functions are on main. Built, not shipped: none verified. Next: step 3, the deck as a shared car; Checkpoint A proof completeness and steps 3–5 are not established by the shipped state schema. Design base:
+> **Status:** Steps 1–2 shipped in #1841 as v46; Checkpoint A is verified below. Step 3 is not ready to ship: the production car handoff stays inside the five-importer budget, but constructing another car directly in the carry test makes six. The registry also forbids extending the public API of `car.ts`. Steps 4–5 are outstanding. Design base:
 > `origin/main` at `35e1c3431`. Replaces
 > steps 2 and 4 of [gap-readability](gap-readability.md) (the railhead's move), which were built on branch
 > `worktree-agent-af55e2f2172764ff8` (tag `archive/worktree/railhead-traveller`, tip `9b9845fbb`) and failed three
@@ -202,8 +202,8 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       fable medium.** Edit `line2-view.ts` (build and return `railheadDeck`), `view.ts`, `works-live.ts`,
       `railhead-view.ts` (take the deck; `drive`; delete `plat{k}` and `slide`), `railhead-shape.ts` (drop `SLIDE`,
       `slide`; add `leanClock`), new `railhead-state.ts`. Lower `railhead-view.ts`'s count in
-      `dev/lint/prefab-debt.json` if the lint asks; never raise one. New `test/railhead-deck.test.ts` on the
-      production physics backend (the pattern of `test/platforms-carry.test.ts`):
+      `dev/lint/prefab-debt.json` if the lint asks; never raise one. Use the existing `test/platforms-carry.test.ts`
+      on the production physics backend (orchestrator state rule 7):
       - `a rider standing on the deck keeps their place in its frame within 1 mm through a 20 m haul`
       - `the deck's drawn pose and a remote rider's are the same interpolated pose at alpha 0.25, 0.5 and 0.75` (the
         reviewers' 8.3 cm case)

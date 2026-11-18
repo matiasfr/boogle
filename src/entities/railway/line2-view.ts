@@ -2,6 +2,8 @@
 // Q1-Q6 frames, depot racks, route-v2 decks, both gates, the summit switch, Far Head, the boiler and the pier show.
 // Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
 import * as THREE from 'three/webgpu';
+import { deckYaw } from './railhead-state.ts';
+import { deckProfile } from './railhead-shape.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -1026,7 +1028,23 @@ export async function createRailwayLine2(
     }
     if (slabT < 0) slab.position.y = down ? slabDown : slabUp;
   }
+  let deckDrive: (() => void) | undefined;
+  const profile = deckProfile();
+  const car = rail.makeCar(profile.spec, new THREE.Group(), () => deckDrive?.(), { shapes: [profile.surface] }, owner);
+  car.platform.id = 'railway:railhead';
+  car.platform.shared = true;
+  car.platform.topAt = profile.topAt;
+  car.yaw = deckYaw;
+  rail.snapCar(car);
+  car.speedLimit = 7.5;
   const api = {
+    railheadDeck: {
+      car,
+      snap: () => rail.snapCar(car),
+      drive(fn: () => void) {
+        deckDrive = fn;
+      },
+    },
     /** Line two owns the machine once the forge is lit and the turn has played. */
     working,
     /** The boiler's haul pace (before the controller) and its rope (after Buddy's final pose). */
