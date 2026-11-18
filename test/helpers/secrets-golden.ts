@@ -14,6 +14,7 @@ import { cosmetic, crateParts, type Part } from '../../src/render/cosmetic-parts
 import { inReach } from '../../src/player/reach.ts';
 import { H } from '../../src/place/terrain.ts';
 import { material } from '../../src/render/materials.ts';
+import { placeSecretThing } from '../../src/entities/finds/secrets-place.ts';
 import { worldColliders } from './poi-golden.ts';
 import { recordMatrices } from './prefab-golden.ts';
 const { GROUP } = await import('../../src/physics/physics.ts');
@@ -190,6 +191,7 @@ export async function secretsBindings() {
       addStatic: (shape: BodySpec['shapes'][number], at: V3, q: Q | undefined, group: number | undefined) =>
         body(shape, at, q, group),
     }),
+    '../../place/terrain.ts': async () => ({ H }),
     '../../render/part-geometry.ts': async () => ({ merged: recorded.merged }),
     '../../place/look.ts': async () => ({ softGlow: {} }),
   };
@@ -223,6 +225,7 @@ export async function secretsBindings() {
       instantiate: runtime.instantiate,
       definitions,
       loadLevelArtifact: validation.loadLevelArtifact,
+      placeSecretThing,
       level: fs.existsSync('content/built/levels/secrets.json') ? json('content/built/levels/secrets.json') : null,
       __lazy: (path: string) => {
         const load = lazy[path];

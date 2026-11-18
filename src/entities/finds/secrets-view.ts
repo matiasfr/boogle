@@ -11,8 +11,9 @@
 // in the order production's abilities really come (`passed`). Hook and jump secrets are reached with production's
 // abilities: their rings are the hook view's side rings (../railway/hook-path.ts HOOK_SIDE).
 // What you've found and what's at the bay are ./state.ts's (Personal Local, written the moment it happens). Everything
-// here is Local presentation: the ground, the boxes, their show and the clues are one merged mesh and three instanced
-// ones. The cards are name-only: Place's secret gifts have no line.
+// here is Local presentation: the ground and the clues are records (content/prefabs/secrets.ts, placed by
+// content/levels/secrets.ts) drawn as one merged mesh; the boxes, their show and their cards are this view's, three
+// instanced meshes. The cards are name-only: Place's secret gifts have no line.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
@@ -20,7 +21,7 @@ import { me } from '../../player/player.ts';
 import { inReach } from '../../player/reach.ts';
 import { playMark } from '../../proto/mark.ts';
 import { getAudio } from '../../render/audio.ts';
-import { cosmetic, crateParts, type GiftId, type Part, type Tier } from '../../render/cosmetic-parts.ts';
+import { cosmetic, crateParts, type GiftId, type Tier } from '../../render/cosmetic-parts.ts';
 import { createCrateShow } from '../../render/crate-show.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { rewardSparkles } from '../../render/reward-particles.ts';
@@ -32,31 +33,34 @@ import { townShelf } from '../town/state.ts';
 import { wardrobe } from '../wardrobe/state.ts';
 import type { FindsApi, FindsViewInspection } from './state.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
+import { definitions } from '../../prefab/catalogue.ts';
+import { loadLevelArtifact } from '../../prefab/validate.ts';
+import { placeSecretThing } from './secrets-place.ts';
+import level from '../../../content/built/levels/secrets.json' with { type: 'json' };
 
-const STONE = '#917b5e',
-  STONE2 = '#b6a080',
-  BRASS = '#c79a3e';
-// Both only up at the box's level: one on a ledge isn't in reach from the ground under it (src/player/reach.ts).
+/** A record's piece in the one ground colour it is drawn in. */
+function coloured(g: THREE.BufferGeometry, color: string) {
+  const n = g.getAttribute('position').count,
+    c = new THREE.Color(color),
+    col = new Float32Array(n * 3);
+  for (let k = 0; k < n; k++) col.set([c.r, c.g, c.b], k * 3);
+  return g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+} // Both only up at the box's level: one on a ledge isn't in reach from the ground under it (src/player/reach.ts).
 const BUMP = 1.25, // m: walking into a box opens it (Place's)
   REACH = 3.4, // m: Open the crate
   SPARKLE_NEAR = 60;
 const TIERS: Tier[] = ['common', 'rare', 'wonder'];
 
 export async function createSecretsView(owner: OwnedView, store: FindsApi) {
-  const [tech, { ORIGIN }, { H, addStatic }, { merged }, { softGlow }] = await Promise.all([
+  const [tech, { ORIGIN }, { H }, { merged }, { softGlow }] = await Promise.all([
     import('../../place/tech-layout.ts'),
     import('../../place/layout.ts'),
-    import('../../place/land.ts'),
+    import('../../place/terrain.ts'),
     import('../../render/part-geometry.ts'),
     import('../../place/look.ts'),
   ]);
-  const { padById } = tech;
   // The jump course's cap ("block") moves to job E with the double jump's course (designer fit check, 9 November).
-  // The tower's first box stands on t0's east edge, not its north one: that's where you walk off back down to p2, and
-  // its plinth stood in the way (builder default, F2; docs/agent-calls.md). Both of t0's pulls leave from the west.
-  const SECRETS = tech.SECRETS.filter((s) => s.id !== 'block').map((s) =>
-    s.id === 'firstpull' ? { ...s, x: tech.padById('t0').x + 2.1, z: tech.padById('t0').z } : s,
-  );
+  const SECRETS = tech.SECRETS.filter((s) => s.id !== 'block');
   const ox = ORIGIN.x;
   const root = new THREE.Group();
   root.name = 'secrets';
@@ -64,186 +68,37 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
   const yOf = (s: (typeof SECRETS)[number]) => (s.y === null ? H(s.x + ox, s.z) : s.y);
 
   // ---------------------------------------------------------------- the ground they stand on, and the clues
-  // One merged mesh: the lookout's shelf, the loft's rock under its slab, the balcony's column and the sea stack, the
-  // tower boxes' plinths, and each clue. Solid where it looks solid (Place's buildPads, buildChestStands, buildClues).
-  // Not Place's jump course (job E) or its Far Head glide pad and ramp (cut: glider B's device is on Needle Bell).
+  // Records (content/prefabs/secrets.ts), standing where content/levels/secrets.ts puts them: the lookout's shelf, the
+  // loft's rock under its slab, the balcony's column and the sea stack, the tower boxes' plinths, and each clue. Solid
+  // where it looks solid (Place's buildPads, buildChestStands, buildClues), and drawn as one merged mesh. The helmet's
+  // ladder down the stack is its own batch. Not Place's jump course (job E) or its Far Head glide pad and ramp (cut:
+  // glider B's device is on Needle Bell).
+  const frame = { ox, H, pad: tech.padById, secret: (id: string) => tech.SECRETS.find((s) => s.id === id)! };
   const parts: THREE.BufferGeometry[] = [];
-  const m4 = new THREE.Matrix4(),
-    q4 = new THREE.Quaternion(),
-    one = new THREE.Vector3(1, 1, 1);
-  /** Pale landing cap, warm stone body and four brass corner keys (Place's stonePad), centred on the origin. */
-  const stonePad = (hx: number, hz: number, thick: number): Part[] => {
-    const out: Part[] = [
-      ['b', 0, -0.08, 0, hx * 2, thick - 0.16, hz * 2, STONE],
-      ['b', 0, thick / 2 - 0.08, 0, hx * 2, 0.16, hz * 2, '#c6b28d'],
-      ['b', 0, -thick / 2 + 0.06, 0, hx * 2 + 0.04, 0.12, hz * 2 + 0.04, '#6f604b'],
-    ];
-    for (const sx of [-1, 1])
-      for (const sz of [-1, 1]) out.push(['b', sx * (hx - 0.34), -0.02, sz * hz, 0.18, thick - 0.24, 0.045, BRASS]);
-    return out;
-  };
-  const put = (p: Part[], at: THREE.Vector3, q = q4.identity()) =>
-    parts.push(merged(p).applyMatrix4(m4.compose(at, q, one)));
-  const v = new THREE.Vector3();
-  const THICK = 1.2;
-  // The ledges no ring serves (the lookout's, the balcony's, the stack's): Place's pads, stone 1.2 m or wood 0.4 m.
-  const lookout = padById('lookout'),
-    balcony = padById('balcony'),
-    stack = padById('stack');
-  instantiate(
-    'railway.sea-ladder',
-    {
-      id: 'helmet-escape',
-      prefab: 'railway.sea-ladder',
-      pos: [stack.x + ox, stack.top + 0.1, stack.z + stack.hz],
-      rot: [0, Math.PI / 4, 0],
-    },
-    { owner, batch: { target: createPrefabBatch('railway.sea-ladder', 51, owner), index: 0 } },
-  ).setEnabled(true);
-  for (const b of [lookout, stack]) {
-    put(stonePad(b.hx, b.hz, THICK), v.set(b.x + ox, b.top - THICK / 2, b.z));
-    addStatic({ kind: 'box', hx: b.hx, hy: THICK / 2, hz: b.hz }, v, undefined, undefined, owner);
+  /** Where a box stands on a record (a tower box on its plinth), by secret id. */
+  const standsOn = new Map<string, THREE.Vector3>();
+  for (const placed of loadLevelArtifact(level, definitions).placements) {
+    const at = placeSecretThing(placed, frame);
+    if (!at) continue;
+    const visual = definitions[at.prefab]!.visual;
+    const batch =
+      'builder' in visual && visual.batch
+        ? { target: createPrefabBatch(at.prefab, visual.instances?.length ?? 1, owner), index: 0 }
+        : undefined;
+    const thing = instantiate(at.prefab, at, { owner, ...(batch ? { batch } : {}) });
+    thing.setEnabled(true);
+    for (const piece of thing.pieces) parts.push(coloured(piece.geometry.applyMatrix4(piece.matrix), piece.color));
+    if (typeof at.params?.holds === 'string') standsOn.set(at.params.holds, thing.attach('box').at);
   }
-  put(
-    [['b', 0, 0, 0, balcony.hx * 2, 0.4, balcony.hz * 2, '#8a6238']],
-    v.set(balcony.x + ox, balcony.top - 0.2, balcony.z),
-  );
-  addStatic({ kind: 'box', hx: balcony.hx, hy: 0.2, hz: balcony.hz }, v, undefined, undefined, owner);
-  // Solid all the way down: what looks solid is solid.
-  const block = (b: { x: number; z: number; hx: number; hz: number }, top: number) => {
-    const base = H(b.x + ox, b.z) - 0.5,
-      h = top - base;
-    if (h <= 0) return;
-    put([['b', 0, 0, 0, b.hx * 2 - 0.1, h, b.hz * 2 - 0.1, STONE]], v.set(b.x + ox, base + h / 2, b.z));
-    addStatic({ kind: 'box', hx: b.hx - 0.05, hy: h / 2, hz: b.hz - 0.05 }, v, undefined, undefined, owner);
-  };
-  block(lookout, lookout.top - THICK);
-  // The loft's rock: its slab is the hook view's (0.9 m, as every ring's slab).
-  const loft = padById('loft');
-  block(loft, loft.top - 0.9);
-  // The balcony's column in the village and the sea stack: Place's seven-sided tapered columns.
-  const column = (b: { x: number; z: number }, top: number, r0: number, r1: number) => {
-    const base = Math.min(H(b.x + ox, b.z) - 0.5, top - 1),
-      h = top - base;
-    const g = new THREE.CylinderGeometry(r1, r0, h, 7);
-    const n = g.getAttribute('position').count,
-      c = new THREE.Color(STONE),
-      col = new Float32Array(n * 3);
-    for (let k = 0; k < n; k++) col.set([c.r, c.g, c.b], k * 3);
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    parts.push(g.translate(b.x + ox, base + h / 2, b.z));
-    addStatic(
-      { kind: 'cylinder', rTop: r1, rBottom: r0, h, segments: 7 },
-      { x: b.x + ox, y: base + h / 2, z: b.z },
-      undefined,
-      undefined,
-      owner,
-    );
-  };
-  column(balcony, balcony.top - 0.4, 1.3, 1.1);
-  column(stack, stack.top - THICK, 5.4, 3.4);
-  // The tower's boxes stand a metre up on plinths.
-  for (const s of SECRETS.filter((q) => q.area === 'tower')) {
-    const y = yOf(s) - 0.5;
-    put([['b', 0, 0, 0, 1.7, 1, 1.2, STONE2]], v.set(s.x + ox, y, s.z));
-    addStatic({ kind: 'box', hx: 0.85, hy: 0.5, hz: 0.6 }, v, undefined, undefined, owner);
-  }
-  const prop = (p: Part[], x: number, y: number, z: number, yaw: number, solid = false) => {
-    put(p, v.set(x + ox, y, z), new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw));
-    if (solid)
-      addStatic(
-        { kind: 'box', hx: 0.15, hy: 1.2, hz: 0.15 },
-        { x: x + ox, y: y + 1.2, z },
-        undefined,
-        undefined,
-        owner,
-      );
-  };
-  // The yard sits behind the cottage: laundry and its gift invite a detour, leaving the shore-to-town approach clear.
-  // The fence keeps its opening on the east.
-  const { anchor: yard, laundry, fences } = tech.YARD_DRESSING;
-  const gy = H(yard.x + ox, yard.z);
-  prop(
-    [
-      ['b', 0, 1.1, 0, 0.12, 2.2, 0.12, '#7f5630'],
-      ['b', 3.2, 2.05, -0.8, 6.6, 0.03, 0.03, '#e8e0d0'],
-      ['b', 1.4, 1.65, -0.4, 0.7, 0.75, 0.04, '#d8392b'],
-      ['b', 2.6, 1.7, -0.7, 0.55, 0.65, 0.04, '#3f6fb0'],
-      ['b', 4.0, 1.68, -1.0, 0.6, 0.7, 0.04, '#f2e6c8'],
-    ],
-    laundry.x,
-    gy,
-    laundry.z,
-    laundry.yaw,
-    true,
-  );
-  for (const { x, z, w, d } of fences) {
-    put([['b', 0, 0, 0, w, 1, d, '#8a6238']], v.set(x + ox, gy + 0.5, z));
-    addStatic({ kind: 'box', hx: w / 2, hy: 0.5, hz: d / 2 }, v, undefined, undefined, owner);
-  }
-  // The lookout: a scarf caught on a dead branch, over the shelf you'd pass under.
-  prop(
-    [
-      ['c', 0, 1.8, 0, 0.13, 3.6, 0.13, '#5c4530'],
-      ['b', 0.5, 3.1, 0, 1.1, 0.07, 0.07, '#5c4530'],
-      ['b', 0.9, 2.6, 0, 0.14, 0.95, 0.03, '#5f8f3e'],
-    ],
-    lookout.x - 1.6,
-    lookout.top,
-    lookout.z + 1.6,
-    0.6,
-  );
-  // The bell: a little bell under a bracket on the bank, under the trestle. You hear it as you cross the footbridge.
-  // The post stands on the dry bank east of the crate, on its own ground height, with the bracket reaching back over the
-  // crate; west of the crate the bank drops into the river.
-  const bell = tech.SECRETS.find((s) => s.id === 'bell')!;
-  const by = H(bell.x + ox, bell.z);
-  const post = { x: bell.x + 1.7, z: bell.z + 0.9 };
-  prop(
-    [
-      ['b', 0, 1.2, 0, 0.14, 2.4, 0.14, '#6e4c2a'],
-      ['b', 0.4, 2.3, 0, 0.9, 0.1, 0.1, '#6e4c2a'],
-      ['k', 0.75, 2.02, 0, 0.17, 0.34, 0.17, BRASS],
-    ],
-    post.x,
-    H(post.x + ox, post.z),
-    post.z,
-    Math.atan2(post.z - bell.z, bell.x - post.x),
-    true,
-  );
-  const bellAt = new THREE.Vector3(bell.x + ox, by + 1, bell.z);
-  // The loft: a yellow hard hat's worth of colour up on the rock.
-  prop([['b', 0, 0.3, 0, 0.6, 0.6, 0.6, '#f2c81a']], loft.x + 1.5, loft.top, loft.z + 1.8, 0.3);
-  // The balcony: a canopy-shaped weather vane, seen from the first steps of the game.
-  prop(
-    [
-      ['b', 0, 2, 0, 0.1, 4, 0.1, '#3a302c'],
-      ['s', 0, 4.1, 0, 1.2, 0.3, 0.46, '#2fb7a0'],
-      ['b', 0, 3.8, 0, 2.4, 0.06, 0.06, BRASS],
-    ],
-    balcony.x - 2,
-    balcony.top,
-    balcony.z - 2,
-    0.5,
-    true,
-  );
-  // The stack: a bright flag, off the side of the sea trestle.
-  prop(
-    [
-      ['b', 0, 2, 0, 0.1, 4, 0.1, '#3a302c'],
-      ['b', 0.7, 3.6, 0, 1.3, 0.8, 0.04, '#f0752c'],
-    ],
-    stack.x + 2,
-    stack.top,
-    stack.z - 2,
-    1,
-  );
   const groundGeo = mergeGeometries(parts)!;
   for (const g of parts) g.dispose();
   const partMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
   const ground = new THREE.Mesh(groundGeo, partMat);
   ground.castShadow = ground.receiveShadow = true;
   root.add(ground);
+  // The bell under its bracket (the level's bell post reaches over it): heard, not drawn.
+  const bell = tech.SECRETS.find((s) => s.id === 'bell')!;
+  const bellAt = new THREE.Vector3(bell.x + ox, H(bell.x + ox, bell.z) + 1, bell.z);
 
   // ---------------------------------------------------------------- the boxes
   // Three instanced meshes, one per tier, holding every waiting box: the secrets' in the world and their second boxes at
@@ -278,7 +133,10 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
       pose: new THREE.Object3D(),
       waiting: false,
     });
-    boxes.push(make(false, new THREE.Vector3(s.x + ox, yOf(s), s.z)), make(true, new THREE.Vector3()));
+    boxes.push(
+      make(false, standsOn.get(s.id)?.clone() ?? new THREE.Vector3(s.x + ox, yOf(s), s.z)),
+      make(true, new THREE.Vector3()),
+    );
   });
   const meshes: Record<Tier, THREE.InstancedMesh> = Object.fromEntries(
     TIERS.map((t) => {

@@ -6,7 +6,10 @@ import * as layout from '../src/place/layout.ts';
 import * as tech from '../src/place/tech-layout.ts';
 import { CELL, H, surfaceHeight } from '../src/place/terrain.ts';
 import { townLocal } from '../src/place/town-plan.ts';
-import { sourceFunction, sourceModule } from '../dev/level/source.ts';
+import { sourceFunction } from '../dev/level/source.ts';
+import { compiled } from '../src/prefab/catalogue.ts';
+import { loadLevelArtifact } from '../src/prefab/validate.ts';
+import { placeSecretThing } from '../src/entities/finds/secrets-place.ts';
 
 const FLOOR = sourceFunction<number>('src/entities/town/rooms.ts', 'FLOOR', layout);
 type XZ = { x: number; z: number };
@@ -77,54 +80,38 @@ for (const [id, room] of Object.entries(layout.ROOM_PLOTS)) {
 }
 
 test('the yard dressing and solid fences are anchored to the actual yard find', () => {
-  const source = fs.readFileSync('src/entities/finds/secrets-view.ts', 'utf8');
-  const start = source.indexOf('  // The yard sits behind the cottage:');
-  const end = source.indexOf('  // The lookout:', start);
-  assert.ok(start >= 0 && end > start, 'execute the real yard dressing block');
-  type Point = { x: number; y: number; z: number };
-  const queries: { x: number; z: number }[] = [],
-    poles: Point[] = [],
-    fences: Point[] = [];
-  const { yard } = sourceModule<{ yard(): void }>(`export function yard() {\n${source.slice(start, end)}\n}`, {
-    tech,
-    SECRETS: tech.SECRETS,
+  // The records' placements, resolved as the secrets view resolves them (content/levels/secrets.ts).
+  const { placements } = loadLevelArtifact(
+    JSON.parse(fs.readFileSync('content/built/levels/secrets.json', 'utf8')) as unknown,
+    compiled.prefabs,
+  );
+  const queries: { x: number; z: number }[] = [];
+  const frame = {
     ox: layout.ORIGIN.x,
-    owner: {},
     H(x: number, z: number) {
       queries.push({ x, z });
       return H(x, z);
     },
-    prop(_parts: unknown, x: number, y: number, z: number) {
-      poles.push({ x, y, z });
-    },
-    put() {},
-    v: {
-      x: 0,
-      y: 0,
-      z: 0,
-      set(this: Point, x: number, y: number, z: number) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        return this;
-      },
-    },
-    addStatic(_shape: unknown, p: Point) {
-      fences.push({ ...p, x: p.x - layout.ORIGIN.x });
-    },
-  });
-  yard();
+    pad: tech.padById,
+    secret: (id: string) => tech.SECRETS.find((s) => s.id === id)!,
+  };
+  const yard = placements.filter((p) => p.params?.on === 'secret:yard').map((p) => placeSecretThing(p, frame)!);
   const find = tech.SECRETS.find((s) => s.id === 'yard')!;
   assert.deepEqual(
     queries,
-    [{ x: find.x + layout.ORIGIN.x, z: find.z }],
+    yard.map(() => ({ x: find.x + layout.ORIGIN.x, z: find.z })),
     'ground the dressing at its find, not at the removed cottage',
   );
+  const at = (p: (typeof yard)[number]) => ({ x: p.pos[0] - layout.ORIGIN.x, y: p.pos[1], z: p.pos[2] });
+  const poles = yard.filter((p) => p.prefab === 'secrets.laundry').map(at),
+    fences = yard.filter((p) => p.prefab === 'secrets.fence').map(at);
   assert.deepEqual(
-    poles.map((p) => ({ x: p.x - find.x, z: p.z - find.z })),
+    poles.map((p) => ({ x: +(p.x - find.x).toFixed(9), z: +(p.z - find.z).toFixed(9) })),
     [{ x: -2.5, z: -3.5 }],
   );
+  assert.ok(compiled.prefabs['secrets.laundry']!.colliders.length, 'the laundry pole is solid');
   assert.equal(fences.length, 2, 'retain both solid fences');
+  assert.ok(compiled.prefabs['secrets.fence']!.colliders.length, 'the fences are solid');
   for (const [i, offset] of [
     [-3.1, 0.5],
     [0, 4.7],

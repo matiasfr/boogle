@@ -232,10 +232,11 @@ test('mushroom stall meshes, canvases, collider, footprint and Take target match
   prefabGolden(actual, JSON.parse(fs.readFileSync('test/fixtures/prefab-mushroom-stall.json', 'utf8')), 'stall');
 });
 
-// Step 13 (the secrets): captured on the pre-record code; GOLDEN=1 rewrites it. Runtime values use the shared tolerance.
+// Step 13 (the secrets): the fixture was captured on the pre-record code (captureSecrets over the view as it was, in
+// the commit "Capture the secrets world golden before the record conversion") and is never rewritten. Runtime values use
+// the shared tolerance; primitive matrices are full precision, before Float32 quantization, and boxes and columns read as
+// unit shapes times their size.
 test('secrets ground, ladder, colliders, boxes and Open target match the pre-record code', async () => {
-  const fixture = 'test/fixtures/prefab-secrets.json';
   const actual = JSON.parse(JSON.stringify(await captureSecrets()));
-  if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual) + '\n');
-  prefabGolden(actual, JSON.parse(fs.readFileSync(fixture, 'utf8')), 'secrets');
+  prefabGolden(actual, JSON.parse(fs.readFileSync('test/fixtures/prefab-secrets.json', 'utf8')), 'secrets');
 });
