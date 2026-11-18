@@ -133,7 +133,7 @@ export function junctions(): Junction[] {
       s: LEG.from,
       dir: -1,
       kind: 'spur',
-      lever: -1,
+      lever: 1,
       when: 'leg',
       through: head(0, LEG.from, -1),
       diverging: (d) => leg(d),
