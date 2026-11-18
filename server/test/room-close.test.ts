@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import { createStore, type Store } from '../src/store.ts';
-import { createRoomHost } from './helpers/accounts.ts';
+import { createRoomHost, createService, loadConfig } from './helpers/accounts.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { CLOSE } from '../../src/net/ws-wire.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
@@ -39,18 +39,15 @@ async function within<T>(wait: Promise<T>, label: string, state: () => string, m
 }
 function connect(base: string, room: string, sid: string) {
   const ws = new WebSocket(`${base}/room/${room}?self=${sid}&pid=alice&key=alicekey000000000000&b=test`, ['boogle.1']);
-  const messages: Obj[] = [];
-  ws.onmessage = (e) => messages.push(JSON.parse(String(e.data)) as Obj);
+  const firstMessage = new Promise<Obj>((resolve) => {
+    ws.addEventListener('message', (event) => resolve(JSON.parse(String(event.data)) as Obj), { once: true });
+  });
   const closed = new Promise<number>((resolve) => {
     ws.onclose = (e) => resolve(e.code);
   });
   // The listener is attached at construction, so a close that fires before anyone awaits is still seen.
-  const closedWithin = (label: string) =>
-    within(closed, `${sid} close: ${label}`, () => `readyState ${ws.readyState}, messages ${messages.length}`);
-  const first = async () => {
-    await until(() => messages.length > 0, `${sid} first message`);
-    return messages[0]!;
-  };
+  const closedWithin = (label: string) => within(closed, `${sid} close: ${label}`, () => `readyState ${ws.readyState}`);
+  const first = () => within(firstMessage, `${sid} first message`, () => `readyState ${ws.readyState}`);
   return { ws, closedWithin, first };
 }
 async function manager(store: Store, t: test.TestContext, tmp: Tmp, onLog = (_line: string) => {}) {
@@ -130,6 +127,126 @@ async function tmpStore() {
   };
   return { dataDir, base, remove };
 }
+
+const HARD_EXIT_MS = 9000; // index.ts
+test('a stalled write with a player connected is reported to index.ts before its hard exit', async (t) => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-review-drain-'));
+  const id = 'review-stall-svc';
+  const realWrite = fs.writeFile;
+  let stall = false;
+  const disk = Promise.withResolvers<void>();
+  let drain: (() => Promise<void>) | undefined;
+  // The store writes through this same module object (store.ts: fs.writeFile), so a write of this room hangs as one on a
+  // stalled disk would.
+  (fs as { writeFile: unknown }).writeFile = async (file: unknown, ...rest: unknown[]) => {
+    if (stall && String(file).includes(id)) await disk.promise;
+    return (realWrite as (...a: unknown[]) => Promise<void>)(file, ...rest);
+  };
+  t.after(async () => {
+    (fs as { writeFile: unknown }).writeFile = realWrite;
+    disk.resolve();
+    await drain?.();
+    await fs.rm(dataDir, { recursive: true, force: true });
+  });
+  let detailAt = Infinity; // when the room host's error, naming the room, reached the log
+  const cfg = loadConfig(
+    { DATA_DIR: dataDir, SERVER_ROOMS: '*', PORT: '0' },
+    {
+      log: (...a: unknown[]) => {
+        const line = a.map(String).join(' ');
+        if (line.includes('rooms failed to close') && line.includes(id))
+          detailAt = Math.min(detailAt, performance.now());
+      },
+    },
+  );
+  const svc = createService(cfg);
+  const port = await svc.listen(0);
+  const c = connect(`ws://127.0.0.1:${port}`, id, 'first');
+  t.after(() => c.ws.close());
+  assert.equal((await c.first()).t, 'welcome');
+  const world = svc.roomHost()!.room(id)!.world;
+  drain = () => world.close({ save: false });
+  stall = true;
+  const start = performance.now();
+  const outcome = await outcomeOf(svc.close({ save: true }));
+  const reportedAt = performance.now() - start;
+  assert.equal(outcome, 'reported');
+  assert.ok(
+    detailAt - start < HARD_EXIT_MS,
+    `the room's detail reached the log after ${Math.round(detailAt - start)} ms (hard exit at ${HARD_EXIT_MS} ms)`,
+  );
+  assert.ok(
+    reportedAt < HARD_EXIT_MS,
+    `the report reached index.ts after ${Math.round(reportedAt)} ms; its hard exit fires at ${HARD_EXIT_MS} ms`,
+  );
+});
+
+// P3: the deadline's error names every room in the snapshot, including ones whose writes already landed, so the
+// report cannot say which room still had a write queued.
+test('the deadline names only the rooms whose writes are still queued', async (t) => {
+  const tmp = await tmpStore();
+  const { base } = tmp;
+  await base.init();
+  const gates = new Map<string, () => void>();
+  let stall = false;
+  const store: Store = {
+    ...base,
+    write(rid, ...rest) {
+      if (stall) void base.withLock(rid, () => new Promise<void>((go) => gates.set(rid, go)));
+      return base.write(rid, ...rest);
+    },
+  };
+  const quick = 'review-lands';
+  const stuck = 'review-stuck';
+  t.after(() => {
+    for (const release of gates.values()) release();
+  });
+  const app = await manager(store, t, tmp, (line) => {
+    if (line.includes(`room ${quick}: close failed`)) gates.get(quick)?.();
+  });
+  const { rooms } = app;
+  const clients = [app.join(quick, 'first'), app.join(stuck, 'second')];
+  for (const client of clients) assert.equal((await client.first()).t, 'welcome');
+  stall = true;
+  for (const r of [quick, stuck]) rooms.room(r)!.world.sync.saveNow(true);
+  stall = false;
+  let quickLanded = false;
+  void base.withLock(quick, async () => void (quickLanded = true));
+  const error: unknown = await rooms.close({ save: false }).then(
+    () => null,
+    (reason: unknown) => reason,
+  );
+  assert.ok(error instanceof AggregateError);
+  assert.equal(quickLanded, true, 'the quick room drained before the deadline');
+  const late = error.errors.map(String).find((e) => e.includes('writes still queued'));
+  assert.ok(late, 'a deadline error');
+  assert.ok(late.includes(stuck), late);
+  assert.ok(!late.includes(quick), `names ${quick}, whose write landed: ${late}`);
+});
+
+// P3: a restore that began before the shutdown is `closing` through offline(), but its own write is queued only after
+// its backup copy; the shutdown's drain, queued at the snapshot, can settle first and index.ts exits 0 mid-restore.
+test('shutdown waits for a restore that offline() is still running', async (t) => {
+  const tmp = await tmpStore();
+  const { base: store } = tmp;
+  await store.init();
+  const id = 'review-restore';
+  await store.write(id, { tick: 1, writerId: 'x', data: {}, updatedAt: new Date().toISOString() });
+  const { rooms } = await manager(store, t, tmp);
+  const backup = Promise.withResolvers<void>();
+  const restoring = rooms.offline(id, async () => {
+    await backup.promise;
+    return store.write(id, { tick: 2, writerId: 'x', data: {}, updatedAt: new Date().toISOString() });
+  });
+  const closing = rooms.close({ save: true }).then(() => store.readSync(id)?.tick);
+  try {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  } finally {
+    backup.resolve();
+    await restoring;
+  }
+  assert.equal(await closing, 2, 'shutdown returned before the restored checkpoint landed');
+});
 
 test('a room whose save did not load cleanly can be joined again after its idle close', async (t) => {
   const tmp = await tmpStore();
