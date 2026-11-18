@@ -65,6 +65,16 @@ function save(next: Credential): boolean {
   }
 }
 
+// Whether the store this tab saves to still holds the token it read; anything else there is someone's newer record.
+function holds(token: string): boolean {
+  try {
+    const saved = (visitStorage ? sessionStorage : localStorage).getItem(ACCOUNT_KEY);
+    return saved !== null && readCredential(saved).token === token;
+  } catch {
+    return false;
+  }
+}
+
 async function request(path: string, token: string, method = 'GET', body: object = {}): Promise<unknown> {
   const server = import.meta.env.VITE_BOOGLE_SERVER;
   if (!server) throw new Error('The game server is not configured. Reload to retry.');
@@ -165,7 +175,8 @@ async function prepare() {
     if (credential.pid && credential.pid !== next.pid) throw new Error('The server returned a different identity.');
     credential = next;
     state = 'ready';
-    save(credential);
+    // Another tab may have signed in or out while this check was in flight: never write the former person back.
+    if (!switching && holds(next.token)) save(credential);
   } catch (error) {
     state = (error as { status?: number } | null)?.status === 401 ? 'revoked' : 'offline';
     problem =
