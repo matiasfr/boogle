@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { parseSync, type Node } from 'oxc-parser';
+import { importClosure } from '../dev/ci/change-class.ts';
 import { CORE_TESTS, FULL_ON, UNFOLLOWED, createWalker, unitPlan, unitTests } from '../dev/ci/unit-select.ts';
 import { CI_UNIT_SHARDS, unitShards } from '../dev/ci/unit-shards.ts';
 import { isMetaUrl, literal, walk } from '../dev/scan/parse.ts';
@@ -15,6 +16,44 @@ import { REVIEW_PATHS } from '../dev/review-stamp.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const plan = (...files: string[]) => unitPlan(files, ROOT);
+
+// Changed file, the test that must run, and how the test reaches it.
+const selectionCases: [string, string, string][] = [
+  ['src/entities/railway/leaf-view.ts', 'test/railway-r4c-leaf.test.ts', 'sourceFunction by rooted path'],
+  ['src/entities/railway/leaf-view.ts', 'test/railway-m10a-views.test.ts', 'a folder URL over the views'],
+  ['src/entities/railway/view.ts', 'test/railway-m10a-views.test.ts', 'a folder URL over the views'],
+  ['src/boot/sw-worker.ts', 'test/sw-worker.test.ts', 'an esbuild entry'],
+  ['src/proto/greybox/ground.ts', 'test/rail-map.test.ts', 'imported by the script it runs with --check'],
+  ['dev/level/rail-map.ts', 'test/rail-map.test.ts', 'the script it runs with --check'],
+  ['dev/level/world-blockout.ts', 'test/world-lines.test.ts', 'the script it runs with --check'],
+  ['dev/migrate/rail-mutants.ts', 'test/railway-migrate.test.ts', 'a script it spawns'],
+];
+for (const [changed, want, how] of selectionCases) {
+  test(`${changed} selects ${want} (${how})`, () => {
+    const p = plan(changed);
+    assert.equal(p.full, false, p.full ? p.why : '');
+    if (!p.full) assert.ok(p.tests.includes(want), `${want} not in ${p.tests.join(' ')}`);
+  });
+}
+
+test("the selector's import closure is computed into FULL_ON and takes the full suite", () => {
+  const closure = [...importClosure(['dev/ci/unit-select.ts'], ROOT)];
+  assert.ok(closure.includes('dev/review-stamp.ts') && closure.includes('dev/server-build.ts'), closure.join(' '));
+  for (const f of closure) assert.ok(FULL_ON.includes(f) || FULL_ON.some((e) => e.endsWith('/') && f.startsWith(e)), f);
+  // A diff that trims REVIEW_PATHS and changes a client file must not pick its own run.
+  for (const files of [['dev/review-stamp.ts', 'src/features/ambience.ts'], ['dev/server-build.ts']]) {
+    const p = plan(...files);
+    assert.equal(p.full, true, files.join(', '));
+  }
+});
+
+test('a file review-path code loads from outside REVIEW_PATHS takes the full suite', () => {
+  for (const f of ['src/proto/flags.ts', 'protos/review-types.ts', 'src/constants.ts']) {
+    const p = plan(f);
+    assert.equal(p.full, true, f);
+    if (p.full) assert.match(p.why, /loaded by review-path code/, f);
+  }
+});
 
 test('every review path, and what every test shares, takes the full suite', () => {
   for (const p of REVIEW_PATHS) assert.ok(FULL_ON.includes(`${p}/`), p);

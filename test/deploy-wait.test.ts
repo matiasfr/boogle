@@ -34,21 +34,16 @@ test('Pages-only deploy accepts its older serverBuild immediately, without expec
   assert.deepEqual(endpoint.sleeps, []);
 });
 
-test('server deploy finishing after six minutes passes with 15-second polling', async () => {
-  const endpoint = fakeEndpoint((elapsed) => (elapsed < 6 * 60 * 1000 ? 'previous' : 'expected'));
+test('server deploy recovers from a restart and converges after six minutes of polling', async () => {
+  const endpoint = fakeEndpoint((elapsed) => {
+    if (elapsed === 0) throw new Error('HTTP 503');
+    if (elapsed === 15000) return '';
+    return elapsed < 6 * 60 * 1000 ? 'previous' : 'expected';
+  });
   assert.equal(await waitForServerBuild('expected', endpoint), 'expected');
   assert.equal(endpoint.now(), 360000);
   assert.equal(endpoint.polls.length, 25);
   assert.ok(endpoint.sleeps.every((ms) => ms === 15000));
-});
-
-test('a restart, missing build and transient endpoint error can recover', async () => {
-  const endpoint = fakeEndpoint((elapsed) => {
-    if (elapsed === 0) throw new Error('HTTP 503');
-    return elapsed === 15000 ? '' : 'expected';
-  });
-  assert.equal(await waitForServerBuild('expected', endpoint), 'expected');
-  assert.equal(endpoint.now(), 30000);
 });
 
 test('failed or superseded deploy remaining on the wrong commit fails after 24 minutes', async () => {
