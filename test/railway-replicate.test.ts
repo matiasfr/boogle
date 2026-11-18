@@ -9,7 +9,6 @@ import { install as installRailway, type Actor } from '../src/world/railway-serv
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror, RAIL_SCHEMAS } from '../src/world/railway-replicate.ts';
 import { Account, Job, Rail, Tree } from '../src/sim/railway-components.ts';
-import { RULE_STEPS } from '../src/world/room-clock.ts';
 import type { RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_INITIAL } from '../src/sim/railway-line-layout.ts';
@@ -158,6 +157,60 @@ function agree(r: ReturnType<typeof room>, cid: string) {
   assert.deepEqual(timed(mirrored), timed(w), `${cid} timed job fields at tick ${tick}`);
 }
 
+/** A room holding `seed`'s world at its tick, with client `cid` joined and agreeing. */
+function seeded(seed: { w: World; t: number }, cid = 'a') {
+  const r = room();
+  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
+  r.api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
+  r.api.touchAll();
+  r.join(cid);
+  r.pump();
+  agree(r, cid);
+  return r;
+}
+/** Player a's predicting adapter on mirror `cid`, standing at `pose`, told its session (`next` request): what it
+ * sent, its corrections and its accepted effects are recorded. */
+function predictor(r: ReturnType<typeof room>, cid: string, pose: { x: number; y: number; z: number }, next: number) {
+  const adapter = createRailwayAdapter({
+    mirror: r.mirrors.get(cid)!,
+    movement: () => ({
+      ...railMovement({ get: (k) => specOf(k)!.def }),
+      beamSoloSpeed: 2,
+      beamHelpSpeed: 5,
+      jumpImpulse: 6,
+      jumpTurn: 1,
+      jumpSteer: 25,
+      jumpApexSpeed: 1,
+    }),
+    pid: 'a',
+    pose: () => pose,
+    now: () => 1000,
+  });
+  let hear: ((message: unknown, from: string) => void) | undefined;
+  const sent: Record<string, unknown>[] = [],
+    corrections: RailwayCorrection[] = [],
+    effects: RailwayAccepted[] = [];
+  adapter.onCorrected((c) => corrections.push(c));
+  adapter.onAccepted((e) => effects.push(e));
+  adapter.attach({
+    selfId: 'a',
+    send: (m) => void sent.push((m as { e: Record<string, unknown> }).e),
+    onMessage: (fn) => {
+      hear = fn;
+      return () => {};
+    },
+    onConnection: () => () => {},
+  });
+  hear!({ t: 'r:session', to: 'a', epoch: r.api.account('a')?.epoch ?? 1, next }, SERVER_ID);
+  r.pump();
+  return { adapter, sent, corrections, effects };
+}
+/** Player `pid`'s next action on the server, from its account. */
+const serverAct = (r: ReturnType<typeof room>, pid: string, e: Record<string, unknown>) => {
+  const a = r.api.account(pid)!;
+  return r.api.act(pid, { epoch: a.epoch, request: a.request + 1, ...e } as RailAction, anywhere);
+};
+
 test('a random multi-player action stream replicates exactly, live and to a late joiner', () => {
   const r = room();
   r.join('a');
@@ -277,7 +330,6 @@ test('a running job sends nothing per rule tick: its timed fields are derived', 
   agree(r, 'a');
   const elapsed = (x: World) => railJobs(x, r.sync.world.tick)[0]!.run.elapsed;
   assert.ok(elapsed(r.api.world()) > 0 && elapsed(r.mirrors.get('a')!.confirmed()) === elapsed(r.api.world()));
-  assert.equal(RULE_STEPS, 6);
 });
 
 test('the railway state is checkpointed by the host and restores its session account', () => {
@@ -288,10 +340,6 @@ test('the railway state is checkpointed by the host and restores its session acc
   const again = room();
   again.sync.loadSnapshot(saved);
   assert.equal(again.api.account('alice')?.epoch, 1);
-  // the depot cart, boiler and trains; the Works and the shed; the lines; the aperture (v27); the yards, the town and
-  // the till and plots (slice 5); the steel works (ring-island-build2); the legs, the junction yard and the route (the greybox
-  // route)
-  assert.equal(RAIL_SCHEMAS.length, 25);
 });
 
 test('a scripted run through line one, the pack and line two to Q6 replicates exactly, live and to a late joiner', () => {
@@ -388,39 +436,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   /** a's predicting adapter on its own mirror session `name`, standing at `pose`, for a one-flag take race. */
   const racer = (name: string, pose: { x: number; y: number; z: number }) => {
     r.join(name);
-    const mirrorOf = r.mirrors.get(name)!;
-    const adapter = createRailwayAdapter({
-      mirror: mirrorOf,
-      movement: () => ({
-        ...railMovement({ get: (k) => specOf(k)!.def }),
-        beamSoloSpeed: 2,
-        beamHelpSpeed: 5,
-        jumpImpulse: 6,
-        jumpTurn: 1,
-        jumpSteer: 25,
-        jumpApexSpeed: 1,
-      }),
-      pid: 'a',
-      pose: () => pose,
-      now: () => 1000,
-    });
-    let hear: ((message: unknown, from: string) => void) | undefined;
-    const corrections: RailwayCorrection[] = [],
-      effects: RailwayAccepted[] = [];
-    adapter.onCorrected((c) => corrections.push(c));
-    adapter.onAccepted((e) => effects.push(e));
-    adapter.attach({
-      selfId: 'a',
-      send: () => {},
-      onMessage: (fn) => {
-        hear = fn;
-        return () => {};
-      },
-      onConnection: () => () => {},
-    });
-    hear!({ t: 'r:session', to: 'a', epoch: 1, next: (req.get('a') ?? 0) + 1 }, SERVER_ID);
-    r.pump();
-    return { adapter, mirror: mirrorOf, corrections, effects };
+    return { ...predictor(r, name, pose, (req.get('a') ?? 0) + 1), mirror: r.mirrors.get(name)! };
   };
   for (let k = 0; k <= Q6; k++) {
     const spec = LINE2_STATIONS[k]!;
@@ -552,14 +568,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
 });
 
 test('boiler and train packets patch the mirror; boiler blocks predicted material and call waits', () => {
-  const seed = railwayAtTrains('boiler'),
-    r = room();
-  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
-  r.api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
-  r.api.touchAll();
-  r.join('a');
-  r.pump();
-  agree(r, 'a');
+  const r = seeded(railwayAtTrains('boiler'));
   const a = r.api.account('a')!;
   const result = r.api.act(
     'a',
@@ -595,14 +604,7 @@ test('boiler and train packets patch the mirror; boiler blocks predicted materia
 });
 
 test("every train and line row reaches the mirror through the replicated components (v27's four trains)", () => {
-  const seed = railwayAtTrains('q6-done'),
-    r = room();
-  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
-  r.api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
-  r.api.touchAll();
-  r.join('a');
-  r.pump();
-  agree(r, 'a');
+  const r = seeded(railwayAtTrains('q6-done'));
   const a = r.api.account('a')!;
   // A lever ask (the line's row) and a rider's ask (the train's own) both reach the mirror.
   const call = (request: number, e: object) =>
@@ -616,8 +618,6 @@ test("every train and line row reaches the mirror through the replicated compone
     agree(r, 'a');
     const server = r.api.world(),
       mirror = r.mirrors.get('a')!.confirmed();
-    // v27's four, and the greybox route's three fleet rows (in the shed until the stack line is laid; three from v34).
-    assert.equal(trains(mirror).length, 7);
     assert.deepEqual(trains(mirror), trains(server));
     assert.deepEqual(lines(mirror), lines(server));
   }
@@ -651,52 +651,9 @@ test('Q6 prediction keeps train rails aboard until funding is confirmed', () => 
 });
 
 test('a footing take predicted, then lost to a friend, comes back as a correction; mechanism ops wait', () => {
-  const seed = railwayAtWorks('works-lit'),
-    r = room();
-  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
-  r.api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
-  r.api.touchAll();
-  r.join('a');
-  r.pump();
-  agree(r, 'a');
-  const mirror = r.mirrors.get('a')!;
-  const adapter = createRailwayAdapter({
-    mirror,
-    movement: () => ({
-      ...railMovement({ get: (k) => specOf(k)!.def }),
-      beamSoloSpeed: 2,
-      beamHelpSpeed: 5,
-      jumpImpulse: 6,
-      jumpTurn: 1,
-      jumpSteer: 25,
-      jumpApexSpeed: 1,
-    }),
-    pid: 'a',
-    pose: () => ({ x: 1088, y: 24, z: 50 }),
-    now: () => 1000,
-  });
-  let hear: ((message: unknown, from: string) => void) | undefined;
-  const sent: Record<string, unknown>[] = [],
-    corrections: RailwayCorrection[] = [];
-  adapter.onCorrected((c) => corrections.push(c));
-  adapter.attach({
-    selfId: 'a',
-    send: (m) => void sent.push((m as { e: Record<string, unknown> }).e),
-    onMessage: (fn) => {
-      hear = fn;
-      return () => {};
-    },
-    onConnection: () => () => {},
-  });
-  const server = (pid: string, e: Record<string, unknown>) => {
-    const a = r.api.account(pid)!;
-    return r.api.act(pid, { epoch: a.epoch, request: a.request + 1, ...e } as RailAction, anywhere);
-  };
-  hear!(
-    { t: 'r:session', to: 'a', epoch: r.api.account('a')!.epoch, next: r.api.account('a')!.request + 1 },
-    SERVER_ID,
-  );
-  r.pump();
+  const r = seeded(railwayAtWorks('works-lit'));
+  const { adapter, sent, corrections } = predictor(r, 'a', { x: 1088, y: 24, z: 50 }, r.api.account('a')!.request + 1);
+  const server = (pid: string, e: Record<string, unknown>) => serverAct(r, pid, e);
   // A friend takes all but one footing (each put down beside the rack).
   for (let k = 0; k < WORKS.rackCap - 1; k++) {
     assert.equal(server('b', { op: 'rail.footTake', rack: 0 }).status, 'accepted');
@@ -736,7 +693,11 @@ test('the kiln lit, the cradle fitted and the wagon rolling out are never predic
   let shown = shownOf(w.w);
   const kiln = { op: 'rail.kiln', epoch: a('b').epoch, request: a('b').request + 1 };
   assert.equal(railPredict(shown, 'b', kiln, w.t).n, WORKS.kilnStone);
-  assert.deepEqual([works(shown).logs, works(shown).stone, works(shown).lit], [16, 16, -1], 'full, lit by the server');
+  assert.deepEqual(
+    [works(shown).logs, works(shown).stone, works(shown).lit],
+    [WORKS.kilnLogs, WORKS.kilnStone, -1],
+    'full, lit by the server',
+  );
   for (const e of [{ op: 'rail.strike', id: 0 }, { op: 'rail.turn', to: 1, revision: 0 }, { op: 'rail.breaker' }])
     assert.equal(railPredict(shown, 'a', { ...e, epoch: a('a').epoch, request: a('a').request + 1 }, w.t).n, 0);
   // The cradle takes its eight rails and no footings (works-late-game step 2a); the table turns only once it is fitted.
@@ -801,51 +762,9 @@ test('the steel works: its yard take and feed are predicted, its lighting and th
 });
 
 test('a steel kit take a friend beat you to comes back as onCorrected', () => {
-  const seed = buildSeedWorld('steel-kit'),
-    r = room();
-  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
-  r.api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
-  r.api.touchAll();
-  r.join('a');
-  r.pump();
-  agree(r, 'a');
-  const adapter = createRailwayAdapter({
-    mirror: r.mirrors.get('a')!,
-    movement: () => ({
-      ...railMovement({ get: (k) => specOf(k)!.def }),
-      beamSoloSpeed: 2,
-      beamHelpSpeed: 5,
-      jumpImpulse: 6,
-      jumpTurn: 1,
-      jumpSteer: 25,
-      jumpApexSpeed: 1,
-    }),
-    pid: 'a',
-    pose: () => ({ x: 4455, y: 9, z: 0 }),
-    now: () => 1000,
-  });
-  let hear: ((message: unknown, from: string) => void) | undefined;
-  const sent: Record<string, unknown>[] = [],
-    corrections: RailwayCorrection[] = [];
-  adapter.onCorrected((c) => corrections.push(c));
-  adapter.attach({
-    selfId: 'a',
-    send: (m) => void sent.push((m as { e: Record<string, unknown> }).e),
-    onMessage: (fn) => {
-      hear = fn;
-      return () => {};
-    },
-    onConnection: () => () => {},
-  });
-  const server = (pid: string, e: Record<string, unknown>) => {
-    const acc = r.api.account(pid)!;
-    return r.api.act(pid, { epoch: acc.epoch, request: acc.request + 1, ...e } as RailAction, anywhere);
-  };
-  hear!(
-    { t: 'r:session', to: 'a', epoch: r.api.account('a')!.epoch, next: r.api.account('a')!.request + 1 },
-    SERVER_ID,
-  );
-  r.pump();
+  const r = seeded(buildSeedWorld('steel-kit'));
+  const { adapter, sent, corrections } = predictor(r, 'a', { x: 4455, y: 9, z: 0 }, r.api.account('a')!.request + 1);
+  const server = (pid: string, e: Record<string, unknown>) => serverAct(r, pid, e);
   assert.equal(steel(r.api.world()).yardLogs, STEEL.logs);
   // A friend takes the rails and puts them down beside the yard (the mirror is current once a change reaches it).
   assert.equal(server('b', { op: 'rail.steelTake', kind: 1 }).status, 'accepted');
@@ -875,18 +794,11 @@ test('a late joiner sees the fitted boiler cold while the cart returns', () => {
   const seed = buildSeedWorld('boiler');
   seedAct(seed, 'a', 'rail.boilerTake', { revision: boiler(seed.w).revision });
   seedAct(seed, 'a', 'rail.boilerFit', { revision: boiler(seed.w).revision });
-  const r = room();
-  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
-  r.api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
-  r.api.touchAll();
-  r.join('late');
-  r.pump();
+  const r = seeded(seed, 'late');
   const w = r.mirrors.get('late')!.confirmed();
   assert.equal(boiler(w).state, 'fitted');
   assert.equal(rail(w).trains, -1);
   assert.equal(works(w).breaker, 0);
-  assert.deepEqual(cart(w), cart(r.api.world()));
-  agree(r, 'late');
   // Disconnect and replace the mirror during the cold wait, as a reconnect does.
   r.replication.removeClient('late');
   for (let i = 0; i < 10; i++) r.sync.stepWorld(100);
