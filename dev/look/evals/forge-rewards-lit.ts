@@ -9,9 +9,7 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
-const { inspectRailway, railBack } = (await import(
-  '/dev/look/rail-read.ts' as string
-)) as typeof import('../rail-read.ts');
+const { inspectRailway } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const q = new URLSearchParams(location.search);
 const second = q.get('player') === '2';
@@ -25,20 +23,22 @@ if (!second) {
   me.body!.velocity.set(0, 0, 0);
 }
 if (q.get('report')) {
-  const seen = new Set<string>();
-  const end = performance.now() + 9000;
+  // Every change of the cut, the roof show, the axe's heat and the machine's crossing, timed from the first sample.
+  const log: string[] = [];
+  let last = '';
+  const t0 = performance.now();
+  const end = t0 + 9000;
   while (performance.now() < end) {
     const v = inspectRailway()!.line2View;
     const cam = v.switchCamera;
-    if (cam.kind === 'forgeAxe' && (cam.active || cam.pending)) seen.add(cam.active ? 'cut playing' : 'cut queued');
-    seen.add(`axe ${v.forgeRewards.axe.heat}`);
-    seen.add(`roof ${v.forgeFinish.stage}`);
-    await wait(100);
+    const shot =
+      cam.kind === 'forgeAxe' && (cam.active || cam.pending) ? (cam.active ? 'cut playing' : 'cut queued') : 'no cut';
+    const now = `${shot}, roof ${v.forgeFinish.stage}, axe ${v.forgeRewards.axe.heat}${v.working ? ', crossed' : ''}`;
+    if (now !== last) log.push(`${((performance.now() - t0) / 1000).toFixed(1)} s: ${now}`);
+    last = now;
+    await wait(50);
   }
   const v = inspectRailway()!.line2View;
-  console.log(
-    `FORGE LOOK player ${second ? 2 : 1}: ${[...seen].join(', ')}; arrivals ${v.forgeRewards.axe.arrivals}; ` +
-      `carrying ${railBack().carry}; at ${me.body!.position.x.toFixed(1)}, ${me.body!.position.z.toFixed(1)}`,
-  );
+  console.log(`FORGE LOOK player ${second ? 2 : 1}: ${log.join(' | ')}; arrivals ${v.forgeRewards.axe.arrivals}`);
 }
 export {};
