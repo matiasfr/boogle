@@ -485,7 +485,7 @@ mesh.visible = true;
 - `scene.environment = pmrem.fromEquirectangular(hdr).texture` → `hdr.mapping = THREE.EquirectangularReflectionMapping; scene.environment = hdr;`: the renderer prefilters an equirectangular environment itself, so manual PMREM of a loaded file adds nothing.
 - `scene.background = hdr` → `hdr.mapping = THREE.EquirectangularReflectionMapping; scene.background = hdr;`: without `mapping`, an equirectangular texture draws as a flat screen-space quad instead of a surround.
 - `ktx2Loader.detectSupportAsync(renderer)` → `await renderer.init(); ktx2Loader.detectSupport(renderer);`: the async variant was deprecated in r181, and support detection needs the initialized device.
-- `ktx2Loader.setTranscoderPath("libs/basis/")` → `const ktx2Loader = new KTX2Loader(); ktx2Loader.detectSupport(renderer);`: the transcoder loads from the package, so a path is only needed when self-hosting, pinned to three@0.186.0.
+- `ktx2Loader.setTranscoderPath("libs/basis/")` → `const ktx2Loader = new KTX2Loader(); ktx2Loader.detectSupport(renderer);`: the transcoder loads from the package, so a path is only needed when self-hosting, pinned to three@0.187.0.
 - `new THREE.WebGLMultipleRenderTargets(width, height, 2)` → `new THREE.WebGLRenderTarget(width, height, { count: 2 })`: removed in r162; the attachments are `renderTarget.textures[0..count-1]`.
 - `new THREE.WebGLCubeRenderTarget(256)` → `new THREE.CubeRenderTarget(256)`: under WebGPURenderer use `CubeRenderTarget` imported from `three/webgpu`; `WebGLCubeRenderTarget` is WebGL-only.
 - `loader.load(url, onLoad, onProgress, onError)` → `manager.onProgress = (url, loaded, total) => console.log(url, loaded, total)`: TextureLoader's `onProgress` parameter is unsupported and never fires.
