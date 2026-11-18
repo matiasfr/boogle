@@ -212,6 +212,7 @@ export async function createFindsView(store: FindsApi) {
       lit: shelf ? lit.count : 0,
       onShelf: !!shelf,
       ...secrets.inspect(),
+      ledges: secrets.ledges(),
     }),
     dispose: () => owner.dispose(),
   };

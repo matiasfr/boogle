@@ -175,6 +175,9 @@ export type FindsViewInspection = {
   }[];
   /** The secret whose box is opening now, or null. */
   opening: string | null;
+  /** Each raised world box's ledge: the height it is opened from (src/player/reach.ts `ledge`), by secret id. Ground
+   * boxes aren't listed. */
+  ledges: Record<string, number>;
 };
 export const inspectFinds = () => (mine ? { ...mine.inspect(), ...(shown?.() ?? null) } : null);
 /** Lifecycle owner only. */

@@ -1,4 +1,4 @@
-> **Status: planned 18 November 2026 (design sub-agent), nothing built.** Four items are ready in three sittings (G27,
+> **Status: planned 18 November 2026 (design sub-agent); sitting 1 (G27) built 18 November.** Four items are ready in three sittings (G27,
 > G25's look, G20, G22's hint); G24 and G30 are already answered on main; G28, G31, G32 and G34 wait on the owner or
 > are his own rows. Checked against `origin/main` at `df94d5816` (world v60). Source: [queue](grant-1114-queue.md)
 > C8, rows G20 to G34 in [round-4-notes](round-4-notes.md#grants-playtest-14-november-his-granola-call-ranked-queued-15-november).
@@ -165,10 +165,19 @@ G33 (running uphill is faster, he liked it) and G35 (the free shop's "$0" never 
 Each is view only, under an hour, three to five files, with no world bump. Checks for every sitting:
 `node dev/ship-check.ts origin/main HEAD`, plus the sitting's own.
 
-1. **G27, the lookout's scarf.** `src/player/reach.ts`, `src/entities/finds/secrets-view.ts`, `test/reach.test.ts`,
+1. [x] **G27, the lookout's scarf.** `src/player/reach.ts`, `src/entities/finds/secrets-view.ts`, `test/reach.test.ts`,
    `dev/look/evals/secret-reach.ts`. Checks: `npm run level-check` (its secret-reach rows; no position moves).
    Walk-through: `dev/look/evals/secret-reach.ts` and `dev/look/evals/railway-finds.ts`; the railway bot opens no
    secret. Shares `secrets-view.ts` with sitting 3 and with the prefab-records work (`06d54cc17`).
+   *As built, 18 November 2026:* `inReach()` takes an optional `ledge`, the height a raised box is opened from; with it
+   your feet may be at most 0.3 m under that, no slope; without it (ground boxes, the bay, every other caller) the rule
+   is unchanged. One departure: the tower's two boxes stand on 1 m plinths, so their ledge is the plinth's foot (the
+   slab, taken from the record's geometry), not the box's base; a 0.3 m limit under the box itself would have refused
+   them from their slabs. So from t0's and the nook's slabs Open is now offered right up to the plinth, and walking
+   into a plinth's long side bumps its box open (before, neither under 1.33 m). The view's inspection gains `ledges`
+   (the box's own `inspect()` is unchanged: the secrets golden stays). Today the ground round the lookout's block is
+   about 17.05, not 17.46, and a real jump lifts the feet 1.55 m; from 3 m out the old rule offered the box at the
+   jump's top and the new one doesn't (`secret-reach.ts` `spot=jump`; stills in `docs/world/grant-c8/`).
 2. **G25's look, the glider as one thing.** `src/entities/railway/glide-device-view.ts`,
    `src/entities/railway/reward-data.ts`, perhaps `src/entities/railway/glide-view.ts` (to share the roll). Seeds
    `hook-taken`, `glide-earned` (`src/sim/railway-seeds.ts`); bots `dev/look/bots/railway-glide.ts` and
