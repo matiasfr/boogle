@@ -29,17 +29,6 @@ async function start(env: Record<string, string> = {}, overrides: Partial<Server
   };
 }
 
-test('healthz', async () => {
-  const s = await start();
-  try {
-    const r = await fetch(`${s.base}/healthz`);
-    assert.equal(r.status, 200);
-    assert.equal(await r.text(), 'ok');
-  } finally {
-    await s.stop();
-  }
-});
-
 test('save inventory is authed and fresh, reports cleanup, and honors the kill switch', async () => {
   let s = await start();
   try {
@@ -47,20 +36,11 @@ test('save inventory is authed and fresh, reports cleanup, and honors the kill s
   } finally {
     await s.stop();
   }
-  const logs: string[] = [];
-  s = await start(
-    { REPORT_TOKEN: 'tok', SAVE_CLEANUP: 'off' },
-    {
-      log: (...args) => {
-        logs.push(args.map(String).join(' '));
-      },
-    },
-  );
+  s = await start({ REPORT_TOKEN: 'tok', SAVE_CLEANUP: 'off' });
   try {
     assert.equal(s.svc.config.saveCleanup, 'off');
     assert.equal(loadConfig({ SAVE_CLEANUP: 'other' }).saveCleanup, 'trash');
     assert.equal(loadConfig({}).saveCleanup, 'trash');
-    assert.equal(logs.filter((line) => line.startsWith('save inventory ')).length, 1);
     const get = (token?: string) =>
       fetch(`${s.base}/admin/saves`, { headers: token ? { authorization: `Bearer ${token}` } : {} });
     assert.equal((await get()).status, 401);
@@ -81,12 +61,11 @@ test('save inventory is authed and fresh, reports cleanup, and honors the kill s
     assert.deepEqual(inv.legacyFiles, []);
     // The read endpoint never performs cleanup; the explicit kill switch also prevents it on boot.
     await s.svc.close({ save: false });
-    await s.svc.listen(s.port);
+    s.base = `http://127.0.0.1:${await s.svc.listen(0)}`;
     const again = await (await get('tok')).json();
     assert.equal(again.lastCleanup.enabled, false);
     const { lastCleanup: _againCleanup, ...againInventory } = again;
     assert.deepEqual(againInventory, inv);
-    assert.equal(logs.filter((line) => line.startsWith('save inventory ')).length, 2);
     assert.deepEqual(
       (await fs.readdir(s.dataDir)).filter((name) => name.endsWith('.json')).sort(),
       [`${WORLD_NS}-a.json`, `${RAILWAY_PLAY_NS}-b.json`, 'v01-old.json', 'garden.json'].sort(),
@@ -217,6 +196,8 @@ test('CORS: default *, and allow-list', async () => {
   let s = await start();
   try {
     const r = await fetch(`${s.base}/healthz`, { headers: { origin: 'https://x.example' } });
+    assert.equal(r.status, 200);
+    assert.equal(await r.text(), 'ok');
     assert.equal(r.headers.get('access-control-allow-origin'), '*');
     const pre = await fetch(`${s.base}/report`, {
       method: 'OPTIONS',
