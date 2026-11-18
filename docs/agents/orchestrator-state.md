@@ -32,6 +32,8 @@ One list, newest first. Each proceeds on its recommendation unless it says it wa
 
 **From 18 November:**
 
+- The railhead re-routes trains before the deck moves (found by the railhead traveller's Checkpoint B review, 18 November): `stopMoved` runs on the pair's second footing (`src/sim/railway-sys-ring.ts:61`), so a train already heading to the railhead drives to the new head about 7 s before the deck hauls, and stands past the bollard while the new apparatus (bell, chocks, haul line) says the platform goes first. It predates the traveller. Recommended: hold the re-route until the haul settles (a sim change with its own plan and review, after steps 3 to 5 ship). Nothing waits.
+
 - The Ring Island footbridge landing (terrain-clean step 7, shipping once its re-check passes): on the downhill side near abutment a the landing stands up to 0.36 m above the hillside (a steep diagonal climbs it but slows), and its steepest slope in any direction is 0.253 at the downhill start corner, where the trail's own cross-fall adds in (0.165 along the path, under the 0.25 limit). The landing is the graded ground, not a box, with an uphill cut of at most 0.128 m. Recommended: accept, and judge on a walk. Nothing waits.
 - The garage's Big-boiler moment (found by the 18 November simplify pass, `src/entities/railway/garage-view.ts:1067`): its wheels may start from the table rate (`momentPart === 'blast' ? 'boiler' : 'table'`) while `watch()` starts them from the long boiler's. Recommended: start from the long boiler's, as `watch()` does; left as it is until he says. Nothing waits.
 
