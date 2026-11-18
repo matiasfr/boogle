@@ -7,7 +7,7 @@ import { camConstraints, me } from '../../player/player.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { readableGlow } from '../../render/readable-unlit.ts';
 import { flat } from '../../render/flat.ts';
-import { draw, makeSet } from '../../render/boxes.ts';
+import { draw, fitBoxBounds, makeSet } from '../../render/boxes.ts';
 import { staticBody } from '../../place/land.ts';
 import { outOf } from '../../place/sites.ts';
 import { H } from '../../place/terrain.ts';
@@ -101,6 +101,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   const proxy = makeSet(plan.pieces);
   proxy.mesh.material = new THREE.MeshBasicNodeMaterial({ colorWrite: false, depthWrite: false });
   draw(proxy, () => 1);
+  fitBoxBounds(proxy);
   proxy.mesh.visible = false;
   scene.add(proxy.mesh);
   const bodies: Body[] = [];

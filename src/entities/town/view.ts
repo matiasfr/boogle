@@ -169,7 +169,7 @@ export async function createTownView(read: () => TownLook | null) {
   createTownBlockout(owner);
   createTownStreets(owner);
   const plots = createTownPlots(owner);
-  sites.buildSites(owner);
+  const siteView = sites.buildSites(owner);
   plots.update(read()?.plots ?? null);
   rooms.snap();
   rooms.warm();
@@ -214,6 +214,7 @@ export async function createTownView(read: () => TownLook | null) {
     /** Just before render: what's drawn near the camera (rooms.ts `cull`). */
     cull() {
       rooms.cull();
+      siteView.fitBounds();
       residents.lateUpdate();
     },
     inspect: (): TownInspection => ({

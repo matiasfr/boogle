@@ -1,5 +1,6 @@
 // The owned Local source/carry view. Only the adapter can request a transfer; poses and flights never spend material.
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from '../../render/instance-bounds.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../sim/railway-layout.ts';
@@ -256,9 +257,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     flat('#b0ab9d'),
     LOOSE_PIECE_CAPACITY,
   );
-  // Like the log and rail piles: never culled. Its bounds were computed once, at the first frame with no stones, and a
-  // pile then showed only while the world origin was in view (6 November playtest).
-  stonePiles.frustumCulled = false;
+  stonePiles.count = 0;
   owner.add(stonePiles);
   // Loose rails lie flat, side by side.
   const railPiles = new THREE.InstancedMesh(
@@ -267,7 +266,6 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     LOOSE_PIECE_CAPACITY,
   );
   railPiles.castShadow = true;
-  railPiles.frustumCulled = false;
   railPiles.count = 0;
   owner.add(railPiles);
   const stoneMatrix = new THREE.Object3D();
@@ -353,6 +351,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     stonePiles.instanceMatrix.needsUpdate = true;
     railPiles.count = railCount;
     railPiles.instanceMatrix.needsUpdate = true;
+    fitInstanceBounds(piles);
+    fitInstanceBounds(stonePiles);
+    fitInstanceBounds(railPiles);
     rack.setStock(rackLogs, stoneRack);
   }
 
@@ -360,7 +361,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     harvestFlights = [];
     pileFlights.length = 0;
     swing.t = 99;
-    for (const tree of trees) fromState(tree);
+    for (const tree of trees) fromState(tree, false);
+    models.upload();
     drawPiles();
   }
   // The prow cannot support the old fixed eastward fall. Use the same authored-ground search on chop and reload.
@@ -370,7 +372,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     tree.collapsed = fall.collapsed;
   }
   // A tree's stable pose from the state it reads (no harvest, no effect).
-  function fromState(tree: TreePose) {
+  function fromState(tree: TreePose, upload = true) {
     const k = sourceIndex.get(tree.index);
     const row = k === undefined ? undefined : treeRow(world(), k);
     tree.work = row ? row.work : 0;
@@ -395,7 +397,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       greatFallPose(tree);
     }
     tree.shake = 0;
-    models.pose(tree, 0);
+    models.pose(tree, 0, upload);
     solid(tree);
   }
 

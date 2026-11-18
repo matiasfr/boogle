@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from '../src/render/instance-bounds.ts';
 import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import { compiled } from '../src/prefab/catalogue.ts';
 import { names } from '../src/prefab/names.ts';
@@ -27,7 +28,7 @@ const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.t
 const createTreeView = sourceFunction<typeof import('../src/render/place-tree-view.ts').createTreeView>(
   'src/render/place-tree-view.ts',
   'createTreeView',
-  { THREE, createTreeRoots },
+  { THREE, createTreeRoots, fitInstanceBounds },
 );
 function runtime(record: (shape: Shape, at: THREE.Vector3) => void = () => {}) {
   const builders = new Map<string, Builder>(names.builders.map((name) => [name, () => new THREE.Group()]));

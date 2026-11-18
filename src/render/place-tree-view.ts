@@ -1,6 +1,7 @@
 // Local tree geometry, fall poses and colliders for the railway entity.
 // No material account, save, co-op or progression owner lives here.
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from './instance-bounds.ts';
 import { createTreeRoots, type TreeRoot } from './tree-roots.ts';
 import { emit } from './particles.ts';
 import { removeBody, teleport, sweepSphere, type Body, type Shape } from '../physics/engine.ts';
@@ -177,9 +178,9 @@ export function createTreeView(
     ),
   ];
   root.add(...roots);
-  for (const m of Object.values(parts)) {
+  const batches = Object.values(parts);
+  for (const m of batches) {
     m.castShadow = true;
-    m.frustumCulled = false;
     root.add(m);
   }
   const base = new THREE.Matrix4(),
@@ -194,10 +195,9 @@ export function createTreeView(
     P1 = new THREE.Vector3(),
     OLD_STUMP = new THREE.Color('#c9a06a'),
     RENEWED_STUMP = new THREE.Color('#dec89f');
-  function pose(t: Tree, now: number) {
+  function writePose(t: Tree, now: number) {
     if (t.cleared) {
       for (const m of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch]) m.setMatrixAt(t.index, ZERO);
-      for (const m of Object.values(parts)) m.instanceMatrix.needsUpdate = true;
       return;
     }
     const hardwoodIndex = hardwoodIndices.get(t.index);
@@ -291,11 +291,21 @@ export function createTreeView(
       );
       parts.cutEnd.setMatrixAt(hardwoodIndex, local);
     }
-    for (const m of Object.values(parts)) m.instanceMatrix.needsUpdate = true;
+  }
+  function upload() {
+    for (const mesh of batches) {
+      mesh.instanceMatrix.needsUpdate = true;
+      fitInstanceBounds(mesh);
+      mesh.visible = !mesh.boundingSphere!.isEmpty();
+    }
   }
 
   return {
-    pose,
+    upload,
+    pose(t: Tree, now: number, uploadNow = true) {
+      writePose(t, now);
+      if (uploadNow) upload();
+    },
     dispose() {
       for (const mesh of roots) {
         mesh.removeFromParent();
