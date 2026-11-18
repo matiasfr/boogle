@@ -10,7 +10,7 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| The forge's west door (home-flip D3), view only | Home's town as the Round (P1) | `codex/forge-west-door-d3` | the heartbeat (HOTBOX), Codex gpt-6.2-astra medium delegate | 17 November 23:45 | building |
+| The forge's west door (home-flip D3), view only | Home's town as the Round (P1) | `codex/forge-west-door-d3` | the heartbeat (HOTBOX), Codex gpt-6.2-astra medium delegate | 17 November 23:45 | built as `dabe248a` (ship check green; the `forge-lit` bot segment unverified); in independent review since 18 November 00:10 UTC (a fresh gpt-6.2-astra medium delegate, asked whether the forge plan's piece counts moved and what the south wall draws). Its report wakes the heartbeat thread: verify findings, send fixes to the builder's thread or ship with the review stamp |
 
 ## Where the work stands
 
