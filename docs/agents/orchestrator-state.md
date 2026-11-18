@@ -10,7 +10,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Railhead re-route, steps 1 and 2 (sim: `Aperture.stop`, `ringStopTick`, invariants, seeds, re-pinned goldens; server: a real `r:edit` host test), then 3 and the checkpoint; v61 in its own commit | The railhead traveller (P2) | `claude/railhead-reroute` | the owner's live orchestrator session (HOTBOX), Claude Opus high delegate | 18 November 18:00 | building (sim and server tier; independent review per step) |
 
 ## Where the work stands
 
