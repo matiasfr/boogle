@@ -178,13 +178,23 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
   telescope, counts at the three poses are identical before and after. *Check:* a still through the telescope at 2x
   (lookout) before and after: the zoomed ground and track are no coarser. *Proof:* census at green and head unchanged;
   pose reading at spawn unchanged within noise.
-- [ ] **3. The townsfolk sleep away from the village.** Gate `folk.updateFolk(dt)` at `opening-view.ts:191` on
-  `resident(viewDistance(village centre), ...)`, entering at 250 m and leaving at 300 m; while asleep, also hide the
-  four folk batches when the census shows they are out of the frustum or under a pixel. On wake, clamp the first `dt`
-  so nobody jumps. *Done:* at Far Head and Ring Island no `updateFolk` in a CPU profile; at the green nothing differs.
-  *Check:* walk from the green to Far Head and back (`npm run look` stills at the return), the folk are where they were
-  and moving. *Proof:* `npm run bench -- --no-load --rail-seed ring-joined --poses head,far --seconds 20 --cpu-prof .look/folk`
-  before and after: view-update ms and frame time.
+- **3. The townsfolk sleep away from the village: dropped (18 November).** The step as planned gated
+  `folk.updateFolk(dt)` (`opening-view.ts:191`) on the village's distance, entering at 250 m and leaving at 300 m. The
+  builder stopped before editing. `updateFolk` (`src/place/folk.ts:1370`) is one loop over every little guy, and it also
+  poses the train riders and drivers on their seats wherever the trains run (`train-view.ts:1134`), the pushers on the
+  cart and Ring Island's crew and Hooter (`src/entities/ring-folk/view.ts` moves them; `updateFolk` draws them), so a
+  village-distance gate would freeze or misplace visible figures, and "no `updateFolk` at Ring Island" cannot hold. In
+  the profile `pose()`, which runs only for figures within 150 m of the camera and in front of it, still runs at Far
+  Head, 525 m from the village centre. The village's own figures already sleep one by one past 150 m from the camera
+  (`folk.ts` `SLEEP = DRAW_WITHIN`, and the commuters' bands in `path-refuge.ts`): `brain()` costs 0.0 ms a second at
+  far and 0.10 at head. All of `updateFolk` is about 0.026 ms a frame at 60 fps. Quiet baseline (Windows, 20 s,
+  `--cpu-prof`; load 3.05 before and 4.58 after, of 20):
+
+  | Pose | CPU ms | GPU ms (p95) | View updates ms/frame | `updateFolk` ms/s (of it `pose`) |
+  | --- | ---: | ---: | ---: | ---: |
+  | head | 16.316 | 17.748 (21.415) | 0.914 | 1.55 (0.75) |
+  | far | 11.418 | 12.146 (17.018) | not read | 1.21 (0.80) |
+
 - [ ] **4. Place-bound railway views sleep.** From step 0's per-kind costs, take at most the three costliest sub-views
   in `view.ts:565-627` whose work belongs to one place (likely candidates: the works, Far Head's posts and glows, the
   hook course, the sea gate; not the cart, trains, freight, arrival, reward or path, which follow the player or the
@@ -264,12 +274,12 @@ research above. The plan sets no costs, rules, rewards, pacing or copy; its game
 | # | Call | Kind | Source or recommendation |
 | --- | --- | --- | --- |
 | 1 | Culling and LOD changes ship only with matched stills at three poses showing no difference | Default | Precedent: far ground, research section 10; terrain practice owner call in [rendering](../agents/rendering.md#terrain-and-large-static-meshes-the-pattern) (11 November) |
-| 2 | Townsfolk stop updating past 300 m from the village (wake at 250 m) | Default | A tunable; nothing visible freezes (verb "sleep", section 3) |
+| 2 | ~~Townsfolk stop updating past 300 m from the village (wake at 250 m)~~ | Default, no longer applies | Step 3 dropped on 18 November: the village figures already sleep one by one past 150 m, and the same loop draws riders, drivers and Ring Island's crew (step 3) |
 | 3 | A slept view resumes from the current shared state and never replays what it missed | Default | Effects follow receipts (room-safety); open question 3 |
 | 4 | Residency and LOD distances scale with the camera's field of view, so the telescope sees finer | Default | Playtest 3 November: "The telescope as a peek at what you can't reach yet" (best moments) |
 | 5 | No gameplay is dropped or deferred for performance | Decided | [Performance guides, it doesn't gate](../agents/owner-calls.md#performance-guides-not-gates) (10 November) |
 
-Counts: 1 Decided, 4 Default, 0 New.
+Counts: 1 Decided, 4 Default (3 since call 2 was dropped on 18 November), 0 New.
 
 Findings, each folded into the steps:
 
