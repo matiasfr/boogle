@@ -12,6 +12,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## Leftovers
 
+- **18 November (P3, server, device stills):** a still for an unknown run id reads the whole body and takes the `device:storage` lock before answering 404; checking the run exists before `readStill` would refuse it without either (optional, from the R4 re-check). The shared rate limiter holds 1,024 addresses, least recently seen evicted, so cycling IPv6 addresses loosens it for everyone (predates R4; never locks the owner out).
 - **18 November (P2, tooling, Windows):** bench's quiet check also counts other harness Chromium processes with `ps`, which sees no Windows processes, so on HOTBOX it always finds 0 (found by the device R3 builder; it predates R3). The load reading itself is real since R3.
 - **18 November (P3, simplify leftovers):** the boiler-install and rotunda views each carry the same 20-line player clearance (belongs beside `src/place/site-clearance.ts` once the footbridge job lands); the forge west door is defined twice (`WORKSHOP_DOOR`, `westDoor`; `dev/level/drawn-geometry.ts` reads that source); the gate's door grading and missing lintel are special-cased in two lists; the garage's five hand-written boiler ternaries want one table.
 - **18 November (P3, Ring Island):** stepping off the footbridge at abutment b is a drop of about 0.12 m at the centre and up to 0.3 m at the low edge (predates step 7; b's ground untouched).
