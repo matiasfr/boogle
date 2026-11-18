@@ -10,7 +10,9 @@ import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { LINE2_BOILER } from '../../src/sim/railway-line2-layout.ts';
+import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import {
+  RAIL_ROCKS,
   SHED_TABLE,
   WORKS,
   WORKS_BREAKER,
@@ -39,6 +41,7 @@ import {
   rocks,
   train,
   trains,
+  trees,
   works,
   worksClock,
   type Seed,
@@ -199,6 +202,49 @@ test('works host: one kiln feed of 16 logs and 16 stone is one accepted action o
     // The outcome (accepted 32) is in the checkpoint: it saves and loads under the outcome bound.
     await r.restart();
     assert.ok(works(r.w).lit >= 0);
+  } finally {
+    await r.done();
+  }
+});
+
+// Review of separate-capacities (18 November 2026): the 16-rows driven through r:edit on the real host, from the
+// back's first chop and strike, with nothing staged in process: logs fill to 16 with the pack and then refuse; stone
+// fills to 8, refuses, then fills to 16 once the breaker is taken (capacity rising mid-load) and refuses again; each
+// refusal spends no source; the full back survives a save and restart.
+test('works host: logs to 16 with the pack and stone to 8, then 16 with the breaker, each full row refusing, through r:edit', async () => {
+  const r = await host('rows', fixture('works-arrive'));
+  try {
+    assert.deepEqual([account(r.w, 'a')!.carry, account(r.w, 'a')!.stone, works(r.w).breaker], [0, 0, 1]);
+    const chopAt = () => {
+      const k = trees(r.w).findIndex((t) => t.left > 0);
+      const [id, x, z] = RAILWAY_SOURCES[k]!;
+      return { k, e: { op: 'rail.chop', id, yaw: 0, collapsed: false }, at: [x, 0, z] as At };
+    };
+    for (let i = 0; i < 8; i++) {
+      const c = chopAt();
+      assert.equal(await r.action(c.e, c.at), 'accepted', `chop ${i}`);
+    }
+    assert.equal(account(r.w, 'a')!.carry, 16, 'a full row of 16 logs at 2 a hit');
+    const c = chopAt();
+    const left = trees(r.w)[c.k]!.left;
+    assert.equal(await r.action(c.e, c.at), 'noop', 'logs full');
+    assert.equal(trees(r.w)[c.k]!.left, left, 'and no tree spent');
+    const strike = (id: number) => r.action({ op: 'rail.mine', id }, [RAIL_ROCKS[id]!.x, 0, RAIL_ROCKS[id]!.z]);
+    for (let i = 0; i < 4; i++) assert.equal(await strike(1), 'accepted', `strike ${i}`);
+    assert.equal(account(r.w, 'a')!.stone, 8, 'stone fills its own row beside 16 logs');
+    assert.equal(await strike(2), 'noop', 'stone full before the breaker');
+    assert.equal(rocks(r.w)[2]!.left, 8, 'and no rock spent');
+    assert.equal(
+      await r.action({ op: 'rail.breaker' }, spot(WORKS_BREAKER)),
+      'accepted',
+      'a full back takes the breaker',
+    );
+    for (let i = 0; i < 4; i++) assert.equal(await strike(2), 'accepted', `strike after the breaker ${i}`);
+    assert.deepEqual([account(r.w, 'a')!.carry, account(r.w, 'a')!.stone], [16, 16]);
+    assert.equal(await strike(3), 'noop', 'stone full at 16');
+    assert.equal(rocks(r.w)[3]!.left, 8);
+    await r.restart();
+    assert.deepEqual([account(r.w, 'a')!.carry, account(r.w, 'a')!.stone], [16, 16], 'a full back saves and loads');
   } finally {
     await r.done();
   }
