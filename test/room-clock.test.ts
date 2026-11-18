@@ -1,21 +1,12 @@
 // The one fixed room clock (docs/plans/replication.md, "One fixed clock"): 60 Hz steps, rules every 6.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  STEP_HZ,
-  RULE_STEPS,
-  RULE_MS,
-  STEP_MS,
-  MAX_CATCH_UP,
-  createFixedSteps,
-  createStepEstimate,
-} from '../src/world/room-clock.ts';
+import { RULE_MS, STEP_MS, MAX_CATCH_UP, createFixedSteps, createStepEstimate } from '../src/world/room-clock.ts';
 import { createSync, TICK_MS } from '../src/world/sync.ts';
 import { createRailwayClock } from '../src/world/railway-clock.ts';
 
-test('a server rule tick is exactly six 60 Hz steps and keeps its 100 ms duration', () => {
-  assert.equal(STEP_HZ, 60);
-  assert.equal(RULE_STEPS, 6);
+// Six 60 Hz steps per tick are held by the step and tick tests below; only the duration needs a pin.
+test('a server rule tick keeps its 100 ms duration', () => {
   assert.equal(RULE_MS, 100);
   assert.equal(TICK_MS, RULE_MS);
 });

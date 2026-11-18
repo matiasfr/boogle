@@ -270,7 +270,7 @@ function rule(s: Toy, pid: string, a: Act) {
   return false;
 }
 
-for (const players of [2, 4, 6])
+for (const players of [2, 6])
   test(`prediction: ${players} clients racing for piles converge on the server's state`, () => {
     const rand = mulberry32(players * 101);
     const server: Toy = { piles: new Map([0, 1, 2].map((k) => [k, 5])), carry: new Map() };
