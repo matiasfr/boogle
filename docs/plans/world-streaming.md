@@ -1,10 +1,9 @@
 # Plan: chunk, cull and stream the world
 
-> **Status: planned (17 November 2026); step 0 building from 18 November (`codex/world-census`).** Backlog row "Chunk, cull and stream the world" (P2, building). Owner, 10
+> **Status: planned (17 November 2026); step 0 complete (`codex/world-census`).** Backlog row "Chunk, cull and stream the world" (P2, building). Owner, 10
 > November: "Treat as urgent and re-order the queue" ([decision](../decisions-process.md#d-2026-11-10-priority-call-migrate-the-game-out)).
-> Written by the planner from the code on `d2abaf31`; no browser or bot was run for it (another job held the GPU), so
-> every frame time below is quoted from [performance research](../research/performance.md) or left for the builder's
-> command. Not tested on a device.
+> The planner worked from `d2abaf31` without a browser run (another job held the GPU). Section 2 distinguishes earlier
+> [performance research](../research/performance.md) from the builder's new captures. Not tested on a device.
 
 **Goal.** Stop paying, every frame and everywhere, for parts of the world the camera cannot see or a player is far
 from, so frame time holds a stable 60 fps on the Mac, phones and the iPad
@@ -79,10 +78,42 @@ Chromium on the M1 Max (section 9); the far view's GPU is fill-bound and the sea
 11 November reading (HOTBOX) held the display rate at the green, Far Head and the Ring Island halt, Far Head with the
 least headroom (12 ms CPU, 14.6 ms GPU).
 
-**Could not measure here** (each needs a browser; step 0 measures them): what makes up Far Head's ~678 draws by object;
-the triangles and draws of each uncullable batch at each pose; per-sub-view update time; the sickle backdrop's cost;
-body counts at a pose; heap and GPU memory now; anything in Safari or on a device. Every comment on #1144 is marked "not
-comparable" (measured under load), so it gives no baseline. Not tested on a device.
+**Windows bench: taken under load, not a baseline.** The exact 20 s `--no-load` bench in section 4 ran at 1280×800, DPR 2,
+on Ampere. `tasklist` showed other Chromium (Edge) processes before and after; Node's Windows load reading of zero is not
+evidence of a quiet machine. Bench poses and render-count methods differ from the census; do not compare them directly.
+
+| Bench pose | CPU avg / p95 (ms) | GPU avg / p95 (ms) | Draws / triangles | JS heap / three.js-tracked GPU (MiB) |
+| --- | ---: | ---: | ---: | ---: |
+| Spawn | 15.032 / 19.615 | 15.568 / 19.611 | 733 / 1,058,316 | 385.6 / 288.7 |
+| Far | 12.177 / 15.235 | 12.735 / 17.184 | 398 / 1,144,005 | 495.1 / 289.8 |
+| Head | 58.726 / 66.855 | 54.639 / 65.057 | 805 / 1,392,865 | 400.7 / 292.2 |
+
+**Step 0 census** (Chromium WebGPU, 960×600, `ring-joined`, one completed frame per pose). Each pair is
+draws / triangles; main means non-shadow submissions. The scene walk includes hidden meshes; “outside” means no
+instance's geometry sphere intersects the main camera frustum, not a claim about occlusion or shadow visibility.
+
+| Pose | Main total and notable rows | Shadow total and notable rows | Uncullable meshes and outside-frustum submissions |
+| --- | --- | --- | --- |
+| Green | **252 / 730,559**; `Scene/Group/Mesh` 97 / 80,602, rail kit 6 / 123,804, main ground tiles 4 / 72,116 | **122 / 183,026**; `Scene/Group/Mesh` 24 / 39,684, `Scene/Group/Group/Mesh` 18 / 40,076 | 151 listed (102 outside): outside meshes still submit 36 / 91,924 main and 22 / 35,824 shadow. Wheel batches (96 and 12 instances) submit 2 / 48,384 main; an unnamed 937-instance caster submits 1 / 11,244 in each pass. |
+| Far Head | **731 / 1,237,093**; `Scene/Group/Mesh` 294 / 405,330, `Scene/Group/Group/Mesh` 97 / 49,022, `Scene/Group/Group/Group/Mesh` 52 / 2,596; rail kit 11 / 161,100 | **106 / 163,572**; `Scene/Group/Group/Mesh` 15 / 39,496, `Scene/Group/Mesh` 12 / 26,612 | 151 listed (65 outside): outside meshes still submit 12 / 25,268 main and 8 / 23,132 shadow. Unnamed 937-, 452- and 253-instance casters submit 3 / 19,704 in each pass. |
+| Ring | **111 / 336,763**; `Scene/Group/Mesh` 28 / 37,570, Ring ground tiles 14 / 101,532, `box plan` in `Scene/Group` 11 / 5,376 | **88 / 150,860**; `Scene/Group/Group/Mesh` 13 / 39,144, `Scene/Group/Mesh` 13 / 25,980 | 151 listed (147 outside): outside meshes still submit 67 / 201,002 main and 48 / 93,044 shadow. Yard rail, steel sleeper, sleeper and post submit 4 / 52,872 main and 1 / 4,488 shadow; the town `box plan` (720 instances) submits 1 / 8,640 in each pass. |
+
+`Sickle Isles horizon` submits 1 / 3,164 main at all three poses and no shadows. The raw per-object and owner-path rows,
+including every uncullable mesh and the ten ranked update kinds, are in `.look/census-{green,head,ring}-before.log`;
+the bench JSON is in `.look/world-census-bench.log`.
+
+- **Step 1:** Prioritize Ring's off-camera static yard batches and town proxy, then use the recurring off-camera caster
+  rows to verify tree, station and pile ownership and the savings. The wheel rows are large but not static candidates.
+- **Step 4:** The inspector exposes each kind's `update` phase, not individual railway sub-views. The eval observes for
+  5 s and reads the built-in rolling 240-frame stats; green had only 83 new renders, versus 258 at Head and 277 at Ring,
+  so this is not a strict five-second timing window or timing evidence. Railway and town ranked first and second at all
+  three poses. Use the existing `--cpu-prof` proof to identify place-bound sub-views before choosing them; no game hook added.
+- **Step 6:** Trace the three leading Far Head draw groups to their actual owners before picking batches. Unnamed
+  ancestry can combine unrelated objects; the already-batched rails are triangle-heavy, not a many-mesh target, and the
+  named `cargo fittings` group rides with wagons, not static scenery.
+
+**Still unmeasured:** individual railway sub-view update costs, physics body counts at these poses, a quiet current frame
+time baseline, and Safari or on-device performance. Not tested on a device.
 
 ## 3. Design
 
@@ -110,7 +141,7 @@ per frame, average and p95 as bench prints, plus calls and triangles), and for d
 with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.45,35 look 903,19.15,20; head: cam
 1392,28,-170 look 1350,15,-128; ring: as that file builds it). Report frame time first; draws and triangles explain it.
 
-- [ ] **0. The census (dev).** New `dev/look/evals/world-census.ts`, extending `terrain-draws.ts`'s `renderer.backend.draw`
+- [x] **0. The census (dev).** New `dev/look/evals/world-census.ts`, extending `terrain-draws.ts`'s `renderer.backend.draw`
   wrapper: per completed frame, main and shadow draws and triangles grouped by object name and owner path; a scene walk
   listing every mesh with `frustumCulled = false` (name, instances, triangles, casts, in view or not); and, if
   `src/entity/inspect.ts` exposes per-kind update time, the ten costliest kinds over 5 s. Prints `WORLD CENSUS {...}`.
