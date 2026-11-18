@@ -341,7 +341,7 @@ test('a failed build writes nothing and is retried; a third stage waiting is tol
   }
 });
 
-test('the request-time sweep deletes an idle test room, never a loaded one or one without a sidecar', async () => {
+test('the request-time sweep deletes an idle test room, never a loaded one or one without a sidecar', async (t) => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-jump-'));
   const loaded = railwayRoomId('awake-live01');
   const hand = railwayRoomId('sunday-family'); // a jump room's shape, but no sidecar: never indexed, never swept
@@ -358,7 +358,8 @@ test('the request-time sweep deletes an idle test room, never a loaded one or on
     const first = await s.jump({ stage: 'start', ns });
     assert.equal(first.status, 200);
     const idle = railwayRoomId(((await first.json()) as { room: string }).room);
-    await new Promise((r) => setTimeout(r, 2300));
+    // Past the 2 s idle limit by the sweep's clock; the files keep their real times.
+    t.mock.timers.enable({ apis: ['Date'], now: Date.now() + 3000 });
     assert.ok(s.svc.roomHost()?.room(loaded));
     assert.equal((await s.jump({ stage: 'start', ns })).status, 200); // its sweep finds the first long idle
     assert.equal(s.svc.jumps.seedOf(idle), null);
