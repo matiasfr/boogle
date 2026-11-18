@@ -22,6 +22,8 @@ import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import type { TreePose } from '../src/render/place-tree-view.ts';
 import type { Body } from '../src/physics/engine.ts';
 import { treeColliderCase } from './helpers/tree-collider-case.ts';
+import { capturePoisBefore } from './helpers/poi-golden.ts';
+import { prefabGolden } from './helpers/prefab-golden.ts';
 const { loadLevel } = await import('../dev/level/level.ts');
 
 test('tree identities, poses, scatter sequence and colliders are byte-identical to pre-prefab code', () => {
@@ -164,4 +166,12 @@ test('runtime scatter body grouping retains the golden home bodies and tile orde
   });
   buildBodies();
   assert.deepEqual(actual, expected);
+});
+
+// Step 13 (src/pois/): captured on the pre-record code; GOLDEN=1 rewrites it. Runtime values use the shared tolerance.
+test('POI parts, poses, colliders and lights match the pre-record code', () => {
+  const fixture = 'test/fixtures/prefab-pois.json';
+  const actual = JSON.parse(JSON.stringify(capturePoisBefore(loadLevel(null).groundAt)));
+  if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual) + '\n');
+  prefabGolden(actual, JSON.parse(fs.readFileSync(fixture, 'utf8')), 'pois');
 });
