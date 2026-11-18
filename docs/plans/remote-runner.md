@@ -1,6 +1,12 @@
-> **Status: planned (2026-11-10).** Six steps after a no-code step 0, each ships alone. Tooling only: nothing in the
-> game changes, no `WORLD_NS` bump, no wire change. One additive `server/` config key (step 2). Base: `origin/main` at
-> `f9ecb4749` or later. The desktop runs Windows 11, so the plan is Windows first; Linux is a note.
+> **Status: superseded in direction (2026-11-18).** HOTBOX orchestrates since 17 November, so the Mac-pushes-to-HOTBOX
+> lane below is not the next work. Read [Re-plan, 18 November: HOTBOX orchestrates](remote-device-tests.md#re-plan-18-november-hotbox-orchestrates):
+> its option B reuses steps 1 to 3 here with the roles swapped (HOTBOX pushes to the Mac), only on the owner's word.
+> The Windows port table is mostly done on main; the load reading and `LISTEN_HOST` are not. Nothing in `dev/remote/`
+> is built.
+>
+> Earlier status (2026-11-10): planned. Six steps after a no-code step 0, each ships alone. Tooling only: nothing in
+> the game changes, no `WORLD_NS` bump, no wire change. One additive `server/` config key (step 2). Base:
+> `origin/main` at `f9ecb4749` or later. The desktop runs Windows 11, so the plan is Windows first; Linux is a note.
 
 # Remote runner: a second machine for browser checks
 
