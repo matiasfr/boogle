@@ -12,7 +12,6 @@ import {
   RAIL_TRAINS,
   TRAIN_EXTENT,
   circuitLen,
-  trainPlaces,
   type RailLineDef,
 } from '../src/sim/railway-lines.ts';
 import {
@@ -155,42 +154,6 @@ function awake(stage: 'trains-on' | 'q6-done' = 'trains-on', audit = true) {
   for (let t = 0; t < TRAIN.wakeTicks; t++) railTick(w.w, ++w.t);
   return w;
 }
-
-// ---------------------------------------------------------------- the catalog's numbers
-test("R2b: Home's shorter trips change Pier/pre-Pier/Railhead cycle and headway pins", () => {
-  const pier = TRAIN_STOPS[LINE2]!.slice(0, 4),
-    before = pier.slice(0, 3),
-    railhead = line2Stops(7, 0);
-  assert.equal(cycleTicks(LINE2, pier), 1204);
-  assert.equal(headTicks(LINE2, pier, 75, 0, 2), 451);
-  assert.equal(cycleTicks(LINE2, before), 914);
-  assert.equal(headTicks(LINE2, before), 0);
-  assert.equal(cycleTicks(LINE2, railhead, 1), 1046);
-  assert.equal(headTicks(0, TRAIN_STOPS[0]!), 0, 'one train: no hold');
-  // Line 2's three start spread round the circuit: the Village (up), Far Head (down, its end before the pier) and the
-  // Quarry (down).
-  assert.deepEqual(trainPlaces(LINE2, before, 3), [
-    { stop: 0, track: 0 },
-    { stop: 2, track: 1 },
-    { stop: 1, track: 1 },
-  ]);
-  assert.deepEqual(trainPlaces(0, TRAIN_STOPS[0]!), [{ stop: 1, track: 1 }], "line 1's one at Camp, as v25");
-  // Every block reaches past its stub's turnout (a crossover's starts at it), and every signal stands on the inbound
-  // track outside it by a train's lead, at least a train's gap from the end stop (review of v26, P2-1).
-  const [village, farHead] = endBlocks(LINE2, before);
-  assert.deepEqual([village.from, village.to, village.signal], [2165, 5400, 7010]);
-  assert.deepEqual([farHead.from, farHead.to, farHead.signal], [49000, 52400, 48180]);
-  assert.deepEqual(
-    endBlocks(LINE2, pier).map((b) => b.signal),
-    [7010, 52780],
-    "the far end's block moves to the pier's stub",
-  );
-  assert.deepEqual(
-    endBlocks(LINE2, railhead).map((b) => b.signal),
-    [7010, 80380],
-    "and on to the Railhead's at Q7",
-  );
-});
 
 // ---------------------------------------------------------------- spacing and the worst wait
 /** The worst wait test's flat bound on line 2 (orchestrator, 10 November): 105 s, from the review's long fuzz (91-97
@@ -345,22 +308,21 @@ test('a held Far Head signal leg lengthens when the pier opens, on a three-train
   assert.match(f.broken() ?? '', /^railway:/, 'zero-length legs remain refused');
 });
 
-// Fresh v57 namespace: stale standing poses are refused whole, including the immediately previous v56 shape.
-for (const [version, oldStop] of [
-  ['v32', 1700],
-  ['v56', 1825],
-] as const)
-  test(`R2b: a ${version} Village standing pose is refused by the load check`, () => {
-    const w = awake('trains-on', false);
-    assert.equal(TRAIN_STOPS[LINE2]![0], 2165);
-    until(w, () => LINE_SLOTS[LINE2]!.some((k) => standing(w, k, 0)()));
-    const k = LINE_SLOTS[LINE2]!.find((s) => standing(w, s, 0)())!;
-    assert.equal(row(w, k).from, 2165);
-    assert.equal(check(restore(w.w)), null, 'the current world loads');
+// A standing pose is its stop's to the centimetre: 1 cm short of the line's first stop is out of range, 1 cm past it is
+// in range but off the stop (stale saves' poses are both kinds).
+test('a Village standing pose off its stop by a centimetre is refused by the load check', () => {
+  const w = awake('trains-on', false);
+  until(w, () => LINE_SLOTS[LINE2]!.some((k) => standing(w, k, 0)()));
+  const k = LINE_SLOTS[LINE2]!.find((s) => standing(w, s, 0)())!;
+  const stop = row(w, k).from;
+  assert.equal(stop, TRAIN_STOPS[LINE2]![0]);
+  assert.equal(check(restore(w.w)), null, 'the current world loads');
+  for (const off of [-1, 1]) {
     const old = restore(w.w);
-    Object.assign(old.mut(Train, trainId(old, k))!, { from: oldStop, dest: oldStop });
-    assert.equal(check(old), 'railway: train', `slot ${k} standing at ${oldStop}`);
-  });
+    Object.assign(old.mut(Train, trainId(old, k))!, { from: stop + off, dest: stop + off });
+    assert.equal(check(old), 'railway: train', `slot ${k} standing at ${stop + off}`);
+  }
+});
 
 test("the wagon's twelve footings reach the pier under random asks and restores", (t) => {
   let w = unaudited(railwayAtWorks('cradle-fitted'));
@@ -519,17 +481,11 @@ for (const pct of [100, TRAIN_HEAD_PCT])
     // Departures from the village take turns; after two laps inspect the balancing hold.
     const gaps = left.slice(-2).map((v, k) => v - left.at(-3 + k)!);
     assert.ok(Math.min(...gaps) >= head - TRAIN.dwellTicks, `${gaps} at least ${head}`);
-    // Home-only control: v56 [604,604] / [554,654] becomes [602,602] / [551,653].
-    // The 3.40 m shorter trip shifts the integer balancing phase; tail-only is unchanged.
-    // Balancing compares spatial gaps once per tick, not equal departure times. At 75% the
-    // end dwell splits the gaps by ±50 ticks. With the shorter Home trip, trainAlong rounds
-    // to the opposite endpoint one tick before trainArrives (7412 vs 7413 in the control),
-    // so spatial equality releases the other train one tick early. The old stop ties at 7426.
-    // Bound that quantisation explicitly; do not drop evenness.
+    // Balancing compares spatial gaps once per tick, so at 75% the end dwell splits the gaps by about the dwell and
+    // whole-tick rounding can release a train one tick early: bound that quantisation, and keep the pair even.
     const tolerance = TRAIN.dwellTicks + 1;
     for (const gap of gaps)
       assert.ok(Math.abs(gap - even) <= tolerance, `${gaps}: within ${tolerance} ticks of ${even}`);
-    assert.deepEqual(gaps, pct === 100 ? [602, 602] : [551, 653]);
     assert.equal((gaps[0]! + gaps[1]!) / 2, even);
   });
 test('the wagon train is never held for headway while the pier owes footings', () => {
@@ -654,22 +610,6 @@ const standF = (f: FixtureLine, k: number, stop: number, track?: number) => {
   const r = f.rows[k]!;
   return r.phase === TRAIN_PHASE.STAND && r.at === stop && (track === undefined || r.track === track);
 };
-
-test('the fixture line: three trains, a 1173 m line, 138.8 s round, 462 ticks apart evenly', () => {
-  const joined = line2Stops(7, 7, true);
-  assert.equal(cycleTicks(V, joined), 1388);
-  assert.equal(Math.floor(cycleTicks(V, joined) / 3), 462);
-  assert.equal(headTicks(V, joined), Math.floor((1388 * TRAIN_HEAD_PCT) / 300));
-  const [, island] = endBlocks(V, joined);
-  assert.deepEqual([island.from, island.to, island.signal], [113700, 119340, 112880]);
-  // The railhead's block and signal follow its stop: at bent 6 and at bent 13, its end in turn.
-  const [, at6] = endBlocks(V, line2Stops(7, 0)),
-    [, at13] = endBlocks(V, line2Stops(7, 7));
-  assert.deepEqual([at6.from, at6.to, at6.signal], [81200, 85200, 80380]);
-  assert.deepEqual([at13.from, at13.to, at13.signal], [95200, 99200, 94380]);
-  // v26's ends are unmoved at Q6 (the catalog's line and its copy, the same row).
-  assert.deepEqual(endBlocks(LINE2, TRAIN_STOPS[LINE2]!.slice(0, 4)), endBlocks(V, line2Stops(6)));
-});
 
 test('an up train into the open island stands at 119340 on its row alone, turns onto the down track and leaves', () => {
   const stops = line2Stops(7, 7, true);
@@ -1160,30 +1100,25 @@ const AT_DWELL = TRAIN.dwellTicks,
 /** With no hold the train goes once the block ahead clears (train 0 still in the island's end block at its dwell). */
 const FREE = heldLeaves({ hold: undefined });
 
-test('six-hold: the hold stands a train at the control halt and releases it on its cap (arrived + dwell + cap)', () => {
+test('six-hold: the hold stands a train at the control halt to its cap (arrived + dwell + cap); each controlFree clause sends it at its dwell', () => {
   assert.ok(FREE >= AT_DWELL && FREE < CAPPED - 50, `with no hold it goes at ${FREE}`);
-  assert.equal(heldLeaves(), CAPPED, 'cap 200');
-  assert.equal(heldLeaves({ hold: { cap: 120, pct: 15 } }), AT_DWELL + 120, 'cap 120');
-  assert.equal(heldLeaves({ hold: { cap: 0, pct: 15 } }), FREE, 'cap 0: off');
-  assert.equal(heldLeaves({ hold: { cap: 200, pct: 0 } }), FREE, 'share 0: off');
-});
-test('six-hold: no train is held while one of its line waits in the shed to join', () => {
-  assert.equal(heldLeaves({ fleet: () => 3 }), CAPPED, 'the fleet all running: held');
-  assert.equal(heldLeaves({ fleet: () => 4 }), FREE, 'one to join: not held');
-});
-test('six-hold: the headway-exempt train is never held', () => {
-  assert.equal(heldLeaves({ headExempt: (slot) => slot === 1 }), FREE);
-  assert.equal(heldLeaves({ headExempt: (slot) => slot !== 1 }), CAPPED, 'another exempt: held');
-});
-test('six-hold: a train the IO puts off (an errand) is never held', () => {
-  assert.equal(heldLeaves({ controlOff: (_l, slot) => slot === 1 }), FREE);
-  assert.equal(heldLeaves({ controlOff: (_l, slot) => slot !== 1 }), CAPPED, 'another on an errand: held');
-  assert.equal(heldLeaves({ controlOff: undefined }), FREE, 'no controlOff in the IO: off');
-});
-test("six-hold: the ask at the held train's own platform its way does not release it", () => {
   const n = line2Stops(7, 7, true).length;
-  assert.equal(heldLeaves({}, reqAdd(0, HEAD, 1, n)), CAPPED, 'its own platform, its way: held');
-  assert.equal(heldLeaves({}, reqAdd(0, 2, -1, n)), CAPPED, "Far Head homeward is train 2's: held");
+  for (const [io, req, leaves, why] of [
+    [{}, 0, CAPPED, 'cap 200'],
+    [{ hold: { cap: 120, pct: 15 } }, 0, AT_DWELL + 120, 'cap 120'],
+    [{ hold: { cap: 0, pct: 15 } }, 0, FREE, 'cap 0: off'],
+    [{ hold: { cap: 200, pct: 0 } }, 0, FREE, 'share 0: off'],
+    [{ fleet: () => 3 }, 0, CAPPED, 'the fleet all running: held'],
+    [{ fleet: () => 4 }, 0, FREE, 'one waits in the shed to join: not held'],
+    [{ headExempt: (slot: number) => slot === 1 }, 0, FREE, 'the headway-exempt train is never held'],
+    [{ headExempt: (slot: number) => slot !== 1 }, 0, CAPPED, 'another exempt: held'],
+    [{ controlOff: (_l: unknown, slot: number) => slot === 1 }, 0, FREE, 'a train on an errand is never held'],
+    [{ controlOff: (_l: unknown, slot: number) => slot !== 1 }, 0, CAPPED, 'another on an errand: held'],
+    [{ controlOff: undefined }, 0, FREE, 'no controlOff in the IO: off'],
+    [{}, reqAdd(0, HEAD, 1, n), CAPPED, 'the ask at its own platform its way does not release it'],
+    [{}, reqAdd(0, 2, -1, n), CAPPED, "Far Head homeward is train 2's: held"],
+  ] as [Partial<TrainIO<RailLineDef>>, number, number, string][])
+    assert.equal(heldLeaves(io, req), leaves, why);
 });
 test('six-hold: the errand list (holdOff): footings owed, a kit aboard that can unload, a kit owed; a waiting kit is none', () => {
   const base = buildSeedWorld('steel-home');

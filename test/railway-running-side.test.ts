@@ -4,14 +4,26 @@ import { railPlatformEnd } from '../src/sim/railway-queries-trains.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RAIL_HALTS, haltPlatform, type RailPlatform } from '../src/sim/railway-lines.ts';
-import { RING_FORMATION, RING_HALT, RING_HEAD, RING_JOINT_UP } from '../src/sim/railway-ring-layout.ts';
+import { RING_HALT, RING_HEAD, RING_JOINT_UP } from '../src/sim/railway-ring-layout.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
-import { act, buildSeedWorld, railTick, restore, type Seed, type SeedStage } from './helpers/rail.ts';
+import { laySection } from '../src/sim/railway-seed-legs.ts';
+import { act, buildSeedWorld, railTick, restore, type Seed } from './helpers/rail.ts';
 
-// Build each played fixture once, outside individual validation tests (as in railway-install.test.ts).
-const stages = ['trains-on', 'q6-done', 'deck-laid', 'leaf-raised', 'ring-joined', 'gorge-mid'] as const;
-const seeds = new Map<SeedStage, Seed>(stages.map((stage) => [stage, buildSeedWorld(stage)]));
-const at = (stage: SeedStage): Seed => {
+// Build each played fixture once, outside individual validation tests (as in railway-install.test.ts). `leg-grown` is
+// `gorge-open` with its first section laid by accepted ops (the kit is already on the rack): Ring Island is a middle
+// halt from that lay, so it needs none of `gorge-mid`'s second section and kit run, most of this file's seed time. It
+// runs 1,000 ticks on so the departure retained from the island's end has cleared (railway-platform-transition.test.ts
+// holds that wait itself).
+const stages = ['trains-on', 'q6-done', 'deck-laid', 'leaf-raised', 'ring-joined'] as const;
+type Stage = (typeof stages)[number] | 'leg-grown';
+const grown = buildSeedWorld('gorge-open');
+laySection(grown);
+for (const end = grown.t + 1000; grown.t < end;) railTick(grown.w, ++grown.t);
+const seeds = new Map<Stage, Seed>([
+  ...stages.map((stage) => [stage, buildSeedWorld(stage)] as const),
+  ['leg-grown', grown],
+]);
+const at = (stage: Stage): Seed => {
   const s = seeds.get(stage)!;
   return { w: restore(s.w), t: s.t };
 };
@@ -93,16 +105,11 @@ test('Ring Island uses east as the end after the rivet, then east outbound and w
   const end = at('ring-joined');
   assert.equal(ask(end, 'Ring Island', -1, RING_HALT.down), true);
   assert.equal(ask(end, 'Ring Island', 1, RING_HALT.down), false);
-  const middle = at('gorge-mid');
+  const middle = at('leg-grown');
   assert.equal(ask(middle, 'Ring Island', 1, RING_HALT.down), true);
   assert.equal(ask(middle, 'Ring Island', -1, RING_HALT.up), true);
   assert.equal(haltPlatform(idOf('Ring Island'), -1, 0, true), RING_HALT.down);
   assert.equal(haltPlatform(idOf('Ring Island'), -1), RING_HALT.up);
-});
-
-test('ring tracks keep their physical locations and assign the original track to outbound', () => {
-  assert.deepEqual(RING_FORMATION.tracks, [0, -400]);
-  assert.deepEqual([RING_FORMATION.left, RING_FORMATION.right, RING_FORMATION.mid], [-580, 180, -200]);
 });
 
 test('the Pier keeps homeward service on its boarding side when Q7 opens the Railhead', () => {

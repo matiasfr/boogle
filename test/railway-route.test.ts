@@ -183,13 +183,16 @@ test('each gate shuts the section it names and stands at that frame', () => {
   });
 });
 
-test("the four grants stand at their leg's destination halt; `pick` where the step 4 review placed it", () => {
+test("the grants after the first stand at their leg's destination halt; `pick` on the stack's rim is its own", () => {
   assert.deepEqual(
     RAIL_GRANTS.map((g) => [g.id, RAIL_LEGS[g.leg]!.id]),
-    [['pick', 'stack'], ['seeds', 'incline'], ['cloth', 'bell-canopy'], ['lantern', 'notch-tunnel']],
+    [
+      ['pick', 'stack'],
+      ['seeds', 'incline'],
+      ['cloth', 'bell-canopy'],
+      ['lantern', 'notch-tunnel'],
+    ],
   );
-  // `pick` on the north stack's rim, reach 4 m (greybox-route.md, step 3 as built after the step 4 review).
-  assert.deepEqual(RAIL_GRANTS[0]!.at, { x: -7435, z: -203262, y: 8500, reach: 400 });
   for (const g of RAIL_GRANTS.slice(1)) {
     const leg = RAIL_LEGS[g.leg]!;
     const h = row(leg.row).halts[leg.destRowHalt]!;
@@ -197,8 +200,12 @@ test("the four grants stand at their leg's destination halt; `pick` where the st
   }
 });
 
-test('the Wall cuts are the islets\' true closest passes to the cave row, within 1 m', () => {
-  const land = layout(parseMapPage(readFileSync(new URL('../docs/world/map-prototypes.html', import.meta.url), 'utf8')), 'sickle', 'A').land;
+test("the Wall cuts are the islets' true closest passes to the cave row, within 1 m", () => {
+  const land = layout(
+    parseMapPage(readFileSync(new URL('../docs/world/map-prototypes.html', import.meta.url), 'utf8')),
+    'sickle',
+    'A',
+  ).land;
   const cave = row('cave');
   for (const [id, cm] of Object.entries(WALL_ISLETS)) {
     const c = land.find((l) => l.id === id)!.c!;

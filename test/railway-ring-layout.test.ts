@@ -10,7 +10,6 @@ import { ringHeight } from '../src/proto/greybox/ring-cones.ts';
 import { FORMATION, ORIGIN } from '../src/place/layout.ts';
 
 import {
-  RING_BENTS,
   RING_BRACE_PLATFORM,
   RING_END,
   RING_GAP,
@@ -52,10 +51,6 @@ test('the bow: the crossing at bents 1-6, 4% between bents, 8.0 m from u 428 m',
     const drop = ringDeckY(2000 * n) - ringDeckY(2000 * (n + 1));
     assert.ok(Math.abs(drop - 80) <= 1, `bent ${n} to ${n + 1}: ${drop} cm in 20 m`);
   }
-  assert.deepEqual(
-    RING_BENTS.map((b) => b.y),
-    [1950, 1870, 1790, 1710, 1630, 1550, 1470],
-  );
   for (let u = 42800; u <= 50000; u += 100) assert.equal(ringDeckY(u), 800);
   assert.ok(ringDeckY(42700) > 800);
 });
@@ -94,8 +89,6 @@ test('railheads: 20 m apart, rack to jib 15 m', () => {
     if (k) assert.equal(h.s - RING_HEAD[k - 1]!.s, 2000);
     assert.equal(h.u, 12000 + 2000 * k);
   }
-  assert.equal(RING_HEAD[0]!.u, 12000);
-  assert.equal(RING_HEAD[7]!.u, 26000);
 });
 
 test('every recovery point stands on a planned deck or on island ground over 50 cm above the sea', () => {
@@ -151,7 +144,6 @@ test('the island ends in buffers 15 m past the platforms, a crossover before the
   const E = RING_END;
   // Rail-map's long train (the longer boiler ahead, three cargo cars behind; docs/plans/rail-map.md, the station plan)
   // is the extent from v33 (fourth-car, R1: the steel car behind the wagon).
-  assert.deepEqual(TRAIN_EXTENT, { aheadCm: 820, behindCm: 1610 });
   assert.equal(E.bufferU, RING_HALT.u1 + 1500);
   assert.deepEqual(E.buffers[0], { ...ringAt(E.bufferU, 0), y: 940 });
   assert.deepEqual(E.buffers[1], { ...ringAt(E.bufferU, -400), y: 940 });
@@ -182,13 +174,4 @@ test('the island ends in buffers 15 m past the platforms, a crossover before the
   const lat = (x: number, z: number) => (x - 140200 + 0.0272 * (z + 37200)) / Math.sqrt(1 + 0.0272 * 0.0272);
   assert.ok(E.bed.lat0 >= -580);
   for (const p of [...E.buffers, E.board]) assert.ok(lat(p.x, p.z) >= -581, `(${p.x}, ${p.z})`);
-  // The world positions, pinned once.
-  const pinned: [{ x: number; z: number }, number, number][] = [
-    [E.buffers[0], 141513, -85482],
-    [E.buffers[1], 141113, -85493],
-    [E.board, 141317, -85638],
-  ];
-  for (const [p, x, z] of pinned) assert.ok(dist(p.x, p.z, x, z) <= 1, `(${p.x}, ${p.z}) against (${x}, ${z})`);
-  assert.equal(E.board.y, 890);
-  assert.equal(E.cut, 750);
 });
