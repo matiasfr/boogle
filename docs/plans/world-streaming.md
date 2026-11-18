@@ -1,6 +1,6 @@
 # Plan: chunk, cull and stream the world
 
-> **Status: planned (17 November 2026).** Backlog row "Chunk, cull and stream the world" (P2, building). Owner, 10
+> **Status: planned (17 November 2026); step 0 building from 18 November (`codex/world-census`).** Backlog row "Chunk, cull and stream the world" (P2, building). Owner, 10
 > November: "Treat as urgent and re-order the queue" ([decision](../decisions-process.md#d-2026-11-10-priority-call-migrate-the-game-out)).
 > Written by the planner from the code on `d2abaf31`; no browser or bot was run for it (another job held the GPU), so
 > every frame time below is quoted from [performance research](../research/performance.md) or left for the builder's
