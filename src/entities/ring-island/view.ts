@@ -11,8 +11,10 @@
 // face are their own. Colliders: the ground's heightfield, the decks, ramps, platforms and yard, the leaf (kinematic).
 // Local: no state, no sync. Positions in world metres from (u, lat) metres via ringAt.
 // The furnishing (the folk, the RINGWORKS board, the works yard, the drop hammer, the works wall and mural, the
-// fingerpost, the map table and the summit lookout) is records (content/prefabs/ring-island.ts), standing where
-// content/levels/ring-island.ts puts them in the island's frames; their solids come on and off with the near view.
+// fingerpost, the map table and the summit lookout) and the hand-authored massing (the hinge pier, the pennant pole's
+// footing, the brace platform with its pier, handrail and gold strut, and the steps) are records
+// (content/prefabs/ring-island.ts), standing where content/levels/ring-island.ts puts them in the island's frames; their
+// solids come on and off with the near view.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BODY, createBody, type Body, type Shape } from '../../physics/engine.ts';
@@ -415,6 +417,8 @@ function boardTexture() {
 
 /** The furnishing's placements (content/levels/ring-island.ts), authored in the island's frames. */
 const furnishing = loadLevelArtifact(level, definitions).placements;
+/** The pennant pole's footing blocks (the far view's one definition), at the deck top where the pole stands. */
+const PENNANT_FOOTING = pennantFooting(deckY(PENNANT_POLE.u));
 type Anchors = Readonly<Record<string, number>>;
 const object = (v: Json | undefined, what: string) => {
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error(`ring island: ${what} expected`);
@@ -424,9 +428,16 @@ const finite = (v: Json | undefined, what: string) => {
   if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`ring island: ${what} expected`);
   return v;
 };
-/** A value in a frame: a number as is, or [from, ...add], `from` an anchor or a value, each add summed in order. */
+/** A value in a frame: a number as is, `{ deck: u }` (the Way's deck top at u), or [from, ...add], `from` an anchor or
+ * a value, each add summed in order. */
 function value(v: Json | undefined, anchors: Anchors): number {
   if (typeof v === 'number') return v;
+  // The Way's deck top at u (ringDeckY, cm-rounded).
+  if (v && typeof v === 'object' && !Array.isArray(v)) {
+    const o = v as JsonObject;
+    if (Object.keys(o).length !== 1 || o.deck === undefined) throw new Error('ring island: expected { deck: u }');
+    return deckY(value(o.deck, anchors));
+  }
   if (!Array.isArray(v) || !v.length) throw new Error('ring island: expected a value');
   const [from, ...add] = v as readonly Json[];
   let n: number;
@@ -440,7 +451,7 @@ function value(v: Json | undefined, anchors: Anchors): number {
 /** World poses for a furnishing placement: its frame's operands resolved on the island as it stands. */
 function resolvePlacement(
   p: Placement,
-  frames: { halt: Anchors; brace: Anchors; summit: Anchors },
+  frames: Readonly<Record<'halt' | 'brace' | 'line' | 'steps' | 'summit', Anchors>>,
   ground: (x: number, z: number) => number,
   toward: (to: Json | undefined) => { x: number; z: number },
 ): Placement {
@@ -458,7 +469,42 @@ function resolvePlacement(
       params: { ...params, yaw: YAW, gorge: [gorge.x, gorge.z], canopy: [canopy.x, canopy.z] },
     };
   }
-  if (frame !== 'halt' && frame !== 'brace' && frame !== 'summit') throw new Error(`ring island: ${p.id} frame`);
+  /** An upright box turned to the line, from bottom to top: the greybox's post. */
+  const upright = (c: { x: number; z: number }, bottom: number, top: number, w: number, d: number): Placement => ({
+    id: p.id,
+    prefab: p.prefab,
+    pos: [c.x, (bottom + top) / 2, c.z],
+    rot: [YAW, 0, 0],
+    scale: [w, top - bottom, d],
+    params,
+  });
+  /** An upright box over (u0..u1, l0..l1), bottom to top: the greybox's block. */
+  const block = (u0: number, u1: number, l0: number, l1: number, bottom: number, top: number) =>
+    upright(at((u0 + u1) / 2, (l0 + l1) / 2), bottom, top, l1 - l0, u1 - u0);
+  /** A box from a to b (its centreline, its top at a.y and b.y), w wide and h deep: the greybox's beam. */
+  const beam = (a: THREE.Vector3Like, b: THREE.Vector3Like, w: number, h: number): Placement => {
+    const dx = b.x - a.x,
+      dy = b.y - a.y,
+      dz = b.z - a.z,
+      len = Math.hypot(dx, dz),
+      full = Math.hypot(len, dy);
+    return {
+      id: p.id,
+      prefab: p.prefab,
+      pos: [(a.x + b.x) / 2, (a.y + b.y) / 2 - h / 2, (a.z + b.z) / 2],
+      rot: [Math.atan2(dx, dz), -Math.atan2(dy, len), 0],
+      scale: [w, h, full + 0.04],
+      params,
+    };
+  };
+  if (frame === 'pennant') {
+    // One of the pennant pole's footing blocks: the far view's one definition (pennantFooting), at the pole's deck.
+    const f = PENNANT_FOOTING[finite(place.footing, 'footing')];
+    if (!f) throw new Error(`ring island: ${p.id} footing`);
+    return block(f.u0, f.u1, f.lat0, f.lat1, f.y0, f.y1);
+  }
+  if (frame !== 'halt' && frame !== 'brace' && frame !== 'line' && frame !== 'steps' && frame !== 'summit')
+    throw new Error(`ring island: ${p.id} frame`);
   let anchors: Anchors = frames[frame];
   if (place.arch !== undefined) {
     // A tile of the mural's arch: its middle, at angle PI * (from + span * k / steps).
@@ -477,15 +523,6 @@ function resolvePlacement(
     q.u !== undefined
       ? at(value(q.u, anchors), value(q.lat, anchors))
       : { x: value(q.x, anchors), z: value(q.z, anchors) };
-  /** An upright box turned to the line, from bottom to top: the greybox's post. */
-  const upright = (c: { x: number; z: number }, bottom: number, top: number, w: number, d: number): Placement => ({
-    id: p.id,
-    prefab: p.prefab,
-    pos: [c.x, (bottom + top) / 2, c.z],
-    rot: [YAW, 0, 0],
-    scale: [w, top - bottom, d],
-    params,
-  });
   const span = (v: Json | undefined, ground?: number) => {
     if (!Array.isArray(v) || v.length !== 2) throw new Error(`ring island: ${p.id} span`);
     const with_ = ground === undefined ? anchors : { ...anchors, ground };
@@ -496,7 +533,29 @@ function resolvePlacement(
     const [u0, u1] = span(b.u),
       [l0, l1] = span(b.lat),
       [bottom, top] = span(b.y);
-    return upright(at((u0 + u1) / 2, (l0 + l1) / 2), bottom, top, l1 - l0, u1 - u0);
+    return block(u0, u1, l0, l1, bottom, top);
+  }
+  if (place.stanchion !== undefined) {
+    // Post k of a handrail's n + 1 from a to b ((u, lat) and the foot's y): the greybox's handrail, its posts every
+    // n-th of the way, `rise` tall and w square. n is authored and must be the handrail's own (one per 3 m).
+    const q = object(place.stanchion, 'stanchion'),
+      a = object(q.a, 'stanchion a'),
+      b = object(q.b, 'stanchion b');
+    const u0 = value(a.u, anchors),
+      lat0 = value(a.lat, anchors),
+      y0 = value(a.y, anchors),
+      u1 = value(b.u, anchors),
+      lat1 = value(b.lat, anchors),
+      y1 = value(b.y, anchors);
+    const n = finite(q.n, 'stanchion n'),
+      k = finite(q.k, 'stanchion k'),
+      w = finite(q.w, 'stanchion width');
+    if (n !== Math.max(1, Math.round(Math.hypot(u1 - u0, lat1 - lat0) / 3)) || !Number.isInteger(k) || k < 0 || k > n)
+      throw new Error(`ring island: ${p.id} stanchion`);
+    const t = k / n,
+      c = at(u0 + (u1 - u0) * t, lat0 + (lat1 - lat0) * t),
+      y = y0 + (y1 - y0) * t;
+    return upright(c, y, y + finite(q.rise, 'stanchion rise'), w, w);
   }
   if (place.post !== undefined) {
     const q = object(place.post, 'post'),
@@ -505,10 +564,11 @@ function resolvePlacement(
     return upright(c, bottom, top, finite(q.w, 'post width'), finite(q.d, 'post depth'));
   }
   if (place.beam !== undefined) {
-    // A box from a to b (its centreline, its top at a.y and b.y), w wide and h deep: the greybox's beam. An end is
-    // `d` metres out from the summit's middle along (x, z) `along`.
+    // A box from a to b (its centreline, its top at a.y and b.y), w wide and h deep: the greybox's beam. An end is a
+    // point (u, lat) on the line, or `d` metres out from the summit's middle along (x, z) `along`.
     const q = object(place.beam, 'beam');
     const end = (e: JsonObject) => {
+      if (e.u !== undefined) return { ...at(value(e.u, anchors), value(e.lat, anchors)), y: value(e.y, anchors) };
       const along = e.along;
       if (!Array.isArray(along)) throw new Error('ring island: beam end');
       const ox = finite(along[0], 'along'),
@@ -519,23 +579,21 @@ function resolvePlacement(
         z = anchors.cz! + (oz / n) * d;
       return { x, y: value(e.y, { ...anchors, ground: ground(x, z) }), z };
     };
-    const a = end(object(q.a, 'beam a')),
-      b = end(object(q.b, 'beam b'));
-    const w = finite(q.w, 'beam width'),
-      h = finite(q.h, 'beam depth');
-    const dx = b.x - a.x,
-      dy = b.y - a.y,
-      dz = b.z - a.z,
-      len = Math.hypot(dx, dz),
-      full = Math.hypot(len, dy);
-    return {
-      id: p.id,
-      prefab: p.prefab,
-      pos: [(a.x + b.x) / 2, (a.y + b.y) / 2 - h / 2, (a.z + b.z) / 2],
-      rot: [Math.atan2(dx, dz), -Math.atan2(dy, len), 0],
-      scale: [w, h, full + 0.04],
-      params,
-    };
+    return beam(
+      end(object(q.a, 'beam a')),
+      end(object(q.b, 'beam b')),
+      finite(q.w, 'beam width'),
+      finite(q.h, 'beam depth'),
+    );
+  }
+  if (place.slab !== undefined) {
+    // A level deck over (u0..u1, l0..l1), its top at y, h deep: the greybox's deck in one span, a beam down its middle.
+    const q = object(place.slab, 'slab');
+    const [u0, u1] = span(q.u),
+      [l0, l1] = span(q.lat),
+      y = value(q.y, anchors),
+      mid = (l0 + l1) / 2;
+    return beam({ ...at(u0, mid), y }, { ...at(u1, mid), y }, l1 - l0, finite(q.h, 'slab depth'));
   }
   const point = object(place.at, `${p.id} at`),
     c = xz(point);
@@ -575,7 +633,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.9, flatShading: true });
   const parts = createParts();
   const b = builders(parts);
-  const { beam, post, block, deck, track, flight, landing, handrail } = b;
+  const { beam, post, block, deck, track, flight, landing } = b;
 
   // ---------------------------------------------------------------- the furnishing's records
   // Instantiated off (no bodies) until the near view mounts: setMounted turns their solids on with the island's own.
@@ -598,7 +656,26 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       west: RING_HALT.offsetLat[0] / 100,
       deck: PLATFORM_Y,
     },
-    brace: { u0: BRACE.u0, l1: BRACE.l1, top: BRACE.y },
+    brace: {
+      u0: BRACE.u0,
+      u1: BRACE.u1,
+      l0: BRACE.l0,
+      l1: BRACE.l1,
+      top: BRACE.y,
+      hinge: HINGE,
+      right: FORM.right,
+      'strut-x': RING_BRACE.x / 100,
+      'strut-z': RING_BRACE.z / 100,
+    },
+    line: { hinge: HINGE, left: FORM.left, right: FORM.right },
+    steps: {
+      u0: RING_STEPS.u0 / 100,
+      u1: RING_STEPS.u1 / 100,
+      lat: RING_STEPS.lat / 100,
+      y0: RING_STEPS.y0 / 100,
+      top: RING_STEPS.y1 / 100,
+      right: FORM.right,
+    },
     summit: {} as Anchors,
   };
   const boardTex = boardTexture();
@@ -629,41 +706,15 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   }
 
   // ---------------------------------------------------------------- the hinge pier, the brace platform, the steps
-  for (const [u0, u1] of [
-    [HINGE - 3, HINGE + 3],
-    [HINGE + 3, HINGE + 20],
-  ] as const)
-    block(STEEL_DARK, u0, u1, FORM.left + 0.2, FORM.right - 0.2, -6, deckY(u1) - 0.5);
-  if (POLE_PENNANT)
-    for (const f of pennantFooting(deckY(PENNANT_POLE.u))) block(CONCRETE, f.u0, f.u1, f.lat0, f.lat1, f.y0, f.y1);
-  deck(CONCRETE, BRACE.u0, BRACE.u1, BRACE.l0, BRACE.l1, () => BRACE.y, BRACE.u1 - BRACE.u0);
-  block(STEEL_DARK, BRACE.u0 + 3, BRACE.u0 + 7, BRACE.l0 + 2, BRACE.l1 - 2, -6, BRACE.y - 0.5);
-  handrail(BRACE.u0, BRACE.l1 - 0.05, BRACE.u1 - 3.5, BRACE.l1 - 0.05, BRACE.y, BRACE.y);
-  {
-    // The gold strut under the heel, its foot on the platform (rail.brace's site, RING_BRACE), facing the railhead.
-    const foot = { u: 28450 / 100, lat: 3.4 };
-    const c = { x: RING_BRACE.x / 100, z: RING_BRACE.z / 100 };
-    post(GOLD, c.x, c.z, BRACE.y, BRACE.y + 0.5, 1.4);
-    beam(
-      GOLD,
-      p3(foot.u - 0.4, foot.lat - 0.3, BRACE.y + 0.5),
-      p3(HINGE + 0.4, FORM.right - 0.4, HINGE_Y - 0.6),
-      0.6,
-      0.6,
-      false,
-    );
-    // One of the folk, waving you over (a looker, never Rivet: call 37).
-    furnish((p) => p.id.startsWith('brace/'));
-  }
-  {
-    // Steps from the platform's far end up to their deck (RING_STEPS), and a landing onto the deck's east edge.
-    const s = RING_STEPS,
-      lat = s.lat / 100,
-      top = s.y1 / 100;
-    beam(CONCRETE, p3(s.u0 / 100, lat, s.y0 / 100), p3(s.u1 / 100, lat, top), 2.8, 0.4);
-    deck(CONCRETE, s.u1 / 100, s.u1 / 100 + 2.5, FORM.right - 0.3, lat + 1.4, () => top, 2.5);
-    handrail(s.u0 / 100, lat + 1.35, s.u1 / 100, lat + 1.35, s.y0 / 100, top);
-  }
+  // Records too (content/levels/ring-island.ts, in this order): the hinge pier's two blocks, the pennant pole's footing,
+  // the brace platform (its deck, pier, handrail, the gold strut under the heel on rail.brace's site, RING_BRACE, and
+  // one of the folk waving you over: a looker, never Rivet, call 37) and the steps from its far end up to their deck
+  // (RING_STEPS) with a landing onto the deck's east edge.
+  furnish((p) => p.id.startsWith('pier/'));
+  if (POLE_PENNANT && furnish((p) => p.id.startsWith('pennant/')).length !== PENNANT_FOOTING.length)
+    throw new Error('ring island: the pennant footing is not all placed');
+  furnish((p) => p.id.startsWith('brace/'));
+  furnish((p) => p.id.startsWith('steps/'));
   for (const ramp of RING_RAMPS) {
     for (const f of ramp.flights) flight(f);
     for (const l of ramp.landings) landing(l);

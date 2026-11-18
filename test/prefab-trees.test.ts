@@ -209,8 +209,10 @@ test('lookout meshes, buoys, colliders, footprint and view match the pre-record 
 // Step 13 (Ring Island): the fixture was captured on the pre-record code (captureRingBefore, in the commit "Capture the
 // Ring Island world golden before the record conversion") and is never rewritten. Runtime values use the shared
 // tolerance; piece matrices are full precision, before Float32 quantization, and boxes read as unit boxes times size.
+let ringCapture: Promise<unknown> | undefined;
+const ringAfter = async () => JSON.parse(JSON.stringify(await (ringCapture ??= captureRingAfter()))) as unknown;
 test('Ring Island pieces, poses, colliders, clearance and frames match the pre-record code', async () => {
-  const actual = JSON.parse(JSON.stringify(await captureRingAfter()));
+  const actual = await ringAfter();
   prefabGolden(actual, JSON.parse(fs.readFileSync('test/fixtures/prefab-ring-island.json', 'utf8')), 'ring');
   // The map table's size repeats state.ts's RING_MAP_TABLE (content may not import src/entities/).
   const { RING_MAP_TABLE } = await import('../src/entities/ring-island/state.ts');
@@ -221,6 +223,18 @@ test('Ring Island pieces, poses, colliders, clearance and frames match the pre-r
   assert.deepEqual(
     [table.params.w, table.params.d, table.params.legs],
     [RING_MAP_TABLE.w, RING_MAP_TABLE.d, +(RING_MAP_TABLE.top - (RING_HALT.y / 100 + 0.9)).toFixed(9)],
+  );
+});
+
+// Step 13 (Ring Island's massing): captured on the view before its hand-authored massing (the hinge pier, the pennant
+// pole's footing, the brace platform with its pier, handrail and gold strut, and the steps) became placements, in the
+// commit "Capture the Ring Island massing golden before the record conversion", and never rewritten. Same capture and
+// tolerance as above; it pins the furnished island as it stood on main, piece by piece and in draw order.
+test('Ring Island massing pieces, colliders and clearance match the pre-placement code', async () => {
+  prefabGolden(
+    await ringAfter(),
+    JSON.parse(fs.readFileSync('test/fixtures/prefab-ring-massing.json', 'utf8')),
+    'ring-massing',
   );
 });
 
