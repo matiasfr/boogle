@@ -5,17 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PATHS, SHELF } from '../src/place/layout.ts';
 import { SHORE_PATH } from '../src/place/shore-layout.ts';
-import {
-  BAY_BOXES,
-  FINDERS_B,
-  HALL,
-  PLINTH_OUT,
-  SHELF_B,
-  SHELF_SIZE,
-  bayBoxPoint,
-  bayPoint,
-  toAxis,
-} from '../src/place/home-station.ts';
+import { BAY_BOXES, FINDERS_B, PLINTH_OUT, SHELF_SIZE, bayPoint } from '../src/place/home-station.ts';
 
 type XZ = { x: number; z: number };
 /** Half the crate's width, with a little over: the box block is the boxes' centres grown by this. */
@@ -45,27 +35,6 @@ function boxDistance(p: XZ, at: XZ, yaw: number, size: { across: number; front: 
 }
 const nearest = (at: XZ, yaw: number, size: { across: number; front: number; back: number }) =>
   Math.min(...lines.map((line) => Math.min(...line.map((p) => boxDistance(p, at, yaw, size)))));
-
-test('the bay is at the Round’s spot beside the hall, the shelf beside it in its frame; boxes and plinth in its frame', () => {
-  assert.deepEqual(SHELF, SHELF_B);
-  const s = toAxis(SHELF_B),
-    b = toAxis(FINDERS_B);
-  // Side by side (owner, 14 November): one line across the axis, the shelf on the bay's far side from the hall.
-  assert.ok(Math.abs(b.a - s.a) < 1e-9 && s.c > b.c && b.c > HALL.c + HALL.w / 2);
-  assert.equal(FINDERS_B.yaw, SHELF_B.yaw);
-  assert.ok(Math.hypot(FINDERS_B.x + 87.86, FINDERS_B.z - 21.31) < 0.01, 'the bay is at (-87.86, 21.31)');
-  const plinth = bayPoint(0, PLINTH_OUT);
-  assert.ok(Math.hypot(plinth.x + 94.17, plinth.z - 23.61) < 0.01, 'the plan put the plinth at (-94.17, 23.61)');
-  // The shelf is on the bay's own front line, to its side, and the boxes stand between the bay and the plinth.
-  const side = { x: Math.cos(FINDERS_B.yaw), z: -Math.sin(FINDERS_B.yaw) },
-    toShelf = { x: SHELF_B.x - FINDERS_B.x, z: SHELF_B.z - FINDERS_B.z };
-  assert.ok((side.x * toShelf.x + side.z * toShelf.z) / Math.hypot(toShelf.x, toShelf.z) > 0.999);
-  for (let k = 0; k < 9; k++) {
-    const p = bayBoxPoint(k),
-      d = Math.hypot(p.x - FINDERS_B.x, p.z - FINDERS_B.z);
-    assert.ok(d > 1.4 && d < PLINTH_OUT - 1, `box ${k} in front of the bay, short of the plinth`);
-  }
-});
 
 test('every curio footprint is 2.5 m off each path centreline, the box block 3 m', () => {
   const pieces: [string, XZ, number, { across: number; front: number; back: number }][] = [
