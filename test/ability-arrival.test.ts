@@ -254,3 +254,71 @@ test('the finder gets nothing more from this file', () => {
   assert.deepEqual({ cards: h.cards, keys: v.inspect().keys }, { cards: [], keys: [] });
   v.dispose();
 });
+
+// Review (review-cutscenes-friend-card): suspected defects and unexercised paths.
+
+test('review: two cards owed at once both come, one after the other, each with one mark', () => {
+  const h = harness();
+  const { v, take } = h.mount('b');
+  v.update(0.1);
+  take('rail.jump', 'a', 'jump');
+  take('rail.glide', 'a', 'glide');
+  v.update(0.016);
+  v.update(0.016);
+  for (let i = 0; i < 5; i++) v.update(0.5);
+  assert.deepEqual({ cards: h.cards, keys: v.inspect().keys }, { cards: ['jump', 'glide'], keys: [] });
+  assert.equal(h.marks.length, 2);
+  v.dispose();
+});
+
+test('review: a card the reveal refuses (key shown before a fresh start) still leaves the friend a flourish, and no card mark', () => {
+  const h = harness();
+  const { v, take } = h.mount('b');
+  v.update(0.1);
+  take('rail.jump', 'a', 'jump');
+  v.update(0.016);
+  assert.deepEqual(h.cards, ['jump']);
+  // A fresh start: the jump goes missing for longer than the reset grace, then a friend finds it again.
+  h.w.jump = false;
+  for (let i = 0; i < 5; i++) v.update(1);
+  assert.equal(v.seen.has('jump'), false);
+  const marks = h.marks.length;
+  take('rail.jump', 'a', 'jump');
+  for (let i = 0; i < 5; i++) v.update(0.5);
+  // The reveal's own shown set still holds 'jump', so youGot returns false: no card can come up.
+  assert.deepEqual(h.cards, ['jump']);
+  // Expected: the late flourish stands in (as it did before this branch), and no "jump card" mark claims a card.
+  assert.deepEqual({ keys: v.inspect().keys, marks: h.marks.length }, { keys: ['jump'], marks });
+  v.dispose();
+});
+
+test('review: a wake heard before a fresh start does not owe a card for a later wake nobody announced', () => {
+  const h = harness();
+  const { v, take } = h.mount('b');
+  v.update(0.1);
+  h.w.awake = 100;
+  h.phase('waking');
+  take('rail.wake', 'a');
+  v.update(0.016);
+  // A fresh start before the wake ends: the machine goes back to sleep.
+  h.w.awake = -1;
+  h.phase('asleep');
+  for (let i = 0; i < 5; i++) v.update(1);
+  // Later the world comes back awake without a live accepted wake (a restore): the flourish, not a card.
+  h.w.awake = 500;
+  h.phase('awake');
+  for (let i = 0; i < 4; i++) v.update(0.5);
+  assert.deepEqual({ cards: h.cards, keys: v.inspect().keys }, { cards: [], keys: ['multi-axe'] });
+  v.dispose();
+});
+
+test('review: a solo page leaves no card mark and owes nothing', () => {
+  const h = harness();
+  const { v, take } = h.mount('a');
+  v.update(0.1);
+  take('rail.jump', 'a', 'jump');
+  take('rail.glide', 'a', 'glide');
+  for (let i = 0; i < 5; i++) v.update(0.5);
+  assert.deepEqual({ cards: h.cards, owed: v.inspect().owed, marks: h.marks.length }, { cards: [], owed: [], marks: 0 });
+  v.dispose();
+});
