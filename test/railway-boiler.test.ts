@@ -76,6 +76,10 @@ test('a held boiler blocks the back', () => {
   assert.ok(pileId >= 0, "the apron keeps Q5's leftover log piles");
   assert.equal(act(w, 'b', 'rail.chop', { id: tree, yaw: 0, collapsed: false }), 0, 'no chop onto a boiler back');
   assert.equal(act(w, 'b', 'rail.take', { id: pileId, kind: 0 }), 0, 'no pile onto a boiler back');
+  // a's logs (one stroke of the proper axe, up to 5) kept the boiler from it; put them down, so the chop and the pile
+  // below meet an empty back, not a full one (a back of 8 here, without the pack).
+  const held = account(w.w, 'a')!.carry;
+  assert.equal(act(w, 'a', 'rail.drop', { x: 100000, y: 2000, z: 3000, n: held, kind: 0 }), held);
   assert.ok(act(w, 'a', 'rail.chop', { id: tree, yaw: 0, collapsed: false }) > 0, 'a free back chops');
   assert.ok(act(w, 'a', 'rail.take', { id: pileId, kind: 0 }) > 0, 'a free back takes the pile');
 });
@@ -224,7 +228,7 @@ const fit = (w: Seed) => {
 };
 test('station 6 takes nothing by hand and the forge gives no rails until trains run', () => {
   const w = doctored(railwayAtTrains('boiler'), 0, 0, 4);
-  chopTo(w, 'a', 4); // a back holds 8: 4 logs beside the 4 rails
+  chopTo(w, 'a', 4); // the proper axe's one stroke: 5 logs, beside the 4 rails (their own row)
   const rack = forge(w.w).rack;
   assert.ok(rack > 0, 'the rack has rails');
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q6', kind: 0, n: 4 }), 0, 'no logs by hand');
@@ -232,7 +236,7 @@ test('station 6 takes nothing by hand and the forge gives no rails until trains 
   assert.equal(act(w, 'b', 'rail.forgeTake'), 0, 'the rack keeps its rails for the kit');
   assert.equal(forge(w.w).rack, rack);
   assert.deepEqual([qjobs(w.w)[5]!.stock, qjobs(w.w)[5]!.railStock], [0, 0]);
-  assert.deepEqual([account(w.w, 'a')!.carry, account(w.w, 'a')!.rails], [4, 4], 'the back keeps its load');
+  assert.deepEqual([account(w.w, 'a')!.carry, account(w.w, 'a')!.rails], [5, 4], 'the back keeps its load');
   // The fit opens both: the frame takes a back's load and the rack gives rails again.
   fit(w);
   while (rail(w.w).trains < 0) advance(w, 1);
