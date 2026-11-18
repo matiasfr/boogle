@@ -859,7 +859,8 @@ cutscenes-for-everyone, step 2): it cuts to the loco from 10 m off its north sid
 over its rail, and drifts back and up through the wake (4.5 s); when the breaker waits on the pedestal it then cuts to
 the forge's breaker cut (2.5 s), the forge's call sounding as it lands, and comes home facing the forge; otherwise it
 cuts home behind Buddy. It waits behind a card, a talk or a glide like every shot, and the Interact skip ends it. A page
-that played it gets no boiler flourish. Reduced motion and a vehicle's seat get no show: the flourish on the next free
+that played it gets no boiler flourish; one whose show was dropped before it reached the screen (a seat taken,
+another shot, a refused fit) gets it on the next free landing. Reduced motion and a vehicle's seat get no show: the flourish on the next free
 landing and the forge's call at the wake's end, as before. A late join, a reload or a resync plays no show; a player
 who wasn't there gets the late flourish. **The mark:** the gold rope stays lashed round both locos' boilers
 whenever trains run, two rings a few centimetres clear of the bands and a knot, so it is there after a reload and for
