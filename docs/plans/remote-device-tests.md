@@ -230,7 +230,7 @@ review stamp for the ship queue; the rest ships on one green run.
     `test/device-stats.test.ts` (percentiles on known arrays, an empty sample is `not measured`, the verdict's three
     branches), `test/device-read.test.ts` (a recorded session fixture gives the expected result; a session cut off
     after scene 3 gives three scenes and `incomplete`; a repeated batch number is dropped; junk events are ignored),
-    `test/device-id.test.ts` (pattern, length, 1000 ids distinct).
+    `test/device-id.test.ts` (pattern, length, no modulo bias; the 1000-id sweep was retired in the test cleanup).
   - Docs: a row in `docs/agents/tools.md`'s table ("Measure on a real device"); `dev/device/README.md` with the
     event kinds.
   - Verify: `npm run look -- --query 'device=new' --question "does the device panel show over the splash and run?"`
