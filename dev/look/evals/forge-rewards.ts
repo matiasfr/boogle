@@ -19,7 +19,9 @@ while (!railwayCommands()?.read.ready() || !me.avatar || !me.body || fallArrival
 const q = new URLSearchParams(location.search);
 // ?carry=1: the look's own player is a fresh account, not the seed's player a: chop a near ordinary tree for logs
 // to deposit (the action walks onto the receiver).
-if (q.get('carry')) {
+// With --players 2, player 2 stands at ?p2X=&p2Z= (and needs no logs).
+const second = q.get('player') === '2';
+if (q.get('carry') && !second) {
   const { inspectRailway, railBack } = (await import(
     '/dev/look/rail-read.ts' as string
   )) as typeof import('../rail-read.ts');
@@ -36,8 +38,8 @@ if (q.get('carry')) {
   console.log(`FORGE LOOK carrying ${railBack().carry} from tree ${tree.id}`);
 }
 // Default: 8 m west of the board (920.2, -14.4), facing east. ?standX=&standZ=&standYaw= override.
-const x = Number(q.get('standX') ?? 912.2),
-  z = Number(q.get('standZ') ?? -14.4),
+const x = Number(q.get(second && q.has('p2X') ? 'p2X' : 'standX') ?? 912.2),
+  z = Number(q.get(second && q.has('p2Z') ? 'p2Z' : 'standZ') ?? -14.4),
   yaw = Number(q.get('standYaw') ?? -Math.PI / 2);
 teleport(me.body, x, H(x, z) + 0.9, z);
 me.body.velocity.set(0, 0, 0);
@@ -57,6 +59,29 @@ await wait(1500);
   console.log(
     `FORGE LOOK target ${t?.id ?? 'none'} ${t?.verb ?? ''}; axe ${r.axeChest.available ? 'offered' : 'not offered'} at ${d.toFixed(2)} m from the pedestal's centre`,
   );
+}
+// ?report=1 on player 2 (the action runs on player 1's page only): watch for the forge lighting, then report what this
+// page saw over the next 9 s, as the action reports player 1's.
+if (second && q.get('report')) {
+  const { inspectRailway } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
+  void (async () => {
+    while (inspectRailway()!.line2View.forgeRewards.axe.heat === 'cool') await wait(50);
+    const seen = new Set<string>();
+    const end = performance.now() + 9000;
+    while (performance.now() < end) {
+      const v = inspectRailway()!.line2View;
+      const cam = v.switchCamera;
+      if (cam.kind === 'forgeAxe' && (cam.active || cam.pending)) seen.add(cam.active ? 'cut playing' : 'cut queued');
+      seen.add(`axe ${v.forgeRewards.axe.heat}`);
+      seen.add(`roof ${v.forgeFinish.stage}`);
+      await wait(100);
+    }
+    const v = inspectRailway()!.line2View;
+    console.log(
+      `FORGE LOOK player 2: ${[...seen].join(', ')}; arrivals ${v.forgeRewards.axe.arrivals}; turned home ${v.switchCamera.forgeTurns}; ` +
+        `at ${me.body!.position.x.toFixed(1)}, ${me.body!.position.z.toFixed(1)}`,
+    );
+  })();
 }
 // A lost pointer lock opens the pause menu over the shot: close it, and keep it out of the picture.
 ((await import('/src/features/pause.ts' as string)) as { closePause(): void }).closePause();

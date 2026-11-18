@@ -9,7 +9,8 @@ import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { reducedMotion } from '../../constants.ts';
-import { thump } from '../../render/machine-sfx.ts';
+import { clank, thump } from '../../render/machine-sfx.ts';
+import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { merged } from '../../render/part-geometry.ts';
 import { flat } from '../../render/flat.ts';
@@ -33,7 +34,14 @@ export const FORGE_REWARDS = {
   near: 30,
   packShow: 1.5,
   axeShow: 1.4,
+  roofHoldMax: 5,
+  cool: 3,
 } as const;
+const HOT = new THREE.Color('#ff7a2a'),
+  /** The steel's own colour while hot: near-white steel in daylight swallows an emissive glow on its own. */
+  HOT_STEEL = new THREE.Color('#9a3a12'),
+  SPARK = new THREE.Color('#ffb347'),
+  SPARK_WHITE = new THREE.Color('#fff1c2');
 /** The plinth's top above the pedestal's foot (boiler-view.ts), and the lean: how far out from the pedestal's centre
  * the axe's foot stands and how far it tips toward the plinth, its head clear over the plinth's edge. */
 const PLINTH = 0.6,
@@ -127,6 +135,52 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
   axe.visible = socket.visible = false;
   owner.add(axe, socket);
   let leaning: boolean | null = null;
+  // Forge-hot: the head, its eye and its edge glow orange from the lit edge until the cut lands, then cool to steel.
+  const hot: { m: THREE.MeshStandardNodeMaterial; steel: THREE.Color }[] = [];
+  axeModel.traverse((o) => {
+    if (!(o instanceof THREE.Mesh) || o.name === 'axe-handle') return;
+    const m = o.material as THREE.MeshStandardNodeMaterial;
+    hot.push({ m, steel: m.color.clone() });
+  });
+  let heat: 'cool' | 'waiting' | 'cooling' = 'cool',
+    heatT = 0,
+    arrivals = 0;
+  const glow = (k: number) => {
+    for (const { m, steel } of hot) {
+      m.color.copy(steel).lerp(HOT_STEEL, k);
+      // Above 1: the glow reads against the daylight's exposure (HDR, as the forge's mouth does).
+      m.emissive.copy(HOT).multiplyScalar(3 * k);
+    }
+  };
+  /** The axe arrives: one hammer ring at the pedestal and a burst of sparks off the head; it cools from here. At most
+   * once per lit edge (the cut's landing, or the fallback after roofHoldMax). */
+  function axeArrives() {
+    if (heat !== 'waiting') return;
+    heat = 'cooling';
+    heatT = 0;
+    arrivals++;
+    clank(AXE_AT.x, AXE_AT.z);
+    if (reducedMotion) return;
+    const head = axeHeadAt(!!leaning, new THREE.Vector3());
+    for (let n = 0; n < 12; n++) {
+      const a = Math.random() * Math.PI * 2,
+        out = 1.2 + Math.random() * 1.8;
+      emit({
+        x: head.x,
+        y: head.y,
+        z: head.z,
+        vx: Math.cos(a) * out,
+        vy: 1.6 + Math.random() * 2.2,
+        vz: Math.sin(a) * out,
+        life: 0.5 + Math.random() * 0.4,
+        size: 0.14,
+        intensity: 2.5,
+        color: n % 3 ? SPARK : SPARK_WHITE,
+        gravity: 9,
+        shape: 'glint',
+      });
+    }
+  }
 
   // The offcut: one timber left over from the frame, lying at the frame's foot on the pack's side.
   const toPack = new THREE.Vector2(at.x - LINE2_FORGE.x / 100, at.z - LINE2_FORGE.z / 100).normalize();
@@ -189,9 +243,14 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
       wait = FORGE_REWARDS.packSelf;
     }
   }
-  function restore() {
+  /** `crossing`: line two's restore as the machine crosses, a few seconds after the lighting: an arrival in flight
+   * keeps its heat. Any other restore (a reload, a late join, a resync) finds the axe cool. */
+  function restore(crossing = false) {
     readyShown = line2PackReady(rd.world());
     finish(false);
+    if (crossing && heat !== 'cool') return;
+    heat = 'cool';
+    glow(0);
   }
   restore();
   owner.cleanup(() => {
@@ -202,6 +261,13 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
 
   return {
     restore,
+    /** The live lit edge: the axe shows forge-hot and still until it arrives (it is never hidden while offered). */
+    axeHot() {
+      heat = 'waiting';
+      heatT = 0;
+      glow(1);
+    },
+    axeArrives,
     /** The pack's spot on the ground, and its head (the prompt's point and the card's `from`). */
     packAt: () => at,
     packTarget: () => head,
@@ -210,6 +276,17 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
       axe.visible = forge(w).lit >= 0 && !rail(w).axe;
       if (axe.visible && axeLeans(w) !== leaning) poseAxe(axe, (leaning = axeLeans(w)));
       socket.visible = axe.visible && !leaning;
+      if (heat !== 'cool') {
+        heatT += dt;
+        // A queued cut that never lands (dropped from the queue) never leaves the axe glowing.
+        if (heat === 'waiting' && heatT > FORGE_REWARDS.roofHoldMax) axeArrives();
+        else if (heat === 'cooling') {
+          // Slow to leave red at first, quicker at the end, like steel out of a fire.
+          const u = Math.min(1, heatT / FORGE_REWARDS.cool);
+          glow((1 - u) ** 0.6);
+          if (u === 1) heat = 'cool';
+        }
+      }
       const ready = line2PackReady(w),
         claimed = rail(w).pack;
       pack.visible = ready && !claimed;
@@ -257,7 +334,7 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
       }
     },
     inspect: () => ({
-      axe: { shown: axe.visible, leaning: !!leaning },
+      axe: { shown: axe.visible, leaning: !!leaning, heat, arrivals },
       pack: { x: at.x, y: at.y, z: at.z, shown: pack.visible, strapped: strapped.visible },
       errand,
       errands,
