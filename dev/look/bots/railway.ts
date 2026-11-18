@@ -1009,25 +1009,33 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   // A station box (Q2-Q6) opens when you walk into it, and the route passes some. Its card holds you until you put it
   // away, as a player would: wait the card's readable time, then press E. The route's own cards keep dismiss().
   // Through line two the friend idles while the leader finds things, and gets each find's card once free (cutscenes
-  // for everyone, step 1): `friendCards` puts those away the same way, so the next one can come up.
+  // for everyone, step 1): from `friendCards` on, each friend's card handed over after the ones already put away is
+  // put away the same way (and nothing else), so the next one can come up.
   let boxCardAt = 0,
-    friendCards = false;
+    friendCards = -1;
   setInterval(() => {
     const reward = inspectRailway()?.reward;
+    const cards = reward?.arrival.cards ?? [];
     const what = reward?.stationBoxes.showing
       ? `${reward.stationBoxes.showing} from a station box`
-      : friendCards && `friend's ${reward?.arrival.cards.at(-1)} card`;
+      : friendCards >= 0 && cards.length > friendCards && `friend's ${cards.at(-1)} card`;
     if (!what || !reward?.showing) return void (boxCardAt = 0);
     boxCardAt ||= performance.now();
     if (performance.now() - boxCardAt < 1600) return;
     boxCardAt = 0;
+    if (!reward.stationBoxes.showing) friendCards = cards.length;
     bot.note(`put away the ${what}`);
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
   }, 100);
   const logHashes = () =>
     console.log(`RAILWAY TICKHASH ${JSON.stringify({ player: player ?? 'solo', hashes: [...tickHashes] })}`);
+  // The friend's cards friendCard() put away: each must still have come up exactly once at every later beat.
+  const friendOnce: string[] = [];
   const mark = (name: string) => {
+    const cards = read().reward.arrival.cards;
+    for (const key of friendOnce)
+      require(cards.filter((k) => k === key).length === 1, `still one ${key} card for the friend at ${name}`);
     const state = read();
     // The facts are rows and queries on one world, taken once for the line.
     const w = R.rw();
@@ -1111,6 +1119,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await until(() => read().reward.arrival.cards.includes(key), `friend's ${name} card owed and shown`, 30000);
     await dismiss(`friend's ${name} card`);
     require(read().reward.arrival.cards.filter((k) => k === key).length === 1, `one ${name} card for the friend`);
+    friendOnce.push(key);
   };
   const settled = async () => {
     // Peer bumps need a landing wait. A sleeping solo body can have an expired coyote timer while supported.
@@ -1697,7 +1706,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       // The leader opens the pack (at the forge, or after the lever under botOrder=legacy): the friend's back carries
       // 16 too. Each of the leader's finds (the pack, the proper axe, the hook, the glider) brings the friend their own
       // card once free, and `friendCards` puts each away; the keener edge has no card, only the flourish.
-      friendCards = true;
+      friendCards = read().reward.arrival.cards.length;
       const shown = (key: string) => read().reward.arrival.cards.includes(key);
       const friendPack = async () => {
         await until(() => R.rail(R.rw()).pack, 'leader opens the pack', 1800000);
