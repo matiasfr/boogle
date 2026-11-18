@@ -23,8 +23,8 @@ const verdict = (stage: SeedStage, fields: Fields) => {
   return worldVerdict(w);
 };
 
-test('the ring stages are accepted, and a driven brace before the weights is legal (either order)', () => {
-  for (const s of STAGES) assert.equal(verdict(s, {}), null, s);
+// The ring stages' own acceptance is the golden shards' ("seed stage X: the world check accepts it").
+test('a driven brace before the weights is legal (either order)', () => {
   assert.equal(verdict('gap-footed', { brace: 2 }), null);
 });
 

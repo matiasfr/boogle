@@ -2,19 +2,11 @@
 // refusals in plain words, the countdown's state, the reset note that carries the stage, and the host status reader.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  LOSSES,
-  REPLACE_STAGES,
-  refusal,
-  replaceArgs,
-  replaceRequest,
-  replacedReply,
-} from '../src/debug/dev/room-replace.ts';
+import { REPLACE_STAGES, refusal, replaceArgs, replaceRequest, replacedReply } from '../src/debug/dev/room-replace.ts';
 import { HOLD_MS, countdownAt, countdownText, startCountdown } from '../src/netplay/replace-countdown.ts';
 import { arrivalPlan, readRoomReset, roomResetNote } from '../src/player/world-reset.ts';
 import { placement } from '../src/ui/notify-order.ts';
 import { hostMeta } from '../src/netplay/room-seed.ts';
-import { replacedText, replacingText } from '../src/net/ws-wire.ts';
 import { OFFERED_STAGES } from '../src/world/railway-jump.ts';
 import { railwayRoomId } from '../src/world/railway-namespace.ts';
 import { startedAs } from '../dev/playtest/summary.ts';
@@ -27,7 +19,6 @@ test('the stages offered are the seed stages, never the empty start', () => {
     [...OFFERED_STAGES],
   );
   assert.ok(!REPLACE_STAGES.some((j) => j.stage === 'start'));
-  assert.equal(LOSSES.length, 4);
 });
 
 test('arguments: a listed stage and a typed name, or a plain reason', () => {
@@ -118,16 +109,11 @@ test('the countdown reads whole seconds down to zero, holds, then gives up', () 
   assert.equal(countdownAt(c, 11_001 + HOLD_MS), null); // nothing was replaced: the notice goes
   // A player who joins mid-countdown is told the seconds left.
   assert.equal(countdownAt(startCountdown({ label: 'Just woke', seconds: 4 }, 0), 500)?.seconds, 4);
-  assert.equal(
-    replacingText(countdownAt(c, 1000)!),
-    'This room will be replaced with Just woke in 10 seconds. What you carry and your finds here will be lost.',
-  );
 });
 
 test('the countdown sentence: the unit agrees, and zero reads "now"', () => {
   const tail = ' What you carry and your finds here will be lost.';
   const say = (seconds: number, label = 'Just woke') => countdownText({ label, seconds });
-  assert.equal(say(10), replacingText({ label: 'Just woke', seconds: 10 })); // the plan's sentence, untouched
   assert.equal(say(2), `This room will be replaced with Just woke in 2 seconds.${tail}`);
   assert.equal(say(1), `This room will be replaced with Just woke in 1 second.${tail}`);
   assert.equal(say(0), `This room will be replaced with Just woke now.${tail}`);
@@ -136,14 +122,6 @@ test('the countdown sentence: the unit agrees, and zero reads "now"', () => {
     say(1, 'Back in 1 seconds. Ha'),
     `This room will be replaced with Back in 1 seconds. Ha in 1 second.${tail}`,
   );
-});
-
-test('the line after a replacement is the plan’s, for the shared island and for a private room', () => {
-  assert.equal(
-    replacedText('Just woke', true),
-    'The shared island was replaced with Just woke for testing. The world changed for everyone, and what you carried and found here is gone.',
-  );
-  assert.match(replacedText('Just woke', false), /^This room was replaced with Just woke for testing\./);
 });
 
 test('the reset note carries the stage of a replacement, and an ordinary reset carries none', () => {

@@ -260,14 +260,14 @@ test('a station 6 part-filled by hand keeps its stock; the first train brings on
   assert.deepEqual([q6().stock, q6().railStock], [10, 6], 'what was in the frame stays there');
   assert.equal(invariant(w.w), null);
 });
-test('the rule never fires before station 6 or once trains run; every stage conserves', () => {
+test('the rule never fires before station 6 or once trains run, the forge offer reads it the same; every stage conserves', () => {
   const stages: [string, () => Seed][] = [
     // Q5 still taking materials, then station 6 from the boiler to laid; the Works stages (after Q6) are in
     // railway-works.test.ts's forge offer test.
     ['q5-finishing', () => railwayAtQ5('q5-finishing')],
     ...TRAIN_STAGES.map((k): [string, () => Seed] => [k, () => railwayAtTrains(k)]),
   ];
-  const seen = { owed: 0, free: 0 };
+  const seen = { owed: 0, free: 0, waits: 0 };
   for (const [name, make] of stages) {
     const w = make(),
       s = w.w;
@@ -275,6 +275,11 @@ test('the rule never fires before station 6 or once trains run; every stage cons
       owed = trainOwed(k, line2Trains(s));
     seen[owed ? 'owed' : 'free']++;
     assert.equal(owed, k === 5 && rail(s).trains < 0, name);
+    // One reading of "station 6 waits for the train" for the frame, the rack and the shelf: the forge offer
+    // (src/entities/railway/forge-offer.ts) waits exactly when the rule refuses hands and the stretch isn't funded.
+    const waits = waitsForTrain(s as unknown as ReadWorld);
+    assert.equal(waits, owed && qjobs(s)[k]!.start < 0, name);
+    seen.waits += Number(waits);
     if (owed) {
       chopTo(w, 'a', 1);
       assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q6', kind: 0, n: 1 }), 0, name);
@@ -283,18 +288,5 @@ test('the rule never fires before station 6 or once trains run; every stage cons
     assert.equal(invariant(s), null, name);
     assert.equal(line2Rails(s), forge(s).poured, name);
   }
-  assert.ok(seen.owed > 0 && seen.free > 0, JSON.stringify(seen));
-});
-// The single cases (hand-fed, funded, trains running) are test/railway-m10c-review.test.ts's, on worlds.
-test('one reading of "station 6 waits for the train" for the frame, the rack and the shelf', () => {
-  let waited = 0;
-  for (const k of TRAIN_STAGES) {
-    const s = railwayAtTrains(k).w,
-      active = line2Active(s);
-    const waits = waitsForTrain(s as unknown as ReadWorld);
-    // Exactly when the rule refuses hands (trainOwed in src/sim) and the stretch isn't funded yet.
-    assert.equal(waits, trainOwed(active, line2Trains(s)) && qjobs(s)[active]!.start < 0, k);
-    waited += Number(waits);
-  }
-  assert.ok(waited > 0, 'some train stage waits');
+  assert.ok(seen.owed > 0 && seen.free > 0 && seen.waits > 0, JSON.stringify(seen));
 });

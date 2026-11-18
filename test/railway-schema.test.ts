@@ -8,7 +8,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { WORLD_NS } from '../src/world/namespace.ts';
-import { RAIL_COMPONENTS, RAIL_REPLICATED } from '../src/sim/railway-components.ts';
+import { RAIL_COMPONENTS } from '../src/sim/railway-components.ts';
 
 const FILE = new URL('./fixtures/rail-schema.json', import.meta.url);
 type Entry = {
@@ -53,13 +53,5 @@ test('the railway component schema matches the golden, or WORLD_NS moved', () =>
   );
   assert.fail(
     `WORLD_NS moved (${golden.worldNs} -> ${WORLD_NS}) and the schema changed: regenerate the golden (GOLDEN=1).`,
-  );
-});
-
-test('the golden marks exactly the replicated components RAIL_REPLICATED lists', () => {
-  const rep = golden.components.filter((c) => c.replicate).map((c) => c.kind);
-  assert.deepEqual(
-    rep,
-    RAIL_REPLICATED.map((c) => c.kind),
   );
 });

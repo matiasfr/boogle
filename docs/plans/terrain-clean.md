@@ -618,7 +618,7 @@ Comparison is against fetched main, not the pre-heavy-load terrain branch:
 | --- | --- | --- |
 | `railway-golden.json` | 47 stage hashes and 47 post-1,200-tick hashes; namespace v49 to v50. All seed ticks unchanged. | Catalog-only state change plus namespace metadata; no heavy-load interaction in these routes. |
 | `railway-ops-golden.json` | All 277 hashes; every operation label/result unchanged. | Catalog only. Main's heavy-load acceptance results are retained. |
-| `railway-tick-order.json` | 2,700 per-tick hashes. | Catalog only; tick counts, systems and their order unchanged. |
+| `railway-tick-order.json` (`railway-tick-order.json` and `TICK_ORDER=1` were retired in the test cleanup of 18 November 2026; only the heads fixture is recorded now) | 2,700 per-tick hashes. | Catalog only; tick counts, systems and their order unchanged. |
 | `railway-tick-order-heads.json` | 14,400 hashes. | Catalog only; headway cases, timing and system sequences unchanged. |
 | `railway-m12-trace.json` | All 82 final hashes and 1,244 checkpoint marks; entry order, frame counts and mark lengths unchanged. | Catalog state/IDs and randomized source selection; a real behavioral interaction with heavy-load in `q3-done`, detailed below. |
 | `server/test/fixtures/world-host-trace.jsonl.gz` | 205 checkpoints and 5,667 serialized-byte counters; all 8,596 record kinds/order, command inputs/results and replication packets unchanged. | Catalog rows/entity IDs and v50 checkpoint namespace/hash/checksum only; no heavy-load interaction in this trace. |
