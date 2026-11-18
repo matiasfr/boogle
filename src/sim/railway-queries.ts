@@ -34,6 +34,7 @@ import {
   Works,
 } from './railway-components.ts';
 import { STEEL } from './railway-ring-layout.ts';
+import { haulHead } from './railway-ring-haul.ts';
 import { LOOSE_PILE_CAPACITY } from './railway-supply.ts';
 
 export type Row<C> = C extends { defaults: infer R } ? { -readonly [K in keyof R]: R[K] } : never;
@@ -111,11 +112,13 @@ export function roomOf(w: World, a: Readonly<AccountRow>, kind: number) {
 export const freePileSlots = (w: World) => LOOSE_PILE_CAPACITY - w.ids(Pile).length;
 export const qCompleted = (w: World) => LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjobId(w, k))!.completion).length;
 export const apertureId = (w: World) => w.single(Aperture);
-/** The railhead: bents footed past bent 6 (0-7), two footings a bent (ring-island-build1, R3). */
-export const ringHead = (w: World) => Math.floor(w.get(Aperture, apertureId(w))!.set / 2);
-/** Ring Island's state as the stops read it: the railhead's bent and whether the rivet is struck. */
+/** The build head: bents footed past bent 6 (0-7), two footings a bent (ring-island-build1, R3). The rack and the
+ * jib stand here from the pair on; the trains' Railhead (ringOpen's head) follows once the haul settles. */
+export const ringHead = (w: World) => haulHead(w.get(Aperture, apertureId(w))!);
+/** Ring Island's state as the stops read it: the trains' Railhead bent (`stop`, moved by ringStopTick when the haul
+ * has settled; docs/plans/railhead-reroute.md) and whether the rivet is struck. */
 export const ringOpen = (w: World): RingOpen => ({
-  head: ringHead(w),
+  head: w.get(Aperture, apertureId(w))!.stop,
   joined: w.get(Aperture, apertureId(w))!.joined >= 0,
 });
 /** The stops line k serves now (trainStops): line 2's Pier once Q6 is laid, the Railhead at its bent once Q7 is, Ring

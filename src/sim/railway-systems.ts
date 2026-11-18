@@ -11,6 +11,7 @@
 //   railOutcome(w, pid, epoch, request)  the receipt: a request's recorded result, snapshot-required, or null
 //   railTick(w, tick, headPct, ...)      the rule tick, a schedule: line one's job, line two's forge and job, the depot
 //                                        cart's trip (./railway-cart.ts), the yards' crates (./railway-sys-trade.ts),
+//                                        the trains' Railhead after a settled haul (./railway-sys-ring.ts),
 //                                        every line's trains (./railway-trains.ts) with their yard freight and
 //                                        line 2's kit and footing wagon, the Works kiln's casts
 //                                        (./railway-works.ts), the steel works' casts (./railway-sys-steel.ts),
@@ -63,7 +64,7 @@ import { call, trainTick } from './railway-sys-trains.ts';
 import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
 import { legKitRelease } from './railway-sys-route-kit.ts';
 import { resume, supply } from './railway-sys-away.ts';
-import { brace, ringFootSet, ringFootTake, ringStrike } from './railway-sys-ring.ts';
+import { brace, ringFootSet, ringFootTake, ringStopTick, ringStrike } from './railway-sys-ring.ts';
 import { buy, sack, tradeTick, yardTick } from './railway-sys-trade.ts';
 import { TRADE_PCT, type TradePct } from './railway-trade-layout.ts';
 import { install, steelFeed, steelTake, steelTick } from './railway-sys-steel.ts';
@@ -155,6 +156,8 @@ export const RAIL_TICK: readonly System<never, unknown>[] = [
   cartTick,
   // Slice 5's yards (./railway-sys-trade.ts), between the cart and the trains.
   yardTick,
+  // The trains' Railhead follows a settled haul (order 2.75, ./railway-sys-ring.ts), before the trains run.
+  ringStopTick,
   trainTick,
   // Slice 5 R3's riders, after the trains.
   tradeTick,

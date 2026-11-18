@@ -14,8 +14,8 @@ const message = (f: () => void) => {
     return e instanceof Error ? e.message : String(e);
   }
 };
-/** The world check's verdict: its message, or null. */
-export const worldVerdict = (w: World) => message(() => railwayCheck(w));
+/** The world check's verdict at rule tick `tick` (unknown when left out): its message, or null. */
+export const worldVerdict = (w: World, tick?: number) => message(() => railwayCheck(w, tick));
 /** A stage's world as the server holds it: the seed's snapshot loaded into a plain world (no check on load). */
 export function stageWorld(stage: SeedStage): World {
   const w = createRailwayWorld();
