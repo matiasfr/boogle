@@ -9,7 +9,7 @@ import * as THREE from 'three/webgpu';
 import type { FrameCtx } from '../../loop.ts';
 import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
-import { HAT_SEAT, headCenter, seatConductorHat } from '../../render/head-clearance.ts';
+import { headCenter, seatConductorHat } from '../../render/head-clearance.ts';
 import { WEAR, cosmetic, type GiftId } from '../../render/cosmetic-parts.ts';
 import { T1_REWARD } from '../../render/t1-reward-parts.ts';
 import {
@@ -158,10 +158,7 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
   const geos = new Map<GiftId, THREE.BufferGeometry>();
   const geoOf = (id: GiftId) => {
     let g = geos.get(id);
-    if (!g) {
-      geos.set(id, (g = merged(cosmetic(id)!.parts)));
-      g.computeBoundingBox();
-    }
+    if (!g) geos.set(id, (g = merged(cosmetic(id)!.parts)));
     return g;
   };
   const dressed = new Map<string, Dressed>();
@@ -234,9 +231,7 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
       }
       if (cosmetic(id)!.slot === 'hat') {
         avatar.worldToLocal(headCenter(avatar, mesh.position));
-        // Enclosing shells (beanies, helmets) keep their authored seating depth; shallow brims clear the forehead.
-        const seat = mesh.geometry.boundingBox!.min.y < -0.02 ? w.y : Math.max(HAT_SEAT, w.y);
-        mesh.position.y += seat - 0.24;
+        mesh.position.y += w.y - 0.24;
         mesh.position.z += w.z;
         continue;
       }

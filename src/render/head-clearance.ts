@@ -1,12 +1,11 @@
 // Local presentation envelope, from Buddy's authored head and the widest earned brim.
 import * as THREE from 'three/webgpu';
 
-export const HAT_SEAT = 0.43;
 export const HAT_RADIUS = 0.56;
 export const sideCarryOffset = (radius: number) => HAT_RADIUS + radius + 0.06;
 const center = new THREE.Vector3();
 const bounds = new THREE.Box3();
-export const CONDUCTOR_HAT_FIT = { scale: 0.86, buddySeat: 0.43, capsuleSeat: 1.2 };
+export const CONDUCTOR_HAT_FIT = { scale: 0.86, buddySeat: 0.38, capsuleSeat: 1.2 };
 
 /** Earned railway conductor hat; shared by local/remote players and the inspection stage. */
 export function seatConductorHat(avatar: THREE.Object3D, hat: THREE.Object3D) {
