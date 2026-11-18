@@ -13,7 +13,8 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
-import { RING_BRACE, RING_HEAD, RING_RIVET } from '../../src/sim/railway-ring-layout.ts';
+import { RING_BRACE, RING_HEAD, RING_RIVET, ringAt, ringDeckY } from '../../src/sim/railway-ring-layout.ts';
+import { railheadLever, railheadLeverUp } from '../../src/entities/railway/lever-place.ts';
 import { railwayAtRing, type RingStage } from '../../src/sim/railway-seed-ring.ts';
 import {
   aperture,
@@ -416,6 +417,45 @@ test('re-route: a checkpoint mid-haul round-trips stop and re-routes once after 
     assert.deepEqual(reroutes, [end], 'the train is replanned once, then');
     assert.equal(dest, RING_HEAD[1]!.s, 'to the new head');
     assert.deepEqual(ringStop(a.confirmed()), ringStop(r.w));
+  } finally {
+    await r.done();
+  }
+});
+
+// The re-check of step 3 (halts-view.ts): the Railhead lever stands at the trains' stop through a haul, stepped down to
+// the walkway once the deck leaves it. A player standing at its foot, where the view draws it, asks through the real
+// r:edit at every rule tick of the haul and a little past the settle; the server never refuses the ask for where they
+// stand (railCallPlatform, rail.call's reach and height), and refuses it 15 m homeward. After the settle the lever
+// stands at the new head.
+test('re-route: the lever as drawn through a haul is where the server takes its ask, every tick', async () => {
+  const r = await host('reroute-lever', pairFixture(), setters);
+  try {
+    await setPair(r);
+    const end = haulEnd(aperture(r.w)),
+      call = { op: 'rail.call', id: RAILHEAD, dir: -1 },
+      refused: string[] = [];
+    let down = 0,
+      far = '';
+    while (r.tick <= end + 5) {
+      const stop = aperture(r.w).stop,
+        { u, lat } = railheadLever(stop),
+        up = railheadLeverUp(u, haulU(aperture(r.w), r.tick) / 100),
+        ucm = Math.round(u * 100),
+        latcm = Math.round(lat * 100),
+        y = ringDeckY(ucm) + Math.round(up * 100);
+      if (!up) down++;
+      const foot = ringAt(ucm, latcm);
+      if ((await r.action(call, [foot.x, y, foot.z])) === 'rejected')
+        refused.push(`tick ${r.tick} (stop ${stop}, ${up ? 'deck' : 'walkway'})`);
+      if (!far && !up) {
+        const off = ringAt(ucm - 1500, latcm);
+        far = (await r.action(call, [off.x, y, off.z])) ?? 'none';
+      }
+      await r.ticks(1);
+    }
+    assert.equal(far, 'rejected', 'the reach is judged: 15 m homeward of the lever is refused');
+    assert.ok(down >= 20, 'the lever stood on the walkway through the travel');
+    assert.deepEqual(refused, [], 'the ask is taken at the lever as drawn');
   } finally {
     await r.done();
   }
