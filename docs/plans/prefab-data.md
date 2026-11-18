@@ -740,3 +740,41 @@ squish and the `mush` room message) stay as they were: they are short-lived, own
 `src/adapters/mushrooms.ts` keeps its debt entry (7) for their `createBody`. The interaction stays registered through
 `src/features/mushrooms.ts`'s counted `registerInteractable`. Left in step 13: the rest of Ring Island, secrets. Not
 tested on a device.
+
+### Step 13, fifth area as built: secrets
+
+The secrets' fixed things are records (`src/content/prefabs/secrets.ts`; builders `src/prefab/builders/secrets.ts`):
+the stone pad (Place's: cap, body and four brass keys, sized by its placement's scale and drawn in the unit frame it
+stretches, so the keys keep their size), the balcony's wooden ledge, the stone supports, the yard's fences, the balcony's
+and the sea stack's seven-sided columns (a metre tall, stood up by their placement), the tower boxes' plinth with its
+`box` point, and six clues (laundry, the scarf on its branch, the bell post, the hard hat, the weather vane, the flag),
+each turned by a `yaw` its pieces take and its pole's solid does not, as before. Each builder returns its pieces beside
+the record's solids. `src/content/levels/secrets.ts` places 18 things as authored operands: what each stands on (a pad
+of `src/place/tech-layout.ts` PADS, or a secret's spot in SECRETS, which stay the authority), its offset, and how its pad
+sizes it (`fit`: slab, block from the ground, column); the sea ladder's placement (`railway.sea-ladder`, already a
+record) moved there too. `src/entities/finds/secrets-place.ts` resolves them on load against the pads and the ground,
+for the view, the level check's drawn census and the tests alike. The view merges the pieces into its one ground draw in
+the old order. Records 303 → 316, levels 25 → 26.
+
+Retyped copies gone: the view's own override of the tower's first box (t0's east edge, `x + 2.1`) is now its plinth's
+placement, and the box stands at the plinth's `box` point; `YARD_DRESSING` (the laundry and fence offsets) left
+tech-layout for the level, and `dev/level/town-plan-sheet.ts` draws them from it; the level check's census
+(`dev/level/tech-geometry.ts`) and `test/round-grounding.test.ts` no longer execute slices of the view's source but
+resolve the level. The view calls no collider API now: its colliders-from-records debt entry (8) goes, and the legacy
+construction entries for `createSecretsView` and `createFindsView` with it (the registry found both stale), as does
+`test/fixtures/prefab-dynamic-review.json`'s finds case, which proved finds was a collider-building door.
+
+Proof: `test/fixtures/prefab-secrets.json` was captured from the unconverted view (commit "Capture the secrets world
+golden before the record conversion") and passes unchanged: all 3,658 numbers bit-identical, max deviation 0 against
+the 1e-9 tolerance (each of the ground's 40 primitives as its unit shape, full-precision world matrix and colour; every
+other mesh's pose and material; the ladder's 51 instance matrices; all 15 colliders in build order; every box's spot;
+a frame of the waiting boxes' instance matrices, which exercises the per-frame update; the Open target beside the
+tower's first box). The census inventory (`test/fixtures/zfight-tech-inventory.json`) is unchanged and `npm run
+level-check` gives the same reports. Opened before/after stills of the lookout's secret ([stills](../world/prefab-secrets/))
+match: the shelf, its support and the scarf's pole are pixel-identical; only the bobbing crate with its shadow, the
+animated flowers and the player's colour differ.
+
+Left in this area: the boxes in the world and at the finders' bay, their bob, show, card and gift, the bell's chime
+(`bellAt`, from SECRETS) and everything found or hubbed stay the view's, as state. SECRETS' own spot for the tower's
+first box is still Place's (8, 9.5), which `dev/look/evals/secret-reach.ts` reads as it always did. Left in step 13: the
+rest of Ring Island. Not tested on a device.
