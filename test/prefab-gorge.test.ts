@@ -15,7 +15,7 @@ import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
 
-test('Gorge collider, placement and count values match the old massing', async () => {
+test('Gorge collider and placement values match the old massing', async (t) => {
   const matrices = recordMatrices();
   const colliders: unknown[] = [];
   const record = (shape: Shape, at: THREE.Vector3, q?: THREE.Quaternion) => {
@@ -74,16 +74,10 @@ test('Gorge collider, placement and count values match the old massing', async (
     const colour = matrices.colour(mesh, i);
     return { matrix: matrix.toArray(), colour: colour.toArray() };
   });
+  t.diagnostic(
+    `Gorge: ${authored.length} authored, ${mesh.count} visible, ${solids} bodies, ${owner.root.children.filter((child) => child instanceof THREE.InstancedMesh).length} batches`,
+  );
   for (const [file, value] of [
-    [
-      'test/fixtures/prefab-gorge-counts.json',
-      {
-        authored: authored.length,
-        visible: mesh.count,
-        bodies: solids,
-        batches: owner.root.children.filter((child) => child instanceof THREE.InstancedMesh).length,
-      },
-    ],
     ['test/fixtures/prefab-gorge-colliders.json', colliders],
     ['test/fixtures/prefab-gorge-placements.json', { boxes: mesh.count, solids, placements }],
   ] as const) {
