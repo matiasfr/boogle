@@ -1,0 +1,239 @@
+# Plan: chunk, cull and stream the world
+
+> **Status: planned (17 November 2026).** Backlog row "Chunk, cull and stream the world" (P2, building). Owner, 10
+> November: "Treat as urgent and re-order the queue" ([decision](../decisions-process.md#d-2026-11-10-priority-call-migrate-the-game-out)).
+> Written by the planner from the code on `d2abaf31`; no browser or bot was run for it (another job held the GPU), so
+> every frame time below is quoted from [performance research](../research/performance.md) or left for the builder's
+> command. Not tested on a device.
+
+**Goal.** Stop paying, every frame and everywhere, for parts of the world the camera cannot see or a player is far
+from, so frame time holds a stable 60 fps on the Mac, phones and the iPad
+([frame-time-60](../agents/owner-calls.md#frame-time-60), [mac-mobile](../agents/owner-calls.md#mac-mobile)). A technical
+goal: it serves those owner calls and bends no DESIGN.md principle. Performance guides and does not gate
+([owner call](../agents/owner-calls.md#performance-guides-not-gates)): nothing here drops or defers gameplay.
+
+**Research.** [performance](../research/performance.md): recommendations 3 (chunk the track) and 6 (ground tiles) are
+done, 1 (railway read cache) is done (section 6), 11 (a phone tier) is done as the Detail ladder; this plan takes 4 (sleep
+what is far), 7 (static matrices), 8 (real bounds), 9 (shadow casters by distance, which bounds give for free) and the
+geometry half of 5 (the sea's grid behind the camera). [open-world](open-world.md) section 3: "visual-only first, no
+server needed" is followed; its 2D chunk grid of shared state is **not** planned, because the server now owns every
+rule and each client mirrors it (see open question 1). [rendering](../agents/rendering.md#terrain-and-large-static-meshes-the-pattern):
+any new big ground uses the far-ground pattern; never `frustumCulled = false` because a mesh is large.
+
+## 1. Already done (checked against the code)
+
+| What | Where | How it works |
+| --- | --- | --- |
+| Main island ground as Chunked LOD tiles, **on by default since 11 November** | `src/place/far-ground.ts:2-4`, `:41-57` (`farGround` setting, default `true`); land.ts hands its full mesh over at `src/place/land.ts:294-296` | 96-cell (192 m) tiles with real bounds (`:156-167`), three levels at 0 / 180 / 420 m (`:27-31`), picked against the player camera in `scene.onBeforeRender` (`:69-88`); stitched borders, pure index half in `far-ground-index.ts` with `test/far-ground-index.test.ts` |
+| Offshore rings and the cove split 3 x 3 so the far sides cull | `src/place/far-ground.ts:168-198` | Same 32,848 triangles, 8 draws at Far Head (research section 10) |
+| Ring Island's ground on the same tiles | `src/entities/ring-island/view.ts:807-808` | `addFarGround(groundMesh, ...)` |
+| One shared LOD pick with hysteresis | `src/render/lod-level.ts:9-13` | Used by the ground tiles and the track |
+| Committed track in chunks with bounds, three LODs and distance-gated shadows | `src/entities/railway/track-chunks.ts:10-30` (200 m heavy / 400 m light chunks, LOD at 0 / 50 / 120 m, shadows within 120 m), wired in `lookTrack` (`src/place/look-kit.ts:276`, bounds `:326-329`, shadow and level `:386-392`) | Far Head 1.15 M → 0.98 M triangles (research section 10, 12 November) |
+| Greybox route areas resident by distance (meshes and colliders) | `src/entities/route-greybox/index.ts:22` (mount 400 m, free 550 m), `:33-37` (gorge, bell, west), `:47-56` (nearer of camera and body) | Built, precompiled and mounted off the frame; freed past 550 m |
+| Ring Island near view mounted by distance, far leaf otherwise | `src/entities/ring-island/index.ts:21` (500 / 650 m), `:73-86`; far leaf `src/entities/ring-island-far/` | Near meshes and colliders only within range; the two never draw at once |
+| Classic island fish and gulls spawn near it only | `src/island/classic-zone.ts:10-11`, `:18-38` (160 / 190 m) | #1114 |
+| Town interiors draw only with the camera near their door | `src/entities/town/rooms.ts:12-15`, `near` group `:284` | Walls and contents of a village you are not in cost nothing |
+| Railway read rebuilt once per change, not per `inspect()` | research section 6 (7 November) | −0.2 ms room-clock CPU and −300 KB/frame garbage at every pose |
+| One palette clone per material, not per mesh | `src/render/material-palette.ts` (research section 3) | −20 materials |
+| Phone/low tier: the Detail ladder with an auto governor | `src/graphics-settings.ts:145-175` (`rungValues`, `setAutoDetail`); 12 graphics settings incl. `seaDetail`, `shadows`, `msaa`, `resolution` | Research section 7 measured each rung |
+
+So three home-grown residency loops exist (greybox, Ring Island, critters), each with its own distance and
+hysteresis code; step 2 gives them one pure decision.
+
+## 2. What is left: drawn, simulated or loaded for the whole world
+
+**Measured here, without a browser** (static code reads and a headless count; exact):
+
+- **Trees.** 350 land trees (2 hardwood), x 800 to 1455, z −245 to 181, in 11 occupied 200 m cells, up to 120 in one
+  (`LAND_TREES`, `src/place/tree-catalog.ts:71`, counted with `dev/sim/hooks.ts`). Drawn as **10 instanced part batches**
+  (`src/render/place-tree-view.ts:156-167`), every one `castShadow` and `frustumCulled = false` (`:180-183`): 10 main
+  and 10 shadow draws from anywhere, Ring Island and the bay included. Chunking them would add draws; bounds are enough.
+- **63 `frustumCulled = false` sites** in `src/`. Most are right (things that move across the world: flights, carried
+  loads, particles, sprites, precompile). The static or slowly changing ones that span an area:
+  `kitBatch` (`src/place/look-kit.ts:210-214`) is uncullable by default, and of its users the yard track
+  (`src/entities/railway/yard-track.ts:208-217`, four whole-yard batches: sleepers, plates, rails, posts, no chunks)
+  and the station kit rails and stones (`src/entities/railway/stations.ts:156`, `:217`, `:227`) never move; the
+  pile batches (`src/entities/railway/sources.ts:261`, `:270`) change only when a pile does; the workshop's box proxy
+  (`src/entities/town/workshop.ts:94` via `src/render/boxes.ts:59-66`, casts); the contact blobs (`src/place/look.ts:316-333`,
+  4,096 instances, one cheap draw: leave); the townsfolk's four batches (`src/place/folk.ts:80`).
+- **The sea**: one camera-centred 360° polar grid, `frustumCulled = false` (`src/render/water/surface.ts:340-343`,
+  `buildGrid` `:116`): more than half its vertices are behind the camera (research G1).
+- **Per-frame view work wherever the player is.** The railway view updates about twenty sub-views every frame
+  (`src/entities/railway/view.ts:565-627`: cart, trains, freight, halts, home station, hoist, works, line 2, hook,
+  glide, shelf, path, wake, arrival, sources, reward, opening). The townsfolk run in the opening view every frame
+  (`src/entities/railway/opening-view.ts:191`; ~5 ms a second in Chromium, research section 6); `sources.update` walks
+  all trees twice a frame (~2 ms a second).
+- **Matrices.** Only four files set `matrixAutoUpdate = false` (`roundhouse-view.ts:407`, `ring-island-far/view.ts:106`,
+  `features/impact.ts:92`, `render/instances.ts:143`); `updateMatrixWorld` over the scene was 25 ms a second on 6 November
+  (research C2).
+- **Prefab placements**, from `content/built/levels/*.json`: static levels room-museum 178, room-shop 132, room-house
+  117, room-gate 92 (all behind the interiors' near gate), town-blockout 58, rotunda-home 41, museum 29, house 27, shop 17,
+  others under 15. Layout levels from their fixtures: gorge 86 authored / 84 visible / 55 bodies, bell 75 / 23 bodies,
+  west 5 / 0 (all three already resident by distance); halt-kit resolves at load (not counted).
+- **Physics.** The main island's static colliders are always resident; the Rapier step was 0.3 ms a frame (research
+  C6). Not worth streaming; not planned.
+
+**From earlier measurements** (counts exact, times from the research doc): Far Head is the heaviest pose, 670 to 678
+main draws and 88 shadow draws at 960x600 (research section 10), `renderer.render` 7.4 to 8.4 ms a frame inclusive in
+Chromium on the M1 Max (section 9); the far view's GPU is fill-bound and the sea was nearly half of it (section 2). The
+11 November reading (HOTBOX) held the display rate at the green, Far Head and the Ring Island halt, Far Head with the
+least headroom (12 ms CPU, 14.6 ms GPU).
+
+**Could not measure here** (each needs a browser; step 0 measures them): what makes up Far Head's ~678 draws by object;
+the triangles and draws of each uncullable batch at each pose; per-sub-view update time; the sickle backdrop's cost;
+body counts at a pose; heap and GPU memory now; anything in Safari or on a device. Every comment on #1144 is marked "not
+comparable" (measured under load), so it gives no baseline. Not tested on a device.
+
+## 3. Design
+
+- **Sync kind: Local, cosmetic, everywhere.** Every step changes what this tab draws or animates. None reads into a
+  rule, a command, a replica, presence or a save. **No step touches `src/sim`, `src/world`, `src/net` or `server/`**;
+  no wire, state or catalog change, so no `WORLD_NS` bump. Physics stays Owner and unchanged: no collider is newly
+  streamed (the greybox's and Ring Island's existing residency keep their exact rules).
+- **Two verbs.** *Cull*: give a static batch real bounds so the frustum (main and shadow) drops it. *Sleep*: skip a
+  place-bound view's update while it is far; hide its meshes only where they are out of the frustum or under a pixel,
+  so nothing a player can see disappears. A view woken from sleep snaps to the current replica; it never replays a
+  one-shot effect it missed (effects still follow receipts, and a slept view simply did not show one).
+- **Distance is what the eye sees.** Residency and LOD use the horizontal camera distance scaled by the camera's field
+  of view against the default 62° (`src/render/scene.ts:241`), so the lookout telescope at 2x zoom
+  (`src/entities/lookout/view.ts:26-32`, `:101`) halves it and sees what it zooms to at the right detail.
+- **One decision, many owners.** A pure `resident(distance, was, near, far)` next to `lodLevel`; each owner keeps its
+  own mount, spawn and dispose. No new lifecycle layer, registry or chunk grid.
+
+## 4. Steps
+
+Each step leaves `node dev/ship-check.ts` green and is its own commit. Tier is **view** for all of them (step 0 is
+**dev**). "Pose reading" means, on a quiet machine with the load stated:
+`npm run bench -- --no-load --rail-seed ring-joined --poses spawn,far,head --seconds 20` (frame time: CPU and GPU ms
+per frame, average and p95 as bench prints, plus calls and triangles), and for draw counts by object
+`npm run look -- --real --fov 62 --rail-seed ring-joined --query 'tpose=<green|head|ring>' --cam <x,y,z> --look <x,y,z> --eval dev/look/evals/world-census.ts --name census-<pose>-<before|after>`
+with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.45,35 look 903,19.15,20; head: cam
+1392,28,-170 look 1350,15,-128; ring: as that file builds it). Report frame time first; draws and triangles explain it.
+
+- [ ] **0. The census (dev).** New `dev/look/evals/world-census.ts`, extending `terrain-draws.ts`'s `renderer.backend.draw`
+  wrapper: per completed frame, main and shadow draws and triangles grouped by object name and owner path; a scene walk
+  listing every mesh with `frustumCulled = false` (name, instances, triangles, casts, in view or not); and, if
+  `src/entity/inspect.ts` exposes per-kind update time, the ten costliest kinds over 5 s. Prints `WORLD CENSUS {...}`.
+  *Done:* it runs at green, head and ring and the builder pastes the three summaries into section 2 of this plan,
+  replacing "could not measure". *Check:* the eval runs at all three poses. *Proof:* the baseline pose reading itself.
+- [ ] **1. Real bounds on static batches.** New `fitInstanceBounds(mesh, pad = 0.5)` in `src/render/instance-bounds.ts`
+  (bounding sphere over the instances actually set, `frustumCulled = true`; recall it after each instance write).
+  Apply it to the tree part batches (`place-tree-view.ts:180-183`; after a felled tree's matrices change too), the yard
+  track batches (`yard-track.ts:208-217`), the station rails and stones (`stations.ts:156`, `:217`, `:227`), the
+  pile batches (`sources.ts:261`, `:270`, on their existing change-only upload) and the workshop proxy
+  (`workshop.ts:94`). Leave flights, carried loads, particles and the blobs alone. *Done:* none of these rows appears
+  in the census when out of view, nor in the shadow pass beyond the ±36 m shadow camera. *Check:* stills at green, head
+  and ring, before and after, show no difference to the eye, the screen edges included (`npm run look` with the
+  census cameras). *Proof:* pose reading at head and ring: shadow and main draws, then frame time.
+- [ ] **2. One residency decision, telescope-aware.** Add `resident(distance, was, near, far)` to `src/render/lod-level.ts`
+  and `viewDistance(x, z)` (new `src/render/view-distance.ts`: horizontal camera distance × tan(fov/2) / tan(31°)).
+  Move `classic-zone.ts:18-38`, `ring-island/index.ts:73` and `route-greybox/index.ts:47-56` onto `resident()` with
+  their numbers unchanged (the greybox keeps the nearer of camera and body); make the ground tiles' pick
+  (`far-ground.ts:79-83`) and the track's level (`look-kit.ts:386-392`) use `viewDistance`. *Done:* outside the
+  telescope, counts at the three poses are identical before and after. *Check:* a still through the telescope at 2x
+  (lookout) before and after: the zoomed ground and track are no coarser. *Proof:* census at green and head unchanged;
+  pose reading at spawn unchanged within noise.
+- [ ] **3. The townsfolk sleep away from the village.** Gate `folk.updateFolk(dt)` at `opening-view.ts:191` on
+  `resident(viewDistance(village centre), ...)`, entering at 250 m and leaving at 300 m; while asleep, also hide the
+  four folk batches when the census shows they are out of the frustum or under a pixel. On wake, clamp the first `dt`
+  so nobody jumps. *Done:* at Far Head and Ring Island no `updateFolk` in a CPU profile; at the green nothing differs.
+  *Check:* walk from the green to Far Head and back (`npm run look` stills at the return), the folk are where they were
+  and moving. *Proof:* `npm run bench -- --no-load --rail-seed ring-joined --poses head,far --seconds 20 --cpu-prof .look/folk`
+  before and after: view-update ms and frame time.
+- [ ] **4. Place-bound railway views sleep.** From step 0's per-kind costs, take at most the three costliest sub-views
+  in `view.ts:565-627` whose work belongs to one place (likely candidates: the works, Far Head's posts and glows, the
+  hook course, the sea gate; not the cart, trains, freight, arrival, reward or path, which follow the player or the
+  shared state). Each gets a centre and a `resident()` gate, and a `snap()` that sets its visuals from the replica on
+  wake, with no animation. *Done:* each slept view costs nothing at the far poses and looks identical after waking.
+  *Check:* for each, one still on approach after a long absence (no stale animation, nothing replayed). *Proof:* pose
+  reading with `--cpu-prof` at spawn and head.
+- [ ] **5. Static matrices on static scenery.** Set `matrixAutoUpdate = false` (one `updateMatrix()` after placing),
+  as `src/render/instances.ts:143` does, on the far-ground tile group (`far-ground.ts:128`), the track chunk batches
+  (`lookTrack`), the sickle backdrop root, Ring Island's ground and static prefab placements under
+  `src/prefab/instantiate.ts`. First grep each root for later `position`, `rotation` or `scale` writes and leave any that
+  move. *Done:* `updateMatrixWorld`'s share of a CPU profile at spawn and head falls. *Check:* stills at the three poses
+  unchanged; one moving thing near each root (a train past track, a door in the town) still moves. *Proof:* pose reading
+  with `--cpu-prof` at spawn and head.
+- [ ] **Checkpoint A (after step 5).** `npm run check`; the full pose reading at spawn, far and head on the Mac and on
+  Windows, each with its load; "not tested on a device" unless `npm run device -- pull` has a report of a build with
+  these steps. Update the owning game-design section only if a still showed a change (none is intended).
+- [ ] **6. Far Head's draws.** Take the top three rows of the census at head that are many separate static meshes in
+  one area and make each one instanced or merged batch per area with real bounds (research recommendation 8). One
+  small job per row; name the row and its before and after count in the commit. *Done:* head's main draws fall by what
+  the three rows held. *Check:* head stills unchanged. *Proof:* pose reading at head.
+- [ ] **7. Cull the sea behind the camera (geometry only).** In `src/render/water/surface.ts`, order the grid's indices
+  by azimuth (`buildGrid`, `:116`) and set a draw range each frame to the azimuths the camera can see plus a margin for
+  displacement and wide fields of view; give the mesh no other change (its fragment graph is untouched). *Done:* the sea's
+  triangles roughly halve at every pose. *Check:* stills at far, bay and pier, looking straight down, and turning
+  quickly (a short `npm run clip`), show no missing water at any edge. *Proof:* pose reading
+  `--poses far,bay,pier --rail-seed q6-done`: GPU ms and triangles.
+- [ ] **Checkpoint B (after step 7).** As checkpoint A, plus the phone profile:
+  `npm run bench -- --no-load --rail-seed ring-joined --poses spawn,far,head --seconds 20 --size 375x812 --query 'q=mobile&dev=1&graphics=msaa:false'`.
+  Then the backlog row's next step is the owner's call on question 5.
+
+**Not planned** (reasons above): server-side chunk streaming of shared state; streaming the main island's colliders;
+chunking the trees; loading area views on demand (first load is 4.8 MB and inside its budget; frame cost is the
+problem, research section 2).
+
+**Level findings.** None: the plan places, moves or gates nothing in the world; `npm run level-check` does not apply.
+
+## 5. Risks
+
+- **Timing under load is not evidence.** Bench numbers count only on a quiet machine (`PERF_POLICY.quiet`: 1-minute
+  load at most 6, no other harness Chromium). On Windows (HOTBOX, now the orchestrator machine) Node's `os.loadavg()`
+  reads 0, so the quiet check cannot see load there: the builder confirms by hand that no other browser, bot or build
+  runs and says so. GPU times vary about 10 % run to run; triangles and calls are exact.
+- **Bounds too tight pop at the screen edge** where a shader moves vertices (sway, folk animation). Pad the sphere
+  (`pad`) and check the edges in step 1's stills.
+- **A slept view that tracks "what changed" to animate it** would play a stale animation on wake. Step 4's `snap()`
+  is the guard; a view without one is not slept. Nothing here changes apply, receipts or what the server sends, so
+  [room-safety](../agents/room-safety.md) is untouched.
+- **Hotspots:** `src/entities/railway/view.ts`, `src/place/look-kit.ts` and `src/render/water/surface.ts` are edited
+  often. `npm run inflight` showed nothing unmerged this week (17 November); re-run it before each step.
+- **Safari**: JavaScriptCore paid twenty times V8 for one pattern before (research section 6); render CPU was the
+  largest section in the owner's Safari session. No WebKit harness here, so Safari gains stay unmeasured until a device run.
+- **The telescope** sees far places zoomed; step 2 covers LOD and residency, but anything slept in step 3 or 4 must be
+  checked through it too.
+
+## 6. Open questions for the owner
+
+1. **Should the server send each client only the state near it (chunk streaming of shared state)?** Recommendation:
+   not now. With one to three players on one railway the replicas are small and every client needs most of them;
+   revisit when a measured join payload or tick cost says so.
+2. **Is the sea's grid in this row?** Recommendation: yes, as step 7, geometry only (no change to how the water looks);
+   the shading half of research recommendation 5 changes the look and stays your call.
+3. **May far-away things stop moving while nobody is near (the townsfolk past 300 m, a place's machinery), resuming
+   as they were rather than catching up?** Recommendation: yes; nothing a player can see freezes, and the telescope
+   counts as near.
+4. **Load areas on demand (download and build an area's views only near it)?** Recommendation: defer until a device
+   run shows memory or load-time trouble; today frame cost, not loading, is the problem.
+5. **When is the row done?** Recommendation: steps 0 to 7 shipped and checkpoint B's reading reported in frame time on
+   the Mac, Windows and one device run once remote device tests land; no frame-time number gates it.
+
+## Design review (2026-11-17)
+
+Run by the planner on this plan (owner call "Fold roles into the builder", 16 November). Read: DESIGN.md headings,
+owner calls (performance, frame-time-60, mac-mobile), the Look topic's current rules, the newest playtests, the
+research above. The plan sets no costs, rules, rewards, pacing or copy; its gameplay calls are about what a player sees.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Culling and LOD changes ship only with matched stills at three poses showing no difference | Default | Precedent: far ground, research section 10; terrain practice owner call in [rendering](../agents/rendering.md#terrain-and-large-static-meshes-the-pattern) (11 November) |
+| 2 | Townsfolk stop updating past 300 m from the village (wake at 250 m) | Default | A tunable; nothing visible freezes (verb "sleep", section 3) |
+| 3 | A slept view resumes from the current shared state and never replays what it missed | Default | Effects follow receipts (room-safety); open question 3 |
+| 4 | Residency and LOD distances scale with the camera's field of view, so the telescope sees finer | Default | Playtest 3 November: "The telescope as a peek at what you can't reach yet" (best moments) |
+| 5 | No gameplay is dropped or deferred for performance | Decided | [Performance guides, it doesn't gate](../agents/owner-calls.md#performance-guides-not-gates) (10 November) |
+
+Counts: 1 Decided, 4 Default, 0 New.
+
+Findings, each folded into the steps:
+
+- **The telescope.** The first draft measured distance from the camera only; at 2x zoom the lookout would show far
+  places at the wrong detail or asleep. Changed step 2 (fov-scaled `viewDistance`) and added the telescope risk.
+- **Sleeping must not mean vanishing.** Place-bound pieces such as Far Head's posts can be in view from far off (the
+  head pose looks back along the trestle to the mainland); hiding them by distance would be a visible pop. Changed steps 3 and 4: sleep skips updates; meshes hide only out of the frustum or
+  under a pixel.
+- **Co-op.** A friend working at Far Head while you stand at the green: their work is in their view and the shared
+  state; your client may sleep Far Head's views and wakes them from the replica as you approach. Remote players
+  (`src/entities/remote-player/`) are never slept. Solo and co-op behave the same.
+- Nothing ported from Place; no level layout changes; The Boogler's copy untouched.
