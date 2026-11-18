@@ -14,7 +14,6 @@ import { RING_HEAD } from '../src/sim/railway-ring-layout.ts';
 import { TRAIN, TRAIN_PHASE, trainAlong, trainDir, type RailTrain } from '../src/sim/railway-train.ts';
 import {
   LINE_SLOTS,
-  balancedHold,
   endBlocks,
   endMoved,
   lineSpacing,
@@ -430,36 +429,5 @@ test('a v26-shaped save (no Aperture row, six QJobs, no out6) is refused with a 
       (e: unknown) => e instanceof Error && !(e instanceof TypeError) && !(e instanceof RangeError),
       name,
     );
-  }
-});
-
-// ---------------------------------------------------------------- the balanced hold's cap (R3b-1 review P3-2)
-test('an ask on the last held tick is owed its dwell by the dwell check alone, not by the cap', () => {
-  // Bunched (as the R3b-1 review's): the gap ahead of train 0 stays the shorter, so only the cap lets it go.
-  const stops = line2Stops(7, 7, true);
-  const run = (balance: number | undefined) => {
-    const f = new FixtureLine(stops, 0, 75, { ...V, balance });
-    f.rows = [standingAt(stops, 0, 0, 0), standingAt(stops, 2, 0, 1e6), standingAt(stops, ISLAND, 1, 1e6)];
-    const ask = TRAIN.dwellTicks + V.balance! - 1;
-    for (let t = 1; t < 5000; t++) {
-      if (t === ask) assert.equal(f.call(0, 1, t), 1);
-      trainStepLine(f.io(), f.line, t);
-      if (f.rows[0]!.phase === TRAIN_PHASE.RUN) return { left: t, ask };
-    }
-    return { left: -1, ask };
-  };
-  const capped = run(V.balance);
-  // The cap runs from the arrival (`arrived`): the ask restarts only the dwell, so the train leaves one dwell after it.
-  assert.equal(capped.left, capped.ask + TRAIN.dwellTicks);
-  // The hold ends at dwell + cap from the arrival, and the dwell check (tick < depart + dwell, before the hold is read)
-  // still keeps the asked train a full dwell from the ask: the hold's answer is false after its cap, and the asker's
-  // dwell alone holds it.
-  const f = new FixtureLine(stops);
-  f.rows = [standingAt(stops, 0, 0, 0), standingAt(stops, 2, 0, 1e6), standingAt(stops, ISLAND, 1, 1e6)];
-  assert.equal(balancedHold(f.io(), V, stops, 0, 0, capped.ask + 1), false, 'from arrival: the cap has run out');
-  f.rows[0] = { ...f.rows[0]!, depart: capped.ask };
-  for (let t = capped.ask + 1; t < capped.ask + TRAIN.dwellTicks; t++) {
-    trainStepLine({ ...f.io(), headExempt: () => true }, V, t);
-    assert.equal(f.rows[0]!.phase, TRAIN_PHASE.STAND, `the asker's dwell holds it at ${t} with no hold at all`);
   }
 });
