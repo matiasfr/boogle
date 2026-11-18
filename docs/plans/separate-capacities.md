@@ -307,6 +307,48 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
   one real-time video of rapid chopping into a full log row at Station 1 (squares pop, the refusal shake, no slowdown).
   Re-read the playthrough's beat times for place.md's timing table. The independent sim/net review reads the diff before
   it reaches main. Ship outside an owner session (no `WORLD_NS` bump mid-session).
+  - **Run on main at `248a76dc` (18 November, a test runner, Windows, load 1 to 8 except the first works run, which started at 17.8; raw logs and clips
+    under `.look/cpa/`).** Not ticked: two proofs are blocked by stale bots, not by this plan.
+    - [x] `npm run check`: green (2,163 tests, 0 failed).
+    - [x] `npm run scenario -- world-inputs`: pass, 9/9 (the catalog reads T3 `[32, 0]`).
+    - [x] `npm run playthrough -- --to Q3`: pass with `--wall 1500` (33 game min in 343 s). The default 300 s wall
+      timed out first, during the wait before Q3, after the glide home; the bot had not failed. Station 3 took 4 log
+      loads of 8 (32). Before the funding every tree took 10 presses (1 a hit), after it 5 (the edge). The edge
+      flourish played once, at the last T3 deposit (the arrival's `seen` gained `edge`). Forge load 4 after the pack
+      was 16 logs. Rails came off the forge rack 8 at a time: 1 take for Q1, 2 for Q2 (doubled), and 1 for Q3, because
+      the bot carried 6 left over from Q2 (Q3's haul did not double on this route). Two `railway refused` marks
+      (`rail.axe` at the chest, `rail.hook` at the device) came in the same instant as each grant: a second press
+      refused after the item was taken, not chased.
+    - [ ] `npm run playthrough -- --players 2 --to t2-funded --warp-speed 2`: **failed twice, identically** (load 2.1
+      and 4.6), at 95 s: player 2's `no multi-axe card for a friend's wake`
+      (`dev/look/bots/railway.ts:1357`). The bot is stale: cutscenes-for-everyone step 1 (88031f26e) gives a friend
+      the card as the wake ends, and only `coop-unlock.ts` was updated. Nothing past the wake ran, so two peers through
+      T2 under the new rules are still unproven.
+    - [ ] The works bot (`--rail-seed works-arrive`): **failed twice, identically**, at 10 s: `take the breaker
+      offered`; the game offers "Open" 1.6 m off. The seeds' `act(s, 'a', 'rail.axe')` at T3
+      (`src/sim/railway-seed-route.ts:83`) has been refused since the axe waited on the lit forge (07879a64b,
+      17 November), so every later seed has the forge lit and no axe. The axe chest (922, −1.17) then offers Open on
+      the breaker's own pedestal (922, −1.17) and wins the target. This is a seed defect from before this plan. The
+      kiln's 16 + 16 and the cradle's single carry were not reached. The look then idles to its wall, because a bot
+      failure never sets `__railStop`.
+    - [x] Video, rapid chopping into a full log row at Station 1 (`awake` seed, a Home tree, real Interact presses
+      every 110 ms; `.look/cpa/chop2/`, stills `chop-4-of-8.png`, `chop-full-8.png`). One log a hit. Each of the
+      8 squares popped once as its log landed (8 pops, about two frames swollen each, seen in the frames). The row
+      took the cream outline at 8. Every swing after that shook the row (17 shakes in 5 s, one per refused swing,
+      a few pixels sideways, seen in the frames). The bundle on the back grew with the row. With the row full, the
+      walk away from the tree covered 8.3 m in 1.5 s (the 5.6 m/s walk): no cargo slowdown. "Chop" stays offered
+      when full, so each press still swings, rebounds and shakes. One 291 ms frame gap during the recording was not
+      located (recording overhead; not a performance reading).
+    - **Beat times** (Q3 run, `report.txt`'s clock, game seconds from the start; bot-clock `PLAY` lines run about
+      9 s earlier). At the machine (woke) 92; T1 funded 136; **Station 1 laid 206**; T2 funded 314; **Station 2 laid
+      395**; great beam seated 427; **Station 3 funded 551** (Station 3 work, Station 2 laid to funded: 156 s, of it
+      four log trips 124 s); **first path open (T3 laid) 681 (11:21)**; second jump 782; pack frame 849; **forge lit
+      892 (14:52)**; proper axe 908; Q1 funded 943, laid 1007; Q2 funded 1273, laid 1386; hook 1406; glided home
+      1451; Q3 funded 1885, **Q3 laid 1968 (32:48)**. This route takes the pack and axe at the forge and has the climb
+      and glide before Q3, so it does not line up row for row with place.md's table; step 5 decides how to fold it in.
+    - **Not seen:** the empty tag (the row's empty hold after a refusal or a capacity step), a remote player's back,
+      and the keener edge's flourish on screen (counted, not watched; the two-player bot stopped at the wake). Also
+      the stone and rails rows in motion, phone width, and reduced motion. Not tested on a device.
 - [ ] **5. Docs.** `docs/game-design/place.md`: rewrite "Carried-resource display" (heavy load, loose-cargo overflow and
   counts paragraphs replaced by this plan's rules and squares; keep "Pack steel", "Approach feedback", "Other amount
   surfaces"); the run's step 3 ("Your back holds 8 … 2 logs per full stroke", "Station 3, at the rim: 40 logs"), the pack
