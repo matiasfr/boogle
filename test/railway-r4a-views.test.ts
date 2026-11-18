@@ -1,14 +1,10 @@
-// R4a, the line goes out (views; docs/plans/ring-island-build1.md, step 4a): the ring seeds put the stops, the relay and
-// Q7's panels where the views read them, through the read facade's world; and line 2's path and lateral past the pier
-// head (src/entities/railway/line2-path.ts) join the layout's, follow the ring's rows, and never jump a train sideways.
-// The views need three.js and a DOM, so their reads are reproduced here as written (train-view's stops and halts-view's stops and head; ring-deck's relay); a change
-// to a view's read is a change to the function below. The differential proof against `inspect()` went with it (X2 of
-// docs/plans/ecs-m12-m13.md).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSeedWorld, type SeedStage } from './helpers/rail.ts';
+import { buildSeedWorld } from './helpers/rail.ts';
 import { railRoom } from './helpers/rail-room.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
+import { aperture } from '../src/sim/railway-rows.ts';
+import { line2Trains } from '../src/sim/railway-queries-line2.ts';
 import { q7Laid, ringHead } from '../src/sim/railway-queries.ts';
 import { LINE2, RAIL_LINES } from '../src/sim/railway-lines.ts';
 import { trainStopsOf } from '../src/sim/railway-train.ts';
@@ -17,35 +13,22 @@ import { PIER_STOP_CM } from '../src/sim/railway-works-layout.ts';
 import { FORMATION, crossLat, lineAt, LINKS, railY } from '../src/place/layout.ts';
 import { RING_S, endMergeM, line2At, line2Lat, line2World, line2Y } from '../src/entities/railway/line2-path.ts';
 
-// ---------------------------------------------------------------- a client at a seed
-/** The read facade's world of one client that has the seed's state: a room at the seed, stepped until it is ready. */
-function client(stage: SeedStage) {
-  const r = railRoom(buildSeedWorld(stage));
-  const c = r.join('a', 'a');
-  r.ready();
-  return c.adapter;
-}
-
-// ---------------------------------------------------------------- the views' reads, as written
-function reads(adapter: ReturnType<typeof client>) {
-  const w = adapter.read.world();
-  return {
-    // train-view.ts (stops2) and halts-view.ts (refreshStops): the open stops of both lines
-    stops: [0, 1].map((k) => [...trainStops(w, k)]),
-    // halts-view.ts (ring levers' head and need)
-    head: ringHead(w),
-    // ring-deck.ts: the relay is down, Q7's panels laid
-    relay: q7Laid(w),
-  };
-}
-test('the ring seeds put the stops where the views expect them', () => {
-  const at = (stage: SeedStage) => reads(client(stage));
-  assert.equal(at('crossing-done').stops[1]!.length, 4, 'the Pier is the end before Q7');
-  assert.equal(at('deck-laid').stops[1]!.length, 5, 'the Railhead is the end once Q7 is laid');
-  assert.equal(at('deck-laid').relay, true);
-  assert.equal(at('crossing-done').relay, false);
-  assert.equal(at('ring-joined').stops[1]!.length, 6, 'Ring Island is the end once the rivet is struck');
-  assert.equal(at('gap-footed').head, 7, 'the railhead at the last bent');
+test('a joined client reads the ring stops and railhead at each construction stage', () => {
+  for (const [stage, stops, laid, set, head, joined] of [
+    ['crossing-done', 4, false, 0, 0, false],
+    ['deck-laid', 5, true, 0, 0, false],
+    ['gap-footed', 5, true, 14, 7, false],
+    ['ring-joined', 6, true, 14, 7, true],
+  ] as const) {
+    const room = railRoom(buildSeedWorld(stage));
+    const client = room.join('a', 'a');
+    room.ready();
+    const world = client.adapter.read.world();
+    assert.equal(line2Trains(world), true, stage);
+    assert.equal(trainStops(world, LINE2).length, stops, stage);
+    assert.equal(q7Laid(world), laid, stage);
+    assert.deepEqual([aperture(world).set, ringHead(world), aperture(world).joined >= 0], [set, head, joined], stage);
+  }
 });
 
 // ---------------------------------------------------------------- line 2's path past the pier head
