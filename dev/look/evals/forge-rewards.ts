@@ -66,21 +66,23 @@ if (second && q.get('report')) {
   const { inspectRailway } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
   void (async () => {
     while (inspectRailway()!.line2View.forgeRewards.axe.heat === 'cool') await wait(50);
-    const seen = new Set<string>();
-    const end = performance.now() + 9000;
+    // Every change of the cut, the roof show, the axe's heat and the machine's crossing, timed from the first sample.
+    const log: string[] = [];
+    let last = '';
+    const t0 = performance.now();
+    const end = t0 + 9000;
     while (performance.now() < end) {
       const v = inspectRailway()!.line2View;
       const cam = v.switchCamera;
-      if (cam.kind === 'forgeAxe' && (cam.active || cam.pending)) seen.add(cam.active ? 'cut playing' : 'cut queued');
-      seen.add(`axe ${v.forgeRewards.axe.heat}`);
-      seen.add(`roof ${v.forgeFinish.stage}`);
-      await wait(100);
+      const shot =
+        cam.kind === 'forgeAxe' && (cam.active || cam.pending) ? (cam.active ? 'cut playing' : 'cut queued') : 'no cut';
+      const now = `${shot}, roof ${v.forgeFinish.stage}, axe ${v.forgeRewards.axe.heat}${v.working ? ', crossed' : ''}`;
+      if (now !== last) log.push(`${((performance.now() - t0) / 1000).toFixed(1)} s: ${now}`);
+      last = now;
+      await wait(50);
     }
     const v = inspectRailway()!.line2View;
-    console.log(
-      `FORGE LOOK player 2: ${[...seen].join(', ')}; arrivals ${v.forgeRewards.axe.arrivals}; turned home ${v.switchCamera.forgeTurns}; ` +
-        `at ${me.body!.position.x.toFixed(1)}, ${me.body!.position.z.toFixed(1)}`,
-    );
+    console.log(`FORGE LOOK player 2: ${log.join(' | ')}; arrivals ${v.forgeRewards.axe.arrivals}`);
   })();
 }
 // ?claim=pack|axe (with --players 2, ?claim2= for player 2): this page opens that reward 2 s on, from where it stands,

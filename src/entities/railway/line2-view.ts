@@ -811,7 +811,9 @@ export async function createRailwayLine2(
     forgePieces.forEach((_, k) => building.snap(k, false));
     for (let n = 0; n < shownPieces; n++) building.snap(ORDER[n]!, true);
     finish.restore(); // after the pieces: it snaps the roof back on once the crossing is done
-    rewards.restore(keepCut);
+    // Any arrival under way keeps going through the crossing: a cut still playing, one queued and then dropped (a
+    // vehicle seat; its fallback lands it), or an axe that arrived at once and is cooling.
+    rewards.restore(crossing);
     drawnDepot = '';
   }
 
@@ -1087,8 +1089,6 @@ export async function createRailwayLine2(
       const wantPieces = piecesFor(fg.used);
       while (shownPieces < wantPieces) building.drop(ORDER[shownPieces++]!, 3.2, 0.3);
       building.update(dt);
-      finish.update(dt);
-      rewards.update(dt);
       mouth.visible = fg.lit >= 0;
       if (mouth.visible && !reducedMotion) fire.advance(dt);
       if (litShown < 0 && fg.lit >= 0) {
@@ -1113,6 +1113,10 @@ export async function createRailwayLine2(
         else rewards.axeArrives();
       }
       litShown = fg.lit;
+      // After the lit edge's block: on the lit frame the axe's cut is already queued, so the roof show's first look at
+      // its hold sees it and waits (independent review, 18 November: updated first, it left `idle` the same frame).
+      finish.update(dt);
+      rewards.update(dt);
       if (fg.lit >= 0) {
         // Lit: the chimney smokes and each poured rail flies out of the mouth onto the rack, as in the prototype.
         smokeAcc += dt * 3;
