@@ -10,6 +10,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { guardInstances } from '../render/draw-count.ts';
 import kitUrl from '../../assets/built/place-kit.glb?url';
 import { camera } from '../render/scene.ts';
+import { viewScale } from '../render/view-distance.ts';
 import { warmDraw } from '../render/precompile.ts';
 import {
   FAR_KINDS,
@@ -389,7 +390,7 @@ export function lookTrack(set: DropSet, kinds: string[], owner: OwnedView, chunk
           setChunk(c);
         }
       } else if (loadedKit && FAR_KINDS.has(c.run.kind) && c.parts.length) {
-        const level = trackLevel(nearest(c, camera.position), c.level);
+        const level = trackLevel(nearest(c, camera.position) * viewScale(), c.level);
         if (level !== c.level) {
           c.level = level;
           for (const q of c.parts) setViewGeometry(q.mesh, farGeometry(q.name, level));

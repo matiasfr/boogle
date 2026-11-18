@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tileIndex, type TileCells } from '../src/place/far-ground-index.ts';
+import { resident } from '../src/render/lod-level.ts';
 
 const NX = 49;
 const xy = (v: number) => [v % NX, Math.floor(v / NX)] as const;
@@ -80,4 +81,13 @@ test('far ground coarse levels draw fewer triangles; step 1 is the full grid', (
   const two = tileIndex(NX, [0, 0, 32, 32], 2, none).length / 3;
   const four = tileIndex(NX, [0, 0, 32, 32], 4, none).length / 3;
   assert.ok(four < two && two < full);
+});
+
+test('resident comes in inside near, stays until far and goes out there', () => {
+  // Ring Island's near view: mount within 500 m, free at 650 m.
+  assert.equal(resident(499, false, 500, 650), true);
+  assert.equal(resident(500, false, 500, 650), false);
+  assert.equal(resident(600, false, 500, 650), false);
+  assert.equal(resident(600, true, 500, 650), true);
+  assert.equal(resident(650, true, 500, 650), false);
 });

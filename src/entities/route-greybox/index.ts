@@ -8,6 +8,7 @@ import { productionRailway } from '../../proto/flags.ts';
 import { background } from '../../async.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
 import { camera } from '../../render/scene.ts';
+import { resident } from '../../render/lod-level.ts';
 import { me } from '../../player/player.ts';
 import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
 import { precompile } from '../../render/precompile.ts';
@@ -50,7 +51,7 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
         Math.hypot(camera.position.x - c.x, camera.position.z - c.z),
         body ? Math.hypot(body.x - c.x, body.z - c.z) : Infinity,
       );
-      return d < (mounted ? MOUNT.far : MOUNT.near);
+      return resident(d, mounted !== null, MOUNT.near, MOUNT.far);
     };
     async function mount() {
       building = true;

@@ -159,7 +159,18 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
   in the census when out of view, nor in the shadow pass beyond the ±36 m shadow camera. *Check:* stills at green, head
   and ring, before and after, show no difference to the eye, the screen edges included (`npm run look` with the
   census cameras). *Proof:* pose reading at head and ring: shadow and main draws, then frame time.
-- [ ] **2. One residency decision, telescope-aware.** Add `resident(distance, was, near, far)` to `src/render/lod-level.ts`
+- [x] **2. One residency decision, telescope-aware.** Census before → after (draws/triangles, main then shadow, outside
+  the telescope): green 251/731751 → 251/729199, 141/189582 → 143/188950; head 731/1237093 → 725/1234517, 95/132980 →
+  62/120992; ring 93/239235 → 92/240147, 76/119908 → 75/120820. Every ground-tile and rail-kit row is identical at green
+  and head; at head the differences are the moving train (engine, coach, flat rack, cargo fittings), at green unnamed
+  `Scene/Group` mesh rows that also moved between step 1's frames. At ring the one rail-kit row reads 2/4560 or 1/5472
+  from run to run on unchanged code (step 1's after on main was 1/5472, as here). Through the lookout telescope at 2x
+  (fov 24°) the drawn ground tiles go 177,766 → 298,150 triangles and the track 182,352 → 217,712: finer, and the
+  [stills](../world/world-residency/) show no coarsening. Spawn pose reading (20 s; load 5.3 → 7.2 before, 4.7 → 8.1
+  after): CPU 15.923 → 15.711 ms (p95 20.765 → 19.865), GPU 16.095 → 15.999 ms (p95 19.969 → 19.786), 732 calls and
+  1,059,580 triangles both times; two runs that reached 20 of 20 were discarded. On `resident()`: the classic zone, Ring
+  Island's near-view mount and the greybox areas; Ring Island and the greybox still measure plain camera and body
+  distance (no fov scale), as written. Add `resident(distance, was, near, far)` to `src/render/lod-level.ts`
   and `viewDistance(x, z)` (new `src/render/view-distance.ts`: horizontal camera distance × tan(fov/2) / tan(31°)).
   Move `classic-zone.ts:18-38`, `ring-island/index.ts:73` and `route-greybox/index.ts:47-56` onto `resident()` with
   their numbers unchanged (the greybox keeps the nearer of camera and body); make the ground tiles' pick

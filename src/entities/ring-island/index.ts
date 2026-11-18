@@ -8,6 +8,7 @@ import { productionRailway } from '../../proto/flags.ts';
 import { background } from '../../async.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
 import { camera } from '../../render/scene.ts';
+import { resident } from '../../render/lod-level.ts';
 import { me } from '../../player/player.ts';
 import { precompile, warmUp } from '../../render/precompile.ts';
 import { RING_FORMATION, RING_GAP, RING_HALT, ringAt } from '../../sim/railway-ring-layout.ts';
@@ -70,7 +71,7 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
         body ? Math.hypot(body.x - a.x, body.z - a.z) : Infinity,
       ]),
     );
-    return ringIslandNear.keep || d < (near ? MOUNT.far : MOUNT.near);
+    return ringIslandNear.keep || resident(d, near !== null, MOUNT.near, MOUNT.far);
   };
   const mount = (v: RingIslandView) => {
     if (me.body) {

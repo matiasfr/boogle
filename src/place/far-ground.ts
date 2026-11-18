@@ -18,12 +18,14 @@ import { camera, scene } from '../render/scene.ts';
 import { registerGraphics, graphicsInitial } from '../graphics-settings.ts';
 import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
 import { lodLevel } from '../render/lod-level.ts';
+import { viewScale } from '../render/view-distance.ts';
 import { tileIndex, type TileCells } from './far-ground-index.ts';
 
 /** Cells per tile side (192 m). */
 export const GROUND_TILE = 96;
 const TILE = GROUND_TILE;
-// [step in cells, from this distance (m) between the camera and the tile's bounds]. Step 1 is the full grid.
+// [step in cells, from this distance (m) between the camera and the tile's bounds, horizontal, scaled by the field of
+// view (src/render/view-distance.ts) so the telescope's zoom sees finer]. Step 1 is the full grid.
 const LEVELS: readonly [step: number, from: number][] = [
   [1, 0],
   [2, 180],
@@ -74,12 +76,15 @@ scene.onBeforeRender = function (renderer, drawn, cam, geometry, material, group
 function pick() {
   if (!enabled || !views.size) return;
   p.copy(camera.position);
+  const scale = viewScale();
   for (const view of views)
     for (const tile of view.built?.tiles ?? NONE) {
-      const d = Math.hypot(
-        Math.max(tile.box.min.x - p.x, 0, p.x - tile.box.max.x),
-        Math.max(tile.box.min.z - p.z, 0, p.z - tile.box.max.z),
-      );
+      const d =
+        scale *
+        Math.hypot(
+          Math.max(tile.box.min.x - p.x, 0, p.x - tile.box.max.x),
+          Math.max(tile.box.min.z - p.z, 0, p.z - tile.box.max.z),
+        );
       const level = lodLevel(LEVEL_FROM, d);
       if (level === tile.level) continue;
       tile.level = level;
