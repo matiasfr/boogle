@@ -284,3 +284,27 @@ test('controls: an action with a context keeps it, so it may share a key (guest-
   assert.equal(actionById('ctx-crouch-test')!.context, 'as x');
   assert.ok(!controlProblems().some((p) => p.includes('ctx-')), JSON.stringify(controlProblems()));
 });
+
+// A wrap (wrapAction) reaches an action's keyboard keys only when they are bound through the action (registerAction's
+// `key`); a code listed only in the guide's `keys` and handled by a raw listener skips every wrap. The garage
+// (src/features/garage.ts) wraps interact for the Install hold, so E in the open garage must reach that wrap.
+test('controls: a wrapped action in src/ binds its guide keys through the action, so its wraps see them', () => {
+  const src = new URL('../src/', import.meta.url);
+  const texts = srcFiles(src)
+    .filter((f) => /\.[jt]s$/.test(f) && !f.startsWith('proto/') && f !== 'player/controls.ts')
+    .map((f) => [f, readFileSync(new URL(f, src), 'utf8')] as const);
+  const wrapped = new Set(texts.flatMap(([, t]) => [...t.matchAll(/wrapAction\(\s*'([\w-]+)'/g)].map((m) => m[1]!)));
+  assert.ok(wrapped.has('interact'), 'the garage wraps interact; did the pattern stop matching?');
+  const missing: string[] = [];
+  for (const [f, text] of texts)
+    for (const [body, id] of text.matchAll(/registerAction\(\s*'([\w-]+)',\s*\{((?:[^{}]|\{[^{}]*\})*?)\}\s*\)/g).map(
+      (m) => [m[2]!, m[1]!] as const,
+    )) {
+      if (!wrapped.has(id)) continue;
+      const guide = body.match(/\bkeys:\s*(\[[^\]]*\])/)?.[1] ?? '';
+      const bound = body.match(/\bkey:\s*('\w+'|\[[^\]]*\])/)?.[1] ?? '';
+      for (const [, code] of guide.matchAll(/'(Key\w+|Digit\w+|Space|Escape|Enter|Tab)'/g))
+        if (!bound.includes(`'${code}'`)) missing.push(`${f}:${id} lists ${code} in keys but does not bind it (key:)`);
+    }
+  assert.deepEqual(missing, []);
+});
