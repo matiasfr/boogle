@@ -110,7 +110,7 @@ async function fixture() {
   };
 }
 
-test("one player's double jump reaches every connected player at once, a reconnect and a late joiner", async () => {
+test("one player's double jump reaches every connected player at once, a reconnect and a late joiner, and survives restart and crash", async () => {
   const f = await fixture();
   try {
     f.connect('a');
@@ -138,18 +138,6 @@ test("one player's double jump reaches every connected player at once, a reconne
     // A second claim is a no-op, not a second unlock.
     const again = await f.claimJump('b', f.open('b'));
     assert.notEqual(again?.status, 'accepted');
-  } finally {
-    await f.close();
-  }
-});
-
-test('the shared unlock survives an orderly restart (the save) and a crash after the checkpoint', async () => {
-  const f = await fixture();
-  try {
-    f.connect('a');
-    f.connect('b');
-    await f.step(3);
-    assert.equal((await f.claimJump('a', f.open('a')))?.status, 'accepted');
     await f.restart();
     await f.step(3);
     assert.equal(rail(f.host.rules.railway.world()).jump, true, 'restored from the save');

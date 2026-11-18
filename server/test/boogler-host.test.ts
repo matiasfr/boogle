@@ -1,6 +1,7 @@
 import test, { type TestContext } from 'node:test';
 import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
+import { EventEmitter, once } from 'node:events';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -354,31 +355,30 @@ test('real relayed bg reaches authority; malformed and missing fields heal; legs
     await svc.close({ save: false });
     await fs.rm(dir, { recursive: true, force: true });
   });
-  const messages: Record<string, unknown>[] = [];
+  const arrivals = new EventEmitter();
+  const wait = async (predicate: () => boolean) => {
+    while (!predicate()) await once(arrivals, 'message');
+  };
+  const legs = new Set<string>();
+  let relayed = false;
   for (const name of ['alice', 'bob']) {
     const ws = new WebSocket(`ws://127.0.0.1:${port}/room/${id}?self=${name}&pid=${name}pid&key=${name}key0000000000`, [
       'boogle.1',
     ]);
     sockets.push(ws);
-    await new Promise<void>((resolve) =>
-      ws.addEventListener('message', function welcome(e) {
-        const m = JSON.parse(String(e.data));
-        messages.push(m);
-        if (m.t === 'welcome') {
-          ws.removeEventListener('message', welcome);
-          resolve();
-        }
-      }),
-    );
-    ws.addEventListener('message', (e) => messages.push(JSON.parse(String(e.data))));
+    let welcomed = false;
+    ws.addEventListener('message', (event) => {
+      const message = JSON.parse(String(event.data));
+      welcomed ||= message.t === 'welcome';
+      relayed ||= name === 'bob' && message.t === 'p' && message.id === 'alice';
+      if (message.t === 'm' && (message.d as ServerPacket).c?.some(([kind]) => kind === 'booglerLeg')) legs.add(name);
+      arrivals.emit('message');
+    });
+    await wait(() => welcomed);
   }
   const room = svc.roomHost()!.room(id)!;
   const world = room.world as ReturnType<typeof createRailwayWorldHost>;
   await world.whenReady();
-  const wait = async (predicate: () => boolean) => {
-    for (let i = 0; i < 100 && !predicate(); i++) await new Promise((r) => setTimeout(r, 20));
-    assert.ok(predicate());
-  };
   await wait(() => world.status().boogler !== null);
   const p = world.status().boogler!;
   let sequence = 0;
@@ -398,15 +398,7 @@ test('real relayed bg reaches authority; malformed and missing fields heal; legs
   await wait(() => world.status().boogler!.mode === 0);
   send(null);
   await wait(() => world.status().booglerMeter.ticks > 0);
-  assert.ok(
-    messages.some((m) => m.t === 'p' && m.id === 'alice'),
-    'original presence still relayed',
-  );
   assert.equal(JSON.stringify(world.sync.snapshot()).includes('boogler'), true);
-  const packets = messages.filter((m) => m.t === 'm').map((m) => JSON.stringify(m.d));
-  assert.equal(
-    packets.some((m) => m.includes('boogler')),
-    true,
-    'authoritative leg on the wire',
-  );
+  await wait(() => relayed && legs.size === 2);
+  assert.deepEqual([...legs].sort(), ['alice', 'bob'], 'both peers receive the authoritative leg');
 });

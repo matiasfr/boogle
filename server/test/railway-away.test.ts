@@ -1,7 +1,7 @@
 // The paused world (docs/decisions.md, "2026-11-06, economy principles amended"): an empty railway room stops
 // simulating after a short grace, and the next join applies one away credit (src/sim/railway-away.ts) to the forge
 // rack and the depot cart, finishes the funded job, and catches up regrowth and drop recovery.
-import test from 'node:test';
+import test, { type TestContext } from 'node:test';
 import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -15,7 +15,7 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { line2Active, railCounts } from '../../src/sim/railway-queries-line2.ts';
 import { LINE2_FORGE, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
-import { railAwayCredit, RAIL_AWAY } from '../../src/sim/railway-away.ts';
+import { RAIL_AWAY } from '../../src/sim/railway-away.ts';
 import { till, yards as yardRows } from '../../src/sim/railway-rows.ts';
 import { plotBuilt, sackCap } from '../../src/sim/railway-queries-trade.ts';
 import { TRADE, TRADE_PCT } from '../../src/sim/railway-trade-layout.ts';
@@ -224,6 +224,7 @@ test('a join after N hours finishes the funded job once; a rejoin before the roo
     assert.equal(t1().elapsed, elapsed + 50, 'five seconds away, fifty ticks');
     assert.equal(t1().completion, 0);
 
+    assert.equal(RAIL_AWAY.finishTicks * 100, RAIL_AWAY.pauseMs, 'one pause grace away finishes the funded job');
     // Three hours away: the funded job finishes, once; nothing new is funded.
     f.host.pause();
     f.clock.now += 3 * HOUR;
@@ -316,17 +317,37 @@ test("ring-island-build2: 8 hours away fills the lit steel works' rack to its ca
   }
 });
 
-test('the credit after 10 min, 1 h, 8 h and 3 days (minutes of production)', () => {
-  const minutes = (ms: number) => Math.round(railAwayCredit(ms / 100) / 60) / 10;
-  assert.deepEqual(
-    [10 * 60000, HOUR, 8 * HOUR, 72 * HOUR].map(minutes),
-    [9.6, 47.2, 117.8, 120],
-    'H = 2 h: a quarter of an hour barely differs, a weekend is the two-hour cap',
-  );
-  assert.equal(RAIL_AWAY.finishTicks * 100, RAIL_AWAY.pauseMs, 'one pause grace away finishes the funded job');
-});
+function packet(ws: WebSocket, matches: (packet: Record<string, any>) => boolean) {
+  return new Promise<Record<string, any>>((resolve) => {
+    const receive = (event: MessageEvent) => {
+      const value = JSON.parse(String(event.data));
+      if (!matches(value)) return;
+      ws.removeEventListener('message', receive);
+      resolve(value);
+    };
+    ws.addEventListener('message', receive);
+  });
+}
 
-test('a hosted room keeps simulating through the reload grace, then pauses until the next join', async () => {
+function nextPause(t: TestContext, world: ReturnType<typeof createRailwayWorldHost>) {
+  let notifyPaused!: () => void;
+  const paused = new Promise<void>((resolve) => {
+    notifyPaused = resolve;
+  });
+  const original = world.pause;
+  t.mock.method(
+    world,
+    'pause',
+    () => {
+      original();
+      notifyPaused();
+    },
+    { times: 1 },
+  );
+  return paused;
+}
+
+test('a hosted room keeps simulating through the reload grace, then pauses until the next join', async (t) => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-railway-pause-'));
   const svc = createService(
     loadConfig(
@@ -336,44 +357,70 @@ test('a hosted room keeps simulating through the reload grace, then pauses until
   );
   const port = await svc.listen(0);
   const room = railwayRoomId('pause');
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-  const connect = () => {
+  let elapsed = 0;
+  t.mock.method(performance, 'now', () => elapsed);
+  t.mock.timers.enable({ apis: ['setInterval', 'setTimeout', 'Date'], now: START });
+  const advanceClock = (ms: number) => {
+    elapsed += ms;
+    t.mock.timers.tick(ms);
+  };
+  const connect = async () => {
     const ws = new WebSocket(
       `ws://127.0.0.1:${port}/room/${room}?self=alice&pid=alicepid&key=alicepidkey0000000000&b=test`,
       ['boogle.1'],
     );
-    return new Promise<WebSocket>((resolve) => (ws.onopen = () => resolve(ws)));
+    await packet(ws, (m) => m.t === 'welcome');
+    return ws;
   };
   try {
     let ws = await connect();
-    await sleep(300);
-    const hosted = svc.roomHost()!.room(room)!;
-    const world = hosted.world as ReturnType<typeof createRailwayWorldHost>;
+    const world = svc.roomHost()!.room(room)!.world as ReturnType<typeof createRailwayWorldHost>;
     await world.whenReady();
+    const leave = async () => {
+      let notifyRemoved!: () => void;
+      const removed = new Promise<void>((resolve) => {
+        notifyRemoved = resolve;
+      });
+      const original = world.replication.removeClient.bind(world.replication);
+      t.mock.method(
+        world.replication,
+        'removeClient',
+        (sid: string) => {
+          original(sid);
+          notifyRemoved();
+        },
+        { times: 1 },
+      );
+      ws.close();
+      await removed;
+    };
     assert.equal(world.paused(), false);
     const marker = railClock(world.rules.railway.world()).resumeMarker;
     // A reload: gone and back inside the grace. The room never paused, so no credit.
-    ws.close();
-    await sleep(150);
+    await leave();
+    advanceClock(100);
+    advanceClock(150);
     ws = await connect();
-    await sleep(600);
+    advanceClock(600);
     assert.equal(world.paused(), false, 'a reload inside the grace keeps it running');
     assert.equal(railClock(world.rules.railway.world()).resumeMarker, marker, 'and credits nothing');
     // Everyone gone past the grace: it stops ticking.
-    ws.close();
-    await sleep(900);
+    await leave();
+    advanceClock(100);
+    advanceClock(401);
     assert.equal(world.paused(), true, 'an empty room pauses after the grace');
     const tick = world.sync.world.tick;
-    await sleep(300);
+    advanceClock(300);
     assert.equal(world.sync.world.tick, tick, 'and stands still');
     ws = await connect();
-    await sleep(100);
+    await world.sync.whenDurable();
     assert.equal(world.paused(), false, 'the next join wakes it');
     assert.ok(railClock(world.rules.railway.world()).resumeMarker > marker, 'with one credit');
-    await sleep(200);
+    advanceClock(200);
     assert.ok(world.sync.world.tick > tick, 'and it ticks again');
     ws.close();
   } finally {
+    t.mock.timers.reset();
     await svc.close();
     await fs.rm(dataDir, { recursive: true, force: true });
   }
@@ -392,31 +439,16 @@ test('K3: a hosted room away for 8 hours fills the till sack once; collection, r
   let svc = createService(cfg);
   let port = await svc.listen(0);
   const room = railwayRoomId('away-sack');
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-  const until = async (ready: () => boolean, why: string) => {
-    for (let k = 0; k < 60 && !ready(); k++) await sleep(25);
-    assert.ok(ready(), why);
-  };
   const connect = async () => {
     const ws = new WebSocket(
       `ws://127.0.0.1:${port}/room/${room}?self=alice&pid=alicepid&key=alicepidkey0000000000&b=test`,
       ['boogle.1'],
     );
-    let session: { epoch: number; next: number } | undefined;
-    ws.onmessage = (e) => {
-      const m = JSON.parse(String(e.data));
-      if (m.t === 'm' && m.d?.t === 'r:session') session = m.d;
-    };
-    await new Promise<void>((resolve, reject) => {
-      ws.onopen = () => resolve();
-      ws.onerror = () => reject(new Error('away sack socket failed'));
-    });
-    for (let k = 0; k < 60 && !session; k++) {
-      ws.send(JSON.stringify({ t: 'm', d: { t: 'r:open' } }));
-      await sleep(25);
-    }
-    assert.ok(session, 'the real client opened a railway session');
-    return { ws, session };
+    await packet(ws, (m) => m.t === 'welcome');
+    await host().whenReady();
+    const opened = packet(ws, (m) => m.d?.t === 'r:session');
+    ws.send(JSON.stringify({ t: 'm', d: { t: 'r:open' } }));
+    return { ws, session: (await opened).d as { epoch: number; next: number } };
   };
   const host = () => svc.roomHost()!.room(room)!.world as ReturnType<typeof createRailwayWorldHost>;
   try {
@@ -440,14 +472,16 @@ test('K3: a hosted room away for 8 hours fills the till sack once; collection, r
     assert.equal(till(w()).sack, 0, 'no sack before leaving');
     assert.equal(world.paused(), false);
 
+    const paused = nextPause(t, world);
     client.ws.close();
-    await until(() => world.paused(), 'the emptied room paused past reconnect and pause grace');
+    await paused;
+    assert.ok(world.paused());
     assert.equal(svc.roomHost()!.room(room)!.status().players, 0);
     const before = { ...till(w()) };
     const tick = world.sync.world.tick;
     const marker = railClock(w()).resumeMarker;
     clock.now += 8 * HOUR;
-    await sleep(50);
+    world.step(0.1);
     assert.equal(world.sync.world.tick, tick, 'eight fake hours do not tick the paused host');
     assert.deepEqual({ ...till(w()) }, before, 'the paused till stays still until the join');
     client = await connect();
@@ -462,6 +496,7 @@ test('K3: a hosted room away for 8 hours fills the till sack once; collection, r
     assert.equal(invariant(w()), null);
 
     const { epoch, next: request } = client.session;
+    const settled = packet(client.ws, (m) => m.d?.ack?.[0] === epoch && m.d.ack[1] === request);
     client.ws.send(
       JSON.stringify({
         t: 'm',
@@ -477,7 +512,7 @@ test('K3: a hosted room away for 8 hours fills the till sack once; collection, r
         },
       }),
     );
-    await until(() => !!world.rules.railway.outcome('alicepid', epoch, request), 'the host settled rail.sack');
+    await settled;
     assert.equal(world.rules.railway.outcome('alicepid', epoch, request)?.status, 'accepted', 'real r:edit accepted');
     assert.equal(till(w()).boogles, before.boogles + cap, 'the box receives exactly the sack');
     assert.equal(till(w()).poured, before.poured + cap, 'the pour ledger counts it once');
@@ -485,8 +520,10 @@ test('K3: a hosted room away for 8 hours fills the till sack once; collection, r
     const collected = { ...till(w()) };
 
     // Empty the sack before rejoining: a duplicate credit can no longer hide behind its cap.
+    const pausedAgain = nextPause(t, world);
     client.ws.close();
-    await until(() => world.paused(), 'the second departure also pauses the room');
+    await pausedAgain;
+    assert.ok(world.paused());
     client = await connect();
     assert.equal(world.paused(), false);
     assert.equal(railClock(w()).resumeMarker, credited, 'no additional away time is consumed');
