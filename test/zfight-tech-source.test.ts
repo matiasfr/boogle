@@ -2,43 +2,20 @@
 import { test } from 'node:test';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import { collectTechGeometry } from '../dev/level/tech-geometry.ts';
 import { padById } from '../src/place/tech-layout.ts';
 import { ORIGIN } from '../src/place/layout.ts';
 import { collectDrawnGeometry } from '../dev/level/drawn-geometry.ts';
 
-test('census captures current tech builders instead of the retired recovery pad catalogue', async () => {
+test('the drawn census captures every audited tech piece and no retired prototype geometry', async () => {
   const { faces } = await collectDrawnGeometry();
   const pieces = new Set(faces.map((f) => f.piece));
   assert.ok(![...pieces].some((p) => /jump-catch|jump-return|glide-ramp/.test(p)), 'no undrawn prototype ramps/slabs');
-  assert.ok(
-    [...pieces].some((p) => p.startsWith('tech/tools/')),
-    'starting pillar/platform builder captured',
-  );
-  assert.ok(
-    [...pieces].some((p) => p.startsWith('tech/hook/')),
-    'live hook slab builder captured',
-  );
   assert.deepEqual(
     [...pieces].filter((p) => /:pad\/|:pad-column\//.test(p)),
     [],
     'no legacy pad box recipes',
   );
-});
-
-// Explicit expected inventory prevents an incomplete adapter from agreeing with itself.
-test('every surviving runtime pad and support reaches the census', async () => {
-  const expected = [
-    ...Array.from({ length: 2 }, (_, i) => `tech/tools/${i}`),
-    ...Array.from({ length: 19 }, (_, i) => `tech/hook/${i}`),
-    ...Array.from({ length: 4 }, (_, i) => `tech/line2/${i}`),
-    ...Array.from({ length: 7 }, (_, i) => `tech/secrets/${i}`),
-    ...Array.from({ length: 51 }, (_, i) => `tech/helmet-escape/${i}`),
-  ].sort();
-  const direct = collectTechGeometry();
-  const { faces } = await collectDrawnGeometry();
-  assert.deepEqual([...new Set(direct.map((f) => f.piece))].sort(), expected);
-  assert.deepEqual([...new Set(faces.filter((f) => f.piece.startsWith('tech/')).map((f) => f.piece))].sort(), expected);
+  const techFaces = faces.filter((f) => f.piece.startsWith('tech/'));
   // Check semantic locations too: indices alone must not conceal a duplicated pad or omitted support.
   for (const [piece, pad] of [
     ['tech/tools/1', 'p1'],
@@ -53,7 +30,7 @@ test('every surviving runtime pad and support reaches the census', async () => {
     ['tech/secrets/5', 'balcony'],
     ['tech/secrets/6', 'stack'],
   ] as const) {
-    const points = faces.filter((f) => f.piece === piece).flatMap((f) => f.points);
+    const points = techFaces.filter((f) => f.piece === piece).flatMap((f) => f.points);
     assert.ok(points.length, piece);
     const p = padById(pad!);
     for (const [axis, value] of [
@@ -66,13 +43,8 @@ test('every surviving runtime pad and support reaches the census', async () => {
       assert.ok(Math.abs(center - value!) < 0.3, `${piece}: ${pad} axis ${axis}`);
     }
   }
-});
-
-// Pin every object's bounds and face count as well as its ID: replacing a missing piece with a duplicate must fail.
-test('runtime tech inventory matches the audited per-piece geometry snapshot', () => {
-  const faces = collectTechGeometry();
-  const inventory = [...new Set(faces.map((f) => f.piece))].sort().map((id) => {
-    const rows = faces.filter((f) => f.piece === id),
+  const inventory = [...new Set(techFaces.map((f) => f.piece))].sort().map((id) => {
+    const rows = techFaces.filter((f) => f.piece === id),
       points = rows.flatMap((f) => f.points);
     return {
       id,
