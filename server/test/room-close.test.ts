@@ -15,6 +15,14 @@ import { CLOSE } from '../../src/net/ws-wire.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 type Obj = Record<string, unknown>;
+function gate() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((release) => {
+    resolve = release;
+  });
+  return { promise, resolve };
+}
+
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 async function until(predicate: () => boolean, label: string, ms = 4000) {
   const end = performance.now() + ms;
@@ -134,7 +142,7 @@ test('a stalled write with a player connected is reported to index.ts before its
   const id = 'review-stall-svc';
   const realWrite = fs.writeFile;
   let stall = false;
-  const disk = Promise.withResolvers<void>();
+  const disk = gate();
   let drain: (() => Promise<void>) | undefined;
   // The store writes through this same module object (store.ts: fs.writeFile), so a write of this room hangs as one on a
   // stalled disk would.
@@ -233,7 +241,7 @@ test('shutdown waits for a restore that offline() is still running', async (t) =
   const id = 'review-restore';
   await store.write(id, { tick: 1, writerId: 'x', data: {}, updatedAt: new Date().toISOString() });
   const { rooms } = await manager(store, t, tmp);
-  const backup = Promise.withResolvers<void>();
+  const backup = gate();
   const restoring = rooms.offline(id, async () => {
     await backup.promise;
     return store.write(id, { tick: 2, writerId: 'x', data: {}, updatedAt: new Date().toISOString() });
