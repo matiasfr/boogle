@@ -164,9 +164,12 @@ export const depotReach = (s: Line2Station) => {
   const side = depotShelfSide(s);
   return Math.max(LINE2_DEPOT.reach, Math.ceil(Math.sqrt(offset * offset + side * side)) + 320);
 };
-/** The pack chest beside the forge (Place ladder.ts CHEST_AT.pack): the forge's first bill (24 logs) puts it there, and
- * opening it gives everyone in the world a back that carries `carry` instead of RAILWAY_T1.carry. */
-export const LINE2_PACK = { x: 91400, z: -900, carry: 16 } as const;
+/** The pack frame's stand beside the forge: the forge's first bill (24 logs) puts it there, and opening it gives
+ * everyone in the world a back that carries `carry` instead of RAILWAY_T1.carry. It stands on open ground 5.6 m south
+ * of the forge frame's middle, in view from the unload point and clear of the bill board's faces (forge-made rewards,
+ * owner's review, 18 November; was 91400, -900, against the forge's south wall, Place ladder.ts CHEST_AT.pack). A
+ * position only, no saved field holds it: the server judges `rail.pack` from here, as the client's prompt does. */
+export const LINE2_PACK = { x: 92200, z: -1760, carry: 16 } as const;
 /** The lever on the quarry apron (2.2 m up), and the hook device on pillar p2's top. p2 stands 11 m left of line 2 at
  * s 89.5 since the second track's formation (generic-lines step 2, 10 November; was 7 m at s 92, device at 99954, 2086,
  * 2350): a position only, no saved field holds it. */
