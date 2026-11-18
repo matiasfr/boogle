@@ -599,8 +599,8 @@ export function createRailwayBoiler(
       ) {
         const at = new THREE.Vector3(bx, b.y / 100 + 2 + (b.state === 'pedestal' ? pedestalHold.lift : 0), bz);
         // It takes rail.boilerTake's empty back (no load, footing or beam) and, like the beam, empty hands.
-        // Say so rather than offer nothing: a back still loaded from station 5 is common here (the forge rack 4.5 m
-        // off offers no rails before trains, but logs or rails carried from elsewhere still block the take).
+        // Say so rather than offer nothing: a back still loaded from station 5 is common here (the forge rack across
+        // the station, 17 m off, is out of reach, but logs or rails carried from elsewhere still block the take).
         // `r`, the pedestal's radius: measured to its edge, so a log pile dropped against it doesn't win the prompt.
         const target = { id: 'railway-boiler', verb: 'Pick up', at, r: 1.3 };
         return [
