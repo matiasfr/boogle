@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-17 · The forge's rewards are its products: a little guy builds the pack frame, the axe waits on the pedestal with a short cut; stations that grant upgrades foreshadow them ([entry](#d-2026-11-17-forge-made-rewards))
 - 2026-11-17 · confirm the build-errand freight-stop rule ([entry](#d-2026-11-17-build-errand-freight-stop))
 
 - 2026-11-17 · batch-3 calls confirmed as logged ([entry](#d-2026-11-17-batch3-confirmed))
@@ -48,6 +49,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Kept from SETTLED:  _("every system is ignorable": replaced for the rail loop by the audit picks ("Skipping the rail"))_ ([entry](#d-undated-kept-from-settled))
 
 ## Decided
+
+- <a id="d-2026-11-17-forge-made-rewards"></a>**2026-11-17, the forge's rewards are its own products, and upgrade-granting stations foreshadow them** (owner, 17 November 2026, mid-playthrough: "it's really not obvious that the pack frame exists. It's just a gift that sort of appears subtly out of nowhere"; "Same with the proper axe ... make that more clear that it's a direct reward of building the forge? Maybe the forge creates it as opposed to just a random gift off to the side"; answering the [brief](brainstorms/forge-made-rewards.md)'s questions: "A little guy builds it", "Foreshadowing is a nice motivator when stations grant upgrades", "Pedestal plus a short cut"). A little guy builds the pack frame from the forge frame's last timber when its 24-log bill is in. A station that grants an upgrade shows what it grants on its board before the bill is done; the forge's first bill shows the pack. The proper axe waits on the forge's pedestal (where the boiler and breaker wait later), with a short camera cut as the forge lights. The co-op claim is unchanged.
 
 - <a id="d-2026-11-17-build-errand-freight-stop"></a>**2026-11-17, confirm the build-errand freight-stop rule** (owner, 17 November 2026, review page: "the others I accept all"). Confirmed with the owner’s exact note: "This is fine, but unsure if we need that rule". The later 12 November amendment still governs: a leg kit waiting for its unopened railhead is no errand. The [batch-3 report](reports/agent-call-batch3-answers-applied-2026-11-17.md#build-errand-rule-finding) answers the doubt read-only and recommends keeping the rule.
 

@@ -23,6 +23,7 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-17 | Default: a funded frame's shut look is a turned board or a shutter, readable without colour, motion or sound; line 1 frames and the forge between bills are proved first | [finished-deposits](brainstorms/finished-deposits.md#design-review-2026-11-17) | Orchestrator | The brief's first build; the owner chose the behaviour, not the form | open |
 | 2026-11-17 | Default: the Round's kerb is 0.30 m wide and 0.08 m high on the green's side only, with no collider; the green is the terrain's own `#618f41` and the kerb the statue's stone `#a3a29c` | [home-flip D2](plans/home-flip.md); `src/prefab/builders/town-green-kerb.ts` | D2 builder; the heartbeat | Low enough to walk over without a collider, and no new colours | open |
 
 
@@ -34,6 +35,8 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-17 | Default: the forge's pack and axe show as the actual items, not crates, with a wooden knock (pack done) and a hammer ring (axe lands); the board's clue is a pack silhouette kept with an unclaimed mark after the board flips to 32 | [forge-made-rewards](brainstorms/forge-made-rewards.md#design-review-2026-11-17) | Orchestrator | The brief's suggestions; the owner chose the maker, the foreshadowing and the pedestal, not these forms | open |
+| 2026-11-17 | New: the axe's cut plays only for players near the forge on the live edge, folded into the lit forge's roof show; the pedestal holds an unclaimed axe and a later cast waits for it (or a side rack), the planner's pick | [forge-made-rewards](brainstorms/forge-made-rewards.md#design-review-2026-11-17) | Orchestrator | One show per edge; far players already get the forge call's whistle; the pedestal is shared with the boiler and breaker | open |
 | 2026-11-17 | Default: the sack keeps its coins when a rate is lowered | [Town economy C1](plans/town-economy-visible.md); `railway-sys-away.ts`, `railway-check-trade.ts` | Orchestrator; C1 builder | Apply the 15-minute cap only to new away accrual; never clamp earned coins. Save checks have no tunable context, so validate integer balances and the pour ledger. Fixed-rate tests assert the cap. C1 tooling copy remains owner placeholders: “Sack waiting”; “Back after a night: the coin sack is on the counter”. | open |
 
 ## Characters, cosmetics and story
