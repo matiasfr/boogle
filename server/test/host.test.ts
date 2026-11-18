@@ -66,6 +66,14 @@ function connect(base: string, room: string, self: string, pid = self + 'pid', k
 const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** Polls state the server changes on its own clock, bounded for a loaded runner rather than a guessed delay. */
+async function until(predicate: () => boolean, label: string, ms = 5000) {
+  const end = performance.now() + ms;
+  while (!predicate()) {
+    if (performance.now() > end) throw new Error(`timeout: ${label}`);
+    await sleep(10);
+  }
+}
 let beat = 0;
 // The room answers a heartbeat only after every earlier frame on that socket, and writes to each socket in order:
 // settling the senders, then the receivers, proves every relay those frames caused has arrived.
@@ -375,7 +383,7 @@ test('join: welcome then list, presence relays with ids, and no tab is special a
     assert.deepEqual(await a.next(is('list')), { t: 'list', peers: [], last: true });
     assert.ok(a.msgs.indexOf(w) < a.msgs.findIndex(is('list')));
     a.send({ t: 'p', s: 1, d: { v: 1, x: 3 } });
-    await sleep(50);
+    await settle([a]);
     const b = connect(base, 'beach', 'bbb');
     const list = await b.next(is('list'));
     assert.deepEqual(list.peers, [{ id: 'aaa', s: 1, d: { v: 1, x: 3 } }]);
@@ -392,7 +400,9 @@ test('join: welcome then list, presence relays with ids, and no tab is special a
   }
 });
 
-for (const order of ['ab', 'ba', 'abc', 'acb', 'bac', 'bca', 'cab', 'cba']) {
+// Each joiner (a first, c last) leaves first in one order and stays last in another; every order also ends with two
+// players, so these four hold the two-player and remaining three-player orders.
+for (const order of ['abc', 'acb', 'bac', 'cba']) {
   test(`no special tab: ${order.length} players hide, then leave in order ${order}`, async () => {
     const id = railwayRoomId(`ordinary-${order}`);
     const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*' });
@@ -430,8 +440,7 @@ for (const order of ['ab', 'ba', 'abc', 'acb', 'bac', 'bca', 'cab', 'cba']) {
         await client.next((m) => m.t === 'hb' && m.at === name);
       }
       const ticks = world.status().booglerMeter.ticks;
-      await sleep(150);
-      assert.ok(world.status().booglerMeter.ticks > ticks, 'the hidden clients do not own brain ticking');
+      await until(() => world.status().booglerMeter.ticks > ticks, 'the hidden clients do not own brain ticking');
       assert.equal(world.status().seats.length, order.length, 'hiding keeps every occupied chair');
       for (const name of order) {
         const departing = clients.get(name)!;
@@ -439,7 +448,7 @@ for (const order of ['ab', 'ba', 'abc', 'acb', 'bac', 'bca', 'cab', 'cba']) {
         departing.ws.close();
         await departing.closed;
         if (remaining.length) await Promise.all(remaining.map((c) => c.next((m) => m.t === 'left' && m.id === name)));
-        else await sleep(FAST.reconnectGraceMs + FAST.housekeepMs * 2);
+        else await until(() => world.status().seats.length === 0, `the last player, ${name}, departs after grace`);
         clients.delete(name);
         assert.deepEqual(
           world.status().seats,
@@ -534,7 +543,7 @@ test('one player, two tabs: the newer one wins and the older leaves at once', as
     const thief = connect(base, 'beach', 'ddd', 'anotherpid', 'notthekey000000000');
     assert.deepEqual(await thief.next(is('taken')), { t: 'taken' });
     assert.equal(await thief.closed, 4011);
-    await sleep(100);
+    await settle([a3]); // the thief was refused (closed above), so anything it caused reached a3 first
     assert.ok(!a3.msgs.some(is('elsewhere')), 'the player keeps playing');
     a3.ws.close();
     b.ws.close();
