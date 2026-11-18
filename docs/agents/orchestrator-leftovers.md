@@ -198,3 +198,36 @@ Prefab portability still matters: committed artifacts hold authored operands onl
 ## Housekeeping
 
 The 13 November cleanup archived removed tips under local `archive/worktree/*` tags, including `codex/hook-swing-prototype-wip`, `codex/two-player-track-wip` and `review/leaf-coop` (its test was not on main). Old worktree counts are superseded; inspect current worktrees before cleanup. Daily-job checkouts under `~/.boogle/daily` stay untouched. The parked traveller branch and tag above are kept.
+
+## Owner questions from 5 to 14 November
+
+Moved word for word from the state file's open owner questions by the 18 November tidy. Each proceeds on its recommendation; they are still his to answer. When he answers one, record it in the decision log and delete it here.
+
+**From 14 November:**
+
+**Owner questions still open** (each proceeds on its recommendation): the board plan's three (above); suspect strings owed to him in one list (footings board lines in `src/entities/railway/footing-cues.ts`, "Next load: on the wagon", kiln, cradle, seal, great tree, rack and wagon prompts); the statue's facing and size, the glider trail's brightness and the wind sound (his walk); the right-hand running plan's three questions; walk the Round blockout. Items the backlog agent could not tell were commitments (train ladder, short turn, co-op abilities E, great beam, 2D economy prototype, express and east bay, yards, production-core slices 6 and 7, the target-quality pass, the 12 November hold list, mini-golf, critters) were put to him on 14 November and are unanswered: ask once.
+
+Proceeding on the recommendations (the gap's earlier three questions, the record ceiling and no try-on are answered; do not ask again):
+
+- **Open orchestrator default, track layer:** add a second hand so Q5/Q6 motion reads; keep laying speed. Newly stated after the owner answer; not owner-confirmed ([agent calls](../agent-calls.md#rail-construction-levels-and-travel)).
+- **Footings:** the pier still accepts a hand-carried footing although the bill says by wagon (recommended: do not refuse it yet); "stall" versus "rotunda" on the footings board.
+- **Turnouts:** J1 proof looks rough from above; the other junctions wait for his look.
+- **Open orchestrator default, draft strings:** stay live until he edits them; keep one consolidated list of new strings owed to him ([agent calls](../agent-calls.md#controls-hud-and-arrival)): "Next load: on the wagon"; kiln, cradle, seal, great tree, rack and wagon prompts; footings board lines in `src/entities/railway/footing-cues.ts`.
+- **Earlier unresolved calls:** (the DESIGN.md text and the agent-instruction drafts were applied on 16 November) ([step 8 report](../archive/plans/server-owned-players-step8-report.md)); settle the earlier after-the-fact independent reviews; level-pacing's "should the cart ever be ridden" (no), "are the yards still the drop box you mean" (yes), the resident's wagon line (not now), and suspect copy "No line beyond yet", "Needs the powered pick", "Stop requested".
+
+Earlier calls, still open:
+
+- Leg 1 shipped under the 1,600 cap (agent call 109): keep it, or revisit train spacing. The earlier 48-seed settled worst was 1,553 heavy and 1,535 light; the 1,400 gate held on four seeds only. Candidate A added waits on main's stages; candidate B helped light asks only. The short turn still needs its own plan; preserve the `scratch/spacing-*` sheets and record the results in the spacing plan.
+- Does the shared pool replace halt yards for upgrades, or cover only goods carried to a hub ([entry](../decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool))?
+- Maps compress the leg to about 30% of its true length; Home shrinks after the rivet and names have leaders. His call on that trade.
+- Suspect copy still his: "It runs faster and pulls one more car", "Look at the engine", "Railhead" beside "Stack railhead", and the leg labels. The fourth car is now built; the old "no fourth car yet" note is superseded.
+
+**From 5 to 10 November:**
+
+- **Look choices:** gain/key cell from the town wedge, then cloud brightness and warmth.
+- **First-path verdict** on slice 3.
+- **Brief questions** in money, cart first and first evening.
+- **Suspect copy:** `SHOP.kept[0]` says "the hat" for any item; "Chops trees, breaks rocks, and more" appears before rocks exist in T1; the Works verbs under Leftovers.
+- **Museum:** inspect the miniature, the crystal specimen, or both.
+- **Worktree archives:** the 13 November cleanup supersedes the old keep-or-archive question; inspect the local archive tags before recovering any experiment (Housekeeping above).
+- **From 10 November** (one lever per platform side and the passenger car at four are answered; see the [decision log](../decisions-rail.md#current-rules)): end-game train direction ([mock-ups](../brainstorms/engine-endgame-mockups.md)): steam to modern (freight or high speed) or the dark plated sci-fi train, or that one as a rival; lengthen halts and gates past 6 m or articulate short cars; a tender on the largest current-era engine or not. The glider banner wording is still his to reword.
