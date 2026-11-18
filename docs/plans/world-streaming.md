@@ -235,7 +235,37 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
   wake, with no animation. *Done:* each slept view costs nothing at the far poses and looks identical after waking.
   *Check:* for each, one still on approach after a long absence (no stale animation, nothing replayed). *Proof:* pose
   reading with `--cpu-prof` at spawn and head.
-- [ ] **5. Static matrices on static scenery.** Set `matrixAutoUpdate = false` (one `updateMatrix()` after placing),
+- [x] **5. Static matrices on static scenery.** Built 18 November with both flags, not `matrixAutoUpdate` alone. In
+  three r187 the Scene keeps `matrixAutoUpdate`, so its own `updateMatrix()` marks it dirty every frame and
+  `updateMatrixWorld` forces a world multiply on every node below it, whatever the node's flags: `matrixAutoUpdate =
+  false` skips only the local `compose` (0.02 ms a frame over the whole scene). `matrixWorldAutoUpdate = false` skips
+  the forced multiply. Neither skips the traversal, which visits all 3,213 nodes and is most of the cost. New
+  `freezeInPlace` (`src/render/instances.ts`) computes a subtree's world matrices once and sets both flags; it is only
+  for objects in their final place under parents that never move (children added later still work). On it: the
+  far-ground tile groups (main island and Ring Island), each track chunk batch in `lookTrack`, the Sickle horizon mesh,
+  Ring Island's full ground mesh, and prefab records that opt in with `instantiate(..., { still: true })`: the room
+  shells (`rooms.ts`: 441 shell records plus hulls, poles and proxies, mostly hidden), the town blockout, the greybox
+  areas' records and leg 2's extras.
+  Left alone, because callers move, re-parent or animate the record: the crossing's bill, halt-kit frames, riders'
+  boards, rotunda, till coins and sack, works loader and rack board, track machine rig, garage cradles, freight boards,
+  house and museum fixtures (re-parented into `near`). Owner roots, and the largest unnamed scene group (673 children,
+  likely the railway view), are not in this step. 672 of 3,213 nodes now keep their world matrix.
+  *Proof*, quiet (Windows, 20 s, `--cpu-prof` 5 s; load 2.88 → 1.18 before, 1.25 → 0.58 after, of 20):
+
+  | Pose | CPU avg / p95 ms | GPU avg / p95 ms | `updateMatrixWorld` ms/s (ms/frame) | `multiplyMatrices` ms/frame |
+  | --- | ---: | ---: | ---: | ---: |
+  | spawn | 15.124 / 17.21 → 14.291 / 15.97 | 15.459 / 18.971 → 14.837 / 18.415 | 47.08 (0.973) → 43.31 (0.928) | 0.201 → 0.171 |
+  | head | 15.52 / 19.56 → 15.625 / 20.53 | 16.878 / 20.531 → 16.943 / 21.145 | 45.83 (0.878) → 42.21 (0.817) | 0.140 → 0.135 |
+
+  Its share of the profile falls from 4.7 to 4.3 % at spawn and 4.6 to 4.2 % at head; calls and triangles are
+  unchanged (748 / 1,060,811 and 802 / 1,364,973). Frame time moves within noise. The rest is the traversal: the next
+  saving is fewer nodes (step 6) or skipping frozen subtrees, which three.js has no flag for.
+  [Stills](../world/world-static-matrices/) at green, head and ring (base `0d85124a` left, this step right): 0.02 % of
+  pixels differ at head and ring, 1.68 % at the green, all walking folk, smoke, the forge fire and the crate pile.
+  In 4 s at each pose no moving node sits under a frozen one and no frozen node's world matrix changes; four engines run
+  62-80 m over the frozen track, one on Ring Island's side. The railhead traveller is at rest in `ring-joined` (gap
+  closed), and town doors are open doorways with nothing to swing. Not tested on a device.
+  Plan as written: set `matrixAutoUpdate = false` (one `updateMatrix()` after placing),
   as `src/render/instances.ts:143` does, on the far-ground tile group (`far-ground.ts:128`), the track chunk batches
   (`lookTrack`), the sickle backdrop root, Ring Island's ground and static prefab placements under
   `src/prefab/instantiate.ts`. First grep each root for later `position`, `rotation` or `scale` writes and leave any that
