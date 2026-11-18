@@ -522,10 +522,10 @@ the live install working. One proof look each; the full check, the bot and the t
 - [x] **G1. The room's facts and a true tile (S).** Edit `garage-data.ts` (`RoomFacts`, `Standing`, `partsOf`,
       `BOILERS` from `BOILER_SPEED`, `rowsFor`'s `fitted`), `garage-state.ts` (`roomFacts` reads `shed(w).steel`,
       `line(w, LINE2).boiler`; the header's "nothing is read" line corrected), `src/features/garage.ts` (pass the fact;
-      pill classes), `garage.css` (two pill colours), `test/garage-data.test.ts`. Longer boiler: "Needs steel", then
+      pill classes) and `garage.css` (two pill colours). Longer boiler: "Needs steel", then
       "Ready", then "Installed"; Boiler becomes "Replaced". No install yet: the button stays Try it. This alone clears
-      the leftover "the tile in `?home=b` still reads Needs steel". Tests: the three standings from three fact sets;
-      a fitted room's rows carry no arrow. Proof: `npm run look -- --rail-seed boiler-long --query home=b --eval
+      the leftover "the tile in `?home=b` still reads Needs steel". Look at the three standings and check the fitted
+      rows carry no arrow: `npm run look -- --rail-seed boiler-long --query home=b --eval
       dev/look/evals/garage-open.ts`, the tile reading "Installed".
       **As built (12 November):** as planned. `boilerRev` is `Line.boiler` itself (what `adapter.installBoiler` is
       sent on). The Longer boiler is not tryable once fitted (no button). Looked at: `boiler-long` under `?home=b`,
