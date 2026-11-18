@@ -20,6 +20,7 @@ test('reused presence emits null for cleared fields without losing valid falsy v
   const packet = { t: 1 };
   assert.deepEqual(mergeFields(packet, fields), { t: 1, a: 30, b: true, c: 'ready', d: 0 });
   const keys = Object.keys(packet);
+  assert.deepEqual(keys, ['t', 'a', 'b', 'c', 'd'], 'core keys first, then fields in registration order');
   active = false;
   packet.t = 2;
   assert.deepEqual(
