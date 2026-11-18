@@ -81,9 +81,16 @@ test('Gorge collider and placement values match the old massing', async (t) => {
   const trimmed = drawn('gorge:trimmed-surfaces');
   assert.ok(untrimmed instanceof THREE.InstancedMesh, 'the untrimmed boxes are attached');
   assert.ok(trimmed instanceof THREE.Mesh, 'the trimmed slabs are attached');
+  assert.ok(untrimmed.visible && trimmed.visible, 'both drawn meshes are visible');
   assert.equal(mesh.visible, false, 'the source batch is not drawn twice');
-  const slabs = gorgeSurfaces(authored).size;
-  assert.ok(slabs > 0 && untrimmed.count > 0 && untrimmed.count <= mesh.count - slabs, 'every box is drawn once');
+  const surfaces = gorgeSurfaces(authored);
+  // A placement takes one batch slot per builder instance (one when it lists none); a trimmed one leaves the batch.
+  const trimmedSlots = authored.reduce((n, p) => {
+    const visual = compiled.prefabs[p.prefab]!.visual;
+    return n + (surfaces.has(p.id) && 'builder' in visual ? (visual.instances?.length ?? 1) : 0);
+  }, 0);
+  assert.ok(surfaces.size > 0 && trimmedSlots > 0, 'Gorge has trimmed slabs');
+  assert.equal(untrimmed.count, mesh.count - trimmedSlots, 'every untrimmed box is drawn once');
   assert.ok(trimmed.geometry.getAttribute('position').count > 0, 'the trimmed slabs have geometry');
   t.diagnostic(
     `Gorge: ${authored.length} authored, ${mesh.count} visible, ${solids} bodies, ${owner.root.children.filter((child) => child instanceof THREE.InstancedMesh).length} batches`,
