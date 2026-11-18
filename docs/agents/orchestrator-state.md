@@ -10,10 +10,9 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Cutscenes for everyone step 2: the boiler's show (`boiler-shot.ts`, `boiler-view.ts`, `line2-view.ts`, `view.ts`, `ability-arrival.ts`, `place.md`) | Cutscenes for everyone and the boiler-fitted cinematic (P2) | `claude/cutscenes-boiler-show` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 14:50 | built 15:27; reviewed 15:52 (one P2: the forge’s call can sound twice after a 30 s wait); in its fix round since 15:55 (browser-heavy: a two-player look) |
+| Cutscenes for everyone step 2: the boiler's show (`boiler-shot.ts`, `boiler-view.ts`, `line2-view.ts`, `view.ts`, `ability-arrival.ts`, `place.md`) | Cutscenes for everyone and the boiler-fitted cinematic (P2) | `claude/cutscenes-boiler-show` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 14:50 | built 15:27; reviewed 15:52 (one P2: the forge’s call can sound twice after a 30 s wait); fix round back 16:40; in an independent re-check since 16:42 (browser-heavy: a two-player look) |
 | The two stale bots (the two-player playthrough expects a friend’s card; the seed route takes the axe at the lit forge; a failed bot ends its look), then Checkpoint A’s two-player and works-bot proofs (`dev/look/bots/railway.ts`, `src/sim/railway-seed-route.ts`, seed-derived tests, `separate-capacities.md`) | Separate capacities (P2) | `claude/capacities-bot-fixes` | the heartbeat (HOTBOX), Claude Opus high delegate | 18 November 15:42 | building (browser-heavy: a two-player playthrough and the works bot) |
 | Prefab data step 13, fifth area: secrets (`src/entities/finds/`, `prefab-data.md`) | Prefab data (P2) | `claude/prefab-secrets` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 15:42 | building |
-| The overlap view: `?view=overlap` and a Dev toggle on the existing detector (`src/debug/`, dev-only) | An overlap view for z-fighting (P3) | `claude/overlap-view` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 15:42 | building |
 
 ## Where the work stands
 
