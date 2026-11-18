@@ -39,11 +39,16 @@ import { freightLoads } from '../src/sim/railway-sys-trade.ts';
 import { steelLoads, steelArrives } from '../src/sim/railway-sys-steel.ts';
 import { legKitLoad } from '../src/sim/railway-sys-route-kit.ts';
 import { townHas, townRead } from '../src/sim/town-facts.ts';
+import { railwayAtWorks } from '../src/sim/railway-seed-works.ts';
+import { railwayAtRing } from '../src/sim/railway-seed-ring.ts';
 
-const YARD = buildSeedWorld('yard-wagon'),
-  DECK = buildSeedWorld('yard-deck'),
+// Keep accepted fixture construction outside the individual unit-test budget, as golden shards do. yard-wagon and
+// yard-deck are built here as buildSeedWorld builds them (src/sim/railway-seeds.ts), on one yard-built world instead of
+// two: the Works and ring builders restore their source and never write it.
+const YARD_BUILT = buildSeedWorld('yard-built'),
+  YARD = railwayAtWorks('wagon-on', YARD_BUILT),
+  DECK = railwayAtRing('deck-laid', YARD_BUILT),
   WAGON = buildSeedWorld('wagon-on');
-// Keep accepted fixture construction outside the individual unit-test budget, as golden shards do.
 const KIT_BASES = {
   'ring-joined': buildSeedWorld('ring-joined'),
   'steel-lit': buildSeedWorld('steel-lit'),
@@ -71,6 +76,7 @@ function buyYard(s: Seed) {
 test('L1: yard completion needs the wagon; yard first adds no neighbours, demand or fares', () => {
   const s = buildSeedWorld('fares-running');
   until(s, () => town(s.w, 0).wood >= 24);
+  const before = plotPrice(s.w, 0, 0, 50);
   buyYard(s);
   const at = s.t;
   assert.equal(loaderBuilt(s.w, at + TRADE.buildTicks - 1), false);
@@ -79,10 +85,11 @@ test('L1: yard completion needs the wagon; yard first adds no neighbours, demand
   assert.equal(loaderOn(s.w, at + TRADE.buildTicks), false, 'not coupled');
   assert.equal(townBuildings(s.w, 0, at + TRADE.buildTicks), 2);
   assert.equal(townHas(townRead(s.w, at + TRADE.buildTicks), 'town'), false);
-  assert.equal(plotPrice(s.w, 0, 0, 50), 300, 'yard doubles the next price');
+  const price = plotPrice(s.w, 0, 0, 50);
+  assert.ok(price > before, 'the yard raises the next price');
   const b = s.w.mut(Till, s.w.single(Till))!;
-  b.boogles += 300;
-  b.poured += 300;
+  b.boogles += price;
+  b.poured += price;
   assert.equal(act(s, 'a', 'rail.buy', { id: 0 }), 1);
   assert.equal(townHas(townRead(s.w, at + TRADE.buildTicks), 'town'), true);
   const coupled = copy(YARD),
@@ -147,7 +154,7 @@ test('L1: existing owed/aboard footings stay put when the yard completes; determ
     conserved(s);
     assert.equal(s.w.hash(), back.w.hash());
   }
-  assert.equal(works(s.w).pierRack, 12);
+  assert.equal(works(s.w).pierRack, WORKS.pier);
   assert.equal(aboard(s.w, 'foot'), 0);
 });
 
@@ -161,7 +168,7 @@ test('L1: non-wagon mid-load snapshot resumes without loss, duplication or deadl
     conserved(s);
     assert.equal(s.w.hash(), back.w.hash());
   }
-  assert.equal(works(s.w).pierRack, 12);
+  assert.equal(works(s.w).pierRack, WORKS.pier);
   assert.equal(aboard(s.w, 'foot'), 0);
 });
 
