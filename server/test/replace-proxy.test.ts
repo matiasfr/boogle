@@ -64,18 +64,11 @@ test('review regression: Fly clients sharing the app-side forwarding hop retain 
   );
 });
 
-test('review regression: a short ADVANCE_KEY disables replacement without crashing the server', async (t) => {
-  const f = await fixture(t, 'x');
-  assert.equal((await fetch(`${f.base}/healthz`)).status, 200);
-  assert.equal((await f.send({}, 'x')).status, 404);
-  assert.match(JSON.stringify(f.logs), /ADVANCE_KEY.*32/);
-  assert.ok(!f.logs.flat().includes('x'), 'warning must not log the configured key');
-});
-
 test('a 31-character key is disabled with a warning that never contains the key', async (t) => {
   const key = 'short-key-marker-01234567890123';
   assert.equal(key.length, 31);
   const f = await fixture(t, key);
+  assert.equal((await fetch(`${f.base}/healthz`)).status, 200);
   assert.equal((await f.send({}, key)).status, 404);
   assert.match(JSON.stringify(f.logs), /ADVANCE_KEY.*32/);
   assert.ok(!JSON.stringify(f.logs).includes(key));
