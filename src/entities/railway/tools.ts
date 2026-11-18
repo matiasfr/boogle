@@ -19,7 +19,6 @@ import { emit } from '../../render/particles.ts';
 import { AXE_REWARD, JUMP_REWARD, PACK_REWARD } from './reward-data.ts';
 import { AXE_AT, PACK_HEAD_Y, axeHeadAt, axeLeans } from './forge-rewards.ts';
 import { airJumpApexForce } from '../player/apex-float.ts';
-
 import { linePanels } from '../../sim/railway-line-layout.ts';
 import { LINE2_PACK } from '../../sim/railway-line2-layout.ts';
 import { account, forge, rail, type ReadWorld } from '../../sim/railway-rows.ts';

@@ -37,7 +37,8 @@ function clear(s: Seed) {
     }
 }
 function chop(s: Seed, pid: string) {
-  // A starting back's row of logs at a time, pack or not, so a bill leaves nothing over on the back.
+  // Until a starting back's row of logs (8), pack or not; the last chop can overshoot it (2 a hit after Station 3, the
+  // proper axe's 5 to 10); `logs` deposits only what the bill takes, so any over stays on the back.
   while (account(s.w, pid)!.carry < RAILWAY_CAPACITY.logs) {
     const k = trees(s.w).findIndex((t) => t.left > 0);
     need(k >= 0, 'a standing source');
