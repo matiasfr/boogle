@@ -4,7 +4,7 @@
 > save or `WORLD_NS` change. Built: [machine-wing.ts](../../src/entities/railway/machine-wing.ts), the flag path in
 > [track-machine.ts](../../src/entities/railway/track-machine.ts), `WING*` and the stack offset in
 > [machine-panels.ts](../../src/entities/railway/machine-panels.ts), `panelStartUp` in
-> [track.ts](../../src/entities/railway/track.ts); eval `dev/look/evals/track-wing.ts`; test `test/track-wing.test.ts`.
+> [track.ts](../../src/entities/railway/track.ts); eval `dev/look/evals/track-wing.ts`.
 
 # Laying both tracks plausibly (track-layers-double)
 
