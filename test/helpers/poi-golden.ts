@@ -265,7 +265,7 @@ export async function capturePoisAfter(groundAt: (x: number, z: number) => numbe
         read('src/prefab/builders/poi-windmills.ts'),
         { THREE, registerBuilder, ...model },
       ),
-      ...sourceModule(read('src/prefab/builders/poi-caves.ts'), {
+      ...sourceModule<Record<string, unknown>>(read('src/prefab/builders/poi-caves.ts'), {
         THREE,
         registerBuilder,
         readableGlow: <T>(m: T) => m,
