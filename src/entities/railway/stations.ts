@@ -11,7 +11,8 @@ import { GROUP } from '../../physics/physics.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { flat } from '../../render/flat.ts';
 import { GOLD_ROPE, createRope } from '../../render/gold-rope.ts';
-import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
+import { paintTwoLines, signBoard, type SignBoard } from '../../render/sign-board.ts';
+import { drawRewardGlyph, type RewardKind } from './reward-glyph.ts';
 import { H, addStatic } from '../../place/land.ts';
 import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint, setBlob } from '../../place/look.ts';
 import { dustRing } from '../../render/particle-effects.ts';
@@ -36,6 +37,8 @@ import {
 export { frameBesideLine, type FrameAt } from '../../place/spatial-station.ts';
 
 export type StationRun = ReturnType<typeof buildStation>;
+/** A reward a bill board shows: `ready` once it waits to be claimed (reward-glyph.ts). */
+export type RewardMark = { kind: RewardKind; ready: boolean };
 /** Seconds a finished frame takes to fold away, and how far from its middle counts as on it (frame, feeder, bearers). */
 const PACK_S = 1,
   /** After a load finds a stretch laid and clear: seconds a friend's avatar arriving on it still stands it up. */
@@ -47,6 +50,23 @@ const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
   stoneMat = material('stone');
 stoneGeo.computeBoundingBox();
 const stoneFoot = -stoneGeo.boundingBox!.min.y;
+/** The bill's two lines, and with marks, the lines in the board's left and the marks stacked in its right slot. */
+function paintMarked(b: Pick<SignBoard, 'g' | 'cw' | 'ch'>, big: string, small: string, marks: readonly RewardMark[]) {
+  if (!marks.length) return paintTwoLines(b, big, small, BILL_LOOK);
+  const { g, cw, ch } = b,
+    // One mark gets most of the board's height; two stack in a narrower slot. Either reads at about the title's size.
+    slot = Math.round(ch * (marks.length === 1 ? 0.8 : 0.55));
+  paintTwoLines({ g, cw: cw - slot, ch }, big, small, { ground: BILL_LOOK.ground, ink: BILL_LOOK.ink });
+  g.fillStyle = BILL_LOOK.ground;
+  g.fillRect(cw - slot, 0, slot, ch);
+  g.strokeStyle = BILL_LOOK.rim;
+  g.lineWidth = ch * 0.04;
+  g.strokeRect(ch * 0.04, ch * 0.04, cw - ch * 0.08, ch - ch * 0.08);
+  const size = Math.min(slot - ch * 0.04, (ch * 0.94) / marks.length);
+  marks.forEach((m, k) =>
+    drawRewardGlyph(g, m.kind, cw - slot / 2 - ch * 0.03, ch / 2 + (k - (marks.length - 1) / 2) * size, size, m.ready),
+  );
+}
 /** Two saddles across the frame's top at its post pairs, in the frame's own space (+z along the line). */
 function saddles(g: THREE.Group) {
   const wood = flat('#8a6236'),
@@ -415,18 +435,23 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
       if (beam) beam.visible = n.beam > 0;
       lashings?.tie(n.beam > 0);
     },
-    /** The sign over it; off when it's not its turn or it's done. */
-    setTag(on: boolean, status?: string) {
+    /** The sign over it; off when it's not its turn or it's done. `marks`: the rewards this station grants, painted
+     * in a slot on the board's right (forge-made rewards, step 2), and `goods: false` drops the goods line (a lit forge's
+     * board, still showing what waits). */
+    setTag(on: boolean, status?: string, marks: readonly RewardMark[] = [], goods = true) {
       bill.mesh.visible = on;
       if (!on) return;
-      const parts = GOODS.filter((g) => run.need(g) > 0).map(
-        (g) => `${g === 'beam' ? 'great beam' : g} ${run.have[g]}/${run.need(g)}`,
-      );
+      const parts = goods
+        ? GOODS.filter((g) => run.need(g) > 0).map(
+            (g) => `${g === 'beam' ? 'great beam' : g} ${run.have[g]}/${run.need(g)}`,
+          )
+        : [];
       const big = run.spec.label,
         small = [status, parts.join('  ')].filter(Boolean).join(' · ');
-      if (big + '|' + small === painted) return;
-      painted = big + '|' + small;
-      paintTwoLines(bill, big, small, BILL_LOOK);
+      const key = [big, small, ...marks.map((m) => `${m.kind}${+m.ready}`)].join('|');
+      if (key === painted) return;
+      painted = key;
+      paintMarked(bill, big, small, marks);
       bill.painted();
     },
     /** Called every frame after drawStock with where the stretch is. A laid stretch's frame packs up (owner, 14
