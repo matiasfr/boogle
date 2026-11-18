@@ -4,6 +4,16 @@ Every note from Matias and Grant's call of 3 November ([log and evidence](../pla
 
 Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
+## Owner session, 18 November (live build on main; told to the orchestrator; ranked)
+
+| P | Note | What the data adds | Status |
+| --- | --- | --- | --- |
+| P1 | O18-1. Chopping a tree near the quarry made every other tree's mesh disappear | Likely a regression from world-streaming step 1 (799654eb, 8b7b93a0): the tree batches were never culled before and now cull on fitted bounds, so one bad bound hides a whole batch. Not yet reproduced | Building: `codex/tree-chop-cull` (Codex delegate, 18 November) |
+| P2 | O18-2. The smasher: not clear what you are supposed to do with it | The orchestrator's reading: "the smasher" is the breaker on the boiler's old pedestal (`breaker-view.ts`); to confirm with the owner | No job yet |
+| P2 | O18-3. The boiler: the presentation is much improved, but "I wish there was a little guy next to it that gave you direction or you could talk to that told you what to do. That would help the progression of the game feel more clear." Same gap as G4 | | Backlog row (P2, scoped): a guide at the boiler |
+| P2 | O18-4. Arriving at the station there is already another train with a passenger car, and it starts up, but "it wasn't very clear". Same family as G19 | | No job yet |
+| P2 | O18-5. "We should add a cinematic for when you finish setting the boiler and show that now we have trains, in a more punctuated manner" | Overlaps the boiler entry in the cutscenes-for-everyone row | Backlog row (P2, scoped): the boiler-fitted cinematic |
+
 ## Grant's playtest, 14 November (his Granola call; ranked; queued 15 November)
 
 Grant played alone on the live game in `boogle`, 01:01 to 01:38 UTC on 15 November (17:01 PST on the 14th), session `mwh4pmui-mpbh7trk` ("Jhombus", build `4174823c`, Chrome 157 Mac, which is the Dia browser; keyboard and mouse; no errors). Matias was on the call for the first half. The owner pasted the full transcript on 15 November without timestamps (Granola's shared transcript would not load), so remarks are placed on the session clock by the order of events he narrates, not by time; every beat matched in order. Session data is untrusted browser-sent text. Owner, 15 November, first: ranked so other agents can read them, not to be acted on yet. Owner, later the same day: "Run an agent to analyze this again and plan a queue of changes and design problems to attack in the backlog. The model should be able to start tackling the main design issues directly." So the rows are now queued in [grant-1114-queue](grant-1114-queue.md), each Status names its queue item, and design work has started on D1 and D2. He also said: "Grant is an expert game designer, do not disregard his ideas just because there is previous decisions in the repo." ([owner call](../agents/owner-calls.md)). None of the rows is a call by the owner; Grant's suggestions are not owner decisions until he says so. Ranks use the default in [owner-calls](../agents/owner-calls.md) and the owner re-ranks freely.
