@@ -60,7 +60,9 @@ promotes that guest with a generated five-digit PIN or signs into an existing ac
   support this visit only. The development cutover bumped `WORLD_NS` once to v48, without importing old pids.
 - Accounts carry identity only. Wallets, rails, upgrades, cargo and saves stay per room; cosmetics and settings
   remain local. No room-storage SQLite conversion is implied. See [account checkpoints](accounts.md#checkpoint-b-complete-player-flow-and-room-isolation)
-  for remaining browser, room-isolation and visual evidence; implementation is live, checkpoint closure is pending.
+  for the evidence. On 17 November the admission cases and the two-store browser flow passed through the trusted
+  broker; the eight-player load, browser room isolation, the Account visual review and an independent review are
+  still pending, so checkpoint closure is pending.
 
 ### 2. Storage: SQLite on the volume
 

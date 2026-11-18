@@ -23,6 +23,8 @@ import type { RailwayWorldHost } from '../../server/src/host/world-host.ts';
 import type { HostedRoom } from '../../server/src/host/hosted-room.ts';
 
 type Page = { name: string; page: import('playwright').Page; selfId: unknown };
+/** Sections that read or step the in-process room host (ws-run.ts counts their checks). */
+export type HostSection = 'jump-in replace' | 'request stop' | 'leaf';
 type Web = { open(name: string, query: string): Promise<Page> };
 type Ctx = {
   web: Web;
@@ -32,6 +34,8 @@ type Ctx = {
   /** An orderly server restart (a deploy). */
   restart: () => Promise<void>;
   hosted: (id: string) => HostedRoom | undefined;
+  /** True when this section must be skipped: broker net runs the server out of process, with no room host to step. */
+  hostOnly: (section: HostSection) => boolean;
   dataDir: string;
 };
 
@@ -1270,6 +1274,10 @@ export async function railwayJumpIn(c: Ctx) {
       }),
     ),
   );
+  if (c.hostOnly('jump-in replace')) {
+    await Promise.all([J0, J1].map((p) => p.page.close()));
+    return;
+  }
   // Keep enough played clock beyond the seed for reconnect latency not to mask the lower-tick replacement.
   await advancePast(await hostedWorld(c, id), (await rail(J0)).tick + 600);
   jumpCheck(

@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { useWorkerSource } from './worker-source.ts';
+import type { HostSection } from './ws-railway.ts';
 
 type Page = { name: string; page: import('playwright').Page; selfId: string | { error: string; max?: number } };
 const results: { name: string; ok: boolean }[] = [];
@@ -70,6 +71,29 @@ async function serve(env: Record<string, string> = {}) {
   return svc;
 }
 let svc = await serve();
+
+// Sections that read or step the in-process room host, with their check counts. Broker net runs the server out of
+// process and skips them; every standalone run (CI's net) recounts them and fails on a stale count, so the broker's
+// skipped total stays true.
+const HOST_ONLY: Record<HostSection, number> = { 'jump-in replace': 14, 'request stop': 11, leaf: 9 };
+const skipped: HostSection[] = [];
+const hostMarks = new Map<HostSection, number>();
+function hostOnly(section: HostSection) {
+  if (controlUrl) {
+    skipped.push(section);
+    console.log(`SKIP  ${section}: ${HOST_ONLY[section]} checks need the in-process room host (broker net)`);
+    return true;
+  }
+  hostMarks.set(section, results.length);
+  return false;
+}
+function hostOnlyDone(section: HostSection) {
+  const start = hostMarks.get(section);
+  if (start === undefined) return;
+  const ran = results.length - start;
+  if (ran !== HOST_ONLY[section])
+    check(`HOST_ONLY counts ${section}'s checks (ran ${ran}, listed ${HOST_ONLY[section]}): update it`, false);
+}
 let closeWeb = async () => {};
 
 let exitCode = 1;
@@ -276,13 +300,21 @@ try {
       svc = await serve();
     },
     hosted: (id: string) => svc.roomHost()?.room(id),
+    hostOnly,
     dataDir,
   };
   await railwayChecks(ctx);
   await railwaySeats(ctx); // Server-kind chairs survive hidden/closed peers and a sitter's reconnect.
   await railwayJumpIn(ctx); // a seeded playtest room, two players, through a restart
-  await railwayRequestStop(ctx); // a lever request, mirrored on three tabs, and the train stopping for it
-  await railwayLeaf(ctx); // Ring Island's leaf: two players bring it down, a late joiner, a reload and a restart
+  hostOnlyDone('jump-in replace');
+  if (!hostOnly('request stop')) {
+    await railwayRequestStop(ctx); // a lever request, mirrored on three tabs, and the train stopping for it
+    hostOnlyDone('request stop');
+  }
+  if (!hostOnly('leaf')) {
+    await railwayLeaf(ctx); // Ring Island's leaf: two players bring it down, a late joiner, a reload and a restart
+    hostOnlyDone('leaf');
+  }
 
   // 11. WS_LOAD=1: R1a's and R1b's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x
   // churn). WS_LOAD_PLAYERS=6 / WS_LOAD_LAT=200 / WS_LOAD_CHURN=5x pick rows.
@@ -303,8 +335,13 @@ try {
   }
 
   const failed = results.filter((r) => !r.ok);
+  // Skipped checks are never in `results`, so they cannot count as passed; the summary names them.
+  const skippedChecks = skipped.reduce((n, s) => n + HOST_ONLY[s], 0);
+  const skipNote = skipped.length
+    ? `; ${skippedChecks} skipped (broker: no in-process room host: ${skipped.join(', ')})`
+    : '';
   console.log(
-    `\n${failed.length ? 'FAIL' : 'PASS'}: ${results.length - failed.length}/${results.length} checks passed`,
+    `\n${failed.length ? 'FAIL' : 'PASS'}: ${results.length - failed.length}/${results.length} checks passed${skipNote}`,
   );
   exitCode = failed.length ? 1 : 0;
 } catch (e) {

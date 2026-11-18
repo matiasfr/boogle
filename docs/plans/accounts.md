@@ -4,7 +4,7 @@
 
 Let a player keep one identity across browsers and devices by saving a short PIN, while continuing to let friends play without registering. Accounts identify people; each room keeps its own progress, wallet, upgrades and saves. Serves DESIGN.md **6. Communal world, personal things**, **8. Enjoyable alone and together**, **Clear authority** and **Small and readable**.
 
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1–4 are on main (#1868, #1871, #1873, #1875), with browser-proof/startup fixes (#1879, #1884, #1887). Built, not shipped: none verified. Next: step 5, close the account checkpoint and completion marks; full browser/visual proof closure remains unverified.
+> **Status, 17 November 2026 against main 6ddfe5d2:** Steps 1–4 are on main (#1868, #1871, #1873, #1875), with browser-proof/startup fixes (#1879, #1884, #1887). Checkpoint A's room-admission cases and the two-store browser flow **pass through the trusted broker** ([step 5 run](#step-5-runner-evidence-17-november-2026)). Step 5 stays open: broker `net` on the final harness, the eight-player load, the Account-menu visual review, room-progress isolation in the browser and a fresh review of identity binding, transactions and fail-closed errors are unverified.
 
 ## Owner answers (15 November 2026)
 
@@ -240,3 +240,95 @@ Account menu desktop/narrow-touch/controller review with secret-free captures, r
 room-reset account survival, storage denial, expired-session and lost-create-response browser cases.
 No device was tested. No new screenshots or browser manifests were fabricated; no independent review is claimed.
 The backlog remains building because these checkpoint proofs are outstanding. Nothing was pushed or shipped.
+
+## Step 5 runner evidence (17 November 2026)
+
+Runner job on `claude/accounts-step5` from main `6ddfe5d2`, Node 26.13.0, Windows. The trusted broker was started
+from `boogle-trusted` (`dev/codex/look-broker.ts` against this worktree, as `dev/codex/run.ts` does) and every
+browser run went through it and the machine-wide bot queue. No Chromium was launched outside the broker. Machine
+load before the browser runs: heartbeat `9.9 of 20` logical CPUs busy (quiet, at most 12). Logs are local in
+`.look/` (`net-1.log`, `smoke-1.log`, `server-accounts.log`, `check-1.log`, `check-2.log`, `rest-*.log`).
+
+### Checkpoint A: authenticated room boundary
+
+`node .look/see-client.ts net` on the clean main tree (commit/tree `6ddfe5d2`/`70f6ecb3`, trusted harness
+`f0437a04`; evidence `.look/evidence/1794977990955-32168`): **174 PASS, 0 FAIL**, then exit 1 when the harness
+aborted at the railway jump-in "replace" section (see the harness gap below). The admission suite in
+`dev/peer-test/ws-accounts.ts` ran first, over real HTTP principals and real sockets:
+
+- [x] Guest-registration and promotion retries keep one principal and one account (`409 already_account` on repeat).
+- [x] Unauthenticated or forged pid while the real owner is absent: a pid in the URL or the frame, an unknown token
+      and a presence frame before auth are all refused, with no welcome/list/message. "No room created" is
+      asserted only by the server suite (`server/test/account-admission.test.ts` passes `rooms`); `ws-run.ts` does
+      not pass it, so the broker run does not prove it.
+- [x] Malformed and oversized auth frames are refused (`CLOSE.BAD`).
+- [x] Auth timeout: a silent socket closes retryably (`CLOSE.RESTART`) between 5.0 and 7.0 s, never admitted.
+- [x] Two device tokens resolve to one pid; the newer connection wins (`ELSEWHERE`), the retired connection cannot
+      take it back and another principal cannot reuse its connection ID (`TAKEN`).
+- [x] Same-connection reconnect live and during grace.
+- [x] Retired/revoked sessions: PIN rotation closes the other device's sockets in every room (`CLOSE.AUTH`), keeps the
+      caller, and the revoked token can neither join nor re-register as a guest.
+- [x] Server restart preserves principal, session and durable revocation; sign-out closes its sockets, is idempotent
+      and the signed-out token cannot reconnect.
+
+The same broker run's two-store browser probe (`ws-account-browser.ts`, production `account.ts` and `createWsRoom`)
+passed all ten of its checks: separate guests per store, promotion on A and sign-in on B, former-person visit memory
+cleared, A retired, B reload, restart survival, sign-out to a distinct guest, switch-back, and revocation stopping B
+with an authentication refusal rather than silently becoming a guest.
+
+Server suite (`node --test test/account-admission.test.ts test/accounts.test.ts` in `server/`): **11 of 12 pass**,
+including operator tuning needing its separate capability, real-client voice-presence reconnect, rollback on failed
+writes, fail-closed unreadable stores, origin/size/rate limits, expiry surviving restart and **room reset/obsolete-save
+cleanup preserving accounts without admin rights**. The failing one, `SIGKILL retains committed guests ...`, is a
+Windows portability gap in the test, not a server defect: a child that kills itself with SIGKILL reports
+`{status: 1, signal: null}` on Windows, so `assert.equal(child.signal, 'SIGKILL')` cannot hold before any durability
+assertion runs. Crash durability is therefore **unverified on Windows** (Linux CI runs it). Not fixed: it is outside
+this job's harness scope.
+
+Still open for A: the fresh independent review of identity binding, transactions and fail-closed errors that the
+checkpoint requires before it counts as ready. This runner did not perform or claim one.
+
+### Harness gap found and fixed in `dev/peer-test/`
+
+Under the broker the game server runs out of process, so `serve()` returns `roomHost: () => undefined`. The jump-in
+"replace" section, `railwayRequestStop` and `railwayLeaf` step or read the in-process room host, so broker `net`
+always aborted with "the server never hosted room ... within 15 s". `Ctx.hostOnly(section)` now marks each of those
+sections. Under the broker (only with `--url`) it prints a `SKIP` line and the section is not run; the replace skip
+starts at the first room-host call, so its two session/seat checks still run. Skipped checks never enter the results,
+and the summary says so: `PASS: n/n checks passed; 34 skipped (broker: no in-process room host: jump-in replace,
+request stop, leaf)`. The broker keeps that line in its `output.txt`. `HOST_ONLY` in `ws-run.ts` lists each section's
+check count (14, 11 and 9); every standalone run recounts them and adds a failing check if a count goes stale.
+
+Standalone `npm run test:net` with the change: **208/208, exit 0, no `SKIP` lines** (`.look/net-standalone-2.log`);
+the run before the counts were filled in also passed all 208 checks and reported exactly 14, 11 and 9. The broker
+runs the **trusted** checkout's harness, so a broker run showing the skipped count is unverified until this is
+reviewed, merged and the trusted checkout updated. A fresh review confirmed CI coverage is intact.
+
+### Checkpoint B: complete player flow and room isolation
+
+- [x] `npm run checks-for` selects `npm run check`.
+- [ ] `npm run check`: lint and typecheck pass; unit tests **2,142 pass, 0 fail, 1 cancelled, 65 skipped, 1 todo** in
+      both runs. The cancelled test is `test/bot-queue.test.ts` "a short job queued after a long one takes the freed
+      slot first", a timing flake against its 5 s limit (5.05–5.6 s; 2 of 3 isolated reruns passed; it uses its own
+      temp queue directory). Because `check` stops at the first failing step, the rest ran directly: `registry`,
+      `level-check`, `assets -- --check`, `prefabs -- --check` and `build` all exit 0. Not a clean `check` exit.
+- [ ] Broker `net` on the final tree: **not proved**. The broker run above used main's old harness, exited 1 and never
+      reached its summary. The trusted broker runs the trusted checkout's harness, so the updated harness cannot run
+      through it until merged and the trusted checkout updated.
+- [x] Rendered `smoke` through the broker: 7/7 pass, WebGPU, no gfx errors, 27.9 s, load 6.88 → 9.54 (evidence
+      `.look/evidence/1794978165398-29712`). Both stills opened: two avatars at the station, HUD showing "shared state:
+      server replication" and "room server rtt 1 ms".
+- [ ] Before/after eight-player `npm run load`: **unverified**. It needs `WS_LOAD=1`, which broker `net` refuses, and
+      running it directly would launch Chromium outside the broker. No figures were taken; the orchestrator runs it on
+      a quiet machine.
+- [ ] Browser room-progress isolation (rejoin keeps progress; another room imports no wallet, rails, upgrades, cargo
+      or save): **unverified in the browser**; no reviewed harness case exists. Room reset preserving account and
+      session records is covered by the server suite above.
+- [ ] Storage denial, expired session and lost create response in the browser: **unverified** (expiry and
+      lost-response recovery via `GET /account/session` are covered only at the server/HTTP level).
+- [ ] Account page visual review (desktop, narrow touch, controller focus): **not run** in this job.
+- [ ] `npm run atlas -- --check`: not rerun; the join story is unchanged since the 15 November run.
+
+Not tested on a device. No timing here is performance evidence beyond the quiet-machine load reading noted.
+Step 5 stays unticked: the load proof, browser room isolation, the Account visual review and the independent review
+remain.
