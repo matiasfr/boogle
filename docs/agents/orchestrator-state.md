@@ -12,6 +12,7 @@ The one record of who is running what, and what the three-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | Railhead traveller: Checkpoint A's owed proofs, then step 3 (the deck is a car) | The railhead traveller (P2) | `codex/railhead-deck-car` | the owner's live orchestrator session (HOTBOX); moved from Codex to a Claude Opus medium delegate on his word, 18 November 06:20 UTC | 18 November 03:45 | building on Claude: the step 3 review defect (the mount clearance moves a sea-side walkway player over the sea), in the existing worktree |
 | Ring Island footbridge, abutment a (terrain-clean step 7), resumed: the ground cap, a solid landing at the old path height, and player clearance for Ring Island's near-view solids | Terrain clean-up (P2) | `codex/ring-footbridge-cap` | the owner's live orchestrator session (HOTBOX); moved from Codex to a Claude Opus medium delegate on his word, 18 November 06:20 UTC | 18 November 00:30; resumed 03:00 | building on Claude: the review's four defects, continuing the partial fix in the existing worktree |
+| Device tests re-plan: which machine runs what now that HOTBOX orchestrates (remote-runner and remote-device-tests), a proposal only | Device tests run remotely (P2) | `claude/device-tests-replan` | the owner's live orchestrator session (HOTBOX), Claude Opus high planner delegate | 18 November 07:10 | planning (no browser) |
 
 ## Where the work stands
 
