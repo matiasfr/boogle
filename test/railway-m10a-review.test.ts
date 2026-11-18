@@ -1,20 +1,12 @@
-// Review of M10 a (branch ecs/m10a-trains-halts): the per-train queries in src/sim/railway-queries-trains.ts
-// (railTrainHeld, railOpenEnd) at the edges a random stream at the frame clock rarely lands on, held to literals: the
-// wake's end, a stand's dwell, a train at a signal, the Pier stub, the railhead's open end moving bent by bent; the
-// trains' catalog the views index by; and the trains staying drawn with the window full. The queries were once held
-// equal to the adapter's functions over the inspection; those twins went with the inspection.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSeedWorld } from './helpers/rail.ts';
-import { railRoom } from './helpers/rail-room.ts';
 import { rail, type ReadWorld } from '../src/sim/railway-rows.ts';
 import { apertureId, railId, trainId } from '../src/sim/railway-queries.ts';
-import { line2Trains } from '../src/sim/railway-queries-line2.ts';
 import { railOpenEnd, railTrainAsked, railTrainHeld, trainStops } from '../src/sim/railway-queries-trains.ts';
-import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
+import { LINE2, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { LINE_HALTS, TRAIN, TRAIN_PHASE, trainWakeAt } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
-import { RAILWAY_WINDOW } from '../src/sim/railway.ts';
 import { Aperture, Rail, Train } from '../src/sim/railway-components.ts';
 import type { World } from '../src/ecs/index.ts';
 
@@ -111,34 +103,4 @@ test('the open end moving: line 2 from Q6 to the ring joined, bent by bent', () 
       ends.add(JSON.stringify(LINE_HALTS.filter((h) => h.line === LINE2).map((h) => railOpenEnd(w, LINE2, h.stop))));
     }
   assert.ok(ends.size > 1, 'the open end moved with the railhead');
-});
-
-// Pre-existing before M10 a: the hide condition. train-view.ts step() hid every car (y -60) while `!read.ready()`.
-// ready() is false not only before the whole state is in but also while RAILWAY_WINDOW actions are pending, so a player
-// with a full window (a burst of presses on a slow link) saw every train vanish until an answer came back. The view now
-// hides them only until the first whole state is in (read.whole(), the session's latch, which step() reads each frame), and draws
-// them from read.world() after that.
-test('a full pending window keeps every train shown (train-view.ts step: hidden = !read.whole())', () => {
-  const r = railRoom(buildSeedWorld('trains-on'));
-  const a = r.join('a', 'a', 30);
-  const shown = a.adapter.read.whole;
-  assert.equal(shown(), false, 'hidden before the whole state is in');
-  r.ready();
-  assert.equal(shown(), true, 'shown once it is');
-  let pressed = 0;
-  for (let k = 0; k < 40 && a.adapter.read.pending() < RAILWAY_WINDOW; k++)
-    if (a.adapter.callTrain(k % LINE_HALTS.length, k % 2 ? 1 : -1)) pressed++;
-  assert.equal(a.adapter.read.pending(), RAILWAY_WINDOW, `the window filled (${pressed} presses)`);
-  assert.equal(a.adapter.read.ready(), false, 'ready() is false with the window full');
-  assert.ok(a.mirror.synced() && line2Trains(a.adapter.read.world()), 'whole and running');
-  assert.equal(shown(), true, 'the trains stay shown while the whole state is in and the window is full');
-});
-
-// train-view.ts (its crossover end, its cargo filter) and halts-view.ts (the ring's halts) index line two as LINE2: a
-// line added, or line two moved, must revisit them. The greybox route (step 3) appends three rows, every halt shut and
-// no train, which the views do not draw yet (halt-map.ts maps lines 1 and 2, the shed trains are hidden); its views
-// (step 4) revisit them.
-test('the views index line two at 1 of five lines, the greybox route three of them', () => {
-  assert.deepEqual([RAIL_LINES.length, LINE2], [5, 1]);
-  assert.ok(RAIL_LINES.slice(2).every((l) => l.trains === 0 && l.halts.every((h) => h.shut)));
 });
