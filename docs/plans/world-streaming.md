@@ -280,7 +280,21 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
 - [ ] **Checkpoint A (after step 5).** `npm run check`; the full pose reading at spawn, far and head on the Mac and on
   Windows, each with its load; "not tested on a device" unless `npm run device -- pull` has a report of a build with
   these steps. Update the owning game-design section only if a still showed a change (none is intended).
-- [ ] **6. Far Head's draws.** Take the top three rows of the census at head that are many separate static meshes in
+- [x] **6. Far Head's draws.** Built 18 November as one row; the first took the bulk. The census now splits each
+  group by parent and names its meshes' geometry, material and area, which traced the three unnamed groups at head:
+  `Scene/Group/Mesh` (296) was the land root's 104 footbridge and shore-landing timbers (`land.ts`), the classic
+  island's 56 terrain chunks (`src/island/terrain.ts`, 1.4 km off: already chunked with bounds, an LOD matter) and
+  about 106 unrelated singles across the island; `Scene/Group/Group/Mesh` (95) is 35 small railway props, mostly
+  state-driven (crate lamps, `sources.ts` piles); `Scene/Group/Group/Group/Mesh` (52) is the halt levers
+  (`halt-lever.ts`, one per halt along the line, with a moving arm). Only the first is static and in one place per
+  structure. Each footbridge and the landing now merge to one mesh per timber and shadow setting (`mergeTimber`,
+  `src/render/wood.ts`; the grain keeps each piece's geometry space and origin as attributes, hashed in the vertex
+  stage). Census, main draws / triangles: head 735 / 1,238,013 → 631 / 1,238,013, green 252 / 729,248 → 203 /
+  729,248; shadow rows unchanged (100 at head, 124 at green). [Stills](../world/world-far-head-draws/): head and the
+  landing close up match pixel for pixel outside the water and townsfolk. Head pose reading, quiet (Windows, 20 s,
+  load 1.84 → 0.44 of 20): CPU 14.347 ms (p95 18.91), GPU 15.895 ms (p95 19.796), 699 calls. The merged meshes are
+  not frozen (`freezeInPlace`). Not tested on a device.
+  Plan as written: take the top three rows of the census at head that are many separate static meshes in
   one area and make each one instanced or merged batch per area with real bounds (research recommendation 8). One
   small job per row; name the row and its before and after count in the commit. *Done:* head's main draws fall by what
   the three rows held. *Check:* head stills unchanged. *Proof:* pose reading at head.
