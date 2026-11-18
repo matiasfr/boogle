@@ -8,11 +8,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { buildSeedWorld } from './helpers/rail.ts';
 import { railRoom, replicatedRows } from './helpers/rail-room.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
-import { account, trains } from '../src/sim/railway-rows.ts';
+import { account, rail, trains, works } from '../src/sim/railway-rows.ts';
 import { line2Completed } from '../src/sim/railway-queries-line2.ts';
 
 test("a late joiner's rows are the server's, every frame from the whole state on, and its own account arrives after it", () => {
-  const r = railRoom(buildSeedWorld('q6-done'), { served: true });
+  const seed = buildSeedWorld('works-lit');
+  assert.ok(works(seed.w).lit);
+  assert.ok(rail(seed.w).glide);
+  const r = railRoom(seed, { served: true });
   const a = r.join('a', 'a', 4);
   r.ready();
   r.run(10);
@@ -45,6 +48,7 @@ test("a late joiner's rows are the server's, every frame from the whole state on
   assert.ok(compared > 20, 'the late joiner was compared from its whole state on');
   assert.ok(noAccount > 0, 'a synced world with no account for this pid was read (its session had not arrived)');
   const w = late.adapter.read.world();
+  assert.equal(late.adapter.read.ready(), true);
   assert.ok(account(w, 'c'), 'the account came');
   assert.ok(line2Completed(w) >= 6, 'the room-wide line 2 is laid for the late joiner');
   assert.ok(trains(w).length > 0, 'the trains are in its world');

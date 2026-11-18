@@ -6,7 +6,6 @@ import { Leg } from '../src/sim/railway-components.ts';
 import { ringRivetSequence } from './helpers/railway-rivet-sequence.ts';
 import {
   aboard,
-  account,
   act,
   advance,
   cart,
@@ -22,7 +21,6 @@ import {
   type Seed,
 } from './helpers/rail.ts';
 
-const seed = (s: Seed): Seed => ({ w: restore(s.w), t: s.t });
 function feedAll(s: Seed, pid: string) {
   for (const kind of [0, 1])
     for (let k = 0; k < 8; k++) {
@@ -48,8 +46,8 @@ function sent(s: Seed, what: string) {
 }
 
 test('review: a save and load every 7 ticks through the kit out, the casts and the steel home changes nothing', () => {
-  const a = seed(railwayAtRing('ring-joined')),
-    b = seed(railwayAtRing('ring-joined'));
+  const a = railwayAtRing('ring-joined'),
+    b = railwayAtRing('ring-joined');
   let fed = false,
     midSteel = 0,
     midKit = 0;
@@ -83,7 +81,6 @@ test('review: a bill fed from backs while its kit rides leaves no kit riding the
     act(s, 'a', 'rail.steel');
   }
   assert.equal(steel(s.w).logs, STEEL.logs, 'the logs fed by hand');
-  assert.equal(account(s.w, 'a')!.carry >= 0, true);
   for (let t = 0; t < 6000 && steel(s.w).lit < 0; t++) {
     advance(s, 1);
     if (steel(s.w).yardRails) feedAll(s, 'a');

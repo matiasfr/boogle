@@ -322,8 +322,8 @@ models`'.
     motion sheet and two 1200 px stills in `docs/reviews/town-sack-c2/`: sack 630 / box 18 before the press,
     no sack / box 648 afterwards; column 1.5% to 54% of its 1,200 cap. One added mesh, 376 triangles,
     one colour draw plus at most one shadow draw while present. WebGPU capture health and level-check pass.
-    The existing box balance label remains cap-clamped, as `test/review-town-a3.test.ts:78` requires; displaying
-    C1's over-cap balance exactly needs a separately reviewed assertion change. Sack counts stay exact.
+    The existing box balance label remains cap-clamped, in `src/entities/railway/till-view.ts`; displaying
+    C1's over-cap balance exactly needs a reviewed change to `till-view.ts` (its clamp has had no unit test since the test cleanup). Sack counts stay exact.
     No test assertions or fixtures edited. Simultaneous two-player press and a later joining peer were not
     browser-tested; not tested on a device.
 - [x] **K3. Checkpoint: the slice closed.** `npm run level-check` with B2's houses solid (finding 7); `npm run perf` at

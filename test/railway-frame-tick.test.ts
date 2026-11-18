@@ -1,31 +1,9 @@
-// Review of M10 e (the ability and arrival views: ability-arrival, tools, glide, hook-shot, glide-device-view,
-// sea-gate-view, back-down): the behaviour the review added, read as rows. A late joiner reads the room-wide abilities
-// the server holds, and the view's frame keeps one tick when the wake ends inside it. The conversion proofs (the views'
-// reads against the `inspect()` fields they replaced, over scripted ability runs and a random stream) and the cost
-// guides went with `inspect()`; the views' reads are not restated here.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
-import { account, rail } from '../src/sim/railway-rows.ts';
+import { rail } from '../src/sim/railway-rows.ts';
 import { railPhase } from '../src/sim/railway-queries-line1.ts';
 import { railRoom, type RoomClient } from './helpers/rail-room.ts';
-import { buildSeedWorld } from './helpers/rail.ts';
-
-test('a late joiner reads its own account and the room-wide abilities, as the server holds them', () => {
-  const seed = buildSeedWorld('glide-earned');
-  assert.equal(rail(seed.w).glide, true, 'the seed has the glider earned');
-  const r = railRoom(seed);
-  r.join('a', 'a', 4);
-  r.ready();
-  r.run(10);
-  const b = r.join('b', 'b', 6);
-  r.run(80);
-  const w = b.adapter.read.world();
-  assert.equal(b.adapter.read.pid, 'b');
-  assert.equal(rail(w).glide, true, 'the room-wide glider reaches the late joiner');
-  assert.deepEqual(rail(w), rail(r.serverWorld()), 'the ability row, as the server holds it');
-  assert.ok(account(w, 'b'), 'its own account arrived');
-});
 
 // ability-arrival takes `adapter.read.tick()`. A frame that straddles the tick that ends the wake must judge the phase
 // once: the head of the frame and a later read in it see the same tick, so the wake ends at the next frame's head.
