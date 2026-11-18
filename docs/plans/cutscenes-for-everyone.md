@@ -275,8 +275,16 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   accepted `rail.boilerFit`, at the fit; the bolt lasts 5 s (at least 2 after they arrive). The eval waits for
   `line2Trains` before checking, and that edge now comes once the depot cart rests: about 12 s after the press in
   every run (press frame 859, trains 1616; 855 and 1660 earlier). Solo, at the trains edge and 300 ms after it, three of
-  camp 0's little guys were on 7 to 11 m from the saddle and `bolting()` was null: the bolt had come and gone. The
-  check was not loosened; it wants its timing measured from the fit's acceptance (not this step's files).
+  camp 0's little guys were on 7 to 11 m from the saddle and `bolting()` was null: the bolt had come and gone.
+  **After the re-check (2026-11-18):** a cut landing on the very frame the 30 s hold ran out still sounded the call twice
+  (the breaker's call sounds in works.update before line 2's update runs the shot's onCut): `createShowCall`'s cue now
+  sounds nothing on or past its deadline, and the deadline is taken before the hold; the unused `held` went. The
+  re-check's test failed (2 calls) before the fix and passed after; it and the earlier one were dropped (test diet).
+  The eval's little-guys check now samples the most of them at the saddle from the press and needs 2 before the trains
+  start (it still fails if they never come). Rerun, two players, `--warp-speed 2`: verdict pass
+  (`.look/boiler-show-4-verdict.json`, commit 58530118, clean tree), every check on both pages reached. The fitter: 2
+  little guys at the saddle before the trains came (7.2 s after the press), the call once at 4.55 s, no flourish. The friend: the cut to the
+  loco, 4.5 s later the breaker cut, 2.5 s later home (6.98 s), the call once at 4.55 s, no card, hold or flourish.
   **Known, left as they are:** the forge leg is decided when the show is queued, not at the cut, so a breaker taken
   while the show waits still gets its cut (review P3-3); and every show shares one camera slot (`switchCamera` keeps
   one pending shot, so a later show replaces a queued one), which is older than this branch (review P3-4).
