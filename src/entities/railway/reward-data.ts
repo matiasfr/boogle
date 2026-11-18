@@ -1,4 +1,5 @@
-import { cosmetic, type Part } from '../../render/cosmetic-parts.ts';
+import { cosmetic } from '../../render/cosmetic-parts.ts';
+import { GLIDER_ROLL } from '../../render/gear-models.ts';
 
 // T2's scarf is the cosmetics catalog's own entry: one copy of its name, line and shape.
 export const T2_REWARD = cosmetic('scarf')!;
@@ -18,9 +19,7 @@ export const HOOK_REWARD = {
 export const GLIDE_REWARD = {
   name: 'The glider',
   line: 'Open it in the air.',
-  // What you wear for it, held up as you take it: the folded wing (Place's tech.ts WORN_SHAPE.glide).
-  parts: [
-    ['b', 0, 0, 0, 1.4, 0.05, 0.5, '#39e6c6', 0, 0.12],
-    ['b', 0, -0.06, 0, 1.3, 0.06, 0.06, '#c79a3e'],
-  ] satisfies Part[],
+  // What you wear for it, held up as you take it: the folded roll from your back (gear-models.ts), which the summit
+  // drum also holds (Grant's G25, docs/plans/grant-c8-batch.md).
+  parts: GLIDER_ROLL,
 };

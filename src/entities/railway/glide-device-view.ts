@@ -1,4 +1,5 @@
-// The first-climb summit prize: faint turning rings and a forge-facing vane, no seal or shaft.
+// The first-climb summit prize: the folded glider roll you will wear, turning in faint rings over a dark drum, no seal or
+// shaft. The roll is the card's own shape (reward-data.ts, from gear-models.ts), so what you take is what you wear.
 // Local over the room's existing shared glide flag; the finder gets the card, friends the flourish.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
@@ -53,31 +54,18 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
     undefined,
     owner,
   );
-  // A short dark mast at the drum's east edge, and the vane at its top pointing west (-x), at the forge.
-  const MAST = { x: 0.48, top: 2.35 };
-  const mast = mesh(shapes.merged([['b', MAST.x, (MAST.top + 0.93) / 2, 0, 0.08, MAST.top - 0.93, 0.08, '#3d3c38']]));
-  // Unfurled from the start, leading edge pointing west to the forge.
-  const vane = mesh(
-    shapes.merged([
-      ['b', -0.3, 0, 0, 1.4, 0.05, 0.9, '#39e6c6', 0, 0.06],
-      ['b', -0.98, -0.02, 0, 0.08, 0.07, 0.92, '#efe4c8'],
-      ['b', 0.36, -0.03, 0, 0.12, 0.09, 0.3, '#c79a3e'],
-    ]),
-  );
-  vane.position.set(MAST.x, MAST.top - 0.1, 0);
-  device.add(mast, vane);
   const ring = mesh(new THREE.TorusGeometry(0.72, 0.05, 8, 26), glow);
   ring.position.y = LIGHT_Y;
   ring.rotation.x = Math.PI / 2;
   const ring2 = mesh(new THREE.TorusGeometry(0.5, 0.04, 8, 22), glow);
   ring2.position.y = LIGHT_Y;
-  const core = mesh(new THREE.OctahedronGeometry(0.26), glow);
-  core.position.y = LIGHT_Y;
-  device.add(ring, ring2, core);
+  // The roll itself where the core was, at its worn size: one geometry for the drum and the card.
+  const prize = shapes.merged(GLIDE_REWARD.parts);
+  const roll = mesh(prize);
+  roll.position.y = LIGHT_Y;
+  device.add(ring, ring2, roll);
   const ringFrom = () => device.localToWorld(new THREE.Vector3(0, LIGHT_Y, 0));
   const target = at.clone().add(new THREE.Vector3(0, 2.2, 0));
-  const prize = shapes.merged(GLIDE_REWARD.parts);
-  geometries.push(prize);
   owner.cleanup(() => {
     for (const g of geometries) g.dispose();
   });
@@ -85,7 +73,7 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   let t = 0;
   const taken = () => rail(adapter.read.world()).glide;
   function draw() {
-    for (const o of [mast, vane, ring, ring2, core]) o.visible = !taken();
+    for (const o of [ring, ring2, roll]) o.visible = !taken();
   }
   return {
     accepted(e: RailwayAccepted) {
@@ -110,8 +98,8 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
       t += dt;
       ring.rotation.z += dt * 0.7;
       ring2.rotation.y += dt;
-      core.rotation.y += dt * 1.2;
-      core.position.y = LIGHT_Y + Math.sin(t * 2) * 0.06;
+      roll.rotation.y += dt * 0.6;
+      roll.position.y = LIGHT_Y + Math.sin(t * 2) * 0.06;
       draw();
     },
     targets(p: V3): Interactable[] {

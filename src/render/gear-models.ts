@@ -166,6 +166,17 @@ export function packFrameMesh(owned = false) {
   return mesh;
 }
 
+/** The folded glider: a cream roll in teal bands on a brass bar, tied with two straps. The summit drum and the glider's
+ * card build the same parts (reward-data.ts), so what you take is what you wear. Axis along x; the straps' side is -z. */
+export const GLIDER_ROLL: Part[] = [
+  ['c', 0, 0, 0, 0.068, 0.48, 0.068, '#f2e6c8', 0, Math.PI / 2],
+  ['c', -0.16, 0, 0, 0.072, 0.065, 0.072, '#2fb7a0', 0, Math.PI / 2],
+  ['c', 0.16, 0, 0, 0.072, 0.065, 0.072, '#2fb7a0', 0, Math.PI / 2],
+  ['b', 0, -0.057, 0.025, 0.53, 0.028, 0.028, '#c79a3e'],
+  ['b', -0.16, 0.07, -0.04, 0.035, 0.15, 0.025, '#69472e'],
+  ['b', 0.16, 0.07, -0.04, 0.035, 0.15, 0.025, '#69472e'],
+];
+
 export type GearState = { rings: boolean; spool: boolean; glider: boolean; frame: boolean; canopy: boolean };
 export function makeGear() {
   // Decoded Buddy ankle radius at y=.225 is .088 m; foot dome ends at .196 m.
@@ -190,17 +201,7 @@ export function makeGear() {
   spool.add(cuff, reel);
   const pack = new THREE.Group();
   pack.name = 'wear_glider';
-  const roll = new THREE.Mesh(
-    merged([
-      ['c', 0, 0, 0, 0.068, 0.48, 0.068, '#f2e6c8', 0, Math.PI / 2],
-      ['c', -0.16, 0, 0, 0.072, 0.065, 0.072, '#2fb7a0', 0, Math.PI / 2],
-      ['c', 0.16, 0, 0, 0.072, 0.065, 0.072, '#2fb7a0', 0, Math.PI / 2],
-      ['b', 0, -0.057, 0.025, 0.53, 0.028, 0.028, '#c79a3e'],
-      ['b', -0.16, 0.07, -0.04, 0.035, 0.15, 0.025, '#69472e'],
-      ['b', 0.16, 0.07, -0.04, 0.035, 0.15, 0.025, '#69472e'],
-    ]),
-    clothMat.clone(),
-  );
+  const roll = new THREE.Mesh(merged(GLIDER_ROLL), clothMat.clone());
   pack.add(roll);
   const gear = { ankleL, ankleR, spool, pack };
   for (const object of Object.values(gear))
