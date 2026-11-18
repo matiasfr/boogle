@@ -61,13 +61,27 @@ const ABILITIES: {
   badge?: boolean;
   /** Shown when the state turns (the wake's end), not when the event arrives. */
   atState?: boolean;
+  /** A state-edge ability's state has begun turning (the wake is under way): a heard event whose state stops having
+   * begun for the reset grace was undone by a fresh start, and owes nothing. */
+  begun?: (l: Look) => boolean;
+  /** A friend online gets its "You got" card (reward.ts builds it). The boiler has none (boiler-view.ts's BOILER_CARD). */
+  card?: boolean;
 }[] = [
-  { key: 'jump', op: 'rail.jump', cue: 'pickupJump', has: ({ w }) => rail(w).jump },
-  { key: 'hook', op: 'rail.hook', cue: 'pickupHook', has: ({ w }) => rail(w).hook },
-  { key: 'glide', op: 'rail.glide', cue: 'pickupGlider', has: ({ w }) => rail(w).glide, badge: true },
-  { key: 'multi-axe', op: 'rail.wake', cue: 'pickupHook', has: AWAKE, badge: true, atState: true },
-  { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: ({ w }) => rail(w).axe, badge: true },
-  { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: ({ w }) => rail(w).pack, badge: true },
+  { key: 'jump', op: 'rail.jump', cue: 'pickupJump', has: ({ w }) => rail(w).jump, card: true },
+  { key: 'hook', op: 'rail.hook', cue: 'pickupHook', has: ({ w }) => rail(w).hook, card: true },
+  { key: 'glide', op: 'rail.glide', cue: 'pickupGlider', has: ({ w }) => rail(w).glide, badge: true, card: true },
+  {
+    key: 'multi-axe',
+    op: 'rail.wake',
+    cue: 'pickupHook',
+    has: AWAKE,
+    begun: ({ w }) => rail(w).awake >= 0,
+    badge: true,
+    atState: true,
+    card: true,
+  },
+  { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: ({ w }) => rail(w).axe, badge: true, card: true },
+  { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: ({ w }) => rail(w).pack, badge: true, card: true },
   {
     key: 'boiler',
     op: 'rail.boilerFit',
@@ -147,11 +161,13 @@ export function createAbilityArrival(
   const watched = new Set<string>();
   /** Cards owed to this player for a friend's find heard live, in order (Local, in memory: a reload drops them and the
    * late flourish stands in). `heard` holds the state-edge ones (the wake) until their state turns: the world is
-   * missing them until then, so the fresh-start forgetting below leaves it alone. */
+   * missing them until then, so the fresh-start forgetting below leaves it alone; it is dropped instead when the state
+   * stops having begun for the reset grace (a fresh start mid-wake), counted in seconds here. */
   const owed: string[] = [];
-  const heard = new Set<string>();
+  const heard = new Map<string, number>();
   const owe = (key: string) => {
-    if (!seen.has(key) && !owed.includes(key) && env.card(key)) owed.push(key);
+    const ability = ABILITIES.find((a) => a.key === key);
+    if (ability?.card && !seen.has(key) && !owed.includes(key)) owed.push(key);
   };
 
   // The charge mark: a filled teal ring under Buddy's feet, lit only by a flourish (hollow when its unlock arrived
@@ -277,7 +293,7 @@ export function createAbilityArrival(
     }
     // A state-edge card (the wake's) is owed as the state turns (update); the boiler has no card and keeps its
     // flourish there.
-    if (ability.atState) return void heard.add(ability.key);
+    if (ability.atState) return void heard.set(ability.key, 0);
     owe(ability.key);
   });
   // A wake you pressed was predicted: if the server refuses it, there is no card, and nothing is marked as shown.
@@ -315,6 +331,12 @@ export function createAbilityArrival(
       const look: Look = { w, tick, phase: railPhase(w, tick, tick) };
       const row = rail(look.w);
       for (const a of ABILITIES) {
+        const undone = heard.get(a.key);
+        if (undone !== undefined && a.begun) {
+          const next = a.begun(look) ? 0 : undone + dt;
+          if (next > 3) heard.delete(a.key);
+          else heard.set(a.key, next);
+        }
         const gone = (a.present ?? a.has)(look) ? 0 : (missing.get(a.key) ?? 0) + dt;
         // Seen going from missing to there in this session: its flourish is the live one, not a late one.
         if (!gone && (missing.get(a.key) ?? 0) > 0) {
@@ -335,15 +357,19 @@ export function createAbilityArrival(
         grounded &&
         !fallArrival.active &&
         !inputState.seated &&
+        !inputState.held && // a talk box, the garage panel or the fall already holds input (and a card would free it)
         !env.seated() &&
         !railwayGlideOpen() &&
         !env.busy() &&
         !momentBusy();
       // A friend's card: one per free frame (the reveal's own queue makes the next wait for this one's dismissal).
       const due = free ? owed.shift() : undefined;
-      if (due) {
-        const got = env.card(due);
-        if (got) env.youGot(got);
+      const got = due ? env.card(due) : null;
+      // The reveal refuses a key it has already shown this session (a fresh start since): the flourish stands in.
+      if (due && !(got && env.youGot(got))) {
+        flourish(due, false);
+        lateWait = 1.2;
+      } else if (due) {
         seen.add(due);
         if (due === 'jump') seen.add('jump-taught'); // the card teaches it, as the finder's does
         stats.cards.push(due);

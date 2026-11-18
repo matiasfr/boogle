@@ -7,7 +7,8 @@
 //   multi     the friend is walking about as the finder wakes the track layer: the multi-axe card at the wake's end
 //   axe       the same at the forge as the finder opens the proper axe chest (the whole route to there first)
 //   unlock    the friend walks towards the device, hopping, as the finder takes it: the jump card once on the ground
-//   seated    the friend sits on the track layer's chair for the find: no card until they stand, then the jump card
+//   seated    the friend sits on the track layer's chair for the wake and the find: no card until they stand, then
+//             the multi-axe card, put away after &cardMs=, and the jump card straight after it
 //   late      the friend is offline for the find and reconnects in the capture: their own flourish on landing, no card
 //   alone     the friend gets the live card, drops and rejoins (none plays again), then passes the Home plinth
 //             alone: the small show
@@ -113,21 +114,24 @@ function trace(label: string, ms: number) {
   tick();
 }
 
-/** A friend's cards come up only when they are free: this fails the run if one ever comes up in the air or seated.
- * Until `capture()`, each card is put away with Interact after &cardMs= (the cards a run passes on its way). */
-async function cardsWhenFree(capture: () => unknown) {
+/** A friend's cards come up only when they are free: this fails the run if one is ever handed over in the air or
+ * seated, checking each card as the arrival hands it over (one may follow straight on from the one before). Each card
+ * is put away with Interact after &cardMs=, except the `focus` one once the capture has started. */
+async function cardsWhenFree(capture: () => unknown, focus: string) {
   const hold = Number(query.get('cardMs')) || 1600;
-  let up = false,
+  let count = 0,
     since = 0;
   for (;;) {
-    const showing = read().reward.showing;
-    if (showing && !up) {
-      if (me.coyote <= 0 || seated() || inputState.seated) throw new Error('COOP FAIL a card came up while busy');
-      console.log(`COOP NOTE card up (${read().reward.arrival.cards.join()})`);
+    const cards = read().reward.arrival.cards;
+    if (cards.length > count) {
+      count = cards.length;
+      if (me.coyote <= 0 || seated() || inputState.seated)
+        throw new Error(`COOP FAIL a card came up while busy (${cards.join()})`);
+      console.log(`COOP NOTE card up (${cards.join()})`);
       since = performance.now();
     }
-    up = showing;
-    if (up && !capture() && performance.now() - since > hold) {
+    const kept = capture() && cards.at(-1) === focus;
+    if (read().reward.showing && !kept && performance.now() - since > hold) {
       window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
       window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
       since = performance.now();
@@ -140,7 +144,7 @@ async function friend() {
   const bot = makeBot({ doneFlag: '__coopFriendDone' });
   await until(landed, 'friend arrived and landed');
   background(
-    cardsWhenFree(() => w.__coopShot),
+    cardsWhenFree(() => w.__coopShot, shot === 'multi' ? 'multi-axe' : shot === 'axe' ? 'axe' : 'jump'),
     'friend cards only when free',
   );
   // Out of the finder's way: both arrive at the same spot, and the route starts from it.

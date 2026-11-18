@@ -199,7 +199,20 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   the find lands mid-hop; the jump card comes on landing, no flourish (Buddy faces away there because the bot's
   `straight()` walk rewrites the yaw every 40 ms, a harness artifact). [late](cutscenes-for-everyone/friend-card-late.png):
   offline for the find, the friend gets the teal flourish on landing, no card, and the first-jump pulse once.
-  **Not seen:** a friend gliding when the card falls due (unit test only); the hook, glider, proper axe and pack
+  **After the independent review (2026-11-18):** "free" also waits while anything else holds input
+  (`inputState.held`: a talk box, the garage panel or the fall; its only other writer is the reveal itself), so a card
+  never comes up over a conversation and frees Buddy under it. A card the reveal refuses (a key it showed before a fresh
+  start) leaves the flourish instead, with no card mark. A wake heard live is forgotten if the machine stops having
+  begun waking for the three-second grace (a fresh start mid-wake), so a later restored wake gets the flourish, not a
+  card; the wait asleep before a wake still keeps it. Which abilities have a card is a flag on each ability (`card`),
+  so `owe()` builds nothing. The look bot checks each card as it is handed over, not only the first of a run of them,
+  and puts away every card but the one a capture is about. Five review tests in `test/ability-arrival.test.ts`.
+  The seated look rerun (`cardMs=1600`): the multi-axe card came up once the friend stood, and was put away; the friend
+  was then back in the chair ("Stand up" showing) and the jump card waited, as it should while seated. What sat them
+  back down is not known: the dismiss press cannot reach the chair (the reveal stops it in the capture phase), so
+  probably a late seat-row correction after the bot's sit loop. Not chased; outside this step.
+  **Not seen:** the jump card straight after the multi-axe card on a friend's page (both seated runs ended before it); a
+  friend gliding when the card falls due (unit test only); the hook, glider, proper axe and pack
   cards on a friend's page (same code path, unit test covers the glider); the jump card after the multi-axe card in
   the seated run (the capture ended with the first card up); anything on a device.
 
