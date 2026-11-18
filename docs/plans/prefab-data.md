@@ -716,11 +716,14 @@ The stall is one record, `mushrooms.stall` (`src/content/prefabs/mushrooms.ts`; 
 `src/prefab/builders/mushrooms.ts`): its builder returns the counter, posts, striped awning, shelf, five bags of seeds
 and the sign, and the record holds the counter's solid, the `pickup` point, its Take a bag interaction
 (`mushrooms.take-seeds`, still offering the target id `stall-seeds`) and its 1.5 m `footprint` beside them.
-`src/content/levels/mushrooms.ts` places it as authored operands (x, z, height above the ground, yaw); the adapter
-(`src/adapters/mushrooms.ts`) resolves the ground on load, instantiates it over an owned view and pushes its footprint
-into the props' obstacles. `dev/level/level.ts` reads the same placement and footprint through `loadLevelArtifact`, so
-its retyped copy is gone (its target and disc now name `src/content/levels/mushrooms.ts`). The adapter's
-colliders-from-records debt drops 9 → 7, its `STALL` export and the legacy `createStall` construction entry go.
+`src/content/levels/mushrooms.ts` places it as authored operands (x, z, height above the ground, yaw); the stall's own
+adapter, `src/adapters/mushroom-stall.ts`, resolves the ground on load, instantiates it over an owned view and pushes
+its footprint into the props' obstacles. It left `src/adapters/mushrooms.ts` because the input code imports that module
+(for `sprout`) and the prefab door leads back to the input code: an import knot the registry rejects.
+`dev/level/level.ts` reads the same placement and footprint through `loadLevelArtifact`, so its retyped copy is gone
+(its target and disc now name `src/content/levels/mushrooms.ts`); so is the layout export's (`dev/layout/export.ts`,
+`fixed.stall`). `src/adapters/mushrooms.ts`'s colliders-from-records debt drops 9 → 7; its `STALL`, `createStall` and
+`stallTargets` exports and the legacy `createStall` construction entry go.
 Records 302 → 303, levels 24 → 25.
 
 Proof: `test/fixtures/prefab-mushroom-stall.json` was captured from the unconverted adapter (commit "Capture the
@@ -730,10 +733,11 @@ awning's and sign's canvases, the collider with its material, the footprint, the
 from five spots around the stall, carrying a bag and before entering). `npm run level-check` gives the same 21
 reports, byte for byte apart from the source hash; none is about the stall, before or after. Opened before/after
 stills of the stall match ([stills](../world/prefab-mushroom-stall/)): zero differing pixels in the stall's box; the
-8,283 elsewhere are the moving player and animated scenery.
+8,283 elsewhere are the moving player and animated scenery. The after still predates the move to its own module,
+which changed no line of the stall; the golden was rerun after it.
 
 Left in this area: nothing of the stall. The bouncing mushrooms (bodies, `mushroom` material and restitution, growth,
 squish and the `mush` room message) stay as they were: they are short-lived, owner-made things, not placed ones, so
-the adapter keeps its debt entry (7) for their `createBody`. The interaction stays registered through
+`src/adapters/mushrooms.ts` keeps its debt entry (7) for their `createBody`. The interaction stays registered through
 `src/features/mushrooms.ts`'s counted `registerInteractable`. Left in step 13: the rest of Ring Island, secrets. Not
 tested on a device.
