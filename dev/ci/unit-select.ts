@@ -45,7 +45,6 @@ export const CORE_TESTS = [
   'test/world-rules.test.ts',
   'test/unit-modes.test.ts',
   'test/unit-select.test.ts',
-  'test/unit-select-review.test.ts',
 ] as const;
 
 /** Loads a test's closure makes that no walk can follow, keyed `<file>: <call>` as test/unit-select.test.ts's guard
@@ -150,7 +149,7 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
   },
   'dev/migrate/rail-mutants.ts: spawnSync': {
     reaches: [],
-    why: 'runs the test files its caller names; railway-lint-review passes a probe written to a temp dir',
+    why: 'runs the test files its caller names; railway-migrate passes a probe written to a temp dir',
   },
   'dev/test-unit.ts: spawnSync': { reaches: [], why: 'runs the unit suite itself (in FULL_ON)' },
   'dev/node-version.ts: spawnSync': {
