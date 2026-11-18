@@ -10,6 +10,7 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
+| Trees vanish after a chop near the quarry (O18-1): reproduce, fix the batch bounds, prove with a look | none: P1 tracker note O18-1 in round-4-notes | `codex/tree-chop-cull` | the owner's live orchestrator session (Claude Opus), Codex gpt-6.2-sol medium delegate | 18 November 08:52 | building |
 | World streaming step 5: static matrices on static scenery (far-ground tiles, track chunks, the sickle backdrop, Ring Island's ground, static prefab placements) | Chunk, cull and stream the world (P2) | `claude/world-static-matrices` | the owner's live orchestrator session (HOTBOX), Claude Opus medium delegate | 18 November 15:30 | building |
 | The forge's rail rack moved off Home's island to road 2's outer side | The forge's rail rack off Home's island (P3) | `claude/forge-rack-move` | the owner's thread "Improve Deposited Rails Position" (HOTBOX), Claude Opus; row added by the heartbeat, which found it running unclaimed | 18 November about 05:00 (true UTC) | building |
 
