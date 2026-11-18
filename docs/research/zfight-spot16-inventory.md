@@ -110,9 +110,9 @@ Original inventory: **46** legacy pad/column boxes. **26** deleted prototype obj
 objects retained as runtime meshes; **12** live pillar/column/underlay objects newly captured: **32** current meshes.
 The added sources are actual builder sections; no hard-coded exclusion was added.
 
-`test/zfight-tech-source.test.ts` requires all 32 exact IDs in the direct capture and final census. The new
-`test/fixtures/zfight-tech-inventory.json` also pins each ID's face count and world-space minimum/maximum bounds
-(to 0.1 mm), so swapped, moved, duplicated or reshaped pieces fail even if the total count stays 32.
+`test/zfight-tech-source.test.ts` compares the final drawn census with `test/fixtures/zfight-tech-inventory.json`.
+The fixture pins each ID's face count and world-space minimum/maximum bounds (to 0.1 mm), so swapped, moved,
+duplicated or reshaped pieces fail even if the total count stays the same.
 The fixture covers all twelve added meshes as well as every surviving pad/support. Updating it requires comparing
 the changed runtime builders against this table; it is not a license to silently accept an inventory change.
 

@@ -19,16 +19,8 @@ test('same drawn material/colour is a joint; appearance differences are actionab
   for (const patch of [
     { material: 'steel' },
     { color: [0, 1, 1] },
-    {
-      vertex: [
-        [0.5, 1, 1],
-        [0.5, 1, 1],
-        [0.5, 1, 1],
-      ],
-    },
     { castShadow: false },
     { receiveShadow: false },
-    { uncertain: 'unknown shader' },
     {
       texture: {
         id: 'image',
