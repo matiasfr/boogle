@@ -1,6 +1,6 @@
 # Turnouts: real points wherever tracks merge or cross
 
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Step 1 (J1 static spur turnout) is on main (#1802); junctions() still returns only J1. Built, not shipped: none verified. Next: step 2, J2–J9 inventory and level checks; Checkpoint A owner/designer viewing is not verified here. Checkpoint A is next; nothing else is
+> **Status, 17 November 2026:** Step 1 (J1 static spur turnout) is on main (#1802). Step 2 (J2 to J9 in junctions(), the level check's junction table) is built on `claude/turnouts-list`, not shipped. Checkpoint A owner/designer viewing is not verified here. Next: Checkpoint A, then step 3; nothing else is
 > built. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
 > overlaps, one track kit, the stall road seated: PR 1793, `yard-track.ts` and `home-yard.ts`) and does not redo it;
 > step 1 extends that pass's shared timbers rather than drawing through `track.ts` (see step 1's departures).
@@ -60,19 +60,25 @@ stop overlapping. World metres (x, z). Radii of the line turnouts are `npm run l
 | # | Junction | Toe (x, z) | Hand | Frog from toe, angle | Clear | Diverging radius | Drawn by | Who runs it |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | J1 | Spur off road 2, s 5.5 | (922.5, 10.5) | right | 5.5 m, 21.2° (1:2.6) | 8.4 m | 15 m off a straight | `home-station-view` + `track.ts` (road 2) | the shunt |
-| J2 | Leg onto road 2, s 26 (body s 26 to 32) | (941.8, 3.5) | left | 4.1 m, 29.1° (1:1.8) | 6.4 m | 15 m, against road 2's 18 m the other way | same | the cart |
+| J2 | Leg onto road 2, s 26 (body s 26 to 32) | (941.8, 3.5) | left | 4.1 m, 28.4° (1:1.8; 29.1° before step 2) | 6.4 m | 15 m, against road 2's 18 m the other way | same | the cart |
 | J3 | Leg off line 1, s 54 (body s 54 down to 42) | (952.3, −30.0) | left | 6.2 m, 12.7° (1:4.4) | 12.1 m | 15 m for 3.3 m, then straight | same | the cart |
-| J4 | Line 1 offset track, Home, s 36 to 56 | (948.3, −12.5) | left | 6.5 m, 14.8° (1:3.8) | 11.1 m | 9.5 m (on line 1's 18 m curve, same way) | `track.ts` | trains |
-| J5 | Line 1 offset track, Camp, s 182 down to 162 | (984.9, −147.4) | right | 6.5 m, 14.8° | 11.1 m | 11.1 m | `track.ts` | trains |
-| J6 | Line 2 offset track, Home, s 34 to 54 | (949.7, 2.9) | left | 6.5 m, 14.8° | 11.1 m | 18.0 m | `track.ts` | trains |
-| J7 | Far Head crossover, offset-track end, s 490 | (1331.3, −150.8) | right | 7.2 m, 13.5° (1:4.2) | 12.2 m | 24.3 m | `track.ts` | trains |
-| J8 | Far Head crossover, down-track end, s 512 | (1351.8, −159.8) | right | 7.2 m, 13.4° | 12.2 m | 24.3 m | `track.ts` | trains |
-| J9 | Line 2 offset track, pier root, s 556 down to 536 | (1385.5, −187.4) | right | 6.5 m, 14.8° | 11.1 m | 15.4 m | `track.ts`; `retire()` removes it at Q7 | trains |
+| J4 | Line 1 offset track, Home, s 36 to 56 | (948.3, −12.5) | left | 6.5 m, 14.8° (1:3.8) | 11.0 m | 9.5 m (on line 1's 18 m curve, same way) | `track.ts` | trains |
+| J5 | Line 1 offset track, Camp, s 182 down to 162 | (984.9, −147.4) | right | 6.5 m, 14.8° | 11.0 m | 11.1 m | `track.ts` | trains |
+| J6 | Line 2 offset track, Home, s 34 to 54 | (949.7, 2.9) | left | 6.5 m, 14.8° | 11.0 m | 20.6 m | `track.ts` | trains |
+| J7 | Far Head crossover, offset-track end, s 490 | (1331.3, −150.8) | right | 7.2 m, 13.5° (1:4.2) | 12.1 m | 24.3 m | `track.ts` | trains |
+| J8 | Far Head crossover, down-track end, s 512 | (1351.8, −159.8) | right | 7.2 m, 13.5° | 12.1 m | 24.8 m | `track.ts` | trains |
+| J9 | Line 2 offset track, pier root, s 556 down to 536 | (1385.5, −187.4) | right | 6.5 m, 14.8° | 11.0 m | 15.4 m | `track.ts`; `retire()` removes it at Q7 | trains |
 | J10 | Railhead stub, moves with the head: merge s 832 to 972 in 20 m steps | (1404.5, −462.0) to (1408.3, −601.9) | — | not measured | — | straight deck | `railhead-view.ts` (`crossoverSpan`) | trains |
 | J11 | Ring Island crossover, s 1137 to 1159 | (1412.7, −766.9) | — | not measured | — | straight | `src/entities/ring-island/view.ts` | trains |
 | J12 | Stack heads 1 to 3 (merge s 1670, 2180, 2690) and High Gorge's crossover (s 3195) | on the greybox row | — | not measured | — | — | the greybox route's views (not read) | trains |
 | T1 | Table rim, the spur (bearing 310° from the centre) | table (942.1, 17.1), r 4.8 | — | a butt join | — | straight 1.5 m | `home-station-view`, `roundhouse-view` | the shunt |
 | T2 to T4 | Table rim, stall roads at 160°, 190° (open), 220° | rims (943.7, 21.6), (941.3, 21.8), (939.0, 20.8) | — | butt joins | — | straight 3.7 m | same | the shunt (190° only) |
+
+**Remeasured at step 2** (`npm run level-check`, `src/place/junctions.ts` through `turnout()`; held in
+`test/turnout.test.ts`): J2's frog is 28.4°, not 29.1°; the line turnouts clear at 11.0 m and the crossover at 12.1 m (not 11.1 and 12.2). The radius
+is now the diverging road's own over the 20 m from the toe: J6 20.6 m and J8 24.8 m (the old tool's 18.0 m and 24.3 m
+reached 2 m behind the toe, onto road 2's 18 m curve, and took the crossover as one zone); J3 reads 15.5 m (its 3.3 m
+of 15 m arc is shorter than the measure's 4 m chord).
 
 **None found:** a diamond (no two tracks only cross: the leg leaves line 1 on the east and the offset track on the west;
 on road 2 the offset track lies between the leg and road 2). Passing loops at halts (the double track runs through; the
@@ -337,12 +343,18 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
     table`; the top-down and the `awake` (stub only) stills go to the reviewer with it.
   - Record `npm run perf` at Home before and after in this plan.
 - [ ] **Checkpoint A: the owner and the designer see step 1's stills before the roll-out.** Nothing else waits on it.
-- [ ] **2. The whole list, and the level check reads it.** `junctions.ts`: J2 to J9. `test/turnout.test.ts` (retired in the test cleanup of 18 November 2026 as geometry a look shows; step 2 is looked at, or the suite comes back with it): the
+- [x] **2. The whole list, and the level check reads it.** `junctions.ts`: J2 to J9. `test/turnout.test.ts` (retired in the test cleanup of 18 November 2026 as geometry a look shows; step 2 has nothing to look at, so the suite comes back with it): the
   tangent, frog and hand cases for each (the table above, ± 0.1 m and ± 0.5°); "every line end the layout draws has a
   junction" against `RAIL_LINES[0..1].halts[].end`; "one timber per station in a cluster" (J3 with J4).
   `dev/level/track-continuity.ts`: replace the "turnouts and crossover" lines with one row per junction (toe, hand,
   frog distance and angle, clear, tightest radius) and add the spur and leg, which the tool does not know today.
-  Verify: `npm run level-check` prints the table above. No player-visible change.
+  Verify:  prints the table above. No player-visible change.
+  **Built 17 November 2026.** `junctions()` returns J1 to J9; only J1 is drawn (`home-yard.ts` picks it by id), so
+  nothing a player sees changes. J2 and J3 carry `when: 'leg'` and `kind: 'spur'`. Levers default to the side away
+  from the road that leaves; at the J3 and J4 cluster that puts each toward the other's zone, for step 3 to settle.
+  The level check's junction rows replace its "turnouts and crossover" lines, and their radius findings name the
+  junction (the spur and leg as `line2-spur`, `line1-leg`, `line2-leg`). Figures that moved: see "Remeasured at
+  step 2" above.
 - [ ] **3. Home's throat: J4, J6, then J2 and J3.** `track.ts` for both lines; the offset track's sleeper loop skips
   inside a zone; `span()` takes the union where zones overlap (J3 with J4). `home-station-view.ts`: the leg's sleepers
   start at `clearD` at both ends; its turnout pieces show with the leg (`legLaid()`). Proof look: `at=throat-top` (the
