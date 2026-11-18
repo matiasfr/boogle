@@ -95,7 +95,7 @@ plots when a purchase changes, while reusing unchanged projections.
 
 **The house goes up (16 November; town-economy-visible B2).** Staked boards show the rider icon and +1 rider per
 minute, their current price and the shared box's balance. An affordable plot draws a gold dashed house using the
-kiln/cradle material. Its roof is visible from the island platform above the curio shelf; the lower outline is
+kiln/cradle material, half opaque and breathing slowly like every gold ghost (below, the kiln's ghosts). Its roof is visible from the island platform above the curio shelf; the lower outline is
 occluded there. A one-second Interact hold queues the buy; only an accepted Plot row clears the pile and starts
 construction. The existing site builder finishes at the purchase tick plus 100; a late arrival sees the completed
 closed shell with its door mark and three solid hulls. Missing plot/till rows hide the view and recover on refill.
@@ -1585,7 +1585,11 @@ throat shot starts high on the halt side, aims through the cut at the bays and h
 slabs have sunk (4.8 s). All Local over accepted state, so a friend and a late joiner see the same ghosts and motes;
 the shot is a shared moment (10 November): everyone in the room gets it on the accepted strike, a late joiner does
 not. No words; motes are off under reduced motion, the ghosts stay. The ghosts are one
-instanced draw (`src/render/ghost-outline.ts`, shared with the boiler plan's saddle echo).
+instanced draw (`src/render/ghost-outline.ts`, shared with the boiler plan's saddle echo, the railway's other gold
+cues and the town plots' house ghosts). Every gold ghost is half opaque and breathes very slowly in opacity, so it
+reads as not a physical object (owner, 16 November; [decision](../decisions-look.md#d-2026-11-16-gold-outline-not-physical)):
+0.45 to 0.75 and back over 6 s, all in step; under reduced motion it holds still at 0.6. Hue, positions and when
+they show are unchanged.
 
 **From the quarry halt to the kiln** (9 November, the designer's answer in the same brief; words and beacons are
 allowed sparingly, [decisions](../decisions.md)). Once the breaker is taken (part 2 moved it from the throat strike,
