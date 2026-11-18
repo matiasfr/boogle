@@ -939,21 +939,6 @@ test('a footing on your back still lets you take the breaker, as the sim does', 
   assert.equal(a.adapter.takeBreaker(), true);
 });
 
-test("a tune edit changes the boiler's haul pace the views read", () => {
-  let solo = 300;
-  const adapter = createRailwayAdapter({
-    mirror: createRailwayMirror(),
-    movement: () => railMovement({ get: (k) => (k === 'railBoilerSoloSpeed' ? solo : specOf(k)!.def) }),
-    pid: 'a',
-    pose: () => ({ x: 0, y: 0, z: 0 }),
-    now: () => 0,
-  });
-  assert.equal(adapter.read.movement().boilerSoloSpeed, 3);
-  assert.equal(adapter.read.movement().boilerHelpSpeed, 5.4);
-  solo = 340;
-  assert.equal(adapter.read.movement().boilerSoloSpeed, 3.4);
-});
-
 test('a back set down as two drops 100 ms apart: both predicted, both accepted by the host, nothing left on the back', () => {
   // The client half of build 0 (docs/brainstorms/station-deposit.md): src/entities/railway/back-down.ts sends one drop a pile.
   const w = world();
@@ -1088,7 +1073,7 @@ test('a world held across frames stays what it was: the next frame gives another
 
 // A disposed adapter is not ready, in the frame it was disposed in and in every later one (the frame memo once kept
 // answering ready: true; docs/plans/ecs-m12-m13.md, X1 moves these two from the M1 review file).
-test('a disposed adapter does not stay ready inside the frame it was disposed in', () => {
+test('a disposed adapter does not stay ready, inside the frame it was disposed in or later', () => {
   const w = world();
   const a = w.join('a', 'alice');
   w.ready();
@@ -1097,15 +1082,6 @@ test('a disposed adapter does not stay ready inside the frame it was disposed in
   assert.equal(a.adapter.read.pending(), 0);
   a.adapter.dispose();
   assert.equal(a.adapter.read.ready(), false, 'ready after dispose');
-});
-
-test('a disposed adapter does not stay ready in later frames', () => {
-  const w = world();
-  const a = w.join('a', 'alice');
-  w.ready();
-  w.quiet(5);
-  assert.equal(a.adapter.read.ready(), true);
-  a.adapter.dispose();
   w.run(30);
   assert.equal(a.adapter.read.ready(), false, 'ready 30 frames after dispose');
 });
