@@ -806,7 +806,7 @@ function loaders() {
     ...SOURCES.filter((s) => s.id !== 'stall').map((s) => ({ ...s, ln: E })),
     {
       id: 'forge',
-      name: "The forge rack (rails; Home, on the island's apron by the buffers)",
+      name: "The forge rack (rails; Home, road 2's south side by the buffers)",
       ...rack,
       line: 'line2',
       ln: E,
@@ -845,7 +845,7 @@ function loaders() {
       s.id === 'stall'
         ? `${where} Not a loader: the shunter brings stock from the stall over the table and up the spur, which leaves road 2 at s ${SPUR.s}.`
         : s.id === 'forge'
-          ? `${where}${loader} The rack stands on the island's apron between the buffers and the deck's head ramp, ${r1(near.stop + CONSIST.tail - a.s)} m behind the last cargo car: the cargo end, on the island, so rails go from rack to car without crossing a track. The recovery rack (the Village yard) stands at ${RECOVERY_RACK.x / 100}, ${RECOVERY_RACK.z / 100}.`
+          ? `${where}${loader} The rack stands on road 2's south side, abeam the cart's forge stop and the forge's mouth, ${r1(near.stop + CONSIST.tail - a.s)} m behind the last cargo car, on the cars' side, so rails go from rack to car without crossing a track. The recovery rack (the Village yard) stands at ${RECOVERY_RACK.x / 100}, ${RECOVERY_RACK.z / 100}.`
           : where + loader;
     rows.push({ name: s.name, x: r1(s.x), z: r1(s.z), text });
   }

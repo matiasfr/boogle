@@ -7,16 +7,16 @@
 />
 <script type="application/json" id="home-data">
   {
-    "sourceCommit": "72354f8d928ef0df3895ae5355e4335c0cb42618",
+    "sourceCommit": "560ed97f95cd7236c26ca0c3500427ae0fdbf7c2",
     "sourceHashes": {
-      "src/place/layout.ts": "e43ec6ac7351207c9025cc2f54486734e3606ee43d56429f0d091e3128212c9f",
-      "src/place/home-station.ts": "e11bf6853d38f9df2f0f0bfc1833ee55b86aaa28f52972d25089e5fd17e9e152",
+      "src/place/layout.ts": "4e6b2171c00e09c618eedc04c757e59541e7a77e5cd979a76a0ceeb25b1eceee",
+      "src/place/home-station.ts": "cfd0e598950c066d59cc6d46f3b736d6ed3fe43a3c4f47073a8562c0f62277ce",
       "src/entities/railway/cars.ts": "72029c504862f5486e525d4a1c757ecf94227d0a8b7918cad87a3d83b346825a",
-      "src/sim/railway-train.ts": "4a0be6787955a3a676d7242e40eb59ddd5b6cfd59d705f735d2942e97adeb82d",
-      "src/sim/railway-lines.ts": "e7e118a9b995d0a5b5d82c399566ae7a87ea145a1fe372c801e74f07dc99342e",
+      "src/sim/railway-train.ts": "7419059cdf3ee6c5106000bbc81264491cd8566a3266f00b5b778b91536c0074",
+      "src/sim/railway-lines.ts": "303e7ea1f360abc47afaad58235b3262a832183c7737a92770423b3fa15155e6",
       "src/sim/railway-line-layout.ts": "17429499158456723196b4e9167645f0b29d0657eda015e03c92e88ae95d4d97",
-      "src/sim/railway-line2-layout.ts": "8864769590255f274f6ea2b85fafabbc99e3b949ffda4d0b2b0c16a9535e8f00",
-      "src/sim/railway-works-layout.ts": "7100fd502befe8c0c97912427e148bd73409dbe8333aa27580dca55a39263e16",
+      "src/sim/railway-line2-layout.ts": "49a6227099904d59dde72aff1f9bec59d65f98c6b8daf0aab81490562453bdcf",
+      "src/sim/railway-works-layout.ts": "203d844a0317028446e5cb811c278e1ee7ea96ab3042eeda884d12c4623e459f",
       "src/sim/railway-cart.ts": "34bfc9efe6d20f159b4be559b805c176f8e1111f0bf310be7633391f94316b83"
     },
     "generator": "node --import ./dev/sim/hooks.ts dev/level/home-station-page.ts",
@@ -24,7 +24,6 @@
     "origin": { "x": 1000, "z": 0 },
     "engine": [1, 1.25, 1.4],
     "town": [
-      { "x": -138.84, "z": 15.87, "w": 5.4, "d": 4.4, "yaw": 1.4, "type": "cottage", "stage": "start" },
       { "x": -88, "z": 31, "w": 11, "d": 8, "yaw": 2.73, "type": "hall", "stage": "wood 1" },
       { "x": -84, "z": -18, "w": 7, "d": 6, "yaw": 0.1, "type": "hall", "stage": "wood 1" },
       { "x": -71, "z": -21, "w": 8, "d": 6, "yaw": -0.5, "type": "shed", "stage": "wood 2" },
@@ -38,7 +37,8 @@
     "rooms": [
       { "x": -110.54, "z": -5.23, "w": 7.4, "d": 7.4, "yaw": -0.17, "id": "house" },
       { "x": -119.52, "z": 45.68, "w": 10, "d": 8, "yaw": 2.97, "id": "shop" },
-      { "x": -125.27, "z": -8.11, "w": 13, "d": 12, "yaw": 0.35, "id": "museum" }
+      { "x": -125.27, "z": -8.11, "w": 13, "d": 12, "yaw": 0.35, "id": "museum" },
+      { "x": -138.84, "z": 15.87, "w": 5.4, "d": 4.4, "yaw": 1.4, "id": "gate" }
     ],
     "home": {
       "lines": {
@@ -694,7 +694,7 @@
         { "b": 210, "door": [-62.45, 31.3], "back": [-67.95, 40.83], "open": false, "w": 4.862 }
       ],
       "anchors": {
-        "forgeRack": [-84.53, 10.05],
+        "forgeRack": [-81.45, 15.74],
         "pedestal": [-78, -1.17],
         "chest": [-86, -9],
         "axeStand": [-92.5, -15],

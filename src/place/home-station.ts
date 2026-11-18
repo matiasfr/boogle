@@ -106,7 +106,7 @@ export const ROAD_GAP = toAxis(HEADS[1].start).c;
 
 /** Buffer stops, by road's `s`: abeam, so the island's head is square. Road 1's stub is the forge's goods dock. */
 export const BUFFERS = [-5.53, -2.6] as const;
-/** The island between the roads: a ground-level apron off the buffers (the forge rack stands on it), a head ramp, the
+/** The island between the roads: a ground-level apron off the buffers (kept open for passengers), a head ramp, the
  * deck at rail + 0.72 (level with the flat cars), an end ramp. No ramp off the back: it would cross a track. */
 export const ISLAND = { width: 4.3, edge: 1.65, apron: 3.3, headRamp: 5, deck: 18, endRamp: 4, lift: 0.72 };
 const A0 = BUFFERS[0];
@@ -221,7 +221,8 @@ export const legPoints = () => sampled(LEG.start, LEG.segs);
 export const spurPoints = () => sampled(spurStart, SPUR.segs);
 
 // ---------------------------------------------------------------- the cart's road and the shunt
-/** The cart's camp stop, line 1's s (unchanged), and its forge stop: road 2's s 0, beside the rack on the apron. */
+/** The cart's camp stop, line 1's s (unchanged), and its forge stop: road 2's s 0, beside the rack on road 2's outer
+ * side. */
 const CAMP_S = 196;
 export const CART_FORGE = CAMP_S - LEG.from + LEG.len + LEG.to;
 type Sampled = Pick<Line, 'xs' | 'zs'>;
@@ -295,14 +296,15 @@ export const CROSSING = {
 };
 
 // ---------------------------------------------------------------- what moves to make room
-/** Yard props drawn in B's places (Place-local): the forge rack on the apron's road 2 side (a lane stays open along
- * road 1's edge, from the hall's back bay to the head ramp), the pedestal on the forge side of road 1, the crane and
- * dock beside road 1, the stone yard off the table, and the greeter in front of the hall's north end, beside the open
- * bay and outside the shelf's reach. Q1's frame flips to road 2's south side. */
+/** Yard props drawn in B's places (Place-local): the forge rack on road 2's outer side, off the island, the pedestal
+ * on the forge side of road 1, the crane and dock beside road 1, the stone yard off the table, and the greeter in
+ * front of the hall's north end, beside the open bay and outside the shelf's reach. Q1's frame flips to road 2's south
+ * side. */
 export const PROPS = {
-  // Square to the axis, centred along the apron: 1.97 m off road 1's sleeper ends, inside the apron's road 2 edge
-  // and 0.53 m off road 2's sleeper ends (unturned, its south posts stood 4 cm into them).
-  rack: { ...axisPoint(-3.88, 4.52), yaw: rad(90 - AXIS.bearing) },
+  // Square to the axis on road 2's outer side, abeam the cart's forge stop and the forge's mouth: 1.15 m off road 2's
+  // sleeper ends, 1.55 m off the cart, off the island (owner, 17 November: the fallback of the backlog row's answer 1).
+  // LINE2_FORGE.rackX/rackZ are its world centimetres (test/home-station.test.ts pins them together).
+  rack: { ...axisPoint(-2.95, 11.2), yaw: rad(90 - AXIS.bearing) },
   greeter: { x: -95.86, z: 9.65 },
   pedestal: { x: -78.0, z: -1.17 }, // the existing 3.5 m rail clearance, including the pedestal's footprint
   crane: { x: -72.4, z: -3.1 },

@@ -27,6 +27,15 @@ import { RAIL_STONE, WORKS_BREAKER } from '../../../src/sim/railway-works-layout
 import { splitRockToCrossing } from './railway-works.ts';
 export { splitRockToCrossing };
 import { LINE2_BOILER } from '../../../src/sim/railway-line2-layout.ts';
+import { ISLAND_C, axisPoint } from '../../../src/place/home-station.ts';
+import { toWorld } from '../../../src/place/layout.ts';
+
+/** Home's apron, off the buffers between the roads (where the forge rack stood until 17 November): the station's hub
+ * for legs that pass through Home. The rack now stands across road 2, a pointless detour. */
+const HOME_APRON = (() => {
+  const p = axisPoint(-3.9, ISLAND_C);
+  return { x: toWorld(p.x), z: p.z };
+})();
 
 /** `?botTo=<stop>` ends the route after that beat: a segment, not a failure. */
 class RouteStop extends Error {}
@@ -545,7 +554,7 @@ export async function boilerToPier(
   if (from !== 'q6') {
     if (from === 'far-head') {
       await walkQuarry(546, 10);
-      await walk(view().forgeRack.x, view().forgeRack.z, 3);
+      await walk(HOME_APRON.x, HOME_APRON.z, 3);
     }
     const b = view().boiler;
     check(await bot.use(b.x, b.z, 'pick up the boiler', /^Pick up$/), 'boiler pickup offered');
@@ -1758,7 +1767,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     const openPack = async () => {
       const packChest = read().reward.tools.packChest;
       require(packChest.available, 'the pack chest waits by the forge');
-      await walk(v2().forgeRack.x, v2().forgeRack.z, 3);
+      await walk(HOME_APRON.x, HOME_APRON.z, 3);
       await walk(packChest.x, packChest.z);
       require(await bot.use(packChest.x, packChest.z, 'open the pack chest', /^Open/), 'pack chest offered');
       require(await bot.work(() => R.rail(R.rw()).pack, 5000, 380), 'pack accepted after bounded retries');

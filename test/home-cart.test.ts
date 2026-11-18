@@ -43,7 +43,8 @@ test('renderer-local Home envelope literals agree with production construction s
   const forge = 'src/place/opening-models.ts';
   has(forge, `[-${f.postZ}, ${f.postZ}]`);
   has(forge, `[-${f.postX}, ${f.postX}]`);
-  has(forge, `new THREE.BoxGeometry(${f.postW}, 1.8, ${f.postW})`);
+  // Each post reaches down to its own ground; its footprint is unchanged.
+  has(forge, `new THREE.BoxGeometry(${f.postW}, 1.8 + drop, ${f.postW})`);
   has(forge, `new THREE.BoxGeometry(${f.beamW}, 0.14, ${f.postW})`);
   has(
     'src/entities/railway/opening-view.ts',

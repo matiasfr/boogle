@@ -31,8 +31,8 @@ const report = (beat: string) => {
   );
 };
 const rack = (read().line2View as { forgeRack: { x: number; z: number } }).forgeRack;
-// From the rack's west side, 6 m from the pedestal, so the boiler's prompt can't win the pick.
-await bot.walk(rack.x - 1.6, rack.z + 0.6, 0.4);
+// From the rack's west side, clear of its collider and 17 m from the pedestal, so the boiler's prompt can't win the pick.
+await bot.walk(rack.x - 2.2, rack.z + 0.6, 0.4);
 face(rack.x, rack.z);
 await bot.wait(600);
 report('at the forge rack');
