@@ -32,6 +32,8 @@ type Ctx = {
   /** An orderly server restart (a deploy). */
   restart: () => Promise<void>;
   hosted: (id: string) => HostedRoom | undefined;
+  /** False under the broker, whose server runs out of process: no in-process room host to read or step. */
+  inProcess: boolean;
   dataDir: string;
 };
 
@@ -1230,6 +1232,11 @@ export async function railwayJumpIn(c: Ctx) {
     'the shared room was not created or changed',
     sharedBefore === null ? sharedAfter === null : !!sharedAfter && sharedAfter.equals(sharedBefore),
   );
+  if (!c.inProcess) {
+    console.log('SKIP  replace: needs the in-process room host (broker net runs the server out of process)');
+    await Promise.all([J0, J1].map((p) => p.page.close()));
+    return;
+  }
   // The replacement checkpoint uses the same two live browser mirrors, at a later played tick, then restores
   // the pinned old world. These are the real room hooks; a peer relay cannot invoke onReplacing.
   await ev(J0.page, () => (window.T.railMessages.length = 0));
