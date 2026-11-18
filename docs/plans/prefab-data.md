@@ -778,3 +778,45 @@ Left in this area: the boxes in the world and at the finders' bay, their bob, sh
 (`bellAt`, from SECRETS) and everything found or hubbed stay the view's, as state. SECRETS' own spot for the tower's
 first box is still Place's (8, 9.5), which `dev/look/evals/secret-reach.ts` reads as it always did. Left in step 13: the
 rest of Ring Island. Not tested on a device.
+
+### Step 13, sixth area as built: Ring Island's hand-authored massing
+
+The first part of the island's massing is placements of the records it already had (`ring.box`, `ring.box-drawn`):
+`src/content/levels/ring-island.ts` places 19 more things (36 → 55), in the old draw order: the hinge pier's two blocks,
+the pennant pole's footing (pile and plinth), the brace platform's deck, its pier, its handrail (rail and three posts)
+and the gold strut (its foot on RING_BRACE's site, solid, and the arm up under the hinge's edge, drawn only), and the
+steps (the flight, the landing onto the deck's east edge, its handrail: rail and four posts). The view's resolver
+learned what these need, as frames and forms rather than retyped numbers: a `line` frame (the hinge edge and the
+Way's edges), a `steps` frame (RING_STEPS), more brace anchors (its far end and landward edge, the hinge edge, RING_BRACE's
+world x and z), a `pennant` frame whose block `footing` comes from `pennantFooting` (the far view's one definition, so
+the near and far footings cannot part), a `{ deck: u }` value (the Way's deck top, ringDeckY), beam ends at (u, lat) on
+the line, `slab` (the greybox's deck in one span) and `stanchion` (post k of a handrail's n + 1; the authored n must be
+the handrail's own, one every 3 m, or the island refuses to load). The view furnishes them where the code stood, so its
+solids join the mount clearance in the old order, through the same `clearanceShape` and `siteExit`, and switch with the
+near view (`setMounted`) like the furnishing's. The strut's foot at u 284.5, lat 3.4 was a literal in the view and is
+one in the level now. No new record or builder: records 316 → 316, levels 26 → 26; the test lists' stub builders, the
+portability record lists and `dev/ci/unit-select.ts` need no entry (the view already selects `test/prefab-trees.test.ts`).
+`dev/lint/prefab-debt.json` is unchanged: the view still calls `createBody` for the island's own body (the generated
+massing below), the ground and the leaf.
+
+Proof: `test/fixtures/prefab-ring-massing.json` was captured from the view before this move (commit "Capture the Ring
+Island massing golden before the record conversion"; the same `captureRingAfter` as the furnishing's golden, over the
+view as it stood on main) and passes unchanged: 12,107 values (every merged piece's geometry, full-precision world matrix
+and colour in draw order, every other mesh, all 88 world colliders, where the mount clearance puts a player standing in
+each of the 83 fixed colliders and two open spots, ten frames of the hammer and leaf), 7 of them not bit-identical, max
+deviation 1.1e-16 against the 1e-9 tolerance. The furnishing's golden (`prefab-ring-island.json`) passes too. `npm run
+level-check` gives the same 21 reports as main, byte for byte apart from the source hash and timings. Opened
+before/after stills of the brace platform and steps (main's build and this branch's, `--rail-seed ring-joined`, the same
+fixed camera from the sea east of the platform; the staging was a raw eval under `.look/`, not committed)
+([stills and their difference](../world/prefab-ring-island/)): the hinge pier, the platform, its pier and handrail, the
+gold strut, the steps and the folk are pixel-identical; what differs is the animated sea and foam, the player's colour,
+the train passing on the Way and drifting specks in the sky. The hinge pier's far side and the pennant footing were not
+photographed apart; the golden holds them.
+
+Left in this area: the generated massing stays view code over the island's own body: the sea ramps' flights and
+landings (RING_RAMPS), the Pilgrims' Way's deck, track, posts, rails and piers, the halt's platforms, landings and
+ramps, the foot crossing's planks, bed and slab, the west platform's ramp to the path, the crossover's rails, the summit
+path's beams, the footbridge (deck, trail and landing surface, parapets, abutments, bents) and the rim rocks; their
+placements would be generated from the sim catalogs (RING_*), path.ts or the ground, as the halts' are. The leaf and its
+footings (kinematic), the pennant, the ground and its heightfield, and the hammer's lift and thump stay as they are.
+Left in step 13: the rest of Ring Island (the generated massing). Not tested on a device.
