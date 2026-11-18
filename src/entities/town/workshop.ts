@@ -156,6 +156,8 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
                 ...solidSpecs.map((s) => ({ dx: s.x, dy: s.y, dz: s.z, hx: s.w / 2, hy: s.h / 2, hz: s.d / 2 })),
               ],
               outOf,
+              undefined,
+              1e-6,
             );
           if (exit && me.body) {
             teleport(me.body, exit.x, H(exit.x, exit.z) + PLAYER_R + 0.2, exit.z);
@@ -186,7 +188,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
       const p = me.body?.interpolatedPosition;
       const inBounds = !!p && p.y < y + high && p.x > x - hw - ROOM_CAM.enter && p.x < x + hw && Math.abs(p.z - z) < hd;
       const atDoor = !!p && Math.abs(p.z - z - door.z) < door.w / 2 + 0.5;
-      inside = open && inBounds && (inside || atDoor || p!.x > x - hw);
+      inside = open && inBounds && (atDoor || p!.x > x - hw);
       flames.update(dt, open, inside);
       if (!open) {
         hidden.fill(0);
