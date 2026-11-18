@@ -10,9 +10,9 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| The forge's west door (home-flip D3), view only | Home's town as the Round (P1) | `codex/forge-west-door-d3` | the heartbeat (HOTBOX), Codex gpt-6.2-astra medium delegate | 17 November 23:45 | built as `dabe248a` (ship check green; the `forge-lit` bot segment unverified); in independent review since 18 November 00:10 UTC (a fresh gpt-6.2-astra medium delegate, asked whether the forge plan's piece counts moved and what the south wall draws). Its report wakes the heartbeat thread: verify findings, send fixes to the builder's thread or ship with the review stamp |
+| The forge's furnace mouth: a fire that moves or a textured firebox in place of the flat orange panel | The forge's furnace mouth (P2) | `codex/forge-furnace-fire` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium delegate | 18 November 02:20 | building |
 | Three small fixes: The Boogler's speech bubble from any distance, the cosmetics fitting pass, the "Connecting to the railway..." toast clear of Jump at phone width | Three small fixes (P3) | `codex/three-small-fixes` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium delegate | 18 November 01:10 | building |
-| World streaming step 0: the census eval (`dev/look/evals/world-census.ts`) and the baseline counts at the green, Far Head and Ring Island | Chunk, cull and stream the world (P2) | `codex/world-census` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-sol medium delegate | 18 November 01:30 | building |
+| World streaming step 1: real bounds on the static batches (trees, yard track, station rails and stones, piles, the workshop proxy) | Chunk, cull and stream the world (P2) | `codex/world-bounds` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium delegate | 18 November 02:20 | building |
 
 ## Where the work stands
 
