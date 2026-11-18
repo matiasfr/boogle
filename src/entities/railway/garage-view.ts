@@ -12,6 +12,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Body } from '../../physics/engine.ts';
 import { camConstraints, camForward, me } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';
+import { openModal, closeModal } from '../../player/modal.ts';
 import { reducedMotion } from '../../constants.ts';
 import { clank, thump, chuff, whistle, cordPull } from '../../render/machine-sfx.ts';
 import { emit } from '../../render/particles.ts';
@@ -1156,6 +1157,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     open = false;
     holding = false;
     inputState.held = false;
+    closeModal();
     // Someone else's install plays on in the world when this tab leaves the garage.
     if (phase === 'moment' && real && !mine) return;
     if (phase !== 'idle') {
@@ -1172,6 +1174,9 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     isOpen: () => open,
     open() {
       if (open || !shown || !facts.boilerFitted || facts.tableBusy) return;
+      // The garage is the one modal while it is open, marked before it drops the pointer lock (openModal does), so
+      // Pause does not take the lost lock for an Esc. Its keys and pad stay its own (src/features/garage.ts).
+      if (!openModal({ passKeys: true })) return;
       open = true;
       settled = false;
       spinRate = today();
@@ -1180,7 +1185,6 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       cat = sel === 'cradle' ? 'cargo' : 'engine';
       if (sel === 'long') ghostT = 0;
       inputState.held = true;
-      document.exitPointerLock?.();
     },
     close,
     snap(): GarageSnap {
@@ -1285,6 +1289,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       cam: camPos.toArray(),
     }),
     dispose() {
+      close();
       const k = camConstraints.indexOf(constraint);
       if (k >= 0) camConstraints.splice(k, 1);
       if (garage.api === api) garage.api = null;
