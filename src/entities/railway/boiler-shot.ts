@@ -45,19 +45,22 @@ export function boilerShot(ground: (x: number, z: number) => number, breaker: bo
 /** The forge's call as a show claims it (forge-call.ts's `holdForgeCall` and `soundForgeCall`, injected so this stays
  * pure): `claim` holds it for up to `seconds`, `cue` sounds it once (the cut, the hand-back, a dropped shot), and a
  * claim still held at its deadline lapses without a cue. forge-call.ts sounds a held call by itself as its hold runs out
- * and sounds it again on every later cue (the pier's reminder), so cueing then would sound it twice. `now` in seconds,
- * on forge-call.ts's clock. */
+ * and sounds it again on every later cue (the pier's reminder), so cueing then would sound it twice; that includes a cut
+ * landing on the deadline's own frame, after the breaker's call already sounded (works.update runs before line 2's).
+ * `until` is taken before the hold, so it is never later than forge-call.ts's own deadline. `now` in seconds, on
+ * forge-call.ts's clock. */
 export function createShowCall(io: { hold(seconds: number): void; sound(): void; now(): number }) {
   let until = -1;
   function cue() {
     if (until < 0) return;
+    const lapsed = io.now() >= until;
     until = -1;
-    io.sound();
+    if (!lapsed) io.sound();
   }
   return {
     claim(seconds: number) {
-      io.hold(seconds);
       until = io.now() + seconds;
+      io.hold(seconds);
     },
     cue,
     /** Each frame: `live` while the show is still queued or playing; a dropped one cues at once. */
@@ -66,6 +69,5 @@ export function createShowCall(io: { hold(seconds: number): void; sound(): void;
       if (io.now() >= until) until = -1;
       else if (!live) cue();
     },
-    held: () => until >= 0,
   };
 }
