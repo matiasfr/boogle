@@ -10,9 +10,18 @@
 // anything yet and nothing prompts (call 22). Static geometry merged into one vertex-coloured mesh; the leaf, its bracket, the hammer's head and the board's
 // face are their own. Colliders: the ground's heightfield, the decks, ramps, platforms and yard, the leaf (kinematic).
 // Local: no state, no sync. Positions in world metres from (u, lat) metres via ringAt.
+// The furnishing (the folk, the RINGWORKS board, the works yard, the drop hammer, the works wall and mural, the
+// fingerpost, the map table and the summit lookout) is records (content/prefabs/ring-island.ts), standing where
+// content/levels/ring-island.ts puts them in the island's frames; their solids come on and off with the near view.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BODY, createBody, type Body, type Shape } from '../../physics/engine.ts';
+import { createOwnedView } from '../../render/owned-view.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
+import { definitions } from '../../prefab/catalogue.ts';
+import { loadLevelArtifact } from '../../prefab/validate.ts';
+import type { Json, JsonObject, Placement } from '../../prefab/types.ts';
+import level from '../../../content/built/levels/ring-island.json' with { type: 'json' };
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { getAudio } from '../../render/audio.ts';
 import { hearGain } from '../../render/hearing.ts';
@@ -83,7 +92,8 @@ const YAW = Math.atan2(0.0272, -1);
 /** The drop hammer (call 19): lift 0.6 s, a short hold, drop, thump, every 2.4 s; heard within 120 m. */
 const HAMMER = { cycle: 2.4, lift: 0.6, hold: 0.25, drop: 0.18, rise: 2.6, hear: 120 };
 
-// ---------------------------------------------------------------- colours (the greybox's)
+// ---------------------------------------------------------------- colours (the greybox's; the furnishing's records
+// carry their own, the same palette)
 const TIMBER = '#8a6a48',
   TIMBER_DARK = '#6a5038',
   STEEL = '#e8742c', // the folk's orange steel
@@ -94,21 +104,17 @@ const TIMBER = '#8a6a48',
   CONCRETE = '#a6a29a',
   SAND = '#d6c69c',
   PATH = '#c9b48a',
-  TARP = '#4f6b8a',
-  WHITE = '#f4f1e8',
-  FOLK = '#7a8f6a',
-  HAT = '#ff8a1f',
   LAND = '#4a4d5c', // buildFar's cones
   LAND2 = '#3b3e4c',
   ROCK = '#7d7a78', // the cuttings' faces
-  STONE = '#c4beb0', // the rim's marker rocks, paler than the cut rock behind them
-  SKY = '#8fc4e0',
-  NIGHT = '#2c2e3a';
+  STONE = '#c4beb0'; // the rim's marker rocks, paler than the cut rock behind them
 
-/** Geometry merged into one vertex-coloured mesh, and the solids beside it. */
+/** Geometry merged into one vertex-coloured mesh, and the solids beside it: `shapes` the island's own body's, `clearance`
+ * every fixed solid in build order, records' included (the mount clearance's order). */
 function createParts() {
   const list: THREE.BufferGeometry[] = [];
-  const shapes: Shape[] = [];
+  const shapes: Shape[] = [],
+    clearance: Shape[] = [];
   const colour = new THREE.Color();
   function add(color: string, geo: THREE.BufferGeometry, m?: THREE.Matrix4) {
     if (m) geo.applyMatrix4(m);
@@ -126,14 +132,16 @@ function createParts() {
       q = new THREE.Quaternion(),
       s = new THREE.Vector3();
     m.decompose(p, q, s);
-    shapes.push({
+    const shape: Shape = {
       kind: 'box',
       hx: w / 2,
       hy: h / 2,
       hz: d / 2,
       offset: { x: p.x, y: p.y, z: p.z },
       rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
-    });
+    };
+    shapes.push(shape);
+    clearance.push(shape);
   }
   const merged = () => {
     const geo = mergeGeometries(list);
@@ -141,7 +149,7 @@ function createParts() {
     list.length = 0;
     return geo;
   };
-  return { add, solid, shapes, merged };
+  return { add, solid, shapes, clearance, merged };
 }
 type Parts = ReturnType<typeof createParts>;
 
@@ -298,22 +306,6 @@ function builders({ add, solid }: Parts) {
           beam(RAIL, p3(u, t + r, y(u) + 0.22), p3(v, t + r, y(v) + 0.22), 0.12, 0.14, false);
       }
   }
-  /** A little folk figure: a body, a head and an orange hard hat; `wave` raises an arm. */
-  function folk(x: number, y: number, z: number, wave = false) {
-    add(FOLK, new THREE.CylinderGeometry(0.32, 0.38, 1.0, 8), tmp.makeTranslation(x, y + 0.5, z));
-    add(SAND, new THREE.SphereGeometry(0.3, 10, 8), tmp.makeTranslation(x, y + 1.3, z));
-    add(HAT, new THREE.CylinderGeometry(0.34, 0.38, 0.16, 10), tmp.makeTranslation(x, y + 1.55, z));
-    if (wave)
-      add(
-        FOLK,
-        new THREE.BoxGeometry(0.14, 0.75, 0.14),
-        new THREE.Matrix4().compose(
-          new THREE.Vector3(x + 0.42, y + 1.35, z),
-          new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -0.5)),
-          new THREE.Vector3(1, 1, 1),
-        ),
-      );
-  }
   /** A waist-high handrail with posts, from (u0, lat0) to (u1, lat1) with its foot at y0..y1. Visual only. */
   function handrail(u0: number, lat0: number, u1: number, lat1: number, y0: number, y1: number) {
     beam(STEEL, p3(u0, lat0, y0 + 1.05), p3(u1, lat1, y1 + 1.05), 0.07, 0.07, false);
@@ -368,7 +360,7 @@ function builders({ add, solid }: Parts) {
     post(TIMBER_DARK, c.x, c.z, -6, y - 0.5, 0.6, 0.6, false);
     handrail(u0, l1 - 0.05, u1, l1 - 0.05, y, y);
   }
-  return { tmp, beam, post, block, deck, track, folk, handrail, flight, landing };
+  return { tmp, beam, post, block, deck, track, handrail, flight, landing };
 }
 
 /** The leaf's local frame: +z along it from the heel toward the toe (toward Home when down), its top face at y 0. */
@@ -421,6 +413,156 @@ function boardTexture() {
   return tex;
 }
 
+/** The furnishing's placements (content/levels/ring-island.ts), authored in the island's frames. */
+const furnishing = loadLevelArtifact(level, definitions).placements;
+type Anchors = Readonly<Record<string, number>>;
+const object = (v: Json | undefined, what: string) => {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error(`ring island: ${what} expected`);
+  return v as JsonObject;
+};
+const finite = (v: Json | undefined, what: string) => {
+  if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`ring island: ${what} expected`);
+  return v;
+};
+/** A value in a frame: a number as is, or [from, ...add], `from` an anchor or a value, each add summed in order. */
+function value(v: Json | undefined, anchors: Anchors): number {
+  if (typeof v === 'number') return v;
+  if (!Array.isArray(v) || !v.length) throw new Error('ring island: expected a value');
+  const [from, ...add] = v as readonly Json[];
+  let n: number;
+  if (typeof from === 'string') {
+    if (!Object.hasOwn(anchors, from)) throw new Error(`ring island: no anchor ${from}`);
+    n = anchors[from]!;
+  } else n = value(from, anchors);
+  for (const a of add) n = n + value(a, anchors);
+  return n;
+}
+/** World poses for a furnishing placement: its frame's operands resolved on the island as it stands. */
+function resolvePlacement(
+  p: Placement,
+  frames: { halt: Anchors; brace: Anchors; summit: Anchors },
+  ground: (x: number, z: number) => number,
+  toward: (to: Json | undefined) => { x: number; z: number },
+): Placement {
+  const { place: authored, ...params } = p.params ?? {};
+  const place = object(authored, `${p.id} place`);
+  const frame = place.frame;
+  if (frame === 'map-table') {
+    const mc = RING_MAP_TABLE,
+      gorge = toward(place.gorge),
+      canopy = toward(place.canopy);
+    return {
+      id: p.id,
+      prefab: p.prefab,
+      pos: [mc.x, mc.top, mc.z],
+      params: { ...params, yaw: YAW, gorge: [gorge.x, gorge.z], canopy: [canopy.x, canopy.z] },
+    };
+  }
+  if (frame !== 'halt' && frame !== 'brace' && frame !== 'summit') throw new Error(`ring island: ${p.id} frame`);
+  let anchors: Anchors = frames[frame];
+  if (place.arch !== undefined) {
+    // A tile of the mural's arch: its middle, at angle PI * (from + span * k / steps).
+    const arch = object(place.arch, 'arch');
+    const a =
+      Math.PI *
+      (finite(arch.from, 'arch') + (finite(arch.span, 'arch') * finite(arch.k, 'arch')) / finite(arch.steps, 'arch'));
+    anchors = {
+      ...anchors,
+      'arch-u': finite(arch.u, 'arch') + Math.cos(a) * finite(arch.ru, 'arch'),
+      'arch-y': finite(arch.y, 'arch') + Math.sin(a) * finite(arch.ry, 'arch'),
+    };
+  }
+  /** (x, z) of a point: (u, lat) on the line, or (x, z) in the summit's frame. */
+  const xz = (q: JsonObject) =>
+    q.u !== undefined
+      ? at(value(q.u, anchors), value(q.lat, anchors))
+      : { x: value(q.x, anchors), z: value(q.z, anchors) };
+  /** An upright box turned to the line, from bottom to top: the greybox's post. */
+  const upright = (c: { x: number; z: number }, bottom: number, top: number, w: number, d: number): Placement => ({
+    id: p.id,
+    prefab: p.prefab,
+    pos: [c.x, (bottom + top) / 2, c.z],
+    rot: [YAW, 0, 0],
+    scale: [w, top - bottom, d],
+    params,
+  });
+  const span = (v: Json | undefined, ground?: number) => {
+    if (!Array.isArray(v) || v.length !== 2) throw new Error(`ring island: ${p.id} span`);
+    const with_ = ground === undefined ? anchors : { ...anchors, ground };
+    return [value(v[0], with_), value(v[1], with_)] as const;
+  };
+  if (place.block !== undefined) {
+    const b = object(place.block, 'block');
+    const [u0, u1] = span(b.u),
+      [l0, l1] = span(b.lat),
+      [bottom, top] = span(b.y);
+    return upright(at((u0 + u1) / 2, (l0 + l1) / 2), bottom, top, l1 - l0, u1 - u0);
+  }
+  if (place.post !== undefined) {
+    const q = object(place.post, 'post'),
+      c = xz(q);
+    const [bottom, top] = span(q.y, ground(c.x, c.z));
+    return upright(c, bottom, top, finite(q.w, 'post width'), finite(q.d, 'post depth'));
+  }
+  if (place.beam !== undefined) {
+    // A box from a to b (its centreline, its top at a.y and b.y), w wide and h deep: the greybox's beam. An end is
+    // `d` metres out from the summit's middle along (x, z) `along`.
+    const q = object(place.beam, 'beam');
+    const end = (e: JsonObject) => {
+      const along = e.along;
+      if (!Array.isArray(along)) throw new Error('ring island: beam end');
+      const ox = finite(along[0], 'along'),
+        oz = finite(along[1], 'along'),
+        n = Math.hypot(ox, oz),
+        d = finite(e.d, 'beam end');
+      const x = anchors.cx! + (ox / n) * d,
+        z = anchors.cz! + (oz / n) * d;
+      return { x, y: value(e.y, { ...anchors, ground: ground(x, z) }), z };
+    };
+    const a = end(object(q.a, 'beam a')),
+      b = end(object(q.b, 'beam b'));
+    const w = finite(q.w, 'beam width'),
+      h = finite(q.h, 'beam depth');
+    const dx = b.x - a.x,
+      dy = b.y - a.y,
+      dz = b.z - a.z,
+      len = Math.hypot(dx, dz),
+      full = Math.hypot(len, dy);
+    return {
+      id: p.id,
+      prefab: p.prefab,
+      pos: [(a.x + b.x) / 2, (a.y + b.y) / 2 - h / 2, (a.z + b.z) / 2],
+      rot: [Math.atan2(dx, dz), -Math.atan2(dy, len), 0],
+      scale: [w, h, full + 0.04],
+      params,
+    };
+  }
+  const point = object(place.at, `${p.id} at`),
+    c = xz(point);
+  const y = value(point.y, anchors);
+  const turn = place.turn;
+  let yaw: number | undefined;
+  if (turn === 'line') yaw = YAW;
+  // Its face to the west, toward the tracks (local +z along -lat).
+  else if (turn === 'west') yaw = Math.atan2(-1, -0.0272);
+  else if (turn !== undefined) {
+    const dir = toward(object(turn, 'turn').toward);
+    yaw = Math.atan2(-dir.z, dir.x);
+  }
+  return {
+    id: p.id,
+    prefab: p.prefab,
+    pos: [c.x, y, c.z],
+    ...(yaw === undefined ? {} : { rot: [yaw, 0, 0] as const }),
+    ...(p.prefab === 'ring.summit-deck'
+      ? { params: { ...params, yaw: YAW } }
+      : Object.keys(params).length
+        ? { params }
+        : {}),
+    ...(p.labels ? { labels: p.labels } : {}),
+  };
+}
+
 export type RingIslandView = ReturnType<typeof createRingIslandView>;
 /** The deck: the walk surface from a to b. The landing before a is the ground itself (ground.ts LANDING). */
 function bridgeWalkSurfaces(beam: ReturnType<typeof builders>['beam'], g: IslandGround) {
@@ -433,7 +575,58 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.9, flatShading: true });
   const parts = createParts();
   const b = builders(parts);
-  const { beam, post, block, deck, track, folk, flight, landing, handrail } = b;
+  const { beam, post, block, deck, track, flight, landing, handrail } = b;
+
+  // ---------------------------------------------------------------- the furnishing's records
+  // Instantiated off (no bodies) until the near view mounts: setMounted turns their solids on with the island's own.
+  const owner = createOwnedView();
+  const records: ReturnType<typeof instantiate>[] = [];
+  /** A world direction (x, z) from the halt's middle toward a world (x, z): where the branch read points. */
+  const haltMid = at((HALT[0] + HALT[1]) / 2, FORM.mid);
+  const toward = (to: Json | undefined) => {
+    if (!Array.isArray(to) || to.length !== 2) throw new Error('ring island: toward expected');
+    const dx = finite(to[0], 'toward') - haltMid.x,
+      dz = finite(to[1], 'toward') - haltMid.z,
+      n = Math.hypot(dx, dz);
+    return { x: dx / n, z: dz / n };
+  };
+  const frames = {
+    halt: {
+      start: HALT[0],
+      end: HALT[1],
+      east: RING_HALT.downLat[1] / 100,
+      west: RING_HALT.offsetLat[0] / 100,
+      deck: PLATFORM_Y,
+    },
+    brace: { u0: BRACE.u0, l1: BRACE.l1, top: BRACE.y },
+    summit: {} as Anchors,
+  };
+  const boardTex = boardTexture();
+  const board: { face?: THREE.Mesh } = {};
+  /** The RINGWORKS board's face: the record's label, painted here (the copy is the owner's). */
+  const makeLabel = (a: { w: number; h: number }) =>
+    (board.face = new THREE.Mesh(
+      new THREE.PlaneGeometry(a.w, a.h),
+      new THREE.MeshStandardNodeMaterial({ map: boardTex, roughness: 0.8 }),
+    ));
+  /** Instantiates the furnishing `which` picks, in its level order: static pieces into the island's one draw, solids
+   * beside its own in the mount clearance's order. */
+  function furnish(which: (p: Placement) => boolean) {
+    const made = furnishing.filter(which).map((p) => {
+      const record = instantiate(p.prefab, resolvePlacement(p, frames, g.islandH, toward), {
+        owner,
+        // The hammer's head moves every frame; everything else stands still.
+        still: p.prefab !== 'ring.hammer-head',
+        ...(p.prefab === 'ring.board-face' ? { makeLabel } : {}),
+      });
+      for (const piece of record.pieces) parts.add(piece.color, piece.geometry, piece.matrix);
+      parts.clearance.push(...record.solids);
+      records.push(record);
+      return record;
+    });
+    if (!made.length) throw new Error('ring island: no furnishing placed');
+    return made;
+  }
 
   // ---------------------------------------------------------------- the hinge pier, the brace platform, the steps
   for (const [u0, u1] of [
@@ -460,8 +653,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       false,
     );
     // One of the folk, waving you over (a looker, never Rivet: call 37).
-    const f = at(BRACE.u0 + 4, BRACE.l1 - 3);
-    folk(f.x, BRACE.y, f.z, true);
+    furnish((p) => p.id.startsWith('brace/'));
   }
   {
     // Steps from the platform's far end up to their deck (RING_STEPS), and a landing onto the deck's east edge.
@@ -538,151 +730,12 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     3,
     0.4,
   );
-  {
-    // The RINGWORKS board on the east platform, its face to the tracks.
-    const c = at(HALT[0] + 20, dnL1 - 0.3);
-    post(STEEL_DARK, c.x, c.z, PLATFORM_Y + 3.3, PLATFORM_Y + 4.7, 0.2, 5.2, false);
-    for (const du of [-2.3, 2.3]) {
-      const p = at(HALT[0] + 20 + du, dnL1 - 0.3);
-      post(RAIL, p.x, p.z, PLATFORM_Y, PLATFORM_Y + 3.4, 0.15, 0.15, false);
-    }
-  }
-  // The works yard east of the halt: its deck level with the east platform, the steel waiting under a tarp (finding 5),
-  // the drop hammer, and the works wall with the prophecy mural on its face to the halt.
-  block(CONCRETE, HALT[0] + 2, HALT[1], dnL1, 16, -1, PLATFORM_Y);
-  block(STEEL, HALT[0] + 3, HALT[0] + 15, 7.5, 13.5, PLATFORM_Y, PLATFORM_Y + 1.4);
-  block(TARP, HALT[0] + 2.6, HALT[0] + 15.4, 7.1, 13.9, PLATFORM_Y + 1.4, PLATFORM_Y + 1.9);
-  const hammerAt = { u: HALT[0] + 24, lat: 11 };
-  {
-    const { u, lat } = hammerAt;
-    block(STEEL_DARK, u - 1.2, u + 1.2, lat - 1.2, lat + 1.2, PLATFORM_Y, PLATFORM_Y + 0.6); // the anvil
-    for (const s of [-1, 1])
-      block(STEEL_DARK, u - 0.25, u + 0.25, lat + s * 1.9 - 0.25, lat + s * 1.9 + 0.25, PLATFORM_Y, PLATFORM_Y + 6);
-    block(STEEL_DARK, u - 0.3, u + 0.3, lat - 2.2, lat + 2.2, PLATFORM_Y + 6, PLATFORM_Y + 6.5);
-  }
-  {
-    // The works wall and the mural: the island under the ring, the line coming in from the south, a box on the line.
-    const u0 = HALT[1] - 12,
-      u1 = HALT[1] - 0.5,
-      face = 15.2;
-    block(CONCRETE, u0, u1, face, 16, PLATFORM_Y, PLATFORM_Y + 6.5);
-    const panel = (color: string, a0: number, a1: number, y0: number, y1: number, inset = 0.02) =>
-      block(color, u0 + a0, u0 + a1, face - inset - 0.03, face - inset, PLATFORM_Y + y0, PLATFORM_Y + y1, false);
-    panel(SKY, 0.6, 10.9, 1.2, 6.0);
-    panel(LAND, 2.0, 9.0, 1.2, 2.4, 0.04); // the island
-    panel(LAND2, 3.6, 7.0, 2.4, 3.3, 0.04);
-    for (let k = 0; k < 9; k++) {
-      // the ring overhead, as an arch of dark tiles
-      const a = Math.PI * (0.1 + (0.8 * k) / 8),
-        cu = 5.5 + Math.cos(a) * 3.4,
-        cy = 3.0 + Math.sin(a) * 2.6;
-      panel(NIGHT, cu - 0.35, cu + 0.35, cy - 0.3, cy + 0.3, 0.06);
-    }
-    panel('#7fd0ff', 5.2, 5.8, 4.4, 5.3, 0.08); // the shard
-    panel(STEEL, 0.6, 5.0, 1.4, 1.7, 0.06); // the line, coming in
-    panel(GOLD, 3.2, 3.9, 1.7, 2.3, 0.08); // the box on it
-  }
-  {
-    // The branch read (ruling 4), beside the west platform: a two-armed fingerpost with painted emblems only (the
-    // Gorge's fork, Canopy's tree; the names are the owner's), and the low map table with the branch lines dashed.
-    const halt = at((HALT[0] + HALT[1]) / 2, FORM.mid);
-    const toward = (x: number, z: number) => {
-      const dx = x - halt.x,
-        dz = z - halt.z,
-        n = Math.hypot(dx, dz);
-      return { x: dx / n, z: dz / n };
-    };
-    const GORGE = toward(-103, -1988),
-      CANOPY = toward(-1085, -313);
-    // It stands on the fill 1.3 m off the platform's west edge, not on the platform: its arms point west, away from
-    // the deck, so from the crossing ramp and the platform it stands left of the footbridge and no longer over it.
-    const fp = at(HALT[0] + 8, upL0 - 1.3);
-    post(TIMBER_DARK, fp.x, fp.z, g.islandH(fp.x, fp.z) - 0.3, PLATFORM_Y + 3.7, 0.28, 0.28, false);
-    for (const [dir, y, emblem] of [
-      [GORGE, 3.2, 'gorge'],
-      [CANOPY, 2.45, 'canopy'],
-    ] as const) {
-      const M = new THREE.Matrix4().compose(
-        new THREE.Vector3(fp.x, PLATFORM_Y + y, fp.z),
-        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, Math.atan2(-dir.z, dir.x)),
-        new THREE.Vector3(1, 1, 1),
-      );
-      const piece = (color: string, geo: THREE.BufferGeometry, x: number, py: number, z: number, rx = 0, rz = 0) =>
-        parts.add(
-          color,
-          geo,
-          new THREE.Matrix4().multiplyMatrices(
-            M,
-            new THREE.Matrix4().compose(
-              new THREE.Vector3(x, py, z),
-              new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, 0, rz)),
-              new THREE.Vector3(1, 1, 1),
-            ),
-          ),
-        );
-      piece(TIMBER, new THREE.BoxGeometry(2.3, 0.52, 0.08), 1.25, 0, 0);
-      piece(TIMBER, new THREE.ConeGeometry(0.37, 0.55, 4), 2.65, 0, 0, 0, -Math.PI / 2);
-      for (const s of [-1, 1]) {
-        const z = s * 0.06;
-        if (emblem === 'gorge') {
-          piece(GOLD, new THREE.BoxGeometry(0.06, 0.2, 0.02), 0.95, -0.1, z);
-          piece(GOLD, new THREE.BoxGeometry(0.06, 0.24, 0.02), 0.88, 0.1, z, 0, 0.5);
-          piece(GOLD, new THREE.BoxGeometry(0.06, 0.24, 0.02), 1.02, 0.1, z, 0, -0.5);
-        } else {
-          piece(TIMBER_DARK, new THREE.BoxGeometry(0.06, 0.2, 0.02), 0.95, -0.12, z);
-          piece(FOLK, new THREE.CylinderGeometry(0.17, 0.17, 0.02, 12), 0.95, 0.06, z, Math.PI / 2);
-        }
-      }
-    }
-    // Where it stands is state.ts's (the halt map lies over this paint from the rivet: railway/ring-map-table.ts).
-    const mc = RING_MAP_TABLE,
-      top = RING_MAP_TABLE.top;
-    parts.add(
-      TARP,
-      new THREE.BoxGeometry(mc.w, 0.08, mc.d),
-      new THREE.Matrix4().makeTranslation(mc.x, top + 0.04, mc.z),
-    );
-    for (const [x, z] of [
-      [-1.0, -0.8],
-      [1.0, -0.8],
-      [-1.0, 0.8],
-      [1.0, 0.8],
-    ] as const)
-      post(TIMBER_DARK, mc.x + x, mc.z + z, PLATFORM_Y, top, 0.12, 0.12, false);
-    const hx = 1.0,
-      hz = 0.35,
-      lay = 0.085;
-    const line = (color: string, dx: number, dz: number, len: number, dashed: boolean) => {
-      const rot = Math.atan2(-dz, dx);
-      const seg = dashed ? 0.12 : len;
-      for (let d = 0; d < len - 1e-6; d += dashed ? 0.2 : len) {
-        const l = Math.min(seg, len - d),
-          c = d + l / 2;
-        parts.add(
-          color,
-          new THREE.BoxGeometry(l, 0.02, 0.06),
-          new THREE.Matrix4().compose(
-            new THREE.Vector3(mc.x + hx + dx * c, top + lay + 0.01, mc.z + hz + dz * c),
-            new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, rot),
-            new THREE.Vector3(1, 1, 1),
-          ),
-        );
-      }
-    };
-    const station = (color: string, dx: number, dz: number, len: number) =>
-      parts.add(
-        color,
-        new THREE.CylinderGeometry(0.1, 0.1, 0.03, 12),
-        new THREE.Matrix4().makeTranslation(mc.x + hx + dx * len, top + lay + 0.015, mc.z + hz + dz * len),
-      );
-    line(WHITE, 0, -1, 1.2, false);
-    station(WHITE, 0, -1, 1.2);
-    line(STEEL, GORGE.x, GORGE.z, 1.4, true);
-    station(BED, GORGE.x, GORGE.z, 1.4);
-    line(FOLK, CANOPY.x, CANOPY.z, 2.05, true);
-    station(BED, CANOPY.x, CANOPY.z, 2.05);
-    station(GOLD, 0, 0, 0);
-  }
+  // The halt's furnishing: the RINGWORKS board's frame and legs on the east platform (its face is below, with the
+  // hammer's head), the works yard east of the halt with the steel waiting under a tarp (finding 5), the drop hammer,
+  // the works wall with the prophecy mural on its face to the halt, and the branch read (ruling 4) beside the west
+  // platform: the fingerpost and the low map table (where it stands is state.ts's; the halt map lies over its paint
+  // from the rivet: railway/ring-map-table.ts).
+  furnish((p) => p.id.startsWith('halt/') && p.prefab !== 'ring.hammer-head' && p.prefab !== 'ring.board-face');
 
   // ---------------------------------------------------------------- the run-off, the buffers and the end board
   // Not here since the greybox route (docs/plans/greybox-route.md, leg 1 step 4): line 2 runs on from WAY_END along
@@ -830,39 +883,12 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     // The box is inscribed in the drawn stone (test/ring-island-path.test.ts): nothing solid stands outside it.
     parts.solid(box.x, box.y, box.z, new THREE.Matrix4().compose(c, q, new THREE.Vector3(1, 1, 1)));
   }
-  const summit = g.islandH(CX, CZ) + 0.3;
-  {
-    parts.add(
-      CONCRETE,
-      new THREE.CylinderGeometry(6, 6.5, 1.2, 7),
-      new THREE.Matrix4().makeTranslation(CX, summit - 0.6, CZ),
-    );
-    parts.shapes.push({
-      kind: 'cylinder',
-      rTop: 6,
-      rBottom: 6.5,
-      h: 1.2,
-      segments: 7,
-      offset: { x: CX, y: summit - 0.6, z: CZ },
-    });
-    for (let i = 0; i < 14; i++) {
-      const a = (i / 14) * Math.PI * 2;
-      post(STEEL, CX + Math.cos(a) * 5.7, CZ + Math.sin(a) * 5.7, summit, summit + 1.1, 0.15, 0.15, false);
-    }
-    folk(CX + 2, summit, CZ - 1.5);
-    // A short ramp from the path's end up onto the deck, whose rim stands about 1.5 m over the slope.
-    const n = Math.hypot(4, 6),
-      ox = 4 / n,
-      oz = 6 / n;
-    const foot = { x: CX + ox * 11.5, z: CZ + oz * 11.5 };
-    beam(
-      CONCRETE,
-      { ...foot, y: g.islandH(foot.x, foot.z) + 0.15 },
-      { x: CX + ox * 5.2, y: summit, z: CZ + oz * 5.2 },
-      2.4,
-      0.4,
-    );
-  }
+  // The summit lookout: its deck, rail posts and one of the folk, and a short ramp from the path's end up onto the deck,
+  // whose rim stands about 1.5 m over the slope. The deck's top is `lift` over the ground at the island's middle.
+  const summitDeck = furnishing.find((p) => p.prefab === 'ring.summit-deck');
+  const summit = g.islandH(CX, CZ) + finite(object(summitDeck?.params?.place, 'summit deck').lift, 'summit lift');
+  frames.summit = { cx: CX, cz: CZ, top: summit };
+  furnish((p) => p.id.startsWith('summit/'));
 
   const shell = new THREE.Mesh(parts.merged(), material);
   shell.castShadow = shell.receiveShadow = true;
@@ -982,7 +1008,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     leafBody.quaternion.set(q.x, q.y, q.z, q.w);
   }
   poseLeaf();
-  const fixedClearance = parts.shapes.map((shape) => clearanceShape(shape));
+  const fixedClearance = parts.clearance.map((shape) => clearanceShape(shape));
   function clearPosition(position: THREE.Vector3Like) {
     poseLeaf();
     leaf.updateMatrix();
@@ -1017,26 +1043,13 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   }
 
   // ---------------------------------------------------------------- the drop hammer's head and the board's face
-  const hammerBase = p3(hammerAt.u, hammerAt.lat, PLATFORM_Y + 0.6);
-  const head = new THREE.Mesh(
-    new THREE.BoxGeometry(1.3, 1.1, 1.3),
-    new THREE.MeshStandardNodeMaterial({ color: RAIL, roughness: 0.6 }),
-  );
-  head.rotation.y = YAW;
-  head.castShadow = true;
-  root.add(head);
-  const boardTex = boardTexture();
-  const board = new THREE.Mesh(
-    new THREE.PlaneGeometry(4.9, 1.2),
-    new THREE.MeshStandardNodeMaterial({ map: boardTex, roughness: 0.8 }),
-  );
-  {
-    const c = p3(HALT[0] + 20, dnL1 - 0.42, PLATFORM_Y + 4.0);
-    board.position.set(c.x, c.y, c.z);
-    // its face to the west (toward the tracks): the plane's +z along -lat
-    board.rotation.y = Math.atan2(-1, -0.0272);
-  }
-  root.add(board);
+  // The head rests on the anvil and lifts from there (the hammer's records are the halt's furnishing, above); the face
+  // is the board's, its paint makeLabel's.
+  const [head] = furnish((p) => p.prefab === 'ring.hammer-head');
+  furnish((p) => p.prefab === 'ring.board-face');
+  if (!board.face || !head) throw new Error('ring island: no RINGWORKS board or hammer');
+  const hammerBase = head.root.position.clone();
+  root.add(owner.root);
 
   let lastPhase = 0;
   function thump(x: number, z: number) {
@@ -1074,10 +1087,14 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     root,
     bodies: [solids, ...groundBodies, leafBody] as readonly Body[],
     clearPosition,
+    /** The furnishing's solids come and go with the near view's own bodies (its meshes ride `root`). */
+    setMounted(on: boolean) {
+      for (const record of records) record.setEnabled(on);
+    },
     update(ctx: FrameCtx) {
       poseLeaf();
       const phase = ctx.elapsed % HAMMER.cycle;
-      head.position.set(hammerBase.x, hammerBase.y + 0.55 + hammerLift(phase), hammerBase.z);
+      head.root.position.set(hammerBase.x, hammerBase.y + hammerLift(phase), hammerBase.z);
       if (lastPhase < strike && phase >= strike) thump(hammerBase.x, hammerBase.z);
       lastPhase = phase;
     },
@@ -1088,7 +1105,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       });
       return {
         meshes,
-        solids: parts.shapes.length,
+        solids: parts.clearance.length,
         ground: { nx: g.nx, nz: g.nz, cell: g.cell, bounds: g.bounds },
         leaf: { ...ringIslandPose },
         summit: +summit.toFixed(2),
@@ -1101,8 +1118,8 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       material.dispose();
       disposeTiles();
       (groundMesh.material as THREE.Material).dispose();
-      (head.material as THREE.Material).dispose();
-      (board.material as THREE.Material).dispose();
+      (board.face?.material as THREE.Material | undefined)?.dispose();
+      owner.dispose();
       boardTex.dispose();
       leafParts.footings.dispose();
       pennant?.geometry.dispose();

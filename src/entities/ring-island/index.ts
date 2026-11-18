@@ -82,6 +82,8 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
         me.body.velocity.set(0, 0, 0);
       }
     }
+    // The furnishing's records turn their solids on with the island's own bodies (the spawn's).
+    v.setMounted(true);
     near = spawn({ kind: 'ring-island-near', mesh: v.root, bodies: v.bodies, update: (ctx) => v.update(ctx) });
     ringIslandNear.mounted = true;
     // The near ground is the hills now, cuttings and all: Place's cones (no cuttings, nothing solid) stand down.
@@ -91,6 +93,7 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
   const unmount = () => {
     if (near) despawn(near);
     near = null;
+    view?.setMounted(false);
     ringIslandNear.mounted = false;
     showFarHills(true);
   };

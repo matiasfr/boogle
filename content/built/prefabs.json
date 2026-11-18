@@ -2626,6 +2626,151 @@
         "none": true
       }
     },
+    "ring.board-face": {
+      "attach": {
+        "face": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 1.2,
+          "kind": "label",
+          "posts": "none",
+          "w": 4.9
+        }
+      },
+      "colliders": [],
+      "key": "ring.board-face",
+      "scope": "place",
+      "visual": {
+        "none": true
+      }
+    },
+    "ring.box": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "half": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "ring.box",
+      "scope": "place",
+      "visual": {
+        "builder": "ring.box",
+        "params": {}
+      }
+    },
+    "ring.box-drawn": {
+      "colliders": [],
+      "key": "ring.box-drawn",
+      "scope": "place",
+      "visual": {
+        "builder": "ring.box",
+        "params": {}
+      }
+    },
+    "ring.fingerpost-arm": {
+      "colliders": [],
+      "key": "ring.fingerpost-arm",
+      "scope": "place",
+      "visual": {
+        "builder": "ring.fingerpost-arm",
+        "params": {
+          "dark": "#6a5038",
+          "gold": "#ffc83a",
+          "leaf": "#7a8f6a",
+          "timber": "#8a6a48"
+        }
+      }
+    },
+    "ring.folk": {
+      "colliders": [],
+      "key": "ring.folk",
+      "scope": "place",
+      "visual": {
+        "builder": "ring.folk",
+        "params": {
+          "body": "#7a8f6a",
+          "hat": "#ff8a1f",
+          "head": "#d6c69c",
+          "wave": false
+        }
+      }
+    },
+    "ring.hammer-head": {
+      "colliders": [],
+      "key": "ring.hammer-head",
+      "scope": "place",
+      "visual": {
+        "builder": "ring.hammer-head",
+        "params": {
+          "color": "#3d3a38"
+        }
+      }
+    },
+    "ring.map-table": {
+      "colliders": [],
+      "key": "ring.map-table",
+      "scope": "place",
+      "visual": {
+        "builder": "ring.map-table",
+        "params": {
+          "canopyColor": "#7a8f6a",
+          "d": 2,
+          "gorgeColor": "#e8742c",
+          "here": "#ffc83a",
+          "home": "#f4f1e8",
+          "legColor": "#6a5038",
+          "legs": 0.95,
+          "stop": "#5d5650",
+          "top": "#4f6b8a",
+          "w": 2.4
+        }
+      }
+    },
+    "ring.summit-deck": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            -0.6,
+            0
+          ],
+          "h": 1.2,
+          "rBottom": 6.5,
+          "rTop": 6,
+          "segments": 7,
+          "shape": "cylinder"
+        }
+      ],
+      "key": "ring.summit-deck",
+      "scope": "place",
+      "visual": {
+        "builder": "ring.summit-deck",
+        "params": {
+          "deck": "#a6a29a",
+          "post": "#e8742c",
+          "posts": 14,
+          "rail": 5.7,
+          "rise": 1.1
+        }
+      }
+    },
     "roundhouse.bay": {
       "colliders": [
         {

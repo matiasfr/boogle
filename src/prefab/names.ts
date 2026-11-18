@@ -77,6 +77,12 @@ export const names: NameRegistry = {
     'lookout.telescope',
     'lookout.buoy',
     'lookout.buoy-top',
+    'ring.box',
+    'ring.folk',
+    'ring.fingerpost-arm',
+    'ring.map-table',
+    'ring.summit-deck',
+    'ring.hammer-head',
   ],
   interactions: [
     'railway.request-stop',

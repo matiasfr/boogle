@@ -24,6 +24,7 @@ import type { Body } from '../src/physics/engine.ts';
 import { treeColliderCase } from './helpers/tree-collider-case.ts';
 import { capturePoisAfter, sameTurns } from './helpers/poi-golden.ts';
 import { captureLookoutAfter } from './helpers/lookout-golden.ts';
+import { captureRingAfter } from './helpers/ring-island-golden.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 const { loadLevel } = await import('../dev/level/level.ts');
 
@@ -201,4 +202,22 @@ test('POI parts, poses, colliders and lights match the pre-record code', async (
 test('lookout meshes, buoys, colliders, footprint and view match the pre-record code', async () => {
   const actual = JSON.parse(JSON.stringify(await captureLookoutAfter()));
   prefabGolden(actual, JSON.parse(fs.readFileSync('test/fixtures/prefab-lookout.json', 'utf8')), 'lookout');
+});
+
+// Step 13 (Ring Island): the fixture was captured on the pre-record code (captureRingBefore, in the commit "Capture the
+// Ring Island world golden before the record conversion") and is never rewritten. Runtime values use the shared
+// tolerance; piece matrices are full precision, before Float32 quantization, and boxes read as unit boxes times size.
+test('Ring Island pieces, poses, colliders, clearance and frames match the pre-record code', async () => {
+  const actual = JSON.parse(JSON.stringify(await captureRingAfter()));
+  prefabGolden(actual, JSON.parse(fs.readFileSync('test/fixtures/prefab-ring-island.json', 'utf8')), 'ring');
+  // The map table's size repeats state.ts's RING_MAP_TABLE (content may not import src/entities/).
+  const { RING_MAP_TABLE } = await import('../src/entities/ring-island/state.ts');
+  const { RING_HALT } = await import('../src/sim/railway-ring-layout.ts');
+  const { definitions } = await import('../src/prefab/catalogue.ts');
+  const table = definitions['ring.map-table']!.visual;
+  assert.ok('builder' in table);
+  assert.deepEqual(
+    [table.params.w, table.params.d, table.params.legs],
+    [RING_MAP_TABLE.w, RING_MAP_TABLE.d, +(RING_MAP_TABLE.top - (RING_HALT.y / 100 + 0.9)).toFixed(9)],
+  );
 });

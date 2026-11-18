@@ -669,3 +669,43 @@ pixels are identical, only the animated water and flowers differ; Look through i
 Left in this area: the site footprint (`addFoot`, a clearance rule, not a solid), the buoys' bob and lift, and the
 telescope's panel and camera stay view code. Left in step 13: Ring Island, the mushroom stall, secrets. Not tested on a
 device.
+
+### Step 13, third area as built: Ring Island's furnishing
+
+Ring Island's fixed furnishing is records (`src/content/prefabs/ring-island.ts`; builders
+`src/prefab/builders/ring-island.ts`): `ring.box` and `ring.box-drawn` (a unit cube of the island's greybox, solid or
+drawn only, sized by the placement's scale, as `greybox.box`), the folk, a fingerpost arm with its emblem, the low map
+table, the summit deck with its rail posts and seven-sided collider, the drop hammer's head (its own mesh) and the
+RINGWORKS board's face (a label whose paint and copy stay in the view). `src/content/levels/ring-island.ts` places 36
+things in the island's frames as authored operands: the halt (u from its ends, lat from the platforms' outer edges, y
+over the platforms), the brace platform, the summit (from the island's middle, `lift` over the ground) and the map
+table's spot (state.ts's RING_MAP_TABLE, which the halt map also reads). The view resolves them on load, merges their
+pieces into its one draw in the old order and turns their solids on and off with the near view (`setMounted`, from
+index.ts's mount and unmount). The mount clearance reads the records' world solids (`instantiate`'s new `solids`)
+in the old order, through the same `clearanceShape` and `siteExit`. Records 294 → 302, levels 23 → 24.
+
+Converted: the waving folk on the brace platform; the RINGWORKS board (frame, legs, face); the works yard (deck,
+steel, tarp); the drop hammer (anvil, uprights, crossbar, head); the works wall and its 15 mural panels; the
+fingerpost (post, two arms); the map table; the summit lookout (deck, rail posts, folk, ramp).
+
+Proof: `test/fixtures/prefab-ring-island.json` was captured from the unconverted view (commit "Capture the Ring Island
+world golden before the record conversion") and passes unchanged: 12,107 values (every merged piece's geometry,
+full-precision world matrix and colour, a box read as a unit box times its size; every other mesh's pose and
+material; all 88 world colliders; where the mount clearance puts a player standing in each of the 83 fixed colliders (heightfields aside) and
+two open spots; and ten frames of the hammer, its thump and the leaf lowered with two footings), max deviation
+1.1e-13 m against the 1e-9 tolerance. The old source re-run through the final helper reproduces the fixture exactly.
+Opened before/after stills of the works yard (`ring-folk.ts` eval, `stare`, seed `ring-joined`) match
+([stills](../world/prefab-ring-island/)): the drop hammer and its head, the mural, the tarp and the yard are
+pixel-identical; only the animated sea foam and the moving folk differ (309 of 900,000 pixels). The board, fingerpost,
+map table and summit were not photographed; the golden holds them.
+
+Left in this area: the island's massing stays view code over the island's own compound body: the hinge pier, the
+pennant pole's footing, the brace platform, its pier, handrail and gold strut, the steps, the sea ramps' flights and
+landings (RING_RAMPS), the Pilgrims' Way's deck, track, posts, rails and piers, the halt's platforms, landings and
+ramps, the foot crossing's planks, bed and slab, the west platform's ramp to the path, the crossover's rails, the
+summit path's beams, the footbridge (deck, trail and landing surface, parapets, abutments, bents) and the rim rocks.
+Most are generated from sim catalogs (RING_*), path.ts or the ground; their placements would be generated, as the
+halts' are. The leaf and its footings (kinematic), the pennant (the far view's one definition), the ground and its
+heightfield, and the hammer's lift and thump stay as they are. The view's colliders-from-records debt entry stays (9):
+the island's own body, the ground tiles and the leaf still call `createBody`. Left in step 13: the rest of Ring
+Island, the mushroom stall, secrets. Not tested on a device.
