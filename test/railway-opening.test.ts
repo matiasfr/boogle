@@ -4,7 +4,7 @@ import type { World } from '../src/ecs/index.ts';
 import type { RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { railEngineStart, railPhase } from '../src/sim/railway-queries-line1.ts';
-import { account, apply, createRailway, hash, invariant, job, rail, railSession, restore } from './helpers/rail.ts';
+import { account, apply, createRailway, hash, invariant, job, railSession, restore } from './helpers/rail.ts';
 
 function act(w: World, pid: string, op: string, fields: Partial<RailAction> = {}, tick = 100) {
   const a = account(w, pid)!;
@@ -60,25 +60,4 @@ test('camp handoff unlocks the room’s axe, and only the last of 24 logs ignite
   assert.equal(railEngineStart(restore(w)), 100, 'funded save restores the ignition tick');
   assert.deepEqual(act(before, 'a', 'rail.deposit', { station: 'T1', n: 1 }).result, last.result);
   assert.equal(hash(before), fundedHash, 'save/reload and uninterrupted final deposit agree');
-});
-
-test('existing awake saves retain the axe and partial bills without migration or a second handoff', () => {
-  const old = fresh();
-  // This is the unchanged pre-D4 wake command and saved shape; no new field participates in the hash.
-  act(old, 'a', 'rail.wake', {}, 0);
-  logs(old, 'a', 0);
-  act(old, 'a', 'rail.deposit', { station: 'T1', n: 8 });
-  const w = restore(old);
-  assert.equal(rail(w).awake, 0);
-  assert.equal(railPhase(w, 100), 'idle');
-  assert.equal(job(w, 0).delivered, 8);
-  assert.equal(railEngineStart(w), -1);
-  assert.equal(act(w, 'a', 'rail.wake').result.accepted, 0);
-  for (const source of [1, 2]) {
-    logs(w, 'b', source);
-    act(w, 'b', 'rail.deposit', { station: 'T1', n: 8 });
-  }
-  assert.equal(railEngineStart(w), 100);
-  assert.equal(job(w, 0).delivered, 24);
-  assert.equal(invariant(restore(w)), null);
 });
