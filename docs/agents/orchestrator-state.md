@@ -10,7 +10,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Prefab data step 13, first area: `src/pois/` (lighthouse, windmills, caves) become records, poses and colliders unchanged | Prefab data (P2) | `claude/prefab-pois` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 10:36 | building (browser: stills) |
 | Cutscenes for everyone step 1: a friend's own card for every shared item (`ability-arrival.ts`, `reward.ts`, `tools.ts`) | Cutscenes for everyone (P2) | `claude/cutscenes-friend-card` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 11:45 | building (browser: a two-player look) |
 | Gold outlines and the house gold ghost at half opacity with a slow pulse (`src/render/ghost-outline.ts`, `src/entities/town/plots.ts`) | Gold ghosts and dashed gold outlines (P2) | `claude/gold-outline-pulse` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 11:45 | building (browser: stills) |
 | Separate capacities, steps 1 to 4 as one batch (world v60); step 4 waits for the cutscenes job's `ability-arrival.ts` to land | Separate capacities (P2) | `claude/separate-capacities` | the heartbeat (HOTBOX), Claude Opus high delegate | 18 November 11:45 | building (steps 1 to 3 first) |
