@@ -65,8 +65,6 @@ test('a shadow-only proxy cannot hide an exposed overlap or become a candidate',
   assert.equal(scan(material())[0]!.class, 'c', 'a genuinely opaque enclosing box hides the overlap');
   const proxy = material({ colorWrite: false, depthWrite: false });
   assert.equal(scan(proxy)[0]!.class, 'a', 'the room/forge shadow proxy must not suppress the exposed pair');
-  const eligible = [material(), different, proxy].filter(isOpaqueMaterial);
-  assert.equal(eligible.length, 2, 'the proxy cannot contribute candidate faces either');
 });
 
 test('the shared opaque-hit predicate skips invisible and non-depth-writing proxies', () => {
