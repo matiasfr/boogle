@@ -357,12 +357,20 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     rack.setStock(rackLogs, stoneRack);
   }
 
+  const treePoses = new Map<TreePose, number>();
+  let refitTrees = false;
+  function flushTreePoses() {
+    for (const [tree, now] of treePoses) models.pose(tree, now, !refitTrees);
+    if (refitTrees) models.upload();
+    treePoses.clear();
+    refitTrees = false;
+  }
   function reconstruct() {
     harvestFlights = [];
     pileFlights.length = 0;
     swing.t = 99;
-    for (const tree of trees) fromState(tree, false);
-    models.upload();
+    for (const tree of trees) fromState(tree);
+    flushTreePoses();
     drawPiles();
   }
   // The prow cannot support the old fixed eastward fall. Use the same authored-ground search on chop and reload.
@@ -372,7 +380,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     tree.collapsed = fall.collapsed;
   }
   // A tree's stable pose from the state it reads (no harvest, no effect).
-  function fromState(tree: TreePose, upload = true) {
+  function fromState(tree: TreePose) {
     const k = sourceIndex.get(tree.index);
     const row = k === undefined ? undefined : treeRow(world(), k);
     tree.work = row ? row.work : 0;
@@ -397,7 +405,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       greatFallPose(tree);
     }
     tree.shake = 0;
-    models.pose(tree, 0, upload);
+    refitTrees = true;
+    treePoses.set(tree, 0);
     solid(tree);
   }
 
@@ -513,7 +522,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         tree.fall = 0;
         greatFallPose(tree);
       }
-      models.pose(tree, tree.hitAt);
+      treePoses.set(tree, tree.hitAt);
       solid(tree);
       return;
     }
@@ -569,7 +578,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       thump(tree.x, tree.z);
       landed = 0;
     }
-    models.pose(tree, tree.hitAt);
+    treePoses.set(tree, tree.hitAt);
   }
 
   // A predicted action that gave pieces back (replication R1b; Local presentation): they lift off your back and arc to
@@ -593,7 +602,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       fromState(tree);
       tree.shake = 1;
       tree.hitAt = performance.now();
-      models.pose(tree, tree.hitAt);
+      treePoses.set(tree, tree.hitAt);
       home = homeAt.set(tree.x, tree.y + 1.1, tree.z);
     } else if (e.op === 'rail.mine') home = cargo.rocks.find((row) => row.id === e.id)?.at ?? null;
     else if (e.op === 'rail.rackTake') home = kind === 'stone' ? rack.stoneAt : rack.logBase;
@@ -679,6 +688,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         k !== undefined ? treeRow(world(), k).left : h !== undefined ? hardwoodRow(world(), h).left : undefined;
       if (left !== undefined && tree.issued !== tree.ceiling - left) fromState(tree);
     }
+    flushTreePoses();
     drawPiles();
   });
   reconstruct();
@@ -746,7 +756,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     pieces.dustRing(x, y - 0.5, z, 5, 0.7, 0.16);
     tree.shake = 0.35;
     tree.hitAt = performance.now();
-    models.pose(tree, tree.hitAt);
+    treePoses.set(tree, tree.hitAt);
   }
   function update(dt: number, now: number) {
     beginFrame();
@@ -763,7 +773,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       tree.fallYaw = row.yaw;
       tree.collapsed = row.fell;
       tree.shake = 0;
-      models.pose(tree, now);
+      refitTrees = true;
+      treePoses.set(tree, now);
       solid(tree);
     }
     cargo.update();
@@ -808,7 +819,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     for (const tree of trees) {
       if (tree.shake > 0) {
         tree.shake = Math.max(0, tree.shake - dt * 3.2);
-        models.pose(tree, now);
+        treePoses.set(tree, now);
       }
       if (tree.fall >= 0 && tree.fall < 0.8) {
         tree.fall += dt;
@@ -826,9 +837,10 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           solid(tree);
           shedTreeCrown(tree);
         }
-        models.pose(tree, now);
+        treePoses.set(tree, now);
       }
     }
+    flushTreePoses();
   }
 
   function targets(): Interactable[] {
