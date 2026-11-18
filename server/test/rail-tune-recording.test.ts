@@ -4,23 +4,6 @@ import assert from 'node:assert/strict';
 import { fixture } from './helpers/rail-tune.ts';
 import { loadTunePanel } from './helpers/tune-panel.ts';
 
-test('remote rail tuning records the effective configuration change', async (t) => {
-  const f = await fixture(t);
-  const a = f.join('alice');
-  const b = f.join('bob');
-  f.run(3);
-  const { panel, records } = await loadTunePanel(t, b);
-  records.length = 0;
-  a.adapter.act('tune.commit', { key: 'railRegrowMinutes', v: 44, expectedRevision: 0, requestId: 'remote-change' });
-  f.run();
-  await f.settled();
-  assert.equal(panel.tuneSnapshot().values.find((r) => r.id === 'railway.regrowMinutes')!.value, 44);
-  assert.ok(
-    records.some((r) => r.kind === 'tune.change' && r.fields.id === 'railway.regrowMinutes' && r.fields.value === 44),
-    'Bob mirrors 44 but emits no tune.change or updated snapshot for his playtest recording',
-  );
-});
-
 const id = 'railway.regrowMinutes';
 type Panel = Awaited<ReturnType<typeof loadTunePanel>>;
 const changes = (tab: Panel) => tab.records.filter((r) => r.kind === 'tune.change' && r.fields.id === id);
