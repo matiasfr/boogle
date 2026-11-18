@@ -83,6 +83,30 @@ if (second && q.get('report')) {
     );
   })();
 }
+// ?claim=pack|axe (with --players 2, ?claim2= for player 2): this page opens that reward 2 s on, from where it stands,
+// and 7 s later reports the card, the friend's flourish and both backs (the plan's shared-claim check).
+const claim = q.get(second ? 'claim2' : 'claim');
+if (claim === 'pack' || claim === 'axe') {
+  const { inspectRailway, rw } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
+  const { rail } = (await import(
+    '/src/sim/railway-rows.ts' as string
+  )) as typeof import('../../../src/sim/railway-rows.ts');
+  void (async () => {
+    await wait(2000);
+    const sent = claim === 'pack' ? railwayCommands()!.openPack() : railwayCommands()!.openAxe();
+    let card = false;
+    const end = performance.now() + 7000;
+    while (performance.now() < end) {
+      card ||= !!inspectRailway()!.reward.showing;
+      await wait(100);
+    }
+    const r = inspectRailway()!.reward;
+    console.log(
+      `FORGE LOOK player ${second ? 2 : 1} opened the ${claim} (sent ${sent}): card ${card}; flourishes ${JSON.stringify(r.arrival.keys)}; ` +
+        `pack ${rail(rw()).pack} axe ${rail(rw()).axe}; frames worn ${r.tools.packFramesWorn}`,
+    );
+  })();
+}
 // A lost pointer lock opens the pause menu over the shot: close it, and keep it out of the picture.
 ((await import('/src/features/pause.ts' as string)) as { closePause(): void }).closePause();
 const style = document.createElement('style');
