@@ -260,7 +260,7 @@ test('works host: an aged footing pile with nobody near goes back to the Works r
   }
 });
 
-test("works host: a leaver's footing waits out the grace, then goes back to the Works rack", async () => {
+test('works host: a briefly returning footing carrier gets a fresh grace; the rack return survives restart', async () => {
   // The reviewer's case: the kiln casts exactly the sixteen the sites need, so a footing kept by a leaver would stop
   // the pier at eleven for good.
   const r = await host('leaver', fixture('wagon-on'));
@@ -274,9 +274,8 @@ test("works host: a leaver's footing waits out the grace, then goes back to the 
     r.later(grace());
     await r.ticks(3);
     assert.equal(foot(), 1, 'back in a new session: still on their back');
-    r.h.depart('s');
-    await r.ticks(5);
-    assert.equal(foot(), 1, 'an absent carrier keeps it through the grace');
+    await briefReturn(r);
+    assert.equal(foot(), 1, 'the second absence has its own grace');
     const before = { ...now() };
     r.later(grace());
     await r.ticks(3);
@@ -292,32 +291,6 @@ test("works host: a leaver's footing waits out the grace, then goes back to the 
   }
 });
 
-test('works host: a carrier back for less than a rule tick still gets a fresh grace', async () => {
-  const r = await host('brief', fixture('wagon-on'));
-  try {
-    const now = () => works(r.w);
-    const foot = () => account(r.w, 'a')!.foot;
-    const grace = () => r.h.rules.railTune.get('railBeamGraceS') * 1000;
-    assert.equal(await r.action({ op: 'rail.footTake', rack: 0 }, spot(WORKS_RACK)), 'accepted');
-    r.h.depart('s');
-    await r.ticks(1);
-    r.later(grace() - 1000);
-    // Back in a new session and gone again (a newer tab took over) before any rule tick saw them.
-    r.h.deliver({ t: 'r:open' }, 's');
-    r.h.depart('s');
-    r.later(1500);
-    await r.ticks(1);
-    assert.equal(foot(), 1, 'the second absence has its own grace');
-    const before = { ...now() };
-    r.later(grace());
-    await r.ticks(1);
-    assert.equal(foot(), 0);
-    assert.equal(now().rack, before.rack + 1 + now().poured - before.poured);
-    assert.equal(footingTotal(r.w), now().poured);
-  } finally {
-    await r.done();
-  }
-});
 type Host = Awaited<ReturnType<typeof host>>;
 /** Away almost the whole grace, then back in a new session (r:open) and gone again before any rule tick saw them. */
 async function briefReturn(r: Host) {
