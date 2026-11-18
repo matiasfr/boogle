@@ -1,15 +1,19 @@
 // src/player/reach.ts: a box up on a ledge is in reach from the ledge and from beside it at its height, not from the ground
 // under it (owner, 10 November 2026: the mossy scarf opened from the ground under the lookout).
+import '../dev/sim/hooks.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { secretsBindings, secretsSource } from './helpers/secrets-golden.ts';
+import { sourceModule } from '../dev/level/source.ts';
 import { inReach } from '../src/player/reach.ts';
 import { PLAYER_R } from '../src/constants.ts';
 import { padById } from '../src/place/tech-layout.ts';
 
 const REACH = 3.4;
-// The lookout's box on its top; the ground round it is 17.46 (tech-layout.ts, the lookout secret's `from`).
+// The lookout's box on its top; the ground round its block is 17.03 to 17.12 (measured 18 November 2026; the lookout
+// secret's `from` once said 17.46).
 const top = padById('lookout').top,
-  ground = 17.46,
+  ground = 17.05,
   box = { x: -134, y: top, z: -119 };
 const standing = (x: number, feet: number, z: number) => ({ x, y: feet + PLAYER_R, z });
 
@@ -45,7 +49,8 @@ const APEX = 1.68;
 test('a raised box, at the top of one jump from the ground beside its block: not offered', () => {
   for (const d of [0.9, 1.5, 2.5, 3.3])
     assert.ok(!inReach(standing(box.x + d, ground + APEX, box.z), box, REACH, top), `${d} m out`);
-  assert.ok(inReach(standing(box.x + 0.9, ground + APEX, box.z), box, REACH), 'the ground rule would offer it');
+  // 3.3 m out the ground rule allows 0.6 + 0.3 × 3.3 = 1.59 m under the box; a jump's top is 1.27 m under it.
+  assert.ok(inReach(standing(box.x + 3.3, ground + APEX, box.z), box, REACH), 'the ground rule would offer it');
 });
 test('a raised box, from its ledge or just under it: offered; any lower: not, however far out', () => {
   assert.ok(inReach(standing(box.x + 1.5, top, box.z), box, REACH, top), 'on the pad');
@@ -60,4 +65,22 @@ test('a tower box on its plinth, a metre over the slab it is opened from: offere
     plinthed = { x: 0, y: slab + 1, z: 0 };
   for (const d of [1.1, 1.5, 3.3]) assert.ok(inReach(standing(d, slab, 0), plinthed, REACH, slab), `${d} m out`);
   assert.ok(!inReach(standing(1.5, slab - 0.5, 0), plinthed, REACH, slab), 'half a metre under the slab');
+});
+test('the view gives each raised box its ledge: its pad, or for the tower two the slab under the plinth', async () => {
+  const c = await secretsBindings();
+  type Built = { ledges(): Record<string, number> };
+  const { createSecretsView } = sourceModule<{ createSecretsView(owner: unknown, store: unknown): Promise<Built> }>(
+    secretsSource(),
+    c.bindings,
+  );
+  const view = await createSecretsView(c.createOwnedView(), c.store);
+  assert.deepEqual(view.ledges(), {
+    lookout: 20,
+    alcove: 12,
+    firstpull: 24,
+    nook: 63,
+    loft: 28.4,
+    balcony: 24.4,
+    stack: 15,
+  });
 });

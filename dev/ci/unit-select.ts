@@ -82,6 +82,10 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     reaches: ['src/entities/finds/secrets-view.ts'],
     why: 'builds the secrets view from its source, its lazy imports routed to stand-ins (the golden)',
   },
+  'test/reach.test.ts: sourceModule': {
+    reaches: ['src/entities/finds/secrets-view.ts'],
+    why: "builds the secrets view from its source (the golden's bindings) to read each raised box's ledge",
+  },
   'test/prefab-seats.test.ts: sourceModule': {
     reaches: ['src/entities/railway/track-machine.ts', 'src/entities/railway/train-view.ts'],
     why: 'executes the seat construction blocks selected from these source-owned boundaries',

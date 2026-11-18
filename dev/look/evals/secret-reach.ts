@@ -72,7 +72,9 @@ for (const s of SECRETS) {
   );
 }
 // The real body, dropped beside each raised box from 8 sides, 1.4 m out: where it lands, and whether it's offered there.
+// Fails (after printing every box) when a raised box has no landing on its ledge, or a landing on it isn't offered Open.
 const body = me.body;
+const failed: string[] = [];
 for (const s of SECRETS) {
   const ledge = ledges[s.id],
     box = boxes.find((b) => b.id === s.id)?.world;
@@ -97,7 +99,11 @@ for (const s of SECRETS) {
   console.log(
     `PLAY reach drop ${s.id} ${box.waiting ? 'waiting' : 'not waiting'} ledge ${ledge.toFixed(2)}: ${offeredOnLedge} of ${onLedge} landings on the ledge offered (side:feet±offered ${rows.join(' ')})`,
   );
+  if (!onLedge) failed.push(`${s.id}: no landing on its ledge ${ledge.toFixed(2)}`);
+  else if (offeredOnLedge < onLedge)
+    failed.push(`${s.id}: ${onLedge - offeredOnLedge} of ${onLedge} landings on its ledge not offered`);
 }
+if (failed.length) throw new Error(`secret-reach: ${failed.join('; ')}`);
 // Keep the player's own camera, so the still shows the prompt (or none) as you'd see it.
 window.__debugCam!.set = () => {};
 const spot = new URLSearchParams(location.search).get('spot') ?? 'ground';

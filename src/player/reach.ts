@@ -1,7 +1,8 @@
 // Is a thing that stands somewhere in reach of you? The reach across stays as generous as ever, but you have to be up at
 // its level: a box on a ledge isn't in reach from the ground under the ledge (owner, 10 November 2026, the mossy scarf
-// opened from the ground under the lookout), nor from the top of one jump beside it when it is meant to need two (G27,
-// 18 November 2026: Grant opened it so; docs/plans/grant-c8-batch.md). Pure: test/reach.test.ts.
+// opened from the ground under the lookout), nor from the top of one jump beside it when it is meant to need two (G27:
+// Grant opened it so in his 14 November 2026 playtest; fixed 18 November, docs/plans/grant-c8-batch.md). Pure:
+// test/reach.test.ts.
 import { PLAYER_R } from '../constants.ts';
 
 export const LEVEL = {
