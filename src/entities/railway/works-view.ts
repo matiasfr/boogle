@@ -341,7 +341,9 @@ export async function createRailwayWorks(
   // from the table's centre and edge-on to both roads, so it faces the walk round the table from the forge rack.
   const tableAt = { x: home.TABLE.x + layout.ORIGIN.x, z: home.TABLE.z };
   const forgeRack = { x: LINE2_FORGE.rackX / 100, z: LINE2_FORGE.rackZ / 100 };
-  const forgeRackY = H(forgeRack.x, forgeRack.z);
+  const forgeRackY = H(forgeRack.x, forgeRack.z),
+    rackCos = Math.cos(layout.RACK.yaw),
+    rackSin = Math.sin(layout.RACK.yaw);
   const billRadius = (home.TABLE.r + 0.6 + home.STALLS.door) / 2;
   const halfBay = (home.STALLS.bearings[1]! - home.STALLS.bearings[0]!) / 2;
   const stallBillAt = [-halfBay, halfBay]
@@ -617,7 +619,9 @@ export async function createRailwayWorks(
       goldMote(h.x, h.y + 0.5, h.z, rockSide, 0.14);
       return;
     }
-    goldMote(forgeRack.x + (Math.random() - 0.5) * 2.2, forgeRackY + 1.2, forgeRack.z, rockSide, 0.3);
+    // Spread along the rack's length (it stands square to the station's axis).
+    const r = (Math.random() - 0.5) * 2.2;
+    goldMote(forgeRack.x + r * rackCos, forgeRackY + 1.2, forgeRack.z - r * rackSin, rockSide, 0.3);
   }
   function drawGhosts() {
     const k = worksRow(wd),

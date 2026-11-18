@@ -260,15 +260,19 @@ export async function createRailwayLine2(
     return out.set(RX + across * rackCos, RY + 0.46 + Math.floor(k / 8) * 0.19, RZ - across * rackSin);
   };
   const rackFrom = new THREE.Vector3(RX, RY + 1.6, RZ);
+  // The pour, mouth to rack: 16.2 m across road 1, the apron and the cart at its forge stop, high and slow enough to
+  // read and to clear heads and the cart's load.
+  const POUR_FLIGHT = { dur: 0.9, apex: 2.4 };
   // The rack's board (docs/plans/forge-call-handoff.md, step 3): while a part waits on the pedestal it shows that part
   // in the gold dashes of the old train's saddle and station 6's sign. On its own post off the rack's end nearer the
   // pedestal, its faces square to the way there, so it is read coming from the pedestal and from the rack's far side.
+  // Along the rack's length ((cos, -sin) of its yaw is the station's axis), not straight toward the pedestal: that
+  // would stand it between the cart's stop and the rack.
   const rackSign = stockSign(owner, 'boiler');
   {
     const dx = LINE2_BOILER.x / 100 - RX,
-      dz = LINE2_BOILER.z / 100 - RZ,
-      d = Math.hypot(dx, dz) || 1;
-    rackSign.board.position.set(RX + (dx / d) * 2.3, 0, RZ + (dz / d) * 2.3);
+      dz = LINE2_BOILER.z / 100 - RZ;
+    rackSign.board.position.set(RX + rackCos * 2.3, 0, RZ - rackSin * 2.3);
     rackSign.board.position.y = land.H(rackSign.board.position.x, rackSign.board.position.z);
     rackSign.board.rotation.y = Math.atan2(dx, dz);
   }
@@ -1150,8 +1154,7 @@ export async function createRailwayLine2(
           mouth.position,
           to,
           {
-            dur: 0.55,
-            apex: 1.1,
+            ...POUR_FLIGHT,
             land: () => {
               if (generation !== pourGeneration) return;
               pouring = Math.max(0, pouring - 1);
