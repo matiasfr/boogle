@@ -546,6 +546,9 @@ export async function createRailwayView(adapter: RailwayAdapter) {
           beam: Math.max(0, station.have.beam - launched.filter((f) => f.kind === 'beam').length - stockOf(2)),
         });
         station.setTag(index === active && !job.completion && phase !== 'asleep' && phase !== 'waking');
+        // Its bill funded (a start the server alone sets; a predicted last piece shows full but not funded) or laid:
+        // the intake shuts while the feeder works (decisions-rail 2026-11-17, finished-deposits-read).
+        station.shut(job.start >= 0 || !!job.completion);
         station.settle(
           job.completion ? 'laid' : job.start >= 0 ? 'working' : 'open',
           () => frameOccupied(station),

@@ -1,4 +1,4 @@
-> **Status: answered (2026-11-17); the owner answered every question the same day (below). Building.**
+> **Status: live (2026-11-17), first build (the shut intake); the halt yard is still station-deposit build 1.**
 
 ## Pitch
 
