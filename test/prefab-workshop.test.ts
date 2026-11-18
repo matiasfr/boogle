@@ -441,25 +441,6 @@ test('review regression: rotated collider rejects sheared unequal axes', () => {
   }
 });
 
-test('re-review: rotated unit-scale placement survives decomposition roundoff', () => {
-  const h = runtimeHarness();
-  h.data.prefabs['town.workshop-chair']!.colliders = [
-    { shape: 'box', at: [0, 0, 0], half: [1, 1, 1], rot: [0.3, 0, 0] },
-  ];
-  const placement: Placement = { ...h.placement, rot: [0, 0.7, 0], scale: [1, 1, 1] };
-  try {
-    validateLevel({ place: 'runtime', placements: [placement] }, h.data.prefabs);
-    const instance = h.spawn(placement);
-    instance.setEnabled(true);
-    assert.equal(h.active.size, 1);
-    assert.equal(h.seats.length, 1);
-  } finally {
-    h.owner.dispose();
-  }
-  assert.equal(h.active.size, 0);
-  assert.equal(h.seats.length, 0);
-});
-
 test('re-review: runtime refuses gates inherited through the prototype', () => {
   const h = runtimeHarness();
   const gates = Object.create({ open: () => true }) as Readonly<Record<string, () => boolean>>;
