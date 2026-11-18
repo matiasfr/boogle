@@ -10,7 +10,7 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| The forge's furnace mouth: a fire that moves or a textured firebox in place of the flat orange panel | The forge's furnace mouth (P2) | `codex/forge-furnace-fire` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium delegate | 18 November 02:20 | building |
+| Railhead traveller: Checkpoint A's owed proofs, then step 3 (the deck is a car) | The railhead traveller (P2) | `codex/railhead-deck-car` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium delegate | 18 November 03:45 | building |
 | Ring Island footbridge, abutment a (terrain-clean step 7), resumed: the ground cap, a solid landing at the old path height, and player clearance for Ring Island's near-view solids | Terrain clean-up (P2) | `codex/ring-footbridge-cap` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium (the same builder thread) | 18 November 00:30; resumed 03:00 | building |
 | World streaming step 1: real bounds on the static batches (trees, yard track, station rails and stones, piles, the workshop proxy) | Chunk, cull and stream the world (P2) | `codex/world-bounds` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium delegate | 18 November 02:20 | building |
 
