@@ -126,7 +126,7 @@ test('junk events are ignored and bad numbers become null', () => {
   assert.ok(Array.isArray(r.scenes));
 });
 
-test('a run is self-minted unless this Mac made the id, or the page says so', () => {
+test('a run is self-minted unless this machine made the id, or the page says so', () => {
   const text = lines([HEAD]);
   assert.equal(readDevice(parseSession(ID, text), false).selfMinted, true);
   assert.equal(readDevice(parseSession(ID, text), true).selfMinted, false);

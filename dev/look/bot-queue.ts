@@ -8,13 +8,14 @@
 // every other run is exclusive: it starts only with nothing running and nobody ahead, and holds every slot.
 // Among runs of the same length, a lower BOOGLE_BOT_RANK (1–3, default 2) goes first, then first come, first served;
 // a run that has waited BOOGLE_BOT_RANK_WAIT_MS (30 minutes) counts as rank 1, so a P3 is never starved.
-// The load gate: a slot is not granted while the 1-minute load average is above BOOGLE_BOT_MAX_LOAD (30; 0 disables),
+// The load gate: a slot is not granted while the machine's load (machine-load.ts: the 1-minute load average, busy CPUs on
+// Windows) is above BOOGLE_BOT_MAX_LOAD (30; on Windows loadLimit makes it busy CPUs, 18 of HOTBOX's 20; 0 disables),
 // for up to BOOGLE_BOT_LOAD_WAIT_MS (20 minutes), after which the run goes ahead and its verdict says "under load".
 // It gates acquisition only: a running job's own load never stops it.
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { loadLimit, machineLoad } from './machine-load.ts';
 
 type Ticket = {
   pid: number;
@@ -42,8 +43,8 @@ const envNumber = (name: string, fallback: number) => {
   if (!Number.isFinite(value) || value < 0) throw new Error(`${name} must be a number of at least 0`);
   return value;
 };
-/** BOOGLE_BOT_MAX_LOAD: 0 turns the gate off. */
-export const maxLoad = () => envNumber('BOOGLE_BOT_MAX_LOAD', 30);
+/** BOOGLE_BOT_MAX_LOAD, written for 10 cores, in this machine's units (18 on HOTBOX's 20 logical CPUs): 0 turns the gate off. */
+export const maxLoad = () => loadLimit(envNumber('BOOGLE_BOT_MAX_LOAD', 30));
 const loadWaitMs = () => envNumber('BOOGLE_BOT_LOAD_WAIT_MS', 20 * 60_000);
 /** May a free slot be taken at this load, after waiting `waitedMs` for it to fall? */
 export function loadGate(load: number, limit: number, waitedMs: number, maxWaitMs: number) {
@@ -122,7 +123,7 @@ export async function acquireBotSlot(
     fs.writeFileSync(inherited + '.tmp', JSON.stringify({ ...ticket, pid: process.pid }));
     fs.renameSync(inherited + '.tmp', inherited);
     // A broker from before the load gate writes no slot: its wait is unknown, and the load is read now.
-    acquired ??= ticket.slot ?? { queueWaitMs: 0, loadAtStart: os.loadavg()[0]!, loadTimedOut: false };
+    acquired ??= ticket.slot ?? { queueWaitMs: 0, loadAtStart: machineLoad(), loadTimedOut: false };
     inheritedFile = inherited;
     return { file: inherited, waitedMs: 0, release() {} };
   }
@@ -202,7 +203,7 @@ export async function acquireBotSlot(
       const limit = Math.min(capacity, ...all.filter((t) => t.v === VERSION).map((t) => t.capacity));
       if (mayStart(me, lower, limit)) {
         // The slot is free; the machine may not be. The patience clock starts at the front of the queue.
-        const load = os.loadavg()[0]!;
+        const load = machineLoad();
         loadSince ??= now;
         const gate = loadGate(load, loadLimit, now - loadSince, loadPatience);
         if (gate === 'timeout') {
@@ -235,7 +236,7 @@ export async function acquireBotSlot(
     }
     const waitedMs = Date.now() - start;
     ticket.held = true;
-    ticket.slot = { queueWaitMs: waitedMs, loadAtStart: os.loadavg()[0]!, loadTimedOut };
+    ticket.slot = { queueWaitMs: waitedMs, loadAtStart: machineLoad(), loadTimedOut };
     acquired ??= ticket.slot;
     publish();
     // Shared: another run held a slot at any moment while this one did. Checked now and every second until release.

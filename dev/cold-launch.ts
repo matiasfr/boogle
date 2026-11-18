@@ -36,6 +36,7 @@ import { installStartupRecorder } from '../src/debug/startup-record.ts';
 import { acquireBotSlot } from './look/bot-queue.ts';
 import { prepareIdentity, clearExclusiveMetal } from './cold-start/identity.ts';
 import { browserChannel, freePort, gpuAngle, root } from './look/lib.ts';
+import { loadAverages } from './look/machine-load.ts';
 
 const argv = process.argv.slice(2);
 const opt = (name: string, def: string) => {
@@ -517,7 +518,7 @@ async function run(profileName: string, n: number, mode: Mode) {
     n,
     mode,
     wallMs: Date.now() - wall,
-    load: os.loadavg(),
+    load: loadAverages(),
     errors,
     ...page_,
     requests: reqs,

@@ -80,7 +80,9 @@ function limits(r: DeviceResult) {
 }
 
 /** What a report compares against; any may be missing. `previous` is this device's newest earlier pulled run. */
-export type Context = { baseline?: Baseline | null; bench?: BenchEntry[]; previous?: DeviceResult | null };
+/** `host`: the name of the machine pulling the run (os.hostname()), where the bench history and minted ids live. */
+export type Context = { baseline?: Baseline | null; bench?: BenchEntry[]; previous?: DeviceResult | null; host?: string };
+const here = (host?: string) => (host ? `this machine (${host})` : 'this machine');
 
 /** `this / base` as "1.84x"; a dash when either is missing or the base is zero. */
 export function ratio(v: number | null, base: number | null): string {
@@ -102,7 +104,7 @@ const who = (o: DeviceResult) =>
  * This run beside another (`name`: "the baseline", "the previous run"). On the same hardware with any condition
  * different (browser version, viewport, DPR, refresh interval, graphics settings, cold or warm) it says the runs are
  * not comparable, lists each difference and prints no frame-time ratios, only counts: a smaller window or a newer
- * browser is not a regression. On other hardware (a phone beside the Mac) the ratios are the point; the differing
+ * browser is not a regression. On other hardware (a phone beside a laptop) the ratios are the point; the differing
  * conditions are listed beside them.
  */
 export function comparison(r: DeviceResult, o: DeviceResult, name: string): string[] {
@@ -178,14 +180,14 @@ export function comparison(r: DeviceResult, o: DeviceResult, name: string): stri
   return out;
 }
 
-/** The baseline section: the device's figures beside the Mac's. Scenes the baseline lacks print dashes. */
+/** The baseline section: the device's figures beside the baseline run's, named by its own device line. Scenes the baseline lacks print dashes. */
 export function baselineSection(r: DeviceResult, ctx: Context): string[] {
   const b = ctx.baseline;
   if (!b)
     return [
       '## Against the baseline',
       '',
-      `No baseline for suite ${r.suite || '?'} yet. On the Mac, open the same link in your own Chrome when it is quiet, pull that run, then \`npm run device -- baseline <code>\`.`,
+      `No baseline for suite ${r.suite || '?'} on ${here(ctx.host)} yet. On the machine to compare against, open the same link in your own browser when it is quiet; then here, pull that run and \`npm run device -- baseline <code>\`.`,
       '',
     ];
   const base = b.result;
@@ -209,7 +211,7 @@ export function previousSection(r: DeviceResult, ctx: Context): string[] {
 }
 
 /** One line comparing exact draw calls and triangles with the bench's, when its history has this build. Null if not. */
-export function benchLine(r: DeviceResult, history: BenchEntry[] = []): string | null {
+export function benchLine(r: DeviceResult, history: BenchEntry[] = [], host?: string): string | null {
   const entry = [...history].reverse().find((e) => same(e.base, r.build));
   if (!entry) return null;
   const parts = r.scenes.flatMap((s) => {
@@ -217,11 +219,11 @@ export function benchLine(r: DeviceResult, history: BenchEntry[] = []): string |
     const tris = entry.metrics[`${s.name}.tris`];
     if (calls === undefined || tris === undefined || s.calls === null || s.tris === null) return [];
     return [
-      `${s.name} ${calls} calls / ${tris} tris on the Mac, ${s.calls} / ${s.tris} here (${diff(s.calls, calls)} / ${diff(s.tris, tris)})`,
+      `${s.name} ${calls} calls / ${tris} tris in the bench, ${s.calls} / ${s.tris} here (${diff(s.calls, calls)} / ${diff(s.tris, tris)})`,
     ];
   });
   if (!parts.length) return null;
-  return `Bench counts at this commit (${entry.base.slice(0, 8)}, the Mac's daily perf run of ${entry.date.slice(0, 10)}, \`?dpr=fixed\`): ${parts.join('; ')}. Exact counts match only at the same detail rung.`;
+  return `Bench counts at this commit (${entry.base.slice(0, 8)}, the daily perf run of ${entry.date.slice(0, 10)} on ${here(host)}, \`?dpr=fixed\`): ${parts.join('; ')}. Exact counts match only at the same detail rung.`;
 }
 
 /** Whether this run's long task counts mean anything: the browser delivers them and the page said so. */
@@ -361,7 +363,7 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
   ];
   if (r.selfMinted)
     out.push(
-      '> **Self-minted.** This run id was not made by `npm run device -- new` on this Mac (a `?device=new` link, or one made elsewhere). The endpoint is public: these are the numbers the page sent, nothing checked them.',
+      `> **Self-minted.** This run id was not made by \`npm run device -- new\` on ${here(ctx.host)} (a \`?device=new\` link, or one made elsewhere). The endpoint is public: these are the numbers the page sent, nothing checked them.`,
       '',
     );
   else
@@ -464,8 +466,8 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
     '',
     '## Limits of this report',
     '',
-    '- The device kept its own adaptive resolution and detail, as a player gets it, not `?dpr=fixed`: the last column names the resolution ratio and detail rung at the end of each sample, and draw calls and triangles differ from the Mac bench only when the rung does.',
-    '- A scene passes when it drew at least 30 frames a second of sample, the page stayed visible and p95 is under two refresh intervals of this device. The Mac bench budgets are not applied. Never ranks devices.',
+    '- The device kept its own adaptive resolution and detail, as a player gets it, not `?dpr=fixed`: the last column names the resolution ratio and detail rung at the end of each sample, and draw calls and triangles differ from the daily bench only when the rung does.',
+    '- A scene passes when it drew at least 30 frames a second of sample, the page stayed visible and p95 is under two refresh intervals of this device. The daily bench budgets are not applied. Never ranks devices.',
     '- No thermal reading exists on the web; the heat check is a proxy. Battery is Chromium only.',
     gpuLimit(r),
     '- Timers are coarse (cross-origin isolation headers are not available to a page on the live site): CPU ms are in 0.1 ms steps, 1 ms on Safari. Frame percentiles are unaffected.',
@@ -478,7 +480,7 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
 }
 
 function benchBlock(r: DeviceResult, ctx: Context): string[] {
-  const line = benchLine(r, ctx.bench);
+  const line = benchLine(r, ctx.bench, ctx.host);
   return line ? [line, ''] : [];
 }
 

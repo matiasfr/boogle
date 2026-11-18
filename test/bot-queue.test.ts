@@ -101,3 +101,15 @@ test('a short job queued after a long one takes the freed slot first', async () 
   (await long).release();
   assert.deepEqual(order, ['short', 'long']);
 });
+
+test('load limits: unchanged off Windows whatever the core count, scaled and capped on Windows', async () => {
+  const { loadLimit } = await import('../dev/look/machine-load.ts');
+  // The Mac (10 cores) and Linux (a 4-vCPU ubuntu-latest runner, a 64-core box) keep the bot gate's 30 and quiet's 6.
+  for (const cores of [10, 4, 64]) {
+    assert.equal(loadLimit(30, cores, false), 30, `bot gate off Windows on ${cores} cores`);
+    assert.equal(loadLimit(6, cores, false), 6, `quiet check off Windows on ${cores} cores`);
+  }
+  assert.equal(loadLimit(30, 20, true), 18);
+  assert.equal(loadLimit(6, 20, true), 12);
+  assert.equal(loadLimit(0, 20, true), 0);
+});

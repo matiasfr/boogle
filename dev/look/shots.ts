@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { buildAt, sameBuild } from '../codex/source.ts';
+import { loadAverages, loadKind } from './machine-load.ts';
 import { installWarp } from './warp.ts';
 import { captureShots } from './shot-page.ts';
 import { paintNative } from './sheet-render.ts';
@@ -132,7 +133,8 @@ function load() {
   }
   return {
     at: new Date().toISOString(),
-    loadAverage: os.loadavg(),
+    loadAverage: loadAverages(),
+    loadKind,
     logicalCpus: os.cpus().length,
     freeGiB: os.freemem() / 2 ** 30,
     processes,

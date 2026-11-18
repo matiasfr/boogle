@@ -36,12 +36,14 @@ the cleaner cold. (A run from before this record has only the load at Run time a
 
 ## Baseline, waiting and pulling
 
-- `baseline <code>` marks a pulled, finished run of a suite as the Mac's baseline for it
-  (`~/.boogle/device/baseline/<suite>.json`, `BOOGLE_DEVICE_DIR` moves it). Make one by opening the same link in your own
-  Chrome on the Mac when it is quiet, `pull` it, then `baseline` it. Every later report of that suite gets an "Against the
-  baseline" section: p50 and p95 beside the Mac's with the ratio, calls and triangles with the difference, the detail rung
-  of each side (named when they differ), and dashes for a scene the baseline lacks. When
-  `~/.boogle/daily/perf/history.jsonl` has an entry for the run's build, one line compares the bench's exact counts.
+- `baseline <code>` marks a pulled, finished run of a suite as the baseline for it on the machine that
+  pulls (`~/.boogle/device/baseline/<suite>.json` in its home, any OS; `BOOGLE_DEVICE_DIR` moves it). Make one by opening
+  the same link in your own browser on the machine to compare against (the Mac's Chrome, say) when it is quiet, then on
+  the pulling machine `pull` it and `baseline` it; the report names the baseline by its own device line. Every later report of that suite gets an "Against the
+  baseline" section: p50 and p95 beside the baseline's with the ratio, calls and triangles with the difference, the detail rung
+  of each side (named when they differ), and dashes for a scene the baseline lacks. When the
+  pulling machine's `~/.boogle/daily/perf/history.jsonl` (only a machine running the daily perf job has one) has an entry
+  for the run's build, one line compares the bench's exact counts and names that machine; otherwise it is left out.
 - A report also gets an "Against this device's previous run" section: the newest earlier pulled run of the same suite on
   the same hardware (device class, GPU, cores) and label, unless that run is the baseline. Both comparisons check the
   conditions first (`dev/device/compare.ts`): full browser version (Safari 27.2, not 27), viewport, DPR, refresh
@@ -84,5 +86,5 @@ report prints a dash or "unavailable", never a zero.
 
 ## Limits
 
-A run on the Mac is not a device test: the look harness proves the flow, not a device. Timing under load is not
+A look-harness run on the pulling machine is not a device test: the look harness proves the flow, not a device. Timing under load is not
 evidence. Step 1 sends numbers only (no stills).
