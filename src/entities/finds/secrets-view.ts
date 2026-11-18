@@ -45,7 +45,8 @@ function coloured(g: THREE.BufferGeometry, color: string) {
     col = new Float32Array(n * 3);
   for (let k = 0; k < n; k++) col.set([c.r, c.g, c.b], k * 3);
   return g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-} // Both only up at the box's level: one on a ledge isn't in reach from the ground under it (src/player/reach.ts).
+} // Both only up at the box's level: one on a ledge isn't in reach from the ground under it, nor from the top of one jump
+// beside it (src/player/reach.ts; G27, docs/plans/grant-c8-batch.md).
 const BUMP = 1.25, // m: walking into a box opens it (Place's)
   REACH = 3.4, // m: Open the crate
   SPARKLE_NEAR = 60;
@@ -75,8 +76,9 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
   // glider B's device is on Needle Bell).
   const frame = { ox, H, pad: tech.padById, secret: (id: string) => tech.SECRETS.find((s) => s.id === id)! };
   const parts: THREE.BufferGeometry[] = [];
-  /** Where a box stands on a record (a tower box on its plinth), by secret id. */
-  const standsOn = new Map<string, THREE.Vector3>();
+  /** Where a box stands on a record (a tower box on its plinth), by secret id, and the foot of that record: the slab
+   * you open it from. */
+  const standsOn = new Map<string, { at: THREE.Vector3; foot: number }>();
   for (const placed of loadLevelArtifact(level, definitions).placements) {
     const at = placeSecretThing(placed, frame);
     if (!at) continue;
@@ -87,8 +89,14 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
         : undefined;
     const thing = instantiate(at.prefab, at, { owner, ...(batch ? { batch } : {}) });
     thing.setEnabled(true);
-    for (const piece of thing.pieces) parts.push(coloured(piece.geometry.applyMatrix4(piece.matrix), piece.color));
-    if (typeof at.params?.holds === 'string') standsOn.set(at.params.holds, thing.attach('box').at);
+    let foot = Infinity;
+    for (const piece of thing.pieces) {
+      const g = piece.geometry.applyMatrix4(piece.matrix);
+      g.computeBoundingBox();
+      foot = Math.min(foot, g.boundingBox!.min.y);
+      parts.push(coloured(g, piece.color));
+    }
+    if (typeof at.params?.holds === 'string') standsOn.set(at.params.holds, { at: thing.attach('box').at, foot });
   }
   const groundGeo = mergeGeometries(parts)!;
   for (const g of parts) g.dispose();
@@ -115,6 +123,8 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
     /** In the world, or its second box at the finders' bay. */
     bay: boolean;
     at: THREE.Vector3;
+    /** Up on a ledge: the height you open it from (src/player/reach.ts `ledge`); undefined on the ground or at the bay. */
+    ledge: number | undefined;
     pose: THREE.Object3D;
     waiting: boolean;
   };
@@ -124,19 +134,20 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
     const gift = cosmetic(s.gift);
     if (!gift) throw new Error(`secret ${s.id}: no gift ${s.gift}`);
     secretOf.set(s.id, s);
-    const make = (bay: boolean, at: THREE.Vector3): Box => ({
+    const make = (bay: boolean, at: THREE.Vector3, ledge?: number): Box => ({
       id: s.id,
       gift: gift.id,
       tier: gift.tier ?? 'common',
       bay,
       at,
+      ledge,
       pose: new THREE.Object3D(),
       waiting: false,
     });
-    boxes.push(
-      make(false, standsOn.get(s.id)?.clone() ?? new THREE.Vector3(s.x + ox, yOf(s), s.z)),
-      make(true, new THREE.Vector3()),
-    );
+    // A raised box (SECRETS `y`) is opened from its own ledge, or a tower box from the slab its plinth stands on.
+    const on = standsOn.get(s.id),
+      at = on?.at.clone() ?? new THREE.Vector3(s.x + ox, yOf(s), s.z);
+    boxes.push(make(false, at, s.y === null ? undefined : (on?.foot ?? at.y)), make(true, new THREE.Vector3()));
   });
   const meshes: Record<Tier, THREE.InstancedMesh> = Object.fromEntries(
     TIERS.map((t) => {
@@ -287,7 +298,7 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
       if (d < SPARKLE_NEAR && Math.random() < dt * 3) rewardSparkles(box.at.x, box.at.y + 1.2, box.at.z, 1, 1.2);
       // The bay's crates stand a metre apart, so walking among them would open whichever you brushed: Open only there
       // (builder default, F2; docs/agent-calls.md).
-      if (!box.bay && inReach(p, box.at, BUMP)) open(box);
+      if (!box.bay && inReach(p, box.at, BUMP, box.ledge)) open(box);
     }
     for (const t of TIERS) {
       const mesh = meshes[t];
@@ -313,7 +324,7 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
       if (!p || show.busy()) return NO_TARGETS;
       let out: Interactable[] | null = null;
       for (const box of boxes) {
-        if (!box.waiting || !inReach(p, box.at, REACH)) continue;
+        if (!box.waiting || !inReach(p, box.at, REACH, box.ledge)) continue;
         let at = targetAt.get(box);
         if (!at) targetAt.set(box, (at = new THREE.Vector3()));
         at.copy(box.at).y += 1.5;
@@ -326,6 +337,9 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
       }
       return out ?? NO_TARGETS;
     },
+    /** Each raised world box's ledge, the height it is opened from (src/player/reach.ts), by secret id. */
+    ledges: (): FindsViewInspection['ledges'] =>
+      Object.fromEntries(boxes.flatMap((b) => (b.bay || b.ledge === undefined ? [] : [[b.id, b.ledge]]))),
     inspect: (): Pick<FindsViewInspection, 'boxes' | 'opening'> => ({
       boxes: SECRETS.map((s) => {
         const world = boxes.find((b) => b.id === s.id && !b.bay)!;

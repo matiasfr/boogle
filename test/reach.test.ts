@@ -37,3 +37,27 @@ test('a box on sloping ground: still offered from a little downhill', () => {
 test('out of reach across: not offered at any height', () => {
   assert.ok(!inReach(standing(box.x + 3.5, top, box.z), box, REACH));
 });
+
+// G27 (Grant, 14 November 2026: one jump and Open took the scarf from the ground; docs/plans/grant-c8-batch.md): a box
+// up on a ledge (a SECRETS row with a `y`) is given the height it's opened from, and your feet may be at most 0.3 m under
+// that, with no slope allowance. One jump from the ground peaks about 1.68 m up (7.6 m/s, gravity 18, the apex float).
+const APEX = 1.68;
+test('a raised box, at the top of one jump from the ground beside its block: not offered', () => {
+  for (const d of [0.9, 1.5, 2.5, 3.3])
+    assert.ok(!inReach(standing(box.x + d, ground + APEX, box.z), box, REACH, top), `${d} m out`);
+  assert.ok(inReach(standing(box.x + 0.9, ground + APEX, box.z), box, REACH), 'the ground rule would offer it');
+});
+test('a raised box, from its ledge or just under it: offered; any lower: not, however far out', () => {
+  assert.ok(inReach(standing(box.x + 1.5, top, box.z), box, REACH, top), 'on the pad');
+  assert.ok(inReach(standing(box.x + 3.3, top, box.z), box, REACH, top), 'the reach across is as generous as ever');
+  assert.ok(inReach(standing(box.x + 1.5, top - 0.25, box.z), box, REACH, top), 'a step under the ledge');
+  assert.ok(!inReach(standing(box.x + 3.3, top - 0.4, box.z), box, REACH, top), 'no slope allowance');
+  assert.ok(inReach(standing(box.x + 1, top + 1.6, box.z), box, REACH, top), 'mid-jump from the pad');
+  assert.ok(!inReach(standing(box.x + 1, top + 3, box.z), box, REACH, top), 'far over it');
+});
+test('a tower box on its plinth, a metre over the slab it is opened from: offered from the slab, not from under it', () => {
+  const slab = 24,
+    plinthed = { x: 0, y: slab + 1, z: 0 };
+  for (const d of [1.1, 1.5, 3.3]) assert.ok(inReach(standing(d, slab, 0), plinthed, REACH, slab), `${d} m out`);
+  assert.ok(!inReach(standing(1.5, slab - 0.5, 0), plinthed, REACH, slab), 'half a metre under the slab');
+});

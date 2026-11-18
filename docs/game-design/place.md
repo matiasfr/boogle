@@ -2014,9 +2014,13 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
   under the trestle (alcove, its ring facing the bridge), the tower's first slab (its east edge, out of the way back down) and its side nook (on plinths), a
   yellow block on the quarry's low rock (loft, its ring facing the camp), a weather vane on the village column
   (balcony) and an orange flag on Far Head's sea stack. Walk into a crate (1.25 m) or Open it (3.4 m across; at the
-  bay, Open only), only up at its level: your feet no more than 0.6 m under its base, plus 0.3 m for each metre across,
-  and no more than 2.2 m over it, so a crate on a ledge isn't offered from the ground beside the ledge (owner,
-  10 November: the mossy scarf from the ground; `src/player/reach.ts`, Place's crates too). The station boxes'
+  bay, Open only), only up at its level: your feet no more than 2.2 m over its base, and under it no more than 0.6 m
+  plus 0.3 m for each metre across for a crate on the ground, so a crate on a ledge isn't offered from the ground
+  beside the ledge (owner, 10 November: the mossy scarf from the ground; `src/player/reach.ts`, Place's crates too).
+  A raised crate (one with a `SECRETS` height) is offered only with your feet at most 0.3 m under the ledge it is
+  opened from, at any distance: its own base, or for the tower's two the slab their plinth stands on. So the top of
+  one jump beside the lookout's block no longer reaches the scarf (G27, 18 November: Grant opened it so before the
+  double jump; [plan](../plans/grant-c8-batch.md)). The station boxes'
   show and card play (one reveal queue, `src/render/crate-show.ts`), the gift is yours at once, and on you when you
   put the card away if its slot is empty. Cards are name-only: these gifts have no line. Mark `secret found`.
 - **Not ported:** the jump course and its lamplighter's cap ("block") move to job E with the double jump; Place's Far
