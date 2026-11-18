@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-18 · The railhead re-route's slower route is accepted; the four greybox gates it breaks are re-measured and re-pinned at v61 ([entry](#d-2026-11-18-railhead-reroute-gates))
 - 2026-11-18 · The railhead's Railhead stop moves to the new head only when the haul settles; trains stand at the old head meanwhile; the world reset this needs is approved (v61, since separate capacities took v60) ([entry](#d-2026-11-18-railhead-reroute-reset))
 - 2026-11-17 · A funded frame shuts its intake while it works; Q7 stows in place; the halt yard is its own bay with a pointer only at a confusing turn ([entry](#d-2026-11-17-finished-deposits-read))
 - 2026-11-16 · The riders' coach ships first as a plain blockout ("acceptable as a v1") and is then modelled from the candidate A reference sheets at its real 2.90 by 1.60 m: arc roof, red upper body, honey panels, four unglazed windows a side with the outer bays as doors and fold-down steps ([entry](#d-2026-11-16-coach-a-sheets-approved))
@@ -161,6 +162,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · The rail spike comes first, and its job is to prove that riding feels good. ([entry](#d-undated-the-rail-spike-comes-first))
 
 ## Decided
+
+- <a id="d-2026-11-18-railhead-reroute-gates"></a>**2026-11-18, the railhead re-route's pacing accepted, its gates re-pinned** (owner, 18 November 2026 (UTC), given three choices for the four greybox gates the re-route breaks (gates 12, 14 and 15 and "a redirected train gets 50 dwell ticks": each footing-wagon delivery after the first lands 4.9 s later per earlier trip because a train now stands its dwell at the old head until the haul settles): (a) re-measure and re-pin at v61, (b) keep the gates and let a train standing at the old head leave at once, (c) hold the change. His answer: "A"). The orchestrator's reading: the slower route is the accepted cost of trains waiting for the deck; each gate is re-measured at v61 with the margin it had at v60, never loosened past what v61 measures.
 
 - <a id="d-2026-11-18-railhead-reroute-reset"></a>**2026-11-18, the railhead re-route waits for the haul, with its own world reset** (owner, 18 November 2026 (UTC), asked whether the [railhead re-route plan](plans/railhead-reroute.md) should go ahead with its world reset, then named v59 to v60: "Yes, bump to v60 (Recommended)"). The orchestrator's reading: he approved this plan's own reset; separate capacities had already taken v60 (#2152), so this one is v61, in its own commit, held only if he says a playtest is on. The plan builds as written on its recommendations: the Railhead stop and everything the trains serve move to the new head when the haul settles, not on the pair's second footing; a train bound there meanwhile stands its dwell at the old head; the waiting little guys ride the deck out. The plan's three owner questions proceed on their recommendations.
 
