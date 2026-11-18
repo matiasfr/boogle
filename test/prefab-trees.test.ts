@@ -25,6 +25,7 @@ import { treeColliderCase } from './helpers/tree-collider-case.ts';
 import { capturePoisAfter, sameTurns } from './helpers/poi-golden.ts';
 import { captureLookoutAfter } from './helpers/lookout-golden.ts';
 import { captureRingAfter } from './helpers/ring-island-golden.ts';
+import { captureStallBefore } from './helpers/mushroom-stall-golden.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 const { loadLevel } = await import('../dev/level/level.ts');
 
@@ -220,4 +221,12 @@ test('Ring Island pieces, poses, colliders, clearance and frames match the pre-r
     [table.params.w, table.params.d, table.params.legs],
     [RING_MAP_TABLE.w, RING_MAP_TABLE.d, +(RING_MAP_TABLE.top - (RING_HALT.y / 100 + 0.9)).toFixed(9)],
   );
+});
+
+// Step 13 (the mushroom stall): captured on the pre-record code; GOLDEN=1 rewrites it. Runtime values use the shared tolerance.
+test('mushroom stall meshes, canvases, collider, footprint and Take target match the pre-record code', () => {
+  const fixture = 'test/fixtures/prefab-mushroom-stall.json';
+  const actual = JSON.parse(JSON.stringify(captureStallBefore()));
+  if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual) + '\n');
+  prefabGolden(actual, JSON.parse(fs.readFileSync(fixture, 'utf8')), 'stall');
 });
