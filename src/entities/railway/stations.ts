@@ -50,22 +50,35 @@ const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
   stoneMat = material('stone');
 stoneGeo.computeBoundingBox();
 const stoneFoot = -stoneGeo.boundingBox!.min.y;
-/** The bill's two lines, and with marks, the lines in the board's left and the marks stacked in its right slot. */
+/** The bill's two lines; with marks, the title across the top and below it the marks side by side, each about twice
+ * the title's height, with the count (if any) to their left (owner's review, 18 November: the stacked marks were too
+ * small to read where a player reads the count). */
 function paintMarked(b: Pick<SignBoard, 'g' | 'cw' | 'ch'>, big: string, small: string, marks: readonly RewardMark[]) {
   if (!marks.length) return paintTwoLines(b, big, small, BILL_LOOK);
-  const { g, cw, ch } = b,
-    // One mark gets most of the board's height; two stack in a narrower slot. Either reads at about the title's size.
-    slot = Math.round(ch * (marks.length === 1 ? 0.8 : 0.55));
-  paintTwoLines({ g, cw: cw - slot, ch }, big, small, { ground: BILL_LOOK.ground, ink: BILL_LOOK.ink });
+  const { g, cw, ch } = b;
+  g.clearRect(0, 0, cw, ch);
   g.fillStyle = BILL_LOOK.ground;
-  g.fillRect(cw - slot, 0, slot, ch);
+  g.fillRect(0, 0, cw, ch);
   g.strokeStyle = BILL_LOOK.rim;
   g.lineWidth = ch * 0.04;
   g.strokeRect(ch * 0.04, ch * 0.04, cw - ch * 0.08, ch - ch * 0.08);
-  const size = Math.min(slot - ch * 0.04, (ch * 0.94) / marks.length);
-  marks.forEach((m, k) =>
-    drawRewardGlyph(g, m.kind, cw - slot / 2 - ch * 0.03, ch / 2 + (k - (marks.length - 1) / 2) * size, size, m.ready),
-  );
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = BILL_LOOK.ink;
+  g.font = `900 ${ch * 0.28}px Figtree, system-ui, sans-serif`;
+  g.fillText(big, cw / 2, ch * 0.22, cw * 0.88);
+  // The marks' row: square cells as tall as the band below the title, from the right; the count fills what is left.
+  const size = ch * 0.58,
+    gap = ch * 0.04,
+    row = ch * 0.66,
+    inset = ch * 0.1,
+    span = marks.length * size + (marks.length - 1) * gap;
+  const left = small ? cw - inset - span : (cw - span) / 2;
+  marks.forEach((m, k) => drawRewardGlyph(g, m.kind, left + size / 2 + k * (size + gap), row, size, m.ready));
+  if (small) {
+    g.font = `900 ${ch * 0.2}px Figtree, system-ui, sans-serif`;
+    g.fillText(small, (inset + left - gap) / 2, row, left - gap - inset);
+  }
 }
 /** Two saddles across the frame's top at its post pairs, in the frame's own space (+z along the line). */
 function saddles(g: THREE.Group) {
