@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { sourceModule } from '../dev/level/source.ts';
+import { createShowCall } from '../src/entities/railway/boiler-shot.ts';
 import type { RailwayAdapter } from '../src/adapters/railway-session.ts';
 import type { RailwayAccepted } from '../src/adapters/railway-effects.ts';
 import type { OwnedView } from '../src/render/owned-view.ts';
@@ -146,20 +147,26 @@ test('a peer still gets the boiler flourish once, at the wake', () => {
   v.dispose();
 });
 
-test("a peer whose page played the boiler's show gets no boiler flourish", () => {
-  const h = harness();
-  const { v, fit } = h.mount('b');
-  v.update(4);
-  fit('a');
-  v.update(30);
-  // boiler-view.ts queues the show on the trains edge, before this file's update in the same frame (view.ts's order).
-  h.w.trains = 3376;
-  v.markShown('boiler');
-  v.update(0.1);
-  v.update(4);
-  assert.deepEqual({ keys: v.inspect().keys, sounds: h.sounds.length }, { keys: [], sounds: 0 });
-  assert.equal(v.seen.has('boiler'), true);
-  v.dispose();
+test("a peer whose page played the boiler's show gets no flourish; one whose show was dropped unseen gets it", () => {
+  for (const end of ['played', 'dropped'] as const) {
+    const h = harness();
+    const { v, fit } = h.mount('b');
+    v.update(4);
+    fit('a');
+    v.update(30);
+    // boiler-view.ts queues the show on the trains edge, before this file's update in the same frame (view.ts's order).
+    h.w.trains = 3376;
+    v.showing('boiler', 'queued');
+    v.update(0.1);
+    v.update(4);
+    assert.deepEqual(v.inspect().keys, [], 'no flourish while the show is queued');
+    v.showing('boiler', end);
+    v.update(0.1);
+    v.update(4);
+    assert.deepEqual(v.inspect().keys, end === 'played' ? [] : ['boiler'], end);
+    assert.equal(v.seen.has('boiler'), true);
+    v.dispose();
+  }
 });
 
 test('a fitter reloading during the wait retains attribution in local storage', () => {
@@ -382,10 +389,9 @@ test("review: a friend's card waits while they are talking to an NPC (conversati
 });
 
 // Review (cutscenes-for-everyone step 2): the real forge-call.ts, driven the way boiler-view.ts drives it for the
-// boiler's show. On the trains edge the show is queued, holdForgeCall(BOILER_SHOW.hold = 30) claims the breaker's call
-// and boiler-view.ts cues it only on the cut, the hand-back or a dropped shot (`called && !shotLive()`). A shot that
-// waits longer than 30 s (a long glide, a talk box, a card left up) stays live, so nothing cues it before the hold
-// runs out: the call sounds on its own at 30 s, and the cut's cue then sounds it again.
+// boiler's show (boiler-shot.ts's createShowCall). On the trains edge the show is queued and claims the breaker's call
+// for BOILER_SHOW.hold (30 s); a shot that waits longer (a long glide, a talk box, a card left up) stays live, the hold
+// runs out and the call sounds by itself. The claim has lapsed by then, so the cut's cue sounds nothing more.
 test("review: the boiler's show sounds the forge's call once when its shot waits past the 30 s hold", () => {
   let ms = 0;
   const forge = sourceModule<typeof import('../src/entities/railway/forge-call.ts')>(
@@ -407,12 +413,16 @@ test("review: the boiler's show sounds the forge's call once when its shot waits
     ms += dt * 1000;
     breaker.update(dt, waiting);
   };
+  const call = createShowCall({ hold: forge.holdForgeCall, sound: forge.soundForgeCall, now: () => ms / 1000 });
   frame(0.1, false);
-  // The trains edge: the breaker is cast; boiler-view.ts queues the show and holds the call for BOILER_SHOW.hold.
-  forge.holdForgeCall(30);
-  // The shot waits (still live, so boiler-view.ts does not cue) for 35 s, then plays: 4.5 s to the forge cut.
-  for (let t = 0; t < 39.5; t += 0.1) frame(0.1, true);
-  forge.soundForgeCall(); // the cut lands: boiler-view.ts's cue()
+  // The trains edge: the breaker is cast; boiler-view.ts queues the show and claims the call for BOILER_SHOW.hold.
+  call.claim(30);
+  // The shot waits (still live) for 35 s, then plays: 4.5 s to the forge cut.
+  for (let t = 0; t < 39.5; t += 0.1) {
+    frame(0.1, true);
+    call.update(true);
+  }
+  call.cue(); // the cut lands: the show's onCut
   frame(0.1, true);
   frame(0.1, true);
   assert.equal(forge.forgeCue.count, 1);

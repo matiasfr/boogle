@@ -55,6 +55,8 @@ const boiler = () => (read().line2View as unknown as { boiler: BoilerView }).boi
 const arrival = () => read().reward.arrival;
 type SwitchCamera = { active: boolean; pending: boolean; seconds: number; kind: string | null; forgeTurns: number };
 const camera = () => (read().line2View as unknown as { switchCamera: SwitchCamera }).switchCamera;
+const guys = () =>
+  (read().line2View as unknown as { bolting: { left: number; guys: number; here: number } | null }).bolting;
 function check(ok: unknown, label: string) {
   console.log(`BOILER ${ok ? 'PASS' : 'FAIL'} ${label}`);
   if (!ok) throw new Error(`BOILER FAIL ${label}`);
@@ -77,6 +79,37 @@ const landed = () => !!me.body && me.coyote > 0 && !me.swimming && !!railRead()?
 const near = (p: { x: number; z: number } | null, q: { x: number; z: number }, r: number) =>
   !!p && Math.hypot(p.x - q.x, p.z - q.z) < r;
 const bot = makeBot({ doneFlag: '__boilerDone' });
+
+/** This page's side of the boiler's show for 8 s from the trains edge (`from`, performance ms): whether a shot came
+ * up, and the forge's call, which sounds exactly once: as the show's forge cut lands (4.5 s in) or, with no shot
+ * (--reduced-motion, a vehicle's seat), at the wake's end (3.1 s, its time before the show). Reported on its own, so a
+ * later check failing first does not hide it. */
+function watchCall(from: number, label: string) {
+  const cues = forgeCue.count;
+  let shot = false,
+    calledAt = -1;
+  const watching = new Promise<void>((resolve) => {
+    const tick = setInterval(() => {
+      const c = camera();
+      shot ||= c.kind === 'boiler' && (c.active || c.pending);
+      if (calledAt < 0 && forgeCue.count > cues) calledAt = (performance.now() - from) / 1000;
+      if (performance.now() - from < 8000) return;
+      clearInterval(tick);
+      resolve();
+    }, 20);
+  });
+  background(
+    watching.then(() => {
+      const calls = forgeCue.count - cues,
+        due = shot ? 4.5 : 3.1;
+      console.log(
+        `BOILER SHOW HERE ${JSON.stringify({ label, shot, calls, calledAt: +calledAt.toFixed(2), due, flourish: arrival().keys.includes('boiler') })}`,
+      );
+      check(calls === 1 && Math.abs(calledAt - due) <= 0.6, `${label}: the forge's call sounds once, at ${due} s`);
+    }),
+    `boiler call ${label}`,
+  );
+}
 
 async function fit() {
   if (!solo) w.__boilerShot = true; // the friend's page times the capture; this page must not hold the warm-up
@@ -104,7 +137,9 @@ async function fit() {
   await wait(1500);
   let acceptedFrame = -1;
   const watch = setInterval(() => {
-    if (acceptedFrame < 0 && trainsOn()) acceptedFrame = boiler().frame;
+    if (acceptedFrame >= 0 || !trainsOn()) return;
+    acceptedFrame = boiler().frame;
+    watchCall(performance.now(), solo ? 'solo' : 'fitter');
   }, 0);
   check(await bot.use(saddle.x, saddle.z, 'fit the boiler', /^Fit the boiler$/), 'boiler fit offered');
   // Read synchronously after the press, before any server message can be handled.
@@ -112,20 +147,16 @@ async function fit() {
     atPress = { phase: flying?.phase ?? null, trains: trainsOn() };
   check(await bot.work(() => trainsOn(), 30000, 380), 'boiler fitted');
   clearInterval(watch);
-  // This page's side of the boiler's show for 8 s: whether a shot came up, and when the forge's call sounded (under
-  // --reduced-motion: no shot, and the call at the wake's end, 3.1 s, as before the show).
-  const showFrom = performance.now(),
-    cues = forgeCue.count;
-  let shotSeen = false,
-    calledAt = -1;
-  const show = setInterval(() => {
-    const c = camera();
-    shotSeen ||= c.kind === 'boiler' && (c.active || c.pending);
-    if (calledAt < 0 && forgeCue.count > cues) calledAt = (performance.now() - showFrom) / 1000;
-    if (performance.now() - showFrom < 8000) return;
-    clearInterval(show);
-    console.log(`BOILER SHOW HERE ${JSON.stringify({ shot: shotSeen, calledAt: +calledAt.toFixed(2), flourish: arrival().keys.includes('boiler') })}`);
-  }, 50);
+  // The camp's little guys as they answer the fit (folk.ts `bolting`), every 100 ms for 6 s, logged whatever the check
+  // below finds: who was picked and how many have arrived.
+  const bolts: unknown[] = [];
+  const boltFrom = performance.now();
+  const boltTrace = setInterval(() => {
+    bolts.push({ t: Math.round(performance.now() - boltFrom), ...(guys() ?? { none: true }) });
+    if (performance.now() - boltFrom < 6000) return;
+    clearInterval(boltTrace);
+    console.log(`BOILER BOLT TRACE ${JSON.stringify(bolts)}`);
+  }, 100);
   await bot.until(() => !boiler().fitting, 3000, 'landed');
   const f = boiler().lastFit;
   console.log(
@@ -133,7 +164,6 @@ async function fit() {
   );
   check(atPress.phase === 'fly' && !atPress.trains, 'the flight starts on the press, before any answer');
   check(f && f.movedFrame === f.pressFrame, 'the boiler leaves the rope on the press frame');
-  const guys = () => (read().line2View as unknown as { bolting: { guys: number; here: number } | null }).bolting;
   check(
     await bot.until(() => (guys()?.here ?? 0) >= 2, 3100, 'bolting'),
     'two little guys at the saddle before the wake ends',
@@ -195,6 +225,7 @@ async function friend() {
       await bot.walk(home.x + (k % 2 ? 0 : 6), home.z + 3, 1, { limit: 6000 });
   })();
   await until(() => trainsOn(), 'friend sees trains on', 120000);
+  watchCall(performance.now(), 'friend');
   const turns = camera().forgeTurns;
   await until(() => camera().kind === 'boiler' && camera().active, 'the boiler show is queued on the trains edge', 1000);
   let longest = 0;
@@ -209,7 +240,7 @@ async function friend() {
   const moving = { x: me.body!.position.x, z: me.body!.position.z };
   await walking;
   await bot.walk(home.x - 4, home.z - 3, 1, { limit: 6000 });
-  check(!near(me.body!.position, moving, 1), 'the friend kept moving after the flourish');
+  check(!near(me.body!.position, moving, 1), 'the friend kept moving after the show');
   await wait(1500);
   clearInterval(trace);
   console.log(`BOILER TRACE ${JSON.stringify(rows)}`);

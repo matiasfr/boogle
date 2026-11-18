@@ -23,7 +23,7 @@ import { readableIntensity } from '../../render/readable-unlit.ts';
 import { PLAYER_R, reducedMotion } from '../../constants.ts';
 import { LINE2_BOILER, LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts';
 import { createForgeCall, holdForgeCall, soundForgeCall } from './forge-call.ts';
-import { BOILER_SHOW } from './boiler-shot.ts';
+import { BOILER_SHOW, createShowCall } from './boiler-shot.ts';
 import { playMark } from '../../proto/mark.ts';
 import { pedestalHold } from './part-hoist.ts';
 import { createBeamDrag, restGrip, type DragShape } from './beam-drag.ts';
@@ -59,8 +59,14 @@ type Deps = {
   /** The boiler's show (boiler-shot.ts) on the line's camera pull-out, from the live trains edge: false when no shot
    * was queued (reduced motion, a vehicle's seat). It calls `cue` as its forge cut lands, or as it comes home. */
   shot?: (cue: () => void) => boolean;
-  /** The show is still queued or playing (a seat taken, a fresh start or a resync drops it). */
-  shotLive?: () => boolean;
+  /** Where the show is now: queued, playing (on screen), or none (done, or dropped: a seat taken, another shot, a
+   * fresh start or a resync). */
+  shotState?: () => 'queued' | 'playing' | 'none';
+  /** Takes a queued or playing show off the camera (a refused fit). */
+  cancelShot?: () => void;
+  /** The show's moment for this player (ability-arrival.ts): its flourish waits while it is queued, is spent once it is
+   * on screen, and stands in if it is dropped unseen. */
+  showing?: (state: 'queued' | 'played' | 'dropped') => void;
 };
 type Avatar = NonNullable<typeof me.avatar>;
 const frameOf = (avatar: THREE.Object3D | null) => {
@@ -106,7 +112,7 @@ function dashedOutline(length: number, radius: number, material: THREE.Material)
 export function createRailwayBoiler(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  { land, props, carry, engine, pieces, flat, youGot, shot, shotLive }: Deps,
+  { land, props, carry, engine, pieces, flat, youGot, shot, shotState, cancelShot, showing }: Deps,
   chimney: { x: number; y: number; z: number },
 ) {
   const pedestal = props.makeProp('pedestal');
@@ -429,13 +435,16 @@ export function createRailwayBoiler(
   }
   let fittedByMe = false;
   let wasAwake = line2Trains(read.world());
-  // The forge's call while the boiler's show holds it: sounded once, on the cut, the hand-back or a dropped shot.
-  let called = false;
-  const cue = () => {
-    if (!called) return;
-    called = false;
-    soundForgeCall();
-  };
+  // The forge's call while the boiler's show holds it: sounded once, on the cut, the hand-back or a dropped shot, or by
+  // itself as the hold runs out (boiler-shot.ts).
+  const claim = createShowCall({ hold: holdForgeCall, sound: soundForgeCall, now: () => performance.now() / 1000 });
+  // This page's show (Local): queued, then seen once it is on screen.
+  let show: 'none' | 'queued' | 'seen' = 'none';
+  /** The show is gone: one that never reached the screen gives the moment back to the flourish. */
+  function endShow() {
+    if (show === 'queued') showing?.('dropped');
+    show = 'none';
+  }
   function update(dt: number) {
     const w = read.world(),
       pid = read.pid;
@@ -489,16 +498,24 @@ export function createRailwayBoiler(
     const awake = line2Trains(w);
     if (awake && !wasAwake) {
       // The live edge only: a rebuild or a resync sets wasAwake first (restore, resync). Every page gets the show.
-      const queued = shot?.(cue) ?? false;
+      const queued = shot?.(claim.cue) ?? false;
       playMark('moment played', { moment: 'boiler trains', mine: false, shot: queued, authority: 'local', edge: 'state' });
       // The breaker is cast on this tick: its call waits for the show, or for the wake when no shot was queued.
-      holdForgeCall(queued ? BOILER_SHOW.hold : FIT.wake);
-      called = queued;
+      if (queued) {
+        claim.claim(BOILER_SHOW.hold);
+        show = 'queued';
+        showing?.('queued');
+      } else holdForgeCall(FIT.wake);
       if (BOILER_CARD && youGot && fittedByMe) cardDue = performance.now() + FIT.wake * 1000;
     }
     wasAwake = awake;
-    // The shot was dropped before it called: the call sounds anyway.
-    if (called && !(shotLive?.() ?? false)) cue();
+    const state = shotState?.() ?? 'none';
+    if (show !== 'none' && state === 'playing') {
+      if (show === 'queued') showing?.('played');
+      show = 'seen';
+    } else if (show !== 'none' && state === 'none') endShow();
+    // A dropped shot sounds the call at once; one still waiting at the hold's end lets it sound by itself.
+    claim.update(state !== 'none');
     call.update(dt, b.state === 'pedestal');
     mote -= dt;
     echoMote -= dt;
@@ -549,7 +566,8 @@ export function createRailwayBoiler(
     restore() {
       // Rebuild silently; the continuous pedestal invitation resumes on a later frame.
       wasAwake = line2Trains(read.world());
-      cue();
+      endShow();
+      claim.cue();
       mote = 0.8;
       call.restore(boilerRow(read.world()).state === 'pedestal');
       update(0);
@@ -603,7 +621,14 @@ export function createRailwayBoiler(
     /** A refused or lost request: a refused fit hops back onto the rope (a refused take ends `grabbing` once nothing
      * is pending). */
     corrected(c?: RailwayCorrection) {
-      if (c?.event.op === 'rail.boilerFit') refuseFit(performance.now());
+      if (c?.event.op !== 'rail.boilerFit') return;
+      refuseFit(performance.now());
+      // A show queued on the predicted fit: no trains after all. The real fit's edge plays it again.
+      if (show === 'none') return;
+      cancelShot?.();
+      showing?.('dropped');
+      show = 'none';
+      claim.cue();
     },
     /** train-view.ts's loco boiler: the fit lands exactly where it sits. */
     seatFrom(fn: () => THREE.Matrix4) {

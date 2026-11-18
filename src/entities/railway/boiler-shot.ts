@@ -1,8 +1,8 @@
 // The boiler's show (docs/plans/cutscenes-for-everyone.md, "The boiler's show"; round-4 notes O18-5): on the live
 // trains edge, every page's camera stands off the old train's loco as it wakes, three-quarters to its front, and drifts
 // back and up through the wake (train-view.ts's rust, coughs, steam and lamps). When the breaker waits on the pedestal
-// the shot then cuts to it at the forge (./forge-cut.ts), and comes home facing the forge. Pure (layout only), for
-// tests; line2-view.ts plays it, boiler-view.ts starts it.
+// the shot then cuts to it at the forge (./forge-cut.ts), and comes home facing the forge. Pure, for
+// tests; line2-view.ts plays it, boiler-view.ts starts it and claims the forge's call for it (createShowCall).
 import { LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts';
 import { FORGE_CUT, forgeCut } from './forge-cut.ts';
 
@@ -39,5 +39,33 @@ export function boilerShot(ground: (x: number, z: number) => number, breaker: bo
     seconds: BOILER_SHOW.train + (breaker ? FORGE_CUT.seconds : 0),
     end: breaker ? forgeCut('breaker') : null,
     back: FORGE_CUT.back,
+  };
+}
+
+/** The forge's call as a show claims it (forge-call.ts's `holdForgeCall` and `soundForgeCall`, injected so this stays
+ * pure): `claim` holds it for up to `seconds`, `cue` sounds it once (the cut, the hand-back, a dropped shot), and a
+ * claim still held at its deadline lapses without a cue. forge-call.ts sounds a held call by itself as its hold runs out
+ * and sounds it again on every later cue (the pier's reminder), so cueing then would sound it twice. `now` in seconds,
+ * on forge-call.ts's clock. */
+export function createShowCall(io: { hold(seconds: number): void; sound(): void; now(): number }) {
+  let until = -1;
+  function cue() {
+    if (until < 0) return;
+    until = -1;
+    io.sound();
+  }
+  return {
+    claim(seconds: number) {
+      io.hold(seconds);
+      until = io.now() + seconds;
+    },
+    cue,
+    /** Each frame: `live` while the show is still queued or playing; a dropped one cues at once. */
+    update(live: boolean) {
+      if (until < 0) return;
+      if (io.now() >= until) until = -1;
+      else if (!live) cue();
+    },
+    held: () => until >= 0,
   };
 }

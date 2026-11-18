@@ -108,9 +108,9 @@ export async function createRailwayLine2(
   youGot: (got: Got) => boolean,
   hookShown?: () => void,
   rewardBusy: () => boolean = () => false,
-  /** Marks an arrival as shown to this player (ability-arrival.ts): a page that played the boiler's show gets no
-   * boiler flourish. */
-  markShown: (key: string) => void = () => {},
+  /** A show of a moment on this page (ability-arrival.ts): a page that played the boiler's show gets no boiler
+   * flourish; one whose show was dropped unseen does. */
+  showing: (key: string, state: 'queued' | 'played' | 'dropped') => void = () => {},
 ) {
   const [layout, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit, props, carry] =
     await Promise.all([
@@ -642,13 +642,18 @@ export async function createRailwayLine2(
             if (breaker) faceForge();
           },
         });
-        if (queued) {
-          switchKind = 'boiler';
-          markShown('boiler');
-        }
+        if (queued) switchKind = 'boiler';
         return queued;
       },
-      shotLive: () => switchKind === 'boiler' && switchCamera.active(),
+      shotState: () => {
+        if (switchKind !== 'boiler') return 'none';
+        const camera = switchCamera.inspect();
+        return camera.active ? 'playing' : camera.pending ? 'queued' : 'none';
+      },
+      cancelShot: () => {
+        if (switchKind === 'boiler') switchCamera.cancel();
+      },
+      showing: (state) => showing('boiler', state),
     },
     chimneyTop,
   );

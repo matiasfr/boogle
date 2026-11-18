@@ -106,7 +106,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     reward.youGot,
     () => demo(),
     reward.gettingItem,
-    reward.markShown,
+    reward.showing,
   );
   const hook = await createRailwayHook(adapter, owner);
   demo = hook.demo;
