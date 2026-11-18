@@ -26,6 +26,7 @@ import { capturePoisAfter, sameTurns } from './helpers/poi-golden.ts';
 import { captureLookoutAfter } from './helpers/lookout-golden.ts';
 import { captureRingAfter } from './helpers/ring-island-golden.ts';
 import { captureStallAfter } from './helpers/mushroom-stall-golden.ts';
+import { captureSecrets } from './helpers/secrets-golden.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 const { loadLevel } = await import('../dev/level/level.ts');
 
@@ -229,4 +230,12 @@ test('Ring Island pieces, poses, colliders, clearance and frames match the pre-r
 test('mushroom stall meshes, canvases, collider, footprint and Take target match the pre-record code', async () => {
   const actual = JSON.parse(JSON.stringify(await captureStallAfter()));
   prefabGolden(actual, JSON.parse(fs.readFileSync('test/fixtures/prefab-mushroom-stall.json', 'utf8')), 'stall');
+});
+
+// Step 13 (the secrets): captured on the pre-record code; GOLDEN=1 rewrites it. Runtime values use the shared tolerance.
+test('secrets ground, ladder, colliders, boxes and Open target match the pre-record code', async () => {
+  const fixture = 'test/fixtures/prefab-secrets.json';
+  const actual = JSON.parse(JSON.stringify(await captureSecrets()));
+  if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual) + '\n');
+  prefabGolden(actual, JSON.parse(fs.readFileSync(fixture, 'utf8')), 'secrets');
 });
