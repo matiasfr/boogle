@@ -80,38 +80,14 @@ test('v0 and v1 return spots obey room and world reset boundaries', () => {
   assert.deepEqual(staleKeys([...mine, other], 'v19', { world: 'v20', rail: 'rail-v20' }), [...mine, other]);
 });
 
-test('a world bump clears the old world wardrobe and keeps this one', () => {
-  const s = storage({
-    'boogle.railway-wardrobe.v0:rail-v18-a:p': 'old',
-    'boogle.railway-wardrobe.v0:rail-v19-a:p': 'mine',
-  });
-  assert.deepEqual(resetForWorld(s, ns).removed, ['boogle.railway-wardrobe.v0:rail-v18-a:p']);
-  assert.equal(s.getItem('boogle.railway-wardrobe.v0:rail-v19-a:p'), 'mine');
-});
-
-test('town memory from an old rail namespace is removed', () => {
-  assert.deepEqual(
-    staleKeys(['boogle.railway-town.v0:rail-v18-a:p', 'boogle.railway-town.v0:rail-v19-a:p'], 'v19', ns),
-    ['boogle.railway-town.v0:rail-v18-a:p'],
-  );
-});
-
-test('found crystals and finds from an old rail namespace are removed', () => {
-  assert.deepEqual(
-    staleKeys(['boogle.railway-finds.v0:rail-v18-a:p', 'boogle.railway-finds.v0:rail-v19-a:p'], 'v19', ns),
-    ['boogle.railway-finds.v0:rail-v18-a:p'],
-  );
-});
-
-test("a jump room's seen arrival line from an old rail namespace is removed", () => {
-  assert.deepEqual(
-    staleKeys(
-      ['boogle.jump.seen.v1:rail-v18-q1-done-a1b2c3', 'boogle.jump.seen.v1:rail-v19-q1-done-a1b2c3'],
-      'v19',
-      ns,
-    ),
-    ['boogle.jump.seen.v1:rail-v18-q1-done-a1b2c3'],
-  );
+test('wardrobe, town memory, finds and jump arrival lines go with their rail namespace', () => {
+  for (const key of [
+    'boogle.railway-wardrobe.v0:rail-v18-a:p',
+    'boogle.railway-town.v0:rail-v18-a:p',
+    'boogle.railway-finds.v0:rail-v18-a:p',
+    'boogle.jump.seen.v1:rail-v18-q1-done-a1b2c3',
+  ])
+    assert.deepEqual(staleKeys([key, key.replace('rail-v18', 'rail-v19')], 'v19', ns), [key]);
 });
 
 test('several missed wipes reset all old-world progress, keeping identity, preferences and unrelated data', () => {
