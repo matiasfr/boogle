@@ -276,13 +276,16 @@ try {
       svc = await serve();
     },
     hosted: (id: string) => svc.roomHost()?.room(id),
+    inProcess: !controlUrl,
     dataDir,
   };
   await railwayChecks(ctx);
   await railwaySeats(ctx); // Server-kind chairs survive hidden/closed peers and a sitter's reconnect.
   await railwayJumpIn(ctx); // a seeded playtest room, two players, through a restart
-  await railwayRequestStop(ctx); // a lever request, mirrored on three tabs, and the train stopping for it
-  await railwayLeaf(ctx); // Ring Island's leaf: two players bring it down, a late joiner, a reload and a restart
+  if (ctx.inProcess) {
+    await railwayRequestStop(ctx); // a lever request, mirrored on three tabs, and the train stopping for it
+    await railwayLeaf(ctx); // Ring Island's leaf: two players bring it down, a late joiner, a reload and a restart
+  } else console.log('SKIP  request stop and leaf: they step the in-process room host, which broker net lacks');
 
   // 11. WS_LOAD=1: R1a's and R1b's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x
   // churn). WS_LOAD_PLAYERS=6 / WS_LOAD_LAT=200 / WS_LOAD_CHURN=5x pick rows.
