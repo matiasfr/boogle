@@ -154,8 +154,7 @@ export async function secretsBindings() {
   const read = (f: string) => fs.readFileSync(f, 'utf8');
   const json = (f: string) => JSON.parse(read(f)) as unknown;
   sourceModule(read('src/prefab/builders/greybox-box.ts'), { THREE, material, registerBuilder }, []);
-  if (fs.existsSync('src/prefab/builders/secrets.ts'))
-    sourceModule(read('src/prefab/builders/secrets.ts'), { THREE, registerBuilder, merged: recorded.merged }, []);
+  sourceModule(read('src/prefab/builders/secrets.ts'), { THREE, registerBuilder, merged: recorded.merged }, []);
   const runtime = sourceModule<typeof import('../../src/prefab/instantiate.ts')>(read('src/prefab/instantiate.ts'), {
     THREE,
     compiled,
@@ -226,7 +225,7 @@ export async function secretsBindings() {
       definitions,
       loadLevelArtifact: validation.loadLevelArtifact,
       placeSecretThing,
-      level: fs.existsSync('content/built/levels/secrets.json') ? json('content/built/levels/secrets.json') : null,
+      level: json('content/built/levels/secrets.json'),
       __lazy: (path: string) => {
         const load = lazy[path];
         if (!load) throw new Error(`secrets golden: unbound lazy import ${path}`);
@@ -242,15 +241,15 @@ export const secretsSource = (file = 'src/entities/finds/secrets-view.ts') =>
     .readFileSync(file, 'utf8')
     .replace(/\bimport\((['"])([^'"]+)\1\)/g, (_, q: string, p: string) => `__lazy(${q}${p}${q})`);
 
-/** Builds the view from `source` over the bindings and reads back everything it placed. */
-export async function captureSecrets(source = secretsSource(), extra: Record<string, unknown> = {}) {
+/** Builds the view over the bindings and reads back everything it placed. */
+export async function captureSecrets() {
   const c = await secretsBindings();
   const matrices = recordMatrices();
   try {
     const owner = c.createOwnedView();
     const { createSecretsView } = sourceModule<{
       createSecretsView(owner: unknown, store: unknown): Promise<View>;
-    }>(source, { ...c.bindings, ...extra });
+    }>(secretsSource(), c.bindings);
     const view = await createSecretsView(owner, c.store);
     const meshes = () => {
       owner.root.updateMatrixWorld(true);
