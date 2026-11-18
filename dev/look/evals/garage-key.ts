@@ -1,5 +1,5 @@
 // npm run look -- --real --size 1440x900 --rail-seed steel-home --hud --eval dev/look/evals/garage-key.ts \
-//   --until window.__gkReady --action dev/look/evals/garage-key-act.ts --video --seconds 22 --name garage-key
+//   --until window.__gkReady --action dev/look/evals/garage-key-act.ts --video --seconds 18 --name garage-key
 // The garage on the keyboard (docs/plans/garage-install-moment.md, checkpoint run of 18 November, "E on the
 // keyboard"): stands by the post at the Roundhouse, as railway-install.ts does, and waits until the garage is offered.
 // The action presses keyboard events only, never triggerAction: every press below goes through the window's key

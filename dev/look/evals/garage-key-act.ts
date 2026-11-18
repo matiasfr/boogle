@@ -1,3 +1,5 @@
+// npm run look -- --real --size 1440x900 --rail-seed steel-home --hud --eval dev/look/evals/garage-key.ts \
+//   --until window.__gkReady --action dev/look/evals/garage-key-act.ts --video --seconds 18 --name garage-key
 // Action half of garage-key.ts: the garage on keyboard events alone (KeyboardEvent on the canvas, bubbling to the
 // window's key listeners as a player's key does; never triggerAction). Prints `GKEY <step> @<ms>` lines, ms from the
 // action's start, for picking frames out of the --video:
