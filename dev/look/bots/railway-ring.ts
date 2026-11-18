@@ -177,6 +177,14 @@ export async function rideToIsland(bot: Bot, { rideFrom, hopTo, view, until }: R
   const levers = () => (view() as unknown as { ringLevers: RingLever[] }).ringLevers;
   const outward = () => levers().find((l) => l.halt === STOP.railhead && l.dir === 1 && l.on);
   const levers0 = () => `RING LEVERS ${JSON.stringify({ at: me.body!.position, levers: levers() })}`;
+  // `wait` below reads the outbound lever at once: from a just-struck rivet it may not stand yet.
+  const t0 = railAt();
+  if (!outward()) console.log(levers0());
+  await until(() => !!outward(), 'the outbound Railhead lever stands', 60000).catch((error: unknown) => {
+    console.log(levers0());
+    throw error;
+  });
+  bot.note(`OUTBOUND LEVER stands ${railAt() - t0} ticks after the ride was asked for`);
   const train = await rideFrom(
     {
       name: 'Railhead',
