@@ -1,4 +1,4 @@
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** R1–R5 and V1–V3 are on main (#1672), with later garage/fourth-car follow-ups (#1681, #1711). Built, not shipped: none verified. Next: reconcile Checkpoints A/B against retained proofs, then T (ring-threading layout); complete checkpoint coverage is not established here. Ring Island
+> **Status, 18 November 2026 against origin/main 2a875bf53 (world v60):** R1–R5 and V1–V3 are on main (#1672), with later garage/fourth-car follow-ups (#1681, #1711). Checkpoints reconciled and run on HOTBOX on 18 November ([checkpoint run](#checkpoint-run-18-november-2026)). **Checkpoint B ticked** (check, perf at the island halt and the Roundhouse, the V1 and V3 looks; not tested on a device). **Checkpoint A not ticked:** check, `loop -- run` and the steel bot from `ring-joined` to `boiler-long` pass on main, but `test:net` has no case with a carrier leaving mid-carry (never written); its "ship v28" no longer applies. Next: the orchestrator's or the owner's call on that net case (write it, or rule it covered), then T (held for the owner's word on question 1). Ring Island
 > build 2 as a systems-first greybox, `WORLD_NS` v31 (main took v28 for slice 5; v29 is the Quarry stone stop's and v30 is the riders step's). Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
 > R1 to R5 do not wait for them. **Designer's review, 11 November: cleared to build;
 > [its rulings](#design-review-designer-2026-11-11) A to F are what gets built where a step below differs** (no footings
@@ -391,6 +391,8 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
 - [ ] **Checkpoint A (rules).** Proofs, and only these: `npm run check`; `npm run loop -- run`; **the bot from
       `--rail-seed ring-joined` to the `boiler-long` state**, logging minutes per beat; `test:net`'s reconnect pair
       once with a carrier leaving mid-carry. Then ship v28 under the mid-session hold.
+      Run on 18 November ([below](#checkpoint-run-18-november-2026)): check, the loop and the bot pass on main
+      2a875bf53; the net case with a carrier leaving mid-carry was never written; "ship v28" no longer applies (v60).
 - [x] **V1. The works on the island (M, Mac).** Create `src/entities/ring-steel/{index,view}.ts`. Greybox boxes only:
       yard stacks drawn from `yardLogs`, `yardRails`, `yardFoot`; a bill sign over the works (the frame sign's
       have/need per material, `stock-sign.ts`'s pattern); the rack's steel blocks; a box jib for the loader between
@@ -487,11 +489,169 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       clearance is the stills' and the arithmetic above. Not tested on a device.
       **Open, for the Home flip:** when Home flips to layout B, `SHED_TABLE` moves to layout B's table (a rules
       change with its own bump) and the garage's Install replaces this prompt, with its moment on the accepted event.
-- [ ] **Checkpoint B (views).** `npm run check`; `npm run perf` at the island halt and the Roundhouse, before and
+- [x] **Checkpoint B (views).** `npm run check`; `npm run perf` at the island halt and the Roundhouse, before and
       after, reported; the two looks above; one device run (`npm run device`) or the line "not tested on a device".
+      Run on 18 November on main 2a875bf53 ([below](#checkpoint-run-18-november-2026)): all pass; perf reported
+      (no "before" figure exists for the island; the Roundhouse matches the garage checkpoint's counts); not tested on
+      a device.
 - [ ] **T. The train through the ring: a layout and a still, no rules (S, Mac; waits for question 1).** A planned
       spur in `dev/level/ring.ts`'s report (start, grade, length, the saddle's height) and one still of the lowered
       saddle from Home behind a flag. Nothing in `src/sim/`. It becomes its own plan if he asks for the ride now.
+
+<a id="checkpoint-run-18-november-2026"></a>
+
+### Checkpoint run, 18 November 2026
+
+On HOTBOX (Windows 11, 20 logical CPUs, one NVIDIA Ampere GPU shared with other builders' looks; Playwright's full
+Chromium on WebGPU), branch `claude/ring-build2-checkpoints` from origin/main `2a875bf53` (world v60;
+`git log origin/main..HEAD` empty before the runs). Game, sim, server and tests are origin/main's. The branch adds two
+stale-eval fixes in `dev/look/evals/` (below) and this record. Load is busy logical CPUs out of 20, from
+`npm run heartbeat` and each verdict (Windows has no load average; the bot gate holds above 18, a bench counts as quiet
+at 12 or under). Every browser run went through the machine bot queue, reported no graphics errors, and I opened its
+still. Raw output is local under `.look/ring-build2-checkpoints/` and `.look/playthrough/rb2-steel/` on HOTBOX (not
+committed). Stills: [docs/reports/ring-build2-checkpoints/](../reports/ring-build2-checkpoints/). Not tested on a device.
+
+**Reconcile: what each named proof had before this run.**
+
+| Proof | Proven before (where, commit, world) | Today |
+| --- | --- | --- |
+| A, B: `npm run check` | Garage moment checkpoint, exit 0 on `7b1cf4028` (main `12c244db4`); prefab data, pass on `83e398bfb` | Stale: since `83e398bfb` main changed `garage-view.ts`, `player/modal.ts`, `glide-device-view.ts`, `reward-data.ts` and `gear-models.ts`, which lint, typecheck and the build cover. **Rerun: pass** |
+| A: `npm run loop -- run` | R5, 12 November, on ring2/rules (v31 era): 1–4 players, rivet to install 4:06–4:40 | Stale: world v31 to v60, the route and the railhead changed since. **Rerun: pass** |
+| A: the bot, `ring-joined` to `boiler-long` | 12 November, rebase 3 tip `9d63d738` (v31 era): pass, 28 min of game in 4 min. The garage checkpoint (18 November, `12c244db4`) ran only `steel-home` to `boiler-long` | Stale: the bot's last phase moved to the garage and to `Line.boiler` 2 (b5bc4e0cb); Ring Island's last massing sitting (#2203) re-bodied the island; the garage became a modal (#2210). The garage run predates both and skips the island. **Rerun: pass** |
+| A: `test:net` reconnect pair, a carrier leaving mid-carry | Never run | **Never written.** `dev/peer-test/ws-railway.ts` holds a reconnect pair (a same-pid takeover, then an orderly restart, about lines 272–292), but the takeover is by a player carrying nothing; the one carrying (RB) never leaves, and carry is checked only as a room total across the restart. No net case closes a page mid-carry. The server unit test `server/test/railway-steel-host.test.ts:339` covers a leaver's leg-rack rails through the grace (the greybox route, not the steel yard's takes). Not written here |
+| A: "Then ship v28 under the mid-session hold" | — | **No longer applies:** the world is v60 and build 2 shipped as #1672 |
+| B: `npm run perf` at the island halt and the Roundhouse, before and after | Island: never. Roundhouse: garage checkpoint, 18 November, `12c244db4`, at the table (412 calls, 946,365 triangles) | **Run here** with the look-based readings |
+| B: V1's look, `--rail-seed steel-kit` at the yard, phone and desktop | 12 November on the Mac, desktop only (`.look/v1-works-cold-still.png`, not kept on HOTBOX); no phone shot | Stale (the island re-bodied, #2203). **Retaken, both widths** |
+| B: V3's look, two players at `steel-home`, both pages see the next line 2 train at the Village with the long boiler | Never run as written (V3 took no two-player look). The garage checkpoint's G4 two-player look (18 November, `12c244db4`) proved the installer's and bystander's moment, not the train at the Village | **Retaken** |
+| B: one device run or the line | — | Not tested on a device |
+
+**Checkpoint A.**
+
+- **`npm run check`: pass** (exit 0 on `2a875bf53`, `timeout 2700`, 22:05 to 22:11 UTC, 5 min 18 s, load 8.1 at
+  start). Lint 0 problems, typecheck, 2,170 unit tests (2,169 pass, 0 fail, 0 skipped, 1 existing todo), level check
+  21 reports, assets, prefabs (318 records, 488,761 bytes) and the build. No rerun was needed. One run serves both
+  checkpoints: the tree has no game, sim, server or test change since. `.look/ring-build2-checkpoints/check.log`,
+  `check.exit`.
+- **`npm run loop -- run`: pass** (exit 0, 23 s, load about 4). Every order probe is enforced by the rules; 1 to 4
+  players finish, with no softlock and no graph bug. Rivet to install, straight-line: **1p 4:08** (rivet 34:48,
+  steelkit 35:53, steelworks 36:03, steelhome 37:48, install 38:56), **2p 4:33**, **3p 4:29**, **4p 4:37**; the steps
+  are the kit 1:06 to 1:35 after the rivet, the feed 9 s, steel home 1:45 later and the install's 1:07 walk. That is
+  the same as R5's 4:06 to 4:40 on the v31 world. Whole route 1p 38:56 straight-line (46:03 calibrated).
+  `.look/ring-build2-checkpoints/loop-run.log`.
+- **The bot, `ring-joined` to `boiler-long`: pass, no recovery.** `npm run playthrough -- --from ring-joined --to
+  boiler-long --stall 6000 --wall 2700 --name rb2-steel` (today's segment: `dev/look/segments.ts` maps `--from
+  ring-joined` with a steel stop to `railway-steel-bot.ts`, `railFrom=steel`; the seed and stop names are unchanged
+  since 11 November). It ran 826 s of game in 245 s of wall clock, at load 4.07 → 1.36, `underLoad: false`, after
+  81 s in the queue (22:13 to 22:19 UTC). Beats, page game time with server ticks (10 a second):
+
+  | Beat (the session's marks) | Game | Wait before | Server tick |
+  | --- | --- | --- | --- |
+  | Train called at the Village | 0:17 | 8 s | — |
+  | Riding line 2 (Far Head 1:43, the Pier 1:56) | 1:13 | 56 s | — |
+  | At the island: steel kit landed (8 logs, 12 rails in the yard) | 5:04 | 3 min 9 s | 12428 (the bot's island checkpoint) |
+  | Kit taken and fed (logs 8; rails 8, then 4: 20 takes and 20 feeds) | 5:06–5:11 | 2 s | — |
+  | Steel works lit | 5:11 | 4 s | 12447 (lit at 12444) |
+  | Home train called at the island's lever | 5:45 | 34 s | — |
+  | Steel home (6 in the bay, all 12 poured) | 13:38 | 8 min 27 s | 13868 |
+  | Boiler installed (`Line.boiler` 2, the garage held) | 13:51 | 13 s | 13940 |
+
+  The bot's own checkpoint clock (island 295.6 s, lit 301.7, home 809.4, installed 826.1) runs a few page seconds
+  behind the marks; the ticks are the server's. Idle seconds per wait (designer ruling, rulings section): stood still 4 times for 4 min 33 s in all.
+  That is 3 min at the island halt after calling the home train (1416, -810), 53 s at the Village before boarding,
+  31 s at the works door after it lit, and 9 s at the table. Lit to steel home is **1,421 ticks, 142.1 s** by the
+  server, against 117.5 s on 12 November; the page clock runs warped, so read waits in ticks. Island to lit is 19
+  ticks, home to installed 72. The end still
+  ([steel-bot-end.png](../reports/ring-build2-checkpoints/steel-bot-end.png)) shows Home: the bay's orange steel on its
+  pallet, the bigger cradle's orange frame on the stand, the engine at the table and the prompt "Look at the engine".
+  The whole steel loop's objective line read "Build the line to High Gorge: section 1 of 4…" (below).
+  `.look/playthrough/rb2-steel/` (verdict.json, report.txt, bot.txt, summary.txt).
+- **`test:net`, the reconnect pair with a carrier leaving mid-carry: never written** (see the table); not run and not
+  written here. **Checkpoint A stays unticked** on this one proof.
+
+**Checkpoint B.**
+
+- **`npm run check`: pass**, the same run.
+- **Perf at the island halt and the Roundhouse: reported.** `npm run perf` stands at the spawn only
+  (`dev/look/perf.ts`), so both readings are looks, one each, at quiet load:
+  - **Island halt** (prefab data's method): `npm run look -- --real --rail-seed steel-lit --eval
+    dev/look/evals/stack-at.ts --query stackat=1418.1,8.5,-815.9 --action dev/look/evals/stack-draws.ts --cam
+    1408,22,-796 --look 1421,9,-820`. **183 draw calls, 367,655 triangles** (of which the leg 1 route meshes add 5
+    calls and 384 triangles); frame cost avg 9.53 ms, p95 11.3, max 16.7; 55.4 completed frames/s; load 2.22 →
+    2.56. The still frames the halt, the works shed with its STEEL WORKS sign and the Ringworks board, the loader, the
+    rack and the island folk ([island-halt-perf.png](../reports/ring-build2-checkpoints/island-halt-perf.png)).
+  - **Roundhouse, at the table** (the garage checkpoint's method): `npm run look -- --real --rail-seed steel-home
+    --cam 952,27,4 --look 943,19.5,26 --action dev/look/evals/railway-works-at.ts --query
+    'worksat=table&worksperf=1&prof=1' --warm 20`. **412 draw calls, 946,365 triangles**; 277 frames, CPU 11.23 avg
+    / 13.0 p95 ms, GPU render 4.18 avg / 5.19 p95 ms, 1 missing; 960×600, DPR 1, MSAA 4; load 2.31 → 2.43
+    ([roundhouse-perf.png](../reports/ring-build2-checkpoints/roundhouse-perf.png)).
+  - **Before and after:** the plan holds no earlier figure for either place (section 8 says perf "reports the cost;
+    it does not gate"), and no pre-build-2 world can be run against today's harness. **Comparable:** the Roundhouse
+    against the garage checkpoint (same machine, method, camera and seed, `12c244db4`): calls and triangles are
+    identical (412, 946,365). CPU is 11.23 against 10.27 ms and GPU 4.18 against 4.14 ms, which is within one reading
+    on a shared GPU. **Not comparable:** the island has no earlier reading; prefab data's Gorge and Bell Rock figures
+    are other places. Frame times are single readings with other jobs on the machine; sole GPU use cannot be shown.
+- **V1's look, the yard at `steel-kit`, phone and desktop: pass.** `npm run look -- --rail-seed steel-kit --size
+  1440x900|440x796 --cam 1413.9,12.5,-806 --look 1422,8.8,-818.5` (load 1.1 → 2.3 and 5.8 → 2.2): the Ringworks board,
+  the STEEL KIT placard, the shed and its doorway, the rails and logs pallets full
+  ([desktop](../reports/ring-build2-checkpoints/v1-yard-desktop.png),
+  [phone](../reports/ring-build2-checkpoints/v1-yard-phone.png)). From this raised spot at the platform's south end,
+  the loader's beam crosses the bill sign ("logs 0/8 rails 0/12"): P3 below. The prompts, pressed with V1's eval
+  (`--hud --eval dev/look/evals/railway-steel-prompts.ts --cam 1416.5,12.6,-811.5 --look 1421.5,9.3,-819`):
+  `steelstep=light` at desktop width (load 12.9 → 2.9). The empty-back feed is blocked "Bring logs or rails"; Take
+  logs moves 8 to the back; the feed moves them in (sign "logs 8/8 rails 0/12"); blocked "Bring rails"; rails go 8,
+  then 4; lit on the last feed (sign "lit steel 0/12", 1/12 by the still), and no feed offered after
+  ([works lit](../reports/ring-build2-checkpoints/v1-works-lit-desktop.png)). `steelstep=take` at phone width
+  (load 17.8 → 9.8) ends with 8 logs on the back and "Take rails" offered at the rails pallet
+  ([take rails](../reports/ring-build2-checkpoints/v1-take-rails-phone.png)). Without `--cam` these looks keep the
+  debug camera on the spawn hill while the eval moves the player: a harness framing matter, not the game.
+- **V3's look, two players at `steel-home`: pass.** `npm run look -- --players 2 --real --rail-seed steel-home --hud
+  --eval .look/ring-build2-checkpoints/evals/garage-two-village.ts --until window.__twoDone --action
+  dev/look/evals/garage-act.ts --query garage=enter --seconds 8 --frames 16 --wall 1500` (load 1.94 → 3.32). The
+  eval is a local copy of `garage-two.ts`, tracked script unchanged. It adds one watcher: after the install, each page
+  waits for a line 2 train standing at the Village with `Train.boiler` 2. The installer opened the garage on the
+  Longer boiler, held, and the moment played as theirs, `Line.boiler` 2. The installer's still shows "Longer boiler
+  Installed", top speed 25 m/s and cars 5, with **no pause menu** over the garage (#2210 holds)
+  ([installer](../reports/ring-build2-checkpoints/v3-installer-garage.png)). The bystander, 12 m east, saw the moment
+  as not theirs with the garage shut; their position, camera and input hold read the same before and after.
+  **Both pages** then read "slot 2 stands at the Village wearing boiler 2, tick 14599", 58 s after ready
+  ([bystander](../reports/ring-build2-checkpoints/v3-bystander.png)). In the bystander's motion sheet that train
+  stands beyond the bay's steel and pulls out at about 6 s
+  ([sheet](../reports/ring-build2-checkpoints/v3-bystander-motion.png)), too small there to see its boiler.
+  The long boiler as drawn: V2's eval at `boiler-long` (`--query steelwant=long --eval
+  dev/look/evals/railway-steel-train.ts`, fixed below; load 2.42 → 0.86) found slot 1 standing at Ring Island with
+  boiler 2. Seen side on, it has the long barrel with its gold sand dome and lashing, beside the sign "STEEL WORKS lit
+  steel 12/12" ([long boiler](../reports/ring-build2-checkpoints/v2-long-boiler-island.png)). So both pages'
+  rows show the Village train fitted, and the long engine is seen drawn from that row; a frame of the Village train
+  on both pages at once was not taken.
+- **Device:** not tested on a device.
+
+**Checkpoint B is ticked:** every proof it names passed on main `2a875bf53`, perf is reported (not a gate), and none
+waits on the owner. **Checkpoint A is not ticked:** the net case with a carrier leaving mid-carry was never written.
+Writing it is test work in `dev/peer-test/` (a sync contract, so allowed by the test diet); ruling it covered by
+the server's leaver tests is a call for the orchestrator or the owner. Its other proofs pass on main today.
+
+**Scripts changed** (own commit, `c4345700b`; scripts only, the game was right):
+`dev/look/evals/railway-steel-prompts.ts` (`steelstep=light`) took and fed rails once and expected the works lit, but a
+back holds 8 against a bill of 12; it failed "a full bill did not light the works" at rails 8/12. It now repeats take
+and feed until the yard is empty. `dev/look/evals/railway-steel-train.ts` (`steelwant=long`) accepted `Train.boiler` 1,
+the 20 m/s fit since b5bc4e0cb; it now wants 2. The steel bot already does both.
+
+**Defects and observations (none fixed here).**
+
+- P3: from the island platform's south end at a raised eye, the loader's beam (u 436.9 to 444.3, 4.6 m) crosses the
+  works' bill sign ([v1-yard-desktop.png](../reports/ring-build2-checkpoints/v1-yard-desktop.png)). The sign reads
+  whole from the doorway and from across the tracks. View code: `src/entities/ring-steel/view.ts`.
+- P3, for the owner (copy, not The Boogler's): through the whole steel loop the objective line reads "Build the line to
+  High Gorge: section 1 of 4. The frame is on Ring Island's west platform." Nothing on the HUD names the works, the
+  steel or the install.
+- P3: `dev/look/evals/railway-install.ts`'s `installstep=hold` and `adopt` paths still wait for `Line.boiler` 1 (the
+  garage checkpoint's note; not run here).
+- Timing, not a defect: lit to steel home took 142 s of server time against 117.5 s on 12 November (the world, the
+  speed rows and the line have changed since).
+
+**Unverified:** a carrier leaving mid-carry over the network; the Village train's long boiler in a frame on both pages
+at once; real-time feel (only the garage checkpoint's capture covers it); quiet-GPU frame times; touch input. Not
+tested on a device.
 
 ## 5. Level findings
 
