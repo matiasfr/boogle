@@ -165,7 +165,8 @@ export async function captureLookout(c: ReturnType<typeof lookoutBindings>, crea
 }
 
 /** The record view: the lookout over the real builders, catalogue and `instantiate`, with the same stand-ins. The
- * fixture came from the pre-record view, run through these bindings as it was (`captureLookoutBefore` at f83eeafa). */
+ * fixture came from the pre-record view, run through these bindings as it was (`captureLookoutBefore`, in the commit
+ * "Capture the lookout world golden before the record conversion"). */
 export async function captureLookoutAfter() {
   const c = lookoutBindings();
   const { compiled, definitions } = await import('../../src/prefab/catalogue.ts');

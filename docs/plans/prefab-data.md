@@ -660,10 +660,10 @@ buoys on the pier line as authored operands (`gaps` out times `gap` metres, in R
 on load. The view calls no collider API now, so its colliders-from-records debt entry (2) goes. Records 291 → 294,
 levels 22 → 23.
 
-Proof: `test/fixtures/prefab-lookout.json` was captured from the unconverted view (f83eeafa) and passes unchanged: all
-713 values bit-identical (every mesh's world pose and material, the buoys' full-precision instance matrices at build and
-after a frame, the collider, footprint, the target and the fixed view through the eyepiece), max deviation 0 against the
-1e-9 tolerance. Opened before/after stills of the telescope match ([stills](../world/prefab-lookout/)): the telescope's
+Proof: `test/fixtures/prefab-lookout.json` was captured from the unconverted view (commit "Capture the lookout world
+golden before the record conversion") and passes unchanged: all 713 values bit-identical (every mesh's world pose and
+material, the buoys' full-precision instance matrices at build and after a frame, the collider, footprint, the target
+and the fixed view through the eyepiece), max deviation 0 against the 1e-9 tolerance. Opened before/after stills of the telescope match ([stills](../world/prefab-lookout/)): the telescope's
 pixels are identical, only the animated water and flowers differ; Look through it opens with a real E press.
 
 Left in this area: the site footprint (`addFoot`, a clearance rule, not a solid), the buoys' bob and lift, and the

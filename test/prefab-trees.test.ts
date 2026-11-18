@@ -196,8 +196,8 @@ test('POI parts, poses, colliders and lights match the pre-record code', async (
   assert.equal(lantern.pos[1], (tower.params.plinthH as number) + (tower.params.towerH as number));
 });
 
-// Step 13 (the lookout): the fixture was captured on the pre-record code (captureLookoutBefore at f83eeafa) and is never
-// rewritten. Runtime values use the shared tolerance; buoy matrices are full precision, before Float32 quantization.
+// Step 13 (the lookout): the fixture was captured on the pre-record code (captureLookoutBefore, in the commit "Capture
+// the lookout world golden before the record conversion") and is never rewritten. Runtime values use the shared tolerance; buoy matrices are full precision, before Float32 quantization.
 test('lookout meshes, buoys, colliders, footprint and view match the pre-record code', async () => {
   const actual = JSON.parse(JSON.stringify(await captureLookoutAfter()));
   prefabGolden(actual, JSON.parse(fs.readFileSync('test/fixtures/prefab-lookout.json', 'utf8')), 'lookout');
