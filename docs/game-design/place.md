@@ -1755,6 +1755,16 @@ precision** and **11. Show, don't tell**.
 **2**: the keener edge, shared by the room. The proper axe gives **5** a hit on trees and hardwoods; rocks stay at 2.
 A tree's notch and a rock's crack track the pieces taken, so the felling or breaking hit finishes it at either yield.
 
+**The bite (G20, 18 November, [plan](../plans/grant-c8-batch.md#g20-chop-progress-on-the-tree-with-a-wood-chop-effect-instead-of-the-bar)).**
+An ordinary tree shows its own chop progress: from the first accepted hit a band of the trunk between 0.94 m and
+1.3 m is opened on the side of the last stroke (two of its six faces), and a dark heart behind the opening draws back
+as pieces are taken, from about 8 cm deep at the first hit to 60% of the trunk's radius at the ninth of ten, so the
+trunk reads narrower at the cut, from the side most of all. The felled trunk tips and lies with its bite, over the
+pale stump. Each accepted chop throws more chips as the bite deepens: 9 at the first hit, 14 at the felling one
+(hardwoods by the same work, 9 to 14). Hardwoods and the great tree keep the old dark notch, and a refused stroke
+still leaves only its shallow scuff. View only (`src/render/place-tree-view.ts`, `src/entities/railway/sources.ts`);
+the rule, the yield and the timing are unchanged. Depth and chip count are defaults, cheap to retune.
+
 **Drop and piles.** Drop (right click / R3 / touch **Drop**) puts one piece down, logs first, then stone, then rails;
 held, it puts the whole back down. It is how a back empties before shouldering a big thing and how friends hand cargo
 over. Drops only change the pile at their validated local point or create one there; they never recover distant stock

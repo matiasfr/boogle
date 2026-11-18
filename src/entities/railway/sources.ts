@@ -555,7 +555,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     tree.hitAt = performance.now();
     if (tree.cleared) return;
     placeSound('treeBite', tree.x, tree.z);
-    pieces.chips(at.x, at.y, at.z, 9);
+    // More chips as the bite deepens (G20): 9 at the first stroke, 14 at the felling one.
+    pieces.chips(at.x, at.y, at.z, 9 + Math.round(5 * Math.min(1, tree.work / 15)));
     for (let k = 0; k < event.accepted - (event.returned ?? 0); k++) {
       const flight = pieces.send(
         'log',
