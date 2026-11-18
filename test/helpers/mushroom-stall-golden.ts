@@ -1,4 +1,4 @@
-// The mushroom stall's world output (src/adapters/mushrooms.ts), headless: every mesh's world pose, geometry and
+// The mushroom stall's world output (src/adapters/mushroom-stall.ts; before the record, src/adapters/mushrooms.ts), headless: every mesh's world pose, geometry and
 // material (its canvases' every paint call), every collider with its material, the footprint, the entity it spawns and
 // the Take target the stand offers (near, far, already carrying a bag), in build order.
 import fs from 'node:fs';
@@ -194,7 +194,7 @@ export async function captureStallAfter() {
     'createOwnedView',
     { THREE, owners: new WeakMap(), addBody() {}, removeBody() {} },
   );
-  const module = sourceModule<Stall>(fs.readFileSync('src/adapters/mushrooms.ts', 'utf8'), {
+  const module = sourceModule<Stall>(fs.readFileSync('src/adapters/mushroom-stall.ts', 'utf8'), {
     ...c.bindings,
     createOwnedView,
     instantiate: runtime.instantiate,

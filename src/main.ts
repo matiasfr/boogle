@@ -25,7 +25,7 @@ import { avatarReady } from './player/avatars.ts';
 import { net, remotes, connectRoom, onRoomReady } from './netplay/net.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
 import { initInput } from './player/input.ts';
-import { createStall } from './adapters/mushrooms.ts';
+import { createStall } from './adapters/mushroom-stall.ts';
 import { runFrame, runStart, beginFrame, mark, endFrame, frameCtx as ctx } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { coverReleased } from './boot/cover-hold.ts';

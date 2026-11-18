@@ -16,7 +16,7 @@ import { definitions } from '../../src/prefab/catalogue.ts';
 import { loadLevelArtifact } from '../../src/prefab/validate.ts';
 
 export const root = path.join(import.meta.dirname, '../..');
-// The mushroom stall's placement and footprint, as src/adapters/mushrooms.ts reads them.
+// The mushroom stall's placement and footprint, as src/adapters/mushroom-stall.ts reads them.
 const stallAt = loadLevelArtifact(stallLevel, definitions).placements.find((p) => p.prefab === 'mushrooms.stall')!;
 const STALL = { x: stallAt.pos[0], z: stallAt.pos[2], r: definitions[stallAt.prefab]!.footprint! };
 const STALL_FILE = 'src/content/levels/mushrooms.ts';

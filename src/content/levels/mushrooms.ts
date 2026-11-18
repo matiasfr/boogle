@@ -1,4 +1,4 @@
-// Where the mushroom stall stands: x and z on the island, y above the ground there (src/adapters/mushrooms.ts resolves
+// Where the mushroom stall stands: x and z on the island, y above the ground there (src/adapters/mushroom-stall.ts resolves
 // it on load; the artifact holds this operand, not the ground's height). dev/level/level.ts reads the same placement.
 import { defineLevel } from '../../prefab/types.ts';
 

@@ -1,4 +1,4 @@
-// The mushroom stall (src/adapters/mushrooms.ts), where you take a bag of seeds. Its builder is
+// The mushroom stall (src/adapters/mushroom-stall.ts), where you take a bag of seeds. Its builder is
 // src/prefab/builders/mushrooms.ts.
 import { definePrefab } from '../../prefab/types.ts';
 

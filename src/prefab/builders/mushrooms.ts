@@ -1,4 +1,4 @@
-// The mushroom stall's record (src/adapters/mushrooms.ts): the counter, its posts and striped awning, the shelf with five
+// The mushroom stall's record (src/adapters/mushroom-stall.ts): the counter, its posts and striped awning, the shelf with five
 // bags of seeds on it and the sign. Origin: the ground under the counter's middle; the sign faces -z.
 import * as THREE from 'three';
 import { registerBuilder } from '../builders.ts';

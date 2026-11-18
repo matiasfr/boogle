@@ -3,7 +3,7 @@
   "colliders": {
     "src/adapters/mushrooms.ts": {
       "count": 7,
-      "exports": ["bounceOffCaps", "createStall", "listenForSprouts", "spotsAhead", "sprout", "stallTargets"],
+      "exports": ["bounceOffCaps", "listenForSprouts", "spotsAhead", "sprout"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/boogler/boogler.ts": {
