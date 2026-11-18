@@ -123,7 +123,10 @@
 // v58 (2026-11-17): capped away-fare sack and rail.sack pour into the shared strongbox; no migration.
 // v59 (2026-11-17): garage steel spending, Shed.spent and Line.cradle; priced installs share a fit revision,
 // the bigger footing cradle and 30 m/s boiler. No save migration.
-export const WORLD_NS = 'v59';
+// v60 (2026-11-18): separate capacities: logs 8 (16 with the pack), stone 8 (16 with the breaker), rails 8; no heavy
+// load or drop reservations; a hit yields 1 until Station 3 is funded, then 2 (the proper axe 5); Station 3 takes 32
+// logs. No migration.
+export const WORLD_NS = 'v60';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
