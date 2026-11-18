@@ -141,22 +141,32 @@ async function fit() {
     acceptedFrame = boiler().frame;
     watchCall(performance.now(), solo ? 'solo' : 'fitter');
   }, 0);
+  // The camp's little guys answer the fit itself (train-view.ts calls folk.ts boltAt on the accepted rail.boilerFit,
+  // for about 5 s), and the trains start only once the depot cart rests, seconds later. So the most of them at the
+  // saddle is sampled from the press and must reach 2 before the trains start; the trace logs each change.
+  let mostHere = 0,
+    hereAtTrains = -1,
+    lastBolt = '';
+  const bolts: unknown[] = [];
+  const boltFrom = performance.now();
+  const boltWatch = setInterval(() => {
+    if (hereAtTrains >= 0) return;
+    const g = guys();
+    mostHere = Math.max(mostHere, g?.here ?? 0);
+    const row = JSON.stringify(g ?? null);
+    if (row !== lastBolt) bolts.push({ t: Math.round(performance.now() - boltFrom), ...(g ?? { none: true }) });
+    lastBolt = row;
+    if (trainsOn()) hereAtTrains = mostHere;
+  }, 20);
   check(await bot.use(saddle.x, saddle.z, 'fit the boiler', /^Fit the boiler$/), 'boiler fit offered');
   // Read synchronously after the press, before any server message can be handled.
   const flying = boiler().fitting,
     atPress = { phase: flying?.phase ?? null, trains: trainsOn() };
   check(await bot.work(() => trainsOn(), 30000, 380), 'boiler fitted');
   clearInterval(watch);
-  // The camp's little guys as they answer the fit (folk.ts `bolting`), every 100 ms for 6 s, logged whatever the check
-  // below finds: who was picked and how many have arrived.
-  const bolts: unknown[] = [];
-  const boltFrom = performance.now();
-  const boltTrace = setInterval(() => {
-    bolts.push({ t: Math.round(performance.now() - boltFrom), ...(guys() ?? { none: true }) });
-    if (performance.now() - boltFrom < 6000) return;
-    clearInterval(boltTrace);
-    console.log(`BOILER BOLT TRACE ${JSON.stringify(bolts)}`);
-  }, 100);
+  clearInterval(boltWatch);
+  if (hereAtTrains < 0) hereAtTrains = mostHere;
+  console.log(`BOILER BOLT TRACE ${JSON.stringify({ hereAtTrains, trains: Math.round(performance.now() - boltFrom), bolts })}`);
   await bot.until(() => !boiler().fitting, 3000, 'landed');
   const f = boiler().lastFit;
   console.log(
@@ -164,11 +174,7 @@ async function fit() {
   );
   check(atPress.phase === 'fly' && !atPress.trains, 'the flight starts on the press, before any answer');
   check(f && f.movedFrame === f.pressFrame, 'the boiler leaves the rope on the press frame');
-  check(
-    await bot.until(() => (guys()?.here ?? 0) >= 2, 3100, 'bolting'),
-    'two little guys at the saddle before the wake ends',
-  );
-  console.log(`BOILER BOLTING ${JSON.stringify(guys())}`);
+  check(hereAtTrains >= 2, 'two little guys at the saddle before the trains start');
   if (solo) {
     await wait(4000);
     const lashed = (read().line2View as unknown as { trains: { lashed: boolean }[] }).trains.map((t) => t.lashed);
