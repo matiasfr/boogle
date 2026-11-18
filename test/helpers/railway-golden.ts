@@ -28,9 +28,19 @@ export const SHARDS: readonly (readonly SeedStage[])[] = [
   ['hook-earned', 'q4-done', 'q5-arriving'],
   ['q5-shelved', 'sea-open', 'q5-stocked'],
   ['q5-carry', 'q5-finishing'],
-  ['q5-done', 'glide-earned'],
-  ['boiler'],
-  ['boiler-camp', 'trains-on', 'freight-running', 'fares-running', 'house-ready', 'house-built', 'sack-waiting'],
+  ['q5-done'],
+  ['glide-earned'],
+  // Every stage from the boiler on is built on railwayAtTrains' cached base: one build per shard that holds any.
+  [
+    'boiler',
+    'boiler-camp',
+    'trains-on',
+    'freight-running',
+    'fares-running',
+    'house-ready',
+    'house-built',
+    'sack-waiting',
+  ],
   ['yard-ready', 'yard-built'],
   ['yard-wagon', 'yard-deck'],
   [
