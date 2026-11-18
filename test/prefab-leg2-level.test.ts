@@ -68,7 +68,9 @@ test('the current route passes the level checker', () => {
   );
 });
 // A zero-failure count cannot see a check that stopped running or lost a target. The approved report pins which checks
-// and facts run and what each reaches; measurements are masked so retuning inside a threshold does not fail it.
+// and facts run and what each reaches. Only the numbers in each message are masked: a retune that changes numbers alone
+// passes, but one that changes a message's wording fails even with zero failures (a 0.25 to 1 m sideways move of
+// bell.rock changes which optional clauses appear in seven messages).
 test('the level checker still runs every approved check and fact', () => {
   const shape = (entries: readonly { kind: string; message: string }[]) =>
     entries.map((entry) => `${entry.kind}: ${entry.message.replace(/-?\d+(?:\.\d+)?/g, '#')}`);
