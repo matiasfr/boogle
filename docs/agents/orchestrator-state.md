@@ -12,7 +12,7 @@ The one record of who is running what, and what the three-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | Railhead traveller: Checkpoint A's owed proofs, then step 3 (the deck is a car) | The railhead traveller (P2) | `codex/railhead-deck-car` | the owner's live orchestrator session (HOTBOX); moved from Codex to a Claude Opus medium delegate on his word, 18 November 06:20 UTC | 18 November 03:45 | building on Claude: the step 3 review defect (the mount clearance moves a sea-side walkway player over the sea), in the existing worktree |
 | Ring Island footbridge, abutment a (terrain-clean step 7), resumed: the ground cap, a solid landing at the old path height, and player clearance for Ring Island's near-view solids | Terrain clean-up (P2) | `codex/ring-footbridge-cap` | the owner's live orchestrator session (HOTBOX); moved from Codex to a Claude Opus medium delegate on his word, 18 November 06:20 UTC | 18 November 00:30; resumed 03:00 | building on Claude: the review's four defects, continuing the partial fix in the existing worktree |
-| Device tests re-plan: which machine runs what now that HOTBOX orchestrates (remote-runner and remote-device-tests), a proposal only | Device tests run remotely (P2) | `claude/device-tests-replan` | the owner's live orchestrator session (HOTBOX), Claude Opus high planner delegate | 18 November 07:10 | planning (no browser) |
+| Device tests R1 and R3: device-run reports name the machine they run on; a real load reading on Windows for the bot queue, bench and heartbeat | Device tests run remotely (P2) | `claude/device-r1-r3` | the owner's live orchestrator session (HOTBOX), Claude Opus medium delegate | 18 November 07:50 | building (tooling, no browser) |
 
 ## Where the work stands
 
@@ -30,6 +30,8 @@ The owner, 18 November 2026 about 06:20 UTC, after the ChatGPT usage limit stopp
 One list, newest first. Each proceeds on its recommendation unless it says it waits; the heartbeat starts nothing on a question that waits. When he answers, record the answer in the decision log and delete the item here. Answered lately: [fill the free job slots, 18 November](../decisions-process.md#d-2026-11-18-fill-free-slots); [the town’s first choice, 16 November](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers); [the first line, 17 November: no fork](../decisions-core-loop.md#d-2026-11-17-first-line-no-fork); the names "Blast pipe" and "Big boiler" (16 November).
 
 **From 18 November:**
+
+- The device-tests re-plan's five questions ([re-plan](../plans/remote-device-tests.md)), each proceeding on its recommendation: (1) the Mac as an ssh runner (option B): not yet, and this is the only one that blocks anything (B1 to B3 wait for his yes); (2) the owner call "HOTBOX shares the load; the Mac orchestrates" now reads HOTBOX orchestrates and runs the harness, the Mac, iPad and phones are measured by device runs: yes, but the call text waits for his word; (3) "The Mac and mobile are the targets": frame time and counts from device runs on the Mac and iPad, HOTBOX stills prove behaviour with the machine named, lighting and colour stay his call on his own screens; (4) the Mac's launchd weekly scenarios keep running while it stays plugged in; (5) option C, a page left open that starts queued runs: no for now. His one-time step for option A: open the board link once in Chrome on the Mac while it is quiet and tap Run, then once on the iPad. Nothing waits but B.
 
 - The world-streaming plan's five questions ([plan](../plans/world-streaming.md#6-open-questions-for-the-owner)), each proceeding on its recommendation: (1) the server sends each client only nearby state: not now; (2) the sea's grid is in this row, geometry only: yes; (3) far-away things (the townsfolk past 300 m, a place's machinery) may stop moving while nobody is near and resume as they were, the telescope counting as near: yes; (4) load areas on demand: defer until a device run shows memory or load trouble; (5) the row is done when steps 0 to 7 ship and checkpoint B's frame-time reading is reported on the Mac, Windows and one device run, with no number gating it. Nothing waits.
 
@@ -49,7 +51,6 @@ One list, newest first. Each proceeds on its recommendation unless it says it wa
 - How many riders a passenger car holds and how cars are added (from his seats call; asked before the riders' coach shipped with eight places, so check [his answers](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework) before asking again).
 - Whether the buy's reach check (3.2 m from the board, live) is wanted.
 - Placeholder strings: "Every train", "Loader yard", the Cars tile's counts line, the board and till strings, and C1's "Sack waiting" and "Back after a night: the coin sack is on the counter", and C2's "Empty" (the prompt), "Sack <n>" and "<n> Boogles" on the till board.
-- Device tests run remotely: both plans assume the Mac orchestrates and HOTBOX is an ssh runner; with HOTBOX orchestrating they need re-planning before any step (the orchestrator's reading, not yet his word).
 
 **From 14 November:**
 
