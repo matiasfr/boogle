@@ -3,7 +3,7 @@
 // settles, whether a sprint's camera pumps, whether a jump's arc changed. `npm run look -- --curves` (.claude/skills/look).
 // `--curves-vs old.csv` draws an earlier run underneath; `--target glide` draws a reference (./targets.ts) and scores against it.
 import fs from 'node:fs';
-import type { Game } from './lib.ts';
+import { scratchPage, type Game } from './lib.ts';
 
 export type Row = {
   t: number;
@@ -238,8 +238,6 @@ function draw({ rows, marks, vs, target, label }: Plot) {
 }
 
 export async function plotCurves(game: Game, file: string, plot: Plot) {
-  const page = await game.ctx.newPage();
-  const url = await page.evaluate(draw, plot);
-  await page.close();
+  const url = await scratchPage(game, (page) => page.evaluate(draw, plot));
   fs.writeFileSync(file, Buffer.from(url.split(',')[1]!, 'base64'));
 }

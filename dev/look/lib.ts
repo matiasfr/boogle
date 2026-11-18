@@ -71,6 +71,33 @@ export const freePort = () =>
     });
   });
 
+// A checkout whose node_modules links to another's (before-after's old commit) loads its packages from the link's real
+// folder, outside the checkout, and Vite refuses those files with a 403 (server.fs.allow: the fonts, on HOTBOX 18
+// November 2026). Vite takes that list only from a config, so wrap the checkout's own config with both folders allowed.
+// The wrapper sits in that scratch checkout; any other checkout keeps its config untouched.
+function linkedModulesConfig(dir: string): string[] {
+  const modules = path.join(dir, 'node_modules');
+  if (!fs.existsSync(modules) || !fs.lstatSync(modules).isSymbolicLink()) return [];
+  const own = ['ts', 'mts', 'js', 'mjs']
+    .map((ext) => `vite.config.${ext}`)
+    .find((f) => fs.existsSync(path.join(dir, f)));
+  if (!own) return [];
+  const wrapper = path.join(dir, 'vite.linked-modules.config.ts');
+  fs.writeFileSync(
+    wrapper,
+    `// Written by dev/look/lib.ts (linkedModulesConfig) for a checkout with linked packages.
+import { mergeConfig, searchForWorkspaceRoot, type UserConfig } from 'vite';
+import own from './${own}';
+type Make = (env: unknown) => UserConfig | Promise<UserConfig>;
+export default async (env: unknown) =>
+  mergeConfig(typeof own === 'function' ? await (own as Make)(env) : (own as UserConfig), {
+    server: { fs: { allow: [searchForWorkspaceRoot(process.cwd()), ${JSON.stringify(fs.realpathSync(modules))}] } },
+  });
+`,
+  );
+  return ['--config', wrapper];
+}
+
 // Starts Vite on a free port and our server in-process, hosting every room (so rooms work offline), with its saves in
 // a temporary directory. With `url`, only uses that already-running game (the game's own server applies).
 // `root` serves another checkout (e.g. a git worktree of a prototype branch) with this harness.
@@ -101,7 +128,11 @@ export async function startStack({
   const port = await freePort();
   const vite = spawn(
     process.execPath,
-    [path.join(dir, 'node_modules/vite/bin/vite.js'), '--port', String(port), '--strictPort', '--host', '127.0.0.1'],
+    [
+      path.join(dir, 'node_modules/vite/bin/vite.js'),
+      ...linkedModulesConfig(dir),
+      ...['--port', String(port), '--strictPort', '--host', '127.0.0.1'],
+    ],
     {
       cwd: dir,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -185,6 +216,21 @@ export const launch = async ({
     throw error;
   }
 };
+
+// A page for the harness's own drawing (contact sheets, curve plots), in a context of its own. A new page in the game's
+// context takes the focus from the game's page, which ends its pointer lock and so opens the pause menu
+// (src/features/pause.ts). Windows' full Chromium grants the lock headless, so every still after a motion sheet showed
+// the menu there (HOTBOX, 18 November 2026); Playwright's headless shell never grants one.
+export async function scratchPage<T>(game: Game, fn: (page: Page) => Promise<T>): Promise<T> {
+  const browser = game.ctx.browser(); // null only for a persistent context, which can hold no second context
+  const ctx = browser ? await browser.newContext() : null;
+  const page = await (ctx ?? game.ctx).newPage();
+  try {
+    return await fn(page);
+  } finally {
+    await (ctx ?? page).close();
+  }
+}
 
 // Prints the THREE.* console errors a game collected (once each), if any.
 export function reportGfxErrors(games: Game[]) {
@@ -525,6 +571,9 @@ export class Game {
   async still(label = 'still') {
     const p = this.path(label, 'still');
     await this.page.screenshot({ path: p, timeout: 120000 }); // a software-rendered tab can take a minute for one frame
+    // Say so rather than leave it to be noticed: a still taken under the menu answers no question about the world.
+    if (await this.page.evaluate(() => !!document.querySelector('dialog.pause[open]')).catch(() => false))
+      console.log(`[${this.name}] note: the pause menu is open in ${p}`);
     return p;
   }
 
@@ -565,9 +614,7 @@ export class Game {
       const t = (Date.now() - t0) / 1000;
       shots.push({ t, b64: (await this.page.screenshot()).toString('base64') });
     }
-    const calc = await this.ctx.newPage();
-    const res = await calc.evaluate(analyse, { shots, region, heatmap, W: W!, H: H! });
-    await calc.close();
+    const res = await scratchPage(this, (calc) => calc.evaluate(analyse, { shots, region, heatmap, W: W!, H: H! }));
     const save = (p: string, url: string) => fs.writeFileSync(p, Buffer.from(url.split(',')[1]!, 'base64'));
     const sheet = this.path(label, every ? 'filmstrip' : 'motion'),
       heat = heatmap ? this.path(label, 'heat') : null;
