@@ -284,3 +284,55 @@ test('controls: an action with a context keeps it, so it may share a key (guest-
   assert.equal(actionById('ctx-crouch-test')!.context, 'as x');
   assert.ok(!controlProblems().some((p) => p.includes('ctx-')), JSON.stringify(controlProblems()));
 });
+
+// A wrap (wrapAction) reaches an action's keyboard keys only when they are bound through the action (registerAction's
+// `key`); a code listed only in the guide's `keys` and handled by a raw listener skips every wrap. The garage
+// (src/features/garage.ts) wraps interact for the Install hold, so E in the open garage must reach that wrap.
+test('controls: a wrapped action in src/ binds its guide keys through the action, so its wraps see them', () => {
+  const src = new URL('../src/', import.meta.url);
+  const texts = srcFiles(src)
+    .filter((f) => /\.[jt]s$/.test(f) && !f.startsWith('proto/') && f !== 'player/controls.ts')
+    .map((f) => [f, readFileSync(new URL(f, src), 'utf8')] as const);
+  const wrapped = new Set(texts.flatMap(([, t]) => [...t.matchAll(/wrapAction\(\s*'([\w-]+)'/g)].map((m) => m[1]!)));
+  assert.ok(wrapped.has('interact'), 'the garage wraps interact; did the pattern stop matching?');
+  const missing: string[] = [];
+  const matched = new Set<string>();
+  for (const [f, text] of texts)
+    for (const [, id, body] of text.matchAll(/registerAction\(\s*'([\w-]+)',\s*\{((?:[^{}]|\{[^{}]*\})*?)\}\s*\)/g)) {
+      if (!wrapped.has(id!)) continue;
+      matched.add(id!);
+      const guide = body!.match(/\bkeys:\s*(\[[^\]]*\])/)?.[1] ?? '';
+      const bound = body!.match(/\bkey:\s*('\w+'|\[[^\]]*\])/)?.[1] ?? '';
+      for (const [, code] of guide.matchAll(/'(Key\w+|Digit\w+|Space|Escape|Enter|Tab)'/g))
+        if (!bound.includes(`'${code}'`)) missing.push(`${f}:${id!} lists ${code} in keys but does not bind it (key:)`);
+    }
+  // A body the pattern cannot read (braces nested two deep) would pass unchecked: every wrapped id must be read.
+  assert.deepEqual(
+    [...wrapped].filter((id) => !matched.has(id)),
+    [],
+    'a wrapped action whose registerAction the pattern did not match',
+  );
+  assert.deepEqual(missing, []);
+});
+
+// macOS sends no keyup for other keys while Cmd is held (src/player/input.ts clears its held keys on Cmd's keyup for
+// this). A bound key's action must be let go the same way: E is interact's key now, and the garage's Install hold
+// (wrapAction('interact') in src/features/garage.ts) commits on its own if interact's up never comes. Review of
+// claude/garage-keyboard-install: E down, Cmd down, E let go (no keyup), Cmd up.
+test('controls: Cmd let go releases a bound key held down, since macOS drops its keyup', () => {
+  const [pad] = freeSlots();
+  const log: string[] = [];
+  quiet(() =>
+    registerAction('meta-hold-test', {
+      pad: pad!,
+      key: 'KeyE',
+      label: 'Meta hold test',
+      group: 'hands',
+      down: () => log.push('down'),
+      up: () => log.push('up'),
+    }),
+  );
+  assert.ok(keyEvent({ type: 'keydown', code: 'KeyE' }));
+  keyEvent({ type: 'keyup', code: 'MetaLeft', metaKey: false });
+  assert.deepEqual(log, ['down', 'up'], 'the hold is still down after Cmd went up with no keyup for E');
+});
