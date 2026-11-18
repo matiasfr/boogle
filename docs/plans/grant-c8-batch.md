@@ -1,4 +1,4 @@
-> **Status: planned 18 November 2026 (design sub-agent); sitting 1 (G27) and sitting 2 (G25's look) built 18 November.** Four items are ready in three sittings (G27,
+> **Status: planned 18 November 2026 (design sub-agent); sittings 1 (G27), 2 (G25's look) and 3 (G20, G22's hint) built 18 November.** Four items are ready in three sittings (G27,
 > G25's look, G20, G22's hint); G24 and G30 are already answered on main; G28, G31, G32 and G34 wait on the owner or
 > are his own rows. Checked against `origin/main` at `df94d5816` (world v60). Source: [queue](grant-1114-queue.md)
 > C8, rows G20 to G34 in [round-4-notes](round-4-notes.md#grants-playtest-14-november-his-granola-call-ranked-queued-15-november).
@@ -192,12 +192,36 @@ Each is view only, under an hour, three to five files, with no world bump. Check
    `hook-taken`, the card, the roll on the back after landing, the empty drum at `glide-earned`
    (`docs/world/grant-c8/g25-one-glider.png`); the take-and-glide bot passed (card, 28.1 s home, dry, 4.9 m from the
    pedestal). Not seen: a friend's card (same parts, `reward.ts`'s flat-shaded material), reduced motion, phone width.
-3. **G20 and G22's hint, two small view changes.** `src/render/place-tree-view.ts`,
+3. [x] **G20 and G22's hint, two small view changes.** `src/render/place-tree-view.ts`,
    `src/entities/railway/sources.ts`, `src/render/reward-reveal.ts`, `src/entities/railway/reward.ts`,
    `src/entities/railway/crates-view.ts` (and `secrets-view.ts`, after sitting 1). Seeds `awake`; bot
    `dev/look/bots/railway.ts` (it chops the first trees and opens Station 1's box). Shares `place-tree-view.ts` with
    the tree-culling fix (`99164fbb4`) and world streaming, and `sources.ts` with the capacities work: rebase first.
    If it runs long, split G22's hint into its own sitting.
+   *As built, 18 November 2026:* **G20.** An ordinary tree with accepted work draws a bitten trunk (a new instanced
+   batch in `createTreeView`): the band 0.94 to 1.3 m above its foot opened on the last stroke's side (two of six faces),
+   bark wrapping the opening's edges, and a dark heart (a second batch) behind it, shrinking toward a point behind the
+   axis so it draws back from about 8 cm at the first hit to 60% of the trunk's radius at the ninth. The felled trunk
+   tips and lies with its bite; chips go 9 + 5 × work/15 (9 to 14). Hardwoods and the great tree keep the old notch; a
+   refused stroke keeps its scuff. The bite's constants live inside `createTreeView` and its geometry is merged by
+   hand, because `test/prefab-scenery-review.test.ts` evaluates that function from source with only `THREE`,
+   `createTreeRoots` and `fitInstanceBounds` bound; the trunk keeps its literal `CylinderGeometry(0.28, 0.46, 5, 6)`,
+   which `test/home-cart.test.ts` pins. Batching, bounds and sleep unchanged; no per-frame allocation. At a stand of
+   three Home trees with two part-cut (`awake`, camera over the stand): 182 to 186 draw calls, 616,395 to 674,003
+   triangles (the two batches in the main and shadow passes; zero-scale slots for every tree, as the notch and stump
+   batches already have; drawn only once some tree has been cut, until the next refit). **G22's hint.** `Got.hint`;
+   `reward-reveal.ts` owns the copy (`WEAR_HINT`) and `withWearHint`, which gives the hint to the first wearable's card
+   and records it with `createSeen('boogle.wear-hint.v0')` (per railway room and player, as the other seen-once
+   moments). The station hat, scarf and boxes go through it in `reward.ts` (`crates-view.ts` unchanged: it is handed
+   the wrapped queue); the secret boxes reach the queue through `railwayYouGot`, whose box cards are recognised by
+   their rarity mark, so `secrets-view.ts` is unchanged (its golden and `test/reach.test.ts` evaluate it from source
+   with fixed bindings). The glyph is `glyph('pause')`: Esc, the pad's menu button (Menu, Options, +), none on touch.
+   The shop's "Take it" card (`town/shop.ts`) does not carry the hint: out of this sitting's files.
+   Seen: the bite at 0, 5 and 9 of 10 from chopping distance and 8 m back, side-on and the felling
+   (`docs/world/grant-c8/g20-*.png`); the hat's card with the hint and the scarf's without
+   (`docs/world/grant-c8/g22-*.png`); `playthrough --to t1-done` passed (the hat's card read "… Change what you wear
+   in Pause Esc"). Not seen: the hint on a secret box's or a crate's card, the pad glyph on a card (checked as markup
+   only), a friend's view of a bitten tree, reduced motion, phone width.
 
 `npm run level-check` on main, 18 November: exit 0, 21 reports; track continuity ok; the 15 planned-track reports
 are all on tracks that are never drawn or not built yet (line 1 and 2 kinks, Ring v27, the bay), none near these
@@ -253,5 +277,5 @@ At most five; each has a recommended answer first. None is recorded as his call.
 
 ## Suspect copy, for the owner
 
-- Draft: "Change what you wear in Pause" (G22's hint), new UI copy, not built yet.
+- Draft: "Change what you wear in Pause" (G22's hint), new UI copy, built 18 November (sitting 3) and still draft for the owner to reword.
 - No character line is changed. Sleeves' "The log cart will bring the heavy conversation" stays as he wrote it.
