@@ -47,14 +47,22 @@ Report and fix:
 - research docs missing from `docs/research/README.md` or without a top block;
 - `docs/agent-calls.md`: count the open calls (one table per topic) and list any older than a week for the owner; `npm run decisions` must pass (no ruled row left in the live tables, every entry with its Current rules line).
 
-Once a week, the designer ranks open `docs/agent-calls.md` calls into decide / flags / bulk, with a recommendation each; the orchestrator republishes the owner’s review page. Record the last review on the state file’s Tidy line ([owner decision](../../../docs/decisions-process.md#d-2026-11-17-weekly-agent-calls-review)).
+Once a week, the orchestrator ranks open `docs/agent-calls.md` calls into decide / flags / bulk, with a recommendation each, using the [design-review skill](../design-review/SKILL.md), and republishes the owner’s review page. Record the last review on the state file’s Tidy line ([owner decision](../../../docs/decisions-process.md#d-2026-11-17-weekly-agent-calls-review)).
 
 Keep each fix small and factual; don't rewrite decisions or The Boogler's copy.
 
 ## 4. Memory
 
-Run `anthropic-skills:consolidate-memory` on Claude's memory directory. Anything that binds every agent moves into the
-repo (owner-calls or decisions) and the memory becomes a pointer. Delete memories that are now wrong.
+Read every file in Claude's memory directory and its `MEMORY.md` index. Merge memories that say the same thing into
+one file. Anything that binds every agent moves into the repo (owner-calls or decisions) and the memory becomes a
+pointer. Delete memories that are now wrong, checking any file, command or flag a memory names against the repo;
+where two memories disagree, fix the wrong one. Turn relative dates ("yesterday", "last week") into absolute ones.
+
+For a correction or preference you suspect was given since the last pass and never saved, grep the session
+transcripts (the JSONL files beside the memory directory) for a narrow term; don't read them whole. Save what you find
+by the same rule: repo first, memory only for what is Claude-specific.
+
+Keep `MEMORY.md` an index: one line per remaining file, no memory content, no pointers to deleted files.
 
 ## 5. Debris
 

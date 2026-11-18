@@ -65,8 +65,6 @@ Use `--base <ref>` (also `--base-ref`) to start a task at an existing commit or 
 
 Run `npm run ship-watch` to wait for shipping trouble; `npm run ship-watch -- --once` checks once. It only reads GitHub.
 
-Directors: put the relevant files, errors and decisions in the brief.
-
 Jobs end with a structured JSON result saved as `.look/codex/<topic>/result.json`; the queue includes its outcome and summary.
 
 Routing card, by job type, with when to escalate: `docs/research/codex-model-routing.md`. Keep `xhigh` and `max` for a specific unresolved question, and name the model, effort and completion check in the brief.

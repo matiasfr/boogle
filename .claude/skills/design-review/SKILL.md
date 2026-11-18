@@ -6,8 +6,8 @@ description: Review a Boogle plan or brief as a game designer before it is built
 # Design review
 
 You wrote or were handed a plan or brief with gameplay calls; review it as Boogle's game designer before anything is
-built. The plan's author runs this itself, with what it already read while planning (owner, 16 November 2026: the
-separate `designer` agent is folded into this skill, owner call "Fold roles into the builder"). The owner decides the
+built. The plan's author runs this itself, with what it already read while planning (owner, 16 November 2026,
+owner call "Fold roles into the builder"). The owner decides the
 game: the job is to make every gameplay call in the plan visible, grounded and small enough to change later. Nothing
 waits for a playtest (owner, 9 November 2026), so this is the design check that happens before building.
 
