@@ -12,6 +12,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## Leftovers
 
+- **18 November (P2, tooling on HOTBOX):** `npm run before-after` fails on Windows (tar reads the `C:` in a path as a remote host; its manual fallback then hit 403s); the pause menu now opens during `look` captures (builders hid it with an injected style, at least four times today). Both cost every visual job time.
 - **18 November (owed proofs, orchestrator, on a quiet machine):** accounts step 5's before and after eight-player `npm run load` (needs `WS_LOAD=1`, which the broker refuses); the railhead traveller's lagged-tab `railheadView.shownU` within 0.1 m (measured under load 15.2 of 20: median 0.057 m, peak 0.21 m, a steady offset that grows with speed).
 - **18 November (P2, server, from the device R4 security review):** body-parser reads an oversized chunked body to its end before the 413, so `/playdata`, reports and reviews can each soak up unlimited bytes for up to Node's default 300 s request timeout; consider a streaming size cap on each and a lower `server.requestTimeout`. `fly.staging.toml` has no `REPLACE_FLY_PROXY`, so on staging every client shares one rate-limit bucket.
 - **18 November (P3, tests on Windows):** `server/test/accounts.test.ts` "SIGKILL retains…" fails on HOTBOX (the child reports `signal null`), on origin/main too, so crash durability is unverified on Windows; `test/bot-queue.test.ts` "short job takes the freed slot first" can pass its 5 s limit under load (passes in about 2.4 s alone).

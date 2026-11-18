@@ -10,7 +10,7 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| World streaming step 5: static matrices on static scenery (far-ground tiles, track chunks, the sickle backdrop, Ring Island's ground, static prefab placements) | Chunk, cull and stream the world (P2) | `claude/world-static-matrices` | the owner's live orchestrator session (HOTBOX), Claude Opus medium delegate | 18 November 15:30 | building |
+| World streaming step 6: Far Head's top three draw sources (from the census; trace the unnamed groups to their owners first) become instanced or merged batches | Chunk, cull and stream the world (P2) | `claude/world-far-head-draws` | the owner's live orchestrator session (HOTBOX), Claude Opus medium delegate | 18 November 17:00 | building |
 
 ## Where the work stands
 
